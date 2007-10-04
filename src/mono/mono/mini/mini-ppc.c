@@ -218,6 +218,70 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
+{
+	char *o = NULL;
+	int reg, offset = 0;
+	guint32* code = (guint32*)code_ptr;
+
+	/* This is the 'blrl' instruction */
+	--code;
+
+	/* Sanity check: instruction must be 'blrl' */
+	if (*code != 0x4e800021)
+		return NULL;
+
+	/* the thunk-less direct call sequence: lis/ori/mtlr/blrl */
+	if ((code [-1] >> 26) == 31 && (code [-2] >> 26) == 24 && (code [-3] >> 26) == 15) {
+		return NULL;
+	}
+
+	/* OK, we're now at the 'blrl' instruction. Now walk backwards
+	till we get to a 'mtlr rA' */
+	for (; --code;) {
+		if((*code & 0x7c0803a6) == 0x7c0803a6) {
+			/* Here we are: we reached the 'mtlr rA'.
+			Extract the register from the instruction */
+			reg = (*code & 0x03e00000) >> 21;
+			--code;
+			/* ok, this is a lwz reg, offset (vtreg) 
+			 * it is emitted with:
+			 * ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
+			 */
+			offset = (*code & 0xffff);
+			reg = (*code >> 16) & 0x1f;
+			g_assert (reg != ppc_r1);
+			/*g_print ("patching reg is %d\n", reg);*/
+			if (reg >= 13) {
+				MonoLMF *lmf = (MonoLMF*)((char*)regs + (14 * sizeof (double)) + (13 * sizeof (gulong)));
+				/* saved in the MonoLMF structure */
+				o = (gpointer)lmf->iregs [reg - 13];
+			} else {
+				o = regs [reg];
+			}
+			break;
+		}
+	}
+	o += offset;
+	return (gpointer*)o;
+}
+
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	return NULL;
+}
+
+gpointer
+mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
+{
+	/* FIXME: handle returning a struct */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return (gpointer)regs [ppc_r4];
+	return (gpointer)regs [ppc_r3];
+}
+
 /*
  * Initialize the cpu to execute managed code.
  */

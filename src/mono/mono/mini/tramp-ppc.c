@@ -29,8 +29,8 @@
  * this argument. This method returns a pointer to a trampoline which does
  * unboxing before calling the method
  */
-static gpointer
-get_unbox_trampoline (MonoMethod *m, gpointer addr)
+gpointer
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = 3;
@@ -55,6 +55,52 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	return start;
 }
 
+void
+mono_arch_patch_callsite (guint8 *code_ptr, guint8 *addr)
+{
+	guint32 *code = (guint32*)code_ptr;
+	/* This is the 'blrl' instruction */
+	--code;
+	
+	/*
+	 * Note that methods are called also with the bl opcode.
+	 */
+	if (((*code) >> 26) == 18) {
+		/*g_print ("direct patching\n");*/
+		ppc_patch ((char*)code, addr);
+		mono_arch_flush_icache ((char*)code, 4);
+		return;
+	}
+	
+	/* Sanity check: instruction must be 'blrl' */
+	g_assert(*code == 0x4e800021);
+
+	/* the thunk-less direct call sequence: lis/ori/mtlr/blrl */
+	if ((code [-1] >> 26) == 31 && (code [-2] >> 26) == 24 && (code [-3] >> 26) == 15) {
+		ppc_patch ((char*)code, addr);
+		return;
+	}
+	g_assert_not_reached ();
+}
+
+void
+mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+{
+	return;
+}
+
+void
+mono_arch_nullify_plt_entry (guint8 *code)
+{
+	g_assert_not_reached ();
+}
+
 /* Stack size for trampoline function 
  * PPC_MINIMAL_STACK_SIZE + 16 (args + alignment to ppc_magic_trampoline)
  * + MonoLMF + 14 fp regs + 13 gregs + alignment
@@ -68,150 +114,6 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 /* Jump-specific trampoline code fragment size */
 #define JUMP_TRAMPOLINE_SIZE   64
-
-/**
- * ppc_magic_trampoline:
- * @code: pointer into caller code
- * @method: the method to translate
- * @sp: stack pointer
- *
- * This method is called by the function 'arch_create_jit_trampoline', which in
- * turn is called by the trampoline functions for virtual methods.
- * After having called the JIT compiler to compile the method, it inspects the
- * caller code to find the address of the method-specific part of the
- * trampoline vtable slot for this method, updates it with a fragment that calls
- * the newly compiled code and returns this address of the compiled code to
- * 'arch_create_jit_trampoline' 
- */
-static gpointer
-ppc_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
-{
-	char *o = NULL;
-	gpointer addr;
-        MonoJitInfo *ji, *target_ji;
-	int reg, offset = 0;
-
-	addr = mono_compile_method(method);
-	/*g_print ("method code at %p for %s:%s\n", addr, method->klass->name, method->name);*/
-	g_assert(addr);
-
-	if (!code){
-		return addr;
-	}
-
-	/* We can't trampoline across domains */
-	ji = mono_jit_info_table_find (mono_domain_get (), code);
-	target_ji = mono_jit_info_table_find (mono_domain_get (), addr);
-	if (!mono_method_same_domain (ji, target_ji))
-		return addr;
-
-	/* Locate the address of the method-specific trampoline. The call using
-	the vtable slot that took the processing flow to 'arch_create_jit_trampoline' 
-	looks something like this:
-	
-		mtlr rA			; Move rA (a register containing the
-					; target address) to LR
-		blrl			; Call function at LR
-	
-	PowerPC instructions are 32-bit long, which means that a 32-bit target
-	address cannot be encoded as an immediate value (because we already
-	have spent some bits to encode the branch instruction!). That's why a
-	'b'ranch to the contents of the 'l'ink 'r'egister (with 'l'ink register
-	update) is needed, instead of a simpler 'branch immediate'. This
-	complicates our purpose here, because 'blrl' overwrites LR, which holds
-	the value we're interested in.
-	
-	Therefore, we need to locate the 'mtlr rA' instruction to know which
-	register LR was loaded from, and then retrieve the value from that
-	register */
-	
-	/* This is the 'blrl' instruction */
-	--code;
-	
-	/*
-	 * Note that methods are called also with the bl opcode.
-	 */
-	if (((*code) >> 26) == 18) {
-		/*g_print ("direct patching\n");*/
-		ppc_patch ((char*)code, addr);
-		mono_arch_flush_icache ((char*)code, 4);
-		return addr;
-	}
-	
-	/* Sanity check: instruction must be 'blrl' */
-	g_assert(*code == 0x4e800021);
-
-	/* the thunk-less direct call sequence: lis/ori/mtlr/blrl */
-	if ((code [-1] >> 26) == 31 && (code [-2] >> 26) == 24 && (code [-3] >> 26) == 15) {
-		ppc_patch ((char*)code, addr);
-		return addr;
-	}
-
-	/* OK, we're now at the 'blrl' instruction. Now walk backwards
-	till we get to a 'mtlr rA' */
-	for(; --code;) {
-		if((*code & 0x7c0803a6) == 0x7c0803a6) {
-			gint16 soff;
-			gint reg_offset;
-			/* Here we are: we reached the 'mtlr rA'.
-			Extract the register from the instruction */
-			reg = (*code & 0x03e00000) >> 21;
-			--code;
-			/* ok, this is a lwz reg, offset (vtreg) 
-			 * it is emitted with:
-			 * ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
-			 */
-			soff = (*code & 0xffff);
-			offset = soff;
-			reg = (*code >> 16) & 0x1f;
-			g_assert (reg != ppc_r1);
-			/*g_print ("patching reg is %d\n", reg);*/
-			if (reg >= 13) {
-				/* saved in the MonoLMF structure */
-				reg_offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs);
-				reg_offset += (reg - 13) * sizeof (gulong);
-			} else {
-				/* saved in the stack, see frame diagram below */
-				reg_offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
-				reg_offset += reg * sizeof (gulong);
-			}
-			/* o contains now the value of register reg */
-			o = *((char**) (sp + reg_offset));
-			break;
-		}
-	}
-
-	/* this is not done for non-virtual calls, because in that case
-	   we won't have an object, but the actual pointer to the 
-	   valuetype as the this argument
-	 */
-	if (method->klass->valuetype && !mono_aot_is_got_entry (code, o))
-		addr = get_unbox_trampoline (method, addr);
-
-	o += offset;
-	if (mono_aot_is_got_entry (code, o) || mono_domain_owns_vtable_slot (mono_domain_get (), o))
-		*((gpointer *)o) = addr;
-	return addr;
-}
-
-static void
-ppc_class_init_trampoline (void *vtable, guint32 *code, char *sp)
-{
-	mono_runtime_class_init (vtable);
-
-#if 0
-	/* This is the 'bl' instruction */
-	--code;
-	
-	if (((*code) >> 26) == 18) {
-		ppc_ori (code, 0, 0, 0); /* nop */
-		mono_arch_flush_icache (code, 4);
-		return;
-	} else {
-		g_assert_not_reached ();
-	}
-#endif
-}
 
 /*
  * Stack frame description when the generic trampoline is called.
@@ -233,6 +135,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code = NULL;
 	int i, offset;
+	gpointer tramp_handler;
 
 	if(!code) {
 		/* Now we'll create in 'buf' the PowerPC trampoline code. This
@@ -292,9 +195,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		/* *(lmf_addr) = r11 */
 		ppc_stw (buf, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
 		/* save method info (it's stored on the stack, so get it first and put it
-		 * in r3 as it's the first argument to the function) */
-		ppc_lwz (buf, ppc_r3, GREGS_OFFSET, ppc_r1);
-		ppc_stw (buf, ppc_r3, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
+		 * in r5 as it's the third argument to the function)
+		 */
+		ppc_lwz (buf, ppc_r5, GREGS_OFFSET, ppc_r1);
+		if ((tramp_type == MONO_TRAMPOLINE_GENERIC) || (tramp_type == MONO_TRAMPOLINE_JUMP))
+			ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
 		ppc_stw (buf, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
 		/* save the IP (caller ip) */
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -305,10 +210,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r11);
 
 		/*
-		 * Now we're ready to call ppc_magic_trampoline ().
+		 * Now we're ready to call trampoline (gssize *regs, guint8 *code, gpointer value, guint8 *tramp)
+		 * Note that the last argument is unused.
 		 */
-		/* Arg 1: MonoMethod *method. It was put in r3 already above */
-		/*ppc_mr  (buf, ppc_r3, ppc_r3);*/
+		/* Arg 1: a pointer to the registers */
+		ppc_addi (buf, ppc_r3, ppc_r1, GREGS_OFFSET);
 		
 		/* Arg 2: code (next address to the instruction that called us) */
 		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -317,18 +223,21 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 			ppc_lwz  (buf, ppc_r4, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
 		}
 		
-		/* Arg 3: stack pointer so that the magic trampoline can access the
-		 * registers we saved above
-		 */
-		ppc_mr   (buf, ppc_r5, ppc_r1);
-		
-		if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
-			ppc_lis  (buf, ppc_r0, (guint32) ppc_class_init_trampoline >> 16);
-			ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) ppc_class_init_trampoline & 0xffff);
-		} else {
-			ppc_lis  (buf, ppc_r0, (guint32) ppc_magic_trampoline >> 16);
-			ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) ppc_magic_trampoline & 0xffff);
-		}
+		/* Arg 3: MonoMethod *method. It was put in r5 already above */
+		/*ppc_mr  (buf, ppc_r5, ppc_r5);*/
+
+		if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
+			tramp_handler = mono_class_init_trampoline;
+		else if (tramp_type == MONO_TRAMPOLINE_AOT)
+			tramp_handler = mono_aot_trampoline;
+		else if (tramp_type == MONO_TRAMPOLINE_AOT_PLT)
+			tramp_handler = mono_aot_plt_trampoline;
+		else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
+			tramp_handler = mono_delegate_trampoline;
+		else
+			tramp_handler = mono_magic_trampoline;
+		ppc_lis  (buf, ppc_r0, (guint32) tramp_handler >> 16);
+		ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) tramp_handler & 0xffff);
 		ppc_mtlr (buf, ppc_r0);
 		ppc_blrl (buf);
 		
@@ -373,13 +282,17 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		}
 
 		/* Non-standard function epilogue. Instead of doing a proper
-		 * return, we just hump to the compiled code.
+		 * return, we just jump to the compiled code.
 		 */
 		/* Restore stack pointer and LR and jump to the code */
 		ppc_lwz  (buf, ppc_r1,  0, ppc_r1);
 		ppc_lwz  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
 		ppc_mtlr (buf, ppc_r11);
-		ppc_bcctr (buf, 20, 0);
+		if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
+			ppc_blr (buf);
+		} else {
+			ppc_bcctr (buf, 20, 0);
+		}
 
 		/* Flush instruction cache, since we've generated code */
 		mono_arch_flush_icache (code, buf - code);
@@ -391,13 +304,16 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	return code;
 }
 
-static MonoJitInfo*
-create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain) {
-	guint8 *code, *buf;
-	MonoJitInfo *ji;
+#define TRAMPOLINE_SIZE 24
+gpointer
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+{
+	guint8 *code, *buf, *tramp;
+
+	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, 24);
+	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
 	mono_domain_unlock (domain);
 
 	/* Prepare the jump to the generic trampoline code.*/
@@ -405,121 +321,17 @@ create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain) {
 	ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) tramp & 0xffff);
 	ppc_mtctr (buf, ppc_r0);
 	
-	/* And finally put 'method' in r0 and fly! */
-	ppc_lis  (buf, ppc_r0, (guint32) method >> 16);
-	ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) method & 0xffff);
+	/* And finally put 'arg1' in r0 and fly! */
+	ppc_lis  (buf, ppc_r0, (guint32) arg1 >> 16);
+	ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) arg1 & 0xffff);
 	ppc_bcctr (buf, 20, 0);
 	
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
 
-	g_assert ((buf - code) <= 24);
-
-	ji = g_new0 (MonoJitInfo, 1);
-	ji->method = method;
-	ji->code_start = code;
-	ji->code_size = buf - code;
-
-	mono_jit_stats.method_trampolines++;
-
-	return ji;
-}
-
-MonoJitInfo*
-mono_arch_create_jump_trampoline (MonoMethod *method)
-{
-	guint8 *tramp;
-	MonoDomain* domain = mono_domain_get ();
-	
-	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_JUMP);
-	return create_specific_tramp (method, tramp, domain);
-}
-
-/**
- * arch_create_jit_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline function for virtual methods. If the created
- * code is called it first starts JIT compilation of method,
- * and then calls the newly created method. It also replaces the
- * corresponding vtable entry (see ppc_magic_trampoline).
- *
- * A trampoline consists of two parts: a main fragment, shared by all method
- * trampolines, and some code specific to each method, which hard-codes a
- * reference to that method and then calls the main fragment.
- *
- * The main fragment contains a call to 'ppc_magic_trampoline', which performs
- * call to the JIT compiler and substitutes the method-specific fragment with
- * some code that directly calls the JIT-compiled method.
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-mono_arch_create_jit_trampoline (MonoMethod *method)
-{
-	guint8 *tramp;
-	MonoJitInfo *ji;
-	MonoDomain* domain = mono_domain_get ();
-	gpointer code_start;
-
-	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC);
-	/* FIXME: should pass the domain down to this function */
-	ji = create_specific_tramp (method, tramp, domain);
-	code_start = ji->code_start;
-	g_free (ji);
-
-	return code_start;
-}
-
-/**
- * mono_arch_create_class_init_trampoline:
- *  @vtable: the type to initialize
- *
- * Creates a trampoline function to run a type initializer. 
- * If the trampoline is called, it calls mono_runtime_class_init with the
- * given vtable, then patches the caller code so it does not get called any
- * more.
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-mono_arch_create_class_init_trampoline (MonoVTable *vtable)
-{
-	guint8 *code, *buf, *tramp;
-
-	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
-
-	/* This is the method-specific part of the trampoline. Its purpose is
-	to provide the generic part with the MonoMethod *method pointer. We'll
-	use r11 to keep that value, for instance. However, the generic part of
-	the trampoline relies on r11 having the same value it had before coming
-	here, so we must save it before. */
-	mono_domain_lock (vtable->domain);
-	code = buf = mono_code_manager_reserve (vtable->domain->code_mp, METHOD_TRAMPOLINE_SIZE);
-	mono_domain_unlock (vtable->domain);
-
-	ppc_mflr (buf, ppc_r4);
-	ppc_stw  (buf, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_sp);
-	ppc_stwu (buf, ppc_sp, -64, ppc_sp);
-	ppc_load (buf, ppc_r3, vtable);
-	ppc_load (buf, ppc_r5, 0);
-
-	ppc_load (buf, ppc_r0, ppc_class_init_trampoline);
-	ppc_mtlr (buf, ppc_r0);
-	ppc_blrl (buf);
-
-	ppc_lwz (buf, ppc_r0, 64 + PPC_RET_ADDR_OFFSET, ppc_sp);
-	ppc_mtlr (buf, ppc_r0);
-	ppc_addic (buf, ppc_sp, ppc_sp, 64);
-	ppc_blr (buf);
-
-	/* Flush instruction cache, since we've generated code */
-	mono_arch_flush_icache (code, buf - code);
-		
-	/* Sanity check */
-	g_assert ((buf - code) <= METHOD_TRAMPOLINE_SIZE);
-
-	mono_jit_stats.method_trampolines++;
+	g_assert ((buf - code) <= TRAMPOLINE_SIZE);
+	if (code_len)
+		*code_len = buf - code;
 
 	return code;
 }
@@ -532,7 +344,7 @@ mono_debugger_create_notification_function (void)
 {
 	guint8 *ptr, *buf;
 
-	ptr = buf = mono_global_codeman_reserve (16);
+	ptr = buf = mono_global_codeman_reserve (8);
 	ppc_break (buf);
 	ppc_blr (buf);
 	mono_arch_flush_icache (ptr, buf - ptr);
