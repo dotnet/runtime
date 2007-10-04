@@ -1909,8 +1909,6 @@ handle_enum:
 	case MONO_TYPE_CHAR:
 		if (strict)
 			return IS_ONE_OF3 (candidate->type, MONO_TYPE_I2, MONO_TYPE_U2, MONO_TYPE_CHAR);
-		return get_stack_type (candidate) == TYPE_I4;
-
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4: {
 		gboolean is_native_int = IS_ONE_OF2 (candidate->type, MONO_TYPE_I, MONO_TYPE_U);
@@ -1934,7 +1932,9 @@ handle_enum:
 	case MONO_TYPE_U: {
 		gboolean is_native_int = IS_ONE_OF2 (candidate->type, MONO_TYPE_I, MONO_TYPE_U);
 		gboolean is_int4 = IS_ONE_OF2 (candidate->type, MONO_TYPE_I4, MONO_TYPE_U4);
-		return is_native_int || is_int4;
+		if (strict)
+			return is_native_int || is_int4;
+		return is_native_int || get_stack_type (candidate) == TYPE_I4;
 	}
 
 	case MONO_TYPE_PTR:
@@ -2683,37 +2683,45 @@ do_ldobj_value (VerifyContext *ctx, int token)
 }
 
 static MonoType *
-get_load_indirect_mono_type (int opcode) {
+get_indirect_op_mono_type (int opcode) {
 	switch (opcode) {
 	case CEE_LDIND_I1:
 	case CEE_LDIND_U1:
+	case CEE_STIND_I1:
 		return &mono_defaults.sbyte_class->byval_arg;
 
 	case CEE_LDIND_I2:
 	case CEE_LDIND_U2:
+	case CEE_STIND_I2:
 		return &mono_defaults.int16_class->byval_arg;
 
 	case CEE_LDIND_I4:
 	case CEE_LDIND_U4:
+	case CEE_STIND_I4:
 		return &mono_defaults.int32_class->byval_arg;
 
 	case CEE_LDIND_I8:
+	case CEE_STIND_I8:
 		return &mono_defaults.int64_class->byval_arg;
 
 	case CEE_LDIND_R4:
+	case CEE_STIND_R4:
 		return &mono_defaults.single_class->byval_arg;
 
-	case CEE_LDIND_R8:		
+	case CEE_LDIND_R8:
+	case CEE_STIND_R8:
 		return &mono_defaults.double_class->byval_arg;
 
 	case CEE_LDIND_I:
+	case CEE_STIND_I:
 		return &mono_defaults.int_class->byval_arg;
 
 	case CEE_LDIND_REF:
+	case CEE_STIND_REF:
 		return &mono_defaults.object_class->byval_arg;
 
 	default:
-		g_error ("unknown opcode %02x in get_load_indirect_type ", opcode);
+		g_error ("unknown opcode %02x in get_indirect_op_mono_type ", opcode);
 		return NULL;
 	}
 }
@@ -2728,7 +2736,7 @@ do_load_indirect (VerifyContext *ctx, int opcode)
 	value = stack_pop (ctx);
 	if (!IS_MANAGED_POINTER (value->stype)) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Load indirect not using a manager pointer at 0x%04x", ctx->ip_offset));
-		set_stack_value (stack_push (ctx), get_load_indirect_mono_type (opcode), FALSE);
+		set_stack_value (stack_push (ctx), get_indirect_op_mono_type (opcode), FALSE);
 		return;
 	}
 
@@ -2737,10 +2745,34 @@ do_load_indirect (VerifyContext *ctx, int opcode)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for ldind_ref expected object byref operation at 0x%04x", ctx->ip_offset));
 		set_stack_value (stack_push (ctx), mono_type_get_type_byval (value->type), FALSE);
 	} else {
-		if (!verify_type_compatibility_full (ctx, get_load_indirect_mono_type (opcode), mono_type_get_type_byval (value->type), TRUE))
+		if (!verify_type_compatibility_full (ctx, get_indirect_op_mono_type (opcode), mono_type_get_type_byval (value->type), TRUE))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for ldind 0x%x operation at 0x%04x", opcode, ctx->ip_offset));
-		set_stack_value (stack_push (ctx), get_load_indirect_mono_type (opcode), FALSE);
+		set_stack_value (stack_push (ctx), get_indirect_op_mono_type (opcode), FALSE);
 	}
+}
+
+static void
+do_store_indirect (VerifyContext *ctx, int opcode)
+{
+	ILStackDesc *addr, *val;
+	if (!check_underflow (ctx, 2))
+		return;
+
+	val = stack_pop (ctx);
+	addr = stack_pop (ctx);	
+
+	check_unmanaged_pointer (ctx, addr);
+
+	if (!IS_MANAGED_POINTER (addr->stype) && addr->stype != TYPE_PTR) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid non-pointer argument to stind at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	if (!verify_type_compatibility_full (ctx, get_indirect_op_mono_type (opcode), mono_type_get_type_byval (addr->type), TRUE))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid addr type at stack for stind 0x%x operation at 0x%04x", opcode, ctx->ip_offset));
+
+	if (!verify_type_compatibility_full (ctx, get_indirect_op_mono_type (opcode), mono_type_get_type_byval (val->type), FALSE))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid addr type at stack for stind 0x%x operation at 0x%04x", opcode, ctx->ip_offset));
 }
 
 static void
@@ -2825,7 +2857,7 @@ mono_method_verify (MonoMethod *method, int level)
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	VerifyContext ctx;
-	VERIFIER_DEBUG ( printf ("Verify IL for method %s %s\n",  method->klass->name, method->name); );
+	VERIFIER_DEBUG ( printf ("Verify IL for method %s %s %s\n",  method->klass->name,  method->klass->name, method->name); );
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 			(method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))) {
@@ -3226,13 +3258,8 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_STIND_I8:
 		case CEE_STIND_R4:
 		case CEE_STIND_R8:
-			if (!check_underflow (&ctx, 2))
-				break;
-			ctx.eval.size -= 2;
-			if (stack_top (&ctx)->stype != TYPE_PTR && stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid pointer argument to stind at 0x%04x", ip_offset));
-			if (!stind_type (*ip, stack_get (&ctx, -1)->stype))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Incompatible value argument to stind at 0x%04x", ip_offset));
+		case CEE_STIND_I:
+			do_store_indirect (&ctx, *ip);
 			++ip;
 			break;
 
@@ -3566,12 +3593,6 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ip_offset));
 			ip += 2;
 			start = 1;
-			break;
-		case CEE_STIND_I:
-			if (!check_underflow (&ctx, 2))
-				break;
-			ctx.eval.size -= 2;
-			++ip;
 			break;
 		case CEE_UNUSED26:
 		case CEE_UNUSED27:
