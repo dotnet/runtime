@@ -481,8 +481,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-	unsigned long *ptr;
-	char *p;
 	MonoPPCStackFrame *sframe;
 
 	/* Avoid costly table lookup during stack overflow */
@@ -503,7 +501,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	if (ji != NULL) {
 		gint32 address;
 		int offset, i;
-		gulong *ctx_regs;
 
 		*new_ctx = *ctx;
 		setup_context (new_ctx);
@@ -712,68 +709,36 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 /*
  * This is the function called from the signal handler
  */
-#ifdef __APPLE__
-
 void
 mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
 {
-	struct ucontext *uc = ctx;
+	os_ucontext *uc = ctx;
 
-	mctx->sc_ir = uc->uc_mcontext->ss.srr0;
-	mctx->sc_sp = uc->uc_mcontext->ss.r1;
-	memcpy (&mctx->regs, &uc->uc_mcontext->ss.r13, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&mctx->fregs, &uc->uc_mcontext->fs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);
+	mctx->sc_ir = UCONTEXT_REG_NIP(uc);
+	mctx->sc_sp = UCONTEXT_REG_Rn(uc, 1);
+	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 13), sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, 14), sizeof (double) * MONO_SAVED_FREGS);
 }
 
 void
 mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 {
-	struct ucontext *uc = ctx;
+	os_ucontext *uc = ctx;
 
-	uc->uc_mcontext->ss.srr0 = mctx->sc_ir;
-	uc->uc_mcontext->ss.r1 = mctx->sc_sp;
-	memcpy (&uc->uc_mcontext->ss.r13, &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&uc->uc_mcontext->fs.fpregs [14], &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
+	UCONTEXT_REG_NIP(uc) = mctx->sc_ir;
+	UCONTEXT_REG_Rn(uc, 1) = mctx->sc_sp;
+	memcpy (&UCONTEXT_REG_Rn(uc, 13), &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&UCONTEXT_REG_FPRn(uc, 14), &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
 }
 
 gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
-	struct ucontext *uc = sigctx;
-	return (gpointer)uc->uc_mcontext->ss.srr0;
+	os_ucontext *uc = sigctx;
+	return (gpointer)UCONTEXT_REG_NIP(uc);
 }
 
-#else
-/* Linux */
-void
-mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
-{
-	struct ucontext *uc = ctx;
-
-	mctx->sc_ir = uc->uc_mcontext.uc_regs->gregs [PT_NIP];
-	mctx->sc_sp = uc->uc_mcontext.uc_regs->gregs [PT_R1];
-	memcpy (&mctx->regs, &uc->uc_mcontext.uc_regs->gregs [PT_R13], sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&mctx->fregs, &uc->uc_mcontext.uc_regs->fpregs.fpregs [14], sizeof (double) * MONO_SAVED_FREGS);
-}
-
-void
-mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
-{
-	struct ucontext *uc = ctx;
-
-	uc->uc_mcontext.uc_regs->gregs [PT_NIP] = mctx->sc_ir;
-	uc->uc_mcontext.uc_regs->gregs [PT_R1] = mctx->sc_sp;
-	memcpy (&uc->uc_mcontext.uc_regs->gregs [PT_R13], &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&uc->uc_mcontext.uc_regs->fpregs.fpregs [14], &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
-}
-
-gpointer
-mono_arch_ip_from_context (void *sigctx)
-{
-	struct ucontext *uc = sigctx;
-	return (gpointer)uc->uc_mcontext.uc_regs->gregs [PT_NIP];
-}
-
+#ifndef __APPLE__
 static void
 altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean test_only)
 {
@@ -799,7 +764,7 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	if (stack_ovf) {
 		const char *method;
 		/* we don't do much now, but we can warn the user with a useful message */
-		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", mono_arch_ip_from_context (sigctx), uc->uc_mcontext.uc_regs->gregs [PT_R1]);
+		fprintf (stderr, "Stack overflow: IP: %p, SP: %p\n", mono_arch_ip_from_context (sigctx), (gpointer)UCONTEXT_REG_Rn(uc, 1));
 		if (ji && ji->method)
 			method = mono_method_full_name (ji->method, TRUE);
 		else
@@ -819,19 +784,21 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 16 + 224;
 	frame_size += 15;
 	frame_size &= ~15;
-	sp = (gpointer)(uc->uc_mcontext.uc_regs->gregs [PT_R1] & ~15);
+	sp = (gpointer)(UCONTEXT_REG_Rn(uc, 1) & ~15);
 	sp = (gpointer)((char*)sp - frame_size);
 	/* may need to adjust pointers in the new struct copy, depending on the OS */
 	uc_copy = (ucontext_t*)(sp + 16);
-	memcpy (uc_copy, uc, sizeof (ucontext_t));
+	memcpy (uc_copy, uc, sizeof (os_ucontext));
+#ifdef __linux__
 	uc_copy->uc_mcontext.uc_regs = (char*)uc_copy + ((char*)uc->uc_mcontext.uc_regs - (char*)uc);
+#endif
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
-	uc->uc_mcontext.uc_regs->gregs [PT_LNK] = uc->uc_mcontext.uc_regs->gregs [PT_NIP];
-	uc->uc_mcontext.uc_regs->gregs [PT_NIP] = (unsigned long)altstack_handle_and_restore;
-	uc->uc_mcontext.uc_regs->gregs [PT_R1] = (unsigned long)sp;
-	uc->uc_mcontext.uc_regs->gregs [PT_R3] = (unsigned long)(sp + 16);
-	uc->uc_mcontext.uc_regs->gregs [PT_R4] = 0;
-	uc->uc_mcontext.uc_regs->gregs [PT_R5] = 0;
+	UCONTEXT_REG_LNK(uc) = UCONTEXT_REG_NIP(uc);
+	UCONTEXT_REG_NIP(uc) = (unsigned long)altstack_handle_and_restore;
+	UCONTEXT_REG_Rn(uc, 1) = (unsigned long)sp;
+	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG) = (unsigned long)(sp + 16);
+	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG + 1) = 0;
+	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG + 2) = 0;
 #endif
 }
 
@@ -840,7 +807,6 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 gboolean
 mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 {
-	struct ucontext *uc = ctx;
 	MonoContext mctx;
 	gboolean result;
 

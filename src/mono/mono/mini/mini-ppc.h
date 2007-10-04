@@ -165,4 +165,28 @@ typedef struct {
 	int offset;
 } MonoPPCArgInfo;
 
+#if defined(__linux__)
+	typedef struct ucontext os_ucontext;
+
+	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.uc_regs->gregs [(n)])
+	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.uc_regs->fpregs.fpregs [(n)])
+	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_NIP])
+	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_LNK])
+#elif defined (__APPLE__)
+	typedef struct ucontext os_ucontext;
+
+	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext->ss.r##n)
+	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext->fs.fpregs [(n)])
+	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext->ss.srr0)
+#elif defined(__NetBSD__)
+	typedef ucontext_t os_ucontext;
+
+	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.__gregs [(n)])
+	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.__fpregs.__fpu_regs [(n)])
+	#define UCONTEXT_REG_NIP(ctx)     _UC_MACHINE_PC(ctx)
+	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.__gregs [_REG_LR])
+#else
+#error Unknown OS
+#endif
+
 #endif /* __MONO_MINI_PPC_H__ */  
