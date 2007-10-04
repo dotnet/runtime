@@ -134,6 +134,7 @@ const unsigned char table_sizes [MONO_TABLE_NUM] = {
 static void reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb);
 static void reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb);
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
+static guint32 mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec);
 static guint32 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method);
 static guint32 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb);
 static guint32 mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *cb);
@@ -580,13 +581,17 @@ encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigB
 {
 	int i;
 	MonoGenericInst *class_inst;
+	MonoClass *klass;
 
 	g_assert (gclass);
 
 	class_inst = gclass->context.class_inst;
 
 	sigbuffer_add_value (buf, MONO_TYPE_GENERICINST);
-	encode_type (assembly, &gclass->container_class->byval_arg, buf);
+	klass = gclass->container_class;
+	sigbuffer_add_value (buf, klass->byval_arg.type);
+	sigbuffer_add_value (buf, mono_image_typedef_or_ref_full (assembly, &klass->byval_arg, FALSE));
+
 	sigbuffer_add_value (buf, class_inst->type_argc);
 	for (i = 0; i < class_inst->type_argc; ++i)
 		encode_type (assembly, class_inst->type_argv [i], buf);
@@ -636,16 +641,22 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		MonoClass *k = mono_class_from_mono_type (type);
-		/*
-		 * Make sure we use the correct type.
-		 */
-		sigbuffer_add_value (buf, k->byval_arg.type);
-		/*
-		 * ensure only non-byref gets passed to mono_image_typedef_or_ref(),
-		 * otherwise two typerefs could point to the same type, leading to
-		 * verification errors.
-		 */
-		sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, &k->byval_arg));
+
+		if (k->generic_container) {
+			MonoGenericClass *gclass = mono_metadata_lookup_generic_class (k, k->generic_container->context.class_inst, TRUE);
+			encode_generic_class (assembly, gclass, buf);
+		} else {
+			/*
+			 * Make sure we use the correct type.
+			 */
+			sigbuffer_add_value (buf, k->byval_arg.type);
+			/*
+			 * ensure only non-byref gets passed to mono_image_typedef_or_ref(),
+			 * otherwise two typerefs could point to the same type, leading to
+			 * verification errors.
+			 */
+			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, &k->byval_arg));
+		}
 		break;
 	}
 	case MONO_TYPE_ARRAY:
@@ -2150,6 +2161,9 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 	guint32 token;
 	SigBuffer buf;
 
+	if ((token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typespec, type))))
+		return token;
+
 	sigbuffer_init (&buf, 32);
 	switch (type->type) {
 	case MONO_TYPE_FNPTR:
@@ -2164,11 +2178,11 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *k = mono_class_from_mono_type (type);
-		if (!k || !k->generic_class) {
+		if (!k || !k->generic_container) {
 			sigbuffer_free (&buf);
 			return 0;
 		}
-		encode_generic_class (assembly, k->generic_class, &buf);
+		encode_type (assembly, type, &buf);
 		break;
 	}
 	default:
@@ -2186,26 +2200,23 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 	sigbuffer_free (&buf);
 
 	token = MONO_TYPEDEFORREF_TYPESPEC | (table->next_idx << MONO_TYPEDEFORREF_BITS);
-	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
+	g_hash_table_insert (assembly->typespec, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
 	return token;
 }
 
-/*
- * Despite the name, we handle also TypeSpec (with the above helper).
- */
 static guint32
-mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
+mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec)
 {
 	MonoDynamicTable *table;
 	guint32 *values;
 	guint32 token, scope, enclosing;
 	MonoClass *klass;
 
-	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
-	if (token)
+	/* if the type requires a typespec, we must try that first*/
+	if (try_typespec && (token = create_typespec (assembly, type)))
 		return token;
-	token = create_typespec (assembly, type);
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
 		return token;
 	klass = my_mono_class_from_mono_type (type);
@@ -2224,7 +2235,7 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
 	}
 
 	if (klass->nested_in) {
-		enclosing = mono_image_typedef_or_ref (assembly, &klass->nested_in->byval_arg);
+		enclosing = mono_image_typedef_or_ref_full (assembly, &klass->nested_in->byval_arg, FALSE);
 		/* get the typeref idx of the enclosing type */
 		enclosing >>= MONO_TYPEDEFORREF_BITS;
 		scope = (enclosing << MONO_RESOLTION_SCOPE_BITS) | MONO_RESOLTION_SCOPE_TYPEREF;
@@ -2244,6 +2255,15 @@ mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
 	table->next_idx ++;
 	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), klass->reflection_info);
 	return token;
+}
+
+/*
+ * Despite the name, we handle also TypeSpec (with the above helper).
+ */
+static guint32
+mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type)
+{
+	return mono_image_typedef_or_ref_full (assembly, type, TRUE);
 }
 
 /*
@@ -2532,7 +2552,9 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	klass = mono_class_from_mono_type (tb->type.type);
 
 	sigbuffer_add_value (&buf, MONO_TYPE_GENERICINST);
-	encode_type (assembly, &klass->byval_arg, &buf);
+	g_assert (klass->generic_container);
+	sigbuffer_add_value (&buf, klass->byval_arg.type);
+	sigbuffer_add_value (&buf, mono_image_typedef_or_ref_full (assembly, &klass->byval_arg, FALSE));
 
 	count = mono_array_length (tb->generic_params);
 	sigbuffer_add_value (&buf, count);
@@ -4180,8 +4202,12 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
-	} else if (strcmp (klass->name, "MonoType") == 0 ||
-		 strcmp (klass->name, "GenericTypeParameterBuilder") == 0) {
+	} else if (strcmp (klass->name, "MonoType") == 0) {
+		MonoReflectionType *tb = (MonoReflectionType *)obj;
+		MonoClass *mc = mono_class_from_mono_type (tb->type);
+		token = mono_metadata_token_from_dor (
+			mono_image_typedef_or_ref_full (assembly, tb->type, mc->generic_container == NULL));
+	} else if (strcmp (klass->name, "GenericTypeParameterBuilder") == 0) {
 		MonoReflectionType *tb = (MonoReflectionType *)obj;
 		token = mono_metadata_token_from_dor (
 			mono_image_typedef_or_ref (assembly, tb->type));
