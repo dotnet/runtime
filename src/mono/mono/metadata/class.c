@@ -4492,9 +4492,12 @@ mono_image_init_name_cache (MonoImage *image)
 
 	for (i = 1; i <= t->rows; ++i) {
 		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
-		/* nested types are accessed from the nesting name */
 		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
-		if (visib > TYPE_ATTRIBUTE_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_ASSEMBLY)
+		/*
+		 * Nested types are accessed from the nesting name.  We use the fact that nested types use different visibility flags
+		 * than toplevel types, thus avoiding the need to grovel through the NESTED_TYPE table
+		 */
+		if (visib >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM)
 			continue;
 		name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
@@ -4631,9 +4634,12 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 	/* add a cache if needed */
 	for (i = 1; i <= t->rows; ++i) {
 		mono_metadata_decode_row (t, i - 1, cols, MONO_TYPEDEF_SIZE);
-		/* nested types are accessed from the nesting name */
 		visib = cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_VISIBILITY_MASK;
-		if (visib > TYPE_ATTRIBUTE_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_ASSEMBLY)
+		/*
+		 * Nested types are accessed from the nesting name.  We use the fact that nested types use different visibility flags
+		 * than toplevel types, thus avoiding the need to grovel through the NESTED_TYPE table
+		 */
+		if (visib >= TYPE_ATTRIBUTE_NESTED_PUBLIC && visib <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM)
 			continue;
 		n = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 		nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
