@@ -36,7 +36,9 @@ sub load_opcodes
 		$i++;
 	}
 	close (OPS);
-	my $cpp = "cpp -undef ";
+	my $cpp = $ENV{"CPP"};
+	$cpp = "cpp" unless defined $cpp;
+	$cpp .= " -undef ";
 	foreach (@defines) {
 		$cpp .= " -U$_";
 		$arch_found = 1 if $arch eq $_;
