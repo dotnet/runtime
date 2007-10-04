@@ -241,6 +241,7 @@ mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
 	till we get to a 'mtlr rA' */
 	for (; --code;) {
 		if((*code & 0x7c0803a6) == 0x7c0803a6) {
+			gint16 soff;
 			/* Here we are: we reached the 'mtlr rA'.
 			Extract the register from the instruction */
 			reg = (*code & 0x03e00000) >> 21;
@@ -249,7 +250,8 @@ mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
 			 * it is emitted with:
 			 * ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
 			 */
-			offset = (*code & 0xffff);
+			soff = (*code & 0xffff);
+			offset = soff;
 			reg = (*code >> 16) & 0x1f;
 			g_assert (reg != ppc_r1);
 			/*g_print ("patching reg is %d\n", reg);*/
@@ -3915,6 +3917,113 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		mono_call_inst_add_outarg_reg (cfg, inst, vtarg->dreg, ppc_r3, FALSE);
 	}
 }
+
+#ifdef MONO_ARCH_HAVE_IMT
+
+#define CMP_SIZE 12
+#define BR_SIZE 4
+#define JUMP_IMM_SIZE 20
+#define ENABLE_WRONG_METHOD_CHECK 0
+
+/*
+ * LOCKING: called with the domain lock held
+ */
+gpointer
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+{
+	int i;
+	int size = 0;
+	guint8 *code, *start;
+
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done)
+					item->chunk_size += CMP_SIZE;
+				item->chunk_size += BR_SIZE + JUMP_IMM_SIZE;
+			} else {
+				item->chunk_size += JUMP_IMM_SIZE;
+#if ENABLE_WRONG_METHOD_CHECK
+				item->chunk_size += CMP_SIZE + BR_SIZE + 4;
+#endif
+			}
+		} else {
+			item->chunk_size += CMP_SIZE + BR_SIZE;
+			imt_entries [item->check_target_idx]->compare_done = TRUE;
+		}
+		size += item->chunk_size;
+	}
+	code = mono_code_manager_reserve (domain->code_mp, size);
+	start = code;
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		item->code_target = code;
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done) {
+					ppc_load (code, ppc_r0, (guint32)item->method);
+					ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
+				}
+				item->jmp_code = code;
+				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+				ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [item->vtable_slot])));
+				ppc_lwz (code, ppc_r0, 0, ppc_r11);
+				ppc_mtctr (code, ppc_r0);
+				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+			} else {
+				/* enable the commented code to assert on wrong method */
+#if ENABLE_WRONG_METHOD_CHECK
+				ppc_load (code, ppc_r0, (guint32)item->method);
+				ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
+				item->jmp_code = code;
+				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+#endif
+				ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [item->vtable_slot])));
+				ppc_lwz (code, ppc_r0, 0, ppc_r11);
+				ppc_mtctr (code, ppc_r0);
+				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+#if ENABLE_WRONG_METHOD_CHECK
+				ppc_patch (item->jmp_code, code);
+				ppc_break (code);
+				item->jmp_code = NULL;
+#endif
+			}
+		} else {
+			ppc_load (code, ppc_r0, (guint32)item->method);
+			ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
+			item->jmp_code = code;
+			ppc_bc (code, PPC_BR_FALSE, PPC_BR_LT, 0);
+		}
+	}
+	/* patch the branches to get to the target items */
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->jmp_code) {
+			if (item->check_target_idx) {
+				ppc_patch (item->jmp_code, imt_entries [item->check_target_idx]->code_target);
+			}
+		}
+	}
+		
+	mono_stats.imt_thunks_size += code - start;
+	g_assert (code - start <= size);
+	mono_arch_flush_icache (start, size);
+	return start;
+}
+
+MonoMethod*
+mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+{
+	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
+}
+
+MonoObject*
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+{
+	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
+}
+#endif
 
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
