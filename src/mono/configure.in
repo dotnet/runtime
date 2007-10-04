@@ -1731,7 +1731,7 @@ case "$host" in
 		jit_wanted=true
 		;;
 	macppc-*-openbsd* | powerpc*-*-linux* | powerpc-*-openbsd* | \
-        powerpc-*-sysv* | powerpc-*-darwin*)
+        powerpc-*-sysv* | powerpc-*-darwin* | powerpc-*-netbsd* )
 		TARGET=POWERPC;
 		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=ppc;
