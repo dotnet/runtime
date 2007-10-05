@@ -3994,7 +3994,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 
 #define CMP_SIZE 12
 #define BR_SIZE 4
-#define JUMP_IMM_SIZE 20
+#define JUMP_IMM_SIZE 12
 #define ENABLE_WRONG_METHOD_CHECK 0
 
 /*
@@ -4026,8 +4026,11 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 		size += item->chunk_size;
 	}
+	/* the initial load of the vtable address */
+	size += 8;
 	code = mono_code_manager_reserve (domain->code_mp, size);
 	start = code;
+	ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [0])));
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
@@ -4039,8 +4042,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				}
 				item->jmp_code = code;
 				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-				ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [item->vtable_slot])));
-				ppc_lwz (code, ppc_r0, 0, ppc_r11);
+				ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->vtable_slot), ppc_r11);
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			} else {
@@ -4051,8 +4053,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				item->jmp_code = code;
 				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 #endif
-				ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [item->vtable_slot])));
-				ppc_lwz (code, ppc_r0, 0, ppc_r11);
+				ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->vtable_slot), ppc_r11);
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 #if ENABLE_WRONG_METHOD_CHECK
