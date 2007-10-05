@@ -32,6 +32,11 @@ enum {
 	TLS_MODE_DARWIN_G5
 };
 
+/* This mutex protects architecture specific caches */
+#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
+#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
+static CRITICAL_SECTION mini_arch_mutex;
+
 int mono_exc_esp_offset = 0;
 static int tls_mode = TLS_MODE_DETECT;
 static int lmf_pthread_key = -1;
@@ -269,9 +274,74 @@ mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
 	return (gpointer*)o;
 }
 
+#define MAX_ARCH_DELEGATE_PARAMS 7
+
 gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {
+	guint8 *code, *start;
+
+	/* FIXME: Support more cases */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
+
+	if (has_target) {
+		static guint8* cached = NULL;
+		mono_mini_arch_lock ();
+		if (cached) {
+			mono_mini_arch_unlock ();
+			return cached;
+		}
+		
+		start = code = mono_global_codeman_reserve (16);
+
+		/* Replace the this argument with the target */
+		ppc_lwz (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
+		ppc_mtctr (code, ppc_r0);
+		ppc_lwz (code, ppc_r3, G_STRUCT_OFFSET (MonoDelegate, target), ppc_r3);
+		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+
+		g_assert ((code - start) <= 16);
+
+		mono_arch_flush_icache (code, 16);
+		cached = start;
+		mono_mini_arch_unlock ();
+		return cached;
+	} else {
+		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
+		int size, i;
+
+		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
+			return NULL;
+		for (i = 0; i < sig->param_count; ++i)
+			if (!mono_is_regsize_var (sig->params [i]))
+				return NULL;
+
+		mono_mini_arch_lock ();
+		code = cache [sig->param_count];
+		if (code) {
+			mono_mini_arch_unlock ();
+			return code;
+		}
+
+		size = 12 + sig->param_count * 4;
+		start = code = mono_global_codeman_reserve (size);
+
+		ppc_lwz (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
+		ppc_mtctr (code, ppc_r0);
+		/* slide down the arguments */
+		for (i = 0; i < sig->param_count; ++i) {
+			ppc_mr (code, (ppc_r3 + i), (ppc_r3 + i + 1));
+		}
+		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+
+		g_assert ((code - start) <= size);
+
+		mono_arch_flush_icache (code, size);
+		cache [sig->param_count] = start;
+		mono_mini_arch_unlock ();
+		return start;
+	}
 	return NULL;
 }
 
@@ -298,6 +368,7 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
+	InitializeCriticalSection (&mini_arch_mutex);	
 }
 
 /*
@@ -306,6 +377,7 @@ mono_arch_init (void)
 void
 mono_arch_cleanup (void)
 {
+	DeleteCriticalSection (&mini_arch_mutex);
 }
 
 /*
