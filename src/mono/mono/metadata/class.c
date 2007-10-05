@@ -5096,7 +5096,8 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 		mono_class_init (class);
 		return mono_class_get_field (class, token);
 	}
-	case MONO_TOKEN_METHOD_DEF: {
+	case MONO_TOKEN_METHOD_DEF:
+	case MONO_TOKEN_METHOD_SPEC: {
 		MonoMethod *meth;
 		meth = mono_get_method_full (image, token, NULL, context);
 		if (handle_class)
