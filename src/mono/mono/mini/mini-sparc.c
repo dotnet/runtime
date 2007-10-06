@@ -2188,7 +2188,7 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 
 			g_assert ((base >= sparc_o0) && (base <= sparc_i7));
 
-			base_val = regs [base - sparc_o0];
+			base_val = regs [base];
 
 			return (gpointer)((guint8*)base_val + disp);
 		}
@@ -2220,7 +2220,7 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 
 			g_assert ((base >= sparc_o0) && (base <= sparc_i7));
 
-			base_val = regs [base - sparc_o0];
+			base_val = regs [base];
 
 			return (gpointer)((guint8*)base_val + disp);
 		} else

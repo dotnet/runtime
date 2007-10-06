@@ -108,6 +108,17 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	method_reg = sparc_g1;
 #endif
 
+	regs_offset = MONO_SPARC_STACK_BIAS + 1000;
+
+	/* Save r1 needed by the IMT code */
+	sparc_sti_imm (code, sparc_g1, sparc_sp, regs_offset + (sparc_g1 * sizeof (gpointer)));
+
+	/* 
+	 * sparc_g5 contains the return address, the trampoline argument is stored in the
+	 * instruction stream after the call.
+	 */
+	sparc_ld_imm (code, sparc_g5, 8, method_reg);
+
 #ifdef SPARCV9
 	/* Save fp regs since they are not preserved by calls */
 	for (i = 0; i < 16; i ++)
@@ -140,17 +151,15 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	code = mono_sparc_emit_save_lmf (code, lmf_offset);
 
-	regs_offset = MONO_SPARC_STACK_BIAS + 1000;
-
 	if (has_caller) {
 		/* Load all registers of the caller into a table inside this frame */
 		/* first the out registers */
 		for (i = 0; i < 8; ++i)
-			sparc_sti_imm (code, sparc_i0 + i, sparc_sp, regs_offset + (i * sizeof (gpointer)));
+			sparc_sti_imm (code, sparc_i0 + i, sparc_sp, regs_offset + ((sparc_o0 + i) * sizeof (gpointer)));
 		/* then the in+local registers */
 		for (i = 0; i < 16; i ++) {
 			sparc_ldi_imm (code, sparc_fp, MONO_SPARC_STACK_BIAS + (i * sizeof (gpointer)), sparc_o7);
-			sparc_sti_imm (code, sparc_o7, sparc_sp, regs_offset + ((i + 8) * sizeof (gpointer)));
+			sparc_sti_imm (code, sparc_o7, sparc_sp, regs_offset + ((sparc_l0 + i) * sizeof (gpointer)));
 		}
 	}
 
@@ -224,7 +233,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	return buf;
 }
 
-#define TRAMPOLINE_SIZE (((SPARC_SET_MAX_SIZE >> 2) * 2) + 2)
+#define TRAMPOLINE_SIZE (SPARC_SET_MAX_SIZE + 3)
 
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
@@ -239,13 +248,14 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	/* We have to use g5 here because there is no other free register */
 	sparc_set (code, tramp, sparc_g5);
-#ifdef SPARCV9
-	sparc_set (code, arg1, sparc_g4);
-#else
-	sparc_set (code, arg1, sparc_g1);
-#endif
-	sparc_jmpl (code, sparc_g5, sparc_g0, sparc_g0);
+	sparc_jmpl (code, sparc_g5, sparc_g0, sparc_g5);
 	sparc_nop (code);
+#ifdef SPARCV9
+	g_assert_not_reached ();
+#else
+	*code = (guint32)arg1;
+	code ++;
+#endif
 
 	g_assert ((code - buf) <= TRAMPOLINE_SIZE);
 
@@ -254,7 +264,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	mono_jit_stats.method_trampolines++;
 
-	mono_arch_flush_icache (buf, (code - buf) * 4);
+	mono_arch_flush_icache ((guint8*)buf, (code - buf) * 4);
 
 	return buf;
 }	
