@@ -18,7 +18,7 @@
  */
 #define MONO_ARCH_CALLEE_REGS ((1 << sparc_o0) | (1 << sparc_o1) | (1 << sparc_o2) | (1 << sparc_o3) | (1 << sparc_o4) | (1 << sparc_o5) | (1 << sparc_l7))
 
-#define MONO_ARCH_CALLEE_SAVED_REGS (~MONO_ARCH_CALLEE_REGS)
+#define MONO_ARCH_CALLEE_SAVED_REGS ((~MONO_ARCH_CALLEE_REGS) & ~(1 << sparc_g1))
 
 #ifdef SPARCV9
 /* Use %d34..%d62 as the double precision floating point local registers */
@@ -124,6 +124,8 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
 #define MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE 1
+#define MONO_ARCH_HAVE_IMT 1
+#define MONO_ARCH_IMT_REG sparc_g1
 
 #ifdef SPARCV9
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS

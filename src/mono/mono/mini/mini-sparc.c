@@ -2181,7 +2181,7 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 		if ((sparc_inst_op (prev_ins) == 0x3) && (sparc_inst_i (prev_ins) == 1) && (sparc_inst_op3 (prev_ins) == 0 || sparc_inst_op3 (prev_ins) == 0xb)) {
 			/* ld [r1 + CONST ], r2; call r2 */
 			guint32 base = sparc_inst_rs1 (prev_ins);
-			guint32 disp = sparc_inst_imm13 (prev_ins);
+			gint32 disp = (((gint32)(sparc_inst_imm13 (prev_ins))) << 19) >> 19;
 			gpointer base_val;
 
 			g_assert (sparc_inst_rd (prev_ins) == sparc_inst_rs1 (ins));
@@ -2230,6 +2230,116 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 		g_assert_not_reached ();
 
 	return NULL;
+}
+
+#define CMP_SIZE 3
+#define BR_SMALL_SIZE 2
+#define BR_LARGE_SIZE 2
+#define JUMP_IMM_SIZE 5
+#define ENABLE_WRONG_METHOD_CHECK 0
+
+/*
+ * LOCKING: called with the domain lock held
+ */
+gpointer
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+{
+	int i;
+	int size = 0;
+	guint32 *code, *start;
+
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done)
+					item->chunk_size += CMP_SIZE;
+				item->chunk_size += BR_SMALL_SIZE + JUMP_IMM_SIZE;
+			} else {
+				item->chunk_size += JUMP_IMM_SIZE;
+#if ENABLE_WRONG_METHOD_CHECK
+				item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + 1;
+#endif
+			}
+		} else {
+			item->chunk_size += CMP_SIZE + BR_LARGE_SIZE;
+			imt_entries [item->check_target_idx]->compare_done = TRUE;
+		}
+		size += item->chunk_size;
+	}
+	code = mono_code_manager_reserve (domain->code_mp, size * 4);
+	start = code;
+
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		item->code_target = (guint8*)code;
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done) {
+					sparc_set (code, (guint32)item->method, sparc_g5);
+					sparc_cmp (code, MONO_ARCH_IMT_REG, sparc_g5);
+				}
+				item->jmp_code = (guint8*)code;
+				sparc_branch (code, 0, sparc_bne, 0);
+				sparc_nop (code);
+				sparc_set (code, ((guint32)(&(vtable->vtable [item->vtable_slot]))), sparc_g5);
+				sparc_ld (code, sparc_g5, 0, sparc_g5);
+				sparc_jmpl (code, sparc_g5, sparc_g0, sparc_g0);
+				sparc_nop (code);
+			} else {
+				/* enable the commented code to assert on wrong method */
+#if ENABLE_WRONG_METHOD_CHECK
+				g_assert_not_reached ();
+#endif
+				sparc_set (code, ((guint32)(&(vtable->vtable [item->vtable_slot]))), sparc_g5);
+				sparc_ld (code, sparc_g5, 0, sparc_g5);
+				sparc_jmpl (code, sparc_g5, sparc_g0, sparc_g0);
+				sparc_nop (code);
+#if ENABLE_WRONG_METHOD_CHECK
+				g_assert_not_reached ();
+#endif
+			}
+		} else {
+			sparc_set (code, (guint32)item->method, sparc_g5);
+			sparc_cmp (code, MONO_ARCH_IMT_REG, sparc_g5);
+			item->jmp_code = (guint8*)code;
+			sparc_branch (code, 0, sparc_beu, 0);
+			sparc_nop (code);
+		}
+	}
+	/* patch the branches to get to the target items */
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->jmp_code) {
+			if (item->check_target_idx) {
+				sparc_patch ((guint32*)item->jmp_code, imt_entries [item->check_target_idx]->code_target);
+			}
+		}
+	}
+
+	mono_arch_flush_icache ((guint8*)start, (code - start) * 4);
+
+	mono_stats.imt_thunks_size += (code - start) * 4;
+	g_assert (code - start <= size);
+	return start;
+}
+
+MonoMethod*
+mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+{
+#ifdef SPARCV9
+	g_assert_not_reached ();
+#endif
+
+	return (MonoMethod*)regs [sparc_g1];
+}
+
+MonoObject*
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+{
+	mono_sparc_flushw ();
+
+	return (gpointer)regs [sparc_o0];
 }
 
 /*
