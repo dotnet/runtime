@@ -1772,12 +1772,14 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 	int i, interface_count, real_count;
 	int all_interfaces;
 	gboolean internal_enumerator;
+	gboolean eclass_is_valuetype;
 
 	if (!mono_defaults.generic_ilist_class) {
 		*num = 0;
 		return NULL;
 	}
 	internal_enumerator = FALSE;
+	eclass_is_valuetype = FALSE;
 	if (class->byval_arg.type != MONO_TYPE_SZARRAY) {
 		if (class->generic_class && class->nested_in == mono_defaults.array_class && strcmp (class->name, "InternalEnumerator`1") == 0)	 {
 			/*
@@ -1842,6 +1844,7 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 		real_count = interface_count = 3;
 		interfaces = g_malloc0 (sizeof (MonoClass*) * interface_count);
 		interfaces [0] = fclass;
+		eclass_is_valuetype = TRUE;
 	} else {
 		int j;
 		int idepth = eclass->idepth;
@@ -1917,14 +1920,16 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 				generic_ienumerator_class, 1, args, FALSE);
 			/*g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));*/
 		}
-		j = interface_count;
-		for (i = 0; i < eclass->idepth; i++) {
-			MonoType *args [1];
-			args [0] = &eclass->supertypes [i]->byval_arg;
-			interfaces [j] = mono_class_bind_generic_parameters (
-				generic_ienumerator_class, 1, args, FALSE);
-			/*g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));*/
-			j ++;
+		if (!eclass_is_valuetype) {
+			j = interface_count;
+			for (i = 0; i < eclass->idepth; i++) {
+				MonoType *args [1];
+				args [0] = &eclass->supertypes [i]->byval_arg;
+				interfaces [j] = mono_class_bind_generic_parameters (
+					generic_ienumerator_class, 1, args, FALSE);
+				/*g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));*/
+				j ++;
+			}
 		}
 	}
 	*num = real_count;
