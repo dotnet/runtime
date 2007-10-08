@@ -18,6 +18,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-counters.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/domain-internals.h>
@@ -70,6 +71,11 @@ static MonoImage *exe_image;
 static CRITICAL_SECTION appdomains_mutex;
 
 static MonoDomain *mono_root_domain = NULL;
+
+/* some statistics */
+static int max_domain_code_size = 0;
+static int max_domain_code_alloc = 0;
+static int total_domain_code_alloc = 0;
 
 /* AppConfigInfo: Information about runtime versions supported by an 
  * aplication.
@@ -1104,6 +1110,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	if (domain)
 		g_assert_not_reached ();
 
+	mono_counters_register ("Max native code in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_size);
+	mono_counters_register ("Max code space allocated in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_alloc);
+	mono_counters_register ("Total code space allocated", MONO_COUNTER_INT|MONO_COUNTER_JIT, &total_domain_code_alloc);
+
 	MONO_GC_PRE_INIT ();
 
 	appdomain_thread_id = TlsAlloc ();
@@ -1684,6 +1694,7 @@ delete_jump_list (gpointer key, gpointer value, gpointer user_data)
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
 {
+	int code_size, code_alloc;
 	GSList *tmp;
 	if ((domain == mono_root_domain) && !force) {
 		g_warning ("cant unload root domain");
@@ -1744,6 +1755,13 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->ldstr_table = NULL;
 	jit_info_table_free (domain->jit_info_table);
 	domain->jit_info_table = NULL;
+
+	/* collect statistics */
+	code_alloc = mono_code_manager_size (domain->code_mp, &code_size);
+	total_domain_code_alloc += code_alloc;
+	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
+	max_domain_code_size = MAX (max_domain_code_size, code_size);
+
 #ifdef DEBUG_DOMAIN_UNLOAD
 	mono_mempool_invalidate (domain->mp);
 	mono_code_manager_invalidate (domain->code_mp);
