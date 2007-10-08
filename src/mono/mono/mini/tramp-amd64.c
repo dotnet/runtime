@@ -345,7 +345,12 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	}
 
 	jump_offset = code - buf;
-	amd64_jump_disp (code, 0xffffffff);
+	/* note that jump_disp can use a 8 bit displacement immediate, so we
+ 	 * need to use a value doesn't fit into signed 8 bits otherwise the
+ 	 * later amd64_jump_disp (code, tramp - code) call will corrupt memory
+ 	 * as we allocate 3 bytes less.
+ 	 */
+	amd64_jump_disp (code, 0xf1f1f1f1);
 
 	g_assert ((code - buf) <= TRAMPOLINE_SIZE);
 
