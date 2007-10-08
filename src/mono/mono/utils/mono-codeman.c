@@ -62,6 +62,17 @@ struct _MonoCodeManager {
 	CodeChunk *full;
 };
 
+/**
+ * mono_code_manager_new:
+ *
+ * Creates a new code manager. A code manager can be used to allocate memory
+ * suitable for storing native code that can be later executed.
+ * A code manager allocates memory from the operating system in large chunks
+ * (typically 64KB in size) so that many methods can be allocated inside them
+ * close together, improving cache locality.
+ *
+ * Returns: the new code manager
+ */
 MonoCodeManager* 
 mono_code_manager_new (void)
 {
@@ -74,6 +85,15 @@ mono_code_manager_new (void)
 	return cman;
 }
 
+/**
+ * mono_code_manager_new_dynamic:
+ *
+ * Creates a new code manager suitable for holding native code that can be
+ * used for single or small methods that need to be deallocated independently
+ * of other native code.
+ *
+ * Returns: the new code manager
+ */
 MonoCodeManager* 
 mono_code_manager_new_dynamic (void)
 {
@@ -110,6 +130,12 @@ free_chunklist (CodeChunk *chunk)
 	}
 }
 
+/**
+ * mono_code_manager_destroy:
+ * @cman: a code manager
+ *
+ * Free all the memory associated with the code manager @cman.
+ */
 void
 mono_code_manager_destroy (MonoCodeManager *cman)
 {
@@ -118,7 +144,14 @@ mono_code_manager_destroy (MonoCodeManager *cman)
 	free (cman);
 }
 
-/* fill all the memory with the 0x2a (42) value */
+/**
+ * mono_code_manager_invalidate:
+ * @cman: a code manager
+ *
+ * Fill all the memory with an invalid native code value
+ * so that any attempt to execute code allocated in the code
+ * manager @cman will fail. This is used for debugging purposes.
+ */
 void             
 mono_code_manager_invalidate (MonoCodeManager *cman)
 {
@@ -136,6 +169,15 @@ mono_code_manager_invalidate (MonoCodeManager *cman)
 		memset (chunk->data, fill_value, chunk->size);
 }
 
+/**
+ * mono_code_manager_foreach:
+ * @cman: a code manager
+ * @func: a callback function pointer
+ * @user_data: additional data to pass to @func
+ *
+ * Invokes the callback @func for each different chunk of memory allocated
+ * in the code manager @cman.
+ */
 void
 mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void *user_data)
 {
@@ -253,13 +295,22 @@ new_codechunk (int dynamic, int size)
 	return chunk;
 }
 
+/**
+ * mono_code_manager_reserve:
+ * @cman: a code manager
+ * @size: size of memory to allocate
+ *
+ * Allocates at least @size bytes of memory inside the code manager @cman.
+ *
+ * Returns: the pointer to the allocated memory or #NULL on failure
+ */
 void*
 mono_code_manager_reserve (MonoCodeManager *cman, int size)
 {
 	CodeChunk *chunk, *prev;
 	void *ptr;
 	
-	size += MIN_ALIGN;
+	size += MIN_ALIGN - 1;
 	size &= ~ (MIN_ALIGN - 1);
 
 	if (cman->dynamic) {
@@ -307,20 +358,57 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 	return ptr;
 }
 
-/* 
- * if we reserved too much room for a method and we didn't allocate
- * already from the code manager, we can get back the excess allocation.
+/**
+ * mono_code_manager_commit:
+ * @cman: a code manager
+ * @data: the pointer returned by mono_code_manager_reserve ()
+ * @size: the size requested in the call to mono_code_manager_reserve ()
+ * @newsize: the new size to reserve
+ *
+ * If we reserved too much room for a method and we didn't allocate
+ * already from the code manager, we can get back the excess allocation
+ * for later use in the code manager.
  */
 void
 mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsize)
 {
-	newsize += MIN_ALIGN;
+	newsize += MIN_ALIGN - 1;
 	newsize &= ~ (MIN_ALIGN - 1);
-	size += MIN_ALIGN;
+	size += MIN_ALIGN - 1;
 	size &= ~ (MIN_ALIGN - 1);
 
 	if (cman->current && (size != newsize) && (data == cman->current->data + cman->current->pos - size)) {
 		cman->current->pos -= size - newsize;
 	}
+}
+
+/**
+ * mono_code_manager_size:
+ * @cman: a code manager
+ * @used_size: pointer to an integer for the result
+ *
+ * This function can be used to get statistics about a code manager:
+ * the integer pointed to by @used_size will contain how much
+ * memory is actually used inside the code managed @cman.
+ *
+ * Returns: the amount of memory allocated in @cman
+ */
+int
+mono_code_manager_size (MonoCodeManager *cman, int *used_size)
+{
+	CodeChunk *chunk;
+	guint32 size = 0;
+	guint32 used = 0;
+	for (chunk = cman->current; chunk; chunk = chunk->next) {
+		size += chunk->size;
+		used += chunk->pos;
+	}
+	for (chunk = cman->full; chunk; chunk = chunk->next) {
+		size += chunk->size;
+		used += chunk->pos;
+	}
+	if (used_size)
+		*used_size = used;
+	return size;
 }
 
