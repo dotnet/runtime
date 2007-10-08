@@ -62,6 +62,8 @@ struct _MonoCodeManager {
 	CodeChunk *full;
 };
 
+#define ALIGN_INT(val,alignment) (((val) + (alignment - 1)) & ~(alignment - 1))
+
 /**
  * mono_code_manager_new:
  *
@@ -247,7 +249,7 @@ new_codechunk (int dynamic, int size)
 
 	/* does it make sense to use the mmap-like API? */
 	if (flags == CODE_FLAG_MALLOC) {
-		ptr = malloc (chunk_size);
+		ptr = malloc (chunk_size + MIN_ALIGN - 1);
 		if (!ptr)
 			return NULL;
 	} else {
@@ -299,19 +301,22 @@ new_codechunk (int dynamic, int size)
  * mono_code_manager_reserve:
  * @cman: a code manager
  * @size: size of memory to allocate
+ * @alignment: power of two alignment value
  *
  * Allocates at least @size bytes of memory inside the code manager @cman.
  *
  * Returns: the pointer to the allocated memory or #NULL on failure
  */
 void*
-mono_code_manager_reserve (MonoCodeManager *cman, int size)
+mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 {
 	CodeChunk *chunk, *prev;
 	void *ptr;
-	
-	size += MIN_ALIGN - 1;
-	size &= ~ (MIN_ALIGN - 1);
+
+	/* eventually allow bigger alignments, but we need to fix the dynamic alloc code to
+	 * handle this before
+	 */
+	g_assert (alignment <= MIN_ALIGN);
 
 	if (cman->dynamic) {
 		++mono_stats.dynamic_code_alloc_count;
@@ -325,7 +330,8 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 	}
 
 	for (chunk = cman->current; chunk; chunk = chunk->next) {
-		if (chunk->pos + size <= chunk->size) {
+		if (ALIGN_INT (chunk->pos, alignment) + size <= chunk->size) {
+			chunk->pos = ALIGN_INT (chunk->pos, alignment);
 			ptr = chunk->data + chunk->pos;
 			chunk->pos += size;
 			return ptr;
@@ -353,9 +359,25 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 		return NULL;
 	chunk->next = cman->current;
 	cman->current = chunk;
+	chunk->pos = ALIGN_INT (chunk->pos, alignment);
 	ptr = chunk->data + chunk->pos;
 	chunk->pos += size;
 	return ptr;
+}
+
+/**
+ * mono_code_manager_reserve:
+ * @cman: a code manager
+ * @size: size of memory to allocate
+ *
+ * Allocates at least @size bytes of memory inside the code manager @cman.
+ *
+ * Returns: the pointer to the allocated memory or #NULL on failure
+ */
+void*
+mono_code_manager_reserve (MonoCodeManager *cman, int size)
+{
+	return mono_code_manager_reserve_align (cman, size, MIN_ALIGN);
 }
 
 /**
@@ -372,10 +394,7 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 void
 mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsize)
 {
-	newsize += MIN_ALIGN - 1;
-	newsize &= ~ (MIN_ALIGN - 1);
-	size += MIN_ALIGN - 1;
-	size &= ~ (MIN_ALIGN - 1);
+	g_assert (newsize <= size);
 
 	if (cman->current && (size != newsize) && (data == cman->current->data + cman->current->pos - size)) {
 		cman->current->pos -= size - newsize;

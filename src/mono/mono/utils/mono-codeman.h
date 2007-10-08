@@ -8,6 +8,8 @@ MonoCodeManager* mono_code_manager_new_dynamic (void);
 void             mono_code_manager_destroy (MonoCodeManager *cman);
 void             mono_code_manager_invalidate (MonoCodeManager *cman);
 
+void*            mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment);
+
 void*            mono_code_manager_reserve (MonoCodeManager *cman, int size);
 void             mono_code_manager_commit  (MonoCodeManager *cman, void *data, int size, int newsize);
 int              mono_code_manager_size    (MonoCodeManager *cman, int *used_size);
