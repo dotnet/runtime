@@ -343,7 +343,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
+	code = buf = mono_code_manager_reserve_align (domain->code_mp, TRAMPOLINE_SIZE, 4);
 	short_branch = branch_for_target_reachable (code + 8, tramp);
 	if (short_branch)
 		mono_code_manager_commit (domain->code_mp, code, TRAMPOLINE_SIZE, 12);

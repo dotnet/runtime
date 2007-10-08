@@ -356,7 +356,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
+	code = buf = mono_code_manager_reserve_align (domain->code_mp, TRAMPOLINE_SIZE, 4);
 	mono_domain_unlock (domain);
 
 	x86_push_imm (buf, arg1);
