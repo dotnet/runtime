@@ -21,6 +21,26 @@
 #include "mini-ppc.h"
 
 /*
+ * Return the instruction to jump from code to target, 0 if not
+ * reachable with a single instruction
+ */
+static guint32
+branch_for_target_reachable (guint8 *branch, guint8 *target)
+{
+	gint diff = target - branch;
+	g_assert ((diff & 3) == 0);
+	if (diff >= 0) {
+		if (diff <= 33554431)
+			return (18 << 26) | (diff);
+	} else {
+		/* diff between 0 and -33554432 */
+		if (diff >= -33554432)
+			return (18 << 26) | (diff & ~0xfc000000);
+	}
+	return 0;
+}
+
+/*
  * get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
@@ -34,6 +54,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = 3;
+	guint32 short_branch;
 	MonoDomain *domain = mono_domain_get ();
 
 	if (!mono_method_signature (m)->ret->byref && MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
@@ -41,12 +62,20 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	    
 	mono_domain_lock (domain);
 	start = code = mono_code_manager_reserve (domain->code_mp, 20);
+	short_branch = branch_for_target_reachable (code + 4, addr);
+	if (short_branch)
+		mono_code_manager_commit (domain->code_mp, code, 20, 8);
 	mono_domain_unlock (domain);
 
-	ppc_load (code, ppc_r0, addr);
-	ppc_mtctr (code, ppc_r0);
-	ppc_addi (code, this_pos, this_pos, sizeof (MonoObject));
-	ppc_bcctr (code, 20, 0);
+	if (short_branch) {
+		ppc_addi (code, this_pos, this_pos, sizeof (MonoObject));
+		ppc_emit32 (code, short_branch);
+	} else {
+		ppc_load (code, ppc_r0, addr);
+		ppc_mtctr (code, ppc_r0);
+		ppc_addi (code, this_pos, this_pos, sizeof (MonoObject));
+		ppc_bcctr (code, 20, 0);
+	}
 	mono_arch_flush_icache (start, code - start);
 	g_assert ((code - start) <= 20);
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
@@ -309,22 +338,32 @@ gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
 	guint8 *code, *buf, *tramp;
+	guint32 short_branch;
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
 	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
+	short_branch = branch_for_target_reachable (code + 8, tramp);
+	if (short_branch)
+		mono_code_manager_commit (domain->code_mp, code, TRAMPOLINE_SIZE, 12);
 	mono_domain_unlock (domain);
 
-	/* Prepare the jump to the generic trampoline code.*/
-	ppc_lis  (buf, ppc_r0, (guint32) tramp >> 16);
-	ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) tramp & 0xffff);
-	ppc_mtctr (buf, ppc_r0);
+	if (short_branch) {
+		ppc_lis  (buf, ppc_r0, (guint32) arg1 >> 16);
+		ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) arg1 & 0xffff);
+		ppc_emit32 (buf, short_branch);
+	} else {
+		/* Prepare the jump to the generic trampoline code.*/
+		ppc_lis  (buf, ppc_r0, (guint32) tramp >> 16);
+		ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) tramp & 0xffff);
+		ppc_mtctr (buf, ppc_r0);
 	
-	/* And finally put 'arg1' in r0 and fly! */
-	ppc_lis  (buf, ppc_r0, (guint32) arg1 >> 16);
-	ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) arg1 & 0xffff);
-	ppc_bcctr (buf, 20, 0);
+		/* And finally put 'arg1' in r0 and fly! */
+		ppc_lis  (buf, ppc_r0, (guint32) arg1 >> 16);
+		ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) arg1 & 0xffff);
+		ppc_bcctr (buf, 20, 0);
+	}
 	
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
