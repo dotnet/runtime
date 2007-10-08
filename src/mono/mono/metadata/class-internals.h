@@ -324,6 +324,18 @@ struct _MonoClass {
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && ((k)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
 int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 
+typedef struct {
+	gpointer static_data;
+} MonoRuntimeGenericSuperInfo;
+
+typedef struct {
+	MonoVTable *vtable;
+} MonoRuntimeGenericArgInfo;
+
+typedef struct {
+	MonoRuntimeGenericArgInfo arg_infos [MONO_ZERO_LEN_ARRAY];
+} MonoRuntimeGenericContext;
+
 /* the interface_offsets array is stored in memory before this struct */
 struct MonoVTable {
 	MonoClass  *klass;
@@ -342,6 +354,7 @@ struct MonoVTable {
 	guint initialized     : 1; /* cctor has been run */
 	guint init_failed     : 1; /* cctor execution failed */
 	guint32     imt_collisions_bitmap;
+	MonoRuntimeGenericContext *runtime_generic_context;
 	/* do not add any fields after vtable, the structure is dynamically extended */
         gpointer    vtable [MONO_ZERO_LEN_ARRAY];	
 };

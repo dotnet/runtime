@@ -1215,6 +1215,31 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 }
 
 static void
+mono_class_setup_runtime_generic_context (MonoClass *class, MonoDomain *domain)
+{
+	MonoVTable *vtable = mono_class_vtable (domain, class);
+	int depth = class->idepth;
+	MonoClass *super;
+	MonoRuntimeGenericSuperInfo *super_infos;
+
+	/* We don't allocate arg_infos because we don't use it yet.
+	 */
+	super_infos = mono_mempool_alloc0 (domain->mp,
+		sizeof (MonoRuntimeGenericSuperInfo) * depth + sizeof (MonoRuntimeGenericContext));
+
+	vtable->runtime_generic_context = (MonoRuntimeGenericContext*) (super_infos + depth);
+
+	depth = 0;
+	for (super = class; super; super = super->parent) {
+		vtable = mono_class_vtable (domain, super);
+
+		super_infos [depth].static_data = vtable->data;
+
+		depth++;
+	}
+}
+
+static void
 build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces) {
 	build_imt_slots (klass, vt, domain, imt, extra_interfaces, -1);
 }
@@ -1517,6 +1542,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 			build_imt (class, vt, domain, interface_offsets, NULL);
 		}
 	}
+
+	if (class->generic_class)
+		mono_class_setup_runtime_generic_context (class, domain);
 
 	mono_domain_unlock (domain);
 
