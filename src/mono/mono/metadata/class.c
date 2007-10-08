@@ -20,6 +20,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/class-internals.h>
@@ -3402,6 +3403,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	class->name = name;
 	class->name_space = nspace;
 
+	mono_profiler_class_event (class, MONO_PROFILE_START_LOAD);
+
 	class->image = image;
 	class->type_token = type_token;
 	class->flags = cols [MONO_TYPEDEF_FLAGS];
@@ -3423,6 +3426,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		if (parent == NULL){
 			mono_internal_hash_table_remove (&image->class_cache, GUINT_TO_POINTER (type_token));
 			mono_loader_unlock ();
+			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;
 		}
 	}
@@ -3440,6 +3444,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 		if (!mono_metadata_interfaces_from_typedef_full (
 			    image, type_token, &interfaces, &icount, context)){
 			mono_loader_unlock ();
+			mono_profiler_class_loaded (class, MONO_PROFILE_FAILED);
 			return NULL;
 		}
 
@@ -3511,6 +3516,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 			image, type_token, class->generic_container);
 
 	mono_loader_unlock ();
+
+	mono_profiler_class_loaded (class, MONO_PROFILE_OK);
 
 	return class;
 }
@@ -3662,6 +3669,15 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	klass = param->pklass = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass));
 
+	if (param->name)
+		klass->name = param->name;
+	else {
+		klass->name = mono_mempool_alloc0 (image->mempool, 16);
+		sprintf ((char*)klass->name, is_mvar ? "!!%d" : "!%d", param->num);
+	}
+	klass->name_space = "";
+	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
+	
 	for (count = 0, ptr = param->constraints; ptr && *ptr; ptr++, count++)
 		;
 
@@ -3681,15 +3697,6 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 			klass->interfaces [i - pos] = param->constraints [i];
 	}
 
-	if (param->name)
-		klass->name = param->name;
-	else {
-		klass->name = mono_mempool_alloc0 (image->mempool, 16);
-		sprintf ((char*)klass->name, is_mvar ? "!!%d" : "!%d", param->num);
-	}
-
-	klass->name_space = "";
-
 	if (!image)
 		image = mono_defaults.corlib;
 
@@ -3707,7 +3714,9 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	mono_class_setup_supertypes (klass);
 
 	mono_loader_unlock ();
-	
+
+	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
+
 	return klass;
 }
 
@@ -3738,6 +3747,9 @@ mono_ptr_class_get (MonoType *type)
 	name = g_strdup_printf ("%s*", el_class->name);
 	result->name = mono_mempool_strdup (image->mempool, name);
 	g_free (name);
+
+	mono_profiler_class_event (result, MONO_PROFILE_START_LOAD);
+
 	result->image = el_class->image;
 	result->inited = TRUE;
 	result->flags = TYPE_ATTRIBUTE_CLASS | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK);
@@ -3756,6 +3768,8 @@ mono_ptr_class_get (MonoType *type)
 	g_hash_table_insert (image->ptr_cache, el_class, result);
 
 	mono_loader_unlock ();
+
+	mono_profiler_class_loaded (result, MONO_PROFILE_OK);
 
 	return result;
 }
@@ -3782,6 +3796,9 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = "System";
 	result->name = "MonoFNPtrFakeClass";
+
+	mono_profiler_class_event (result, MONO_PROFILE_START_LOAD);
+
 	result->image = mono_defaults.corlib; /* need to fix... */
 	result->inited = TRUE;
 	result->flags = TYPE_ATTRIBUTE_CLASS; /* | (el_class->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK); */
@@ -3801,6 +3818,8 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	g_hash_table_insert (ptr_hash, sig, result);
 
 	mono_loader_unlock ();
+
+	mono_profiler_class_loaded (result, MONO_PROFILE_OK);
 
 	return result;
 }
@@ -3972,6 +3991,9 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	name [nsize + rank + 1] = 0;
 	class->name = mono_mempool_strdup (image->mempool, name);
 	g_free (name);
+
+	mono_profiler_class_event (class, MONO_PROFILE_START_LOAD);
+
 	class->type_token = 0;
 	/* all arrays are marked serializable and sealed, bug #42779 */
 	class->flags = TYPE_ATTRIBUTE_CLASS | TYPE_ATTRIBUTE_SERIALIZABLE | TYPE_ATTRIBUTE_SEALED |
@@ -4041,6 +4063,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	g_hash_table_insert (image->array_cache, eclass, list);
 
 	mono_loader_unlock ();
+
+	mono_profiler_class_loaded (class, MONO_PROFILE_OK);
 
 	return class;
 }

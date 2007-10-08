@@ -22,6 +22,7 @@
 #include "tabledefs.h"
 #include "tokentype.h"
 #include "metadata-internals.h"
+#include "profiler-private.h"
 #include "loader.h"
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-logger.h>
@@ -771,6 +772,8 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	MonoMSDOSHeader msdos;
 	gint32 offset = 0;
 
+	mono_profiler_module_event (image, MONO_PROFILE_START_LOAD);
+
 	mono_image_init (image);
 
 	iinfo = image->image_info;
@@ -848,12 +851,14 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	load_modules (image);
 
 done:
+	mono_profiler_module_loaded (image, MONO_PROFILE_OK);
 	if (status)
 		*status = MONO_IMAGE_OK;
 
 	return image;
 
 invalid_image:
+	mono_profiler_module_loaded (image, MONO_PROFILE_FAILED);
 	mono_image_close (image);
 		return NULL;
 }
@@ -1183,6 +1188,8 @@ mono_image_close (MonoImage *image)
 	if (InterlockedDecrement (&image->ref_count) > 0)
 		return;
 
+	mono_profiler_module_event (image, MONO_PROFILE_START_UNLOAD);
+
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
 
 	mono_metadata_clean_for_image (image);
@@ -1363,6 +1370,8 @@ mono_image_close (MonoImage *image)
 		}
 		mono_mempool_destroy (image->mempool);
 	}
+
+	mono_profiler_module_event (image, MONO_PROFILE_END_UNLOAD);
 }
 
 /** 

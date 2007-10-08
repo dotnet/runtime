@@ -33,6 +33,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/threads-types.h>
 #include <metadata/threads.h>
+#include <metadata/profiler-private.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
 
@@ -1055,6 +1056,8 @@ mono_domain_create (void)
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
 
+	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_LOAD);
+
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_code_manager_new ();
 	domain->env = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal, MONO_HASH_KEY_VALUE_GC);
@@ -1082,6 +1085,8 @@ mono_domain_create (void)
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
 
+	mono_profiler_appdomain_loaded (domain, MONO_PROFILE_OK);
+	
 	return domain;
 }
 
@@ -1701,6 +1706,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		return;
 	}
 
+	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_UNLOAD);
+
 	mono_debug_domain_unload (domain);
 
 	mono_appdomains_lock ();
@@ -1808,6 +1815,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->setup = NULL;
 
 	/* FIXME: anything else required ? */
+
+	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
 
 	mono_gc_free_fixed (domain);
 

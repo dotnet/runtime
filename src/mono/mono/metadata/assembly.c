@@ -20,6 +20,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/mono-endian.h>
@@ -1418,7 +1419,6 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		return NULL;
 	}
 
-
 #if defined (PLATFORM_WIN32)
 	{
 		gchar *tmp_fn;
@@ -1452,6 +1452,8 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	ass->basedir = base_dir;
 	ass->ref_only = refonly;
 	ass->image = image;
+
+	mono_profiler_assembly_event (ass, MONO_PROFILE_START_LOAD);
 
 	/* Add a non-temporary reference because of ass->image */
 	mono_image_addref (image);
@@ -1498,6 +1500,9 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		g_hash_table_insert (ass_loading, (gpointer)GetCurrentThreadId (), loading);
 	if (*status != MONO_IMAGE_OK) {
 		mono_assemblies_unlock ();
+		
+		mono_profiler_assembly_loaded (ass, MONO_PROFILE_FAILED);
+		
 		mono_assembly_close (ass);
 		return NULL;
 	}
@@ -1507,6 +1512,9 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		if (ass2) {
 			/* Somebody else has loaded the assembly before us */
 			mono_assemblies_unlock ();
+			
+			mono_profiler_assembly_loaded (ass, MONO_PROFILE_FAILED);
+			
 			mono_assembly_close (ass);
 			return ass2;
 		}
@@ -1519,6 +1527,8 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 
 	mono_assembly_invoke_load_hook (ass);
 
+	mono_profiler_assembly_loaded (ass, MONO_PROFILE_OK);
+	
 	return ass;
 }
 
@@ -2347,6 +2357,8 @@ mono_assembly_close (MonoAssembly *assembly)
 	if (InterlockedDecrement (&assembly->ref_count) > 0)
 		return;
 
+	mono_profiler_assembly_event (assembly, MONO_PROFILE_START_UNLOAD);
+
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading assembly %s [%p].", assembly->aname.name, assembly);
 
 	mono_debug_close_image (assembly->image);
@@ -2371,6 +2383,8 @@ mono_assembly_close (MonoAssembly *assembly)
 	} else {
 		g_free (assembly);
 	}
+
+	mono_profiler_assembly_event (assembly, MONO_PROFILE_END_UNLOAD);
 }
 
 MonoImage*
