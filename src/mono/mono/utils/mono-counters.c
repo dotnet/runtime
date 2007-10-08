@@ -13,6 +13,7 @@ struct _MonoCounter {
 
 static MonoCounter *counters = NULL;
 static int valid_mask = 0;
+static int set_mask = 0;
 
 /**
  * mono_counters_enable:
@@ -33,6 +34,8 @@ mono_counters_enable (int section_mask)
  * @addr: The address to register.
  *
  * Register addr as the address of a counter of type type.
+ * Note that @name must be a valid string at all times until
+ * mono_counters_dump () is called.
  *
  * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
  * the function should return the value and take no arguments.
@@ -50,6 +53,8 @@ mono_counters_register (const char* name, int type, void *addr)
 	counter->type = type;
 	counter->addr = addr;
 	counter->next = NULL;
+
+	set_mask |= type;
 
 	/* Append */
 	if (counters) {
@@ -70,7 +75,7 @@ typedef gssize (*PtrFunc) (void);
 typedef double (*DoubleFunc) (void);
 typedef char* (*StrFunc) (void);
 
-#define ENTRY_FMT "%-24s : "
+#define ENTRY_FMT "%-36s: "
 static void
 dump_counter (MonoCounter *counter, FILE *outfile) {
 	int intval;
@@ -172,10 +177,27 @@ mono_counters_dump (int section_mask, FILE *outfile)
 	if (!counters)
 		return;
 	for (j = 0, i = MONO_COUNTER_JIT; i < MONO_COUNTER_LAST_SECTION; j++, i <<= 1) {
-		if (section_mask & i) {
+		if ((section_mask & i) && (set_mask & i)) {
 			fprintf (outfile, "\n%s statistics\n", section_names [j]);
 			mono_counters_dump_section (i, outfile);
 		}
 	}
+}
+
+/**
+ * mono_counters_cleanup:
+ *
+ * Perform any needed cleanup at process exit.
+ */
+void
+mono_counters_cleanup (void)
+{
+	MonoCounter *counter = counters;
+	while (counter) {
+		MonoCounter *tmp = counters;
+		counter = counter->next;
+		free (tmp);
+	}
+	counters = NULL;
 }
 

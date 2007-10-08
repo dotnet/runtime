@@ -37,5 +37,7 @@ void mono_counters_register (const char* descr, int type, void *addr);
  */
 void mono_counters_dump (int section_mask, FILE *outfile);
 
+void mono_counters_cleanup (void);
+
 #endif /* __MONO_COUNTERS_H__ */
 
