@@ -1846,6 +1846,19 @@ loop_start:
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			last_ins = temp;
 			goto loop_start; /* make it handle the possibly big ins->inst_offset */
+		case OP_R8CONST:
+		case OP_R4CONST:
+			NEW_INS (cfg, temp, OP_ICONST);
+			temp->inst_c0 = ins->inst_p0;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+			ins->inst_basereg = temp->dreg;
+			ins->inst_offset = 0;
+			ins->opcode = ins->opcode == OP_R4CONST? OP_LOADR4_MEMBASE: OP_LOADR8_MEMBASE;
+			last_ins = temp;
+			/* make it handle the possibly big ins->inst_offset
+			 * later optimize to use lis + load_membase
+			 */
+			goto loop_start;
 		}
 		last_ins = ins;
 		ins = ins->next;
@@ -2442,8 +2455,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
 			divisor_is_m1 = code;
 			ppc_bc (code, PPC_BR_FALSE | PPC_BR_LIKELY, PPC_BR_EQ, 0);
-			ppc_lis (code, ppc_r11, 0x8000);
-			ppc_cmp (code, 0, 0, ins->sreg1, ppc_r11);
+			ppc_lis (code, ppc_r0, 0x8000);
+			ppc_cmp (code, 0, 0, ins->sreg1, ppc_r0);
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "ArithmeticException");
 			ppc_patch (divisor_is_m1, code);
 			 /* XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
@@ -2462,22 +2475,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_DIV_IMM:
 			g_assert_not_reached ();
-#if 0
-			ppc_load (code, ppc_r11, ins->inst_imm);
-			ppc_divwod (code, ins->dreg, ins->sreg1, ppc_r11);
-			ppc_mfspr (code, ppc_r0, ppc_xer);
-			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
-			/* FIXME: use OverflowException for 0x80000000/-1 */
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
-			break;
-#endif
 		case CEE_REM: {
 			guint32 *divisor_is_m1;
 			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
 			divisor_is_m1 = code;
 			ppc_bc (code, PPC_BR_FALSE | PPC_BR_LIKELY, PPC_BR_EQ, 0);
-			ppc_lis (code, ppc_r11, 0x8000);
-			ppc_cmp (code, 0, 0, ins->sreg1, ppc_r11);
+			ppc_lis (code, ppc_r0, 0x8000);
+			ppc_cmp (code, 0, 0, ins->sreg1, ppc_r0);
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "ArithmeticException");
 			ppc_patch (divisor_is_m1, code);
 			ppc_divwod (code, ppc_r11, ins->sreg1, ins->sreg2);
@@ -2620,6 +2624,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * Keep in sync with mono_arch_emit_epilog
 			 */
 			g_assert (!cfg->method->save_lmf);
+			/*
+			 * Note: we can use ppc_r11 here because it is dead anyway:
+			 * we're leaving the method.
+			 */
 			if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
 				if (ppc_is_imm16 (cfg->stack_usage + PPC_RET_ADDR_OFFSET)) {
 					ppc_lwz (code, ppc_r0, cfg->stack_usage + PPC_RET_ADDR_OFFSET, cfg->frame_reg);
@@ -2661,12 +2669,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ARGLIST: {
 			if (ppc_is_imm16 (cfg->sig_cookie + cfg->stack_usage)) {
-				ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->sig_cookie + cfg->stack_usage);
+				ppc_addi (code, ppc_r0, cfg->frame_reg, cfg->sig_cookie + cfg->stack_usage);
 			} else {
-				ppc_load (code, ppc_r11, cfg->sig_cookie + cfg->stack_usage);
-				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
+				ppc_load (code, ppc_r0, cfg->sig_cookie + cfg->stack_usage);
+				ppc_add (code, ppc_r0, cfg->frame_reg, ppc_r0);
 			}
-			ppc_stw (code, ppc_r11, 0, ins->sreg1);
+			ppc_stw (code, ppc_r0, 0, ins->sreg1);
 			break;
 		}
 		case OP_FCALL:
@@ -2898,13 +2906,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* floating point opcodes */
 		case OP_R8CONST:
-			ppc_load (code, ppc_r11, ins->inst_p0);
-			ppc_lfd (code, ins->dreg, 0, ppc_r11);
-			break;
 		case OP_R4CONST:
-			ppc_load (code, ppc_r11, ins->inst_p0);
-			ppc_lfs (code, ins->dreg, 0, ppc_r11);
-			break;
+			g_assert_not_reached ();
 		case OP_STORER8_MEMBASE_REG:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_stfd (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
