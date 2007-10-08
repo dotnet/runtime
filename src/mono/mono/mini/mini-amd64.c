@@ -492,7 +492,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
  * Draft Version 0.23" document for more information.
  */
 static CallInfo*
-get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
 	MonoType *ret_type;
@@ -567,6 +567,12 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 			;
 			break;
 		case MONO_TYPE_VOID:
+			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			g_assert (cfg->generic_shared);
+			cinfo->ret.storage = ArgInIReg;
+			cinfo->ret.reg = AMD64_RAX;
 			break;
 		default:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
@@ -656,6 +662,11 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_R8:
 			add_float (&fr, &stack_size, ainfo, TRUE);
 			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			g_assert (cfg->generic_shared);
+			add_general (&gr, &stack_size, ainfo);
+			break;
 		default:
 			g_assert_not_reached ();
 		}
@@ -696,7 +707,7 @@ int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k;
-	CallInfo *cinfo = get_call_info (NULL, csig, FALSE);
+	CallInfo *cinfo = get_call_info (NULL, NULL, csig, FALSE);
 	guint32 args_size = cinfo->stack_usage;
 
 	/* The arguments are saved to a stack area in mono_arch_instrument_prolog */
@@ -842,7 +853,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	if (!cfg->arch.cinfo)
-		cfg->arch.cinfo = get_call_info (cfg->mempool, sig, FALSE);
+		cfg->arch.cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 	cinfo = cfg->arch.cinfo;
 
 	/*
@@ -1126,7 +1137,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	if (!cfg->arch.cinfo)
-		cfg->arch.cinfo = get_call_info (cfg->mempool, sig, FALSE);
+		cfg->arch.cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 	cinfo = cfg->arch.cinfo;
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
@@ -1236,7 +1247,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (cfg->mempool, sig, sig->pinvoke);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
@@ -2373,7 +2384,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
-		cinfo = get_call_info (cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
+		cinfo = get_call_info (cfg, cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
 			/* Pop the destination address from the stack */
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
@@ -4962,7 +4973,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		/* Allocate a new area on the stack and save arguments there */
 		sig = mono_method_signature (cfg->method);
 
-		cinfo = get_call_info (cfg->mempool, sig, FALSE);
+		cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 
 		n = sig->param_count + sig->hasthis;
 
@@ -5412,7 +5423,7 @@ void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	MonoCallInst *call = (MonoCallInst*)inst;
-	CallInfo * cinfo = get_call_info (cfg->mempool, inst->signature, FALSE);
+	CallInfo * cinfo = get_call_info (cfg, cfg->mempool, inst->signature, FALSE);
 
 	if (vt_reg != -1) {
 		MonoInst *vtarg;

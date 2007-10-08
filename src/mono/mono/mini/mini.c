@@ -560,8 +560,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->ssa_op = MONO_SSA_LOAD;	\
 		(dest)->inst_i0 = arg_array [(num)];	\
-		(dest)->opcode = mono_type_to_ldind ((dest)->inst_i0->inst_vtype);	\
-		type_to_eval_stack_type (param_types [(num)], (dest));	\
+		(dest)->opcode = mini_type_to_ldind ((cfg), (dest)->inst_i0->inst_vtype); \
+		type_to_eval_stack_type ((cfg), param_types [(num)], (dest));	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
 	}} while (0)
 
@@ -569,8 +569,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->ssa_op = MONO_SSA_LOAD;	\
 		(dest)->inst_i0 = (cfg)->varinfo [locals_offset + (num)];	\
-		(dest)->opcode = mono_type_to_ldind ((dest)->inst_i0->inst_vtype);	\
-		type_to_eval_stack_type (header->locals [(num)], (dest));	\
+		(dest)->opcode = mini_type_to_ldind ((cfg), (dest)->inst_i0->inst_vtype); \
+		type_to_eval_stack_type ((cfg), header->locals [(num)], (dest));	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
 	} while (0)
 
@@ -613,8 +613,8 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->ssa_op = MONO_SSA_LOAD;	\
 		(dest)->inst_i0 = (cfg)->varinfo [(num)];	\
-		(dest)->opcode = mono_type_to_ldind ((dest)->inst_i0->inst_vtype);	\
-		type_to_eval_stack_type ((dest)->inst_i0->inst_vtype, (dest));	\
+		(dest)->opcode = mini_type_to_ldind ((cfg), (dest)->inst_i0->inst_vtype); \
+		type_to_eval_stack_type ((cfg), (dest)->inst_i0->inst_vtype, (dest));	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
 	} while (0)
 
@@ -634,15 +634,15 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 #define NEW_INDLOAD(cfg,dest,addr,vtype) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->inst_left = addr;	\
-		(dest)->opcode = mono_type_to_ldind (vtype);	\
-		type_to_eval_stack_type (vtype, (dest));	\
+		(dest)->opcode = mini_type_to_ldind ((cfg), vtype);	\
+		type_to_eval_stack_type ((cfg), vtype, (dest));	\
 		/* FIXME: (dest)->klass = (dest)->inst_i0->klass;*/	\
 	} while (0)
 
 #define NEW_INDSTORE(cfg,dest,addr,value,vtype) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->inst_i0 = addr;	\
-		(dest)->opcode = mono_type_to_stind (vtype);	\
+		(dest)->opcode = mini_type_to_stind ((cfg), vtype);	\
 		(dest)->inst_i1 = (value);	\
 		/* FIXME: (dest)->klass = (dest)->inst_i0->klass;*/	\
 	} while (0)
@@ -651,14 +651,14 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->ssa_op = MONO_SSA_STORE;	\
 		(dest)->inst_i0 = (cfg)->varinfo [(num)];	\
-		(dest)->opcode = mono_type_to_stind ((dest)->inst_i0->inst_vtype);	\
+		(dest)->opcode = mini_type_to_stind ((cfg), (dest)->inst_i0->inst_vtype); \
 		(dest)->inst_i1 = (inst);	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
 	} while (0)
 
 #define NEW_LOCSTORE(cfg,dest,num,inst) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_type_to_stind (header->locals [(num)]);	\
+		(dest)->opcode = mini_type_to_stind ((cfg), header->locals [(num)]); \
 		(dest)->ssa_op = MONO_SSA_STORE;	\
 		(dest)->inst_i0 = (cfg)->varinfo [locals_offset + (num)];	\
 		(dest)->inst_i1 = (inst);	\
@@ -668,7 +668,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 #define NEW_ARGSTORE(cfg,dest,num,inst) do {	\
                 if (arg_array [(num)]->opcode == OP_ICONST) goto inline_failure; \
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = mono_type_to_stind (param_types [(num)]);	\
+		(dest)->opcode = mini_type_to_stind ((cfg), param_types [(num)]); \
 		(dest)->ssa_op = MONO_SSA_STORE;	\
 		(dest)->inst_i0 = arg_array [(num)];	\
 		(dest)->inst_i1 = (inst);	\
@@ -1193,7 +1193,7 @@ condbr_to_fp_br (int opcode)
  * FIXME: return a MonoType/MonoClass for the byref and VALUETYPE cases.
  */
 static void
-type_to_eval_stack_type (MonoType *type, MonoInst *inst)
+type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst)
 {
 	MonoClass *klass;
 
@@ -1255,6 +1255,15 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		type = &type->data.generic_class->container_class->byval_arg;
 		goto handle_enum;
+	case MONO_TYPE_VAR :
+	case MONO_TYPE_MVAR :
+		/* FIXME: all the arguments must be references for now,
+		 * later look inside cfg and see if the arg num is
+		 * really a reference
+		 */
+		g_assert (cfg->generic_shared);
+		inst->type = STACK_OBJ;
+		return;
 	default:
 		g_error ("unknown type 0x%02x in eval stack type", type->type);
 	}
@@ -1631,6 +1640,34 @@ check_values_to_signature (MonoInst *args, MonoType *this, MonoMethodSignature *
 }
 #endif
 
+static guint
+mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
+{
+	if (cfg->generic_shared && !type->byref) {
+		/* FIXME: all the arguments must be references for now,
+		 * later look inside cfg and see if the arg num is
+		 * really a reference
+		 */
+		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)
+			return CEE_LDIND_REF;
+	}
+	return mono_type_to_ldind (type);
+}
+
+static guint
+mini_type_to_stind (MonoCompile* cfg, MonoType *type)
+{
+	if (cfg->generic_shared && !type->byref) {
+		/* FIXME: all the arguments must be references for now,
+		 * later look inside cfg and see if the arg num is
+		 * really a reference
+		 */
+		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)
+			return CEE_STIND_REF;
+	}
+	return mono_type_to_stind (type);
+}
+
 /*
  * When we need a pointer to the current domain many times in a method, we
  * call mono_domain_get() once and we store the result in a local variable.
@@ -1704,8 +1741,8 @@ mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index) 
 	memset (dest, 0, sizeof (MonoInst));
 	dest->ssa_op = MONO_SSA_LOAD;
 	dest->inst_i0 = cfg->varinfo [var_index];
-	dest->opcode = mono_type_to_ldind (dest->inst_i0->inst_vtype);
-	type_to_eval_stack_type (dest->inst_i0->inst_vtype, dest);
+	dest->opcode = mini_type_to_ldind (cfg, dest->inst_i0->inst_vtype);
+	type_to_eval_stack_type (cfg, dest->inst_i0->inst_vtype, dest);
 	dest->klass = dest->inst_i0->klass;
 }
 
@@ -2341,6 +2378,16 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 			/* FIXME: check type compatibility */
 			return 0;
 		}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		/* FIXME: all the arguments must be references for now,
+		 * later look inside cfg and see if the arg num is
+		 * really a reference
+		 */
+		g_assert (cfg->generic_shared);
+		if (arg->type != STACK_OBJ)
+			return 1;
+		return 0;
 	default:
 		g_error ("unknown type 0x%02x in target_type_is_incompatible", simple_type->type);
 	}
@@ -2452,7 +2499,7 @@ mono_spill_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoCallInst *call, M
 			call->inst.opcode = CEE_CALL;
 			temp = mono_compile_create_var (cfg, &mono_defaults.string_class->byval_arg, OP_LOCAL);
 		} else {
-			type_to_eval_stack_type (ret, ins);
+			type_to_eval_stack_type (cfg, ret, ins);
 			temp = mono_compile_create_var (cfg, ret, OP_LOCAL);
 		}
 		
@@ -2534,7 +2581,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	call->args = args;
 	call->signature = sig;
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
-	type_to_eval_stack_type (sig->ret, &call->inst);
+	type_to_eval_stack_type (cfg, sig->ret, &call->inst);
 
 	for (arg = call->out_args; arg;) {
 		MonoInst *narg = arg->next;
@@ -3016,7 +3063,7 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 	add->cil_code = ip;
 	add->klass = klass;
 	MONO_INST_NEW (cfg, vstore, CEE_STIND_I);
-	vstore->opcode = mono_type_to_stind (&klass->byval_arg);
+	vstore->opcode = mini_type_to_stind (cfg, &klass->byval_arg);
 	vstore->cil_code = ip;
 	vstore->inst_left = add;
 	vstore->inst_right = val;
@@ -3367,7 +3414,7 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		MonoInst *ldelem, *store, *load;
 		MonoClass *eklass = mono_class_from_mono_type (fsig->params [1]);
 		int n;
-		n = mono_type_to_stind (&eklass->byval_arg);
+		n = mini_type_to_stind (cfg, &eklass->byval_arg);
 		if (n == CEE_STOBJ)
 			return NULL;
 		sp [0] = args [0];
@@ -3375,9 +3422,8 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		NEW_LDELEMA (cfg, ldelem, sp, eklass);
 		ldelem->flags |= MONO_INST_NORANGECHECK;
 		MONO_INST_NEW (cfg, store, n);
-		n = mono_type_to_ldind (&eklass->byval_arg);
-		MONO_INST_NEW (cfg, load, mono_type_to_ldind (&eklass->byval_arg));
-		type_to_eval_stack_type (&eklass->byval_arg, load);
+		MONO_INST_NEW (cfg, load, mini_type_to_ldind (cfg, &eklass->byval_arg));
+		type_to_eval_stack_type (cfg, &eklass->byval_arg, load);
 		load->inst_left = ldelem;
 		store->inst_left = args [2];
 		store->inst_right = load;
@@ -4815,8 +4861,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * sp [0] is a pointer to the data: we need the value
 					 * in handle_box (), so load it here.
 					 */
-					MONO_INST_NEW (cfg, load, mono_type_to_ldind (&constrained_call->byval_arg));
-					type_to_eval_stack_type (&constrained_call->byval_arg, load);
+					MONO_INST_NEW (cfg, load, mini_type_to_ldind (cfg, &constrained_call->byval_arg));
+					type_to_eval_stack_type (cfg, &constrained_call->byval_arg, load);
 					load->cil_code = ip;
 					load->inst_left = sp [0];
 					sp [0] = handle_box (cfg, bblock, load, ip, constrained_call);
@@ -4941,7 +4987,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (MONO_TYPE_IS_VOID (fsig->ret)) {
 					MONO_ADD_INS (bblock, ins);
 				} else {
-					type_to_eval_stack_type (fsig->ret, ins);
+					type_to_eval_stack_type (cfg, fsig->ret, ins);
 					*sp = ins;
 					sp++;
 				}
@@ -5147,7 +5193,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					CHECK_STACK (1);
 					--sp;
 					MONO_INST_NEW (cfg, ins, OP_NOP);
-					ins->opcode = mono_type_to_stind (mono_method_signature (method)->ret);
+					ins->opcode = mini_type_to_stind (cfg, mono_method_signature (method)->ret);
 					if (ins->opcode == CEE_STOBJ) {
 						NEW_RETLOADA (cfg, ins);
 						/* FIXME: it is possible some optimization will pass the a heap pointer for the struct address, so we'll need the write barrier */
@@ -6218,7 +6264,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						mono_emit_method_call_spilled (cfg, bblock, stfld_wrapper, mono_method_signature (stfld_wrapper), iargs, ip, NULL);
 					}
 #if HAVE_WRITE_BARRIERS
-				} else if (mono_type_to_stind (field->type) == CEE_STIND_REF) {
+				} else if (mini_type_to_stind (cfg, field->type) == CEE_STIND_REF) {
 					/* insert call to write barrier */
 					MonoMethod *write_barrier = mono_marshal_get_write_barrier ();
 					MonoInst *iargs [2];
@@ -6234,7 +6280,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_emit_method_call_spilled (cfg, bblock, write_barrier, mono_method_signature (write_barrier), iargs, ip, NULL);
 #endif
 #ifdef MONO_ARCH_SOFT_FLOAT
-				} else if (mono_type_to_stind (field->type) == CEE_STIND_R4) {
+				} else if (mini_type_to_stind (cfg, field->type) == CEE_STIND_R4) {
 					NEW_ICONST (cfg, offset_ins, foffset);
 					MONO_INST_NEW (cfg, ins, OP_PADD);
 					ins->cil_code = ip;
@@ -6253,7 +6299,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->inst_right = offset_ins;
 					ins->type = STACK_MP;
 
-					MONO_INST_NEW (cfg, store, mono_type_to_stind (field->type));
+					MONO_INST_NEW (cfg, store, mini_type_to_stind (cfg, field->type));
 					store->cil_code = ip;
 					store->inst_left = ins;
 					store->inst_right = sp [1];
@@ -6317,14 +6363,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						*sp++ = ins;
 					} else {
 						MonoInst *load;
-						MONO_INST_NEW (cfg, load, mono_type_to_ldind (field->type));
-						type_to_eval_stack_type (field->type, load);
+						MONO_INST_NEW (cfg, load, mini_type_to_ldind (cfg, field->type));
+						type_to_eval_stack_type (cfg, field->type, load);
 						load->cil_code = ip;
 						load->inst_left = ins;
 						load->flags |= ins_flag;
 						ins_flag = 0;
 #ifdef MONO_ARCH_SOFT_FLOAT
-						if (mono_type_to_ldind (field->type) == CEE_LDIND_R4) {
+						if (mini_type_to_ldind (cfg, field->type) == CEE_LDIND_R4) {
 							int temp;
 							temp = handle_load_float (cfg, bblock, ins, ip);
 							NEW_TEMPLOAD (cfg, *sp, temp);
@@ -6439,7 +6485,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *store;
 				CHECK_STACK (1);
 				sp--;
-				MONO_INST_NEW (cfg, store, mono_type_to_stind (field->type));
+				MONO_INST_NEW (cfg, store, mini_type_to_stind (cfg, field->type));
 				store->cil_code = ip;
 				store->inst_left = ins;
 				store->inst_right = sp [0];
@@ -6502,7 +6548,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					case MONO_TYPE_FNPTR:
 					case MONO_TYPE_ARRAY:
 						NEW_PCONST (cfg, *sp, *((gpointer *)addr));
-						type_to_eval_stack_type (field->type, *sp);
+						type_to_eval_stack_type (cfg, field->type, *sp);
 						sp++;
 						break;
 #endif
@@ -6525,8 +6571,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!is_const) {
 					MonoInst *load;
 					CHECK_STACK_OVF (1);
-					MONO_INST_NEW (cfg, load, mono_type_to_ldind (field->type));
-					type_to_eval_stack_type (field->type, load);
+					MONO_INST_NEW (cfg, load, mini_type_to_ldind (cfg, field->type));
+					type_to_eval_stack_type (cfg, field->type, load);
 					load->cil_code = ip;
 					load->inst_left = ins;
 					*sp++ = load;
@@ -6546,7 +6592,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
-			n = mono_type_to_stind (&klass->byval_arg);
+			n = mini_type_to_stind (cfg, &klass->byval_arg);
 			/* FIXME: handle CEE_STIND_R4 */
 			if (n == CEE_STOBJ) {
 				handle_stobj (cfg, bblock, sp [0], sp [1], ip, klass, FALSE, FALSE, TRUE);
@@ -6772,11 +6818,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			mono_class_init (klass);
 			NEW_LDELEMA (cfg, load, sp, klass);
 			load->cil_code = ip;
-			MONO_INST_NEW (cfg, ins, mono_type_to_ldind (&klass->byval_arg));
+			MONO_INST_NEW (cfg, ins, mini_type_to_ldind (cfg, &klass->byval_arg));
 			ins->cil_code = ip;
 			ins->inst_left = load;
 			*sp++ = ins;
-			type_to_eval_stack_type (&klass->byval_arg, ins);
+			type_to_eval_stack_type (cfg, &klass->byval_arg, ins);
 			ip += 5;
 			break;
 		}
@@ -6902,7 +6948,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_LDELEMA (cfg, load, sp, klass);
 				load->cil_code = ip;
 
-				n = mono_type_to_stind (&klass->byval_arg);
+				n = mini_type_to_stind (cfg, &klass->byval_arg);
 				/* FIXME: CEE_STIND_R4 */
 				if (n == CEE_STOBJ)
 					handle_stobj (cfg, bblock, load, sp [2], ip, klass, FALSE, FALSE, TRUE);

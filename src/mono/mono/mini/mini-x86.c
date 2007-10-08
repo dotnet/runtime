@@ -239,7 +239,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
  * For x86 win32, see ???.
  */
 static CallInfo*
-get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
 	MonoType *ret_type;
@@ -313,6 +313,12 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 			break;
 		case MONO_TYPE_VOID:
 			cinfo->ret.storage = ArgNone;
+			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			g_assert (cfg->generic_shared);
+			cinfo->ret.storage = ArgInIReg;
+			cinfo->ret.reg = X86_EAX;
 			break;
 		default:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
@@ -402,6 +408,11 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_R8:
 			add_float (&fr, &stack_size, ainfo, TRUE);
 			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			g_assert (cfg->generic_shared);
+			add_general (&gr, &stack_size, ainfo);
+			break;
 		default:
 			g_error ("unexpected type 0x%x", ptype->type);
 			g_assert_not_reached ();
@@ -449,7 +460,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	int offset = 8;
 	CallInfo *cinfo;
 
-	cinfo = get_call_info (NULL, csig, FALSE);
+	cinfo = get_call_info (NULL, NULL, csig, FALSE);
 
 	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
 		frame_size += sizeof (gpointer);
@@ -777,7 +788,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	header = mono_method_get_header (cfg->method);
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 
 	cfg->frame_reg = MONO_ARCH_BASEREG;
 	offset = 0;
@@ -883,7 +894,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
@@ -970,7 +981,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		sentinelpos = sig->sentinelpos + (is_virtual ? 1 : 0);
@@ -1948,7 +1959,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
-		cinfo = get_call_info (cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
+		cinfo = get_call_info (cfg, cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
 			/* Pop the destination address from the stack */
 			x86_pop_reg (code, X86_ECX);
@@ -2030,7 +2041,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	sig = mono_method_signature (method);
 
-	cinfo = get_call_info (cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 	
 	/* This is the opposite of the code in emit_prolog */
 
@@ -3909,7 +3920,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = get_call_info (cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		for (quad = 0; quad < 2; quad ++) {
 			switch (cinfo->ret.pair_storage [quad]) {
@@ -4119,7 +4130,7 @@ void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	MonoCallInst *call = (MonoCallInst*)inst;
-	CallInfo *cinfo = get_call_info (cfg->mempool, inst->signature, FALSE);
+	CallInfo *cinfo = get_call_info (cfg, cfg->mempool, inst->signature, FALSE);
 
 	/* add the this argument */
 	if (this_reg != -1) {
@@ -4287,7 +4298,7 @@ MonoObject*
 mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
-	CallInfo *cinfo = get_call_info (NULL, sig, FALSE);
+	CallInfo *cinfo = get_call_info (NULL, NULL, sig, FALSE);
 	int this_argument_offset;
 	MonoObject *this_argument;
 
@@ -4511,7 +4522,7 @@ mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8
 	CallInfo *cinfo;
 	gpointer res;
 
-	cinfo = get_call_info (NULL, sig, FALSE);
+	cinfo = get_call_info (NULL, NULL, sig, FALSE);
 
 	/*
 	 * The stack looks like:
