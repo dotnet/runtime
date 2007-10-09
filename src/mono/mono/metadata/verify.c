@@ -1322,10 +1322,6 @@ check_unverifiable_type (VerifyContext *ctx, MonoType *type)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unmanaged pointer is not a verifiable type at 0x%04x", ctx->ip_offset));
 		return 0;
 	}
-	if (type->type == MONO_TYPE_TYPEDBYREF) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("TypedByRef is not a verifiable type at 0x%04x", ctx->ip_offset));
-		return 0;
-	}
 	return 1;
 }
 
@@ -1379,6 +1375,11 @@ get_boxable_mono_type (VerifyContext* ctx, int token)
 
 	if (type->byref && type->type != MONO_TYPE_TYPEDBYREF) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid use of byref type at 0x%04x", ctx->ip_offset));
+		return NULL;
+	}
+
+	if (type->type == MONO_TYPE_TYPEDBYREF) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid use of typedbyref at 0x%04x", ctx->ip_offset));
 		return NULL;
 	}
 
