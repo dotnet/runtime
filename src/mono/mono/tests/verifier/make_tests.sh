@@ -438,6 +438,40 @@ do
 	I=`expr $I + 1`
 done
 
+#test for unverifiable types
+
+I=1
+for OP in "stloc.0" "starg 0"
+do
+  ./make_store_test.sh misc_types_store_1_${I} valid "$OP" typedref typedref
+  ./make_store_test.sh misc_types_store_2_${I} unverifiable "$OP" "int32*" "int32*"
+  ./make_store_test.sh misc_types_store_3_${I} unverifiable "$OP" "method int32 *(int32)" "method int32 *(int32)"
+
+  ./make_store_test.sh misc_types_store_4_${I} unverifiable "$OP" "method int32 *(int32)" "method void *(int32)"
+  ./make_store_test.sh misc_types_store_5_${I} unverifiable "$OP" "int32*" "int8*"
+  ./make_store_test.sh misc_types_store_6_${I} unverifiable "$OP" typedref "native int&"
+
+
+  ./make_store_test.sh managed_pointer_store_1_${I} valid "$OP" "int32&" "int32&"
+  ./make_store_test.sh managed_pointer_store_2_${I} valid "$OP" "int32&" "native int&"
+  ./make_store_test.sh managed_pointer_store_3_${I} valid "$OP" "int32&" "unsigned int32&"
+  ./make_store_test.sh managed_pointer_store_4_${I} valid "$OP" "native int&" "int32&"
+  ./make_store_test.sh managed_pointer_store_5_${I} unverifiable "$OP" "int32&" "int16&"
+
+  ./make_store_test.sh managed_pointer_store_6_${I} valid "$OP" "int8&" "unsigned int8&"
+  ./make_store_test.sh managed_pointer_store_7_${I} valid "$OP" "int8&" "bool&"
+  ./make_store_test.sh managed_pointer_store_8_${I} unverifiable "$OP" "int8&" "int16&"
+
+  ./make_store_test.sh managed_pointer_store_9_${I} valid "$OP" "int16&" "unsigned int16&"
+  ./make_store_test.sh managed_pointer_store_10_${I} valid "$OP" "int16&" "char&"
+  ./make_store_test.sh managed_pointer_store_11_${I} unverifiable "$OP" "int16&" "int32&"
+
+  ./make_store_test.sh managed_pointer_store_12_${I} unverifiable "$OP" "float32&" "float64&"
+  ./make_store_test.sh managed_pointer_store_13_${I} unverifiable "$OP" "float64&" "float32&"
+
+  I=`expr $I + 1`
+done
+
 
 function fix () {
 	if [ "$3" != "" ]; then
@@ -2506,4 +2540,60 @@ do
 	./make_store_indirect_test.sh indirect_store_bad_val_ref_${I} unverifiable "stind.ref" "object&" "${TYPE1}"
 	I=`expr $I + 1`
 done
+
+
+#TODO validate delegate construction (Wait for ldftn, ldvirtftn and calli to be fully checking)
+#underflow
+./make_newobj_test.sh newobj_underflow invalid "newobj instance void class ClassA::.ctor(int32,int32)" "int32" "int32"
+
+#good simple cases
+./make_newobj_test.sh newobj_good_instantiation_1 valid "newobj instance void class ClassA::.ctor(int32)" "int32" "int32"
+./make_newobj_test.sh newobj_good_instantiation_2 valid "newobj instance void class ClassA::.ctor(int32)" "native int" "int32"
+./make_newobj_test.sh newobj_good_instantiation_3 valid "newobj instance void class ClassA::.ctor(native int)" "int32" "native int"
+./make_newobj_test.sh newobj_good_instantiation_4 valid "newobj instance void class ClassA::.ctor(native int)" "int32" "native int"
+./make_newobj_test.sh newobj_good_instantiation_5 valid "ldloc.0\n\tnewobj instance void int32[,]::.ctor(int32, int32)" "int32" "native int"
+./make_newobj_test.sh newobj_good_instantiation_6 valid "newobj instance void class ClassA::.ctor(typedref)" "typedref" "typedref"
+
+#unverifable types
+./make_newobj_test.sh newobj_unverifiable_types_1 unverifiable "newobj instance void class ClassA::.ctor(int32*)" "int32*" "int32*"
+./make_newobj_test.sh newobj_unverifiable_types_2 unverifiable "newobj instance void class ClassA::.ctor(method int32 *(int32))" "method int32 *(int32)" "method int32 *(int32)"
+
+
+
+#abstract type
+./make_newobj_test.sh newobj_bad_inst_1 unverifiable "newobj instance void class AbsClass::.ctor()" "int32" "int32"
+
+#bad types
+./make_newobj_test.sh newobj_bad_args_1 unverifiable "newobj instance void class ClassA::.ctor(int32)" "int64" "int32"
+./make_newobj_test.sh newobj_bad_args_2 unverifiable "newobj instance void class ClassA::.ctor(int32)" "object" "int32"
+./make_newobj_test.sh newobj_bad_args_3 unverifiable "newobj instance void class ClassA::.ctor(int32)" "int32\&" "int32"
+./make_newobj_test.sh newobj_bad_args_4 unverifiable "newobj instance void class ClassA::.ctor(int32)" "float32" "int32"
+
+./make_newobj_test.sh newobj_bad_args_5 unverifiable "newobj instance void class ClassA::.ctor(int64)" "int32" "int64"
+./make_newobj_test.sh newobj_bad_args_6 unverifiable "newobj instance void class ClassA::.ctor(int64)" "object" "int64"
+./make_newobj_test.sh newobj_bad_args_7 unverifiable "newobj instance void class ClassA::.ctor(int64)" "int32\&" "int64"
+./make_newobj_test.sh newobj_bad_args_8 unverifiable "newobj instance void class ClassA::.ctor(int64)" "float32" "int64"
+
+./make_newobj_test.sh newobj_bad_args_9 unverifiable "newobj instance void class ClassA::.ctor(object)" "int64" "object"
+./make_newobj_test.sh newobj_bad_args_10 unverifiable "newobj instance void class ClassA::.ctor(object)" "int32" "object"
+./make_newobj_test.sh newobj_bad_args_11 unverifiable "newobj instance void class ClassA::.ctor(object)" "int32\&" "object"
+./make_newobj_test.sh newobj_bad_args_12 unverifiable "newobj instance void class ClassA::.ctor(object)" "float32" "object"
+
+./make_newobj_test.sh newobj_bad_args_13 unverifiable "newobj instance void class ClassA::.ctor(float32)" "int64" "float32"
+./make_newobj_test.sh newobj_bad_args_14 unverifiable "newobj instance void class ClassA::.ctor(float32)" "object" "float32"
+./make_newobj_test.sh newobj_bad_args_15 unverifiable "newobj instance void class ClassA::.ctor(float32)" "int32\&" "float32"
+./make_newobj_test.sh newobj_bad_args_16 unverifiable "newobj instance void class ClassA::.ctor(float32)" "int32" "float32"
+
+./make_newobj_test.sh newobj_bad_args_17 unverifiable "newobj instance void class ClassA::.ctor(typedref)" "int32" "typedref"
+./make_newobj_test.sh newobj_bad_args_18 unverifiable "newobj instance void class ClassA::.ctor(typedref)" "object" "typedref"
+./make_newobj_test.sh newobj_bad_args_19 unverifiable "newobj instance void class ClassA::.ctor(typedref)" "int32\&" "typedref"
+./make_newobj_test.sh newobj_bad_args_20 unverifiable "newobj instance void class ClassA::.ctor(typedref)" "float32" "typedref"
+
+
+#calling something that it's not an instance constructor
+
+./make_newobj_test.sh newobj_method_not_ctor_1 invalid "newobj instance void class ClassA::ctor(int32)" "int32" "int32"
+./make_newobj_test.sh newobj_method_not_ctor_2 invalid "newobj instance void class ClassA::sctor(int32)" "int32" "int32"
+./make_newobj_test.sh newobj_method_not_ctor_1 invalid "pop\n\tnewobj instance void class ClassA::.cctor()" "int32" "int32"
+
 

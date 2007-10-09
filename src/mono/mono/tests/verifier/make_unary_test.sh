@@ -32,6 +32,7 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${
 .class public auto ansi sealed MyStruct
   	extends [mscorlib]System.ValueType
 {
+    .field public int32 valid
 }
 
 .class public auto ansi sealed Int8Enum
