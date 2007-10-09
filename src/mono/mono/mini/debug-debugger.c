@@ -69,6 +69,8 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	G_STRUCT_OFFSET (MonoClass, generic_class),
 	G_STRUCT_OFFSET (MonoClass, generic_container),
 	sizeof (MonoClassField),
+	G_STRUCT_OFFSET (MonoClassField, type),
+	G_STRUCT_OFFSET (MonoClassField, offset),
 	G_STRUCT_OFFSET (MonoDefaults, corlib),
 	G_STRUCT_OFFSET (MonoDefaults, object_class),
 	G_STRUCT_OFFSET (MonoDefaults, byte_class),

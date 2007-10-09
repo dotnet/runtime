@@ -83,6 +83,8 @@ struct _MonoDebuggerMetadataInfo {
 	int klass_generic_class_offset;
 	int klass_generic_container_offset;
 	int field_info_size;
+	int field_info_type_offset;
+	int field_info_offset_offset;
 	int mono_defaults_corlib_offset;
 	int mono_defaults_object_offset;
 	int mono_defaults_byte_offset;
