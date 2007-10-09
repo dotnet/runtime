@@ -2165,6 +2165,9 @@ fi
     export VERSION
     [myver=$($AWK 'BEGIN {
       split (ENVIRON["VERSION"] ".0.0.0", vsplit, ".")
+      if(length(vsplit [1]) > 4) {
+        split (substr(ENVIRON["VERSION"], 0, 4) "." substr(ENVIRON["VERSION"], 5) ".0.0", vsplit, ".")
+      }
       print vsplit [1] "." vsplit [2] "." vsplit [3] "." vsplit [4]
     }')]
 

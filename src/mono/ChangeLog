@@ -1,3 +1,9 @@
+2007-10-09  Wade Berrier  <wberrier@novell.com>
+
+	* configure.in: Split up the mono version that goes into Consts.cs 
+	to make sure each segment is no longer than 4 digits.  
+	This allows svn revisions to be used.
+
 2007-10-02  Miguel de Icaza  <miguel@novell.com>
 
 	* scripts/mono-test-install: (temp_exe): Add tests for dynamic
