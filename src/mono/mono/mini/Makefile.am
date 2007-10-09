@@ -143,6 +143,7 @@ arm_sources = \
 	mini-arm.c		\
 	mini-arm.h		\
 	exceptions-arm.c	\
+	mini-trampolines.c	\
 	tramp-arm.c
 
 mips_sources = \

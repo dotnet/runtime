@@ -208,6 +208,71 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
+{
+	char *o = NULL;
+	int reg, offset = 0;
+	guint32* code = (guint32*)code_ptr;
+
+	/* Locate the address of the method-specific trampoline. The call using
+	the vtable slot that took the processing flow to 'arch_create_jit_trampoline' 
+	looks something like this:
+
+		ldr rA, rX, #offset
+		mov lr, pc
+		mov pc, rA
+	or better:
+		mov lr, pc
+		ldr pc, rX, #offset
+
+	The call sequence could be also:
+		ldr ip, pc, 0
+		b skip
+		function pointer literal
+		skip:
+		mov lr, pc
+		mov pc, ip
+	Note that on ARM5+ we can use one instruction instead of the last two.
+	Therefore, we need to locate the 'ldr rA' instruction to know which
+	register was used to hold the method addrs.
+	*/
+	
+	/* This is the 'bl' or 'mov pc' instruction */
+	--code;
+
+	/* called directly with the bl opcode */
+	if ((((*code) >> 25)  & 7) == 5)
+		return NULL;
+
+	/* ldr pc, rX, #offset */
+#define LDR_MASK ((0xf << ARMCOND_SHIFT) | (3 << 26) | (1 << 22) | (1 << 20) | (15 << 12))
+#define LDR_PC_VAL ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 26) | (0 << 22) | (1 << 20) | (15 << 12))
+	if ((*code & LDR_MASK) == LDR_PC_VAL) {
+		reg = (*code >> 16 ) & 0xf;
+		offset = *code & 0xfff;
+		/*g_print ("found vcall at r%d + %d\n", reg, offset);*/
+		o = regs [reg];
+		return (gpointer*)(o + offset);
+	}
+	return NULL;
+}
+
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	return NULL;
+}
+
+gpointer
+mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
+{
+	/* FIXME: handle returning a struct */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return (gpointer)regs [ARMREG_R1];
+	return (gpointer)regs [ARMREG_R0];
+}
+
 /*
  * Initialize the cpu to execute managed code.
  */
