@@ -848,7 +848,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
-	int i;
+	int i, locals_size;
 	CallInfo *cinfo;
 
 	if (cfg->arch.omit_fp_computed)
@@ -902,7 +902,15 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		}
 	}
 
-	if (cfg->num_varinfo > 10000) {
+	locals_size = 0;
+	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+		MonoInst *ins = cfg->varinfo [i];
+		int ialign;
+
+		locals_size += mono_type_size (ins->inst_vtype, &ialign);
+	}
+
+	if ((cfg->num_varinfo > 10000) || (locals_size >= (1 << 15))) {
 		/* Avoid hitting the stack_alloc_size < (1 << 16) assertion in emit_epilog () */
 		cfg->arch.omit_fp = FALSE;
 	}
@@ -4342,7 +4350,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->arch.lmf_offset;
 
-	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 512);
+	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 1024);
 
 	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		cfg->code_size += 512;
