@@ -5,13 +5,21 @@ TEST_VALIDITY=$2
 TEST_OP=$3
 TEST_TYPE1=$4
 TEST_TYPE2=$5
+TEST_CREATE_FIELD=$6
 
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
 TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
 TEST_TYPE2=`echo $TEST_TYPE2 | sed -s 's/&/\\\&/'`
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/${TEST_TYPE2}/g" > $TEST_FILE <<//EOF
+
+if [ "$TEST_CREATE_FIELD" == "no" ]; then
+	CLASS_FIELDS="";
+else
+	CLASS_FIELDS=".field public ${TEST_TYPE1} fld\n	.field public static ${TEST_TYPE1} sfld";
+fi
+
+sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/CLASS_FIELDS/${CLASS_FIELDS}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/TYPE2/${TEST_TYPE2}/g" > $TEST_FILE <<//EOF
 
 .assembly '${TEST_NAME}_generated'
 {
@@ -51,8 +59,7 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g"  -e "s/OPCODE/${TEST_OP}/g" -e "s/TYPE1/$
 
 .class Class extends [mscorlib]System.Object
 {
-    .field public TYPE1 fld
-    .field public static TYPE1 sfld
+	CLASS_FIELDS
 
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{

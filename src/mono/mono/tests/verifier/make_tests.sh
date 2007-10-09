@@ -651,12 +651,6 @@ do
   #./make_obj_store_test.sh obj_coercion_75_${I} invalid "$OP" 'int32&' float64
   #./make_obj_store_test.sh obj_coercion_76_${I} invalid "$OP" 'int32&' object
   
-  ./make_obj_store_test.sh obj_coercion_77_${I} invalid "$OP" typedref int32
-  ./make_obj_store_test.sh obj_coercion_78_${I} invalid "$OP" typedref 'native int'
-  ./make_obj_store_test.sh obj_coercion_79_${I} invalid "$OP" typedref int64
-  ./make_obj_store_test.sh obj_coercion_80_${I} invalid "$OP" typedref float64
-  ./make_obj_store_test.sh obj_coercion_81_${I} invalid "$OP" typedref 'typedref&'
-  ./make_obj_store_test.sh obj_coercion_82_${I} invalid "$OP" typedref object
 
   ./make_obj_store_test.sh obj_coercion_83_${I} valid "$OP" int32 "native int"
   ./make_obj_store_test.sh obj_coercion_84_${I} valid "$OP" "native int" int32
@@ -669,6 +663,17 @@ do
  
   ./make_obj_store_test.sh obj_coercion_89_${I} valid "$OP" "unsigned int32" "native int"
   ./make_obj_store_test.sh obj_coercion_90_${I} valid "$OP" "native unsigned int" "unsigned int32"
+  I=`expr $I + 1`
+done
+
+I=1
+for OP in "call void Class::Method(TYPE1)"
+do
+  ./make_obj_store_test.sh obj_coercion_77_${I} unverifiable "$OP" typedref int32 "no"
+  ./make_obj_store_test.sh obj_coercion_78_${I} unverifiable "$OP" typedref 'native int' "no"
+  ./make_obj_store_test.sh obj_coercion_79_${I} unverifiable "$OP" typedref int64 "no"
+  ./make_obj_store_test.sh obj_coercion_80_${I} unverifiable "$OP" typedref float64 "no"
+  ./make_obj_store_test.sh obj_coercion_82_${I} unverifiable "$OP" typedref object "no"
   I=`expr $I + 1`
 done
 
@@ -1023,6 +1028,20 @@ done
 ./make_ret_test.sh ret_coercion_88 valid "native unsigned int" int32
 ./make_ret_test.sh ret_coercion_89 valid "unsigned int32" "native int"
 ./make_ret_test.sh ret_coercion_90 valid "native unsigned int" "unsigned int32"
+
+#type is unverifable
+./make_ret_test.sh ret_coercion_100 unverifiable "int32*" "int32*"
+./make_ret_test.sh ret_coercion_101 unverifiable "method int32* (int32)" "method int32* (int32)"
+
+#typedbyref as parm is ok
+./make_ret_test.sh ret_coercion_102 unverifiable int32 typedref
+./make_ret_test.sh ret_coercion_103 unverifiable typedref int32
+
+#unverifable return type: byref, typedbyref and ArgInterator
+./make_ret_test.sh bad_ret_type_1 unverifiable typedref typedref
+./make_ret_test.sh bad_ret_type_2 unverifiable "int32&" "int32&"
+./make_ret_test.sh bad_ret_type_4 unverifiable "valuetype [mscorlib]System.ArgIterator" "valuetype [mscorlib]System.ArgIterator"
+
 
 ./make_ret_test.sh ret_sub_type valid ClassA ClassSubA
 ./make_ret_test.sh ret_same_type valid ClassA ClassA
