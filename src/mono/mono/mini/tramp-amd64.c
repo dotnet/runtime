@@ -164,7 +164,7 @@ mono_arch_nullify_plt_entry (guint8 *code)
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
-	guint8 *buf, *code, *tramp;
+	guint8 *buf, *code, *tramp, *br [2];
 	int i, lmf_offset, offset, method_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
 	gboolean has_caller;
 
@@ -180,26 +180,25 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	offset = 0;
 
-	/* 
-	 * Allocate a new stack frame and transfer the two arguments received on 
-	 * the stack to our frame.
-	 */
-	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
+	/* Pop the return address off the stack */
 	amd64_pop_reg (code, AMD64_R11);
 
+	/* 
+	 * Allocate a new stack frame
+	 */
 	amd64_push_reg (code, AMD64_RBP);
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, 8);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
-	/* 
-	 * The method is at offset -8 from the new RBP, so no need to
-	 * copy it.
-	 */
+	offset += 8;
+	tramp_offset = - offset;
+
 	offset += 8;
 	method_offset = - offset;
 
-	offset += 8;
-	tramp_offset = - offset;
+	/* Compute the trampoline address from the return address */
+	/* 5 = length of amd64_call_membase () */
+	amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 5);
 	amd64_mov_membase_reg (code, AMD64_RBP, tramp_offset, AMD64_R11, 8);
 
 	/* Save all registers */
@@ -212,6 +211,23 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	saved_fpregs_offset = - offset;
 	for (i = 0; i < 8; ++i)
 		amd64_movsd_membase_reg (code, AMD64_RBP, saved_fpregs_offset + (i * 8), i);
+
+	/* Obtain the trampoline argument which is encoded in the instruction stream */
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, tramp_offset, 8);
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 5, 1);
+	amd64_widen_reg (code, AMD64_RAX, AMD64_RAX, TRUE, FALSE);
+	amd64_alu_reg_imm_size (code, X86_CMP, AMD64_RAX, 4, 1);
+	br [0] = code;
+	x86_branch8 (code, X86_CC_NE, 6, FALSE);
+	/* 32 bit immediate */
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 6, 4);
+	br [1] = code;
+	x86_jump8 (code, 10);
+	/* 64 bit immediate */
+	mono_amd64_patch (br [0], code);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 6, 8);
+	mono_amd64_patch (br [1], code);
+	amd64_mov_membase_reg (code, AMD64_RBP, method_offset, AMD64_R11, 8);
 
 	/* Save LMF begin */
 
@@ -320,58 +336,43 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	return buf;
 }
 
-#define TRAMPOLINE_SIZE 34
-
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
-	guint8 *code, *buf, *tramp, *real_code;
-	int size, jump_offset;
+	guint8 *code, *buf, *tramp;
+	int size;
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	code = buf = g_alloca (TRAMPOLINE_SIZE);
-
-	/* push trampoline address */
-	amd64_lea_membase (code, AMD64_R11, AMD64_RIP, -7);
-	amd64_push_reg (code, AMD64_R11);
-
-	/* push argument */
-	if (amd64_is_imm32 ((gint64)arg1))
-		amd64_push_imm (code, (gint64)arg1);
-	else {
-		amd64_mov_reg_imm (code, AMD64_R11, arg1);
-		amd64_push_reg (code, AMD64_R11);
-	}
-
-	jump_offset = code - buf;
-	/* note that jump_disp can use a 8 bit displacement immediate, so we
- 	 * need to use a value doesn't fit into signed 8 bits otherwise the
- 	 * later amd64_jump_disp (code, tramp - code) call will corrupt memory
- 	 * as we allocate 3 bytes less.
- 	 */
-	amd64_jump_disp (code, 0xf1f1f1f1);
-
-	g_assert ((code - buf) <= TRAMPOLINE_SIZE);
+	if ((((guint64)arg1) >> 32) == 0)
+		size = 5 + 1 + 4;
+	else
+		size = 5 + 1 + 8;
 
 	mono_domain_lock (domain);
-	real_code = mono_code_manager_reserve (domain->code_mp, code - buf);
-	size = code - buf;
+	code = buf = mono_code_manager_reserve_align (domain->code_mp, size, 1);
 	mono_domain_unlock (domain);
 
-	memcpy (real_code, buf, size);
+	amd64_call_code (code, tramp);
+	/* The trampoline code will obtain the argument from the instruction stream */
+	if ((((guint64)arg1) >> 32) == 0) {
+		*code = 0x4;
+		*(guint32*)(code + 1) = (gint64)arg1;
+		code += 5;
+	} else {
+		*code = 0x8;
+		*(guint64*)(code + 1) = (gint64)arg1;
+		code += 9;
+	}
 
-	/* Fix up jump */
-	code = (guint8*)real_code + jump_offset;
-	g_assert (amd64_is_imm32 (((gint64)tramp - (gint64)code)));
-	amd64_jump_disp (code, tramp - code);
+	g_assert ((code - buf) <= size);
 
 	if (code_len)
 		*code_len = size;
 
-	mono_arch_flush_icache (real_code, size);
+	mono_arch_flush_icache (buf, size);
 
-	return real_code;
+	return buf;
 }	
 
 void

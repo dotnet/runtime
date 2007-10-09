@@ -268,7 +268,10 @@ typedef struct {
 #define MONO_ARCH_AOT_SUPPORTED 1
 
 gboolean
-mono_amd64_is_sse2 (void);
+mono_amd64_is_sse2 (void) MONO_INTERNAL;
+
+void 
+mono_amd64_patch (unsigned char* code, gpointer target) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_AMD64_H__ */  
 

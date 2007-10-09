@@ -191,6 +191,12 @@ amd64_patch (unsigned char* code, gpointer target)
 		x86_patch (code, (unsigned char*)target);
 }
 
+void 
+mono_amd64_patch (unsigned char* code, gpointer target)
+{
+	amd64_patch (code, target);
+}
+
 typedef enum {
 	ArgInIReg,
 	ArgInFloatSSEReg,
