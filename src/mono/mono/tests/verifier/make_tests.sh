@@ -2201,7 +2201,7 @@ done
 ./make_unbox_test.sh unbox_byref_type invalid "int32" 'int32\&'
 
 # Box unbox-like type.
-./make_unbox_test.sh unbox_byref_like unverifiable int32 typedref
+./make_unbox_test.sh unbox_byref_like unverifiable typedref typedref
 
 # Box unbox-like type.
 ./make_unbox_test.sh unbox_wrong_types valid object int32
