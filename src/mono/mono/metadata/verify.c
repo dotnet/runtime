@@ -2682,6 +2682,46 @@ do_ldobj_value (VerifyContext *ctx, int token)
 	set_stack_value (stack_push (ctx), type, FALSE);
 }
 
+#define CTOR_REQUIRED_FLAGS (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_PUBLIC)
+#define CTOR_INVALID_FLAGS (METHOD_ATTRIBUTE_STATIC)
+/* TODO implement delegate verification */
+static void
+do_newobj (VerifyContext *ctx, int token) 
+{
+	ILStackDesc *value;
+	int i;
+	MonoMethodSignature *sig;
+	MonoMethod *method = mono_get_method_full (ctx->image, token, NULL, ctx->generic_context);
+	if (!method) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Constructor 0x%08x not found at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	if ((method->flags & CTOR_REQUIRED_FLAGS) != CTOR_REQUIRED_FLAGS
+		|| (method->flags & CTOR_INVALID_FLAGS) != 0
+		|| strcmp (".ctor", method->name)) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Method from token 0x%08x not a constructor at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	if (method->klass->flags & (TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_INTERFACE))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Trying to instantiate an abstract or interface type at 0x%04x", token, ctx->ip_offset));
+
+	sig = mono_method_signature (method);
+	if (!check_underflow (ctx, sig->param_count))
+		return;
+
+	for (i = sig->param_count - 1; i >= 0; --i) {
+		VERIFIER_DEBUG ( printf ("verifying constructor argument %d\n", i); );
+		value = stack_pop (ctx);
+		if (!verify_stack_type_compatibility (ctx, sig->params [i], value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature at 0x%04x", ctx->ip_offset));
+	}
+
+	if (check_overflow (ctx))
+		set_stack_value (stack_push (ctx),  &method->klass->byval_arg, FALSE);
+}
+
 static MonoType *
 get_indirect_op_mono_type (int opcode) {
 	switch (opcode) {
@@ -2847,13 +2887,11 @@ end_verify:
 GSList*
 mono_method_verify (MonoMethod *method, int level)
 {
-	MonoMethodSignature *csig;
 	const unsigned char *ip;
 	const unsigned char *end;
 	const unsigned char *target = NULL; /* branch target */
 	int i, n, need_merge = 0, start = 0;
 	guint token, ip_offset = 0, prefix = 0;
-	MonoMethod *cmethod;
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	VerifyContext ctx;
@@ -3319,23 +3357,12 @@ mono_method_verify (MonoMethod *method, int level)
 				stack_push_val (&ctx, TYPE_COMPLEX,  &mono_defaults.string_class->byval_arg);
 			ip += 5;
 			break;
-		case CEE_NEWOBJ:
-			token = read32 (ip + 1);
-			/*
-			 * FIXME: we could just load the signature ...
-			 */
-			cmethod = mono_get_method_full (image, token, NULL, generic_context);
-			if (!cmethod)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Constructor 0x%08x not found at 0x%04x", token, ip_offset));
-			csig = mono_method_signature (cmethod);
-			if (!check_underflow (&ctx, csig->param_count))
-				break;
-			ctx.eval.size -= csig->param_count;
-			if (check_overflow (&ctx))
-				stack_push_val (&ctx, cmethod->klass->valuetype? TYPE_COMPLEX: TYPE_COMPLEX, &cmethod->klass->byval_arg);
 
+		case CEE_NEWOBJ:
+			do_newobj (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_CASTCLASS:
 		case CEE_ISINST:
 			token = read32 (ip + 1);
