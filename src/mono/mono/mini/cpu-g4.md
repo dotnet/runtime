@@ -216,7 +216,8 @@ conv.ovf.u4:
 conv.ovf.i8:
 conv.ovf.u8:
 refanyval:
-ckfinite: dest:f src1:f len:24
+ckfinite: src1:f
+ppc_check_finite: src1:i len:16
 mkrefany:
 ldtoken:
 conv.u2: dest:i src1:i len:4

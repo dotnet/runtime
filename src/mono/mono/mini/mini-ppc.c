@@ -2474,33 +2474,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			break;
 		case OP_DIV_IMM:
-			g_assert_not_reached ();
-		case CEE_REM: {
-			guint32 *divisor_is_m1;
-			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
-			divisor_is_m1 = code;
-			ppc_bc (code, PPC_BR_FALSE | PPC_BR_LIKELY, PPC_BR_EQ, 0);
-			ppc_lis (code, ppc_r0, 0x8000);
-			ppc_cmp (code, 0, 0, ins->sreg1, ppc_r0);
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "ArithmeticException");
-			ppc_patch (divisor_is_m1, code);
-			ppc_divwod (code, ppc_r11, ins->sreg1, ins->sreg2);
-			ppc_mfspr (code, ppc_r0, ppc_xer);
-			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
-			/* FIXME: use OverflowException for 0x80000000/-1 */
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
-			ppc_mullw (code, ppc_r11, ppc_r11, ins->sreg2);
-			ppc_subf (code, ins->dreg, ppc_r11, ins->sreg1);
-			break;
-		}
+		case CEE_REM:
 		case CEE_REM_UN:
-			ppc_divwuod (code, ppc_r11, ins->sreg1, ins->sreg2);
-			ppc_mfspr (code, ppc_r0, ppc_xer);
-			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
-			ppc_mullw (code, ppc_r11, ppc_r11, ins->sreg2);
-			ppc_subf (code, ins->dreg, ppc_r11, ins->sreg1);
-			break;
 		case OP_REM_IMM:
 			g_assert_not_reached ();
 		case CEE_OR:
@@ -2950,31 +2925,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STORER8_MEMINDEX:
 			ppc_stfdx (code, ins->sreg1, ins->sreg2, ins->inst_destbasereg);
 			break;
-		case CEE_CONV_R_UN: {
-			static const guint64 adjust_val = 0x4330000000000000ULL;
-			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
-			ppc_stw (code, ppc_r0, -8, ppc_sp);
-			ppc_stw (code, ins->sreg1, -4, ppc_sp);
-			ppc_load (code, ppc_r11, &adjust_val);
-			ppc_lfd (code, ins->dreg, -8, ppc_sp);
-			ppc_lfd (code, ppc_f0, 0, ppc_r11);
-			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);
-			break;
-		}
+		case CEE_CONV_R_UN:
 		case CEE_CONV_R4: /* FIXME: change precision */
-		case CEE_CONV_R8: {
-			static const guint64 adjust_val = 0x4330000080000000ULL;
-			// addis is special for ppc_r0
-			ppc_addis (code, ppc_r0, ppc_r0, 0x4330);
-			ppc_stw (code, ppc_r0, -8, ppc_sp);
-			ppc_xoris (code, ins->sreg1, ppc_r11, 0x8000);
-			ppc_stw (code, ppc_r11, -4, ppc_sp);
-			ppc_lfd (code, ins->dreg, -8, ppc_sp);
-			ppc_load (code, ppc_r11, &adjust_val);
-			ppc_lfd (code, ppc_f0, 0, ppc_r11);
-			ppc_fsub (code, ins->dreg, ins->dreg, ppc_f0);
-			break;
-		}
+		case CEE_CONV_R8:
+			g_assert_not_reached ();
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
 			break;
@@ -3122,12 +3076,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FBLE_UN:
 			EMIT_COND_BRANCH (ins, CEE_BLE_UN - CEE_BEQ);
 			break;
-		case OP_CKFINITE: {
-			ppc_stfd (code, ins->sreg1, -8, ppc_sp);
-			ppc_lwz (code, ppc_r11, -8, ppc_sp);
-			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 1, 31);
-			ppc_addis (code, ppc_r11, ppc_r11, -32752);
-			ppc_rlwinmd (code, ppc_r11, ppc_r11, 1, 31, 31);
+		case OP_CKFINITE:
+			g_assert_not_reached ();
+		case OP_CHECK_FINITE: {
+			ppc_rlwinm (code, ins->sreg1, ins->sreg1, 0, 1, 31);
+			ppc_addis (code, ins->sreg1, ins->sreg1, -32752);
+			ppc_rlwinmd (code, ins->sreg1, ins->sreg1, 1, 31, 31);
 			EMIT_COND_SYSTEM_EXCEPTION (CEE_BEQ - CEE_BEQ, "ArithmeticException");
 			break;
 		}

@@ -1,3 +1,12 @@
+#define MONO_EMIT_NEW_LOAD_R8(cfg,dr,addr) do { \
+		MonoInst *inst; \
+		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst)); \
+		inst->opcode = OP_R8CONST; \
+		inst->dreg = dr; \
+		inst->inst_p0 = addr; \
+		mono_bblock_add_inst (cfg->cbb, inst); \
+	} while (0)
+
 %%
 
 #
@@ -29,6 +38,23 @@ stmt: OP_ENDFILTER (reg) {
 	tree->inst_left = spvar;
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
+}
+
+reg: CEE_REM_UN (reg, reg),
+reg: CEE_REM (reg, reg) "0" {
+	int div_result = mono_regstate_next_int (s->rs);
+	int mul_result = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_BIALU (s, (tree->opcode == CEE_REM_UN?CEE_DIV_UN:CEE_DIV), div_result, state->left->reg1, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, CEE_MUL, mul_result, div_result, state->right->reg1);
+	MONO_EMIT_NEW_BIALU (s, CEE_SUB, state->reg1, state->left->reg1, mul_result);
+}
+
+freg: OP_CKFINITE (freg) "0" {
+	int msw_reg = mono_regstate_next_int (s->rs);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORER8_MEMBASE_REG, ppc_sp, -8, state->left->reg1);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, msw_reg, ppc_sp, -8);
+	MONO_EMIT_NEW_UNALU (s, OP_CHECK_FINITE, -1, msw_reg);
+	MONO_EMIT_NEW_UNALU (s, OP_FMOVE, state->reg1, state->left->reg1);
 }
 
 lreg: OP_LADD_OVF (lreg, lreg) "0" {
@@ -80,10 +106,34 @@ freg: OP_LCONV_TO_R4 (lreg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-freg: CEE_CONV_R_UN (reg) {
-	tree->dreg = state->reg1;
-	tree->sreg1 = state->left->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
+freg: CEE_CONV_R_UN (reg) "1" {
+	static const guint64 adjust_val = 0x4330000000000000ULL;
+	int msw_reg = mono_regstate_next_int (s->rs);
+	int adj_reg = mono_regstate_next_float (s->rs);
+	int tmp_reg = mono_regstate_next_float (s->rs);
+	MONO_EMIT_NEW_ICONST (s, msw_reg, 0x43300000);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, ppc_sp, -8, msw_reg);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, ppc_sp, -4, state->left->reg1);
+	MONO_EMIT_NEW_LOAD_R8 (s, adj_reg, &adjust_val);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADR8_MEMBASE, tmp_reg, ppc_sp, -8);
+	MONO_EMIT_BIALU (s, tree, OP_FSUB, state->reg1, tmp_reg, adj_reg);
+}
+
+freg: CEE_CONV_R8 (reg),
+freg: CEE_CONV_R4 (reg) "1" {
+	/* FIXME: change precision for CEE_CONV_R4 */
+	static const guint64 adjust_val = 0x4330000080000000ULL;
+	int msw_reg = mono_regstate_next_int (s->rs);
+	int xored = mono_regstate_next_int (s->rs);
+	int adj_reg = mono_regstate_next_float (s->rs);
+	int tmp_reg = mono_regstate_next_float (s->rs);
+	MONO_EMIT_NEW_ICONST (s, msw_reg, 0x43300000);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, ppc_sp, -8, msw_reg);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_XOR_IMM, xored, state->left->reg1, 0x80000000);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI4_MEMBASE_REG, ppc_sp, -4, xored);
+	MONO_EMIT_NEW_LOAD_R8 (s, adj_reg, &adjust_val);
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADR8_MEMBASE, tmp_reg, ppc_sp, -8);
+	MONO_EMIT_BIALU (s, tree, OP_FSUB, state->reg1, tmp_reg, adj_reg);
 }
 
 reg: OP_LOCALLOC (OP_ICONST) {
