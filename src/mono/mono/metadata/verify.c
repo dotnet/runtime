@@ -2347,13 +2347,8 @@ do_invoke_method (VerifyContext *ctx, int method_token)
 	for (i = sig->param_count - 1; i >= 0; --i) {
 		VERIFIER_DEBUG ( printf ("verifying argument %d\n", i); );
 		value = stack_pop (ctx);
-		if (!verify_stack_type_compatibility (ctx, sig->params[i], value)) {
-			if (sig->params [i]->type == MONO_TYPE_TYPEDBYREF) {
-				ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Typedbyref field is an unverfiable type for a call parameter at 0x%04x", ctx->ip_offset));
-				return;
-			}
+		if (!verify_stack_type_compatibility (ctx, sig->params[i], value))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature at 0x%04x", ctx->ip_offset));
-		}
 	}
 
 	if (sig->hasthis) {
@@ -2373,6 +2368,11 @@ do_invoke_method (VerifyContext *ctx, int method_token)
 		if (check_overflow (ctx))
 			set_stack_value (stack_push (ctx), sig->ret, FALSE);
 	}
+
+	if (sig->ret->type == MONO_TYPE_TYPEDBYREF
+		|| sig->ret->byref
+		|| (sig->ret->type == MONO_TYPE_VALUETYPE && !strcmp ("System", sig->ret->data.klass->name_space) && !strcmp ("ArgIterator", sig->ret->data.klass->name)))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns typedbyref, byref or ArgIterator at 0x%04x", ctx->ip_offset));
 }
 
 static void
@@ -2706,7 +2706,7 @@ do_newobj (VerifyContext *ctx, int token)
 	}
 
 	if (method->klass->flags & (TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_INTERFACE))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Trying to instantiate an abstract or interface type at 0x%04x", token, ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Trying to instantiate an abstract or interface type at 0x%04x", ctx->ip_offset));
 
 	sig = mono_method_signature (method);
 	if (!check_underflow (ctx, sig->param_count))
