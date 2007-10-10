@@ -71,7 +71,11 @@ mono_valloc (void *addr, size_t length, int flags)
 int
 mono_vfree (void *addr, size_t length)
 {
-	return VirtualFree (addr, length, MEM_RELEASE) == 0;
+	int res = VirtualFree (addr, 0, MEM_RELEASE);
+
+	g_assert (res);
+
+	return 0;
 }
 
 void*
