@@ -154,6 +154,21 @@ emit_call_reg (guint8 *code, int reg)
 	return code;
 }
 
+static guint8*
+emit_call_seq (MonoCompile *cfg, guint8 *code)
+{
+	if (cfg->method->dynamic) {
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (code, 0);
+		*(gpointer*)code = NULL;
+		code += 4;
+		code = emit_call_reg (code, ARMREG_IP);
+	} else {
+		ARM_BL (code, 0);
+	}
+	return code;
+}
+
 /*
  * mono_arch_get_argument_info:
  * @csig:  a method signature
@@ -1734,6 +1749,9 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 				return 1;
 			} else if ((thunks [0] == 0) && (thunks [1] == 0) && (thunks [2] == 0)) {
 				/* found a free slot instead: emit thunk */
+				/* ARMREG_IP is fine to use since this can't be an IMT call
+				 * which is indirect
+				 */
 				code = (guchar*)thunks;
 				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 				if (thumb_supported)
@@ -2388,15 +2406,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 			else
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
-			if (cfg->method->dynamic) {
-				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-				ARM_B (code, 0);
-				*(gpointer*)code = NULL;
-				code += 4;
-				code = emit_call_reg (code, ARMREG_IP);
-			} else {
-				ARM_BL (code, 0);
-			}
+			code = emit_call_seq (cfg, code);
 			break;
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
@@ -2454,15 +2464,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_MOV_REG_REG (code, ARMREG_R0, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_throw_exception");
-			if (cfg->method->dynamic) {
-				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-				ARM_B (code, 0);
-				*(gpointer*)code = NULL;
-				code += 4;
-				code = emit_call_reg (code, ARMREG_IP);
-			} else {
-				ARM_BL (code, 0);
-			}
+			code = emit_call_seq (cfg, code);
 			break;
 		}
 		case OP_RETHROW: {
@@ -2470,15 +2472,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_MOV_REG_REG (code, ARMREG_R0, ins->sreg1);
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					     (gpointer)"mono_arch_rethrow_exception");
-			if (cfg->method->dynamic) {
-				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-				ARM_B (code, 0);
-				*(gpointer*)code = NULL;
-				code += 4;
-				code = emit_call_reg (code, ARMREG_IP);
-			} else {
-				ARM_BL (code, 0);
-			}
+			code = emit_call_seq (cfg, code);
 			break;
 		}
 		case OP_START_HANDLER:
@@ -3300,15 +3294,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 			     (gpointer)"mono_get_lmf_addr");
-		if (cfg->method->dynamic) {
-			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-			ARM_B (code, 0);
-			*(gpointer*)code = NULL;
-			code += 4;
-			code = emit_call_reg (code, ARMREG_IP);
-		} else {
-			ARM_BL (code, 0);
-		}
+		code = emit_code_seq (cfg, code);
 		/* we build the MonoLMF structure on the stack - see mini-arm.h */
 		/* lmf_offset is the offset from the previous stack pointer,
 		 * alloc_size is the total stack space allocated, so the offset
