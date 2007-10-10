@@ -19,6 +19,26 @@
 #include "mini-arm.h"
 
 /*
+ * Return the instruction to jump from code to target, 0 if not
+ * reachable with a single instruction
+ */
+static guint32
+branch_for_target_reachable (guint8 *branch, guint8 *target)
+{
+	gint diff = target - branch - 8;
+	g_assert ((diff & 3) == 0);
+	if (diff >= 0) {
+		if (diff <= 33554431)
+			return (ARMCOND_AL << ARMCOND_SHIFT) | (ARM_BR_TAG) | (diff >> 2);
+	} else {
+		/* diff between 0 and -33554432 */
+		if (diff >= -33554432)
+			return (ARMCOND_AL << ARMCOND_SHIFT) | (ARM_BR_TAG) | ((diff >> 2) & ~0xff000000);
+	}
+	return 0;
+}
+
+/*
  * mono_arch_get_unbox_trampoline:
  * @m: method pointer
  * @addr: pointer to native code for @m
@@ -127,12 +147,14 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	code = buf = mono_global_codeman_reserve (GEN_TRAMP_SIZE);
 
 	/*
-	 * At this point r0 has the specific arg and sp points to the saved
-	 * regs on the stack (all but PC and SP).
+	 * At this point lr points to the specific arg and sp points to the saved
+	 * regs on the stack (all but PC and SP). The original LR value has been
+	 * saved as sp + LR_OFFSET by the push in the specific trampoline
 	 */
+#define LR_OFFSET (sizeof (gpointer) * 13)
 	ARM_MOV_REG_REG (buf, ARMREG_V1, ARMREG_SP);
-	ARM_MOV_REG_REG (buf, ARMREG_V2, ARMREG_R0);
-	ARM_MOV_REG_REG (buf, ARMREG_V3, ARMREG_LR);
+	ARM_LDR_IMM (buf, ARMREG_V2, ARMREG_LR, 0);
+	ARM_LDR_IMM (buf, ARMREG_V3, ARMREG_SP, LR_OFFSET);
 
 	/* ok, now we can continue with the MonoLMF setup, mostly untouched 
 	 * from emit_prolog in mini-arm.c
@@ -256,16 +278,23 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	return code;
 }
 
+#define SPEC_TRAMP_SIZE 24
+
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
 	guint8 *code, *buf, *tramp;
 	gpointer *constants;
+	guint32 short_branch, size = SPEC_TRAMP_SIZE;
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, 24);
+	code = buf = mono_code_manager_reserve_align (domain->code_mp, size, 4);
+	if ((short_branch = branch_for_target_reachable (code + 8, tramp))) {
+		size = 12;
+		mono_code_manager_commit (domain->code_mp, code, SPEC_TRAMP_SIZE, size);
+	}
 	mono_domain_unlock (domain);
 
 	/* we could reduce this to 12 bytes if tramp is within reach:
@@ -282,19 +311,26 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	 */
 	/* We save all the registers, except PC and SP */
 	ARM_PUSH (buf, 0x5fff);
-	ARM_LDR_IMM (buf, ARMREG_R0, ARMREG_PC, 4); /* arg1 is the only arg */
-	ARM_LDR_IMM (buf, ARMREG_R1, ARMREG_PC, 4); /* temp reg */
-	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_R1);
+	if (short_branch) {
+		constants = (gpointer*)buf;
+		constants [0] = GUINT_TO_POINTER (short_branch | (1 << 24));
+		constants [1] = arg1;
+		buf += 8;
+	} else {
+		ARM_LDR_IMM (buf, ARMREG_R1, ARMREG_PC, 8); /* temp reg */
+		ARM_MOV_REG_REG (buf, ARMREG_LR, ARMREG_PC);
+		ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_R1);
 
-	constants = (gpointer*)buf;
-	constants [0] = arg1;
-	constants [1] = tramp;
-	buf += 8;
+		constants = (gpointer*)buf;
+		constants [0] = arg1;
+		constants [1] = tramp;
+		buf += 8;
+	}
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
 
-	g_assert ((buf - code) <= 24);
+	g_assert ((buf - code) <= size);
 
 	if (code_len)
 		*code_len = buf - code;
