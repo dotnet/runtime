@@ -23,6 +23,11 @@
 #include "mono/arch/arm/arm-vfp-codegen.h"
 #endif
 
+/* This mutex protects architecture specific caches */
+#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
+#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
+static CRITICAL_SECTION mini_arch_mutex;
+
 static int v5_supported = 0;
 static int thumb_supported = 0;
 
@@ -258,9 +263,73 @@ mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
 	return NULL;
 }
 
+#define MAX_ARCH_DELEGATE_PARAMS 3
+
 gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {
+	guint8 *code, *start;
+
+	/* FIXME: Support more cases */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
+
+	if (has_target) {
+		static guint8* cached = NULL;
+		mono_mini_arch_lock ();
+		if (cached) {
+			mono_mini_arch_unlock ();
+			return cached;
+		}
+		
+		start = code = mono_global_codeman_reserve (12);
+
+		/* Replace the this argument with the target */
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, target));
+		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+
+		g_assert ((code - start) <= 12);
+
+		mono_arch_flush_icache (code, 12);
+		cached = start;
+		mono_mini_arch_unlock ();
+		return cached;
+	} else {
+		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
+		int size, i;
+
+		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
+			return NULL;
+		for (i = 0; i < sig->param_count; ++i)
+			if (!mono_is_regsize_var (sig->params [i]))
+				return NULL;
+
+		mono_mini_arch_lock ();
+		code = cache [sig->param_count];
+		if (code) {
+			mono_mini_arch_unlock ();
+			return code;
+		}
+
+		size = 8 + sig->param_count * 4;
+		start = code = mono_global_codeman_reserve (size);
+
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		/* slide down the arguments */
+		for (i = 0; i < sig->param_count; ++i) {
+			ARM_MOV_REG_REG (code, (ARMREG_R0 + i), (ARMREG_R0 + i + 1));
+		}
+		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+
+		g_assert ((code - start) <= size);
+
+		mono_arch_flush_icache (code, size);
+		cache [sig->param_count] = start;
+		mono_mini_arch_unlock ();
+		return start;
+	}
+
 	return NULL;
 }
 
@@ -287,6 +356,7 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
+	InitializeCriticalSection (&mini_arch_mutex);	
 }
 
 /*
