@@ -1124,5 +1124,6 @@ gboolean mono_method_is_generic_sharable_impl (MonoMethod *method) MONO_INTERNAL
 
 MonoGenericContext* mono_make_shared_context (MonoCompile *cfg, MonoGenericContext *context) MONO_INTERNAL;
 
+MonoType* mini_get_basic_type_from_generic (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_H__ */

@@ -517,6 +517,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 	/* return value */
 	{
 		ret_type = mono_type_get_underlying_type (sig->ret);
+		ret_type = mini_get_basic_type_from_generic (cfg, ret_type);
 		switch (ret_type->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -574,12 +575,6 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 			break;
 		case MONO_TYPE_VOID:
 			break;
-		case MONO_TYPE_VAR:
-		case MONO_TYPE_MVAR:
-			g_assert (cfg->generic_shared);
-			cinfo->ret.storage = ArgInIReg;
-			cinfo->ret.reg = AMD64_RAX;
-			break;
 		default:
 			g_error ("Can't handle as return value 0x%x", sig->ret->type);
 		}
@@ -619,6 +614,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 			continue;
 		}
 		ptype = mono_type_get_underlying_type (sig->params [i]);
+		ptype = mini_get_basic_type_from_generic (cfg, ptype);
 		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -667,11 +663,6 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 			break;
 		case MONO_TYPE_R8:
 			add_float (&fr, &stack_size, ainfo, TRUE);
-			break;
-		case MONO_TYPE_VAR:
-		case MONO_TYPE_MVAR:
-			g_assert (cfg->generic_shared);
-			add_general (&gr, &stack_size, ainfo);
 			break;
 		default:
 			g_assert_not_reached ();
