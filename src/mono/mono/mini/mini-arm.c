@@ -3294,7 +3294,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 			     (gpointer)"mono_get_lmf_addr");
-		code = emit_code_seq (cfg, code);
+		code = emit_call_seq (cfg, code);
 		/* we build the MonoLMF structure on the stack - see mini-arm.h */
 		/* lmf_offset is the offset from the previous stack pointer,
 		 * alloc_size is the total stack space allocated, so the offset
