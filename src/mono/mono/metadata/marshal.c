@@ -4884,7 +4884,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			 */
 			callsig = signature_dup_add_this (mono_method_signature (method), method->klass);
 		} else {
-			callsig = mono_method_signature (method);
+			if (method->dynamic)
+				callsig = signature_dup (method->klass->image, mono_method_signature (method));
+			else
+				callsig = mono_method_signature (method);
 		}
 	}
 
