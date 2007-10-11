@@ -838,6 +838,16 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	gpointer *sp;
 	int frame_size;
 
+	/* if we didn't find a managed method for the ip address and it matches the fault
+	 * address, we assume we followed a broken pointer during an indirect call, so
+	 * we try the lookup again with the return address pushed on the stack
+	 */
+	if (!ji && fault_addr == (gpointer)UCONTEXT_REG_EIP (ctx)) {
+		glong *sp = (gpointer)UCONTEXT_REG_ESP (ctx);
+		ji = mono_jit_info_table_find (mono_domain_get (), (gpointer)sp [0]);
+		if (ji)
+			UCONTEXT_REG_EIP (ctx) = sp [0];
+	}
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
 	if (!ji)
