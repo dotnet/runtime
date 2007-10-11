@@ -3640,6 +3640,12 @@ mono_type_size (MonoType *t, int *align)
 int
 mono_type_stack_size (MonoType *t, int *align)
 {
+	return mono_type_stack_size_internal (t, align, FALSE);
+}
+
+int
+mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
+{
 	int tmp;
 
 	g_assert (t != NULL);
@@ -3689,7 +3695,7 @@ mono_type_stack_size (MonoType *t, int *align)
 		guint32 size;
 
 		if (t->data.klass->enumtype)
-			return mono_type_stack_size (t->data.klass->enum_basetype, align);
+			return mono_type_stack_size_internal (t->data.klass->enum_basetype, align, allow_open);
 		else {
 			size = mono_class_value_size (t->data.klass, (guint32*)align);
 
@@ -3706,11 +3712,12 @@ mono_type_stack_size (MonoType *t, int *align)
 		MonoGenericClass *gclass = t->data.generic_class;
 		MonoClass *container_class = gclass->container_class;
 
-		g_assert (!gclass->context.class_inst->is_open);
+		if (!allow_open)
+			g_assert (!gclass->context.class_inst->is_open);
 
 		if (container_class->valuetype) {
 			if (container_class->enumtype)
-				return mono_type_stack_size (container_class->enum_basetype, align);
+				return mono_type_stack_size_internal (container_class->enum_basetype, align, allow_open);
 			else {
 				guint32 size = mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 

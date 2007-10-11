@@ -201,7 +201,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		if (csig->pinvoke)
 			size = mono_type_native_stack_size (csig->params [k], &align);
 		else
-			size = mono_type_stack_size (csig->params [k], &align);
+			size = mini_type_stack_size (NULL, csig->params [k], &align);
 
 		/* ignore alignment for now */
 		align = 1;

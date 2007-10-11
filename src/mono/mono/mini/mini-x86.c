@@ -174,7 +174,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
 
 
 static void
-add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
+add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	       gboolean is_return,
 	       guint32 *gr, guint32 *fr, guint32 *stack_size)
 {
@@ -185,7 +185,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	if (sig->pinvoke) 
 		size = mono_type_native_stack_size (&klass->byval_arg, NULL);
 	else 
-		size = mono_type_stack_size (&klass->byval_arg, NULL);
+		size = mini_type_stack_size (gsctx, &klass->byval_arg, NULL);
 
 #ifdef SMALL_STRUCTS_IN_REGS
 	if (sig->pinvoke && is_return) {
@@ -246,6 +246,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
+	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
 
 	if (mp)
 		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
@@ -258,7 +259,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 	/* return value */
 	{
 		ret_type = mono_type_get_underlying_type (sig->ret);
-		ret_type = mini_get_basic_type_from_generic (cfg, ret_type);
+		ret_type = mini_get_basic_type_from_generic (gsctx, ret_type);
 		switch (ret_type->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -301,7 +302,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 		case MONO_TYPE_VALUETYPE: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-			add_valuetype (sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack)
 				/* The caller passes the address where the value is stored */
 				add_general (&gr, &stack_size, &cinfo->ret);
@@ -354,7 +355,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 			continue;
 		}
 		ptype = mono_type_get_underlying_type (sig->params [i]);
-		ptype = mini_get_basic_type_from_generic (cfg, ptype);
+		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
 		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -388,7 +389,7 @@ get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboo
 			}
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
-			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
+			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
 			stack_size += sizeof (MonoTypedRef);
@@ -473,7 +474,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 			size = mono_type_native_stack_size (csig->params [k], &align);
 		else {
 			int ialign;
-			size = mono_type_stack_size (csig->params [k], &ialign);
+			size = mini_type_stack_size (NULL, csig->params [k], &ialign);
 			align = ialign;
 		}
 
@@ -1018,7 +1019,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
 					else {
 						int ialign;
-						size = mono_type_stack_size (&in->klass->byval_arg, &ialign);
+						size = mini_type_stack_size (cfg->generic_sharing_context, &in->klass->byval_arg, &ialign);
 						align = ialign;
 					}
 				arg->opcode = OP_OUTARG_VT;

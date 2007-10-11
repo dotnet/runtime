@@ -383,7 +383,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 		if (csig->pinvoke)
 			size = mono_type_native_stack_size (csig->params [k], &align);
 		else
-			size = mono_type_stack_size (csig->params [k], &align);
+			size = mini_type_stack_size (NULL, csig->params [k], &align);
 
 		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
 		arg_info [k].pad = pad;

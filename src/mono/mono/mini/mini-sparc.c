@@ -860,7 +860,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
 		else
-			size = mono_type_stack_size (inst->inst_vtype, &align);
+			size = mini_type_stack_size (m->generic_sharing_context, inst->inst_vtype, &align);
 
 		/* 
 		 * This is needed since structures containing doubles must be doubleword 
@@ -1105,7 +1105,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
 				else {
 					/* 
-					 * Can't use mono_type_stack_size (), but that
+					 * Can't use mini_type_stack_size (), but that
 					 * aligns the size to sizeof (gpointer), which is larger 
 					 * than the size of the source, leading to reads of invalid
 					 * memory if the source is at the end of address space or
@@ -1931,7 +1931,7 @@ emit_save_sp_to_lmf (MonoCompile *cfg, guint32 *code)
 }
 
 static guint32*
-emit_vret_token (MonoInst *ins, guint32 *code)
+emit_vret_token (MonoGenericSharingContext *gsctx, MonoInst *ins, guint32 *code)
 {
 	MonoCallInst *call = (MonoCallInst*)ins;
 	guint32 size;
@@ -1942,7 +1942,7 @@ emit_vret_token (MonoInst *ins, guint32 *code)
 	 */
 	if (call->signature->pinvoke && MONO_TYPE_ISSTRUCT(call->signature->ret)) {
 		if (call->signature->ret->type == MONO_TYPE_TYPEDBYREF)
-			size = mono_type_stack_size (call->signature->ret, NULL);
+			size = mini_type_stack_size (gsctx, call->signature->ret, NULL);
 		else
 			size = mono_class_native_size (call->signature->ret->data.klass, NULL);
 		sparc_unimp (code, size & 0xfff);
@@ -2889,7 +2889,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 			    code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr);
 
-			code = emit_vret_token (ins, code);
+			code = emit_vret_token (cfg->generic_sharing_context, ins, code);
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_FCALL_REG:
@@ -2910,7 +2910,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				sparc_nop (code);
 
-			code = emit_vret_token (ins, code);
+			code = emit_vret_token (cfg->generic_sharing_context, ins, code);
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_FCALL_MEMBASE:
@@ -2932,7 +2932,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				sparc_nop (code);
 
-			code = emit_vret_token (ins, code);
+			code = emit_vret_token (cfg->generic_sharing_context, ins, code);
 			code = emit_move_return_value (ins, code);
 			break;
 		case OP_SETFRET:

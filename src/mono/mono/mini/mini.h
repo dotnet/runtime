@@ -533,6 +533,14 @@ enum {
 #define MONO_BBLOCK_IS_IN_REGION(bblock, regtype) (((bblock)->region & (0xf << 4)) == (regtype))
 
 /*
+ * Will contain information on the generic type arguments in the
+ * future.  For now, all arguments are always reference types.
+ */
+typedef struct {
+	int dummy;
+} MonoGenericSharingContext;
+
+/*
  * Control Flow Graph and compilation unit information
  */
 typedef struct {
@@ -584,6 +592,8 @@ typedef struct {
 	
 	MonoDomain      *domain;
 
+	MonoGenericSharingContext *generic_sharing_context;
+
 	unsigned char   *cil_start;
 	unsigned char   *native_code;
 	guint            code_size;
@@ -610,7 +620,6 @@ typedef struct {
 	guint            dont_verify_stack_merge : 1;
 	guint            unverifiable : 1;
 	guint            skip_visibility : 1;
-	guint            generic_shared : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	guint16          *intvars;
@@ -1124,6 +1133,8 @@ gboolean mono_method_is_generic_sharable_impl (MonoMethod *method) MONO_INTERNAL
 
 MonoGenericContext* mono_make_shared_context (MonoCompile *cfg, MonoGenericContext *context) MONO_INTERNAL;
 
-MonoType* mini_get_basic_type_from_generic (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
+MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type) MONO_INTERNAL;
+
+int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_H__ */

@@ -243,7 +243,7 @@ add_float (guint32 *gr, guint32 *fr, guint32 *stack_size, ArgInfo *ainfo, gboole
 }
 
 static void
-add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
+add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	       gboolean is_return,
 	       guint32 *gr, guint32 *fr, guint32 *stack_size)
 {
@@ -259,7 +259,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	else if (sig->pinvoke) 
 		size = mono_type_native_stack_size (&klass->byval_arg, NULL);
 	else 
-		size = mono_type_stack_size (&klass->byval_arg, NULL);
+		size = mini_type_stack_size (gsctx, &klass->byval_arg, NULL);
 
 	if (!sig->pinvoke || (size == 0)) {
 		/* Allways pass in memory */
@@ -349,7 +349,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
  * Gude" document for more information.
  */
 static CallInfo*
-get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
 	MonoType *ret_type;
@@ -407,7 +407,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_TYPEDBYREF: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
-			add_valuetype (sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
+			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
 			if (cinfo->ret.storage == ArgOnStack)
 				/* The caller passes the address where the value is stored */
 				add_general (&gr, &stack_size, &cinfo->ret);
@@ -493,7 +493,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_TYPEDBYREF:
 			/* FIXME: */
 			/* We allways pass valuetypes on the stack */
-			add_valuetype (sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
+			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
@@ -539,7 +539,7 @@ int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k;
-	CallInfo *cinfo = get_call_info (csig, FALSE);
+	CallInfo *cinfo = get_call_info (NULL, csig, FALSE);
 	guint32 args_size = cinfo->stack_usage;
 
 	/* The arguments are saved to a stack area in mono_arch_instrument_prolog */
@@ -611,7 +611,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig, FALSE);
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoInst *ins = cfg->args [i];
@@ -663,7 +663,7 @@ mono_ia64_alloc_stacked_registers (MonoCompile *cfg)
 		/* Already done */
 		return;
 
-	cinfo = get_call_info (mono_method_signature (cfg->method), FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, mono_method_signature (cfg->method), FALSE);
 
 	header = mono_method_get_header (cfg->method);
 	
@@ -757,7 +757,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig, FALSE);
 
 	/*
 	 * Determine whenever the frame pointer can be eliminated.
@@ -947,7 +947,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig, FALSE);
 
 	if (cinfo->ret.storage == ArgAggregate)
 		cfg->ret_var_is_local = TRUE;
@@ -1036,7 +1036,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (sig, sig->pinvoke);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig, sig->pinvoke);
 
 	if (cinfo->ret.storage == ArgAggregate) {
 		/* The code in emit_this_vret_arg needs a local */
@@ -1086,7 +1086,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
 				else {
 					/* 
-					 * Other backends use mono_type_stack_size (), but that
+					 * Other backends use mini_type_stack_size (), but that
 					 * aligns the size to 8, which is larger than the size of
 					 * the source, leading to reads of invalid memory if the
 					 * source is at the end of address space.
@@ -1926,7 +1926,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, Ia64CodegenState code)
 
 	sig = mono_method_signature (method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig, FALSE);
 	
 	/* This is the opposite of the code in emit_prolog */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -2027,7 +2027,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 	case OP_VCALL_MEMBASE: {
 		ArgStorage storage;
 
-		cinfo = get_call_info (((MonoCallInst*)ins)->signature, FALSE);
+		cinfo = get_call_info (cfg->generic_sharing_context, ((MonoCallInst*)ins)->signature, FALSE);
 		storage = cinfo->ret.storage;
 
 		if (storage == ArgAggregate) {
@@ -3790,7 +3790,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	pos = 0;
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig, FALSE);
 
 	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 512);
 
@@ -4028,7 +4028,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = get_call_info (mono_method_signature (method), FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, mono_method_signature (method), FALSE);
 	ainfo = &cinfo->ret;
 	switch (ainfo->storage) {
 	case ArgAggregate:
@@ -4252,7 +4252,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		/* Allocate a new area on the stack and save arguments there */
 		sig = mono_method_signature (cfg->method);
 
-		cinfo = get_call_info (sig, FALSE);
+		cinfo = get_call_info (cfg->generic_sharing_context, sig, FALSE);
 
 		n = sig->param_count + sig->hasthis;
 
@@ -4328,7 +4328,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	ia64_codegen_init (code, p);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, sig, FALSE);
 
 	/* Save return value + pass it to func */
 	switch (cinfo->ret.storage) {
@@ -4567,7 +4567,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	int out_reg = cfg->arch.reg_out0;
 
 	if (vt_reg != -1) {
-		CallInfo * cinfo = get_call_info (inst->signature, FALSE);
+		CallInfo * cinfo = get_call_info (cfg->generic_sharing_context, inst->signature, FALSE);
 		MonoInst *vtarg;
 
 		if (cinfo->ret.storage == ArgAggregate) {

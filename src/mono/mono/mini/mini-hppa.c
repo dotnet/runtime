@@ -591,7 +591,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
 		else
-			size = mono_type_stack_size (inst->inst_vtype, &align);
+			size = mini_type_stack_size (cfg->generic_sharing_context, inst->inst_vtype, &align);
 
 		/* 
 		 * This is needed since structures containing doubles must be doubleword 

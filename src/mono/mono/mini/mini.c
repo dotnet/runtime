@@ -109,7 +109,7 @@
 		goto exception_exit;	\
 	} while (0)
 #define GENERIC_SHARING_FAILURE do {	\
-		if (cfg->generic_shared) {	\
+		if (cfg->generic_sharing_context) {	\
 			/* g_print ("sharing failed for method %s.%s in %s:%d\n", method->klass->name, method->name, __FILE__, __LINE__); */ \
 			cfg->exception_type = MONO_EXCEPTION_GENERIC_SHARING_FAILED;	\
 			goto exception_exit;	\
@@ -1261,7 +1261,7 @@ handle_enum:
 		 * later look inside cfg and see if the arg num is
 		 * really a reference
 		 */
-		g_assert (cfg->generic_shared);
+		g_assert (cfg->generic_sharing_context);
 		inst->type = STACK_OBJ;
 		return;
 	default:
@@ -1643,7 +1643,7 @@ check_values_to_signature (MonoInst *args, MonoType *this, MonoMethodSignature *
 static guint
 mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 {
-	if (cfg->generic_shared && !type->byref) {
+	if (cfg->generic_sharing_context && !type->byref) {
 		/* FIXME: all the arguments must be references for now,
 		 * later look inside cfg and see if the arg num is
 		 * really a reference
@@ -1657,7 +1657,7 @@ mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 static guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
-	if (cfg->generic_shared && !type->byref) {
+	if (cfg->generic_sharing_context && !type->byref) {
 		/* FIXME: all the arguments must be references for now,
 		 * later look inside cfg and see if the arg num is
 		 * really a reference
@@ -2384,7 +2384,7 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		 * later look inside cfg and see if the arg num is
 		 * really a reference
 		 */
-		g_assert (cfg->generic_shared);
+		g_assert (cfg->generic_sharing_context);
 		if (arg->type != STACK_OBJ)
 			return 1;
 		return 0;
@@ -4097,7 +4097,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	end = ip + header->code_size;
 	mono_jit_stats.cil_code_size += header->code_size;
 
-	if (cfg->generic_shared) {
+	if (cfg->generic_sharing_context) {
 		g_assert (shared_context);
 		generic_context = shared_context;
 	} else if (sig->is_inflated)
@@ -4740,7 +4740,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cmethod)
 				goto load_error;
 
-			if (cfg->generic_shared && mono_method_check_context_used (cmethod, generic_context))
+			if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
@@ -4839,7 +4839,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cmethod && cmethod->klass->generic_container)
 				UNVERIFIED;
 
-			if (cfg->generic_shared && cmethod && mono_method_check_context_used (cmethod, generic_context))
+			if (cfg->generic_sharing_context && cmethod && mono_method_check_context_used (cmethod, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			CHECK_STACK (n);
@@ -5818,7 +5818,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!mono_class_init (cmethod->klass))
 				goto load_error;
 
-			if (cfg->generic_shared && mono_method_check_context_used (cmethod, generic_context))
+			if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
@@ -5930,7 +5930,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			if (cfg->generic_shared && mono_class_check_context_used (klass, generic_context))
+			if (cfg->generic_sharing_context && mono_class_check_context_used (klass, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			/* Needed by the code generated in inssel.brg */
@@ -5988,7 +5988,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_shared && mono_class_check_context_used (klass, generic_context))
+			if (cfg->generic_sharing_context && mono_class_check_context_used (klass, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
@@ -6088,7 +6088,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_shared && mono_class_check_context_used (klass, generic_context))
+			if (cfg->generic_sharing_context && mono_class_check_context_used (klass, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			if (mono_class_is_nullable (klass)) {
@@ -6130,7 +6130,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			if (cfg->generic_shared && mono_class_check_context_used (klass, generic_context))
+			if (cfg->generic_sharing_context && mono_class_check_context_used (klass, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			/* Needed by the code generated in inssel.brg */
@@ -6404,7 +6404,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
 				FIELD_ACCESS_FAILURE;
 
-			if (cfg->generic_shared && mono_class_check_context_used (klass, generic_context))
+			if (cfg->generic_sharing_context && mono_class_check_context_used (klass, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
@@ -6621,7 +6621,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_shared && mono_class_check_context_used (klass, generic_context))
+			if (cfg->generic_sharing_context && mono_class_check_context_used (klass, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
@@ -6699,7 +6699,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_shared)
+			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass, generic_context);
 			else
 				context_used = 0;
@@ -7052,7 +7052,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			mono_class_init (klass);
 			ins->cil_code = ip;
 
-			if (cfg->generic_shared && mono_class_check_context_used (klass, generic_context))
+			if (cfg->generic_sharing_context && mono_class_check_context_used (klass, generic_context))
 				GENERIC_SHARING_FAILURE;
 
 			loc = mono_compile_create_var (cfg, &mono_defaults.typed_reference_class->byval_arg, OP_LOCAL);
@@ -7085,7 +7085,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			else {
 				handle = mono_ldtoken (image, n, &handle_class, generic_context);
-				if (cfg->generic_shared &&
+				if (cfg->generic_sharing_context &&
 						mono_class_check_context_used (handle_class, generic_context))
 					GENERIC_SHARING_FAILURE;
 			}
@@ -7538,7 +7538,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
-				if (cfg->generic_shared && mono_method_check_context_used (cmethod, generic_context))
+				if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod, generic_context))
 					GENERIC_SHARING_FAILURE;
 
 				cil_method = cmethod;
@@ -7578,7 +7578,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
-				if (cfg->generic_shared && mono_method_check_context_used (cmethod, generic_context))
+				if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod, generic_context))
 					GENERIC_SHARING_FAILURE;
 
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
@@ -7765,7 +7765,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
 
-				if (cfg->generic_shared && mono_class_check_context_used (klass, generic_context))
+				if (cfg->generic_sharing_context && mono_class_check_context_used (klass, generic_context))
 					GENERIC_SHARING_FAILURE;
 
 				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
@@ -10675,7 +10675,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->verbose_level = mini_verbose;
 	cfg->compile_aot = compile_aot;
 	cfg->skip_visibility = method->skip_visibility;
-	cfg->generic_shared = try_generic_shared;
+	if (try_generic_shared)
+		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 	if (!header) {
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
@@ -10941,7 +10942,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	jinfo->used_regs = cfg->used_int_regs;
 	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
 	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
-	jinfo->generic_shared = cfg->generic_shared;
+	jinfo->generic_shared = cfg->generic_sharing_context ? 1 : 0;
 
 	if (header->num_clauses) {
 		int i;
@@ -11210,7 +11211,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_internal_hash_table_insert (&target_domain->jit_code_hash, method, cfg->jit_info);
 		code = cfg->native_code;
 
-		if (cfg->generic_shared && mono_method_is_generic_sharable_impl (method)) {
+		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method)) {
 			/* g_print ("inserting method %s.%s.%s\n", method->klass->name_space, method->klass->name, method->name); */
 			mono_domain_register_shared_generic (target_domain, 
 				method_get_declaring_generic_method (method), cfg->jit_info);

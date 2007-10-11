@@ -209,12 +209,18 @@ mono_make_shared_context (MonoCompile *cfg, MonoGenericContext *context)
 }
 
 MonoType*
-mini_get_basic_type_from_generic (MonoCompile *cfg, MonoType *type)
+mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type)
 {
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		/* FIXME: we support sharing only of reference types */
-		g_assert (cfg->generic_shared);
+		g_assert (gsctx);
 		return &mono_defaults.object_class->byval_arg;
 	}
 	return type;
+}
+
+int
+mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align)
+{
+	return mono_type_stack_size_internal (t, align, gsctx != NULL);
 }
