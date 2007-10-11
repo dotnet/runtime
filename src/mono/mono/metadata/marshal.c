@@ -1311,7 +1311,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	} else {
 		/* Realloc the method info into a mempool */
 
-		method = mono_mempool_alloc (mp, sizeof (MonoMethodWrapper));
+		method = mono_mempool_alloc0 (mp, sizeof (MonoMethodWrapper));
 		memcpy (method, mb->method, sizeof (MonoMethodWrapper));
 
 		if (mb->no_dup_name)
