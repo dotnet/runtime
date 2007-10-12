@@ -4680,6 +4680,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
+	int local_prev, local_target;
 	int pos0;
 	char *name;
 
@@ -4700,7 +4701,8 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	g_free (name);
 
 	/* allocate local 0 (object) */
-	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+	local_target = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+	local_prev = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
 	g_assert (sig->hasthis);
 	
@@ -4717,6 +4719,8 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_stloc (mb, local_prev);
+	mono_mb_emit_ldloc (mb, local_prev);
 
 	/* if prev != null */
 	pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
@@ -4726,9 +4730,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
 
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoMulticastDelegate, prev));
-	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_ldloc (mb, local_prev);
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + 1);
 	mono_mb_emit_managed_call (mb, method, mono_method_signature (method));
@@ -4742,14 +4744,14 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, target));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_stloc (mb, 0);
+	mono_mb_emit_stloc (mb, local_target);
 
 	/* if target != null */
-	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_ldloc (mb, local_target);
 	pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 	
 	/* then call this->method_ptr nonstatic */
-	mono_mb_emit_ldloc (mb, 0); 
+	mono_mb_emit_ldloc (mb, local_target); 
 	for (i = 0; i < sig->param_count; ++i)
 		mono_mb_emit_ldarg (mb, i + 1);
 	mono_mb_emit_ldarg (mb, 0);
@@ -4771,8 +4773,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_and_cache (cache, sig,
-										 mb, sig, sig->param_count + 16);
+	res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 
 	return res;	
