@@ -24,7 +24,7 @@ void
 ves_icall_System_String_InternalCopyTo (MonoString *me, gint32 sindex, MonoArray *dest, gint32 dindex, gint32 count) MONO_INTERNAL;
 
 MonoArray * 
-ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gint32 count) MONO_INTERNAL;
+ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gint32 count, gint32 options) MONO_INTERNAL;
 
 MonoString * 
 ves_icall_System_String_InternalTrim (MonoString *me, MonoArray *chars, gint32 typ) MONO_INTERNAL;
