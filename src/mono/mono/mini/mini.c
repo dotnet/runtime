@@ -6813,7 +6813,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			klass = mono_class_get_full (image, token, generic_context);
+			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 			NEW_LDELEMA (cfg, load, sp, klass);
@@ -6919,7 +6919,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			klass = mono_class_get_full (image, token, generic_context);
+			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
