@@ -78,6 +78,25 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	gpointer addr;
 	gpointer *vtable_slot;
 
+#if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
+	if (m == MONO_FAKE_VTABLE_METHOD) {
+		int displacement;
+		MonoVTable *vt = mono_arch_get_vcall_slot (code, (gpointer*)regs, &displacement);
+		g_assert (vt);
+		if (displacement > 0) {
+			displacement -= G_STRUCT_OFFSET (MonoVTable, vtable);
+			g_assert (displacement >= 0);
+			displacement /= sizeof (gpointer);
+			mono_class_setup_vtable (vt->klass);
+			m = vt->klass->vtable [displacement];
+			/*g_print ("%s with disp %d: %s at %p\n", vt->klass->name, displacement, m->name, code);*/
+		} else {
+			/* We got here from an interface method: redirect to IMT handling */
+			m = MONO_FAKE_IMT_METHOD;
+			/*g_print ("vtable with disp %d at %p\n", displacement, code);*/
+		}
+	}
+#endif
 	/* this is the IMT trampoline */
 #ifdef MONO_ARCH_HAVE_IMT
 	if (m == MONO_FAKE_IMT_METHOD) {
@@ -92,9 +111,11 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		/* mono_convert_imt_slot_to_vtable_slot () also gives us the method that is supposed
 		 * to be called, so we compile it and go ahead as usual.
 		 */
+		/*g_print ("imt found method %p (%s) at %p\n", impl_method, impl_method->name, code);*/
 		m = impl_method;
 	}
 #endif
+
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
