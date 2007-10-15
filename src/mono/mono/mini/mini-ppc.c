@@ -223,12 +223,14 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
+gpointer
+mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 {
 	char *o = NULL;
 	int reg, offset = 0;
 	guint32* code = (guint32*)code_ptr;
+
+	*displacement = 0;
 
 	/* This is the 'blrl' instruction */
 	--code;
@@ -270,8 +272,19 @@ mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
 			break;
 		}
 	}
-	o += offset;
-	return (gpointer*)o;
+	*displacement = offset;
+	return o;
+}
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
 }
 
 #define MAX_ARCH_DELEGATE_PARAMS 7
