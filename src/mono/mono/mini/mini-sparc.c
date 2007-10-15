@@ -2161,18 +2161,20 @@ mono_sparc_is_virtual_call (guint32 *code)
 }
 
 /*
- * mono_arch_get_vcall_slot_addr:
+ * mono_arch_get_vcall_slot:
  *
  *  Determine the vtable slot used by a virtual call.
  */
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
+gpointer
+mono_arch_get_vcall_slot (guint8 *code8, gpointer *regs, int *displacement)
 {
 	guint32 *code = (guint32*)(gpointer)code8;
 	guint32 ins = code [0];
 	guint32 prev_ins = code [-1];
 
 	mono_sparc_flushw ();
+
+	*displacement = 0;
 
 	if (!mono_sparc_is_virtual_call (code))
 		return NULL;
@@ -2190,7 +2192,9 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 
 			base_val = regs [base];
 
-			return (gpointer)((guint8*)base_val + disp);
+			*displacement = disp;
+
+			return (gpointer)base_val;
 		}
 		else if ((sparc_inst_op (prev_ins) == 0x3) && (sparc_inst_i (prev_ins) == 0) && (sparc_inst_op3 (prev_ins) == 0)) {
 			/* set r1, ICONST; ld [r1 + r2], r2; call r2 */
@@ -2222,7 +2226,9 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 
 			base_val = regs [base];
 
-			return (gpointer)((guint8*)base_val + disp);
+			*displacement = disp;
+
+			return (gpointer)base_val;
 		} else
 			g_assert_not_reached ();
 	}
@@ -2230,6 +2236,17 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 		g_assert_not_reached ();
 
 	return NULL;
+}
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
 }
 
 #define CMP_SIZE 3
