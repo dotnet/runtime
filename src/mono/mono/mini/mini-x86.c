@@ -4445,11 +4445,13 @@ mono_arch_get_patch_offset (guint8 *code)
 	}
 }
 
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
+gpointer
+mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 {
 	guint8 reg = 0;
 	gint32 disp = 0;
+
+	*displacement = 0;
 
 	/* go to the start of the call instruction
 	 *
@@ -4504,7 +4506,19 @@ mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
 			return NULL;
 	}
 
-	return (gpointer*)(((gint32)(regs [reg])) + disp);
+	*displacement = disp;
+	return regs [reg];
+}
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
 }
 
 gpointer
