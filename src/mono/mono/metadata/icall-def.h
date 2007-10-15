@@ -786,6 +786,7 @@ ICALL(THREAD_22, "Sleep_internal", ves_icall_System_Threading_Thread_Sleep_inter
 ICALL(THREAD_54, "SpinWait_internal", ves_icall_System_Threading_Thread_SpinWait_internal)
 ICALL(THREAD_23, "Suspend_internal", ves_icall_System_Threading_Thread_Suspend)
 ICALL(THREAD_24, "Thread_free_internal", ves_icall_System_Threading_Thread_Thread_free_internal)
+ICALL(THREAD_24a, "Thread_init", ves_icall_System_Threading_Thread_Thread_init)
 ICALL(THREAD_25, "Thread_internal", ves_icall_System_Threading_Thread_Thread_internal)
 ICALL(THREAD_26, "VolatileRead(byte&)", ves_icall_System_Threading_Thread_VolatileRead1)
 ICALL(THREAD_27, "VolatileRead(double&)", ves_icall_System_Threading_Thread_VolatileRead8)

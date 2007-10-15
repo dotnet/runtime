@@ -43,6 +43,7 @@ typedef enum {
 #define SPECIAL_STATIC_CONTEXT 2
 
 extern HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start) MONO_INTERNAL;
+extern void ves_icall_System_Threading_Thread_Thread_init(MonoThread *this_obj) MONO_INTERNAL;
 extern void ves_icall_System_Threading_Thread_Thread_free_internal(MonoThread *this_obj, HANDLE thread) MONO_INTERNAL;
 extern void ves_icall_System_Threading_Thread_Sleep_internal(int ms) MONO_INTERNAL;
 extern gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms, HANDLE thread) MONO_INTERNAL;
