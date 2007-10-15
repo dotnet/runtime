@@ -1169,6 +1169,9 @@ void
 mono_install_imt_trampoline (gpointer tramp) MONO_INTERNAL;
 
 void
+mono_install_vtable_trampoline (gpointer tramp) MONO_INTERNAL;
+
+void
 mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot) MONO_INTERNAL;
 
 guint32

@@ -1252,6 +1252,14 @@ mono_install_imt_trampoline (gpointer tramp_code)
 	imt_trampoline = tramp_code;
 }
 
+static gpointer vtable_trampoline = NULL;
+
+void
+mono_install_vtable_trampoline (gpointer tramp_code)
+{
+	vtable_trampoline = tramp_code;
+}
+
 /**
  * mono_vtable_build_imt_slot:
  * @vtable: virtual object table struct
@@ -1527,7 +1535,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 				if (mono_method_signature (cm)->generic_param_count)
 					vt->vtable [i] = cm;
 				else
-					vt->vtable [i] = arch_create_jit_trampoline (cm);
+					vt->vtable [i] = vtable_trampoline? vtable_trampoline: arch_create_jit_trampoline (cm);
 			}
 		}
 	}
