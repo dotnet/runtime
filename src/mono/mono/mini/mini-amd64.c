@@ -5218,12 +5218,14 @@ mono_arch_get_patch_offset (guint8 *code)
 	return 3;
 }
 
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
+gpointer
+mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 {
 	guint32 reg;
 	gint32 disp;
 	guint8 rex = 0;
+
+	*displacement = 0;
 
 	/* go to the start of the call instruction
 	 *
@@ -5315,7 +5317,19 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	/* R11 is clobbered by the trampoline code */
 	g_assert (reg != AMD64_R11);
 
-	return (gpointer)(((guint64)(regs [reg])) + disp);
+	*displacement = disp;
+	return regs [reg];
+}
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
 }
 
 gpointer
