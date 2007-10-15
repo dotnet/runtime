@@ -12037,6 +12037,17 @@ mini_get_imt_trampoline (void)
 }
 #endif
 
+#ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
+static gpointer
+mini_get_vtable_trampoline (void)
+{
+	static gpointer tramp = NULL;
+	if (!tramp)
+		tramp =  mono_arch_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_GENERIC, mono_get_root_domain (), NULL);
+	return tramp;
+}
+#endif
+
 static void
 mini_parse_debug_options (void)
 {
@@ -12196,6 +12207,9 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef MONO_ARCH_HAVE_IMT
 	mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 	mono_install_imt_trampoline (mini_get_imt_trampoline ());
+#if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
+	mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
+#endif
 #endif
 	mono_icall_init ();
 

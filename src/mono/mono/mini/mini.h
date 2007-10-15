@@ -51,6 +51,7 @@
 #define inst_ms_word data.op[MINI_MS_WORD_IDX].const_val
 
 #define MONO_FAKE_IMT_METHOD ((MonoMethod*)GINT_TO_POINTER(-1))
+#define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "32"
@@ -1033,6 +1034,7 @@ gboolean mono_arch_is_int_overflow              (void *sigctx, void *info) MONO_
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg) MONO_INTERNAL;
 guint32  mono_arch_get_patch_offset             (guint8 *code) MONO_INTERNAL;
 gpointer*mono_arch_get_vcall_slot_addr          (guint8* code, gpointer *regs) MONO_INTERNAL;
+gpointer mono_arch_get_vcall_slot               (guint8 *code, gpointer *regs, int *displacement) MONO_INTERNAL;
 gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs) MONO_INTERNAL;
 void     mono_arch_create_vars                  (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_arch_save_unwind_info             (MonoCompile *cfg) MONO_INTERNAL;
