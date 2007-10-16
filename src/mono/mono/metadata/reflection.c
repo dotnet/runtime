@@ -6432,6 +6432,39 @@ MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve) {
 	return mono_reflection_get_type_with_rootimage(image, image, info, ignorecase, type_resolve);
 }
+
+static MonoType*
+mono_reflection_get_type_internal_dynamic (MonoImage *rootimage, MonoAssembly *assembly, MonoTypeNameParse *info, gboolean ignorecase)
+{
+	MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)mono_assembly_get_object (mono_domain_get (), assembly);
+	MonoType *type;
+	int i;
+
+	g_assert (assembly->dynamic);
+
+	/* Enumerate all modules */
+
+	type = NULL;
+	if (abuilder->modules) {
+		for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
+			MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
+			type = mono_reflection_get_type_internal (rootimage, &mb->dynamic_image->image, info, ignorecase);
+			if (type)
+				break;
+		}
+	}
+
+	if (!type && abuilder->loaded_modules) {
+		for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
+			MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
+			type = mono_reflection_get_type_internal (rootimage, mod->image, info, ignorecase);
+			if (type)
+				break;
+		}
+	}
+
+	return type;
+}
 	
 MonoType*
 mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
@@ -6441,7 +6474,10 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	GString *fullName;
 	GList *mod;
 
-	type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase);
+	if (image && image->dynamic)
+		type = mono_reflection_get_type_internal_dynamic (rootimage, image->assembly, info, ignorecase);
+	else
+		type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase);
 	if (type)
 		return type;
 	if (!mono_domain_has_type_resolve (mono_domain_get ()))
@@ -6465,30 +6501,8 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 
 	assembly = mono_domain_try_type_resolve ( mono_domain_get (), fullName->str, NULL);
 	if (assembly) {
-		if (assembly->assembly->dynamic) {
-			/* Enumerate all modules */
-			MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
-			int i;
-
-			type = NULL;
-			if (abuilder->modules) {
-				for (i = 0; i < mono_array_length (abuilder->modules); ++i) {
-					MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-					type = mono_reflection_get_type_internal (rootimage, &mb->dynamic_image->image, info, ignorecase);
-					if (type)
-						break;
-				}
-			}
-
-			if (!type && abuilder->loaded_modules) {
-				for (i = 0; i < mono_array_length (abuilder->loaded_modules); ++i) {
-					MonoReflectionModule *mod = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-					type = mono_reflection_get_type_internal (rootimage, mod->image, info, ignorecase);
-					if (type)
-						break;
-				}
-			}
-		}
+		if (assembly->assembly->dynamic)
+			type = mono_reflection_get_type_internal_dynamic (rootimage, assembly->assembly, info, ignorecase);
 		else
 			type = mono_reflection_get_type_internal (rootimage, assembly->assembly->image, 
 													  info, ignorecase);
