@@ -3880,6 +3880,17 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		return NULL;
 	}
 
+	if (info.assembly.name) {
+		if (throwOnError) {
+			/* 1.0 and 2.0 throw different exceptions */
+			if (mono_defaults.generic_ilist_class)
+				mono_raise_exception (mono_get_exception_argument (NULL, "Type names passed to Assembly.GetType() must not specify an assembly."));
+			else
+				mono_raise_exception (mono_get_exception_type_load (name, NULL));
+		}
+		return NULL;
+	}
+
 	if (module != NULL) {
 		if (module->image)
 			type = mono_reflection_get_type (module->image, &info, ignoreCase, &type_resolve);
