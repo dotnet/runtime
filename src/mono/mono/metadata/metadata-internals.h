@@ -278,6 +278,8 @@ struct _MonoDynamicImage {
 	guint32 strong_name_size;
 	char *win32_res;
 	guint32 win32_res_size;
+	guint8 *public_key;
+	int public_key_len;
 	MonoDynamicStream sheap;
 	MonoDynamicStream code; /* used to store method headers and bytecode */
 	MonoDynamicStream resources; /* managed embedded resources */

@@ -3791,6 +3791,10 @@ load_public_key (MonoArray *pkey, MonoDynamicImage *assembly) {
 	token = mono_image_add_stream_data (&assembly->blob, blob_size, b - blob_size);
 	mono_image_add_stream_data (&assembly->blob, mono_array_addr (pkey, char, 0), len);
 
+	assembly->public_key = g_malloc (len);
+	memcpy (assembly->public_key, mono_array_addr (pkey, char, 0), len);
+	assembly->public_key_len = len;
+
 	/* Special case: check for ECMA key (16 bytes) */
 	if ((len == MONO_ECMA_KEY_LENGTH) && mono_is_ecma_key (mono_array_addr (pkey, char, 0), len)) {
 		/* In this case we must reserve 128 bytes (1024 bits) for the signature */
