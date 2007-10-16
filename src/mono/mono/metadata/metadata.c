@@ -1408,19 +1408,26 @@ mono_generic_inst_hash (gconstpointer data)
 }
 
 static gboolean
-mono_generic_inst_equal (gconstpointer ka, gconstpointer kb)
+mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b, gboolean signature_only)
 {
-	const MonoGenericInst *a = (const MonoGenericInst *) ka;
-	const MonoGenericInst *b = (const MonoGenericInst *) kb;
 	int i;
 
 	if (a->is_open != b->is_open || a->type_argc != b->type_argc)
 		return FALSE;
 	for (i = 0; i < a->type_argc; ++i) {
-		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], FALSE))
+		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], signature_only))
 			return FALSE;
 	}
 	return TRUE;
+}
+
+static gboolean
+mono_generic_inst_equal (gconstpointer ka, gconstpointer kb)
+{
+	const MonoGenericInst *a = (const MonoGenericInst *) ka;
+	const MonoGenericInst *b = (const MonoGenericInst *) kb;
+
+	return mono_generic_inst_equal_full (a, b, FALSE);
 }
 
 static guint
@@ -3756,19 +3763,29 @@ mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass)
 static gboolean
 _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2, gboolean signature_only)
 {
-	int i;
 	MonoGenericInst *i1 = g1->context.class_inst;
 	MonoGenericInst *i2 = g2->context.class_inst;
 
-	if (i1->type_argc != i2->type_argc || g1->is_dynamic != g2->is_dynamic)
+	if (g1->is_dynamic != g2->is_dynamic)
 		return FALSE;
 	if (!mono_metadata_class_equal (g1->container_class, g2->container_class, signature_only))
 		return FALSE;
-	for (i = 0; i < i1->type_argc; ++i) {
-		if (!do_mono_metadata_type_equal (i1->type_argv [i], i2->type_argv [i], signature_only))
-			return FALSE;
-	}
+	if (!mono_generic_inst_equal_full (i1, i2, signature_only))
+		return FALSE;
 	return g1->is_tb_open == g2->is_tb_open;
+}
+
+static gboolean
+_mono_metadata_generic_class_container_equal (const MonoGenericClass *g1, MonoClass *c2, gboolean signature_only)
+{
+	MonoGenericInst *i1 = g1->context.class_inst;
+	MonoGenericInst *i2 = c2->generic_container->context.class_inst;
+
+	if (!mono_metadata_class_equal (g1->container_class, c2, signature_only))
+		return FALSE;
+	if (!mono_generic_inst_equal_full (i1, i2, signature_only))
+		return FALSE;
+	return !g1->is_tb_open;
 }
 
 guint
@@ -3843,6 +3860,10 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 		return TRUE;
 	if (c1->generic_class && c2->generic_class)
 		return _mono_metadata_generic_class_equal (c1->generic_class, c2->generic_class, signature_only);
+	if (c1->generic_class && c2->generic_container)
+		return _mono_metadata_generic_class_container_equal (c1->generic_class, c2, signature_only);
+	if (c1->generic_container && c2->generic_class)
+		return _mono_metadata_generic_class_container_equal (c2->generic_class, c1, signature_only);
 	if ((c1->byval_arg.type == MONO_TYPE_VAR) && (c2->byval_arg.type == MONO_TYPE_VAR))
 		return mono_metadata_generic_param_equal (
 			c1->byval_arg.data.generic_param, c2->byval_arg.data.generic_param, signature_only);
