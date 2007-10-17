@@ -2814,6 +2814,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 
 			/* Keep this in synch with get_vcall_slot_addr */
+			ia64_mov (code, IA64_R11, ins->sreg1);
 			if (ia64_is_imm14 (ins->inst_offset))
 				ia64_adds_imm (code, IA64_R8, ins->inst_offset, ins->sreg1);
 			else {
@@ -3863,9 +3864,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (alloc_size) {
+#if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		int pagesize = getpagesize ();
 
-#if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		if (alloc_size >= pagesize) {
 			gint32 remaining_size = alloc_size;
 
@@ -4493,8 +4494,8 @@ mono_arch_get_patch_offset (guint8 *code)
 	return 0;
 }
 
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
+gpointer
+mono_arch_get_vcall_slot (guint8* code, gpointer *regs, int *displacement)
 {
 	guint8 *bundle2 = code - 48;
 	guint8 *bundle3 = code - 32;
@@ -4508,7 +4509,6 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	guint64 ins41 = ia64_bundle_ins1 (bundle4);
 	guint64 ins42 = ia64_bundle_ins2 (bundle4);
 	guint64 ins43 = ia64_bundle_ins3 (bundle4);
-	int reg;
 
 	/* 
 	 * Virtual calls are made with:
@@ -4544,19 +4544,23 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 		g_assert (ia64_ins_x (ins22) == 0);
 		g_assert (ia64_ins_b1 (ins22) == IA64_B6);
 
-		reg = IA64_R8;
+		*displacement = (gssize)regs [IA64_R8] - (gssize)regs [IA64_R11];
 
-		/* 
-		 * Must be a scratch register, since only those are saved by the trampoline
-		 */
-		g_assert ((1 << reg) & MONO_ARCH_CALLEE_REGS);
-
-		g_assert (regs [reg]);
-
-		return regs [reg];
+		return regs [IA64_R11];
 	}
 
 	return NULL;
+}
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)(gpointer)((char*)vt + displacement);
 }
 
 gpointer*
@@ -4651,6 +4655,8 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	buf = g_malloc0 (size);
 	ia64_codegen_init (code, buf);
 
+	/* IA64_R9 contains the IMT method */
+
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		ia64_begin_bundle (code);
@@ -4658,32 +4664,32 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
-					ia64_movl (code, IA64_R8, item->method);
-					ia64_cmp_eq (code, 6, 7, IA64_R9, IA64_R8);
+					ia64_movl (code, GP_SCRATCH_REG, item->method);
+					ia64_cmp_eq (code, 6, 7, IA64_R9, GP_SCRATCH_REG);
 				}
 				item->jmp_code = (guint8*)code.buf + code.nins;
 				ia64_br_cond_pred (code, 7, 0);
 
-				ia64_movl (code, IA64_R8, &(vtable->vtable [item->vtable_slot]));
-				ia64_ld8 (code, IA64_R8, IA64_R8);
-				ia64_mov_to_br (code, IA64_B6, IA64_R8);
+				ia64_movl (code, GP_SCRATCH_REG, &(vtable->vtable [item->vtable_slot]));
+				ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
+				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 				ia64_br_cond_reg (code, IA64_B6);
 			} else {
 				/* enable the commented code to assert on wrong method */
 #if ENABLE_WRONG_METHOD_CHECK
 				g_assert_not_reached ();
 #endif
-				ia64_movl (code, IA64_R8, &(vtable->vtable [item->vtable_slot]));
-				ia64_ld8 (code, IA64_R8, IA64_R8);
-				ia64_mov_to_br (code, IA64_B6, IA64_R8);
+				ia64_movl (code, GP_SCRATCH_REG, &(vtable->vtable [item->vtable_slot]));
+				ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
+				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 				ia64_br_cond_reg (code, IA64_B6);
 #if ENABLE_WRONG_METHOD_CHECK
 				g_assert_not_reached ();
 #endif
 			}
 		} else {
-			ia64_movl (code, IA64_R8, item->method);
-			ia64_cmp_geu (code, 6, 7, IA64_R9, IA64_R8);
+			ia64_movl (code, GP_SCRATCH_REG, item->method);
+			ia64_cmp_geu (code, 6, 7, IA64_R9, GP_SCRATCH_REG);
 			item->jmp_code = (guint8*)code.buf + code.nins;
 			ia64_br_cond_pred (code, 6, 0);
 		}
