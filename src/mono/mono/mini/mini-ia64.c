@@ -2803,7 +2803,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
-		case OP_CALL_MEMBASE:
+		case OP_CALL_MEMBASE: {
+			MonoCallInst *call = (MonoCallInst*)ins;
+			CallInfo *cinfo;
+			int out_reg;
+
 			/* 
 			 * There are no membase instructions on ia64, but we can't 
 			 * lower this since get_vcall_slot_addr () needs to decode it.
@@ -2816,6 +2820,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ia64_movl (code, GP_SCRATCH_REG, ins->inst_offset);
 				ia64_add (code, IA64_R8, GP_SCRATCH_REG, ins->sreg1);
 			}
+
+			if (call->method && ins->inst_offset < 0) {
+				/* 
+				 * This is a possible IMT call so save the IMT method in a global 
+				 * register where mono_arch_find_imt_method () and its friends can access 
+				 * it.
+				 */
+				ia64_movl (code, IA64_R9, call->method);
+			}
+
+			/* 
+			 * mono_arch_find_this_arg () needs to find the this argument in a global 
+			 * register.
+			 */
+			cinfo = get_call_info (NULL, call->signature, FALSE);
+			out_reg = cfg->arch.reg_out0;
+			if (cinfo->ret.storage == ArgValuetypeAddrInIReg)
+				out_reg ++;
+			g_free (cinfo);
+			ia64_mov (code, IA64_R10, out_reg);
 
 			ia64_begin_bundle (code);
 			ia64_codegen_set_one_ins_per_bundle (code, TRUE);
@@ -2836,6 +2860,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			code = emit_move_return_value (cfg, ins, code);
 			break;
+		}
 		case OP_JMP: {
 			/*
 			 * Keep in sync with the code in emit_epilog.
@@ -4607,6 +4632,104 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		mono_call_inst_add_outarg_reg (cfg, call, this->dreg, out_reg, FALSE);
 	}
 }
+
+
+#ifdef MONO_ARCH_HAVE_IMT
+
+/*
+ * LOCKING: called with the domain lock held
+ */
+gpointer
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+{
+	int i;
+	int size = 0;
+	guint8 *start, *buf;
+	Ia64CodegenState code;
+
+	size = count * 256;
+	buf = g_malloc0 (size);
+	ia64_codegen_init (code, buf);
+
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		ia64_begin_bundle (code);
+		item->code_target = (guint8*)code.buf + code.nins;
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done) {
+					ia64_movl (code, IA64_R8, item->method);
+					ia64_cmp_eq (code, 6, 7, IA64_R9, IA64_R8);
+				}
+				item->jmp_code = (guint8*)code.buf + code.nins;
+				ia64_br_cond_pred (code, 7, 0);
+
+				ia64_movl (code, IA64_R8, &(vtable->vtable [item->vtable_slot]));
+				ia64_ld8 (code, IA64_R8, IA64_R8);
+				ia64_mov_to_br (code, IA64_B6, IA64_R8);
+				ia64_br_cond_reg (code, IA64_B6);
+			} else {
+				/* enable the commented code to assert on wrong method */
+#if ENABLE_WRONG_METHOD_CHECK
+				g_assert_not_reached ();
+#endif
+				ia64_movl (code, IA64_R8, &(vtable->vtable [item->vtable_slot]));
+				ia64_ld8 (code, IA64_R8, IA64_R8);
+				ia64_mov_to_br (code, IA64_B6, IA64_R8);
+				ia64_br_cond_reg (code, IA64_B6);
+#if ENABLE_WRONG_METHOD_CHECK
+				g_assert_not_reached ();
+#endif
+			}
+		} else {
+			ia64_movl (code, IA64_R8, item->method);
+			ia64_cmp_geu (code, 6, 7, IA64_R9, IA64_R8);
+			item->jmp_code = (guint8*)code.buf + code.nins;
+			ia64_br_cond_pred (code, 6, 0);
+		}
+	}
+	/* patch the branches to get to the target items */
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->jmp_code) {
+			if (item->check_target_idx) {
+				ia64_patch (item->jmp_code, imt_entries [item->check_target_idx]->code_target);
+			}
+		}
+	}
+
+	ia64_codegen_close (code);
+	g_assert (code.buf - buf <= size);
+
+	size = code.buf - buf;
+	start = mono_code_manager_reserve (domain->code_mp, size);
+	memcpy (start, buf, size);
+
+	mono_arch_flush_icache (start, size);
+
+	mono_stats.imt_thunks_size += size;
+
+	return start;
+}
+
+MonoMethod*
+mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+{
+	return regs [IA64_R9];
+}
+
+MonoObject*
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+{
+	return regs [IA64_R10];
+}
+
+void
+mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call)
+{
+	/* Done by the implementation of the CALL_MEMBASE opcodes */
+}
+#endif
 
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)

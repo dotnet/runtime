@@ -1814,7 +1814,7 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 		guint32 imt_slot = mono_method_get_imt_slot (method);
 		emit_imt_argument (cfg, (MonoCallInst*)tree);
 		slot_reg = vtable_reg;
-		tree->inst_offset = (imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+		tree->inst_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
 #else
 		slot_reg = mono_regstate_next_int (cfg->rs);
 		mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
