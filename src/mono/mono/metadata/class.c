@@ -4727,6 +4727,7 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	GHashTable *nspace_table;
 	MonoImage *loaded_image;
 	guint32 token = 0;
+	int i;
 	MonoClass *class;
 	char *nested;
 	char buf [1024];
@@ -4763,6 +4764,17 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 		token = GPOINTER_TO_UINT (g_hash_table_lookup (nspace_table, name));
 
 	mono_loader_unlock ();
+
+	if (!token && image->dynamic && image->modules) {
+		/* Search modules as well */
+		for (i = 0; i < image->module_count; ++i) {
+			MonoImage *module = image->modules [i];
+
+			class = mono_class_from_name (module, name_space, name);
+			if (class)
+				return class;
+		}
+	}
 
 	if (!token)
 		return NULL;
