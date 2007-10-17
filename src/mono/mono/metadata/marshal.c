@@ -8201,6 +8201,7 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		} else {
 			switch (spec->native) {
 			case MONO_NATIVE_I1:
+			case MONO_NATIVE_U1:
 				local_type = &mono_defaults.byte_class->byval_arg;
 				break;
 			case MONO_NATIVE_VARIANTBOOL:
