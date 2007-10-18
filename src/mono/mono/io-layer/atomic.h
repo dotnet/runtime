@@ -710,13 +710,16 @@ static inline gint32 InterlockedCompareExchange(gint32 volatile *dest,
 						gint32 exch, gint32 comp)
 {
 	gint32 old;
+	guint64 real_comp;
 
 #ifdef __INTEL_COMPILER
 	old = _InterlockedCompareExchange (dest, exch, comp);
 #else
+	/* cmpxchg4 zero extends the value read from memory */
+	real_comp = (guint64)(guint32)comp;
 	asm volatile ("mov ar.ccv = %2 ;;\n\t"
 				  "cmpxchg4.acq %0 = [%1], %3, ar.ccv\n\t"
-				  : "=r" (old) : "r" (dest), "r" (comp), "r" (exch));
+				  : "=r" (old) : "r" (dest), "r" (real_comp), "r" (exch));
 #endif
 
 	return(old);
