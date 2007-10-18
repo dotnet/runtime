@@ -22,27 +22,35 @@ public class InterlockTest
 		if (it.test != 1)
 			return 2;
 
+		it.test = -2;
+		c = Interlocked.CompareExchange (ref it.test, 1, -2);
+		if (c != -2)
+			return 3;
+
+		if (it.test != 1)
+			return 4;
+
 		a = 1;
 		b = Interlocked.Increment (ref a);
 		if (a != 2)
-			return 3;
+			return 5;
 		if (b != 2)
-			return 4;
+			return 6;
 
 		a = 2;
 		b = Interlocked.Decrement (ref a);
 		if (b != 1)
-			return 3;
+			return 7;
 		if (a != 1)
-			return 4;
+			return 8;
 
 		string s = IncTest ();
 		if (s != "A1")
-			return 5;
+			return 9;
 
 		s = IncTest ();
 		if (s != "A2")
-			return 6;
+			return 10;
 
 		Thread.MemoryBarrier ();
 
