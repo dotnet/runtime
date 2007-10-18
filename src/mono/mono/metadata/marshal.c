@@ -11752,7 +11752,7 @@ mono_marshal_free_ccw (MonoObject* object)
 
 	/* if list is empty remove original address from hash */
 	if (g_list_length (ccw_list) == 0)
-		g_hash_table_remove (ccw_hash, ccw_list_orig);
+		g_hash_table_remove (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)));
 
 
 	return TRUE;
