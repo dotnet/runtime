@@ -1026,7 +1026,7 @@ mono_class_layout_fields (MonoClass *class)
 
 	if (class->generic_container ||
 	    (class->generic_class && class->generic_class->context.class_inst->is_open)) {
-		class->size_inited = TRUE;
+		class->size_inited = 1;
 		return;
 	}
 
