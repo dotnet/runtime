@@ -3585,6 +3585,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->image = gklass->image;
 	klass->flags = gklass->flags;
 	klass->type_token = gklass->type_token;
+	klass->field.count = gklass->field.count;
 
 	klass->generic_class = gclass;
 
