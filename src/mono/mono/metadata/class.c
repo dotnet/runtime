@@ -1025,8 +1025,10 @@ mono_class_layout_fields (MonoClass *class)
 	MonoClassField *field;
 
 	if (class->generic_container ||
-	    (class->generic_class && class->generic_class->context.class_inst->is_open))
+	    (class->generic_class && class->generic_class->context.class_inst->is_open)) {
+		class->size_inited = TRUE;
 		return;
+	}
 
 	/*
 	 * Enable GC aware auto layout: in this mode, reference
@@ -2128,6 +2130,7 @@ mono_class_setup_vtable (MonoClass *class)
 {
 	MonoMethod **overrides;
 	MonoGenericContext *context;
+	MonoClass *overrides_class;
 	guint32 type_token;
 	int onum = 0;
 	gboolean ok = TRUE;
@@ -2152,13 +2155,15 @@ mono_class_setup_vtable (MonoClass *class)
 	if (class->generic_class) {
 		context = mono_class_get_context (class);
 		type_token = class->generic_class->container_class->type_token;
+		overrides_class = class->generic_class->container_class;
 	} else {
 		context = (MonoGenericContext *) class->generic_container;		
 		type_token = class->type_token;
+		overrides_class = class;
 	}
 
 	if (class->image->dynamic)
-		mono_reflection_get_dynamic_overrides (class, &overrides, &onum);
+		mono_reflection_get_dynamic_overrides (overrides_class, &overrides, &onum);
 	else {
 		/* The following call fails if there are missing methods in the type */
 		ok = mono_class_get_overrides_full (class->image, type_token, &overrides, &onum, context);
