@@ -2551,6 +2551,9 @@ create_generic_typespec (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *
 	g_assert (tb->generic_params);
 	klass = mono_class_from_mono_type (tb->type.type);
 
+	if (tb->generic_container)
+		mono_reflection_create_generic_class (tb);
+
 	sigbuffer_add_value (&buf, MONO_TYPE_GENERICINST);
 	g_assert (klass->generic_container);
 	sigbuffer_add_value (&buf, klass->byval_arg.type);
@@ -8584,6 +8587,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		m->generic_container = container = rmb->generic_container;
 		container->type_argc = count;
 		container->type_params = g_new0 (MonoGenericParam, count);
+		container->is_method = TRUE;
 		container->owner.method = m;
 
 		for (i = 0; i < count; i++) {

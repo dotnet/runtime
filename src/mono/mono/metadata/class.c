@@ -1273,13 +1273,14 @@ mono_class_setup_methods (MonoClass *class)
 		return;
 	}
 
-	if (class->generic_class && !class->generic_class->is_dynamic) {
+	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
 
 		mono_class_init (gklass);
 		mono_class_setup_methods (gklass);
 
 		/* The + 1 makes this always non-NULL to pass the check in mono_class_setup_methods () */
+		class->method.count = gklass->method.count;
 		methods = g_new0 (MonoMethod *, class->method.count + 1);
 
 		for (i = 0; i < class->method.count; i++) {
