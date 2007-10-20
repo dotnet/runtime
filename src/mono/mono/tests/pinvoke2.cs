@@ -157,6 +157,24 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_byref")]
 	public static extern int mono_test_marshal_bool_byref (int a, ref bool b, int c);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_in_as_I1_U1")]
+	public static extern int mono_test_marshal_bool_in_as_I1 ([MarshalAs (UnmanagedType.I1)] bool bTrue, [MarshalAs (UnmanagedType.I1)] bool bFalse);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_in_as_I1_U1")]
+	public static extern int mono_test_marshal_bool_in_as_U1 ([MarshalAs (UnmanagedType.U1)] bool bTrue, [MarshalAs (UnmanagedType.U1)] bool bFalse);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_out_as_I1_U1")]
+	public static extern int mono_test_marshal_bool_out_as_I1 ([MarshalAs (UnmanagedType.I1)] out bool bTrue, [MarshalAs (UnmanagedType.I1)] out bool bFalse);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_out_as_I1_U1")]
+	public static extern int mono_test_marshal_bool_out_as_U1 ([MarshalAs (UnmanagedType.U1)] out bool bTrue, [MarshalAs (UnmanagedType.U1)] out bool bFalse);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_ref_as_I1_U1")]
+	public static extern int mono_test_marshal_bool_ref_as_I1 ([MarshalAs (UnmanagedType.I1)] ref bool bTrue, [MarshalAs (UnmanagedType.I1)] ref bool bFalse);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_bool_ref_as_I1_U1")]
+	public static extern int mono_test_marshal_bool_ref_as_U1 ([MarshalAs (UnmanagedType.U1)] ref bool bTrue, [MarshalAs (UnmanagedType.U1)] ref bool bFalse);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_array")]
 	public static extern int mono_test_marshal_array (int [] a1);
 
@@ -614,6 +632,62 @@ public class Tests {
 		if (mono_test_marshal_bool_byref (99, ref b, 100) != 0)
 			return 12;
 		if (b != true)
+			return 13;
+
+		return 0;
+	}
+
+	public static int test_0_marshal_bool_as_I1 () {
+
+		int ret;
+		bool bTrue, bFalse;
+		if ((ret = mono_test_marshal_bool_in_as_I1 (true, false)) != 0)
+			return ret;
+
+		if ((ret = mono_test_marshal_bool_out_as_I1 (out bTrue, out bFalse)) != 0)
+			return ret;
+
+		if(!bTrue)
+			return 10;
+
+		if(bFalse)
+			return 11;
+
+		if ((ret = mono_test_marshal_bool_ref_as_I1 (ref bTrue, ref bFalse)) != 0)
+			return ret;
+
+		if(bTrue)
+			return 12;
+
+		if(!bFalse)
+			return 13;
+
+		return 0;
+	}
+
+	public static int test_0_marshal_bool_as_U1 () {
+
+		int ret;
+		bool bTrue, bFalse;
+		if ((ret = mono_test_marshal_bool_in_as_U1 (true, false)) != 0)
+			return ret;
+
+		if ((ret = mono_test_marshal_bool_out_as_U1 (out bTrue, out bFalse)) != 0)
+			return ret;
+
+		if(!bTrue)
+			return 10;
+
+		if(bFalse)
+			return 11;
+
+		if ((ret = mono_test_marshal_bool_ref_as_U1 (ref bTrue, ref bFalse)) != 0)
+			return ret;
+
+		if(bTrue)
+			return 12;
+
+		if(!bFalse)
 			return 13;
 
 		return 0;

@@ -252,6 +252,45 @@ mono_test_marshal_bool_byref (int a, int *b, int c)
 	return res;
 }
 
+STDCALL int
+mono_test_marshal_bool_in_as_I1_U1 (char bTrue, char bFalse)
+{
+	if (!bTrue)
+                return 1;
+	if (bFalse)
+                return 2;
+        return 0;
+}
+
+STDCALL int
+mono_test_marshal_bool_out_as_I1_U1 (char* bTrue, char* bFalse)
+{
+        if (!bTrue || !bFalse)
+		return 3;
+
+	*bTrue = 1;
+	*bFalse = 0;
+
+	return 0;
+}
+
+STDCALL int
+mono_test_marshal_bool_ref_as_I1_U1 (char* bTrue, char* bFalse)
+{
+	if (!bTrue || !bFalse)
+                return 4;
+
+	if (!(*bTrue))
+                return 5;
+        if (*bFalse)
+                return 6;
+
+	*bFalse = 1;
+        *bTrue = 0;
+
+	return 0;
+}
+
 STDCALL int 
 mono_test_marshal_array (int *a1)
 {
