@@ -3592,6 +3592,8 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->this_arg.type = klass->byval_arg.type = MONO_TYPE_GENERICINST;
 	klass->this_arg.data.generic_class = klass->byval_arg.data.generic_class = gclass;
 	klass->this_arg.byref = TRUE;
+	klass->enumtype = gklass->enumtype;
+	klass->valuetype = gklass->valuetype;
 
 	klass->cast_class = klass->element_class = klass;
 
@@ -3599,14 +3601,20 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		klass->cast_class = klass->element_class = mono_class_get_nullable_param (klass);
 
 	if (gclass->is_dynamic) {
-		klass->instance_size = gklass->instance_size;
-		klass->sizes.class_size = gklass->sizes.class_size;
-		klass->size_inited = 1;
 		klass->inited = 1;
 
-		klass->valuetype = gklass->valuetype;
-
 		mono_class_setup_supertypes (klass);
+
+		if (klass->enumtype) {
+			/*
+			 * For enums, gklass->fields might not been set, but instance_size etc. is 
+			 * already set in mono_reflection_create_internal_class (). For non-enums,
+			 * these will be computed normally in mono_class_layout_fields ().
+			 */
+			klass->instance_size = gklass->instance_size;
+			klass->sizes.class_size = gklass->sizes.class_size;
+			klass->size_inited = 1;
+		}
 	}
 
 	klass->interface_count = gklass->interface_count;
