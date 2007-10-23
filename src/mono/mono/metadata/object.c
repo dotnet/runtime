@@ -427,6 +427,14 @@ default_trampoline (MonoMethod *method)
 }
 
 static gpointer
+default_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
+{
+	g_assert_not_reached ();
+
+	return NULL;
+}
+
+static gpointer
 default_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
 {
 	g_error ("remoting not installed");
@@ -441,6 +449,7 @@ default_delegate_trampoline (MonoClass *klass)
 }
 
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
+static MonoJumpTrampoline arch_create_jump_trampoline = default_jump_trampoline;
 static MonoRemotingTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
 static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
 static MonoImtThunkBuilder imt_thunk_builder = NULL;
@@ -453,6 +462,12 @@ void
 mono_install_trampoline (MonoTrampoline func) 
 {
 	arch_create_jit_trampoline = func? func: default_trampoline;
+}
+
+void
+mono_install_jump_trampoline (MonoJumpTrampoline func) 
+{
+	arch_create_jump_trampoline = func? func: default_jump_trampoline;
 }
 
 void
@@ -501,6 +516,12 @@ mono_compile_method (MonoMethod *method)
 		return NULL;
 	}
 	return default_mono_compile_method (method);
+}
+
+gpointer
+mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
+{
+	return arch_create_jump_trampoline (domain, method, add_sync_wrapper);
 }
 
 static MonoFreeMethodFunc default_mono_free_method = NULL;

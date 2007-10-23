@@ -572,6 +572,7 @@ typedef struct {
 extern MonoStats mono_stats MONO_INTERNAL;
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
+typedef gpointer (*MonoJumpTrampoline)       (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper);
 typedef gpointer (*MonoRemotingTrampoline)       (MonoMethod *method, MonoRemotingTarget target);
 typedef gpointer (*MonoDelegateTrampoline)       (MonoClass *klass);
 
@@ -637,6 +638,9 @@ void
 mono_install_trampoline (MonoTrampoline func) MONO_INTERNAL;
 
 void
+mono_install_jump_trampoline (MonoJumpTrampoline func) MONO_INTERNAL;
+
+void
 mono_install_remoting_trampoline (MonoRemotingTrampoline func) MONO_INTERNAL;
 
 void
@@ -650,6 +654,9 @@ mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, MonoClass **ha
 
 void
 mono_install_lookup_dynamic_token (MonoLookupDynamicToken func) MONO_INTERNAL;
+
+gpointer
+mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper) MONO_INTERNAL;
 
 void
 mono_install_get_cached_class_info (MonoGetCachedClassInfo func) MONO_INTERNAL;
