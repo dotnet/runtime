@@ -133,6 +133,7 @@ TEST_CS_SRC=			\
 	iface4.cs		\
 	iface-large.cs		\
 	virtual-method.cs	\
+	virtual-sync.cs	\
 	intptrcast.cs		\
 	indexer.cs		\
 	stream.cs		\
