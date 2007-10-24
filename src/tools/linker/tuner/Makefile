@@ -7,6 +7,7 @@ LINKER = ../linker/monolinker.exe
 TUNER_SOURCES = \
 	Mono.Tuner/PrintStatus.cs	\
 	Mono.Tuner/RemoveSerialization.cs	\
+	Mono.Tuner/AdjustVisibilityStep.cs	\
 	Mono.Tuner/CheckVisibility.cs	\
 
 TUNER_DESCS =	\
@@ -55,12 +56,13 @@ run-test-local run-test-ondotnet-local:
 
 TUNER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR) -l none -c link -a smcs -b true
 TUNER_STEPS = \
+	Mono.Tuner.AdjustVisibility,Mono.Tuner:OutputStep	\
 	Mono.Tuner.PrintStatus,Mono.Tuner:OutputStep	\
 	Mono.Tuner.RemoveSerialization,Mono.Tuner:OutputStep	\
 	Mono.Tuner.CheckVisibility,Mono.Tuner	\
 
 tune:
-	MONO_PATH=".$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(LINKER) $(TUNER_FLAGS) $(TUNER_DESCS:%=-x %) $(TUNER_STEPS:%=-s %) $(TUNER_MASTERS:%=-i %)
+	MONO_PATH=".$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) --debug $(LINKER) $(TUNER_FLAGS) $(TUNER_DESCS:%=-x %) $(TUNER_STEPS:%=-s %) $(TUNER_MASTERS:%=-i %)
 
 gacutil = $(topdir)/class/lib/net_1_1_bootstrap/gacutil.exe
 GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(gacutil)
