@@ -53,6 +53,14 @@ int mono_exc_esp_offset = 0;
 #define arm_is_imm8(v) ((v) > -256 && (v) < 256)
 #define arm_is_fpimm8(v) ((v) >= -1020 && (v) <= 1020)
 
+#define LDR_MASK ((0xf << ARMCOND_SHIFT) | (3 << 26) | (1 << 22) | (1 << 20) | (15 << 12))
+#define LDR_PC_VAL ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 26) | (0 << 22) | (1 << 20) | (15 << 12))
+#define IS_LDR_PC(val) (((val) & LDR_MASK) == LDR_PC_VAL)
+
+#define ADD_LR_PC_4 ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 25) | (1 << 23) | (ARMREG_PC << 16) | (ARMREG_LR << 12) | 4)
+#define MOV_LR_PC ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 24) | (0xa << 20) |  (ARMREG_LR << 12) | ARMREG_PC)
+#define DEBUG_IMT 0
+
 const char*
 mono_arch_regname (int reg) {
 	static const char * rnames[] = {
@@ -228,11 +236,23 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
+static gpointer*
+decode_vcall_slot_from_ldr (guint32 ldr, gpointer *regs)
 {
 	char *o = NULL;
 	int reg, offset = 0;
+	reg = (ldr >> 16 ) & 0xf;
+	offset = ldr & 0xfff;
+	if (((ldr >> 23) & 1) == 0) /*U bit, 0 means negative and 1 positive*/
+		offset = -offset;
+	/*g_print ("found vcall at r%d + %d for code at %p 0x%x\n", reg, offset, code, *code);*/
+	o = regs [reg];
+	return (gpointer*)(o + offset);
+}
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
+{
 	guint32* code = (guint32*)code_ptr;
 
 	/* Locate the address of the method-specific trampoline. The call using
@@ -257,24 +277,39 @@ mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
 	Therefore, we need to locate the 'ldr rA' instruction to know which
 	register was used to hold the method addrs.
 	*/
-	
-	/* This is the 'bl' or 'mov pc' instruction */
+
+	/* This is the instruction after "ldc pc, xxx", "mov pc, xxx" or "bl xxx" could be either the IMT value or some other instruction*/
 	--code;
 
-	/* called directly with the bl opcode */
-	if ((((*code) >> 25)  & 7) == 5)
-		return NULL;
+	/* Three possible code sequences can happen here:
+	 * interface call:
+	 * 
+	 * add lr, [pc + #4]
+	 * ldr pc, [rX - #offset]
+	 * .word IMT value
+	 * 
+	 * virtual call:
+	 * 
+	 * mov lr, pc
+	 * ldr pc, [rX - #offset] 
+	 * 
+	 * direct branch with bl:
+	 * 
+	 * bl #offset
+	 * 
+	 * direct branch with mov: 
+	 * 
+	 * mv pc, rX
+	 * 
+	 * We only need to identify interface and virtual calls, the others can be ignored.
+	 * 
+	 */
+	if (IS_LDR_PC (code [-1]) && code [-2] == ADD_LR_PC_4)
+		return decode_vcall_slot_from_ldr (code [-1], regs);
 
-	/* ldr pc, rX, #offset */
-#define LDR_MASK ((0xf << ARMCOND_SHIFT) | (3 << 26) | (1 << 22) | (1 << 20) | (15 << 12))
-#define LDR_PC_VAL ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 26) | (0 << 22) | (1 << 20) | (15 << 12))
-	if ((*code & LDR_MASK) == LDR_PC_VAL) {
-		reg = (*code >> 16 ) & 0xf;
-		offset = *code & 0xfff;
-		/*g_print ("found vcall at r%d + %d\n", reg, offset);*/
-		o = regs [reg];
-		return (gpointer*)(o + offset);
-	}
+	if (IS_LDR_PC (code [0]) && code [-1] == MOV_LR_PC)
+		return decode_vcall_slot_from_ldr (code [0], regs);
+
 	return NULL;
 }
 
@@ -2422,8 +2457,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_MEMBASE:
 			g_assert (arm_is_imm12 (ins->inst_offset));
 			g_assert (ins->sreg1 != ARMREG_LR);
-			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-			ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
+			call = (MonoCallInst*)ins;
+			if (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+				ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_PC, 4);
+				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
+				*((gpointer*)code) = (gpointer)call->method;
+				code += 4;
+			} else {
+				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
+			}
 			break;
 		case OP_OUTARG:
 			g_assert_not_reached ();
@@ -3577,4 +3620,179 @@ mono_arch_fixup_jinfo (MonoCompile *cfg)
 	g_assert ((cfg->stack_usage & ~(0xffff << 2)) == 0);
 	cfg->jit_info->used_regs |= cfg->stack_usage << 14;
 }
+
+#ifdef MONO_ARCH_HAVE_IMT
+
+void
+mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call)
+{
+}
+
+MonoMethod*
+mono_arch_find_imt_method (gpointer *regs, guint8 *code)
+{
+	guint32 *code_ptr = (guint32*)code;
+	code_ptr -= 2;
+	/* The IMT value is stored in the code stream right after the LDC instruction. */
+	if (!IS_LDR_PC (code_ptr [0])) {
+		g_warning ("invalid code stream, instruction before IMT value is not a LDC in %s() (code %p value 0: 0x%x -1: 0x%x -2: 0x%x)", __FUNCTION__, code, code_ptr [2], code_ptr [1], code_ptr [0]);
+		g_assert (IS_LDR_PC (code_ptr [0]));
+	}
+	return (MonoMethod*) code_ptr [1];
+}
+
+MonoObject*
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+{
+	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
+}
+
+
+#define ENABLE_WRONG_METHOD_CHECK 0
+#define BASE_SIZE (8)
+
+static arminstr_t *
+arm_emit_value_and_patch_ldr (arminstr_t *code, arminstr_t *target, guint32 value)
+{
+	guint32 delta = ((guint32)code) - ((guint32)target);
+	delta -= 8;
+	g_assert (delta >= 0 && delta <= 0xFFF);
+	*target = *target | delta;
+	*code = value;
+	return code + 1;
+}
+
+gpointer
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+{
+	int size, i, extra_space = 0;
+	arminstr_t *code, *start;
+	size = BASE_SIZE;
+
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done)
+					item->chunk_size += 3 * 4;
+				item->chunk_size += 6 * 4;
+			} else {
+				item->chunk_size += 5 * 4;
+#if ENABLE_WRONG_METHOD_CHECK
+				item->chunk_size += 5 * 4;
+#endif
+			}
+		} else {
+			item->chunk_size += 4 * 4;
+			imt_entries [item->check_target_idx]->compare_done = TRUE;
+		}
+		size += item->chunk_size;
+	}
+
+	start = code = mono_code_manager_reserve (domain->code_mp, size);
+
+#if DEBUG_IMT
+	printf ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size);
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		printf ("method %d (%p) %s vtable addr %p content %p is_equals %d\n", i, item->method, item->method->name, &(vtable->vtable [item->vtable_slot]), vtable->vtable [item->vtable_slot], item->is_equals);
+	}
+#endif
+
+	ARM_PUSH3 (code, ARMREG_R0, ARMREG_IP, ARMREG_LR);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_LR, -4);
+
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		arminstr_t *imt_method = NULL;
+		arminstr_t *vtable_target = NULL;		
+		item->code_target = (guint8*)code;
+
+		if (item->is_equals) {
+			if (item->check_target_idx) {
+				if (!item->compare_done) {
+					imt_method = code;
+					ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+					ARM_CMP_REG_REG (code, ARMREG_IP, ARMREG_R0);
+				}
+				item->jmp_code = (guint8*)code;
+				ARM_B_COND (code, ARMCOND_NE, 0);
+
+				vtable_target = code;
+				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 0);
+				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, 8);
+				ARM_POP3 (code, ARMREG_R0, ARMREG_IP, ARMREG_PC);
+			} else {
+				/*Enable the commented code to assert on wrong method*/
+#if ENABLE_WRONG_METHOD_CHECK
+				imt_method = code;
+				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+				ARM_CMP_REG_REG (code, ARMREG_IP, ARMREG_R0);
+				ARM_B_COND (code, ARMCOND_NE, 3);
+#endif
+				vtable_target = code;
+				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 0);
+				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, 8);
+				ARM_POP3 (code, ARMREG_R0, ARMREG_IP, ARMREG_PC);
+
+#if ENABLE_WRONG_METHOD_CHECK
+				ARM_DBRK (code);
+#endif
+			}
+		} else {
+			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
+			ARM_CMP_REG_REG (code, ARMREG_IP, ARMREG_R0);
+
+			item->jmp_code = (guint8*)code;
+			ARM_B_COND (code, ARMCOND_GE, 0);
+			++extra_space;
+		}
+
+		if (imt_method)
+			code = arm_emit_value_and_patch_ldr (code, imt_method, (guint32)item->method);
+
+		if (vtable_target)
+			code = arm_emit_value_and_patch_ldr (code, vtable_target, (guint32)&(vtable->vtable [item->vtable_slot]));
+
+		/*We reserve the space for bsearch IMT values after the first entry with an absolute jump*/
+		if (item->is_equals && extra_space) {
+			code += extra_space;
+			extra_space = 0;
+		}
+	}
+
+	for (i = 0; i < count; ++i) {
+		MonoIMTCheckItem *item = imt_entries [i];
+		if (item->jmp_code) {
+			if (item->check_target_idx)
+				arm_patch (item->jmp_code, imt_entries [item->check_target_idx]->code_target);
+		}
+		if (i > 0 && item->is_equals) {
+			int j;
+			arminstr_t *space_start = (arminstr_t*)(item->code_target + item->chunk_size);
+			for (j = i - 1; j >= 0 && !imt_entries [j]->is_equals; --j) {
+				space_start = arm_emit_value_and_patch_ldr (space_start, (arminstr_t*)imt_entries [j]->code_target, (guint32)imt_entries [j]->method);
+			}
+		}
+	}
+
+#if DEBUG_IMT
+	{
+		char *buff = g_strdup_printf ("thunk_for_class_%s_%s_entries_%d", vtable->klass->name_space, vtable->klass->name, count);
+		mono_disassemble_code (NULL, (guint8*)start, size, buff);
+		g_free (buff);
+	}
+#endif
+
+	mono_arch_flush_icache ((guint8*)start, size);
+	mono_stats.imt_thunks_size += code - start;
+
+	g_assert (code - start <= size);
+	return start;
+}
+
+#endif
+
 

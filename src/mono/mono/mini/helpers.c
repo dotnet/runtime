@@ -127,7 +127,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	}
 	fprintf (ofd, ":\n");
 
-	if (emit_debug_info) {
+	if (emit_debug_info && cfg != NULL) {
 		MonoBasicBlock *bb;
 
 		fprintf (ofd, ".stabs	\"\",100,0,0,.Ltext0\n");
