@@ -1,3 +1,4 @@
+./Mono.Linker/ApiInfoService.cs
 ./Mono.Linker/Pipeline.cs
 ./Mono.Linker/AssemblyInfo.cs
 ./Mono.Linker/AssemblyResolver.cs
@@ -9,7 +10,6 @@
 ./Mono.Linker/I18nAssemblies.cs
 ./Mono.Linker/MethodAction.cs
 ./Mono.Linker/ResolutionException.cs
-./Mono.Linker.Steps/AdjustVisibilityStep.cs
 ./Mono.Linker.Steps/BaseStep.cs
 ./Mono.Linker.Steps/LoadReferencesStep.cs
 ./Mono.Linker.Steps/LoadI18nAssemblies.cs
