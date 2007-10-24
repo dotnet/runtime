@@ -1129,6 +1129,9 @@ void
 mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass) MONO_INTERNAL;
 
 gpointer
+mono_create_ftnptr (MonoDomain *domain, gpointer addr) MONO_INTERNAL;
+
+gpointer
 mono_get_addr_from_ftnptr (gpointer descr) MONO_INTERNAL;
 
 void
