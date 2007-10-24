@@ -7,7 +7,7 @@ LINKER = ../linker/monolinker.exe
 TUNER_SOURCES = \
 	Mono.Tuner/PrintStatus.cs	\
 	Mono.Tuner/RemoveSerialization.cs	\
-	Mono.Tuner/AdjustVisibilityStep.cs	\
+	Mono.Tuner/AdjustVisibility.cs	\
 	Mono.Tuner/CheckVisibility.cs	\
 
 TUNER_DESCS =	\
