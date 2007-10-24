@@ -200,31 +200,6 @@ mono_running_on_valgrind (void)
 #endif
 }
 
-/*
- * mono_create_ftnptr:
- *
- *   Given a function address, create a function descriptor for it.
- * This is only needed on IA64.
- */
-gpointer
-mono_create_ftnptr (MonoDomain *domain, gpointer addr)
-{
-#ifdef __ia64__
-	gpointer *desc;
-
-	mono_domain_lock (domain);
-	desc = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
-	mono_domain_unlock (domain);
-
-	desc [0] = addr;
-	desc [1] = NULL;
-
-	return desc;
-#else
-	return addr;
-#endif
-}
-
 typedef struct {
 	void *ip;
 	MonoMethod *method;
