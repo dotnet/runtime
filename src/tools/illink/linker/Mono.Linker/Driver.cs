@@ -135,11 +135,7 @@ namespace Mono.Linker {
 					break;
 				case 'i':
 					foreach (string file in GetFiles (GetParam ()))
-						p.PrependStep (new ResolveFromApiInfoStep (new XPathDocument (file)));
-
-					if (!p.ContainsStep (typeof (AdjustVisibilityStep)))
-						p.AddStepBefore (typeof (OutputStep), new AdjustVisibilityStep ());
-
+						p.PrependStep (new ResolveFromApiInfoStep (ApiInfoService.GetApiInfoFromFile (file)));
 					resolver = true;
 					break;
 				case 'l':

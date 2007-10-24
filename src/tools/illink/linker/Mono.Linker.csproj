@@ -42,7 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Mono.Linker.Steps\AdjustVisibilityStep.cs" />
+    <Compile Include="Mono.Linker\ApiInfoService.cs" />
     <Compile Include="Mono.Linker.Steps\BaseStep.cs" />
     <Compile Include="Mono.Linker.Steps\BlacklistStep.cs" />
     <Compile Include="Mono.Linker.Steps\CleanStep.cs" />
