@@ -3824,7 +3824,7 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 
 	vtable = mono_class_vtable (domain, class);
 	size = mono_class_instance_size (class);
-	res = mono_object_allocate (size, vtable);
+	res = mono_object_new_alloc_specific (vtable);
 	mono_profiler_allocation (res, class);
 
 	size = size - sizeof (MonoObject);
