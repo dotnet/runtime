@@ -9,7 +9,7 @@
 ./Mono.Linker/I18nAssemblies.cs
 ./Mono.Linker/MethodAction.cs
 ./Mono.Linker/ResolutionException.cs
-./Mono.Linker/ApiInfoService.cs
+./Mono.Linker/XApiService.cs
 ./Mono.Linker/XApiReader.cs
 ./Mono.Linker/IXApiVisitor.cs
 ./Mono.Linker.Steps/BaseStep.cs
@@ -17,7 +17,7 @@
 ./Mono.Linker.Steps/LoadI18nAssemblies.cs
 ./Mono.Linker.Steps/ResolveFromXmlStep.cs
 ./Mono.Linker.Steps/SweepStep.cs
-./Mono.Linker.Steps/ResolveFromApiInfoStep.cs
+./Mono.Linker.Steps/ResolveFromXApiStep.cs
 ./Mono.Linker.Steps/ResolveFromAssemblyStep.cs
 ./Mono.Linker.Steps/ResolveStep.cs
 ./Mono.Linker.Steps/CleanStep.cs
