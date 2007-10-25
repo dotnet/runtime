@@ -1,5 +1,10 @@
 2007-10-25  Jb Evain  <jbevain@novell.com>
 
+	* Mono.Tuner/InjectAttributes.cs: infrastructure for
+	the attribute injector.
+
+2007-10-25  Jb Evain  <jbevain@novell.com>
+
 	* Mono.Tuner/PrintStatus.cs: print which items
 	have been internalized if the parameter `display_internalized`
 	is set to true.

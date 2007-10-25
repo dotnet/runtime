@@ -10,6 +10,7 @@ TUNER_SOURCES = \
 	Mono.Tuner/RemoveSerialization.cs	\
 	Mono.Tuner/AdjustVisibility.cs	\
 	Mono.Tuner/CheckVisibility.cs	\
+	Mono.Tuner/InjectAttributes.cs	\
 
 TUNER_DESCS =	\
 	Descriptors/mscorlib.xml	\
