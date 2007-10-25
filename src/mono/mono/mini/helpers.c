@@ -199,6 +199,10 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	system (cmd);
 	g_free (cmd);
 	
+#ifndef PLATFORM_WIN32
+	unlink (o_file);
+	unlink (as_file);
+#endif
 	g_free (o_file);
 	g_free (as_file);
 #endif
