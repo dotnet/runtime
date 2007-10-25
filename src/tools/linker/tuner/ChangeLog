@@ -1,3 +1,7 @@
+2007-10-26  Jb Evain  <jbevain@novell.com>
+
+	* Makefile: activate the InjectAttributes step.
+
 2007-10-25  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/InjectAttributes.cs: inject security attributes

@@ -65,6 +65,7 @@ TUNER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR)	\
 	-m display_internalized false	\
 
 TUNER_STEPS = \
+	Mono.Tuner.InjectAttributes,Mono.Tuner:OutputStep	\
 	Mono.Tuner.AdjustVisibility,Mono.Tuner:OutputStep	\
 	Mono.Tuner.PrintStatus,Mono.Tuner:OutputStep	\
 	Mono.Tuner.RemoveSerialization,Mono.Tuner:OutputStep	\
