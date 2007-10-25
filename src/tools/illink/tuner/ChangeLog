@@ -1,3 +1,12 @@
+2007-10-25  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/TunerAnnotations.cs
+	* Mono.Tuner/AdjustVisibility.cs:
+		Annotate the items that have been internalized
+		for later use.
+
+	* Makefile: always rebuild Mono.Tuner.dll for now.
+
 2007-09-04  Jb Evain  <jbevain@novell.com>
 
 	* masterinfos/*.info added, so we don't have to download them.
