@@ -40,11 +40,48 @@ namespace Mono.Tuner {
 
 	public class InjectAttributes : BaseStep, IXApiVisitor {
 
+		static string _security = "System.Security";
+		static string _safe_critical = Concat (_security, "SecuritySafeCriticalAttribute");
+		static string _critical = Concat (_security, "SecurityCriticalAttribute");
+		static string _transparent = Concat (_security, "SecurityTransparentAttribute");
+
+		static string Concat (string l, string r)
+		{
+			return l + "." + r;
+		}
+
+		AssemblyDefinition _assembly;
 		ICustomAttributeProvider _provider;
+
+		MethodDefinition _safe_critical_ctor;
+		MethodDefinition _critical_ctor;
+		MethodDefinition _transparent_ctor;
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			XPathDocument xapi = XApiService.GetApiInfoByAssemblyName (assembly.Name.Name);
+			_assembly = assembly;
+
+			MatchApi ();
+			LoadAdjustments ();
+			ProcessInternals ();
+		}
+
+		/*
+			This step is responsible for injecting the security attributes in
+			the tuned assemblies. It's a three parts operation:
+
+			- we apply the attributes from we found in the public api, by reading
+				the xml-api-info files.
+
+			- we load an external file manually maintained wich details the security attributes
+				we know we have to apply on certain metadata elements.
+
+			- we apply the attributes on the internals of the assembly.
+		*/
+
+		void MatchApi ()
+		{
+			XPathDocument xapi = XApiService.GetApiInfoByAssemblyName (_assembly.Name.Name);
 			if (xapi == null)
 				return;
 
@@ -52,8 +89,84 @@ namespace Mono.Tuner {
 			reader.Process (Context);
 		}
 
+		void LoadAdjustments ()
+		{
+		}
+
+		void ProcessInternals ()
+		{
+		}
+
+		MethodDefinition GetDefaultConstructor (TypeDefinition type)
+		{
+			foreach (MethodDefinition ctor in type.Constructors)
+				if (ctor.Parameters.Count == 0)
+					return ctor;
+
+			return null;
+		}
+
+		MethodDefinition GetSafeCriticalCtor ()
+		{
+			if (_safe_critical_ctor != null)
+				return _safe_critical_ctor;
+
+			_safe_critical_ctor = GetDefaultConstructor (Context.GetType (_safe_critical));
+			return _safe_critical_ctor;
+		}
+
+		MethodDefinition GetCriticalCtor ()
+		{
+			if (_critical_ctor != null)
+				return _critical_ctor;
+
+			_critical_ctor = GetDefaultConstructor (Context.GetType (_critical));
+			return _critical_ctor;
+		}
+
+		MethodDefinition GetTransparentCtor ()
+		{
+			if (_transparent_ctor != null)
+				return _transparent_ctor;
+
+			_transparent_ctor = GetDefaultConstructor (Context.GetType (_transparent));
+			return _transparent_ctor;
+		}
+
+		MethodReference Import (MethodDefinition method)
+		{
+			return _assembly.MainModule.Import (method);
+		}
+
+		CustomAttribute CreateSafeCriticalAttribute ()
+		{
+			return new CustomAttribute (Import (GetSafeCriticalCtor ()));
+		}
+
+		CustomAttribute CreateCriticalAttribute ()
+		{
+			return new CustomAttribute (Import (GetCriticalCtor ()));
+		}
+
+		CustomAttribute CreateTransparentAttribute ()
+		{
+			return new CustomAttribute (Import (GetTransparentCtor ()));
+		}
+
 		public void OnAttribute (XPathNavigator nav)
 		{
+			CustomAttribute attribute = null;
+			string name = nav.GetAttribute ("name", string.Empty);
+
+			if (name == _safe_critical)
+				attribute = CreateSafeCriticalAttribute ();
+			else if (name == _critical)
+				attribute = CreateCriticalAttribute ();
+			else if (name == _transparent)
+				attribute = CreateTransparentAttribute ();
+
+			if (attribute != null)
+				_provider.CustomAttributes.Add (attribute);
 		}
 
 		public void OnAssembly (XPathNavigator nav, AssemblyDefinition assembly)
