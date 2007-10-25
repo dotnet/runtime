@@ -65,6 +65,8 @@ namespace Mono.Tuner {
 				type.Attributes |= TypeAttributes.NotPublic;
 			else
 				type.Attributes |= TypeAttributes.NestedAssembly;
+
+			TunerAnnotations.Internalized (type);
 		}
 
 		static void ProcessMethods (ICollection methods)
@@ -88,6 +90,8 @@ namespace Mono.Tuner {
 		{
 			method.Attributes &= ~MethodAttributes.MemberAccessMask;
 			method.Attributes |= MethodAttributes.Assem;
+
+			TunerAnnotations.Internalized (method);
 		}
 
 		static bool IsMarkedAsPublic (IAnnotationProvider provider)
@@ -116,6 +120,8 @@ namespace Mono.Tuner {
 		{
 			field.Attributes &= ~FieldAttributes.FieldAccessMask;
 			field.Attributes |= FieldAttributes.Assembly;
+
+			TunerAnnotations.Internalized (field);
 		}
 	}
 }
