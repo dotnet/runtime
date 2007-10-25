@@ -1,5 +1,15 @@
 2007-10-25  Jb Evain  <jbevain@novell.com>
 
+	* Mono.Tuner/PrintStatus.cs: print which items
+	have been internalized if the parameter `display_internalized`
+	is set to true.
+
+	* Makefile: define parameter `display_internalized` and set it
+	to false. Set it explicitely to true if you want a detailed log
+	about which metadata items have been internalized.
+
+2007-10-25  Jb Evain  <jbevain@novell.com>
+
 	* Mono.Tuner/TunerAnnotations.cs
 	* Mono.Tuner/AdjustVisibility.cs:
 		Annotate the items that have been internalized

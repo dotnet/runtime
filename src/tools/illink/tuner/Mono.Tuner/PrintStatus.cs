@@ -27,6 +27,7 @@
 //
 
 using System;
+using System.Collections;
 
 using Mono.Linker;
 using Mono.Linker.Steps;
@@ -37,9 +38,47 @@ namespace Mono.Tuner {
 
 	public class PrintStatus : BaseStep {
 
+		static string display_internalized = "display_internalized";
+
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			Console.WriteLine ("Assembly `{0}' ({1}) tuned", assembly.Name, assembly.MainModule.Image.FileInformation);
+
+			if (!DisplayInternalized ())
+				return;
+
+			foreach (TypeDefinition type in assembly.MainModule.Types)
+				ProcessType (type);
+		}
+
+		bool DisplayInternalized ()
+		{
+			try {
+				return bool.Parse (Context.GetParameter (display_internalized));
+			} catch {
+				return false;
+			}
+		}
+
+		static void ProcessType (TypeDefinition type)
+		{
+			ProcessCollection (type.Fields);
+			ProcessCollection (type.Constructors);
+			ProcessCollection (type.Methods);
+		}
+
+		static void ProcessCollection (ICollection collection)
+		{
+			foreach (IAnnotationProvider provider in collection)
+				ProcessProvider (provider);
+		}
+
+		static void ProcessProvider (IAnnotationProvider provider)
+		{
+			if (!TunerAnnotations.IsInternalized (provider))
+				return;
+
+			Console.WriteLine ("[internalized] {0}", provider);
 		}
 	}
 }
