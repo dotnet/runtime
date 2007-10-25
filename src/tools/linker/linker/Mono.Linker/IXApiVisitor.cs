@@ -1,5 +1,5 @@
 //
-// XApiService.cs
+// XApiVisitor.cs
 //
 // Author:
 //   Jb Evain (jbevain@novell.com)
@@ -26,46 +26,22 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System.Collections;
 using System.Xml.XPath;
+
+using Mono.Cecil;
 
 namespace Mono.Linker {
 
-	public class XApiService {
+	public interface IXApiVisitor {
 
-		static Hashtable infos = new Hashtable ();
-
-		public static XPathDocument GetApiInfoFromFile (string file)
-		{
-			XPathDocument document = infos [file] as XPathDocument;
-			if (document != null)
-				return document;
-
-			document = new XPathDocument (file);
-			infos [GetAssemblyName (document)] = file;
-			return document;
-		}
-
-		public static XPathDocument GetApiInfoByAssemblyName (string assembly_name)
-		{
-			if (!infos.Contains (assembly_name))
-				return null;
-
-			foreach (string name in infos.Keys)
-				if (assembly_name == name)
-					return new XPathDocument ((string) infos [name]);
-
-			return null;
-		}
-
-		static string GetAssemblyName (XPathDocument document)
-		{
-			XPathNavigator nav = document.CreateNavigator ();
-			for (XPathNodeIterator it = nav.Select ("assemblies//assembly"); it.MoveNext (); ) {
-				return it.Current.GetAttribute ("name", string.Empty);
-			}
-
-			return null;
-		}
+		void OnAssembly (XPathNavigator nav, AssemblyDefinition assembly);
+		void OnAttribute (XPathNavigator nav);
+		void OnClass (XPathNavigator nav, TypeDefinition type);
+		void OnInterface (XPathNavigator nav, TypeDefinition type);
+		void OnField (XPathNavigator nav, FieldDefinition field);
+		void OnMethod (XPathNavigator nav, MethodDefinition method);
+		void OnConstructor (XPathNavigator nav, MethodDefinition method);
+		void OnProperty (XPathNavigator nav, PropertyDefinition property);
+		void OnEvent (XPathNavigator nav, EventDefinition evt);
 	}
 }

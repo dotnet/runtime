@@ -1,3 +1,16 @@
+2007-10-25  Jb Evain  <jbevain@novell.com>
+
+	* monolinker.exe.sources
+	* Mono.Linker.Steps/ResolveFromApiInfoStep.cs
+	* Mono.Linker/Driver.cs
+	* Mono.Linker/XApiReader.cs
+	* Mono.Linker/ApiInfoService.cs
+	* Mono.Linker/IXApiVisitor.cs:
+
+		Big refactoring. Move logic to read Xml Api Info files
+		to XApiReader, so we can use that in the tuner to deal
+		with xapi files to inject attributes.
+
 2007-08-27  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/Driver.cs
