@@ -42,15 +42,18 @@ namespace Mono.Linker {
 				return document;
 
 			document = new XPathDocument (file);
-			infos [file] = document;
+			infos [GetAssemblyName (document)] = file;
 			return document;
 		}
 
-		public static XPathDocument LookupApiInfoByAssemblyName (string name)
+		public static XPathDocument GetApiInfoByAssemblyName (string assembly_name)
 		{
-			foreach (XPathDocument document in infos.Values)
-				if (GetAssemblyName (document) == name)
-					return document;
+			if (!infos.Contains (assembly_name))
+				return null;
+
+			foreach (string name in infos.Keys)
+				if (assembly_name == name)
+					return new XPathDocument ((string) infos [name]);
 
 			return null;
 		}
