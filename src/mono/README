@@ -52,8 +52,8 @@ This is Mono.
 		make
 		make install
 
-	Mono supports a JIT engine on x86, SPARC, SPARCv9, S/390, AMD64, ARM
-	and PowerPC systems.
+	Mono supports a JIT engine on x86, SPARC, SPARCv9, S/390,
+	S/390x, AMD64, ARM and PowerPC systems.   
 
 	If you obtained this as a snapshot, you will need an existing
 	Mono installation.  To upgrade your installation, unpack both
@@ -133,7 +133,7 @@ This is Mono.
 	also try passing EXTERNAL_MCS=false on the make command-line.
 
 	Testing and Installation
-	 ------------------------
+	------------------------
 
 	You can run (part of) the mono and mcs testsuites with the command:
 
@@ -425,6 +425,11 @@ This is Mono.
 
 		Manual pages for the various Mono commands and programs.
 
+	samples/
+
+		Some simple sample programs on uses of the Mono
+		runtime as an embedded library.   
+
 	scripts/
 
 		Scripts used to invoke Mono and the corresponding program.
@@ -434,3 +439,9 @@ This is Mono.
 		A directory that contains the Makefiles that link the
 		mono/ and mcs/ build systems.
 
+	../olive/
+
+		If the directory ../olive is present (as an
+		independent checkout) from the Mono module, that
+		directory is automatically configured to share the
+		same prefix than this module gets.
