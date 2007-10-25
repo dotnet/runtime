@@ -56,7 +56,13 @@ test-local:
 
 run-test-local run-test-ondotnet-local:
 
-TUNER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR) -l none -c link -a smcs -b true
+TUNER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR)	\
+	-l none		\
+	-c link		\
+	-a smcs		\
+	-b true		\
+	-m display_internalized false	\
+
 TUNER_STEPS = \
 	Mono.Tuner.AdjustVisibility,Mono.Tuner:OutputStep	\
 	Mono.Tuner.PrintStatus,Mono.Tuner:OutputStep	\
