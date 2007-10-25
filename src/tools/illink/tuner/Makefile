@@ -31,8 +31,7 @@ WORKING_DIR = $(topdir)/class/lib/net_2_1
 OUTPUT_DIR = $(topdir)/class/lib/net_2_1_tuned
 
 ifneq (net_2_1, $(PROFILE))
-all-local:
-	$(CSCOMPILE) /out:Mono.Tuner.dll /t:library $(TUNER_SOURCES)
+all-local: Mono.Tuner.dll
 
 install-local:
 
@@ -91,3 +90,5 @@ inst-%:
 gac-%:
 	$(GACUTIL) /i $(OUTPUT_DIR)/$*.dll /f /root $(DESTDIR)$(mono_libdir) /package 2.1
 
+Mono.Tuner.dll:
+	$(CSCOMPILE) /out:Mono.Tuner.dll /t:library $(TUNER_SOURCES)

@@ -1,5 +1,10 @@
 2007-10-26  Jb Evain  <jbevain@novell.com>
 
+	* Makefile: disable the `always build the tuner` as per
+	Paolo's suggestion. Need to use the build mecanism from now.
+
+2007-10-26  Jb Evain  <jbevain@novell.com>
+
 	* Makefile: activate the InjectAttributes step.
 
 2007-10-25  Jb Evain  <jbevain@novell.com>
