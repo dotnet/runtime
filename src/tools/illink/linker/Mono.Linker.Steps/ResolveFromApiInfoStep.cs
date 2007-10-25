@@ -1,5 +1,5 @@
 //
-// ResolveFromApiInfoStep.cs
+// ResolveFromXApiStep.cs
 //
 // Author:
 //   Jb Evain (jbevain@novell.com)
@@ -26,29 +26,24 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
-using System.Collections;
-using System.Text;
 using System.Xml.XPath;
+
+using Mono.Linker;
 
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps {
 
-	public class ResolveFromApiInfoStep : ResolveStep {
+	public class ResolveFromXApiStep : ResolveStep, IXApiVisitor {
 
 		static readonly string _name = "name";
 		static readonly string _ns = string.Empty;
 
 		LinkContext _context;
+
 		XPathDocument _document;
 
-		AssemblyDefinition _assembly;
-		string _namespace;
-		Stack _types = new Stack ();
-		StringBuilder _signature;
-
-		public ResolveFromApiInfoStep (XPathDocument document)
+		public ResolveFromXApiStep (XPathDocument document)
 		{
 			_document = document;
 		}
@@ -56,35 +51,15 @@ namespace Mono.Linker.Steps {
 		public override void Process (LinkContext context)
 		{
 			_context = context;
-			ProcessAssemblies (_document.CreateNavigator ());
+			XApiReader reader = new XApiReader (_document, this);
+			reader.Process (context);
 		}
 
-		void OnAssembly (XPathNavigator nav)
+		public void OnAssembly (XPathNavigator nav, AssemblyDefinition assembly)
 		{
-			_assembly = GetAssembly (nav);
-
-			ProcessAttributes (nav);
-			ProcessNamespaces (nav);
 		}
 
-		AssemblyDefinition GetAssembly (XPathNavigator nav)
-		{
-			AssemblyNameReference name = new AssemblyNameReference ();
-			name.Name = GetName (nav);
-			name.Version = new Version (GetAttribute (nav, "version"));
-
-			AssemblyDefinition assembly = _context.Resolve (name);
-			ProcessReferences (assembly);
-			return assembly;
-		}
-
-		void ProcessReferences (AssemblyDefinition assembly)
-		{
-			foreach (AssemblyNameReference name in assembly.MainModule.AssemblyReferences)
-				_context.Resolve (name);
-		}
-
-		void OnAttribute (XPathNavigator nav)
+		public void OnAttribute (XPathNavigator nav)
 		{
 			string name = GetName (nav);
 
@@ -93,280 +68,44 @@ namespace Mono.Linker.Steps {
 				MarkType (type);
 		}
 
-		void PushType (TypeDefinition type)
+		public void OnClass (XPathNavigator nav, TypeDefinition type)
 		{
-			_types.Push (type);
-		}
-
-		TypeDefinition PeekType ()
-		{
-			return (TypeDefinition) _types.Peek ();
-		}
-
-		TypeDefinition PopType ()
-		{
-			return (TypeDefinition) _types.Pop ();
-		}
-
-		static void MarkType (TypeDefinition type)
-		{
-			InternalMark (type);
-		}
-
-		static void InternalMark (IAnnotationProvider provider)
-		{
-			Annotations.Mark (provider);
-			Annotations.SetPublic (provider);
-		}
-
-		void OnNamespace (XPathNavigator nav)
-		{
-			_namespace = GetName (nav);
-
-			ProcessClasses (nav);
-		}
-
-		void OnClass (XPathNavigator nav)
-		{
-			string name = GetClassName (nav);
-
-			TypeDefinition type = _assembly.MainModule.Types [name];
-			if (type == null)
-				return;
-
-			MarkType (type);
-
-			PushType (type);
-
-			ProcessAttributes (nav);
-			ProcessInterfaces (nav);
-			ProcessFields (nav);
-			ProcessMethods (nav);
-			ProcessConstructors (nav);
-			ProcessProperties (nav);
-			ProcessEvents (nav);
-			ProcessClasses (nav);
-
-			PopType ();
-		}
-
-		string GetClassName (XPathNavigator nav)
-		{
-			if (IsNestedClass ())
-				return PeekType ().FullName + "/" + GetName (nav);
-
-			return _namespace + "." + GetName (nav);
-		}
-
-		bool IsNestedClass ()
-		{
-			return _types.Count > 0;
-		}
-
-		void OnField (XPathNavigator nav)
-		{
-			TypeDefinition declaring = PeekType ();
-
-			FieldDefinition field = declaring.Fields.GetField (GetName (nav));
-			if (field != null)
-				MarkField (field);
-
-			ProcessAttributes (nav);
-		}
-
-		static void MarkField (FieldDefinition field)
-		{
-			InternalMark (field);
-		}
-
-		void OnInterface (XPathNavigator nav)
-		{
-			string name = GetName (nav);
-
-			TypeDefinition type = _context.GetType (name);
 			MarkType (type);
 		}
 
-		void OnMethod (XPathNavigator nav)
+		public void OnInterface (XPathNavigator nav, TypeDefinition type)
 		{
-			InitMethodSignature (nav);
-
-			ProcessParameters (nav);
-
-			string signature = GetMethodSignature ();
-
-			MethodDefinition method = GetMethod (signature);
-			if (method != null)
-				MarkMethod (method);
-
-			ProcessAttributes (nav);
+			MarkType (type);
 		}
 
-		static void MarkMethod (MethodDefinition method)
+		public void OnField (XPathNavigator nav, FieldDefinition field)
 		{
-			InternalMark (method);
-			Annotations.SetAction (method, MethodAction.Parse);
+			MarkField (field);
 		}
 
-		MethodDefinition GetMethod (string signature)
+		public void OnMethod (XPathNavigator nav, MethodDefinition method)
 		{
-			return GetMethod (PeekType ().Methods, signature);
+			MarkMethod (method);
 		}
 
-		MethodDefinition GetConstructor (string signature)
+		public void OnConstructor (XPathNavigator nav, MethodDefinition method)
 		{
-			return GetMethod (PeekType ().Constructors, signature);
+			MarkMethod (method);
 		}
 
-		static MethodDefinition GetMethod (ICollection methods, string signature)
+		public void OnProperty (XPathNavigator nav, PropertyDefinition property)
 		{
-			foreach (MethodDefinition method in methods)
-				if (signature == GetSignature (method))
-					return method;
-
-			return null;
 		}
 
-		static string GetSignature (MethodDefinition method)
+		public void OnEvent (XPathNavigator nav, EventDefinition evt)
 		{
-			return method.ToString ();
+			if (evt.AddMethod != null)
+				MarkMethod (evt.AddMethod);
+			if (evt.InvokeMethod != null)
+				MarkMethod (evt.InvokeMethod);
+			if (evt.RemoveMethod != null)
+				MarkMethod (evt.RemoveMethod);
 		}
-
-		string GetMethodSignature ()
-		{
-			_signature.Append (")");
-			return _signature.ToString ();
-		}
-
-		void InitMethodSignature (XPathNavigator nav)
-		{
-			_signature = new StringBuilder ();
-
-			string returntype = GetAttribute (nav, "returntype");
-			if (returntype == null || returntype.Length == 0)
-				returntype = Constants.Void;
-
-			_signature.Append (returntype);
-			_signature.Append (" ");
-			_signature.Append (PeekType ().FullName);
-			_signature.Append ("::");
-
-			string name = GetName (nav);
-			_signature.Append (name.Substring (0, name.IndexOf ("(") + 1));
-		}
-
-		void OnParameter (XPathNavigator nav)
-		{
-			string type = GetAttribute (nav, "type");
-			int pos = int.Parse (GetAttribute (nav, "position"));
-
-			if (pos > 0)
-				_signature.Append (",");
-			_signature.Append (type);
-		}
-
-		void OnConstructor (XPathNavigator nav)
-		{
-			InitMethodSignature (nav);
-
-			ProcessParameters (nav);
-
-			string signature = GetMethodSignature ();
-
-			MethodDefinition ctor = GetConstructor (signature);
-			if (ctor != null)
-				MarkMethod (ctor);
-
-			ProcessAttributes (nav);
-		}
-
-		void OnProperty (XPathNavigator nav)
-		{
-			ProcessAttributes (nav);
-			ProcessMethods (nav);
-		}
-
-		void OnEvent (XPathNavigator nav)
-		{
-			string name = GetName (nav);
-			TypeDefinition type = PeekType ();
-
-			EventDefinition evt = type.Events.GetEvent (name);
-			if (evt != null) {
-				if (evt.AddMethod != null)
-					MarkMethod (evt.AddMethod);
-				if (evt.InvokeMethod != null)
-					MarkMethod (evt.InvokeMethod);
-				if (evt.RemoveMethod != null)
-					MarkMethod (evt.RemoveMethod);
-			}
-
-			ProcessAttributes (nav);
-		}
-
-		void ProcessAssemblies (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "assemblies//assembly", new OnChildren (OnAssembly));
-		}
-
-		void ProcessAttributes (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "attributes//attribute", new OnChildren (OnAttribute));
-		}
-
-		void ProcessNamespaces (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "namespaces//namespace", new OnChildren (OnNamespace));
-		}
-
-		void ProcessClasses (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "classes//class", new OnChildren (OnClass));
-		}
-
-		void ProcessInterfaces (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "intefaces//interface", new OnChildren (OnInterface));
-		}
-
-		void ProcessFields (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "fields//field", new OnChildren (OnField));
-		}
-
-		void ProcessMethods (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "methods//method", new OnChildren (OnMethod));
-		}
-
-		void ProcessConstructors (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "constructors//constructor", new OnChildren (OnConstructor));
-		}
-
-		void ProcessParameters (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "parameters//parameter", new OnChildren (OnParameter));
-		}
-
-		void ProcessProperties (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "properties//property", new OnChildren (OnProperty));
-		}
-
-		void ProcessEvents (XPathNavigator nav)
-		{
-			ProcessChildren (nav, "events//event", new OnChildren (OnEvent));
-		}
-
-		static void ProcessChildren (XPathNavigator nav, string children, OnChildren action)
-		{
-			XPathNodeIterator iterator = nav.Select (children);
-			while (iterator.MoveNext ())
-				action (iterator.Current);
-		}
-
-		delegate void OnChildren (XPathNavigator nav);
 
 		static string GetName (XPathNavigator nav)
 		{
@@ -376,6 +115,28 @@ namespace Mono.Linker.Steps {
 		static string GetAttribute (XPathNavigator nav, string attribute)
 		{
 			return nav.GetAttribute (attribute, _ns);
+		}
+
+		static void MarkType (TypeDefinition type)
+		{
+			InternalMark (type);
+		}
+
+		static void MarkField (FieldDefinition field)
+		{
+			InternalMark (field);
+		}
+
+		static void InternalMark (IAnnotationProvider provider)
+		{
+			Annotations.Mark (provider);
+			Annotations.SetPublic (provider);
+		}
+
+		static void MarkMethod (MethodDefinition method)
+		{
+			InternalMark (method);
+			Annotations.SetAction (method, MethodAction.Parse);
 		}
 	}
 }
