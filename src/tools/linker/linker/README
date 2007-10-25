@@ -45,8 +45,7 @@ monolinker -i assembly.info
 
 will use a file produced by mono-api-info as a source. The linker will use
 this file to link only what is necessary to match the public API defined in
-the info file. The linker will also adjust the visibility of the metadata
-elements that are linked, but not present in the public API.
+the info file.
 
 4) Actions on the assemblies
 
