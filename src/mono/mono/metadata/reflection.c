@@ -7547,6 +7547,9 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 	} else if (strcmp ("FieldBuilder", klass->name) == 0) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder*)obj;
 		cinfo = mono_custom_attrs_from_builders (&((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image->image, fb->cattrs);
+	} else if (strcmp ("MonoGenericClass", klass->name) == 0) {
+		MonoReflectionGenericClass *gclass = (MonoReflectionGenericClass*)obj;
+		cinfo = mono_reflection_get_custom_attrs_info ((MonoObject*)gclass->generic_type);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", klass->name);
 	}
