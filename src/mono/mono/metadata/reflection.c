@@ -8703,6 +8703,10 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
 
+	if (mb->mhandle)
+		/* Can happen if this was called from inflate_method () earlier */
+		return mb->mhandle;
+
 	mono_loader_lock ();
 	sig = ctor_builder_to_signature (klass->image->mempool, mb);
 	mono_loader_unlock ();
@@ -8725,6 +8729,10 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 {
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
+
+	if (mb->mhandle)
+		/* Can happen if this was called from inflate_method () earlier */
+		return mb->mhandle;
 
 	mono_loader_lock ();
 	sig = method_builder_to_signature (klass->image->mempool, mb);
@@ -9693,6 +9701,14 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 
 			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
 			result = fb->handle;
+		}
+
+		if (fb->handle && fb->handle->parent->generic_container) {
+			MonoClass *klass = fb->handle->parent;
+			MonoClass *inflated = mono_class_from_mono_type (mono_class_inflate_generic_type (&klass->byval_arg, context));
+
+			result = mono_class_get_field_from_name (inflated, fb->handle->name);
+			g_assert (result);
 		}
 		*handle_class = mono_defaults.fieldhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "TypeBuilder") == 0) {
