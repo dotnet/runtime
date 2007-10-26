@@ -115,7 +115,8 @@ static int _wapi_shm_file_open (const gchar *filename, guint32 wanted_size)
 	struct stat statbuf;
 	int ret, tries = 0;
 	gboolean created = FALSE;
-	
+	mode_t oldmask;
+
 try_again:
 	if (tries++ > 10) {
 		/* Just give up */
@@ -125,16 +126,24 @@ try_again:
 		unlink (filename);
 	}
 	
+	/* Make sure future processes can open the shared data files */
+	oldmask = umask (066);
+
 	/* No O_CREAT yet, because we need to initialise the file if
 	 * we have to create it.
 	 */
 	fd = open (filename, O_RDWR, 0600);
+	umask (oldmask);
+	
 	if (fd == -1 && errno == ENOENT) {
 		/* OK, its up to us to create it.  O_EXCL to avoid a
 		 * race condition where two processes can
 		 * simultaneously try and create the file
 		 */
+		oldmask = umask (066);
 		fd = open (filename, O_CREAT|O_EXCL|O_RDWR, 0600);
+		umask (oldmask);
+		
 		if (fd == -1 && errno == EEXIST) {
 			/* It's possible that the file was created in
 			 * between finding it didn't exist, and trying
