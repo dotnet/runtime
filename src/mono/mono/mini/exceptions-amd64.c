@@ -156,17 +156,21 @@ mono_arch_get_restore_context (void)
 	start = code = mono_global_codeman_reserve (256);
 
 	/* get return address */
-	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, rip), 8);
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rip), 8);
 
 	/* Restore registers */
-	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, rbp), 8);
-	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, rbx), 8);
-	amd64_mov_reg_membase (code, AMD64_R12, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, r12), 8);
-	amd64_mov_reg_membase (code, AMD64_R13, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, r13), 8);
-	amd64_mov_reg_membase (code, AMD64_R14, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, r14), 8);
-	amd64_mov_reg_membase (code, AMD64_R15, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, r15), 8);
+	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rbp), 8);
+	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rbx), 8);
+	amd64_mov_reg_membase (code, AMD64_R12, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, r12), 8);
+	amd64_mov_reg_membase (code, AMD64_R13, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, r13), 8);
+	amd64_mov_reg_membase (code, AMD64_R14, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, r14), 8);
+	amd64_mov_reg_membase (code, AMD64_R15, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, r15), 8);
+#ifdef PLATFORM_WIN32
+	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rdi), 8);
+	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rsi), 8);
+#endif
 
-	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_RDI,  G_STRUCT_OFFSET (MonoContext, rsp), 8);
+	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rsp), 8);
 
 	/* jump to the saved IP */
 	amd64_jump_reg (code, AMD64_RAX);
@@ -195,7 +199,7 @@ mono_arch_get_call_filter (void)
 	if (inited)
 		return start;
 
-	start = code = mono_global_codeman_reserve (64);
+	start = code = mono_global_codeman_reserve (128);
 
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	code = start;
@@ -221,16 +225,20 @@ mono_arch_get_call_filter (void)
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
 
 	/* set new EBP */
-	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_RDI, G_STRUCT_OFFSET (MonoContext, rbp), 8);
+	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, rbp), 8);
 	/* load callee saved regs */
-	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_RDI, G_STRUCT_OFFSET (MonoContext, rbx), 8);
-	amd64_mov_reg_membase (code, AMD64_R12, AMD64_RDI, G_STRUCT_OFFSET (MonoContext, r12), 8);
-	amd64_mov_reg_membase (code, AMD64_R13, AMD64_RDI, G_STRUCT_OFFSET (MonoContext, r13), 8);
-	amd64_mov_reg_membase (code, AMD64_R14, AMD64_RDI, G_STRUCT_OFFSET (MonoContext, r14), 8);
-	amd64_mov_reg_membase (code, AMD64_R15, AMD64_RDI, G_STRUCT_OFFSET (MonoContext, r15), 8);
+	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, rbx), 8);
+	amd64_mov_reg_membase (code, AMD64_R12, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r12), 8);
+	amd64_mov_reg_membase (code, AMD64_R13, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r13), 8);
+	amd64_mov_reg_membase (code, AMD64_R14, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r14), 8);
+	amd64_mov_reg_membase (code, AMD64_R15, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoContext, r15), 8);
+#ifdef PLATFORM_WIN32
+	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rdi), 8);
+	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_ARG_REG1,  G_STRUCT_OFFSET (MonoContext, rsi), 8);
+#endif
 
 	/* call the handler */
-	amd64_call_reg (code, AMD64_RSI);
+	amd64_call_reg (code, AMD64_ARG_REG2);
 
 	if (! (pos & 8))
 		amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
@@ -246,17 +254,23 @@ mono_arch_get_call_filter (void)
 	amd64_leave (code);
 	amd64_ret (code);
 
-	g_assert ((code - start) < 64);
+	g_assert ((code - start) < 128);
 
 	inited = TRUE;
 
 	return start;
 }
-
+#ifdef PLATFORM_WIN32
+static void
+throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
+		 guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
+		 guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, guint64 rethrow)
+#else
 static void
 throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 		 guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
 		 guint64 r14, guint64 r15, guint64 rethrow)
+#endif
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
@@ -272,6 +286,10 @@ throw_exception (MonoObject *exc, guint64 rip, guint64 rsp,
 	ctx.r13 = r13;
 	ctx.r14 = r14;
 	ctx.r15 = r15;
+#ifdef PLATFORM_WIN32
+	ctx.rdi = rdi;
+	ctx.rsi = rsi;
+#endif
 
 	if (!rethrow && mono_debugger_throw_exception ((gpointer)(rip - 8), (gpointer)rsp, exc)) {
 		/*
@@ -321,11 +339,30 @@ get_throw_trampoline (gboolean rethrow)
 	code = start;
 
 	/* Exception */
-	amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RDI, 8);
+	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_ARG_REG1, 8);
 	/* IP */
-	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RSP, 0, 8);
+	amd64_mov_reg_membase (code, AMD64_ARG_REG2, AMD64_RSP, 0, 8);
 	/* SP */
-	amd64_lea_membase (code, AMD64_RDX, AMD64_RSP, 8);
+	amd64_lea_membase (code, AMD64_ARG_REG3, AMD64_RSP, 8);
+
+#ifdef PLATFORM_WIN32
+	/* Callee saved regs */
+	amd64_mov_reg_reg (code, AMD64_R9, AMD64_RBX, 8);
+	/* reverse order */
+	amd64_push_imm (code, rethrow);
+	amd64_push_reg (code, AMD64_RSI);
+	amd64_push_reg (code, AMD64_RDI);
+	amd64_push_reg (code, AMD64_R15);
+	amd64_push_reg (code, AMD64_R14);
+	amd64_push_reg (code, AMD64_R13);
+	amd64_push_reg (code, AMD64_R12);
+	amd64_push_reg (code, AMD64_RBP);
+	/* align stack */
+	amd64_push_imm (code, 0);
+	amd64_push_imm (code, 0);
+	amd64_push_imm (code, 0);
+	amd64_push_imm (code, 0);
+#else
 	/* Callee saved regs */
 	amd64_mov_reg_reg (code, AMD64_RCX, AMD64_RBX, 8);
 	amd64_mov_reg_reg (code, AMD64_R8, AMD64_RBP, 8);
@@ -337,6 +374,7 @@ get_throw_trampoline (gboolean rethrow)
 	amd64_push_reg (code, AMD64_R15);
 	amd64_push_reg (code, AMD64_R14);
 	amd64_push_reg (code, AMD64_R13);
+#endif
 
 	amd64_mov_reg_imm (code, AMD64_R11, throw_exception);
 	amd64_call_reg (code, AMD64_R11);
@@ -429,27 +467,27 @@ mono_arch_get_throw_corlib_exception (void)
 	start = code = mono_global_codeman_reserve (64);
 
 	/* Push throw_ip */
-	amd64_push_reg (code, AMD64_RSI);
+	amd64_push_reg (code, AMD64_ARG_REG2);
 
 	/* Call exception_from_token */
-	amd64_mov_reg_reg (code, AMD64_RSI, AMD64_RDI, 8);
-	amd64_mov_reg_imm (code, AMD64_RDI, mono_defaults.exception_class->image);
+	amd64_mov_reg_reg (code, AMD64_ARG_REG2, AMD64_ARG_REG1, 8);
+	amd64_mov_reg_imm (code, AMD64_ARG_REG1, mono_defaults.exception_class->image);
 	amd64_mov_reg_imm (code, AMD64_R11, mono_exception_from_token);
 	amd64_call_reg (code, AMD64_R11);
 
 	/* Compute throw_ip */
-	amd64_pop_reg (code, AMD64_RSI);
+	amd64_pop_reg (code, AMD64_ARG_REG2);
 	/* return addr */
-	amd64_pop_reg (code, AMD64_RDX);
-	amd64_alu_reg_reg (code, X86_SUB, AMD64_RDX, AMD64_RSI);
+	amd64_pop_reg (code, AMD64_ARG_REG3);
+	amd64_alu_reg_reg (code, X86_SUB, AMD64_ARG_REG3, AMD64_ARG_REG2);
 
 	/* Put the throw_ip at the top of the misaligned stack */
-	amd64_push_reg (code, AMD64_RDX);
+	amd64_push_reg (code, AMD64_ARG_REG3);
 
 	throw_ex = (guint64)mono_arch_get_throw_exception ();
 
 	/* Call throw_exception */
-	amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RAX, 8);
+	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_RAX, 8);
 	amd64_mov_reg_imm (code, AMD64_R11, throw_ex);
 	/* The original IP is on the stack */
 	amd64_jump_reg (code, AMD64_R11);

@@ -134,6 +134,10 @@ struct MonoLMF {
 	guint64     r13;
 	guint64     r14;
 	guint64     r15;
+#ifdef PLATFORM_WIN32
+	guint64     rdi;
+	guint64     rsi;
+#endif
 };
 
 typedef struct MonoCompileArch {
@@ -175,7 +179,7 @@ typedef struct {
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx, start_func) do { \
     guint64 stackptr; \
 	mono_arch_flush_register_windows (); \
-	stackptr = ((guint64)_GetAddressOfReturnAddress () - sizeof (void*));\
+	stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));\
 	MONO_CONTEXT_SET_IP ((ctx), (start_func)); \
 	MONO_CONTEXT_SET_BP ((ctx), stackptr); \
 	MONO_CONTEXT_SET_SP ((ctx), stackptr); \

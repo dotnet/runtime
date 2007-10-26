@@ -40,11 +40,12 @@ gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
-	int this_reg = AMD64_RDI;
+	int this_reg = AMD64_ARG_REG1;
+
 	MonoDomain *domain = mono_domain_get ();
 
 	if (!mono_method_signature (m)->ret->byref && MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
-		this_reg = AMD64_RSI;
+		this_reg = AMD64_ARG_REG2;
 
 	mono_domain_lock (domain);
 	start = code = mono_code_manager_reserve (domain->code_mp, 20);
@@ -251,6 +252,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, method_offset, 8);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), AMD64_R11, 8);
 	/* Save callee saved regs */
+#ifdef PLATFORM_WIN32
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), AMD64_RDI, 8);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), AMD64_RSI, 8);
+#endif
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, 8);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), AMD64_R12, 8);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, 8);
@@ -272,19 +277,19 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Save LMF end */
 
 	/* Arg1 is the pointer to the saved registers */
-	amd64_lea_membase (code, AMD64_RDI, AMD64_RBP, saved_regs_offset);
+	amd64_lea_membase (code, AMD64_ARG_REG1, AMD64_RBP, saved_regs_offset);
 
 	/* Arg2 is the address of the calling code */
 	if (has_caller)
-		amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RBP, 8, 8);
+		amd64_mov_reg_membase (code, AMD64_ARG_REG2, AMD64_RBP, 8, 8);
 	else
-		amd64_mov_reg_imm (code, AMD64_RSI, 0);
+		amd64_mov_reg_imm (code, AMD64_ARG_REG2, 0);
 
 	/* Arg3 is the method/vtable ptr */
-	amd64_mov_reg_membase (code, AMD64_RDX, AMD64_RBP, method_offset, 8);
+	amd64_mov_reg_membase (code, AMD64_ARG_REG3, AMD64_RBP, method_offset, 8);
 
 	/* Arg4 is the trampoline address */
-	amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RBP, tramp_offset, 8);
+	amd64_mov_reg_membase (code, AMD64_ARG_REG4, AMD64_RBP, tramp_offset, 8);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		tramp = (guint8*)mono_class_init_trampoline;
@@ -381,7 +386,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	/* FIXME: This is not thread safe */
 	guint8 *code = ji->code_start;
 
-	amd64_mov_reg_imm (code, AMD64_RDI, func_arg);
+	amd64_mov_reg_imm (code, AMD64_ARG_REG1, func_arg);
 	amd64_mov_reg_imm (code, AMD64_R11, func);
 
 	x86_push_imm (code, (guint64)func_arg);

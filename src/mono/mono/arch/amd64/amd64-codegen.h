@@ -16,6 +16,8 @@
 #ifndef AMD64_H
 #define AMD64_H
 
+#include <glib.h>
+
 typedef enum {
 	AMD64_RAX = 0,
 	AMD64_RCX = 1,
@@ -65,6 +67,28 @@ typedef enum
   AMD64_REX_W = 8  /* Opeartion is 64-bits instead of 32 (default) or 16 (with 0x66 prefix) */
 } AMD64_REX_Bits;
 
+#ifdef PLATFORM_WIN32
+#define AMD64_ARG_REG1 AMD64_RCX
+#define AMD64_ARG_REG2 AMD64_RDX
+#define AMD64_ARG_REG3 AMD64_R8
+#define AMD64_ARG_REG4 AMD64_R9
+#else
+#define AMD64_ARG_REG1 AMD64_RDI
+#define AMD64_ARG_REG2 AMD64_RSI
+#define AMD64_ARG_REG3 AMD64_RDX
+#define AMD64_ARG_REG4 AMD64_RCX
+#endif
+
+#ifdef PLATFORM_WIN32
+#define AMD64_CALLEE_REGS ((1<<AMD64_RAX) | (1<<AMD64_RCX) | (1<<AMD64_RDX) | (1<<AMD64_R8) | (1<<AMD64_R9) | (1<<AMD64_R10))
+#define AMD64_IS_CALLEE_REG(reg)  (AMD64_CALLEE_REGS & (1 << (reg)))
+
+#define AMD64_ARGUMENT_REGS ((1<<AMD64_RDX) | (1<<AMD64_RCX) | (1<<AMD64_R8) | (1<<AMD64_R9))
+#define AMD64_IS_ARGUMENT_REG(reg) (AMD64_ARGUMENT_REGS & (1 << (reg)))
+
+#define AMD64_CALLEE_SAVED_REGS ((1<<AMD64_RDI) | (1<<AMD64_RSI) | (1<<AMD64_RBX) | (1<<AMD64_R12) | (1<<AMD64_R13) | (1<<AMD64_R14) | (1<<AMD64_R15) | (1<<AMD64_RBP))
+#define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
+#else
 #define AMD64_CALLEE_REGS ((1<<AMD64_RAX) | (1<<AMD64_RCX) | (1<<AMD64_RDX) | (1<<AMD64_RSI) | (1<<AMD64_RDI) | (1<<AMD64_R8) | (1<<AMD64_R9) | (1<<AMD64_R10))
 #define AMD64_IS_CALLEE_REG(reg)  (AMD64_CALLEE_REGS & (1 << (reg)))
 
@@ -73,6 +97,7 @@ typedef enum
 
 #define AMD64_CALLEE_SAVED_REGS ((1<<AMD64_RBX) | (1<<AMD64_R12) | (1<<AMD64_R13) | (1<<AMD64_R14) | (1<<AMD64_R15) | (1<<AMD64_RBP))
 #define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
+#endif
 
 #define AMD64_REX(bits) ((unsigned char)(0x40 | (bits)))
 #define amd64_emit_rex(inst, width, reg_modrm, reg_index, reg_rm_base_opcode) do \
@@ -86,7 +111,7 @@ typedef enum
 	} while (0)
 
 typedef union {
-	long val;
+	gsize val;
 	unsigned char b [8];
 } amd64_imm_buf;
 
@@ -108,7 +133,8 @@ typedef union {
 
 #define x86_imm_emit64(inst,imm)     \
 	do {	\
-			amd64_imm_buf imb; imb.val = (long) (imm);	\
+			amd64_imm_buf imb; 	\
+			imb.val = (gsize) (imm);	\
 			*(inst)++ = imb.b [0];	\
 			*(inst)++ = imb.b [1];	\
 			*(inst)++ = imb.b [2];	\
@@ -276,14 +302,14 @@ typedef union {
 		amd64_emit_rex(inst, (size), 0, 0, (reg)); \
 		*(inst)++ = (unsigned char)0xb8 + ((reg) & 0x7);	\
 		if ((size) == 8) \
-			x86_imm_emit64 ((inst), (long)(imm));	\
+			x86_imm_emit64 ((inst), (gsize)(imm));	\
 		else \
-			x86_imm_emit32 ((inst), (int)(long)(imm));	\
+			x86_imm_emit32 ((inst), (int)(gsize)(imm));	\
 	} while (0)
 
 #define amd64_mov_reg_imm(inst,reg,imm)	\
 	do {	\
-		int _amd64_width_temp = ((long)(imm) == (long)(int)(long)(imm)); \
+		int _amd64_width_temp = ((gsize)(imm) == (gsize)(int)(gsize)(imm)); \
         amd64_mov_reg_imm_size ((inst), (reg), (imm), (_amd64_width_temp ? 4 : 8)); \
 	} while (0)
 
