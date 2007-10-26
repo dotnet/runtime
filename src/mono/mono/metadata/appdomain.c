@@ -44,7 +44,7 @@
 #include <direct.h>
 #endif
 
-#define MONO_CORLIB_VERSION 59
+#define MONO_CORLIB_VERSION 60
 
 typedef struct
 {

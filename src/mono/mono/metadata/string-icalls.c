@@ -97,8 +97,14 @@ ves_icall_System_String_InternalCopyTo (MonoString *me, gint32 sindex, MonoArray
 	memcpy(destptr, src + sindex, sizeof(gunichar2) * count);
 }
 
+/* System.StringSplitOptions */
+typedef enum {
+	STRINGSPLITOPTIONS_NONE = 0,
+	STRINGSPLITOPTIONS_REMOVE_EMPTY_ENTRIES = 1
+} StringSplitOptions;
+
 MonoArray * 
-ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gint32 count)
+ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gint32 count, gint32 options)
 {
 	MonoString * tmpstr;
 	MonoArray * retarr;
@@ -106,63 +112,132 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	gint32 arrsize, srcsize, splitsize;
 	gint32 i, lastpos, arrpos;
 	gint32 tmpstrsize;
+	gint32 remempty;
+	gint32 flag;
 	gunichar2 *tmpstrptr;
 
-	gunichar2 cmpchar;
+	remempty = options & STRINGSPLITOPTIONS_REMOVE_EMPTY_ENTRIES;
+	src = mono_string_chars (me);
+	srcsize = mono_string_length (me);
+	arrsize = mono_array_length (separator);
 
-	MONO_ARCH_SAVE_REGS;
+	splitsize = 1;
+	/* Count the number of elements we will return. Note that this operation
+	 * guarantees that we will return exactly splitsize elements, and we will
+	 * have enough data to fill each. This allows us to skip some checks later on.
+	 */
+	if (remempty == 0) {
+		for (i = 0; i != srcsize && splitsize < count; i++) {
+			if (string_icall_is_in_array (separator, arrsize, src [i]))
+				splitsize++;
+		}
+	} else if (count > 1) {
+		/* Require pattern "Nondelim + Delim + Nondelim" to increment counter.
+		 * Lastpos != 0 means first nondelim found.
+		 * Flag = 0 means last char was delim.
+		 * Efficient, though perhaps confusing.
+		 */
+		lastpos = 0;
+		flag = 0;
+		for (i = 0; i != srcsize && splitsize < count; i++) {
+			if (string_icall_is_in_array (separator, arrsize, src [i])) {
+				flag = 0;
+			} else if (flag == 0) {
+				if (lastpos == 1)
+					splitsize++;
+				flag = 1;
+				lastpos = 1;
+			}
+		}
 
-	src = mono_string_chars(me);
-	srcsize = mono_string_length(me);
-	arrsize = mono_array_length(separator);
+		/* Nothing but separators */
+		if (lastpos == 0) {
+			retarr = mono_array_new (mono_domain_get (), mono_get_string_class (), 0);
+			return retarr;
+		}
+	}
 
-	cmpchar = mono_array_get(separator, gunichar2, 0);
+	/* if no split chars found return the string */
+	if (splitsize == 1) {
+		if (remempty == 0 || count == 1) {
+			/* Copy the whole string */
+			retarr = mono_array_new (mono_domain_get (), mono_get_string_class (), 1);
+			mono_array_setref (retarr, 0, me);
+		} else {
+			/* otherwise we have to filter out leading & trailing delims */
 
-	splitsize = 0;
-	for (i = 0; i != srcsize && splitsize < count; i++) {
-		if (string_icall_is_in_array(separator, arrsize, src[i]))
-			splitsize++;
+			/* find first non-delim char */
+			for (; srcsize != 0; srcsize--, src++) {
+				if (!string_icall_is_in_array (separator, arrsize, src [0]))
+					break;
+			}
+			/* find last non-delim char */
+			for (; srcsize != 0; srcsize--) {
+				if (!string_icall_is_in_array (separator, arrsize, src [srcsize - 1]))
+					break;
+			}
+			tmpstr = mono_string_new_size (mono_domain_get (), srcsize);
+			tmpstrptr = mono_string_chars (tmpstr);
+
+			memcpy (tmpstrptr, src, srcsize * sizeof (gunichar2));
+			retarr = mono_array_new (mono_domain_get (), mono_get_string_class (), 1);
+			mono_array_setref (retarr, 0, tmpstr);
+		}
+		return retarr;
 	}
 
 	lastpos = 0;
 	arrpos = 0;
+	
+	retarr = mono_array_new (mono_domain_get (), mono_get_string_class (), splitsize);
 
-	/* if no split chars found return the string */
-	if (splitsize == 0) {
-		retarr = mono_array_new(mono_domain_get(), mono_get_string_class (), 1);
-		mono_array_setref (retarr, 0, me);
-
-		return retarr;
-	}
-
-	if (splitsize != count)
-		splitsize++;
-
-	retarr = mono_array_new(mono_domain_get(), mono_get_string_class (), splitsize);
-	for (i = 0; i != srcsize && arrpos != count; i++) {
-		if (string_icall_is_in_array(separator, arrsize, src[i])) {
-			if (arrpos == count - 1)
-				tmpstrsize = srcsize - lastpos;
-			else
+	for (i = 0; i != srcsize && arrpos != splitsize; i++) {
+		if (string_icall_is_in_array (separator, arrsize, src [i])) {
+			
+			if (lastpos != i || remempty == 0) {
 				tmpstrsize = i - lastpos;
+				tmpstr = mono_string_new_size (mono_domain_get (), tmpstrsize);
+				tmpstrptr = mono_string_chars (tmpstr);
 
-			tmpstr = mono_string_new_size( mono_domain_get (), tmpstrsize);
-			tmpstrptr = mono_string_chars(tmpstr);
+				memcpy (tmpstrptr, src + lastpos, tmpstrsize * sizeof (gunichar2));
+				mono_array_setref (retarr, arrpos, tmpstr);
+				arrpos++;
 
-			memcpy(tmpstrptr, src + lastpos, tmpstrsize * sizeof(gunichar2));
-			mono_array_setref (retarr, arrpos, tmpstr);
-			arrpos++;
+				if (arrpos == splitsize - 1) {
+					/* Shortcut the last array element */
+
+					lastpos = i + 1;
+					if (remempty != 0) {
+						/* Search for non-delim starting char (guaranteed to find one) Note that loop
+						 * condition is only there for safety. It will never actually terminate the loop. */
+						for (; lastpos != srcsize ; lastpos++) {
+							if (!string_icall_is_in_array (separator, arrsize, src [lastpos])) 
+								break;
+						}
+						if (count > splitsize) {
+							/* Since we have fewer results than our limit, we must remove
+							 * trailing delimiters as well. 
+							 */
+							for (; srcsize != lastpos + 1 ; srcsize--) {
+								if (!string_icall_is_in_array (separator, arrsize, src [srcsize - 1])) 
+									break;
+							}
+						}
+					}
+
+					tmpstrsize = srcsize - lastpos;
+					tmpstr = mono_string_new_size (mono_domain_get (), tmpstrsize);
+					tmpstrptr = mono_string_chars (tmpstr);
+
+					memcpy (tmpstrptr, src + lastpos, tmpstrsize * sizeof (gunichar2));
+					mono_array_setref (retarr, arrpos, tmpstr);
+
+					/* Loop will ALWAYS end here. Test criteria in the FOR loop is technically unnecessary. */
+					break;
+				}
+			}
 			lastpos = i + 1;
 		}
-	}
-
-	if (arrpos < count) {
-		tmpstrsize = srcsize - lastpos;
-		tmpstr = mono_string_new_size( mono_domain_get (), tmpstrsize);
-		tmpstrptr = mono_string_chars(tmpstr);
-
-		memcpy(tmpstrptr, src + lastpos, tmpstrsize * sizeof(gunichar2));
-		mono_array_setref (retarr, arrpos, tmpstr);
 	}
 
 	return retarr;
