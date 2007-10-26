@@ -3649,12 +3649,18 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
 
 
 #define ENABLE_WRONG_METHOD_CHECK 0
-#define BASE_SIZE (8)
+#define BASE_SIZE (4 * 4)
+#define BSEARCH_ENTRY_SIZE (4 * 4)
+#define CMP_SIZE (3 * 4)
+#define BRANCH_SIZE (1 * 4)
+#define CALL_SIZE (2 * 4)
+#define WMC_SIZE (5 * 4)
+#define DISTANCE(A, B) (((gint32)(B)) - ((gint32)(A)))
 
 static arminstr_t *
 arm_emit_value_and_patch_ldr (arminstr_t *code, arminstr_t *target, guint32 value)
 {
-	guint32 delta = ((guint32)code) - ((guint32)target);
+	guint32 delta = DISTANCE (target, code);
 	delta -= 8;
 	g_assert (delta >= 0 && delta <= 0xFFF);
 	*target = *target | delta;
@@ -3666,24 +3672,26 @@ gpointer
 mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
 {
 	int size, i, extra_space = 0;
-	arminstr_t *code, *start;
+	arminstr_t *code, *start, *vtable_target = NULL;
 	size = BASE_SIZE;
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
+			g_assert (arm_is_imm12 (DISTANCE (vtable, &vtable->vtable[item->vtable_slot])));
+
 			if (item->check_target_idx) {
 				if (!item->compare_done)
-					item->chunk_size += 3 * 4;
-				item->chunk_size += 6 * 4;
+					item->chunk_size += CMP_SIZE;
+				item->chunk_size += BRANCH_SIZE;
 			} else {
-				item->chunk_size += 5 * 4;
 #if ENABLE_WRONG_METHOD_CHECK
-				item->chunk_size += 5 * 4;
+				item->chunk_size += WMC_SIZE;
 #endif
 			}
+			item->chunk_size += CALL_SIZE;
 		} else {
-			item->chunk_size += 4 * 4;
+			item->chunk_size += BSEARCH_ENTRY_SIZE;
 			imt_entries [item->check_target_idx]->compare_done = TRUE;
 		}
 		size += item->chunk_size;
@@ -3692,74 +3700,73 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	start = code = mono_code_manager_reserve (domain->code_mp, size);
 
 #if DEBUG_IMT
-	printf ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size);
+	printf ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable);
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
-		printf ("method %d (%p) %s vtable addr %p content %p is_equals %d\n", i, item->method, item->method->name, &(vtable->vtable [item->vtable_slot]), vtable->vtable [item->vtable_slot], item->is_equals);
+		printf ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->method, item->method->name, &vtable->vtable [item->vtable_slot], item->is_equals, item->chunk_size);
 	}
 #endif
 
-	ARM_PUSH3 (code, ARMREG_R0, ARMREG_IP, ARMREG_LR);
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_LR, -4);
+	ARM_PUSH2 (code, ARMREG_R0, ARMREG_R1);
+	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, -4);
+	vtable_target = code;
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		arminstr_t *imt_method = NULL;
-		arminstr_t *vtable_target = NULL;		
 		item->code_target = (guint8*)code;
 
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
 					imt_method = code;
-					ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-					ARM_CMP_REG_REG (code, ARMREG_IP, ARMREG_R0);
+					ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
+					ARM_CMP_REG_REG (code, ARMREG_R0, ARMREG_R1);
 				}
 				item->jmp_code = (guint8*)code;
 				ARM_B_COND (code, ARMCOND_NE, 0);
 
-				vtable_target = code;
-				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 0);
-				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, 8);
-				ARM_POP3 (code, ARMREG_R0, ARMREG_IP, ARMREG_PC);
+				ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
+				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, DISTANCE (vtable, &vtable->vtable[item->vtable_slot]));
 			} else {
 				/*Enable the commented code to assert on wrong method*/
 #if ENABLE_WRONG_METHOD_CHECK
 				imt_method = code;
-				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-				ARM_CMP_REG_REG (code, ARMREG_IP, ARMREG_R0);
-				ARM_B_COND (code, ARMCOND_NE, 3);
+				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
+				ARM_CMP_REG_REG (code, ARMREG_R0, ARMREG_R1);
+				ARM_B_COND (code, ARMCOND_NE, 1);
 #endif
-				vtable_target = code;
-				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-				ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, 0);
-				ARM_STR_IMM (code, ARMREG_R0, ARMREG_SP, 8);
-				ARM_POP3 (code, ARMREG_R0, ARMREG_IP, ARMREG_PC);
+				ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
+				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, DISTANCE (vtable, &vtable->vtable[item->vtable_slot]));
 
 #if ENABLE_WRONG_METHOD_CHECK
 				ARM_DBRK (code);
 #endif
 			}
+
+			if (imt_method)
+				code = arm_emit_value_and_patch_ldr (code, imt_method, (guint32)item->method);
+
+			/*must emit after unconditional branch*/
+			if (vtable_target) {
+				code = arm_emit_value_and_patch_ldr (code, vtable_target, (guint32)vtable);
+				item->chunk_size += 4;
+				vtable_target = NULL;
+			}
+
+			/*We reserve the space for bsearch IMT values after the first entry with an absolute jump*/
+			if (extra_space) {
+				code += extra_space;
+				extra_space = 0;
+			}
 		} else {
-			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-			ARM_CMP_REG_REG (code, ARMREG_IP, ARMREG_R0);
+			ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
+			ARM_CMP_REG_REG (code, ARMREG_R0, ARMREG_R1);
 
 			item->jmp_code = (guint8*)code;
 			ARM_B_COND (code, ARMCOND_GE, 0);
 			++extra_space;
-		}
-
-		if (imt_method)
-			code = arm_emit_value_and_patch_ldr (code, imt_method, (guint32)item->method);
-
-		if (vtable_target)
-			code = arm_emit_value_and_patch_ldr (code, vtable_target, (guint32)&(vtable->vtable [item->vtable_slot]));
-
-		/*We reserve the space for bsearch IMT values after the first entry with an absolute jump*/
-		if (item->is_equals && extra_space) {
-			code += extra_space;
-			extra_space = 0;
 		}
 	}
 
@@ -3789,7 +3796,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	mono_arch_flush_icache ((guint8*)start, size);
 	mono_stats.imt_thunks_size += code - start;
 
-	g_assert (code - start <= size);
+	g_assert (DISTANCE (start, code) <= size);
 	return start;
 }
 
