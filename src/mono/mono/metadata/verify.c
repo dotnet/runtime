@@ -1969,9 +1969,7 @@ handle_enum:
 		return candidate->type == MONO_TYPE_STRING;
 
 	case MONO_TYPE_CLASS:
-		if (candidate->type != MONO_TYPE_CLASS)
-			return FALSE;
-		return mono_class_is_assignable_from (target->data.klass, candidate->data.klass);
+		return mono_class_is_assignable_from (target->data.klass, mono_class_from_mono_type (candidate));
 
 	case MONO_TYPE_OBJECT:
 		return MONO_TYPE_IS_REFERENCE (candidate);
