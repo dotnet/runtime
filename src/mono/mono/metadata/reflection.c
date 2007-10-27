@@ -8703,10 +8703,6 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
 
-	if (mb->mhandle)
-		/* Can happen if this was called from inflate_method () earlier */
-		return mb->mhandle;
-
 	mono_loader_lock ();
 	sig = ctor_builder_to_signature (klass->image->mempool, mb);
 	mono_loader_unlock ();
@@ -8729,10 +8725,6 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 {
 	ReflectionMethodBuilder rmb;
 	MonoMethodSignature *sig;
-
-	if (mb->mhandle)
-		/* Can happen if this was called from inflate_method () earlier */
-		return mb->mhandle;
 
 	mono_loader_lock ();
 	sig = method_builder_to_signature (klass->image->mempool, mb);
