@@ -145,28 +145,28 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 {
 #if HAVE_BOEHM_GC
 	guint offset = 0;
+	MonoDomain *domain = obj->vtable->domain;
 
 #ifndef GC_DEBUG
 	/* This assertion is not valid when GC_DEBUG is defined */
 	g_assert (GC_base (obj) == (char*)obj - offset);
 #endif
 
-	if (mono_domain_is_unloading (obj->vtable->domain) && (callback != NULL))
+	if (mono_domain_is_unloading (domain) && (callback != NULL))
 		/*
 		 * Can't register finalizers in a dying appdomain, since they
 		 * could be invoked after the appdomain has been unloaded.
 		 */
 		return;
 
-	mono_domain_lock (obj->vtable->domain);
+	mono_domain_lock (domain);
 
 	if (callback)
-		g_hash_table_insert (obj->vtable->domain->finalizable_objects_hash, obj,
-							 obj);
+		g_hash_table_insert (domain->finalizable_objects_hash, obj, obj);
 	else
-		g_hash_table_remove (obj->vtable->domain->finalizable_objects_hash, obj);
+		g_hash_table_remove (domain->finalizable_objects_hash, obj);
 
-	mono_domain_unlock (obj->vtable->domain);
+	mono_domain_unlock (domain);
 
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
 #elif defined(HAVE_SGEN_GC)
@@ -226,7 +226,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	if (done_event == NULL) {
-		return(FALSE);
+		return FALSE;
 	}
 
 	req = g_new0 (DomainFinalizationReq, 1);
@@ -314,8 +314,6 @@ ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
 void
 ves_icall_System_GC_WaitForPendingFinalizers (void)
 {
-	MONO_ARCH_SAVE_REGS;
-	
 #ifndef HAVE_NULL_GC
 	if (!mono_gc_pending_finalizers ())
 		return;
@@ -329,9 +327,9 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	/* g_print ("Waiting for pending finalizers....\n"); */
 	WaitForSingleObjectEx (pending_done_event, INFINITE, TRUE);
 	/* g_print ("Done pending....\n"); */
-#else
 #endif
 }
+
 #define mono_allocator_lock() EnterCriticalSection (&allocator_section)
 #define mono_allocator_unlock() LeaveCriticalSection (&allocator_section)
 static CRITICAL_SECTION allocator_section;
@@ -799,8 +797,7 @@ finalize_domain_objects (DomainFinalizationReq *req)
 		 * remove entries from the hash table, so we make a copy.
 		 */
 		objs = g_ptr_array_new ();
-		g_hash_table_foreach (domain->finalizable_objects_hash, 
-							  collect_objects, objs);
+		g_hash_table_foreach (domain->finalizable_objects_hash, collect_objects, objs);
 		/* printf ("FINALIZING %d OBJECTS.\n", objs->len); */
 
 		for (i = 0; i < objs->len; ++i) {
@@ -833,13 +830,14 @@ finalize_domain_objects (DomainFinalizationReq *req)
 	g_free (req);
 }
 
-static guint32 finalizer_thread (gpointer unused)
+static guint32
+finalizer_thread (gpointer unused)
 {
 	gc_thread = mono_thread_current ();
 
 	SetEvent (thread_started_event);
 
-	while(!finished) {
+	while (!finished) {
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
@@ -854,14 +852,10 @@ static guint32 finalizer_thread (gpointer unused)
 				mono_finalizer_unlock ();
 
 				finalize_domain_objects (req);
-			}
-			else
+			} else {
 				mono_finalizer_unlock ();
+			}
 		}				
-
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": invoking finalizers");
-#endif
 
 		/* If finished == TRUE, mono_gc_cleanup has been called (from mono_runtime_cleanup),
 		 * before the domain is unloaded.
@@ -872,15 +866,8 @@ static guint32 finalizer_thread (gpointer unused)
 	}
 
 	SetEvent (shutdown_event);
-	return(0);
+	return 0;
 }
-
-/* 
- * Enable or disable the separate finalizer thread.
- * It's currently disabled because it still requires some
- * work in the rest of the runtime.
- */
-#define ENABLE_FINALIZER_THREAD
 
 void
 mono_gc_init (void)
@@ -894,8 +881,6 @@ mono_gc_init (void)
 	MONO_GC_REGISTER_ROOT (gc_handles [HANDLE_PINNED].entries);
 
 	mono_gc_base_init ();
-
-#ifdef ENABLE_FINALIZER_THREAD
 
 	if (g_getenv ("GC_DONT_GC")) {
 		gc_disabled = TRUE;
@@ -916,16 +901,15 @@ mono_gc_init (void)
 	 * by mono_thread_attach ()
 	 */
 	WaitForSingleObjectEx (thread_started_event, INFINITE, FALSE);
-#endif
 }
 
-void mono_gc_cleanup (void)
+void
+mono_gc_cleanup (void)
 {
 #ifdef DEBUG
 	g_message (G_GNUC_PRETTY_FUNCTION ": cleaning up finalizer");
 #endif
 
-#ifdef ENABLE_FINALIZER_THREAD
 	if (!gc_disabled) {
 		ResetEvent (shutdown_event);
 		finished = TRUE;
@@ -943,8 +927,6 @@ void mono_gc_cleanup (void)
 #endif
 	}
 
-#endif
-
 	DeleteCriticalSection (&handle_section);
 	DeleteCriticalSection (&allocator_section);
 	DeleteCriticalSection (&finalizer_mutex);
@@ -952,7 +934,12 @@ void mono_gc_cleanup (void)
 
 #else
 
-/* no Boehm GC support. */
+/* Null GC dummy functions */
+void
+mono_gc_finalize_notify (void)
+{
+}
+
 void mono_gc_init (void)
 {
 	InitializeCriticalSection (&handle_section);
