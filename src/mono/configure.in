@@ -413,7 +413,7 @@ else
   olivedir=../olive
 fi
 
-if test -d $olivedir; then
+if test -d $srcdir/$olivedir; then
 olive_topdir='$(top_srcdir)/'$olivedir
 fi
 
