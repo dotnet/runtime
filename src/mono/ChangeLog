@@ -1,3 +1,8 @@
+2007-10-30  Raja R Harinath  <harinath@gmail.com>
+
+	* runtime/Makefile.am ($(tmpinst)/bin/gmcs): Update rule to point
+	to location of 'gmcs.exe'.
+
 2007-10-29  Raja R Harinath  <rharinath@novell.com>
 
 	* configure.in (olive_topdir): Look for $olivedir in the source tree.
