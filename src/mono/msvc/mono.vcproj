@@ -20,8 +20,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -67,8 +67,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;bin/libmono/$(PlatformName)/$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).exe.pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -99,8 +100,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -147,7 +148,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;bin/libmono/$(PlatformName)/$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -179,8 +180,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -223,7 +224,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;bin/libmono/$(PlatformName)/$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -257,8 +258,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -302,7 +303,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;bin/libmono/$(PlatformName)/$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

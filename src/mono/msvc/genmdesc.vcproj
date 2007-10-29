@@ -19,8 +19,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -53,7 +53,6 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
-				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
@@ -74,7 +73,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
-				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
 				GenerateDebugInformation="true"
@@ -109,8 +107,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -144,7 +142,6 @@
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
-				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
@@ -165,7 +162,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
-				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
 				GenerateDebugInformation="true"
@@ -200,8 +196,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -254,7 +250,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
-				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
 				ProgramDatabaseFile=".\Release/genmdesc.pdb"
@@ -289,8 +284,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -344,7 +339,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
-				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
 				ProgramDatabaseFile=".\Release/genmdesc.pdb"

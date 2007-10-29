@@ -20,8 +20,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\bin\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -103,8 +103,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\bin\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -187,8 +187,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\bin\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>
@@ -269,8 +269,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\bin\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="1"
 			CharacterSet="2"
 			>

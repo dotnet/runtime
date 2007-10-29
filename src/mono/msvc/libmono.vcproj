@@ -19,8 +19,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -72,8 +72,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
+				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -102,8 +103,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -156,8 +157,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
+				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -187,8 +189,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -243,9 +245,10 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
+				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -274,8 +277,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory="./bin/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
-			IntermediateDirectory="./obj/$(ProjectName)/$(PlatformName)/$(ConfigurationName)"
+			OutputDirectory=".\bin\$(PlatformName)"
+			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -331,9 +334,10 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib;&quot;.\lib\libgc\$(PlatformName)\$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
+				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -3344,6 +3348,10 @@
 						BrowseInformation="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\mono\mini\generic-sharing.c"
+				>
 			</File>
 			<File
 				RelativePath="..\mono\mini\graph.c"
