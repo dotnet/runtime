@@ -5519,7 +5519,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		mono_domain_unlock (domain);
 		return res;
 	}
-	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic) {
+	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !(type->data.generic_class->container_class && type->data.generic_class->container_class->wastypebuilder)) {
 		res = (MonoReflectionType *)mono_generic_class_get_object (domain, type);
 		mono_g_hash_table_insert (domain->type_hash, type, res);
 		mono_domain_unlock (domain);
@@ -8715,7 +8715,8 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb)
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
 
-	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->save) {
+	/* If we are in a generic class, we might be called multiple times from inflate_method */
+	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->save && !klass->generic_container) {
 		/* ilgen is no longer needed */
 		mb->ilgen = NULL;
 	}
@@ -8738,7 +8739,8 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilder* mb)
 	mb->mhandle = reflection_methodbuilder_to_mono_method (klass, &rmb, sig);
 	mono_save_custom_attrs (klass->image, mb->mhandle, mb->cattrs);
 
-	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->save) {
+	/* If we are in a generic class, we might be called multiple times from inflate_method */
+	if (!((MonoDynamicImage*)(MonoDynamicImage*)klass->image)->save && !klass->generic_container) {
 		/* ilgen is no longer needed */
 		mb->ilgen = NULL;
 	}

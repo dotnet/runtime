@@ -1329,7 +1329,7 @@ mono_class_setup_properties (MonoClass *class)
 		return;
 	}
 
-	if (class->generic_class && !class->generic_class->is_dynamic) {
+	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
 
 		class->property = gklass->property;
@@ -3586,6 +3586,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->flags = gklass->flags;
 	klass->type_token = gklass->type_token;
 	klass->field.count = gklass->field.count;
+	klass->property.count = gklass->property.count;
 
 	klass->generic_class = gclass;
 
@@ -3599,23 +3600,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 
 	if (mono_class_is_nullable (klass))
 		klass->cast_class = klass->element_class = mono_class_get_nullable_param (klass);
-
-	if (gclass->is_dynamic) {
-		klass->inited = 1;
-
-		mono_class_setup_supertypes (klass);
-
-		if (klass->enumtype) {
-			/*
-			 * For enums, gklass->fields might not been set, but instance_size etc. is 
-			 * already set in mono_reflection_create_internal_class (). For non-enums,
-			 * these will be computed normally in mono_class_layout_fields ().
-			 */
-			klass->instance_size = gklass->instance_size;
-			klass->sizes.class_size = gklass->sizes.class_size;
-			klass->size_inited = 1;
-		}
-	}
 
 	klass->interface_count = gklass->interface_count;
 	klass->interfaces = g_new0 (MonoClass *, klass->interface_count);
@@ -3646,6 +3630,23 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	if (klass->enumtype) {
 		klass->enum_basetype = gklass->enum_basetype;
 		klass->cast_class = gklass->cast_class;
+	}
+
+	if (gclass->is_dynamic) {
+		klass->inited = 1;
+
+		mono_class_setup_supertypes (klass);
+
+		if (klass->enumtype) {
+			/*
+			 * For enums, gklass->fields might not been set, but instance_size etc. is 
+			 * already set in mono_reflection_create_internal_class (). For non-enums,
+			 * these will be computed normally in mono_class_layout_fields ().
+			 */
+			klass->instance_size = gklass->instance_size;
+			klass->sizes.class_size = gklass->sizes.class_size;
+			klass->size_inited = 1;
+		}
 	}
 
 	if (MONO_CLASS_IS_INTERFACE (klass))
