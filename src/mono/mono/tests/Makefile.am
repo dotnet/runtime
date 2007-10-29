@@ -237,7 +237,8 @@ TEST_CS_SRC=			\
 	cominterop.cs		\
 	exists.cs		\
 	handleref.cs	\
-	transparentproxy.cs
+	transparentproxy.cs \
+	imt_big_iface_test.cs
 
 if X86
 # bug #71274
@@ -601,6 +602,9 @@ bug-81466.exe: bug-81466.il bug-81466-lib.dll
 	$(ILASM) /exe /output:bug-81466.exe $(srcdir)/bug-81466.il
 test-bug-81466: bug-81466.exe bug-81466-lib.dll
 	$(RUNTIME) bug-81466.exe
+
+imt_big_iface_test.cs: make_imt_test.sh
+	./make_imt_test.sh > imt_big_iface_test.cs
 
 EXTRA_DIST += coreclr-security.cs
 
