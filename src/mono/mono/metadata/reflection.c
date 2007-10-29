@@ -3612,7 +3612,8 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
 				g_assert (f->generic_info);
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder") ||
+					!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
 				continue;
 			} else {
 				g_assert_not_reached ();
@@ -4184,16 +4185,18 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 	klass = obj->vtable->klass;
 	if (strcmp (klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
 
-		if (((MonoReflectionTypeBuilder*)mb->type)->module->dynamic_image == assembly)
+		if (tb->module->dynamic_image == assembly && !tb->generic_params)
 			token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 		else
 			token = mono_image_get_methodbuilder_token (assembly, mb);
 		/*g_print ("got token 0x%08x for %s\n", token, mono_string_to_utf8 (mb->name));*/
 	} else if (strcmp (klass->name, "ConstructorBuilder") == 0) {
 		MonoReflectionCtorBuilder *mb = (MonoReflectionCtorBuilder *)obj;
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
 
-		if (((MonoReflectionTypeBuilder*)mb->type)->module->dynamic_image == assembly)
+		if (tb->module->dynamic_image == assembly && !tb->generic_params)
 			token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 		else
 			token = mono_image_get_ctorbuilder_token (assembly, mb);
