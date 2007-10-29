@@ -5369,7 +5369,11 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	delegate = mono_object_new (mono_object_domain (type), delegate_class);
 
-	func = mono_create_ftnptr (mono_domain_get (), mono_runtime_create_jump_trampoline (mono_domain_get (), info->method, TRUE));
+	if (info->method->dynamic)
+		/* Creating a trampoline would leak memory */
+		func = mono_compile_method (info->method);
+	else
+		func = mono_create_ftnptr (mono_domain_get (), mono_runtime_create_jump_trampoline (mono_domain_get (), info->method, TRUE));
 
 	mono_delegate_ctor (delegate, target, func);
 
