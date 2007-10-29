@@ -1,5 +1,13 @@
 2007-08-29  Jonathan Chambers <joncham@gmail.com>
 
+	* mono.sln, libmono.vcproj, mono.vcproj, genmdesc.vcproj, monoburg.vcproj: 
+	Setup eglib configurations (Debug_eglib, Release_eglib). They
+	do not build at this point.
+	
+	Contributed under MIT/X11 license.
+
+2007-08-29  Jonathan Chambers <joncham@gmail.com>
+
 	* monodiet.vcproj, libgc.vcproj, eglib.vcproj, libmono.vcproj, mono.vcproj, 
 	genmdesc.vcproj, monoburg.vcproj, pedump.vcproj: 
 	Make output directories a bit more usable.
