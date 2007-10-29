@@ -2130,9 +2130,9 @@ mono_class_setup_vtable (MonoClass *class)
 {
 	MonoMethod **overrides;
 	MonoGenericContext *context;
-	MonoClass *overrides_class;
 	guint32 type_token;
 	int onum = 0;
+	int i;
 	gboolean ok = TRUE;
 
 	if (class->vtable)
@@ -2155,16 +2155,23 @@ mono_class_setup_vtable (MonoClass *class)
 	if (class->generic_class) {
 		context = mono_class_get_context (class);
 		type_token = class->generic_class->container_class->type_token;
-		overrides_class = class->generic_class->container_class;
 	} else {
 		context = (MonoGenericContext *) class->generic_container;		
 		type_token = class->type_token;
-		overrides_class = class;
 	}
 
-	if (class->image->dynamic)
-		mono_reflection_get_dynamic_overrides (overrides_class, &overrides, &onum);
-	else {
+	if (class->image->dynamic) {
+		if (class->generic_class) {
+			mono_reflection_get_dynamic_overrides (class->generic_class->container_class, &overrides, &onum);
+			for (i = 0; i < onum; ++i)
+				overrides [(i * 2) + 1] = 
+					mono_class_inflate_generic_method_full (overrides [(i * 2) + 1],
+															class,
+															mono_class_get_context (class));				
+		} else {
+			mono_reflection_get_dynamic_overrides (class, &overrides, &onum);
+		}
+	} else {
 		/* The following call fails if there are missing methods in the type */
 		ok = mono_class_get_overrides_full (class->image, type_token, &overrides, &onum, context);
 	}
