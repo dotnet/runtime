@@ -604,8 +604,9 @@ bug-81466.exe: bug-81466.il bug-81466-lib.dll
 test-bug-81466: bug-81466.exe bug-81466-lib.dll
 	$(RUNTIME) bug-81466.exe
 
-imt_big_iface_test.cs: make_imt_test.sh
-	./make_imt_test.sh > imt_big_iface_test.cs
+EXTRA_DIST += make_imt_test.sh
+imt_big_iface_test.cs: $(srcdir)/make_imt_test.sh
+	$(srcdir)/make_imt_test.sh > imt_big_iface_test.cs
 
 EXTRA_DIST += coreclr-security.cs
 
