@@ -639,7 +639,8 @@ ICALL_TYPE(REALP, "System.Runtime.Remoting.Proxies.RealProxy", REALP_1)
 ICALL(REALP_1, "InternalGetProxyType", ves_icall_Remoting_RealProxy_InternalGetProxyType)
 ICALL(REALP_2, "InternalGetTransparentProxy", ves_icall_Remoting_RealProxy_GetTransparentProxy)
 
-ICALL_TYPE(REMSER, "System.Runtime.Remoting.RemotingServices", REMSER_1)
+ICALL_TYPE(REMSER, "System.Runtime.Remoting.RemotingServices", REMSER_0)
+ICALL(REMSER_0, "GetVirtualMethod", ves_icall_Remoting_RemotingServices_GetVirtualMethod)
 ICALL(REMSER_1, "InternalExecute", ves_icall_InternalExecute)
 ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy)
 
