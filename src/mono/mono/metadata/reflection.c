@@ -7319,6 +7319,9 @@ mono_custom_attrs_from_class (MonoClass *klass)
 {
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
+
+	if (klass->generic_class)
+		klass = klass->generic_class->container_class;
 	
 	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (klass)))
 		return cinfo;
