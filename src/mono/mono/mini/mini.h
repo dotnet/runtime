@@ -18,6 +18,8 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-compiler.h>
 
+#define MONO_BREAKPOINT_ARRAY_SIZE 64
+
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "declsec.h"
@@ -1099,6 +1101,10 @@ void      mono_debug_add_aot_method             (MonoDomain *domain,
 void      mono_debug_add_icall_wrapper          (MonoMethod *method, MonoJitICallInfo* info) MONO_INTERNAL;
 void      mono_debug_print_vars                 (gpointer ip, gboolean only_arguments);
 void      mono_debugger_run_finally             (MonoContext *start_ctx);
+
+extern gssize mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
+
+gboolean mono_breakpoint_clean_code (guint8 *code, guint8 *buf, int size);
 
 /* Mono Debugger support */
 void      mono_debugger_init                    (void);

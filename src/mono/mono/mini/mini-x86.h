@@ -269,5 +269,12 @@ typedef struct {
 
 #define MONO_ARCH_AOT_SUPPORTED 1
 
+typedef struct {
+	guint8 *address;
+	guint8 saved_byte;
+} MonoBreakpointInfo;
+
+extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
+
 #endif /* __MONO_MINI_X86_H__ */  
 

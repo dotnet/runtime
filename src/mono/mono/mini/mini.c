@@ -184,6 +184,14 @@ static int valgrind_register = 0;
  */
 guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 
+/*
+ * Table written to by the debugger with a 1-based index into the
+ * mono_breakpoint_info table, which contains changes made to
+ * the JIT instructions by the debugger.
+ */
+gssize
+mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
+
 gboolean
 mono_running_on_valgrind (void)
 {

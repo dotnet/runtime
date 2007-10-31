@@ -62,6 +62,9 @@ static CRITICAL_SECTION mini_arch_mutex;
 
 #define NOT_IMPLEMENTED g_assert_not_reached ()
 
+MonoBreakpointInfo
+mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
+
 const char*
 mono_arch_regname (int reg) {
 	switch (reg) {
@@ -4445,11 +4448,37 @@ mono_arch_get_patch_offset (guint8 *code)
 	}
 }
 
+gboolean
+mono_breakpoint_clean_code (guint8 *code, guint8 *buf, int size)
+{
+	int i;
+	gboolean can_write = TRUE;
+	memcpy (buf, code, size);
+	for (i = 0; i < MONO_BREAKPOINT_ARRAY_SIZE; ++i) {
+		int idx = mono_breakpoint_info_index [i];
+		guint8 *ptr;
+		if (idx < 1)
+			continue;
+		ptr = mono_breakpoint_info [idx].address;
+		if (ptr >= code && ptr < code + size) {
+			guint8 saved_byte = mono_breakpoint_info [idx].saved_byte;
+			can_write = FALSE;
+			/*g_print ("patching %p with 0x%02x (was: 0x%02x)\n", ptr, saved_byte, buf [ptr - code]);*/
+			buf [ptr - code] = saved_byte;
+		}
+	}
+	return can_write;
+}
+
 gpointer
 mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 {
+	guint8 buf [8];
 	guint8 reg = 0;
 	gint32 disp = 0;
+
+	mono_breakpoint_clean_code (code - 8, buf, sizeof (buf));
+	code = buf + 8;
 
 	*displacement = 0;
 
