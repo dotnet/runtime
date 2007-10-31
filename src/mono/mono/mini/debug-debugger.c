@@ -141,7 +141,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	NULL, /* &mono_debugger_breakpoint_table, */
 
 	EXECUTABLE_CODE_BUFFER_SIZE,
-	MONO_DEBUGGER_BREAKPOINT_TABLE_SIZE,
+	-1, /* MONO_DEBUGGER_BREAKPOINT_TABLE_SIZE, */
 };
 
 static guint64
