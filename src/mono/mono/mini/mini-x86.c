@@ -4504,8 +4504,8 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 	guint8 reg = 0;
 	gint32 disp = 0;
 
-	mono_debugger_remove_breakpoints_from_code (code - 8, buf, sizeof (buf));
-	code = buf + 8;
+	if (mono_debugger_remove_breakpoints_from_code (code - 8, buf, sizeof (buf)))
+		code = buf + 8;
 
 	*displacement = 0;
 
