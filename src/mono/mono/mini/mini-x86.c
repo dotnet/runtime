@@ -3624,14 +3624,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	pos = 0;
 
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		/* Might need to attach the thread to the JIT */
-		if (lmf_tls_offset != -1) {
-			guint8 *buf;
+		/* Might need to attach the thread to the JIT  or change the domain for the callback */
+		if (appdomain_tls_offset != -1 && lmf_tls_offset != -1) {
+			guint8 *buf, *no_domain_branch;
 
+			code = emit_tls_get (code, X86_EAX, appdomain_tls_offset);
+			x86_alu_reg_imm (code, X86_CMP, X86_EAX, GPOINTER_TO_UINT (cfg->domain));
+			no_domain_branch = code;
+			x86_branch8 (code, X86_CC_NE, 0, 0);
 			code = emit_tls_get ( code, X86_EAX, lmf_tls_offset);
 			x86_test_reg_reg (code, X86_EAX, X86_EAX);
 			buf = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
+			x86_patch (no_domain_branch, code);
 			x86_push_imm (code, cfg->domain);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);

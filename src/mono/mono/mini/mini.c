@@ -9010,6 +9010,8 @@ mono_jit_thread_attach (MonoDomain *domain)
 	if (!TlsGetValue (mono_jit_tls_id))
 		mono_thread_attach (domain);
 #endif
+	if (mono_domain_get () != domain)
+		mono_domain_set (domain, TRUE);
 }	
 
 /**
