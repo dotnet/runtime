@@ -146,7 +146,15 @@ gboolean
 g_path_is_absolute (const char *filename)
 {
 	g_return_val_if_fail (filename != NULL, FALSE);
+#ifdef G_OS_WIN32
+	if (filename[0] != '\0' && filename[1] != '\0' && filename[1] == ':' && 
+		filename[2] != '\0' && filename[2] == '\\')
+		return TRUE;
+	else
+		return FALSE;
+#else
 	return (*filename == '/');
+#endif
 }
 
 gchar *

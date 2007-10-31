@@ -181,3 +181,26 @@ g_array_remove_index (GArray *array,
 	return array;
 }
 
+GArray*
+g_array_remove_index_fast (GArray *array,
+		      guint index_)
+{
+	GArrayPriv *priv = (GArrayPriv*)array;
+
+	g_return_val_if_fail (array != NULL, NULL);
+
+	memmove (element_offset (priv, index_),
+		 element_offset (priv, array->len - 1),
+		 element_length (priv, array->len - index_));
+
+	array->len --;
+
+	if (priv->zero_terminated) {
+		memset (element_offset (priv, priv->array.len),
+			0,
+			priv->element_size);
+	}
+
+	return array;
+}
+

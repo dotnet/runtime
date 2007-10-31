@@ -168,6 +168,7 @@ void            g_hash_table_foreach         (GHashTable *hash, GHFunc func, gpo
 gpointer        g_hash_table_find            (GHashTable *hash, GHRFunc predicate, gpointer user_data);
 gboolean        g_hash_table_remove          (GHashTable *hash, gconstpointer key);
 guint           g_hash_table_foreach_remove  (GHashTable *hash, GHRFunc func, gpointer user_data);
+guint           g_hash_table_foreach_steal   (GHashTable *hash, GHRFunc func, gpointer user_data);
 void            g_hash_table_destroy         (GHashTable *hash);
 
 guint           g_spaced_primes_closest      (guint x);
@@ -397,6 +398,7 @@ gchar*  g_array_free              (GArray *array, gboolean free_segment);
 GArray *g_array_append_vals       (GArray *array, gconstpointer data, guint len);
 GArray* g_array_insert_vals       (GArray *array, guint index_, gconstpointer data, guint len);
 GArray* g_array_remove_index      (GArray *array, guint index_);
+GArray* g_array_remove_index_fast (GArray *array, guint index_);
 
 #define g_array_append_val(a,v)   (g_array_append_vals((a),&(v),1))
 #define g_array_insert_val(a,i,v) (g_array_insert_vals((a),(i),&(v),1))

@@ -1,3 +1,12 @@
+2007-10-31  Jonathan Chambers <joncham@gmail.com>
+	
+	* src/ghashtable.c: Add g_hash_table_foreach_steal.
+	* src/garray.c: Add g_array_remove_index_fast.
+	* src/gpath.c (g_path_is_absolute): Handle windows paths.
+	* src/glib.h: Add g_hash_table_foreach_steal and g_array_remove_index_fast
+	
+	Contribution is licensed as MIT/X11.
+
 2007-06-13  Jonathan Chambers <joncham@gmail.com>
 	
 	* src/gunicode.c: Add g_unichar_isxdigit and g_unichar_xdigit_value.

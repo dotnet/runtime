@@ -358,6 +358,45 @@ g_hash_table_foreach_remove (GHashTable *hash, GHRFunc func, gpointer user_data)
 	return count;
 }
 
+guint
+g_hash_table_foreach_steal (GHashTable *hash, GHRFunc func, gpointer user_data)
+{
+	int i;
+	int count = 0;
+	
+	g_return_val_if_fail (hash != NULL, 0);
+	g_return_val_if_fail (func != NULL, 0);
+
+	for (i = 0; i < hash->table_size; i++){
+		Slot *s, *last;
+
+		last = NULL;
+		for (s = hash->table [i]; s != NULL; ){
+			if ((*func)(s->key, s->value, user_data)){
+				Slot *n;
+
+				if (last == NULL){
+					hash->table [i] = s->next;
+					n = s->next;
+				} else  {
+					last->next = s->next;
+					n = last->next;
+				}
+				g_free (s);
+				hash->in_use--;
+				count++;
+				s = n;
+			} else {
+				last = s;
+				s = s->next;
+			}
+		}
+	}
+	if (count > 0)
+		rehash (hash);
+	return count;
+}
+
 void
 g_hash_table_destroy (GHashTable *hash)
 {
