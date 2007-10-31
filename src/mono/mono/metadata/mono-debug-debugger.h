@@ -34,7 +34,10 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_LOAD_MODULE,
 	MONO_DEBUGGER_EVENT_UNLOAD_MODULE,
 	MONO_DEBUGGER_EVENT_DOMAIN_CREATE,
-	MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD
+	MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD,
+
+	/* Extended per-thread notifications */
+	MONO_DEBUGGER_EVENT_TRAMPOLINE			= 256,
 } MonoDebuggerEvent;
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
