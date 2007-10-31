@@ -121,6 +121,8 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
+	mono_debugger_trampoline_compiled (m, addr);
+
 	/* the method was jumped to */
 	if (!code)
 		return addr;

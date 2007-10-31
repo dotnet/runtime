@@ -53,6 +53,8 @@ struct _MonoDebuggerThreadInfo {
 	guint64 lmf_addr;
 	guint64 end_stack;
 
+	guint64 extended_notifications;
+
 	/* Next pointer. */
 	MonoDebuggerThreadInfo *next;
 
@@ -68,6 +70,7 @@ struct _MonoDebuggerThreadInfo {
 	 * The debugger doesn't access anything beyond this point.
 	 */
 	MonoJitTlsData *jit_tls;
+	MonoThread *thread;
 };
 
 MonoDebuggerThreadInfo *mono_debugger_thread_table = NULL;
@@ -838,7 +841,7 @@ mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
 }
 
 void
-mono_debugger_thread_created (gsize tid, MonoJitTlsData *jit_tls)
+mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit_tls)
 {
 #ifdef MONO_DEBUGGER_SUPPORTED
 	size_t stsize = 0;
@@ -852,6 +855,7 @@ mono_debugger_thread_created (gsize tid, MonoJitTlsData *jit_tls)
 
 	info = g_new0 (MonoDebuggerThreadInfo, 1);
 	info->tid = tid;
+	info->thread = thread;
 	info->stack_start = (guint64) (gsize) staddr;
 	info->signal_stack_start = (guint64) (gsize) jit_tls->signal_stack;
 	info->stack_size = stsize;
@@ -891,4 +895,35 @@ mono_debugger_thread_cleanup (MonoJitTlsData *jit_tls)
 		break;
 	}
 #endif
+}
+
+void
+mono_debugger_extended_notification (MonoDebuggerEvent event, guint64 data, guint64 arg)
+{
+#ifdef MONO_DEBUGGER_SUPPORTED
+	MonoDebuggerThreadInfo **ptr;
+	MonoThread *thread = mono_thread_current ();
+
+	if (!mono_debug_using_mono_debugger ())
+		return;
+
+	for (ptr = &mono_debugger_thread_table; *ptr; ptr = &(*ptr)->next) {
+		MonoDebuggerThreadInfo *info = *ptr;
+
+		if (info->thread != thread)
+			continue;
+
+		if ((info->extended_notifications & (int) event) == 0)
+			continue;
+
+		mono_debugger_event (event, data, arg);
+	}
+#endif
+}
+
+void
+mono_debugger_trampoline_compiled (MonoMethod *method, const guint8 *code)
+{
+	mono_debugger_extended_notification (MONO_DEBUGGER_EVENT_TRAMPOLINE,
+					     (guint64) (gsize) method, (guint64) (gsize) code);
 }

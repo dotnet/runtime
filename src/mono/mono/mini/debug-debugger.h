@@ -58,6 +58,13 @@ struct _MonoDebuggerInfo {
 
 	gint32 *debugger_version;
 	MonoDebuggerThreadInfo **thread_table;
+
+	guint8 **executable_code_buffer;
+	volatile const MonoDebuggerBreakpointInfo **breakpoint_info_area;
+	volatile const MonoDebuggerBreakpointInfo ***breakpoint_table;
+
+	guint32 executable_code_buffer_size;
+	guint32 breakpoint_table_size;
 };
 
 struct _MonoDebuggerMetadataInfo {
@@ -82,6 +89,7 @@ struct _MonoDebuggerMetadataInfo {
 	int klass_byval_arg_offset;
 	int klass_generic_class_offset;
 	int klass_generic_container_offset;
+	int klass_vtable_offset;
 	int field_info_size;
 	int field_info_type_offset;
 	int field_info_offset_offset;
@@ -111,6 +119,8 @@ struct _MonoDebuggerMetadataInfo {
 	int mono_method_token_offset;
 	int mono_method_flags_offset;
 	int mono_method_inflated_offset;
+	int mono_vtable_klass_offset;
+	int mono_vtable_vtable_offset;
 };
 
 #endif

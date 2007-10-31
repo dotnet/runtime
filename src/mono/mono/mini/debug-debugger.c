@@ -46,6 +46,9 @@ static void debugger_runtime_class_init (guint64 klass_arg);
 
 static void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
 
+#define EXECUTABLE_CODE_BUFFER_SIZE 4096
+static guint8 *debugger_executable_code_buffer = NULL;
+
 static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	sizeof (MonoDebuggerMetadataInfo),
 	sizeof (MonoDefaults),
@@ -68,6 +71,7 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	G_STRUCT_OFFSET (MonoClass, byval_arg),
 	G_STRUCT_OFFSET (MonoClass, generic_class),
 	G_STRUCT_OFFSET (MonoClass, generic_container),
+	G_STRUCT_OFFSET (MonoClass, vtable),
 	sizeof (MonoClassField),
 	G_STRUCT_OFFSET (MonoClassField, type),
 	G_STRUCT_OFFSET (MonoClassField, offset),
@@ -96,7 +100,9 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	G_STRUCT_OFFSET (MonoMethod, klass),
 	G_STRUCT_OFFSET (MonoMethod, token),
 	G_STRUCT_OFFSET (MonoMethod, name) + sizeof (void *),
-	G_STRUCT_OFFSET (MonoMethodInflated, declaring)
+	G_STRUCT_OFFSET (MonoMethodInflated, declaring),
+	G_STRUCT_OFFSET (MonoVTable, klass),
+	G_STRUCT_OFFSET (MonoVTable, vtable)
 };
 
 /*
@@ -130,7 +136,14 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_runtime_class_init,
 
 	&mono_debug_debugger_version,
-	&mono_debugger_thread_table
+	&mono_debugger_thread_table,
+
+	&debugger_executable_code_buffer,
+	&_mono_debugger_breakpoint_info_area,
+	&mono_debugger_breakpoint_table,
+
+	EXECUTABLE_CODE_BUFFER_SIZE,
+	MONO_DEBUGGER_BREAKPOINT_TABLE_SIZE,
 };
 
 static guint64
@@ -335,6 +348,7 @@ debugger_attach (void)
 	mono_debugger_init ();
 
 	mono_debugger_event_handler = debugger_event_handler;
+	debugger_executable_code_buffer = mono_global_codeman_reserve (EXECUTABLE_CODE_BUFFER_SIZE);
 	debugger_init_threads ();
 }
 
@@ -357,6 +371,7 @@ void
 mono_debugger_init (void)
 {
 	mono_debugger_notification_function = mono_debugger_create_notification_function ();
+	debugger_executable_code_buffer = mono_global_codeman_reserve (EXECUTABLE_CODE_BUFFER_SIZE);
 	mono_debugger_event_handler = debugger_event_handler;
 
 	/*
