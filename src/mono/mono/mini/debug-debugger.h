@@ -59,8 +59,8 @@ struct _MonoDebuggerInfo {
 	MonoDebuggerThreadInfo **thread_table;
 
 	guint8 **executable_code_buffer;
-	volatile const MonoDebuggerBreakpointInfo **breakpoint_info_area;
-	volatile const MonoDebuggerBreakpointInfo ***breakpoint_table;
+	void *dummy3; /* volatile const MonoDebuggerBreakpointInfo **breakpoint_info_area; */
+	void *dummy4; /* volatile const MonoDebuggerBreakpointInfo ***breakpoint_table; */
 
 	guint32 executable_code_buffer_size;
 	guint32 breakpoint_table_size;
