@@ -137,8 +137,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_debugger_thread_table,
 
 	&debugger_executable_code_buffer,
-	&_mono_debugger_breakpoint_info_area,
-	&mono_debugger_breakpoint_table,
+	NULL, /* &_mono_debugger_breakpoint_info_area, */
+	NULL, /* &mono_debugger_breakpoint_table, */
 
 	EXECUTABLE_CODE_BUFFER_SIZE,
 	MONO_DEBUGGER_BREAKPOINT_TABLE_SIZE,

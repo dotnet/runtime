@@ -23,7 +23,6 @@
 
 #include "trace.h"
 #include "mini-x86.h"
-#include "debug-mini.h"
 #include "inssel.h"
 #include "cpu-x86.h"
 
@@ -4446,66 +4445,11 @@ mono_arch_get_patch_offset (guint8 *code)
 	}
 }
 
-struct _MonoDebuggerBreakpointInfo {
-	const guint8 *address;
-	guint8 saved_byte;
-};
-
-static MonoDebuggerBreakpointInfo breakpoint_info_area [MONO_DEBUGGER_BREAKPOINT_TABLE_SIZE];
-static volatile const MonoDebuggerBreakpointInfo *breakpoint_table [MONO_DEBUGGER_BREAKPOINT_TABLE_SIZE];
-
-volatile const MonoDebuggerBreakpointInfo *_mono_debugger_breakpoint_info_area = breakpoint_info_area;
-volatile const MonoDebuggerBreakpointInfo **mono_debugger_breakpoint_table = breakpoint_table;
-
-/*
- * Removes breakpoints from target memory.
- *
- * @orig_address:
- * The original memory address.
- *
- * @code:
- * A copy of @size bytes from that memory area, which we can modify.
- *
- * Returns:
- * TRUE if there were any breakpoints in that area, FALSE if not.
- */
-gboolean
-mono_debugger_remove_breakpoints_from_code (const guint8 *orig_address, guint8 *code, int size)
-{
-	gboolean found_breakpoint = FALSE;
-	int i;
-
-	for (i = 0; i < MONO_DEBUGGER_BREAKPOINT_TABLE_SIZE; i++) {
-		volatile const MonoDebuggerBreakpointInfo *info = mono_debugger_breakpoint_table [i];
-		int offset;
-
-		if (!info)
-			continue;
-
-		if ((info->address < orig_address) || (info->address > orig_address + size))
-			continue;
-
-		if (!found_breakpoint) {
-			memcpy (code, orig_address, size);
-			found_breakpoint = TRUE;
-		}
-
-		offset = info->address - orig_address;
-		code [offset] = info->saved_byte;
-	}
-
-	return found_breakpoint;
-}
-
 gpointer
 mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 {
-	guint8 buf [16];
 	guint8 reg = 0;
 	gint32 disp = 0;
-
-	if (mono_debugger_remove_breakpoints_from_code (code - 8, buf, sizeof (buf)))
-		code = buf + 8;
 
 	*displacement = 0;
 
