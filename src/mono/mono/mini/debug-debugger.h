@@ -54,7 +54,6 @@ struct _MonoDebuggerInfo {
 				gchar *full_name);
 	guint64 (*insert_breakpoint) (guint64 method_argument, guint64 index);
 	void (*remove_breakpoint) (G_GNUC_UNUSED guint64 dummy, guint64 index);
-	void (*runtime_class_init) (guint64 klass_arg);
 
 	gint32 *debugger_version;
 	MonoDebuggerThreadInfo **thread_table;

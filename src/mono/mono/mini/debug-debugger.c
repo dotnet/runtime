@@ -42,7 +42,6 @@ static gint64 debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint
 				     gchar *full_name);
 static guint64 debugger_insert_method_breakpoint (guint64 method_argument, guint64 index);
 static void debugger_remove_method_breakpoint (G_GNUC_UNUSED guint64 dummy, guint64 index);
-static void debugger_runtime_class_init (guint64 klass_arg);
 
 static void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
 
@@ -133,7 +132,6 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_lookup_class,
 	&debugger_insert_method_breakpoint,
 	&debugger_remove_method_breakpoint,
-	&debugger_runtime_class_init,
 
 	&mono_debug_debugger_version,
 	&mono_debugger_thread_table,
@@ -277,13 +275,6 @@ debugger_remove_method_breakpoint (G_GNUC_UNUSED guint64 dummy, guint64 index)
 	mono_debugger_lock ();
 	mono_debugger_remove_method_breakpoint (index);
 	mono_debugger_unlock ();
-}
-
-static void
-debugger_runtime_class_init (guint64 klass_arg)
-{
-	MonoClass *klass = (MonoClass *) GUINT_TO_POINTER ((gsize) klass_arg);
-	mono_runtime_class_init (mono_class_vtable (mono_domain_get (), klass));
 }
 
 static void
