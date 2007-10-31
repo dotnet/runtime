@@ -278,5 +278,12 @@ mono_amd64_is_sse2 (void) MONO_INTERNAL;
 void 
 mono_amd64_patch (unsigned char* code, gpointer target) MONO_INTERNAL;
 
+typedef struct {
+	guint8 *address;
+	guint8 saved_byte;
+} MonoBreakpointInfo;
+
+extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
+
 #endif /* __MONO_MINI_AMD64_H__ */  
 

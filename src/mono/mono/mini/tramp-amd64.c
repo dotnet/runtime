@@ -63,21 +63,30 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 void
-mono_arch_patch_callsite (guint8 *code, guint8 *addr)
+mono_arch_patch_callsite (guint8 *orig_code, guint8 *addr)
 {
+	guint8 *code;
+	guint8 buf [16];
+	gboolean can_write = mono_breakpoint_clean_code (orig_code - 14, buf, sizeof (buf));
+
+	code = buf + 14;
+
 	if (((code [-13] == 0x49) && (code [-12] == 0xbb)) || (code [-5] == 0xe8)) {
-		if (code [-5] != 0xe8)
-			InterlockedExchangePointer ((gpointer*)(code - 11), addr);
-		else {
+		if (code [-5] != 0xe8) {
+			if (can_write)
+				InterlockedExchangePointer ((gpointer*)(orig_code - 11), addr);
+		} else {
 			g_assert ((((guint64)(addr)) >> 32) == 0);
-			g_assert ((((guint64)(code)) >> 32) == 0);
-			InterlockedExchange ((gint32*)(code - 4), ((gint64)addr - (gint64)code));
+			g_assert ((((guint64)(orig_code)) >> 32) == 0);
+			if (can_write)
+				InterlockedExchange ((gint32*)(orig_code - 4), ((gint64)addr - (gint64)orig_code));
 		}
 	}
 	else if ((code [-7] == 0x41) && (code [-6] == 0xff) && (code [-5] == 0x15)) {
 		/* call *<OFFSET>(%rip) */
-		gpointer *got_entry = (gpointer*)((guint8*)code + (*(guint32*)(code - 4)));
-		InterlockedExchangePointer (got_entry, addr);
+		gpointer *got_entry = (gpointer*)((guint8*)orig_code + (*(guint32*)(orig_code - 4)));
+		if (can_write)
+			InterlockedExchangePointer (got_entry, addr);
 	}
 }
 
