@@ -143,7 +143,7 @@ struct _MonoDebugVarInfo {
 	MonoType *type;
 };
 
-#define MONO_DEBUGGER_VERSION				63
+#define MONO_DEBUGGER_VERSION				64
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;
