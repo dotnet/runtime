@@ -58,17 +58,8 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 void
-mono_arch_patch_callsite (guint8 *orig_code, guint8 *addr)
+mono_arch_patch_callsite (guint8 *code, guint8 *addr)
 {
-	guint8 *code;
-	guint8 buf [16];
-	gboolean can_write = mono_debugger_remove_breakpoints_from_code (orig_code - 8, buf, sizeof (buf));
-
-	code = buf + 8;
-	code = orig_code;
-	if (mono_running_on_valgrind ())
-		can_write = FALSE;
-
 	/* go to the start of the call instruction
 	 *
 	 * address_byte = (m << 6) | (o << 3) | reg
@@ -77,10 +68,9 @@ mono_arch_patch_callsite (guint8 *orig_code, guint8 *addr)
 	 * 0xff m=2,o=2 imm32
 	 */
 	code -= 6;
-	orig_code -= 6;
 	if ((code [1] == 0xe8)) {
-		if (can_write) {
-			InterlockedExchange ((gint32*)(orig_code + 2), (guint)addr - ((guint)orig_code + 1) - 5);
+		if (!mono_running_on_valgrind ()) {
+			InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 				/* Tell valgrind to recompile the patched code */
@@ -89,8 +79,8 @@ mono_arch_patch_callsite (guint8 *orig_code, guint8 *addr)
 		}
 	} else if (code [1] == 0xe9) {
 		/* A PLT entry: jmp <DISP> */
-		if (can_write)
-			InterlockedExchange ((gint32*)(orig_code + 2), (guint)addr - ((guint)orig_code + 1) - 5);
+		if (!mono_running_on_valgrind ())
+			InterlockedExchange ((gint32*)(code + 2), (guint)addr - ((guint)code + 1) - 5);
 	} else {
 		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
 				code [4], code [5], code [6]);
