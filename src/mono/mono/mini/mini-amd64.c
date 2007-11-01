@@ -4601,7 +4601,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	/* Might need to attach the thread to the JIT */
+	/* Might need to attach the thread to the JIT  or change the domain for the callback */
 	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		guint64 domain = (guint64)cfg->domain;
 
@@ -4609,17 +4609,22 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		 * The call might clobber argument registers, but they are already
 		 * saved to the stack/global regs.
 		 */
-		if (lmf_addr_tls_offset != -1) {
-			guint8 *buf;
+		if (appdomain_tls_offset != -1 && lmf_tls_offset != -1) {
+			guint8 *buf, *no_domain_branch;
 
-			code = emit_tls_get ( code, AMD64_RAX, lmf_addr_tls_offset);
-			amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
-			buf = code;
-			x86_branch8 (code, X86_CC_NE, 0, 0);
+			code = emit_tls_get (code, AMD64_RAX, appdomain_tls_offset);
 			if ((domain >> 32) == 0)
 				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
 			else
 				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
+			amd64_alu_reg_reg (code, X86_CMP, AMD64_RAX, AMD64_ARG_REG1);
+			no_domain_branch = code;
+			x86_branch8 (code, X86_CC_NE, 0, 0);
+			code = emit_tls_get ( code, AMD64_RAX, lmf_addr_tls_offset);
+			amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
+			buf = code;
+			x86_branch8 (code, X86_CC_NE, 0, 0);
+			amd64_patch (no_domain_branch, code);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
 			amd64_patch (buf, code);
 		} else {
