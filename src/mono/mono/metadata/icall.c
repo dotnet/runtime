@@ -5883,55 +5883,6 @@ char **environ;
 static MonoArray *
 ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 {
-#ifdef PLATFORM_WIN32
-	MonoArray *names;
-	MonoDomain *domain;
-	MonoString *str;
-	WCHAR* env_strings;
-	WCHAR* env_string;
-	WCHAR* equal_str;
-	int n = 0;
-
-	env_strings = GetEnvironmentStrings();
-
-	if (env_strings) {
-		env_string = env_strings;
-		while (*env_string != '\0') {
-		/* weird case that MS seems to skip */
-			if (*env_string != '=')
-				n++;
-			while (*env_string != '\0')
-				env_string++;
-			env_string++;
-		}
-	}
-
-	domain = mono_domain_get ();
-	names = mono_array_new (domain, mono_defaults.string_class, n);
-
-	if (env_strings) {
-		n = 0;
-		env_string = env_strings;
-		while (*env_string != '\0') {
-			/* weird case that MS seems to skip */
-			if (*env_string != '=') {
-				equal_str = wcschr(env_string, '=');
-				g_assert(equal_str);
-				str = mono_string_new_utf16 (domain, env_string, equal_str-env_string);
-				mono_array_setref (names, n, str);
-			}
-			while (*env_string != '\0')
-				env_string++;
-			env_string++;
-			n++;
-		}
-
-		FreeEnvironmentStrings (env_strings);
-	}
-
-	return names;
-
-#else
 	MonoArray *names;
 	MonoDomain *domain;
 	MonoString *str;
@@ -5961,7 +5912,6 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 	}
 
 	return names;
-#endif
 }
 
 /*
