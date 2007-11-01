@@ -179,7 +179,13 @@ typedef struct {
 	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.uc_regs->fpregs.fpregs [(n)])
 	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_NIP])
 	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_LNK])
-#elif defined (__APPLE__)
+#elif defined (__APPLE__) && defined (_STRUCT_MCONTEXT)
+	typedef struct __darwin_ucontext os_ucontext;
+
+	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext->__ss.__r##n)
+	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext->__fs.__fpregs [(n)])
+	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext->__ss.__srr0)
+#elif defined (__APPLE__) && !defined (_STRUCT_MCONTEXT)
 	typedef struct ucontext os_ucontext;
 
 	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext->ss.r##n)
