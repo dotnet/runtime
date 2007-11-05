@@ -744,6 +744,76 @@ complete_path (const gunichar2 *appname, gchar **completed)
 	return TRUE;
 }
 
+#ifndef HAVE_GETPROCESSID
+/* Run-time GetProcessId detection for Windows */
+#ifdef PLATFORM_WIN32
+#define HAVE_GETPROCESSID
+
+typedef DWORD (WINAPI *GETPROCESSID_PROC) (HANDLE);
+typedef DWORD (WINAPI *NTQUERYINFORMATIONPROCESS_PROC) (HANDLE, PROCESSINFOCLASS, PVOID, ULONG, PULONG);
+typedef DWORD (WINAPI *RTLNTSTATUSTODOSERROR_PROC) (NTSTATUS);
+
+static DWORD WINAPI GetProcessId_detect (HANDLE process);
+
+static GETPROCESSID_PROC GetProcessId = &GetProcessId_detect;
+static NTQUERYINFORMATIONPROCESS_PROC NtQueryInformationProcess_proc = NULL;
+static RTLNTSTATUSTODOSERROR_PROC RtlNtStatusToDosError_proc = NULL;
+
+static DWORD WINAPI GetProcessId_ntdll (HANDLE process)
+{
+	PROCESS_BASIC_INFORMATION pi;
+	NTSTATUS status;
+
+	status = NtQueryInformationProcess_proc (process, ProcessBasicInformation, &pi, sizeof (pi), NULL);
+	if (NT_SUCCESS (status)) {
+		return pi.UniqueProcessId;
+	} else {
+		SetLastError (RtlNtStatusToDosError_proc (status));
+		return 0;
+	}
+}
+
+static DWORD WINAPI GetProcessId_stub (HANDLE process)
+{
+	SetLastError (ERROR_CALL_NOT_IMPLEMENTED);
+	return 0;
+}
+
+static DWORD WINAPI GetProcessId_detect (HANDLE process)
+{
+	HMODULE module_handle;
+	GETPROCESSID_PROC GetProcessId_kernel;
+
+	/* Windows XP SP1 and above have GetProcessId API */
+	module_handle = GetModuleHandle (L"kernel32.dll");
+	if (module_handle != NULL) {
+		GetProcessId_kernel = (GETPROCESSID_PROC) GetProcAddress (module_handle, "GetProcessId");
+		if (GetProcessId_kernel != NULL) {
+			GetProcessId = GetProcessId_kernel;
+			return GetProcessId (process);
+		}
+	}
+
+	/* Windows 2000 and above have deprecated NtQueryInformationProcess API */
+	module_handle = GetModuleHandle (L"ntdll.dll");
+	if (module_handle != NULL) {
+		NtQueryInformationProcess_proc = (NTQUERYINFORMATIONPROCESS_PROC) GetProcAddress (module_handle, "NtQueryInformationProcess");
+		if (NtQueryInformationProcess_proc != NULL) {
+			RtlNtStatusToDosError_proc = (RTLNTSTATUSTODOSERROR_PROC) GetProcAddress (module_handle, "RtlNtStatusToDosError");
+			if (RtlNtStatusToDosError_proc != NULL) {
+				GetProcessId = &GetProcessId_ntdll;
+				return GetProcessId (process);
+			}
+		}
+	}
+
+	/* Fall back to ERROR_CALL_NOT_IMPLEMENTED */
+	GetProcessId = &GetProcessId_stub;
+	return GetProcessId (process);
+}
+#endif /* PLATFORM_WIN32 */
+#endif /* !HAVE_GETPROCESSID */
+
 MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoProcessStartInfo *proc_start_info, MonoProcInfo *process_info)
 {
 	SHELLEXECUTEINFO shellex = {0};

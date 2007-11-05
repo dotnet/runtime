@@ -22,6 +22,17 @@
 #include <psapi.h>
 #include <shlobj.h>
 #include <mswsock.h>
+#ifndef HAVE_GETPROCESSID
+#ifdef _MSC_VER
+#include <winternl.h>
+#ifndef NT_SUCCESS
+#define NT_SUCCESS (status) ((NTSTATUS) (status) >= 0)
+#endif /* !NT_SUCCESS */
+#else /* !_MSC_VER */
+#include <ddk/ntddk.h>
+#include <ddk/ntapi.h>
+#endif /* _MSC_VER */
+#endif /* !HAVE_GETPROCESSID */
 #else	/* EVERYONE ELSE */
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"
