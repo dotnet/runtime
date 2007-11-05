@@ -238,7 +238,8 @@ TEST_CS_SRC=			\
 	exists.cs		\
 	handleref.cs	\
 	transparentproxy.cs \
-	imt_big_iface_test.cs
+	imt_big_iface_test.cs \
+	soft-float-tests.cs
 
 if X86
 # bug #71274
