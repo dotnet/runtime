@@ -137,11 +137,11 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_debugger_thread_table,
 
 	&debugger_executable_code_buffer,
-	NULL, /* &_mono_debugger_breakpoint_info_area, */
-	NULL, /* &mono_debugger_breakpoint_table, */
+	mono_breakpoint_info,
+	mono_breakpoint_info_index,
 
 	EXECUTABLE_CODE_BUFFER_SIZE,
-	-1, /* MONO_DEBUGGER_BREAKPOINT_TABLE_SIZE, */
+	MONO_BREAKPOINT_ARRAY_SIZE
 };
 
 static guint64
