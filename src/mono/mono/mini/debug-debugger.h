@@ -63,7 +63,7 @@ struct _MonoDebuggerInfo {
 	gssize *mono_breakpoint_info_index;
 
 	guint32 executable_code_buffer_size;
-	guint32 breakpoint_table_size;
+	guint32 breakpoint_array_size;
 };
 
 struct _MonoDebuggerMetadataInfo {
