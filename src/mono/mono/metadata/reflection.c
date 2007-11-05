@@ -5711,6 +5711,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	guint32 *types = NULL;
 	MonoType *type = NULL;
 	MonoObject *dbnull = mono_get_dbnull_object (domain);
+	MonoObject *missing = mono_get_reflection_missing_object (domain);
 	MonoMarshalSpec **mspecs;
 	MonoMethodSignature *sig;
 	int i;
@@ -5745,7 +5746,10 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 		param->AttrsImpl = sig->params [i]->attrs;
 
 		if (!(param->AttrsImpl & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
-			MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
+			if (param->AttrsImpl & PARAM_ATTRIBUTE_OPTIONAL)
+				MONO_OBJECT_SETREF (param, DefaultValueImpl, missing);
+			else
+				MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
 		} else {
 
 			if (!blobs) {
@@ -5772,8 +5776,12 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 			MONO_OBJECT_SETREF (param, DefaultValueImpl, mono_get_object_from_blob (domain, type, blobs [i]));
 
 			/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
-			if (types [i] != MONO_TYPE_CLASS && !param->DefaultValueImpl) 
-				MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
+			if (types [i] != MONO_TYPE_CLASS && !param->DefaultValueImpl) {
+				if (param->AttrsImpl & PARAM_ATTRIBUTE_OPTIONAL)
+					MONO_OBJECT_SETREF (param, DefaultValueImpl, missing);
+				else
+					MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
+			}
 			
 		}
 
@@ -5894,6 +5902,14 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	return ret;
 }
 
+/**
+ * mono_get_dbnull_object:
+ * @domain: Domain where the object lives
+ *
+ * Returns the System.DBNull.Value singleton object
+ *
+ * Used as the value for ParameterInfo.DefaultValue 
+ */
 MonoObject *
 mono_get_dbnull_object (MonoDomain *domain)
 {
@@ -5908,6 +5924,34 @@ mono_get_dbnull_object (MonoDomain *domain)
 		g_assert (dbnull_value_field);
 	}
 	obj = mono_field_get_value_object (domain, dbnull_value_field, NULL); 
+	g_assert (obj);
+	return obj;
+}
+
+/**
+ * mono_get_reflection_missing_object:
+ * @domain: Domain where the object lives
+ *
+ * Returns the System.Reflection.Missing.Value singleton object
+ * (of type System.Reflection.Missing).
+ *
+ * Used as the value for ParameterInfo.DefaultValue when Optional
+ * is present
+ */
+MonoObject *
+mono_get_reflection_missing_object (MonoDomain *domain)
+{
+	MonoObject *obj;
+	static MonoClassField *missing_value_field = NULL;
+	
+	if (!missing_value_field) {
+		MonoClass *missing_klass;
+		missing_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Missing");
+		mono_class_init (missing_klass);
+		missing_value_field = mono_class_get_field_from_name (missing_klass, "Value");
+		g_assert (missing_value_field);
+	}
+	obj = mono_field_get_value_object (domain, missing_value_field, NULL); 
 	g_assert (obj);
 	return obj;
 }
