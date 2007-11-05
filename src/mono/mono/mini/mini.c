@@ -144,6 +144,11 @@ static int mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlo
 		   int locals_offset, MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
 		   guint inline_offset, gboolean is_virtual_call, MonoGenericContext *shared_context);
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+static void
+handle_store_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, MonoInst *val, const unsigned char *ip);
+#endif
+
 /* helper methods signature */
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
 static MonoMethodSignature *helper_sig_domain_get = NULL;
@@ -2516,8 +2521,16 @@ mono_spill_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoCallInst *call, M
 				MONO_ADD_INS (bblock, ins);
 		} else {
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
-			/* FIXME: handle CEE_STIND_R4 */
 			store->cil_code = ip;
+			
+#ifdef MONO_ARCH_SOFT_FLOAT
+			if (store->opcode == CEE_STIND_R4) {
+				/*FIXME implement proper support for to_end*/
+				g_assert (!to_end);
+				NEW_TEMPLOADA (cfg, store, temp->inst_c0);
+				handle_store_float (cfg, bblock, store, ins, ip);
+			} else
+#endif
 			if (to_end)
 				mono_add_ins_to_end (bblock, store);
 			else
@@ -5141,8 +5154,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					*sp++ = ins;
 				} else {
 					if ((temp = mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, virtual ? sp [0] : NULL)) != -1) {
-						NEW_TEMPLOAD (cfg, *sp, temp);
-						sp++;
+						MonoInst *load;
+						NEW_TEMPLOAD (cfg, load, temp);
+
+#ifdef MONO_ARCH_SOFT_FLOAT
+						if (load->opcode == CEE_LDIND_R4) {
+							NEW_TEMPLOADA (cfg, load, temp);
+							temp = handle_load_float (cfg, bblock, load, ip);
+							NEW_TEMPLOAD (cfg, load, temp);
+						}
+#endif
+						*sp++ = load;
 					}
 				}
 			}
@@ -6475,7 +6497,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				store->flags |= ins_flag;
 				ins_flag = 0;
 
-				/* FIXME: handle CEE_STIND_R4 */
+#ifdef MONO_ARCH_SOFT_FLOAT
+				if (store->opcode == CEE_STIND_R4)
+					handle_store_float (cfg, bblock, ins, sp [0], ip);
+				else
+#endif
 				if (store->opcode == CEE_STOBJ) {
 					handle_stobj (cfg, bblock, ins, sp [0], ip, mono_class_from_mono_type (field->type), FALSE, FALSE, FALSE);
 				} else
