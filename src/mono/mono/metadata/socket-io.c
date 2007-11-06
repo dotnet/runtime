@@ -2789,12 +2789,18 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	}
 	
 	if(family == AF_INET) {
+#if __APPLE__
+		saddr.sin_len = sizeof (saddr);
+#endif
 		if(getnameinfo ((struct sockaddr*)&saddr, sizeof(saddr),
 				hostname, sizeof(hostname), NULL, 0,
 				flags) != 0) {
 			return(FALSE);
 		}
 	} else if(family == AF_INET6) {
+#if __APPLE__
+		saddr6.sin6_len = sizeof (saddr6);
+#endif
 		if(getnameinfo ((struct sockaddr*)&saddr6, sizeof(saddr6),
 				hostname, sizeof(hostname), NULL, 0,
 				flags) != 0) {
