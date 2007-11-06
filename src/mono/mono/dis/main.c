@@ -1783,6 +1783,14 @@ monodis_preload (MonoAssemblyName *aname,
 		result = real_load (assemblies_path, aname->culture, aname->name, refonly);
 	}
 
+	if (result == NULL) {
+		char *name = mono_stringify_assembly_name (aname);
+		fprintf (stderr, "\n\nERROR: Cannot find referenced assembly `%s'\n\nexiting...\n", name);
+		g_free (name);
+
+		exit (1);
+	}
+
 	return result;
 }
 
