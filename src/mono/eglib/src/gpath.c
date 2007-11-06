@@ -220,7 +220,7 @@ g_get_home_dir (void)
 	if (home_dir == NULL){
 		pthread_mutex_lock (&home_lock);
 		if (home_dir == NULL){
-#ifdef HAVE_GETPWNENT_R
+#ifdef HAVE_GETPWENT_R
 			struct passwd pwbuf, *track;
 			char buf [4096];
 			uid_t uid;
