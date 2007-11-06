@@ -1,5 +1,3 @@
-noinst_PROGRAMS = test-eglib
-
 SOURCES = \
 	test.c 		\
 	test.h 		\
@@ -29,14 +27,15 @@ SOURCES = \
 
 test_eglib_SOURCES = $(SOURCES)
 
-test_eglib_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2 -I$(srcdir)/../src -DDRIVER_NAME=\"EGlib\"
+test_eglib_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2 -I$(srcdir)/../src -I../src -DDRIVER_NAME=\"EGlib\"
 test_eglib_LDADD = ../src/libeglib.la -ldl
 
 run-eglib: all
 	./test-eglib
 
 if HAVE_GLIB
-noinst_PROGRAMS += test-glib
+
+noinst_PROGRAMS = test-glib test-eglib
 
 test_glib_SOURCES = $(SOURCES)
 
@@ -49,6 +48,8 @@ run-glib: all
 run-both: run-glib run-eglib
 
 else
+
+noinst_PROGRAMS = test-eglib
 
 run-both: run-eglib
 
