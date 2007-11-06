@@ -63,6 +63,11 @@
 #define NO_INTR(var,cmd) do { (var) = (cmd); } while ((var) == -1 && errno == EINTR)
 #define CLOSE_PIPE(p) do { close (p [0]); close (p [1]); } while (0)
 
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ *_NSGetEnviron();
+#endif
+
 static int
 safe_read (int fd, gchar *buffer, gint count, GError **error)
 {

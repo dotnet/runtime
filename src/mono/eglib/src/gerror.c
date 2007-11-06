@@ -48,6 +48,15 @@ g_error_new (gpointer domain, gint code, const char *format, ...)
 }
 
 void
+g_clear_error (GError **error)
+{
+	if (error && *error) {
+		g_error_free (*error);
+		*error = NULL;
+	}
+}
+
+void
 g_error_free (GError *error)
 {
 	g_return_if_fail (error != NULL);

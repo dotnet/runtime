@@ -30,7 +30,7 @@ libeglib_la_SOURCES = \
 	gutf8.c		\
 	gunicode.c
 
-libeglib_la_CFLAGS = -Wall -Werror -D_FORTIFY_SOURCE=2
+libeglib_la_CFLAGS = -Wall -D_FORTIFY_SOURCE=2
 
 INCLUDES = -I$(srcdir)
 

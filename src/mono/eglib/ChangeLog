@@ -1,3 +1,15 @@
+2007-11-05  Geoff Norton  <gnorton@novell.com>
+
+	* configure.ac: Check for getpwent_r and wether libiconv is needed to be linked.
+	Also look to see if we can use export-dynamic in the test suite.
+	* test/Makefile.am: Get LDFLAGS from configure instead of setting them.
+	* src/gerror.c: Implement g_clear_error.
+	* src/glib.h: Only use the format, ... convention is HAVE_C99_SUPPORT is available.
+	* src/gpath.c: Only use the getpwent_r codepath if getpwent_r is available.
+	* src/gspawn.c: Define environ to call _NSGetEnviron() on Apple.
+	* src/Makefile.am: Remove -Werror so we dont fail on different function declarations.
+		Portions of all of the above are from Andreas Faerber & Jonathan Chambers
+	
 2007-10-31  Jonathan Chambers <joncham@gmail.com>
 	
 	* src/ghashtable.c: Add g_hash_table_foreach_steal.

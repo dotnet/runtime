@@ -471,14 +471,24 @@ GLogLevelFlags g_log_set_fatal_mask   (const gchar *log_domain, GLogLevelFlags f
 void           g_logv                 (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, va_list args);
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
 
+#ifdef HAVE_C99_SUPPORT
 #define g_error(format, ...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, __VA_ARGS__)
 #define g_critical(format, ...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, format, __VA_ARGS__)
 #define g_warning(format, ...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format, __VA_ARGS__)
 #define g_message(format, ...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format, __VA_ARGS__)
 #define g_debug(format, ...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, format, __VA_ARGS__)
 
-#define g_log_set_handler(a,b,c,d)
 #define g_printerr(format, ...) fprintf (stderr, format, __VA_ARGS__)
+#else
+#define g_error(...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __VA_ARGS__)
+#define g_critical(...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __VA_ARGS__)
+#define g_warning(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, __VA_ARGS__)
+#define g_message(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
+#define g_debug(...)    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
+
+#define g_printerr(...) fprintf (stderr, __VA_ARGS__)
+#endif
+#define g_log_set_handler(a,b,c,d)
 /*
  * Conversions
  */
