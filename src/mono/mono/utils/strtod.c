@@ -21,10 +21,11 @@
 #define freedtoa __freedtoa
 #define dtoa __dtoa
 
-static GStaticMutex str_mutex [2] = {G_STATIC_MUTEX_INIT, G_STATIC_MUTEX_INIT};
+G_LOCK_DEFINE_STATIC(str_mutex0);
+G_LOCK_DEFINE_STATIC(str_mutex1);
 #define MULTIPLE_THREADS 1
-#define ACQUIRE_DTOA_LOCK(n)	g_static_mutex_lock (&str_mutex [(n)])
-#define FREE_DTOA_LOCK(n)	g_static_mutex_unlock (&str_mutex [(n)])
+#define ACQUIRE_DTOA_LOCK(n)	G_LOCK (str_mutex##n)
+#define FREE_DTOA_LOCK(n)		G_UNLOCK (str_mutex##n)
 
 /* Please send bug reports to David M. Gay (dmg at acm dot org,
  * with " at " changed at "@" and " dot " changed to ".").	*/
