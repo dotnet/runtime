@@ -1,3 +1,8 @@
+2007-11-06  Geoff Norton  <gnorton@novell.com>
+
+	* configure.ac: Check for libiconv_open as the previous check was failing against 
+	some versions of libiconv.
+
 2007-11-06  Andreas Faerber  <andreas.faerber@web.de>
 
 	* test/Makefile.am: Fix noinst_PROGRAMS for automake 1.6.3

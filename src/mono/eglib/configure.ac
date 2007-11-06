@@ -49,7 +49,7 @@ AM_CONDITIONAL(PLATFORM_WIN32, test x$OS = xWIN32)
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(void *)
 AC_CHECK_FUNCS(strndup strlcpy getpwent_r)
-AC_CHECK_LIB(iconv, iconv_open, LIBS="$LIBS -liconv")
+AC_CHECK_LIB(iconv, libiconv_open, LIBS="$LIBS -liconv")
 old_ldflags="${LDFLAGS}"
 LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
 AC_TRY_LINK(, [int i;], found_export_dynamic=yes, found_export_dynamic=no)
