@@ -1,3 +1,8 @@
+2007-11-06  Geoff Norton  <gnorton@novell.com>
+
+	* configure.ac: Determing if glib-2.0 is installed and set HAVE_GLIB appropriately
+	* test/Makefile.am: Only build test-glib if glib-2.0 is available
+
 2007-11-05  Geoff Norton  <gnorton@novell.com>
 
 	* configure.ac: Check for getpwent_r and wether libiconv is needed to be linked.

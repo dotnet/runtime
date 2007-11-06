@@ -48,7 +48,7 @@ AM_CONDITIONAL(PLATFORM_WIN32, test x$OS = xWIN32)
 
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(void *)
-AC_CHECK_FUNCS(strlcpy getpwent_r)
+AC_CHECK_FUNCS(strndup strlcpy getpwent_r)
 AC_CHECK_LIB(iconv, iconv_open, LIBS="$LIBS -liconv")
 old_ldflags="${LDFLAGS}"
 LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
@@ -76,6 +76,11 @@ else
    GSIZE_FORMAT='"u"'
    G_GUINT64_FORMAT='"llu"'
 fi
+
+PKG_CHECK_MODULES(GLIB, glib-2.0,
+	[AM_CONDITIONAL(HAVE_GLIB, test x = x)],
+	[AM_CONDITIONAL(HAVE_GLIB, test x = y)]
+	)
 AC_SUBST(GPOINTER_TO_INT)
 AC_SUBST(GPOINTER_TO_UINT)
 AC_SUBST(GINT_TO_POINTER)
