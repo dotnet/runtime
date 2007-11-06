@@ -4223,6 +4223,7 @@ mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
 char *
 mono_string_to_utf8 (MonoString *s)
 {
+	long written = 0;
 	char *as;
 	GError *error = NULL;
 
@@ -4232,11 +4233,19 @@ mono_string_to_utf8 (MonoString *s)
 	if (!s->length)
 		return g_strdup ("");
 
-	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, NULL, &error);
+	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, &written, &error);
 	if (error) {
 		MonoException *exc = mono_get_exception_argument ("string", error->message);
 		g_error_free (error);
 		mono_raise_exception(exc);
+	}
+	/* g_utf16_to_utf8  may not be able to complete the convertion (e.g. NULL values were found, #335488) */
+	if (s->length > written) {
+		/* allocate the total length and copy the part of the string that has been converted */
+		char *as2 = g_malloc0 (s->length);
+		memcpy (as2, as, written);
+		g_free (as);
+		as = as2;
 	}
 
 	return as;
