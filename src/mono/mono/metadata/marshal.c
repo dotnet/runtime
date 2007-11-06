@@ -1130,7 +1130,7 @@ mono_string_from_bstr (gpointer bstr)
 		return NULL;
 	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
 #else
-	return mono_string_new_utf16 (mono_domain_get (), bstr, *(guint32 *)((char *)bstr - 4));
+	return mono_string_new_utf16 (mono_domain_get (), bstr, *(guint32 *)((char *)bstr - 4) / 2);
 #endif
 }
 
