@@ -457,6 +457,8 @@ embedded)
   GLIB_LIBS='-L$(top_builddir)/eglib/src -leglib -lm'
   BUILD_GLIB_CFLAGS="$GLIB_CFLAGS"
   BUILD_GLIB_LIBS="$GLIB_LIBS"
+  GMODULE_CFLAGS="$GLIB_CFLAGS"
+  GMODULE_LIBS="$GLIB_LIBS"
   AC_CONFIG_SUBDIRS(eglib)
   ;;
 system)
