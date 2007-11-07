@@ -1,3 +1,7 @@
+2007-11-07  Geoff Norton  <gnorton@novell.com>
+
+	* configure.in: Add a check for sockaddr_in(6).sin(6)_len
+
 2007-11-05  Geoff Norton  <gnorton@novell.com>
 
 	* configure.in: Set GMODULE_CFLAGS and GMODULE_LIBS to be set
