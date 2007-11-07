@@ -2789,7 +2789,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	}
 	
 	if(family == AF_INET) {
-#if __APPLE__
+#if HAVE_SOCKADDR_IN_SIN_LEN
 		saddr.sin_len = sizeof (saddr);
 #endif
 		if(getnameinfo ((struct sockaddr*)&saddr, sizeof(saddr),
@@ -2798,7 +2798,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 			return(FALSE);
 		}
 	} else if(family == AF_INET6) {
-#if __APPLE__
+#if HAVE_SOCKADDR_IN6_SIN_LEN
 		saddr6.sin6_len = sizeof (saddr6);
 #endif
 		if(getnameinfo ((struct sockaddr*)&saddr6, sizeof(saddr6),
