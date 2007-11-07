@@ -284,9 +284,10 @@ TEST_IL_SRC=			\
 	filter-bug.il		\
 	even-odd.il		\
 	bug-82022.il	\
-	bug-318677.il	\
 	vt-sync-method.il	\
 	enum_types.il
+
+#	bug-318677.il
 
 TEST_CS2_SRC = \
 	assemblyresolve_event2.2.cs	\
