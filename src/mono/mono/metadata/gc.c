@@ -211,8 +211,6 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		/* We are called from inside a finalizer, not much we can do here */
 		return FALSE;
 
-	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_UNLOAD);
-
 	/* 
 	 * No need to create another thread 'cause the finalizer thread
 	 * is still working and will take care of running the finalizers
