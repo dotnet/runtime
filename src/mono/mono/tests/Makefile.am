@@ -284,6 +284,7 @@ TEST_IL_SRC=			\
 	filter-bug.il		\
 	even-odd.il		\
 	bug-82022.il	\
+	bug-318677.il	\
 	vt-sync-method.il	\
 	enum_types.il
 
