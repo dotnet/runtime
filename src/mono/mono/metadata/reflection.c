@@ -12,6 +12,7 @@
 #include "mono/metadata/reflection.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/metadata-internals.h"
+#include <mono/metadata/profiler-private.h>
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/gc-internal.h"
 #include "mono/metadata/tokentype.h"
@@ -4315,7 +4316,9 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 #else
 	image = g_new0 (MonoDynamicImage, 1);
 #endif
-
+	
+	mono_profiler_module_event (&image->image, MONO_PROFILE_START_LOAD);
+	
 	/*g_print ("created image %p\n", image);*/
 	/* keep in sync with image.c */
 	image->image.name = assembly_name;
@@ -4368,6 +4371,8 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->save = assembly->save;
 	image->pe_kind = 0x1; /* ILOnly */
 	image->machine = 0x14c; /* I386 */
+	
+	mono_profiler_module_loaded (&image->image, MONO_PROFILE_OK);
 
 	return image;
 }
@@ -4397,6 +4402,8 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicAssembly, 1);
 #endif
 
+	mono_profiler_assembly_event (&assembly->assembly, MONO_PROFILE_START_LOAD);
+	
 	assembly->assembly.ref_count = 1;
 	assembly->assembly.dynamic = TRUE;
 	assembly->assembly.corlib_internal = assemblyb->corlib_internal;
@@ -4438,6 +4445,9 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	mono_domain_assemblies_unlock (domain);
 
 	register_assembly (mono_object_domain (assemblyb), &assemblyb->assembly, &assembly->assembly);
+	
+	mono_profiler_assembly_loaded (&assembly->assembly, MONO_PROFILE_OK);
+	
 	mono_assembly_invoke_load_hook ((MonoAssembly*)assembly);
 }
 
