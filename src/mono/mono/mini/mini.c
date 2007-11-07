@@ -9773,56 +9773,6 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 	for (bbn = cfg->bb_entry; bbn->next_bb && bbn->next_bb != bb; bbn = bbn->next_bb)
 		;
 	if (bbn->next_bb) {
-		MonoInst *last_ins = bbn->last_ins;
-
-		if (last_ins != NULL) {
-			if (! MONO_IS_BRANCH_OP (last_ins)) {
-				MonoInst *ins;
-				MONO_INST_NEW (cfg, ins, OP_BR);
-				MONO_ADD_INS (bbn, ins);
-				link_bblock (cfg, bbn, bbn->next_bb);
-				ins->inst_target_bb = bbn->next_bb;
-				
-				if (cfg->verbose_level > 2)
-					printf ("move_basic_block_to_end linked BB %d to BB %d with a branch\n", bbn->block_num, bbn->next_bb->block_num);
-			} else if (last_ins->opcode == CEE_SWITCH) {
-				/* See bug #318677 for an explanation... */
-				MonoBasicBlock *new_bb;
-				MonoInst *ins;
-				
-				/* Create block */
-				new_bb = NEW_BBLOCK (cfg);
-				new_bb->real_offset = bbn->real_offset;
-				new_bb->cil_code = bbn->cil_code;
-				new_bb->region = bbn->region;
-				new_bb->block_num = cfg->num_bblocks++;
-				
-				/* Create branch */
-				MONO_INST_NEW (cfg, ins, OP_BR);
-				MONO_ADD_INS (new_bb, ins);
-				ins->inst_target_bb = bbn->next_bb;
-				
-				/* Link all blocks */
-				link_bblock (cfg, bbn, new_bb);
-				link_bblock (cfg, new_bb, bbn->next_bb);
-				
-				if (cfg->verbose_level > 2)
-					printf ("move_basic_block_to_end linked BB %d to BB %d with a branch\n", bbn->block_num, bbn->next_bb->block_num);
-				
-				/* Insert new block into the list */
-				bbn->next_bb = new_bb;
-				bbn = new_bb;
-			}
-		} else {
-			MonoInst *ins;
-			MONO_INST_NEW (cfg, ins, OP_BR);
-			MONO_ADD_INS (bbn, ins);
-			link_bblock (cfg, bbn, bbn->next_bb);
-			ins->inst_target_bb = bbn->next_bb;
-			if (cfg->verbose_level > 2)
-				printf ("move_basic_block_to_end linked empty BB %d to BB %d with a branch\n", bbn->block_num, bbn->next_bb->block_num);
-		}
-
 		bbn->next_bb = bb->next_bb;
 	}
 
@@ -9951,7 +9901,7 @@ try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb)
  *
  */
 static void
-optimize_branches (MonoCompile *cfg, gboolean can_create_blocks)
+optimize_branches (MonoCompile *cfg)
 {
 	int i, changed = FALSE;
 	MonoBasicBlock *bb, *bbn;
@@ -10151,7 +10101,7 @@ optimize_branches (MonoCompile *cfg, gboolean can_create_blocks)
 					}
 				}
 
-				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins) && can_create_blocks) {
+				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
 					if (bb->last_ins->inst_false_bb->out_of_line && (bb->region == bb->last_ins->inst_false_bb->region)) {
 						/* Reverse the branch */
 						bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
@@ -10805,7 +10755,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
 
 	if (cfg->opt & MONO_OPT_BRANCH)
-		optimize_branches (cfg, TRUE);
+		optimize_branches (cfg);
 
 	if (cfg->opt & MONO_OPT_SSAPRE) {
 		remove_critical_edges (cfg);
@@ -10903,7 +10853,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_ssa_remove (cfg);
 
 		if (cfg->opt & MONO_OPT_BRANCH)
-			optimize_branches (cfg, FALSE);
+			optimize_branches (cfg);
 	}
 
 	/* after SSA removal */
