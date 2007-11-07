@@ -3963,11 +3963,19 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 	 */
 	if (ip [0] == CEE_DUP && ip [1] == CEE_LDTOKEN && ip [5] == 0x4 && ip [6] == CEE_CALL) {
 		MonoClass *klass = newarr->inst_newa_class;
+		guint32 field_token = read32 (ip + 2);
+		guint32 field_index = field_token & 0xffffff;
 		guint32 token = read32 (ip + 7);
-		guint32 rva, field_index;
+		guint32 rva;
 		const char *data_ptr;
 		int size = 0;
 		MonoMethod *cmethod;
+		MonoClass *dummy_class;
+		MonoClassField *field = mono_field_from_token (method->klass->image, field_token, &dummy_class, NULL);
+		int dummy_align;
+
+		if (!field)
+			return NULL;
 
 		if (newarr->inst_newa_len->opcode != OP_ICONST)
 			return NULL;
@@ -4003,6 +4011,8 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 			return NULL;
 		}
 		size *= newarr->inst_newa_len->inst_c0;
+		if (size > mono_type_size (field->type, &dummy_align))
+		    return NULL;
 		*out_size = size;
 		/*g_print ("optimized in %s: size: %d, numelems: %d\n", method->name, size, newarr->inst_newa_len->inst_c0);*/
 		field_index = read32 (ip + 2) & 0xffffff;

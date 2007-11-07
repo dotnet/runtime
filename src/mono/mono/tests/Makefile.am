@@ -351,14 +351,14 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
-test:	assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
+test:	assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535
 else
 # Can't use mkbundle on win32 since there is no static build there
 # Can't run test-unhandled-exception on Windows because of all the debug popups...
 if PLATFORM_WIN32
-test:   assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
+test:   assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535
 else
-test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466
+test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535
 endif
 endif
 
@@ -604,6 +604,14 @@ bug-81466.exe: bug-81466.il bug-81466-lib.dll
 	$(ILASM) /exe /output:bug-81466.exe $(srcdir)/bug-81466.il
 test-bug-81466: bug-81466.exe bug-81466-lib.dll
 	$(RUNTIME) bug-81466.exe
+
+EXTRA_DIST += bug-324535-il.il bug-324535.cs
+bug-324535-il.dll : bug-324535-il.il
+	$(ILASM) /dll /output:bug-324535-il.dll $(srcdir)/bug-324535-il.il
+bug-324535.exe : bug-324535.cs bug-324535-il.dll
+	$(MCS) -r:bug-324535-il.dll -out:bug-324535.exe $(srcdir)/bug-324535.cs
+test-bug-324535 : bug-324535.exe bug-324535-il.dll
+	$(RUNTIME) bug-324535.exe
 
 EXTRA_DIST += make_imt_test.sh
 imt_big_iface_test.cs: $(srcdir)/make_imt_test.sh

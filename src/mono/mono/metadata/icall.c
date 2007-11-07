@@ -718,8 +718,31 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 {
 	MonoClass *klass = array->obj.vtable->klass;
 	guint32 size = mono_array_element_size (klass);
+	MonoType *type = mono_type_get_underlying_type (&klass->element_class->byval_arg);
+	int align;
+
+	if (MONO_TYPE_IS_REFERENCE (type) ||
+			(type->type == MONO_TYPE_VALUETYPE &&
+				(!mono_type_get_class (type) ||
+				mono_type_get_class (type)->has_references))) {
+		MonoException *exc = mono_get_exception_argument("array",
+			"Cannot initialize array containing references");
+		mono_raise_exception (exc);
+	}
+
+	if (!(field_handle->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
+		MonoException *exc = mono_get_exception_argument("field_handle",
+			"Field doesn't have an RVA");
+		mono_raise_exception (exc);
+	}
 
 	size *= array->max_length;
+
+	if (size > mono_type_size (field_handle->type, &align)) {
+		MonoException *exc = mono_get_exception_argument("field_handle",
+			"Field not large enough to fill array");
+		mono_raise_exception (exc);
+	}
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #define SWAP(n) {\
@@ -734,7 +757,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 
 	/* printf ("Initialize array with elements of %s type\n", klass->element_class->name); */
 
-	switch (mono_type_get_underlying_type (&klass->element_class->byval_arg)->type) {
+	switch (type->type) {
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
