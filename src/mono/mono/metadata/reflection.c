@@ -5702,6 +5702,50 @@ mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 	CACHE_OBJECT (MonoReflectionEvent *, event, res, klass);
 }
 
+/**
+ * mono_get_reflection_missing_object:
+ * @domain: Domain where the object lives
+ *
+ * Returns the System.Reflection.Missing.Value singleton object
+ * (of type System.Reflection.Missing).
+ *
+ * Used as the value for ParameterInfo.DefaultValue when Optional
+ * is present
+ */
+static MonoObject *
+mono_get_reflection_missing_object (MonoDomain *domain)
+{
+	MonoObject *obj;
+	static MonoClassField *missing_value_field = NULL;
+	
+	if (!missing_value_field) {
+		MonoClass *missing_klass;
+		missing_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Missing");
+		mono_class_init (missing_klass);
+		missing_value_field = mono_class_get_field_from_name (missing_klass, "Value");
+		g_assert (missing_value_field);
+	}
+	obj = mono_field_get_value_object (domain, missing_value_field, NULL); 
+	g_assert (obj);
+	return obj;
+}
+
+static MonoObject*
+get_dbnull (MonoDomain *domain, MonoObject **dbnull)
+{
+	if (!*dbnull)
+		*dbnull = mono_get_dbnull_object (domain);
+	return *dbnull;
+}
+
+static MonoObject*
+get_reflection_missing (MonoDomain *domain, MonoObject **reflection_missing)
+{
+	if (!*reflection_missing)
+		*reflection_missing = mono_get_reflection_missing_object (domain);
+	return *reflection_missing;
+}
+
 /*
  * mono_param_get_objects:
  * @domain: an app domain
@@ -5720,8 +5764,8 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	char **names, **blobs = NULL;
 	guint32 *types = NULL;
 	MonoType *type = NULL;
-	MonoObject *dbnull = mono_get_dbnull_object (domain);
-	MonoObject *missing = mono_get_reflection_missing_object (domain);
+	MonoObject *dbnull = NULL;
+	MonoObject *missing = NULL;
 	MonoMarshalSpec **mspecs;
 	MonoMethodSignature *sig;
 	int i;
@@ -5757,9 +5801,9 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 
 		if (!(param->AttrsImpl & PARAM_ATTRIBUTE_HAS_DEFAULT)) {
 			if (param->AttrsImpl & PARAM_ATTRIBUTE_OPTIONAL)
-				MONO_OBJECT_SETREF (param, DefaultValueImpl, missing);
+				MONO_OBJECT_SETREF (param, DefaultValueImpl, get_reflection_missing (domain, &missing));
 			else
-				MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
+				MONO_OBJECT_SETREF (param, DefaultValueImpl, get_dbnull (domain, &dbnull));
 		} else {
 
 			if (!blobs) {
@@ -5788,9 +5832,9 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 			/* Type in the Constant table is MONO_TYPE_CLASS for nulls */
 			if (types [i] != MONO_TYPE_CLASS && !param->DefaultValueImpl) {
 				if (param->AttrsImpl & PARAM_ATTRIBUTE_OPTIONAL)
-					MONO_OBJECT_SETREF (param, DefaultValueImpl, missing);
+					MONO_OBJECT_SETREF (param, DefaultValueImpl, get_reflection_missing (domain, &missing));
 				else
-					MONO_OBJECT_SETREF (param, DefaultValueImpl, dbnull);
+					MONO_OBJECT_SETREF (param, DefaultValueImpl, get_dbnull (domain, &dbnull));
 			}
 			
 		}
@@ -5937,35 +5981,6 @@ mono_get_dbnull_object (MonoDomain *domain)
 	g_assert (obj);
 	return obj;
 }
-
-/**
- * mono_get_reflection_missing_object:
- * @domain: Domain where the object lives
- *
- * Returns the System.Reflection.Missing.Value singleton object
- * (of type System.Reflection.Missing).
- *
- * Used as the value for ParameterInfo.DefaultValue when Optional
- * is present
- */
-MonoObject *
-mono_get_reflection_missing_object (MonoDomain *domain)
-{
-	MonoObject *obj;
-	static MonoClassField *missing_value_field = NULL;
-	
-	if (!missing_value_field) {
-		MonoClass *missing_klass;
-		missing_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Missing");
-		mono_class_init (missing_klass);
-		missing_value_field = mono_class_get_field_from_name (missing_klass, "Value");
-		g_assert (missing_value_field);
-	}
-	obj = mono_field_get_value_object (domain, missing_value_field, NULL); 
-	g_assert (obj);
-	return obj;
-}
-
 
 static void
 get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)

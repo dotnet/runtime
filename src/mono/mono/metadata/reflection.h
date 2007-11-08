@@ -67,7 +67,6 @@ MonoArray* mono_param_get_objects  (MonoDomain *domain, MonoMethod *method);
 MonoReflectionMethodBody* mono_method_body_get_object (MonoDomain *domain, MonoMethod *method);
 
 MonoObject *mono_get_dbnull_object (MonoDomain *domain);
-MonoObject *mono_get_reflection_missing_object (MonoDomain *domain);
 
 MonoArray*  mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass);
 MonoArray*  mono_reflection_get_custom_attrs (MonoObject *obj);
