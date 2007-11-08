@@ -1,6 +1,7 @@
 2007-11-08  Wade Berrier  <wberrier@novell.com>
 
 	* configure.in: add sysconfdir for mcs config.make
+	version bump -> 1.2.6
 
 2007-11-07  Geoff Norton  <gnorton@novell.com>
 
