@@ -239,6 +239,7 @@ TEST_CS_SRC=			\
 	handleref.cs	\
 	transparentproxy.cs \
 	imt_big_iface_test.cs \
+	dbnull-missing.cs	\
 	soft-float-tests.cs
 
 if X86
