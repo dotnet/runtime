@@ -1,3 +1,7 @@
+2007-11-08  Wade Berrier  <wberrier@novell.com>
+
+	* configure.in: add sysconfdir for mcs config.make
+
 2007-11-07  Geoff Norton  <gnorton@novell.com>
 
 	* configure.in: Add a check for sockaddr_in(6).sin(6)_len
