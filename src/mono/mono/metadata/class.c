@@ -3344,6 +3344,9 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		/*class->enumtype = class->parent->enumtype; */
 		mono_class_setup_supertypes (class);
 	} else {
+		/* initialize com types if COM interfaces are present */
+		if (MONO_CLASS_IS_IMPORT (class))
+			mono_init_com_types ();
 		class->parent = NULL;
 	}
 
