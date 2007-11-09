@@ -1000,6 +1000,15 @@ mono_class_has_references (MonoClass *klass)
 #define IS_GC_REFERENCE(t) ((t)->type == MONO_TYPE_U && class->image == mono_defaults.corlib)
 #endif
 
+static MonoType*
+mono_get_basic_type_from_generic (MonoType *type)
+{
+	/* When we do generic sharing we let type variables stand for reference types. */
+	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))
+		return &mono_defaults.object_class->byval_arg;
+	return type;
+}
+
 /*
  * mono_class_layout_fields:
  * @class: a class
@@ -1024,11 +1033,12 @@ mono_class_layout_fields (MonoClass *class)
 	gboolean gc_aware_layout = FALSE;
 	MonoClassField *field;
 
-	if (class->generic_container ||
-	    (class->generic_class && class->generic_class->context.class_inst->is_open)) {
-		class->size_inited = 1;
-		return;
-	}
+	/*
+	 * When we do generic sharing we need to have layout
+	 * information for open generic classes (either with a generic
+	 * context containing type variables or with a generic
+	 * container), so we don't return in that case anymore.
+	 */
 
 	/*
 	 * Enable GC aware auto layout: in this mode, reference
@@ -1061,6 +1071,7 @@ mono_class_layout_fields (MonoClass *class)
 
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			ftype = mono_type_get_underlying_type (field->type);
+			ftype = mono_get_basic_type_from_generic (ftype);
 			if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
 				class->has_references = TRUE;
 		}
@@ -1073,6 +1084,7 @@ mono_class_layout_fields (MonoClass *class)
 
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 			ftype = mono_type_get_underlying_type (field->type);
+			ftype = mono_get_basic_type_from_generic (ftype);
 			if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
 				class->has_static_refs = TRUE;
 		}
@@ -1084,6 +1096,7 @@ mono_class_layout_fields (MonoClass *class)
 		field = &class->fields [i];
 
 		ftype = mono_type_get_underlying_type (field->type);
+		ftype = mono_get_basic_type_from_generic (ftype);
 		if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				class->has_static_refs = TRUE;
@@ -1127,6 +1140,7 @@ mono_class_layout_fields (MonoClass *class)
 					continue;
 
 				ftype = mono_type_get_underlying_type (field->type);
+				ftype = mono_get_basic_type_from_generic (ftype);
 				if (gc_aware_layout) {
 					if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
 						if (pass == 1)
@@ -1197,6 +1211,7 @@ mono_class_layout_fields (MonoClass *class)
 			 */
 			field->offset += sizeof (MonoObject);
 			ftype = mono_type_get_underlying_type (field->type);
+			ftype = mono_get_basic_type_from_generic (ftype);
 			if (MONO_TYPE_IS_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
 				if (field->offset % sizeof (gpointer)) {
 					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
