@@ -18,6 +18,8 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/mono-mlist.h>
+#include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/os/gc_wrapper.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
@@ -41,6 +43,7 @@ static gboolean gc_disabled = FALSE;
 static CRITICAL_SECTION finalizer_mutex;
 
 static GSList *domains_to_finalize= NULL;
+static MonoMList *threads_to_finalize = NULL;
 
 static MonoThread *gc_thread;
 
@@ -51,6 +54,16 @@ static HANDLE pending_done_event;
 static HANDLE shutdown_event;
 static HANDLE thread_started_event;
 #endif
+
+static void
+add_thread_to_finalize (MonoThread *thread)
+{
+	mono_finalizer_lock ();
+	if (!threads_to_finalize)
+		MONO_GC_REGISTER_ROOT (threads_to_finalize);
+	threads_to_finalize = mono_mlist_append (threads_to_finalize, (MonoObject*)thread);
+	mono_finalizer_unlock ();
+}
 
 /* 
  * actually, we might want to queue the finalize requests in a separate thread,
@@ -79,10 +92,20 @@ run_finalize (void *obj, void *data)
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 
-	if (o->vtable->klass == mono_get_thread_class ())
-		if (mono_gc_is_finalizer_thread ((MonoThread*)o))
+	if (o->vtable->klass == mono_get_thread_class ()) {
+		MonoThread *t = (MonoThread*)o;
+
+		if (mono_gc_is_finalizer_thread (t))
 			/* Avoid finalizing ourselves */
 			return;
+
+		if (t->threadpool_thread) {
+			/* Don't finalize threadpool threads - they're
+			   finalized when the threadpool shuts down. */
+			add_thread_to_finalize (t);
+			return;
+		}
+	}
 
 	/* speedup later... and use a timeout */
 	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
@@ -116,6 +139,22 @@ run_finalize (void *obj, void *data)
 
 	if (exc) {
 		/* fixme: do something useful */
+	}
+}
+
+void
+mono_gc_finalize_threadpool_threads (void)
+{
+	while (threads_to_finalize) {
+		MonoThread *thread = (MonoThread*) mono_mlist_get_data (threads_to_finalize);
+
+		/* Force finalization of the thread. */
+		thread->threadpool_thread = FALSE;
+		mono_object_register_finalizer ((MonoObject*)thread);
+
+		run_finalize (thread, NULL);
+
+		threads_to_finalize = mono_mlist_next (threads_to_finalize);
 	}
 }
 
@@ -249,6 +288,12 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	}
 
 	CloseHandle (done_event);
+
+	if (domain == mono_get_root_domain ()) {
+		mono_thread_pool_cleanup ();
+		mono_gc_finalize_threadpool_threads ();
+	}
+
 	return TRUE;
 #else
 	/* We don't support domain finalization without a GC */

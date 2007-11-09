@@ -235,7 +235,6 @@ async_invoke_io_thread (gpointer data)
 	MonoDomain *domain;
 	MonoThread *thread;
 	thread = mono_thread_current ();
-	thread->threadpool_thread = TRUE;
 	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 
 	for (;;) {
@@ -324,7 +323,7 @@ start_io_thread_or_queue (MonoSocketAsyncResult *ares)
 		InterlockedIncrement (&busy_io_worker_threads);
 		InterlockedIncrement (&io_worker_threads);
 		domain = ((ares) ? ((MonoObject *) ares)->vtable->domain : mono_domain_get ());
-		mono_thread_create (mono_get_root_domain (), async_invoke_io_thread, ares);
+		mono_thread_create_internal (mono_get_root_domain (), async_invoke_io_thread, ares, TRUE);
 	} else {
 		append_job (&io_queue_lock, &async_io_queue, (MonoObject*)ares);
 		ReleaseSemaphore (io_job_added, 1, NULL);
@@ -396,7 +395,6 @@ socket_io_poll_main (gpointer p)
 	MonoThread *thread;
 
 	thread = mono_thread_current ();
-	thread->threadpool_thread = TRUE;
 	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 
 	allocated = INITIAL_POLLFD_SIZE;
@@ -766,11 +764,11 @@ socket_io_init (SocketIOData *data)
 	g_assert (io_job_added != NULL);
 	InitializeCriticalSection (&io_queue_lock);
 	if (data->epoll_disabled) {
-		mono_thread_create (mono_get_root_domain (), socket_io_poll_main, data);
+		mono_thread_create_internal (mono_get_root_domain (), socket_io_poll_main, data, TRUE);
 	}
 #ifdef HAVE_EPOLL
 	else {
-		mono_thread_create (mono_get_root_domain (), socket_io_epoll_main, data);
+		mono_thread_create_internal (mono_get_root_domain (), socket_io_epoll_main, data, TRUE);
 	}
 #endif
 	InterlockedCompareExchange (&data->inited, 1, 0);
@@ -1053,7 +1051,7 @@ start_thread_or_queue (MonoAsyncResult *ares)
 	    worker < mono_max_worker_threads) {
 		InterlockedIncrement (&mono_worker_threads);
 		InterlockedIncrement (&busy_worker_threads);
-		mono_thread_create (mono_get_root_domain (), async_invoke_thread, ares);
+		mono_thread_create_internal (mono_get_root_domain (), async_invoke_thread, ares, TRUE);
 	} else {
 		append_job (&mono_delegate_section, &async_call_queue, (MonoObject*)ares);
 		ReleaseSemaphore (job_added, 1, NULL);
