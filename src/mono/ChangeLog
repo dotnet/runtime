@@ -1,3 +1,7 @@
+2007-11-10  Alp Toker  <alp@atoker.com>
+
+	* samples/embed/teste.c: Add a newline at the end of this printf()
+
 2007-11-08  Wade Berrier  <wberrier@novell.com>
 
 	* configure.in: add sysconfdir for mcs config.make
