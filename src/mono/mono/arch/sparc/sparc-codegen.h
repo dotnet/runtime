@@ -855,7 +855,7 @@ typedef struct {
 	do {	\
         if ((val) == 0) \
             sparc_clr_reg((ins),(reg)); \
-		else if (((guint32)(val) & 0x1fff) == 0)	\
+               else if (((guint32)(val) & 0x3ff) == 0) \
 			sparc_sethi((ins),(guint32)(val),(reg));	\
 		else if (((gint32)(val) >= -4096) && ((gint32)(val) <= 4095))	\
 			sparc_or_imm((ins),FALSE,sparc_g0,(gint32)(val),(reg));	\
@@ -883,7 +883,8 @@ typedef struct {
 		else if ((val >= -4096) && ((val) <= 4095))	\
 			sparc_or_imm((ins),FALSE,sparc_g0,bottom_word,(reg));	\
         else if ((val >= 0) && (val <= 4294967295L)) {   \
-			sparc_sethi((ins),bottom_word,(reg));	\
+               sparc_sethi((ins),bottom_word,(reg));   \
+               if (bottom_word & 0x3ff) \
 			sparc_or_imm((ins),FALSE,(reg),bottom_word&0x3ff,(reg));	\
         } \
         else if ((val >= 0) && (val <= (1L << 44) - 1)) {  \
@@ -913,7 +914,7 @@ typedef struct {
 	do {	\
         if ((val) == 0) \
             sparc_clr_reg((ins),(reg)); \
-		else if (((guint32)(val) & 0x1fff) == 0)	\
+               else if (((guint32)(val) & 0x3ff) == 0) \
 			sparc_sethi((ins),(guint32)(val),(reg));	\
 		else if (((gint32)(val) >= -4096) && ((gint32)(val) <= 4095))	\
 			sparc_or_imm((ins),FALSE,sparc_g0,(gint32)(val),(reg));	\
