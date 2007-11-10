@@ -293,18 +293,28 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	/* Hopefully this is optimized based on the actual CPU */
 	sync_instruction_memory (code, size);
 #else
-	guint64 *p = (guint64*)code;
-	guint64 *end = (guint64*)(code + ((size + 8) /8));
+	gulong start = (gulong) code;
+	gulong end = start + size;
+	gulong align;
 
-	/* 
-	 * FIXME: Flushing code in dword chunks in _slow_.
+	/* Sparcv9 chips only need flushes on 32 byte
+	 * cacheline boundaries.
+	 *
+	 * Sparcv8 needs a flush every 8 bytes.
 	 */
-	while (p < end)
+	align = (sparcv9 ? 32 : 8);
+
+	start &= ~(align - 1);
+	end = (end + (align - 1)) & ~(align - 1);
+
+	while (start < end) {
 #ifdef __GNUC__
-		__asm__ __volatile__ ("iflush %0"::"r"(p++));
+		__asm__ __volatile__ ("iflush %0"::"r"(start));
 #else
-			flushi (p ++);
+		flushi (start);
 #endif
+		start += align;
+	}
 #endif
 }
 
