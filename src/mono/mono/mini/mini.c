@@ -11442,7 +11442,16 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	 */
 	mono_runtime_class_init (mono_class_vtable (mono_domain_get (), method->klass));
 
-	compiled_method = mono_jit_compile_method (method);
+	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+		/* 
+		 * Array Get/Set/Address methods. The JIT implements them using inline code 
+		 * inside the runtime invoke wrappers, so no need to compile them.
+		 */
+		compiled_method = NULL;
+	} else {
+		compiled_method = mono_jit_compile_method (method);
+	}
 	return runtime_invoke (obj, params, exc, compiled_method);
 }
 
