@@ -570,13 +570,11 @@ stmt: CEE_STIND_REF (OP_REGVAR, CEE_ADD (reg, reg)) {
 stmt: CEE_STIND_I4 (OP_REGVAR, CEE_LDIND_I4(base)) {
 	MONO_EMIT_LOAD_MEMBASE (s, tree, state->left->tree->dreg, state->right->left->tree->inst_basereg, 
 				state->right->left->tree->inst_offset);	
-	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: CEE_STIND_REF (OP_REGVAR, CEE_LDIND_REF(base)) {
 	MONO_EMIT_LOAD_MEMBASE (s, tree, state->left->tree->dreg, state->right->left->tree->inst_basereg, 
 				state->right->left->tree->inst_offset);	
-	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_SETRET (CEE_LDIND_I1(base)),
@@ -589,7 +587,6 @@ stmt: OP_SETRET (CEE_LDIND_I4(base)),
 stmt: OP_SETRET (CEE_LDIND_U4(base)) {
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, ldind_to_load_membase (state->left->tree->opcode), 
 		sparc_i0, state->left->left->tree->inst_basereg, state->left->left->tree->inst_offset);	
-	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: OP_SETRET (CEE_LDIND_I4(OP_REGVAR)) {
@@ -624,7 +621,6 @@ stmt: OP_OUTARG (CEE_LDIND_REF(base)) {
 	int dreg = mono_regstate_next_int (s->rs);
 	MONO_EMIT_LOAD_MEMBASE (s, tree, dreg, state->left->left->tree->inst_basereg, 
 				state->left->left->tree->inst_offset);	
-	mono_bblock_add_inst (s->cbb, tree);
 
 	mono_call_inst_add_outarg_reg (s, call, dreg, tree->backend.reg3, FALSE);
 }
@@ -635,7 +631,6 @@ stmt: OP_OUTARG (CEE_LDIND_I4(base)) {
 	int dreg = mono_regstate_next_int (s->rs);
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADI4_MEMBASE, dreg, state->left->left->tree->inst_basereg, 
 				state->left->left->tree->inst_offset);	
-	mono_bblock_add_inst (s->cbb, tree);
 
 	mono_call_inst_add_outarg_reg (s, call, dreg, tree->backend.reg3, FALSE);
 }
@@ -647,8 +642,8 @@ reg: OP_LDADDR (OP_REGOFFSET) "1" {
 		tree->opcode = OP_MOVE;
 		tree->sreg1 = state->left->tree->inst_basereg;
 		tree->dreg = state->reg1;
+               mono_bblock_add_inst (s->cbb, tree);
 	}
-	mono_bblock_add_inst (s->cbb, tree);
 }
 
 lreg: OP_LNEG (lreg) "3" {
