@@ -4669,29 +4669,79 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	return res;
 }
 
+typedef struct
+{
+	MonoMethodSignature *sig;
+	MonoMethod *method;
+} SignatureMethodPair;
+
+static guint
+signature_method_pair_hash (gconstpointer data)
+{
+	SignatureMethodPair *pair = (SignatureMethodPair*)data;
+
+	return mono_signature_hash (pair->sig) ^ mono_aligned_addr_hash (pair->method);
+}
+
+static gboolean
+signature_method_pair_equal (SignatureMethodPair *pair1, SignatureMethodPair *pair2)
+{
+	return mono_metadata_signature_equal (pair1->sig, pair2->sig) && (pair1->method == pair2->method);
+}
+
+static void
+free_signature_method_pair (SignatureMethodPair *pair)
+{
+	g_free (pair);
+}
+
 /*
  * the returned method invokes all methods in a multicast delegate 
  */
 MonoMethod *
-mono_marshal_get_delegate_invoke (MonoMethod *method)
+mono_marshal_get_delegate_invoke (MonoMethod *method, MonoMethod *target_method)
 {
 	MonoMethodSignature *sig, *static_sig;
 	int i;
 	MonoMethodBuilder *mb;
-	MonoMethod *res;
+	MonoMethod *res, *newm;
 	GHashTable *cache;
+	SignatureMethodPair key;
+	SignatureMethodPair *new_key;
 	int local_prev, local_target;
 	int pos0;
 	char *name;
+	gboolean abstract;
+
+	/*
+	 * Creating a delegate with an abstract method is a non-documented .NET feature. In
+	 * that case, a virtual call is made to the abstract method with the first delegate
+	 * argument as this.
+	 */
+	abstract = target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT);
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
 		
 	sig = signature_no_pinvoke (method);
 
-	cache = method->klass->image->delegate_invoke_cache;
-	if ((res = mono_marshal_find_in_cache (cache, sig)))
-		return res;
+	if (abstract) {
+		/* We need to cache the signature+method pair */
+		mono_marshal_lock ();
+		if (!method->klass->image->delegate_abstract_invoke_cache)
+			method->klass->image->delegate_abstract_invoke_cache = g_hash_table_new_full (signature_method_pair_hash, (GEqualFunc)signature_method_pair_equal, (GDestroyNotify)free_signature_method_pair, NULL);
+		cache = method->klass->image->delegate_abstract_invoke_cache;
+		key.sig = sig;
+		key.method = target_method;
+		res = g_hash_table_lookup (cache, &key);
+		mono_marshal_unlock ();
+		if (res)
+			return res;
+	} else {
+		cache = method->klass->image->delegate_invoke_cache;
+		if ((res = mono_marshal_find_in_cache (cache, sig)))
+			return res;
+	}
 
 	static_sig = signature_dup (method->klass->image, sig);
 	static_sig->hasthis = 0;
@@ -4733,7 +4783,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	mono_mb_emit_ldloc (mb, local_prev);
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + 1);
-	mono_mb_emit_managed_call (mb, method, mono_method_signature (method));
+	mono_mb_emit_op (mb, CEE_CALLVIRT, method);
 	if (sig->ret->type != MONO_TYPE_VOID)
 		mono_mb_emit_byte (mb, CEE_POP);
 
@@ -4751,29 +4801,61 @@ mono_marshal_get_delegate_invoke (MonoMethod *method)
 	pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 	
 	/* then call this->method_ptr nonstatic */
-	mono_mb_emit_ldloc (mb, local_target); 
-	for (i = 0; i < sig->param_count; ++i)
-		mono_mb_emit_ldarg (mb, i + 1);
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-	mono_mb_emit_byte (mb, CEE_LDIND_I );
-	mono_mb_emit_op (mb, CEE_CALLI, sig);
+	if (abstract) {
+		// FIXME:
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "");
+	} else {
+		mono_mb_emit_ldloc (mb, local_target); 
+		for (i = 0; i < sig->param_count; ++i)
+			mono_mb_emit_ldarg (mb, i + 1);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mono_mb_emit_byte (mb, CEE_LDIND_I );
+		mono_mb_emit_op (mb, CEE_CALLI, sig);
 
-	mono_mb_emit_byte (mb, CEE_RET);
+		mono_mb_emit_byte (mb, CEE_RET);
+	}
 
 	/* else [target == null] call this->method_ptr static */
 	mono_mb_patch_branch (mb, pos0);
 
-	for (i = 0; i < sig->param_count; ++i)
-		mono_mb_emit_ldarg (mb, i + 1);
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-	mono_mb_emit_byte (mb, CEE_LDIND_I );
-	mono_mb_emit_op (mb, CEE_CALLI, static_sig);
+	if (abstract) {
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_op (mb, CEE_CASTCLASS, target_method->klass);
+		for (i = 1; i < sig->param_count; ++i)
+			mono_mb_emit_ldarg (mb, i + 1);
+		mono_mb_emit_op (mb, CEE_CALLVIRT, target_method);
+	} else {
+		for (i = 0; i < sig->param_count; ++i)
+			mono_mb_emit_ldarg (mb, i + 1);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mono_mb_emit_byte (mb, CEE_LDIND_I );
+		mono_mb_emit_op (mb, CEE_CALLI, static_sig);
+	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+	if (abstract) {
+		// From mono_mb_create_and_cache
+		newm = mono_mb_create_method (mb, sig, sig->param_count + 16);
+		mono_marshal_lock ();
+		res = g_hash_table_lookup (cache, &key);
+		if (!res) {
+			res = newm;
+			new_key = g_new0 (SignatureMethodPair, 1);
+			new_key->sig = sig;
+			new_key->method = target_method;
+			g_hash_table_insert (cache, new_key, res);
+			g_hash_table_insert (wrapper_hash, res, new_key);
+			mono_marshal_unlock ();
+		} else {
+			mono_marshal_unlock ();
+			mono_free_method (newm);
+		}
+	} else {
+		res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+	}
 	mono_mb_free (mb);
 
 	return res;	

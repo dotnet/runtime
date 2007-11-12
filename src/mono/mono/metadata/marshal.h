@@ -206,7 +206,7 @@ MonoMethod *
 mono_marshal_get_delegate_end_invoke (MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod *
-mono_marshal_get_delegate_invoke (MonoMethod *method) MONO_INTERNAL;
+mono_marshal_get_delegate_invoke (MonoMethod *method, MonoMethod *target_method) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_runtime_invoke (MonoMethod *method) MONO_INTERNAL;

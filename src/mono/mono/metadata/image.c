@@ -1271,6 +1271,8 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->delegate_begin_invoke_cache);
 	g_hash_table_destroy (image->delegate_end_invoke_cache);
 	g_hash_table_destroy (image->delegate_invoke_cache);
+	if (image->delegate_abstract_invoke_cache)
+		g_hash_table_destroy (image->delegate_abstract_invoke_cache);
 	g_hash_table_foreach (image->remoting_invoke_cache, free_remoting_wrappers, NULL);
 	g_hash_table_destroy (image->remoting_invoke_cache);
 	g_hash_table_destroy (image->runtime_invoke_cache);

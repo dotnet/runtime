@@ -5417,7 +5417,7 @@ ves_icall_System_Delegate_SetMulticastInvoke (MonoDelegate *this)
 	}
 	g_assert (invoke);
 
-	this->invoke_impl = mono_compile_method (mono_marshal_get_delegate_invoke (invoke));
+	this->invoke_impl = mono_compile_method (mono_marshal_get_delegate_invoke (invoke, this->method_info ? this->method_info->method : NULL));
 }
 
 /*
