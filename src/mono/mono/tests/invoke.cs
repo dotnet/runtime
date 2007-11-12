@@ -70,6 +70,14 @@ class Test {
 		// valuetype is used.
 		ConstructorInfo ci = typeof (SimpleStruct).GetConstructor (new Type [] { typeof (bool) });
 		SimpleStruct res2 = (SimpleStruct)ci.Invoke (ss, new object [] { false });
+
+		// Test invoking of the array Get/Set methods
+		string[,] arr = new string [10, 10];
+
+		arr.GetType ().GetMethod ("Set").Invoke (arr, new object [] { 1, 1, "FOO" });
+		string s = (string)arr.GetType ().GetMethod ("Get").Invoke (arr, new object [] { 1, 1 });
+		if (s != "FOO")
+			return 3;
 	
 		return 0;
 	}
