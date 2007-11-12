@@ -313,7 +313,9 @@ TEST_CS2_SRC = \
 	generic_type_definition.2.cs	\
 	bug-333798.2.cs		\
 	bug-333798-tb.2.cs		\
-	bug-335131.2.cs
+	bug-335131.2.cs		\
+	bug-322722_patch_bx.2.cs		\
+	bug-322722_dyn_method_throw.2.cs
 
 TEST_IL2_SRC = find-method.2.il	\
 	bug-79215.2.il	\
