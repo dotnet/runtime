@@ -166,7 +166,7 @@ castclass:
 isinst:
 conv.r.un: dest:f src1:i len:56
 unbox:
-throw: src1:i len:20
+throw: src1:i len:24
 op_rethrow: src1:i len:20
 ldfld:
 ldflda:
