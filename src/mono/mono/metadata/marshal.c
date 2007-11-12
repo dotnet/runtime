@@ -4952,8 +4952,18 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	static MonoMethodSignature *dealy_abort_sig = NULL;
 	int i, pos, posna;
 	char *name;
+	gboolean need_direct_wrapper = FALSE;
 
 	g_assert (method);
+
+	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+		/* 
+		 * Array Get/Set/Address methods. The JIT implements them using inline code
+		 * so we need to create an invoke wrapper which calls the method directly.
+		 */
+		need_direct_wrapper = TRUE;
+	}
 
 	if (method->string_ctor) {
 		callsig = lookup_string_ctor_signature (mono_method_signature (method));
@@ -4993,12 +5003,17 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		}
 	}
 #endif
-	cache = target_klass->image->runtime_invoke_cache;
+	if (need_direct_wrapper) {
+		cache = target_klass->image->runtime_invoke_direct_cache;
+		res = mono_marshal_find_in_cache (cache, method);
+	} else {
+		cache = target_klass->image->runtime_invoke_cache;
 
-	/* from mono_marshal_find_in_cache */
-	mono_marshal_lock ();
-	res = g_hash_table_lookup (cache, callsig);
-	mono_marshal_unlock ();
+		/* from mono_marshal_find_in_cache */
+		mono_marshal_lock ();
+		res = g_hash_table_lookup (cache, callsig);
+		mono_marshal_unlock ();
+	}
 
 	if (res) {
 		return res;
@@ -5065,10 +5080,11 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			mono_mb_emit_icon (mb, sizeof (gpointer) * i);
 			mono_mb_emit_byte (mb, CEE_ADD);
 		}
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
 
-		if (t->byref)
+		if (t->byref) {
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			continue;
+		}
 
 		type = sig->params [i]->type;
 handle_enum:
@@ -5087,6 +5103,7 @@ handle_enum:
 		case MONO_TYPE_R8:
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));
 			break;
 		case MONO_TYPE_STRING:
@@ -5095,11 +5112,11 @@ handle_enum:
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_OBJECT:
-			/* do nothing */
+			mono_mb_emit_byte (mb, mono_type_to_ldind (sig->params [i]));
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (sig->params [i])) {
-				/* do nothing */
+				mono_mb_emit_byte (mb, CEE_LDIND_I);
 				break;
 			}
 
@@ -5109,6 +5126,7 @@ handle_enum:
 				type = t->data.klass->enum_basetype->type;
 				goto handle_enum;
 			}
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
 			if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
 				/* Need to convert a boxed vtype to an mp to a Nullable struct */
 				mono_mb_emit_op (mb, CEE_UNBOX, mono_class_from_mono_type (sig->params [i]));
@@ -5122,8 +5140,12 @@ handle_enum:
 		}		
 	}
 	
-	mono_mb_emit_ldarg (mb, 3);
-	mono_mb_emit_calli (mb, callsig);
+	if (need_direct_wrapper) {
+		mono_mb_emit_op (mb, CEE_CALL, method);
+	} else {
+		mono_mb_emit_ldarg (mb, 3);
+		mono_mb_emit_calli (mb, callsig);
+	}
 
 	if (sig->ret->byref) {
 		/* fixme: */
@@ -5220,29 +5242,33 @@ handle_enum:
 	mono_mb_emit_ldloc (mb, 0);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	/* taken from mono_mb_create_and_cache */
-	mono_marshal_lock ();
-	res = g_hash_table_lookup (cache, callsig);
-	mono_marshal_unlock ();
-
-	/* Somebody may have created it before us */
-	if (!res) {
-		MonoMethod *newm;
-		newm = mono_mb_create_method (mb, csig, sig->param_count + 16);
-
+	if (need_direct_wrapper) {
+		res = mono_mb_create_and_cache (cache, method, mb, csig, sig->param_count + 16);
+	} else {
+		/* taken from mono_mb_create_and_cache */
 		mono_marshal_lock ();
 		res = g_hash_table_lookup (cache, callsig);
-		if (!res) {
-			res = newm;
-			g_hash_table_insert (cache, callsig, res);
-			g_hash_table_insert (wrapper_hash, res, callsig);
-		} else {
-			mono_free_method (newm);
-		}
 		mono_marshal_unlock ();
-	}
 
-	/* end mono_mb_create_and_cache */
+		/* Somebody may have created it before us */
+		if (!res) {
+			MonoMethod *newm;
+			newm = mono_mb_create_method (mb, csig, sig->param_count + 16);
+
+			mono_marshal_lock ();
+			res = g_hash_table_lookup (cache, callsig);
+			if (!res) {
+				res = newm;
+				g_hash_table_insert (cache, callsig, res);
+				g_hash_table_insert (wrapper_hash, res, callsig);
+			} else {
+				mono_free_method (newm);
+			}
+			mono_marshal_unlock ();
+		}
+
+		/* end mono_mb_create_and_cache */
+	}
 
 	mono_mb_free (mb);
 

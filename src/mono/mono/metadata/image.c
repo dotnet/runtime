@@ -599,6 +599,7 @@ mono_image_init (MonoImage *image)
 		g_hash_table_new ((GHashFunc)mono_signature_hash, 
 				  (GCompareFunc)mono_metadata_signature_equal);
 	
+	image->runtime_invoke_direct_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->managed_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->native_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->remoting_invoke_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -1276,6 +1277,7 @@ mono_image_close (MonoImage *image)
 	g_hash_table_foreach (image->remoting_invoke_cache, free_remoting_wrappers, NULL);
 	g_hash_table_destroy (image->remoting_invoke_cache);
 	g_hash_table_destroy (image->runtime_invoke_cache);
+	g_hash_table_destroy (image->runtime_invoke_direct_cache);
 	g_hash_table_destroy (image->synchronized_cache);
 	g_hash_table_destroy (image->unbox_wrapper_cache);
 	g_hash_table_destroy (image->cominterop_invoke_cache);
