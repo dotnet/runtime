@@ -1909,7 +1909,37 @@ arm_patch (guchar *code, const guchar *target)
 	 * 	address constant // execution never reaches here
 	 */
 	if ((ins & 0x0ffffff0) == 0x12fff10) {
-		/* branch and exchange: the address is constructed in a reg */
+		/* Branch and exchange: the address is constructed in a reg 
+		 * We can patch BX when the code sequence is the following:
+		 *  ldr     ip, [pc, #0]    ; 0x8
+		 *  b       0xc
+   		 *  .word code_ptr
+   	 	 *  mov     lr, pc
+  		 *  bx      ips
+		 * */
+		guint32 ccode [4];
+		guint8 *emit = (guint8*)ccode;
+		ARM_LDR_IMM (emit, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (emit, 0);
+		ARM_MOV_REG_REG (emit, ARMREG_LR, ARMREG_PC);
+		ARM_BX (emit, ARMREG_IP);
+
+		/*patching from magic trampoline*/
+		if (ins == ccode [3]) {
+			g_assert (code32 [-4] == ccode [0]);
+			g_assert (code32 [-3] == ccode [1]);
+			g_assert (code32 [-1] == ccode [2]);
+			code32 [-2] = (guint32)target;
+			return;
+		}
+		/*patching from JIT*/
+		if (ins == ccode [0]) {
+			g_assert (code32 [1] == ccode [1]);
+			g_assert (code32 [3] == ccode [2]);
+			g_assert (code32 [4] == ccode [3]);
+			code32 [2] = (guint32)target;
+			return;
+		}
 		g_assert_not_reached ();
 	} else {
 		guint32 ccode [4];

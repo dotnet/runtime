@@ -92,6 +92,13 @@ mono_arch_patch_callsite (guint8 *code_ptr, guint8 *addr)
 		return;
 	}
 
+	if ((((*code) >> 20) & 0xFF) == 0x12) {
+		/*g_print ("patching bx\n");*/
+		arm_patch ((char*)code, addr);
+		mono_arch_flush_icache ((char*)(code - 2), 4);
+		return;
+	}
+
 	g_assert_not_reached ();
 }
 
