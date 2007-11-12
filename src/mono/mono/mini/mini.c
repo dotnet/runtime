@@ -11125,7 +11125,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				g_assert (mi);
 				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper (mi));
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-			        nm = mono_marshal_get_delegate_invoke (method);
+			        nm = mono_marshal_get_delegate_invoke (method, NULL);
 					return mono_get_addr_from_ftnptr (mono_compile_method (nm));
 			} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_begin_invoke (method);

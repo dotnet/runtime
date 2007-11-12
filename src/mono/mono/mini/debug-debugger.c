@@ -248,7 +248,7 @@ debugger_insert_method_breakpoint (guint64 method_argument, guint64 index)
 
 		if (method->klass->parent == mono_defaults.multicastdelegate_class) {
 			if (*name == 'I' && (strcmp (name, "Invoke") == 0))
-			        nm = mono_marshal_get_delegate_invoke (method);
+			        nm = mono_marshal_get_delegate_invoke (method, NULL);
 			else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0))
 				nm = mono_marshal_get_delegate_begin_invoke (method);
 			else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0))
