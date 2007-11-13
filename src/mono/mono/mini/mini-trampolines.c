@@ -294,7 +294,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	MonoJitInfo *ji;
 	gpointer iter;
 	MonoMethod *invoke;
-	gboolean multicast, abstract;
+	gboolean multicast, callvirt;
 
 	/* Find the Invoke method */
 	iter = NULL;
@@ -313,12 +313,12 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	 * further calls don't have to go through the trampoline.
 	 */
 	ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
-	abstract = ji && (ji->method->flags & METHOD_ATTRIBUTE_ABSTRACT);
-	if (ji && !abstract)
+	callvirt = !delegate->target && ji && mono_method_signature (ji->method)->hasthis;
+	if (ji && !callvirt)
 		delegate->method_ptr = mono_compile_method (ji->method);
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
-	if (!multicast && !abstract) {
+	if (!multicast && !callvirt) {
 		code = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), delegate->target != NULL);
 
 		if (code) {
@@ -328,7 +328,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	}
 
 	/* The general, unoptimized case */
-	delegate->invoke_impl = mono_compile_method (mono_marshal_get_delegate_invoke (invoke, ji ? ji->method : NULL));
+	delegate->invoke_impl = mono_compile_method (mono_marshal_get_delegate_invoke (invoke, delegate));
 	return delegate->invoke_impl;
 }
 
