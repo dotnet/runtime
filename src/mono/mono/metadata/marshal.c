@@ -4696,10 +4696,10 @@ free_signature_method_pair (SignatureMethodPair *pair)
 }
 
 /*
- * the returned method invokes all methods in a multicast delegate 
+ * the returned method invokes all methods in a multicast delegate.
  */
 MonoMethod *
-mono_marshal_get_delegate_invoke (MonoMethod *method, MonoMethod *target_method)
+mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 {
 	MonoMethodSignature *sig, *static_sig;
 	int i;
@@ -4711,21 +4711,25 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoMethod *target_method)
 	int local_prev, local_target;
 	int pos0;
 	char *name;
-	gboolean abstract;
+	MonoMethod *target_method = NULL;
+	gboolean callvirt = FALSE;
 
 	/*
-	 * Creating a delegate with an abstract method is a non-documented .NET feature. In
-	 * that case, a virtual call is made to the abstract method with the first delegate
-	 * argument as this.
+	 * If the delegate target is null, and the target method is not static, a virtual 
+	 * call is made to that method with the first delegate argument as this. This is 
+	 * a non-documented .NET feature.
 	 */
-	abstract = target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT);
+	if (del && !del->target && del->method_info && mono_method_signature (del->method_info->method)->hasthis) {
+		callvirt = TRUE;
+		target_method = del->method_info->method;
+	}
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
 		
 	sig = signature_no_pinvoke (method);
 
-	if (abstract) {
+	if (callvirt) {
 		/* We need to cache the signature+method pair */
 		mono_marshal_lock ();
 		if (!method->klass->image->delegate_abstract_invoke_cache)
@@ -4801,7 +4805,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoMethod *target_method)
 	pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 	
 	/* then call this->method_ptr nonstatic */
-	if (abstract) {
+	if (callvirt) {
 		// FIXME:
 		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "");
 	} else {
@@ -4819,7 +4823,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoMethod *target_method)
 	/* else [target == null] call this->method_ptr static */
 	mono_mb_patch_branch (mb, pos0);
 
-	if (abstract) {
+	if (callvirt) {
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_op (mb, CEE_CASTCLASS, target_method->klass);
 		for (i = 1; i < sig->param_count; ++i)
@@ -4836,7 +4840,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoMethod *target_method)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	if (abstract) {
+	if (callvirt) {
 		// From mono_mb_create_and_cache
 		newm = mono_mb_create_method (mb, sig, sig->param_count + 16);
 		mono_marshal_lock ();
