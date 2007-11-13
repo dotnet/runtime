@@ -427,7 +427,7 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 	}
 
 	mono_loader_lock ();
-	if (field && !field->parent->generic_class)
+	if (field && !field->parent->generic_class && !field->parent->generic_container)
 		g_hash_table_insert (image->field_cache, GUINT_TO_POINTER (token), field);
 	mono_loader_unlock ();
 	return field;

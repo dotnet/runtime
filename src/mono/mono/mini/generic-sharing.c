@@ -13,42 +13,26 @@
 
 #include "mini.h"
 
-static gboolean
-generic_inst_uses_type (MonoGenericInst *inst, MonoType *type)
-{
-	int i;
-
-	if (!inst)
-		return FALSE;
-
-	for (i = 0; i < inst->type_argc; ++i)
-		if (mono_metadata_type_equal (type, inst->type_argv [i]))
-			return TRUE;
-	return FALSE;
-}
-
-static int context_check_context_used (MonoGenericContext *context, MonoGenericContext *shared_context);
+static int context_check_context_used (MonoGenericContext *context);
 
 static int
-type_check_context_used (MonoType *type, MonoGenericContext *context, gboolean recursive)
+type_check_context_used (MonoType *type, gboolean recursive)
 {
+	int t = mono_type_get_type (type);
 	int context_used = 0;
 
-	if (generic_inst_uses_type (context->class_inst, type))
+	if (t == MONO_TYPE_VAR)
 		context_used |= MONO_GENERIC_CONTEXT_USED_CLASS;
-	if (generic_inst_uses_type (context->method_inst, type))
+	else if (t == MONO_TYPE_MVAR)
 		context_used |= MONO_GENERIC_CONTEXT_USED_METHOD;
-
-	if (recursive) {
-		int t = mono_type_get_type (type);
-
+	else if (recursive) {
 		if (t == MONO_TYPE_CLASS)
-			context_used |= mono_class_check_context_used (mono_type_get_class (type), context);
+			context_used |= mono_class_check_context_used (mono_type_get_class (type));
 		else if (t == MONO_TYPE_GENERICINST) {
 			MonoGenericClass *gclass = type->data.generic_class;
 
-			context_used |= context_check_context_used (&gclass->context, context);
-			context_used |= mono_class_check_context_used (gclass->container_class, context);
+			context_used |= context_check_context_used (&gclass->context);
+			g_assert (gclass->container_class->generic_container);
 		}
 	}
 
@@ -56,7 +40,7 @@ type_check_context_used (MonoType *type, MonoGenericContext *context, gboolean r
 }
 
 static int
-inst_check_context_used (MonoGenericInst *inst, MonoGenericContext *context)
+inst_check_context_used (MonoGenericInst *inst)
 {
 	int context_used = 0;
 	int i;
@@ -65,43 +49,84 @@ inst_check_context_used (MonoGenericInst *inst, MonoGenericContext *context)
 		return 0;
 
 	for (i = 0; i < inst->type_argc; ++i)
-		context_used |= type_check_context_used (inst->type_argv [i], context, TRUE);
+		context_used |= type_check_context_used (inst->type_argv [i], TRUE);
 
 	return context_used;
 }
 
 static int
-context_check_context_used (MonoGenericContext *context, MonoGenericContext *shared_context)
+context_check_context_used (MonoGenericContext *context)
 {
 	int context_used = 0;
 
-	context_used |= inst_check_context_used (context->class_inst, shared_context);
-	context_used |= inst_check_context_used (context->method_inst, shared_context);
+	context_used |= inst_check_context_used (context->class_inst);
+	context_used |= inst_check_context_used (context->method_inst);
 
 	return context_used;
 }
 
-int
-mono_method_check_context_used (MonoMethod *method, MonoGenericContext *context)
+/*
+ * mini_method_get_context:
+ * @method: a method
+ *
+ * Returns the generic context of a method or NULL if it doesn't have
+ * one.  For an inflated method that's the context stored in the
+ * method.  Otherwise it's in the method's generic container or in the
+ * generic container of the method's class.
+ */
+MonoGenericContext*
+mini_method_get_context (MonoMethod *method)
 {
-	MonoGenericContext *method_context = mono_method_get_context (method);
+	if (method->is_inflated)
+		return mono_method_get_context (method);
+	if (method->generic_container)
+		return &method->generic_container->context;
+	if (method->klass->generic_container)
+		return &method->klass->generic_container->context;
+	return NULL;
+}
+
+/*
+ * mono_method_check_context_used:
+ * @method: a method
+ *
+ * Checks whether the method's generic context uses a type variable.
+ * Returns an int with the bits MONO_GENERIC_CONTEXT_USED_CLASS and
+ * MONO_GENERIC_CONTEXT_USED_METHOD set to reflect whether the
+ * context's class or method instantiation uses type variables.
+ */
+int
+mono_method_check_context_used (MonoMethod *method)
+{
+	MonoGenericContext *method_context = mini_method_get_context (method);
 
 	if (!method_context)
 		return 0;
 
-	return context_check_context_used (method_context, context);
+	return context_check_context_used (method_context);
 }
 
+/*
+ * mono_class_check_context_used:
+ * @class: a class
+ *
+ * Checks whether the class's generic context uses a type variable.
+ * Returns an int with the bit MONO_GENERIC_CONTEXT_USED_CLASS set to
+ * reflect whether the context's class instantiation uses type
+ * variables.
+ */
 int
-mono_class_check_context_used (MonoClass *class, MonoGenericContext *context)
+mono_class_check_context_used (MonoClass *class)
 {
 	int context_used = 0;
 
-	context_used |= type_check_context_used (&class->this_arg, context, FALSE);
-	context_used |= type_check_context_used (&class->byval_arg, context, FALSE);
+	context_used |= type_check_context_used (&class->this_arg, FALSE);
+	context_used |= type_check_context_used (&class->byval_arg, FALSE);
 
 	if (class->generic_class)
-		context_used |= context_check_context_used (&class->generic_class->context, context);
+		context_used |= context_check_context_used (&class->generic_class->context);
+	else if (class->generic_container)
+		context_used |= context_check_context_used (&class->generic_container->context);
 
 	return context_used;
 }
@@ -122,8 +147,15 @@ generic_inst_is_sharable (MonoGenericInst *inst)
 	return TRUE;
 }
 
-static gboolean
-generic_context_is_sharable (MonoGenericContext *context)
+/*
+ * mono_generic_context_is_sharable:
+ * @context: a generic context
+ *
+ * Returns whether the generic context is sharable.  A generic context
+ * is sharable iff all of its type arguments are reference type.
+ */
+gboolean
+mono_generic_context_is_sharable (MonoGenericContext *context)
 {
 	g_assert (context->class_inst || context->method_inst);
 
@@ -136,12 +168,27 @@ generic_context_is_sharable (MonoGenericContext *context)
 	return TRUE;
 }
 
+/*
+ * mono_method_is_generic_impl:
+ * @method: a method
+ *
+ * Returns whether the method is either inflated or part of an
+ * inflated class.
+ */
 gboolean
 mono_method_is_generic_impl (MonoMethod *method)
 {
 	return method->klass->generic_class != NULL && method->is_inflated;
 }
 
+/*
+ * mono_method_is_generic_sharable_impl:
+ * @method: a method
+ *
+ * Returns TRUE iff the method is inflated or part of an inflated
+ * class, its context is sharable and it has no constraints on its
+ * type parameters.  Otherwise returns FALSE.
+ */
 gboolean
 mono_method_is_generic_sharable_impl (MonoMethod *method)
 {
@@ -152,7 +199,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
 		MonoGenericContext *context = &inflated->context;
 
-		if (!generic_context_is_sharable (context))
+		if (!mono_generic_context_is_sharable (context))
 			return FALSE;
 
 		g_assert (inflated->declaring);
@@ -166,7 +213,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 	}
 
 	if (method->klass->generic_class) {
-		if (!generic_context_is_sharable (&method->klass->generic_class->context))
+		if (!mono_generic_context_is_sharable (&method->klass->generic_class->context))
 			return FALSE;
 
 		g_assert (method->klass->generic_class->container_class &&
@@ -180,47 +227,54 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 	return TRUE;
 }
 
-static MonoGenericInst*
-share_generic_inst (MonoCompile *cfg, MonoGenericInst *inst)
-{
-	MonoType **type_argv;
-	int i;
 
-	if (!inst)
-		return NULL;
-
-	type_argv = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoType*) * inst->type_argc);
-
-	for (i = 0; i < inst->type_argc; ++i)
-		type_argv [i] = &mono_defaults.object_class->byval_arg;
-
-	return mono_metadata_get_generic_inst (inst->type_argc, type_argv);
-}
-
-MonoGenericContext*
-mono_make_shared_context (MonoCompile *cfg, MonoGenericContext *context)
-{
-	MonoGenericContext *shared = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoGenericContext));
-
-	shared->class_inst = share_generic_inst (cfg, context->class_inst);
-	shared->method_inst = share_generic_inst (cfg, context->method_inst);
-
-	return shared;
-}
-
+/*
+ * mini_get_basic_type_from_generic:
+ * @gsctx: a generic sharing context
+ * @type: a type
+ *
+ * Returns a closed type corresponding to the possibly open type
+ * passed to it.
+ */
 MonoType*
 mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type)
 {
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		/* FIXME: we support sharing only of reference types */
+	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))
 		g_assert (gsctx);
-		return &mono_defaults.object_class->byval_arg;
-	}
-	return type;
+
+	return mono_type_get_basic_type_from_generic (type);
 }
 
+/*
+ * mini_type_stack_size:
+ * @gsctx: a generic sharing context
+ * @t: a type
+ * @align: Pointer to an int for returning the alignment
+ *
+ * Returns the type's stack size and the alignment in *align.  The
+ * type is allowed to be open.
+ */
 int
 mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align)
 {
 	return mono_type_stack_size_internal (t, align, gsctx != NULL);
 }
+
+/*
+ * mono_method_get_declaring_generic_method:
+ * @method: an inflated method
+ *
+ * Returns an inflated method's declaring method.
+ */
+MonoMethod*
+mono_method_get_declaring_generic_method (MonoMethod *method)
+{
+	MonoMethodInflated *inflated;
+
+	g_assert (method->is_inflated);
+
+	inflated = (MonoMethodInflated*)method;
+
+	return inflated->declaring;
+}
+

@@ -911,6 +911,38 @@ mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash)
 				       jit_info_next_value);
 }
 
+/*
+ * mono_jit_info_get_generic_sharing_context:
+ * @ji: a jit info
+ *
+ * Returns the jit info's generic sharing context, or NULL if it
+ * doesn't have one.
+ */
+MonoGenericSharingContext*
+mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji)
+{
+	if (ji->has_generic_sharing_context)
+		return *((MonoGenericSharingContext**)&ji->clauses [ji->num_clauses]);
+	else
+		return NULL;
+}
+
+/*
+ * mono_jit_info_set_generic_sharing_context:
+ * @ji: a jit info
+ * @gsctx: a generic sharing context
+ *
+ * Sets the jit info's generic sharing context.  The jit info must
+ * have memory allocated for the context.
+ */
+void
+mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx)
+{
+	g_assert (ji->has_generic_sharing_context);
+
+	*((MonoGenericSharingContext**)&ji->clauses [ji->num_clauses]) = gsctx;
+}
+
 /**
  * mono_string_equal:
  * @s1: First string to compare

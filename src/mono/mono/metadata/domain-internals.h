@@ -72,6 +72,14 @@ typedef struct {
 	} data;
 } MonoJitExceptionInfo;
 
+/*
+ * Will contain information on the generic type arguments in the
+ * future.  For now, all arguments are always reference types.
+ */
+typedef struct {
+	int dummy;
+} MonoGenericSharingContext;
+
 struct _MonoJitInfo {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the
@@ -92,8 +100,9 @@ struct _MonoJitInfo {
 	gboolean    cas_method_assert:1;
 	gboolean    cas_method_deny:1;
 	gboolean    cas_method_permitonly:1;
-	gboolean    generic_shared:1;
+	gboolean    has_generic_sharing_context:1;
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
+	/* There is an optional MonoGenericSharingContext* after the clauses */
 };
 
 typedef struct {
@@ -214,6 +223,12 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
 
 void
 mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end) MONO_INTERNAL;
+
+MonoGenericSharingContext*
+mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji) MONO_INTERNAL;
+
+void
+mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 
 MonoJitInfo*
 mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
