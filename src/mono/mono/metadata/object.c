@@ -1242,21 +1242,40 @@ mono_class_setup_runtime_generic_context (MonoClass *class, MonoDomain *domain)
 	int depth = class->idepth;
 	MonoClass *super;
 	MonoRuntimeGenericSuperInfo *super_infos;
+	MonoRuntimeGenericContext *rgctx;
+	MonoGenericInst *class_inst = class->generic_class->context.class_inst;
+	int i;
 
 	/* We don't allocate arg_infos because we don't use it yet.
 	 */
 	super_infos = mono_mempool_alloc0 (domain->mp,
-		sizeof (MonoRuntimeGenericSuperInfo) * depth + sizeof (MonoRuntimeGenericContext));
+		sizeof (MonoRuntimeGenericSuperInfo) * depth +
+		sizeof (MonoRuntimeGenericContext) +
+		sizeof (MonoRuntimeGenericArgInfo) * class_inst->type_argc);
 
-	vtable->runtime_generic_context = (MonoRuntimeGenericContext*) (super_infos + depth);
+	rgctx = vtable->runtime_generic_context = (MonoRuntimeGenericContext*) (super_infos + depth);
+
+	rgctx->domain = domain;
 
 	depth = 0;
 	for (super = class; super; super = super->parent) {
 		vtable = mono_class_vtable (domain, super);
 
 		super_infos [depth].static_data = vtable->data;
+		super_infos [depth].klass = super;
+		super_infos [depth].vtable = vtable;
 
 		depth++;
+	}
+
+	for (i = 0; i < class_inst->type_argc; ++i) {
+		MonoClass *arg_class = mono_class_from_mono_type (class_inst->type_argv [i]);
+
+		vtable = mono_class_vtable (domain, arg_class);
+
+		rgctx->arg_infos [i].static_data = vtable->data;
+		rgctx->arg_infos [i].klass = arg_class;
+		rgctx->arg_infos [i].vtable = vtable;
 	}
 }
 

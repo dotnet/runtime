@@ -326,13 +326,18 @@ int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 
 typedef struct {
 	gpointer static_data;
+	MonoClass *klass;
+	MonoVTable *vtable;
 } MonoRuntimeGenericSuperInfo;
 
 typedef struct {
+	gpointer static_data;
+	MonoClass *klass;
 	MonoVTable *vtable;
 } MonoRuntimeGenericArgInfo;
 
 typedef struct {
+	MonoDomain *domain;
 	MonoRuntimeGenericArgInfo arg_infos [MONO_ZERO_LEN_ARRAY];
 } MonoRuntimeGenericContext;
 
