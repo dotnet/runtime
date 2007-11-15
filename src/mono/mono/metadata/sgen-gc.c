@@ -598,8 +598,8 @@ static void scan_from_remsets (void *start_nursery, void *end_nursery);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static GCMemSection* alloc_section (size_t size);
-static void finalize_in_range (void **start, void **end);
-static void null_link_in_range (void **start, void **end);
+static void finalize_in_range (char *start, char *end);
+static void null_link_in_range (char *start, char *end);
 static gboolean search_fragment_for_size (size_t size);
 static void mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end);
 static void clear_remsets (void);
@@ -807,7 +807,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 		}
 		/* Note: we also handle structs with just ref fields */
 		if (num_set * sizeof (gpointer) == elem_size) {
-			return (void*)(desc | VECTOR_SUBTYPE_REFS | ((-1LL) << 16));
+			return (void*)(desc | VECTOR_SUBTYPE_REFS | ((gssize)(-1) << 16));
 		}
 		/* FIXME: try run-len first */
 		/* Note: we can't skip the object header here, because it's not present */
@@ -1911,7 +1911,7 @@ drain_gray_stack (char *start_addr, char *end_addr)
 	 */
 	do {
 		fin_ready = num_ready_finalizers;
-		finalize_in_range ((void**)start_addr, (void**)end_addr);
+		finalize_in_range (start_addr, end_addr);
 		bigo_scanned_num = scan_needed_big_objects (start_addr, end_addr);
 
 		/* drain the new stack that might have been created */
@@ -1934,7 +1934,7 @@ drain_gray_stack (char *start_addr, char *end_addr)
 	 * GC a finalized object my lose the monitor because it is cleared before the finalizer is
 	 * called.
 	 */
-	null_link_in_range ((void**)start_addr, (void**)end_addr);
+	null_link_in_range (start_addr, end_addr);
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 }
@@ -2032,7 +2032,7 @@ scan_from_registered_roots (char *addr_start, char *addr_end)
 			if (!root->root_desc)
 				continue;
 			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
-			precisely_scan_objects_from ((void**)root->start_root, root->end_root, addr_start, addr_end, root->root_desc);
+			precisely_scan_objects_from ((void**)root->start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc);
 		}
 	}
 }
@@ -2407,10 +2407,6 @@ minor_collect_or_expand_inner (size_t size)
  * Internal memory can be handled with a freelist for small objects.
  */
 
-#ifndef MAP_ANONYMOUS
-#define MAP_ANONYMOUS MAP_ANON
-#endif
-
 /*
  * Allocate a big chunk of memory from the OS (usually 64KB to several megabytes).
  * This must not require any lock.
@@ -2592,11 +2588,11 @@ build_freelist (PinnedChunk *chunk, int slot, int size, char *start_page, char *
 	void **p, **end;
 	int count = 0;
 	/*g_print ("building freelist for slot %d, size %d in %p\n", slot, size, chunk);*/
-	p = start_page;
+	p = (void**)start_page;
 	end = (void**)(end_page - size);
 	g_assert (!chunk->free_list [slot]);
 	chunk->free_list [slot] = p;
-	while ((char*)p + size <= end) {
+	while ((char*)p + size <= (char*)end) {
 		count++;
 		*p = (void*)((char*)p + size);
 		p = *p;
@@ -2857,7 +2853,7 @@ search_fragment_for_size (size_t size)
 }
 
 /*
- * size is already rounded up.
+ * size is already rounded up and we hold the GC lock.
  */
 static void*
 alloc_degraded (MonoVTable *vtable, size_t size)
@@ -2866,14 +2862,14 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 	void **p = NULL;
 	for (section = section_list; section; section = section->next) {
 		if (section != nursery_section && (section->end_data - section->next_data) >= size) {
-			p = section->next_data;
+			p = (void**)section->next_data;
 			break;
 		}
 	}
 	if (!p) {
 		section = alloc_section (nursery_section->size * 4);
 		/* FIXME: handle OOM */
-		p = section->next_data;
+		p = (void**)section->next_data;
 	}
 	section->next_data += size;
 	degraded_mode += size;
@@ -2948,7 +2944,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 				}
 			} else {
 				/* record the scan start so we can find pinned objects more easily */
-				nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = p;
+				nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
 				/* we just bump nursery_temp_end as well */
 				nursery_temp_end = MIN (nursery_frag_real_end, nursery_next + SCAN_START_SIZE);
 				DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", nursery_next, nursery_temp_end));
@@ -3003,7 +2999,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 #define object_is_fin_ready(obj) (!object_is_pinned (obj) && !object_is_forwarded (obj))
 
 static void
-finalize_in_range (void **start, void **end)
+finalize_in_range (char *start, char *end)
 {
 	FinalizeEntry *entry, *prev;
 	int i;
@@ -3045,7 +3041,7 @@ finalize_in_range (void **start, void **end)
 }
 
 static void
-null_link_in_range (void **start, void **end)
+null_link_in_range (char *start, char *end)
 {
 	FinalizeEntry *entry, *prev;
 	int i;
@@ -3433,7 +3429,7 @@ struct _SgenThreadInfo {
 	int skip;
 	void *stack_end;
 	void *stack_start;
-	RememberedSet **remset;
+	RememberedSet *remset;
 };
 
 /* FIXME: handle large/small config */
@@ -3632,7 +3628,7 @@ pin_thread_data (void *start_nursery, void *end_nursery)
 		}
 	}
 	DEBUG (2, fprintf (gc_debug_file, "Scanning current thread registers\n"));
-	conservatively_pin_objects_from (cur_thread_regs, cur_thread_regs + ARCH_NUM_REGS, start_nursery, end_nursery);
+	conservatively_pin_objects_from ((void*)cur_thread_regs, (void*)(cur_thread_regs + ARCH_NUM_REGS), start_nursery, end_nursery);
 }
 
 static void
