@@ -98,6 +98,287 @@ typedef struct
 	guint32 dwFileDateLS;
 } WapiFixedFileInfo;
 
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#define VS_FFI_SIGNATURE	0xbd04effe
+#define VS_FFI_STRUCVERSION	0x00000100
+#else
+#define VS_FFI_SIGNATURE	0xfeef04bd
+#define VS_FFI_STRUCVERSION	0x00010000
+#endif
+
+#define VS_FFI_FILEFLAGSMASK	0x3f
+
+typedef struct
+{
+	gpointer lpBaseOfDll;
+	guint32 SizeOfImage;
+	gpointer EntryPoint;
+} WapiModuleInfo;
+
+#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
+
+#define IMAGE_DIRECTORY_ENTRY_EXPORT	0
+#define IMAGE_DIRECTORY_ENTRY_IMPORT	1
+#define IMAGE_DIRECTORY_ENTRY_RESOURCE	2
+#define IMAGE_DIRECTORY_ENTRY_EXCEPTION	3
+#define IMAGE_DIRECTORY_ENTRY_SECURITY	4
+#define IMAGE_DIRECTORY_ENTRY_BASERELOC	5
+#define IMAGE_DIRECTORY_ENTRY_DEBUG	6
+#define IMAGE_DIRECTORY_ENTRY_COPYRIGHT	7
+#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE	7
+#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR	8
+#define IMAGE_DIRECTORY_ENTRY_TLS	9
+#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG	10
+#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT	11
+#define IMAGE_DIRECTORY_ENTRY_IAT	12
+#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT	13
+#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR	14
+
+#define IMAGE_SIZEOF_SHORT_NAME	8
+
+#define IMAGE_RESOURCE_NAME_IS_STRING		0x80000000
+#define IMAGE_RESOURCE_DATA_IS_DIRECTORY	0x80000000
+
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#define IMAGE_DOS_SIGNATURE	0x4d5a
+#define IMAGE_NT_SIGNATURE	0x50450000
+#define IMAGE_NT_OPTIONAL_HDR32_MAGIC	0xb10
+#define IMAGE_NT_OPTIONAL_HDR64_MAGIC	0xb20
+#else
+#define IMAGE_DOS_SIGNATURE	0x5a4d
+#define IMAGE_NT_SIGNATURE	0x00004550
+#define IMAGE_NT_OPTIONAL_HDR32_MAGIC	0x10b
+#define IMAGE_NT_OPTIONAL_HDR64_MAGIC	0x20b
+#endif
+
+typedef struct
+{
+	guint16 e_magic;
+	guint16 e_cblp;
+	guint16 e_cp;
+	guint16 e_crlc;
+	guint16 e_cparhdr;
+	guint16 e_minalloc;
+	guint16 e_maxalloc;
+	guint16 e_ss;
+	guint16 e_sp;
+	guint16 e_csum;
+	guint16 e_ip;
+	guint16 e_cs;
+	guint16 e_lfarlc;
+	guint16 e_ovno;
+	guint16 e_res[4];
+	guint16 e_oemid;
+	guint16 e_oeminfo;
+	guint16 e_res2[10];
+	guint32 e_lfanew;
+} WapiImageDosHeader;
+
+typedef struct
+{
+	guint16 Machine;
+	guint16 NumberOfSections;
+	guint32 TimeDateStamp;
+	guint32 PointerToSymbolTable;
+	guint32 NumberOfSymbols;
+	guint16 SizeOfOptionalHeader;
+	guint16 Characteristics;
+} WapiImageFileHeader;
+
+typedef struct
+{
+	guint32 VirtualAddress;
+	guint32 Size;
+} WapiImageDataDirectory;
+
+typedef struct
+{
+	guint16 Magic;
+	guint8 MajorLinkerVersion;
+	guint8 MinorLinkerVersion;
+	guint32 SizeOfCode;
+	guint32 SizeOfInitializedData;
+	guint32 SizeOfUninitializedData;
+	guint32 AddressOfEntryPoint;
+	guint32 BaseOfCode;
+	guint32 BaseOfData;
+	guint32 ImageBase;
+	guint32 SectionAlignment;
+	guint32 FileAlignment;
+	guint16 MajorOperatingSystemVersion;
+	guint16 MinorOperatingSystemVersion;
+	guint16 MajorImageVersion;
+	guint16 MinorImageVersion;
+	guint16 MajorSubsystemVersion;
+	guint16 MinorSubsystemVersion;
+	guint32 Win32VersionValue;
+	guint32 SizeOfImage;
+	guint32 SizeOfHeaders;
+	guint32 CheckSum;
+	guint16 Subsystem;
+	guint16 DllCharacteristics;
+	guint32 SizeOfStackReserve;
+	guint32 SizeOfStackCommit;
+	guint32 SizeOfHeapReserve;
+	guint32 SizeOfHeapCommit;
+	guint32 LoaderFlags;
+	guint32 NumberOfRvaAndSizes;
+	WapiImageDataDirectory DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+} WapiImageOptionalHeader32;
+
+typedef struct
+{
+	guint16 Magic;
+	guint8 MajorLinkerVersion;
+	guint8 MinorLinkerVersion;
+	guint32 SizeOfCode;
+	guint32 SizeOfInitializedData;
+	guint32 SizeOfUninitializedData;
+	guint32 AddressOfEntryPoint;
+	guint32 BaseOfCode;
+	guint64 ImageBase;
+	guint32 SectionAlignment;
+	guint32 FileAlignment;
+	guint16 MajorOperatingSystemVersion;
+	guint16 MinorOperatingSystemVersion;
+	guint16 MajorImageVersion;
+	guint16 MinorImageVersion;
+	guint16 MajorSubsystemVersion;
+	guint16 MinorSubsystemVersion;
+	guint32 Win32VersionValue;
+	guint32 SizeOfImage;
+	guint32 SizeOfHeaders;
+	guint32 CheckSum;
+	guint16 Subsystem;
+	guint16 DllCharacteristics;
+	guint64 SizeOfStackReserve;
+	guint64 SizeOfStackCommit;
+	guint64 SizeOfHeapReserve;
+	guint64 SizeOfHeapCommit;
+	guint32 LoaderFlags;
+	guint32 NumberOfRvaAndSizes;
+	WapiImageDataDirectory DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+} WapiImageOptionalHeader64;
+
+#if SIZEOF_VOID_P == 8
+typedef WapiImageOptionalHeader64	WapiImageOptionalHeader;
+#else
+typedef WapiImageOptionalHeader32	WapiImageOptionalHeader;
+#endif
+
+typedef struct
+{
+	guint32 Signature;
+	WapiImageFileHeader FileHeader;
+	WapiImageOptionalHeader OptionalHeader;
+} WapiImageNTHeaders32;
+
+typedef struct
+{
+	guint32 Signature;
+	WapiImageFileHeader FileHeader;
+	WapiImageOptionalHeader64 OptionalHeader;
+} WapiImageNTHeaders64;
+
+#if SIZEOF_VOID_P == 8
+typedef WapiImageNTHeaders64	WapiImageNTHeaders;
+#else
+typedef WapiImageNTHeaders32	WapiImageNTHeaders;
+#endif
+
+typedef struct
+{
+	guint8 Name[IMAGE_SIZEOF_SHORT_NAME];
+	union
+	{
+		guint32 PhysicalAddress;
+		guint32 VirtualSize;
+	} Misc;
+	guint32 VirtualAddress;
+	guint32 SizeOfRawData;
+	guint32 PointerToRawData;
+	guint32 PointerToRelocations;
+	guint32 PointerToLinenumbers;
+	guint16 NumberOfRelocations;
+	guint16 NumberOfLinenumbers;
+	guint32 Characteristics;
+} WapiImageSectionHeader;
+
+#define IMAGE_FIRST_SECTION(header) ((WapiImageSectionHeader *)(GPOINTER_TO_UINT (header) + G_STRUCT_OFFSET (WapiImageNTHeaders, OptionalHeader) + ((WapiImageNTHeaders *)(header))->FileHeader.SizeOfOptionalHeader))
+
+#define RT_CURSOR	0x01
+#define RT_BITMAP	0x02
+#define RT_ICON		0x03
+#define RT_MENU		0x04
+#define RT_DIALOG	0x05
+#define RT_STRING	0x06
+#define RT_FONTDIR	0x07
+#define RT_FONT		0x08
+#define RT_ACCELERATOR	0x09
+#define RT_RCDATA	0x0a
+#define RT_MESSAGETABLE	0x0b
+#define RT_GROUP_CURSOR	0x0c
+#define RT_GROUP_ICON	0x0e
+#define RT_VERSION	0x10
+#define RT_DLGINCLUDE	0x11
+#define RT_PLUGPLAY	0x13
+#define RT_VXD		0x14
+#define RT_ANICURSOR	0x15
+#define RT_ANIICON	0x16
+#define RT_HTML		0x17
+#define RT_MANIFEST	0x18
+
+typedef struct
+{
+	guint32 Characteristics;
+	guint32 TimeDateStamp;
+	guint16 MajorVersion;
+	guint16 MinorVersion;
+	guint16 NumberOfNamedEntries;
+	guint16 NumberOfIdEntries;
+} WapiImageResourceDirectory;
+
+typedef struct
+{
+	union 
+	{
+		struct 
+		{
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+			guint32 NameIsString:1;
+			guint32 NameOffset:31;
+#else
+			guint32 NameOffset:31;
+			guint32 NameIsString:1;
+#endif
+		};
+		guint32 Name;
+		guint16 Id;
+	};
+	union
+	{
+		guint32 OffsetToData;
+		struct 
+		{
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+			guint32 DataIsDirectory:1;
+			guint32 OffsetToDirectory:31;
+#else
+			guint32 OffsetToDirectory:31;
+			guint32 DataIsDirectory:1;
+#endif
+		};
+	};
+} WapiImageResourceDirectoryEntry;
+
+typedef struct 
+{
+	guint32 OffsetToData;
+	guint32 Size;
+	guint32 CodePage;
+	guint32 Reserved;
+} WapiImageResourceDataEntry;
+
 #define VS_FF_DEBUG		0x0001
 #define VS_FF_PRERELEASE	0x0002
 #define VS_FF_PATCHED		0x0004
@@ -147,14 +428,13 @@ typedef struct
 #define VFT2_FONT_VECTOR	0x0002
 #define VFT2_FONT_TRUETYPE	0x0003
 
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-#define VS_FFI_SIGNATURE	0xbd04effe
-#define VS_FFI_STRUCVERSION	0x00000100
-#else
-#define VS_FFI_SIGNATURE	0xfeef04bd
-#define VS_FFI_STRUCVERSION	0x00010000
-#endif
-
-#define VS_FFI_FILEFLAGSMASK	0x3f
+extern guint32 GetFileVersionInfoSize (gunichar2 *filename, guint32 *handle);
+extern gboolean GetFileVersionInfo (gunichar2 *filename, guint32 handle,
+				    guint32 len, gpointer data);
+extern gboolean VerQueryValue (gconstpointer datablock,
+			       const gunichar2 *subblock, gpointer *buffer,
+			       guint32 *len);
+extern guint32 VerLanguageName (guint32 lang, gunichar2 *lang_out,
+				guint32 lang_len);
 
 #endif /* _WAPI_VERSIONINFO_H_ */

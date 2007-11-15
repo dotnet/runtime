@@ -85,52 +85,6 @@ static guint32 unicode_chars (const gunichar2 *str)
 	} while(1);
 }
 
-static guint32 unicode_bytes (const gunichar2 *str)
-{
-	guint32 len=0;
-	
-	do {
-		if(str[len]=='\0') {
-			/* Include the terminators */
-			return((len*2)+2);
-		}
-		len++;
-	} while(1);
-}
-
-static gunichar2*
-unicode_get (const gunichar2 *str)
-{
-	gunichar2 *swapped;
-	int i, len;
-
-	len = unicode_bytes (str);
-	swapped = g_malloc0 (len);
-	i = 0;
-	while (str [i]) {
-		swapped [i] = GUINT16_FROM_LE (str [i]);
-		i ++;
-	}
-
-	return swapped;
-}
-
-/* 
- * compare a little-endian null-terminated utf16 string and a normal string.
- * Can be used only for ascii or latin1 chars.
- */
-static gboolean
-unicode_string_equals (const gunichar2 *str1, const gchar *str2)
-{
-	while (*str1 && *str2) {
-		if (GUINT16_TO_LE (*str1) != *str2)
-			return FALSE;
-		++str1;
-		++str2;
-	}
-	return *str1 == *str2;
-}
-
 static void process_set_field_object (MonoObject *obj, const gchar *fieldname,
 				      MonoObject *data)
 {
@@ -166,26 +120,6 @@ static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
 	*(MonoString **)(((char *)obj) + field->offset)=string;
 }
 
-static void process_set_field_string_utf8 (MonoObject *obj,
-					   const gchar *fieldname,
-					   const gchar *val)
-{
-	MonoClassField *field;
-	MonoString *string;
-
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": Setting field %s to [%s]",
-		   fieldname, val);
-#endif
-
-	string=mono_string_new (mono_object_domain (obj), val);
-	
-	field=mono_class_get_field_from_name (mono_object_class (obj),
-					      fieldname);
-	/* FIXME: moving GC */
-	*(MonoString **)(((char *)obj) + field->offset)=string;
-}
-
 static void process_set_field_int (MonoObject *obj, const gchar *fieldname,
 				   guint32 val)
 {
@@ -199,6 +133,20 @@ static void process_set_field_int (MonoObject *obj, const gchar *fieldname,
 	field=mono_class_get_field_from_name (mono_object_class (obj),
 					      fieldname);
 	*(guint32 *)(((char *)obj) + field->offset)=val;
+}
+
+static void process_set_field_intptr (MonoObject *obj, const gchar *fieldname,
+				      gpointer val)
+{
+	MonoClassField *field;
+
+#ifdef DEBUG
+	g_message ("%s: Setting field %s to %p", __func__, fieldname, val);
+#endif
+	
+	field=mono_class_get_field_from_name (mono_object_class (obj),
+					      fieldname);
+	*(gpointer *)(((char *)obj) + field->offset)=val;
 }
 
 static void process_set_field_bool (MonoObject *obj, const gchar *fieldname,
@@ -216,378 +164,186 @@ static void process_set_field_bool (MonoObject *obj, const gchar *fieldname,
 	*(guint8 *)(((char *)obj) + field->offset)=val;
 }
 
-typedef struct {
-	guint16 data_len;
-	guint16 value_len;
-	guint16 type;
-	gunichar2 *key;
-} version_data;
+#define SFI_COMMENTS		"\\StringFileInfo\\%02X%02X%02X%02X\\Comments"
+#define SFI_COMPANYNAME		"\\StringFileInfo\\%02X%02X%02X%02X\\CompanyName"
+#define SFI_FILEDESCRIPTION	"\\StringFileInfo\\%02X%02X%02X%02X\\FileDescription"
+#define SFI_FILEVERSION		"\\StringFileInfo\\%02X%02X%02X%02X\\FileVersion"
+#define SFI_INTERNALNAME	"\\StringFileInfo\\%02X%02X%02X%02X\\InternalName"
+#define SFI_LEGALCOPYRIGHT	"\\StringFileInfo\\%02X%02X%02X%02X\\LegalCopyright"
+#define SFI_LEGALTRADEMARKS	"\\StringFileInfo\\%02X%02X%02X%02X\\LegalTrademarks"
+#define SFI_ORIGINALFILENAME	"\\StringFileInfo\\%02X%02X%02X%02X\\OriginalFilename"
+#define SFI_PRIVATEBUILD	"\\StringFileInfo\\%02X%02X%02X%02X\\PrivateBuild"
+#define SFI_PRODUCTNAME		"\\StringFileInfo\\%02X%02X%02X%02X\\ProductName"
+#define SFI_PRODUCTVERSION	"\\StringFileInfo\\%02X%02X%02X%02X\\ProductVersion"
+#define SFI_SPECIALBUILD	"\\StringFileInfo\\%02X%02X%02X%02X\\SpecialBuild"
 
-/* Returns a pointer to the value data, because theres no way to know
- * how big that data is (value_len is set to zero for most blocks :-()
- */
-static gpointer process_get_versioninfo_block (gpointer data,
-					       version_data *block)
+static void process_module_string_read (MonoObject *filever, gpointer data,
+					const gchar *fieldname,
+					guchar lang_hi, guchar lang_lo,
+					const gchar *key)
 {
-	block->data_len=GUINT16_TO_LE (*((guint16 *)data));
-	data = (char *)data + sizeof(guint16);
-	block->value_len=GUINT16_TO_LE (*((guint16 *)data));
-	data = (char *)data + sizeof(guint16);
+	gchar *lang_key_utf8;
+	gunichar2 *lang_key, *buffer;
+	UINT bytes;
 
-	/* No idea what the type is supposed to indicate */
-	block->type=GUINT16_TO_LE (*((guint16 *)data));
-	data = (char *)data + sizeof(guint16);
-	block->key=((gunichar2 *)data);
+	lang_key_utf8 = g_strdup_printf (key, lang_lo, lang_hi, 0x04, 0xb0);
 
-	/* skip over the key (including the terminator) */
-	data=((gunichar2 *)data)+(unicode_chars (block->key)+1);
-
-	/* align on a 32-bit boundary */
-	data=(gpointer)((char *)data + 3);
-	data=(gpointer)((char *)data - (GPOINTER_TO_INT(data) & 3));
-	
-	return(data);
-}
-
-/* Returns a pointer to the byte following the Var block */
-static gpointer process_read_var_block (MonoObject *filever, gpointer data_ptr,
-					guint16 data_len)
-{
-	/* Not currently interested in the VarFileInfo block.  This
-	 * might change if language support is needed for file version
-	 * strings (VarFileInfo contains lists of supported
-	 * languages.)
-	 */
-	version_data block;
-
-	/* data_ptr is pointing at a Var block of length data_len */
-	data_ptr=process_get_versioninfo_block (data_ptr, &block);
-	data_ptr=((guchar *)data_ptr)+block.value_len;
-
-	return(data_ptr);
-}
-
-/* Returns a pointer to the byte following the String block, or NULL
- * if the data read hits padding.  We can't recover from this because
- * the data length does not include padding bytes, so it's not
- * possible to just return the start position + length.
- */
-static gpointer process_read_string_block (MonoObject *filever,
-					   gpointer data_ptr,
-					   guint16 data_len,
-					   gboolean store)
-{
-	version_data block;
-	guint16 string_len=28; /* Length of the StringTable block */
-
-	/* data_ptr is pointing at an array of one or more String
-	 * blocks with total length (not including alignment padding)
-	 * of data_len.
-	 */
-	while(string_len<data_len) {
-		gunichar2 *value;
-		
-		/* align on a 32-bit boundary */
-		data_ptr=(gpointer)((char *)data_ptr + 3);
-		data_ptr=(gpointer)((char *)data_ptr -
-		    (GPOINTER_TO_INT(data_ptr) & 3));
-
-		data_ptr=process_get_versioninfo_block (data_ptr, &block);
-		if(block.data_len==0) {
-			/* We must have hit padding, so give up
-			 * processing now
-			 */
 #ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Hit 0-length block, giving up");
+	g_message ("%s: asking for [%s]", __func__, lang_key_utf8);
 #endif
-			return(NULL);
-		}
-		
-		string_len=string_len+block.data_len;
-		value=unicode_get ((gunichar2 *)data_ptr);
-		/* Skip over the value */
-		data_ptr=((gunichar2 *)data_ptr)+block.value_len;
 
-		if(store==TRUE) {
-			if (unicode_string_equals (block.key, "Comments")) {
-				process_set_field_string (filever, "comments", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "CompanyName")) {
-				process_set_field_string (filever, "companyname", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "FileDescription")) {
-				process_set_field_string (filever, "filedescription", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "FileVersion")) {
-				process_set_field_string (filever, "fileversion", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "InternalName")) {
-				process_set_field_string (filever, "internalname", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "LegalCopyright")) {
-				process_set_field_string (filever, "legalcopyright", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "LegalTrademarks")) {
-				process_set_field_string (filever, "legaltrademarks", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "OriginalFilename")) {
-				process_set_field_string (filever, "originalfilename", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "PrivateBuild")) {
-				process_set_field_string (filever, "privatebuild", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "ProductName")) {
-				process_set_field_string (filever, "productname", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "ProductVersion")) {
-				process_set_field_string (filever, "productversion", value, unicode_chars (value));
-			} else if (unicode_string_equals (block.key, "SpecialBuild")) {
-				process_set_field_string (filever, "specialbuild", value, unicode_chars (value));
-			} else {
-				/* Not an error, just not interesting
-				 * in this case
-				 */
-			}
-		}
-		g_free (value);
+	lang_key = g_utf8_to_utf16 (lang_key_utf8, -1, NULL, NULL, NULL);
+
+	if (VerQueryValue (data, lang_key, (gpointer *)&buffer, &bytes)) {
+#ifdef DEBUG
+		g_message ("%s: found %d bytes of [%s]", __func__, bytes,
+			   g_utf16_to_utf8 (buffer, bytes, NULL, NULL, NULL));
+#endif
+		process_set_field_string (filever, fieldname, buffer, bytes);
 	}
-	
-	return(data_ptr);
+
+	g_free (lang_key);
+	g_free (lang_key_utf8);
 }
 
-/* returns a pointer to the byte following the Stringtable block, or
- * NULL if the data read hits padding.  We can't recover from this
- * because the data length does not include padding bytes, so it's not
- * possible to just return the start position + length
- */
-static gpointer process_read_stringtable_block (MonoObject *filever,
-						gpointer data_ptr,
-						guint16 data_len)
+static void process_module_stringtable (MonoObject *filever, gpointer data,
+					guchar lang_hi, guchar lang_lo)
 {
-	version_data block;
-	gunichar2 *value;
-	gchar *language;
-	guint16 string_len=36;	/* length of the StringFileInfo block */
-
-	/* data_ptr is pointing at an array of StringTable blocks,
-	 * with total length (not including alignment padding) of
-	 * data_len.
-	 */
-
-	while(string_len<data_len) {
-		/* align on a 32-bit boundary */
-		data_ptr=(gpointer)((char *)data_ptr + 3);
-		data_ptr=(gpointer)((char *)data_ptr -
-		    (GPOINTER_TO_INT(data_ptr) & 3));
-
-		data_ptr=process_get_versioninfo_block (data_ptr, &block);
-		if(block.data_len==0) {
-			/* We must have hit padding, so give up
-			 * processing now
-			 */
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Hit 0-length block, giving up");
-#endif
-			return(NULL);
-		}
-		string_len=string_len+block.data_len;
-
-		value = unicode_get (block.key);
-		language = g_utf16_to_utf8 (value, unicode_bytes (block.key), NULL, NULL, NULL);
-		g_strdown (language);
-
-		/* Kludge: treat en_US as neutral too */
-		if (!strcmp (language, "007f04b0") ||
-		    !strcmp (language, "000004b0") ||
-		    !strcmp (language, "040904b0")) {
-			/* Got the one we're interested in */
-			process_set_field_string_utf8 (filever, "language",
-						       "Language Neutral");
-			
-			data_ptr=process_read_string_block (filever, data_ptr,
-							    block.data_len,
-							    TRUE);
-		} else {
-			/* Some other language.  We might want to do
-			 * something with this in the future.
-			 */
-			data_ptr=process_read_string_block (filever, data_ptr,
-							    block.data_len,
-							    FALSE);
-		}
-		g_free (language);
-		g_free (value);
-		
-		if(data_ptr==NULL) {
-			/* Child block hit padding */
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": Child block hit 0-length block, giving up");
-#endif
-			return(NULL);
-		}
-	}
-		
-	return(data_ptr);
+	process_module_string_read (filever, data, "comments", lang_hi, lang_lo,
+				    SFI_COMMENTS);
+	process_module_string_read (filever, data, "companyname", lang_hi,
+				    lang_lo, SFI_COMPANYNAME);
+	process_module_string_read (filever, data, "filedescription", lang_hi,
+				    lang_lo, SFI_FILEDESCRIPTION);
+	process_module_string_read (filever, data, "fileversion", lang_hi,
+				    lang_lo, SFI_FILEVERSION);
+	process_module_string_read (filever, data, "internalname", lang_hi,
+				    lang_lo, SFI_INTERNALNAME);
+	process_module_string_read (filever, data, "legalcopyright", lang_hi,
+				    lang_lo, SFI_LEGALCOPYRIGHT);
+	process_module_string_read (filever, data, "legaltrademarks", lang_hi,
+				    lang_lo, SFI_LEGALTRADEMARKS);
+	process_module_string_read (filever, data, "originalfilename", lang_hi,
+				    lang_lo, SFI_ORIGINALFILENAME);
+	process_module_string_read (filever, data, "privatebuild", lang_hi,
+				    lang_lo, SFI_PRIVATEBUILD);
+	process_module_string_read (filever, data, "productname", lang_hi,
+				    lang_lo, SFI_PRODUCTNAME);
+	process_module_string_read (filever, data, "productversion", lang_hi,
+				    lang_lo, SFI_PRODUCTVERSION);
+	process_module_string_read (filever, data, "specialbuild", lang_hi,
+				    lang_lo, SFI_SPECIALBUILD);
 }
 
-static void process_read_fixedfileinfo_block (MonoObject *filever,
-					      VS_FIXEDFILEINFO *ffi)
+static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 {
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": ffi: sig 0x%x, strucver 0x%x, fileverm 0x%x, fileverl 0x%x, prodverm 0x%x, prodverl 0x%x, ffmask 0x%x, ff 0x%x, os 0x%x, type 0x%x, subtype 0x%x, datem 0x%x, datel 0x%x", ffi->dwSignature, ffi->dwStrucVersion, ffi->dwFileVersionMS, ffi->dwFileVersionLS, ffi->dwProductVersionMS, ffi->dwProductVersionLS, ffi->dwFileFlagsMask, ffi->dwFileFlags, ffi->dwFileOS, ffi->dwFileType, ffi->dwFileSubtype, ffi->dwFileDateMS, ffi->dwFileDateLS);
-#endif
-		
-	process_set_field_int (filever, "filemajorpart",
-			       HIWORD (ffi->dwFileVersionMS));
-	process_set_field_int (filever, "fileminorpart",
-			       LOWORD (ffi->dwFileVersionMS));
-	process_set_field_int (filever, "filebuildpart",
-			       HIWORD (ffi->dwFileVersionLS));
-	process_set_field_int (filever, "fileprivatepart",
-			       LOWORD (ffi->dwFileVersionLS));
-		
-	process_set_field_int (filever, "productmajorpart",
-			       HIWORD (ffi->dwProductVersionMS));
-	process_set_field_int (filever, "productminorpart",
-			       LOWORD (ffi->dwProductVersionMS));
-	process_set_field_int (filever, "productbuildpart",
-			       HIWORD (ffi->dwProductVersionLS));
-	process_set_field_int (filever, "productprivatepart",
-			       LOWORD (ffi->dwProductVersionLS));
-	
-	process_set_field_bool (filever, "isdebug",
-				ffi->dwFileFlags&VS_FF_DEBUG);
-	process_set_field_bool (filever, "isprerelease",
-				ffi->dwFileFlags&VS_FF_PRERELEASE);
-	process_set_field_bool (filever, "ispatched",
-				ffi->dwFileFlags&VS_FF_PATCHED);
-	process_set_field_bool (filever, "isprivatebuild",
-				ffi->dwFileFlags&VS_FF_PRIVATEBUILD);
-	process_set_field_bool (filever, "isspecialbuild",
-				ffi->dwFileFlags&VS_FF_SPECIALBUILD);
-}
-
-static void process_get_fileversion (MonoObject *filever, MonoImage *image)
-{
-	MonoPEResourceDataEntry *version_info;
-	gpointer data;
+	DWORD verinfohandle;
 	VS_FIXEDFILEINFO *ffi;
-	gpointer data_ptr;
-	version_data block;
-	gint32 data_len; /* signed to guard against underflow */
+	gpointer data;
+	DWORD datalen;
+	guchar *trans_data;
+	gunichar2 *query;
+	UINT ffi_size, trans_size;
+	BOOL ok;
+	int i;
 
-	version_info=mono_image_lookup_resource (image,
-						 MONO_PE_RESOURCE_ID_VERSION,
-						 0, NULL);
+	datalen = GetFileVersionInfoSize (filename, &verinfohandle);
+	if (datalen) {
+		data = g_malloc0 (datalen);
+		ok = GetFileVersionInfo (filename, verinfohandle, datalen,
+					 data);
+		if (ok) {
+			query = g_utf8_to_utf16 ("\\", -1, NULL, NULL, NULL);
+			if (query == NULL) {
+				g_free (data);
+				return;
+			}
+			
+			if (VerQueryValue (data, query, (gpointer *)&ffi,
+			    &ffi_size)) {
 #ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": image_lookup returned %p",
-		   version_info);
+				g_message (G_GNUC_PRETTY_FUNCTION ": recording assembly: FileName [%s] FileVersionInfo [%d.%d.%d.%d]", g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), HIWORD (ffi->dwFileVersionMS), LOWORD (ffi->dwFileVersionMS), HIWORD (ffi->dwFileVersionLS), LOWORD (ffi->dwFileVersionLS));
 #endif
-
-	if(version_info==NULL) {
-		return;
-	}
 	
-	data=mono_image_rva_map (image,
-			       version_info->rde_data_offset);
-	g_free (version_info);
-	if(data==NULL) {
-		return;
-	}
+				process_set_field_int (filever, "filemajorpart", HIWORD (ffi->dwFileVersionMS));
+				process_set_field_int (filever, "fileminorpart", LOWORD (ffi->dwFileVersionMS));
+				process_set_field_int (filever, "filebuildpart", HIWORD (ffi->dwFileVersionLS));
+				process_set_field_int (filever, "fileprivatepart", LOWORD (ffi->dwFileVersionLS));
 
-	/* See io-layer/versioninfo.h for the gory details on how this
-	 * data is laid out. (data should be pointing to
-	 * VS_VERSIONINFO data).
-	 */
+				process_set_field_int (filever, "productmajorpart", HIWORD (ffi->dwProductVersionMS));
+				process_set_field_int (filever, "productminorpart", LOWORD (ffi->dwProductVersionMS));
+				process_set_field_int (filever, "productbuildpart", HIWORD (ffi->dwProductVersionLS));
+				process_set_field_int (filever, "productprivatepart", LOWORD (ffi->dwProductVersionLS));
 
-	data_ptr=process_get_versioninfo_block (data, &block);
-		
-	data_len=block.data_len;
-		
-	if(block.value_len!=sizeof(VS_FIXEDFILEINFO)) {
+				process_set_field_bool (filever, "isdebug", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_DEBUG);
+				process_set_field_bool (filever, "isprerelease", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PRERELEASE);
+				process_set_field_bool (filever, "ispatched", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PATCHED);
+				process_set_field_bool (filever, "isprivatebuild", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PRIVATEBUILD);
+				process_set_field_bool (filever, "isspecialbuild", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_SPECIALBUILD);
+			}
+			g_free (query);
+
+			query = g_utf8_to_utf16 ("\\VarFileInfo\\Translation", -1, NULL, NULL, NULL);
+			if (query == NULL) {
+				g_free (data);
+				return;
+			}
+			
+			if (VerQueryValue (data, query,
+					   (gpointer *)&trans_data,
+					   &trans_size)) {
+				/* Look for neutral or en_US language data
+				 * (or should we use the first language ID we
+				 * see?)
+				 */
+				for (i = 0; i < trans_size; i += 4) {
 #ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": FIXEDFILEINFO size mismatch");
+		 			g_message("%s: %s has 0x%0x 0x%0x 0x%0x 0x%0x", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), trans_data[i], trans_data[i+1], trans_data[i+2], trans_data[i+3]);
 #endif
-		return;
-	}
 
-	if (!unicode_string_equals (block.key, "VS_VERSION_INFO")) {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": VS_VERSION_INFO mismatch");
-#endif
-		return;
-	}
+					if ((trans_data[i] == 0x09 &&
+					     trans_data[i+1] == 0x04 &&
+					     trans_data[i+2] == 0xb0 &&
+					     trans_data[i+3] == 0x04) ||
+					    (trans_data[i] == 0x00 &&
+					     trans_data[i+1] == 0x00 &&
+					     trans_data[i+2] == 0xb0 &&
+					     trans_data[i+3] == 0x04) ||
+					    (trans_data[i] == 0x7f &&
+					     trans_data[i+1] == 0x00 &&
+					     trans_data[i+2] == 0xb0 &&
+					     trans_data[i+3] == 0x04)) {
+						gunichar2 lang_buf[128];
+						guint32 lang, lang_count;
 
-	ffi=((VS_FIXEDFILEINFO *)data_ptr);
-	data_ptr = (char *)data_ptr + sizeof(VS_FIXEDFILEINFO);
-	if((ffi->dwSignature!=VS_FFI_SIGNATURE) ||
-	   (ffi->dwStrucVersion!=VS_FFI_STRUCVERSION)) {
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION
-			   ": FIXEDFILEINFO bad signature");
-#endif
-		return;
-	}
-	process_read_fixedfileinfo_block (filever, ffi);
-	
-	/* Subtract the 92 bytes we've already seen */
-	data_len -= 92;
-	
-	/* There now follow zero or one StringFileInfo blocks and zero
-	 * or one VarFileInfo blocks
-	 */
-	while(data_len > 0) {
-		/* align on a 32-bit boundary */
-		data_ptr=(gpointer)((char *)data_ptr + 3);
-		data_ptr=(gpointer)((char *)data_ptr -
-		    (GPOINTER_TO_INT(data_ptr) & 3));
-
-		data_ptr=process_get_versioninfo_block (data_ptr, &block);
-		if(block.data_len==0) {
-			/* We must have hit padding, so give up
-			 * processing now
-			 */
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Hit 0-length block, giving up");
-#endif
-			return;
+						lang = (trans_data[i]) |
+						       (trans_data[i+1] << 8) |
+						       (trans_data[i+2] << 16) |
+						       (trans_data[i+3] << 24);
+						lang_count = VerLanguageName (lang, lang_buf, 128);
+						if (lang_count) {
+							process_set_field_string (filever, "language", lang_buf, lang_count);
+						}
+						process_module_stringtable (filever, data, trans_data[i], trans_data[i+1]);
+					}
+				}
+			}
+			g_free (query);
 		}
-		
-		data_len=data_len-block.data_len;
-
-		if (unicode_string_equals (block.key, "VarFileInfo")) {
-			data_ptr=process_read_var_block (filever, data_ptr,
-							 block.data_len);
-		} else if (unicode_string_equals (block.key, "StringFileInfo")) {
-			data_ptr=process_read_stringtable_block (filever, data_ptr, block.data_len);
-		} else {
-			/* Bogus data */
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION
-				   ": Not a valid VERSIONINFO child block");
-			return;
-#endif
-		}
-
-		if(data_ptr==NULL) {
-			/* Child block hit padding */
-#ifdef DEBUG
-			g_message (G_GNUC_PRETTY_FUNCTION ": Child block hit 0-length block, giving up");
-#endif
-			return;
-		}
+		g_free (data);
 	}
 }
 
-static void process_add_module (GPtrArray *modules, MonoAssembly *ass)
+static void process_add_module (GPtrArray *modules, HANDLE process, HMODULE mod,
+				gunichar2 *filename, gunichar2 *modulename)
 {
 	MonoClass *proc_class, *filever_class;
 	MonoObject *item, *filever;
 	MonoDomain *domain=mono_domain_get ();
-	gchar *modulename;
-	const char* filename;
+	MODULEINFO modinfo;
+	BOOL ok;
 	
 	/* Build a System.Diagnostics.ProcessModule with the data.
-	 * Leave BaseAddress and EntryPointAddress set to NULL,
-	 * FileName is ass->image->name, FileVersionInfo is an object
-	 * constructed from the PE image data referenced by
-	 * ass->image, ModuleMemorySize set to 0, ModuleName the last
-	 * component of FileName.
 	 */
 	proc_class=mono_class_from_name (system_assembly, "System.Diagnostics",
 					 "ProcessModule");
@@ -597,60 +353,59 @@ static void process_add_module (GPtrArray *modules, MonoAssembly *ass)
 					    "System.Diagnostics",
 					    "FileVersionInfo");
 	filever=mono_object_new (domain, filever_class);
-	
-#ifdef DEBUG
-	g_message (G_GNUC_PRETTY_FUNCTION ": recording assembly: FileName [%s] FileVersionInfo [%d.%d.%d.%d], ModuleName [%s]", ass->image->name, ass->aname.major, ass->aname.minor, ass->aname.build, ass->aname.revision, ass->image->name);
-#endif
 
-	process_get_fileversion (filever, mono_assembly_get_image (ass));
+	process_get_fileversion (filever, filename);
 
-	filename = mono_image_get_filename (mono_assembly_get_image (ass));
-	process_set_field_string_utf8 (filever, "filename", filename);
-	process_set_field_string_utf8 (item, "filename", filename);
+	process_set_field_string (filever, "filename", filename,
+				  unicode_chars (filename));
+
+	ok = GetModuleInformation (process, mod, &modinfo, sizeof(MODULEINFO));
+	if (ok) {
+		process_set_field_intptr (item, "baseaddr",
+					  modinfo.lpBaseOfDll);
+		process_set_field_intptr (item, "entryaddr",
+					  modinfo.EntryPoint);
+		process_set_field_int (item, "memory_size",
+				       modinfo.SizeOfImage);
+	}
+	process_set_field_string (item, "filename", filename,
+				  unicode_chars (filename));
+	process_set_field_string (item, "modulename", modulename,
+				  unicode_chars (modulename));
 	process_set_field_object (item, "version_info", filever);
-
-	modulename=g_path_get_basename (filename);
-	process_set_field_string_utf8 (item, "modulename", modulename);
-	g_free (modulename);
 
 	/* FIXME: moving GC */
 	g_ptr_array_add (modules, item);
 }
 
-static void process_scan_modules (gpointer data, gpointer user_data)
-{
-	MonoAssembly *ass=data;
-	GPtrArray *modules=user_data;
-
-	/* The main assembly is already in the list */
-	if(mono_assembly_get_main () != ass) {
-		process_add_module (modules, ass);
-	}
-}
-
-
 /* Returns an array of System.Diagnostics.ProcessModule */
-MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this)
+MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this, HANDLE process)
 {
-	/* I was going to use toolhelp for this, but then realised I
-	 * was being an idiot :)
-	 *
-	 * (Toolhelp would give shared libraries open by the runtime,
-	 * as well as open assemblies.  On windows my tests didnt find
-	 * the assemblies loaded by mono either.)
-	 */
 	GPtrArray *modules_list=g_ptr_array_new ();
 	MonoArray *arr;
+	HMODULE mods[1024];
+	gunichar2 filename[MAX_PATH];
+	gunichar2 modname[MAX_PATH];
+	DWORD needed;
+	guint32 count;
 	guint32 i;
 	
 	MONO_ARCH_SAVE_REGS;
 
 	STASH_SYS_ASS (this);
-	
-	/* Make sure the first entry is the main module */
-	process_add_module (modules_list, mono_assembly_get_main ());
-	
-	mono_assembly_foreach (process_scan_modules, modules_list);
+
+	if (EnumProcessModules (process, mods, sizeof(mods), &needed)) {
+		count = needed / sizeof(HMODULE);
+		for (i = 0; i < count; i++) {
+			if (GetModuleBaseName (process, mods[i], modname,
+					       MAX_PATH) &&
+			    GetModuleFileNameEx (process, mods[i], filename,
+						 MAX_PATH)) {
+				process_add_module (modules_list, process,
+						    mods[i], filename, modname);
+			}
+		}
+	}
 
 	/* Build a MonoArray out of modules_list */
 	arr=mono_array_new (mono_domain_get (), mono_get_object_class (),
@@ -667,30 +422,14 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 
 void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this, MonoString *filename)
 {
-	MonoImage *image;
-	gchar *filename_utf8;
-	
 	MONO_ARCH_SAVE_REGS;
 
 	STASH_SYS_ASS (this);
 	
-	filename_utf8 = mono_string_to_utf8 (filename);
-	image = mono_pe_file_open (filename_utf8, NULL);
-	g_free (filename_utf8);
-	
-	if(image==NULL) {
-		/* FIXME: an exception might be appropriate here */
-#ifdef DEBUG
-		g_message (G_GNUC_PRETTY_FUNCTION ": Failed to load image");
-#endif
-
-		return;
-	}
-	
-	process_get_fileversion (this, image);
-	process_set_field_string_utf8 (this, "filename", mono_image_get_filename (image));
-	
-	mono_image_close (image);
+	process_get_fileversion (this, mono_string_chars (filename));
+	process_set_field_string (this, "filename",
+				  mono_string_chars (filename),
+				  mono_string_length (filename));
 }
 
 /* Only used when UseShellExecute is false */
@@ -1048,7 +787,7 @@ gint64 ves_icall_System_Diagnostics_Process_StartTime_internal (HANDLE process)
 
 gint32 ves_icall_System_Diagnostics_Process_ExitCode_internal (HANDLE process)
 {
-	guint32 code;
+	DWORD code;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -1067,7 +806,7 @@ MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE pr
 	gboolean ok;
 	HMODULE mod;
 	gunichar2 name[MAX_PATH];
-	guint32 needed;
+	DWORD needed;
 	guint32 len;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -1097,8 +836,9 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 {
 	MonoArray *procs;
 	gboolean ret;
-	guint32 needed, count, i;
-	guint32 pids[1024];
+	DWORD needed;
+	guint32 count, i;
+	DWORD pids[1024];
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -1108,7 +848,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 		return(NULL);
 	}
 	
-	count=needed/sizeof(guint32);
+	count=needed/sizeof(DWORD);
 	procs=mono_array_new (mono_domain_get (), mono_get_int32_class (),
 			      count);
 	for(i=0; i<count; i++) {
@@ -1121,7 +861,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE process, guint32 *min, guint32 *max)
 {
 	gboolean ret;
-	size_t ws_min, ws_max;
+	SIZE_T ws_min, ws_max;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -1135,8 +875,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_GetWorkingSet_internal (HANDLE 
 MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE process, guint32 min, guint32 max, MonoBoolean use_min)
 {
 	gboolean ret;
-	size_t ws_min;
-	size_t ws_max;
+	SIZE_T ws_min;
+	SIZE_T ws_max;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -1146,9 +886,9 @@ MonoBoolean ves_icall_System_Diagnostics_Process_SetWorkingSet_internal (HANDLE 
 	}
 	
 	if(use_min==TRUE) {
-		ws_min=min;
+		ws_min=(SIZE_T)min;
 	} else {
-		ws_max=max;
+		ws_max=(SIZE_T)max;
 	}
 	
 	ret=SetProcessWorkingSetSize (process, ws_min, ws_max);

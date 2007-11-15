@@ -9,6 +9,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <stdio.h>
 #include <string.h>
 #include <pthread.h>
 #include <sched.h>
@@ -21,6 +22,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <fcntl.h>
+#include <sys/param.h>
 
 /* sys/resource.h (for rusage) is required when using osx 10.3 (but not 10.4) */
 #ifdef __APPLE__
@@ -1533,9 +1535,162 @@ gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 	return(TRUE);
 }
 
+typedef struct
+{
+	gpointer address_start;
+	gpointer address_end;
+	gchar *perms;
+	gpointer address_offset;
+	dev_t device;
+	ino_t inode;
+	gchar *filename;
+} WapiProcModule;
+
+static void free_procmodule (WapiProcModule *mod)
+{
+	if (mod->perms != NULL) {
+		g_free (mod->perms);
+	}
+	if (mod->filename != NULL) {
+		g_free (mod->filename);
+	}
+	g_free (mod);
+}
+
+static GSList *load_modules (FILE *fp)
+{
+	gchar buf[MAXPATHLEN + 1], **fields, **addresses;
+	GSList *ret = NULL;
+	WapiProcModule *mod;
+	char *ep;
+	long address_start, address_end, address_offset, maj, min;
+	dev_t device;
+	ino_t inode;
+	
+	while (fgets (buf, sizeof(buf), fp)) {
+		/* Have to specify 7 fields here, as otherwise
+		 * g_strsplit_set gives us variable numbers of empty
+		 * fields when the input buffer contains contiguous
+		 * spaces before the filename.  Unuseful.
+		 */
+		fields = g_strsplit_set (buf, " \t:", 7);
+		if (g_strv_length (fields) < 7) {
+			g_strfreev (fields);
+			continue;
+		}
+
+		g_strstrip (fields[6]);
+		if ((strlen (fields[0]) == 0) ||
+		    (strlen (fields[2]) == 0) ||
+		    (strlen (fields[3]) == 0) ||
+		    (strlen (fields[4]) == 0) ||
+		    (strlen (fields[5]) == 0) ||
+		    (strlen (fields[6]) == 0)) {
+			g_strfreev (fields);
+			continue;
+		}
+
+		ep = NULL;
+		address_offset = strtol (fields[2], &ep, 16);
+		if ((address_offset == LONG_MIN) ||
+		    (address_offset == LONG_MAX) ||
+		    (ep == NULL) ||
+		    (*ep != '\0')) {
+			g_strfreev (fields);
+			continue;
+		}
+
+		ep = NULL;
+		maj = strtol (fields[3], &ep, 16);
+		if ((maj == LONG_MIN) ||
+		    (maj == LONG_MAX) ||
+		    (ep == NULL) ||
+		    (*ep != '\0')) {
+			g_strfreev (fields);
+			continue;
+		}
+		
+		ep = NULL;
+		min = strtol (fields[4], &ep, 16);
+		if ((min == LONG_MIN) ||
+		    (min == LONG_MAX) ||
+		    (ep == NULL) ||
+		    (*ep != '\0')) {
+			g_strfreev (fields);
+			continue;
+		}
+
+		inode = (ino_t)atoi (fields[5]);
+		device = makedev ((int)maj, (int)min);
+		
+		if ((device == 0) &&
+		    (inode == 0)) {
+			g_strfreev (fields);
+			continue;
+		}
+			
+		addresses = g_strsplit (fields[0], "-", -1);
+		if (g_strv_length (addresses) != 2) {
+			g_strfreev (addresses);
+			g_strfreev (fields);
+			continue;
+		}
+
+		ep = NULL;
+		address_start = strtol (addresses[0], &ep, 16);
+		if ((address_start == LONG_MIN) ||
+		    (address_start == LONG_MAX) ||
+		    (ep == NULL) ||
+		    (*ep != '\0')) {
+			g_strfreev (addresses);
+			g_strfreev (fields);
+			continue;
+		}
+
+		ep = NULL;
+		address_end = strtol (addresses[1], &ep, 16);
+		if ((address_end == LONG_MIN) ||
+		    (address_end == LONG_MAX) ||
+		    (ep == NULL) ||
+		    (*ep != '\0')) {
+			g_strfreev (addresses);
+			g_strfreev (fields);
+			continue;
+		}
+		
+		
+		mod = g_new0 (WapiProcModule, 1);
+		mod->address_start = GUINT_TO_POINTER (address_start);
+		mod->address_end = GUINT_TO_POINTER (address_end);
+		mod->perms = NULL;
+		mod->address_offset = GUINT_TO_POINTER (address_offset);
+		mod->device = device;
+		mod->inode = inode;
+		mod->filename = g_strdup (fields[6]);
+		
+		ret = g_slist_prepend (ret, mod);
+		
+		g_strfreev (addresses);
+		g_strfreev (fields);
+	}
+
+	ret = g_slist_reverse (ret);
+	
+	return(ret);
+}
+
 gboolean EnumProcessModules (gpointer process, gpointer *modules,
 			     guint32 size, guint32 *needed)
 {
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	gchar *filename;
+	FILE *fp;
+	GSList *mods = NULL;
+	WapiProcModule *module;
+	guint32 count, avail = size / sizeof(gpointer);
+	int i;
+	
 	/* Store modules in an array of pointers (main module as
 	 * modules[0]), using the load address for each module as a
 	 * token.  (Use 'NULL' as an alternative for the main module
@@ -1544,26 +1699,72 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 	 * other systems will have to implement /dev/kmem reading or
 	 * whatever other horrid technique is needed.
 	 */
-	if(size<sizeof(gpointer)) {
+	if (size < sizeof(gpointer)) {
+		return(FALSE);
+	}
+
+	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				  (gpointer *)&process_handle);
+	if (ok == FALSE) {
+#ifdef DEBUG
+		g_message ("%s: Can't find process %p", __func__, process);
+#endif
+		
 		return(FALSE);
 	}
 	
-#ifdef linux
-	modules[0]=NULL;
-	*needed=sizeof(gpointer);
-#else
-	modules[0]=NULL;
-	*needed=sizeof(gpointer);
-#endif
+	filename = g_strdup_printf ("/proc/%d/maps", process_handle->id);
+	if ((fp = fopen (filename, "r")) == NULL) {
+		/* No /proc/<pid>/maps so just return the main module
+		 * shortcut for now
+		 */
+		modules[0] = NULL;
+		*needed = sizeof(gpointer);
+	} else {
+		mods = load_modules (fp);
+		count = g_slist_length (mods);
+		
+		*needed = sizeof(gpointer) * count;
+
+		/* Use the NULL shortcut, as the first line in
+		 * /proc/<pid>/maps isn't the executable, and we need
+		 * that first in the returned list
+		 */
+		modules[0] = NULL;
+		for (i = 1; i < avail && i < count; i++) {
+			module = (WapiProcModule *)g_slist_nth_data (mods, i);
+			modules[i] = module->address_start;
+		}
+		
+		for (i = 0; i < count; i++) {
+			free_procmodule (g_slist_nth_data (mods, i));
+		}
+		g_slist_free (mods);
+	}
+
+	fclose (fp);
+	g_free (filename);
 	
 	return(TRUE);
 }
 
-guint32 GetModuleBaseName (gpointer process, gpointer module,
-			   gunichar2 *basename, guint32 size)
+static guint32 get_module_name (gpointer process, gpointer module,
+				gunichar2 *basename, guint32 size,
+				gboolean base)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
+	pid_t pid;
+	gunichar2 *procname;
+	gchar *procname_ext = NULL;
+	glong len;
+	gsize bytes;
+	gchar *filename;
+	FILE *fp;
+	GSList *mods = NULL;
+	WapiProcModule *found_module;
+	guint32 count;
+	int i;
 	
 	mono_once (&process_current_once, process_set_current);
 
@@ -1572,50 +1773,85 @@ guint32 GetModuleBaseName (gpointer process, gpointer module,
 		   __func__, process, module);
 #endif
 
-	if(basename==NULL || size==0) {
-		return(FALSE);
+	if (basename == NULL || size == 0) {
+		return(0);
 	}
 	
-	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
-				(gpointer *)&process_handle);
-	if(ok==FALSE) {
+	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				  (gpointer *)&process_handle);
+	if (ok == FALSE) {
 #ifdef DEBUG
 		g_message ("%s: Can't find process %p", __func__, process);
 #endif
 		
-		return(FALSE);
+		return(0);
 	}
+	pid = process_handle->id;
 
-	if(module==NULL) {
+	if (module == NULL) {
 		/* Shorthand for the main module, which has the
 		 * process name recorded in the handle data
 		 */
-		pid_t pid;
-		gunichar2 *procname;
-		gchar *procname_utf8 = NULL;
-		glong len, bytes;
 		
 #ifdef DEBUG
 		g_message ("%s: Returning main module name", __func__);
 #endif
 
-		pid=process_handle->id;
-		procname_utf8 = process_handle->proc_name;
-	
+		if (base) {
+			procname_ext = g_path_get_basename (process_handle->proc_name);
+		} else {
+			procname_ext = g_strdup (process_handle->proc_name);
+		}
+	} else {
+		/* Look up the address in /proc/<pid>/maps */
+		filename = g_strdup_printf ("/proc/%d/maps", pid);
+		if ((fp = fopen (filename, "r")) == NULL) {
+			/* No /proc/<pid>/maps, so just return failure
+			 * for now
+			 */
+			g_free (filename);
+			return(0);
+		} else {
+			mods = load_modules (fp);
+			fclose (fp);
+			count = g_slist_length (mods);
+			
+			for (i = 0; i < count; i++) {
+				found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
+				if (procname_ext == NULL &&
+				    found_module->address_start == module) {
+					if (base) {
+						procname_ext = g_path_get_basename (found_module->filename);
+					} else {
+						procname_ext = g_strdup (found_module->filename);
+					}
+				}
+
+				free_procmodule (found_module);
+			}
+
+			g_slist_free (mods);
+			g_free (filename);
+		}
+	}
+
+	if (procname_ext != NULL) {
 #ifdef DEBUG
 		g_message ("%s: Process name is [%s]", __func__,
-			   procname_utf8);
+			   procname_ext);
 #endif
 
-		procname = g_utf8_to_utf16 (procname_utf8, -1, NULL, &len,
-					    NULL);
+		procname = mono_unicode_from_external (procname_ext, &bytes);
 		if (procname == NULL) {
 			/* bugger */
+			g_free (procname_ext);
 			return(0);
 		}
-
-		/* Add the terminator, and convert chars to bytes */
-		bytes = (len + 1) * 2;
+		
+		len = (bytes / 2);
+		
+		/* Add the terminator */
+		bytes += 2;
 		
 		if (size < bytes) {
 #ifdef DEBUG
@@ -1633,13 +1869,102 @@ guint32 GetModuleBaseName (gpointer process, gpointer module,
 		}
 		
 		g_free (procname);
-
+		g_free (procname_ext);
+		
 		return(len);
-	} else {
-		/* Look up the address in /proc/<pid>/maps */
 	}
 	
 	return(0);
+}
+
+guint32 GetModuleBaseName (gpointer process, gpointer module,
+			   gunichar2 *basename, guint32 size)
+{
+	return(get_module_name (process, module, basename, size, TRUE));
+}
+
+guint32 GetModuleFileNameEx (gpointer process, gpointer module,
+			     gunichar2 *filename, guint32 size)
+{
+	return(get_module_name (process, module, filename, size, FALSE));
+}
+
+gboolean GetModuleInformation (gpointer process, gpointer module,
+			       WapiModuleInfo *modinfo, guint32 size)
+{
+	struct _WapiHandle_process *process_handle;
+	gboolean ok;
+	pid_t pid;
+	gchar *filename;
+	FILE *fp;
+	GSList *mods = NULL;
+	WapiProcModule *found_module;
+	guint32 count;
+	int i;
+	gboolean ret = FALSE;
+	
+	mono_once (&process_current_once, process_set_current);
+	
+#ifdef DEBUG
+	g_message ("%s: Getting module info, process handle %p module %p",
+		   __func__, process, module);
+#endif
+
+	if (modinfo == NULL || size < sizeof(WapiModuleInfo)) {
+		return(FALSE);
+	}
+	
+	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+				  (gpointer *)&process_handle);
+	if (ok == FALSE) {
+#ifdef DEBUG
+		g_message ("%s: Can't find process %p", __func__, process);
+#endif
+
+		return(FALSE);
+	}
+	pid = process_handle->id;
+	
+	if (module == NULL) {
+		/* Shorthand for the main module, which has the
+		 * process name recorded in the handle data
+		 *
+		 * FIXME: try and dig through the /proc/<pid>/maps
+		 * list matching filename?
+		 */
+		return(FALSE);
+	} else {
+		/* Look up the address in /proc/<pid>/maps */
+		filename = g_strdup_printf ("/proc/%d/maps", pid);
+		if ((fp = fopen (filename, "r")) == NULL) {
+			/* No /proc/<pid>/maps, so just return failure
+			 * for now
+			 */
+			g_free (filename);
+			return(FALSE);
+		} else {
+			mods = load_modules (fp);
+			fclose (fp);
+			count = g_slist_length (mods);
+			
+			for (i = 0; i < count; i++) {
+				found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
+				if (found_module->address_start == module) {
+					modinfo->lpBaseOfDll = found_module->address_start;
+					modinfo->SizeOfImage = GPOINTER_TO_UINT(found_module->address_end) - GPOINTER_TO_UINT (found_module->address_start);
+					modinfo->EntryPoint = found_module->address_offset;
+					ret = TRUE;
+				}
+				
+				free_procmodule (found_module);
+			}
+			
+			g_slist_free (mods);
+			g_free (filename);
+		}
+	}
+	
+	return(ret);
 }
 
 gboolean GetProcessWorkingSetSize (gpointer process, size_t *min, size_t *max)

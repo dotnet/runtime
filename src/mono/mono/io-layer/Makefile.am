@@ -96,6 +96,7 @@ OTHER_SRC = \
 	timefuncs-private.h	\
 	types.h			\
 	uglify.h		\
+	versioninfo.c		\
 	versioninfo.h		\
 	wait.c			\
 	wait.h			\

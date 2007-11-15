@@ -14,6 +14,7 @@
 
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/access.h>
+#include <mono/io-layer/versioninfo.h>
 
 G_BEGIN_DECLS
 
@@ -199,6 +200,10 @@ extern gboolean EnumProcessModules (gpointer process, gpointer *modules,
 				    guint32 size, guint32 *needed);
 extern guint32 GetModuleBaseName (gpointer process, gpointer module,
 				  gunichar2 *basename, guint32 size);
+extern guint32 GetModuleFileNameEx (gpointer process, gpointer module,
+				    gunichar2 *filename, guint32 size);
+extern gboolean GetModuleInformation (gpointer process, gpointer module,
+				      WapiModuleInfo *modinfo, guint32 size);
 extern gboolean GetProcessWorkingSetSize (gpointer process, size_t *min,
 					  size_t *max);
 extern gboolean SetProcessWorkingSetSize (gpointer process, size_t min,

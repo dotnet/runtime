@@ -61,7 +61,7 @@ HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid) MO
 MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void) MONO_INTERNAL;
 guint32 ves_icall_System_Diagnostics_Process_GetPid_internal (void) MONO_INTERNAL;
 void ves_icall_System_Diagnostics_Process_Process_free_internal (MonoObject *this, HANDLE process) MONO_INTERNAL;
-MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this) MONO_INTERNAL;
+MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this, HANDLE process) MONO_INTERNAL;
 void ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this, MonoString *filename) MONO_INTERNAL;
 MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoProcessStartInfo *proc_start_info, MonoProcInfo *process_handle) MONO_INTERNAL;
 MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoProcessStartInfo *proc_start_info, HANDLE stdin_handle, HANDLE stdout_handle, HANDLE stderr_handle, MonoProcInfo *process_handle) MONO_INTERNAL;
