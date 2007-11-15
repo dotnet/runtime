@@ -3475,6 +3475,28 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	return res;
 }
 
+static guint
+property_hash (gconstpointer data)
+{
+	MonoProperty *prop = (MonoProperty*)data;
+
+	return g_str_hash (prop->name);
+}
+
+static gboolean
+property_equal (MonoProperty *prop1, MonoProperty *prop2)
+{
+	// Properties are hide-by-name-and-signature
+	if (!g_str_equal (prop1->name, prop2->name))
+		return FALSE;
+
+	if (prop1->get && prop2->get && !mono_metadata_signature_equal (mono_method_signature (prop1->get), mono_method_signature (prop2->get)))
+		return FALSE;
+	if (prop1->set && prop2->set && !mono_metadata_signature_equal (mono_method_signature (prop1->set), mono_method_signature (prop2->set)))
+		return FALSE;
+	return TRUE;
+}
+
 static MonoArray*
 ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
@@ -3484,14 +3506,13 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	MonoArray *res;
 	MonoMethod *method;
 	MonoProperty *prop;
-	int i, match, nslots;
+	int i, match;
 	int len = 0;
 	guint32 flags;
-	guint32 method_slots_default [8];
-	guint32 *method_slots;
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	gpointer iter;
+	GHashTable *properties;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -3510,21 +3531,14 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 
 	mono_class_setup_vtable (klass);
 
-	nslots = MONO_CLASS_IS_INTERFACE (klass) ? mono_class_num_methods (klass) : klass->vtable_size;
-	if (nslots >= sizeof (method_slots_default) * 8) {
-		method_slots = g_new0 (guint32, nslots / 32 + 1);
-	} else {
-		method_slots = method_slots_default;
-		memset (method_slots, 0, sizeof (method_slots_default));
-	}
+	properties = g_hash_table_new (property_hash, (GEqualFunc)property_equal);
 	i = 0;
 	len = 2;
 	res = mono_array_new (domain, System_Reflection_PropertyInfo, len);
 handle_parent:
 	mono_class_setup_vtable (klass);
 	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		if (method_slots != method_slots_default)
-			g_free (method_slots);
+		g_hash_table_destroy (properties);
 		if (name != NULL)
 			g_free (propname);
 		mono_raise_exception (mono_class_get_exception_for_failure (klass));
@@ -3569,16 +3583,8 @@ handle_parent:
 				continue;
 		}
 		
-		if (prop->get && prop->get->slot != -1) {
-			if (method_slots [prop->get->slot >> 5] & (1 << (prop->get->slot & 0x1f)))
-				continue;
-			method_slots [prop->get->slot >> 5] |= 1 << (prop->get->slot & 0x1f);
-		}
-		if (prop->set && prop->set->slot != -1) {
-			if (method_slots [prop->set->slot >> 5] & (1 << (prop->set->slot & 0x1f)))
-				continue;
-			method_slots [prop->set->slot >> 5] |= 1 << (prop->set->slot & 0x1f);
-		}
+		if (g_hash_table_lookup (properties, prop))
+			continue;
 
 		if (i >= len) {
 			MonoArray *new_res = mono_array_new (domain, System_Reflection_PropertyInfo, len * 2);
@@ -3588,13 +3594,14 @@ handle_parent:
 		}
 		mono_array_setref (res, i, mono_property_get_object (domain, startklass, prop));
 		++i;
+		
+		g_hash_table_insert (properties, prop, prop);
 	}
 	if ((!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent)))
 		goto handle_parent;
 
+	g_hash_table_destroy (properties);
 	g_free (propname);
-	if (method_slots != method_slots_default)
-		g_free (method_slots);
 	if (i != len) {
 		MonoArray *new_res = mono_array_new (domain, System_Reflection_PropertyInfo, i);
 		mono_array_memcpy_refs (new_res, 0, res, 0, i);
