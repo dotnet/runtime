@@ -1165,6 +1165,7 @@ mono_thread_current (void)
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 							 int ms, HANDLE thread)
 {
+	MonoThread *cur_thread = mono_thread_current ();
 	gboolean ret;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -1179,8 +1180,6 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 		mono_raise_exception (mono_get_exception_thread_state ("Thread has not been started."));
 		return FALSE;
 	}
-	
-	this->state |= ThreadState_WaitSleepJoin;
 
 	LeaveCriticalSection (this->synch_cs);
 
@@ -1189,9 +1188,11 @@ gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
 	}
 	THREAD_DEBUG (g_message ("%s: joining thread handle %p, %d ms", __func__, thread, ms));
 	
+	mono_thread_set_state (cur_thread, ThreadState_WaitSleepJoin);
+
 	ret=WaitForSingleObjectEx (thread, ms, TRUE);
 
-	mono_thread_clr_state (this, ThreadState_WaitSleepJoin);
+	mono_thread_clr_state (cur_thread, ThreadState_WaitSleepJoin);
 	
 	if(ret==WAIT_OBJECT_0) {
 		THREAD_DEBUG (g_message ("%s: join successful", __func__));
