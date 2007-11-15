@@ -10820,7 +10820,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (!header->num_clauses && !cfg->disable_ssa) {
 		mono_local_cprop (cfg);
+#ifndef DISABLE_SSA
 		mono_ssa_compute (cfg);
+#endif
 	}
 #else 
 
@@ -10828,7 +10830,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (cfg->opt & (MONO_OPT_SSA | MONO_OPT_ABCREM | MONO_OPT_SSAPRE)) {
 		if (!(cfg->comp_done & MONO_COMP_SSA) && !header->num_clauses && !cfg->disable_ssa) {
 			mono_local_cprop (cfg);
+#ifndef DISABLE_SSA
 			mono_ssa_compute (cfg);
+#endif
 
 			if (cfg->verbose_level >= 2) {
 				print_dfn (cfg);
@@ -10843,12 +10847,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if ((cfg->opt & MONO_OPT_CONSPROP) || (cfg->opt & MONO_OPT_COPYPROP)) {
 		if (cfg->comp_done & MONO_COMP_SSA) {
+#ifndef DISABLE_SSA
 			mono_ssa_cprop (cfg);
+#endif
 		} else {
 			mono_local_cprop (cfg);
 		}
 	}
 
+#ifndef DISABLE_SSA
 	if (cfg->comp_done & MONO_COMP_SSA) {			
 		//mono_ssa_deadce (cfg);
 
@@ -10872,6 +10879,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		if (cfg->opt & MONO_OPT_BRANCH)
 			optimize_branches (cfg);
 	}
+#endif
 
 	/* after SSA removal */
 	if (parts == 3)

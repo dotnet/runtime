@@ -14,6 +14,9 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/opcodes.h>
 
+#include "config.h"
+
+#ifndef DISABLE_SSA
 #include "inssel.h"
 
 #include "ssapre.h"
@@ -2155,3 +2158,6 @@ mono_perform_ssapre (MonoCompile *cfg) {
 	
 	mono_mempool_destroy (area.mempool);
 }
+
+#endif /* DISABLE_SSA */
+

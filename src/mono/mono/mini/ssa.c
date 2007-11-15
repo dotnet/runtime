@@ -11,6 +11,8 @@
 
 #include "mini.h"
 
+#ifndef DISABLE_SSA
+
 #define USE_ORIGINAL_VARS
 #define CREATE_PRUNED_SSA
 
@@ -1276,3 +1278,6 @@ mono_ssa_strength_reduction (MonoCompile *cfg)
 	}
 }
 #endif
+
+#endif /* DISABLE_SSA */
+

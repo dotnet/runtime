@@ -13,6 +13,10 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/opcodes.h>
 
+#include "config.h"
+
+#ifndef DISABLE_SSA
+
 #include "inssel.h"
 
 #include "abcremoval.h"
@@ -1461,3 +1465,6 @@ handle_integer_value:
 	
 	process_block (cfg->bblocks [0], &area);
 }
+
+#endif /* DISABLE_SSA */
+
