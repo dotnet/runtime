@@ -4045,6 +4045,167 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
 }
 
 /*
+ * Generates this->vtable->runtime_generic_context
+ */
+static MonoInst*
+get_runtime_generic_context_from_this (MonoCompile *cfg, MonoInst *this, unsigned char *ip)
+{
+	MonoInst *vtable, *rgc_ptr_addr, *rgc_ptr_offset, *rgc_ptr;
+
+	MONO_INST_NEW (cfg, vtable, CEE_LDIND_I);
+	vtable->cil_code = ip;
+	vtable->inst_left = this;
+	vtable->type = STACK_PTR;
+
+	NEW_ICONST (cfg, rgc_ptr_offset, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
+
+	MONO_INST_NEW (cfg, rgc_ptr_addr, OP_PADD);
+	rgc_ptr_addr->cil_code = ip;
+	rgc_ptr_addr->inst_left = vtable;
+	rgc_ptr_addr->inst_right = rgc_ptr_offset;
+	rgc_ptr_addr->type = STACK_PTR;
+
+	MONO_INST_NEW (cfg, rgc_ptr, CEE_LDIND_I);
+	rgc_ptr->cil_code = ip;
+	rgc_ptr->inst_left = rgc_ptr_addr;
+	rgc_ptr->type = STACK_PTR;
+
+	return rgc_ptr;
+}
+
+static MonoInst*
+get_runtime_generic_context_field_from_offset (MonoCompile *cfg, MonoInst *rgc_ptr, int offset, unsigned char *ip)
+{
+	MonoInst *field_offset, *field_addr, *field;
+
+	NEW_ICONST (cfg, field_offset, offset);
+
+	MONO_INST_NEW (cfg, field_addr, OP_PADD);
+	field_addr->cil_code = ip;
+	field_addr->inst_left = rgc_ptr;
+	field_addr->inst_right = field_offset;
+	field_addr->type = STACK_PTR;
+
+	MONO_INST_NEW (cfg, field, CEE_LDIND_I);
+	field->cil_code = ip;
+	field->inst_left = field_addr;
+	field->type = STACK_PTR;
+
+	return field;
+}
+
+/*
+ * Generates ((MonoRuntimeGenericSuperInfo*)rgc)[-depth].XXX where XXX
+ * is specified by rgctx_type.
+ */
+static MonoInst*
+get_runtime_generic_context_super_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int depth, int rgctx_type, unsigned char *ip)
+{
+	int field_offset_const;
+
+	g_assert (depth >= 1);
+
+	switch (rgctx_type) {
+	case MINI_RGCTX_STATIC_DATA :
+		field_offset_const = G_STRUCT_OFFSET (MonoRuntimeGenericSuperInfo, static_data);
+		break;
+	case MINI_RGCTX_KLASS :
+		field_offset_const = G_STRUCT_OFFSET (MonoRuntimeGenericSuperInfo, klass);
+		break;
+	case MINI_RGCTX_VTABLE:
+		field_offset_const = G_STRUCT_OFFSET (MonoRuntimeGenericSuperInfo, vtable);
+		break;
+	default :
+		g_assert_not_reached ();
+	}
+
+	return get_runtime_generic_context_field_from_offset (cfg, rgc_ptr,
+		-depth * sizeof (MonoRuntimeGenericSuperInfo) + field_offset_const, ip);
+}
+
+/*
+ * Generic rgc->arg_infos [arg_num].XXX where XXX is specified by
+ * rgctx_type;
+ */
+static MonoInst*
+get_runtime_generic_context_arg_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int arg_num, int rgctx_type, unsigned char *ip)
+{
+	int arg_info_offset, arg_info_field_offset;
+
+	g_assert (arg_num >= 0);
+
+	arg_info_offset = G_STRUCT_OFFSET (MonoRuntimeGenericContext, arg_infos) +
+		arg_num * sizeof (MonoRuntimeGenericArgInfo);
+
+	switch (rgctx_type) {
+	case MINI_RGCTX_STATIC_DATA :
+		arg_info_field_offset = G_STRUCT_OFFSET (MonoRuntimeGenericArgInfo, static_data);
+		break;
+	case MINI_RGCTX_KLASS:
+		arg_info_field_offset = G_STRUCT_OFFSET (MonoRuntimeGenericArgInfo, klass);
+		break;
+	case MINI_RGCTX_VTABLE :
+		arg_info_field_offset = G_STRUCT_OFFSET (MonoRuntimeGenericArgInfo, vtable);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return get_runtime_generic_context_field_from_offset (cfg, rgc_ptr, arg_info_offset + arg_info_field_offset, ip);
+}
+
+static MonoInst*
+get_runtime_generic_context_other_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
+	MonoInst *rgc_ptr, guint32 token, int rgctx_type, unsigned char *ip)
+{
+	MonoInst *args [4];
+	int temp;
+	MonoInst *result;
+
+	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
+
+	NEW_PCONST (cfg, args [0], method);
+	args [1] = rgc_ptr;
+	NEW_ICONST (cfg, args [2], token);
+	NEW_ICONST (cfg, args [3], rgctx_type);
+
+	temp = mono_emit_jit_icall (cfg, bblock, mono_helper_get_rgctx_other_ptr, args, ip);
+	NEW_TEMPLOAD (cfg, result, temp);
+
+	return result;
+}
+
+static MonoInst*
+get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
+	MonoClass *klass, guint32 type_token, MonoGenericContext *generic_context, MonoInst *rgctx,
+	int rgctx_type, unsigned char *ip)
+{
+	int arg_num = -1;
+	int relation = mono_class_generic_class_relation (klass, method->klass, generic_context, &arg_num);
+
+	switch (relation) {
+	case MINI_GENERIC_CLASS_RELATION_SELF: {
+		int depth = klass->idepth;
+		return get_runtime_generic_context_super_ptr (cfg, rgctx, depth, rgctx_type, ip);
+	}
+	case MINI_GENERIC_CLASS_RELATION_ARGUMENT:
+		return get_runtime_generic_context_arg_ptr (cfg, rgctx, arg_num, rgctx_type, ip);
+	case MINI_GENERIC_CLASS_RELATION_OTHER:
+		return get_runtime_generic_context_other_ptr (cfg, method, bblock, rgctx, type_token, rgctx_type, ip);
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static gboolean
+generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
+{
+	MonoType *type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, &klass->byval_arg);
+
+	return MONO_TYPE_IS_REFERENCE (type);
+}
+
+/*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
 static int
@@ -6699,11 +6860,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		}
 		case CEE_NEWARR: {
-			int context_used;
+			gboolean shared_access = FALSE;
 
 			CHECK_STACK (1);
-			MONO_INST_NEW (cfg, ins, *ip);
-			ins->cil_code = ip;
 			--sp;
 
 			CHECK_OPSIZE (5);
@@ -6722,18 +6881,54 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_sharing_context)
-				context_used = mono_class_check_context_used (klass);
-			else
-				context_used = 0;
+			if (cfg->generic_sharing_context) {
+				int context_used = mono_class_check_context_used (klass);
 
-			if (context_used)
-				GENERIC_SHARING_FAILURE (CEE_NEWARR);
+				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD || klass->valuetype)
+					GENERIC_SHARING_FAILURE (CEE_NEWARR);
 
-			ins->inst_newa_class = klass;
-			ins->inst_newa_len = *sp;
-			ins->type = STACK_OBJ;
-			ins->klass = mono_array_class_get (klass, 1);
+				if (context_used) {
+					if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
+						shared_access = TRUE;
+					else
+						GENERIC_SHARING_FAILURE (CEE_NEWARR);
+				}
+			}
+
+			if (shared_access) {
+				MonoInst *domain_var;
+				MonoInst *this, *rgctx;
+				MonoInst *args [3];
+				int temp;
+
+				/* domain */
+				if (cfg->opt & MONO_OPT_SHARED) {
+					domain_var = mono_get_domainvar (cfg);
+					NEW_TEMPLOAD (cfg, args [0], domain_var->inst_c0);
+				} else {
+					NEW_PCONST (cfg, args [0], cfg->domain);
+				}
+
+				/* klass */
+				NEW_ARGLOAD (cfg, this, 0);
+				rgctx = get_runtime_generic_context_from_this (cfg, this, ip);
+				args [1] = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+					token, generic_context, rgctx, MINI_RGCTX_KLASS, ip);
+
+				/* array len */
+				args [2] = *sp;
+
+				temp = mono_emit_jit_icall (cfg, bblock, mono_array_new, args, ip);
+				NEW_TEMPLOAD (cfg, ins, temp);
+			} else {
+				MONO_INST_NEW (cfg, ins, *ip);
+				ins->cil_code = ip;
+				ins->inst_newa_class = klass;
+				ins->inst_newa_len = *sp;
+				ins->type = STACK_OBJ;
+				ins->klass = mono_array_class_get (klass, 1);
+			}
+
 			ip += 5;
 			*sp++ = ins;
 			/* 
@@ -12433,6 +12628,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
 	register_icall (mono_helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);
 	register_icall (mono_value_copy, "mono_value_copy", "void ptr ptr ptr", FALSE);
+	register_icall (mono_helper_get_rgctx_other_ptr, "get_rgctx_other_ptr", "ptr ptr ptr int32 int32", FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS
@@ -12440,6 +12636,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
 	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
 #endif
+
+	mono_generic_sharing_init ();
 
 	mono_thread_attach (domain);
 	return domain;

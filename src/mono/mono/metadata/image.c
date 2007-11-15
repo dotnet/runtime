@@ -1299,6 +1299,9 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->helper_signatures);
 	g_hash_table_destroy (image->method_signatures);
 
+	if (image->generic_class_cache)
+		g_hash_table_destroy (image->generic_class_cache);
+
 	if (image->interface_bitset) {
 		mono_unload_interface_ids (image->interface_bitset);
 		mono_bitset_free (image->interface_bitset);

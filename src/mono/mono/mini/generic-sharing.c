@@ -10,8 +10,12 @@
 #include <config.h>
 
 #include <mono/metadata/class.h>
+#include <mono/utils/mono-counters.h>
 
 #include "mini.h"
+
+static int generic_class_lookups = 0;
+static int generic_class_lookup_failures = 0;
 
 static int context_check_context_used (MonoGenericContext *context);
 
@@ -227,6 +231,75 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 	return TRUE;
 }
 
+static gboolean
+generic_inst_equal (MonoGenericInst *inst1, MonoGenericInst *inst2)
+{
+	int i;
+
+	if (!inst1) {
+		g_assert (!inst2);
+		return TRUE;
+	}
+
+	g_assert (inst2);
+
+	if (inst1->type_argc != inst2->type_argc)
+		return FALSE;
+
+	for (i = 0; i < inst1->type_argc; ++i)
+		if (!mono_metadata_type_equal (inst1->type_argv [i], inst2->type_argv [i]))
+			return FALSE;
+
+	return TRUE;
+}
+
+/*
+ * mono_generic_context_equal_deep:
+ * @context1: a generic context
+ * @context2: a generic context
+ *
+ * Returns whether context1's type arguments are equal to context2's
+ * type arguments.
+ */
+gboolean
+mono_generic_context_equal_deep (MonoGenericContext *context1, MonoGenericContext *context2)
+{
+	return generic_inst_equal (context1->class_inst, context2->class_inst) &&
+		generic_inst_equal (context1->method_inst, context2->method_inst);
+}
+
+/*
+ * mini_class_get_container_class:
+ * @class: a generic class
+ *
+ * Returns the class's container class, which is the class itself if
+ * it doesn't have generic_class set.
+ */
+MonoClass*
+mini_class_get_container_class (MonoClass *class)
+{
+	if (class->generic_class)
+		return class->generic_class->container_class;
+
+	g_assert (class->generic_container);
+	return class;
+}
+
+/*
+ * mini_class_get_context:
+ * @class: a generic class
+ *
+ * Returns the class's generic context.
+ */
+MonoGenericContext*
+mini_class_get_context (MonoClass *class)
+{
+	if (class->generic_class)
+		return &class->generic_class->context;
+
+	g_assert (class->generic_container);
+	return &class->generic_container->context;
+}
 
 /*
  * mini_get_basic_type_from_generic:
@@ -278,3 +351,170 @@ mono_method_get_declaring_generic_method (MonoMethod *method)
 	return inflated->declaring;
 }
 
+/*
+ * mono_class_generic_class_relation:
+ * @klass: the class to be investigated
+ * @method_klass: the reference class
+ * @generic_context: the generic context of method_klass
+ * @arg_num: where a value will be returned
+ *
+ * Discovers and returns the relation of klass with reference to
+ * method_klass.  This can either be MINI_GENERIC_CLASS_RELATION_SELF,
+ * meaning that klass is the same as method_klass,
+ * MINI_GENERIC_CLASS_RELATION_ARGUMENT, meaning that klass is one of
+ * the type arguments of method_klass, or otherwise
+ * MINI_GENERIC_CLASS_RELATION_OTHER.  In the case of
+ * MINI_GENERIC_CLASS_RELATION_ARGUMENT the number of the argument is
+ * returned in *arg_num.
+ */
+int
+mono_class_generic_class_relation (MonoClass *klass, MonoClass *method_klass,
+	MonoGenericContext *generic_context, int *arg_num)
+{
+	if (!klass->generic_class && !klass->generic_container) {
+		MonoGenericContext *context = mini_class_get_context (method_klass);
+		MonoGenericInst *class_inst = context->class_inst;
+		int i;
+
+		for (i = 0; i < class_inst->type_argc; ++i) {
+			if (klass == mono_class_from_mono_type (class_inst->type_argv [i])) {
+				if (arg_num)
+					*arg_num = i;
+				return MINI_GENERIC_CLASS_RELATION_ARGUMENT;
+			}
+		}
+
+		g_assert_not_reached ();
+	}
+
+	if (mini_class_get_container_class (klass) == mini_class_get_container_class (method_klass) &&
+			mono_generic_context_equal_deep (mini_class_get_context (klass), generic_context))
+		return MINI_GENERIC_CLASS_RELATION_SELF;
+
+	return MINI_GENERIC_CLASS_RELATION_OTHER;
+}
+
+typedef struct
+{
+	guint32 token;
+	MonoGenericContext *context;
+} MonoTokenAndContext;
+
+static guint
+token_context_hash (MonoTokenAndContext *tc)
+{
+	return (guint)((gulong)tc->token | (gulong)tc->context->class_inst | (gulong)tc->context->method_inst);
+}
+
+static gboolean
+token_context_equal (MonoTokenAndContext *tc1, MonoTokenAndContext *tc2)
+{
+	if (tc1->token != tc2->token)
+		return FALSE;
+
+	return tc1->context->class_inst == tc2->context->class_inst &&
+		tc1->context->method_inst == tc2->context->method_inst;
+}
+
+/*
+ * mono_helper_get_rgctx_other_ptr:
+ * @method: the calling method
+ * @rgctx: the runtime generic context
+ * @token: the token which to look up
+ * @rgctx_type: the kind of value requested
+ *
+ * Is called from method to look up a token for a given runtime
+ * generic sharing context and return some particular information
+ * about the looked up class (the class itself, the vtable or the
+ * static_data pointer).
+ */
+gpointer
+mono_helper_get_rgctx_other_ptr (MonoMethod *method, MonoRuntimeGenericContext *rgctx, guint32 token, guint32 rgctx_type)
+{
+	MonoImage *image = method->klass->image;
+	int depth = method->klass->idepth;
+	MonoRuntimeGenericSuperInfo *super_info = &((MonoRuntimeGenericSuperInfo*)rgctx)[-depth];
+	MonoClass *klass = super_info->klass;
+	MonoClass *result = NULL;
+	MonoTokenAndContext tc = { token, &klass->generic_class->context };
+
+	mono_loader_lock ();
+
+	generic_class_lookups++;
+
+	if (!image->generic_class_cache) {
+		image->generic_class_cache = g_hash_table_new ((GHashFunc)token_context_hash,
+			(GCompareFunc)token_context_equal);
+	}
+
+	result = g_hash_table_lookup (image->generic_class_cache, &tc);
+
+	mono_loader_unlock ();
+
+	if (!result) {
+		generic_class_lookup_failures++;
+
+		switch (token & 0xff000000) {
+		case MONO_TOKEN_MEMBER_REF :
+			mono_field_from_token (method->klass->image, token, &result, &klass->generic_class->context);
+			break;
+		case MONO_TOKEN_TYPE_DEF:
+		case MONO_TOKEN_TYPE_REF:
+		case MONO_TOKEN_TYPE_SPEC:
+			result = mono_class_get_full (method->klass->image, token, &klass->generic_class->context);
+			break;
+		default :
+			g_assert_not_reached ();
+		}
+
+		g_assert (result);
+
+		mono_class_init (result);
+
+		mono_loader_lock ();
+
+		/*
+		 * In the meantime another thread might have put this class in
+		 * the cache, so check again.
+		 */
+		if (!g_hash_table_lookup (image->generic_class_cache, &tc)) {
+			MonoTokenAndContext *tcp = (MonoTokenAndContext*) mono_mempool_alloc0 (image->mempool,
+				sizeof (MonoTokenAndContext));
+
+			*tcp = tc;
+
+			g_hash_table_insert (image->generic_class_cache, tcp, result);
+		}
+
+		mono_loader_unlock ();
+	}
+
+	g_assert (result);
+
+	switch (rgctx_type) {
+	case MINI_RGCTX_KLASS:
+		return result;
+	case MINI_RGCTX_STATIC_DATA: {
+		MonoVTable *vtable = mono_class_vtable (rgctx->domain, result);
+		return vtable->data;
+	}
+	case MINI_RGCTX_VTABLE:
+		return mono_class_vtable (rgctx->domain, result);
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+/*
+ * mono_generic_sharing_init:
+ *
+ * Register the generic sharing counters.
+ */
+void
+mono_generic_sharing_init (void)
+{
+	mono_counters_register ("Generic class lookups", MONO_COUNTER_GENERICS | MONO_COUNTER_INT,
+			&generic_class_lookups);
+	mono_counters_register ("Generic class lookup failures", MONO_COUNTER_GENERICS | MONO_COUNTER_INT,
+			&generic_class_lookup_failures);
+}

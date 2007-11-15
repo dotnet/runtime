@@ -845,6 +845,18 @@ enum {
 
 #define MONO_GENERIC_CONTEXT_USED_BOTH		(MONO_GENERIC_CONTEXT_USED_CLASS | MONO_GENERIC_CONTEXT_USED_METHOD)
 
+enum {
+	MINI_GENERIC_CLASS_RELATION_SELF,
+	MINI_GENERIC_CLASS_RELATION_ARGUMENT,
+	MINI_GENERIC_CLASS_RELATION_OTHER
+};
+
+enum {
+	MINI_RGCTX_STATIC_DATA,
+	MINI_RGCTX_KLASS,
+	MINI_RGCTX_VTABLE
+};
+
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
@@ -1130,10 +1142,25 @@ MonoGenericContext* mini_method_get_context (MonoMethod *method) MONO_INTERNAL;
 int mono_method_check_context_used (MonoMethod *method) MONO_INTERNAL;
 int mono_class_check_context_used (MonoClass *class) MONO_INTERNAL;
 
+gboolean mono_generic_context_equal_deep (MonoGenericContext *context1, MonoGenericContext *context2) MONO_INTERNAL;
+
+gboolean mono_generic_context_is_sharable (MonoGenericContext *context) MONO_INTERNAL;
+
 gboolean mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
 gboolean mono_method_is_generic_sharable_impl (MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod* mono_method_get_declaring_generic_method (MonoMethod *method) MONO_INTERNAL;
+
+int mono_class_generic_class_relation (MonoClass *klass, MonoClass *method_klass,
+				       MonoGenericContext *generic_context, int *arg_num) MONO_INTERNAL;
+
+gpointer mono_helper_get_rgctx_other_ptr (MonoMethod *method, MonoRuntimeGenericContext *rgctx,
+					  guint32 token, guint32 rgctx_type) MONO_INTERNAL;
+
+void mono_generic_sharing_init (void) MONO_INTERNAL;
+
+MonoClass* mini_class_get_container_class (MonoClass *class) MONO_INTERNAL;
+MonoGenericContext* mini_class_get_context (MonoClass *class) MONO_INTERNAL;
 
 MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type) MONO_INTERNAL;
 

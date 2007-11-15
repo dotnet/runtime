@@ -201,6 +201,11 @@ struct _MonoImage {
 	GHashTable *castclass_cache;
 	GHashTable *proxy_isinst_cache;
 
+	/*
+	 * indexed by token and MonoGenericContext pointer
+	 */
+	GHashTable *generic_class_cache;
+
 	void *reflection_info;
 
 	/*
