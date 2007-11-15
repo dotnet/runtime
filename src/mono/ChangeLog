@@ -1,3 +1,7 @@
+2007-11-15  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Check for g_strsplit_set() and g_strv_length()
+
 2007-11-10  Alp Toker  <alp@atoker.com>
 
 	* samples/embed/teste.c: Add a newline at the end of this printf()

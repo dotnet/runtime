@@ -1559,8 +1559,9 @@ static void free_procmodule (WapiProcModule *mod)
 
 static GSList *load_modules (FILE *fp)
 {
-	gchar buf[MAXPATHLEN + 1], **fields, **addresses;
 	GSList *ret = NULL;
+#if defined(HAVE_G_STRSPLIT_SET) && defined(HAVE_G_STRV_LENGTH)
+	gchar buf[MAXPATHLEN + 1], **fields, **addresses;
 	WapiProcModule *mod;
 	char *ep;
 	long address_start, address_end, address_offset, maj, min;
@@ -1675,6 +1676,7 @@ static GSList *load_modules (FILE *fp)
 	}
 
 	ret = g_slist_reverse (ret);
+#endif /* HAVE_G_STRSPLIT_SET && HAVE_G_STRV_LENGTH */
 	
 	return(ret);
 }
@@ -1724,16 +1726,20 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		mods = load_modules (fp);
 		count = g_slist_length (mods);
 		
-		*needed = sizeof(gpointer) * count;
+		/* count + 1 to leave slot 0 for the main module */
+		*needed = sizeof(gpointer) * (count + 1);
 
 		/* Use the NULL shortcut, as the first line in
 		 * /proc/<pid>/maps isn't the executable, and we need
-		 * that first in the returned list
+		 * that first in the returned list.  We'll probably
+		 * have a duplicate reference to the main module later
+		 * in the list too.  FIXME if this turns out to be a
+		 * problem.
 		 */
 		modules[0] = NULL;
-		for (i = 1; i < avail && i < count; i++) {
+		for (i = 0; i < (avail - 1) && i < count; i++) {
 			module = (WapiProcModule *)g_slist_nth_data (mods, i);
-			modules[i] = module->address_start;
+			modules[i + 1] = module->address_start;
 		}
 		
 		for (i = 0; i < count; i++) {
