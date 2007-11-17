@@ -1027,6 +1027,8 @@ typedef struct {
 	MonoReflectionType *return_type;
 	guint32 call_conv;
 	guint32 unmanaged_call_conv;
+	MonoArray *modreqs;
+	MonoArray *modopts;
 } MonoReflectionSigHelper;
 
 enum {

@@ -44,7 +44,18 @@
 #include <direct.h>
 #endif
 
-#define MONO_CORLIB_VERSION 60
+/*
+ * This is the version number of the corlib-runtime interface. When
+ * making changes to this interface (by changing the layout
+ * of classes the runtime knows about, changing icall signature or
+ * semantics etc), increment this variable. Also increment the
+ * pair of this variable in mscorlib in:
+ *       mcs/class/mscorlib/System/Environment.cs
+ *
+ * Changes which are already detected at runtime, like the addition
+ * of icalls, do not require an increment.
+ */
+#define MONO_CORLIB_VERSION 61
 
 typedef struct
 {
