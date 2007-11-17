@@ -105,8 +105,13 @@ conv.r8: dest:f src1:i len:9
 conv.u4: dest:i src1:i len:3
 conv.u8: dest:i src1:i len:3
 conv.r.un: dest:f src1:i len:8
+
 throw: src1:i len:18
 op_rethrow: src1:i len:18
+start_handler: len:9
+endfinally: len:9
+op_endfilter: src1:a len:9
+
 conv.ovf.i4.un: dest:i src1:i len:16
 conv.ovf.u4.un: 
 conv.ovf.u4: dest:i src1:i len:15

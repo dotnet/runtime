@@ -2608,14 +2608,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
-		if (offset > (cfg->code_size - max_len - 16)) {
+		if (G_UNLIKELY (offset > (cfg->code_size - max_len - 16))) {
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 			code = cfg->native_code + offset;
 			mono_jit_stats.code_reallocs++;
 		}
 
-		mono_debug_record_line_number (cfg, ins, offset);
+		if (cfg->debug_info)
+			mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
 		case OP_BIGMUL:
@@ -3390,6 +3391,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Restore stack alignment */
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
 			break;
+		case OP_START_HANDLER: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			amd64_mov_membase_reg (code, spvar->inst_basereg, spvar->inst_offset, AMD64_RSP, 8);
+			break;
+		}
+		case OP_ENDFINALLY: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			amd64_mov_reg_membase (code, AMD64_RSP, spvar->inst_basereg, spvar->inst_offset, 8);
+			amd64_ret (code);
+			break;
+		}
+		case OP_ENDFILTER: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			amd64_mov_reg_membase (code, AMD64_RSP, spvar->inst_basereg, spvar->inst_offset, 8);
+			/* The local allocator will put the result into RAX */
+			amd64_ret (code);
+			break;
+		}
 
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
@@ -4366,10 +4385,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->arch.lmf_offset;
 
-	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 1024);
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		cfg->code_size += 512;
+	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 10240);
 
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
