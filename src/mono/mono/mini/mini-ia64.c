@@ -4727,13 +4727,13 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 {
 	MonoInst *ins = NULL;
 
-	if (cmethod->klass == mono_defaults.thread_class &&
-		strcmp (cmethod->name, "MemoryBarrier") == 0) {
-		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
-	} else if(cmethod->klass->image == mono_defaults.corlib &&
+	if(cmethod->klass->image == mono_defaults.corlib &&
 			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
 			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
-
+		/* 
+		 * We don't use the generic version in mini_get_inst_for_method () since the
+		 * ia64 has atomic_add_imm opcodes.
+		 */
 		if (strcmp (cmethod->name, "Increment") == 0) {
 			guint32 opcode;
 
@@ -4758,22 +4758,6 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->inst_imm = -1;
 			ins->inst_i0 = args [0];
-		} else if (strcmp (cmethod->name, "Exchange") == 0) {
-			guint32 opcode;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_EXCHANGE_I4;
-			else if ((fsig->params [0]->type == MONO_TYPE_I8) ||
-					 (fsig->params [0]->type == MONO_TYPE_I) ||
-					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
-				opcode = OP_ATOMIC_EXCHANGE_I8;
-			else
-				return NULL;
-
-			MONO_INST_NEW (cfg, ins, opcode);
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = args [1];
 		} else if (strcmp (cmethod->name, "Add") == 0) {
 			guint32 opcode;
 
@@ -4788,10 +4772,6 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
-		} else if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
-			/* 64 bit reads are already atomic */
-			MONO_INST_NEW (cfg, ins, CEE_LDIND_I8);
-			ins->inst_i0 = args [0];
 		}
 	}
 
