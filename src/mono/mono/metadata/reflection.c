@@ -2670,7 +2670,17 @@ mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigH
 	sigbuffer_add_value (&buf, nargs);
 	encode_reflection_type (assembly, helper->return_type, &buf);
 	for (i = 0; i < nargs; ++i) {
-		MonoReflectionType *pt = mono_array_get (helper->arguments, MonoReflectionType*, i);
+		MonoArray *modreqs = NULL;
+		MonoArray *modopts = NULL;
+		MonoReflectionType *pt;
+
+		if (helper->modreqs && (i < mono_array_length (helper->modreqs)))
+			modreqs = mono_array_get (helper->modreqs, MonoArray*, i);
+		if (helper->modopts && (i < mono_array_length (helper->modopts)))
+			modopts = mono_array_get (helper->modopts, MonoArray*, i);
+
+		encode_custom_modifiers (assembly, modreqs, modopts, &buf);
+		pt = mono_array_get (helper->arguments, MonoReflectionType*, i);
 		encode_reflection_type (assembly, pt, &buf);
 	}
 	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
