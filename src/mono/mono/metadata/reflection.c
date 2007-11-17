@@ -4169,12 +4169,19 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
  * Get a token to insert in the IL code stream for the given MemberInfo.
  * @obj can be one of:
  * 	ConstructorBuilder
- * 	MethodBuilder
+ *      EnumBuilder
  * 	FieldBuilder
+ *      GenericTypeParameterBuilder
+ * 	MethodBuilder
+ *      MonoArrayMethod
  * 	MonoCMethod
  * 	MonoMethod
  * 	MonoField
+ *      MonoGenericClass
+ *      MonoGenericMethod
+ *      MonoGenericCMethod
  * 	MonoType
+ *      SignatureHelperxo
  * 	TypeBuilder
  */
 guint32
