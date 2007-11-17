@@ -2637,7 +2637,7 @@ mono_reflection_encode_sighelper (MonoDynamicImage *assembly, MonoReflectionSigH
 	if (!assembly->save)
 		return 0;
 
-	/* FIXME: */
+	/* FIXME: this means SignatureHelper.SignatureHelpType.HELPER_METHOD */
 	g_assert (helper->type == 2);
 
 	if (helper->arguments)
