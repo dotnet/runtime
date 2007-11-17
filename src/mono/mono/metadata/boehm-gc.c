@@ -311,7 +311,8 @@ create_allocator (int atype, int offset)
 		mono_mb_emit_byte (mb, MONO_CEE_ADD);
 		mono_mb_emit_icon (mb, 1);
 		mono_mb_emit_byte (mb, MONO_CEE_SHL);
-		mono_mb_emit_icon (mb, sizeof (MonoString));
+		// sizeof (MonoString) might include padding
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoString, chars));
 		mono_mb_emit_byte (mb, MONO_CEE_ADD);
 		mono_mb_emit_stloc (mb, bytes_var);
 	} else {
@@ -510,9 +511,6 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 		return NULL;
 	if (klass->byval_arg.type == MONO_TYPE_STRING) {
 		atype = ATYPE_STRING;
-#ifdef __x86_64__
-		return NULL;
-#endif
 	} else if (!klass->has_references) {
 		if (for_box)
 			atype = ATYPE_FREEPTR_FOR_BOX;
