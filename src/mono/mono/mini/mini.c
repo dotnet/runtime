@@ -3410,6 +3410,10 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	} else if (cmethod->klass == mono_defaults.thread_class) {
 		if (strcmp (cmethod->name, "get_CurrentThread") == 0 && (ins = mono_arch_get_thread_intrinsic (cfg)))
 			return ins;
+		if (strcmp (cmethod->name, "MemoryBarrier") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
+			return ins;
+		}
 	} else if (mini_class_is_system_array (cmethod->klass) &&
 			strcmp (cmethod->name, "GetGenericValueImpl") == 0) {
 		MonoInst *sp [2];
@@ -3446,6 +3450,119 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 				return ins;
 			}
 		}
+	} else if (cmethod->klass->image == mono_defaults.corlib &&
+			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
+			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
+		ins = NULL;
+
+#if SIZEOF_VOID_P == 8
+		if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
+			/* 64 bit reads are already atomic */
+			MONO_INST_NEW (cfg, ins, CEE_LDIND_I8);
+			ins->inst_i0 = args [0];
+		}
+#endif
+
+#ifdef MONO_ARCH_HAVE_ATOMIC_ADD
+		if (strcmp (cmethod->name, "Increment") == 0) {
+			MonoInst *ins_iconst;
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_NEW_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_NEW_I8;
+			else
+				g_assert_not_reached ();
+
+#if SIZEOF_VOID_P == 4
+			if (opcode == OP_ATOMIC_ADD_NEW_I8)
+				return NULL;
+#endif
+
+			MONO_INST_NEW (cfg, ins, opcode);
+			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
+			ins_iconst->inst_c0 = 1;
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = ins_iconst;
+		} else if (strcmp (cmethod->name, "Decrement") == 0) {
+			MonoInst *ins_iconst;
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_NEW_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_NEW_I8;
+			else
+				g_assert_not_reached ();
+
+#if SIZEOF_VOID_P == 4
+			if (opcode == OP_ATOMIC_ADD_NEW_I8)
+				return NULL;
+#endif
+
+			MONO_INST_NEW (cfg, ins, opcode);
+			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
+			ins_iconst->inst_c0 = -1;
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = ins_iconst;
+		} else if (strcmp (cmethod->name, "Add") == 0) {
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_ADD_NEW_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_I8)
+				opcode = OP_ATOMIC_ADD_NEW_I8;
+			else
+				g_assert_not_reached ();
+
+#if SIZEOF_VOID_P == 4
+			if (opcode == OP_ATOMIC_ADD_NEW_I8)
+				return NULL;
+#endif
+			
+			MONO_INST_NEW (cfg, ins, opcode);
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = args [1];
+		}
+#endif /* MONO_ARCH_HAVE_ATOMIC_ADD */
+
+#ifdef MONO_ARCH_HAVE_ATOMIC_EXCHANGE
+		if (strcmp (cmethod->name, "Exchange") == 0) {
+			guint32 opcode;
+
+			if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_EXCHANGE_I4;
+#if SIZEOF_VOID_P == 8
+			else if ((fsig->params [0]->type == MONO_TYPE_I8) ||
+					 (fsig->params [0]->type == MONO_TYPE_I) ||
+					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
+				opcode = OP_ATOMIC_EXCHANGE_I8;
+#else
+			else if ((fsig->params [0]->type == MONO_TYPE_I) ||
+					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
+				opcode = OP_ATOMIC_EXCHANGE_I4;
+#endif
+			else
+				return NULL;
+
+#if SIZEOF_VOID_P == 4
+			if (opcode == OP_ATOMIC_EXCHANGE_I8)
+				return NULL;
+#endif
+
+			MONO_INST_NEW (cfg, ins, opcode);
+
+			ins->inst_i0 = args [0];
+			ins->inst_i1 = args [1];
+		}
+#endif /* MONO_ARCH_HAVE_ATOMIC_EXCHANGE */
+
+		if (ins)
+			return ins;
 	} else if (cmethod->klass->image == mono_defaults.corlib) {
 		if (cmethod->name [0] == 'B' && strcmp (cmethod->name, "Break") == 0
 				&& strcmp (cmethod->klass->name, "Debugger") == 0) {
