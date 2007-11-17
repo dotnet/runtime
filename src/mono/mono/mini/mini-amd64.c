@@ -918,6 +918,9 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		}
 	}
 
+	if (cinfo->ret.storage == ArgValuetypeInReg)
+		cfg->arch.omit_fp = FALSE;
+
 	locals_size = 0;
 	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
