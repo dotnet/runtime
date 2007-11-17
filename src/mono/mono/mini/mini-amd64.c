@@ -2937,8 +2937,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_OR:
 			amd64_alu_reg_reg (code, X86_OR, ins->sreg1, ins->sreg2);
 			break;
-		case OP_OR_IMM
-:			g_assert (amd64_is_imm32 (ins->inst_imm));
+		case OP_OR_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm (code, X86_OR, ins->sreg1, ins->inst_imm);
 			break;
 		case CEE_XOR:
