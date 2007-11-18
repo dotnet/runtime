@@ -2992,7 +2992,7 @@ write_enum_value (char *mem, int type, guint64 value)
 }
 
 static MonoObject *
-ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
+ves_icall_System_Enum_ToObject (MonoReflectionType *enumType, MonoObject *value)
 {
 	MonoDomain *domain; 
 	MonoClass *enumc, *objc;
@@ -3001,12 +3001,12 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 	
 	MONO_ARCH_SAVE_REGS;
 
-	MONO_CHECK_ARG_NULL (type);
-	MONO_CHECK_ARG_NULL (obj);
+	MONO_CHECK_ARG_NULL (enumType);
+	MONO_CHECK_ARG_NULL (value);
 
-	domain = mono_object_domain (type); 
-	enumc = mono_class_from_mono_type (type->type);
-	objc = obj->vtable->klass;
+	domain = mono_object_domain (enumType); 
+	enumc = mono_class_from_mono_type (enumType->type);
+	objc = value->vtable->klass;
 
 	if (!enumc->enumtype)
 		mono_raise_exception (mono_get_exception_argument ("enumType", "Type provided must be an Enum."));
@@ -3014,7 +3014,7 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *type, MonoObject *obj)
 		mono_raise_exception (mono_get_exception_argument ("value", "The value passed in must be an enum base or an underlying type for an enum, such as an Int32."));
 
 	res = mono_object_new (domain, enumc);
-	val = read_enum_value ((char *)obj + sizeof (MonoObject), objc->enumtype? objc->enum_basetype->type: objc->byval_arg.type);
+	val = read_enum_value ((char *)value + sizeof (MonoObject), objc->enumtype? objc->enum_basetype->type: objc->byval_arg.type);
 	write_enum_value ((char *)res + sizeof (MonoObject), enumc->enum_basetype->type, val);
 
 	return res;
