@@ -2202,9 +2202,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_widen_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset, TRUE, TRUE);
 			break;
 		case CEE_CONV_I1:
+		case OP_SEXT_I1:
 			x86_widen_reg (code, ins->dreg, ins->sreg1, TRUE, FALSE);
 			break;
 		case CEE_CONV_I2:
+		case OP_SEXT_I2:
 			x86_widen_reg (code, ins->dreg, ins->sreg1, TRUE, TRUE);
 			break;
 		case CEE_CONV_U1:
@@ -2457,12 +2459,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_NEG:
 			x86_neg_reg (code, ins->sreg1);
 			break;
-		case OP_SEXT_I1:
-			x86_widen_reg (code, ins->dreg, ins->sreg1, TRUE, FALSE);
-			break;
-		case OP_SEXT_I2:
-			x86_widen_reg (code, ins->dreg, ins->sreg1, TRUE, TRUE);
-			break;
+
 		case CEE_MUL:
 			x86_imul_reg_reg (code, ins->sreg1, ins->sreg2);
 			break;

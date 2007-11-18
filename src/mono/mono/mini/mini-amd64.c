@@ -2698,9 +2698,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_memindex_size (code, ins->dreg, ins->inst_basereg, 0, ins->inst_indexreg, 0, 8);
 			break;
 		case CEE_CONV_I1:
+		case OP_SEXT_I1:
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, TRUE, FALSE);
 			break;
 		case CEE_CONV_I2:
+		case OP_SEXT_I2:
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, TRUE, TRUE);
 			break;
 		case CEE_CONV_U1:
@@ -2716,6 +2718,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_CONV_I8:
 		case CEE_CONV_I:
+		case OP_SEXT_I4:
 			amd64_movsxd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;			
 		case OP_COMPARE:
@@ -3134,15 +3137,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_NEG:
 			amd64_neg_reg (code, ins->sreg1);
 			break;
-		case OP_SEXT_I1:
-			amd64_widen_reg (code, ins->dreg, ins->sreg1, TRUE, FALSE);
-			break;
-		case OP_SEXT_I2:
-			amd64_widen_reg (code, ins->dreg, ins->sreg1, TRUE, TRUE);
-			break;
-		case OP_SEXT_I4:
-			amd64_movsxd_reg_reg (code, ins->dreg, ins->sreg1);
-			break;
+
 		case OP_ICONST:
 		case OP_I8CONST:
 			if ((((guint64)ins->inst_c0) >> 32) == 0)
