@@ -1,3 +1,7 @@
+2007-11-19  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* configure.in : fix win32 build.
+
 2007-11-16  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Make --with-moonlight=yes the default.
