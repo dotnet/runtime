@@ -233,6 +233,8 @@ long_xor: dest:i src1:i src2:i len:3 clob:1
 long_shl: dest:i src1:i src2:s clob:1 len:31
 long_shr: dest:i src1:i src2:s clob:1 len:32
 long_shr_un: dest:i src1:i src2:s clob:1 len:32
+long_min: dest:i src1:i src2:i len:16 clob:1
+long_max: dest:i src1:i src2:i len:16 clob:1
 
 long_conv_to_r4: dest:f src1:i len:8
 long_conv_to_r8: dest:f src1:i len:8
@@ -382,6 +384,9 @@ int_xor_imm: dest:i src1:i clob:1 len:64
 int_shl_imm: dest:i src1:i clob:1 len:64
 int_shr_imm: dest:i src1:i clob:1 len:64
 int_shr_un_imm: dest:i src1:i clob:1 len:64
+int_min: dest:i src1:i src2:i len:16 clob:1
+int_max: dest:i src1:i src2:i len:16 clob:1
+
 int_neg: dest:i src1:i clob:1 len:64
 int_not: dest:i src1:i clob:1 len:64
 int_ceq: dest:c len:64

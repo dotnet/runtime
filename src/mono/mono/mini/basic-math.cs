@@ -155,4 +155,37 @@ class Tests {
 	static int test_0_atan_nan () {
 		return Double.IsNaN (Math.Atan (Double.NaN)) ? 0 : 1;
 	}
+
+	static int test_0_min () {
+		if (Math.Min (5, 6) != 5)
+			return 1;
+		if (Math.Min (6, 5) != 5)
+			return 2;
+		if (Math.Min (-100, -101) != -101)
+			return 3;
+		if (Math.Min ((long)5, (long)6) != 5)
+			return 4;
+		if (Math.Min ((long)6, (long)5) != 5)
+			return 5;
+		if (Math.Min ((long)-100, (long)-101) != -101)
+			return 6;
+		return 0;
+	}
+
+	static int test_0_max () {
+		if (Math.Max (5, 6) != 6)
+			return 1;
+		if (Math.Max (6, 5) != 6)
+			return 2;
+		if (Math.Max (-100, -101) != -100)
+			return 3;
+		if (Math.Max ((long)5, (long)6) != 6)
+			return 4;
+		if (Math.Max ((long)6, (long)5) != 6)
+			return 5;
+		if (Math.Max ((long)-100, (long)-101) != -100)
+			return 6;
+		return 0;
+	}
+		
 }

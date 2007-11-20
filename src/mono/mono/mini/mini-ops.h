@@ -453,6 +453,10 @@ MINI_OP(OP_BIGMUL, "op_bigmul")
 MINI_OP(OP_BIGMUL_UN, "op_bigmul_un")
 MINI_OP(OP_MIN, "op_min")
 MINI_OP(OP_MAX, "op_max")
+MINI_OP(OP_IMIN, "int_min")
+MINI_OP(OP_IMAX, "int_max")
+MINI_OP(OP_LMIN, "long_min")
+MINI_OP(OP_LMAX, "long_max")
 
 /* opcodes most architecture have */
 MINI_OP(OP_ADC,     "adc")
