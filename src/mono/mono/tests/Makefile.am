@@ -309,6 +309,7 @@ TEST_CS2_SRC = \
 	bug-82194.2.cs	\
 	anonarray.2.cs	\
 	ienumerator-interfaces.2.cs	\
+	array-enumerator-ifaces.2.cs	\
 	generic_type_definition_encoding.2.cs \
 	generic_type_definition.2.cs	\
 	bug-333798.2.cs		\
