@@ -35,13 +35,6 @@ typedef struct {
 
 typedef struct
 {
-	guint64 index;
-	MonoMethod *method;
-	MonoDebugMethodAddressList *address_list;
-} MiniDebugMethodBreakpointInfo;
-
-typedef struct
-{
 	MonoDebugMethodJitInfo *jit;
 	GArray *line_numbers;
 	guint32 has_line_numbers;
@@ -74,9 +67,6 @@ struct _MonoDebuggerThreadInfo {
 };
 
 MonoDebuggerThreadInfo *mono_debugger_thread_table = NULL;
-
-static void
-mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info);
 
 static inline void
 record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
@@ -673,81 +663,6 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 		for (i = 0; i < jit->num_locals; ++i) {
 			print_var_info (&jit->locals [i], i, "", "Local");
 		}
-	}
-}
-
-
-/*
- * Debugger breakpoint interface.
- *
- * This interface is used to insert breakpoints on methods which are not yet JITed.
- * The debugging code keeps a list of all such breakpoints and automatically inserts the
- * breakpoint when the method is JITed.
- */
-
-static GPtrArray *method_breakpoints = NULL;
-
-MonoDebugMethodAddressList *
-mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
-{
-	MiniDebugMethodBreakpointInfo *info;
-
-	info = g_new0 (MiniDebugMethodBreakpointInfo, 1);
-	info->method = method;
-	info->index = index;
-
-	info->address_list = mono_debug_lookup_method_addresses (method);
-
-	if (!method_breakpoints)
-		method_breakpoints = g_ptr_array_new ();
-
-	g_ptr_array_add (method_breakpoints, info);
-
-	return info->address_list;
-}
-
-int
-mono_debugger_remove_method_breakpoint (guint64 index)
-{
-	int i;
-
-	if (!method_breakpoints)
-		return 0;
-
-	for (i = 0; i < method_breakpoints->len; i++) {
-		MiniDebugMethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
-
-		if (info->index != index)
-			continue;
-
-		g_ptr_array_remove (method_breakpoints, info);
-		g_free (info->address_list);
-		g_free (info);
-		return 1;
-	}
-
-	return 0;
-}
-
-static void
-mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info)
-{
-	int i;
-
-	if (!method_breakpoints)
-		return;
-
-	if (method->is_inflated)
-		method = ((MonoMethodInflated *) method)->declaring;
-
-	for (i = 0; i < method_breakpoints->len; i++) {
-		MiniDebugMethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
-
-		if (method != info->method)
-			continue;
-
-		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
-				     (guint64) (gsize) debug_info, info->index);
 	}
 }
 

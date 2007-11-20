@@ -6,12 +6,6 @@
 
 #include "mini.h"
 
-MonoDebugMethodAddressList *
-mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 idx);
-
-int
-mono_debugger_remove_method_breakpoint (guint64 index);
-
 typedef struct _MonoDebuggerThreadInfo MonoDebuggerThreadInfo;
 extern MonoDebuggerThreadInfo *mono_debugger_thread_table;
 

@@ -32,9 +32,9 @@ struct _MonoDebuggerInfo {
 	guint32 version;
 	guint32 total_size;
 	guint32 symbol_table_size;
-	guint32 dummy;
-	gpointer notification_function;
+	guint32 mono_trampoline_num;
 	guint8 **mono_trampoline_code;
+	gpointer notification_function;
 	MonoSymbolTable **symbol_table;
 	MonoDebuggerMetadataInfo *metadata_info;
 	guint64 (*compile_method) (guint64 method_argument);
@@ -49,11 +49,18 @@ struct _MonoDebuggerInfo {
 	void * (*get_lmf_addr) (void);
 
 	guint64 (*create_string) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2,
-				  const gchar *string_argument);
+				  G_GNUC_UNUSED guint64 dummy3, const gchar *string_argument);
 	gint64 (*lookup_class) (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
-				gchar *full_name);
-	guint64 (*insert_breakpoint) (guint64 method_argument, guint64 index);
-	void (*remove_breakpoint) (G_GNUC_UNUSED guint64 dummy, guint64 index);
+				G_GNUC_UNUSED guint64 dummy2, gchar *full_name);
+
+	guint64 (*insert_method_breakpoint) (guint64 method_argument, guint64 index);
+	guint64 (*insert_source_breakpoint) (guint64 image_argument, guint64 token,
+					     guint64 index, const gchar *class_name);
+	void (*remove_breakpoint) (guint64 index, G_GNUC_UNUSED guint64 dummy);
+
+	guint64 (*rgister_class_init_callback) (guint64 image_argument, guint64 token,
+						guint64 index, const gchar *class_name);
+	void (*remove_class_init_callback) (guint64 index, G_GNUC_UNUSED guint64 dummy);
 
 	gint32 *debugger_version;
 	MonoDebuggerThreadInfo **thread_table;
