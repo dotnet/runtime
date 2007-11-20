@@ -3,6 +3,66 @@
 #include <glib.h>
 #include "test.h"
 
+
+RESULT
+test_slist_nth ()
+{
+	char *foo = "foo";
+	char *bar = "bar";
+	char *baz = "baz";
+	GSList *nth, *list;
+	list = g_slist_prepend (NULL, baz);
+	list = g_slist_prepend (list, bar);
+	list = g_slist_prepend (list, foo);
+
+	nth = g_slist_nth (list, 0);
+	if (nth->data != foo)
+		return FAILED ("nth failed. #0");
+
+	nth = g_slist_nth (list, 1);
+	if (nth->data != bar)
+		return FAILED ("nth failed. #1");
+	
+	nth = g_slist_nth (list, 2);
+	if (nth->data != baz)
+		return FAILED ("nth failed. #2");
+
+	nth = g_slist_nth (list, 3);
+	if (nth)
+		return FAILED ("nth failed. #3: %s", nth->data);
+
+	g_slist_free (list);
+	return OK;
+}
+
+RESULT
+test_slist_index ()
+{
+	int i;
+	char *foo = "foo";
+	char *bar = "bar";
+	char *baz = "baz";
+	GSList *list;
+	list = g_slist_prepend (NULL, baz);
+	list = g_slist_prepend (list, bar);
+	list = g_slist_prepend (list, foo);
+
+	i = g_slist_index (list, foo);
+	if (i != 0)
+		return FAILED ("index failed. #0: %d", i);
+
+	i = g_slist_index (list, bar);
+	if (i != 1)
+		return FAILED ("index failed. #1: %d", i);
+	
+	i = g_slist_index (list, baz);
+	if (i != 2)
+		return FAILED ("index failed. #2: %d", i);
+
+	g_slist_free (list);
+	return OK;
+}
+
 RESULT
 test_slist_append ()
 {
@@ -239,6 +299,8 @@ test_slist_sort ()
 }
 
 static Test slist_tests [] = {
+	{"nth", test_slist_nth},
+	{"index", test_slist_index},
 	{"append", test_slist_append},
 	{"concat", test_slist_concat},
 	{"find", test_slist_find},

@@ -171,68 +171,161 @@ g_strconcat (const gchar *first, ...)
 	return ret;
 }
 
+static void
+add_to_vector (gchar ***vector, int size, gchar *token)
+{
+	*vector = *vector == NULL ? 
+		(gchar **)g_malloc(2 * sizeof(*vector)) :
+		(gchar **)g_realloc(*vector, (size + 1) * sizeof(*vector));
+		
+	(*vector)[size - 1] = token;
+}
+
 gchar ** 
 g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 {
-	gchar *string_c;
-	gchar *strtok_save, **vector;
-	gchar *token, *token_c;
+	const gchar *c;
+	gchar *token, **vector;
 	gint size = 1;
-	size_t token_length;
-
-	g_return_val_if_fail(string != NULL, NULL);
-	g_return_val_if_fail(delimiter != NULL, NULL);
-	g_return_val_if_fail(delimiter[0] != 0, NULL);
 	
-	token_length = strlen(string);
-	string_c = (gchar *)g_malloc(token_length + 1);
-	memcpy(string_c, string, token_length);
-	string_c[token_length] = 0;
-
-	if (strncmp (string_c, delimiter, strlen (delimiter)) == 0){
-		vector = (gchar **) g_malloc (2 * sizeof (vector));
-		vector [0]  = g_strdup ("");
+	g_return_val_if_fail (string != NULL, NULL);
+	g_return_val_if_fail (delimiter != NULL, NULL);
+	g_return_val_if_fail (delimiter[0] != 0, NULL);
+	
+	if (strncmp (string, delimiter, strlen (delimiter)) == 0) {
+		vector = (gchar **)g_malloc (2 * sizeof(vector));
+		vector[0] = g_strdup ("");
 		size++;
-	} else
+		string += strlen (delimiter);
+	} else {
 		vector = NULL;
-	token = (gchar *)strtok_r(string_c, delimiter, &strtok_save);
+	}
 
-	if (!(max_tokens > 0 && size >= max_tokens)){
-		while(token != NULL) {
-			token_length = strlen(token);
-			token_c = (gchar *)g_malloc(token_length + 1);
-			memcpy(token_c, token, token_length);
-			token_c[token_length] = 0;
-			
-			vector = vector == NULL ? 
-				(gchar **)g_malloc(2 * sizeof(vector)) :
-				(gchar **)g_realloc(vector, (size + 1) * sizeof(vector));
-			
-			vector[size - 1] = token_c;	
-			size++;
-			
-			if(max_tokens > 0 && size >= max_tokens) {
-				if(size > max_tokens) {
-					break;
+	while (*string && !(max_tokens > 0 && size >= max_tokens)) {
+		c = string;
+		if (strncmp (string, delimiter, strlen (delimiter)) == 0) {
+			token = g_strdup ("");
+			string += strlen (delimiter);
+		} else {
+			while (*string && strncmp (string, delimiter, strlen (delimiter)) != 0) {
+				string++;
+			}
+
+			if (*string) {
+				int toklen = (string - c);
+				token = g_strndup (c, toklen);
+
+				/* Need to leave a trailing empty
+				 * token if the delimiter is the last
+				 * part of the string
+				 */
+				if (strcmp (string, delimiter) != 0) {
+					string += strlen (delimiter);
 				}
-				
-				token = *strtok_save ? strtok_save : NULL;
 			} else {
-				token = (gchar *)strtok_r(NULL, delimiter, &strtok_save);
+				token = g_strdup (c);
 			}
 		}
+			
+		add_to_vector (&vector, size, token);
+		size++;
+	}
+
+	if (*string) {
+		/* Add the rest of the string as the last element */
+		add_to_vector (&vector, size, g_strdup (string));
+		size++;
 	}
 	
-	if (vector == NULL){
+	if (vector == NULL) {
 		vector = (gchar **) g_malloc (2 * sizeof (vector));
 		vector [0] = NULL;
-	} else if (size > 0){
+	} else if (size > 0) {
 		vector[size - 1] = NULL;
 	}
 	
-	g_free(string_c);
-	string_c = NULL;
+	return vector;
+}
 
+static gboolean
+charcmp (gchar testchar, const gchar *compare)
+{
+	while(*compare) {
+		if (*compare == testchar) {
+			return TRUE;
+		}
+		compare++;
+	}
+	
+	return FALSE;
+}
+
+gchar ** 
+g_strsplit_set (const gchar *string, const gchar *delimiter, gint max_tokens)
+{
+	const gchar *c;
+	gchar *token, **vector;
+	gint size = 1;
+	
+	g_return_val_if_fail (string != NULL, NULL);
+	g_return_val_if_fail (delimiter != NULL, NULL);
+	g_return_val_if_fail (delimiter[0] != 0, NULL);
+	
+	if (charcmp (*string, delimiter)) {
+		vector = (gchar **)g_malloc (2 * sizeof(vector));
+		vector[0] = g_strdup ("");
+		size++;
+		string++;
+	} else {
+		vector = NULL;
+	}
+
+	c = string;
+	while (*string && !(max_tokens > 0 && size >= max_tokens)) {
+		if (charcmp (*string, delimiter)) {
+			int toklen = (string - c);
+			if (toklen == 0) {
+				token = g_strdup ("");
+			} else {
+				token = g_strndup (c, toklen);
+			}
+			
+			c = string + 1;
+			
+			add_to_vector (&vector, size, token);
+			size++;
+		}
+
+		string++;
+	}
+	
+	if (max_tokens > 0 && size >= max_tokens) {
+		if (*string) {
+			/* Add the rest of the string as the last element */
+			add_to_vector (&vector, size, g_strdup (string));
+			size++;
+		}
+	} else {
+		if (*c) {
+			/* Fill in the trailing last token */
+			add_to_vector (&vector, size, g_strdup (c));
+			size++;
+		} else {
+			/* Need to leave a trailing empty token if the
+			 * delimiter is the last part of the string
+			 */
+			add_to_vector (&vector, size, g_strdup (""));
+			size++;
+		}
+	}
+	
+	if (vector == NULL) {
+		vector = (gchar **) g_malloc (2 * sizeof (vector));
+		vector [0] = NULL;
+	} else if (size > 0) {
+		vector[size - 1] = NULL;
+	}
+	
 	return vector;
 }
 

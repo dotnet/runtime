@@ -90,6 +90,206 @@ test_split ()
 	
 	g_strfreev (v);
 
+	v = g_strsplit ("abcXYdefXghiXYjklYmno", "XY", 4);
+	if (strcmp (v [0], "abc") != 0)
+		return FAILED ("Invalid value 0");
+	
+	if (strcmp (v [1], "defXghi") != 0)
+		return FAILED ("Invalid value 1");
+
+	if (strcmp (v [2], "jklYmno") != 0)
+		return FAILED ("Invalid value 2");
+
+	if (v [3] != NULL)
+		return FAILED ("Expected only 3 elements (1)");
+	
+	g_strfreev (v);
+
+	v = g_strsplit ("abcXYdefXghiXYjklYmno", "XY", 2);
+	if (strcmp (v [0], "abc") != 0)
+		return FAILED ("Invalid value 3");
+	
+	if (strcmp (v [1], "defXghiXYjklYmno") != 0)
+		return FAILED ("Invalid value 4");
+
+	if (v [2] != NULL)
+		return FAILED ("Expected only 2 elements (2)");
+	
+	g_strfreev (v);
+
+	v = g_strsplit ("abcXYdefXghiXYjklYmnoXY", "XY", 3);
+	if (strcmp (v [0], "abc") != 0)
+		return FAILED ("Invalid value 5");
+	
+	if (strcmp (v [1], "defXghi") != 0)
+		return FAILED ("Invalid value 6");
+
+	if (strcmp (v [2], "jklYmnoXY") != 0)
+		return FAILED ("Invalid value 7");
+
+	if (v [3] != NULL)
+		return FAILED ("Expected only 3 elements (3)");
+	
+	g_strfreev (v);
+
+	v = g_strsplit ("abcXYXYXYdefXY", "XY", -1);
+	if (strcmp (v [0], "abc") != 0)
+		return FAILED ("Invalid value 8");
+
+	if (strcmp (v [1], "") != 0)
+		return FAILED ("Invalid value 9");
+
+	if (strcmp (v [2], "") != 0)
+		return FAILED ("Invalid value 10");
+	
+	if (strcmp (v [3], "def") != 0)
+		return FAILED ("Invalid value 11");
+
+	if (strcmp (v [4], "") != 0)
+		return FAILED ("Invalid value 12");
+
+	if (v [5] != NULL)
+		return FAILED ("Expected only 5 elements (4)");
+	
+	g_strfreev (v);
+
+	v = g_strsplit ("XYXYXYabcXYdef", "XY", -1);
+	if (strcmp (v [0], "") != 0)
+		return FAILED ("Invalid value 13");
+	
+	if (strcmp (v [1], "") != 0)
+		return FAILED ("Invalid value 14");
+	
+	if (strcmp (v [2], "") != 0)
+		return FAILED ("Invalid value 15");
+	
+	if (strcmp (v [3], "abc") != 0)
+		return FAILED ("Invalid value 16");
+	
+	if (strcmp (v [4], "def") != 0)
+		return FAILED ("Invalid value 17");
+
+	if (v [5] != NULL)
+		return FAILED ("Expected only 5 elements (5)");
+	
+	g_strfreev (v);
+
+	return OK;
+}
+
+RESULT
+test_split_set ()
+{
+	gchar **v;
+	
+	v = g_strsplit_set ("abcXYdefXghiXYjklYmno", "XY", 6);
+	if (strcmp (v [0], "abc") != 0)
+		return FAILED ("Invalid value 0");
+
+	if (strcmp (v [1], "") != 0)
+		return FAILED ("Invalid value 1");
+	
+	if (strcmp (v [2], "def") != 0)
+		return FAILED ("Invalid value 2");
+
+	if (strcmp (v [3], "ghi") != 0)
+		return FAILED ("Invalid value 3");
+
+	if (strcmp (v [4], "") != 0)
+		return FAILED ("Invalid value 4");
+
+	if (strcmp (v [5], "jklYmno") != 0)
+		return FAILED ("Invalid value 5");
+
+	if (v [6] != NULL)
+		return FAILED ("Expected only 6 elements (1)");
+
+	g_strfreev (v);
+
+	v = g_strsplit_set ("abcXYdefXghiXYjklYmno", "XY", 3);
+	if (strcmp (v [0], "abc") != 0)
+		return FAILED ("Invalid value 6");
+
+	if (strcmp (v [1], "") != 0)
+		return FAILED ("Invalid value 7");
+	
+	if (strcmp (v [2], "defXghiXYjklYmno") != 0)
+		return FAILED ("Invalid value 8");
+
+	if (v [3] != NULL)
+		return FAILED ("Expected only 3 elements (2)");
+	
+	g_strfreev (v);
+
+	v = g_strsplit_set ("abcXdefYghiXjklYmnoX", "XY", 5);
+	if (strcmp (v [0], "abc") != 0)
+		return FAILED ("Invalid value 9");
+	
+	if (strcmp (v [1], "def") != 0)
+		return FAILED ("Invalid value 10");
+
+	if (strcmp (v [2], "ghi") != 0)
+		return FAILED ("Invalid value 11");
+
+	if (strcmp (v [3], "jkl") != 0)
+		return FAILED ("Invalid value 12");
+
+	if (strcmp (v [4], "mnoX") != 0)
+		return FAILED ("Invalid value 13");
+
+	if (v [5] != NULL)
+		return FAILED ("Expected only 5 elements (5)");
+	
+	g_strfreev (v);
+
+	v = g_strsplit_set ("abcXYXdefXY", "XY", -1);
+	if (strcmp (v [0], "abc") != 0)
+		return FAILED ("Invalid value 14");
+
+	if (strcmp (v [1], "") != 0)
+		return FAILED ("Invalid value 15");
+
+	if (strcmp (v [2], "") != 0)
+		return FAILED ("Invalid value 16");
+	
+	if (strcmp (v [3], "def") != 0)
+		return FAILED ("Invalid value 17");
+
+	if (strcmp (v [4], "") != 0)
+		return FAILED ("Invalid value 18");
+
+	if (strcmp (v [5], "") != 0)
+		return FAILED ("Invalid value 19");
+
+	if (v [6] != NULL)
+		return FAILED ("Expected only 6 elements (4)");
+	
+	g_strfreev (v);
+
+	v = g_strsplit_set ("XYXabcXYdef", "XY", -1);
+	if (strcmp (v [0], "") != 0)
+		return FAILED ("Invalid value 20");
+	
+	if (strcmp (v [1], "") != 0)
+		return FAILED ("Invalid value 21");
+	
+	if (strcmp (v [2], "") != 0)
+		return FAILED ("Invalid value 22");
+	
+	if (strcmp (v [3], "abc") != 0)
+		return FAILED ("Invalid value 23");
+
+	if (strcmp (v [4], "") != 0)
+		return FAILED ("Invalid value 24");
+	
+	if (strcmp (v [5], "def") != 0)
+		return FAILED ("Invalid value 25");
+
+	if (v [6] != NULL)
+		return FAILED ("Expected only 6 elements (5)");
+	
+	g_strfreev (v);
+
 	return OK;
 }
 
@@ -425,6 +625,7 @@ static Test strutil_tests [] = {
 	{"g_strfreev", test_strfreev},
 	{"g_strconcat", test_concat},
 	{"g_strsplit", test_split},
+	{"g_strsplit_set", test_split_set},
 	{"g_strreverse", test_strreverse},
 	{"g_strjoin", test_strjoin},
 	{"g_strchug", test_strchug},

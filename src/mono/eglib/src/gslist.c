@@ -300,6 +300,40 @@ g_slist_insert_sorted (GSList *list, gpointer data, GCompareFunc func)
 	return list;
 }
 
+gint
+g_slist_index (GSList *list, gconstpointer data)
+{
+	gint index = 0;
+	
+	while (list) {
+		if (list->data == data)
+			return index;
+		
+		index++;
+		list = list->next;
+	}
+	
+	return -1;
+}
+
+GSList*
+g_slist_nth (GSList *list, guint n)
+{
+	for (; list; list = list->next) {
+		if (n == 0)
+			break;
+		n--;
+	}
+	return list;
+}
+
+gpointer
+g_slist_nth_data (GSList *list, guint n)
+{
+	GSList *node = g_slist_nth (list, n);
+	return node ? node->data : NULL;
+}
+
 typedef GSList list_node;
 #include "sort.frag.h"
 
@@ -309,15 +343,4 @@ g_slist_sort (GSList *list, GCompareFunc func)
 	if (!list || !list->next)
 		return list;
 	return do_sort (list, func);
-}
-
-gpointer
-g_slist_nth_data (GSList *list, guint n)
-{
-	while (n-- && list != NULL){
-		list = list->next;
-	}
-	if (list)
-		return list->data;
-	return NULL;
 }

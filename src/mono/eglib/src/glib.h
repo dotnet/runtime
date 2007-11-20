@@ -212,6 +212,7 @@ gchar       *g_strndup        (const gchar *str, gsize n);
 void         g_strfreev       (gchar **str_array);
 gchar       *g_strconcat      (const gchar *first, ...);
 gchar      **g_strsplit       (const gchar *string, const gchar *delimiter, gint max_tokens);
+gchar      **g_strsplit_set   (const gchar *string, const gchar *delimiter, gint max_tokens);
 gchar       *g_strreverse     (gchar *str);
 gboolean     g_str_has_prefix (const gchar *str, const gchar *prefix);
 gboolean     g_str_has_suffix (const gchar *str, const gchar *suffix);
@@ -332,7 +333,12 @@ GSList *g_slist_insert_before (GSList        *list,
 			       gpointer       data);
 GSList *g_slist_sort          (GSList        *list,
 			       GCompareFunc   func);
-gpointer g_slist_nth_data     (GSList *list, guint n);
+gint    g_slist_index	      (GSList        *list,
+			       gconstpointer  data);
+GSList *g_slist_nth	      (GSList	     *list,
+			       guint	      n);
+gpointer g_slist_nth_data     (GSList	     *list,
+			       guint	      n);
 
 #define g_slist_next(slist) ((slist) ? (((GSList *) (slist))->next) : NULL)
 

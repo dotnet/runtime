@@ -1,3 +1,19 @@
+2007-11-20  Dick Porter  <dick@ximian.com>
+
+	* src/gstr.c: Implement g_strsplit_set() and re-implement
+	g_strsplit() so it passes the additional tests. (g_strsplit()
+	should treat multi-char delimiters as just a single token, rather
+	than a set of delimiters.)
+
+	* src/gslist.c: Implement g_slist_index(), g_slist_nth() and
+	g_slist_nth_data().
+
+	* test/string-util.c: Test g_strsplit_set() and more tests for
+	g_strsplit().
+
+	* test/slist.c: Test g_slist_nth() and
+	g_slist_index().
+
 2007-11-06  Geoff Norton  <gnorton@novell.com>
 
 	* configure.ac: Check for libiconv_open as the previous check was failing against 
