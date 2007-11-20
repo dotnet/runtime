@@ -717,7 +717,7 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
 	}
 
 	mh = mono_metadata_parse_mh_full (m, container, ptr);
-	if ((entry_point = mono_image_get_entry_point (m))){
+	if ((entry_point = mono_image_get_entry_point (m)) && mono_metadata_token_index (entry_point)){
 		loc = mono_metadata_locate_token (m, entry_point);
 		if (rva == read32 (loc))
 			fprintf (output, "\t.entrypoint\n");
@@ -1386,6 +1386,23 @@ dis_types (MonoImage *m, int forward)
 	}
 }
 
+static char *
+get_uninitialized_data_type (guint32 size)
+{
+	switch (size) {
+	case 1:
+		return "int8";
+	case 2:
+		return "int16";
+	case 4:
+		return "int32";
+	case 8:
+		return "int64";
+	default:
+		g_error ("get_uninitialized_data_type for size: %d\n", size);
+	}		
+}
+
 /**
  * dis_data:
  * @m: metadata context
@@ -1414,13 +1431,18 @@ dis_data (MonoImage *m)
 		type = mono_metadata_parse_field_type (m, 0, sig + 1, &sig);
 		mono_class_init (mono_class_from_mono_type (type));
 		size = mono_type_size (type, &align);
-		fprintf (output, ".data D_%08x = bytearray (", cols [MONO_FIELD_RVA_RVA]);
-		for (b = 0; b < size; ++b) {
-			if (!(b % 16))
-				fprintf (output, "\n\t");
-			fprintf (output, " %02X", rva [b] & 0xff);
-		}
-		fprintf (output, ") // size: %d\n", size);
+
+		if (rva) {
+			fprintf (output, ".data D_%08x = bytearray (", cols [MONO_FIELD_RVA_RVA]);
+			for (b = 0; b < size; ++b) {
+				if (!(b % 16))
+					fprintf (output, "\n\t");
+				fprintf (output, " %02X", rva [b] & 0xff);
+			}
+			fprintf (output, ") // size: %d\n", size);
+		} else
+			fprintf (output, ".data D_%08x = %s [%d]\n",
+				cols [MONO_FIELD_RVA_RVA], get_uninitialized_data_type (size), size);
 	}
 }
 
