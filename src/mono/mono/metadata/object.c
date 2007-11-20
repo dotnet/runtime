@@ -1479,6 +1479,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 			MonoClass *fklass = mono_class_from_mono_type (field->type);
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT));
 			t = (char*)vt->data + field->offset;
+			/* some fields don't really have rva, they are just zeroed (bss? bug #343083) */
+			if (!field->data)
+				continue;
 			if (fklass->valuetype) {
 				memcpy (t, field->data, mono_class_value_size (fklass, NULL));
 			} else {
