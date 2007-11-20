@@ -35,6 +35,7 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_UNLOAD_MODULE,
 	MONO_DEBUGGER_EVENT_DOMAIN_CREATE,
 	MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD,
+	MONO_DEBUGGER_EVENT_CLASS_INITIALIZED,
 
 	/* Extended per-thread notifications */
 	MONO_DEBUGGER_EVENT_TRAMPOLINE			= 256,
@@ -57,5 +58,24 @@ mono_vtable_get_static_field_data (MonoVTable *vt);
 
 gchar *
 mono_debugger_check_runtime_version (const char *filename);
+
+void
+mono_debugger_add_type (MonoDebugHandle *symfile, MonoClass *klass);
+
+MonoDebugMethodAddressList *
+mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 idx);
+
+int
+mono_debugger_remove_method_breakpoint (guint64 index);
+
+void
+mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info);
+
+MonoClass *
+mono_debugger_register_class_init_callback (MonoImage *image, const gchar *full_name,
+					    guint32 token, guint32 index);
+
+void
+mono_debugger_remove_class_init_callback (int index);
 
 #endif /* __MONO_DEBUG_DEBUGGER_H__ */

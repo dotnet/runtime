@@ -841,6 +841,8 @@ mono_debug_add_type (MonoClass *klass)
 	if (!handle)
 		return;
 
+	mono_debugger_add_type (handle, klass);
+
 	if (klass->generic_class || klass->rank ||
 	    (klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
 		return;

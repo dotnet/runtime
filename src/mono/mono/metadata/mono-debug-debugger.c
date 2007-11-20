@@ -29,6 +29,22 @@ typedef struct {
 	guint32 stop;
 } MonoDebuggerExceptionInfo;
 
+typedef struct
+{
+	guint32 index;
+	MonoMethod *method;
+	MonoDebugMethodAddressList *address_list;
+} MethodBreakpointInfo;
+
+typedef struct {
+	guint64 index;
+	guint32 token;
+	gchar *name_space;
+	gchar *name;
+} ClassInitCallback;
+
+static GPtrArray *class_init_callbacks = NULL;
+
 static int initialized = 0;
 
 void
@@ -193,4 +209,184 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	}
 
 	return retval;
+}
+
+
+/*
+ * Debugger breakpoint interface.
+ *
+ * This interface is used to insert breakpoints on methods which are not yet JITed.
+ * The debugging code keeps a list of all such breakpoints and automatically inserts the
+ * breakpoint when the method is JITed.
+ */
+
+static GPtrArray *method_breakpoints = NULL;
+
+MonoDebugMethodAddressList *
+mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
+{
+	MethodBreakpointInfo *info;
+
+	info = g_new0 (MethodBreakpointInfo, 1);
+	info->method = method;
+	info->index = index;
+
+	info->address_list = mono_debug_lookup_method_addresses (method);
+
+	if (!method_breakpoints)
+		method_breakpoints = g_ptr_array_new ();
+
+	g_ptr_array_add (method_breakpoints, info);
+
+	return info->address_list;
+}
+
+int
+mono_debugger_remove_method_breakpoint (guint64 index)
+{
+	int i;
+
+	if (!method_breakpoints)
+		return 0;
+
+	for (i = 0; i < method_breakpoints->len; i++) {
+		MethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
+
+		if (info->index != index)
+			continue;
+
+		g_ptr_array_remove (method_breakpoints, info);
+		g_free (info->address_list);
+		g_free (info);
+		return 1;
+	}
+
+	return 0;
+}
+
+void
+mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info)
+{
+	int i;
+
+	if (!method_breakpoints)
+		return;
+
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
+
+	for (i = 0; i < method_breakpoints->len; i++) {
+		MethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
+
+		if (method != info->method)
+			continue;
+
+		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
+				     (guint64) (gsize) debug_info, info->index);
+	}
+}
+
+MonoClass *
+mono_debugger_register_class_init_callback (MonoImage *image, const gchar *full_name,
+					    guint32 method_token, guint32 index)
+{
+	ClassInitCallback *info;
+	MonoClass *klass;
+	gchar *name_space, *name, *pos;
+
+	name = g_strdup (full_name);
+
+	pos = strrchr (name, '.');
+	if (pos) {
+		name_space = name;
+		*pos = 0;
+		name = pos + 1;
+	} else {
+		name_space = NULL;
+	}
+
+	mono_loader_lock ();
+
+	klass = mono_class_from_name (image, name_space ? name_space : "", name);
+	if (klass && klass->inited && klass->methods) {
+		mono_loader_unlock ();
+		return klass;
+	}
+
+	info = g_new0 (ClassInitCallback, 1);
+	info->index = index;
+	info->token = method_token;
+	info->name_space = name_space;
+	info->name = name;
+
+	if (!class_init_callbacks)
+		class_init_callbacks = g_ptr_array_new ();
+
+	g_ptr_array_add (class_init_callbacks, info);
+	mono_loader_unlock ();
+	return NULL;
+}
+
+void
+mono_debugger_remove_class_init_callback (int index)
+{
+	int i;
+
+	if (!class_init_callbacks)
+		return;
+
+	for (i = 0; i < class_init_callbacks->len; i++) {
+		ClassInitCallback *info = g_ptr_array_index (class_init_callbacks, i);
+
+		if (info->index != index)
+			continue;
+
+		g_ptr_array_remove (class_init_callbacks, info);
+		if (info->name_space)
+			g_free (info->name_space);
+		else
+			g_free (info->name);
+		g_free (info);
+	}
+}
+
+void
+mono_debugger_add_type (MonoDebugHandle *symfile, MonoClass *klass)
+{
+	int i;
+
+	if (!class_init_callbacks)
+		return;
+
+ again:
+	for (i = 0; i < class_init_callbacks->len; i++) {
+		ClassInitCallback *info = g_ptr_array_index (class_init_callbacks, i);
+
+		if (info->name_space && strcmp (info->name_space, klass->name_space))
+			continue;
+		if (strcmp (info->name, klass->name))
+			continue;
+
+		mono_debugger_event (MONO_DEBUGGER_EVENT_CLASS_INITIALIZED,
+				     (guint64) (gsize) klass, info->index);
+
+		if (info->token) {
+			int j;
+
+			for (j = 0; j < klass->method.count; j++) {
+				if (klass->methods [j]->token != info->token)
+					continue;
+
+				mono_debugger_insert_method_breakpoint (klass->methods [j], info->index);
+			}
+		}
+
+		g_ptr_array_remove (class_init_callbacks, info);
+		if (info->name_space)
+			g_free (info->name_space);
+		else
+			g_free (info->name);
+		g_free (info);
+		goto again;
+	}
 }
