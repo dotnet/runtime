@@ -310,3 +310,14 @@ g_slist_sort (GSList *list, GCompareFunc func)
 		return list;
 	return do_sort (list, func);
 }
+
+gpointer
+g_slist_nth_data (GSList *list, guint n)
+{
+	while (n-- && list != NULL){
+		list = list->next;
+	}
+	if (list)
+		return list->data;
+	return NULL;
+}

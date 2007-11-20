@@ -332,7 +332,10 @@ GSList *g_slist_insert_before (GSList        *list,
 			       gpointer       data);
 GSList *g_slist_sort          (GSList        *list,
 			       GCompareFunc   func);
+gpointer g_slist_nth_data     (GSList *list, guint n);
+
 #define g_slist_next(slist) ((slist) ? (((GSList *) (slist))->next) : NULL)
+
 
 typedef struct _GList GList;
 struct _GList {
