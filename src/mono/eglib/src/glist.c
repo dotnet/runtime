@@ -161,6 +161,22 @@ g_list_find (GList *list, gconstpointer data)
 }
 
 GList*
+g_list_find_custom (GList *list, gconstpointer data, GCompareFunc func)
+{
+	if (!func)
+		return NULL;
+	
+	while (list) {
+		if (func (list->data, data) == 0)
+			return list;
+		
+		list = list->next;
+	}
+	
+	return NULL;
+}
+
+GList*
 g_list_reverse (GList *list)
 {
 	GList *reverse = NULL;

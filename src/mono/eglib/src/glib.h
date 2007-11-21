@@ -315,6 +315,9 @@ void    g_slist_foreach       (GSList        *list,
 GSList *g_slist_last          (GSList        *list);
 GSList *g_slist_find          (GSList        *list,
 			       gconstpointer  data);
+GSList *g_slist_find_custom   (GSList	     *list,
+			       gconstpointer  data,
+			       GCompareFunc   func);
 GSList *g_slist_remove        (GSList        *list,
 			       gconstpointer  data);
 GSList *g_slist_remove_all    (GSList        *list,
@@ -376,6 +379,9 @@ void   g_list_foreach       (GList         *list,
 GList *g_list_first         (GList         *list);
 GList *g_list_find          (GList         *list,
 			     gconstpointer  data);
+GList *g_list_find_custom   (GList	   *list,
+			     gconstpointer  data,
+			     GCompareFunc   func);
 GList *g_list_remove        (GList         *list,
 			     gconstpointer  data);
 GList *g_list_reverse       (GList         *list);

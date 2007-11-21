@@ -181,6 +181,22 @@ g_slist_find (GSList *list, gconstpointer data)
 	return list;
 }
 
+GSList *
+g_slist_find_custom (GSList *list, gconstpointer data, GCompareFunc func)
+{
+	if (!func)
+		return NULL;
+	
+	while (list) {
+		if (func (list->data, data) == 0)
+			return list;
+		
+		list = list->next;
+	}
+	
+	return NULL;
+}
+
 guint
 g_slist_length (GSList *list)
 {

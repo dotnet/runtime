@@ -119,6 +119,34 @@ test_slist_find ()
 	return OK;
 }
 
+static gint
+find_custom (gconstpointer a, gconstpointer b)
+{
+	return(strcmp (a, b));
+}
+
+RESULT
+test_slist_find_custom ()
+{
+	GSList *list = NULL, *found;
+	char *foo = "foo";
+	char *bar = "bar";
+	char *baz = "baz";
+	
+	list = g_slist_prepend (list, baz);
+	list = g_slist_prepend (list, bar);
+	list = g_slist_prepend (list, foo);
+	
+	found = g_slist_find_custom (list, baz, find_custom);
+	
+	if (found == NULL)
+		return FAILED ("Find failed");
+	
+	g_slist_free (list);
+	
+	return OK;
+}
+
 RESULT
 test_slist_remove ()
 {
@@ -304,6 +332,7 @@ static Test slist_tests [] = {
 	{"append", test_slist_append},
 	{"concat", test_slist_concat},
 	{"find", test_slist_find},
+	{"find_custom", test_slist_find_custom},
 	{"remove", test_slist_remove},
 	{"remove_link", test_slist_remove_link},
 	{"insert_sorted", test_slist_insert_sorted},

@@ -1,3 +1,13 @@
+2007-11-21  Dick Porter  <dick@ximian.com>
+
+	* src/gslist.c (g_slist_find_custom): Implement
+
+	* src/glist.c (g_list_find_custom): Implement
+
+	* test/list.c: Test g_list_find_custom()
+
+	* test/slist.c: Test g_slist_find_custom()
+
 2007-11-20  Dick Porter  <dick@ximian.com>
 
 	* src/gstr.c: Implement g_strsplit_set() and re-implement

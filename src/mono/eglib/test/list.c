@@ -388,6 +388,34 @@ test_list_sort ()
 	return OK;
 }
 
+static gint
+find_custom (gconstpointer a, gconstpointer b)
+{
+	return(strcmp (a, b));
+}
+
+RESULT
+test_list_find_custom ()
+{
+	GList *list = NULL, *found;
+	char *foo = "foo";
+	char *bar = "bar";
+	char *baz = "baz";
+	
+	list = g_list_prepend (list, baz);
+	list = g_list_prepend (list, bar);
+	list = g_list_prepend (list, foo);
+	
+	found = g_list_find_custom (list, baz, find_custom);
+	
+	if (found == NULL)
+		return FAILED ("Find failed");
+	
+	g_list_free (list);
+	
+	return OK;
+}
+
 static Test list_tests [] = {
 	{       "length", test_list_length},
 	{          "nth", test_list_nth},
@@ -403,6 +431,7 @@ static Test list_tests [] = {
 	{  "remove_link", test_list_remove_link},
 	{  "remove_link", test_list_remove_link},
 	{         "sort", test_list_sort},
+	{  "find_custom", test_list_find_custom},
 	{NULL, NULL}
 };
 
