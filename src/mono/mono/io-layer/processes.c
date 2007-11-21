@@ -1557,126 +1557,134 @@ static void free_procmodule (WapiProcModule *mod)
 	g_free (mod);
 }
 
+static gint find_procmodule (gconstpointer a, gconstpointer b)
+{
+	WapiProcModule *want = (WapiProcModule *)a;
+	WapiProcModule *compare = (WapiProcModule *)b;
+	
+	if ((want->device == compare->device) &&
+	    (want->inode == compare->inode)) {
+		return(0);
+	} else {
+		return(1);
+	}
+}
+
 static GSList *load_modules (FILE *fp)
 {
 	GSList *ret = NULL;
-#if defined(HAVE_G_STRSPLIT_SET) && defined(HAVE_G_STRV_LENGTH)
-	gchar buf[MAXPATHLEN + 1], **fields, **addresses;
 	WapiProcModule *mod;
-	char *ep;
-	long address_start, address_end, address_offset, maj, min;
-	dev_t device;
+	gchar buf[MAXPATHLEN + 1], *p, *endp;
+	gchar *start_start, *end_start, *prot_start, *offset_start;
+	gchar *maj_dev_start, *min_dev_start, *inode_start, prot_buf[5];
+	gpointer address_start, address_end, address_offset;
+	guint32 maj_dev, min_dev;
 	ino_t inode;
+	dev_t device;
 	
 	while (fgets (buf, sizeof(buf), fp)) {
-		/* Have to specify 7 fields here, as otherwise
-		 * g_strsplit_set gives us variable numbers of empty
-		 * fields when the input buffer contains contiguous
-		 * spaces before the filename.  Unuseful.
-		 */
-		fields = g_strsplit_set (buf, " \t:", 7);
-		if (g_strv_length (fields) < 7) {
-			g_strfreev (fields);
+		p = buf;
+		while (g_ascii_isspace (*p)) ++p;
+		start_start = p;
+		if (!g_ascii_isxdigit (*start_start)) {
 			continue;
 		}
-
-		g_strstrip (fields[6]);
-		if ((strlen (fields[0]) == 0) ||
-		    (strlen (fields[2]) == 0) ||
-		    (strlen (fields[3]) == 0) ||
-		    (strlen (fields[4]) == 0) ||
-		    (strlen (fields[5]) == 0) ||
-		    (strlen (fields[6]) == 0)) {
-			g_strfreev (fields);
-			continue;
-		}
-
-		ep = NULL;
-		address_offset = strtol (fields[2], &ep, 16);
-		if ((address_offset == LONG_MIN) ||
-		    (address_offset == LONG_MAX) ||
-		    (ep == NULL) ||
-		    (*ep != '\0')) {
-			g_strfreev (fields);
-			continue;
-		}
-
-		ep = NULL;
-		maj = strtol (fields[3], &ep, 16);
-		if ((maj == LONG_MIN) ||
-		    (maj == LONG_MAX) ||
-		    (ep == NULL) ||
-		    (*ep != '\0')) {
-			g_strfreev (fields);
+		address_start = (gpointer)strtoul (start_start, &endp, 16);
+		p = endp;
+		if (*p != '-') {
 			continue;
 		}
 		
-		ep = NULL;
-		min = strtol (fields[4], &ep, 16);
-		if ((min == LONG_MIN) ||
-		    (min == LONG_MAX) ||
-		    (ep == NULL) ||
-		    (*ep != '\0')) {
-			g_strfreev (fields);
+		++p;
+		end_start = p;
+		if (!g_ascii_isxdigit (*end_start)) {
+			continue;
+		}
+		address_end = (gpointer)strtoul (end_start, &endp, 16);
+		p = endp;
+		if (!g_ascii_isspace (*p)) {
+			continue;
+		}
+		
+		while (g_ascii_isspace (*p)) ++p;
+		prot_start = p;
+		if (*prot_start != 'r' && *prot_start != '-') {
+			continue;
+		}
+		memcpy (prot_buf, prot_start, 4);
+		prot_buf[4] = '\0';
+		while (!g_ascii_isspace (*p)) ++p;
+		
+		while (g_ascii_isspace (*p)) ++p;
+		offset_start = p;
+		if (!g_ascii_isxdigit (*offset_start)) {
+			continue;
+		}
+		address_offset = (gpointer)strtoul (offset_start, &endp, 16);
+		p = endp;
+		if (!g_ascii_isspace (*p)) {
+			continue;
+		}
+		
+		while(g_ascii_isspace (*p)) ++p;
+		maj_dev_start = p;
+		if (!g_ascii_isxdigit (*maj_dev_start)) {
+			continue;
+		}
+		maj_dev = strtoul (maj_dev_start, &endp, 16);
+		p = endp;
+		if (*p != ':') {
+			continue;
+		}
+		
+		++p;
+		min_dev_start = p;
+		if (!g_ascii_isxdigit (*min_dev_start)) {
+			continue;
+		}
+		min_dev = strtoul (min_dev_start, &endp, 16);
+		p = endp;
+		if (!g_ascii_isspace (*p)) {
+			continue;
+		}
+		
+		while (g_ascii_isspace (*p)) ++p;
+		inode_start = p;
+		if (!g_ascii_isxdigit (*inode_start)) {
+			continue;
+		}
+		inode = (ino_t)strtol (inode_start, &endp, 10);
+		p = endp;
+		if (!g_ascii_isspace (*p)) {
 			continue;
 		}
 
-		inode = (ino_t)atoi (fields[5]);
-		device = makedev ((int)maj, (int)min);
-		
+		device = makedev ((int)maj_dev, (int)min_dev);
 		if ((device == 0) &&
 		    (inode == 0)) {
-			g_strfreev (fields);
-			continue;
-		}
-			
-		addresses = g_strsplit (fields[0], "-", -1);
-		if (g_strv_length (addresses) != 2) {
-			g_strfreev (addresses);
-			g_strfreev (fields);
-			continue;
-		}
-
-		ep = NULL;
-		address_start = strtol (addresses[0], &ep, 16);
-		if ((address_start == LONG_MIN) ||
-		    (address_start == LONG_MAX) ||
-		    (ep == NULL) ||
-		    (*ep != '\0')) {
-			g_strfreev (addresses);
-			g_strfreev (fields);
-			continue;
-		}
-
-		ep = NULL;
-		address_end = strtol (addresses[1], &ep, 16);
-		if ((address_end == LONG_MIN) ||
-		    (address_end == LONG_MAX) ||
-		    (ep == NULL) ||
-		    (*ep != '\0')) {
-			g_strfreev (addresses);
-			g_strfreev (fields);
 			continue;
 		}
 		
-		
+		while(g_ascii_isspace (*p)) ++p;
+		/* p now points to the filename */
+
 		mod = g_new0 (WapiProcModule, 1);
-		mod->address_start = GUINT_TO_POINTER (address_start);
-		mod->address_end = GUINT_TO_POINTER (address_end);
-		mod->perms = NULL;
-		mod->address_offset = GUINT_TO_POINTER (address_offset);
+		mod->address_start = address_start;
+		mod->address_end = address_end;
+		mod->perms = g_strdup (prot_buf);
+		mod->address_offset = address_offset;
 		mod->device = device;
 		mod->inode = inode;
-		mod->filename = g_strdup (fields[6]);
+		mod->filename = g_strdup (g_strstrip (p));
 		
-		ret = g_slist_prepend (ret, mod);
-		
-		g_strfreev (addresses);
-		g_strfreev (fields);
+		if (g_slist_find_custom (ret, mod, find_procmodule) == NULL) {
+			ret = g_slist_prepend (ret, mod);
+		} else {
+			free_procmodule (mod);
+		}
 	}
 
 	ret = g_slist_reverse (ret);
-#endif /* HAVE_G_STRSPLIT_SET && HAVE_G_STRV_LENGTH */
 	
 	return(ret);
 }

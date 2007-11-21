@@ -1,3 +1,7 @@
+2007-11-21  Dick Porter  <dick@ximian.com>
+
+	* configure.in: No need to check for glib functions any more
+
 2007-11-19  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* configure.in : fix win32 build.
