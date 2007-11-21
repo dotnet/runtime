@@ -30,6 +30,7 @@
 using System;
 using SR = System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.XPath;
 
 using Mono.Cecil;
@@ -93,31 +94,64 @@ namespace Mono.Linker.Steps {
 			while (iterator.MoveNext ()) {
 				XPathNavigator nav = iterator.Current;
 				string fullname = GetFullName (nav);
+
+				if (IsTypePattern (fullname)) {
+					ProcessTypePattern (fullname, assembly, nav);
+					continue;
+				}
+
 				TypeDefinition type = assembly.MainModule.Types [fullname];
 				if (type == null)
 					continue;
 
-				TypePreserve preserve = GetTypePreserve (nav);
+				ProcessType (type, nav);
+			}
+		}
 
-				if (!IsRequired (nav)) {
-					Annotations.SetPreserve (type, preserve);
+		static bool IsTypePattern (string fullname)
+		{
+			return fullname.IndexOf ("*") != -1;
+		}
+
+		static Regex CreateRegexFromPattern (string pattern)
+		{
+			return new Regex (pattern.Replace(".", @"\.").Replace("*", "(.*)"));
+		}
+
+		void ProcessTypePattern (string fullname, AssemblyDefinition assembly, XPathNavigator nav)
+		{
+			Regex regex = CreateRegexFromPattern (fullname);
+
+			foreach (TypeDefinition type in assembly.MainModule.Types) {
+				if (!regex.Match (type.FullName).Success)
 					continue;
-				}
 
-				Annotations.Mark (type);
+				ProcessType (type, nav);
+			}
+		}
 
-				switch (preserve) {
-				case TypePreserve.Nothing:
-					if (nav.HasChildren) {
-						MarkSelectedFields (nav, type);
-						MarkSelectedMethods (nav, type);
-					} else
-						Annotations.SetPreserve (type, TypePreserve.All);
-					break;
-				default:
-					Annotations.SetPreserve (type, preserve);
-					break;
-				}
+		void ProcessType (TypeDefinition type, XPathNavigator nav)
+		{
+			TypePreserve preserve = GetTypePreserve (nav);
+
+			if (!IsRequired (nav)) {
+				Annotations.SetPreserve (type, preserve);
+				return;
+			}
+
+			Annotations.Mark (type);
+
+			switch (preserve) {
+			case TypePreserve.Nothing:
+				if (nav.HasChildren) {
+					MarkSelectedFields (nav, type);
+					MarkSelectedMethods (nav, type);
+				} else
+					Annotations.SetPreserve (type, TypePreserve.All);
+				break;
+			default:
+				Annotations.SetPreserve (type, preserve);
+				break;
 			}
 		}
 
