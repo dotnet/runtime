@@ -1,3 +1,8 @@
+2007-11-21  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/ResolveFromXmlStep.cs:
+		Implement resolving from xml patterns.
+
 2007-10-25  Jb Evain  <jbevain@novell.com>
 
 	* monolinker.exe.sources
