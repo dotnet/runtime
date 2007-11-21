@@ -11529,6 +11529,9 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 
 	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
 
+	/* We can corlib internal methods */
+	res->skip_visibility = TRUE;
+
 	mono_mb_free (mb);
 
 	return res;
