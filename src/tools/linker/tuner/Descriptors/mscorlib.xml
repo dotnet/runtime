@@ -3,5 +3,7 @@
 	<assembly fullname="mscorlib">
 		<type fullname="System.AppDomain" preserve="all" />
 		<type fullname="System.Reflection.Assembly" preserve="all" />
+		<type fullname="System.Security.SecuritySafeCriticalAttribute" preserve="all" />
+		<type fullname="System.Security.SecurityTransparentAttribute" preserve="all" />
 	</assembly>
 </linker>
