@@ -80,6 +80,12 @@ namespace Mono.Linker.Tests {
 			RunTest ("ReferenceInAttributes");
 		}
 
+		[Test]
+		public void TestXmlPattern ()
+		{
+			RunTest ("XmlPattern");
+		}
+
 		protected override void RunTest (string testCase)
 		{
 			base.RunTest (testCase);
