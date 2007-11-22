@@ -36,7 +36,8 @@
 typedef enum {
 	MONO_DEBUG_DATA_ITEM_UNKNOWN		= 0,
 	MONO_DEBUG_DATA_ITEM_CLASS,
-	MONO_DEBUG_DATA_ITEM_METHOD
+	MONO_DEBUG_DATA_ITEM_METHOD,
+	MONO_DEBUG_DATA_ITEM_DELEGATE_IMPL
 } MonoDebugDataItemType;
 
 typedef struct _MonoDebugDataChunk MonoDebugDataChunk;
@@ -87,6 +88,11 @@ struct _MonoDebugClassEntry {
 	guint32 size;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
+
+typedef struct {
+	gpointer code;
+	guint32 size;
+} MonoDebugDelegateImplEntry;
 
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
@@ -230,6 +236,8 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debugger_start_class_init_func = mono_debug_start_add_type;
 	mono_debugger_class_init_func = mono_debug_add_type;
 	mono_install_assembly_load_hook (mono_debug_add_assembly, NULL);
+
+	mono_symbol_table->global_data_table = create_data_table (NULL);
 
 	mono_debugger_unlock ();
 }
@@ -689,6 +697,27 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 
 	mono_debugger_unlock ();
 	return address;
+}
+
+void
+mono_debug_add_delegate_impl (gpointer code, int size)
+{
+	MonoDebugDelegateImplEntry *entry;
+
+	if (!mono_debug_initialized)
+		return;
+
+	mono_debugger_lock ();
+
+	entry = (MonoDebugDelegateImplEntry *) allocate_data_item (
+		mono_symbol_table->global_data_table, MONO_DEBUG_DATA_ITEM_DELEGATE_IMPL,
+		sizeof (MonoDebugDelegateImplEntry));
+	entry->code = code;
+	entry->size = size;
+
+	write_data_item (mono_symbol_table->global_data_table, (guint8 *) entry);
+
+	mono_debugger_unlock ();
 }
 
 static inline guint32

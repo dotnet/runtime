@@ -37,21 +37,6 @@ typedef enum {
 	MONO_DEBUG_FORMAT_DEBUGGER
 } MonoDebugFormat;
 
-typedef enum {
-	MONO_DEBUGGER_TYPE_KIND_UNKNOWN = 1,
-	MONO_DEBUGGER_TYPE_KIND_FUNDAMENTAL,
-	MONO_DEBUGGER_TYPE_KIND_STRING,
-	MONO_DEBUGGER_TYPE_KIND_SZARRAY,
-	MONO_DEBUGGER_TYPE_KIND_ARRAY,
-	MONO_DEBUGGER_TYPE_KIND_POINTER,
-	MONO_DEBUGGER_TYPE_KIND_ENUM,
-	MONO_DEBUGGER_TYPE_KIND_OBJECT,
-	MONO_DEBUGGER_TYPE_KIND_STRUCT,
-	MONO_DEBUGGER_TYPE_KIND_CLASS,
-	MONO_DEBUGGER_TYPE_KIND_CLASS_INFO,
-	MONO_DEBUGGER_TYPE_KIND_REFERENCE
-} MonoDebuggerTypeKind;
-
 /*
  * NOTE:
  * We intentionally do not use GList here since the debugger needs to know about
@@ -71,7 +56,7 @@ struct _MonoSymbolTable {
 	 * Corlib and metadata info.
 	 */
 	MonoDebugHandle *corlib;
-
+	MonoDebugDataTable *global_data_table;
 	MonoDebugList *data_tables;
 
 	/*
@@ -176,6 +161,9 @@ mono_debug_lookup_method_addresses (MonoMethod *method);
 
 MonoDebugMethodJitInfo*
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain);
+
+void
+mono_debug_add_delegate_impl (gpointer code, int size);
 
 /*
  * Line number support.
