@@ -34,13 +34,13 @@ extern gboolean TryEnterCriticalSection(WapiCriticalSection *section);
 /* These two are perf critical so avoid the wrapper function */
 
 #define EnterCriticalSection(section) do { \
-	/*int ret =*/ mono_mutex_lock(&(section)->mutex);	\
-	/*g_assert (ret == 0);*/			 \
+	int ret = mono_mutex_lock(&(section)->mutex);    \
+	g_assert (ret == 0);				 \
 } while (0)
 
 #define LeaveCriticalSection(section) do { \
-	/*int ret =*/ mono_mutex_unlock(&(section)->mutex);	\
-	/*g_assert (ret == 0);*/			     \
+	int ret = mono_mutex_unlock(&(section)->mutex);      \
+	g_assert (ret == 0);    \
 } while (0)
 
 G_END_DECLS
