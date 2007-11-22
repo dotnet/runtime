@@ -12,6 +12,7 @@
 #endif
 
 #include "mini.h"
+#include "debug-mini.h"
 
 #ifdef MONO_ARCH_HAVE_IMT
 
