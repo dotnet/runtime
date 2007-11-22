@@ -1412,6 +1412,10 @@ simple_shutdown (MonoProfiler *prof)
 	if (see_shutdown_done)
 		return;
 
+	if (mono_profiler_events & MONO_PROFILE_STATISTICAL) {
+		stat_prof_report ();
+	}
+
 	// Stop all incoming events
 	mono_profiler_set_events (0);
 	
