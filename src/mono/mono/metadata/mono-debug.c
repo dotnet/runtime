@@ -950,7 +950,7 @@ mono_debug_lookup_method_addresses (MonoMethod *method)
 	GSList *list;
 	guint8 *ptr;
 
-	g_assert (mono_debug_debugger_version == 2);
+	g_assert (mono_debug_debugger_version == 3);
 
 	mono_debugger_lock ();
 
