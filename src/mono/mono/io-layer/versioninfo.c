@@ -61,7 +61,7 @@ static gpointer get_ptr_from_rva (guint32 rva, WapiImageNTHeaders *ntheaders,
 	delta = (guint32)(section_header->VirtualAddress -
 			  section_header->PointerToRawData);
 	
-	return(GUINT_TO_POINTER (GPOINTER_TO_UINT (file_map) + rva - delta));
+	return((guint8 *)file_map + rva - delta);
 }
 
 static gpointer scan_resource_dir (WapiImageResourceDirectory *root,
@@ -104,7 +104,7 @@ static gpointer scan_resource_dir (WapiImageResourceDirectory *root,
 	}
 	
 	if (is_dir == TRUE) {
-		WapiImageResourceDirectory *res_dir = (WapiImageResourceDirectory *)GUINT_TO_POINTER (GPOINTER_TO_UINT (root) + dir_offset);
+		WapiImageResourceDirectory *res_dir = (WapiImageResourceDirectory *)((guint8 *)root + dir_offset);
 		WapiImageResourceDirectoryEntry *sub_entries = (WapiImageResourceDirectoryEntry *)(res_dir + 1);
 		guint32 entries, i;
 		
@@ -124,7 +124,7 @@ static gpointer scan_resource_dir (WapiImageResourceDirectory *root,
 		
 		return(NULL);
 	} else {
-		WapiImageResourceDataEntry *data_entry = (WapiImageResourceDataEntry *)GUINT_TO_POINTER (GPOINTER_TO_UINT (root) + data_offset);
+		WapiImageResourceDataEntry *data_entry = (WapiImageResourceDataEntry *)((guint8 *)root + data_offset);
 		*size = GUINT32_FROM_LE (data_entry->Size);
 		
 		return(get_ptr_from_rva (data_entry->OffsetToData, nt_headers, file_map));
@@ -162,7 +162,7 @@ static gpointer find_pe_file_resources (gpointer file_map, guint32 map_size,
 		return(NULL);
 	}
 	
-	nt_headers = (WapiImageNTHeaders *)GUINT_TO_POINTER ((GPOINTER_TO_UINT (file_map) + GUINT32_FROM_LE (dos_header->e_lfanew)));
+	nt_headers = (WapiImageNTHeaders *)((guint8 *)file_map + GUINT32_FROM_LE (dos_header->e_lfanew));
 	if (nt_headers->Signature != IMAGE_NT_SIGNATURE) {
 #ifdef DEBUG
 		g_message ("%s: Bad NT signature 0x%x", __func__,
