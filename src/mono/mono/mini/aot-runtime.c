@@ -223,10 +223,10 @@ decode_value (guint8 *ptr, guint8 **rptr)
 }
 
 static MonoClass*
-decode_klass_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
+decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoImage *image;
-	MonoClass *klass;
+	MonoClass *klass, *eklass;
 	guint32 token, rank, image_index;
 
 	token = decode_value (buf, &buf);
@@ -242,24 +242,13 @@ decode_klass_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + token);
 	} else if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
 		klass = mono_class_get (image, token);
-	} else {
-		g_assert (mono_metadata_token_table (token) == MONO_TABLE_TYPEDEF);
-		token = MONO_TOKEN_TYPE_DEF + decode_value (buf, &buf);
+	} else if (token == MONO_TOKEN_TYPE_DEF) {
+		/* Array */
 		rank = decode_value (buf, &buf);
-		if (token == MONO_TOKEN_TYPE_DEF) {
-			/* <Type>[][] */
-			token = MONO_TOKEN_TYPE_DEF + decode_value (buf, &buf);
-			klass = mono_class_get (image, token);
-			g_assert (klass);
-			klass = mono_array_class_get (klass, rank);
-
-			rank = decode_value (buf, &buf);
-			klass = mono_array_class_get (klass, rank);
-		} else {
-			klass = mono_class_get (image, token);
-			g_assert (klass);
-			klass = mono_array_class_get (klass, rank);
-		}
+		eklass = decode_klass_ref (module, buf, &buf);
+		klass = mono_array_class_get (eklass, rank);
+	} else {
+		g_assert_not_reached ();
 	}
 	g_assert (klass);
 	mono_class_init (klass);
@@ -271,7 +260,7 @@ decode_klass_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 static MonoClassField*
 decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
-	MonoClass *klass = decode_klass_info (module, buf, &buf);
+	MonoClass *klass = decode_klass_ref (module, buf, &buf);
 	guint32 token;
 
 	if (!klass)
@@ -291,7 +280,6 @@ decode_method_ref (MonoAotModule *module, guint32 *token, guint8 *buf, guint8 **
 	MonoImage *image;
 
 	value = decode_value (buf, &buf);
-	*endbuf = buf;
 	image_index = value >> 24;
 	*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
@@ -300,6 +288,8 @@ decode_method_ref (MonoAotModule *module, guint32 *token, guint8 *buf, guint8 **
 		image_index = decode_value (buf, &buf);
 		*token = decode_value (buf, &buf);
 	}
+
+	*endbuf = buf;
 
 	image = load_image (module, image_index);
 	if (!image)
@@ -1211,7 +1201,7 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 			break;
 		}
 		case MONO_WRAPPER_PROXY_ISINST: {
-			MonoClass *klass = decode_klass_info (aot_module, p, &p);
+			MonoClass *klass = decode_klass_ref (aot_module, p, &p);
 			if (!klass)
 				goto cleanup;
 			ji->type = MONO_PATCH_INFO_METHOD;
@@ -1224,7 +1214,7 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		case MONO_WRAPPER_LDFLD_REMOTE:
 		case MONO_WRAPPER_STFLD_REMOTE:
 		case MONO_WRAPPER_ISINST: {
-			MonoClass *klass = decode_klass_info (aot_module, p, &p);
+			MonoClass *klass = decode_klass_ref (aot_module, p, &p);
 			if (!klass)
 				goto cleanup;
 			ji->type = MONO_PATCH_INFO_METHOD;
@@ -1278,13 +1268,13 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 			//printf ("HIT!\n");
 		} else {
 			guint8 *tmp = aot_module->got_info + aot_module->got_info_offsets [*got_offset];
-			ji->data.klass = decode_klass_info (aot_module, tmp, &tmp);
+			ji->data.klass = decode_klass_ref (aot_module, tmp, &tmp);
 			if (!ji->data.klass)
 				goto cleanup;
 		}
 		break;
 	case MONO_PATCH_INFO_CLASS_INIT:
-		ji->data.klass = decode_klass_info (aot_module, p, &p);
+		ji->data.klass = decode_klass_ref (aot_module, p, &p);
 		if (!ji->data.klass)
 			goto cleanup;
 		break;
@@ -1356,7 +1346,7 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		}
 		break;
 	case MONO_PATCH_INFO_EXC_NAME:
-		ji->data.klass = decode_klass_info (aot_module, p, &p);
+		ji->data.klass = decode_klass_ref (aot_module, p, &p);
 		if (!ji->data.klass)
 			goto cleanup;
 		ji->data.name = ji->data.klass->name;
@@ -1465,6 +1455,12 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (aot_module->out_of_date)
 		return NULL;
 
+	if (method->is_inflated) {
+		if (!mono_method_is_generic_sharable_impl (method))
+			return NULL;
+		method = mono_method_get_declaring_generic_method (method);
+	}
+
 	if (aot_module->code_offsets [method_index] == 0xffffffff) {
 		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 			char *full_name = mono_method_full_name (method, TRUE);
@@ -1507,7 +1503,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	MonoJitInfo *jinfo = NULL;
 
 	p = info;
-	decode_klass_info (aot_module, p, &p);
+	decode_klass_ref (aot_module, p, &p);
 
 	if (!use_loaded_code) {
 		guint8 *code2;
@@ -1685,7 +1681,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	}
 
 	p = info;
-	*klass = decode_klass_info (aot_module, p, &p);
+	*klass = decode_klass_ref (aot_module, p, &p);
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 		MonoMethod *method = mono_get_method (image, token, NULL);

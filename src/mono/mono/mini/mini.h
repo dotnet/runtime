@@ -56,7 +56,7 @@
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "32"
+#define MONO_AOT_FILE_VERSION "33"
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \

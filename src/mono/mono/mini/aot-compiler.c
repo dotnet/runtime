@@ -1608,36 +1608,24 @@ find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 }
 
 static void
-encode_klass_info (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
+encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
 	if (klass->generic_class) {
 		g_assert (klass->type_token);
 
 		encode_value (find_typespec_for_class (acfg, klass), buf, &buf);
 		encode_value (get_image_index (acfg, acfg->image), buf, &buf);
-	} else if (!klass->type_token) {
-		guint32 token;
-
+	} else if (klass->type_token) {
+		g_assert (mono_metadata_token_code (klass->type_token) == MONO_TOKEN_TYPE_DEF);
+		encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, buf, &buf);
+		encode_value (get_image_index (acfg, klass->image), buf, &buf);
+	} else {
 		/* Array class */
 		g_assert (klass->rank > 0);
 		encode_value (MONO_TOKEN_TYPE_DEF, buf, &buf);
 		encode_value (get_image_index (acfg, klass->image), buf, &buf);
-		token = klass->element_class->type_token;
-		if (!token) {
-			/* <Type>[][] */
-			g_assert (klass->element_class->rank);
-			encode_value (0, buf, &buf);
-			encode_value (klass->element_class->rank, buf, &buf);
-			token = klass->element_class->element_class->type_token;
-		}
-		g_assert (mono_metadata_token_code (token) == MONO_TOKEN_TYPE_DEF);
-		encode_value (token - MONO_TOKEN_TYPE_DEF, buf, &buf);
 		encode_value (klass->rank, buf, &buf);
-	}
-	else {
-		g_assert (mono_metadata_token_code (klass->type_token) == MONO_TOKEN_TYPE_DEF);
-		encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, buf, &buf);
-		encode_value (get_image_index (acfg, klass->image), buf, &buf);
+		encode_klass_ref (acfg, klass->element_class, buf, &buf);
 	}
 	*endbuf = buf;
 }
@@ -1647,7 +1635,7 @@ encode_field_info (MonoAotCompile *cfg, MonoClassField *field, guint8 *buf, guin
 {
 	guint32 token = mono_get_field_token (field);
 
-	encode_klass_info (cfg, field->parent, buf, &buf);
+	encode_klass_ref (cfg, field->parent, buf, &buf);
 	g_assert (mono_metadata_token_code (token) == MONO_TOKEN_FIELD_DEF);
 	encode_value (token - MONO_TOKEN_FIELD_DEF, buf, &buf);
 	*endbuf = buf;
@@ -2040,7 +2028,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			mono_class_from_name (mono_defaults.exception_class->image,
 								  "System", patch_info->data.target);
 		g_assert (ex_class);
-		encode_klass_info (acfg, ex_class, p, &p);
+		encode_klass_ref (acfg, ex_class, p, &p);
 		break;
 	}
 	case MONO_PATCH_INFO_R4:
@@ -2058,11 +2046,11 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			guint32 offset = get_got_offset (acfg, patch_info);
 			encode_value (offset, p, &p);
 		} else {
-			encode_klass_info (acfg, patch_info->data.klass, p, &p);
+			encode_klass_ref (acfg, patch_info->data.klass, p, &p);
 		}
 		break;
 	case MONO_PATCH_INFO_CLASS_INIT:
-		encode_klass_info (acfg, patch_info->data.klass, p, &p);
+		encode_klass_ref (acfg, patch_info->data.klass, p, &p);
 		break;
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
@@ -2099,7 +2087,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		case MONO_WRAPPER_STFLD_REMOTE:
 		case MONO_WRAPPER_ISINST: {
 			MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (patch_info->data.method);
-			encode_klass_info (acfg, proxy_class, p, &p);
+			encode_klass_ref (acfg, proxy_class, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_ALLOC: {
@@ -2163,7 +2151,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	p = buf = g_malloc (buf_size);
 
 	if (mono_class_get_cctor (method->klass))
-		encode_klass_info (acfg, method->klass, p, &p);
+		encode_klass_ref (acfg, method->klass, p, &p);
 	else
 		/* Not needed when loading the method */
 		encode_value (0, p, &p);
@@ -2652,11 +2640,7 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
-	/* 
-	 * FIXME: The aot runtime code should be modified to only return compiled generic
-	 * methods if the given method is sharable.
-	 */
-	acfg->opts &= ~MONO_OPT_GSHARED;
+	//acfg->opts &= ~MONO_OPT_GSHARED;
 
 	if (!(acfg->opts & MONO_OPT_GSHARED)) {
 		if (mono_method_signature (method)->has_type_parameters || method->klass->generic_container) {
@@ -2673,6 +2657,7 @@ compile_method (MonoAotCompile *acfg, int index)
 	 */
 	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), FALSE, TRUE, 0);
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
+		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 		acfg->stats.genericcount ++;
 		return;
 	}
