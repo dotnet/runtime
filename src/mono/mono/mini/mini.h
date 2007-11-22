@@ -930,6 +930,7 @@ gboolean mono_aot_is_pagefault              (void *ptr) MONO_INTERNAL;
 void mono_aot_handle_pagefault              (void *ptr) MONO_INTERNAL;
 guint32 mono_aot_get_n_pagefaults           (void) MONO_INTERNAL;
 gpointer mono_aot_plt_resolve               (gpointer aot_module, guint32 plt_info_offset, guint8 *code) MONO_INTERNAL;
+gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot) MONO_INTERNAL;
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;
@@ -961,6 +962,7 @@ gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token
 gpointer          mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 										   guint8* tramp) MONO_INTERNAL;
 void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
+gpointer          mini_get_vtable_trampoline (void) MONO_INTERNAL;
 gpointer          mono_debugger_create_notification_function (void) MONO_INTERNAL;
 
 

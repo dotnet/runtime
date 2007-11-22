@@ -87,6 +87,18 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			displacement -= G_STRUCT_OFFSET (MonoVTable, vtable);
 			g_assert (displacement >= 0);
 			displacement /= sizeof (gpointer);
+
+			/* Avoid loading metadata or creating a generic vtable if possible */
+			addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, displacement);
+			if (addr && !vt->klass->valuetype) {
+				vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+				if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot)) {
+					*vtable_slot = mono_get_addr_from_ftnptr (addr);
+				}
+
+				return addr;
+			}
+
 			mono_class_setup_vtable (vt->klass);
 			m = vt->klass->vtable [displacement];
 			if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
@@ -106,7 +118,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		/* we get the interface method because mono_convert_imt_slot_to_vtable_slot ()
 		 * needs the signature to be able to find the this argument
 		 */
-		m = mono_arch_find_imt_method (regs, code);
+		m = mono_arch_find_imt_method ((gpointer*)regs, code);
 		vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 		g_assert (vtable_slot);
 		vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, m, &impl_method);

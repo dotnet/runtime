@@ -12404,7 +12404,7 @@ mini_get_imt_trampoline (void)
 #endif
 
 #ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
-static gpointer
+gpointer
 mini_get_vtable_trampoline (void)
 {
 	static gpointer tramp = NULL;

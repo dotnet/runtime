@@ -2643,6 +2643,14 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
+		/* 
+		 * FIXME: Enabling this causes virtual-sync.exe to fail, since the trampoline
+		 * code can't determine that it needs to insert a sync wrapper in the AOT case.
+		 */
+		return;
+	}
+
 	if (mono_method_signature (method)->has_type_parameters || method->klass->generic_container) {
 		acfg->stats.genericcount ++;
 		return;

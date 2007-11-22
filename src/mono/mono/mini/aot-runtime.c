@@ -758,8 +758,8 @@ mono_aot_init_vtable (MonoVTable *vtable)
 			return FALSE;
 		}
 
-#ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
-		vtable->vtable [i] = mono_create_jit_trampoline_from_token (image, token);
+#ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
+		vtable->vtable [i] = mini_get_vtable_trampoline ();
 #else
 		m = mono_get_method (image, token, NULL);
 		g_assert (m);
@@ -772,6 +772,57 @@ mono_aot_init_vtable (MonoVTable *vtable)
 	mono_aot_unlock ();
 
 	return TRUE;
+}
+
+gpointer
+mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int slot)
+{
+	int i;
+	MonoAotModule *aot_module;
+	MonoClass *klass = vtable->klass;
+	guint8 *info, *p;
+	MonoCachedClassInfo class_info;
+	gboolean err;
+	guint32 image_index, token, value;
+	MonoImage *image;
+
+	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
+		return NULL;
+
+	mono_aot_lock ();
+
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
+	if (!aot_module) {
+		mono_aot_unlock ();
+		return NULL;
+	}
+
+	info = &aot_module->class_info [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
+	p = info;
+
+	err = decode_cached_class_info (aot_module, &class_info, p, &p);
+	if (!err) {
+		mono_aot_unlock ();
+		return NULL;
+	}
+
+	for (i = 0; i < slot; ++i) {
+		value = decode_value (p, &p);
+	}
+	
+	value = decode_value (p, &p);
+	image_index = value >> 24;
+	token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
+
+	image = load_image (aot_module, image_index);
+	if (!image) {
+		mono_aot_unlock ();
+		return NULL;
+	}
+
+	mono_aot_unlock ();
+
+	return mono_aot_get_method_from_token (domain, image, token);
 }
 
 gboolean
@@ -2112,4 +2163,9 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	return NULL;
 }
 
+gpointer
+mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int slot)
+{
+	return NULL;
+}
 #endif
