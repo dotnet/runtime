@@ -1328,7 +1328,7 @@ mono_class_setup_methods (MonoClass *class)
 	/* Leave this assignment as the last op in this function */
 	class->methods = methods;
 
-	if (mono_debugger_class_init_methods_func)
+	if (mono_debugger_class_loaded_methods_func)
 		mono_debugger_class_loaded_methods_func (class);
 
 	mono_loader_unlock ();
