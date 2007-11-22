@@ -293,7 +293,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	MonoDelegate *delegate;
 	MonoJitInfo *ji;
 	gpointer iter;
-	MonoMethod *invoke;
+	MonoMethod *invoke, *m;
 	gboolean multicast, callvirt;
 
 	/* Find the Invoke method */
@@ -314,8 +314,10 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	 */
 	ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
 	callvirt = !delegate->target && ji && mono_method_signature (ji->method)->hasthis;
-	if (ji && !callvirt)
+	if (ji && !callvirt) {
 		delegate->method_ptr = mono_compile_method (ji->method);
+		mono_debugger_trampoline_compiled (ji->method, delegate->method_ptr);
+	}
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
 	if (!multicast && !callvirt) {
@@ -328,7 +330,10 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	}
 
 	/* The general, unoptimized case */
-	delegate->invoke_impl = mono_compile_method (mono_marshal_get_delegate_invoke (invoke, delegate));
+	m = mono_marshal_get_delegate_invoke (invoke, delegate);
+	delegate->invoke_impl = mono_compile_method (m);
+	mono_debugger_trampoline_compiled (m, delegate->invoke_impl);
+
 	return delegate->invoke_impl;
 }
 
