@@ -4281,7 +4281,7 @@ get_runtime_generic_context_other_ptr (MonoCompile *cfg, MonoMethod *method, Mon
 
 	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
 
-	NEW_PCONST (cfg, args [0], method);
+	NEW_METHODCONST (cfg, args [0], method);
 	args [1] = rgc_ptr;
 	NEW_ICONST (cfg, args [2], token);
 	NEW_ICONST (cfg, args [3], rgctx_type);
@@ -4312,14 +4312,6 @@ get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasic
 	default:
 		g_assert_not_reached ();
 	}
-}
-
-static gboolean
-generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
-{
-	MonoType *type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, &klass->byval_arg);
-
-	return MONO_TYPE_IS_REFERENCE (type);
 }
 
 /*
@@ -7013,18 +7005,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (shared_access) {
-				MonoInst *domain_var;
 				MonoInst *this, *rgctx;
 				MonoInst *args [3];
 				int temp;
 
 				/* domain */
-				if (cfg->opt & MONO_OPT_SHARED) {
-					domain_var = mono_get_domainvar (cfg);
-					NEW_TEMPLOAD (cfg, args [0], domain_var->inst_c0);
-				} else {
-					NEW_PCONST (cfg, args [0], cfg->domain);
-				}
+				NEW_DOMAINCONST (cfg, args [0]);
 
 				/* klass */
 				NEW_ARGLOAD (cfg, this, 0);
