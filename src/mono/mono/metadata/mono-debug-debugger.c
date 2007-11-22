@@ -351,7 +351,7 @@ mono_debugger_remove_class_init_callback (int index)
 }
 
 void
-mono_debugger_add_type (MonoDebugHandle *symfile, MonoClass *klass)
+mono_debugger_class_initialized (MonoClass *klass)
 {
 	int i;
 

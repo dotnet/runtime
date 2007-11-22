@@ -60,7 +60,7 @@ gchar *
 mono_debugger_check_runtime_version (const char *filename);
 
 void
-mono_debugger_add_type (MonoDebugHandle *symfile, MonoClass *klass);
+mono_debugger_class_initialized (MonoClass *klass);
 
 MonoDebugMethodAddressList *
 mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 idx);

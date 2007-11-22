@@ -46,8 +46,8 @@ static MonoGetClassFromName get_class_from_name = NULL;
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
 static gboolean mono_class_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res);
 
-void (*mono_debugger_start_class_init_func) (MonoClass *klass) = NULL;
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
+void (*mono_debugger_class_loaded_methods_func) (MonoClass *klass) = NULL;
 
 /*
  * mono_class_from_typeref:
@@ -1327,6 +1327,9 @@ mono_class_setup_methods (MonoClass *class)
 
 	/* Leave this assignment as the last op in this function */
 	class->methods = methods;
+
+	if (mono_debugger_class_init_methods_func)
+		mono_debugger_class_loaded_methods_func (class);
 
 	mono_loader_unlock ();
 }
@@ -2956,9 +2959,6 @@ mono_class_init (MonoClass *class)
 
 	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
 		check_core_clr_inheritance (class);
-
-	if (mono_debugger_start_class_init_func)
-		mono_debugger_start_class_init_func (class);
 
 	mono_stats.initialized_class_count++;
 
