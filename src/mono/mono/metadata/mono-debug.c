@@ -37,7 +37,7 @@ typedef enum {
 	MONO_DEBUG_DATA_ITEM_UNKNOWN		= 0,
 	MONO_DEBUG_DATA_ITEM_CLASS,
 	MONO_DEBUG_DATA_ITEM_METHOD,
-	MONO_DEBUG_DATA_ITEM_DELEGATE_IMPL
+	MONO_DEBUG_DATA_ITEM_DELEGATE_TRAMPOLINE
 } MonoDebugDataItemType;
 
 typedef struct _MonoDebugDataChunk MonoDebugDataChunk;
@@ -92,7 +92,7 @@ struct _MonoDebugClassEntry {
 typedef struct {
 	gpointer code;
 	guint32 size;
-} MonoDebugDelegateImplEntry;
+} MonoDebugDelegateTrampolineEntry;
 
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
@@ -699,18 +699,18 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 }
 
 void
-mono_debug_add_delegate_impl (gpointer code, int size)
+mono_debug_add_delegate_trampoline (gpointer code, int size)
 {
-	MonoDebugDelegateImplEntry *entry;
+	MonoDebugDelegateTrampolineEntry *entry;
 
 	if (!mono_debug_initialized)
 		return;
 
 	mono_debugger_lock ();
 
-	entry = (MonoDebugDelegateImplEntry *) allocate_data_item (
-		mono_symbol_table->global_data_table, MONO_DEBUG_DATA_ITEM_DELEGATE_IMPL,
-		sizeof (MonoDebugDelegateImplEntry));
+	entry = (MonoDebugDelegateTrampolineEntry *) allocate_data_item (
+		mono_symbol_table->global_data_table, MONO_DEBUG_DATA_ITEM_DELEGATE_TRAMPOLINE,
+		sizeof (MonoDebugDelegateTrampolineEntry));
 	entry->code = code;
 	entry->size = size;
 

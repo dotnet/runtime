@@ -163,7 +163,7 @@ MonoDebugMethodJitInfo*
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain);
 
 void
-mono_debug_add_delegate_impl (gpointer code, int size);
+mono_debug_add_delegate_trampoline (gpointer code, int size);
 
 /*
  * Line number support.
