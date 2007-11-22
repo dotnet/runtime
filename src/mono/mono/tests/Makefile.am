@@ -453,7 +453,9 @@ testjit-net_2_0: $(TESTSI_CS2) $(TESTSI_IL2) libtest.la
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
-testaot: $(TESTSI_CS) $(TESTBS) libtest.la
+testaot: testaot-default testaot-net_2_0
+
+testaot-default: $(TESTSI_CS) $(TESTBS) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
@@ -472,6 +474,26 @@ testaot: $(TESTSI_CS) $(TESTBS) libtest.la
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
+testaot-net_2_0: $(TESTSI_CS2) $(TESTSI_IL2) libtest.la
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	for i in $(TESTSI_CS2) $(TESTSI_IL2); do	\
+		rm -f $${i}.so; \
+		$(JITTEST_PROG_RUN) --aot $${i} > /dev/null; \
+		if $(srcdir)/test-driver '$(with_mono_path2) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			if [ $$? = 2 ]; then break; fi; \
+			failed=`expr $${failed} + 1`; \
+			failed_tests="$${failed_tests} $$i"; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
 testtrace:
