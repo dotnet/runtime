@@ -115,7 +115,7 @@ static void                 mono_debug_add_type        (MonoClass *klass);
 void _mono_debug_init_corlib (MonoDomain *domain);
 
 extern void (*mono_debugger_class_init_func) (MonoClass *klass);
-extern void (*mono_debugger_class_init_methods_func) (MonoClass *klass);
+extern void (*mono_debugger_class_loaded_methods_func) (MonoClass *klass);
 
 static MonoDebugDataTable *
 create_data_table (MonoDomain *domain)
