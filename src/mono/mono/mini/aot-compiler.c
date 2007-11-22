@@ -1696,6 +1696,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		*/
 		/* Obtain the token from information recorded by the JIT */
 		ji = g_hash_table_lookup (acfg->token_info_hash, method);
+		g_assert (ji);
 		image_index = get_image_index (acfg, ji->image);
 		g_assert (image_index < 255);
 		token = ji->token;
@@ -2651,9 +2652,17 @@ compile_method (MonoAotCompile *acfg, int index)
 		return;
 	}
 
-	if (mono_method_signature (method)->has_type_parameters || method->klass->generic_container) {
-		acfg->stats.genericcount ++;
-		return;
+	/* 
+	 * FIXME: The aot runtime code should be modified to only return compiled generic
+	 * methods if the given method is sharable.
+	 */
+	acfg->opts &= ~MONO_OPT_GSHARED;
+
+	if (!(acfg->opts & MONO_OPT_GSHARED)) {
+		if (mono_method_signature (method)->has_type_parameters || method->klass->generic_container) {
+			acfg->stats.genericcount ++;
+			return;
+		}
 	}
 
 	/*
@@ -2663,6 +2672,10 @@ compile_method (MonoAotCompile *acfg, int index)
 	 * does not need to support them by creating a fake GOT etc.
 	 */
 	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), FALSE, TRUE, 0);
+	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
+		acfg->stats.genericcount ++;
+		return;
+	}
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 		/* Let the exception happen at runtime */
 		return;

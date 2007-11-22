@@ -4281,6 +4281,8 @@ get_runtime_generic_context_other_ptr (MonoCompile *cfg, MonoMethod *method, Mon
 
 	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
 
+	/* Can't encode the method reference */
+	cfg->disable_aot = 1;
 	NEW_METHODCONST (cfg, args [0], method);
 	args [1] = rgc_ptr;
 	NEW_ICONST (cfg, args [2], token);
@@ -10973,13 +10975,19 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	MonoJitInfo *jinfo;
 	int dfn = 0, i, code_size_ratio;
 	gboolean deadce_has_run = FALSE;
-	gboolean try_generic_shared = (opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method);
+	gboolean try_generic_shared;
 	MonoMethod *method_to_compile;
 	int gsctx_size;
 
 	mono_jit_stats.methods_compiled++;
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
 		mono_profiler_method_jit (method);
+ 
+	if (compile_aot)
+		/* We are passed the original generic method definition */
+		try_generic_shared = (opts & MONO_OPT_GSHARED) && (method->generic_container || method->klass->generic_container);
+	else
+		try_generic_shared = (opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method);
 
 	if (opts & MONO_OPT_GSHARED) {
 		if (try_generic_shared)
@@ -10990,10 +10998,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
  restart_compile:
 	if (try_generic_shared) {
-		MonoMethod *declaring_method = mono_method_get_declaring_generic_method (method);
+		MonoMethod *declaring_method;
 		MonoGenericContext *shared_context;
 
-		g_assert (method->klass->generic_class->container_class == declaring_method->klass);
+		if (compile_aot) {
+			declaring_method = method;
+		} else {
+			declaring_method = mono_method_get_declaring_generic_method (method);
+			g_assert (method->klass->generic_class->container_class == declaring_method->klass);
+		}
 
 		if (declaring_method->generic_container)
 			shared_context = &declaring_method->generic_container->context;
@@ -11042,6 +11055,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if ((i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0, FALSE)) < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
+			if (compile_aot)
+				return cfg;
 			mono_destroy_compile (cfg);
 			try_generic_shared = FALSE;
 			goto restart_compile;
