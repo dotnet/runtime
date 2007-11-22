@@ -122,6 +122,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_debugger_notification_function,
 	&mono_symbol_table,
 	&debugger_metadata_info,
+	&mono_debug_debugger_version,
+
 	&debugger_compile_method,
 	&debugger_get_virtual_method,
 	&debugger_get_boxed_object,
@@ -143,7 +145,6 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_register_class_init_callback,
 	&debugger_remove_class_init_callback,
 
-	&mono_debug_debugger_version,
 	&mono_debugger_thread_table,
 
 	&debugger_executable_code_buffer,
