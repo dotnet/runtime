@@ -3171,10 +3171,9 @@ emit_class_name_table (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
-		full_name = mono_type_get_full_name (klass);
+		full_name = mono_type_get_name_full (mono_class_get_type (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
 		hash = g_str_hash (full_name) % table_size;
-
-		//printf ("A: '%s' %d %d\n", full_name, g_str_hash (full_name), hash);
+		g_free (full_name);
 
 		/* FIXME: Allocate from the mempool */
 		new_entry = g_new0 (ClassNameTableEntry, 1);
