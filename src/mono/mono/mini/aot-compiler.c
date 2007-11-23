@@ -1671,7 +1671,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 
 	g_assert (image_index < 255);
 
-	if (method->klass->generic_class || mono_method_signature (method)->is_inflated) {
+	if (mono_method_signature (method)->is_inflated) {
 		/* 
 		 * This is a generic method, find the original token which referenced it and
 		 * encode that.
@@ -2643,7 +2643,7 @@ compile_method (MonoAotCompile *acfg, int index)
 	//acfg->opts &= ~MONO_OPT_GSHARED;
 
 	if (!(acfg->opts & MONO_OPT_GSHARED)) {
-		if (mono_method_signature (method)->has_type_parameters || method->klass->generic_container) {
+		if (method->generic_container || method->klass->generic_container) {
 			acfg->stats.genericcount ++;
 			return;
 		}
