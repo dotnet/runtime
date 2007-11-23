@@ -2750,6 +2750,7 @@ generic_array_methods (MonoClass *class)
 	GList *list = NULL, *tmp;
 	if (generic_array_method_num)
 		return generic_array_method_num;
+	mono_class_setup_methods (class->parent);
 	for (i = 0; i < class->parent->method.count; i++) {
 		MonoMethod *m = class->parent->methods [i];
 		if (!strncmp (m->name, "InternalArray__", 15)) {
