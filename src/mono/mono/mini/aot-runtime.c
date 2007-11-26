@@ -725,43 +725,18 @@ mono_aot_init_vtable (MonoVTable *vtable)
 		return FALSE;
 	}
 
-	//printf ("VT0: %s.%s %d\n", klass->name_space, klass->name, vtable_size);
-	for (i = 0; i < class_info.vtable_size; ++i) {
-		guint32 image_index, token, value;
-		MonoImage *image;
-#ifndef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
-		MonoMethod *m;
-#endif
-
-		vtable->vtable [i] = 0;
-
-		value = decode_value (p, &p);
-		if (!value)
-			continue;
-
-		image_index = value >> 24;
-		token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
-
-		image = load_image (aot_module, image_index);
-		if (!image) {
-			mono_aot_unlock ();
-			return FALSE;
-		}
-
-#ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
-		vtable->vtable [i] = mini_get_vtable_trampoline ();
-#else
-		m = mono_get_method (image, token, NULL);
-		g_assert (m);
-
-		//printf ("M: %d %p %s\n", i, &(vtable->vtable [i]), mono_method_full_name (m, TRUE));
-		vtable->vtable [i] = mono_create_jit_trampoline (m);
-#endif
-	}
-
 	mono_aot_unlock ();
 
+#ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
+	//printf ("VT0: %s.%s %d\n", klass->name_space, klass->name, vtable_size);
+	for (i = 0; i < class_info.vtable_size; ++i) {
+		vtable->vtable [i] = mini_get_vtable_trampoline ();
+	}
+
 	return TRUE;
+#else
+	return FALSE;
+#endif
 }
 
 gpointer
