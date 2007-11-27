@@ -1412,6 +1412,13 @@ mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b
 {
 	int i;
 
+	if (a->id && b->id) {
+		if (a->id == b->id)
+			return TRUE;
+		if (!signature_only)
+			return FALSE;
+	}
+
 	if (a->is_open != b->is_open || a->type_argc != b->type_argc)
 		return FALSE;
 	for (i = 0; i < a->type_argc; ++i) {
