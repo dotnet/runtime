@@ -43,6 +43,7 @@
 #include "mono/utils/mono-compiler.h"
 
 #include "mini.h"
+#include "version.h"
 
 #ifndef DISABLE_AOT
 
@@ -69,6 +70,7 @@ typedef struct MonoAotOptions {
 	gboolean save_temps;
 	gboolean write_symbols;
 	gboolean metadata_only;
+	gboolean bind_to_runtime_version;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -1689,6 +1691,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		g_assert (image_index < 255);
 		token = ji->token;
 
+		/* Marker */
 		encode_value ((255 << 24), buf, &buf);
 		encode_value (image_index, buf, &buf);
 		encode_value (token, buf, &buf);
@@ -2577,6 +2580,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->write_symbols = TRUE;
 		} else if (str_begins_with (arg, "metadata-only")) {
 			opts->metadata_only = TRUE;
+		} else if (str_begins_with (arg, "bind-to-runtime-version")) {
+			opts->bind_to_runtime_version = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -3355,6 +3360,11 @@ emit_globals (MonoAotCompile *acfg)
 	opts_str = g_strdup_printf ("%d", acfg->opts);
 	emit_string_symbol (acfg, "mono_aot_opt_flags", opts_str);
 	g_free (opts_str);
+
+	if (acfg->aot_opts.bind_to_runtime_version)
+		emit_string_symbol (acfg, "mono_runtime_version", FULL_VERSION);
+	else
+		emit_string_symbol (acfg, "mono_runtime_version", "");
 }
 
 int

@@ -51,6 +51,7 @@
 #include "mono/utils/mono-compiler.h"
 
 #include "mini.h"
+#include "version.h"
 
 #ifndef DISABLE_AOT
 
@@ -452,6 +453,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	gboolean usable = TRUE;
 	char *saved_guid = NULL;
 	char *aot_version = NULL;
+	char *runtime_version;
 	char *opt_flags = NULL;
 	gpointer *plt_jump_table_addr = NULL;
 	guint32 *plt_jump_table_size = NULL;
@@ -492,6 +494,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_dl_symbol (assembly->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
 	mono_dl_symbol (assembly->aot_module, "mono_aot_version", (gpointer *) &aot_version);
 	mono_dl_symbol (assembly->aot_module, "mono_aot_opt_flags", (gpointer *)&opt_flags);
+	mono_dl_symbol (assembly->aot_module, "mono_runtime_version", (gpointer *)&runtime_version);
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
@@ -502,6 +505,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is out of date.\n", aot_name);
 			usable = FALSE;
 		}
+	}
+
+	if (!runtime_version || ((strlen (runtime_version) > 0 && strcmp (runtime_version, FULL_VERSION)))) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled against runtime version %s while this runtime has version %s.\n", aot_name, runtime_version, FULL_VERSION);
+		usable = FALSE;
 	}
 
 	if (!usable) {
