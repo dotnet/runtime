@@ -418,7 +418,7 @@ token_context_equal (MonoTokenAndContext *tc1, MonoTokenAndContext *tc2)
 
 /*
  * mono_helper_get_rgctx_other_ptr:
- * @method: the calling method
+ * @caller_class: the klass of the calling method
  * @rgctx: the runtime generic context
  * @token: the token which to look up
  * @rgctx_type: the kind of value requested
@@ -429,10 +429,10 @@ token_context_equal (MonoTokenAndContext *tc1, MonoTokenAndContext *tc2)
  * static_data pointer).
  */
 gpointer
-mono_helper_get_rgctx_other_ptr (MonoMethod *method, MonoRuntimeGenericContext *rgctx, guint32 token, guint32 rgctx_type)
+mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoRuntimeGenericContext *rgctx, guint32 token, guint32 rgctx_type)
 {
-	MonoImage *image = method->klass->image;
-	int depth = method->klass->idepth;
+	MonoImage *image = caller_class->image;
+	int depth = caller_class->idepth;
 	MonoRuntimeGenericSuperInfo *super_info = &((MonoRuntimeGenericSuperInfo*)rgctx)[-depth];
 	MonoClass *klass = super_info->klass;
 	MonoClass *result = NULL;
@@ -456,12 +456,12 @@ mono_helper_get_rgctx_other_ptr (MonoMethod *method, MonoRuntimeGenericContext *
 
 		switch (token & 0xff000000) {
 		case MONO_TOKEN_MEMBER_REF :
-			mono_field_from_token (method->klass->image, token, &result, &klass->generic_class->context);
+			mono_field_from_token (image, token, &result, &klass->generic_class->context);
 			break;
 		case MONO_TOKEN_TYPE_DEF:
 		case MONO_TOKEN_TYPE_REF:
 		case MONO_TOKEN_TYPE_SPEC:
-			result = mono_class_get_full (method->klass->image, token, &klass->generic_class->context);
+			result = mono_class_get_full (image, token, &klass->generic_class->context);
 			break;
 		default :
 			g_assert_not_reached ();

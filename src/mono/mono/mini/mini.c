@@ -4281,9 +4281,7 @@ get_runtime_generic_context_other_ptr (MonoCompile *cfg, MonoMethod *method, Mon
 
 	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
 
-	/* Can't encode the method reference */
-	cfg->disable_aot = 1;
-	NEW_METHODCONST (cfg, args [0], method);
+	NEW_CLASSCONST (cfg, args [0], method->klass);
 	args [1] = rgc_ptr;
 	NEW_ICONST (cfg, args [2], token);
 	NEW_ICONST (cfg, args [3], rgctx_type);

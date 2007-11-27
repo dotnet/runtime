@@ -1156,7 +1156,7 @@ MonoMethod* mono_method_get_declaring_generic_method (MonoMethod *method) MONO_I
 int mono_class_generic_class_relation (MonoClass *klass, MonoClass *method_klass,
 				       MonoGenericContext *generic_context, int *arg_num) MONO_INTERNAL;
 
-gpointer mono_helper_get_rgctx_other_ptr (MonoMethod *method, MonoRuntimeGenericContext *rgctx,
+gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoRuntimeGenericContext *rgctx,
 					  guint32 token, guint32 rgctx_type) MONO_INTERNAL;
 
 void mono_generic_sharing_init (void) MONO_INTERNAL;
