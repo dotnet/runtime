@@ -115,6 +115,10 @@ int_xor: dest:i src1:i src2:i len:2 clob:1
 
 throw: src1:i len:13
 op_rethrow: src1:i len:13
+start_handler: len:16
+endfinally: len:16
+op_endfilter: src1:a len:16
+
 ckfinite: dest:f src1:f len:22
 mul.ovf: dest:i src1:i src2:i clob:1 len:9
 # this opcode is handled specially in the code generator

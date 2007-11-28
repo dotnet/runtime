@@ -67,13 +67,15 @@ MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
 const char*
-mono_arch_regname (int reg) {
+mono_arch_regname (int reg)
+{
 	switch (reg) {
 	case X86_EAX: return "%eax";
 	case X86_EBX: return "%ebx";
 	case X86_ECX: return "%ecx";
 	case X86_EDX: return "%edx";
-	case X86_ESP: return "%esp";	case X86_EBP: return "%ebp";
+	case X86_ESP: return "%esp";	
+	case X86_EBP: return "%ebp";
 	case X86_EDI: return "%edi";
 	case X86_ESI: return "%esi";
 	}
@@ -81,8 +83,28 @@ mono_arch_regname (int reg) {
 }
 
 const char*
-mono_arch_fregname (int reg) {
-	return "unknown";
+mono_arch_fregname (int reg)
+{
+	switch (reg) {
+	case 0:
+		return "%fr0";
+	case 1:
+		return "%fr1";
+	case 2:
+		return "%fr2";
+	case 3:
+		return "%fr3";
+	case 4:
+		return "%fr4";
+	case 5:
+		return "%fr5";
+	case 6:
+		return "%fr6";
+	case 7:
+		return "%fr7";
+	default:
+		return "unknown";
+	}
 }
 
 typedef enum {
@@ -2135,14 +2157,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
-		if (offset > (cfg->code_size - max_len - 16)) {
+		if (G_UNLIKELY (offset > (cfg->code_size - max_len - 16))) {
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 			code = cfg->native_code + offset;
 			mono_jit_stats.code_reallocs++;
 		}
 
-		mono_debug_record_line_number (cfg, ins, offset);
+		if (cfg->debug_info)
+			mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
 		case OP_BIGMUL:
@@ -2785,6 +2808,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
 #endif
 			break;
+		case OP_START_HANDLER: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			x86_mov_membase_reg (code, spvar->inst_basereg, spvar->inst_offset, X86_ESP, 4);
+			break;
+		}
+		case OP_ENDFINALLY: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			x86_mov_reg_membase (code, X86_ESP, spvar->inst_basereg, spvar->inst_offset, 4);
+			x86_ret (code);
+			break;
+		}
+		case OP_ENDFILTER: {
+			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			x86_mov_reg_membase (code, X86_ESP, spvar->inst_basereg, spvar->inst_offset, 4);
+			/* The local allocator will put the result into EAX */
+			x86_ret (code);
+			break;
+		}
+
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;
