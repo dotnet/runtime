@@ -19,6 +19,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-math.h>
 
 #include "trace.h"
@@ -4577,7 +4578,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		g_assert ((code - start) < 64);
 
 		cached = start;
-
+		mono_debug_add_delegate_trampoline (start, code - start);
 		mono_mini_arch_unlock ();
 	} else {
 		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
@@ -4629,6 +4630,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		cache [sig->param_count] = start;
 
+		mono_debug_add_delegate_trampoline (start, code - start);
 		mono_mini_arch_unlock ();
 	}
 
