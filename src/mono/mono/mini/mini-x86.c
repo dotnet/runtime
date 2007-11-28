@@ -2113,8 +2113,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoCallInst *call;
 	guint offset;
 	guint8 *code = cfg->native_code + cfg->code_len;
-	MonoInst *last_ins = NULL;
-	guint last_offset = 0;
 	int max_len, cpos;
 
 	if (cfg->opt & MONO_OPT_PEEPHOLE)
@@ -2831,9 +2829,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = code - cfg->native_code;
 			break;
 		case OP_BR:
-			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
-			//if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
-			//break;
 			if (ins->flags & MONO_INST_BRLABEL) {
 				if (ins->inst_i0->inst_c0) {
 					x86_jump_code (code, cfg->native_code + ins->inst_i0->inst_c0);
@@ -3434,13 +3429,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
 			break;
 		case OP_CKFINITE: {
+			guchar *br1;
 			x86_push_reg (code, X86_EAX);
 			x86_fxam (code);
 			x86_fnstsw (code);
 			x86_alu_reg_imm (code, X86_AND, X86_EAX, 0x4100);
 			x86_alu_reg_imm (code, X86_CMP, X86_EAX, X86_FP_C0);
 			x86_pop_reg (code, X86_EAX);
+
+			/* Have to clean up the fp stack before throwing the exception */
+			br1 = code;
+			x86_branch8 (code, X86_CC_NE, 0, FALSE);
+
+			x86_fstp (code, 0);			
 			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
+
+			x86_patch (br1, code);
 			break;
 		}
 		case OP_TLS_GET: {
@@ -3565,7 +3569,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 		}
 
-		if ((code - cfg->native_code - offset) > max_len) {
+		if (G_UNLIKELY ((code - cfg->native_code - offset) > max_len)) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
@@ -3573,9 +3577,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	       
 		cpos += max_len;
 
-		last_ins = ins;
-		last_offset = offset;
-		
 		ins = ins->next;
 	}
 
