@@ -119,7 +119,7 @@ start_handler: len:16
 endfinally: len:16
 op_endfilter: src1:a len:16
 
-ckfinite: dest:f src1:f len:22
+ckfinite: dest:f src1:f len:32
 mul.ovf: dest:i src1:i src2:i clob:1 len:9
 # this opcode is handled specially in the code generator
 mul.ovf.un: dest:i src1:i src2:i len:16
