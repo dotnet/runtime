@@ -524,6 +524,12 @@ mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gbo
 	return arch_create_jump_trampoline (domain, method, add_sync_wrapper);
 }
 
+gpointer
+mono_runtime_create_delegate_trampoline (MonoClass *klass)
+{
+	return arch_create_delegate_trampoline (klass);
+}
+
 static MonoFreeMethodFunc default_mono_free_method = NULL;
 
 /**

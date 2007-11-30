@@ -5413,18 +5413,8 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 static void
 ves_icall_System_Delegate_SetMulticastInvoke (MonoDelegate *this)
 {
-	gpointer iter;
-	MonoMethod *invoke;
-
-	/* Find the Invoke method */
-	iter = NULL;
-	while ((invoke = mono_class_get_methods (this->object.vtable->klass, &iter))) {
-		if (!strcmp (invoke->name, "Invoke"))
-			break;
-	}
-	g_assert (invoke);
-
-	this->invoke_impl = mono_compile_method (mono_marshal_get_delegate_invoke (invoke, this));
+	/* Reset the invoke impl to the default one */
+	this->invoke_impl = mono_runtime_create_delegate_trampoline (this->object.vtable->klass);
 }
 
 /*

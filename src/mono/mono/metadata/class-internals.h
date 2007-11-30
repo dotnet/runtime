@@ -663,6 +663,9 @@ mono_install_lookup_dynamic_token (MonoLookupDynamicToken func) MONO_INTERNAL;
 gpointer
 mono_runtime_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper) MONO_INTERNAL;
 
+gpointer
+mono_runtime_create_delegate_trampoline (MonoClass *klass) MONO_INTERNAL;
+
 void
 mono_install_get_cached_class_info (MonoGetCachedClassInfo func) MONO_INTERNAL;
 
