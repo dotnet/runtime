@@ -4679,6 +4679,7 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 
 	if ((ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr)))) {
 		method = ji->method;
+		delegate->method = method;
 		MONO_OBJECT_SETREF (delegate, method_info, mono_method_get_object (domain, method, NULL));
 	}
 

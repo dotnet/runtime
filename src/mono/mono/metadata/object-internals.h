@@ -526,6 +526,7 @@ struct _MonoDelegate {
 	gpointer method_ptr;
 	gpointer invoke_impl;
 	MonoObject *target;
+	MonoMethod *method;
 	MonoObject *target_type;
 	MonoString *method_name;
 	gpointer delegate_trampoline;
