@@ -19,7 +19,7 @@ namespace stacktracetest
 			};
 			IPHostEntry ip = Dns.EndGetHostEntry (res);
 			Console.WriteLine (ip);*/
-			if (frame_count > 1)
+			if (frame_count >= 1)
 				return 0;
 			return 1;
 		}
