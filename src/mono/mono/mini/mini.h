@@ -954,6 +954,7 @@ gpointer          mono_create_jump_trampoline (MonoDomain *domain,
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable) MONO_INTERNAL;
 gpointer          mono_create_jit_trampoline (MonoMethod *method) MONO_INTERNAL;
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token) MONO_INTERNAL;
+gpointer          mono_create_delegate_trampoline (MonoClass *klass) MONO_INTERNAL;
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 gpointer          mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp) MONO_INTERNAL;
 gpointer          mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* tramp) MONO_INTERNAL;

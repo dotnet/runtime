@@ -3081,6 +3081,71 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 	return dest;
 }
 
+static MonoInst*
+handle_delegate_ctor (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, MonoInst *target, MonoMethod *method, unsigned char *ip)
+{
+	gpointer *trampoline;
+	MonoInst *obj, *ins, *store, *offset_ins, *method_ins, *tramp_ins;
+	int temp;
+
+	temp = handle_alloc (cfg, bblock, klass, FALSE, ip);
+
+	/* Inline the contents of mono_delegate_ctor */
+
+	/* Set target field */
+	NEW_TEMPLOAD (cfg, obj, temp);
+	NEW_ICONST (cfg, offset_ins, G_STRUCT_OFFSET (MonoDelegate, target));
+	MONO_INST_NEW (cfg, ins, OP_PADD);
+	ins->cil_code = ip;
+	ins->inst_left = obj;
+	ins->inst_right = offset_ins;
+
+	MONO_INST_NEW (cfg, store, CEE_STIND_REF);
+	store->cil_code = ip;
+	store->inst_left = ins;
+	store->inst_right = target;
+	mono_bblock_add_inst (bblock, store);
+
+	/* Set method field */
+	NEW_TEMPLOAD (cfg, obj, temp);
+	NEW_ICONST (cfg, offset_ins, G_STRUCT_OFFSET (MonoDelegate, method));
+	MONO_INST_NEW (cfg, ins, OP_PADD);
+	ins->cil_code = ip;
+	ins->inst_left = obj;
+	ins->inst_right = offset_ins;
+
+	NEW_METHODCONST (cfg, method_ins, method);
+
+	MONO_INST_NEW (cfg, store, CEE_STIND_I);
+	store->cil_code = ip;
+	store->inst_left = ins;
+	store->inst_right = method_ins;
+	mono_bblock_add_inst (bblock, store);
+
+	/* Set invoke_impl field */
+	NEW_TEMPLOAD (cfg, obj, temp);
+	NEW_ICONST (cfg, offset_ins, G_STRUCT_OFFSET (MonoDelegate, invoke_impl));
+	MONO_INST_NEW (cfg, ins, OP_PADD);
+	ins->cil_code = ip;
+	ins->inst_left = obj;
+	ins->inst_right = offset_ins;
+
+	trampoline = mono_create_delegate_trampoline (klass);
+	NEW_PCONST (cfg, tramp_ins, trampoline);
+
+	MONO_INST_NEW (cfg, store, CEE_STIND_I);
+	store->cil_code = ip;
+	store->inst_left = ins;
+	store->inst_right = tramp_ins;
+	mono_bblock_add_inst (bblock, store);
+
+	/* All the checks which are in mono_delegate_ctor () are done by the delegate trampoline */
+
+	NEW_TEMPLOAD (cfg, obj, temp);
+
+	return obj;
+}
+
 static int
 handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst **sp, unsigned char *ip)
 {
@@ -7848,7 +7913,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_LDFTN: {
 				MonoInst *argconst;
-				MonoMethod *cil_method;
+				MonoMethod *cil_method, *ctor_method;
 				int temp;
 
 				CHECK_STACK_OVF (1);
@@ -7872,6 +7937,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
 					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
 				}
+
+				/* 
+				 * Optimize the common case of ldftn+delegate creation
+				 */
+#if defined(MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE) && !defined(HAVE_WRITE_BARRIERS)
+				/* FIXME: AOT */
+				/* FIXME: SGEN support */
+				if ((sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class) && !cfg->compile_aot) {
+					MonoInst *target_ins;
+
+					ip += 6;
+					if (cfg->verbose_level > 3)
+						g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
+					target_ins = sp [-1];
+					sp --;
+					*sp = handle_delegate_ctor (cfg, bblock, ctor_method->klass, target_ins, cmethod, ip);
+					ip += 5;					
+					sp ++;
+					break;
+				}
+#endif
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
@@ -8724,7 +8810,7 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 }	
 #endif
 
-static gpointer
+gpointer
 mono_create_delegate_trampoline (MonoClass *klass)
 {
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE

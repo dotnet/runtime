@@ -306,7 +306,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	MonoDelegate *delegate;
 	MonoJitInfo *ji;
 	gpointer iter;
-	MonoMethod *invoke, *m;
+	MonoMethod *invoke, *method, *m;
 	gboolean multicast, callvirt;
 
 	/* Find the Invoke method */
@@ -321,15 +321,28 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 
 	delegate = mono_arch_get_this_arg_from_call (mono_method_signature (invoke), regs, code);
 
+	if (!delegate->method_ptr && delegate->method) {
+		/* The delegate was initialized by mini_delegate_ctor */
+		method = delegate->method;
+
+		if (delegate->target && delegate->target->vtable->klass == mono_defaults.transparent_proxy_class)
+			method = mono_marshal_get_remoting_invoke (method);
+		else if (mono_method_signature (method)->hasthis && method->klass->valuetype)
+			method = mono_marshal_get_unbox_wrapper (method);
+	} else {
+		ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
+		if (ji)
+			method = ji->method;
+	}
+	callvirt = !delegate->target && method && mono_method_signature (method)->hasthis;
+
 	/* 
 	 * If the called address is a trampoline, replace it with the compiled method so
 	 * further calls don't have to go through the trampoline.
 	 */
-	ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
-	callvirt = !delegate->target && ji && mono_method_signature (ji->method)->hasthis;
-	if (ji && !callvirt) {
-		delegate->method_ptr = mono_compile_method (ji->method);
-		mono_debugger_trampoline_compiled (ji->method, delegate->method_ptr);
+	if (method && !callvirt) {
+		delegate->method_ptr = mono_compile_method (method);
+		mono_debugger_trampoline_compiled (method, delegate->method_ptr);
 	}
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
