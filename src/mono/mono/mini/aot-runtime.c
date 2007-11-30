@@ -228,23 +228,53 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoImage *image;
 	MonoClass *klass, *eklass;
-	guint32 token, rank, image_index;
+	guint32 token, rank;
 
 	token = decode_value (buf, &buf);
 	if (token == 0) {
 		*endbuf = buf;
 		return NULL;
 	}
-	image_index = decode_value (buf, &buf);
-	image = load_image (module, image_index);
-	if (!image)
-		return NULL;
 	if (mono_metadata_token_table (token) == 0) {
+		image = load_image (module, decode_value (buf, &buf));
+		if (!image)
+			return NULL;
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF + token);
 	} else if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
-		klass = mono_class_get (image, token);
+		if (token == MONO_TOKEN_TYPE_SPEC) {
+			MonoClass *gclass;
+			int i;
+			MonoGenericContext ctx;
+			MonoGenericInst inst;
+
+			gclass = decode_klass_ref (module, buf, &buf);
+			g_assert (gclass->generic_container);
+
+			memset (&ctx, 0, sizeof (ctx));
+			memset (&inst, 0, sizeof (inst));
+			ctx.class_inst = &inst;
+			inst.type_argc = decode_value (buf, &buf);
+			inst.type_argv = g_new0 (MonoType*, inst.type_argc);
+			for (i = 0; i < inst.type_argc; ++i) {
+				MonoClass *pclass = decode_klass_ref (module, buf, &buf);
+				if (!pclass) {
+					g_free (inst.type_argv);
+					return NULL;
+				}
+				inst.type_argv [i] = &pclass->byval_arg;
+			}
+			klass = mono_class_from_mono_type (mono_class_inflate_generic_type (&gclass->byval_arg, &ctx));
+		} else {
+			image = load_image (module, decode_value (buf, &buf));
+			if (!image)
+				return NULL;
+			klass = mono_class_get (image, token);
+		}
 	} else if (token == MONO_TOKEN_TYPE_DEF) {
 		/* Array */
+		image = load_image (module, decode_value (buf, &buf));
+		if (!image)
+			return NULL;
 		rank = decode_value (buf, &buf);
 		eklass = decode_klass_ref (module, buf, &buf);
 		klass = mono_array_class_get (eklass, rank);

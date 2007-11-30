@@ -1598,25 +1598,42 @@ find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 
 	/* FIXME: Search referenced images as well */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows; ++i) {
-		/* Since we don't compile generic methods, the context is empty */
 		k = mono_class_get_full (acfg->image, MONO_TOKEN_TYPE_SPEC | (i + 1), NULL);
 		if (k == klass)
 			break;
 	}
 
-	g_assert (i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows);
-
-	return MONO_TOKEN_TYPE_SPEC | (i + 1);
+	if (i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows)
+		return MONO_TOKEN_TYPE_SPEC | (i + 1);
+	else
+		return 0;
 }
 
 static void
 encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
 	if (klass->generic_class) {
+		guint32 token;
 		g_assert (klass->type_token);
 
-		encode_value (find_typespec_for_class (acfg, klass), buf, &buf);
-		encode_value (get_image_index (acfg, acfg->image), buf, &buf);
+		/* Find a typespec for a class if possible */
+		token = find_typespec_for_class (acfg, klass);
+		if (token) {
+			encode_value (token, buf, &buf);
+			encode_value (get_image_index (acfg, acfg->image), buf, &buf);
+		} else {
+			MonoClass *gclass = klass->generic_class->container_class;
+			MonoGenericInst *inst = klass->generic_class->context.class_inst;
+			int i;
+
+			/* Encode it ourselves */
+			/* Marker */
+			encode_value (MONO_TOKEN_TYPE_SPEC, buf, &buf);
+			encode_klass_ref (acfg, gclass, buf, &buf);
+			encode_value (inst->type_argc, buf, &buf);
+			for (i = 0; i < inst->type_argc; ++i)
+				encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), buf, &buf);
+		}
 	} else if (klass->type_token) {
 		g_assert (mono_metadata_token_code (klass->type_token) == MONO_TOKEN_TYPE_DEF);
 		encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, buf, &buf);
