@@ -4659,8 +4659,7 @@ mono_print_unhandled_exception (MonoObject *exc)
  * @target: target object
  * @addr: pointer to native code
  *
- * This is used to initialize a delegate. We also insert the method_info if
- * we find the info with mono_jit_info_table_find().
+ * This is used to initialize a delegate.
  */
 void
 mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
@@ -4680,7 +4679,6 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 	if ((ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr)))) {
 		method = ji->method;
 		delegate->method = method;
-		MONO_OBJECT_SETREF (delegate, method_info, mono_method_get_object (domain, method, NULL));
 	}
 
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {

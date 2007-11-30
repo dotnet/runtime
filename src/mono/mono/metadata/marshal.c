@@ -694,7 +694,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 	klass = ((MonoObject *)delegate)->vtable->klass;
 	g_assert (klass->delegate);
 
-	method = delegate->method_info->method;
+	method = delegate->method;
 
 	wrapper = mono_marshal_get_managed_wrapper (method, klass, delegate->target);
 
@@ -2845,7 +2845,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			MonoObject *exc;
 			MonoArray *out_args;
 			HANDLE handle;
-			method = delegate->method_info->method;
+			method = delegate->method;
 
 			msg = mono_method_call_message_new (mono_marshal_method_from_wrapper (method), params, NULL, &async_callback, &state);
 			handle = CreateEvent (NULL, TRUE, FALSE, NULL);
@@ -3272,6 +3272,11 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	MonoClass *klass;
 
 	g_assert (delegate);
+
+	if (!delegate->method_info) {
+		g_assert (delegate->method);
+		MONO_OBJECT_SETREF (delegate, method_info, mono_method_get_object (domain, delegate->method, NULL));
+	}
 
 	if (!delegate->method_info || !delegate->method_info->method)
 		g_assert_not_reached ();
@@ -4719,9 +4724,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	 * call is made to that method with the first delegate argument as this. This is 
 	 * a non-documented .NET feature.
 	 */
-	if (del && !del->target && del->method_info && mono_method_signature (del->method_info->method)->hasthis) {
+	if (del && !del->target && del->method && mono_method_signature (del->method)->hasthis) {
 		callvirt = TRUE;
-		target_method = del->method_info->method;
+		target_method = del->method;
 	}
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
