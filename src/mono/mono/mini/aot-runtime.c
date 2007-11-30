@@ -786,7 +786,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	guint8 *info, *p;
 	MonoCachedClassInfo class_info;
 	gboolean err;
-	guint32 image_index, token, value;
+	guint32 token;
 	MonoImage *image;
 
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
@@ -809,15 +809,10 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 		return NULL;
 	}
 
-	for (i = 0; i < slot; ++i) {
-		value = decode_value (p, &p);
-	}
-	
-	value = decode_value (p, &p);
-	image_index = value >> 24;
-	token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
+	for (i = 0; i < slot; ++i)
+		decode_method_ref (aot_module, &token, p, &p);
 
-	image = load_image (aot_module, image_index);
+	image = decode_method_ref (aot_module, &token, p, &p);
 	if (!image) {
 		mono_aot_unlock ();
 		return NULL;
