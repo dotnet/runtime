@@ -1282,6 +1282,7 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		}
 		break;
 	case MONO_PATCH_INFO_CLASS_INIT:
+	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		ji->data.klass = decode_klass_ref (aot_module, p, &p);
 		if (!ji->data.klass)
 			goto cleanup;

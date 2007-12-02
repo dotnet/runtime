@@ -2070,6 +2070,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		}
 		break;
 	case MONO_PATCH_INFO_CLASS_INIT:
+	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		encode_klass_ref (acfg, patch_info->data.klass, p, &p);
 		break;
 	case MONO_PATCH_INFO_FIELD:
@@ -2784,6 +2785,7 @@ compile_method (MonoAotCompile *acfg, int index)
 			break;
 		case MONO_PATCH_INFO_VTABLE:
 		case MONO_PATCH_INFO_CLASS_INIT:
+		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		case MONO_PATCH_INFO_CLASS:
 		case MONO_PATCH_INFO_IID:
 		case MONO_PATCH_INFO_ADJUSTED_IID:

@@ -173,6 +173,7 @@ static int mini_verbose = 0;
 static CRITICAL_SECTION jit_mutex;
 
 static GHashTable *class_init_hash_addr = NULL;
+static GHashTable *delegate_trampoline_hash_addr = NULL;
 
 static MonoCodeManager *global_codeman = NULL;
 
@@ -3131,7 +3132,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass
 	ins->inst_right = offset_ins;
 
 	trampoline = mono_create_delegate_trampoline (klass);
-	NEW_PCONST (cfg, tramp_ins, trampoline);
+	NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_ABS, trampoline);
 
 	MONO_INST_NEW (cfg, store, CEE_STIND_I);
 	store->cil_code = ip;
@@ -7942,9 +7943,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * Optimize the common case of ldftn+delegate creation
 				 */
 #if defined(MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE) && !defined(HAVE_WRITE_BARRIERS)
-				/* FIXME: AOT */
 				/* FIXME: SGEN support */
-				if ((sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class) && !cfg->compile_aot) {
+				if ((sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
 					MonoInst *target_ins;
 
 					ip += 6;
@@ -8834,6 +8834,12 @@ mono_create_delegate_trampoline (MonoClass *klass)
 							  klass, ptr);
 	mono_domain_unlock (domain);
 
+	mono_jit_lock ();
+	if (!delegate_trampoline_hash_addr)
+		delegate_trampoline_hash_addr = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (delegate_trampoline_hash_addr, ptr, klass);
+	mono_jit_unlock ();
+
 	return ptr;
 #else
 	return NULL;
@@ -8848,6 +8854,20 @@ mono_find_class_init_trampoline_by_addr (gconstpointer addr)
 	mono_jit_lock ();
 	if (class_init_hash_addr)
 		res = g_hash_table_lookup (class_init_hash_addr, addr);
+	else
+		res = NULL;
+	mono_jit_unlock ();
+	return res;
+}
+
+static MonoClass*
+mono_find_delegate_trampoline_by_addr (gconstpointer addr)
+{
+	MonoClass *res;
+
+	mono_jit_lock ();
+	if (delegate_trampoline_hash_addr)
+		res = g_hash_table_lookup (delegate_trampoline_hash_addr, addr);
 	else
 		res = NULL;
 	mono_jit_unlock ();
@@ -9762,6 +9782,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_CLASS_INIT:
 		target = mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass));
+		break;
+	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+		target = mono_create_delegate_trampoline (patch_info->data.klass);
 		break;
 	case MONO_PATCH_INFO_SFLDA: {
 		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
@@ -10844,6 +10867,12 @@ mono_codegen (MonoCompile *cfg)
 				if (vtable) {
 					patch_info->type = MONO_PATCH_INFO_CLASS_INIT;
 					patch_info->data.klass = vtable->klass;
+				} else {
+					MonoClass *klass = mono_find_delegate_trampoline_by_addr (patch_info->data.target);
+					if (klass) {
+						patch_info->type = MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
+						patch_info->data.klass = klass;
+					}
 				}
 			}
 			break;
@@ -12967,6 +12996,8 @@ mini_cleanup (MonoDomain *domain)
 	g_hash_table_destroy (jit_icall_name_hash);
 	if (class_init_hash_addr)
 		g_hash_table_destroy (class_init_hash_addr);
+	if (delegate_trampoline_hash_addr)
+		g_hash_table_destroy (delegate_trampoline_hash_addr);
 	g_free (emul_opcode_map);
 
 	mono_arch_cleanup ();
