@@ -3545,7 +3545,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			}
 			arm_patch (ip, code);
 			//*(int*)code = 0xef9f0001;
-			code += 4;
+			//code += 4;
+			ARM_NOP (code);
 			/*mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);*/
 			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
 			/* we got here from a conditional call, so the calling ip is set in lr already */
