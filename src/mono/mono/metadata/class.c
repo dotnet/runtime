@@ -4344,6 +4344,33 @@ mono_class_get_field_token (MonoClassField *field)
 	return 0;
 }
 
+/*
+ * mono_class_get_field_default_value:
+ *
+ * Return the default value of the field as a pointer into the metadata blob.
+ */
+const char*
+mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_type)
+{
+	guint32 cindex;
+	guint32 constant_cols [MONO_CONSTANT_SIZE];
+
+	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT);
+
+	if (!field->data) {
+		cindex = mono_metadata_get_constant_index (field->parent->image, mono_class_get_field_token (field), cindex + 1);
+		g_assert (cindex);
+		g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA));
+
+		mono_metadata_decode_row (&field->parent->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
+		field->def_type = constant_cols [MONO_CONSTANT_TYPE];
+		field->data = (gpointer)mono_metadata_blob_heap (field->parent->image, constant_cols [MONO_CONSTANT_VALUE]);
+	}
+
+	*def_type = field->def_type;
+	return field->data;
+}
+
 guint32
 mono_class_get_event_token (MonoEvent *event)
 {
