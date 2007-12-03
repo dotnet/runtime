@@ -364,7 +364,7 @@ else
 if PLATFORM_WIN32
 test:   assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535
 else
-test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535
+test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 custom-modifiers
 endif
 endif
 
@@ -644,6 +644,14 @@ test-bug-324535 : bug-324535.exe bug-324535-il.dll
 EXTRA_DIST += make_imt_test.sh
 imt_big_iface_test.cs: $(srcdir)/make_imt_test.sh
 	$(srcdir)/make_imt_test.sh > imt_big_iface_test.cs
+
+EXTRA_DIST += custom-modifiers-lib.il
+custom-modifiers-lib.dll: custom-modifiers-lib.il
+	$(ILASM) /dll /output:custom-modifiers-lib.dll $(srcdir)/custom-modifiers-lib.il
+custom-modifiers.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
+	$(GMCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.exe $(srcdir)/custom-modifiers.2.cs
+custom-modifiers: custom-modifiers.exe
+	$(RUNTIME2) custom-modifiers.exe
 
 EXTRA_DIST += coreclr-security.cs
 
