@@ -645,7 +645,7 @@ EXTRA_DIST += make_imt_test.sh
 imt_big_iface_test.cs: $(srcdir)/make_imt_test.sh
 	$(srcdir)/make_imt_test.sh > imt_big_iface_test.cs
 
-EXTRA_DIST += custom-modifiers-lib.il
+EXTRA_DIST += custom-modifiers.2.cs custom-modifiers-lib.il
 custom-modifiers-lib.dll: custom-modifiers-lib.il
 	$(ILASM) /dll /output:custom-modifiers-lib.dll $(srcdir)/custom-modifiers-lib.il
 custom-modifiers.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
