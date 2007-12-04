@@ -561,6 +561,8 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
 	shellex.fMask = SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE;
 	shellex.nShow = SW_SHOWNORMAL;
+
+	
 	
 	if (proc_start_info->filename != NULL) {
 		shellex.lpFile = mono_string_chars (proc_start_info->filename);
@@ -578,6 +580,12 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	if (proc_start_info->working_directory != NULL &&
 	    mono_string_length (proc_start_info->working_directory) != 0) {
 		shellex.lpDirectory = mono_string_chars (proc_start_info->working_directory);
+	}
+
+	if (proc_start_info->error_dialog) {	
+		shellex.hwnd = proc_start_info->error_dialog_parent_handle;
+	} else {
+		shellex.fMask |= SEE_MASK_FLAG_NO_UI;
 	}
 
 	ret = ShellExecuteEx (&shellex);
