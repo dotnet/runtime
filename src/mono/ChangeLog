@@ -1,3 +1,8 @@
+2007-12-05  Dick Porter  <dick@ximian.com>
+
+	* configure.in: Define PLATFORM_SOLARIS for solaris builds, needed
+	by fix for bug 323524.
+
 2007-11-21  Dick Porter  <dick@ximian.com>
 
 	* configure.in: No need to check for glib functions any more
