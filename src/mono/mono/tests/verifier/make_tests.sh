@@ -2634,3 +2634,88 @@ do
   I=`expr $I + 1`
 done
 
+
+#ldelema
+
+#TODO add tests for CMMP (read only prefix)
+#TODO add tests for arrays that are not zero-based
+
+./make_ldelema_test.sh ldelema_int_array valid "newarr int32" "ldc.i4.0" "int32"
+./make_ldelema_test.sh ldelema_null_array valid "pop\n\tldnull" "ldc.i4.0" "int32"
+
+./make_ldelema_test.sh ldelema_int_array_native_int valid "newarr int32" "ldc.i4.0\n\tconv.i" "int32"
+./make_ldelema_test.sh ldelema_null_array_native_int valid "pop\n\tldnull" "ldc.i4.0\n\tconv.i" "int32"
+
+
+./make_ldelema_test.sh ldelema_empty_stack_1 invalid "pop" "nop" "int32"
+./make_ldelema_test.sh ldelema_empty_stack_2 invalid "newarr int32" "nop" "int32"
+./make_ldelema_test.sh ldelema_empty_stack_3 invalid "pop" "ldc.i4.0" "int32"
+
+I=1
+for ARR in "int8" "int16" "int32" "native int" 
+do
+ ./make_ldelema_test.sh ldelema_size_compat_${I} valid "newarr ${ARR}" "ldc.i4.0" "unsigned ${ARR}"
+  I=`expr $I + 1`
+done
+
+for ARR in "int8" "int16" "int32"
+do
+ ./make_ldelema_test.sh ldelema_size_compat_${I} valid "newarr unsigned ${ARR}" "ldc.i4.0" "${ARR}"
+  I=`expr $I + 1`
+done
+
+./make_ldelema_test.sh ldelema_size_compat_nat_1 valid "newarr native int" "ldc.i4.0" "native unsigned int"
+./make_ldelema_test.sh ldelema_size_compat_nat_2 valid "newarr native unsigned int" "ldc.i4.0" "native int"
+
+
+./make_ldelema_test.sh ldelema_misc_size_compat_1 valid "newarr bool" "ldc.i4.0" "int8"
+./make_ldelema_test.sh ldelema_misc_size_compat_2 valid "newarr char" "ldc.i4.0" "int16"
+./make_ldelema_test.sh ldelema_misc_size_compat_3 valid "newarr native int" "ldc.i4.0" "int32"
+./make_ldelema_test.sh ldelema_misc_size_compat_4 valid "newarr native unsigned int" "ldc.i4.0" "int32"
+
+./make_ldelema_test.sh ldelema_misc_size_compat_5 valid "newarr int8" "ldc.i4.0" "bool" 
+./make_ldelema_test.sh ldelema_misc_size_compat_6 valid "newarr int16" "ldc.i4.0" "char"
+./make_ldelema_test.sh ldelema_misc_size_compat_7 valid "newarr int32" "ldc.i4.0" "native int"
+./make_ldelema_test.sh ldelema_misc_size_compat_8 valid "newarr int32" "ldc.i4.0" "native unsigned int"
+
+./make_ldelema_test.sh ldelema_misc_size_compat_9 valid "newarr unsigned int8" "ldc.i4.0" "bool" 
+./make_ldelema_test.sh ldelema_misc_size_compat_10 valid "newarr unsigned int16" "ldc.i4.0" "char"
+./make_ldelema_test.sh ldelema_misc_size_compat_11 valid "newarr unsigned int32" "ldc.i4.0" "native int"
+./make_ldelema_test.sh ldelema_misc_size_compat_12 valid "newarr unsigned int32" "ldc.i4.0" "native unsigned int"
+
+
+I=1
+for ARR in "newobj instance void object::.ctor()" "ldc.i4.0\n\tldc.i4.0\n\tnewobj instance void string[,]::.ctor(int32, int32)" "ldc.r4 0" "ldc.r8 0" "ldc.i8 0" "ldc.i4.0" "ldc.i4.0\n\tconv.i"
+do
+ ./make_ldelema_test.sh ldelema_bad_array_${I} unverifiable "pop\n\t${ARR}" "ldc.i4.0" "int32"
+  I=`expr $I + 1`
+done
+
+
+I=1
+for IDX in "newobj instance void object::.ctor()" "ldc.i8 0" "ldc.r4 0"
+do
+ ./make_ldelema_test.sh ldelema_bad_index_${I} unverifiable "newarr int32" "${IDX}" "int32"
+  I=`expr $I + 1`
+done
+
+I=1
+for TOKEN in "object" "int64" "int32[]"
+do
+./make_ldelema_test.sh ldelema_type_mismatch_${I} unverifiable "newarr int32" "ldc.i4.0" "${TOKEN}"
+  I=`expr $I + 1`
+done
+
+for TOKEN in "object" "int32"
+do
+./make_ldelema_test.sh ldelema_type_mismatch_${I} unverifiable "newarr string" "ldc.i4.0" "${TOKEN}"
+  I=`expr $I + 1`
+done
+
+for TOKEN in "object" "int32" "ClassSubA"
+do
+./make_ldelema_test.sh ldelema_type_mismatch_${I} unverifiable "newarr ClassA" "ldc.i4.0" "${TOKEN}"
+  I=`expr $I + 1`
+done
+
+
