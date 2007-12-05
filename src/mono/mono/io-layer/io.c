@@ -1514,7 +1514,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	 * other code, perms instead are the on-disk permissions and
 	 * this is a sane default.
 	 */
-	mode_t perms=0644;
+	mode_t perms=0666;
 	gchar *filename;
 	int fd, ret;
 	int handle_type;
