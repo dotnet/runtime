@@ -1505,6 +1505,29 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	
 	mono_class_init (field->klass);
 
+	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC)
+		is_static = TRUE;
+
+	if (obj && !is_static) {
+		/* Check that the field belongs to the object */
+		gboolean found = FALSE;
+		MonoClass *k;
+
+		for (k = obj->vtable->klass; k; k = k->parent) {
+			if (k == cf->parent) {
+				found = TRUE;
+				break;
+			}
+		}
+
+		if (!found) {
+			char *msg = g_strdup_printf ("Field '%s' defined on type '%s' is not a field on the target object which is of type '%s'.", cf->name, cf->parent->name, obj->vtable->klass->name);
+			MonoException *ex = mono_get_exception_argument (NULL, msg);
+			g_free (msg);
+			mono_raise_exception (ex);
+		}
+	}
+
 	t = mono_type_get_underlying_type (cf->type);
 	switch (t->type) {
 	case MONO_TYPE_STRING:
@@ -1545,8 +1568,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 	}
 
 	vtable = NULL;
-	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		is_static = TRUE;
+	if (is_static) {
 		vtable = mono_class_vtable (domain, cf->parent);
 		if (!vtable->initialized && !(cf->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 			mono_runtime_class_init (vtable);
