@@ -2833,6 +2833,22 @@ do_newarr (VerifyContext *ctx, int token)
 	set_stack_value (stack_push (ctx), mono_class_get_type (mono_array_class_get (mono_class_from_mono_type (type), 1)), FALSE);
 }
 
+static void
+do_ldlen (VerifyContext *ctx)
+{
+	ILStackDesc *value;
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	value = stack_pop (ctx);
+
+	if (value->stype != TYPE_COMPLEX || value->type->type != MONO_TYPE_SZARRAY)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type for ldlen at 0x%04x", ctx->ip_offset));
+
+	stack_push_val (ctx, TYPE_NATIVE_INT, &mono_defaults.int_class->byval_arg);	
+}
+
 /*Merge the stacks and perform compat checks*/
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start) 
@@ -3447,14 +3463,10 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_LDLEN:
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to ldlen at 0x%04x", ip_offset));
-			stack_top (&ctx)->type = &mono_defaults.int32_class->byval_arg; /* FIXME: use a native int type */
-			stack_top (&ctx)->stype = TYPE_PTR;
+			do_ldlen (&ctx);
 			++ip;
 			break;
+
 		case CEE_LDELEMA:
 			if (check_underflow (&ctx, 2))
 				break;
