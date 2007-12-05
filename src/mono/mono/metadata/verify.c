@@ -57,6 +57,7 @@ enum {
 
 #define UNMASK_TYPE(type) ((type) & TYPE_MASK)
 #define IS_MANAGED_POINTER(type) (((type) & POINTER_MASK) == POINTER_MASK)
+#define IS_NULL_LITERAL(type) (((type) & NULL_LITERAL_MASK) == NULL_LITERAL_MASK)
 
 enum {
 	IL_CODE_FLAG_NOT_PROCESSED  = 0,
@@ -130,6 +131,9 @@ enum {
 
 	/* Controlled Mutability Manager Pointer */
 	CMMP_MASK = 0x200,
+
+	/* The stack type is a null literal*/
+	NULL_LITERAL_MASK = 0x400,
 };
 
 static const char* const
@@ -2833,6 +2837,7 @@ do_newarr (VerifyContext *ctx, int token)
 	set_stack_value (stack_push (ctx), mono_class_get_type (mono_array_class_get (mono_class_from_mono_type (type), 1)), FALSE);
 }
 
+/*FIXME handle arrays that are not 0-indexed*/
 static void
 do_ldlen (VerifyContext *ctx)
 {
@@ -2847,6 +2852,42 @@ do_ldlen (VerifyContext *ctx)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type for ldlen at 0x%04x", ctx->ip_offset));
 
 	stack_push_val (ctx, TYPE_NATIVE_INT, &mono_defaults.int_class->byval_arg);	
+}
+
+/*FIXME handle arrays that are not 0-indexed*/
+/*FIXME handle readonly prefix and CMMP*/
+static void
+do_ldelema (VerifyContext *ctx, int klass_token)
+{
+	ILStackDesc *index, *array;
+	MonoType *type = get_boxable_mono_type (ctx, klass_token);
+	gboolean valid; 
+
+	if (!type)
+		return;
+
+	if (!check_underflow (ctx, 2))
+		return;
+
+	index = stack_pop (ctx);
+	array = stack_pop (ctx);
+
+	if (index->stype != TYPE_I4 && index->stype != TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Index type(%s) for ldelema is not an int or a native int at 0x%04x", type_names [UNMASK_TYPE (index->stype)], ctx->ip_offset));
+
+	if (!IS_NULL_LITERAL (array->stype)) {
+		if (array->stype != TYPE_COMPLEX || array->type->type != MONO_TYPE_SZARRAY)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type(%s) for ldlen at 0x%04x", type_names [UNMASK_TYPE (array->stype)], ctx->ip_offset));
+	
+		if (get_stack_type (type) == TYPE_I4 || get_stack_type (type) == TYPE_NATIVE_INT)
+			valid = verify_type_compatibility_full (ctx, type, &array->type->data.klass->byval_arg, TRUE);
+		else
+			valid = mono_metadata_type_equal (type, &array->type->data.klass->byval_arg);
+		if (!valid)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type on stack for ldelema at 0x%04x", ctx->ip_offset));
+	}
+
+	set_stack_value (stack_push (ctx), type, TRUE);	
 }
 
 /*Merge the stacks and perform compat checks*/
@@ -3150,7 +3191,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_LDNULL:
 			if (check_overflow (&ctx))
-				stack_push_val (&ctx,TYPE_COMPLEX, &mono_defaults.object_class->byval_arg);
+				stack_push_val (&ctx, TYPE_COMPLEX | NULL_LITERAL_MASK, &mono_defaults.object_class->byval_arg);
 			++ip;
 			break;
 
@@ -3468,17 +3509,10 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_LDELEMA:
-			if (check_underflow (&ctx, 2))
-				break;
-			--ctx.eval.size;
-			if (stack_top (&ctx)->stype != TYPE_COMPLEX)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid array argument to ldelema at 0x%04x", ip_offset));
-			if (stack_top (&ctx)->stype != TYPE_I4 && stack_top (&ctx)->stype != TYPE_PTR)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Array index needs to be Int32 or IntPtr at 0x%04x", ip_offset));
-			stack_top (&ctx)->stype = TYPE_COMPLEX;
-			token = read32 (ip + 1);
+			do_ldelema (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_LDELEM_I1:
 		case CEE_LDELEM_U1:
 		case CEE_LDELEM_I2:
