@@ -2616,3 +2616,21 @@ done
 ./make_newobj_test.sh newobj_method_not_ctor_1 invalid "pop\n\tnewobj instance void class ClassA::.cctor()" "int32" "int32"
 
 
+#ldlen tests
+./make_ldlen_test.sh ldlen_int_array valid "ldc.i4.0\n\tnewarr int32"
+./make_ldlen_test.sh ldlen_array_array valid "ldc.i4.0\n\tnewarr string[]"
+
+./make_ldlen_test.sh ldlen_multi_dyn_array unverifiable "ldc.i4.0\n\tldc.i4.0\n\tnewobj instance void string[,]::.ctor(int32, int32)"
+
+#TODO add tests for arrays that are not zero-based
+#./make_ldlen_test.sh ldlen_size_bounded_array unverifiable "call int32[1...5] mkarr()"
+
+./make_ldlen_test.sh ldlen_empty_stack invalid "nop"
+
+I=1
+for OP in "ldc.i4.0" "ldc.r4 0" " newobj instance void object::.ctor()"
+do
+  ./make_ldlen_test.sh ldlen_bad_stuff_on_stack_${I} unverifiable "$OP"
+  I=`expr $I + 1`
+done
+
