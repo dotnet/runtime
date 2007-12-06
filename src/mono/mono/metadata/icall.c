@@ -817,6 +817,7 @@ static void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (MonoType *handle)
 {
 	MonoClass *klass;
+	MonoMethod *method;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -826,8 +827,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (Mo
 	MONO_CHECK_ARG (handle, klass);
 
 	/* This will call the type constructor */
-	if (! (klass->flags & TYPE_ATTRIBUTE_INTERFACE))
-		mono_runtime_class_init (mono_class_vtable (mono_domain_get (), klass));
+	mono_runtime_class_init (mono_class_vtable (mono_domain_get (), klass));
 }
 
 static void
