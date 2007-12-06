@@ -1887,6 +1887,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				break;
 		}
 
+#ifdef MONO_ARCH_AOT_SUPPORTED
 		skip = FALSE;
 		if (patch_info && (patch_info->ip.i == i) && (pindex < patches->len)) {
 			start_index = pindex;
@@ -1967,6 +1968,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 			}
 			}
 		}
+#endif /* MONO_ARCH_AOT_SUPPORTED */
 
 		if (!skip)
 			emit_bytes (acfg, code + i, 1);
