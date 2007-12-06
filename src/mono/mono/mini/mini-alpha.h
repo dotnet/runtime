@@ -287,7 +287,6 @@ unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD 1
-#define MONO_ARCH_HAVE_PIC_AOT 1
 #define MONO_ARCH_HAVE_SAVE_UNWIND_INFO 1
 
 #endif
