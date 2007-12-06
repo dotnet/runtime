@@ -236,8 +236,8 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
-static gpointer*
-decode_vcall_slot_from_ldr (guint32 ldr, gpointer *regs)
+static gpointer
+decode_vcall_slot_from_ldr (guint32 ldr, gpointer *regs, int *displacement)
 {
 	char *o = NULL;
 	int reg, offset = 0;
@@ -247,11 +247,13 @@ decode_vcall_slot_from_ldr (guint32 ldr, gpointer *regs)
 		offset = -offset;
 	/*g_print ("found vcall at r%d + %d for code at %p 0x%x\n", reg, offset, code, *code);*/
 	o = regs [reg];
-	return (gpointer*)(o + offset);
+
+	*displacement = offset;
+	return o;
 }
 
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
+gpointer
+mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 {
 	guint32* code = (guint32*)code_ptr;
 
@@ -305,12 +307,23 @@ mono_arch_get_vcall_slot_addr (guint8 *code_ptr, gpointer *regs)
 	 * 
 	 */
 	if (IS_LDR_PC (code [-1]) && code [-2] == ADD_LR_PC_4)
-		return decode_vcall_slot_from_ldr (code [-1], regs);
+		return decode_vcall_slot_from_ldr (code [-1], regs, displacement);
 
 	if (IS_LDR_PC (code [0]) && code [-1] == MOV_LR_PC)
-		return decode_vcall_slot_from_ldr (code [0], regs);
+		return decode_vcall_slot_from_ldr (code [0], regs, displacement);
 
 	return NULL;
+}
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
 }
 
 #define MAX_ARCH_DELEGATE_PARAMS 3
