@@ -1386,7 +1386,7 @@ dis_types (MonoImage *m, int forward)
 	}
 }
 
-static char *
+static const char *
 get_uninitialized_data_type (guint32 size)
 {
 	switch (size) {
@@ -1803,14 +1803,6 @@ monodis_preload (MonoAssemblyName *aname,
 
 	if (assemblies_path && assemblies_path [0] != NULL) {
 		result = real_load (assemblies_path, aname->culture, aname->name, refonly);
-	}
-
-	if (result == NULL) {
-		char *name = mono_stringify_assembly_name (aname);
-		fprintf (stderr, "\n\nERROR: Cannot find referenced assembly `%s'\n\nexiting...\n", name);
-		g_free (name);
-
-		exit (1);
 	}
 
 	return result;
