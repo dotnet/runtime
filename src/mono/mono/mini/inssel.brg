@@ -1408,11 +1408,20 @@ lreg: OP_LSHR_UN (lreg, reg) {
 # string support
 #
 reg: OP_GETCHR (reg, reg) "4" {
+	int index_reg;
 	int mult_reg = mono_regstate_next_int (s->rs);
 	int add_reg = mono_regstate_next_int (s->rs);
 	
-	MONO_EMIT_BOUNDS_CHECK (s, state->left->reg1, MonoString, length, state->right->reg1);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, mult_reg, state->right->reg1, 1);
+	if (sizeof (gpointer) == 8) {
+		/* The array reg is 64 bits but the index reg is only 32 */
+		index_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_UNALU (s, OP_SEXT_I4, index_reg, state->right->reg1);
+	} else {
+		index_reg = state->right->reg1;
+	}
+
+	MONO_EMIT_BOUNDS_CHECK (s, state->left->reg1, MonoString, length, index_reg);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, mult_reg, index_reg, 1);
 	MONO_EMIT_NEW_BIALU (s, CEE_ADD, add_reg, mult_reg, state->left->reg1);
 	MONO_EMIT_LOAD_MEMBASE_OP (s, tree, OP_LOADU2_MEMBASE, state->reg1, 
 				   add_reg, G_STRUCT_OFFSET (MonoString, chars));
@@ -1519,12 +1528,21 @@ reg: CEE_LDELEMA (reg, OP_ICONST) "15" {
 }
 
 reg: CEE_LDELEMA (reg, reg) "20" {
+	int index_reg;
 	int mult_reg = mono_regstate_next_int (s->rs);
 	int add_reg = mono_regstate_next_int (s->rs);
 	guint32 size = mono_class_array_element_size (tree->klass);
 
-	MONO_EMIT_BOUNDS_CHECK (s, state->left->reg1, MonoArray, max_length, state->right->reg1);
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_MUL_IMM, mult_reg, state->right->reg1, size);
+	if (sizeof (gpointer) == 8) {
+		/* The array reg is 64 bits but the index reg is only 32 */
+		index_reg = mono_regstate_next_int (s->rs);
+		MONO_EMIT_NEW_UNALU (s, OP_SEXT_I4, index_reg, state->right->reg1);
+	} else {
+		index_reg = state->right->reg1;
+	}
+
+	MONO_EMIT_BOUNDS_CHECK (s, state->left->reg1, MonoArray, max_length, index_reg);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_MUL_IMM, mult_reg, index_reg, size);
 	MONO_EMIT_NEW_BIALU (s, CEE_ADD, add_reg, mult_reg, state->left->reg1);
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_ADD_IMM, state->reg1, add_reg, G_STRUCT_OFFSET (MonoArray, vector));
 }

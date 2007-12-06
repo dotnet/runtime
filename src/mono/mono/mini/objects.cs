@@ -1048,5 +1048,31 @@ ncells ) {
 			temp = (uint)(data[temp >> 24] | data[temp >> 0]);
 		return 0;
 	}
+
+	/* #346563 */
+	static int test_0_array_access_64_bit () {
+		int[] arr2 = new int [10];
+		for (int i = 0; i < 10; ++i)
+			arr2 [i] = i;
+		string s = "ABCDEFGH";
+
+		byte[] arr = new byte [4];
+		arr [0] = 252;
+		arr [1] = 255;
+		arr [2] = 255;
+		arr [3] = 255;
+
+		int len = arr [0] | (arr [1] << 8) | (arr [2] << 16) | (arr [3] << 24);
+		int len2 = - (len + 2);
+
+		// Test array and string access with a 32 bit value whose upper 32 bits are
+		// undefined
+		// len2 = 3
+		if (arr2 [len2] != 2)
+			return 1;
+		if (s [len2] != 'C')
+			return 2;
+		return 0;
+	}
 }
 
