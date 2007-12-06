@@ -2556,7 +2556,7 @@ I=1
 for TYPE1 in "int8" "bool" "int16" "char" "int32" "int64" "float32" "float64" "native int"
 do
 	./make_store_indirect_test.sh indirect_store_bad_addr_ref_${I} unverifiable "stind.ref" "${TYPE1}\&" "object"
-	./make_store_indirect_test.sh indirect_store_bad_val_ref_${I} unverifiable "stind.ref" "object&" "${TYPE1}"
+	./make_store_indirect_test.sh indirect_store_bad_val_ref_${I} unverifiable "stind.ref" "object\&" "${TYPE1}"
 	I=`expr $I + 1`
 done
 
@@ -2652,7 +2652,7 @@ done
 ./make_ldelema_test.sh ldelema_empty_stack_3 invalid "pop" "ldc.i4.0" "int32"
 
 I=1
-for ARR in "int8" "int16" "int32" "native int" 
+for ARR in "int8" "int16" "int32" 
 do
  ./make_ldelema_test.sh ldelema_size_compat_${I} valid "newarr ${ARR}" "ldc.i4.0" "unsigned ${ARR}"
   I=`expr $I + 1`
