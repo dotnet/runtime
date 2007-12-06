@@ -2719,3 +2719,149 @@ do
 done
 
 
+#ldelem.X
+
+#TODO add tests for CMMP (read only prefix)
+#TODO add tests for arrays that are not zero-based
+
+
+I=1
+for ARR in "int8" "bool" "unsigned int8"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i1"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u1"
+	I=`expr $I + 1`
+done
+
+for ARR in "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "int64" "unsigned int64" "float32" "float64" "object"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.i1"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.u1"
+	I=`expr $I + 1`
+done
+
+
+for ARR in "int16" "char" "unsigned int16"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i2"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u2"
+	I=`expr $I + 1`
+done
+
+for ARR in "int8" "bool" "unsigned int8" "int32" "unsigned int32" "native int" "native unsigned int" "int64" "unsigned int64" "float32" "float64" "object"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.i2"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.u2"
+	I=`expr $I + 1`
+done
+
+
+for ARR in "int32" "unsigned int32" "native int" "native unsigned int"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i4"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u4"
+	./make_ldelem_test.sh ldelem_base_types_n_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i"
+	I=`expr $I + 1`
+done
+
+for ARR in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int64" "unsigned int64" "float32" "float64" "object"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.i4"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.u4"
+	./make_ldelem_test.sh ldelem_base_types_n_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.i"
+	I=`expr $I + 1`
+done
+
+
+for ARR in "int64" "unsigned int64"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i8"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u8"
+	I=`expr $I + 1`
+done
+
+for ARR in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "float32" "float64" "object"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.i8"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.u8"
+	I=`expr $I + 1`
+done
+
+
+for ARR in "float32"
+do
+	./make_ldelem_test.sh ldelem_base_types_f_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.r4"
+	I=`expr $I + 1`
+done
+
+for ARR in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "int64" "unsigned int64" "float64" "object"
+do
+	./make_ldelem_test.sh ldelem_base_types_f_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.r4"
+	I=`expr $I + 1`
+done
+
+
+for ARR in "float64"
+do
+	./make_ldelem_test.sh ldelem_base_types_f_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.r8"
+	I=`expr $I + 1`
+done
+
+for ARR in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "int64" "unsigned int64" "float32" "object"
+do
+	./make_ldelem_test.sh ldelem_base_types_f_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.r8"
+	I=`expr $I + 1`
+done
+
+
+for ARR in "object" "string" "ClassA"
+do
+	./make_ldelem_test.sh ldelem_base_types_o_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.ref"
+	I=`expr $I + 1`
+done
+
+for ARR in "valuetype MyStruct" "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "int64" "unsigned int64" "float32" "float64" 
+do
+	./make_ldelem_test.sh ldelem_base_types_o_${I} unverifiable "newarr ${ARR}" "ldc.i4.0" "ldelem.ref"
+	I=`expr $I + 1`
+done
+
+I=1
+for OP in i1 u1 i2 u2 i4 u4 i8 u8 r4 r8 i ref
+do
+	./make_ldelem_test.sh ldelem_null_array_${I} valid "pop\n\tldnull" "ldc.i4.0" "ldelem.${OP}"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for OP in i1 u1 i2 u2 i4 u4 i8 u8 r4 r8 i ref
+do
+	./make_ldelem_test.sh ldelem_empty_stack_1_${I} invalid "pop" "nop" "ldelem.${OP}"
+	./make_ldelem_test.sh ldelem_empty_stack_2_${I} invalid "newarr int32" "nop" "ldelem.${OP}"
+	./make_ldelem_test.sh ldelem_empty_stack_3_${I} invalid "pop" "ldc.i4.0" "ldelem.${OP}"
+	I=`expr $I + 1`
+done
+
+I=1
+for OP in i1 u1 i2 u2 i4 u4 i8 u8 r4 r8 i ref
+do
+	for ARR in "newobj instance void object::.ctor()" "ldc.i4.0\n\tldc.i4.0\n\tnewobj instance void string[,]::.ctor(int32, int32)" "ldc.r4 0" "ldc.r8 0" "ldc.i8 0" "ldc.i4.0" "ldc.i4.0\n\tconv.i"
+	do
+	 ./make_ldelem_test.sh ldelema_bad_array_${I} unverifiable "pop\n\t${ARR}" "ldc.i4.0" "ldelem.${OP}"
+	  I=`expr $I + 1`
+	done
+done
+
+
+I=1
+for OP in i1 u1 i2 u2 i4 u4 i8 u8 r4 r8 i ref
+do
+	for IDX in "newobj instance void object::.ctor()" "ldc.i8 0" "ldc.r4 0"
+	do
+	 ./make_ldelem_test.sh ldelema_bad_index_${I} unverifiable "pop\n\tldnull" "${IDX}" "ldelem.${OP}"
+	  I=`expr $I + 1`
+	done
+done
+
+
