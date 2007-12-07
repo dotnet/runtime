@@ -105,7 +105,15 @@ mono_arch_patch_callsite (guint8 *code_ptr, guint8 *addr)
 void
 mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 {
-	g_assert_not_reached ();
+	guint32 ins = branch_for_target_reachable (code, addr);
+
+	if (ins)
+		/* Patch the branch */
+		((guint32*)code) [0] = ins;
+	else
+		/* Patch the jump address */
+		((guint32*)code) [1] = addr;
+	mono_arch_flush_icache ((char*)code, 4);
 }
 
 void
@@ -117,7 +125,14 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 void
 mono_arch_nullify_plt_entry (guint8 *code)
 {
-	g_assert_not_reached ();
+	guint8 buf [4];
+	guint8 *p;
+
+	p = buf;
+	ARM_MOV_REG_REG (p, ARMREG_PC, ARMREG_LR);
+
+	((guint32*)code) [0] = ((guint32*)buf) [0];
+	mono_arch_flush_icache ((char*)code, 4);
 }
 
 

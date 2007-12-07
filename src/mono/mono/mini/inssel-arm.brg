@@ -496,11 +496,33 @@ stmt: CEE_SWITCH (reg) {
 
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_COMPARE_IMM, -1, state->left->reg1, n);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, CEE_BGE_UN, tree->inst_many_bb [n]);
-	mono_bblock_add_inst (s->cbb, label);
-	mono_create_jump_table (s, label, tree->inst_many_bb, n);
-	/* the backend code will deal with aot vs normal case */
-	tree->sreg1 = state->left->reg1;
-	mono_bblock_add_inst (s->cbb, tree);
+
+	if (s->compile_aot) {
+		/* FIXME: Optimize this */
+		int offset_reg = mono_regstate_next_int (s->rs);
+		int target_reg = mono_regstate_next_int (s->rs);
+		int table_reg = mono_regstate_next_int (s->rs);
+		int sum_reg = mono_regstate_next_int (s->rs);
+		MonoJumpInfoBBTable *table;
+
+		MONO_EMIT_NEW_BIALU_IMM (s, OP_SHL_IMM, offset_reg, state->left->reg1, 2);
+
+		table = mono_mempool_alloc (s->mempool, sizeof (MonoJumpInfoBBTable));
+		table->table = tree->inst_many_bb;
+		table->table_size = n;
+
+		MONO_EMIT_NEW_AOTCONST (s, table_reg, table, MONO_PATCH_INFO_SWITCH);
+
+		MONO_EMIT_NEW_BIALU (s, CEE_ADD, sum_reg, table_reg, offset_reg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, target_reg, sum_reg, 0);
+		MONO_EMIT_UNALU (s, tree, OP_BR_REG, -1, target_reg);
+	} else {
+		mono_bblock_add_inst (s->cbb, label);
+		mono_create_jump_table (s, label, tree->inst_many_bb, n);
+		/* the backend code will deal with aot vs normal case */
+		tree->sreg1 = state->left->reg1;
+		mono_bblock_add_inst (s->cbb, tree);
+	}
 }
 
 %%

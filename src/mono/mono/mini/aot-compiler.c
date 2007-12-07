@@ -184,17 +184,10 @@ get_patch_name (int info)
 static gboolean 
 is_got_patch (MonoJumpInfoType patch_type)
 {
-#ifdef __x86_64__
 	return TRUE;
-#elif defined(__i386__)
-	return TRUE;
-#else
-	return FALSE;
-#endif
 }
 
-#if defined(__ppc__) && defined(__MACH__)
-static int
+static G_GNUC_UNUSED int
 ilog2(register int value)
 {
 	int count = -1;
@@ -202,7 +195,6 @@ ilog2(register int value)
 	while (value) count++, value >>= 1;
 	return count;
 }
-#endif
 
 #ifdef USE_BIN_WRITER
 
@@ -1261,7 +1253,7 @@ emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsect
 	emit_unset_mode (acfg);
 #if defined(PLATFORM_WIN32)
 	fprintf (acfg->fp, ".section %s\n", section_name);
-#elif defined(sparc)
+#elif defined(sparc) || defined(__arm__)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (acfg->fp, ".section \"%s\"\n", section_name);
 #elif defined(__ppc__) && defined(__MACH__)
@@ -1283,7 +1275,7 @@ emit_symbol_type (MonoAotCompile *acfg, const char *name, gboolean func)
 		stype = "object";
 
 	emit_unset_mode (acfg);
-#if defined(sparc)
+#if defined(sparc) || defined(__arm__)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
 #elif defined(PLATFORM_WIN32)
 
@@ -1353,7 +1345,9 @@ static void
 emit_alignment (MonoAotCompile *acfg, int size)
 {
 	emit_unset_mode (acfg);
-#if defined(__ppc__) && defined(__MACH__)
+#if defined(__arm__)
+	fprintf (acfg->fp, "\t.align %d\n", ilog2 (size));
+#elif defined(__ppc__) && defined(__MACH__)
 	// the mach-o assembler specifies alignments as powers of 2.
 	fprintf (acfg->fp, "\t.align %d\t; ilog2\n", ilog2(size));
 #elif defined(__powerpc__)
@@ -1402,7 +1396,12 @@ emit_int16 (MonoAotCompile *acfg, int value)
 		acfg->col_count = 0;
 	}
 	if ((acfg->col_count++ % 8) == 0)
+#if defined(__arm__)
+		/* FIXME: Use .hword on other archs as well */
+		fprintf (acfg->fp, "\n\t.hword ");
+#else
 		fprintf (acfg->fp, "\n\t.word ");
+#endif
 	else
 		fprintf (acfg->fp, ", ");
 	fprintf (acfg->fp, "%d", value);
@@ -1949,8 +1948,15 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 					emit_byte (acfg, '\xe8');
 					emit_symbol_diff (acfg, direct_call_target, ".", -4);
 					i += 4;
-#else
+#elif defined(__arm__)
+#ifdef USE_BIN_WRITER
+					/* FIXME: Can't encode this using the current symbol writer functions */
 					g_assert_not_reached ();
+#else
+					emit_unset_mode (acfg);
+					fprintf (acfg->fp, "bl %s\n", direct_call_target);
+					i += 4 - 1;
+#endif
 #endif
 				} else {
 					got_slot = get_got_offset (acfg, patch_info);
@@ -1960,6 +1966,10 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 					emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
 #elif defined(__i386__)
 					emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
+#elif defined(__arm__)
+					emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
+#else
+					g_assert_not_reached ();
 #endif
 					
 					i += mono_arch_get_patch_offset (code + i) + 4 - 1;
@@ -2413,7 +2423,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
  * - the ELF PLT entries make an indirect jump though the GOT so they expect the
  *   GOT pointer to be in EBX. We want to avoid this, so our table contains direct
  *   jumps. This means the jumps need to be patched when the address of the callee is
- *   known. Initially the PLT entries jump to code which transfer control to the
+ *   known. Initially the PLT entries jump to code which transfers control to the
  *   AOT runtime through the first PLT entry.
  */
 static void
@@ -2449,6 +2459,11 @@ emit_plt (MonoAotCompile *acfg)
 	emit_alignment (acfg, PAGESIZE);
 	emit_label (acfg, symbol);
 
+#if defined(USE_BIN_WRITER) && defined(__arm__)
+	/* FIXME: */
+	g_assert_not_reached ();
+#endif
+
 	/* 
 	 * The first plt entry is used to transfer code to the AOT loader. 
 	 */
@@ -2463,6 +2478,12 @@ emit_plt (MonoAotCompile *acfg)
 	emit_byte (acfg, '\x25');
 	emit_symbol_diff (acfg, "plt_jump_table", ".", -4);
 	emit_zero_bytes (acfg, 10);
+#elif defined(__arm__)
+	/* This is 8 bytes long, init_plt () depends on this */
+	emit_unset_mode (acfg);
+	fprintf (acfg->fp, "\tldr pc, [pc, #-4]\n");
+	/* This is filled up during loading by the AOT loader */
+	fprintf (acfg->fp, "\t.word 0\n");
 #else
 	g_assert_not_reached ();
 #endif
@@ -2498,6 +2519,22 @@ emit_plt (MonoAotCompile *acfg)
 		/* jmp .Lp_0 */
 		emit_byte (acfg, '\xe9');
 		emit_symbol_diff (acfg, ".Lp_0", ".", -4);
+#elif defined(__arm__)
+		/* 
+		 * Emit an indirect call since branch displacements are limited to 24 bits on 
+		 * ARM. Put the jump table entries inline since offsets are even smaller on
+		 * ARM.
+		 * FIXME:
+		 * - optimize OP_AOTCONST implementation
+		 * - optimize the PLT entries
+		 * - optimize SWITCH AOT implementation
+		 * - implement IMT support
+		 */
+		/* This is 8 bytes long, init_plt () depends on this */
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "\tldr pc, [pc, #-4]\n");
+		/* This is filled up during loading by the AOT loader */
+		fprintf (acfg->fp, "\t.word 0\n");
 #else
 		g_assert_not_reached ();
 #endif
@@ -2528,6 +2565,12 @@ emit_plt (MonoAotCompile *acfg)
 		emit_symbol_diff (acfg, ".Lp_0", ".", -4);
 #elif defined(__x86_64__)
 		/* Emitted along with the PLT entries since they will not be patched */
+#elif defined(__arm__)
+		/* This is 12 bytes long, init_plt () depends on this */
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "\tldr ip, [pc, #0]\n");
+		fprintf (acfg->fp, "\tb .Lp_0\n");
+		fprintf (acfg->fp, "\t.word %d\n", plt_info_offsets [i]);
 #else
 		g_assert_not_reached ();
 #endif
@@ -3114,7 +3157,7 @@ emit_exception_info (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	/* To reduce size of generate assembly */
+	/* To reduce size of generated assembly */
 	symbol = g_strdup_printf ("ex");
 	emit_label (acfg, symbol);
 
