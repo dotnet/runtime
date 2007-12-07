@@ -240,6 +240,7 @@ TEST_CS_SRC=			\
 	transparentproxy.cs \
 	imt_big_iface_test.cs \
 	dbnull-missing.cs	\
+	test-type-ctor.cs 	\
 	soft-float-tests.cs
 
 if X86
