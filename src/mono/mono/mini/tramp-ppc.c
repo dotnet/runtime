@@ -255,16 +255,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		/* Arg 3: MonoMethod *method. It was put in r5 already above */
 		/*ppc_mr  (buf, ppc_r5, ppc_r5);*/
 
-		if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-			tramp_handler = mono_class_init_trampoline;
-		else if (tramp_type == MONO_TRAMPOLINE_AOT)
-			tramp_handler = mono_aot_trampoline;
-		else if (tramp_type == MONO_TRAMPOLINE_AOT_PLT)
-			tramp_handler = mono_aot_plt_trampoline;
-		else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
-			tramp_handler = mono_delegate_trampoline;
-		else
-			tramp_handler = mono_magic_trampoline;
+		tramp_handler = mono_get_trampoline_func (tramp_type);
 		ppc_lis  (buf, ppc_r0, (guint32) tramp_handler >> 16);
 		ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) tramp_handler & 0xffff);
 		ppc_mtlr (buf, ppc_r0);
