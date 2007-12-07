@@ -2733,6 +2733,7 @@ mono_type_from_opcode (int opcode) {
 	case CEE_STIND_I1:
 	case CEE_LDELEM_I1:
 	case CEE_LDELEM_U1:
+	case CEE_STELEM_I1:
 		return &mono_defaults.sbyte_class->byval_arg;
 
 	case CEE_LDIND_I2:
@@ -2740,6 +2741,7 @@ mono_type_from_opcode (int opcode) {
 	case CEE_STIND_I2:
 	case CEE_LDELEM_I2:
 	case CEE_LDELEM_U2:
+	case CEE_STELEM_I2:
 		return &mono_defaults.int16_class->byval_arg;
 
 	case CEE_LDIND_I4:
@@ -2747,31 +2749,37 @@ mono_type_from_opcode (int opcode) {
 	case CEE_STIND_I4:
 	case CEE_LDELEM_I4:
 	case CEE_LDELEM_U4:
+	case CEE_STELEM_I4:
 		return &mono_defaults.int32_class->byval_arg;
 
 	case CEE_LDIND_I8:
 	case CEE_STIND_I8:
 	case CEE_LDELEM_I8:
+	case CEE_STELEM_I8:
 		return &mono_defaults.int64_class->byval_arg;
 
 	case CEE_LDIND_R4:
 	case CEE_STIND_R4:
 	case CEE_LDELEM_R4:
+	case CEE_STELEM_R4:
 		return &mono_defaults.single_class->byval_arg;
 
 	case CEE_LDIND_R8:
 	case CEE_STIND_R8:
 	case CEE_LDELEM_R8:
+	case CEE_STELEM_R8:
 		return &mono_defaults.double_class->byval_arg;
 
 	case CEE_LDIND_I:
 	case CEE_STIND_I:
 	case CEE_LDELEM_I:
+	case CEE_STELEM_I:
 		return &mono_defaults.int_class->byval_arg;
 
 	case CEE_LDIND_REF:
 	case CEE_STIND_REF:
 	case CEE_LDELEM_REF:
+	case CEE_STELEM_REF:
 		return &mono_defaults.object_class->byval_arg;
 
 	default:
@@ -2945,6 +2953,52 @@ do_ldelem (VerifyContext *ctx, int opcode, int token)
 	set_stack_value (stack_push (ctx), type, FALSE);
 }
 
+/*FIXME handle arrays that are not 0-indexed*/
+static void
+do_stelem (VerifyContext *ctx, int opcode, int token)
+{
+	ILStackDesc *index, *array, *value;
+	MonoType *type;
+	if (!check_underflow (ctx, 3))
+		return;
+
+	if (opcode == CEE_STELEM_ANY) {
+		type = mono_type_get_full (ctx->image, token, ctx->generic_context);
+		if (!type) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Type (0x%08x) not found at 0x%04x", token, ctx->ip_offset));
+			return;
+		}
+	} else {
+		type = mono_type_from_opcode (opcode);
+	}
+	
+	value = stack_pop (ctx);
+	index = stack_pop (ctx);
+	array = stack_pop (ctx);
+
+	if (index->stype != TYPE_I4 && index->stype != TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Index type(%s) for stdelem.X is not an int or a native int at 0x%04x", type_names [UNMASK_TYPE (index->stype)], ctx->ip_offset));
+
+	if (!IS_NULL_LITERAL (array->stype)) {
+		if (array->stype != TYPE_COMPLEX || array->type->type != MONO_TYPE_SZARRAY) {
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type(%s) for stelem.X at 0x%04x", type_names [UNMASK_TYPE (array->stype)], ctx->ip_offset));
+		} else {
+			if (opcode == CEE_STELEM_REF) {
+				if (array->type->data.klass->valuetype)
+					CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type is not a reference type for stelem.ref 0x%04x", ctx->ip_offset));
+			} else if (!verify_type_compatibility_full (ctx, &array->type->data.klass->byval_arg, type, TRUE)) {
+					CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type on stack for stdelem.X at 0x%04x", ctx->ip_offset));
+			}
+		}
+	}
+
+	if (opcode == CEE_STELEM_REF) {
+		if (mono_class_from_mono_type(value->type)->valuetype)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value is not a reference type for stelem.ref 0x%04x", ctx->ip_offset));
+	} else if (opcode != CEE_STELEM_REF && !verify_type_compatibility_full (ctx, type, mono_type_from_stack_slot (value), FALSE)) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value on stack for stdelem.X at 0x%04x", ctx->ip_offset));
+	}
+}
 
 /*Merge the stacks and perform compat checks*/
 static void
@@ -3592,9 +3646,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_STELEM_R4:
 		case CEE_STELEM_R8:
 		case CEE_STELEM_REF:
-			if (!check_underflow (&ctx, 3))
-				break;
-			ctx.eval.size -= 3;
+			do_stelem (&ctx, *ip, 0);
 			++ip;
 			break;
 
@@ -3604,6 +3656,10 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_STELEM_ANY:
+			do_stelem (&ctx, *ip, read32 (ip + 1));
+			ip += 5;
+			break;
+			
 		case CEE_UNBOX_ANY:
 		case CEE_UNUSED5:
 		case CEE_UNUSED6:
