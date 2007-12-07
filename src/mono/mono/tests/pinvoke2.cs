@@ -771,7 +771,7 @@ public class Tests {
 			return 1;
 	}
 
-	public static int test_0_library_not_found () {
+	public static int test_0_entry_point_not_found () {
 
 		try {
 			mono_entry_point_not_found ();
@@ -783,7 +783,7 @@ public class Tests {
 		return 0;
 	}
 
-	public static int test_0_entry_point_not_found () {
+	public static int test_0_library_not_found () {
 
 		try {
 			mono_library_not_found ();
