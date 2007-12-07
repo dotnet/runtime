@@ -296,22 +296,16 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
  * mono_generic_class_init_trampoline:
  *
  * This method calls mono_runtime_class_init () to run the static constructor
- * for the type, then patches the caller code so it is not called again.
+ * for the type.
  */
 void
-mono_generic_class_init_trampoline (gssize *regs, guint8 *code, gpointer dummy, guint8 *tramp)
+mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
-#ifdef MONO_ARCH_VTABLE_REG
-	MonoVTable *vtable = mono_arch_find_vtable ((gpointer*)regs, code);
-
-	//g_print ("generic class init for class %s.%s\n", vtable->klass->name_space, vtable->klass->name);
+	g_print ("generic class init for class %s.%s\n", vtable->klass->name_space, vtable->klass->name);
 
 	mono_runtime_class_init (vtable);
 
 	//g_print ("done initing generic\n");
-#else
-	g_assert_not_reached ();
-#endif
 }
 
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE

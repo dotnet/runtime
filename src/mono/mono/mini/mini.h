@@ -964,7 +964,7 @@ gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token
 gpointer          mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 										   guint8* tramp) MONO_INTERNAL;
 void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
-void              mono_generic_class_init_trampoline (gssize *regs, guint8 *code, gpointer dummy, guint8 *tramp) MONO_INTERNAL;
+void              mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (void) MONO_INTERNAL;
 gpointer          mono_debugger_create_notification_function (void) MONO_INTERNAL;
@@ -1063,7 +1063,6 @@ gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineTy
 void        mono_arch_emit_imt_argument         (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
 MonoMethod* mono_arch_find_imt_method           (gpointer *regs, guint8 *code) MONO_INTERNAL;
 MonoObject* mono_arch_find_this_argument        (gpointer *regs, MonoMethod *method) MONO_INTERNAL;
-MonoVTable* mono_arch_find_vtable		(gpointer *regs, guint8 *code) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count) MONO_INTERNAL;
 
 /* Exception handling */

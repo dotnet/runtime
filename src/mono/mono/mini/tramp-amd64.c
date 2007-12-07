@@ -202,18 +202,16 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, 8);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
-	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
-		offset += 8;
-		tramp_offset = - offset;
+	offset += 8;
+	tramp_offset = - offset;
 
-		offset += 8;
-		method_offset = - offset;
+	offset += 8;
+	method_offset = - offset;
 
-		/* Compute the trampoline address from the return address */
-		/* 5 = length of amd64_call_membase () */
-		amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 5);
-		amd64_mov_membase_reg (code, AMD64_RBP, tramp_offset, AMD64_R11, 8);
-	}
+	/* Compute the trampoline address from the return address */
+	/* 5 = length of amd64_call_membase () */
+	amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 5);
+	amd64_mov_membase_reg (code, AMD64_RBP, tramp_offset, AMD64_R11, 8);
 
 	/* Save all registers */
 
@@ -243,6 +241,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 6, 8);
 		mono_amd64_patch (br [1], code);
 		amd64_mov_membase_reg (code, AMD64_RBP, method_offset, AMD64_R11, 8);
+	} else {
+		amd64_mov_membase_reg (code, AMD64_RBP, method_offset, MONO_ARCH_VTABLE_REG, 8);
 	}
 
 	/* Save LMF begin */
@@ -263,11 +263,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, 8);
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, framesize + 16);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_R11, 8);
-	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
-		/* Save method */
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, method_offset, 8);
-		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), AMD64_R11, 8);
-	}
+	/* Save method */
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, method_offset, 8);
+	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), AMD64_R11, 8);
 	/* Save callee saved regs */
 #ifdef PLATFORM_WIN32
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), AMD64_RDI, 8);
@@ -302,11 +300,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	else
 		amd64_mov_reg_imm (code, AMD64_ARG_REG2, 0);
 
-	/* Arg3 is the method ptr / dummy */
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
-		amd64_mov_reg_imm (code, AMD64_ARG_REG3, 0);
-	else
-		amd64_mov_reg_membase (code, AMD64_ARG_REG3, AMD64_RBP, method_offset, 8);
+	/* Arg3 is the method/vtable ptr */
+	amd64_mov_reg_membase (code, AMD64_ARG_REG3, AMD64_RBP, method_offset, 8);
 
 	/* Arg4 is the trampoline address */
 	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)

@@ -192,13 +192,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 */
 
 	/* If this is a generic class init the argument is not on the
-	 * stack yet but in MONO_ARCH_VTABLE_REG and is accessed by
-	 * the callee via the register array.  As a dummy argument we
-	 * pass it NULL, which we push here, and then everything that
-	 * follows works the same way.
+	 * stack yet but in MONO_ARCH_VTABLE_REG.
 	 */
 	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
-		x86_push_imm (buf, 0);
+		x86_push_reg (buf, MONO_ARCH_VTABLE_REG);
 
 	/* Put all registers into an array on the stack
 	 * If this code is changed, make sure to update the offset value in
