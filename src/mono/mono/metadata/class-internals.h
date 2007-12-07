@@ -574,6 +574,12 @@ typedef struct {
 	void       *handle;
 } MonoHandleRef;
 
+enum {
+	MONO_GENERIC_SHARING_NONE,
+	MONO_GENERIC_SHARING_CORLIB,
+	MONO_GENERIC_SHARING_ALL
+};
+
 extern MonoStats mono_stats MONO_INTERNAL;
 
 typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
@@ -885,6 +891,9 @@ mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass) MONO_IN
 
 MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type) MONO_INTERNAL;
+
+gboolean
+mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 

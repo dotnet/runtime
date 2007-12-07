@@ -6391,3 +6391,48 @@ mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
 {
 	return gklass->context.class_inst == gklass->container_class->generic_container->context.class_inst;
 }
+
+/*
+ * mono_class_generic_sharing_enabled:
+ * @class: a class
+ *
+ * Returns whether generic sharing is enabled for class.
+ *
+ * This is a stop-gap measure to slowly introduce generic sharing
+ * until we have all the issues sorted out, at which time this
+ * function will disappear and generic sharing will always be enabled.
+ */
+gboolean
+mono_class_generic_sharing_enabled (MonoClass *class)
+{
+	static int generic_sharing = MONO_GENERIC_SHARING_CORLIB;
+	static gboolean inited = FALSE;
+
+	if (!inited) {
+		const char *option;
+
+		if ((option = g_getenv ("MONO_GENERIC_SHARING"))) {
+			if (strcmp (option, "corlib") == 0)
+				generic_sharing = MONO_GENERIC_SHARING_CORLIB;
+			else if (strcmp (option, "all") == 0)
+				generic_sharing = MONO_GENERIC_SHARING_ALL;
+			else if (strcmp (option, "none") == 0)
+				generic_sharing = MONO_GENERIC_SHARING_NONE;
+			else
+				g_warning ("Unknown generic sharing option `%s'.", option);
+		}
+
+		inited = TRUE;
+	}
+
+	switch (generic_sharing) {
+	case MONO_GENERIC_SHARING_NONE:
+		return FALSE;
+	case MONO_GENERIC_SHARING_ALL:
+		return TRUE;
+	case MONO_GENERIC_SHARING_CORLIB :
+		return class->image == mono_defaults.corlib;
+	default:
+		g_assert_not_reached ();
+	}
+}

@@ -11098,9 +11098,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
  
 	if (compile_aot)
 		/* We are passed the original generic method definition */
-		try_generic_shared = (opts & MONO_OPT_GSHARED) && (method->generic_container || method->klass->generic_container);
+		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
+			(opts & MONO_OPT_GSHARED) && (method->generic_container || method->klass->generic_container);
 	else
-		try_generic_shared = (opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method);
+		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
+			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method);
 
 	if (opts & MONO_OPT_GSHARED) {
 		if (try_generic_shared)

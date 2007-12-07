@@ -1600,7 +1600,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	}
 
-	if (class->generic_class)
+	if (class->generic_class && mono_class_generic_sharing_enabled (class))
 		mono_class_setup_runtime_generic_context (class, domain);
 
 	mono_domain_unlock (domain);
