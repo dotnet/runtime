@@ -301,6 +301,7 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
 void
 mono_generic_class_init_trampoline (gssize *regs, guint8 *code, gpointer dummy, guint8 *tramp)
 {
+#ifdef MONO_ARCH_VTABLE_REG
 	MonoVTable *vtable = mono_arch_find_vtable ((gpointer*)regs, code);
 
 	//g_print ("generic class init for class %s.%s\n", vtable->klass->name_space, vtable->klass->name);
@@ -308,6 +309,9 @@ mono_generic_class_init_trampoline (gssize *regs, guint8 *code, gpointer dummy, 
 	mono_runtime_class_init (vtable);
 
 	//g_print ("done initing generic\n");
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
