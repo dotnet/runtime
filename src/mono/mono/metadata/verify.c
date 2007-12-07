@@ -2905,12 +2905,22 @@ do_ldelema (VerifyContext *ctx, int klass_token)
 /*FIXME handle arrays that are not 0-indexed*/
 /*FIXME handle readonly prefix and CMMP*/
 static void
-do_ldelem (VerifyContext *ctx, int opcode)
+do_ldelem (VerifyContext *ctx, int opcode, int token)
 {
 	ILStackDesc *index, *array;
-	MonoType *type = mono_type_from_opcode (opcode);
+	MonoType *type;
 	if (!check_underflow (ctx, 2))
 		return;
+
+	if (opcode == CEE_LDELEM_ANY) {
+		type = mono_type_get_full (ctx->image, token, ctx->generic_context);
+		if (!type) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Type (0x%08x) not found at 0x%04x", token, ctx->ip_offset));
+			return;
+		}
+	} else {
+		type = mono_type_from_opcode (opcode);
+	}
 
 	index = stack_pop (ctx);
 	array = stack_pop (ctx);
@@ -2925,6 +2935,7 @@ do_ldelem (VerifyContext *ctx, int opcode)
 			if (opcode == CEE_LDELEM_REF) {
 				if (array->type->data.klass->valuetype)
 					CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type is not a reference type for ldelem.ref 0x%04x", ctx->ip_offset));
+				type = &array->type->data.klass->byval_arg;
 			} else if (!verify_type_compatibility_full (ctx, type, &array->type->data.klass->byval_arg, TRUE)) {
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type on stack for ldelem.X at 0x%04x", ctx->ip_offset));
 			}
@@ -3569,7 +3580,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_LDELEM_R4:
 		case CEE_LDELEM_R8:
 		case CEE_LDELEM_REF:
-			do_ldelem (&ctx, *ip);
+			do_ldelem (&ctx, *ip, 0);
 			++ip;
 			break;
 
@@ -3586,7 +3597,12 @@ mono_method_verify (MonoMethod *method, int level)
 			ctx.eval.size -= 3;
 			++ip;
 			break;
+
 		case CEE_LDELEM_ANY:
+			do_ldelem (&ctx, *ip, read32 (ip + 1));
+			ip += 5;
+			break;
+
 		case CEE_STELEM_ANY:
 		case CEE_UNBOX_ANY:
 		case CEE_UNUSED5:
