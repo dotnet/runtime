@@ -965,6 +965,7 @@ gpointer          mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *t
 										   guint8* tramp) MONO_INTERNAL;
 void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
 void              mono_generic_class_init_trampoline (gssize *regs, guint8 *code, gpointer dummy, guint8 *tramp) MONO_INTERNAL;
+gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (void) MONO_INTERNAL;
 gpointer          mono_debugger_create_notification_function (void) MONO_INTERNAL;
 

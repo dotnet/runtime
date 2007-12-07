@@ -314,19 +314,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	else
 		amd64_mov_reg_membase (code, AMD64_ARG_REG4, AMD64_RBP, tramp_offset, 8);
 
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		tramp = (guint8*)mono_class_init_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
-		tramp = (guint8*)mono_generic_class_init_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_AOT)
-		tramp = (guint8*)mono_aot_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_AOT_PLT)
-		tramp = (guint8*)mono_aot_plt_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
-		tramp = (guint8*)mono_delegate_trampoline;
-	else
-		tramp = (guint8*)mono_magic_trampoline;
-
+	tramp = mono_get_trampoline_func (tramp_type);
 	amd64_mov_reg_imm (code, AMD64_RAX, tramp);
 	amd64_call_reg (code, AMD64_RAX);
 

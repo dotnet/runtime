@@ -259,16 +259,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	constants = (gpointer*)buf;
 	constants [0] = mono_get_lmf_addr;
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		constants [1] = mono_class_init_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_AOT)
-		constants [1] = mono_aot_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_AOT_PLT)
-		constants [1] = mono_aot_plt_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
-		constants [1] = mono_delegate_trampoline;
-	else
-		constants [1] = mono_magic_trampoline;
+	constants [1] = mono_get_trampoline_func (tramp_type);
 
 	/* backpatch by emitting the missing instructions skipped above */
 	ARM_LDR_IMM (load_get_lmf_addr, ARMREG_R0, ARMREG_PC, (buf - load_get_lmf_addr - 8));

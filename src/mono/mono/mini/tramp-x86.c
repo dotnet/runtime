@@ -181,7 +181,7 @@ mono_arch_nullify_plt_entry (guint8 *code)
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
-	guint8 *buf, *code;
+	guint8 *buf, *code, *tramp;
 	int pushed_args;
 
 	code = buf = mono_global_codeman_reserve (256);
@@ -306,18 +306,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	x86_breakpoint (buf);*/
 #endif
 
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		x86_call_code (buf, mono_class_init_trampoline);
-	else if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
-		x86_call_code (buf, mono_generic_class_init_trampoline);
-	else if (tramp_type == MONO_TRAMPOLINE_AOT)
-		x86_call_code (buf, mono_aot_trampoline);
-	else if (tramp_type == MONO_TRAMPOLINE_AOT_PLT)
-		x86_call_code (buf, mono_aot_plt_trampoline);
-	else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
-		x86_call_code (buf, mono_delegate_trampoline);
-	else
-		x86_call_code (buf, mono_magic_trampoline);
+	tramp = mono_get_trampoline_func (tramp_type);
+	x86_call_code (tramp);
 
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4*4);
 

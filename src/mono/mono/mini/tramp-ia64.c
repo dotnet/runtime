@@ -225,8 +225,6 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	ia64_codegen_init (code, buf);
 
-	/* FIXME: Save/restore lmf */
-
 	/* Stacked Registers */
 	in0 = 32;
 	local0 = in0 + 8;
@@ -317,16 +315,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* FIXME: */
 	ia64_mov (code, o3, 0);
 
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		tramp = (guint8*)mono_class_init_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_AOT)
-		tramp = (guint8*)mono_aot_trampoline;
-	/*
-	else if (tramp_type == MONO_TRAMPOLINE_DELEGATE)
-		tramp = (guint8*)mono_delegate_trampoline;
-	*/
-	else
-		tramp = (guint8*)mono_magic_trampoline;
+	tramp = mono_get_trampoline_func (tramp_type);
 
 	/* Call the trampoline using an indirect call */
 	ia64_movl (code, l0, tramp);

@@ -383,4 +383,37 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 
 #endif
 
+/*
+ * mono_get_trampoline_func:
+ *
+ *   Return the C function which needs to be called by the generic trampoline of type
+ * TRAMP_TYPE.
+ */
+gconstpointer
+mono_get_trampoline_func (MonoTrampolineType tramp_type)
+{
+	switch (tramp_type) {
+	case MONO_TRAMPOLINE_GENERIC:
+	case MONO_TRAMPOLINE_JUMP:
+		return mono_magic_trampoline;
+	case MONO_TRAMPOLINE_CLASS_INIT:
+		return mono_class_init_trampoline;
+	case MONO_TRAMPOLINE_GENERIC_CLASS_INIT:
+		return mono_generic_class_init_trampoline;
+#ifdef MONO_ARCH_AOT_SUPPORTED
+	case MONO_TRAMPOLINE_AOT:
+		return mono_aot_trampoline;
+	case MONO_TRAMPOLINE_AOT_PLT:
+		return mono_aot_plt_trampoline;
+#endif
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+	case MONO_TRAMPOLINE_DELEGATE:
+		return mono_delegate_trampoline;
+#endif
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
 

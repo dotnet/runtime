@@ -163,12 +163,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		}
 	}
 
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
-		tramp_addr = &mono_class_init_trampoline;
-	else if (tramp_type == MONO_TRAMPOLINE_AOT)
-		tramp_addr = mono_aot_trampoline;
-	else
-		tramp_addr = &mono_magic_trampoline;
+	tramp_addr = mono_get_trampoline_func (tramp_type);
 	sparc_ldi_imm (code, sparc_sp, MONO_SPARC_STACK_BIAS + 200, sparc_o2);
 	/* pass address of register table as third argument */
 	sparc_add_imm (code, FALSE, sparc_sp, regs_offset, sparc_o0);
