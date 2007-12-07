@@ -190,6 +190,16 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * and it is stored at: esp + pushed_args * sizeof (gpointer)
 	 * the ret address is at: esp + (pushed_args + 1) * sizeof (gpointer)
 	 */
+
+	/* If this is a generic class init the argument is not on the
+	 * stack yet but in MONO_ARCH_VTABLE_REG and is accessed by
+	 * the callee via the register array.  As a dummy argument we
+	 * pass it NULL, which we push here, and then everything that
+	 * follows works the same way.
+	 */
+	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
+		x86_push_imm (buf, 0);
+
 	/* Put all registers into an array on the stack
 	 * If this code is changed, make sure to update the offset value in
 	 * mono_arch_find_this_argument () in mini-x86.c.
@@ -298,6 +308,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
 		x86_call_code (buf, mono_class_init_trampoline);
+	else if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
+		x86_call_code (buf, mono_generic_class_init_trampoline);
 	else if (tramp_type == MONO_TRAMPOLINE_AOT)
 		x86_call_code (buf, mono_aot_trampoline);
 	else if (tramp_type == MONO_TRAMPOLINE_AOT_PLT)
@@ -338,7 +350,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Pop saved reg array + stack align + method ptr */
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 10 * 4);
 
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT || tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
 		x86_ret (buf);
 	else
 		/* call the compiled method */

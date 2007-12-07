@@ -4371,6 +4371,12 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
 }
 #endif
 
+MonoVTable*
+mono_arch_find_vtable (gpointer *regs, guint8 *code)
+{
+	return (MonoVTable*) regs [MONO_ARCH_VTABLE_REG];
+}
+
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {

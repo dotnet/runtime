@@ -716,7 +716,8 @@ mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **
 	case OP_VCALL:
 	case OP_VOIDCALL_REG:
 	case OP_VOIDCALLVIRT:
-	case OP_VOIDCALL: {
+	case OP_VOIDCALL:
+	case OP_TRAMPCALL_VTABLE: {
 		MonoCallInst *call = (MonoCallInst *)tree;
 		MonoMethodSignature *sig = call->signature;
 		int i, byref = FALSE;

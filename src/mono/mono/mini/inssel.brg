@@ -921,6 +921,23 @@ stmt: OP_VCALL_REG (reg, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+stmt: OP_TRAMPCALL_VTABLE (reg) {
+	#ifdef MONO_ARCH_VTABLE_REG
+		MonoCallInst *call = (MonoCallInst*)tree;
+		int vtable_reg = mono_regstate_next_int (s->rs);
+
+		MONO_EMIT_NEW_UNALU (s, OP_MOVE, vtable_reg, state->left->reg1);
+
+		call->inst.opcode = OP_VOIDCALL;
+
+		mono_call_inst_add_outarg_reg (s, call, vtable_reg, MONO_ARCH_VTABLE_REG, FALSE);
+
+		mono_bblock_add_inst (s->cbb, &call->inst);
+	#else
+		g_assert_not_reached ();
+	#endif
+}
+
 stmt: OP_SAVE_LMF,
 stmt: OP_RESTORE_LMF {
 	mono_bblock_add_inst (s->cbb, tree);

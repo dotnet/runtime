@@ -152,6 +152,7 @@ handle_store_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, Mon
 
 /* helper methods signature */
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
+static MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
 static MonoMethodSignature *helper_sig_domain_get = NULL;
 
 static guint32 default_opt = 0;
@@ -6744,6 +6745,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STSFLD: {
 			MonoClassField *field;
 			gpointer addr = NULL;
+			gboolean shared_access = FALSE;
+			int relation;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -6759,8 +6762,32 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
 				FIELD_ACCESS_FAILURE;
 
-			if (cfg->generic_sharing_context && mono_class_check_context_used (klass))
-				GENERIC_SHARING_FAILURE (*ip);
+			/*
+			 * We can only support shared generic static
+			 * field access on architectures where the
+			 * trampoline code has been extended to handle
+			 * the generic class init.
+			 */
+#ifndef MONO_ARCH_VTABLE_REG
+			GENERIC_SHARING_FAILURE (*ip);
+#endif
+
+			if (cfg->generic_sharing_context) {
+				int context_used = mono_class_check_context_used (klass);
+
+				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD ||
+						klass->valuetype)
+					GENERIC_SHARING_FAILURE (*ip);
+
+				if (context_used) {
+					relation = mono_class_generic_class_relation (klass, method->klass, generic_context, NULL);
+
+					if (!(method->flags & METHOD_ATTRIBUTE_STATIC) /*&& relation != MINI_GENERIC_CLASS_RELATION_OTHER*/)
+						shared_access = TRUE;
+					else
+						GENERIC_SHARING_FAILURE (*ip);
+				}
+			}
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
 
@@ -6777,7 +6804,70 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
 			mono_domain_unlock (cfg->domain);
 
-			if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
+			if (shared_access) {
+				MonoInst *this, *rgctx, *static_data;
+
+				/*
+				g_print ("sharing static field access in %s.%s.%s - depth %d offset %d\n",
+					method->klass->name_space, method->klass->name, method->name,
+					depth, field->offset);
+				*/
+
+				if (mono_class_needs_cctor_run (klass, method)) {
+					MonoMethodSignature *sig = helper_sig_generic_class_init_trampoline;
+					MonoCallInst *call;
+					MonoInst *this, *vtable;
+
+					NEW_ARGLOAD (cfg, this, 0);
+
+					if (relation == MINI_GENERIC_CLASS_RELATION_SELF) {
+						MONO_INST_NEW (cfg, vtable, CEE_LDIND_I);
+						vtable->cil_code = ip;
+						vtable->inst_left = this;
+						vtable->type = STACK_PTR;
+						vtable->klass = klass;
+					} else {
+						MonoInst *rgctx = get_runtime_generic_context_from_this (cfg, this, ip);
+
+						vtable = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+							token, generic_context, rgctx, MINI_RGCTX_VTABLE, ip);
+					}
+
+					call = mono_emit_call_args (cfg, bblock, sig, NULL, FALSE, FALSE, ip, FALSE);
+					call->inst.opcode = OP_TRAMPCALL_VTABLE;
+					call->fptr = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+
+					call->inst.inst_left = vtable;
+
+					mono_spill_call (cfg, bblock, call, sig, FALSE, ip, FALSE);
+				}
+
+				/*
+				 * The pointer we're computing here is
+				 *
+				 *   super_info.static_data + field->offset
+				 */
+
+				NEW_ARGLOAD (cfg, this, 0);
+				rgctx = get_runtime_generic_context_from_this (cfg, this, ip);
+				static_data = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+					token, generic_context, rgctx, MINI_RGCTX_STATIC_DATA, ip);
+
+				if (field->offset == 0) {
+					ins = static_data;
+				} else {
+					MonoInst *field_offset;
+
+					NEW_ICONST (cfg, field_offset, field->offset);
+
+					MONO_INST_NEW (cfg, ins, OP_PADD);
+					ins->cil_code = ip;
+					ins->inst_left = static_data;
+					ins->inst_right = field_offset;
+					ins->type = STACK_PTR;
+					ins->klass = klass;
+				}
+			} else if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
 				int temp;
 				MonoInst *iargs [2];
 				MonoInst *domain_var;
@@ -6859,7 +6949,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
-				if (!((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
+				if (!shared_access && !((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
 				    vtable->initialized && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY)) {
 					gpointer addr = (char*)vtable->data + field->offset;
 					int ro_type = field->type->type;
@@ -8497,7 +8587,8 @@ mono_print_tree (MonoInst *tree) {
 	case OP_VCALL:
 	case OP_VCALLVIRT:
 	case OP_VOIDCALL:
-	case OP_VOIDCALLVIRT: {
+	case OP_VOIDCALLVIRT:
+	case OP_TRAMPCALL_VTABLE: {
 		MonoCallInst *call = (MonoCallInst*)tree;
 		if (call->method)
 			printf ("[%s]", call->method->name);
@@ -8589,6 +8680,7 @@ create_helper_signature (void)
 {
 	helper_sig_domain_get = mono_create_icall_signature ("ptr");
 	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
+	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
 }
 
 gconstpointer
@@ -8637,6 +8729,7 @@ mono_init_trampolines (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
 	mono_trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 	mono_trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+ 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
 #ifdef MONO_ARCH_AOT_SUPPORTED
 	mono_trampoline_code [MONO_TRAMPOLINE_AOT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT);
 	mono_trampoline_code [MONO_TRAMPOLINE_AOT_PLT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT_PLT);
@@ -8667,6 +8760,8 @@ gpointer
 mono_create_class_init_trampoline (MonoVTable *vtable)
 {
 	gpointer code, ptr;
+
+	g_assert (!vtable->klass->generic_container);
 
 	/* previously created trampoline code */
 	mono_domain_lock (vtable->domain);
