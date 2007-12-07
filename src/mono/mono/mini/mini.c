@@ -6223,6 +6223,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * will be transformed into a normal call there.
 					 */
 				} else {
+					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
+					if (mini_field_access_needs_cctor_run (cfg, method, vtable) && !(g_slist_find (class_inits, vtable))) {
+						guint8 *tramp = mono_create_class_init_trampoline (vtable);
+						mono_emit_native_call (cfg, bblock, tramp, 
+											   helper_sig_class_init_trampoline,
+											   NULL, ip, FALSE, FALSE);
+						if (cfg->verbose_level > 2)
+							g_print ("class %s.%s needs init call for ctor\n", klass->name_space, klass->name);
+						class_inits = g_slist_prepend (class_inits, vtable);
+					}
 					temp = handle_alloc (cfg, bblock, cmethod->klass, FALSE, ip);
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				}
