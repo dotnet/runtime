@@ -307,7 +307,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 #endif
 
 	tramp = mono_get_trampoline_func (tramp_type);
-	x86_call_code (tramp);
+	x86_call_code (buf, tramp);
 
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4*4);
 
