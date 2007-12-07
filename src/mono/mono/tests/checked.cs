@@ -25,7 +25,7 @@ namespace test {
 
 
 			if (!exception)
-				return -1;
+				return 1;
 
 			exception = false;
 
@@ -37,12 +37,12 @@ namespace test {
 					i = (int)a;
 				}
 			} catch (Exception) {
-				return -2;
+				return 2;
 			}
 
 
 			if (i != 100000)
-				return -3;
+				return 3;
 		
 			exception = false;
 
@@ -78,7 +78,7 @@ namespace test {
 
 
 			if (!exception)
-				return -4;
+				return 4;
 
 			a  = 1e5f;
 			try {
@@ -88,11 +88,11 @@ namespace test {
 				}
 			} 
 			catch (Exception) {
-				return -5;
+				return 5;
 			}
 
 			if (ui != 100000)
-				return -6;
+				return 6;
 
 			// Check mul.ovf
 			checked {
@@ -112,7 +112,7 @@ namespace test {
 
 				for (int j = 0; j < cases.Length; ++j)
 					if (cases [j][0] * cases [j][1] != cases [j][2])
-						return -7 - j;
+						return 7 + j;
 			}
 
 			checked {
@@ -121,47 +121,47 @@ namespace test {
 
 				j = k = 0;
 				if (j * k != 0)
-					return -7;
+					return 20;
 
 				j = -5;
 				k = 0;
 				if (j * k != 0)
-					return -8;
+					return 21;
 
 				j = 0;
 				k = -5;
 				if (j * k != 0)
-					return -9;
+					return 22;
 
 				j = 3;
 				k = -5;
 				if (j * k != -15)
-					return -10;
+					return 23;
 
 				j = 3;
 				k = 5;
 				if (j * k != 15)
-					return -11;
+					return 24;
 
 				j = -3;
 				k = -5;
 				if (j * k != 15)
-					return -12;
+					return 25;
 
 				j = -3;
 				k = 5;
 				if (j * k != -15)
-					return -13;
+					return 26;
 
 				j = -1;
 				k = 32767;
 				if (j * k != -32767)
-					return -14;
+					return 27;
 				
 				j = 32767;
 				k = -1;
 				if (j * k != -32767)
-					return -15;
+					return 28;
 			}
 
 			checked {
@@ -180,7 +180,7 @@ namespace test {
 
 				for (int j = 0; j < cases.Length; ++j)
 					if (cases [j][0] * cases [j][1] != cases [j][2])
-						return -15 - j;
+						return 29 + j;
 			}
 				
 			Console.WriteLine("test-ok");
