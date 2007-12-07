@@ -322,7 +322,8 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	MonoDelegate *delegate;
 	MonoJitInfo *ji;
 	gpointer iter;
-	MonoMethod *invoke, *method, *m;
+	MonoMethod *invoke, *m;
+	MonoMethod *method = NULL;
 	gboolean multicast, callvirt;
 
 	/* Find the Invoke method */
