@@ -3083,7 +3083,53 @@ done
 
 
 
+#cast class and isins tests
 
+#empty stack
+./make_cast_test.sh cast_empty_stack invalid "int32" "nop" "castclass object"
+./make_cast_test.sh isinst_empty_stack invalid "int32"  "nop" "isinst object"
+
+#type
+I=1
+for OBJ in int32 int64 float32 float64 "int32\&" "valuetype MyStruct" "int32*" "typedref" "method int32 *(int32)"
+do
+	./make_cast_test.sh cast_object_${I} unverifiable "$OBJ" "ldloc.0" "castclass object"
+	./make_cast_test.sh isinst_object_${I} unverifiable "$OBJ" "ldloc.0" "isinst object"
+	I=`expr $I + 1`
+done
+
+for OBJ in "int32[]" "string"
+do
+	./make_cast_test.sh cast_object_${I} valid "$OBJ" "ldloc.0" "castclass object"
+	./make_cast_test.sh isinst_object_${I} valid "$OBJ" "ldloc.0" "isinst object"
+	I=`expr $I + 1`
+done
+#token
+
+I=1
+for TOKEN in int32 int64 float32 float64 "valuetype MyStruct" "int32*" "typedref" "int32[]" "string" "method int32 *(int32)"
+do
+	./make_cast_test.sh cast_token_${I} valid "object" "ldloc.0" "castclass $TOKEN"
+	./make_cast_test.sh isinst_token_${I} valid "object" "ldloc.0" "isinst $TOKEN"
+	I=`expr $I + 1`
+done
+
+for TOKEN in "int32\&"
+do
+	./make_cast_test.sh cast_token_${I} invalid "object" "ldloc.0" "castclass $TOKEN"
+	./make_cast_test.sh isinst_token_${I} invalid "object" "ldloc.0" "isinst $TOKEN"
+	I=`expr $I + 1`
+done
+
+#object
+
+I=1
+for LOAD in "ldloc.0" "ldnull" 
+do
+	./make_cast_test.sh cast_good_obj_${I} valid "object" "$LOAD" "castclass object"
+	./make_cast_test.sh isinst_good_obj_${I} valid "object" "$LOAD" "isinst object"
+	I=`expr $I + 1`
+done
 
 
 
