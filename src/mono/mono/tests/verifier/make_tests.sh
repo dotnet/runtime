@@ -2865,3 +2865,12 @@ do
 done
 
 
+#adicional tests for ldelem
+I=1
+for ARR in "int8" "bool" "unsigned int8" "int16" "char" "unsigned int16" "int32" "unsigned int32" "native int" "native unsigned int" "int64" "unsigned int64" "float32" "float64" "object"
+do
+	./make_ldelem_test.sh ldelem_token_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem ${ARR}"
+	I=`expr $I + 1`
+done
+
+
