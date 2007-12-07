@@ -2725,6 +2725,43 @@ do_newobj (VerifyContext *ctx, int token)
 		set_stack_value (stack_push (ctx),  &method->klass->byval_arg, FALSE);
 }
 
+static void
+do_cast (VerifyContext *ctx, int token) {
+	ILStackDesc *value;
+	MonoType *type;
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	type = mono_type_get_full (ctx->image, token, ctx->generic_context);
+
+	if (!type) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Type (0x%08x) not found at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	if (type->byref) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid castclass type at 0x%04x",  ctx->ip_offset));
+		return;
+	}
+
+	value = stack_top (ctx);
+
+	if (IS_MANAGED_POINTER (value->stype))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value for checkast at 0x%04x", ctx->ip_offset));
+	else if (mono_class_from_mono_type (value->type)->valuetype)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Value cannot be a valuetype for checkast at 0x%04x", ctx->ip_offset));
+
+	switch (value->type->type) {
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_TYPEDBYREF: 
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value for checkast at 0x%04x", ctx->ip_offset));
+	}
+
+	set_stack_value (value, type, FALSE);
+}
+
 static MonoType *
 mono_type_from_opcode (int opcode) {
 	switch (opcode) {
@@ -3531,11 +3568,10 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_CASTCLASS:
 		case CEE_ISINST:
-			token = read32 (ip + 1);
-			if (!check_underflow (&ctx, 1))
-				break;
+			do_cast (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_UNUSED58:
 		case CEE_UNUSED1:
 			++ip; /* warn, error ? */
