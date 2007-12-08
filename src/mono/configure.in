@@ -300,7 +300,7 @@ fi
 
 AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
-AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h)
+AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h)
 
 AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
 if test x$have_zlib = xyes; then
@@ -1455,7 +1455,7 @@ if test x$platform_win32 = xno; then
 		AC_CHECK_LIB(attr, lsetxattr, XATTR_LIB="-lattr",)
 	)
 	AC_SUBST(XATTR_LIB)
-	
+
 	dnl *********************************
 	dnl *** Checks for Windows compilation ***
 	dnl *********************************

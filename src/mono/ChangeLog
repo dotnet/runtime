@@ -1,3 +1,7 @@
+2007-12-08  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add check for sys/mkdev.h.
+
 2007-12-05  Dick Porter  <dick@ximian.com>
 
 	* configure.in: Define PLATFORM_SOLARIS for solaris builds, needed
