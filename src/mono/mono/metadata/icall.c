@@ -6363,6 +6363,9 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 	method = rmethod->method;
 	klass = mono_class_from_mono_type (rtype->type);
 
+	if (MONO_CLASS_IS_INTERFACE (klass))
+		return NULL;
+
 	if (method->flags & METHOD_ATTRIBUTE_STATIC)
 		return NULL;
 
