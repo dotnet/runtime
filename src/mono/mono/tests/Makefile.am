@@ -215,6 +215,7 @@ TEST_CS_SRC=			\
 	bug-78653.cs		\
 	bug-78656.cs		\
 	bug-77127.cs		\
+	bug-323114.cs		\
 	bug-331958.cs		\
 	interlocked.cs		\
 	cross-domain.cs		\

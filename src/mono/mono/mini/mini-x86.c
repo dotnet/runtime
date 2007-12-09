@@ -3914,7 +3914,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			x86_mov_mem_reg (code, lmf_tls_offset, X86_ECX, 4);
 		} else {
 			/* Find a spare register */
-			switch (sig->ret->type) {
+			switch (mono_type_get_underlying_type (sig->ret)->type) {
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
 				prev_lmf_reg = X86_EDI;
