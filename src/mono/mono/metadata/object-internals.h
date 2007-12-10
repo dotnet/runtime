@@ -1102,7 +1102,7 @@ MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelp
 MonoReflectionMarshal* mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec) MONO_INTERNAL;
 
 gpointer
-mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context) MONO_INTERNAL;
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context) MONO_INTERNAL;
 
 gboolean
 mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass) MONO_INTERNAL;

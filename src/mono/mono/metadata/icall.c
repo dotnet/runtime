@@ -817,7 +817,6 @@ static void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor (MonoType *handle)
 {
 	MonoClass *klass;
-	MonoMethod *method;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -5149,7 +5148,7 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 	if (image->dynamic) {
 		if (type_args || method_args)
 			mono_raise_exception (mono_get_exception_not_implemented (NULL));
-		return mono_lookup_dynamic_token (image, token, NULL);
+		return mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
 	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {
@@ -5187,7 +5186,7 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 		if (type_args || method_args)
 			mono_raise_exception (mono_get_exception_not_implemented (NULL));
 		/* FIXME: validate memberref token type */
-		return mono_lookup_dynamic_token (image, token, NULL);
+		return mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
 	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {
@@ -5219,7 +5218,7 @@ ves_icall_System_Reflection_Module_ResolveStringToken (MonoImage *image, guint32
 	}
 
 	if (image->dynamic)
-		return mono_lookup_dynamic_token (image, token, NULL);
+		return mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
 
 	if ((index <= 0) || (index >= image->heap_us.size)) {
 		*error = ResolveTokenError_OutOfRange;
@@ -5252,7 +5251,7 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 		if (type_args || method_args)
 			mono_raise_exception (mono_get_exception_not_implemented (NULL));
 		/* FIXME: validate memberref token type */
-		return mono_lookup_dynamic_token (image, token, NULL);
+		return mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
 	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {

@@ -6678,7 +6678,9 @@ mono_reflection_get_token (MonoObject *obj)
 		token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 	} else if (strcmp (klass->name, "FieldBuilder") == 0) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)obj;
-		token = fb->table_idx | MONO_TOKEN_FIELD_DEF;
+
+		/* Call mono_image_create_token so the object gets added to the tokens hash table */
+		token = mono_image_create_token (((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image, obj, FALSE);
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;
@@ -9698,18 +9700,27 @@ mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb)
  * mono_reflection_lookup_dynamic_token:
  *
  * Finish the Builder object pointed to by TOKEN and return the corresponding
- * runtime structure. HANDLE_CLASS is set to the class required by 
- * mono_ldtoken.
+ * runtime structure. If HANDLE_CLASS is not NULL, it is set to the class required by 
+ * mono_ldtoken. If valid_token is TRUE, assert if it is not found in the token->object
+ * mapping table.
  */
 gpointer
-mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context)
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context)
 {
 	MonoDynamicImage *assembly = (MonoDynamicImage*)image;
 	MonoObject *obj;
+	MonoClass *klass;
 
 	obj = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
-	g_assert (obj);
+	if (!obj) {
+		if (valid_token)
+			g_assert_not_reached ();
+		else
+			return NULL;
+	}
 
+	if (!handle_class)
+		handle_class = &klass;
 	return resolve_object (image, obj, handle_class, context);
 }
 

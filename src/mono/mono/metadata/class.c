@@ -5209,7 +5209,7 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 {
 	if (image->dynamic) {
 		MonoClass *tmp_handle_class;
-		gpointer obj = mono_lookup_dynamic_token_class (image, token, &tmp_handle_class, context);
+		gpointer obj = mono_lookup_dynamic_token_class (image, token, TRUE, &tmp_handle_class, context);
 
 		g_assert (tmp_handle_class);
 		if (handle_class)
@@ -5299,13 +5299,13 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *
 {
 	MonoClass *handle_class;
 
-	return lookup_dynamic (image, token, &handle_class, context);
+	return lookup_dynamic (image, token, TRUE, &handle_class, context);
 }
 
 gpointer
-mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context)
+mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context)
 {
-	return lookup_dynamic (image, token, handle_class, context);
+	return lookup_dynamic (image, token, valid_token, handle_class, context);
 }
 
 static MonoGetCachedClassInfo get_cached_class_info = NULL;
