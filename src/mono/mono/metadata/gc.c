@@ -38,6 +38,8 @@ extern int __imp_GC_finalize_on_demand;
 
 static gboolean gc_disabled = FALSE;
 
+static gboolean finalizing_root_domain = FALSE;
+
 #define mono_finalizer_lock() EnterCriticalSection (&finalizer_mutex)
 #define mono_finalizer_unlock() LeaveCriticalSection (&finalizer_mutex)
 static CRITICAL_SECTION finalizer_mutex;
@@ -99,9 +101,10 @@ run_finalize (void *obj, void *data)
 			/* Avoid finalizing ourselves */
 			return;
 
-		if (t->threadpool_thread) {
-			/* Don't finalize threadpool threads - they're
-			   finalized when the threadpool shuts down. */
+		if (t->threadpool_thread && finalizing_root_domain) {
+			/* Don't finalize threadpool threads when
+			   shutting down - they're finalized when the
+			   threadpool shuts down. */
 			add_thread_to_finalize (t);
 			return;
 		}
@@ -269,6 +272,9 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	req = g_new0 (DomainFinalizationReq, 1);
 	req->domain = domain;
 	req->done_event = done_event;
+
+	if (domain == mono_get_root_domain ())
+		finalizing_root_domain = TRUE;
 	
 	mono_finalizer_lock ();
 
