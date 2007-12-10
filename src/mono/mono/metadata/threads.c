@@ -383,7 +383,11 @@ mono_hazard_pointer_get (void)
 {
 	MonoThread *current_thread = mono_thread_current ();
 
-	g_assert (current_thread && current_thread->small_id >= 0);
+	if (!(current_thread && current_thread->small_id >= 0)) {
+		static MonoThreadHazardPointers emerg_hazard_table;
+		g_warning ("Thread %p may have been prematurely finalized", current_thread);
+		return &emerg_hazard_table;
+	}
 
 	return &hazard_table [current_thread->small_id];
 }
