@@ -127,6 +127,8 @@ mono_arch_get_restore_context (void)
 	restore_regs_from_context (ARMREG_R0, ARMREG_R1, ARMREG_R2);
 	/* restore also the stack pointer, FIXME: handle sp != fp */
 	ARM_LDR_IMM (code, ARMREG_SP, ARMREG_R0, G_STRUCT_OFFSET (MonoContext, ebp));
+	ARM_LDR_IMM (code, ARMREG_FP, ARMREG_R0, G_STRUCT_OFFSET (MonoContext, esp));
+
 	/* jump to the saved IP */
 	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
 	/* never reached */
@@ -196,6 +198,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 
 	/*printf ("stack in throw: %p\n", esp);*/
 	MONO_CONTEXT_SET_BP (&ctx, esp);
+	MONO_CONTEXT_SET_SP (&ctx, esp);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
 	memcpy (&ctx.regs, int_regs, sizeof (gulong) * 8);
 	/* memcpy (&ctx.fregs, fp_regs, sizeof (double) * MONO_SAVED_FREGS); */
