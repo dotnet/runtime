@@ -869,8 +869,13 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		/* We use the loaded corlib */
 		if (!strcmp (aname.name, "mscorlib"))
 			reference = mono_assembly_load_full (&aname, image->assembly->basedir, &status, FALSE);
-		else
+		else {
 			reference = mono_assembly_loaded_full (&aname, TRUE);
+			if (!reference)
+				/* Try a postload search hook */
+				reference = mono_assembly_invoke_search_hook_internal (&aname, TRUE, TRUE);
+		}
+
 		/*
 		 * Here we must advice that the error was due to
 		 * a non loaded reference using the ReflectionOnly api
