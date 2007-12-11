@@ -3037,6 +3037,22 @@ do_stelem (VerifyContext *ctx, int opcode, int token)
 	}
 }
 
+static void
+do_throw (VerifyContext *ctx)
+{
+	ILStackDesc *exception;
+	if (!check_underflow (ctx, 1))
+		return;
+	exception = stack_pop (ctx);
+
+	if (!IS_NULL_LITERAL (exception->stype) && !(exception->stype == TYPE_COMPLEX && !mono_class_from_mono_type (exception->type)->valuetype))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type on stack for throw, expected reference type at 0x%04x", ctx->ip_offset));
+
+	/*The stack is left empty after a throw*/
+	ctx->eval.size = 0;
+}
+
+
 /*Merge the stacks and perform compat checks*/
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start) 
@@ -3580,12 +3596,10 @@ mono_method_verify (MonoMethod *method, int level)
 			do_unbox_value (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_THROW:
-			if (!check_underflow (&ctx, 1))
-				break;
-			stack_pop (&ctx);
+			do_throw (&ctx);
 			++ip;
-			start = 1;
 			break;
 
 		case CEE_LDFLD:
