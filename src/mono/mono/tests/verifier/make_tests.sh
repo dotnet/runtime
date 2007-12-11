@@ -3133,5 +3133,28 @@ done
 
 
 
+#throw tests
+
+#empty stack
+./make_throw_test.sh throw_empty_stack invalid int32 pop
+
+#null literal
+./make_throw_test.sh throw_null_literal valid int32 "pop\n\tldnull"
+
+#valid types
+I=1
+for TYPE in object string "[mscorlib]System.Exception" "int32[]" "ClassA" "class [mscorlib]System.IComparable\`1<int32>" "int32[,]"
+do
+	./make_throw_test.sh throw_ref_type_${I} valid "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#invalid types
+I=1
+for TYPE in "valuetype MyStruct" int32 int64 float32 float64 "native int" "int32*" "typedref" "object\&"
+do
+	./make_throw_test.sh throw_value_type_${I} unverifiable "${TYPE}"
+	I=`expr $I + 1`
+done
 
 
