@@ -6230,7 +6230,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 											   helper_sig_class_init_trampoline,
 											   NULL, ip, FALSE, FALSE);
 						if (cfg->verbose_level > 2)
-							g_print ("class %s.%s needs init call for ctor\n", klass->name_space, klass->name);
+							g_print ("class %s.%s needs init call for ctor\n", cmethod->klass->name_space, cmethod->klass->name);
 						class_inits = g_slist_prepend (class_inits, vtable);
 					}
 					temp = handle_alloc (cfg, bblock, cmethod->klass, FALSE, ip);
