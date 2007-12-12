@@ -517,6 +517,7 @@ setfreg: dest:f src1:f len:4
 setreg: dest:i src1:i len:4
 setregimm: dest:i len:20
 setret: dest:a src1:i len:4
+sext_i4: dest:i src1:i len:4
 shl: dest:i src1:i src2:i clob:s len:6
 shl_imm: dest:i src1:i len:8
 shr.un: dest:i src1:i src2:i clob:s len:6

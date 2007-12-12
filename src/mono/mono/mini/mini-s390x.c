@@ -3472,6 +3472,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case CEE_CONV_I:
 		case CEE_CONV_I8:
+		case OP_SEXT_I4:
 		case OP_MOVE:
 		case OP_SETREG: {
 			if (ins->dreg != ins->sreg1) {
