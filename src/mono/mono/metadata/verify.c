@@ -1068,7 +1068,8 @@ in_any_block (MonoMethodHeader *header, guint offset)
 			return 1;
 		if (MONO_OFFSET_IN_HANDLER (clause, offset))
 			return 1;
-		/* need to check filter ... */
+		if (MONO_OFFSET_IN_FILTER (clause, offset))
+			return 1;
 	}
 	return 0;
 }
@@ -1107,6 +1108,26 @@ is_correct_leave (MonoMethodHeader *header, guint offset, guint target)
 	}
 	return 1;
 }
+
+/*
+ * A rethrow can't happen outside of a catch handler.
+ */
+static int
+is_correct_rethrow (MonoMethodHeader *header, guint offset)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (MONO_OFFSET_IN_HANDLER (clause, offset))
+			return 1;
+		if (MONO_OFFSET_IN_FILTER (clause, offset))
+			return 1;
+	}
+	return 0;
+}
+
 
 static int
 can_merge_stack (ILCodeDesc *a, ILCodeDesc *b)
@@ -3169,6 +3190,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	for (i = 0; i < ctx.header->num_clauses; ++i) {
 		MonoExceptionClause *clause = ctx.header->clauses + i;
+		printf ("clause try %x len %x filter at %x handler at %x len %x\n", clause->try_offset, clause->try_len, clause->data.filter_offset, clause->handler_offset, clause->handler_len);
 		/* catch blocks and filter have the exception on the stack. */
 		/* must check boundaries for handler_offset and handler_start < handler_start*/
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
@@ -3979,6 +4001,8 @@ mono_method_verify (MonoMethod *method, int level)
 				ip += 2;
 				break;
 			case CEE_RETHROW:
+				if (!is_correct_rethrow (ctx.header, ip_offset))
+					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("rethrow must be used inside a catch handler at 0x%04x", ctx.ip_offset));
 				++ip;
 				break;
 			case CEE_UNUSED:

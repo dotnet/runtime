@@ -279,6 +279,8 @@ void mono_metadata_encode_value (guint32 value, char *bug, char **endbuf);
 	((clause)->try_offset <= (offset) && (offset) < ((clause)->try_offset + (clause)->try_len))
 #define MONO_OFFSET_IN_HANDLER(clause,offset) \
 	((clause)->handler_offset <= (offset) && (offset) < ((clause)->handler_offset + (clause)->handler_len))
+#define MONO_OFFSET_IN_FILTER(clause,offset) \
+	((clause)->flags == MONO_EXCEPTION_CLAUSE_FILTER && (clause)->data.filter_offset <= (offset) && (offset) < ((clause)->handler_offset))
 
 typedef struct {
 	guint32 flags;
