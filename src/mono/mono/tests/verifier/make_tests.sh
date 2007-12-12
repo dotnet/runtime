@@ -3158,7 +3158,7 @@ do
 done
 
 
-# Exception block branch tests (see 3.15)
+# Exception block branch tests (see 2.19)
 
 for I in {1..2};
 do
@@ -3170,4 +3170,24 @@ do
 	./make_rethrow_test.sh rethrow_from_catch_${I} valid ${I}
 done
 
+
+
+# endfinally / endfault
+
+for I in {1..7};
+do
+	./make_endfinally_test.sh endfinally_block_${I} invalid finally ${I}
+	./make_endfinally_test.sh endfault_block_${I} invalid fault ${I}
+done
+
+for I in {8..9};
+do
+	./make_endfinally_test.sh endfinally_block_${I} valid finally ${I}
+	./make_endfinally_test.sh endfault_block_${I} valid fault ${I}
+done
+
+#stack can have stuff and endfinally or endfault will just empty it
+
+./make_endfinally_test.sh endfinally_clean_stack valid finally 8 "ldc.i4.0"
+./make_endfinally_test.sh endfault_clean_stack valid fault 8 "ldc.i4.0"
 
