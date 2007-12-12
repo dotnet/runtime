@@ -3158,3 +3158,16 @@ do
 done
 
 
+# Exception block branch tests (see 3.15)
+
+for I in {1..2};
+do
+	./make_rethrow_test.sh rethrow_from_catch_${I} invalid ${I}
+done
+
+for I in {3..10};
+do
+	./make_rethrow_test.sh rethrow_from_catch_${I} valid ${I}
+done
+
+
