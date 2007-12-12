@@ -1128,6 +1128,23 @@ is_correct_rethrow (MonoMethodHeader *header, guint offset)
 	return 0;
 }
 
+/*
+ * An endfinally can't happen outside of a finally/fault handler.
+ */
+static int
+is_correct_endfinally (MonoMethodHeader *header, guint offset)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (MONO_OFFSET_IN_HANDLER (clause, offset) && (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT || clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY))
+			return 1;
+	}
+	return 0;
+}
+
 
 static int
 can_merge_stack (ILCodeDesc *a, ILCodeDesc *b)
@@ -3828,8 +3845,10 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			break;
 		case CEE_ENDFINALLY:
+			if (!is_correct_endfinally (ctx.header, ip_offset))
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("endfinally must be used inside a finally/fault handler at 0x%04x", ctx.ip_offset));
+			ctx.eval.size = 0;
 			++ip;
-			start = 1;
 			break;
 		case CEE_LEAVE:
 			target = ip + (gint32)read32(ip + 1) + 5;
@@ -4003,6 +4022,7 @@ mono_method_verify (MonoMethod *method, int level)
 			case CEE_RETHROW:
 				if (!is_correct_rethrow (ctx.header, ip_offset))
 					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("rethrow must be used inside a catch handler at 0x%04x", ctx.ip_offset));
+				ctx.eval.size = 0;
 				++ip;
 				break;
 			case CEE_UNUSED:
