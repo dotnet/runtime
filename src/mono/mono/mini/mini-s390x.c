@@ -166,7 +166,7 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 
 #define S390_TRACE_STACK_SIZE (5*sizeof(gpointer)+4*sizeof(gdouble))
 
-#define MAX (a, b) ((a) > (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 /*========================= End of Defines =========================*/
 
