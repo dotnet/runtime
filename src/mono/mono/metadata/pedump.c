@@ -398,8 +398,8 @@ main (int argc, char *argv [])
 	MonoImage *image;
 	char *file = NULL;
 	char *flags = NULL;
-	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", NULL};
-	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, MONO_VERIFY_ALL + 1};
+	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", "fail-on-verifiable", "non-strict", NULL};
+	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, MONO_VERIFY_ALL + 1, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT};
 	int i;
 	
 	for (i = 1; i < argc; i++){

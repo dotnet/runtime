@@ -13,6 +13,22 @@ typedef enum {
 	MONO_VERIFY_WARNING,
 	MONO_VERIFY_CLS = 4,
 	MONO_VERIFY_ALL = 7,
+
+	/*OR it with other flags*/
+	
+	/* Abort the verification if the code is not verifiable.
+	 * The standard behavior is to abort if the code is not valid.
+	 * */
+	MONO_VERIFY_FAIL_FAST = 16,
+
+
+	/* Perform less verification of the code. This flag should be used
+	 * if one wants the verifier to be more compatible to the MS runtime.
+	 * Mind that this is not to be more compatible with MS peverify, but
+	 * with the runtime itself, that has a less strict verifier.
+	 */
+	MONO_VERIFY_NON_STRICT = 32,
+
 	/* Status signaling code that is not verifiable.*/
 	MONO_VERIFY_NOT_VERIFIABLE = 8
 } MonoVerifyStatus;

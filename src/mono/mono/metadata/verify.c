@@ -33,6 +33,9 @@ enum {
 #endif
 
 //////////////////////////////////////////////////////////////////
+#define IS_STRICT_MODE(ctx) (((ctx)->level & MONO_VERIFY_NON_STRICT) == 0)
+#define IS_FAIL_FAST_MODE(ctx) (((ctx)->level & MONO_VERIFY_FAIL_FAST) == MONO_VERIFY_FAIL_FAST)
+
 #define ADD_VERIFY_INFO(__ctx, __msg, __status)	\
 	do {	\
 		MonoVerifyInfo *vinfo = g_new (MonoVerifyInfo, 1);	\
@@ -52,6 +55,8 @@ enum {
 		if ((__ctx)->verifiable) { \
 			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_NOT_VERIFIABLE); \
 			(__ctx)->verifiable = 0; \
+			if (IS_FAIL_FAST_MODE (__ctx)) \
+				(__ctx)->valid = 0; \
 		} \
 	} while (0)
 
@@ -81,6 +86,7 @@ typedef struct {
 	int max_stack;
 	int verifiable;
 	int valid;
+	int level;
 
 	int code_size;
 	ILCodeDesc *code;
@@ -3180,6 +3186,7 @@ mono_method_verify (MonoMethod *method, int level)
 	ctx.max_args = ctx.signature->param_count + ctx.signature->hasthis;
 	ctx.max_stack = ctx.header->max_stack;
 	ctx.verifiable = ctx.valid = 1;
+	ctx.level = level;
 
 	ctx.code = g_new0 (ILCodeDesc, ctx.header->code_size);
 	ctx.code_size = ctx.header->code_size;
