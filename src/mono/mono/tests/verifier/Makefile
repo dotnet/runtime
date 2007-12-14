@@ -22,7 +22,6 @@ test: compile-stamp run-test
 
 run-test:
 	@for i in *.exe; do \
-		#echo $$i; \
 		TEST=`echo $$i | cut -d '.' -f 1`; \
 		RES=99; \
 		FIRST=`echo $$i | cut -d '_' -f 1`; \
@@ -38,11 +37,26 @@ run-test:
 		then \
 			RES=0; \
 		fi; \
-		../../metadata/pedump --verify error,warn,cls,code $$TEST.exe >/dev/null 2>/dev/null;\
-		R=$$?; \
-		if [ $$R != $$RES ]; \
+		if [ "$$FIRST" == "strict" ]; \
 		then \
-			echo "$$TEST failed expected $$RES but got $$R"; \
+			#in strict more it must fail under strict check and pass under non-strict check \
+			../../metadata/pedump --verify error,warn,cls,code $$TEST.exe >/dev/null 2>/dev/null; \
+			R1=$$?; \
+			../../metadata/pedump --verify error,warn,cls,code,non-strict $$TEST.exe >/dev/null 2>/dev/null; \
+			R2=$$?; \
+			if [ $$R1 != 2 ] && [ $$R1 != 3 ]; then \
+				echo "$$TEST is strict but did not fail under strict check, got $${R1} but expected 2 or 3"; \
+			fi \
+			#non-strict result \
+			if [ $$R2 != 0 ]; then \
+				echo "$$TEST is strict but did not pass under non-strict check, got $${R2} but expected 0"; \
+			fi \
+		else \
+			../../metadata/pedump --verify error,warn,cls,code $$TEST.exe >/dev/null 2>/dev/null; \
+			R=$$?; \
+			if [ $$R != $$RES ]; then \
+				echo "$$TEST failed expected $$RES but got $$R"; \
+			fi \
 		fi; \
 	done
 
