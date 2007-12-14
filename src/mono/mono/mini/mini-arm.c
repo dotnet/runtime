@@ -2629,7 +2629,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_BR_REG:
 			ARM_MOV_REG_REG (code, ARMREG_PC, ins->sreg1);
 			break;
-		case CEE_SWITCH:
+		case OP_SWITCH:
 			/* 
 			 * In the normal case we have:
 			 * 	ldr pc, [pc, ins->sreg1 << 2]

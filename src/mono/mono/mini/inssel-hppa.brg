@@ -311,7 +311,7 @@ reg: OP_ICONST "0" {
      	MONO_EMIT_NEW_ICONST (s, state->reg1, tree->inst_c0);
 }
 
-stmt: CEE_SWITCH (reg) {
+stmt: OP_SWITCH (reg) {
 	MonoInst *label, *inst;
 	int n = GPOINTER_TO_INT (tree->klass);
 	int sreg = mono_regstate_next_int (s->rs);

@@ -488,7 +488,7 @@ reg: CEE_SUB_OVF_UN (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-stmt: CEE_SWITCH (reg) {
+stmt: OP_SWITCH (reg) {
 	MonoInst *label;
 	int n = GPOINTER_TO_INT (tree->klass);
 	

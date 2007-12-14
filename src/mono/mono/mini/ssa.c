@@ -938,7 +938,7 @@ fold_tree (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **carr
 			inst->opcode = OP_BR;
 			inst->inst_target_bb = target;
 		}
-	} else if (inst->opcode == CEE_SWITCH && (evaluate_const_tree (cfg, inst->inst_left, &a, carray) == 1) && (a >= 0) && (a < GPOINTER_TO_INT (inst->klass))) {
+	} else if (inst->opcode == OP_SWITCH && (evaluate_const_tree (cfg, inst->inst_left, &a, carray) == 1) && (a >= 0) && (a < GPOINTER_TO_INT (inst->klass))) {
 		bb->out_bb [0] = inst->inst_many_bb [a];
 		bb->out_count = 1;
 		inst->inst_target_bb = bb->out_bb [0];
@@ -972,7 +972,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, GList **cvars,
 {
 	g_assert (inst);
 
-	if (inst->opcode == CEE_SWITCH) {
+	if (inst->opcode == OP_SWITCH) {
 		int r1, i, a;
 		int cases = GPOINTER_TO_INT (inst->klass);
 

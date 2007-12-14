@@ -1767,7 +1767,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			hppa_nop(code);
 			break;
 
-		case CEE_SWITCH: {
+		case OP_SWITCH: {
 			int i;
 
 			max_len += 8 * GPOINTER_TO_INT (ins->klass);

@@ -271,7 +271,7 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_SWITCH (reg) {
+stmt: OP_SWITCH (reg) {
 	MonoInst *label;
 	int n = GPOINTER_TO_INT (tree->klass);
 	

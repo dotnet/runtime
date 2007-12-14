@@ -226,7 +226,7 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 	case OP_BR:
 		fprintf (fp, "[B%d]", tree->inst_target_bb->block_num);
 		break;
-	case CEE_SWITCH:
+	case OP_SWITCH:
 	case CEE_ISINST:
 	case CEE_CASTCLASS:
 	case OP_OUTARG:

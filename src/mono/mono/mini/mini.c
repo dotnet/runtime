@@ -124,7 +124,7 @@
 #define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN) || ((ins)->opcode >= OP_IBEQ && (ins)->opcode <= OP_IBLT_UN))
 #define MONO_IS_COND_BRANCH_NOFP(ins) (MONO_IS_COND_BRANCH_OP(ins) && (ins)->inst_left->inst_left->type != STACK_R8)
 
-#define MONO_IS_BRANCH_OP(ins) (MONO_IS_COND_BRANCH_OP(ins) || ((ins)->opcode == OP_BR) || ((ins)->opcode == OP_BR_REG) || ((ins)->opcode == CEE_SWITCH))
+#define MONO_IS_BRANCH_OP(ins) (MONO_IS_COND_BRANCH_OP(ins) || ((ins)->opcode == OP_BR) || ((ins)->opcode == OP_BR_REG) || ((ins)->opcode == OP_SWITCH))
 
 #define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
@@ -1858,7 +1858,7 @@ mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 	case CEE_BLE_UN:
 	case CEE_BLT_UN:
 	case OP_BR:
-	case CEE_SWITCH:
+	case OP_SWITCH:
 		prev = bb->code;
 		while (prev->next && prev->next != bb->last_ins)
 			prev = prev->next;
@@ -5728,7 +5728,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_OPSIZE (5);
 			CHECK_STACK (1);
 			n = read32 (ip + 1);
-			MONO_INST_NEW (cfg, ins, *ip);
+			MONO_INST_NEW (cfg, ins, OP_SWITCH);
 			--sp;
 			ins->inst_left = *sp;
 			if ((ins->inst_left->type != STACK_I4) && (ins->inst_left->type != STACK_PTR)) 
@@ -8639,7 +8639,7 @@ mono_print_tree (MonoInst *tree) {
 	case OP_CALL_HANDLER:
 		printf ("[B%d]", tree->inst_target_bb->block_num);
 		break;
-	case CEE_SWITCH:
+	case OP_SWITCH:
 	case CEE_ISINST:
 	case CEE_CASTCLASS:
 	case OP_OUTARG:
@@ -10101,7 +10101,7 @@ replace_out_block_in_code (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBl
 				bb->last_ins->inst_target_bb = repl;
 			}
 			break;
-		case CEE_SWITCH: {
+		case OP_SWITCH: {
 			int i;
 			int n = GPOINTER_TO_INT (bb->last_ins->klass);
 			for (i = 0; i < n; i++ ) {
@@ -10190,7 +10190,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	}
 	
 	/* Do not touch BBs following a switch (they are the "default" branch) */
-	if ((previous_bb->last_ins != NULL) && (previous_bb->last_ins->opcode == CEE_SWITCH)) {
+	if ((previous_bb->last_ins != NULL) && (previous_bb->last_ins->opcode == OP_SWITCH)) {
 		return FALSE;
 	}
 	
@@ -10230,7 +10230,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 				((previous_bb->last_ins == NULL) ||
 				((previous_bb->last_ins->opcode != OP_BR) &&
 				(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
-				(previous_bb->last_ins->opcode != CEE_SWITCH)))) {
+				(previous_bb->last_ins->opcode != OP_SWITCH)))) {
 			for (i = 0; i < previous_bb->out_count; i++) {
 				if (previous_bb->out_bb [i] == target_bb) {
 					MonoInst *jump;
@@ -11088,7 +11088,7 @@ remove_critical_edges (MonoCompile *cfg) {
 							if ((previous_bb->last_ins == NULL) ||
 									((previous_bb->last_ins->opcode != OP_BR) &&
 									(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
-									(previous_bb->last_ins->opcode != CEE_SWITCH))) {
+									(previous_bb->last_ins->opcode != OP_SWITCH))) {
 								int i;
 								/* Make sure previous_bb really falls through bb */
 								for (i = 0; i < previous_bb->out_count; i++) {

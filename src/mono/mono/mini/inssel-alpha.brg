@@ -213,7 +213,7 @@ stmt: OP_ENDFILTER (reg) {
         mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_SWITCH (reg) {
+stmt: OP_SWITCH (reg) {
         MonoInst *label;
         int offset_reg = mono_regstate_next_int (s->rs);
         int target_reg = mono_regstate_next_int (s->rs);

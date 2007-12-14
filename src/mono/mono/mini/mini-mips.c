@@ -2483,7 +2483,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_jr (code, ins->sreg1);
 			mips_nop (code);
 			break;
-		case CEE_SWITCH: {
+		case OP_SWITCH: {
 			int i;
 
 			max_len += 4 * GPOINTER_TO_INT (ins->klass);
