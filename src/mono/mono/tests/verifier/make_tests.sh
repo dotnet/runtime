@@ -3191,3 +3191,40 @@ done
 ./make_endfinally_test.sh endfinally_clean_stack valid finally 8 "ldc.i4.0"
 ./make_endfinally_test.sh endfault_clean_stack valid fault 8 "ldc.i4.0"
 
+
+
+# endfilter
+
+#valid endfilter
+./make_endfilter_test.sh endfilter_at_end_of_filter_block valid 9
+
+#endfilter outside protected block
+./make_endfilter_test.sh endfilter_outside_protected_block invalid 1 "ldc.i4.1\n\t\tendfilter"
+
+#endfilter inside bad protected block
+./make_endfilter_test.sh endfilter_inside_protected_block_3 invalid 3 "ldc.i4.1\n\t\tendfilter"
+./make_endfilter_test.sh endfilter_inside_protected_block_5 strict 5 "ldc.i4.1\n\t\tendfilter"
+
+for I in {2,4,6};
+do
+	./make_endfilter_test.sh endfilter_inside_protected_block_${I} unverifiable ${I} "ldc.i4.1\n\t\tendfilter"
+done
+
+
+#endfilter is the first instruction
+./make_endfilter_test.sh endfilter_first_instruction_of_filter_block invalid 7 "ldc.i4.1\n\tendfilter"
+./make_endfilter_test.sh endfilter_in_the_midle_instruction_of_filter_block invalid 8 "ldc.i4.1\n\t\tendfilter"
+
+#stack sizes
+
+./make_endfilter_test.sh endfilter_empty_stack strict 9 "pop"
+./make_endfilter_test.sh endfilter_too_big strict 9 "ldc.i4.0"
+
+
+I=1
+for OP in "ldc.i8 0" "ldnull" "ldc.r4 0" "ldc.r8 1" "ldc.i4.0\n\t\tconv.i" "ldc.r8 99999"
+do
+	./make_endfilter_test.sh endfilter_bad_arg_${I} strict 9 "pop\t\n\n${OP}"
+	I=`expr $I + 1`
+done
+
