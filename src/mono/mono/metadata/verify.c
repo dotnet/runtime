@@ -1152,6 +1152,47 @@ is_correct_endfinally (MonoMethodHeader *header, guint offset)
 }
 
 
+/*
+ * An endfilter can only happens inside a filter clause.
+ * In non-strict mode filter is allowed inside the handler clause too
+ */
+static MonoExceptionClause *
+is_correct_endfilter (VerifyContext *ctx, guint offset)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < ctx->header->num_clauses; ++i) {
+		clause = &ctx->header->clauses [i];
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FILTER)
+			continue;
+		if (MONO_OFFSET_IN_FILTER (clause, offset))
+			return clause;
+		if (!IS_STRICT_MODE (ctx) && MONO_OFFSET_IN_HANDLER (clause, offset))
+			return clause;
+	}
+	return NULL;
+}
+
+
+/*
+ * Non-strict endfilter can happens inside a try block or any handler block
+ */
+static int
+is_unverifiable_endfilter (VerifyContext *ctx, guint offset)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < ctx->header->num_clauses; ++i) {
+		clause = &ctx->header->clauses [i];
+		if (MONO_OFFSET_IN_CLAUSE (clause, offset))
+			return 1;
+	}
+	return 0;
+}
+
+
 static int
 can_merge_stack (ILCodeDesc *a, ILCodeDesc *b)
 {
@@ -3097,6 +3138,38 @@ do_throw (VerifyContext *ctx)
 }
 
 
+static void
+do_endfilter (VerifyContext *ctx)
+{
+	MonoExceptionClause *clause;
+
+	if (IS_STRICT_MODE (ctx)) {
+		if (ctx->eval.size != 1)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Stack size must have one item for endfilter at 0x%04x", ctx->ip_offset));
+
+		if (ctx->eval.size >= 1 && stack_pop (ctx)->stype != TYPE_I4)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Stack item type is not an int32 for endfilter at 0x%04x", ctx->ip_offset));
+	}
+
+	if ((clause = is_correct_endfilter (ctx, ctx->ip_offset))) {
+		if (IS_STRICT_MODE (ctx)) {
+			if (ctx->ip_offset != clause->handler_offset - 2)
+				ADD_VERIFY_ERROR (ctx, g_strdup_printf ("endfilter is not the last instruction of the filter clause at 0x%04x", ctx->ip_offset));			
+		} else {
+			if ((ctx->ip_offset != clause->handler_offset - 2) && !MONO_OFFSET_IN_HANDLER (clause, ctx->ip_offset))
+				ADD_VERIFY_ERROR (ctx, g_strdup_printf ("endfilter is not the last instruction of the filter clause at 0x%04x", ctx->ip_offset));
+		}
+	} else {
+		if (IS_STRICT_MODE (ctx) && !is_unverifiable_endfilter (ctx, ctx->ip_offset))
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("endfilter outside filter clause at 0x%04x", ctx->ip_offset));
+		else
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("endfilter outside filter clause at 0x%04x", ctx->ip_offset));
+	}
+
+	ctx->eval.size = 0;
+}
+
+
 /*Merge the stacks and perform compat checks*/
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start) 
@@ -3855,6 +3928,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (!is_correct_endfinally (ctx.header, ip_offset))
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("endfinally must be used inside a finally/fault handler at 0x%04x", ctx.ip_offset));
 			ctx.eval.size = 0;
+			start = 1;
 			++ip;
 			break;
 		case CEE_LEAVE:
@@ -3984,8 +4058,8 @@ mono_method_verify (MonoMethod *method, int level)
 				++ip;
 				break;
 			case CEE_ENDFILTER:
-				if (ctx.eval.size != 1)
-					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Stack must have only filter result in endfilter at 0x%04x", ip_offset));
+				do_endfilter (&ctx);
+				start = 1;
 				++ip;
 				break;
 			case CEE_UNALIGNED_:
