@@ -6756,7 +6756,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoClassField *field;
 			gpointer addr = NULL;
 			gboolean shared_access = FALSE;
-			int relation;
+			int relation = 0;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
