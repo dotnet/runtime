@@ -1397,11 +1397,17 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	ass = mono_assembly_load_full_nosearch (&aname, NULL, &status, refOnly);
 	mono_assembly_name_free (&aname);
 
-	/* MS.NET doesn't seem to call the assembly resolve handler for refonly assemblies */
-	if (!ass && !refOnly && (refass = mono_try_assembly_resolve (domain, assRef, refOnly)) == NULL){
-		/* FIXME: it doesn't make much sense since we really don't have a filename ... */
-		MonoException *exc = mono_get_exception_file_not_found2 (NULL, assRef);
-		mono_raise_exception (exc);
+	if (!ass) {
+		/* MS.NET doesn't seem to call the assembly resolve handler for refonly assemblies */
+		if (!refOnly)
+			refass = mono_try_assembly_resolve (domain, assRef, refOnly);
+		else
+			refass = NULL;
+		if (!refass) {
+			/* FIXME: it doesn't make much sense since we really don't have a filename ... */
+			MonoException *exc = mono_get_exception_file_not_found2 (NULL, assRef);
+			mono_raise_exception (exc);
+		}
 	}
 
 	if (refass == NULL)
