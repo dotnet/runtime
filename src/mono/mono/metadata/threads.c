@@ -184,6 +184,8 @@ static MonoThreadHazardPointers * volatile hazard_table = NULL;
 static CRITICAL_SECTION delayed_free_table_mutex;
 static GArray *delayed_free_table = NULL;
 
+static gboolean shutting_down = FALSE;
+
 guint32
 mono_thread_get_tls_key (void)
 {
@@ -200,12 +202,20 @@ mono_thread_get_tls_offset (void)
 
 /* handle_store() and handle_remove() manage the array of threads that
  * still need to be waited for when the main thread exits.
+ *
+ * If handle_store() returns FALSE the thread must not be started
+ * because Mono is shutting down.
  */
-static void handle_store(MonoThread *thread)
+static gboolean handle_store(MonoThread *thread)
 {
 	mono_threads_lock ();
 
 	THREAD_DEBUG (g_message ("%s: thread %p ID %"G_GSIZE_FORMAT, __func__, thread, (gsize)thread->tid));
+
+	if (shutting_down) {
+		mono_threads_unlock ();
+		return FALSE;
+	}
 
 	if(threads==NULL) {
 		MONO_GC_REGISTER_ROOT (threads);
@@ -219,6 +229,8 @@ static void handle_store(MonoThread *thread)
 				 thread);
 
 	mono_threads_unlock ();
+
+	return TRUE;
 }
 
 static gboolean handle_remove(MonoThread *thread)
@@ -663,9 +675,8 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 
 	thread->threadpool_thread = threadpool_thread;
 
-	handle_store(thread);
-
-	ResumeThread (thread_handle);
+	if (handle_store (thread))
+		ResumeThread (thread_handle);
 }
 
 void
@@ -762,7 +773,11 @@ mono_thread_attach (MonoDomain *domain)
 
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 
-	handle_store(thread);
+	if (!handle_store (thread)) {
+		/* Mono is shutting down, so just wait for the end */
+		for (;;)
+			Sleep (10000);
+	}
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Setting current_object_key to %p", __func__, GetCurrentThreadId (), thread));
 
@@ -924,7 +939,8 @@ static void mono_thread_start (MonoThread *thread)
 	 * launched, to avoid the main thread deadlocking while trying
 	 * to clean up a thread that will never be signalled.
 	 */
-	handle_store (thread);
+	if (!handle_store (thread))
+		return;
 
 	ResumeThread (thread->handle);
 
@@ -2465,10 +2481,90 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 	return (thread->tid != self && !mono_gc_is_finalizer_thread (thread)); 
 }
 
+static MonoException* mono_thread_execute_interruption (MonoThread *thread);
+
+/** 
+ * mono_threads_set_shutting_down:
+ * @may_abort: Whether the function is allowed to abort the current
+ * thread if it cannot shut down Mono.
+ *
+ * Is called by a thread that wants to shut down Mono.  Returs whether
+ * the thread is allowed to do that.  The reason for not allowing it
+ * is because another thread has already commenced shutdown.
+ */
+gboolean
+mono_threads_set_shutting_down (gboolean may_abort)
+{
+	MonoThread *current_thread = mono_thread_current ();
+
+	mono_threads_lock ();
+
+	if (shutting_down) {
+		if (may_abort) {
+			ves_icall_System_Threading_Thread_Abort (current_thread, NULL);
+
+			return FALSE;
+		} else {
+			mono_threads_unlock ();
+
+			/* Make sure we're properly suspended/stopped */
+
+			EnterCriticalSection (current_thread->synch_cs);
+
+			if ((current_thread->state & ThreadState_SuspendRequested) ||
+					(current_thread->state & ThreadState_AbortRequested) ||
+					(current_thread->state & ThreadState_StopRequested)) {
+				LeaveCriticalSection (current_thread->synch_cs);
+				mono_thread_execute_interruption (current_thread);
+			} else {
+				current_thread->state |= ThreadState_Stopped;
+				LeaveCriticalSection (current_thread->synch_cs);
+			}
+
+			/* Wake up other threads potentially waiting for us */
+
+			_wapi_thread_signal_self (0);
+
+			/* Wait for the end of the world */
+
+			for (;;)
+				Sleep (10000);
+		}
+	} else {
+		shutting_down = TRUE;
+
+		mono_threads_unlock ();
+
+		/* Even though our state hasn't changed we still wake
+		   up other threads.  Actually we only care about the
+		   main thread, which might be waiting for us to
+		   finish. */
+
+		_wapi_thread_signal_self (0);
+
+		return TRUE;
+	}
+}
+
+/** 
+ * mono_threads_is_shutting_down:
+ *
+ * Returns whether a thread has commenced shutdown of Mono.  Note that
+ * if the function returns FALSE the caller must not assume that
+ * shutdown is not in progress, because the situation might have
+ * changed since the function returned.  For that reason this function
+ * is of very limited utility.
+ */
+gboolean
+mono_threads_is_shutting_down (void)
+{
+	return shutting_down;
+}
+
 void mono_thread_manage (void)
 {
 	struct wait_data *wait=g_new0 (struct wait_data, 1);
-	
+
 	/* join each thread that's still running */
 	THREAD_DEBUG (g_message ("%s: Joining each running thread...", __func__));
 	
@@ -2482,6 +2578,11 @@ void mono_thread_manage (void)
 	
 	do {
 		mono_threads_lock ();
+		if (shutting_down) {
+			/* somebody else is shutting down */
+			mono_threads_unlock ();
+			break;
+		}
 		THREAD_DEBUG (g_message ("%s: There are %d threads to join", __func__, mono_g_hash_table_size (threads));
 			mono_g_hash_table_foreach (threads, print_tids, NULL));
 	
@@ -2495,6 +2596,10 @@ void mono_thread_manage (void)
 		}
 		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
+
+	mono_threads_set_shutting_down (FALSE);
+
+	/* No new threads will be created after this point */
 
 	mono_runtime_set_shutting_down ();
 

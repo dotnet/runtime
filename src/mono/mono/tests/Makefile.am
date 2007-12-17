@@ -242,7 +242,8 @@ TEST_CS_SRC=			\
 	imt_big_iface_test.cs \
 	dbnull-missing.cs	\
 	test-type-ctor.cs 	\
-	soft-float-tests.cs
+	soft-float-tests.cs	\
+	thread-exit.cs
 
 if X86
 # bug #71274
