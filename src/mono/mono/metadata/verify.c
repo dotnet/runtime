@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <ctype.h>
 
+
 /*
  * Pull the list of opcodes
  */
@@ -1110,7 +1111,8 @@ is_correct_leave (MonoMethodHeader *header, guint offset, guint target)
 		clause = &header->clauses [i];
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY && MONO_OFFSET_IN_HANDLER (clause, offset) && !MONO_OFFSET_IN_HANDLER (clause, target))
 			return 0;
-		/* need to check filter ... */
+		if (MONO_OFFSET_IN_FILTER (clause, offset))
+			return 0;
 	}
 	return 1;
 }
@@ -3169,6 +3171,16 @@ do_endfilter (VerifyContext *ctx)
 	ctx->eval.size = 0;
 }
 
+static void
+do_leave (VerifyContext *ctx, int delta)
+{
+	int target = ((gint32)ctx->ip_offset) + delta;
+	if (target >= ctx->code_size || target < 0)
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Branch target out of code at 0x%04x", ctx->ip_offset));
+
+	if (!is_correct_leave (ctx->header, ctx->ip_offset, target))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ctx->ip_offset));
+}
 
 /*Merge the stacks and perform compat checks*/
 static void
@@ -3931,24 +3943,19 @@ mono_method_verify (MonoMethod *method, int level)
 			start = 1;
 			++ip;
 			break;
+
 		case CEE_LEAVE:
-			target = ip + (gint32)read32(ip + 1) + 5;
-			if (target >= end || target < ctx.header->code)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
-			if (!is_correct_leave (ctx.header, ip_offset, target - ctx.header->code))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ip_offset));
+			do_leave (&ctx, read32 (ip + 1) + 5);
 			ip += 5;
 			start = 1;
 			break;
+
 		case CEE_LEAVE_S:
-			target = ip + (signed char)ip [1] + 2;
-			if (target >= end || target < ctx.header->code)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
-			if (!is_correct_leave (ctx.header, ip_offset, target - ctx.header->code))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ip_offset));
+			do_leave (&ctx, (signed char)ip [1] + 2);
 			ip += 2;
 			start = 1;
 			break;
+			
 		case CEE_UNUSED26:
 		case CEE_UNUSED27:
 		case CEE_UNUSED28:
