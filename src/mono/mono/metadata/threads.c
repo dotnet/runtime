@@ -2523,7 +2523,10 @@ mono_threads_set_shutting_down (gboolean may_abort)
 
 			/* Wake up other threads potentially waiting for us */
 
+			/* FIXME: We have to do this on Win32 in some way, too */
+#if !defined(PLATFORM_WIN32)
 			_wapi_thread_signal_self (0);
+#endif
 
 			/* Wait for the end of the world */
 
@@ -2540,7 +2543,10 @@ mono_threads_set_shutting_down (gboolean may_abort)
 		   main thread, which might be waiting for us to
 		   finish. */
 
+		/* FIXME: We have to do this on Win32 in some way, too */
+#if !defined(PLATFORM_WIN32)
 		_wapi_thread_signal_self (0);
+#endif
 
 		return TRUE;
 	}
