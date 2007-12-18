@@ -3228,3 +3228,23 @@ do
 	I=`expr $I + 1`
 done
 
+
+# leave
+
+#leave in all positions
+
+EXTRA="ldloc.0\n\tbrfalse END"
+
+#it's "OK" to use leave as a br
+./make_leave_test.sh "filter_block_test_1" valid "1" "leave END" "$EXTRA"
+
+#but not ok to leave finally or filter
+for I in {2..3};
+do
+	./make_leave_test.sh "filter_block_test_${I}" unverifiable "${I}" "leave END" "${EXTRA}_${I}"
+done
+
+#neither is to branch to invalid regions of code
+./make_leave_test.sh "filter_branch_before_start" invalid "1" "leave -400" "$EXTRA"
+./make_leave_test.sh "filter_branch_after_end" invalid "1" "leave 400" "$EXTRA"
+
