@@ -3238,7 +3238,7 @@ mono_method_verify (MonoMethod *method, int level)
 	const unsigned char *ip;
 	const unsigned char *end;
 	const unsigned char *target = NULL; /* branch target */
-	int i, n, need_merge = 0, start = 0;
+	int i, n, need_merge = 0, start = 0, handler_start = 0;
 	guint token, ip_offset = 0, prefix = 0;
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
@@ -3296,12 +3296,40 @@ mono_method_verify (MonoMethod *method, int level)
 
 	stack_init (&ctx, &ctx.eval);
 
-
-	for (i = 0; i < ctx.header->num_clauses; ++i) {
+	for (i = 0; i < ctx.header->num_clauses && ctx.valid; ++i) {
 		MonoExceptionClause *clause = ctx.header->clauses + i;
 		VERIFIER_DEBUG (printf ("clause try %x len %x filter at %x handler at %x len %x\n", clause->try_offset, clause->try_len, clause->data.filter_offset, clause->handler_offset, clause->handler_len); );
-		/* catch blocks and filter have the exception on the stack. */
-		/* must check boundaries for handler_offset and handler_start < handler_start*/
+
+		if (clause->try_offset < 0 || clause->try_offset > ctx.code_size)
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause out of bounds at 0x%04x", clause->try_offset));
+
+		if (clause->try_len <= 0)
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
+
+		if (clause->handler_offset < 0 || clause->handler_offset > ctx.code_size)
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause out of bounds at 0x%04x", clause->try_offset));
+
+		if (clause->handler_len <= 0)
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
+
+		if (i && clause->handler_offset < handler_start)
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("exception handler are in the wrong order, 0x%04x > 0x%04x", handler_start, clause->handler_offset));
+
+		if (clause->try_offset < clause->handler_offset && clause->try_offset + clause->try_len > clause->handler_offset)
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try block (at 0x%04x) includes handler block (at 0x%04x)", clause->try_offset, clause->handler_offset));
+
+		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			for (n = 0; n < ctx.header->num_clauses && ctx.valid; ++n) {
+				MonoExceptionClause *inner = ctx.header->clauses + n;
+				if (n != i && clause->data.filter_offset <= inner->try_offset && clause->handler_offset > inner->try_offset)
+					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("filter clause contains a try starting at 0x%04x", inner->try_offset));
+			}
+		}
+		handler_start = clause->handler_offset;
+
+		if (!ctx.valid)
+			break;
+
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
 			ILCodeDesc *code = ctx.code + clause->handler_offset;
 			stack_init (&ctx, code);
@@ -3322,6 +3350,40 @@ mono_method_verify (MonoMethod *method, int level)
 
 	while (ip < end && ctx.valid) {
 		ctx.ip_offset = ip_offset = ip - ctx.header->code;
+
+		/*We need to check against fallthrou in and out of protected blocks.
+		 * For fallout we check the once a protected block ends, if the start flag is not set.
+		 * Likewise for fallthru in, we check if ip is the start of a protected block and start is not set
+		 */
+		for (i = 0; i < ctx.header->num_clauses && ctx.valid; ++i) {
+			MonoExceptionClause *clause = ctx.header->clauses + i;
+
+			if ((clause->try_offset + clause->try_len == ip_offset) && start == 0) {
+				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("fallthru off try block at 0x%04x", ip_offset));
+				start = 1;
+			}
+
+			if ((clause->handler_offset + clause->handler_len == ip_offset) && start == 0) {
+				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("fallthru off handler block at 0x%04x", ip_offset));
+				else
+					CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("fallthru off handler block at 0x%04x", ip_offset));
+				start = 1;
+			}
+
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER && clause->handler_offset == ip_offset && start == 0) {
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("fallthru off filter block at 0x%04x", ip_offset));
+				start = 1;
+			}
+
+			if (clause->handler_offset == ip_offset && start == 0) {
+				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("fallthru in handler block at 0x%04x", ip_offset));
+				start = 1;
+			}
+		}
+
+		if (!ctx.valid)
+			break;
 
 		/*TODO id stack merge fails, we break, should't we - or only on errors??
 		TODO verify need_merge
@@ -3730,6 +3792,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_THROW:
 			do_throw (&ctx);
+			start = 1;
 			++ip;
 			break;
 
