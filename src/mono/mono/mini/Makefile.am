@@ -68,6 +68,18 @@ else
 libmono_la_LDFLAGS=$(monoldflags)
 endif
 
+if MONO_DEBUGGER_SUPPORTED
+libmono_dbg_la = libmono-dbg.la
+mono_dbg_h = mono-dbg.h
+
+libmono_dbg_la_SOURCES = mono-dbg.c mono-dbg.h
+else
+libmono_dbg_la =
+mono_dbg_h =
+
+libmono_dbg_la_SOURCES =
+endif
+
 if JIT_SUPPORTED
 
 if PLATFORM_WIN32
@@ -78,7 +90,7 @@ endif
 
 noinst_PROGRAMS = genmdesc
 
-lib_LTLIBRARIES = libmono.la
+lib_LTLIBRARIES = libmono.la $(libmono_dbg_la)
 noinst_LTLIBRARIES = libmono-static.la
 endif
 
@@ -371,7 +383,7 @@ BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
-libmonoinclude_HEADERS = jit.h
+libmonoinclude_HEADERS = jit.h $(mono_dbg_h)
 
 libmono_la_LIBADD = \
 	$(libs)
