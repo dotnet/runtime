@@ -3299,7 +3299,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	for (i = 0; i < ctx.header->num_clauses; ++i) {
 		MonoExceptionClause *clause = ctx.header->clauses + i;
-		VERIFIER_DEBUG (printf ("clause try %x len %x filter at %x handler at %x len %x\n", clause->try_offset, clause->try_len, clause->data.filter_offset, clause->handler_offset, clause->handler_len));
+		VERIFIER_DEBUG (printf ("clause try %x len %x filter at %x handler at %x len %x\n", clause->try_offset, clause->try_len, clause->data.filter_offset, clause->handler_offset, clause->handler_len); );
 		/* catch blocks and filter have the exception on the stack. */
 		/* must check boundaries for handler_offset and handler_start < handler_start*/
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
