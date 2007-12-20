@@ -862,9 +862,15 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 
 		GC_init_gcj_malloc (5, NULL);
 
+		/* 
+		 * This is not needed unless the relevant code in mono_get_allocation_ftn () is 
+		 * turned on.
+		 */
+#if 0
 #ifdef GC_REDIRECT_TO_LOCAL
 		mono_register_jit_icall (GC_local_gcj_malloc, "GC_local_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
 		mono_register_jit_icall (GC_local_gcj_fast_malloc, "GC_local_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
+#endif
 #endif
 		mono_register_jit_icall (GC_gcj_malloc, "GC_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
 		mono_register_jit_icall (GC_gcj_fast_malloc, "GC_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
