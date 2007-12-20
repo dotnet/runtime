@@ -3581,6 +3581,25 @@ property_equal (MonoProperty *prop1, MonoProperty *prop2)
 	return TRUE;
 }
 
+static gboolean
+property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
+{
+	if (!accessor)
+		return FALSE;
+
+	switch (accessor->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) {
+		case METHOD_ATTRIBUTE_ASSEM:
+			return (start_klass || mono_defaults.generic_ilist_class);
+			break;
+		case METHOD_ATTRIBUTE_PRIVATE:
+			return start_klass;
+		case METHOD_ATTRIBUTE_PUBLIC:
+			return FALSE;
+		default:
+			return TRUE;
+	}
+}
+
 static MonoArray*
 ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
@@ -3642,9 +3661,11 @@ handle_parent:
 			(prop->set && ((prop->set->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else {
-			if (bflags & BFLAGS_NonPublic)
+		} else if (bflags & BFLAGS_NonPublic) {
+			if (property_accessor_nonpublic(prop->get, startklass == klass) ||
+				property_accessor_nonpublic(prop->set, startklass == klass)) {
 				match++;
+			}
 		}
 		if (!match)
 			continue;
