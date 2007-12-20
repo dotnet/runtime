@@ -245,6 +245,14 @@ TEST_CS_SRC=			\
 	soft-float-tests.cs	\
 	thread-exit.cs
 
+if AMD64
+TEST_CS_SRC+=async-exc-compilation.cs
+endif
+
+if X86
+TEST_CS_SRC+=async-exc-compilation.cs
+endif
+
 if X86
 # bug #71274
 PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
