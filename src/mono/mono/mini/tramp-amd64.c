@@ -175,7 +175,7 @@ guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp, *br [2];
-	int i, lmf_offset, offset, arg_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
+	int i, lmf_offset, offset, res_offset, arg_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
 	gboolean has_caller;
 
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
@@ -220,6 +220,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	} else {
 		amd64_mov_membase_imm (code, AMD64_RBP, tramp_offset, 0, 8);
 	}
+
+	offset += 8;
+	res_offset = - offset;
 
 	/* Save all registers */
 
@@ -321,6 +324,13 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	tramp = (guint8*)mono_get_trampoline_func (tramp_type);
 	amd64_mov_reg_imm (code, AMD64_RAX, tramp);
 	amd64_call_reg (code, AMD64_RAX);
+
+	/* Check for thread interruption */
+	/* This is not perf critical code so no need to check the interrupt flag */
+	amd64_mov_membase_reg (code, AMD64_RBP, res_offset, AMD64_RAX, 8);
+	amd64_mov_reg_imm (code, AMD64_RAX, (guint8*)mono_thread_interruption_checkpoint);
+	amd64_call_reg (code, AMD64_RAX);
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, res_offset, 8);	
 
 	/* Restore LMF */
 

@@ -303,12 +303,19 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	x86_breakpoint (buf);*/
 #endif
 
-	tramp = mono_get_trampoline_func (tramp_type);
+	tramp = (guint8*)mono_get_trampoline_func (tramp_type);
 	x86_call_code (buf, tramp);
 
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 4*4);
 
-	/* restore LMF start */
+	/* Check for thread interruption */
+	/* This is not perf critical code so no need to check the interrupt flag */
+	x86_push_reg (buf, X86_EAX);
+	x86_call_code (buf, (guint8*)mono_thread_interruption_checkpoint);
+	x86_pop_reg (buf, X86_EAX);
+
+	/* Restore LMF */
+
 	/* ebx = previous_lmf */
 	x86_pop_reg (buf, X86_EBX);
 	x86_alu_reg_imm (buf, X86_SUB, X86_EBX, 1);
