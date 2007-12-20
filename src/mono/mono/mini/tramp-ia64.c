@@ -315,7 +315,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* FIXME: */
 	ia64_mov (code, o3, 0);
 
-	tramp = mono_get_trampoline_func (tramp_type);
+	tramp = (guint8*)mono_get_trampoline_func (tramp_type);
 
 	/* Call the trampoline using an indirect call */
 	ia64_movl (code, l0, tramp);
