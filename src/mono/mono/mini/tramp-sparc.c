@@ -180,6 +180,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Save result */
 	sparc_sti_imm (code, sparc_o0, sparc_sp, MONO_SPARC_STACK_BIAS + 304);
 
+	/* Check for thread interruption */
+	sparc_set (code, (guint8*)mono_thread_interruption_checkpoint, sparc_o7);
+	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_o7);
+	sparc_nop (code);
+
 	/* Restore lmf */
 	code = mono_sparc_emit_restore_lmf (code, lmf_offset);
 

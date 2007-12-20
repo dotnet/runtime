@@ -324,6 +324,19 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	ia64_ld8 (code, IA64_GP, l0);
 	ia64_br_call_reg (code, 0, IA64_B6);
 
+	/* Check for thread interruption */
+	/* This is not perf critical code so no need to check the interrupt flag */
+	ia64_mov (code, l2, IA64_R8);
+
+	tramp = (guint8*)mono_thread_interruption_checkpoint;
+	ia64_movl (code, l0, tramp);
+	ia64_ld8_inc_imm (code, l1, l0, 8);
+	ia64_mov_to_br (code, IA64_B6, l1);
+	ia64_ld8 (code, IA64_GP, l0);
+	ia64_br_call_reg (code, 0, IA64_B6);
+
+	ia64_mov (code, IA64_R8, l2);
+
 	/* Restore fp regs */
 	ia64_adds_imm (code, l1, saved_fpregs_offset, IA64_SP);
 	for (i = 0; i < 8; ++i)
