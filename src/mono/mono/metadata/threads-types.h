@@ -134,6 +134,10 @@ void mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local) MON
 extern void mono_thread_current_check_pending_interrupt (void) MONO_INTERNAL;
 extern void mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize) MONO_INTERNAL;
 
+extern void mono_thread_set_state (MonoThread *thread, MonoThreadState state) MONO_INTERNAL;
+extern void mono_thread_clr_state (MonoThread *thread, MonoThreadState state) MONO_INTERNAL;
+extern gboolean mono_thread_test_state (MonoThread *thread, MonoThreadState test) MONO_INTERNAL;
+
 extern void mono_thread_init_apartment_state (void) MONO_INTERNAL;
 extern void mono_thread_cleanup_apartment_state (void) MONO_INTERNAL;
 

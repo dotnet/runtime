@@ -67,10 +67,6 @@ extern void mono_thread_interruption_checkpoint (void);
 extern void mono_thread_force_interruption_checkpoint (void);
 extern gint32* mono_thread_interruption_request_flag (void);
 
-extern void mono_thread_set_state (MonoThread *thread, MonoThreadState state);
-extern void mono_thread_clr_state (MonoThread *thread, MonoThreadState state);
-extern gboolean mono_thread_test_state (MonoThread *thread, MonoThreadState test);
-
 G_END_DECLS
 
 #endif /* _MONO_METADATA_THREADS_H_ */
