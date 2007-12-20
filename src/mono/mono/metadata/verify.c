@@ -1804,6 +1804,17 @@ handle_enum:
 	return;
 }
 
+/* Initialize a stack and push a given type. 
+ */
+static void
+init_stack_with_value (VerifyContext *ctx, ILCodeDesc *code, MonoClass *klass)
+{
+	stack_init (ctx, code);
+	set_stack_value (code->stack, &klass->byval_arg, FALSE);
+	code->size = 1;
+	code->flags = IL_CODE_FLAG_SEEN;
+}
+
 /* Generics validation stuff, should be moved to another metadata/? file */
 static gboolean
 mono_is_generic_type_compatible (MonoType *target, MonoType *candidate)
@@ -3312,7 +3323,7 @@ mono_method_verify (MonoMethod *method, int level)
 		if (clause->handler_len <= 0)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
 
-		if (i && clause->handler_offset < handler_start)
+		if (i && clause->handler_offset + clause->handler_len < handler_start)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("exception handler are in the wrong order, 0x%04x > 0x%04x", handler_start, clause->handler_offset));
 
 		if (clause->try_offset < clause->handler_offset && clause->try_offset + clause->try_len > clause->handler_offset)
@@ -3325,26 +3336,17 @@ mono_method_verify (MonoMethod *method, int level)
 					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("filter clause contains a try starting at 0x%04x", inner->try_offset));
 			}
 		}
-		handler_start = clause->handler_offset;
+		handler_start = clause->handler_offset  + clause->handler_len;
 
 		if (!ctx.valid)
 			break;
 
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
-			ILCodeDesc *code = ctx.code + clause->handler_offset;
-			stack_init (&ctx, code);
-			code->stack [0].stype = TYPE_COMPLEX;
-			code->stack [0].type = &clause->data.catch_class->byval_arg;
-			code->size = 1;
-			code->flags = IL_CODE_FLAG_SEEN;
+			init_stack_with_value (&ctx, ctx.code + clause->handler_offset, clause->data.catch_class);
 		}
 		else if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-			ILCodeDesc *code = ctx.code + clause->data.filter_offset;
-			stack_init (&ctx, code);
-			code->stack [0].stype = TYPE_COMPLEX;
-			code->stack [0].type = &mono_defaults.exception_class->byval_arg;
-			code->size = 1;
-			code->flags = IL_CODE_FLAG_SEEN;
+			init_stack_with_value (&ctx, ctx.code + clause->data.filter_offset, mono_defaults.exception_class);
+			init_stack_with_value (&ctx, ctx.code + clause->handler_offset, mono_defaults.exception_class);	
 		}
 	}
 
