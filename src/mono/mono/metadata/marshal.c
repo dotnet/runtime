@@ -4994,7 +4994,19 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	}
 
 	/* See bug #80743 */
-	target_klass = method->klass;
+	/*
+	 * FIXME: Sharing runtime invoke wrappers between different methods means that
+	 * calling a method of klass A might invoke the type initializer of class B.
+	 * Normally, the type initializer of type B was already executed when B's method
+	 * was called but in some complex cases this might not be true.
+	 * See #349621 for an example. We avoid that for mscorlib methods by putting every
+	 * wrapper into the object class, but the non-mscorlib case needs fixing.
+	 */
+	if (method->klass->image == mono_defaults.corlib)
+		target_klass = mono_defaults.object_class;
+	else {
+		target_klass = method->klass;
+	}
 #if 0
 	target_klass = mono_defaults.object_class;
 	/* 
