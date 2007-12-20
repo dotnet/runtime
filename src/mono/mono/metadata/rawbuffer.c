@@ -169,9 +169,7 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 	 * http://bugzilla.ximian.com/show_bug.cgi?id=49499
 	 * for more info.
 	 */
-	if (mprotect (ptr, end - start, prot | PROT_EXEC) != 0)
-		g_warning (G_GNUC_PRETTY_FUNCTION
-				   ": mprotect failed: %s", g_strerror (errno));
+	mprotect (ptr, end - start, prot | PROT_EXEC);
 
 	if (make_unreadable) {
 		int res = mprotect (ptr, end - start, 0);
