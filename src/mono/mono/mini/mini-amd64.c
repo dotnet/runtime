@@ -3633,10 +3633,36 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LCONV_TO_R_UN: { 
 			static guint8 mn[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f, 0x40 };
-			guint8 *br;
+			guint8 *br [2];
 
-			if (use_sse2)
-				g_assert_not_reached ();
+			if (use_sse2) {
+				/* Based on gcc code */
+				amd64_test_reg_reg (code, ins->sreg1, ins->sreg1);
+				br [0] = code; x86_branch8 (code, X86_CC_S, 0, TRUE);
+
+				/* Positive case */
+				amd64_sse_cvtsi2sd_reg_reg (code, ins->dreg, ins->sreg1);
+				br [1] = code; x86_jump8 (code, 0);
+				amd64_patch (br [0], code);
+
+				/* Negative case */
+				/* Save to the red zone */
+				amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RAX, 8);
+				amd64_mov_membase_reg (code, AMD64_RSP, -16, AMD64_RCX, 8);
+				amd64_mov_reg_reg (code, AMD64_RCX, ins->sreg1, 8);
+				amd64_mov_reg_reg (code, AMD64_RAX, ins->sreg1, 8);
+				amd64_alu_reg_imm (code, X86_AND, AMD64_RCX, 1);
+				amd64_shift_reg_imm (code, X86_SHR, AMD64_RAX, 1);
+				amd64_alu_reg_imm (code, X86_OR, AMD64_RAX, AMD64_RCX);
+				amd64_sse_cvtsi2sd_reg_reg (code, ins->dreg, AMD64_RAX);
+				amd64_sse_addsd_reg_reg (code, ins->dreg, ins->dreg);
+				/* Restore */
+				amd64_mov_reg_membase (code, AMD64_RCX, AMD64_RSP, -16, 8);
+				amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, -8, 8);
+				amd64_patch (br [1], code);
+
+				break;
+			}
 
 			/* load 64bit integer to FP stack */
 			amd64_push_imm (code, 0);
@@ -3648,7 +3674,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			
 			/* test if lreg is negative */
 			amd64_test_reg_reg (code, ins->sreg2, ins->sreg2);
-			br = code; x86_branch8 (code, X86_CC_GEZ, 0, TRUE);
+			br [0] = code; x86_branch8 (code, X86_CC_GEZ, 0, TRUE);
 	
 			/* add correction constant mn */
 			x86_fld80_mem (code, (gssize)mn);
@@ -3656,7 +3682,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_fp_op_reg (code, X86_FADD, 1, TRUE);
 			x86_fst80_membase (code, AMD64_RSP, 0);
 
-			amd64_patch (br, code);
+			amd64_patch (br [0], code);
 
 			x86_fld80_membase (code, AMD64_RSP, 0);
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 12);

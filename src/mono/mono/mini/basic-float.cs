@@ -192,6 +192,15 @@ class Tests {
 		return 4;
 	}
 
+	static int test_4_ulong_cast () {
+		ulong a = 1000;
+		double d = (double)a;
+		ulong b = (ulong)d;
+		if (b != 1000)
+			return 0;
+		return 4;
+	}
+
 	static int test_4_single_long_cast () {
 		long a = 1000;
 		float d = (float)a;

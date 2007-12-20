@@ -73,6 +73,7 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+freg: OP_LCONV_TO_R_UN (reg),
 freg: OP_LCONV_TO_R8 (reg) {
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;

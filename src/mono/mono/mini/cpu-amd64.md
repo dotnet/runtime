@@ -241,7 +241,7 @@ long_conv_to_r8: dest:f src1:i len:8
 long_conv_to_ovf_i: dest:i src1:i src2:i len:40
 long_mul_ovf: dest:i src1:i src2:i clob:1 len:16
 long_mul_ovf_un: dest:i src1:i src2:i len:22
-long_conv_to_r_un: dest:f src1:i src2:i len:48 
+long_conv_to_r_un: dest:f src1:i len:64
 long_shr_imm: dest:i src1:i clob:1 len:11
 long_shr_un_imm: dest:i src1:i clob:1 len:11
 long_shl_imm: dest:i src1:i clob:1 len:11
