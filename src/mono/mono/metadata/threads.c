@@ -2956,13 +2956,13 @@ mono_threads_clear_cached_culture (MonoDomain *domain)
 }
 
 /*
- * mono_thread_get_pending_exception:
+ * mono_thread_get_undeniable_exception:
  *
  *   Return an exception which needs to be raised when leaving a catch clause.
  * This is used for undeniable exception propagation.
  */
 MonoException*
-mono_thread_get_pending_exception (void)
+mono_thread_get_undeniable_exception (void)
 {
 	MonoThread *thread = mono_thread_current ();
 

@@ -144,6 +144,8 @@ extern void mono_thread_cleanup_apartment_state (void) MONO_INTERNAL;
 extern gboolean mono_threads_set_shutting_down (gboolean may_abort) MONO_INTERNAL;
 extern gboolean mono_threads_is_shutting_down (void) MONO_INTERNAL;
 
+extern MonoException * mono_thread_get_undeniable_exception (void);
+
 typedef struct {
 	gpointer hazard_pointers [2];
 } MonoThreadHazardPointers;
