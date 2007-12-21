@@ -1,19 +1,19 @@
 #! /bin/sh
 
 TEST_NAME=$1
+TEST_VALIDITY=$2
 
 # Only 1 TEST_OP variable should be set.
+TEST_OP1=$3
+TEST_OP2=$4
+TEST_OP3=$5
+TEST_OP4=$6
+TEST_OP5=$7
 
-TEST_OP1=$2
-TEST_OP2=$3
-TEST_OP3=$4
-TEST_OP4=$5
-TEST_OP5=$6
-
-TEST_FILE=invalid_exception_branch_${TEST_NAME}_generated.il
+TEST_FILE=${TEST_VALIDITY}_exception_branch_${TEST_NAME}_generated.il
 echo $TEST_FILE
 sed -e "s/OPCODE1/${TEST_OP1}/g" -e "s/OPCODE2/${TEST_OP2}/g" -e "s/OPCODE3/${TEST_OP3}/g" -e "s/OPCODE4/${TEST_OP4}/g" -e "s/OPCODE5/${TEST_OP5}/g" > $TEST_FILE <<//EOF
-// invalid CIL which breaks the ECMA-335 rules. 
+// ${TEST_VALIDITY} CIL which breaks the ECMA-335 rules. 
 // This CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -25,7 +25,10 @@ sed -e "s/OPCODE1/${TEST_OP1}/g" -e "s/OPCODE2/${TEST_OP2}/g" -e "s/OPCODE3/${TE
 .method public static int32 Main() cil managed
 {
 	.entrypoint
-	.maxstack 2
+	.maxstack 8
+	.locals init (int32 V0,
+		int32 V1)
+
 	OPCODE1
 	.try
 	{

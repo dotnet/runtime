@@ -807,21 +807,35 @@ done
 I=1
 for OP in br "ldc.i4.0\n\tbrfalse"
 do
-  ./make_exception_branch_test.sh in_try_${I} "$OP branch_target1"
-  ./make_exception_branch_test.sh in_catch_${I} "$OP branch_target2"
-  ./make_exception_branch_test.sh in_finally_${I} "$OP branch_target3"
-  ./make_exception_branch_test.sh in_filter_${I} "$OP branch_target4"
-  ./make_exception_branch_test.sh out_try_${I} "" "$OP branch_target5"
-  ./make_exception_branch_test.sh out_catch_${I} "" "" "$OP branch_target5"
-  ./make_exception_branch_test.sh out_finally_${I} "" "" "" "$OP branch_target5"
-  ./make_exception_branch_test.sh out_filter_${I} "" "" "" "" "$OP branch_target5"
+  ./make_exception_branch_test.sh in_try_${I} unverifiable "$OP branch_target1"
+  ./make_exception_branch_test.sh in_catch_${I} unverifiable "$OP branch_target2"
+  ./make_exception_branch_test.sh in_finally_${I} invalid "$OP branch_target3"
+  ./make_exception_branch_test.sh in_filter_${I} unverifiable "$OP branch_target4"
+  ./make_exception_branch_test.sh out_try_${I} unverifiable "" "$OP branch_target5"
+  ./make_exception_branch_test.sh out_catch_${I} unverifiable "" "" "$OP branch_target5"
+  ./make_exception_branch_test.sh out_finally_${I} unverifiable "" "" "" "$OP branch_target5"
+  ./make_exception_branch_test.sh out_filter_${I} unverifiable "" "" "" "" "$OP branch_target5"
   I=`expr $I + 1`
 done
 
-./make_exception_branch_test.sh ret_out_try "" "ldc.i4.0\n\tret"
-./make_exception_branch_test.sh ret_out_catch "" "" "ldc.i4.0\n\tret"
-./make_exception_branch_test.sh ret_out_finally "" "" "" "ldc.i4.0\n\tret"
-./make_exception_branch_test.sh ret_out_filter "" "" "" "" "ldc.i4.0\n\tret"
+for OP in "ldloc.0\n\tldloc.1\n\tbeq" "ldloc.0\n\tldloc.1\n\tbge"
+do
+  ./make_exception_branch_test.sh in_try_${I} invalid "$OP branch_target1"
+  ./make_exception_branch_test.sh in_catch_${I} invalid "$OP branch_target2"
+  ./make_exception_branch_test.sh in_finally_${I} invalid "$OP branch_target3"
+  ./make_exception_branch_test.sh in_filter_${I} invalid "$OP branch_target4"
+  ./make_exception_branch_test.sh out_try_${I} invalid "" "$OP branch_target5"
+  ./make_exception_branch_test.sh out_catch_${I} invalid "" "" "$OP branch_target5"
+  ./make_exception_branch_test.sh out_finally_${I} unverifiable "" "" "" "$OP branch_target5"
+  ./make_exception_branch_test.sh out_filter_${I} unverifiable "" "" "" "" "$OP branch_target5"
+  I=`expr $I + 1`
+done
+
+./make_exception_branch_test.sh ret_out_try unverifiable "" "ldc.i4.0\n\tret"
+./make_exception_branch_test.sh ret_out_catch unverifiable "" "" "ldc.i4.0\n\tret"
+./make_exception_branch_test.sh ret_out_finally unverifiable "" "" "" "ldc.i4.0\n\tret"
+./make_exception_branch_test.sh ret_out_filter unverifiable "" "" "" "" "ldc.i4.0\n\tret"
+
 
 # Unary branch op type tests (see 3.17)
 
@@ -3247,4 +3261,39 @@ done
 #neither is to branch to invalid regions of code
 ./make_leave_test.sh "filter_branch_before_start" invalid "1" "leave -400" "$EXTRA"
 ./make_leave_test.sh "filter_branch_after_end" invalid "1" "leave 400" "$EXTRA"
+
+
+# br.X
+#valid tests
+for I in {1..6}; do
+	./make_branch_test.sh branch_inside_same_block_${I} valid ${I} "br BLOCK_${I}";
+	./make_branch_test.sh branch_inside_same_block_${I}_s valid ${I} "br.s BLOCK_${I}";
+done
+
+#branching outside of the protected block
+for I in {2..6}; do
+	./make_branch_test.sh branch_outside_protected_block_${I} unverifiable ${I} "br END";
+done
+
+#branching to a protected block from the outside
+for I in {2..6}; do
+	if [ "$I" == "4" ]; then
+		./make_branch_test.sh branch_inside_protected_block_from_outside_${I}_finally invalid 1 "br BLOCK_${I}" "finally";
+		./make_branch_test.sh branch_inside_protected_block_from_outside_${I}_fault invalid 1 "br BLOCK_${I}" "fault";
+	else
+		./make_branch_test.sh branch_inside_protected_block_from_outside_${I} unverifiable 1 "br BLOCK_${I}";
+	fi
+done
+
+
+#branching out of range
+./make_branch_test.sh branch_out_of_bounds_before_start invalid 1 "br -1000";
+./make_branch_test.sh branch_out_of_bounds_after_end invalid 1 "br 1000";
+
+#branching in the middle of an instruction
+./make_branch_test.sh branch_middle_of_instruction invalid 1 "br 2";
+
+#branching in between prefix and instruction 
+./make_branch_test.sh branch_middle_of_instruction_prefix_1 invalid 1 "br AFTER_FIRST_PREFIX";
+./make_branch_test.sh branch_middle_of_instruction_prefix_2 invalid 1 "br AFTER_SECOND_PREFIX";
 
