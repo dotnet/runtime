@@ -1370,6 +1370,8 @@ mono_image_basic_method (ReflectionMethodBuilder *mb, MonoDynamicImage *assembly
 static void
 reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, MonoReflectionMethodBuilder *mb)
 {
+	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
+
 	rmb->ilgen = mb->ilgen;
 	rmb->rtype = mb->rtype;
 	rmb->parameters = mb->parameters;
@@ -1385,6 +1387,7 @@ reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb, Mono
 	rmb->name = mb->name;
 	rmb->table_idx = &mb->table_idx;
 	rmb->init_locals = mb->init_locals;
+	rmb->skip_visibility = FALSE;
 	rmb->return_modreq = mb->return_modreq;
 	rmb->return_modopt = mb->return_modopt;
 	rmb->param_modreq = mb->param_modreq;
@@ -1408,6 +1411,8 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoRe
 {
 	const char *name = mb->attrs & METHOD_ATTRIBUTE_STATIC ? ".cctor": ".ctor";
 
+	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
+
 	rmb->ilgen = mb->ilgen;
 	rmb->rtype = mono_type_get_object (mono_domain_get (), &mono_defaults.void_class->byval_arg);
 	rmb->parameters = mb->parameters;
@@ -1423,6 +1428,7 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoRe
 	rmb->name = mono_string_new (mono_domain_get (), name);
 	rmb->table_idx = &mb->table_idx;
 	rmb->init_locals = mb->init_locals;
+	rmb->skip_visibility = FALSE;
 	rmb->return_modreq = NULL;
 	rmb->return_modopt = NULL;
 	rmb->param_modreq = mb->param_modreq;
@@ -1436,6 +1442,8 @@ reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoRe
 static void
 reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb)
 {
+	memset (rmb, 0, sizeof (ReflectionMethodBuilder));
+
 	rmb->ilgen = mb->ilgen;
 	rmb->rtype = mb->rtype;
 	rmb->parameters = mb->parameters;
