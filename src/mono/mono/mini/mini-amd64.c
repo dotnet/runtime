@@ -4527,7 +4527,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_lea_membase (code, AMD64_R11, AMD64_RIP, 0);
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), AMD64_R11, 8);
 		/* Save fp */
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), AMD64_RBP, 8);
+		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
 		/* Save sp */
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 		/* Skip method (only needed for trampoline LMF frames) */
@@ -4809,7 +4809,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 		/* Restore caller saved regs */
 		if (cfg->used_int_regs & (1 << AMD64_RBP)) {
-			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, ebp), 8);
+			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), 8);
 		}
 		if (cfg->used_int_regs & (1 << AMD64_RBX)) {
 			amd64_mov_reg_membase (code, AMD64_RBX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), 8);

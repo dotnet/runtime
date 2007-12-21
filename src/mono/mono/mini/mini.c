@@ -9603,7 +9603,11 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 	jit_tls->end_of_stack = stack_start;
 
 	lmf = g_new0 (MonoLMF, 1);
+#ifdef MONO_ARCH_INIT_TOP_LMF_ENTRY
+	MONO_ARCH_INIT_TOP_LMF_ENTRY (lmf);
+#else
 	lmf->ebp = -1;
+#endif
 
 	jit_tls->first_lmf = lmf;
 

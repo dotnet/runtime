@@ -128,7 +128,7 @@ struct MonoLMF {
 	MonoMethod *method;
 	guint64     rip;
 	guint64     rbx;
-	guint64     ebp;
+	guint64     rbp;
 	guint64     rsp;
 	guint64     r12;
 	guint64     r13;
@@ -173,6 +173,8 @@ typedef struct {
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->rip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->rbp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->rsp))
+
+#define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 #ifdef _MSC_VER
 

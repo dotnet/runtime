@@ -553,13 +553,13 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			if (omit_fp)
 				lmf_match = (*lmf) && (*lmf)->rsp == ctx->rsp;
 			else
-				lmf_match = (*lmf) && (*lmf)->ebp == ctx->rbp;
+				lmf_match = (*lmf) && (*lmf)->rbp == ctx->rbp;
 
-			if (*lmf && ((*lmf) != jit_tls->first_lmf) && lmf_match) {
+			if (*lmf && lmf_match) {
 				/* Make sure the LMF belongs to this method */
 				g_assert ((*lmf)->rip >= (guint64)ji->code_start && (*lmf)->rip <= ((guint64)((guint8*)ji->code_start + ji->code_size)));
 
-				new_ctx->rbp = (*lmf)->ebp;
+				new_ctx->rbp = (*lmf)->rbp;
 				new_ctx->rbx = (*lmf)->rbx;
 				new_ctx->rsp = (*lmf)->rsp;
 				new_ctx->r12 = (*lmf)->r12;
@@ -655,7 +655,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		}
 
 		new_ctx->rip = (*lmf)->rip;
-		new_ctx->rbp = (*lmf)->ebp;
+		new_ctx->rbp = (*lmf)->rbp;
 		new_ctx->rsp = (*lmf)->rsp;
 
 		new_ctx->rbx = (*lmf)->rbx;
