@@ -65,9 +65,14 @@ enum {
 #define IS_MANAGED_POINTER(type) (((type) & POINTER_MASK) == POINTER_MASK)
 #define IS_NULL_LITERAL(type) (((type) & NULL_LITERAL_MASK) == NULL_LITERAL_MASK)
 
+/*Flags to be used with ILCodeDesc::flags */
 enum {
+	/*Instruction has not been processed.*/
 	IL_CODE_FLAG_NOT_PROCESSED  = 0,
-	IL_CODE_FLAG_SEEN = 1
+	/*Instruction was decoded by mono_method_verify loop.*/
+	IL_CODE_FLAG_SEEN = 1,
+	/*Instruction was target of a branch or is at a protected block boundary.*/
+	IL_CODE_FLAG_WAS_TARGET = 2
 };
 
 typedef struct {
@@ -1093,9 +1098,77 @@ in_same_block (MonoMethodHeader *header, guint offset, guint target)
 			return 0;
 		if (MONO_OFFSET_IN_HANDLER (clause, offset) ^ MONO_OFFSET_IN_HANDLER (clause, target))
 			return 0;
-		/* need to check filter ... */
+		if (MONO_OFFSET_IN_FILTER (clause, offset) ^ MONO_OFFSET_IN_FILTER (clause, target))
+			return 0;
 	}
 	return 1;
+}
+
+/*
+ * is_valid_branch_instruction:
+ *
+ * Verify if it's valid to perform a branch from @offset to @target.
+ * This should be used with br and brtrue/false.
+ * It returns 0 if valid, 1 for unverifiable and 2 for invalid.
+ * The major diferent from other similiar functions is that branching into a
+ * finally/fault block is invalid instead of just unverifiable.  
+ */
+static int
+is_valid_branch_instruction (MonoMethodHeader *header, guint offset, guint target)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		/*branching into a finally block is invalid*/
+		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags == MONO_EXCEPTION_CLAUSE_FAULT) &&
+			!MONO_OFFSET_IN_HANDLER (clause, offset) &&
+			MONO_OFFSET_IN_HANDLER (clause, target))
+			return 2;
+
+		if (MONO_OFFSET_IN_CLAUSE (clause, offset) ^ MONO_OFFSET_IN_CLAUSE (clause, target))
+			return 1;
+		if (MONO_OFFSET_IN_HANDLER (clause, offset) ^ MONO_OFFSET_IN_HANDLER (clause, target))
+			return 1;
+		if (MONO_OFFSET_IN_FILTER (clause, offset) ^ MONO_OFFSET_IN_FILTER (clause, target))
+			return 1;
+	}
+	return 0;
+}
+
+/*
+ * is_valid_cmp_branch_instruction:
+ * 
+ * Verify if it's valid to perform a branch from @offset to @target.
+ * This should be used with binary comparison branching instruction, like beq, bge and similars.
+ * It returns 0 if valid, 1 for unverifiable and 2 for invalid.
+ * 
+ * The major diferences from other similar functions are that most errors lead to invalid
+ * code and only branching out of finally, filter or fault clauses is unverifiable. 
+ */
+static int
+is_valid_cmp_branch_instruction (MonoMethodHeader *header, guint offset, guint target)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		/*branching out of a handler or finally*/
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_NONE &&
+			MONO_OFFSET_IN_HANDLER (clause, offset) &&
+			!MONO_OFFSET_IN_HANDLER (clause, target))
+			return 1;
+
+		if (MONO_OFFSET_IN_CLAUSE (clause, offset) ^ MONO_OFFSET_IN_CLAUSE (clause, target))
+			return 2;
+		if (MONO_OFFSET_IN_HANDLER (clause, offset) ^ MONO_OFFSET_IN_HANDLER (clause, target))
+			return 2;
+		if (MONO_OFFSET_IN_FILTER (clause, offset) ^ MONO_OFFSET_IN_FILTER (clause, target))
+			return 2;
+	}
+	return 0;
 }
 
 /*
@@ -1804,15 +1877,19 @@ handle_enum:
 	return;
 }
 
-/* Initialize a stack and push a given type. 
+/* 
+ * init_stack_with_value_at_exception_boundary:
+ * 
+ * Initialize the stack and push a given type.
+ * The instruction is marked as been on the exception boundary.
  */
 static void
-init_stack_with_value (VerifyContext *ctx, ILCodeDesc *code, MonoClass *klass)
+init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *code, MonoClass *klass)
 {
 	stack_init (ctx, code);
 	set_stack_value (code->stack, &klass->byval_arg, FALSE);
 	code->size = 1;
-	code->flags = IL_CODE_FLAG_SEEN;
+	code->flags |= IL_CODE_FLAG_WAS_TARGET;
 }
 
 /* Generics validation stuff, should be moved to another metadata/? file */
@@ -2287,7 +2364,11 @@ do_boolean_branch_op (VerifyContext *ctx, int delta)
 		return;
 	}
 
-	if (!in_same_block (ctx->header, ctx->ip_offset, target)) {
+	switch (is_valid_branch_instruction (ctx->header, ctx->ip_offset, target)) {
+	case 1:
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
+		break;
+	case 2:
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
 		return;
 	}
@@ -2320,7 +2401,11 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 		return;
 	}
 
-	if (!in_same_block (ctx->header, ctx->ip_offset, target)) {
+	switch (is_valid_cmp_branch_instruction (ctx->header, ctx->ip_offset, target)) {
+	case 1:
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
+		break;
+	case 2:
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
 		return;
 	}
@@ -2414,7 +2499,7 @@ do_ret (VerifyContext *ctx)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Stack not empty (%d) after ret at 0x%04x", ctx->eval.size, ctx->ip_offset));
 	} 
 	if (in_any_block (ctx->header, ctx->ip_offset))
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("ret cannot escape exception blocks at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("ret cannot escape exception blocks at 0x%04x", ctx->ip_offset));
 }
 
 /* FIXME: we could just load the signature instead of the whole MonoMethod
@@ -3193,30 +3278,56 @@ do_leave (VerifyContext *ctx, int delta)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Leave not allowed in finally block at 0x%04x", ctx->ip_offset));
 }
 
+/* 
+ * do_static_branch:
+ * 
+ * Verify br and br.s opcodes.
+ */
+static void
+do_static_branch (VerifyContext *ctx, int delta)
+{
+	int target = ctx->ip_offset + delta;
+	if (target < 0 || target >= ctx->code_size) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("branch target out of code at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	switch (is_valid_branch_instruction (ctx->header, ctx->ip_offset, target)) {
+	case 1:
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
+		break;
+	case 2:
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
+		break;
+	}
+
+	ctx->target = target;
+}
+
 /*Merge the stacks and perform compat checks*/
 static void
-merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start) 
+merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external) 
 {
 	int i;
 
 	if (to->flags == IL_CODE_FLAG_NOT_PROCESSED) 
-			stack_init (ctx, to);
+		stack_init (ctx, to);
 
 	if (start) {
 		if (to->flags == IL_CODE_FLAG_NOT_PROCESSED) 
 			from->size = 0;
 		else
-			stack_copy (&ctx->eval, to); 
+			stack_copy (&ctx->eval, to);
 		goto end_verify;
 	} else if (to->flags == IL_CODE_FLAG_NOT_PROCESSED) {
-		stack_copy (to, from);
+		printf ("going to END (2)\n");
 		goto end_verify;
 	}
 	VERIFIER_DEBUG ( printf ("performing stack merge %d x %d\n", from->size, to->size); );
 
 	if (from->size != to->size) {
-		VERIFIER_DEBUG ( printf ("different stack sizes %d x %d\n", from->size, to->size); );
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, different sizes (%d x %d)", from->size, to->size)); 
+		VERIFIER_DEBUG ( printf ("different stack sizes %d x %d at 0x%04x\n", from->size, to->size, ctx->ip_offset); );
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, different sizes (%d x %d) at 0x%04x", from->size, to->size, ctx->ip_offset)); 
 		goto end_verify;
 	}
 
@@ -3234,7 +3345,8 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start)
 	}
 
 end_verify:
-	to->flags = IL_CODE_FLAG_SEEN;
+	if (external)
+		to->flags |= IL_CODE_FLAG_WAS_TARGET;
 }
 
 
@@ -3250,7 +3362,7 @@ mono_method_verify (MonoMethod *method, int level)
 	const unsigned char *end;
 	const unsigned char *target = NULL; /* branch target */
 	int i, n, need_merge = 0, start = 0, handler_start = 0;
-	guint token, ip_offset = 0, prefix = 0;
+	guint token, ip_offset = 0, prefix = 0, prefix_list = 0;
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	VerifyContext ctx;
@@ -3342,11 +3454,11 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
-			init_stack_with_value (&ctx, ctx.code + clause->handler_offset, clause->data.catch_class);
+			init_stack_with_value_at_exception_boundary (&ctx, ctx.code + clause->handler_offset, clause->data.catch_class);
 		}
 		else if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-			init_stack_with_value (&ctx, ctx.code + clause->data.filter_offset, mono_defaults.exception_class);
-			init_stack_with_value (&ctx, ctx.code + clause->handler_offset, mono_defaults.exception_class);	
+			init_stack_with_value_at_exception_boundary (&ctx, ctx.code + clause->data.filter_offset, mono_defaults.exception_class);
+			init_stack_with_value_at_exception_boundary (&ctx, ctx.code + clause->handler_offset, mono_defaults.exception_class);	
 		}
 	}
 
@@ -3391,12 +3503,21 @@ mono_method_verify (MonoMethod *method, int level)
 		TODO verify need_merge
 		*/
 		if (need_merge) {
-			VERIFIER_DEBUG ( printf ("extra merge needed! %d \n", ctx.target); );
-			merge_stacks (&ctx, &ctx.eval, &ctx.code [ctx.target], FALSE);
+			VERIFIER_DEBUG ( printf ("extra merge needed! 0x%04x \n", ctx.target); );
+			merge_stacks (&ctx, &ctx.eval, &ctx.code [ctx.target], FALSE, TRUE);
 			need_merge = 0;	
 		}
-		merge_stacks (&ctx, &ctx.eval, &ctx.code[ip_offset], start);
+		merge_stacks (&ctx, &ctx.eval, &ctx.code[ip_offset], start, FALSE);
 		start = 0;
+
+		/*TODO we can fast detect a forward branch or exception block targeting code after prefix, we should fail fast*/
+		if (prefix) {
+			prefix_list |= prefix;
+		} else {
+			prefix_list = 0;
+			ctx.code [ip_offset].flags |= IL_CODE_FLAG_SEEN;
+		}
+		prefix = 0;
 
 #ifdef MONO_VERIFIER_DEBUG
 		{
@@ -3641,11 +3762,8 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 5;
 			break;
 		case CEE_BR_S:
-			target = ip + (signed char)ip [1] + 2;
-			if (target >= end || target < ctx.header->code)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
-			if (!in_same_block (ctx.header, ip_offset, target - ctx.header->code))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
+			do_static_branch (&ctx, (signed char)ip [1] + 2);
+			need_merge = 1;
 			ip += 2;
 			start = 1;
 			break;
@@ -3658,11 +3776,8 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_BR:
-			target = ip + (gint32)read32 (ip + 1) + 5;
-			if (target >= end || target < ctx.header->code)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
-			if (!in_same_block (ctx.header, ip_offset, target - ctx.header->code))
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ip_offset));
+			do_static_branch (&ctx, (gint32)read32 (ip + 1) + 5);
+			need_merge = 1;
 			ip += 5;
 			start = 1;
 			break;
@@ -4136,7 +4251,7 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 			case CEE_UNALIGNED_:
 				prefix |= PREFIX_UNALIGNED;
-				++ip;
+				ip += 2;
 				break;
 			case CEE_VOLATILE_:
 				prefix |= PREFIX_VOLATILE;
@@ -4211,6 +4326,11 @@ mono_method_verify (MonoMethod *method, int level)
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Run ahead of method code at 0x%04x", ip_offset));
 	}
 
+	/*We should guard against the last decoded opcode, otherwise we might add errors that doesn't make sense.*/
+	for (i = 0; i < ctx.code_size && i <= ip_offset; ++i) {
+		if ((ctx.code [i].flags & IL_CODE_FLAG_WAS_TARGET) && !(ctx.code [i].flags & IL_CODE_FLAG_SEEN))
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or exception block target middle of intruction at 0x%04x", i));		
+	}
 invalid_cil:
 
 	if (ctx.code) {
