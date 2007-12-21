@@ -542,11 +542,23 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		 * JIT, so we have to restore callee saved registers from the lmf.
 		 */
 		if (ji->method->save_lmf) {
-			/* 
-			 * We only need to do this if the exception was raised in managed
-			 * code, since otherwise the lmf was already popped of the stack.
+			gboolean lmf_match;
+
+			/*
+			 * If the exception was raised in unmanaged code, then the LMF was already
+			 * popped off the stack. We detect that case by comparing the sp (or bp)
+			 * value in the LMF with the one in the context. This works because these
+			 * registers are saved to the LMF at the start of the method.
 			 */
-			if (*lmf && ((*lmf) != jit_tls->first_lmf) && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->rsp)) {
+			if (omit_fp)
+				lmf_match = (*lmf) && (*lmf)->rsp == ctx->rsp;
+			else
+				lmf_match = (*lmf) && (*lmf)->ebp == ctx->rbp;
+
+			if (*lmf && ((*lmf) != jit_tls->first_lmf) && lmf_match) {
+				/* Make sure the LMF belongs to this method */
+				g_assert ((*lmf)->rip >= (guint64)ji->code_start && (*lmf)->rip <= ((guint64)((guint8*)ji->code_start + ji->code_size)));
+
 				new_ctx->rbp = (*lmf)->ebp;
 				new_ctx->rbx = (*lmf)->rbx;
 				new_ctx->rsp = (*lmf)->rsp;
@@ -554,6 +566,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 				new_ctx->r13 = (*lmf)->r13;
 				new_ctx->r14 = (*lmf)->r14;
 				new_ctx->r15 = (*lmf)->r15;
+
+				*lmf = (*lmf)->previous_lmf;
 			}
 		}
 		else {
