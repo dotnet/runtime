@@ -1,3 +1,7 @@
+2007-12-23  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/glib.h: Include <limits.h>. Fixes #350482.
+
 2007-11-21  Dick Porter  <dick@ximian.com>
 
 	* src/gslist.c (g_slist_find_custom): Implement
