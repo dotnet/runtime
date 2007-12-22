@@ -1,5 +1,5 @@
 /*
- * threads.h: Thread support internal calls
+ * threads.h: Threading API
  *
  * Author:
  *	Dick Porter (dick@ximian.com)
@@ -14,7 +14,6 @@
 #include <mono/utils/mono-membar.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
-#include <mono/metadata/threads-types.h>
 
 G_BEGIN_DECLS
 
