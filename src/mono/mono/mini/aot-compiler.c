@@ -2364,7 +2364,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	guint8 *p, *buf;
 	int i, buf_size;
 	char *label;
-	gboolean no_special_static;
+	gboolean no_special_static, cant_encode;
 
 	buf_size = 10240 + (klass->vtable_size * 16);
 	p = buf = g_malloc (buf_size);
@@ -2381,7 +2381,16 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 
 	no_special_static = !mono_class_has_special_static_fields (klass);
 
-	if (klass->generic_container) {
+	/* Check whenever we have enough info to encode the vtable */
+	cant_encode = FALSE;
+	for (i = 0; i < klass->vtable_size; ++i) {
+		MonoMethod *cm = klass->vtable [i];
+
+		if (cm && mono_method_signature (cm)->is_inflated && !g_hash_table_lookup (acfg->token_info_hash, cm))
+			cant_encode = TRUE;
+	}
+
+	if (klass->generic_container || cant_encode) {
 		encode_value (-1, p, &p);
 	} else {
 		encode_value (klass->vtable_size, p, &p);
@@ -2823,6 +2832,9 @@ compile_method (MonoAotCompile *acfg, int index)
 				 * assembly which contains the element type, and not the assembly which
 				 * referenced this type.
 				 */
+				skip = TRUE;
+			if (patch_info->data.method->is_inflated && !g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method))
+				/* FIXME: Can't encode these */
 				skip = TRUE;
 			break;
 		case MONO_PATCH_INFO_VTABLE:
