@@ -321,17 +321,11 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 	MonoDomain *domain = mono_domain_get ();
 	MonoDelegate *delegate;
 	MonoJitInfo *ji;
-	gpointer iter;
 	MonoMethod *invoke, *m;
 	MonoMethod *method = NULL;
 	gboolean multicast, callvirt;
 
-	/* Find the Invoke method */
-	iter = NULL;
-	while ((invoke = mono_class_get_methods (klass, &iter))) {
-		if (!strcmp (invoke->name, "Invoke"))
-			break;
-	}
+	invoke = mono_get_delegate_invoke (klass);
 	g_assert (invoke);
 
 	/* Obtain the delegate object according to the calling convention */
