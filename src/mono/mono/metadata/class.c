@@ -4529,8 +4529,15 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 {
 	MonoClass *class = NULL;
 
-	if (image->dynamic)
+	if (image->dynamic) {
+		int table = mono_metadata_token_table (type_token);
+
+		if (table != MONO_TABLE_TYPEDEF && table != MONO_TABLE_TYPEREF && table != MONO_TABLE_TYPESPEC) {
+			mono_loader_set_error_bad_image (g_strdup ("Bad type token."));
+			return NULL;
+		}
 		return mono_lookup_dynamic_token (image, type_token, context);
+	}
 
 	switch (type_token & 0xff000000){
 	case MONO_TOKEN_TYPE_DEF:

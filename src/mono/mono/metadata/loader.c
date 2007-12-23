@@ -344,12 +344,6 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	const char *ptr;
 	guint32 idx = mono_metadata_token_index (token);
 
-	if (image->dynamic) {
-		MonoClassField *result = mono_lookup_dynamic_token (image, token, context);
-		*retklass = result->parent;
-		return result;
-	}
-
 	mono_metadata_decode_row (&tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
 	nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
 	class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
@@ -428,7 +422,16 @@ mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass,
 	MonoClassField *field;
 
 	if (image->dynamic) {
-		MonoClassField *result = mono_lookup_dynamic_token (image, token, context);
+		MonoClassField *result;
+		MonoClass *handle_class;
+
+		*retklass = NULL;
+		result = mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context);
+		// This checks the memberref type as well
+		if (result && handle_class != mono_defaults.fieldhandle_class) {
+			mono_loader_set_error_bad_image (g_strdup ("Bad field token."));
+			return NULL;
+		}
 		*retklass = result->parent;
 		return result;
 	}
@@ -1313,11 +1316,15 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
 	if (image->dynamic) {
-		if (table != MONO_TABLE_METHOD && table != MONO_TABLE_METHODSPEC && table != MONO_TABLE_MEMBERREF) {
+		MonoClass *handle_class;
+
+		result = mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context);
+		// This checks the memberref type as well
+		if (result && handle_class != mono_defaults.methodhandle_class) {
 			mono_loader_set_error_bad_image (g_strdup ("Bad method token."));
 			return NULL;
 		}
-		return mono_lookup_dynamic_token (image, token, context);
+		return result;
 	}
 
 	if (table != MONO_TABLE_METHOD) {
