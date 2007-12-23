@@ -66,23 +66,6 @@ struct _MonoRemotingMethods {
 
 typedef struct _MonoRemotingMethods MonoRemotingMethods;
 
-#ifdef DEBUG_RUNTIME_CODE
-static char*
-indenter (MonoDisHelper *dh, MonoMethod *method, guint32 ip_offset)
-{
-	return g_strdup (" ");
-}
-
-static MonoDisHelper marshal_dh = {
-	"\n",
-	"IL_%04x: ",
-	"IL_%04x",
-	indenter, 
-	NULL,
-	NULL
-};
-#endif 
-
 /* 
  * This mutex protects the various marshalling related caches in MonoImage
  * and a few other data structures static to this file.
