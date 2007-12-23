@@ -95,11 +95,14 @@ mono_marshal_get_write_barrier (void) MONO_INTERNAL;
 
 /* method builder functions */
 
-void
-mono_mb_free (MonoMethodBuilder *mb) MONO_INTERNAL;
-
 MonoMethodBuilder *
 mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type) MONO_INTERNAL;
+
+MonoMethodBuilder *
+mono_mb_new_no_dup_name (MonoClass *klass, const char *name, MonoWrapperType type) MONO_INTERNAL;
+
+void
+mono_mb_free (MonoMethodBuilder *mb) MONO_INTERNAL;
 
 void
 mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value) MONO_INTERNAL;
@@ -118,6 +121,9 @@ mono_mb_get_label (MonoMethodBuilder *mb) MONO_INTERNAL;
 
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data) MONO_INTERNAL;
+
+void
+mono_mb_emit_ptr (MonoMethodBuilder *mb, gpointer ptr) MONO_INTERNAL;
 
 void
 mono_mb_emit_calli (MonoMethodBuilder *mb, MonoMethodSignature *sig) MONO_INTERNAL;
