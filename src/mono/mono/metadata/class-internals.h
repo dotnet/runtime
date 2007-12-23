@@ -176,6 +176,7 @@ enum {
 	MONO_EXCEPTION_METHOD_ACCESS = 9,
 	MONO_EXCEPTION_FIELD_ACCESS = 10,
 	MONO_EXCEPTION_GENERIC_SHARING_FAILED = 11,
+	MONO_EXCEPTION_BAD_IMAGE = 12
 	/* add other exception type */
 };
 
@@ -516,6 +517,7 @@ typedef struct {
 	MonoClass *klass; /* If kind != TYPE */
 	const char *member_name; /* If kind != TYPE */
 	gboolean ref_only; /* If kind == ASSEMBLY */
+	char *msg; /* If kind == BAD_IMAGE */
 } MonoLoaderError;
 
 #define mono_class_has_parent(klass,parent) (((klass)->idepth >= (parent)->idepth) && ((klass)->supertypes [(parent)->idepth - 1] == (parent)))
@@ -798,6 +800,8 @@ mono_loader_set_error_method_load (const char *class_name, const char *member_na
 
 void
 mono_loader_set_error_field_load (MonoClass *klass, const char *member_name) MONO_INTERNAL;
+void
+mono_loader_set_error_bad_image (char *msg) MONO_INTERNAL;
 
 MonoException *
 mono_loader_error_prepare_exception (MonoLoaderError *error) MONO_INTERNAL;
