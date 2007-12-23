@@ -108,6 +108,9 @@ void
 mono_mb_patch_addr_s (MonoMethodBuilder *mb, int pos, gint8 value) MONO_INTERNAL;
 
 void
+mono_mb_patch_branch (MonoMethodBuilder *mb, guint32 pos) MONO_INTERNAL;
+
+void
 mono_mb_patch_short_branch (MonoMethodBuilder *mb, guint32 pos) MONO_INTERNAL;
 
 int
@@ -115,6 +118,9 @@ mono_mb_get_label (MonoMethodBuilder *mb) MONO_INTERNAL;
 
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data) MONO_INTERNAL;
+
+void
+mono_mb_emit_calli (MonoMethodBuilder *mb, MonoMethodSignature *sig) MONO_INTERNAL;
 
 void
 mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpointer func) MONO_INTERNAL;
@@ -150,6 +156,9 @@ void
 mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char *msg) MONO_INTERNAL;
 
 void
+mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg) MONO_INTERNAL;
+
+void
 mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value) MONO_INTERNAL;
 
 guint32
@@ -172,6 +181,9 @@ mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data) MONO_INTERNAL;
 
 void
 mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data) MONO_INTERNAL;
+
+void
+mono_mb_emit_op (MonoMethodBuilder *mb, guint8 op, gpointer data) MONO_INTERNAL;
 
 void
 mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str) MONO_INTERNAL;
