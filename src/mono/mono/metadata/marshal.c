@@ -12,6 +12,7 @@
 #include "object.h"
 #include "loader.h"
 #include "metadata/marshal.h"
+#include "metadata/method-builder.h"
 #include "metadata/tabledefs.h"
 #include "metadata/exception.h"
 #include "metadata/appdomain.h"
@@ -45,17 +46,6 @@ enum {
 	LAST = 0xff
 };
 #undef OPDEF
-
-struct _MonoMethodBuilder {
-	MonoMethod *method;
-	char *name;
-	GList *locals_list;
-	int locals;
-	gboolean dynamic;
-	gboolean no_dup_name;
-	guint32 code_size, pos;
-	unsigned char *code;
-};
 
 struct _MonoRemotingMethods {
 	MonoMethod *invoke;
@@ -1199,9 +1189,7 @@ mono_mb_emit_proxy_check (MonoMethodBuilder *mb, int branch_code)
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_CLASSCONST);
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, mono_defaults.transparent_proxy_class));
-	mono_mb_emit_byte (mb, branch_code);
-	pos = mb->pos;
-	mono_mb_emit_i4 (mb, 0);
+	pos = mono_mb_emit_branch (mb, branch_code);
 	return pos;
 }
 
@@ -1214,9 +1202,7 @@ mono_mb_emit_xdomain_check (MonoMethodBuilder *mb, int branch_code)
 	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, target_domain_id));
 	mono_mb_emit_byte (mb, CEE_LDIND_I4);
 	mono_mb_emit_icon (mb, -1);
-	mono_mb_emit_byte (mb, branch_code);
-	pos = mb->pos;
-	mono_mb_emit_i4 (mb, 0);
+	pos = mono_mb_emit_branch (mb, branch_code);
 	return pos;
 }
 
@@ -1455,8 +1441,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			/* Loop footer */
 			mono_mb_emit_add_to_local (mb, index_var, 1);
 
-			mono_mb_emit_byte (mb, CEE_BR);
-			mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+			mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
 			mono_mb_patch_branch (mb, label3);
 		
@@ -1883,8 +1868,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			/* Loop footer */
 			mono_mb_emit_add_to_local (mb, index_var, 1);
 
-			mono_mb_emit_byte (mb, CEE_BR);
-			mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+			mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
 			mono_mb_patch_branch (mb, label3);
 		
@@ -3765,7 +3749,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	/* Main exception catch */
 	main_clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
-	main_clause->try_len = mb->pos - main_clause->try_offset;
+	main_clause->try_len = mono_mb_get_pos (mb) - main_clause->try_offset;
 	main_clause->data.catch_class = mono_defaults.object_class;
 	
 	/* handler code */
@@ -3776,7 +3760,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	mono_mb_emit_ldloc (mb, loc_serialized_exc);
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 	mono_mb_emit_branch (mb, CEE_LEAVE);
-	main_clause->handler_len = mb->pos - main_clause->handler_offset;
+	main_clause->handler_len = mono_mb_get_pos (mb) - main_clause->handler_offset;
 	/* end catch */
 
 	mono_mb_patch_branch (mb, pos_leave);
@@ -4779,7 +4763,7 @@ handle_enum:
 	mono_mb_patch_short_branch (mb, posna);
 	mono_mb_emit_branch (mb, CEE_LEAVE);
 
-	clause->handler_len = mb->pos - clause->handler_offset;
+	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
 
 	/* return result */
 	mono_mb_patch_branch (mb, pos);
@@ -7286,8 +7270,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_add_to_local (mb, index_var, 1);
 			mono_mb_emit_add_to_local (mb, dest_ptr, esize);
 			
-			mono_mb_emit_byte (mb, CEE_BR);
-			mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+			mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
 			mono_mb_patch_branch (mb, label3);
 
@@ -7412,8 +7395,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_add_to_local (mb, index_var, 1);
 			mono_mb_emit_add_to_local (mb, src_ptr, esize);
 
-			mono_mb_emit_byte (mb, CEE_BR);
-			mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+			mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
 			mono_mb_patch_branch (mb, label1);
 			mono_mb_patch_branch (mb, label3);
@@ -7603,8 +7585,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_add_to_local (mb, index_var, 1);
 		mono_mb_emit_add_to_local (mb, src_ptr, esize);
 
-		mono_mb_emit_byte (mb, CEE_BR);
-		mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+		mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
 		mono_mb_patch_branch (mb, label1);
 		mono_mb_patch_branch (mb, label3);
@@ -7724,8 +7705,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_add_to_local (mb, index_var, 1);
 		mono_mb_emit_add_to_local (mb, dest_ptr, esize);
 
-		mono_mb_emit_byte (mb, CEE_BR);
-		mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+		mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
 		mono_mb_patch_branch (mb, label1);
 		mono_mb_patch_branch (mb, label3);
@@ -7820,8 +7800,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_add_to_local (mb, index_var, 1);
 		mono_mb_emit_add_to_local (mb, dest, esize);
 
-		mono_mb_emit_byte (mb, CEE_BR);
-		mono_mb_emit_i4 (mb, label2 - (mb->pos + 4));
+		mono_mb_emit_branch_label (mb, CEE_BR, label2);
 
 		mono_mb_patch_branch (mb, label3);
 		mono_mb_patch_branch (mb, label1);
@@ -9200,7 +9179,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 
 	pos = mono_mb_emit_branch (mb, CEE_LEAVE);
 
-	clause->try_len = mb->pos - clause->try_offset;
+	clause->try_len = mono_mb_get_pos (mb) - clause->try_offset;
 	clause->handler_offset = mono_mb_get_label (mb);
 
 	/* Call Monitor::Exit() */
@@ -9209,7 +9188,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	mono_mb_emit_managed_call (mb, exit_method, NULL);
 	mono_mb_emit_byte (mb, CEE_ENDFINALLY);
 
-	clause->handler_len = mb->pos - clause->handler_offset;
+	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
 
 	mono_mb_patch_branch (mb, pos);
 	if (!MONO_TYPE_IS_VOID (sig->ret))
@@ -11493,7 +11472,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 		/* Main exception catch */
 		main_clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
-		main_clause->try_len = mb->pos - main_clause->try_offset;
+		main_clause->try_len = mono_mb_get_pos (mb) - main_clause->try_offset;
 		main_clause->data.catch_class = mono_defaults.object_class;
 		
 		/* handler code */
@@ -11501,7 +11480,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 		mono_mb_emit_managed_call (mb, get_hr_for_exception, NULL);
 		mono_mb_emit_stloc (mb, hr);
 		mono_mb_emit_branch (mb, CEE_LEAVE);
-		main_clause->handler_len = mb->pos - main_clause->handler_offset;
+		main_clause->handler_len = mono_mb_get_pos (mb) - main_clause->handler_offset;
 		/* end catch */
 
 		mono_mb_patch_branch (mb, pos_leave);

@@ -53,6 +53,7 @@ libmonoruntime_la_SOURCES = \
 	sgen-gc.h	\
 	gc.c		\
 	gc-internal.h	\
+	method-builder.h \
 	method-builder.c \
 	marshal.c	\
 	marshal.h	\
