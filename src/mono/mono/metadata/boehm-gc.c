@@ -10,7 +10,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
-#include <mono/metadata/marshal.h>
+#include <mono/metadata/method-builder.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/utils/mono-logger.h>
 

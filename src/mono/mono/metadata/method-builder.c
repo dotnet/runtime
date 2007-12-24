@@ -9,22 +9,14 @@
  */
 
 #include "config.h"
-#include "object.h"
 #include "loader.h"
-#include "metadata/marshal.h"
-#include "metadata/tabledefs.h"
-#include "metadata/exception.h"
-#include "metadata/appdomain.h"
+#include "mono/metadata/method-builder.h"
+#include "mono/metadata/tabledefs.h"
+#include "mono/metadata/exception.h"
+#include "mono/metadata/appdomain.h"
 #include "mono/metadata/debug-helpers.h"
-#include "mono/metadata/threadpool.h"
-#include "mono/metadata/threads.h"
-#include "mono/metadata/monitor.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/domain-internals.h"
-#include "mono/metadata/gc-internal.h"
-#include "mono/metadata/threads-types.h"
-#include "mono/metadata/string-icalls.h"
-#include <mono/os/gc_wrapper.h>
 #include <string.h>
 #include <errno.h>
 
@@ -38,17 +30,6 @@ enum {
 	LAST = 0xff
 };
 #undef OPDEF
-
-struct _MonoMethodBuilder {
-	MonoMethod *method;
-	char *name;
-	GList *locals_list;
-	int locals;
-	gboolean dynamic;
-	gboolean no_dup_name;
-	guint32 code_size, pos;
-	unsigned char *code;
-};
 
 #ifdef DEBUG_RUNTIME_CODE
 static char*
@@ -423,6 +404,12 @@ mono_mb_get_label (MonoMethodBuilder *mb)
 	return mb->pos;
 }
 
+int
+mono_mb_get_pos (MonoMethodBuilder *mb)
+{
+	return mb->pos;
+}
+
 guint32
 mono_mb_emit_branch (MonoMethodBuilder *mb, guint8 op)
 {
@@ -442,6 +429,13 @@ mono_mb_emit_short_branch (MonoMethodBuilder *mb, guint8 op)
 	mono_mb_emit_byte (mb, 0);
 
 	return res;
+}
+
+void
+mono_mb_emit_branch_label (MonoMethodBuilder *mb, guint8 op, guint32 label)
+{
+	mono_mb_emit_byte (mb, op);
+	mono_mb_emit_i4 (mb, label - (mb->pos + 4));
 }
 
 void
