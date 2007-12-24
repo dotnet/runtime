@@ -104,6 +104,7 @@ typedef struct {
 	int num_locals;
 	MonoType **locals;
 
+	/*TODO get rid of target here, need_merge in mono_method_verify and hoist the merging code in the branching code*/
 	int target;
 
 	guint32 ip_offset;
@@ -114,6 +115,9 @@ typedef struct {
 	MonoImage *image;
 	MonoMethod *method;
 } VerifyContext;
+
+static void
+merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external);
 
 //////////////////////////////////////////////////////////////////
 
@@ -3304,6 +3308,38 @@ do_static_branch (VerifyContext *ctx, int delta)
 	ctx->target = target;
 }
 
+static void
+do_switch (VerifyContext *ctx, int count, const unsigned char *data)
+{
+	int i, base = ctx->ip_offset + 5 + count * 4;
+	ILStackDesc *value;
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	value = stack_pop (ctx);
+
+	if (value->stype != TYPE_I4 && value->stype != TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument to switch at 0x%04x", ctx->ip_offset));
+
+	for (i = 0; i < count; ++i) {
+		int target = base + read32 (data + i * 4);
+
+		if (target < 0 || target >= ctx->code_size)
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Switch target %x out of code at 0x%04x", i, ctx->ip_offset));
+
+		switch (is_valid_branch_instruction (ctx->header, ctx->ip_offset, target)) {
+		case 1:
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Switch target %x escapes out of exception block at 0x%04x", i, ctx->ip_offset));
+			break;
+		case 2:
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Switch target %x escapes out of exception block at 0x%04x", i, ctx->ip_offset));
+			break;
+		}
+		merge_stacks (ctx, &ctx->eval, &ctx->code [target], FALSE, TRUE);
+	}
+}
+
 /*Merge the stacks and perform compat checks*/
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external) 
@@ -3320,14 +3356,14 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, g
 			stack_copy (&ctx->eval, to);
 		goto end_verify;
 	} else if (to->flags == IL_CODE_FLAG_NOT_PROCESSED) {
-		printf ("going to END (2)\n");
+		stack_copy (to, &ctx->eval);
 		goto end_verify;
 	}
 	VERIFIER_DEBUG ( printf ("performing stack merge %d x %d\n", from->size, to->size); );
 
 	if (from->size != to->size) {
 		VERIFIER_DEBUG ( printf ("different stack sizes %d x %d at 0x%04x\n", from->size, to->size, ctx->ip_offset); );
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, different sizes (%d x %d) at 0x%04x", from->size, to->size, ctx->ip_offset)); 
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Could not merge stacks, different sizes (%d x %d) at 0x%04x", from->size, to->size, ctx->ip_offset)); 
 		goto end_verify;
 	}
 
@@ -3528,6 +3564,7 @@ mono_method_verify (MonoMethod *method, int level)
 			g_free (discode);
 		}
 		dump_stack_state (&ctx.code [ip_offset]);
+		dump_stack_state (&ctx.eval);
 #endif
 
 		switch (*ip) {
@@ -3791,15 +3828,8 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_SWITCH:
 			n = read32 (ip + 1);
-			target = ip + sizeof (guint32) * n;
-			/* FIXME: check that ip is in range (and within the same exception block) */
-			for (i = 0; i < n; ++i)
-				if (target + (gint32) read32 (ip + 5 + i * sizeof (gint32)) >= end || target + (gint32) read32 (ip + 5 + i * sizeof (gint32)) < ctx.header->code)
-					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch target out of code at 0x%04x", ip_offset));
-			if (!check_underflow (&ctx, 1))
-				break;
-			if (stack_pop (&ctx)->stype != TYPE_I4)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to switch at 0x%04x", ip_offset));
+			do_switch (&ctx, n, (ip + 5));
+			start = 1;
 			ip += 5 + sizeof (guint32) * n;
 			break;
 
