@@ -69,6 +69,7 @@ branch_target3:
 	}
 
 	{
+		pop
 		nop
 branch_target4:
 		OPCODE5

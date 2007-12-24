@@ -3297,3 +3297,51 @@ done
 ./make_branch_test.sh branch_middle_of_instruction_prefix_1 invalid 1 "br AFTER_FIRST_PREFIX";
 ./make_branch_test.sh branch_middle_of_instruction_prefix_2 invalid 1 "br AFTER_SECOND_PREFIX";
 
+#TODO test the encoding of the switch table
+# switch
+#valid tests
+for I in {1..6}; do
+	./make_switch_test.sh switch_inside_same_block_${I} valid ${I} "ldloc.0" "switch (BLOCK_${I}, BLOCK_${I}_B)";
+done
+
+./make_switch_test.sh switch_with_native_int_on_stack valid 1 "ldloc.1" "switch (BLOCK_1, BLOCK_1_B)";
+
+#branching outside of the protected block
+for I in {2..6}; do
+	./make_switch_test.sh switch_outside_protected_block_${I} unverifiable ${I} "ldloc.0" "switch (END, BLOCK_1, BLOCK_1_B)";
+done
+
+#branching to a protected block from the outside
+for I in {2..6}; do
+	if [ "$I" == "4" ]; then
+		./make_switch_test.sh switch_inside_protected_block_from_outside_${I}_finally invalid 1 "ldloc.0" "switch (BLOCK_${I}, BLOCK_${I}_B)" "finally";
+		./make_switch_test.sh switch_inside_protected_block_from_outside_${I}_fault invalid 1 "ldloc.0" "switch (BLOCK_${I}, BLOCK_${I}_B)" "fault";
+	else
+		./make_switch_test.sh switch_inside_protected_block_from_outside_${I} unverifiable 1 "ldloc.0" "switch (BLOCK_${I}, BLOCK_${I}_B)";
+	fi
+done
+
+#TODO branching out of range (FIX ilasm first)
+#./make_switch_test.sh switch_out_of_bounds_before_start invalid 1 "ldloc.0" "switch (-1000, -2000)"
+#./make_switch_test.sh switch_out_of_bounds_after_end invalid 1 "ldloc.0" "switch (BLOCK_1, 1000, 1500)"
+
+#empty stack
+./make_switch_test.sh switch_empty_stack invalid 1 "nop" "switch (BLOCK_1, BLOCK_1_B)"
+
+#wrong type on stack
+I=1
+for TYPE in "ldnull" "ldc.i8 0" "ldc.r4 0" "ldc.r8 0"
+do
+	./make_switch_test.sh switch_bad_type_on_stack_${I} unverifiable 1 "$TYPE" "switch (BLOCK_1, BLOCK_1_B)"
+	I=`expr $I + 1`
+done
+
+#switch landing in the middle of instructions
+#FIXME (ilasm don't work with offsets on switch statements)
+#./make_switch_test.sh switch_target_middle_of_instruction invalid 1 "ldloc.1" "switch (BLOCK_1, BLOCK_1)";
+
+./make_switch_test.sh switch_target_between_prefix_1 invalid 1 "ldloc.1" "switch (AFTER_FIRST_PREFIX, BLOCK_1)";
+./make_switch_test.sh switch_target_between_prefix_2 invalid 1 "ldloc.1" "switch (AFTER_SECOND_PREFIX, BLOCK_1)";
+./make_switch_test.sh switch_target_bad_merge_point invalid 1 "ldloc.1" "switch (INVALID_MERGE_POINT, BLOCK_1)";
+
+
