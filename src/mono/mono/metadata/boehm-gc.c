@@ -23,6 +23,8 @@
 #include "private/pthread_support.h"
 #endif
 
+static gboolean gc_initialized = FALSE;
+
 static void
 mono_gc_warning (char *msg, GC_word arg)
 {
@@ -32,6 +34,59 @@ mono_gc_warning (char *msg, GC_word arg)
 void
 mono_gc_base_init (void)
 {
+	if (gc_initialized)
+		return;
+
+	/*
+	 * Handle the case when we are called from a thread different from the main thread,
+	 * confusing libgc.
+	 * FIXME: Move this to libgc where it belongs.
+	 *
+	 * we used to do this only when running on valgrind,
+	 * but it happens also in other setups.
+	 */
+#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
+	{
+		size_t size;
+		void *sstart;
+		pthread_attr_t attr;
+		pthread_getattr_np (pthread_self (), &attr);
+		pthread_attr_getstack (&attr, &sstart, &size);
+		pthread_attr_destroy (&attr); 
+		/*g_print ("stackbottom pth is: %p\n", (char*)sstart + size);*/
+#ifdef __ia64__
+		/*
+		 * The calculation above doesn't seem to work on ia64, also we need to set
+		 * GC_register_stackbottom as well, but don't know how.
+		 */
+#else
+		/* apparently with some linuxthreads implementations sstart can be NULL,
+		 * fallback to the more imprecise method (bug# 78096).
+		 */
+		if (sstart) {
+			GC_stackbottom = (char*)sstart + size;
+		} else {
+			int dummy;
+			gsize stack_bottom = (gsize)&dummy;
+			stack_bottom += 4095;
+			stack_bottom &= ~4095;
+			GC_stackbottom = (char*)stack_bottom;
+		}
+#endif
+	}
+#elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
+		GC_stackbottom = (char*)pthread_get_stackaddr_np (pthread_self ());
+#else
+	{
+		int dummy;
+		gsize stack_bottom = (gsize)&dummy;
+		stack_bottom += 4095;
+		stack_bottom &= ~4095;
+		/*g_print ("stackbottom is: %p\n", (char*)stack_bottom);*/
+		GC_stackbottom = (char*)stack_bottom;
+	}
+#endif
+
 	GC_init ();
 	GC_no_dls = TRUE;
 	GC_oom_fn = mono_gc_out_of_memory;
@@ -42,6 +97,8 @@ mono_gc_base_init (void)
 #ifdef HAVE_GC_GCJ_MALLOC
 	GC_init_gcj_malloc (5, NULL);
 #endif
+
+	gc_initialized = TRUE;
 }
 
 void
