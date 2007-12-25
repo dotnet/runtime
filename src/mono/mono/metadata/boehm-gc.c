@@ -32,6 +32,7 @@ mono_gc_warning (char *msg, GC_word arg)
 void
 mono_gc_base_init (void)
 {
+	GC_init ();
 	GC_no_dls = TRUE;
 	GC_oom_fn = mono_gc_out_of_memory;
 	GC_set_warn_proc (mono_gc_warning);
@@ -163,6 +164,13 @@ mono_gc_enable_events (void)
 }
 
 #endif
+
+int
+mono_gc_register_root (char *start, size_t size, void *descr)
+{
+	/* for some strange reason, they want one extra byte on the end */
+	GC_add_roots (start, start + size + 1);
+}
 
 void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj)

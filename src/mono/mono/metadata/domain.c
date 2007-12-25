@@ -1151,7 +1151,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_counters_register ("Max code space allocated in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_alloc);
 	mono_counters_register ("Total code space allocated", MONO_COUNTER_INT|MONO_COUNTER_JIT, &total_domain_code_alloc);
 
-	MONO_GC_PRE_INIT ();
+	mono_gc_base_init ();
 
 	appdomain_thread_id = TlsAlloc ();
 

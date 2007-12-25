@@ -11,6 +11,11 @@
 #ifdef HAVE_NULL_GC
 
 void
+mono_gc_base_init (void)
+{
+}
+
+void
 mono_gc_collect (int generation)
 {
 }
@@ -81,6 +86,11 @@ mono_object_is_alive (MonoObject* o)
 
 void
 mono_gc_enable_events (void)
+{
+}
+
+int
+mono_gc_register_root (char *start, size_t size, void *descr)
 {
 }
 
