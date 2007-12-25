@@ -41,14 +41,6 @@
 #	else
 #		error have boehm GC without headers, you probably need to install them by hand
 #	endif
-	/* for some strange resion, they want one extra byte on the end */
-#	define MONO_GC_REGISTER_ROOT(x) \
-		GC_add_roots ((char*)&(x), (char*)&(x) + sizeof (x) + 1)
-	/* this needs to be called before ANY gc allocations. We can't use
-	 * mono_gc_init here because we need to make allocations before that
-	 * function is called 
-	 */
-#	define MONO_GC_PRE_INIT() GC_init ()
 
 #if defined(PLATFORM_WIN32)
 #define CreateThread GC_CreateThread
@@ -73,16 +65,12 @@ int mono_gc_pthread_detach (pthread_t thread);
 
 #endif
 
+#else /* not Boehm and not sgen GC */
+#endif
+
 extern int
 mono_gc_register_root (char *start, size_t size, void *descr);
-extern void mono_gc_base_init (void);
 
-#	define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root (&(x), sizeof(x), NULL)
-#	define MONO_GC_PRE_INIT() mono_gc_base_init ()
-
-#else /* not Boehm and not sgen GC */
-#	define MONO_GC_REGISTER_ROOT(x) /* nop */
-#	define MONO_GC_PRE_INIT()
-#endif
+#define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root ((char*)&(x), sizeof(x), NULL)
 
 #endif
