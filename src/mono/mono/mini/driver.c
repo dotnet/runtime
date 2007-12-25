@@ -42,6 +42,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/os/gc_wrapper.h>
 #include "mono/utils/mono-counters.h"
 
@@ -1253,7 +1254,7 @@ mono_main (int argc, char* argv[])
 
 	if (enable_profile) {
 		/* Needed because of TLS accesses in mono_profiler_load () */
-		MONO_GC_PRE_INIT ();
+		mono_gc_base_init ();
 		mono_profiler_load (profile_options);
 	}
 

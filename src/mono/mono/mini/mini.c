@@ -12758,7 +12758,7 @@ mini_init (const char *filename, const char *runtime_version)
 	}
 #endif
 #endif
-	MONO_GC_PRE_INIT ();
+	mono_gc_base_init ();
 
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
