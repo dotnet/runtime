@@ -859,9 +859,6 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		mono_register_jit_icall (mono_string_alloc, "mono_string_alloc", mono_create_icall_signature ("object int"), FALSE);
 
 #ifdef HAVE_GC_GCJ_MALLOC
-
-		GC_init_gcj_malloc (5, NULL);
-
 		/* 
 		 * This is not needed unless the relevant code in mono_get_allocation_ftn () is 
 		 * turned on.

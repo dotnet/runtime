@@ -92,6 +92,7 @@ mono_gc_enable_events (void)
 int
 mono_gc_register_root (char *start, size_t size, void *descr)
 {
+	return TRUE;
 }
 
 void

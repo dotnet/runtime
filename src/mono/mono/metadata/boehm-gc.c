@@ -38,6 +38,10 @@ mono_gc_base_init (void)
 	GC_set_warn_proc (mono_gc_warning);
 	GC_finalize_on_demand = 1;
 	GC_finalizer_notifier = mono_gc_finalize_notify;
+
+#ifdef HAVE_GC_GCJ_MALLOC
+	GC_init_gcj_malloc (5, NULL);
+#endif
 }
 
 void
@@ -170,6 +174,8 @@ mono_gc_register_root (char *start, size_t size, void *descr)
 {
 	/* for some strange reason, they want one extra byte on the end */
 	GC_add_roots (start, start + size + 1);
+
+	return TRUE;
 }
 
 void
