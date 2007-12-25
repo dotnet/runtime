@@ -5190,9 +5190,7 @@ reflected_hash (gconstpointer a) {
         mono_domain_unlock (domain); \
 	} while (0)
 
-#if HAVE_BOEHM_GC
-#define ALLOC_REFENTRY GC_MALLOC (sizeof (ReflectedEntry))
-#elif HAVE_SGEN_GC
+#ifndef HAVE_NULL_GC
 #define ALLOC_REFENTRY mono_gc_alloc_fixed (sizeof (ReflectedEntry), NULL)
 #else
 #define ALLOC_REFENTRY mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry))
