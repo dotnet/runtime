@@ -114,6 +114,18 @@ mono_gc_weak_link_get (void **link_addr)
 }
 
 void*
+mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
+{
+	return NULL;
+}
+
+void*
+mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
+{
+	return NULL;
+}
+
+void*
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {
 	return NULL;

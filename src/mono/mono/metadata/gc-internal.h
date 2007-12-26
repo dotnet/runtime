@@ -78,7 +78,7 @@ void     mono_gc_finalize_notify    (void) MONO_INTERNAL;
 
 void* mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size) MONO_INTERNAL;
 void* mono_gc_alloc_obj (MonoVTable *vtable, size_t size) MONO_INTERNAL;
-void* mono_gc_make_descr_for_string (void) MONO_INTERNAL;
+void* mono_gc_make_descr_for_string (gsize *bitmap, int numbits) MONO_INTERNAL;
 void* mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size) MONO_INTERNAL;
 void* mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size) MONO_INTERNAL;
 

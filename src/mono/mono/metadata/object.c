@@ -44,13 +44,9 @@
 #define CREATION_SPEEDUP 1
 #define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
 #define ALLOC_TYPED(dest,size,type) do { (dest) = GC_GCJ_MALLOC ((size),(type)); } while (0)
-#define MAKE_STRING_DESCRIPTOR(bitmap,sz) GC_make_descriptor((GC_bitmap)(bitmap),(sz))
-#define MAKE_DESCRIPTOR(bitmap,sz,objsize) GC_make_descriptor((GC_bitmap)(bitmap),(sz))
 #else
 #define GC_NO_DESCRIPTOR (NULL)
 #define ALLOC_TYPED(dest,size,type) do { (dest) = GC_MALLOC ((size)); *(gpointer*)dest = (type);} while (0)
-#define MAKE_STRING_DESCRIPTOR(bitmap,sz) NULL
-#define MAKE_DESCRIPTOR(bitmap,sz,objsize) NULL
 #endif
 #else
 #ifdef HAVE_SGEN_GC
@@ -58,16 +54,12 @@
 #define ALLOC_PTRFREE(obj,vt,size) do { (obj) = mono_gc_alloc_obj (vt, size);} while (0)
 #define ALLOC_OBJECT(obj,vt,size) do { (obj) = mono_gc_alloc_obj (vt, size);} while (0)
 #define ALLOC_TYPED(dest,size,type) do { (dest) = mono_gc_alloc_obj (type, size);} while (0)
-#define MAKE_STRING_DESCRIPTOR(bitmap,sz) mono_gc_make_descr_for_string ()
-#define MAKE_DESCRIPTOR(bitmap,sz,objsize) mono_gc_make_descr_for_object ((bitmap), (sz), (objsize))
 #else
 #define NEED_TO_ZERO_PTRFREE 1
 #define GC_NO_DESCRIPTOR (NULL)
 #define ALLOC_PTRFREE(obj,vt,size) do { (obj) = malloc ((size)); (obj)->vtable = (vt); (obj)->synchronisation = NULL;} while (0)
 #define ALLOC_OBJECT(obj,vt,size) do { (obj) = calloc (1, (size)); (obj)->vtable = (vt);} while (0)
 #define ALLOC_TYPED(dest,size,type) do { (dest) = calloc (1, (size)); *(gpointer*)dest = (type);} while (0)
-#define MAKE_STRING_DESCRIPTOR(bitmap,sz) NULL
-#define MAKE_DESCRIPTOR(bitmap,sz,objsize) NULL
 #endif
 #endif
 
@@ -888,7 +880,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 
 	bitmap = default_bitmap;
 	if (class == mono_defaults.string_class) {
-		class->gc_descr = (gpointer)MAKE_STRING_DESCRIPTOR (bitmap, 2);
+		class->gc_descr = (gpointer)mono_gc_make_descr_for_string (bitmap, 2);
 	} else if (class->rank) {
 		mono_class_compute_gc_descriptor (class->element_class);
 #ifdef HAVE_SGEN_GC
@@ -913,16 +905,11 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		if (count++ > 58)
 			return;*/
 		bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
-#ifdef HAVE_BOEHM_GC
-		/* It seems there are issues when the bitmap doesn't fit: play it safe */
-		if (max_set >= 30) {
-			/*g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);*/
-			if (bitmap != default_bitmap)
-				g_free (bitmap);
-			return;
-		}
-#endif
-		class->gc_descr = (gpointer)MAKE_DESCRIPTOR (bitmap, max_set + 1, class->instance_size);
+		class->gc_descr = (gpointer)mono_gc_make_descr_for_object (bitmap, max_set + 1, class->instance_size);
+		/*
+		if (class->gc_descr == GC_NO_DESCRIPTOR)
+			g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);
+		*/
 		/*printf ("new descriptor: %p 0x%x for %s.%s\n", class->gc_descr, bitmap [0], class->name_space, class->name);*/
 		if (bitmap != default_bitmap)
 			g_free (bitmap);

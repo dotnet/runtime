@@ -733,7 +733,7 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
  * Descriptor builders.
  */
 void*
-mono_gc_make_descr_for_string (void)
+mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 {
 	return (void*) DESC_TYPE_STRING;
 }

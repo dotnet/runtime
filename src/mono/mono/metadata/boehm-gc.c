@@ -23,6 +23,8 @@
 #include "private/pthread_support.h"
 #endif
 
+#define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
+
 static gboolean gc_initialized = FALSE;
 
 static void
@@ -190,7 +192,7 @@ gboolean
 mono_object_is_alive (MonoObject* o)
 {
 #ifdef USE_INCLUDED_LIBGC
-	return GC_is_marked (o);
+	return GC_is_marked ((gpointer)o);
 #else
 	return TRUE;
 #endif
@@ -260,9 +262,29 @@ mono_gc_weak_link_get (void **link_addr)
 }
 
 void*
+mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
+{
+	return mono_gc_make_descr_from_bitmap (bitmap, numbits);
+}
+
+void*
+mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
+{
+	return mono_gc_make_descr_from_bitmap (bitmap, numbits);
+}
+
+void*
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {
+#ifdef HAVE_GC_GCJ_MALLOC
+	/* It seems there are issues when the bitmap doesn't fit: play it safe */
+	if (numbits >= 30)
+		return GC_NO_DESCRIPTOR;
+	else
+		return (gpointer)GC_make_descriptor ((GC_bitmap)bitmap, numbits);
+#else
 	return NULL;
+#endif
 }
 
 void*
@@ -551,7 +573,6 @@ create_allocator (int atype, int offset)
 }
 
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
-#define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
 
 /*
  * If possible, generate a managed method that can quickly allocate objects in class
