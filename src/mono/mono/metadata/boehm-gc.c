@@ -274,6 +274,13 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 }
 
 void*
+mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size)
+{
+	/* libgc has no usable support for arrays... */
+	return GC_NO_DESCRIPTOR;
+}
+
+void*
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {
 #ifdef HAVE_GC_GCJ_MALLOC

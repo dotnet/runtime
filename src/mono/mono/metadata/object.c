@@ -883,8 +883,6 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		class->gc_descr = (gpointer)mono_gc_make_descr_for_string (bitmap, 2);
 	} else if (class->rank) {
 		mono_class_compute_gc_descriptor (class->element_class);
-#ifdef HAVE_SGEN_GC
-		/* libgc has no usable support for arrays... */
 		if (!class->element_class->valuetype) {
 			gsize abm = 1;
 			class->gc_descr = mono_gc_make_descr_for_array (TRUE, &abm, 1, sizeof (gpointer));
@@ -899,7 +897,6 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 			if (bitmap != default_bitmap)
 				g_free (bitmap);
 		}
-#endif
 	} else {
 		/*static int count = 0;
 		if (count++ > 58)

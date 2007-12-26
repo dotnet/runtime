@@ -126,6 +126,12 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 }
 
 void*
+mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size)
+{
+	return NULL;
+}
+
+void*
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {
 	return NULL;
