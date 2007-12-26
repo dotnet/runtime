@@ -890,7 +890,7 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 				class->name_space, class->name);*/
 		} else {
 			/* remove the object header */
-			bitmap = compute_class_bitmap (class->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
+			bitmap = compute_class_bitmap (class->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
 			class->gc_descr = mono_gc_make_descr_for_array (TRUE, bitmap, mono_array_element_size (class) / sizeof (gpointer), mono_array_element_size (class));
 			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
