@@ -167,7 +167,9 @@ mono_gc_enable (void)
 gboolean
 mono_gc_is_gc_thread (void)
 {
-#ifdef USE_INCLUDED_LIBGC
+#if GC_VERSION_MAJOR >= 7
+	return TRUE;
+#elif defined(USE_INCLUDED_LIBGC)
 	return GC_thread_is_registered ();
 #else
 	return TRUE;
@@ -179,12 +181,32 @@ extern int GC_thread_register_foreign (void *base_addr);
 gboolean
 mono_gc_register_thread (void *baseptr)
 {
+#if GC_VERSION_MAJOR >= 7
+	struct GC_stack_base sb;
+	int res;
+
+	res = GC_get_stack_base (&sb);
+	if (res != GC_SUCCESS) {
+		sb.mem_base = baseptr;
+#ifdef __ia64__
+		/* Can't determine the register stack bounds */
+		g_error ("mono_gc_register_thread failed ().\n");
+#endif
+	}
+	res = GC_register_my_thread (&sb);
+	if ((res != GC_SUCCESS) && (res != GC_DUPLICATE)) {
+		g_warning ("GC_register_my_thread () failed.\n");
+		return FALSE;
+	}
+	return TRUE;
+#else
 	if (mono_gc_is_gc_thread())
 		return TRUE;
 #if defined(USE_INCLUDED_LIBGC) && !defined(PLATFORM_WIN32)
 	return GC_thread_register_foreign (baseptr);
 #else
 	return FALSE;
+#endif
 #endif
 }
 
