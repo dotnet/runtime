@@ -72,7 +72,11 @@ enum {
 	/*Instruction was decoded by mono_method_verify loop.*/
 	IL_CODE_FLAG_SEEN = 1,
 	/*Instruction was target of a branch or is at a protected block boundary.*/
-	IL_CODE_FLAG_WAS_TARGET = 2
+	IL_CODE_FLAG_WAS_TARGET = 2,
+	/*Used by stack_init to avoid double initialize each entry.*/
+	IL_CODE_FLAG_STACK_INITED = 4,
+	/*Used by merge_stacks to decide if it should just copy the eval stack.*/
+	IL_CODE_STACK_MERGED = 8,
 };
 
 typedef struct {
@@ -1131,7 +1135,7 @@ is_valid_branch_instruction (MonoMethodHeader *header, guint offset, guint targe
 			MONO_OFFSET_IN_HANDLER (clause, target))
 			return 2;
 
-		if (MONO_OFFSET_IN_CLAUSE (clause, offset) ^ MONO_OFFSET_IN_CLAUSE (clause, target))
+		if (clause->try_offset != target && (MONO_OFFSET_IN_CLAUSE (clause, offset) ^ MONO_OFFSET_IN_CLAUSE (clause, target)))
 			return 1;
 		if (MONO_OFFSET_IN_HANDLER (clause, offset) ^ MONO_OFFSET_IN_HANDLER (clause, target))
 			return 1;
@@ -1165,7 +1169,7 @@ is_valid_cmp_branch_instruction (MonoMethodHeader *header, guint offset, guint t
 			!MONO_OFFSET_IN_HANDLER (clause, target))
 			return 1;
 
-		if (MONO_OFFSET_IN_CLAUSE (clause, offset) ^ MONO_OFFSET_IN_CLAUSE (clause, target))
+		if (clause->try_offset != target && (MONO_OFFSET_IN_CLAUSE (clause, offset) ^ MONO_OFFSET_IN_CLAUSE (clause, target)))
 			return 2;
 		if (MONO_OFFSET_IN_HANDLER (clause, offset) ^ MONO_OFFSET_IN_HANDLER (clause, target))
 			return 2;
@@ -1433,10 +1437,12 @@ mono_type_from_stack_slot (ILStackDesc *slot)
 static void
 stack_init (VerifyContext *ctx, ILCodeDesc *state) 
 {
+	if (state->flags & IL_CODE_FLAG_STACK_INITED)
+		return;
 	state->size = 0;
-	if (!state->stack) {
+	state->flags |= IL_CODE_FLAG_STACK_INITED;
+	if (!state->stack)
 		state->stack = g_new0 (ILStackDesc, ctx->max_stack);
-	}
 }
 
 static void
@@ -3345,9 +3351,7 @@ static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external) 
 {
 	int i;
-
-	if (to->flags == IL_CODE_FLAG_NOT_PROCESSED) 
-		stack_init (ctx, to);
+	stack_init (ctx, to);
 
 	if (start) {
 		if (to->flags == IL_CODE_FLAG_NOT_PROCESSED) 
@@ -3355,7 +3359,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, g
 		else
 			stack_copy (&ctx->eval, to);
 		goto end_verify;
-	} else if (to->flags == IL_CODE_FLAG_NOT_PROCESSED) {
+	} else if (!(to->flags & IL_CODE_STACK_MERGED)) {
 		stack_copy (to, &ctx->eval);
 		goto end_verify;
 	}
@@ -3383,6 +3387,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, g
 end_verify:
 	if (external)
 		to->flags |= IL_CODE_FLAG_WAS_TARGET;
+	to->flags |= IL_CODE_STACK_MERGED;
 }
 
 #define HANDLER_START(clause) ((clause)->flags == MONO_EXCEPTION_CLAUSE_FILTER ? (clause)->data.filter_offset : clause->handler_offset)
@@ -3589,6 +3594,7 @@ mono_method_verify (MonoMethod *method, int level)
 		/*We need to check against fallthrou in and out of protected blocks.
 		 * For fallout we check the once a protected block ends, if the start flag is not set.
 		 * Likewise for fallthru in, we check if ip is the start of a protected block and start is not set
+		 * TODO convert these checks to be done using flags and not this loop
 		 */
 		for (i = 0; i < ctx.header->num_clauses && ctx.valid; ++i) {
 			MonoExceptionClause *clause = ctx.header->clauses + i;
@@ -3613,6 +3619,11 @@ mono_method_verify (MonoMethod *method, int level)
 
 			if (clause->handler_offset == ip_offset && start == 0) {
 				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("fallthru handler block at 0x%04x", ip_offset));
+				start = 1;
+			}
+
+			if (clause->try_offset == ip_offset && ctx.eval.size > 0) {
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Try to enter try block with a non-empty stack at 0x%04x", ip_offset));
 				start = 1;
 			}
 		}
