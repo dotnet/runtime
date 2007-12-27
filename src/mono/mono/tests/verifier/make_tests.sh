@@ -3345,3 +3345,49 @@ done
 ./make_switch_test.sh switch_target_bad_merge_point invalid 1 "ldloc.1" "switch (INVALID_MERGE_POINT, BLOCK_1)";
 
 
+#TESTS for exception clauses. As described in P1 12.4.2.7.
+#regions must not overlap with each other
+./make_exception_overlap_test.sh exception_entry_overlap_separate_1 valid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+./make_exception_overlap_test.sh exception_entry_overlap_separate_2 valid ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" 
+
+./make_exception_overlap_test.sh exception_entry_overlap_try_over_catch invalid ".try TRY_BLOCK_1 to CATCH_BLOCK_1_A catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+./make_exception_overlap_test.sh exception_entry_overlap_try_over_filter invalid ".try TRY_BLOCK_1 to FILTER_BLOCK_3_A filter FILTER_BLOCK_3 handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" "yes"
+
+#blocks start in the middle of an intruction
+./make_exception_overlap_test.sh try_block_start_in_the_middle_of_a_instruction invalid ".try AFTER_PREFIX_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+./make_exception_overlap_test.sh catch_block_start_in_the_middle_of_a_instruction invalid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler AFTER_PREFIX_2 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+./make_exception_overlap_test.sh filter_block_start_in_the_middle_of_a_instructior invalid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END filter AFTER_PREFIX_4 handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" "yes"
+
+
+#block end in the middle of an instruction
+./make_exception_overlap_test.sh try_block_end_in_the_middle_of_a_instruction invalid ".try TRY_BLOCK_1 to AFTER_PREFIX_4 catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+./make_exception_overlap_test.sh catch_block_end_in_the_middle_of_a_instruction invalid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to AFTER_PREFIX_5" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+
+#regions are disjoint
+./make_exception_overlap_test.sh exception_entry_overlap_disjoint_1 valid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END"
+
+./make_exception_overlap_test.sh exception_entry_overlap_disjoint_2 valid ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+#nesting
+./make_exception_overlap_test.sh nested_exception_entry_comes_first valid ".try TRY_BLOCK_1_A to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_1 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+./make_exception_overlap_test.sh nested_exception_entry_comes_after invalid ".try TRY_BLOCK_1 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" ".try TRY_BLOCK_1_A to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END"
+
+
+#mutual protectiong
+./make_exception_overlap_test.sh exception_same_try valid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END"
+
+./make_exception_overlap_test.sh exception_same_catch invalid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" ".try TRY_BLOCK_2 to TRY_BLOCK_2_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END"
+
+./make_exception_overlap_test.sh exception_same_try_with_catch_and_filter valid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_2 to CATCH_BLOCK_2_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END filter FILTER_BLOCK_3 handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" "yes"
+
+./make_exception_overlap_test.sh exception_same_try_with_catch_and_finally invalid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END finally handler FINALLY_BLOCK_1 to FINALLY_BLOCK_1_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" "no" "yes"
+
+./make_exception_overlap_test.sh exception_same_try_with_catch_and_fault invalid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END fault handler FINALLY_BLOCK_1 to FINALLY_BLOCK_1_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" "no" "yes"
+
