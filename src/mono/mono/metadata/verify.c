@@ -3385,6 +3385,97 @@ end_verify:
 		to->flags |= IL_CODE_FLAG_WAS_TARGET;
 }
 
+#define HANDLER_START(clause) ((clause)->flags == MONO_EXCEPTION_CLAUSE_FILTER ? (clause)->data.filter_offset : clause->handler_offset)
+#define IS_CATCH_OR_FILTER(clause) ((clause)->flags == MONO_EXCEPTION_CLAUSE_FILTER || (clause)->flags == MONO_EXCEPTION_CLAUSE_NONE)
+
+/*
+ * is_clause_in_range :
+ * 
+ * Returns TRUE if either the protected block or the handler of @clause is in the @start - @end range.  
+ */
+static gboolean
+is_clause_in_range (MonoExceptionClause *clause, guint32 start, guint32 end)
+{
+	if (clause->try_offset >= start && clause->try_offset < end)
+		return TRUE;
+	if (HANDLER_START (clause) >= start && HANDLER_START (clause) < end)
+		return TRUE;
+	return FALSE;
+}
+
+/*
+ * is_clause_inside_range :
+ * 
+ * Returns TRUE if @clause lies completely inside the @start - @end range.  
+ */
+static gboolean
+is_clause_inside_range (MonoExceptionClause *clause, guint32 start, guint32 end)
+{
+	if (clause->try_offset < start || (clause->try_offset + clause->try_len) > end)
+		return FALSE;
+	if (HANDLER_START (clause) < start || (clause->handler_offset + clause->handler_len) > end)
+		return FALSE;
+	return TRUE;
+}
+
+/*
+ * is_clause_nested :
+ * 
+ * Returns TRUE if @nested is nested in @clause.   
+ */
+static gboolean
+is_clause_nested (MonoExceptionClause *clause, MonoExceptionClause *nested)
+{
+	if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER && is_clause_inside_range (nested, clause->data.filter_offset, clause->handler_offset))
+		return TRUE;
+	return is_clause_inside_range (nested, clause->try_offset, clause->try_offset + clause->try_len) ||
+	is_clause_inside_range (nested, clause->handler_offset, clause->handler_offset + clause->handler_len);
+}
+
+/* Test the relationship between 2 exception clauses. Follow  P.1 12.4.2.7 of ECMA
+ * the each pair of exception must have the following properties:
+ *  - one is fully nested on another (the outer must not be a filter clause) (the nested one must come earlier)
+ *  - completely disjoin (none of the 3 regions of each entry overlap with the other 3)
+ *  - mutual protection (protected block is EXACT the same, handlers are disjoin and all handler are catch or all handler are filter)
+ */
+static void
+verify_clause_relationship (VerifyContext *ctx, MonoExceptionClause *clause, MonoExceptionClause *to_test)
+{
+	/*clause is nested*/
+	if (is_clause_nested (to_test, clause)) {
+		if (to_test->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Exception clause inside filter"));
+		}
+		return;
+	}
+
+	/*wrong nesting order.*/
+	if (is_clause_nested (clause, to_test)) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Nested exception clause appears after enclosing clause"));
+		return;
+	}
+
+	/*mutual protection*/
+	if (clause->try_offset == to_test->try_offset && clause->try_len == to_test->try_len) {
+		/*handlers are not disjoint*/
+		if (is_clause_in_range (to_test, HANDLER_START (clause), clause->handler_offset + clause->handler_len)) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Exception handlers overlap"));
+			return;
+		}
+		/* handlers are not catch or filter */
+		if (!IS_CATCH_OR_FILTER (clause) || !IS_CATCH_OR_FILTER (to_test)) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Exception clauses with shared protected block are neither catch or filter"));
+			return;
+		}
+		/*OK*/
+		return;
+	}
+
+	/*not completelly disjoint*/
+	if (is_clause_in_range (to_test, clause->try_offset, clause->try_offset + clause->try_len) ||
+		is_clause_in_range (to_test, HANDLER_START (clause), clause->handler_offset + clause->handler_len))
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Exception clauses overlap"));
+}
 
 /*
  * FIXME: need to distinguish between valid and verifiable.
@@ -3396,8 +3487,7 @@ mono_method_verify (MonoMethod *method, int level)
 {
 	const unsigned char *ip;
 	const unsigned char *end;
-	const unsigned char *target = NULL; /* branch target */
-	int i, n, need_merge = 0, start = 0, handler_start = 0;
+	int i, n, need_merge = 0, start = 0;
 	guint token, ip_offset = 0, prefix = 0, prefix_list = 0;
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
@@ -3459,35 +3549,30 @@ mono_method_verify (MonoMethod *method, int level)
 		MonoExceptionClause *clause = ctx.header->clauses + i;
 		VERIFIER_DEBUG (printf ("clause try %x len %x filter at %x handler at %x len %x\n", clause->try_offset, clause->try_len, clause->data.filter_offset, clause->handler_offset, clause->handler_len); );
 
-		if (clause->try_offset < 0 || clause->try_offset > ctx.code_size)
+		if (clause->try_offset > ctx.code_size)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause out of bounds at 0x%04x", clause->try_offset));
 
 		if (clause->try_len <= 0)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
 
-		if (clause->handler_offset < 0 || clause->handler_offset > ctx.code_size)
+		if (clause->handler_offset > ctx.code_size)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause out of bounds at 0x%04x", clause->try_offset));
 
 		if (clause->handler_len <= 0)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
 
-		if (i && clause->handler_offset + clause->handler_len < handler_start)
-			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("exception handler are in the wrong order, 0x%04x > 0x%04x", handler_start, clause->handler_offset));
-
-		if (clause->try_offset < clause->handler_offset && clause->try_offset + clause->try_len > clause->handler_offset)
+		if (clause->try_offset < clause->handler_offset && clause->try_offset + clause->try_len > HANDLER_START (clause))
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try block (at 0x%04x) includes handler block (at 0x%04x)", clause->try_offset, clause->handler_offset));
 
-		if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-			for (n = 0; n < ctx.header->num_clauses && ctx.valid; ++n) {
-				MonoExceptionClause *inner = ctx.header->clauses + n;
-				if (n != i && clause->data.filter_offset <= inner->try_offset && clause->handler_offset > inner->try_offset)
-					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("filter clause contains a try starting at 0x%04x", inner->try_offset));
-			}
-		}
-		handler_start = clause->handler_offset  + clause->handler_len;
+		for (n = i + 1; n < ctx.header->num_clauses && ctx.valid; ++n)
+			verify_clause_relationship (&ctx, clause, ctx.header->clauses + n);
 
 		if (!ctx.valid)
 			break;
+
+		ctx.code [clause->try_offset].flags |= IL_CODE_FLAG_WAS_TARGET;
+		ctx.code [clause->try_offset + clause->try_len].flags |= IL_CODE_FLAG_WAS_TARGET;
+		ctx.code [clause->handler_offset + clause->handler_len].flags |= IL_CODE_FLAG_WAS_TARGET;
 
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
 			init_stack_with_value_at_exception_boundary (&ctx, ctx.code + clause->handler_offset, clause->data.catch_class);
@@ -3515,19 +3600,19 @@ mono_method_verify (MonoMethod *method, int level)
 
 			if ((clause->handler_offset + clause->handler_len == ip_offset) && start == 0) {
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("fallthru off handler block at 0x%04x", ip_offset));
+					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("fallout of handler block at 0x%04x", ip_offset));
 				else
-					CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("fallthru off handler block at 0x%04x", ip_offset));
+					CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("fallout of handler block at 0x%04x", ip_offset));
 				start = 1;
 			}
 
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER && clause->handler_offset == ip_offset && start == 0) {
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("fallthru off filter block at 0x%04x", ip_offset));
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("fallout of filter block at 0x%04x", ip_offset));
 				start = 1;
 			}
 
 			if (clause->handler_offset == ip_offset && start == 0) {
-				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("fallthru in handler block at 0x%04x", ip_offset));
+				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("fallthru handler block at 0x%04x", ip_offset));
 				start = 1;
 			}
 		}
@@ -4357,7 +4442,7 @@ mono_method_verify (MonoMethod *method, int level)
 	}
 
 	/*We should guard against the last decoded opcode, otherwise we might add errors that doesn't make sense.*/
-	for (i = 0; i < ctx.code_size && i <= ip_offset; ++i) {
+	for (i = 0; i < ctx.code_size && i < ip_offset; ++i) {
 		if ((ctx.code [i].flags & IL_CODE_FLAG_WAS_TARGET) && !(ctx.code [i].flags & IL_CODE_FLAG_SEEN))
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or exception block target middle of intruction at 0x%04x", i));		
 	}
