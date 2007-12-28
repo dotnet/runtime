@@ -52,7 +52,7 @@
 		<type fullname="System.GC" />
 		<type fullname="System.Globalization.DateTimeFormatInfo" preserve="fields" />
 		<type fullname="System.Globalization.CompareInfo" preserve="fields" />
-		<type fullname="System.Globalization.CultureInfo" preserve="fields" />
+		<type fullname="System.Globalization.CultureInfo" preserve="all" />
 		<type fullname="System.Globalization.NumberFormatInfo" preserve="fields" />
 		<type fullname="System.Globalization.RegionInfo" preserve="fields" />
 		<type fullname="System.Globalization.SortKey" preserve="fields" />

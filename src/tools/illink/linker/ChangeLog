@@ -1,3 +1,9 @@
+2007-12-28  Gert Driesen  <drieseng@users.sourceforge.net>
+
+	* Descriptors/mscorlib.xml: Preserve all for CultureInfo to prevent
+	linker from removing CreateCulture method that is only used by the
+	runtime.
+
 2007-11-21  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker.Steps/ResolveFromXmlStep.cs:
