@@ -4278,7 +4278,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 
 	if (count > 0) {
 		MonoMethodDesc *desc = mono_method_desc_new (
-			"System.Globalization.CultureInfo:CreateSpecificCulture(string)", TRUE);
+			"System.Globalization.CultureInfo:CreateCulture(string,bool)", TRUE);
 		create_culture = mono_method_desc_search_in_image (desc, mono_defaults.corlib);
 		g_assert (create_culture);
 		mono_method_desc_free (desc);
@@ -4305,8 +4305,10 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 		MONO_OBJECT_SETREF (aname, version, create_version (domain, aname->major, aname->minor, aname->build, aname->revision));
 
 		if (create_culture) {
-			gpointer args [1];
+			gpointer args [2];
+			gboolean assembly_ref = TRUE;
 			args [0] = mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]));
+			args [1] = &assembly_ref;
 			MONO_OBJECT_SETREF (aname, cultureInfo, mono_runtime_invoke (create_culture, NULL, args, NULL));
 		}
 		
@@ -4714,10 +4716,11 @@ static void
 fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version)
 {
 	static MonoMethod *create_culture = NULL;
-	gpointer args [1];
+	gpointer args [2];
 	guint32 pkey_len;
 	const char *pkey_ptr;
 	gchar *codebase;
+	gboolean assembly_ref = FALSE;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -4737,7 +4740,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	}
 
 	if (!create_culture) {
-		MonoMethodDesc *desc = mono_method_desc_new ("System.Globalization.CultureInfo:CreateSpecificCulture(string)", TRUE);
+		MonoMethodDesc *desc = mono_method_desc_new ("System.Globalization.CultureInfo:CreateCulture(string,bool)", TRUE);
 		create_culture = mono_method_desc_search_in_image (desc, mono_defaults.corlib);
 		g_assert (create_culture);
 		mono_method_desc_free (desc);
@@ -4745,6 +4748,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 
 	if (name->culture) {
 		args [0] = mono_string_new (domain, name->culture);
+		args [1] = &assembly_ref;
 		MONO_OBJECT_SETREF (aname, cultureInfo, mono_runtime_invoke (create_culture, NULL, args, NULL));
 	}
 
