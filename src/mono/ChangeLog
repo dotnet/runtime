@@ -1,3 +1,7 @@
+2007-12-28  Everaldo Canuto  <ecanuto@novell.com>
+
+	* configure.in: Add support for oprofile.
+
 2007-12-08  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add check for sys/mkdev.h.
