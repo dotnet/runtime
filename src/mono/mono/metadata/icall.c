@@ -5774,12 +5774,18 @@ ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData (guint32 year, MonoArray 
 		tz_info.StandardDate.wYear = year;
 		convert_to_absolute_date(&tz_info.StandardDate);
 		err = SystemTimeToFileTime (&tz_info.StandardDate, &ft);
-		g_assert(err);
+		//g_assert(err);
+		if (err == 0)
+			return 0;
+		
 		mono_array_set ((*data), gint64, 1, FILETIME_ADJUST + (((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime));
 		tz_info.DaylightDate.wYear = year;
 		convert_to_absolute_date(&tz_info.DaylightDate);
 		err = SystemTimeToFileTime (&tz_info.DaylightDate, &ft);
-		g_assert(err);
+		//g_assert(err);
+		if (err == 0)
+			return 0;
+		
 		mono_array_set ((*data), gint64, 0, FILETIME_ADJUST + (((guint64)ft.dwHighDateTime<<32) | ft.dwLowDateTime));
 	}
 	mono_array_set ((*data), gint64, 2, (tz_info.Bias + tz_info.StandardBias) * -600000000LL);
