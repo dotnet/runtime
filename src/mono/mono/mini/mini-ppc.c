@@ -316,7 +316,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		g_assert ((code - start) <= 16);
 
-		mono_arch_flush_icache (code, 16);
+		mono_arch_flush_icache (start, 16);
 		cached = start;
 		mono_mini_arch_unlock ();
 		return cached;
@@ -350,7 +350,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		g_assert ((code - start) <= size);
 
-		mono_arch_flush_icache (code, size);
+		mono_arch_flush_icache (start, size);
 		cache [sig->param_count] = start;
 		mono_mini_arch_unlock ();
 		return start;
