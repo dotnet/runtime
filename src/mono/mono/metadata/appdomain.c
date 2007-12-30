@@ -197,7 +197,6 @@ mono_get_corlib_version (void)
 const char*
 mono_check_corlib_version (void)
 {
-	return NULL;
 	int version = mono_get_corlib_version ();
 	if (version != MONO_CORLIB_VERSION)
 		return g_strdup_printf ("expected corlib version %d, found %d.", MONO_CORLIB_VERSION, version);
