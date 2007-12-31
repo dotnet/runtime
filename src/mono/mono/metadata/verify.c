@@ -82,6 +82,7 @@ enum {
 typedef struct {
 	MonoType *type;
 	int stype;
+	MonoMethodSignature *sig;
 } ILStackDesc;
 
 
@@ -174,8 +175,22 @@ enum {
 	PREFIX_ADDR_MASK = 3,
 	PREFIX_FUNC_MASK = 4
 };
+//////////////////////////////////////////////////////////////////
 
 
+/*Token validation macros and functions */
+#define IS_MEMBER_REF(token) (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
+#define IS_METHOD_DEF(token) (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
+#define IS_METHOD_DEF_OR_REF(token) (IS_METHOD_DEF (token) || IS_MEMBER_REF (token))
+
+/*
+ * Verify if @token refers to a valid row on int's table.
+ */
+static gboolean
+token_bounds_check (MonoImage *image, guint32 token)
+{
+	return image->tables [mono_metadata_token_table (token)].rows >= mono_metadata_token_index (token);
+}
 
 //////////////////////////////////////////////////////////////////
 void
@@ -3346,6 +3361,31 @@ do_switch (VerifyContext *ctx, int count, const unsigned char *data)
 	}
 }
 
+static void
+do_ldftn (VerifyContext *ctx, guint32 token)
+{
+	ILStackDesc *ptr;
+	MonoMethod *method;
+	if (!check_overflow (ctx))
+		return;
+
+	if (!IS_METHOD_DEF_OR_REF (token) || !token_bounds_check (ctx->image, token)) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid token %x for ldftn  at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	method = mono_get_method_full (ctx->image, token, NULL, ctx->generic_context);
+
+	if (!method) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Could not resolve ldftn token %x at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	ptr = stack_push (ctx);
+	set_stack_value (ptr, &mono_defaults.int_class->byval_arg, FALSE);
+	ptr->sig = method->signature;
+}
+
 /*Merge the stacks and perform compat checks*/
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external) 
@@ -4326,14 +4366,12 @@ mono_method_verify (MonoMethod *method, int level)
 			case CEE_ARGLIST:
 				check_overflow (&ctx);
 				++ip;
+	
 			case CEE_LDFTN:
-				if (!check_overflow (&ctx))
-					break;
-				token = read32 (ip + 1);
+				do_ldftn (&ctx, read32 (ip + 1));
 				ip += 5;
-				stack_top (&ctx)->stype = TYPE_PTR;
-				ctx.eval.size++;
 				break;
+
 			case CEE_LDVIRTFTN:
 				if (!check_underflow (&ctx, 1))
 					break;
