@@ -1340,6 +1340,11 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if (used_context) *used_context = FALSE;
 
+	if (idx > image->tables [MONO_TABLE_METHOD].rows) {
+		mono_loader_set_error_bad_image (g_strdup ("Bad method token."));
+		return NULL;
+	}
+
 	mono_metadata_decode_row (&image->tables [MONO_TABLE_METHOD], idx - 1, cols, 6);
 
 	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||

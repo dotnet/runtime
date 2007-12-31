@@ -954,7 +954,10 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 {
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
-	const char *data = t->base + idx * t->row_size;
+	const char *data;
+
+	g_assert (idx < t->rows);
+	data = t->base + idx * t->row_size;
 	
 	g_assert (res_size == count);
 	
@@ -989,10 +992,12 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 {
 	guint32 bitfield = t->size_bitfield;
 	int i;
-	register const char *data = t->base + idx * t->row_size;
+	register const char *data; 
 	register int n;
 	
+	g_assert (idx < t->rows);
 	g_assert (col < mono_metadata_table_count (bitfield));
+	data = t->base + idx * t->row_size;
 
 	n = mono_metadata_table_size (bitfield, 0);
 	for (i = 0; i < col; ++i) {
