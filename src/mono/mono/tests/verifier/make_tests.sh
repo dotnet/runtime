@@ -3391,3 +3391,15 @@ done
 
 ./make_exception_overlap_test.sh exception_same_try_with_catch_and_fault invalid ".try TRY_BLOCK_1 to TRY_BLOCK_1_END fault handler FINALLY_BLOCK_1 to FINALLY_BLOCK_1_END" ".try TRY_BLOCK_1 to TRY_BLOCK_1_END catch [mscorlib]System.Exception handler CATCH_BLOCK_1 to CATCH_BLOCK_1_END" "no" "yes"
 
+
+#ldftn
+./make_ldftn_test.sh ldftn_static_method valid "ldftn void class Driver::Method()"
+./make_ldftn_test.sh ldftn_virtual_method valid "ldftn void class Driver::VirtMethod()"
+./make_ldftn_test.sh ldftn_corlib_method valid "ldftn instance string string::ToUpper()"
+
+#this is encoded as a memberref
+./make_ldftn_test.sh ldftn_bad_function invalid "ldftn void class Test::NonPresent()"
+
+./make_ldftn_test.sh ldftn_overflow invalid "ldftn void class Driver::Method()" "ldc.i4.0\n\tldc.i4.0"
+
+

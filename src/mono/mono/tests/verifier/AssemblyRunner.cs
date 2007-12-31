@@ -142,6 +142,8 @@ namespace AssemblyRunner {
 				return RunResult.unverifiable;
 			} catch (TypeLoadException) {
 				return RunResult.unverifiable;
+			} catch (BadImageFormatException) {
+				return RunResult.invalid; 
 			} catch (Exception e) {
 				Console.WriteLine ("Warning: test {0} thrown exception {1}", assemblyName, e);
 				return RunResult.valid;
@@ -156,9 +158,18 @@ namespace AssemblyRunner {
 		 */
 		static RunResult testWithRuntime (String path) {
 			String stderr = ExecuteAndFetchStderr (path);
-			bool invalid = stderr.IndexOf ("InvalidProgramException") >= 0 || stderr.IndexOf ("FileLoadException") >= 0;
+			String[] knownErrors = new String[] {
+				"MissingMethodException",
+				"InvalidProgramException",
+				"FileLoadException",
+				"BadImageFormatException"
+			};
 
-			return invalid ? RunResult.invalid : RunResult.valid;
+			foreach (String str in knownErrors) {
+				if (stderr.IndexOf (str) >= 0)
+					return RunResult.invalid;
+			} 
+			return RunResult.valid;
 		}
 
 		/*
@@ -173,7 +184,7 @@ namespace AssemblyRunner {
 
 		static RunResult decide (RunResult ad, RunResult rt, RunResult pv, String testName) {
 			if (ad == RunResult.valid) {
-				if (rt != RunResult.valid) {
+				if (rt != RunResult.valid) { 
 					Console.WriteLine ("Warning: test {0} returned valid under AD but {1} under runtime. PV said {2}, using runtime choice", testName, rt, pv);
 					return rt;
 				}
@@ -189,7 +200,10 @@ namespace AssemblyRunner {
 					Console.WriteLine ("Warning: test {0} returned unverifiable under AD but {1} under PV, using AD choice", testName, pv);
 
 				if (rt == RunResult.invalid) {
+					/*This warning doesn't help a lot since there are cases which this happens
 					Console.WriteLine ("Warning: test {0} returned unverifiable under AD but {1} under runtime. PV said {2}, using runtime choice", testName, rt, pv);
+					*/
+					
 					return rt;
 				}
 
@@ -219,21 +233,7 @@ namespace AssemblyRunner {
 			
 			RunResult veredict = decide (ad, rt, pv, assemblyName);
 			if (veredict != expected)
-				Console.WriteLine ("ERROR: test {0} expected {1} but got {2}", assemblyName, expected, veredict);
-		}
-
-		/*
-		This method exists because sometimes a VerificationException is throw for invalid code, so we try to run it as standard-alone a check again.
-		*/
-		static void RecheckUnverifiableResult (String path, String assembly, String op) {
-			String stderr = ExecuteAndFetchStderr (path);
-			bool invalid = stderr.IndexOf ("InvalidProgramException") >= 0 || stderr.IndexOf ("FileLoadException") >= 0;
-
-			if (invalid) {
-				if (!op.Equals ("invalid"))
-					Console.WriteLine ("Test returned invalid: "+assembly);
-			}else if (!op.Equals ("unverifiable"))
-				Console.WriteLine ("Test returned unverifiable: "+assembly);
+				Console.WriteLine ("ERROR: test {0} expected {1} but got {2} AD {3} RT {4} PV {5}", assemblyName, expected, veredict, ad, rt, pv);
 		}
 
 		public static void Main (String[] args) {
