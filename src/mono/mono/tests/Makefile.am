@@ -297,7 +297,8 @@ TEST_IL_SRC=			\
 	even-odd.il		\
 	bug-82022.il	\
 	vt-sync-method.il	\
-	enum_types.il
+	enum_types.il	\
+	invalid-token.il
 
 #	bug-318677.il
 
