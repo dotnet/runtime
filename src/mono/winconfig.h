@@ -45,6 +45,9 @@
 /* String of disabled features */
 #define DISABLED_FEATURES "none"
 
+/* Have GetProcessId */
+#define HAVE_GETPROCESSID 1
+
 /* Disable AOT support */
 /* #undef DISABLE_AOT */
 

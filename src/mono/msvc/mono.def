@@ -407,6 +407,7 @@ mono_lookup_internal_call
 mono_lookup_pinvoke_call
 mono_main
 mono_marshal_string_to_utf16
+mono_mb_free
 mono_md5_final
 mono_md5_get_digest
 mono_md5_get_digest_from_file
@@ -663,7 +664,6 @@ mono_thread_exit
 mono_thread_force_interruption_checkpoint
 mono_thread_get_abort_signal
 mono_thread_get_main
-mono_thread_get_pending_exception
 mono_thread_has_appdomain_ref
 mono_thread_init
 mono_thread_interruption_checkpoint

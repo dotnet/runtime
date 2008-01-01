@@ -70,7 +70,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -155,7 +155,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -243,7 +243,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -332,7 +332,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -3728,6 +3728,14 @@
 						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\method-builder.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\method-builder.h"
+				>
 			</File>
 			<File
 				RelativePath="..\mono\metadata\monitor.c"

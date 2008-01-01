@@ -1,3 +1,8 @@
+2007-12-31  Jonathan Chambers  <joncham@gmail.com>
+
+	* winconfig.h: Define HAVE_GETPROCESSID.
+	Contributed under MIT/X11 license.
+
 2007-12-28  Everaldo Canuto  <ecanuto@novell.com>
 
 	* configure.in: Add support for oprofile.

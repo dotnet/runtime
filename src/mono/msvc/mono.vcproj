@@ -65,7 +65,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
@@ -146,7 +146,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
@@ -222,7 +222,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
@@ -301,7 +301,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
@@ -382,7 +382,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
@@ -463,7 +463,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
@@ -539,7 +539,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"
@@ -618,7 +618,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib mono.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)/lib&quot;;&quot;lib/$(PlatformName)&quot;"
 				GenerateDebugInformation="true"

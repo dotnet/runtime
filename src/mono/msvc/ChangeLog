@@ -1,3 +1,10 @@
+2007-12-31  Jonathan Chambers  <joncham@gmail.com>
+
+	* mono.sln, libmono.vcproj, mono.vcproj, mono.def: Update .def
+	file and fix some eglib target settings.
+	
+	Contributed under MIT/X11 license.
+
 2007-08-29  Jonathan Chambers <joncham@gmail.com>
 
 	* mono.sln, libmono.vcproj, mono.vcproj, genmdesc.vcproj, monoburg.vcproj: 
