@@ -49,6 +49,11 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LDFTN_OP
 	}
 }
 
+.class sealed MyValueType extends [mscorlib]System.ValueType
+{
+	.field private int32 v
+}
+
 .class public auto ansi beforefieldinit Driver
         extends [mscorlib]System.Object
 {
@@ -62,15 +67,22 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LDFTN_OP
 		ret
 	}
 
+	.method public static void Foo (native int bla) {
+		ret
+	}
+
 	.method public static int32 Main ()
 	{
 		.entrypoint
 		.maxstack 2
-		.locals init (int32 bla)
+		.locals init (Test V0, MyValueType V1)
+		newobj void class Test::.ctor()
+		stloc.0
 
 		OPCODE // VALIDITY
 		LDFTN_OP
 		pop
+
 		ldc.i4.0
 		ret 
 	}

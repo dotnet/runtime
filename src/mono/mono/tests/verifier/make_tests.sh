@@ -3394,12 +3394,45 @@ done
 
 #ldftn
 ./make_ldftn_test.sh ldftn_static_method valid "ldftn void class Driver::Method()"
-./make_ldftn_test.sh ldftn_virtual_method valid "ldftn void class Driver::VirtMethod()"
+./make_ldftn_test.sh ldftn_virtual_method valid "ldftn instance void class Driver::VirtMethod()"
 ./make_ldftn_test.sh ldftn_corlib_method valid "ldftn instance string string::ToUpper()"
 
 #this is encoded as a memberref
 ./make_ldftn_test.sh ldftn_bad_function invalid "ldftn void class Test::NonPresent()"
 
-./make_ldftn_test.sh ldftn_overflow invalid "ldftn void class Driver::Method()" "ldc.i4.0\n\tldc.i4.0"
+./make_ldftn_test.sh ldftn_overflow invalid "ldftn instance void class Driver::Method()" "ldc.i4.0\n\tldc.i4.0"
+
+./make_ldftn_test.sh ldftn_ctor unverifiable "ldftn void class Test::.ctor()"
+./make_ldftn_test.sh ldftn_static_method valid "ldftn void class Test::StaticMethod()"
+./make_ldftn_test.sh ldftn_non_virtual_method valid "ldftn instance void class Test::Method()"
+./make_ldftn_test.sh ldftn_virtual_method valid "ldftn instance void class Test::VirtMethod()"
+
+
+#ldvirtftn
+#TODO test visibility for ldftn and ldvirtftn
+#TODO test that the pushed value is not a native int, but a propert function pointer
+
+./make_ldvirtftn_test.sh ldvirtftn_virt_method valid "ldvirtftn instance void class Test::VirtMethod()" "newobj void class Test::.ctor()"
+./make_ldvirtftn_test.sh ldvirtftn_virt_underflow invalid "ldvirtftn instance void class Test::VirtMethod()" "nop"
+./make_ldvirtftn_test.sh ldvirtftn_valid_obj_on_stack valid "ldvirtftn instance string object::ToString()" "newobj void object::.ctor()"
+
+I=1
+for TYPE in "ldc.i4.0" "ldc.i8 0" "ldc.r4 2" "ldc.i4.1\n\tconv.i" "ldloca 0" "ldloc.1"
+do
+	./make_ldvirtftn_test.sh ldvirtftn_invalid_type_on_stack_${I} unverifiable "ldvirtftn instance string object::ToString()" "$TYPE"
+	I=`expr $I + 1`
+done
+
+./make_ldvirtftn_test.sh ldvirtftn_non_virtual_method valid "ldvirtftn instance void class Test::Method()" "newobj void class Test::.ctor()"
+
+./make_ldvirtftn_test.sh ldvirtftn_ctor unverifiable "ldvirtftn void class Test::.ctor()" "newobj void class Test::.ctor()"
+./make_ldvirtftn_test.sh ldvirtftn_static_method unverifiable "ldvirtftn void class Test::StaticMethod()" "newobj void class Test::.ctor()"
+./make_ldvirtftn_test.sh ldvirtftn_method_not_present invalid "ldvirtftn void class Test::NonExistant()" "newobj void Test::.ctor()"
+
+
+./make_ldvirtftn_test.sh ldvirtftn_method_stack_type_obj_compatible_1 valid "ldvirtftn instance string object::ToString()" "newobj void Test::.ctor()"
+./make_ldvirtftn_test.sh ldvirtftn_method_stack_type_obj_compatible_2 valid "ldvirtftn void class Test::VirtMethod()" "newobj void Test::.ctor()"
+./make_ldvirtftn_test.sh ldvirtftn_method_stack_type_obj_compatible_3 unverifiable "ldvirtftn void class Test::VirtMethod()" "newobj void object::.ctor()"
+
 
 
