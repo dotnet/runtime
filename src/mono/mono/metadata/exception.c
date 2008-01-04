@@ -135,6 +135,7 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 		if (count == 2 && sig->params [1]->type != MONO_TYPE_STRING)
 			continue;
 		method = m;
+		break;
 	}
 
 	args [0] = a1;
