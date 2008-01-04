@@ -1150,6 +1150,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				inst->opcode = OP_REGOFFSET;
 				inst->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
+				offset = ALIGN_TO (offset, sizeof (gpointer));
 				if (cfg->arch.omit_fp) {
 					inst->inst_offset = offset;
 					offset += (ainfo->storage == ArgValuetypeInReg) ? 2 * sizeof (gpointer) : sizeof (gpointer);
