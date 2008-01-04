@@ -40,7 +40,7 @@ STRESS_TESTS_SRC=	\
 	thread-stress.cs	\
 	gc-stress.cs
 
-TEST_CS_SRC=			\
+BASE_TEST_CS_SRC=		\
 	array-init.cs		\
 	arraylist.cs		\
 	assemblyresolve_event.cs	\
@@ -246,11 +246,13 @@ TEST_CS_SRC=			\
 	thread-exit.cs
 
 if AMD64
-TEST_CS_SRC+=async-exc-compilation.cs
-endif
-
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
+else
 if X86
-TEST_CS_SRC+=async-exc-compilation.cs
+TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
+else
+TEST_CS_SRC = $(BASE_TEST_CS_SRC)
+endif
 endif
 
 if X86
