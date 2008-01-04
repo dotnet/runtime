@@ -304,7 +304,7 @@ typedef struct
 	guint32 Characteristics;
 } WapiImageSectionHeader;
 
-#define IMAGE_FIRST_SECTION(header) ((WapiImageSectionHeader *)(GPOINTER_TO_UINT (header) + G_STRUCT_OFFSET (WapiImageNTHeaders, OptionalHeader) + ((WapiImageNTHeaders *)(header))->FileHeader.SizeOfOptionalHeader))
+#define IMAGE_FIRST_SECTION(header) ((WapiImageSectionHeader *)(GPOINTER_TO_UINT (header) + G_STRUCT_OFFSET (WapiImageNTHeaders, OptionalHeader) + GUINT16_FROM_LE (((WapiImageNTHeaders *)(header))->FileHeader.SizeOfOptionalHeader)))
 
 #define RT_CURSOR	0x01
 #define RT_BITMAP	0x02

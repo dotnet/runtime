@@ -184,7 +184,7 @@ static void process_module_string_read (MonoObject *filever, gpointer data,
 {
 	gchar *lang_key_utf8;
 	gunichar2 *lang_key, *buffer;
-	UINT bytes;
+	UINT chars;
 
 	lang_key_utf8 = g_strdup_printf (key, lang_lo, lang_hi, 0x04, 0xb0);
 
@@ -194,12 +194,12 @@ static void process_module_string_read (MonoObject *filever, gpointer data,
 
 	lang_key = g_utf8_to_utf16 (lang_key_utf8, -1, NULL, NULL, NULL);
 
-	if (VerQueryValue (data, lang_key, (gpointer *)&buffer, &bytes)) {
+	if (VerQueryValue (data, lang_key, (gpointer *)&buffer, &chars)) {
 #ifdef DEBUG
 		g_message ("%s: found %d bytes of [%s]", __func__, bytes,
 			   g_utf16_to_utf8 (buffer, bytes, NULL, NULL, NULL));
 #endif
-		process_set_field_string (filever, fieldname, buffer, bytes);
+		process_set_field_string (filever, fieldname, buffer, chars);
 	}
 
 	g_free (lang_key);

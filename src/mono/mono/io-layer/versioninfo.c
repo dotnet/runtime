@@ -32,14 +32,14 @@ static WapiImageSectionHeader *get_enclosing_section_header (guint32 rva, WapiIm
 	WapiImageSectionHeader *section = IMAGE_FIRST_SECTION (nt_headers);
 	guint32 i;
 	
-	for (i = 0; i < nt_headers->FileHeader.NumberOfSections; i++, section++) {
-		guint32 size = section->Misc.VirtualSize;
+	for (i = 0; i < GUINT16_FROM_LE (nt_headers->FileHeader.NumberOfSections); i++, section++) {
+		guint32 size = GUINT32_FROM_LE (section->Misc.VirtualSize);
 		if (size == 0) {
-			size = section->SizeOfRawData;
+			size = GUINT32_FROM_LE (section->SizeOfRawData);
 		}
 		
-		if ((rva >= section->VirtualAddress) &&
-		    (rva < (section->VirtualAddress + size))) {
+		if ((rva >= GUINT32_FROM_LE (section->VirtualAddress)) &&
+		    (rva < (GUINT32_FROM_LE (section->VirtualAddress) + size))) {
 			return(section);
 		}
 	}
@@ -688,7 +688,7 @@ gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 					    string_value != NULL &&
 					    string_value_len != 0) {
 						*buffer = string_value;
-						*len = string_value_len;
+						*len = string_value_len / 2; /* chars */
 						ret = TRUE;
 						goto done;
 					}
