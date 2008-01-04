@@ -105,6 +105,8 @@ typedef struct {
 
 	MonoType **params;
 	GSList *list;
+	/*Allocated fnptr MonoType that should be freed by us.*/
+	GSList *funptrs;
 
 	int num_locals;
 	MonoType **locals;
@@ -192,6 +194,26 @@ token_bounds_check (MonoImage *image, guint32 token)
 	return image->tables [mono_metadata_token_table (token)].rows >= mono_metadata_token_index (token);
 }
 
+static MonoType *
+mono_type_create_fnptr_from_mono_method (VerifyContext *ctx, MonoMethod *method)
+{
+	MonoType *res = g_new0 (MonoType, 1);
+	res->data.method = mono_method_signature (method);
+	res->type = MONO_TYPE_FNPTR;
+	ctx->funptrs = g_slist_prepend (ctx->funptrs, res);
+	return res;
+}
+
+#define CTOR_REQUIRED_FLAGS (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
+#define CTOR_INVALID_FLAGS (METHOD_ATTRIBUTE_STATIC)
+
+static gboolean
+mono_method_is_constructor (MonoMethod *method) 
+{
+	return ((method->flags & CTOR_REQUIRED_FLAGS) == CTOR_REQUIRED_FLAGS &&
+			!(method->flags & CTOR_INVALID_FLAGS) &&
+			!strcmp (".ctor", method->name));
+}
 //////////////////////////////////////////////////////////////////
 void
 mono_free_verify_list (GSList *list)
@@ -2716,7 +2738,7 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a temporary value-type at 0x%04x", ctx->ip_offset));
 
 	if (take_addr && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY) &&
-		!(field->parent == ctx->method->klass && (ctx->method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && !strcmp (".ctor", ctx->method->name)))
+		!(field->parent == ctx->method->klass && mono_method_is_constructor (ctx->method)))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a init-only field at 0x%04x", ctx->ip_offset));
 
 	set_stack_value (stack_push (ctx), field->type, take_addr);
@@ -2893,9 +2915,10 @@ do_ldobj_value (VerifyContext *ctx, int token)
 	set_stack_value (stack_push (ctx), type, FALSE);
 }
 
-#define CTOR_REQUIRED_FLAGS (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_PUBLIC)
-#define CTOR_INVALID_FLAGS (METHOD_ATTRIBUTE_STATIC)
-/* TODO implement delegate verification */
+/* TODO implement delegate verification
+ * TODO implement access verification
+ */
+
 static void
 do_newobj (VerifyContext *ctx, int token) 
 {
@@ -2908,9 +2931,7 @@ do_newobj (VerifyContext *ctx, int token)
 		return;
 	}
 
-	if ((method->flags & CTOR_REQUIRED_FLAGS) != CTOR_REQUIRED_FLAGS
-		|| (method->flags & CTOR_INVALID_FLAGS) != 0
-		|| strcmp (".ctor", method->name)) {
+	if (!mono_method_is_constructor (method)) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Method from token 0x%08x not a constructor at 0x%04x", token, ctx->ip_offset));
 		return;
 	}
@@ -3361,12 +3382,16 @@ do_switch (VerifyContext *ctx, int count, const unsigned char *data)
 	}
 }
 
+/*TODO add visibility checks*/
 static void
-do_ldftn (VerifyContext *ctx, guint32 token)
+do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 {
-	ILStackDesc *ptr;
 	MonoMethod *method;
-	if (!check_overflow (ctx))
+
+	if (virtual && !check_underflow (ctx, 1))
+		return;
+
+	if (!virtual && !check_overflow (ctx))
 		return;
 
 	if (!IS_METHOD_DEF_OR_REF (token) || !token_bounds_check (ctx->image, token)) {
@@ -3381,9 +3406,23 @@ do_ldftn (VerifyContext *ctx, guint32 token)
 		return;
 	}
 
-	ptr = stack_push (ctx);
-	set_stack_value (ptr, &mono_defaults.int_class->byval_arg, FALSE);
-	ptr->sig = method->signature;
+	if (mono_method_is_constructor (method))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use ldftn with a constructor at 0x%04x", ctx->ip_offset));
+
+	if (virtual) {
+		ILStackDesc *top = stack_pop (ctx);
+	
+		if (top->stype != TYPE_COMPLEX || top->type->type == MONO_TYPE_VALUETYPE)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument to ldvirtftn at 0x%04x", ctx->ip_offset));
+	
+		if (method->flags & METHOD_ATTRIBUTE_STATIC)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use ldvirtftn with a constructor at 0x%04x", ctx->ip_offset));
+	
+		if (!verify_type_compatibility (ctx, &method->klass->byval_arg, top->type))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unexpected object for ldvirtftn at 0x%04x", ctx->ip_offset));
+	}
+
+	stack_push_val(ctx, TYPE_PTR, mono_type_create_fnptr_from_mono_method (ctx, method));
 }
 
 /*Merge the stacks and perform compat checks*/
@@ -3537,6 +3576,8 @@ mono_method_verify (MonoMethod *method, int level)
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	VerifyContext ctx;
+	GSList *tmp;
+
 	VERIFIER_DEBUG ( printf ("Verify IL for method %s %s %s\n",  method->klass->name,  method->klass->name, method->name); );
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
@@ -4368,19 +4409,15 @@ mono_method_verify (MonoMethod *method, int level)
 				++ip;
 	
 			case CEE_LDFTN:
-				do_ldftn (&ctx, read32 (ip + 1));
+				do_load_function_ptr (&ctx, read32 (ip + 1), FALSE);
 				ip += 5;
 				break;
 
 			case CEE_LDVIRTFTN:
-				if (!check_underflow (&ctx, 1))
-					break;
-				token = read32 (ip + 1);
+				do_load_function_ptr (&ctx, read32 (ip + 1), TRUE);
 				ip += 5;
-				if (stack_top (&ctx)->stype != TYPE_COMPLEX)
-					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to ldvirtftn at 0x%04x", ip_offset));
-				stack_top (&ctx)->stype = TYPE_PTR;
 				break;
+
 			case CEE_UNUSED56:
 				++ip;
 				break;
@@ -4503,6 +4540,10 @@ invalid_cil:
 				g_free (ctx.code [i].stack);
 		}
 	}
+
+	for (tmp = ctx.funptrs; tmp; tmp = tmp->next)
+		g_free (tmp->data);
+	g_slist_free (ctx.funptrs);
 
 	if (ctx.eval.stack)
 		g_free (ctx.eval.stack);
