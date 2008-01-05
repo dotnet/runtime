@@ -72,6 +72,11 @@ int mono_gc_pthread_detach (pthread_t thread);
 extern int
 mono_gc_register_root (char *start, size_t size, void *descr);
 
+extern void
+mono_gc_deregister_root (char *addr);
+
 #define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root ((char*)&(x), sizeof(x), NULL)
+
+#define MONO_GC_UNREGISTER_ROOT(x) mono_gc_deregister_root ((char*)&(x))
 
 #endif
