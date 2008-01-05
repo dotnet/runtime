@@ -2,6 +2,7 @@
 #define __MONO_OS_GC_WRAPPER_H__
 
 #include <config.h>
+#include <stdlib.h>
 
 #ifdef HAVE_BOEHM_GC
 
