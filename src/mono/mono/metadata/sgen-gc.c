@@ -146,6 +146,9 @@
 #include "metadata/mono-gc.h"
 #include "utils/mono-mmap.h"
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+#include <valgrind/memcheck.h>
+#endif
 
 /*
  * ######################################################################
@@ -1638,6 +1641,15 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 		start++;
 	}
 	DEBUG (7, if (count) fprintf (gc_debug_file, "found %d potential pinned heap pointers\n", count));
+
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+	/*
+	 * The pinning addresses might come from undefined memory, this is normal. Since they
+	 * are used in lots of functions, we make the memory defined here instead of having
+	 * to add a supression for those functions.
+	 */
+	VALGRIND_MAKE_MEM_DEFINED (pin_queue, next_pin_slot * sizeof (pin_queue [0]));
+#endif
 }
 
 /* 
