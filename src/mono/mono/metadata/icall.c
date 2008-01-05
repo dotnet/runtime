@@ -4714,7 +4714,7 @@ ves_icall_System_MonoType_getFullName (MonoReflectionType *object, gboolean full
 }
 
 static void
-fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version)
+fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version, gboolean default_publickey, gboolean default_token)
 {
 	static MonoMethod *create_culture = NULL;
 	gpointer args [2];
@@ -4731,6 +4731,8 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	aname->build = name->build;
 	aname->revision = name->revision;
 	aname->hashalg = name->hash_alg;
+	aname->versioncompat = 1; /* SameMachine (default) */
+
 	if (by_default_version)
 		MONO_OBJECT_SETREF (aname, version, create_version (domain, name->major, name->minor, name->build, name->revision));
 	
@@ -4759,6 +4761,10 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 
 		MONO_OBJECT_SETREF (aname, publicKey, mono_array_new (domain, mono_defaults.byte_class, pkey_len));
 		memcpy (mono_array_addr (aname->publicKey, guint8, 0), pkey_ptr, pkey_len);
+		aname->flags |= ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG;
+	} else if (default_publickey) {
+		MONO_OBJECT_SETREF (aname, publicKey, mono_array_new (domain, mono_defaults.byte_class, 0));
+		aname->flags |= ASSEMBLYREF_FULL_PUBLIC_KEY_FLAG;
 	}
 
 	/* MonoAssemblyName keeps the public key token as an hexadecimal string */
@@ -4774,6 +4780,8 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 			*p |= g_ascii_xdigit_value (name->public_key_token [j++]);
 			p++;
 		}
+	} else if (default_token) {
+		MONO_OBJECT_SETREF (aname, keyToken, mono_array_new (domain, mono_defaults.byte_class, 0));
 	}
 }
 
@@ -4787,13 +4795,15 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 
 	if (g_path_is_absolute (mass->image->name)) {
 		fill_reflection_assembly_name (mono_object_domain (assembly),
-			aname, &mass->aname, mass->image->name, TRUE);
+			aname, &mass->aname, mass->image->name, TRUE,
+			TRUE, mono_get_runtime_info ()->framework_version [0] >= '2');
 		return;
 	}
 	absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
 
 	fill_reflection_assembly_name (mono_object_domain (assembly),
-		aname, &mass->aname, absolute, TRUE);
+		aname, &mass->aname, absolute, TRUE, TRUE,
+		mono_get_runtime_info ()->framework_version [0] >= '2');
 
 	g_free (absolute);
 }
@@ -4831,7 +4841,9 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 		mono_raise_exception (mono_get_exception_argument ("assemblyFile", "The file does not contain a manifest"));
 	}
 
-	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename, TRUE);
+	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename,
+		TRUE, mono_get_runtime_info ()->framework_version [0] == '1',
+		mono_get_runtime_info ()->framework_version [0] >= '2');
 
 	g_free (filename);
 	mono_image_close (image);
@@ -5052,7 +5064,8 @@ ves_icall_System_Reflection_AssemblyName_ParseName (MonoReflectionAssemblyName *
 	if (!mono_assembly_name_parse_full (val, &aname, TRUE, &is_version_defined))
 		return FALSE;
 	
-	fill_reflection_assembly_name (domain, name, &aname, "", is_version_defined);
+	fill_reflection_assembly_name (domain, name, &aname, "", is_version_defined,
+		FALSE, FALSE);
 
 	mono_assembly_name_free (&aname);
 	g_free ((guint8*) aname.public_key);

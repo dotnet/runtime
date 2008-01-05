@@ -1602,6 +1602,10 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	}
 	
 	if (token && strncmp (token, "null", 4) != 0) {
+		/* the constant includes the ending NULL, hence the -1 */
+		if (strlen (token) != (MONO_PUBLIC_KEY_TOKEN_LENGTH - 1)) {
+			return FALSE;
+		}
 		char *lower = g_ascii_strdown (token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_strlcpy ((char*)aname->public_key_token, lower, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_free (lower);
@@ -1625,7 +1629,7 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 		else
 			g_free (pkey);
 	}
-	
+
 	return TRUE;
 }
 
@@ -1679,24 +1683,37 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		if (!g_ascii_strncasecmp (value, "Version=", 8)) {
 			*is_version_defined = TRUE;
 			version = g_strstrip (value + 8);
+			if (strlen (version) == 0) {
+				return FALSE;
+			}
+
 			tmp++;
 			continue;
 		}
 
 		if (!g_ascii_strncasecmp (value, "Culture=", 8)) {
 			culture = g_strstrip (value + 8);
+			if (strlen (culture) == 0) {
+				return FALSE;
+			}
 			tmp++;
 			continue;
 		}
 
 		if (!g_ascii_strncasecmp (value, "PublicKeyToken=", 15)) {
 			token = g_strstrip (value + 15);
+			if (strlen (token) == 0) {
+				return FALSE;
+			}
 			tmp++;
 			continue;
 		}
 
 		if (!g_ascii_strncasecmp (value, "PublicKey=", 10)) {
 			key = g_strstrip (value + 10);
+			if (strlen (key) == 0) {
+				return FALSE;
+			}
 			tmp++;
 			continue;
 		}
