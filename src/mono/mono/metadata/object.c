@@ -33,7 +33,7 @@
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/mono-debug-debugger.h"
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/utils/strenc.h>
 
 #ifdef HAVE_BOEHM_GC

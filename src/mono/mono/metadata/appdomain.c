@@ -19,8 +19,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <mono/os/gc_wrapper.h>
-
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/metadata-internals.h"

@@ -31,7 +31,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/io-layer/io-layer.h>
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 #include <errno.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>

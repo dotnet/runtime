@@ -1,16 +1,21 @@
 /*
- * metadata/gc-internal.h: GC icalls.
+ * metadata/gc-internal.h: Internal GC interface
  *
  * Author: Paolo Molaro <lupus@ximian.com>
  *
  * (C) 2002 Ximian, Inc.
  */
 
-#ifndef __MONO_METADATA_GC_H__
-#define __MONO_METADATA_GC_H__
+#ifndef __MONO_METADATA_GC_INTERNAL_H__
+#define __MONO_METADATA_GC_INTERNAL_H__
 
 #include <glib.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/os/gc_wrapper.h>
+
+#define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root ((char*)&(x), sizeof(x), NULL)
+
+#define MONO_GC_UNREGISTER_ROOT(x) mono_gc_deregister_root ((char*)&(x))
 
 void   mono_object_register_finalizer               (MonoObject  *obj) MONO_INTERNAL;
 void   ves_icall_System_GC_InternalCollect          (int          generation) MONO_INTERNAL;
@@ -98,5 +103,5 @@ MonoMethod *mono_gc_get_managed_allocator_by_type (int atype) MONO_INTERNAL;
 /* helper for the managed alloc support */
 MonoString *mono_string_alloc (int length) MONO_INTERNAL;
 
-#endif /* __MONO_METADATA_GC_H__ */
+#endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

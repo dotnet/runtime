@@ -33,7 +33,7 @@
 #include "cil-coff.h"
 #include "rawbuffer.h"
 #include "mono-endian.h"
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 
 typedef struct {
 	char *p;

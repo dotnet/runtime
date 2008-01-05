@@ -25,7 +25,7 @@
 #include "mono/metadata/gc-internal.h"
 #include "mono/metadata/threads-types.h"
 #include "mono/metadata/string-icalls.h"
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 #include <string.h>
 #include <errno.h>
 

@@ -21,7 +21,7 @@
 #include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-logger.h>
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 
 typedef struct DomainFinalizationReq {

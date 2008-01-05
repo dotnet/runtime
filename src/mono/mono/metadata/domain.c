@@ -13,7 +13,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger.h>

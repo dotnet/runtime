@@ -5,7 +5,7 @@
 
 #include "config.h"
 #define GC_I_HIDE_POINTERS
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/profiler-private.h>

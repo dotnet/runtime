@@ -36,7 +36,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-membar.h>
 
-#include <mono/os/gc_wrapper.h>
+#include <mono/metadata/gc-internal.h>
 
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
 #define THREAD_DEBUG(a)
