@@ -5,7 +5,7 @@ SUBDIRS = $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) support docs data ru
 
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
-DIST_SUBDIRS = libgc eglib mono ikvm-native support docs data runtime scripts man samples web tools msvc
+DIST_SUBDIRS = libgc $(eglib_dir) mono ikvm-native support docs data runtime scripts man samples web tools msvc
 
 EXTRA_DIST= mono-uninstalled.pc.in LICENSE
 
