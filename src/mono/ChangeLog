@@ -1,5 +1,10 @@
 2008-01-05  Andreas Faerber  <andreas.faerber@web.de>
 
+	* configure.in: Add support for building with eglib and VPATH.
+	Fixes #351893.
+
+2008-01-05  Andreas Faerber  <andreas.faerber@web.de>
+
 	* configure.in: Define eglib_dir.
 	* Makefile.am: Add eglib to subdirectory lists.
 

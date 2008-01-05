@@ -455,7 +455,7 @@ eglib_dir=
 
 case $with_glib in
 embedded) 
-  GLIB_CFLAGS='-I$(top_srcdir)/eglib/src'
+  GLIB_CFLAGS='-I$(top_srcdir)/eglib/src -I$(top_builddir)/eglib/src'
   GLIB_LIBS='-L$(top_builddir)/eglib/src -leglib -lm'
   BUILD_GLIB_CFLAGS="$GLIB_CFLAGS"
   BUILD_GLIB_LIBS="$GLIB_LIBS"
