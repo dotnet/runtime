@@ -953,6 +953,7 @@ typedef struct {
 	MonoArray   *keyToken;
 	guint32     versioncompat;
 	MonoObject *version;
+	guint32     processor_architecture;
 } MonoReflectionAssemblyName;
 
 typedef struct {
