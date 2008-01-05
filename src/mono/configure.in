@@ -451,6 +451,8 @@ AC_ARG_WITH([glib],
 	[  --with-glib=embedded|system       Choose glib API: system or embedded (default to system)],
 	[], [with_glib=system])
 
+eglib_dir=
+
 case $with_glib in
 embedded) 
   GLIB_CFLAGS='-I$(top_srcdir)/eglib/src'
@@ -459,6 +461,7 @@ embedded)
   BUILD_GLIB_LIBS="$GLIB_LIBS"
   GMODULE_CFLAGS="$GLIB_CFLAGS"
   GMODULE_LIBS="$GLIB_LIBS"
+  eglib_dir=eglib
   AC_CONFIG_SUBDIRS(eglib)
   ;;
 system)
@@ -486,6 +489,7 @@ AC_SUBST(GMODULE_CFLAGS)
 AC_SUBST(GMODULE_LIBS)
 AC_SUBST(BUILD_GLIB_CFLAGS)
 AC_SUBST(BUILD_GLIB_LIBS)
+AC_SUBST(eglib_dir)
 
 if test x$cross_compiling$platform_win32 = xnoyes; then
    AC_MSG_CHECKING(for cygwin glib2-dev package)

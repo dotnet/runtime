@@ -1,3 +1,8 @@
+2008-01-05  Andreas Faerber  <andreas.faerber@web.de>
+
+	* configure.in: Define eglib_dir.
+	* Makefile.am: Add eglib to subdirectory lists.
+
 2007-12-31  Jonathan Chambers  <joncham@gmail.com>
 
 	* winconfig.h: Define HAVE_GETPROCESSID.
