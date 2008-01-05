@@ -274,8 +274,10 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 	}
 
 	if (mono_object_isinst (value, ec)) {
-		// FIXME: Add membarrier
-		memcpy (ea, (char *)value + sizeof (MonoObject), esize);
+		if (ec->has_references)
+			mono_value_copy (ea, (char*)value + sizeof (MonoObject), ec);
+		else
+			memcpy (ea, (char *)value + sizeof (MonoObject), esize);
 		return;
 	}
 
