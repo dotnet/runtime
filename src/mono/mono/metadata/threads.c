@@ -571,7 +571,8 @@ static guint32 WINAPI start_wrapper(void *data)
 		 */
 		ReleaseSemaphore (thread->start_notify, 1, NULL);
 	}
-	
+
+	MONO_GC_UNREGISTER_ROOT (start_info->start_arg);
 	g_free (start_info);
 
 	thread_adjust_static_data (thread);
@@ -652,6 +653,12 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 	start_info->obj = thread;
 	start_info->domain = domain;
 	start_info->start_arg = arg;
+
+	/* 
+	 * The argument may be an object reference, and there is no ref to keep it alive
+	 * when the new thread is started but not yet registered with the collector.
+	 */
+	MONO_GC_REGISTER_ROOT (start_info->start_arg);
 	
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
@@ -661,6 +668,8 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so throw an exception */
+		MONO_GC_UNREGISTER_ROOT (start_info->start_arg);
+		g_free (start_info);
 		mono_raise_exception (mono_get_exception_execution_engine ("Couldn't create thread"));
 		return;
 	}
@@ -1100,7 +1109,7 @@ cache_culture (MonoThread *this, MonoObject *culture, int start_idx)
 	EnterCriticalSection (this->synch_cs);
 	
 	if (!this->cached_culture_info)
-		this->cached_culture_info = mono_array_new (mono_object_domain (this), mono_defaults.object_class, NUM_CACHED_CULTURES * 2);
+		MONO_OBJECT_SETREF (this, cached_culture_info, mono_array_new (mono_object_domain (this), mono_defaults.object_class, NUM_CACHED_CULTURES * 2));
 
 	for (i = start_idx; i < start_idx + NUM_CACHED_CULTURES; ++i) {
 		obj = mono_array_get (this->cached_culture_info, MonoObject*, i);

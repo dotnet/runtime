@@ -260,6 +260,13 @@ mono_gc_register_root (char *start, size_t size, void *descr)
 }
 
 void
+mono_gc_deregister_root (char* addr)
+{
+	/* FIXME: No size info */
+	GC_remove_roots (addr, addr + sizeof (gpointer));
+}
+
+void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj)
 {
 	/* libgc requires that we use HIDE_POINTER... */

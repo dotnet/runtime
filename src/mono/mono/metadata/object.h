@@ -61,6 +61,11 @@ typedef void	    (*MonoMainThreadFunc)    (gpointer user_data);
 		/*(obj)->fieldname = (value);*/	\
 	} while (0)
 
+/* This should be used if 's' can reside on the heap */
+#define MONO_STRUCT_SETREF(s,field,value) do { \
+        mono_gc_wbarrier_generic_store (&((s)->field), (MonoObject*)(value)); \
+    } while (0)
+
 #define mono_array_length(array) ((array)->max_length)
 #define mono_array_addr(array,type,index) ((type*)(gpointer) mono_array_addr_with_size (array, sizeof (type), index))
 #define mono_array_addr_with_size(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )

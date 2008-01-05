@@ -3440,8 +3440,8 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 	g_assert (size == mono_array_length (dest));
 	size *= mono_array_element_size (klass);
 #ifdef HAVE_SGEN_GC
-	if (klass->valuetype) {
-		if (klass->has_references)
+	if (klass->element_class->valuetype) {
+		if (klass->element_class->has_references)
 			mono_value_copy_array (dest, 0, src, mono_array_length (src));
 		else
 			memcpy (&dest->vector, &src->vector, size);
@@ -3477,8 +3477,8 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 
 		size *= mono_array_element_size (klass);
 #ifdef HAVE_SGEN_GC
-		if (klass->valuetype) {
-			if (klass->has_references)
+		if (klass->element_class->valuetype) {
+			if (klass->element_class->has_references)
 				mono_value_copy_array (o, 0, array, mono_array_length (array));
 			else
 				memcpy (&o->vector, &array->vector, size);
@@ -3500,8 +3500,8 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 	}
 	o = mono_array_new_full (domain, klass, sizes, sizes + klass->rank);
 #ifdef HAVE_SGEN_GC
-	if (klass->valuetype) {
-		if (klass->has_references)
+	if (klass->element_class->valuetype) {
+		if (klass->element_class->has_references)
 			mono_value_copy_array (o, 0, array, mono_array_length (array));
 		else
 			memcpy (&o->vector, &array->vector, size);
