@@ -6319,10 +6319,14 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		m->orig_conv_args [argnum] = 0;
 		
 		if (klass->delegate) {
-			g_assert (!t->byref);
-			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN));
-			mono_mb_emit_stloc (mb, conv_arg);
+			if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_OUT)) {
+				char *msg = g_strdup_printf ("Byref marshalling of delegates is not implemented.");
+				mono_mb_emit_exception_marshal_directive (mb, msg);
+			} else {
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN));
+				mono_mb_emit_stloc (mb, conv_arg);
+			}
 		} else if (klass == mono_defaults.stringbuilder_class) {
 			MonoMarshalNative encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 			MonoMarshalConv conv = mono_marshal_get_stringbuilder_to_ptr_conv (m->piinfo, spec);
@@ -6430,8 +6434,17 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
-		if (klass->delegate)
+		if (klass->delegate) {
+			if (t->byref) {
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
+				mono_mb_emit_byte (mb, CEE_STIND_REF);
+			}
 			break;
+		}
 
 		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			/* allocate a new object */
