@@ -347,7 +347,7 @@ typedef struct {
 /* these bits are set in the object vtable: we could merge them since an object can be
  * either pinned or forwarded but not both.
  * We store them in the vtable slot because the bits are used in the sync block for
- * other purpouses: if we merge them and alloc the sync blocks aligned to 8 bytes, we can change
+ * other purposes: if we merge them and alloc the sync blocks aligned to 8 bytes, we can change
  * this and use bit 3 in the syncblock (with the lower two bits both set for forwarded, that
  * would be an invalid combination for the monitor and hash code).
  * The values are already shifted.
@@ -408,6 +408,19 @@ safe_object_get_size (MonoObject* o)
 	}
 }
 
+static inline gboolean
+is_half_constructed (MonoObject *o)
+{
+	MonoClass *klass;
+
+	klass = ((MonoVTable*)LOAD_VTABLE (o))->klass;
+	if ((klass == mono_defaults.string_class && mono_string_length ((MonoString*)o) == 0) ||
+		(klass->rank && mono_array_length ((MonoArray*)o) == 0))
+		return TRUE;
+	else
+		return FALSE;
+}
+
 /*
  * ######################################################################
  * ########  Global data.
@@ -423,7 +436,7 @@ static int num_major_gcs = 0;
 #define DEFAULT_NURSERY_SIZE (1024*512*2)
 #define DEFAULT_MAX_SECTION (DEFAULT_NURSERY_SIZE * 16)
 #define DEFAULT_LOS_COLLECTION_TARGET (DEFAULT_NURSERY_SIZE * 2)
-/* to quickly find the heard of an object pinned by a conservative address
+/* to quickly find the head of an object pinned by a conservative address
  * we keep track of the objects allocated for each SCAN_START_SIZE memory
  * chunk in the nursery or other memory sections. Larger values have less
  * memory overhead and bigger runtime cost. 4-8 KB are reasonable values.
@@ -477,9 +490,9 @@ static FinalizeEntry **disappearing_link_hash = NULL;
 static mword disappearing_link_hash_size = 0;
 static mword finalizable_hash_size = 0;
 
-static mword num_registered_finalizers = 0;
-static mword num_ready_finalizers = 0;
-static mword num_disappearing_links = 0;
+static int num_registered_finalizers = 0;
+static int num_ready_finalizers = 0;
+static int num_disappearing_links = 0;
 static int no_finalize = 0;
 
 /* keep each size a multiple of ALLOC_ALIGN */
@@ -512,7 +525,7 @@ obj_is_from_pinned_alloc (char *p)
 static RootRecord **roots_hash = NULL;
 static int roots_hash_size = 0;
 static mword roots_size = 0; /* amount of memory in the root set */
-static mword num_roots_entries = 0;
+static int num_roots_entries = 0;
 
 /* 
  * The current allocation cursors
@@ -606,6 +619,8 @@ static void clear_remsets (void);
 static void sweep_pinned_objects (void);
 static void free_large_object (LOSObject *obj);
 static void free_mem_section (GCMemSection *section);
+
+void check_consistency (void);
 
 /*
  * ######################################################################
@@ -761,24 +776,24 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 		 */
 		if (first_set < 0) {
 			desc = DESC_TYPE_RUN_LENGTH | stored_size;
-			DEBUG (6, fprintf (gc_debug_file, "Ptrfree descriptor %p, size: %d\n", (void*)desc, stored_size));
+			DEBUG (6, fprintf (gc_debug_file, "Ptrfree descriptor %p, size: %zd\n", (void*)desc, stored_size));
 			return (void*) desc;
 		} else if (first_set < 256 && num_set < 256 && (first_set + num_set == last_set + 1)) {
 			desc = DESC_TYPE_RUN_LENGTH | stored_size | (first_set << 16) | (num_set << 24);
-			DEBUG (6, fprintf (gc_debug_file, "Runlen descriptor %p, size: %d, first set: %d, num set: %d\n", (void*)desc, stored_size, first_set, num_set));
+			DEBUG (6, fprintf (gc_debug_file, "Runlen descriptor %p, size: %zd, first set: %d, num set: %d\n", (void*)desc, stored_size, first_set, num_set));
 			return (void*) desc;
 		}
 		/* we know the 2-word header is ptr-free */
 		if (last_set < SMALL_BITMAP_SIZE + OBJECT_HEADER_WORDS) {
 			desc = DESC_TYPE_SMALL_BITMAP | stored_size | ((*bitmap >> OBJECT_HEADER_WORDS) << SMALL_BITMAP_SHIFT);
-			DEBUG (6, fprintf (gc_debug_file, "Smallbitmap descriptor %p, size: %d, last set: %d\n", (void*)desc, stored_size, last_set));
+			DEBUG (6, fprintf (gc_debug_file, "Smallbitmap descriptor %p, size: %zd, last set: %d\n", (void*)desc, stored_size, last_set));
 			return (void*) desc;
 		}
 	}
 	/* we know the 2-word header is ptr-free */
 	if (last_set < LARGE_BITMAP_SIZE + OBJECT_HEADER_WORDS) {
 		desc = DESC_TYPE_LARGE_BITMAP | ((*bitmap >> OBJECT_HEADER_WORDS) << LOW_TYPE_BITS);
-		DEBUG (6, fprintf (gc_debug_file, "Largebitmap descriptor %p, size: %d, last set: %d\n", (void*)desc, stored_size, last_set));
+		DEBUG (6, fprintf (gc_debug_file, "Largebitmap descriptor %p, size: %zd, last set: %d\n", (void*)desc, stored_size, last_set));
 		return (void*) desc;
 	}
 	/* it's a complex object ... */
@@ -894,7 +909,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 		bitmap_data++;	\
 		if (0) {	\
 			MonoObject *myobj = (MonoObject*)obj;	\
-			g_print ("found %d at %p (0x%x): %s.%s\n", bwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
+			g_print ("found %d at %p (0x%zx): %s.%s\n", bwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
 		}	\
 		while (bwords-- > 0) {	\
 			gsize _bmap = *bitmap_data++;	\
@@ -921,7 +936,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 		char *e_end = e_start + el_size * mono_array_length ((MonoArray*)(obj));	\
 		if (0) {	\
 			MonoObject *myobj = (MonoObject*)start;	\
-			g_print ("found %d at %p (0x%x): %s.%s\n", mbwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
+			g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (vt)->desc, myobj->vtable->klass->name_space, myobj->vtable->klass->name);	\
 		}	\
 		while (e_start < e_end) {	\
 			void **_objptr = (void**)e_start;	\
@@ -1030,7 +1045,7 @@ scan_area (char *start, char *end)
 		DEBUG (8, fprintf (gc_debug_file, "Scanning object %p, vtable: %p (%s)\n", start, vt, vt->klass->name));
 		if (0) {
 			MonoObject *obj = (MonoObject*)start;
-			g_print ("found at %p (0x%x): %s.%s\n", start, vt->desc, obj->vtable->klass->name_space, obj->vtable->klass->name);
+			g_print ("found at %p (0x%zx): %s.%s\n", start, vt->desc, obj->vtable->klass->name_space, obj->vtable->klass->name);
 		}
 		type = vt->desc & 0x7;
 		if (type == DESC_TYPE_STRING) {
@@ -1265,7 +1280,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		objsize = safe_object_get_size ((MonoObject*)obj);
 		objsize += ALLOC_ALIGN - 1;
 		objsize &= ~(ALLOC_ALIGN - 1);
-		DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %d)\n", gray_objects, ((MonoObject*)obj)->vtable->klass->name, objsize));
+		DEBUG (9, fprintf (gc_debug_file, " (to %p, %s size: %zd)\n", gray_objects, ((MonoObject*)obj)->vtable->klass->name, objsize));
 		/* FIXME: handle pinned allocs:
 		 * Large objects are simple, at least until we always follow the rule:
 		 * if objsize >= MAX_SMALL_OBJ_SIZE, pin the object and return it.
@@ -1273,7 +1288,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		 * the object is pinned, it is marked, otherwise it can be freed.
 		 */
 		if (objsize >= MAX_SMALL_OBJ_SIZE || (obj >= min_pinned_chunk_addr && obj < max_pinned_chunk_addr && obj_is_from_pinned_alloc (obj))) {
-			DEBUG (9, fprintf (gc_debug_file, "Marked LOS/Pinned %p (%s), size: %d\n", obj, safe_name (obj), objsize));
+			DEBUG (9, fprintf (gc_debug_file, "Marked LOS/Pinned %p (%s), size: %zd\n", obj, safe_name (obj), objsize));
 			pin_object (obj);
 			return obj;
 		}
@@ -1300,7 +1315,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		if (vt->rank && ((MonoArray*)obj)->bounds) {
 			MonoArray *array = (MonoArray*)gray_objects;
 			array->bounds = (MonoArrayBounds*)((char*)gray_objects + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
-			DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %d, rank: %d, length: %d\n", array, objsize, vt->rank, mono_array_length (array)));
+			DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %zd, rank: %d, length: %d\n", array, objsize, vt->rank, mono_array_length (array)));
 		}
 		/* set the forwarding pointer */
 		forward_object (obj, gray_objects);
@@ -1458,7 +1473,7 @@ pin_objects_from_addresses (GCMemSection *section, void **start, void **end, voi
 				last_obj_size = safe_object_get_size ((MonoObject*)search_start);
 				last_obj_size += ALLOC_ALIGN - 1;
 				last_obj_size &= ~(ALLOC_ALIGN - 1);
-				DEBUG (8, fprintf (gc_debug_file, "Pinned try match %p (%s), size %d\n", last_obj, safe_name (last_obj), last_obj_size));
+				DEBUG (8, fprintf (gc_debug_file, "Pinned try match %p (%s), size %zd\n", last_obj, safe_name (last_obj), last_obj_size));
 				if (addr >= search_start && (char*)addr < (char*)last_obj + last_obj_size) {
 					DEBUG (4, fprintf (gc_debug_file, "Pinned object %p, vtable %p (%s), count %d\n", search_start, *(void**)search_start, safe_name (search_start), count));
 					pin_object (search_start);
@@ -1541,11 +1556,11 @@ print_nursery_gaps (void* start_nursery, void *end_nursery)
 	gpointer next;
 	for (i = 0; i < next_pin_slot; ++i) {
 		next = pin_queue [i];
-		fprintf (gc_debug_file, "Nursery range: %p-%p, size: %d\n", first, next, (char*)next-(char*)first);
+		fprintf (gc_debug_file, "Nursery range: %p-%p, size: %zd\n", first, next, (char*)next-(char*)first);
 		first = next;
 	}
 	next = end_nursery;
-	fprintf (gc_debug_file, "Nursery range: %p-%p, size: %d\n", first, next, (char*)next-(char*)first);
+	fprintf (gc_debug_file, "Nursery range: %p-%p, size: %zd\n", first, next, (char*)next-(char*)first);
 }
 
 /* reduce the info in the pin queue, removing duplicate pointers and sorting them */
@@ -1756,7 +1771,7 @@ alloc_nursery (void)
 
 	if (nursery_section)
 		return;
-	DEBUG (2, fprintf (gc_debug_file, "Allocating nursery size: %d\n", nursery_size));
+	DEBUG (2, fprintf (gc_debug_file, "Allocating nursery size: %zd\n", nursery_size));
 	/* later we will alloc a larger area for the nursery but only activate
 	 * what we need. The rest will be used as expansion if we have too many pinned
 	 * objects in the existing nursery.
@@ -1769,7 +1784,7 @@ alloc_nursery (void)
 	nursery_temp_end = data + SCAN_START_SIZE;
 	UPDATE_HEAP_BOUNDARIES (nursery_start, nursery_real_end);
 	total_alloc += nursery_size;
-	DEBUG (4, fprintf (gc_debug_file, "Expanding heap size: %d, total: %d\n", nursery_size, total_alloc));
+	DEBUG (4, fprintf (gc_debug_file, "Expanding heap size: %zd, total: %zd\n", nursery_size, total_alloc));
 	section->data = section->next_data = data;
 	section->size = nursery_size;
 	section->end_data = nursery_real_end;
@@ -1821,7 +1836,7 @@ scan_old_generation (char *start, char* end)
 	}
 	/* scan the old object space, too */
 	for (big_object = los_object_list; big_object; big_object = big_object->next) {
-		DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %d\n", big_object->data, safe_name (big_object->data), big_object->size));
+		DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %zd\n", big_object->data, safe_name (big_object->data), big_object->size));
 		scan_object (big_object->data, start, end);
 	}
 	/* scan the list of objects ready for finalization */
@@ -1841,7 +1856,7 @@ static void
 add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 {
 	Fragment *fragment;
-	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %d\n", frag_start, frag_end, frag_size));
+	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
 	/* memsetting just the first chunk start is bound to provide better cache locality */
 	memset (frag_start, 0, frag_size);
 	/* Not worth dealing with smaller fragments: need to tune */
@@ -1863,7 +1878,7 @@ scan_needed_big_objects (char *start_addr, char *end_addr)
 	int count = 0;
 	for (big_object = los_object_list; big_object; big_object = big_object->next) {
 		if (!big_object->scanned && object_is_pinned (big_object->data)) {
-			DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %d\n", big_object->data, safe_name (big_object->data), big_object->size));
+			DEBUG (5, fprintf (gc_debug_file, "Scan of big object: %p (%s), size: %zd\n", big_object->data, safe_name (big_object->data), big_object->size));
 			scan_object (big_object->data, start_addr, end_addr);
 			big_object->scanned = TRUE;
 			count++;
@@ -1942,7 +1957,7 @@ drain_gray_stack (char *start_addr, char *end_addr)
 static int last_num_pinned = 0;
 
 static void
-build_nursery_fragments (int start_pin, int end_pin)
+build_nursery_fragments (int start_pin, int end_pin, char *nursery_last_allocated)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
@@ -1967,6 +1982,17 @@ build_nursery_fragments (int start_pin, int end_pin)
 		frag_size += ALLOC_ALIGN - 1;
 		frag_size &= ~(ALLOC_ALIGN - 1);
 		frag_start = (char*)pin_queue [i] + frag_size;
+		/* 
+		 * pin_queue [i] might point to a half-constructed string or vector whose
+		 * length field is not set. In that case, frag_start points inside the 
+		 * (zero initialized) object. Find the end of the object by scanning forward.
+		 * 
+		 */
+		if (is_half_constructed (pin_queue [i])) {
+			/* Can't use nursery_next as the limit as it is modified in collect_nursery () */
+			while ((frag_start < nursery_last_allocated) && *(mword*)frag_start == 0)
+				frag_start += sizeof (mword);
+		}
 	}
 	nursery_last_pinned_end = frag_start;
 	frag_end = nursery_real_end;
@@ -2046,10 +2072,14 @@ collect_nursery (size_t requested_size)
 	GCMemSection *section;
 	size_t max_garbage_amount;
 	int i;
+	char *nursery_last_allocated;
+	TV_DECLARE (all_atv);
+	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
 	degraded_mode = 0;
+	nursery_last_allocated = nursery_next;
 	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, nursery_real_end);
@@ -2074,7 +2104,9 @@ collect_nursery (size_t requested_size)
 	nursery_section->next_data = nursery_next;
 
 	num_minor_gcs++;
+	mono_stats.minor_gc_count ++;
 	/* world must be stopped already */
+	TV_GETTIME (all_atv);
 	TV_GETTIME (atv);
 	/* pin from pinned handles */
 	pin_from_roots (nursery_start, nursery_next);
@@ -2112,9 +2144,12 @@ collect_nursery (size_t requested_size)
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
-	build_nursery_fragments (0, next_pin_slot);
+	build_nursery_fragments (0, next_pin_slot, nursery_last_allocated);
 	TV_GETTIME (atv);
-	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %d bytes available\n", TV_ELAPSED (btv, atv), fragment_total));
+	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %zd bytes available\n", TV_ELAPSED (btv, atv), fragment_total));
+
+	TV_GETTIME (all_btv);
+	mono_stats.minor_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 
 	/* prepare the pin queue for the next collection */
 	last_num_pinned = next_pin_slot;
@@ -2134,6 +2169,8 @@ major_collection (void)
 	PinnedChunk *chunk;
 	FinalizeEntry *fin;
 	int count;
+	TV_DECLARE (all_atv);
+	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 	/* FIXME: only use these values for the precise scan
@@ -2146,6 +2183,7 @@ major_collection (void)
 	degraded_mode = 0;
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
 	num_major_gcs++;
+	mono_stats.major_gc_count ++;
 	/* 
 	 * FIXME: implement Mark/Compact
 	 * Until that is done, we can just apply mostly the same alg as for the nursery:
@@ -2156,6 +2194,7 @@ major_collection (void)
 		collect_nursery (0);
 		return;
 	}
+	TV_GETTIME (all_atv);
 	/* FIXME: make sure the nursery next_data ptr is updated */
 	nursery_section->next_data = nursery_real_end;
 	/* we should also coalesce scanning from sections close to each other
@@ -2187,7 +2226,7 @@ major_collection (void)
 		if (next_pin_slot != count) {
 			next_pin_slot = count;
 			pin_object (bigobj->data);
-			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %d from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
+			DEBUG (6, fprintf (gc_debug_file, "Marked large object %p (%s) size: %zd from roots\n", bigobj->data, safe_name (bigobj->data), bigobj->size));
 		}
 	}
 	/* look for pinned addresses for pinned-alloc objects */
@@ -2207,7 +2246,7 @@ major_collection (void)
 	DEBUG (4, fprintf (gc_debug_file, "Start scan with %d pinned objects\n", next_pin_slot));
 
 	/* allocate the big to space */
-	DEBUG (4, fprintf (gc_debug_file, "Allocate tospace for size: %d\n", copy_space_required));
+	DEBUG (4, fprintf (gc_debug_file, "Allocate tospace for size: %zd\n", copy_space_required));
 	section = alloc_section (copy_space_required);
 	to_space = gray_objects = section->next_data;
 	to_space_end = section->end_data;
@@ -2299,8 +2338,10 @@ major_collection (void)
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
-	build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_end);
+	build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_end, nursery_next);
 
+	TV_GETTIME (all_btv);
+	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 	/* prepare the pin queue for the next collection */
 	next_pin_slot = 0;
 	if (fin_ready_list) {
@@ -2339,7 +2380,7 @@ alloc_section (size_t size)
 	section->end_data = data + new_size;
 	UPDATE_HEAP_BOUNDARIES (data, section->end_data);
 	total_alloc += new_size;
-	DEBUG (2, fprintf (gc_debug_file, "Expanding heap size: %d, total: %d\n", new_size, total_alloc));
+	DEBUG (2, fprintf (gc_debug_file, "Expanding heap size: %zd, total: %zd\n", new_size, total_alloc));
 	section->data = data;
 	section->size = new_size;
 	scan_starts = new_size / SCAN_START_SIZE;
@@ -2358,7 +2399,7 @@ free_mem_section (GCMemSection *section)
 {
 	char *data = section->data;
 	size_t size = section->size;
-	DEBUG (2, fprintf (gc_debug_file, "Freed section %p, size %d\n", data, size));
+	DEBUG (2, fprintf (gc_debug_file, "Freed section %p, size %zd\n", data, size));
 	free_os_memory (data, size);
 	free_internal_mem (section);
 	total_alloc -= size;
@@ -2382,13 +2423,13 @@ minor_collect_or_expand_inner (size_t size)
 	if (do_minor_collection) {
 		stop_world ();
 		collect_nursery (size);
-		DEBUG (2, fprintf (gc_debug_file, "Heap size: %d, LOS size: %d\n", total_alloc, los_memory_usage));
+		DEBUG (2, fprintf (gc_debug_file, "Heap size: %zd, LOS size: %zd\n", total_alloc, los_memory_usage));
 		restart_world ();
 		/* this also sets the proper pointers for the next allocation */
 		if (!search_fragment_for_size (size)) {
 			int i;
 			/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
-			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %d alloc (%d pinned)", size, last_num_pinned));
+			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)", size, last_num_pinned));
 			for (i = 0; i < last_num_pinned; ++i) {
 				DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], safe_name (pin_queue [i]), safe_object_get_size (pin_queue [i])));
 			}
@@ -2632,7 +2673,7 @@ alloc_pinned_chunk (size_t size)
 	/* allocate the first page to the freelist */
 	chunk->page_sizes [0] = PINNED_FIRST_SLOT_SIZE;
 	build_freelist (chunk, slot_for_size (PINNED_FIRST_SLOT_SIZE), PINNED_FIRST_SLOT_SIZE, chunk->start_data, ((char*)chunk + FREELIST_PAGESIZE));
-	DEBUG (4, fprintf (gc_debug_file, "Allocated pinned chunk %p, size: %d\n", chunk, size));
+	DEBUG (4, fprintf (gc_debug_file, "Allocated pinned chunk %p, size: %zd\n", chunk, size));
 	min_pinned_chunk_addr = MIN (min_pinned_chunk_addr, (char*)chunk->start_data);
 	max_pinned_chunk_addr = MAX (max_pinned_chunk_addr, ((char*)chunk + size));
 	return chunk;
@@ -2705,6 +2746,7 @@ static void*
 get_internal_mem (size_t size)
 {
 	return calloc (1, size);
+#if 0
 	int slot;
 	void *res = NULL;
 	PinnedChunk *pchunk;
@@ -2728,13 +2770,14 @@ get_internal_mem (size_t size)
 	internal_chunk_list = pchunk;
 	res = get_chunk_freelist (pchunk, slot);
 	return res;
+#endif
 }
 
 static void
 free_internal_mem (void *addr)
 {
 	free (addr);
-	return;
+#if 0
 	PinnedChunk *pchunk;
 	for (pchunk = internal_chunk_list; pchunk; pchunk = pchunk->next) {
 		/*printf ("trying to free %p in %p (pages: %d)\n", addr, pchunk, pchunk->num_pages);*/
@@ -2750,6 +2793,7 @@ free_internal_mem (void *addr)
 	}
 	printf ("free of %p failed\n", addr);
 	g_assert_not_reached ();
+#endif
 }
 
 /*
@@ -2768,7 +2812,7 @@ static void
 free_large_object (LOSObject *obj)
 {
 	size_t size = obj->size;
-	DEBUG (4, fprintf (gc_debug_file, "Freed large object %p, size %d\n", obj->data, obj->size));
+	DEBUG (4, fprintf (gc_debug_file, "Freed large object %p, size %zd\n", obj->data, obj->size));
 
 	los_memory_usage -= size;
 	size += sizeof (LOSObject);
@@ -2794,7 +2838,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	int just_did_major_gc = FALSE;
 
 	if (los_memory_usage > next_los_collection) {
-		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %d (los already: %u, limit: %u)\n", size, los_memory_usage, next_los_collection));
+		DEBUG (4, fprintf (gc_debug_file, "Should trigger major collection: req size %zd (los already: %zu, limit: %zu)\n", size, los_memory_usage, next_los_collection));
 		just_did_major_gc = TRUE;
 		stop_world ();
 		major_collection ();
@@ -2817,7 +2861,7 @@ alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_object_list = obj;
 	los_memory_usage += size;
 	los_num_objects++;
-	DEBUG (4, fprintf (gc_debug_file, "Allocated large object %p, vtable: %p (%s), size: %d\n", obj->data, vtable, vtable->klass->name, size));
+	DEBUG (4, fprintf (gc_debug_file, "Allocated large object %p, vtable: %p (%s), size: %zd\n", obj->data, vtable, vtable->klass->name, size));
 	return obj->data;
 }
 
@@ -2829,7 +2873,7 @@ static gboolean
 search_fragment_for_size (size_t size)
 {
 	Fragment *frag, *prev;
-	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, size: %d\n", nursery_frag_real_end, size));
+	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, size: %zd\n", nursery_frag_real_end, size));
 	prev = NULL;
 	for (frag = nursery_fragments; frag; frag = frag->next) {
 		if (size <= (frag->fragment_end - frag->fragment_start)) {
@@ -2842,7 +2886,7 @@ search_fragment_for_size (size_t size)
 			nursery_frag_real_end = frag->fragment_end;
 			nursery_temp_end = MIN (nursery_frag_real_end, nursery_next + size + SCAN_START_SIZE);
 
-			DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %d (req: %d)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
+			DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %zd (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
 			frag->next = fragment_freelist;
 			fragment_freelist = frag;
 			return TRUE;
@@ -2873,7 +2917,7 @@ alloc_degraded (MonoVTable *vtable, size_t size)
 	}
 	section->next_data += size;
 	degraded_mode += size;
-	DEBUG (3, fprintf (gc_debug_file, "Allocated (degraded) object %p, vtable: %p (%s), size: %d in section %p\n", p, vtable, vtable->klass->name, size, section));
+	DEBUG (3, fprintf (gc_debug_file, "Allocated (degraded) object %p, vtable: %p (%s), size: %zd in section %p\n", p, vtable, vtable->klass->name, size, section));
 	*p = vtable;
 	return p;
 }
@@ -2951,7 +2995,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 			}
 		}
 	}
-	DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %d\n", p, vtable, vtable->klass->name, size));
+	DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 	*p = vtable;
 
 	UNLOCK_GC;
@@ -2979,7 +3023,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 		p = alloc_from_freelist (size);
 		memset (p, 0, size);
 	}
-	DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %d\n", p, vtable, vtable->klass->name, size));
+	DEBUG (6, fprintf (gc_debug_file, "Allocated pinned object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 	*p = vtable;
 	UNLOCK_GC;
 	return p;
@@ -3008,7 +3052,7 @@ finalize_in_range (char *start, char *end)
 	for (i = 0; i < finalizable_hash_size; ++i) {
 		prev = NULL;
 		for (entry = finalizable_hash [i]; entry;) {
-			if (entry->object >= start && entry->object < end && (entry->object < to_space || entry->object >= to_space_end)) {
+			if ((char*)entry->object >= start && (char*)entry->object < end && ((char*)entry->object < to_space || (char*)entry->object >= to_space_end)) {
 				if (object_is_fin_ready (entry->object)) {
 					char *from;
 					FinalizeEntry *next;
@@ -3048,7 +3092,7 @@ null_link_in_range (char *start, char *end)
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		prev = NULL;
 		for (entry = disappearing_link_hash [i]; entry;) {
-			if (entry->object >= start && entry->object < end && (entry->object < to_space || entry->object >= to_space_end)) {
+			if ((char*)entry->object >= start && (char*)entry->object < end && ((char*)entry->object < to_space || (char*)entry->object >= to_space_end)) {
 				if (object_is_fin_ready (entry->object)) {
 					void **p = entry->data;
 					FinalizeEntry *old;
@@ -3620,10 +3664,10 @@ pin_thread_data (void *start_nursery, void *end_nursery)
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
 			if (info->skip) {
-				DEBUG (2, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+				DEBUG (2, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %zd\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 				continue;
 			}
-			DEBUG (2, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+			DEBUG (2, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %zd\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 			conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery);
 		}
 	}
@@ -3645,7 +3689,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 				continue;
 			while (start < (char**)info->stack_end) {
 				if (*start >= obj && *start < endobj) {
-					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p\n", obj, info, info->id, start, info->stack_start, info->stack_end));
+					DEBUG (0, fprintf (gc_debug_file, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p\n", obj, info, (gpointer)info->id, start, info->stack_start, info->stack_end));
 				}
 				start++;
 			}
@@ -3675,7 +3719,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 	switch ((*p) & REMSET_TYPE_MASK) {
 	case REMSET_LOCATION:
 		ptr = (void**)(*p);
-		if ((ptr < start_nursery || ptr >= end_nursery) && ptr_in_heap (ptr)) {
+		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery) && ptr_in_heap (ptr)) {
 			*ptr = copy_object (*ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
@@ -3686,7 +3730,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		return p + 1;
 	case REMSET_RANGE:
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		if ((ptr >= start_nursery && ptr < end_nursery) || !ptr_in_heap (ptr))
+		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
 			return p + 2;
 		count = p [1];
 		while (count-- > 0) {
@@ -3699,7 +3743,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		return p + 2;
 	case REMSET_OBJECT:
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		if ((ptr >= start_nursery && ptr < end_nursery) || !ptr_in_heap (ptr))
+		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
 			return p + 1;
 		scan_object (*ptr, start_nursery, end_nursery);
 		return p + 1;
@@ -3719,7 +3763,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 
 	/* the global one */
 	for (remset = global_remset; remset; remset = remset->next) {
-		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %d\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
 		for (p = remset->data; p < remset->store_next;) {
 			p = handle_remset (p, start_nursery, end_nursery, TRUE);
 		}
@@ -3728,7 +3772,7 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
 			for (remset = info->remset; remset; remset = next) {
-				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %d\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
+				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %zd\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
 				for (p = remset->data; p < remset->store_next;) {
 					p = handle_remset (p, start_nursery, end_nursery, FALSE);
 				}
@@ -3985,7 +4029,7 @@ void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	RememberedSet *rs;
-	if (field_ptr >= nursery_start && field_ptr < nursery_real_end) {
+	if ((char*)field_ptr >= nursery_start && (char*)field_ptr < nursery_real_end) {
 		*(void**)field_ptr = value;
 		return;
 	}
@@ -4008,7 +4052,7 @@ void
 mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	RememberedSet *rs = remembered_set;
-	if (slot_ptr >= nursery_start && slot_ptr < nursery_real_end) {
+	if ((char*)slot_ptr >= nursery_start && (char*)slot_ptr < nursery_real_end) {
 		*(void**)slot_ptr = value;
 		return;
 	}
@@ -4030,7 +4074,7 @@ void
 mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 {
 	RememberedSet *rs = remembered_set;
-	if (slot_ptr >= nursery_start && slot_ptr < nursery_real_end)
+	if ((char*)slot_ptr >= nursery_start && (char*)slot_ptr < nursery_real_end)
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", slot_ptr, count));
 	if (rs->store_next + 1 < rs->end_set) {
@@ -4050,7 +4094,7 @@ void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	RememberedSet *rs = remembered_set;
-	if (ptr >= nursery_start && ptr < nursery_real_end) {
+	if ((char*)ptr >= nursery_start && (char*)ptr < nursery_real_end) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		*(void**)ptr = value;
 		return;
@@ -4073,7 +4117,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
-	if (dest >= nursery_start && dest < nursery_real_end) {
+	if ((char*)dest >= nursery_start && (char*)dest < nursery_real_end) {
 		return;
 	}
 	DEBUG (1, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
@@ -4098,6 +4142,214 @@ mono_gc_wbarrier_object (MonoObject* obj)
 	remembered_set = rs;
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
 	*(rs->store_next++) = (mword)obj | REMSET_OBJECT;
+}
+
+/*
+ * ######################################################################
+ * ########  Collector debugging
+ * ######################################################################
+ */
+
+static mword*
+find_in_remset_loc (mword *p, char *addr, gboolean *found)
+{
+	void **ptr;
+	mword count;
+
+	switch ((*p) & REMSET_TYPE_MASK) {
+	case REMSET_LOCATION:
+		if (*p == (mword)addr)
+			*found = TRUE;
+		return p + 1;
+	case REMSET_RANGE:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		count = p [1];
+		if ((void**)addr >= ptr && (void**)addr < ptr + count)
+			*found = TRUE;
+		return p + 2;
+	case REMSET_OBJECT:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		count = safe_object_get_size ((MonoObject*)ptr); 
+		count += (ALLOC_ALIGN - 1);
+		count &= (ALLOC_ALIGN - 1);
+		count /= sizeof (mword);
+		if ((void**)addr >= ptr && (void**)addr < ptr + count)
+			*found = TRUE;
+		return p + 1;
+	default:
+		g_assert_not_reached ();
+	}
+	return NULL;
+}
+
+/*
+ * Return whenever ADDR occurs in the remembered sets
+ */
+static gboolean
+find_in_remsets (char *addr)
+{
+	int i;
+	SgenThreadInfo *info;
+	RememberedSet *remset;
+	mword *p;
+	gboolean found = FALSE;
+
+	/* the global one */
+	for (remset = global_remset; remset; remset = remset->next) {
+		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
+		for (p = remset->data; p < remset->store_next;) {
+			p = find_in_remset_loc (p, addr, &found);
+			if (found)
+				return TRUE;
+		}
+	}
+	/* the per-thread ones */
+	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
+		for (info = thread_table [i]; info; info = info->next) {
+			for (remset = info->remset; remset; remset = remset->next) {
+				DEBUG (4, fprintf (gc_debug_file, "Scanning remset for thread %p, range: %p-%p, size: %zd\n", info, remset->data, remset->store_next, remset->store_next - remset->data));
+				for (p = remset->data; p < remset->store_next;) {
+					p = find_in_remset_loc (p, addr, &found);
+					if (found)
+						return TRUE;
+				}
+			}
+		}
+	}
+
+	return FALSE;
+}
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		if (*(ptr) && (char*)*(ptr) >= nursery_start && (char*)*(ptr) < nursery_next) {	\
+            if (!find_in_remsets ((char*)(ptr))) { \
+                fprintf (gc_debug_file, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.\n", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
+                g_assert_not_reached (); \
+            } \
+        } \
+	} while (0)
+
+/*
+ * Check that each object reference inside the area which points into the nursery
+ * can be found in the remembered sets.
+ */
+static void __attribute__((noinline))
+check_remsets_for_area (char *start, char *end)
+{
+	GCVTable *vt;
+	size_t skip_size;
+	int type;
+	int type_str = 0, type_rlen = 0, type_bitmap = 0, type_vector = 0, type_lbit = 0, type_complex = 0;
+	new_obj_references = 0;
+	obj_references_checked = 0;
+	while (start < end) {
+		if (!*(void**)start) {
+			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
+			continue;
+		}
+		vt = (GCVTable*)LOAD_VTABLE (start);
+		DEBUG (8, fprintf (gc_debug_file, "Scanning object %p, vtable: %p (%s)\n", start, vt, vt->klass->name));
+		if (0) {
+			MonoObject *obj = (MonoObject*)start;
+			g_print ("found at %p (0x%lx): %s.%s\n", start, (long)vt->desc, obj->vtable->klass->name_space, obj->vtable->klass->name);
+		}
+		type = vt->desc & 0x7;
+		if (type == DESC_TYPE_STRING) {
+			STRING_SIZE (skip_size, start);
+			start += skip_size;
+			type_str++;
+			continue;
+		} else if (type == DESC_TYPE_RUN_LENGTH) {
+			OBJ_RUN_LEN_SIZE (skip_size, vt, start);
+			g_assert (skip_size);
+			OBJ_RUN_LEN_FOREACH_PTR (vt,start);
+			start += skip_size;
+			type_rlen++;
+			continue;
+		} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
+			skip_size = (vt->desc >> LOW_TYPE_BITS) & MAX_ELEMENT_SIZE;
+			skip_size *= mono_array_length ((MonoArray*)start);
+			skip_size += sizeof (MonoArray);
+			skip_size += (ALLOC_ALIGN - 1);
+			skip_size &= ~(ALLOC_ALIGN - 1);
+			OBJ_VECTOR_FOREACH_PTR (vt, start);
+			if (((MonoArray*)start)->bounds) {
+				/* account for the bounds */
+				skip_size += sizeof (MonoArrayBounds) * vt->klass->rank;
+			}
+			start += skip_size;
+			type_vector++;
+			continue;
+		} else if (type == DESC_TYPE_SMALL_BITMAP) {
+			OBJ_BITMAP_SIZE (skip_size, vt, start);
+			g_assert (skip_size);
+			OBJ_BITMAP_FOREACH_PTR (vt,start);
+			start += skip_size;
+			type_bitmap++;
+			continue;
+		} else if (type == DESC_TYPE_LARGE_BITMAP) {
+			skip_size = safe_object_get_size ((MonoObject*)start);
+			skip_size += (ALLOC_ALIGN - 1);
+			skip_size &= ~(ALLOC_ALIGN - 1);
+			OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start);
+			start += skip_size;
+			type_lbit++;
+			continue;
+		} else if (type == DESC_TYPE_COMPLEX) {
+			/* this is a complex object */
+			skip_size = safe_object_get_size ((MonoObject*)start);
+			skip_size += (ALLOC_ALIGN - 1);
+			skip_size &= ~(ALLOC_ALIGN - 1);
+			OBJ_COMPLEX_FOREACH_PTR (vt, start);
+			start += skip_size;
+			type_complex++;
+			continue;
+		} else if (type == DESC_TYPE_COMPLEX_ARR) {
+			/* this is an array of complex structs */
+			skip_size = mono_array_element_size (((MonoVTable*)vt)->klass);
+			skip_size *= mono_array_length ((MonoArray*)start);
+			skip_size += sizeof (MonoArray);
+			skip_size += (ALLOC_ALIGN - 1);
+			skip_size &= ~(ALLOC_ALIGN - 1);
+			OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
+			if (((MonoArray*)start)->bounds) {
+				/* account for the bounds */
+				skip_size += sizeof (MonoArrayBounds) * vt->klass->rank;
+			}
+			start += skip_size;
+			type_complex++;
+			continue;
+		} else {
+			g_assert (0);
+		}
+	}
+}
+
+/*
+ * Perform consistency check of the heap.
+ *
+ * Assumes the world is stopped.
+ */
+void
+check_consistency (void)
+{
+	GCMemSection *section;
+
+	// Need to add more checks
+	// FIXME: Create a general heap enumeration function and use that
+
+	DEBUG (1, fprintf (gc_debug_file, "Begin heap consistency check...\n"));
+
+	// Check that oldspace->newspace pointers are registered with the collector
+	for (section = section_list; section; section = section->next) {
+		if (section->role == MEMORY_ROLE_GEN0)
+			continue;
+		DEBUG (2, fprintf (gc_debug_file, "Scan of old section: %p-%p, size: %d\n", section->data, section->next_data, (int)(section->next_data - section->data)));
+		check_remsets_for_area (section->data, section->next_data);
+	}
+
+	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
 }
 
 /*
