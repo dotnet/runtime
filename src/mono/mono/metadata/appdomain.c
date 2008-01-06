@@ -54,7 +54,7 @@
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
  */
-#define MONO_CORLIB_VERSION 64
+#define MONO_CORLIB_VERSION 65
 
 typedef struct
 {
@@ -1455,29 +1455,17 @@ ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id)
 }
 
 gint32
-ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file, 
-					    MonoObject *evidence, MonoArray *args)
+ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, 
+											MonoReflectionAssembly *refass, MonoArray *args)
 {
-	MonoAssembly *assembly;
 	MonoImage *image;
 	MonoMethod *method;
-	char *filename;
-	gint32 res;
-	MonoReflectionAssembly *refass;
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (!file)
-		mono_raise_exception (mono_get_exception_argument_null ("assemblyFile"));
-
-	filename = mono_string_to_utf8 (file);
-	assembly = mono_assembly_open (filename, NULL);
-	g_free (filename);
-
-	if (!assembly)
-		mono_raise_exception (mono_get_exception_file_not_found2 (NULL, file));
-
-	image = assembly->image;
+	g_assert (refass);
+	image = refass->assembly->image;
+	g_assert (image);
 
 	method = mono_get_method (image, mono_image_get_entry_point (image), NULL);
 
@@ -1487,12 +1475,7 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 	if (!args)
 		args = (MonoArray *) mono_array_new (ad->data, mono_defaults.string_class, 0);
 
-	refass = mono_assembly_get_object (ad->data, assembly);
-	MONO_OBJECT_SETREF (refass, evidence, evidence);
-
-	res = mono_runtime_exec_main (method, (MonoArray *)args, NULL);
-
-	return res;
+	return mono_runtime_exec_main (method, (MonoArray *)args, NULL);
 }
 
 gint32 

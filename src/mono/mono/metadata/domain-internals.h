@@ -301,9 +301,8 @@ ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id) MONO_INTER
 
 gint32
 ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomain *ad, 
-						    MonoString    *file, 
-						    MonoObject    *evidence,
-						    MonoArray     *args) MONO_INTERNAL;
+													MonoReflectionAssembly *refass,
+													MonoArray     *args) MONO_INTERNAL;
 
 MonoAppDomain * 
 ves_icall_System_AppDomain_InternalSetDomain	   (MonoAppDomain *ad) MONO_INTERNAL;
