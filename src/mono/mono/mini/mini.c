@@ -66,7 +66,6 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
 #include <string.h>

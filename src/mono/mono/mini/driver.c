@@ -43,7 +43,6 @@
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/gc-internal.h>
-#include <mono/os/gc_wrapper.h>
 #include "mono/utils/mono-counters.h"
 
 #include "mini.h"
