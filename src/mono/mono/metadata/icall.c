@@ -4328,6 +4328,8 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 				MONO_OBJECT_SETREF (aname, keyToken, mono_array_new (domain, mono_defaults.byte_class, pkey_len));
 				memcpy (mono_array_addr (aname->keyToken, guint8, 0), pkey_ptr, pkey_len);
 			}
+		} else {
+			MONO_OBJECT_SETREF (aname, keyToken, mono_array_new (domain, mono_defaults.byte_class, 0));
 		}
 		
 		/* note: this function doesn't return the codebase on purpose (i.e. it can
