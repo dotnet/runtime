@@ -1467,6 +1467,9 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad, MonoString *file,
 
 	MONO_ARCH_SAVE_REGS;
 
+	if (!file)
+		mono_raise_exception (mono_get_exception_argument_null ("assemblyFile"));
+
 	filename = mono_string_to_utf8 (file);
 	assembly = mono_assembly_open (filename, NULL);
 	g_free (filename);
