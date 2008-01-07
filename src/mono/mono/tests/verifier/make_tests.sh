@@ -2575,7 +2575,6 @@ do
 done
 
 
-#TODO validate delegate construction (Wait for ldftn, ldvirtftn and calli to be fully checking)
 #underflow
 ./make_newobj_test.sh newobj_underflow invalid "newobj instance void class ClassA::.ctor(int32,int32)" "int32" "int32"
 
@@ -3410,7 +3409,6 @@ done
 
 #ldvirtftn
 #TODO test visibility for ldftn and ldvirtftn
-#TODO test that the pushed value is not a native int, but a propert function pointer
 
 ./make_ldvirtftn_test.sh ldvirtftn_virt_method valid "ldvirtftn instance void class Test::VirtMethod()" "newobj void class Test::.ctor()"
 ./make_ldvirtftn_test.sh ldvirtftn_virt_underflow invalid "ldvirtftn instance void class Test::VirtMethod()" "nop"
@@ -3433,6 +3431,91 @@ done
 ./make_ldvirtftn_test.sh ldvirtftn_method_stack_type_obj_compatible_1 valid "ldvirtftn instance string object::ToString()" "newobj void Test::.ctor()"
 ./make_ldvirtftn_test.sh ldvirtftn_method_stack_type_obj_compatible_2 valid "ldvirtftn void class Test::VirtMethod()" "newobj void Test::.ctor()"
 ./make_ldvirtftn_test.sh ldvirtftn_method_stack_type_obj_compatible_3 unverifiable "ldvirtftn void class Test::VirtMethod()" "newobj void object::.ctor()"
+
+
+#Delegates
+#ldftn delegates
+#pure native int
+./make_delegate_test.sh delegate_with_native_int unverifiable "ldarg.1\n\tconv.i" "DelegateNoArg" "ldarg.0"
+
+#random types
+I=1;
+for TYPE in "ldc.i4.0" "ldc.i8 0" "ldc.r4 0" "ldc.r8 1" "ldarga 1"
+do
+	./make_delegate_test.sh delegate_with_bad_type_${I} unverifiable "ldftn void Driver::Method()" "DelegateNoArg" "$TYPE"
+	I=`expr $I + 1`
+done
+
+#ldftn
+#static method
+./make_delegate_test.sh delegate_ldftn_static_method_1 valid "ldftn void Driver::Method()" "DelegateNoArg" "ldnull"
+./make_delegate_test.sh delegate_ldftn_static_method_2 valid "ldftn void Driver::Method2(int32)" "DelegateIntArg" "ldnull"
+./make_delegate_test.sh delegate_ldftn_static_method_3 unverifiable "ldftn void Driver::Method2(int32)" "DelegateNoArg" "ldnull"
+./make_delegate_test.sh delegate_ldftn_static_method_4 unverifiable "ldftn void Driver::Method()" "DelegateIntArg" "ldnull"
+
+#non-virtual
+#null this
+./make_delegate_test.sh delegate_ldftn_non_virtual_method_1 valid "ldftn instance void Driver::NonVirtMethod()" "DelegateNoArg" "ldnull"
+./make_delegate_test.sh delegate_ldftn_non_virtual_method_2 valid "ldftn instance void Driver::NonVirtMethod2(int32)" "DelegateIntArg" "ldnull"
+
+#method on this
+./make_delegate_test.sh delegate_ldftn_non_virtual_method_3 valid "ldftn instance void Driver::NonVirtMethod()" "DelegateNoArg" "newobj instance void class Driver::.ctor()"
+./make_delegate_test.sh delegate_ldftn_non_virtual_method_4 valid "ldftn instance void Driver::NonVirtMethod2(int32)" "DelegateIntArg" "newobj instance void class Driver::.ctor()"
+#method on parent
+./make_delegate_test.sh delegate_ldftn_non_virtual_method_5 valid "ldftn instance void Parent::ParentMethod()" "DelegateNoArg" "newobj instance void class Driver::.ctor()"
+
+#invalid this
+./make_delegate_test.sh delegate_ldftn_non_virtual_method_6 unverifiable "ldftn instance void Driver::NonVirtMethod()" "DelegateNoArg" "newobj void object::.ctor()"
+./make_delegate_test.sh delegate_ldftn_non_virtual_method_7 unverifiable "ldftn instance void Driver::NonVirtMethod()" "DelegateNoArg" "newobj void Parent::.ctor()"
+
+#virtual methods
+./make_delegate_test.sh delegate_ldftn_virtual_method_1 valid "ldftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0"
+./make_delegate_test.sh delegate_ldftn_virtual_method_2 valid "ldftn instance void Driver::VirtMethod2(int32)" "DelegateIntArg" "ldarg.0"
+./make_delegate_test.sh delegate_ldftn_virtual_method_3 valid "ldftn instance void Driver::ParentVirtMethod()" "DelegateNoArg" "ldarg.0"
+./make_delegate_test.sh delegate_ldftn_virtual_method_4 valid "ldftn instance void Parent::ParentVirtMethod()" "DelegateNoArg" "ldarg.0"
+
+#other forms of ldarg
+./make_delegate_test.sh delegate_ldftn_virtual_method_5 valid "ldftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.s 0"
+./make_delegate_test.sh delegate_ldftn_virtual_method_6 valid "ldftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg 0"
+
+#object is not this
+./make_delegate_test.sh delegate_ldftn_virtual_method_7 unverifiable "ldftn instance void Driver::VirtMethod()" "DelegateNoArg" "newobj instance void class Driver::.ctor()"
+./make_delegate_test.sh delegate_ldftn_virtual_method_8 unverifiable "ldftn instance void Parent::VirtMethod()" "DelegateNoArg" "newobj instance void class Driver::.ctor()"
+./make_delegate_test.sh delegate_ldftn_virtual_method_9 unverifiable "ldftn instance void Driver::ParentVirtMethod()" "DelegateNoArg" "newobj instance void class Driver::.ctor()"
+./make_delegate_test.sh delegate_ldftn_virtual_method_10 unverifiable "ldftn instance void Parent::ParentVirtMethod()" "DelegateNoArg" "newobj instance void class Driver::.ctor()"
+
+#static method
+./make_delegate_test.sh delegate_ldftn_virtual_method_11 unverifiable "ldftn void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0" "Driver"
+./make_delegate_test.sh delegate_ldftn_virtual_method_12 unverifiable "ldftn void Parent::VirtMethod()" "DelegateNoArg" "ldarg.0" "Driver"
+./make_delegate_test.sh delegate_ldftn_virtual_method_13 unverifiable "ldftn void Parent::ParentVirtMethod()" "DelegateNoArg" "ldarg.0" "Driver"
+
+#final virtual
+./make_delegate_test.sh delegate_ldftn_virtual_method_14 valid "ldftn instance void Driver::SealedVirtMethod()" "DelegateNoArg" "ldarg.0" "Driver"
+./make_delegate_test.sh delegate_ldftn_virtual_method_15 unverifiable "ldftn instance void Parent::SealedVirtMethod()" "DelegateNoArg" "ldarg.0" "Driver"
+./make_delegate_test.sh delegate_ldftn_virtual_method_16 unverifiable "ldftn instance void Parent::SealedVirtMethod()" "DelegateNoArg" "ldarg.0" "Parent"
+
+
+#instruction sequennce
+./make_delegate_test.sh delegate_ldftn_bad_sequence unverifiable "ldftn void Driver::Method()\n\t\tnop" "DelegateNoArg" "ldarg.0"
+#this one is terribly hard to read
+
+./make_delegate_test.sh delegate_ldftn_diferent_basic_block unverifiable "pop\n\t\tpop\n\t\tldarg.0\n\t\tldftn void Driver::Method()" "DelegateNoArg" "ldarg.0\n\t\tldftn void Driver::Method()\n\t\tldarg.1\n\t\tbrfalse DELEGATE_OP"
+
+#it's not necessary to test split due to a protected block since the stack must be empty at the beginning.
+
+
+#virtual method with starg.0
+./make_delegate_test.sh delegate_ldftn_virtual_method_with_starg0_1 unverifiable "ldftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\tstarg.s 0\n\tldarg.0"
+./make_delegate_test.sh delegate_ldftn_virtual_method_with_starg0_2 unverifiable "ldftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\tstarg 0\n\tldarg.0"
+
+
+
+#value types
+./make_delegate_test.sh delegate_ldftn_non_virtual_method_valuetype valid "ldftn instance void MyValueType::NonVirtMethod()" "DelegateNoArg" "ldloc.0\n\tbox MyValueType"
+./make_delegate_test.sh delegate_ldftn_virtual_method_valuetype valid "ldftn instance string MyValueType::ToString()" "ToStringDelegate" "ldloc.0\n\tbox MyValueType"
+
+./make_delegate_test.sh delegate_ldftn_virtual_method_valuetype_byref unverifiable "ldftn instance string MyValueType::ToString()" "ToStringDelegate" "ldloca 0"
+
 
 
 
