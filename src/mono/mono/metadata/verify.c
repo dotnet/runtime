@@ -61,10 +61,6 @@ enum {
 		} \
 	} while (0)
 
-#define UNMASK_TYPE(type) ((type) & TYPE_MASK)
-#define IS_MANAGED_POINTER(type) (((type) & POINTER_MASK) == POINTER_MASK)
-#define IS_NULL_LITERAL(type) (((type) & NULL_LITERAL_MASK) == NULL_LITERAL_MASK)
-
 /*Flags to be used with ILCodeDesc::flags */
 enum {
 	/*Instruction has not been processed.*/
@@ -77,6 +73,11 @@ enum {
 	IL_CODE_FLAG_STACK_INITED = 4,
 	/*Used by merge_stacks to decide if it should just copy the eval stack.*/
 	IL_CODE_STACK_MERGED = 8,
+	/*This is a delegate created from a ldftn*/
+	IL_CODE_LDFTN_DELEGATE = 0x10,
+	/*This is a delegate created from a ldftn to a non final virtual method*/
+	IL_CODE_LDFTN_DELEGATE_NONFINAL_VIRTUAL = 0x20,
+	
 };
 
 typedef struct {
@@ -121,6 +122,10 @@ typedef struct {
 	MonoGenericContext *generic_context;
 	MonoImage *image;
 	MonoMethod *method;
+
+	/*This flag helps solving a corner case of delegate verification in that you cannot have a "starg 0" 
+	 *on a method that creates a delegate for a non-final virtual method using ldftn*/
+	gboolean has_this_store;
 } VerifyContext;
 
 static void
@@ -151,12 +156,22 @@ enum {
 
 	/* The stack type is a managed pointer, unmask the value to res */
 	POINTER_MASK = 0x100,
+	
+	/*Stack type with the pointer mask*/
+	RAW_TYPE_MASK = 0x10F,
 
 	/* Controlled Mutability Manager Pointer */
 	CMMP_MASK = 0x200,
 
 	/* The stack type is a null literal*/
 	NULL_LITERAL_MASK = 0x400,
+	
+	/**Used by ldarg.0 and family to let delegate verification happens.*/
+	THIS_POINTER_MASK = 0x800,
+
+	/**Signals that this is a boxed value type*/
+	BOXED_MASK = 0x1000,
+
 };
 
 static const char* const
@@ -213,6 +228,89 @@ mono_method_is_constructor (MonoMethod *method)
 	return ((method->flags & CTOR_REQUIRED_FLAGS) == CTOR_REQUIRED_FLAGS &&
 			!(method->flags & CTOR_INVALID_FLAGS) &&
 			!strcmp (".ctor", method->name));
+}
+
+
+/* stack_slot_get_type:
+ * 
+ * Returns the stack type of @value. This value includes POINTER_MASK.
+ * 
+ * Use this function to checks that account for a managed pointer.
+ */
+static gint32
+stack_slot_get_type (ILStackDesc *value)
+{
+	return value->stype & RAW_TYPE_MASK;
+}
+
+/* stack_slot_get_underlying_type:
+ * 
+ * Returns the stack type of @value. This value does not include POINTER_MASK.
+ * 
+ * Use this function is cases where the fact that the value could be a managed pointer is
+ * irrelevant. For example, field load doesn't care about this fact of type on stack.
+ */
+static gint32
+stack_slot_get_underlying_type (ILStackDesc *value)
+{
+	return value->stype & TYPE_MASK;
+}
+
+/* stack_slot_is_managed_pointer:
+ * 
+ * Returns TRUE is @value is a managed pointer.
+ */
+static gboolean
+stack_slot_is_managed_pointer (ILStackDesc *value)
+{
+	return (value->stype & POINTER_MASK) == POINTER_MASK;
+}
+
+/* stack_slot_is_managed_mutability_pointer:
+ * 
+ * Returns TRUE is @value is a managed mutability pointer.
+ */
+static gboolean
+stack_slot_is_managed_mutability_pointer (ILStackDesc *value)
+{
+	return (value->stype & CMMP_MASK) == CMMP_MASK;
+}
+
+/* stack_slot_is_null_literal:
+ * 
+ * Returns TRUE is @value is the null literal.
+ */
+static gboolean
+stack_slot_is_null_literal (ILStackDesc *value)
+{
+	return (value->stype & NULL_LITERAL_MASK) == NULL_LITERAL_MASK;
+}
+
+
+/* stack_slot_is_this_pointer:
+ * 
+ * Returns TRUE is @value is the this literal
+ */
+static gboolean
+stack_slot_is_this_pointer (ILStackDesc *value)
+{
+	return (value->stype & THIS_POINTER_MASK) == THIS_POINTER_MASK;
+}
+
+/* stack_slot_is_boxed_value:
+ * 
+ * Returns TRUE is @value is a boxed value
+ */
+static gboolean
+stack_slot_is_boxed_value (ILStackDesc *value)
+{
+	return (value->stype & BOXED_MASK) == BOXED_MASK;
+}
+
+static const char *
+stack_slot_get_name (ILStackDesc *value)
+{
+	return type_names [value->stype & TYPE_MASK];
 }
 //////////////////////////////////////////////////////////////////
 void
@@ -953,166 +1051,6 @@ ldelem_type [] = {
 	} while (0)
 
 
-static void
-type_to_eval_stack_type (MonoType *type, ILStackDesc *stack, int take_addr) {
-	int t = type->type;
-
-	stack->type = type;
-	if (type->byref || take_addr) { /* fix double addr issue */
-		stack->stype = TYPE_COMPLEX;
-		return;
-	}
-
-handle_enum:
-	switch (t) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		stack->stype = TYPE_I4;
-		return;
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-		stack->stype = TYPE_PTR;
-		return;
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
-		stack->stype = TYPE_COMPLEX;
-		return;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		stack->stype = TYPE_I8;
-		return;
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		stack->stype = TYPE_R8;
-		return;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
-			goto handle_enum;
-		} else {
-			stack->stype = TYPE_COMPLEX;
-			return;
-		}
-	default:
-		g_error ("unknown type %02x in eval stack type", type->type);
-	}
-	return;
-}
-
-static int
-type_from_op (int ins, ILStackDesc *arg) {
-	switch (ins) {
-	/* binops */
-	case CEE_ADD:
-	case CEE_SUB:
-	case CEE_MUL:
-	case CEE_DIV:
-	case CEE_REM:
-		/* FIXME: check unverifiable args for TYPE_COMPLEX */
-		return arg->stype = bin_num_table [arg->stype] [arg [1].stype];
-	case CEE_DIV_UN:
-	case CEE_REM_UN:
-	case CEE_AND:
-	case CEE_OR:
-	case CEE_XOR:
-		return arg->stype = bin_int_table [arg->stype] [arg [1].stype];
-	case CEE_SHL:
-	case CEE_SHR:
-	case CEE_SHR_UN:
-		return arg->stype = shift_table [arg->stype] [arg [1].stype];
-	case CEE_BEQ_S:
-	case CEE_BGE_S:
-	case CEE_BGT_S:
-	case CEE_BLE_S:
-	case CEE_BLT_S:
-	case CEE_BNE_UN_S:
-	case CEE_BGE_UN_S:
-	case CEE_BGT_UN_S:
-	case CEE_BLE_UN_S:
-	case CEE_BLT_UN_S:
-	case CEE_BEQ:
-	case CEE_BGE:
-	case CEE_BGT:
-	case CEE_BLE:
-	case CEE_BLT:
-	case CEE_BNE_UN:
-	case CEE_BGE_UN:
-	case CEE_BGT_UN:
-	case CEE_BLE_UN:
-	case CEE_BLT_UN:
-		/* FIXME: handle some specifics with ins->next->type */
-		return bin_comp_table [arg->stype] [arg [1].stype] ? TYPE_I4: TYPE_INV;
-	case 256+CEE_CEQ:
-	case 256+CEE_CGT:
-	case 256+CEE_CGT_UN:
-	case 256+CEE_CLT:
-	case 256+CEE_CLT_UN:
-		return arg->stype = bin_comp_table [arg->stype] [arg [1].stype] ? TYPE_I4: TYPE_INV;
-	/* unops */
-	case CEE_NEG:
-		return arg->stype = neg_table [arg->stype];
-	case CEE_NOT:
-		if (arg->stype >= TYPE_I4 && arg->stype <= TYPE_PTR)
-			return arg->stype;
-		else
-			return arg->stype = TYPE_INV;
-	case CEE_CONV_I1:
-	case CEE_CONV_U1:
-	case CEE_CONV_I2:
-	case CEE_CONV_U2:
-	case CEE_CONV_I4:
-	case CEE_CONV_U4:
-	case CEE_CONV_OVF_I1:
-	case CEE_CONV_OVF_U1:
-	case CEE_CONV_OVF_I2:
-	case CEE_CONV_OVF_U2:
-	case CEE_CONV_OVF_I4:
-	case CEE_CONV_OVF_U4:
-	case CEE_CONV_OVF_I1_UN:
-	case CEE_CONV_OVF_U1_UN:
-	case CEE_CONV_OVF_I2_UN:
-	case CEE_CONV_OVF_U2_UN:
-	case CEE_CONV_OVF_I4_UN:
-	case CEE_CONV_OVF_U4_UN:
-		if (arg->stype == TYPE_INV || arg->stype >= TYPE_COMPLEX)
-			return arg->stype = TYPE_INV;
-		return arg->stype = TYPE_I4;
-	case CEE_CONV_I:
-	case CEE_CONV_U:
-	case CEE_CONV_OVF_I:
-	case CEE_CONV_OVF_U:
-	case CEE_CONV_OVF_I_UN:
-	case CEE_CONV_OVF_U_UN:
-		if (arg->stype == TYPE_INV || arg->stype == TYPE_COMPLEX)
-			return arg->stype = TYPE_INV;
-		return arg->stype = TYPE_PTR;
-	case CEE_CONV_I8:
-	case CEE_CONV_U8:
-	case CEE_CONV_OVF_I8:
-	case CEE_CONV_OVF_U8:
-	case CEE_CONV_OVF_I8_UN:
-	case CEE_CONV_OVF_U8_UN:
-		return arg->stype = TYPE_I8;
-	case CEE_CONV_R4:
-	case CEE_CONV_R8:
-		return arg->stype = TYPE_R8;
-	default:
-		g_error ("opcode 0x%04x not handled in type from op", ins);
-		break;
-	}
-	return FALSE;
-}
-
 static int
 in_any_block (MonoMethodHeader *header, guint offset)
 {
@@ -1129,24 +1067,6 @@ in_any_block (MonoMethodHeader *header, guint offset)
 			return 1;
 	}
 	return 0;
-}
-
-static int
-in_same_block (MonoMethodHeader *header, guint offset, guint target)
-{
-	int i;
-	MonoExceptionClause *clause;
-
-	for (i = 0; i < header->num_clauses; ++i) {
-		clause = &header->clauses [i];
-		if (MONO_OFFSET_IN_CLAUSE (clause, offset) ^ MONO_OFFSET_IN_CLAUSE (clause, target))
-			return 0;
-		if (MONO_OFFSET_IN_HANDLER (clause, offset) ^ MONO_OFFSET_IN_HANDLER (clause, target))
-			return 0;
-		if (MONO_OFFSET_IN_FILTER (clause, offset) ^ MONO_OFFSET_IN_FILTER (clause, target))
-			return 0;
-	}
-	return 1;
 }
 
 /*
@@ -1312,28 +1232,12 @@ is_unverifiable_endfilter (VerifyContext *ctx, guint offset)
 	return 0;
 }
 
-
-static int
-can_merge_stack (ILCodeDesc *a, ILCodeDesc *b)
-{
-	if (!b->flags & IL_CODE_FLAG_SEEN) {
-		b->flags |= IL_CODE_FLAG_SEEN;
-		b->size = a->size;
-		/* merge types */
-		return 1;
-	}
-	if (a->size != b->size)
-		return 0;
-	/* merge types */
-	return 1;
-}
-
 static gboolean
 is_valid_bool_arg (ILStackDesc *arg)
 {
-	if (IS_MANAGED_POINTER (arg->stype))
+	if (stack_slot_is_managed_pointer (arg))
 		return TRUE;
-	switch (arg->stype) {
+	switch (stack_slot_get_underlying_type (arg)) {
 	case TYPE_I4:
 	case TYPE_I8:
 	case TYPE_NATIVE_INT:
@@ -1363,83 +1267,6 @@ is_valid_bool_arg (ILStackDesc *arg)
 }
 
 
-static int
-can_store_type (ILStackDesc *arg, MonoType *type)
-{
-	int t = type->type;
-	if (type->byref && arg->stype != TYPE_COMPLEX)
-		return FALSE;
-handle_enum:
-	switch (t) {
-	case MONO_TYPE_VOID:
-		return FALSE;
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		if (arg->stype == TYPE_I4 || arg->stype == TYPE_PTR)
-			return TRUE;
-		return FALSE;
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-		return TRUE;
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
-		return TRUE; /* FIXME */
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		if (arg->stype == TYPE_I8)
-			return TRUE;
-		return FALSE;
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		if (arg->stype == TYPE_R8)
-			return TRUE;
-		return FALSE;
-	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
-			goto handle_enum;
-		} else {
-			if (arg->type->data.klass != type->data.klass)
-				return FALSE;
-			return TRUE;
-		}
-	default:
-		g_error ("unknown type %02x in store type", type->type);
-	}
-	return FALSE;
-}
-
-static int
-stind_type (int op, int type) {
-	switch (op) {
-	case CEE_STIND_REF:
-		return type == TYPE_COMPLEX;
-	case CEE_STIND_I1:
-	case CEE_STIND_I2:
-	case CEE_STIND_I4:
-		return type == TYPE_I4;
-	case CEE_STIND_I8:
-		return type == TYPE_I8;
-	case CEE_STIND_R4:
-	case CEE_STIND_R8:
-		return type == TYPE_R8;
-	default:
-		g_assert_not_reached ();
-	}
-	return FALSE;
-}
-
-
 /*Type manipulation helper*/
 
 /*Returns the byref version of the supplied MonoType*/
@@ -1464,7 +1291,7 @@ mono_type_get_type_byval (MonoType *type)
 static MonoType*
 mono_type_from_stack_slot (ILStackDesc *slot)
 {
-	if (IS_MANAGED_POINTER (slot->stype))
+	if (stack_slot_is_managed_pointer (slot))
 		return mono_type_get_type_byref (slot->type);
 	return slot->type;
 }
@@ -1519,7 +1346,7 @@ check_overflow (VerifyContext *ctx)
 static gboolean
 check_unmanaged_pointer (VerifyContext *ctx, ILStackDesc *value)
 {
-	if (value->stype == TYPE_PTR) {
+	if (stack_slot_get_type (value) == TYPE_PTR) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unmanaged pointer is not a verifiable type at 0x%04x", ctx->ip_offset));
 		return 0;
 	}
@@ -1668,15 +1495,21 @@ static const unsigned char cmp_br_eq_op [TYPE_MAX][TYPE_MAX] = {
 static void
 dump_stack_value (ILStackDesc *value)
 {
-	printf ("[(%d)(%d)", value->type->type, value->stype);
+	printf ("[(%x)(%x)", value->type->type, value->stype);
 
-	if (value->stype & CMMP_MASK)
+	if (stack_slot_is_this_pointer (value))
+		printf ("[this] ");
+
+	if (stack_slot_is_boxed_value (value))
+		printf ("[boxed] ");
+
+	if (stack_slot_is_managed_mutability_pointer (value))
 		printf ("Controled Mutability MP: ");
 
-	if (IS_MANAGED_POINTER (value->stype))
+	if (stack_slot_is_managed_pointer (value))
 		printf ("Managed Pointer to: ");
 
-	switch (UNMASK_TYPE (value->stype)) {
+	switch (stack_slot_get_underlying_type (value)) {
 		case TYPE_INV:
 			printf ("invalid type]"); 
 			return;
@@ -1726,12 +1559,16 @@ dump_stack_value (ILStackDesc *value)
 			case MONO_TYPE_MVAR:
 				printf ("complex] (method generic param !!%d - %s) ", value->type->data.generic_param->num, value->type->data.generic_param->name);
 				return;
-			default:
-				printf ("unknown complex %d type]\n", value->type->type);
-				g_assert_not_reached ();
+			default: {
+				//should be a boxed value 
+				char * name = mono_type_full_name (value->type);
+				printf ("complex] %s", name);
+				g_free (name);
+				return;
+				}
 			}
 		default:
-			printf ("unknown stack %d type]\n", value->stype);
+			printf ("unknown stack %x type]\n", value->stype);
 			g_assert_not_reached ();
 	}
 }
@@ -1745,19 +1582,6 @@ dump_stack_state (ILCodeDesc *state)
 	for (i = 0; i < state->size; ++i)
 		dump_stack_value (state->stack + i);
 	printf ("\n");
-}
-
-static void
-dump_context (VerifyContext *ctx, int code_size)
-{
-	int i;
-
-	for (i = 0; i < code_size; ++i) {
-		if (ctx->code [i].flags & IL_CODE_FLAG_SEEN) {
-			printf ("opcode [%d]:\n\t", i);
-			dump_stack_state (&ctx->code [i]);
-		}
-	}
 }
 
 /*Returns TRUE if candidate array type can be assigned to target.
@@ -2282,6 +2106,8 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("ByRef of ByRef at 0x%04x", ctx->ip_offset));
 		set_stack_value (stack_push (ctx), ctx->params [arg], take_addr);
 	} 
+	if (arg == 0 && !take_addr && !(ctx->method->flags & METHOD_ATTRIBUTE_STATIC))
+		stack_top (ctx)->stype |= THIS_POINTER_MASK;
 }
 
 static void
@@ -2314,9 +2140,11 @@ store_arg (VerifyContext *ctx, guint32 arg)
 	if (check_underflow (ctx, 1)) {
 		value = stack_pop (ctx);
 		if (!verify_stack_type_compatibility (ctx, ctx->params [arg], value)) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in argument store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in argument store at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));
 		}
 	}
+	if (arg == 0)
+		ctx->has_this_store = 1;
 }
 
 static void
@@ -2332,7 +2160,7 @@ store_local (VerifyContext *ctx, guint32 arg)
 	if (check_underflow (ctx, 1)) {
 		value = stack_pop(ctx);
 		if (!verify_stack_type_compatibility (ctx, ctx->locals [arg], value)) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));	
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));	
 		}
 	}
 }
@@ -2349,14 +2177,14 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
 	a = stack_get (ctx, 1);
 	b = stack_top (ctx);
 
-	idxa = a->stype;
-	if (IS_MANAGED_POINTER (idxa)) {
+	idxa = stack_slot_get_underlying_type (a);
+	if (stack_slot_is_managed_pointer (a)) {
 		idxa = TYPE_PTR;
 		complexMerge = 1;
 	}
 
-	idxb = b->stype;
-	if (IS_MANAGED_POINTER (idxb)) {
+	idxb = stack_slot_get_underlying_type (b);
+	if (stack_slot_is_managed_pointer (b)) {
 		idxb = TYPE_PTR;
 		complexMerge = 2;
 	}
@@ -2370,13 +2198,12 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
 
 	ctx->eval.size--;
 	if (res == TYPE_INV) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction applyed to ill formed stack (%s x %s)", type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)]));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction applyed to ill formed stack (%s x %s)", stack_slot_get_name (a), stack_slot_get_name (b)));
 		return;
 	}
 
  	if (res & NON_VERIFIABLE_RESULT) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction is not verifiable (%s x %s)", 
-			type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)]));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction is not verifiable (%s x %s)", stack_slot_get_name (a), stack_slot_get_name (b)));
 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
@@ -2427,7 +2254,7 @@ do_boolean_branch_op (VerifyContext *ctx, int delta)
 
 	top = stack_pop (ctx);
 	if (!is_valid_bool_arg (top))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", type_names [UNMASK_TYPE (stack_get (ctx, -1)->stype)], ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", stack_slot_get_name (stack_get (ctx, -1)), ctx->ip_offset));
 
 	check_unmanaged_pointer (ctx, top);
 }
@@ -2465,12 +2292,12 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 	b = stack_pop (ctx);
 	a = stack_pop (ctx);
 
-	idxa = a->stype;
-	if (IS_MANAGED_POINTER (idxa))
+	idxa = stack_slot_get_underlying_type (a);
+	if (stack_slot_is_managed_pointer (a))
 		idxa = TYPE_PTR;
 
-	idxb = b->stype;
-	if (IS_MANAGED_POINTER (idxb))
+	idxb = stack_slot_get_underlying_type (b);
+	if (stack_slot_is_managed_pointer (b))
 		idxb = TYPE_PTR;
 
 	--idxa;
@@ -2482,11 +2309,9 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 
 	if (res == TYPE_INV) {
 		ADD_VERIFY_ERROR (ctx,
-			g_strdup_printf ("Compare and Branch instruction applyed to ill formed stack (%s x %s) at 0x%04x",
-				type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset));
+			g_strdup_printf ("Compare and Branch instruction applyed to ill formed stack (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset));
 	} else if (res & NON_VERIFIABLE_RESULT) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare and Branch instruction is not verifiable (%s x %s) at 0x%04x",
-				type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset)); 
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare and Branch instruction is not verifiable (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
 }
@@ -2503,12 +2328,12 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
 	b = stack_pop (ctx);
 	a = stack_pop (ctx);
 
-	idxa = a->stype;
-	if (IS_MANAGED_POINTER (idxa))
+	idxa = stack_slot_get_underlying_type (a);
+	if (stack_slot_is_managed_pointer (a))
 		idxa = TYPE_PTR;
 
-	idxb = b->stype;
-	if (IS_MANAGED_POINTER (idxb)) 
+	idxb = stack_slot_get_underlying_type (b);
+	if (stack_slot_is_managed_pointer (b)) 
 		idxb = TYPE_PTR;
 
 	--idxa;
@@ -2516,10 +2341,9 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX])
 	res = table [idxa][idxb];
 
 	if(res == TYPE_INV) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset));
 	} else if (res & NON_VERIFIABLE_RESULT) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare instruction is not verifiable (%s x %s) at 0x%04x",
-			type_names [UNMASK_TYPE (idxa)], type_names [UNMASK_TYPE (idxb)], ctx->ip_offset)); 
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare instruction is not verifiable (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
  	}
  	stack_push_val (ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
@@ -2665,7 +2489,7 @@ do_store_static_field (VerifyContext *ctx, int token) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
 
 	if (!verify_stack_type_compatibility (ctx, field->type, value))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in static field store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));	
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in static field store at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));	
 }
 
 static gboolean
@@ -2674,14 +2498,11 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 	MonoClassField *field;
 	MonoClass *klass;
 
-	/*must be one of: object type, managed pointer, unmanaged pointer (native int) or an instance of a value type */
-	if (!((obj->stype == TYPE_COMPLEX)
-		/* the managed reference must be to an object or value type */
-		|| (( IS_MANAGED_POINTER (obj->stype)) && (UNMASK_TYPE (obj->stype) == TYPE_COMPLEX))
-		|| (obj->stype == TYPE_NATIVE_INT)
-		|| (obj->stype == TYPE_PTR)
-		|| (obj->stype == TYPE_COMPLEX))) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument %s to load field at 0x%04x", type_names [UNMASK_TYPE (obj->stype)], ctx->ip_offset));
+	/*must be one of: complex type, managed pointer (to complex type), unmanaged pointer (native int) or an instance of a value type */
+	if (!( stack_slot_get_underlying_type (obj) == TYPE_COMPLEX
+		|| stack_slot_get_type (obj) == TYPE_NATIVE_INT
+		|| stack_slot_get_type (obj) == TYPE_PTR)) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument %s to load field at 0x%04x", stack_slot_get_name (obj), ctx->ip_offset));
 	}
 
 	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
@@ -2700,7 +2521,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 
 	/*The value on the stack must be a subclass of the defining type of the field*/ 
 	/* we need to check if we can load the field from the stack value*/
-	if (UNMASK_TYPE (obj->stype) == TYPE_COMPLEX) {
+	if (stack_slot_get_underlying_type (obj) == TYPE_COMPLEX) {
 		MonoType *type = obj->type->byref ? &field->parent->this_arg : &field->parent->byval_arg;
 
 		if (!verify_type_compatibility (ctx, type, obj->type)) {
@@ -2714,7 +2535,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 	if (!mono_method_can_access_field (ctx->method, field))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
 
-	if (obj->stype == TYPE_NATIVE_INT)
+	if (stack_slot_get_underlying_type (obj) == TYPE_NATIVE_INT)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Native int is not a verifiable type to reference a field at 0x%04x", ctx->ip_offset));
 
 	check_unmanaged_pointer (ctx, obj);
@@ -2734,7 +2555,7 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 	if (!check_is_valid_type_for_field_ops (ctx, token, obj, &field))
 		return;
 
-	if (take_addr && field->parent->valuetype && !IS_MANAGED_POINTER (obj->stype))
+	if (take_addr && field->parent->valuetype && !stack_slot_is_managed_pointer (obj))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a temporary value-type at 0x%04x", ctx->ip_offset));
 
 	if (take_addr && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY) &&
@@ -2760,7 +2581,7 @@ do_store_field (VerifyContext *ctx, int token)
 		return;
 
 	if (!verify_stack_type_compatibility (ctx, field->type, value))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in field store at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));	
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in field store at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));	
 }
 
 /*TODO proper handle for Nullable<T>*/
@@ -2778,15 +2599,18 @@ do_box_value (VerifyContext *ctx, int klass_token)
 
 	value = stack_top (ctx);
 	/*box is a nop for reference types*/
-	if (value->stype == TYPE_COMPLEX && MONO_TYPE_IS_REFERENCE (value->type) && MONO_TYPE_IS_REFERENCE (type))
+
+	if (stack_slot_get_underlying_type (value) == TYPE_COMPLEX && MONO_TYPE_IS_REFERENCE (value->type) && MONO_TYPE_IS_REFERENCE (type)) {
+		value->stype |= BOXED_MASK;
 		return;
+	}
 
 	value = stack_pop (ctx);
 
 	if (!verify_stack_type_compatibility (ctx, type, value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for boxing operation at 0x%04x", ctx->ip_offset));
 
-	stack_push_val (ctx, TYPE_COMPLEX, mono_class_get_type (mono_defaults.object_class));
+	stack_push_val (ctx, TYPE_COMPLEX | BOXED_MASK, type);
 }
 
 static void
@@ -2803,10 +2627,10 @@ do_unbox_value (VerifyContext *ctx, int klass_token)
 
 	value = stack_pop (ctx);
 
-	if (value->stype != TYPE_COMPLEX || value->type->type != MONO_TYPE_OBJECT)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type %s at stack for unbox operation at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
+	if (!stack_slot_is_boxed_value (value))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type %s at stack for unbox operation at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));
 
-	//TODO Pushed managed pointer is haver controled mutability (CMMP) 
+	//TODO Pushed managed pointer is controled mutability (CMMP) 
 	set_stack_value (stack_push (ctx), mono_type_get_type_byref (type), FALSE);
 }
 
@@ -2817,7 +2641,7 @@ do_unary_math_op (VerifyContext *ctx, int op)
 	if (!check_underflow (ctx, 1))
 		return;
 	value = stack_top (ctx);
-	switch(value->stype) {
+	switch (stack_slot_get_type (value)) {
 	case TYPE_I4:
 	case TYPE_I8:
 	case TYPE_NATIVE_INT:
@@ -2841,7 +2665,7 @@ do_conversion (VerifyContext *ctx, int kind)
 		return;
 	value = stack_pop (ctx);
 
-	switch(value->stype) {
+	switch (stack_slot_get_type (value)) {
 	case TYPE_I4:
 	case TYPE_I8:
 	case TYPE_NATIVE_INT:
@@ -2898,14 +2722,14 @@ do_ldobj_value (VerifyContext *ctx, int token)
 		return;
 
 	value = stack_pop (ctx);
-	if (!IS_MANAGED_POINTER (value->stype) 
-			&& value->stype != TYPE_NATIVE_INT
-			&& !(value->stype == TYPE_PTR && value->type->type != MONO_TYPE_FNPTR)) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid argument %s to ldobj at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
+	if (!stack_slot_is_managed_pointer (value) 
+			&& stack_slot_get_type (value) != TYPE_NATIVE_INT
+			&& !(stack_slot_get_type (value) == TYPE_PTR && value->type->type != MONO_TYPE_FNPTR)) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid argument %s to ldobj at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));
 		return;
 	}
 
-	if (value->stype == TYPE_NATIVE_INT)
+	if (stack_slot_get_type (value) == TYPE_NATIVE_INT)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Using native pointer to ldobj at 0x%04x", ctx->ip_offset));
 
 	/*We have a byval on the stack, but the comparison must be strict. */
@@ -2976,7 +2800,7 @@ do_cast (VerifyContext *ctx, int token) {
 
 	value = stack_top (ctx);
 
-	if (IS_MANAGED_POINTER (value->stype))
+	if (stack_slot_is_managed_pointer (value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value for checkast at 0x%04x", ctx->ip_offset));
 	else if (mono_class_from_mono_type (value->type)->valuetype)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Value cannot be a valuetype for checkast at 0x%04x", ctx->ip_offset));
@@ -3062,14 +2886,14 @@ do_load_indirect (VerifyContext *ctx, int opcode)
 		return;
 	
 	value = stack_pop (ctx);
-	if (!IS_MANAGED_POINTER (value->stype)) {
+	if (!stack_slot_is_managed_pointer (value)) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Load indirect not using a manager pointer at 0x%04x", ctx->ip_offset));
 		set_stack_value (stack_push (ctx), mono_type_from_opcode (opcode), FALSE);
 		return;
 	}
 
 	if (opcode == CEE_LDIND_REF) {
-		if (UNMASK_TYPE (value->stype) != TYPE_COMPLEX || mono_class_from_mono_type (value->type)->valuetype)
+		if (stack_slot_get_underlying_type (value) != TYPE_COMPLEX || mono_class_from_mono_type (value->type)->valuetype)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for ldind_ref expected object byref operation at 0x%04x", ctx->ip_offset));
 		set_stack_value (stack_push (ctx), mono_type_get_type_byval (value->type), FALSE);
 	} else {
@@ -3091,7 +2915,7 @@ do_store_indirect (VerifyContext *ctx, int opcode)
 
 	check_unmanaged_pointer (ctx, addr);
 
-	if (!IS_MANAGED_POINTER (addr->stype) && addr->stype != TYPE_PTR) {
+	if (!stack_slot_is_managed_pointer (addr) && stack_slot_get_type (addr) != TYPE_PTR) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid non-pointer argument to stind at 0x%04x", ctx->ip_offset));
 		return;
 	}
@@ -3116,8 +2940,8 @@ do_newarr (VerifyContext *ctx, int token)
 		return;
 
 	value = stack_pop (ctx);
-	if (value->stype != TYPE_I4 && value->stype != TYPE_NATIVE_INT)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Array size type on stack (%s) is not a verifiable type at 0x%04x", type_names [UNMASK_TYPE (value->stype)], ctx->ip_offset));
+	if (stack_slot_get_type (value) != TYPE_I4 && stack_slot_get_type (value) != TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Array size type on stack (%s) is not a verifiable type at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));
 
 	set_stack_value (stack_push (ctx), mono_class_get_type (mono_array_class_get (mono_class_from_mono_type (type), 1)), FALSE);
 }
@@ -3133,7 +2957,7 @@ do_ldlen (VerifyContext *ctx)
 
 	value = stack_pop (ctx);
 
-	if (value->stype != TYPE_COMPLEX || value->type->type != MONO_TYPE_SZARRAY)
+	if (stack_slot_get_type (value) != TYPE_COMPLEX || value->type->type != MONO_TYPE_SZARRAY)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type for ldlen at 0x%04x", ctx->ip_offset));
 
 	stack_push_val (ctx, TYPE_NATIVE_INT, &mono_defaults.int_class->byval_arg);	
@@ -3157,12 +2981,12 @@ do_ldelema (VerifyContext *ctx, int klass_token)
 	index = stack_pop (ctx);
 	array = stack_pop (ctx);
 
-	if (index->stype != TYPE_I4 && index->stype != TYPE_NATIVE_INT)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Index type(%s) for ldelema is not an int or a native int at 0x%04x", type_names [UNMASK_TYPE (index->stype)], ctx->ip_offset));
+	if (stack_slot_get_type (index) != TYPE_I4 && stack_slot_get_type (index) != TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Index type(%s) for ldelema is not an int or a native int at 0x%04x", stack_slot_get_name (index), ctx->ip_offset));
 
-	if (!IS_NULL_LITERAL (array->stype)) {
-		if (array->stype != TYPE_COMPLEX || array->type->type != MONO_TYPE_SZARRAY)
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type(%s) for ldelema at 0x%04x", type_names [UNMASK_TYPE (array->stype)], ctx->ip_offset));
+	if (!stack_slot_is_null_literal (array)) {
+		if (stack_slot_get_type (array) != TYPE_COMPLEX || array->type->type != MONO_TYPE_SZARRAY)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type(%s) for ldelema at 0x%04x", stack_slot_get_name (array), ctx->ip_offset));
 		else {
 			if (get_stack_type (type) == TYPE_I4 || get_stack_type (type) == TYPE_NATIVE_INT)
 				valid = verify_type_compatibility_full (ctx, type, &array->type->data.klass->byval_arg, TRUE);
@@ -3199,12 +3023,12 @@ do_ldelem (VerifyContext *ctx, int opcode, int token)
 	index = stack_pop (ctx);
 	array = stack_pop (ctx);
 
-	if (index->stype != TYPE_I4 && index->stype != TYPE_NATIVE_INT)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Index type(%s) for ldelema is not an int or a native int at 0x%04x", type_names [UNMASK_TYPE (index->stype)], ctx->ip_offset));
+	if (stack_slot_get_type (index) != TYPE_I4 && stack_slot_get_type (index) != TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Index type(%s) for ldelema is not an int or a native int at 0x%04x", stack_slot_get_name (index), ctx->ip_offset));
 
-	if (!IS_NULL_LITERAL (array->stype)) {
-		if (array->stype != TYPE_COMPLEX || array->type->type != MONO_TYPE_SZARRAY)
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type(%s) for ldelem.X at 0x%04x", type_names [UNMASK_TYPE (array->stype)], ctx->ip_offset));
+	if (!stack_slot_is_null_literal (array)) {
+		if (stack_slot_get_type (array) != TYPE_COMPLEX || array->type->type != MONO_TYPE_SZARRAY)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type(%s) for ldelem.X at 0x%04x", stack_slot_get_name (array), ctx->ip_offset));
 		else {
 			if (opcode == CEE_LDELEM_REF) {
 				if (array->type->data.klass->valuetype)
@@ -3242,12 +3066,12 @@ do_stelem (VerifyContext *ctx, int opcode, int token)
 	index = stack_pop (ctx);
 	array = stack_pop (ctx);
 
-	if (index->stype != TYPE_I4 && index->stype != TYPE_NATIVE_INT)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Index type(%s) for stdelem.X is not an int or a native int at 0x%04x", type_names [UNMASK_TYPE (index->stype)], ctx->ip_offset));
+	if (stack_slot_get_type (index) != TYPE_I4 && stack_slot_get_type (index) != TYPE_NATIVE_INT)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Index type(%s) for stdelem.X is not an int or a native int at 0x%04x", stack_slot_get_name (index), ctx->ip_offset));
 
-	if (!IS_NULL_LITERAL (array->stype)) {
-		if (array->stype != TYPE_COMPLEX || array->type->type != MONO_TYPE_SZARRAY) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type(%s) for stelem.X at 0x%04x", type_names [UNMASK_TYPE (array->stype)], ctx->ip_offset));
+	if (!stack_slot_is_null_literal (array)) {
+		if (stack_slot_get_type (array) != TYPE_COMPLEX || array->type->type != MONO_TYPE_SZARRAY) {
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid array type(%s) for stelem.X at 0x%04x", stack_slot_get_name (array), ctx->ip_offset));
 		} else {
 			if (opcode == CEE_STELEM_REF) {
 				if (array->type->data.klass->valuetype)
@@ -3274,7 +3098,7 @@ do_throw (VerifyContext *ctx)
 		return;
 	exception = stack_pop (ctx);
 
-	if (!IS_NULL_LITERAL (exception->stype) && !(exception->stype == TYPE_COMPLEX && !mono_class_from_mono_type (exception->type)->valuetype))
+	if (!stack_slot_is_null_literal (exception) && !(stack_slot_get_type (exception) == TYPE_COMPLEX && !mono_class_from_mono_type (exception->type)->valuetype))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type on stack for throw, expected reference type at 0x%04x", ctx->ip_offset));
 
 	/*The stack is left empty after a throw*/
@@ -3291,7 +3115,7 @@ do_endfilter (VerifyContext *ctx)
 		if (ctx->eval.size != 1)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Stack size must have one item for endfilter at 0x%04x", ctx->ip_offset));
 
-		if (ctx->eval.size >= 1 && stack_pop (ctx)->stype != TYPE_I4)
+		if (ctx->eval.size >= 1 && stack_slot_get_type (stack_pop (ctx)) != TYPE_I4)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Stack item type is not an int32 for endfilter at 0x%04x", ctx->ip_offset));
 	}
 
@@ -3361,7 +3185,7 @@ do_switch (VerifyContext *ctx, int count, const unsigned char *data)
 
 	value = stack_pop (ctx);
 
-	if (value->stype != TYPE_I4 && value->stype != TYPE_NATIVE_INT)
+	if (stack_slot_get_type (value) != TYPE_I4 && stack_slot_get_type (value) != TYPE_NATIVE_INT)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument to switch at 0x%04x", ctx->ip_offset));
 
 	for (i = 0; i < count; ++i) {
@@ -3412,7 +3236,7 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 	if (virtual) {
 		ILStackDesc *top = stack_pop (ctx);
 	
-		if (top->stype != TYPE_COMPLEX || top->type->type == MONO_TYPE_VALUETYPE)
+		if (stack_slot_get_type (top) != TYPE_COMPLEX || top->type->type == MONO_TYPE_VALUETYPE)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument to ldvirtftn at 0x%04x", ctx->ip_offset));
 	
 		if (method->flags & METHOD_ATTRIBUTE_STATIC)
@@ -4530,9 +4354,14 @@ mono_method_verify (MonoMethod *method, int level)
 	/*We should guard against the last decoded opcode, otherwise we might add errors that doesn't make sense.*/
 	for (i = 0; i < ctx.code_size && i < ip_offset; ++i) {
 		if ((ctx.code [i].flags & IL_CODE_FLAG_WAS_TARGET) && !(ctx.code [i].flags & IL_CODE_FLAG_SEEN))
-			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or exception block target middle of intruction at 0x%04x", i));		
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or exception block target middle of intruction at 0x%04x", i));
+
+		if ((ctx.code [i].flags & IL_CODE_FLAG_WAS_TARGET) && (ctx.code [i].flags & IL_CODE_LDFTN_DELEGATE))
+			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Branch to delegate newobj at 0x%04x", i));
+		
+		if ((ctx.code [i].flags & IL_CODE_LDFTN_DELEGATE_NONFINAL_VIRTUAL) && ctx.has_this_store)
+			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Invalid ldftn with virtual function in method with stdarg 0 at  0x%04x", i));
 	}
-invalid_cil:
 
 	if (ctx.code) {
 		for (i = 0; i < ctx.header->code_size; ++i) {
