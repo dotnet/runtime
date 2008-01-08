@@ -436,5 +436,9 @@ mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
 int
 mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open) MONO_INTERNAL;
 
+gboolean
+mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only) MONO_INTERNAL;
+
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

@@ -3989,6 +3989,23 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 }
 
 /**
+ * mono_metadata_type_equal_full:
+ * @t1: a type
+ * @t2: another type
+ * @signature_only: if signature only comparison should be made
+ *
+ * Determine if @t1 and @t2 are signature compatible if @signature_only is #TRUE, otherwise
+ * behaves the same way as mono_metadata_type_equal.
+ * The function mono_metadata_type_equal(a, b) is just a shortcut for mono_metadata_type_equal_full(a, b, FALSE).
+ * Returns: #TRUE if @t1 and @t2 are equal taking @signature_only into account.
+ */
+gboolean
+mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only)
+{
+	return do_mono_metadata_type_equal (t1, t2, signature_only);
+}
+
+/**
  * mono_metadata_signature_equal:
  * @sig1: a signature
  * @sig2: another signature

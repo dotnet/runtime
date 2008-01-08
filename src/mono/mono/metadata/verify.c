@@ -73,17 +73,16 @@ enum {
 	IL_CODE_FLAG_STACK_INITED = 4,
 	/*Used by merge_stacks to decide if it should just copy the eval stack.*/
 	IL_CODE_STACK_MERGED = 8,
-	/*This is a delegate created from a ldftn*/
-	IL_CODE_LDFTN_DELEGATE = 0x10,
+	/*This instruction is part of the delegate construction sequence, it cannot be target of a branch.*/
+	IL_CODE_DELEGATE_SEQUENCE = 0x10,
 	/*This is a delegate created from a ldftn to a non final virtual method*/
 	IL_CODE_LDFTN_DELEGATE_NONFINAL_VIRTUAL = 0x20,
-	
 };
 
 typedef struct {
 	MonoType *type;
 	int stype;
-	MonoMethodSignature *sig;
+	MonoMethod *method;
 } ILStackDesc;
 
 
@@ -1935,7 +1934,7 @@ verify_type_compatibility_full (VerifyContext *ctx, MonoType *target, MonoType *
 #define IS_ONE_OF3(T, A, B, C) (T == A || T == B || T == C)
 #define IS_ONE_OF2(T, A, B) (T == A || T == B)
 
-	VERIFIER_DEBUG ( printf ("checking type compatibility %p %p[%d][%d] %p[%d][%d]\n", ctx, target, target->type, target->byref, candidate, candidate->type, candidate->byref); );
+	VERIFIER_DEBUG ( printf ("checking type compatibility %p %p[%x][%x] %p[%x][%x]\n", ctx, target, target->type, target->byref, candidate, candidate->type, candidate->byref); );
 
  	/*only one is byref */
 	if (candidate->byref ^ target->byref) {
@@ -2085,6 +2084,131 @@ static int
 verify_stack_type_compatibility (VerifyContext *ctx, MonoType *type, ILStackDesc *stack)
 {
 	return verify_type_compatibility_full (ctx, type, mono_type_from_stack_slot (stack), FALSE);
+}
+
+/*
+ * mono_delegate_signature_equal:
+ * 
+ * Compare two signatures in the way expected by delegates.
+ * 
+ * This function only exists due to the fact that it should ignore the 'has_this' part of the signature.
+ *
+ * FIXME can this function be eliminated and proper metadata functionality be used?
+ */
+static gboolean
+mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	int i;
+
+	//FIXME do we need to check for explicit_this?
+	//We don't check for has_this since this is irrelevant for delegate signatures
+	if (sig1->param_count != sig2->param_count) 
+		return FALSE;
+
+	if (sig1->generic_param_count != sig2->generic_param_count)
+		return FALSE;
+
+	for (i = 0; i < sig1->param_count; i++) { 
+		MonoType *p1 = sig1->params [i];
+		MonoType *p2 = sig2->params [i];
+
+		if (!mono_metadata_type_equal_full (p1, p2, TRUE))
+			return FALSE;
+	}
+
+	if (!mono_metadata_type_equal_full (sig1->ret, sig2->ret, TRUE))
+		return FALSE;
+
+	return TRUE;
+}
+
+/* 
+ * verify_ldftn_delegate:
+ * 
+ * Verify properties of ldftn based delegates.
+ */
+static void
+verify_ldftn_delegate (VerifyContext *ctx, MonoClass *delegate, ILStackDesc *value, ILStackDesc *funptr)
+{
+	MonoMethod *method = funptr->method;
+
+	/*ldftn non-final virtuals only allowed if method is not static,
+	 * the object is a this arg (comes from a ldarg.0), and there is no starg.0.
+	 * This rules doesn't apply if the object on stack is a boxed valuetype.
+	 */
+	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL) && !stack_slot_is_boxed_value (value)) {
+		/*A stdarg 0 must not happen, we fail here only in fail fast mode to avoid double error reports*/
+		if (IS_FAIL_FAST_MODE (ctx) && ctx->has_this_store)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid ldftn with virtual function in method with stdarg 0 at  0x%04x", ctx->ip_offset));
+
+		/*current method must not be static*/
+		if (ctx->method->flags & METHOD_ATTRIBUTE_STATIC)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid ldftn with virtual function at 0x%04x", ctx->ip_offset));
+
+		/*value is the this pointer, loaded using ldarg.0 */
+		if (!stack_slot_is_this_pointer (value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid object argument, it is not the this pointer, to ldftn with virtual method at  0x%04x", ctx->ip_offset));
+
+		ctx->code [ctx->ip_offset].flags |= IL_CODE_LDFTN_DELEGATE_NONFINAL_VIRTUAL;
+	}
+}
+
+/*
+ * verify_delegate_compatibility:
+ * 
+ * Verify delegate creation sequence.
+ * 
+ */
+static void
+verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackDesc *value, ILStackDesc *funptr)
+{
+#define IS_VALID_OPCODE(offset, opcode) (ip [ip_offset - offset] == opcode && (ctx->code [ip_offset - offset].flags & IL_CODE_FLAG_SEEN))
+#define IS_LOAD_FUN_PTR(kind) (IS_VALID_OPCODE (6, CEE_PREFIX1) && ip [ip_offset - 5] == kind)
+
+	MonoMethod *invoke, *method;
+	const guint8 *ip = ctx->header->code;
+	guint32 ip_offset = ctx->ip_offset;
+	
+	if (stack_slot_get_type (funptr) != TYPE_PTR || !funptr->method) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid function pointer parameter for delegate constructor at %d", ctx->ip_offset));
+		return;
+	}
+	
+	invoke = mono_get_delegate_invoke (delegate);
+	method = funptr->method;
+
+	if (!mono_delegate_signature_equal (mono_method_signature (invoke), mono_method_signature (method)))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer parameter for delegate constructor has diferent signature at %d", ctx->ip_offset));
+
+	/* 
+	 * Delegate code sequences:
+	 * [-6] ldftn token
+	 * newobj ...
+	 * 
+	 * 
+	 * [-7] dup
+	 * [-6] ldvirtftn token
+	 * newobj ...
+	 * 
+	 * ldftn sequence:*/
+	if (ip_offset > 5 && IS_LOAD_FUN_PTR (CEE_LDFTN)) {
+		verify_ldftn_delegate (ctx, delegate, value, funptr);
+	} else if (ip_offset > 6 && IS_VALID_OPCODE (7, CEE_DUP) && IS_LOAD_FUN_PTR (CEE_LDVIRTFTN)) {
+		ctx->code [ip_offset - 6].flags |= IL_CODE_DELEGATE_SEQUENCE;	
+	}else {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid code sequence for delegate creation at 0x%04x", ctx->ip_offset));
+	}
+	ctx->code [ip_offset].flags |= IL_CODE_DELEGATE_SEQUENCE;
+
+	//general tests
+	if (!verify_type_compatibility (ctx, &method->klass->byval_arg, value->type) && !stack_slot_is_null_literal (value))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
+
+	if (stack_slot_get_type (value) != TYPE_COMPLEX)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid first parameter for delegate creation at 0x%04x", ctx->ip_offset));
+
+#undef IS_VALID_OPCODE
+#undef IS_LOAD_FUN_PTR
 }
 
 /* implement the opcode checks*/
@@ -2750,6 +2874,8 @@ do_newobj (VerifyContext *ctx, int token)
 	int i;
 	MonoMethodSignature *sig;
 	MonoMethod *method = mono_get_method_full (ctx->image, token, NULL, ctx->generic_context);
+	gboolean is_delegate = FALSE;
+
 	if (!method) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Constructor 0x%08x not found at 0x%04x", token, ctx->ip_offset));
 		return;
@@ -2767,11 +2893,25 @@ do_newobj (VerifyContext *ctx, int token)
 	if (!check_underflow (ctx, sig->param_count))
 		return;
 
-	for (i = sig->param_count - 1; i >= 0; --i) {
-		VERIFIER_DEBUG ( printf ("verifying constructor argument %d\n", i); );
+	is_delegate = method->klass->parent == mono_defaults.multicastdelegate_class;
+
+	if (is_delegate) {
+		ILStackDesc *funptr;
+		//first arg is object, second arg is fun ptr
+		if (sig->param_count != 2) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid delegate constructor at 0x%04x", ctx->ip_offset));
+			return;
+		}
+		funptr = stack_pop (ctx);
 		value = stack_pop (ctx);
-		if (!verify_stack_type_compatibility (ctx, sig->params [i], value))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature at 0x%04x", ctx->ip_offset));
+		verify_delegate_compatibility (ctx, method->klass, value, funptr);
+	} else {
+		for (i = sig->param_count - 1; i >= 0; --i) {
+			VERIFIER_DEBUG ( printf ("verifying constructor argument %d\n", i); );
+			value = stack_pop (ctx);
+			if (!verify_stack_type_compatibility (ctx, sig->params [i], value))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature at 0x%04x", ctx->ip_offset));
+		}
 	}
 
 	if (check_overflow (ctx))
@@ -3210,6 +3350,7 @@ do_switch (VerifyContext *ctx, int count, const unsigned char *data)
 static void
 do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 {
+	ILStackDesc *top;
 	MonoMethod *method;
 
 	if (virtual && !check_underflow (ctx, 1))
@@ -3246,7 +3387,8 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unexpected object for ldvirtftn at 0x%04x", ctx->ip_offset));
 	}
 
-	stack_push_val(ctx, TYPE_PTR, mono_type_create_fnptr_from_mono_method (ctx, method));
+	top = stack_push_val(ctx, TYPE_PTR, mono_type_create_fnptr_from_mono_method (ctx, method));
+	top->method = method;
 }
 
 /*Merge the stacks and perform compat checks*/
@@ -4353,12 +4495,13 @@ mono_method_verify (MonoMethod *method, int level)
 
 	/*We should guard against the last decoded opcode, otherwise we might add errors that doesn't make sense.*/
 	for (i = 0; i < ctx.code_size && i < ip_offset; ++i) {
-		if ((ctx.code [i].flags & IL_CODE_FLAG_WAS_TARGET) && !(ctx.code [i].flags & IL_CODE_FLAG_SEEN))
-			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or exception block target middle of intruction at 0x%04x", i));
+		if (ctx.code [i].flags & IL_CODE_FLAG_WAS_TARGET) {
+			if (!(ctx.code [i].flags & IL_CODE_FLAG_SEEN))
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Branch or exception block target middle of intruction at 0x%04x", i));
 
-		if ((ctx.code [i].flags & IL_CODE_FLAG_WAS_TARGET) && (ctx.code [i].flags & IL_CODE_LDFTN_DELEGATE))
-			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Branch to delegate newobj at 0x%04x", i));
-		
+			if (ctx.code [i].flags & IL_CODE_DELEGATE_SEQUENCE)
+				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Branch to delegate code sequence at 0x%04x", i));
+		}
 		if ((ctx.code [i].flags & IL_CODE_LDFTN_DELEGATE_NONFINAL_VIRTUAL) && ctx.has_this_store)
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Invalid ldftn with virtual function in method with stdarg 0 at  0x%04x", i));
 	}
