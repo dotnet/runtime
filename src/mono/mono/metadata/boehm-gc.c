@@ -265,7 +265,7 @@ mono_gc_deregister_root (char* addr)
 #ifndef PLATFORM_WIN32
 	/* FIXME: libgc doesn't define this work win32 for some reason */
 	/* FIXME: No size info */
-	GC_remove_roots (addr, addr + sizeof (gpointer));
+	GC_remove_roots (addr, addr + sizeof (gpointer) + 1);
 #endif
 }
 
