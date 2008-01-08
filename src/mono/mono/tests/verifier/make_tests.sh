@@ -551,7 +551,7 @@ do
 done
 
 #Field store parameter compatibility leads to invalid code
-#Calling method with diferent verification types on stack lead to invalid code
+#Calling method with different verification types on stack lead to invalid code
 I=1
 for OP in "stfld TYPE1 Class::fld" "stsfld TYPE1 Class::sfld\n\tpop"  "call void Class::Method(TYPE1)"
 do
@@ -1404,7 +1404,7 @@ do
 	./make_field_store_test.sh field_store_${I}_4 unverifiable "${OP} int32 ClassA::fld" int32 'class MyValueType'
 	./make_field_store_test.sh field_store_${I}_5 valid "${OP} int32 ClassA::fld" int32 'class ClassA' yes
 	./make_field_store_test.sh field_store_${I}_6 valid "${OP} int32 ClassA::fld" int32 'class SubClass' yes
-	#ldfld and ldflda works diferent with value objects, you cannot take the address of a value-object on the stack
+	#ldfld and ldflda works different with value objects, you cannot take the address of a value-object on the stack
 	#./make_field_store_test.sh field_store_${I}_7 valid "${OP} int32 MyValueType::fld" int32 'class MyValueType'
 	#Not usefull as it throws NRE
 	#./make_field_store_test.sh field_store_${I}_8 valid "${OP} int32 MyValueType::fld" int32 'class MyValueType \&'
@@ -1813,7 +1813,7 @@ do
 	I=`expr $I + 1`
 done
 
-#static members are diferent from instance members
+#static members are different from instance members
 I=1
 for OP in "ldc.i4.0\n\t\tstsfld int32 Class::sfld" "ldsfld int32 Class::sfld\n\n\tpop" "ldsflda int32 Class::sfld\n\n\tpop" 
 do
@@ -3495,11 +3495,11 @@ done
 ./make_delegate_test.sh delegate_ldftn_virtual_method_16 unverifiable "ldftn instance void Parent::SealedVirtMethod()" "DelegateNoArg" "ldarg.0" "Parent"
 
 
-#instruction sequennce
+#instruction sequence
 ./make_delegate_test.sh delegate_ldftn_bad_sequence unverifiable "ldftn void Driver::Method()\n\t\tnop" "DelegateNoArg" "ldarg.0"
 #this one is terribly hard to read
 
-./make_delegate_test.sh delegate_ldftn_diferent_basic_block unverifiable "pop\n\t\tpop\n\t\tldarg.0\n\t\tldftn void Driver::Method()" "DelegateNoArg" "ldarg.0\n\t\tldftn void Driver::Method()\n\t\tldarg.1\n\t\tbrfalse DELEGATE_OP"
+./make_delegate_test.sh delegate_ldftn_different_basic_block unverifiable "pop\n\t\tpop\n\t\tldarg.0\n\t\tldftn void Driver::Method()" "DelegateNoArg" "ldarg.0\n\t\tldftn void Driver::Method()\n\t\tldarg.1\n\t\tbrfalse DELEGATE_OP"
 
 #it's not necessary to test split due to a protected block since the stack must be empty at the beginning.
 
@@ -3508,13 +3508,25 @@ done
 ./make_delegate_test.sh delegate_ldftn_virtual_method_with_starg0_1 unverifiable "ldftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\tstarg.s 0\n\tldarg.0"
 ./make_delegate_test.sh delegate_ldftn_virtual_method_with_starg0_2 unverifiable "ldftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\tstarg 0\n\tldarg.0"
 
-
-
 #value types
 ./make_delegate_test.sh delegate_ldftn_non_virtual_method_valuetype valid "ldftn instance void MyValueType::NonVirtMethod()" "DelegateNoArg" "ldloc.0\n\tbox MyValueType"
 ./make_delegate_test.sh delegate_ldftn_virtual_method_valuetype valid "ldftn instance string MyValueType::ToString()" "ToStringDelegate" "ldloc.0\n\tbox MyValueType"
 
 ./make_delegate_test.sh delegate_ldftn_virtual_method_valuetype_byref unverifiable "ldftn instance string MyValueType::ToString()" "ToStringDelegate" "ldloca 0"
+
+
+#ldvirtftn
+#ok cases
+./make_delegate_test.sh delegate_ldvirtftn_non_virtual_method valid "ldvirtftn instance void Driver::NonVirtMethod()" "DelegateNoArg" "ldarg.0\n\tdup"
+./make_delegate_test.sh delegate_ldvirtftn_virtual_method valid "ldvirtftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\tdup"
+
+#wrong instruction sequence
+./make_delegate_test.sh delegate_ldvirtftn_bad_sequence unverifiable "ldvirtftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\tldarg.0"
+
+./make_delegate_test.sh delegate_ldvirtftn_different_basic_block unverifiable "pop\n\t\tdup\n\t\tldvirtftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\t\tldarg.0\n\t\tldvirtftn instance void Driver::VirtMethod()\n\t\tldarg.1\n\t\tbrfalse DELEGATE_OP"
+
+./make_delegate_test.sh delegate_ldvirtftn_different_basic_block_dup unverifiable "DUP_OP: ldvirtftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\t\tdup\n\t\tldarg.1\n\t\tbrfalse DUP_OP\n\t\tpop\n\t\tdup"
+
 
 
 

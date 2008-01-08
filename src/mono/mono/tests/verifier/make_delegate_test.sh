@@ -203,7 +203,7 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/DELEGATE
 
 	.method public ${METHOD_STATIC} void DriverExec (${EXTRA_ARG} int32 V_1)
 	{
-		.maxstack 2
+		.maxstack 8
 		.locals init (MyValueType V_0)
 	
 		OPCODE
