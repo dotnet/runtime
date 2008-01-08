@@ -7218,7 +7218,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * for small sizes open code the memcpy
 				 * ensure the rva field is big enough
 				 */
-				if ((cfg->opt & MONO_OPT_INTRINS) && ip_in_bb (cfg, bblock, ip + 6) && (data_ptr = initialize_array_data (method, cfg->compile_aot, ip, ins, &data_size))) {
+				if ((cfg->opt & MONO_OPT_INTRINS) && ip + 6 < end && ip_in_bb (cfg, bblock, ip + 6) && (data_ptr = initialize_array_data (method, cfg->compile_aot, ip, ins, &data_size))) {
 					MonoMethod *memcpy_method = get_memcpy_method ();
 					MonoInst *data_offset, *add;
 					MonoInst *iargs [3];
