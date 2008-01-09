@@ -98,7 +98,7 @@ typedef struct
 	guint32 dwFileDateLS;
 } WapiFixedFileInfo;
 
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#if G_BYTE_ORDER == G_BIG_ENDIAN
 #define VS_FFI_SIGNATURE	0xbd04effe
 #define VS_FFI_STRUCVERSION	0x00000100
 #else
@@ -344,7 +344,7 @@ typedef struct
 	{
 		struct 
 		{
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#if G_BYTE_ORDER == G_BIG_ENDIAN
 			guint32 NameIsString:1;
 			guint32 NameOffset:31;
 #else
@@ -353,14 +353,22 @@ typedef struct
 #endif
 		};
 		guint32 Name;
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+		struct
+		{
+			guint16 __wapi_big_endian_padding;
+			guint16 Id;
+		};
+#else
 		guint16 Id;
+#endif
 	};
 	union
 	{
 		guint32 OffsetToData;
 		struct 
 		{
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+#if G_BYTE_ORDER == G_BIG_ENDIAN
 			guint32 DataIsDirectory:1;
 			guint32 OffsetToDirectory:31;
 #else

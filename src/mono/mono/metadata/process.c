@@ -196,8 +196,8 @@ static void process_module_string_read (MonoObject *filever, gpointer data,
 
 	if (VerQueryValue (data, lang_key, (gpointer *)&buffer, &chars)) {
 #ifdef DEBUG
-		g_message ("%s: found %d bytes of [%s]", __func__, bytes,
-			   g_utf16_to_utf8 (buffer, bytes, NULL, NULL, NULL));
+		g_message ("%s: found %d chars of [%s]", __func__, chars,
+			   g_utf16_to_utf8 (buffer, chars, NULL, NULL, NULL));
 #endif
 		process_set_field_string (filever, fieldname, buffer, chars);
 	}

@@ -58,8 +58,8 @@ static gpointer get_ptr_from_rva (guint32 rva, WapiImageNTHeaders *ntheaders,
 		return(NULL);
 	}
 	
-	delta = (guint32)(section_header->VirtualAddress -
-			  section_header->PointerToRawData);
+	delta = (guint32)(GUINT32_FROM_LE (section_header->VirtualAddress) -
+			  GUINT32_FROM_LE (section_header->PointerToRawData));
 	
 	return((guint8 *)file_map + rva - delta);
 }
@@ -71,11 +71,18 @@ static gpointer scan_resource_dir (WapiImageResourceDirectory *root,
 				   int level, guint32 res_id, guint32 lang_id,
 				   guint32 *size)
 {
-	gboolean is_string = entry->NameIsString;
-	gboolean is_dir = entry->DataIsDirectory;
-	guint32 name_offset = GUINT32_FROM_LE (entry->NameOffset);
-	guint32 dir_offset = GUINT32_FROM_LE (entry->OffsetToDirectory);
-	guint32 data_offset = GUINT32_FROM_LE (entry->OffsetToData);
+	WapiImageResourceDirectoryEntry swapped_entry;
+	gboolean is_string, is_dir;
+	guint32 name_offset, dir_offset, data_offset;
+	
+	swapped_entry.Name = GUINT32_FROM_LE (entry->Name);
+	swapped_entry.OffsetToData = GUINT32_FROM_LE (entry->OffsetToData);
+	
+	is_string = swapped_entry.NameIsString;
+	is_dir = swapped_entry.DataIsDirectory;
+	name_offset = swapped_entry.NameOffset;
+	dir_offset = swapped_entry.OffsetToDirectory;
+	data_offset = swapped_entry.OffsetToData;
 	
 	if (level == 0) {
 		/* Normally holds a directory entry for each type of
@@ -127,7 +134,7 @@ static gpointer scan_resource_dir (WapiImageResourceDirectory *root,
 		WapiImageResourceDataEntry *data_entry = (WapiImageResourceDataEntry *)((guint8 *)root + data_offset);
 		*size = GUINT32_FROM_LE (data_entry->Size);
 		
-		return(get_ptr_from_rva (data_entry->OffsetToData, nt_headers, file_map));
+		return(get_ptr_from_rva (GUINT32_FROM_LE (data_entry->OffsetToData), nt_headers, file_map));
 	}
 }
 
@@ -297,66 +304,6 @@ static void unmap_pe_file (gpointer file_map, guint32 map_size)
 	munmap (file_map, map_size);
 }
 
-guint32 GetFileVersionInfoSize (gunichar2 *filename, guint32 *handle)
-{
-	gpointer file_map;
-	gpointer versioninfo;
-	guint32 map_size;
-	guint32 size;
-	
-	/* This value is unused, but set to zero */
-	*handle = 0;
-	
-	file_map = map_pe_file (filename, &map_size);
-	if (file_map == NULL) {
-		return(0);
-	}
-	
-	versioninfo = find_pe_file_resources (file_map, map_size, RT_VERSION,
-					      0, &size);
-	if (versioninfo == NULL) {
-		/* Didn't find the resource, so set the return value
-		 * to 0
-		 */
-		size = 0;
-	}
-
-	unmap_pe_file (file_map, map_size);
-
-	return(size);
-}
-
-gboolean GetFileVersionInfo (gunichar2 *filename, guint32 handle G_GNUC_UNUSED,
-			     guint32 len, gpointer data)
-{
-	gpointer file_map;
-	gpointer versioninfo;
-	guint32 map_size;
-	guint32 size;
-	gboolean ret = FALSE;
-	
-	file_map = map_pe_file (filename, &map_size);
-	if (file_map == NULL) {
-		return(FALSE);
-	}
-	
-	versioninfo = find_pe_file_resources (file_map, map_size, RT_VERSION,
-					      0, &size);
-	if (versioninfo != NULL) {
-		/* This could probably process the data so that
-		 * VerQueryValue() doesn't have to follow the data
-		 * blocks every time.  But hey, these functions aren't
-		 * likely to appear in many profiles.
-		 */
-		memcpy (data, versioninfo, len < size?len:size);
-		ret = TRUE;
-	}
-
-	unmap_pe_file (file_map, map_size);
-	
-	return(ret);
-}
-
 static guint32 unicode_chars (const gunichar2 *str)
 {
 	guint32 len = 0;
@@ -372,7 +319,7 @@ static guint32 unicode_chars (const gunichar2 *str)
 static gboolean unicode_compare (const gunichar2 *str1, const gunichar2 *str2)
 {
 	while (*str1 && *str2) {
-		if (GUINT16_TO_LE (*str1) != GUINT16_TO_LE (*str2)) {
+		if (*str1 != *str2) {
 			return(FALSE);
 		}
 		++str1;
@@ -492,8 +439,6 @@ static gconstpointer get_string_block (gconstpointer data_ptr,
 	 * data_len
 	 */
 	while (string_len < data_len) {
-		gunichar2 *value;
-		
 		/* align on a 32-bit boundary */
 		data_ptr = (gpointer)((char *)data_ptr + 3);
 		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
@@ -511,7 +456,6 @@ static gconstpointer get_string_block (gconstpointer data_ptr,
 		}
 		
 		string_len = string_len + block->data_len;
-		value = (gunichar2 *)data_ptr;
 		
 		if (string_key != NULL &&
 		    string_value != NULL &&
@@ -602,6 +546,221 @@ static gconstpointer get_stringtable_block (gconstpointer data_ptr,
 	return(data_ptr);
 }
 
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+static gconstpointer big_up_string_block (gconstpointer data_ptr,
+					  version_data *block)
+{
+	guint16 data_len = block->data_len;
+	guint16 string_len = 28; /* Length of the StringTable block */
+	gchar *big_value;
+	
+	/* data_ptr is pointing at an array of one or more String
+	 * blocks with total length (not including alignment padding)
+	 * of data_len
+	 */
+	while (string_len < data_len) {
+		/* align on a 32-bit boundary */
+		data_ptr = (gpointer)((char *)data_ptr + 3);
+		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+		
+		data_ptr = get_versioninfo_block (data_ptr, block);
+		if (block->data_len == 0) {
+			/* We must have hit padding, so give up
+			 * processing now
+			 */
+#ifdef DEBUG
+			g_message ("%s: Hit 0-length block, giving up",
+				   __func__);
+#endif
+			return(NULL);
+		}
+		
+		string_len = string_len + block->data_len;
+		
+		big_value = g_convert ((gchar *)block->key,
+				       unicode_chars (block->key) * 2,
+				       "UTF-16BE", "UTF-16LE", NULL, NULL,
+				       NULL);
+		if (big_value == NULL) {
+#ifdef DEBUG
+			g_message ("%s: Didn't find a valid string, giving up",
+				   __func__);
+#endif
+			return(NULL);
+		}
+		
+		/* The swapped string should be exactly the same
+		 * length as the original little-endian one, but only
+		 * copy the number of original chars just to be on the
+		 * safe side
+		 */
+		memcpy (block->key, big_value, unicode_chars (block->key) * 2);
+		g_free (big_value);
+
+		big_value = g_convert ((gchar *)data_ptr,
+				       unicode_chars (data_ptr) * 2,
+				       "UTF-16BE", "UTF-16LE", NULL, NULL,
+				       NULL);
+		if (big_value == NULL) {
+#ifdef DEBUG
+			g_message ("%s: Didn't find a valid data string, giving up", __func__);
+#endif
+			return(NULL);
+		}
+		memcpy ((gpointer)data_ptr, big_value,
+			unicode_chars (data_ptr) * 2);
+		g_free (big_value);
+
+		data_ptr = ((gunichar2 *)data_ptr) + block->value_len;
+	}
+	
+	return(data_ptr);
+}
+
+/* Returns a pointer to the byte following the Stringtable block, or
+ * NULL if the data read hits padding.  We can't recover from this
+ * because the data length does not include padding bytes, so it's not
+ * possible to just return the start position + length
+ */
+static gconstpointer big_up_stringtable_block (gconstpointer data_ptr,
+					       version_data *block)
+{
+	guint16 data_len = block->data_len;
+	guint16 string_len = 36; /* length of the StringFileInfo block */
+	gchar *big_value;
+	
+	/* data_ptr is pointing at an array of StringTable blocks,
+	 * with total length (not including alignment padding) of
+	 * data_len
+	 */
+
+	while(string_len < data_len) {
+		/* align on a 32-bit boundary */
+		data_ptr = (gpointer)((char *)data_ptr + 3);
+		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+
+		data_ptr = get_versioninfo_block (data_ptr, block);
+		if (block->data_len == 0) {
+			/* We must have hit padding, so give up
+			 * processing now
+			 */
+#ifdef DEBUG
+			g_message ("%s: Hit 0-length block, giving up",
+				   __func__);
+#endif
+			return(NULL);
+		}
+		
+		string_len = string_len + block->data_len;
+
+		big_value = g_convert ((gchar *)block->key, 16, "UTF-16BE",
+				       "UTF-16LE", NULL, NULL, NULL);
+		if (big_value == NULL) {
+#ifdef DEBUG
+			g_message ("%s: Didn't find a valid string, giving up",
+				   __func__);
+#endif
+			return(NULL);
+		}
+		
+		memcpy (block->key, big_value, 16);
+		g_free (big_value);
+		
+		data_ptr = big_up_string_block (data_ptr, block);
+		
+		if (data_ptr == NULL) {
+			/* Child block hit padding */
+#ifdef DEBUG
+			g_message ("%s: Child block hit 0-length block, giving up", __func__);
+#endif
+			return(NULL);
+		}
+	}
+	
+	return(data_ptr);
+}
+
+/* Follows the data structures and turns all UTF-16 strings from the
+ * LE found in the resource section into UTF-16BE
+ */
+static void big_up (gconstpointer datablock, guint32 size)
+{
+	gconstpointer data_ptr;
+	gint32 data_len; /* signed to guard against underflow */
+	version_data block;
+	
+	data_ptr = get_fixedfileinfo_block (datablock, &block);
+	if (data_ptr != NULL) {
+		WapiFixedFileInfo *ffi = (WapiFixedFileInfo *)data_ptr;
+		
+		/* Byteswap all the fields */
+		ffi->dwFileVersionMS = GUINT32_SWAP_LE_BE (ffi->dwFileVersionMS);
+		ffi->dwFileVersionLS = GUINT32_SWAP_LE_BE (ffi->dwFileVersionLS);
+		ffi->dwProductVersionMS = GUINT32_SWAP_LE_BE (ffi->dwProductVersionMS);
+		ffi->dwProductVersionLS = GUINT32_SWAP_LE_BE (ffi->dwProductVersionLS);
+		ffi->dwFileFlagsMask = GUINT32_SWAP_LE_BE (ffi->dwFileFlagsMask);
+		ffi->dwFileFlags = GUINT32_SWAP_LE_BE (ffi->dwFileFlags);
+		ffi->dwFileOS = GUINT32_SWAP_LE_BE (ffi->dwFileOS);
+		ffi->dwFileType = GUINT32_SWAP_LE_BE (ffi->dwFileType);
+		ffi->dwFileSubtype = GUINT32_SWAP_LE_BE (ffi->dwFileSubtype);
+		ffi->dwFileDateMS = GUINT32_SWAP_LE_BE (ffi->dwFileDateMS);
+		ffi->dwFileDateLS = GUINT32_SWAP_LE_BE (ffi->dwFileDateLS);
+
+		/* The FFI and header occupies the first 92 bytes
+		 */
+		data_ptr = (char *)data_ptr + sizeof(WapiFixedFileInfo);
+		data_len = block.data_len - 92;
+		
+		/* There now follow zero or one StringFileInfo blocks
+		 * and zero or one VarFileInfo blocks
+		 */
+		while (data_len > 0) {
+			/* align on a 32-bit boundary */
+			data_ptr = (gpointer)((char *)data_ptr + 3);
+			data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+			
+			data_ptr = get_versioninfo_block (data_ptr, &block);
+			if (block.data_len == 0) {
+				/* We must have hit padding, so give
+				 * up processing now
+				 */
+#ifdef DEBUG
+				g_message ("%s: Hit 0-length block, giving up",
+					   __func__);
+#endif
+				return;
+			}
+			
+			data_len = data_len - block.data_len;
+			
+			if (unicode_string_equals (block.key, "VarFileInfo")) {
+				data_ptr = get_varfileinfo_block (data_ptr,
+								  &block);
+				data_ptr = ((guchar *)data_ptr) + block.value_len;
+			} else if (unicode_string_equals (block.key,
+							  "StringFileInfo")) {
+				data_ptr = big_up_stringtable_block (data_ptr,
+								     &block);
+			} else {
+				/* Bogus data */
+#ifdef DEBUG
+				g_message ("%s: Not a valid VERSIONINFO child block", __func__);
+#endif
+				return;
+			}
+			
+			if (data_ptr == NULL) {
+				/* Child block hit padding */
+#ifdef DEBUG
+				g_message ("%s: Child block hit 0-length block, giving up", __func__);
+#endif
+				return;
+			}
+		}
+	}
+}
+#endif
+
 gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 			gpointer *buffer, guint32 *len)
 {
@@ -688,7 +847,7 @@ gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 					    string_value != NULL &&
 					    string_value_len != 0) {
 						*buffer = string_value;
-						*len = string_value_len / 2; /* chars */
+						*len = unicode_chars (string_value);
 						ret = TRUE;
 						goto done;
 					}
@@ -723,4 +882,69 @@ gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 guint32 VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
 {
 	return(0);
+}
+
+
+guint32 GetFileVersionInfoSize (gunichar2 *filename, guint32 *handle)
+{
+	gpointer file_map;
+	gpointer versioninfo;
+	guint32 map_size;
+	guint32 size;
+	
+	/* This value is unused, but set to zero */
+	*handle = 0;
+	
+	file_map = map_pe_file (filename, &map_size);
+	if (file_map == NULL) {
+		return(0);
+	}
+	
+	versioninfo = find_pe_file_resources (file_map, map_size, RT_VERSION,
+					      0, &size);
+	if (versioninfo == NULL) {
+		/* Didn't find the resource, so set the return value
+		 * to 0
+		 */
+		size = 0;
+	}
+
+	unmap_pe_file (file_map, map_size);
+
+	return(size);
+}
+
+gboolean GetFileVersionInfo (gunichar2 *filename, guint32 handle G_GNUC_UNUSED,
+			     guint32 len, gpointer data)
+{
+	gpointer file_map;
+	gpointer versioninfo;
+	guint32 map_size;
+	guint32 size;
+	gboolean ret = FALSE;
+	
+	file_map = map_pe_file (filename, &map_size);
+	if (file_map == NULL) {
+		return(FALSE);
+	}
+	
+	versioninfo = find_pe_file_resources (file_map, map_size, RT_VERSION,
+					      0, &size);
+	if (versioninfo != NULL) {
+		/* This could probably process the data so that
+		 * VerQueryValue() doesn't have to follow the data
+		 * blocks every time.  But hey, these functions aren't
+		 * likely to appear in many profiles.
+		 */
+		memcpy (data, versioninfo, len < size?len:size);
+		ret = TRUE;
+
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+		big_up (data, size);
+#endif
+	}
+
+	unmap_pe_file (file_map, map_size);
+	
+	return(ret);
 }
