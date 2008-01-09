@@ -174,6 +174,22 @@ do
   I=`expr $I + 1`
 done
 
+#tests for the difference between cgt.un and others
+I=1
+for TYPE in string object
+do
+	./make_bin_test.sh bin_cgt_un_a_${I} valid 'cgt.un' "${TYPE}" 'object'
+	./make_bin_test.sh bin_cgt_un_b_${I} valid 'cgt.un' 'object' "${TYPE}"
+  I=`expr $I + 1`
+done
+
+
+for TYPE in int32 float32 int64 "int32&" "native int" 
+do
+	./make_bin_test.sh bin_cgt_un_a_${I} unverifiable 'cgt.un' "${TYPE}" 'object'
+	./make_bin_test.sh bin_cgt_un_b_${I} unverifiable 'cgt.un' 'object' "${TYPE}"
+  I=`expr $I + 1`
+
 for OP in ceq
 do
   ./make_bin_test.sh bin_comp_op_27_${I} unverifiable $OP 'native int' 'native int&'
@@ -1445,6 +1461,12 @@ done
 
 ./make_field_store_test.sh static_field_store_2_25 unverifiable 'ldsflda int32 ClassA::st_const_field\n\tpop' int32 'class ClassA'
 
+
+#stfld with null values
+./make_field_store_test.sh field_store_null_value valid "ldnull\n\tstfld string ClassA::fld\n\tldc.i4.0" 'string' 'class ClassA' yes
+./make_field_store_test.sh field_store_null_object valid "pop\n\tldnull\n\tldnull\n\tstfld string ClassA::fld\n\tldc.i4.0" 'string' 'class ClassA' yes
+
+
 ./make_field_valuetype_test.sh value_type_field_load_1 valid 'ldfld int32 MyValueType::fld' 'ldloc.0'
 ./make_field_valuetype_test.sh value_type_field_load_2 unverifiable 'ldflda int32 MyValueType::fld' 'ldloc.0'
 ./make_field_valuetype_test.sh value_type_field_load_3 valid 'ldfld int32 MyValueType::fld' 'ldloca.s 0'
@@ -2243,7 +2265,7 @@ done
 # Box void type.
 #./make_unary_test.sh box_void unverifiable "box [mscorlib]System.Void\n\tpop" "class [mscorlib]System.Void"
 I=1;
-for OP in "native int" "int32*" typedref int16 string float32
+for OP in "native int" "int32*" typedref int16 float32
 do
 	./make_unbox_test.sh unbox_bad_stack_${I} unverifiable "${OP}" int32 "nop" "yes"
 	I=`expr $I + 1`
