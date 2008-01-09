@@ -10635,7 +10635,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		native_size += parent_size;
 		info->native_size = parent_size;
 	}
-	
+
 	iter = NULL;
 	j = 0;
 	while ((field = mono_class_get_fields (klass, &iter))) {
@@ -10723,10 +10723,13 @@ gint32
 mono_class_native_size (MonoClass *klass, guint32 *align)
 {	
 	if (!klass->marshal_info) {
-		if (mono_marshal_is_loading_type_info (klass))
+		if (mono_marshal_is_loading_type_info (klass)) {
+			if (align)
+				*align = 0;
 			return 0;
-		else
+		} else {
 			mono_marshal_load_type_info (klass);
+		}
 	}
 
 	if (align)
