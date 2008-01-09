@@ -3550,6 +3550,64 @@ done
 ./make_delegate_test.sh delegate_ldvirtftn_different_basic_block_dup unverifiable "DUP_OP: ldvirtftn instance void Driver::VirtMethod()" "DelegateNoArg" "ldarg.0\n\t\tdup\n\t\tldarg.1\n\t\tbrfalse DUP_OP\n\t\tpop\n\t\tdup"
 
 
+#tests for ovf opcodes
+I=1
+for OP in "add.ovf" "add.ovf.un" "mul.ovf" "mul.ovf.un" "sub.ovf" "sub.ovf.un" 
+do
+	for TYPE in "object" "string" "float32" "float64" "int32*" "typedref" "int32[]" "int32[,]" "method int32 *(int32)"
+	do
+		./make_bin_test.sh bin_ovf_math_1_${I} unverifiable $OP int32 "${TYPE}"
+		./make_bin_test.sh bin_ovf_math_2_${I} unverifiable $OP int64 "${TYPE}"
+		./make_bin_test.sh bin_ovf_math_3_${I} unverifiable $OP "native int" "${TYPE}"
+		./make_bin_test.sh bin_ovf_math_4_${I} unverifiable $OP "int32&" "${TYPE}"
+		I=`expr $I + 1`
+	done
+
+	for TYPE in "int32" "native int"
+	do
+		./make_bin_test.sh bin_ovf_math_5_${I} valid $OP int32 "${TYPE}"
+		I=`expr $I + 1`
+	done
+
+	for TYPE in "int32" "native int"
+	do
+		./make_bin_test.sh bin_ovf_math_6_${I} valid $OP "native int" "${TYPE}"
+		I=`expr $I + 1`
+	done
+done
+
+for OP in "add.ovf.un" "sub.ovf.un" 
+do
+	for TYPE in "int32" "native int" "int32&"
+	do
+		./make_bin_test.sh bin_ovf_math_7_${I} unverifiable $OP "int32&" "${TYPE}"
+		I=`expr $I + 1`
+	done
+
+	for TYPE in "int32" "native int" "int32&"
+	do
+		./make_bin_test.sh bin_ovf_math_8_${I} unverifiable $OP "${TYPE}" "int32&"
+		I=`expr $I + 1`
+	done
+done
+
+#should be invalid
+for OP in "add.ovf" "mul.ovf" "mul.ovf.un" "sub.ovf"
+do
+	for TYPE in "int32" "native int" "int32&"
+	do
+		./make_bin_test.sh bin_ovf_math_7_${I} unverifiable $OP "int32&" "${TYPE}"
+		I=`expr $I + 1`
+	done
+
+	for TYPE in "int32" "native int" "int32&"
+	do
+		./make_bin_test.sh bin_ovf_math_8_${I} unverifiable $OP "${TYPE}" "int32&"
+		I=`expr $I + 1`
+	done
+done
+
+
 
 
 
