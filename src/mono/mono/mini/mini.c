@@ -3094,18 +3094,21 @@ handle_delegate_ctor (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass
 	/* Inline the contents of mono_delegate_ctor */
 
 	/* Set target field */
-	NEW_TEMPLOAD (cfg, obj, temp);
-	NEW_ICONST (cfg, offset_ins, G_STRUCT_OFFSET (MonoDelegate, target));
-	MONO_INST_NEW (cfg, ins, OP_PADD);
-	ins->cil_code = ip;
-	ins->inst_left = obj;
-	ins->inst_right = offset_ins;
+	/* Optimize away setting of NULL target */
+	if (!(target->opcode == OP_PCONST && target->inst_p0 == 0)) {
+		NEW_TEMPLOAD (cfg, obj, temp);
+		NEW_ICONST (cfg, offset_ins, G_STRUCT_OFFSET (MonoDelegate, target));
+		MONO_INST_NEW (cfg, ins, OP_PADD);
+		ins->cil_code = ip;
+		ins->inst_left = obj;
+		ins->inst_right = offset_ins;
 
-	MONO_INST_NEW (cfg, store, CEE_STIND_REF);
-	store->cil_code = ip;
-	store->inst_left = ins;
-	store->inst_right = target;
-	mono_bblock_add_inst (bblock, store);
+		MONO_INST_NEW (cfg, store, CEE_STIND_REF);
+		store->cil_code = ip;
+		store->inst_left = ins;
+		store->inst_right = target;
+		mono_bblock_add_inst (bblock, store);
+	}
 
 	/* Set method field */
 	NEW_TEMPLOAD (cfg, obj, temp);
