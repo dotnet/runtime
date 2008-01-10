@@ -197,7 +197,9 @@ enum {
 /*Token validation macros and functions */
 #define IS_MEMBER_REF(token) (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)
 #define IS_METHOD_DEF(token) (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
-#define IS_METHOD_DEF_OR_REF(token) (IS_METHOD_DEF (token) || IS_MEMBER_REF (token))
+#define IS_METHOD_SPEC(token) (mono_metadata_token_table (token) == MONO_TABLE_METHODSPEC)
+
+#define IS_METHOD_DEF_OR_REF_OR_SPEC(token) (IS_METHOD_DEF (token) || IS_MEMBER_REF (token) || IS_METHOD_SPEC (token))
 
 /*
  * Verify if @token refers to a valid row on int's table.
@@ -1349,10 +1351,13 @@ get_boxable_mono_type (VerifyContext* ctx, int token)
 		return NULL;
 	}
 
-	if (type->type == MONO_TYPE_TYPEDBYREF) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid use of typedbyref at 0x%04x", ctx->ip_offset));
+	if (type->type == MONO_TYPE_VOID) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid use of void type at 0x%04x", ctx->ip_offset));
 		return NULL;
 	}
+
+	if (type->type == MONO_TYPE_TYPEDBYREF)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid use of typedbyref at 0x%04x", ctx->ip_offset));
 
 	check_unverifiable_type (ctx, type);
 	return type;
@@ -2719,6 +2724,28 @@ do_unbox_value (VerifyContext *ctx, int klass_token)
 }
 
 static void
+do_unbox_any (VerifyContext *ctx, int klass_token)
+{
+	ILStackDesc *value;
+	MonoType *type = get_boxable_mono_type (ctx, klass_token);
+
+	if (!type)
+		return;
+ 
+	if (!check_underflow (ctx, 1))
+		return;
+
+	value = stack_pop (ctx);
+
+	/*Value should be: a boxed valuetype or a reference type*/
+	if (!(stack_slot_get_type (value) == TYPE_COMPLEX &&
+		(stack_slot_is_boxed_value (value) || !mono_class_from_mono_type (value->type)->valuetype)))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type %s at stack for unbox.any operation at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));
+ 
+	set_stack_value (stack_push (ctx), type, FALSE);
+}
+
+static void
 do_unary_math_op (VerifyContext *ctx, int op)
 {
 	ILStackDesc *value;
@@ -3322,7 +3349,7 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 	if (!virtual && !check_overflow (ctx))
 		return;
 
-	if (!IS_METHOD_DEF_OR_REF (token) || !token_bounds_check (ctx->image, token)) {
+	if (!IS_METHOD_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid token %x for ldftn  at 0x%04x", token, ctx->ip_offset));
 		return;
 	}
@@ -4164,9 +4191,10 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 			
 		case CEE_UNBOX_ANY:
-			//FIXME implement me
+			do_unbox_any (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_UNUSED5:
 		case CEE_UNUSED6:
 		case CEE_UNUSED7:
