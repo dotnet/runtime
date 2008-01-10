@@ -3608,6 +3608,24 @@ do
 done
 
 
+#unbox.any
+
+./make_unbox_any_test.sh unbox_any_valuetype valid object int32 "stloc.1" "ldc.i4.0\n\tbox int32"
+./make_unbox_any_test.sh unbox_any_reference valid object string "stloc.1" "ldstr \"str\""
+./make_unbox_any_test.sh unbox_any_reference_null valid object string "stloc.1" "ldnull"
+
+#object is not a reference type
+I=1
+for TYPE in "ldc.i4.0" "ldc.i8 0" "ldc.r8 0" "ldloca 0" "ldc.i4.0\n\tconv.u"
+do
+	./make_unbox_any_test.sh unbox_any_bad_object_${I} unverifiable object int32 "stloc.1" "$TYPE"
+	I=`expr $I + 1`
+done
+
+#token is byref, byref-like or void
+./make_unbox_any_test.sh unbox_any_bad_token_1 invalid object "int32\&" "pop" "ldnull"
+./make_unbox_any_test.sh unbox_any_bad_token_2 unverifiable object typedref "pop" "ldnull"
+./make_unbox_any_test.sh unbox_any_bad_token_3 invalid object void "pop" "ldnull"
 
 
 
