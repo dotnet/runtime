@@ -2062,6 +2062,20 @@ retry:
 		goto retry;
 	case MONO_TYPE_FNPTR:
 		return signature_in_image (type->data.method, image);
+	case MONO_TYPE_VAR:
+		if (type->data.generic_param->owner) {
+			g_assert (!type->data.generic_param->owner->is_method);
+			return type->data.generic_param->owner->owner.klass->image == image;
+		} else {
+			return type->data.generic_param->image == image;
+		}
+	case MONO_TYPE_MVAR:
+		if (type->data.generic_param->owner) {
+			g_assert (type->data.generic_param->owner->is_method);
+			return type->data.generic_param->owner->owner.method->klass->image == image;
+		} else {
+			return type->data.generic_param->image == image;
+		}
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type () */
 		return image == mono_class_from_mono_type (type)->image;
@@ -2519,6 +2533,7 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 		param->name = mono_mempool_alloc0 (m->mempool, 8);
 		sprintf ((char*)param->name, "%d", index);
 		param->num = index;
+		param->image = m;
 
 		return param;
 	}

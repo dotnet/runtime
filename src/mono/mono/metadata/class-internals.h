@@ -475,6 +475,8 @@ struct _MonoGenericParam {
 	guint16 flags;
 	guint16 num;
 	MonoClass** constraints; /* NULL means end of list */
+	/* If owner is NULL, this is the image whose mempool this struct was allocated from */
+	MonoImage *image;
 };
 
 /*
