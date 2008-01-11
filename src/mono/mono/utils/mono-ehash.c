@@ -29,7 +29,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <glib.h>
-#include <mono/os/gc_wrapper.h>
 #include "mono-hash.h"
 #include "metadata/gc-internal.h"
 
