@@ -3629,3 +3629,73 @@ done
 
 
 
+#stobj
+#bad src
+I=1
+for TYPE in "int32" "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]" "native int"
+do
+	./make_stobj_test.sh stobj_simple_${I} valid "$TYPE" "$TYPE\&" "$TYPE" 
+	I=`expr $I + 1`
+done
+
+
+for TYPE in "int32*" "typedref" "method int32 *(int32)"
+do
+	./make_stobj_test.sh stobj_simple_${I} unverifiable "$TYPE" "$TYPE\&" "$TYPE" 
+	I=`expr $I + 1`
+done
+
+for TYPE in "int32\&" "void"
+do
+	./make_stobj_test.sh stobj_simple_${I} invalid "$TYPE" "$TYPE\&" "$TYPE" 
+	I=`expr $I + 1`
+done
+
+#src should not be ptr or byref
+I=1
+for TYPE in "int32\&" "int32*" "typedref"
+do
+	./make_stobj_test.sh stobj_bad_src_${I} unverifiable "$TYPE" "int32\&" "int32" 
+	I=`expr $I + 1`
+done
+
+#dest type is not a managed pointer
+I=1
+for TYPE in "int32" "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]" "native int"
+do
+	./make_stobj_test.sh stobj_dest_not_managed_pointer_${I} unverifiable "$TYPE" "$TYPE" "$TYPE" 
+	I=`expr $I + 1`
+done
+
+#src is compat to dest
+I=1
+for TYPE in "int8" "unsigned int8" "bool" "int16" "unsigned int16" "char" "int32" "unsigned int32" "native int" "native unsigned int"
+do 
+	./make_stobj_test.sh stobj_src_compat_to_token_${I} valid "$TYPE" "int32\&" "int32" 
+	I=`expr $I + 1`
+done
+
+for TYPE in "int64" "unsigned int64" "float32" "float64" string object
+do 
+	./make_stobj_test.sh stobj_src_compat_to_token_${I} unverifiable "$TYPE" "int32\&" "int32" 
+	I=`expr $I + 1`
+done
+
+for TYPE in string object Class
+do 
+	./make_stobj_test.sh stobj_src_compat_to_token_${I} valid "$TYPE" "object\&" "object" 
+	I=`expr $I + 1`
+done
+
+./make_stobj_test.sh stobj_src_compat_to_token_boxed_vt valid "int32" "object\&" "object" "box int32"
+./make_stobj_test.sh stobj_src_compat_to_token_null_literal valid "object" "object\&" "object" "pop\n\tldnull"
+
+
+#token type subtype of dest_type
+for TYPE in string object Class "int32[]" "int32[,]"
+do 
+	./make_stobj_test.sh stobj_token_subtype_of_dest_${I} valid "$TYPE" "object\&" "$TYPE" 
+	I=`expr $I + 1`
+done
+
+
