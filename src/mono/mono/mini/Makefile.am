@@ -520,7 +520,8 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 version.h: Makefile
 	if test -d $(srcdir)/.svn; then \
 		(cd $(srcdir); 	\
-			export LANG=C;	\
+			LANG=C; \
+			export LANG;	\
 			branch=`svn info | grep URL | sed -e 's/.*source//' -e 's,mono/mono/mini,,'`; \
 			version=`svn info | grep Revision | sed 's/.*: //'`; \
 			echo "#define FULL_VERSION \"$$branch r$$version\""; \
