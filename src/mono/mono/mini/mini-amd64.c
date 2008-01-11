@@ -3234,7 +3234,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
-			amd64_alu_membase_imm (code, X86_CMP, ins->sreg1, 0, 0);
+			amd64_alu_membase_imm_size (code, X86_CMP, ins->sreg1, 0, 0, 4);
 			break;
 		case OP_ARGLIST: {
 			amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, cfg->sig_cookie);
