@@ -2897,7 +2897,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
-			sparc_ld_imm (code, ins->sreg1, 0, sparc_g0);
+			/* Might be misaligned in case of vtypes so use a byte load */
+			sparc_ldsb_imm (code, ins->sreg1, 0, sparc_g0);
 			break;
 		case OP_ARGLIST:
 			sparc_add_imm (code, FALSE, sparc_fp, cfg->sig_cookie, sparc_o7);
