@@ -4,6 +4,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <errno.h>
 #include <mono/utils/mono-io-portability.h>
 
 #ifdef PLATFORM_WIN32
