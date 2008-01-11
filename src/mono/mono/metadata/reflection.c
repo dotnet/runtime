@@ -8690,7 +8690,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		m->generic_container = container = rmb->generic_container;
 		container->type_argc = count;
 		container->type_params = g_new0 (MonoGenericParam, count);
-		container->is_method = TRUE;
 		container->owner.method = m;
 
 		for (i = 0; i < count; i++) {
@@ -9534,8 +9533,10 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	param = g_new0 (MonoGenericParam, 1);
 
 	if (gparam->mbuilder) {
-		if (!gparam->mbuilder->generic_container)
+		if (!gparam->mbuilder->generic_container) {
 			gparam->mbuilder->generic_container = g_new0 (MonoGenericContainer, 1);
+			gparam->mbuilder->generic_container->is_method = TRUE;
+		}
 		param->owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
 		g_assert (gparam->tbuilder->generic_container);

@@ -2072,6 +2072,9 @@ retry:
 	case MONO_TYPE_MVAR:
 		if (type->data.generic_param->owner) {
 			g_assert (type->data.generic_param->owner->is_method);
+			if (!type->data.generic_param->owner->owner.method)
+				/* RefEmit created generic param whose method is not finished */
+				return FALSE;
 			return type->data.generic_param->owner->owner.method->klass->image == image;
 		} else {
 			return type->data.generic_param->image == image;
