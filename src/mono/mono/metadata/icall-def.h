@@ -391,6 +391,9 @@ ICALL(SOCK_21, "WSAIoctl(intptr,int,byte[],byte[],int&)", ves_icall_System_Net_S
 ICALL_TYPE(SOCKEX, "System.Net.Sockets.SocketException", SOCKEX_1)
 ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal)
 
+ICALL_TYPE(NUMBER_FORMATTER, "System.NumberFormatter", NUMBER_FORMATTER_1)
+ICALL(NUMBER_FORMATTER_1, "GetFormatterTables", ves_icall_System_NumberFormatter_GetFormatterTables)
+
 ICALL_TYPE(OBJ, "System.Object", OBJ_1)
 ICALL(OBJ_1, "GetType", ves_icall_System_Object_GetType)
 ICALL(OBJ_2, "InternalGetHashCode", mono_object_hash)
