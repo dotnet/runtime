@@ -4465,7 +4465,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	MonoClass *target_klass;
 	MonoMethod *res = NULL;
 	static MonoString *string_dummy = NULL;
-	static MonoMethodSignature *dealy_abort_sig = NULL;
+	static MonoMethodSignature *delay_abort_sig = NULL;
 	int i, pos, posna;
 	char *name;
 	gboolean need_direct_wrapper = FALSE;
@@ -4547,10 +4547,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		return res;
 	}
 
-	if (!dealy_abort_sig) {
-		dealy_abort_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-		dealy_abort_sig->ret = &mono_defaults.void_class->byval_arg;
-		dealy_abort_sig->pinvoke = 0;
+	if (!delay_abort_sig) {
+		delay_abort_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		delay_abort_sig->ret = &mono_defaults.void_class->byval_arg;
+		delay_abort_sig->pinvoke = 0;
 	}
 	
 	/* to make it work with our special string constructors */
@@ -4758,7 +4758,7 @@ handle_enum:
 	posna = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
 	/* Delay the abort exception */
-	mono_mb_emit_native_call (mb, dealy_abort_sig, ves_icall_System_Threading_Thread_ResetAbort);
+	mono_mb_emit_native_call (mb, delay_abort_sig, ves_icall_System_Threading_Thread_ResetAbort);
 
 	mono_mb_patch_short_branch (mb, posna);
 	mono_mb_emit_branch (mb, CEE_LEAVE);
