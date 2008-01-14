@@ -4725,7 +4725,7 @@ find_nocase (gpointer key, gpointer value, gpointer user_data)
 
 /**
  * mono_class_from_name_case:
- * @image: The MonoImage where the type is looked up in, or NULL for looking up in all loaded assemblies
+ * @image: The MonoImage where the type is looked up in
  * @name_space: the type namespace
  * @name: the type short name.
  *
@@ -4818,7 +4818,7 @@ return_nested_in (MonoClass *class, char *nested) {
 
 /**
  * mono_class_from_name:
- * @image: The MonoImage where the type is looked up in, or NULL for looking up in all loaded assemblies
+ * @image: The MonoImage where the type is looked up in
  * @name_space: the type namespace
  * @name: the type short name.
  *
