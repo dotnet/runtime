@@ -7,6 +7,7 @@
  *   Paolo Molaro (lupus@ximian.com)
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Patrik Torstensson
+ *   Zoltan Varga (vargaz@gmail.com)
  *
  * (C) 2003 Ximian, Inc.
  */
@@ -1013,30 +1014,24 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset = 0;
 	}
 
-	cfg->arch.reg_save_area_offset = offset;
-
-	/* Reserve space for caller saved registers */
-	for (i = 0; i < AMD64_NREG; ++i)
-		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
-			offset += sizeof (gpointer);
-		}
-
 	if (cfg->method->save_lmf) {
-		/* Reserve stack space for saving LMF + argument regs */
-		guint32 size = sizeof (MonoLMF);
-
-		if (lmf_addr_tls_offset == -1)
-			/* Need to save argument regs too */
-			size += (AMD64_NREG * 8) + (8 * 8);
-
+		/* Reserve stack space for saving LMF */
+		/* mono_arch_find_jit_info () expects to find the LMF at a fixed offset */
+		g_assert (offset == 0);
 		if (cfg->arch.omit_fp) {
 			cfg->arch.lmf_offset = offset;
-			offset += size;
+			offset += sizeof (MonoLMF);
 		}
 		else {
-			offset += size;
+			offset += sizeof (MonoLMF);
 			cfg->arch.lmf_offset = -offset;
 		}
+	} else {
+		/* Reserve space for caller saved registers */
+		for (i = 0; i < AMD64_NREG; ++i)
+			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+				offset += sizeof (gpointer);
+			}
 	}
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
