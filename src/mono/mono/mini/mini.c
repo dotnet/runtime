@@ -407,7 +407,11 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
  * dfn: Depth First Number
  * block_num: unique ID assigned at bblock creation
  */
-#define NEW_BBLOCK(cfg) (mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock)))
+#define NEW_BBLOCK(cfg,new_bb) do {	\
+		new_bb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock)); \
+		MONO_INST_LIST_INIT (&new_bb->ins_list); \
+	} while (0)
+
 #define ADD_BBLOCK(cfg,b) do {	\
 		cfg->cil_offset_to_bb [(b)->cil_code - cfg->cil_start] = (b);	\
 		(b)->block_num = cfg->num_bblocks++;	\
@@ -418,17 +422,19 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(tblock) = cfg->cil_offset_to_bb [(ip) - cfg->cil_start]; \
 		if (!(tblock)) {	\
 			if ((ip) >= end || (ip) < header->code) UNVERIFIED; \
-			(tblock) = NEW_BBLOCK (cfg);	\
+			NEW_BBLOCK (cfg, (tblock));	\
 			(tblock)->cil_code = (ip);	\
 			ADD_BBLOCK (cfg, (tblock));	\
 		} \
 	} while (0)
 
 #define CHECK_BBLOCK(target,ip,tblock) do {	\
-		if ((target) < (ip) && !(tblock)->code)	{	\
-			bb_recheck = g_list_prepend (bb_recheck, (tblock));	\
-			if (cfg->verbose_level > 2) g_print ("queued block %d for check at IL%04x from IL%04x\n", (tblock)->block_num, (int)((target) - header->code), (int)((ip) - header->code));	\
-		}	\
+		if ((target) < (ip) && \
+				MONO_INST_LIST_EMPTY (&(tblock)->ins_list)) { \
+			bb_recheck = g_list_prepend (bb_recheck, (tblock)); \
+			if (cfg->verbose_level > 2) \
+				g_print ("queued block %d for check at IL%04x from IL%04x\n", (tblock)->block_num, (int)((target) - header->code), (int)((ip) - header->code));	\
+		} \
 	} while (0)
 
 #define NEW_ICONST(cfg,dest,val) do {	\
@@ -1079,7 +1085,7 @@ split_bblock (MonoCompile *cfg, MonoBasicBlock *first, MonoBasicBlock *second) {
 	MonoInst *inst;
 	MonoBasicBlock *bb;
 
-	if (second->code)
+	if (!MONO_INST_LIST_EMPTY (&second->ins_list))
 		return;
 	
 	/* 
@@ -1101,23 +1107,33 @@ split_bblock (MonoCompile *cfg, MonoBasicBlock *first, MonoBasicBlock *second) {
 	first->out_bb = NULL;
 	link_bblock (cfg, first, second);
 
-	second->last_ins = first->last_ins;
-
 	/*g_print ("start search at %p for %p\n", first->cil_code, second->cil_code);*/
-	for (inst = first->code; inst && inst->next; inst = inst->next) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (inst, &first->ins_list, node) {
+		MonoInst *inst_next;
+
 		/*char *code = mono_disasm_code_one (NULL, cfg->method, inst->next->cil_code, NULL);
 		g_print ("found %p: %s", inst->next->cil_code, code);
 		g_free (code);*/
-		if (inst->cil_code < second->cil_code && inst->next->cil_code >= second->cil_code) {
-			second->code = inst->next;
-			inst->next = NULL;
-			first->last_ins = inst;
-			second->next_bb = first->next_bb;
-			first->next_bb = second;
-			return;
-		}
+		if (inst->cil_code >= second->cil_code)
+			continue;
+
+		inst_next = mono_inst_list_next (&inst->node, &first->ins_list);
+		if (!inst_next)
+			break;
+
+		if (inst_next->cil_code < second->cil_code)
+			continue;
+			
+		second->ins_list.next = inst->node.next;
+		second->ins_list.prev = first->ins_list.prev;
+		inst->node.next = &first->ins_list;
+		first->ins_list.prev = &inst->node;
+
+		second->next_bb = first->next_bb;
+		first->next_bb = second;
+		return;
 	}
-	if (!second->code) {
+	if (MONO_INST_LIST_EMPTY (&second->ins_list)) {
 		g_warning ("bblock split failed in %s::%s\n", cfg->method->klass->name, cfg->method->name);
 		//G_BREAKPOINT ();
 	}
@@ -1840,44 +1856,15 @@ array_access_to_klass (int opcode, MonoInst *array_obj)
 void
 mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 {
-	MonoInst *prev;
-	if (!bb->code) {
+	MonoInst *last = mono_inst_list_last (&bb->ins_list);
+
+	if (last && ((last->opcode >= CEE_BEQ &&
+			last->opcode <= CEE_BLT_UN) ||
+			last->opcode == OP_BR ||
+			last->opcode == OP_SWITCH)) {
+		MONO_INST_LIST_ADD_TAIL (&inst->node, &last->node);
+	} else {
 		MONO_ADD_INS (bb, inst);
-		return;
-	}
-	switch (bb->last_ins->opcode) {
-	case CEE_BEQ:
-	case CEE_BGE:
-	case CEE_BGT:
-	case CEE_BLE:
-	case CEE_BLT:
-	case CEE_BNE_UN:
-	case CEE_BGE_UN:
-	case CEE_BGT_UN:
-	case CEE_BLE_UN:
-	case CEE_BLT_UN:
-	case OP_BR:
-	case OP_SWITCH:
-		prev = bb->code;
-		while (prev->next && prev->next != bb->last_ins)
-			prev = prev->next;
-		if (prev == bb->code) {
-			if (bb->last_ins == bb->code) {
-				inst->next = bb->code;
-				bb->code = inst;
-			} else {
-				inst->next = prev->next;
-				prev->next = inst;
-			}
-		} else {
-			inst->next = bb->last_ins;
-			prev->next = inst;
-		}
-		break;
-	//	g_warning ("handle conditional jump in add_ins_to_end ()\n");
-	default:
-		MONO_ADD_INS (bb, inst);
-		break;
 	}
 }
 
@@ -2555,7 +2542,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 		     MonoInst **args, int calli, int virtual, const guint8 *ip, gboolean to_end)
 {
 	MonoCallInst *call;
-	MonoInst *arg;
+	MonoInst *arg, *n;
 
 	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (sig->ret, calli, virtual, cfg->generic_sharing_context));
 
@@ -2583,16 +2570,13 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
 	type_to_eval_stack_type (cfg, sig->ret, &call->inst);
 
-	for (arg = call->out_args; arg;) {
-		MonoInst *narg = arg->next;
-		arg->next = NULL;
+	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (arg, n, &call->out_args, node) {
 		if (!arg->cil_code)
 			arg->cil_code = ip;
 		if (to_end)
 			mono_add_ins_to_end (bblock, arg);
 		else
 			MONO_ADD_INS (bblock, arg);
-		arg = narg;
 	}
 	return call;
 }
@@ -2690,8 +2674,8 @@ mono_emit_jit_icall (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer fun
 static void
 mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJitICallInfo *info)
 {
-	MonoInst *ins, *temp = NULL, *store, *load, *begin;
-	MonoInst *last_arg = NULL;
+	MonoInst *ins, *temp = NULL, *store, *load;
+	MonoInstList *head, *list;
 	int nargs;
 	MonoCallInst *call;
 
@@ -2699,6 +2683,7 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 	//mono_print_tree_nl (tree);
 	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (info->sig->ret, FALSE, FALSE, cfg->generic_sharing_context));
 	ins = (MonoInst*)call;
+	MONO_INST_LIST_INIT (&ins->node);
 	
 	call->inst.cil_code = tree->cil_code;
 	call->args = iargs;
@@ -2710,6 +2695,7 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 		temp = mono_compile_create_var (cfg, info->sig->ret, OP_LOCAL);
 		temp->flags |= MONO_INST_IS_TEMP;
 		NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
+		MONO_INST_LIST_INIT (&store->node);
 		/* FIXME: handle CEE_STIND_R4 */
 		store->cil_code = tree->cil_code;
 	} else {
@@ -2718,15 +2704,13 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 
 	nargs = info->sig->param_count + info->sig->hasthis;
 
-	for (last_arg = call->out_args; last_arg && last_arg->next; last_arg = last_arg->next) ;
-
-	if (nargs)
-		last_arg->next = store;
-
-	if (nargs)
-		begin = call->out_args;
-	else
-		begin = store;
+	if (nargs) {
+		MONO_INST_LIST_ADD_TAIL (&store->node,
+					&call->out_args);
+		list = &call->out_args;
+	} else {
+		list = &store->node;
+	}
 
 	if (cfg->prev_ins) {
 		/* 
@@ -2734,12 +2718,12 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 		 * node before it is called for its children. dec_foreach needs to
 		 * take this into account.
 		 */
-		store->next = cfg->prev_ins->next;
-		cfg->prev_ins->next = begin;
+		head = &cfg->prev_ins->node;
 	} else {
-		store->next = cfg->cbb->code;
-		cfg->cbb->code = begin;
+		head = &cfg->cbb->ins_list;
 	}
+
+	MONO_INST_LIST_SPLICE_INIT (list, head);
 
 	call->fptr = mono_icall_get_wrapper (info);
 
@@ -3191,12 +3175,7 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 	NEW_TEMPSTORE (cfg, store, cfg->got_var->inst_c0, get_got);
 
 	/* Add it to the start of the first bblock */
-	if (cfg->bb_entry->code) {
-		store->next = cfg->bb_entry->code;
-		cfg->bb_entry->code = store;
-	}
-	else
-		MONO_ADD_INS (cfg->bb_entry, store);
+	MONO_INST_LIST_ADD (&store->node, &cfg->bb_entry->ins_list);
 
 	cfg->got_var_allocated = TRUE;
 
@@ -3793,11 +3772,11 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		mono_compile_create_var (cfg, cheader->locals [i], OP_LOCAL);
 
 	/* allocate starte and end blocks */
-	sbblock = NEW_BBLOCK (cfg);
+	NEW_BBLOCK (cfg, sbblock);
 	sbblock->block_num = cfg->num_bblocks++;
 	sbblock->real_offset = real_offset;
 
-	ebblock = NEW_BBLOCK (cfg);
+	NEW_BBLOCK (cfg, ebblock);
 	ebblock->block_num = cfg->num_bblocks++;
 	ebblock->real_offset = real_offset;
 
@@ -4474,13 +4453,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
 
 		/* ENTRY BLOCK */
-		cfg->bb_entry = start_bblock = NEW_BBLOCK (cfg);
+		NEW_BBLOCK (cfg, start_bblock);
+		cfg->bb_entry = start_bblock;
 		start_bblock->cil_code = NULL;
 		start_bblock->cil_length = 0;
 		start_bblock->block_num = cfg->num_bblocks++;
 
 		/* EXIT BLOCK */
-		cfg->bb_exit = end_bblock = NEW_BBLOCK (cfg);
+		NEW_BBLOCK (cfg, end_bblock);
+		cfg->bb_exit = end_bblock;
 		end_bblock->cil_code = NULL;
 		end_bblock->cil_length = 0;
 		end_bblock->block_num = cfg->num_bblocks++;
@@ -4571,7 +4552,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	/* FIRST CODE BLOCK */
-	bblock = NEW_BBLOCK (cfg);
+	NEW_BBLOCK (cfg, bblock);
 	bblock->cil_code = ip;
 
 	ADD_BBLOCK (cfg, bblock);
@@ -4626,7 +4607,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	
 	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || cfg->compile_aot || security || pinvoke) {
 		/* we use a separate basic block for the initialization code */
-		cfg->bb_init = init_localsbb = NEW_BBLOCK (cfg);
+		NEW_BBLOCK (cfg, init_localsbb);
+		cfg->bb_init = init_localsbb;
 		init_localsbb->real_offset = real_offset;
 		start_bblock->next_bb = init_localsbb;
 		init_localsbb->next_bb = bblock;
@@ -9376,14 +9358,13 @@ mono_inst_foreach (MonoInst *tree, MonoInstFunc func, gpointer data) {
 
 G_GNUC_UNUSED
 static void
-mono_print_bb_code (MonoBasicBlock *bb) {
-	if (bb->code) {
-		MonoInst *c = bb->code;
-		while (c) {
-			mono_print_tree (c);
-			g_print ("\n");
-			c = c->next;
-		}
+mono_print_bb_code (MonoBasicBlock *bb)
+{
+	MonoInst *c;
+
+	MONO_INST_LIST_FOR_EACH_ENTRY (c, &bb->ins_list, node) {
+		mono_print_tree (c);
+		g_print ("\n");
 	}
 }
 
@@ -9396,6 +9377,8 @@ print_dfn (MonoCompile *cfg) {
 	g_print ("IR code for method %s\n", mono_method_full_name (cfg->method, TRUE));
 
 	for (i = 0; i < cfg->num_bblocks; ++i) {
+		MonoInst *c;
+
 		bb = cfg->bblocks [i];
 		/*if (bb->cil_code) {
 			char* code1, *code2;
@@ -9412,15 +9395,9 @@ print_dfn (MonoCompile *cfg) {
 		} else*/
 			code = g_strdup ("\n");
 		g_print ("\nBB%d DFN%d (len: %d): %s", bb->block_num, i, bb->cil_length, code);
-		if (bb->code) {
-			MonoInst *c = bb->code;
-			while (c) {
-				mono_print_tree (c);
-				g_print ("\n");
-				c = c->next;
-			}
-		} else {
-
+		MONO_INST_LIST_FOR_EACH_ENTRY (c, &bb->ins_list, node) {
+			mono_print_tree (c);
+			g_print ("\n");
 		}
 
 		g_print ("\tprev:");
@@ -9449,14 +9426,7 @@ print_dfn (MonoCompile *cfg) {
 void
 mono_bblock_add_inst (MonoBasicBlock *bb, MonoInst *inst)
 {
-	inst->next = NULL;
-	if (bb->last_ins) {
-		g_assert (bb->code);
-		bb->last_ins->next = inst;
-		bb->last_ins = inst;
-	} else {
-		bb->last_ins = bb->code = inst;
-	}
+	MONO_INST_LIST_ADD_TAIL (&inst->node, &bb->ins_list);
 }
 
 void
@@ -10030,7 +10000,7 @@ decompose_pass (MonoCompile *cfg) {
 		MonoInst *tree;
 		cfg->cbb = bb;
 		cfg->prev_ins = NULL;
-		for (tree = cfg->cbb->code; tree; tree = tree->next) {
+		MONO_INST_LIST_FOR_EACH_ENTRY (tree, &cfg->cbb->ins_list, node){
 			dec_foreach (tree, cfg);
 			cfg->prev_ins = tree;
 		}
@@ -10045,7 +10015,7 @@ nullify_basic_block (MonoBasicBlock *bb)
 	bb->in_bb = NULL;
 	bb->out_bb = NULL;
 	bb->next_bb = NULL;
-	bb->code = bb->last_ins = NULL;
+	MONO_INST_LIST_INIT (&bb->ins_list);
 	bb->cil_code = NULL;
 }
 
@@ -10093,50 +10063,48 @@ static void
 replace_out_block_in_code (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl) {
 	MonoInst *inst;
 	
-	for (inst = bb->code; inst != NULL; inst = inst->next) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (inst, &bb->ins_list, node) {
 		if (inst->opcode == OP_CALL_HANDLER) {
-			if (inst->inst_target_bb == orig) {
+			if (inst->inst_target_bb == orig)
 				inst->inst_target_bb = repl;
-			}
 		}
 	}
-	if (bb->last_ins != NULL) {
-		switch (bb->last_ins->opcode) {
-		case OP_BR:
-			if (bb->last_ins->inst_target_bb == orig) {
-				bb->last_ins->inst_target_bb = repl;
-			}
-			break;
-		case OP_SWITCH: {
-			int i;
-			int n = GPOINTER_TO_INT (bb->last_ins->klass);
-			for (i = 0; i < n; i++ ) {
-				if (bb->last_ins->inst_many_bb [i] == orig) {
-					bb->last_ins->inst_many_bb [i] = repl;
-				}
-			}
-			break;
+
+	inst = mono_inst_list_last (&bb->ins_list);
+	if (!inst)
+		return;
+
+	switch (inst->opcode) {
+	case OP_BR:
+		if (inst->inst_target_bb == orig)
+			inst->inst_target_bb = repl;
+		break;
+	case OP_SWITCH: {
+		int i;
+		int n = GPOINTER_TO_INT (inst->klass);
+		for (i = 0; i < n; i++ ) {
+			if (inst->inst_many_bb [i] == orig)
+				inst->inst_many_bb [i] = repl;
 		}
-		case CEE_BNE_UN:
-		case CEE_BEQ:
-		case CEE_BLT:
-		case CEE_BLT_UN:
-		case CEE_BGT:
-		case CEE_BGT_UN:
-		case CEE_BGE:
-		case CEE_BGE_UN:
-		case CEE_BLE:
-		case CEE_BLE_UN:
-			if (bb->last_ins->inst_true_bb == orig) {
-				bb->last_ins->inst_true_bb = repl;
-			}
-			if (bb->last_ins->inst_false_bb == orig) {
-				bb->last_ins->inst_false_bb = repl;
-			}
-			break;
-		default:
-			break;
-		}
+		break;
+	}
+	case CEE_BNE_UN:
+	case CEE_BEQ:
+	case CEE_BLT:
+	case CEE_BLT_UN:
+	case CEE_BGT:
+	case CEE_BGT_UN:
+	case CEE_BGE:
+	case CEE_BGE_UN:
+	case CEE_BLE:
+	case CEE_BLE_UN:
+		if (inst->inst_true_bb == orig)
+			inst->inst_true_bb = repl;
+		if (inst->inst_false_bb == orig)
+			inst->inst_false_bb = repl;
+		break;
+	default:
+		break;
 	}
 }
 
@@ -10173,7 +10141,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		return FALSE;
 	}
 	
-	for (inst = bb->code; inst != NULL; inst = inst->next) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (inst, &bb->ins_list, node) {
 		switch (inst->opcode) {
 		case OP_NOP:
 			break;
@@ -10196,9 +10164,9 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	}
 	
 	/* Do not touch BBs following a switch (they are the "default" branch) */
-	if ((previous_bb->last_ins != NULL) && (previous_bb->last_ins->opcode == OP_SWITCH)) {
+	inst = mono_inst_list_last (&previous_bb->ins_list);
+	if (inst && inst->opcode == OP_SWITCH)
 		return FALSE;
-	}
 	
 	/* Do not touch BBs following the entry BB and jumping to something that is not */
 	/* thiry "next" bb (the entry BB cannot contain the branch) */
@@ -10215,6 +10183,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	
 	/* Check that there is a target BB, and that bb is not an empty loop (Bug 75061) */
 	if ((target_bb != NULL) && (target_bb != bb)) {
+		MonoInst *last_ins;
 		int i;
 
 		if (cfg->verbose_level > 1) {
@@ -10231,12 +10200,14 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		
 		mono_unlink_bblock (cfg, bb, target_bb);
 		
+		last_ins = mono_inst_list_last (&previous_bb->ins_list);
+
 		if ((previous_bb != cfg->bb_entry) &&
 				(previous_bb->region == bb->region) &&
-				((previous_bb->last_ins == NULL) ||
-				((previous_bb->last_ins->opcode != OP_BR) &&
-				(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
-				(previous_bb->last_ins->opcode != OP_SWITCH)))) {
+				((last_ins == NULL) ||
+				((last_ins->opcode != OP_BR) &&
+				(!(MONO_IS_COND_BRANCH_OP (last_ins))) &&
+				(last_ins->opcode != OP_SWITCH)))) {
 			for (i = 0; i < previous_bb->out_count; i++) {
 				if (previous_bb->out_bb [i] == target_bb) {
 					MonoInst *jump;
@@ -10261,25 +10232,21 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 static void
 merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn) 
 {
+	MonoInst *last_ins;
+
 	bb->out_count = bbn->out_count;
 	bb->out_bb = bbn->out_bb;
 
 	replace_basic_block (bb, bbn, bb);
 
-	/* Nullify branch at the end of bb */
-	if (bb->last_ins && MONO_IS_BRANCH_OP (bb->last_ins)) {
-		bb->last_ins->opcode = OP_NOP;
-	}		
+	last_ins = mono_inst_list_last (&bb->ins_list);
 
-	if (bb->last_ins) {
-		if (bbn->code) {
-			bb->last_ins->next = bbn->code;
-			bb->last_ins = bbn->last_ins;
-		}
-	} else {
-		bb->code = bbn->code;
-		bb->last_ins = bbn->last_ins;
-	}
+	/* Nullify branch at the end of bb */
+	if (last_ins && MONO_IS_BRANCH_OP (last_ins))
+		last_ins->opcode = OP_NOP;
+
+	MONO_INST_LIST_SPLICE_TAIL_INIT (&bbn->ins_list, &bb->ins_list);
+
 	bb->next_bb = bbn->next_bb;
 	nullify_basic_block (bbn);
 }
@@ -10288,6 +10255,7 @@ static void
 move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoBasicBlock *bbn, *next;
+	MonoInst *last_ins;
 
 	next = bb->next_bb;
 
@@ -10304,8 +10272,10 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 	bbn->next_bb = bb;
 	bb->next_bb = NULL;
 
+	last_ins = mono_inst_list_last (&bb->ins_list);
+
 	/* Add a branch */
-	if (next && (!bb->last_ins || (bb->last_ins->opcode != OP_NOT_REACHED))) {
+	if (next && (!last_ins || (last_ins->opcode != OP_NOT_REACHED))) {
 		MonoInst *ins;
 
 		MONO_INST_NEW (cfg, ins, OP_BR);
@@ -10387,20 +10357,20 @@ tree_is_unsigned (MonoInst* ins) {
  * Note that this can't be applied if the second arg is not positive...
  */
 static int
-try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb)
+try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *bb_last)
 {
 	MonoBasicBlock *truet, *falset;
-	MonoInst *cmp_inst = bb->last_ins->inst_left;
+	MonoInst *cmp_inst = bb_last->inst_left;
 	MonoInst *condb;
 	if (!cmp_inst->inst_right->inst_c0 == 0)
 		return FALSE;
-	truet = bb->last_ins->inst_true_bb;
-	falset = bb->last_ins->inst_false_bb;
+	truet = bb_last->inst_true_bb;
+	falset = bb_last->inst_false_bb;
 	if (falset->in_count != 1)
 		return FALSE;
-	condb = falset->last_ins;
+	condb = mono_inst_list_last (&falset->ins_list);
 	/* target bb must have one instruction */
-	if (!condb || (condb != falset->code))
+	if (!condb || (condb->node.next != &falset->ins_list))
 		return FALSE;
 	if ((((condb->opcode == CEE_BLE || condb->opcode == CEE_BLT) && (condb->inst_false_bb == truet))
 			|| ((condb->opcode == CEE_BGE || condb->opcode == CEE_BGT) && (condb->inst_true_bb == truet)))
@@ -10409,8 +10379,8 @@ try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb)
 			return FALSE;
 		condb->opcode = get_unsigned_condbranch (condb->opcode);
 		/* change the original condbranch to just point to the new unsigned check */
-		bb->last_ins->opcode = OP_BR;
-		bb->last_ins->inst_target_bb = falset;
+		bb_last->opcode = OP_BR;
+		bb_last->inst_target_bb = falset;
 		replace_out_block (bb, truet, NULL);
 		replace_in_block (truet, bb, NULL);
 		return TRUE;
@@ -10446,6 +10416,7 @@ optimize_branches (MonoCompile *cfg)
 
 		/* we skip the entry block (exit is handled specially instead ) */
 		for (previous_bb = cfg->bb_entry, bb = cfg->bb_entry->next_bb; bb; previous_bb = bb, bb = bb->next_bb) {
+			MonoInst *last_ins;
 
 			/* dont touch code inside exception clauses */
 			if (bb->region != -1)
@@ -10469,20 +10440,21 @@ optimize_branches (MonoCompile *cfg)
 				changed = TRUE;
 			}
 
+			last_ins = mono_inst_list_last (&bb->ins_list);
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
 				/* conditional branches where true and false targets are the same can be also replaced with OP_BR */
-				if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
+				if (last_ins && MONO_IS_COND_BRANCH_OP (last_ins)) {
 					MonoInst *pop;
 					MONO_INST_NEW (cfg, pop, CEE_POP);
-					pop->inst_left = bb->last_ins->inst_left->inst_left;
+					pop->inst_left = last_ins->inst_left->inst_left;
 					mono_add_ins_to_end (bb, pop);
 					MONO_INST_NEW (cfg, pop, CEE_POP);
-					pop->inst_left = bb->last_ins->inst_left->inst_right;
+					pop->inst_left = last_ins->inst_left->inst_right;
 					mono_add_ins_to_end (bb, pop);
-					bb->last_ins->opcode = OP_BR;
-					bb->last_ins->inst_target_bb = bb->last_ins->inst_true_bb;
+					last_ins->opcode = OP_BR;
+					last_ins->inst_target_bb = last_ins->inst_true_bb;
 					changed = TRUE;
 					if (cfg->verbose_level > 2)
 						g_print ("cond branch removal triggered in %d %d\n", bb->block_num, bb->out_count);
@@ -10492,8 +10464,8 @@ optimize_branches (MonoCompile *cfg)
 					/* the block are in sequence anyway ... */
 
 					/* branches to the following block can be removed */
-					if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
-						bb->last_ins->opcode = OP_NOP;
+					if (last_ins && last_ins->opcode == OP_BR) {
+						last_ins->opcode = OP_NOP;
 						changed = TRUE;
 						if (cfg->verbose_level > 2)
 							g_print ("br removal triggered %d -> %d\n", bb->block_num, bbn->block_num);
@@ -10530,84 +10502,91 @@ optimize_branches (MonoCompile *cfg)
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
-				if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
-					bbn = bb->last_ins->inst_target_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-					    bbn->code->inst_target_bb->region == bb->region) {
-						
+				if (last_ins && last_ins->opcode == OP_BR) {
+					MonoInst *bbn_code;
+
+					bbn = last_ins->inst_target_bb;
+					bbn_code = mono_inst_list_first (&bbn->ins_list);
+					if (bb->region == bbn->region && bbn_code &&
+							bbn_code->opcode == OP_BR &&
+							bbn_code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
 							g_print ("in %s branch to branch triggered %d -> %d -> %d\n", cfg->method->name, 
-								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num);
+								 bb->block_num, bbn->block_num, bbn_code->inst_target_bb->block_num);
 
 						replace_in_block (bbn, bb, NULL);
-						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
-						link_bblock (cfg, bb, bbn->code->inst_target_bb);
-						bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
+						replace_out_block (bb, bbn, bbn_code->inst_target_bb);
+						link_bblock (cfg, bb, bbn_code->inst_target_bb);
+						last_ins->inst_target_bb = bbn_code->inst_target_bb;
 						changed = TRUE;
 						continue;
 					}
 				}
 			} else if (bb->out_count == 2) {
-				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
-					int branch_result = mono_eval_cond_branch (bb->last_ins);
+				if (last_ins && MONO_IS_COND_BRANCH_NOFP (last_ins)) {
+					int branch_result = mono_eval_cond_branch (last_ins);
 					MonoBasicBlock *taken_branch_target = NULL, *untaken_branch_target = NULL;
+					MonoInst *bbn_code;
+
 					if (branch_result == BRANCH_TAKEN) {
-						taken_branch_target = bb->last_ins->inst_true_bb;
-						untaken_branch_target = bb->last_ins->inst_false_bb;
+						taken_branch_target = last_ins->inst_true_bb;
+						untaken_branch_target = last_ins->inst_false_bb;
 					} else if (branch_result == BRANCH_NOT_TAKEN) {
-						taken_branch_target = bb->last_ins->inst_false_bb;
-						untaken_branch_target = bb->last_ins->inst_true_bb;
+						taken_branch_target = last_ins->inst_false_bb;
+						untaken_branch_target = last_ins->inst_true_bb;
 					}
 					if (taken_branch_target) {
 						/* if mono_eval_cond_branch () is ever taken to handle 
 						 * non-constant values to compare, issue a pop here.
 						 */
-						bb->last_ins->opcode = OP_BR;
-						bb->last_ins->inst_target_bb = taken_branch_target;
+						last_ins->opcode = OP_BR;
+						last_ins->inst_target_bb = taken_branch_target;
 						mono_unlink_bblock (cfg, bb, untaken_branch_target);
 						changed = TRUE;
 						continue;
 					}
-					bbn = bb->last_ins->inst_true_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-					    bbn->code->inst_target_bb->region == bb->region) {
+					bbn = last_ins->inst_true_bb;
+					bbn_code = mono_inst_list_first (&bbn->ins_list);
+					if (bb->region == bbn->region && bbn_code && bbn_code->opcode == OP_BR &&
+							bbn_code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)		
 							g_print ("cbranch1 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
-								 bbn->code->opcode);
+								 bb->block_num, bbn->block_num, bbn_code->inst_target_bb->block_num, 
+								 bbn_code->opcode);
 
 						/* 
 						 * Unlink, then relink bblocks to avoid various
 						 * tricky situations when the two targets of the branch
 						 * are equal, or will become equal after the change.
 						 */
-						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
-						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
+						mono_unlink_bblock (cfg, bb, last_ins->inst_true_bb);
+						mono_unlink_bblock (cfg, bb, last_ins->inst_false_bb);
 
-						bb->last_ins->inst_true_bb = bbn->code->inst_target_bb;
+						last_ins->inst_true_bb = bbn_code->inst_target_bb;
 
-						link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
-						link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
+						link_bblock (cfg, bb, last_ins->inst_true_bb);
+						link_bblock (cfg, bb, last_ins->inst_false_bb);
 
 						changed = TRUE;
 						continue;
 					}
 
-					bbn = bb->last_ins->inst_false_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-					    bbn->code->inst_target_bb->region == bb->region) {
+					bbn = last_ins->inst_false_bb;
+					bbn_code = mono_inst_list_first (&bbn->ins_list);
+					if (bb->region == bbn->region && bbn_code && bbn_code->opcode == OP_BR &&
+							bbn_code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
 							g_print ("cbranch2 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
-								 bbn->code->opcode);
+								 bb->block_num, bbn->block_num, bbn_code->inst_target_bb->block_num, 
+								 bbn_code->opcode);
 
-						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
-						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
+						mono_unlink_bblock (cfg, bb, last_ins->inst_true_bb);
+						mono_unlink_bblock (cfg, bb, last_ins->inst_false_bb);
 
-						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
+						last_ins->inst_false_bb = bbn_code->inst_target_bb;
 
-						link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
-						link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
+						link_bblock (cfg, bb, last_ins->inst_true_bb);
+						link_bblock (cfg, bb, last_ins->inst_false_bb);
 
 						changed = TRUE;
 						continue;
@@ -10615,23 +10594,23 @@ optimize_branches (MonoCompile *cfg)
 				}
 
 				/* detect and optimize to unsigned compares checks like: if (v < 0 || v > limit */
-				if (bb->last_ins && bb->last_ins->opcode == CEE_BLT && bb->last_ins->inst_left->inst_right->opcode == OP_ICONST) {
-					if (try_unsigned_compare (cfg, bb)) {
-						/*g_print ("applied in bb %d (->%d) %s\n", bb->block_num, bb->last_ins->inst_target_bb->block_num, mono_method_full_name (cfg->method, TRUE));*/
+				if (last_ins && last_ins->opcode == CEE_BLT && last_ins->inst_left->inst_right->opcode == OP_ICONST) {
+					if (try_unsigned_compare (cfg, bb, last_ins)) {
+						/*g_print ("applied in bb %d (->%d) %s\n", bb->block_num, last_ins->inst_target_bb->block_num, mono_method_full_name (cfg->method, TRUE));*/
 						changed = TRUE;
 						continue;
 					}
 				}
 
-				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
-					if (bb->last_ins->inst_false_bb->out_of_line && (bb->region == bb->last_ins->inst_false_bb->region)) {
+				if (last_ins && MONO_IS_COND_BRANCH_NOFP (last_ins)) {
+					if (last_ins->inst_false_bb->out_of_line && (bb->region == last_ins->inst_false_bb->region)) {
 						/* Reverse the branch */
-						bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
-						bbn = bb->last_ins->inst_false_bb;
-						bb->last_ins->inst_false_bb = bb->last_ins->inst_true_bb;
-						bb->last_ins->inst_true_bb = bbn;
+						last_ins->opcode = reverse_branch_op (last_ins->opcode);
+						bbn = last_ins->inst_false_bb;
+						last_ins->inst_false_bb = last_ins->inst_true_bb;
+						last_ins->inst_true_bb = bbn;
 
-						move_basic_block_to_end (cfg, bb->last_ins->inst_true_bb);
+						move_basic_block_to_end (cfg, last_ins->inst_true_bb);
 						if (cfg->verbose_level > 2)
 							g_print ("cbranch to throw block triggered %d.\n", 
 									 bb->block_num);
@@ -10696,20 +10675,16 @@ mono_print_code (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *tree = bb->code;	
+		MonoInst *tree;
 
-		if (!tree)
-			continue;
-		
-		g_print ("CODE BLOCK %d (nesting %d):\n", bb->block_num, bb->nesting);
+		if (!MONO_INST_LIST_EMPTY (&bb->ins_list))
+			g_print ("CODE BLOCK %d (nesting %d):\n",
+				 bb->block_num, bb->nesting);
 
-		for (; tree; tree = tree->next) {
+		MONO_INST_LIST_FOR_EACH_ENTRY (tree, &bb->ins_list, node) {
 			mono_print_tree (tree);
 			g_print ("\n");
 		}
-
-		if (bb->last_ins)
-			bb->last_ins->next = NULL;
 	}
 }
 
@@ -10791,22 +10766,24 @@ mini_select_instructions (MonoCompile *cfg)
 	cfg->rs = mono_regstate_new ();
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins) &&
-		    bb->next_bb != bb->last_ins->inst_false_bb) {
+		MonoInst *last_ins = mono_inst_list_last (&bb->ins_list);
+
+		if (last_ins && MONO_IS_COND_BRANCH_OP (last_ins) &&
+				bb->next_bb != last_ins->inst_false_bb) {
 
 			/* we are careful when inverting, since bugs like #59580
 			 * could show up when dealing with NaNs.
 			 */
-			if (MONO_IS_COND_BRANCH_NOFP(bb->last_ins) && bb->next_bb == bb->last_ins->inst_true_bb) {
-				MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
-				bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
-				bb->last_ins->inst_false_bb = tmp;
+			if (MONO_IS_COND_BRANCH_NOFP(last_ins) && bb->next_bb == last_ins->inst_true_bb) {
+				MonoBasicBlock *tmp =  last_ins->inst_true_bb;
+				last_ins->inst_true_bb = last_ins->inst_false_bb;
+				last_ins->inst_false_bb = tmp;
 
-				bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
+				last_ins->opcode = reverse_branch_op (last_ins->opcode);
 			} else {			
 				MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
 				inst->opcode = OP_BR;
-				inst->inst_target_bb = bb->last_ins->inst_false_bb;
+				inst->inst_target_bb = last_ins->inst_false_bb;
 				mono_bblock_add_inst (bb, inst);
 			}
 		}
@@ -10815,11 +10792,10 @@ mini_select_instructions (MonoCompile *cfg)
 #ifdef DEBUG_SELECTION
 	if (cfg->verbose_level >= 4) {
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *tree = bb->code;	
+		MonoInst *tree;	
 		g_print ("DUMP BLOCK %d:\n", bb->block_num);
-		if (!tree)
-			continue;
-		for (; tree; tree = tree->next) {
+
+		MONO_INST_LIST_FOR_EACH_ENTRY (tree, &bb->ins_list, node) {
 			mono_print_tree (tree);
 			g_print ("\n");
 		}
@@ -10828,13 +10804,14 @@ mini_select_instructions (MonoCompile *cfg)
 #endif
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *tree = bb->code, *next;	
+		MonoInst *tree, *n;	
+		MonoInstList head;
 		MBState *mbstate;
 
-		if (!tree)
+		MONO_INST_LIST_INIT (&head);
+		if (MONO_INST_LIST_EMPTY (&bb->ins_list))
 			continue;
-		bb->code = NULL;
-		bb->last_ins = NULL;
+		MONO_INST_LIST_SPLICE_INIT (&bb->ins_list, &head);
 		
 		cfg->cbb = bb;
 		mono_regstate_reset (cfg->rs);
@@ -10843,8 +10820,7 @@ mini_select_instructions (MonoCompile *cfg)
 		if (cfg->verbose_level >= 3)
 			g_print ("LABEL BLOCK %d:\n", bb->block_num);
 #endif
-		for (; tree; tree = next) {
-			next = tree->next;
+		MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (tree, n, &head, node) {
 #ifdef DEBUG_SELECTION
 			if (cfg->verbose_level >= 3) {
 				mono_print_tree (tree);
@@ -10861,9 +10837,6 @@ mini_select_instructions (MonoCompile *cfg)
 			emit_state (cfg, mbstate, MB_NTERM_stmt);
 		}
 		bb->max_vreg = cfg->rs->next_vreg;
-
-		if (bb->last_ins)
-			bb->last_ins->next = NULL;
 
 		mono_mempool_empty (cfg->state_pool); 
 	}
@@ -11057,6 +11030,7 @@ remove_critical_edges (MonoCompile *cfg) {
 	
 	if (cfg->verbose_level > 3) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			MonoInst *last_ins;
 			int i;
 			printf ("remove_critical_edges %s, BEFORE BB%d (in:", mono_method_full_name (cfg->method, TRUE), bb->block_num);
 			for (i = 0; i < bb->in_count; i++) {
@@ -11067,9 +11041,10 @@ remove_critical_edges (MonoCompile *cfg) {
 				printf (" %d", bb->out_bb [i]->block_num);
 			}
 			printf (")");
-			if (bb->last_ins != NULL) {
+			last_ins = mono_inst_list_last (&bb->ins_list);
+			if (last_ins) {
 				printf (" ");
-				mono_print_tree (bb->last_ins);
+				mono_print_tree (last_ins);
 			}
 			printf ("\n");
 		}
@@ -11082,6 +11057,7 @@ remove_critical_edges (MonoCompile *cfg) {
 				MonoBasicBlock *in_bb = bb->in_bb [in_bb_index];
 				if (in_bb->out_count > 1) {
 					MonoBasicBlock *new_bb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+					MONO_INST_LIST_INIT (&new_bb->ins_list);
 					new_bb->block_num = cfg->num_bblocks++;
 //					new_bb->real_offset = bb->real_offset;
 					new_bb->region = bb->region;
@@ -11089,12 +11065,14 @@ remove_critical_edges (MonoCompile *cfg) {
 					/* Do not alter the CFG while altering the BB list */
 					if (previous_bb->region == bb->region) {
 						if (previous_bb != cfg->bb_entry) {
+							MonoInst *last_ins;
 							/* If previous_bb "followed through" to bb, */
 							/* keep it linked with a OP_BR */
-							if ((previous_bb->last_ins == NULL) ||
-									((previous_bb->last_ins->opcode != OP_BR) &&
-									(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
-									(previous_bb->last_ins->opcode != OP_SWITCH))) {
+							last_ins = mono_inst_list_last (&previous_bb->ins_list);
+							if ((last_ins == NULL) ||
+									((last_ins->opcode != OP_BR) &&
+									(!(MONO_IS_COND_BRANCH_OP (last_ins))) &&
+									(last_ins->opcode != OP_SWITCH))) {
 								int i;
 								/* Make sure previous_bb really falls through bb */
 								for (i = 0; i < previous_bb->out_count; i++) {
@@ -11113,6 +11091,7 @@ remove_critical_edges (MonoCompile *cfg) {
 							/* put a new BB in the middle to hold the OP_BR */
 							MonoInst *jump;
 							MonoBasicBlock *new_bb_after_entry = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+							MONO_INST_LIST_INIT (&new_bb_after_entry->ins_list);
 							new_bb_after_entry->block_num = cfg->num_bblocks++;
 //							new_bb_after_entry->real_offset = bb->real_offset;
 							new_bb_after_entry->region = bb->region;
@@ -11159,6 +11138,7 @@ remove_critical_edges (MonoCompile *cfg) {
 	
 	if (cfg->verbose_level > 3) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			MonoInst *last_ins;
 			int i;
 			printf ("remove_critical_edges %s, AFTER BB%d (in:", mono_method_full_name (cfg->method, TRUE), bb->block_num);
 			for (i = 0; i < bb->in_count; i++) {
@@ -11169,9 +11149,10 @@ remove_critical_edges (MonoCompile *cfg) {
 				printf (" %d", bb->out_bb [i]->block_num);
 			}
 			printf (")");
-			if (bb->last_ins != NULL) {
+			last_ins = mono_inst_list_last (&bb->ins_list);
+			if (last_ins) {
 				printf (" ");
-				mono_print_tree (bb->last_ins);
+				mono_print_tree (last_ins);
 			}
 			printf ("\n");
 		}

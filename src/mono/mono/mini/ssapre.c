@@ -273,9 +273,8 @@ static void dump_code (MonoSsapreWorkArea *area) {
 		MonoInst *current_inst;
 		
 		print_bb_info (current_bb, TRUE);
-		for (current_inst = current_bb->bb->code; current_inst != NULL; current_inst = current_inst->next) {
+		MONO_INST_LIST_FOR_EACH_ENTRY (current_inst, &current_bb->bb->ins_list, node)
 			mono_print_tree_nl (current_inst);
-		}
 	}
 }
 
@@ -827,9 +826,8 @@ process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *uppe
 	
 	bb_info->phi_insertion_point = NULL;
 	
-	current_inst = bb->code;
 	previous_inst = NULL;
-	while (current_inst != NULL) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (current_inst, &bb->ins_list, node) {
 		/* Ugly hack to fix missing variable definitions */
 		/* (the SSA construction code should have done it already!) */
 		switch (current_inst->opcode) {
@@ -868,7 +866,6 @@ process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *uppe
 		}
 		
 		previous_inst = current_inst;
-		current_inst = current_inst->next;
 	}
 	
 	if (current_depth > area->dt_depth) {
@@ -1908,11 +1905,11 @@ static void code_motion (MonoSsapreWorkArea *area) {
 			}
 			store = mono_compile_create_var_store (area->cfg, current_bb->phi_variable_index, phi);
 			if (current_bb->phi_insertion_point != NULL) {
-				store->next = current_bb->phi_insertion_point->next;
-				current_bb->phi_insertion_point->next = store;
+				MONO_INST_LIST_ADD (&store->node,
+					&current_bb->phi_insertion_point->node);
 			} else {
-				store->next = current_bb->bb->code;
-				current_bb->bb->code = store;
+				MONO_INST_LIST_ADD (&store->node,
+					&current_bb->bb->ins_list);
 			}
 			area->cfg->vars [current_bb->phi_variable_index]->def = store;
 			current_bb->phi_insertion_point = store;
@@ -1928,11 +1925,11 @@ static void code_motion (MonoSsapreWorkArea *area) {
 	 			*moved_expression = *(current_expression->occurrence);
 	 			store = mono_compile_create_var_store (area->cfg, current_expression->variable_index, moved_expression);
 	 			if (current_expression->previous_tree != NULL) {
-		 			store->next = current_expression->previous_tree->next;
-		 			current_expression->previous_tree->next = store;
+		 			MONO_INST_LIST_ADD (&store->node,
+						&current_expression->previous_tree->node);
 	 			} else {
-		 			store->next = current_bb->bb->code;
-		 			current_bb->bb->code = store;
+					MONO_INST_LIST_ADD (&store->node,
+						&current_bb->bb->ins_list);
 	 			}
 				area->cfg->vars [current_expression->variable_index]->def = store;
 	 			mono_compile_make_var_load (area->cfg, current_expression->occurrence, current_expression->variable_index);
@@ -1984,7 +1981,7 @@ static void code_motion (MonoSsapreWorkArea *area) {
 	 		inserted_expression = create_expression (area, &expression_description, &prototype_occurrence);
 	 		store = mono_compile_create_var_store (area->cfg, current_bb->phi_argument_variable_index, inserted_expression);
 			area->cfg->vars [current_bb->phi_argument_variable_index]->def = store;
-	 		store->next = NULL;
+			MONO_INST_LIST_INIT (&store->node);
 	 		mono_add_ins_to_end (current_bb->bb, store);
 	 		
 	 		area->inserted_occurrences ++;

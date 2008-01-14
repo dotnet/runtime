@@ -1049,9 +1049,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	sig_arg->inst_p0 = tmp_sig;
 	arg->inst_left = sig_arg;
 	arg->type = STACK_PTR;
-	/* prepend, so they get reversed */
-	arg->next = call->out_args;
-	call->out_args = arg;
+	MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
 }
 
 /* 
@@ -1091,9 +1089,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->cil_code = in->cil_code;
 			arg->inst_left = in;
 			arg->type = in->type;
-			/* prepend, we'll need to reverse them later */
-			arg->next = call->out_args;
-			call->out_args = arg;
+			MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
 
 			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
 				MonoInst *inst;
@@ -1203,19 +1199,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 		emit_sig_cookie (cfg, call, cinfo);
 	}
 
-	/*
-	 * Reverse the call->out_args list.
-	 */
-	{
-		MonoInst *prev = NULL, *list = call->out_args, *next;
-		while (list) {
-			next = list->next;
-			list->next = prev;
-			prev = list;
-			list = next;
-		}
-		call->out_args = prev;
-	}
 	call->stack_usage = cinfo->stack_usage + extra_space;
 	call->out_ireg_args = NULL;
 	call->out_freg_args = NULL;
@@ -1503,10 +1486,10 @@ emit_call (MonoCompile *cfg, guint32 *code, guint32 patch_type, gconstpointer da
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *last_ins = NULL;
-	ins = bb->code;
+	MonoInst *ins, *n;
 
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
+		MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
 
 		switch (ins->opcode) {
 		case OP_MUL_IMM: 
@@ -1515,8 +1498,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->dreg != ins->sreg1) {
 					ins->opcode = OP_MOVE;
 				} else {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				}
 			}
@@ -1533,8 +1515,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			    ins->inst_basereg == last_ins->inst_destbasereg &&
 			    ins->inst_offset == last_ins->inst_offset) {
 				if (ins->dreg == last_ins->sreg1) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
@@ -1557,8 +1538,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			      ins->inst_offset == last_ins->inst_offset) {
 
 				if (ins->dreg == last_ins->dreg) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					ins->opcode = OP_MOVE;
@@ -1592,8 +1572,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
 				if (ins->dreg == last_ins->sreg1) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
@@ -1607,8 +1586,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
 				if (ins->dreg == last_ins->sreg1) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
@@ -1632,8 +1610,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (sparcv9) {
 					last_ins->opcode = OP_STOREI8_MEMBASE_IMM;
 					last_ins->inst_offset = ins->inst_offset;
-					last_ins->next = ins->next;				
-					ins = ins->next;
+					MONO_DEL_INS (ins);
 					continue;
 				}
 			}
@@ -1662,7 +1639,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (v64 && (mono_method_get_header (cfg->method)->code_size < 10000) && last_ins && 
 				(last_ins->opcode == OP_COMPARE_IMM) &&
 				(last_ins->inst_imm == 0)) {
-				MonoInst *next = ins->next;
 				switch (ins->opcode) {
 				case CEE_BEQ:
 					ins->opcode = OP_SPARC_BRZ;
@@ -1703,10 +1679,17 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				default:
 					g_assert_not_reached ();
 				}
-				ins->sreg1 = last_ins->sreg1;
-				*last_ins = *ins;
-				last_ins->next = next;
-				ins = next;
+				last_ins->data = ins->data;
+				last_ins->opcode = ins->opcode;
+				last_ins->type = ins->type;
+				last_ins->ssa_op = ins->ssa_op;
+				last_ins->flags = ins->flags;
+				last_ins->dreg = ins->dreg;
+				last_ins->sreg2 = ins->sreg2;
+				last_ins->backend = ins->backend;
+				last_ins->klass = ins->klass;
+				last_ins->cil_code = ins->cil_code;
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			break;
@@ -1717,9 +1700,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * OP_MOVE reg, reg 
 			 */
 			if (ins->dreg == ins->sreg1) {
-				if (last_ins)
-					last_ins->next = ins->next;				
-				ins = ins->next;
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			/* 
@@ -1729,16 +1710,12 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && last_ins->opcode == OP_MOVE &&
 			    ins->sreg1 == last_ins->dreg &&
 			    ins->dreg == last_ins->sreg1) {
-				last_ins->next = ins->next;				
-				ins = ins->next;				
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			break;
 		}
-		last_ins = ins;
-		ins = ins->next;
 	}
-	bb->last_ins = last_ins;
 }
 
 static int
@@ -2382,7 +2359,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoCallInst *call;
 	guint offset;
 	guint32 *code = (guint32*)(cfg->native_code + cfg->code_len);
-	MonoInst *last_ins = NULL;
 	int max_len, cpos;
 	const char *spec;
 
@@ -2398,8 +2374,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		NOT_IMPLEMENTED;
 	}
 
-	ins = bb->code;
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
 		guint8* code_start;
 
 		offset = (guint8*)code - cfg->native_code;
@@ -3156,8 +3131,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = (guint8*)code - cfg->native_code;
 			break;
 		case OP_BR:
-			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
-			if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
+			if ((ins->inst_target_bb == bb->next_bb) &&
+			    ins->node.next == &bb->ins_list)
 				break;
 			if (ins->flags & MONO_INST_BRLABEL) {
 				if (ins->inst_i0->inst_c0) {
@@ -3661,10 +3636,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	       
 		cpos += max_len;
-
-		last_ins = ins;
-		
-		ins = ins->next;
 	}
 
 	cfg->code_len = (guint8*)code - cfg->native_code;

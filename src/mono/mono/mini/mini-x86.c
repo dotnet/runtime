@@ -949,9 +949,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call)
 
 	arg->inst_left = sig_arg;
 	arg->type = STACK_PTR;
-	/* prepend, so they get reversed */
-	arg->next = call->out_args;
-	call->out_args = arg;
+	MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 }
 
 /*
@@ -1029,9 +1027,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->cil_code = in->cil_code;
 			arg->inst_left = in;
 			arg->type = in->type;
-			/* prepend, so they get reversed */
-			arg->next = call->out_args;
-			call->out_args = arg;
+			MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 
 			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(t))) {
 				guint32 size, align;
@@ -1111,14 +1107,12 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			zero_inst->inst_p0 = 0;
 			arg->inst_left = zero_inst;
 			arg->type = STACK_PTR;
-			/* prepend, so they get reversed */
-			arg->next = call->out_args;
-			call->out_args = arg;
-		}
-		else
+			MONO_INST_LIST_ADD (&arg->node, &call->out_args);
+		} else {
 			/* if the function returns a struct, the called method already does a ret $0x4 */
 			if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret))
 				cinfo->stack_usage -= 4;
+		}
 	}
 	
 	call->stack_usage = cinfo->stack_usage;
@@ -1127,8 +1121,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	if (cinfo->need_stack_align) {
 		MONO_INST_NEW (cfg, arg, OP_X86_OUTARG_ALIGN_STACK);
 		arg->inst_c0 = cinfo->stack_align_amount;
-		arg->next = call->out_args;
-		call->out_args = arg;
+		MONO_INST_LIST_ADD (&arg->node, &call->out_args);
         }
 #endif 
 
@@ -1349,10 +1342,10 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 static void
 peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *last_ins = NULL;
-	ins = bb->code;
+	MonoInst *ins, *n;
 
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
+		MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
 		switch (ins->opcode) {
 		case OP_IADD_IMM:
 		case OP_ADD_IMM:
@@ -1422,8 +1415,7 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			    ins->inst_basereg == last_ins->inst_destbasereg &&
 			    ins->inst_offset == last_ins->inst_offset) {
 				if (ins->dreg == last_ins->sreg1) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
@@ -1448,8 +1440,7 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			      ins->inst_offset == last_ins->inst_offset) {
 
 				if (ins->dreg == last_ins->dreg) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					ins->opcode = OP_MOVE;
@@ -1520,9 +1511,7 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * OP_MOVE reg, reg 
 			 */
 			if (ins->dreg == ins->sreg1) {
-				if (last_ins)
-					last_ins->next = ins->next;				
-				ins = ins->next;
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			/* 
@@ -1534,8 +1523,7 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && last_ins->opcode == OP_MOVE &&
 			    ins->sreg1 == last_ins->dreg &&
 			    ins->dreg == last_ins->sreg1) {
-				last_ins->next = ins->next;				
-				ins = ins->next;				
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			break;
@@ -1550,25 +1538,26 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		last_ins = ins;
-		ins = ins->next;
 	}
-	bb->last_ins = last_ins;
 }
 
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *last_ins = NULL;
-	ins = bb->code;
+	MonoInst *ins, *n;
 
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
+		MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
 
 		switch (ins->opcode) {
-		case OP_ICONST:
+		case OP_ICONST: {
+			MonoInst *next;
+
 			/* reg = 0 -> XOR (reg, reg) */
 			/* XOR sets cflags on x86, so we cant do it always */
-			if (ins->inst_c0 == 0 && (!ins->next || (ins->next && INST_IGNORES_CFLAGS (ins->next->opcode)))) {
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
+			if (ins->inst_c0 == 0 && (!next ||
+					(next && INST_IGNORES_CFLAGS (next->opcode)))) {
 				MonoInst *ins2;
 
 				ins->opcode = OP_IXOR;
@@ -1579,23 +1568,22 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * Convert succeeding STORE_MEMBASE_IMM 0 ins to STORE_MEMBASE_REG 
 				 * since it takes 3 bytes instead of 7.
 				 */
-				for (ins2 = ins->next; ins2; ins2 = ins2->next) {
+				for (ins2 = mono_inst_list_next (&ins->node, &bb->ins_list); ins2;
+						ins2 = mono_inst_list_next (&ins2->node, &bb->ins_list)) {
 					if ((ins2->opcode == OP_STORE_MEMBASE_IMM) && (ins2->inst_imm == 0)) {
 						ins2->opcode = OP_STORE_MEMBASE_REG;
 						ins2->sreg1 = ins->dreg;
-					}
-					else if ((ins2->opcode == OP_STOREI4_MEMBASE_IMM) && (ins2->inst_imm == 0)) {
+					} else if ((ins2->opcode == OP_STOREI4_MEMBASE_IMM) && (ins2->inst_imm == 0)) {
 						ins2->opcode = OP_STOREI4_MEMBASE_REG;
 						ins2->sreg1 = ins->dreg;
-					}
-					else if ((ins2->opcode == OP_STOREI1_MEMBASE_IMM) || (ins2->opcode == OP_STOREI2_MEMBASE_IMM)) {
+					} else if ((ins2->opcode == OP_STOREI1_MEMBASE_IMM) || (ins2->opcode == OP_STOREI2_MEMBASE_IMM)) {
 						/* Continue iteration */
-					}
-					else
+					} else
 						break;
 				}
 			}
 			break;
+		}
 		case OP_IADD_IMM:
 		case OP_ADD_IMM:
 			if ((ins->inst_imm == 1) && (ins->dreg == ins->sreg1))
@@ -1644,8 +1632,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			    ins->inst_basereg == last_ins->inst_destbasereg &&
 			    ins->inst_offset == last_ins->inst_offset) {
 				if (ins->dreg == last_ins->sreg1) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
@@ -1670,8 +1657,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			      ins->inst_offset == last_ins->inst_offset) {
 
 				if (ins->dreg == last_ins->dreg) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					ins->opcode = OP_MOVE;
@@ -1742,9 +1728,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * OP_MOVE reg, reg 
 			 */
 			if (ins->dreg == ins->sreg1) {
-				if (last_ins)
-					last_ins->next = ins->next;				
-				ins = ins->next;
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			/* 
@@ -1756,8 +1740,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && last_ins->opcode == OP_MOVE &&
 			    ins->sreg1 == last_ins->dreg &&
 			    ins->dreg == last_ins->sreg1) {
-				last_ins->next = ins->next;				
-				ins = ins->next;				
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			break;
@@ -1771,10 +1754,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		last_ins = ins;
-		ins = ins->next;
 	}
-	bb->last_ins = last_ins;
 }
 
 static const int 
@@ -2149,8 +2129,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	mono_debug_open_block (cfg, bb, offset);
 
-	ins = bb->code;
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
 		offset = code - cfg->native_code;
 
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
@@ -3589,8 +3568,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	       
 		cpos += max_len;
-
-		ins = ins->next;
 	}
 
 	cfg->code_len = code - cfg->native_code;
@@ -3828,7 +3805,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	max_offset = 0;
 	if (cfg->opt & MONO_OPT_BRANCH) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *ins = bb->code;
+			MonoInst *ins;
 			bb->max_offset = max_offset;
 
 			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
@@ -3837,12 +3814,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if ((cfg->opt & MONO_OPT_LOOP) && bb_is_loop_start (bb))
 				max_offset += LOOP_ALIGNMENT;
 
-			while (ins) {
+			MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
 				if (ins->opcode == OP_LABEL)
 					ins->inst_c1 = max_offset;
 				
 				max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
-				ins = ins->next;
 			}
 		}
 	}

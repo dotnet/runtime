@@ -702,10 +702,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->inst_left = in;
 			arg->inst_call = call;
 			arg->type = in->type;
-
-			/* prepend, we'll need to reverse them later */
-			arg->next = call->out_args;
-			call->out_args = arg;
+			MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
 
 			switch (ainfo->storage) {
 			case ArgInIReg:
@@ -754,19 +751,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 		}
 	}
 
-	/*
-	 * Reverse the call->out_args list.
-	 */
-	{
-		MonoInst *prev = NULL, *list = call->out_args, *next;
-		while (list) {
-			next = list->next;
-			list->next = prev;
-			prev = list;
-			list = next;
-		}
-		call->out_args = prev;
-	}
 	call->stack_usage = cinfo->stack_usage;
 	cfg->param_area = MAX (cfg->param_area, call->stack_usage);
 	cfg->param_area = ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT);
@@ -786,23 +770,10 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	DEBUG_FUNC_EXIT();
 }
 
-static void
-insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *to_insert)
-{
-	if (ins == NULL) {
-		ins = bb->code;
-		bb->code = to_insert;
-		to_insert->next = ins;
-	} else {
-		to_insert->next = ins->next;
-		ins->next = to_insert;
-	}
-}
-
-#define NEW_INS(cfg,dest,op) do {       \
+#define NEW_INS(cfg,ins,dest,op) do {					\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));       \
 		(dest)->opcode = (op);  \
-		insert_after_ins (bb, last_ins, (dest)); \
+		MONO_INST_LIST_ADD_TAIL (&(dest)->node, &(ins)->node); \
 	} while (0)
 
 static int
@@ -881,21 +852,20 @@ map_to_reg_reg_op (int op)
 static void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *next, *temp, *last_ins = NULL;
+	MonoInst *ins, *next, *temp, *temp2;
 	int imm;
 
 	/* setup the virtual reg allocator */
 	if (bb->max_vreg > cfg->rs->next_vreg)
 		cfg->rs->next_vreg = bb->max_vreg;
 
-	ins = bb->code;
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
 loop_start:
 		switch (ins->opcode) {
 		case OP_ADD_IMM:
 		case OP_ADDCC_IMM:
 			if (!hppa_check_bits (ins->inst_imm, 11)) {
-				NEW_INS (cfg, temp, OP_ICONST);
+				NEW_INS (cfg, ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
 				ins->sreg2 = temp->dreg;
@@ -905,7 +875,7 @@ loop_start:
 		case OP_SUB_IMM:
 		case OP_SUBCC_IMM:
 			if (!hppa_check_bits (ins->inst_imm, 11)) {
-				NEW_INS (cfg, temp, OP_ICONST);
+				NEW_INS (cfg, ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
 				ins->sreg2 = temp->dreg;
@@ -931,7 +901,7 @@ loop_start:
 			}
 			else {
 				int tmp = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, temp, OP_ICONST);
+				NEW_INS (cfg, ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_c0;
 				temp->dreg = tmp;
 
@@ -946,35 +916,35 @@ loop_start:
 			int freg1 = mono_regstate_next_float (cfg->rs);
 			int freg2 = mono_regstate_next_float (cfg->rs);
 
-			NEW_INS(cfg, temp, OP_STORE_MEMBASE_REG);
+			NEW_INS(cfg, ins, temp, OP_STORE_MEMBASE_REG);
 			temp->sreg1 = ins->sreg1;
 			temp->inst_destbasereg = hppa_sp;
 			temp->inst_offset = -16;
 
-			NEW_INS(cfg, temp, OP_LOADR4_MEMBASE);
-			temp->dreg = freg1;
-			temp->inst_basereg = hppa_sp;
-			temp->inst_offset = -16;
+			NEW_INS(cfg, temp, temp2, OP_LOADR4_MEMBASE);
+			temp2->dreg = freg1;
+			temp2->inst_basereg = hppa_sp;
+			temp2->inst_offset = -16;
 
-			NEW_INS(cfg, temp, OP_STORE_MEMBASE_REG);
+			NEW_INS(cfg, temp2, temp, OP_STORE_MEMBASE_REG);
 			temp->sreg1 = ins->sreg2;
 			temp->inst_destbasereg = hppa_sp;
 			temp->inst_offset = -16;
 
-			NEW_INS(cfg, temp, OP_LOADR4_MEMBASE);
-			temp->dreg = freg2;
-			temp->inst_basereg = hppa_sp;
-			temp->inst_offset = -16;
+			NEW_INS(cfg, temp, temp2, OP_LOADR4_MEMBASE);
+			temp2->dreg = freg2;
+			temp2->inst_basereg = hppa_sp;
+			temp2->inst_offset = -16;
 
-			NEW_INS (cfg, temp, OP_HPPA_XMPYU);
+			NEW_INS (cfg, temp2, temp, OP_HPPA_XMPYU);
 			temp->dreg = freg2;
 			temp->sreg1 = freg1;
 			temp->sreg2 = freg2;
 
-			NEW_INS(cfg, temp, OP_HPPA_STORER4_RIGHT);
-			temp->sreg1 = freg2;
-			temp->inst_destbasereg = hppa_sp;
-			temp->inst_offset = -16;
+			NEW_INS(cfg, temp, temp2, OP_HPPA_STORER4_RIGHT);
+			temp2->sreg1 = freg2;
+			temp2->inst_destbasereg = hppa_sp;
+			temp2->inst_offset = -16;
 
 			ins->opcode = OP_LOAD_MEMBASE;
 			ins->inst_basereg = hppa_sp;
@@ -985,10 +955,7 @@ loop_start:
 		default:
 			break;
 		}
-		last_ins = ins;
-		ins = ins->next;
 	}
-	bb->last_ins = last_ins;
 	bb->max_vreg = cfg->rs->next_vreg;
 	
 }
@@ -997,7 +964,7 @@ void
 mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	DEBUG_FUNC_ENTER();
-	if (!bb->code)
+	if (MONO_INST_LIST_EMPTY (&bb->ins_list))
 		return;
 	mono_arch_lowering_pass (cfg, bb);
 	mono_local_regalloc (cfg, bb);
@@ -1261,7 +1228,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoCallInst *call;
 	guint offset;
 	guint32 *code = (guint32*)(cfg->native_code + cfg->code_len);
-	MonoInst *last_ins = NULL;
 	int max_len, cpos;
 	const char *spec;
 
@@ -1278,8 +1244,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		NOT_IMPLEMENTED;
 	}
 
-	ins = bb->code;
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
 		guint8* code_start;
 
 		offset = (guint8*)code - cfg->native_code;
@@ -1746,7 +1711,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_BR: {
 			guint32 target;
-			DEBUG (printf ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins));
 			if (ins->flags & MONO_INST_BRLABEL) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
 			} else {
@@ -2062,10 +2026,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	       
 		cpos += max_len;
-
-		last_ins = ins;
-		
-		ins = ins->next;
 	}
 
 	cfg->code_len = (guint8*)code - cfg->native_code;
@@ -2337,16 +2297,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	 */
 	max_offset = 0;
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *ins = bb->code;
+		MonoInst *ins;
 		bb->max_offset = max_offset;
 
 		if (cfg->prof_options & MONO_PROFILE_COVERAGE)
 			max_offset += 6; 
 
-		while (ins) {
+		MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node)
 			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
-			ins = ins->next;
-		}
 	}
 
 	DEBUG (printf ("Incoming arguments: \n"));

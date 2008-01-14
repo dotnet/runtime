@@ -802,10 +802,10 @@ mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **
 static void
 mono_local_cprop_bb (MonoCompile *cfg, TreeMover *tree_mover, MonoBasicBlock *bb, MonoInst **acp, int acp_size)
 {
-	MonoInst *tree = bb->code;
+	MonoInst *tree;
 	int i;
 
-	if (!tree)
+	if (MONO_INST_LIST_EMPTY (&bb->ins_list))
 		return;
 
 	if (tree_mover != NULL) {
@@ -814,7 +814,7 @@ mono_local_cprop_bb (MonoCompile *cfg, TreeMover *tree_mover, MonoBasicBlock *bb
 			printf ("Running tree mover on BB%d\n", bb->block_num);
 		}
 	}
-	for (; tree; tree = tree->next) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (tree, &bb->ins_list, node) {
 		if (tree_mover != NULL) {
 			if (MONO_DEBUG_TREE_MOVER) {
 				printf ("Running tree mover on tree ");

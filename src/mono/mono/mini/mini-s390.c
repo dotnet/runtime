@@ -1867,9 +1867,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 			arg->ins.cil_code   = in->cil_code;
 			arg->ins.inst_left  = in;
 			arg->ins.type       = in->type;
-			/* prepend, we'll need to reverse them later */
-			arg->ins.next       = call->out_args;
-			call->out_args      = (MonoInst *) arg;
+			MONO_INST_LIST_ADD_TAIL (&arg->ins.node, &call->out_args);
 			arg->ins.inst_right = (MonoInst *) call;
 			if (ainfo->regtype == RegTypeGeneral) {
 				arg->ins.backend.reg3   = ainfo->reg;
@@ -1932,20 +1930,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 		emit_sig_cookie (cfg, call, cinfo, ainfo->size);
 	}
 
-	/*
-	 * Reverse the call->out_args list.
-	 */
-	{
-		MonoInst *prev = NULL, *list = call->out_args, *next;
-		while (list) {
-			next = list->next;
-			list->next = prev;
-			prev = list;
-			list = next;
-		}
-		call->out_args = prev;
-	}
-
 	g_free (cinfo);
 	return call;
 }
@@ -1993,8 +1977,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call,
 	arg->ins.inst_right  = (MonoInst *) call;
 	arg->size            = argSize;
 	arg->offset          = cinfo->sigCookie.offset;
-	arg->ins.next        = call->out_args;
-	call->out_args       = (MonoInst *) arg;
+	MONO_INST_LIST_ADD_TAIL (&arg->ins.node, &call->out_args);
 }
 
 /*========================= End of Function ========================*/
@@ -2208,11 +2191,10 @@ handle_enum:
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *last_ins = NULL;
-	ins = bb->code;
+	MonoInst *ins, *n;
 
-	while (ins) {
-
+	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
+		MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
 		switch (ins->opcode) {
 		case OP_MUL_IMM: 
 			/* remove unnecessary multiplication with 1 */
@@ -2220,8 +2202,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->dreg != ins->sreg1) {
 					ins->opcode = OP_MOVE;
 				} else {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				}
 			}
@@ -2237,8 +2218,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			    ins->inst_basereg == last_ins->inst_destbasereg &&
 			    ins->inst_offset == last_ins->inst_offset) {
 				if (ins->dreg == last_ins->sreg1) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					ins->opcode = OP_MOVE;
@@ -2260,8 +2240,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			      ins->inst_offset == last_ins->inst_offset) {
 
 				if (ins->dreg == last_ins->dreg) {
-					last_ins->next = ins->next;				
-					ins = ins->next;				
+					MONO_DEL_INS (ins);
 					continue;
 				} else {
 					ins->opcode = OP_MOVE;
@@ -2314,9 +2293,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * OP_MOVE reg, reg 
 			 */
 			if (ins->dreg == ins->sreg1) {
-				if (last_ins)
-					last_ins->next = ins->next;				
-				ins = ins->next;
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			/* 
@@ -2326,16 +2303,12 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && last_ins->opcode == OP_MOVE &&
 			    ins->sreg1 == last_ins->dreg &&
 			    ins->dreg == last_ins->sreg1) {
-				last_ins->next = ins->next;				
-				ins = ins->next;				
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			break;
 		}
-		last_ins = ins;
-		ins = ins->next;
 	}
-	bb->last_ins = last_ins;
 }
 
 /*========================= End of Function ========================*/
@@ -2431,11 +2404,10 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins;
+	MonoInst *ins, *next;
 	MonoCallInst *call;
 	guint offset;
 	guint8 *code = cfg->native_code + cfg->code_len;
-	MonoInst *last_ins = NULL;
 	guint last_offset = 0;
 	int max_len, cpos, src2;
 
@@ -2460,8 +2432,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		//x86_inc_mem (code, &cov->data [bb->dfn].count); 
 	}
 
-	ins = bb->code;
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
 		offset = code - cfg->native_code;
 
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
@@ -2697,28 +2668,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_COMPARE: {
-			if ((ins->next) && 
-			    (((ins->next->opcode >= CEE_BNE_UN) &&
-			      (ins->next->opcode <= CEE_BLT_UN)) || 
-			     ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
-			      (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
-			     ((ins->next->opcode == OP_CLT_UN) ||
-			      (ins->next->opcode == OP_CGT_UN))))
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
+			if ((next) && 
+			    (((next->opcode >= CEE_BNE_UN) &&
+			      (next->opcode <= CEE_BLT_UN)) || 
+			     ((next->opcode >= OP_COND_EXC_NE_UN) &&
+			      (next->opcode <= OP_COND_EXC_LT_UN)) ||
+			     ((next->opcode == OP_CLT_UN) ||
+			      (next->opcode == OP_CGT_UN))))
 				s390_clr  (code, ins->sreg1, ins->sreg2);
 			else
 				s390_cr   (code, ins->sreg1, ins->sreg2);
 		}
 			break;
 		case OP_COMPARE_IMM: {
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lhi  (code, s390_r0, ins->inst_imm);
-				if ((ins->next) && 
-				    (((ins->next->opcode >= CEE_BNE_UN) &&
-				      (ins->next->opcode <= CEE_BLT_UN)) || 
-				     ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
-				      (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
-				     ((ins->next->opcode == OP_CLT_UN) ||
-				      (ins->next->opcode == OP_CGT_UN))))
+				if ((next) && 
+				    (((next->opcode >= CEE_BNE_UN) &&
+				      (next->opcode <= CEE_BLT_UN)) || 
+				     ((next->opcode >= OP_COND_EXC_NE_UN) &&
+				      (next->opcode <= OP_COND_EXC_LT_UN)) ||
+				     ((next->opcode == OP_CLT_UN) ||
+				      (next->opcode == OP_CGT_UN))))
 					s390_clr  (code, ins->sreg1, s390_r0);
 				else
 					s390_cr   (code, ins->sreg1, s390_r0);
@@ -2727,13 +2700,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_basr (code, s390_r13, 0);
 				s390_j    (code, 4);
 				s390_word (code, ins->inst_imm);
-				if ((ins->next) && 
-				    (((ins->next->opcode >= CEE_BNE_UN) &&
-				      (ins->next->opcode <= CEE_BLT_UN)) || 
-				     ((ins->next->opcode >= OP_COND_EXC_NE_UN) &&
-				      (ins->next->opcode <= OP_COND_EXC_LT_UN)) ||
-				     ((ins->next->opcode == OP_CLT_UN) ||
-				      (ins->next->opcode == OP_CGT_UN))))
+				if ((next) && 
+				    (((next->opcode >= CEE_BNE_UN) &&
+				      (next->opcode <= CEE_BLT_UN)) || 
+				     ((next->opcode >= OP_COND_EXC_NE_UN) &&
+				      (next->opcode <= OP_COND_EXC_LT_UN)) ||
+				     ((next->opcode == OP_CLT_UN) ||
+				      (next->opcode == OP_CGT_UN))))
 					s390_cl   (code, ins->sreg1, 0, s390_r13, 4);
 				else
 					s390_c 	  (code, ins->sreg1, 0, s390_r13, 4);
@@ -2764,8 +2737,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != ins->sreg1) {
 				s390_lr	  (code, ins->dreg, ins->sreg1);
 			}
-			if ((ins->next) &&
-			    (ins->next->opcode == OP_ADC_IMM)) {
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
+			if ((next) &&
+			    (next->opcode == OP_ADC_IMM)) {
 				s390_basr (code, s390_r13, 0);
 				s390_j	  (code, 4);
 				s390_word (code, ins->inst_imm);
@@ -2783,8 +2757,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_ADDCC_IMM: {
-			if ((ins->next) &&
-			    (ins->next->opcode == OP_ADC_IMM)) {
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
+			if ((next) &&
+			    (next->opcode == OP_ADC_IMM)) {
 				s390_basr (code, s390_r13, 0);
 				s390_j	  (code, 4);
 				s390_word (code, ins->inst_imm);
@@ -3362,9 +3337,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCONV_TO_R4: {
 			NOT_IMPLEMENTED("OP_FCONV_TO_R4");
-			if ((ins->next) &&
-			     (ins->next->opcode != OP_FMOVE) &&
-			     (ins->next->opcode != OP_STORER4_MEMBASE_REG))
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
+			if ((next) &&
+			     (next->opcode != OP_FMOVE) &&
+			     (next->opcode != OP_STORER4_MEMBASE_REG))
 				s390_ledbr (code, ins->dreg, ins->sreg1);
 		}
 			break;
@@ -4052,10 +4028,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	       
 		cpos += max_len;
 
-		last_ins = ins;
 		last_offset = offset;
-		
-		ins = ins->next;
 	}
 
 	cfg->code_len = code - cfg->native_code;
@@ -4332,16 +4305,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	 */
 	max_offset = 0;
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *ins = bb->code;
+		MonoInst *ins;
 		bb->max_offset = max_offset;
 
 		if (cfg->prof_options & MONO_PROFILE_COVERAGE)
 			max_offset += 6; 
 
-		while (ins) {
+		MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node)
 			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
-			ins = ins->next;
-		}
 	}
 
 	/* load arguments allocated to register from the stack */

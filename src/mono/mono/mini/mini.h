@@ -95,20 +95,12 @@ enum {
 #define MONO_INST_NEW_CALL(cfg,dest,op) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallInst));	\
 		(dest)->inst.opcode = (op);	\
+		MONO_INST_LIST_INIT (&(dest)->out_args); \
 	} while (0)
 
 #define MONO_INST_NEW_CALL_ARG(cfg,dest,op) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallArgParm));	\
 		(dest)->ins.opcode = (op);	\
-	} while (0)
-
-#define MONO_ADD_INS(b,inst) do {	\
-		if ((b)->last_ins) {	\
-			(b)->last_ins->next = (inst);	\
-			(b)->last_ins = (inst);	\
-		} else {	\
-			(b)->code = (b)->last_ins = (inst);	\
-		}	\
 	} while (0)
 
 #define NULLIFY_INS(ins) do { \
@@ -117,6 +109,7 @@ enum {
 		(ins)->ssa_op = MONO_SSA_NOP; \
     } while (0)
 
+typedef struct MonoInstList MonoInstList;
 typedef struct MonoInst MonoInst;
 typedef struct MonoCallInst MonoCallInst;
 typedef struct MonoCallArgParm MonoCallArgParm;
@@ -138,6 +131,142 @@ extern gboolean mono_compile_aot;
 #endif
 extern MonoMethodDesc *mono_inject_async_exc_method;
 extern int mono_inject_async_exc_pos;
+
+struct MonoInstList {
+	struct MonoInstList *next, *prev;
+};
+
+#define MONO_INST_LIST_INIT(list) do {	\
+		(list)->next = (list);		\
+		(list)->prev = (list);		\
+	} while (0)
+
+static inline int
+MONO_INST_LIST_EMPTY (MonoInstList *list)
+{
+	return list->next == list;
+}
+
+static inline void
+__MONO_INST_LIST_ADD (MonoInstList *new, MonoInstList *prev, MonoInstList *next)
+{
+	next->prev = new;
+	new->next = next;
+	new->prev = prev;
+	prev->next = new;
+}
+
+
+static inline void
+MONO_INST_LIST_ADD (MonoInstList *new, MonoInstList *head)
+{
+	__MONO_INST_LIST_ADD (new, head, head->next);
+}
+
+static inline void
+MONO_INST_LIST_ADD_TAIL (MonoInstList *new, MonoInstList *head)
+{
+	__MONO_INST_LIST_ADD (new, head->prev, head);
+}
+
+static inline void
+__MONO_INST_LIST_DEL (MonoInstList *prev, MonoInstList *next)
+{
+	next->prev = prev;
+	prev->next = next;
+}
+
+static inline void
+__MONO_INST_LIST_SPLICE (MonoInstList *list, MonoInstList *head)
+{
+	MonoInstList *first = list->next;
+	MonoInstList *last = list->prev;
+	MonoInstList *at = head->next;
+
+	first->prev = head;
+	head->next = first;
+
+	last->next = at;
+	at->prev = last;
+}
+
+static inline void
+MONO_INST_LIST_SPLICE (MonoInstList *list, MonoInstList *head) 
+{
+	if (!MONO_INST_LIST_EMPTY (list))
+		__MONO_INST_LIST_SPLICE (list, head);
+}
+
+static inline void
+MONO_INST_LIST_SPLICE_TAIL (MonoInstList *list, MonoInstList *head) 
+{
+	if (!MONO_INST_LIST_EMPTY (list))
+		__MONO_INST_LIST_SPLICE (list, head->prev);
+}
+
+static inline void
+MONO_INST_LIST_SPLICE_INIT (MonoInstList *list, MonoInstList *head)
+{
+	if (!MONO_INST_LIST_EMPTY (list)) {
+		__MONO_INST_LIST_SPLICE (list, head);
+		MONO_INST_LIST_INIT (list);
+	}
+}
+
+static inline void
+MONO_INST_LIST_SPLICE_TAIL_INIT (MonoInstList *list, MonoInstList *head)
+{
+	if (!MONO_INST_LIST_EMPTY (list)) {
+		__MONO_INST_LIST_SPLICE (list, head->prev);
+		MONO_INST_LIST_INIT (list);
+	}
+}
+
+/*#define mono_container_of(ptr, type, member) ({			\
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+
+#define MONO_INST_LIST_ENTRY(ptr, type, member) \
+	mono_container_of(ptr, type, member)*/
+
+#define MONO_INST_LIST_ENTRY(ptr, type, member)	\
+	((type *)(ptr))
+
+#define MONO_INST_LIST_FIRST_ENTRY(ptr, type, member) \
+	MONO_INST_LIST_ENTRY((ptr)->next, type, member)
+
+#define MONO_INST_LIST_LAST_ENTRY(ptr, type, member) \
+	MONO_INST_LIST_ENTRY((ptr)->prev, type, member)
+
+#define MONO_INST_LIST_FOR_EACH(pos, head) \
+	for (pos = (head)->next; pos != (head); pos = pos->next)
+
+#define MONO_INST_LIST_FOR_EACH_PREV(pos, head) \
+	for (pos = (head)->prev; pos != (head); pos = pos->prev)
+
+#define MONO_INST_LIST_FOR_EACH_SAFE(pos, n, head) \
+	for (pos = (head)->next, n = pos->next; pos != (head); \
+		pos = n, n = pos->next)
+
+#define MONO_INST_LIST_FOR_EACH_PREV_SAFE(pos, n, head) \
+	for (pos = (head)->prev, n = pos->prev; pos != (head); \
+		pos = n, n = pos->prev)
+
+#define MONO_INST_LIST_FOR_EACH_ENTRY(pos, head, member) \
+	for (pos = MONO_INST_LIST_ENTRY ((head)->next, MonoInst, member);\
+	     &pos->member != (head);\
+	     pos = MONO_INST_LIST_ENTRY (pos->member.next, MonoInst, member))
+
+#define MONO_INST_LIST_FOR_EACH_ENTRY_REVERSE(pos, head, member) \
+	for (pos = MONO_INST_LIST_ENTRY ((head)->prev, MonoInst, member);\
+	     &pos->member != (head);\
+	     pos = MONO_INST_LIST_ENTRY (pos->member.prev, MonoInst, member))
+
+#define MONO_INST_LIST_FOR_EACH_ENTRY_SAFE(pos, n, head, member) \
+	for (pos = MONO_INST_LIST_ENTRY ((head)->next, MonoInst, member),\
+		n = MONO_INST_LIST_ENTRY (pos->member.next, MonoInst, member);\
+	     &pos->member != (head); 					\
+	     pos = n, n = MONO_INST_LIST_ENTRY (n->member.next, MonoInst, member))
 
 struct MonoEdge {
 	MonoEdge *next;
@@ -171,18 +300,10 @@ typedef struct {
  * at the beginning of the block, never in the middle.
  */
 struct MonoBasicBlock {
-	MonoInst *last_ins;
+	MonoInstList ins_list;
 
 	/* the next basic block in the order it appears in IL */
 	MonoBasicBlock *next_bb;
-
-	/*
-	 * Before instruction selection it is the first tree in the
-	 * forest and the first item in the list of trees. After
-	 * instruction selection it is the first instruction and the
-	 * first item in the list of instructions.
-	 */
-	MonoInst *code;
 
 	/* unique block number identification */
 	gint32 block_num;
@@ -281,6 +402,8 @@ typedef struct MonoMemcpyArgs {
 } MonoMemcpyArgs;
 
 struct MonoInst {
+	MonoInstList node; /* this must be the first field in this struct */
+
 	union {
 		union {
 			MonoInst *src;
@@ -318,17 +441,60 @@ struct MonoInst {
 		gpointer data;
 	} backend;
 	
-	MonoInst *next;
 	MonoClass *klass;
 	const unsigned char* cil_code; /* for debugging and bblock splitting */
 };
 	
+static inline void
+MONO_ADD_INS (MonoBasicBlock *bb, MonoInst *inst)
+{
+	MONO_INST_LIST_ADD_TAIL (&inst->node, &bb->ins_list);
+}
+
+static inline void
+MONO_DEL_INS (MonoInst *inst)
+{
+	__MONO_INST_LIST_DEL (inst->node.prev, inst->node.next);
+}
+
+static inline MonoInst *
+mono_inst_list_first (MonoInstList *head)
+{
+	if (MONO_INST_LIST_EMPTY (head))
+		return NULL;
+	return MONO_INST_LIST_FIRST_ENTRY (head, MonoInst, node);
+}
+
+static inline MonoInst *
+mono_inst_list_last (MonoInstList *head)
+{
+	if (MONO_INST_LIST_EMPTY (head))
+		return NULL;
+	return MONO_INST_LIST_LAST_ENTRY (head, MonoInst, node);
+}
+
+static inline MonoInst *
+mono_inst_list_next (MonoInstList *ins, MonoInstList *head)
+{
+	if (ins->next == head)
+		return NULL;
+	return MONO_INST_LIST_ENTRY (ins->next, MonoInst, node);
+}
+
+static inline MonoInst *
+mono_inst_list_prev (MonoInstList *ins, MonoInstList *head)
+{
+	if (ins->prev == head)
+		return NULL;
+	return MONO_INST_LIST_ENTRY (ins->prev, MonoInst, node);
+}
+
 struct MonoCallInst {
 	MonoInst inst;
 	MonoMethodSignature *signature;
 	MonoMethod *method;
 	MonoInst **args;
-	MonoInst *out_args;
+	MonoInstList out_args;
 	gconstpointer fptr;
 	guint stack_usage;
 	gboolean virtual;
@@ -630,9 +796,7 @@ typedef struct {
 	/* Fields used by the local reg allocator */
 	void*            reginfo;
 	void*            reginfof;
-	void*            reverse_inst_list;
 	int              reginfo_len, reginfof_len;
-	int              reverse_inst_list_len;
 } MonoCompile;
 
 typedef enum {

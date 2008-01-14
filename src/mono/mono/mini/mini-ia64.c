@@ -1009,9 +1009,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	arg->inst_imm = 16 + cinfo->sig_cookie.offset;
 	arg->type = STACK_PTR;
 
-	/* prepend, so they get reversed */
-	arg->next = call->out_args;
-	call->out_args = arg;
+	MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 }
 
 /* 
@@ -1063,9 +1061,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 			arg->cil_code = in->cil_code;
 			arg->inst_left = in;
 			arg->type = in->type;
-			/* prepend, so they get reversed */
-			arg->next = call->out_args;
-			call->out_args = arg;
+			MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 
 			if (sig->hasthis && (i == 0))
 				arg_type = &mono_defaults.object_class->byval_arg;
@@ -1142,10 +1138,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						else
 							MONO_INST_NEW (cfg, set_reg, OP_OUTARG_REG);
 						add_outarg_reg (cfg, call, set_reg, arg_storage, dest_reg, load);
-						if (set_reg != call->out_args) {
-							set_reg->next = call->out_args;
-							call->out_args = set_reg;
-						}
+						if (&set_reg->node != &call->out_args)
+							MONO_INST_LIST_ADD (&set_reg->node, &call->out_args);
 					}
 
 					/* 
@@ -1175,10 +1169,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						outarg->inst_left = load;
 						outarg->inst_imm = 16 + ainfo->offset + (slot - 8) * 8;
 
-						if (outarg != call->out_args) {
-							outarg->next = call->out_args;
-							call->out_args = outarg;
-						}
+						if (&outarg->node != &call->out_args)
+							MONO_INST_LIST_ADD (&outarg->node, &call->out_args);
 					}
 
 					/* Trees can't be shared so make a copy */
@@ -1188,10 +1180,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					arg->inst_left = vtaddr;
 					arg->inst_right = in;
 					arg->type = in->type;
-					
-					/* prepend, so they get reversed */
-					arg->next = call->out_args;
-					call->out_args = arg;
+					MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 				}
 				else {
 					MONO_INST_NEW (cfg, stack_addr, OP_REGOFFSET);
@@ -1242,10 +1231,11 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *last_ins = NULL;
-	ins = bb->code;
+	MonoInst *ins, *n;
 
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
+		MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
+
 		switch (ins->opcode) {
 		case OP_MOVE:
 		case OP_FMOVE:
@@ -1255,9 +1245,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * OP_MOVE reg, reg 
 			 */
 			if (ins->dreg == ins->sreg1) {
-				if (last_ins)
-					last_ins->next = ins->next;				
-				ins = ins->next;
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			/* 
@@ -1269,8 +1257,7 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && last_ins->opcode == OP_MOVE &&
 			    ins->sreg1 == last_ins->dreg &&
 			    ins->dreg == last_ins->sreg1) {
-				last_ins->next = ins->next;				
-				ins = ins->next;				
+				MONO_DEL_INS (ins);
 				continue;
 			}
 			break;
@@ -1283,16 +1270,13 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else {
 					last_ins->next = ins->next;
 					ins = ins->next;
+					MONO_DEL_INS (ins);
 					continue;
 				}
 			}
 			break;
 		}
-
-		last_ins = ins;
-		ins = ins->next;
 	}
-	bb->last_ins = last_ins;
 }
 
 int cond_to_ia64_cmp [][3] = {
@@ -1334,25 +1318,10 @@ opcode_to_ia64_cmp_imm (int opcode, int cmp_opcode)
 	return cond_to_ia64_cmp_imm [mono_opcode_to_cond (opcode)][mono_opcode_to_type (opcode, cmp_opcode)];
 }
 
-static void
-insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *to_insert)
-{
-	if (ins == NULL) {
-		ins = bb->code;
-		bb->code = to_insert;
-		to_insert->next = ins;
-	}
-	else {
-		to_insert->next = ins->next;
-		ins->next = to_insert;
-	}
-}
-
-#define NEW_INS(cfg,dest,op) do {	\
+#define NEW_INS(cfg,ins,dest,op) do {					\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = (op);	\
-        insert_after_ins (bb, last_ins, (dest)); \
-        last_ins = (dest); \
+		MONO_INST_LIST_ADD_TAIL (&(dest)->node, &(ins)->node); \
 	} while (0)
 
 /*
@@ -1364,13 +1333,12 @@ insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *to_insert)
 static void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *next, *temp, *temp2, *temp3, *last_ins = NULL;
-	ins = bb->code;
+	MonoInst *ins, *n, *next, *temp, *temp2, *temp3;
 
 	if (bb->max_vreg > cfg->rs->next_vreg)
 		cfg->rs->next_vreg = bb->max_vreg;
 
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
 		switch (ins->opcode) {
 		case OP_STOREI1_MEMBASE_IMM:
 		case OP_STOREI2_MEMBASE_IMM:
@@ -1381,16 +1349,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_offset == 0) {
 				temp2 = NULL;
 			} else if (ia64_is_imm14 (ins->inst_offset)) {
-				NEW_INS (cfg, temp2, OP_ADD_IMM);
+				NEW_INS (cfg, ins, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->inst_imm = ins->inst_offset;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
 			}
 			else {
-				NEW_INS (cfg, temp, OP_I8CONST);
+				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, temp2, CEE_ADD);
+				NEW_INS (cfg, ins, temp2, CEE_ADD);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->sreg2 = temp->dreg;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
@@ -1417,7 +1385,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_imm == 0)
 				ins->sreg1 = IA64_R0;
 			else {
-				NEW_INS (cfg, temp3, OP_I8CONST);
+				NEW_INS (cfg, ins, temp3, OP_I8CONST);
 				temp3->inst_c0 = ins->inst_imm;
 				temp3->dreg = mono_regstate_next_int (cfg->rs);
 				ins->sreg1 = temp3->dreg;
@@ -1439,16 +1407,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 			else if (ia64_is_imm14 (ins->inst_offset)) {
-				NEW_INS (cfg, temp2, OP_ADD_IMM);
+				NEW_INS (cfg, ins, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->inst_imm = ins->inst_offset;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
 			}
 			else {
-				NEW_INS (cfg, temp, OP_I8CONST);
+				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, temp2, CEE_ADD);
+				NEW_INS (cfg, ins, temp2, CEE_ADD);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->sreg2 = temp->dreg;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
@@ -1478,16 +1446,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 			else if (ia64_is_imm14 (ins->inst_offset)) {
-				NEW_INS (cfg, temp2, OP_ADD_IMM);
+				NEW_INS (cfg, ins, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_basereg;
 				temp2->inst_imm = ins->inst_offset;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
 			}
 			else {
-				NEW_INS (cfg, temp, OP_I8CONST);
+				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, temp2, CEE_ADD);
+				NEW_INS (cfg, ins, temp2, CEE_ADD);
 				temp2->sreg1 = ins->inst_basereg;
 				temp2->sreg2 = temp->dreg;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
@@ -1614,7 +1582,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_imm == 0)
 				ins->sreg2 = IA64_R0;
 			else {
-				NEW_INS (cfg, temp, OP_I8CONST);
+				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
 				ins->sreg2 = temp->dreg;
@@ -1631,7 +1599,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * The compare_imm instructions have switched up arguments, and 
 			 * some of them take an imm between -127 and 128.
 			 */
-			next = ins->next;
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
+			g_assert(next);
 			cond = mono_opcode_to_cond (next->opcode);
 			if ((cond == CMP_LT) || (cond == CMP_GE))
 				imm = ia64_is_imm8 (ins->inst_imm - 1);
@@ -1650,7 +1619,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->inst_imm == 0)
 					ins->sreg2 = IA64_R0;
 				else {
-					NEW_INS (cfg, temp, OP_I8CONST);
+					NEW_INS (cfg, ins, temp, OP_I8CONST);
 					temp->inst_c0 = ins->inst_imm;
 					temp->dreg = mono_regstate_next_int (cfg->rs);
 					ins->sreg2 = temp->dreg;
@@ -1716,7 +1685,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCOMPARE: {
 			/* Instead of compare+b<cond>, ia64 has compare<cond>+br */
 
-			next = ins->next;
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
+			g_assert(next);
 
 			ins->opcode = opcode_to_ia64_cmp (next->opcode, ins->opcode);
 			switch (next->opcode) {
@@ -1808,7 +1778,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				sum_reg = 0;
 				for (i = 0; i < 64; ++i) {
 					if (ins->inst_imm & (((gint64)1) << i)) {
-						NEW_INS (cfg, temp, shl_op);
+						NEW_INS (cfg, ins, temp, shl_op);
 						temp->dreg = mono_regstate_next_int (cfg->rs);
 						temp->sreg1 = ins->sreg1;
 						temp->inst_imm = i;
@@ -1816,7 +1786,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 						if (sum_reg == 0)
 							sum_reg = temp->dreg;
 						else {
-							NEW_INS (cfg, temp2, CEE_ADD);
+							NEW_INS (cfg, ins, temp2, CEE_ADD);
 							temp2->dreg = mono_regstate_next_int (cfg->rs);
 							temp2->sreg1 = sum_reg;
 							temp2->sreg2 = temp->dreg;
@@ -1830,25 +1800,25 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case CEE_CONV_OVF_U4:
-			NEW_INS (cfg, temp, OP_IA64_CMP4_LT);
+			NEW_INS (cfg, ins, temp, OP_IA64_CMP4_LT);
 			temp->sreg1 = ins->sreg1;
 			temp->sreg2 = IA64_R0;
 
-			NEW_INS (cfg, temp, OP_IA64_COND_EXC);
+			NEW_INS (cfg, ins, temp, OP_IA64_COND_EXC);
 			temp->inst_p1 = (char*)"OverflowException";
 
 			ins->opcode = OP_MOVE;
 			break;
 		case CEE_CONV_OVF_I4_UN:
-			NEW_INS (cfg, temp, OP_ICONST);
+			NEW_INS (cfg, ins, temp, OP_ICONST);
 			temp->inst_c0 = 0x7fffffff;
 			temp->dreg = mono_regstate_next_int (cfg->rs);
 
-			NEW_INS (cfg, temp2, OP_IA64_CMP4_GT_UN);
+			NEW_INS (cfg, ins, temp2, OP_IA64_CMP4_GT_UN);
 			temp2->sreg1 = ins->sreg1;
 			temp2->sreg2 = temp->dreg;
 
-			NEW_INS (cfg, temp, OP_IA64_COND_EXC);
+			NEW_INS (cfg, ins, temp, OP_IA64_COND_EXC);
 			temp->inst_p1 = (char*)"OverflowException";
 
 			ins->opcode = OP_MOVE;
@@ -1858,7 +1828,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_U2:
 		case OP_FCONV_TO_I1:
 		case OP_FCONV_TO_U1:
-			NEW_INS (cfg, temp, OP_FCONV_TO_I8);
+			NEW_INS (cfg, ins, temp, OP_FCONV_TO_I8);
 			temp->sreg1 = ins->sreg1;
 			temp->dreg = ins->dreg;
 
@@ -1886,10 +1856,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		default:
 			break;
 		}
-		last_ins = ins;
-		ins = ins->next;
 	}
-	bb->last_ins = last_ins;
 
 	bb->max_vreg = cfg->rs->next_vreg;
 }
@@ -1897,7 +1864,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	if (!bb->code)
+	if (MONO_INST_LIST_EMPTY (&bb->ins_list))
 		return;
 
 	mono_arch_lowering_pass (cfg, bb);
@@ -2108,7 +2075,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint offset;
 	Ia64CodegenState code;
 	guint8 *code_start = cfg->native_code + cfg->code_len;
-	MonoInst *last_ins = NULL;
 	guint last_offset = 0;
 	int max_len, cpos;
 
@@ -2137,8 +2103,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		break_count ();
 #endif
 
-	ins = bb->code;
-	while (ins) {
+	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
 		offset = code.buf - cfg->native_code;
 
 		max_len = ((int)(((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN])) + 128;
@@ -3117,10 +3082,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	       
 		cpos += max_len;
 
-		last_ins = ins;
 		last_offset = offset;
-		
-		ins = ins->next;
 	}
 
 	ia64_codegen_close (code);
