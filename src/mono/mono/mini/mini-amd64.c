@@ -1833,7 +1833,7 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 static void
 peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *n, *ins2;
+	MonoInst *ins, *n;
 
 	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
 		MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
