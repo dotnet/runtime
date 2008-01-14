@@ -115,6 +115,7 @@ libmonoruntime_la_SOURCES = \
 	cil-coff.h	\
 	metadata.c	\
 	metadata-internals.h	\
+	number-formatter.h	\
 	verify.c	\
 	mono-endian.c	\
 	mono-endian.h	\
