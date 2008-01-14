@@ -526,11 +526,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	if (managed)
 		*managed = FALSE;
 
+	*new_ctx = *ctx;
+
 	if (ji != NULL) {
 		int offset;
 		gboolean omit_fp = (ji->used_regs & (1 << 31)) > 0;
-
-		*new_ctx = *ctx;
 
 		if (managed)
 			if (!ji->method->wrapper_type)
@@ -641,9 +641,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		return ji;
 	} else if (*lmf) {
-		
-		*new_ctx = *ctx;
-
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->rip))) {
 		} else {
 			if (!(*lmf)->method)
