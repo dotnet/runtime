@@ -1268,8 +1268,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->dreg != ins->sreg1) {
 					ins->opcode = OP_MOVE;
 				} else {
-					last_ins->next = ins->next;
-					ins = ins->next;
 					MONO_DEL_INS (ins);
 					continue;
 				}
