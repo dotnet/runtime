@@ -1,3 +1,8 @@
+2008-01-15  Andreas Faerber  <andreas.faerber@web.de>
+
+	* configure.ac: Add default G_BREAKPOINT implementation.
+	Fix typo in breakpoint CPU output.
+
 2007-12-23  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/glib.h: Include <limits.h>. Fixes #350482.

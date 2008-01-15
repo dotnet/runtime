@@ -11,11 +11,11 @@ CFLAGS='-g -O0 -D_GNU_SOURCE'
 AC_SUBST(CFLAGS)
 GNUC_PRETTY=
 GNUC_UNUSED=
-BREAKPOINT="G_STMT_START { } G_STMT_END"
+BREAKPOINT="G_STMT_START { raise (SIGTRAP); } G_STMT_END"
 if test x$GCC = xyes; then
    GNUC_UNUSED='__attribute__((__unused__))'
    GNUC_NORETURN='__attribute__((__noreturn__))'
-   echo targte_cpu=$target_cpu
+   echo target_cpu=$target_cpu
    case $target_cpu in
      i*86) BREAKPOINT="G_STMT_START { __asm__ (\"int \$03\"); } G_STMT_END" ;;
    esac
