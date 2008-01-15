@@ -875,7 +875,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 
 	if ((filed = fopen (fname, "rb")) == NULL){
 		if (IS_PORTABILITY_SET) {
-			gchar *ffname = mono_portability_find_file (fname, FALSE);
+			gchar *ffname = mono_portability_find_file (fname, TRUE);
 			if (ffname) {
 				filed = fopen (ffname, "rb");
 				g_free (ffname);
@@ -1738,7 +1738,7 @@ mono_image_get_public_key (MonoImage *image, guint32 *size)
 	if (image->dynamic) {
 		if (size)
 			*size = ((MonoDynamicImage*)image)->public_key_len;
-		return ((MonoDynamicImage*)image)->public_key;
+		return (char*)((MonoDynamicImage*)image)->public_key;
 	}
 	if (image->tables [MONO_TABLE_ASSEMBLY].rows != 1)
 		return NULL;
