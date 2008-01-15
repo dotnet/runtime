@@ -623,7 +623,7 @@ add_general (guint *gr, guint *stack_size, ArgInfo *ainfo, gboolean simple)
 			ainfo->reg = ARMREG_SP; /* in the caller */
 			ainfo->regtype = RegTypeBaseGen;
 			*stack_size += 4;
-		} else if (*gr > ARMREG_R3) {
+		} else if (*gr >= ARMREG_R3) {
 #ifdef __ARM_EABI__
 			*stack_size += 7;
 			*stack_size &= ~7;
@@ -2485,8 +2485,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			alloca_waste &= ~7;
 			/* round the size to 8 bytes */
 			ARM_ADD_REG_IMM8 (code, ins->dreg, ins->sreg1, 7);
-			ARM_BIC_REG_IMM8 (code, ins->dreg, ins->sreg1, 7);
-			ARM_ADD_REG_IMM8 (code, ins->dreg, ins->dreg, alloca_waste);
+			ARM_BIC_REG_IMM8 (code, ins->dreg, ins->dreg, 7);
+			if (alloca_waste)
+				ARM_ADD_REG_IMM8 (code, ins->dreg, ins->dreg, alloca_waste);
 			ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ins->dreg);
 			/* memzero the area: dreg holds the size, sp is the pointer */
 			if (ins->flags & MONO_INST_INIT) {
@@ -2499,7 +2500,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_patch (branch_to_cond, code);
 				/* decrement by 4 and set flags */
 				ARM_SUBS_REG_IMM8 (code, ins->dreg, ins->dreg, 4);
-				ARM_B_COND (code, ARMCOND_LT, 0);
+				ARM_B_COND (code, ARMCOND_GE, 0);
 				arm_patch (code - 4, start_loop);
 			}
 			ARM_ADD_REG_IMM8 (code, ins->dreg, ARMREG_SP, alloca_waste);
