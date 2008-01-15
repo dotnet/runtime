@@ -805,6 +805,7 @@ mono_class_setup_fields (MonoClass *class)
 		MonoClass *gklass = class->generic_class->container_class;
 		mono_class_setup_fields (gklass);
 		top = gklass->field.count;
+		class->field.count = gklass->field.count;
 	}
 
 	class->instance_size = 0;
