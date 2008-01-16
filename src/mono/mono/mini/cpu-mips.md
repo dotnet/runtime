@@ -270,7 +270,6 @@ ldloc:
 ldloca:
 stloc:
 localloc: dest:i src1:i len:60
-endfilter: len:12
 unaligned.:
 volatile.:
 tail.:

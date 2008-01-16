@@ -163,7 +163,6 @@ div: dest:a src1:i src2:i len:10
 div_imm: dest:i src1:i src2:i len:24
 div_un_imm: dest:i src1:i src2:i len:24
 dup:
-endfilter: len:20
 endfinally: len: 20
 endmac:
 fcall: dest:g len:10 clob:c
