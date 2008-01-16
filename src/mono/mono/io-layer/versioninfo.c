@@ -847,7 +847,7 @@ gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 					    string_value != NULL &&
 					    string_value_len != 0) {
 						*buffer = string_value;
-						*len = unicode_chars (string_value);
+						*len = unicode_chars (string_value) + 1; /* Include trailing null */
 						ret = TRUE;
 						goto done;
 					}

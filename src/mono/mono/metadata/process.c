@@ -199,7 +199,8 @@ static void process_module_string_read (MonoObject *filever, gpointer data,
 		g_message ("%s: found %d chars of [%s]", __func__, chars,
 			   g_utf16_to_utf8 (buffer, chars, NULL, NULL, NULL));
 #endif
-		process_set_field_string (filever, fieldname, buffer, chars);
+		/* chars includes trailing null */
+		process_set_field_string (filever, fieldname, buffer, chars - 1);
 	}
 
 	g_free (lang_key);
