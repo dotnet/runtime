@@ -100,7 +100,7 @@ conv.r8: dest:f src1:i len:64
 conv.u4: dest:i src1:i len:4
 conv.u8: dest:i src1:i len:4
 throw: src1:i len:64
-op_rethrow: src1:i len:64
+rethrow: src1:i len:64
 conv.ovf.u4: dest:i src1:i len:64
 ckfinite: dest:f src1:f len:40
 conv.u2: dest:i src1:i len:8
@@ -251,7 +251,7 @@ float_clt: dest:i src1:f src2:f len:64
 float_clt_un: dest:i src1:f src2:f len:64
 float_conv_to_u: dest:i src1:f len:64
 call_handler: len:64
-op_endfilter: src1:i len:64
+endfilter: src1:i len:64
 aot_const: dest:i len:64
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
@@ -260,8 +260,8 @@ adc_imm: dest:i src1:i len:64
 sbb: dest:i src1:i src2:i len:4
 sbb_imm: dest:i src1:i len:64
 br_reg: src1:i len:8
-op_bigmul: len:2 dest:L src1:a src2:i
-op_bigmul_un: len:2 dest:L src1:a src2:i
+bigmul: len:2 dest:L src1:a src2:i
+bigmul_un: len:2 dest:L src1:a src2:i
 fmove: dest:f src1:f len:8
 
 # 32 bit opcodes

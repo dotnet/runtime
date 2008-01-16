@@ -114,10 +114,10 @@ conv.i: dest:i src1:i len:3
 int_xor: dest:i src1:i src2:i len:2 clob:1
 
 throw: src1:i len:13
-op_rethrow: src1:i len:13
+rethrow: src1:i len:13
 start_handler: len:16
 endfinally: len:16
-op_endfilter: src1:a len:16
+endfilter: src1:a len:16
 
 ckfinite: dest:f src1:f len:32
 mul.ovf: dest:i src1:i src2:i clob:1 len:9
@@ -308,8 +308,8 @@ abs: dest:f src1:f len:2
 tan: dest:f src1:f len:49
 atan: dest:f src1:f len:8
 sqrt: dest:f src1:f len:2
-op_bigmul: len:2 dest:l src1:a src2:i
-op_bigmul_un: len:2 dest:l src1:a src2:i
+bigmul: len:2 dest:l src1:a src2:i
+bigmul_un: len:2 dest:l src1:a src2:i
 sext_i1: dest:i src1:y len:3
 sext_i2: dest:i src1:y len:3
 tls_get: dest:i len:20

@@ -167,7 +167,7 @@ isinst:
 conv.r.un: dest:f src1:i len:56
 unbox:
 throw: src1:i len:24
-op_rethrow: src1:i len:20
+rethrow: src1:i len:20
 ldfld:
 ldflda:
 stfld:
@@ -529,7 +529,7 @@ float_clt: dest:i src1:f src2:f len:16
 float_clt_un: dest:i src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:12
-op_endfilter: src1:i len:16
+endfilter: src1:i len:16
 aot_const: dest:i len:16
 sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
@@ -543,6 +543,6 @@ sbb_imm: dest:i src1:i len:12
 br_reg: src1:i len:8
 arm_rsbs_imm: dest:i src1:i len:4
 arm_rsc_imm: dest:i src1:i len:4
-op_bigmul: len:8 dest:l src1:i src2:i
-op_bigmul_un: len:8 dest:l src1:i src2:i
+bigmul: len:8 dest:l src1:i src2:i
+bigmul_un: len:8 dest:l src1:i src2:i
 tls_get: len:8 dest:i

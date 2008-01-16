@@ -109,7 +109,7 @@ conv.u4: dest:i src1:i len:4
 conv.u8: dest:i src1:i len:4
 conv.r.un: dest:f src1:i len:8
 throw: src1:i len:20
-op_rethrow: src1:i len:20
+rethrow: src1:i len:20
 conv.ovf.i4.un: dest:i src1:i len:16
 conv.ovf.u4.un: 
 conv.ovf.u4: dest:i src1:i len:15
@@ -304,7 +304,7 @@ fmove: dest:f src1:f len:8
 call_handler: len:4
 start_handler: len:96
 endfinally: len:96
-op_endfilter: src1:i len:96
+endfilter: src1:i len:96
 aot_const: dest:i len:10
 # x86_test_null: src1:i len:5
 # x86_compare_membase_reg: src1:b src2:i len:9
@@ -358,8 +358,8 @@ abs: dest:f src1:f len:4
 tan: dest:f src1:f len:59
 atan: dest:f src1:f len:9
 sqrt: dest:f src1:f len:32
-op_bigmul: len:3 dest:i src1:a src2:i
-op_bigmul_un: len:3 dest:i src1:a src2:i
+bigmul: len:3 dest:i src1:a src2:i
+bigmul_un: len:3 dest:i src1:a src2:i
 sext_i1: dest:i src1:i len:8
 sext_i2: dest:i src1:i len:8
 sext_i4: dest:i src1:i len:8

@@ -107,10 +107,10 @@ conv.u8: dest:i src1:i len:3
 conv.r.un: dest:f src1:i len:8
 
 throw: src1:i len:18
-op_rethrow: src1:i len:18
+rethrow: src1:i len:18
 start_handler: len:9
 endfinally: len:9
-op_endfilter: src1:a len:9
+endfilter: src1:a len:9
 
 conv.ovf.i4.un: dest:i src1:i len:16
 conv.ovf.u4.un: 
@@ -342,8 +342,8 @@ abs: dest:f src1:f len:32
 tan: dest:f src1:f len:59
 atan: dest:f src1:f len:9
 sqrt: dest:f src1:f len:32
-op_bigmul: len:3 dest:i src1:a src2:i
-op_bigmul_un: len:3 dest:i src1:a src2:i
+bigmul: len:3 dest:i src1:a src2:i
+bigmul_un: len:3 dest:i src1:a src2:i
 sext_i1: dest:i src1:i len:4
 sext_i2: dest:i src1:i len:4
 sext_i4: dest:i src1:i len:8

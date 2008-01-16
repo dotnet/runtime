@@ -43,7 +43,7 @@ conv.u4: dest:i src1:i len:112
 conv.u8: dest:i src1:i len:112
 conv.r.un: dest:f src1:i len:48
 throw: src1:i len:96
-op_rethrow: src1:i len:48
+rethrow: src1:i len:48
 conv.ovf.i4.un: dest:i src1:i len:96
 conv.ovf.u4.un: 
 conv.ovf.u4: dest:i src1:i len:48
@@ -214,7 +214,7 @@ float_conv_to_u: dest:i src1:f len:48
 fmove: dest:f src1:f len:48
 call_handler: len:96
 start_handler: len:96
-op_endfilter: len:96
+endfilter: len:96
 endfinally: len:96
 endfilter: len:96
 aot_const: dest:i len:48
@@ -241,8 +241,8 @@ abs: dest:f src1:f len:48
 tan: dest:f src1:f len:48
 atan: dest:f src1:f len:48
 sqrt: dest:f src1:f len:48
-op_bigmul: len:48 dest:i src1:a src2:i
-op_bigmul_un: len:48 dest:i src1:a src2:i
+bigmul: len:48 dest:i src1:a src2:i
+bigmul_un: len:48 dest:i src1:a src2:i
 sext_i1: dest:i src1:i len:48
 sext_i2: dest:i src1:i len:48
 sext_i4: dest:i src1:i len:48

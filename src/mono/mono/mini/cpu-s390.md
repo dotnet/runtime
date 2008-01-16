@@ -418,10 +418,10 @@ newarr:
 newobj:
 nop: len:4
 not: dest:i src1:i len:8
-op_bigmul: len:2 dest:l src1:a src2:i
-op_bigmul_un: len:2 dest:l src1:a src2:i
-op_endfilter: src1:i len:12
-op_rethrow: src1:i len:8
+bigmul: len:2 dest:l src1:a src2:i
+bigmul_un: len:2 dest:l src1:a src2:i
+endfilter: src1:i len:12
+rethrow: src1:i len:8
 oparglist: src1:i len:20
 or: dest:i src1:i src2:i len:4
 or_imm: dest:i src1:i len:16
