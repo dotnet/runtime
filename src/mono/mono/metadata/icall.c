@@ -6813,7 +6813,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType 
 /* These parameters are "readonly" in corlib/System/NumberFormatter.cs */
 static void
 ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const **mantissas,
-					    guint32 const **exponents,
+					    gint32 const **exponents,
 					    gunichar2 const **digitLowerTable,
 					    gunichar2 const **digitUpperTable,
 					    gint64 const **tenPowersList,
