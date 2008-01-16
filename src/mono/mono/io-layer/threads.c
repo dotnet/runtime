@@ -138,11 +138,11 @@ void _wapi_thread_set_termination_details (gpointer handle,
 #ifdef DEBUG
 	g_message ("%s: Thread %p terminating", __func__, handle);
 #endif
+
+	_wapi_thread_abandon_mutexes (handle);
 	
 	thr_ret = _wapi_handle_lock_shared_handles ();
 	g_assert (thr_ret == 0);
-	
-	_wapi_thread_abandon_mutexes (handle);
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
