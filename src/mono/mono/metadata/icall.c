@@ -3253,9 +3253,10 @@ handle_parent:
 		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else {
-			if (bflags & BFLAGS_NonPublic)
+		} else if ((klass == startklass) || (field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
+			if (bflags & BFLAGS_NonPublic) {
 				match++;
+			}
 		}
 		if (!match)
 			continue;
@@ -3322,11 +3323,9 @@ handle_parent:
 		if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else {
+		} else if ((klass == startklass) || (field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
 			if (bflags & BFLAGS_NonPublic) {
-				/* Serialization currently depends on the old behavior.
-				 * if ((field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE || startklass == klass)*/
-					match++;
+				match++;
 			}
 		}
 		if (!match)
@@ -3365,6 +3364,21 @@ handle_parent:
 		 */
 	}
 	return res;
+}
+
+static gboolean
+method_nonpublic (MonoMethod* method, gboolean start_klass)
+{
+	switch (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) {
+		case METHOD_ATTRIBUTE_ASSEM:
+			return (start_klass || mono_defaults.generic_ilist_class);
+		case METHOD_ATTRIBUTE_PRIVATE:
+			return start_klass;
+		case METHOD_ATTRIBUTE_PUBLIC:
+			return FALSE;
+		default:
+			return TRUE;
+	}
 }
 
 static MonoArray*
@@ -3423,8 +3437,7 @@ handle_parent:
 		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
-		} else {
-			if (bflags & BFLAGS_NonPublic)
+		} else if ((bflags & BFLAGS_NonPublic) && method_nonpublic (method, (klass == startklass))) {
 				match++;
 		}
 		if (!match)
@@ -3591,17 +3604,7 @@ property_accessor_nonpublic (MonoMethod* accessor, gboolean start_klass)
 	if (!accessor)
 		return FALSE;
 
-	switch (accessor->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) {
-		case METHOD_ATTRIBUTE_ASSEM:
-			return (start_klass || mono_defaults.generic_ilist_class);
-			break;
-		case METHOD_ATTRIBUTE_PRIVATE:
-			return start_klass;
-		case METHOD_ATTRIBUTE_PUBLIC:
-			return FALSE;
-		default:
-			return TRUE;
-	}
+	return method_nonpublic (accessor, start_klass);
 }
 
 static MonoArray*
@@ -3762,11 +3765,23 @@ handle_parent:
 			} else {
 				if (!(bflags & BFLAGS_NonPublic))
 					continue;
+				if ((klass != startklass) && (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PRIVATE)
+					continue;
 			}
 		}
 		else
 			if (!(bflags & BFLAGS_NonPublic))
 				continue;
+
+		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+			if (!(bflags & BFLAGS_Static))
+				continue;
+			if (!(bflags & BFLAGS_FlattenHierarchy) && (klass != startklass))
+				continue;
+		} else {
+			if (!(bflags & BFLAGS_Instance))
+				continue;
+		}
 
 		g_free (event_name);
 		return mono_event_get_object (domain, startklass, event);
@@ -3821,7 +3836,7 @@ handle_parent:
 			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
 				if (bflags & BFLAGS_Public)
 					match++;
-			} else {
+			} else if ((klass == startklass) || (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE) {
 				if (bflags & BFLAGS_NonPublic)
 					match++;
 			}
