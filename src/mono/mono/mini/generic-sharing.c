@@ -371,21 +371,31 @@ int
 mono_class_generic_class_relation (MonoClass *klass, MonoClass *method_klass,
 	MonoGenericContext *generic_context, int *arg_num)
 {
-	if (!klass->generic_class && !klass->generic_container) {
-		MonoGenericContext *context = mini_class_get_context (method_klass);
-		MonoGenericInst *class_inst = context->class_inst;
-		int i;
+	MonoRuntimeGenericContextTemplate *rgctx_template =
+		mono_class_get_runtime_generic_context_template (method_klass);
+	int i;
 
-		for (i = 0; i < class_inst->type_argc; ++i) {
-			if (klass == mono_class_from_mono_type (class_inst->type_argv [i])) {
-				if (arg_num)
-					*arg_num = i;
-				return MINI_GENERIC_CLASS_RELATION_ARGUMENT;
-			}
+	for (i = 0; i < rgctx_template->num_arg_infos; ++i) {
+		MonoType *arg_info = rgctx_template->arg_infos [i];
+		MonoType *inflated_arg;
+
+		if (arg_info == NULL)
+			continue;
+
+		inflated_arg = mono_class_inflate_generic_type(arg_info, generic_context);
+
+		if ((MONO_TYPE_IS_REFERENCE (inflated_arg) ||
+						mono_type_get_type (inflated_arg) == MONO_TYPE_VAR ||
+						mono_type_get_type (inflated_arg) == MONO_TYPE_MVAR) &&
+				klass == mono_class_from_mono_type (inflated_arg)) {
+			if (arg_num)
+				*arg_num = i;
+			return MINI_GENERIC_CLASS_RELATION_ARGUMENT;
 		}
-
-		g_assert_not_reached ();
 	}
+
+	if (!klass->generic_class && !klass->generic_container)
+		g_assert_not_reached ();
 
 	if (mini_class_get_container_class (klass) == mini_class_get_container_class (method_klass) &&
 			mono_generic_context_equal_deep (mini_class_get_context (klass), generic_context))

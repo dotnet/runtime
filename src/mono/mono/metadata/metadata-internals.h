@@ -200,6 +200,7 @@ struct _MonoImage {
 	GHashTable *isinst_cache;
 	GHashTable *castclass_cache;
 	GHashTable *proxy_isinst_cache;
+	GHashTable *rgctx_template_hash;
 
 	/*
 	 * indexed by token and MonoGenericContext pointer

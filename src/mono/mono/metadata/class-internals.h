@@ -189,6 +189,11 @@ typedef struct {
 	MonoVTable *domain_vtables [MONO_ZERO_LEN_ARRAY];
 } MonoClassRuntimeInfo;
 
+typedef struct {
+	int num_arg_infos;
+	MonoType *arg_infos [MONO_ZERO_LEN_ARRAY];
+} MonoRuntimeGenericContextTemplate;
+
 struct _MonoClass {
 	/* element class for arrays and enum */
 	MonoClass *element_class; 
@@ -904,6 +909,9 @@ mono_type_get_basic_type_from_generic (MonoType *type) MONO_INTERNAL;
 
 gboolean
 mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
+
+MonoRuntimeGenericContextTemplate*
+mono_class_get_runtime_generic_context_template (MonoClass *class) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
 
