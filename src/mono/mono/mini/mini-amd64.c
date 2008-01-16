@@ -1278,6 +1278,11 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
+	if (cfg->method->save_lmf) {
+		MONO_INST_NEW (cfg, arg, OP_AMD64_SAVE_SP_TO_LMF);
+		MONO_INST_LIST_ADD (&arg->node, &call->out_args);
+	}
+
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
@@ -3257,6 +3262,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
 			break;
+		case OP_AMD64_SAVE_SP_TO_LMF:
+			amd64_mov_membase_reg (code, cfg->frame_reg, cfg->arch.lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
+			break;
 		case OP_OUTARG:
 		case OP_X86_PUSH:
 			amd64_push_reg (code, ins->sreg1);
@@ -4450,16 +4458,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* Save LMF */
 	if (method->save_lmf) {
-		/* Save ip */
-		amd64_lea_membase (code, AMD64_R11, AMD64_RIP, 0);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rip), AMD64_R11, 8);
-		/* Save fp */
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
-		/* Save sp */
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
+		/* 
+		 * The ip field is not set, the exception handling code will obtain it from the stack location pointed to by the sp field.
+		 */
+		/* sp is saved right before calls */
 		/* Skip method (only needed for trampoline LMF frames) */
 		/* Save callee saved regs */
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, 8);
+		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), AMD64_R12, 8);
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, 8);
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);

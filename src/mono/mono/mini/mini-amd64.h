@@ -123,8 +123,14 @@ struct sigcontext {
 #define inst_sreg2_high sreg2>>3
 
 struct MonoLMF {
+	/* 
+	 * If the lowest bit is set to 1, then this LMF has the rip field set. Otherwise,
+	 * the rip field is not set, and the rsp field points to the stack location where
+	 * the caller ip is saved.
+	 */
 	gpointer    previous_lmf;
 	gpointer    lmf_addr;
+	/* This is only set in trampoline LMF frames */
 	MonoMethod *method;
 	guint64     rip;
 	guint64     rbx;

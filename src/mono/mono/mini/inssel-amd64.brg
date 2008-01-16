@@ -355,6 +355,10 @@ stmt: OP_AMD64_OUTARG_ALIGN_STACK {
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
 }	
 
+stmt: OP_AMD64_SAVE_SP_TO_LMF {
+	mono_bblock_add_inst (s->cbb, tree);
+}	
+
 base: OP_INARG_VT (base) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->tree->inst_basereg, 
 					state->left->tree->inst_offset);

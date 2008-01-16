@@ -602,7 +602,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		if (*lmf && ((*lmf) != jit_tls->first_lmf) && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->rsp)) {
 			/* remove any unused lmf */
-			*lmf = (*lmf)->previous_lmf;
+			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~1);
 		}
 
 		if (omit_fp) {
@@ -630,8 +630,24 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		return ji;
 	} else if (*lmf) {
-		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->rip))) {
+		guint64 rip;
+
+		if (((guint64)(*lmf)->previous_lmf) & 1) {
+			/* This LMF has the rip field set */
+			rip = (*lmf)->rip;
+		} else if ((*lmf)->rsp == 0) {
+			/* Top LMF entry */
+			return (gpointer)-1;
 		} else {
+			/* 
+			 * The rsp field is set just before the call which transitioned to native 
+			 * code. Obtain the rip from the stack.
+			 */
+			rip = *(guint64*)((*lmf)->rsp - sizeof (gpointer));
+		}
+
+		ji = mono_jit_info_table_find (domain, (gpointer)rip);
+		if (!ji) {
 			if (!(*lmf)->method)
 				/* Top LMF entry */
 				return (gpointer)-1;
@@ -640,7 +656,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			res->method = (*lmf)->method;
 		}
 
-		new_ctx->rip = (*lmf)->rip;
+		new_ctx->rip = rip;
 		new_ctx->rbp = (*lmf)->rbp;
 		new_ctx->rsp = (*lmf)->rsp;
 
@@ -650,7 +666,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		new_ctx->r14 = (*lmf)->r14;
 		new_ctx->r15 = (*lmf)->r15;
 
-		*lmf = (*lmf)->previous_lmf;
+		*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~1);
 
 		return ji ? ji : res;
 	}
