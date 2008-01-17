@@ -271,7 +271,6 @@ tail.:
 initobj:
 cpblk:
 initblk:
-rethrow:
 sizeof:
 refanytype:
 illegal:
