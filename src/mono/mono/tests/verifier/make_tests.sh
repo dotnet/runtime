@@ -3876,4 +3876,32 @@ do
 done
 
 
+#localloc
+
+#valid types
+I=1
+for INIT in "ldc.i4.1" "ldc.i4.1\n\tconv.i" 
+do
+	./make_localloc_test.sh localloc_stack_type_$I unverifiable "$INIT"
+	I=`expr $I + 1`
+done
+
+#these types should be invalid
+for INIT in "ldc.i8 2" "ldc.r4 2.2" "ldc.r8 2.2" "ldloca 1"
+do
+	./make_localloc_test.sh localloc_stack_type_$I unverifiable "$INIT"
+	I=`expr $I + 1`
+done
+
+#stack underflow
+./make_localloc_test.sh localloc_empty_stack invalid 
+./make_localloc_test.sh localloc_stack_with_more_than_2_items invalid "ldc.i4.1\n\tldc.i4.1"
+
+#inside exception blocks
+./make_localloc_test.sh localloc_inside_catch_handler invalid "ldc.i4.1" "catch"
+./make_localloc_test.sh localloc_inside_filter invalid "ldc.i4.1" "filter"
+./make_localloc_test.sh localloc_inside_handler invalid "ldc.i4.1" "handler"
+./make_localloc_test.sh localloc_inside_finally invalid "ldc.i4.1" "finally"
+./make_localloc_test.sh localloc_inside_fault invalid "ldc.i4.1" "fault"
+
 
