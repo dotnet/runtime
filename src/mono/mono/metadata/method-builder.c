@@ -472,12 +472,8 @@ mono_mb_emit_managed_call (MonoMethodBuilder *mb, MonoMethod *method, MonoMethod
 void
 mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpointer func)
 {
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_SAVE_LMF);
 	mono_mb_emit_ptr (mb, func);
 	mono_mb_emit_calli (mb, sig);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_RESTORE_LMF);
 }
 
 void
