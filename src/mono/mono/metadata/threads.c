@@ -145,6 +145,9 @@ static MonoThreadAttachCB mono_thread_attach_cb = NULL;
 /* function called at thread cleanup */
 static MonoThreadCleanupFunc mono_thread_cleanup_fn = NULL;
 
+/* function called to notify the runtime about a pending exception on the current thread */
+static MonoThreadNotifyPendingExcFunc mono_thread_notify_pending_exc_fn = NULL;
+
 /* The default stack size for each thread */
 static guint32 default_stacksize = 0;
 #define default_stacksize_for_thread(thread) ((thread)->stack_size? (thread)->stack_size: default_stacksize)
@@ -2299,6 +2302,11 @@ mono_threads_install_cleanup (MonoThreadCleanupFunc func)
 	mono_thread_cleanup_fn = func;
 }
 
+void mono_threads_install_notify_pending_exc (MonoThreadNotifyPendingExcFunc func)
+{
+	mono_thread_notify_pending_exc_fn = func;
+}
+
 G_GNUC_UNUSED
 static void print_tids (gpointer key, gpointer value, gpointer user)
 {
@@ -3412,11 +3420,16 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		/* Can't stop while in unmanaged code. Increase the global interruption
 		   request count. When exiting the unmanaged method the count will be
 		   checked and the thread will be interrupted. */
-
+		
 		InterlockedIncrement (&thread_interruption_requested);
 		thread->interruption_requested = TRUE;
 
 		LeaveCriticalSection (thread->synch_cs);
+
+		if (mono_thread_notify_pending_exc_fn && !running_managed)
+			/* The JIT will notify the thread about the interruption */
+			/* This shouldn't take any locks */
+			mono_thread_notify_pending_exc_fn ();
 
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
@@ -3470,6 +3483,27 @@ void mono_thread_interruption_checkpoint ()
 void mono_thread_force_interruption_checkpoint ()
 {
 	mono_thread_interruption_checkpoint_request (TRUE);
+}
+
+/*
+ * mono_thread_get_and_clear_pending_exception:
+ *
+ *   Return any pending exceptions for the current thread and clear it as a side effect.
+ */
+MonoException*
+mono_thread_get_and_clear_pending_exception (void)
+{
+	MonoThread *thread = mono_thread_current ();
+
+	/* The thread may already be stopping */
+	if (thread == NULL)
+		return NULL;
+
+	if (thread->interruption_requested && !is_running_protected_wrapper ()) {
+		return mono_thread_execute_interruption (thread);
+	}
+	else
+		return NULL;
 }
 
 /**

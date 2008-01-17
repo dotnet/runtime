@@ -5299,7 +5299,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
  * calls the unmanaged code in func)
  */
 MonoMethod *
-mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func)
+mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func, gboolean check_exceptions)
 {
 	MonoMethodSignature *csig;
 	MonoMethodBuilder *mb;
@@ -5321,7 +5321,8 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
 	mono_mb_emit_native_call (mb, sig, (gpointer) func);
-	emit_thread_interrupt_checkpoint (mb);
+	if (check_exceptions)
+		emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	csig = signature_dup (mono_defaults.corlib, sig);
@@ -8239,12 +8240,13 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 /**
  * mono_marshal_get_native_wrapper:
  * @method: The MonoMethod to wrap.
+ * @check_exceptions: Whenever to check for pending exceptions
  *
  * generates IL code for the pinvoke wrapper (the generated method
  * calls the unmanaged code in piinfo->addr)
  */
 MonoMethod *
-mono_marshal_get_native_wrapper (MonoMethod *method)
+mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions)
 {
 	MonoMethodSignature *sig, *csig;
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
@@ -8356,7 +8358,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method)
 
 		g_assert (piinfo->addr);
 		mono_mb_emit_native_call (mb, csig, piinfo->addr);
-		emit_thread_interrupt_checkpoint (mb);
+		if (check_exceptions)
+			emit_thread_interrupt_checkpoint (mb);
 		mono_mb_emit_byte (mb, CEE_RET);
 
 		csig = signature_dup (method->klass->image, csig);

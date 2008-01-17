@@ -38,6 +38,8 @@ typedef enum {
 	ThreadApartmentState_Unknown = 0x00000002
 } MonoThreadApartmentState;
 
+typedef void (*MonoThreadNotifyPendingExcFunc) (void);
+
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
@@ -144,7 +146,9 @@ void mono_thread_cleanup_apartment_state (void) MONO_INTERNAL;
 gboolean mono_threads_set_shutting_down (gboolean may_abort) MONO_INTERNAL;
 gboolean mono_threads_is_shutting_down (void) MONO_INTERNAL;
 
-MonoException * mono_thread_get_undeniable_exception (void);
+MonoException* mono_thread_get_undeniable_exception (void);
+
+MonoException* mono_thread_get_and_clear_pending_exception (void) MONO_INTERNAL;
 
 typedef struct {
 	gpointer hazard_pointers [2];
@@ -155,6 +159,8 @@ typedef void (*MonoHazardousFreeFunc) (gpointer p);
 void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func);
 
 MonoThreadHazardPointers* mono_hazard_pointer_get (void);
+
+void mono_threads_install_notify_pending_exc (MonoThreadNotifyPendingExcFunc func) MONO_INTERNAL;
 
 #define mono_hazard_pointer_set(hp,i,v)	\
 	do { g_assert ((i) == 0 || (i) == 1); \
