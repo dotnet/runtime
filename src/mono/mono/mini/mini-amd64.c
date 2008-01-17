@@ -4649,9 +4649,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			/* Save previous_lmf */
 			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), AMD64_RAX, 8);
 			/* Set new lmf */
-			amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
-			x86_prefix (code, X86_FS_PREFIX);
-			amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
+			if (lmf_offset == 0) {
+				x86_prefix (code, X86_FS_PREFIX);
+				amd64_mov_mem_reg (code, lmf_tls_offset, cfg->frame_reg, 8);
+			} else {
+				amd64_lea_membase (code, AMD64_R11, cfg->frame_reg, lmf_offset);
+				x86_prefix (code, X86_FS_PREFIX);
+				amd64_mov_mem_reg (code, lmf_tls_offset, AMD64_R11, 8);
+			}
 		} else {
 			if (lmf_addr_tls_offset != -1) {
 				/* Load lmf quicky using the FS register */

@@ -2584,13 +2584,22 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	return call;
 }
 
-inline static int
+inline static MonoCallInst*
 mono_emit_calli (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *sig, 
 		 MonoInst **args, MonoInst *addr, const guint8 *ip)
 {
 	MonoCallInst *call = mono_emit_call_args (cfg, bblock, sig, args, TRUE, FALSE, ip, FALSE);
 
 	call->inst.inst_i0 = addr;
+
+	return call;
+}
+
+inline static int
+mono_emit_calli_spilled (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *sig, 
+						 MonoInst **args, MonoInst *addr, const guint8 *ip)
+{
+	MonoCallInst *call = mono_emit_calli (cfg, bblock, sig, args, addr, ip);
 
 	return mono_spill_call (cfg, bblock, call, sig, FALSE, ip, FALSE);
 }
@@ -5095,6 +5104,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoMethodSignature *fsig = NULL;
 			int temp, array_rank = 0;
 			int virtual = *ip == CEE_CALLVIRT;
+			gboolean no_spill;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -5257,7 +5267,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				NEW_TEMPLOAD (cfg, addr, temp);
 				NEW_TEMPLOAD (cfg, sp [0], this_arg_temp->inst_c0);
 
-				if ((temp = mono_emit_calli (cfg, bblock, fsig, sp, addr, ip)) != -1) {
+				if ((temp = mono_emit_calli_spilled (cfg, bblock, fsig, sp, addr, ip)) != -1) {
 					NEW_TEMPLOAD (cfg, *sp, temp);
 					sp++;
 				}
@@ -5410,13 +5420,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
+			if (ip_in_bb (cfg, bblock, ip + 5) 
+				&& (!MONO_TYPE_ISSTRUCT (fsig->ret))
+				&& (!MONO_TYPE_IS_VOID (fsig->ret) || (cmethod && cmethod->string_ctor))
+				&& (CODE_IS_STLOC (ip + 5) || ip [5] == CEE_POP || ip [5] == CEE_RET))
+				/* No need to spill */
+				no_spill = TRUE;
+			else
+				no_spill = FALSE;
+
 			if (*ip == CEE_CALLI) {
 				/* Prevent inlining of methods with indirect calls */
 				INLINE_FAILURE;
-				if ((temp = mono_emit_calli (cfg, bblock, fsig, sp, addr, ip)) != -1) {
-					NEW_TEMPLOAD (cfg, *sp, temp);
-					sp++;
-				}	      				
+				if (no_spill) {
+					ins = (MonoInst*)mono_emit_calli (cfg, bblock, fsig, sp, addr, ip);
+					*sp++ = ins;					
+				} else {
+					if ((temp = mono_emit_calli_spilled (cfg, bblock, fsig, sp, addr, ip)) != -1) {
+						NEW_TEMPLOAD (cfg, *sp, temp);
+						sp++;
+					}
+				}			
 			} else if (array_rank) {
 				MonoInst *addr;
 
@@ -5483,11 +5507,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						NEW_TEMPLOAD (cfg, *sp, temp);
 						sp++;
 					}
-				} else if (ip_in_bb (cfg, bblock, ip + 5) 
-				    && (!MONO_TYPE_ISSTRUCT (fsig->ret))
-				    && (!MONO_TYPE_IS_VOID (fsig->ret) || cmethod->string_ctor)
-				    && (CODE_IS_STLOC (ip + 5) || ip [5] == CEE_POP || ip [5] == CEE_RET)) {
-					/* no need to spill */
+				} else if (no_spill) {
 					ins = (MonoInst*)mono_emit_method_call (cfg, bblock, cmethod, fsig, sp, ip, virtual ? sp [0] : NULL);
 					*sp++ = ins;
 				} else {
