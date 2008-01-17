@@ -3858,3 +3858,22 @@ done
 
 ./make_cpobj_test.sh cpobj_underflow_1 invalid "int32\&" "int32\&" "int32" "pop"
 ./make_cpobj_test.sh cpobj_underflow_2 invalid "int32\&" "int32\&" "int32" "pop\n\tpop"
+
+
+
+#sizeof
+I=1
+for TYPE in int32 object string "int32[]" "native int" "int32[,]" typedref "int32*" "method int32 *(int32)" "class Template\`1<int32>" "valuetype MyStruct"
+do
+	./make_sizeof_test.sh sizeof_${I} valid "$TYPE"
+	I=`expr $I + 1`
+done
+
+for TYPE in void "int32&"
+do
+	./make_sizeof_test.sh sizeof_${I} invalid "$TYPE"
+	I=`expr $I + 1`
+done
+
+
+
