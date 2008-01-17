@@ -3699,3 +3699,57 @@ do
 done
 
 
+
+
+#initobj
+I=1
+for TYPE in int32 int64 float32 float64 object string MyStruct Class "valuetype StructTemplate\`1<object>" "native int"
+do
+	./make_initobj_test.sh initobj_good_types_${I} valid "${TYPE}\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#pointers
+I=1
+for TYPE in "native int" "int32*"
+do
+	./make_initobj_test.sh initobj_pointer_like_types_${I} unverifiable "${TYPE}" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#bad dest
+I=1
+for TYPE in int32 int64 float32 float64 string MyStruct typedref
+do
+	./make_initobj_test.sh initobj_wrong_on_stack_types_${I} unverifiable "${TYPE}" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+
+#invalid token
+I=1
+for TYPE in "int32\&" void
+do
+	./make_initobj_test.sh initobj_bad_token_type_${I} invalid "int32\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#bad token
+I=1
+for TYPE in int64 float32 float64 object string MyStruct Class "valuetype StructTemplate\`1<object>"
+do
+	./make_initobj_test.sh initobj_wrong_type_on_stack_${I} unverifiable "int32\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#type and token are compatible
+./make_initobj_test.sh initobj_compatible_type_on_stack_1 valid "int32\&" "native int"
+./make_initobj_test.sh initobj_compatible_type_on_stack_2 strict "object\&" "string"
+./make_initobj_test.sh initobj_compatible_type_on_stack_3 unverifiable "string\&" "object"
+
+./make_initobj_test.sh initobj_stack_underflow invalid "int32\&" "int32" "pop"
+
+./make_initobj_test.sh initobj_null_literal unverifiable "int32\&" "int32" "pop\n\tldnull"
+./make_initobj_test.sh initobj_boxed_value unverifiable "int32\&" "int32" "pop\n\tldc.i4.0\n\tbox int32"
+
+
