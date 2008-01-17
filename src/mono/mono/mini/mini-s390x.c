@@ -2618,7 +2618,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_COMPARE: 
 		case OP_LCOMPARE: {
-			next = mono_inst_list_next (&ins->node, &bb->inst_list);
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
 			if ((next) && (opcode_to_cond(next->opcode) >= CMP_LE_UN))
 				s390_clgr (code, ins->sreg1, ins->sreg2);
 			else
@@ -2626,7 +2626,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_COMPARE_IMM: {
-			next = mono_inst_list_next (&ins->node, &bb->inst_list);
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lghi (code, s390_r0, ins->inst_imm);
 				if ((next) && 
@@ -2647,7 +2647,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_ICOMPARE: {
-			next = mono_inst_list_next (&ins->node, &bb->inst_list);
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
 			if ((next) && (opcode_to_cond(next->opcode) >= CMP_LE_UN))
 				s390_clr  (code, ins->sreg1, ins->sreg2);
 			else
@@ -2655,7 +2655,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_ICOMPARE_IMM: {
-			next = mono_inst_list_next (&ins->node, &bb->inst_list);
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lghi (code, s390_r0, ins->inst_imm);
 				if ((next) && 
@@ -3491,7 +3491,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCONV_TO_R4: {
 			g_error ("Shouldn't be reached");
-			next = mono_inst_list_next (&ins->node, &bb->inst_list);
+			next = mono_inst_list_next (&ins->node, &bb->ins_list);
 			if ((next) &&
 			    (next->opcode != OP_FMOVE) &&
 			    (next->opcode != OP_STORER4_MEMBASE_REG))
