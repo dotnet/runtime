@@ -199,6 +199,9 @@ guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 gssize
 mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
 
+/* Whenever to check for pending exceptions in managed-to-native wrappers */
+gboolean check_for_pending_exc = TRUE;
+
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -5139,7 +5142,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				if (mono_method_signature (cmethod)->pinvoke) {
-					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod);
+					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc);
 					fsig = mono_method_signature (wrapper);
 				} else if (constrained_call) {
 					fsig = mono_method_signature (cmethod);
@@ -5342,7 +5345,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 					/* Prevent inlining of methods that call wrappers */
 					INLINE_FAILURE;
-					cmethod = mono_marshal_get_native_wrapper (cmethod);
+					cmethod = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc);
 					allways = TRUE;
 				}
 
@@ -8704,7 +8707,7 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	}
 
 	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
-	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func);
+	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_for_pending_exc);
 	g_free (name);
 
 	trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper));
@@ -11654,7 +11657,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 					mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
-			nm = mono_marshal_get_native_wrapper (method);
+			nm = mono_marshal_get_native_wrapper (method, check_for_pending_exc);
 			return mono_get_addr_from_ftnptr (mono_compile_method (nm));
 
 			//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
@@ -12704,6 +12707,16 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_runtime_install_handlers ();
 	mono_threads_install_cleanup (mini_thread_cleanup);
+
+#ifdef MONO_ARCH_HAVE_NOTIFY_PENDING_EXC
+	// This is experimental code so provide an env var to switch it off
+	if (getenv ("MONO_DISABLE_PENDING_EXCEPTIONS")) {
+		printf ("MONO_DISABLE_PENDING_EXCEPTIONS env var set.\n");
+	} else {
+		check_for_pending_exc = FALSE;
+		mono_threads_install_notify_pending_exc (mono_arch_notify_pending_exc);
+	}
+#endif
 
 #define JIT_TRAMPOLINES_WORK
 #ifdef JIT_TRAMPOLINES_WORK

@@ -1228,6 +1228,7 @@ void        mono_arch_emit_imt_argument         (MonoCompile *cfg, MonoCallInst 
 MonoMethod* mono_arch_find_imt_method           (gpointer *regs, guint8 *code) MONO_INTERNAL;
 MonoObject* mono_arch_find_this_argument        (gpointer *regs, MonoMethod *method) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count) MONO_INTERNAL;
+void    mono_arch_notify_pending_exc (void) MONO_INTERNAL;
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
