@@ -3753,3 +3753,108 @@ done
 ./make_initobj_test.sh initobj_boxed_value unverifiable "int32\&" "int32" "pop\n\tldc.i4.0\n\tbox int32"
 
 
+
+#cpobj
+I=1
+for TYPE in int32 int64 float32 float64 object string "valuetype MyStruct" "int32[]" "int32[,]" "native int"
+do
+	./make_cpobj_test.sh cpobj_simple_${I} valid "${TYPE}\&" "${TYPE}\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#should be able to use unmanaged types
+for TYPE in "int32*" "typedref" "method int32 *(int32)"
+do
+	./make_cpobj_test.sh cpobj_simple_${I} unverifiable "${TYPE}\&" "${TYPE}\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#should be able to use invalid types
+for TYPE in "int32\&" "void"
+do
+	./make_cpobj_test.sh cpobj_simple_${I} invalid "${TYPE}\&" "${TYPE}\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#src not a managed pointer
+I=1
+for TYPE in "int32" "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]" "native int"
+do
+	./make_cpobj_test.sh cpobj_src_not_byref_${I} unverifiable "${TYPE}" "${TYPE}\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#dest not a managed pointer
+I=1
+for TYPE in "int32" "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]" "native int"
+do
+	./make_cpobj_test.sh cpobj_dest_not_byref_${I} unverifiable "${TYPE}\&" "${TYPE}" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#src and dest not a managed pointer
+I=1
+for TYPE in "int32" "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]" "native int"
+do
+	./make_cpobj_test.sh cpobj_src_and_dest_not_byref_${I} unverifiable "${TYPE}" "${TYPE}" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+
+#bad token type
+I=1
+for TYPE in "int32\&" "void"
+do
+	./make_cpobj_test.sh cpobj_bad_token_type_${I} invalid "int32\&" "int32\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#src compat to token
+./make_cpobj_test.sh cpobj_src_compat_1 valid "int32\&" "int32\&" "native int"
+./make_cpobj_test.sh cpobj_src_compat_2 valid "native int\&" "int32\&" "int32"
+
+./make_cpobj_test.sh cpobj_src_compat_3 valid "string\&" "object\&" "object"
+./make_cpobj_test.sh cpobj_src_compat_4 valid "Class\&" "object\&" "object"
+
+./make_cpobj_test.sh cpobj_src_compat_5 unverifiable "object\&" "string\&" "string"
+./make_cpobj_test.sh cpobj_src_compat_6 unverifiable "object\&" "Class\&" "Class"
+
+
+#src not compat to token
+I=1
+for TYPE in  "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]"
+do
+	./make_cpobj_test.sh cpobj_src_not_compat_to_token_${I} unverifiable "${TYPE}\&" "int32\&" "int32"
+	I=`expr $I + 1`
+done
+
+#token compat to dest
+./make_cpobj_test.sh cpobj_token_compat_1 valid "int32\&" "int32\&" "native int"
+./make_cpobj_test.sh cpobj_token_compat_2 valid "int32\&" "native int\&" "int32"
+
+./make_cpobj_test.sh cpobj_token_compat_3 valid "Class\&" "object\&" "Class"
+./make_cpobj_test.sh cpobj_token_compat_4 valid "string\&" "object\&" "string"
+
+./make_cpobj_test.sh cpobj_token_compat_5 unverifiable "object\&" "Class\&" "object"
+./make_cpobj_test.sh cpobj_token_compat_6 unverifiable "object\&" "string\&" "object"
+
+#token to compat to dest
+I=1
+for TYPE in  "int64" "float32" "float64" Class MyStruct string object "int32[]" "int32[,]"
+do
+	./make_cpobj_test.sh cpobj_token_not_compat_to_dest${I} unverifiable "int32\&" "int32\&" "${TYPE}"
+	I=`expr $I + 1`
+done
+
+#src and dest not a managed pointer
+./make_cpobj_test.sh cpobj_bad_src_and_dest unverifiable "int32" "int32" "int32"
+
+#src or dest are null or boxed
+./make_cpobj_test.sh cpobj_src_is_null unverifiable "int32\&" "int32\&" "int32" "pop\n\tldnull"
+./make_cpobj_test.sh cpobj_dest_is_null unverifiable "int32\&" "int32\&" "int32" "pop\n\tpop\n\tldnull\n\tldloc.0"
+
+./make_cpobj_test.sh cpobj_src_is_boxed unverifiable "int32" "int32\&" "int32" "box int32"
+./make_cpobj_test.sh cpobj_dest_is_boxed unverifiable "int32\&" "int32" "int32" "pop\n\tbox int32\n\tldloc.0"
+
+./make_cpobj_test.sh cpobj_underflow_1 invalid "int32\&" "int32\&" "int32" "pop"
+./make_cpobj_test.sh cpobj_underflow_2 invalid "int32\&" "int32\&" "int32" "pop\n\tpop"
