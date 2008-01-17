@@ -1009,6 +1009,27 @@ in_any_block (MonoMethodHeader *header, guint offset)
 }
 
 /*
+ * in_any_exception_block:
+ * 
+ * Returns TRUE is @offset is part of any exception clause (filter, handler, catch, finally or fault).
+ */
+static gboolean
+in_any_exception_block (MonoMethodHeader *header, guint offset)
+{
+	int i;
+	MonoExceptionClause *clause;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if (MONO_OFFSET_IN_HANDLER (clause, offset))
+			return TRUE;
+		if (MONO_OFFSET_IN_FILTER (clause, offset))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/*
  * is_valid_branch_instruction:
  *
  * Verify if it's valid to perform a branch from @offset to @target.
@@ -1595,6 +1616,9 @@ handle_enum:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_TYPEDBYREF:
 		return TYPE_PTR | mask;
+
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
 
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_STRING:
@@ -2881,13 +2905,65 @@ do_stobj (VerifyContext *ctx, int token)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid destination of stobj operation at 0x%04x", ctx->ip_offset));
 
 	if (!verify_stack_type_compatibility (ctx, type, src))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid source of stobj operation at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Token and source types of stobj don't match at 0x%04x", ctx->ip_offset));
 
 	if (!verify_type_compatibility (ctx, mono_type_get_type_byval (dest->type), type))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Destination and type token of stobj don't match at 0x%04x", ctx->ip_offset));
-
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Destination and token types of stobj don't match at 0x%04x", ctx->ip_offset));
 }
-	
+
+static void
+do_cpobj (VerifyContext *ctx, int token)
+{
+	ILStackDesc *dest, *src;
+	MonoType *type = get_boxable_mono_type (ctx, token);
+	if (!type)
+		return;
+
+	if (!check_underflow (ctx, 2))
+		return;
+
+	src = stack_pop (ctx);
+	dest = stack_pop (ctx);
+
+	if (!stack_slot_is_managed_pointer (src)) 
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid source of cpobj operation at 0x%04x", ctx->ip_offset));
+
+	if (!stack_slot_is_managed_pointer (dest)) 
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid destination of cpobj operation at 0x%04x", ctx->ip_offset));
+
+	if (!verify_type_compatibility (ctx, type, mono_type_get_type_byval (src->type)))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Token and source types of cpobj don't match at 0x%04x", ctx->ip_offset));
+
+	if (!verify_type_compatibility (ctx, mono_type_get_type_byval (dest->type), type))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Destination and token types of cpobj don't match at 0x%04x", ctx->ip_offset));
+}
+
+static void
+do_initobj (VerifyContext *ctx, int token)
+{
+	ILStackDesc *obj;
+	MonoType *stack, *type = get_boxable_mono_type (ctx, token);
+	if (!type)
+		return;
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	obj = stack_pop (ctx);
+
+	if (!stack_slot_is_managed_pointer (obj)) 
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid object address for initobj at 0x%04x", ctx->ip_offset));
+
+	stack = mono_type_get_type_byval (obj->type);
+	if (MONO_TYPE_IS_REFERENCE (stack)) {
+		if (!verify_type_compatibility (ctx, stack, type)) 
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type token of initobj not compatible with value on stack at 0x%04x", ctx->ip_offset));
+		else if (IS_STRICT_MODE (ctx) && !mono_metadata_type_equal (type, stack)) 
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type token of initobj not compatible with value on stack at 0x%04x", ctx->ip_offset));
+	} else if (!verify_type_compatibility (ctx, stack, type)) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type token of initobj not compatible with value on stack at 0x%04x", ctx->ip_offset));
+	}
+}
 
 /* TODO implement access verification */
 static void
@@ -3415,6 +3491,55 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 
 	top = stack_push_val(ctx, TYPE_PTR, mono_type_create_fnptr_from_mono_method (ctx, method));
 	top->method = method;
+}
+
+static void
+do_sizeof (VerifyContext *ctx, int token)
+{
+	MonoType *type;
+
+	if (!IS_TYPE_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid type token %x at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+	
+	type = mono_type_get_full (ctx->image, token, ctx->generic_context);
+
+	if (!type) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Type (0x%08x) not found at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	if (type->byref && type->type != MONO_TYPE_TYPEDBYREF) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid use of byref type at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	if (type->type == MONO_TYPE_VOID) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid use of void type at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	if (check_overflow (ctx))
+		set_stack_value (ctx, stack_push (ctx), &mono_defaults.uint32_class->byval_arg, FALSE);
+}
+
+/* Stack top can be of any type, the runtime doesn't care and treat everything as an int. */
+static void
+do_localloc (VerifyContext *ctx)
+{
+	if (ctx->eval.size != 1) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Stack must have only size item in localloc at 0x%04x", ctx->ip_offset));
+		return;		
+	}
+
+	if (in_any_exception_block (ctx->header, ctx->ip_offset)) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Stack must have only size item in localloc at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	set_stack_value (ctx, stack_top (ctx), &mono_defaults.int_class->byval_arg, FALSE);
+	CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Instruction localloc in never verifiable at 0x%04x", ctx->ip_offset));
 }
 
 /*Merge the stacks and perform compat checks*/
@@ -4072,10 +4197,7 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_CPOBJ:
-			token = read32 (ip + 1);
-			if (!check_underflow (&ctx, 2))
-				break;
-			ctx.eval.size -= 2;
+			do_cpobj (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
@@ -4424,13 +4546,10 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 
 			case CEE_LOCALLOC:
-				if (ctx.eval.size != 1)
-					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Stack must have only size item in localloc at 0x%04x", ip_offset));
-				if (stack_top (&ctx)->stype != TYPE_I4 && stack_top (&ctx)->stype != TYPE_PTR)
-					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid argument to localloc at 0x%04x", ip_offset));
-				stack_top (&ctx)->stype = TYPE_COMPLEX;
+				do_localloc (&ctx);
 				++ip;
 				break;
+
 			case CEE_UNUSED57:
 				++ip;
 				break;
@@ -4453,13 +4572,12 @@ mono_method_verify (MonoMethod *method, int level)
 				if (ip < end && (*ip != CEE_CALL && *ip != CEE_CALLI && *ip != CEE_CALLVIRT))
 					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("tail prefix must be used only with call opcodes at 0x%04x", ip_offset));
 				break;
+
 			case CEE_INITOBJ:
-				if (!check_underflow (&ctx, 1))
-					break;
-				token = read32 (ip + 1);
+				do_initobj (&ctx, read32 (ip + 1));
 				ip += 5;
-				stack_pop (&ctx);
 				break;
+
 			case CEE_CONSTRAINED_:
 				token = read32 (ip + 1);
 				ip += 5;
@@ -4486,15 +4604,12 @@ mono_method_verify (MonoMethod *method, int level)
 			case CEE_UNUSED:
 				++ip;
 				break;
+
 			case CEE_SIZEOF:
-				if (!check_overflow (&ctx))
-					break;
-				token = read32 (ip + 1);
+				do_sizeof (&ctx, read32 (ip + 1));
 				ip += 5;
-				stack_top (&ctx)->type = &mono_defaults.uint32_class->byval_arg;
-				stack_top (&ctx)->stype = TYPE_I4;
-				ctx.eval.size++;
 				break;
+
 			case CEE_REFANYTYPE:
 				if (!check_underflow (&ctx, 1))
 					break;
