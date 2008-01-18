@@ -2887,6 +2887,10 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 		break;
 	}
 
+	case MONO_EXCEPTION_BAD_IMAGE:
+		class->exception_data = error->msg;
+		break;
+
 	default :
 		g_assert_not_reached ();
 	}
@@ -6175,6 +6179,9 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		g_free (msg);
 
 		return ex;
+	}
+	case MONO_EXCEPTION_BAD_IMAGE: {
+		return mono_get_exception_bad_image_format (klass->exception_data);
 	}
 	default: {
 		MonoLoaderError *error;
