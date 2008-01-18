@@ -1278,11 +1278,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
-	if (cfg->method->save_lmf) {
-		MONO_INST_NEW (cfg, arg, OP_AMD64_SAVE_SP_TO_LMF);
-		MONO_INST_LIST_ADD (&arg->node, &call->out_args);
-	}
-
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
 
@@ -1429,6 +1424,11 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	if (cinfo->need_stack_align) {
 		MONO_INST_NEW (cfg, arg, OP_AMD64_OUTARG_ALIGN_STACK);
 		MONO_INST_LIST_ADD (&arg->node, &call->out_args);
+	}
+
+	if (cfg->method->save_lmf) {
+		MONO_INST_NEW (cfg, arg, OP_AMD64_SAVE_SP_TO_LMF);
+		MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
 	}
 
 	call->stack_usage = cinfo->stack_usage;
@@ -4720,9 +4720,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (ins->opcode != OP_REGVAR) {
 				switch (ainfo->storage) {
 				case ArgInIReg: {
-					if (next->opcode == OP_LOAD_MEMBASE && next->inst_basereg == ins->inst_basereg && next->inst_offset == ins->inst_offset && next->dreg == ainfo->reg) {
-						NULLIFY_INS (next);
-						match = TRUE;
+					if (((next->opcode == OP_LOAD_MEMBASE) || (next->opcode == OP_LOADI4_MEMBASE)) && next->inst_basereg == ins->inst_basereg && next->inst_offset == ins->inst_offset) {
+						if (next->dreg == ainfo->reg)
+							NULLIFY_INS (next);
+						else {
+							next->opcode = OP_MOVE;
+							next->sreg1 = ainfo->reg;
+						}
+						/* Only continue if the instruction doesn't change argument regs */
+						if (next->dreg == ainfo->reg || next->dreg == AMD64_RAX)
+							match = TRUE;
 					}
 					break;
 				}
