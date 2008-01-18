@@ -3575,7 +3575,7 @@ do
 		I=`expr $I + 1`
 	done
 done
-
+	
 for OP in "add.ovf.un" "sub.ovf.un" 
 do
 	for TYPE in "int32" "native int" "int32&"
@@ -3607,6 +3607,16 @@ do
 	done
 done
 
+#ovf math doesn't work with floats
+I=1
+for OP in "add.ovf.un" "add.ovf" "sub.ovf.un" "sub.ovf" "mul.ovf.un" "mul.ovf"
+do
+	for TYPE in "float32" "float64"
+	do
+		./make_bin_test.sh bin_ovf_math_f_${I} unverifiable $OP "${TYPE}" "${TYPE}"
+		I=`expr $I + 1`
+	done
+done
 
 #unbox.any
 
