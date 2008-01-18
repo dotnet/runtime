@@ -4693,6 +4693,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 	}
 
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		args_clobbered = TRUE;
+
 	/*
 	 * Optimize the common case of the first bblock making a call with the same
 	 * arguments as the method. This works because the arguments are still in their
