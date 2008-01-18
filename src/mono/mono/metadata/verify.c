@@ -1460,6 +1460,34 @@ static const unsigned char cmp_br_eq_op [TYPE_MAX][TYPE_MAX] = {
 	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_I4},
 };
 
+static const unsigned char add_ovf_un_table [TYPE_MAX][TYPE_MAX] = {
+	{TYPE_I4, TYPE_INV, TYPE_NATIVE_INT, TYPE_INV, TYPE_PTR | NON_VERIFIABLE_RESULT, TYPE_INV},
+	{TYPE_INV, TYPE_I8, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_NATIVE_INT, TYPE_INV, TYPE_NATIVE_INT, TYPE_INV, TYPE_PTR | NON_VERIFIABLE_RESULT, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_PTR | NON_VERIFIABLE_RESULT, TYPE_INV, TYPE_PTR | NON_VERIFIABLE_RESULT, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+};
+
+static const unsigned char sub_ovf_un_table [TYPE_MAX][TYPE_MAX] = {
+	{TYPE_I4, TYPE_INV, TYPE_NATIVE_INT, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_I8, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_NATIVE_INT, TYPE_INV, TYPE_NATIVE_INT, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_PTR | NON_VERIFIABLE_RESULT, TYPE_INV, TYPE_PTR | NON_VERIFIABLE_RESULT, TYPE_INV, TYPE_NATIVE_INT | NON_VERIFIABLE_RESULT, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+};
+
+static const unsigned char bin_ovf_table [TYPE_MAX][TYPE_MAX] = {
+	{TYPE_I4, TYPE_INV, TYPE_NATIVE_INT, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_I8, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_NATIVE_INT, TYPE_INV, TYPE_NATIVE_INT, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
+};
+
+
 /*debug helpers */
 static void
 dump_stack_value (ILStackDesc *value)
@@ -3881,22 +3909,34 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 2;
 			break;
 
-		case CEE_ADD:
 		case CEE_ADD_OVF_UN:
+			do_binop (&ctx, *ip, add_ovf_un_table);
+			++ip;
+			break;
+
+		case CEE_SUB_OVF_UN:
+			do_binop (&ctx, *ip, sub_ovf_un_table);
+			++ip;
+			break;
+
+		case CEE_ADD_OVF:
+		case CEE_SUB_OVF:
+		case CEE_MUL_OVF:
+		case CEE_MUL_OVF_UN:
+			do_binop (&ctx, *ip, bin_ovf_table);
+			++ip;
+			break;
+
+		case CEE_ADD:
 			do_binop (&ctx, *ip, add_table);
 			++ip;
 			break;
 
 		case CEE_SUB:
-		case CEE_SUB_OVF_UN:
 			do_binop (&ctx, *ip, sub_table);
 			++ip;
 			break;
 
-		case CEE_ADD_OVF:
-		case CEE_MUL_OVF:
-		case CEE_MUL_OVF_UN:
-		case CEE_SUB_OVF:
 		case CEE_MUL:
 		case CEE_DIV:
 		case CEE_REM:
