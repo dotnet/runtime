@@ -1545,6 +1545,8 @@ type_from_op (MonoInst *ins) {
 	case CEE_SUB_OVF_UN:
 		ins->type = bin_num_table [ins->inst_i0->type] [ins->inst_i1->type];
 		ins->opcode += ovfops_op_map [ins->inst_i0->type];
+		if (ins->type == STACK_R8)
+			ins->type = STACK_INV;
 		return;
 	default:
 		g_error ("opcode 0x%04x not handled in type from op", ins->opcode);
