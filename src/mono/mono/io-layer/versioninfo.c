@@ -476,6 +476,8 @@ static gconstpointer get_string_block (gconstpointer data_ptr,
  * NULL if the data read hits padding.  We can't recover from this
  * because the data length does not include padding bytes, so it's not
  * possible to just return the start position + length
+ *
+ * If lang == NULL it means we're just stepping through this block
  */
 static gconstpointer get_stringtable_block (gconstpointer data_ptr,
 					    gchar *lang,
@@ -522,7 +524,7 @@ static gconstpointer get_stringtable_block (gconstpointer data_ptr,
 		
 		g_strdown (found_lang);
 		
-		if (!strcmp (found_lang, lang)) {
+		if (lang != NULL && !strcmp (found_lang, lang)) {
 			/* Got the one we're interested in */
 			data_ptr = get_string_block (data_ptr, string_key,
 						     string_value,
