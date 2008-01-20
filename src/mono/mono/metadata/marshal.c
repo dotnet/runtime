@@ -139,7 +139,7 @@ static void
 mono_marshal_set_last_error_windows (int error);
 
 static void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func);
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean check_exceptions);
 
 static void init_safe_handle (void);
 
@@ -3028,7 +3028,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 		mspecs[0] = NULL;
 	}
 
-	mono_marshal_emit_native_wrapper(method->klass->image, mb_native, sig_native, piinfo, mspecs, piinfo->addr);
+	mono_marshal_emit_native_wrapper (method->klass->image, mb_native, sig_native, piinfo, mspecs, piinfo->addr, TRUE);
 
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
 
@@ -8052,11 +8052,12 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
  * @piinfo: Marshalling information
  * @mspecs: Marshalling information
  * @func: the native function to call
+ * @check_exceptions: Whenever to check for pending exceptions after the native call
  *
  * generates IL code for the pinvoke wrapper, the generated code calls @func.
  */
 static void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func)
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean check_exceptions)
 {
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
@@ -8205,7 +8206,8 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	 * Need to call this after converting the result since MONO_VTADDR needs 
 	 * to be adjacent to the call instruction.
 	 */
-	emit_thread_interrupt_checkpoint (mb);
+	if (check_exceptions)
+		emit_thread_interrupt_checkpoint (mb);
 
 	/* we need to convert byref arguments back and free string arrays */
 	for (i = 0; i < sig->param_count; i++) {
@@ -8375,7 +8377,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions)
 	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	mono_marshal_emit_native_wrapper (mb->method->klass->image, mb, sig, piinfo, mspecs, piinfo->addr);
+	mono_marshal_emit_native_wrapper (mb->method->klass->image, mb, sig, piinfo, mspecs, piinfo->addr, check_exceptions);
 
 	csig = signature_dup (method->klass->image, sig);
 	csig->pinvoke = 0;
@@ -8421,7 +8423,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
-	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func);
+	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, TRUE);
 
 	csig = signature_dup (image, sig);
 	csig->pinvoke = 0;
