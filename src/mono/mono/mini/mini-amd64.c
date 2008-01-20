@@ -4415,17 +4415,20 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 	}
 
-	alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
-
-	alloc_size -= pos;
-
-	if (cfg->arch.omit_fp)
+	if (cfg->arch.omit_fp) {
 		/* 
 		 * On enter, the stack is misaligned by the the pushing of the return
 		 * address. It is either made aligned by the pushing of %rbp, or by
 		 * this.
 		 */
-		alloc_size += 8;
+		alloc_size = ALIGN_TO (cfg->stack_offset, 8);
+		if ((alloc_size % 16) == 0)
+			alloc_size += 8;
+	} else {
+		alloc_size = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+		alloc_size -= pos;
+	}
 
 	cfg->arch.stack_alloc_size = alloc_size;
 
