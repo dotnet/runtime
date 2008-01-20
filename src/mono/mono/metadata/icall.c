@@ -4749,6 +4749,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	aname->major = name->major;
 	aname->minor = name->minor;
 	aname->build = name->build;
+	aname->flags = name->flags;
 	aname->revision = name->revision;
 	aname->hashalg = name->hash_alg;
 	aname->versioncompat = 1; /* SameMachine (default) */
@@ -5079,13 +5080,14 @@ ves_icall_System_Reflection_AssemblyName_ParseName (MonoReflectionAssemblyName *
 	MonoDomain *domain = mono_object_domain (name);
 	char *val;
 	gboolean is_version_defined;
+	gboolean is_token_defined;
 
 	val = mono_string_to_utf8 (assname);
-	if (!mono_assembly_name_parse_full (val, &aname, TRUE, &is_version_defined))
+	if (!mono_assembly_name_parse_full (val, &aname, TRUE, &is_version_defined, &is_token_defined))
 		return FALSE;
 	
 	fill_reflection_assembly_name (domain, name, &aname, "", is_version_defined,
-		FALSE, FALSE);
+		FALSE, is_token_defined);
 
 	mono_assembly_name_free (&aname);
 	g_free ((guint8*) aname.public_key);

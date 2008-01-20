@@ -422,7 +422,8 @@ gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,
 					      MonoAssemblyName	   *aname,
 					      gboolean save_public_key,
-					      gboolean *is_version_defined) MONO_INTERNAL;
+					      gboolean *is_version_defined,
+						  gboolean *is_token_defined) MONO_INTERNAL;
 
 guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 

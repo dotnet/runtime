@@ -1356,7 +1356,7 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		slen = mono_metadata_decode_value (data + 2, &data);
 		aname = g_new0 (MonoAssemblyName, 1);
 		/*g_print ("friend ass: %s\n", data);*/
-		if (mono_assembly_name_parse_full (data, aname, TRUE, NULL)) {
+		if (mono_assembly_name_parse_full (data, aname, TRUE, NULL, NULL)) {
 			ass->friend_assembly_names = g_slist_prepend (ass->friend_assembly_names, aname);
 		} else {
 			g_free (aname);
@@ -1563,7 +1563,7 @@ parse_public_key (const gchar *key, gchar** pubkey)
 }
 
 static gboolean
-build_assembly_name (const char *name, const char *version, const char *culture, const char *token, const char *key, MonoAssemblyName *aname, gboolean save_public_key)
+build_assembly_name (const char *name, const char *version, const char *culture, const char *token, const char *key, guint32 flags, MonoAssemblyName *aname, gboolean save_public_key)
 {
 	gint major, minor, build, revision;
 	gint len;
@@ -1592,6 +1592,7 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 			aname->revision = 0;
 	}
 	
+	aname->flags = flags;
 	aname->name = g_strdup (name);
 	
 	if (culture) {
@@ -1611,8 +1612,8 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 		g_free (lower);
 	}
 
-	if (key && strncmp (key, "null", 4) != 0) {
-		if (!parse_public_key (key, &pkey)) {
+	if (key) {
+		if (strcmp (key, "null") == 0 || !parse_public_key (key, &pkey)) {
 			mono_assembly_name_free (aname);
 			return FALSE;
 		}
@@ -1645,30 +1646,36 @@ parse_assembly_directory_name (const char *name, const char *dirname, MonoAssemb
 		return FALSE;
 	}
 	
-	res = build_assembly_name (name, parts[0], parts[1], parts[2], NULL, aname, FALSE);
+	res = build_assembly_name (name, parts[0], parts[1], parts[2], NULL, 0, aname, FALSE);
 	g_strfreev (parts);
 	return res;
 }
 
 gboolean
-mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboolean save_public_key, gboolean *is_version_defined)
+mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboolean save_public_key, gboolean *is_version_defined, gboolean *is_token_defined)
 {
 	gchar *dllname;
 	gchar *version = NULL;
 	gchar *culture = NULL;
 	gchar *token = NULL;
 	gchar *key = NULL;
+	gchar *retargetable = NULL;
 	gboolean res;
 	gchar *value;
 	gchar **parts;
 	gchar **tmp;
 	gboolean version_defined;
+	gboolean token_defined;
+	guint32 flags = 0;
 
 	if (!is_version_defined)
 		is_version_defined = &version_defined;
 	*is_version_defined = FALSE;
+	if (!is_token_defined)
+		is_token_defined = &token_defined;
+	*is_token_defined = FALSE;
 	
-	parts = tmp = g_strsplit (name, ",", 4);
+	parts = tmp = g_strsplit (name, ",", 6);
 	if (!tmp || !*tmp) {
 		g_strfreev (tmp);
 		return FALSE;
@@ -1686,7 +1693,6 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			if (strlen (version) == 0) {
 				return FALSE;
 			}
-
 			tmp++;
 			continue;
 		}
@@ -1701,6 +1707,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		}
 
 		if (!g_ascii_strncasecmp (value, "PublicKeyToken=", 15)) {
+			*is_token_defined = TRUE;
 			token = g_strstrip (value + 15);
 			if (strlen (token) == 0) {
 				return FALSE;
@@ -1718,6 +1725,20 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
+		if (!g_ascii_strncasecmp (value, "Retargetable=", 13)) {
+			retargetable = g_strstrip (value + 13);
+			if (strlen (retargetable) == 0) {
+				return FALSE;
+			}
+			if (!g_ascii_strcasecmp (retargetable, "yes")) {
+				flags |= ASSEMBLYREF_RETARGETABLE_FLAG;
+			} else if (g_ascii_strcasecmp (retargetable, "no")) {
+				return FALSE;
+			}
+			tmp++;
+			continue;
+		}
+
 		if (!g_ascii_strncasecmp (value, "ProcessorArchitecture=", 22)) {
 			/* this is ignored for now, until we can change MonoAssemblyName */
 			tmp++;
@@ -1728,7 +1749,13 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		return FALSE;
 	}
 
-	res = build_assembly_name (dllname, version, culture, token, key, aname, save_public_key);
+	/* if retargetable flag is set, then we must have a fully qualified name */
+	if (retargetable != NULL && (version == NULL || culture == NULL || (key == NULL && token == NULL))) {
+		return FALSE;
+	}
+
+	res = build_assembly_name (dllname, version, culture, token, key, flags,
+		aname, save_public_key);
 	g_strfreev (parts);
 	return res;
 }
@@ -1746,7 +1773,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
 {
-	return mono_assembly_name_parse_full (name, aname, FALSE, NULL);
+	return mono_assembly_name_parse_full (name, aname, FALSE, NULL, NULL);
 }
 
 static MonoAssembly*
