@@ -9431,6 +9431,20 @@ typebuilder_setup_events (MonoClass *klass)
 	}
 }
 
+static gboolean
+remove_instantiations_of (gpointer key,
+						  gpointer value,
+						  gpointer user_data)
+{
+	MonoType *type = (MonoType*)key;
+	MonoClass *klass = (MonoClass*)user_data;
+
+	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass))
+		return TRUE;
+	else
+		return FALSE;
+}
+
 MonoReflectionType*
 mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 {
@@ -9512,6 +9526,15 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	typebuilder_setup_events (klass);
 	
 	klass->wastypebuilder = TRUE;
+
+	/* 
+	 * If we are a generic TypeBuilder, there might be instantiations in the type cache
+	 * which have type System.Reflection.MonoGenericClass, but after the type is created, 
+	 * we want to return normal System.MonoType objects, so clear these out from the cache.
+	 */
+	if (domain->type_hash && klass->generic_container)
+		mono_g_hash_table_foreach_remove (domain->type_hash, remove_instantiations_of, klass);
+
 	mono_loader_unlock ();
 	mono_domain_unlock (domain);
 
