@@ -2044,7 +2044,6 @@ handle_enum:
 			return FALSE;
 		return is_array_type_compatible (target, candidate);
 
-	//TODO verify aditional checks that needs to be done
 	case MONO_TYPE_TYPEDBYREF:
 		return candidate->type == MONO_TYPE_TYPEDBYREF;
 
@@ -2784,8 +2783,8 @@ do_unbox_value (VerifyContext *ctx, int klass_token)
 		(stack_slot_is_boxed_value (value) || !mono_class_from_mono_type (value->type)->valuetype)))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type %s at stack for unbox operation at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));
 
-	//TODO Pushed managed pointer is controled mutability (CMMP) 
-	set_stack_value (ctx, stack_push (ctx), mono_type_get_type_byref (type), FALSE);
+	set_stack_value (ctx, value = stack_push (ctx), mono_type_get_type_byref (type), FALSE);
+	value->stype |= CMMP_MASK;
 }
 
 static void
@@ -3577,8 +3576,13 @@ do_localloc (VerifyContext *ctx)
 static void
 do_ldstr (VerifyContext *ctx, guint32 token)
 {
-	if (token >= ctx->image->heap_us.size) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid string index at 0x%04x", ctx->ip_offset));
+	if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid string token %x at 0x%04x", token, ctx->ip_offset));
+		return;
+	}
+
+	if (mono_metadata_token_index (token) >= ctx->image->heap_us.size) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x", token, ctx->ip_offset));
 		return;
 	}
 
