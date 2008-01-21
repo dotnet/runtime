@@ -8309,6 +8309,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 	klass->name_space = mono_string_to_utf8_mp (klass->image->mempool, tb->nspace);
 	klass->type_token = MONO_TOKEN_TYPE_DEF | tb->table_idx;
 	klass->flags = tb->attrs;
+	
+	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
 	klass->element_class = klass;
 
@@ -8356,6 +8358,8 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	/*g_print ("setup %s as %s (%p)\n", klass->name, ((MonoObject*)tb)->vtable->klass->name, tb);*/
 
+	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
+	
 	mono_loader_unlock ();
 }
 

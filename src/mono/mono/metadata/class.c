@@ -3641,6 +3641,9 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 
 	klass->name = gklass->name;
 	klass->name_space = gklass->name_space;
+	
+	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
+	
 	klass->image = gklass->image;
 	klass->flags = gklass->flags;
 	klass->type_token = gklass->type_token;
@@ -3711,6 +3714,8 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	if (MONO_CLASS_IS_INTERFACE (klass))
 		setup_interface_offsets (klass, 0);
 
+	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
+	
 	mono_loader_unlock ();
 
 	return klass;
@@ -5845,6 +5850,18 @@ guint32
 mono_field_get_flags (MonoClassField *field)
 {
 	return field->type->attrs;
+}
+
+/**
+ * mono_field_get_offset;
+ * @field: the MonoClassField to act on
+ *
+ * Returns: the field offset.
+ */
+guint32
+mono_field_get_offset (MonoClassField *field)
+{
+	return field->offset;
 }
 
 /**

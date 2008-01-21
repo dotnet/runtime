@@ -211,6 +211,9 @@ mono_field_get_parent (MonoClassField *field);
 guint32
 mono_field_get_flags  (MonoClassField *field);
 
+guint32
+mono_field_get_offset  (MonoClassField *field);
+
 const char *
 mono_field_get_data  (MonoClassField *field);
 
