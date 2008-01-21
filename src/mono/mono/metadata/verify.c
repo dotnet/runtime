@@ -3476,7 +3476,6 @@ do_switch (VerifyContext *ctx, int count, const unsigned char *data)
 	}
 }
 
-/*TODO add visibility checks*/
 static void
 do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 {
@@ -3516,6 +3515,9 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 		if (!verify_type_compatibility (ctx, &method->klass->byval_arg, top->type))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unexpected object for ldvirtftn at 0x%04x", ctx->ip_offset));
 	}
+	
+	if (!mono_method_can_access_method (ctx->method, method))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Loaded method is not visible for ldftn/ldvirtftn at 0x%04x", ctx->ip_offset));
 
 	top = stack_push_val(ctx, TYPE_PTR, mono_type_create_fnptr_from_mono_method (ctx, method));
 	top->method = method;
