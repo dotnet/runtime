@@ -279,7 +279,9 @@ typedef struct {
 #define MONO_ARCH_VTABLE_REG X86_EDX
 #define MONO_ARCH_COMMON_VTABLE_TRAMPOLINE 1
 
+#if !defined(__APPLE__)
 #define MONO_ARCH_AOT_SUPPORTED 1
+#endif
 
 typedef struct {
 	guint8 *address;
