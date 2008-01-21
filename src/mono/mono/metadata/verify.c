@@ -3574,6 +3574,18 @@ do_localloc (VerifyContext *ctx)
 	CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Instruction localloc in never verifiable at 0x%04x", ctx->ip_offset));
 }
 
+static void
+do_ldstr (VerifyContext *ctx, guint32 token)
+{
+	if (token >= ctx->image->heap_us.size) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid string index at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
+	if (check_overflow (ctx))
+		stack_push_val (ctx, TYPE_COMPLEX,  &mono_defaults.string_class->byval_arg);
+}
+
 /*Merge the stacks and perform compat checks*/
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external) 
@@ -3861,9 +3873,6 @@ mono_method_verify (MonoMethod *method, int level)
 		if (!ctx.valid)
 			break;
 
-		/*TODO id stack merge fails, we break, should't we - or only on errors??
-		TODO verify need_merge
-		*/
 		if (need_merge) {
 			VERIFIER_DEBUG ( printf ("extra merge needed! 0x%04x \n", ctx.target); );
 			merge_stacks (&ctx, &ctx.eval, &ctx.code [ctx.target], FALSE, TRUE);
@@ -4251,10 +4260,7 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_LDSTR:
-			/*TODO verify if token is a valid string literal*/
-			token = read32 (ip + 1);
-			if (check_overflow (&ctx))
-				stack_push_val (&ctx, TYPE_COMPLEX,  &mono_defaults.string_class->byval_arg);
+			do_ldstr (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
