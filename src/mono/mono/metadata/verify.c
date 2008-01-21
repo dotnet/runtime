@@ -2993,7 +2993,6 @@ do_initobj (VerifyContext *ctx, int token)
 	}
 }
 
-/* TODO implement access verification */
 static void
 do_newobj (VerifyContext *ctx, int token) 
 {
@@ -3015,6 +3014,9 @@ do_newobj (VerifyContext *ctx, int token)
 
 	if (method->klass->flags & (TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_INTERFACE))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Trying to instantiate an abstract or interface type at 0x%04x", ctx->ip_offset));
+
+	if (!mono_method_can_access_method (ctx->method, method))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Constructor not visible at 0x%04x", ctx->ip_offset));
 
 	sig = mono_method_signature (method);
 	if (!check_underflow (ctx, sig->param_count))
