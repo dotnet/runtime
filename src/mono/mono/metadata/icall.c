@@ -2297,22 +2297,12 @@ ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 	gclass = (MonoDynamicGenericClass *) type->type.type->data.generic_class;
 
 	domain = mono_object_domain (type);
-	klass = mono_class_from_mono_type (type->generic_type->type);
+	klass = mono_class_from_mono_type (type->generic_type->type.type);
 
 	if (!klass->generic_class && !klass->generic_container)
 		return NULL;
 
-	if (!strcmp (type->generic_type->object.vtable->klass->name, "TypeBuilder")) {
-		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *) type->generic_type;
-		parent = tb->parent;
-	} else if (klass->wastypebuilder) {
-		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *) type->generic_type;
-		parent = tb->parent;
-	} else {
-		MonoClass *pklass = klass->parent;
-		if (pklass)
-			parent = mono_type_get_object (domain, &pklass->byval_arg);
-	}
+	parent = type->generic_type->parent;
 
 	if (!parent || (parent->type->type != MONO_TYPE_GENERICINST))
 		return NULL;
@@ -2347,14 +2337,8 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 	gclass = type->type.type->data.generic_class;
 	g_assert (gclass->is_dynamic);
 
-	if (!strcmp (type->generic_type->object.vtable->klass->name, "TypeBuilder")) {
-		tb = (MonoReflectionTypeBuilder *) type->generic_type;
-		icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
-	} else {
-		klass = gclass->container_class;
-		mono_class_init (klass);
-		icount = klass->interface_count;
-	}
+	tb = type->generic_type;
+	icount = tb->interfaces ? mono_array_length (tb->interfaces) : 0;
 
 	res = mono_array_new (domain, System_Reflection_MonoGenericClass, icount);
 

@@ -5494,10 +5494,9 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 #endif
 
 	res->type.type = geninst;
-	if (gklass->wastypebuilder && gklass->reflection_info)
-		MONO_OBJECT_SETREF (res, generic_type, gklass->reflection_info);
-	else
-		MONO_OBJECT_SETREF (res, generic_type, mono_type_get_object (domain, &gklass->byval_arg));
+	g_assert (gklass->reflection_info);
+	g_assert (!strcmp (((MonoObject*)gklass->reflection_info)->vtable->klass->name, "TypeBuilder"));
+	MONO_OBJECT_SETREF (res, generic_type, gklass->reflection_info);
 
 	return res;
 }
@@ -5552,7 +5551,8 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		mono_domain_unlock (domain);
 		return res;
 	}
-	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !(type->data.generic_class->container_class && type->data.generic_class->container_class->wastypebuilder)) {
+	/* Create a MonoGenericClass object for instantiations of not finished TypeBuilders */
+	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !type->data.generic_class->container_class->wastypebuilder) {
 		res = (MonoReflectionType *)mono_generic_class_get_object (domain, type);
 		mono_g_hash_table_insert (domain->type_hash, type, res);
 		mono_domain_unlock (domain);
@@ -8905,11 +8905,8 @@ mono_reflection_bind_generic_parameters (MonoReflectionType *type, int type_argc
 		is_dynamic = TRUE;
 	} else if (!strcmp (((MonoObject *) type)->vtable->klass->name, "MonoGenericClass")) {
 		MonoReflectionGenericClass *rgi = (MonoReflectionGenericClass *) type;
-		MonoReflectionType *rgt = rgi->generic_type;
 
-		g_assert (!strcmp (((MonoObject *) rgt)->vtable->klass->name, "TypeBuilder"));
-		tb = (MonoReflectionTypeBuilder *) rgt;
-
+		tb = rgi->generic_type;
 		is_dynamic = TRUE;
 	}
 
@@ -9039,7 +9036,7 @@ inflate_method (MonoReflectionGenericClass *type, MonoObject *obj)
 	MonoMethod *method;
 	MonoClass *gklass;
 
-	gklass = mono_class_from_mono_type (type->generic_type->type);
+	gklass = mono_class_from_mono_type (type->generic_type->type.type);
 
 	if (!strcmp (obj->vtable->klass->name, "MethodBuilder"))
 		method = methodbuilder_to_mono_method (gklass, (MonoReflectionMethodBuilder *) obj);
