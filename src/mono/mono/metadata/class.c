@@ -665,9 +665,9 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 
 	sig = mono_method_signature (method);
 	if (sig->pinvoke) {
-		iresult->method.pinvoke = *(MonoMethodPInvoke*)method;
+		memcpy (&iresult->method.pinvoke, method, sizeof (MonoMethodPInvoke));
 	} else {
-		iresult->method.normal = *(MonoMethodNormal*)method;
+		memcpy (&iresult->method.normal, method, sizeof (MonoMethodNormal));
 		iresult->method.normal.header = NULL;
 	}
 
@@ -691,6 +691,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 			mono_metadata_free_type (inflated);
 	}
 
+	/* These are originally set by the memcpy above */
 	if (context->method_inst)
 		result->generic_container = NULL;
 	else if (method->generic_container)
