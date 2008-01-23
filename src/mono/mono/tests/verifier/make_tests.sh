@@ -3915,3 +3915,95 @@ done
 ./make_localloc_test.sh localloc_inside_fault invalid "ldc.i4.1" "fault"
 
 
+
+
+
+
+#tests for call and callvirt
+
+#call test
+#invalid method token
+#valid
+#validate the this pointer for signatures with HASTHIS. 
+#this ptr: reference types must be a value, value type can be a MP or a BT.
+#number of args
+#args are compatible
+#method is abstract
+#calling base class constructor
+#calling a value type constructor
+#visibility
+#calling non-final virtual calls on something not a boxed valuetype, this arg must have THIS_POINTER_MASK and no starg.0 or ldarga.0 happens
+
+
+I=1
+for CTYPE in "call" "callvirt"
+do
+	./make_call_test.sh call_${I}_non_virtual_1 valid "${CTYPE} instance void ClassA::Method1()" "newobj instance void ClassA::.ctor()"
+	./make_call_test.sh call_${I}_non_virtual_2 valid "${CTYPE} instance void ClassA::Method1()" "ldnull"
+	./make_call_test.sh call_${I}_non_virtual_3 valid "${CTYPE} instance void ClassA::Method2(int32)" "newobj instance void ClassA::.ctor()\n\t\tldc.i4.0"
+	./make_call_test.sh call_${I}_non_virtual_underflow invalid "${CTYPE} instance void ClassA::Method12(int32)" "newobj instance void ClassA::.ctor()"
+	./make_call_test.sh call_${I}_non_virtual_bad_this invalid "${CTYPE} instance void ClassA::Method12(int32)" "newobj instance void ClassB::.ctor()"
+
+	./make_call_test.sh call_${I}_non_virtual_compat_this_1 valid "${CTYPE} instance void ClassA::Method1()" "newobj instance void ClassC::.ctor()"
+	./make_call_test.sh call_${I}_non_virtual_compat_this_2 valid "${CTYPE} instance void ClassC::Method1()" "newobj instance void ClassC::.ctor()"
+	./make_call_test.sh call_${I}_non_virtual_compat_this_3 unverifiable "${CTYPE} instance void ClassC::Method1()" "newobj instance void ClassA::.ctor()"
+
+	./make_call_test.sh call_${I}_final_virtual_method_1 valid "${CTYPE} instance void ClassC::VirtMethod()" "newobj instance void ClassC::.ctor()"
+
+	./make_call_test.sh call_${I}_virtual_method_1 valid "${CTYPE} instance void Driver::VirtMethod()" "ldarg.0" "instance"
+	./make_call_test.sh call_${I}_virtual_method_2 valid "${CTYPE} instance void BaseClass::VirtMethod()" "ldarg.0" "instance"
+
+	I=`expr $I + 1`
+done
+
+
+#tests for call only
+./make_call_test.sh call_global_1 valid "call void GlobalMethod1()"
+./make_call_test.sh call_global_2 valid "call void GlobalMethod2(int32)" "ldc.i4.0"
+./make_call_test.sh call_global_underflow invalid "call void GlobalMethod2(int32)" ""
+./make_call_test.sh call_abstract_method unverifiable "call instance void InterfaceA::AbsMethod()" "newobj instance void ImplIfaceA::.ctor()"
+./make_call_test.sh call_final_virtual_method_2 unverifiable "call instance void ClassC::VirtMethod()" "newobj instance void ClassA::.ctor()"
+./make_call_test.sh call_final_virtual_method_3 unverifiable "call instance void ClassA::VirtMethod()" "newobj instance void ClassA::.ctor()"
+
+./make_call_test.sh call_virtual_method_3 unverifiable "call instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarg.0\n\t\tstarg 0" 
+./make_call_test.sh call_virtual_method_4 unverifiable "call instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarga 0\n\t\tpop"
+
+#value type (we can call non final virtual on boxed VT)
+./make_call_test.sh call_valuetype_1 valid "call instance void MyValueType::Method()" "ldloca 0"
+./make_call_test.sh call_valuetype_2 unverifiable "call instance void MyValueType::Method()" "ldloc.0\n\t\tbox MyValueType"
+./make_call_test.sh call_valuetype_3 unverifiable "call instance void MyValueType::Method()" "ldloc.0"
+
+./make_call_test.sh call_valuetype_4 unverifiable "call instance int32 [mscorlib]System.ValueType::GetHashCode()" "ldloca 0" "static" "pop"
+./make_call_test.sh call_valuetype_5 valid "call instance int32 MyValueType::GetHashCode()" "ldloca 0" "static" "pop"
+
+./make_call_test.sh call_valuetype_6 valid "call instance int32 [mscorlib]System.ValueType::GetHashCode()"  "ldloc.0\n\t\tbox MyValueType" "static" "pop"
+./make_call_test.sh call_valuetype_7 valid "call instance bool object::Equals(object)" "ldloc.0\n\t\tbox MyValueType\n\t\tldnull" "static" "pop"
+
+./make_call_test.sh call_valuetype_8 valid "call instance int32 [mscorlib]System.Object::GetHashCode()"  "ldloc.0\n\t\tbox MyValueType" "static" "pop"
+
+#tests for callvirt only
+#FIXME ilasm encode the signature with instance even if it doesn't state so.
+#./make_call_test.sh call_virt_global_1 invalid "callvirt void GlobalMethod1()"
+
+./make_call_test.sh callvirt_abstract_method valid "callvirt instance void InterfaceA::AbsMethod()" "newobj instance void ImplIfaceA::.ctor()"
+./make_call_test.sh callvirt_final_virtual_method_2 unverifiable "callvirt instance void ClassC::VirtMethod()" "newobj instance void ClassA::.ctor()"
+./make_call_test.sh callvirt_final_virtual_method_3 valid "callvirt instance void ClassA::VirtMethod()" "newobj instance void ClassA::.ctor()"
+
+./make_call_test.sh callvirt_virtual_method_3 valid "callvirt instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarg.0\n\t\tstarg 0" 
+./make_call_test.sh callvirt_virtual_method_4 valid "callvirt instance void BaseClass::VirtMethod()" "ldarg.0" "instance" "ldarga 0\n\t\tpop"
+
+#value type (we can call non final virtual on boxed VT)
+./make_call_test.sh callvirt_valuetype_1 unverifiable "callvirt instance void MyValueType::Method()" "ldloca 0"
+./make_call_test.sh callvirt_valuetype_2 unverifiable "callvirt instance void MyValueType::Method()" "ldloc.0\n\t\tbox MyValueType"
+./make_call_test.sh callvirt_valuetype_3 unverifiable "callvirt instance void MyValueType::Method()" "ldloc.0"
+
+./make_call_test.sh callvirt_valuetype_4 unverifiable "callvirt instance int32 [mscorlib]System.ValueType::GetHashCode()" "ldloca 0" "static" "pop"
+./make_call_test.sh callvirt_valuetype_5 unverifiable "callvirt instance int32 MyValueType::GetHashCode()" "ldloca 0" "static" "pop"
+
+./make_call_test.sh callvirt_valuetype_6 valid "callvirt instance int32 [mscorlib]System.ValueType::GetHashCode()"  "ldloc.0\n\t\tbox MyValueType" "static" "pop"
+./make_call_test.sh callvirt_valuetype_7 valid "callvirt instance bool object::Equals(object)" "ldloc.0\n\t\tbox MyValueType\n\t\tldnull" "static" "pop"
+./make_call_test.sh callvirt_valuetype_8 valid "callvirt instance int32 [mscorlib]System.Object::GetHashCode()"  "ldloc.0\n\t\tbox MyValueType" "static" "pop"
+
+
+
+
