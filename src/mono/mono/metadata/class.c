@@ -655,6 +655,9 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	iresult->context = *context;
 	iresult->declaring = method;
 
+	if (!context->method_inst && method->generic_container)
+		iresult->context.method_inst = method->generic_container->context.method_inst;
+
 	mono_loader_lock ();
 	cached = mono_method_inflated_lookup (iresult, FALSE);
 	if (cached) {
@@ -673,8 +676,12 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 
 	result = (MonoMethod *) iresult;
 	result->is_inflated = 1;
-	/* result->generic_container = NULL; */
 	result->signature = NULL;
+
+	if (context->method_inst)
+		result->generic_container = NULL;
+
+	/* Due to the memcpy above, !context->method_inst => result->generic_container == method->generic_container */
 
 	if (!klass_hint || !klass_hint->generic_class ||
 	    klass_hint->generic_class->container_class != method->klass ||
@@ -690,12 +697,6 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		if (inflated)
 			mono_metadata_free_type (inflated);
 	}
-
-	/* These are originally set by the memcpy above */
-	if (context->method_inst)
-		result->generic_container = NULL;
-	else if (method->generic_container)
-		iresult->context.method_inst = method->generic_container->context.method_inst;
 
 	mono_method_inflated_lookup (iresult, TRUE);
 	mono_loader_unlock ();
