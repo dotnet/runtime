@@ -2502,68 +2502,47 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread);
 
 /** 
  * mono_threads_set_shutting_down:
- * @may_abort: Whether the function is allowed to abort the current
- * thread if it cannot shut down Mono.
  *
  * Is called by a thread that wants to shut down Mono.  Returs whether
  * the thread is allowed to do that.  The reason for not allowing it
  * is because another thread has already commenced shutdown.
  */
 gboolean
-mono_threads_set_shutting_down (gboolean may_abort)
+mono_threads_set_shutting_down (void)
 {
 	MonoThread *current_thread = mono_thread_current ();
 
 	mono_threads_lock ();
 
 	if (shutting_down) {
-		if (may_abort) {
-			ves_icall_System_Threading_Thread_Abort (current_thread, NULL);
+		mono_threads_unlock ();
 
-			return FALSE;
+		/* Make sure we're properly suspended/stopped */
+
+		EnterCriticalSection (current_thread->synch_cs);
+
+		if ((current_thread->state & ThreadState_SuspendRequested) ||
+		    (current_thread->state & ThreadState_AbortRequested) ||
+		    (current_thread->state & ThreadState_StopRequested)) {
+			LeaveCriticalSection (current_thread->synch_cs);
+			mono_thread_execute_interruption (current_thread);
 		} else {
-			mono_threads_unlock ();
-
-			/* Make sure we're properly suspended/stopped */
-
-			EnterCriticalSection (current_thread->synch_cs);
-
-			if ((current_thread->state & ThreadState_SuspendRequested) ||
-					(current_thread->state & ThreadState_AbortRequested) ||
-					(current_thread->state & ThreadState_StopRequested)) {
-				LeaveCriticalSection (current_thread->synch_cs);
-				mono_thread_execute_interruption (current_thread);
-			} else {
-				current_thread->state |= ThreadState_Stopped;
-				LeaveCriticalSection (current_thread->synch_cs);
-			}
-
-			/* Wake up other threads potentially waiting for us */
-
-			/* FIXME: We have to do this on Win32 in some way, too */
-#if !defined(PLATFORM_WIN32)
-			_wapi_thread_signal_self (0);
-#endif
-
-			/* Wait for the end of the world */
-
-			for (;;)
-				Sleep (10000);
+			current_thread->state |= ThreadState_Stopped;
+			LeaveCriticalSection (current_thread->synch_cs);
 		}
+
+		/* Wake up other threads potentially waiting for us */
+		ExitThread (0);
 	} else {
 		shutting_down = TRUE;
 
+		/* Not really a background state change, but this will
+		 * interrupt the main thread if it is waiting for all
+		 * the other threads.
+		 */
+		SetEvent (background_change_event);
+		
 		mono_threads_unlock ();
-
-		/* Even though our state hasn't changed we still wake
-		   up other threads.  Actually we only care about the
-		   main thread, which might be waiting for us to
-		   finish. */
-
-		/* FIXME: We have to do this on Win32 in some way, too */
-#if !defined(PLATFORM_WIN32)
-		_wapi_thread_signal_self (0);
-#endif
 
 		return TRUE;
 	}
@@ -2620,7 +2599,7 @@ void mono_thread_manage (void)
 		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
 
-	mono_threads_set_shutting_down (FALSE);
+	mono_threads_set_shutting_down ();
 
 	/* No new threads will be created after this point */
 
