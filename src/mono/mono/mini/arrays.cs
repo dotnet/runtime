@@ -476,6 +476,15 @@ class Tests {
 
 		return y;
 	}
+
+	public static int test_0_stelem_ref_null_opt () {
+		object[] arr = new Tests [1];
+
+		arr [0] = new Tests ();
+		arr [0] = null;
+
+		return arr [0] == null ? 0 : 1;
+	}
 }
 
 

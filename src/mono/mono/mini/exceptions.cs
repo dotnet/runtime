@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 /*
  * Regression tests for the mono JIT.
@@ -2350,6 +2351,24 @@ class Tests {
 			return 0;
 		}
 		return 1;
+	}
+
+	public static int throw_only () {
+		throw new Exception ();
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)] 
+	public static int throw_only2 () {
+		return throw_only ();
+	}
+
+	public static int test_0_inline_throw_only () {
+		try {
+			return throw_only2 ();
+		}
+		catch (Exception ex) {
+			return 0;
+		}
 	}
 
 	// bug #78633

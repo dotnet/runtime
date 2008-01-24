@@ -1035,6 +1035,12 @@ class Tests {
 		u --;
 		return (u == 4257145736) ? 0 : 1;
 	}
+
+	public static int test_0_ulong_regress2 () {
+		int p2 = 31;
+		ulong sum_p = 2897079476 + (ulong) (1 << p2);
+		return (sum_p == 749595828) ? 0 : 1;
+	}
 	
 	public static int test_0_assemble_long ()
 	{

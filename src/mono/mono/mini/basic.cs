@@ -1274,4 +1274,36 @@ class Tests {
 
 		return 0;
 	}
+
+	public static int cmov (int i) {
+		int j = 0;
+
+		if (i > 0)
+			j = 1;
+
+		return j;
+	}
+
+	public static int cmov2 (int i) {
+		int j = 0;
+
+		if (i <= 0)
+			;
+		else
+			j = 1;
+
+		return j;
+	}
+		
+	public static int test_0_branch_to_cmov_opt () {
+		if (cmov (0) != 0)
+			return 1;
+		if (cmov (1) != 1)
+			return 2;
+		if (cmov2 (0) != 0)
+			return 1;
+		if (cmov2 (1) != 1)
+			return 2;
+		return 0;
+	}
 }

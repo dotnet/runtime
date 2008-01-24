@@ -273,6 +273,112 @@ class Tests {
 		return 5;
 	}
 
+	// 64-bits, 32-bit aligned
+	struct struct1 {
+		public int	a;
+		public int	b;
+	};
+
+	static int check_struct1(struct1 x) {
+		if (x.a != 1)
+			return 1;
+		if (x.b != 2)
+			return 2;
+		return 0;
+	}
+
+	static int pass_struct1(int a, int b, struct1 x) {
+		if (a != 3)
+			return 3;
+		if (b != 4)
+			return 4;
+		return check_struct1(x);
+	}
+
+	static int pass_struct1(int a, struct1 x) {
+		if (a != 3)
+			return 3;
+		return check_struct1(x);
+	}
+
+	static int pass_struct1(struct1 x) {
+		return check_struct1(x);
+	}
+
+	static int test_0_struct1_args () {
+		int r;
+		struct1 x;
+
+		x.a = 1;
+		x.b = 2;
+		if ((r = check_struct1(x)) != 0)
+			return r;
+		if ((r = pass_struct1(x)) != 0)
+			return r + 10;
+		if ((r = pass_struct1(3, x)) != 0)
+			return r + 20;
+		if ((r = pass_struct1(3, 4, x)) != 0)
+			return r + 30;
+		return 0;
+	}
+
+	// 64-bits, 64-bit aligned
+	struct struct2 {
+		public long	a;
+	};
+
+	static int check_struct2(struct2 x) {
+		if (x.a != 1)
+			return 1;
+		return 0;
+	}
+
+	static int pass_struct2(int a, int b, int c, struct2 x) {
+		if (a != 3)
+			return 3;
+		if (b != 4)
+			return 4;
+		if (c != 5)
+			return 5;
+		return check_struct2(x);
+	}
+
+	static int pass_struct2(int a, int b, struct2 x) {
+		if (a != 3)
+			return 3;
+		if (b != 4)
+			return 4;
+		return check_struct2(x);
+	}
+
+	static int pass_struct2(int a, struct2 x) {
+		if (a != 3)
+			return 3;
+		return check_struct2(x);
+	}
+
+	static int pass_struct2(struct2 x) {
+		return check_struct2(x);
+	}
+
+	static int test_0_struct2_args () {
+		int r;
+		struct2 x;
+
+		x.a = 1;
+		if ((r = check_struct2(x)) != 0)
+			return r;
+		if ((r = pass_struct2(x)) != 0)
+			return r + 10;
+		if ((r = pass_struct2(3, x)) != 0)
+			return r + 20;
+		if ((r = pass_struct2(3, 4, x)) != 0)
+			return r + 30;
+		if ((r = pass_struct2(3, 4, 5, x)) != 0)
+			return r + 40;
+		return 0;
+	}
+
 	struct AStruct {
 		public int i;
 
@@ -1046,6 +1152,43 @@ ncells ) {
 		byte[] data = new byte[256];
 		for (int i = 0; i < 1; i ++)
 			temp = (uint)(data[temp >> 24] | data[temp >> 0]);
+		return 0;
+	}
+
+	class Foo2 {
+		public virtual int foo () {
+			return 0;
+		}
+	}
+
+	sealed class Bar2 : Foo2 {
+		public override int foo () {
+			return 0;
+		}
+	}
+
+	static int test_0_abcrem_check_this_removal () {
+		Bar2 b = new Bar2 ();
+
+		// The check_this generated here by the JIT should be removed
+		b.foo ();
+
+		return 0;
+	}
+
+	static int invoke_twice (Bar2 b) {
+		b.foo ();
+		// The check_this generated here by the JIT should be removed
+		b.foo ();
+
+		return 0;
+	}
+
+	static int test_0_abcrem_check_this_removal2 () {
+		Bar2 b = new Bar2 ();
+
+		invoke_twice (b);
+
 		return 0;
 	}
 
