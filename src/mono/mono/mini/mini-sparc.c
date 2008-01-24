@@ -2378,9 +2378,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		offset = (guint8*)code - cfg->native_code;
 
 		spec = ins_get_spec (ins->opcode);
-		/* I kept this, but this looks a workaround for a bug */
-		if (spec == MONO_ARCH_CPU_SPEC)
-			spec = ins_get_spec (CEE_ADD);
 
 		max_len = ((guint8 *)spec)[MONO_INST_LEN];
 
