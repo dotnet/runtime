@@ -1709,9 +1709,11 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 	int num = cfg->num_varinfo;
 
 	if ((num + 1) >= cfg->varinfo_count) {
+		int orig_count = cfg->varinfo_count;
 		cfg->varinfo_count = (cfg->varinfo_count + 2) * 2;
 		cfg->varinfo = (MonoInst **)g_realloc (cfg->varinfo, sizeof (MonoInst*) * cfg->varinfo_count);
-		cfg->vars = (MonoMethodVar **)g_realloc (cfg->vars, sizeof (MonoMethodVar*) * cfg->varinfo_count);      
+		cfg->vars = (MonoMethodVar *)g_realloc (cfg->vars, sizeof (MonoMethodVar) * cfg->varinfo_count);
+		memset (&cfg->vars [orig_count], 0, (cfg->varinfo_count - orig_count) * sizeof (MonoMethodVar));
 	}
 
 	/*g_print ("created temp %d of type 0x%x\n", num, type->type);*/
@@ -1726,8 +1728,7 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 
 	cfg->varinfo [num] = inst;
 
-	cfg->vars [num] = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoMethodVar));
-	MONO_INIT_VARINFO (cfg->vars [num], num);
+	MONO_INIT_VARINFO (&cfg->vars [num], num);
 
 	cfg->num_varinfo++;
 	if (cfg->verbose_level > 2)

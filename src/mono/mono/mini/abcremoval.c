@@ -1331,8 +1331,8 @@ mono_perform_abc_removal (MonoCompile *cfg)
 		area.relations [i].relation = MONO_EQ_RELATION;
 		area.relations [i].relation_is_static_definition = TRUE;
 		area.relations [i].next = NULL;
-		if (cfg->vars [i]->def != NULL) {
-			MonoInst *value = get_variable_value_from_store_instruction (cfg->vars [i]->def, i);
+		if (MONO_VARINFO (cfg, i)->def != NULL) {
+			MonoInst *value = get_variable_value_from_store_instruction (MONO_VARINFO (cfg, i)->def, i);
 			if (value != NULL) {
 				gboolean is_array_type;
 				MonoIntegerValueKind effective_value_kind;

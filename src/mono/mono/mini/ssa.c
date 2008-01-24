@@ -225,7 +225,7 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, MonoIn
 			inst->inst_i0 = new_var;
 
 #ifdef USE_ORIGINAL_VARS
-			cfg->vars [new_var->inst_c0]->reg = idx;
+			MONO_VARINFO (cfg, new_var->inst_c0)->reg = idx;
 #endif
 
 			stack [idx] = new_var;
@@ -419,7 +419,7 @@ mono_ssa_replace_copies (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, c
 	    (inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG)) {
 		MonoInst *new_var;
 		int idx = inst->inst_i0->inst_c0;
-		MonoMethodVar *mv = cfg->vars [idx];
+		MonoMethodVar *mv = MONO_VARINFO (cfg, idx);
 
 		if (mv->reg != -1 && mv->reg != mv->idx) {
 		       
@@ -475,7 +475,7 @@ mono_ssa_remove (MonoCompile *cfg)
 				for (j = 0; j < bb->in_count; j++) {
 					MonoBasicBlock *pred = bb->in_bb [j];
 					int idx = phi->inst_phi_args [j + 1];
-					MonoMethodVar *mv = cfg->vars [idx];
+					MonoMethodVar *mv = MONO_VARINFO (cfg, idx);
 
 					if (mv->reg != -1 && mv->reg != mv->idx) {
 						//printf ("PHICOPY %d %d -> %d\n", idx, mv->reg, inst->inst_i0->inst_c0);
@@ -558,7 +558,7 @@ mono_ssa_remove (MonoCompile *cfg)
 	}
 
 	for (i = 0; i < cfg->num_varinfo; ++i) {
-		cfg->vars [i]->reg = -1;
+		MONO_VARINFO (cfg, i)->reg = -1;
 		if (!is_live [i]) {
 			cfg->varinfo [i]->flags |= MONO_INST_IS_DEAD;
 		}
@@ -613,7 +613,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 	if ((inst->ssa_op == MONO_SSA_STORE) && 
 	    (inst->inst_i0->opcode == OP_LOCAL /*|| inst->inst_i0->opcode == OP_ARG */)) {
 		idx = inst->inst_i0->inst_c0;
-		info = cfg->vars [idx];
+		info = MONO_VARINFO (cfg, idx);
 		//printf ("%d defined in BB%d %p\n", idx, bb->block_num, root);
 		if (info->def) {
 			g_warning ("more than one definition of variable %d in %s", idx,
@@ -630,7 +630,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 			for (i = inst->inst_i1->inst_phi_args [0]; i > 0; i--) {
 				MonoVarUsageInfo *ui = mono_mempool_alloc (cfg->mempool, sizeof (MonoVarUsageInfo));
 				idx = inst->inst_i1->inst_phi_args [i];	
-				info = cfg->vars [idx];
+				info = MONO_VARINFO (cfg, idx);
 				//printf ("FOUND %d\n", idx);
 				ui->bb = bb;
 				ui->inst = root;
@@ -643,7 +643,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 	    (inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG)) {
 		MonoVarUsageInfo *ui = mono_mempool_alloc (cfg->mempool, sizeof (MonoVarUsageInfo));
 		idx = inst->inst_i0->inst_c0;	
-		info = cfg->vars [idx];
+		info = MONO_VARINFO (cfg, idx);
 		//printf ("FOUND %d\n", idx);
 		ui->bb = bb;
 		ui->inst = root;
@@ -679,7 +679,7 @@ mono_ssa_avoid_copies (MonoCompile *cfg)
 		MONO_BB_FOR_EACH_INS (bb, inst) {
 			if (inst->ssa_op == MONO_SSA_STORE && inst->inst_i0->opcode == OP_LOCAL &&
 			    !IS_CALL (inst->inst_i1->opcode) && inst->inst_i1->opcode != OP_PHI && !inst->flags) {
-				i1 = cfg->vars [inst->inst_i0->inst_c0];
+				i1 = MONO_VARINFO (cfg, inst->inst_i0->inst_c0);
 
 /* fixme: compiling mcs does not work when I enable this */
 #if 0
@@ -709,7 +709,7 @@ mono_ssa_avoid_copies (MonoCompile *cfg)
 						g_list_length (i1->uses) == 1 &&
 						inst->opcode == next->opcode &&
 						inst->inst_i0->type == next->inst_i0->type) {
-					i2 = cfg->vars [next->inst_i0->inst_c0];
+					i2 = MONO_VARINFO (cfg, next->inst_i0->inst_c0);
 					//printf ("ELIM. COPY in BB%d %s\n", bb->block_num, mono_method_full_name (cfg->method, TRUE));
 					inst->inst_i0 = next->inst_i0;
 					i2->def = inst;
@@ -1036,7 +1036,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, GList **cvars,
 		}	
 	} else if (inst->ssa_op == MONO_SSA_STORE && 
 		   (inst->inst_i0->opcode == OP_LOCAL || inst->inst_i0->opcode == OP_ARG)) {
-		MonoMethodVar *info = cfg->vars [inst->inst_i0->inst_c0];
+		MonoMethodVar *info = MONO_VARINFO (cfg, inst->inst_i0->inst_c0);
 		MonoInst *i1 = inst->inst_i1;
 		int res;
 		
@@ -1048,7 +1048,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, GList **cvars,
 				int j;
 
 				for (j = 1; j <= i1->inst_phi_args [0]; j++) {
-					MonoMethodVar *mv = cfg->vars [i1->inst_phi_args [j]];
+					MonoMethodVar *mv = MONO_VARINFO (cfg, i1->inst_phi_args [j]);
 					MonoInst *src = mv->def;
 
 					if (mv->def_bb && !(mv->def_bb->flags & BB_REACHABLE)) {
@@ -1115,7 +1115,7 @@ mono_ssa_cprop (MonoCompile *cfg)
 	memset (carray, 0, sizeof (MonoInst *) * cfg->num_varinfo);
 
 	for (i = 0; i < cfg->num_varinfo; i++) {
-		MonoMethodVar *info = cfg->vars [i];
+		MonoMethodVar *info = MONO_VARINFO (cfg, i);
 		if (!info->def)
 			info->cpstate = 2;
 	}
@@ -1195,7 +1195,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 	/* fixme: we should update usage infos during cprop, instead of computing it again */
 	cfg->comp_done &=  ~MONO_COMP_SSA_DEF_USE;
 	for (i = 0; i < cfg->num_varinfo; i++) {
-		MonoMethodVar *info = cfg->vars [i];
+		MonoMethodVar *info = MONO_VARINFO (cfg, i);
 		info->def = NULL;
 		info->uses = NULL;
 	}
@@ -1207,7 +1207,7 @@ mono_ssa_deadce (MonoCompile *cfg)
 
 	work_list = NULL;
 	for (i = 0; i < cfg->num_varinfo; i++) {
-		MonoMethodVar *info = cfg->vars [i];
+		MonoMethodVar *info = MONO_VARINFO (cfg, i);
 		work_list = g_list_prepend (work_list, info);
 		
 		//if ((info->def != NULL) && (info->def->inst_i1->opcode != OP_PHI)) printf ("SSA DEADCE TOTAL LOCAL\n");
@@ -1225,12 +1225,12 @@ mono_ssa_deadce (MonoCompile *cfg)
 			if (i1->opcode == OP_PHI) {
 				int j;
 				for (j = i1->inst_phi_args [0]; j > 0; j--) {
-					MonoMethodVar *u = cfg->vars [i1->inst_phi_args [j]];
+					MonoMethodVar *u = MONO_VARINFO (cfg, i1->inst_phi_args [j]);
 					add_to_dce_worklist (cfg, info, u, &work_list);
 				}
 			} else if (i1->ssa_op == MONO_SSA_LOAD &&
 				   (i1->inst_i0->opcode == OP_LOCAL || i1->inst_i0->opcode == OP_ARG)) {
-					MonoMethodVar *u = cfg->vars [i1->inst_i0->inst_c0];
+					MonoMethodVar *u = MONO_VARINFO (cfg, i1->inst_i0->inst_c0);
 					add_to_dce_worklist (cfg, info, u, &work_list);
 			}
 			//if (i1->opcode != OP_PHI) printf ("SSA DEADCE DEAD LOCAL\n");
@@ -1264,7 +1264,7 @@ mono_ssa_strength_reduction (MonoCompile *cfg)
 				continue;
 
 			for (i = 0; i < cfg->num_varinfo; i++) {
-				MonoMethodVar *info = cfg->vars [i];
+				MonoMethodVar *info = MONO_VARINFO (cfg, i);
 			
 				if (info->def && info->def->ssa_op == MONO_SSA_STORE &&
 				    info->def->inst_i0->opcode == OP_LOCAL && g_list_find (lp, info->def_bb)) {

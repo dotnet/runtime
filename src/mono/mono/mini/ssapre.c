@@ -411,7 +411,7 @@ convert_ssa_variables_to_original_names (MonoSsapreExpressionDescription *result
 		result->left_argument = expression->left_argument;
 	} else {
 		result->left_argument.type = MONO_SSAPRE_EXPRESSION_ARGUMENT_ORIGINAL_VARIABLE;
-		original_variable = cfg->vars [expression->left_argument.argument.ssa_variable]->reg;
+		original_variable = MONO_VARINFO (cfg, expression->left_argument.argument.ssa_variable)->reg;
 		if (original_variable >= 0) {
 			result->left_argument.argument.original_variable = original_variable;
 		} else {
@@ -422,7 +422,7 @@ convert_ssa_variables_to_original_names (MonoSsapreExpressionDescription *result
 		result->right_argument = expression->right_argument;
 	} else {
 		result->right_argument.type = MONO_SSAPRE_EXPRESSION_ARGUMENT_ORIGINAL_VARIABLE;
-		original_variable = cfg->vars [expression->right_argument.argument.ssa_variable]->reg;
+		original_variable = MONO_VARINFO (cfg, expression->right_argument.argument.ssa_variable)->reg;
 		if (original_variable >= 0) {
 			result->right_argument.argument.original_variable = original_variable;
 		} else {
@@ -464,7 +464,7 @@ is_phi_definition (MonoInst *definition) {
  * Given a variable index, checks if it is a phi definition
  * (it assumes the "area" is visible).
  */
-#define IS_PHI_DEFINITION(v) is_phi_definition (area->cfg->vars [v]->def)
+#define IS_PHI_DEFINITION(v) is_phi_definition (MONO_VARINFO (area->cfg, v)->def)
 
 /*
  * Given a variable index, checks if it is a phi definition.
@@ -473,7 +473,7 @@ is_phi_definition (MonoInst *definition) {
  */
 static int*
 get_phi_definition (MonoCompile *cfg, gssize variable) {
-	MonoInst *definition = cfg->vars [variable]->def;
+	MonoInst *definition = MONO_VARINFO (cfg, variable)->def;
 	if (is_phi_definition (definition) && (definition->inst_left->inst_c0 == variable)) {
 		return definition->inst_right->inst_phi_args;
 	} else {
@@ -489,7 +489,7 @@ get_phi_definition (MonoCompile *cfg, gssize variable) {
  */
 static MonoSsapreBBInfo*
 get_bb_info_of_definition (MonoSsapreWorkArea *area, gssize variable) {
-	MonoBasicBlock *def_bb = area->cfg->vars [variable]->def_bb;
+	MonoBasicBlock *def_bb = MONO_VARINFO (area->cfg, variable)->def_bb;
 	if (def_bb != NULL) {
 		return area->bb_infos_in_cfg_dfn_order [def_bb->dfn];
 	} else {
@@ -842,11 +842,11 @@ process_bb (MonoSsapreWorkArea *area, MonoBasicBlock *bb, int *dt_dfn, int *uppe
 			if ((current_inst->inst_left->opcode == OP_LOCAL) || (current_inst->inst_left->opcode == OP_ARG)) {
 				int variable_index = current_inst->inst_left->inst_c0;
 				
-				if (area->cfg->vars [variable_index]->def_bb == NULL) {
+				if (MONO_VARINFO (area->cfg, variable_index)->def_bb == NULL) {
 					if (area->cfg->verbose_level >= 4) {
 						printf ("SSAPRE WARNING: variable %d has no definition, fixing.\n", variable_index);
 					}
-					area->cfg->vars [variable_index]->def_bb = bb_info->bb;
+					MONO_VARINFO (area->cfg, variable_index)->def_bb = bb_info->bb;
 				}
 			}
 			break;
@@ -984,7 +984,7 @@ static void process_phi_variable_in_phi_insertion (MonoSsapreWorkArea *area, gss
 	int* phi_definition = get_phi_definition (area->cfg, variable);
 	
 	if (phi_definition != NULL) {
-		int definition_bb = area->cfg->vars [variable]->def_bb->dfn;
+		int definition_bb = MONO_VARINFO (area->cfg, variable)->def_bb->dfn;
 		if (! mono_bitset_test (phi_bbs, definition_bb)) {
 			int i;
 			mono_bitset_set (phi_bbs, definition_bb);
@@ -1843,8 +1843,8 @@ static void code_motion (MonoSsapreWorkArea *area) {
 			if (original_variable_index == BOTTOM_REDUNDANCY_CLASS) {
 				original_variable_index = new_var->inst_c0;
 			}
-			area->cfg->vars [new_var->inst_c0]->reg = original_variable_index;
-			area->cfg->vars [new_var->inst_c0]->def_bb = current_bb->bb;
+			MONO_VARINFO (area->cfg, new_var->inst_c0)->reg = original_variable_index;
+			MONO_VARINFO (area->cfg, new_var->inst_c0)->def_bb = current_bb->bb;
 		} else {
 			current_bb->phi_variable_index = BOTTOM_REDUNDANCY_CLASS;
 		}
@@ -1859,8 +1859,8 @@ static void code_motion (MonoSsapreWorkArea *area) {
 				if (original_variable_index == BOTTOM_REDUNDANCY_CLASS) {
 					original_variable_index = new_var->inst_c0;
 				}
-				area->cfg->vars [new_var->inst_c0]->reg = original_variable_index;
-				area->cfg->vars [new_var->inst_c0]->def_bb = current_bb->bb;
+				MONO_VARINFO (area->cfg, new_var->inst_c0)->reg = original_variable_index;
+				MONO_VARINFO (area->cfg, new_var->inst_c0)->def_bb = current_bb->bb;
 	 		} else {
 				current_expression->variable_index = BOTTOM_REDUNDANCY_CLASS;
 	 		}
@@ -1872,8 +1872,8 @@ static void code_motion (MonoSsapreWorkArea *area) {
 			if (original_variable_index == BOTTOM_REDUNDANCY_CLASS) {
 				original_variable_index = new_var->inst_c0;
 			}
-			area->cfg->vars [new_var->inst_c0]->reg = original_variable_index;
-			area->cfg->vars [new_var->inst_c0]->def_bb = current_bb->bb;
+			MONO_VARINFO (area->cfg, new_var->inst_c0)->reg = original_variable_index;
+			MONO_VARINFO (area->cfg, new_var->inst_c0)->def_bb = current_bb->bb;
 		} else {
 			current_bb->phi_argument_variable_index = BOTTOM_REDUNDANCY_CLASS;
 		}
@@ -1886,7 +1886,7 @@ static void code_motion (MonoSsapreWorkArea *area) {
 			int in_bb;
 			
 			NEW_INST (phi, OP_PHI);
-			phi->inst_c0 = area->cfg->vars [current_bb->phi_variable_index]->reg;
+			phi->inst_c0 = MONO_VARINFO (area->cfg, current_bb->phi_variable_index)->reg;
 			phi->inst_phi_args = mono_mempool_alloc (area->cfg->mempool, (sizeof (int) * ((current_bb->in_count) + 1)));
 			phi->inst_phi_args [0] = current_bb->in_count;
 			for (in_bb = 0; in_bb < current_bb->in_count; in_bb++) {
@@ -1911,7 +1911,7 @@ static void code_motion (MonoSsapreWorkArea *area) {
 				MONO_INST_LIST_ADD (&store->node,
 					&current_bb->bb->ins_list);
 			}
-			area->cfg->vars [current_bb->phi_variable_index]->def = store;
+			MONO_VARINFO (area->cfg, current_bb->phi_variable_index)->def = store;
 			current_bb->phi_insertion_point = store;
 			
 			area->added_phis ++;
@@ -1931,7 +1931,7 @@ static void code_motion (MonoSsapreWorkArea *area) {
 					MONO_INST_LIST_ADD (&store->node,
 						&current_bb->bb->ins_list);
 	 			}
-				area->cfg->vars [current_expression->variable_index]->def = store;
+				MONO_VARINFO (area->cfg, current_expression->variable_index)->def = store;
 	 			mono_compile_make_var_load (area->cfg, current_expression->occurrence, current_expression->variable_index);
 				if (current_expression->father_in_tree != NULL) {
 					handle_father_expression (area, current_expression, store);
@@ -1980,7 +1980,7 @@ static void code_motion (MonoSsapreWorkArea *area) {
 	 		
 	 		inserted_expression = create_expression (area, &expression_description, &prototype_occurrence);
 	 		store = mono_compile_create_var_store (area->cfg, current_bb->phi_argument_variable_index, inserted_expression);
-			area->cfg->vars [current_bb->phi_argument_variable_index]->def = store;
+			MONO_VARINFO (area->cfg, current_bb->phi_argument_variable_index)->def = store;
 			MONO_INST_LIST_INIT (&store->node);
 	 		mono_add_ins_to_end (current_bb->bb, store);
 	 		

@@ -87,7 +87,7 @@ enum {
 };
 #undef OPDEF
 
-#define MONO_VARINFO(cfg,varnum) ((cfg)->vars [varnum])
+#define MONO_VARINFO(cfg,varnum) (&(cfg)->vars [varnum])
 
 #define MONO_INST_NEW(cfg,dest,op) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
@@ -724,7 +724,7 @@ typedef struct {
 	MonoMethod      *method;
 	MonoMemPool     *mempool;
 	MonoInst       **varinfo;
-	MonoMethodVar  **vars;
+	MonoMethodVar   *vars;
 	MonoInst        *ret;
 	MonoBasicBlock  *bb_entry;
 	MonoBasicBlock  *bb_exit;
