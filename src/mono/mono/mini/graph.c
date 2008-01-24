@@ -290,7 +290,7 @@ mono_draw_code_cfg (MonoCompile *cfg, FILE *fp)
 
 		fprintf (fp, "BB%d [%sshape=record,labeljust=l,label=\"{BB%d|", bb->block_num, color, bb->block_num);
 			
-		MONO_INST_LIST_FOR_EACH_ENTRY (inst, &bb->ins_list, node) {
+		MONO_BB_FOR_EACH_INS (bb, inst) {
 			mono_print_label (fp, inst);
 			fprintf (fp, "\\n");			
 		}

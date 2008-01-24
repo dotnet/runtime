@@ -859,7 +859,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	if (bb->max_vreg > cfg->rs->next_vreg)
 		cfg->rs->next_vreg = bb->max_vreg;
 
-	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
+	MONO_BB_FOR_EACH_INS (bb, ins) {
 loop_start:
 		switch (ins->opcode) {
 		case OP_ADD_IMM:
@@ -1244,7 +1244,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		NOT_IMPLEMENTED;
 	}
 
-	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
+	MONO_BB_FOR_EACH_INS (bb, ins) {
 		guint8* code_start;
 
 		offset = (guint8*)code - cfg->native_code;
@@ -2303,7 +2303,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (cfg->prof_options & MONO_PROFILE_COVERAGE)
 			max_offset += 6; 
 
-		MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node)
+		MONO_BB_FOR_EACH_INS (bb, ins) {
 			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 	}
 

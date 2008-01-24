@@ -2210,7 +2210,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
    mono_debug_open_block (cfg, bb, offset);
    
-   MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
+   MONO_BB_FOR_EACH_INS (bb, ins) {
        offset = ((char *)code) - ((char *)cfg->native_code);
 	  
        max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];

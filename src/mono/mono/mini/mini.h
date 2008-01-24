@@ -35,6 +35,8 @@
 #define MINI_DEBUG(level,limit,code) do {if (G_UNLIKELY ((level) >= (limit))) code} while (0)
 #endif
 
+#define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
+
 #ifndef DISABLE_AOT
 #define MONO_USE_AOT_COMPILER
 #endif
@@ -108,6 +110,15 @@ enum {
         (ins)->dreg = (ins)->sreg1 = (ins)->sreg2 = -1; \
 		(ins)->ssa_op = MONO_SSA_NOP; \
     } while (0)
+
+/* 
+ * this is used to determine when some branch optimizations are possible: we exclude FP compares
+ * because they have weird semantics with NaNs.
+ */
+#define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN) || ((ins)->opcode >= OP_IBEQ && (ins)->opcode <= OP_IBLT_UN))
+#define MONO_IS_COND_BRANCH_NOFP(ins) (MONO_IS_COND_BRANCH_OP(ins) && (ins)->inst_left->inst_left->type != STACK_R8)
+
+#define MONO_IS_BRANCH_OP(ins) (MONO_IS_COND_BRANCH_OP(ins) || ((ins)->opcode == OP_BR) || ((ins)->opcode == OP_BR_REG) || ((ins)->opcode == OP_SWITCH))
 
 typedef struct MonoInstList MonoInstList;
 typedef struct MonoInst MonoInst;
@@ -268,6 +279,10 @@ MONO_INST_LIST_SPLICE_TAIL_INIT (MonoInstList *list, MonoInstList *head)
 	     &pos->member != (head); 					\
 	     pos = n, n = MONO_INST_LIST_ENTRY (n->member.next, MonoInst, member))
 
+#define MONO_BB_FOR_EACH_INS(bb, ins) MONO_INST_LIST_FOR_EACH_ENTRY ((ins), &((bb)->ins_list), node)
+
+#define MONO_BB_FOR_EACH_INS_REVERSE(bb, ins) MONO_INST_LIST_FOR_EACH_ENTRY_REVERSE ((ins), &((bb)->ins_list), node)
+
 struct MonoEdge {
 	MonoEdge *next;
 	MonoBasicBlock *bb;
@@ -366,12 +381,12 @@ struct MonoBasicBlock {
 	MonoInst **in_stack;
 	MonoStackSlot *stack_state; /* Verification stack state on enter to bblock */
 
-	/* we use that to prevent merging of bblock covered by different clauses*/
+	/* we use that to prevent merging of bblocks covered by different clauses*/
 	guint real_offset;
 
 	/*
 	 * The region encodes whether the basic block is inside
-	 * a finally, catch, filter or none of thoese.
+	 * a finally, catch, filter or none of these.
 	 *
 	 * If the value is -1, then it is neither finally, catch nor filter
 	 *

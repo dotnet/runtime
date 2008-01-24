@@ -1268,7 +1268,7 @@ process_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
 	apply_change_to_evaluation_area (area, &(additional_relations.relation2));
 	
 	inst_index = 0;
-	MONO_INST_LIST_FOR_EACH_ENTRY (current_inst, &bb->ins_list, node) {
+	MONO_BB_FOR_EACH_INS (bb, current_inst) {
 		if (TRACE_ABC_REMOVAL) {
 			printf ("Processing instruction %d\n", inst_index);
 			inst_index++;

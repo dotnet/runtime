@@ -2374,7 +2374,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		NOT_IMPLEMENTED;
 	}
 
-	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
+	MONO_BB_FOR_EACH_INS (bb, ins) {
 		guint8* code_start;
 
 		offset = (guint8*)code - cfg->native_code;

@@ -2129,7 +2129,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	mono_debug_open_block (cfg, bb, offset);
 
-	MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
+	MONO_BB_FOR_EACH_INS (bb, ins) {
 		offset = code - cfg->native_code;
 
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
@@ -3814,7 +3814,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if ((cfg->opt & MONO_OPT_LOOP) && bb_is_loop_start (bb))
 				max_offset += LOOP_ALIGNMENT;
 
-			MONO_INST_LIST_FOR_EACH_ENTRY (ins, &bb->ins_list, node) {
+			MONO_BB_FOR_EACH_INS (bb, ins) {
 				if (ins->opcode == OP_LABEL)
 					ins->inst_c1 = max_offset;
 				
