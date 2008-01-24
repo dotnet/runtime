@@ -31,13 +31,22 @@ static void marshal_free (void *ptr)
 #endif
 }
 
+static void* marshal_alloc (gsize size)
+{
+#ifdef WIN32
+	CoTaskMemAlloc (size);
+#else
+	g_malloc (size);
+#endif
+}
+
 STDCALL unsigned short*
 test_lpwstr_marshal (unsigned short* chars, long length)
 {
 	int i = 0;
 	unsigned short *res;
 
-	res = malloc (2 * (length + 1));
+	res = marshal_alloc (2 * (length + 1));
 
 	// printf("test_lpwstr_marshal()\n");
 	
@@ -50,6 +59,24 @@ test_lpwstr_marshal (unsigned short* chars, long length)
 	res [i] = 0;
 
 	return res;
+}
+
+
+STDCALL void
+test_lpwstr_marshal_out (unsigned short** chars)
+{
+	int i = 0;
+	const char abc[] = "ABC";
+	glong len = strlen(abc);
+
+	*chars = marshal_alloc (2 * (len + 1));
+	
+	while ( i < len ) {
+		(*chars) [i] = abc[i];
+		i++;
+	}
+
+	(*chars) [i] = 0;
 }
 
 typedef struct {
@@ -1194,7 +1221,7 @@ string_marshal_test0 (char *str)
 STDCALL void
 string_marshal_test1 (const char **str)
 {
-	*str = "TEST1";
+	*str = g_strdup ("TEST1");
 }
 
 STDCALL int

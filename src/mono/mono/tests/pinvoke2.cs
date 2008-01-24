@@ -1205,7 +1205,32 @@ public class Tests {
 		string s,
 		int length );
 
+	[DllImport("libtest", EntryPoint="test_lpwstr_marshal_out")]
+	private static extern void mono_test_marshal_lpwstr_out_marshal(
+		[MarshalAs(UnmanagedType.LPWStr)] out string s);
+
+	[DllImport("libtest", EntryPoint="test_lpwstr_marshal_out", CharSet=CharSet.Unicode)]
+	private static extern void mono_test_marshal_lpwstr_out_marshal2(
+		out string s);
+
 	public static int test_0_pass_return_lwpstr () {
+		string s;
+		
+		mono_test_marshal_lpwstr_out_marshal (out s);
+
+		if (s != "ABC")
+			return 1;
+
+		s = null;
+		mono_test_marshal_lpwstr_out_marshal2 (out s);
+
+		if (s != "ABC")
+			return 2;
+		
+		return 0;		
+	}
+
+	public static int test_0_out_lwpstr () {
 		string s = "ABC";
 		
 		string res = mono_test_marshal_lpwstr_marshal (s, s.Length);

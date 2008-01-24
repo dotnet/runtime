@@ -2533,6 +2533,7 @@ mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 
 	switch (encoding) {
 	case MONO_NATIVE_LPWSTR:
+		*need_free = FALSE;
 		return MONO_MARSHAL_CONV_LPWSTR_STR;
 	case MONO_NATIVE_LPSTR:
 		return MONO_MARSHAL_CONV_LPSTR_STR;
@@ -5989,26 +5990,27 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_CONV_OUT:
+		conv = mono_marshal_get_ptr_to_string_conv (m->piinfo, spec, &need_free);
+		if (conv == -1) {
+			char *msg = g_strdup_printf ("string marshalling conversion %d not implemented", encoding);
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+			break;
+		}
+
 		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc (mb, conv_arg);
-			if (conv == MONO_MARSHAL_CONV_STR_BSTR) {
-				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_BSTR_STR));
-				// BSTRs always need freed
-				mono_mb_emit_ldloc (mb, conv_arg);
-				mono_mb_emit_icall (mb, mono_free_bstr);
-			}
-			else
-				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_LPSTR_STR));
+			mono_mb_emit_icall (mb, conv_to_icall (conv));
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
-		} else {
-			if (mono_marshal_need_free (t, m->piinfo, spec)) {
-				mono_mb_emit_ldloc (mb, conv_arg);
-				if (conv == MONO_MARSHAL_CONV_STR_BSTR)
-					mono_mb_emit_icall (mb, mono_free_bstr);
-				else
-					mono_mb_emit_icall (mb, mono_marshal_free);
-			}
+
+		}
+
+		if (need_free || (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
+			mono_mb_emit_ldloc (mb, conv_arg);
+			if (conv == MONO_MARSHAL_CONV_BSTR_STR)
+				mono_mb_emit_icall (mb, mono_free_bstr);
+			else
+				mono_mb_emit_icall (mb, mono_marshal_free);
 		}
 		break;
 
