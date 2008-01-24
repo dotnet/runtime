@@ -84,8 +84,6 @@ mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
  * UNORDERED        1  1  1
  */
 
-#define NOT_IMPLEMENTED g_assert_not_reached ()
-
 const char*
 mono_arch_regname (int reg) {
 	switch (reg) {

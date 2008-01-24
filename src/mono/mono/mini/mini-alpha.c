@@ -18,10 +18,6 @@
 /*------------------------------------------------------------------*/
 /*                 D e f i n e s                                    */
 /*------------------------------------------------------------------*/
-
-#define NOT_IMPLEMENTED(x) \
-   g_error ("FIXME: %s is not yet implemented.", x);
-
 #define ALPHA_DEBUG(x) \
    if (mini_alpha_verbose_level) \
    	g_debug ("ALPHA_DEBUG: %s is called.", x);
@@ -4144,7 +4140,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
  
 	    if (*ip2 != (t_addr & 0xFFFFFFFF) ||
 		*(ip2+1) != ((t_addr>>32) & 0xFFFFFFFF))
-	    	    NOT_IMPLEMENTED("mono_arch_patch_code: MONO_PATCH_INFO_CLASS_INIT");
+			NOT_IMPLEMENTED;
 	    //  amd64_call_code (ip2, 0);
 	    break;
 	  }
@@ -5260,7 +5256,7 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 {
    ALPHA_DEBUG("mono_arch_create_class_init_trampoline");
    
-   NOT_IMPLEMENTED("mono_arch_create_class_init_trampoline: check MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE define");
+   NOT_IMPLEMENTED;
    
    return 0;
 }
@@ -5786,7 +5782,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	       break;
 
 	     default:
-	       NOT_IMPLEMENTED("");
+	       NOT_IMPLEMENTED;
 	     }
 
 	   if (!inreg && (ainfo->storage != ArgOnStack))

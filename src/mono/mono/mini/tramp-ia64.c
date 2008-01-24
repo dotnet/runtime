@@ -19,8 +19,6 @@
 #include "mini.h"
 #include "mini-ia64.h"
 
-#define NOT_IMPLEMENTED g_assert_not_reached ()
-
 #define GP_SCRATCH_REG 31
 #define GP_SCRATCH_REG2 30
 

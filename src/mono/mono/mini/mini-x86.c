@@ -61,8 +61,6 @@ static CRITICAL_SECTION mini_arch_mutex;
 #define CALLCONV_IS_STDCALL(sig) (((sig)->call_convention) == MONO_CALL_STDCALL)
 #endif
 
-#define NOT_IMPLEMENTED g_assert_not_reached ()
-
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 

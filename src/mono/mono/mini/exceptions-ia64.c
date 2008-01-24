@@ -37,8 +37,6 @@
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 
-#define NOT_IMPLEMENTED g_assert_not_reached ()
-
 #define GP_SCRATCH_REG 31
 #define GP_SCRATCH_REG2 30
 

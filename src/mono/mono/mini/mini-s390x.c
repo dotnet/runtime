@@ -18,9 +18,6 @@
 /*                 D e f i n e s                                    */
 /*------------------------------------------------------------------*/
 
-#define NOT_IMPLEMENTED(x) \
-        g_error ("FIXME: %s is not yet implemented.", x);
-
 #define EMIT_COND_BRANCH(ins,cond) 							\
 {											\
 if (ins->flags & MONO_INST_BRLABEL) { 							\

@@ -18,9 +18,6 @@
 /*                 D e f i n e s                                    */
 /*------------------------------------------------------------------*/
 
-#define NOT_IMPLEMENTED(x) \
-        g_error ("FIXME: %s is not yet implemented.", x);
-
 #define EMIT_COND_BRANCH(ins,cond) 							\
 {											\
 if (ins->flags & MONO_INST_BRLABEL) { 							\
@@ -3336,7 +3333,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_FCONV_TO_R4: {
-			NOT_IMPLEMENTED("OP_FCONV_TO_R4");
+			NOT_IMPLEMENTED;
 			next = mono_inst_list_next (&ins->node, &bb->ins_list);
 			if ((next) &&
 			     (next->opcode != OP_FMOVE) &&

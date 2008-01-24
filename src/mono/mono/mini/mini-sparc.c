@@ -127,8 +127,6 @@
 #endif
 #endif
 
-#define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
-
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
 
 #define SIGNAL_STACK_SIZE (64 * 1024)

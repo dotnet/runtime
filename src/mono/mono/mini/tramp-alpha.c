@@ -18,9 +18,6 @@
 /*------------------------------------------------------------------*/
 /*                 D e f i n e s                                    */
 /*------------------------------------------------------------------*/
-#define NOT_IMPLEMENTED(x) \
-        g_error ("FIXME: %s is not yet implemented.", x);
-
 #define ALPHA_DEBUG(x) \
 	if (mini_alpha_verbose_level) \
         	g_debug ("ALPHA_DEBUG: %s is called.", x);
@@ -383,7 +380,7 @@ mono_arch_create_jump_trampoline (MonoMethod *method)
 {
 	ALPHA_DEBUG("mono_arch_create_jump_trampoline");
 
-	NOT_IMPLEMENTED("mono_arch_create_jump_trampoline");
+	NOT_IMPLEMENTED;
 	
         return 0;
 }

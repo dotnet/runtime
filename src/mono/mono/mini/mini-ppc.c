@@ -558,9 +558,6 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	asm ("isync");
 }
 
-#define NOT_IMPLEMENTED(x) \
-                g_error ("FIXME: %s is not yet implemented. (trampoline)", x);
-
 #ifdef __APPLE__
 #define ALWAYS_ON_STACK(s) s
 #define FP_ALSO_IN_REG(s) s

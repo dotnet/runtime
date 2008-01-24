@@ -569,9 +569,6 @@ mono_arch_flush_icache (guint8 *code, gint size)
 
 }
 
-#define NOT_IMPLEMENTED(x) \
-                g_error ("FIXME: %s is not yet implemented. (trampoline)", x);
-
 enum {
 	RegTypeGeneral,
 	RegTypeBase,
