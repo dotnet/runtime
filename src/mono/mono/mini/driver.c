@@ -898,6 +898,7 @@ mini_usage_jitdeveloper (void)
 		 "Runtime and JIT debugging options:\n"
 		 "    --breakonex            Inserts a breakpoint on exceptions\n"
 		 "    --break METHOD         Inserts a breakpoint at METHOD entry\n"
+		 "    --break-at-bb METHOD N Inserts a breakpoint in METHOD at BB N\n"
 		 "    --compile METHOD       Just compile METHOD in assembly\n"
 		 "    --compile-all          Compiles all the methods in the assembly\n"
 		 "    --ncompile N           Number of times to compile METHOD (default: 1)\n"
@@ -1127,6 +1128,17 @@ mono_main (int argc, char* argv[])
 			
 			if (!mono_debugger_insert_breakpoint (argv [++i], FALSE))
 				fprintf (stderr, "Error: invalid method name '%s'\n", argv [i]);
+		} else if (strcmp (argv [i], "--break-at-bb") == 0) {
+			if (i + 2 >= argc) {
+				fprintf (stderr, "Missing method name or bb num in --break-at-bb command line option.");
+				return 1;
+			}
+			mono_break_at_bb_method = mono_method_desc_new (argv [++i], TRUE);
+			if (mono_break_at_bb_method == NULL) {
+				fprintf (stderr, "Method name is in a bad format in --break-at-bb command line option.");
+				return 1;
+			}
+			mono_break_at_bb_bb_num = atoi (argv [++i]);
 		} else if (strcmp (argv [i], "--inject-async-exc") == 0) {
 			if (i + 2 >= argc) {
 				fprintf (stderr, "Missing method name or position in --inject-async-exc command line option\n");

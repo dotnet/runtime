@@ -156,6 +156,8 @@ gboolean mono_compile_aot = FALSE;
 #endif
 MonoMethodDesc *mono_inject_async_exc_method = NULL;
 int mono_inject_async_exc_pos;
+MonoMethodDesc *mono_break_at_bb_method = NULL;
+int mono_break_at_bb_bb_num;
 
 static int mini_verbose = 0;
 
