@@ -4308,7 +4308,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (cfg->prof_options & MONO_PROFILE_COVERAGE)
 			max_offset += 6; 
 
-		MONO_BB_FOR_EACH_INS (bb, ins) {
+		MONO_BB_FOR_EACH_INS (bb, ins)
 			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 	}
 
