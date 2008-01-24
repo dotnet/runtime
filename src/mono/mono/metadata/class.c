@@ -4986,6 +4986,14 @@ mono_class_has_variant_generic_params (MonoClass *klass)
 	return FALSE;
 }
 
+/**
+ * mono_class_is_assignable_from:
+ * @klass: the class to be assigned to
+ * @oklass: the source class
+ *
+ * Return: true if an instance of object oklass can be assigned to an
+ * instance of object @klass
+ */
 gboolean
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 {
@@ -5092,10 +5100,11 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 	return mono_class_has_parent (oklass, klass);
 }	
 
-/*
+/**
  * mono_class_get_cctor:
+ * @klass: A MonoClass pointer
  *
- *   Returns the static constructor of @klass if it exists, NULL otherwise.
+ * Returns: the static constructor of @klass if it exists, NULL otherwise.
  */
 MonoMethod*
 mono_class_get_cctor (MonoClass *klass)
@@ -5111,10 +5120,11 @@ mono_class_get_cctor (MonoClass *klass)
 	return mono_class_get_method_from_name_flags (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME);
 }
 
-/*
+/**
  * mono_class_get_finalizer:
+ * @klass: The MonoClass pointer
  *
- *   Returns the finalizer method of @klass if it exists, NULL otherwise.
+ * Returns: the finalizer method of @klass if it exists, NULL otherwise.
  */
 MonoMethod*
 mono_class_get_finalizer (MonoClass *klass)
@@ -5134,10 +5144,12 @@ mono_class_get_finalizer (MonoClass *klass)
 	}
 }
 
-/*
+/**
  * mono_class_needs_cctor_run:
+ * @klass: the MonoClass pointer
+ * @caller: a MonoMethod describing the caller
  *
- *  Determines whenever the class has a static constructor and whenever it
+ * Determines whenever the class has a static constructor and whenever it
  * needs to be called when executing CALLER.
  */
 gboolean
