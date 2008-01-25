@@ -118,9 +118,6 @@ struct MonoLMF
 
 #define MONO_ARCH_USE_SIGACTION 1
 
-/* Use prerefered create trampoline callback method */
-#define MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE 1
-
 //#define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'r') ? IA64_R8 : ((desc == 'g') ? 8 : -1))
 //#define MONO_ARCH_INST_IS_FLOAT(desc) ((desc == 'f') || (desc == 'g'))
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)

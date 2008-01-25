@@ -122,28 +122,24 @@ x86_sources = \
 	mini-x86.c		\
 	mini-x86.h		\
 	exceptions-x86.c	\
-	tramp-x86.c			\
-	mini-trampolines.c
+	tramp-x86.c
 
 amd64_sources = \
 	mini-amd64.c		\
 	mini-amd64.h		\
 	exceptions-amd64.c	\
-	tramp-amd64.c		\
-	mini-trampolines.c
+	tramp-amd64.c
 
 ppc_sources = \
 	mini-ppc.c		\
 	mini-ppc.h		\
 	exceptions-ppc.c	\
-	mini-trampolines.c	\
 	tramp-ppc.c
 
 arm_sources = \
 	mini-arm.c		\
 	mini-arm.h		\
 	exceptions-arm.c	\
-	mini-trampolines.c	\
 	tramp-arm.c
 
 mips_sources = \
@@ -156,43 +152,37 @@ sparc_sources = \
 	mini-sparc.c		\
 	mini-sparc.h		\
 	exceptions-sparc.c	\
-	tramp-sparc.c		\
-	mini-trampolines.c
+	tramp-sparc.c
 
 s390_sources = \
 	mini-s390.c		\
 	mini-s390.h		\
 	exceptions-s390.c	\
-	tramp-s390.c        \
-	mini-trampolines.c
+	tramp-s390.c
 
 s390x_sources = \
 	mini-s390x.c		\
 	mini-s390x.h		\
 	exceptions-s390x.c	\
-	tramp-s390x.c		\
-	mini-trampolines.c
+	tramp-s390x.c
 
 ia64_sources = \
 	mini-ia64.c			\
 	mini-ia64.h			\
 	exceptions-ia64.c	\
-	tramp-ia64.c		\
-	mini-trampolines.c
+	tramp-ia64.c
 
 alpha_sources = \
 	mini-alpha.c	\
 	mini-alpha.h	\
 	exceptions-alpha.c	\
-	tramp-alpha.c	\
-	mini-trampolines.c
+	tramp-alpha.c
 
 hppa_sources = \
 	mini-hppa.c	\
 	mini-hppa.h	\
 	exceptions-hppa.c	\
-	tramp-hppa.c	\
-	mini-trampolines.c
+	tramp-hppa.c
 
 common_sources = \
 	mini.c		\
@@ -231,6 +221,7 @@ common_sources = \
 	graph.c		\
 	mini-exceptions.c	\
 	mini-codegen.c		\
+	mini-trampolines.c  \
 	declsec.c	\
 	declsec.h	\
 	wapihandles.c	\
