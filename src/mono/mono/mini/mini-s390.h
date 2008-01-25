@@ -223,8 +223,6 @@ typedef struct
 #define MONO_ARCH_BASEREG s390_r15
 #define MONO_ARCH_RETREG1 s390_r2
 
-#define MONO_SPARC_STACK_BIAS 0
-
 /*-----------------------------------------------*/
 /* Macros used to generate instructions          */
 /*-----------------------------------------------*/
