@@ -730,6 +730,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 gboolean
 mono_aot_init_vtable (MonoVTable *vtable)
 {
+#ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	int i;
 	MonoAotModule *aot_module;
 	MonoClass *klass = vtable->klass;
@@ -759,7 +760,6 @@ mono_aot_init_vtable (MonoVTable *vtable)
 
 	mono_aot_unlock ();
 
-#ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	//printf ("VT0: %s.%s %d\n", klass->name_space, klass->name, vtable_size);
 	for (i = 0; i < class_info.vtable_size; ++i) {
 		vtable->vtable [i] = mini_get_vtable_trampoline ();
