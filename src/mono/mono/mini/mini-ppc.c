@@ -15,7 +15,7 @@
 
 #include "mini-ppc.h"
 #include "inssel.h"
-#include "cpu-g4.h"
+#include "cpu-ppc.h"
 #include "trace.h"
 #ifdef __APPLE__
 #include <sys/sysctl.h>

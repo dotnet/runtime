@@ -281,7 +281,7 @@ endif
 if POWERPC
 arch_sources = $(ppc_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-ppc.brg
-arch_built=cpu-g4.h
+arch_built=cpu-ppc.h
 arch_define=__ppc__
 endif
 
@@ -407,8 +407,8 @@ cpu-x86.h: cpu-x86.md genmdesc$(EXEEXT)
 cpu-amd64.h: cpu-amd64.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-amd64.md cpu-amd64.h amd64_desc
 
-cpu-g4.h: cpu-g4.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-g4.md cpu-g4.h ppcg4
+cpu-ppc.h: cpu-ppc.md genmdesc$(EXEEXT)
+	$(GENMDESC_PRG) $(srcdir)/cpu-ppc.md cpu-ppc.h ppcg4
 
 cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
@@ -500,7 +500,7 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	inssel-softfloat.brg	\
 	$(x86_sources) inssel-x86.brg cpu-x86.md \
 	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
-	$(ppc_sources) inssel-ppc.brg cpu-g4.md \
+	$(ppc_sources) inssel-ppc.brg cpu-ppc.md \
 	$(arm_sources) inssel-arm.brg cpu-arm.md \
 	$(mips_sources) inssel-mips.brg inssel-long32-mips.brg cpu-mips.md \
 	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
