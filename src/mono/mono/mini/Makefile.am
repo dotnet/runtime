@@ -170,7 +170,8 @@ s390x_sources = \
 	mini-s390x.c		\
 	mini-s390x.h		\
 	exceptions-s390x.c	\
-	tramp-s390x.c
+	tramp-s390x.c		\
+	mini-trampolines.c
 
 ia64_sources = \
 	mini-ia64.c			\

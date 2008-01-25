@@ -177,6 +177,7 @@ typedef struct
 #define MONO_ARCH_NEED_DIV_CHECK		1
 #define MONO_ARCH_SIGNAL_STACK_SIZE 		256*1024
 // #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION	1
+#define MONO_ARCH_HAVE_CREATE_SPECIFIC_TRAMPOLINE 1
 
 #define MONO_ARCH_USE_SIGACTION 	1
 
@@ -232,8 +233,6 @@ typedef struct
 
 #define MONO_ARCH_BASEREG s390_r15
 #define MONO_ARCH_RETREG1 s390_r2
-
-#define MONO_SPARC_STACK_BIAS 0
 
 /*-----------------------------------------------*/
 /* Macros used to generate instructions          */
