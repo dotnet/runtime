@@ -4367,6 +4367,7 @@ get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasic
 		return get_runtime_generic_context_other_ptr (cfg, method, bblock, rgctx, type_token, rgctx_type, ip);
 	default:
 		g_assert_not_reached ();
+		return NULL;
 	}
 }
 
