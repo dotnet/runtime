@@ -66,7 +66,7 @@ bge.un: len:8
 bgt.un: len:8
 ble.un: len:8
 blt.un: len:8
-label:
+label: len:0
 ldind.i1: dest:i len:8
 ldind.u1: dest:i len:8
 ldind.i2: dest:i len:8

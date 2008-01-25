@@ -54,8 +54,6 @@
 #
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
-arg:
-arglist:
 break: len:4
 jmp: len:48
 br: len:4
@@ -69,7 +67,7 @@ bge.un: len:4
 bgt.un: len:4
 ble.un: len:4
 blt.un: len:4
-label:
+label: len:0
 ldind.i1: dest:i len:8
 ldind.u1: dest:i len:8
 ldind.i2: dest:i len:8

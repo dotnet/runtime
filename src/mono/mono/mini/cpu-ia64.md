@@ -4,7 +4,7 @@
 # since there are no short branches.
 #
 
-label:
+label: len:0
 break: len:48
 jmp: len:48
 br: len:48

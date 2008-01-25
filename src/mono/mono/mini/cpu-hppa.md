@@ -47,7 +47,7 @@
 #
 # See the code in mini-hppa.c for more details on how the specifiers are used.
 #
-label:
+label: len:0
 break: len:64
 jmp: len:64
 br: len:16

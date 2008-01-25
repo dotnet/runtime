@@ -47,7 +47,7 @@
 #
 # See the code in mini-sparc32.c for more details on how the specifiers are used.
 #
-label:
+label: len:0
 break: len:64
 jmp: len:64
 br: len:8
