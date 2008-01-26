@@ -167,7 +167,6 @@ BASE_TEST_CS_SRC=		\
 	remoting3.cs		\
 	remoting4.cs		\
 	remoting5.cs		\
-	nonvirt.cs		\
 	largeexp.cs		\
 	largeexp2.cs		\
 	marshalbyref1.cs	\
@@ -253,6 +252,10 @@ TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
 else
 TEST_CS_SRC = $(BASE_TEST_CS_SRC)
 endif
+endif
+
+if IA64
+TEST_CS_SRC+=async-exc-compilation.cs
 endif
 
 if X86
