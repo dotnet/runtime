@@ -215,6 +215,36 @@ class Tests {
 		return 4;
 	}
 
+	public static int test_0_lconv_to_r8 () {
+		long a = 150;
+		double b = (double) a;
+
+		if (b != 150.0)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_lconv_to_r4 () {
+		long a = 3000;
+		float b = (float) a;
+
+		if (b != 3000.0F)
+			return 1;
+		return 0;
+	}
+
+	static void doit (double value, out long m) {
+		m = (long) value;
+	}
+
+	public static int test_0_ftol_clobber () {
+		long m;
+		doit (1.3, out m);
+		if (m != 1)
+			return 2;
+		return 0;
+	}
+
 	public static int test_0_rounding () {
 		long ticks = 631502475130080000L;
 		long ticksperday = 864000000000L;

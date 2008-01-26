@@ -160,6 +160,7 @@ ia64_patch (unsigned char* code, gpointer target);
 typedef enum {
 	ArgInIReg,
 	ArgInFloatReg,
+	ArgInFloatRegR4,
 	ArgOnStack,
 	ArgValuetypeAddrInIReg,
 	ArgAggregate,
@@ -234,7 +235,7 @@ add_float (guint32 *gr, guint32 *fr, guint32 *stack_size, ArgInfo *ainfo, gboole
 		(*stack_size) += sizeof (gpointer);
     }
     else {
-		ainfo->storage = ArgInFloatReg;
+		ainfo->storage = is_double ? ArgInFloatReg : ArgInFloatRegR4;
 		ainfo->reg = 8 + *fr;
 		(*fr) += 1;
 		(*gr) += 1;
@@ -885,6 +886,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				inst->dreg = cfg->arch.reg_in0 + ainfo->reg;
 				break;
 			case ArgInFloatReg:
+			case ArgInFloatRegR4:
 				/* 
 				 * Since float regs are volatile, we save the arguments to
 				 * the stack in the prolog.
@@ -962,6 +964,13 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, MonoInst *arg, ArgStorage 
 		break;
 	case ArgInFloatReg:
 		arg->opcode = OP_OUTARG_FREG;
+		arg->inst_left = tree;
+		arg->inst_right = (MonoInst*)call;
+		arg->backend.reg3 = reg;
+		call->used_fregs |= 1 << reg;
+		break;
+	case ArgInFloatRegR4:
+		arg->opcode = OP_OUTARG_FREG_R4;
 		arg->inst_left = tree;
 		arg->inst_right = (MonoInst*)call;
 		arg->backend.reg3 = reg;
@@ -1184,6 +1193,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					add_outarg_reg (cfg, call, arg, ainfo->storage, cfg->arch.reg_out0 + ainfo->reg, in);
 					break;
 				case ArgInFloatReg:
+				case ArgInFloatRegR4:
 					add_outarg_reg (cfg, call, arg, ainfo->storage, ainfo->reg, in);
 					break;
 				case ArgOnStack:
@@ -3866,6 +3876,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			switch (ainfo->storage) {
 			case ArgInIReg:
 			case ArgInFloatReg:
+			case ArgInFloatRegR4:
 				g_assert (inst->opcode == OP_REGOFFSET);
 				if (ia64_is_adds_imm (inst->inst_offset))
 					ia64_adds_imm (code, GP_SCRATCH_REG, inst->inst_offset, inst->inst_basereg);

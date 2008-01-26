@@ -195,6 +195,17 @@ stmt: OP_OUTARG_FREG (freg) {
 	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, TRUE);
 }
 
+stmt: OP_OUTARG_FREG_R4 (freg) {
+	MonoCallInst *call = (MonoCallInst*)tree->inst_right;
+
+	tree->opcode = OP_FCONV_TO_R4;
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = mono_regstate_next_float (s->rs);
+	mono_bblock_add_inst (s->cbb, tree);
+
+	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, TRUE);
+}
+
 stmt: OP_OUTARG (reg) {
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREI8_MEMBASE_REG, IA64_SP, tree->inst_imm, state->left->reg1);
 }
