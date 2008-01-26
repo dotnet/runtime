@@ -274,6 +274,7 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 		}
 		g_assert (res >= 0);
 	}
+	ctx.precise_ip = FALSE;
 
 	mono_handle_exception (&ctx, exc, (gpointer)(ip), FALSE);
 	restore_context (&ctx);
@@ -525,6 +526,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	unw_word_t ip;
 
 	*new_ctx = *ctx;
+	new_ctx->precise_ip = FALSE;
 
 	while (TRUE) {
 		err = unw_get_reg (&new_ctx->cursor, UNW_IA64_IP, &ip);
@@ -618,6 +620,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 		res = unw_step (&ctx.cursor);
 		g_assert (res >= 0);
 	}
+	ctx.precise_ip = TRUE;
 
 	mono_handle_exception (&ctx, obj, (gpointer)ip, test_only);
 

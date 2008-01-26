@@ -51,6 +51,9 @@ struct MonoLMF {
 
 typedef struct MonoContext {
 	unw_cursor_t cursor;
+	/* Whenever the ip in 'cursor' points to the ip where the exception happened */
+	/* This is true for the initial context for exceptions thrown from signal handlers */
+	gboolean precise_ip;
 } MonoContext;
 
 typedef struct MonoCompileArch {
@@ -84,8 +87,12 @@ mono_ia64_context_get_ip (MonoContext *ctx)
 	err = unw_get_reg (&ctx->cursor, UNW_IA64_IP, &ip);
 	g_assert (err == 0);
 
-	/* Subtrack 1 so ip points into the actual instruction */
-	return ip - 1;
+	if (ctx->precise_ip) {
+		return ip;
+	} else {
+		/* Subtrack 1 so ip points into the actual instruction */
+		return ip - 1;
+	}
 }
 
 static inline unw_word_t
