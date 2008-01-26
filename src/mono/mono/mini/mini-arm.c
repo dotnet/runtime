@@ -1908,6 +1908,24 @@ arm_patch (guchar *code, const guchar *target)
 			return;
 		}
 		g_assert_not_reached ();
+	} else if ((ins & 0x0ffffff0) == 0x12fff30) {
+		/*
+		 * ldr ip, [pc, #0]
+		 * b 0xc
+		 * .word code_ptr
+		 * blx ip
+		 */
+		guint32 ccode [4];
+		guint8 *emit = (guint8*)ccode;
+		ARM_LDR_IMM (emit, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (emit, 0);
+		ARM_BLX_REG (emit, ARMREG_IP);
+
+		g_assert (code32 [-3] == ccode [0]);
+		g_assert (code32 [-2] == ccode [1]);
+		g_assert (code32 [0] == ccode [2]);
+
+		code32 [-1] = (guint32)target;
 	} else {
 		guint32 ccode [4];
 		guint32 *tmp = ccode;
