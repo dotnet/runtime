@@ -2353,6 +2353,21 @@ class Tests {
 		return 1;
 	}
 
+	public int amethod () {
+		return 1;
+	}
+
+	public static int test_0_nonvirt_nullref_at_clause_start () {
+		Tests t = null;
+		try {
+			t.amethod ();
+		} catch (NullReferenceException) {
+			return 0;
+		}
+
+		return 1;
+	}
+
 	public static int throw_only () {
 		throw new Exception ();
 	}
