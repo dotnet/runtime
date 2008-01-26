@@ -207,6 +207,73 @@ static guint32 convert_attrs(MonoFileAttributes attrs)
 	return(attrs);
 }
 
+/*
+ * On Win32, GetFileAttributes|Ex () seems to try opening the file,
+ * which might lead to sharing violation errors, whereas FindFirstFile
+ * always succeeds. These 2 wrappers resort to FindFirstFile if
+ * GetFileAttributes|Ex () has failed.
+ */
+static guint32
+get_file_attributes (const gunichar2 *path)
+{
+	guint32 res;
+	WIN32_FIND_DATA find_data;
+	HANDLE find_handle;
+	gint32 error;
+
+	res = GetFileAttributes (path);
+	if (res != -1)
+		return res;
+
+	error = GetLastError ();
+
+	if (error != ERROR_SHARING_VIOLATION)
+		return res;
+
+	find_handle = FindFirstFile (path, &find_data);
+
+	if (find_handle == INVALID_HANDLE_VALUE)
+		return res;
+
+	FindClose (find_handle);
+
+	return find_data.dwFileAttributes;
+}
+
+static gboolean
+get_file_attributes_ex (const gunichar2 *path, WIN32_FILE_ATTRIBUTE_DATA *data)
+{
+	gboolean res;
+	WIN32_FIND_DATA find_data;
+	HANDLE find_handle;
+	gint32 error;
+
+	res = GetFileAttributesEx (path, GetFileExInfoStandard, data);
+	if (res)
+		return TRUE;
+
+	error = GetLastError ();
+
+	if (error != ERROR_SHARING_VIOLATION)
+		return FALSE;
+
+	find_handle = FindFirstFile (path, &find_data);
+
+	if (find_handle == INVALID_HANDLE_VALUE)
+		return FALSE;
+
+	FindClose (find_handle);
+
+	data->dwFileAttributes = find_data.dwFileAttributes;
+	data->ftCreationTime = find_data.ftCreationTime;
+	data->ftLastAccessTime = find_data.ftLastAccessTime;
+	data->ftLastWriteTime = find_data.ftLastWriteTime;
+	data->nFileSizeHigh = find_data.nFileSizeHigh;
+	data->nFileSizeLow = find_data.nFileSizeLow;
+	
+	return TRUE;
+}
+
 /* System.IO.MonoIO internal calls */
 
 MonoBoolean
@@ -462,7 +529,7 @@ ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error)
 
 	*error=ERROR_SUCCESS;
 	
-	ret=GetFileAttributes (mono_string_chars (path));
+	ret=get_file_attributes (mono_string_chars (path));
 
 	/* 
 	 * The definition of INVALID_FILE_ATTRIBUTES in the cygwin win32
@@ -528,7 +595,7 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 
 	*error=ERROR_SUCCESS;
 	
-	result = GetFileAttributesEx (mono_string_chars (path), GetFileExInfoStandard, &data);
+	result = get_file_attributes_ex (mono_string_chars (path), &data);
 
 	if (result) {
 		convert_win32_file_attribute_data (&data,
@@ -580,7 +647,7 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 
 	/* If we're opening a directory we need to set the extra flag
 	 */
-	attrs = GetFileAttributes (chars);
+	attrs = get_file_attributes (chars);
 	if (attrs != INVALID_FILE_ATTRIBUTES) {
 		if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
 			attributes |= FILE_FLAG_BACKUP_SEMANTICS;
