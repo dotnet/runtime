@@ -739,7 +739,6 @@ reg: OP_ATOMIC_EXCHANGE_I4 (base, reg) {
 }
 
 # Optimized call instructions
-# mono_arch_patch_delegate_trampoline depends on these
 reg: OP_CALL_REG (CEE_LDIND_I (base)),
 freg: OP_FCALL_REG (CEE_LDIND_I (base)),
 reg: OP_LCALL_REG (CEE_LDIND_I (base)) {
