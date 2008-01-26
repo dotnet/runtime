@@ -135,11 +135,13 @@ gboolean mono_fclt (double a, double b) MONO_INTERNAL;
 
 gboolean mono_fclt_un (double a, double b) MONO_INTERNAL;
 
-double   mono_fload_r4 (float *ptr);
+double   mono_fload_r4 (float *ptr) MONO_INTERNAL;
 
-void     mono_fstore_r4 (double val, float *ptr);
+void     mono_fstore_r4 (double val, float *ptr) MONO_INTERNAL;
 
-guint32  mono_fload_r4_arg (double val);
+guint32  mono_fload_r4_arg (double val) MONO_INTERNAL;
+
+void     mono_break (void) MONO_INTERNAL;
 
 #endif /* __MONO_JIT_ICALLS_H__ */
 

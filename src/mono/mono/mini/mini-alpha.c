@@ -69,6 +69,7 @@
 #include "mini-alpha.h"
 #include "inssel.h"
 #include "cpu-alpha.h"
+#include "jit-icalls.h"
 
 /*========================= End of Includes ========================*/
 
@@ -92,7 +93,6 @@ gboolean lmf_addr_key_inited = FALSE;
 
 /*====================== End of Global Variables ===================*/
 
-static void mono_arch_break(void);
 gpointer mono_arch_get_lmf_addr (void);
 
 typedef enum {
@@ -5027,19 +5027,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name         - mono_arch_break                                   */
-/*                                                                  */
-/* Function     - Process a "break" operation for debugging.        */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-static void
-mono_arch_break(void) {
-}
-
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name         - mono_arch_register_lowlevel_calls                 */
 /*                                                                  */
 /* Function     - Register routines to help with --trace operation. */
@@ -5051,7 +5038,6 @@ mono_arch_register_lowlevel_calls (void)
 {
    ALPHA_DEBUG("mono_arch_register_lowlevel_calls");
    
-   mono_register_jit_icall (mono_arch_break, "mono_arch_break", NULL, TRUE);
    mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr",
 							NULL, TRUE);
 }

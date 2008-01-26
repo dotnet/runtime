@@ -182,6 +182,7 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 #include "mini-s390x.h"
 #include "inssel.h"
 #include "cpu-s390x.h"
+#include "jit-icalls.h"
 
 /*========================= End of Includes ========================*/
 
@@ -271,7 +272,6 @@ static inline void add_float (guint *, size_data *, ArgInfo *);
 static CallInfo * calculate_sizes (MonoMethodSignature *, size_data *, gboolean);
 static void peephole_pass (MonoCompile *, MonoBasicBlock *);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
-static void mono_arch_break(void);
 gpointer mono_arch_get_lmf_addr (void);
 static guint8 * emit_load_volatile_registers (guint8 *, MonoCompile *);
 static CompRelation opcode_to_cond (int);
@@ -2677,8 +2677,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_basr  (code, s390_r13, 0);
 			s390_j	   (code, 6);
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, 
-					     mono_arch_break);
-			s390_llong (code, mono_arch_break);
+					     mono_break);
+			s390_llong (code, mono_break);
 			s390_lg    (code, s390_r14, 0, s390_r13, 4);
                         s390_basr  (code, s390_r14, s390_r14);
 		}
@@ -4208,22 +4208,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_register_lowlevel_calls (void)
 {
-	mono_register_jit_icall (mono_arch_break, "mono_arch_break", NULL, TRUE);
 	mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr", NULL, TRUE);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_break                                   */
-/*                                                                  */
-/* Function	- Process a "break" operation for debugging.        */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static void
-mono_arch_break(void) {
 }
 
 /*========================= End of Function ========================*/

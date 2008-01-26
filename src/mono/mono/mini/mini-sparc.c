@@ -34,6 +34,7 @@
 #include "inssel.h"
 #include "trace.h"
 #include "cpu-sparc.h"
+#include "jit-icalls.h"
 
 /*
  * Sparc V9 means two things:
@@ -264,11 +265,6 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		*exclude_mask |= MONO_OPT_CMOV | MONO_OPT_FCMOV;
 
 	return opts;
-}
-
-static void
-mono_arch_break (void)
-{
 }
 
 #ifdef __GNUC__
@@ -2555,7 +2551,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * breakpoint there.
 			 */
 			//sparc_ta (code, 1);
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, mono_arch_break);
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, mono_break);
 			EMIT_CALL();
 			break;
 		case OP_ADDCC:
@@ -3639,7 +3635,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_register_lowlevel_calls (void)
 {
-	mono_register_jit_icall (mono_arch_break, "mono_arch_break", NULL, TRUE);
 	mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr", NULL, TRUE);
 }
 

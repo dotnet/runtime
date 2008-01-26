@@ -12925,6 +12925,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);
 	register_icall (mono_value_copy, "mono_value_copy", "void ptr ptr ptr", FALSE);
 	register_icall (mono_helper_get_rgctx_other_ptr, "get_rgctx_other_ptr", "ptr ptr ptr int32 int32", FALSE);
+	register_icall (mono_break, "mono_break", NULL, TRUE);
 #endif
 
 #define JIT_RUNTIME_WORKS
