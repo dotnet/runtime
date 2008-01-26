@@ -2737,14 +2737,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
 		case OP_VCALL_REG:
-		case OP_VOIDCALL_REG:
-			call = (MonoCallInst*)ins;
+		case OP_VOIDCALL_REG: {
+			MonoCallInst *call = (MonoCallInst*)ins;
+			CallInfo *cinfo;
+			int out_reg;
+
+			/* 
+			 * mono_arch_find_this_arg () needs to find the this argument in a global 
+			 * register.
+			 */
+			cinfo = get_call_info (cfg, cfg->mempool, call->signature, FALSE);
+			out_reg = cfg->arch.reg_out0;
+			if (cinfo->ret.storage == ArgValuetypeAddrInIReg)
+				out_reg ++;
+			ia64_mov (code, IA64_R10, out_reg);
 
 			/* Indirect call */
-			/* 
-			 * mono_arch_patch_delegate_trampoline will patch this, this is why R8 is 
-			 * used.
-			 */
 			ia64_mov (code, IA64_R8, ins->sreg1);
 			ia64_ld8_inc_imm (code, GP_SCRATCH_REG2, IA64_R8, 8);
 			ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG2);
@@ -2753,7 +2761,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			code = emit_move_return_value (cfg, ins, code);
 			break;
-
+		}
 		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
@@ -2780,8 +2788,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (call->method && ins->inst_offset < 0) {
 				/* 
 				 * This is a possible IMT call so save the IMT method in a global 
-				 * register where mono_arch_find_imt_method () and its friends can access 
-				 * it.
+				 * register where mono_arch_find_imt_method () and its friends can 
+				 * access it.
 				 */
 				ia64_movl (code, IA64_R9, call->method);
 			}
@@ -4666,18 +4674,30 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 	return regs [IA64_R9];
 }
 
-MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
-{
-	return regs [IA64_R10];
-}
-
 void
 mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call)
 {
 	/* Done by the implementation of the CALL_MEMBASE opcodes */
 }
 #endif
+
+gpointer
+mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
+{
+	return (gpointer)regs [IA64_R10];
+}
+
+MonoObject*
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+{
+	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
+}
+
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	return NULL;
+}
 
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)

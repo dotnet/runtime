@@ -368,10 +368,11 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 
 	/* The general, unoptimized case */
 	m = mono_marshal_get_delegate_invoke (invoke, delegate);
-	delegate->invoke_impl = mono_compile_method (m);
+	code = mono_compile_method (m);
+	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
 	mono_debugger_trampoline_compiled (m, delegate->invoke_impl);
 
-	return delegate->invoke_impl;
+	return code;
 }
 
 #endif

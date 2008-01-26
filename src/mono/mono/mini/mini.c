@@ -8910,7 +8910,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 {
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 	MonoDomain *domain = mono_domain_get ();
-	gpointer code, ptr;
+	gpointer ptr;
 	guint32 code_size;
 
 	mono_domain_lock (domain);
@@ -8919,9 +8919,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	if (ptr)
 		return ptr;
 
-    code = mono_arch_create_specific_trampoline (klass, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
-
-	ptr = mono_create_ftnptr (domain, code);
+    ptr = mono_arch_create_specific_trampoline (klass, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
 
 	/* store trampoline address */
 	mono_domain_lock (domain);
