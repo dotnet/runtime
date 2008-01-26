@@ -1,3 +1,8 @@
+2008-01-26  Zoltan Varga  <vargaz@gmail.com>
+
+	* docs/mini-porting.txt: Add some info about the order the JIT regression
+	tests should be run.
+
 2008-01-26  Daniel Nauck  <dna@mono-project.de>
 
 	* scripts/mono-service.in: fix compability with the dash shell,
