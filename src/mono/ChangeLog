@@ -1,3 +1,8 @@
+2008-01-26  Daniel Nauck  <dna@mono-project.de>
+
+	* scripts/mono-service.in: fix compability with the dash shell,
+	it doesn't like the use of >& without a file descriptor
+
 2008-01-09  Zoltan Varga  <vargaz@freemail.hu>
 
 	* runtime/Makefile.am (mcs-compileall): Remove some whitespace after
