@@ -1050,12 +1050,11 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 		} else {
 			MonoType *arg_type;
 
-			MONO_INST_NEW (cfg, arg, OP_OUTARG);
 			in = call->args [i];
+			MONO_INST_NEW (cfg, arg, OP_OUTARG);
 			arg->cil_code = in->cil_code;
 			arg->inst_left = in;
 			arg->type = in->type;
-			MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 
 			if (sig->hasthis && (i == 0))
 				arg_type = &mono_defaults.object_class->byval_arg;
@@ -1089,6 +1088,15 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					int slot, j;
 
 					vtaddr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+
+					/* Trees can't be shared so make a copy */
+					MONO_INST_NEW (cfg, arg, CEE_STIND_I);
+					arg->cil_code = in->cil_code;
+					arg->ssa_op = MONO_SSA_STORE;
+					arg->inst_left = vtaddr;
+					arg->inst_right = in;
+					arg->type = in->type;
+					MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
 
 					/* 
 					 * Part of the structure is passed in registers.
@@ -1127,13 +1135,9 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						MONO_INST_NEW (cfg, load, load_op);
 						load->inst_left = load2;
 
-						if (j == 0)
-							set_reg = arg;
-						else
-							MONO_INST_NEW (cfg, set_reg, OP_OUTARG_REG);
+						MONO_INST_NEW (cfg, set_reg, OP_OUTARG_REG);
 						add_outarg_reg (cfg, call, set_reg, arg_storage, dest_reg, load);
-						if (&set_reg->node != &call->out_args)
-							MONO_INST_LIST_ADD (&set_reg->node, &call->out_args);
+						MONO_INST_LIST_ADD_TAIL (&set_reg->node, &call->out_args);
 					}
 
 					/* 
@@ -1156,25 +1160,12 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 						MONO_INST_NEW (cfg, load, CEE_LDIND_I);
 						load->inst_left = load2;
 
-						if (j == 0)
-							outarg = arg;
-						else
-							MONO_INST_NEW (cfg, outarg, OP_OUTARG);
+						MONO_INST_NEW (cfg, outarg, OP_OUTARG);
 						outarg->inst_left = load;
 						outarg->inst_imm = 16 + ainfo->offset + (slot - 8) * 8;
 
-						if (&outarg->node != &call->out_args)
-							MONO_INST_LIST_ADD (&outarg->node, &call->out_args);
+						MONO_INST_LIST_ADD_TAIL (&outarg->node, &call->out_args);
 					}
-
-					/* Trees can't be shared so make a copy */
-					MONO_INST_NEW (cfg, arg, CEE_STIND_I);
-					arg->cil_code = in->cil_code;
-					arg->ssa_op = MONO_SSA_STORE;
-					arg->inst_left = vtaddr;
-					arg->inst_right = in;
-					arg->type = in->type;
-					MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 				}
 				else {
 					MONO_INST_NEW (cfg, stack_addr, OP_REGOFFSET);
@@ -1184,6 +1175,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 					arg->opcode = OP_OUTARG_VT;
 					arg->inst_right = stack_addr;
+					MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
 				}
 			}
 			else {
@@ -1205,6 +1197,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				default:
 					g_assert_not_reached ();
 				}
+				MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
 			}
 		}
 	}
