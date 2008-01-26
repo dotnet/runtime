@@ -3437,15 +3437,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lg   (code,ins->dreg, 0, s390_r13, 4);
 		}
 			break;
-		case CEE_CONV_I:
-		case CEE_CONV_I8:
-		case OP_SEXT_I4:
 		case OP_MOVE:
-		case OP_SETREG: {
+		case OP_SETREG:
 			if (ins->dreg != ins->sreg1) {
 				s390_lgr (code, ins->dreg, ins->sreg1);
 			}
-		}
+			break;
+		case CEE_CONV_I:
+		case CEE_CONV_I8:
+		case OP_SEXT_I4:
+			s390_lgfr (code, ins->dreg, ins->sreg1);
 			break;
 		case CEE_CONV_I4:
 			s390_lgfr (code, ins->dreg, ins->sreg1);

@@ -108,7 +108,7 @@ conv.i1: dest:i src1:i len:30
 conv.i2: dest:i src1:i len:36
 conv.i4: dest:i src1:i len:4
 conv.i8: dest:i src1:i len:4
-conv.i: dest:i src1:i len:2
+conv.i: dest:i src1:i len:4
 conv.ovf.i4.un: dest:i src1:i len:50
 conv.ovf.u4: dest:i src1:i len:48
 conv.ovf.u8.un: dest:i src1:i len:4
