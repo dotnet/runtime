@@ -154,6 +154,17 @@ class Tests {
 		return (int)pass_floats (1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f);
 	}
 
+	public static bool is_small (float value) {
+		double d = (double)value;
+		double d2 = 7.183757E-41;
+		return d - d2 < 0.000001;
+	}
+		
+	static int test_0_float_argument_passing_precision () {
+		float f = 7.183757E-41f;
+		return is_small (f) ? 0 : 1;
+	}
+
 	// The first argument must be passed on a dword aligned stack location
 	static int pass_byref_ints_longs (ref long a, ref int b, ref byte c, ref short d, ref long e, ref int f, ref long g) {
 		return (int)(a + b + c + d + e + f + g);
