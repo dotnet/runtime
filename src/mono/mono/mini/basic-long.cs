@@ -197,23 +197,6 @@ class Tests {
 		return 0;
 	}
 
-	public static int test_0_conv_to_r8 () {
-		long a = 150;
-		double b = (double) a;
-
-		if (b != 150.0)
-			return 1;
-		return 0;
-	}
-
-	public static int test_0_conv_to_r4 () {
-		long a = 3000;
-		float b = (float) a;
-
-		if (b != 3000.0F)
-			return 1;
-		return 0;
-	}
 	/*
 	public static int test_0_conv_from_r8 () {
 		double b = 2.0;
@@ -947,10 +930,6 @@ class Tests {
 		return (int)res;
 	}
 	
-	static void doit (double value, out long m) {
-		m = (long) value;
-	}
-	
 	public static int test_3_checked_cast_un () {
                 ulong i = 2;
                 long j;
@@ -1020,14 +999,6 @@ class Tests {
 			j++;
 		}
 		return j;
-	}
-
-	public static int test_0_ftol_clobber () {
-		long m;
-		doit (1.3, out m);
-		if (m != 1)
-			return 2;
-		return 0;
 	}
 
 	public static int test_0_ulong_regress () {
