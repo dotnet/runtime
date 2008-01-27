@@ -4645,7 +4645,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				/*---------------------------------------------*/
 				/* Load return address & parameter register    */
 				/*---------------------------------------------*/
-				s390_larl (code, s390_r14, S390_RELATIVE((patch_info->ip.i +
+				s390_larl (code, s390_r14, (gsize)S390_RELATIVE((patch_info->ip.i +
 							   cfg->native_code + 8), code));
 				s390_l    (code, s390_r2, 0, s390_r13, 4);
 				/*---------------------------------------------*/
