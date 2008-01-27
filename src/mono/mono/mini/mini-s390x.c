@@ -269,7 +269,7 @@ static gboolean is_regsize_var (MonoType *);
 static inline void add_general (guint *, size_data *, ArgInfo *);
 static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
 static inline void add_float (guint *, size_data *, ArgInfo *);
-static CallInfo * calculate_sizes (MonoMethodSignature *, size_data *, gboolean);
+static CallInfo * calculate_sizes (MonoCompile *, MonoMethodSignature *, size_data *, gboolean);
 static void peephole_pass (MonoCompile *, MonoBasicBlock *);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 gpointer mono_arch_get_lmf_addr (void);
@@ -695,7 +695,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	
 	sig = mono_method_signature (method);
 	
-	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
+	cinfo = calculate_sizes (NULL, sig, &sz, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		printf ("[STRUCTRET:%p], ", (gpointer) rParm->gr[0]);
@@ -1321,13 +1321,15 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
 /*------------------------------------------------------------------*/
 
 static CallInfo *
-calculate_sizes (MonoMethodSignature *sig, size_data *sz, 
+calculate_sizes (MonoCompile *cfg, MonoMethodSignature *sig, size_data *sz, 
 		 gboolean string_ctor)
 {
 	guint i, fr, gr, size;
 	int nParm = sig->hasthis + sig->param_count;
+	MonoType *ret_type;
 	guint32 simpletype, align;
 	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * nParm);
+	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
 
 	fr                = 0;
 	gr                = s390_r2;
@@ -1347,7 +1349,9 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 	/* area that the callee will use.			    */
 	/*----------------------------------------------------------*/
 
-	simpletype = mono_type_get_underlying_type (sig->ret)->type;
+	ret_type = mono_type_get_underlying_type (sig->ret);
+	ret_type = mini_get_basic_type_from_generic (gsctx, ret_type);
+	simpletype = ret_type->type;
 enum_retvalue:
 	switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
@@ -1396,7 +1400,7 @@ enum_retvalue:
 			if (sig->pinvoke)
 				size = mono_class_native_size (klass, &align);
 			else
-                        	size = mono_class_value_size (klass, &align);
+				size = mono_class_value_size (klass, &align);
 	
 			cinfo->ret.reg    = s390_r2;
 			cinfo->struct_ret = 1;
@@ -1432,6 +1436,8 @@ enum_retvalue:
 	/*----------------------------------------------------------*/
 
 	for (i = 0; i < sig->param_count; ++i) {
+		MonoType *ptype;
+
 		/*--------------------------------------------------*/
 		/* Handle vararg type calls. All args are put on    */
 		/* the stack.                                       */
@@ -1449,7 +1455,9 @@ enum_retvalue:
 			continue;
 		}
 
-		simpletype = mono_type_get_underlying_type(sig->params [i])->type;
+		ptype = mono_type_get_underlying_type (sig->params [i]);
+		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
+		simpletype = ptype->type;
 		cinfo->args[nParm].type = simpletype;
 		switch (simpletype) {
 		case MONO_TYPE_BOOLEAN:
@@ -1681,7 +1689,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	sig     = mono_method_signature (cfg->method);
 	
-	cinfo   = calculate_sizes (sig, &sz, sig->pinvoke);
+	cinfo   = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		cfg->ret->opcode = OP_REGVAR;
@@ -1870,7 +1878,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 	n = sig->param_count + sig->hasthis;
 	DEBUG (g_print ("Call requires: %d parameters\n",n));
 	
-	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
+	cinfo = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
 
 	call->stack_usage = MAX(sz.stack_size, call->stack_usage);
 	lParamArea        = MAX((call->stack_usage - S390_MINIMAL_STACK_SIZE - sz.parm_size), 0);
@@ -4305,7 +4313,7 @@ emit_load_volatile_registers (guint8 *code, MonoCompile *cfg)
 	CallInfo *cinfo;
 	size_data sz;
 
-	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
+	cinfo = calculate_sizes (NULL, sig, &sz, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -4472,7 +4480,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	pos = 0;
 
-	cinfo = calculate_sizes (sig, &sz, sig->pinvoke);
+	cinfo = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -4808,7 +4816,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				/*---------------------------------------------*/
 				/* Load return address & parameter register    */
 				/*---------------------------------------------*/
-				s390_larl (code, s390_r14, S390_RELATIVE((patch_info->ip.i +
+				s390_larl (code, s390_r14, (guint64)S390_RELATIVE((patch_info->ip.i +
 							   cfg->native_code + 8), code));
 				s390_lg   (code, s390_r2, 0, s390_r13, 4);
 				/*---------------------------------------------*/

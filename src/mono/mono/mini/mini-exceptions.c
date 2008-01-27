@@ -462,7 +462,7 @@ ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
 #endif
 
-#if	defined(__ia64__)
+#if	defined(__ia64__) || defined(__s390__) || defined(__s390x__)
 	skip--;
 #endif
 
@@ -568,7 +568,7 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityStack);
 #endif
 
-#if	defined(__ia64__)
+#if	defined(__ia64__) || defined(__s390__) || defined(__s390x__)
 	skip--;
 #endif
 
