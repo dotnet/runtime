@@ -1768,6 +1768,7 @@ mono_opcode_to_cond (int opcode)
 	default:
 		printf ("%s\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
+		return 0;
 	}
 }
 

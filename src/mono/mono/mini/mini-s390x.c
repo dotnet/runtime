@@ -2676,7 +2676,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_BREAK: {
 			s390_basr  (code, s390_r13, 0);
 			s390_j	   (code, 6);
-			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, 
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_ABS, 
 					     mono_break);
 			s390_llong (code, mono_break);
 			s390_lg    (code, s390_r14, 0, s390_r13, 4);

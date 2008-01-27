@@ -106,7 +106,7 @@ reg: OP_LOCALLOC (reg) {
 stmt: OP_SETRET (reg) {
 	tree->opcode = OP_MOVE;
 	tree->sreg1 = state->left->reg1;
-	tree->dreg = state->left->reg2;
+	tree->dreg = s390_r2;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
