@@ -8577,8 +8577,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	gboolean dynamic;
 	int i;
 
-	g_assert (!klass->generic_class);
-
 	/*
 	 * Methods created using a MethodBuilder should have their memory allocated
 	 * inside the image mempool, while dynamic methods should have their memory
@@ -8586,6 +8584,9 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	 */
 	dynamic = rmb->refs != NULL;
 	mp = dynamic ? NULL : klass->image->mempool;
+
+	if (!dynamic)
+		g_assert (!klass->generic_class);
 
 	mono_loader_lock ();
 
