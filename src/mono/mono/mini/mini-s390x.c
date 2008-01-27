@@ -467,7 +467,7 @@ backUpStackPtr(MonoCompile *cfg, guint8 *code)
 {
 	int stackSize = cfg->stack_usage;
 
-	if (s390_is_uimm16 (stackSize)) {
+	if (s390_is_imm16 (stackSize)) {
 		s390_aghi  (code, STK_BASE, stackSize);
 	} else { 
 		while (stackSize > 32767) {
@@ -3623,7 +3623,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				int lmfOffset = cfg->stack_usage - sizeof(MonoLMF);
 
 				s390_lgr (code, s390_r13, cfg->frame_reg);
-				if (s390_is_uimm16(lmfOffset))
+				if (s390_is_imm16(lmfOffset))
 					s390_aghi (code, s390_r13, lmfOffset);
 				else {
 					s390_basr (code, s390_r14, 0);
@@ -4437,7 +4437,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	cfg->stack_usage = alloc_size;
 	s390_lgr  (code, s390_r11, STK_BASE);
-	if (s390_is_uimm16 (alloc_size)) {
+	if (s390_is_imm16 (alloc_size)) {
 		s390_aghi (code, STK_BASE, -alloc_size);
 	} else { 
 		int stackSize = alloc_size;
