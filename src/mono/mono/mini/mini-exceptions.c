@@ -38,8 +38,6 @@
 #include <unistd.h>
 #endif
 
-#define IS_ON_SIGALTSTACK(jit_tls) ((jit_tls) && ((guint8*)&(jit_tls) > (guint8*)(jit_tls)->signal_stack) && ((guint8*)&(jit_tls) < ((guint8*)(jit_tls)->signal_stack + (jit_tls)->signal_stack_size)))
-
 #ifndef MONO_ARCH_CONTEXT_DEF
 #define MONO_ARCH_CONTEXT_DEF
 #endif
@@ -608,7 +606,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	int frame_count = 0;
 	gboolean has_dynamic_methods = FALSE;
 	gint32 filter_idx, first_filter_idx;
-	
+
 	g_assert (ctx != NULL);
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
@@ -618,8 +616,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 
 	/*
 	 * Allocate a new exception object instead of the preconstructed ones.
-	 * We can't do this in sigsegv_signal_handler, since GC is not yet
-	 * disabled.
 	 */
 	if (obj == domain->stack_overflow_ex) {
 		obj = mono_get_exception_stack_overflow ();
@@ -820,28 +816,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			if (!test_only) {
 				*(mono_get_lmf_addr ()) = lmf;
 
-				if (IS_ON_SIGALTSTACK (jit_tls)) {
-					/* Switch back to normal stack */
-					if (stack_overflow) {
-						/* Free up some stack space */
-#ifndef MONO_ARCH_STACK_GROWS_UP
-						MONO_CONTEXT_SET_SP (&initial_ctx, (gssize)(MONO_CONTEXT_GET_SP (&initial_ctx)) + (64 * 1024));
-						g_assert ((gssize)MONO_CONTEXT_GET_SP (&initial_ctx) < (gssize)jit_tls->end_of_stack);
-#else
-						MONO_CONTEXT_SET_SP (&initial_ctx, (gssize)(MONO_CONTEXT_GET_SP (&initial_ctx)) - (64 * 1024));
-						g_assert ((gssize)MONO_CONTEXT_GET_SP (&initial_ctx) > (gssize)jit_tls->end_of_stack);
-#endif
-					}
-#ifdef MONO_CONTEXT_SET_FUNC
-					/* jit_tls->abort_func is a function descriptor on ia64 */
-					MONO_CONTEXT_SET_FUNC (&initial_ctx, (gssize)jit_tls->abort_func);
-#else
-					MONO_CONTEXT_SET_IP (&initial_ctx, (gssize)jit_tls->abort_func);
-#endif
-					restore_context (&initial_ctx);
-				}
-				else
-					jit_tls->abort_func (obj);
+				jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			} else {
 				if (mono_ex && !initial_trace_ips) {
