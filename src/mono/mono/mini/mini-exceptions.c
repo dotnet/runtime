@@ -462,6 +462,10 @@ ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
 #endif
 
+#if	defined(__ia64__)
+	skip--;
+#endif
+
 	si.skips = skip;
 	si.frame = NULL;
 	mono_walk_stack (domain, jit_tls, &ctx, callback_get_first_frame_security_info, (gpointer)&si);
@@ -562,6 +566,10 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
 #else
 	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, ves_icall_System_Security_SecurityFrame_GetSecurityStack);
+#endif
+
+#if	defined(__ia64__)
+	skip--;
 #endif
 
 	ss.skips = skip;
