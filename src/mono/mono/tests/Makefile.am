@@ -273,6 +273,7 @@ DISABLED_TESTS=			\
 	delegate-delegate-exception.exe	\
 	appdomain-unload.exe		\
 	bug-77127.exe \
+	bug-348522.exe	\
 	$(PLATFORM_DISABLED_TESTS)
 
 # These only compile with MS CSC
