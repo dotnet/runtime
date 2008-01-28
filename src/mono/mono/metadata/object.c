@@ -3120,135 +3120,6 @@ mono_install_runtime_invoke (MonoInvokeFunc func)
 }
 
 
-/*
- * is_widen_compatible:
- * 
- * Tests if @candidate can be used in place of @type by means of a widening conversion.
- * This means, for example, that a byte can be widened to an int and be used as argument in
- * a reflection call. 
- * 
- * Returns true if @candidate can be widened to @type.
- */
-static gboolean
-is_widen_compatible (MonoType * type, MonoType *candidate)
-{
-	if (type->type == candidate->type)
-		return TRUE;
-
-	switch (candidate->type) {
-	case MONO_TYPE_U1:
-		switch (type->type) {
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-		return FALSE;
-	case MONO_TYPE_I1:
-		switch (type->type) {
-		case MONO_TYPE_I2:
-		case MONO_TYPE_I:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-	case MONO_TYPE_BOOLEAN:
-		return type->type == MONO_TYPE_BOOLEAN;
-	case MONO_TYPE_U2:
-		switch (type->type) {
-		case MONO_TYPE_U2:
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-		return FALSE;
-	case MONO_TYPE_I2:
-		switch (type->type) {
-		case MONO_TYPE_I:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-		return FALSE;
-	case MONO_TYPE_CHAR:
-		switch (type->type) {
-		case MONO_TYPE_U2:
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-		return FALSE;
-	case MONO_TYPE_U:
-		switch (type->type) {
-		case MONO_TYPE_U4:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-		return FALSE;
-	case MONO_TYPE_I:
-		switch (type->type) {
-		case MONO_TYPE_I:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-		return FALSE;
-	case MONO_TYPE_U4:
-		switch (type->type) {
-		case MONO_TYPE_U:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-		return FALSE;
-	case MONO_TYPE_I4:
-		switch (type->type) {
-		case MONO_TYPE_I:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			return TRUE;
-		}
-		return FALSE;
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-		return type->type == MONO_TYPE_R4 || type->type == MONO_TYPE_R8;
-	case MONO_TYPE_R4:
-		return type->type == MONO_TYPE_R8;
-	case MONO_TYPE_R8:
-		break;
-	}
-	return FALSE;
-}
 /**
  * mono_runtime_invoke_array:
  * @method: method to invoke
@@ -3298,8 +3169,6 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		pa = alloca (sizeof (gpointer) * mono_array_length (params));
 		for (i = 0; i < mono_array_length (params); i++) {
 			MonoType *t = sig->params [i];
-			MonoClass *par_class = mono_class_from_mono_type (t);
-			MonoObject *pao;
 
 		again:
 			switch (t->type) {
@@ -3325,16 +3194,9 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 					/* The runtime invoke wrapper needs the original boxed vtype */
 					pa [i] = mono_array_get (params, MonoObject*, i);
 				} else {
-					pao = mono_array_get (params, MonoObject*, i);
 					/* MS seems to create the objects if a null is passed in */
-					if (pao) {
-						if ((t->type == MONO_TYPE_VALUETYPE && pao->vtable->klass != par_class) ||
-							(t->type != MONO_TYPE_VALUETYPE && !is_widen_compatible (t, &pao->vtable->klass->byval_arg)))
-							mono_raise_exception (mono_get_exception_argument ("", "Incompatible type passed"));
-					} else {
-						pao = mono_object_new (mono_domain_get (), par_class);
-						mono_array_setref (params, i, pao);
-					}
+					if (!mono_array_get (params, MonoObject*, i))
+						mono_array_setref (params, i, mono_object_new (mono_domain_get (), mono_class_from_mono_type (sig->params [i]))); 
 
 					if (t->byref) {
 						/*
@@ -3344,13 +3206,12 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 						 * object, pass that to the callee, and replace the original
 						 * boxed object in the arg array with the copy.
 						 */
-						MonoObject *orig = pao;
+						MonoObject *orig = mono_array_get (params, MonoObject*, i);
 						MonoObject *copy = mono_value_box (mono_domain_get (), orig->vtable->klass, mono_object_unbox (orig));
 						mono_array_setref (params, i, copy);
-						pao = copy;
 					}
 						
-					pa [i] = mono_object_unbox (pao);
+					pa [i] = mono_object_unbox (mono_array_get (params, MonoObject*, i));
 				}
 				break;
 			case MONO_TYPE_STRING:
@@ -3358,16 +3219,11 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				if (t->byref) {
+				if (t->byref)
 					pa [i] = mono_array_addr (params, MonoObject*, i);
 					// FIXME: I need to check this code path
-				} else {
-					pao = mono_array_get (params, MonoObject*, i);
-					pa [i] = pao;
-					
-					if (pao != NULL && !mono_class_is_assignable_from (par_class, pao->vtable->klass))
-						mono_raise_exception (mono_get_exception_argument ("", "Incompatible type passed"));
-				}
+				else
+					pa [i] = mono_array_get (params, MonoObject*, i);
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (t->byref)
