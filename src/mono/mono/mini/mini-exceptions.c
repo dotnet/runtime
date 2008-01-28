@@ -649,6 +649,8 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, &first_filter_idx)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
+			// FIXME: This runs managed code so it might cause another stack overflow when
+			// we are handling a stack overflow
 			mono_unhandled_exception (obj);
 
 			if (mono_debugger_unhandled_exception (original_ip, MONO_CONTEXT_GET_SP (ctx), obj)) {
