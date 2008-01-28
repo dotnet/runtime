@@ -635,6 +635,17 @@ mono_get_exception_stack_overflow (void)
 }
 
 /**
+ * mono_get_exception_out_of_memory:
+ *
+ * Returns: a new instance of the System.OutOfMemoryException
+ */
+MonoException *
+mono_get_exception_out_of_memory (void)
+{
+	return mono_exception_from_name (mono_get_corlib (), "System", "OutOfMemoryException");
+}
+
+/**
  * mono_get_exception_reflection_type_load:
  * @types: an array of types that were defined in the moduled loaded.
  * @exceptions: an array of exceptions that were thrown during the type loading.

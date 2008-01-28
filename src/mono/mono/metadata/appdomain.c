@@ -628,6 +628,8 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	data->domain = ad;
 	data->setup = setup;
 	data->friendly_name = mono_string_to_utf8 (friendly_name);
+	// FIXME: The ctor runs in the current domain
+	// FIXME: Initialize null_reference_ex and stack_overflow_ex
 	data->out_of_memory_ex = mono_exception_from_name_domain (data, mono_defaults.corlib, "System", "OutOfMemoryException");
 
 	if (!setup->application_base) {

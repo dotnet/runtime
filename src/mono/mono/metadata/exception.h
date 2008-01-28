@@ -127,6 +127,9 @@ MonoException *
 mono_get_exception_stack_overflow (void);
 
 MonoException *
+mono_get_exception_out_of_memory (void);
+
+MonoException *
 mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions);
 
 G_END_DECLS
