@@ -77,6 +77,8 @@ enum {
 	IL_CODE_DELEGATE_SEQUENCE = 0x10,
 	/*This is a delegate created from a ldftn to a non final virtual method*/
 	IL_CODE_LDFTN_DELEGATE_NONFINAL_VIRTUAL = 0x20,
+	/*This is a call to a non final virtual method*/
+	IL_CODE_CALL_NONFINAL_VIRTUAL = 0x40,
 };
 
 typedef struct {
@@ -1281,6 +1283,7 @@ copy_stack_value (ILStackDesc *to, ILStackDesc *from)
 {
 	to->stype = from->stype;
 	to->type = from->type;
+	to->method = from->method;
 }
 
 static int
@@ -2241,8 +2244,12 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 		if (!set_stack_value (ctx, stack_push (ctx), ctx->params [arg], take_addr))
 			return;
 
-		if (arg == 0 && !take_addr && !(ctx->method->flags & METHOD_ATTRIBUTE_STATIC))
-			stack_top (ctx)->stype |= THIS_POINTER_MASK;
+		if (arg == 0 && !(ctx->method->flags & METHOD_ATTRIBUTE_STATIC)) {
+			if (take_addr)
+				ctx->has_this_store = TRUE;
+			else
+				stack_top (ctx)->stype |= THIS_POINTER_MASK;
+		}
 	} 
 }
 
@@ -2517,24 +2524,36 @@ do_ret (VerifyContext *ctx)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("ret cannot escape exception blocks at 0x%04x", ctx->ip_offset));
 }
 
-/* FIXME: we could just load the signature instead of the whole MonoMethod
+/*
+ * FIXME we need to fix the case of a non-virtual instance method defined in the parent but call using a token pointing to a subclass.
+ * 	This is illegal but mono_get_method_full decoded it.
+ * 
  * TODO handle vararg calls
- * TODO handle non virt calls to non-final virtual calls (from the verifiability clause in page 52 of partition 3)
- * TODO handle abstract calls
- * TODO handle calling .ctor outside one or calling the .ctor for other class but super
- * TODO handle call invoking virtual methods (only allowed to invoke super)  
+ * TODO handle calling .ctor outside one or calling the .ctor for other class but super  
  */
 static void
-do_invoke_method (VerifyContext *ctx, int method_token)
+do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 {
 	int param_count, i;
 	MonoMethodSignature *sig;
 	ILStackDesc *value;
 	MonoMethod *method = mono_get_method_full (ctx->image, method_token, NULL, ctx->generic_context);
+	gboolean virt_check_this = FALSE;
 
 	if (!method) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Method 0x%08x not found at 0x%04x", method_token, ctx->ip_offset));
 		return;
+	}
+
+	if (!virtual && (method->flags & METHOD_ATTRIBUTE_ABSTRACT)) 
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use call with an abstract method at 0x%04x", ctx->ip_offset));
+
+	if (virtual && method->klass->valuetype)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with valuetype method at 0x%04x", ctx->ip_offset));
+
+	if (!virtual && (method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL)) {
+		virt_check_this = TRUE;
+		ctx->code [ctx->ip_offset].flags |= IL_CODE_CALL_NONFINAL_VIRTUAL;
 	}
 
 	if (!(sig = mono_method_signature (method)))
@@ -2552,15 +2571,31 @@ do_invoke_method (VerifyContext *ctx, int method_token)
 	}
 
 	if (sig->hasthis) {
-		MonoType * type = method->klass->valuetype ? &method->klass->this_arg : &method->klass->byval_arg;
-
-		VERIFIER_DEBUG ( printf ("verifying this argument\n"); );
+		MonoType *type = &method->klass->byval_arg;
+		ILStackDesc copy;
 		value = stack_pop (ctx);
-		if (!verify_stack_type_compatibility (ctx, type, value)) {
-			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature at 0x%04x", ctx->ip_offset));
-			return;
-		}
+		copy_stack_value (&copy, value);
+		copy.stype &= ~POINTER_MASK;
+
+		if (virt_check_this && !stack_slot_is_this_pointer (value) && !(method->klass->valuetype || stack_slot_is_boxed_value (value)))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a non-final virtual method from an objet diferent thant the this pointer at 0x%04x", ctx->ip_offset));
+			
+		if (stack_slot_is_managed_pointer (value) && !mono_class_from_mono_type (value->type)->valuetype)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a reference type using a managed pointer to the this arg at 0x%04x", ctx->ip_offset));
+
+		if (!virtual && mono_class_from_mono_type (value->type)->valuetype && !method->klass->valuetype && !stack_slot_is_boxed_value (value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a valuetype baseclass at 0x%04x", ctx->ip_offset));
+
+		if (virtual && mono_class_from_mono_type (value->type)->valuetype && !stack_slot_is_boxed_value (value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a valuetype with callvirt at 0x%04x", ctx->ip_offset));
+		
+		if (method->klass->valuetype && (stack_slot_is_boxed_value (value) || !stack_slot_is_managed_pointer (value)))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a boxed or literal valuetype to call a valuetype method  at 0x%04x", ctx->ip_offset));
+
+		if (!verify_stack_type_compatibility (ctx, type, &copy))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature at 0x%04x", ctx->ip_offset));
 	}
+
 	if (!mono_method_can_access_method (ctx->method, method))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method is not accessible at 0x%04x", ctx->ip_offset));
 
@@ -4144,7 +4179,7 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 		case CEE_CALL:
 		case CEE_CALLVIRT:
-			do_invoke_method (&ctx, read32 (ip + 1));
+			do_invoke_method (&ctx, read32 (ip + 1), *ip == CEE_CALLVIRT);
 			ip += 5;
 			break;
 
@@ -4223,7 +4258,6 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			break;
 
-		//TODO: implement proper typecheck
 		case CEE_CONV_I1:
 		case CEE_CONV_I2:
 		case CEE_CONV_I4:
@@ -4696,6 +4730,9 @@ mono_method_verify (MonoMethod *method, int level)
 		}
 		if ((ctx.code [i].flags & IL_CODE_LDFTN_DELEGATE_NONFINAL_VIRTUAL) && ctx.has_this_store)
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Invalid ldftn with virtual function in method with stdarg 0 at  0x%04x", i));
+
+		if ((ctx.code [i].flags & IL_CODE_CALL_NONFINAL_VIRTUAL) && ctx.has_this_store)
+			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Invalid call to a non-final virtual function in method with stdarg.0 or ldarga.0 at  0x%04x", i));
 	}
 
 	if (ctx.code) {
