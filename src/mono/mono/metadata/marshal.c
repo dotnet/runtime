@@ -41,6 +41,13 @@ typedef enum {
 	MONO_MARSHAL_SERIALIZE		/* Value needs to be serialized into the new domain */
 } MonoXDomainMarshalType;
 
+typedef enum {
+	MONO_COM_DEFAULT,
+	MONO_COM_MS
+} MonoCOMProvider;
+
+static MonoCOMProvider com_provider = MONO_COM_DEFAULT;
+
 enum {
 #include "mono/cil/opcode.def"
 	LAST = 0xff
@@ -538,12 +545,17 @@ mono_marshal_init (void)
 	static gboolean module_initialized = FALSE;
 
 	if (!module_initialized) {
+		char* com_provider_env = NULL;
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
 		InitializeCriticalSection (&cominterop_mutex);
 		wrapper_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		last_error_tls_id = TlsAlloc ();
 		load_type_info_tls_id = TlsAlloc ();
+
+		com_provider_env = getenv ("MONO_COM");
+		if (com_provider_env && !strcmp(com_provider_env, "MS"))
+			com_provider = MONO_COM_MS;
 
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);
 		register_icall (mono_marshal_string_to_utf16_copy, "mono_marshal_string_to_utf16_copy", "ptr obj", FALSE);
@@ -1074,6 +1086,56 @@ mono_string_to_ansibstr (MonoString *string_obj)
 	return NULL;
 }
 
+typedef gpointer (*SysAllocStringLenFunc)(gunichar* str, guint32 len);
+typedef guint32 (*SysStringLenFunc)(gpointer bstr);
+typedef void (*SysFreeStringFunc)(gunichar* str);
+
+static SysAllocStringLenFunc sys_alloc_string_len_ms = NULL;
+static SysStringLenFunc sys_string_len_ms = NULL;
+static SysFreeStringFunc sys_free_string_ms = NULL;
+
+static gboolean
+init_com_provider_ms ()
+{
+	static gboolean initialized = FALSE;
+	char *error_msg;
+	MonoDl *module = NULL;
+	const char* scope = "liboleaut32.so";
+
+	if (initialized)
+		return TRUE;
+
+	module = mono_dl_open(scope, MONO_DL_LAZY, &error_msg);
+	if (error_msg) {
+		g_warning ("Error loading COM support library '%s': %s", scope, error_msg);
+		g_assert_not_reached ();
+		return FALSE;
+	}
+	error_msg = mono_dl_symbol (module, "SysAllocStringLen", (gpointer*)&sys_alloc_string_len_ms);
+	if (error_msg) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysAllocStringLen", scope, error_msg);
+		g_assert_not_reached ();
+		return FALSE;
+	}
+
+	error_msg = mono_dl_symbol (module, "SysStringLen", (gpointer*)&sys_string_len_ms);
+	if (error_msg) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysStringLen", scope, error_msg);
+		g_assert_not_reached ();
+		return FALSE;
+	}
+
+	error_msg = mono_dl_symbol (module, "SysFreeString", (gpointer*)&sys_free_string_ms);
+	if (error_msg) {
+		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysFreeString", scope, error_msg);
+		g_assert_not_reached ();
+		return FALSE;
+	}
+
+	initialized = TRUE;
+	return TRUE;
+}
+
 gpointer
 mono_string_to_bstr (MonoString *string_obj)
 {
@@ -1082,16 +1144,31 @@ mono_string_to_bstr (MonoString *string_obj)
 		return NULL;
 	return SysAllocStringLen (mono_string_chars (string_obj), mono_string_length (string_obj));
 #else
-	int slen = mono_string_length (string_obj);
-	char *ret = g_malloc (slen * 2 + 4 + 2);
-	if (ret == NULL)
-		return NULL;
-	memcpy (ret + 4, mono_string_chars (string_obj), slen * 2);
-	* ((guint32 *) ret) = slen * 2;
-	ret [4 + slen * 2] = 0;
-	ret [5 + slen * 2] = 0;
+	if (com_provider == MONO_COM_DEFAULT) {
+		int slen = mono_string_length (string_obj);
+		char *ret = g_malloc (slen * 2 + 4 + 2);
+		if (ret == NULL)
+			return NULL;
+		memcpy (ret + 4, mono_string_chars (string_obj), slen * 2);
+		* ((guint32 *) ret) = slen;
+		ret [4 + slen * 2] = 0;
+		ret [5 + slen * 2] = 0;
 
-	return ret + 4;
+		return ret + 4;
+	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
+		gpointer ret = NULL;
+		gunichar* str = NULL;
+		guint32 len;
+		gint32 written = 0;
+		len = mono_string_length (string_obj);
+		str = g_utf16_to_ucs4 (mono_string_chars (string_obj), len,
+			NULL, NULL, NULL);
+		ret = sys_alloc_string_len_ms (str, len);
+		g_free(str);
+		return ret;
+	} else {
+		g_assert_not_reached ();
+	}
 #endif
 }
 
@@ -1103,7 +1180,21 @@ mono_string_from_bstr (gpointer bstr)
 		return NULL;
 	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
 #else
-	return mono_string_new_utf16 (mono_domain_get (), bstr, *(guint32 *)((char *)bstr - 4) / 2);
+	if (com_provider == MONO_COM_DEFAULT) {
+		return mono_string_new_utf16 (mono_domain_get (), bstr, *(guint32 *)((char *)bstr - 4));
+	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
+		MonoString* str = NULL;
+		glong written = 0;
+		gunichar2* utf16 = NULL;
+
+		utf16 = g_ucs4_to_utf16 (bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
+		str = mono_string_new_utf16 (mono_domain_get (), utf16, written);
+		g_free (utf16);
+		return str;
+	} else {
+		g_assert_not_reached ();
+	}
+
 #endif
 }
 
@@ -1113,7 +1204,14 @@ mono_free_bstr (gpointer bstr)
 #ifdef PLATFORM_WIN32
 	SysFreeString ((BSTR)bstr);
 #else
-	g_free (((char *)bstr) - 4);
+	if (com_provider == MONO_COM_DEFAULT) {
+		g_free (((char *)bstr) - 4);
+	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
+		sys_free_string_ms (bstr);
+	} else {
+		g_assert_not_reached ();
+	}
+
 #endif
 }
 
