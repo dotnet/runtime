@@ -312,6 +312,18 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 				errnum = WSAEWOULDBLOCK; /* see bug #73053 */
 
 			WSASetLastError (errnum);
+
+			/* 
+			 * On solaris x86 getsockopt (SO_ERROR) is not set after 
+			 * connect () fails so we need to save this error.
+			 */
+			ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+						  (gpointer *)&socket_handle);
+			if (ok == FALSE) {
+				g_warning ("%s: error looking up socket handle %p", __func__, handle);
+			} else {
+				socket_handle->saved_error = errnum;
+			}
 		
 			return(SOCKET_ERROR);
 		}
