@@ -488,7 +488,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean single)
  * the 'Sparc Compliance Definition 2.4' document.
  */
 static CallInfo*
-get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoCompile *cfg, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
 	int n = sig->hasthis + sig->param_count;
@@ -759,7 +759,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg, sig, FALSE);
 
 	/* Use unused input registers */
 	for (i = cinfo->reg_usage; i < 6; ++i)
@@ -804,7 +804,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	sig = mono_method_signature (m->method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (m, sig, FALSE);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		switch (cinfo->ret.storage) {
@@ -1069,7 +1069,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	
-	cinfo = get_call_info (sig, sig->pinvoke);
+	cinfo = get_call_info (cfg, sig, sig->pinvoke);
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
@@ -2013,7 +2013,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint32 *code)
 
 	sig = mono_method_signature (method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg, sig, FALSE);
 	
 	/* This is the opposite of the code in emit_prolog */
 
@@ -3694,7 +3694,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	for (i = 0; i < 6; ++i)
 		sparc_sti_imm (code, sparc_i0 + i, sparc_fp, ARGS_OFFSET + (i * sizeof (gpointer)));
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg, sig, FALSE);
 
 	/* Save float regs on V9, since they are caller saved */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -3911,7 +3911,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	sig = mono_method_signature (method);
 
-	cinfo = get_call_info (sig, FALSE);
+	cinfo = get_call_info (cfg, sig, FALSE);
 
 	/* Keep in sync with emit_load_volatile_arguments */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -4402,7 +4402,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 
-	cinfo = get_call_info (csig, FALSE);
+	cinfo = get_call_info (NULL, csig, FALSE);
 
 	if (csig->hasthis) {
 		ainfo = &cinfo->args [0];
