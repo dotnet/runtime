@@ -4562,36 +4562,18 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 	MonoTableInfo *table;
 
 	g_assert (assembly->assembly->image != NULL);
+	g_assert (!assembly->assembly->dynamic);
 
-	if (assembly->assembly->dynamic) {
-		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)assembly;
+	table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
+	file_count = table->rows;
 
-		if (assemblyb->modules)
-			module_count = mono_array_length (assemblyb->modules);
-		else
-			module_count = 0;
-		real_module_count = module_count;
+	modules = assembly->assembly->image->modules;
+	module_count = assembly->assembly->image->module_count;
 
-		modules = g_new0 (MonoImage*, module_count);
-		if (assemblyb->modules) {
-			for (i = 0; i < mono_array_length (assemblyb->modules); ++i) {
-				modules [i] = 
-					mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i)->module.image;
-			}
-		}
-	}
-	else {
-		table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
-		file_count = table->rows;
-
-		modules = assembly->assembly->image->modules;
-		module_count = assembly->assembly->image->module_count;
-
-		real_module_count = 0;
-		for (i = 0; i < module_count; ++i)
-			if (modules [i])
-				real_module_count ++;
-	}
+	real_module_count = 0;
+	for (i = 0; i < module_count; ++i)
+		if (modules [i])
+			real_module_count ++;
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
 	res = mono_array_new (domain, klass, 1 + real_module_count + file_count);
@@ -4935,60 +4917,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 
 	domain = mono_object_domain (assembly);
 
-	if (assembly->assembly->dynamic) {
-		MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
-		if (abuilder->modules) {
-			for (i = 0; i < mono_array_length(abuilder->modules); i++) {
-				MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-				MonoArray *append = mb->types;
-				/* The types array might not be fully filled up */
-				if (append && mb->num_types > 0) {
-					guint32 len1, len2;
-					MonoArray *new;
-					len1 = res ? mono_array_length (res) : 0;
-					len2 = mb->num_types;
-					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
-					if (res)
-						mono_array_memcpy_refs (new, 0, res, 0, len1);
-					mono_array_memcpy_refs (new, len1, append, 0, len2);
-					res = new;
-				}
-			}
-
-			/*
-			 * Replace TypeBuilders with the created types to be compatible
-			 * with MS.NET.
-			 */
-			if (res) {
-				for (i = 0; i < mono_array_length (res); ++i) {
-					MonoReflectionTypeBuilder *tb = mono_array_get (res, MonoReflectionTypeBuilder*, i);
-					if (tb->created)
-						mono_array_setref (res, i, tb->created);
-				}
-			}
-		}
-
-		if (abuilder->loaded_modules)
-			for (i = 0; i < mono_array_length(abuilder->loaded_modules); i++) {
-				MonoReflectionModule *rm = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-				MonoArray *append = mono_module_get_types (domain, rm->image, exportedOnly);
-				if (append && mono_array_length (append) > 0) {
-					guint32 len1, len2;
-					MonoArray *new;
-					len1 = res ? mono_array_length (res) : 0;
-					len2 = mono_array_length (append);
-					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
-					if (res)
-						mono_array_memcpy_refs (new, 0, res, 0, len1);
-					mono_array_memcpy_refs (new, len1, append, 0, len2);
-					res = new;
-				}
-			}
-		if (res)
-			return res;
-		else
-			return mono_array_new (domain, mono_defaults.monotype_class, 0);
-	}
+	g_assert (!assembly->assembly->dynamic);
 	image = assembly->assembly->image;
 	table = &image->tables [MONO_TABLE_FILE];
 	res = mono_module_get_types (domain, image, exportedOnly);
