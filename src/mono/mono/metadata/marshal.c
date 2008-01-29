@@ -1095,7 +1095,7 @@ static SysStringLenFunc sys_string_len_ms = NULL;
 static SysFreeStringFunc sys_free_string_ms = NULL;
 
 static gboolean
-init_com_provider_ms ()
+init_com_provider_ms (void)
 {
 	static gboolean initialized = FALSE;
 	char *error_msg;
@@ -1159,7 +1159,6 @@ mono_string_to_bstr (MonoString *string_obj)
 		gpointer ret = NULL;
 		gunichar* str = NULL;
 		guint32 len;
-		gint32 written = 0;
 		len = mono_string_length (string_obj);
 		str = g_utf16_to_ucs4 (mono_string_chars (string_obj), len,
 			NULL, NULL, NULL);
