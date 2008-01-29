@@ -4116,7 +4116,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (can_fold && (sparc_inst_op (code [-2]) == 0x2) && (sparc_inst_op3 (code [-2]) == 0x2) && sparc_inst_imm (code [-2]) && (sparc_inst_rd (code [-2]) == sparc_i0)) {
 		/* or reg, imm, %i0 */
 		int reg = sparc_inst_rs1 (code [-2]);
-		int imm = sparc_inst_imm13 (code [-2]);
+		int imm = (((gint32)(sparc_inst_imm13 (code [-2]))) << 19) >> 19;
 		code [-2] = code [-1];
 		code --;
 		sparc_restore_imm (code, reg, imm, sparc_o0);
