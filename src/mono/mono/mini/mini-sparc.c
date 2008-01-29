@@ -494,6 +494,8 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
+	MonoType *ret_type;
+	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
 
 	cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
 
@@ -521,6 +523,7 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 
 	for (i = 0; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
+		MonoType *ptype;
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			gr = PARAM_REGS;
@@ -536,7 +539,9 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			continue;
 		}
-		switch (mono_type_get_underlying_type (sig->params [i])->type) {
+		ptype = mono_type_get_underlying_type (sig->params [i]);
+		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
+		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -623,86 +628,86 @@ get_call_info (MonoMethodSignature *sig, gboolean is_pinvoke)
 	}
 
 	/* return value */
-	{
-		switch (mono_type_get_underlying_type (sig->ret)->type) {
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_FNPTR:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_STRING:
-			cinfo->ret.storage = ArgInIReg;
-			cinfo->ret.reg = sparc_i0;
-			if (gr < 1)
-				gr = 1;
-			break;
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
+	ret_type = mono_type_get_underlying_type (sig->ret);
+	ret_type = mini_get_basic_type_from_generic (gsctx, ret_type);
+	switch (ret_type->type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_STRING:
+		cinfo->ret.storage = ArgInIReg;
+		cinfo->ret.reg = sparc_i0;
+		if (gr < 1)
+			gr = 1;
+		break;
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
 #ifdef SPARCV9
+		cinfo->ret.storage = ArgInIReg;
+		cinfo->ret.reg = sparc_i0;
+		if (gr < 1)
+			gr = 1;
+#else
+		cinfo->ret.storage = ArgInIRegPair;
+		cinfo->ret.reg = sparc_i0;
+		if (gr < 2)
+			gr = 2;
+#endif
+		break;
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+		cinfo->ret.storage = ArgInFReg;
+		cinfo->ret.reg = sparc_f0;
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
 			cinfo->ret.storage = ArgInIReg;
 			cinfo->ret.reg = sparc_i0;
 			if (gr < 1)
 				gr = 1;
-#else
-			cinfo->ret.storage = ArgInIRegPair;
-			cinfo->ret.reg = sparc_i0;
-			if (gr < 2)
-				gr = 2;
-#endif
 			break;
-		case MONO_TYPE_R4:
-		case MONO_TYPE_R8:
-			cinfo->ret.storage = ArgInFReg;
-			cinfo->ret.reg = sparc_f0;
-			break;
-		case MONO_TYPE_GENERICINST:
-			if (!mono_type_generic_inst_is_valuetype (sig->ret)) {
-				cinfo->ret.storage = ArgInIReg;
-				cinfo->ret.reg = sparc_i0;
-				if (gr < 1)
-					gr = 1;
-				break;
-			}
-			/* Fall through */
-		case MONO_TYPE_VALUETYPE:
-			if (v64) {
-				if (sig->pinvoke)
-					NOT_IMPLEMENTED;
-				else
-					/* Already done */
-					;
-			}
-			else
-				cinfo->ret.storage = ArgOnStack;
-			break;
-		case MONO_TYPE_TYPEDBYREF:
-			if (v64) {
-				if (sig->pinvoke)
-					/* Same as a valuetype with size 24 */
-					NOT_IMPLEMENTED;
-				else
-					/* Already done */
-					;
-			}
-			else
-				cinfo->ret.storage = ArgOnStack;
-			break;
-		case MONO_TYPE_VOID:
-			break;
-		default:
-			g_error ("Can't handle as return value 0x%x", sig->ret->type);
 		}
+		/* Fall through */
+	case MONO_TYPE_VALUETYPE:
+		if (v64) {
+			if (sig->pinvoke)
+				NOT_IMPLEMENTED;
+			else
+				/* Already done */
+				;
+		}
+		else
+			cinfo->ret.storage = ArgOnStack;
+		break;
+	case MONO_TYPE_TYPEDBYREF:
+		if (v64) {
+			if (sig->pinvoke)
+				/* Same as a valuetype with size 24 */
+				NOT_IMPLEMENTED;
+			else
+				/* Already done */
+				;
+		}
+		else
+			cinfo->ret.storage = ArgOnStack;
+		break;
+	case MONO_TYPE_VOID:
+		break;
+	default:
+		g_error ("Can't handle as return value 0x%x", sig->ret->type);
 	}
 
 	cinfo->stack_usage = stack_size;
