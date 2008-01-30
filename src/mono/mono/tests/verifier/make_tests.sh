@@ -1407,6 +1407,10 @@ do
 	./make_bool_branch_test.sh boolean_branch_${I}_18 unverifiable ${OP} float64
 	./make_bool_branch_test.sh boolean_branch_${I}_19 unverifiable ${OP} 'class MyValueType'
 	./make_bool_branch_test.sh boolean_branch_${I}_20 unverifiable ${OP} 'class ValueTypeTemplate`1<object>'
+
+	./make_bool_branch_test.sh boolean_branch_${I}_21 valid ${OP} object "pop\n\tldnull"
+	./make_bool_branch_test.sh boolean_branch_${I}_22 valid ${OP} MyValueType "pop\n\tldnull\n\tisinst MyValueType"
+
 	I=`expr $I + 1`
 done
 

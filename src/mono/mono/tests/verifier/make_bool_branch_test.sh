@@ -4,12 +4,13 @@ TEST_NAME=$1
 TEST_VALIDITY=$2
 TEST_OP=$3
 TEST_TYPE1=$4
+TEST_EXTRAS=$5
 
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
 TEST_TYPE1=`echo $TEST_TYPE1 | sed -s 's/&/\\\&/'`
-sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g"  -e "s/OPCODE/${TEST_OP}/g" > $TEST_FILE <<//EOF
+sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g"  -e "s/OPCODE/${TEST_OP}/g"  -e "s/EXTRAS/${TEST_EXTRAS}/g" > $TEST_FILE <<//EOF
 
 // VALIDITY CIL which breaks the ECMA-335 rules. 
 // this CIL should fail verification by a conforming CLI verifier.
@@ -50,6 +51,9 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST_TYPE1}/g"  -e "s/OPCOD
             TYPE1 V_0
         )
         ldloc.0
+
+	EXTRAS
+
         OPCODE branch_target // VALIDITY.
         nop
         branch_target:
