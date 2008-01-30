@@ -1916,7 +1916,7 @@ function create_nesting_test_only_first_ok () {
 
 I=1
 
-for OP in "callvirt instance int32 class Root\/Nested::Target()" "call instance int32 class Root\/Nested::Target()" "ldc.i4.0\n\t\tstfld int32 Root\/Nested::fld\n\t\tldc.i4.0" "ldfld int32 Root\/Nested::fld" "ldflda int32 Root\/Nested::fld"
+for OP in "callvirt instance int32 class Root\/Nested::Target()" "ldc.i4.0\n\t\tstfld int32 Root\/Nested::fld\n\t\tldc.i4.0" "ldfld int32 Root\/Nested::fld" "ldflda int32 Root\/Nested::fld"
 do
   create_nesting_test_same_result 1 valid public assembly assembly
 
