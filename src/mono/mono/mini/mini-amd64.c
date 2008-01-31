@@ -1865,6 +1865,15 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case CEE_XOR:
 		case OP_LXOR:
+			/*
+			 * Use IXOR to avoid a rex prefix if possible. The cpu will sign extend the 
+			 * 0 result into 64 bits.
+			 */
+			if ((ins->sreg1 == ins->sreg2) && (ins->sreg1 == ins->dreg)) {
+				ins->opcode = OP_IXOR;
+			}
+			/* Fall through */
+		case OP_IXOR:
 			if ((ins->sreg1 == ins->sreg2) && (ins->sreg1 == ins->dreg)) {
 				MonoInst *ins2;
 
