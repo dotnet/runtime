@@ -194,6 +194,16 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	g_free (cmd);
 	if (!objdump_args)
 		objdump_args = "";
+
+#ifdef __arm__
+	/* 
+	 * The arm assembler inserts ELF directives instructing objdump to display 
+	 * everything as data.
+	 */
+	cmd = g_strdup_printf ("strip -x %s", o_file);
+	system (cmd);
+	g_free (cmd);
+#endif
 	
 	cmd = g_strdup_printf (DIS_CMD " %s %s", objdump_args, o_file);
 	system (cmd);
