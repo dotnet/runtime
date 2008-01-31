@@ -2076,7 +2076,6 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 	for (i = 0; i < count; ++i) {
 		/* add store ops at the end of the bb, before the branch */
 		NEW_TEMPSTORE (cfg, inst, locals [i]->inst_c0, sp [i]);
-		/* FIXME: handle CEE_STIND_R4 */
 		if (inst->opcode == CEE_STOBJ) {
 			NEW_TEMPLOADA (cfg, inst, locals [i]->inst_c0);
 			handle_stobj (cfg, bb, inst, sp [i], sp [i]->cil_code, inst->klass, TRUE, FALSE, FALSE);
@@ -2230,7 +2229,6 @@ handle_loaded_temps (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst **stack,
 			temp->flags |= MONO_INST_IS_TEMP;
 			NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
 			store->cil_code = ins->cil_code;
-			/* FIXME: handle CEE_STIND_R4 */
 			if (store->opcode == CEE_STOBJ) {
 				NEW_TEMPLOADA (cfg, store, temp->inst_c0);
 				handle_stobj (cfg, bblock, store, ins, ins->cil_code, temp->klass, FALSE, FALSE, FALSE);
@@ -3676,6 +3674,11 @@ mono_save_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignature *s
 			if (store->opcode == CEE_STOBJ) {
 				NEW_TEMPLOADA (cfg, store, temp->inst_c0);
 				handle_stobj (cfg, bblock, store, *sp, sp [0]->cil_code, temp->klass, FALSE, FALSE, FALSE);
+#ifdef MONO_ARCH_SOFT_FLOAT
+			} else if (store->opcode == CEE_STIND_R4) {
+				NEW_TEMPLOADA (cfg, store, temp->inst_c0);
+				handle_store_float (cfg, bblock, store, *sp, sp [0]->cil_code);
+#endif
 			} else {
 				MONO_ADD_INS (bblock, store);
 			} 
@@ -3817,6 +3820,14 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 		if (rvar) {
 			NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
+#ifdef MONO_ARCH_SOFT_FLOAT
+			if (ins->opcode == CEE_LDIND_R4) {
+				int temp;
+				NEW_TEMPLOADA (cfg, ins, rvar->inst_c0);
+				temp = handle_load_float (cfg, bblock, ins, ip);
+				NEW_TEMPLOAD (cfg, ins, temp);
+			}
+#endif
 			*sp++ = ins;
 		}
 		*last_b = ebblock;
@@ -5530,7 +5541,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_RET:
 			if (cfg->method != method) {
-				/* return from inlined methode */
+				/* return from inlined method */
 				if (return_var) {
 					MonoInst *store;
 					CHECK_STACK (1);
@@ -5544,6 +5555,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						NEW_TEMPLOADA (cfg, store, return_var->inst_c0);
 						/* FIXME: it is possible some optimization will pass the a heap pointer for the struct address, so we'll need the write barrier */
 						handle_stobj (cfg, bblock, store, *sp, sp [0]->cil_code, return_var->klass, FALSE, FALSE, FALSE);
+#ifdef MONO_ARCH_SOFT_FLOAT
+					} else if (store->opcode == CEE_STIND_R4) {
+						NEW_TEMPLOADA (cfg, store, return_var->inst_c0);
+						handle_store_float (cfg, bblock, store, *sp, sp [0]->cil_code);
+#endif
 					} else
 						MONO_ADD_INS (bblock, store);
 				} 
@@ -7038,11 +7054,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					type_to_eval_stack_type (cfg, field->type, load);
 					load->cil_code = ip;
 					load->inst_left = ins;
-					*sp++ = load;
 					load->flags |= ins_flag;
+#ifdef MONO_ARCH_SOFT_FLOAT
+					if (load->opcode == CEE_LDIND_R4) {
+						int temp;
+						temp = handle_load_float (cfg, bblock, ins, ip);
+						NEW_TEMPLOAD (cfg, load, temp);
+					}
+#endif
+					*sp++ = load;
 					ins_flag = 0;
-					/* fixme: dont see the problem why this does not work */
-					//cfg->disable_aot = TRUE;
 				}
 			}
 			ip += 5;
