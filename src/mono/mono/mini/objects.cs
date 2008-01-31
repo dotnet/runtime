@@ -1217,5 +1217,55 @@ ncells ) {
 			return 2;
 		return 0;
 	}
+
+	class R4Holder {
+		public static float pi = 3.14f;
+
+		public float float_field;
+	}
+
+	static int test_0_ldsfld_soft_float () {
+		if (R4Holder.pi == 3.14f)
+			return 0;
+		else
+			return 1;
+	}
+
+	static int test_0_ldfld_stfld_soft_float () {
+		R4Holder h = new R4Holder ();
+		h.float_field = 3.14f;
+
+		if (h.float_field == 3.14f)
+			return 0;
+		else
+			return 1;
+	}
+
+	class R4HolderRemote : MarshalByRefObject {
+		public static float pi = 3.14f;
+
+		public float float_field;
+	}
+
+	static int test_0_ldfld_stfld_soft_float_remote () {
+		R4HolderRemote h = new R4HolderRemote ();
+		h.float_field = 3.14f;
+
+		if (h.float_field == 3.14f)
+			return 0;
+		else
+			return 1;
+	}
+
+	static int test_0_locals_soft_float () {
+		float f = 0.0f;
+		
+		f = 3.14f;
+
+		if (f == 3.14f)
+			return 0;
+		else
+			return 1;
+	}
 }
 
