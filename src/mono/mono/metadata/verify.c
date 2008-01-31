@@ -1197,8 +1197,10 @@ is_unverifiable_endfilter (VerifyContext *ctx, guint offset)
 static gboolean
 is_valid_bool_arg (ILStackDesc *arg)
 {
-	if (stack_slot_is_managed_pointer (arg))
+	if (stack_slot_is_managed_pointer (arg) || stack_slot_is_boxed_value (arg) || stack_slot_is_null_literal (arg))
 		return TRUE;
+
+
 	switch (stack_slot_get_underlying_type (arg)) {
 	case TYPE_I4:
 	case TYPE_I8:
@@ -2575,6 +2577,9 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		ILStackDesc copy;
 		value = stack_pop (ctx);
 		copy_stack_value (&copy, value);
+		//TODO we should extract this to a 'drop_byref_argument' and use everywhere
+		//Other parts of the code suffer from the same issue of 
+		copy.type = mono_type_get_type_byval (copy.type);
 		copy.stype &= ~POINTER_MASK;
 
 		if (virt_check_this && !stack_slot_is_this_pointer (value) && !(method->klass->valuetype || stack_slot_is_boxed_value (value)))
@@ -3117,7 +3122,7 @@ do_cast (VerifyContext *ctx, int token) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value for checkast at 0x%04x", ctx->ip_offset));
 	}
 
-	stack_push_val (ctx, TYPE_COMPLEX | (is_boxed ? BOXED_MASK : 0), type);
+	stack_push_val (ctx, TYPE_COMPLEX | (mono_class_from_mono_type (type)->valuetype ? BOXED_MASK : 0), type);
 }
 
 static MonoType *
