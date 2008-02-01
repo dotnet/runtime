@@ -1,3 +1,9 @@
+2008-02-01  Jb Evain  <jbevain@novell.com>
+
+	* Makefile, Descriptors/System.Core.xml:
+	protect some internals of System.Core as apparently
+	the masterinfos are somewhat wrong.
+
 2007-10-26  Jb Evain  <jbevain@novell.com>
 
 	* Makefile: disable the `always build the tuner` as per
