@@ -1,5 +1,9 @@
 2008-02-01  Jb Evain  <jbevain@novell.com>
 
+	* Makefile: remove System.Core temporary hack.
+
+2008-02-01  Jb Evain  <jbevain@novell.com>
+
 	* Makefile, Descriptors/System.Core.xml:
 	protect some internals of System.Core as apparently
 	the masterinfos are somewhat wrong.

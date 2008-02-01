@@ -16,7 +16,6 @@ TUNER_DESCS =	\
 	Descriptors/mscorlib.xml	\
 	Descriptors/smcs.xml	\
 	Descriptors/System.xml	\
-	Descriptors/System.Core.xml	\
 
 TUNER_MASTERS =	\
 	masterinfos/silverlight/mscorlib.info	\
