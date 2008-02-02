@@ -1566,7 +1566,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i)
 		names [i] = "";
 
-	if (klass->generic_class || klass->rank) /* copy the names later */
+	if (klass->rank)
 		return;
 
 	mono_class_init (klass);
