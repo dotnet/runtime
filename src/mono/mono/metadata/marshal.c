@@ -4564,11 +4564,24 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	MonoMethod *res = NULL;
 	static MonoString *string_dummy = NULL;
 	static MonoMethodSignature *delay_abort_sig = NULL;
+	static MonoMethodSignature *cctor_signature = NULL;
+	static MonoMethodSignature *finalize_signature = NULL;
 	int i, pos, posna;
 	char *name;
 	gboolean need_direct_wrapper = FALSE;
 
 	g_assert (method);
+
+	if (!cctor_signature) {
+		cctor_signature = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		cctor_signature->ret = &mono_defaults.void_class->byval_arg;
+		cctor_signature->hasthis = 1;
+	}
+	if (!finalize_signature) {
+		finalize_signature = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		finalize_signature->ret = &mono_defaults.void_class->byval_arg;
+		finalize_signature->hasthis = 1;
+	}
 
 	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
@@ -4598,37 +4611,35 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		}
 	}
 
-	/* See bug #80743 */
 	/*
-	 * FIXME: Sharing runtime invoke wrappers between different methods means that
-	 * calling a method of klass A might invoke the type initializer of class B.
-	 * Normally, the type initializer of type B was already executed when B's method
-	 * was called but in some complex cases this might not be true.
-	 * See #349621 for an example. We avoid that for mscorlib methods by putting every
-	 * wrapper into the object class, but the non-mscorlib case needs fixing.
+	 * We try to share runtime invoke wrappers between different methods but have to
+	 * be careful about methods whose klass has a type cctor, since putting the wrapper
+	 * into that klass would mean that calling a method of klass A might invoke the
+	 * type initializer of class B, or throw an exception if the type initializer 
+	 * was called before and failed. See #349621 for an example. 
+	 * We avoid that for mscorlib methods by putting every wrapper into the object class.
 	 */
 	if (method->klass->image == mono_defaults.corlib)
 		target_klass = mono_defaults.object_class;
 	else {
-		target_klass = method->klass;
-	}
-#if 0
-	target_klass = mono_defaults.object_class;
-	/* 
-	 * if types in the signature belong to non-mscorlib, we cache only
-	 * in the method image
-	 */
-	if (mono_class_from_mono_type (callsig->ret)->image != mono_defaults.corlib) {
-		target_klass = method->klass;
-	} else {
-		for (i = 0; i < callsig->param_count; i++) {
-			if (mono_class_from_mono_type (callsig->params [i])->image != mono_defaults.corlib) {
-				target_klass = method->klass;
-				break;
-			}
+		/* Try to share wrappers for non-corlib methods with simple signatures */
+		if (mono_metadata_signature_equal (callsig, cctor_signature)) {
+			callsig = cctor_signature;
+			target_klass = mono_defaults.object_class;
+		} else if (mono_metadata_signature_equal (callsig, finalize_signature)) {
+			callsig = finalize_signature;
+			target_klass = mono_defaults.object_class;
+		} else {
+			if (mono_class_get_cctor (method->klass))
+				need_direct_wrapper = TRUE;
+			/*
+			 * Can't put these wrappers into object, since they reference non-corlib
+			 * metadata (callsig).
+			 */
+			target_klass = method->klass;
 		}
 	}
-#endif
+
 	if (need_direct_wrapper) {
 		cache = target_klass->image->runtime_invoke_direct_cache;
 		res = mono_marshal_find_in_cache (cache, method);
