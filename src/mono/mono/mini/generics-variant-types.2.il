@@ -21,7 +21,7 @@
 //
 // A Covariant interface
 //
-.class interface public abstract auto ansi beforefieldinit IEnumerator`1<+T>
+.class interface public abstract auto ansi beforefieldinit MyIEnumerator`1<+T>
 {
 	.method public hidebysig abstract virtual instance bool  MoveNext() cil managed
 	{
@@ -33,7 +33,7 @@
 	
 	.property !T Current()
 	{
-    	.get instance !T IEnumerator`1::get_Current()
+    	.get instance !T MyIEnumerator`1::get_Current()
 	}
 }
 
