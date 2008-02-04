@@ -35,6 +35,7 @@ public class Test {
 		Derived2 d2 = new Derived2 ();
 		Base b1 = d1;
 		Base b2 = d2;
+		Base rb = new Base ();
 
 		if (d1.Turn () != 4)
 			return 1;
@@ -51,8 +52,16 @@ public class Test {
 		if (((IVehicle)b2).Turn () != 7)
 			return 5;
 		
-		//Console.WriteLine ("TEST {0}", ((IVehicle)b2).Turn ());	
+		if (((IVehicle)rb).Stop () != 2)
+			return 6;
 
+		if (((IVehicle)d1).Stop () != 2)
+			return 7;
+
+		if (((IVehicle)d2).Stop () != 6)
+			return 8;
+
+		//Console.WriteLine ("TEST {0}", ((IVehicle)b2).Turn ());
 		return 0;
 	}
 }
