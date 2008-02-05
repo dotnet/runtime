@@ -436,6 +436,8 @@ typedef struct
 #define VFT2_FONT_VECTOR	0x0002
 #define VFT2_FONT_TRUETYPE	0x0003
 
+#define MAKELANGID(primary,secondary) ((guint16)((secondary << 10) | (primary)))
+
 extern guint32 GetFileVersionInfoSize (gunichar2 *filename, guint32 *handle);
 extern gboolean GetFileVersionInfo (gunichar2 *filename, guint32 handle,
 				    guint32 len, gpointer data);

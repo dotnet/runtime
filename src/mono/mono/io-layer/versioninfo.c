@@ -885,12 +885,6 @@ gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 	return(ret);
 }
 
-guint32 VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
-{
-	return(0);
-}
-
-
 guint32 GetFileVersionInfoSize (gunichar2 *filename, guint32 *handle)
 {
 	gpointer file_map;
@@ -953,4 +947,1318 @@ gboolean GetFileVersionInfo (gunichar2 *filename, guint32 handle G_GNUC_UNUSED,
 	unmap_pe_file (file_map, map_size);
 	
 	return(ret);
+}
+
+static guint32 copy_lang (gunichar2 *lang_out, guint32 lang_len,
+			  const gchar *text)
+{
+	gunichar2 *unitext;
+	int chars = strlen (text);
+	int ret;
+	
+	unitext = g_utf8_to_utf16 (text, -1, NULL, NULL, NULL);
+	g_assert (unitext != NULL);
+	
+	if (chars < (lang_len - 1)) {
+		memcpy (lang_out, (gpointer)unitext, chars * 2);
+		lang_out[chars] = '\0';
+		ret = chars;
+	} else {
+		memcpy (lang_out, (gpointer)unitext, (lang_len - 1) * 2);
+		lang_out[lang_len] = '\0';
+		ret = lang_len;
+	}
+	
+	g_free (unitext);
+
+	return(ret);
+}
+
+guint32 VerLanguageName (guint32 lang, gunichar2 *lang_out, guint32 lang_len)
+{
+	int primary, secondary;
+	
+	primary = lang & 0x3FF;
+	secondary = (lang >> 10) & 0x3F;
+	
+	switch(primary) {
+	case 0x00:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Process Default Language"));
+			break;
+		}
+		break;
+	case 0x01:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Arabic (Saudi Arabia)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Arabic (Iraq)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "Arabic (Egypt)"));
+			break;
+		case 0x04:
+			return(copy_lang (lang_out, lang_len, "Arabic (Libya)"));
+			break;
+		case 0x05:
+			return(copy_lang (lang_out, lang_len, "Arabic (Algeria)"));
+			break;
+		case 0x06:
+			return(copy_lang (lang_out, lang_len, "Arabic (Morocco)"));
+			break;
+		case 0x07:
+			return(copy_lang (lang_out, lang_len, "Arabic (Tunisia)"));
+			break;
+		case 0x08:
+			return(copy_lang (lang_out, lang_len, "Arabic (Oman)"));
+			break;
+		case 0x09:
+			return(copy_lang (lang_out, lang_len, "Arabic (Yemen)"));
+			break;
+		case 0x0a:
+			return(copy_lang (lang_out, lang_len, "Arabic (Syria)"));
+			break;
+		case 0x0b:
+			return(copy_lang (lang_out, lang_len, "Arabic (Jordan)"));
+			break;
+		case 0x0c:
+			return(copy_lang (lang_out, lang_len, "Arabic (Lebanon)"));
+			break;
+		case 0x0d:
+			return(copy_lang (lang_out, lang_len, "Arabic (Kuwait)"));
+			break;
+		case 0x0e:
+			return(copy_lang (lang_out, lang_len, "Arabic (U.A.E.)"));
+			break;
+		case 0x0f:
+			return(copy_lang (lang_out, lang_len, "Arabic (Bahrain)"));
+			break;
+		case 0x10:
+			return(copy_lang (lang_out, lang_len, "Arabic (Qatar)"));
+			break;
+		}
+		break;
+	case 0x02:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Bulgarian (Bulgaria)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Bulgarian"));
+			break;
+		}
+		break;
+	case 0x03:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Catalan (Spain)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Catalan"));
+			break;
+		}
+		break;
+	case 0x04:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Chinese (Taiwan)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Chinese (PRC)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "Chinese (Hong Kong S.A.R.)"));
+			break;
+		case 0x04:
+			return(copy_lang (lang_out, lang_len, "Chinese (Singapore)"));
+			break;
+		case 0x05:
+			return(copy_lang (lang_out, lang_len, "Chinese (Macau S.A.R.)"));
+			break;
+		}
+		break;
+	case 0x05:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Czech (Czech Republic)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Czech"));
+			break;
+		}
+		break;
+	case 0x06:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Danish (Denmark)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Danish"));
+			break;
+		}
+		break;
+	case 0x07:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "German (Germany)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "German (Switzerland)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "German (Austria)"));
+			break;
+		case 0x04:
+			return(copy_lang (lang_out, lang_len, "German (Luxembourg)"));
+			break;
+		case 0x05:
+			return(copy_lang (lang_out, lang_len, "German (Liechtenstein)"));
+			break;
+		}
+		break;
+	case 0x08:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Greek (Greece)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Greek"));
+			break;
+		}
+		break;
+	case 0x09:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "English (United States)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "English (United Kingdom)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "English (Australia)"));
+			break;
+		case 0x04:
+			return(copy_lang (lang_out, lang_len, "English (Canada)"));
+			break;
+		case 0x05:
+			return(copy_lang (lang_out, lang_len, "English (New Zealand)"));
+			break;
+		case 0x06:
+			return(copy_lang (lang_out, lang_len, "English (Ireland)"));
+			break;
+		case 0x07:
+			return(copy_lang (lang_out, lang_len, "English (South Africa)"));
+			break;
+		case 0x08:
+			return(copy_lang (lang_out, lang_len, "English (Jamaica)"));
+			break;
+		case 0x09:
+			return(copy_lang (lang_out, lang_len, "English (Caribbean)"));
+			break;
+		case 0x0a:
+			return(copy_lang (lang_out, lang_len, "English (Belize)"));
+			break;
+		case 0x0b:
+			return(copy_lang (lang_out, lang_len, "English (Trinidad and Tobago)"));
+			break;
+		case 0x0c:
+			return(copy_lang (lang_out, lang_len, "English (Zimbabwe)"));
+			break;
+		case 0x0d:
+			return(copy_lang (lang_out, lang_len, "English (Philippines)"));
+			break;
+		case 0x10:
+			return(copy_lang (lang_out, lang_len, "English (India)"));
+			break;
+		case 0x11:
+			return(copy_lang (lang_out, lang_len, "English (Malaysia)"));
+			break;
+		case 0x12:
+			return(copy_lang (lang_out, lang_len, "English (Singapore)"));
+			break;
+		}
+		break;
+	case 0x0a:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Spanish (Spain)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Spanish (Traditional Sort)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Spanish (Mexico)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "Spanish (International Sort)"));
+			break;
+		case 0x04:
+			return(copy_lang (lang_out, lang_len, "Spanish (Guatemala)"));
+			break;
+		case 0x05:
+			return(copy_lang (lang_out, lang_len, "Spanish (Costa Rica)"));
+			break;
+		case 0x06:
+			return(copy_lang (lang_out, lang_len, "Spanish (Panama)"));
+			break;
+		case 0x07:
+			return(copy_lang (lang_out, lang_len, "Spanish (Dominican Republic)"));
+			break;
+		case 0x08:
+			return(copy_lang (lang_out, lang_len, "Spanish (Venezuela)"));
+			break;
+		case 0x09:
+			return(copy_lang (lang_out, lang_len, "Spanish (Colombia)"));
+			break;
+		case 0x0a:
+			return(copy_lang (lang_out, lang_len, "Spanish (Peru)"));
+			break;
+		case 0x0b:
+			return(copy_lang (lang_out, lang_len, "Spanish (Argentina)"));
+			break;
+		case 0x0c:
+			return(copy_lang (lang_out, lang_len, "Spanish (Ecuador)"));
+			break;
+		case 0x0d:
+			return(copy_lang (lang_out, lang_len, "Spanish (Chile)"));
+			break;
+		case 0x0e:
+			return(copy_lang (lang_out, lang_len, "Spanish (Uruguay)"));
+			break;
+		case 0x0f:
+			return(copy_lang (lang_out, lang_len, "Spanish (Paraguay)"));
+			break;
+		case 0x10:
+			return(copy_lang (lang_out, lang_len, "Spanish (Bolivia)"));
+			break;
+		case 0x11:
+			return(copy_lang (lang_out, lang_len, "Spanish (El Salvador)"));
+			break;
+		case 0x12:
+			return(copy_lang (lang_out, lang_len, "Spanish (Honduras)"));
+			break;
+		case 0x13:
+			return(copy_lang (lang_out, lang_len, "Spanish (Nicaragua)"));
+			break;
+		case 0x14:
+			return(copy_lang (lang_out, lang_len, "Spanish (Puerto Rico)"));
+			break;
+		case 0x15:
+			return(copy_lang (lang_out, lang_len, "Spanish (United States)"));
+			break;
+		}
+		break;
+	case 0x0b:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Finnish (Finland)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Finnish"));
+			break;
+		}
+		break;
+	case 0x0c:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "French (France)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "French (Belgium)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "French (Canada)"));
+			break;
+		case 0x04:
+			return(copy_lang (lang_out, lang_len, "French (Switzerland)"));
+			break;
+		case 0x05:
+			return(copy_lang (lang_out, lang_len, "French (Luxembourg)"));
+			break;
+		case 0x06:
+			return(copy_lang (lang_out, lang_len, "French (Monaco)"));
+			break;
+		}
+		break;
+	case 0x0d:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Hebrew (Israel)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Hebrew"));
+			break;
+		}
+		break;
+	case 0x0e:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Hungarian (Hungary)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Hungarian"));
+			break;
+		}
+		break;
+	case 0x0f:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Icelandic (Iceland)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Icelandic"));
+			break;
+		}
+		break;
+	case 0x10:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Italian (Italy)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Italian (Switzerland)"));
+			break;
+		}
+		break;
+	case 0x11:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Japanese (Japan)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Japanese"));
+			break;
+		}
+		break;
+	case 0x12:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Korean (Korea)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Korean"));
+			break;
+		}
+		break;
+	case 0x13:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Dutch (Netherlands)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Dutch (Belgium)"));
+			break;
+		}
+		break;
+	case 0x14:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Norwegian (Bokmal)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Norwegian (Nynorsk)"));
+			break;
+		}
+		break;
+	case 0x15:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Polish (Poland)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Polish"));
+			break;
+		}
+		break;
+	case 0x16:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Portuguese (Brazil)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Portuguese (Portugal)"));
+			break;
+		}
+		break;
+	case 0x17:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Romansh (Switzerland)"));
+			break;
+		}
+		break;
+	case 0x18:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Romanian (Romania)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Romanian"));
+			break;
+		}
+		break;
+	case 0x19:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Russian (Russia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Russian"));
+			break;
+		}
+		break;
+	case 0x1a:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Croatian (Croatia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Croatian"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Serbian (Latin)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "Serbian (Cyrillic)"));
+			break;
+		case 0x04:
+			return(copy_lang (lang_out, lang_len, "Croatian (Bosnia and Herzegovina)"));
+			break;
+		case 0x05:
+			return(copy_lang (lang_out, lang_len, "Bosnian (Latin, Bosnia and Herzegovina)"));
+			break;
+		case 0x06:
+			return(copy_lang (lang_out, lang_len, "Serbian (Latin, Bosnia and Herzegovina)"));
+			break;
+		case 0x07:
+			return(copy_lang (lang_out, lang_len, "Serbian (Cyrillic, Bosnia and Herzegovina)"));
+			break;
+		case 0x08:
+			return(copy_lang (lang_out, lang_len, "Bosnian (Cyrillic, Bosnia and Herzegovina)"));
+			break;
+		}
+		break;
+	case 0x1b:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Slovak (Slovakia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Slovak"));
+			break;
+		}
+		break;
+	case 0x1c:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Albanian (Albania)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Albanian"));
+			break;
+		}
+		break;
+	case 0x1d:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Swedish (Sweden)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Swedish"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Swedish (Finland)"));
+			break;
+		}
+		break;
+	case 0x1e:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Thai (Thailand)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Thai"));
+			break;
+		}
+		break;
+	case 0x1f:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Turkish (Turkey)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Turkish"));
+			break;
+		}
+		break;
+	case 0x20:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Urdu (Islamic Republic of Pakistan)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Urdu"));
+			break;
+		}
+		break;
+	case 0x21:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Indonesian (Indonesia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Indonesian"));
+			break;
+		}
+		break;
+	case 0x22:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Ukrainian (Ukraine)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Ukrainian"));
+			break;
+		}
+		break;
+	case 0x23:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Belarusian (Belarus)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Belarusian"));
+			break;
+		}
+		break;
+	case 0x24:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Slovenian (Slovenia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Slovenian"));
+			break;
+		}
+		break;
+	case 0x25:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Estonian (Estonia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Estonian"));
+			break;
+		}
+		break;
+	case 0x26:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Latvian (Latvia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Latvian"));
+			break;
+		}
+		break;
+	case 0x27:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Lithuanian (Lithuania)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Lithuanian"));
+			break;
+		}
+		break;
+	case 0x28:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Tajik (Tajikistan)"));
+			break;
+		}
+		break;
+	case 0x29:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Farsi (Iran)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Farsi"));
+			break;
+		}
+		break;
+	case 0x2a:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Vietnamese (Viet Nam)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Vietnamese"));
+			break;
+		}
+		break;
+	case 0x2b:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Armenian (Armenia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Armenian"));
+			break;
+		}
+		break;
+	case 0x2c:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Azeri (Latin) (Azerbaijan)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Azeri (Latin)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Azeri (Cyrillic)"));
+			break;
+		}
+		break;
+	case 0x2d:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Basque (Spain)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Basque"));
+			break;
+		}
+		break;
+	case 0x2e:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Upper Sorbian (Germany)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Lower Sorbian (Germany)"));
+			break;
+		}
+		break;
+	case 0x2f:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "FYRO Macedonian (Former Yugoslav Republic of Macedonia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "FYRO Macedonian"));
+			break;
+		}
+		break;
+	case 0x32:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Tswana (South Africa)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Tswana"));
+			break;
+		}
+		break;
+	case 0x34:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Xhosa (South Africa)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Xhosa"));
+			break;
+		}
+		break;
+	case 0x35:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Zulu (South Africa)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Zulu"));
+			break;
+		}
+		break;
+	case 0x36:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Afrikaans (South Africa)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Afrikaans"));
+			break;
+		}
+		break;
+	case 0x37:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Georgian (Georgia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Georgian"));
+			break;
+		}
+		break;
+	case 0x38:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Faroese (Faroe Islands)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Faroese"));
+			break;
+		}
+		break;
+	case 0x39:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Hindi (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Hindi"));
+			break;
+		}
+		break;
+	case 0x3a:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Maltese (Malta)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Maltese"));
+			break;
+		}
+		break;
+	case 0x3b:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Sami (Northern) (Norway)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Sami, Northern (Norway)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Sami, Northern (Sweden)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "Sami, Northern (Finland)"));
+			break;
+		case 0x04:
+			return(copy_lang (lang_out, lang_len, "Sami, Lule (Norway)"));
+			break;
+		case 0x05:
+			return(copy_lang (lang_out, lang_len, "Sami, Lule (Sweden)"));
+			break;
+		case 0x06:
+			return(copy_lang (lang_out, lang_len, "Sami, Southern (Norway)"));
+			break;
+		case 0x07:
+			return(copy_lang (lang_out, lang_len, "Sami, Southern (Sweden)"));
+			break;
+		case 0x08:
+			return(copy_lang (lang_out, lang_len, "Sami, Skolt (Finland)"));
+			break;
+		case 0x09:
+			return(copy_lang (lang_out, lang_len, "Sami, Inari (Finland)"));
+			break;
+		}
+		break;
+	case 0x3c:
+		switch(secondary) {
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Irish (Ireland)"));
+			break;
+		}
+		break;
+	case 0x3e:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Malay (Malaysia)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Malay (Brunei Darussalam)"));
+			break;
+		}
+		break;
+	case 0x3f:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Kazakh (Kazakhstan)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Kazakh"));
+			break;
+		}
+		break;
+	case 0x40:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Kyrgyz (Kyrgyzstan)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Kyrgyz (Cyrillic)"));
+			break;
+		}
+		break;
+	case 0x41:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Swahili (Kenya)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Swahili"));
+			break;
+		}
+		break;
+	case 0x42:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Turkmen (Turkmenistan)"));
+			break;
+		}
+		break;
+	case 0x43:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Uzbek (Latin) (Uzbekistan)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Uzbek (Latin)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Uzbek (Cyrillic)"));
+			break;
+		}
+		break;
+	case 0x44:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Tatar (Russia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Tatar"));
+			break;
+		}
+		break;
+	case 0x45:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Bengali (India)"));
+			break;
+		}
+		break;
+	case 0x46:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Punjabi (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Punjabi"));
+			break;
+		}
+		break;
+	case 0x47:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Gujarati (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Gujarati"));
+			break;
+		}
+		break;
+	case 0x49:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Tamil (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Tamil"));
+			break;
+		}
+		break;
+	case 0x4a:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Telugu (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Telugu"));
+			break;
+		}
+		break;
+	case 0x4b:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Kannada (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Kannada"));
+			break;
+		}
+		break;
+	case 0x4c:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Malayalam (India)"));
+			break;
+		}
+		break;
+	case 0x4d:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Assamese (India)"));
+			break;
+		}
+		break;
+	case 0x4e:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Marathi (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Marathi"));
+			break;
+		}
+		break;
+	case 0x4f:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Sanskrit (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Sanskrit"));
+			break;
+		}
+		break;
+	case 0x50:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Mongolian (Mongolia)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Mongolian (Cyrillic)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Mongolian (PRC)"));
+			break;
+		}
+		break;
+	case 0x51:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Tibetan (PRC)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Tibetan (Bhutan)"));
+			break;
+		}
+		break;
+	case 0x52:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Welsh (United Kingdom)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Welsh"));
+			break;
+		}
+		break;
+	case 0x53:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Khmer (Cambodia)"));
+			break;
+		}
+		break;
+	case 0x54:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Lao (Lao PDR)"));
+			break;
+		}
+		break;
+	case 0x56:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Galician (Spain)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Galician"));
+			break;
+		}
+		break;
+	case 0x57:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Konkani (India)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Konkani"));
+			break;
+		}
+		break;
+	case 0x5a:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Syriac (Syria)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Syriac"));
+			break;
+		}
+		break;
+	case 0x5b:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Sinhala (Sri Lanka)"));
+			break;
+		}
+		break;
+	case 0x5d:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Inuktitut (Syllabics, Canada)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Inuktitut (Latin, Canada)"));
+			break;
+		}
+		break;
+	case 0x5e:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Amharic (Ethiopia)"));
+			break;
+		}
+		break;
+	case 0x5f:
+		switch(secondary) {
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Tamazight (Algeria, Latin)"));
+			break;
+		}
+		break;
+	case 0x61:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Nepali (Nepal)"));
+			break;
+		}
+		break;
+	case 0x62:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Frisian (Netherlands)"));
+			break;
+		}
+		break;
+	case 0x63:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Pashto (Afghanistan)"));
+			break;
+		}
+		break;
+	case 0x64:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Filipino (Philippines)"));
+			break;
+		}
+		break;
+	case 0x65:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Divehi (Maldives)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Divehi"));
+			break;
+		}
+		break;
+	case 0x68:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Hausa (Nigeria, Latin)"));
+			break;
+		}
+		break;
+	case 0x6a:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Yoruba (Nigeria)"));
+			break;
+		}
+		break;
+	case 0x6b:
+		switch(secondary) {
+		case 0x00:
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Quechua (Bolivia)"));
+			break;
+		case 0x02:
+			return(copy_lang (lang_out, lang_len, "Quechua (Ecuador)"));
+			break;
+		case 0x03:
+			return(copy_lang (lang_out, lang_len, "Quechua (Peru)"));
+			break;
+		}
+		break;
+	case 0x6c:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Northern Sotho (South Africa)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Northern Sotho"));
+			break;
+		}
+		break;
+	case 0x6d:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Bashkir (Russia)"));
+			break;
+		}
+		break;
+	case 0x6e:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Luxembourgish (Luxembourg)"));
+			break;
+		}
+		break;
+	case 0x6f:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Greenlandic (Greenland)"));
+			break;
+		}
+		break;
+	case 0x78:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Yi (PRC)"));
+			break;
+		}
+		break;
+	case 0x7a:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Mapudungun (Chile)"));
+			break;
+		}
+		break;
+	case 0x7c:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Mohawk (Mohawk)"));
+			break;
+		}
+		break;
+	case 0x7e:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Breton (France)"));
+			break;
+		}
+		break;
+	case 0x7f:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Invariant Language (Invariant Country)"));
+			break;
+		}
+		break;
+	case 0x80:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Uighur (PRC)"));
+			break;
+		}
+		break;
+	case 0x81:
+		switch(secondary) {
+		case 0x00:
+			return(copy_lang (lang_out, lang_len, "Maori (New Zealand)"));
+			break;
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Maori"));
+			break;
+		}
+		break;
+	case 0x83:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Corsican (France)"));
+			break;
+		}
+		break;
+	case 0x84:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Alsatian (France)"));
+			break;
+		}
+		break;
+	case 0x85:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Yakut (Russia)"));
+			break;
+		}
+		break;
+	case 0x86:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "K'iche (Guatemala)"));
+			break;
+		}
+		break;
+	case 0x87:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Kinyarwanda (Rwanda)"));
+			break;
+		}
+		break;
+	case 0x88:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Wolof (Senegal)"));
+			break;
+		}
+		break;
+	case 0x8c:
+		switch(secondary) {
+		case 0x01:
+			return(copy_lang (lang_out, lang_len, "Dari (Afghanistan)"));
+			break;
+		}
+		break;
+
+	default:
+		return(copy_lang (lang_out, lang_len, "Language Neutral"));
+
+	}
+	
+	return(copy_lang (lang_out, lang_len, "Language Neutral"));
 }
