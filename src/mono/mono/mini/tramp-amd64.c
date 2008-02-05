@@ -204,6 +204,24 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	offset = 0;
 
+	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
+		static int byte_offset = -1;
+		static guint8 bitmask;
+
+		guint8 *jump;
+
+		if (byte_offset < 0)
+			mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+		amd64_test_membase_imm_size (code, MONO_ARCH_VTABLE_REG, byte_offset, bitmask, 1);
+		jump = code;
+		amd64_branch8 (code, X86_CC_Z, -1, 1);
+
+		amd64_ret (code);
+
+		x86_patch (jump, code);
+	}
+
 	/*
 	 * The generic class init trampoline is called directly by JITted code, there is no
 	 * specific trampoline.

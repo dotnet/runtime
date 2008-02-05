@@ -192,10 +192,28 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 */
 
 	/* If this is a generic class init the argument is not on the
-	 * stack yet but in MONO_ARCH_VTABLE_REG.
+	 * stack yet but in MONO_ARCH_VTABLE_REG.  We first check
+	 * whether the vtable is already initialized in which case we
+	 * just return.  Otherwise we push it and continue.
 	 */
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
+	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
+		static int byte_offset = -1;
+		static guint8 bitmask;
+
+		guint8 *jump;
+
+		if (byte_offset < 0)
+			mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+		x86_test_membase_imm (buf, MONO_ARCH_VTABLE_REG, byte_offset, bitmask);
+		jump = buf;
+		x86_branch8 (buf, X86_CC_Z, -1, 1);
+
+		x86_ret (buf);
+
+		x86_patch (jump, buf);
 		x86_push_reg (buf, MONO_ARCH_VTABLE_REG);
+	}
 
 	/* Put all registers into an array on the stack
 	 * If this code is changed, make sure to update the offset value in

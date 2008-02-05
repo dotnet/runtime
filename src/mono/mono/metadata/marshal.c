@@ -11798,3 +11798,24 @@ cominterop_ccw_invoke (MonoCCWInterface* ccwe, guint32 dispIdMember,
 {
 	return MONO_E_NOTIMPL;
 }
+
+void
+mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask)
+{
+	int i;
+	guint8 byte;
+
+	for (i = 0; i < len; ++i)
+		if (buf [i])
+			break;
+
+	g_assert (i < len);
+
+	byte = buf [i];
+	while (byte && !(byte & 1))
+		byte >>= 1;
+	g_assert (byte == 1);
+
+	*byte_offset = i;
+	*bitmask = buf [i];
+}
