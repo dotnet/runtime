@@ -4575,7 +4575,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	if (!cctor_signature) {
 		cctor_signature = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 		cctor_signature->ret = &mono_defaults.void_class->byval_arg;
-		cctor_signature->hasthis = 1;
 	}
 	if (!finalize_signature) {
 		finalize_signature = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
