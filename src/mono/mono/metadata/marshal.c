@@ -9145,7 +9145,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, mono_method_signature (stoptr), 0);
+	res = mono_mb_create_method (mb, signature_no_pinvoke (stoptr), 0);
 	mono_mb_free (mb);
 
 	klass->marshal_info->str_to_ptr = res;
@@ -9172,11 +9172,18 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	if (klass->marshal_info->ptr_to_str)
 		return klass->marshal_info->ptr_to_str;
 
-	if (!ptostr)
+	if (!ptostr) {
+		MonoMethodSignature *sig;
+
 		/* Create the signature corresponding to
 		 	  static void PtrToStructure (IntPtr ptr, object structure);
 		   defined in class/corlib/System.Runtime.InteropServices/Marshal.cs */
-		ptostr = mono_create_icall_signature ("void ptr object");
+		sig = mono_create_icall_signature ("void ptr object");
+		sig = signature_dup (mono_defaults.corlib, sig);
+		sig->pinvoke = 0;
+		mono_memory_barrier ();
+		ptostr = sig;
+	}
 
 	mb = mono_mb_new (klass, "PtrToStructure", MONO_WRAPPER_UNKNOWN);
 
