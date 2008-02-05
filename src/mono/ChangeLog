@@ -1,3 +1,14 @@
+2008-02-05  Zoltan Varga  <vargaz@gmail.com>
+
+	* runtime/Makefile.am: Update after the changes to mcs/Makefile.
+
+2008-02-03  Zoltan Varga  <vargaz@gmail.com>
+
+	* runtime/Makefile.am (clean-local): Use mono --wapi=semdel instead of the
+	nonexistent semdel utility.
+
+	* runtime/semdel-wrapper.in: Delete.
+
 2008-01-28  Wade Berrier  <wberrier@novell.com>
 
 	* configure.in: version bump -> 1.9
