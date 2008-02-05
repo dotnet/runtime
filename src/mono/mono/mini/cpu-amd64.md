@@ -186,7 +186,7 @@ loadr8_membase: dest:f src1:b len:16
 loadr8_spill_membase: src1:b len:9
 loadu4_mem: dest:i len:10
 amd64_loadi8_memindex: dest:i src1:i src2:i len:10
-move: dest:i src1:i len:4
+move: dest:i src1:i len:3
 add_imm: dest:i src1:i len:8 clob:1
 sub_imm: dest:i src1:i len:8 clob:1
 mul_imm: dest:i src1:i len:11
