@@ -1492,6 +1492,7 @@ static const unsigned char bin_ovf_table [TYPE_MAX][TYPE_MAX] = {
 	{TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV, TYPE_INV},
 };
 
+#ifdef MONO_VERIFIER_DEBUG
 
 /*debug helpers */
 static void
@@ -1588,6 +1589,7 @@ dump_stack_state (ILCodeDesc *state)
 		dump_stack_value (state->stack + i);
 	printf ("\n");
 }
+#endif
 
 /*Returns TRUE if candidate array type can be assigned to target.
  *Both parameters MUST be of type MONO_TYPE_ARRAY (target->type == MONO_TYPE_ARRAY)
@@ -3630,11 +3632,19 @@ do_ldstr (VerifyContext *ctx, guint32 token)
 		stack_push_val (ctx, TYPE_COMPLEX,  &mono_defaults.string_class->byval_arg);
 }
 
-/*Merge the stacks and perform compat checks*/
+/*
+ * merge_stacks:
+ * Merge the stacks and perform compat checks. The merge check if types of @from are mergeable with type of @to 
+ * 
+ * @from holds new values for a given control path
+ * @to holds the current values of a given control path
+ * 
+ * TODO we can eliminate the from argument as all callers pass &ctx->eval
+ */
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external) 
 {
-	int i;
+	int i, j, k;
 	stack_init (ctx, to);
 
 	if (start) {
@@ -3655,17 +3665,64 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, g
 		goto end_verify;
 	}
 
+	//FIXME we need to preserve CMMP attributes
+	//FIXME we must take null literals and boxes values into consideration.
 	for (i = 0; i < from->size; ++i) {
-		ILStackDesc *from_slot = from->stack + i;
-		ILStackDesc *to_slot = to->stack + i;
+		ILStackDesc *new_slot = from->stack + i;
+		ILStackDesc *old_slot = to->stack + i;
+		MonoType *new_type = mono_type_from_stack_slot (new_slot);
+		MonoType *old_type = mono_type_from_stack_slot (old_slot);
+		MonoClass *old_class = mono_class_from_mono_type (old_type);
+		MonoClass *new_class = mono_class_from_mono_type (new_type);
+		MonoClass *match_class = NULL;
 
-		if (!verify_type_compatibility (ctx, mono_type_from_stack_slot (to_slot), mono_type_from_stack_slot (from_slot))) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, types not compatible at 0x%04x", ctx->ip_offset)); 
-			goto end_verify;
+		// S := T then U = S (new value is compatible with current value, keep current)
+		if (verify_type_compatibility (ctx, old_type, new_type)) {
+			copy_stack_value (new_slot, old_slot);
+			continue;
 		}
 
-		/*TODO we need to choose the base class for merging reference types*/
-		copy_stack_value (to_slot, from_slot);
+		// T := S then U = T (old value is compatible with current value, use new)
+		if (verify_type_compatibility (ctx, new_type, old_type)) {
+			copy_stack_value (old_slot, new_slot);
+			continue;
+		}
+
+		//both are reference types, use closest common super type
+		if (!mono_class_from_mono_type (old_type)->valuetype 
+			&& !mono_class_from_mono_type (new_type)->valuetype
+			&& !stack_slot_is_managed_pointer (old_slot)
+			&& !stack_slot_is_managed_pointer (new_slot)) {
+			
+			for (j = MIN (old_class->idepth, new_class->idepth) - 1; j > 0; --j) {
+				if (mono_metadata_type_equal (&old_class->supertypes [j]->byval_arg, &new_class->supertypes [j]->byval_arg)) {
+					match_class = old_class->supertypes [j];
+					goto match_found;
+				}
+			}
+
+			for (j = 0; j < old_class->interface_count; ++j) {
+				for (k = 0; k < new_class->interface_count; ++k) {
+					if (mono_metadata_type_equal (&old_class->interfaces [j]->byval_arg, &new_class->interfaces [k]->byval_arg)) {
+						match_class = old_class->interfaces [j];
+						goto match_found;
+					}
+				}
+			}
+
+			//No decent super type found, use object
+			match_class = mono_defaults.object_class;
+			goto match_found;
+		}
+
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, types not compatible at 0x%04x", ctx->ip_offset)); 
+		goto end_verify;
+
+match_found:
+		g_assert (match_class);
+		set_stack_value (ctx, old_slot, &match_class->byval_arg, stack_slot_is_managed_pointer (old_slot));
+		set_stack_value (ctx, new_slot, &match_class->byval_arg, stack_slot_is_managed_pointer (old_slot));
+		continue;
 	}
 
 end_verify:
