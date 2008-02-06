@@ -231,12 +231,23 @@ long_shr_imm: dest:i src1:i clob:1 len:11
 long_shr_un_imm: dest:i src1:i clob:1 len:11
 long_shl_imm: dest:i src1:i clob:1 len:11
 
+long_beq: len:8
+long_bge: len:8
+long_bgt: len:8
+long_ble: len:8
+long_blt: len:8
+long_bne_un: len:8
+long_bge_un: len:8
+long_bgt_un: len:8
+long_ble_un: len:8
+long_blt_un: len:8
+
 float_beq: len:13
 float_bne_un: len:18
 float_blt: len:13
 float_blt_un: len:30
 float_bgt: len:13
-float_btg_un: len:30
+float_bgt_un: len:30
 float_bge: len:32
 float_bge_un: len:13
 float_ble: len:32

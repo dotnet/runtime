@@ -208,7 +208,7 @@ float_bne_un: len:8
 float_blt: len:8
 float_blt_un: len:8
 float_bgt: len:8
-float_btg_un: len:8
+float_bgt_un: len:8
 float_bge: len:8
 float_bge_un: len:8
 float_ble: len:8

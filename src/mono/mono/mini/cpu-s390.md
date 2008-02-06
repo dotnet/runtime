@@ -132,7 +132,7 @@ float_ble_un: len:8
 float_blt: len:10
 float_blt_un: len:8
 float_bne_un: len:8
-float_btg_un: len:8
+float_bgt_un: len:8
 float_ceq: dest:i src1:f src2:f len:16
 float_cgt: dest:i src1:f src2:f len:16
 float_cgt_un: dest:i src1:f src2:f len:16
