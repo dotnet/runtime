@@ -303,10 +303,6 @@ mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtab
 {
 	//g_print ("generic class init for class %s.%s\n", vtable->klass->name_space, vtable->klass->name);
 
-#if defined(__i386__) || defined(__x86_64__)
-	g_assert (!vtable->initialized);
-#endif
-
 	mono_runtime_class_init (vtable);
 
 	//g_print ("done initing generic\n");
