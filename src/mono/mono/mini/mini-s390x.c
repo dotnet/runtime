@@ -4947,80 +4947,8 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
 //			MONO_INST_NEW (cfg, ins, OP_ABS);
 //			ins->inst_i0 = args [0];
 //		}
-	} else if(cmethod->klass->image == mono_defaults.corlib &&
-			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
-			   (strcmp (cmethod->klass->name, "Interlocked") == 0)) {
-
-		if (strcmp (cmethod->name, "Increment") == 0) {
-			MonoInst *ins_iconst;
-			guint32 opcode = 0;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_ADD_NEW_I4;
-			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
-			else
-				g_assert_not_reached ();
-
-			MONO_INST_NEW (cfg, ins, opcode);
-			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
-			ins_iconst->inst_c0 = 1;
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = ins_iconst;
-		} else if (strcmp (cmethod->name, "Decrement") == 0) {
-			MonoInst *ins_iconst;
-			guint32 opcode = 0;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_ADD_NEW_I4;
-			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_NEW_I8;
-			else
-				g_assert_not_reached ();
-			MONO_INST_NEW (cfg, ins, opcode);
-			MONO_INST_NEW (cfg, ins_iconst, OP_ICONST);
-			ins_iconst->inst_c0 = -1;
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = ins_iconst;
-			/* FIXME: */
-		} else if (strcmp (cmethod->name, "Exchange") == 0) {
-			guint32 opcode = 0;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_EXCHANGE_I4;
-			else if ((fsig->params [0]->type == MONO_TYPE_I8) ||
-					 (fsig->params [0]->type == MONO_TYPE_I) ||
-					 (fsig->params [0]->type == MONO_TYPE_OBJECT))
-				opcode = OP_ATOMIC_EXCHANGE_I8;
-			else
-				return NULL;
-
-			MONO_INST_NEW (cfg, ins, opcode);
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = args [1];
-		} else if (strcmp (cmethod->name, "Add") == 0) {
-			guint32 opcode = 0;
-
-			if (fsig->params [0]->type == MONO_TYPE_I4)
-				opcode = OP_ATOMIC_ADD_I4;
-			else if (fsig->params [0]->type == MONO_TYPE_I8)
-				opcode = OP_ATOMIC_ADD_I8;
-			else
-				g_assert_not_reached ();
-
-			MONO_INST_NEW (cfg, ins, opcode);
-
-			ins->inst_i0 = args [0];
-			ins->inst_i1 = args [1];
-		} else if ((strcmp (cmethod->name, "Read") == 0 && 
-			   (fsig->params [0]->type == MONO_TYPE_I8))) {
-			MONO_INST_NEW (cfg, ins, CEE_LDIND_I8);
-			ins->inst_i0 = args [0];
-		}
 	}
+
 	return ins;
 }
 
