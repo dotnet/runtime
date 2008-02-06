@@ -2522,23 +2522,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
-		case CEE_LDIND_I:
-		case CEE_LDIND_I4: {
-			s390_basr (code, s390_r13, 0);
-			s390_j	  (code, 6);
-			s390_llong(code, ins->inst_p0);
-			s390_lg   (code, s390_r13, 0, s390_r13, 4);
-			s390_lgf  (code, ins->dreg, 0, s390_r13, 0);
-		}
-			break;
-		case CEE_LDIND_U4: {
-			s390_basr (code, s390_r13, 0);
-			s390_j	  (code, 6);
-			s390_llong(code, ins->inst_p0);
-			s390_lg   (code, s390_r13, 0, s390_r13, 4);
-			s390_llgf (code, ins->dreg, 0, s390_r13, 0);
-		}
-			break;
 		case OP_LOADU4_MEM:
 			g_assert_not_reached ();
 			break;

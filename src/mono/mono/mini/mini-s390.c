@@ -2535,16 +2535,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 			break;
-		case CEE_LDIND_I:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_U4: {
-			s390_basr (code, s390_r13, 0);
-			s390_j	  (code, 4);
-			s390_word (code, ins->inst_p0);
-			s390_l	  (code, s390_r13, 0, s390_r13, 4);
-			s390_l	  (code, ins->dreg, 0, s390_r13, 0);
-		}
-			break;
 		case OP_LOADU4_MEM:
 			g_assert_not_reached ();
 			break;

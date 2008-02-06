@@ -227,14 +227,6 @@ lcall: dest:o len:22 clob:c
 lcall_membase: dest:o src1:b len:12 clob:c
 lcall_reg: dest:o src1:i len:8 clob:c
 lcompare: src1:i src2:i len:4
-ldind.i1: dest:i len:8
-ldind.i2: dest:i len:8
-ldind.i4: dest:i len:8
-ldind.i: dest:i len:8
-ldind.ref: dest:i len:8
-ldind.u1: dest:i len:8
-ldind.u2: dest:i len:8
-ldind.u4: dest:i len:8
 load_membase: dest:i src1:b len:26
 loadi1_membase: dest:i src1:b len:40
 loadi2_membase: dest:i src1:b len:26
@@ -314,12 +306,6 @@ shr_imm: dest:i src1:i len:10
 shr_un_imm: dest:i src1:i len:8
 sqrt: dest:f src1:f len:4
 start_handler: len:26
-stind.i1: src1:b src2:i
-stind.i2: src1:b src2:i
-stind.i4: src1:b src2:i
-stind.r4: src1:b src2:f
-stind.r8: src1:b src2:f
-stind.ref: src1:b src2:i
 store_membase_imm: dest:b len:46
 store_membase_reg: dest:b src1:i len:26
 storei1_membase_imm: dest:b len:46

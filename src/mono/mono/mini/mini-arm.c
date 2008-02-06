@@ -2124,11 +2124,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREI4_MEMINDEX:
 			ARM_STR_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ins->sreg2);
 			break;
-		case CEE_LDIND_I:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_U4:
-			g_assert_not_reached ();
-			break;
 		case OP_LOADU4_MEM:
 			g_assert_not_reached ();
 			break;

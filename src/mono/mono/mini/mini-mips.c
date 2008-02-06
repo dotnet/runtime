@@ -1808,12 +1808,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_sw (code, ins->sreg1, mips_at, 0);
 			}
 			break;
-		case CEE_LDIND_I:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_U4:
-			g_assert_not_reached ();
-			//x86_mov_reg_mem (code, ins->dreg, ins->inst_p0, 4);
-			break;
 		case OP_LOADU4_MEM:
 			g_assert_not_reached ();
 			//x86_mov_reg_imm (code, ins->dreg, ins->inst_p0);

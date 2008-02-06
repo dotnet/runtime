@@ -1284,11 +1284,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREI4_MEMBASE_REG:
 			EMIT_STORE_MEMBASE_REG (ins, stw);
 			break;
-		case CEE_LDIND_I:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_U4:
-			NOT_IMPLEMENTED;
-			break;
 		case OP_LOADU1_MEMBASE:
 			EMIT_LOAD_MEMBASE (ins, ldb);
 			break;

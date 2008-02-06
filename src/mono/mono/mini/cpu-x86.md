@@ -72,20 +72,6 @@ bgt.un: len:6
 ble.un: len:6
 blt.un: len:6
 label: len:0
-ldind.i1: dest:i len:6
-ldind.u1: dest:i len:6
-ldind.i2: dest:i len:6
-ldind.u2: dest:i len:6
-ldind.i4: dest:i len:6
-ldind.u4: dest:i len:6
-ldind.i: dest:i len:6
-ldind.ref: dest:i len:6
-stind.ref: src1:b src2:i
-stind.i1: src1:b src2:i
-stind.i2: src1:b src2:i
-stind.i4: src1:b src2:i
-stind.r4: dest:f src1:b
-stind.r8: dest:f src1:b
 add: dest:i src1:i src2:i len:2 clob:1
 sub: dest:i src1:i src2:i len:2 clob:1
 mul: dest:i src1:i src2:i len:3 clob:1

@@ -2174,11 +2174,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREI4_MEMBASE_REG:
 			x86_mov_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1, 4);
 			break;
-		case CEE_LDIND_I:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_U4:
-			x86_mov_reg_mem (code, ins->dreg, ins->inst_p0, 4);
-			break;
 		case OP_LOADU4_MEM:
 			x86_mov_reg_imm (code, ins->dreg, ins->inst_p0);
 			x86_mov_reg_membase (code, ins->dreg, ins->dreg, 0, 4);
