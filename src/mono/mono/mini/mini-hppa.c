@@ -2867,14 +2867,6 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 	DEBUG_FUNC_ENTER();
 	DEBUG_FUNC_EXIT();
 
-#if 0
-	if (cmethod->klass == mono_defaults.thread_class &&
-		strcmp (cmethod->name, "MemoryBarrier") == 0) {
-		if (sparcv9)
-			MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
-	}
-#endif
-
 	return ins;
 }
 

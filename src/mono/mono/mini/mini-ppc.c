@@ -4004,10 +4004,6 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 {
 	MonoInst *ins = NULL;
 
-	if (cmethod->klass == mono_defaults.thread_class &&
-			strcmp (cmethod->name, "MemoryBarrier") == 0) {
-		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
-	}
 	/*if (cmethod->klass == mono_defaults.math_class) {
 		if (strcmp (cmethod->name, "Sqrt") == 0) {
 			MONO_INST_NEW (cfg, ins, OP_SQRT);

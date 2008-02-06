@@ -3633,12 +3633,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	MonoInst *ins = NULL;
-	if (cmethod->klass == mono_defaults.thread_class &&
-			strcmp (cmethod->name, "MemoryBarrier") == 0) {
-		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
-	}
-	return ins;
+	return NULL;
 }
 
 gboolean
