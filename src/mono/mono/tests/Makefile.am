@@ -272,7 +272,6 @@ DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
 	delegate-delegate-exception.exe	\
 	appdomain-unload.exe		\
-	bug-77127.exe \
 	bug-348522.exe	\
 	$(PLATFORM_DISABLED_TESTS)
 
