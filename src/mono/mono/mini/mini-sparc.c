@@ -2846,7 +2846,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->sreg1 != ins->dreg)
 				sparc_mov_reg_reg (code, ins->sreg1, ins->dreg);
 			break;
-		case OP_SETFREG:
+		case OP_FMOVE:
 			/* Only used on V9 */
 			if (ins->sreg1 != ins->dreg)
 				sparc_fmovd (code, ins->sreg1, ins->dreg);

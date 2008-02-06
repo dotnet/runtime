@@ -1496,7 +1496,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						spill = -val -1;
 					}
 
-					if (((ins->opcode == OP_MOVE) || (ins->opcode == OP_SETREG)) && !spill && !fp && (is_local_ireg (ins->dreg) && (rs->ifree_mask & (regmask (ins->dreg))))) {
+					if ((ins->opcode == OP_MOVE) && !spill && !fp && (is_local_ireg (ins->dreg) && (rs->ifree_mask & (regmask (ins->dreg))))) {
 						/* 
 						 * Allocate the same hreg to sreg1 as well so the 
 						 * peephole can get rid of the move.

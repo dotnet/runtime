@@ -1387,7 +1387,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
-		case OP_SETREG:
 			ins->opcode = OP_MOVE;
 			/* 
 			 * OP_MOVE reg, reg 
@@ -2376,7 +2375,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_MUL_REG_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ICONST:
-		case OP_SETREGIMM:
 			code = mono_arm_emit_load_imm (code, ins->dreg, ins->inst_c0);
 			break;
 		case OP_AOTCONST:
@@ -2392,7 +2390,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
-		case OP_SETREG:
 			if (ins->dreg != ins->sreg1)
 				ARM_MOV_REG_REG (code, ins->dreg, ins->sreg1);
 			break;
@@ -2408,7 +2405,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_MOV_REG_REG (code, ARM_MSW_REG, saved);
 			break;
 		}
-		case OP_SETFREG:
 		case OP_FMOVE:
 #ifdef ARM_FPU_FPA
 			ARM_MVFD (code, ins->dreg, ins->sreg1);
@@ -3624,7 +3620,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	/* add the this argument */
 	if (this_reg != -1) {
 		MonoInst *this;
-		MONO_INST_NEW (cfg, this, OP_SETREG);
+		MONO_INST_NEW (cfg, this, OP_MOVE);
 		this->type = this_type;
 		this->sreg1 = this_reg;
 		this->dreg = mono_regstate_next_int (cfg->rs);
@@ -3634,7 +3630,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 
 	if (vt_reg != -1) {
 		MonoInst *vtarg;
-		MONO_INST_NEW (cfg, vtarg, OP_SETREG);
+		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 		vtarg->type = STACK_MP;
 		vtarg->sreg1 = vt_reg;
 		vtarg->dreg = mono_regstate_next_int (cfg->rs);

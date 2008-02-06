@@ -224,10 +224,7 @@ s390_setf4ret: dest:f src1:f len:4
 tls_get: dest:i len:44
 sbb: dest:i src1:i src2:i len:8
 sbb_imm: dest:i src1:i len:18
-setfreg: dest:f src1:f len:4
 setlret: src1:i src2:i len:12
-setreg: dest:i src1:i len:4
-setregimm: dest:i len:18
 setret: dest:a src1:i len:6
 shl: dest:i src1:i src2:i clob:s len:8
 shl_imm: dest:i src1:i len:8

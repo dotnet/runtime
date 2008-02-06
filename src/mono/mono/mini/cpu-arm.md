@@ -133,9 +133,6 @@ outarg: src1:i len:1
 outarg_imm: len:16
 setret: dest:a src1:i len:4
 setlret: src1:i src2:i len:12
-setreg: dest:i src1:i len:4 clob:r
-setregimm: dest:i len:16 clob:r
-setfreg: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
 voidcall: len:20 clob:c
 voidcall_reg: src1:i len:8 clob:c

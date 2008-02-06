@@ -325,7 +325,7 @@ stmt: OP_SPARC_OUTARG_FLOAT_REG (freg) {
 stmt: OP_SPARC_OUTARG_DOUBLE_REG (freg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_SETFREG;
+	tree->opcode = OP_FMOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);

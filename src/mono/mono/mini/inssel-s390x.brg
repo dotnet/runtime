@@ -131,7 +131,7 @@ stmt: OP_SETRET (OP_ICONST) {
 stmt: OP_OUTARG (reg) {
 	MonoCallInst *call = (MonoCallInst*) tree->inst_right;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg   = mono_regstate_next_int (s->rs);
 	tree->sreg1  = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -149,7 +149,7 @@ stmt: OP_OUTARG_MEMBASE (reg) {
 stmt: OP_OUTARG (OP_REGVAR) {
 	MonoCallInst *call = (MonoCallInst*) tree->inst_right;
 
-	tree->opcode       = OP_SETREG;
+	tree->opcode       = OP_MOVE;
 	tree->dreg         = mono_regstate_next_int (s->rs);
 	tree->sreg1        = state->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -186,7 +186,7 @@ stmt: OP_OUTARG_MEMBASE (OP_ICONST) {
 stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	MonoCallInst *call = (MonoCallInst*) tree->inst_right;
 
-	tree->opcode       = OP_SETREG;
+	tree->opcode       = OP_MOVE;
 	tree->sreg1        = state->left->left->tree->dreg;
 	tree->dreg         = mono_regstate_next_int (s->rs);
 	mono_bblock_add_inst (s->cbb, tree);
@@ -227,7 +227,7 @@ stmt: OP_OUTARG_R8 (freg),
 stmt: OP_OUTARG (freg) {
 	MonoCallInst *call = (MonoCallInst*) tree->inst_right;
 
-	tree->opcode = OP_SETFREG;
+	tree->opcode = OP_FMOVE;
 	tree->dreg   = mono_regstate_next_float (s->rs);
 	tree->sreg1  = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -257,7 +257,7 @@ stmt: OP_OUTARG_R4 (CEE_LDOBJ (OP_REGOFFSET)),
 stmt: OP_OUTARG_R8 (CEE_LDOBJ (OP_REGOFFSET)) {
 	MonoCallInst *call = (MonoCallInst*) tree->inst_right;
 
-	tree->opcode = OP_SETFREG;
+	tree->opcode = OP_FMOVE;
 	tree->dreg   = mono_regstate_next_float (s->rs);
 	tree->sreg1  = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -406,7 +406,7 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 //printf("OP_OUTARG_VT(OP_ICONST) %d\n",nregs);
 	if (start_reg != STK_BASE) {
 		if (nregs) {
-			tree->opcode  = OP_SETREGIMM;
+			tree->opcode  = OP_ICONST;
 			tree->dreg    = mono_regstate_next_int (s->rs);
 			tree->inst_c0 = state->left->tree->inst_c0;
 			mono_bblock_add_inst (s->cbb, tree);

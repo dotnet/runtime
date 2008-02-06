@@ -73,7 +73,7 @@ stmt: OP_OUTARG (reg) {
 	MonoCallInst *call = tree->inst_call;
 	MonoHPPAArgInfo *ai = tree->backend.data;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -95,7 +95,7 @@ stmt: OP_OUTARG (OP_REGVAR) {
 	MonoCallInst *call = tree->inst_call;
 	MonoHPPAArgInfo *ai = tree->backend.data;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -107,9 +107,9 @@ stmt: OP_OUTARG (lreg) {
 	MonoHPPAArgInfo *ai = tree->backend.data;
 	int tdreg = mono_regstate_next_int (s->rs);
 
-	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tdreg, state->left->reg2);
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, tdreg, state->left->reg2);
 	mono_call_inst_add_outarg_reg (s, call, tdreg, ai->reg, FALSE);
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -131,7 +131,7 @@ stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	MonoCallInst *call = tree->inst_call;
 	MonoHPPAArgInfo *ai = tree->backend.data;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -156,7 +156,7 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) "0" {
 			if (size < sizeof (gpointer))
 				MONO_EMIT_NEW_BIALU_IMM (s, OP_SHR_IMM, dreg, tmpr, (sizeof (gpointer) - size) * 8);
 			else
-				MONO_EMIT_NEW_UNALU (s, OP_SETREG, dreg, tmpr);
+				MONO_EMIT_NEW_UNALU (s, OP_MOVE, dreg, tmpr);
 			mono_call_inst_add_outarg_reg (s, call, dreg, start_reg + i, FALSE);
 			soffset += sizeof (gpointer);
 			size -= sizeof (gpointer);
@@ -191,7 +191,7 @@ stmt: OP_OUTARG_R8 (freg),
 stmt: OP_OUTARG (freg) {
 	MonoCallInst *call = tree->inst_call;
 
-	tree->opcode = OP_SETFREG;
+	tree->opcode = OP_FMOVE;
 	tree->dreg = mono_regstate_next_float (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -289,7 +289,7 @@ stmt: OP_SETRET (freg) {
 	if (mono_method_signature (s->method)->ret->type == MONO_TYPE_R4) {
 		tree->opcode = OP_HPPA_SETF4REG;
 	} else {
-		tree->opcode = OP_SETFREG;
+		tree->opcode = OP_FMOVE;
 	}
 
 	tree->sreg1 = state->left->reg1;

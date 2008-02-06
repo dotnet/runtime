@@ -432,7 +432,6 @@ static void
 	{	 
 	case OP_MOVE:
 	case OP_FMOVE:
-	case OP_SETREG:
 	  /*
 	   * Removes:
 	   *
