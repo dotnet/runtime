@@ -2685,9 +2685,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_addi (code, ins->dreg, ppc_sp, area_offset);
 			break;
 		}
-		case CEE_RET:
-			ppc_blr (code);
-			break;
 		case OP_THROW: {
 			//ppc_break (code);
 			ppc_mr (code, ppc_r3, ins->sreg1);

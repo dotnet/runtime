@@ -57,7 +57,6 @@ break: len:4
 jmp: len:92
 call: dest:v clob:c len:20
 calli: dest:v clob:c len:20
-ret: len:8
 br.s: len:8
 brfalse.s: len:8
 brtrue.s: len:8

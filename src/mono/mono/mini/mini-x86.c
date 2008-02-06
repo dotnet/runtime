@@ -2765,9 +2765,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_emit_stack_alloc (code, ins);
 			x86_mov_reg_reg (code, ins->dreg, X86_ESP, 4);
 			break;
-		case CEE_RET:
-			x86_ret (code);
-			break;
 		case OP_THROW: {
 			x86_push_reg (code, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 

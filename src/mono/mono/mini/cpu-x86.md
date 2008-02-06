@@ -59,7 +59,6 @@
 break: len:1
 jmp: len:32
 call: dest:a clob:c len:17
-ret: len:1
 br: len:5
 beq: len:6
 bge: len:6

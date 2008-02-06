@@ -970,10 +970,6 @@ freg: OP_FCALL_REG (OP_I8CONST) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_RET "0" {
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 stmt: CEE_POP (reg)
 
 # remove some common pops without side effects

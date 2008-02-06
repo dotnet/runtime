@@ -2512,10 +2512,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_ADD_REG_IMM8 (code, ins->dreg, ARMREG_SP, alloca_waste);
 			break;
 		}
-		case CEE_RET:
-			g_assert_not_reached ();
-			ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_LR);
-			break;
 		case OP_THROW: {
 			if (ins->sreg1 != ARMREG_R0)
 				ARM_MOV_REG_REG (code, ARMREG_R0, ins->sreg1);

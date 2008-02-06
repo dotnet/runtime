@@ -3484,10 +3484,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 			break;
-		case CEE_RET: {
-			s390_br  (code, s390_r14);
-		}
-			break;
 		case OP_THROW: {
 			s390_lr (code, s390_r2, ins->sreg1);
 			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 

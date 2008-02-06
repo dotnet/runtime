@@ -3312,9 +3312,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_emit_stack_alloc (code, ins);
 			amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
 			break;
-		case CEE_RET:
-			amd64_ret (code);
-			break;
 		case OP_THROW: {
 			amd64_mov_reg_reg (code, AMD64_ARG_REG1, ins->sreg1, 8);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 

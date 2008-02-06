@@ -3822,12 +3822,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	     alpha_bsr(code, alpha_ra, 0);
 	   }
 	   break;
-	   
-	 case CEE_RET:
-	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [ret]\n");
-	   
-	   alpha_ret(code, alpha_ra, 1);
-	   break;
 
 	 case OP_THROW:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [throw] sreg1=%0x\n",

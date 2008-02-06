@@ -3041,10 +3041,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		case CEE_RET:
-			/* The return is done in the epilog */
-			g_assert_not_reached ();
-			break;
 		case OP_THROW:
 			sparc_mov_reg_reg (code, ins->sreg1, sparc_o0);
 			mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 

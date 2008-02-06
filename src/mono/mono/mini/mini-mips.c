@@ -2325,10 +2325,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		case CEE_RET:
-			mips_jr (code, mips_ra);
-			mips_nop (code);
-			break;
 		case OP_THROW: {
 			gpointer addr = mono_arch_get_throw_exception();
 			mips_move (code, mips_a0, ins->sreg1);
