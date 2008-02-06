@@ -2260,9 +2260,9 @@ static int __use_new_interface_vtable_code = -1;
 static gboolean
 use_new_interface_vtable_code (void) {
 	if (__use_new_interface_vtable_code == -1) {
-		char *env_var = getenv ("USE_NEW_INTERFACE_VTABLE_CODE");
+		char *env_var = getenv ("MONO_USE_NEW_INTERFACE_VTABLE_CODE");
 		if (env_var == NULL) {
-			__use_new_interface_vtable_code = FALSE;
+			__use_new_interface_vtable_code = TRUE;
 		} else {
 			if ((strcmp (env_var, "0") == 0) || (strcmp (env_var, "false") == 0) || (strcmp (env_var, "FALSE") == 0)) {
 				__use_new_interface_vtable_code = FALSE;
