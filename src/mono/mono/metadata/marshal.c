@@ -4629,8 +4629,12 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			callsig = finalize_signature;
 			target_klass = mono_defaults.object_class;
 		} else {
+			// FIXME: This breaks too many things
+			/*
 			if (mono_class_get_cctor (method->klass))
 				need_direct_wrapper = TRUE;
+			*/
+
 			/*
 			 * Can't put these wrappers into object, since they reference non-corlib
 			 * metadata (callsig).
