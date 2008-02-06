@@ -571,7 +571,7 @@ mono_ssa_remove (MonoCompile *cfg)
 }
 
 
-#define IS_CALL(op) (op == CEE_CALLI || op == CEE_CALL || op == CEE_CALLVIRT || (op >= OP_VOIDCALL && op <= OP_CALL_MEMBASE))
+#define IS_CALL(op) (op == CEE_CALLI || op == OP_CALL || op == OP_CALLVIRT || (op >= OP_VOIDCALL && op <= OP_CALL_MEMBASE))
 
 typedef struct {
 	MonoBasicBlock *bb;

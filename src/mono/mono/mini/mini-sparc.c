@@ -1947,7 +1947,7 @@ emit_move_return_value (MonoInst *ins, guint32 *code)
 	case OP_VOIDCALL_REG:
 	case OP_VOIDCALL_MEMBASE:
 		break;
-	case CEE_CALL:
+	case OP_CALL:
 	case OP_CALL_REG:
 	case OP_CALL_MEMBASE:
 		g_assert (ins->dreg == sparc_o0);
@@ -2862,7 +2862,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VOIDCALL:
-		case CEE_CALL:
+		case OP_CALL:
 			call = (MonoCallInst*)ins;
 			g_assert (!call->virtual);
 			code = emit_save_sp_to_lmf (cfg, code);

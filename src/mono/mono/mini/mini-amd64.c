@@ -2339,7 +2339,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	/* Move return value to the target register */
 	/* FIXME: do this in the local reg allocator */
 	switch (ins->opcode) {
-	case CEE_CALL:
+	case OP_CALL:
 	case OP_CALL_REG:
 	case OP_CALL_MEMBASE:
 	case OP_LCALL:
@@ -3187,7 +3187,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VOIDCALL:
-		case CEE_CALL:
+		case OP_CALL:
 			call = (MonoCallInst*)ins;
 			/*
 			 * The AMD64 ABI forces callers to know about varargs.

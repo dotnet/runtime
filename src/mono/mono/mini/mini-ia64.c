@@ -1967,7 +1967,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 	case OP_VOIDCALL_REG:
 	case OP_VOIDCALL_MEMBASE:
 		break;
-	case CEE_CALL:
+	case OP_CALL:
 	case OP_CALL_REG:
 	case OP_CALL_MEMBASE:
 	case OP_LCALL:
@@ -2722,7 +2722,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VOIDCALL:
-		case CEE_CALL:
+		case OP_CALL:
 			call = (MonoCallInst*)ins;
 
 			if (ins->flags & MONO_INST_HAS_METHOD)

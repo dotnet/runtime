@@ -48,7 +48,7 @@ static const char *mono_stack_type_names[] = {
 
 
 #define OP_IS_OUTARG(op) (((op)==OP_OUTARG)||((op)==OP_OUTARG_REG)||((op)==OP_OUTARG_IMM)||((op)==OP_OUTARG_R4)||((op)==OP_OUTARG_R8)||((op)==OP_OUTARG_VT))
-#define OP_IS_CALL(op) (((op)==CEE_CALLI)||((op)==CEE_CALL)||((op)==CEE_CALLVIRT)||(((op)>=OP_VOIDCALL)&&((op)<=OP_CALL_MEMBASE)))
+#define OP_IS_CALL(op) (((op)==CEE_CALLI)||((op)==OP_CALL)||((op)==OP_CALLVIRT)||(((op)>=OP_VOIDCALL)&&((op)<=OP_CALL_MEMBASE)))
 #define OP_IS_STORE(op) (((op)==CEE_STIND_REF)||((op)==CEE_STIND_I1)||((op)==CEE_STIND_I2)||((op)==CEE_STIND_I4)||((op)==CEE_STIND_I8)||((op)==CEE_STIND_R4)||((op)==CEE_STIND_R8)||((op)==CEE_STIND_I))
 #define OP_IS_LOAD(op) (((op)==CEE_LDIND_REF)||((op)==CEE_LDIND_I1)||((op)==CEE_LDIND_I2)||((op)==CEE_LDIND_I4)||((op)==CEE_LDIND_U1)||((op)==CEE_LDIND_U2)||((op)==CEE_LDIND_U4)||((op)==CEE_LDIND_I8)||((op)==CEE_LDIND_R4)||((op)==CEE_LDIND_R8)||((op)==CEE_LDIND_I))
 #define OP_IS_CONST(op) (((op)==OP_ICONST)||((op)==OP_I8CONST)||((op)==OP_R4CONST)||((op)==OP_R8CONST)||((op)==OP_AOTCONST))
@@ -158,8 +158,8 @@ print_tree_node (MonoInst *tree) {
 	case CEE_NEWARR:
 		printf ("[%s]",  tree->inst_newa_class->name);
 		break;
-	case CEE_CALL:
-	case CEE_CALLVIRT:
+	case OP_CALL:
+	case OP_CALLVIRT:
 	case OP_FCALL:
 	case OP_FCALLVIRT:
 	case OP_LCALL:

@@ -3543,7 +3543,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VOIDCALL:
-		case CEE_CALL: {
+		case OP_CALL: {
 			s390_basr (code, s390_r13, 0);
 			s390_j    (code, 6);
 			call = (MonoCallInst*)ins;

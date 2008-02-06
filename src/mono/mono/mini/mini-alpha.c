@@ -3676,7 +3676,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case OP_LCALL:
 	 case OP_VCALL:
 	 case OP_VOIDCALL:
-	 case CEE_CALL:
+	 case OP_CALL:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [fcall/lcall/vcall/voidcall/call] Target: [");
 	   call = (MonoCallInst*)ins;
 	   

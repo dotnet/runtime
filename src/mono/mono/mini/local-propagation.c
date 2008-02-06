@@ -702,9 +702,9 @@ mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **
 		}
 
 		break;
-	case CEE_CALL:
+	case OP_CALL:
 	case OP_CALL_REG:
-	case CEE_CALLVIRT:
+	case OP_CALLVIRT:
 	case OP_LCALL_REG:
 	case OP_LCALLVIRT:
 	case OP_LCALL:

@@ -187,8 +187,8 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 		fprintf (fp, "[%s]",  tree->inst_newa_class->name);
 		mono_print_label (fp, tree->inst_newa_len);
 		break;
-	case CEE_CALL:
-	case CEE_CALLVIRT:
+	case OP_CALL:
+	case OP_CALLVIRT:
 	case OP_FCALL:
 	case OP_FCALLVIRT:
 	case OP_LCALL:
