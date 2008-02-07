@@ -51,63 +51,15 @@ label: len:0
 break: len:64
 jmp: len:64
 br: len:8
-beq: len:8
-bge: len:8
-bgt: len:8
-ble: len:8
-blt: len:8
-bne.un: len:64
-bge.un: len:64
-bgt.un: len:64
-ble.un: len:64
-blt.un: len:64
-sparc_brz: src1:i len: 8
-sparc_brlez: src1:i len: 8
-sparc_brlz: src1:i len: 8
-sparc_brnz: src1:i len: 8
-sparc_brgz: src1:i len: 8
-sparc_brgez: src1:i len: 8
-sparc_cond_exc_eqz: src1:i len:64
-sparc_cond_exc_nez: src1:i len:64
-sparc_cond_exc_ltz: src1:i len:64
-sparc_cond_exc_gtz: src1:i len:64
-sparc_cond_exc_gez: src1:i len:64
-sparc_cond_exc_lez: src1:i len:64
-add: dest:i src1:i src2:i len:64
-sub: dest:i src1:i src2:i len:4
-mul: dest:i src1:i src2:i len:4
-div: dest:i src1:i src2:i len:64
-div.un: dest:i src1:i src2:i len:8
-rem: dest:d src1:i src2:i len:64
-rem.un: dest:d src1:i src2:i len:64
-and: dest:i src1:i src2:i len:4
-or: dest:i src1:i src2:i len:4
-xor: dest:i src1:i src2:i len:4
-shl: dest:i src1:i src2:i len:4
-shr: dest:i src1:i src2:i len:4
-shr.un: dest:i src1:i src2:i len:4
-neg: dest:i src1:i len:4
-not: dest:i src1:i len:4
-conv.i1: dest:i src1:i len:8
-conv.i2: dest:i src1:i len:8
-conv.i4: dest:i src1:i len:4
-conv.i8: dest:i src1:i len:4
-conv.r4: dest:f src1:i len:64
-conv.r8: dest:f src1:i len:64
-conv.u4: dest:i src1:i len:4
-conv.u8: dest:i src1:i len:4
+
 throw: src1:i len:64
 rethrow: src1:i len:64
-conv.ovf.u4: dest:i src1:i len:64
-ckfinite: dest:f src1:f len:40
-conv.u2: dest:i src1:i len:8
-conv.u1: dest:i src1:i len:4
-conv.i: dest:i src1:i len:4
-mul.ovf: dest:i src1:i src2:i len:64
-mul.ovf.un: dest:i src1:i src2:i len:64
 start_handler: len:64
 endfinally: len:64
 endfilter: src1:i len:64
+
+conv.ovf.u4: dest:i src1:i len:64
+ckfinite: dest:f src1:f len:40
 conv.u: dest:i src1:i len:4
 arglist: src1:i
 ceq: dest:i len:64
@@ -202,15 +154,6 @@ cond_exc_ov: len:64
 cond_exc_no: len:64
 cond_exc_c: len:64
 cond_exc_nc: len:64
-long_shl: dest:i src1:i src2:i len:64
-long_shr: dest:i src1:i src2:i len:64
-long_shr_un: dest:i src1:i src2:i len:64
-long_conv_to_ovf_i: dest:i src1:i src2:i len:48
-long_mul_ovf: 
-long_conv_to_r_un: dest:f src1:i src2:i len:64 
-long_shr_imm: dest:i src1:i len:64
-long_shr_un_imm: dest:i src1:i len:64
-long_shl_imm: dest:i src1:i len:64
 float_beq: len:8
 float_bne_un: len:64
 float_blt: len:8
@@ -292,6 +235,19 @@ int_xor_imm: dest:i src1:i len:64
 int_shl_imm: dest:i src1:i len:64
 int_shr_imm: dest:i src1:i len:64
 int_shr_un_imm: dest:i src1:i len:64
+int_mul_ovf: dest:i src1:i src2:i len:64
+int_mul_ovf_un: dest:i src1:i src2:i len:64
+int_conv_to_i1: dest:i src1:i len:8
+int_conv_to_i2: dest:i src1:i len:8
+int_conv_to_i4: dest:i src1:i len:4
+int_conv_to_i8: dest:i src1:i len:4
+int_conv_to_r4: dest:f src1:i len:64
+int_conv_to_r8: dest:f src1:i len:64
+int_conv_to_u4: dest:i src1:i len:4
+int_conv_to_u8: dest:i src1:i len:4
+int_conv_to_u2: dest:i src1:i len:8
+int_conv_to_u1: dest:i src1:i len:4
+int_conv_to_i: dest:i src1:i len:4
 int_neg: dest:i src1:i len:64
 int_not: dest:i src1:i len:64
 int_ceq: dest:i len:64
@@ -299,15 +255,39 @@ int_cgt: dest:i len:64
 int_cgt_un: dest:i len:64
 int_clt: dest:i len:64
 int_clt_un: dest:i len:64
-int_beq: len:64
+int_beq: len:8
+int_bge: len:8
+int_bgt: len:8
+int_ble: len:8
+int_blt: len:8
 int_bne_un: len:64
-int_blt: len:64
-int_blt_un: len:64
-int_bgt: len:64
-int_bgt_un: len:64
-int_bge: len:64
 int_bge_un: len:64
-int_ble: len:64
+int_bgt_un: len:64
 int_ble_un: len:64
+int_blt_un: len:64
+
+# 64 bit opcodes
+long_shl: dest:i src1:i src2:i len:64
+long_shr: dest:i src1:i src2:i len:64
+long_shr_un: dest:i src1:i src2:i len:64
+long_conv_to_ovf_i: dest:i src1:i src2:i len:48
+long_mul_ovf: 
+long_conv_to_r_un: dest:f src1:i src2:i len:64 
+long_shr_imm: dest:i src1:i len:64
+long_shr_un_imm: dest:i src1:i len:64
+long_shl_imm: dest:i src1:i len:64
 
 memory_barrier: len:4
+
+sparc_brz: src1:i len: 8
+sparc_brlez: src1:i len: 8
+sparc_brlz: src1:i len: 8
+sparc_brnz: src1:i len: 8
+sparc_brgz: src1:i len: 8
+sparc_brgez: src1:i len: 8
+sparc_cond_exc_eqz: src1:i len:64
+sparc_cond_exc_nez: src1:i len:64
+sparc_cond_exc_ltz: src1:i len:64
+sparc_cond_exc_gtz: src1:i len:64
+sparc_cond_exc_gez: src1:i len:64
+sparc_cond_exc_lez: src1:i len:64
