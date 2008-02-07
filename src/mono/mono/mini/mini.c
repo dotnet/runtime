@@ -10933,6 +10933,10 @@ mono_normalize_opcodes (MonoCompile *cfg, MonoBasicBlock *bb)
 		remap_table [CEE_BGE_UN] = REMAP_OPCODE (BGE_UN);
 		remap_table [CEE_BLE] = REMAP_OPCODE (BLE);
 		remap_table [CEE_BLE_UN] = REMAP_OPCODE (BLE_UN);
+		remap_table [CEE_ADD_OVF] = REMAP_OPCODE (ADD_OVF);
+		remap_table [CEE_ADD_OVF_UN] = REMAP_OPCODE (ADD_OVF_UN);
+		remap_table [CEE_SUB_OVF] = REMAP_OPCODE (SUB_OVF);
+		remap_table [CEE_SUB_OVF_UN] = REMAP_OPCODE (SUB_OVF_UN);
 		remap_table [CEE_MUL_OVF] = REMAP_OPCODE (MUL_OVF);
 		remap_table [CEE_MUL_OVF_UN] = REMAP_OPCODE (MUL_OVF_UN);
 	}
