@@ -30,10 +30,56 @@ sed -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/ARR/${TEST_ARR}/g" -e "s/IDX/${TEST
 }
 
 .class public auto ansi sealed MyStruct
-  	extends [mscorlib]System.ValueType
+	extends [mscorlib]System.ValueType
 {
 	.field public int32 foo
 }
+
+.class public auto ansi sealed ByteEnum
+	extends [mscorlib]System.Enum
+{
+	.field  public specialname  rtspecialname  unsigned int8 value__
+
+	.field public static literal valuetype ByteEnum V_0 = int8(0x00)
+	.field public static literal valuetype ByteEnum V_1 = int8(0x01)
+}
+
+.class public auto ansi sealed ShortEnum
+	extends [mscorlib]System.Enum
+{
+	.field  public specialname  rtspecialname  unsigned int16 value__
+
+	.field public static literal valuetype ShortEnum V_0 = int16(0x00)
+	.field public static literal valuetype ShortEnum V_1 = int16(0x01)
+}
+
+.class public auto ansi sealed IntEnum
+	extends [mscorlib]System.Enum
+{
+	.field  public specialname  rtspecialname  unsigned int32 value__
+
+	.field public static literal valuetype IntEnum V_0 = int32(0x00)
+	.field public static literal valuetype IntEnum V_1 = int32(0x01)
+}
+
+.class public auto ansi sealed LongEnum
+	extends [mscorlib]System.Enum
+{
+	.field  public specialname  rtspecialname  unsigned int64 value__
+
+	.field public static literal valuetype LongEnum V_0 = int64(0x00)
+	.field public static literal valuetype LongEnum V_1 = int64(0x01)
+}
+
+.class public auto ansi sealed NativeIntEnum
+	extends [mscorlib]System.Enum
+{
+	.field  public specialname  rtspecialname native int value__
+
+	.field public static literal valuetype NativeIntEnum V_0 = int32(0x00)
+	.field public static literal valuetype NativeIntEnum V_1 = int32(0x01)
+}
+
 
 .method public static void foo() cil managed
 {

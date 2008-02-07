@@ -2765,7 +2765,7 @@ done
 
 
 I=1
-for ARR in "int8" "bool" "unsigned int8"
+for ARR in "int8" "bool" "unsigned int8" "ByteEnum"
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i1"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u1"
@@ -2780,7 +2780,7 @@ do
 done
 
 
-for ARR in "int16" "char" "unsigned int16"
+for ARR in "int16" "char" "unsigned int16" "ShortEnum"
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i2"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u2"
@@ -2794,11 +2794,18 @@ do
 	I=`expr $I + 1`
 done
 
-
-for ARR in "int32" "unsigned int32" "native int" "native unsigned int"
+for ARR in "int32" "unsigned int32" "IntEnum" 
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i4"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u4"
+	./make_ldelem_test.sh ldelem_base_types_n_${I} strict "newarr ${ARR}" "ldc.i4.0" "ldelem.i"
+	I=`expr $I + 1`
+done
+
+for ARR in "native int" "native unsigned int" "NativeIntEnum"
+do
+	./make_ldelem_test.sh ldelem_base_types_i_${I} strict "newarr ${ARR}" "ldc.i4.0" "ldelem.i4"
+	./make_ldelem_test.sh ldelem_base_types_u_${I} strict "newarr ${ARR}" "ldc.i4.0" "ldelem.u4"
 	./make_ldelem_test.sh ldelem_base_types_n_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i"
 	I=`expr $I + 1`
 done
@@ -2812,7 +2819,7 @@ do
 done
 
 
-for ARR in "int64" "unsigned int64"
+for ARR in "int64" "unsigned int64" "LongEnum"
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i8"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u8"
