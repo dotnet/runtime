@@ -60,43 +60,44 @@ break: len:1
 jmp: len:32
 call: dest:a clob:c len:17
 br: len:5
-beq: len:6
-bge: len:6
-bgt: len:6
-ble: len:6
-blt: len:6
-bne.un: len:6
-bge.un: len:6
-bgt.un: len:6
-ble.un: len:6
-blt.un: len:6
+int_beq: len:6
+int_bge: len:6
+int_bgt: len:6
+int_ble: len:6
+int_blt: len:6
+int_bne_un: len:6
+int_bge_un: len:6
+int_bgt_un: len:6
+int_ble_un: len:6
+int_blt_un: len:6
 label: len:0
-add: dest:i src1:i src2:i len:2 clob:1
-sub: dest:i src1:i src2:i len:2 clob:1
-mul: dest:i src1:i src2:i len:3 clob:1
-div: dest:a src1:a src2:i len:15 clob:d
-div.un: dest:a src1:a src2:i len:15 clob:d
-rem: dest:d src1:a src2:i len:15 clob:a
-rem.un: dest:d src1:a src2:i len:15 clob:a
-and: dest:i src1:i src2:i len:2 clob:1
-or: dest:i src1:i src2:i len:2 clob:1
-xor: dest:i src1:i src2:i len:2 clob:1
-shl: dest:i src1:i src2:s clob:1 len:2
-shr: dest:i src1:i src2:s clob:1 len:2
-shr.un: dest:i src1:i src2:s clob:1 len:2
-neg: dest:i src1:i len:2 clob:1
-not: dest:i src1:i len:2 clob:1
-conv.i1: dest:i src1:y len:3
-conv.i2: dest:i src1:i len:3
-conv.i4: dest:i src1:i len:2
-conv.r4: dest:f src1:i len:7
-conv.r8: dest:f src1:i len:7
-conv.u4: dest:i src1:i
-conv.u2: dest:i src1:i len:3
-conv.u1: dest:i src1:y len:3
-conv.i: dest:i src1:i len:3
 
+int_add: dest:i src1:i src2:i len:2 clob:1
+int_sub: dest:i src1:i src2:i len:2 clob:1
+int_mul: dest:i src1:i src2:i len:3 clob:1
+int_div: dest:a src1:a src2:i len:15 clob:d
+int_div_un: dest:a src1:a src2:i len:15 clob:d
+int_rem: dest:d src1:a src2:i len:15 clob:a
+int_rem_un: dest:d src1:a src2:i len:15 clob:a
+int_and: dest:i src1:i src2:i len:2 clob:1
+int_or: dest:i src1:i src2:i len:2 clob:1
 int_xor: dest:i src1:i src2:i len:2 clob:1
+int_shl: dest:i src1:i src2:s clob:1 len:2
+int_shr: dest:i src1:i src2:s clob:1 len:2
+int_shr_un: dest:i src1:i src2:s clob:1 len:2
+int_neg: dest:i src1:i len:2 clob:1
+int_not: dest:i src1:i len:2 clob:1
+int_conv_to_i1: dest:i src1:y len:3
+int_conv_to_i2: dest:i src1:i len:3
+int_conv_to_i4: dest:i src1:i len:2
+int_conv_to_r4: dest:f src1:i len:7
+int_conv_to_r8: dest:f src1:i len:7
+int_conv_to_u4: dest:i src1:i
+int_conv_to_u2: dest:i src1:i len:3
+int_conv_to_u1: dest:i src1:y len:3
+int_conv_to_i: dest:i src1:i len:3
+int_mul_ovf: dest:i src1:i src2:i clob:1 len:9
+int_mul_ovf_un: dest:i src1:i src2:i len:16
 
 throw: src1:i len:13
 rethrow: src1:i len:13
@@ -105,10 +106,6 @@ endfinally: len:16
 endfilter: src1:a len:16
 
 ckfinite: dest:f src1:f len:32
-mul.ovf: dest:i src1:i src2:i clob:1 len:9
-# this opcode is handled specially in the code generator
-mul.ovf.un: dest:i src1:i src2:i len:16
-conv.u: dest:i src1:i len:3
 ceq: dest:y len:6
 cgt: dest:y len:6
 cgt.un: dest:y len:6
