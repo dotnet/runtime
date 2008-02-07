@@ -1679,7 +1679,7 @@ map_to_reg_reg_op (int op)
  * represented with very simple instructions with no register
  * requirements.
  */
-static void
+void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *next, *temp;
@@ -1830,15 +1830,6 @@ loop_start:
 	}
 	bb->max_vreg = cfg->rs->next_vreg;
 	
-}
-
-void
-mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-	if (MONO_INST_LIST_EMPTY (&bb->ins_list))
-		return;
-	mono_arch_lowering_pass (cfg, bb);
-	mono_local_regalloc (cfg, bb);
 }
 
 static guchar*

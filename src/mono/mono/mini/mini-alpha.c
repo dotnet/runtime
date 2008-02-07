@@ -579,11 +579,6 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
     }
 }
 
-void
-mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-}
-
 // Convert to opposite branch opcode
 static guint16 cvt_branch_opcode(guint16 opcode)
 {
@@ -1174,33 +1169,6 @@ static void
      }
    
    bb->max_vreg = cfg->rs->next_vreg;
-}
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name         - mono_arch_local_regalloc.                         */
-/*                                                                  */
-/* Function     - We first scan the list of instructions and we     */
-/*                save the liveness information of each register    */
-/*                (when the register is first used, when its value  */
-/*                is set etc.). We also reverse the list of instr-  */
-/*                uctions (in the InstList list) because assigning  */
-/*                registers backwards allows for more tricks to be  */
-/*                used.                                             */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-void
-mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-  CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_local_regalloc");
-   
-  if (MONO_INST_LIST_EMPTY (&bb->ins_list))
-    return;
-   
-  mono_arch_lowering_pass (cfg, bb);
-   
-  mono_local_regalloc(cfg, bb);
 }
 
 /*========================= End of Function ========================*/
