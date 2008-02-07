@@ -67,48 +67,50 @@ bgt.un: len:8
 ble.un: len:8
 blt.un: len:8
 label: len:0
-add: dest:i src1:i src2:i len:3 clob:1
-sub: dest:i src1:i src2:i len:3 clob:1
-mul: dest:i src1:i src2:i len:4 clob:1
-div: dest:a src1:a src2:i len:16 clob:d
-div.un: dest:a src1:a src2:i len:16 clob:d
-rem: dest:d src1:a src2:i len:16 clob:a
-rem.un: dest:d src1:a src2:i len:16 clob:a
-and: dest:i src1:i src2:i len:3 clob:1
-or: dest:i src1:i src2:i len:3 clob:1
-xor: dest:i src1:i src2:i len:3 clob:1
-shl: dest:i src1:i src2:s clob:1 len:3
-shr: dest:i src1:i src2:s clob:1 len:3
-shr.un: dest:i src1:i src2:s clob:1 len:3
-neg: dest:i src1:i len:3 clob:1
-not: dest:i src1:i len:3 clob:1
-conv.i1: dest:i src1:i len:4
-conv.i2: dest:i src1:i len:4
-conv.i4: dest:i src1:i len:3
-conv.i8: dest:i src1:i len:3
-conv.r4: dest:f src1:i len:9
-conv.r8: dest:f src1:i len:9
-conv.u4: dest:i src1:i len:3
-conv.u8: dest:i src1:i len:3
-conv.r.un: dest:f src1:i len:8
+
+long_add: dest:i src1:i src2:i len:3 clob:1
+long_sub: dest:i src1:i src2:i len:3 clob:1
+long_mul: dest:i src1:i src2:i len:4 clob:1
+long_div: dest:a src1:a src2:i len:16 clob:d
+long_div_un: dest:a src1:a src2:i len:16 clob:d
+long_rem: dest:d src1:a src2:i len:16 clob:a
+long_rem_un: dest:d src1:a src2:i len:16 clob:a
+long_and: dest:i src1:i src2:i len:3 clob:1
+long_or: dest:i src1:i src2:i len:3 clob:1
+long_xor: dest:i src1:i src2:i len:3 clob:1
+long_shl: dest:i src1:i src2:s clob:1 len:3
+long_shr: dest:i src1:i src2:s clob:1 len:3
+long_shr_un: dest:i src1:i src2:s clob:1 len:3
+long_neg: dest:i src1:i len:3 clob:1
+long_not: dest:i src1:i len:3 clob:1
+long_conv_to_i1: dest:i src1:i len:4
+long_conv_to_i2: dest:i src1:i len:4
+long_conv_to_i4: dest:i src1:i len:3
+long_conv_to_i8: dest:i src1:i len:3
+long_conv_to_r4: dest:f src1:i len:9
+long_conv_to_r8: dest:f src1:i len:9
+long_conv_to_u4: dest:i src1:i len:3
+long_conv_to_u8: dest:i src1:i len:3
+long_conv_to_r_un: dest:f src1:i len:64
+long_conv_to_ovf_i4_un: dest:i src1:i len:16
+long_conv_to_ovf_u4: dest:i src1:i len:15
+long_conv_to_u2: dest:i src1:i len:4
+long_conv_to_u1: dest:i src1:i len:4
+zext_i4: dest:i src1:i len:4
+
+long_mul_imm: dest:i src1:i clob:1 len:12
+long_min: dest:i src1:i src2:i len:16 clob:1
+long_max: dest:i src1:i src2:i len:16 clob:1
 
 throw: src1:i len:18
 rethrow: src1:i len:18
 start_handler: len:9
 endfinally: len:9
 endfilter: src1:a len:9
-
-conv.ovf.i4.un: dest:i src1:i len:16
-conv.ovf.u4.un: 
-conv.ovf.u4: dest:i src1:i len:15
 ckfinite: dest:f src1:f len:43
-conv.u2: dest:i src1:i len:4
-conv.u1: dest:i src1:i len:4
-conv.i: dest:i src1:i len:4
 mul.ovf: dest:i src1:i src2:i clob:1 len:10
 # this opcode is handled specially in the code generator
 mul.ovf.un: dest:i src1:i src2:i len:18
-conv.u: dest:i src1:i len:4
 ceq: dest:c len:8
 cgt: dest:c len:8
 cgt.un: dest:c len:8
@@ -205,28 +207,9 @@ cond_exc_nc: len:8
 cond_exc_iov: len:8
 cond_exc_ic: len:8
 
-long_add: dest:i src1:i src2:i len:3 clob:1
-long_mul: dest:i src1:i src2:i clob:1 len:4
-long_mul_imm: dest:i src1:i clob:1 len:12
-long_div: dest:a src1:a src2:i len:16 clob:d
-long_div_un: dest:a src1:a src2:i len:16 clob:d
-long_rem: dest:d src1:a src2:i len:16 clob:a
-long_rem_un: dest:d src1:a src2:i len:16 clob:a
-long_and: dest:i src1:i src2:i len:3 clob:1
-long_or: dest:i src1:i src2:i len:3 clob:1
-long_xor: dest:i src1:i src2:i len:3 clob:1
-long_shl: dest:i src1:i src2:s clob:1 len:31
-long_shr: dest:i src1:i src2:s clob:1 len:32
-long_shr_un: dest:i src1:i src2:s clob:1 len:32
-long_min: dest:i src1:i src2:i len:16 clob:1
-long_max: dest:i src1:i src2:i len:16 clob:1
-
-long_conv_to_r4: dest:f src1:i len:8
-long_conv_to_r8: dest:f src1:i len:8
 long_conv_to_ovf_i: dest:i src1:i src2:i len:40
 long_mul_ovf: dest:i src1:i src2:i clob:1 len:16
 long_mul_ovf_un: dest:i src1:i src2:i len:22
-long_conv_to_r_un: dest:f src1:i len:64
 long_shr_imm: dest:i src1:i clob:1 len:11
 long_shr_un_imm: dest:i src1:i clob:1 len:11
 long_shl_imm: dest:i src1:i clob:1 len:11
@@ -385,6 +368,8 @@ int_max: dest:i src1:i src2:i len:16 clob:1
 
 int_neg: dest:i src1:i clob:1 len:4
 int_not: dest:i src1:i clob:1 len:4
+int_conv_to_r4: dest:f src1:i len:9
+int_conv_to_r8: dest:f src1:i len:9
 int_ceq: dest:c len:8
 int_cgt: dest:c len:8
 int_cgt_un: dest:c len:8
