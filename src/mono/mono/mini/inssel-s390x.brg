@@ -30,15 +30,27 @@ stmt: OP_ENDFILTER (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-reg: CEE_ADD_OVF (reg, reg),
 reg: OP_LADD_OVF (reg, reg),
-reg: CEE_ADD_OVF_UN (reg, reg),
 reg: OP_LADD_OVF_UN (reg, reg),
-reg: CEE_SUB_OVF (reg, reg),
 reg: OP_LSUB_OVF (reg, reg),
-reg: CEE_SUB_OVF_UN (reg, reg),
 reg: OP_LSUB_OVF_UN (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+reg: CEE_ADD_OVF (reg, reg) "0" {
+	MONO_EMIT_BIALU (s, tree, OP_IADD_OVF, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+reg: CEE_ADD_OVF_UN (reg, reg) "0" {
+	MONO_EMIT_BIALU (s, tree, OP_IADD_OVF_UN, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+reg: CEE_SUB_OVF (reg, reg) "0" {
+	MONO_EMIT_BIALU (s, tree, OP_ISUB_OVF, state->reg1, state->left->reg1, state->right->reg1);
+}
+
+reg: CEE_SUB_OVF_UN (reg, reg) "0" {
+	MONO_EMIT_BIALU (s, tree, OP_ISUB_OVF_UN, state->reg1, state->left->reg1, state->right->reg1);
 }
 
 stmt: CEE_STIND_I8 (OP_REGVAR, reg) {
