@@ -419,8 +419,13 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 
 /*========================= End of Function ========================*/
 
-static void
-  peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+void
+mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
+void
+mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
   MonoInst *ins, *n;
    
@@ -574,7 +579,10 @@ static void
     }
 }
 
-
+void
+mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
 
 // Convert to opposite branch opcode
 static guint16 cvt_branch_opcode(guint16 opcode)
@@ -2193,9 +2201,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
    
    CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_output_basic_block");
    
-   if (cfg->opt & MONO_OPT_PEEPHOLE)
-     peephole_pass (cfg, bb);
-    
    CFG_DEBUG(2) g_print ("Basic block %d(%p) starting at offset 0x%x\n",
 			 bb->block_num, bb, bb->native_offset);
    

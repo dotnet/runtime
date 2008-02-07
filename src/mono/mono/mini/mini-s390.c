@@ -248,7 +248,6 @@ static inline void add_general (guint *, size_data *, ArgInfo *, gboolean);
 static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
 static inline void add_float (guint *, size_data *, ArgInfo *);
 static CallInfo * calculate_sizes (MonoCompile *, MonoMethodSignature *, size_data *, gboolean);
-static void peephole_pass (MonoCompile *, MonoBasicBlock *);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 gpointer mono_arch_get_lmf_addr (void);
 static guint8 * emit_load_volatile_registers(guint8 *, MonoCompile *);
@@ -2184,17 +2183,22 @@ handle_enum:
 
 /*========================= End of Function ========================*/
 
+void
+mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- peephole_pass                                     */
+/* Name		- mono_arch_peephole_pass                                     */
 /*                                                                  */
 /* Function	- Form a peephole pass at the code looking for      */
 /*		  simple optimizations.        			    */
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
-static void
-peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+void
+mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n;
 
@@ -2318,24 +2322,9 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_local_regalloc.                         */
-/*                                                                  */
-/* Function	- We first scan the list of instructions and we     */
-/*                save the liveness information of each register    */
-/*                (when the register is first used, when its value  */
-/*                is set etc.). We also reverse the list of instr-  */
-/*                uctions (in the InstList list) because assigning  */
-/*                registers backwards allows for more tricks to be  */
-/*		  used.                        			    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
 void
-mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
+mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	mono_local_regalloc(cfg, bb);
 }
 
 /*========================= End of Function ========================*/
@@ -2415,9 +2404,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint8 *code = cfg->native_code + cfg->code_len;
 	guint last_offset = 0;
 	int max_len, cpos, src2;
-
-	if (cfg->opt & MONO_OPT_PEEPHOLE)
-		peephole_pass (cfg, bb);
 
 	/* we don't align basic blocks of loops on s390 */
 

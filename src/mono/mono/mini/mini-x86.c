@@ -1333,12 +1333,12 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 #define INST_IGNORES_CFLAGS(opcode) (!(((opcode) == OP_ADC) || ((opcode) == OP_IADC) || ((opcode) == OP_ADC_IMM) || ((opcode) == OP_IADC_IMM) || ((opcode) == OP_SBB) || ((opcode) == OP_ISBB) || ((opcode) == OP_SBB_IMM) || ((opcode) == OP_ISBB_IMM)))
 
 /*
- * peephole_pass_1:
+ * mono_peephole_pass_1:
  *
  *   Perform peephole opts which should/can be performed before local regalloc
  */
-static void
-peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
+void
+mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n;
 
@@ -1539,8 +1539,8 @@ peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 }
 
-static void
-peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+void
+mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n;
 
@@ -1755,6 +1755,11 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 }
 
+void
+mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
 static const int 
 branch_cc_table [] = {
 	X86_CC_EQ, X86_CC_GE, X86_CC_GT, X86_CC_LE, X86_CC_LT,
@@ -1774,15 +1779,6 @@ cc_signed_table [] = {
 	TRUE, TRUE, TRUE, TRUE, TRUE, TRUE,
 	FALSE, FALSE, FALSE, FALSE
 };
-
-void
-mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-	if (cfg->opt & MONO_OPT_PEEPHOLE)
-		peephole_pass_1 (cfg, bb);
-
-	mono_local_regalloc (cfg, bb);
-}
 
 static unsigned char*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int size, gboolean is_signed)
@@ -2092,9 +2088,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint offset;
 	guint8 *code = cfg->native_code + cfg->code_len;
 	int max_len, cpos;
-
-	if (cfg->opt & MONO_OPT_PEEPHOLE)
-		peephole_pass (cfg, bb);
 
 	if (cfg->opt & MONO_OPT_LOOP) {
 		int pad, align = LOOP_ALIGNMENT;

@@ -10959,7 +10959,16 @@ mono_codegen (MonoCompile *cfg)
 #ifdef MONO_ARCH_ENABLE_NORMALIZE_OPCODES
 		mono_normalize_opcodes (cfg, bb);
 #endif
-		mono_arch_local_regalloc (cfg, bb);
+
+		mono_arch_lowering_pass (cfg, bb);
+
+		if (cfg->opt & MONO_OPT_PEEPHOLE)
+			mono_arch_peephole_pass_1 (cfg, bb);
+
+		mono_local_regalloc (cfg, bb);
+
+		if (cfg->opt & MONO_OPT_PEEPHOLE)
+			mono_arch_peephole_pass_2 (cfg, bb);
 	}
 
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE)

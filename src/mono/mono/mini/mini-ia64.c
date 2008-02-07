@@ -1225,8 +1225,13 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	return call;
 }
 
-static void
-peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+void
+mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
+void
+mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n;
 
@@ -1325,7 +1330,7 @@ opcode_to_ia64_cmp_imm (int opcode, int cmp_opcode)
  *  Converts complex opcodes into simpler ones so that each IR instruction
  * corresponds to one machine instruction.
  */
-static void
+void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n, *next, *temp, *temp2, *temp3;
@@ -1856,17 +1861,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	bb->max_vreg = cfg->rs->next_vreg;
 }
 
-void
-mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-	if (MONO_INST_LIST_EMPTY (&bb->ins_list))
-		return;
-
-	mono_arch_lowering_pass (cfg, bb);
-
-	mono_local_regalloc (cfg, bb);
-}
-
 /*
  * emit_load_volatile_arguments:
  *
@@ -2072,9 +2066,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint8 *code_start = cfg->native_code + cfg->code_len;
 	guint last_offset = 0;
 	int max_len, cpos;
-
-	if (cfg->opt & MONO_OPT_PEEPHOLE)
-		peephole_pass (cfg, bb);
 
 	if (cfg->opt & MONO_OPT_LOOP) {
 		/* FIXME: */

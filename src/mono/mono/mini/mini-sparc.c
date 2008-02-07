@@ -1482,8 +1482,13 @@ emit_call (MonoCompile *cfg, guint32 *code, guint32 patch_type, gconstpointer da
 	return code;
 }
 
-static void
-peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+void
+mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
+void
+mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n;
 
@@ -1717,6 +1722,11 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 }
 
+void
+mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
 static int
 mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 {
@@ -1737,12 +1747,6 @@ mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
 }
 
 /* FIXME: Strange loads from the stack in basic-float.cs:test_2_rem */
-
-void
-mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-	mono_local_regalloc (cfg, bb);
-}
 
 static void
 sparc_patch (guint32 *code, const gpointer target)
@@ -2360,9 +2364,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint32 *code = (guint32*)(cfg->native_code + cfg->code_len);
 	int max_len, cpos;
 	const char *spec;
-
-	if (cfg->opt & MONO_OPT_PEEPHOLE)
-		peephole_pass (cfg, bb);
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);

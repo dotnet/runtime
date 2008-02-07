@@ -1200,7 +1200,9 @@ int       mono_arch_max_epilog_size             (MonoCompile *cfg) MONO_INTERNAL
 guint8   *mono_arch_emit_prolog                 (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_arch_emit_epilog                 (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_arch_emit_exceptions             (MonoCompile *cfg) MONO_INTERNAL;
-void      mono_arch_local_regalloc              (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
+void      mono_arch_lowering_pass               (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
+void      mono_arch_peephole_pass_1             (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
+void      mono_arch_peephole_pass_2             (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
 void      mono_arch_output_basic_block          (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
 gboolean  mono_arch_has_unwind_info             (gconstpointer addr) MONO_INTERNAL;
 void      mono_arch_setup_jit_tls_data          (MonoJitTlsData *tls) MONO_INTERNAL;
