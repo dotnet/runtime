@@ -10907,6 +10907,7 @@ mono_normalize_opcodes (MonoCompile *cfg, MonoBasicBlock *bb)
 		remap_table [CEE_CONV_I2] = REMAP_OPCODE (CONV_TO_I2);
 		remap_table [CEE_CONV_U1] = REMAP_OPCODE (CONV_TO_U1);
 		remap_table [CEE_CONV_U2] = REMAP_OPCODE (CONV_TO_U2);
+		remap_table [CEE_CONV_R_UN] = REMAP_OPCODE (CONV_TO_R_UN);
 		remap_table [CEE_ADD] = REMAP_OPCODE (ADD);
 		remap_table [CEE_SUB] = REMAP_OPCODE (SUB);
 		remap_table [CEE_MUL] = REMAP_OPCODE (MUL);

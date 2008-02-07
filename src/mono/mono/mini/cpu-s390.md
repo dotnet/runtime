@@ -231,8 +231,7 @@ int_conv_to_u1: dest:i src1:i len:8
 int_conv_to_u2: dest:i src1:i len:16
 int_conv_to_u4: dest:i src1:i
 
-conv.r.un: dest:f src1:i len:30
-conv.u: dest:i src1:i len:4
+int_conv_to_r_un: dest:f src1:i len:30
 
 int_beq: len:8
 int_bge_un: len:8

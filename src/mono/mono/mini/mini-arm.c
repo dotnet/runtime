@@ -2696,7 +2696,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (arm_is_fpimm8 (ins->inst_offset));
 			ARM_LDFS (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
-		case CEE_CONV_R_UN: {
+		case OP_ICONV_TO_R_UN: {
 			int tmpreg;
 			tmpreg = ins->dreg == 0? 1: 0;
 			ARM_CMP_REG_IMM8 (code, ins->sreg1, 0);

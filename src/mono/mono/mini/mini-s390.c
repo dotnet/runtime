@@ -3708,7 +3708,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 			break;
-		case CEE_CONV_R_UN: {
+		case OP_ICONV_TO_R_UN: {
 			s390_cdfbr (code, ins->dreg, ins->sreg1);
 			s390_ltr   (code, ins->sreg1, ins->sreg1);
 			s390_jnl   (code, 12);

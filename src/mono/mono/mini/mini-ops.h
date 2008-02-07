@@ -338,6 +338,7 @@ MINI_OP(OP_IXOR_IMM,    "int_xor_imm")
 MINI_OP(OP_ISHL_IMM,    "int_shl_imm")
 MINI_OP(OP_ISHR_IMM,    "int_shr_imm")
 MINI_OP(OP_ISHR_UN_IMM, "int_shr_un_imm")
+MINI_OP(OP_ICONV_TO_R_UN,"int_conv_to_r_un")
 
 MINI_OP(OP_ICEQ,   "int_ceq")
 MINI_OP(OP_ICGT,   "int_cgt")
