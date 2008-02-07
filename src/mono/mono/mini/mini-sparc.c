@@ -2830,9 +2830,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				sparc_mov_reg_reg (code, ins->sreg1, ins->dreg);
 			break;
 		case OP_FMOVE:
-			/* Only used on V9 */
+#ifdef SPARCV9
 			if (ins->sreg1 != ins->dreg)
 				sparc_fmovd (code, ins->sreg1, ins->dreg);
+#else
+			sparc_fmovs (code, ins->sreg1, ins->dreg);
+			sparc_fmovs (code, ins->sreg1 + 1, ins->dreg + 1);
+#endif
 			break;
 		case OP_SPARC_SETFREG_FLOAT:
 			/* Only used on V9 */
@@ -3325,14 +3329,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_fstod (code, FP_SCRATCH_REG, ins->dreg);
 			break;
 		}
-		case OP_FMOVE:
-#ifdef SPARCV9
-			sparc_fmovd (code, ins->sreg1, ins->dreg);
-#else
-			sparc_fmovs (code, ins->sreg1, ins->dreg);
-			sparc_fmovs (code, ins->sreg1 + 1, ins->dreg + 1);
-#endif
-			break;
 		case CEE_CONV_R4: {
 			gint32 offset = mono_spillvar_offset_float (cfg, 0);
 #ifdef SPARCV9
