@@ -132,6 +132,9 @@ typedef struct {
 static void
 merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external);
 
+static int
+get_stack_type (MonoType *type);
+
 //////////////////////////////////////////////////////////////////
 
 
@@ -256,6 +259,12 @@ mono_type_get_underlying_type_any (MonoType *type)
 	if (type->type == MONO_TYPE_GENERICINST && type->data.generic_class->container_class->enumtype)
 		return type->data.generic_class->container_class->enum_basetype;
 	return type;
+}
+
+static const char*
+mono_type_get_stack_name (MonoType *type)
+{
+	return type_names [get_stack_type (type) & TYPE_MASK];
 }
 
 #define CTOR_REQUIRED_FLAGS (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
@@ -2015,6 +2024,8 @@ verify_type_compatibility_full (VerifyContext *ctx, MonoType *target, MonoType *
 
 handle_enum:
 	switch (target->type) {
+	case MONO_TYPE_VOID:
+		return candidate->type == MONO_TYPE_VOID;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
@@ -2154,12 +2165,22 @@ verify_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candi
 /*
  * is_compatible_boxed_valuetype:
  * 
- * Returns TRUE if @candidate / @stack is a boxed valuetype and @type is System.Object. 
+ * Returns TRUE if @candidate / @stack is a valid boxed valuetype. 
+ * 
+ * @type The source type. It it tested to be of the proper type.    
+ * @candidate type of the boxed valuetype.
+ * @stack stack slot of the boxed valuetype, separate from @candidade since one could be changed before calling this function
+ * @type_must_be_object if TRUE @type must be System.Object, otherwise can be any reference type.
+ * 
  */
 static gboolean
-is_compatible_boxed_valuetype (MonoType *type, MonoType *candidate, ILStackDesc *stack)
+is_compatible_boxed_valuetype (MonoType *type, MonoType *candidate, ILStackDesc *stack, gboolean type_must_be_object)
 {
-	return type->type == MONO_TYPE_OBJECT && !type->byref && mono_class_from_mono_type (candidate)->valuetype && !candidate->byref && stack_slot_is_boxed_value (stack);
+	if (type_must_be_object && type->type != MONO_TYPE_OBJECT)
+		return FALSE;
+	if (!type_must_be_object && !MONO_TYPE_IS_REFERENCE (type))
+		return FALSE;
+	return !type->byref && mono_class_from_mono_type (candidate)->valuetype && !candidate->byref && stack_slot_is_boxed_value (stack);
 }
 
 static int
@@ -2169,7 +2190,7 @@ verify_stack_type_compatibility (VerifyContext *ctx, MonoType *type, ILStackDesc
 	if (MONO_TYPE_IS_REFERENCE (type) && !type->byref && stack_slot_is_null_literal (stack))
 		return TRUE;
 
-	if (is_compatible_boxed_valuetype (type, candidate, stack))
+	if (is_compatible_boxed_valuetype (type, candidate, stack, TRUE))
 		return TRUE;
 
 	return verify_type_compatibility_full (ctx, type, candidate, FALSE);
@@ -2379,7 +2400,10 @@ store_local (VerifyContext *ctx, guint32 arg)
 	if (check_underflow (ctx, 1)) {
 		value = stack_pop(ctx);
 		if (!verify_stack_type_compatibility (ctx, ctx->locals [arg], value)) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in local store at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));	
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type [%s], type [%s] was expected in local store at 0x%04x",
+					stack_slot_get_name (value),
+					mono_type_get_stack_name (ctx->locals [arg]),
+					ctx->ip_offset));	
 		}
 	}
 }
@@ -2528,7 +2552,7 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 	VERIFIER_DEBUG ( printf ("idxa %d idxb %d\n", idxa, idxb); );
 
 	if (res == TYPE_INV) {
-		ADD_VERIFY_ERROR (ctx,
+		CODE_NOT_VERIFIABLE (ctx,
 			g_strdup_printf ("Compare and Branch instruction applyed to ill formed stack (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset));
 	} else if (res & NON_VERIFIABLE_RESULT) {
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare and Branch instruction is not verifiable (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset)); 
@@ -3796,12 +3820,12 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, g
 			//No decent super type found, use object
 			match_class = mono_defaults.object_class;
 			goto match_found;
-		} else if (is_compatible_boxed_valuetype (old_type, new_type, new_slot) || is_compatible_boxed_valuetype (new_type, old_type, old_slot)) {
+		} else if (is_compatible_boxed_valuetype (old_type, new_type, new_slot, FALSE) || is_compatible_boxed_valuetype (new_type, old_type, old_slot, FALSE)) {
 			match_class = mono_defaults.object_class;
 			goto match_found;
 		} 
 
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stacks, types not compatible at 0x%04x", ctx->ip_offset)); 
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stack at depth %d, types not compatible old [%s] new [%s] at 0x%04x", i, stack_slot_get_name (old_slot), stack_slot_get_name (new_slot), ctx->ip_offset)); 
 		goto end_verify;
 
 match_found:
