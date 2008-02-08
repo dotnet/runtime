@@ -8,49 +8,9 @@ label: len:0
 break: len:48
 jmp: len:48
 br: len:48
-beq: len:48
-bge: len:48
-bgt: len:48
-ble: len:48
-blt: len:48
-bne.un: len:48
-bge.un: len:48
-bgt.un: len:48
-ble.un: len:48
-blt.un: len:48
-add: dest:i src1:i src2:i len:48
-sub: dest:i src1:i src2:i len:48
-mul: dest:i src1:i src2:i len:48
-div: dest:a src1:a src2:i len:48 clob:d
-div.un: dest:a src1:a src2:i len:48 clob:d
-rem: dest:d src1:a src2:i len:48 clob:a
-rem.un: dest:d src1:a src2:i len:48 clob:a
-and: dest:i src1:i src2:i len:48
-or: dest:i src1:i src2:i len:48
-xor: dest:i src1:i src2:i len:48
-shl: dest:i src1:i src2:s len:48
-shr: dest:i src1:i src2:s len:48
-shr.un: dest:i src1:i src2:s len:48
-neg: dest:i src1:i len:48
-not: dest:i src1:i len:48
-conv.i1: dest:i src1:i len:48
-conv.i2: dest:i src1:i len:48
-conv.i4: dest:i src1:i len:48
-conv.i8: dest:i src1:i len:48
-conv.r4: dest:f src1:i len:112
-conv.r8: dest:f src1:i len:112
-conv.u4: dest:i src1:i len:112
-conv.u8: dest:i src1:i len:112
-conv.r.un: dest:f src1:i len:48
 throw: src1:i len:96
 rethrow: src1:i len:48
-conv.ovf.i4.un: dest:i src1:i len:96
-conv.ovf.u4.un: 
-conv.ovf.u4: dest:i src1:i len:48
 ckfinite: dest:f src1:f len:48
-conv.u2: dest:i src1:i len:48
-conv.u1: dest:i src1:i len:48
-conv.i: dest:i src1:i len:48
 mul.ovf: dest:i src1:i src2:i len:48
 # this opcode is handled specially in the code generator
 mul.ovf.un: dest:i src1:i src2:i len:48
@@ -149,24 +109,6 @@ cond_exc_c: len:48
 cond_exc_nc: len:48
 cond_exc_iov: len:48
 cond_exc_ic: len:48
-long_mul: dest:i src1:i src2:i len:48
-long_mul_imm: dest:i src1:i src2:i len:48
-long_div: dest:a src1:a src2:i len:48 clob:d
-long_div_un: dest:a src1:a src2:i len:48 clob:d
-long_rem: dest:d src1:a src2:i len:48 clob:a
-long_rem_un: dest:d src1:a src2:i len:48 clob:a
-long_shl: dest:i src1:i src2:s len:48
-long_shr: dest:i src1:i src2:s len:48
-long_shr_un: dest:i src1:i src2:s len:48
-long_conv_to_r4: dest:f src1:i len:48
-long_conv_to_r8: dest:f src1:i len:48
-long_conv_to_ovf_i: dest:i src1:i src2:i len:48
-long_mul_ovf: dest:i src1:i src2:i len:48
-long_mul_ovf_un: dest:i src1:i src2:i len:48
-long_conv_to_r_un: dest:f src1:i src2:i len:48 
-long_shr_imm: dest:i src1:i len:48
-long_shr_un_imm: dest:i src1:i len:48
-long_shl_imm: dest:i src1:i len:48
 float_beq: len:48
 float_bne_un: len:48
 float_blt: len:48
@@ -301,6 +243,56 @@ int_bge: len:48
 int_bge_un: len:48
 int_ble: len:48
 int_ble_un: len:48
+
+# 64 bit opcodes
+long_add: dest:i src1:i src2:i len:48
+long_sub: dest:i src1:i src2:i len:48
+long_mul: dest:i src1:i src2:i len:48
+long_div: dest:a src1:a src2:i len:48 clob:d
+long_div_un: dest:a src1:a src2:i len:48 clob:d
+long_rem: dest:d src1:a src2:i len:48 clob:a
+long_rem_un: dest:d src1:a src2:i len:48 clob:a
+long_and: dest:i src1:i src2:i len:48
+long_or: dest:i src1:i src2:i len:48
+long_xor: dest:i src1:i src2:i len:48
+long_shl: dest:i src1:i src2:s len:48
+long_shr: dest:i src1:i src2:s len:48
+long_shr_un: dest:i src1:i src2:s len:48
+long_neg: dest:i src1:i len:48
+long_not: dest:i src1:i len:48
+long_conv_to_i1: dest:i src1:i len:48
+long_conv_to_i2: dest:i src1:i len:48
+long_conv_to_i4: dest:i src1:i len:48
+long_conv_to_i8: dest:i src1:i len:48
+long_conv_to_r4: dest:f src1:i len:112
+long_conv_to_r8: dest:f src1:i len:112
+long_conv_to_u4: dest:i src1:i len:112
+long_conv_to_u8: dest:i src1:i len:112
+long_conv_to_r_un: dest:f src1:i len:48
+long_conv_to_ovf_i: dest:i src1:i src2:i len:48
+long_conv_to_ovf_i4_un: dest:i src1:i len:96
+long_conv_to_ovf_u4: dest:i src1:i len:48
+long_conv_to_u2: dest:i src1:i len:48
+long_conv_to_u1: dest:i src1:i len:48
+long_conv_to_i: dest:i src1:i len:48
+
+long_mul_imm: dest:i src1:i src2:i len:48
+long_mul_ovf: dest:i src1:i src2:i len:48
+long_mul_ovf_un: dest:i src1:i src2:i len:48
+long_shr_imm: dest:i src1:i len:48
+long_shr_un_imm: dest:i src1:i len:48
+long_shl_imm: dest:i src1:i len:48
+
+long_beq: len:48
+long_bge: len:48
+long_bgt: len:48
+long_ble: len:48
+long_blt: len:48
+long_bne_un: len:48
+long_bge_un: len:48
+long_bgt_un: len:48
+long_ble_un: len:48
+long_blt_un: len:48
 
 ia64_cmp4_eq: src1:i src2:i len:48
 ia64_cmp4_ne: src1:i src2:i len:48

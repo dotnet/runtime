@@ -150,6 +150,8 @@ long_add_ovf_un: len:22 dest:l src1:l src2:i clob:1
 long_add_ovf: len:28 dest:l src1:l src2:i clob:1
 long_conv_to_ovf_i: dest:i src1:i src2:i len:44
 long_conv_to_r_un: dest:f src1:i src2:i len:37 
+long_conv_to_r4: dest:f src1:i len:4
+long_conv_to_r8: dest:f src1:i len:4
 long_mul_ovf: len: 18
 long_mul_ovf_un: len: 18 
 long_sub: len: 18 dest:l src1:l src2:i clob:1
