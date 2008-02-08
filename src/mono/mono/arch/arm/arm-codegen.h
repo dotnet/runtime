@@ -790,22 +790,22 @@ typedef struct {
 #define ARM_DEF_HXFER_REG_MINUS_REG_COND(rm, h, s, rd, rn, ls, wb, p, cond) \
 	ARM_DEF_HXFER_REG_REG_UPDOWN_COND(rm, h, s, rd, rn, ls, wb, ARM_DOWN, p, cond)
 
-#define ARM_LDRH_REG_REG_COND(p, rm, rd, rn, cond) \
+#define ARM_LDRH_REG_REG_COND(p, rd, rm, rn, cond) \
 	ARM_EMIT(p, ARM_DEF_HXFER_REG_REG_COND(rm, 1, 0, rd, rn, ARMOP_LDR, 0, 1, cond))
-#define ARM_LDRH_REG_REG(p, rm, rd, rn) \
-	ARM_LDRH_REG_REG_COND(p, rm, rd, rn, ARMCOND_AL)
-#define ARM_LDRSH_REG_REG_COND(p, rm, rd, rn, cond) \
+#define ARM_LDRH_REG_REG(p, rd, rm, rn) \
+	ARM_LDRH_REG_REG_COND(p, rd, rm, rn, ARMCOND_AL)
+#define ARM_LDRSH_REG_REG_COND(p, rd, rm, rn, cond) \
 	ARM_EMIT(p, ARM_DEF_HXFER_REG_REG_COND(rm, 1, 1, rd, rn, ARMOP_LDR, 0, 1, cond))
-#define ARM_LDRSH_REG_REG(p, rm, rd, rn) \
-	ARM_LDRSH_REG_REG_COND(p, rm, rd, rn, ARMCOND_AL)
-#define ARM_LDRSB_REG_REG_COND(p, rm, rd, rn, cond) \
+#define ARM_LDRSH_REG_REG(p, rd, rm, rn) \
+	ARM_LDRSH_REG_REG_COND(p, rd, rm, rn, ARMCOND_AL)
+#define ARM_LDRSB_REG_REG_COND(p, rd, rm, rn, cond) \
 	ARM_EMIT(p, ARM_DEF_HXFER_REG_REG_COND(rm, 0, 1, rd, rn, ARMOP_LDR, 0, 1, cond))
-#define ARM_LDRSB_REG_REG(p, rm, rd, rn) ARM_LDRSB_REG_REG_COND(p, rm, rd, rn, ARMCOND_AL)
+#define ARM_LDRSB_REG_REG(p, rd, rm, rn) ARM_LDRSB_REG_REG_COND(p, rd, rm, rn, ARMCOND_AL)
 
-#define ARM_STRH_REG_REG_COND(p, rm, rd, rn, cond) \
+#define ARM_STRH_REG_REG_COND(p, rd, rm, rn, cond) \
 	ARM_EMIT(p, ARM_DEF_HXFER_REG_REG_COND(rm, 1, 0, rd, rn, ARMOP_STR, 0, 1, cond))
-#define ARM_STRH_REG_REG(p, rm, rd, rn) \
-	ARM_STRH_REG_REG_COND(p, rm, rd, rn, ARMCOND_AL)
+#define ARM_STRH_REG_REG(p, rd, rm, rn) \
+	ARM_STRH_REG_REG_COND(p, rd, rm, rn, ARMCOND_AL)
 
 
 
