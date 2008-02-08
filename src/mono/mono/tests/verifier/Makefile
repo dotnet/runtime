@@ -4,7 +4,7 @@
 
 compile-stamp: generate-stamp
 	for i in *.il; do ilasm2 $$i; done
-	for i in *.cs; do gmcs $$i; done
+	for i in *.cs; do gmcs /unsafe $$i; done
 	touch compile-stamp
 
 clean:
