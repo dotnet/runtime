@@ -3261,8 +3261,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			else if (ainfo->regtype == RegTypeFP) {
 				g_assert_not_reached ();
 			} else if (ainfo->regtype == RegTypeBase) {
-				g_assert (arm_is_imm12 (prev_sp_offset + ainfo->offset));
-				ARM_LDR_IMM (code, inst->dreg, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
+					ARM_LDR_IMM (code, inst->dreg, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+					ARM_LDR_REG_REG (code, inst->dreg, ARMREG_SP, ARMREG_IP);
+				}
 			} else
 				g_assert_not_reached ();
 
@@ -3285,8 +3289,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						ARM_STRH_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 					} else {
 						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
-						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
-						ARM_STRH_IMM (code, ainfo->reg, ARMREG_IP, 0);
+						/* note: the args are reversed in the macro */
+						ARM_STRH_REG_REG (code, inst->inst_basereg, ainfo->reg, ARMREG_IP);
 					}
 					break;
 				case 8:
@@ -3311,15 +3315,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
 				ARM_STR_IMM (code, ARMREG_R3, inst->inst_basereg, inst->inst_offset);
 			} else if (ainfo->regtype == RegTypeBase) {
-				g_assert (arm_is_imm12 (prev_sp_offset + ainfo->offset));
+				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, prev_sp_offset + ainfo->offset);
+					ARM_LDR_REG_REG (code, ARMREG_LR, ARMREG_SP, ARMREG_IP);
+				}
+
 				switch (ainfo->size) {
 				case 1:
-					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
-					g_assert (arm_is_imm12 (inst->inst_offset));
-					ARM_STRB_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+					if (arm_is_imm8 (inst->inst_offset)) {
+						ARM_STRB_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+						ARM_STRB_IMM (code, ARMREG_LR, ARMREG_IP, 0);
+					}
 					break;
 				case 2:
-					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
 					if (arm_is_imm8 (inst->inst_offset)) {
 						ARM_STRH_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
 					} else {
@@ -3329,18 +3342,36 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					}
 					break;
 				case 8:
-					g_assert (arm_is_imm12 (inst->inst_offset));
-					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
-					ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
-					g_assert (arm_is_imm12 (prev_sp_offset + ainfo->offset + 4));
-					g_assert (arm_is_imm12 (inst->inst_offset + 4));
-					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset + 4));
-					ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
+					if (arm_is_imm12 (inst->inst_offset)) {
+						ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+						ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, 0);
+					}
+					if (arm_is_imm12 (prev_sp_offset + ainfo->offset + 4)) {
+						ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset + 4));
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, prev_sp_offset + ainfo->offset + 4);
+						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, ARMREG_SP);
+						ARM_LDR_IMM (code, ARMREG_LR, ARMREG_IP, 0);
+					}
+					if (arm_is_imm12 (inst->inst_offset + 4)) {
+						ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset + 4);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset + 4);
+						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+						ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, 0);
+					}
 					break;
 				default:
-					g_assert (arm_is_imm12 (inst->inst_offset));
-					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, (prev_sp_offset + ainfo->offset));
-					ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+					if (arm_is_imm12 (inst->inst_offset)) {
+						ARM_STR_IMM (code, ARMREG_LR, inst->inst_basereg, inst->inst_offset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+						ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, 0);
+					}
 					break;
 				}
 			} else if (ainfo->regtype == RegTypeFP) {
@@ -3353,8 +3384,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				if (mono_class_from_mono_type (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
-					g_assert (arm_is_imm12 (doffset));
-					ARM_STR_IMM (code, ainfo->reg + cur_reg, inst->inst_basereg, doffset);
+					if (arm_is_imm12 (doffset)) {
+						ARM_STR_IMM (code, ainfo->reg + cur_reg, inst->inst_basereg, doffset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, doffset);
+						ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_IP, inst->inst_basereg);
+						ARM_STR_IMM (code, ainfo->reg + cur_reg, ARMREG_IP, 0);
+					}
 					soffset += sizeof (gpointer);
 					doffset += sizeof (gpointer);
 				}
