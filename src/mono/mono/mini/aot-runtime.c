@@ -2066,6 +2066,9 @@ guint8*
 mono_aot_get_plt_entry (guint8 *code)
 {
 	MonoAotModule *aot_module = find_aot_module (code);
+#if defined(__arm__)
+	guint32 ins;
+#endif
 
 	if (!aot_module)
 		return NULL;
@@ -2079,7 +2082,7 @@ mono_aot_get_plt_entry (guint8 *code)
 			return target;
 	}
 #elif defined(__arm__)
-	guint32 ins = ((guint32*)code) [-1];
+	ins = ((guint32*)(gpointer)code) [-1];
 
 	/* Should be a 'bl' */
 	if ((((ins >> 25) & 0x7) == 0x5) && (((ins >> 24) & 0x1) == 0x1)) {
