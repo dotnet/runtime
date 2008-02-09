@@ -535,7 +535,11 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V2));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V3));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V4));
-	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V5));
+	if (cfg->compile_aot)
+		/* V5 is reserved for holding the IMT method */
+		cfg->used_int_regs |= (1 << ARMREG_V5);
+	else
+		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V5));
 	/*regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V6));*/
 	/*regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V7));*/
 
@@ -2456,12 +2460,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->sreg1 != ARMREG_LR);
 			call = (MonoCallInst*)ins;
 			if (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-				if (cfg->compile_aot)
-					/* FIXME: */
-					cfg->disable_aot = 1;
 				ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_PC, 4);
 				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
-				*((gpointer*)code) = (gpointer)call->method;
+				if (cfg->compile_aot) {
+					/* 
+					 * We can't embed the method in the code stream in PIC code. Instead,
+					 * we put it in V5 in code emitted by mono_arch_emit_imt_argument (),
+					 * and embed NULL here to signal the IMT thunk that the call is made
+					 * from AOT code.
+					 */
+					*((gpointer*)code) = NULL;
+				} else {
+					*((gpointer*)code) = (gpointer)call->method;
+				}
 				code += 4;
 			} else {
 				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
@@ -3543,13 +3554,12 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
      
 	/* 
 	 * make sure we have enough space for exceptions
-	 * 12 is the simulated call to throw_exception_by_name
 	 */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC) {
 			i = exception_id_by_name (patch_info->data.target);
 			if (!exc_throw_found [i]) {
-				max_epilog_size += 12;
+				max_epilog_size += 32;
 				exc_throw_found [i] = TRUE;
 			}
 		}
@@ -3567,8 +3577,10 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_EXC: {
+			MonoClass *exc_class;
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
 			const char *ex_name = patch_info->data.target;
+
 			i = exception_id_by_name (patch_info->data.target);
 			if (exc_throw_pos [i]) {
 				arm_patch (ip, exc_throw_pos [i]);
@@ -3578,17 +3590,17 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				exc_throw_pos [i] = code;
 			}
 			arm_patch (ip, code);
-			//*(int*)code = 0xef9f0001;
-			//code += 4;
-			ARM_NOP (code);
-			/*mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);*/
+
+			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
+			g_assert (exc_class);
+
+			ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR);
 			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-			/* we got here from a conditional call, so the calling ip is set in lr already */
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-			patch_info->data.name = "mono_arch_throw_exception_by_name";
+			patch_info->data.name = "mono_arch_throw_corlib_exception";
 			patch_info->ip.i = code - cfg->native_code;
-			ARM_B (code, 0);
-			*(gconstpointer*)code = ex_name;
+			ARM_BL (code, 0);
+			*(gconstpointer*)code = exc_class->type_token;
 			code += 4;
 			break;
 		}
@@ -3693,6 +3705,18 @@ mono_arch_fixup_jinfo (MonoCompile *cfg)
 void
 mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call)
 {
+	if (cfg->compile_aot) {
+		int method_reg = mono_regstate_next_int (cfg->rs);
+		MonoInst *ins;
+
+		MONO_INST_NEW (cfg, ins, OP_AOTCONST);
+		ins->dreg = method_reg;
+		ins->inst_p0 = call->method;
+		ins->inst_c1 = MONO_PATCH_INFO_METHODCONST;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
+	}
 }
 
 MonoMethod*
@@ -3705,7 +3729,11 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 		g_warning ("invalid code stream, instruction before IMT value is not a LDC in %s() (code %p value 0: 0x%x -1: 0x%x -2: 0x%x)", __FUNCTION__, code, code_ptr [2], code_ptr [1], code_ptr [0]);
 		g_assert (IS_LDR_PC (code_ptr [0]));
 	}
-	return (MonoMethod*) code_ptr [1];
+	if (code_ptr [1] == 0)
+		/* This is AOTed code, the IMT method is in V5 */
+		return (MonoMethod*)regs [ARMREG_V5];
+	else
+		return (MonoMethod*) code_ptr [1];
 }
 
 MonoObject*
@@ -3716,7 +3744,7 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
 
 
 #define ENABLE_WRONG_METHOD_CHECK 0
-#define BASE_SIZE (4 * 4)
+#define BASE_SIZE (6 * 4)
 #define BSEARCH_ENTRY_SIZE (4 * 4)
 #define CMP_SIZE (3 * 4)
 #define BRANCH_SIZE (1 * 4)
@@ -3778,6 +3806,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, -4);
 	vtable_target = code;
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+
+	/* R0 == 0 means we are called from AOT code. In this case, V5 contains the IMT method */
+	ARM_CMP_REG_IMM8 (code, ARMREG_R0, 0);
+	ARM_MOV_REG_REG_COND (code, ARMREG_R0, ARMREG_V5, ARMCOND_EQ);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
