@@ -2632,6 +2632,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			
 			ic = class->interfaces_packed [i];
 			ic_offset = mono_class_interface_offset (class, ic);
+
+			mono_class_setup_methods (ic);
 			
 			// Check if this interface is explicitly implemented (instead of just inherited)
 			if (parent != NULL) {
