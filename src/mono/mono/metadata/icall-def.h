@@ -428,9 +428,10 @@ ICALL(ASSEM_19, "MonoDebugger_GetMethodToken", ves_icall_MonoDebugger_GetMethodT
 ICALL(ASSEM_20, "get_EntryPoint", ves_icall_System_Reflection_Assembly_get_EntryPoint)
 ICALL(ASSEM_21, "get_ReflectionOnly", ves_icall_System_Reflection_Assembly_get_ReflectionOnly)
 ICALL(ASSEM_22, "get_code_base", ves_icall_System_Reflection_Assembly_get_code_base)
-ICALL(ASSEM_23, "get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache)
-ICALL(ASSEM_24, "get_location", ves_icall_System_Reflection_Assembly_get_location)
-ICALL(ASSEM_25, "load_with_partial_name", ves_icall_System_Reflection_Assembly_load_with_partial_name)
+ICALL(ASSEM_23, "get_fullname", ves_icall_System_Reflection_Assembly_get_fullName)
+ICALL(ASSEM_24, "get_global_assembly_cache", ves_icall_System_Reflection_Assembly_get_global_assembly_cache)
+ICALL(ASSEM_25, "get_location", ves_icall_System_Reflection_Assembly_get_location)
+ICALL(ASSEM_26, "load_with_partial_name", ves_icall_System_Reflection_Assembly_load_with_partial_name)
 
 ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_1)
 ICALL(ASSEMN_1, "ParseName", ves_icall_System_Reflection_AssemblyName_ParseName)

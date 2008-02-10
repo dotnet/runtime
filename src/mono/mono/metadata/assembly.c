@@ -695,12 +695,12 @@ char*
 mono_stringify_assembly_name (MonoAssemblyName *aname)
 {
 	return g_strdup_printf (
-		"%s, Version=%d.%d.%d.%d, Culture=%s%s%s",
+		"%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
 		aname->name,
 		aname->major, aname->minor, aname->build, aname->revision,
 		aname->culture && *aname->culture? aname->culture: "neutral",
-		aname->public_key_token [0] ? ", PublicKeyToken=" : "",
-		aname->public_key_token [0] ? (char *)aname->public_key_token : "");
+		aname->public_key_token [0] ? (char *)aname->public_key_token : "null",
+		(aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG) ? ", Retargetable=Yes" : "");
 }
 
 static gchar*
