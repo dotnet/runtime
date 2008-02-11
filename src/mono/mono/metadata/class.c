@@ -1213,7 +1213,8 @@ mono_class_layout_fields (MonoClass *class)
 				continue;
 
 			size = mono_type_size (field->type, &align);
-			
+			class->min_align = MAX (align, class->min_align);
+
 			/*
 			 * When we get here, field->offset is already set by the
 			 * loader (for either runtime fields or fields loaded from metadata).
