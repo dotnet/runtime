@@ -2644,11 +2644,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_fnorm_d_sf (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_LCONV_TO_R4:
+		case OP_ICONV_TO_R4:
 			ia64_setf_sig (code, ins->dreg, ins->sreg1);
 			ia64_fcvt_xf (code, ins->dreg, ins->dreg);
 			ia64_fnorm_s_sf (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_LCONV_TO_R8:
+		case OP_ICONV_TO_R8:
 			ia64_setf_sig (code, ins->dreg, ins->sreg1);
 			ia64_fcvt_xf (code, ins->dreg, ins->dreg);
 			ia64_fnorm_d_sf (code, ins->dreg, ins->dreg, 0);

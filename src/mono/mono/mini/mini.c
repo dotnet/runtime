@@ -10899,8 +10899,8 @@ mono_normalize_opcodes (MonoCompile *cfg, MonoBasicBlock *bb)
 		remap_table [CEE_CONV_OVF_I4_UN] = OP_LCONV_TO_OVF_I4_UN;
 #else
 #endif
-		remap_table [CEE_CONV_R4] = REMAP_OPCODE (CONV_TO_R4);
-		remap_table [CEE_CONV_R8] = REMAP_OPCODE (CONV_TO_R8);
+		remap_table [CEE_CONV_R4] = OP_ICONV_TO_R4;
+		remap_table [CEE_CONV_R8] = OP_ICONV_TO_R8;
 		remap_table [CEE_CONV_I4] = OP_MOVE;
 		remap_table [CEE_CONV_U4] = OP_MOVE;
 		remap_table [CEE_CONV_I1] = REMAP_OPCODE (CONV_TO_I1);

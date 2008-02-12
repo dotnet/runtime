@@ -243,6 +243,8 @@ int_bge: len:48
 int_bge_un: len:48
 int_ble: len:48
 int_ble_un: len:48
+int_conv_to_r4: dest:f src1:i len:112
+int_conv_to_r8: dest:f src1:i len:112
 
 # 64 bit opcodes
 long_add: dest:i src1:i src2:i len:48
