@@ -606,19 +606,19 @@ freg: OP_FCONV_TO_R4 (freg) "0" {
 reg: CEE_ADD(reg, CEE_LDIND_I4 (base)) {
 	MonoInst *base = state->right->left->tree;
 
-	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_ADD_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
+	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_ADD_REG_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
 } 
 
 reg: CEE_SUB(reg, CEE_LDIND_I4 (base)) {
 	MonoInst *base = state->right->left->tree;
 
-	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_SUB_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
+	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_SUB_REG_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
 } 
 
 reg: CEE_MUL(reg, CEE_LDIND_I4 (base)) {
 	MonoInst *base = state->right->left->tree;
 
-	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_MUL_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
+	MONO_EMIT_BIALU_MEMBASE (cfg, tree, OP_X86_MUL_REG_MEMBASE, state->reg1, state->left->reg1, base->inst_basereg, base->inst_offset);
 } 
 
 reg: OP_LSHL (reg, reg),

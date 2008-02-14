@@ -281,9 +281,14 @@ x86_fpop: src1:f len:3
 x86_fp_load_i8: dest:f src1:b len:8
 x86_fp_load_i4: dest:f src1:b len:8
 x86_seteq_membase: src1:b len:9
-x86_add_membase: dest:i src1:i src2:b clob:1 len:13
-x86_sub_membase: dest:i src1:i src2:b clob:1 len:13
-x86_mul_membase: dest:i src1:i src2:b clob:1 len:14
+
+x86_add_reg_membase: dest:i src1:i src2:b clob:1 len:13
+x86_sub_reg_membase: dest:i src1:i src2:b clob:1 len:13
+x86_mul_reg_membase: dest:i src1:i src2:b clob:1 len:13
+x86_and_reg_membase: dest:i src1:i src2:b clob:1 len:13
+x86_or_reg_membase: dest:i src1:i src2:b clob:1 len:13
+x86_xor_reg_membase: dest:i src1:i src2:b clob:1 len:13
+
 amd64_test_null: src1:i len:5
 amd64_icompare_membase_reg: src1:b src2:i len:8
 amd64_icompare_membase_imm: src1:b len:13

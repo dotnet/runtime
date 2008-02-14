@@ -2689,12 +2689,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_membase_size (code, X86_XOR, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
 
-		case OP_X86_ADD_MEMBASE:
-			amd64_alu_reg_membase_size (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
-			break;
-		case OP_X86_SUB_MEMBASE:
-			amd64_alu_reg_membase_size (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
-			break;
 		case OP_X86_ADD_MEMBASE_IMM:
 			/* FIXME: Make a 64 version too */
 			amd64_alu_membase_imm_size (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
@@ -2742,8 +2736,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_DEC_REG:
 			amd64_dec_reg_size (code, ins->dreg, 4);
 			break;
-		case OP_X86_MUL_MEMBASE:
-		case OP_X86_MUL_MEMBASE_REG:
+		case OP_X86_MUL_REG_MEMBASE:
 			amd64_imul_reg_membase_size (code, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
 		case OP_AMD64_ICOMPARE_MEMBASE_REG:
