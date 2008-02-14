@@ -2954,8 +2954,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		case OP_SPARC_LOCALLOC_IMM: {
-			gint32 offset = ins->inst_c0;
+		case OP_LOCALLOC_IMM: {
+			gint32 offset = ins->inst_imm;
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 			/* Perform stack touching */
