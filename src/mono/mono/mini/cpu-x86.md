@@ -274,9 +274,11 @@ x86_fp_load_i8: dest:f src1:b len:7
 x86_fp_load_i4: dest:f src1:b len:7
 x86_seteq_membase: src1:b len:7
 x86_setne_membase: src1:b len:7
-x86_add_membase: dest:i src1:i src2:b clob:1 len:11
-x86_sub_membase: dest:i src1:i src2:b clob:1 len:11
-x86_mul_membase: dest:i src1:i src2:b clob:1 len:13
+
+x86_add_reg_membase: dest:i src1:i src2:b clob:1 len:11
+x86_sub_reg_membase: dest:i src1:i src2:b clob:1 len:11
+x86_mul_reg_membase: dest:i src1:i src2:b clob:1 len:13
+
 adc: dest:i src1:i src2:i len:2 clob:1
 addcc: dest:i src1:i src2:i len:2 clob:1
 subcc: dest:i src1:i src2:i len:2 clob:1

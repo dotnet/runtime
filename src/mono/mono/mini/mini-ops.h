@@ -601,9 +601,6 @@ MINI_OP(OP_X86_FP_LOAD_I8,         "x86_fp_load_i8")
 MINI_OP(OP_X86_FP_LOAD_I4,         "x86_fp_load_i4")
 MINI_OP(OP_X86_SETEQ_MEMBASE,      "x86_seteq_membase")
 MINI_OP(OP_X86_SETNE_MEMBASE,      "x86_setne_membase")
-MINI_OP(OP_X86_ADD_MEMBASE,        "x86_add_membase")
-MINI_OP(OP_X86_SUB_MEMBASE,        "x86_sub_membase")
-MINI_OP(OP_X86_MUL_MEMBASE,        "x86_mul_membase")
 MINI_OP(OP_X86_OUTARG_ALIGN_STACK,     "x86_outarg_align_stack")
 #endif
 

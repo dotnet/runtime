@@ -2225,13 +2225,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_ADD_MEMBASE_IMM:
 			x86_alu_membase_imm (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->inst_imm);
 			break;
-		case OP_X86_ADD_MEMBASE:
+		case OP_X86_ADD_REG_MEMBASE:
 			x86_alu_reg_membase (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset);
 			break;
 		case OP_X86_SUB_MEMBASE_IMM:
 			x86_alu_membase_imm (code, X86_SUB, ins->inst_basereg, ins->inst_offset, ins->inst_imm);
 			break;
-		case OP_X86_SUB_MEMBASE:
+		case OP_X86_SUB_REG_MEMBASE:
 			x86_alu_reg_membase (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset);
 			break;
 		case OP_X86_AND_MEMBASE_IMM:
@@ -2255,7 +2255,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_DEC_REG:
 			x86_dec_reg (code, ins->dreg);
 			break;
-		case OP_X86_MUL_MEMBASE:
+		case OP_X86_MUL_REG_MEMBASE:
 			x86_imul_reg_membase (code, ins->sreg1, ins->sreg2, ins->inst_offset);
 			break;
 		case OP_BREAK:
