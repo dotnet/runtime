@@ -1672,6 +1672,92 @@ mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 	return mono_type_to_stind (type);
 }
 
+int
+mono_op_imm_to_op (int opcode)
+{
+	switch (opcode) {
+	case OP_ADD_IMM:
+		return OP_PADD;
+	case OP_IADD_IMM:
+		return OP_IADD;
+	case OP_LADD_IMM:
+		return OP_LADD;
+	case OP_ISUB_IMM:
+		return OP_ISUB;
+	case OP_LSUB_IMM:
+		return OP_LSUB;
+	case OP_AND_IMM:
+#if SIZEOF_VOID_P == 4
+		return OP_IAND;
+#else
+		return OP_LAND;
+#endif
+	case OP_IAND_IMM:
+		return OP_IAND;
+	case OP_LAND_IMM:
+		return OP_LAND;
+	case OP_IOR_IMM:
+		return OP_IOR;
+	case OP_LOR_IMM:
+		return OP_LOR;
+	case OP_IXOR_IMM:
+		return OP_IXOR;
+	case OP_LXOR_IMM:
+		return OP_LXOR;
+	case OP_ISHL_IMM:
+		return OP_ISHL;
+	case OP_LSHL_IMM:
+		return OP_LSHL;
+	case OP_ISHR_IMM:
+		return OP_ISHR;
+	case OP_LSHR_IMM:
+		return OP_LSHR;
+	case OP_ISHR_UN_IMM:
+		return OP_ISHR_UN;
+	case OP_LSHR_UN_IMM:
+		return OP_LSHR_UN;
+	case OP_IDIV_IMM:
+		return OP_IDIV;
+	case OP_IDIV_UN_IMM:
+		return OP_IDIV_UN;
+	case OP_IREM_UN_IMM:
+		return OP_IREM_UN;
+	case OP_IREM_IMM:
+		return OP_IREM;
+	case OP_DIV_IMM:
+#if SIZEOF_VOID_P == 4
+		return OP_IDIV;
+#else
+		return OP_LDIV;
+#endif
+	case OP_REM_IMM:
+#if SIZEOF_VOID_P == 4
+		return OP_IREM;
+#else
+		return OP_LREM;
+#endif
+	case OP_ADDCC_IMM:
+		return OP_ADDCC;
+	case OP_ADC_IMM:
+		return OP_ADC;
+	case OP_SUBCC_IMM:
+		return OP_SUBCC;
+	case OP_SBB_IMM:
+		return OP_SBB;
+	case OP_IADC_IMM:
+		return OP_IADC;
+	case OP_ISBB_IMM:
+		return OP_ISBB;
+	case OP_COMPARE_IMM:
+		return OP_COMPARE;
+	case OP_ICOMPARE_IMM:
+		return OP_ICOMPARE;
+	default:
+		printf ("%s\n", mono_inst_name (opcode));
+		g_assert_not_reached ();
+	}
+}
+
 /*
  * When we need a pointer to the current domain many times in a method, we
  * call mono_domain_get() once and we store the result in a local variable.

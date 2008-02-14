@@ -85,7 +85,8 @@ mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
  */
 
 const char*
-mono_arch_regname (int reg) {
+mono_arch_regname (int reg)
+{
 	switch (reg) {
 	case AMD64_RAX: return "%rax";
 	case AMD64_RBX: return "%rbx";
@@ -1663,6 +1664,7 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_COMPARE_IMM:
+		case OP_LCOMPARE_IMM:
 			/* OP_COMPARE_IMM (reg, 0) 
 			 * --> 
 			 * OP_AMD64_TEST_NULL (reg) 
@@ -2113,26 +2115,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_REM_IMM:
 		case OP_IDIV_IMM:
 		case OP_IREM_IMM:
+		case OP_IDIV_UN_IMM:
+		case OP_IREM_UN_IMM:
 			NEW_INS (cfg, ins, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_regstate_next_int (cfg->rs);
-			switch (ins->opcode) {
-			case OP_DIV_IMM:
-				ins->opcode = OP_LDIV;
-				break;
-			case OP_REM_IMM:
-				ins->opcode = OP_LREM;
-				break;
-			case OP_IDIV_IMM:
-				ins->opcode = OP_IDIV;
-				break;
-			case OP_IREM_IMM:
-				ins->opcode = OP_IREM;
-				break;
-			}
+			ins->opcode = mono_op_imm_to_op (ins->opcode);
 			ins->sreg2 = temp->dreg;
 			break;
 		case OP_COMPARE_IMM:
+		case OP_LCOMPARE_IMM:
 			if (!amd64_is_imm32 (ins->inst_imm)) {
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_imm;
@@ -2585,9 +2577,31 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, ins->inst_imm, 8);
 			break;
+		case OP_LOAD_MEM:
+		case OP_LOADI8_MEM:
+			// FIXME: Decompose this earlier
+			if (amd64_is_imm32 (ins->inst_imm))
+				amd64_mov_reg_mem (code, ins->dreg, ins->inst_imm, sizeof (gpointer));
+			else {
+				amd64_mov_reg_imm (code, ins->dreg, ins->inst_imm);
+				amd64_mov_reg_membase (code, ins->dreg, ins->dreg, 0, 8);
+			}
+			break;
+		case OP_LOADI4_MEM:
+			amd64_mov_reg_imm (code, ins->dreg, ins->inst_imm);
+			amd64_movsxd_reg_membase (code, ins->dreg, ins->dreg, 0);
+			break;
 		case OP_LOADU4_MEM:
 			amd64_mov_reg_imm (code, ins->dreg, ins->inst_p0);
 			amd64_mov_reg_membase (code, ins->dreg, ins->dreg, 0, 4);
+			break;
+		case OP_LOADU1_MEM:
+			amd64_mov_reg_imm (code, ins->dreg, ins->inst_imm);
+			amd64_widen_membase (code, ins->dreg, ins->dreg, 0, FALSE, FALSE);
+			break;
+		case OP_LOADU2_MEM:
+			amd64_mov_reg_imm (code, ins->dreg, ins->inst_imm);
+			amd64_widen_membase (code, ins->dreg, ins->dreg, 0, FALSE, TRUE);
 			break;
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI8_MEMBASE:
@@ -2616,17 +2630,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_memindex_size (code, ins->dreg, ins->inst_basereg, 0, ins->inst_indexreg, 0, 8);
 			break;
 		case OP_LCONV_TO_I1:
+		case OP_ICONV_TO_I1:
 		case OP_SEXT_I1:
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, TRUE, FALSE);
 			break;
 		case OP_LCONV_TO_I2:
+		case OP_ICONV_TO_I2:
 		case OP_SEXT_I2:
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, TRUE, TRUE);
 			break;
 		case OP_LCONV_TO_U1:
+		case OP_ICONV_TO_U1:
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, FALSE, FALSE);
 			break;
 		case OP_LCONV_TO_U2:
+		case OP_ICONV_TO_U2:
 			amd64_widen_reg (code, ins->dreg, ins->sreg1, FALSE, TRUE);
 			break;
 		case OP_ZEXT_I4:
@@ -2635,12 +2653,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SEXT_I4:
 			amd64_movsxd_reg_reg (code, ins->dreg, ins->sreg1);
-			break;			
+			break;
 		case OP_COMPARE:
 		case OP_LCOMPARE:
 			amd64_alu_reg_reg (code, X86_CMP, ins->sreg1, ins->sreg2);
 			break;
 		case OP_COMPARE_IMM:
+		case OP_LCOMPARE_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm (code, X86_CMP, ins->sreg1, ins->inst_imm);
 			break;
@@ -2653,19 +2672,63 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_AMD64_TEST_NULL:
 			amd64_test_reg_reg (code, ins->sreg1, ins->sreg1);
 			break;
+
+		case OP_X86_ADD_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
+			break;
+		case OP_X86_SUB_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
+			break;
+		case OP_X86_AND_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_AND, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
+			break;
+		case OP_X86_OR_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_OR, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
+			break;
+		case OP_X86_XOR_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_XOR, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
+			break;
+
+		case OP_X86_ADD_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
+			break;
+		case OP_X86_SUB_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
+			break;
 		case OP_X86_ADD_MEMBASE_IMM:
 			/* FIXME: Make a 64 version too */
 			amd64_alu_membase_imm_size (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
-			break;
-		case OP_X86_ADD_MEMBASE:
-			amd64_alu_reg_membase_size (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
 		case OP_X86_SUB_MEMBASE_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_membase_imm_size (code, X86_SUB, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
 			break;
-		case OP_X86_SUB_MEMBASE:
-			amd64_alu_reg_membase_size (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
+		case OP_X86_AND_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_AND, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
+			break;
+		case OP_X86_OR_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_OR, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
+			break;
+		case OP_X86_XOR_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_XOR, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
+			break;
+		case OP_X86_ADD_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
+			break;
+		case OP_X86_SUB_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_SUB, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
+			break;
+		case OP_X86_AND_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_AND, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
+			break;
+		case OP_X86_OR_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_OR, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
+			break;
+		case OP_X86_XOR_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_XOR, ins->inst_basereg, ins->inst_offset, ins->sreg2, 4);
 			break;
 		case OP_X86_INC_MEMBASE:
 			amd64_inc_membase_size (code, ins->inst_basereg, ins->inst_offset, 4);
@@ -2680,6 +2743,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_dec_reg_size (code, ins->dreg, 4);
 			break;
 		case OP_X86_MUL_MEMBASE:
+		case OP_X86_MUL_MEMBASE_REG:
 			amd64_imul_reg_membase_size (code, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
 		case OP_AMD64_ICOMPARE_MEMBASE_REG:
@@ -2688,11 +2752,84 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_AMD64_ICOMPARE_MEMBASE_IMM:
 			amd64_alu_membase_imm_size (code, X86_CMP, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
 			break;
+		case OP_AMD64_COMPARE_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_CMP, ins->inst_basereg, ins->inst_offset, ins->sreg2, 8);
+			break;
+		case OP_AMD64_COMPARE_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_CMP, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 8);
+			break;
+		case OP_X86_COMPARE_MEMBASE8_IMM:
+			amd64_alu_membase8_imm_size (code, X86_CMP, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 4);
+			break;
 		case OP_AMD64_ICOMPARE_REG_MEMBASE:
 			amd64_alu_reg_membase_size (code, X86_CMP, ins->sreg1, ins->sreg2, ins->inst_offset, 4);
 			break;
+		case OP_AMD64_COMPARE_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_CMP, ins->sreg1, ins->sreg2, ins->inst_offset, 8);
+			break;
+
+		case OP_AMD64_ADD_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_ADD, ins->sreg1, ins->sreg2, ins->inst_offset, 8);
+			break;
+		case OP_AMD64_SUB_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_SUB, ins->sreg1, ins->sreg2, ins->inst_offset, 8);
+			break;
+		case OP_AMD64_AND_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_AND, ins->sreg1, ins->sreg2, ins->inst_offset, 8);
+			break;
+		case OP_AMD64_OR_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_OR, ins->sreg1, ins->sreg2, ins->inst_offset, 8);
+			break;
+		case OP_AMD64_XOR_REG_MEMBASE:
+			amd64_alu_reg_membase_size (code, X86_XOR, ins->sreg1, ins->sreg2, ins->inst_offset, 8);
+			break;
+
+		case OP_AMD64_ADD_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->sreg2, 8);
+			break;
+		case OP_AMD64_SUB_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_SUB, ins->inst_basereg, ins->inst_offset, ins->sreg2, 8);
+			break;
+		case OP_AMD64_AND_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_AND, ins->inst_basereg, ins->inst_offset, ins->sreg2, 8);
+			break;
+		case OP_AMD64_OR_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_OR, ins->inst_basereg, ins->inst_offset, ins->sreg2, 8);
+			break;
+		case OP_AMD64_XOR_MEMBASE_REG:
+			amd64_alu_membase_reg_size (code, X86_XOR, ins->inst_basereg, ins->inst_offset, ins->sreg2, 8);
+			break;
+
+		case OP_AMD64_ADD_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_ADD, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 8);
+			break;
+		case OP_AMD64_SUB_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_SUB, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 8);
+			break;
+		case OP_AMD64_AND_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_AND, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 8);
+			break;
+		case OP_AMD64_OR_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_OR, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 8);
+			break;
+		case OP_AMD64_XOR_MEMBASE_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_alu_membase_imm_size (code, X86_XOR, ins->inst_basereg, ins->inst_offset, ins->inst_imm, 8);
+			break;
+
 		case OP_BREAK:
 			amd64_breakpoint (code);
+			break;
+		case OP_NOP:
+		case OP_DUMMY_USE:
+		case OP_DUMMY_STORE:
+		case OP_NOT_REACHED:
+		case OP_NOT_NULL:
 			break;
 		case OP_ADDCC:
 		case OP_LADD:
@@ -2702,6 +2839,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_reg (code, X86_ADC, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ADD_IMM:
+		case OP_LADD_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm (code, X86_ADD, ins->dreg, ins->inst_imm);
 			break;
@@ -2717,6 +2855,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_reg (code, X86_SBB, ins->sreg1, ins->sreg2);
 			break;
 		case OP_SUB_IMM:
+		case OP_LSUB_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm (code, X86_SUB, ins->dreg, ins->inst_imm);
 			break;
@@ -2728,6 +2867,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_reg (code, X86_AND, ins->sreg1, ins->sreg2);
 			break;
 		case OP_AND_IMM:
+		case OP_LAND_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm (code, X86_AND, ins->sreg1, ins->inst_imm);
 			break;
@@ -2850,6 +2990,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_reg (code, X86_OR, ins->sreg1, ins->sreg2);
 			break;
 		case OP_OR_IMM:
+		case OP_LOR_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm (code, X86_OR, ins->sreg1, ins->inst_imm);
 			break;
@@ -2857,6 +2998,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_reg (code, X86_XOR, ins->sreg1, ins->sreg2);
 			break;
 		case OP_XOR_IMM:
+		case OP_LXOR_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm (code, X86_XOR, ins->sreg1, ins->inst_imm);
 			break;
@@ -3026,13 +3168,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IBGT:
 		case OP_IBGE:
 		case OP_IBLE:
+		case OP_LBEQ:
+		case OP_LBLT:
+		case OP_LBGT:
+		case OP_LBGE:
+		case OP_LBLE:
 		case OP_IBNE_UN:
 		case OP_IBLT_UN:
 		case OP_IBGT_UN:
 		case OP_IBGE_UN:
 		case OP_IBLE_UN:
+		case OP_LBNE_UN:
+		case OP_LBLT_UN:
+		case OP_LBGT_UN:
+		case OP_LBGE_UN:
+		case OP_LBLE_UN:
 			EMIT_COND_BRANCH (ins, cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)]);
 			break;
+
 		case OP_LNOT:
 			amd64_not_reg (code, ins->sreg1);
 			break;
@@ -3269,6 +3422,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_emit_stack_alloc (code, ins);
 			amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
 			break;
+		case OP_LOCALLOC_IMM: {
+			guint32 size = ins->inst_imm;
+			size = (size + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
+
+			if (ins->flags & MONO_INST_INIT) {
+				/* FIXME: Optimize this */
+				amd64_mov_reg_imm (code, ins->dreg, size);
+				ins->sreg1 = ins->dreg;
+
+				code = mono_emit_stack_alloc (code, ins);
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
+			} else {
+				amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, size);
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
+			}
+			break;
+		}
 		case OP_THROW: {
 			amd64_mov_reg_reg (code, AMD64_ARG_REG1, ins->sreg1, 8);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
@@ -3311,8 +3481,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;
-		case OP_NOP:
-			break;
 		case OP_BR:
 			if (ins->flags & MONO_INST_BRLABEL) {
 				if (ins->inst_i0->inst_c0) {
@@ -3342,14 +3510,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_jump_reg (code, ins->sreg1);
 			break;
 		case OP_CEQ:
+		case OP_LCEQ:
 		case OP_ICEQ:
 		case OP_CLT:
+		case OP_LCLT:
 		case OP_ICLT:
 		case OP_CGT:
 		case OP_ICGT:
+		case OP_LCGT:
 		case OP_CLT_UN:
+		case OP_LCLT_UN:
 		case OP_ICLT_UN:
 		case OP_CGT_UN:
+		case OP_LCGT_UN:
 		case OP_ICGT_UN:
 			amd64_set_reg (code, cc_table [mono_opcode_to_cond (ins->opcode)], ins->dreg, cc_signed_table [mono_opcode_to_cond (ins->opcode)]);
 			amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
@@ -3364,6 +3537,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_GE_UN:
 		case OP_COND_EXC_LE:
 		case OP_COND_EXC_LE_UN:
+		case OP_COND_EXC_IEQ:
+		case OP_COND_EXC_INE_UN:
+		case OP_COND_EXC_ILT:
+		case OP_COND_EXC_ILT_UN:
+		case OP_COND_EXC_IGT:
+		case OP_COND_EXC_IGT_UN:
+		case OP_COND_EXC_IGE:
+		case OP_COND_EXC_IGE_UN:
+		case OP_COND_EXC_ILE:
+		case OP_COND_EXC_ILE_UN:
 			EMIT_COND_SYSTEM_EXCEPTION (cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)], ins->inst_p1);
 			break;
 		case OP_COND_EXC_OV:
@@ -3374,21 +3557,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 						    (ins->opcode < OP_COND_EXC_NE_UN), ins->inst_p1);
 			break;
 		case OP_COND_EXC_IOV:
+		case OP_COND_EXC_INO:
 		case OP_COND_EXC_IC:
+		case OP_COND_EXC_INC:
 			EMIT_COND_SYSTEM_EXCEPTION (branch_cc_table [ins->opcode - OP_COND_EXC_IEQ], 
 						    (ins->opcode < OP_COND_EXC_INE_UN), ins->inst_p1);
-			break;
-		case OP_LBEQ:
-		case OP_LBLT:
-		case OP_LBGT:
-		case OP_LBGE:
-		case OP_LBLE:
-		case OP_LBNE_UN:
-		case OP_LBLT_UN:
-		case OP_LBGT_UN:
-		case OP_LBGE_UN:
-		case OP_LBLE_UN:
-			EMIT_COND_BRANCH (ins, cc_table [mono_opcode_to_cond (ins->opcode)], cc_signed_table [mono_opcode_to_cond (ins->opcode)]);
 			break;
 
 		/* floating point opcodes */
@@ -3502,6 +3675,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			amd64_fild_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);
 			break;
+		case OP_FCONV_TO_R4:
+			/* FIXME: nothing to do ?? */
+			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
 			break;
@@ -3513,6 +3689,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCONV_TO_U2:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, FALSE);
+			break;
+		case OP_FCONV_TO_U4:
+			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);			
 			break;
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_I:
@@ -4094,7 +4273,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_CMP, AMD64_RAX, X86_FP_C0);
 			EMIT_COND_BRANCH (ins, X86_CC_NE, FALSE);
 			break;
-		case OP_CKFINITE: {
+		case OP_CKFINITE:
 			if (use_sse2) {
 				/* Transfer value to the fp stack */
 				amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 16);
@@ -4114,7 +4293,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (use_sse2)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 16);
 			break;
-		}
 		case OP_TLS_GET: {
 			code = emit_tls_get (code, ins->dreg, ins->inst_offset);
 			break;
