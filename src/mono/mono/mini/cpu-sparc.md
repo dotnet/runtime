@@ -68,7 +68,7 @@ cgt.un: dest:i len:64
 clt: dest:i len:64
 clt.un: dest:i len:64
 localloc: dest:i src1:i len:64
-sparc_localloc_imm: dest:i len:64
+localloc_imm: dest:i len:64
 compare: src1:i src2:i len:4
 icompare: src1:i src2:i len:4
 compare_imm: src1:i len:64

@@ -663,8 +663,8 @@ reg: CEE_DIV (reg, OP_ICONST) {
 }
 
 reg: OP_LOCALLOC (OP_ICONST) {
-	tree->opcode = OP_SPARC_LOCALLOC_IMM;
-	tree->inst_c0 = state->left->tree->inst_c0;
+	tree->opcode = OP_LOCALLOC_IMM;
+	tree->inst_imm = state->left->tree->inst_c0;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
