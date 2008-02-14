@@ -119,6 +119,7 @@ MINI_OP(OP_LOADI8_MEM, "loadi8_mem")
 MINI_OP(OP_LOADI4_MEM, "loadi4_mem")
 MINI_OP(OP_LOADU1_MEM, "loadu1_mem")
 MINI_OP(OP_LOADU2_MEM, "loadu2_mem")
+MINI_OP(OP_STORE_MEM_IMM, "store_mem_imm")
 
 MINI_OP(OP_LOADR8_SPILL_MEMBASE,"loadr8_spill_membase")
 MINI_OP(OP_LOADU4_MEM,"loadu4_mem")
@@ -601,7 +602,8 @@ MINI_OP(OP_X86_FP_LOAD_I8,         "x86_fp_load_i8")
 MINI_OP(OP_X86_FP_LOAD_I4,         "x86_fp_load_i4")
 MINI_OP(OP_X86_SETEQ_MEMBASE,      "x86_seteq_membase")
 MINI_OP(OP_X86_SETNE_MEMBASE,      "x86_setne_membase")
-MINI_OP(OP_X86_OUTARG_ALIGN_STACK,     "x86_outarg_align_stack")
+MINI_OP(OP_X86_OUTARG_ALIGN_STACK, "x86_outarg_align_stack")
+MINI_OP(OP_X86_FXCH,               "x86_fxch")
 #endif
 
 #if defined(__x86_64__)
