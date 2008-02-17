@@ -1,3 +1,9 @@
+2008-02-17  Raja R Harinath  <harinath@hurrynot.org>
+
+	* Makefile: Improve.  Update to new net_2_1 profiles.  Specify
+	more dependencies.  Do work only when necessary.
+	* Descriptors/smcs.xml: Add CompilerCallableEntryPoint.
+
 2008-02-01  Jb Evain  <jbevain@novell.com>
 
 	* Makefile: remove System.Core temporary hack.
