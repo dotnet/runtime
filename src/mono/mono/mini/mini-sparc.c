@@ -792,7 +792,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
  * The locals var stuff should most likely be split in another method.
  */
 void
-mono_arch_allocate_vars (MonoCompile *m)
+mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
@@ -800,34 +800,34 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int i, offset, size, align, curinst;
 	CallInfo *cinfo;
 
-	header = mono_method_get_header (m->method);
+	header = mono_method_get_header (cfg->method);
 
-	sig = mono_method_signature (m->method);
+	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (m, sig, FALSE);
+	cinfo = get_call_info (cfg, sig, FALSE);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
 		case ArgInFReg:
 		case ArgInIRegPair:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->inst_c0 = cinfo->ret.reg;
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->inst_c0 = cinfo->ret.reg;
 			break;
 		case ArgOnStack:
 #ifdef SPARCV9
 			g_assert_not_reached ();
 #else
 			/* valuetypes */
-			m->ret->opcode = OP_REGOFFSET;
-			m->ret->inst_basereg = sparc_fp;
-			m->ret->inst_offset = 64;
+			cfg->vret_addr->opcode = OP_REGOFFSET;
+			cfg->vret_addr->inst_basereg = sparc_fp;
+			cfg->vret_addr->inst_offset = 64;
 #endif
 			break;
 		default:
 			NOT_IMPLEMENTED;
 		}
-		m->ret->dreg = m->ret->inst_c0;
+		cfg->ret->dreg = cfg->ret->inst_c0;
 	}
 
 	/*
@@ -837,7 +837,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 */
 
 	/* Locals are allocated backwards from %fp */
-	m->frame_reg = sparc_fp;
+	cfg->frame_reg = sparc_fp;
 	offset = 0;
 
 	/* 
@@ -847,16 +847,16 @@ mono_arch_allocate_vars (MonoCompile *m)
 	if (header->num_clauses)
 		offset += sizeof (gpointer) * 2;
 
-	if (m->method->save_lmf) {
+	if (cfg->method->save_lmf) {
 		offset += sizeof (MonoLMF);
-		m->arch.lmf_offset = offset;
+		cfg->arch.lmf_offset = offset;
 	}
 
-	curinst = m->locals_start;
-	for (i = curinst; i < m->num_varinfo; ++i) {
-		inst = m->varinfo [i];
+	curinst = cfg->locals_start;
+	for (i = curinst; i < cfg->num_varinfo; ++i) {
+		inst = cfg->varinfo [i];
 
-		if (inst->opcode == OP_REGVAR) {
+		if ((inst->opcode == OP_REGVAR) || (inst->opcode == OP_REGOFFSET)) {
 			//g_print ("allocating local %d to %s\n", i, mono_arch_regname (inst->dreg));
 			continue;
 		}
@@ -869,7 +869,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
 			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
 		else
-			size = mini_type_stack_size (m->generic_sharing_context, inst->inst_vtype, &align);
+			size = mini_type_stack_size (cfg->generic_sharing_context, inst->inst_vtype, &align);
 
 		/* 
 		 * This is needed since structures containing doubles must be doubleword 
@@ -895,11 +895,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 	}
 
 	if (sig->call_convention == MONO_CALL_VARARG) {
-		m->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
+		cfg->sig_cookie = cinfo->sig_cookie.offset + ARGS_OFFSET;
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		inst = m->args [i];
+		inst = cfg->args [i];
 		if (inst->opcode != OP_REGVAR) {
 			ArgInfo *ainfo = &cinfo->args [i];
 			gboolean inreg = TRUE;
@@ -986,7 +986,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 				 * are destructively modified in a lot of places in inssel.brg.
 				 */
 				MonoInst *indir;
-				MONO_INST_NEW (m, indir, 0);
+				MONO_INST_NEW (cfg, indir, 0);
 				*indir = *inst;
 				inst->opcode = OP_SPARC_INARG_VT;
 				inst->inst_left = indir;
@@ -999,13 +999,29 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 * by the ABI.
 	 */
 
-	m->stack_offset = offset;
+	cfg->stack_offset = offset;
 
 	/* Add a properly aligned dword for use by int<->float conversion opcodes */
-	m->spill_count ++;
-	mono_spillvar_offset_float (m, 0);
+	cfg->spill_count ++;
+	mono_spillvar_offset_float (cfg, 0);
 
 	g_free (cinfo);
+}
+
+void
+mono_arch_create_vars (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+
+	sig = mono_method_signature (cfg->method);
+
+	if (MONO_TYPE_ISSTRUCT ((sig->ret))) {
+		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr = ");
+			mono_print_ins (cfg->vret_addr);
+		}
+	}
 }
 
 static MonoInst *
