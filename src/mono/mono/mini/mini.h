@@ -757,6 +757,13 @@ typedef struct {
 	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
 	MonoInst        **args;
+
+	/* 
+	 * This variable represents the hidden argument holding the vtype
+	 * return address. If the method returns something other than a vtype, or
+	 * the vtype is returned in registers this is NULL.
+	 */
+	MonoInst        *vret_addr;
 	
 	struct MonoAliasingInformation *aliasing_info;
 
@@ -1102,7 +1109,8 @@ int       mono_compile_assembly             (MonoAssembly *ass, guint32 opts, co
 MonoCompile *mini_method_compile            (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts) MONO_INTERNAL;
 void      mono_destroy_compile              (MonoCompile *cfg) MONO_INTERNAL;
 MonoJitICallInfo *mono_find_jit_opcode_emulation (int opcode) MONO_INTERNAL;
-void	  mono_print_ins (int i, MonoInst *ins) MONO_INTERNAL;
+void	  mono_print_ins_index (int i, MonoInst *ins) MONO_INTERNAL;
+void	  mono_print_ins (MonoInst *ins) MONO_INTERNAL;
 
 void      mono_aot_init                     (void) MONO_INTERNAL;
 gpointer  mono_aot_get_method               (MonoDomain *domain,

@@ -376,7 +376,7 @@ typedef struct {
 
 #ifndef DISABLE_LOGGING
 void
-mono_print_ins (int i, MonoInst *ins)
+mono_print_ins_index (int i, MonoInst *ins)
 {
 	const char *spec = ins_get_spec (ins->opcode);
 	printf ("\t%-2d %s", i, mono_inst_name (ins->opcode));
@@ -441,7 +441,18 @@ print_regtrack (RegTrack *t, int num)
 		printf ("liveness: %s [%d - %d]\n", r, t [i].born_in, t[i].killed_in);
 	}
 }
+#else
+void
+mono_print_ins_index (int i, MonoInst *ins)
+{
+}
 #endif /* DISABLE_LOGGING */
+
+void
+mono_print_ins (MonoInst *ins)
+{
+	mono_print_ins_index (-1, ins);
+}
 
 static inline void
 insert_before_ins (MonoInst *ins, MonoInst* to_insert)
@@ -784,7 +795,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_error ("Opcode '%s' missing from machine description file.", mono_inst_name (ins->opcode));
 		}
 		
-		DEBUG (mono_print_ins (i, ins));
+		DEBUG (mono_print_ins_index (i, ins));
 
 		/*
 		 * TRACK FP STACK
@@ -962,7 +973,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		sreg2_mask = sreg2_is_fp (spec) ? MONO_ARCH_CALLEE_FREGS : MONO_ARCH_CALLEE_REGS;
 
 		DEBUG (printf ("processing:"));
-		DEBUG (mono_print_ins (i, ins));
+		DEBUG (mono_print_ins_index (i, ins));
 
 		ip = ins->cil_code;
 
@@ -1669,7 +1680,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_regstate_free_int (rs, ins->sreg2);
 		}*/
 	
-		DEBUG (mono_print_ins (i, ins));
+		DEBUG (mono_print_ins_index (i, ins));
 		ins = prev_ins;
 	}
 

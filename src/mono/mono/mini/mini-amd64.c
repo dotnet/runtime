@@ -1040,14 +1040,18 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgInDoubleSSEReg:
 			if ((MONO_TYPE_ISSTRUCT (sig->ret) && !mono_class_from_mono_type (sig->ret)->enumtype) || (sig->ret->type == MONO_TYPE_TYPEDBYREF)) {
 				/* The register is volatile */
-				cfg->ret->opcode = OP_REGOFFSET;
-				cfg->ret->inst_basereg = cfg->frame_reg;
+				cfg->vret_addr->opcode = OP_REGOFFSET;
+				cfg->vret_addr->inst_basereg = cfg->frame_reg;
 				if (cfg->arch.omit_fp) {
-					cfg->ret->inst_offset = offset;
+					cfg->vret_addr->inst_offset = offset;
 					offset += 8;
 				} else {
 					offset += 8;
-					cfg->ret->inst_offset = -offset;
+					cfg->vret_addr->inst_offset = -offset;
+				}
+				if (G_UNLIKELY (cfg->verbose_level > 1)) {
+					printf ("vret_addr =");
+					mono_print_ins (cfg->vret_addr);
 				}
 			}
 			else {
@@ -1173,6 +1177,14 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
+
+	if ((cinfo->ret.storage != ArgValuetypeInReg) && MONO_TYPE_ISSTRUCT (sig->ret)) {
+		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr = ");
+			mono_print_ins (cfg->vret_addr);
+		}
+	}
 }
 
 static void
@@ -2420,9 +2432,8 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 	/* This is the opposite of the code in emit_prolog */
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if ((cinfo->ret.storage == ArgInIReg) && (cfg->ret->opcode != OP_REGVAR)) {
-			amd64_mov_reg_membase (code, cinfo->ret.reg, cfg->ret->inst_basereg, cfg->ret->inst_offset, 8);
-		}
+		if (cfg->vret_addr && (cfg->vret_addr->opcode != OP_REGVAR))
+			amd64_mov_reg_membase (code, cinfo->ret.reg, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, 8);
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -4641,10 +4652,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cinfo = cfg->arch.cinfo;
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if ((cinfo->ret.storage == ArgInIReg) && (cfg->ret->opcode != OP_REGVAR)) {
-			/* Save volatile arguments to the stack */
-			amd64_mov_membase_reg (code, cfg->ret->inst_basereg, cfg->ret->inst_offset, cinfo->ret.reg, 8);
-		}
+		/* Save volatile arguments to the stack */
+		if (cfg->vret_addr && (cfg->vret_addr->opcode != OP_REGVAR))
+			amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, cinfo->ret.reg, 8);
 	}
 
 	/* Keep this in sync with emit_load_volatile_arguments */

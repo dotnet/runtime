@@ -579,14 +579,23 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_RETLOADA(cfg,dest) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
-		(dest)->inst_i0 = (cfg)->ret;	\
-		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
-		(dest)->opcode = cfg->ret_var_is_local ? OP_LDADDR : CEE_LDIND_I;	\
-		(dest)->type = STACK_MP;	\
-		(dest)->klass = (dest)->inst_i0->klass;	\
-                (cfg)->disable_ssa = TRUE; \
+        if (cfg->vret_addr) { \
+		    (dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		    (dest)->ssa_op = MONO_SSA_LOAD;	\
+		    (dest)->inst_i0 = cfg->vret_addr; \
+		    (dest)->opcode = mini_type_to_ldind ((cfg), (dest)->inst_i0->inst_vtype); \
+            (dest)->type = STACK_MP; \
+		    (dest)->klass = (dest)->inst_i0->klass;	\
+        } else { \
+			(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		    (dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
+		    (dest)->inst_i0 = (cfg)->ret;	\
+		    (dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
+		    (dest)->opcode = cfg->ret_var_is_local ? OP_LDADDR : CEE_LDIND_I;	\
+		    (dest)->type = STACK_MP;	\
+		    (dest)->klass = (dest)->inst_i0->klass;	\
+            (cfg)->disable_ssa = TRUE; \
+        } \
 	} while (0)
 
 #define NEW_ARGLOADA(cfg,dest,num) do {	\
@@ -5659,7 +5668,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (ins->opcode == CEE_STOBJ) {
 						NEW_RETLOADA (cfg, ins);
 						/* FIXME: it is possible some optimization will pass the a heap pointer for the struct address, so we'll need the write barrier */
-						handle_stobj (cfg, bblock, ins, *sp, ip, ins->klass, FALSE, FALSE, FALSE);
+						handle_stobj (cfg, bblock, ins, *sp, ip, cfg->ret->klass, FALSE, FALSE, FALSE);
 					} else {
 						ins->opcode = OP_SETRET;
 						ins->cil_code = ip;
