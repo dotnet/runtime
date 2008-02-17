@@ -817,8 +817,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			cfg->ret->inst_c0 = cinfo->ret.reg;
 			break;
 		case ArgValuetypeAddrInIReg:
-			cfg->ret->opcode = OP_REGVAR;
-			cfg->ret->inst_c0 = cfg->arch.reg_in0 + cinfo->ret.reg;
+			cfg->vret_addr->opcode = OP_REGVAR;
+			cfg->vret_addr->dreg = cfg->arch.reg_in0 + cinfo->ret.reg;
 			break;
 		case ArgAggregate:
 			/* Allocate a local to hold the result, the epilog will copy it to the correct place */
@@ -949,6 +949,13 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (cinfo->ret.storage == ArgAggregate)
 		cfg->ret_var_is_local = TRUE;
+	if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
+		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr = ");
+			mono_print_ins (cfg->vret_addr);
+		}
+	}
 }
 
 static void
