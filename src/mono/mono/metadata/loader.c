@@ -1556,19 +1556,20 @@ void
 mono_method_get_param_names (MonoMethod *method, const char **names)
 {
 	int i, lastp;
-	MonoClass *klass = method->klass;
+	MonoClass *klass;
 	MonoTableInfo *methodt;
 	MonoTableInfo *paramt;
 	guint32 idx;
+
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
 
 	if (!mono_method_signature (method)->param_count)
 		return;
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i)
 		names [i] = "";
 
-	if (method->is_inflated)
-		method = ((MonoMethodInflated *) method)->declaring;
-
+	klass = method->klass;
 	if (klass->rank)
 		return;
 
