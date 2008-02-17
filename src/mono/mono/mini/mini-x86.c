@@ -863,9 +863,23 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	switch (cinfo->ret.storage) {
 	case ArgOnStack:
-		cfg->ret->opcode = OP_REGOFFSET;
-		cfg->ret->inst_basereg = X86_EBP;
-		cfg->ret->inst_offset = cinfo->ret.offset + ARGS_OFFSET;
+		if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+			/* 
+			 * In the new IR, the cfg->vret_addr variable represents the
+			 * vtype return value.
+			 */
+			cfg->vret_addr->opcode = OP_REGOFFSET;
+			cfg->vret_addr->inst_basereg = cfg->frame_reg;
+			cfg->vret_addr->inst_offset = cinfo->ret.offset + ARGS_OFFSET;
+			if (G_UNLIKELY (cfg->verbose_level > 1)) {
+				printf ("vret_addr =");
+				mono_print_ins (cfg->vret_addr);
+			}
+		} else {
+			cfg->ret->opcode = OP_REGOFFSET;
+			cfg->ret->inst_basereg = X86_EBP;
+			cfg->ret->inst_offset = cinfo->ret.offset + ARGS_OFFSET;
+		}
 		break;
 	case ArgValuetypeInReg:
 		break;
@@ -914,6 +928,9 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
+	if ((cinfo->ret.storage != ArgValuetypeInReg) && MONO_TYPE_ISSTRUCT (sig->ret)) {
+		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+	}
 }
 
 /* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
