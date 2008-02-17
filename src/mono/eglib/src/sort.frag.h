@@ -34,10 +34,6 @@
  * 'prev' pointer of a doubly-linked list node is _not_ updated).  Any
  * invariant would require a post-processing pass to fix matters if
  * necessary.
- *
- * Note: We refer to a list fragment as a "digit" because the code for
- * maintaining the invariants of the core data structure parallels the
- * code for incrementing the binary representation of a number.
  */
 typedef list_node *digit;
 
@@ -46,18 +42,34 @@ typedef list_node *digit;
  *   = ceiling (log2 (maximum number of list nodes))
  *   = ceiling (log2 (maximum possible memory size/size of each list node))
  *   = number of bits in 'size_t' - floor (log2 (sizeof digit))
- * Also, each "digit" is at least 2 nodes long: we can reduce the depth by 1
+ * Also, each list in sort_info is at least 2 nodes long: we can reduce the depth by 1
  */
-
 #define FLOOR_LOG2(x) (((x)>=2) + ((x)>=4) + ((x)>=8) + ((x)>=16) + ((x)>=32) + ((x)>=64) + ((x)>=128))
-#define MAX_DIGITS ((sizeof (size_t) * 8) - FLOOR_LOG2(sizeof (list_node)) - 1)
+#define MAX_RANKS ((sizeof (size_t) * 8) - FLOOR_LOG2(sizeof (list_node)) - 1)
 
-static inline digit
-add_digits (digit first, digit second, GCompareFunc func)
+struct sort_info
+{
+	int min_rank, n_ranks;
+	GCompareFunc func;
+
+	/* Invariant: ranks[i] == NULL || length(ranks[i]) >= 2**(i+1) */
+	list_node *ranks [MAX_RANKS]; /* ~ 128 bytes on 32bit, ~ 512 bytes on 64bit */
+};
+
+static inline void
+init_sort_info (struct sort_info *si, GCompareFunc func)
+{
+	si->min_rank = si->n_ranks = 0;
+	si->func = func;
+	/* we don't need to initialize si->ranks, since we never lookup past si->n_ranks.  */
+}
+
+static inline list_node *
+merge_lists (list_node *first, list_node *second, GCompareFunc func)
 {
 	/* merge the two lists */
-	digit list = NULL;
-	digit *pos = &list;
+	list_node *list = NULL;
+	list_node **pos = &list;
 	while (first && second) {
 		if (func (first->data, second->data) > 0) {
 			*pos = second;
@@ -72,51 +84,89 @@ add_digits (digit first, digit second, GCompareFunc func)
 	return list;
 }
 
-static inline digit
-combine_digits (digit *digits, digit list, int n_digits, GCompareFunc func)
+/* Pre-condition: upto <= si->n_ranks, list == NULL || length(list) == 1 */
+static inline list_node *
+sweep_up (struct sort_info *si, list_node *list, int upto)
 {
 	int i;
-	for (i = 0; i < n_digits; ++i)
-		list = add_digits (digits [i], list, func);
+	for (i = si->min_rank; i < upto; ++i) {
+		list = merge_lists (si->ranks [i], list, si->func);
+		si->ranks [i] = NULL;
+	}
 	return list;
 }
 
 /*
- * Given: length(list) == k
- * Invariant: digit[i] == NULL || length(digit[i]) == k * 2**i
+ * The 'ranks' array essentially captures the recursion stack of a mergesort.
+ * The merge tree is built in a bottom-up manner.  The control loop for
+ * updating the 'ranks' array is analogous to incrementing a binary integer,
+ * and the O(n) time for counting upto n translates to O(n) merges when
+ * inserting rank-0 lists.  When we plug in the sizes of the lists involved in
+ * those merges, we get the O(n log n) time for the sort.
+ *
+ * Inserting higher-ranked lists reduce the height of the merge tree, and also
+ * eliminate a lot of redundant comparisons when merging two lists that would've
+ * been part of the same run.  Adding a rank-i list is analogous to incrementing
+ * a binary integer by 2**i in one operation, thus sharing a similar speedup.
+ *
+ * When inserting higher-ranked lists, we choose to clear out the lower ranks
+ * in the interests of keeping the sort stable, but this makes analysis harder.
+ * Note that clearing the lower-ranked lists is O(length(list))-- thus it
+ * shouldn't affect the O(n log n) behaviour.  IOW, inserting one rank-i list
+ * is equivalent to inserting 2**i rank-0 lists, thus even if we do i additional
+ * merges in the clearing-out (taking at most 2**i time) we are still fine.
  */
-static inline int
-increment (digit *digits, digit list, int n_digits, GCompareFunc func)
+
+#define stringify2(x) #x
+#define stringify(x) stringify2(x)
+
+/* Pre-condition: 2**(rank+1) <= length(list) < 2**(rank+2) (therefore: length(list) >= 2) */
+static inline void
+insert_list (struct sort_info *si, list_node* list, int rank)
 {
 	int i;
-	for (i = 0; i < n_digits && digits [i]; i++) {
-		list = add_digits (digits [i], list, func);
-		digits [i] = NULL;
-	}
-	if (i == MAX_DIGITS) /* Will _never_ happen: so we can just devolve into quadratic ;-) */
-		--i;
 
-	if (i == n_digits)
-		++n_digits;
-	digits [i] = list;
-	return n_digits;
+	if (rank > si->n_ranks) {
+		if (rank > MAX_RANKS) {
+			g_warning ("Rank '%d' should not exceed " stringify (MAX_RANKS), rank);
+			rank = MAX_RANKS;
+		}
+		list = merge_lists (sweep_up (si, NULL, si->n_ranks), list, si->func);
+		for (i = si->n_ranks; i < rank; ++i)
+			si->ranks [i] = NULL;
+	} else {
+		if (rank)
+			list = merge_lists (sweep_up (si, NULL, rank), list, si->func);
+		for (i = rank; i < si->n_ranks && si->ranks [i]; ++i) {
+			list = merge_lists (si->ranks [i], list, si->func);
+			si->ranks [i] = NULL;
+		}
+	}
+
+	if (i == MAX_RANKS) /* Will _never_ happen: so we can just devolve into quadratic ;-) */
+		--i;
+	if (i >= si->n_ranks)
+		si->n_ranks = i + 1;
+	si->min_rank = i;
+	si->ranks [i] = list;
 }
 
-/*
- * A mergesort that avoids recursion.  The 'digits' array essentially
- * captures the recursion stack.  The actual merge tree is built in a
- * bottom-up manner.  It's "counting", since we "increment" a set of
- * "digit"s.
- */
+#undef stringify2
+#undef stringify
+#undef MAX_RANKS
+#undef FLOOR_LOG2
+
+/* A non-recursive mergesort */
 static inline digit
-do_sort (digit list, GCompareFunc func)
+do_sort (list_node* list, GCompareFunc func)
 {
-	int n_digits = 0;
-	digit digits [MAX_DIGITS]; /* ~ 128 bytes on 32bit, ~ 512 bytes on 64bit */
+	struct sort_info si;
+
+	init_sort_info (&si, func);
 
 	while (list && list->next) {
-		digit next = list->next;
-		digit tail = next->next;
+		list_node* next = list->next;
+		list_node* tail = next->next;
 
 		if (func (list->data, next->data) > 0) {
 			next->next = list;
@@ -125,13 +175,10 @@ do_sort (digit list, GCompareFunc func)
 		}
 		next->next = NULL;
 
-		n_digits = increment (digits, list, n_digits, func);
+		insert_list (&si, list, 0);
 
 		list = tail;
 	}
 
-	return combine_digits (digits, list, n_digits, func);
+	return sweep_up (&si, list, si.n_ranks);
 }
-
-#undef MAX_DIGITS
-#undef FLOOR_LOG2
