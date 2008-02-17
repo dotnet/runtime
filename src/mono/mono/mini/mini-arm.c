@@ -879,10 +879,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	
 	offset = 0;
 	curinst = 0;
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		m->ret->opcode = OP_REGVAR;
-		m->ret->inst_c0 = ARMREG_R0;
-	} else {
+	if (!MONO_TYPE_ISSTRUCT (sig->ret)) {
 		/* FIXME: handle long and FP values */
 		switch (mono_type_get_underlying_type (sig->ret)->type) {
 		case MONO_TYPE_VOID:
@@ -921,12 +918,16 @@ mono_arch_allocate_vars (MonoCompile *m)
         }
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		inst = m->ret;
+		inst = m->vret_addr;
 		offset += sizeof(gpointer) - 1;
 		offset &= ~(sizeof(gpointer) - 1);
 		inst->inst_offset = offset;
 		inst->opcode = OP_REGOFFSET;
 		inst->inst_basereg = frame_reg;
+		if (G_UNLIKELY (m->verbose_level > 1)) {
+			printf ("vret_addr =");
+			mono_print_ins (m->vret_addr);
+		}
 		offset += sizeof(gpointer);
 		if (sig->call_convention == MONO_CALL_VARARG)
 			m->sig_cookie += sizeof (gpointer);
@@ -1005,9 +1006,21 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 }
 
-/* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
- * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info 
- */
+void
+mono_arch_create_vars (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+
+	sig = mono_method_signature (cfg->method);
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr = ");
+			mono_print_ins (cfg->vret_addr);
+		}
+	}
+}
 
 /* 
  * take the arguments and generate the arch-specific
@@ -3252,7 +3265,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;
-		inst = cfg->ret;
+		inst = cfg->vret_addr;
 		g_assert (arm_is_imm12 (inst->inst_offset));
 		ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 	}
