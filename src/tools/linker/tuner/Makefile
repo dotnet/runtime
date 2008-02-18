@@ -91,12 +91,12 @@ TUNER_INSTALL_DIR = $(DESTDIR)$(mono_libdir)/mono/2.1
 
 end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Xml.Core gac-System.Core
 
-inst-%: %
+inst-%: $(OUTPUT_DIR)/%
 	$(MKINSTALLDIRS) $(TUNER_INSTALL_DIR)
 	$(INSTALL_LIB) $(OUTPUT_DIR)/$* $(TUNER_INSTALL_DIR)/$*
 	test ! -f $(OUTPUT_DIR)/$*.mdb || $(INSTALL_LIB) $(OUTPUT_DIR)/$*.mdb $(TUNER_INSTALL_DIR)/$*.mdb
 
-gac-%: %.dll
+gac-%: $(OUTPUT_DIR)/%.dll
 	$(GACUTIL) /i $(OUTPUT_DIR)/$*.dll /f /root $(DESTDIR)$(mono_libdir) /package 2.1
 
 Mono.Tuner.dll: $(TUNER_SOURCES)

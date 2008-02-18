@@ -1,3 +1,7 @@
+2008-02-18  Raja R Harinath  <harinath@hurrynot.org>
+
+	* Makefile (inst-%, gac-%): Fix dependencies.
+
 2008-02-17  Raja R Harinath  <harinath@hurrynot.org>
 
 	* Makefile: Improve.  Update to new net_2_1 profiles.  Specify
