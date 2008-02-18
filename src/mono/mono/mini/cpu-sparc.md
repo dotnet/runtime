@@ -58,10 +58,7 @@ start_handler: len:64
 endfinally: len:64
 endfilter: src1:i len:64
 
-conv.ovf.u4: dest:i src1:i len:64
 ckfinite: dest:f src1:f len:40
-conv.u: dest:i src1:i len:4
-arglist: src1:i
 ceq: dest:i len:64
 cgt: dest:i len:64
 cgt.un: dest:i len:64

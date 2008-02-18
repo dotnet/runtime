@@ -166,7 +166,7 @@ build_table (const char *fname, const char *name) {
 	for (i = 0; i < OP_LAST; ++i) {
 		desc = opcodes + i;
 		if (!desc->desc)
-			g_string_append_printf (idx_array, "\t0,\t/* %s */\n", desc->name);
+			g_string_append_printf (idx_array, "\t0,\t/* %s */\n", desc->name ? desc->name : "");
 		else {
 			fprintf (f, "\t\"");
 			for (j = 0; j < MONO_INST_MAX; ++j)
