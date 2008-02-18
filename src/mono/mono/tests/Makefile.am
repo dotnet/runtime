@@ -387,9 +387,9 @@ test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline
 endif
 endif
 
-if INSTALL_2_1
-test : test-coreclr-security
-endif
+#if INSTALL_2_1
+#test : test-coreclr-security
+#endif
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
