@@ -98,9 +98,6 @@ start_handler: len:9
 endfinally: len:9
 endfilter: src1:a len:9
 ckfinite: dest:f src1:f len:43
-mul.ovf: dest:i src1:i src2:i clob:1 len:10
-# this opcode is handled specially in the code generator
-mul.ovf.un: dest:i src1:i src2:i len:18
 ceq: dest:c len:8
 cgt: dest:c len:8
 cgt.un: dest:c len:8

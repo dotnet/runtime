@@ -119,12 +119,14 @@ init_table (void) {
 	table = g_hash_table_new (g_str_hash, g_str_equal);
 
 	opcodes = g_new0 (OpDesc, OP_LAST);
+#ifndef MONO_ARCH_ENABLE_NORMALIZE_OPCODES
 	for (i = 0; i < MONO_CEE_LAST; ++i) {
 		desc = opcodes + i;
 		desc->num = i;
 		desc->name = mono_inst_name (i);
 		g_hash_table_insert (table, (char *)desc->name, desc);
 	}
+#endif
 	for (i = OP_LOAD; i < OP_LAST; ++i) {
 		desc = opcodes + i;
 		desc->num = i;
