@@ -39,9 +39,9 @@ enum {
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status)	\
 	do {	\
-		MonoVerifyInfo *vinfo = g_new (MonoVerifyInfo, 1);	\
-		vinfo->status = __status;	\
-		vinfo->message = ( __msg );	\
+		MonoVerifyInfoExtended *vinfo = g_new (MonoVerifyInfoExtended, 1);	\
+		vinfo->info.status = __status;	\
+		vinfo->info.message = ( __msg );	\
 		(__ctx)->list = g_slist_prepend ((__ctx)->list, vinfo);	\
 	} while (0)
 
@@ -364,12 +364,12 @@ stack_slot_get_name (ILStackDesc *value)
 void
 mono_free_verify_list (GSList *list)
 {
-	MonoVerifyInfo *info;
+	MonoVerifyInfoExtended *info;
 	GSList *tmp;
 
 	for (tmp = list; tmp; tmp = tmp->next) {
 		info = tmp->data;
-		g_free (info->message);
+		g_free (info->info.message);
 		g_free (info);
 	}
 	g_slist_free (list);
@@ -377,17 +377,17 @@ mono_free_verify_list (GSList *list)
 
 #define ADD_ERROR(list,msg)	\
 	do {	\
-		MonoVerifyInfo *vinfo = g_new (MonoVerifyInfo, 1);	\
-		vinfo->status = MONO_VERIFY_ERROR;	\
-		vinfo->message = (msg);	\
+		MonoVerifyInfoExtended *vinfo = g_new (MonoVerifyInfoExtended, 1);	\
+		vinfo->info.status = MONO_VERIFY_ERROR;	\
+		vinfo->info.message = (msg);	\
 		(list) = g_slist_prepend ((list), vinfo);	\
 	} while (0)
 
 #define ADD_WARN(list,code,msg)	\
 	do {	\
-		MonoVerifyInfo *vinfo = g_new (MonoVerifyInfo, 1);	\
-		vinfo->status = (code);	\
-		vinfo->message = (msg);	\
+		MonoVerifyInfoExtended *vinfo = g_new (MonoVerifyInfoExtended, 1);	\
+		vinfo->info.status = (code);	\
+		vinfo->info.message = (msg);	\
 		(list) = g_slist_prepend ((list), vinfo);	\
 	} while (0)
 
@@ -1012,7 +1012,7 @@ mono_image_verify_tables (MonoImage *image, int level)
 
 #define ADD_INVALID(list,msg)	\
 	do {	\
-		MonoVerifyInfo *vinfo = g_new (MonoVerifyInfo, 1);	\
+		MonoVerifyInfoExtended *vinfo = g_new (MonoVerifyInfoExtended, 1);	\
 		vinfo->status = MONO_VERIFY_ERROR;	\
 		vinfo->message = (msg);	\
 		(list) = g_slist_prepend ((list), vinfo);	\
@@ -3989,6 +3989,8 @@ mono_method_verify (MonoMethod *method, int level)
 	ctx.num_locals = ctx.header->num_locals;
 	ctx.locals = ctx.header->locals;
 
+	if (ctx.num_locals > 0 && !ctx.header->init_locals)
+		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Method with locals variable but without init locals set"));
 
 	if (ctx.signature->hasthis) {
 		ctx.params = g_new0 (MonoType*, ctx.max_args);

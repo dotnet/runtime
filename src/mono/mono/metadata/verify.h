@@ -4,6 +4,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader.h>
+#include "mono/utils/mono-compiler.h"
 
 G_BEGIN_DECLS
 
@@ -13,6 +14,9 @@ typedef enum {
 	MONO_VERIFY_WARNING,
 	MONO_VERIFY_CLS = 4,
 	MONO_VERIFY_ALL = 7,
+
+	/* Status signaling code that is not verifiable.*/
+	MONO_VERIFY_NOT_VERIFIABLE = 8,
 
 	/*OR it with other flags*/
 	
@@ -29,14 +33,20 @@ typedef enum {
 	 */
 	MONO_VERIFY_NON_STRICT = 32,
 
-	/* Status signaling code that is not verifiable.*/
-	MONO_VERIFY_NOT_VERIFIABLE = 8
+	/*Skip all visibility related checks*/
+	MONO_VERIFY_SKIP_VISIBILITY = 64,
 } MonoVerifyStatus;
 
 typedef struct {
 	char            *message;
 	MonoVerifyStatus status;
 } MonoVerifyInfo;
+
+typedef struct {
+	MonoVerifyInfo info;
+	guint8 exception_type; /*should be one of MONO_EXCEPTION_* */
+} MonoVerifyInfoExtended;
+
 
 GSList* mono_image_verify_tables (MonoImage *image, int level);
 GSList* mono_method_verify       (MonoMethod *method, int level);
