@@ -30,6 +30,7 @@ MINI_OP(OP_RETARG,	"retarg")
 MINI_OP(OP_SETRET,	"setret")
 MINI_OP(OP_SETFRET,	"setfret")
 MINI_OP(OP_SETLRET,	"setlret")
+MINI_OP(OP_LOCALLOC, "localloc")
 MINI_OP(OP_LOCALLOC_IMM, "localloc_imm")
 MINI_OP(OP_CHECK_THIS,	"checkthis")
 MINI_OP(OP_VOIDCALL,	"voidcall")
@@ -145,6 +146,13 @@ MINI_OP(OP_BR,         "br")
 MINI_OP(OP_JMP,        "jmp")
 MINI_OP(OP_BREAK,      "break")
 MINI_OP(OP_CKFINITE, "ckfinite")
+
+/* Must be in the same order as the matching CEE_ branch opcodes */
+MINI_OP(OP_CEQ,   "ceq")
+MINI_OP(OP_CGT,   "cgt")
+MINI_OP(OP_CGT_UN,"cgt.un")
+MINI_OP(OP_CLT,   "clt")
+MINI_OP(OP_CLT_UN,"clt.un")
 
 /* exceptions: must be in the same order as the matching CEE_ branch opcodes */
 MINI_OP(OP_COND_EXC_EQ, "cond_exc_eq")

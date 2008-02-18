@@ -8097,7 +8097,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 *    CEE_CLT    into OP_CLT
 				 *    CEE_CLT_UN into OP_CLT_UN
 				 */
-				MONO_INST_NEW (cfg, cmp, 256 + ip [1]);
+				MONO_INST_NEW (cfg, cmp, (OP_CEQ - CEE_CEQ) + ip [1]);
 				
 				MONO_INST_NEW (cfg, ins, cmp->opcode);
 				sp -= 2;

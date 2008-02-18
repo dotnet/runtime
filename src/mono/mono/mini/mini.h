@@ -879,13 +879,6 @@ enum {
 	MONO_SSA_LOAD|MONO_SSA_STORE|MONO_SSA_ADDRESS_TAKEN
 };
 
-#define OP_CEQ    (256+CEE_CEQ)
-#define OP_CLT    (256+CEE_CLT)
-#define OP_CLT_UN (256+CEE_CLT_UN)
-#define OP_CGT    (256+CEE_CGT)
-#define OP_CGT_UN (256+CEE_CGT_UN)
-#define OP_LOCALLOC (256+CEE_LOCALLOC)
-
 /* opcodes: value assigned after all the CIL opcodes */
 #ifdef MINI_OP
 #undef MINI_OP
