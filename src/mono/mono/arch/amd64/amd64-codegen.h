@@ -278,6 +278,13 @@ typedef union {
 		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
 	} while (0)
 
+#define amd64_movsxd_reg_mem(inst,reg,mem) \
+    do {     \
+       amd64_emit_rex(inst,8,(reg),0,0); \
+       *(inst)++ = (unsigned char)0x63; \
+       x86_mem_emit ((inst), ((reg)&0x7), (mem)); \
+    } while (0)
+
 #define amd64_movsxd_reg_membase(inst,reg,basereg,disp) \
     do {     \
        amd64_emit_rex(inst,8,(reg),0,(basereg)); \
