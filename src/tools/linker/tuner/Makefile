@@ -72,10 +72,6 @@ TUNER_STEPS = \
 	Mono.Tuner.RemoveSerialization,Mono.Tuner:OutputStep	\
 	Mono.Tuner.CheckVisibility,Mono.Tuner	\
 
-$(OUTPUT_DIR)/.stamp:
-	$(MKINSTALLDIRS) $(@D)
-	touch $@
-
 $(OUTPUT_FILES): tune.stamp
 	test -f $@ || { rm -f $<; $(MAKE) $<; }
 
