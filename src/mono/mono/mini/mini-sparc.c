@@ -162,9 +162,6 @@ static gboolean v64 = FALSE;
 
 static gpointer mono_arch_get_lmf_addr (void);
 
-static int
-mono_spillvar_offset_float (MonoCompile *cfg, int spillvar);
-
 const char*
 mono_arch_regname (int reg) {
 	static const char * rnames[] = {
@@ -994,16 +991,17 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 	}
 
+	/* Add a properly aligned dword for use by int<->float conversion opcodes */
+ 	offset += 8;
+ 	offset = ALIGN_TO (offset, 8);
+ 	cfg->arch.float_spill_slot_offset = offset;
+
 	/* 
 	 * spillvars are stored between the normal locals and the storage reserved
 	 * by the ABI.
 	 */
 
 	cfg->stack_offset = offset;
-
-	/* Add a properly aligned dword for use by int<->float conversion opcodes */
-	cfg->spill_count ++;
-	mono_spillvar_offset_float (cfg, 0);
 
 	g_free (cinfo);
 }
@@ -1729,25 +1727,6 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-}
-
-static int
-mono_spillvar_offset_float (MonoCompile *cfg, int spillvar)
-{
-	MonoSpillInfo **si, *info;
-
-	g_assert (spillvar == 0);
-
-	si = &cfg->spill_info_float; 
-
-	if (!*si) {
-		*si = info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo));
-		cfg->stack_offset += sizeof (double);
-		cfg->stack_offset = ALIGN_TO (cfg->stack_offset, 8);
-		info->offset = - cfg->stack_offset;
-	}
-
-	return MONO_SPARC_STACK_BIAS + (*si)->offset;
 }
 
 /* FIXME: Strange loads from the stack in basic-float.cs:test_2_rem */
@@ -3293,7 +3272,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ICONV_TO_R4: {
-			gint32 offset = mono_spillvar_offset_float (cfg, 0);
+			gint32 offset = cfg->arch.float_spill_slot_offset;
 #ifdef SPARCV9
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
@@ -3319,7 +3298,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ICONV_TO_R8: {
-			gint32 offset = mono_spillvar_offset_float (cfg, 0);
+			gint32 offset = cfg->arch.float_spill_slot_offset;
 #ifdef SPARCV9
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
@@ -3353,7 +3332,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_U4: {
-			gint32 offset = mono_spillvar_offset_float (cfg, 0);
+			gint32 offset = cfg->arch.float_spill_slot_offset;
 			sparc_fdtoi (code, ins->sreg1, FP_SCRATCH_REG);
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
@@ -3514,7 +3493,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_FLOAT_COND_BRANCH (ins, sparc_fbu, 1, 1);
 			break;
 		case OP_CKFINITE: {
-			gint32 offset = mono_spillvar_offset_float (cfg, 0);
+			gint32 offset = cfg->arch.float_spill_slot_offset;
 			if (!sparc_is_imm13 (offset)) {
 				sparc_set (code, offset, sparc_o7);
 				sparc_stdf (code, ins->sreg1, sparc_sp, sparc_o7);
