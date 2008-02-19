@@ -46,34 +46,9 @@ g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
 		return new_list;
 }
 
-/**
- * Duplicated here from regalloc.c so they can be inlined
- * FIXME: Remove the old one after the new JIT is done
- */
-
 static inline void
-mono_regstate2_reset (MonoRegState *rs) {
-	rs->next_vreg = MONO_MAX_IREGS;
-}
-
-static inline MonoRegState*
-mono_regstate2_new (void)
+mono_regstate_assign (MonoRegState *rs)
 {
-	MonoRegState* rs = g_new0 (MonoRegState, 1);
-
-	mono_regstate2_reset (rs);
-
-	return rs;
-}
-
-static inline void
-mono_regstate2_free (MonoRegState *rs) {
-	g_free (rs->vassign);
-	g_free (rs);
-}
-
-static inline void
-mono_regstate_assign (MonoRegState *rs) {
 	if (rs->next_vreg > rs->vassign_size) {
 		g_free (rs->vassign);
 		rs->vassign_size = MAX (rs->next_vreg, 256);
@@ -147,16 +122,6 @@ mono_regstate_free_float (MonoRegState *rs, int reg)
 		rs->ffree_mask |= (regmask_t)1 << reg;
 		rs->fsymbolic [reg] = 0;
 	}
-}
-
-static inline int
-mono_regstate2_next_long (MonoRegState *rs)
-{
-	int rval = rs->next_vreg;
-
-	rs->next_vreg += 2;
-
-	return rval;
 }
 
 const char*
