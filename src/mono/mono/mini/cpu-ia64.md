@@ -11,10 +11,6 @@ br: len:48
 throw: src1:i len:96
 rethrow: src1:i len:48
 ckfinite: dest:f src1:f len:48
-mul.ovf: dest:i src1:i src2:i len:48
-# this opcode is handled specially in the code generator
-mul.ovf.un: dest:i src1:i src2:i len:48
-conv.u: dest:i src1:i len:48
 ceq: dest:c len:48
 cgt: dest:c len:48
 cgt.un: dest:c len:48
