@@ -2657,6 +2657,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 				int im_slot = ic_offset + im->slot;
 				MonoMethod *override_im = (override_map != NULL) ? g_hash_table_lookup (override_map, im) : NULL;
 				
+				if (im->flags & METHOD_ATTRIBUTE_STATIC)
+					continue;
+
 				// If there is an explicit implementation, just use it right away,
 				// otherwise look for a matching method
 				if (override_im == NULL) {
@@ -2721,6 +2724,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 					MonoMethod *im = ic->methods [im_index];
 					int im_slot = ic_offset + im->slot;
 					
+					if (im->flags & METHOD_ATTRIBUTE_STATIC)
+						continue;
+
 					TRACE_INTERFACE_VTABLE (printf ("      [class is not abstract, checking slot %d for interface '%s'.'%s', method %s, slot check is %d]\n",
 							im_slot, ic->name_space, ic->name, im->name, (vtable [im_slot] == NULL)));
 					if (vtable [im_slot] == NULL) {
