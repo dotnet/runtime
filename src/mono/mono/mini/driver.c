@@ -1007,6 +1007,7 @@ mono_main (int argc, char* argv[])
 	MonoMethod *method;
 	MonoCompile *cfg;
 	MonoDomain *domain;
+	MonoImageOpenStatus open_status;
 	const char* aname, *mname = NULL;
 	char *config_file = NULL;
 	int i, count = 1;
@@ -1352,9 +1353,9 @@ mono_main (int argc, char* argv[])
 		jit_info_table_test (domain);
 #endif
 
-	assembly = mono_assembly_open (aname, NULL);
+	assembly = mono_assembly_open (aname, &open_status);
 	if (!assembly) {
-		fprintf (stderr, "Cannot open assembly %s.\n", aname);
+		fprintf (stderr, "Cannot open assembly '%s': %s.\n", aname, mono_image_strerror (open_status));
 		mini_cleanup (domain);
 		return 2;
 	}
