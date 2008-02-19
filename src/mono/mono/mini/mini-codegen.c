@@ -379,7 +379,10 @@ void
 mono_print_ins_index (int i, MonoInst *ins)
 {
 	const char *spec = ins_get_spec (ins->opcode);
-	printf ("\t%-2d %s", i, mono_inst_name (ins->opcode));
+	if (i != -1)
+		printf ("\t%-2d %s", i, mono_inst_name (ins->opcode));
+	else
+		printf (" %s", mono_inst_name (ins->opcode));
 	if (!spec)
 		g_error ("Unknown opcode: %s\n", mono_inst_name (ins->opcode));
 
