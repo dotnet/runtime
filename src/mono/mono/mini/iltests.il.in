@@ -1374,4 +1374,35 @@ COND:   ldloc.0
 				  ret
 	}
 
+	.class interface nested public auto ansi abstract IFaceWithStaticMethod
+	{
+	    .method public static  specialname 
+    	       default void foo ()  cil managed noinlining 
+	    {
+		.maxstack 0
+		IL_0000:  ret 
+    	}
+	}
+	
+	.class nested public auto ansi AClass extends [mscorlib]System.Object implements Tests/IFaceWithStaticMethod
+	{
+	    .method public hidebysig  specialname  rtspecialname 
+           instance default void .ctor ()  cil managed 
+	    {
+			.maxstack 8
+			ret
+		}
+
+	}
+
+	// Test that static methods in interfaces are ignored during vtable construction
+	.method private static default int32 test_0_ifaces_with_static_methods () cil managed
+	{
+		.maxstack 16
+
+		newobj instance void class Tests/AClass::.ctor()
+		pop
+		ldc.i4.0
+		ret
+	}	
 }
