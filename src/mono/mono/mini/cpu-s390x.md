@@ -90,7 +90,6 @@ cond_exc_nc: len:8
 cond_exc_ne_un: len:8
 cond_exc_no: len:8
 cond_exc_ov: len:8
-div: dest:a src1:i src2:i len:10
 div_imm: dest:i src1:i src2:i len:24
 div_un_imm: dest:i src1:i src2:i len:24
 endfinally: len:28
