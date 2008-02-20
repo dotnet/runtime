@@ -2711,6 +2711,7 @@ static MonoReflectionMethod *
 ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 {
 	MonoMethodInflated *imethod;
+	MonoMethod *result;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2721,12 +2722,19 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 		return NULL;
 
 	imethod = (MonoMethodInflated *) method->method;
-
 	if (imethod->reflection_info)
 		return imethod->reflection_info;
-	else
-		return mono_method_get_object (
-			mono_object_domain (method), imethod->declaring, NULL);
+
+	result = imethod->declaring;
+	/* Not a generic method.  */
+	if (!result->generic_container)
+		return NULL;
+	if (imethod->context.class_inst) {
+		MonoClass *klass = ((MonoMethod *) imethod)->klass;
+		result = mono_class_inflate_generic_method_full (result, klass, mono_class_get_context (klass));
+	}
+
+	return mono_method_get_object (mono_object_domain (method), result, NULL);
 }
 
 static gboolean
