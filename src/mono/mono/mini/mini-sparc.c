@@ -1222,66 +1222,27 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	return call;
 }
 
+int cond_to_sparc_cond [][3] = {
+	{sparc_be,   sparc_be,   sparc_fbe},
+	{sparc_bne,  sparc_bne,  0},
+	{sparc_ble,  sparc_ble,  sparc_fble},
+	{sparc_bge,  sparc_bge,  sparc_fbge},
+	{sparc_bl,   sparc_bl,   sparc_fbl},
+	{sparc_bg,   sparc_bg,   sparc_fbg},
+	{sparc_bleu, sparc_bleu, 0},
+	{sparc_beu,  sparc_beu,  0},
+	{sparc_blu,  sparc_blu,  sparc_fbl},
+	{sparc_bgu,  sparc_bgu,  sparc_fbg}
+};
+
 /* Map opcode to the sparc condition codes */
 static inline SparcCond
 opcode_to_sparc_cond (int opcode)
 {
+	CompRelation rel;
+	CompType t;
+
 	switch (opcode) {
-	case OP_FBGE:
-		return sparc_fbge;
-	case OP_FBLE:
-		return sparc_fble;
-	case OP_FBEQ:
-	case OP_FCEQ:
-		return sparc_fbe;
-	case OP_FBLT:
-	case OP_FCLT:
-	case OP_FCLT_UN:
-		return sparc_fbl;
-	case OP_FBGT:
-	case OP_FCGT:
-	case OP_FCGT_UN:
-		return sparc_fbg;
-	case OP_IBEQ:
-	case OP_CEQ:
-	case OP_ICEQ:
-	case OP_COND_EXC_EQ:
-		return sparc_be;
-	case OP_IBNE_UN:
-	case OP_COND_EXC_NE_UN:
-		return sparc_bne;
-	case OP_IBLT:
-	case OP_CLT:
-	case OP_ICLT:
-	case OP_COND_EXC_LT:
-		return sparc_bl;
-	case OP_IBLT_UN:
-	case OP_CLT_UN:
-	case OP_ICLT_UN:
-	case OP_COND_EXC_LT_UN:
-		return sparc_blu;
-	case OP_IBGT:
-	case OP_CGT:
-	case OP_ICGT:
-	case OP_COND_EXC_GT:
-		return sparc_bg;
-	case OP_IBGT_UN:
-	case OP_CGT_UN:
-	case OP_ICGT_UN:
-	case OP_COND_EXC_GT_UN:
-		return sparc_bgu;
-	case OP_IBGE:
-	case OP_COND_EXC_GE:
-		return sparc_bge;
-	case OP_IBGE_UN:
-	case OP_COND_EXC_GE_UN:
-		return sparc_beu;
-	case OP_IBLE:
-	case OP_COND_EXC_LE:
-		return sparc_ble;
-	case OP_IBLE_UN:
-	case OP_COND_EXC_LE_UN:
-		return sparc_bleu;
 	case OP_COND_EXC_OV:
 	case OP_COND_EXC_IOV:
 		return sparc_bvs;
@@ -1292,9 +1253,14 @@ opcode_to_sparc_cond (int opcode)
 	case OP_COND_EXC_NC:
 		NOT_IMPLEMENTED;
 	default:
-		g_assert_not_reached ();
-		return sparc_be;
+		rel = mono_opcode_to_cond (opcode);
+		t = mono_opcode_to_type (opcode, -1);
+
+		return cond_to_sparc_cond [rel][t];
+		break;
 	}
+
+	return -1;
 }
 
 #define COMPUTE_DISP(ins) \
