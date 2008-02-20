@@ -992,9 +992,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* Add a properly aligned dword for use by int<->float conversion opcodes */
- 	offset += 8;
- 	offset = ALIGN_TO (offset, 8);
- 	cfg->arch.float_spill_slot_offset = offset;
+	offset += 8;
+	offset = ALIGN_TO (offset, 8);
+	cfg->arch.float_spill_slot_offset = offset;
 
 	/* 
 	 * spillvars are stored between the normal locals and the storage reserved
