@@ -159,11 +159,8 @@ loadu4_membase: dest:i src1:b len:26
 localloc: dest:i src1:i len:106
 memory_barrier: len: 10
 move: dest:i src1:i len:4
-mul: dest:i src1:i src2:i len:6
 mul_imm: dest:i src1:i len:24
-neg: dest:i src1:i len:6
 nop: len:4
-not: dest:i src1:i len:12
 oparglist: src1:i len:28
 bigmul: len:2 dest:i src1:a src2:i
 bigmul_un: len:2 dest:i src1:a src2:i
@@ -174,8 +171,6 @@ outarg: src1:i len:1
 outarg_imm: len:5
 r4const: dest:f len:26
 r8const: dest:f len:24
-rem.un: dest:d src1:i src2:i len:12
-rem: dest:d src1:i src2:i len:10
 rem_imm: dest:i src1:i src2:i len:24
 rem_un_imm: dest:i src1:i src2:i len:24
 s390_bkchain: len: 8 dest:i src1:i
@@ -186,10 +181,7 @@ sbb_imm: dest:i src1:i len:14
 setret: dest:a src1:i len:4
 sext_i4: dest:i src1:i len:4
 zext_i4: dest:i src1:i len:4
-shl: dest:i src1:i src2:i clob:s len:6
 shl_imm: dest:i src1:i len:8
-shr.un: dest:i src1:i src2:i clob:s len:6
-shr: dest:i src1:i src2:i clob:s len:6
 shr_imm: dest:i src1:i len:10
 shr_un_imm: dest:i src1:i len:8
 sqrt: dest:f src1:f len:4
