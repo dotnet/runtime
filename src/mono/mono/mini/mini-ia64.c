@@ -1473,11 +1473,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
+		case OP_LADD_IMM:
 		case OP_ISUB_IMM:
-		case OP_IAND_IMM:
-		case OP_IOR_IMM:
-		case OP_IXOR_IMM:
+		case OP_LSUB_IMM:
 		case OP_AND_IMM:
+		case OP_IAND_IMM:
+		case OP_LAND_IMM:
+		case OP_IOR_IMM:
+		case OP_LOR_IMM:
+		case OP_IXOR_IMM:
+		case OP_LXOR_IMM:
 		case OP_SHL_IMM:
 		case OP_SHR_IMM:
 		case OP_ISHL_IMM:
@@ -1497,10 +1502,12 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			switch (ins->opcode) {
 			case OP_ADD_IMM:
 			case OP_IADD_IMM:
+			case OP_LADD_IMM:
 				is_imm = ia64_is_imm14 (ins->inst_imm);
 				switched = TRUE;
 				break;
 			case OP_ISUB_IMM:
+			case OP_LSUB_IMM:
 				is_imm = ia64_is_imm14 (- (ins->inst_imm));
 				if (is_imm) {
 					/* A = B - IMM -> A = B + (-IMM) */
@@ -1513,6 +1520,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_IOR_IMM:
 			case OP_IXOR_IMM:
 			case OP_AND_IMM:
+			case OP_LAND_IMM:
+			case OP_LOR_IMM:
+			case OP_LXOR_IMM:
 				is_imm = ia64_is_imm8 (ins->inst_imm);
 				switched = TRUE;
 				break;
@@ -1536,55 +1546,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
-			switch (ins->opcode) {
-			case OP_ADD_IMM:					
-				ins->opcode = OP_LADD;
-				break;
-			case OP_IADD_IMM:
-				ins->opcode = OP_IADD;
-				break;
-			case OP_ISUB_IMM:
-				ins->opcode = OP_ISUB;
-				break;
-			case OP_IAND_IMM:
-				ins->opcode = OP_IAND;
-				break;
-			case OP_IOR_IMM:
-				ins->opcode = OP_IOR;
-				break;
-			case OP_IXOR_IMM:
-				ins->opcode = OP_IXOR;
-				break;
-			case OP_ISHL_IMM:
-				ins->opcode = OP_ISHL;
-				break;
-			case OP_ISHR_IMM:
-				ins->opcode = OP_ISHR;
-				break;
-			case OP_ISHR_UN_IMM:
-				ins->opcode = OP_ISHR_UN;
-				break;
-			case OP_AND_IMM:
-				ins->opcode = OP_LAND;
-				break;
-			case OP_SHL_IMM:
-				ins->opcode = OP_LSHL;
-				break;
-			case OP_SHR_IMM:
-				ins->opcode = OP_LSHR;
-				break;
-			case OP_LSHL_IMM:
-				ins->opcode = OP_LSHL;
-				break;
-			case OP_LSHR_IMM:
-				ins->opcode = OP_LSHR;
-				break;
-			case OP_LSHR_UN_IMM:
-				ins->opcode = OP_LSHR_UN;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
+			ins->opcode = mono_op_imm_to_op (ins->opcode);
 
 			if (ins->inst_imm == 0)
 				ins->sreg2 = IA64_R0;
