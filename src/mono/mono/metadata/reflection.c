@@ -7399,6 +7399,15 @@ mono_custom_attrs_from_method (MonoMethod *method)
 {
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
+
+	/*
+	 * An instantiated method has the same cattrs as the generic method definition.
+	 *
+	 * LAMESPEC: The .NET SRE throws an exception for instantiations of generic method builders
+	 *           Note that this stanza is not necessary for non-SRE types, but it's a micro-optimization
+	 */
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
 	
 	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (method)))
 		return cinfo;
@@ -7503,6 +7512,15 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	guint32 param_list, param_last, param_pos, found;
 	MonoImage *image;
 	MonoReflectionMethodAux *aux;
+
+	/*
+	 * An instantiated method has the same cattrs as the generic method definition.
+	 *
+	 * LAMESPEC: The .NET SRE throws an exception for instantiations of generic method builders
+	 *           Note that this stanza is not necessary for non-SRE types, but it's a micro-optimization
+	 */
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
 
 	if (method->klass->image->dynamic) {
 		MonoCustomAttrInfo *res, *ainfo;
