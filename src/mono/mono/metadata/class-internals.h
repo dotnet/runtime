@@ -415,6 +415,9 @@ struct _MonoMethodInflated {
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
 	gpointer reflection_info;
+
+	/* TODO we MUST get rid of this field, it's an ugly hack nobody is proud of. */
+	guint is_mb_open : 1;		/* This is the fully open instantiation of a generic method_builder. Worse than is_tb_open, but it's temporary */
 };
 
 /*

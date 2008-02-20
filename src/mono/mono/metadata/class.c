@@ -633,6 +633,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	MonoMethodInflated *iresult, *cached;
 	MonoMethodSignature *sig;
 	MonoGenericContext tmp_context;
+	gboolean is_mb_open = FALSE;
 
 	/* The `method' has already been instantiated before => we need to peel out the instantiation and create a new context */
 	while (method->is_inflated) {
@@ -651,10 +652,22 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	if (!method->generic_container && !method->klass->generic_container)
 		return method;
 
+	/*
+	 * The reason for this hack is to fix the behavior of inflating generic methods that come from a MethodBuilder.
+	 * What happens is that instantiating a generic MethodBuilder with its own arguments should create a diferent object.
+	 * This is opposite to the way non-SRE MethodInfos behave.
+	 *
+	 * FIXME: express this better, somehow!
+	 */
+	is_mb_open = method->generic_container &&
+		method->klass->image->dynamic && !method->klass->wastypebuilder &&
+		context->method_inst == method->generic_container->context.method_inst;
+
 	mono_stats.inflated_method_count++;
 	iresult = g_new0 (MonoMethodInflated, 1);
 	iresult->context = *context;
 	iresult->declaring = method;
+	iresult->is_mb_open = is_mb_open;
 
 	if (!context->method_inst && method->generic_container)
 		iresult->context.method_inst = method->generic_container->context.method_inst;

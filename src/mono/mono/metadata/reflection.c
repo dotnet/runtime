@@ -9007,21 +9007,12 @@ static MonoMethod *
 inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoObject *obj)
 {
 	MonoMethodInflated *imethod;
-	MonoGenericContext tmp_context;
 	MonoGenericContext *context;
 	MonoClass *klass;
 
 	klass = mono_class_from_mono_type (type->type.type);
 	g_assert (klass->generic_class);
 	context = mono_class_get_context (klass);
-
-	if (method->generic_container) {
-		g_assert (method->klass == klass->generic_class->container_class);
-
-		tmp_context.class_inst = klass->generic_class->context.class_inst;
-		tmp_context.method_inst = method->generic_container->context.method_inst;
-		context = &tmp_context;
-	}
 
 	imethod = (MonoMethodInflated *) mono_class_inflate_generic_method_full (method, klass, context);
 	if (method->generic_container) {

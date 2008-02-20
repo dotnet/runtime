@@ -1960,6 +1960,8 @@ inflated_method_equal (gconstpointer a, gconstpointer b)
 	const MonoMethodInflated *mb = b;
 	if (ma->declaring != mb->declaring)
 		return FALSE;
+	if (ma->is_mb_open != mb->is_mb_open)
+		return FALSE;
 	return mono_metadata_generic_context_equal (&ma->context, &mb->context);
 }
 
@@ -1967,7 +1969,7 @@ static guint
 inflated_method_hash (gconstpointer a)
 {
 	const MonoMethodInflated *ma = a;
-	return mono_metadata_generic_context_hash (&ma->context) ^ mono_aligned_addr_hash (ma->declaring);
+	return mono_metadata_generic_context_hash (&ma->context) ^ mono_aligned_addr_hash (ma->declaring) + ma->is_mb_open;
 }
 
 static gboolean
