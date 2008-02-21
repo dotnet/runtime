@@ -7921,11 +7921,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				break;
 			}
-			case CEE_MONO_LDPTR:
+			case CEE_MONO_LDPTR: {
+				gpointer ptr;
+
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
-				NEW_PCONST (cfg, ins, mono_method_get_wrapper_data (method, token));
+
+				ptr = mono_method_get_wrapper_data (method, token);
+				if (cfg->compile_aot && cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+					MonoMethod *wrapped = mono_marshal_method_from_wrapper (cfg->method);
+
+					if (wrapped && ptr != NULL && mono_lookup_internal_call (wrapped) == ptr) {
+						NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_ICALL_ADDR, wrapped);
+						ins->cil_code = ip;
+						*sp++ = ins;
+						ip += 6;
+						break;
+					}
+				}
+				NEW_PCONST (cfg, ins, ptr);
 				ins->cil_code = ip;
 				*sp++ = ins;
 				ip += 6;
@@ -7933,6 +7948,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Can't embed random pointers into AOT code */
 				cfg->disable_aot = 1;
 				break;
+			}
 			case CEE_MONO_VTADDR:
 				CHECK_STACK (1);
 				--sp;
@@ -10040,6 +10056,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_DECLSEC:
 		target = (mono_metadata_blob_heap (patch_info->data.token->image, patch_info->data.token->token) + 2);
+		break;
+	case MONO_PATCH_INFO_ICALL_ADDR:
+		target = mono_lookup_internal_call (patch_info->data.method);
 		break;
 	case MONO_PATCH_INFO_BB_OVF:
 	case MONO_PATCH_INFO_EXC_OVF:

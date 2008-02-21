@@ -115,6 +115,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *shared_patches;
 	GHashTable *image_hash;
 	GHashTable *method_to_cfg;
+	GHashTable *wrapper_to_method;
 	GHashTable *token_info_hash;
 	GPtrArray *image_table;
 	GList *method_order;
@@ -1837,6 +1838,20 @@ get_shared_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 	return get_got_offset (acfg, ji);
 }
 
+static guint32
+get_method_index (MonoAotCompile *acfg, MonoMethod *method)
+{
+	int method_index = mono_metadata_token_index (method->token);
+
+	if (method_index == 0) {
+		MonoMethod *wrapped = g_hash_table_lookup (acfg->wrapper_to_method, method);
+		g_assert (wrapped);
+		method_index = mono_metadata_token_index (wrapped->token);
+	}
+
+	return method_index;
+}
+
 static void
 emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 {
@@ -1855,7 +1870,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	code = cfg->native_code;
 	header = mono_method_get_header (method);
 
-	method_index = mono_metadata_token_index (method->token);
+	method_index = get_method_index (acfg, method);
 
 	/* Make the labels local */
 	symbol = g_strdup_printf (".Lm_%x", method_index);
@@ -2018,6 +2033,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
+	case MONO_PATCH_INFO_ICALL_ADDR:
 		encode_method_ref (acfg, patch_info->data.method, p, &p);
 		break;
 	case MONO_PATCH_INFO_INTERNAL_METHOD: {
@@ -2091,7 +2107,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			encode_field_info (acfg, patch_info->data.field, p, &p);
 		}
 		break;
-	case MONO_PATCH_INFO_WRAPPER: {
+	case MONO_PATCH_INFO_WRAPPER:
 		encode_value (patch_info->data.method->wrapper_type, p, &p);
 
 		switch (patch_info->data.method->wrapper_type) {
@@ -2132,7 +2148,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			g_assert_not_reached ();
 		}
 		break;
-	}
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
 		g_assert_not_reached ();
@@ -2152,7 +2167,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
 	MonoMethodHeader *header;
-	guint32 last_offset, method_idx;
+	guint32 last_offset, method_index;
 	guint8 *p, *buf;
 	guint32 first_got_offset;
 
@@ -2160,10 +2175,10 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	code = cfg->native_code;
 	header = mono_method_get_header (method);
 
-	method_idx = mono_metadata_token_index (method->token);
+	method_index = get_method_index (acfg, method);
 
 	/* Make the labels local */
-	symbol = g_strdup_printf (".Lm_%x_p", method_idx);
+	symbol = g_strdup_printf (".Lm_%x_p", method_index);
 
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
@@ -2171,7 +2186,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		g_ptr_array_add (patches, patch_info);
 	g_ptr_array_sort (patches, compare_patches);
 
-	first_got_offset = acfg->method_got_offsets [mono_metadata_token_index (cfg->method->token)];
+	first_got_offset = acfg->method_got_offsets [method_index];
 
 	/**********************/
 	/* Encode method info */
@@ -2229,7 +2244,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	if (n_patches)
-		g_assert (acfg->has_got_slots [method_idx]);
+		g_assert (acfg->has_got_slots [method_index]);
 
 	encode_value (n_patches, p, &p);
 
@@ -2297,7 +2312,7 @@ static void
 emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 {
 	MonoMethod *method;
-	int k, buf_size;
+	int k, buf_size, method_index;
 	guint32 debug_info_size;
 	guint8 *code;
 	char *symbol;
@@ -2308,8 +2323,10 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	code = cfg->native_code;
 	header = mono_method_get_header (method);
 
+	method_index = get_method_index (acfg, method);
+
 	/* Make the labels local */
-	symbol = g_strdup_printf (".Le_%x_p", mono_metadata_token_index (method->token));
+	symbol = g_strdup_printf (".Le_%x_p", method_index);
 
 	buf_size = header->num_clauses * 256 + 128;
 	p = buf = g_malloc (buf_size);
@@ -2689,22 +2706,26 @@ compile_method (MonoAotCompile *acfg, int index)
 	method_idx = mono_metadata_token_index (method->token);	
 		
 	/* fixme: maybe we can also precompile wrapper methods */
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 		//printf ("Skip (impossible): %s\n", mono_method_full_name (method, TRUE));
 		return;
 	}
 
-	acfg->stats.mcount++;
-
-	/* fixme: we need to patch the IP for the LMF in that case */
-	if (method->save_lmf) {
-		//printf ("Skip (needs lmf):  %s\n", mono_method_full_name (method, TRUE));
-		acfg->stats.lmfcount++;
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 		return;
+
+#if 0
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+		/* Compile the wrapper instead */
+		MonoMethod *wrapper = mono_marshal_get_native_wrapper (method, check_for_pending_exc);
+		g_hash_table_insert (acfg->wrapper_to_method, wrapper, method);
+		method = wrapper;
 	}
+#endif
+
+	acfg->stats.mcount++;
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 		/* 
@@ -3458,6 +3479,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->patch_to_shared_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->shared_patches = g_ptr_array_new ();
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
+	acfg->wrapper_to_method = g_hash_table_new (NULL, NULL);
 	acfg->token_info_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
