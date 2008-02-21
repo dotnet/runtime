@@ -1228,166 +1228,6 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 	vt->imt_collisions_bitmap |= imt_collisions_bitmap;
 }
 
-static gboolean
-include_arg_info (MonoType *type, MonoRuntimeGenericContextTemplate *parent_template)
-{
-	int i;
-
-	if (!MONO_TYPE_IS_REFERENCE (type) &&
-			mono_type_get_type (type) != MONO_TYPE_VAR &&
-			mono_type_get_type (type) != MONO_TYPE_MVAR)
-		return FALSE;
-
-	if (!parent_template)
-		return TRUE;
-
-	for (i = 0; i < parent_template->num_arg_infos; ++i)
-		if (type == parent_template->arg_infos [i])
-			return FALSE;
-
-	return TRUE;
-}
-
-/**
- * mono_class_get_runtime_generic_context_template:
- * @class: an open generic class
- *
- * Returns the generic context template for the class.  Might have to
- * build it first.
- */
-MonoRuntimeGenericContextTemplate*
-mono_class_get_runtime_generic_context_template (MonoClass *class)
-{
-	int num_parent_args, num_class_args, total_num_args;
-	MonoRuntimeGenericContextTemplate *parent_template, *template;
-	MonoGenericInst *inst;
-	int i, j;
-	MonoImage *image = class->image;
-
-	mono_loader_lock ();
-	if (!image->rgctx_template_hash)
-		image->rgctx_template_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	template = g_hash_table_lookup (image->rgctx_template_hash, class);
-
-	if (template) {
-		mono_loader_unlock ();
-		return template;
-	}
-
-	if (class->parent)
-		parent_template = mono_class_get_runtime_generic_context_template (class->parent);
-	else
-		parent_template = NULL;
-
-	if (parent_template)
-		num_parent_args = parent_template->num_arg_infos;
-	else
-		num_parent_args = 0;
-
-	if (class->generic_class)
-		inst = class->generic_class->context.class_inst;
-	else if (class->generic_container)
-		inst = class->generic_container->context.class_inst;
-	else
-		inst = NULL;
-
-	num_class_args = 0;
-	if (inst) {
-		for (i = 0; i < inst->type_argc; ++i) {
-			if (include_arg_info (inst->type_argv [i], parent_template))
-				++num_class_args;
-		}
-	}
-
-	total_num_args = num_parent_args + num_class_args;
-
-	template = mono_mempool_alloc (image->mempool,
-		sizeof (MonoRuntimeGenericContextTemplate) + sizeof (MonoType*) * total_num_args);
-
-	template->num_arg_infos = total_num_args;
-
-	if (num_parent_args > 0)
-		memcpy (template->arg_infos, parent_template->arg_infos,
-			sizeof (MonoType*) * parent_template->num_arg_infos);
-
-	j = 0;
-	if (inst) {
-		for (i = 0; i < inst->type_argc; ++i) {
-			MonoType *type = inst->type_argv [i];
-
-			if (include_arg_info (type, parent_template))
-				template->arg_infos [num_parent_args + j++] = type;
-		}
-	}
-	g_assert (j == num_class_args);
-
-	g_hash_table_insert (image->rgctx_template_hash, class, template);
-	mono_loader_unlock ();
-
-	return template;
-}
-
-static void
-mono_class_setup_runtime_generic_context (MonoClass *class, MonoDomain *domain)
-{
-	MonoVTable *vtable = mono_class_vtable (domain, class);
-	int depth = class->idepth;
-	MonoClass *super;
-	MonoRuntimeGenericSuperInfo *super_infos;
-	MonoRuntimeGenericContext *rgctx;
-	MonoRuntimeGenericContextTemplate *rgctx_template;
-	MonoGenericContext *context = &class->generic_class->context;
-	int i;
-
-	rgctx_template = mono_class_get_runtime_generic_context_template (class->generic_class->container_class);
-
-	mono_domain_lock (domain);
-	/* We don't allocate arg_infos because we don't use it yet.
-	 */
-	super_infos = mono_mempool_alloc0 (domain->mp,
-		sizeof (MonoRuntimeGenericSuperInfo) * depth +
-		sizeof (MonoRuntimeGenericContext) +
-		sizeof (MonoRuntimeGenericArgInfo) * rgctx_template->num_arg_infos);
-	mono_domain_unlock (domain);
-
-	rgctx = vtable->runtime_generic_context = (MonoRuntimeGenericContext*) (super_infos + depth);
-
-	rgctx->domain = domain;
-
-	depth = 0;
-	for (super = class; super; super = super->parent) {
-		vtable = mono_class_vtable (domain, super);
-
-		super_infos [depth].static_data = vtable->data;
-		super_infos [depth].klass = super;
-		super_infos [depth].vtable = vtable;
-
-		depth++;
-	}
-
-	for (i = 0; i < rgctx_template->num_arg_infos; ++i) {
-		MonoType *arg_info = rgctx_template->arg_infos [i];
-		MonoType *arg_type;
-		MonoClass *arg_class;
-
-		if (!arg_info)
-			continue;
-
-		arg_type = mono_class_inflate_generic_type (arg_info, context);
-
-		if (!MONO_TYPE_IS_REFERENCE (arg_type))
-			continue;
-
-		arg_class = mono_class_from_mono_type (arg_type);
-
-		vtable = mono_class_vtable (domain, arg_class);
-
-		rgctx->arg_infos [i].static_data = vtable->data;
-		rgctx->arg_infos [i].klass = arg_class;
-		rgctx->arg_infos [i].vtable = vtable;
-	}
-}
-
 static void
 build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces) {
 	build_imt_slots (klass, vt, domain, imt, extra_interfaces, -1);
@@ -1459,6 +1299,21 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
 		return runtime_info->domain_vtables [domain->domain_id];
 	return mono_class_create_runtime_vtable (domain, class);
+}
+
+static gboolean
+class_needs_rgctx (MonoClass *class)
+{
+	if (!mono_class_generic_sharing_enabled (class))
+		return FALSE;
+
+	while (class) {
+		if (class->generic_class)
+			return TRUE;
+		class = class->parent;
+	}
+
+	return FALSE;
 }
 
 static MonoVTable *
@@ -1703,11 +1558,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	}
 
-	/* FIXME: We need to generate a runtime generic context not
-	   only for generic classes but also for non-generic classes
-	   which derive (directly or indirectly) from generic
-	   classes. */
-	if (class->generic_class && mono_class_generic_sharing_enabled (class))
+	if (class_needs_rgctx (class))
 		mono_class_setup_runtime_generic_context (class, domain);
 
 	mono_domain_unlock (domain);

@@ -189,8 +189,24 @@ typedef struct {
 	MonoVTable *domain_vtables [MONO_ZERO_LEN_ARRAY];
 } MonoClassRuntimeInfo;
 
+#define MONO_RGCTX_MAX_OTHER_INFOS	2
+
+enum {
+	MONO_RGCTX_INFO_STATIC_DATA,
+	MONO_RGCTX_INFO_KLASS,
+	MONO_RGCTX_INFO_VTABLE
+};
+
+typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
+	MonoType *type;
+	int info_type;
+	struct _MonoRuntimeGenericContextOtherInfoTemplate *next;
+} MonoRuntimeGenericContextOtherInfoTemplate;
+
 typedef struct {
 	int num_arg_infos;
+	MonoClass *next_subclass;
+	MonoRuntimeGenericContextOtherInfoTemplate *other_infos;
 	MonoType *arg_infos [MONO_ZERO_LEN_ARRAY];
 } MonoRuntimeGenericContextTemplate;
 
@@ -344,6 +360,8 @@ typedef struct {
 
 typedef struct {
 	MonoDomain *domain;
+	gpointer other_infos [MONO_RGCTX_MAX_OTHER_INFOS];
+	gpointer *extra_other_infos;
 	MonoRuntimeGenericArgInfo arg_infos [MONO_ZERO_LEN_ARRAY];
 } MonoRuntimeGenericContext;
 
@@ -595,6 +613,16 @@ enum {
 	MONO_GENERIC_SHARING_CORLIB,
 	MONO_GENERIC_SHARING_ALL
 };
+
+/*
+ * Flags for which contexts were used in inflating a generic.
+ */
+enum {
+	MONO_GENERIC_CONTEXT_USED_CLASS = 1,
+	MONO_GENERIC_CONTEXT_USED_METHOD = 2
+};
+
+#define MONO_GENERIC_CONTEXT_USED_BOTH		(MONO_GENERIC_CONTEXT_USED_CLASS | MONO_GENERIC_CONTEXT_USED_METHOD)
 
 extern MonoStats mono_stats MONO_INTERNAL;
 
@@ -916,5 +944,22 @@ mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
 MonoRuntimeGenericContextTemplate*
 mono_class_get_runtime_generic_context_template (MonoClass *class) MONO_INTERNAL;
 
-#endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
+void
+mono_class_setup_runtime_generic_context (MonoClass *class, MonoDomain *domain) MONO_INTERNAL;
 
+gboolean
+mono_class_lookup_or_register_other_info (MonoClass *class, MonoClass *other_class, int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
+
+int
+mono_generic_context_check_used (MonoGenericContext *context) MONO_INTERNAL;
+
+int
+mono_class_check_context_used (MonoClass *class) MONO_INTERNAL;
+
+void
+mono_class_unregister_image_generic_subclasses (MonoImage *image) MONO_INTERNAL;
+
+void
+mono_class_unregister_domain_generic_vtables (MonoDomain *domain) MONO_INTERNAL;
+
+#endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

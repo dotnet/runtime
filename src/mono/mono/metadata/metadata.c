@@ -2165,6 +2165,7 @@ mono_metadata_clean_for_image (MonoImage *image)
 		free_generic_class (l->data);
 	g_slist_free (ginst_data.list);
 	g_slist_free (gclass_data.list);
+	mono_class_unregister_image_generic_subclasses (image);
 	mono_loader_unlock ();
 }
 

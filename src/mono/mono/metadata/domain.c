@@ -1801,6 +1801,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
 	max_domain_code_size = MAX (max_domain_code_size, code_size);
 
+	mono_class_unregister_domain_generic_vtables (domain);
+
 #ifdef DEBUG_DOMAIN_UNLOAD
 	mono_mempool_invalidate (domain->mp);
 	mono_code_manager_invalidate (domain->code_mp);
