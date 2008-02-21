@@ -60,7 +60,7 @@ endfinally: len:20
 call_handler: len:12
 endfilter: src1:i len:16
 
-ckfinite: dest:f src1:f len:24
+ckfinite: dest:f src1:f len:64
 ceq: dest:i len:12
 cgt: dest:i len:12
 cgt.un: dest:i len:12

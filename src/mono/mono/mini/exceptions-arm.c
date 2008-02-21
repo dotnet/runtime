@@ -444,11 +444,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		
 		*new_ctx = *ctx;
 
-		if (!(*lmf)->method)
-			return (gpointer)-1;
-
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
 		} else {
+			if (!(*lmf)->method)
+				return (gpointer)-1;
 			memset (res, 0, sizeof (MonoJitInfo));
 			res->method = (*lmf)->method;
 		}

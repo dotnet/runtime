@@ -2030,6 +2030,126 @@ mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val)
 	return code;
 }
 
+/*
+ * emit_load_volatile_arguments:
+ *
+ *  Load volatile arguments from the stack to the original input registers.
+ * Required before a tail call.
+ */
+static guint8*
+emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
+{
+	MonoMethod *method = cfg->method;
+	MonoMethodSignature *sig;
+	MonoInst *inst;
+	CallInfo *cinfo;
+	guint32 i, pos;
+
+	/* FIXME: Generate intermediate code instead */
+
+	sig = mono_method_signature (method);
+
+	/* This is the opposite of the code in emit_prolog */
+
+	pos = 0;
+
+	cinfo = calculate_sizes (sig, sig->pinvoke);
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		ArgInfo *ainfo = &cinfo->ret;
+		inst = cfg->vret_addr;
+		g_assert (arm_is_imm12 (inst->inst_offset));
+		ARM_LDR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+	}
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = cinfo->args + i;
+		inst = cfg->args [pos];
+		
+		if (cfg->verbose_level > 2)
+			g_print ("Loading argument %d (type: %d)\n", i, ainfo->regtype);
+		if (inst->opcode == OP_REGVAR) {
+			if (ainfo->regtype == RegTypeGeneral)
+				ARM_MOV_REG_REG (code, inst->dreg, ainfo->reg);
+			else if (ainfo->regtype == RegTypeFP) {
+				g_assert_not_reached ();
+			} else if (ainfo->regtype == RegTypeBase) {
+				// FIXME:
+				NOT_IMPLEMENTED;
+				/*
+				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
+					ARM_LDR_IMM (code, inst->dreg, ARMREG_SP, (prev_sp_offset + ainfo->offset));
+				} else {
+					code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+					ARM_LDR_REG_REG (code, inst->dreg, ARMREG_SP, ARMREG_IP);
+				}
+				*/
+			} else
+				g_assert_not_reached ();
+		} else {
+			if (ainfo->regtype == RegTypeGeneral) {
+				switch (ainfo->size) {
+				case 1:
+				case 2:
+					// FIXME:
+					NOT_IMPLEMENTED;
+					break;
+				case 8:
+					g_assert (arm_is_imm12 (inst->inst_offset));
+					ARM_LDR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					g_assert (arm_is_imm12 (inst->inst_offset + 4));
+					ARM_LDR_IMM (code, ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);
+					break;
+				default:
+					if (arm_is_imm12 (inst->inst_offset)) {
+						ARM_LDR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, inst->inst_offset);
+						ARM_LDR_REG_REG (code, ainfo->reg, inst->inst_basereg, ARMREG_IP);
+					}
+					break;
+				}
+			} else if (ainfo->regtype == RegTypeBaseGen) {
+				// FIXME:
+				NOT_IMPLEMENTED;
+			} else if (ainfo->regtype == RegTypeBase) {
+				// FIXME:
+				NOT_IMPLEMENTED;
+			} else if (ainfo->regtype == RegTypeFP) {
+				g_assert_not_reached ();
+			} else if (ainfo->regtype == RegTypeStructByVal) {
+				int doffset = inst->inst_offset;
+				int soffset = 0;
+				int cur_reg;
+				int size = 0;
+				if (mono_class_from_mono_type (inst->inst_vtype))
+					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
+				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
+					if (arm_is_imm12 (doffset)) {
+						ARM_LDR_IMM (code, ainfo->reg + cur_reg, inst->inst_basereg, doffset);
+					} else {
+						code = mono_arm_emit_load_imm (code, ARMREG_IP, doffset);
+						ARM_LDR_REG_REG (code, ainfo->reg + cur_reg, inst->inst_basereg, ARMREG_IP);
+					}
+					soffset += sizeof (gpointer);
+					doffset += sizeof (gpointer);
+				}
+				if (ainfo->vtsize)
+					// FIXME:
+					NOT_IMPLEMENTED;
+			} else if (ainfo->regtype == RegTypeStructByAddr) {
+			} else {
+				// FIXME:
+				NOT_IMPLEMENTED;
+			}
+		}
+		pos ++;
+	}
+
+	g_free (cinfo);
+
+	return code;
+}
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -2057,6 +2177,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		/* this is not thread save, but good enough */
 		/* fixme: howto handle overflows? */
 		//x86_inc_mem (code, &cov->data [bb->dfn].count); 
+	}
+
+    if (mono_break_at_bb_method && mono_method_desc_full_match (mono_break_at_bb_method, cfg->method) && bb->block_num == mono_break_at_bb_bb_num) {
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+							 (gpointer)"mono_break");
+		code = emit_call_seq (cfg, code);
 	}
 
 	MONO_BB_FOR_EACH_INS (bb, ins) {
@@ -2424,6 +2550,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * Keep in sync with mono_arch_emit_epilog
 			 */
 			g_assert (!cfg->method->save_lmf);
+
+			code = emit_load_volatile_arguments (cfg, code);
+
 			code = emit_big_add (code, ARMREG_SP, cfg->frame_reg, cfg->stack_usage);
 			ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP)) | ((1 << ARMREG_LR)));
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
@@ -3047,13 +3176,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_GE); /* swapped */
 			break;
 		case OP_CKFINITE: {
-			/*ppc_stfd (code, ins->sreg1, -8, ppc_sp);
-			ppc_lwz (code, ppc_r11, -8, ppc_sp);
-			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 1, 31);
-			ppc_addis (code, ppc_r11, ppc_r11, -32752);
-			ppc_rlwinmd (code, ppc_r11, ppc_r11, 1, 31, 31);
-			EMIT_COND_SYSTEM_EXCEPTION (OP_IBEQ - OP_IBEQ, "ArithmeticException");*/
+#ifdef ARM_FPU_FPA
+			if (ins->dreg != ins->sreg1)
+				ARM_MVFD (code, ins->dreg, ins->sreg1);
+#else
 			g_assert_not_reached ();
+#endif
 			break;
 		}
 		default:
@@ -3442,9 +3570,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 		/* *(lmf_addr) = r1 */
 		ARM_STR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		/* save method info */
-		code = mono_arm_emit_load_imm (code, ARMREG_R2, GPOINTER_TO_INT (method));
-		ARM_STR_IMM (code, ARMREG_R2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, method));
+		/* Skip method (only needed for trampoline LMF frames) */
 		ARM_STR_IMM (code, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, ebp));
 		/* save the current IP */
 		ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_PC);
@@ -3592,7 +3718,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		case MONO_PATCH_INFO_EXC: {
 			MonoClass *exc_class;
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
-			const char *ex_name = patch_info->data.target;
 
 			i = exception_id_by_name (patch_info->data.target);
 			if (exc_throw_pos [i]) {
@@ -3613,7 +3738,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			patch_info->data.name = "mono_arch_throw_corlib_exception";
 			patch_info->ip.i = code - cfg->native_code;
 			ARM_BL (code, 0);
-			*(gconstpointer*)code = exc_class->type_token;
+			*(guint32*)(gpointer)code = exc_class->type_token;
 			code += 4;
 			break;
 		}
