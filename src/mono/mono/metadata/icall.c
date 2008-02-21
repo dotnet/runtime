@@ -5177,6 +5177,9 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 	init_generic_context_from_args (&context, type_args, method_args);
 	klass = mono_class_get_full (image, token, &context);
 
+	if (mono_loader_get_last_error ())
+		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+
 	if (klass)
 		return &klass->byval_arg;
 	else
@@ -5218,6 +5221,9 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 
 	init_generic_context_from_args (&context, type_args, method_args);
 	method = mono_get_method_full (image, token, NULL, &context);
+
+	if (mono_loader_get_last_error ())
+		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
 
 	return method;
 }
@@ -5283,6 +5289,9 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 
 	init_generic_context_from_args (&context, type_args, method_args);
 	field = mono_field_from_token (image, token, &klass, &context);
+
+	if (mono_loader_get_last_error ())
+		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
 	
 	return field;
 }
