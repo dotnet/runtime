@@ -4424,7 +4424,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
-		const unsigned char *target;
+		unsigned char *target;
 
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
