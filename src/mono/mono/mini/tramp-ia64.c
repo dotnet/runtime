@@ -421,3 +421,19 @@ mono_debugger_create_notification_function (void)
 
 	return NULL;
 }
+
+gpointer
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+{
+	/* FIXME: implement! */
+	g_assert_not_reached ();
+	return NULL;
+}
+
+guint32
+mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs)
+{
+	/* FIXME: implement! */
+	g_assert_not_reached ();
+	return 0;
+}

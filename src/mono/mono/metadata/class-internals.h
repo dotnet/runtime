@@ -360,10 +360,23 @@ typedef struct {
 
 typedef struct {
 	MonoDomain *domain;
+	MonoVTable *vtable;
 	gpointer other_infos [MONO_RGCTX_MAX_OTHER_INFOS];
 	gpointer *extra_other_infos;
 	MonoRuntimeGenericArgInfo arg_infos [MONO_ZERO_LEN_ARRAY];
 } MonoRuntimeGenericContext;
+
+#define MONO_RGCTX_ENCODE_DIRECT_OFFSET(o)	((guint32)(o) & 0x00ffffff)
+#define MONO_RGCTX_ENCODE_INDIRECT_OFFSET(o)	(((guint32)(o) & 0x00ffffff) | 0x01000000)
+
+#define MONO_RGCTX_OFFSET_INDIRECT_SLOT(s)	((gint32)(((guint32)(s))>>24) - 1)
+#define MONO_RGCTX_OFFSET_IS_INDIRECT(s)	(MONO_RGCTX_OFFSET_INDIRECT_SLOT((s)) >= 0)
+
+#define MONO_RGCTX_OFFSET_OFFSET_PART(s)	((guint32)(s) & 0x00ffffff)
+#define MONO_RGCTX_OFFSET_DIRECT_OFFSET(s)	((MONO_RGCTX_OFFSET_OFFSET_PART((s)) & 0x00800000) ? \
+			(gint32)(MONO_RGCTX_OFFSET_OFFSET_PART((s)) | 0xff000000) : \
+			(gint32)MONO_RGCTX_OFFSET_OFFSET_PART((s)))
+#define MONO_RGCTX_OFFSET_INDIRECT_OFFSET(s)    MONO_RGCTX_OFFSET_DIRECT_OFFSET((s))
 
 /* the interface_offsets array is stored in memory before this struct */
 struct MonoVTable {
@@ -946,6 +959,9 @@ mono_class_get_runtime_generic_context_template (MonoClass *class) MONO_INTERNAL
 
 void
 mono_class_setup_runtime_generic_context (MonoClass *class, MonoDomain *domain) MONO_INTERNAL;
+
+void
+mono_class_fill_runtime_generic_context (MonoRuntimeGenericContext *rgctx) MONO_INTERNAL;
 
 gboolean
 mono_class_lookup_or_register_other_info (MonoClass *class, MonoClass *other_class, int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;

@@ -173,6 +173,33 @@ public class MyDict<N,M> {
 	public MyDict (N n, M m) { p = new MyPair<N,M> (n, m); }
 }
 
+public class RGCTXTest<T> {
+	public GenA<T>[] newAArr () {
+		return new GenA<T> [3];
+	}
+}
+
+public class RGCTXTestSubA<T> : RGCTXTest<T> {
+	public GenB<T>[] newBArr () {
+		return new GenB<T> [3];
+	}
+}
+
+public class RGCTXTestSubB<T> : RGCTXTest<T> {
+	public GenC<T>[] newCArr () {
+		return new GenC<T> [3];
+	}
+}
+
+public class RGCTXTestSubASub : RGCTXTestSubA<ClassA> {
+}
+
+public class RGCTXTestSubASubSub<T> : RGCTXTestSubASub {
+	public GenC<T>[] newCArr () {
+		return new GenC<T> [3];
+	}
+}
+
 public class main {
 	static bool haveError = false;
 
@@ -223,6 +250,33 @@ public class main {
 
 		typeCheck ("GenABDeriv.newArr", gabd.newArr (), typeof (GenB<T>[]));
 		typeCheck ("GenABDeriv.newDerivArr", gabd.newDerivArr (), typeof (T[]));
+
+		RGCTXTest<T> rt = new RGCTXTest<T> ();
+		RGCTXTestSubA<T> rtsa = new RGCTXTestSubA<T> ();
+		RGCTXTestSubB<T> rtsb = new RGCTXTestSubB<T> ();
+		RGCTXTestSubASub rtsas = new RGCTXTestSubASub ();
+		RGCTXTestSubASubSub<T> rtsass = new RGCTXTestSubASubSub<T> ();
+
+		typeCheck ("rtsass.newCArr", rtsass.newCArr (), typeof (GenC<T>[]));
+		typeCheck ("rgsa.newBArr", rtsa.newBArr (), typeof (GenB<T>[]));
+		typeCheck ("rg.newAArr", rt.newAArr (), typeof (GenA<T>[]));
+		typeCheck ("rgsb.newCArr", rtsb.newCArr (), typeof (GenC<T>[]));
+
+		/* repeat all for each class */
+		typeCheck ("rtsass.newCArr", rtsass.newCArr (), typeof (GenC<T>[]));
+		typeCheck ("rtsass.newBArr", rtsass.newBArr (), typeof (GenB<ClassA>[]));
+		typeCheck ("rtsass.newAArr", rtsass.newAArr (), typeof (GenA<ClassA>[]));
+
+		typeCheck ("rtsas.newBArr", rtsas.newBArr (), typeof (GenB<ClassA>[]));
+		typeCheck ("rtsas.newAArr", rtsas.newAArr (), typeof (GenA<ClassA>[]));
+
+		typeCheck ("rtsa.newBArr", rtsa.newBArr (), typeof (GenB<T>[]));
+		typeCheck ("rtsa.newAArr", rtsa.newAArr (), typeof (GenA<T>[]));
+
+		typeCheck ("rtsb.newCArr", rtsb.newCArr (), typeof (GenC<T>[]));
+		typeCheck ("rtsb.newAArr", rtsb.newAArr (), typeof (GenA<T>[]));
+
+		typeCheck ("rt.newAArr", rt.newAArr (), typeof (GenA<T>[]));
 	}
 
 	public static void virtualTest<T> (VirtualTest<T> vt, int len) {

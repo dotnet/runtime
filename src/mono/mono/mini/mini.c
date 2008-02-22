@@ -143,6 +143,7 @@ handle_store_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, Mon
 /* helper methods signature */
 static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
 static MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
+static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
 static MonoMethodSignature *helper_sig_domain_get = NULL;
 
 static guint32 default_opt = 0;
@@ -167,6 +168,8 @@ static CRITICAL_SECTION jit_mutex;
 
 static GHashTable *class_init_hash_addr = NULL;
 static GHashTable *delegate_trampoline_hash_addr = NULL;
+
+static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
 
 static MonoCodeManager *global_codeman = NULL;
 
@@ -4353,27 +4356,58 @@ get_runtime_generic_context_from_this (MonoCompile *cfg, MonoInst *this, unsigne
 	return rgc_ptr;
 }
 
-static MonoInst*
-get_runtime_generic_context_field_from_offset (MonoCompile *cfg, MonoInst *rgc_ptr, int offset, unsigned char *ip)
+static gpointer
+create_rgctx_lazy_fetch_trampoline (guint32 offset)
 {
-	MonoInst *field_offset, *field_addr, *field;
+	gpointer tramp, ptr;
 
-	if (offset == 0) {
-		field_addr = rgc_ptr;
-	} else {
-		NEW_ICONST (cfg, field_offset, offset);
+	mono_jit_lock ();
+	if (rgctx_lazy_fetch_trampoline_hash)
+		tramp = g_hash_table_lookup (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset));
+	else
+		tramp = NULL;
+	mono_jit_unlock ();
+	if (tramp)
+		return tramp;
 
-		MONO_INST_NEW (cfg, field_addr, OP_PADD);
-		field_addr->cil_code = ip;
-		field_addr->inst_left = rgc_ptr;
-		field_addr->inst_right = field_offset;
-		field_addr->type = STACK_PTR;
-	}
+	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset);
+	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
 
-	MONO_INST_NEW (cfg, field, CEE_LDIND_I);
-	field->cil_code = ip;
-	field->inst_left = field_addr;
-	field->type = STACK_PTR;
+	mono_jit_lock ();
+	if (!rgctx_lazy_fetch_trampoline_hash)
+		rgctx_lazy_fetch_trampoline_hash = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset), ptr);
+	mono_jit_unlock ();
+
+	return ptr;
+}	
+
+static MonoInst*
+lazy_fetch_rgctx_direct_field (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *rgc_ptr, int offset, unsigned char *ip)
+{
+	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
+	guint8 *tramp = create_rgctx_lazy_fetch_trampoline (MONO_RGCTX_ENCODE_DIRECT_OFFSET (offset));
+	int temp;
+	MonoInst *field;
+
+	temp = mono_emit_native_call (cfg, bblock, tramp, sig, &rgc_ptr, ip, FALSE, FALSE); 
+
+	NEW_TEMPLOAD (cfg, field, temp);
+
+	return field;
+}
+
+static MonoInst*
+lazy_fetch_rgctx_indirect_field (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *rgc_ptr, int offset, unsigned char *ip)
+{
+	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
+	guint8 *tramp = create_rgctx_lazy_fetch_trampoline (MONO_RGCTX_ENCODE_INDIRECT_OFFSET (offset));
+	int temp;
+	MonoInst *field;
+
+	temp = mono_emit_native_call (cfg, bblock, tramp, sig, &rgc_ptr, ip, FALSE, FALSE); 
+
+	NEW_TEMPLOAD (cfg, field, temp);
 
 	return field;
 }
@@ -4383,9 +4417,10 @@ get_runtime_generic_context_field_from_offset (MonoCompile *cfg, MonoInst *rgc_p
  * is specified by rgctx_type.
  */
 static MonoInst*
-get_runtime_generic_context_super_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int depth, int rgctx_type, unsigned char *ip)
+get_runtime_generic_context_super_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
+	MonoInst *rgc_ptr, int depth, int rgctx_type, unsigned char *ip)
 {
-	int field_offset_const;
+	int field_offset_const, offset;
 
 	g_assert (depth >= 1);
 
@@ -4403,8 +4438,9 @@ get_runtime_generic_context_super_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int 
 		g_assert_not_reached ();
 	}
 
-	return get_runtime_generic_context_field_from_offset (cfg, rgc_ptr,
-		-depth * sizeof (MonoRuntimeGenericSuperInfo) + field_offset_const, ip);
+	offset = -depth * sizeof (MonoRuntimeGenericSuperInfo) + field_offset_const;
+
+	return lazy_fetch_rgctx_direct_field (cfg, bblock, rgc_ptr, offset, ip);
 }
 
 static int
@@ -4427,18 +4463,22 @@ get_rgctx_arg_info_field_offset (int rgctx_type)
  * rgctx_type;
  */
 static MonoInst*
-get_runtime_generic_context_arg_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int arg_num, int rgctx_type, unsigned char *ip)
+get_runtime_generic_context_arg_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
+	MonoInst *rgc_ptr, int arg_num, int rgctx_type, unsigned char *ip)
 {
-	int arg_info_offset, arg_info_field_offset;
+	int arg_info_offset, arg_info_field_offset, offset;
 
 	g_assert (arg_num >= 0);
+	//g_assert (!lazy);
 
 	arg_info_offset = G_STRUCT_OFFSET (MonoRuntimeGenericContext, arg_infos) +
 		arg_num * sizeof (MonoRuntimeGenericArgInfo);
 
 	arg_info_field_offset = get_rgctx_arg_info_field_offset (rgctx_type);
 
-	return get_runtime_generic_context_field_from_offset (cfg, rgc_ptr, arg_info_offset + arg_info_field_offset, ip);
+	offset = arg_info_offset + arg_info_field_offset;
+
+	return lazy_fetch_rgctx_direct_field (cfg, bblock, rgc_ptr, offset, ip);
 }
 
 /*
@@ -4447,7 +4487,8 @@ get_runtime_generic_context_arg_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int ar
  * specified by rgctx_type;
  */
 static MonoInst*
-get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int index, unsigned char *ip)
+get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
+	MonoInst *rgc_ptr, int index, unsigned char *ip)
 {
 	if (index < MONO_RGCTX_MAX_OTHER_INFOS) {
 		int other_type_offset;
@@ -4455,17 +4496,13 @@ get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoInst *rgc_ptr
 		other_type_offset = G_STRUCT_OFFSET (MonoRuntimeGenericContext, other_infos) +
 			index * sizeof (gpointer);
 
-		return get_runtime_generic_context_field_from_offset (cfg, rgc_ptr, other_type_offset, ip);
+		return lazy_fetch_rgctx_direct_field (cfg, bblock, rgc_ptr, other_type_offset, ip);
 	} else {
-		int table_ptr_offset, slot_offset;
-		MonoInst *table_ptr;
-
-		table_ptr_offset = G_STRUCT_OFFSET (MonoRuntimeGenericContext, extra_other_infos);
-		table_ptr = get_runtime_generic_context_field_from_offset (cfg, rgc_ptr, table_ptr_offset, ip);
+		int slot_offset;
 
 		slot_offset = (index - MONO_RGCTX_MAX_OTHER_INFOS) * sizeof (gpointer);
 
-		return get_runtime_generic_context_field_from_offset (cfg, table_ptr, slot_offset, ip);
+		return lazy_fetch_rgctx_indirect_field (cfg, bblock, rgc_ptr, slot_offset, ip);
 	}
 }
 
@@ -4503,12 +4540,12 @@ get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasic
 	switch (relation) {
 	case MINI_GENERIC_CLASS_RELATION_SELF: {
 		int depth = klass->idepth;
-		return get_runtime_generic_context_super_ptr (cfg, rgctx, depth, rgctx_type, ip);
+		return get_runtime_generic_context_super_ptr (cfg, bblock, rgctx, depth, rgctx_type, ip);
 	}
 	case MINI_GENERIC_CLASS_RELATION_ARGUMENT:
-		return get_runtime_generic_context_arg_ptr (cfg, rgctx, arg_num, rgctx_type, ip);
+		return get_runtime_generic_context_arg_ptr (cfg, bblock, rgctx, arg_num, rgctx_type, ip);
 	case MINI_GENERIC_CLASS_RELATION_OTHER_TABLE:
-		return get_runtime_generic_context_other_table_ptr (cfg, rgctx, arg_num, ip);
+		return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, arg_num, ip);
 	case MINI_GENERIC_CLASS_RELATION_OTHER:
 		return get_runtime_generic_context_other_ptr (cfg, method, bblock, rgctx,
 			type_token, token_source, rgctx_type, ip, arg_num);
@@ -8870,6 +8907,7 @@ create_helper_signature (void)
 	helper_sig_domain_get = mono_create_icall_signature ("ptr");
 	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
 	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
+	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
 }
 
 gconstpointer
@@ -8919,6 +8957,7 @@ mono_init_trampolines (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 	mono_trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
  	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+	mono_trampoline_code [MONO_TRAMPOLINE_RGCTX_LAZY_FETCH] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_RGCTX_LAZY_FETCH);
 #ifdef MONO_ARCH_AOT_SUPPORTED
 	mono_trampoline_code [MONO_TRAMPOLINE_AOT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT);
 	mono_trampoline_code [MONO_TRAMPOLINE_AOT_PLT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT_PLT);

@@ -362,7 +362,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Pop saved reg array + stack align + method ptr */
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 10 * 4);
 
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT || tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT ||
+			tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||
+			tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 		x86_ret (buf);
 	else
 		/* call the compiled method */
@@ -402,6 +404,87 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 		*code_len = buf - code;
 
 	return code;
+}
+
+gpointer
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+{
+	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_RGCTX_LAZY_FETCH);
+	gboolean indirect = MONO_RGCTX_OFFSET_IS_INDIRECT (encoded_offset);
+	int offset = indirect ? MONO_RGCTX_OFFSET_INDIRECT_OFFSET (encoded_offset) :
+		MONO_RGCTX_OFFSET_DIRECT_OFFSET (encoded_offset);
+	guint8 *code, *buf, *jump;
+	guint8 *dummy;
+
+	g_assert (tramp);
+	if (indirect)
+		g_assert (MONO_RGCTX_OFFSET_INDIRECT_SLOT (encoded_offset) == 0);
+
+	code = buf = mono_global_codeman_reserve (32);
+
+	/* load rgctx ptr */
+	x86_mov_reg_membase (buf, X86_EAX, X86_ESP, 4, 4);
+	if (indirect) {
+		/* if indirect, load extra_other_infos ptr */
+		x86_mov_reg_membase (buf, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoRuntimeGenericContext, extra_other_infos), 4);
+	}
+	/* fetch slot */
+	x86_mov_reg_membase (buf, X86_EAX, X86_EAX, offset, 4);
+
+	dummy = buf;
+
+	/* is slot null? */
+	x86_test_reg_reg (buf, X86_EAX, X86_EAX);
+	jump = buf;
+	/* if yes, jump to actual trampoline */
+	x86_branch8 (buf, X86_CC_Z, -1, 1);
+
+	/* if no, just return */
+	x86_ret (buf);
+
+	/*
+	 * our stack looks like this (tos on top):
+	 *
+	 * | ret addr  |
+	 * | rgctx ptr |
+	 * | ...       |
+	 *
+	 * the trampoline code expects it to look like this:
+	 *
+	 * | rgctx ptr |
+	 * | ret addr  |
+	 * | ...       |
+	 *
+	 * whereas our caller expects to still have one argument on
+	 * the stack when we return, so we transform the stack into
+	 * this:
+	 *
+	 * | rgctx ptr |
+	 * | ret addr  |
+	 * | dummy     |
+	 * | ...       |
+	 *
+	 * which actually only requires us to push the rgctx ptr, and
+	 * the "old" rgctx ptr becomes the dummy.
+	 */
+
+	x86_patch (jump, buf);
+	x86_push_membase (buf, X86_ESP, 4);
+
+	x86_mov_reg_imm (buf, X86_EAX, encoded_offset);
+	x86_jump_code (buf, tramp);
+
+	mono_arch_flush_icache (code, buf - code);
+
+	g_assert (buf - code <= 32);
+
+	return code;
+}
+
+guint32
+mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs)
+{
+	return (guint32)(regs [X86_EAX]);
 }
 
 void

@@ -308,6 +308,32 @@ mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtab
 	//g_print ("done initing generic\n");
 }
 
+static gpointer
+mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, MonoRuntimeGenericContext *rgctx, guint8 *tramp)
+{
+	guint32 encoded_offset = mono_arch_get_rgctx_lazy_fetch_offset ((gpointer*)regs);
+	gpointer result;
+
+	mono_class_fill_runtime_generic_context (rgctx);
+
+	if (MONO_RGCTX_OFFSET_IS_INDIRECT (encoded_offset)) {
+		int indirect_slot = MONO_RGCTX_OFFSET_INDIRECT_SLOT (encoded_offset);
+		int offset = MONO_RGCTX_OFFSET_INDIRECT_OFFSET (encoded_offset);
+
+		g_assert (indirect_slot == 0);
+		
+		result = *(gpointer*)((guint8*)rgctx->extra_other_infos + offset);
+	} else {
+		int offset = MONO_RGCTX_OFFSET_DIRECT_OFFSET (encoded_offset);
+
+		result = *(gpointer*)((guint8*)rgctx + offset);
+	}
+
+	g_assert (result);
+
+	return result;
+}
+
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 
 /**
@@ -394,6 +420,8 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 		return mono_class_init_trampoline;
 	case MONO_TRAMPOLINE_GENERIC_CLASS_INIT:
 		return mono_generic_class_init_trampoline;
+	case MONO_TRAMPOLINE_RGCTX_LAZY_FETCH:
+		return mono_rgctx_lazy_fetch_trampoline;
 #ifdef MONO_ARCH_AOT_SUPPORTED
 	case MONO_TRAMPOLINE_AOT:
 		return mono_aot_trampoline;

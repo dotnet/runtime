@@ -698,6 +698,7 @@ typedef enum {
 	MONO_TRAMPOLINE_JUMP,
 	MONO_TRAMPOLINE_CLASS_INIT,
 	MONO_TRAMPOLINE_GENERIC_CLASS_INIT,
+	MONO_TRAMPOLINE_RGCTX_LAZY_FETCH,
 	MONO_TRAMPOLINE_AOT,
 	MONO_TRAMPOLINE_AOT_PLT,
 	MONO_TRAMPOLINE_DELEGATE,
@@ -1184,6 +1185,8 @@ guchar*   mono_arch_create_trampoline_code      (MonoTrampolineType tramp_type) 
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method) MONO_INTERNAL;
 MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method) MONO_INTERNAL;
 gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable) MONO_INTERNAL;
+gpointer  mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset) MONO_INTERNAL;
+guint32	  mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs) MONO_INTERNAL;
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg) MONO_INTERNAL;
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg) MONO_INTERNAL;
 guint32   mono_arch_regalloc_cost               (MonoCompile *cfg, MonoMethodVar *vmv) MONO_INTERNAL;
