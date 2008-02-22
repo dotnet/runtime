@@ -559,7 +559,7 @@ mono_ssa_remove (MonoCompile *cfg)
 
 	for (i = 0; i < cfg->num_varinfo; ++i) {
 		MONO_VARINFO (cfg, i)->reg = -1;
-		if (!is_live [i]) {
+		if (!is_live [i] && !(cfg->varinfo [i]->flags & MONO_INST_VOLATILE)) {
 			cfg->varinfo [i]->flags |= MONO_INST_IS_DEAD;
 		}
 	}
