@@ -38,30 +38,46 @@ enum {
 #define IS_FAIL_FAST_MODE(ctx) (((ctx)->level & MONO_VERIFY_FAIL_FAST) == MONO_VERIFY_FAIL_FAST)
 #define IS_SKIP_VISIBILITY(ctx) (((ctx)->level & MONO_VERIFY_SKIP_VISIBILITY) == MONO_VERIFY_SKIP_VISIBILITY)
 
-#define ADD_VERIFY_INFO(__ctx, __msg, __status)	\
+#define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
 	do {	\
 		MonoVerifyInfoExtended *vinfo = g_new (MonoVerifyInfoExtended, 1);	\
 		vinfo->info.status = __status;	\
 		vinfo->info.message = ( __msg );	\
+		vinfo->exception_type = (__exception);	\
 		(__ctx)->list = g_slist_prepend ((__ctx)->list, vinfo);	\
 	} while (0)
 
 #define ADD_VERIFY_ERROR(__ctx, __msg)	\
 	do {	\
-		ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR); \
+		ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR, MONO_EXCEPTION_INVALID_PROGRAM); \
 		(__ctx)->valid = 0; \
 	} while (0)
 
 #define CODE_NOT_VERIFIABLE(__ctx, __msg) \
 	do {	\
 		if ((__ctx)->verifiable) { \
-			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_NOT_VERIFIABLE); \
+			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_NOT_VERIFIABLE, MONO_EXCEPTION_UNVERIFIABLE_IL); \
 			(__ctx)->verifiable = 0; \
 			if (IS_FAIL_FAST_MODE (__ctx)) \
 				(__ctx)->valid = 0; \
 		} \
 	} while (0)
 
+#define ADD_VERIFY_ERROR2(__ctx, __msg, __exception)	\
+	do {	\
+		ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR, __exception); \
+		(__ctx)->valid = 0; \
+	} while (0)
+
+#define CODE_NOT_VERIFIABLE2(__ctx, __msg, __exception) \
+	do {	\
+		if ((__ctx)->verifiable) { \
+			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_NOT_VERIFIABLE, __exception); \
+			(__ctx)->verifiable = 0; \
+			if (IS_FAIL_FAST_MODE (__ctx)) \
+				(__ctx)->valid = 0; \
+		} \
+	} while (0)
 /*Flags to be used with ILCodeDesc::flags */
 enum {
 	/*Instruction has not been processed.*/
@@ -1413,7 +1429,7 @@ get_boxable_mono_type (VerifyContext* ctx, int token)
 {
 	MonoType *type;
 	if (!IS_TYPE_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid type token %x at 0x%04x", token, ctx->ip_offset));
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid type token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
 	
@@ -2628,7 +2644,7 @@ do_ret (VerifyContext *ctx)
 /*
  * FIXME we need to fix the case of a non-virtual instance method defined in the parent but call using a token pointing to a subclass.
  * 	This is illegal but mono_get_method_full decoded it.
- * 
+ * FIXME valitade the token
  * TODO handle vararg calls
  * TODO handle calling .ctor outside one or calling the .ctor for other class but super  
  */
@@ -2701,7 +2717,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 	}
 
 	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method (ctx->method, method))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method is not accessible at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Method is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (check_overflow (ctx))
@@ -2714,6 +2730,9 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns typedbyref, byref or ArgIterator at 0x%04x", ctx->ip_offset));
 }
 
+/*
+ * FIXME validate the token
+ */
 static void
 do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 {
@@ -2736,11 +2755,14 @@ do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a init-only field at 0x%04x", ctx->ip_offset));
 
 	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field (ctx->method, field))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 
 	set_stack_value (ctx, stack_push (ctx), field->type, take_addr);
 }
 
+/*
+ * FIXME validate the token
+ */
 static void
 do_store_static_field (VerifyContext *ctx, int token) {
 	MonoClassField *field;
@@ -2769,12 +2791,15 @@ do_store_static_field (VerifyContext *ctx, int token) {
 	}
 
 	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field (ctx->method, field))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 
 	if (!verify_stack_type_compatibility (ctx, field->type, value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible type %s in static field store at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));	
 }
 
+/*
+ * FIXME validate the token
+ */
 static gboolean
 check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *obj, MonoClassField **ret_field)
 {
@@ -2790,10 +2815,13 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 
 	field = mono_field_from_token (ctx->image, token, &klass, ctx->generic_context);
 	if (!field) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ctx->ip_offset));
+		//add_error_from_loader_error (ctx);
+		//FIXME improve error reporting including class and field name
+		ADD_VERIFY_ERROR(ctx, g_strdup_printf ("Cannot load field from token 0x%08x at 0x%04x", token, ctx->ip_offset));
 		return FALSE;
 	}
 
+	//TODO verify if type loaded correctly.
 	*ret_field = field;
 
 	if (field->type->type == MONO_TYPE_TYPEDBYREF) {
@@ -2816,11 +2844,11 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
 		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field (ctx->method, field))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
+			CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 	}
 
 	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field (ctx->method, field))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 
 	if (stack_slot_get_underlying_type (obj) == TYPE_NATIVE_INT)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Native int is not a verifiable type to reference a field at 0x%04x", ctx->ip_offset));
@@ -2829,6 +2857,9 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 	return TRUE;
 }
 
+/*
+ * FIXME validate the token
+ */
 static void
 do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 {
@@ -2852,6 +2883,9 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 	set_stack_value (ctx, stack_push (ctx), field->type, take_addr);
 }
 
+/*
+ * FIXME validate the token
+ */
 static void
 do_store_field (VerifyContext *ctx, int token)
 {
@@ -3008,6 +3042,9 @@ do_conversion (VerifyContext *ctx, int kind)
 	}
 }
 
+/*
+ * FIXME validate the token
+ */
 static void
 do_load_token (VerifyContext *ctx, int token) 
 {
@@ -3131,6 +3168,9 @@ do_initobj (VerifyContext *ctx, int token)
 	}
 }
 
+/*
+ * FIXME, validate the token
+ */
 static void
 do_newobj (VerifyContext *ctx, int token) 
 {
@@ -3154,7 +3194,7 @@ do_newobj (VerifyContext *ctx, int token)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Trying to instantiate an abstract or interface type at 0x%04x", ctx->ip_offset));
 
 	if (!mono_method_can_access_method (ctx->method, method))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Constructor not visible at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Constructor not visible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
 	sig = mono_method_signature (method);
 	if (!check_underflow (ctx, sig->param_count))
@@ -3185,6 +3225,9 @@ do_newobj (VerifyContext *ctx, int token)
 		set_stack_value (ctx, stack_push (ctx),  &method->klass->byval_arg, FALSE);
 }
 
+/*
+ * FIXME validate the token
+ */
 static void
 do_cast (VerifyContext *ctx, int token) {
 	ILStackDesc *value;
@@ -3410,8 +3453,11 @@ do_ldelema (VerifyContext *ctx, int klass_token)
 	set_stack_value (ctx, stack_push (ctx), type, TRUE);	
 }
 
-/*FIXME handle arrays that are not 0-indexed*/
-/*FIXME handle readonly prefix and CMMP*/
+/*
+ * FIXME handle arrays that are not 0-indexed
+ * FIXME handle readonly prefix and CMMP
+ * FIXME validate the token
+ */
 static void
 do_ldelem (VerifyContext *ctx, int opcode, int token)
 {
@@ -3464,7 +3510,10 @@ do_ldelem (VerifyContext *ctx, int opcode, int token)
 #undef IS_ONE_OF2
 }
 
-/*FIXME handle arrays that are not 0-indexed*/
+/*
+ * FIXME handle arrays that are not 0-indexed
+ * FIXME validate the token
+ */
 static void
 do_stelem (VerifyContext *ctx, int opcode, int token)
 {
@@ -3640,7 +3689,7 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 		return;
 
 	if (!IS_METHOD_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid token %x for ldftn  at 0x%04x", token, ctx->ip_offset));
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid token %x for ldftn  at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return;
 	}
 
@@ -3668,7 +3717,7 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 	}
 	
 	if (!mono_method_can_access_method (ctx->method, method))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Loaded method is not visible for ldftn/ldvirtftn at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Loaded method is not visible for ldftn/ldvirtftn at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
 	top = stack_push_val(ctx, TYPE_PTR, mono_type_create_fnptr_from_mono_method (ctx, method));
 	top->method = method;
@@ -3680,7 +3729,7 @@ do_sizeof (VerifyContext *ctx, int token)
 	MonoType *type;
 
 	if (!IS_TYPE_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid type token %x at 0x%04x", token, ctx->ip_offset));
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid type token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return;
 	}
 	
@@ -3727,12 +3776,12 @@ static void
 do_ldstr (VerifyContext *ctx, guint32 token)
 {
 	if (mono_metadata_token_code (token) != MONO_TOKEN_STRING) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid string token %x at 0x%04x", token, ctx->ip_offset));
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string token %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return;
 	}
 
 	if (mono_metadata_token_index (token) >= ctx->image->heap_us.size) {
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x", token, ctx->ip_offset));
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return;
 	}
 
