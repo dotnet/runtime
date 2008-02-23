@@ -8574,17 +8574,6 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
 
-	/* fixme: howto handle this ? */
-	if (sig->hasthis) {
-		if (this) {
-			/* FIXME: need a solution for the moving GC here */
-			mono_mb_emit_ptr (mb, this);
-		} else {
-			/* fixme: */
-			g_assert_not_reached ();
-		}
-	} 
-
 	/* we first do all conversions */
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
@@ -8607,6 +8596,17 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	}
 
 	emit_thread_interrupt_checkpoint (mb);
+
+	/* fixme: howto handle this ? */
+	if (sig->hasthis) {
+		if (this) {
+			/* FIXME: need a solution for the moving GC here */
+			mono_mb_emit_ptr (mb, this);
+		} else {
+			/* fixme: */
+			g_assert_not_reached ();
+		}
+	} 
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
