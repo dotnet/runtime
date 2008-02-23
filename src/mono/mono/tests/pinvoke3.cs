@@ -710,6 +710,49 @@ public class Tests {
 		}
 	}
 
+	public delegate int ArrayDelegate4_2 (int i, 
+										string j, 
+										  string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate4_2 (string[] arr, int len, ArrayDelegate4_2 d);
+
+	public static int array_delegate4_2 (int i, string j, string[] arr) {
+		return (arr == null) ? 0 : 1;
+	}
+
+	public static int test_0_marshal_array_delegate_no_marshal_directive () {
+		try {
+			mono_test_marshal_array_delegate4_2 (null, 0, new ArrayDelegate4_2 (array_delegate4_2));
+			return 1;
+		}
+		catch (MarshalDirectiveException) {
+			return 0;
+		}
+	}
+
+	public delegate int ArrayDelegate4_3 (int i, 
+										string j, 
+										  string[] arr);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_array_delegate")]
+	public static extern int mono_test_marshal_array_delegate4_3 (string[] arr, int len, ArrayDelegate4_3 d);
+
+	public int array_delegate4_3 (int i, string j, string[] arr) {
+		return (arr == null) ? 0 : 1;
+	}
+
+	public static int test_0_marshal_array_delegate_no_marshal_directive_instance () {
+		try {
+			Tests t = new Tests ();
+			mono_test_marshal_array_delegate4_3 (null, 0, new ArrayDelegate4_3 (t.array_delegate4_3));
+			return 1;
+		}
+		catch (MarshalDirectiveException) {
+			return 0;
+		}
+	}
+
 	public delegate int ArrayDelegate5 (int i, 
 										string j, 
 										[In, MarshalAs(UnmanagedType.LPArray, 
