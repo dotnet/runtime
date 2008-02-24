@@ -11563,9 +11563,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	ip = (guint8 *)header->code;
 
-	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * header->max_stack);
-	cfg->aliasing_info = NULL;
-	
 	if (cfg->verbose_level > 2)
 		g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
 

@@ -810,7 +810,6 @@ typedef struct {
 	guint            skip_visibility : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
-	guint16          *intvars;
 	MonoProfileCoverageInfo *coverage_info;
 	GHashTable       *token_info_hash;
 	MonoCompileArch  arch;

@@ -26,7 +26,7 @@ typedef struct {
 	 * If the register is spilled, then this contains -spill - 1, where 'spill'
 	 * is the index of the spill variable.
 	 */
-	int *vassign;
+	gint16 *vassign;
 
 	/* hard -> symbolic */
 	int isymbolic [MONO_MAX_IREGS];
