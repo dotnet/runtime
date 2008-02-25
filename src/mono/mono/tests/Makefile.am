@@ -304,6 +304,10 @@ TEST_IL_SRC=			\
 	bug-82022.il	\
 	vt-sync-method.il	\
 	enum_types.il	\
+	call_missing_method.il	\
+	call_missing_class.il	\
+	ldfld_missing_field.il	\
+	ldfld_missing_class.il	\
 	invalid-token.il
 
 #	bug-318677.il
