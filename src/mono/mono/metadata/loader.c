@@ -75,7 +75,7 @@ mono_loader_cleanup (void)
  * with the appropriate arguments, then return NULL to report the failure. The error 
  * should be propagated until it reaches code which can throw managed exceptions. At that
  * point, an exception should be thrown based on the information returned by
- * mono_loader_get_error (). Then the error should be cleared by calling 
+ * mono_loader_get_last_error (). Then the error should be cleared by calling 
  * mono_loader_clear_error ().
  */
 
@@ -358,8 +358,9 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
 		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | nindex);
 		if (!klass) {
-			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex);
-			g_warning ("Missing field %s in class %s (typeref index %d)", fname, name, nindex);
+			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_DEF | nindex);
+			g_warning ("Missing field %s in class %s (typedef index %d)", fname, name, nindex);
+			mono_loader_set_error_type_load (name, image->assembly_name);
 			g_free (name);
 			return NULL;
 		}
@@ -372,7 +373,8 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		klass = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | nindex);
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex);
-			g_warning ("Missing field %s in class %s (typeref index %d)", fname, name, nindex);
+			g_warning ("missing field %s in class %s (typeref index %d)", fname, name, nindex);
+			mono_loader_set_error_type_load (name, image->assembly_name);
 			g_free (name);
 			return NULL;
 		}
@@ -396,6 +398,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		mono_class_init (klass);
 		g_print ("type in sig: %s\n", klass->name);*/
 		klass = mono_class_get_full (image, MONO_TOKEN_TYPE_SPEC | nindex, context);
+		//FIXME can't klass be null?
 		mono_class_init (klass);
 		if (retklass)
 			*retklass = klass;
@@ -771,7 +774,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_REF | nindex);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
-			mono_loader_set_error_method_load (name, mname);
+			mono_loader_set_error_type_load (name, image->assembly_name);
 			g_free (name);
 			return NULL;
 		}
@@ -784,7 +787,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_SPEC | nindex);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
-			mono_loader_set_error_method_load (name, mname);
+			mono_loader_set_error_type_load (name, image->assembly_name);
 			g_free (name);
 			return NULL;
 		}
@@ -794,7 +797,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		if (!klass) {
 			char *name = mono_class_name_from_token (image, MONO_TOKEN_TYPE_DEF | nindex);
 			g_warning ("Missing method %s in assembly %s, type %s", mname, image->name, name);
-			mono_loader_set_error_method_load (name, mname);
+			mono_loader_set_error_type_load (name, image->assembly_name);
 			g_free (name);
 			return NULL;
 		}
