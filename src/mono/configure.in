@@ -729,6 +729,9 @@ dnl
 
 if test x$platform_win32 = xno; then
 
+	dnl hires monotonic clock support
+	AC_SEARCH_LIBS(clock_gettime, rt)
+
 	dnl dynamic loader support
 	AC_CHECK_FUNC(dlopen, DL_LIB="",
 		AC_CHECK_LIB(dl, dlopen, DL_LIB="-ldl", dl_support=no)
