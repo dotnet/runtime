@@ -134,7 +134,8 @@ ICALL_TYPE(TZONE, "System.CurrentSystemTimeZone", TZONE_1)
 ICALL(TZONE_1, "GetTimeZoneData", ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData)
 
 ICALL_TYPE(DTIME, "System.DateTime", DTIME_1)
-ICALL(DTIME_1, "GetNow", ves_icall_System_DateTime_GetNow)
+ICALL(DTIME_1, "GetNow", mono_100ns_datetime)
+ICALL(DTIME_2, "GetTimeMonotonic", mono_100ns_ticks)
 
 #ifndef DISABLE_DECIMAL
 ICALL_TYPE(DECIMAL, "System.Decimal", DECIMAL_1)
@@ -184,6 +185,9 @@ ICALL(PROCESS_14, "StartTime_internal(intptr)", ves_icall_System_Diagnostics_Pro
 ICALL(PROCESS_14M, "Times", ves_icall_System_Diagnostics_Process_Times)
 ICALL(PROCESS_15, "WaitForExit_internal(intptr,int)", ves_icall_System_Diagnostics_Process_WaitForExit_internal)
 
+ICALL_TYPE(STOPWATCH, "System.Diagnostics.Stopwatch", STOPWATCH_1)
+ICALL(STOPWATCH_1, "GetTimestamp", mono_100ns_ticks)
+
 ICALL_TYPE(DOUBLE, "System.Double", DOUBLE_1)
 ICALL(DOUBLE_1, "ParseImpl",    mono_double_ParseImpl)
 
@@ -206,7 +210,7 @@ ICALL(ENV_11, "get_MachineName", ves_icall_System_Environment_get_MachineName)
 ICALL(ENV_12, "get_NewLine", ves_icall_System_Environment_get_NewLine)
 ICALL(ENV_13, "get_Platform", ves_icall_System_Environment_get_Platform)
 ICALL(ENV_14, "get_ProcessorCount", ves_icall_System_Environment_get_ProcessorCount)
-ICALL(ENV_15, "get_TickCount", ves_icall_System_Environment_get_TickCount)
+ICALL(ENV_15, "get_TickCount", mono_msec_ticks)
 ICALL(ENV_16, "get_UserName", ves_icall_System_Environment_get_UserName)
 ICALL(ENV_17, "internalGetEnvironmentVariable", ves_icall_System_Environment_GetEnvironmentVariable)
 ICALL(ENV_18, "internalGetGacPath", ves_icall_System_Environment_GetGacPath)

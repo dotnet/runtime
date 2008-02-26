@@ -63,6 +63,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
+#include <mono/utils/mono-time.h>
 
 #if defined (PLATFORM_WIN32)
 #include <windows.h>
@@ -5539,35 +5540,6 @@ ves_icall_System_Delegate_SetMulticastInvoke (MonoDelegate *this)
  */
 #define FILETIME_ADJUST ((guint64)504911232000000000LL)
 
-/*
- * This returns Now in UTC
- */
-static gint64
-ves_icall_System_DateTime_GetNow (void)
-{
-#ifdef PLATFORM_WIN32
-	SYSTEMTIME st;
-	FILETIME ft;
-	
-	GetSystemTime (&st);
-	SystemTimeToFileTime (&st, &ft);
-	return (gint64) FILETIME_ADJUST + ((((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime);
-#else
-	/* FIXME: put this in io-layer and call it GetLocalTime */
-	struct timeval tv;
-	gint64 res;
-
-	MONO_ARCH_SAVE_REGS;
-
-	if (gettimeofday (&tv, NULL) == 0) {
-		res = (((gint64)tv.tv_sec + EPOCH_ADJUST)* 1000000 + tv.tv_usec)*10;
-		return res;
-	}
-	/* fixme: raise exception */
-	return 0;
-#endif
-}
-
 #ifdef PLATFORM_WIN32
 /* convert a SYSTEMTIME which is of the form "last thursday in october" to a real date */
 static void
@@ -6150,16 +6122,6 @@ ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, M
 	g_free (utf8_value);
 #endif
 }
-
-/*
- * Returns: the number of milliseconds elapsed since the system started.
- */
-static gint32
-ves_icall_System_Environment_get_TickCount (void)
-{
-	return GetTickCount ();
-}
-
 
 static void
 ves_icall_System_Environment_Exit (int result)
