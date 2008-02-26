@@ -26,6 +26,8 @@ libmonoutils_la_SOURCES = \
 	mono-math.c  \
 	mono-mmap.c  \
 	mono-mmap.h  \
+	mono-time.c  \
+	mono-time.h  \
 	strtod.h	\
 	strtod.c	\
 	strenc.h	\
