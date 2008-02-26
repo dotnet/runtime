@@ -25,18 +25,13 @@ static_libs=	\
 	$(GLIB_LIBS)	\
 	$(libgc_static_libs)
 
-CLASS1=$(mcs_topdir)/class/lib/default
-CLASS2=$(mcs_topdir)/class/lib/net_2_0
+CLASS=$(mcs_topdir)/class/lib/net_2_0
 
-RUNTIME = MONO_PATH=$(CLASS1) $(top_builddir)/runtime/mono-wrapper
-RUNTIME2 = MONO_PATH=$(CLASS2) $(top_builddir)/runtime/mono-wrapper
-RUNTIME_AOTCHECK = MONO_PATH=$(CLASS1):. $(top_builddir)/runtime/mono-wrapper
-RUNTIME_AOTCHECK2 = MONO_PATH=$(CLASS2):. $(top_builddir)/runtime/mono-wrapper
+RUNTIME = MONO_PATH=$(CLASS) $(top_builddir)/runtime/mono-wrapper
+RUNTIME_AOTCHECK = MONO_PATH=$(CLASS):. $(top_builddir)/runtime/mono-wrapper
 
-MCS = $(RUNTIME) $(CLASS1)/mcs.exe -unsafe -nowarn:0162
-GMCS = $(RUNTIME2) $(CLASS2)/gmcs.exe -unsafe -nowarn:0162
-ILASM = $(RUNTIME) $(CLASS1)/ilasm.exe
-ILASM2 = $(RUNTIME2) $(CLASS2)/ilasm.exe
+MCS = $(RUNTIME) $(CLASS)/gmcs.exe -unsafe -nowarn:0162
+ILASM = $(RUNTIME) $(CLASS)/ilasm.exe
 
 AM_CFLAGS = \
 	-I$(top_srcdir) 	\
@@ -240,9 +235,10 @@ test_sources = 		\
 	exceptions.cs	\
 	devirtualization.cs	\
 	iltests.il.in		\
-	test.cs
-
-test_sources2 = generics.2.cs il2tests.2.il generics-variant-types.2.il
+	test.cs			\
+	generics.cs	\
+	il2tests.il	\
+	generics-variant-types.il
 
 if MONO_DEBUGGER_SUPPORTED
 if AMD64
@@ -259,8 +255,7 @@ else
 mono_debugger_sources =
 endif
 
-regtests=basic.exe arrays.exe basic-float.exe basic-math.exe basic-long.exe objects.exe basic-calls.exe iltests.exe exceptions.exe bench.exe devirtualization.exe
-regtests2=generics.exe il2tests.exe
+regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe bench.exe devirtualization.exe generics.exe il2tests.exe
 
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
 
@@ -369,14 +364,11 @@ libmonoinclude_HEADERS = jit.h
 libmono_la_LIBADD = \
 	$(libs)
 
-%.exe: %.2.cs TestDriver.dll generics-variant-types.dll
-	$(GMCS) -out:$@ $< -r:TestDriver.dll -r:generics-variant-types.dll
+generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
+	$(MCS) -out:$@ $< -r:TestDriver.dll -r:generics-variant-types.dll
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) -out:$@ -unsafe $< -r:TestDriver.dll
-
-%.exe: %.2.il
-	$(ILASM2) -output=$@ $<
 
 iltests.il: iltests.il.in Makefile.am
 	echo '// DO NOT EDIT: This file has been generated from iltests.il.in' > iltests.il
@@ -388,8 +380,8 @@ iltests.il: iltests.il.in Makefile.am
 TestDriver.dll: $(srcdir)/TestDriver.cs
 	$(MCS) -out:$@ -target:library $<
 
-generics-variant-types.dll: generics-variant-types.2.il
-	$(ILASM2) -dll -output=$@ $<
+generics-variant-types.dll: generics-variant-types.il
+	$(ILASM) -dll -output=$@ $<
 
 # we don't always use the perl impl because it's an additional
 # build dependency for the poor windows users
@@ -444,18 +436,12 @@ testi: mono test.exe
 checktests: $(regtests)
 	for i in $(regtests); do $(RUNTIME) $$i; done
 
-checktests2: $(regtests2)
-	for i in $(regtests); do $(RUNTIME2) $$i; done
-
-rcheck: mono $(regtests) $(regtests2)
+rcheck: mono $(regtests)
 	$(RUNTIME) --regression $(regtests)
-	$(RUNTIME2) --regression $(regtests2)
 
 aotcheck: mono $(regtests)
 	for i in $(regtests); do $(RUNTIME) --aot $$i || exit 1; done
-	for i in $(regtests2); do $(RUNTIME2) --aot $$i || exit 1; done
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
-	for i in $(regtests2); do $(RUNTIME_AOTCHECK2) --regression $$i || exit 1; done
 	rm -f *.exe.so
 
 bench: mono test.exe
@@ -495,7 +481,7 @@ endif
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	genmdesc.pl	\
-	$(test_sources) $(test_sources2) \
+	$(test_sources) \
 	inssel-long.brg inssel-long32.brg \
 	inssel-softfloat.brg	\
 	$(x86_sources) inssel-x86.brg cpu-x86.md \
@@ -522,3 +508,4 @@ version.h: Makefile
 	else \
 		echo "#define FULL_VERSION \"tarball\""; \
 	fi > version.h
+
