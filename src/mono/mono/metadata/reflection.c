@@ -1144,9 +1144,6 @@ mono_custom_attrs_from_builders (MonoImage *image, MonoArray *cattrs)
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		if (!custom_attr_visible (image, cattr))
 			not_visible ++;
-
-		// FIXME: Bug #363447
-		g_assert (cattr->ctor->method);
 	}
 	count -= not_visible;
 
