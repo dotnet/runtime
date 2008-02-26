@@ -32,6 +32,7 @@
 #include <mono/metadata/socket-io.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/utils/mono-time.h>
 #include <errno.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -278,14 +279,14 @@ async_invoke_io_thread (gpointer data)
 		if (!data) {
 			guint32 wr;
 			int timeout = 10000;
-			guint32 start_time = GetTickCount ();
+			guint32 start_time = mono_msec_ticks ();
 			
 			do {
 				wr = WaitForSingleObjectEx (io_job_added, (guint32)timeout, TRUE);
 				if (THREAD_WANTS_A_BREAK (thread))
 					mono_thread_interruption_checkpoint ();
 			
-				timeout -= GetTickCount () - start_time;
+				timeout -= mono_msec_ticks () - start_time;
 			
 				if (wr != WAIT_TIMEOUT)
 					data = dequeue_job (&io_queue_lock, &async_io_queue);
@@ -1220,14 +1221,14 @@ async_invoke_thread (gpointer data)
 		if (!data) {
 			guint32 wr;
 			int timeout = 10000;
-			guint32 start_time = GetTickCount ();
+			guint32 start_time = mono_msec_ticks ();
 			
 			do {
 				wr = WaitForSingleObjectEx (job_added, (guint32)timeout, TRUE);
 				if (THREAD_WANTS_A_BREAK (thread))
 					mono_thread_interruption_checkpoint ();
 			
-				timeout -= GetTickCount () - start_time;
+				timeout -= mono_msec_ticks () - start_time;
 			
 				if (wr != WAIT_TIMEOUT)
 					data = dequeue_job (&mono_delegate_section, &async_call_queue);

@@ -35,6 +35,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-time.h>
 
 #include <mono/metadata/gc-internal.h>
 
@@ -2888,7 +2889,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 
 	THREAD_DEBUG (g_message ("%s: starting abort", __func__));
 
-	start_time = GetTickCount ();
+	start_time = mono_msec_ticks ();
 	do {
 		mono_threads_lock ();
 
@@ -2905,8 +2906,8 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 			wait_for_tids (&user_data.wait, 100);
 
 		/* Update remaining time */
-		timeout -= GetTickCount () - start_time;
-		start_time = GetTickCount ();
+		timeout -= mono_msec_ticks () - start_time;
+		start_time = mono_msec_ticks ();
 
 		if (timeout < 0)
 			return FALSE;
