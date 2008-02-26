@@ -65,7 +65,7 @@ public class Tests {
 		// While the thread waits, trigger initialization on this thread too so this
 		// thread will wait for the other thread to finish initialization
 		try {
-			Run ();
+			Run2 ();
 			return 1;
 		}
 		catch (TypeInitializationException ex) {
@@ -73,7 +73,7 @@ public class Tests {
 
 		// Try again synchronously
 		try {
-			Run ();
+			Run2 ();
 			return 1;
 		}
 		catch (TypeInitializationException ex) {
@@ -83,6 +83,15 @@ public class Tests {
 	}
 
 	private static void Run () {
+		try {
+			StaticInitFails.foo ();
+		}
+		catch (Exception) {
+		}
+	}
+
+	private static void Run2 () {
 		StaticInitFails.foo ();
 	}
+
 }
