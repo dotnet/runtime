@@ -208,12 +208,13 @@ public class Tests : LoadMissing {
 	}
 #endif
 
+	// FIXME: the corrent exception here is FileNotFoundException
 	public static int test_0_missing_assembly_in_call () {
-		return check_missing_method (new TestDel (missing_assembly_in_call));
+		return check_type_load (new TestDel (missing_assembly_in_call));
 	}
 
 	public static int test_0_missing_assembly_in_newobj () {
-		return check_missing_method (new TestDel (missing_assembly_in_newobj));
+		return check_type_load (new TestDel (missing_assembly_in_newobj));
 	}
 	
 	//
