@@ -9264,7 +9264,8 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	if (method->klass->valuetype && !(method->flags & MONO_METHOD_ATTR_STATIC)) {
 		mono_class_set_failure (method->klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 		/* This will throw the type load exception when the wrapper is compiled */
-		mono_mb_emit_op (mb, CEE_NEWOBJ, method->klass);
+		mono_mb_emit_byte (mb, CEE_LDNULL);
+		mono_mb_emit_op (mb, CEE_ISINST, method->klass);
 		mono_mb_emit_byte (mb, CEE_POP);
 
 		if (!MONO_TYPE_IS_VOID (sig->ret))
