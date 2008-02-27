@@ -10,23 +10,19 @@ JITTEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime MONO_CFG_DIR=$(mon
 
 RUNTIME_ARGS=--config tests-config --optimize=all
 
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
-with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 with_mono_path21 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_1
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
-RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper
 RUNTIME21 = $(with_mono_path21) $(top_builddir)/runtime/mono-wrapper
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
-	$(RUNTIME) $(mcs_topdir)/class/lib/default/mkbundle.exe
+	$(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/mkbundle.exe
 
-MCS = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
-GMCS = $(RUNTIME2) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
+MCS = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 SMCS = $(RUNTIME21) --security=temporary-smcs-hack $(mcs_topdir)/class/lib/net_2_1/smcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
-ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/default/ilasm.exe
-ILASM2 = $(RUNTIME2) $(mcs_topdir)/class/lib/net_2_0/ilasm.exe
+ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -242,7 +238,35 @@ BASE_TEST_CS_SRC=		\
 	dbnull-missing.cs	\
 	test-type-ctor.cs 	\
 	soft-float-tests.cs	\
-	thread-exit.cs
+	thread-exit.cs		\
+	assemblyresolve_event2.2.cs	\
+	interlocked-2.2.cs	\
+	pinvoke-2.2.cs 		\
+	bug-78431.2.cs 		\
+	bug-79684.2.cs 		\
+	catch-generics.2.cs	\
+	event-get.2.cs		\
+	safehandle.2.cs		\
+	stackframes-async.2.cs		\
+	module-cctor-loader.2.cs	\
+	generics-invoke-byref.2.cs	\
+	generic-signature-compare.2.cs	\
+	generics-sharing.2.cs	\
+	recursive-generics.2.cs	\
+	bug-80392.2.cs		\
+	dynamic-method-access.2.cs	\
+	bug-82194.2.cs	\
+	anonarray.2.cs	\
+	ienumerator-interfaces.2.cs	\
+	array-enumerator-ifaces.2.cs	\
+	generic_type_definition_encoding.2.cs \
+	generic_type_definition.2.cs	\
+	bug-333798.2.cs		\
+	bug-333798-tb.2.cs		\
+	bug-335131.2.cs		\
+	bug-322722_patch_bx.2.cs		\
+	bug-348522.2.cs		\
+	bug-322722_dyn_method_throw.2.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
@@ -272,7 +296,7 @@ DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
 	delegate-delegate-exception.exe	\
 	appdomain-unload.exe		\
-	bug-348522.exe	\
+	bug-348522.2.exe	\
 	$(PLATFORM_DISABLED_TESTS)
 
 # These only compile with MS CSC
@@ -304,45 +328,12 @@ TEST_IL_SRC=			\
 	bug-82022.il	\
 	vt-sync-method.il	\
 	enum_types.il	\
+	invalid-token.il	\
 	call_missing_method.il	\
 	call_missing_class.il	\
 	ldfld_missing_field.il	\
 	ldfld_missing_class.il	\
-	invalid-token.il
-
-#	bug-318677.il
-
-TEST_CS2_SRC = \
-	assemblyresolve_event2.2.cs	\
-	interlocked-2.2.cs	\
-	pinvoke-2.2.cs 		\
-	bug-78431.2.cs 		\
-	bug-79684.2.cs 		\
-	catch-generics.2.cs	\
-	event-get.2.cs		\
-	safehandle.2.cs		\
-	stackframes-async.2.cs		\
-	module-cctor-loader.2.cs	\
-	generics-invoke-byref.2.cs	\
-	generic-signature-compare.2.cs	\
-	generics-sharing.2.cs	\
-	recursive-generics.2.cs	\
-	bug-80392.2.cs		\
-	dynamic-method-access.2.cs	\
-	bug-82194.2.cs	\
-	anonarray.2.cs	\
-	ienumerator-interfaces.2.cs	\
-	array-enumerator-ifaces.2.cs	\
-	generic_type_definition_encoding.2.cs \
-	generic_type_definition.2.cs	\
-	bug-333798.2.cs		\
-	bug-333798-tb.2.cs		\
-	bug-335131.2.cs		\
-	bug-322722_patch_bx.2.cs		\
-	bug-348522.2.cs		\
-	bug-322722_dyn_method_throw.2.cs
-
-TEST_IL2_SRC = find-method.2.il	\
+	find-method.2.il	\
 	bug-79215.2.il	\
 	bug-79956.2.il	\
 	bug-327438.2.il \
@@ -350,6 +341,8 @@ TEST_IL2_SRC = find-method.2.il	\
 	resolve_method_bug.2.il \
 	resolve_field_bug.2.il \
 	resolve_type_bug.2.il
+
+#	bug-318677.il
 
 # pre-requisite test sources: files that are not test themselves
 # but that need to be compiled
@@ -362,22 +355,14 @@ PREREQSI_IL=$(PREREQ_IL_SRC:.il=.exe)
 PREREQSI_CS=$(PREREQ_CS_SRC:.cs=.exe)
 TESTSI_CS=$(TEST_CS_SRC:.cs=.exe)
 TESTSI_IL=$(TEST_IL_SRC:.il=.exe)
-TESTSI_CS2=$(TEST_CS2_SRC:.2.cs=.exe)
-TESTSI_IL2=$(TEST_IL2_SRC:.2.il=.exe)
 TESTBS=$(BENCHSRC:.cs=.exe)
 STRESS_TESTS=$(STRESS_TESTS_SRC:.cs=.exe)
 
-EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_SRC) \
+EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) \
 	$(BENCHSRC) $(STRESS_TESTS_SRC) stress-runner.pl $(PREREQ_IL_SRC) $(PREREQ_CS_SRC)
-
-%.exe: %.2.il
-	$(ILASM2) -out:$@ $<
 
 %.exe: %.il
 	$(ILASM) -out:$@ $<
-
-%.exe: %.2.cs TestDriver.dll
-	$(GMCS) -r:TestDriver.dll -out:$@ $<
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) -r:TestDriver.dll -out:$@ $<
@@ -440,9 +425,7 @@ testb: $(TEST_PROG) $(TESTBS)
 		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS);	\
 	done
 
-testjit: testjit-default testjit-net_2_0
-
-testjit-default: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
@@ -461,33 +444,12 @@ testjit-default: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
-testjit-net_2_0: $(TESTSI_CS2) $(TESTSI_IL2) libtest.la
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	for i in $(TESTSI_CS2) $(TESTSI_IL2); do	\
-		rm -f $${i}.so; \
-		if $(srcdir)/test-driver '$(with_mono_path2) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
-		then \
-			passed=`expr $${passed} + 1`; \
-		else \
-			if [ $$? = 2 ]; then break; fi; \
-			failed=`expr $${failed} + 1`; \
-			failed_tests="$${failed_tests} $$i"; \
-		fi \
-	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
-
-testaot: testaot-default testaot-net_2_0
-
-testaot-default: $(TESTSI_CS) $(TESTBS) libtest.la
+testaot: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
-	for i in $(TESTSI_CS) $(TESTBS); do	\
+	for i in $(TESTSI_CS) $(TESTSI_IL) $(TESTBS); do	\
 		rm -f $${i}.so; \
 		$(JITTEST_PROG_RUN) --aot $${i} > /dev/null; \
 		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
@@ -501,26 +463,6 @@ testaot-default: $(TESTSI_CS) $(TESTBS) libtest.la
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
 	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
-
-testaot-net_2_0: $(TESTSI_CS2) $(TESTSI_IL2) libtest.la
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	for i in $(TESTSI_CS2) $(TESTSI_IL2); do	\
-		rm -f $${i}.so; \
-		$(JITTEST_PROG_RUN) --aot $${i} > /dev/null; \
-		if $(srcdir)/test-driver '$(with_mono_path2) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
-		then \
-			passed=`expr $${passed} + 1`; \
-		else \
-			if [ $$? = 2 ]; then break; fi; \
-			failed=`expr $${failed} + 1`; \
-			failed_tests="$${failed_tests} $$i"; \
-		fi \
-	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
 testtrace:
@@ -615,11 +557,11 @@ unhandled-exception-test-case.1.exe: unhandled-exception-test-case.1.cs
 unhandled-exception-test-case-legacy.1.exe: unhandled-exception-test-case-legacy.1.cs
 	$(MCS) /debug unhandled-exception-test-case-legacy.1.cs
 unhandled-exception-test-case.2.exe: unhandled-exception-test-case.2.cs
-	$(GMCS) /debug unhandled-exception-test-case.2.cs
+	$(MCS) /debug unhandled-exception-test-case.2.cs
 unhandled-exception-test-case-legacy.2.exe: unhandled-exception-test-case-legacy.2.cs
-	$(GMCS) /debug unhandled-exception-test-case-legacy.2.cs
+	$(MCS) /debug unhandled-exception-test-case-legacy.2.cs
 unhandled-exception-test-runner.2.exe: unhandled-exception-test-runner.2.cs
-	$(GMCS) /debug unhandled-exception-test-runner.2.cs
+	$(MCS) /debug unhandled-exception-test-runner.2.cs
 
 test-unhandled-exception: unhandled-exception-test-runner.2.exe unhandled-exception-config_files unhandled-exception-test-case.1.exe unhandled-exception-test-case-legacy.1.exe  unhandled-exception-test-case.2.exe unhandled-exception-test-case-legacy.2.exe
 	$(RUNTIME) unhandled-exception-test-runner.2.exe RUNTIME:../mini/mono,GTC:F
@@ -644,9 +586,9 @@ test-bug-81673 : bug-81673.exe bug-81673-interface.dll
 
 EXTRA_DIST += bug-81691.cs bug-81691-a.cs bug-81691-b.cs
 bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $(srcdir)/bug-81691-b.cs
-	$(GMCS) -target:library -out:bug-81691-a.dll $(srcdir)/bug-81691-a.cs
-	$(GMCS) -target:library -out:bug-81691-b.dll -r:bug-81691-a.dll $(srcdir)/bug-81691-b.cs
-	$(GMCS) -r:bug-81691-b.dll -out:bug-81691.exe $(srcdir)/bug-81691.cs
+	$(MCS) -target:library -out:bug-81691-a.dll $(srcdir)/bug-81691-a.cs
+	$(MCS) -target:library -out:bug-81691-b.dll -r:bug-81691-a.dll $(srcdir)/bug-81691-b.cs
+	$(MCS) -r:bug-81691-b.dll -out:bug-81691.exe $(srcdir)/bug-81691.cs
 	rm -f bug-81691-a.dll
 
 test-bug-81691 : bug-81691.exe bug-81691-b.dll
@@ -676,9 +618,9 @@ EXTRA_DIST += custom-modifiers.2.cs custom-modifiers-lib.il
 custom-modifiers-lib.dll: custom-modifiers-lib.il
 	$(ILASM) /dll /output:custom-modifiers-lib.dll $(srcdir)/custom-modifiers-lib.il
 custom-modifiers.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
-	$(GMCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.exe $(srcdir)/custom-modifiers.2.cs
+	$(MCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.exe $(srcdir)/custom-modifiers.2.cs
 custom-modifiers: custom-modifiers.exe
-	$(RUNTIME2) custom-modifiers.exe
+	$(RUNTIME) custom-modifiers.exe
 
 EXTRA_DIST += coreclr-security.cs
 
