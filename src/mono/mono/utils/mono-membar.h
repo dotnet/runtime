@@ -150,6 +150,21 @@ static inline void mono_memory_write_barrier (void)
 {
         mono_memory_barrier ();
 }
+#elif defined(__mips__)
+static inline void mono_memory_barrier (void)
+{
+        __asm__ __volatile__ ("" : : : "memory");
+}
+
+static inline void mono_memory_read_barrier (void)
+{
+        mono_memory_barrier ();
+}
+
+static inline void mono_memory_write_barrier (void)
+{
+        mono_memory_barrier ();
+}
 #endif
 
 #endif	/* _MONO_UTILS_MONO_MEMBAR_H_ */
