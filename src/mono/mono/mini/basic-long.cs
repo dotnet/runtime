@@ -103,6 +103,8 @@ class Tests {
 		long a = 0xffffffffff;
 		if (a == 0xfffffffffe)
 			return 1;
+		if (a == 0xfeffffffff)
+			return 2;
 		return 0;
 	}
 
@@ -110,6 +112,20 @@ class Tests {
 		long a = 0xffffffffff;
 		if (a > 0xffffffffff)
 			return 1;
+
+		if (a > 0x1ffffffffff)
+			return 2;
+
+		if (a > 0xff00000000) {} else
+			return 3;
+
+		if (a > 0xfeffffffff) {} else
+			return 4;
+
+		a = 0xff00000000;
+		if (a > 0xffffffffff)
+			return 5;
+
 		return 0;
 	}
 
@@ -117,6 +133,20 @@ class Tests {
 		ulong a = 0xffffffffff;
 		if (a > 0xffffffffff)
 			return 1;
+
+		if (a > 0x1ffffffffff)
+			return 2;
+
+		if (a > 0xff00000000) {} else
+			return 3;
+
+		if (a > 0xfeffffffff) {} else
+			return 4;
+
+		a = 0xff00000000;
+		if (a > 0xffffffffff)
+			return 5;
+
 		return 0;
 	}
 
@@ -124,6 +154,20 @@ class Tests {
 		long a = 0xffffffffff;
 		if (a < 0xffffffffff)
 			return 1;
+
+		if (a < 0x1ffffffffff) {} else
+			return 2;
+
+		if (a < 0xff00000000)
+			return 3;
+
+		if (a < 0xfeffffffff)
+			return 4;
+
+		a = 0xff00000000;
+		if (a < 0xffffffffff) {} else
+			return 5;
+
 		return 0;
 	}
 
@@ -131,6 +175,20 @@ class Tests {
 		ulong a = 0xffffffffff;
 		if (a < 0xffffffffff)
 			return 1;
+
+		if (a < 0x1ffffffffff) {} else
+			return 2;
+
+		if (a < 0xff00000000)
+			return 3;
+
+		if (a < 0xfeffffffff)
+			return 4;
+
+		a = 0xff00000000;
+		if (a < 0xffffffffff) {} else
+			return 5;
+
 		return 0;
 	}
 
@@ -138,6 +196,20 @@ class Tests {
 		long a = 0xfffffffffe;
 		if (a >= 0xffffffffff)
 			return 1;
+
+		if (a >= 0x1fffffffffe)
+			return 2;
+
+		if (a >= 0xff00000000) {} else
+			return 3;
+
+		if (a >= 0xfefffffffe) {} else
+			return 4;
+
+		a = 0xff00000000;
+		if (a >= 0xffffffffff)
+			return 5;
+
 		return 0;
 	}
 
@@ -145,6 +217,20 @@ class Tests {
 		ulong a = 0xfffffffffe;
 		if (a >= 0xffffffffff)
 			return 1;
+
+		if (a >= 0x1fffffffffe)
+			return 2;
+
+		if (a >= 0xff00000000) {} else
+			return 3;
+
+		if (a >= 0xfefffffffe) {} else
+			return 4;
+
+		a = 0xff00000000;
+		if (a >= 0xffffffffff)
+			return 5;
+
 		return 0;
 	}
 
@@ -152,6 +238,41 @@ class Tests {
 		long a = 0xffffffffff;
 		if (a <= 0xfffffffffe)
 			return 1;
+
+		if (a <= 0x1ffffffffff) {} else
+			return 2;
+
+		if (a <= 0xff00000000)
+			return 3;
+
+		if (a <= 0xfeffffffff)
+			return 4;
+
+		a = 0xff00000000;
+		if (a <= 0xffffffffff) {} else
+			return 5;
+
+		return 0;
+	}
+
+	public static int test_0_bgt_un () {
+		ulong a = 0xffffffffff;
+		if (a <= 0xfffffffffe)
+			return 1;
+
+		if (a <= 0x1ffffffffff) {} else
+			return 2;
+
+		if (a <= 0xff00000000)
+			return 3;
+
+		if (a <= 0xfeffffffff)
+			return 4;
+
+		a = 0xff00000000;
+		if (a <= 0xffffffffff) {} else
+			return 5;
+
 		return 0;
 	}
 

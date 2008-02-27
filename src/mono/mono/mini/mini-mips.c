@@ -82,10 +82,6 @@ struct InstList {
 	MonoInst *data;
 };
 
-#define ALWAYS_ON_STACK(s) s
-#define FP_ALSO_IN_REG(s) s
-#define ALIGN_DOUBLES
-
 enum {
 	RegTypeGeneral,
 	RegTypeBase,
@@ -106,8 +102,7 @@ typedef struct {
 	int nargs;
 	int gr;
 	int fr;
-	int gr_passed;
-	int fr_passed;
+	gboolean gr_passed;
 	gboolean on_stack;
 	int stack_size;
 	guint32 stack_usage;
@@ -545,17 +540,12 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 }
 
 static void
-args_onto_stack (CallInfo *info, gboolean force)
+args_onto_stack (CallInfo *info)
 {
-	if (!info->on_stack) {
-		if ((info->gr > MIPS_LAST_ARG_REG) || (info->fr > (MIPS_LAST_FPARG_REG+1))) {
-			force = TRUE;
-		}
-		if (force) {
-			info->on_stack = TRUE;
-			info->stack_size = MIPS_STACK_PARAM_OFFSET;
-		}
-	}
+	g_assert(!info->on_stack);
+	g_assert(info->stack_size <= MIPS_STACK_PARAM_OFFSET);
+	info->on_stack = TRUE;
+	info->stack_size = MIPS_STACK_PARAM_OFFSET;
 }
 
 /*
@@ -565,75 +555,73 @@ args_onto_stack (CallInfo *info, gboolean force)
 static void
 add_int32_arg (CallInfo *info, ArgInfo *ainfo) {
 	/* First, see if we need to drop onto the stack */
-	args_onto_stack (info, FALSE);
+	if (!info->on_stack && info->gr > MIPS_LAST_ARG_REG)
+		args_onto_stack (info);
 
 	/* Now, place the argument */
-	ainfo->offset = info->stack_size;
-	info->stack_size += 4;
 	if (info->on_stack) {
 		ainfo->regtype = RegTypeBase;
 		ainfo->reg = mips_sp; /* in the caller */
+		ainfo->offset = info->stack_size;
 	}
 	else {
+		ainfo->regtype = RegTypeGeneral;
 		ainfo->reg = info->gr;
 		info->gr += 1;
-		info->gr_passed += 1;
-		/* FP and GP slots do not overlap */
-		info->fr += 1;
+		info->gr_passed = TRUE;
 	}
+	info->stack_size += 4;
 }
 
 static void
 add_int64_arg (CallInfo *info, ArgInfo *ainfo) {
 	/* First, see if we need to drop onto the stack */
-	args_onto_stack (info, FALSE);
+	if (!info->on_stack && info->gr+1 > MIPS_LAST_ARG_REG)
+		args_onto_stack (info);
 
 	/* Now, place the argument */
-	if (info->stack_size & 0x7) {
-		ArgInfo dummy;
-
-		/* foo (int, long) -- need to align 2nd arg */
-		add_int32_arg (info, &dummy);
-		args_onto_stack (info, FALSE);
-	}
-	ainfo->offset = info->stack_size;
-	info->stack_size += 8;
 	if (info->on_stack) {
+		g_assert(info->stack_size % 4 == 0);
+		info->stack_size += (info->stack_size % 8);
+
 		ainfo->regtype = RegTypeBase;
 		ainfo->reg = mips_sp; /* in the caller */
+		ainfo->offset = info->stack_size;
 	}
 	else {
+		// info->gr must be a0 or a2
+		info->gr += (info->gr - MIPS_FIRST_ARG_REG) % 2;
+		g_assert(info->gr <= MIPS_LAST_ARG_REG);
+
+		ainfo->regtype = RegTypeGeneral;
 		ainfo->reg = info->gr;
 		info->gr += 2;
-		info->gr_passed += 2;
-		/* FP and GP slots do not overlap */
-		info->fr += 2;
+		info->gr_passed = TRUE;
 	}
+	info->stack_size += 8;
 }
 
 static void
 add_float32_arg (CallInfo *info, ArgInfo *ainfo) {
 	/* First, see if we need to drop onto the stack */
-	args_onto_stack (info, FALSE);
+	if (!info->on_stack && info->gr > MIPS_LAST_ARG_REG)
+		args_onto_stack (info);
 
 	/* Now, place the argument */
-	ainfo->offset = info->stack_size;
 	if (info->on_stack) {
 		ainfo->regtype = RegTypeBase;
 		ainfo->reg = mips_sp; /* in the caller */
-		info->stack_size += 8;
+		ainfo->offset = info->stack_size;
 	}
 	else {
 		/* Only use FP regs for args if no int args passed yet */
-		if (!info->gr_passed) {
+		if (!info->gr_passed && info->fr <= MIPS_LAST_FPARG_REG) {
 			ainfo->regtype = RegTypeFP;
 			ainfo->reg = info->fr;
-			info->stack_size += 8;
 			/* Even though it's a single-precision float, it takes up two FP regs */
 			info->fr += 2;
-			info->fr_passed += 1;
 			/* FP and GP slots do not overlap */
-			info->gr += 2;
+			info->gr += 1;
 		}
 		else {
 			/* Passing single-precision float arg in a GP register
@@ -642,47 +630,50 @@ add_float32_arg (CallInfo *info, ArgInfo *ainfo) {
 			 */
 			ainfo->regtype = RegTypeGeneral;
 			ainfo->reg = info->gr;
-			info->stack_size += 4;
 
-			/* Even though it's a single-precision float, it takes up two FP regs */
-			info->fr += 1;
-			info->fr_passed += 1;
-			/* FP and GP slots do not overlap */
 			info->gr += 1;
+			info->gr_passed = TRUE;
 		}
 	}
+	info->stack_size += 4;
 }
 
 static void
 add_float64_arg (CallInfo *info, ArgInfo *ainfo) {
 	/* First, see if we need to drop onto the stack */
-	args_onto_stack (info, FALSE);
+	if (!info->on_stack && info->gr+1 > MIPS_LAST_ARG_REG)
+		args_onto_stack (info);
 
 	/* Now, place the argument */
-#ifdef ALIGN_DOUBLES
-	// info->stack_size += (info->stack_size % 8);
-#endif
-	ainfo->offset = info->stack_size;
-	info->stack_size += 8;
 	if (info->on_stack) {
+		g_assert(info->stack_size % 4 == 0);
+		info->stack_size += (info->stack_size % 8);
+
 		ainfo->regtype = RegTypeBase;
 		ainfo->reg = mips_sp; /* in the caller */
+		ainfo->offset = info->stack_size;
 	}
 	else {
 		/* Only use FP regs for args if no int args passed yet */
-		if (!info->gr_passed) {
+		if (!info->gr_passed && info->fr <= MIPS_LAST_FPARG_REG) {
 			ainfo->regtype = RegTypeFP;
 			ainfo->reg = info->fr;
+			info->fr += 2;
+			/* FP and GP slots do not overlap */
+			info->gr += 2;
 		}
 		else {
+			// info->gr must be a0 or a2
+			info->gr += (info->gr - MIPS_FIRST_ARG_REG) % 2;
+			g_assert(info->gr <= MIPS_LAST_ARG_REG);
+
 			ainfo->regtype = RegTypeGeneral;
 			ainfo->reg = info->gr;
+			info->gr += 2;
+			info->gr_passed = TRUE;
 		}
-		info->fr += 2;
-		info->fr_passed += 2;
-		/* FP and GP slots do not overlap */
-		info->gr += 2;
 	}
+	info->stack_size += 8;
 }
 
 static CallInfo*
@@ -715,7 +706,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
                         /* Prevent implicit arguments and sig_cookie from
 			   being passed in registers */
-			args_onto_stack (cinfo, TRUE);
+			args_onto_stack (cinfo);
                         /* Emit the signature cookie just before the implicit arguments */
 			add_int32_arg (cinfo, &cinfo->sig_cookie);
                 }
@@ -774,8 +765,8 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			int j;
-			int align_size;
 			int nwords = 0;
+			int has_offset = FALSE;
 			ArgInfo dummy_arg;
 			gint size, alignment;
 			MonoClass *klass;
@@ -788,25 +779,33 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			alignment = mono_class_min_align (klass);
 #if MIPS_PASS_STRUCTS_BY_VALUE
 			/* Need to do alignment if struct contains long or double */
-			if (cinfo->stack_size & (alignment - 1)) {
-				add_int32_arg (cinfo, &dummy_arg);
+			if (alignment > 4) {
+				if (cinfo->stack_size & (alignment - 1)) {
+					add_int32_arg (cinfo, &dummy_arg);
+				}
+				g_assert (!(cinfo->stack_size & (alignment - 1)));
 			}
-			g_assert (!(cinfo->stack_size & (alignment - 1)));
 
 #if 0
 			g_printf ("valuetype struct size=%d offset=%d align=%d\n",
 				  mono_class_native_size (sig->params [i]->data.klass, NULL),
 				  cinfo->stack_size, alignment);
 #endif
-			align_size = size;
-			align_size += (sizeof (gpointer) - 1);
-			align_size &= ~(sizeof (gpointer) - 1);
-			nwords = (align_size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+			nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+			g_assert(cinfo->args [n].size == 0);
+			g_assert(cinfo->args [n].vtsize == 0);
 			for (j = 0; j < nwords; ++j) {
-				if (j == 0)
+				if (j == 0) {
 					add_int32_arg (cinfo, &cinfo->args [n]);
-				else
+					if (cinfo->on_stack)
+						has_offset = TRUE;
+				} else {
 					add_int32_arg (cinfo, &dummy_arg);
+					if (!has_offset && cinfo->on_stack) {
+						cinfo->args [n].offset = dummy_arg.offset;
+						has_offset = TRUE;
+					}
+				}
 				if (cinfo->on_stack)
 					cinfo->args [n].vtsize += 1;
 				else
@@ -828,20 +827,26 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				int size = sizeof (MonoTypedRef);
 				int nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
 				cinfo->args [n].regtype = RegTypeStructByVal;
-				if (cinfo->gr <= MIPS_LAST_ARG_REG) {
+				if (!cinfo->on_stack && cinfo->gr <= MIPS_LAST_ARG_REG) {
 					int rest = MIPS_LAST_ARG_REG - cinfo->gr + 1;
 					int n_in_regs = rest >= nwords? nwords: rest;
 					cinfo->args [n].size = n_in_regs;
 					cinfo->args [n].vtsize = nwords - n_in_regs;
 					cinfo->args [n].reg = cinfo->gr;
 					cinfo->gr += n_in_regs;
+					cinfo->gr_passed = TRUE;
 				} else {
 					cinfo->args [n].size = 0;
 					cinfo->args [n].vtsize = nwords;
 				}
-				cinfo->args [n].offset = MIPS_STACK_PARAM_OFFSET + cinfo->stack_size;
-				g_print ("offset for arg %d at %d\n", n, MIPS_STACK_PARAM_OFFSET + cinfo->stack_size);
-				cinfo->stack_size += nwords * sizeof (gpointer);
+				if (cinfo->args [n].vtsize > 0) {
+					if (!cinfo->on_stack)
+						args_onto_stack (cinfo);
+					g_assert(cinfo->on_stack);
+					cinfo->args [n].offset = cinfo->stack_size;
+					g_print ("offset for arg %d at %d\n", n, cinfo->args [n].offset);
+					cinfo->stack_size += cinfo->args [n].vtsize * sizeof (gpointer);
+				}
 			}
 #else
 			add_int32_arg (cinfo, &cinfo->args[n]);
@@ -852,16 +857,19 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 		}
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
+                        DEBUG(printf("8 bytes\n"));
 			cinfo->args [n].size = 8;
 			add_int64_arg (cinfo, &cinfo->args[n]);
 			n++;
 			break;
 		case MONO_TYPE_R4:
+                        DEBUG(printf("R4\n"));
 			cinfo->args [n].size = 4;
 			add_float32_arg (cinfo, &cinfo->args[n]);
 			n++;
 			break;
 		case MONO_TYPE_R8:
+                        DEBUG(printf("R8\n"));
 			cinfo->args [n].size = 8;
 			add_float64_arg (cinfo, &cinfo->args[n]);
 			n++;
@@ -919,7 +927,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	}
 
 	/* align stack size to 16 */
-	cinfo->stack_size = (cinfo->stack_size + 15) & ~15;
+	cinfo->stack_size = (cinfo->stack_size + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
 
 	cinfo->stack_usage = cinfo->stack_size;
 	return cinfo;
@@ -960,7 +968,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		cfg->param_area = MAX (cfg->param_area, sizeof (gpointer)*8);
 
-	cfg->param_area = MAX (cfg->param_area, 16);
+	/* a0-a3 always present */
+	cfg->param_area = MAX (cfg->param_area, MIPS_STACK_PARAM_OFFSET);
 
 	header = mono_method_get_header (cfg->method);
 
@@ -1117,12 +1126,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			inst->opcode = OP_REGOFFSET;
 			size = mono_type_size (arg_type, &align);
 
-			/* Need to take references to R4 into account */
-			/* If it's a single-precision float, allocate 8 bytes of stack for it */
-			if ((arg_type->type == MONO_TYPE_R4) && !arg_type->byref) {
-				align = 8;
-				size = 8;
-			}
 			if (size < 4) {
 				size = 4;
 				align = 4;
@@ -1230,6 +1233,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 #endif
 			} else if (ainfo->regtype == RegTypeBase) {
 				MonoMIPSArgInfo *ai = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoMIPSArgInfo));
+				g_assert(ainfo->reg == mips_sp);
 				arg->opcode = OP_OUTARG_MEMBASE;
 				ai->reg = ainfo->reg;
 				ai->size = ainfo->size;
@@ -1671,6 +1675,96 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 			mips_sra (code, dreg, dreg, 16);
 		}
 	}
+	return code;
+}
+
+/*
+ * emit_load_volatile_arguments:
+ *
+ *  Load volatile arguments from the stack to the original input registers.
+ * Required before a tail call.
+ */
+static guint8 *
+emit_load_volatile_arguments(MonoCompile *cfg, guint8 *code)
+{
+	MonoMethod *method = cfg->method;
+	MonoMethodSignature *sig;
+	MonoInst *inst;
+	CallInfo *cinfo;
+	int i;
+
+	sig = mono_method_signature (method);
+	cinfo = calculate_sizes (sig, sig->pinvoke);
+	if (cinfo->struct_ret) {
+		ArgInfo *ainfo = &cinfo->ret;
+		inst = cfg->ret;
+		mips_lw (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+	}
+
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = cinfo->args + i;
+		inst = cfg->args [i];
+		if (inst->opcode == OP_REGVAR) {
+			if (ainfo->regtype == RegTypeGeneral)
+				mips_move (code, ainfo->reg, inst->dreg);
+			else if (ainfo->regtype == RegTypeFP)
+				g_assert_not_reached();
+			else if (ainfo->regtype == RegTypeBase) {
+				/* do nothing */
+			} else
+				g_assert_not_reached ();
+		} else {
+			if (ainfo->regtype == RegTypeGeneral) {
+				g_assert (mips_is_imm16 (inst->inst_offset));
+				switch (ainfo->size) {
+				case 1:
+					mips_lb (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					break;
+				case 2:
+					mips_lh (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					break;
+				case 0: /* XXX */
+				case 4:
+					mips_lw (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					break;
+				case 8:
+					mips_lw (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+					mips_lw (code, ainfo->reg + 1, inst->inst_basereg, inst->inst_offset + 4);
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+			} else if (ainfo->regtype == RegTypeBase) {
+				/* do nothing */
+			} else if (ainfo->regtype == RegTypeFP) {
+				g_assert (mips_is_imm16 (inst->inst_offset));
+				if (ainfo->size == 8)
+					mips_ldc1 (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+				else if (ainfo->size == 4)
+					mips_lwc1 (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+				else
+					g_assert_not_reached ();
+			} else if (ainfo->regtype == RegTypeStructByVal) {
+				int i;
+				int doffset = inst->inst_offset;
+
+				g_assert (mips_is_imm16 (inst->inst_offset));
+				g_assert (mips_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
+				for (i = 0; i < ainfo->size; ++i) {
+					mips_lw (code, ainfo->reg + i, inst->inst_basereg, doffset);
+					doffset += sizeof (gpointer);
+				}
+			} else if (ainfo->regtype == RegTypeStructByAddr) {
+				g_assert (mips_is_imm16 (inst->inst_offset));
+				mips_lw (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+			} else
+				g_assert_not_reached ();
+		}
+	}
+
+	g_free (cinfo);
+
 	return code;
 }
 
@@ -2217,6 +2311,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_cvtds (code, ins->dreg, ins->dreg);
 			break;
 		case OP_JMP:
+			code = emit_load_volatile_arguments(cfg, code);
+
 			/*
 			 * Pop our stack, then jump to specified method (tail-call)
 			 * Keep in sync with mono_arch_emit_epilog
@@ -2264,13 +2360,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
+			call = (MonoCallInst*)ins;
 			switch (ins->opcode) {
 			case OP_FCALL:
 			case OP_LCALL:
 			case OP_VCALL:
 			case OP_VOIDCALL:
 			case OP_CALL:
-				call = (MonoCallInst*)ins;
 				if (ins->flags & MONO_INST_HAS_METHOD)
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 				else
@@ -2295,6 +2391,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			mips_jalr (code, mips_t9, mips_ra);
 			mips_nop (code);
+			if ((ins->opcode == OP_FCALL ||
+			     ins->opcode == OP_FCALL_REG) &&
+			    call->signature->ret->type == MONO_TYPE_R4) {
+				mips_cvtds (code, mips_f0, mips_f0);
+			}
 			break;
 		case OP_OUTARG:
 			g_assert_not_reached ();
@@ -3051,7 +3152,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 /*
  * Stack frame layout:
  * 
- *   ------------------- sp + cfg->stack_usage + MIPS_STACK_PARAM_OFFSET + cfg->param_area
+ *   ------------------- sp + cfg->stack_usage + cfg->param_area
  *      param area		incoming
  *   ------------------- sp + cfg->stack_usage + MIPS_STACK_PARAM_OFFSET
  *      a0-a3			incoming
@@ -3067,7 +3168,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
  *   	locals
  *   ------------------- sp + cfg->param_area
  *   	param area		outgoing
- *   ------------------- sp + 16
+ *   ------------------- sp + MIPS_STACK_PARAM_OFFSET
  *   	a0-a3			outgoing
  *   ------------------- sp
  *   	red zone
@@ -3100,9 +3201,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	cfg->code_size = 768 + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
-
-	alloc_size = cfg->stack_offset;
-	g_assert ((alloc_size & (MIPS_STACK_ALIGNMENT-1)) == 0);
 
 	/* re-align cfg->stack_offset if needed (due to var spilling in mini-codegen.c) */
 	cfg->stack_offset = (cfg->stack_offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
@@ -3210,6 +3308,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			mips_sw (code, ainfo->reg, mips_at, 0);
 		}
 	}
+	/* Keep this in sync with emit_load_volatile_arguments */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		inst = cfg->args [pos];
@@ -3392,10 +3491,9 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int offset;
 	MonoMethod *method = cfg->method;
 	int rtype = mono_type_get_underlying_type (mono_method_signature (method)->ret)->type;
-	int save_offset = 16;
+	int save_offset = MIPS_STACK_PARAM_OFFSET;
 
-	save_offset += 15;
-	save_offset &= ~15;
+	g_assert ((save_offset & (MIPS_STACK_ALIGNMENT-1)) == 0);
 	
 	offset = code - cfg->native_code;
 	/* we need about 16 instructions */

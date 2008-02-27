@@ -226,6 +226,14 @@ class Tests {
 		return 5;
 	}
 
+	static Simple s_v;
+	static int test_5_pass_static_struct () {
+		s_v = get_simple (1);
+		if (receive_simple (7, s_v, 9) != 0)
+			return 0;
+		return 5;
+	}
+
 	// Test alignment of small structs
 
 	static Small get_small (byte v) {

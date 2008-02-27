@@ -605,9 +605,8 @@ stmt: CEE_BLE (OP_LCOMPARE (lreg, lreg)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_true_bb);
 
-	/* if (rreg2 < lreg2) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> false */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_false_bb);
 
 	/* (lreg2 == rreg2), if (lreg1 <= rreg1) -> true  [or if (rreg1 < lreg1) -> false] */
 
@@ -628,9 +627,8 @@ stmt: CEE_BLE (OP_LCOMPARE (lreg, i8con)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_true_bb);
 
-	/* if (rreg2 < lreg2) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> false */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_false_bb);
 
 	/* (rreg2 == lreg2), if (lreg1 <= rreg1) -> true  [or if (rreg1 < lreg1) -> false] */
 
@@ -650,9 +648,8 @@ stmt: CEE_BLE_UN (OP_LCOMPARE (lreg, lreg)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_true_bb);
 
-	/* if (rreg2 < lreg2) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> false */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_false_bb);
 
 	/* (lreg2 == rreg2), if (lreg1 <= rreg1) -> true  [or if (rreg1 < lreg1) -> false] */
 
@@ -673,9 +670,8 @@ stmt: CEE_BLE_UN (OP_LCOMPARE (lreg, i8con)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_true_bb);
 
-	/* if (rreg2 < lreg2) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> false */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_false_bb);
 
 	/* (rreg2 == lreg2), if (rreg1 <= lreg1) -> true  [or if (rreg1 < lreg1) -> false] */
 
@@ -695,11 +691,11 @@ stmt: CEE_BGE (OP_LCOMPARE (lreg, lreg)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 
-	/* if (rreg2 != lreg2) -> false */
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, rreg2, lreg2, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> true */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_true_bb);
 
-	/* (rreg2 == lreg2), so if (lreg1 < rreg1) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg1, rreg1);
+	/* (lreg2 == rreg2), so if (lreg1 < rreg1) -> false */
+	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg1, rreg1);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, OP_BR, tree->inst_true_bb);
 }
@@ -716,13 +712,13 @@ stmt: CEE_BGE (OP_LCOMPARE (lreg, i8con)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 
-	/* if (rreg2 != lreg2) -> false */
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, rreg2, lreg2, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> true */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_true_bb);
 
      	MONO_EMIT_NEW_ICONST (s, rreg1, state->left->right->tree->inst_ls_word);
 
-	/* (rreg2 == lreg2), so if (lreg1 < rreg1) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg1, rreg1);
+	/* (lreg2 == rreg2), so if (lreg1 < rreg1) -> false */
+	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg1, rreg1);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, OP_BR, tree->inst_true_bb);
 }
@@ -737,11 +733,11 @@ stmt: CEE_BGE_UN (OP_LCOMPARE (lreg, lreg)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 
-	/* if (rreg2 != lreg2) -> false */
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, rreg2, lreg2, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> true */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_true_bb);
 
 	/* (rreg2 == lreg2), so if (lreg1 < rreg1) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg1, rreg1);
+	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg1, rreg1);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, OP_BR, tree->inst_true_bb);
 }
@@ -758,13 +754,13 @@ stmt: CEE_BGE_UN (OP_LCOMPARE (lreg, i8con)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 
-	/* if (rreg2 != lreg2) -> false */
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, rreg2, lreg2, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> true */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_true_bb);
 
      	MONO_EMIT_NEW_ICONST (s, rreg1, state->left->right->tree->inst_ls_word);
 
-	/* (rreg2 == lreg2), so if (lreg1 < rreg1) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg1, rreg1);
+	/* (lreg2 == rreg2), so if (lreg1 < rreg1) -> false */
+	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg1, rreg1);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 	MONO_EMIT_NEW_BRANCH_BLOCK (s, OP_BR, tree->inst_true_bb);
 }
@@ -779,9 +775,8 @@ stmt: CEE_BLT (OP_LCOMPARE (lreg, lreg)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_true_bb);
 
-	/* if (rreg2 < lreg2) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> false */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_false_bb);
 
 	/* (lreg2 == rreg2), if (lreg1 < rreg1) -> true */
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg1, rreg1);
@@ -801,9 +796,8 @@ stmt: CEE_BLT (OP_LCOMPARE (lreg, i8con)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_true_bb);
 
-	/* if (rreg2 < lreg2) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> false */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_false_bb);
 
      	MONO_EMIT_NEW_ICONST (s, rreg1, state->left->right->tree->inst_ls_word);
 
@@ -823,9 +817,8 @@ stmt: CEE_BLT_UN (OP_LCOMPARE (lreg, lreg)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_true_bb);
 
-	/* if (rreg2 < lreg2) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> false */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_false_bb);
 
 	/* (lreg2 == rreg2), if (lreg1 < rreg1) -> true */
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg1, rreg1);
@@ -845,9 +838,8 @@ stmt: CEE_BLT_UN (OP_LCOMPARE (lreg, i8con)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_true_bb);
 
-	/* if (rreg2 < lreg2) -> false */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> false */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_false_bb);
 
      	MONO_EMIT_NEW_ICONST (s, rreg1, state->left->right->tree->inst_ls_word);
 
@@ -867,9 +859,8 @@ stmt: CEE_BGT (OP_LCOMPARE (lreg, lreg)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 
-	/* if (rreg2 < lreg2) -> true */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> true */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_true_bb);
 
 	/* (rreg2 == lreg2), so if (lreg1 > rreg1) -> true */
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, rreg1, lreg1);
@@ -889,9 +880,8 @@ stmt: CEE_BGT (OP_LCOMPARE (lreg, i8con)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 
-	/* if (rreg2 < lreg2) -> true */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLT, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> true */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_true_bb);
 
      	MONO_EMIT_NEW_ICONST (s, rreg1, state->left->right->tree->inst_ls_word);
 
@@ -911,9 +901,8 @@ stmt: CEE_BGT_UN (OP_LCOMPARE (lreg, lreg)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 
-	/* if (rreg2 < lreg2) -> true */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> true */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_true_bb);
 
 	/* (rreg2 == lreg2), so if (lreg1 > rreg1) -> true */
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, rreg1, lreg1);
@@ -933,9 +922,8 @@ stmt: CEE_BGT_UN (OP_LCOMPARE (lreg, i8con)) {
 	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, lreg2, rreg2);
 	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
 
-	/* if (rreg2 < lreg2) -> true */
-	MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, rreg2, lreg2);
-	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, mips_at, mips_zero, tree->inst_false_bb);
+	/* if (lreg2 != rreg2) -> true */
+	MONO_EMIT_NEW_COMPARE_BRANCH_BLOCK (s, OP_MIPS_BNE, lreg2, rreg2, tree->inst_true_bb);
 
      	MONO_EMIT_NEW_ICONST (s, rreg1, state->left->right->tree->inst_ls_word);
 
