@@ -4862,6 +4862,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_throw_verification_exception (cfg, bblock, ip);
 	}
 
+	if (header->code_size == 0)
+		UNVERIFIED;
+
 	if (get_basic_blocks (cfg, header, real_offset, ip, end, &err_pos)) {
 		ip = err_pos;
 		UNVERIFIED;
