@@ -1690,8 +1690,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cinfo   = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
-		cfg->ret->opcode = OP_REGVAR;
-		cfg->ret->inst_c0 = s390_r2;
+		cfg->vret_addr->opcode = OP_REGVAR;
+		cfg->vret_addr->inst_c0 = s390_r2;
 	} else {
 		switch (mono_type_get_underlying_type (sig->ret)->type) {
 		case MONO_TYPE_VOID:
@@ -1713,7 +1713,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cfg->sig_cookie = 0;
 
 	if (cinfo->struct_ret) {
-		inst 		   = cfg->ret;
+		inst 		   = cfg->vret_addr;
 		offset 		   = S390_ALIGN(offset, sizeof(gpointer));
 		inst->inst_offset  = offset;
 		inst->opcode 	   = OP_REGOFFSET;
@@ -1722,6 +1722,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if ((sig->call_convention == MONO_CALL_VARARG) &&
 		    (!retFitsInReg (cinfo->ret.size)))
 			cfg->sig_cookie += cinfo->ret.size;
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr =");
+			mono_print_ins (cfg->vret_addr);
+		}
 	}
 
 	if (sig->hasthis) {
@@ -1858,6 +1862,23 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 void
 mono_arch_create_vars (MonoCompile *cfg)
 {
+	MonoMethodSignature *sig;
+	CallInfo *cinfo;
+	size_data sz;
+
+	sig = mono_method_signature (cfg->method);
+
+	cinfo = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
+
+	if (cinfo->struct_ret) {
+		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr = ");
+			mono_print_ins (cfg->vret_addr);
+		}
+	}
+
+	g_free (cinfo);
 }
 
 /*========================= End of Function ========================*/
@@ -4275,7 +4296,7 @@ emit_load_volatile_registers (guint8 *code, MonoCompile *cfg)
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
-		inst         = cfg->ret;
+		inst         = cfg->vret_addr;
 		s390_lg (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 	}
 
@@ -4442,7 +4463,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
-		inst         = cfg->ret;
+		inst         = cfg->vret_addr;
 		inst->backend.size = ainfo->vtsize;
 		s390_stg (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 	}
