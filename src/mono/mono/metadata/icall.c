@@ -60,6 +60,7 @@
 #include <mono/metadata/number-formatter.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
+#include <mono/metadata/mono-perfcounters.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>

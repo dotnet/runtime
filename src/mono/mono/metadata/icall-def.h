@@ -165,6 +165,12 @@ ICALL(TRACEL_1, "WriteWindowsDebugString", ves_icall_System_Diagnostics_DefaultT
 ICALL_TYPE(FILEV, "System.Diagnostics.FileVersionInfo", FILEV_1)
 ICALL(FILEV_1, "GetVersionInfo_internal(string)", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal)
 
+ICALL_TYPE(PERFCTR, "System.Diagnostics.PerformanceCounter", PERFCTR_1)
+ICALL(PERFCTR_1, "FreeData", mono_perfcounter_free_data)
+ICALL(PERFCTR_2, "GetImpl", mono_perfcounter_get_impl)
+ICALL(PERFCTR_3, "GetSample", mono_perfcounter_get_sample)
+ICALL(PERFCTR_4, "UpdateValue", mono_perfcounter_update_value)
+
 ICALL_TYPE(PROCESS, "System.Diagnostics.Process", PROCESS_1)
 ICALL(PROCESS_1, "CreateProcess_internal(System.Diagnostics.ProcessStartInfo,intptr,intptr,intptr,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_CreateProcess_internal)
 ICALL(PROCESS_2, "ExitCode_internal(intptr)", ves_icall_System_Diagnostics_Process_ExitCode_internal)
