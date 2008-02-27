@@ -1334,8 +1334,6 @@ mono_class_setup_methods (MonoClass *class)
 		for (i = 0; i < class->method.count; ++i) {
 			int idx = mono_metadata_translate_token_index (class->image, MONO_TABLE_METHOD, class->method.first + i + 1);
 			methods [i] = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | idx, class);
-			if (class->valuetype && methods [i]->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED && !(methods [i]->flags & MONO_METHOD_ATTR_STATIC))
-				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 		}
 	}
 
