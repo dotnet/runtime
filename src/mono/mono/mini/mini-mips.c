@@ -1106,10 +1106,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	/* Return struct-by-value results in a hidden first argument */
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		cfg->ret->opcode = OP_REGOFFSET;
-		cfg->ret->inst_c0 = mips_a0;
-		cfg->ret->inst_offset = offset;
-		cfg->ret->inst_basereg = frame_reg;
+		cfg->vret_addr->opcode = OP_REGOFFSET;
+		cfg->vret_addr->inst_c0 = mips_a0;
+		cfg->vret_addr->inst_offset = offset;
+		cfg->vret_addr->inst_basereg = frame_reg;
 		offset += 4;
 	}
 
@@ -1156,6 +1156,17 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 void
 mono_arch_create_vars (MonoCompile *cfg)
 {
+	MonoMethodSignature *sig;
+
+	sig = mono_method_signature (cfg->method);
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr = ");
+			mono_print_ins (cfg->vret_addr);
+		}
+	}
 }
 
 /* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
@@ -1702,7 +1713,7 @@ emit_load_volatile_arguments(MonoCompile *cfg, guint8 *code)
 	cinfo = calculate_sizes (sig, sig->pinvoke);
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
-		inst = cfg->ret;
+		inst = cfg->vret_addr;
 		mips_lw (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 	}
 
@@ -3302,7 +3313,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		ArgInfo *ainfo = &cinfo->ret;
-		inst = cfg->ret;
+		inst = cfg->vret_addr;
 		if (inst->opcode == OP_REGVAR)
 			mips_move (code, inst->dreg, ainfo->reg);
 		else if (mips_is_imm16 (inst->inst_offset)) {
