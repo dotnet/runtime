@@ -1852,6 +1852,18 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- mono_arch_create_vars                                 */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_create_vars (MonoCompile *cfg)
+{
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- mono_arch_call_opcode                             */
 /*                                                                  */
 /* Function	- Take the arguments and generate the arch-specific */

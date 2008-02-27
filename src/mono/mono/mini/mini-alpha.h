@@ -129,8 +129,6 @@ struct MonoLMF
 //#define MONO_ARCH_INST_FIXED_REG(desc)	(-1)
 #define MONO_ARCH_INST_FIXED_REG(desc)  ((desc == 'o') ? alpha_at : ( (desc == 'a') ? alpha_r0 : -1) )
 
-#define MONO_ARCH_HAVE_CREATE_VARS 1
-
 #if 0
 
 /* r8..r11, r14..r29 */

@@ -1102,6 +1102,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 }
 
+void
+mono_arch_create_vars (MonoCompile *cfg)
+{
+}
+
 /* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
  * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info 
  */

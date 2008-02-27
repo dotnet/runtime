@@ -10888,9 +10888,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
 
-#ifdef MONO_ARCH_HAVE_CREATE_VARS
 	mono_arch_create_vars (cfg);
-#endif
 }
 
 void
