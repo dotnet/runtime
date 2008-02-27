@@ -242,6 +242,7 @@ static MonoType *
 mono_type_create_fnptr_from_mono_method (VerifyContext *ctx, MonoMethod *method)
 {
 	MonoType *res = g_new0 (MonoType, 1);
+	//FIXME use mono_method_get_signature_full
 	res->data.method = mono_method_signature (method);
 	res->type = MONO_TYPE_FNPTR;
 	ctx->funptrs = g_slist_prepend (ctx->funptrs, res);
@@ -2721,7 +2722,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		ctx->code [ctx->ip_offset].flags |= IL_CODE_CALL_NONFINAL_VIRTUAL;
 	}
 
-	if (!(sig = mono_method_signature (method)))
+	if (!(sig = mono_method_get_signature_full (method, ctx->image, method_token, ctx->generic_context)))
 		sig = mono_method_get_signature (method, ctx->image, method_token);
 
 	param_count = sig->param_count + sig->hasthis;
@@ -2772,9 +2773,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 			set_stack_value (ctx, stack_push (ctx), sig->ret, FALSE);
 	}
 
-	if (sig->ret->type == MONO_TYPE_TYPEDBYREF
-		|| sig->ret->byref
-		|| (sig->ret->type == MONO_TYPE_VALUETYPE && !strcmp ("System", sig->ret->data.klass->name_space) && !strcmp ("ArgIterator", sig->ret->data.klass->name)))
+	if (sig->ret->byref)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns typedbyref, byref or ArgIterator at 0x%04x", ctx->ip_offset));
 }
 
@@ -3216,6 +3215,7 @@ do_newobj (VerifyContext *ctx, int token)
 	if (!mono_method_can_access_method (ctx->method, method))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Constructor not visible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
+	//FIXME use mono_method_get_signature_full
 	sig = mono_method_signature (method);
 	if (!check_underflow (ctx, sig->param_count))
 		return;
@@ -3790,6 +3790,25 @@ do_ldstr (VerifyContext *ctx, guint32 token)
 		stack_push_val (ctx, TYPE_COMPLEX,  &mono_defaults.string_class->byval_arg);
 }
 
+static void
+do_refanyval (VerifyContext *ctx, int token)
+{
+	ILStackDesc *top;
+	MonoType *type;
+	if (!check_underflow (ctx, 1))
+		return;
+
+	if (!(type = get_boxable_mono_type (ctx, token, "refanyval")))
+		return;
+
+	top = stack_pop (ctx);
+
+	if (top->stype != TYPE_PTR || top->type->type != MONO_TYPE_TYPEDBYREF)
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Expected a typedref as argument for refanyval, but found %s at 0x%04x", stack_slot_get_name (top), ctx->ip_offset));
+
+	set_stack_value (ctx, stack_push (ctx), type, TRUE);
+}
+
 /*
  * merge_stacks:
  * Merge the stacks and perform compat checks. The merge check if types of @from are mergeable with type of @to 
@@ -4010,6 +4029,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	memset (&ctx, 0, sizeof (VerifyContext));
 
+	//FIXME use mono_method_get_signature_full
 	ctx.signature = mono_method_signature (method);
 	if (!ctx.signature) {
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method signature"));
@@ -4712,9 +4732,8 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip; /* warn, error ? */
 			break;
 		case CEE_REFANYVAL:
-			if (!check_underflow (&ctx, 1))
-				break;
-			++ip;
+			do_refanyval (&ctx, read32 (ip + 1));
+			ip += 5;
 			break;
 		case CEE_CKFINITE:
 			if (!check_underflow (&ctx, 1))
@@ -4830,7 +4849,11 @@ mono_method_verify (MonoMethod *method, int level)
 
 			case CEE_ARGLIST:
 				check_overflow (&ctx);
+				if (ctx.signature->call_convention != MONO_CALL_VARARG)
+					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Cannot use arglist on method without VARGARG calling convention at 0x%04x", ctx.ip_offset));
+				set_stack_value (&ctx, stack_push (&ctx), &mono_defaults.argumenthandle_class->byval_arg, FALSE);
 				++ip;
+				break;
 	
 			case CEE_LDFTN:
 				do_load_function_ptr (&ctx, read32 (ip + 1), FALSE);
