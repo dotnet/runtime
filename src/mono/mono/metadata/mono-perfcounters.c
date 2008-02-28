@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include "metadata/mono-perfcounters.h"
+#include "metadata/appdomain.h"
 /* for mono_stats */
 #include "metadata/class-internals.h"
 #include "utils/mono-time.h"
@@ -161,6 +162,15 @@ create_vtable (void *arg, SampleFunc sample, UpdateFunc update)
 	vtable->sample = sample;
 	vtable->update = update;
 	return vtable;
+}
+
+MonoPerfCounters *mono_perfcounters = NULL;
+
+void
+mono_perfcounters_init (void)
+{
+	/* later allocate in the shared memory area */
+	mono_perfcounters = g_new0 (MonoPerfCounters, 1);
 }
 
 static int
@@ -470,6 +480,71 @@ mono_mem_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBoo
 	return NULL;
 }
 
+/* consider storing the pointer directly in vtable->arg, so the runtime overhead is lower:
+ * this needs some way to set sample->counterType as well, though.
+ */
+static MonoBoolean
+predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *sample)
+{
+	int cat_id = GPOINTER_TO_INT (vtable->arg);
+	int id = cat_id >> 16;
+	cat_id &= 0xffff;
+	if (!only_value) {
+		fill_sample (sample);
+		sample->baseValue = 1;
+	}
+	sample->counterType = predef_counters [predef_categories [cat_id].first_counter + id].type;
+	switch (id) {
+	case COUNTER_ASPNET_REQ_Q:
+		sample->rawValue = mono_perfcounters->aspnet_requests_queued;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gint64
+predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
+{
+	glong *ptr = NULL;
+	int cat_id = GPOINTER_TO_INT (vtable->arg);
+	int id = cat_id >> 16;
+	cat_id &= 0xffff;
+	switch (cat_id) {
+	case CATEGORY_ASPNET:
+		switch (id) {
+		case COUNTER_ASPNET_REQ_Q: ptr = (glong*)&mono_perfcounters->aspnet_requests_queued; break;
+		}
+		break;
+	}
+	if (ptr) {
+		if (do_incr) {
+			/* FIXME: we need to do this atomically */
+			*ptr += value;
+			return *ptr;
+		}
+		/* this can be non-atomic */
+		*ptr = value;
+		return value;
+	}
+	return 0;
+}
+
+static void*
+predef_writable_get_impl (int cat, MonoString* counter, MonoString* instance, int *type, MonoBoolean *custom)
+{
+	int i;
+	const CategoryDesc *desc = &predef_categories [cat];
+	*custom = TRUE;
+	for (i = desc->first_counter; i < desc [1].first_counter; ++i) {
+		const CounterDesc *cdesc = &predef_counters [i];
+		if (mono_string_compare_ascii (counter, cdesc->name) == 0) {
+			*type = cdesc->type;
+			return create_vtable (GINT_TO_POINTER ((cdesc->id << 16) | cat), predef_writable_counter, predef_writable_update);
+		}
+	}
+	return NULL;
+}
+
 static const CategoryDesc*
 find_category (MonoString *category)
 {
@@ -486,7 +561,7 @@ mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString
 		MonoString* machine, int *type, MonoBoolean *custom)
 {
 	const CategoryDesc *cdesc;
-	/* no support for counters other machines */
+	/* no support for counters on other machines */
 	if (mono_string_compare_ascii (machine, "."))
 		return NULL;
 	cdesc = find_category (category);
@@ -499,6 +574,8 @@ mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString
 		return process_get_impl (counter, instance, type, custom);
 	case CATEGORY_MONO_MEM:
 		return mono_mem_get_impl (counter, instance, type, custom);
+	case CATEGORY_ASPNET:
+		return predef_writable_get_impl (cdesc->id, counter, instance, type, custom);
 	}
 	return NULL;
 }
@@ -525,5 +602,111 @@ void
 mono_perfcounter_free_data (void *impl)
 {
 	g_free (impl);
+}
+
+/* Category icalls */
+MonoBoolean
+mono_perfcounter_category_del (MonoString *name)
+{
+	return FALSE;
+}
+
+MonoString*
+mono_perfcounter_category_help (MonoString *category, MonoString *machine)
+{
+	const CategoryDesc *cdesc;
+	/* no support for counters on other machines */
+	if (mono_string_compare_ascii (machine, "."))
+		return NULL;
+	cdesc = find_category (category);
+	if (!cdesc)
+		return NULL;
+	return mono_string_new (mono_domain_get (), cdesc->help);
+}
+
+MonoBoolean
+mono_perfcounter_category_exists (MonoString *counter, MonoString *category, MonoString *machine)
+{
+	int i;
+	const CategoryDesc *cdesc;
+	/* no support for counters on other machines */
+	if (mono_string_compare_ascii (machine, "."))
+		return FALSE;
+	cdesc = find_category (category);
+	if (!cdesc)
+		return FALSE;
+	/* counter is allowed to be null */
+	if (!counter)
+		return TRUE;
+	for (i = cdesc->first_counter; i < cdesc [1].first_counter; ++i) {
+		const CounterDesc *desc = &predef_counters [i];
+		if (mono_string_compare_ascii (counter, desc->name) == 0)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/*
+ * Since we'll keep a copy of the category per-process, we should also make sure
+ * categories with the same name are compatible.
+ */
+MonoBoolean
+mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoArray *items)
+{
+	return FALSE;
+}
+
+int
+mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, MonoString *machine)
+{
+	const CategoryDesc *cdesc;
+	/* no support for counters on other machines */
+	if (mono_string_compare_ascii (machine, "."))
+		return FALSE;
+	cdesc = find_category (category);
+	if (!cdesc)
+		return FALSE;
+	return FALSE;
+}
+
+MonoArray*
+mono_perfcounter_category_names (MonoString *machine)
+{
+	int i;
+	MonoArray *res;
+	MonoDomain *domain = mono_domain_get ();
+	/* no support for counters on other machines */
+	if (mono_string_compare_ascii (machine, "."))
+		return mono_array_new (domain, mono_get_string_class (), 0);
+	res = mono_array_new (domain, mono_get_string_class (), NUM_CATEGORIES);
+	for (i = 0; i < NUM_CATEGORIES; ++i) {
+		const CategoryDesc *cdesc = &predef_categories [i];
+		mono_array_setref (res, i, mono_string_new (domain, cdesc->name));
+	}
+	return res;
+}
+
+MonoArray*
+mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
+{
+	int i;
+	const CategoryDesc *cdesc;
+	MonoArray *res;
+	MonoDomain *domain = mono_domain_get ();
+	/* no support for counters on other machines */
+	if (mono_string_compare_ascii (machine, ".") || !(cdesc = find_category (category)))
+		return mono_array_new (domain, mono_get_string_class (), 0);
+	res = mono_array_new (domain, mono_get_string_class (), cdesc [1].first_counter - cdesc->first_counter);
+	for (i = cdesc->first_counter; i < cdesc [1].first_counter; ++i) {
+		const CounterDesc *desc = &predef_counters [i];
+		mono_array_setref (res, i - cdesc->first_counter, mono_string_new (domain, desc->name));
+	}
+	return res;
+}
+
+MonoArray*
+mono_perfcounter_instance_names (MonoString *category, MonoString *machine)
+{
+	return mono_array_new (mono_domain_get (), mono_get_string_class (), 0);
 }
 

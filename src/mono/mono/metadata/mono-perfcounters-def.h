@@ -25,3 +25,6 @@ PERFCTR_COUNTER(PROC_PBYTES,    "Private Bytes", "", NumberOfItems64)
 PERFCTR_CAT(MONO_MEM, "Mono Memory", "", SingleInstance, MEM_NUM_OBJECTS)
 PERFCTR_COUNTER(MEM_NUM_OBJECTS, "Allocated Objects", "", NumberOfItems64)
 
+PERFCTR_CAT(ASPNET, "ASP.NET", "", MultiInstance, ASPNET_REQ_Q)
+PERFCTR_COUNTER(ASPNET_REQ_Q, "Requests Queued", "", NumberOfItems64)
+

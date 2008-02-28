@@ -603,6 +603,21 @@ typedef struct {
 	gboolean enabled;
 } MonoStats;
 
+/* 
+ * new structure to hold performace counters values that are exported
+ * to managed code.
+ * Note: never remove fields from this structure and only add them to the end.
+ * Size of fields and type should not be changed as well.
+ */
+typedef struct {
+	gulong methods_jitted;
+	gulong aspnet_requests_queued;
+} MonoPerfCounters;
+
+extern MonoPerfCounters *mono_perfcounters MONO_INTERNAL;
+
+void mono_perfcounters_init (void);
+
 /*
  * The definition of the first field in SafeHandle,
  * Keep in sync with SafeHandle.cs, this is only used
