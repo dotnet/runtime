@@ -4016,5 +4016,24 @@ done
 ./make_call_test.sh callvirt_valuetype_8 valid "callvirt instance int32 [mscorlib]System.Object::GetHashCode()"  "ldloc.0\n\t\tbox MyValueType" "static" "pop"
 
 
+#mkrefany
+./make_mkrefany.sh mkrefany_empty_stack invalid int32 int32 "pop"
+
+./make_mkrefany.sh mkrefany_good_type_1 valid int32 int32
+./make_mkrefany.sh mkrefany_good_type_2 valid int32 "unsigned int32"
+./make_mkrefany.sh mkrefany_good_type_3 valid int32 "native int"
+./make_mkrefany.sh mkrefany_good_type_4 valid object object
+
+./make_mkrefany.sh mkrefany_type_not_compat_1 unverifiable string object
+./make_mkrefany.sh mkrefany_type_not_compat_2 unverifiable int32 int8
+./make_mkrefany.sh mkrefany_type_not_compat_3 unverifiable object string
+
+./make_mkrefany.sh mkrefany_native_int unverifiable int32 int32 "conv.i"
+
+./make_mkrefany.sh mkrefany_bad_type_1 unverifiable int32 int32 "pop\n\t\tldc.i4.0"
+
+./make_mkrefany.sh mkrefany_bad_type_2 invalid int32 "int32\&"
+
+
 
 
