@@ -1,3 +1,13 @@
+2008-02-28  Miguel de Icaza  <miguel@novell.com>
+
+	* scripts/Makefile.am: Implement new defaults for the Mono 2.0
+	release, 2.0 profile executables are now the defaults (al, ilasm,
+	mkbundle, mono-api-info, monop, resgen, wsdl and mcs).
+
+	Old commands running under the 1.0 profile are still available
+	by having the number 1 appended to their command name (al1,
+	ilasm1, mcs1, mkbundle1, mono-api-info1, monop1, resgen1, wsdl1). 
+
 2008-02-05  Zoltan Varga  <vargaz@gmail.com>
 
 	* runtime/Makefile.am: Update after the changes to mcs/Makefile.
