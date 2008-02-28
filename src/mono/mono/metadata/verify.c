@@ -3810,6 +3810,23 @@ do_refanyval (VerifyContext *ctx, int token)
 }
 
 static void
+do_refanytype (VerifyContext *ctx)
+{
+	ILStackDesc *top;
+
+	if (!check_underflow (ctx, 1))
+		return;
+
+	top = stack_pop (ctx);
+
+	if (top->stype != TYPE_PTR || top->type->type != MONO_TYPE_TYPEDBYREF)
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Expected a typedref as argument for refanytype, but found %s at 0x%04x", stack_slot_get_name (top), ctx->ip_offset));
+
+	set_stack_value (ctx, stack_push (ctx), &mono_defaults.typehandle_class->byval_arg, FALSE);
+
+}
+
+static void
 do_mkrefany (VerifyContext *ctx, int token)
 {
 	ILStackDesc *top;
@@ -4974,10 +4991,10 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 
 			case CEE_REFANYTYPE:
-				if (!check_underflow (&ctx, 1))
-					break;
+				do_refanytype (&ctx);
 				++ip;
 				break;
+
 			case CEE_UNUSED53:
 			case CEE_UNUSED54:
 			case CEE_UNUSED55:
