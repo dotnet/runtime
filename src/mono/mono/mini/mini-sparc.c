@@ -985,7 +985,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				MonoInst *indir;
 				MONO_INST_NEW (cfg, indir, 0);
 				*indir = *inst;
-				inst->opcode = OP_SPARC_INARG_VT;
+				inst->opcode = OP_VTARG_ADDR;
 				inst->inst_left = indir;
 			}
 		}

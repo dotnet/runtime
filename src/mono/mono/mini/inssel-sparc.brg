@@ -74,17 +74,17 @@ reg: OP_LOCALLOC (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-base: OP_SPARC_INARG_VT (base) {
+base: OP_VTARG_ADDR (base) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->tree->inst_basereg, 
 					state->left->tree->inst_offset);
 }
 
-reg: OP_LDADDR (OP_SPARC_INARG_VT (base)) {
+reg: OP_LDADDR (OP_VTARG_ADDR (base)) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->tree->inst_basereg, 
 					state->left->left->tree->inst_offset);
 }
 
-reg: CEE_LDOBJ (OP_SPARC_INARG_VT (base)) {
+reg: CEE_LDOBJ (OP_VTARG_ADDR (base)) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->tree->inst_basereg, 
 					state->left->left->tree->inst_offset);
 }
