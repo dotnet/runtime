@@ -1,3 +1,12 @@
+2008-02-29  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: Detect if there is an mcs1 command installed as
+	the external c# compiler, and if this is the compiler, pick this
+	to bootstrap. 
+
+	You need to re-autogen.sh after the first installation of mono
+	with the new scripts.
+
 2008-02-28  Miguel de Icaza  <miguel@novell.com>
 
 	* scripts/Makefile.am: Implement new defaults for the Mono 2.0

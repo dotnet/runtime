@@ -1928,6 +1928,8 @@ if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86" -o "x$TARGET" = "xALPHA"; t
 	fi
 fi
 
+AC_PATH_PROG(MCSCMD, mcs1, mcs1, mcs)
+
 AC_MSG_CHECKING(if the Mono Debugger is supported on this platform)
 if test "x$mono_debugger_supported" = "xyes"; then
 	AC_DEFINE(MONO_DEBUGGER_SUPPORTED,1,[The Mono Debugger is supported on this platform])
@@ -2209,7 +2211,7 @@ fi
     echo 'IL_FLAGS = /debug' >> $srcdir/$mcsdir/build/config.make
     echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$mcsdir/build/config.make
     echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $srcdir/$mcsdir/build/config.make
-
+    echo "EXTERNAL_MCS = $MCSCMD" >>  $srcdir/$mcsdir/build/config.make
     case $INSTALL in
     [[\\/$]]* | ?:[[\\/]]* ) mcs_INSTALL=$INSTALL ;;
     *) mcs_INSTALL=$mono_build_root/$INSTALL ;;
