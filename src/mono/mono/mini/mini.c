@@ -5335,6 +5335,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						goto load_error;
 				}
 
+				if (virtual && (cmethod->flags & METHOD_ATTRIBUTE_STATIC))
+					UNVERIFIED;
+
 				if (mono_method_signature (cmethod)->pinvoke) {
 					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc);
 					fsig = mono_method_signature (wrapper);
