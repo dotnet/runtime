@@ -5335,9 +5335,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						goto load_error;
 				}
 
-				if (virtual && (cmethod->flags & METHOD_ATTRIBUTE_STATIC))
-					UNVERIFIED;
-
 				if (mono_method_signature (cmethod)->pinvoke) {
 					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc);
 					fsig = mono_method_signature (wrapper);
@@ -7804,9 +7801,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (bblock, store);
 				NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 			} else {
-				if ((ip [5] == CEE_CALL) && (cmethod = mini_get_method (method, read32 (ip + 6), NULL, generic_context)) &&
-						(cmethod->klass == mono_defaults.monotype_class->parent) &&
-						(strcmp (cmethod->name, "GetTypeFromHandle") == 0) && ip_in_bb (cfg, bblock, ip + 5)) {
+				if ((ip + 5 < end) && ip_in_bb (cfg, bblock, ip + 5) && 
+					((ip [5] == CEE_CALL) || (ip [5] == CEE_CALLVIRT)) && 
+					(cmethod = mini_get_method (method, read32 (ip + 6), NULL, generic_context)) &&
+					(cmethod->klass == mono_defaults.monotype_class->parent) &&
+					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 					mono_class_init (tclass);
 					if (cfg->compile_aot)
