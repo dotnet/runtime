@@ -3360,7 +3360,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (!(cfg->opt & MONO_OPT_SHARED)) {
 		vtable = mono_class_vtable (cfg->domain, method->klass);
 		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
-			if (cfg->run_cctors) {
+			if (cfg->run_cctors && method->klass->has_cctor) {
 				/* This makes so that inline cannot trigger */
 				/* .cctors: too many apps depend on them */
 				/* running with a specific order... */

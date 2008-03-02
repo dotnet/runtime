@@ -476,8 +476,11 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 	for (i = 0; i < max_vars; i ++) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, i);
-		if (cfg->varinfo [vi->idx]->opcode == OP_ARG)
+		if (cfg->varinfo [vi->idx]->opcode == OP_ARG) {
+			if (vi->range.last_use.abs_pos == 0 && !(cfg->varinfo [vi->idx]->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
+				cfg->varinfo [vi->idx]->flags |= MONO_INST_IS_DEAD;
 			vi->range.first_use.abs_pos = 0;
+		}
 	}
 
 #ifdef DEBUG_LIVENESS

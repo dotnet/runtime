@@ -4665,6 +4665,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		ins = cfg->args [i];
 
+		if (ins->flags & MONO_INST_IS_DEAD)
+			/* Unused arguments */
+			continue;
+
 		if (sig->hasthis && (i == 0))
 			arg_type = &mono_defaults.object_class->byval_arg;
 		else
