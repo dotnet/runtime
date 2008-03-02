@@ -4505,10 +4505,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->arch.lmf_offset;
 	gboolean args_clobbered = FALSE;
+	gboolean trace = FALSE;
 
 	cfg->code_size =  MAX (((MonoMethodNormal *)method)->header->code_size * 4, 10240);
 
 	code = cfg->native_code = g_malloc (cfg->code_size);
+
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+		trace = TRUE;
 
 	/* Amount of stack space allocated by register saving code */
 	pos = 0;
@@ -4665,7 +4669,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		ins = cfg->args [i];
 
-		if (ins->flags & MONO_INST_IS_DEAD)
+		if ((ins->flags & MONO_INST_IS_DEAD) && !trace)
 			/* Unused arguments */
 			continue;
 
@@ -4824,7 +4828,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
+	if (trace) {
 		args_clobbered = TRUE;
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 	}
