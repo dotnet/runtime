@@ -1,3 +1,9 @@
+2008-03-02  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: No need to detect mcs1, as we are going to keep
+	mcs as the 1.0 compiler and gmcs as the 2.0 compiler.  Since
+	making mcs a 2.0 compiler caused too many problems.
+
 2008-02-29  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in: Detect if there is an mcs1 command installed as
