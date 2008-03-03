@@ -9738,6 +9738,19 @@ mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb)
 }
 
 /**
+ * 
+ * mono_reflection_is_valid_dynamic_token:
+ * 
+ * Returns TRUE if token is valid.
+ * 
+ */
+gboolean
+mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token)
+{
+	return mono_g_hash_table_lookup (image->tokens, GUINT_TO_POINTER (token)) != NULL;
+}
+
+/**
  * mono_reflection_lookup_dynamic_token:
  *
  * Finish the Builder object pointed to by TOKEN and return the corresponding

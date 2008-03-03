@@ -53,6 +53,7 @@ MonoType*     mono_reflection_get_type   (MonoImage* image, MonoTypeNameParse *i
 void          mono_reflection_free_type_info (MonoTypeNameParse *info);
 MonoType*     mono_reflection_type_from_name (char *name, MonoImage *image);
 guint32       mono_reflection_get_token (MonoObject *obj);
+gboolean      mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token) MONO_INTERNAL;
 
 MonoReflectionAssembly* mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly);
 MonoReflectionModule*   mono_module_get_object   (MonoDomain *domain, MonoImage *image);

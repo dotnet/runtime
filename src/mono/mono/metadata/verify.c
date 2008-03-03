@@ -235,10 +235,8 @@ enum {
 static gboolean
 token_bounds_check (MonoImage *image, guint32 token)
 {
-	if (image->dynamic) {
-		MonoDynamicImage *dyn = (MonoDynamicImage*)image; 
-		return mono_g_hash_table_lookup (dyn->tokens, GUINT_TO_POINTER (token)) != NULL;
-	}
+	if (image->dynamic)
+		return mono_reflection_is_valid_dynamic_token ((MonoDynamicImage*)image, token);
 	return image->tables [mono_metadata_token_table (token)].rows >= mono_metadata_token_index (token);
 }
 
