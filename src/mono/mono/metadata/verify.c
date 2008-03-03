@@ -235,6 +235,8 @@ enum {
 static gboolean
 token_bounds_check (MonoImage *image, guint32 token)
 {
+	if (image->dynamic)
+		return mono_g_hash_table_lookup (dyn->tokens, GUINT_TO_POINTER (token)) != NULL;
 	return image->tables [mono_metadata_token_table (token)].rows >= mono_metadata_token_index (token);
 }
 
@@ -322,7 +324,7 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 	MonoMethod* method;
 	
 	if (!IS_METHOD_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid field token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid method token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
 
@@ -4064,7 +4066,7 @@ mono_method_verify (MonoMethod *method, int level)
 	VerifyContext ctx;
 	GSList *tmp;
 
-	VERIFIER_DEBUG ( printf ("Verify IL for method %s %s %s\n",  method->klass->name,  method->klass->name, method->name); );
+	VERIFIER_DEBUG ( printf ("Verify IL for method %s %s %s\n",  method->klass->name_space,  method->klass->name, method->name); );
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 			(method->flags & (METHOD_ATTRIBUTE_PINVOKE_IMPL | METHOD_ATTRIBUTE_ABSTRACT))) {
