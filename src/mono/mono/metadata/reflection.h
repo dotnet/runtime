@@ -2,6 +2,7 @@
 #define __METADATA_REFLECTION_H__
 
 #include <mono/metadata/object.h>
+#include "mono/utils/mono-compiler.h"
 
 G_BEGIN_DECLS
 
