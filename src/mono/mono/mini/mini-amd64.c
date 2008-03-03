@@ -4864,15 +4864,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				switch (ainfo->storage) {
 				case ArgInIReg: {
 					if (((next->opcode == OP_LOAD_MEMBASE) || (next->opcode == OP_LOADI4_MEMBASE)) && next->inst_basereg == ins->inst_basereg && next->inst_offset == ins->inst_offset) {
-						if (next->dreg == ainfo->reg)
+						if (next->dreg == ainfo->reg) {
 							NULLIFY_INS (next);
-						else {
+							match = TRUE;
+						} else {
 							next->opcode = OP_MOVE;
 							next->sreg1 = ainfo->reg;
+							/* Only continue if the instruction doesn't change argument regs */
+							if (next->dreg == ainfo->reg || next->dreg == AMD64_RAX)
+								match = TRUE;
 						}
-						/* Only continue if the instruction doesn't change argument regs */
-						if (next->dreg == ainfo->reg || next->dreg == AMD64_RAX)
-							match = TRUE;
 					}
 					break;
 				}
