@@ -315,6 +315,18 @@ class Tests {
 			return 1;
 	}
 
+	struct S {
+		public int i;
+	}
+
+	public static int test_0_ldloca_initobj_opt () {
+		if (new Foo<S> (new S ()).get_default ().i != 0)
+			return 1;
+		if (new Foo<object> (null).get_default () != null)
+			return 2;
+		return 0;
+	}
+
 	public static int test_0_variance_reflection () {
 		// covariance on IEnumerator
 		if (!typeof (MyIEnumerator<object>).IsAssignableFrom (typeof (MyIEnumerator<string>)))
@@ -359,6 +371,10 @@ class Tests {
 				if (key == null)
 					throw new ArgumentNullException ("key");
 			}
+		}
+
+		public T1 get_default () {
+			return default (T1);
 		}
 		
 		readonly T1 m_t1;
