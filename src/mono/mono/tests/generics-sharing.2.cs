@@ -5,8 +5,14 @@ public class ClassA {}
 public class ClassB {}
 public class ClassC {}
 
+public class GenExc<T> : Exception {}
+
 public class NonGen {
 	public static int field = 123;
+
+	public static void doThrow () {
+		throw new GenExc<ClassA> ();
+	}
 }
 
 public class GenA<T> {
@@ -65,6 +71,16 @@ public class GenA<T> {
 
 	public T cast (Object obj) {
 		return (T)obj;
+	}
+
+	public void except () {
+		try {
+			NonGen.doThrow();
+		}
+		catch (GenExc<T>)
+		{
+			//Console.WriteLine("exception thrown");
+		}
 	}
 }
 
@@ -213,7 +229,7 @@ public class main {
 			error ("object from " + method + " should have type " + t.ToString () + " but has type " + obj.GetType ().ToString ());
 	}
 
-	public static void work<T> (T obj) {
+	public static void work<T> (T obj, bool mustCatch) {
 		EqualityComparer<T> comp = EqualityComparer<T>.Default;
 
 		GenA<T> ga = new GenA<T> ();
@@ -241,6 +257,20 @@ public class main {
 			error ("cast");
 
 		new GenADeriv<T> ();
+
+		if (mustCatch) {
+			bool didCatch = false;
+
+			try {
+				ga.except ();
+			} catch (GenExc<ClassA>) {
+				didCatch = true;
+			}
+
+			if (!didCatch)
+				error ("except");
+		} else
+			ga.except ();
 
 		MyDict<T, ClassB> dtb = new MyDict<T, ClassB> (obj, new ClassB ());
 
@@ -299,12 +329,12 @@ public class main {
 
 	public static int Main ()
 	{
-		work<ClassA> (new ClassA ());
-		work<ClassB> (new ClassB ());
-		work<ClassC> (new ClassC ());
-		work<GenA<ClassA>> (new GenA<ClassA> ());
-		work<int[]> (new int[3]);
-		work<int> (123);
+		work<ClassA> (new ClassA (), false);
+		work<ClassB> (new ClassB (), true);
+		work<ClassC> (new ClassC (), true);
+		work<GenA<ClassA>> (new GenA<ClassA> (), true);
+		work<int[]> (new int[3], true);
+		work<int> (123, true);
 
 		StaticTest<ClassA> sa = new StaticTest<ClassA> (1234);
 		StaticTest<ClassB> sb = new StaticTest<ClassB> (2345);

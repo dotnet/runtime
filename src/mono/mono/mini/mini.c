@@ -4672,6 +4672,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		for (i = 0; i < header->num_clauses; ++i) {
 			MonoBasicBlock *try_bb;
 			MonoExceptionClause *clause = &header->clauses [i];
+
+			/* We can't handle open exception clauses in
+			 * static methods yet.
+			 */
+			if ((method->flags & METHOD_ATTRIBUTE_STATIC) &&
+					clause->flags != MONO_EXCEPTION_CLAUSE_FILTER &&
+					clause->data.catch_class &&
+					mono_class_check_context_used (clause->data.catch_class)) {
+				GENERIC_SHARING_FAILURE (CEE_NOP);
+			}
+
 			GET_BBLOCK (cfg, try_bb, ip + clause->try_offset);
 			try_bb->real_offset = clause->try_offset;
 			GET_BBLOCK (cfg, tblock, ip + clause->handler_offset);
@@ -11491,7 +11502,7 @@ remove_critical_edges (MonoCompile *cfg) {
 MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts)
 {
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header;
 	guint8 *ip;
 	MonoCompile *cfg;
 	MonoJitInfo *jinfo;
@@ -11499,7 +11510,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	gboolean deadce_has_run = FALSE;
 	gboolean try_generic_shared;
 	MonoMethod *method_to_compile;
-	int gsctx_size;
+	int generic_info_size;
 
 	mono_jit_stats.methods_compiled++;
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
@@ -11556,6 +11567,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (try_generic_shared)
 		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
+
+	header = mono_method_get_header (method_to_compile);
 	if (!header) {
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 		cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
@@ -11808,19 +11821,19 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if (cfg->generic_sharing_context)
-		gsctx_size = sizeof (MonoGenericSharingContext*);
+		generic_info_size = sizeof (MonoGenericJitInfo);
 	else
-		gsctx_size = 0;
+		generic_info_size = 0;
 
 	if (cfg->method->dynamic) {
 		jinfo = g_malloc0 (sizeof (MonoJitInfo) + (header->num_clauses * sizeof (MonoJitExceptionInfo)) +
-				gsctx_size);
+				generic_info_size);
 	} else {
 		/* we access cfg->domain->mp */
 		mono_domain_lock (cfg->domain);
 		jinfo = mono_mempool_alloc0 (cfg->domain->mp, sizeof (MonoJitInfo) +
 				(header->num_clauses * sizeof (MonoJitExceptionInfo)) +
-				gsctx_size);
+				generic_info_size);
 		mono_domain_unlock (cfg->domain);
 	}
 
@@ -11832,9 +11845,41 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
 	jinfo->num_clauses = header->num_clauses;
 
-	if (cfg->generic_sharing_context) {
-		jinfo->has_generic_sharing_context = 1;
-		mono_jit_info_set_generic_sharing_context (jinfo, cfg->generic_sharing_context);
+	if (cfg->generic_sharing_context && !(method_to_compile->flags & METHOD_ATTRIBUTE_STATIC)) {
+		MonoInst *inst;
+		MonoGenericJitInfo *gi;
+
+		jinfo->has_generic_jit_info = 1;
+
+		gi = mono_jit_info_get_generic_jit_info (jinfo);
+		g_assert (gi);
+
+		gi->generic_sharing_context = cfg->generic_sharing_context;
+
+		g_assert (!(method_to_compile->flags & METHOD_ATTRIBUTE_STATIC));
+
+		inst = cfg->varinfo [0];
+
+		if (inst->opcode == OP_REGVAR) {
+			gi->this_in_reg = 1;
+			gi->this_reg = inst->dreg;
+
+			//g_print ("this in reg %d\n", inst->dreg);
+		} else {
+			g_assert (inst->opcode == OP_REGOFFSET);
+#ifdef __i386__
+			g_assert (inst->inst_basereg == X86_EBP);
+#elif defined(__x86_64__)
+			g_assert (inst->inst_basereg == X86_EBP || inst->inst_basereg == X86_ESP);
+#endif
+			g_assert (inst->inst_offset >= G_MININT32 && inst->inst_offset <= G_MAXINT32);
+
+			gi->this_in_reg = 0;
+			gi->this_reg = inst->inst_basereg;
+			gi->this_offset = inst->inst_offset;
+
+			//g_print ("this at offset %d\n", inst->inst_offset);
+		}
 	}
 
 	if (header->num_clauses) {

@@ -5944,7 +5944,7 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
 	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
 }
@@ -6050,4 +6050,25 @@ MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
 	ins->inst_offset = thread_tls_offset;
 	return ins;
+}
+
+#define _CTX_REG(ctx,fld,i) ((gpointer)((&ctx->fld)[i]))
+
+gpointer
+mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
+{
+	switch (reg) {
+	case AMD64_RCX: return (gpointer)ctx->rcx;
+	case AMD64_RDX: return (gpointer)ctx->rdx;
+	case AMD64_RBX: return (gpointer)ctx->rbx;
+	case AMD64_RBP: return (gpointer)ctx->rbp;
+	case AMD64_RSP: return (gpointer)ctx->rsp;
+	default:
+		if (reg < 8)
+			return _CTX_REG (ctx, rax, reg);
+		else if (reg >= 12)
+			return _CTX_REG (ctx, r12, reg - 12);
+		else
+			g_assert_not_reached ();
+	}
 }

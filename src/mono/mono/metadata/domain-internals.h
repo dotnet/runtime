@@ -80,6 +80,14 @@ typedef struct {
 	int dummy;
 } MonoGenericSharingContext;
 
+typedef struct
+{
+	MonoGenericSharingContext *generic_sharing_context;
+	gint32 this_offset;
+	guint8 this_reg;
+	gboolean this_in_reg:1;
+} MonoGenericJitInfo;
+
 struct _MonoJitInfo {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the
@@ -100,9 +108,9 @@ struct _MonoJitInfo {
 	gboolean    cas_method_assert:1;
 	gboolean    cas_method_deny:1;
 	gboolean    cas_method_permitonly:1;
-	gboolean    has_generic_sharing_context:1;
+	gboolean    has_generic_jit_info:1;
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
-	/* There is an optional MonoGenericSharingContext* after the clauses */
+	/* There is an optional MonoGenericJitInfo after the clauses */
 };
 
 typedef struct {
@@ -223,6 +231,9 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
 
 void
 mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end) MONO_INTERNAL;
+
+MonoGenericJitInfo*
+mono_jit_info_get_generic_jit_info (MonoJitInfo *ji) MONO_INTERNAL;
 
 MonoGenericSharingContext*
 mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji) MONO_INTERNAL;

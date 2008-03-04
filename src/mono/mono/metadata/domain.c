@@ -911,6 +911,15 @@ mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash)
 				       jit_info_next_value);
 }
 
+MonoGenericJitInfo*
+mono_jit_info_get_generic_jit_info (MonoJitInfo *ji)
+{
+	if (ji->has_generic_jit_info)
+		return (MonoGenericJitInfo*)&ji->clauses [ji->num_clauses];
+	else
+		return NULL;
+}
+
 /*
  * mono_jit_info_get_generic_sharing_context:
  * @ji: a jit info
@@ -921,8 +930,10 @@ mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash)
 MonoGenericSharingContext*
 mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji)
 {
-	if (ji->has_generic_sharing_context)
-		return *((MonoGenericSharingContext**)&ji->clauses [ji->num_clauses]);
+	MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (ji);
+
+	if (gi)
+		return gi->generic_sharing_context;
 	else
 		return NULL;
 }
@@ -938,9 +949,11 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji)
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx)
 {
-	g_assert (ji->has_generic_sharing_context);
+	MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (ji);
 
-	*((MonoGenericSharingContext**)&ji->clauses [ji->num_clauses]) = gsctx;
+	g_assert (gi);
+
+	gi->generic_sharing_context = gsctx;
 }
 
 /**

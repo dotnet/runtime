@@ -14,15 +14,26 @@
 #include "mini.h"
 #include "debug-mini.h"
 
+static MonoGenericSharingContext*
+get_generic_context (guint8 *code)
+{
+	MonoJitInfo *jit_info = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+
+	g_assert (jit_info);
+
+	return mono_jit_info_get_generic_sharing_context (jit_info);
+}
+
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
 mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method)
 {
-	MonoObject *this_argument = mono_arch_find_this_argument (regs, method);
+	MonoGenericSharingContext *gsctx = get_generic_context (code);
+	MonoObject *this_argument = mono_arch_find_this_argument (regs, method, gsctx);
 	MonoVTable *vt = this_argument->vtable;
 	int displacement = slot - ((gpointer*)vt);
-	
+
 	if (displacement > 0) {
 		/* slot is in the vtable, not in the IMT */
 #if DEBUG_IMT

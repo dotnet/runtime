@@ -263,14 +263,13 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
  * For x86 win32, see ???.
  */
 static CallInfo*
-get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
 	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
-	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
 
 	if (mp)
 		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
@@ -804,7 +803,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	header = mono_method_get_header (cfg->method);
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 
 	cfg->frame_reg = MONO_ARCH_BASEREG;
 	offset = 0;
@@ -924,7 +923,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
@@ -1012,7 +1011,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		sentinelpos = sig->sentinelpos + (is_virtual ? 1 : 0);
@@ -1964,7 +1963,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
-		cinfo = get_call_info (cfg, cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
+		cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
 			/* Pop the destination address from the stack */
 			x86_pop_reg (code, X86_ECX);
@@ -2046,7 +2045,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 	sig = mono_method_signature (method);
 
-	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 	
 	/* This is the opposite of the code in emit_prolog */
 
@@ -4058,7 +4057,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Load returned vtypes into registers if needed */
-	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 	if (cinfo->ret.storage == ArgValuetypeInReg) {
 		for (quad = 0; quad < 2; quad ++) {
 			switch (cinfo->ret.pair_storage [quad]) {
@@ -4268,7 +4267,7 @@ void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	MonoCallInst *call = (MonoCallInst*)inst;
-	CallInfo *cinfo = get_call_info (cfg, cfg->mempool, inst->signature, FALSE);
+	CallInfo *cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, inst->signature, FALSE);
 
 	/* add the this argument */
 	if (this_reg != -1) {
@@ -4433,10 +4432,10 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
-	CallInfo *cinfo = get_call_info (NULL, NULL, sig, FALSE);
+	CallInfo *cinfo = get_call_info (gsctx, NULL, sig, FALSE);
 	int this_argument_offset;
 	MonoObject *this_argument;
 
@@ -4778,4 +4777,16 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	}
 
 	return start;
+}
+
+gpointer
+mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
+{
+	switch (reg) {
+	case X86_ECX: return (gpointer)ctx->ecx;
+	case X86_EDX: return (gpointer)ctx->edx;
+	case X86_EBP: return (gpointer)ctx->ebp;
+	case X86_ESP: return (gpointer)ctx->esp;
+	default: return ((gpointer)(&ctx->eax)[reg]);
+	}
 }

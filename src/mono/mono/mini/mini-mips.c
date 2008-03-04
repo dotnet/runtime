@@ -4033,3 +4033,9 @@ mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 	return ins;
 }
 
+gpointer
+mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
+{
+	/* FIXME: implement */
+	g_assert_not_reached ();
+}

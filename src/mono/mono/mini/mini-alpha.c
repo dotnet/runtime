@@ -5904,3 +5904,9 @@ mono_arch_get_patch_offset (guint8 *code)
   return 3;
 }
 
+gpointer
+mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
+{
+	/* FIXME: implement */
+	g_assert_not_reached ();
+}
