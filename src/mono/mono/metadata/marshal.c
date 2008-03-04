@@ -4963,7 +4963,7 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
 	sig->params [2] = &mono_defaults.int_class->byval_arg;
-	sig->ret = &klass->this_arg;
+	sig->ret = &mono_defaults.object_class->byval_arg;
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
@@ -4973,7 +4973,7 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	csig->params [0] = &mono_defaults.object_class->byval_arg;
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->ret = &klass->this_arg;
+	csig->ret = &mono_defaults.object_class->byval_arg;
 	csig->pinvoke = 1;
 
 	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
