@@ -50,7 +50,7 @@ struct _MonoMethod {
 	const char *name;
 	/* this is used by the inlining algorithm */
 	unsigned int inline_info:1;
-	unsigned int uses_this:1;
+	unsigned int inline_failure:1;
 	unsigned int wrapper_type:5;
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
