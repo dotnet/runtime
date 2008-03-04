@@ -1,8 +1,9 @@
 /*
- * tramp-x86.c: JIT trampoline code for x86
+ * tramp-amd64.c: JIT trampoline code for amd64
  *
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)
+ *   Zoltan Varga (vargaz@gmail.com)
  *
  * (C) 2001 Ximian, Inc.
  */
@@ -40,12 +41,11 @@ gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
-	int this_reg = AMD64_ARG_REG1;
+	int this_reg;
 
 	MonoDomain *domain = mono_domain_get ();
 
-	if (!mono_method_signature (m)->ret->byref && MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
-		this_reg = AMD64_ARG_REG2;
+	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (m));
 
 	mono_domain_lock (domain);
 	start = code = mono_code_manager_reserve (domain->code_mp, 20);

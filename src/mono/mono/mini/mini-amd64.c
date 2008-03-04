@@ -921,9 +921,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		}
 	}
 
-	if (cinfo->ret.storage == ArgValuetypeInReg)
-		cfg->arch.omit_fp = FALSE;
-
 	locals_size = 0;
 	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		MonoInst *ins = cfg->varinfo [i];
@@ -1061,11 +1058,15 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			break;
 		case ArgValuetypeInReg:
 			/* Allocate a local to hold the result, the epilog will copy it to the correct place */
-			g_assert (!cfg->arch.omit_fp);
-			offset += 16;
 			cfg->ret->opcode = OP_REGOFFSET;
 			cfg->ret->inst_basereg = cfg->frame_reg;
-			cfg->ret->inst_offset = - offset;
+			if (cfg->arch.omit_fp) {
+				cfg->ret->inst_offset = offset;
+				offset += 16;
+			} else {
+				offset += 16;
+				cfg->ret->inst_offset = - offset;
+			}
 			break;
 		default:
 			g_assert_not_reached ();
@@ -5621,13 +5622,26 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 	return (gpointer*)((char*)vt + displacement);
 }
 
+int
+mono_arch_get_this_arg_reg (MonoMethodSignature *sig)
+{
+	int this_reg = AMD64_ARG_REG1;
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		CallInfo *cinfo = get_call_info (NULL, NULL, sig, FALSE);
+		
+		if (cinfo->ret.storage != ArgValuetypeInReg)
+			this_reg = AMD64_ARG_REG2;
+		g_free (cinfo);
+	}
+
+	return this_reg;
+}
+
 gpointer
 mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
-	if (MONO_TYPE_ISSTRUCT (sig->ret))
-		return (gpointer)regs [AMD64_ARG_REG2];
-	else
-		return (gpointer)regs [AMD64_ARG_REG1];
+	return (gpointer)regs [mono_arch_get_this_arg_reg (sig)];
 }
 
 #define MAX_ARCH_DELEGATE_PARAMS 10
