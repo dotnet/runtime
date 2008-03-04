@@ -182,6 +182,7 @@ BASE_TEST_CS_SRC=		\
 	marshal7.cs		\
 	marshal8.cs		\
 	marshal9.cs		\
+	marshal-valuetypes.cs	\
 	test-byval-in-struct.cs	\
 	thread.cs		\
 	thread5.cs		\
