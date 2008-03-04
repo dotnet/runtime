@@ -3316,6 +3316,9 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (cfg->generic_sharing_context)
 		return FALSE;
 
+	if (method->inline_failure)
+		return FALSE;
+
 #ifdef MONO_ARCH_HAVE_LMF_OPS
 	if (((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 		 (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) &&
@@ -3935,6 +3938,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			g_print ("INLINE ABORTED %s\n", mono_method_full_name (cmethod, TRUE));
 		cfg->exception_type = MONO_EXCEPTION_NONE;
 		mono_loader_clear_error ();
+		cmethod->inline_failure = TRUE;
 	}
 	return 0;
 }
