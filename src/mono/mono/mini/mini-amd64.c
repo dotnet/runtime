@@ -2419,9 +2419,9 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 {
 	MonoMethod *method = cfg->method;
 	MonoMethodSignature *sig;
-	MonoInst *inst;
+	MonoInst *ins;
 	CallInfo *cinfo;
-	guint32 i;
+	guint32 i, quad;
 
 	/* FIXME: Generate intermediate code instead */
 
@@ -2430,7 +2430,6 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 	cinfo = cfg->arch.cinfo;
 	
 	/* This is the opposite of the code in emit_prolog */
-
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (cfg->vret_addr && (cfg->vret_addr->opcode != OP_REGVAR))
 			amd64_mov_reg_membase (code, cinfo->ret.reg, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, 8);
@@ -2439,27 +2438,44 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		MonoType *arg_type;
-		inst = cfg->args [i];
+		ins = cfg->args [i];
 
 		if (sig->hasthis && (i == 0))
 			arg_type = &mono_defaults.object_class->byval_arg;
 		else
 			arg_type = sig->params [i - sig->hasthis];
 
-		if (inst->opcode != OP_REGVAR) {
+		if (ins->opcode != OP_REGVAR) {
 			switch (ainfo->storage) {
 			case ArgInIReg: {
 				guint32 size = 8;
 
 				/* FIXME: I1 etc */
-				amd64_mov_reg_membase (code, ainfo->reg, inst->inst_basereg, inst->inst_offset, size);
+				amd64_mov_reg_membase (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, size);
 				break;
 			}
 			case ArgInFloatSSEReg:
-				amd64_movss_reg_membase (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+				amd64_movss_reg_membase (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
 				break;
 			case ArgInDoubleSSEReg:
-				amd64_movsd_reg_membase (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+				amd64_movsd_reg_membase (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
+				break;
+			case ArgValuetypeInReg:
+				for (quad = 0; quad < 2; quad ++) {
+					switch (ainfo->pair_storage [quad]) {
+					case ArgInIReg:
+						amd64_mov_reg_membase (code, ainfo->pair_regs [quad], ins->inst_basereg, ins->inst_offset + (quad * sizeof (gpointer)), sizeof (gpointer));
+						break;
+					case ArgInFloatSSEReg:
+					case ArgInDoubleSSEReg:
+						g_assert_not_reached ();
+						break;
+					case ArgNone:
+						break;
+					default:
+						g_assert_not_reached ();
+					}
+				}
 				break;
 			default:
 				break;
@@ -2468,7 +2484,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 		else {
 			g_assert (ainfo->storage == ArgInIReg);
 
-			amd64_mov_reg_reg (code, ainfo->reg, inst->dreg, 8);
+			amd64_mov_reg_reg (code, ainfo->reg, ins->dreg, 8);
 		}
 	}
 
