@@ -1,7 +1,9 @@
 2008-03-05  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/Makefile.am: fix typo so that 'scripts_defaults' scripts get
-	 installed.
+	installed.
+	Fix sed command so that 'scripts_defaults' scripts work. 
+	Add some files to the cleanup list.
 
 2008-03-02  Miguel de Icaza  <miguel@novell.com>
 
