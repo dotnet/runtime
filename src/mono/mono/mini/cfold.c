@@ -73,11 +73,6 @@ mono_is_power_of_two (guint32 val)
 		} \
                 return;
 
-#ifndef G_MININT32
-#define MYGINT32_MAX 2147483647
-#define G_MININT32 (-MYGINT32_MAX -1)
-#endif
-
 /* 
  * We can't let this cause a division by zero exception since the division 
  * might not be executed during runtime.
