@@ -6352,7 +6352,9 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 					break;
 				if (*p == ',')
 					rank++;
-				else if (*p != '*') /* '*' means unknown lower bound */
+				else if (*p == '*') /* '*' means unknown lower bound */
+					info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (-2));
+				else
 					return 0;
 				++p;
 			}
@@ -6437,6 +6439,7 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 	MonoClass *klass;
 	GList *mod;
 	int modval;
+	gboolean bounded = FALSE;
 	
 	if (!image)
 		image = mono_defaults.corlib;
@@ -6506,8 +6509,10 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 			return &klass->this_arg;
 		} else if (modval == -1) {
 			klass = mono_ptr_class_get (&klass->byval_arg);
+		} else if (modval == -2) {
+			bounded = TRUE;
 		} else { /* array rank */
-			klass = mono_array_class_get (klass, modval);
+			klass = mono_bounded_array_class_get (klass, modval, bounded);
 		}
 		mono_class_init (klass);
 	}
