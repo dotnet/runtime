@@ -1612,11 +1612,13 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	}
 	
 	if (token && strncmp (token, "null", 4) != 0) {
+		char *lower;
+
 		/* the constant includes the ending NULL, hence the -1 */
 		if (strlen (token) != (MONO_PUBLIC_KEY_TOKEN_LENGTH - 1)) {
 			return FALSE;
 		}
-		char *lower = g_ascii_strdown (token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		lower = g_ascii_strdown (token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_strlcpy ((char*)aname->public_key_token, lower, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_free (lower);
 	}
