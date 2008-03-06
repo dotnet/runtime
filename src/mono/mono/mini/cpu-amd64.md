@@ -112,14 +112,13 @@ icompare_imm: src1:i len:8
 fcompare: src1:f src2:f clob:a len:13
 oparglist: src1:b len:11
 outarg: src1:i len:2
-outarg_imm: len:6
 setret: dest:a src1:i len:3
 setlret: dest:i src1:i src2:i len:5
 checkthis: src1:b len:5
-call: dest:a clob:c len:64
-voidcall: clob:c len:64
-voidcall_reg: src1:i clob:c len:64
-voidcall_membase: src1:b clob:c len:64
+call: dest:a clob:c len:32
+voidcall: clob:c len:32
+voidcall_reg: src1:i clob:c len:32
+voidcall_membase: src1:b clob:c len:32
 fcall: dest:f len:64 clob:c
 fcall_reg: dest:f src1:i len:64 clob:c
 fcall_membase: dest:f src1:b len:64 clob:c
@@ -129,10 +128,10 @@ lcall_membase: dest:a src1:b len:64 clob:c
 vcall: len:64 clob:c
 vcall_reg: src1:i len:64 clob:c
 vcall_membase: src1:b len:64 clob:c
-call_reg: dest:a src1:i len:64 clob:c
-call_membase: dest:a src1:b len:64 clob:c
+call_reg: dest:a src1:i len:32 clob:c
+call_membase: dest:a src1:b len:32 clob:c
 iconst: dest:i len:10
-i8const: dest:i len:18
+i8const: dest:i len:10
 r4const: dest:f len:14
 r8const: dest:f len:9
 store_membase_imm: dest:b len:15
@@ -147,7 +146,7 @@ storei4_membase_reg: dest:b src1:i len:9
 storei8_membase_imm: dest:b len:18
 storer4_membase_reg: dest:b src1:f len:15
 storer8_membase_reg: dest:b src1:f len:10
-load_membase: dest:i src1:b len:15
+load_membase: dest:i src1:b len:8
 loadi1_membase: dest:c src1:b len:9
 loadu1_membase: dest:c src1:b len:9
 loadi2_membase: dest:i src1:b len:9

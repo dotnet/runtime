@@ -6334,10 +6334,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MonoInst *iargs [2];
 						int temp;
 
-						if (cfg->compile_aot && cfg->method->klass->image == mono_defaults.corlib) {
+						if (cfg->method->klass->image == mono_defaults.corlib) {
 							/* 
-							 * Avoid relocations by using a version of helper_ldstr
-							 * specialized to mscorlib.
+							 * Avoid relocations and save some code size by using a 
+							 * version of helper_ldstr specialized to mscorlib.
 							 */
 							NEW_ICONST (cfg, iargs [0], mono_metadata_token_index (n));
 							temp = mono_emit_jit_icall (cfg, bblock, mono_helper_ldstr_mscorlib, iargs, ip);
