@@ -4307,9 +4307,20 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 		g_error ("requested token for %s\n", klass->name);
 	}
 
-	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
+	mono_image_register_token (assembly, token, obj);
 
 	return token;
+}
+
+/*
+ * mono_image_register_token:
+ *
+ *   Register the TOKEN->OBJ mapping in the mapping table in ASSEMBLY.
+ */
+void
+mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
+{
+	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
 }
 
 typedef struct {
