@@ -1214,8 +1214,6 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		case MONO_WRAPPER_LDFLD:
 		case MONO_WRAPPER_LDFLDA:
 		case MONO_WRAPPER_STFLD:
-		case MONO_WRAPPER_LDFLD_REMOTE:
-		case MONO_WRAPPER_STFLD_REMOTE:
 		case MONO_WRAPPER_ISINST: {
 			MonoClass *klass = decode_klass_ref (aot_module, p, &p);
 			if (!klass)
@@ -1227,16 +1225,18 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 				ji->data.method = mono_marshal_get_ldflda_wrapper (&klass->byval_arg);
 			else if (wrapper_type == MONO_WRAPPER_STFLD)
 				ji->data.method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
-			else if (wrapper_type == MONO_WRAPPER_LDFLD_REMOTE)
-				ji->data.method = mono_marshal_get_ldfld_remote_wrapper (klass);
-			else if (wrapper_type == MONO_WRAPPER_STFLD_REMOTE)
-				ji->data.method = mono_marshal_get_stfld_remote_wrapper (klass);
 			else if (wrapper_type == MONO_WRAPPER_ISINST)
 				ji->data.method = mono_marshal_get_isinst (klass);
 			else
 				g_assert_not_reached ();
 			break;
 		}
+		case MONO_WRAPPER_LDFLD_REMOTE:
+			ji->data.method = mono_marshal_get_ldfld_remote_wrapper (NULL);
+			break;
+		case MONO_WRAPPER_STFLD_REMOTE:
+			ji->data.method = mono_marshal_get_stfld_remote_wrapper (NULL);
+			break;
 		case MONO_WRAPPER_ALLOC: {
 			int atype = decode_value (p, &p);
 

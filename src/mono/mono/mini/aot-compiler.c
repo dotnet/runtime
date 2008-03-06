@@ -2129,13 +2129,14 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		case MONO_WRAPPER_LDFLD:
 		case MONO_WRAPPER_LDFLDA:
 		case MONO_WRAPPER_STFLD:
-		case MONO_WRAPPER_LDFLD_REMOTE:
-		case MONO_WRAPPER_STFLD_REMOTE:
 		case MONO_WRAPPER_ISINST: {
 			MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (patch_info->data.method);
 			encode_klass_ref (acfg, proxy_class, p, &p);
 			break;
 		}
+		case MONO_WRAPPER_LDFLD_REMOTE:
+		case MONO_WRAPPER_STFLD_REMOTE:
+			break;
 		case MONO_WRAPPER_ALLOC: {
 			int alloc_type = mono_gc_get_managed_allocator_type (patch_info->data.method);
 			g_assert (alloc_type != -1);
