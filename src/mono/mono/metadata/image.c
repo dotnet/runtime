@@ -610,9 +610,7 @@ mono_image_init (MonoImage *image)
 
 	image->ldfld_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->ldflda_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->ldfld_remote_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->stfld_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->stfld_remote_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->castclass_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->proxy_isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -1285,9 +1283,7 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->typespec_cache);
 	g_hash_table_destroy (image->ldfld_wrapper_cache);
 	g_hash_table_destroy (image->ldflda_wrapper_cache);
-	g_hash_table_destroy (image->ldfld_remote_wrapper_cache);
 	g_hash_table_destroy (image->stfld_wrapper_cache);
-	g_hash_table_destroy (image->stfld_remote_wrapper_cache);
 	g_hash_table_destroy (image->isinst_cache);
 	g_hash_table_destroy (image->castclass_cache);
 	g_hash_table_destroy (image->proxy_isinst_cache);

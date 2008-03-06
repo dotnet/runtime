@@ -194,9 +194,7 @@ struct _MonoImage {
 	 */
 	GHashTable *ldfld_wrapper_cache;
 	GHashTable *ldflda_wrapper_cache;
-	GHashTable *ldfld_remote_wrapper_cache;
 	GHashTable *stfld_wrapper_cache;
-	GHashTable *stfld_remote_wrapper_cache;
 	GHashTable *isinst_cache;
 	GHashTable *castclass_cache;
 	GHashTable *proxy_isinst_cache;

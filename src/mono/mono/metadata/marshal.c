@@ -4933,8 +4933,10 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
  * mono_marshal_get_ldfld_remote_wrapper:
  * @klass: The return type
  *
- * This method generates a wrapper for calling mono_load_remote_field_new with
- * the appropriate return type.
+ * This method generates a wrapper for calling mono_load_remote_field_new.
+ * The return type is ignored for now, as mono_load_remote_field_new () always
+ * returns an object. In the future, to optimize some codepaths, we might
+ * call a different function that takes a pointer to a valuetype, instead.
  */
 MonoMethod *
 mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
@@ -4942,20 +4944,16 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	GHashTable *cache;
-	char *name;
+	static MonoMethod* cached = NULL;
 
-	cache = klass->image->ldfld_remote_wrapper_cache;
-	if ((res = mono_marshal_find_in_cache (cache, klass)))
-		return res;
+	mono_marshal_lock ();
+	if (cached) {
+		mono_marshal_unlock ();
+		return cached;
+	}
+	mono_marshal_unlock ();
 
-	/* 
-	 * This wrapper is similar to an icall wrapper but all the wrappers
-	 * call the same C function, but with a different signature.
-	 */
-	name = g_strdup_printf ("__mono_load_remote_field_new_wrapper_%s.%s", klass->name_space, klass->name); 
-	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLD_REMOTE);
-	g_free (name);
+	mb = mono_mb_new_no_dup_name (mono_defaults.object_class, "__mono_load_remote_field_new_wrapper", MONO_WRAPPER_LDFLD_REMOTE);
 
 	mb->method->save_lmf = 1;
 
@@ -4980,11 +4978,26 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	emit_thread_interrupt_checkpoint (mb);
 
 	mono_mb_emit_byte (mb, CEE_RET);
-       
-	res = mono_mb_create_and_cache (cache, klass,
-									mb, sig, sig->param_count + 16);
+ 
+	mono_marshal_lock ();
+	res = cached;
+	mono_marshal_unlock ();
+	if (!res) {
+		MonoMethod *newm;
+		newm = mono_mb_create_method (mb, sig, 4);
+		mono_marshal_lock ();
+		res = cached;
+		if (!res) {
+			res = newm;
+			cached = res;
+			mono_marshal_unlock ();
+		} else {
+			mono_marshal_unlock ();
+			mono_free_method (newm);
+		}
+	}
 	mono_mb_free (mb);
-	
+
 	return res;
 }
 
@@ -5226,6 +5239,8 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
  *
  *  This function generates a wrapper for calling mono_store_remote_field_new
  * with the appropriate signature.
+ * Similarly to mono_marshal_get_ldfld_remote_wrapper () this doesn't depend on the
+ * klass argument anymore.
  */
 MonoMethod *
 mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
@@ -5233,16 +5248,16 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	GHashTable *cache;
-	char *name;
+	static MonoMethod *cached = NULL;
 
-	cache = klass->image->stfld_remote_wrapper_cache;
-	if ((res = mono_marshal_find_in_cache (cache, klass)))
-		return res;
+	mono_marshal_lock ();
+	if (cached) {
+		mono_marshal_unlock ();
+		return cached;
+	}
+	mono_marshal_unlock ();
 
-	name = g_strdup_printf ("__mono_store_remote_field_new_wrapper_%s.%s", klass->name_space, klass->name); 
-	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD_REMOTE);
-	g_free (name);
+	mb = mono_mb_new_no_dup_name (mono_defaults.object_class, "__mono_store_remote_field_new_wrapper", MONO_WRAPPER_STFLD_REMOTE);
 
 	mb->method->save_lmf = 1;
 
@@ -5250,7 +5265,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
 	sig->params [2] = &mono_defaults.int_class->byval_arg;
-	sig->params [3] = &klass->byval_arg;
+	sig->params [3] = &mono_defaults.object_class->byval_arg;
 	sig->ret = &mono_defaults.void_class->byval_arg;
 
 	mono_mb_emit_ldarg (mb, 0);
@@ -5258,14 +5273,11 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldarg (mb, 3);
 
-	if (klass->valuetype)
-		mono_mb_emit_op (mb, CEE_BOX, klass);
-
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
 	csig->params [0] = &mono_defaults.object_class->byval_arg;
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->params [3] = &klass->byval_arg;
+	csig->params [3] = &mono_defaults.object_class->byval_arg;
 	csig->ret = &mono_defaults.void_class->byval_arg;
 	csig->pinvoke = 1;
 
@@ -5273,9 +5285,24 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	emit_thread_interrupt_checkpoint (mb);
 
 	mono_mb_emit_byte (mb, CEE_RET);
-       
-	res = mono_mb_create_and_cache (cache, klass,
-									mb, sig, sig->param_count + 16);
+ 
+	mono_marshal_lock ();
+	res = cached;
+	mono_marshal_unlock ();
+	if (!res) {
+		MonoMethod *newm;
+		newm = mono_mb_create_method (mb, sig, 6);
+		mono_marshal_lock ();
+		res = cached;
+		if (!res) {
+			res = newm;
+			cached = res;
+			mono_marshal_unlock ();
+		} else {
+			mono_marshal_unlock ();
+			mono_free_method (newm);
+		}
+	}
 	mono_mb_free (mb);
 	
 	return res;
@@ -5348,6 +5375,8 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldarg (mb, 4);
+	if (klass->valuetype)
+		mono_mb_emit_op (mb, CEE_BOX, klass);
 
 	mono_mb_emit_managed_call (mb, mono_marshal_get_stfld_remote_wrapper (klass), NULL);
 
