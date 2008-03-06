@@ -29,12 +29,12 @@
 #define G_UNLIKELY(a) (a)
 #endif
 
-#ifndef G_MININT32
-#define G_MININT32 -2147483648
-#endif
-
 #ifndef G_MAXINT32
 #define G_MAXINT32 2147483647
+#endif
+
+#ifndef G_MININT32
+#define G_MININT32 (-G_MAXINT32 - 1)
 #endif
 
 #if DISABLE_LOGGING
