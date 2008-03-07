@@ -25,6 +25,10 @@ MonoException *
 mono_exception_from_name_msg	       (MonoImage *image, const char *name_space,
 					const char *name, const char *msg);
 
+MonoException *
+mono_exception_from_token_two_strings (MonoImage *image, guint32 token,
+									   MonoString *a1, MonoString *a2);
+
 extern MonoException *
 mono_exception_from_name_domain        (MonoDomain *domain, MonoImage *image, 
 					const char* name_space, 

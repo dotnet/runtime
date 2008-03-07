@@ -88,25 +88,10 @@ mono_exception_from_token (MonoImage *image, guint32 token)
 	return (MonoException *)o;
 }
 
-/**
- * mono_exception_from_name_two_strings:
- * @image: the Mono image where to look for the class
- * @name_space: the namespace for the class
- * @name: class name
- * @a1: first string argument to pass
- * @a2: second string argument to pass
- *
- * Creates an exception from a constructor that takes two string
- * arguments.
- *
- * Returns: the initialized exception instance.
- */
-MonoException *
-mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
-				      const char *name, MonoString *a1, MonoString *a2)
+static MonoException *
+create_exception_two_strings (MonoClass *klass, MonoString *a1, MonoString *a2)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoClass *klass;
 	MonoMethod *method = NULL;
 	MonoObject *o;
 	int count = 1;
@@ -117,7 +102,6 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 	if (a2 != NULL)
 		count++;
 	
-	klass = mono_class_from_name (image, name_space, name);
 	o = mono_object_new (domain, klass);
 
 	iter = NULL;
@@ -145,6 +129,28 @@ mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 }
 
 /**
+ * mono_exception_from_name_two_strings:
+ * @image: the Mono image where to look for the class
+ * @name_space: the namespace for the class
+ * @name: class name
+ * @a1: first string argument to pass
+ * @a2: second string argument to pass
+ *
+ * Creates an exception from a constructor that takes two string
+ * arguments.
+ *
+ * Returns: the initialized exception instance.
+ */
+MonoException *
+mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
+				      const char *name, MonoString *a1, MonoString *a2)
+{
+	MonoClass *klass = mono_class_from_name (image, name_space, name);
+
+	return create_exception_two_strings (klass, a1, a2);
+}
+
+/**
  * mono_exception_from_name_msg:
  * @image: the Mono image where to look for the class
  * @name_space: the namespace for the class
@@ -167,6 +173,21 @@ mono_exception_from_name_msg (MonoImage *image, const char *name_space,
 		MONO_OBJECT_SETREF (ex, message, mono_string_new (mono_object_get_domain ((MonoObject*)ex), msg));
 
 	return ex;
+}
+
+/**
+ * mono_exception_from_token_two_strings:
+ *
+ *   Same as mono_exception_from_name_two_strings, but lookup the exception class using
+ * IMAGE and TOKEN.
+ */
+MonoException *
+mono_exception_from_token_two_strings (MonoImage *image, guint32 token,
+									   MonoString *a1, MonoString *a2)
+{
+	MonoClass *klass = mono_class_get (image, token);
+
+	return create_exception_two_strings (klass, a1, a2);
 }
 
 /**
