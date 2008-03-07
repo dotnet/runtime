@@ -61,6 +61,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/security-core-clr.h>
+#include <mono/metadata/verify.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -4559,6 +4560,83 @@ get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasic
 	}
 }
 
+static MiniVerifierMode verifier_mode = MINI_VERIFIER_MODE_OFF;
+
+void
+mini_verifier_set_mode (MiniVerifierMode mode)
+{
+       verifier_mode = mode;
+}
+
+/*
+ * Return TRUE if method don't need to be verifiable.
+ * TODO check appdomain security flags 
+ */
+static gboolean
+check_method_full_trust (MonoMethod *method)
+{
+	return method->klass->image->assembly->in_gac || method->klass->image == mono_defaults.corlib || verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
+}
+
+/*
+ * Return TRUE if method should be verifier
+ * FIXME we should be able to check gac'ed code for validity
+ */
+static gboolean
+check_for_method_verify (MonoMethod *method) {
+	return (verifier_mode > MINI_VERIFIER_MODE_OFF) && !method->klass->image->assembly->in_gac && method->klass->image != mono_defaults.corlib && method->wrapper_type == MONO_WRAPPER_NONE;
+}
+
+/*
+ * mini_method_verify:
+ * 
+ * Verify the method using the new verfier.
+ * 
+ * Returns true if the method is invalid. 
+ */
+static gboolean
+mini_method_verify (MonoCompile *cfg, MonoMethod *method)
+{
+	GSList *tmp, *res;
+	gboolean is_fulltrust = check_method_full_trust (method);
+	MonoLoaderError *error;
+
+	if (!check_for_method_verify (method))
+		return FALSE;
+
+	res = mono_method_verify (method, 
+		(verifier_mode != MINI_VERIFIER_MODE_STRICT ? MONO_VERIFY_NON_STRICT: 0)
+		| (!is_fulltrust ? MONO_VERIFY_FAIL_FAST : 0)
+		| (cfg->skip_visibility ? MONO_VERIFY_SKIP_VISIBILITY : 0));
+
+	if ((error = mono_loader_get_last_error ())) {
+		cfg->exception_type = error->exception_type;
+		if (res)
+			mono_free_verify_list (res);
+		return TRUE;
+	}
+
+	if (res) { 
+		for (tmp = res; tmp; tmp = tmp->next) {
+			MonoVerifyInfoExtended *info = (MonoVerifyInfoExtended *)tmp->data;
+			if (info->info.status == MONO_VERIFY_ERROR) {
+				cfg->exception_type = info->exception_type;
+				cfg->exception_message = g_strdup (info->info.message);
+				mono_free_verify_list (res);
+				return TRUE;
+			}
+			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && !is_fulltrust) {
+				cfg->exception_type = info->exception_type;
+				cfg->exception_message = g_strdup (info->info.message);
+				mono_free_verify_list (res);
+				return TRUE;
+			}
+		}
+		mono_free_verify_list (res);
+	}
+	return FALSE;
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -4623,6 +4701,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	cfg->cil_start = ip;
 	end = ip + header->code_size;
 	mono_jit_stats.cil_code_size += header->code_size;
+
+	if (!dont_verify && mini_method_verify (cfg, method))
+		goto exception_exit;
 
 	if (sig->is_inflated)
 		generic_context = mono_method_get_context (method);

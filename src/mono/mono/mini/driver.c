@@ -948,7 +948,7 @@ mini_usage (void)
 		"    --optimize=OPT         Turns on or off a specific optimization\n"
 		"                           Use --list-opt to get a list of optimizations\n"
 		"    --security[=mode]      Turns on the unsupported security manager (off by default)\n"
-		"                           mode is one of cas or core-clr\n");
+		"                           mode is one of cas, core-clr, verifiable or validil\n");
 }
 
 static void
@@ -1205,21 +1205,35 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
+			/* fixme enable verifiable code when the verifier works with 2.0
+			* mini_verifier_set_mode (MINI_VERIFIER_MODE_VERIFIABLE);
+			*/
 			mono_security_set_mode (MONO_SECURITY_MODE_CAS);
 			mono_activate_security_manager ();
 		} else if (strncmp (argv [i], "--security=", 11) == 0) {
 			if (strcmp (argv [i] + 11, "temporary-smcs-hack") == 0) {
 				mono_security_set_mode (MONO_SECURITY_MODE_SMCS_HACK);
 			} else if (strcmp (argv [i] + 11, "core-clr") == 0) {
+				/* fixme enable verifiable code when the verifier works with 2.0
+				 * mini_verifier_set_mode (MINI_VERIFIER_MODE_VERIFIABLE);
+				 */
 				mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
 			} else if (strcmp (argv [i] + 11, "core-clr-test") == 0) {
+				/* fixme should we enable verifiable code here?*/
 				mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
 				mono_security_core_clr_test = TRUE;
 			} else if (strcmp (argv [i] + 11, "cas") == 0){
+				/* fixme enable verifiable code when the verifier works with 2.0
+				 * mini_verifier_set_mode (MINI_VERIFIER_MODE_VERIFIABLE);
+				 */
 				mono_security_set_mode (MONO_SECURITY_MODE_CAS);
 				mono_activate_security_manager ();
-			} else {
-				fprintf (stderr, "error: --security= option has invalid argument (cas or core-clr)\n");
+			} else  if (strcmp (argv [i] + 11, "validil") == 0) {
+				mini_verifier_set_mode (MINI_VERIFIER_MODE_VALID);
+			} else  if (strcmp (argv [i] + 11, "verifiable") == 0) {
+				mini_verifier_set_mode (MINI_VERIFIER_MODE_VERIFIABLE);
+			} else  {
+				fprintf (stderr, "error: --security= option has invalid argument (cas, core-clr, verifiable or validil)\n");
 				return 1;
 			}
 		} else if (strcmp (argv [i], "--desktop") == 0) {

@@ -1045,6 +1045,13 @@ enum {
 	MINI_TOKEN_SOURCE_FIELD
 };
 
+typedef enum {
+	MINI_VERIFIER_MODE_OFF,
+	MINI_VERIFIER_MODE_VALID,
+	MINI_VERIFIER_MODE_VERIFIABLE,
+	MINI_VERIFIER_MODE_STRICT
+} MiniVerifierMode;
+
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
@@ -1366,5 +1373,8 @@ MonoGenericContext* mini_class_get_context (MonoClass *class) MONO_INTERNAL;
 MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type) MONO_INTERNAL;
 
 int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align) MONO_INTERNAL;
+
+void mini_verifier_set_mode (MiniVerifierMode mode) MONO_INTERNAL;
+
 
 #endif /* __MONO_MINI_H__ */
