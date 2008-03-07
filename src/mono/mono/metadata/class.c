@@ -3645,6 +3645,7 @@ mono_class_setup_mono_type (MonoClass *class)
 {
 	const char *name = class->name;
 	const char *nspace = class->name_space;
+	gboolean is_corlib = class->image->assembly && !strcmp (class->image->assembly->aname.name, "mscorlib");
 
 	class->this_arg.byref = 1;
 	class->this_arg.data.klass = class;
@@ -3652,7 +3653,7 @@ mono_class_setup_mono_type (MonoClass *class)
 	class->byval_arg.data.klass = class;
 	class->byval_arg.type = MONO_TYPE_CLASS;
 
-	if (!strcmp (nspace, "System")) {
+	if (is_corlib && !strcmp (nspace, "System")) {
 		if (!strcmp (name, "ValueType")) {
 			/*
 			 * do not set the valuetype bit for System.ValueType.
@@ -3674,10 +3675,11 @@ mono_class_setup_mono_type (MonoClass *class)
 			class->this_arg.type = class->byval_arg.type = MONO_TYPE_TYPEDBYREF;
 		}
 	}
-	
+
 	if (class->valuetype) {
 		int t = MONO_TYPE_VALUETYPE;
-		if (!strcmp (nspace, "System")) {
+
+		if (is_corlib && !strcmp (nspace, "System")) {
 			switch (*name) {
 			case 'B':
 				if (!strcmp (name, "Boolean")) {
