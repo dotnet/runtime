@@ -221,15 +221,15 @@ float_bge: len:32
 float_bge_un: len:13
 float_ble: len:32
 float_ble_un: len:13
-float_add: dest:f src1:f src2:f len:5
-float_sub: dest:f src1:f src2:f len:5
-float_mul: dest:f src1:f src2:f len:5
-float_div: dest:f src1:f src2:f len:5
-float_div_un: dest:f src1:f src2:f len:5
-float_rem: dest:f src1:f src2:f len:19
-float_rem_un: dest:f src1:f src2:f len:19
-float_neg: dest:f src1:f len:23
-float_not: dest:f src1:f len:3
+float_add: dest:f src1:f src2:f clob:1 len:5
+float_sub: dest:f src1:f src2:f clob:1 len:5
+float_mul: dest:f src1:f src2:f clob:1 len:5
+float_div: dest:f src1:f src2:f clob:1 len:5
+float_div_un: dest:f src1:f src2:f clob:1 len:5
+float_rem: dest:f src1:f src2:f clob:1 len:19
+float_rem_un: dest:f src1:f src2:f clob:1 len:19
+float_neg: dest:f src1:f clob:1 len:23
+float_not: dest:f src1:f clob:1 len:3
 float_conv_to_i1: dest:i src1:f len:49
 float_conv_to_i2: dest:i src1:f len:49
 float_conv_to_i4: dest:i src1:f len:49
