@@ -845,8 +845,20 @@ mono_break (void)
 {
 }
 
-MonoObject *
-mono_create_corlib_exception (guint32 token, MonoString *arg)
+MonoException *
+mono_create_corlib_exception_0 (guint32 token)
+{
+	return mono_exception_from_token (mono_defaults.corlib, token);
+}
+
+MonoException *
+mono_create_corlib_exception_1 (guint32 token, MonoString *arg)
 {
 	return mono_exception_from_token_two_strings (mono_defaults.corlib, token, arg, NULL);
+}
+
+MonoException *
+mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg2)
+{
+	return mono_exception_from_token_two_strings (mono_defaults.corlib, token, arg1, arg2);
 }

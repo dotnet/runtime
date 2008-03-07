@@ -6398,6 +6398,43 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			n = fsig->param_count;
 			CHECK_STACK (n);
+ 
+			/* 
+			 * Generate smaller code for the common newobj <exception> instruction in
+			 * argument checking code.
+			 */
+			if (bblock->out_of_line && cmethod->klass->image == mono_defaults.corlib && n <= 2 && 
+				((n < 1) || (!fsig->params [0]->byref && fsig->params [0]->type == MONO_TYPE_STRING)) && 
+				((n < 2) || (!fsig->params [1]->byref && fsig->params [1]->type == MONO_TYPE_STRING))) {
+				MonoInst *iargs [3];
+				int temp;
+				
+				sp -= n;
+
+				NEW_ICONST (cfg, iargs [0], cmethod->klass->type_token);
+				switch (n) {
+				case 0:
+					temp = mono_emit_jit_icall (cfg, bblock, mono_create_corlib_exception_0, iargs, ip);
+					break;
+				case 1:
+					iargs [1] = sp [0];
+					temp = mono_emit_jit_icall (cfg, bblock, mono_create_corlib_exception_1, iargs, ip);
+					break;
+				case 2:
+					iargs [1] = sp [0];
+					iargs [2] = sp [1];
+					temp = mono_emit_jit_icall (cfg, bblock, mono_create_corlib_exception_2, iargs, ip);
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+				NEW_TEMPLOAD (cfg, ins, temp);
+				*sp ++ = ins;
+
+				ip += 5;
+				inline_costs += 5;
+				break;
+			}
 
 			/* move the args to allow room for 'this' in the first position */
 			while (n--) {
@@ -13283,6 +13320,9 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_value_copy, "mono_value_copy", "void ptr ptr ptr", FALSE);
 	register_icall (mono_helper_get_rgctx_other_ptr, "get_rgctx_other_ptr", "ptr ptr ptr int32 int32 int32 int32", FALSE);
 	register_icall (mono_break, "mono_break", NULL, TRUE);
+	register_icall (mono_create_corlib_exception_0, "mono_create_corlib_exception_0", "object int", TRUE);
+	register_icall (mono_create_corlib_exception_1, "mono_create_corlib_exception_1", "object int object", TRUE);
+	register_icall (mono_create_corlib_exception_2, "mono_create_corlib_exception_2", "object int object object", TRUE);
 #endif
 
 #define JIT_RUNTIME_WORKS

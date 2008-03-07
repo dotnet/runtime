@@ -143,7 +143,11 @@ guint32  mono_fload_r4_arg (double val) MONO_INTERNAL;
 
 void     mono_break (void) MONO_INTERNAL;
 
-MonoObject *mono_create_corlib_exception (guint32 token, MonoString *arg) MONO_INTERNAL;
+MonoException *mono_create_corlib_exception_0 (guint32 token) MONO_INTERNAL;
+
+MonoException *mono_create_corlib_exception_1 (guint32 token, MonoString *arg) MONO_INTERNAL;
+
+MonoException *mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg2) MONO_INTERNAL;
 
 #endif /* __MONO_JIT_ICALLS_H__ */
 
