@@ -4911,9 +4911,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				}
 			}
 
-			if (!match)
-				break;
-			next = mono_inst_list_next (&next->node, &first_bb->ins_list);
+			if (match) {
+				next = mono_inst_list_next (&next->node, &first_bb->ins_list);
+				if (!next)
+					break;
+			}
 		}
 	}
 
