@@ -3645,7 +3645,12 @@ mono_class_setup_mono_type (MonoClass *class)
 {
 	const char *name = class->name;
 	const char *nspace = class->name_space;
-	gboolean is_corlib = class->image->assembly && !strcmp (class->image->assembly->aname.name, "mscorlib");
+	gboolean is_corlib;
+
+	if (class->image->dynamic)
+		is_corlib = class->image->assembly && !strcmp (class->image->assembly->aname.name, "mscorlib");
+	else
+		is_corlib = class->image == mono_defaults.corlib;
 
 	class->this_arg.byref = 1;
 	class->this_arg.data.klass = class;
