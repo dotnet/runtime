@@ -1,28 +1,73 @@
 <?xml version="1.0"?>
 <assemblies>
-  <assembly name="System" version="2.1.0.0">
+  <assembly name="System" version="2.0.5.0">
     <attributes>
-      <attribute name="System.Reflection.AssemblyTitleAttribute" />
-      <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
-      <attribute name="System.Reflection.AssemblyDescriptionAttribute" />
-      <attribute name="System.CLSCompliantAttribute" />
+      <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
+      <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
+      <attribute name="System.Resources.SatelliteContractVersionAttribute" />
       <attribute name="System.Diagnostics.DebuggableAttribute" />
+      <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
+      <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
       <attribute name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
       <attribute name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute">
         <properties>
           <property name="WrapNonExceptionThrows" value="True" />
         </properties>
       </attribute>
-      <attribute name="System.Resources.SatelliteContractVersionAttribute" />
-      <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
+      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
+        <properties>
+          <property name="Target" value="System.Uri..ctor(System.String)" />
+          <property name="MessageId" value="0#" />
+          <property name="Scope" value="member" />
+        </properties>
+      </attribute>
+      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
+        <properties>
+          <property name="Target" value="System.Uri.IsIntranet(System.String):System.Boolean" />
+          <property name="Scope" value="member" />
+        </properties>
+      </attribute>
+      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
+        <properties>
+          <property name="Target" value="System.Uri.AllowIdnStatic(System.UriParser,System.Uri+Flags):System.Boolean" />
+          <property name="Scope" value="member" />
+        </properties>
+      </attribute>
+      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
+        <properties>
+          <property name="Target" value="System.Uri..cctor()" />
+          <property name="Scope" value="member" />
+        </properties>
+      </attribute>
+      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
+        <properties>
+          <property name="Target" value="System.UriParser..cctor()" />
+          <property name="Scope" value="member" />
+        </properties>
+      </attribute>
+      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
+        <properties>
+          <property name="Target" value="System.UriParser.InitializeAndValidate(System.Uri,System.UriFormatException&amp;):System.Void" />
+          <property name="MessageId" value="1#" />
+          <property name="Scope" value="member" />
+        </properties>
+      </attribute>
+      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
+        <properties>
+          <property name="Target" value="System.UriParser.Resolve(System.Uri,System.Uri,System.UriFormatException&amp;):System.String" />
+          <property name="MessageId" value="2#" />
+          <property name="Scope" value="member" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
+      <attribute name="System.CLSCompliantAttribute" />
+      <attribute name="System.Reflection.AssemblyTitleAttribute" />
+      <attribute name="System.Reflection.AssemblyDescriptionAttribute" />
       <attribute name="System.Reflection.AssemblyDefaultAliasAttribute" />
-      <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
-      <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
-      <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
-      <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
-      <attribute name="System.Reflection.AssemblyCopyrightAttribute" />
-      <attribute name="System.Reflection.AssemblyProductAttribute" />
       <attribute name="System.Reflection.AssemblyCompanyAttribute" />
+      <attribute name="System.Reflection.AssemblyProductAttribute" />
+      <attribute name="System.Reflection.AssemblyCopyrightAttribute" />
+      <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
     </attributes>
     <namespaces>
       <namespace name="System">
@@ -505,6 +550,12 @@
           </class>
           <class name="UriFormatException" type="class" base="System.FormatException" charset="Ansi" layout="Auto">
             <constructors>
+              <constructor name=".ctor(System.String, System.Exception)" attrib="6278">
+                <parameters>
+                  <parameter name="textString" position="0" attrib="0" type="System.String" />
+                  <parameter name="e" position="1" attrib="0" type="System.Exception" />
+                </parameters>
+              </constructor>
               <constructor name=".ctor(System.String)" attrib="6278">
                 <parameters>
                   <parameter name="textString" position="0" attrib="0" type="System.String" />
@@ -581,214 +632,46 @@
           </class>
         </classes>
       </namespace>
+      <namespace name="System.CodeDom.Compiler">
+        <classes>
+          <class name="GeneratedCodeAttribute" type="class" base="System.Attribute" sealed="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="AllowMultiple" value="False" />
+                  <property name="Inherited" value="False" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.String, System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="tool" position="0" attrib="0" type="System.String" />
+                  <parameter name="version" position="1" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Tool" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Tool()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Version" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Version()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+        </classes>
+      </namespace>
       <namespace name="System.Collections.Generic">
         <classes>
-          <class name="LinkedList`1" type="class" base="System.Object" charset="Ansi" layout="Auto">
-            <attributes>
-              <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
-            </attributes>
-            <interfaces>
-              <interface name="System.Collections.Generic.ICollection`1&lt;T&gt;" />
-              <interface name="System.Collections.Generic.IEnumerable`1&lt;T&gt;" />
-              <interface name="System.Collections.ICollection" />
-              <interface name="System.Collections.IEnumerable" />
-            </interfaces>
-            <constructors>
-              <constructor name=".ctor(System.Collections.Generic.IEnumerable`1[T])" attrib="6278">
-                <parameters>
-                  <parameter name="collection" position="0" attrib="0" type="System.Collections.Generic.IEnumerable`1&lt;T&gt;" />
-                </parameters>
-              </constructor>
-              <constructor name=".ctor()" attrib="6278">
-                <parameters />
-              </constructor>
-            </constructors>
-            <properties>
-              <property name="Count" attrib="0" ptype="System.Int32" params="">
-                <methods>
-                  <method name="get_Count()" attrib="2534" virtual="true" returntype="System.Int32">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="First" attrib="0" ptype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" params="">
-                <methods>
-                  <method name="get_First()" attrib="2182" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Last" attrib="0" ptype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" params="">
-                <methods>
-                  <method name="get_Last()" attrib="2182" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-            </properties>
-            <methods>
-              <method name="AddAfter(System.Collections.Generic.LinkedListNode`1[T], System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
-                <parameters>
-                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                  <parameter name="newNode" position="1" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                </parameters>
-              </method>
-              <method name="AddAfter(System.Collections.Generic.LinkedListNode`1[T], T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                <parameters>
-                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                  <parameter name="value" position="1" attrib="0" type="T" />
-                </parameters>
-              </method>
-              <method name="AddBefore(System.Collections.Generic.LinkedListNode`1[T], System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
-                <parameters>
-                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                  <parameter name="newNode" position="1" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                </parameters>
-              </method>
-              <method name="AddBefore(System.Collections.Generic.LinkedListNode`1[T], T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                <parameters>
-                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                  <parameter name="value" position="1" attrib="0" type="T" />
-                </parameters>
-              </method>
-              <method name="AddFirst(System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
-                <parameters>
-                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                </parameters>
-              </method>
-              <method name="AddFirst(T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                <parameters>
-                  <parameter name="value" position="0" attrib="0" type="T" />
-                </parameters>
-              </method>
-              <method name="AddLast(System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
-                <parameters>
-                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                </parameters>
-              </method>
-              <method name="AddLast(T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                <parameters>
-                  <parameter name="value" position="0" attrib="0" type="T" />
-                </parameters>
-              </method>
-              <method name="Clear()" attrib="486" virtual="true" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="Contains(T)" attrib="486" virtual="true" returntype="System.Boolean">
-                <parameters>
-                  <parameter name="value" position="0" attrib="0" type="T" />
-                </parameters>
-              </method>
-              <method name="CopyTo(T[], System.Int32)" attrib="486" virtual="true" returntype="System.Void">
-                <parameters>
-                  <parameter name="array" position="0" attrib="0" type="T[]" />
-                  <parameter name="index" position="1" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="Find(T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                <parameters>
-                  <parameter name="value" position="0" attrib="0" type="T" />
-                </parameters>
-              </method>
-              <method name="FindLast(T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                <parameters>
-                  <parameter name="value" position="0" attrib="0" type="T" />
-                </parameters>
-              </method>
-              <method name="GetEnumerator()" attrib="134" returntype="System.Collections.Generic.LinkedList`1/Enumerator&lt;T&gt;">
-                <parameters />
-              </method>
-              <method name="Remove(System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
-                <parameters>
-                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" />
-                </parameters>
-              </method>
-              <method name="Remove(T)" attrib="486" virtual="true" returntype="System.Boolean">
-                <parameters>
-                  <parameter name="value" position="0" attrib="0" type="T" />
-                </parameters>
-              </method>
-              <method name="RemoveFirst()" attrib="134" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="RemoveLast()" attrib="134" returntype="System.Void">
-                <parameters />
-              </method>
-            </methods>
-            <classes>
-              <class name="Enumerator" type="struct" base="System.ValueType" sealed="true" charset="Ansi" layout="Sequential">
-                <interfaces>
-                  <interface name="System.Collections.Generic.IEnumerator`1&lt;T&gt;" />
-                  <interface name="System.IDisposable" />
-                  <interface name="System.Collections.IEnumerator" />
-                </interfaces>
-                <properties>
-                  <property name="Current" attrib="0" ptype="T" params="">
-                    <methods>
-                      <method name="get_Current()" attrib="2534" virtual="true" returntype="T">
-                        <parameters />
-                      </method>
-                    </methods>
-                  </property>
-                </properties>
-                <methods>
-                  <method name="Dispose()" attrib="486" virtual="true" returntype="System.Void">
-                    <parameters />
-                  </method>
-                  <method name="MoveNext()" attrib="486" virtual="true" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                </methods>
-              </class>
-            </classes>
-          </class>
-          <class name="LinkedListNode`1" type="class" base="System.Object" sealed="true" charset="Ansi" layout="Auto">
-            <attributes>
-              <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
-            </attributes>
-            <constructors>
-              <constructor name=".ctor(T)" attrib="6278">
-                <parameters>
-                  <parameter name="value" position="0" attrib="0" type="T" />
-                </parameters>
-              </constructor>
-            </constructors>
-            <properties>
-              <property name="List" attrib="0" ptype="System.Collections.Generic.LinkedList`1&lt;T&gt;" params="">
-                <methods>
-                  <method name="get_List()" attrib="2182" returntype="System.Collections.Generic.LinkedList`1&lt;T&gt;">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Next" attrib="0" ptype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" params="">
-                <methods>
-                  <method name="get_Next()" attrib="2182" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Previous" attrib="0" ptype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;" params="">
-                <methods>
-                  <method name="get_Previous()" attrib="2182" returntype="System.Collections.Generic.LinkedListNode`1&lt;T&gt;">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Value" attrib="0" ptype="T" params="">
-                <methods>
-                  <method name="get_Value()" attrib="2182" returntype="T">
-                    <parameters />
-                  </method>
-                  <method name="set_Value(T)" attrib="2182" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="T" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-            </properties>
-          </class>
           <class name="Queue`1" type="class" base="System.Object" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
@@ -985,6 +868,45 @@
       </namespace>
       <namespace name="System.ComponentModel">
         <classes>
+          <class name="AsyncCompletedEventArgs" type="class" base="System.EventArgs" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Exception, System.Boolean, System.Object)" attrib="6278">
+                <parameters>
+                  <parameter name="error" position="0" attrib="0" type="System.Exception" />
+                  <parameter name="cancelled" position="1" attrib="0" type="System.Boolean" />
+                  <parameter name="userState" position="2" attrib="0" type="System.Object" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Cancelled" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_Cancelled()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Error" attrib="0" ptype="System.Exception" params="">
+                <methods>
+                  <method name="get_Error()" attrib="2182" returntype="System.Exception">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="UserState" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_UserState()" attrib="2182" returntype="System.Object">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="RaiseExceptionIfNecessary()" attrib="132" returntype="System.Void">
+                <parameters />
+              </method>
+            </methods>
+          </class>
           <class name="CategoryAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.AttributeUsageAttribute" />
@@ -1171,6 +1093,175 @@
               </method>
             </methods>
           </class>
+          <class name="EditorBrowsableAttribute" type="class" base="System.Attribute" sealed="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+              <constructor name=".ctor(System.ComponentModel.EditorBrowsableState)" attrib="6278">
+                <parameters>
+                  <parameter name="state" position="0" attrib="0" type="System.ComponentModel.EditorBrowsableState" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="State" attrib="0" ptype="System.ComponentModel.EditorBrowsableState" params="">
+                <methods>
+                  <method name="get_State()" attrib="2182" returntype="System.ComponentModel.EditorBrowsableState">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="Equals(System.Object)" attrib="198" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="obj" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="GetHashCode()" attrib="198" virtual="true" returntype="System.Int32">
+                <parameters />
+              </method>
+            </methods>
+          </class>
+          <class name="EditorBrowsableState" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
+            <fields>
+              <field name="Advanced" attrib="32854" fieldtype="System.ComponentModel.EditorBrowsableState" value="2" />
+              <field name="Always" attrib="32854" fieldtype="System.ComponentModel.EditorBrowsableState" value="0" />
+              <field name="Never" attrib="32854" fieldtype="System.ComponentModel.EditorBrowsableState" value="1" />
+            </fields>
+          </class>
+          <class name="INotifyPropertyChanged" type="interface" abstract="true" charset="Ansi" layout="Auto">
+            <events>
+              <event name="PropertyChanged" attrib="0" eventtype="System.ComponentModel.PropertyChangedEventHandler" />
+            </events>
+          </class>
+          <class name="PropertyChangedEventArgs" type="class" base="System.EventArgs" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="propertyName" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="PropertyName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_PropertyName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="PropertyChangedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.ComponentModel.PropertyChangedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.PropertyChangedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.ComponentModel.PropertyChangedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.PropertyChangedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="TypeConverter" type="class" base="System.Object" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="CanConvertFrom(System.Type)" attrib="454" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="sourceType" position="0" attrib="0" type="System.Type" />
+                </parameters>
+              </method>
+              <method name="CanConvertTo(System.Type)" attrib="454" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="destinationType" position="0" attrib="0" type="System.Type" />
+                </parameters>
+              </method>
+              <method name="ConvertFrom(System.Object)" attrib="454" virtual="true" returntype="System.Object">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="ConvertFromString(System.String)" attrib="454" virtual="true" returntype="System.Object">
+                <parameters>
+                  <parameter name="text" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </method>
+              <method name="ConvertTo(System.Object, System.Type)" attrib="454" virtual="true" returntype="System.Object">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Object" />
+                  <parameter name="destinationType" position="1" attrib="0" type="System.Type" />
+                </parameters>
+              </method>
+              <method name="ConvertToString(System.Object)" attrib="454" virtual="true" returntype="System.String">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="TypeConverterAttribute" type="class" base="System.Attribute" sealed="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="Inherited" value="True" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="type" position="0" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="typeNameVal" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="ConverterTypeName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_ConverterTypeName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
         </classes>
       </namespace>
       <namespace name="System.Diagnostics">
@@ -1180,6 +1271,7 @@
               <method name="Assert(System.Boolean, System.String, System.String)" attrib="150" static="true" returntype="System.Void">
                 <attributes>
                   <attribute name="System.Diagnostics.ConditionalAttribute" />
+                  <attribute name="System.Security.SecuritySafeCriticalAttribute" />
                 </attributes>
                 <parameters>
                   <parameter name="condition" position="0" attrib="0" type="System.Boolean" />
@@ -1249,745 +1341,6 @@
                 </parameters>
               </method>
             </methods>
-          </class>
-        </classes>
-      </namespace>
-      <namespace name="System.Net">
-        <classes>
-          <class name="DecompressionMethods" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
-            <attributes>
-              <attribute name="System.FlagsAttribute" />
-            </attributes>
-            <fields>
-              <field name="Deflate" attrib="32854" fieldtype="System.Net.DecompressionMethods" value="2" />
-              <field name="GZip" attrib="32854" fieldtype="System.Net.DecompressionMethods" value="1" />
-              <field name="None" attrib="32854" fieldtype="System.Net.DecompressionMethods" value="0" />
-            </fields>
-          </class>
-          <class name="HttpRequestHeader" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
-            <fields>
-              <field name="Accept" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="20" />
-              <field name="AcceptCharset" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="21" />
-              <field name="AcceptEncoding" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="22" />
-              <field name="AcceptLanguage" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="23" />
-              <field name="Allow" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="10" />
-              <field name="Authorization" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="24" />
-              <field name="CacheControl" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="0" />
-              <field name="Connection" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="1" />
-              <field name="ContentEncoding" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="13" />
-              <field name="ContentLanguage" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="14" />
-              <field name="ContentLength" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="11" />
-              <field name="ContentLocation" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="15" />
-              <field name="ContentMd5" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="16" />
-              <field name="ContentRange" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="17" />
-              <field name="ContentType" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="12" />
-              <field name="Cookie" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="25" />
-              <field name="Date" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="2" />
-              <field name="Expect" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="26" />
-              <field name="Expires" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="18" />
-              <field name="From" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="27" />
-              <field name="Host" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="28" />
-              <field name="IfMatch" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="29" />
-              <field name="IfModifiedSince" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="30" />
-              <field name="IfNoneMatch" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="31" />
-              <field name="IfRange" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="32" />
-              <field name="IfUnmodifiedSince" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="33" />
-              <field name="KeepAlive" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="3" />
-              <field name="LastModified" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="19" />
-              <field name="MaxForwards" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="34" />
-              <field name="Pragma" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="4" />
-              <field name="ProxyAuthorization" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="35" />
-              <field name="Range" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="37" />
-              <field name="Referer" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="36" />
-              <field name="Te" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="38" />
-              <field name="Trailer" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="5" />
-              <field name="TransferEncoding" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="6" />
-              <field name="Translate" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="39" />
-              <field name="Upgrade" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="7" />
-              <field name="UserAgent" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="40" />
-              <field name="Via" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="8" />
-              <field name="Warning" attrib="32854" fieldtype="System.Net.HttpRequestHeader" value="9" />
-            </fields>
-          </class>
-          <class name="HttpResponseHeader" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
-            <fields>
-              <field name="AcceptRanges" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="20" />
-              <field name="Age" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="21" />
-              <field name="Allow" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="10" />
-              <field name="CacheControl" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="0" />
-              <field name="Connection" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="1" />
-              <field name="ContentEncoding" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="13" />
-              <field name="ContentLanguage" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="14" />
-              <field name="ContentLength" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="11" />
-              <field name="ContentLocation" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="15" />
-              <field name="ContentMd5" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="16" />
-              <field name="ContentRange" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="17" />
-              <field name="ContentType" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="12" />
-              <field name="Date" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="2" />
-              <field name="ETag" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="22" />
-              <field name="Expires" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="18" />
-              <field name="KeepAlive" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="3" />
-              <field name="LastModified" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="19" />
-              <field name="Location" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="23" />
-              <field name="Pragma" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="4" />
-              <field name="ProxyAuthenticate" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="24" />
-              <field name="RetryAfter" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="25" />
-              <field name="Server" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="26" />
-              <field name="SetCookie" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="27" />
-              <field name="Trailer" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="5" />
-              <field name="TransferEncoding" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="6" />
-              <field name="Upgrade" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="7" />
-              <field name="Vary" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="28" />
-              <field name="Via" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="8" />
-              <field name="Warning" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="9" />
-              <field name="WwwAuthenticate" attrib="32854" fieldtype="System.Net.HttpResponseHeader" value="29" />
-            </fields>
-          </class>
-          <class name="HttpStatusCode" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
-            <fields>
-              <field name="Accepted" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="202" />
-              <field name="Ambiguous" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="300" />
-              <field name="BadGateway" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="502" />
-              <field name="BadRequest" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="400" />
-              <field name="Conflict" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="409" />
-              <field name="Continue" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="100" />
-              <field name="Created" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="201" />
-              <field name="ExpectationFailed" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="417" />
-              <field name="Forbidden" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="403" />
-              <field name="Found" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="302" />
-              <field name="GatewayTimeout" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="504" />
-              <field name="Gone" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="410" />
-              <field name="HttpVersionNotSupported" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="505" />
-              <field name="InternalServerError" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="500" />
-              <field name="LengthRequired" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="411" />
-              <field name="MethodNotAllowed" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="405" />
-              <field name="Moved" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="301" />
-              <field name="MovedPermanently" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="301" />
-              <field name="MultipleChoices" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="300" />
-              <field name="NoContent" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="204" />
-              <field name="NonAuthoritativeInformation" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="203" />
-              <field name="NotAcceptable" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="406" />
-              <field name="NotFound" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="404" />
-              <field name="NotImplemented" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="501" />
-              <field name="NotModified" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="304" />
-              <field name="OK" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="200" />
-              <field name="PartialContent" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="206" />
-              <field name="PaymentRequired" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="402" />
-              <field name="PreconditionFailed" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="412" />
-              <field name="ProxyAuthenticationRequired" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="407" />
-              <field name="Redirect" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="302" />
-              <field name="RedirectKeepVerb" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="307" />
-              <field name="RedirectMethod" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="303" />
-              <field name="RequestedRangeNotSatisfiable" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="416" />
-              <field name="RequestEntityTooLarge" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="413" />
-              <field name="RequestTimeout" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="408" />
-              <field name="RequestUriTooLong" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="414" />
-              <field name="ResetContent" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="205" />
-              <field name="SeeOther" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="303" />
-              <field name="ServiceUnavailable" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="503" />
-              <field name="SwitchingProtocols" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="101" />
-              <field name="TemporaryRedirect" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="307" />
-              <field name="Unauthorized" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="401" />
-              <field name="UnsupportedMediaType" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="415" />
-              <field name="Unused" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="306" />
-              <field name="UseProxy" attrib="32854" fieldtype="System.Net.HttpStatusCode" value="305" />
-            </fields>
-          </class>
-          <class name="HttpWebRequest" type="class" base="System.Object" abstract="true" charset="Ansi" layout="Auto">
-            <constructors>
-              <constructor name=".ctor(System.Uri)" attrib="6278">
-                <parameters>
-                  <parameter name="uri" position="0" attrib="0" type="System.Uri" />
-                </parameters>
-              </constructor>
-            </constructors>
-            <properties>
-              <property name="Accept" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_Accept()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_Accept(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Address" attrib="0" ptype="System.Uri" params="">
-                <methods>
-                  <method name="get_Address()" attrib="3526" abstract="true" virtual="true" returntype="System.Uri">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="AllowAutoRedirect" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_AllowAutoRedirect()" attrib="3526" abstract="true" virtual="true" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                  <method name="set_AllowAutoRedirect(System.Boolean)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="AllowWriteStreamBuffering" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_AllowWriteStreamBuffering()" attrib="3526" abstract="true" virtual="true" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                  <method name="set_AllowWriteStreamBuffering(System.Boolean)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="AutomaticDecompression" attrib="0" ptype="System.Net.DecompressionMethods" params="">
-                <methods>
-                  <method name="get_AutomaticDecompression()" attrib="3526" abstract="true" virtual="true" returntype="System.Net.DecompressionMethods">
-                    <parameters />
-                  </method>
-                  <method name="set_AutomaticDecompression(System.Net.DecompressionMethods)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Net.DecompressionMethods" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Connection" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_Connection()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_Connection(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="ContentLength" attrib="0" ptype="System.Int64" params="">
-                <methods>
-                  <method name="get_ContentLength()" attrib="3526" abstract="true" virtual="true" returntype="System.Int64">
-                    <parameters />
-                  </method>
-                  <method name="set_ContentLength(System.Int64)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Int64" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="ContentType" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_ContentType()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_ContentType(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Expect" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_Expect()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_Expect(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="HaveResponse" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_HaveResponse()" attrib="3526" abstract="true" virtual="true" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Headers" attrib="0" ptype="System.Net.WebHeaderCollection" params="">
-                <methods>
-                  <method name="get_Headers()" attrib="3526" abstract="true" virtual="true" returntype="System.Net.WebHeaderCollection">
-                    <parameters />
-                  </method>
-                  <method name="set_Headers(System.Net.WebHeaderCollection)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Net.WebHeaderCollection" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="KeepAlive" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_KeepAlive()" attrib="3526" abstract="true" virtual="true" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                  <method name="set_KeepAlive(System.Boolean)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="MediaType" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_MediaType()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_MediaType(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Method" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_Method()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_Method(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Pipelined" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_Pipelined()" attrib="3526" abstract="true" virtual="true" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                  <method name="set_Pipelined(System.Boolean)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="PreAuthenticate" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_PreAuthenticate()" attrib="3526" abstract="true" virtual="true" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                  <method name="set_PreAuthenticate(System.Boolean)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="ProtocolVersion" attrib="0" ptype="System.Version" params="">
-                <methods>
-                  <method name="get_ProtocolVersion()" attrib="2502" virtual="true" returntype="System.Version">
-                    <parameters />
-                  </method>
-                  <method name="set_ProtocolVersion(System.Version)" attrib="2502" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Version" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="ReadWriteTimeout" attrib="0" ptype="System.Int32" params="">
-                <methods>
-                  <method name="get_ReadWriteTimeout()" attrib="3526" abstract="true" virtual="true" returntype="System.Int32">
-                    <parameters />
-                  </method>
-                  <method name="set_ReadWriteTimeout(System.Int32)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Int32" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Referer" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_Referer()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_Referer(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="RequestUri" attrib="0" ptype="System.Uri" params="">
-                <methods>
-                  <method name="get_RequestUri()" attrib="3526" abstract="true" virtual="true" returntype="System.Uri">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="SendChunked" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_SendChunked()" attrib="3526" abstract="true" virtual="true" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                  <method name="set_SendChunked(System.Boolean)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Timeout" attrib="0" ptype="System.Int32" params="">
-                <methods>
-                  <method name="get_Timeout()" attrib="3526" abstract="true" virtual="true" returntype="System.Int32">
-                    <parameters />
-                  </method>
-                  <method name="set_Timeout(System.Int32)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Int32" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="TransferEncoding" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_TransferEncoding()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_TransferEncoding(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="UserAgent" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_UserAgent()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_UserAgent(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-            </properties>
-            <methods>
-              <method name="Abort()" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="AddRange(System.Int32)" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
-                <parameters>
-                  <parameter name="range" position="0" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="AddRange(System.String, System.Int32)" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
-                <parameters>
-                  <parameter name="rangeSpecifier" position="0" attrib="0" type="System.String" />
-                  <parameter name="range" position="1" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="AddRange(System.Int32, System.Int32)" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
-                <parameters>
-                  <parameter name="from" position="0" attrib="0" type="System.Int32" />
-                  <parameter name="to" position="1" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="AddRange(System.String, System.Int32, System.Int32)" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
-                <parameters>
-                  <parameter name="rangeSpecifier" position="0" attrib="0" type="System.String" />
-                  <parameter name="from" position="1" attrib="0" type="System.Int32" />
-                  <parameter name="to" position="2" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="BeginGetRequestStream(System.AsyncCallback, System.Object)" attrib="1478" abstract="true" virtual="true" returntype="System.IAsyncResult">
-                <parameters>
-                  <parameter name="callback" position="0" attrib="0" type="System.AsyncCallback" />
-                  <parameter name="state" position="1" attrib="0" type="System.Object" />
-                </parameters>
-              </method>
-              <method name="BeginGetResponse(System.AsyncCallback, System.Object)" attrib="1478" abstract="true" virtual="true" returntype="System.IAsyncResult">
-                <parameters>
-                  <parameter name="callback" position="0" attrib="0" type="System.AsyncCallback" />
-                  <parameter name="state" position="1" attrib="0" type="System.Object" />
-                </parameters>
-              </method>
-              <method name="EndGetRequestStream(System.IAsyncResult)" attrib="1478" abstract="true" virtual="true" returntype="System.IO.Stream">
-                <parameters>
-                  <parameter name="asyncResult" position="0" attrib="0" type="System.IAsyncResult" />
-                </parameters>
-              </method>
-              <method name="EndGetResponse(System.IAsyncResult)" attrib="1478" abstract="true" virtual="true" returntype="System.Net.HttpWebResponse">
-                <parameters>
-                  <parameter name="asyncResult" position="0" attrib="0" type="System.IAsyncResult" />
-                </parameters>
-              </method>
-              <method name="GetRequestStream()" attrib="1478" abstract="true" virtual="true" returntype="System.IO.Stream">
-                <parameters />
-              </method>
-              <method name="GetResponse()" attrib="1478" abstract="true" virtual="true" returntype="System.Net.HttpWebResponse">
-                <parameters />
-              </method>
-            </methods>
-          </class>
-          <class name="HttpWebResponse" type="class" base="System.Object" abstract="true" charset="Ansi" layout="Auto">
-            <constructors>
-              <constructor name=".ctor()" attrib="6276">
-                <parameters />
-              </constructor>
-            </constructors>
-            <properties>
-              <property name="CharacterSet" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_CharacterSet()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="ContentEncoding" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_ContentEncoding()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="ContentLength" attrib="0" ptype="System.Int64" params="">
-                <methods>
-                  <method name="get_ContentLength()" attrib="3526" abstract="true" virtual="true" returntype="System.Int64">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="ContentType" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_ContentType()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Headers" attrib="0" ptype="System.Net.WebHeaderCollection" params="">
-                <methods>
-                  <method name="get_Headers()" attrib="3526" abstract="true" virtual="true" returntype="System.Net.WebHeaderCollection">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="LastModified" attrib="0" ptype="System.DateTime" params="">
-                <methods>
-                  <method name="get_LastModified()" attrib="3526" abstract="true" virtual="true" returntype="System.DateTime">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Method" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_Method()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="ProtocolVersion" attrib="0" ptype="System.Version" params="">
-                <methods>
-                  <method name="get_ProtocolVersion()" attrib="3526" abstract="true" virtual="true" returntype="System.Version">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="ResponseUri" attrib="0" ptype="System.Uri" params="">
-                <methods>
-                  <method name="get_ResponseUri()" attrib="3526" abstract="true" virtual="true" returntype="System.Uri">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Server" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_Server()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="StatusCode" attrib="0" ptype="System.Net.HttpStatusCode" params="">
-                <methods>
-                  <method name="get_StatusCode()" attrib="3526" abstract="true" virtual="true" returntype="System.Net.HttpStatusCode">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="StatusDescription" attrib="0" ptype="System.String" params="">
-                <methods>
-                  <method name="get_StatusDescription()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-            </properties>
-            <methods>
-              <method name="Close()" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="GetResponseHeader(System.String)" attrib="1478" abstract="true" virtual="true" returntype="System.String">
-                <parameters>
-                  <parameter name="headerName" position="0" attrib="0" type="System.String" />
-                </parameters>
-              </method>
-              <method name="GetResponseStream()" attrib="1478" abstract="true" virtual="true" returntype="System.IO.Stream">
-                <parameters />
-              </method>
-            </methods>
-          </class>
-          <class name="WebException" type="class" base="System.InvalidOperationException" charset="Ansi" layout="Auto">
-            <constructors>
-              <constructor name=".ctor(System.String, System.Net.WebExceptionStatus)" attrib="6278">
-                <parameters>
-                  <parameter name="message" position="0" attrib="0" type="System.String" />
-                  <parameter name="status" position="1" attrib="0" type="System.Net.WebExceptionStatus" />
-                </parameters>
-              </constructor>
-              <constructor name=".ctor(System.String, System.Exception, System.Net.WebExceptionStatus, System.Net.HttpWebResponse)" attrib="6278">
-                <parameters>
-                  <parameter name="message" position="0" attrib="0" type="System.String" />
-                  <parameter name="innerException" position="1" attrib="0" type="System.Exception" />
-                  <parameter name="status" position="2" attrib="0" type="System.Net.WebExceptionStatus" />
-                  <parameter name="response" position="3" attrib="0" type="System.Net.HttpWebResponse" />
-                </parameters>
-              </constructor>
-              <constructor name=".ctor(System.String, System.Exception)" attrib="6278">
-                <parameters>
-                  <parameter name="message" position="0" attrib="0" type="System.String" />
-                  <parameter name="innerException" position="1" attrib="0" type="System.Exception" />
-                </parameters>
-              </constructor>
-              <constructor name=".ctor()" attrib="6278">
-                <parameters />
-              </constructor>
-              <constructor name=".ctor(System.String)" attrib="6278">
-                <parameters>
-                  <parameter name="message" position="0" attrib="0" type="System.String" />
-                </parameters>
-              </constructor>
-            </constructors>
-            <properties>
-              <property name="Response" attrib="0" ptype="System.Net.HttpWebResponse" params="">
-                <methods>
-                  <method name="get_Response()" attrib="2182" returntype="System.Net.HttpWebResponse">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Status" attrib="0" ptype="System.Net.WebExceptionStatus" params="">
-                <methods>
-                  <method name="get_Status()" attrib="2182" returntype="System.Net.WebExceptionStatus">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-            </properties>
-          </class>
-          <class name="WebExceptionStatus" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
-            <fields>
-              <field name="CacheEntryNotFound" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="18" />
-              <field name="ConnectFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="2" />
-              <field name="ConnectionClosed" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="8" />
-              <field name="KeepAliveFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="12" />
-              <field name="MessageLengthLimitExceeded" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="17" />
-              <field name="NameResolutionFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="1" />
-              <field name="Pending" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="13" />
-              <field name="PipelineFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="5" />
-              <field name="ProtocolError" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="7" />
-              <field name="ProxyNameResolutionFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="15" />
-              <field name="ReceiveFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="3" />
-              <field name="RequestCanceled" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="6" />
-              <field name="RequestProhibitedByCachePolicy" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="19" />
-              <field name="RequestProhibitedByProxy" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="20" />
-              <field name="SecureChannelFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="10" />
-              <field name="SendFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="4" />
-              <field name="ServerProtocolViolation" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="11" />
-              <field name="Success" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="0" />
-              <field name="Timeout" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="14" />
-              <field name="TrustFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="9" />
-              <field name="UnknownError" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="16" />
-            </fields>
-          </class>
-          <class name="WebHeaderCollection" type="class" base="System.Object" sealed="true" charset="Ansi" layout="Auto">
-            <attributes>
-              <attribute name="System.Reflection.DefaultMemberAttribute" />
-            </attributes>
-            <constructors>
-              <constructor name=".ctor(System.String)" attrib="6278">
-                <parameters>
-                  <parameter name="headers" position="0" attrib="0" type="System.String" />
-                </parameters>
-              </constructor>
-              <constructor name=".ctor()" attrib="6278">
-                <parameters />
-              </constructor>
-            </constructors>
-            <properties>
-              <property name="Count" attrib="0" ptype="System.Int32" params="">
-                <methods>
-                  <method name="get_Count()" attrib="2182" returntype="System.Int32">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Headers" attrib="0" ptype="System.Collections.Generic.ICollection`1&lt;System.String&gt;" params="">
-                <methods>
-                  <method name="get_Headers()" attrib="2182" returntype="System.Collections.Generic.ICollection`1&lt;System.String&gt;">
-                    <parameters />
-                  </method>
-                </methods>
-              </property>
-              <property name="Item" attrib="0" ptype="System.String" params="System.String">
-                <methods>
-                  <method name="get_Item(System.String)" attrib="2182" returntype="System.String">
-                    <parameters>
-                      <parameter name="header" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                  <method name="set_Item(System.String, System.String)" attrib="2182" returntype="System.Void">
-                    <parameters>
-                      <parameter name="header" position="0" attrib="0" type="System.String" />
-                      <parameter name="value" position="1" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Item" attrib="0" ptype="System.String" params="System.Net.HttpResponseHeader">
-                <methods>
-                  <method name="get_Item(System.Net.HttpResponseHeader)" attrib="2182" returntype="System.String">
-                    <parameters>
-                      <parameter name="header" position="0" attrib="0" type="System.Net.HttpResponseHeader" />
-                    </parameters>
-                  </method>
-                  <method name="set_Item(System.Net.HttpResponseHeader, System.String)" attrib="2182" returntype="System.Void">
-                    <parameters>
-                      <parameter name="header" position="0" attrib="0" type="System.Net.HttpResponseHeader" />
-                      <parameter name="value" position="1" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="Item" attrib="0" ptype="System.String" params="System.Net.HttpRequestHeader">
-                <methods>
-                  <method name="get_Item(System.Net.HttpRequestHeader)" attrib="2182" returntype="System.String">
-                    <parameters>
-                      <parameter name="header" position="0" attrib="0" type="System.Net.HttpRequestHeader" />
-                    </parameters>
-                  </method>
-                  <method name="set_Item(System.Net.HttpRequestHeader, System.String)" attrib="2182" returntype="System.Void">
-                    <parameters>
-                      <parameter name="header" position="0" attrib="0" type="System.Net.HttpRequestHeader" />
-                      <parameter name="value" position="1" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-            </properties>
           </class>
         </classes>
       </namespace>
@@ -2099,13 +1452,6 @@
                 </methods>
               </property>
             </properties>
-            <methods>
-              <method name="Synchronized(System.Text.RegularExpressions.Group)" attrib="150" static="true" returntype="System.Text.RegularExpressions.Group">
-                <parameters>
-                  <parameter name="inner" position="0" attrib="0" type="System.Text.RegularExpressions.Group" />
-                </parameters>
-              </method>
-            </methods>
           </class>
           <class name="GroupCollection" type="class" base="System.Object" charset="Ansi" layout="Auto">
             <attributes>
@@ -2201,11 +1547,6 @@
                   <parameter name="replacement" position="0" attrib="0" type="System.String" />
                 </parameters>
               </method>
-              <method name="Synchronized(System.Text.RegularExpressions.Match)" attrib="150" static="true" returntype="System.Text.RegularExpressions.Match">
-                <parameters>
-                  <parameter name="inner" position="0" attrib="0" type="System.Text.RegularExpressions.Match" />
-                </parameters>
-              </method>
             </methods>
           </class>
           <class name="MatchCollection" type="class" base="System.Object" charset="Ansi" layout="Auto">
@@ -2298,8 +1639,6 @@
           </class>
           <class name="Regex" type="class" base="System.Object" charset="Ansi" layout="Auto">
             <fields>
-              <field name="capnames" attrib="5" fieldtype="System.Collections.Hashtable" />
-              <field name="caps" attrib="5" fieldtype="System.Collections.Hashtable" />
               <field name="capsize" attrib="5" fieldtype="System.Int32" />
               <field name="capslist" attrib="5" fieldtype="System.String[]" />
               <field name="pattern" attrib="5" fieldtype="System.String" />
@@ -2574,7 +1913,6 @@
               <attribute name="System.FlagsAttribute" />
             </attributes>
             <fields>
-              <field name="Compiled" attrib="32854" fieldtype="System.Text.RegularExpressions.RegexOptions" value="8" />
               <field name="CultureInvariant" attrib="32854" fieldtype="System.Text.RegularExpressions.RegexOptions" value="512" />
               <field name="ECMAScript" attrib="32854" fieldtype="System.Text.RegularExpressions.RegexOptions" value="256" />
               <field name="ExplicitCapture" attrib="32854" fieldtype="System.Text.RegularExpressions.RegexOptions" value="4" />
@@ -2585,134 +1923,6 @@
               <field name="RightToLeft" attrib="32854" fieldtype="System.Text.RegularExpressions.RegexOptions" value="64" />
               <field name="Singleline" attrib="32854" fieldtype="System.Text.RegularExpressions.RegexOptions" value="16" />
             </fields>
-          </class>
-          <class name="RegexRunner" type="class" base="System.Object" abstract="true" charset="Ansi" layout="Auto">
-            <fields>
-              <field name="runcrawl" attrib="5" fieldtype="System.Int32[]" />
-              <field name="runcrawlpos" attrib="5" fieldtype="System.Int32" />
-              <field name="runmatch" attrib="5" fieldtype="System.Text.RegularExpressions.Match" />
-              <field name="runregex" attrib="5" fieldtype="System.Text.RegularExpressions.Regex" />
-              <field name="runstack" attrib="5" fieldtype="System.Int32[]" />
-              <field name="runstackpos" attrib="5" fieldtype="System.Int32" />
-              <field name="runtext" attrib="5" fieldtype="System.String" />
-              <field name="runtextbeg" attrib="5" fieldtype="System.Int32" />
-              <field name="runtextend" attrib="5" fieldtype="System.Int32" />
-              <field name="runtextpos" attrib="5" fieldtype="System.Int32" />
-              <field name="runtextstart" attrib="5" fieldtype="System.Int32" />
-              <field name="runtrack" attrib="5" fieldtype="System.Int32[]" />
-              <field name="runtrackcount" attrib="5" fieldtype="System.Int32" />
-              <field name="runtrackpos" attrib="5" fieldtype="System.Int32" />
-            </fields>
-            <constructors>
-              <constructor name=".ctor()" attrib="6277">
-                <parameters />
-              </constructor>
-            </constructors>
-            <methods>
-              <method name="Capture(System.Int32, System.Int32, System.Int32)" attrib="132" returntype="System.Void">
-                <parameters>
-                  <parameter name="capnum" position="0" attrib="0" type="System.Int32" />
-                  <parameter name="start" position="1" attrib="0" type="System.Int32" />
-                  <parameter name="end" position="2" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="CharInClass(System.Char, System.String)" attrib="148" static="true" returntype="System.Boolean">
-                <parameters>
-                  <parameter name="ch" position="0" attrib="0" type="System.Char" />
-                  <parameter name="charClass" position="1" attrib="0" type="System.String" />
-                </parameters>
-              </method>
-              <method name="CharInSet(System.Char, System.String, System.String)" attrib="148" static="true" returntype="System.Boolean">
-                <parameters>
-                  <parameter name="ch" position="0" attrib="0" type="System.Char" />
-                  <parameter name="set" position="1" attrib="0" type="System.String" />
-                  <parameter name="category" position="2" attrib="0" type="System.String" />
-                </parameters>
-              </method>
-              <method name="Crawl(System.Int32)" attrib="132" returntype="System.Void">
-                <parameters>
-                  <parameter name="i" position="0" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="Crawlpos()" attrib="132" returntype="System.Int32">
-                <parameters />
-              </method>
-              <method name="DoubleCrawl()" attrib="132" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="DoubleStack()" attrib="132" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="DoubleTrack()" attrib="132" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="EnsureStorage()" attrib="132" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="FindFirstChar()" attrib="1476" abstract="true" virtual="true" returntype="System.Boolean">
-                <parameters />
-              </method>
-              <method name="Go()" attrib="1476" abstract="true" virtual="true" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="InitTrackCount()" attrib="1476" abstract="true" virtual="true" returntype="System.Void">
-                <parameters />
-              </method>
-              <method name="IsBoundary(System.Int32, System.Int32, System.Int32)" attrib="132" returntype="System.Boolean">
-                <parameters>
-                  <parameter name="index" position="0" attrib="0" type="System.Int32" />
-                  <parameter name="startpos" position="1" attrib="0" type="System.Int32" />
-                  <parameter name="endpos" position="2" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="IsECMABoundary(System.Int32, System.Int32, System.Int32)" attrib="132" returntype="System.Boolean">
-                <parameters>
-                  <parameter name="index" position="0" attrib="0" type="System.Int32" />
-                  <parameter name="startpos" position="1" attrib="0" type="System.Int32" />
-                  <parameter name="endpos" position="2" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="IsMatched(System.Int32)" attrib="132" returntype="System.Boolean">
-                <parameters>
-                  <parameter name="cap" position="0" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="MatchIndex(System.Int32)" attrib="132" returntype="System.Int32">
-                <parameters>
-                  <parameter name="cap" position="0" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="MatchLength(System.Int32)" attrib="132" returntype="System.Int32">
-                <parameters>
-                  <parameter name="cap" position="0" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="Popcrawl()" attrib="132" returntype="System.Int32">
-                <parameters />
-              </method>
-              <method name="Scan(System.Text.RegularExpressions.Regex, System.String, System.Int32, System.Int32, System.Int32, System.Int32, System.Boolean)" attrib="133" returntype="System.Text.RegularExpressions.Match">
-                <parameters>
-                  <parameter name="regex" position="0" attrib="0" type="System.Text.RegularExpressions.Regex" />
-                  <parameter name="text" position="1" attrib="0" type="System.String" />
-                  <parameter name="textbeg" position="2" attrib="0" type="System.Int32" />
-                  <parameter name="textend" position="3" attrib="0" type="System.Int32" />
-                  <parameter name="textstart" position="4" attrib="0" type="System.Int32" />
-                  <parameter name="prevlen" position="5" attrib="0" type="System.Int32" />
-                  <parameter name="quick" position="6" attrib="0" type="System.Boolean" />
-                </parameters>
-              </method>
-              <method name="TransferCapture(System.Int32, System.Int32, System.Int32, System.Int32)" attrib="132" returntype="System.Void">
-                <parameters>
-                  <parameter name="capnum" position="0" attrib="0" type="System.Int32" />
-                  <parameter name="uncapnum" position="1" attrib="0" type="System.Int32" />
-                  <parameter name="start" position="2" attrib="0" type="System.Int32" />
-                  <parameter name="end" position="3" attrib="0" type="System.Int32" />
-                </parameters>
-              </method>
-              <method name="Uncapture()" attrib="132" returntype="System.Void">
-                <parameters />
-              </method>
-            </methods>
           </class>
         </classes>
       </namespace>
