@@ -2,7 +2,7 @@
 rem This runs genmdesc on the x86 files when called on Visual Studio
 echo Running genmdesc
 cd ..\mono\mini
-set PATH=%PATH%;%MONO_DEPENDENCIES_PREFIX%\bin
+set PATH=%PATH%;%MONO_DEPENDENCIES_PREFIX%\lib
 if "%2" == "Win32" goto x86
 if "%2" == "x64" goto x64
 goto error

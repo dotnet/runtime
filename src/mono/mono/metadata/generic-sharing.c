@@ -10,6 +10,9 @@
 #include <config.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+#include <glib.h>
+#endif
 #include <mono/utils/mono-membar.h>
 
 #include "metadata-internals.h"

@@ -12,7 +12,9 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #include "metadata/mono-perfcounters.h"
 #include "metadata/appdomain.h"
 /* for mono_stats */
@@ -67,7 +69,7 @@ enum {
 enum {
 	SingleInstance,
 	MultiInstance,
-	Unknown = -1
+	CatTypeUnknown = -1
 };
 
 #define PERFCTR_CAT(id,name,help,type,first_counter) CATEGORY_ ## id,

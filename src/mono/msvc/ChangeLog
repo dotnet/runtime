@@ -1,3 +1,15 @@
+2007-03-10  Bill Holmes  <billholmes54@gmail.com>
+
+	* mono.sln: Fixing configuration list to build the correct targets for the 
+	  specified configuration.
+
+	* runburg.bat, runmdesc.bat:  Changing the PATH environment variable assignment 
+	  to the correct location.
+
+	* libmono.vcproj:  Adding missing files.
+
+	Contributed under MIT/X11 license.
+
 2007-12-31  Jonathan Chambers  <joncham@gmail.com>
 
 	* mono.sln, libmono.vcproj, mono.vcproj, mono.def: Update .def
