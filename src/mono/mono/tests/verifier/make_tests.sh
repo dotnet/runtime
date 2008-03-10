@@ -4036,4 +4036,12 @@ done
 
 
 
+#method definition return type validation
+./make_invalid_ret_type.sh ret_type_byref unverifiable "int32\&"
+./make_invalid_ret_type.sh ret_type_typedref unverifiable "typedref"
+./make_invalid_ret_type.sh ret_type_arg_interator unverifiable "valuetype [mscorlib]System.ArgIterator"
+./make_invalid_ret_type.sh ret_type_arg_handle unverifiable "valuetype [mscorlib]System.RuntimeArgumentHandle"
+
+
+
 
