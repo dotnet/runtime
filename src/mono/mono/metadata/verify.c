@@ -267,6 +267,19 @@ mono_type_is_enum_type (MonoType *type)
 }
 
 /*
+ * mono_type_is_value_type:
+ * 
+ * Returns TRUE if @type is named after @namespace.@name.
+ * 
+ */
+static gboolean
+mono_type_is_value_type (MonoType *type, const char *namespace, const char *name)
+{
+	return type->type == MONO_TYPE_VALUETYPE &&
+		!strcmp (namespace, type->data.klass->name_space) &&
+		!strcmp (name, type->data.klass->name);
+}
+/*
  * mono_type_get_underlying_type_any:
  * 
  * This functions is just like mono_type_get_underlying_type but it doesn't care if the type is byref.
@@ -2674,8 +2687,9 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX], g
 static void
 do_ret (VerifyContext *ctx)
 {
+	MonoType *ret = ctx->signature->ret;
 	VERIFIER_DEBUG ( printf ("checking ret\n"); );
-	if (ctx->signature->ret->type != MONO_TYPE_VOID) {
+	if (ret->type != MONO_TYPE_VOID) {
 		ILStackDesc *top;
 		if (!check_underflow (ctx, 1))
 			return;
@@ -2686,6 +2700,9 @@ do_ret (VerifyContext *ctx)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible return value on stack with method signature ret at 0x%04x", ctx->ip_offset));
 			return;
 		}
+
+		if (ret->byref || ret->type == MONO_TYPE_TYPEDBYREF || mono_type_is_value_type (ret, "System", "ArgIterator") || mono_type_is_value_type (ret, "System", "RuntimeArgumentHandle"))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns byref, TypedReference, ArgIterator or RuntimeArgumentHandle at 0x%04x", ctx->ip_offset));
 	}
 
 	if (ctx->eval.size > 0) {
@@ -2776,9 +2793,6 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		if (check_overflow (ctx))
 			set_stack_value (ctx, stack_push (ctx), sig->ret, FALSE);
 	}
-
-	if (sig->ret->byref)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns byref at 0x%04x", ctx->ip_offset));
 }
 
 static void
