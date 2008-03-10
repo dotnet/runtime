@@ -2351,7 +2351,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	guint32 ip_offset = ctx->ip_offset;
 	
 	if (stack_slot_get_type (funptr) != TYPE_PTR || !funptr->method) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid function pointer parameter for delegate constructor at %d", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid function pointer parameter for delegate constructor at 0x%04x", ctx->ip_offset));
 		return;
 	}
 	
@@ -2359,7 +2359,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	method = funptr->method;
 
 	if (!mono_delegate_signature_equal (mono_method_signature (invoke), mono_method_signature (method)))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer parameter for delegate constructor has diferent signature at %d", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer parameter for delegate constructor has diferent signature at 0x%04x", ctx->ip_offset));
 
 	/* 
 	 * Delegate code sequences:
@@ -2698,7 +2698,6 @@ do_ret (VerifyContext *ctx)
 /*
  * FIXME we need to fix the case of a non-virtual instance method defined in the parent but call using a token pointing to a subclass.
  * 	This is illegal but mono_get_method_full decoded it.
- * TODO handle vararg calls
  * TODO handle calling .ctor outside one or calling the .ctor for other class but super  
  */
 static void
@@ -2719,6 +2718,9 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 	if (virtual && method->klass->valuetype)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with valuetype method at 0x%04x", ctx->ip_offset));
 
+	if (virtual && (method->flags & METHOD_ATTRIBUTE_STATIC))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with static method at 0x%04x", ctx->ip_offset));
+		
 	if (!virtual && (method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL)) {
 		virt_check_this = TRUE;
 		ctx->code [ctx->ip_offset].flags |= IL_CODE_CALL_NONFINAL_VIRTUAL;
@@ -2776,7 +2778,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 	}
 
 	if (sig->ret->byref)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns typedbyref, byref or ArgIterator at 0x%04x", ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method returns byref at 0x%04x", ctx->ip_offset));
 }
 
 static void
@@ -3065,9 +3067,6 @@ do_conversion (VerifyContext *ctx, int kind)
 	}
 }
 
-/*
- * FIXME validate the token
- */
 static void
 do_load_token (VerifyContext *ctx, int token) 
 {
@@ -3191,9 +3190,6 @@ do_initobj (VerifyContext *ctx, int token)
 	}
 }
 
-/*
- * FIXME, validate the token
- */
 static void
 do_newobj (VerifyContext *ctx, int token) 
 {
