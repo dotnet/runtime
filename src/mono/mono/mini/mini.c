@@ -6717,6 +6717,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					bblock = ebblock;
 					inline_costs += costs;				
 				} else {
+					/* Needed by the code generated in inssel.brg */
+					mono_get_got_var (cfg);
+		
 					MONO_INST_NEW (cfg, ins, CEE_CASTCLASS);
 					ins->type = STACK_OBJ;
 					ins->inst_left = *sp;
@@ -6736,6 +6739,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 				break;
 			}
+
+			/* Needed by the code generated in inssel.brg */
+			mono_get_got_var (cfg);
 
 			MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
 			ins->type = STACK_OBJ;
@@ -8246,6 +8252,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
+				/* Needed by the code generated in inssel.brg */
+				mono_get_got_var (cfg);
+		
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 				MONO_INST_NEW (cfg, ins, (ip [1] == CEE_MONO_CISINST) ? OP_CISINST : OP_CCASTCLASS);
 				ins->type = STACK_I4;
