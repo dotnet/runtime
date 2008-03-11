@@ -237,7 +237,6 @@ test_sources = 		\
 	iltests.il.in		\
 	test.cs			\
 	generics.cs	\
-	il2tests.il	\
 	generics-variant-types.il
 
 if MONO_DEBUGGER_SUPPORTED
@@ -255,7 +254,7 @@ else
 mono_debugger_sources =
 endif
 
-regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe il2tests.exe bench.exe
+regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe bench.exe
 
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
 
