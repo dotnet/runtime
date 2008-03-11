@@ -191,7 +191,7 @@ guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code, *tramp, *br [2];
-	int i, lmf_offset, offset, res_offset, arg_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, framesize;
+	int i, lmf_offset, offset, res_offset, arg_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, rbp_offset, framesize;
 	gboolean has_caller;
 
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
@@ -203,8 +203,6 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	framesize = 512 + sizeof (MonoLMF);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
-
-	offset = 0;
 
 	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
 		static int byte_offset = -1;
@@ -243,6 +241,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, 8);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
+	offset = 0;
+	rbp_offset = - offset;
+
 	offset += 8;
 	tramp_offset = - offset;
 
@@ -266,8 +267,15 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	offset += AMD64_NREG * 8;
 	saved_regs_offset = - offset;
-	for (i = 0; i < AMD64_NREG; ++i)
-		amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), i, 8);
+	for (i = 0; i < AMD64_NREG; ++i) {
+		if (i == AMD64_RBP) {
+			/* RAX is already saved */
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, rbp_offset, 8);
+			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), AMD64_RAX, 8);
+		} else {
+			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), i, 8);
+		}
+	}
 	offset += 8 * 8;
 	saved_fpregs_offset = - offset;
 	for (i = 0; i < 8; ++i)
