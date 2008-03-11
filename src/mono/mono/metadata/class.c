@@ -3802,11 +3802,13 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 			if (parent == mono_defaults.object_class)
 				parent = mono_defaults.com_object_class;
 		}
-		class->parent = parent;
-
 		if (!parent) {
-			return;
+			/* set the parent to something useful and safe, but mark the type as broken */
+			parent = mono_defaults.object_class;
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 		}
+
+		class->parent = parent;
 
 		if (parent->generic_class && !parent->name) {
 			/*
