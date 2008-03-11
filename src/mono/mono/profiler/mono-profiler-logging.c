@@ -12,7 +12,7 @@
 #include <ctype.h>
 #include <glib.h>
 
-#define HAS_OPROFILE 1
+#define HAS_OPROFILE 0
 
 #if (HAS_OPROFILE)
 #include <libopagent.h>
@@ -80,7 +80,9 @@ typedef enum {
 	MONO_PROFILER_EVENT_GC_COLLECTION = 2,
 	MONO_PROFILER_EVENT_GC_MARK = 3,
 	MONO_PROFILER_EVENT_GC_SWEEP = 4,
-	MONO_PROFILER_EVENT_GC_RESIZE = 5
+	MONO_PROFILER_EVENT_GC_RESIZE = 5,
+	MONO_PROFILER_EVENT_GC_STOP_WORLD = 6,
+	MONO_PROFILER_EVENT_GC_START_WORLD = 7
 } MonoProfilerEvents;
 typedef enum {
 	MONO_PROFILER_EVENT_KIND_START = 0,
@@ -418,12 +420,12 @@ static MonoProfiler *profiler;
 
 
 #define DEBUG_LOAD_EVENTS 0
-#define DEBUG_MAPPING_EVENTS 1
+#define DEBUG_MAPPING_EVENTS 0
 #define DEBUG_LOGGING_PROFILER 0
-#define DEBUG_HEAP_PROFILER 1
-#define DEBUG_CLASS_BITMAPS 1
+#define DEBUG_HEAP_PROFILER 0
+#define DEBUG_CLASS_BITMAPS 0
 #define DEBUG_STATISTICAL_PROFILER 0
-#if (DEBUG_LOGGING_PROFILER || DEBUG_STATISTICAL_PROFILER || DEBUG_HEAP_PROFILER || DEBUG_CLASS_BITMAPS)
+#if (DEBUG_LOGGING_PROFILER || DEBUG_STATISTICAL_PROFILER || DEBUG_HEAP_PROFILER)
 #define LOG_WRITER_THREAD(m) printf ("WRITER-THREAD-LOG %s\n", m)
 #else
 #define LOG_WRITER_THREAD(m)
@@ -484,11 +486,19 @@ class_id_mapping_element_build_layout_bitmap (MonoClass *klass, ClassIdMappingEl
 	MonoClassField *field;
 	
 #if (DEBUG_CLASS_BITMAPS)
-	printf ("class_id_mapping_element_build_layout_bitmap: building layout for class %s: ", klass_id->name);
+	printf ("class_id_mapping_element_build_layout_bitmap: building layout for class %s.%s: ", mono_class_get_namespace (klass), mono_class_get_name (klass));
 #endif
+	
 	if (parent_class != NULL) {
 		parent_id = class_id_mapping_element_get (parent_class);
 		g_assert (parent_id != NULL);
+		
+		if (parent_id->data.layout.slots == CLASS_LAYOUT_NOT_INITIALIZED) {
+#if (DEBUG_CLASS_BITMAPS)
+			printf ("[recursively building bitmap for father class]\n");
+#endif
+			class_id_mapping_element_build_layout_bitmap (parent_class, parent_id);
+		}
 	} else {
 		parent_id = NULL;
 	}
@@ -512,6 +522,23 @@ class_id_mapping_element_build_layout_bitmap (MonoClass *klass, ClassIdMappingEl
 				ClassIdMappingElement *field_id = class_id_mapping_element_get (field_class);
 				g_assert (field_id != NULL);
 				
+				if (field_id->data.layout.slots == CLASS_LAYOUT_NOT_INITIALIZED) {
+					if (field_id != klass_id) {
+#if (DEBUG_CLASS_BITMAPS)
+						printf ("[recursively building bitmap for field %s]\n", mono_field_get_name (field));
+#endif
+						class_id_mapping_element_build_layout_bitmap (field_class, field_id);
+					} else {
+#if (DEBUG_CLASS_BITMAPS)
+						printf ("[breaking recursive bitmap build for field %s]", mono_field_get_name (field));
+						
+#endif
+						klass_id->data.bitmap.compact = 0;
+						klass_id->data.layout.slots = 0;
+						klass_id->data.layout.references = 0;
+					}
+				}
+				
 				if (field_id->data.layout.references > 0) {
 					int field_offset = mono_field_get_offset (field) - sizeof (MonoObject);
 					int max_offset_reference_in_field = (field_id->data.layout.slots - 1) * sizeof (gpointer);
@@ -527,28 +554,28 @@ class_id_mapping_element_build_layout_bitmap (MonoClass *klass, ClassIdMappingEl
 	}
 	
 #if (DEBUG_CLASS_BITMAPS)
-	printf ("[allocating bitmap for class %s (references %d, max offset %d, slots %d)]", klass_id->name, number_of_reference_fields, max_offset_of_reference_fields, (int)(max_offset_of_reference_fields / sizeof (gpointer)) + 1);
+	printf ("[allocating bitmap for class %s.%s (references %d, max offset %d, slots %d)]", mono_class_get_namespace (klass), mono_class_get_name (klass), number_of_reference_fields, max_offset_of_reference_fields, (int)(max_offset_of_reference_fields / sizeof (gpointer)) + 1);
 #endif
 	if ((number_of_reference_fields == 0) && ((parent_id == NULL) || (parent_id->data.layout.references == 0))) {
-		klass_id->data.bitmap.compact = 0;
-		klass_id->data.layout.slots = 0;
-		klass_id->data.layout.references = 0;
 #if (DEBUG_CLASS_BITMAPS)
 		printf ("[no references at all]");
 #endif
+		klass_id->data.bitmap.compact = 0;
+		klass_id->data.layout.slots = 0;
+		klass_id->data.layout.references = 0;
 	} else {
 		if ((parent_id != NULL) && (parent_id->data.layout.references > 0)) {
+#if (DEBUG_CLASS_BITMAPS)
+			printf ("[parent %s.%s has %d references in %d slots]", mono_class_get_namespace (parent_class), mono_class_get_name (parent_class), parent_id->data.layout.references, parent_id->data.layout.slots);
+#endif
 			klass_id->data.layout.slots = parent_id->data.layout.slots;
 			klass_id->data.layout.references = parent_id->data.layout.references;
-#if (DEBUG_CLASS_BITMAPS)
-			printf ("[parent %s has %d references in %d slots]", parent_id->name, parent_id->data.layout.references, parent_id->data.layout.slots);
-#endif
 		} else {
-			klass_id->data.layout.slots = 0;
-			klass_id->data.layout.references = 0;
 #if (DEBUG_CLASS_BITMAPS)
 			printf ("[no references from parent]");
 #endif
+			klass_id->data.layout.slots = 0;
+			klass_id->data.layout.references = 0;
 		}
 		
 		if (number_of_reference_fields > 0) {
@@ -560,41 +587,41 @@ class_id_mapping_element_build_layout_bitmap (MonoClass *klass, ClassIdMappingEl
 		}
 		
 		if (klass_id->data.layout.slots <= CLASS_LAYOUT_PACKED_BITMAP_SIZE) {
-			klass_id->data.bitmap.compact = 0;
 #if (DEBUG_CLASS_BITMAPS)
 				printf ("[zeroing bitmap]");
 #endif
+				klass_id->data.bitmap.compact = 0;
 			if ((parent_id != NULL) && (parent_id->data.layout.references > 0)) {
-				klass_id->data.bitmap.compact = parent_id->data.bitmap.compact;
 #if (DEBUG_CLASS_BITMAPS)
 				printf ("[copying compact father bitmap]");
 #endif
+				klass_id->data.bitmap.compact = parent_id->data.bitmap.compact;
 			}
 		} else {
 			int size_of_bitmap = klass_id->data.layout.slots;
 			BITS_TO_BYTES (size_of_bitmap);
-			klass_id->data.bitmap.extended = g_malloc0 (size_of_bitmap);
 #if (DEBUG_CLASS_BITMAPS)
 			printf ("[allocating %d bytes for bitmap]", size_of_bitmap);
 #endif
+			klass_id->data.bitmap.extended = g_malloc0 (size_of_bitmap);
 			if ((parent_id != NULL) && (parent_id->data.layout.references > 0)) {
 				int size_of_father_bitmap = parent_id->data.layout.slots;
 				if (size_of_father_bitmap <= CLASS_LAYOUT_PACKED_BITMAP_SIZE) {
 					int father_slot;
+#if (DEBUG_CLASS_BITMAPS)
+					printf ("[copying %d bits from father bitmap]", size_of_father_bitmap);
+#endif
 					for (father_slot = 0; father_slot < size_of_father_bitmap; father_slot ++) {
 						if (parent_id->data.bitmap.compact & (((guint64)1) << father_slot)) {
 							klass_id->data.bitmap.extended [father_slot >> 3] |= (1 << (father_slot & 7));
 						}
 					}
-#if (DEBUG_CLASS_BITMAPS)
-					printf ("[copying %d bits from father bitmap]", size_of_father_bitmap);
-#endif
 				} else {
 					BITS_TO_BYTES (size_of_father_bitmap);
-					memcpy (klass_id->data.bitmap.extended, parent_id->data.bitmap.extended, size_of_father_bitmap);
 #if (DEBUG_CLASS_BITMAPS)
 					printf ("[copying %d bytes from father bitmap]", size_of_father_bitmap);
 #endif
+					memcpy (klass_id->data.bitmap.extended, parent_id->data.bitmap.extended, size_of_father_bitmap);
 				}
 			}
 		}
@@ -673,7 +700,7 @@ class_id_mapping_element_build_layout_bitmap (MonoClass *klass, ClassIdMappingEl
 #if (DEBUG_CLASS_BITMAPS)
 	do {
 		int slot;
-		printf ("Layot of class \"%s\": references %d, slots %d, bitmap {", klass_id->name, klass_id->data.layout.references, klass_id->data.layout.slots);
+		printf ("\nLayot of class \"%s.%s\": references %d, slots %d, bitmap {", mono_class_get_namespace (klass), mono_class_get_name (klass), klass_id->data.layout.references, klass_id->data.layout.slots);
 		for (slot = 0; slot < klass_id->data.layout.slots; slot ++) {
 			if (klass_id->data.layout.slots <= CLASS_LAYOUT_PACKED_BITMAP_SIZE) {
 				if (klass_id->data.bitmap.compact & (((guint64)1) << slot)) {
@@ -1204,8 +1231,14 @@ write_string (const char *string) {
 	WRITE_BYTE (0);
 }
 
+#if DEBUG_HEAP_PROFILER
+#define WRITE_HEAP_SHOT_JOB_VALUE_MESSAGE(v,c) printf ("WRITE_HEAP_SHOT_JOB_VALUE: writing value %p at cursor %p\n", (v), (c))
+#else
+#define WRITE_HEAP_SHOT_JOB_VALUE_MESSAGE(v,c)
+#endif
 #define WRITE_HEAP_SHOT_JOB_VALUE(j,v) do {\
 	if ((j)->cursor < (j)->end) {\
+		WRITE_HEAP_SHOT_JOB_VALUE_MESSAGE ((v), ((j)->cursor));\
 		*((j)->cursor) = (v);\
 		(j)->cursor ++;\
 	} else {\
@@ -1309,6 +1342,9 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 #endif
 			}
 		} else {
+#if DEBUG_HEAP_PROFILER
+			printf ("profiler_heap_shot_write_block: unknown code %d in value %p\n", code, value);
+#endif
 			g_assert_not_reached ();
 		}
 	}
@@ -1362,7 +1398,7 @@ write_clock_data (void) {
 }
 
 static void
-write_mapping_block (gsize thread_id, gboolean flushObjects) {
+write_mapping_block (gsize thread_id) {
 	ClassIdMappingElement *current_class;
 	MethodIdMappingElement *current_method;
 	
@@ -1925,7 +1961,7 @@ refresh_memory_regions (void) {
 }
 
 static void
-flush_all_mappings (gboolean flushObjects);
+flush_all_mappings (void);
 
 static void
 write_statistical_data_block (ProfilerStatisticalData *data) {
@@ -2045,14 +2081,14 @@ update_mapping (ProfilerPerThreadData *data) {
 }
 
 static void
-flush_all_mappings (gboolean flushObjects) {
+flush_all_mappings (void) {
 	ProfilerPerThreadData *data;
 	
 	for (data = profiler->per_thread_data; data != NULL; data = data->next) {
 		update_mapping (data);
 	}
 	for (data = profiler->per_thread_data; data != NULL; data = data->next) {
-		write_mapping_block (data->thread_id, flushObjects);
+		write_mapping_block (data->thread_id);
 	}
 }
 
@@ -2062,7 +2098,7 @@ flush_full_event_data_buffer (ProfilerPerThreadData *data) {
 	
 	// We flush all mappings because some id definitions could come
 	// from other threads
-	flush_all_mappings (FALSE);
+	flush_all_mappings ();
 	g_assert (data->first_unmapped_event == data->end_event);
 	
 	write_thread_data_block (data);
@@ -2085,10 +2121,10 @@ flush_full_event_data_buffer (ProfilerPerThreadData *data) {
 } while (0)
 
 static void
-flush_everything (gboolean flushObjects) {
+flush_everything (void) {
 	ProfilerPerThreadData *data;
 	
-	flush_all_mappings (flushObjects);
+	flush_all_mappings ();
 	for (data = profiler->per_thread_data; data != NULL; data = data->next) {
 		write_thread_data_block (data);
 	}
@@ -2119,7 +2155,7 @@ static void
 appdomain_start_unload (MonoProfiler *profiler, MonoDomain *domain) {
 	LOCK_PROFILER ();
 	loaded_element_unload_start (profiler->loaded_appdomains, domain);
-	flush_everything (FALSE);
+	flush_everything ();
 	UNLOCK_PROFILER ();
 }
 
@@ -2158,7 +2194,7 @@ static void
 module_start_unload (MonoProfiler *profiler, MonoImage *module) {
 	LOCK_PROFILER ();
 	loaded_element_unload_start (profiler->loaded_modules, module);
-	flush_everything (FALSE);
+	flush_everything ();
 	UNLOCK_PROFILER ();
 }
 
@@ -2197,7 +2233,7 @@ static void
 assembly_start_unload (MonoProfiler *profiler, MonoAssembly *assembly) {
 	LOCK_PROFILER ();
 	loaded_element_unload_start (profiler->loaded_assemblies, assembly);
-	flush_everything (FALSE);
+	flush_everything ();
 	UNLOCK_PROFILER ();
 }
 static void
@@ -2233,11 +2269,13 @@ method_event_code_to_string (MonoProfilerClassEvents code) {
 static const char*
 number_event_code_to_string (MonoProfilerEvents code) {
 	switch (code) {
-	case MONO_PROFILER_EVENT_THREAD: return "HREAD";
+	case MONO_PROFILER_EVENT_THREAD: return "THREAD";
 	case MONO_PROFILER_EVENT_GC_COLLECTION: return "GC_COLLECTION";
 	case MONO_PROFILER_EVENT_GC_MARK: return "GC_MARK";
 	case MONO_PROFILER_EVENT_GC_SWEEP: return "GC_SWEEP";
 	case MONO_PROFILER_EVENT_GC_RESIZE: return "GC_RESIZE";
+	case MONO_PROFILER_EVENT_GC_STOP_WORLD: return "GC_STOP_WORLD";
+	case MONO_PROFILER_EVENT_GC_START_WORLD: return "GC_START_WORLD";
 	default: g_assert_not_reached (); return "";
 	}
 }
@@ -2531,6 +2569,12 @@ gc_event_code_from_profiler_event (MonoGCEvent event) {
 	case MONO_GC_EVENT_RECLAIM_START:
 	case MONO_GC_EVENT_RECLAIM_END:
 		return MONO_PROFILER_EVENT_GC_SWEEP;
+	case MONO_GC_EVENT_PRE_STOP_WORLD:
+	case MONO_GC_EVENT_POST_STOP_WORLD:
+		return MONO_PROFILER_EVENT_GC_STOP_WORLD;
+	case MONO_GC_EVENT_PRE_START_WORLD:
+	case MONO_GC_EVENT_POST_START_WORLD:
+		return MONO_PROFILER_EVENT_GC_START_WORLD;
 	default:
 		g_assert_not_reached ();
 		return 0;
@@ -2543,10 +2587,14 @@ gc_event_kind_from_profiler_event (MonoGCEvent event) {
 	case MONO_GC_EVENT_START:
 	case MONO_GC_EVENT_MARK_START:
 	case MONO_GC_EVENT_RECLAIM_START:
+	case MONO_GC_EVENT_PRE_STOP_WORLD:
+	case MONO_GC_EVENT_PRE_START_WORLD:
 		return MONO_PROFILER_EVENT_KIND_START;
 	case MONO_GC_EVENT_END:
 	case MONO_GC_EVENT_MARK_END:
 	case MONO_GC_EVENT_RECLAIM_END:
+	case MONO_GC_EVENT_POST_START_WORLD:
+	case MONO_GC_EVENT_POST_STOP_WORLD:
 		return MONO_PROFILER_EVENT_KIND_END;
 	default:
 		g_assert_not_reached ();
@@ -2625,6 +2673,9 @@ profiler_heap_report_object_reachable (ProfilerHeapShotWriteJob *job, MonoObject
 		gpointer *reference_counter_location;
 		
 		WRITE_HEAP_SHOT_JOB_VALUE_WITH_CODE (job, obj, HEAP_CODE_OBJECT);
+#if DEBUG_HEAP_PROFILER
+		printf ("profiler_heap_report_object_reachable: reported object %p at cursor %p\n", obj, (job->cursor - 1));
+#endif
 		WRITE_HEAP_SHOT_JOB_VALUE (job, NULL);
 		reference_counter_location = job->cursor - 1;
 		
@@ -2650,11 +2701,10 @@ profiler_heap_report_object_reachable (ProfilerHeapShotWriteJob *job, MonoObject
 			} else if (element_id->data.layout.references > 0) {
 				int length = mono_array_length (array);
 				int array_element_size = mono_array_element_size (klass);
-				int counter = 0;
 				int i;
 				for (i = 0; i < length; i++) {
 					gpointer array_element_address = mono_array_addr_with_size (array, array_element_size, i);
-					counter += report_object_references (array_element_address, element_id, job);
+					reference_counter += report_object_references (array_element_address, element_id, job);
 				}
 			}
 		} else {
@@ -2667,11 +2717,14 @@ profiler_heap_report_object_reachable (ProfilerHeapShotWriteJob *job, MonoObject
 				class_id_mapping_element_build_layout_bitmap (klass, class_id);
 			}
 			if (class_id->data.layout.references > 0) {
-				reference_counter += report_object_references ((gpointer) (obj + sizeof (MonoObject)), class_id, job);
+				reference_counter += report_object_references ((gpointer)(((char*)obj) + sizeof (MonoObject)), class_id, job);
 			}
 		}
 		
 		*reference_counter_location = GINT_TO_POINTER (reference_counter);
+#if DEBUG_HEAP_PROFILER
+		printf ("profiler_heap_report_object_reachable: updated reference_counter_location %p with value %d\n", reference_counter_location, reference_counter);
+#endif
 	}
 }
 static void
@@ -2770,9 +2823,18 @@ profiler_heap_scan (ProfilerHeapShotHeapBuffers *heap, ProfilerHeapShotWriteJob 
 }
 
 static void
-gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
-	STORE_EVENT_NUMBER_COUNTER (profiler, generation, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, gc_event_code_from_profiler_event (ev), gc_event_kind_from_profiler_event (ev));
-	if ((ev == MONO_GC_EVENT_MARK_END) && (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot)) {
+handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
+	switch (ev) {
+	case MONO_GC_EVENT_PRE_STOP_WORLD:
+		// Get the lock, so we are sure nobody is flushing events during the collection,
+		// and we can update all mappings (building the class descriptors).
+		LOCK_PROFILER ();
+		break;
+	case MONO_GC_EVENT_POST_STOP_WORLD:
+		// Update all mappings, so that we have built all the class descriptors.
+		flush_all_mappings ();
+		break;
+	case MONO_GC_EVENT_MARK_END: {
 		ProfilerHeapShotWriteJob *job = profiler_heap_shot_write_job_new ();
 		ProfilerPerThreadData *data;
 		
@@ -2788,11 +2850,17 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 				for (cursor = buffer->first_unprocessed_slot; cursor < buffer->next_free_slot; cursor ++) {
 					MonoObject *obj = *cursor;
 #if DEBUG_HEAP_PROFILER
-					printf ("gc_event: in object buffer %p(%p-%p) cursor at %p has object %p\n", buffer, &(buffer->buffer [0]), buffer->end, cursor, obj);
+					printf ("gc_event: in object buffer %p(%p-%p) cursor at %p has object %p ", buffer, &(buffer->buffer [0]), buffer->end, cursor, obj);
 #endif
 					if (mono_object_is_alive (obj)) {
+#if DEBUG_HEAP_PROFILER
+						printf ("(object is alive, adding to heap)\n");
+#endif
 						profiler_heap_add_object (&(profiler->heap), job, obj);
 					} else {
+#if DEBUG_HEAP_PROFILER
+						printf ("(object is unreachable, reporting in job)\n");
+#endif
 						profiler_heap_report_object_unreachable (job, obj);
 					}
 				}
@@ -2805,6 +2873,22 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 		profiler_add_heap_shot_write_job (job);
 		profiler_free_heap_shot_write_jobs ();
 		WRITER_EVENT_RAISE ();
+		break;
+	}
+	case MONO_GC_EVENT_PRE_START_WORLD:
+		// Release lock...
+		UNLOCK_PROFILER ();
+		break;
+	default:
+		break;
+	}
+}
+
+static void
+gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
+	STORE_EVENT_NUMBER_COUNTER (profiler, generation, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, gc_event_code_from_profiler_event (ev), gc_event_kind_from_profiler_event (ev));
+	if (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot) {
+		handle_heap_profiling (profiler, ev);
 	}
 }
 
@@ -2838,7 +2922,7 @@ profiler_shutdown (MonoProfiler *prof)
 	MONO_PROFILER_GET_CURRENT_TIME (profiler->end_time);
 	MONO_PROFILER_GET_CURRENT_COUNTER (profiler->end_counter);
 	
-	flush_everything (FALSE);
+	flush_everything ();
 	write_end_block ();
 	FLUSH_FILE ();
 	CLOSE_FILE();
@@ -3003,7 +3087,7 @@ data_writer_thread (gpointer nothing) {
 			
 			// This makes sure that all method ids are in place
 			LOG_WRITER_THREAD ("data_writer_thread: writing mapping...");
-			flush_all_mappings (FALSE);
+			flush_all_mappings ();
 			LOG_WRITER_THREAD ("data_writer_thread: wrote mapping");
 			
 			if (statistical_data != NULL) {
