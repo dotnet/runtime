@@ -152,6 +152,8 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, g
 static int
 get_stack_type (MonoType *type);
 
+static gboolean
+mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
 //////////////////////////////////////////////////////////////////
 
 
@@ -2280,6 +2282,103 @@ verify_stack_type_compatibility (VerifyContext *ctx, MonoType *type, ILStackDesc
 	return verify_type_compatibility_full (ctx, type, candidate, FALSE);
 }
 
+static gboolean
+mono_delegate_type_equal (MonoType *target, MonoType *candidate)
+{
+	if (candidate->byref ^ target->byref)
+		return FALSE;
+
+	switch (target->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_TYPEDBYREF:
+		return candidate->type == target->type;
+
+	case MONO_TYPE_PTR:
+		return mono_delegate_type_equal (target->data.type, candidate->data.type);
+
+	case MONO_TYPE_FNPTR:
+		if (candidate->type != MONO_TYPE_FNPTR)
+			return FALSE;
+		return mono_delegate_signature_equal (mono_type_get_signature (target), mono_type_get_signature (candidate));
+
+	case MONO_TYPE_GENERICINST:
+		//TODO implement me
+		g_assert_not_reached ();
+		return FALSE;
+
+		return candidate->type == MONO_TYPE_STRING;
+	
+	case MONO_TYPE_OBJECT:
+		return MONO_TYPE_IS_REFERENCE (candidate);
+
+	case MONO_TYPE_CLASS:
+		if (candidate->type != MONO_TYPE_CLASS)
+			return FALSE;
+		return mono_class_is_assignable_from(target->data.klass, candidate->data.klass);
+
+	case MONO_TYPE_SZARRAY:
+		if (candidate->type != MONO_TYPE_SZARRAY)
+			return FALSE;
+		return mono_class_is_assignable_from (target->data.array->eklass, candidate->data.array->eklass);
+
+	case MONO_TYPE_ARRAY:
+		if (candidate->type != MONO_TYPE_ARRAY)
+			return FALSE;
+		return is_array_type_compatible (target, candidate);
+
+	case MONO_TYPE_VALUETYPE:
+		return candidate->type == MONO_TYPE_VALUETYPE && target->data.klass == candidate->data.klass;
+
+	case MONO_TYPE_VAR:
+		//TODO implement me
+		g_assert_not_reached ();
+		return FALSE;
+
+	case MONO_TYPE_MVAR:
+		//TODO implement me
+		g_assert_not_reached ();
+		return FALSE;
+
+	default:
+		VERIFIER_DEBUG ( printf ("Unknown type %d. Implement me!\n", target->type); );
+		g_assert_not_reached ();
+		return FALSE;
+	}
+}
+
+static gboolean
+mono_delegate_param_equal (MonoType *delegate, MonoType *method)
+{
+	if (mono_metadata_type_equal_full (delegate, method, TRUE))
+		return TRUE;
+
+	return mono_delegate_type_equal (method, delegate);
+}
+
+static gboolean
+mono_delegate_ret_equal (MonoType *delegate, MonoType *method)
+{
+	if (mono_metadata_type_equal_full (delegate, method, TRUE))
+		return TRUE;
+
+	return mono_delegate_type_equal (delegate, method);
+}
+
 /*
  * mono_delegate_signature_equal:
  * 
@@ -2293,24 +2392,24 @@ static gboolean
 mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
 {
 	int i;
-
-	//FIXME do we need to check for explicit_this?
-	//We don't check for has_this since this is irrelevant for delegate signatures
 	if (sig1->param_count != sig2->param_count) 
 		return FALSE;
 
 	if (sig1->generic_param_count != sig2->generic_param_count)
+		return FALSE;
+	
+	if (sig1->call_convention != sig2->call_convention)
 		return FALSE;
 
 	for (i = 0; i < sig1->param_count; i++) { 
 		MonoType *p1 = sig1->params [i];
 		MonoType *p2 = sig2->params [i];
 
-		if (!mono_metadata_type_equal_full (p1, p2, TRUE))
+		if (!mono_delegate_param_equal (p1, p2))
 			return FALSE;
 	}
 
-	if (!mono_metadata_type_equal_full (sig1->ret, sig2->ret, TRUE))
+	if (!mono_delegate_ret_equal (sig1->ret, sig2->ret))
 		return FALSE;
 
 	return TRUE;
