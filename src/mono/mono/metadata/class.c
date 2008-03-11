@@ -121,7 +121,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 				i = mono_metadata_nesting_typedef (enclosing->image, enclosing->type_token, i + 1);
 			}
 		}
-		g_warning ("TypeRef ResolutionScope not yet handled (%d)", idx);
+		g_warning ("TypeRef ResolutionScope not yet handled (%d) for %s.%s in image %s", idx, nspace, name, image->name);
 		return NULL;
 	}
 	case MONO_RESOLTION_SCOPE_ASSEMBLYREF:
@@ -3637,6 +3637,16 @@ mono_class_init (MonoClass *class)
 	return class_init_ok;
 }
 
+static gboolean
+is_corlib_image (MonoImage *image)
+{
+	/* FIXME: allow the dynamic case for our compilers and with full trust */
+	if (image->dynamic)
+		return image->assembly && !strcmp (image->assembly->aname.name, "mscorlib");
+	else
+		return image == mono_defaults.corlib;
+}
+
 /*
  * LOCKING: this assumes the loader lock is held
  */
@@ -3645,12 +3655,7 @@ mono_class_setup_mono_type (MonoClass *class)
 {
 	const char *name = class->name;
 	const char *nspace = class->name_space;
-	gboolean is_corlib;
-
-	if (class->image->dynamic)
-		is_corlib = class->image->assembly && !strcmp (class->image->assembly->aname.name, "mscorlib");
-	else
-		is_corlib = class->image == mono_defaults.corlib;
+	gboolean is_corlib = is_corlib_image (class->image);
 
 	class->this_arg.byref = 1;
 	class->this_arg.data.klass = class;
@@ -3774,8 +3779,9 @@ void
 mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 {
 	gboolean system_namespace;
+	gboolean is_corlib = is_corlib_image (class->image);
 
-	system_namespace = !strcmp (class->name_space, "System");
+	system_namespace = !strcmp (class->name_space, "System") && is_corlib;
 
 	/* if root of the hierarchy */
 	if (system_namespace && !strcmp (class->name, "Object")) {
@@ -3798,9 +3804,9 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 		}
 		class->parent = parent;
 
-
-		if (!parent)
-			g_assert_not_reached (); /* FIXME */
+		if (!parent) {
+			return;
+		}
 
 		if (parent->generic_class && !parent->name) {
 			/*
@@ -3830,10 +3836,10 @@ mono_class_setup_parent (MonoClass *class, MonoClass *parent)
 				class->delegate  = 1;
 		}
 
-		if (class->parent->enumtype || ((strcmp (class->parent->name, "ValueType") == 0) && 
+		if (class->parent->enumtype || (is_corlib_image (class->parent->image) && (strcmp (class->parent->name, "ValueType") == 0) && 
 						(strcmp (class->parent->name_space, "System") == 0)))
 			class->valuetype = 1;
-		if (((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
+		if (is_corlib_image (class->parent->image) && ((strcmp (class->parent->name, "Enum") == 0) && (strcmp (class->parent->name_space, "System") == 0))) {
 			class->valuetype = class->enumtype = 1;
 		}
 		/*class->enumtype = class->parent->enumtype; */
