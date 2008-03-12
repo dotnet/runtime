@@ -1,3 +1,7 @@
+2008-03-12  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* scripts/Makefile.am : added xsd2.
+
 2008-03-12  Geoff Norton  <gnorton@novell.com>
 
 	* build-iphone.sh: A autogen/make wrapper to define everything to build
