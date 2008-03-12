@@ -16,10 +16,12 @@
 #include "config.h"
 #include <mono/metadata/exception.h>
 #include <stdio.h>
-#include <memory.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#ifdef HAVE_MEMORY_H
+#include <memory.h>
+#endif
 
 #ifndef DISABLE_DECIMAL
 
