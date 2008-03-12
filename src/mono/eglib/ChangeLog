@@ -1,3 +1,15 @@
+2008-03-12  Geoff Norton  <gnorton@novell.com>
+
+	* src/gutf8.c: Implement g_ucs4_to_utf16 and g_utf16_to_ucs4 as
+	asserts.  They're needed to build mono with eglib.
+	* src/gutil.h: Add a few missing function declarations to the header.
+	* src/gspawn.c: Some darwin implementations don't have crt_externs.h
+	So we'll just define _NSGetEnviron() ourselves.
+	* Makefile.am: Dont build test when cross compiling.
+	* configure.ac: Define CROSS_COMPILING when cross compiling.
+	Undefine _FORTIFY_SOURCE on arm-apple-darwin as the headers it 
+	requires are not available.
+
 2008-01-15  Andreas Faerber  <andreas.faerber@web.de>
 
 	* configure.ac: Add default G_BREAKPOINT implementation.

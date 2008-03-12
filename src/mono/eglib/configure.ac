@@ -25,6 +25,7 @@ AC_SUBST(GNUC_UNUSED)
 AC_SUBST(GNUC_NORETURN)
 AC_SUBST(BREAKPOINT)
 
+AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
 AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
 AC_SUBST(ORDER)
 
@@ -38,6 +39,12 @@ case $host in
     PATHSEP='/'
     SEARCHSEP=':'
     OS="UNIX"
+    ;;
+esac
+
+case $target in
+arm*-darwin*)
+    CFLAGS="$CLAFGS -U_FORTIFY_SOURCE"
     ;;
 esac
 

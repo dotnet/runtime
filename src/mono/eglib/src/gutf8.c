@@ -379,3 +379,19 @@ utf16_to_utf8_len (const gunichar2 *str, glong len, glong *items_read, GError **
 		*items_read = in_pos;
 	return ret;
 }
+
+gunichar2*
+g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error)
+{
+	g_assert_not_reached ();
+
+	return NULL;
+}
+
+gunichar*
+g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error)
+{
+	g_assert_not_reached ();
+
+	return NULL;
+}

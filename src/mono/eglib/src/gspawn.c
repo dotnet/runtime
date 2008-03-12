@@ -64,7 +64,11 @@
 #define CLOSE_PIPE(p) do { close (p [0]); close (p [1]); } while (0)
 
 #ifdef __APPLE__
-#include <crt_externs.h>
+/* Apple defines this in crt_externs.h but doesn't provide that header for 
+ * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
+ * in fact exist on all implementations (so far) 
+ */
+gchar ***_NSGetEnviron();
 #define environ *_NSGetEnviron();
 #endif
 

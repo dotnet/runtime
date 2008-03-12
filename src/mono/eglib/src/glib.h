@@ -197,6 +197,7 @@ typedef struct {
 	gchar   *message;
 } GError;
 
+void    g_clear_error (GError **error);
 void    g_error_free (GError *error);
 GError *g_error_new  (gpointer domain, gint code, const char *format, ...);
 void    g_set_error  (GError **err, gpointer domain, gint code, const gchar *format, ...);
@@ -559,8 +560,8 @@ typedef enum {
 	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH
 } GConvertError;
 
-gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong     *items_written, GError **error);
-gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong     *items_written, GError **error);
+gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **error);
+gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error);
 
 #define u8to16(str) g_utf8_to_utf16(str, (glong)strlen(str), NULL, NULL, NULL)
 
