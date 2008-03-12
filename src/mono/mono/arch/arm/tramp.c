@@ -12,6 +12,7 @@
 #	include <windows.h>
 #endif
 
+#if !defined(PLATFORM_MACOSX)
 #include <errno.h>
 
 #include "mono/metadata/class.h"
@@ -705,4 +706,4 @@ MonoMethod* mono_method_pointer_get (void* code)
 	    c[7] == 'o') return ((MonoMethod**)code)[2];
 	return NULL;
 }
-
+#endif
