@@ -232,6 +232,9 @@ case "$host" in
 		no_version_script=yes
 		libdl=
 		libgc_threads=pthreads
+		if test "x$cross_compiling" = "xyes"; then
+			has_broken_apple_cpp=yes
+		fi
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.in checks!])
@@ -1300,11 +1303,13 @@ if test x$platform_win32 = xno; then
 	dnl *** Checks for math functions ***
 	dnl *********************************
         LIBS="$LIBS -lm";
-        AC_CHECK_FUNCS(finite, , AC_MSG_CHECKING(for finite in math.h)
-                AC_TRY_LINK([#include <math.h>], 
-                [ finite(0.0); ], 
-                AC_DEFINE(HAVE_FINITE) AC_MSG_RESULT(yes),
-                AC_MSG_RESULT(no)))
+	if text "x$has_broken_apple_cpp" != "xyes"; then
+	        AC_CHECK_FUNCS(finite, , AC_MSG_CHECKING(for finite in math.h)
+	                AC_TRY_LINK([#include <math.h>], 
+	                [ finite(0.0); ], 
+	                AC_DEFINE(HAVE_FINITE) AC_MSG_RESULT(yes),
+	                AC_MSG_RESULT(no)))
+	fi
         AC_CHECK_FUNCS(isfinite, , AC_MSG_CHECKING(for isfinite in math.h)
                 AC_TRY_LINK([#include <math.h>], 
                 [ isfinite(0.0); ], 
@@ -1779,6 +1784,14 @@ case "$host" in
 		JIT_SUPPORTED=yes
 		jit_wanted=true
 		;;
+	arm*-darwin*)
+		TARGET=ARM;
+		arch_target=arm;
+		ACCESS_UNALIGNED="no"
+		JIT_SUPPORTED=yes
+		CPPFLAGS="$CPPFLAGS -DARM_FPU_NONE=1"
+		jit_wanted=true
+		;;
 	arm*-linux*)
 		TARGET=ARM;
 		arch_target=arm;
@@ -1949,7 +1962,7 @@ if test "x$with_tls" = "x__thread"; then
 	])
 fi
 
-if test ${TARGET} = ARM; then
+if test ${TARGET} = ARM && test x$cross_compiling = xno && test x$enable_mcs_build != xno; then
 	dnl ******************************************
 	dnl *** Check to see what FPU is available ***
 	dnl ******************************************

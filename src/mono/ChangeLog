@@ -1,3 +1,9 @@
+2008-03-12  Geoff Norton  <gnorton@novell.com>
+
+	* build-iphone.sh: A autogen/make wrapper to define everything to build
+	mono for the iphone.
+	* configure.in: Add support for arm-apple-darwin (iPhone).
+
 2008-03-05  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/Makefile.am: fix typo so that 'scripts_defaults' scripts get
