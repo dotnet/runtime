@@ -5385,6 +5385,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			int temp, array_rank = 0;
 			int virtual = *ip == CEE_CALLVIRT;
 			gboolean no_spill;
+			int context_used = 0;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -5463,9 +5464,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cfg->generic_sharing_context && cmethod && cmethod->klass->generic_container)
 				UNVERIFIED;
 
-			if (cfg->generic_sharing_context && cmethod && mono_method_check_context_used (cmethod))
-				GENERIC_SHARING_FAILURE (*ip);
-
 			CHECK_STACK (n);
 
 			//g_assert (!virtual || fsig->hasthis);
@@ -5512,6 +5510,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (*ip != CEE_CALLI && check_call_signature (cfg, fsig, sp))
 				UNVERIFIED;
+
+			if (cfg->generic_sharing_context && cmethod) {
+				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
+
+				context_used = mono_method_check_context_used (cmethod);
+
+				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
+					GENERIC_SHARING_FAILURE (*ip);
+
+				if (context_used &&
+						((cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) ||
+						(cmethod_context && cmethod_context->method_inst) ||
+						cmethod->klass->valuetype ||
+						(cmethod->flags & METHOD_ATTRIBUTE_STATIC))) {
+					GENERIC_SHARING_FAILURE (*ip);
+				}
+			}
 
 			if (cmethod && virtual && 
 			    (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && 
@@ -5560,6 +5575,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((ins_flag & MONO_INST_TAILCALL) && cmethod && (*ip == CEE_CALL) &&
 				 (mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)))) {
 				int i;
+
+				GENERIC_SHARING_FAILURE (*ip);
 
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
 				INLINE_FAILURE;

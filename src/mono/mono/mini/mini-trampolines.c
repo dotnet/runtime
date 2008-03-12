@@ -89,6 +89,8 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
 	gpointer *vtable_slot;
+	gboolean generic_shared = FALSE;
+	MonoMethod *declaring = NULL;
 
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	if (m == MONO_FAKE_VTABLE_METHOD) {
@@ -142,6 +144,66 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	}
 #endif
 
+	if (mono_method_check_context_used (m)) {
+		MonoClass *klass = NULL;
+		MonoMethod *actual_method = NULL;
+		MonoVTable *vt = NULL;
+
+		vtable_slot = NULL;
+		generic_shared = TRUE;
+
+		g_assert (code);
+
+
+		if (m->flags & METHOD_ATTRIBUTE_STATIC) {
+			g_assert_not_reached ();
+		} else {
+			MonoObject *this_argument = mono_arch_find_this_argument ((gpointer*)regs, m,
+				get_generic_context (code));
+
+			vt = this_argument->vtable;
+			vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+
+			g_assert (this_argument->vtable->klass->inited);
+			//mono_class_init (this_argument->vtable->klass);
+
+			if (!vtable_slot)
+				klass = this_argument->vtable->klass->supertypes [m->klass->idepth - 1];
+		}
+
+		g_assert (vtable_slot || klass);
+
+		if (vtable_slot) {
+			int displacement = vtable_slot - ((gpointer*)vt);
+
+			g_assert_not_reached ();
+
+			g_assert (displacement > 0);
+
+			actual_method = vt->klass->vtable [displacement];
+		} else {
+			int i;
+
+			if (m->is_inflated)
+				declaring = mono_method_get_declaring_generic_method (m);
+			else
+				declaring = m;
+
+			for (i = 0; i < klass->method.count; ++i) {
+				actual_method = klass->methods [i];
+				if (actual_method->is_inflated) {
+					if (mono_method_get_declaring_generic_method (actual_method) == declaring)
+						break;
+				}
+			}
+
+			g_assert (mono_method_get_declaring_generic_method (actual_method) == declaring);
+		}
+
+		g_assert (actual_method);
+		m = actual_method;
+	}
+
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
@@ -166,7 +228,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			*vtable_slot = mono_get_addr_from_ftnptr (addr);
 		}
 	}
-	else {
+	else if (!generic_shared || mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
 		/* Patch calling code */
