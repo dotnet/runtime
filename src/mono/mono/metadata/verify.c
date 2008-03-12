@@ -2151,6 +2151,8 @@ handle_enum:
 	}
 
 	case MONO_TYPE_PTR:
+		if (!IS_STRICT_MODE (ctx) && IS_ONE_OF2 (candidate->type, MONO_TYPE_I, MONO_TYPE_U))
+			return TRUE;
 		if (candidate->type != MONO_TYPE_PTR)
 			return FALSE;
 		/* check the underlying type */
