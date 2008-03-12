@@ -6712,7 +6712,7 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 		if (friend->public_key_token [0]) {
 			if (!accessing->aname.public_key_token [0])
 				continue;
-			if (strcmp ((char*)friend->public_key_token, (char*)accessing->aname.public_key_token))
+			if (!mono_public_tokens_are_equal (friend->public_key_token, accessing->aname.public_key_token))
 				continue;
 		}
 		return TRUE;
