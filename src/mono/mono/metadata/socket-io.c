@@ -617,28 +617,39 @@ static MonoImage *system_assembly=NULL;
 #ifdef AF_INET6
 static gint32 get_family_hint(void)
 {
-	MonoClass *socket_class;
-	MonoClassField *ipv6_field, *ipv4_field;
-	gint32 ipv6_enabled = -1, ipv4_enabled = -1;
-	MonoVTable *vtable;
+	MonoDomain *domain = mono_domain_get ();
 
-	socket_class = mono_class_from_name (system_assembly,
-					     "System.Net.Sockets", "Socket");
-	ipv4_field = mono_class_get_field_from_name (socket_class,
-						     "ipv4Supported");
-	ipv6_field = mono_class_get_field_from_name (socket_class,
-						     "ipv6Supported");
-	vtable = mono_class_vtable (mono_domain_get (), socket_class);
+	if (!domain->inet_family_hint) {
+		MonoClass *socket_class;
+		MonoClassField *ipv6_field, *ipv4_field;
+		gint32 ipv6_enabled = -1, ipv4_enabled = -1;
+		MonoVTable *vtable;
 
-	mono_field_static_get_value(vtable, ipv4_field, &ipv4_enabled);
-	mono_field_static_get_value(vtable, ipv6_field, &ipv6_enabled);
+		socket_class = mono_class_from_name (system_assembly, "System.Net.Sockets", "Socket");
+		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4Supported");
+		ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6Supported");
+		vtable = mono_class_vtable (mono_domain_get (), socket_class);
+		mono_runtime_class_init (vtable);
 
-	if(ipv4_enabled == 1 && ipv6_enabled == 1) {
-		return(PF_UNSPEC);
-	} else if(ipv4_enabled == 1) {
-		return(PF_INET);
-	} else {
-		return(PF_INET6);
+		mono_field_static_get_value (vtable, ipv4_field, &ipv4_enabled);
+		mono_field_static_get_value (vtable, ipv6_field, &ipv6_enabled);
+
+		mono_domain_lock (domain);
+		if (ipv4_enabled == 1 && ipv6_enabled == 1) {
+			domain->inet_family_hint = 1;
+		} else if (ipv4_enabled == 1) {
+			domain->inet_family_hint = 2;
+		} else {
+			domain->inet_family_hint = 3;
+		}
+		mono_domain_unlock (domain);
+	}
+	switch (domain->inet_family_hint) {
+	case 1: return PF_UNSPEC;
+	case 2: return PF_INET;
+	case 3: return PF_INET6;
+	default:
+		return PF_UNSPEC;
 	}
 }
 #endif
