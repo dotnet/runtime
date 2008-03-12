@@ -2429,7 +2429,7 @@ verify_ldftn_delegate (VerifyContext *ctx, MonoClass *delegate, ILStackDesc *val
 	 * the object is a this arg (comes from a ldarg.0), and there is no starg.0.
 	 * This rules doesn't apply if the object on stack is a boxed valuetype.
 	 */
-	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL) && !stack_slot_is_boxed_value (value)) {
+	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL) && !(method->klass->flags & TYPE_ATTRIBUTE_SEALED) && !stack_slot_is_boxed_value (value)) {
 		/*A stdarg 0 must not happen, we fail here only in fail fast mode to avoid double error reports*/
 		if (IS_FAIL_FAST_MODE (ctx) && ctx->has_this_store)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid ldftn with virtual function in method with stdarg 0 at  0x%04x", ctx->ip_offset));
