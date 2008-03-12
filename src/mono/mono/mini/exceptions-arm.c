@@ -80,6 +80,9 @@ typedef struct ucontext {
  * We define our own version here and use it instead.
  */
 
+#if __APPLE__
+#define my_ucontext ucontext_t
+#else
 typedef struct my_ucontext {
 	unsigned long       uc_flags;
 	struct my_ucontext *uc_link;
@@ -93,6 +96,7 @@ typedef struct my_ucontext {
 	 * we don't use them for now...
 	 */
 } my_ucontext;
+#endif
 
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
@@ -478,9 +482,9 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #else
 	my_ucontext *my_uc = sigctx;
 
-	mctx->eip = my_uc->sig_ctx.arm_pc;
-	mctx->ebp = my_uc->sig_ctx.arm_sp;
-	memcpy (&mctx->regs, &my_uc->sig_ctx.arm_r4, sizeof (gulong) * 8);
+	mctx->eip = UCONTEXT_REG_PC (my_uc);
+	mctx->ebp = UCONTEXT_REG_SP (my_uc);
+	memcpy (&mctx->regs, &UCONTEXT_REG_R4 (my_uc), sizeof (gulong) * 8);
 #endif
 }
 
@@ -497,9 +501,9 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 #else
 	my_ucontext *my_uc = ctx;
 
-	my_uc->sig_ctx.arm_pc = mctx->eip;
-	my_uc->sig_ctx.arm_sp = mctx->ebp;
-	memcpy (&my_uc->sig_ctx.arm_r4, &mctx->regs, sizeof (gulong) * 8);
+	UCONTEXT_REG_PC (my_uc) = mctx->eip;
+	UCONTEXT_REG_SP (my_uc) = mctx->ebp;
+	memcpy (&UCONTEXT_REG_R4 (my_uc), &mctx->regs, sizeof (gulong) * 8);
 #endif
 }
 
@@ -530,7 +534,7 @@ mono_arch_ip_from_context (void *sigctx)
 	return (gpointer)uc->uc_mcontext.gregs [ARMREG_PC];
 #else
 	my_ucontext *my_uc = sigctx;
-	return (void*)my_uc->sig_ctx.arm_pc;
+	return (void*) UCONTEXT_REG_PC (my_uc);
 #endif
 }
 

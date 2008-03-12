@@ -437,6 +437,10 @@ guint32
 mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 {
 	guint32 opts = 0;
+#if __APPLE__
+	thumb_supported = TRUE;
+	v5_supported = TRUE;
+#else
 	char buf [512];
 	char *line;
 	FILE *file = fopen ("/proc/cpuinfo", "r");
@@ -462,6 +466,7 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		fclose (file);
 		/*printf ("features: v5: %d, thumb: %d\n", v5_supported, thumb_supported);*/
 	}
+#endif
 
 	/* no arm-specific optimizations yet */
 	*exclude_mask = 0;
@@ -563,6 +568,9 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
+#if __APPLE__
+	sys_icache_invalidate (code, size);
+#else
 	__asm __volatile ("mov r0, %0\n"
 			"mov r1, %1\n"
 			"mov r2, %2\n"
@@ -570,7 +578,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 			: /* no outputs */
 			: "r" (code), "r" (code + size), "r" (0)
 			: "r0", "r1", "r3" );
-
+#endif
 }
 
 enum {
@@ -2880,7 +2888,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #elif defined(ARM_FPU_VFP)
 		case OP_R8CONST:
 			if (cfg->compile_aot) {
-				ARM_LDFD (code, ins->dreg, ARMREG_PC, 0);
+				ARM_FLDD (code, ins->dreg, ARMREG_PC, 0);
 				ARM_B (code, 1);
 				*(guint32*)code = ((guint32*)(ins->inst_p0))[0];
 				code += 4;
