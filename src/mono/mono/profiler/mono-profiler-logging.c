@@ -403,6 +403,9 @@ struct _MonoProfiler {
 	ProfilerHeapShotWriteJob *heap_shot_write_jobs;
 	ProfilerHeapShotHeapBuffers heap;
 	
+	char *heap_shot_command_file_name;
+	int dump_next_heap_snapshots;
+	
 	ProfilerExecutableMemoryRegions *executable_regions;
 	
 	struct {
@@ -2952,8 +2955,14 @@ profiler_shutdown (MonoProfiler *prof)
 	if (profiler->executable_regions != NULL) {
 		profiler_executable_memory_regions_destroy (profiler->executable_regions);
 	}
+	if (profiler->file_name != NULL) {
+		g_free (profiler->file_name);
+	}
 	
 	profiler_heap_buffers_free (&(profiler->heap));
+	if (profiler->heap_shot_command_file_name != NULL) {
+		g_free (profiler->heap_shot_command_file_name);
+	}
 	
 	profiler_free_write_buffers ();
 	profiler_destroy_heap_shot_write_jobs ();
@@ -2979,6 +2988,8 @@ setup_user_options (const char *arguments) {
 	profiler->per_thread_buffer_size = 10000;
 	profiler->statistical_buffer_size = 10000;
 	profiler->write_buffer_size = 1024;
+	profiler->heap_shot_command_file_name = NULL;
+	profiler->dump_next_heap_snapshots = 0;
 	profiler->flags = MONO_PROFILE_APPDOMAIN_EVENTS|
 			MONO_PROFILE_ASSEMBLY_EVENTS|
 			MONO_PROFILE_MODULE_EVENTS|
@@ -3022,6 +3033,12 @@ setup_user_options (const char *arguments) {
 				if (strlen (equals + 1) > 0) {
 					profiler->file_name = g_strdup (equals + 1);
 				}
+			} else if (! (strncmp (argument, "gc-commands", equals_position) && strncmp (argument, "gc-c", equals_position) && strncmp (argument, "gcc", equals_position))) {
+				if (strlen (equals + 1) > 0) {
+					profiler->heap_shot_command_file_name = g_strdup (equals + 1);
+				}
+			} else if (! (strncmp (argument, "gc-dumps", equals_position) && strncmp (argument, "gc-d", equals_position) && strncmp (argument, "gcd", equals_position))) {
+				profiler->dump_next_heap_snapshots = atoi (equals + 1);
 			} else {
 				g_warning ("Cannot parse valued argument %s\n", argument);
 			}
