@@ -1,3 +1,7 @@
+2008-03-13  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/AdjustVisibility.cs: don't adjust enums.
+
 2008-02-18  Raja R Harinath  <harinath@hurrynot.org>
 
 	* Makefile (inst-%, gac-%): Fix dependencies.
