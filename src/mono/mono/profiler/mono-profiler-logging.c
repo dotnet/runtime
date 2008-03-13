@@ -1327,10 +1327,21 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 			printf ("profiler_heap_shot_write_block: wrote unreachable object of class %p (id %d, size %d)\n", klass, class_id->id, size);
 #endif
 		} else if (code == HEAP_CODE_OBJECT) {
+			MonoObject *object = GUINT_TO_POINTER (GPOINTER_TO_UINT (value) & (~ (guint64) HEAP_CODE_MASK));
+			MonoClass *klass = mono_object_get_class (object);
+			ClassIdMappingElement *class_id = class_id_mapping_element_get (klass);
+			guint32 size = mono_object_get_size (object);
 			guint32 references = GPOINTER_TO_UINT (*cursor);
 			UPDATE_JOB_BUFFER_CURSOR ();
 			
+			if (class_id == NULL) {
+				printf ("profiler_heap_shot_write_block: unknown class %p", klass);
+			}
+			g_assert (class_id != NULL);
+			
 			write_uint64 (GPOINTER_TO_UINT (value));
+			write_uint32 (class_id->id);
+			write_uint32 (size);
 			write_uint32 (references);
 #if DEBUG_HEAP_PROFILER
 			printf ("profiler_heap_shot_write_block: writing object %p (references %d)\n", value, references);
