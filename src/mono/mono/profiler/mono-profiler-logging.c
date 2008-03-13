@@ -94,7 +94,18 @@ typedef enum {
 	gettimeofday (&current_time, NULL);\
 	(t) = (((guint64)current_time.tv_sec) * 1000000) + current_time.tv_usec;\
 } while (0)
+#if 0
 #define MONO_PROFILER_GET_CURRENT_COUNTER(c) MONO_PROFILER_GET_CURRENT_TIME ((c));
+#else
+static __inline__ guint64 rdtsc(void) {
+	guint32 hi, lo;
+	__asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
+	return ((guint64) lo) | (((guint64) hi) << 32);
+}
+#define MONO_PROFILER_GET_CURRENT_COUNTER(c) {\
+	(c) = rdtsc ();\
+} while (0)
+#endif
 
 
 #define CLASS_LAYOUT_PACKED_BITMAP_SIZE 64
