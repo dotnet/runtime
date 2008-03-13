@@ -597,6 +597,19 @@ gboolean CreateProcessWithLogonW (const gunichar2 *username,
 	return CreateProcess (appname, cmdline, NULL, NULL, FALSE, create_flags, environ, cwd, startup, process_info);
 }
 
+static gboolean
+is_executable (const char *prog)
+{
+	struct stat buf;
+	if (access (prog, X_OK) != 0)
+		return FALSE;
+	if (stat (prog, &buf))
+		return FALSE;
+	if (S_ISREG (buf.st_mode))
+		return TRUE;
+	return FALSE;
+}
+
 gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			WapiSecurityAttributes *process_attrs G_GNUC_UNUSED,
 			WapiSecurityAttributes *thread_attrs G_GNUC_UNUSED,
@@ -713,7 +726,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			prog = g_strdup (unquoted);
 
 			/* Executable existing ? */
-			if (access (prog, X_OK) != 0) {
+			if (!is_executable (prog)) {
 #ifdef DEBUG
 				g_message ("%s: Couldn't find executable %s",
 					   __func__, prog);
@@ -732,7 +745,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			g_free (curdir);
 
 			/* And make sure it's executable */
-			if (access (prog, X_OK) != 0) {
+			if (!is_executable (prog)) {
 #ifdef DEBUG
 				g_message ("%s: Couldn't find executable %s",
 					   __func__, prog);
@@ -831,7 +844,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			prog = g_strdup (token);
 			
 			/* Executable existing ? */
-			if (access (prog, X_OK) != 0) {
+			if (!is_executable (prog)) {
 #ifdef DEBUG
 				g_message ("%s: Couldn't find executable %s",
 					   __func__, token);
@@ -856,7 +869,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			/* I assume X_OK is the criterion to use,
 			 * rather than F_OK
 			 */
-			if (access (prog, X_OK) != 0) {
+			if (!is_executable (prog)) {
 				g_free (prog);
 				prog = g_find_program_in_path (token);
 				if (prog == NULL) {
