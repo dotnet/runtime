@@ -1,3 +1,8 @@
+
+Thu Mar 13 22:32:24 CET 2008 Paolo Molaro <lupus@ximian.com>
+
+	* Makefile: strong name the tuned assemblies.
+
 2008-03-13  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/AdjustVisibility.cs: don't adjust enums.

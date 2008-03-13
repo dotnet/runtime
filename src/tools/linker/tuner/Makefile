@@ -2,6 +2,10 @@ thisdir = tools/tuner
 SUBDIRS =
 include ../../build/rules.make
 
+sn = $(topdir)/class/lib/net_1_1_bootstrap/sn.exe
+SN = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(sn)
+SNFLAGS = -q -R
+
 LINKER = ../linker/monolinker.exe
 
 TUNER_SOURCES = \
@@ -30,7 +34,8 @@ DISTFILES = README $(TUNER_SOURCES) $(TUNER_DESCS) $(TUNER_MASTERS)
 WORKING_DIR = $(topdir)/class/lib/net_2_1_raw
 OUTPUT_DIR = $(topdir)/class/lib/net_2_1
 
-FILES = smcs.exe mscorlib.dll System.dll System.Xml.Core.dll System.Core.dll
+DLLFILES = mscorlib.dll System.dll System.Xml.Core.dll System.Core.dll
+FILES = smcs.exe $(DLLFILES)
 WORKING_FILES = $(FILES:%=$(WORKING_DIR)/%)
 OUTPUT_FILES = $(FILES:%=$(OUTPUT_DIR)/%)
 
@@ -78,6 +83,7 @@ $(OUTPUT_FILES): tune.stamp
 tune.stamp: $(WORKING_FILES) $(OUTPUT_DIR)/.stamp
 	touch $@t
 	MONO_PATH=".$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) --debug $(LINKER) $(TUNER_FLAGS) $(TUNER_DESCS:%=-x %) $(TUNER_STEPS:%=-s %) $(TUNER_MASTERS:%=-i %)
+	for i in $(DLLFILES); do $(SN) $(SNFLAGS) $(OUTPUT_DIR)/$$i $(topdir)/class/mono.snk; done
 	mv $@t $@
 
 gacutil = $(topdir)/class/lib/net_1_1_bootstrap/gacutil.exe
