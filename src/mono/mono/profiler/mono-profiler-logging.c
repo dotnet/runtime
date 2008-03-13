@@ -405,6 +405,7 @@ struct _MonoProfiler {
 	
 	char *heap_shot_command_file_name;
 	int dump_next_heap_snapshots;
+	guint64 heap_shot_command_file_access_time;
 	
 	ProfilerExecutableMemoryRegions *executable_regions;
 	
@@ -2605,6 +2606,58 @@ gc_event_kind_from_profiler_event (MonoGCEvent event) {
 	}
 }
 
+/*
+char *heap_shot_command_file_name;
+int dump_next_heap_snapshots;
+guint64 heap_shot_command_file_access_time;
+*/
+
+#define HEAP_SHOT_COMMAND_FILE_MAX_LENGTH 64
+static void
+profiler_heap_shot_process_command_file (void) {
+	//FIXME: Port to Windows as well
+	struct stat stat_buf;
+	int fd;
+	char buffer [HEAP_SHOT_COMMAND_FILE_MAX_LENGTH + 1];
+	
+	if (profiler->heap_shot_command_file_name == NULL)
+		return;
+	if (stat (profiler->heap_shot_command_file_name, &stat_buf) != 0)
+		return;
+	if (stat_buf.st_size > HEAP_SHOT_COMMAND_FILE_MAX_LENGTH)
+		return;
+	if ((stat_buf.st_mtim.tv_sec * 1000000) < profiler->heap_shot_command_file_access_time)
+		return;
+	
+	fd = open (profiler->heap_shot_command_file_name, O_RDONLY);
+	if (fd < 0) {
+		return;
+	} else {
+		if (read (fd, &(buffer [0]), stat_buf.st_size) != stat_buf.st_size) {
+			return;
+		} else {
+			buffer [stat_buf.st_size] = 0;
+			profiler->dump_next_heap_snapshots = atoi (buffer);
+			MONO_PROFILER_GET_CURRENT_TIME (profiler->heap_shot_command_file_access_time);
+		}
+		close (fd);
+	}
+}
+
+static gboolean
+dump_current_heap_snapshot (void) {
+	profiler_heap_shot_process_command_file ();
+	
+	if (profiler->dump_next_heap_snapshots > 0) {
+		profiler->dump_next_heap_snapshots--;
+		return TRUE;
+	} else if (profiler->dump_next_heap_snapshots < 0) {
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
 static void
 profiler_heap_buffers_setup (ProfilerHeapShotHeapBuffers *heap) {
 	heap->buffers = g_new (ProfilerHeapShotHeapBuffer, 1);
@@ -2670,7 +2723,7 @@ report_object_references (gpointer *start, ClassIdMappingElement *layout, Profil
 
 static void
 profiler_heap_report_object_reachable (ProfilerHeapShotWriteJob *job, MonoObject *obj) {
-	if (profiler->action_flags.heap_shot) {
+	if (profiler->action_flags.heap_shot && (job != NULL)) {
 		MonoClass *klass = mono_object_get_class (obj);
 		int reference_counter = 0;
 		gpointer *reference_counter_location;
@@ -2732,18 +2785,20 @@ profiler_heap_report_object_reachable (ProfilerHeapShotWriteJob *job, MonoObject
 }
 static void
 profiler_heap_report_object_unreachable (ProfilerHeapShotWriteJob *job, MonoObject *obj) {
-	MonoClass *klass = mono_object_get_class (obj);
-	guint32 size = mono_object_get_size (obj);
+	if (job != NULL) {
+		MonoClass *klass = mono_object_get_class (obj);
+		guint32 size = mono_object_get_size (obj);
+		
+#if DEBUG_HEAP_PROFILER
+		printf ("profiler_heap_report_object_unreachable: at job %p writing klass %p\n", job, klass);
+#endif
+		WRITE_HEAP_SHOT_JOB_VALUE_WITH_CODE (job, klass, HEAP_CODE_FREE_OBJECT_CLASS);
 	
 #if DEBUG_HEAP_PROFILER
-	printf ("profiler_heap_report_object_unreachable: at job %p writing klass %p\n", job, klass);
+		printf ("profiler_heap_report_object_unreachable: at job %p writing size %p\n", job, GUINT_TO_POINTER (size));
 #endif
-	WRITE_HEAP_SHOT_JOB_VALUE_WITH_CODE (job, klass, HEAP_CODE_FREE_OBJECT_CLASS);
-	
-#if DEBUG_HEAP_PROFILER
-	printf ("profiler_heap_report_object_unreachable: at job %p writing size %p\n", job, GUINT_TO_POINTER (size));
-#endif
-	WRITE_HEAP_SHOT_JOB_VALUE (job, GUINT_TO_POINTER (size));
+		WRITE_HEAP_SHOT_JOB_VALUE (job, GUINT_TO_POINTER (size));
+	}
 }
 
 static void
@@ -2838,11 +2893,16 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 		flush_all_mappings ();
 		break;
 	case MONO_GC_EVENT_MARK_END: {
-		ProfilerHeapShotWriteJob *job = profiler_heap_shot_write_job_new ();
+		ProfilerHeapShotWriteJob *job;
 		ProfilerPerThreadData *data;
 		
-		MONO_PROFILER_GET_CURRENT_COUNTER (job->start_counter);
-		MONO_PROFILER_GET_CURRENT_TIME (job->start_time);
+		if (dump_current_heap_snapshot ()) {
+			job = profiler_heap_shot_write_job_new ();
+			MONO_PROFILER_GET_CURRENT_COUNTER (job->start_counter);
+			MONO_PROFILER_GET_CURRENT_TIME (job->start_time);
+		} else {
+			job = NULL;
+		}
 		
 		profiler_heap_scan (&(profiler->heap), job);
 		
@@ -2870,12 +2930,15 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 				buffer->first_unprocessed_slot = cursor;
 			}
 		}
-		MONO_PROFILER_GET_CURRENT_COUNTER (job->end_counter);
-		MONO_PROFILER_GET_CURRENT_TIME (job->end_time);
 		
-		profiler_add_heap_shot_write_job (job);
-		profiler_free_heap_shot_write_jobs ();
-		WRITER_EVENT_RAISE ();
+		if (job != NULL) {
+			MONO_PROFILER_GET_CURRENT_COUNTER (job->end_counter);
+			MONO_PROFILER_GET_CURRENT_TIME (job->end_time);
+			
+			profiler_add_heap_shot_write_job (job);
+			profiler_free_heap_shot_write_jobs ();
+			WRITER_EVENT_RAISE ();
+		}
 		break;
 	}
 	case MONO_GC_EVENT_PRE_START_WORLD:
@@ -2955,9 +3018,6 @@ profiler_shutdown (MonoProfiler *prof)
 	if (profiler->executable_regions != NULL) {
 		profiler_executable_memory_regions_destroy (profiler->executable_regions);
 	}
-	if (profiler->file_name != NULL) {
-		g_free (profiler->file_name);
-	}
 	
 	profiler_heap_buffers_free (&(profiler->heap));
 	if (profiler->heap_shot_command_file_name != NULL) {
@@ -2990,6 +3050,7 @@ setup_user_options (const char *arguments) {
 	profiler->write_buffer_size = 1024;
 	profiler->heap_shot_command_file_name = NULL;
 	profiler->dump_next_heap_snapshots = 0;
+	profiler->heap_shot_command_file_access_time = 0;
 	profiler->flags = MONO_PROFILE_APPDOMAIN_EVENTS|
 			MONO_PROFILE_ASSEMBLY_EVENTS|
 			MONO_PROFILE_MODULE_EVENTS|
@@ -3038,7 +3099,9 @@ setup_user_options (const char *arguments) {
 					profiler->heap_shot_command_file_name = g_strdup (equals + 1);
 				}
 			} else if (! (strncmp (argument, "gc-dumps", equals_position) && strncmp (argument, "gc-d", equals_position) && strncmp (argument, "gcd", equals_position))) {
-				profiler->dump_next_heap_snapshots = atoi (equals + 1);
+				if (strlen (equals + 1) > 0) {
+					profiler->dump_next_heap_snapshots = atoi (equals + 1);
+				}
 			} else {
 				g_warning ("Cannot parse valued argument %s\n", argument);
 			}
