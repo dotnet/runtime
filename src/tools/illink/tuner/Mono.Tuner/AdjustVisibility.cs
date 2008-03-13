@@ -53,6 +53,9 @@ namespace Mono.Tuner {
 				return;
 			}
 
+			if (type.IsEnum)
+				return;
+
 			ProcessFields (type.Fields);
 			ProcessMethods (type.Constructors);
 			ProcessMethods (type.Methods);
