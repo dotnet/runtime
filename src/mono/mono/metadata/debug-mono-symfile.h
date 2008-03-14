@@ -18,7 +18,6 @@ typedef struct MonoSymbolFileMethodAddress	MonoSymbolFileMethodAddress;
 typedef struct MonoSymbolFileDynamicTable	MonoSymbolFileDynamicTable;
 typedef struct MonoSymbolFileSourceEntry	MonoSymbolFileSourceEntry;
 typedef struct MonoSymbolFileMethodIndexEntry	MonoSymbolFileMethodIndexEntry;
-typedef struct MonoSymbolFileLexicalBlockEntry	MonoSymbolFileLexicalBlockEntry;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
@@ -78,8 +77,6 @@ struct MonoSymbolFileMethodAddress {
 	guint32 type_table_offset;
 	guint32 num_line_numbers;
 	guint32 line_number_offset;
-	guint32 num_lexical_blocks;
-	guint32 lexical_block_table_offset;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
@@ -99,8 +96,6 @@ struct _MonoDebugMethodInfo {
 	guint32 index;
 	guint32 num_il_offsets;
 	MonoSymbolFileLineNumberEntry *il_offsets;
-	guint32 num_lexical_blocks;
-	MonoSymbolFileLexicalBlockEntry *lexical_blocks;
 	MonoSymbolFileMethodEntry *entry;
 };
 
@@ -119,12 +114,14 @@ struct _MonoDebugLineNumberEntry {
 struct _MonoSymbolFile {
 	const guint8 *raw_contents;
 	int raw_contents_size;
+	int version;
 	gchar *filename;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
 };
 
-#define MONO_SYMBOL_FILE_VERSION		39
+#define MONO_SYMBOL_FILE_VERSION		41
+#define MONO_SYMBOL_FILE_COMPATIBILITY_VERSION	39
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614ULL
 
 G_BEGIN_DECLS

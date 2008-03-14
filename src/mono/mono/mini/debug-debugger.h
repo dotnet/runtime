@@ -72,6 +72,8 @@ struct _MonoDebuggerInfo {
 
 	guint32 executable_code_buffer_size;
 	guint32 breakpoint_array_size;
+
+	guint64 (*get_method_signature) (guint64 method_argument, G_GNUC_UNUSED guint64 dummy);
 };
 
 struct _MonoDebuggerMetadataInfo {

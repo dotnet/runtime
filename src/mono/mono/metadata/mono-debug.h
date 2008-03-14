@@ -18,7 +18,6 @@ typedef struct _MonoSymbolFile			MonoSymbolFile;
 typedef struct _MonoDebugHandle			MonoDebugHandle;
 
 typedef struct _MonoDebugLineNumberEntry	MonoDebugLineNumberEntry;
-typedef struct _MonoDebugLexicalBlockEntry	MonoDebugLexicalBlockEntry;
 
 typedef struct _MonoDebugVarInfo		MonoDebugVarInfo;
 typedef struct _MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
@@ -81,8 +80,6 @@ struct _MonoDebugMethodJitInfo {
 	const guint8 *wrapper_addr;
 	guint32 num_line_numbers;
 	MonoDebugLineNumberEntry *line_numbers;
-	guint32 num_lexical_blocks;
-	MonoDebugLexicalBlockEntry *lexical_blocks;
 	guint32 num_params;
 	MonoDebugVarInfo *this_var;
 	MonoDebugVarInfo *params;
@@ -128,7 +125,7 @@ struct _MonoDebugVarInfo {
 	MonoType *type;
 };
 
-#define MONO_DEBUGGER_VERSION				66
+#define MONO_DEBUGGER_VERSION				68
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;

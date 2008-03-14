@@ -558,7 +558,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	guint8 buffer [BUFSIZ];
 	guint8 *ptr, *oldptr;
 	guint32 i, size, total_size, max_size;
-	gint32 last_il_offset = 0, last_native_offset = 0;
 	gboolean is_wrapper = FALSE;
 
 	mono_debugger_lock ();
@@ -576,9 +575,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		is_wrapper = TRUE;
 	}
 
-	jit->num_lexical_blocks = minfo ? minfo->num_lexical_blocks : 0;
-
-	max_size = 24 + 8 * jit->num_line_numbers + 16 * jit->num_lexical_blocks +
+	max_size = 24 + 8 * jit->num_line_numbers +
 		(20 + sizeof (gpointer)) * (1 + jit->num_params + jit->num_locals);
 
 	if (max_size > BUFSIZ)
@@ -593,41 +590,8 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	for (i = 0; i < jit->num_line_numbers; i++) {
 		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
 
-		write_sleb128 (lne->il_offset - last_il_offset, ptr, &ptr);
-		write_sleb128 (lne->native_offset - last_native_offset, ptr, &ptr);
-
-		last_il_offset = lne->il_offset;
-		last_native_offset = lne->native_offset;
-	}
-
-	jit->lexical_blocks = g_new0 (MonoDebugLexicalBlockEntry, jit->num_lexical_blocks);
-	for (i = 0; i < jit->num_lexical_blocks; i ++) {
-		MonoDebugLexicalBlockEntry *jit_lbe = &jit->lexical_blocks [i];
-		MonoSymbolFileLexicalBlockEntry *minfo_lbe = &minfo->lexical_blocks [i];
-		jit_lbe->il_start_offset = read32 (&(minfo_lbe->_start_offset));
-		jit_lbe->native_start_offset = _mono_debug_address_from_il_offset (jit, jit_lbe->il_start_offset);
-
-		jit_lbe->il_end_offset = read32 (&(minfo_lbe->_end_offset));
-		jit_lbe->native_end_offset = _mono_debug_address_from_il_offset (jit, jit_lbe->il_end_offset);
-	}
-
-	last_il_offset = 0;
-	last_native_offset = 0;
-	write_leb128 (jit->num_lexical_blocks, ptr, &ptr);
-	for (i = 0; i < jit->num_lexical_blocks; i++) {
-		MonoDebugLexicalBlockEntry *lbe = &jit->lexical_blocks [i];
-
-		write_sleb128 (lbe->il_start_offset - last_il_offset, ptr, &ptr);
-		write_sleb128 (lbe->native_start_offset - last_native_offset, ptr, &ptr);
-
-		last_il_offset = lbe->il_start_offset;
-		last_native_offset = lbe->native_start_offset;
-
-		write_sleb128 (lbe->il_end_offset - last_il_offset, ptr, &ptr);
-		write_sleb128 (lbe->native_end_offset - last_native_offset, ptr, &ptr);
-
-		last_il_offset = lbe->il_end_offset;
-		last_native_offset = lbe->native_end_offset;
+		write_sleb128 (lne->il_offset, ptr, &ptr);
+		write_sleb128 (lne->native_offset, ptr, &ptr);
 	}
 
 	*ptr++ = jit->this_var ? 1 : 0;
@@ -778,7 +742,7 @@ static MonoDebugMethodJitInfo *
 mono_debug_read_method (MonoDebugMethodAddress *address)
 {
 	MonoDebugMethodJitInfo *jit;
-	guint32 i, il_offset = 0, native_offset = 0;
+	guint32 i;
 	guint8 *ptr;
 
 	jit = g_new0 (MonoDebugMethodJitInfo, 1);
@@ -796,31 +760,8 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 	for (i = 0; i < jit->num_line_numbers; i++) {
 		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
 
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
-
-		lne->il_offset = il_offset;
-		lne->native_offset = native_offset;
-	}
-
-	il_offset = 0;
-	native_offset = 0;
-	jit->num_lexical_blocks = read_leb128 (ptr, &ptr);
-	jit->lexical_blocks = g_new0 (MonoDebugLexicalBlockEntry, jit->num_lexical_blocks);
-	for (i = 0; i < jit->num_lexical_blocks; i ++) {
-		MonoDebugLexicalBlockEntry *lbe = &jit->lexical_blocks [i];
-
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
-
-		lbe->il_start_offset = il_offset;
-		lbe->native_start_offset = native_offset;
-
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
-
-		lbe->il_end_offset = il_offset;
-		lbe->native_end_offset = native_offset;
+		lne->il_offset = read_sleb128 (ptr, &ptr);
+		lne->native_offset = read_sleb128 (ptr, &ptr);
 	}
 
 	if (*ptr++) {

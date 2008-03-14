@@ -77,7 +77,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 
 	version = read32(ptr);
 	ptr += sizeof(guint32);
-	if (version != MONO_SYMBOL_FILE_VERSION) {
+	if ((version != MONO_SYMBOL_FILE_VERSION) && (version != MONO_SYMBOL_FILE_COMPATIBILITY_VERSION)) {
 		if (!in_the_debugger)
 			g_warning ("Symbol file %s has incorrect version "
 				   "(expected %d, got %ld)", symfile->filename,
@@ -96,6 +96,8 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 			g_free (guid);
 		return FALSE;
 	}
+
+	symfile->version = version;
 
 	symfile->offset_table = (MonoSymbolFileOffsetTable *) ptr;
 
@@ -267,11 +269,13 @@ _mono_debug_address_from_il_offset (MonoDebugMethodJitInfo *jit, guint32 il_offs
 	for (i = jit->num_line_numbers - 1; i >= 0; i--) {
 		MonoDebugLineNumberEntry lne = jit->line_numbers [i];
 
+		if (lne.il_offset < 0)
+			continue;
 		if (lne.il_offset <= il_offset)
 			return lne.native_offset;
 	}
 
-	return -1;
+	return 0;
 }
 
 static int
@@ -319,9 +323,7 @@ mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 	minfo->num_il_offsets = read32(&(me->_num_line_numbers));
 	minfo->il_offsets = (MonoSymbolFileLineNumberEntry *)
 		(symfile->raw_contents + read32(&(me->_line_number_table_offset)));
-	minfo->num_lexical_blocks = read32(&(me->_num_lexical_blocks));
-	minfo->lexical_blocks = (MonoSymbolFileLexicalBlockEntry *)
-		(symfile->raw_contents + read32(&(me->_lexical_block_table_offset)));
+
 	minfo->entry = me;
 
 	g_hash_table_insert (symfile->method_hash, method, minfo);
