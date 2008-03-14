@@ -86,6 +86,9 @@ tune.stamp: $(WORKING_FILES) $(OUTPUT_DIR)/.stamp
 	for i in $(DLLFILES); do $(SN) $(SNFLAGS) $(OUTPUT_DIR)/$$i $(topdir)/class/mono.snk; done
 	mv $@t $@
 
+gacutil = $(topdir)/class/lib/net_1_1_bootstrap/gacutil.exe
+GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(gacutil) -bootstrap
+
 TUNER_INSTALL_DIR = $(DESTDIR)$(mono_libdir)/mono/2.1
 
 end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Xml.Core gac-System.Core
