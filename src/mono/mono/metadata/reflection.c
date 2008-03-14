@@ -2434,6 +2434,9 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 	MonoReflectionFieldBuilder *fb = f->fb;
 	char *name;
 
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, f));
+	if (token)
+		return token;
 	klass = mono_class_from_mono_type (f->inst->type.type);
 	gclass = f->inst->type.type->data.generic_class;
 	g_assert (gclass->is_dynamic);
@@ -2445,6 +2448,7 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name,
 											fieldref_encode_signature (assembly, ftype));
 	g_free (name);
+	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER (token));
 	return token;
 }
 
