@@ -354,7 +354,7 @@ reg: OP_LCALL_RGCTX (reg) {
 	emit_rgctx_argument (s, tree, state->left->reg1, OP_LCALL);
 
 	tree->dreg = state->reg1;
-	mono_bblock_add_inst (s->cbb, &call->inst);
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 reg: OP_LCALL_REG (reg) {
