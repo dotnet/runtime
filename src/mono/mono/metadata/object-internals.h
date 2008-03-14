@@ -1033,6 +1033,12 @@ typedef struct {
 	MonoArray *modopts;
 } MonoReflectionSigHelper;
 
+typedef struct {
+	MonoObject object;
+	MonoReflectionGenericClass *inst;
+	MonoReflectionFieldBuilder *fb;
+} MonoReflectionFieldOnTypeBuilderInst;
+
 enum {
 	RESOURCE_LOCATION_EMBEDDED = 1,
 	RESOURCE_LOCATION_ANOTHER_ASSEMBLY = 2,

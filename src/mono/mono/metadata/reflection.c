@@ -2424,6 +2424,31 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 }
 
 static guint32
+mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFieldOnTypeBuilderInst *f)
+{
+	MonoType *ftype;
+	guint32 token;
+	MonoClass *klass;
+	MonoGenericClass *gclass;
+	MonoDynamicGenericClass *dgclass;
+	MonoReflectionFieldBuilder *fb = f->fb;
+	char *name;
+
+	klass = mono_class_from_mono_type (f->inst->type.type);
+	gclass = f->inst->type.type->data.generic_class;
+	g_assert (gclass->is_dynamic);
+	dgclass = (MonoDynamicGenericClass *) gclass;
+
+	// FIXME: Make the f objects unique, otherwise no use in caching their tokens
+	name = mono_string_to_utf8 (fb->name);
+	ftype = mono_class_inflate_generic_type (fb->type->type, mono_generic_class_get_context ((gclass)));
+	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name,
+											fieldref_encode_signature (assembly, ftype));
+	g_free (name);
+	return token;
+}
+
+static guint32
 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context)
 {
 	SigBuffer buf;
@@ -4303,6 +4328,9 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 		MonoReflectionType *tb = (MonoReflectionType *)obj;
 		token = mono_metadata_token_from_dor (
 			mono_image_typedef_or_ref (assembly, tb->type));
+	} else if (strcmp (klass->name, "FieldOnTypeBuilderInst") == 0) {
+		MonoReflectionFieldOnTypeBuilderInst *f = (MonoReflectionFieldOnTypeBuilderInst*)obj;
+		token = mono_image_get_field_on_inst_token (assembly, f);
 	} else {
 		g_error ("requested token for %s\n", klass->name);
 	}
@@ -9941,6 +9969,14 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		result = mono_class_from_mono_type (mono_class_inflate_generic_type (ref->type.type, context));
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
+	} else if (strcmp (obj->vtable->klass->name, "FieldOnTypeBuilderInst") == 0) {
+		MonoReflectionFieldOnTypeBuilderInst *f = (MonoReflectionFieldOnTypeBuilderInst*)obj;
+		MonoClass *inflated = mono_class_from_mono_type (f->inst->type.type);
+
+		g_assert (f->fb->handle);
+		result = mono_class_get_field_from_name (inflated, f->fb->handle->name);
+		g_assert (result);
+		*handle_class = mono_defaults.fieldhandle_class;
 	} else {
 		g_print (obj->vtable->klass->name);
 		g_assert_not_reached ();
