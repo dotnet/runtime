@@ -158,6 +158,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		if (m->flags & METHOD_ATTRIBUTE_STATIC) {
 			g_assert_not_reached ();
 		} else {
+#ifdef MONO_ARCH_HAVE_IMT
 			MonoObject *this_argument = mono_arch_find_this_argument ((gpointer*)regs, m,
 				get_generic_context (code));
 
@@ -169,6 +170,9 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 			if (!vtable_slot)
 				klass = this_argument->vtable->klass->supertypes [m->klass->idepth - 1];
+#else
+			NOT_IMPLEMENTED;
+#endif
 		}
 
 		g_assert (vtable_slot || klass);
