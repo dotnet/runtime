@@ -1296,6 +1296,8 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->isinst_cache);
 	g_hash_table_destroy (image->castclass_cache);
 	g_hash_table_destroy (image->proxy_isinst_cache);
+	if (image->static_rgctx_invoke_cache)
+		g_hash_table_destroy (image->static_rgctx_invoke_cache);
 
 	/* The ownership of signatures is not well defined */
 	//g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);

@@ -3931,6 +3931,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
+	/* store runtime generic context */
+	if (cfg->rgctx_var) {
+		g_assert (cfg->rgctx_var->opcode == OP_REGOFFSET && cfg->rgctx_var->inst_basereg == X86_EBP);
+
+		x86_mov_membase_reg (code, X86_EBP, cfg->rgctx_var->inst_offset, MONO_ARCH_RGCTX_REG, 4);
+	}
+
 	/* load arguments allocated to register from the stack */
 	sig = mono_method_signature (method);
 	pos = 0;
@@ -4453,6 +4460,12 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSha
 	return this_argument;
 }
 #endif
+
+MonoRuntimeGenericContext*
+mono_arch_find_static_call_rgctx (gpointer *regs, guint8 *code)
+{
+	return (MonoRuntimeGenericContext*) regs [MONO_ARCH_RGCTX_REG];
+}
 
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)

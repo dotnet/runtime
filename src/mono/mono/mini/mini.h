@@ -765,6 +765,7 @@ typedef struct {
 	MonoMethod      *inlined_method; /* the method which is currently inlined */
 	MonoInst        *domainvar; /* a cache for the current domain */
 	MonoInst        *got_var; /* Global Offset Table variable */
+	MonoInst	*rgctx_var; /* Runtime generic context variable (for static generic methods) */
 	MonoInst        **args;
 
 	/* 
@@ -1263,6 +1264,7 @@ gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gbool
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
 void        mono_arch_emit_imt_argument         (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
 MonoMethod* mono_arch_find_imt_method           (gpointer *regs, guint8 *code) MONO_INTERNAL;
+MonoRuntimeGenericContext* mono_arch_find_static_call_rgctx (gpointer *regs, guint8 *code) MONO_INTERNAL;
 MonoObject* mono_arch_find_this_argument        (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count) MONO_INTERNAL;
 void    mono_arch_notify_pending_exc (void) MONO_INTERNAL;
@@ -1351,7 +1353,7 @@ int mono_method_check_context_used (MonoMethod *method) MONO_INTERNAL;
 
 gboolean mono_generic_context_equal_deep (MonoGenericContext *context1, MonoGenericContext *context2) MONO_INTERNAL;
 
-gboolean mono_generic_context_is_sharable (MonoGenericContext *context) MONO_INTERNAL;
+gboolean mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars) MONO_INTERNAL;
 
 gboolean mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
 gboolean mono_method_is_generic_sharable_impl (MonoMethod *method) MONO_INTERNAL;

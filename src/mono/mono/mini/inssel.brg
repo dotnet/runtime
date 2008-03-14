@@ -938,6 +938,33 @@ stmt: OP_TRAMPCALL_VTABLE (reg) {
 	#endif
 }
 
+reg: OP_CALL_RGCTX (reg) {
+	emit_rgctx_argument (s, tree, state->left->reg1, OP_CALL);
+
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_FCALL_RGCTX (reg) {
+	emit_rgctx_argument (s, tree, state->left->reg1, OP_FCALL);
+
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_VOIDCALL_RGCTX (reg) {
+	emit_rgctx_argument (s, tree, state->left->reg1, OP_VOIDCALL);
+
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_VCALL_RGCTX (reg, reg) {
+	emit_rgctx_argument (s, tree, state->right->reg1, OP_VCALL);
+
+	mono_arch_emit_this_vret_args (s, (MonoCallInst*)tree, -1, -1, state->left->reg1);
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: OP_SAVE_LMF,
 stmt: OP_RESTORE_LMF {
 	mono_bblock_add_inst (s->cbb, tree);
@@ -1861,6 +1888,23 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	tree->sreg1 = slot_reg;
 	((MonoCallInst*)tree)->virtual = TRUE;
 	mono_bblock_add_inst (cfg->cbb, tree);
+}
+
+static void
+emit_rgctx_argument (MonoCompile *s, MonoInst *tree, int reg, int new_opcode)
+{
+#ifdef MONO_ARCH_RGCTX_REG
+	MonoCallInst *call = (MonoCallInst*)tree;
+	int rgctx_reg = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, rgctx_reg, reg);
+
+	call->inst.opcode = new_opcode;
+
+	mono_call_inst_add_outarg_reg (s, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 /*

@@ -1,5 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+
+namespace GenericSharingTest {
+
+public delegate int IntVoidDelegate ();
 
 public class ClassA {}
 public class ClassB {}
@@ -12,6 +17,47 @@ public class NonGen {
 
 	public static void doThrow () {
 		throw new GenExc<ClassA> ();
+	}
+}
+
+public class GenBi<S,T> {
+	public static int field = 123;
+	public static float floatField = 1.0f;
+
+	public static int staticMethod (int x) {
+		return x + field;
+	}
+
+	public static void staticVoidMethod (int x) {
+		field = x;
+	}
+
+	public static float staticFloatMethod () {
+		return floatField;
+	}
+
+	public static long staticLongMethod (long x) {
+		return x + field;
+	}
+
+	public static GenStruct<T> staticValueMethod (int x) {
+		return new GenStruct<T> (x);
+	}
+}
+
+public struct GenStruct<T> {
+	public int field;
+	public int dummy1;
+	public int dummy2;
+	public int dummy3;
+
+	public GenStruct (int f) {
+		field = f;
+		dummy1 = dummy2 = dummy3 = 0;
+	}
+
+	public int method (int x) {
+		return x + field;
 	}
 }
 
@@ -75,12 +121,72 @@ public class GenA<T> {
 
 	public void except () {
 		try {
-			NonGen.doThrow();
+			NonGen.doThrow ();
 		}
-		catch (GenExc<T>)
-		{
+		catch (GenExc<T>) {
 			//Console.WriteLine("exception thrown");
 		}
+	}
+
+	public static void staticExcept () {
+		try {
+			NonGen.doThrow ();
+		}
+		catch (GenExc<T>) {
+			Console.WriteLine("exception thrown and caught");
+		}
+	}
+
+	public static int staticField = 54321;
+
+	public static int staticMethod () {
+		return staticField;
+	}
+
+	public static int staticMethodCaller () {
+		return staticMethod ();
+	}
+
+	public static float staticFloatField = 1.0f;
+
+	public static float staticFloatMethod () {
+		return staticFloatField;
+	}
+
+	public static int staticBiCaller (int x) {
+		return GenBi<int,T>.staticMethod (x);
+	}
+
+	public static void staticBiVoidCaller (int x) {
+		GenBi<int,T>.staticVoidMethod (x);
+	}
+
+	public static float staticBiFloatCaller () {
+		return GenBi<int,T>.staticFloatMethod ();
+	}
+
+	public static GenStruct<T> staticBiValueCaller (int x) {
+		return GenBi<int,T>.staticValueMethod (x);
+	}
+
+	public static int staticSharedBiCaller (int x) {
+		return GenBi<T,T>.staticMethod (x);
+	}
+
+	public static void staticSharedBiVoidCaller (int x) {
+		GenBi<T,T>.staticVoidMethod (x);
+	}
+
+	public static float staticSharedBiFloatCaller () {
+		return GenBi<T,T>.staticFloatMethod ();
+	}
+
+	public static GenStruct<T> staticSharedBiValueCaller (int x) {
+		return GenBi<T,T>.staticValueMethod (x);
+	}
+
+	public static long staticBiLongCaller (long x) {
+		return GenBi<int, T>.staticLongMethod (x);
 	}
 }
 
@@ -229,6 +335,10 @@ public class main {
 			error ("object from " + method + " should have type " + t.ToString () + " but has type " + obj.GetType ().ToString ());
 	}
 
+	public static int callStaticMethod<T> () {
+		return GenA<T>.staticMethod ();
+	}
+
 	public static void work<T> (T obj, bool mustCatch) {
 		EqualityComparer<T> comp = EqualityComparer<T>.Default;
 
@@ -256,6 +366,50 @@ public class main {
 		if (!comp.Equals (ga.cast (obj), obj))
 			error ("cast");
 
+		if (callStaticMethod<T> () != 54321)
+			error ("staticMethod");
+
+		GenBi<int,T>.field = 123;
+		if (GenA<T>.staticBiCaller (123) != 246)
+			error ("staticBiCaller");
+		GenA<T>.staticBiVoidCaller (1234);
+		if (GenBi<int,T>.field != 1234)
+			error ("staticBiVoidCaller");
+		if (GenA<T>.staticBiFloatCaller () != 1.0f)
+			error ("staticBiFloatCaller");
+		if (GenA<T>.staticBiLongCaller (123) != 123 + 1234)
+			error ("staticBiLongCaller");
+		GenStruct<T> gs = GenA<T>.staticBiValueCaller (987);
+		if (gs.field != 987)
+			error ("staticBiValueCaller");
+
+		GenBi<T,T>.field = 123;
+		if (GenA<T>.staticSharedBiCaller (123) != 246)
+			error ("staticSharedBiCaller");
+		GenA<T>.staticSharedBiVoidCaller (1234);
+		if (GenBi<T,T>.field != 1234)
+			error ("staticSharedBiVoidCaller");
+		if (GenA<T>.staticSharedBiFloatCaller () != 1.0f)
+			error ("staticSharedBiFloatCaller");
+		GenStruct<T> gss = GenA<T>.staticSharedBiValueCaller (987);
+		if (gss.field != 987)
+			error ("staticSharedBiValueCaller");
+
+		IntVoidDelegate ivdel = new IntVoidDelegate (GenA<T>.staticMethod);
+		if (ivdel () != 54321)
+			error ("staticMethod delegate");
+
+		Type gatype = typeof (GenA<T>);
+		MethodInfo staticMethodInfo = gatype.GetMethod ("staticMethod");
+		if ((Convert.ToInt32 (staticMethodInfo.Invoke (null, null))) != 54321)
+			error ("staticMethod reflection");
+
+		if (GenA<T>.staticMethodCaller () != 54321)
+			error ("staticMethodCaller");
+
+		if (GenA<T>.staticFloatMethod () != 1.0)
+			error ("staticFloatMethod");
+
 		new GenADeriv<T> ();
 
 		if (mustCatch) {
@@ -266,11 +420,22 @@ public class main {
 			} catch (GenExc<ClassA>) {
 				didCatch = true;
 			}
-
 			if (!didCatch)
 				error ("except");
-		} else
+
+			didCatch = false;
+
+			try {
+				GenA<T>.staticExcept ();
+			} catch (GenExc<ClassA>) {
+				didCatch = true;
+			}
+			if (!didCatch)
+				error ("staticExcept");
+		} else {
 			ga.except ();
+			GenA<T>.staticExcept ();
+		}
 
 		MyDict<T, ClassB> dtb = new MyDict<T, ClassB> (obj, new ClassB ());
 
@@ -372,4 +537,6 @@ public class main {
 			return 1;
 		return 0;
 	}
+}
+
 }

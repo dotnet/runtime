@@ -59,13 +59,22 @@ mono_method_check_context_used (MonoMethod *method)
 }
 
 static gboolean
-generic_inst_is_sharable (MonoGenericInst *inst)
+generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars)
 {
 	int i;
 
 	for (i = 0; i < inst->type_argc; ++i) {
-		if (!MONO_TYPE_IS_REFERENCE (inst->type_argv [i]))
-			return FALSE;
+		MonoType *type = inst->type_argv [i];
+		int type_type;
+
+		if (MONO_TYPE_IS_REFERENCE (type))
+			continue;
+
+		type_type = mono_type_get_type (type);
+		if (allow_type_vars && (type_type == MONO_TYPE_VAR || type_type == MONO_TYPE_MVAR))
+			continue;
+
+		return FALSE;
 	}
 
 	return TRUE;
@@ -79,14 +88,14 @@ generic_inst_is_sharable (MonoGenericInst *inst)
  * is sharable iff all of its type arguments are reference type.
  */
 gboolean
-mono_generic_context_is_sharable (MonoGenericContext *context)
+mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars)
 {
 	g_assert (context->class_inst || context->method_inst);
 
-	if (context->class_inst && !generic_inst_is_sharable (context->class_inst))
+	if (context->class_inst && !generic_inst_is_sharable (context->class_inst, allow_type_vars))
 		return FALSE;
 
-	if (context->method_inst && !generic_inst_is_sharable (context->method_inst))
+	if (context->method_inst && !generic_inst_is_sharable (context->method_inst, allow_type_vars))
 		return FALSE;
 
 	return TRUE;
@@ -123,7 +132,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
 		MonoGenericContext *context = &inflated->context;
 
-		if (!mono_generic_context_is_sharable (context))
+		if (!mono_generic_context_is_sharable (context, FALSE))
 			return FALSE;
 
 		g_assert (inflated->declaring);
@@ -137,7 +146,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 	}
 
 	if (method->klass->generic_class) {
-		if (!mono_generic_context_is_sharable (&method->klass->generic_class->context))
+		if (!mono_generic_context_is_sharable (&method->klass->generic_class->context, FALSE))
 			return FALSE;
 
 		g_assert (method->klass->generic_class->container_class &&

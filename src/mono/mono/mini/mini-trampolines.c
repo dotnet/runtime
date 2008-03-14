@@ -156,7 +156,13 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 
 		if (m->flags & METHOD_ATTRIBUTE_STATIC) {
+#ifdef MONO_ARCH_RGCTX_REG
+			MonoRuntimeGenericContext *rgctx = mono_arch_find_static_call_rgctx ((gpointer*)regs, code);
+
+			klass = rgctx->vtable->klass;
+#else
 			g_assert_not_reached ();
+#endif
 		} else {
 #ifdef MONO_ARCH_HAVE_IMT
 			MonoObject *this_argument = mono_arch_find_this_argument ((gpointer*)regs, m,

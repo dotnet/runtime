@@ -350,6 +350,13 @@ reg: OP_LCALL {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+reg: OP_LCALL_RGCTX (reg) {
+	emit_rgctx_argument (s, tree, state->left->reg1, OP_LCALL);
+
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, &call->inst);
+}
+
 reg: OP_LCALL_REG (reg) {
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;

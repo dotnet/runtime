@@ -4540,9 +4540,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	 * - push rbp, mov rbp, rsp
 	 * - save callee saved regs using pushes
 	 * - allocate frame
+	 * - save rgctx if needed
 	 * - save lmf if needed
 	 * FP not present:
 	 * - allocate frame
+	 * - save rgctx if needed
 	 * - save lmf if needed
 	 * - save callee saved regs using moves
 	 */
@@ -4644,6 +4646,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				save_area_offset += 8;
 				async_exc_point (code);
 			}
+	}
+
+	/* store runtime generic context */
+	if (cfg->rgctx_var) {
+		g_assert (cfg->rgctx_var->opcode == OP_REGOFFSET &&
+				(cfg->rgctx_var->inst_basereg == AMD64_RBP || cfg->rgctx_var->inst_basereg == AMD64_RSP));
+
+		amd64_mov_membase_reg (code, cfg->rgctx_var->inst_basereg, cfg->rgctx_var->inst_offset, MONO_ARCH_RGCTX_REG, 8);
 	}
 
 	/* compute max_offset in order to use short forward jumps */
@@ -5981,6 +5991,12 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSha
 	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
 }
 #endif
+
+MonoRuntimeGenericContext*
+mono_arch_find_static_call_rgctx (gpointer *regs, guint8 *code)
+{
+	return (MonoRuntimeGenericContext*) regs [MONO_ARCH_RGCTX_REG];
+}
 
 MonoInst*
 mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
