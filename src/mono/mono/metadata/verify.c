@@ -1920,168 +1920,6 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 	code->flags |= IL_CODE_FLAG_WAS_TARGET;
 }
 
-/* Generics validation stuff, should be moved to another metadata/? file */
-static gboolean
-mono_is_generic_type_compatible (MonoType *target, MonoType *candidate)
-{
-	if (target->byref != candidate->byref)
-		return FALSE;
-
-handle_enum:
-	switch (target->type) {
-	case MONO_TYPE_STRING:
-		if (candidate->type == MONO_TYPE_STRING)
-			return TRUE;
-		return FALSE;
-
-	case MONO_TYPE_CLASS:
-		if (candidate->type != MONO_TYPE_CLASS)
-			return FALSE;
-
-		VERIFIER_DEBUG ( printf ("verifying type class %p %p\n", target->data.klass, candidate->data.klass); );
-		return mono_class_is_assignable_from (target->data.klass, candidate->data.klass);
-
-	case MONO_TYPE_OBJECT:
-		return MONO_TYPE_IS_REFERENCE (candidate);
-
-	case MONO_TYPE_SZARRAY:
-		if (candidate->type != MONO_TYPE_SZARRAY)
-			return FALSE;
-		return mono_class_is_assignable_from (target->data.klass, candidate->data.klass);
-
-	case MONO_TYPE_VALUETYPE:
-		if (mono_type_is_enum_type (target)) {
-			target = mono_type_get_underlying_type_any (target);
-			goto handle_enum;
-		} else {
-			if (candidate->type != MONO_TYPE_VALUETYPE)
-				return FALSE;
-			return candidate->data.klass == target->data.klass;
-		}
-
-	case MONO_TYPE_ARRAY:
-		if (candidate->type != MONO_TYPE_ARRAY)
-			return FALSE;
-		return is_array_type_compatible (target, candidate);
-
-	default:
-		VERIFIER_DEBUG ( printf ("unknown target type %d\n", target->type); );
-		g_assert_not_reached ();
-	}
-
-	return FALSE;
-}
-
-
-static gboolean
-mono_is_generic_instance_compatible (MonoGenericClass *target, MonoGenericClass *candidate, MonoGenericClass *root_candidate) {
-	MonoGenericContainer *container;
-	int i;
-
-	VERIFIER_DEBUG ( printf ("candidate container %p\n", candidate->container_class->generic_container); );
-	if (target->container_class != candidate->container_class) {
-		MonoType *param_class;
-		MonoClass *cand_class;
-		VERIFIER_DEBUG ( printf ("generic class != target\n"); );
-		param_class = candidate->context.class_inst->type_argv [0];
-		VERIFIER_DEBUG ( printf ("param 0 %d\n", param_class->type); );
-		cand_class = candidate->container_class;
-
-		/* We must check if it's an interface type*/
-		if (MONO_CLASS_IS_INTERFACE (target->container_class)) {
-			VERIFIER_DEBUG ( printf ("generic type is an interface\n"); );
-
-			do {
-				int iface_count = cand_class->interface_count;
-				MonoClass **ifaces = cand_class->interfaces;
-				int i;
-				VERIFIER_DEBUG ( printf ("type has %d interfaces\n", iface_count); );
-				for (i = 0; i< iface_count; ++i) {
-					MonoClass *ifc = ifaces[i];
-					VERIFIER_DEBUG ( printf ("analysing %s\n", ifc->name); );
-					if (ifc->generic_class) {
-						VERIFIER_DEBUG ( printf ("interface has generic info\n"); );
-					}
-					if (mono_is_generic_instance_compatible (target, ifc->generic_class, root_candidate)) {
-						VERIFIER_DEBUG ( printf ("we got compatible stuff!\n"); );
-						return TRUE;
-					}
-				}
-
-				cand_class = cand_class->parent;
-			} while (cand_class);
-
-			VERIFIER_DEBUG ( printf ("don't implements an interface\n"); );
-
-		} else {
-			VERIFIER_DEBUG ( printf ("verifying upper classes\n"); );
-
-			cand_class = cand_class->parent;
-
-			while (cand_class) {
-				VERIFIER_DEBUG ( printf ("verifying parent class name %s\n", cand_class->name); );	
-				if (cand_class->generic_class) {
-					VERIFIER_DEBUG ( printf ("super type has generic context\n"); );
-
-					/* TODO break loop if target->container_class == cand_class->generic_class->container_class */
-					return mono_is_generic_instance_compatible (target, cand_class->generic_class, root_candidate);
-				} else
-					VERIFIER_DEBUG ( printf ("super class has no generic context\n"); );
-				cand_class = cand_class->parent;
-			}
-		}
-		return FALSE;
-	}
-
-	/* now we verify if the instantiations are compatible*/	
-	if (target->context.class_inst == candidate->context.class_inst) {
-		VERIFIER_DEBUG ( printf ("generic types are compatible, both have the same instantiation\n"); );
-		return TRUE;
-	}
-
-	if (target->context.class_inst->type_argc != candidate->context.class_inst->type_argc) {
-		VERIFIER_DEBUG ( printf ("generic instantiations with different arg counts\n"); );
-		return FALSE;
-	}
-
-	//verify if open instance -- none should be 
-
-	container = target->container_class->generic_container;
-
-	for (i = 0; i < container->type_argc; ++i) {
-		MonoGenericParam *param = container->type_params + i;
-		MonoType *target_type = target->context.class_inst->type_argv [i];
-		MonoType *candidate_type = candidate->context.class_inst->type_argv [i];
-		/* We resolve TYPE_VAR types before proceeding */
-
-		if (candidate_type->type == MONO_TYPE_VAR) {
-			MonoGenericParam *var_param = candidate_type->data.generic_param;
-			candidate_type = root_candidate->context.class_inst->type_argv [var_param->num];
-		}
-
-		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK) == 0) {
-			VERIFIER_DEBUG ( printf ("generic type have no variance flag, checking each type %d %d \n",target_type->type, candidate_type->type); );
-
-			if (!mono_metadata_type_equal (target_type, candidate_type))
-				return FALSE;
-		} else {
-			VERIFIER_DEBUG ( printf ("generic type has variance flag, need to perform deeper check\n"); );
-			/* first we check if they are the same kind */
-			/* byref generic params are forbiden, but better safe than sorry.*/
-
-			if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_COVARIANT) == GENERIC_PARAMETER_ATTRIBUTE_COVARIANT) {
-				if (!mono_is_generic_type_compatible (target_type, candidate_type))
-					return FALSE;
-			/* the attribute must be contravariant */
-			} else if (!mono_is_generic_type_compatible (candidate_type, target_type))
-				return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-
-
 /*Verify if type 'candidate' can be stored in type 'target'.
  * 
  * If strict, check for the underlying type and not the verification stack types
@@ -2169,19 +2007,11 @@ handle_enum:
 	}
 
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *left;
-		MonoGenericClass *right;
 		if (mono_type_is_enum_type (target)) {
 			target = mono_type_get_underlying_type_any (target);
 			goto handle_enum;
 		}
-
-		if (candidate->type != MONO_TYPE_GENERICINST)
-			return mono_class_is_assignable_from (mono_class_from_mono_type (target), mono_class_from_mono_type (candidate));
-		left = target->data.generic_class;
-		right = candidate->data.generic_class;
-
-		return mono_is_generic_instance_compatible (left, right, right);
+		return mono_class_is_assignable_from (mono_class_from_mono_type (target), mono_class_from_mono_type (candidate));
 	}
 
 	case MONO_TYPE_STRING:
@@ -4230,6 +4060,13 @@ mono_method_verify (MonoMethod *method, int level)
 
 	if (ctx.signature->is_inflated)
 		ctx.generic_context = generic_context = mono_method_get_context (method);
+
+	if (!generic_context && (method->klass->generic_container || method->generic_container)) {
+		if (method->generic_container)
+			ctx.generic_context = generic_context = &method->generic_container->context;
+		else
+			ctx.generic_context = generic_context = &method->klass->generic_container->context;
+	}
 
 	stack_init (&ctx, &ctx.eval);
 
