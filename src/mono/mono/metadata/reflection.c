@@ -2442,7 +2442,6 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 	g_assert (gclass->is_dynamic);
 	dgclass = (MonoDynamicGenericClass *) gclass;
 
-	// FIXME: Make the f objects unique, otherwise no use in caching their tokens
 	name = mono_string_to_utf8 (fb->name);
 	ftype = mono_class_inflate_generic_type (fb->type->type, mono_generic_class_get_context ((gclass)));
 	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name,
