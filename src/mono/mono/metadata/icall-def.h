@@ -178,6 +178,7 @@ ICALL(PERFCTRCAT_3, "CounterCategoryExists", mono_perfcounter_category_exists)
 ICALL(PERFCTRCAT_4, "Create",         mono_perfcounter_create)
 ICALL(PERFCTRCAT_5, "GetCategoryNames", mono_perfcounter_category_names)
 ICALL(PERFCTRCAT_6, "GetCounterNames", mono_perfcounter_counter_names)
+ICALL(PERFCTRCAT_8, "GetInstanceNames", mono_perfcounter_instance_names)
 ICALL(PERFCTRCAT_7, "InstanceExistsInternal", mono_perfcounter_instance_exists)
 
 ICALL_TYPE(PROCESS, "System.Diagnostics.Process", PROCESS_1)
