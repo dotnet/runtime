@@ -91,7 +91,7 @@ w32_dlerror (void)
 	DWORD code = GetLastError ();
 
 	if (FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), &buf, 0, NULL))
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buf, 0, NULL))
 	{
 		ret = g_utf16_to_utf8 (buf, wcslen(buf), NULL, NULL, NULL);
 		LocalFree (buf);
@@ -163,14 +163,21 @@ static gpointer
 w32_load_module (const char* file, int flags)
 {
 	gpointer hModule = NULL;
-	if (file)
-	{
+	if (file) {
 		gunichar2* file_utf16 = g_utf8_to_utf16 (file, strlen (file), NULL, NULL, NULL);
+		guint last_sem = SetErrorMode (SEM_FAILCRITICALERRORS);
+		guint32 last_error = 0;
+
 		hModule = LoadLibrary (file_utf16);
+		if (!hModule)
+			last_error = GetLastError ();
+
+		SetErrorMode (last_sem);
 		g_free (file_utf16);
-	}
-	else
-	{
+
+		if (!hModule)
+			SetLastError (last_error);
+	} else {
 		hModule = GetModuleHandle (NULL);
 	}
 	return hModule;
