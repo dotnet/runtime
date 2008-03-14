@@ -38,6 +38,22 @@ public class SimpleClass
 
 }
 
+public class ComplexClass<K>
+{
+	public static bool cond;
+	public void GenericMethod<T> (K k) {
+		T a = default (T);
+		T b = a;
+	}
+
+	public void GenericMethod<T> (K k, T t) {
+		T a = t;
+		t = a;
+	}
+
+}
+
+
 public class Driver
 {
 	public static int Main ()
@@ -45,6 +61,9 @@ public class Driver
 		new GenericClass<int>().SimpleMethod ();
 		new SimpleClass().GenericMethod<int>();
 		new SimpleClass().GenericMethod<int>(10);
+
+		new ComplexClass<float>().GenericMethod<int>(1.1f);
+		new ComplexClass<float>().GenericMethod<int>(2.2f, 10);
 
 		return 0;
 	}
