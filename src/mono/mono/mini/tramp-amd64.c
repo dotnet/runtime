@@ -124,16 +124,15 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 }
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *orig_code, gssize *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
-	guint8 *code;
 	guint8 buf [16];
-	gboolean can_write = mono_breakpoint_clean_code (orig_code - 7, buf, sizeof (buf));
-
-	code = buf + 4;
+	gboolean can_write = mono_breakpoint_clean_code (code - 7, buf, sizeof (buf));
 
 	if (!can_write)
 		return;
+
+	code -= 3;
 
 	/* 
 	 * A given byte sequence can match more than case here, so we have to be
