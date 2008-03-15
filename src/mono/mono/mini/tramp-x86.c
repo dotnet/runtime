@@ -108,9 +108,17 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 }
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *orig_code, gssize *regs)
 {
-	code -= 5;
+	guint8 *code;
+	guint8 buf [16];
+	gboolean can_write = mono_breakpoint_clean_code (orig_code - 6, buf, sizeof (buf));
+
+	code = buf + 1;
+
+	if (!can_write)
+		return;
+
 	if (code [0] == 0xe8) {
 		if (!mono_running_on_valgrind ()) {
 			guint32 ops;
