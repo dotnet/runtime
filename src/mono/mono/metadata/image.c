@@ -30,6 +30,7 @@
 #include <mono/utils/mono-io-portability.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/object-internals.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -1136,12 +1137,6 @@ free_mr_signatures (gpointer key, gpointer val, gpointer user_data)
 */
 
 static void
-free_blob_cache_entry (gpointer key, gpointer val, gpointer user_data)
-{
-	g_free (key);
-}
-
-static void
 free_remoting_wrappers (gpointer key, gpointer val, gpointer user_data)
 {
 	g_free (val);
@@ -1349,45 +1344,8 @@ mono_image_close (MonoImage *image)
 		}
 	} else {
 		/* Dynamic images are GC_MALLOCed */
-		struct _MonoDynamicImage *di = (struct _MonoDynamicImage*)image;
-		int i;
 		g_free ((char*)image->module_name);
-		if (di->typespec)
-			g_hash_table_destroy (di->typespec);
-		if (di->typeref)
-			g_hash_table_destroy (di->typeref);
-		if (di->handleref)
-			g_hash_table_destroy (di->handleref);
-		if (di->tokens)
-			mono_g_hash_table_destroy (di->tokens);
-		if (di->blob_cache) {
-			g_hash_table_foreach (di->blob_cache, free_blob_cache_entry, NULL);
-			g_hash_table_destroy (di->blob_cache);
-		}
-		g_list_free (di->array_methods);
-		if (di->gen_params)
-			g_ptr_array_free (di->gen_params, TRUE);
-		if (di->token_fixups)
-			mono_g_hash_table_destroy (di->token_fixups);
-		if (di->method_to_table_idx)
-			g_hash_table_destroy (di->method_to_table_idx);
-		if (di->field_to_table_idx)
-			g_hash_table_destroy (di->field_to_table_idx);
-		if (di->method_aux_hash)
-			g_hash_table_destroy (di->method_aux_hash);
-		g_free (di->strong_name);
-		g_free (di->win32_res);
-		/*g_print ("string heap destroy for image %p\n", di);*/
-		mono_dynamic_stream_reset (&di->sheap);
-		mono_dynamic_stream_reset (&di->code);
-		mono_dynamic_stream_reset (&di->resources);
-		mono_dynamic_stream_reset (&di->us);
-		mono_dynamic_stream_reset (&di->blob);
-		mono_dynamic_stream_reset (&di->tstream);
-		mono_dynamic_stream_reset (&di->guid);
-		for (i = 0; i < MONO_TABLE_NUM; ++i) {
-			g_free (di->tables [i].values);
-		}
+		mono_dynamic_image_free ((MonoDynamicImage*)image);
 		mono_mempool_destroy (image->mempool);
 	}
 
