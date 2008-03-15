@@ -4407,6 +4407,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->method_aux_hash = g_hash_table_new (NULL, NULL);
 	image->handleref = g_hash_table_new (NULL, NULL);
 	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
+	image->generic_def_objects = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
@@ -4464,6 +4465,8 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		g_hash_table_destroy (di->handleref);
 	if (di->tokens)
 		mono_g_hash_table_destroy (di->tokens);
+	if (di->generic_def_objects)
+		mono_g_hash_table_destroy (di->generic_def_objects);
 	if (di->blob_cache) {
 		g_hash_table_foreach (di->blob_cache, free_blob_cache_entry, NULL);
 		g_hash_table_destroy (di->blob_cache);
@@ -9112,9 +9115,17 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	inflated = mono_class_inflate_generic_method (method, &tmp_context);
 	imethod = (MonoMethodInflated *) inflated;
 
-	MOVING_GC_REGISTER (&imethod->reflection_info);
-	imethod->reflection_info = rmethod;
-
+	if (method->klass->image->dynamic) {
+		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
+		/*
+		 * This table maps metadata structures representing inflated methods/fields
+		 * to the reflection objects representing their generic definitions.
+		 */
+		mono_loader_lock ();
+		mono_g_hash_table_insert (image->generic_def_objects, imethod, rmethod);
+		mono_loader_unlock ();
+	}
+	
 	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 }
 
@@ -9130,9 +9141,12 @@ inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoO
 	context = mono_class_get_context (klass);
 
 	imethod = (MonoMethodInflated *) mono_class_inflate_generic_method_full (method, klass, context);
-	if (method->generic_container) {
-		MOVING_GC_REGISTER (&imethod->reflection_info);
-		imethod->reflection_info = obj;
+	if (method->generic_container && method->klass->image->dynamic) {
+		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
+
+		mono_loader_lock ();
+		mono_g_hash_table_insert (image->generic_def_objects, imethod, obj);
+		mono_loader_unlock ();
 	}
 	return (MonoMethod *) imethod;
 }
