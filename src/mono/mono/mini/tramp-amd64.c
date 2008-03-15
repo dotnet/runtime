@@ -124,9 +124,16 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 }
 
 void
-mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
+mono_arch_nullify_class_init_trampoline (guint8 *orig_code, gssize *regs)
 {
-	code -= 3;
+	guint8 *code;
+	guint8 buf [16];
+	gboolean can_write = mono_breakpoint_clean_code (orig_code - 7, buf, sizeof (buf));
+
+	code = buf + 4;
+
+	if (!can_write)
+		return;
 
 	/* 
 	 * A given byte sequence can match more than case here, so we have to be
@@ -176,7 +183,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 		;
 	} else {
 		printf ("Invalid trampoline sequence: %x %x %x %x %x %x %x\n", code [0], code [1], code [2], code [3],
-				code [4], code [5], code [6]);
+			code [4], code [5], code [6]);
 		g_assert_not_reached ();
 	}
 }
