@@ -6915,7 +6915,11 @@ mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
 gboolean
 mono_class_generic_sharing_enabled (MonoClass *class)
 {
+#if defined(__i386__) || defined(__x86_64__)
 	static int generic_sharing = MONO_GENERIC_SHARING_CORLIB;
+#else
+	static int generic_sharing = MONO_GENERIC_SHARING_NONE;
+#endif
 	static gboolean inited = FALSE;
 
 	if (!inited) {
