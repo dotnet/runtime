@@ -333,7 +333,7 @@ mono_class_generic_class_relation (MonoClass *klass, int info_type, MonoClass *m
 			mono_generic_context_equal_deep (mini_class_get_context (klass), generic_context))
 		return MINI_GENERIC_CLASS_RELATION_SELF;
 
-	i = mono_class_lookup_or_register_other_info (method_klass, klass, info_type, generic_context);
+	i = mono_class_lookup_or_register_other_info (method_klass, &klass->byval_arg, info_type, generic_context);
 	if (arg_num)
 		*arg_num = i;
 	return MINI_GENERIC_CLASS_RELATION_OTHER_TABLE;

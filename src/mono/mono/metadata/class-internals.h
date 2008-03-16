@@ -194,12 +194,14 @@ typedef struct {
 enum {
 	MONO_RGCTX_INFO_STATIC_DATA,
 	MONO_RGCTX_INFO_KLASS,
-	MONO_RGCTX_INFO_VTABLE
+	MONO_RGCTX_INFO_VTABLE,
+	MONO_RGCTX_INFO_METHOD,
+	MONO_RGCTX_INFO_GENERIC_METHOD_CODE
 };
 
 typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
-	MonoType *type;
 	int info_type;
+	gpointer data;
 	struct _MonoRuntimeGenericContextOtherInfoTemplate *next;
 } MonoRuntimeGenericContextOtherInfoTemplate;
 
@@ -978,7 +980,7 @@ void
 mono_class_fill_runtime_generic_context (MonoRuntimeGenericContext *rgctx) MONO_INTERNAL;
 
 gboolean
-mono_class_lookup_or_register_other_info (MonoClass *class, MonoClass *other_class, int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
+mono_class_lookup_or_register_other_info (MonoClass *class, gpointer data, int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
 
 int
 mono_generic_context_check_used (MonoGenericContext *context) MONO_INTERNAL;
