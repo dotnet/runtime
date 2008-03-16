@@ -3595,7 +3595,8 @@ build_compressed_metadata (MonoDynamicImage *assembly)
  * tokens for the method with ILGenerator @ilgen.
  */
 static void
-fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *assembly) {
+fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *assembly)
+{
 	guint32 code_idx = GPOINTER_TO_UINT (value);
 	MonoReflectionILTokenInfo *iltoken;
 	MonoReflectionFieldBuilder *field;
@@ -3661,6 +3662,8 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder") ||
 					!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
+				continue;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldOnTypeBuilderInst")) {
 				continue;
 			} else {
 				g_assert_not_reached ();

@@ -817,6 +817,16 @@ mono_class_setup_fields (MonoClass *class)
 	if (class->size_inited)
 		return;
 
+	if (class->generic_class && class->generic_class->container_class->image->dynamic && !class->generic_class->container_class->wastypebuilder) {
+		/*
+		 * This happens when a generic instance of an unfinished generic typebuilder
+		 * is used as an element type for creating an array type. We can't initialize
+		 * the fields of this class using the fields of gklass, since gklass is not
+		 * finished yet, fields could be added to it later.
+		 */
+		return;
+	}
+
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
 		mono_class_setup_fields (gklass);
