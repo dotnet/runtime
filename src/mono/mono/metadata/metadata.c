@@ -1969,7 +1969,7 @@ static guint
 inflated_method_hash (gconstpointer a)
 {
 	const MonoMethodInflated *ma = a;
-	return mono_metadata_generic_context_hash (&ma->context) ^ mono_aligned_addr_hash (ma->declaring) + ma->is_mb_open;
+	return (mono_metadata_generic_context_hash (&ma->context) ^ mono_aligned_addr_hash (ma->declaring)) + ma->is_mb_open;
 }
 
 static gboolean

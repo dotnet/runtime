@@ -889,7 +889,7 @@ output_profile (GList *funcs)
 		m = method_get_name (p->method);
 		fprintf (poutput, "########################\n");
 		fprintf (poutput, "% 8.3f ", (double) (p->total * 1000));
-		fprintf (poutput, "%7" G_GUINT64_FORMAT " ", (unsigned long long)p->count);
+		fprintf (poutput, "%7" G_GUINT64_FORMAT " ", (guint64)p->count);
 		fprintf (poutput, "% 8.3f ", (double) (p->total * 1000)/(double)p->count);
 		fprintf (poutput, "  %s\n", m);
 
@@ -897,7 +897,7 @@ output_profile (GList *funcs)
 		/* callers */
 		output_callers (p);
 	}
-	fprintf (poutput, "Total number of calls: %" G_GINT64_FORMAT "\n", (long long)total_calls);
+	fprintf (poutput, "Total number of calls: %" G_GINT64_FORMAT "\n", (gint64)total_calls);
 }
 
 typedef struct {

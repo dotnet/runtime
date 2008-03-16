@@ -732,7 +732,7 @@ objval_describe (MonoClass *class, const char *addr)
 	MonoClassField *field;
 	MonoClass *p;
 	const char *field_ptr;
-	int type_offset = 0;
+	gssize type_offset = 0;
 	if (class->valuetype)
 		type_offset = -sizeof (MonoObject);
 

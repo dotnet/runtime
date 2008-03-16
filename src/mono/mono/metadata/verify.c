@@ -411,7 +411,7 @@ stack_slot_is_managed_pointer (ILStackDesc *value)
  * 
  * Returns TRUE is @value is a managed mutability pointer.
  */
-static gboolean
+static G_GNUC_UNUSED gboolean
 stack_slot_is_managed_mutability_pointer (ILStackDesc *value)
 {
 	return (value->stype & CMMP_MASK) == CMMP_MASK;

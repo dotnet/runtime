@@ -223,11 +223,11 @@ get_events_from_list (MonoMList *list)
 }
 
 #define ICALL_RECV(x)	ves_icall_System_Net_Sockets_Socket_Receive_internal (\
-				(SOCKET) x->handle, x->buffer, x->offset, x->size,\
+				(SOCKET)(gssize)x->handle, x->buffer, x->offset, x->size,\
 				 x->socket_flags, &x->error);
 
 #define ICALL_SEND(x)	ves_icall_System_Net_Sockets_Socket_Send_internal (\
-				(SOCKET) x->handle, x->buffer, x->offset, x->size,\
+				(SOCKET)(gssize)x->handle, x->buffer, x->offset, x->size,\
 				 x->socket_flags, &x->error);
 
 static void

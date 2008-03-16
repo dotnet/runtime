@@ -402,7 +402,7 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 	return ji;
 }
 
-static void
+static G_GNUC_UNUSED void
 jit_info_table_check (MonoJitInfoTable *table)
 {
 	int i;
@@ -1090,7 +1090,7 @@ mono_domain_create (void)
 			bit = i / sizeof (gpointer);
 			domain_gc_bitmap [bit / 32] |= 1 << (bit % 32);
 		}
-		domain_gc_desc = mono_gc_make_descr_from_bitmap (domain_gc_bitmap, bit + 1);
+		domain_gc_desc = mono_gc_make_descr_from_bitmap ((gsize*)domain_gc_bitmap, bit + 1);
 	}
 	mono_appdomains_unlock ();
 

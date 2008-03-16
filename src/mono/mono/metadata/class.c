@@ -1682,73 +1682,6 @@ mono_class_get_implemented_interfaces (MonoClass *klass)
 	return res;
 }
 
-typedef struct _IOffsetInfo IOffsetInfo;
-struct _IOffsetInfo {
-	IOffsetInfo *next;
-	int size;
-	int next_free;
-	int data [MONO_ZERO_LEN_ARRAY];
-};
-
-static IOffsetInfo *cached_offset_info = NULL;
-static int next_offset_info_size = 128;
-
-static int*
-cache_interface_offsets (int max_iid, int *data)
-{
-	IOffsetInfo *cached_info;
-	int *cached;
-	int new_size;
-	for (cached_info = cached_offset_info; cached_info; cached_info = cached_info->next) {
-		cached = cached_info->data;
-		while (cached < cached_info->data + cached_info->size && *cached) {
-			if (*cached == max_iid) {
-				int i, matched = TRUE;
-				cached++;
-				for (i = 0; i < max_iid; ++i) {
-					if (cached [i] != data [i]) {
-						matched = FALSE;
-						break;
-					}
-				}
-				if (matched)
-					return cached;
-				cached += max_iid;
-			} else {
-				cached += *cached + 1;
-			}
-		}
-	}
-	/* find a free slot */
-	for (cached_info = cached_offset_info; cached_info; cached_info = cached_info->next) {
-		if (cached_info->size - cached_info->next_free >= max_iid + 1) {
-			cached = &cached_info->data [cached_info->next_free];
-			*cached++ = max_iid;
-			memcpy (cached, data, max_iid * sizeof (int));
-			cached_info->next_free += max_iid + 1;
-			return cached;
-		}
-	}
-	/* allocate a new chunk */
-	if (max_iid + 1 < next_offset_info_size) {
-		new_size = next_offset_info_size;
-		if (next_offset_info_size < 4096)
-			next_offset_info_size += next_offset_info_size >> 2;
-	} else {
-		new_size = max_iid + 1;
-	}
-	cached_info = g_malloc0 (sizeof (IOffsetInfo) + sizeof (int) * new_size);
-	cached_info->size = new_size;
-	/*g_print ("allocated %d offset entries at %p (total: %d)\n", new_size, cached_info->data, offset_info_total_size);*/
-	cached = &cached_info->data [0];
-	*cached++ = max_iid;
-	memcpy (cached, data, max_iid * sizeof (int));
-	cached_info->next_free += max_iid + 1;
-	cached_info->next = cached_offset_info;
-	cached_offset_info = cached_info;
-	return cached;
-}
-
 static int
 compare_interface_ids (const void *p_key, const void *p_element) {
 	const MonoClass *key = p_key;
@@ -6609,17 +6542,8 @@ mono_classes_init (void)
 void
 mono_classes_cleanup (void)
 {
-	IOffsetInfo *cached_info, *next;
-
 	if (global_interface_bitset)
 		mono_bitset_free (global_interface_bitset);
-
-	for (cached_info = cached_offset_info; cached_info;) {
-		next = cached_info->next;
-
-		g_free (cached_info);
-		cached_info = next;
-	}
 }
 
 /**

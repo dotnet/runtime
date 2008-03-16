@@ -33,9 +33,10 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/profiler.h>
+#include <mono/metadata/profiler-private.h>
+#include <mono/metadata/exception.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl.h>
-#include <mono/metadata/exception.h>
 
 MonoDefaults mono_defaults;
 
