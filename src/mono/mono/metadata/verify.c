@@ -144,6 +144,9 @@ typedef struct {
 	/*This flag helps solving a corner case of delegate verification in that you cannot have a "starg 0" 
 	 *on a method that creates a delegate for a non-final virtual method using ldftn*/
 	gboolean has_this_store;
+
+	guint32 prefix_set;
+	MonoType *constrained_type;
 } VerifyContext;
 
 static void
@@ -212,8 +215,7 @@ enum {
 	PREFIX_UNALIGNED = 1,
 	PREFIX_VOLATILE  = 2,
 	PREFIX_TAIL      = 4,
-	PREFIX_ADDR_MASK = 3,
-	PREFIX_FUNC_MASK = 4
+	PREFIX_CONSTRAINED = 8
 };
 //////////////////////////////////////////////////////////////////
 
@@ -2098,7 +2100,7 @@ is_compatible_boxed_valuetype (MonoType *type, MonoType *candidate, ILStackDesc 
 		return FALSE;
 	if (!type_must_be_object && !MONO_TYPE_IS_REFERENCE (type))
 		return FALSE;
-	return !type->byref && mono_class_from_mono_type (candidate)->valuetype && !candidate->byref && stack_slot_is_boxed_value (stack);
+	return !type->byref && !candidate->byref && stack_slot_is_boxed_value (stack);
 }
 
 static int
@@ -2656,22 +2658,28 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 	ILStackDesc *value;
 	MonoMethod *method;
 	gboolean virt_check_this = FALSE;
+	gboolean constrained = ctx->prefix_set & PREFIX_CONSTRAINED;
 
 	if (!(method = verifier_load_method (ctx, method_token, virtual ? "callvirt" : "call")))
 		return;
 
-	if (!virtual && (method->flags & METHOD_ATTRIBUTE_ABSTRACT)) 
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use call with an abstract method at 0x%04x", ctx->ip_offset));
+	if (virtual) {
+		ctx->prefix_set &= ~PREFIX_CONSTRAINED;
 
-	if (virtual && method->klass->valuetype)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with valuetype method at 0x%04x", ctx->ip_offset));
+		if (method->klass->valuetype) // && !constrained ???
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with valuetype method at 0x%04x", ctx->ip_offset));
 
-	if (virtual && (method->flags & METHOD_ATTRIBUTE_STATIC))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with static method at 0x%04x", ctx->ip_offset));
+		if ((method->flags & METHOD_ATTRIBUTE_STATIC))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with static method at 0x%04x", ctx->ip_offset));
+
+	} else {
+		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT) 
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use call with an abstract method at 0x%04x", ctx->ip_offset));
 		
-	if (!virtual && (method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL)) {
-		virt_check_this = TRUE;
-		ctx->code [ctx->ip_offset].flags |= IL_CODE_CALL_NONFINAL_VIRTUAL;
+		if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !(method->flags & METHOD_ATTRIBUTE_FINAL)) {
+			virt_check_this = TRUE;
+			ctx->code [ctx->ip_offset].flags |= IL_CODE_CALL_NONFINAL_VIRTUAL;
+		}
 	}
 
 	if (!(sig = mono_method_get_signature_full (method, ctx->image, method_token, ctx->generic_context)))
@@ -2700,19 +2708,26 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 
 		if (virt_check_this && !stack_slot_is_this_pointer (value) && !(method->klass->valuetype || stack_slot_is_boxed_value (value)))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a non-final virtual method from an objet diferent thant the this pointer at 0x%04x", ctx->ip_offset));
-			
-		if (stack_slot_is_managed_pointer (value) && !mono_class_from_mono_type (value->type)->valuetype)
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a reference type using a managed pointer to the this arg at 0x%04x", ctx->ip_offset));
 
-		if (!virtual && mono_class_from_mono_type (value->type)->valuetype && !method->klass->valuetype && !stack_slot_is_boxed_value (value))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a valuetype baseclass at 0x%04x", ctx->ip_offset));
-
-		if (virtual && mono_class_from_mono_type (value->type)->valuetype && !stack_slot_is_boxed_value (value))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a valuetype with callvirt at 0x%04x", ctx->ip_offset));
-		
-		if (method->klass->valuetype && (stack_slot_is_boxed_value (value) || !stack_slot_is_managed_pointer (value)))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a boxed or literal valuetype to call a valuetype method  at 0x%04x", ctx->ip_offset));
-
+		if (constrained && virtual) {
+			if (!stack_slot_is_managed_pointer (value))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Object is not a managed pointer for a constrained call at 0x%04x", ctx->ip_offset));
+			if (!mono_metadata_type_equal_full (mono_type_get_type_byval (value->type), ctx->constrained_type, TRUE))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Object not compatible with constrained type at 0x%04x", ctx->ip_offset));
+			copy.stype |= BOXED_MASK;
+		} else {
+			if (stack_slot_is_managed_pointer (value) && !mono_class_from_mono_type (value->type)->valuetype)
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a reference type using a managed pointer to the this arg at 0x%04x", ctx->ip_offset));
+	
+			if (!virtual && mono_class_from_mono_type (value->type)->valuetype && !method->klass->valuetype && !stack_slot_is_boxed_value (value))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a valuetype baseclass at 0x%04x", ctx->ip_offset));
+	
+			if (virtual && mono_class_from_mono_type (value->type)->valuetype && !stack_slot_is_boxed_value (value))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a valuetype with callvirt at 0x%04x", ctx->ip_offset));
+	
+			if (method->klass->valuetype && (stack_slot_is_boxed_value (value) || !stack_slot_is_managed_pointer (value)))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a boxed or literal valuetype to call a valuetype method  at 0x%04x", ctx->ip_offset));
+		}
 		if (!verify_stack_type_compatibility (ctx, type, &copy))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature at 0x%04x", ctx->ip_offset));
 	}
@@ -2724,6 +2739,9 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		if (check_overflow (ctx))
 			set_stack_value (ctx, stack_push (ctx), sig->ret, FALSE);
 	}
+
+	if (virtual)
+		ctx->prefix_set &= ~PREFIX_CONSTRAINED;
 }
 
 static void
@@ -3220,7 +3238,7 @@ do_cast (VerifyContext *ctx, int token, const char *opcode) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value for %s at 0x%04x", opcode, ctx->ip_offset));
 	}
 
-	stack_push_val (ctx, TYPE_COMPLEX | (mono_class_from_mono_type (type)->valuetype ? BOXED_MASK : 0), type);
+	stack_push_val (ctx, TYPE_COMPLEX | (mono_class_from_mono_type (type)->valuetype || is_boxed ? BOXED_MASK : 0), type);
 }
 
 static MonoType *
@@ -4001,7 +4019,7 @@ mono_method_verify (MonoMethod *method, int level)
 	const unsigned char *ip;
 	const unsigned char *end;
 	int i, n, need_merge = 0, start = 0;
-	guint token, ip_offset = 0, prefix = 0, prefix_list = 0;
+	guint token, ip_offset = 0, prefix = 0;
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	VerifyContext ctx;
@@ -4160,14 +4178,6 @@ mono_method_verify (MonoMethod *method, int level)
 		start = 0;
 
 		/*TODO we can fast detect a forward branch or exception block targeting code after prefix, we should fail fast*/
-		if (prefix) {
-			prefix_list |= prefix;
-		} else {
-			prefix_list = 0;
-			ctx.code [ip_offset].flags |= IL_CODE_FLAG_SEEN;
-		}
-		prefix = 0;
-
 #ifdef MONO_VERIFIER_DEBUG
 		{
 			char *discode;
@@ -4909,7 +4919,8 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 
 			case CEE_CONSTRAINED_:
-				token = read32 (ip + 1);
+				ctx.constrained_type = get_boxable_mono_type (&ctx, read32 (ip + 1), "constrained.");
+				prefix |= PREFIX_CONSTRAINED;
 				ip += 5;
 				break;
 			case CEE_CPBLK:
@@ -4952,6 +4963,16 @@ mono_method_verify (MonoMethod *method, int level)
 				++ip;
 				break;
 			}
+		}
+
+		/*TODO we can fast detect a forward branch or exception block targeting code after prefix, we should fail fast*/
+		if (prefix) {
+			ctx.prefix_set |= prefix;
+			prefix = 0;
+		} else {
+			ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
+			if (ctx.prefix_set & PREFIX_CONSTRAINED)
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after constrained prefix intruction at 0x%04x", ctx.ip_offset));
 		}
 	}
 	/*
