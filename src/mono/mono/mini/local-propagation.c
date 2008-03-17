@@ -722,7 +722,12 @@ mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **
 	case OP_FCALL_RGCTX:
 	case OP_VOIDCALL_RGCTX:
 	case OP_LCALL_RGCTX:
-	case OP_VCALL_RGCTX: {
+	case OP_VCALL_RGCTX:
+	case OP_CALL_REG_RGCTX:
+	case OP_FCALL_REG_RGCTX:
+	case OP_VOIDCALL_REG_RGCTX:
+	case OP_LCALL_REG_RGCTX:
+	case OP_VCALL_REG_RGCTX: {
 		MonoCallInst *call = (MonoCallInst *)tree;
 		MonoMethodSignature *sig = call->signature;
 		int i, byref = FALSE;

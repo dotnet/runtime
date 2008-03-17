@@ -253,6 +253,7 @@ BASE_TEST_CS_SRC=		\
 	generics-invoke-byref.2.cs	\
 	generic-signature-compare.2.cs	\
 	generics-sharing.2.cs	\
+	shared-generic-methods.2.cs	\
 	shared-generic-synchronized.2.cs	\
 	generic-inlining.2.cs	\
 	recursive-generics.2.cs	\
@@ -635,8 +636,9 @@ test-coreclr-security : coreclr-security.exe
 	$(RUNTIME21) --security=core-clr-test coreclr-security.exe
 endif
 
-test-generic-sharing : generics-sharing.2.exe shared-generic-synchronized.2.exe
+test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe shared-generic-synchronized.2.exe
 	$(RUNTIME) -O=gshared generics-sharing.2.exe
+	$(RUNTIME) -O=gshared,-inline shared-generic-methods.2.exe
 	$(RUNTIME) -O=gshared shared-generic-synchronized.2.exe
 
 EXTRA_DIST += async-exceptions.cs

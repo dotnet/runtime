@@ -241,6 +241,11 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 	case OP_VOIDCALL_RGCTX:
 	case OP_LCALL_RGCTX:
 	case OP_VCALL_RGCTX:
+	case OP_CALL_REG_RGCTX:
+	case OP_FCALL_REG_RGCTX:
+	case OP_VOIDCALL_REG_RGCTX:
+	case OP_LCALL_REG_RGCTX:
+	case OP_VCALL_REG_RGCTX:
 		mono_print_label (fp, tree->inst_left);
 		break;
 	case CEE_BNE_UN:

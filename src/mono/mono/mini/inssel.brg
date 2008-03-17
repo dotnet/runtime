@@ -965,6 +965,41 @@ stmt: OP_VCALL_RGCTX (reg, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+reg: OP_CALL_REG_RGCTX (reg, reg) {
+	emit_rgctx_argument (s, tree, state->right->reg1, OP_CALL_REG);
+
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+freg: OP_FCALL_REG_RGCTX (reg, reg) {
+	emit_rgctx_argument (s, tree, state->right->reg1, OP_FCALL_REG);
+
+	tree->sreg1 = state->left->reg1;
+	tree->dreg = state->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_VOIDCALL_REG_RGCTX (reg, reg) {
+	emit_rgctx_argument (s, tree, state->right->reg1, OP_VOIDCALL_REG);
+
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
+stmt: OP_VCALL_REG_RGCTX (OP_GROUP (reg, reg), reg) {
+	emit_rgctx_argument (s, tree, state->left->right->reg1, OP_VCALL_REG);
+
+	tree->inst_left = tree->inst_left->inst_left;
+	state->left = state->left->left;
+
+	mono_arch_emit_this_vret_args (s, (MonoCallInst*)tree, -1, -1, state->right->reg1);
+
+	tree->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: OP_SAVE_LMF,
 stmt: OP_RESTORE_LMF {
 	mono_bblock_add_inst (s->cbb, tree);

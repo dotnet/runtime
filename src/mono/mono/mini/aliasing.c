@@ -173,7 +173,12 @@ print_tree_node (MonoInst *tree) {
 	case OP_FCALL_RGCTX:
 	case OP_VOIDCALL_RGCTX:
 	case OP_LCALL_RGCTX:
-	case OP_VCALL_RGCTX: {
+	case OP_VCALL_RGCTX:
+	case OP_CALL_REG_RGCTX:
+	case OP_FCALL_REG_RGCTX:
+	case OP_VOIDCALL_REG_RGCTX:
+	case OP_LCALL_REG_RGCTX:
+	case OP_VCALL_REG_RGCTX: {
 		MonoCallInst *call = (MonoCallInst*)tree;
 		if (call->method)
 			printf ("[%s]", call->method->name);
