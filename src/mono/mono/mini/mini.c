@@ -6844,7 +6844,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 5;
 			break;
 		}
-		case CEE_ISINST:
+		case CEE_ISINST: {
+			gboolean shared_access = FALSE;
+
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
@@ -6854,13 +6856,44 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			if (cfg->generic_sharing_context && mono_class_check_context_used (klass))
-				GENERIC_SHARING_FAILURE (CEE_ISINST);
+			if (cfg->generic_sharing_context) {
+				int context_used = mono_class_check_context_used (klass);
+
+				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
+					GENERIC_SHARING_FAILURE (CEE_ISINST);
+
+				if (context_used)
+					shared_access = TRUE;
+			}
 
 			/* Needed by the code generated in inssel.brg */
-			mono_get_got_var (cfg);
+			if (!shared_access)
+				mono_get_got_var (cfg);
 
-			if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			if (shared_access) {
+				MonoInst *this = NULL, *rgctx;
+				MonoInst *args [2];
+				int temp;
+
+				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
+
+				/* obj */
+				args [0] = *sp;
+
+				/* klass */
+				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
+					NEW_ARGLOAD (cfg, this, 0);
+				rgctx = get_runtime_generic_context (cfg, method, this, ip);
+				args [1] = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+					token, MINI_TOKEN_SOURCE_CLASS, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
+
+				temp = mono_emit_jit_icall (cfg, bblock, mono_object_isinst, args, ip);
+				NEW_TEMPLOAD (cfg, *sp, temp);
+
+				sp++;
+				ip += 5;
+				inline_costs += 2;
+			} else if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 			
 				MonoMethod *mono_isinst;
 				MonoInst *iargs [1];
@@ -6900,6 +6933,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 			}
 			break;
+		}
 		case CEE_UNBOX_ANY: {
 			MonoInst *add, *vtoffset;
 			MonoInst *iargs [3];
