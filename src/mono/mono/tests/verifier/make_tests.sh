@@ -4206,5 +4206,40 @@ done
 ./make_delegate_compat_test.sh delegate_method_ptr_pinvoke_arg_2 unverifiable int32 int32 "method int32 *(float64)" "method int32 *(int32)" "" "" "pinvoke"
 
 
+#constrained prefix
+
+#good type tests
+I=1
+for TYPE in object string MyValueType
+do
+	./make_constrained_test.sh contrained_prefix_basic_types_$I valid "$TYPE" "$TYPE" "callvirt string object::ToString()"
+	I=`expr $I + 1`
+done
+
+#method that exist on the value type
+./make_constrained_test.sh contrained_prefix_basic_types_$I valid "MyValueType" "MyValueType" "callvirt int32 object::GetHashCode()"
+
+
+#mismatch between constrained. type token and this argument
+./make_constrained_test.sh contrained_prefix_type_mismatch_1 unverifiable "object" "string" "callvirt instance int32 object::GetHashCode()"
+./make_constrained_test.sh contrained_prefix_type_mismatch_2 unverifiable "string" "object" "callvirt instance int32 object::GetHashCode()"
+
+./make_constrained_test.sh contrained_prefix_type_mismatch_3 unverifiable "object" "MyValueType" "callvirt instance int32 object::GetHashCode()"
+./make_constrained_test.sh contrained_prefix_type_mismatch_4 unverifiable "MyValueType" "object" "callvirt instance int32 object::GetHashCode()"
+
+#bad contrained token
+./make_constrained_test.sh contrained_prefix_bad_token_1 unverifiable "object" "object&" "callvirt instance int32 object::GetHashCode()"
+./make_constrained_test.sh contrained_prefix_bad_token_1 unverifiable "object*" "object*" "callvirt instance int32 object::GetHashCode()"
+
+#contrained no before a callvirt
+./make_constrained_test.sh contrained_prefix_not_before_a_callvirt invalid "string" "string" "call instance string string::Trim()"
+
+#wrong stack type
+
+./make_constrained_test.sh contrained_prefix_bad_stack_type_1 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldloc.0"
+./make_constrained_test.sh contrained_prefix_bad_stack_type_2 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldnull"
+./make_constrained_test.sh contrained_prefix_bad_stack_type_3 unverifiable "object" "object" "callvirt instance int32 object::GetHashCode()" "ldc.i4.0"
+
+
 
 
