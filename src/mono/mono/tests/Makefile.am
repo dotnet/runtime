@@ -256,6 +256,7 @@ BASE_TEST_CS_SRC=		\
 	shared-generic-methods.2.cs	\
 	shared-generic-synchronized.2.cs	\
 	generic-inlining.2.cs	\
+	generic-initobj.2.cs	\
 	recursive-generics.2.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
@@ -636,10 +637,11 @@ test-coreclr-security : coreclr-security.exe
 	$(RUNTIME21) --security=core-clr-test coreclr-security.exe
 endif
 
-test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe shared-generic-synchronized.2.exe
+test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe shared-generic-synchronized.2.exe generic-initobj.2.exe
 	$(RUNTIME) -O=gshared generics-sharing.2.exe
 	$(RUNTIME) -O=gshared,-inline shared-generic-methods.2.exe
 	$(RUNTIME) -O=gshared shared-generic-synchronized.2.exe
+	$(RUNTIME) -O=gshared,-inline generic-initobj.2.exe
 
 EXTRA_DIST += async-exceptions.cs
 async-exceptions.exe : async-exceptions.cs

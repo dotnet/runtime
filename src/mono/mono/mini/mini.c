@@ -4685,6 +4685,14 @@ get_runtime_generic_context_method (MonoCompile *cfg, MonoMethod *method, MonoBa
 	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, arg_num, ip);
 }
 
+static gboolean
+generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
+{
+	MonoType *type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, &klass->byval_arg);
+
+	return MONO_TYPE_IS_REFERENCE (type);
+}
+
 static MiniVerifierMode verifier_mode = MINI_VERIFIER_MODE_OFF;
 
 void
@@ -8900,7 +8908,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				inline_costs += 100000;
 				ip += 2;
 				break;
-			case CEE_INITOBJ:
+			case CEE_INITOBJ: {
+				gboolean generic_shared = FALSE;
+
 				CHECK_STACK (1);
 				--sp;
 				CHECK_OPSIZE (6);
@@ -8908,10 +8918,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
 
-				if (cfg->generic_sharing_context && mono_class_check_context_used (klass))
-					GENERIC_SHARING_FAILURE (CEE_INITOBJ);
+				if (cfg->generic_sharing_context && mono_class_check_context_used (klass)) {
+					if (generic_class_is_reference_type (cfg, klass))
+						generic_shared = TRUE;
+					else
+						GENERIC_SHARING_FAILURE (CEE_INITOBJ);
+				}
 
-				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg) || generic_shared) {
 					MonoInst *store, *load;
 					NEW_PCONST (cfg, load, NULL);
 					load->cil_code = ip;
@@ -8929,6 +8943,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 6;
 				inline_costs += 1;
 				break;
+ 			}
 			case CEE_CONSTRAINED_:
 				/* FIXME: implement */
 				CHECK_OPSIZE (6);
