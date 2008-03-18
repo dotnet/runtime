@@ -345,7 +345,8 @@ TEST_IL_SRC=			\
 	ldtoken_with_byref_typespec.2.il \
 	resolve_method_bug.2.il \
 	resolve_field_bug.2.il \
-	resolve_type_bug.2.il
+	resolve_type_bug.2.il	\
+	generics-sharing-other-exc.2.il
 
 #	bug-318677.il
 
@@ -637,11 +638,12 @@ test-coreclr-security : coreclr-security.exe
 	$(RUNTIME21) --security=core-clr-test coreclr-security.exe
 endif
 
-test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe shared-generic-synchronized.2.exe generic-initobj.2.exe
+test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe shared-generic-synchronized.2.exe generic-initobj.2.exe generics-sharing-other-exc.2.exe
 	$(RUNTIME) -O=gshared generics-sharing.2.exe
 	$(RUNTIME) -O=gshared,-inline shared-generic-methods.2.exe
 	$(RUNTIME) -O=gshared shared-generic-synchronized.2.exe
 	$(RUNTIME) -O=gshared,-inline generic-initobj.2.exe
+	$(RUNTIME) -O=gshared,-inline generics-sharing-other-exc.2.exe
 
 EXTRA_DIST += async-exceptions.cs
 async-exceptions.exe : async-exceptions.cs
