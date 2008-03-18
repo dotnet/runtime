@@ -77,7 +77,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 void
-mono_arch_patch_callsite (guint8 *p, guint8 *addr)
+mono_arch_patch_callsite (guint8 *method_start, guint8 *p, guint8 *addr)
 {
 	guint32 *code = (void *)p;
 	/* Search for and patch the calling sequence

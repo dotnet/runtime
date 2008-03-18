@@ -76,7 +76,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 void
-mono_arch_patch_callsite (guint8 *code, guint8 *addr)
+mono_arch_patch_callsite (guint8 *method_start, guint8 *code, guint8 *addr)
 {
 	guint8 *callsite_begin;
 	guint64 *callsite = (guint64*)(gpointer)(code - 16);

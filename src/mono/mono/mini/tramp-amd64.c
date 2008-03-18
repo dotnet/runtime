@@ -69,7 +69,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
  * points to the pc right after the call.
  */
 void
-mono_arch_patch_callsite (guint8 *orig_code, guint8 *addr)
+mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 {
 	guint8 *code;
 	guint8 buf [16];

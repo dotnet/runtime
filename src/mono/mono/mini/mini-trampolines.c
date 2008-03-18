@@ -251,7 +251,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 				mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
 
 			if (mono_method_same_domain (ji, target_ji))
-				mono_arch_patch_callsite (code, addr);
+				mono_arch_patch_callsite (ji->code_start, code, addr);
 		}
 	}
 

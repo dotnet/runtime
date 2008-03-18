@@ -523,7 +523,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 }
 
 void
-mono_arch_patch_callsite (guint8 *code, guint8 *addr)
+mono_arch_patch_callsite (guint8 *method_start, guint8 *code, guint8 *addr)
 {
   unsigned long *p = (unsigned int *)(code-12);
   
