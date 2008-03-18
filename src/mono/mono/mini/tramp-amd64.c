@@ -73,7 +73,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 {
 	guint8 *code;
 	guint8 buf [16];
-	gboolean can_write = mono_breakpoint_clean_code (orig_code - 14, buf, sizeof (buf));
+	gboolean can_write = mono_breakpoint_clean_code (method_start, orig_code, 14, buf, sizeof (buf));
 
 	code = buf + 14;
 
@@ -127,7 +127,7 @@ void
 mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
 	guint8 buf [16];
-	gboolean can_write = mono_breakpoint_clean_code (code - 7, buf, sizeof (buf));
+	gboolean can_write = mono_breakpoint_clean_code (NULL, code, 7, buf, sizeof (buf));
 
 	if (!can_write)
 		return;

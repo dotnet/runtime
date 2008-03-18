@@ -4570,12 +4570,33 @@ mono_arch_get_patch_offset (guint8 *code)
 	}
 }
 
+/**
+ * mono_breakpoint_clean_code:
+ *
+ * Copy @size bytes from @code - @offset to the buffer @buf. If the debugger inserted software
+ * breakpoints in the original code, they are removed in the copy.
+ *
+ * Returns TRUE if no sw breakpoint was present.
+ */
 gboolean
-mono_breakpoint_clean_code (guint8 *code, guint8 *buf, int size)
+mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guint8 *buf, int size)
 {
 	int i;
 	gboolean can_write = TRUE;
-	memcpy (buf, code, size);
+	/*
+	 * If method_start is non-NULL we need to perform bound checks, since we access memory
+	 * at code - offset we could go before the start of the method and end up in a different
+	 * page of memory that is not mapped or read incorrect data anyway. We zero-fill the bytes
+	 * instead.
+	 */
+	if (!method_start || code - offset >= method_start) {
+		memcpy (buf, code - offset, size);
+	} else {
+		int diff = code - method_start;
+		memset (buf, 0, size);
+		memcpy (buf + offset - diff, method_start, diff + size - offset);
+	}
+	code -= offset;
 	for (i = 0; i < MONO_BREAKPOINT_ARRAY_SIZE; ++i) {
 		int idx = mono_breakpoint_info_index [i];
 		guint8 *ptr;
@@ -4599,7 +4620,7 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 	guint8 reg = 0;
 	gint32 disp = 0;
 
-	mono_breakpoint_clean_code (code - 8, buf, sizeof (buf));
+	mono_breakpoint_clean_code (NULL, code, 8, buf, sizeof (buf));
 	code = buf + 8;
 
 	*displacement = 0;

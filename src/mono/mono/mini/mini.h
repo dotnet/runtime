@@ -1318,7 +1318,7 @@ void      mono_debugger_run_finally             (MonoContext *start_ctx);
 
 extern gssize mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
 
-gboolean mono_breakpoint_clean_code (guint8 *code, guint8 *buf, int size);
+gboolean mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guint8 *buf, int size);
 
 /* Mono Debugger support */
 void      mono_debugger_init                    (void);
