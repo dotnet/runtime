@@ -8212,7 +8212,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (bblock, store);
 				NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 			} else {
-				if ((ip + 5 < end) && ip_in_bb (cfg, bblock, ip + 5) && 
+				if ((ip + 10 < end) && ip_in_bb (cfg, bblock, ip + 5) &&
+					handle_class == mono_defaults.typehandle_class &&
 					((ip [5] == CEE_CALL) || (ip [5] == CEE_CALLVIRT)) && 
 					(cmethod = mini_get_method (method, read32 (ip + 6), NULL, generic_context)) &&
 					(cmethod->klass == mono_defaults.monotype_class->parent) &&
