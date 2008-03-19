@@ -1440,12 +1440,12 @@ ves_icall_get_method_info (MonoMethod *method, MonoMethodInfo *info)
 	info->attrs = method->flags;
 	info->implattrs = method->iflags;
 	if (sig->call_convention == MONO_CALL_DEFAULT)
-		info->callconv = 1;
+		info->callconv = sig->sentinelpos >= 0 ? 2 : 1;
 	else {
-		if (sig->call_convention == MONO_CALL_VARARG)
+		if (sig->call_convention == MONO_CALL_VARARG || sig->sentinelpos >= 0)
 			info->callconv = 2;
 		else
-			info->callconv = 0;
+			info->callconv = 1;
 	}
 	info->callconv |= (sig->hasthis << 5) | (sig->explicit_this << 6); 
 }
