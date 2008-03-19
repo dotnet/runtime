@@ -452,7 +452,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 	  if (ins->dreg == ins->sreg1 &&
 	      ins->dreg != alpha_at) 
 	    {
-	      MONO_DEL_INS (ins);
+	      MONO_DELETE_INS (bb, ins);
 	      continue;
 	    }
 	  
@@ -467,7 +467,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 	      last_ins->dreg != alpha_at &&
 	      ins->dreg == last_ins->sreg1) 
 	    {
-	      MONO_DEL_INS (ins);
+	      MONO_DELETE_INS (bb, ins);
 	      continue;
 	    }
 	  
@@ -483,7 +483,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	      else 
 		{
-		  MONO_DEL_INS (ins);
+		  MONO_DELETE_INS (bb, ins);
 		  continue;
 		}
 	    }
@@ -509,7 +509,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
             {
               if (ins->dreg == last_ins->sreg1)
                 {
-		  MONO_DEL_INS (ins);
+		  MONO_DELETE_INS (bb, ins);
                   continue;
                 }
               else
@@ -540,7 +540,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 	    {
 	      if (ins->dreg == last_ins->sreg1)
 		{
-		  MONO_DEL_INS (ins);
+		  MONO_DELETE_INS (bb, ins);
 		  continue;
 		}
 	      else
@@ -569,7 +569,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 	    {
 	      if (ins->dreg == last_ins->dreg)
 		{
-		  MONO_DEL_INS (ins);
+		  MONO_DELETE_INS (bb, ins);
 		  continue;
 		}
 	      else

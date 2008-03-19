@@ -1445,7 +1445,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (ins->dreg != ins->sreg1) {
 					ins->opcode = OP_MOVE;
 				} else {
-					MONO_DEL_INS (ins);
+					MONO_DELETE_INS (bb, ins);
 					continue;
 				}
 			} else {
@@ -1467,7 +1467,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			    ins->inst_basereg == last_ins->inst_destbasereg &&
 			    ins->inst_offset == last_ins->inst_offset) {
 				if (ins->dreg == last_ins->sreg1) {
-					MONO_DEL_INS (ins);
+					MONO_DELETE_INS (bb, ins);
 					continue;
 				} else {
 					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
@@ -1490,7 +1490,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			      ins->inst_offset == last_ins->inst_offset) {
 
 				if (ins->dreg == last_ins->dreg) {
-					MONO_DEL_INS (ins);
+					MONO_DELETE_INS (bb, ins);
 					continue;
 				} else {
 					ins->opcode = OP_MOVE;
@@ -1544,7 +1544,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * OP_MOVE reg, reg 
 			 */
 			if (ins->dreg == ins->sreg1) {
-				MONO_DEL_INS (ins);
+				MONO_DELETE_INS (bb, ins);
 				continue;
 			}
 			/* 
@@ -1554,7 +1554,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && last_ins->opcode == OP_MOVE &&
 			    ins->sreg1 == last_ins->dreg &&
 			    ins->dreg == last_ins->sreg1) {
-				MONO_DEL_INS (ins);
+				MONO_DELETE_INS (bb, ins);
 				continue;
 			}
 			break;

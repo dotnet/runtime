@@ -478,7 +478,7 @@ MONO_ADD_INS (MonoBasicBlock *bb, MonoInst *inst)
 }
 
 static inline void
-MONO_DEL_INS (MonoInst *inst)
+MONO_DELETE_INS (MonoBasicBlock *bb, MonoInst *inst)
 {
 	__MONO_INST_LIST_DEL (inst->node.prev, inst->node.next);
 }
