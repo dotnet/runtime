@@ -1,3 +1,7 @@
+2008-03-19  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Fix a typo.
+
 2008-03-17  Geoff Norton  <gnorton@novell.com>
 
 	* build-iphone.sh: Fix a typo.
