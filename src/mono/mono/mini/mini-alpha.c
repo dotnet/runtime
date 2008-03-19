@@ -438,7 +438,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
    
   CFG_DEBUG(3) g_print ("ALPHA: PEEPHOLE_2 pass\n");
 
-  MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
+  MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
       MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
       switch (ins->opcode) 
 	{	 
@@ -931,7 +931,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
     * cdq.
     */
    
-   MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
+   MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
        switch (ins->opcode) 
 	 {	 
 	 case OP_DIV_IMM:

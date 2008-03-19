@@ -292,6 +292,8 @@ MONO_INST_LIST_SPLICE_TAIL_INIT (MonoInstList *list, MonoInstList *head)
 
 #define MONO_BB_FOR_EACH_INS(bb, ins) MONO_INST_LIST_FOR_EACH_ENTRY ((ins), &((bb)->ins_list), node)
 
+#define MONO_BB_FOR_EACH_INS_SAFE(bb, next, ins) MONO_INST_LIST_FOR_EACH_ENTRY_SAFE ((ins), (next), &((bb)->ins_list), node)
+
 #define MONO_BB_FOR_EACH_INS_REVERSE(bb, ins) MONO_INST_LIST_FOR_EACH_ENTRY_REVERSE ((ins), &((bb)->ins_list), node)
 
 struct MonoEdge {
