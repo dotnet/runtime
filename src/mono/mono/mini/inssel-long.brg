@@ -330,7 +330,9 @@ reg: CEE_CONV_OVF_I8 (reg) {
 }
 
 reg: CEE_CONV_OVF_I8_UN (reg),
-reg: CEE_CONV_OVF_U8_UN (reg) {
+reg: CEE_CONV_OVF_U8_UN (reg),
+reg: CEE_CONV_OVF_I_UN (reg),
+reg: CEE_CONV_OVF_U_UN (reg) {
 	/* an unsigned 32 bit num always fits in an (un)signed 64 bit one */
 	/* Clean out the upper word */
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_U8, state->reg1, state->left->reg1);
