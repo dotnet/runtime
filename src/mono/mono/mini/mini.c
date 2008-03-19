@@ -7499,10 +7499,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoMethodSignature *sig = helper_sig_generic_class_init_trampoline;
 					MonoCallInst *call;
 					MonoInst *vtable;
-					MonoInst *this = NULL;
 
 					if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
 						NEW_ARGLOAD (cfg, this, 0);
+					else
+						this = NULL;
 
 					if (relation == MINI_GENERIC_CLASS_RELATION_SELF && this) {
 						MONO_INST_NEW (cfg, vtable, CEE_LDIND_I);
@@ -7535,6 +7536,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
 					NEW_ARGLOAD (cfg, this, 0);
+				else
+					this = NULL;
 				rgctx = get_runtime_generic_context (cfg, method, this, ip);
 				static_data = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
 					token, MINI_TOKEN_SOURCE_FIELD, generic_context,
