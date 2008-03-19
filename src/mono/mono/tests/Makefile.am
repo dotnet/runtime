@@ -271,6 +271,7 @@ BASE_TEST_CS_SRC=		\
 	bug-335131.2.cs		\
 	bug-322722_patch_bx.2.cs		\
 	bug-348522.2.cs		\
+	bug-340662_bug.cs	\
 	bug-322722_dyn_method_throw.2.cs
 
 if AMD64
