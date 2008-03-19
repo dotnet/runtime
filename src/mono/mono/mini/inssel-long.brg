@@ -324,7 +324,8 @@ freg: OP_LCONV_TO_R_UN (lreg) {
 	MONO_EMIT_UNALU (s, tree, tree->opcode, state->reg1, state->left->reg1);
 }
 
-reg: CEE_CONV_OVF_I8 (reg) {
+reg: CEE_CONV_OVF_I8 (reg),
+reg: CEE_CONV_OVF_I (reg) {
 	/* Sign extend the value in the lower word into the upper word */
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_I8, state->reg1, state->left->reg1);
 }
@@ -338,7 +339,8 @@ reg: CEE_CONV_OVF_U_UN (reg) {
 	MONO_EMIT_UNALU (s, tree, CEE_CONV_U8, state->reg1, state->left->reg1);
 }
 
-reg: CEE_CONV_OVF_U8 (reg) {
+reg: CEE_CONV_OVF_U8 (reg),
+reg: CEE_CONV_OVF_U (reg) {
 	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, LT, state->left->reg1, 0, "OverflowException");
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
