@@ -1,3 +1,7 @@
+2008-03-20  Geoff Norton  <gnorton@novell.com>
+
+	* build-iphone.sh: Add CPLUS_INCLUDE_PATH.
+
 2008-03-20  Kornél Pál  <kornelpal@gmail.com>
 
 	* configure.in: Added Windows version macros to CPPFLAGS and export

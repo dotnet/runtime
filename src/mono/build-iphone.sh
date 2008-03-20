@@ -5,10 +5,11 @@ ASPEN_SDK=$ASPEN_ROOT/SDKs/Aspen1.2.sdk/
 export PATH=$ASPEN_ROOT/usr/bin:$PATH
 
 export C_INCLUDE_PATH="$ASPEN_SDK/usr/lib/gcc/arm-apple-darwin9/4.0.1/include:$ASPEN_SDK/usr/include"
+export CPLUS_INCLUDE_PATH="$ASPEN_SDK/usr/lib/gcc/arm-apple-darwin9/4.0.1/include:$ASPEN_SDK/usr/include"
 export CC=arm-apple-darwin9-gcc-4.0.1
 export CXX=arm-apple-darwin9-g++-4.0.1
 export CPP="cpp-4.0 -nostdinc -U__i386__ -D__arm__"
-export CXXCPP="cpp-4.0 -nostdinc -U__i386__ -D__arm__"
+export CXXPP="cpp-4.0 -nostdinc -U__i386__ -D__arm__"
 export LD=$CC
 export LDFLAGS=-Wl,-syslibroot,$ASPEN_SDK
 
