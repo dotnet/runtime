@@ -8242,6 +8242,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDTOKEN: {
 			gpointer handle;
 			MonoClass *handle_class;
+			int context_used = 0;
 
 			CHECK_STACK_OVF (1);
 
@@ -8256,13 +8257,31 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			else {
 				handle = mono_ldtoken (image, n, &handle_class, generic_context);
-				if (cfg->generic_sharing_context &&
-						mono_class_check_context_used (handle_class))
-					GENERIC_SHARING_FAILURE (CEE_LDTOKEN);
 			}
 			if (!handle)
 				goto load_error;
 			mono_class_init (handle_class);
+
+			if (cfg->generic_sharing_context) {
+				if (handle_class == mono_defaults.typehandle_class) {
+					/* If we get a MONO_TYPE_CLASS
+					   then we need to provide the
+					   open type, not an
+					   instantiation of it. */
+					if (mono_type_get_type (handle) == MONO_TYPE_CLASS)
+						context_used = 0;
+					else
+						context_used = mono_class_check_context_used (mono_class_from_mono_type (handle));
+				} else if (handle_class == mono_defaults.fieldhandle_class)
+					context_used = mono_class_check_context_used (((MonoClassField*)handle)->parent);
+				else if (handle_class == mono_defaults.methodhandle_class)
+					context_used = mono_method_check_context_used (handle);
+				else
+					g_assert_not_reached ();
+
+				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
+					GENERIC_SHARING_FAILURE (CEE_LDTOKEN);
+			}
 
 			if (cfg->opt & MONO_OPT_SHARED) {
 				int temp;
@@ -8290,15 +8309,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 					mono_class_init (tclass);
-					if (cfg->compile_aot)
+					if (context_used) {
+						MonoInst *this, *rgctx;
+
+						g_assert (!cfg->compile_aot);
+						if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
+							NEW_ARGLOAD (cfg, this, 0);
+						rgctx = get_runtime_generic_context (cfg, method, this, ip);
+						ins = get_runtime_generic_context_ptr (cfg, method, bblock, tclass,
+							token, MINI_TOKEN_SOURCE_CLASS, generic_context,
+							rgctx, MONO_RGCTX_INFO_REFLECTION_TYPE, ip);
+					} else if (cfg->compile_aot) {
 						NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n);
-					else
+					} else {
 						NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
+					}
 					ins->type = STACK_OBJ;
 					ins->klass = cmethod->klass;
 					ip += 5;
 				} else {
 					MonoInst *store, *addr, *vtvar;
+
+					GENERIC_SHARING_FAILURE (CEE_LDTOKEN);
 
 					if (cfg->compile_aot)
 						NEW_LDTOKENCONST (cfg, ins, image, n);

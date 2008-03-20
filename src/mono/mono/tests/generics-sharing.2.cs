@@ -61,6 +61,14 @@ public struct GenStruct<T> {
 	}
 }
 
+public interface IGen<T> {
+	T[] iMethod ();
+	void voidIMethod (int x);
+	long longIMethod (long x);
+	float floatIMethod ();
+	GenStruct<T> valueIMethod (int x);
+}
+
 public class GenA<T> {
 	public static T[] arr;
 
@@ -117,6 +125,22 @@ public class GenA<T> {
 
 	public T cast (Object obj) {
 		return (T)obj;
+	}
+
+	public Type ldtokenT () {
+		return typeof (T);
+	}
+
+	public Type ldtokenIGenT () {
+		return typeof (IGen<T>);
+	}
+
+	public Type ldtokenGenAIGenT () {
+		return typeof (GenA<IGen<T>>);
+	}
+
+	public Type ldtokenGenB () {
+		return typeof (GenB<>);
 	}
 
 	public void except () {
@@ -365,6 +389,15 @@ public class main {
 
 		if (!comp.Equals (ga.cast (obj), obj))
 			error ("cast");
+
+		if (ga.ldtokenT () != typeof (T))
+			error ("ldtokenT");
+		if (ga.ldtokenIGenT () != typeof (IGen<T>))
+			error ("ldtokenIGenT");
+		if (ga.ldtokenGenAIGenT () != typeof (GenA<IGen<T>>))
+			error ("ldtokenGenAIGenT");
+		if (ga.ldtokenGenB () != typeof (GenB<>))
+			error ("ldtokenGenB");
 
 		if (callStaticMethod<T> () != 54321)
 			error ("staticMethod");

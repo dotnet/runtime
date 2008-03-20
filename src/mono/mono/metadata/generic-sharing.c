@@ -450,6 +450,7 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context)
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
+	case MONO_RGCTX_INFO_REFLECTION_TYPE:
 		return mono_class_inflate_generic_type (data, context);
 
 	case MONO_RGCTX_INFO_METHOD:
@@ -668,6 +669,8 @@ instantiate_other_info (MonoDomain *domain, MonoRuntimeGenericContextOtherInfoTe
 
 		return class_type_info (domain, arg_class, oti->info_type);
 	}
+	case MONO_RGCTX_INFO_REFLECTION_TYPE:
+		return mono_type_get_object (domain, data);
 	case MONO_RGCTX_INFO_METHOD:
 		return data;
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
@@ -865,6 +868,7 @@ other_info_equal (gpointer data1, gpointer data2, int info_type)
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
+	case MONO_RGCTX_INFO_REFLECTION_TYPE:
 		return mono_class_from_mono_type (data1) == mono_class_from_mono_type (data2);
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
