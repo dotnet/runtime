@@ -12,11 +12,6 @@
 #include <config.h>
 #include <glib.h>
 
-#ifdef PLATFORM_WIN32
-#define WINVER 0x0500
-#define _WIN32_WINNT 0x0500
-#endif
-
 #define THREADS_PER_CPU	5 /* 20 + THREADS_PER_CPU * number of CPUs */
 
 #include <mono/metadata/domain-internals.h>

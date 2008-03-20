@@ -26,10 +26,6 @@
 #include <pthread.h>
 #endif
 
-#ifdef PLATFORM_WIN32
-#define _WIN32_WINNT 0x0500
-#endif
-
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif

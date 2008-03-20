@@ -1,3 +1,10 @@
+2008-03-20  Kornél Pál  <kornelpal@gmail.com>
+
+	* configure.in: Added Windows version macros to CPPFLAGS and export
+	CPPFLAGS for libgc configure to ensure Windows version compatibility.
+	* winconfig.h: Added compile-time feature detection and support for
+	64-bit Windows versions. Updated VERSION to 1.9.
+
 2008-03-19  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Fix a typo.

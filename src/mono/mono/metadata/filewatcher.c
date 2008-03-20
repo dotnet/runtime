@@ -16,7 +16,7 @@
 #include <mono/metadata/filewatcher.h>
 #include <mono/metadata/marshal.h>
 #include <mono/utils/mono-dl.h>
-#if (defined (PLATFORM_WIN32) && WINVER >= 0x0400)
+#ifdef PLATFORM_WIN32
 
 /*
  * TODO:

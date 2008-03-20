@@ -70,7 +70,10 @@ case "$host" in
 			export CC
 		fi
 		HOST_CC="gcc"
-		CPPFLAGS="$CPPFLAGS -DWIN32_THREADS -DFD_SETSIZE=1024 -DUNICODE -D_UNICODE"
+		# Windows 2000 is required that includes Internet Explorer 5.01
+		CPPFLAGS="$CPPFLAGS -DWINVER=0x0500 -D_WIN32_WINNT=0x0500 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
+		# export for libgc configure
+		export CPPFLAGS
 		libmono_cflags="-mno-cygwin"
 		libmono_ldflags="-mno-cygwin"
 		libdl=
