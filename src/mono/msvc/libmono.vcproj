@@ -421,7 +421,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -510,7 +510,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -596,7 +596,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
@@ -681,7 +681,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
+				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
 				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"

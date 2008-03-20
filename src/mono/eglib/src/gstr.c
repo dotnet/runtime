@@ -212,7 +212,7 @@ g_strsplit (const gchar *string, const gchar *delimiter, gint max_tokens)
 			}
 
 			if (*string) {
-				int toklen = (string - c);
+				gsize toklen = (string - c);
 				token = g_strndup (c, toklen);
 
 				/* Need to leave a trailing empty
@@ -283,7 +283,7 @@ g_strsplit_set (const gchar *string, const gchar *delimiter, gint max_tokens)
 	c = string;
 	while (*string && !(max_tokens > 0 && size >= max_tokens)) {
 		if (charcmp (*string, delimiter)) {
-			int toklen = (string - c);
+			gsize toklen = (string - c);
 			if (toklen == 0) {
 				token = g_strdup ("");
 			} else {
@@ -527,29 +527,46 @@ g_filename_to_uri (const gchar *filename, const gchar *hostname, GError **error)
 	size_t n;
 	char *ret, *rp;
 	const char *p;
+#ifdef G_OS_WIN32
+	const char *uriPrefix = "file:///";
+#else
+	const char *uriPrefix = "file://";
+#endif
 	
 	g_return_val_if_fail (filename != NULL, NULL);
 
 	if (hostname != NULL)
 		g_warning ("%s", "eglib: g_filename_to_uri: hostname not handled");
 
-	if (*filename != '/'){
+	if (!g_path_is_absolute (filename)){
 		if (error != NULL)
 			*error = g_error_new (NULL, 2, "Not an absolute filename");
 		
 		return NULL;
 	}
 	
-	n = strlen ("file://") + 1;
+	n = strlen (uriPrefix) + 1;
 	for (p = filename; *p; p++){
+#ifdef G_OS_WIN32
+		if (*p == '\\') {
+			n++;
+			continue;
+		}
+#endif
 		if (char_needs_encoding (*p))
 			n += 3;
 		else
 			n++;
 	}
 	ret = g_malloc (n);
-	strcpy (ret, "file://");
+	strcpy (ret, uriPrefix);
 	for (p = filename, rp = ret + strlen (ret); *p; p++){
+#ifdef G_OS_WIN32
+		if (*p == '\\') {
+			*rp++ = '/';
+			continue;
+		}
+#endif
 		if (char_needs_encoding (*p)){
 			*rp++ = '%';
 			*rp++ = hx [((unsigned char)(*p)) >> 4];
@@ -604,13 +621,21 @@ g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error)
 		} 
 		flen++;
 	}
+#ifndef G_OS_WIN32
 	flen++;
-	
+#endif
+
 	result = g_malloc (flen + 1);
-	*result = '/';
 	result [flen] = 0;
 
-	for (p = uri + 8, r = result + 1; *p; p++){
+#ifndef G_OS_WIN32
+	*result = '/';
+	r = result + 1;
+#else
+	r = result;
+#endif
+
+	for (p = uri + 8; *p; p++){
 		if (*p == '%'){
 			*r++ = (char)((decode (p [1]) << 4) | decode (p [2]));
 			p += 2;
@@ -666,8 +691,8 @@ g_ascii_strncasecmp (const gchar *s1, const gchar *s2, gsize n)
 	g_return_val_if_fail (s2 != NULL, 0);
 
 	for (i = 0; i < n; i++){
-		gchar c1 = *s1++;
-		gchar c2 = *s2++;
+		gchar c1 = g_ascii_tolower (*s1++);
+		gchar c2 = g_ascii_tolower (*s2++);
 		
 		if (c1 == c2)
 			continue;
@@ -809,6 +834,7 @@ g_ascii_xdigit_value (gchar c)
 		 ((c >= 'a' && c <= 'f') ? (c - 'a' + 10) :
 		  (c - 'A' + 10))));
 }
+
 
 
 

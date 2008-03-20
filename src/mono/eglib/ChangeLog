@@ -1,3 +1,24 @@
+2007-03-19  Bill Holmes  <billholmes54@gmail.com>
+
+	* src/gpath.c (g_path_is_absolute) : Adding a case for '/'
+	  on Windows.
+	
+	* src/gpath.c (g_get_user_name) : On Windows add a check for %USERNAME%
+	  when %USER% fails.
+
+	* src/gstr.c (g_strsplit, g_strsplit_set):  Change to remove truncation
+	  errors with MSVC build.
+
+	* src/gstr.c (g_filename_to_uri, g_filename_from_uri):  Fixes to handle
+	  Windows paths.
+
+	* src/gstr.c (g_ascii_strncasecmp):  Convert each character to lower case
+	  before comparing.
+
+	* src/gunicode.c (g_get_charset):  Implement for Windows.
+
+	Contributed under MIT/X11 license.
+
 2008-03-12  Geoff Norton  <gnorton@novell.com>
 
 	* src/gutf8.c: Implement g_ucs4_to_utf16 and g_utf16_to_ucs4 as
@@ -1084,4 +1105,5 @@ Mon Oct 9 12:59:16 CEST 2006 Paolo Molaro <lupus@ximian.com>
 
 	* src/ghashtable.c: Implement most of this, it is completely
 	untested at this point.
+
 

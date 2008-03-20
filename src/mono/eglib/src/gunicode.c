@@ -39,6 +39,8 @@
 #ifdef _MSC_VER
 /* FIXME */
 #define CODESET 1
+#include <Windows.h>
+
 typedef int iconv_t;
 #else
 #include <langinfo.h>
@@ -177,6 +179,10 @@ gboolean
 g_get_charset (G_CONST_RETURN char **charset)
 {
 #ifdef G_OS_WIN32
+	static char buf[14];
+	sprintf (buf, "CP%u", GetACP ());
+	*charset = buf;
+	is_utf8 = FALSE;
 #else
 	if (my_charset == NULL){
 		my_charset = g_strdup (nl_langinfo (CODESET));

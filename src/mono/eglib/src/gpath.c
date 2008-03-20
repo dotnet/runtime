@@ -148,7 +148,7 @@ g_path_is_absolute (const char *filename)
 	g_return_val_if_fail (filename != NULL, FALSE);
 #ifdef G_OS_WIN32
 	if (filename[0] != '\0' && filename[1] != '\0' && filename[1] == ':' && 
-		filename[2] != '\0' && filename[2] == '\\')
+		filename[2] != '\0' && (filename[2] == '\\' || filename[2] == '/'))
 		return TRUE;
 	else
 		return FALSE;
@@ -315,7 +315,12 @@ g_get_tmp_dir (void)
 const char *
 g_get_user_name (void)
 {
-	return g_getenv ("USER");
+	const char * retName = g_getenv ("USER");
+#if defined (G_OS_WIN32)
+	if (!retName)
+		retName = g_getenv ("USERNAME");
+#endif
+	return retName;
 }
 
 static char *name;

@@ -1,5 +1,11 @@
 2007-03-10  Bill Holmes  <billholmes54@gmail.com>
 
+	* libmono.vcproj:  Adding a link to version.lib for the eglib targets.
+
+	Contributed under MIT/X11 license.
+
+2007-03-10  Bill Holmes  <billholmes54@gmail.com>
+
 	* mono.sln: Fixing configuration list to build the correct targets for the 
 	  specified configuration.
 
@@ -101,5 +107,6 @@
 	* *.vcproj: Begin Win64 port. Run bat files with $(Platform) argument.
 	* *.bat: Begin Win64 port. Run bat files with $(Platform) argument.
 	Contributed under MIT/X11 license.
+
 
 
