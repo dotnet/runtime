@@ -200,20 +200,20 @@ struct InstList {
 	MonoInst *data;
 };
 
-enum {
+typedef enum {
 	RegTypeGeneral,
 	RegTypeBase,
 	RegTypeFP,
 	RegTypeStructByVal,
 	RegTypeStructByAddr
-};
+} ArgStorage;
 
 typedef struct {
 	gint32  offset;		/* offset from caller's stack */
 	gint32  offparm;	/* offset from callee's stack */
 	guint16 vtsize; 	/* in param area */
 	guint8  reg;
-	guint8  regtype;     	/* See RegType* */
+	ArgStorage regtype;     	/* See RegType* */
 	guint32 size;        	/* Size of structure used by RegTypeStructByVal */
 } ArgInfo;
 
@@ -224,6 +224,7 @@ typedef struct {
 	guint32 struct_ret;
 	ArgInfo ret;
 	ArgInfo sigCookie;
+	size_data sz;
 	ArgInfo args [1];
 } CallInfo;
 
@@ -247,7 +248,7 @@ static gboolean is_regsize_var (MonoType *);
 static inline void add_general (guint *, size_data *, ArgInfo *, gboolean);
 static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
 static inline void add_float (guint *, size_data *, ArgInfo *);
-static CallInfo * calculate_sizes (MonoCompile *, MonoMethodSignature *, size_data *, gboolean);
+static CallInfo * get_call_info (MonoCompile *, MonoMemPool *, MonoMethodSignature *, gboolean);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 gpointer mono_arch_get_lmf_addr (void);
 static guint8 * emit_load_volatile_registers(guint8 *, MonoCompile *);
@@ -266,7 +267,6 @@ static int indent_level = 0;
 static gboolean tls_offset_inited = FALSE;
 
 static int appdomain_tls_offset = -1,
-       	   lmf_tls_offset = -1,
            thread_tls_offset = -1;
 
 pthread_key_t lmf_addr_key;
@@ -632,7 +632,8 @@ enum_parmtype:
 
 /*========================= End of Function ========================*/
 
-static int lc = 0;
+// static int lc = 0;
+
 /*------------------------------------------------------------------*/
 /*                                                                  */
 /* Name		- enter_method                                      */
@@ -652,7 +653,6 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	guint32 ip;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
-	size_data sz;
 	void *curParm;
 
 	fname = mono_method_full_name (method, TRUE);
@@ -668,7 +668,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	
 	sig = mono_method_signature (method);
 	
-	cinfo = calculate_sizes (NULL, sig, &sz, sig->pinvoke);
+	cinfo = get_call_info (NULL, NULL, sig, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		printf ("[STRUCTRET:%p], ", (gpointer) rParm->gr[0]);
@@ -1263,7 +1263,7 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- calculate_sizes                                   */
+/* Name		- get_call_info                                         */
 /*                                                                  */
 /* Function	- Determine the amount of space required for code   */
 /* 		  and stack. In addition determine starting points  */
@@ -1273,20 +1273,26 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
 /*------------------------------------------------------------------*/
 
 static CallInfo *
-calculate_sizes (MonoCompile *cfg, MonoMethodSignature *sig, size_data *sz, 
-		 gboolean string_ctor)
+get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint i, fr, gr, size;
 	int nParm = sig->hasthis + sig->param_count;
 	MonoType *ret_type;
 	guint32 simpletype, align;
-	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * nParm);
+	CallInfo *cinfo;
+	size_data *sz;
 	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
+
+	if (mp)
+		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * nParm));
+	else
+		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * nParm));
 
 	fr                = 0;
 	gr                = s390_r2;
 	nParm 		  = 0;
 	cinfo->struct_ret = 0;
+	sz = &cinfo->sz;
 	sz->offset	  = 0;
 	sz->offStruct     = S390_MINIMAL_STACK_SIZE;
 	sz->retStruct     = 0;
@@ -1623,7 +1629,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	MonoInst *inst;
 	CallInfo *cinfo;
-	size_data sz;
 	int iParm, iVar, offset, size, align, curinst;
 	int frame_reg = STK_BASE;
 	int sArg, eArg;
@@ -1652,7 +1657,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	sig     = mono_method_signature (cfg->method);
 	
-	cinfo   = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
+	cinfo   = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		cfg->vret_addr->opcode = OP_REGVAR;
@@ -1830,11 +1835,10 @@ mono_arch_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
-	size_data sz;
 
 	sig = mono_method_signature (cfg->method);
 
-	cinfo = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
@@ -1843,8 +1847,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 			mono_print_ins (cfg->vret_addr);
 		}
 	}
-
-	g_free (cinfo);
 }
 
 /*========================= End of Function ========================*/
@@ -1862,25 +1864,25 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 MonoCallInst*
 mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, 
-		       MonoCallInst *call, int is_virtual) {
+		       MonoCallInst *call, int is_virtual)
+{
 	MonoInst *in;
 	MonoCallArgParm *arg;
 	MonoMethodSignature *sig;
 	int i, n, lParamArea;
 	CallInfo *cinfo;
 	ArgInfo *ainfo = NULL;
-	size_data sz;
 	int stackSize;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	DEBUG (g_print ("Call requires: %d parameters\n",n));
 	
-	cinfo = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
-	stackSize         = sz.stack_size + sz.local_size + sz.parm_size + sz.offset;
+	stackSize         = cinfo->sz.stack_size + cinfo->sz.local_size + cinfo->sz.parm_size + cinfo->sz.offset;
 	call->stack_usage = MAX(stackSize, call->stack_usage);
-	lParamArea        = MAX((call->stack_usage-S390_MINIMAL_STACK_SIZE-sz.parm_size), 0);
+	lParamArea        = MAX((call->stack_usage-S390_MINIMAL_STACK_SIZE-cinfo->sz.parm_size), 0);
 	cfg->param_area   = MAX(((signed) cfg->param_area), lParamArea);
 	cfg->flags       |= MONO_CFG_HAS_CALLS;
 
@@ -1918,7 +1920,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 				arg->ins.opcode   = OP_OUTARG_VT;
 				arg->size         = -ainfo->vtsize;
 				arg->offset       = ainfo->offset;
-				arg->offPrm       = ainfo->offparm + sz.offStruct;
+				arg->offPrm       = ainfo->offparm + cinfo->sz.offStruct;
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				if (ainfo->reg != STK_BASE) {
 					switch (ainfo->size) {
@@ -1940,7 +1942,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 				arg->ins.opcode = OP_OUTARG_VT;
 				arg->size       = ainfo->size;
 				arg->offset     = ainfo->offset;
-				arg->offPrm     = ainfo->offparm + sz.offStruct;
+				arg->offPrm     = ainfo->offparm + cinfo->sz.offStruct;
 			} else if (ainfo->regtype == RegTypeBase) {
 				arg->ins.opcode   = OP_OUTARG_MEMBASE;
 				arg->ins.sreg1    = ainfo->reg;
@@ -1968,7 +1970,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb,
 		emit_sig_cookie (cfg, call, cinfo, ainfo->size);
 	}
 
-	g_free (cinfo);
 	return call;
 }
 
@@ -2354,9 +2355,39 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /*========================= End of Function ========================*/
 
+#define NEW_INS(cfg,dest,op) do {	\
+		MONO_INST_NEW ((cfg), (dest), (op)); \
+		MONO_INST_LIST_ADD_TAIL (&(dest)->node, &(ins)->node); \
+	} while (0)
+
 void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
+	MonoInst *ins, *next, *temp;
+
+	if (bb->max_vreg > cfg->rs->next_vreg)
+		cfg->rs->next_vreg = bb->max_vreg;
+
+	MONO_BB_FOR_EACH_INS_SAFE (bb, next, ins) {
+		switch (ins->opcode) {
+		case OP_DIV_IMM:
+		case OP_REM_IMM:
+		case OP_IDIV_IMM:
+		case OP_IREM_IMM:
+		case OP_IDIV_UN_IMM:
+		case OP_IREM_UN_IMM:
+			NEW_INS (cfg, temp, OP_ICONST);
+			temp->inst_c0 = ins->inst_imm;
+			temp->dreg = mono_regstate_next_int (cfg->rs);
+			ins->opcode = mono_op_imm_to_op (ins->opcode);
+			ins->sreg2 = temp->dreg;
+			break;
+		default:
+			break;
+		}
+	}
+
+	bb->max_vreg = cfg->rs->next_vreg;
 }
 
 /*========================= End of Function ========================*/
@@ -2391,8 +2422,8 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		short *o[1];
 		s390_basr   (code, s390_r13, 0);
 		s390_j	    (code, 10);
-		s390_llong  (code, 0x41e0000000000000);
-		s390_llong  (code, 0x41f0000000000000);
+		s390_llong  (code, 0x41e0000000000000LL);
+		s390_llong  (code, 0x41f0000000000000LL);
 		s390_ldr    (code, s390_f15, sreg);
 		s390_cdb    (code, s390_f15, 0, s390_r13, 4);
 		s390_jl     (code, 0); CODEPTR(code, o[0]);
@@ -3047,22 +3078,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lr   (code, ins->dreg, s390_r1);
 		}
 			break;
-		case OP_DIV_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
-				s390_lhi  (code, s390_r13, ins->inst_imm);
-				s390_lr   (code, s390_r0, ins->sreg1);
-			} else {
-				s390_basr (code, s390_r13, 0);
-				s390_j    (code, 4);
-				s390_word (code, ins->inst_imm);
-				s390_lr   (code, s390_r0, ins->sreg1);
-				s390_l	  (code, s390_r13, 0, s390_r13, 4);
-			}
-			s390_srda (code, s390_r0, 0, 32);
-			s390_dr   (code, s390_r0, s390_r13);
-			s390_lr   (code, ins->dreg, s390_r1);
-		}
-			break;
 		case OP_IREM: {
 			s390_lr	  (code, s390_r0, ins->sreg1);
 			s390_srda (code, s390_r0, 0, 32);
@@ -3073,22 +3088,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lr	  (code, s390_r0, ins->sreg1);
 			s390_srdl (code, s390_r0, 0, 32);
 			s390_dlr  (code, s390_r0, ins->sreg2);
-			s390_lr   (code, ins->dreg, s390_r0);
-		}
-			break;
-		case OP_REM_IMM: {
-			if (s390_is_imm16 (ins->inst_imm)) {
-				s390_lhi  (code, s390_r13, ins->inst_imm);
-				s390_lr   (code, s390_r0, ins->sreg1);
-			} else {
-				s390_basr (code, s390_r13, 0);
-				s390_j	  (code, 4);
-				s390_word (code, ins->inst_imm);
-				s390_lr   (code, s390_r0, ins->sreg1);
-				s390_l	  (code, s390_r13, 0, s390_r13, 4);
-			}
-			s390_srda (code, s390_r0, 0, 32);
-			s390_dr   (code, s390_r0, s390_r13);
 			s390_lr   (code, ins->dreg, s390_r0);
 		}
 			break;
@@ -4135,19 +4134,18 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain,
 /*------------------------------------------------------------------*/
 
 guint8 *
-emit_load_volatile_registers(guint8 * code, MonoCompile *cfg)
+emit_load_volatile_registers (guint8 * code, MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
 	int pos, i;
 	CallInfo *cinfo;
-	size_data sz;
 
 	sig = mono_method_signature (method);
 	pos = 0;
 
-	cinfo = calculate_sizes (NULL, sig, &sz, sig->pinvoke);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -4227,8 +4225,6 @@ emit_load_volatile_registers(guint8 * code, MonoCompile *cfg)
 		pos++;
 	}
 
-	g_free (cinfo);
-
 	return code;
 }
 
@@ -4253,7 +4249,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, pos, max_offset, i;
 	guint8 *code;
 	CallInfo *cinfo;
-	size_data sz;
 	int tracing = 0;
 	int lmfOffset;								\
 
@@ -4308,7 +4303,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	pos = 0;
 
-	cinfo = calculate_sizes (cfg, sig, &sz, sig->pinvoke);
+	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo = &cinfo->ret;
@@ -4501,7 +4496,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_arch_instrument_prolog(cfg, enter_method, code, TRUE);
 
 	cfg->code_len = code - cfg->native_code;
-	g_free (cinfo);
 
 	return code;
 }
@@ -4993,4 +4987,5 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	/* FIXME: implement */
 	g_assert_not_reached ();
+	return NULL;
 }
