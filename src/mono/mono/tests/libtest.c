@@ -16,6 +16,10 @@
 #define STDCALL
 #endif
 
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#endif
+
 #ifdef WIN32
 extern __declspec(dllimport) __stdcall void CoTaskMemFree(void *ptr);
 #endif
@@ -34,9 +38,9 @@ static void marshal_free (void *ptr)
 static void* marshal_alloc (gsize size)
 {
 #ifdef WIN32
-	CoTaskMemAlloc (size);
+	return CoTaskMemAlloc (size);
 #else
-	g_malloc (size);
+	return g_malloc (size);
 #endif
 }
 
@@ -482,7 +486,7 @@ mono_test_marshal_byref_struct (simplestruct *ss, int a, int b, int c, char *d)
 {
 	gboolean res = (ss->a == a && ss->b == b && ss->c == c && strcmp (ss->d, d) == 0);
 
-	marshal_free (ss->d);
+	marshal_free ((char*)ss->d);
 
 	ss->a = !ss->a;
 	ss->b = !ss->b;
@@ -676,7 +680,7 @@ return_plus_one (int i)
 }
 
 STDCALL SimpleDelegate
-mono_test_marshal_return_delegate_2 ()
+mono_test_marshal_return_delegate_2 (void)
 {
 	return return_plus_one;
 }
@@ -2073,7 +2077,7 @@ STDCALL int
 mono_safe_handle_struct_ref (HandleStructs *x)
 {
 	printf ("Dingus Ref! \n");
-	printf ("Values: %d %d %d %d\n", x->a, x->b, x->handle1, x->handle2);
+	printf ("Values: %d %d %p %p\n", x->a, x->b, x->handle1, x->handle2);
 	if (x->a != 1234)
 		return 1;
 	if (x->b != 8743)
@@ -2092,7 +2096,7 @@ STDCALL int
 mono_safe_handle_struct (HandleStructs x)
 {
 	printf ("Dingus Standard! \n");
-	printf ("Values: %d %d %d %d\n", x.a, x.b, x.handle1, x.handle2);
+	printf ("Values: %d %d %p %p\n", x.a, x.b, x.handle1, x.handle2);
 	if (x.a != 1234)
 		return 1;
 	if (x.b != 8743)
@@ -2114,12 +2118,12 @@ typedef struct {
 STDCALL int
 mono_safe_handle_struct_simple (TrivialHandle x)
 {
-	printf ("The value is %d\n", x.a);
-	return ((int)x.a) * 2;
+	printf ("The value is %p\n", x.a);
+	return ((int)(gsize)x.a) * 2;
 }
 
 STDCALL int
-mono_safe_handle_return ()
+mono_safe_handle_return (void)
 {
 	return 0x1000f00d;
 }
