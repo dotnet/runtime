@@ -3435,6 +3435,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_MEMBASE:
 		case OP_FCALL_MEMBASE:
 		case OP_CALL_MEMBASE: {
+			call = (MonoCallInst*)ins;
 			if (s390_is_uimm12(ins->inst_offset))
 				s390_l    (code, s390_r1, 0, ins->inst_basereg, ins->inst_offset);
 			else {
