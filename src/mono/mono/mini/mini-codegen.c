@@ -1961,7 +1961,12 @@ mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins)
 		if (last_ins && (last_ins->opcode == OP_STOREI2_MEMBASE_REG) &&
 			ins->inst_basereg == last_ins->inst_destbasereg &&
 			ins->inst_offset == last_ins->inst_offset) {
+#if SIZEOF_VOID_P == 8
 			ins->opcode = (ins->opcode == OP_LOADI2_MEMBASE) ? OP_PCONV_TO_I2 : OP_PCONV_TO_U2;
+#else
+			/* The definition of OP_PCONV_TO_U2 is wrong */
+			ins->opcode = (ins->opcode == OP_LOADI2_MEMBASE) ? OP_PCONV_TO_I2 : OP_ICONV_TO_U2;
+#endif
 			ins->sreg1 = last_ins->sreg1;
 		}
 		break;
