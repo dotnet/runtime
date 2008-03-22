@@ -1,3 +1,8 @@
+2008-03-22  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Pass CPPFLAGS to libgc configure using ac_configure_args instead
+	of exporting it. Fixes #373113.
+
 2008-03-20  Geoff Norton  <gnorton@novell.com>
 
 	* build-iphone.sh: Add CPLUS_INCLUDE_PATH.

@@ -72,8 +72,6 @@ case "$host" in
 		HOST_CC="gcc"
 		# Windows 2000 is required that includes Internet Explorer 5.01
 		CPPFLAGS="$CPPFLAGS -DWINVER=0x0500 -D_WIN32_WINNT=0x0500 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
-		# export for libgc configure
-		export CPPFLAGS
 		libmono_cflags="-mno-cygwin"
 		libmono_ldflags="-mno-cygwin"
 		libdl=
@@ -666,13 +664,6 @@ case "x$gc" in
 		;;
 
 	xincluded)
-		AC_CONFIG_SUBDIRS(libgc)
-
-		# Pass CPPFLAGS to libgc configure
-		# Maybe we should use a separate variable for this to avoid passing useless and
-		# potentially problematic defines to libgc (like -D_FILE_OFFSET_BITS=64)
-		export CPPFLAGS
-
 		found_boehm=yes
 		gc_headers=yes
 		use_included_gc=yes
@@ -719,9 +710,6 @@ if test "x$large_heap" = "xyes"; then
    echo "FOO"
    CPPFLAGS="$CPPFLAGS -DLARGE_CONFIG"
 fi
-
-# tell libgc/configure about what we want
-ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args"
 
 AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
 AC_SUBST(LIBGC_CFLAGS)
@@ -1988,6 +1976,17 @@ fi
 if test ${ACCESS_UNALIGNED} = no; then
 	CPPFLAGS="$CPPFLAGS -DNO_UNALIGNED_ACCESS"
 fi
+
+case "x$gc" in
+	xincluded)
+		# Pass CPPFLAGS to libgc configure
+		# We should use a separate variable for this to avoid passing useless and
+		# potentially problematic defines to libgc (like -D_FILE_OFFSET_BITS=64)
+		# This should be executed late so we pick up the final version of CPPFLAGS
+		ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args \"CPPFLAGS=$CPPFLAGS\""
+		AC_CONFIG_SUBDIRS(libgc)
+		;;
+esac
 
 PREVIEW=yes
 AC_ARG_WITH(preview,  [ --with-preview=yes,no     If you want to install the 2.0 FX preview],[
