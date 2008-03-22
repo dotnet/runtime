@@ -339,6 +339,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
 	MonoDebugSourceLocation *location;
+	MonoMethod *last_method = NULL;
 
 	MONO_ARCH_CONTEXT_DEF;
 
@@ -359,6 +360,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	skip++;
 #endif
 
+	/* We skip the duplicate get_frame_info wrapper below */
+	skip --;
+
 	do {
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
 		
@@ -372,8 +376,16 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
 		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
 		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE)
+		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE ||
+			ji->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
 			continue;
+
+		if (ji->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && ji->method == last_method) {
+			/* FIXME: Native-to-managed wrappers sometimes show up twice */
+			continue;
+		}
+
+		last_method = ji->method;
 
 		skip--;
 
