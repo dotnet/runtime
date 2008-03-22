@@ -3432,7 +3432,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
-		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_FCALL_MEMBASE:
 		case OP_CALL_MEMBASE: {
