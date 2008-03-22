@@ -1179,6 +1179,7 @@ gboolean          mono_is_regsize_var (MonoType *t) MONO_INTERNAL;
 CompRelation      mono_opcode_to_cond (int opcode) MONO_INTERNAL;
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode) MONO_INTERNAL;
 int               mono_op_imm_to_op (int opcode) MONO_INTERNAL;
+void              mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins) MONO_INTERNAL;
 
 /* methods that must be provided by the arch-specific port */
 void      mono_arch_init                        (void) MONO_INTERNAL;

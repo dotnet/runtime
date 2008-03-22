@@ -1842,3 +1842,151 @@ mono_is_regsize_var (MonoType *t)
 	}
 	return FALSE;
 }
+
+/*
+ * mono_peephole_ins:
+ *
+ *   Perform some architecture independent peephole optimizations.
+ */
+void
+mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins)
+{
+	MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
+
+	switch (ins->opcode) {
+	case OP_MUL_IMM: 
+		/* remove unnecessary multiplication with 1 */
+		if (ins->inst_imm == 1) {
+			if (ins->dreg != ins->sreg1)
+				ins->opcode = OP_MOVE;
+			else
+				MONO_DELETE_INS (bb, ins);
+		}
+		break;
+	case OP_LOAD_MEMBASE:
+	case OP_LOADI4_MEMBASE:
+		/* 
+		 * Note: if reg1 = reg2 the load op is removed
+		 *
+		 * OP_STORE_MEMBASE_REG reg1, offset(basereg) 
+		 * OP_LOAD_MEMBASE offset(basereg), reg2
+		 * -->
+		 * OP_STORE_MEMBASE_REG reg1, offset(basereg)
+		 * OP_MOVE reg1, reg2
+		 */
+		if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_REG 
+						 || last_ins->opcode == OP_STORE_MEMBASE_REG) &&
+			ins->inst_basereg == last_ins->inst_destbasereg &&
+			ins->inst_offset == last_ins->inst_offset) {
+			if (ins->dreg == last_ins->sreg1) {
+				MONO_DELETE_INS (bb, ins);
+				break;
+			} else {
+				ins->opcode = OP_MOVE;
+				ins->sreg1 = last_ins->sreg1;
+			}
+			
+			/* 
+			 * Note: reg1 must be different from the basereg in the second load
+			 * Note: if reg1 = reg2 is equal then second load is removed
+			 *
+			 * OP_LOAD_MEMBASE offset(basereg), reg1
+			 * OP_LOAD_MEMBASE offset(basereg), reg2
+			 * -->
+			 * OP_LOAD_MEMBASE offset(basereg), reg1
+			 * OP_MOVE reg1, reg2
+			 */
+		} if (last_ins && (last_ins->opcode == OP_LOADI4_MEMBASE
+						   || last_ins->opcode == OP_LOAD_MEMBASE) &&
+			  ins->inst_basereg != last_ins->dreg &&
+			  ins->inst_basereg == last_ins->inst_basereg &&
+			  ins->inst_offset == last_ins->inst_offset) {
+
+			if (ins->dreg == last_ins->dreg) {
+				MONO_DELETE_INS (bb, ins);
+			} else {
+				ins->opcode = OP_MOVE;
+				ins->sreg1 = last_ins->dreg;
+			}
+
+			//g_assert_not_reached ();
+
+#if 0
+			/* 
+			 * OP_STORE_MEMBASE_IMM imm, offset(basereg) 
+			 * OP_LOAD_MEMBASE offset(basereg), reg
+			 * -->
+			 * OP_STORE_MEMBASE_IMM imm, offset(basereg) 
+			 * OP_ICONST reg, imm
+			 */
+		} else if (last_ins && (last_ins->opcode == OP_STOREI4_MEMBASE_IMM
+						|| last_ins->opcode == OP_STORE_MEMBASE_IMM) &&
+				   ins->inst_basereg == last_ins->inst_destbasereg &&
+				   ins->inst_offset == last_ins->inst_offset) {
+			ins->opcode = OP_ICONST;
+			ins->inst_c0 = last_ins->inst_imm;
+			g_assert_not_reached (); // check this rule
+#endif
+		}
+		break;
+	case OP_LOADI1_MEMBASE:
+	case OP_LOADU1_MEMBASE:
+		/* 
+		 * Note: if reg1 = reg2 the load op is removed
+		 *
+		 * OP_STORE_MEMBASE_REG reg1, offset(basereg) 
+		 * OP_LOAD_MEMBASE offset(basereg), reg2
+		 * -->
+		 * OP_STORE_MEMBASE_REG reg1, offset(basereg)
+		 * OP_MOVE reg1, reg2
+		 */
+		if (last_ins && (last_ins->opcode == OP_STOREI1_MEMBASE_REG) &&
+			ins->inst_basereg == last_ins->inst_destbasereg &&
+			ins->inst_offset == last_ins->inst_offset) {
+			ins->opcode = (ins->opcode == OP_LOADI1_MEMBASE) ? OP_PCONV_TO_I1 : OP_PCONV_TO_U1;
+			ins->sreg1 = last_ins->sreg1;
+		}
+		break;
+	case OP_LOADI2_MEMBASE:
+	case OP_LOADU2_MEMBASE:
+		/* 
+		 * Note: if reg1 = reg2 the load op is removed
+		 *
+		 * OP_STORE_MEMBASE_REG reg1, offset(basereg) 
+		 * OP_LOAD_MEMBASE offset(basereg), reg2
+		 * -->
+		 * OP_STORE_MEMBASE_REG reg1, offset(basereg)
+		 * OP_MOVE reg1, reg2
+		 */
+		if (last_ins && (last_ins->opcode == OP_STOREI2_MEMBASE_REG) &&
+			ins->inst_basereg == last_ins->inst_destbasereg &&
+			ins->inst_offset == last_ins->inst_offset) {
+			ins->opcode = (ins->opcode == OP_LOADI2_MEMBASE) ? OP_PCONV_TO_I2 : OP_PCONV_TO_U2;
+			ins->sreg1 = last_ins->sreg1;
+		}
+		break;
+	case OP_MOVE:
+	case OP_FMOVE:
+		/*
+		 * Removes:
+		 *
+		 * OP_MOVE reg, reg 
+		 */
+		if (ins->dreg == ins->sreg1) {
+			MONO_DELETE_INS (bb, ins);
+			break;
+		}
+		/* 
+		 * Removes:
+		 *
+		 * OP_MOVE sreg, dreg 
+		 * OP_MOVE dreg, sreg
+		 */
+		if (last_ins && last_ins->opcode == OP_MOVE &&
+			ins->sreg1 == last_ins->dreg &&
+			ins->dreg == last_ins->sreg1) {
+			MONO_DELETE_INS (bb, ins);
+		}
+		break;
+	}
+}
