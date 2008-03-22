@@ -3430,20 +3430,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_basr (code, s390_r14, s390_r1);
 		}
 			break;
-		case OP_FCALL_MEMBASE: {
-			call = (MonoCallInst*)ins;
-			s390_l    (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
-			s390_basr (code, s390_r14, s390_r1);
-			if (call->signature->ret->type == MONO_TYPE_R4)
-				s390_ldebr (code, s390_f0, s390_f0);
-		}
-			break;
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
+		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
+		case OP_FCALL_MEMBASE:
 		case OP_CALL_MEMBASE: {
-			s390_l    (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
+			if (s390_is_uimm12(ins->inst_offset))
+				s390_l    (code, s390_r1, 0, ins->inst_basereg, ins->inst_offset);
+			else {
+				if (s390_is_imm16(ins->inst_offset)) {
+					s390_lhi (code, s390_r13, ins->inst_offset);
+					s390_l   (code, s390_r1, s390_r13, ins->inst_basereg, 0);
+				} else {
+					s390_basr (code, s390_r13, 0);
+					s390_j    (code, 4);
+					s390_word (code, ins->inst_offset);
+					s390_l    (code, s390_r13, 0, s390_r13, 4);
+					s390_l    (code, s390_r1, s390_r13, ins->inst_basereg, 0);
+				}
+			}
 			s390_basr (code, s390_r14, s390_r1);
+			if (ins->opcode == OP_FCALL_MEMBASE && call->signature->ret->type == MONO_TYPE_R4)
+				s390_ldebr (code, s390_f0, s390_f0);
 		}
 			break;
 		case OP_OUTARG: 
@@ -3799,8 +3808,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lhi  (code, s390_r13, -1);
 			s390_cr   (code, ins->sreg2, s390_r13);
 			s390_jnz  (code, 0); CODEPTR(code, o[2]);
-			if (ins->dreg != ins->sreg1)
-				s390_lr   (code, ins->dreg, ins->sreg1);
 			s390_j	  (code, 0); CODEPTR(code, o[3]);
 			PTRSLOT(code, o[0]);
 			s390_ltr  (code, ins->sreg2, ins->sreg2);
@@ -3812,6 +3819,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_brasl (code, s390_r14, 0);
 			PTRSLOT(code, o[3]);
 			PTRSLOT(code, o[4]);
+			if (ins->dreg != ins->sreg1)
+				s390_lr   (code, ins->dreg, ins->sreg1);
 		}
 			break;
 		case OP_SQRT: {

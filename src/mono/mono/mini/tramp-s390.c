@@ -228,6 +228,21 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 								  CREATE_GR_OFFSET +
 								  sizeof(int)*(reg-2)));
 		return base;
+	case 0x581d :
+		/* l %r1,OFFSET(%r13,%r7) */
+		code    -= 4;
+		reg      = *code >> 4;
+		*displacement = *((short *)code) & 0x0fff;
+		if (reg > 5) 
+			base = *((guchar **) (sp + S390_REG_SAVE_OFFSET+
+								  sizeof(int)*(reg-6)));
+		else
+			base = *((guchar **) ((sp - CREATE_STACK_SIZE) + 
+								  CREATE_GR_OFFSET +
+								  sizeof(int)*(reg-2)));
+		base += *((guint32*) (sp + S390_REG_SAVE_OFFSET+
+							  sizeof(int)*(s390_r13-6)));
+		return base;
 	case 0xc0e5 :
 		/* This is the 'brasl' instruction */
 		return NULL;
