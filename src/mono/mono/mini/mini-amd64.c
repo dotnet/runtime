@@ -1820,11 +1820,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IREM_IMM:
 		case OP_IDIV_UN_IMM:
 		case OP_IREM_UN_IMM:
-			NEW_INS (cfg, ins, temp, OP_ICONST);
-			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
-			ins->opcode = mono_op_imm_to_op (ins->opcode);
-			ins->sreg2 = temp->dreg;
+			mono_decompose_op_imm (cfg, ins);
 			break;
 		case OP_COMPARE_IMM:
 		case OP_LCOMPARE_IMM:

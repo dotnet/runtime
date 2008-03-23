@@ -2244,15 +2244,10 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /*========================= End of Function ========================*/
 
-#define NEW_INS(cfg,dest,op) do {	\
-		MONO_INST_NEW ((cfg), (dest), (op)); \
-		MONO_INST_LIST_ADD_TAIL (&(dest)->node, &(ins)->node); \
-	} while (0)
-
 void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *next, *temp;
+	MonoInst *ins, *next;
 
 	if (bb->max_vreg > cfg->rs->next_vreg)
 		cfg->rs->next_vreg = bb->max_vreg;
@@ -2265,11 +2260,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IREM_IMM:
 		case OP_IDIV_UN_IMM:
 		case OP_IREM_UN_IMM:
-			NEW_INS (cfg, temp, OP_ICONST);
-			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
-			ins->opcode = mono_op_imm_to_op (ins->opcode);
-			ins->sreg2 = temp->dreg;
+			mono_decompose_op_imm (cfg, ins);
 			break;
 		default:
 			break;
