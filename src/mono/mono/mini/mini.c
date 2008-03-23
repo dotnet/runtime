@@ -1601,7 +1601,8 @@ param_table [STACK_MAX] [STACK_MAX] = {
 };
 
 static int
-check_values_to_signature (MonoInst *args, MonoType *this, MonoMethodSignature *sig) {
+check_values_to_signature (MonoInst *args, MonoType *this, MonoMethodSignature *sig)
+{
 	int i;
 
 	if (sig->hasthis) {
@@ -1768,6 +1769,24 @@ mono_op_imm_to_op (int opcode)
 		printf ("%s\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
 	}
+}
+
+/*
+ * mono_decompose_op_imm:
+ *
+ *   Replace the OP_.._IMM INS with its non IMM variant.
+ */
+void
+mono_decompose_op_imm (MonoCompile *cfg, MonoInst *ins)
+{
+	MonoInst *temp;
+
+	MONO_INST_NEW (cfg, temp, OP_ICONST);
+	temp->inst_c0 = ins->inst_imm;
+	temp->dreg = mono_regstate_next_int (cfg->rs);
+	MONO_INST_LIST_ADD_TAIL (&(temp)->node, &(ins)->node);
+	ins->opcode = mono_op_imm_to_op (ins->opcode);
+	ins->sreg2 = temp->dreg;
 }
 
 /*

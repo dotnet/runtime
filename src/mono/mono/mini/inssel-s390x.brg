@@ -782,13 +782,6 @@ reg: OP_LMUL_OVF_UN (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
-reg: OP_LMUL (reg, OP_I8CONST) {
-	MONO_EMIT_BIALU_IMM (s, tree, OP_LMUL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
-} cost {
-	MBCOND (mono_arch_is_inst_imm (state->right->tree->inst_c0));
-	return 0;
-}
-
 reg: OP_LSHL (reg, OP_ICONST) {
 	MONO_EMIT_BIALU_IMM (s, tree, OP_LSHL_IMM, state->reg1, state->left->reg1, state->right->tree->inst_c0);
 } cost {
