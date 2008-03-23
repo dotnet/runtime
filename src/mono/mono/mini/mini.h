@@ -1095,6 +1095,7 @@ MonoJumpInfo* mono_patch_info_dup_mp        (MonoMemPool *mp, MonoJumpInfo *patc
 guint     mono_patch_info_hash (gconstpointer data) MONO_INTERNAL;
 gint      mono_patch_info_equal (gconstpointer ka, gconstpointer kb) MONO_INTERNAL;
 gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors) MONO_INTERNAL;
+gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 MonoLMF * mono_get_lmf                      (void) MONO_INTERNAL;
 MonoLMF** mono_get_lmf_addr                 (void) MONO_INTERNAL;
 void      mono_jit_thread_attach            (MonoDomain *domain);
@@ -1146,6 +1147,8 @@ MonoJitICallInfo *mono_find_jit_icall_by_addr  (gconstpointer addr) MONO_INTERNA
 MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save) MONO_INTERNAL;
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo) MONO_INTERNAL;
 
+void              mono_trampolines_init (void) MONO_INTERNAL;
+void              mono_trampolines_cleanup (void) MONO_INTERNAL;
 guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type) MONO_INTERNAL;
 gpointer          mono_create_jump_trampoline (MonoDomain *domain, 
 											   MonoMethod *method, 
@@ -1153,8 +1156,10 @@ gpointer          mono_create_jump_trampoline (MonoDomain *domain,
 gpointer          mono_create_class_init_trampoline (MonoVTable *vtable) MONO_INTERNAL;
 gpointer          mono_create_jit_trampoline (MonoMethod *method) MONO_INTERNAL;
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token) MONO_INTERNAL;
+gpointer          mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 gpointer          mono_create_delegate_trampoline (MonoClass *klass) MONO_INTERNAL;
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
+MonoClass*        mono_find_delegate_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 gpointer          mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp) MONO_INTERNAL;
 gpointer          mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* tramp) MONO_INTERNAL;
 gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
@@ -1274,6 +1279,7 @@ gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain 
 void    mono_arch_notify_pending_exc (void) MONO_INTERNAL;
 
 /* Exception handling */
+void     mono_exceptions_init                   (void) MONO_INTERNAL;
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,
 						 gpointer original_ip, gboolean test_only) MONO_INTERNAL;
 void     mono_handle_native_sigsegv             (int signal, void *sigctx) MONO_INTERNAL;

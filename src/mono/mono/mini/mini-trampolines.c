@@ -14,6 +14,19 @@
 #include "mini.h"
 #include "debug-mini.h"
 
+/*
+ * Address of the trampoline code.  This is used by the debugger to check
+ * whether a method is a trampoline.
+ */
+guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
+
+static GHashTable *class_init_hash_addr = NULL;
+static GHashTable *delegate_trampoline_hash_addr = NULL;
+
+#define mono_trampolines_lock() EnterCriticalSection (&trampolines_mutex)
+#define mono_trampolines_unlock() LeaveCriticalSection (&trampolines_mutex)
+static CRITICAL_SECTION trampolines_mutex;
+
 static MonoGenericSharingContext*
 get_generic_context (guint8 *code)
 {
@@ -521,4 +534,235 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 	}
 }
 
+void
+mono_trampolines_init (void)
+{
+	InitializeCriticalSection (&trampolines_mutex);
 
+	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	mono_trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
+	mono_trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
+ 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+	mono_trampoline_code [MONO_TRAMPOLINE_RGCTX_LAZY_FETCH] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_RGCTX_LAZY_FETCH);
+#ifdef MONO_ARCH_AOT_SUPPORTED
+	mono_trampoline_code [MONO_TRAMPOLINE_AOT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT);
+	mono_trampoline_code [MONO_TRAMPOLINE_AOT_PLT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_AOT_PLT);
+#endif
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+	mono_trampoline_code [MONO_TRAMPOLINE_DELEGATE] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_DELEGATE);
+#endif
+}
+
+void
+mono_trampolines_cleanup (void)
+{
+	if (class_init_hash_addr)
+		g_hash_table_destroy (class_init_hash_addr);
+	if (delegate_trampoline_hash_addr)
+		g_hash_table_destroy (delegate_trampoline_hash_addr);
+
+	DeleteCriticalSection (&trampolines_mutex);
+}
+
+guint8 *
+mono_get_trampoline_code (MonoTrampolineType tramp_type)
+{
+	return mono_trampoline_code [tramp_type];
+}
+
+gpointer
+mono_create_class_init_trampoline (MonoVTable *vtable)
+{
+	gpointer code, ptr;
+
+	g_assert (!vtable->klass->generic_container);
+
+	/* previously created trampoline code */
+	mono_domain_lock (vtable->domain);
+	ptr = 
+		g_hash_table_lookup (vtable->domain->class_init_trampoline_hash,
+								  vtable);
+	mono_domain_unlock (vtable->domain);
+	if (ptr)
+		return ptr;
+
+	code = mono_arch_create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain, NULL);
+
+	ptr = mono_create_ftnptr (vtable->domain, code);
+
+	/* store trampoline address */
+	mono_domain_lock (vtable->domain);
+	g_hash_table_insert (vtable->domain->class_init_trampoline_hash,
+							  vtable, ptr);
+	mono_domain_unlock (vtable->domain);
+
+	mono_trampolines_lock ();
+	if (!class_init_hash_addr)
+		class_init_hash_addr = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (class_init_hash_addr, ptr, vtable);
+	mono_trampolines_unlock ();
+
+	return ptr;
+}
+
+gpointer
+mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, 
+							 gboolean add_sync_wrapper)
+{
+	MonoJitInfo *ji;
+	gpointer code;
+	guint32 code_size;
+
+	if (add_sync_wrapper && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		return mono_create_jump_trampoline (domain, mono_marshal_get_synchronized_wrapper (method), FALSE);
+
+	code = mono_jit_find_compiled_method (domain, method);
+	if (code)
+		return code;
+
+	mono_domain_lock (domain);
+	code = g_hash_table_lookup (domain->jump_trampoline_hash, method);
+	mono_domain_unlock (domain);
+	if (code)
+		return code;
+
+	code = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
+
+	mono_domain_lock (domain);
+	ji = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
+	mono_domain_unlock (domain);
+	ji->code_start = code;
+	ji->code_size = code_size;
+	ji->method = method;
+
+	/*
+	 * mono_delegate_ctor needs to find the method metadata from the 
+	 * trampoline address, so we save it here.
+	 */
+
+	mono_jit_info_table_add (domain, ji);
+
+	mono_domain_lock (domain);
+	g_hash_table_insert (domain->jump_trampoline_hash, method, ji->code_start);
+	mono_domain_unlock (domain);
+
+	return ji->code_start;
+}
+
+gpointer
+mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
+{
+	gpointer tramp;
+
+	mono_domain_lock (domain);
+	tramp = g_hash_table_lookup (domain->jit_trampoline_hash, method);
+	mono_domain_unlock (domain);
+	if (tramp)
+		return tramp;
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		return mono_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
+
+	tramp = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, domain, NULL);
+	
+	mono_domain_lock (domain);
+	g_hash_table_insert (domain->jit_trampoline_hash, method, tramp);
+	mono_domain_unlock (domain);
+
+	mono_jit_stats.method_trampolines++;
+
+	return tramp;
+}	
+
+gpointer
+mono_create_jit_trampoline (MonoMethod *method)
+{
+	return mono_create_jit_trampoline_in_domain (mono_domain_get (), method);
+}
+
+#ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
+gpointer
+mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
+{
+	gpointer tramp;
+
+	MonoDomain *domain = mono_domain_get ();
+	guint8 *buf, *start;
+
+	mono_domain_lock (domain);
+	buf = start = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
+	mono_domain_unlock (domain);
+
+	*(gpointer*)(gpointer)buf = image;
+	buf += sizeof (gpointer);
+	*(guint32*)(gpointer)buf = token;
+
+	tramp = mono_arch_create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
+
+	mono_jit_stats.method_trampolines++;
+
+	return tramp;
+}	
+#endif
+
+gpointer
+mono_create_delegate_trampoline (MonoClass *klass)
+{
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+	MonoDomain *domain = mono_domain_get ();
+	gpointer ptr;
+	guint32 code_size;
+
+	mono_domain_lock (domain);
+	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, klass);
+	mono_domain_unlock (domain);
+	if (ptr)
+		return ptr;
+
+    ptr = mono_arch_create_specific_trampoline (klass, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
+
+	/* store trampoline address */
+	mono_domain_lock (domain);
+	g_hash_table_insert (domain->delegate_trampoline_hash,
+							  klass, ptr);
+	mono_domain_unlock (domain);
+
+	mono_trampolines_lock ();
+	if (!delegate_trampoline_hash_addr)
+		delegate_trampoline_hash_addr = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (delegate_trampoline_hash_addr, ptr, klass);
+	mono_trampolines_unlock ();
+
+	return ptr;
+#else
+	return NULL;
+#endif
+}
+
+MonoVTable*
+mono_find_class_init_trampoline_by_addr (gconstpointer addr)
+{
+	MonoVTable *res;
+
+	mono_trampolines_lock ();
+	if (class_init_hash_addr)
+		res = g_hash_table_lookup (class_init_hash_addr, addr);
+	else
+		res = NULL;
+	mono_trampolines_unlock ();
+	return res;
+}
+
+MonoClass*
+mono_find_delegate_trampoline_by_addr (gconstpointer addr)
+{
+	MonoClass *res;
+
+	mono_trampolines_lock ();
+	if (delegate_trampoline_hash_addr)
+		res = g_hash_table_lookup (delegate_trampoline_hash_addr, addr);
+	else
+		res = NULL;
+	mono_trampolines_unlock ();
+	return res;
+}
