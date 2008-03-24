@@ -4835,7 +4835,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoSecurityManager* secman = NULL;
 	MonoDeclSecurityActions actions;
 	GSList *class_inits = NULL;
-	gboolean dont_verify, dont_verify_stloc;
+	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
@@ -6041,6 +6041,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					*sp++ = ins;
 				} else if (strcmp (cmethod->name, "Address") == 0) { /* array Address */
+					if (!cmethod->klass->element_class->valuetype && !readonly) {
+						MonoInst* check;
+						//* Needed by the code generated in inssel.brg * /
+						mono_get_got_var (cfg);
+
+						MONO_INST_NEW (cfg, check, OP_CHECK_ARRAY_TYPE);
+						check->cil_code = ip;
+						check->klass = cmethod->klass;
+						check->inst_left = sp [0];
+						check->type = STACK_OBJ;
+						sp [0] = check;
+					}
+
+					readonly = FALSE;
 					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, FALSE);
 					*sp++ = addr;
 				} else {
@@ -7959,7 +7973,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * to be for correctness. the wrappers are lax with their usage
 			 * so we need to ignore them here
 			 */
-			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE) {
+			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE && !readonly) {
 				MonoInst* check;
 
 				/* Needed by the code generated in inssel.brg */
@@ -7967,13 +7981,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				MONO_INST_NEW (cfg, check, OP_CHECK_ARRAY_TYPE);
 				check->cil_code = ip;
-				check->klass = klass;
+				check->klass = mono_array_class_get (klass, 1);
 				check->inst_left = sp [0];
 				check->type = STACK_OBJ;
-				check->klass = klass;
 				sp [0] = check;
 			}
 			
+			readonly = FALSE;
 			mono_class_init (klass);
 			NEW_LDELEMA (cfg, ins, sp, klass);
 			ins->cil_code = ip;
@@ -9157,6 +9171,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				*sp++ = ins;
 				break;
 			case CEE_READONLY_:
+				readonly = TRUE;
 				ip += 2;
 				break;
 			default:
