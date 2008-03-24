@@ -72,6 +72,19 @@ public class InterlockTest
 		if (o != o2)
 			return 15;
 
+		/* long increment/decrement */
+		la = 0x12345678;
+		lb = Interlocked.Increment (ref la);
+		if (la != 0x12345679)
+			return 16;
+		if (lb != 0x12345679)
+			return 16;
+		lb = Interlocked.Decrement (ref la);
+		if (la != 0x12345678)
+			return 17;
+		if (lb != 0x12345678)
+			return 18;		
+
 		Console.WriteLine ("done!");
 
 		return 0;
