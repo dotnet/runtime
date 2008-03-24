@@ -215,7 +215,8 @@ enum {
 	PREFIX_UNALIGNED = 1,
 	PREFIX_VOLATILE  = 2,
 	PREFIX_TAIL      = 4,
-	PREFIX_CONSTRAINED = 8
+	PREFIX_CONSTRAINED = 8,
+	PREFIX_READONLY = 16
 };
 //////////////////////////////////////////////////////////////////
 
@@ -2694,6 +2695,9 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		value = stack_pop (ctx);
 		if (!verify_stack_type_compatibility (ctx, sig->params[i], value))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature at 0x%04x", ctx->ip_offset));
+
+		if (stack_slot_is_managed_mutability_pointer (value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer as argument of %s at 0x%04x", virtual ? "callvirt" : "call",  ctx->ip_offset));
 	}
 
 	if (sig->hasthis) {
@@ -2726,7 +2730,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a valuetype with callvirt at 0x%04x", ctx->ip_offset));
 	
 			if (method->klass->valuetype && (stack_slot_is_boxed_value (value) || !stack_slot_is_managed_pointer (value)))
-				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a boxed or literal valuetype to call a valuetype method  at 0x%04x", ctx->ip_offset));
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a boxed or literal valuetype to call a valuetype method at 0x%04x", ctx->ip_offset));
 		}
 		if (!verify_stack_type_compatibility (ctx, type, &copy))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature at 0x%04x", ctx->ip_offset));
@@ -2736,12 +2740,15 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Method is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (check_overflow (ctx))
-			set_stack_value (ctx, stack_push (ctx), sig->ret, FALSE);
+		if (check_overflow (ctx)) {
+			value = stack_push (ctx);
+			set_stack_value (ctx, value, sig->ret, FALSE);
+			if ((ctx->prefix_set & PREFIX_READONLY) && method->klass->rank && !strcmp (method->name, "Address")) {
+				ctx->prefix_set &= ~PREFIX_READONLY;
+				value->stype |= CMMP_MASK;
+			}
+		}
 	}
-
-	if (virtual)
-		ctx->prefix_set &= ~PREFIX_CONSTRAINED;
 }
 
 static void
@@ -3089,6 +3096,9 @@ do_stobj (VerifyContext *ctx, int token)
 	src = stack_pop (ctx);
 	dest = stack_pop (ctx);
 
+	if (stack_slot_is_managed_mutability_pointer (dest))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer with stobj at 0x%04x", ctx->ip_offset));
+
 	if (!stack_slot_is_managed_pointer (dest)) 
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid destination of stobj operation at 0x%04x", ctx->ip_offset));
 
@@ -3119,6 +3129,9 @@ do_cpobj (VerifyContext *ctx, int token)
 	if (!stack_slot_is_managed_pointer (dest)) 
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid destination of cpobj operation at 0x%04x", ctx->ip_offset));
 
+	if (stack_slot_is_managed_mutability_pointer (dest))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer with cpobj at 0x%04x", ctx->ip_offset));
+
 	if (!verify_type_compatibility (ctx, type, mono_type_get_type_byval (src->type)))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Token and source types of cpobj don't match at 0x%04x", ctx->ip_offset));
 
@@ -3141,6 +3154,9 @@ do_initobj (VerifyContext *ctx, int token)
 
 	if (!stack_slot_is_managed_pointer (obj)) 
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid object address for initobj at 0x%04x", ctx->ip_offset));
+
+	if (stack_slot_is_managed_mutability_pointer (obj))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer with initobj at 0x%04x", ctx->ip_offset));
 
 	stack = mono_type_get_type_byval (obj->type);
 	if (MONO_TYPE_IS_REFERENCE (stack)) {
@@ -3199,6 +3215,9 @@ do_newobj (VerifyContext *ctx, int token)
 			value = stack_pop (ctx);
 			if (!verify_stack_type_compatibility (ctx, sig->params [i], value))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature at 0x%04x", ctx->ip_offset));
+
+			if (stack_slot_is_managed_mutability_pointer (value))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer as argument of newobj at 0x%04x", ctx->ip_offset));
 		}
 	}
 
@@ -3346,6 +3365,11 @@ do_store_indirect (VerifyContext *ctx, int opcode)
 		return;
 	}
 
+	if (stack_slot_is_managed_mutability_pointer (addr)) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer with stind at 0x%04x", ctx->ip_offset));
+		return;
+	}
+
 	if (!verify_type_compatibility_full (ctx, mono_type_from_opcode (opcode), mono_type_get_type_byval (addr->type), TRUE))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid addr type at stack for stind 0x%x operation at 0x%04x", opcode, ctx->ip_offset));
 
@@ -3394,7 +3418,7 @@ do_ldlen (VerifyContext *ctx)
 static void
 do_ldelema (VerifyContext *ctx, int klass_token)
 {
-	ILStackDesc *index, *array;
+	ILStackDesc *index, *array, *res;
 	MonoType *type = get_boxable_mono_type (ctx, klass_token, "ldelema");
 	gboolean valid; 
 
@@ -3424,7 +3448,12 @@ do_ldelema (VerifyContext *ctx, int klass_token)
 		}
 	}
 
-	set_stack_value (ctx, stack_push (ctx), type, TRUE);	
+	res = stack_push (ctx);
+	set_stack_value (ctx, res, type, TRUE);
+	if (ctx->prefix_set & PREFIX_READONLY) {
+		ctx->prefix_set &= ~PREFIX_READONLY;
+		res->stype |= CMMP_MASK;
+	}
 }
 
 /*
@@ -3799,6 +3828,9 @@ do_mkrefany (VerifyContext *ctx, int token)
 		return;
 
 	top = stack_pop (ctx);
+
+	if (stack_slot_is_managed_mutability_pointer (top))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer with mkrefany at 0x%04x", ctx->ip_offset));
 
 	if (!stack_slot_is_managed_pointer (top)) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Expected a managed pointer for mkrefany, but found %s at 0x%04x", stack_slot_get_name (top), ctx->ip_offset));
@@ -4923,6 +4955,12 @@ mono_method_verify (MonoMethod *method, int level)
 				prefix |= PREFIX_CONSTRAINED;
 				ip += 5;
 				break;
+	
+			case CEE_READONLY_:
+				prefix |= PREFIX_READONLY;
+				ip++;
+				break;
+
 			case CEE_CPBLK:
 				if (!check_underflow (&ctx, 3))
 					break;
@@ -4972,7 +5010,9 @@ mono_method_verify (MonoMethod *method, int level)
 		} else {
 			ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
 			if (ctx.prefix_set & PREFIX_CONSTRAINED)
-				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after constrained prefix intruction at 0x%04x", ctx.ip_offset));
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after constrained prefix at 0x%04x", ctx.ip_offset));
+			if (ctx.prefix_set & PREFIX_READONLY)
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after readonly prefix at 0x%04x", ctx.ip_offset));
 		}
 	}
 	/*
