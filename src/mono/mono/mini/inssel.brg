@@ -1562,7 +1562,7 @@ reg: OP_ARRAY_RANK (reg) {
 
 reg: OP_CHECK_ARRAY_TYPE (reg) {
 
-	MonoClass* array_class = mono_array_class_get (tree->klass, 1);
+	MonoClass* array_class = tree->klass;
 	
 	int vtable_reg = mono_regstate_next_int (s->rs);
 
