@@ -4242,4 +4242,107 @@ done
 
 
 
+#cmmp support
+#ldind.x tests
+I=1
+for TYPE in "ldind.i1 int8" "ldind.u1 int8" "ldind.i2 int16" "ldind.u2 int16" "ldind.i4 int32" "ldind.u4 int32" "ldind.i8 int64" "ldind.u8 int64" "ldind.i native int" "ldind.r4 float32" "ldind.r8 float64"
+do
+	LOAD=`echo $TYPE | cut -d' ' -f 1` 
+	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	./make_cmmp_test.sh cmmp_basic_test_ro_$I valid "readonly. ldelema $TYPE" "$LOAD" "$TYPE"
+	./make_cmmp_test.sh cmmp_basic_test_ub_$I valid "unbox $TYPE" "$LOAD" "$TYPE"
+	I=`expr $I + 1`
+done
+
+#unbox is only for value types, so cannot be paired with ldind.ref
+./make_cmmp_test.sh cmmp_basic_test_ro_$I valid "readonly. ldelema object" "ldind.ref" "object"
+
+./make_cmmp_test.sh cmmp_basic_test_ro_ldobj valid "readonly. ldelema int32" "ldobj int32" "int32"
+./make_cmmp_test.sh cmmp_basic_test_ub_ldobj valid "unbox int32" "ldobj int32" "int32"
+
+./make_cmmp_test.sh cmmp_basic_test_ro_ldfld valid "readonly. ldelema valuetype MyStruct" "ldfld int32 MyStruct::foo" "valuetype MyStruct"
+./make_cmmp_test.sh cmmp_basic_test_ub_ldfld valid "unbox valuetype MyStruct" "ldfld int32 MyStruct::foo" "valuetype MyStruct "
+
+./make_cmmp_test.sh cmmp_basic_test_ro_ldflda valid "readonly. ldelema valuetype MyStruct" "ldflda int32 MyStruct::foo" "valuetype MyStruct"
+./make_cmmp_test.sh cmmp_basic_test_ub_ldflda valid "unbox valuetype MyStruct" "ldflda int32 MyStruct::foo" "valuetype MyStruct "
+
+#as the object parameter of callvirt, constrained. callvirt
+#ldobj
+
+./make_cmmp_test.sh cmmp_basic_test_ro_stfld_ptr valid "readonly. ldelema valuetype MyStruct" "ldc.i4.0\n\tstfld int32 MyStruct::foo" "valuetype MyStruct"
+./make_cmmp_test.sh cmmp_basic_test_ub_stfld_ptr valid "unbox valuetype MyStruct" "ldc.i4.0\n\tstfld int32 MyStruct::foo" "valuetype MyStruct "
+
+#testing for second argument in stfld is pointless as fields cannot be a byref type
+
+#can be the this ptr for call
+./make_cmmp_test.sh cmmp_basic_test_ro_call_this valid "readonly. ldelema int32" "ldc.i4.0\n\tcall instance int32 int32::CompareTo(int32)" "int32"
+./make_cmmp_test.sh cmmp_basic_test_ub_call_this valid "unbox int32" "ldc.i4.0\n\tcall instance int32 int32::CompareTo(int32)" "int32"
+
+
+#cannot be parameter
+./make_cmmp_test.sh cmmp_basic_test_ro_call_arg unverifiable "readonly. ldelema valuetype MyStruct" "call void MyStruct::Test(MyStruct\&)" "valuetype MyStruct"
+./make_cmmp_test.sh cmmp_basic_test_ub_call_arg unverifiable "unbox valuetype MyStruct" "call void MyStruct::Test(MyStruct\&)" "valuetype MyStruct"
+
+
+#FIXME it's not possible to use a managed pointer with an unconstrained callvirt
+
+#constrained. callvirt
+./make_cmmp_test.sh cmmp_basic_test_ro_callvirt_this valid "readonly. ldelema int32" "constrained. int32 callvirt instance int32 object::GetHashCode()" "int32"
+./make_cmmp_test.sh cmmp_basic_test_ub_callvirt_this valid "unbox int32" "constrained. int32 callvirt instance int32 object::GetHashCode()" "int32"
+
+
+#constrained. callvirt as parameter
+./make_cmmp_test.sh cmmp_basic_test_ro_callvirt_arg unverifiable "readonly. ldelema ClassA" "dup\n\tconstrained. ClassA callvirt instance void ClassA::VirtTest(ClassA\&)" "ClassA"
+
+
+#invalid instructions with cmmp argument
+#test, at least, stobj, cpobj, stind, initobj, mkrefany, newobj, ceq
+
+#stind.x
+I=1
+for TYPE in "stind.i1 int8" "stind.i2 int16" "stind.i4 int32" "stind.i8 int64" "stind.r4 float32" "stind.r8 float64" "stind.i native int"
+do
+	STORE=`echo $TYPE | cut -d' ' -f 1` 
+	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	./make_cmmp_test.sh cmmp_bad_ops_test_ro_$I unverifiable "readonly. ldelema $TYPE" "ldloc.0\n\t$STORE" "$TYPE"
+	./make_cmmp_test.sh cmmp_bad_ops_test_ub_$I unverifiable "unbox $TYPE" "ldloc.0\n\t$STORE" "$TYPE"
+	I=`expr $I + 1`
+done
+
+#unbox is only for value types, so cannot be paired with ldind.ref
+./make_cmmp_test.sh cmmp_bad_ops_test_ro_$I unverifiable "readonly. ldelema object" "ldloc.0\n\tstind.ref" "object"
+
+
+./make_cmmp_test.sh cmmp_stobj_test_ro unverifiable "readonly. ldelema int32" "ldloc.0\n\tstobj int32" "int32"
+./make_cmmp_test.sh cmmp_stobj_test_ub unverifiable "unbox int32" "ldloc.0\n\tstobj int32" "int32"
+
+./make_cmmp_test.sh cmmp_cpobj_src_ro valid "readonly. ldelema int32" "cpobj int32" "int32" "ldloca 0"
+./make_cmmp_test.sh cmmp_cpobj_src_ub valid "unbox int32" "cpobj int32" "int32" "ldloca 0"
+
+./make_cmmp_test.sh cmmp_cpobj_dst_ro unverifiable "readonly. ldelema int32" "ldloca 0\n\tcpobj int32" "int32"
+./make_cmmp_test.sh cmmp_cpobj_dst_ub unverifiable "unbox int32" "ldloca 0\n\tcpobj int32" "int32"
+
+./make_cmmp_test.sh cmmp_initobj_test_ro unverifiable "readonly. ldelema int32" "initobj int32" "int32"
+./make_cmmp_test.sh cmmp_initobj_test_ub unverifiable "unbox int32" "initobj int32" "int32"
+
+./make_cmmp_test.sh cmmp_mkrefany_test_ro unverifiable "readonly. ldelema int32" "mkrefany int32" "int32"
+./make_cmmp_test.sh cmmp_mkrefany_test_ub unverifiable "unbox int32" "mkrefany int32" "int32"
+
+./make_cmmp_test.sh cmmp_newobj_test_ro unverifiable "readonly. ldelema int32" "newobj instance void class ClassA::.ctor(int32\&)" "int32"
+./make_cmmp_test.sh cmmp_newobj_test_ub unverifiable "unbox int32" "newobj instance void class ClassA::.ctor(int32\&)" "int32"
+
+./make_cmmp_test.sh cmmp_ceq_test_ro valid "readonly. ldelema int32" "dup\n\tceq" "int32"
+./make_cmmp_test.sh cmmp_ceq_test_ub valid "unbox int32" "dup\n\tceq" "int32"
+
+./make_cmmp_test.sh cmmp_basic_test_address_method_1 valid "ldc.i4.1\n\tldc.i4.1\n\tnewobj instance void int32[,]::.ctor(int32, int32)\n\tldc.i4.0\n\tldc.i4.0\n\tcall instance int32\&  int32[,]::Address(int32, int32)" "ldloc.0\n\tstind.i4" "int32"
+
+./make_cmmp_test.sh cmmp_basic_test_address_method_2 unverifiable "ldc.i4.1\n\tldc.i4.1\n\tnewobj instance void int32[,]::.ctor(int32, int32)\n\tldc.i4.0\n\tldc.i4.0\n\treadonly. call instance int32\&  int32[,]::Address(int32, int32)" "ldloc.0\n\tstind.i4" "int32"
+
+
+#readonly before an invalid instruction
+./make_cmmp_test.sh readonly_before_invalid_instruction_1 invalid "readonly. ldelem int32" "nop" "int32"
+./make_cmmp_test.sh readonly_before_invalid_instruction_2 invalid "ldstr \"tst\"\n\treadonly. call string int32::Parse(string)" "nop" "int32"
+
+
+
 
