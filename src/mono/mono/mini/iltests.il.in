@@ -1573,6 +1573,7 @@ HAS_VALUE:	ldc.i4.1
 		ret
 	}
 
+	//Bug 372410
 	.method static public int32 test_0_ldelema_type_check () cil managed {
 		.maxstack 16
 		.locals init (object[] V_0,
@@ -1638,6 +1639,7 @@ HAS_VALUE:	ldc.i4.1
 	}
 
 
+	//Bug 372410
 	.method static public int32 test_0_array_address_type_check () cil managed {
 		.maxstack 16
 		.locals init (object[] V_0,
