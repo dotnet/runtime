@@ -34,7 +34,9 @@ int mini_wapi_seminfo (int argc, char **argv)
 
 static const gchar *unused_details (struct _WapiHandleShared *handle);
 static const gchar *unshared_details (struct _WapiHandleShared *handle);
+#if 0
 static const gchar *thread_details (struct _WapiHandleShared *handle);
+#endif
 static const gchar *namedmutex_details (struct _WapiHandleShared *handle);
 static const gchar *namedsem_details (struct _WapiHandleShared *handle);
 static const gchar *namedevent_details (struct _WapiHandleShared *handle);
@@ -48,7 +50,7 @@ static const gchar * (*details[])(struct _WapiHandleShared *)=
 	unused_details,
 	unshared_details,		/* file */
 	unshared_details,		/* console */
-	thread_details,
+	unshared_details,		/* thread */
 	unshared_details,		/* sem */
 	unshared_details,		/* mutex */
 	unshared_details,		/* event */
@@ -128,6 +130,7 @@ static const gchar *unshared_details (struct _WapiHandleShared *handle)
 	return("unshared details");
 }
 
+#if 0
 static const gchar *thread_details (struct _WapiHandleShared *handle)
 {
 	static gchar buf[80];
@@ -140,6 +143,7 @@ static const gchar *thread_details (struct _WapiHandleShared *handle)
 	
 	return(buf);
 }
+#endif
 
 static const gchar *namedmutex_details (struct _WapiHandleShared *handle)
 {

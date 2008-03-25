@@ -141,27 +141,30 @@ void _wapi_thread_set_termination_details (gpointer handle,
 
 	_wapi_thread_abandon_mutexes (handle);
 	
-	thr_ret = _wapi_handle_lock_shared_handles ();
-	g_assert (thr_ret == 0);
-	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread_handle);
 	if (ok == FALSE) {
 		g_warning ("%s: error looking up thread handle %p", __func__,
 			   handle);
 
-		_wapi_handle_unlock_shared_handles ();
 		return;
 	}
+	
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
+	g_assert (thr_ret == 0);
 	
 	thread_handle->exitstatus = exitstatus;
 	thread_handle->state = THREAD_STATE_EXITED;
 	MONO_SEM_DESTROY (&thread_handle->suspend_sem);
 	g_ptr_array_free (thread_handle->owned_mutexes, TRUE);
 
-	_wapi_shared_handle_set_signal_state (handle, TRUE);
+	_wapi_handle_set_signal_state (handle, TRUE, TRUE);
 
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 #ifdef DEBUG
 	g_message("%s: Recording thread handle %p id %ld status as %d",
@@ -343,7 +346,9 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 		return (NULL);
 	}
 
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
@@ -427,7 +432,9 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	}
 
 cleanup:
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	/* Must not call _wapi_handle_unref() with the shared handles
 	 * already locked
@@ -536,7 +543,7 @@ gpointer OpenThread (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSE
 	ret = _wapi_thread_handle_from_id ((pthread_t)tid);
 	if (ret == NULL) {
 		/* We need to search for this thread */
-		ret = _wapi_search_handle (WAPI_HANDLE_THREAD, find_thread_by_id, (gpointer)tid, NULL, TRUE);	/* FIXME: have a proper look at this, me might not need to set search_shared = TRUE */
+		ret = _wapi_search_handle (WAPI_HANDLE_THREAD, find_thread_by_id, (gpointer)tid, NULL, FALSE/*TRUE*/);	/* FIXME: have a proper look at this, me might not need to set search_shared = TRUE */
 	} else {
 		/* if _wapi_search_handle() returns a found handle, it
 		 * refs it itself
@@ -670,7 +677,9 @@ static gpointer thread_attach(gsize *tid)
 		return (NULL);
 	}
 
-	thr_ret = _wapi_handle_lock_shared_handles ();
+	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
+			      handle);
+	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
@@ -719,7 +728,9 @@ static gpointer thread_attach(gsize *tid)
 	}
 
 cleanup:
-	_wapi_handle_unlock_shared_handles ();
+	thr_ret = _wapi_handle_unlock_handle (handle);
+	g_assert (thr_ret == 0);
+	pthread_cleanup_pop (0);
 	
 	return(handle);
 }
