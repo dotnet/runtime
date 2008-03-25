@@ -1,3 +1,7 @@
+2008-03-25  Zoltan Varga  <vargaz@gmail.com>
+
+	* runtime/Makefile.am (mcs-compileall): Skip net 2.1 assemblies for now.
+
 2008-03-22  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Pass CPPFLAGS to libgc configure using ac_configure_args instead
