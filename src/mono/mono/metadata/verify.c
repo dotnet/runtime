@@ -5005,6 +5005,8 @@ mono_method_verify (MonoMethod *method, int level)
 
 		/*TODO we can fast detect a forward branch or exception block targeting code after prefix, we should fail fast*/
 		if (prefix) {
+			if (!ctx.prefix_set) //first prefix
+				ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
 			ctx.prefix_set |= prefix;
 			prefix = 0;
 		} else {
@@ -5013,6 +5015,7 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after constrained prefix at 0x%04x", ctx.ip_offset));
 			if (ctx.prefix_set & PREFIX_READONLY)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after readonly prefix at 0x%04x", ctx.ip_offset));
+			ctx.prefix_set = prefix = 0;
 		}
 	}
 	/*
