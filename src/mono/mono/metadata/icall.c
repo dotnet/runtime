@@ -2850,7 +2850,7 @@ ensure_reflection_security (void)
 }
 
 static MonoObject *
-ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params) 
+ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoException **exc) 
 {
 	/* 
 	 * Invoke from reflection is supposed to always be a virtual call (the API
@@ -2863,31 +2863,43 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 	MONO_ARCH_SAVE_REGS;
 
+	*exc = NULL;
+
 	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR &&
 			mono_security_core_clr_method_level (m, TRUE) == MONO_SECURITY_CORE_CLR_CRITICAL)
 		ensure_reflection_security ();
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (this) {
-			if (!mono_object_isinst (this, m->klass))
-				mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
+			if (!mono_object_isinst (this, m->klass)) {
+				*exc = mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException");
+				return NULL;
+			}
 			m = mono_object_get_virtual_method (this, m);
 			/* must pass the pointer to the value for valuetype methods */
 			if (m->klass->valuetype)
 				obj = mono_object_unbox (this);
-		} else if (strcmp (m->name, ".ctor") && !m->wrapper_type)
-			mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException"));
+		} else if (strcmp (m->name, ".ctor") && !m->wrapper_type) {
+			*exc = mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException");
+			return NULL;
+		}
 	}
 
 	pcount = params? mono_array_length (params): 0;
-	if (pcount != mono_method_signature (m)->param_count)
-		mono_raise_exception (mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
+	if (pcount != mono_method_signature (m)->param_count) {
+		*exc = mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException");
+		return NULL;
+	}
 
-	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor") && !this)
-		mono_raise_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", "Cannot invoke constructor of an abstract class."));
+	if ((m->klass->flags & TYPE_ATTRIBUTE_ABSTRACT) && !strcmp (m->name, ".ctor") && !this) {
+		*exc = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", "Cannot invoke constructor of an abstract class.");
+		return NULL;
+	}
 
-	if (m->klass->image->assembly->ref_only)
-		mono_raise_exception (mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api."));
+	if (m->klass->image->assembly->ref_only) {
+		*exc = mono_get_exception_invalid_operation ("It is illegal to invoke a method on a type loaded using the ReflectionOnly api.");
+		return NULL;
+	}
 	
 	if (m->klass->rank && !strcmp (m->name, ".ctor")) {
 		int i;
