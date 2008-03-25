@@ -3258,22 +3258,11 @@ handle_unbox_nullable (MonoCompile* cfg, MonoBasicBlock* bblock, MonoInst* val, 
 }
 
 
-
-static MonoInst *
-handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip, MonoClass *klass)
+static MonoInst*
+handle_box_copy (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip, MonoClass *klass, int temp)
 {
 	MonoInst *dest, *vtoffset, *add, *vstore;
-	int temp;
 
-       if (mono_class_is_nullable (klass)) {
-               MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
-               temp = mono_emit_method_call_spilled (cfg, bblock, method, mono_method_signature (method), &val, ip, NULL);
-               NEW_TEMPLOAD (cfg, dest, temp);
-               return dest;
-       }
-
-
-	temp = handle_alloc (cfg, bblock, klass, TRUE, ip);
 	NEW_TEMPLOAD (cfg, dest, temp);
 	NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
 	MONO_INST_NEW (cfg, add, OP_PADD);
@@ -3299,6 +3288,37 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 
 	NEW_TEMPLOAD (cfg, dest, temp);
 	return dest;
+}
+
+static MonoInst *
+handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip, MonoClass *klass)
+{
+	MonoInst *dest;
+	int temp;
+
+	if (mono_class_is_nullable (klass)) {
+		MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
+		temp = mono_emit_method_call_spilled (cfg, bblock, method, mono_method_signature (method), &val, ip, NULL);
+		NEW_TEMPLOAD (cfg, dest, temp);
+		return dest;
+	}
+
+	temp = handle_alloc (cfg, bblock, klass, TRUE, ip);
+
+	return handle_box_copy (cfg, bblock, val, ip, klass, temp);
+}
+
+static MonoInst *
+handle_box_from_inst (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip,
+		MonoClass *klass, MonoInst *vtable_inst)
+{
+	int temp;
+
+	g_assert (!mono_class_is_nullable (klass));
+
+	temp = handle_alloc_from_inst (cfg, bblock, klass, vtable_inst, TRUE, ip);
+
+	return handle_box_copy (cfg, bblock, val, ip, klass, temp);
 }
 
 static MonoInst*
@@ -7774,6 +7794,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_BOX: {
 			MonoInst *val;
+			gboolean generic_shared = FALSE;
 
 			CHECK_STACK (1);
 			--sp;
@@ -7783,10 +7804,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_sharing_context && mono_class_check_context_used (klass))
-				GENERIC_SHARING_FAILURE (CEE_BOX);
+			if (cfg->generic_sharing_context && mono_class_check_context_used (klass)) {
+				if (mono_class_is_nullable (klass))
+					GENERIC_SHARING_FAILURE (CEE_BOX);
+				else
+					generic_shared = TRUE;
+			}
 
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg) ||
+					(generic_shared && generic_class_is_reference_type (cfg, klass))) {
 				*sp++ = val;
 				ip += 5;
 				break;
@@ -7832,7 +7858,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				start_new_bblock = 1;
 				break;
 			}
-			*sp++ = handle_box (cfg, bblock, val, ip, klass);
+			if (generic_shared) {
+				MonoInst *this = NULL, *rgctx, *vtable;
+
+				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
+
+				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
+					NEW_ARGLOAD (cfg, this, 0);
+				rgctx = get_runtime_generic_context (cfg, method, this, ip);
+				vtable = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+					token, MINI_TOKEN_SOURCE_CLASS, generic_context,
+					rgctx, MONO_RGCTX_INFO_VTABLE, ip);
+
+				*sp++ = handle_box_from_inst (cfg, bblock, val, ip, klass, vtable);
+			} else {
+				*sp++ = handle_box (cfg, bblock, val, ip, klass);
+			}
 			ip += 5;
 			inline_costs += 1;
 			break;
