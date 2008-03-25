@@ -187,6 +187,9 @@ mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
 /* Whenever to check for pending exceptions in managed-to-native wrappers */
 gboolean check_for_pending_exc = TRUE;
 
+/* Whenever to run the verifier on all methods */
+gboolean mono_verify_all = FALSE;
+
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -4767,8 +4770,12 @@ check_method_full_trust (MonoMethod *method)
  * FIXME we should be able to check gac'ed code for validity
  */
 static gboolean
-check_for_method_verify (MonoMethod *method) {
-	return (verifier_mode > MINI_VERIFIER_MODE_OFF) && !method->klass->image->assembly->in_gac && method->klass->image != mono_defaults.corlib && method->wrapper_type == MONO_WRAPPER_NONE;
+check_for_method_verify (MonoMethod *method)
+{
+	if (mono_verify_all)
+		return method->wrapper_type == MONO_WRAPPER_NONE;
+	else
+		return (verifier_mode > MINI_VERIFIER_MODE_OFF) && !method->klass->image->assembly->in_gac && method->klass->image != mono_defaults.corlib && method->wrapper_type == MONO_WRAPPER_NONE;
 }
 
 /*
