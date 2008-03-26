@@ -286,8 +286,8 @@ typedef struct _ProfilerUnmanagedFunctions {
 #define MUTEX_TYPE pthread_mutex_t
 #define INITIALIZE_PROFILER_MUTEX() pthread_mutex_init (&(profiler->mutex), NULL)
 #define DELETE_PROFILER_MUTEX() pthread_mutex_destroy (&(profiler->mutex))
-#define LOCK_PROFILER() do {LOG_WRITER_THREAD ("LOCK_PROFILER"); pthread_mutex_lock (&(profiler->mutex));} while (0)
-#define UNLOCK_PROFILER() do {LOG_WRITER_THREAD ("UNLOCK_PROFILER"); pthread_mutex_unlock (&(profiler->mutex));} while (0)
+#define LOCK_PROFILER() do {/*LOG_WRITER_THREAD ("LOCK_PROFILER");*/ pthread_mutex_lock (&(profiler->mutex));} while (0)
+#define UNLOCK_PROFILER() do {/*LOG_WRITER_THREAD ("UNLOCK_PROFILER");*/ pthread_mutex_unlock (&(profiler->mutex));} while (0)
 
 #define THREAD_TYPE pthread_t
 #define CREATE_WRITER_THREAD(f) pthread_create (&(profiler->data_writer_thread), NULL, ((void*(*)(void*))f), NULL)
@@ -322,7 +322,7 @@ make_pthread_profiler_key (void) {
 #define CLOSE_FILE() fclose (profiler->file);
 #else
 #define FILE_HANDLE_TYPE int
-#define OPEN_FILE() profiler->file = open (profiler->file_name, O_WRONLY|O_CREAT|O_TRUNC);
+#define OPEN_FILE() profiler->file = open (profiler->file_name, O_WRONLY|O_CREAT|O_TRUNC, 0664);
 #define WRITE_BUFFER(b,s) write (profiler->file, (b), (s))
 #define FLUSH_FILE()
 #define CLOSE_FILE() close (profiler->file);

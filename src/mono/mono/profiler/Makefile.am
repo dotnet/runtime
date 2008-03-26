@@ -6,8 +6,8 @@ INCLUDES = \
 
 if JIT_SUPPORTED
 
-lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la
-#lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-logging.la
+#lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la
+lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-logging.la
 endif
 
 if HAVE_OPROFILE
