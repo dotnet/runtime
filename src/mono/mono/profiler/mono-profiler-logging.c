@@ -1707,12 +1707,12 @@ profiler_executable_memory_region_destroy (ProfilerExecutableMemoryRegionData *d
 }
 
 static ProfilerExecutableMemoryRegions*
-profiler_executable_memory_regions_new (void) {
+profiler_executable_memory_regions_new (int next_id) {
 	ProfilerExecutableMemoryRegions *result = g_new (ProfilerExecutableMemoryRegions, 1);
 	result->regions = g_new0 (ProfilerExecutableMemoryRegionData*, 32);
 	result->regions_capacity = 32;
 	result->regions_count = 0;
-	result->next_id = 1;
+	result->next_id = next_id;
 	return result;
 }
 
@@ -1799,9 +1799,6 @@ restore_region_ids (ProfilerExecutableMemoryRegions *old_regions, ProfilerExecut
 					! strcmp (old_region->file_name, new_region->file_name)) {
 				new_region->is_new = FALSE;
 				new_region->id = old_region->id;
-				if (new_region->id >= new_regions->next_id) {
-					new_regions->next_id = new_region->id + 1;
-				}
 				old_region->is_new = TRUE;
 			}
 		}
@@ -2040,8 +2037,8 @@ typedef enum {
 
 static void
 refresh_memory_regions (void) {
-	ProfilerExecutableMemoryRegions *new_regions = profiler_executable_memory_regions_new ();
 	ProfilerExecutableMemoryRegions *old_regions = profiler->executable_regions;
+	ProfilerExecutableMemoryRegions *new_regions = profiler_executable_memory_regions_new (old_regions->next_id);
 	int i;
 	
 	LOG_WRITER_THREAD ("Refreshing memory regions...");
@@ -3376,7 +3373,7 @@ mono_profiler_startup (const char *desc)
 	profiler->current_write_position = 0;
 	profiler->full_write_buffers = 0;
 	
-	profiler->executable_regions = profiler_executable_memory_regions_new ();
+	profiler->executable_regions = profiler_executable_memory_regions_new (1);
 	
 	profiler->heap_shot_write_jobs = NULL;
 	if (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot) {
