@@ -176,6 +176,7 @@ static void process_set_field_bool (MonoObject *obj, const gchar *fieldname,
 #define SFI_PRODUCTNAME		"\\StringFileInfo\\%02X%02X%02X%02X\\ProductName"
 #define SFI_PRODUCTVERSION	"\\StringFileInfo\\%02X%02X%02X%02X\\ProductVersion"
 #define SFI_SPECIALBUILD	"\\StringFileInfo\\%02X%02X%02X%02X\\SpecialBuild"
+#define EMPTY_STRING		(gunichar2*)"\000\000"
 
 static void process_module_string_read (MonoObject *filever, gpointer data,
 					const gchar *fieldname,
@@ -201,6 +202,8 @@ static void process_module_string_read (MonoObject *filever, gpointer data,
 #endif
 		/* chars includes trailing null */
 		process_set_field_string (filever, fieldname, buffer, chars - 1);
+	} else {
+		process_set_field_string (filever, fieldname, EMPTY_STRING, 0);
 	}
 
 	g_free (lang_key);
@@ -328,7 +331,48 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 						process_module_stringtable (filever, data, trans_data[i], trans_data[i+1]);
 					}
 				}
+			} else {
+				/* No strings, so set every field to
+				 * the empty string
+				 */
+				process_set_field_string (filever,
+							  "comments",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "companyname",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "filedescription",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "fileversion",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "internalname",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "legalcopyright",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "legaltrademarks",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "originalfilename",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "privatebuild",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "productname",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "productversion",
+							  EMPTY_STRING, 0);
+				process_set_field_string (filever,
+							  "specialbuild",
+							  EMPTY_STRING, 0);
 			}
+			
 			g_free (query);
 		}
 		g_free (data);
