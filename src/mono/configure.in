@@ -250,6 +250,7 @@ if test x$need_link_unlink = xyes; then
 fi
 
 AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
+AM_CONDITIONAL(PLATFORM_LINUX, test x$target_os = xlinux-gnu)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
