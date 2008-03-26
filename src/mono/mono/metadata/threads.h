@@ -19,6 +19,9 @@ G_BEGIN_DECLS
 
 typedef void (*MonoThreadCleanupFunc) (MonoThread* thread);
 
+/* This callback should return TRUE if the runtime must wait for the thread, FALSE otherwise */
+typedef gboolean (*MonoThreadManageCallback) (MonoThread* thread);
+
 extern int  mono_thread_get_abort_signal (void);
 
 extern void mono_thread_init (MonoThreadStartCB start_cb,
@@ -50,6 +53,7 @@ extern void mono_thread_detach (MonoThread *thread);
 extern void mono_thread_exit (void);
 
 void     mono_threads_install_cleanup   (MonoThreadCleanupFunc func);
+void     mono_thread_set_manage_callback (MonoThread *thread, MonoThreadManageCallback func);
 
 extern void mono_threads_set_default_stacksize (guint32 stacksize);
 extern guint32 mono_threads_get_default_stacksize (void);

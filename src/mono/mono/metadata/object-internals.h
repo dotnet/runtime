@@ -2,6 +2,7 @@
 #define __MONO_OBJECT_INTERNALS_H__
 
 #include <mono/metadata/object.h>
+#include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
 #include <mono/io-layer/io-layer.h>
@@ -279,7 +280,7 @@ struct _MonoThread {
 	gssize small_id;    /* A small, unique id, used for the hazard
 			       pointer table.  Should be changed to a
 			       guint32 at the next corlib version bump. */
-	gpointer unused6;
+	MonoThreadManageCallback manage_callback;
 	gpointer unused7;
 };
 
