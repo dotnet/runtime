@@ -4658,7 +4658,10 @@ mini_verifier_set_mode (MiniVerifierMode mode)
 static gboolean
 check_method_full_trust (MonoMethod *method)
 {
-	return method->klass->image->assembly->in_gac || method->klass->image == mono_defaults.corlib || verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
+	if (mono_verify_all)
+		return verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
+	else
+		return method->klass->image->assembly->in_gac || method->klass->image == mono_defaults.corlib || verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
 }
 
 /*
@@ -4669,7 +4672,8 @@ static gboolean
 check_for_method_verify (MonoMethod *method)
 {
 	if (mono_verify_all)
-		return method->wrapper_type == MONO_WRAPPER_NONE;
+		/* The current verifier can't handle mscorlib */
+		return method->wrapper_type == MONO_WRAPPER_NONE && method->klass->image != mono_defaults.corlib;
 	else
 		return (verifier_mode > MINI_VERIFIER_MODE_OFF) && !method->klass->image->assembly->in_gac && method->klass->image != mono_defaults.corlib && method->wrapper_type == MONO_WRAPPER_NONE;
 }
