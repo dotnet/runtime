@@ -769,7 +769,7 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 	MonoImage *image = mono_assembly_get_image (ass);
 	MonoMethod *method;
 	MonoCompile *cfg;
-	int i, count = 0;
+	int i, count = 0, fail_count = 0;
 
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
@@ -800,10 +800,13 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 		cfg = mini_method_compile (method, args->opts, mono_get_root_domain (), FALSE, FALSE, 0);
 		if (cfg->exception_type != MONO_EXCEPTION_NONE) {
 			printf ("Compilation of %s failed with exception '%s':\n", mono_method_full_name (cfg->method, TRUE), cfg->exception_message);
-			exit (1);
+			fail_count ++;
 		}
 		mono_destroy_compile (cfg);
 	}
+
+	if (fail_count)
+		exit (1);
 }
 
 static void

@@ -2009,66 +2009,6 @@ mono_add_varcopy_to_end (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest
 }
 
 /*
- * merge_stacks:
- *
- * Merge stack state between two basic blocks according to Ecma 335, Partition III,
- * section 1.8.1.1. Store the resulting stack state into stack_2.
- * Returns: TRUE, if verification succeeds, FALSE otherwise.
- * FIXME: We should store the stack state in a dedicated structure instead of in
- * MonoInst's.
- */
-static gboolean
-merge_stacks (MonoCompile *cfg, MonoStackSlot *state_1, MonoStackSlot *state_2, guint32 size)
-{
-	int i;
-
-	if (cfg->dont_verify_stack_merge)
-		return TRUE;
-
-	/* FIXME: Implement all checks from the spec */
-
-	for (i = 0; i < size; ++i) {
-		MonoStackSlot *slot1 = &state_1 [i];
-		MonoStackSlot *slot2 = &state_2 [i];
-
-		if (slot1->type != slot2->type)
-			return FALSE;
-
-		switch (slot1->type) {
-		case STACK_PTR:
-			/* FIXME: Perform merge ? */
-			/* klass == NULL means a native int */
-			if (slot1->klass && slot2->klass) {
-				if (slot1->klass != slot2->klass)
-					return FALSE;
-			}
-			break;
-		case STACK_MP:
-			/* FIXME: Change this to an assert and fix the JIT to allways fill this */
-			if (slot1->klass && slot2->klass) {
-				if (slot1->klass != slot2->klass)
-					return FALSE;
-			}
-			break;
-		case STACK_OBJ: {
-			MonoClass *klass1 = slot1->klass;
-			MonoClass *klass2 = slot2->klass;
-
-			if (!klass1) {
-				/* slot1 is ldnull */
-			} else if (!klass2) {
-				/* slot2 is ldnull */
-				slot2->klass = slot1->klass;
-			}
-			break;
-		}
-		}
-	}
-
-	return TRUE;
-}
-
-/*
  * This function is called to handle items that are left on the evaluation stack
  * at basic block boundaries. What happens is that we save the values to local variables
  * and we reload them later when first entering the target basic block (with the
@@ -2085,56 +2025,12 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 	int i, bindex;
 	MonoBasicBlock *outb;
 	MonoInst *inst, **locals;
-	MonoStackSlot *stack_state;
 	gboolean found;
 
 	if (!count)
 		return 0;
 	if (cfg->verbose_level > 3)
 		g_print ("%d item(s) on exit from B%d\n", count, bb->block_num);
-
-	stack_state = mono_mempool_alloc (cfg->mempool, sizeof (MonoStackSlot) * count);
-	for (i = 0; i < count; ++i) {
-		stack_state [i].type = sp [i]->type;
-		stack_state [i].klass = sp [i]->klass;
-
-		/* Check that instructions other than ldnull have ins->klass set */
-		if (!cfg->dont_verify_stack_merge && (sp [i]->type == STACK_OBJ) && !((sp [i]->opcode == OP_PCONST) && sp [i]->inst_c0 == 0))
-			g_assert (sp [i]->klass);
-	}
-
-	/* Perform verification and stack state merge */
-	for (i = 0; i < bb->out_count; ++i) {
-		outb = bb->out_bb [i];
-
-		/* exception handlers are linked, but they should not be considered for stack args */
-		if (outb->flags & BB_EXCEPTION_HANDLER)
-			continue;
-		if (outb->stack_state) {
-			gboolean verified;
-
-			if (count != outb->in_scount) {
-				cfg->unverifiable = TRUE;
-				return 0;
-			}
-			verified = merge_stacks (cfg, stack_state, outb->stack_state, count);
-			if (!verified) {
-				cfg->unverifiable = TRUE;
-				return 0;
-			}
-
-			if (cfg->verbose_level > 3) {
-				int j;
-
-				for (j = 0; j < count; ++j)
-					printf ("\tStack state of BB%d, slot %d=%d\n", outb->block_num, j, outb->stack_state [j].type);
-			}
-		} else {
-			/* Make a copy of the stack state */
-			outb->stack_state = mono_mempool_alloc (cfg->mempool, sizeof (MonoStackSlot) * count);
-			memcpy (outb->stack_state, stack_state, sizeof (MonoStackSlot) * count);
-		}
-	}
 
 	if (!bb->out_scount) {
 		bb->out_scount = count;
@@ -4762,7 +4658,10 @@ mini_verifier_set_mode (MiniVerifierMode mode)
 static gboolean
 check_method_full_trust (MonoMethod *method)
 {
-	return method->klass->image->assembly->in_gac || method->klass->image == mono_defaults.corlib || verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
+	if (mono_verify_all)
+		return verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
+	else
+		return method->klass->image->assembly->in_gac || method->klass->image == mono_defaults.corlib || verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
 }
 
 /*
@@ -4773,7 +4672,8 @@ static gboolean
 check_for_method_verify (MonoMethod *method)
 {
 	if (mono_verify_all)
-		return method->wrapper_type == MONO_WRAPPER_NONE;
+		/* The current verifier can't handle mscorlib */
+		return method->wrapper_type == MONO_WRAPPER_NONE && method->klass->image != mono_defaults.corlib;
 	else
 		return (verifier_mode > MINI_VERIFIER_MODE_OFF) && !method->klass->image->assembly->in_gac && method->klass->image != mono_defaults.corlib && method->wrapper_type == MONO_WRAPPER_NONE;
 }
@@ -4879,9 +4779,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
 	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_UNKNOWN;
 	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED;
-
-	/* Not turned on yet */
-	cfg->dont_verify_stack_merge = TRUE;
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);
@@ -4994,10 +4891,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				tblock->in_scount = 1;
 				tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
 				tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
-				tblock->stack_state = mono_mempool_alloc (cfg->mempool, sizeof (MonoStackSlot));
-				tblock->stack_state [0].type = STACK_OBJ;
-				/* FIXME? */
-				tblock->stack_state [0].klass = mono_defaults.object_class;
 
 				/* 
 				 * Add a dummy use for the exvar so its liveness info will be
@@ -5012,11 +4905,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					tblock->real_offset = clause->data.filter_offset;
 					tblock->in_scount = 1;
 					tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
-					tblock->stack_state = mono_mempool_alloc (cfg->mempool, sizeof (MonoStackSlot));
-					tblock->stack_state [0].type = STACK_OBJ;
-					/* FIXME? */
-					tblock->stack_state [0].klass = mono_defaults.object_class;
-
 					/* The filter block shares the exvar with the handler block */
 					tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
 					MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
