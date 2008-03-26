@@ -422,6 +422,7 @@ struct _MonoProfiler {
 	THREAD_TYPE data_writer_thread;
 	EVENT_TYPE statistical_data_writer_event;
 	gboolean terminate_writer_thread;
+	gboolean detach_writer_thread;
 	
 	ProfilerFileWriteBuffer *write_buffers;
 	ProfilerFileWriteBuffer *current_write_buffer;
@@ -457,7 +458,7 @@ static MonoProfiler *profiler;
 #define DEBUG_HEAP_PROFILER 0
 #define DEBUG_CLASS_BITMAPS 0
 #define DEBUG_STATISTICAL_PROFILER 0
-#define DEBUG_WRITER_THREAD 0
+#define DEBUG_WRITER_THREAD 1
 #if (DEBUG_LOGGING_PROFILER || DEBUG_STATISTICAL_PROFILER || DEBUG_HEAP_PROFILER || DEBUG_WRITER_THREAD)
 #define LOG_WRITER_THREAD(m) printf ("WRITER-THREAD-LOG %s\n", m)
 #else
@@ -3294,9 +3295,21 @@ setup_user_options (const char *arguments) {
 	}
 }
 
+static gboolean
+thread_detach_callback (MonoThread *thread) {
+	LOG_WRITER_THREAD ("thread_detach_callback: asking writer thread to detach");
+	profiler->detach_writer_thread = TRUE;
+	WRITER_EVENT_RAISE ();
+	LOG_WRITER_THREAD ("thread_detach_callback: done");
+	return FALSE;
+}
 
 static guint32
 data_writer_thread (gpointer nothing) {
+	static gboolean thread_attached = FALSE;
+	static gboolean thread_detached = FALSE;
+	static MonoThread *this_thread = NULL;
+	
 	for (;;) {
 		ProfilerStatisticalData *statistical_data;
 		gboolean done;
@@ -3304,6 +3317,24 @@ data_writer_thread (gpointer nothing) {
 		LOG_WRITER_THREAD ("data_writer_thread: going to sleep");
 		WRITER_EVENT_WAIT ();
 		LOG_WRITER_THREAD ("data_writer_thread: just woke up");
+		
+		if (! thread_attached) {
+			if (! profiler->terminate_writer_thread) {
+				MonoDomain * root_domain = mono_get_root_domain ();
+				if (root_domain != NULL) {
+					LOG_WRITER_THREAD ("data_writer_thread: attaching thread");
+					this_thread = mono_thread_attach (root_domain);
+					mono_thread_set_manage_callback (this_thread, thread_detach_callback);
+					thread_attached = TRUE;
+				} else {
+					g_error ("Cannot get root domain\n");
+				}
+			} else {
+				/* Execution was too short, pretend we attached and detached. */
+				thread_attached = TRUE;
+				thread_detached = TRUE;
+			}
+		}
 		
 		statistical_data = profiler->statistical_data_ready;
 		done = (statistical_data == NULL) && (profiler->heap_shot_write_jobs == NULL);
@@ -3317,7 +3348,7 @@ data_writer_thread (gpointer nothing) {
 			flush_all_mappings ();
 			LOG_WRITER_THREAD ("data_writer_thread: wrote mapping");
 			
-			if (statistical_data != NULL) {
+			if ((statistical_data != NULL) && ! thread_detached) {
 				LOG_WRITER_THREAD ("data_writer_thread: writing statistical data...");
 				profiler->statistical_data_ready = NULL;
 				write_statistical_data_block (statistical_data);
@@ -3331,7 +3362,18 @@ data_writer_thread (gpointer nothing) {
 			
 			UNLOCK_PROFILER ();
 			LOG_WRITER_THREAD ("data_writer_thread: wrote data and released lock");
-			
+		}
+		
+		if (profiler->detach_writer_thread) {
+			if (this_thread != NULL) {
+				LOG_WRITER_THREAD ("data_writer_thread: detaching thread");
+				mono_thread_detach (this_thread);
+				this_thread = NULL;
+				profiler->detach_writer_thread = FALSE;
+				thread_detached = TRUE;
+			} else {
+				LOG_WRITER_THREAD ("data_writer_thread: warning: thread has already been detached");
+			}
 		}
 		
 		if (profiler->terminate_writer_thread) {
