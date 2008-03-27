@@ -1724,15 +1724,15 @@ static gboolean match_procname_to_modulename (gchar *procname, gchar *modulename
 	if (procname == NULL || modulename == NULL)
 		return (FALSE);
 
+	if (!strcmp (procname, modulename))
+		return (TRUE);
+
 	lastsep = strrchr (modulename, '/');
 	if (lastsep) {
-		if (0 == strcmp (lastsep+1, procname))
+		if (!strcmp (lastsep+1, procname))
 			return (TRUE);
 		return (FALSE);
 	}
-
-	if (0 == strcmp (procname, modulename))
-		return (TRUE);
 
 	return (FALSE);
 }
