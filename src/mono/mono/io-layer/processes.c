@@ -378,6 +378,8 @@ utf16_concat (const gunichar2 *first, ...)
 
 static const gunichar2 utf16_space_bytes [2] = { 0x20, 0 };
 static const gunichar2 *utf16_space = utf16_space_bytes; 
+static const gunichar2 utf16_quote_bytes [2] = { 0x22, 0 };
+static const gunichar2 *utf16_quote = utf16_quote_bytes;
 
 /* Implemented as just a wrapper around CreateProcess () */
 gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
@@ -448,7 +450,15 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 #endif
 		handler_utf16 = g_utf8_to_utf16 (handler, -1, NULL, NULL, NULL);
 		g_free (handler);
-		args = utf16_concat (handler_utf16, utf16_space, sei->lpFile,
+
+		/* Put quotes around the filename, in case it's a url
+		 * that contains #'s (CreateProcess() calls
+		 * g_shell_parse_argv(), which deliberately throws
+		 * away anything after an unquoted #).  Fixes bug
+		 * 371567.
+		 */
+		args = utf16_concat (handler_utf16, utf16_space, utf16_quote,
+				     sei->lpFile, utf16_quote,
 				     sei->lpParameters == NULL ? NULL : utf16_space,
 				     sei->lpParameters, NULL);
 		if (args == NULL){
