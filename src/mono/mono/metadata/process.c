@@ -249,7 +249,6 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 	gunichar2 *query;
 	UINT ffi_size, trans_size;
 	BOOL ok;
-	int i;
 
 	datalen = GetFileVersionInfoSize (filename, &verinfohandle);
 	if (datalen) {
@@ -296,40 +295,23 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 			if (VerQueryValue (data, query,
 					   (gpointer *)&trans_data,
 					   &trans_size)) {
-				/* Look for neutral or en_US language data
-				 * (or should we use the first language ID we
-				 * see?)
+				/* use the first language ID we see
 				 */
-				for (i = 0; i < trans_size; i += 4) {
+				if (trans_size >= 4) {
+					gunichar2 lang_buf[128];
+					guint32 lang, lang_count;
 #ifdef DEBUG
-		 			g_message("%s: %s has 0x%0x 0x%0x 0x%0x 0x%0x", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), trans_data[i], trans_data[i+1], trans_data[i+2], trans_data[i+3]);
+		 			g_message("%s: %s has 0x%0x 0x%0x 0x%0x 0x%0x", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), trans_data[0], trans_data[1], trans_data[2], trans_data[3]);
 #endif
-
-					if ((trans_data[i] == 0x09 &&
-					     trans_data[i+1] == 0x04 &&
-					     trans_data[i+2] == 0xb0 &&
-					     trans_data[i+3] == 0x04) ||
-					    (trans_data[i] == 0x00 &&
-					     trans_data[i+1] == 0x00 &&
-					     trans_data[i+2] == 0xb0 &&
-					     trans_data[i+3] == 0x04) ||
-					    (trans_data[i] == 0x7f &&
-					     trans_data[i+1] == 0x00 &&
-					     trans_data[i+2] == 0xb0 &&
-					     trans_data[i+3] == 0x04)) {
-						gunichar2 lang_buf[128];
-						guint32 lang, lang_count;
-
-						lang = (trans_data[i]) |
-						       (trans_data[i+1] << 8) |
-						       (trans_data[i+2] << 16) |
-						       (trans_data[i+3] << 24);
-						lang_count = VerLanguageName (lang, lang_buf, 128);
-						if (lang_count) {
-							process_set_field_string (filever, "language", lang_buf, lang_count);
-						}
-						process_module_stringtable (filever, data, trans_data[i], trans_data[i+1]);
+					lang = (trans_data[0]) |
+						(trans_data[1] << 8) |
+						(trans_data[2] << 16) |
+						(trans_data[3] << 24);
+					lang_count = VerLanguageName (lang, lang_buf, 128);
+					if (lang_count) {
+						process_set_field_string (filever, "language", lang_buf, lang_count);
 					}
+					process_module_stringtable (filever, data, trans_data[0], trans_data[1]);
 				}
 			} else {
 				/* No strings, so set every field to
