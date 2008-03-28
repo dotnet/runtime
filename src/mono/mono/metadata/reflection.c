@@ -4578,12 +4578,12 @@ calc_section_size (MonoDynamicImage *assembly)
 	int nsections = 0;
 
 	/* alignment constraints */
-	assembly->code.index += 3;
-	assembly->code.index &= ~3;
+	mono_image_add_stream_zero (&assembly->code, 4 - (assembly->code.index % 4));
+	g_assert ((assembly->code.index % 4) == 0);
 	assembly->meta_size += 3;
 	assembly->meta_size &= ~3;
-	assembly->resources.index += 3;
-	assembly->resources.index &= ~3;
+	mono_image_add_stream_zero (&assembly->resources, 4 - (assembly->resources.index % 4));
+	g_assert ((assembly->resources.index % 4) == 0);
 
 	assembly->sections [MONO_SECTION_TEXT].size = assembly->meta_size + assembly->code.index + assembly->resources.index + assembly->strong_name_size;
 	assembly->sections [MONO_SECTION_TEXT].attrs = SECT_FLAGS_HAS_CODE | SECT_FLAGS_MEM_EXECUTE | SECT_FLAGS_MEM_READ;
