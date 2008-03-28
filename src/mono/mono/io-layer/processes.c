@@ -101,7 +101,9 @@ static gboolean process_set_termination_details (gpointer handle, int status)
 	 */
 	
 #ifdef DEBUG
-	g_message ("%s: Setting handle %p signalled", __func__, handle);
+	g_message ("%s: Setting handle %p pid %d signalled, exit status %d",
+		   __func__, handle, process_handle->id,
+		   process_handle->exitstatus);
 #endif
 
 	_wapi_shared_handle_set_signal_state (handle, TRUE);
@@ -1494,8 +1496,13 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 	
 	/* A process handle is only signalled if the process has exited
 	 * and has been waited for */
-	if (_wapi_handle_issignalled (process) == TRUE ||
-	    process_wait (process, 0) == WAIT_OBJECT_0) {
+
+	/* Make sure any process exit has been noticed, before
+	 * checking if the process is signalled.  Fixes bug 325463.
+	 */
+	process_wait (process, 0);
+	
+	if (_wapi_handle_issignalled (process) == TRUE) {
 		*code = process_handle->exitstatus;
 	} else {
 		*code = STILL_ACTIVE;
