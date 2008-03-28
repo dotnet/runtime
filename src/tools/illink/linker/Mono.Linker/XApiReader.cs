@@ -167,7 +167,7 @@ namespace Mono.Linker {
 		{
 			string name = GetName (nav);
 
-			TypeDefinition type = _context.GetType (name);
+			TypeDefinition type = _context.GetType (GetTypeName (name));
 			if (type != null)
 				_visitor.OnInterface (nav, type);
 		}
@@ -208,7 +208,7 @@ namespace Mono.Linker {
 
 		static string GetSignature (MethodDefinition method)
 		{
-			return method.ToString ();
+			return method.ToString ().Replace ("<", "[").Replace (">", "]");
 		}
 
 		string GetMethodSignature ()
@@ -225,13 +225,39 @@ namespace Mono.Linker {
 			if (returntype == null || returntype.Length == 0)
 				returntype = Constants.Void;
 
-			_signature.Append (returntype);
+			_signature.Append (NormalizeTypeName (returntype));
 			_signature.Append (" ");
 			_signature.Append (PeekType ().FullName);
 			_signature.Append ("::");
 
 			string name = GetName (nav);
-			_signature.Append (name.Substring (0, name.IndexOf ("(") + 1));
+			_signature.Append (GetMethodName (name));
+
+			_signature.Append ("(");
+		}
+
+		static string GetMethodName (string name)
+		{
+			return GetStringBefore (name, "(");
+		}
+
+		static string NormalizeTypeName (string name)
+		{
+			return name.Replace ("+", "/");
+		}
+
+		static string GetTypeName (string name)
+		{
+			return GetStringBefore (NormalizeTypeName (name), "[");
+		}
+
+		static string GetStringBefore (string str, string marker)
+		{
+			int pos = str.IndexOf (marker);
+			if (pos == -1)
+				return str;
+
+			return str.Substring (0, pos);
 		}
 
 		void OnParameter (XPathNavigator nav)
@@ -241,7 +267,7 @@ namespace Mono.Linker {
 
 			if (pos > 0)
 				_signature.Append (",");
-			_signature.Append (type);
+			_signature.Append (NormalizeTypeName (type));
 		}
 
 		void OnConstructor (XPathNavigator nav)
