@@ -2300,6 +2300,12 @@ mono_threads_install_cleanup (MonoThreadCleanupFunc func)
 	mono_thread_cleanup_fn = func;
 }
 
+void
+mono_thread_set_manage_callback (MonoThread *thread, MonoThreadManageCallback func)
+{
+	thread->manage_callback = func;
+}
+
 void mono_threads_install_notify_pending_exc (MonoThreadNotifyPendingExcFunc func)
 {
 	mono_thread_notify_pending_exc_fn = func;
@@ -2447,11 +2453,18 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 			return;
 		}
 		
-		wait->handles[wait->num]=handle;
-		wait->threads[wait->num]=thread;
-		wait->num++;
+		THREAD_DEBUG (g_message ("%s: Invoking mono_thread_manage callback on thread %p", __func__, thread));
+		if ((thread->manage_callback == NULL) || (thread->manage_callback (thread) == TRUE)) {
+			wait->handles[wait->num]=handle;
+			wait->threads[wait->num]=thread;
+			wait->num++;
 
-		THREAD_DEBUG (g_message ("%s: adding thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			THREAD_DEBUG (g_message ("%s: adding thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+		} else {
+			THREAD_DEBUG (g_message ("%s: ignoring (because of callback) thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+		}
+		
+		
 	} else {
 		/* Just ignore the rest, we can't do anything with
 		 * them yet

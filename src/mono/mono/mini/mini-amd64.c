@@ -515,14 +515,13 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
  * Draft Version 0.23" document for more information.
  */
 static CallInfo*
-get_call_info (MonoCompile *cfg, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
+get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint32 i, gr, fr;
 	MonoType *ret_type;
 	int n = sig->hasthis + sig->param_count;
 	guint32 stack_size = 0;
 	CallInfo *cinfo;
-	MonoGenericSharingContext *gsctx = cfg ? cfg->generic_sharing_context : NULL;
 
 	if (mp)
 		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
@@ -878,7 +877,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	if (!cfg->arch.cinfo)
-		cfg->arch.cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
+		cfg->arch.cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 	cinfo = cfg->arch.cinfo;
 
 	/*
@@ -1173,7 +1172,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	if (!cfg->arch.cinfo)
-		cfg->arch.cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
+		cfg->arch.cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 	cinfo = cfg->arch.cinfo;
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
@@ -1288,7 +1287,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	cinfo = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, sig->pinvoke);
 
 	for (i = 0; i < n; ++i) {
 		ainfo = cinfo->args + i;
@@ -2040,7 +2039,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
-		cinfo = get_call_info (cfg, cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
+		cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
 			/* Pop the destination address from the stack */
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
@@ -4941,7 +4940,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		/* Allocate a new area on the stack and save arguments there */
 		sig = mono_method_signature (cfg->method);
 
-		cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
+		cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 
 		n = sig->param_count + sig->hasthis;
 
@@ -5342,12 +5341,12 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 }
 
 int
-mono_arch_get_this_arg_reg (MonoMethodSignature *sig)
+mono_arch_get_this_arg_reg (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx)
 {
 	int this_reg = AMD64_ARG_REG1;
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		CallInfo *cinfo = get_call_info (NULL, NULL, sig, FALSE);
+		CallInfo *cinfo = get_call_info (gsctx, NULL, sig, FALSE);
 		
 		if (cinfo->ret.storage != ArgValuetypeInReg)
 			this_reg = AMD64_ARG_REG2;
@@ -5360,7 +5359,7 @@ mono_arch_get_this_arg_reg (MonoMethodSignature *sig)
 gpointer
 mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
-	return (gpointer)regs [mono_arch_get_this_arg_reg (sig)];
+	return (gpointer)regs [mono_arch_get_this_arg_reg (sig, NULL)];
 }
 
 #define MAX_ARCH_DELEGATE_PARAMS 10
@@ -5467,7 +5466,7 @@ void
 mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
 {
 	MonoCallInst *call = (MonoCallInst*)inst;
-	CallInfo * cinfo = get_call_info (cfg, cfg->mempool, inst->signature, FALSE);
+	CallInfo * cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, inst->signature, FALSE);
 
 	if (vt_reg != -1) {
 		MonoInst *vtarg;
@@ -5695,7 +5694,7 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 MonoObject*
 mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
+	return regs [mono_arch_get_this_arg_reg (mono_method_signature (method), gsctx)];
 }
 #endif
 

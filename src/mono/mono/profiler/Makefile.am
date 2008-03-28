@@ -5,9 +5,11 @@ INCLUDES = \
 	$(GLIB_CFLAGS)
 
 if JIT_SUPPORTED
-
+if PLATFORM_LINUX
+lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-logging.la
+else
 lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la
-#lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-logging.la
+endif
 endif
 
 if HAVE_OPROFILE

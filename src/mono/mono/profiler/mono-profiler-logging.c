@@ -286,8 +286,8 @@ typedef struct _ProfilerUnmanagedFunctions {
 #define MUTEX_TYPE pthread_mutex_t
 #define INITIALIZE_PROFILER_MUTEX() pthread_mutex_init (&(profiler->mutex), NULL)
 #define DELETE_PROFILER_MUTEX() pthread_mutex_destroy (&(profiler->mutex))
-#define LOCK_PROFILER() do {LOG_WRITER_THREAD ("LOCK_PROFILER"); pthread_mutex_lock (&(profiler->mutex));} while (0)
-#define UNLOCK_PROFILER() do {LOG_WRITER_THREAD ("UNLOCK_PROFILER"); pthread_mutex_unlock (&(profiler->mutex));} while (0)
+#define LOCK_PROFILER() do {/*LOG_WRITER_THREAD ("LOCK_PROFILER");*/ pthread_mutex_lock (&(profiler->mutex));} while (0)
+#define UNLOCK_PROFILER() do {/*LOG_WRITER_THREAD ("UNLOCK_PROFILER");*/ pthread_mutex_unlock (&(profiler->mutex));} while (0)
 
 #define THREAD_TYPE pthread_t
 #define CREATE_WRITER_THREAD(f) pthread_create (&(profiler->data_writer_thread), NULL, ((void*(*)(void*))f), NULL)
@@ -322,7 +322,7 @@ make_pthread_profiler_key (void) {
 #define CLOSE_FILE() fclose (profiler->file);
 #else
 #define FILE_HANDLE_TYPE int
-#define OPEN_FILE() profiler->file = open (profiler->file_name, O_WRONLY|O_CREAT|O_TRUNC);
+#define OPEN_FILE() profiler->file = open (profiler->file_name, O_WRONLY|O_CREAT|O_TRUNC, 0664);
 #define WRITE_BUFFER(b,s) write (profiler->file, (b), (s))
 #define FLUSH_FILE()
 #define CLOSE_FILE() close (profiler->file);
@@ -422,6 +422,7 @@ struct _MonoProfiler {
 	THREAD_TYPE data_writer_thread;
 	EVENT_TYPE statistical_data_writer_event;
 	gboolean terminate_writer_thread;
+	gboolean detach_writer_thread;
 	
 	ProfilerFileWriteBuffer *write_buffers;
 	ProfilerFileWriteBuffer *current_write_buffer;
@@ -1707,12 +1708,12 @@ profiler_executable_memory_region_destroy (ProfilerExecutableMemoryRegionData *d
 }
 
 static ProfilerExecutableMemoryRegions*
-profiler_executable_memory_regions_new (void) {
+profiler_executable_memory_regions_new (int next_id) {
 	ProfilerExecutableMemoryRegions *result = g_new (ProfilerExecutableMemoryRegions, 1);
 	result->regions = g_new0 (ProfilerExecutableMemoryRegionData*, 32);
 	result->regions_capacity = 32;
 	result->regions_count = 0;
-	result->next_id = 1;
+	result->next_id = next_id;
 	return result;
 }
 
@@ -1799,9 +1800,6 @@ restore_region_ids (ProfilerExecutableMemoryRegions *old_regions, ProfilerExecut
 					! strcmp (old_region->file_name, new_region->file_name)) {
 				new_region->is_new = FALSE;
 				new_region->id = old_region->id;
-				if (new_region->id >= new_regions->next_id) {
-					new_regions->next_id = new_region->id + 1;
-				}
 				old_region->is_new = TRUE;
 			}
 		}
@@ -2040,8 +2038,8 @@ typedef enum {
 
 static void
 refresh_memory_regions (void) {
-	ProfilerExecutableMemoryRegions *new_regions = profiler_executable_memory_regions_new ();
 	ProfilerExecutableMemoryRegions *old_regions = profiler->executable_regions;
+	ProfilerExecutableMemoryRegions *new_regions = profiler_executable_memory_regions_new (old_regions->next_id);
 	int i;
 	
 	LOG_WRITER_THREAD ("Refreshing memory regions...");
@@ -3293,13 +3291,60 @@ setup_user_options (const char *arguments) {
 	g_free (arguments_array);
 	
 	if (profiler->file_name == NULL) {
-		profiler->file_name = g_strdup ("profiler-log.prof");
+		char *program_name = g_get_prgname ();
+		
+		if (program_name != NULL) {
+			char *name_buffer = g_strdup (program_name);
+			char *name_start = name_buffer;
+			char *cursor;
+			
+			/* Jump over the last '/' */
+			cursor = strrchr (name_buffer, '/');
+			if (cursor == NULL) {
+				cursor = name_buffer;
+			} else {
+				cursor ++;
+			}
+			name_start = cursor;
+			
+			/* Then jump over the last '\\' */
+			cursor = strrchr (name_start, '\\');
+			if (cursor == NULL) {
+				cursor = name_start;
+			} else {
+				cursor ++;
+			}
+			name_start = cursor;
+			
+			/* Finally, find the last '.' */
+			cursor = strrchr (name_start, '.');
+			if (cursor != NULL) {
+				*cursor = 0;
+			}
+			
+			profiler->file_name = g_strdup_printf ("%s.mprof", name_start);
+			g_free (name_buffer);
+		} else {
+			profiler->file_name = g_strdup_printf ("%s.mprof", "profiler-log");
+		}
 	}
 }
 
+static gboolean
+thread_detach_callback (MonoThread *thread) {
+	LOG_WRITER_THREAD ("thread_detach_callback: asking writer thread to detach");
+	profiler->detach_writer_thread = TRUE;
+	WRITER_EVENT_RAISE ();
+	LOG_WRITER_THREAD ("thread_detach_callback: done");
+	return FALSE;
+}
 
 static guint32
 data_writer_thread (gpointer nothing) {
+	static gboolean thread_attached = FALSE;
+	static gboolean thread_detached = FALSE;
+	static MonoThread *this_thread = NULL;
+	
 	for (;;) {
 		ProfilerStatisticalData *statistical_data;
 		gboolean done;
@@ -3307,6 +3352,24 @@ data_writer_thread (gpointer nothing) {
 		LOG_WRITER_THREAD ("data_writer_thread: going to sleep");
 		WRITER_EVENT_WAIT ();
 		LOG_WRITER_THREAD ("data_writer_thread: just woke up");
+		
+		if (! thread_attached) {
+			if (! profiler->terminate_writer_thread) {
+				MonoDomain * root_domain = mono_get_root_domain ();
+				if (root_domain != NULL) {
+					LOG_WRITER_THREAD ("data_writer_thread: attaching thread");
+					this_thread = mono_thread_attach (root_domain);
+					mono_thread_set_manage_callback (this_thread, thread_detach_callback);
+					thread_attached = TRUE;
+				} else {
+					g_error ("Cannot get root domain\n");
+				}
+			} else {
+				/* Execution was too short, pretend we attached and detached. */
+				thread_attached = TRUE;
+				thread_detached = TRUE;
+			}
+		}
 		
 		statistical_data = profiler->statistical_data_ready;
 		done = (statistical_data == NULL) && (profiler->heap_shot_write_jobs == NULL);
@@ -3320,7 +3383,7 @@ data_writer_thread (gpointer nothing) {
 			flush_all_mappings ();
 			LOG_WRITER_THREAD ("data_writer_thread: wrote mapping");
 			
-			if (statistical_data != NULL) {
+			if ((statistical_data != NULL) && ! thread_detached) {
 				LOG_WRITER_THREAD ("data_writer_thread: writing statistical data...");
 				profiler->statistical_data_ready = NULL;
 				write_statistical_data_block (statistical_data);
@@ -3334,7 +3397,18 @@ data_writer_thread (gpointer nothing) {
 			
 			UNLOCK_PROFILER ();
 			LOG_WRITER_THREAD ("data_writer_thread: wrote data and released lock");
-			
+		}
+		
+		if (profiler->detach_writer_thread) {
+			if (this_thread != NULL) {
+				LOG_WRITER_THREAD ("data_writer_thread: detaching thread");
+				mono_thread_detach (this_thread);
+				this_thread = NULL;
+				profiler->detach_writer_thread = FALSE;
+				thread_detached = TRUE;
+			} else {
+				LOG_WRITER_THREAD ("data_writer_thread: warning: thread has already been detached");
+			}
 		}
 		
 		if (profiler->terminate_writer_thread) {
@@ -3376,7 +3450,7 @@ mono_profiler_startup (const char *desc)
 	profiler->current_write_position = 0;
 	profiler->full_write_buffers = 0;
 	
-	profiler->executable_regions = profiler_executable_memory_regions_new ();
+	profiler->executable_regions = profiler_executable_memory_regions_new (1);
 	
 	profiler->heap_shot_write_jobs = NULL;
 	if (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot) {
