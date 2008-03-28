@@ -124,8 +124,11 @@ namespace Mono.Linker {
 			return assembly;
 		}
 
-		static void SafeLoadSymbols (AssemblyDefinition assembly)
+		void SafeLoadSymbols (AssemblyDefinition assembly)
 		{
+			if (!_linkSymbols)
+				return;
+
 			try {
 				assembly.MainModule.LoadSymbols ();
 				Annotations.SetHasSymbols (assembly);

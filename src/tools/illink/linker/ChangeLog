@@ -1,3 +1,8 @@
+2008-03-28  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/LinkContext.cs: do not force the loading of
+	debug symbols if not asked.
+
 2007-12-28  Gert Driesen  <drieseng@users.sourceforge.net>
 
 	* Descriptors/mscorlib.xml: Preserve all for CultureInfo to prevent
