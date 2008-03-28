@@ -179,10 +179,8 @@ signature_dup (MonoImage *image, MonoMethodSignature *sig)
 	MonoMethodSignature *res;
 	int sigsize;
 
+	res = mono_metadata_signature_alloc (image, sig->param_count);
 	sigsize = sizeof (MonoMethodSignature) + ((sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
-	mono_loader_lock ();
-	res = mono_mempool_alloc (image->mempool, sigsize);
-	mono_loader_unlock ();
 	memcpy (res, sig, sigsize);
 
 	return res;
@@ -281,10 +279,8 @@ cominterop_method_signature (MonoMethod* method)
 	if (!preserve_sig &&!MONO_TYPE_IS_VOID (sig->ret))
 		param_count++;
 
-	sigsize = sizeof (MonoMethodSignature) + ((param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
-	mono_loader_lock ();
-	res = mono_mempool_alloc (image->mempool, sigsize);
-	mono_loader_unlock ();
+	res = mono_metadata_signature_alloc (image, param_count);
+	sigsize = sizeof (MonoMethodSignature) + ((sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
 	memcpy (res, sig, sigsize);
 
 	// now move args forward one
