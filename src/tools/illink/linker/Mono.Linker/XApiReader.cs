@@ -243,7 +243,7 @@ namespace Mono.Linker {
 
 		static string NormalizeTypeName (string name)
 		{
-			return name.Replace ("+", "/");
+			return name.Replace ("+", "/").Replace ("<", "[").Replace (">", "]");
 		}
 
 		static string GetTypeName (string name)
