@@ -6629,6 +6629,46 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 }
 
 static gboolean
+is_nesting_type (MonoClass *outer_klass, MonoClass *inner_klass)
+ {
+	do {
+		if (outer_klass == inner_klass)
+			return TRUE;
+		inner_klass = inner_klass->nested_in;
+	} while (inner_klass);
+	return FALSE;
+}
+
+/*
+ * Subtype can only access parent members with family protection if the site object
+ * is subclass of Subtype. For example:
+ * class A { protected int x; }
+ * class B : A {
+ * 	void valid_access () {
+ * 		B b;
+ * 		b.x = 0;
+ *  }
+ *  void invalid_access () {
+ *		A a;
+ * 		a.x = 0;
+ *  }
+ * }
+ * */
+static gboolean
+is_valid_family_access (MonoClass *access_klass, MonoClass *member_klass, MonoClass *context_klass)
+{
+	if (!mono_class_has_parent (access_klass, member_klass))
+		return FALSE;
+
+	if (context_klass == NULL)
+		return TRUE;
+	/*if access_klass is not member_klass context_klass must be type compat*/
+	if (access_klass != member_klass && !mono_class_has_parent (context_klass, access_klass))
+		return FALSE;
+	return TRUE;
+}
+
+static gboolean
 can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 {
 	GSList *tmp;
@@ -6670,9 +6710,50 @@ get_generic_definition_class (MonoClass *klass)
 	return NULL;
 }
 
+static gboolean
+can_access_type (MonoClass *access_klass, MonoClass *member_klass)
+{
+	int access_level = member_klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+
+	if (is_nesting_type (access_klass, member_klass) || (access_klass->nested_in && is_nesting_type (access_klass->nested_in, member_klass)))
+		return TRUE;
+
+	if (member_klass->nested_in && !can_access_type (access_klass, member_klass->nested_in))
+		return FALSE;
+
+	switch (access_level) {
+	case TYPE_ATTRIBUTE_NOT_PUBLIC:
+		return can_access_internals (access_klass->image->assembly, member_klass->image->assembly);
+
+	case TYPE_ATTRIBUTE_PUBLIC:
+		return TRUE;
+
+	case TYPE_ATTRIBUTE_NESTED_PUBLIC:
+		return TRUE;
+
+	case TYPE_ATTRIBUTE_NESTED_PRIVATE:
+		return is_nesting_type (member_klass, access_klass);
+
+	case TYPE_ATTRIBUTE_NESTED_FAMILY:
+		return mono_class_has_parent (access_klass, member_klass->nested_in); 
+
+	case TYPE_ATTRIBUTE_NESTED_ASSEMBLY:
+		return can_access_internals (access_klass->image->assembly, member_klass->image->assembly);
+
+	case TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM:
+		return can_access_internals (access_klass->image->assembly, member_klass->nested_in->image->assembly) &&
+			mono_class_has_parent (access_klass, member_klass->nested_in);
+
+	case TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM:
+		return can_access_internals (access_klass->image->assembly, member_klass->nested_in->image->assembly) ||
+			mono_class_has_parent (access_klass, member_klass->nested_in);
+	}
+	return FALSE;
+}
+
 /* FIXME: check visibility of type, too */
 static gboolean
-can_access_member (MonoClass *access_klass, MonoClass *member_klass, int access_level)
+can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* context_klass, int access_level)
 {
 	MonoClass *member_generic_def;
 	if (((access_klass->generic_class && access_klass->generic_class->container_class) ||
@@ -6685,7 +6766,7 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, int access_
 		else
 			access_container = access_klass->generic_class->container_class;
 
-		if (can_access_member (access_container, member_generic_def, access_level))
+		if (can_access_member (access_container, member_generic_def, context_klass, access_level))
 			return TRUE;
 	}
 
@@ -6698,18 +6779,18 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, int access_
 	case FIELD_ATTRIBUTE_PRIVATE:
 		return access_klass == member_klass;
 	case FIELD_ATTRIBUTE_FAM_AND_ASSEM:
-		if (mono_class_has_parent (access_klass, member_klass) &&
+		if (is_valid_family_access (access_klass, member_klass, context_klass) &&
 		    can_access_internals (access_klass->image->assembly, member_klass->image->assembly))
 			return TRUE;
 		return FALSE;
 	case FIELD_ATTRIBUTE_ASSEMBLY:
 		return can_access_internals (access_klass->image->assembly, member_klass->image->assembly);
 	case FIELD_ATTRIBUTE_FAMILY:
-		if (mono_class_has_parent (access_klass, member_klass))
+		if (is_valid_family_access (access_klass, member_klass, context_klass))
 			return TRUE;
 		return FALSE;
 	case FIELD_ATTRIBUTE_FAM_OR_ASSEM:
-		if (mono_class_has_parent (access_klass, member_klass))
+		if (is_valid_family_access (access_klass, member_klass, context_klass))
 			return TRUE;
 		return can_access_internals (access_klass->image->assembly, member_klass->image->assembly);
 	case FIELD_ATTRIBUTE_PUBLIC:
@@ -6722,11 +6803,11 @@ gboolean
 mono_method_can_access_field (MonoMethod *method, MonoClassField *field)
 {
 	/* FIXME: check all overlapping fields */
-	int can = can_access_member (method->klass, field->parent, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+	int can = can_access_member (method->klass, field->parent, NULL, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
 	if (!can) {
 		MonoClass *nested = method->klass->nested_in;
 		while (nested) {
-			can = can_access_member (nested, field->parent, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+			can = can_access_member (nested, field->parent, NULL, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
 			if (can)
 				return TRUE;
 			nested = nested->nested_in;
@@ -6738,11 +6819,11 @@ mono_method_can_access_field (MonoMethod *method, MonoClassField *field)
 gboolean
 mono_method_can_access_method (MonoMethod *method, MonoMethod *called)
 {
-	int can = can_access_member (method->klass, called->klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
+	int can = can_access_member (method->klass, called->klass, NULL, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
 	if (!can) {
 		MonoClass *nested = method->klass->nested_in;
 		while (nested) {
-			can = can_access_member (nested, called->klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
+			can = can_access_member (nested, called->klass, NULL, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
 			if (can)
 				return TRUE;
 			nested = nested->nested_in;
@@ -6758,6 +6839,78 @@ mono_method_can_access_method (MonoMethod *method, MonoMethod *called)
 	if ((called->flags & METHOD_ATTRIBUTE_VIRTUAL) && (called->flags & METHOD_ATTRIBUTE_FINAL))
 		return TRUE;
 	return can;
+}
+
+/*
+ * mono_method_can_access_method_with_context:
+ * @method: The caller method 
+ * @called: The called method 
+ * @context_klass:TThe static type on stack of the owner @called object used
+ * 
+ * This function must be used with instance calls, as they have more strict family accessibility.
+ * It can be used with static mehthod, but context_klass should be NULL.
+ * 
+ * Returns: TRUE if caller have proper visibility and acessibility to @called
+ */
+gboolean
+mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, MonoClass *context_klass)
+{
+	MonoClass *access_class = method->klass;
+	MonoClass *member_class = called->klass;
+	int can = can_access_member (access_class, member_class, context_klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
+	if (!can) {
+		MonoClass *nested = access_class->nested_in;
+		while (nested) {
+			can = can_access_member (nested, member_class, context_klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
+			if (can)
+				return TRUE;
+			nested = nested->nested_in;
+		}
+	}
+
+	if (!can)
+		return FALSE;
+
+	if (!can_access_type (access_class, member_class) && (!access_class->nested_in || !can_access_type (access_class->nested_in, member_class)))
+		return FALSE;
+	return TRUE;
+}
+
+
+/*
+ * mono_method_can_access_method_with_context:
+ * @method: The caller method 
+ * @field: The accessed field
+ * @context_klass: The static type on stack of the owner @field object used
+ * 
+ * This function must be used with instance fields, as they have more strict family accessibility.
+ * It can be used with static fields, but context_klass should be NULL.
+ * 
+ * Returns: TRUE if caller have proper visibility and acessibility to @field
+ */
+gboolean
+mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, MonoClass *context_klass)
+{
+	MonoClass *access_class = method->klass;
+	MonoClass *member_class = field->parent;
+	/* FIXME: check all overlapping fields */
+	int can = can_access_member (access_class, member_class, context_klass, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+	if (!can) {
+		MonoClass *nested = access_class->nested_in;
+		while (nested) {
+			can = can_access_member (nested, member_class, context_klass, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
+			if (can)
+				return TRUE;
+			nested = nested->nested_in;
+		}
+	}
+
+	if (!can)
+		return FALSE;
+
+	if (!can_access_type (access_class, member_class) && (!access_class->nested_in || !can_access_type (access_class->nested_in, member_class)))
+		return FALSE;
+	return TRUE;
 }
 
 /**
