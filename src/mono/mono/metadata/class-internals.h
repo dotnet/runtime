@@ -995,4 +995,10 @@ mono_class_unregister_image_generic_subclasses (MonoImage *image) MONO_INTERNAL;
 void
 mono_class_unregister_domain_generic_vtables (MonoDomain *domain) MONO_INTERNAL;
 
+gboolean
+mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, MonoClass *context_klass) MONO_INTERNAL;
+
+gboolean
+mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, MonoClass *context_klass) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

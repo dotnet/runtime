@@ -92,8 +92,8 @@ mono_trace_message(MonoTraceMask mask, const char *format, ...)
 	va_end (args);
 }
 
-G_END_DECLS
-
 #endif /* !__GNUC__ */
+
+G_END_DECLS
 
 #endif /* __MONO_LOGGER_H__ */

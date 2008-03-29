@@ -2734,9 +2734,11 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		}
 		if (!verify_stack_type_compatibility (ctx, type, &copy))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible this argument on stack with method signature at 0x%04x", ctx->ip_offset));
-	}
 
-	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method (ctx->method, method))
+		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method_full (ctx->method, method, value->type->data.klass))
+			CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Method is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
+
+	} else if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_method_full (ctx->method, method, NULL))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Method is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
@@ -2769,7 +2771,7 @@ do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 		!(field->parent == ctx->method->klass && (ctx->method->flags & (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_STATIC)) && !strcmp (".cctor", ctx->method->name)))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot take the address of a init-only field at 0x%04x", ctx->ip_offset));
 
-	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field (ctx->method, field))
+	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, NULL))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 
 	set_stack_value (ctx, stack_push (ctx), field->type, take_addr);
@@ -2799,7 +2801,7 @@ do_store_static_field (VerifyContext *ctx, int token) {
 		return;
 	}
 
-	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field (ctx->method, field))
+	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, NULL))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 
 	if (!verify_stack_type_compatibility (ctx, field->type, value))
@@ -2813,7 +2815,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 	MonoClass *klass;
 
 	/*must be one of: complex type, managed pointer (to complex type), unmanaged pointer (native int) or an instance of a value type */
-	if (!( stack_slot_get_underlying_type (obj) == TYPE_COMPLEX
+	if (!(stack_slot_get_underlying_type (obj) == TYPE_COMPLEX
 		|| stack_slot_get_type (obj) == TYPE_NATIVE_INT
 		|| stack_slot_get_type (obj) == TYPE_PTR)) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument %s to load field at 0x%04x", stack_slot_get_name (obj), ctx->ip_offset));
@@ -2844,11 +2846,9 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 		if (!stack_slot_is_null_literal (obj) && !verify_type_compatibility (ctx, &field->parent->byval_arg, mono_type_get_type_byval (obj->type)))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
-		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field (ctx->method, field))
+		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, obj->type->data.klass))
 			CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
-	}
-
-	if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field (ctx->method, field))
+	} else if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, NULL))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 
 	if (stack_slot_get_underlying_type (obj) == TYPE_NATIVE_INT)
@@ -3189,7 +3189,7 @@ do_newobj (VerifyContext *ctx, int token)
 	if (method->klass->flags & (TYPE_ATTRIBUTE_ABSTRACT | TYPE_ATTRIBUTE_INTERFACE))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Trying to instantiate an abstract or interface type at 0x%04x", ctx->ip_offset));
 
-	if (!mono_method_can_access_method (ctx->method, method))
+	if (!mono_method_can_access_method_full (ctx->method, method, NULL))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Constructor not visible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
 	//FIXME use mono_method_get_signature_full
@@ -3711,7 +3711,7 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unexpected object for ldvirtftn at 0x%04x", ctx->ip_offset));
 	}
 	
-	if (!mono_method_can_access_method (ctx->method, method))
+	if (!mono_method_can_access_method_full (ctx->method, method, NULL))
 		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Loaded method is not visible for ldftn/ldvirtftn at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_METHOD_ACCESS);
 
 	top = stack_push_val(ctx, TYPE_PTR, mono_type_create_fnptr_from_mono_method (ctx, method));
