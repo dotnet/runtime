@@ -89,9 +89,8 @@ struct sigcontext {
 #define MONO_ARCH_CALLEE_REGS AMD64_CALLEE_REGS
 #define MONO_ARCH_CALLEE_SAVED_REGS AMD64_CALLEE_SAVED_REGS
 
-/* Setting this to FALSE means using SSE2 instructions for fp arithmetic */
 #define MONO_ARCH_USE_FPSTACK FALSE
-#define MONO_ARCH_FPSTACK_SIZE 6
+#define MONO_ARCH_FPSTACK_SIZE 0
 
 #define MONO_ARCH_INST_FIXED_REG(desc) ((desc == '\0') ? -1 : ((desc == 'i' ? -1 : ((desc == 'a') ? AMD64_RAX : ((desc == 's') ? AMD64_RCX : ((desc == 'd') ? AMD64_RDX : -1))))))
 
@@ -286,9 +285,6 @@ typedef struct {
 #define MONO_ARCH_ENABLE_NORMALIZE_OPCODES 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
-
-gboolean
-mono_amd64_is_sse2 (void) MONO_INTERNAL;
 
 void 
 mono_amd64_patch (unsigned char* code, gpointer target) MONO_INTERNAL;
