@@ -2953,7 +2953,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;		
 		case OP_SQRT:
 			x86_fsqrt (code);
-			break;		
+			break;
+		case OP_IMIN:
+			g_assert (cfg->opt & MONO_OPT_CMOV);
+			g_assert (ins->dreg == ins->sreg1);
+			x86_alu_reg_reg (code, X86_CMP, ins->sreg1, ins->sreg2);
+			x86_cmov_reg (code, X86_CC_GT, TRUE, ins->dreg, ins->sreg2);
+			break;
+		case OP_IMAX:
+			g_assert (cfg->opt & MONO_OPT_CMOV);
+			g_assert (ins->dreg == ins->sreg1);
+			x86_alu_reg_reg (code, X86_CMP, ins->sreg1, ins->sreg2);
+			x86_cmov_reg (code, X86_CC_LT, TRUE, ins->dreg, ins->sreg2);
+			break;
 		case OP_X86_FPOP:
 			x86_fstp (code, 0);
 			break;
@@ -4210,6 +4222,25 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 			MONO_INST_NEW (cfg, ins, OP_ABS);
 			ins->inst_i0 = args [0];
 		}
+
+		if (cfg->opt & MONO_OPT_CMOV) {
+			int opcode = 0;
+
+			if (strcmp (cmethod->name, "Min") == 0) {
+				if (fsig->params [0]->type == MONO_TYPE_I4)
+					opcode = OP_IMIN;
+			} else if (strcmp (cmethod->name, "Max") == 0) {
+				if (fsig->params [0]->type == MONO_TYPE_I4)
+					opcode = OP_IMAX;
+			}		
+
+			if (opcode) {
+				MONO_INST_NEW (cfg, ins, opcode);
+				ins->inst_i0 = args [0];
+				ins->inst_i1 = args [1];
+			}
+		}
+
 #if 0
 		/* OP_FREM is not IEEE compatible */
 		else if (strcmp (cmethod->name, "IEEERemainder") == 0) {
