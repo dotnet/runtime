@@ -141,7 +141,7 @@ namespace AssemblyRunner {
 			} catch (MemberAccessException) {
 				return RunResult.unverifiable;
 			} catch (TypeLoadException) {
-				return RunResult.unverifiable;
+				return RunResult.invalid;
 			} catch (BadImageFormatException) {
 				return RunResult.invalid; 
 			} catch (Exception e) {
@@ -162,7 +162,8 @@ namespace AssemblyRunner {
 				"MissingMethodException",
 				"InvalidProgramException",
 				"FileLoadException",
-				"BadImageFormatException"
+				"BadImageFormatException",
+				"TypeLoadException"
 			};
 
 			foreach (String str in knownErrors) {

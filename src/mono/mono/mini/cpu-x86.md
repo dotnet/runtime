@@ -85,6 +85,9 @@ int_xor: dest:i src1:i src2:i len:2 clob:1
 int_shl: dest:i src1:i src2:s clob:1 len:2
 int_shr: dest:i src1:i src2:s clob:1 len:2
 int_shr_un: dest:i src1:i src2:s clob:1 len:2
+int_min: dest:i src1:i src2:i len:16 clob:1
+int_max: dest:i src1:i src2:i len:16 clob:1
+
 int_neg: dest:i src1:i len:2 clob:1
 int_not: dest:i src1:i len:2 clob:1
 int_conv_to_i1: dest:i src1:y len:3

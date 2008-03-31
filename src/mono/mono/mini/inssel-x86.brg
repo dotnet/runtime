@@ -693,6 +693,11 @@ reg: CEE_MUL(reg, CEE_LDIND_I4 (base)) {
 	mono_bblock_add_inst (s->cbb, tree);
 } 
 
+reg: OP_IMIN (reg, reg),
+reg: OP_IMAX (reg, reg) {
+	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
+}
+
 lreg: OP_LSHL (lreg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
