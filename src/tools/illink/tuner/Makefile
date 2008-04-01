@@ -92,7 +92,7 @@ GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARA
 
 TUNER_INSTALL_DIR = $(DESTDIR)$(mono_libdir)/mono/2.1
 
-end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Net gac-System.Core gac-System.Core
+end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Net gac-System.Xml gac-System.Core
 
 inst-%: $(OUTPUT_DIR)/%
 	$(MKINSTALLDIRS) $(TUNER_INSTALL_DIR)
