@@ -249,6 +249,8 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 	gunichar2 *query;
 	UINT ffi_size, trans_size;
 	BOOL ok;
+	gunichar2 lang_buf[128];
+	guint32 lang, lang_count;
 
 	datalen = GetFileVersionInfoSize (filename, &verinfohandle);
 	if (datalen) {
@@ -298,8 +300,6 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 				/* use the first language ID we see
 				 */
 				if (trans_size >= 4) {
-					gunichar2 lang_buf[128];
-					guint32 lang, lang_count;
 #ifdef DEBUG
 		 			g_message("%s: %s has 0x%0x 0x%0x 0x%0x 0x%0x", __func__, g_utf16_to_utf8 (filename, -1, NULL, NULL, NULL), trans_data[0], trans_data[1], trans_data[2], trans_data[3]);
 #endif
@@ -353,6 +353,14 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 				process_set_field_string (filever,
 							  "specialbuild",
 							  EMPTY_STRING, 0);
+
+				/* And language seems to be set to
+				 * en_US according to bug 374600
+				 */
+				lang_count = VerLanguageName (0x0409, lang_buf, 128);
+				if (lang_count) {
+					process_set_field_string (filever, "language", lang_buf, lang_count);
+				}
 			}
 			
 			g_free (query);

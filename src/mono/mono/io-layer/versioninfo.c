@@ -433,13 +433,13 @@ static gconstpointer get_string_block (gconstpointer data_ptr,
 {
 	guint16 data_len = block->data_len;
 	guint16 string_len = 28; /* Length of the StringTable block */
-	guint16 value_len = 0; /* Length of the previous value data */
- 	
+ 	char *orig_data_ptr = (char *)data_ptr - 28;
+
 	/* data_ptr is pointing at an array of one or more String blocks
 	 * with total length (not including alignment padding) of
 	 * data_len
 	 */
-	while ((string_len + value_len) < data_len) {
+	while (((char *)data_ptr - (char *)orig_data_ptr) < data_len) {
 		/* align on a 32-bit boundary */
 		data_ptr = (gpointer)((char *)data_ptr + 3);
 		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
@@ -457,7 +457,6 @@ static gconstpointer get_string_block (gconstpointer data_ptr,
 		}
 		
 		string_len = string_len + block->data_len;
-		value_len = (block->value_len * 2); /* value given in words not bytes */
 		
 		if (string_key != NULL &&
 		    string_value != NULL &&
@@ -556,14 +555,14 @@ static gconstpointer big_up_string_block (gconstpointer data_ptr,
 {
 	guint16 data_len = block->data_len;
 	guint16 string_len = 28; /* Length of the StringTable block */
-	guint16 value_len = 0; /* Length of the previous value data */
 	gchar *big_value;
+	char *orig_data_ptr = (char *)data_ptr - 28;
 	
 	/* data_ptr is pointing at an array of one or more String
 	 * blocks with total length (not including alignment padding)
 	 * of data_len
 	 */
-	while ((string_len + value_len) < data_len) {
+	while (((char *)data_ptr - (char *)orig_data_ptr) < data_len) {
 		/* align on a 32-bit boundary */
 		data_ptr = (gpointer)((char *)data_ptr + 3);
 		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
@@ -581,7 +580,6 @@ static gconstpointer big_up_string_block (gconstpointer data_ptr,
 		}
 		
 		string_len = string_len + block->data_len;
-		value_len = (block->value_len * 2); /* value given in words not bytes */
 		
 		big_value = g_convert ((gchar *)block->key,
 				       unicode_chars (block->key) * 2,
