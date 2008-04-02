@@ -4608,3 +4608,70 @@ done
 ./make_type_constraint_test.sh type_constraint_nested_class invalid "class TemplateTarget<valuetype MyValueType>" "class"
 
 
+#prefixes volatile. and unaligned
+
+#stind.x
+I=1
+for TYPE in "stind.i1 int8" "stind.i2 int16" "stind.i4 int32" "stind.i8 int64" "stind.r4 float32" "stind.r8 float64" "stind.i native int"
+do
+	STORE=`echo $TYPE | cut -d' ' -f 1` 
+	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	./make_prefix_test.sh "prefix_test_stind_volatile_$I" valid "volatile. $STORE" "ldloca 0\n\tldloc.0" "$TYPE"
+	./make_prefix_test.sh "prefix_test_stind_unaligned_$I" valid  "unaligned. 1 $STORE" "ldloca 0\n\tldloc.0" "$TYPE"
+	I=`expr $I + 1`
+done
+
+./make_prefix_test.sh "prefix_test_stind_volatile_$I" valid "volatile. stind.ref" "ldloca 0\n\tldnull" "object"
+./make_prefix_test.sh "prefix_test_stind_unaligned_$I" valid  "unaligned. 1 stind.ref" "ldloca 0\n\tldnull" "object"
+
+
+#ldind.x
+I=1
+for TYPE in "ldind.i1 int8" "ldind.u1 unsigned int8" "ldind.i2 int16" "ldind.u2 unsigned int16" "ldind.i4 int32" "ldind.u4 unsigned int32" "ldind.i8 int64" "ldind.u8 unsigned int64" "ldind.r4 float32" "ldind.r8 float64" "ldind.i native int"
+do
+	STORE=`echo $TYPE | cut -d' ' -f 1` 
+	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	./make_prefix_test.sh "prefix_test_ldind_volatile_$I" valid "volatile. $STORE" "ldloca 0" "$TYPE"
+	./make_prefix_test.sh "prefix_test_ldind_unaligned_$I" valid  "unaligned. 1 $STORE" "ldloca 0" "$TYPE"
+	I=`expr $I + 1`
+done
+
+./make_prefix_test.sh "prefix_test_ldind_volatilee_$I" valid "volatile. ldind.ref" "ldloca 0" "object"
+./make_prefix_test.sh "prefix_test_ldind_unalignede_$I" valid  "unaligned. 1 ldind.ref" "ldloca 0" "object"
+
+
+./make_prefix_test.sh "prefix_test_ldfld_volatile" valid "volatile. ldfld int32 MyStruct::foo" "ldloca 0" "MyStruct"
+./make_prefix_test.sh "prefix_test_ldfld_unaligned" valid  "unaligned. 1 ldfld int32 MyStruct::foo " "ldloca 0" "MyStruct"
+
+
+./make_prefix_test.sh "prefix_test_stfld_volatile" valid "volatile. stfld int32 MyStruct::foo" "ldloca 0\n\tldc.i4.0" "MyStruct"
+./make_prefix_test.sh "prefix_test_stfld_unaligned" valid  "unaligned. 1 stfld int32 MyStruct::foo" "ldloca 0\n\tldc.i4.0" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_ldobj_volatile" valid "volatile. ldobj MyStruct" "ldloca 0" "MyStruct"
+./make_prefix_test.sh "prefix_test_ldobj_unaligned" valid  "unaligned. 1 ldobj MyStruct" "ldloca 0" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_stobj_volatile" valid "volatile. stobj MyStruct" "ldloca 0\n\tldloc.0" "MyStruct"
+./make_prefix_test.sh "prefix_test_stobj_unaligned" valid  "unaligned. 1 stobj MyStruct" "ldloca 0\n\tldloc.0" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_cpblk_volatile" unverifiable "volatile. cpblk" "ldloca 0\n\tldloca 0\n\tldc.i4.1" "MyStruct"
+./make_prefix_test.sh "prefix_test_cpblk_unaligned" unverifiable  "unaligned. 1 cpblk" "ldloca 0\n\tldloca 0\n\tldc.i4.1" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_initblk_volatile" unverifiable "volatile. initblk" "ldloca 0\n\tldc.i4.0\n\tldc.i4.1" "MyStruct"
+./make_prefix_test.sh "prefix_test_initblk_unaligned" unverifiable  "unaligned. 1 initblk" "ldloca 0\n\tldc.i4.0\n\tldc.i4.1" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_stsfld_volatile" valid "volatile. stsfld int32 MyStruct::stFoo" "ldc.i4.0" "MyStruct"
+./make_prefix_test.sh "prefix_test_stsfld_unaligned" invalid  "unaligned. 1 stsfld int32 MyStruct::stFoo" "ldc.i4.0" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_ldsfld_volatile" valid "volatile. ldsfld int32 MyStruct::stFoo" "" "MyStruct"
+./make_prefix_test.sh "prefix_test_ldsfld_unaligned" invalid  "unaligned. 1 ldsfld int32 MyStruct::stFoo" "" "MyStruct"
+
+
+I=1
+for TYPE in "nop" "new object::.ctor()" "call void MyStruct::Test()"
+do
+	./make_prefix_test.sh "prefix_test_invalid_op_volatile_$I" invalid  "volatile. $OP" "nop" "int32"
+	./make_prefix_test.sh "prefix_test_invalid_op_unaligned_$I" invalid  "unaligned. 1 nop" "nop" "int32"
+	I=`expr $I + 1`
+done
+
+
