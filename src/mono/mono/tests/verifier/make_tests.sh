@@ -4345,4 +4345,266 @@ done
 
 
 
+#type constraint verification
+#see PII 10.1.7 for details
+
+#TODO test usage of open types
+#TODO test recursive types
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_no_ct_$I valid "$TYPE" ""
+	./make_type_constraint_test.sh type_constraint_object_ct_$I valid "$TYPE" "(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_class_ct_$I valid "$TYPE" "class "
+	./make_type_constraint_test.sh type_constraint_class_object_ct_$I valid "$TYPE" "class (class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_class_ct_$I invalid "$TYPE" "class "
+	./make_type_constraint_test.sh type_constraint_class_object_ct_$I invalid "$TYPE" "class (class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object AbstractClass ClassWithDefaultCtor IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_class_ctor_ct_$I valid "$TYPE" "class .ctor"
+	./make_type_constraint_test.sh type_constraint_class_ctor_object_ct_$I valid "$TYPE" "class .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in ClassNoDefaultCtor ClassWithDefaultCtorNotVisible "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_class_ctor_ct_$I invalid "$TYPE" "class .ctor"
+	./make_type_constraint_test.sh type_constraint_class_ctor_object_ct_$I invalid "$TYPE" "class .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_vt_ct_$I invalid "$TYPE" "valuetype"
+	./make_type_constraint_test.sh type_constraint_vt_object_ct_$I invalid "$TYPE" "valuetype(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in "valuetype MyValueType" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_vt_ct_$I valid "$TYPE" "valuetype"
+	./make_type_constraint_test.sh type_constraint_vt_object_ct_$I valid "$TYPE" "valuetype(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_vt_ctor_ct_$I invalid "$TYPE"  "valuetype .ctor"
+	./make_type_constraint_test.sh type_constraint_vt_ctor_object_ct_$I invalid "$TYPE"  "valuetype .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in "valuetype MyValueType" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_vt_ctor_ct_$I valid "$TYPE"  "valuetype .ctor"
+	./make_type_constraint_test.sh type_constraint_vt_ctor_object_ct_$I valid "$TYPE"  "valuetype .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object AbstractClass ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_ctor_ct_$I valid "$TYPE" ".ctor"
+	./make_type_constraint_test.sh type_constraint_ctor_object_ct_$I valid "$TYPE" ".ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in ClassNoDefaultCtor ClassWithDefaultCtorNotVisible "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace
+do
+	./make_type_constraint_test.sh type_constraint_ctor_ct_$I invalid "$TYPE" ".ctor"
+	./make_type_constraint_test.sh type_constraint_ctor_object_ct_$I invalid "$TYPE" ".ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_class_vt_ct_$I invalid "$TYPE" "class valuetype"
+	./make_type_constraint_test.sh type_constraint_class_vt_object_ct_$I invalid "$TYPE" "class valuetype(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+I=1
+for TYPE in ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace
+do
+	./make_type_constraint_test.sh type_constraint_class_vt_ctor_ct_$I invalid "$TYPE" "class valuetype .ctor"
+	./make_type_constraint_test.sh type_constraint_class_vt_ctor_object_ct_$I invalid "$TYPE" "class valuetype .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+
+I=1
+for TYPE in "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_ctor_ct_$I valid "$TYPE" ".ctor (class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_ctor_ct_$I invalid "$TYPE" ".ctor (class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "valuetype MyValueType" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_vt_ct_$I valid "$TYPE" "valuetype(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor  "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_vt_ct_$I invalid "$TYPE" "valuetype(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "valuetype MyValueType" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_vt_ctor_ct_$I valid "$TYPE" "valuetype .ctor(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_vt_ctor_ct_$I invalid "$TYPE" "valuetype .ctor(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum"  "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_ct_$I valid "$TYPE" "(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_ct_$I invalid "$TYPE" "(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_class_ct_$I invalid "$TYPE" "class (class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in "[mscorlib]System.ValueType" "[mscorlib]System.Enum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_class_ct_$I valid "$TYPE" "class (class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_class_ctor_ct_$I invalid "$TYPE" "class .ctor(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+
+I=1
+for TYPE in "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_ctor_ct_$I valid "$TYPE" ".ctor (class [mscorlib]System.Enum)"
+	./make_type_constraint_test.sh type_constraint_system_enum_vt_ct_$I valid "$TYPE" "valuetype (class [mscorlib]System.Enum)"
+	./make_type_constraint_test.sh type_constraint_system_enum_vt_ctor_ct_$I valid "$TYPE" "valuetype .ctor(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl 
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_ctor_ct_$I invalid "$TYPE" ".ctor (class [mscorlib]System.Enum)"
+	./make_type_constraint_test.sh type_constraint_system_enum_vt_ct_$I invalid "$TYPE" "valuetype (class [mscorlib]System.Enum)"
+	./make_type_constraint_test.sh type_constraint_system_enum_vt_ctor_ct_$I invalid "$TYPE" "valuetype .ctor(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "[mscorlib]System.Enum" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_ct_$I valid "$TYPE" "(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_ct_$I invalid "$TYPE" "(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "[mscorlib]System.Enum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_class_ct_$I valid "$TYPE" "class (class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_class_ct_$I invalid "$TYPE" "class (class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_class_ctor_ct_$I invalid "$TYPE" "class .ctor(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_iface_ct_$I valid "$TYPE" "(IFace)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_iface_ct_$I invalid "$TYPE" "(IFace)"
+	I=`expr $I + 1`
+done
+
+#misc tests
+./make_type_constraint_test.sh type_constraint_nested_class invalid "class TemplateTarget<valuetype MyValueType>" "class"
+
 
