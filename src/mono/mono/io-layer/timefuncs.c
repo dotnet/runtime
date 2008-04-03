@@ -15,6 +15,7 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/timefuncs-private.h>
+#include "mono/utils/mono-time.h"
 
 #undef DEBUG
 
@@ -47,50 +48,7 @@ gboolean QueryPerformanceFrequency(WapiLargeInteger *freq G_GNUC_UNUSED)
 	return(FALSE);
 }
 
-static void
-get_uptime (struct timeval *start_tv)
-{
-	FILE *uptime = fopen ("/proc/uptime", "r");
-	if (uptime) {
-		double upt;
-		if (fscanf (uptime, "%lf", &upt) == 1) {
-			gettimeofday (start_tv, NULL);
-			start_tv->tv_sec -= (int)upt;
-			start_tv->tv_usec = 0;
-			fclose (uptime);
-			return;
-		}
-		fclose (uptime);
-	}
-	/* a made up uptime */
-	gettimeofday (start_tv, NULL);
-	start_tv->tv_sec -= 300;
-}
-
 guint32 GetTickCount (void)
 {
-	struct timeval tv;
-	static struct timeval start_tv = {0};
-	guint32 ret;
-
-	if (!start_tv.tv_sec)
-		get_uptime (&start_tv);
-	ret=gettimeofday (&tv, NULL);
-	if(ret==-1) {
-		return(0);
-	}
-	
-	tv.tv_sec -= start_tv.tv_sec;
-	tv.tv_usec -= start_tv.tv_usec;
-	if (tv.tv_usec < 0) {
-		tv.tv_sec++;
-		tv.tv_usec += 1000000;
-	}
-	ret=(guint32)((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
-
-#ifdef DEBUG
-	g_message ("%s: returning %d", __func__, ret);
-#endif
-
-	return(ret);
+	return mono_msec_ticks ();
 }

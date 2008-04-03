@@ -4345,4 +4345,333 @@ done
 
 
 
+#type constraint verification
+#see PII 10.1.7 for details
+
+#TODO test usage of open types
+#TODO test recursive types
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_no_ct_$I valid "$TYPE" ""
+	./make_type_constraint_test.sh type_constraint_object_ct_$I valid "$TYPE" "(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_class_ct_$I valid "$TYPE" "class "
+	./make_type_constraint_test.sh type_constraint_class_object_ct_$I valid "$TYPE" "class (class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_class_ct_$I invalid "$TYPE" "class "
+	./make_type_constraint_test.sh type_constraint_class_object_ct_$I invalid "$TYPE" "class (class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object AbstractClass ClassWithDefaultCtor IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_class_ctor_ct_$I valid "$TYPE" "class .ctor"
+	./make_type_constraint_test.sh type_constraint_class_ctor_object_ct_$I valid "$TYPE" "class .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in ClassNoDefaultCtor ClassWithDefaultCtorNotVisible "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_class_ctor_ct_$I invalid "$TYPE" "class .ctor"
+	./make_type_constraint_test.sh type_constraint_class_ctor_object_ct_$I invalid "$TYPE" "class .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_vt_ct_$I invalid "$TYPE" "valuetype"
+	./make_type_constraint_test.sh type_constraint_vt_object_ct_$I invalid "$TYPE" "valuetype(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in "valuetype MyValueType" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_vt_ct_$I valid "$TYPE" "valuetype"
+	./make_type_constraint_test.sh type_constraint_vt_object_ct_$I valid "$TYPE" "valuetype(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_vt_ctor_ct_$I invalid "$TYPE"  "valuetype .ctor"
+	./make_type_constraint_test.sh type_constraint_vt_ctor_object_ct_$I invalid "$TYPE"  "valuetype .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in "valuetype MyValueType" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_vt_ctor_ct_$I valid "$TYPE"  "valuetype .ctor"
+	./make_type_constraint_test.sh type_constraint_vt_ctor_object_ct_$I valid "$TYPE"  "valuetype .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object AbstractClass ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_ctor_ct_$I valid "$TYPE" ".ctor"
+	./make_type_constraint_test.sh type_constraint_ctor_object_ct_$I valid "$TYPE" ".ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+for TYPE in ClassNoDefaultCtor ClassWithDefaultCtorNotVisible "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace
+do
+	./make_type_constraint_test.sh type_constraint_ctor_ct_$I invalid "$TYPE" ".ctor"
+	./make_type_constraint_test.sh type_constraint_ctor_object_ct_$I invalid "$TYPE" ".ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_class_vt_ct_$I invalid "$TYPE" "class valuetype"
+	./make_type_constraint_test.sh type_constraint_class_vt_object_ct_$I invalid "$TYPE" "class valuetype(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+I=1
+for TYPE in ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace
+do
+	./make_type_constraint_test.sh type_constraint_class_vt_ctor_ct_$I invalid "$TYPE" "class valuetype .ctor"
+	./make_type_constraint_test.sh type_constraint_class_vt_ctor_object_ct_$I invalid "$TYPE" "class valuetype .ctor(class [mscorlib]System.Object)"
+	I=`expr $I + 1`
+done
+
+
+
+I=1
+for TYPE in "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_ctor_ct_$I valid "$TYPE" ".ctor (class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_ctor_ct_$I invalid "$TYPE" ".ctor (class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "valuetype MyValueType" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_vt_ct_$I valid "$TYPE" "valuetype(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor  "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_vt_ct_$I invalid "$TYPE" "valuetype(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "valuetype MyValueType" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_vt_ctor_ct_$I valid "$TYPE" "valuetype .ctor(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_vt_ctor_ct_$I invalid "$TYPE" "valuetype .ctor(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum"  "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_ct_$I valid "$TYPE" "(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_ct_$I invalid "$TYPE" "(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_class_ct_$I invalid "$TYPE" "class (class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+for TYPE in "[mscorlib]System.ValueType" "[mscorlib]System.Enum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_class_ct_$I valid "$TYPE" "class (class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_valuetype_class_ctor_ct_$I invalid "$TYPE" "class .ctor(class [mscorlib]System.ValueType)"
+	I=`expr $I + 1`
+done
+
+
+
+I=1
+for TYPE in "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_ctor_ct_$I valid "$TYPE" ".ctor (class [mscorlib]System.Enum)"
+	./make_type_constraint_test.sh type_constraint_system_enum_vt_ct_$I valid "$TYPE" "valuetype (class [mscorlib]System.Enum)"
+	./make_type_constraint_test.sh type_constraint_system_enum_vt_ctor_ct_$I valid "$TYPE" "valuetype .ctor(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl 
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_ctor_ct_$I invalid "$TYPE" ".ctor (class [mscorlib]System.Enum)"
+	./make_type_constraint_test.sh type_constraint_system_enum_vt_ct_$I invalid "$TYPE" "valuetype (class [mscorlib]System.Enum)"
+	./make_type_constraint_test.sh type_constraint_system_enum_vt_ctor_ct_$I invalid "$TYPE" "valuetype .ctor(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "[mscorlib]System.Enum" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_ct_$I valid "$TYPE" "(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_ct_$I invalid "$TYPE" "(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in "[mscorlib]System.Enum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_class_ct_$I valid "$TYPE" "class (class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_class_ct_$I invalid "$TYPE" "class (class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" IFace IFaceImpl "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_system_enum_class_ctor_ct_$I invalid "$TYPE" "class .ctor(class [mscorlib]System.Enum)"
+	I=`expr $I + 1`
+done
+
+
+I=1
+for TYPE in IFace IFaceImpl
+do
+	./make_type_constraint_test.sh type_constraint_iface_ct_$I valid "$TYPE" "(IFace)"
+	I=`expr $I + 1`
+done
+
+for TYPE in object ClassNoDefaultCtor AbstractClass ClassWithDefaultCtorNotVisible ClassWithDefaultCtor "valuetype MyValueType" "valuetype [mscorlib]System.Nullable\`1<valuetype MyValueType>" "[mscorlib]System.ValueType" "[mscorlib]System.Enum" "valuetype MyEnum"
+do
+	./make_type_constraint_test.sh type_constraint_iface_ct_$I invalid "$TYPE" "(IFace)"
+	I=`expr $I + 1`
+done
+
+#misc tests
+./make_type_constraint_test.sh type_constraint_nested_class invalid "class TemplateTarget<valuetype MyValueType>" "class"
+
+
+#prefixes volatile. and unaligned
+
+#stind.x
+I=1
+for TYPE in "stind.i1 int8" "stind.i2 int16" "stind.i4 int32" "stind.i8 int64" "stind.r4 float32" "stind.r8 float64" "stind.i native int"
+do
+	STORE=`echo $TYPE | cut -d' ' -f 1` 
+	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	./make_prefix_test.sh "prefix_test_stind_volatile_$I" valid "volatile. $STORE" "ldloca 0\n\tldloc.0" "$TYPE"
+	./make_prefix_test.sh "prefix_test_stind_unaligned_$I" valid  "unaligned. 1 $STORE" "ldloca 0\n\tldloc.0" "$TYPE"
+	I=`expr $I + 1`
+done
+
+./make_prefix_test.sh "prefix_test_stind_volatile_$I" valid "volatile. stind.ref" "ldloca 0\n\tldnull" "object"
+./make_prefix_test.sh "prefix_test_stind_unaligned_$I" valid  "unaligned. 1 stind.ref" "ldloca 0\n\tldnull" "object"
+
+
+#ldind.x
+I=1
+for TYPE in "ldind.i1 int8" "ldind.u1 unsigned int8" "ldind.i2 int16" "ldind.u2 unsigned int16" "ldind.i4 int32" "ldind.u4 unsigned int32" "ldind.i8 int64" "ldind.u8 unsigned int64" "ldind.r4 float32" "ldind.r8 float64" "ldind.i native int"
+do
+	STORE=`echo $TYPE | cut -d' ' -f 1` 
+	TYPE=`echo $TYPE | cut -d' ' -f 2-` 
+	./make_prefix_test.sh "prefix_test_ldind_volatile_$I" valid "volatile. $STORE" "ldloca 0" "$TYPE"
+	./make_prefix_test.sh "prefix_test_ldind_unaligned_$I" valid  "unaligned. 1 $STORE" "ldloca 0" "$TYPE"
+	I=`expr $I + 1`
+done
+
+./make_prefix_test.sh "prefix_test_ldind_volatilee_$I" valid "volatile. ldind.ref" "ldloca 0" "object"
+./make_prefix_test.sh "prefix_test_ldind_unalignede_$I" valid  "unaligned. 1 ldind.ref" "ldloca 0" "object"
+
+
+./make_prefix_test.sh "prefix_test_ldfld_volatile" valid "volatile. ldfld int32 MyStruct::foo" "ldloca 0" "MyStruct"
+./make_prefix_test.sh "prefix_test_ldfld_unaligned" valid  "unaligned. 1 ldfld int32 MyStruct::foo " "ldloca 0" "MyStruct"
+
+
+./make_prefix_test.sh "prefix_test_stfld_volatile" valid "volatile. stfld int32 MyStruct::foo" "ldloca 0\n\tldc.i4.0" "MyStruct"
+./make_prefix_test.sh "prefix_test_stfld_unaligned" valid  "unaligned. 1 stfld int32 MyStruct::foo" "ldloca 0\n\tldc.i4.0" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_ldobj_volatile" valid "volatile. ldobj MyStruct" "ldloca 0" "MyStruct"
+./make_prefix_test.sh "prefix_test_ldobj_unaligned" valid  "unaligned. 1 ldobj MyStruct" "ldloca 0" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_stobj_volatile" valid "volatile. stobj MyStruct" "ldloca 0\n\tldloc.0" "MyStruct"
+./make_prefix_test.sh "prefix_test_stobj_unaligned" valid  "unaligned. 1 stobj MyStruct" "ldloca 0\n\tldloc.0" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_cpblk_volatile" unverifiable "volatile. cpblk" "ldloca 0\n\tldloca 0\n\tldc.i4.1" "MyStruct"
+./make_prefix_test.sh "prefix_test_cpblk_unaligned" unverifiable  "unaligned. 1 cpblk" "ldloca 0\n\tldloca 0\n\tldc.i4.1" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_initblk_volatile" unverifiable "volatile. initblk" "ldloca 0\n\tldc.i4.0\n\tldc.i4.1" "MyStruct"
+./make_prefix_test.sh "prefix_test_initblk_unaligned" unverifiable  "unaligned. 1 initblk" "ldloca 0\n\tldc.i4.0\n\tldc.i4.1" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_stsfld_volatile" valid "volatile. stsfld int32 MyStruct::stFoo" "ldc.i4.0" "MyStruct"
+./make_prefix_test.sh "prefix_test_stsfld_unaligned" invalid  "unaligned. 1 stsfld int32 MyStruct::stFoo" "ldc.i4.0" "MyStruct"
+
+./make_prefix_test.sh "prefix_test_ldsfld_volatile" valid "volatile. ldsfld int32 MyStruct::stFoo" "" "MyStruct"
+./make_prefix_test.sh "prefix_test_ldsfld_unaligned" invalid  "unaligned. 1 ldsfld int32 MyStruct::stFoo" "" "MyStruct"
+
+
+I=1
+for TYPE in "nop" "new object::.ctor()" "call void MyStruct::Test()"
+do
+	./make_prefix_test.sh "prefix_test_invalid_op_volatile_$I" invalid  "volatile. $OP" "nop" "int32"
+	./make_prefix_test.sh "prefix_test_invalid_op_unaligned_$I" invalid  "unaligned. 1 nop" "nop" "int32"
+	I=`expr $I + 1`
+done
+
 
