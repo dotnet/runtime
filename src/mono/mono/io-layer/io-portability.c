@@ -302,7 +302,9 @@ gchar *_wapi_basename (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
 
-	g_strdelimit (new_filename, "\\", '/');
+	if (IS_PORTABILITY_SET) {
+		g_strdelimit (new_filename, "\\", '/');
+	}
 
 	if (IS_PORTABILITY_DRIVE &&
 	    g_ascii_isalpha (new_filename[0]) &&
@@ -323,7 +325,9 @@ gchar *_wapi_dirname (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
 
-	g_strdelimit (new_filename, "\\", '/');
+	if (IS_PORTABILITY_SET) {
+		g_strdelimit (new_filename, "\\", '/');
+	}
 
 	if (IS_PORTABILITY_DRIVE &&
 	    g_ascii_isalpha (new_filename[0]) &&
