@@ -37,6 +37,7 @@ enum {
 #define IS_STRICT_MODE(ctx) (((ctx)->level & MONO_VERIFY_NON_STRICT) == 0)
 #define IS_FAIL_FAST_MODE(ctx) (((ctx)->level & MONO_VERIFY_FAIL_FAST) == MONO_VERIFY_FAIL_FAST)
 #define IS_SKIP_VISIBILITY(ctx) (((ctx)->level & MONO_VERIFY_SKIP_VISIBILITY) == MONO_VERIFY_SKIP_VISIBILITY)
+#define CLEAR_PREFIX(ctx, prefix) do { (ctx)->prefix_set &= ~(prefix); } while (0)
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
 	do {	\
@@ -318,6 +319,18 @@ mono_method_is_constructor (MonoMethod *method)
 			!strcmp (".ctor", method->name));
 }
 
+static gboolean
+verify_type_load_error(VerifyContext *ctx, MonoClass *klass)
+{
+	mono_class_init (klass);
+	if (mono_loader_get_last_error () || klass->exception_type != MONO_EXCEPTION_NONE) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		return FALSE;
+	}
+
+	//TODO verify if the type can be inflated in the current context
+	return TRUE;
+}
 
 static MonoClassField*
 verifier_load_field (VerifyContext *ctx, int token, MonoClass **klass, const char *opcode) {
@@ -333,6 +346,9 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **klass, const cha
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load field from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
+
+	if (!verify_type_load_error (ctx, field->parent))
+		return NULL;
 
 	return field;
 }
@@ -353,6 +369,10 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 		return NULL;
 	}
 	
+	if (!verify_type_load_error (ctx, method->klass))
+		return NULL;
+
+	//TODO verify if the method can be inflated in the current context
 	return method;
 }
 
@@ -371,6 +391,10 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load type from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
+
+	if (!verify_type_load_error (ctx, mono_class_from_mono_type (type)))
+		return NULL;
+
 	return type;
 }
 
@@ -2758,6 +2782,8 @@ do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 {
 	MonoClassField *field;
 	MonoClass *klass;
+	if (!take_addr)
+		CLEAR_PREFIX (ctx, PREFIX_VOLATILE);
 
 	if (!(field = verifier_load_field (ctx, token, &klass, take_addr ? "ldsflda" : "ldsfld")))
 		return;
@@ -2782,6 +2808,7 @@ do_store_static_field (VerifyContext *ctx, int token) {
 	MonoClassField *field;
 	MonoClass *klass;
 	ILStackDesc *value;
+	CLEAR_PREFIX (ctx, PREFIX_VOLATILE);
 
 	if (!check_underflow (ctx, 1))
 		return;
@@ -2864,6 +2891,9 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 	ILStackDesc *obj;
 	MonoClassField *field;
 
+	if (!take_addr)
+		CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
+
 	if (!check_underflow (ctx, 1))
 		return;
 	obj = stack_pop (ctx);
@@ -2886,6 +2916,7 @@ do_store_field (VerifyContext *ctx, int token)
 {
 	ILStackDesc *value, *obj;
 	MonoClassField *field;
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 
 	if (!check_underflow (ctx, 2))
 		return;
@@ -3057,6 +3088,7 @@ do_ldobj_value (VerifyContext *ctx, int token)
 {
 	ILStackDesc *value;
 	MonoType *type = get_boxable_mono_type (ctx, token, "ldobj");
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 
 	if (!type)
 		return;
@@ -3087,6 +3119,8 @@ do_stobj (VerifyContext *ctx, int token)
 {
 	ILStackDesc *dest, *src;
 	MonoType *type = get_boxable_mono_type (ctx, token, "stobj");
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
+
 	if (!type)
 		return;
 
@@ -3327,6 +3361,8 @@ static void
 do_load_indirect (VerifyContext *ctx, int opcode)
 {
 	ILStackDesc *value;
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
+
 	if (!check_underflow (ctx, 1))
 		return;
 	
@@ -3352,6 +3388,8 @@ static void
 do_store_indirect (VerifyContext *ctx, int opcode)
 {
 	ILStackDesc *addr, *val;
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
+
 	if (!check_underflow (ctx, 2))
 		return;
 
@@ -4962,15 +5000,21 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 
 			case CEE_CPBLK:
+				CLEAR_PREFIX (&ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 				if (!check_underflow (&ctx, 3))
 					break;
+				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Instruction cpblk is not verifiable at 0x%04x", ctx.ip_offset));
 				ip++;
 				break;
+				
 			case CEE_INITBLK:
+				CLEAR_PREFIX (&ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 				if (!check_underflow (&ctx, 3))
 					break;
+				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Instruction initblk is not verifiable at 0x%04x", ctx.ip_offset));
 				ip++;
 				break;
+				
 			case CEE_NO_:
 				ip += 2;
 				break;
@@ -5015,6 +5059,10 @@ mono_method_verify (MonoMethod *method, int level)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after constrained prefix at 0x%04x", ctx.ip_offset));
 			if (ctx.prefix_set & PREFIX_READONLY)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after readonly prefix at 0x%04x", ctx.ip_offset));
+			if (ctx.prefix_set & PREFIX_VOLATILE)
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after volatile prefix at 0x%04x", ctx.ip_offset));
+			if (ctx.prefix_set & PREFIX_UNALIGNED)
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after unaligned prefix at 0x%04x", ctx.ip_offset));
 			ctx.prefix_set = prefix = 0;
 		}
 	}
