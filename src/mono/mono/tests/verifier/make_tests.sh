@@ -4675,3 +4675,30 @@ do
 done
 
 
+
+#prefix tail.
+./make_tail_call_test.sh "prefix_test_tail_call" valid "call void MyStruct::Test()" "" "int32"
+./make_tail_call_test.sh "prefix_test_tail_callvirt" valid "callvirt instance void ClassA::VirtTest()" "newobj instance void ClassA::.ctor()" "int32"
+
+#MS runtime maks calli as been unverifiable even on a scenario that is verifiable by the spec.
+./make_tail_call_test.sh "prefix_test_tail_calli" unverifiable "calli void()" "ldftn void MyStruct::Test()" "int32"
+
+#not followed by a ret
+./make_tail_call_test.sh "prefix_test_tail_call_not_followed_by_ret" unverifiable "call void MyStruct::Test()\n\tnop" "" "int32"
+
+#caller return type is diferent
+./make_tail_call_test.sh "prefix_test_tail_call_different_return_type" invalid "call void MyStruct::Test()\n\tnop" "" "int32" "int32"
+
+
+./make_tail_call_test.sh "prefix_test_tail_call_compatible_return_type" valid "call string MyStruct::StrTest()" "" "string" "object"
+
+
+#callee receive byref
+./make_tail_call_test.sh "prefix_test_tail_call_callee_with_byref_arg" invalid "call void MyStruct::Test(int32\&)\n\tnop" "ldloca 0" "int32"
+
+
+./make_tail_call_test.sh "prefix_test_tail_call_middle_of_instruction" invalid "call void MyStruct::Test()" "newobj instance void object::.ctor()\n\tcallvirt instance int32 object::GetHashCode()\n\tbrtrue MIDDLE" "int32"
+
+./make_tail_call_test.sh "prefix_test_tail_with_invalid_instruction" invalid "nop" "" "int32"
+
+
