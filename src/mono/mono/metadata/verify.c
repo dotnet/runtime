@@ -147,11 +147,12 @@ typedef struct {
 	gboolean has_this_store;
 
 	guint32 prefix_set;
+	gboolean has_flags;
 	MonoType *constrained_type;
 } VerifyContext;
 
 static void
-merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external);
+merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean start, gboolean external);
 
 static int
 get_stack_type (MonoType *type);
@@ -3894,7 +3895,7 @@ do_mkrefany (VerifyContext *ctx, int token)
  * TODO we can eliminate the from argument as all callers pass &ctx->eval
  */
 static void
-merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external) 
+merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean start, gboolean external) 
 {
 	int i, j, k;
 	stack_init (ctx, to);
@@ -5052,9 +5053,12 @@ mono_method_verify (MonoMethod *method, int level)
 			if (!ctx.prefix_set) //first prefix
 				ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
 			ctx.prefix_set |= prefix;
+			ctx.has_flags = TRUE;
 			prefix = 0;
 		} else {
-			ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
+			if (!ctx.has_flags)
+				ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
+
 			if (ctx.prefix_set & PREFIX_CONSTRAINED)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after constrained prefix at 0x%04x", ctx.ip_offset));
 			if (ctx.prefix_set & PREFIX_READONLY)
@@ -5064,6 +5068,7 @@ mono_method_verify (MonoMethod *method, int level)
 			if (ctx.prefix_set & PREFIX_UNALIGNED)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after unaligned prefix at 0x%04x", ctx.ip_offset));
 			ctx.prefix_set = prefix = 0;
+			ctx.has_flags = FALSE;
 		}
 	}
 	/*
