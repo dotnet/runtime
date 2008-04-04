@@ -2690,7 +2690,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		return;
 
 	if (virtual) {
-		ctx->prefix_set &= ~PREFIX_CONSTRAINED;
+		CLEAR_PREFIX (ctx, PREFIX_CONSTRAINED);
 
 		if (method->klass->valuetype) // && !constrained ???
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with valuetype method at 0x%04x", ctx->ip_offset));
@@ -2723,6 +2723,11 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 
 		if (stack_slot_is_managed_mutability_pointer (value))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer as argument of %s at 0x%04x", virtual ? "callvirt" : "call",  ctx->ip_offset));
+
+		if ((ctx->prefix_set & PREFIX_TAIL) && stack_slot_is_managed_pointer (value)) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot  pass a byref argument to a tail %s at 0x%04x", virtual ? "callvirt" : "call",  ctx->ip_offset));
+			return;
+		}
 	}
 
 	if (sig->hasthis) {
@@ -2776,6 +2781,14 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 			}
 		}
 	}
+
+	if ((ctx->prefix_set & PREFIX_TAIL)) {
+		if (!mono_delegate_ret_equal (mono_method_signature (ctx->method)->ret, sig->ret))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Tail call with incompatible return type at 0x%04x", ctx->ip_offset));
+		if (ctx->header->code [ctx->ip_offset + 5] != CEE_RET)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Tail call not followed by ret at 0x%04x", ctx->ip_offset));
+	}
+
 }
 
 static void
@@ -4507,7 +4520,9 @@ mono_method_verify (MonoMethod *method, int level)
 			token = read32 (ip + 1);
 			/*
 			 * FIXME: check signature, retval, arguments etc.
+			 * FIXME: check requirements for tail call
 			 */
+			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Intruction calli is not verifiable at 0x%04x", ctx.ip_offset));
 			ip += 5;
 			break;
 		case CEE_BR_S:
