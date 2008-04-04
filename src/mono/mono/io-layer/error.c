@@ -128,6 +128,7 @@ errno_to_WSA (guint32 code, const gchar *function_name)
 	/* This might happen with unix sockets */
 	case ENOENT: result = WSAECONNREFUSED; break;
 	case EDESTADDRREQ: result = WSAEDESTADDRREQ; break;
+	case ENODEV: result = WSAENETDOWN; break;
 	default:
 		sys_error = strerror (code);
 		msg = g_locale_to_utf8 (sys_error, strlen (sys_error), NULL, NULL, NULL);
