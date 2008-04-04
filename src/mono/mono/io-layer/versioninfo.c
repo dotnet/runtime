@@ -27,9 +27,11 @@
 
 #undef DEBUG
 
-static WapiImageSectionHeader *get_enclosing_section_header (guint32 rva, WapiImageNTHeaders *nt_headers)
+#define ALIGN32(ptr) ptr = (gpointer)((char *)ptr + 3); ptr = (gpointer)((char *)ptr - ((gsize)ptr & 3));
+
+static WapiImageSectionHeader *get_enclosing_section_header (guint32 rva, WapiImageNTHeaders32 *nt_headers)
 {
-	WapiImageSectionHeader *section = IMAGE_FIRST_SECTION (nt_headers);
+	WapiImageSectionHeader *section = _WAPI_IMAGE_FIRST_SECTION32 (nt_headers);
 	guint32 i;
 	
 	for (i = 0; i < GUINT16_FROM_LE (nt_headers->FileHeader.NumberOfSections); i++, section++) {
@@ -47,7 +49,10 @@ static WapiImageSectionHeader *get_enclosing_section_header (guint32 rva, WapiIm
 	return(NULL);
 }
 
-static gpointer get_ptr_from_rva (guint32 rva, WapiImageNTHeaders *ntheaders,
+/* This works for both 32bit and 64bit files, as the differences are
+ * all after the section header block
+ */
+static gpointer get_ptr_from_rva (guint32 rva, WapiImageNTHeaders32 *ntheaders,
 				  gpointer file_map)
 {
 	WapiImageSectionHeader *section_header;
@@ -65,7 +70,7 @@ static gpointer get_ptr_from_rva (guint32 rva, WapiImageNTHeaders *ntheaders,
 }
 
 static gpointer scan_resource_dir (WapiImageResourceDirectory *root,
-				   WapiImageNTHeaders *nt_headers,
+				   WapiImageNTHeaders32 *nt_headers,
 				   gpointer file_map,
 				   WapiImageResourceDirectoryEntry *entry,
 				   int level, guint32 res_id, guint32 lang_id,
@@ -138,12 +143,12 @@ static gpointer scan_resource_dir (WapiImageResourceDirectory *root,
 	}
 }
 
-static gpointer find_pe_file_resources (gpointer file_map, guint32 map_size,
-					guint32 res_id, guint32 lang_id,
-					guint32 *size)
+static gpointer find_pe_file_resources32 (gpointer file_map, guint32 map_size,
+					  guint32 res_id, guint32 lang_id,
+					  guint32 *size)
 {
 	WapiImageDosHeader *dos_header;
-	WapiImageNTHeaders *nt_headers;
+	WapiImageNTHeaders32 *nt_headers;
 	WapiImageResourceDirectory *resource_dir;
 	WapiImageResourceDirectoryEntry *resource_dir_entry;
 	guint32 resource_rva, entries, i;
@@ -160,7 +165,7 @@ static gpointer find_pe_file_resources (gpointer file_map, guint32 map_size,
 		return(NULL);
 	}
 	
-	if (map_size < sizeof(WapiImageNTHeaders) + GUINT32_FROM_LE (dos_header->e_lfanew)) {
+	if (map_size < sizeof(WapiImageNTHeaders32) + GUINT32_FROM_LE (dos_header->e_lfanew)) {
 #ifdef DEBUG
 		g_message ("%s: File is too small: %d", __func__, map_size);
 #endif
@@ -169,7 +174,7 @@ static gpointer find_pe_file_resources (gpointer file_map, guint32 map_size,
 		return(NULL);
 	}
 	
-	nt_headers = (WapiImageNTHeaders *)((guint8 *)file_map + GUINT32_FROM_LE (dos_header->e_lfanew));
+	nt_headers = (WapiImageNTHeaders32 *)((guint8 *)file_map + GUINT32_FROM_LE (dos_header->e_lfanew));
 	if (nt_headers->Signature != IMAGE_NT_SIGNATURE) {
 #ifdef DEBUG
 		g_message ("%s: Bad NT signature 0x%x", __func__,
@@ -195,7 +200,7 @@ static gpointer find_pe_file_resources (gpointer file_map, guint32 map_size,
 		return(NULL);
 	}
 	
-	resource_dir = (WapiImageResourceDirectory *)get_ptr_from_rva (resource_rva, nt_headers, file_map);
+	resource_dir = (WapiImageResourceDirectory *)get_ptr_from_rva (resource_rva, (WapiImageNTHeaders32 *)nt_headers, file_map);
 	if (resource_dir == NULL) {
 #ifdef DEBUG
 		g_message ("%s: Can't find resource directory", __func__);
@@ -209,14 +214,113 @@ static gpointer find_pe_file_resources (gpointer file_map, guint32 map_size,
 	
 	for (i = 0; i < entries; i++) {
 		WapiImageResourceDirectoryEntry *direntry = &resource_dir_entry[i];
-		ret = scan_resource_dir (resource_dir, nt_headers, file_map,
-					 direntry, 0, res_id, lang_id, size);
+		ret = scan_resource_dir (resource_dir,
+					 (WapiImageNTHeaders32 *)nt_headers,
+					 file_map, direntry, 0, res_id,
+					 lang_id, size);
 		if (ret != NULL) {
 			return(ret);
 		}
 	}
-	
+
 	return(NULL);
+}
+
+static gpointer find_pe_file_resources64 (gpointer file_map, guint32 map_size,
+					  guint32 res_id, guint32 lang_id,
+					  guint32 *size)
+{
+	WapiImageDosHeader *dos_header;
+	WapiImageNTHeaders64 *nt_headers;
+	WapiImageResourceDirectory *resource_dir;
+	WapiImageResourceDirectoryEntry *resource_dir_entry;
+	guint32 resource_rva, entries, i;
+	gpointer ret = NULL;
+
+	dos_header = (WapiImageDosHeader *)file_map;
+	if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
+#ifdef DEBUG
+		g_message ("%s: Bad dos signature 0x%x", __func__,
+			   dos_header->e_magic);
+#endif
+
+		SetLastError (ERROR_INVALID_DATA);
+		return(NULL);
+	}
+	
+	if (map_size < sizeof(WapiImageNTHeaders64) + GUINT32_FROM_LE (dos_header->e_lfanew)) {
+#ifdef DEBUG
+		g_message ("%s: File is too small: %d", __func__, map_size);
+#endif
+
+		SetLastError (ERROR_BAD_LENGTH);
+		return(NULL);
+	}
+	
+	nt_headers = (WapiImageNTHeaders64 *)((guint8 *)file_map + GUINT32_FROM_LE (dos_header->e_lfanew));
+	if (nt_headers->Signature != IMAGE_NT_SIGNATURE) {
+#ifdef DEBUG
+		g_message ("%s: Bad NT signature 0x%x", __func__,
+			   nt_headers->Signature);
+#endif
+
+		SetLastError (ERROR_INVALID_DATA);
+		return(NULL);
+	}
+	
+	if (nt_headers->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+		/* Do 64-bit stuff */
+		resource_rva = GUINT32_FROM_LE (((WapiImageNTHeaders64 *)nt_headers)->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress);
+	} else {
+		resource_rva = GUINT32_FROM_LE (nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress);
+	}
+
+	if (resource_rva == 0) {
+#ifdef DEBUG
+		g_message ("%s: No resources in file!", __func__);
+#endif
+		SetLastError (ERROR_INVALID_DATA);
+		return(NULL);
+	}
+	
+	resource_dir = (WapiImageResourceDirectory *)get_ptr_from_rva (resource_rva, (WapiImageNTHeaders32 *)nt_headers, file_map);
+	if (resource_dir == NULL) {
+#ifdef DEBUG
+		g_message ("%s: Can't find resource directory", __func__);
+#endif
+		SetLastError (ERROR_INVALID_DATA);
+		return(NULL);
+	}
+
+	entries = GUINT16_FROM_LE (resource_dir->NumberOfNamedEntries) + GUINT16_FROM_LE (resource_dir->NumberOfIdEntries);
+	resource_dir_entry = (WapiImageResourceDirectoryEntry *)(resource_dir + 1);
+	
+	for (i = 0; i < entries; i++) {
+		WapiImageResourceDirectoryEntry *direntry = &resource_dir_entry[i];
+		ret = scan_resource_dir (resource_dir,
+					 (WapiImageNTHeaders32 *)nt_headers,
+					 file_map, direntry, 0, res_id,
+					 lang_id, size);
+		if (ret != NULL) {
+			return(ret);
+		}
+	}
+
+	return(NULL);
+}
+
+static gpointer find_pe_file_resources (gpointer file_map, guint32 map_size,
+					guint32 res_id, guint32 lang_id,
+					guint32 *size)
+{
+	/* Figure this out when we support 64bit PE files */
+	if (1) {
+		return find_pe_file_resources32 (file_map, map_size, res_id,
+						 lang_id, size);
+	} else {
+		return find_pe_file_resources64 (file_map, map_size, res_id,
+						 lang_id, size);
+	}
 }
 
 static gpointer map_pe_file (gunichar2 *filename, guint32 *map_size)
@@ -270,7 +374,7 @@ static gpointer map_pe_file (gunichar2 *filename, guint32 *map_size)
 	/* Check basic file size */
 	if (statbuf.st_size < sizeof(WapiImageDosHeader)) {
 #ifdef DEBUG
-		g_message ("%s: File %s is too small: %ld", __func__,
+		g_message ("%s: File %s is too small: %lld", __func__,
 			   filename_ext, statbuf.st_size);
 #endif
 
@@ -373,8 +477,7 @@ static gconstpointer get_versioninfo_block (gconstpointer data,
 	data = ((gunichar2 *)data) + (unicode_chars (block->key) + 1);
 	
 	/* align on a 32-bit boundary */
-	data = (gpointer)((char *)data + 3);
-	data = (gpointer)((char *)data - (GPOINTER_TO_INT (data) & 3));
+	ALIGN32 (data);
 	
 	return(data);
 }
@@ -441,8 +544,7 @@ static gconstpointer get_string_block (gconstpointer data_ptr,
 	 */
 	while (((char *)data_ptr - (char *)orig_data_ptr) < data_len) {
 		/* align on a 32-bit boundary */
-		data_ptr = (gpointer)((char *)data_ptr + 3);
-		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+		ALIGN32 (data_ptr);
 		
 		data_ptr = get_versioninfo_block (data_ptr, block);
 		if (block->data_len == 0) {
@@ -498,8 +600,7 @@ static gconstpointer get_stringtable_block (gconstpointer data_ptr,
 
 	while(string_len < data_len) {
 		/* align on a 32-bit boundary */
-		data_ptr = (gpointer)((char *)data_ptr + 3);
-		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+		ALIGN32 (data_ptr);
 		
 		data_ptr = get_versioninfo_block (data_ptr, block);
 		if (block->data_len == 0) {
@@ -564,8 +665,7 @@ static gconstpointer big_up_string_block (gconstpointer data_ptr,
 	 */
 	while (((char *)data_ptr - (char *)orig_data_ptr) < data_len) {
 		/* align on a 32-bit boundary */
-		data_ptr = (gpointer)((char *)data_ptr + 3);
-		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+		ALIGN32 (data_ptr);
 		
 		data_ptr = get_versioninfo_block (data_ptr, block);
 		if (block->data_len == 0) {
@@ -640,8 +740,7 @@ static gconstpointer big_up_stringtable_block (gconstpointer data_ptr,
 
 	while(string_len < data_len) {
 		/* align on a 32-bit boundary */
-		data_ptr = (gpointer)((char *)data_ptr + 3);
-		data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+		ALIGN32 (data_ptr);
 
 		data_ptr = get_versioninfo_block (data_ptr, block);
 		if (block->data_len == 0) {
@@ -720,8 +819,7 @@ static void big_up (gconstpointer datablock, guint32 size)
 		 */
 		while (data_len > 0) {
 			/* align on a 32-bit boundary */
-			data_ptr = (gpointer)((char *)data_ptr + 3);
-			data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+			ALIGN32 (data_ptr);
 			
 			data_ptr = get_versioninfo_block (data_ptr, &block);
 			if (block.data_len == 0) {
@@ -817,8 +915,7 @@ gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 			 */
 			while (data_len > 0) {
 				/* align on a 32-bit boundary */
-				data_ptr = (gpointer)((char *)data_ptr + 3);
-				data_ptr = (gpointer)((char *)data_ptr - (GPOINTER_TO_INT (data_ptr) & 3));
+				ALIGN32 (data_ptr);
 				
 				data_ptr = get_versioninfo_block (data_ptr,
 								  &block);

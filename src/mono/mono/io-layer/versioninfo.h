@@ -270,7 +270,7 @@ typedef struct
 {
 	guint32 Signature;
 	WapiImageFileHeader FileHeader;
-	WapiImageOptionalHeader OptionalHeader;
+	WapiImageOptionalHeader32 OptionalHeader;
 } WapiImageNTHeaders32;
 
 typedef struct
@@ -304,7 +304,9 @@ typedef struct
 	guint32 Characteristics;
 } WapiImageSectionHeader;
 
-#define IMAGE_FIRST_SECTION(header) ((WapiImageSectionHeader *)(GPOINTER_TO_UINT (header) + G_STRUCT_OFFSET (WapiImageNTHeaders, OptionalHeader) + GUINT16_FROM_LE (((WapiImageNTHeaders *)(header))->FileHeader.SizeOfOptionalHeader)))
+#define IMAGE_FIRST_SECTION(header) ((WapiImageSectionHeader *)((gsize)(header) + G_STRUCT_OFFSET (WapiImageNTHeaders, OptionalHeader) + GUINT16_FROM_LE (((WapiImageNTHeaders *)(header))->FileHeader.SizeOfOptionalHeader)))
+
+#define _WAPI_IMAGE_FIRST_SECTION32(header) ((WapiImageSectionHeader *)((gsize)(header) + G_STRUCT_OFFSET (WapiImageNTHeaders32, OptionalHeader) + GUINT16_FROM_LE (((WapiImageNTHeaders32 *)(header))->FileHeader.SizeOfOptionalHeader)))
 
 #define RT_CURSOR	0x01
 #define RT_BITMAP	0x02
