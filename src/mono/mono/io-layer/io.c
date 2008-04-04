@@ -1740,6 +1740,7 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	int result, errno_copy;
 	struct stat stat_src, stat_dest;
 	gboolean ret = FALSE;
+	struct _WapiFileShare *shareinfo;
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1786,16 +1787,36 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	 * We check it here and return the failure if dest exists and is not
 	 * the same file as src.
 	 */
-	if (!_wapi_stat (utf8_dest_name, &stat_dest) &&
-	    !_wapi_stat (utf8_name, &stat_src)) {
+	if (_wapi_stat (utf8_name, &stat_src) < 0) {
+		g_free (utf8_name);
+		g_free (utf8_dest_name);
+		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
+		return FALSE;
+	}
+	
+	if (!_wapi_stat (utf8_dest_name, &stat_dest)) {
 		if (stat_dest.st_dev != stat_src.st_dev ||
 		    stat_dest.st_ino != stat_src.st_ino) {
 			g_free (utf8_name);
 			g_free (utf8_dest_name);
 			SetLastError (ERROR_ALREADY_EXISTS);
 			return FALSE;
-		}	
+		}
 	}
+
+	/* Check to make sure sharing allows us to open the file for
+	 * writing.  See bug 377049.
+	 *
+	 * Do the checks that don't need an open file descriptor, for
+	 * simplicity's sake.  If we really have to do the full checks
+	 * then we can implement that later.
+	 */
+	if (share_allows_open (&stat_src, 0, GENERIC_WRITE,
+			       &shareinfo) == FALSE) {
+		SetLastError (ERROR_SHARING_VIOLATION);
+		return FALSE;
+	}
+	_wapi_handle_share_release (shareinfo);
 
 	result = _wapi_rename (utf8_name, utf8_dest_name);
 	errno_copy = errno;
