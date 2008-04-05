@@ -1,0 +1,3 @@
+2008-04-05  Gert Driesen  (drieseng@users.sourceforge.net>
+
+	* cormissing.css: Allow nested enums and parameters to be collapsed.
