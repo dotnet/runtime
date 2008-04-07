@@ -58,6 +58,7 @@
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/verify.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -186,9 +187,6 @@ mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
 
 /* Whenever to check for pending exceptions in managed-to-native wrappers */
 gboolean check_for_pending_exc = TRUE;
-
-/* Whenever to run the verifier on all methods */
-gboolean mono_verify_all = FALSE;
 
 gboolean
 mono_running_on_valgrind (void)
@@ -4643,40 +4641,6 @@ generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
 	return MONO_TYPE_IS_REFERENCE (type);
 }
 
-static MiniVerifierMode verifier_mode = MINI_VERIFIER_MODE_OFF;
-
-void
-mini_verifier_set_mode (MiniVerifierMode mode)
-{
-       verifier_mode = mode;
-}
-
-/*
- * Return TRUE if method don't need to be verifiable.
- * TODO check appdomain security flags 
- */
-static gboolean
-check_method_full_trust (MonoMethod *method)
-{
-	if (mono_verify_all)
-		return verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
-	else
-		return method->klass->image->assembly->in_gac || method->klass->image == mono_defaults.corlib || verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
-}
-
-/*
- * Return TRUE if method should be verifier
- * FIXME we should be able to check gac'ed code for validity
- */
-static gboolean
-check_for_method_verify (MonoMethod *method)
-{
-	if (mono_verify_all)
-		return method->wrapper_type == MONO_WRAPPER_NONE;
-	else
-		return (verifier_mode > MINI_VERIFIER_MODE_OFF) && !method->klass->image->assembly->in_gac && method->klass->image != mono_defaults.corlib && method->wrapper_type == MONO_WRAPPER_NONE;
-}
-
 /*
  * mini_method_verify:
  * 
@@ -4688,16 +4652,13 @@ static gboolean
 mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 {
 	GSList *tmp, *res;
-	gboolean is_fulltrust = check_method_full_trust (method);
+	gboolean is_fulltrust = mono_verifier_is_method_full_trust (method);
 	MonoLoaderError *error;
 
-	if (!check_for_method_verify (method))
+	if (!mono_verifier_is_enabled_for_method (method))
 		return FALSE;
 
-	res = mono_method_verify (method, 
-		(verifier_mode != MINI_VERIFIER_MODE_STRICT ? MONO_VERIFY_NON_STRICT: 0)
-		| (!is_fulltrust ? MONO_VERIFY_FAIL_FAST : 0)
-		| (cfg->skip_visibility ? MONO_VERIFY_SKIP_VISIBILITY : 0));
+	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility);
 
 	if ((error = mono_loader_get_last_error ())) {
 		cfg->exception_type = error->exception_type;
