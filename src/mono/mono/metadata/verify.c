@@ -3896,6 +3896,18 @@ do_mkrefany (VerifyContext *ctx, int token)
 	set_stack_value (ctx, stack_push (ctx), &mono_defaults.typed_reference_class->byval_arg, FALSE);
 }
 
+static void
+do_ckfinite (VerifyContext *ctx)
+{
+	ILStackDesc *top;
+	if (!check_underflow (ctx, 1))
+		return;
+
+	top = stack_top (ctx);
+
+	if (stack_slot_get_underlying_type (top) != TYPE_R8)
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Expected float32 or float64 on stack for ckfinit but found %s at 0x%04x", stack_slot_get_name (top), ctx->ip_offset));	
+}
 /*
  * merge_stacks:
  * Merge the stacks and perform compat checks. The merge check if types of @from are mergeable with type of @to 
@@ -4823,11 +4835,12 @@ mono_method_verify (MonoMethod *method, int level)
 			do_refanyval (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_CKFINITE:
-			if (!check_underflow (&ctx, 1))
-				break;
+			do_ckfinite (&ctx);
 			++ip;
 			break;
+
 		case CEE_UNUSED24:
 		case CEE_UNUSED25:
 			++ip; /* warn, error ? */
