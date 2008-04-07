@@ -942,7 +942,7 @@ mini_usage (void)
 		"\n"
 		"Development:\n"
 		"    --aot                  Compiles the assembly to native code\n"
-		"    --debug                Enable debugging support\n"
+		"    --debug[=<options>]    Enable debugging support. The only valid option is 'casts' which enables more detailed InvalidCastException messages.\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
 		"    --help-devel           Shows more options available to developers\n"
@@ -1214,6 +1214,14 @@ mono_main (int argc, char* argv[])
 			action = DO_DRAW;
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
+		} else if (strncmp (argv [i], "--debug=", 8) == 0) {
+			enable_debugging = TRUE;
+			if (strcmp (argv [i] + 8, "casts") == 0)
+				mini_get_debug_options ()->better_cast_details = TRUE;
+			else {
+				fprintf (stderr, "Invalid debug option '%s'. The following options are supported: 'casts'.\n", argv [i] + 8);
+				return 1;
+			}
 		} else if (strcmp (argv [i], "--security") == 0) {
 			/* fixme enable verifiable code when the verifier works with 2.0
 			* mini_verifier_set_mode (MINI_VERIFIER_MODE_VERIFIABLE);

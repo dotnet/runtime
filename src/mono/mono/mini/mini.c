@@ -149,6 +149,11 @@ static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 
 guint32 mono_jit_tls_id = -1;
+
+#ifdef HAVE_KW_THREAD
+static __thread gpointer mono_jit_tls MONO_TLS_FAST;
+#endif
+
 MonoTraceSpec *mono_jit_trace_calls = NULL;
 gboolean mono_break_on_exc = FALSE;
 #ifndef DISABLE_AOT
@@ -7103,6 +7108,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->klass = klass;
 				ins->inst_newa_class = klass;
+				ins->backend.record_cast_details = debug_options.better_cast_details;
 				ins->cil_code = ip;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 5);
 				ip += 5;
@@ -9908,6 +9914,18 @@ mono_get_jit_tls_key (void)
 }
 
 gint32
+mono_get_jit_tls_offset (void)
+{
+#ifdef HAVE_KW_THREAD
+	int offset;
+	MONO_THREAD_VAR_OFFSET (mono_jit_tls, offset);
+	return offset;
+#else
+	return -1;
+#endif
+}
+
+gint32
 mono_get_lmf_tls_offset (void)
 {
 #if defined(HAVE_KW_THREAD) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
@@ -10011,6 +10029,10 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	TlsSetValue (mono_jit_tls_id, jit_tls);
 
+#ifdef HAVE_KW_THREAD
+	mono_jit_tls = jit_tls;
+#endif
+
 	jit_tls->abort_func = abort_func;
 	jit_tls->end_of_stack = stack_start;
 
@@ -10091,6 +10113,30 @@ mini_thread_cleanup (MonoThread *thread)
 		thread->jit_data = NULL;
 		TlsSetValue (mono_jit_tls_id, NULL);
 	}
+}
+
+static MonoInst*
+mono_create_tls_get (MonoCompile *cfg, int offset)
+{
+#ifdef MONO_ARCH_HAVE_TLS_GET
+	MonoInst* ins;
+	
+	if (offset == -1)
+		return NULL;
+	
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+	ins->dreg = mono_regstate_next_int (cfg->rs);
+	ins->inst_offset = offset;
+	return ins;
+#else
+	return NULL;
+#endif
+}
+
+MonoInst*
+mono_get_jit_tls_intrinsic (MonoCompile *cfg)
+{
+	return mono_create_tls_get (cfg, mono_get_jit_tls_offset ());
 }
 
 void
@@ -13241,6 +13287,12 @@ mini_parse_debug_options (void)
 			exit (1);
 		}
 	}
+}
+
+MonoDebugOptions *
+mini_get_debug_options (void)
+{
+	return &debug_options;
 }
 
 MonoDomain *
