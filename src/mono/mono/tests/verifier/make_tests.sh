@@ -4702,3 +4702,21 @@ done
 ./make_tail_call_test.sh "prefix_test_tail_with_invalid_instruction" invalid "nop" "" "int32"
 
 
+#ckfinite
+
+I=1
+for TYPE in float32 float64
+do
+	./make_unary_test.sh ck_finite_test_$I valid "ckfinite" "$TYPE"
+	I=`expr $I + 1`
+done
+
+I=1
+for TYPE in int8 bool int32 int64 "int32&" object
+do
+	./make_unary_test.sh ck_finite_test_bad_arg_$I invalid "ckfinite" "$TYPE"
+	I=`expr $I + 1`
+done
+
+./make_unary_test.sh ck_finite_tes_underflow invalid "pop\n\tckfinite" "$TYPE"
+
