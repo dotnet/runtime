@@ -1,6 +1,7 @@
 
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/verify.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/reflection.h>
@@ -5148,4 +5149,73 @@ mono_verify_corlib ()
 	return NULL;
 }
 
+static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
+static gboolean verify_all = FALSE;
 
+/*
+ * Set the desired level of checks for the verfier.
+ * 
+ */
+void
+mono_verifier_set_mode (MiniVerifierMode mode)
+{
+	verifier_mode = mode;
+}
+
+void
+mono_verifier_enable_verify_all ()
+{
+	verify_all = TRUE;
+}
+
+/*
+ * Returns true if @method needs to be verified.
+ * 
+ */
+gboolean
+mono_verifier_is_enabled_for_method (MonoMethod *method)
+{
+	return mono_verifier_is_enabled_for_class (method->klass) && method->wrapper_type == MONO_WRAPPER_NONE;
+}
+
+/*
+ * Returns true if @klass need to be verified.
+ * 
+ */
+gboolean
+mono_verifier_is_enabled_for_class (MonoClass *klass)
+{
+	return verify_all || (verifier_mode > MONO_VERIFIER_MODE_OFF && !klass->image->assembly->in_gac && klass->image != mono_defaults.corlib);
+}
+
+gboolean
+mono_verifier_is_method_full_trust (MonoMethod *method)
+{
+	return mono_verifier_is_class_full_trust (method->klass);
+}
+
+/*
+ * Returns if @klass is under full trust or not.
+ * 
+ * TODO This code doesn't take CAS into account.
+ * 
+ * This value is only pertinent to assembly verification and has
+ * nothing to do with CoreClr security. 
+ * 
+ * Under verify_all, all code is under full trust if no verifier mode is set. 
+ * 
+ */
+gboolean
+mono_verifier_is_class_full_trust (MonoClass *klass)
+{
+	return verifier_mode < MONO_VERIFIER_MODE_VERIFIABLE || klass->image->assembly->in_gac || klass->image == mono_defaults.corlib;
+}
+
+GSList*
+mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visibility)
+{
+	return mono_method_verify (method, 
+			(verifier_mode != MONO_VERIFIER_MODE_STRICT ? MONO_VERIFY_NON_STRICT: 0)
+			| (!mono_verifier_is_method_full_trust (method) ? MONO_VERIFY_FAIL_FAST : 0)
+			| (skip_visibility ? MONO_VERIFY_SKIP_VISIBILITY : 0));
+}
