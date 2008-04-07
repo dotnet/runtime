@@ -2011,7 +2011,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 			     ((module == NULL && match_procname_to_modulename (process_handle->proc_name, found_module->filename)) ||
 			      (module != NULL && found_module->address_start == module))) {
 				modinfo->lpBaseOfDll = found_module->address_start;
-				modinfo->SizeOfImage = GPOINTER_TO_UINT(found_module->address_end) - GPOINTER_TO_UINT (found_module->address_start);
+				modinfo->SizeOfImage = (gsize)(found_module->address_end) - (gsize)(found_module->address_start);
 				modinfo->EntryPoint = found_module->address_offset;
 				ret = TRUE;
 			}

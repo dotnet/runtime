@@ -37,6 +37,7 @@ enum {
 #define IS_STRICT_MODE(ctx) (((ctx)->level & MONO_VERIFY_NON_STRICT) == 0)
 #define IS_FAIL_FAST_MODE(ctx) (((ctx)->level & MONO_VERIFY_FAIL_FAST) == MONO_VERIFY_FAIL_FAST)
 #define IS_SKIP_VISIBILITY(ctx) (((ctx)->level & MONO_VERIFY_SKIP_VISIBILITY) == MONO_VERIFY_SKIP_VISIBILITY)
+#define CLEAR_PREFIX(ctx, prefix) do { (ctx)->prefix_set &= ~(prefix); } while (0)
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
 	do {	\
@@ -146,11 +147,12 @@ typedef struct {
 	gboolean has_this_store;
 
 	guint32 prefix_set;
+	gboolean has_flags;
 	MonoType *constrained_type;
 } VerifyContext;
 
 static void
-merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external);
+merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean start, gboolean external);
 
 static int
 get_stack_type (MonoType *type);
@@ -318,6 +320,18 @@ mono_method_is_constructor (MonoMethod *method)
 			!strcmp (".ctor", method->name));
 }
 
+static gboolean
+verify_type_load_error(VerifyContext *ctx, MonoClass *klass)
+{
+	mono_class_init (klass);
+	if (mono_loader_get_last_error () || klass->exception_type != MONO_EXCEPTION_NONE) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		return FALSE;
+	}
+
+	//TODO verify if the type can be inflated in the current context
+	return TRUE;
+}
 
 static MonoClassField*
 verifier_load_field (VerifyContext *ctx, int token, MonoClass **klass, const char *opcode) {
@@ -333,6 +347,9 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **klass, const cha
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load field from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
+
+	if (!verify_type_load_error (ctx, field->parent))
+		return NULL;
 
 	return field;
 }
@@ -353,6 +370,10 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 		return NULL;
 	}
 	
+	if (!verify_type_load_error (ctx, method->klass))
+		return NULL;
+
+	//TODO verify if the method can be inflated in the current context
 	return method;
 }
 
@@ -371,6 +392,10 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load type from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
+
+	if (!verify_type_load_error (ctx, mono_class_from_mono_type (type)))
+		return NULL;
+
 	return type;
 }
 
@@ -2665,7 +2690,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		return;
 
 	if (virtual) {
-		ctx->prefix_set &= ~PREFIX_CONSTRAINED;
+		CLEAR_PREFIX (ctx, PREFIX_CONSTRAINED);
 
 		if (method->klass->valuetype) // && !constrained ???
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use callvirtual with valuetype method at 0x%04x", ctx->ip_offset));
@@ -2698,6 +2723,11 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 
 		if (stack_slot_is_managed_mutability_pointer (value))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer as argument of %s at 0x%04x", virtual ? "callvirt" : "call",  ctx->ip_offset));
+
+		if ((ctx->prefix_set & PREFIX_TAIL) && stack_slot_is_managed_pointer (value)) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Cannot  pass a byref argument to a tail %s at 0x%04x", virtual ? "callvirt" : "call",  ctx->ip_offset));
+			return;
+		}
 	}
 
 	if (sig->hasthis) {
@@ -2751,6 +2781,14 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 			}
 		}
 	}
+
+	if ((ctx->prefix_set & PREFIX_TAIL)) {
+		if (!mono_delegate_ret_equal (mono_method_signature (ctx->method)->ret, sig->ret))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Tail call with incompatible return type at 0x%04x", ctx->ip_offset));
+		if (ctx->header->code [ctx->ip_offset + 5] != CEE_RET)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Tail call not followed by ret at 0x%04x", ctx->ip_offset));
+	}
+
 }
 
 static void
@@ -2758,6 +2796,8 @@ do_push_static_field (VerifyContext *ctx, int token, gboolean take_addr)
 {
 	MonoClassField *field;
 	MonoClass *klass;
+	if (!take_addr)
+		CLEAR_PREFIX (ctx, PREFIX_VOLATILE);
 
 	if (!(field = verifier_load_field (ctx, token, &klass, take_addr ? "ldsflda" : "ldsfld")))
 		return;
@@ -2782,6 +2822,7 @@ do_store_static_field (VerifyContext *ctx, int token) {
 	MonoClassField *field;
 	MonoClass *klass;
 	ILStackDesc *value;
+	CLEAR_PREFIX (ctx, PREFIX_VOLATILE);
 
 	if (!check_underflow (ctx, 1))
 		return;
@@ -2813,19 +2854,15 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 {
 	MonoClassField *field;
 	MonoClass *klass;
+	gboolean is_pointer;
 
-	/*must be one of: complex type, managed pointer (to complex type), unmanaged pointer (native int) or an instance of a value type */
-	if (!(stack_slot_get_underlying_type (obj) == TYPE_COMPLEX
-		|| stack_slot_get_type (obj) == TYPE_NATIVE_INT
-		|| stack_slot_get_type (obj) == TYPE_PTR)) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid argument %s to load field at 0x%04x", stack_slot_get_name (obj), ctx->ip_offset));
-	}
-
+	/*must be a reference type, a managed pointer, an unamanaged pointer, or a valuetype*/
 	if (!(field = verifier_load_field (ctx, token, &klass, opcode)))
 		return FALSE;
 
-	//TODO verify if type loaded correctly.
 	*ret_field = field;
+	//the value on stack is going to be used as a pointer
+	is_pointer = stack_slot_get_type (obj) == TYPE_PTR || (stack_slot_get_type (obj) == TYPE_NATIVE_INT && !get_stack_type (&field->parent->byval_arg));
 
 	if (field->type->type == MONO_TYPE_TYPEDBYREF) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Typedbyref field is an unverfiable type at 0x%04x", ctx->ip_offset));
@@ -2835,7 +2872,13 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 
 	/*The value on the stack must be a subclass of the defining type of the field*/ 
 	/* we need to check if we can load the field from the stack value*/
-	if (stack_slot_get_underlying_type (obj) == TYPE_COMPLEX) {
+	if (is_pointer) {
+		if (stack_slot_get_underlying_type (obj) == TYPE_NATIVE_INT)
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Native int is not a verifiable type to reference a field at 0x%04x", ctx->ip_offset));
+
+		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, NULL))
+				CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
+	} else {
 		if (!field->parent->valuetype && stack_slot_is_managed_pointer (obj))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is a managed pointer to a reference type and is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
@@ -2848,11 +2891,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 
 		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, obj->type->data.klass))
 			CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
-	} else if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, NULL))
-		CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
-
-	if (stack_slot_get_underlying_type (obj) == TYPE_NATIVE_INT)
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Native int is not a verifiable type to reference a field at 0x%04x", ctx->ip_offset));
+	} 
 
 	check_unmanaged_pointer (ctx, obj);
 	return TRUE;
@@ -2863,6 +2902,9 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 {
 	ILStackDesc *obj;
 	MonoClassField *field;
+
+	if (!take_addr)
+		CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 
 	if (!check_underflow (ctx, 1))
 		return;
@@ -2886,6 +2928,7 @@ do_store_field (VerifyContext *ctx, int token)
 {
 	ILStackDesc *value, *obj;
 	MonoClassField *field;
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 
 	if (!check_underflow (ctx, 2))
 		return;
@@ -3015,7 +3058,7 @@ do_conversion (VerifyContext *ctx, int kind)
 	case TYPE_R8:
 		break;
 	default:
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type (%s) at stack for conversion operation at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type (%s) at stack for conversion operation. Numeric type expected at 0x%04x", stack_slot_get_name (value), ctx->ip_offset));
 	}
 
 	switch (kind) {
@@ -3057,6 +3100,7 @@ do_ldobj_value (VerifyContext *ctx, int token)
 {
 	ILStackDesc *value;
 	MonoType *type = get_boxable_mono_type (ctx, token, "ldobj");
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 
 	if (!type)
 		return;
@@ -3087,6 +3131,8 @@ do_stobj (VerifyContext *ctx, int token)
 {
 	ILStackDesc *dest, *src;
 	MonoType *type = get_boxable_mono_type (ctx, token, "stobj");
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
+
 	if (!type)
 		return;
 
@@ -3327,6 +3373,8 @@ static void
 do_load_indirect (VerifyContext *ctx, int opcode)
 {
 	ILStackDesc *value;
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
+
 	if (!check_underflow (ctx, 1))
 		return;
 	
@@ -3352,6 +3400,8 @@ static void
 do_store_indirect (VerifyContext *ctx, int opcode)
 {
 	ILStackDesc *addr, *val;
+	CLEAR_PREFIX (ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
+
 	if (!check_underflow (ctx, 2))
 		return;
 
@@ -3856,7 +3906,7 @@ do_mkrefany (VerifyContext *ctx, int token)
  * TODO we can eliminate the from argument as all callers pass &ctx->eval
  */
 static void
-merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, int start, gboolean external) 
+merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean start, gboolean external) 
 {
 	int i, j, k;
 	stack_init (ctx, to);
@@ -4468,7 +4518,9 @@ mono_method_verify (MonoMethod *method, int level)
 			token = read32 (ip + 1);
 			/*
 			 * FIXME: check signature, retval, arguments etc.
+			 * FIXME: check requirements for tail call
 			 */
+			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Intruction calli is not verifiable at 0x%04x", ctx.ip_offset));
 			ip += 5;
 			break;
 		case CEE_BR_S:
@@ -4962,15 +5014,21 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 
 			case CEE_CPBLK:
+				CLEAR_PREFIX (&ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 				if (!check_underflow (&ctx, 3))
 					break;
+				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Instruction cpblk is not verifiable at 0x%04x", ctx.ip_offset));
 				ip++;
 				break;
+				
 			case CEE_INITBLK:
+				CLEAR_PREFIX (&ctx, PREFIX_UNALIGNED | PREFIX_VOLATILE);
 				if (!check_underflow (&ctx, 3))
 					break;
+				CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Instruction initblk is not verifiable at 0x%04x", ctx.ip_offset));
 				ip++;
 				break;
+				
 			case CEE_NO_:
 				ip += 2;
 				break;
@@ -5008,14 +5066,22 @@ mono_method_verify (MonoMethod *method, int level)
 			if (!ctx.prefix_set) //first prefix
 				ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
 			ctx.prefix_set |= prefix;
+			ctx.has_flags = TRUE;
 			prefix = 0;
 		} else {
-			ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
+			if (!ctx.has_flags)
+				ctx.code [ctx.ip_offset].flags |= IL_CODE_FLAG_SEEN;
+
 			if (ctx.prefix_set & PREFIX_CONSTRAINED)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after constrained prefix at 0x%04x", ctx.ip_offset));
 			if (ctx.prefix_set & PREFIX_READONLY)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after readonly prefix at 0x%04x", ctx.ip_offset));
+			if (ctx.prefix_set & PREFIX_VOLATILE)
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after volatile prefix at 0x%04x", ctx.ip_offset));
+			if (ctx.prefix_set & PREFIX_UNALIGNED)
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction after unaligned prefix at 0x%04x", ctx.ip_offset));
 			ctx.prefix_set = prefix = 0;
+			ctx.has_flags = FALSE;
 		}
 	}
 	/*

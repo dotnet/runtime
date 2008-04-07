@@ -7,6 +7,7 @@
 	vertical-align: middle;
 }
 
+.a, .a_,
 .y, .y_,
 .n, .n_,
 .c, .c_,
@@ -42,6 +43,8 @@
 .n_ .i_,
 .c_ .c,
 .c_ .c_,
+.c_ .d,
+.c_ .d_,
 .c_ .e,
 .c_ .e_,
 .c_ .f,
@@ -50,6 +53,8 @@
 .c_ .m_,
 .c_ .o,
 .c_ .o_,
+.c_ .en,
+.c_ .en_,
 .c_ .p,
 .c_ .p_,
 .c_ .r,
@@ -66,6 +71,8 @@
 .d_ .e_,
 .d_ .f,
 .d_ .f_,
+.d_ .i,
+.d_ .i_,
 .d_ .m,
 .d_ .m_,
 .d_ .o,
@@ -78,12 +85,16 @@
 .d_ .x_,
 .d_ .w,
 .d_ .w_,
+.e_ .m,
+.e_ .m_,
 .en_ .c,
 .en_ .c_,
 .en_ .e,
 .en_ .e_,
 .en_ .f,
 .en_ .f_,
+.en_ .i,
+.en_ .i_,
 .en_ .m,
 .en_ .m_,
 .en_ .o,
@@ -138,7 +149,10 @@
 .s_ .i_,
 .s_ .w,
 .s_ .w_,
-
+.x_ .a,
+.x_ .a_,
+.m_ .a,
+.m_ .a_,
 .e_ .r,
 .e_ .r_,
 .e_ .o,
@@ -155,6 +169,7 @@
 .o_ .r_,
 .o_ .o,
 .o_ .o_,
+.o_ .a_,
 .p_ .r,
 .p_ .r_,
 .p_ .o,
@@ -186,7 +201,6 @@
 	cursor: pointer;
 	vertical-align: middle;
 }
-
 
 .st
 {

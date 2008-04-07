@@ -729,7 +729,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 			      gboolean search_shared)
 {
 	struct _WapiHandleUnshared *handle_data = NULL;
-	struct _WapiHandleShared *shared;
+	struct _WapiHandleShared *shared = NULL;
 	gpointer ret = NULL;
 	guint32 i, k;
 	gboolean found = FALSE;

@@ -1,10 +1,16 @@
-2007-03-19  Bill Holmes  <billholmes54@gmail.com>
+2008-04-04  Bill Holmes  <billholmes54@gmail.com>
+
+	* runburg.bat, runmdesc.bat:  Reverting back to r97888.  The PATH was correct before.
+
+	Contributed under MIT/X11 license.
+
+2008-03-19  Bill Holmes  <billholmes54@gmail.com>
 
 	* libmono.vcproj:  Adding a link to version.lib for the eglib targets.
 
 	Contributed under MIT/X11 license.
 
-2007-03-10  Bill Holmes  <billholmes54@gmail.com>
+2008-03-10  Bill Holmes  <billholmes54@gmail.com>
 
 	* mono.sln: Fixing configuration list to build the correct targets for the 
 	  specified configuration.

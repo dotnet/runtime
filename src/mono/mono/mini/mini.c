@@ -4672,8 +4672,7 @@ static gboolean
 check_for_method_verify (MonoMethod *method)
 {
 	if (mono_verify_all)
-		/* The current verifier can't handle mscorlib */
-		return method->wrapper_type == MONO_WRAPPER_NONE && method->klass->image != mono_defaults.corlib;
+		return method->wrapper_type == MONO_WRAPPER_NONE;
 	else
 		return (verifier_mode > MINI_VERIFIER_MODE_OFF) && !method->klass->image->assembly->in_gac && method->klass->image != mono_defaults.corlib && method->wrapper_type == MONO_WRAPPER_NONE;
 }
