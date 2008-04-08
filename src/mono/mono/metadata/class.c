@@ -34,6 +34,7 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-counters.h>
 
 MonoStats mono_stats;
@@ -3561,6 +3562,11 @@ mono_class_init (MonoClass *class)
 		setup_interface_offsets (class, 0);
 	}
 
+
+	if (mono_verifier_is_enabled_for_class (class) && !mono_verifier_verify_class (class)) {
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, concat_two_strings_with_zero (class->image->mempool, class->name, class->image->assembly_name));
+		class_init_ok = FALSE;
+	}
  leave:
 	class->inited = 1;
 	class->init_pending = 0;
