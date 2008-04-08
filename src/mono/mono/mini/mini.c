@@ -4641,8 +4641,12 @@ get_runtime_generic_context_method (MonoCompile *cfg, MonoMethod *method, MonoBa
 static gboolean
 generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
 {
-	MonoType *type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, &klass->byval_arg);
+	MonoType *type;
 
+	if (cfg->generic_sharing_context)
+		type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, &klass->byval_arg);
+	else
+		type = &klass->byval_arg;
 	return MONO_TYPE_IS_REFERENCE (type);
 }
 
@@ -6414,7 +6418,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			sp -= 2;
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				MonoInst *store, *load;
 				MONO_INST_NEW (cfg, load, CEE_LDIND_REF);
 				load->cil_code = ip;
@@ -6463,7 +6467,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				MONO_INST_NEW (cfg, ins, CEE_LDIND_REF);
 				ins->cil_code = ip;
 				ins->inst_i0 = sp [0];
@@ -6922,7 +6926,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context && mono_class_check_context_used (klass))
 				GENERIC_SHARING_FAILURE (CEE_UNBOX_ANY);
 
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS */
 				if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 					MonoMethod *mono_castclass;
@@ -7672,8 +7676,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					generic_shared = TRUE;
 			}
 
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg) ||
-					(generic_shared && generic_class_is_reference_type (cfg, klass))) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				*sp++ = val;
 				ip += 5;
 				break;
@@ -8013,7 +8016,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				/* storing a NULL doesn't need any of the complex checks in stelemref */
 				if (sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL) {
 					MonoInst *load;
@@ -8931,9 +8934,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				inline_costs += 100000;
 				ip += 2;
 				break;
-			case CEE_INITOBJ: {
-				gboolean generic_shared = FALSE;
-
+			case CEE_INITOBJ:
 				CHECK_STACK (1);
 				--sp;
 				CHECK_OPSIZE (6);
@@ -8941,14 +8942,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
 
-				if (cfg->generic_sharing_context && mono_class_check_context_used (klass)) {
-					if (generic_class_is_reference_type (cfg, klass))
-						generic_shared = TRUE;
-					else
-						GENERIC_SHARING_FAILURE (CEE_INITOBJ);
-				}
-
-				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg) || generic_shared) {
+				if (generic_class_is_reference_type (cfg, klass)) {
 					MonoInst *store, *load;
 					NEW_PCONST (cfg, load, NULL);
 					load->cil_code = ip;
@@ -8961,12 +8955,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					store->inst_i0 = sp [0];
 					store->inst_i1 = load;
 				} else {
+					GENERIC_SHARING_FAILURE (CEE_INITOBJ);
 					handle_initobj (cfg, bblock, *sp, NULL, klass, stack_start, sp);
 				}
 				ip += 6;
 				inline_costs += 1;
 				break;
- 			}
 			case CEE_CONSTRAINED_:
 				/* FIXME: implement */
 				CHECK_OPSIZE (6);
