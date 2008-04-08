@@ -678,7 +678,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 #endif
 
 			SetLastError (ERROR_PATH_NOT_FOUND);
-			goto cleanup;
+			goto free_strings;
 		}
 
 		/* Turn all the slashes round the right way */
@@ -697,7 +697,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 #endif
 
 			SetLastError (ERROR_PATH_NOT_FOUND);
-			goto cleanup;
+			goto free_strings;
 		}
 	}
 
@@ -709,7 +709,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 #endif
 
 			SetLastError (ERROR_PATH_NOT_FOUND);
-			goto cleanup;
+			goto free_strings;
 		}
 
 		/* Turn all the slashes round the right way */
@@ -746,7 +746,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 #endif
 				g_free (unquoted);
 				SetLastError (ERROR_FILE_NOT_FOUND);
-				goto cleanup;
+				goto free_strings;
 			}
 		} else {
 			/* Search for file named by cmd in the current
@@ -765,7 +765,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 #endif
 				g_free (unquoted);
 				SetLastError (ERROR_FILE_NOT_FOUND);
-				goto cleanup;
+				goto free_strings;
 			}
 		}
 		g_free (unquoted);
@@ -831,7 +831,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 #endif
 
 			SetLastError (ERROR_PATH_NOT_FOUND);
-			goto cleanup;
+			goto free_strings;
 		}
 		
 		/* Turn all the slashes round the right way. Only for
@@ -864,7 +864,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 #endif
 				g_free (token);
 				SetLastError (ERROR_FILE_NOT_FOUND);
-				goto cleanup;
+				goto free_strings;
 			}
 
 		} else {
@@ -892,7 +892,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 
 					g_free (token);
 					SetLastError (ERROR_FILE_NOT_FOUND);
-					goto cleanup;
+					goto free_strings;
 				}
 			}
 		}
@@ -908,25 +908,36 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	/* Check for CLR binaries; if found, we will try to invoke
 	 * them using the same mono binary that started us.
 	 */
-	if (is_managed_binary (prog) && (appname == NULL)) {
+	if (is_managed_binary (prog)) {
+		gunichar2 *newapp, *newcmd;
 		gsize bytes_ignored;
 
-		appname = mono_unicode_from_external ("mono", &bytes_ignored);
+		newapp = mono_unicode_from_external ("mono", &bytes_ignored);
 
-		if (appname != NULL) {
-			cmdline = utf16_concat (appname, utf16_space, cmdline, NULL);
+		if (newapp != NULL) {
+			if (appname != NULL) {
+				newcmd = utf16_concat (newapp, utf16_space,
+						       appname, utf16_space,
+						       cmdline, NULL);
+			} else {
+				newcmd = utf16_concat (newapp, utf16_space,
+						       cmdline, NULL);
+			}
 			
-			g_free ((gunichar2 *)appname);
+			g_free ((gunichar2 *)newapp);
 			
-			if (cmdline != NULL) {
-				gboolean return_value = CreateProcess (
-					NULL, cmdline, process_attrs,
-					thread_attrs, inherit_handles, create_flags, new_environ,
-					cwd, startup, process_info);
+			if (newcmd != NULL) {
+				ret = CreateProcess (NULL, newcmd,
+						     process_attrs,
+						     thread_attrs,
+						     inherit_handles,
+						     create_flags, new_environ,
+						     cwd, startup,
+						     process_info);
 				
-				g_free ((gunichar2 *)cmdline);
+				g_free ((gunichar2 *)newcmd);
 				
-				return return_value;
+				goto free_strings;
 			}
 		}
 	}
@@ -967,7 +978,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 		g_warning ("%s: error creating process handle", __func__);
 
 		SetLastError (ERROR_PATH_NOT_FOUND);
-		goto cleanup;
+		goto free_strings;
 	}
 
 	/* Hold another reference so the process has somewhere to
@@ -1139,6 +1150,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 cleanup:
 	_wapi_handle_unlock_shared_handles ();
 
+free_strings:
 	if (cmd != NULL) {
 		g_free (cmd);
 	}
