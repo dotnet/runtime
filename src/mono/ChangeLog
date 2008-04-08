@@ -1,3 +1,8 @@
+2008-04-08  Dean Brettle  <dean@brettle.com>
+
+	* configure.in, runtime/Makefile.am: create a symlink at
+	mono/runtime/etc/mono/2.0/Browsers/Compat.browser similar to machine.config
+
 2008-03-26  Massimiliano Mantione  <massi@ximian.com>
 	* configure.in: Added PLATFORM_LINUX automake conditional.
 
