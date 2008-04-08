@@ -4720,3 +4720,31 @@ done
 
 ./make_unary_test.sh ck_finite_tes_underflow invalid "pop\n\tckfinite" "$TYPE"
 
+
+#overlapped types
+./make_overlapped_test.sh not_overlapped_test valid 0 4 0
+
+./make_overlapped_test.sh obj_overlapped_with_long invalid 0 4 0 int64
+
+
+for I in 0 1 2 3
+do
+	./make_overlapped_test.sh bad_overlapped_$I invalid 0 $I 0
+done
+
+for I in 1 2 3 5 6 7
+do
+	./make_overlapped_test.sh bad_overlapped_end_$I invalid 0 $I 4
+done
+
+for I in 1 2 3 5 6 7
+do
+	./make_overlapped_test.sh obj_bad_aligned_$I invalid 0 $I 0
+done
+
+#we must be carefull as on 64 bits machines a reference takes 8 bytes.
+for I in 13 14 15
+do
+	./make_overlapped_test.sh int_bad_aligned_$I valid 0 4 $I
+done
+
