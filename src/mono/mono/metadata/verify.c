@@ -5219,3 +5219,31 @@ mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visi
 			| (!mono_verifier_is_method_full_trust (method) ? MONO_VERIFY_FAIL_FAST : 0)
 			| (skip_visibility ? MONO_VERIFY_SKIP_VISIBILITY : 0));
 }
+
+
+gboolean
+mono_verifier_verify_class (MonoClass *class)
+{
+	int i, j, align;
+	if (!(class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT || !class->has_references)
+		return TRUE;
+		
+		//we must check for stuff overlapping reference fields
+	for (i = 0; i < class->field.count; ++i) {
+		MonoClassField *field = &class->fields [i];
+		int fieldEnd = field->offset + mono_type_size (field->type, &align);
+		gboolean is_valuetype = !MONO_TYPE_IS_REFERENCE (field->type);
+		if (mono_field_is_deleted (field))
+			continue;
+
+		for (j = i + 1; j < class->field.count; ++j) {
+			MonoClassField *other = &class->fields [j];
+			int otherEnd = other->offset + mono_type_size (other->type, &align);
+			if (mono_field_is_deleted (other) || (is_valuetype && !MONO_TYPE_IS_REFERENCE (other->type)))
+				continue;
+			if ((otherEnd > field->offset && otherEnd <= fieldEnd) || (other->offset >= field->offset && other->offset < fieldEnd))
+				return FALSE;
+		}
+	}
+	return TRUE;
+}

@@ -23,6 +23,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/verify-internals.h>
 #include "mono/utils/mono-digest.h"
 
 gboolean dump_data = TRUE;
@@ -351,6 +352,8 @@ dump_verify_info (MonoImage *image, int flags)
 	if (flags & (MONO_VERIFY_ALL + 1)) { /* verify code */
 		int i;
 		MonoTableInfo *m = &image->tables [MONO_TABLE_METHOD];
+		
+		mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
 
 		for (i = 0; i < m->rows; ++i) {
 			MonoMethod *method;
@@ -360,6 +363,7 @@ dump_verify_info (MonoImage *image, int flags)
 				char *sig;
 				MonoClass *klass = mono_method_get_class (method);
 				sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
+				//FIXME report the class name taking nesting into account
 				g_print ("In method: %s.%s::%s(%s)\n", mono_class_get_namespace (klass), mono_class_get_name (klass), mono_method_get_name (method), sig);
 				g_free (sig);
 			}
@@ -388,7 +392,7 @@ dump_verify_info (MonoImage *image, int flags)
 static void
 usage (void)
 {
-	printf ("Usage is: pedump [--verify error,warn,cls,all,code] file.exe\n");
+	printf ("Usage is: pedump [--verify error,warn,cls,all,code,fail-on-verifiable,non-strict] file.exe\n");
 	exit (1);
 }
 
