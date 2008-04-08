@@ -10310,7 +10310,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			target = code;
 		} else {
 			/* get the trampoline to the method from the domain */
-			if (method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
+			if (method && method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
 				target = mono_ldftn_nosync (patch_info->data.method);
 			else
 				target = mono_create_jit_trampoline (patch_info->data.method);

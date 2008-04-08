@@ -1184,6 +1184,8 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 
 		wrapper_type = decode_value (p, &p);
 
+		ji->type = MONO_PATCH_INFO_METHOD;
+
 		switch (wrapper_type) {
 		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
 			guint32 image_index, token, value;
@@ -1199,7 +1201,6 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 			g_assert (ji->data.method);
 			mono_class_init (ji->data.method->klass);
 
-			ji->type = MONO_PATCH_INFO_METHOD;
 			ji->data.method = mono_marshal_get_remoting_invoke_with_check (ji->data.method);
 			break;
 		}
@@ -1207,7 +1208,6 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 			MonoClass *klass = decode_klass_ref (aot_module, p, &p);
 			if (!klass)
 				goto cleanup;
-			ji->type = MONO_PATCH_INFO_METHOD;
 			ji->data.method = mono_marshal_get_proxy_cancast (klass);
 			break;
 		}
@@ -1218,7 +1218,6 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 			MonoClass *klass = decode_klass_ref (aot_module, p, &p);
 			if (!klass)
 				goto cleanup;
-			ji->type = MONO_PATCH_INFO_METHOD;
 			if (wrapper_type == MONO_WRAPPER_LDFLD)
 				ji->data.method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
 			else if (wrapper_type == MONO_WRAPPER_LDFLDA)
@@ -1240,12 +1239,10 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		case MONO_WRAPPER_ALLOC: {
 			int atype = decode_value (p, &p);
 
-			ji->type = MONO_PATCH_INFO_METHOD;
 			ji->data.method = mono_gc_get_managed_allocator_by_type (atype);
 			break;
 		}
 		case MONO_WRAPPER_STELEMREF:
-			ji->type = MONO_PATCH_INFO_METHOD;
 			ji->data.method = mono_marshal_get_stelemref ();
 			break;
 		default:
