@@ -4815,14 +4815,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoBasicBlock *try_bb;
 			MonoExceptionClause *clause = &header->clauses [i];
 
-			if ((method->flags & METHOD_ATTRIBUTE_STATIC) &&
-					clause->flags != MONO_EXCEPTION_CLAUSE_FILTER &&
-					clause->data.catch_class &&
-					cfg->generic_sharing_context &&
-					mono_class_check_context_used (clause->data.catch_class)) {
-				mono_get_rgctx_var (cfg);
-			}
-
 			GET_BBLOCK (cfg, try_bb, ip + clause->try_offset);
 			try_bb->real_offset = clause->try_offset;
 			GET_BBLOCK (cfg, tblock, ip + clause->handler_offset);
@@ -4878,6 +4870,47 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
 					MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
 					MONO_ADD_INS (tblock, ins);
+				}
+			}
+
+			if (clause->flags != MONO_EXCEPTION_CLAUSE_FILTER &&
+					clause->data.catch_class &&
+					cfg->generic_sharing_context &&
+					mono_class_check_context_used (clause->data.catch_class)) {
+				/*
+				 * In shared generic code with catch
+				 * clauses containing type variables
+				 * the exception handling code has to
+				 * be able to get to the rgctx.
+				 * Therefore we have to make sure that
+				 * the rgctx argument (for static
+				 * methods) or the "this" argument
+				 * (for non-static methods) are live.
+				 */
+				if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+					mono_get_rgctx_var (cfg);
+				} else {
+					MonoInst *this, *dummy_use;
+					MonoType *this_type;
+
+					if (method->klass->valuetype)
+						this_type = &method->klass->this_arg;
+					else
+						this_type = &method->klass->byval_arg;
+
+					if (arg_array [0]->opcode == OP_ICONST) {
+						this = arg_array [0];
+					} else {
+						this = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));
+						this->ssa_op = MONO_SSA_LOAD;
+						this->inst_i0 = arg_array [0];
+						this->opcode = mini_type_to_ldind ((cfg), this->inst_i0->inst_vtype);
+						type_to_eval_stack_type ((cfg), this_type, this);
+						this->klass = this->inst_i0->klass;
+					}
+
+					NEW_DUMMY_USE (cfg, dummy_use, this);
+					MONO_ADD_INS (tblock, dummy_use);
 				}
 			}
 		}
