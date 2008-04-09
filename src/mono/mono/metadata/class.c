@@ -4208,6 +4208,31 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
+	if (param->owner) {
+		guint32 owner;
+		guint32 cols [MONO_GENERICPARAM_SIZE];
+		MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
+		i = 0;
+
+		if (is_mvar && param->owner->owner.method)
+			 i = mono_metadata_get_generic_param_row (image, param->owner->owner.method->token, &owner);
+		else if (!is_mvar && param->owner->owner.klass)
+			 i = mono_metadata_get_generic_param_row (image, param->owner->owner.klass->type_token, &owner);
+
+		if (i) {
+			mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
+			do {
+				if (cols [MONO_GENERICPARAM_NUMBER] == param->num) {
+					klass->sizes.generic_param_token = i | MONO_TOKEN_GENERIC_PARAM;
+					break;
+				}
+				if (++i > tdef->rows)
+					break;
+				mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
+			} while (cols [MONO_GENERICPARAM_OWNER] == owner);
+		}
+	}
+
 	mono_class_setup_supertypes (klass);
 
 	mono_loader_unlock ();
