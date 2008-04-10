@@ -163,7 +163,8 @@ namespace AssemblyRunner {
 				"InvalidProgramException",
 				"FileLoadException",
 				"BadImageFormatException",
-				"TypeLoadException"
+				"TypeLoadException",
+				"VerificationException"
 			};
 
 			foreach (String str in knownErrors) {
