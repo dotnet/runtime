@@ -4808,7 +4808,7 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT);
 
 	if (!field->data) {
-		cindex = mono_metadata_get_constant_index (field->parent->image, mono_class_get_field_token (field), cindex + 1);
+		cindex = mono_metadata_get_constant_index (field->parent->image, mono_class_get_field_token (field), 0);
 		g_assert (cindex);
 		g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA));
 
