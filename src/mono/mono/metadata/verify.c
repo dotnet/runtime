@@ -163,6 +163,9 @@ mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 
 static gboolean
 mono_class_is_valid_generic_instantiation (MonoClass *klass);
+
+static gboolean
+mono_method_is_valid_generic_instantiation (MonoMethod *method);
 //////////////////////////////////////////////////////////////////
 
 
@@ -396,11 +399,8 @@ mono_class_is_constraint_compatible (MonoClass *candidate, MonoClass *target)
 }
 
 static gboolean
-mono_class_is_valid_generic_instantiation (MonoClass *klass)
+is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
 {
-	MonoGenericClass *gklass = klass->generic_class;
-	MonoGenericInst *ginst = gklass->context.class_inst;
-	MonoGenericContainer *gc = gklass->container_class->generic_container;
 	int i;
 
 	if (ginst->type_argc != gc->type_argc)
@@ -443,7 +443,7 @@ mono_class_is_valid_generic_instantiation (MonoClass *klass)
 			MonoClass *ctr = *constraints;
 			MonoType *inflated;
 
-			inflated = mono_class_inflate_generic_type (&ctr->byval_arg, &gklass->context);
+			inflated = mono_class_inflate_generic_type (&ctr->byval_arg, context);
 			ctr = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 
@@ -455,15 +455,37 @@ mono_class_is_valid_generic_instantiation (MonoClass *klass)
 }
 
 static gboolean
+mono_method_is_valid_generic_instantiation (MonoMethod *method)
+{
+	MonoMethodInflated *gmethod = (MonoMethodInflated *)method;
+	MonoGenericInst *ginst = gmethod->context.method_inst;
+	MonoGenericContainer *gc = gmethod->declaring->generic_container;
+
+	return is_valid_generic_instantiation (gc, &gmethod->context, ginst);
+
+}
+
+static gboolean
+mono_class_is_valid_generic_instantiation (MonoClass *klass)
+{
+	MonoGenericClass *gklass = klass->generic_class;
+	MonoGenericInst *ginst = gklass->context.class_inst;
+	MonoGenericContainer *gc = gklass->container_class->generic_container;
+	return is_valid_generic_instantiation (gc, &gklass->context, ginst);
+}
+
+static gboolean
 verify_type_load_error(VerifyContext *ctx, MonoClass *klass)
 {
 	mono_class_init (klass);
 	if (mono_loader_get_last_error () || klass->exception_type != MONO_EXCEPTION_NONE) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		if (klass->generic_class && !mono_class_is_valid_generic_instantiation (klass))
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		else
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
 
-	//TODO verify if the type can be inflated in the current context
 	return TRUE;
 }
 
@@ -507,7 +529,11 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 	if (!verify_type_load_error (ctx, method->klass))
 		return NULL;
 
-	//TODO verify if the method can be inflated in the current context
+	if (method->is_inflated && !mono_method_is_valid_generic_instantiation (method)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_UNVERIFIABLE_IL);
+		return NULL;
+	}
+
 	return method;
 }
 
