@@ -160,6 +160,9 @@ get_stack_type (MonoType *type);
 
 static gboolean
 mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
+
+static gboolean
+mono_class_is_valid_generic_instantiation (MonoClass *klass);
 //////////////////////////////////////////////////////////////////
 
 
@@ -319,6 +322,136 @@ mono_method_is_constructor (MonoMethod *method)
 	return ((method->flags & CTOR_REQUIRED_FLAGS) == CTOR_REQUIRED_FLAGS &&
 			!(method->flags & CTOR_INVALID_FLAGS) &&
 			!strcmp (".ctor", method->name));
+}
+
+static gboolean
+mono_class_has_default_constructor (MonoClass *klass)
+{
+	MonoMethod *method;
+	int i;
+
+	mono_class_setup_methods (klass);
+
+	for (i = 0; i < klass->method.count; ++i) {
+		method = klass->methods [i];
+		if (mono_method_is_constructor (method) &&
+			mono_method_signature (method)->param_count == 0 &&
+			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
+mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *interface)
+{
+	int i;
+	if (candidate == interface)
+		return TRUE;
+	for (i = 0; i < candidate->interface_count; ++i) {
+		if (candidate->interfaces [i] == interface || mono_class_interface_implements_interface (candidate->interfaces [i], interface))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/*
+ * Test if @candidate is a subtype of @target using the minimal possible information
+ * TODO move the code for non finished TypeBuilders to here.
+ */
+static gboolean
+mono_class_is_constraint_compatible (MonoClass *candidate, MonoClass *target)
+{
+	if (candidate == target)
+		return TRUE;
+	if (target == mono_defaults.object_class)
+			return TRUE;
+
+	//setup_supertypes don't mono_class_init anything
+	mono_class_setup_supertypes (candidate);
+	mono_class_setup_supertypes (target);
+
+	if (mono_class_has_parent (candidate, target))
+		return TRUE;
+
+	//if target is not a supertype it must be an interface
+	if (!MONO_CLASS_IS_INTERFACE (target))
+			return FALSE;
+
+	if (candidate->image->dynamic && !candidate->wastypebuilder) {
+		MonoReflectionTypeBuilder *tb = candidate->reflection_info;
+		int j;
+		if (tb->interfaces) {
+			for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
+				MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
+				MonoClass *ifaceClass = mono_class_from_mono_type (iface->type);
+				if (mono_class_is_constraint_compatible (ifaceClass, target)) {
+					return TRUE;
+				}
+			}
+		}
+		return FALSE;
+	}
+	return mono_class_interface_implements_interface (candidate, target);
+}
+
+static gboolean
+mono_class_is_valid_generic_instantiation (MonoClass *klass)
+{
+	MonoGenericClass *gklass = klass->generic_class;
+	MonoGenericInst *ginst = gklass->context.class_inst;
+	MonoGenericContainer *gc = gklass->container_class->generic_container;
+	int i;
+
+	if (ginst->type_argc != gc->type_argc)
+		return FALSE;
+
+	for (i = 0; i < gc->type_argc; ++i) {
+		MonoGenericParam *param = &gc->type_params [i];
+		MonoClass *paramClass;
+		MonoClass **constraints;
+
+		if (!param->constraints && !(param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
+			continue;
+		if (ginst->type_argv [i]->type == MONO_TYPE_VAR || ginst->type_argv [i]->type == MONO_TYPE_MVAR)
+			continue; //it's not our job to validate type variables
+
+		paramClass = mono_class_from_mono_type (ginst->type_argv [i]);
+
+		if (paramClass->exception_type != MONO_EXCEPTION_NONE)
+			return FALSE;
+
+		/*it's not safe to call mono_class_init from here*/
+		if (paramClass->generic_class && !paramClass->inited) {
+			if (!mono_class_is_valid_generic_instantiation (paramClass))
+				return FALSE;
+		}
+
+		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && (!paramClass->valuetype || mono_class_is_nullable (paramClass)))
+			return FALSE;
+
+		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && paramClass->valuetype)
+			return FALSE;
+
+		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !paramClass->valuetype && !mono_class_has_default_constructor (paramClass))
+			return FALSE;
+
+		if (!param->constraints)
+			continue;
+
+		for (constraints = param->constraints; *constraints; ++constraints) {
+			MonoClass *ctr = *constraints;
+			MonoType *inflated;
+
+			inflated = mono_class_inflate_generic_type (&ctr->byval_arg, &gklass->context);
+			ctr = mono_class_from_mono_type (inflated);
+			mono_metadata_free_type (inflated);
+
+			if (!mono_class_is_constraint_compatible (paramClass, ctr))
+				return FALSE;
+		}
+	}
+	return TRUE;
 }
 
 static gboolean
@@ -5220,9 +5353,8 @@ mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visi
 			| (skip_visibility ? MONO_VERIFY_SKIP_VISIBILITY : 0));
 }
 
-
-gboolean
-mono_verifier_verify_class (MonoClass *class)
+static gboolean
+verify_class_for_overlapping_reference_fields (MonoClass *class)
 {
 	int i, j, align;
 	if (!(class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT || !class->has_references)
@@ -5245,5 +5377,25 @@ mono_verifier_verify_class (MonoClass *class)
 				return FALSE;
 		}
 	}
+	return TRUE;
+}
+
+/*
+ * Check if the class is verifiable.
+ * 
+ * Right now there are no conditions that make a class a valid but not verifiable. Both overlapping reference
+ * field and invalid generic instantiation are fatal errors.
+ * 
+ * This method must be safe to be called from mono_class_init and all code must be carefull about that.
+ * 
+ */
+gboolean
+mono_verifier_verify_class (MonoClass *class)
+{
+	if (!verify_class_for_overlapping_reference_fields (class))
+		return FALSE;
+	
+	if (class->generic_class && !mono_class_is_valid_generic_instantiation (class))
+		return FALSE;
 	return TRUE;
 }
