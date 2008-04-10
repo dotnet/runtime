@@ -4748,3 +4748,35 @@ do
 	./make_overlapped_test.sh int_bad_aligned_$I valid 0 4 $I
 done
 
+
+#invalid opcodes
+for I in {166..178}
+do
+	./make_bad_op_test.sh bad_op_$I invalid $I
+done
+
+
+for I in {187..193}
+do
+	./make_bad_op_test.sh bad_op_$I invalid $I
+done
+
+for I in {196..207}
+do
+	./make_bad_op_test.sh bad_op_$I invalid $I
+done
+
+for I in {225..253}
+do
+	./make_bad_op_test.sh bad_op_$I invalid $I
+done
+
+./make_bad_op_test.sh bad_op_xff invalid 255
+
+
+for I in {35..255}
+do
+	./make_bad_op_test.sh bad_op_with_prefix_$I invalid 0xFE $I
+done
+
+
