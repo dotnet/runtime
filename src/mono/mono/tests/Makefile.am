@@ -257,7 +257,9 @@ BASE_TEST_CS_SRC=		\
 	shared-generic-synchronized.2.cs	\
 	generic-inlining.2.cs	\
 	generic-initobj.2.cs	\
-	generic-box.2.cs	\
+	generic-delegate.2.cs	\
+	generic-sizeof.2.cs	\
+	generic-virtual.2.cs	\
 	recursive-generics.2.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
@@ -348,7 +350,14 @@ TEST_IL_SRC=			\
 	resolve_method_bug.2.il \
 	resolve_field_bug.2.il \
 	resolve_type_bug.2.il	\
-	generics-sharing-other-exc.2.il
+	generics-sharing-other-exc.2.il	\
+	generic-sizeof.2.il	\
+	generic-ldobj.2.il	\
+	generic-mkrefany.2.il	\
+	generic-ldtoken.2.il	\
+	generic-ldtoken-method.2.il	\
+	generic-ldtoken-field.2.il	\
+	generic-tailcall.2.il
 
 #	bug-318677.il
 
@@ -640,15 +649,42 @@ test-coreclr-security : coreclr-security.exe
 	$(RUNTIME21) --security=core-clr-test coreclr-security.exe
 endif
 
+generic-unboxing.2.dll : generic-unboxing.2.il
+	$(ILASM) /dll /output:generic-unboxing.2.dll $(srcdir)/generic-unboxing.2.il
+
+generic-boxing.2.dll : generic-boxing.2.il generic-unboxing.2.dll
+	$(ILASM) /dll /output:generic-boxing.2.dll $(srcdir)/generic-boxing.2.il
+
+generic-unbox.2.exe : generic-unbox.2.cs generic-unboxing.2.dll
+	$(MCS) -r:generic-unboxing.2.dll $(srcdir)/generic-unbox.2.cs
+
+generic-box.2.exe : generic-box.2.cs generic-unboxing.2.dll generic-boxing.2.dll
+	$(MCS) -r:generic-unboxing.2.dll,generic-boxing.2.dll $(srcdir)/generic-box.2.cs
+
 test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		shared-generic-synchronized.2.exe generic-initobj.2.exe		\
-		generics-sharing-other-exc.2.exe generic-box.2.exe
-	$(RUNTIME) -O=gshared generics-sharing.2.exe
-	$(RUNTIME) -O=gshared,-inline shared-generic-methods.2.exe
-	$(RUNTIME) -O=gshared shared-generic-synchronized.2.exe
-	$(RUNTIME) -O=gshared,-inline generic-initobj.2.exe
-	$(RUNTIME) -O=gshared,-inline generic-box.2.exe
-	$(RUNTIME) -O=gshared,-inline generics-sharing-other-exc.2.exe
+		generics-sharing-other-exc.2.exe generic-box.2.exe		\
+		generic-unbox.2.exe generic-delegate.2.exe generic-sizeof.2.exe	\
+		generic-ldobj.2.exe generic-mkrefany.2.exe			\
+		generic-ldtoken.2.exe			\
+		generic-ldtoken-method.2.exe  generic-ldtoken-field.2.exe	\
+		generic-virtual.2.exe generic-tailcall.2.exe
+	$(RUNTIME) -O=gshared,-inline        generics-sharing.2.exe
+	$(RUNTIME) -O=gshared,-inline        shared-generic-methods.2.exe
+	$(RUNTIME) -O=gshared,-inline        shared-generic-synchronized.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-initobj.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-box.2.exe
+	$(RUNTIME) -O=gshared,-inline        generics-sharing-other-exc.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-unbox.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-delegate.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-sizeof.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-ldobj.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-mkrefany.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-ldtoken.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-ldtoken-method.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-ldtoken-field.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-virtual.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-tailcall.2.exe
 
 EXTRA_DIST += async-exceptions.cs
 async-exceptions.exe : async-exceptions.cs

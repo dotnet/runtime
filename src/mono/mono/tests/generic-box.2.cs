@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using UnboxTest;
+using BoxTest;
 
 public class ClassA {}
 
@@ -55,6 +57,16 @@ public class main {
 		if (gca.boxNullableStruct (null) != null)
 			return 1;
 		*/
+
+		UnboxerStruct<ClassA> us;
+		Boxer<ClassA> b = new Boxer<ClassA> ();
+
+		us.field = 123;
+
+		if (((UnboxerStruct<ClassA>?)b.boxNullable (us)).Value.field != 123)
+			return 1;
+		if (b.boxNullable (null) != null)
+			return 1;
 
 		return 0;
 	}
