@@ -2023,15 +2023,16 @@ mono_add_varcopy_to_end (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest
  * bb->in_stack, if the basic block is before or after the joint point).
  * If the stack merge fails at a join point, cfg->unverifiable is set.
  */
-static int
-handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int count) {
+static void
+handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int count)
+{
 	int i, bindex;
 	MonoBasicBlock *outb;
 	MonoInst *inst, **locals;
 	gboolean found;
 
 	if (!count)
-		return 0;
+		return;
 	if (cfg->verbose_level > 3)
 		g_print ("%d item(s) on exit from B%d\n", count, bb->block_num);
 
@@ -2086,8 +2087,10 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (outb->flags & BB_EXCEPTION_HANDLER)
 			continue;
 		if (outb->in_scount) {
-			if (outb->in_scount != bb->out_scount)
-				G_BREAKPOINT ();
+			if (outb->in_scount != bb->out_scount) {
+				cfg->unverifiable = TRUE;
+				return;
+			}
 			continue; /* check they are the same locals */
 		}
 		outb->in_scount = count;
@@ -2142,8 +2145,6 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 			bindex ++;
 		}
 	}
-	
-	return 0;
 }
 
 static int
