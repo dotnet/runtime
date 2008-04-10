@@ -351,7 +351,6 @@ TEST_IL_SRC=			\
 	resolve_field_bug.2.il \
 	resolve_type_bug.2.il	\
 	generics-sharing-other-exc.2.il	\
-	generic-sizeof.2.il	\
 	generic-ldobj.2.il	\
 	generic-mkrefany.2.il	\
 	generic-ldtoken.2.il	\
