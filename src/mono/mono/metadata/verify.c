@@ -4649,6 +4649,8 @@ mono_method_verify (MonoMethod *method, int level)
 			token = read32 (ip + 1);
 			if (in_any_block (ctx.header, ip_offset))
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("jmp cannot escape exception blocks at 0x%04x", ip_offset));
+
+			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Intruction jmp is not verifiable at 0x%04x", ctx.ip_offset));
 			/*
 			 * FIXME: check signature, retval, arguments etc.
 			 */
@@ -4918,22 +4920,6 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 5;
 			break;
 
-		case CEE_UNUSED5:
-		case CEE_UNUSED6:
-		case CEE_UNUSED7:
-		case CEE_UNUSED8:
-		case CEE_UNUSED9:
-		case CEE_UNUSED10:
-		case CEE_UNUSED11:
-		case CEE_UNUSED12:
-		case CEE_UNUSED13:
-		case CEE_UNUSED14:
-		case CEE_UNUSED15:
-		case CEE_UNUSED16:
-		case CEE_UNUSED17:
-			++ip; /* warn, error ? */
-			break;
-
 		case CEE_CONV_OVF_I1:
 		case CEE_CONV_OVF_U1:
 		case CEE_CONV_OVF_I2:
@@ -4956,15 +4942,6 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			break;
 
-		case CEE_UNUSED50:
-		case CEE_UNUSED18:
-		case CEE_UNUSED19:
-		case CEE_UNUSED20:
-		case CEE_UNUSED21:
-		case CEE_UNUSED22:
-		case CEE_UNUSED23:
-			++ip; /* warn, error ? */
-			break;
 		case CEE_REFANYVAL:
 			do_refanyval (&ctx, read32 (ip + 1));
 			ip += 5;
@@ -4975,27 +4952,11 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			break;
 
-		case CEE_UNUSED24:
-		case CEE_UNUSED25:
-			++ip; /* warn, error ? */
-			break;
-
 		case CEE_MKREFANY:
 			do_mkrefany (&ctx,  read32 (ip + 1));
 			ip += 5;
 			break;
 
-		case CEE_UNUSED59:
-		case CEE_UNUSED60:
-		case CEE_UNUSED61:
-		case CEE_UNUSED62:
-		case CEE_UNUSED63:
-		case CEE_UNUSED64:
-		case CEE_UNUSED65:
-		case CEE_UNUSED66:
-		case CEE_UNUSED67:
-			++ip; /* warn, error ? */
-			break;
 		case CEE_LDTOKEN:
 			do_load_token (&ctx, read32 (ip + 1));
 			ip += 5;
@@ -5020,41 +4981,7 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 2;
 			start = 1;
 			break;
-			
-		case CEE_UNUSED26:
-		case CEE_UNUSED27:
-		case CEE_UNUSED28:
-		case CEE_UNUSED29:
-		case CEE_UNUSED30:
-		case CEE_UNUSED31:
-		case CEE_UNUSED32:
-		case CEE_UNUSED33:
-		case CEE_UNUSED34:
-		case CEE_UNUSED35:
-		case CEE_UNUSED36:
-		case CEE_UNUSED37:
-		case CEE_UNUSED38:
-		case CEE_UNUSED39:
-		case CEE_UNUSED40:
-		case CEE_UNUSED41:
-		case CEE_UNUSED42:
-		case CEE_UNUSED43:
-		case CEE_UNUSED44:
-		case CEE_UNUSED45:
-		case CEE_UNUSED46:
-		case CEE_UNUSED47:
-		case CEE_UNUSED48:
-			++ip;
-			break;
-		case CEE_PREFIX7:
-		case CEE_PREFIX6:
-		case CEE_PREFIX5:
-		case CEE_PREFIX4:
-		case CEE_PREFIX3:
-		case CEE_PREFIX2:
-		case CEE_PREFIXREF:
-			++ip;
-			break;
+
 		case CEE_PREFIX1:
 			++ip;
 			switch (*ip) {
@@ -5199,13 +5126,15 @@ mono_method_verify (MonoMethod *method, int level)
 				++ip;
 				break;
 
-			case CEE_UNUSED53:
-			case CEE_UNUSED54:
-			case CEE_UNUSED55:
-			case CEE_UNUSED70:
+			default:
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction FE %x at 0x%04x", *ip, ctx.ip_offset));
 				++ip;
-				break;
 			}
+			break;
+
+		default:
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction %x at 0x%04x", *ip, ctx.ip_offset));
+			++ip;
 		}
 
 		/*TODO we can fast detect a forward branch or exception block targeting code after prefix, we should fail fast*/
