@@ -399,6 +399,7 @@ struct _MonoProfiler {
 	
 	MonoProfileFlags flags;
 	char *file_name;
+	char *file_name_suffix;
 	FILE_HANDLE_TYPE file;
 	
 	guint64 start_time;
@@ -3140,6 +3141,9 @@ profiler_shutdown (MonoProfiler *prof)
 	CLOSE_FILE();
 	UNLOCK_PROFILER ();
 	g_free (profiler->file_name);
+	if (profiler->file_name_suffix != NULL) {
+		g_free (profiler->file_name_suffix);
+	}
 	
 	method_id_mapping_destroy (profiler->methods);
 	class_id_mapping_destroy (profiler->classes);
@@ -3192,6 +3196,7 @@ setup_user_options (const char *arguments) {
 	gchar **arguments_array, **current_argument;
 	
 	profiler->file_name = NULL;
+	profiler->file_name_suffix = NULL;
 	profiler->per_thread_buffer_size = 10000;
 	profiler->statistical_buffer_size = 10000;
 	profiler->write_buffer_size = 1024;
@@ -3241,6 +3246,10 @@ setup_user_options (const char *arguments) {
 			} else if (! (strncmp (argument, "output", equals_position) && strncmp (argument, "out", equals_position) && strncmp (argument, "o", equals_position) && strncmp (argument, "O", equals_position))) {
 				if (strlen (equals + 1) > 0) {
 					profiler->file_name = g_strdup (equals + 1);
+				}
+			} else if (! (strncmp (argument, "output-suffix", equals_position) && strncmp (argument, "suffix", equals_position) && strncmp (argument, "os", equals_position) && strncmp (argument, "OS", equals_position))) {
+				if (strlen (equals + 1) > 0) {
+					profiler->file_name_suffix = g_strdup (equals + 1);
 				}
 			} else if (! (strncmp (argument, "gc-commands", equals_position) && strncmp (argument, "gc-c", equals_position) && strncmp (argument, "gcc", equals_position))) {
 				if (strlen (equals + 1) > 0) {
@@ -3323,7 +3332,11 @@ setup_user_options (const char *arguments) {
 				*cursor = 0;
 			}
 			
-			profiler->file_name = g_strdup_printf ("%s.mprof", name_start);
+			if (profiler->file_name_suffix == NULL) {
+				profiler->file_name = g_strdup_printf ("%s.mprof", name_start);
+			} else {
+				profiler->file_name = g_strdup_printf ("%s-%s.mprof", name_start, profiler->file_name_suffix);
+			}
 			g_free (name_buffer);
 		} else {
 			profiler->file_name = g_strdup_printf ("%s.mprof", "profiler-log");
