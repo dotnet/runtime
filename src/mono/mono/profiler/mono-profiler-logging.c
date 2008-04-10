@@ -7,7 +7,6 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/io-layer/atomic.h>
-#include <signal.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -3058,12 +3057,7 @@ profiler_heap_scan (ProfilerHeapShotHeapBuffers *heap, ProfilerHeapShotWriteJob 
 			
 			if (current_slot == current_buffer->end_slot) {
 				current_buffer = current_buffer->next;
-				//g_assert (current_buffer != NULL);
-				if (current_buffer == NULL) {
-					printf ("KO\n");
-					G_BREAKPOINT ();
-					g_assert_not_reached ();
-				}
+				g_assert (current_buffer != NULL);
 				current_slot = current_buffer->start_slot;
 			}
 		}
