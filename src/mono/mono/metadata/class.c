@@ -657,12 +657,35 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	 * The reason for this hack is to fix the behavior of inflating generic methods that come from a MethodBuilder.
 	 * What happens is that instantiating a generic MethodBuilder with its own arguments should create a diferent object.
 	 * This is opposite to the way non-SRE MethodInfos behave.
+	 * 
+	 * This happens, for example, when we want to emit a recursive generic method. Given the following C# code:
+	 * 
+	 * void Example<T> () {
+	 *    Example<T> ();
+	 * }
+	 *  
+	 * In Example, the method token must be encoded as: "void Example<!!0>()"
+	 * 
+	 * The reference to the first generic argument, "!!0", must be explicit otherwise it won't be inflated
+	 * properly. To get that we need to inflate the MethodBuilder with its own arguments.
+	 * 
+	 * On the other hand, inflating a non-SRE generic method with its own arguments should
+	 * return itself. For example:
+	 * 
+	 * MethodInfo m = ... //m is a generic method definition
+	 * MethodInfo res = m.MakeGenericMethod (m.GetGenericArguments ());
+	 * res == m
 	 *
-	 * FIXME: express this better, somehow!
+	 * To allow such scenarios we must allow inflation of MethodBuilder to happen in a diferent way than
+	 * what happens with regular methods.
+	 * 
+	 * There is one last touch to this madness, once a TypeBuilder is finished, IOW CreateType() is called,
+	 * everything should behave like a regular type or method.
+	 * 
 	 */
-	is_mb_open = method->generic_container &&
-		method->klass->image->dynamic && !method->klass->wastypebuilder &&
-		context->method_inst == method->generic_container->context.method_inst;
+	is_mb_open = method->generic_container && /* This is a generic method definition */
+		method->klass->image->dynamic && !method->klass->wastypebuilder && /* that is a MethodBuilder from an unfinished TypeBuilder */
+		context->method_inst == method->generic_container->context.method_inst; /* and it's been instantiated with its own arguments.  */
 
 	mono_stats.inflated_method_count++;
 	iresult = g_new0 (MonoMethodInflated, 1);
