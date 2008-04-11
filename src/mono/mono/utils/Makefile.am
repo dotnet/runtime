@@ -14,6 +14,8 @@ libmonoutils_la_SOURCES = \
 	mono-sha1.c	\
 	mono-logger.c	\
 	mono-codeman.c	\
+	dlmalloc.h      \
+	dlmalloc.c      \
 	mono-counters.c	\
 	mono-compiler.h	\
 	mono-dl.c	\

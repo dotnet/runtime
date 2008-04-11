@@ -58,6 +58,7 @@
 #include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/verify.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -148,6 +149,11 @@ static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 
 guint32 mono_jit_tls_id = -1;
+
+#ifdef HAVE_KW_THREAD
+static __thread gpointer mono_jit_tls MONO_TLS_FAST;
+#endif
+
 MonoTraceSpec *mono_jit_trace_calls = NULL;
 gboolean mono_break_on_exc = FALSE;
 #ifndef DISABLE_AOT
@@ -186,9 +192,6 @@ mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
 
 /* Whenever to check for pending exceptions in managed-to-native wrappers */
 gboolean check_for_pending_exc = TRUE;
-
-/* Whenever to run the verifier on all methods */
-gboolean mono_verify_all = FALSE;
 
 gboolean
 mono_running_on_valgrind (void)
@@ -2020,15 +2023,16 @@ mono_add_varcopy_to_end (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest
  * bb->in_stack, if the basic block is before or after the joint point).
  * If the stack merge fails at a join point, cfg->unverifiable is set.
  */
-static int
-handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int count) {
+static void
+handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int count)
+{
 	int i, bindex;
 	MonoBasicBlock *outb;
 	MonoInst *inst, **locals;
 	gboolean found;
 
 	if (!count)
-		return 0;
+		return;
 	if (cfg->verbose_level > 3)
 		g_print ("%d item(s) on exit from B%d\n", count, bb->block_num);
 
@@ -2083,8 +2087,10 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 		if (outb->flags & BB_EXCEPTION_HANDLER)
 			continue;
 		if (outb->in_scount) {
-			if (outb->in_scount != bb->out_scount)
-				G_BREAKPOINT ();
+			if (outb->in_scount != bb->out_scount) {
+				cfg->unverifiable = TRUE;
+				return;
+			}
 			continue; /* check they are the same locals */
 		}
 		outb->in_scount = count;
@@ -2139,8 +2145,6 @@ handle_stack_args (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **sp, int coun
 			bindex ++;
 		}
 	}
-	
-	return 0;
 }
 
 static int
@@ -4638,43 +4642,13 @@ get_runtime_generic_context_method (MonoCompile *cfg, MonoMethod *method, MonoBa
 static gboolean
 generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
 {
-	MonoType *type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, &klass->byval_arg);
+	MonoType *type;
 
+	if (cfg->generic_sharing_context)
+		type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, &klass->byval_arg);
+	else
+		type = &klass->byval_arg;
 	return MONO_TYPE_IS_REFERENCE (type);
-}
-
-static MiniVerifierMode verifier_mode = MINI_VERIFIER_MODE_OFF;
-
-void
-mini_verifier_set_mode (MiniVerifierMode mode)
-{
-       verifier_mode = mode;
-}
-
-/*
- * Return TRUE if method don't need to be verifiable.
- * TODO check appdomain security flags 
- */
-static gboolean
-check_method_full_trust (MonoMethod *method)
-{
-	if (mono_verify_all)
-		return verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
-	else
-		return method->klass->image->assembly->in_gac || method->klass->image == mono_defaults.corlib || verifier_mode < MINI_VERIFIER_MODE_VERIFIABLE;
-}
-
-/*
- * Return TRUE if method should be verifier
- * FIXME we should be able to check gac'ed code for validity
- */
-static gboolean
-check_for_method_verify (MonoMethod *method)
-{
-	if (mono_verify_all)
-		return method->wrapper_type == MONO_WRAPPER_NONE;
-	else
-		return (verifier_mode > MINI_VERIFIER_MODE_OFF) && !method->klass->image->assembly->in_gac && method->klass->image != mono_defaults.corlib && method->wrapper_type == MONO_WRAPPER_NONE;
 }
 
 /*
@@ -4688,16 +4662,13 @@ static gboolean
 mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 {
 	GSList *tmp, *res;
-	gboolean is_fulltrust = check_method_full_trust (method);
+	gboolean is_fulltrust = mono_verifier_is_method_full_trust (method);
 	MonoLoaderError *error;
 
-	if (!check_for_method_verify (method))
+	if (!mono_verifier_is_enabled_for_method (method))
 		return FALSE;
 
-	res = mono_method_verify (method, 
-		(verifier_mode != MINI_VERIFIER_MODE_STRICT ? MONO_VERIFY_NON_STRICT: 0)
-		| (!is_fulltrust ? MONO_VERIFY_FAIL_FAST : 0)
-		| (cfg->skip_visibility ? MONO_VERIFY_SKIP_VISIBILITY : 0));
+	res = mono_method_verify_with_current_settings (method, cfg->skip_visibility);
 
 	if ((error = mono_loader_get_last_error ())) {
 		cfg->exception_type = error->exception_type;
@@ -4845,14 +4816,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoBasicBlock *try_bb;
 			MonoExceptionClause *clause = &header->clauses [i];
 
-			if ((method->flags & METHOD_ATTRIBUTE_STATIC) &&
-					clause->flags != MONO_EXCEPTION_CLAUSE_FILTER &&
-					clause->data.catch_class &&
-					cfg->generic_sharing_context &&
-					mono_class_check_context_used (clause->data.catch_class)) {
-				mono_get_rgctx_var (cfg);
-			}
-
 			GET_BBLOCK (cfg, try_bb, ip + clause->try_offset);
 			try_bb->real_offset = clause->try_offset;
 			GET_BBLOCK (cfg, tblock, ip + clause->handler_offset);
@@ -4908,6 +4871,47 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
 					MONO_INST_NEW (cfg, ins, OP_START_HANDLER);
 					MONO_ADD_INS (tblock, ins);
+				}
+			}
+
+			if (clause->flags != MONO_EXCEPTION_CLAUSE_FILTER &&
+					clause->data.catch_class &&
+					cfg->generic_sharing_context &&
+					mono_class_check_context_used (clause->data.catch_class)) {
+				/*
+				 * In shared generic code with catch
+				 * clauses containing type variables
+				 * the exception handling code has to
+				 * be able to get to the rgctx.
+				 * Therefore we have to make sure that
+				 * the rgctx argument (for static
+				 * methods) or the "this" argument
+				 * (for non-static methods) are live.
+				 */
+				if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+					mono_get_rgctx_var (cfg);
+				} else {
+					MonoInst *this, *dummy_use;
+					MonoType *this_type;
+
+					if (method->klass->valuetype)
+						this_type = &method->klass->this_arg;
+					else
+						this_type = &method->klass->byval_arg;
+
+					if (arg_array [0]->opcode == OP_ICONST) {
+						this = arg_array [0];
+					} else {
+						this = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));
+						this->ssa_op = MONO_SSA_LOAD;
+						this->inst_i0 = arg_array [0];
+						this->opcode = mini_type_to_ldind ((cfg), this->inst_i0->inst_vtype);
+						type_to_eval_stack_type ((cfg), this_type, this);
+						this->klass = this->inst_i0->klass;
+					}
+
+					NEW_DUMMY_USE (cfg, dummy_use, this);
+					MONO_ADD_INS (tblock, dummy_use);
 				}
 			}
 		}
@@ -6448,7 +6452,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			sp -= 2;
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				MonoInst *store, *load;
 				MONO_INST_NEW (cfg, load, CEE_LDIND_REF);
 				load->cil_code = ip;
@@ -6497,7 +6501,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				MONO_INST_NEW (cfg, ins, CEE_LDIND_REF);
 				ins->cil_code = ip;
 				ins->inst_i0 = sp [0];
@@ -6956,7 +6960,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context && mono_class_check_context_used (klass))
 				GENERIC_SHARING_FAILURE (CEE_UNBOX_ANY);
 
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				/* CASTCLASS */
 				if (klass->marshalbyref || klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 					MonoMethod *mono_castclass;
@@ -7142,6 +7146,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->klass = klass;
 				ins->inst_newa_class = klass;
+				ins->backend.record_cast_details = debug_options.better_cast_details;
 				ins->cil_code = ip;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 5);
 				ip += 5;
@@ -7705,8 +7710,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					generic_shared = TRUE;
 			}
 
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg) ||
-					(generic_shared && generic_class_is_reference_type (cfg, klass))) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				*sp++ = val;
 				ip += 5;
 				break;
@@ -8046,7 +8050,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
-			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			if (generic_class_is_reference_type (cfg, klass)) {
 				/* storing a NULL doesn't need any of the complex checks in stelemref */
 				if (sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL) {
 					MonoInst *load;
@@ -8964,9 +8968,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				inline_costs += 100000;
 				ip += 2;
 				break;
-			case CEE_INITOBJ: {
-				gboolean generic_shared = FALSE;
-
+			case CEE_INITOBJ:
 				CHECK_STACK (1);
 				--sp;
 				CHECK_OPSIZE (6);
@@ -8974,14 +8976,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
 
-				if (cfg->generic_sharing_context && mono_class_check_context_used (klass)) {
-					if (generic_class_is_reference_type (cfg, klass))
-						generic_shared = TRUE;
-					else
-						GENERIC_SHARING_FAILURE (CEE_INITOBJ);
-				}
-
-				if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg) || generic_shared) {
+				if (generic_class_is_reference_type (cfg, klass)) {
 					MonoInst *store, *load;
 					NEW_PCONST (cfg, load, NULL);
 					load->cil_code = ip;
@@ -8994,12 +8989,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					store->inst_i0 = sp [0];
 					store->inst_i1 = load;
 				} else {
+					GENERIC_SHARING_FAILURE (CEE_INITOBJ);
 					handle_initobj (cfg, bblock, *sp, NULL, klass, stack_start, sp);
 				}
 				ip += 6;
 				inline_costs += 1;
 				break;
- 			}
 			case CEE_CONSTRAINED_:
 				/* FIXME: implement */
 				CHECK_OPSIZE (6);
@@ -9947,6 +9942,18 @@ mono_get_jit_tls_key (void)
 }
 
 gint32
+mono_get_jit_tls_offset (void)
+{
+#ifdef HAVE_KW_THREAD
+	int offset;
+	MONO_THREAD_VAR_OFFSET (mono_jit_tls, offset);
+	return offset;
+#else
+	return -1;
+#endif
+}
+
+gint32
 mono_get_lmf_tls_offset (void)
 {
 #if defined(HAVE_KW_THREAD) && defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
@@ -10050,6 +10057,10 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	TlsSetValue (mono_jit_tls_id, jit_tls);
 
+#ifdef HAVE_KW_THREAD
+	mono_jit_tls = jit_tls;
+#endif
+
 	jit_tls->abort_func = abort_func;
 	jit_tls->end_of_stack = stack_start;
 
@@ -10130,6 +10141,30 @@ mini_thread_cleanup (MonoThread *thread)
 		thread->jit_data = NULL;
 		TlsSetValue (mono_jit_tls_id, NULL);
 	}
+}
+
+static MonoInst*
+mono_create_tls_get (MonoCompile *cfg, int offset)
+{
+#ifdef MONO_ARCH_HAVE_TLS_GET
+	MonoInst* ins;
+	
+	if (offset == -1)
+		return NULL;
+	
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+	ins->dreg = mono_regstate_next_int (cfg->rs);
+	ins->inst_offset = offset;
+	return ins;
+#else
+	return NULL;
+#endif
+}
+
+MonoInst*
+mono_get_jit_tls_intrinsic (MonoCompile *cfg)
+{
+	return mono_create_tls_get (cfg, mono_get_jit_tls_offset ());
 }
 
 void
@@ -10303,7 +10338,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			target = code;
 		} else {
 			/* get the trampoline to the method from the domain */
-			if (method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
+			if (method && method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
 				target = mono_ldftn_nosync (patch_info->data.method);
 			else
 				target = mono_create_jit_trampoline (patch_info->data.method);
@@ -13280,6 +13315,12 @@ mini_parse_debug_options (void)
 			exit (1);
 		}
 	}
+}
+
+MonoDebugOptions *
+mini_get_debug_options (void)
+{
+	return &debug_options;
 }
 
 MonoDomain *

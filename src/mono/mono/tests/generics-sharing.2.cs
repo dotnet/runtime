@@ -46,6 +46,8 @@ public class GenBi<S,T> {
 }
 
 public struct GenStruct<T> {
+	public static int staticField;
+
 	public int field;
 	public int dummy1;
 	public int dummy2;
@@ -67,6 +69,30 @@ public interface IGen<T> {
 	long longIMethod (long x);
 	float floatIMethod ();
 	GenStruct<T> valueIMethod (int x);
+}
+
+public class IGenImpl<T> : IGen<T> {
+	public int field;
+
+	public T[] iMethod () {
+		return new T[3];
+	}
+
+	public void voidIMethod (int x) {
+		field = x;
+	}
+
+	public long longIMethod (long x) {
+		return x + 1;
+	}
+
+	public float floatIMethod () {
+		return 1.0f;
+	}
+
+	public GenStruct<T> valueIMethod (int x) {
+		return new GenStruct<T> (x);
+	}
 }
 
 public class GenA<T> {
@@ -92,6 +118,10 @@ public class GenA<T> {
 
 	public int getNonGenField () {
 		return NonGen.field;
+	}
+
+	public int getGenStructStaticField () {
+		return GenStruct<T>.staticField;
 	}
 
 	public T[] getArr () {
@@ -127,6 +157,10 @@ public class GenA<T> {
 		return (T)obj;
 	}
 
+	public GenStruct<T> structCast (Object obj) {
+		return (GenStruct<T>)obj;
+	}
+
 	public Type ldtokenT () {
 		return typeof (T);
 	}
@@ -141,6 +175,14 @@ public class GenA<T> {
 
 	public Type ldtokenGenB () {
 		return typeof (GenB<>);
+	}
+
+	public GenStruct<T>? makeNullable (Object obj) {
+		return (GenStruct<T>?)obj;
+	}
+
+	public object unmakeNullable (GenStruct<T>? obj) {
+		return (object)obj;
 	}
 
 	public void except () {
@@ -211,6 +253,32 @@ public class GenA<T> {
 
 	public static long staticBiLongCaller (long x) {
 		return GenBi<int, T>.staticLongMethod (x);
+	}
+
+	public int structCaller (int x) {
+		GenStruct<GenA<T>> gs = new GenStruct<GenA<T>> (123);
+
+		return gs.method (x);
+	}
+
+	public T[] callInterface (IGen<T> ig) {
+		return ig.iMethod ();
+	}
+
+	public void callVoidInterface (IGen<T> ig, int x) {
+		ig.voidIMethod (x);
+	}
+
+	public long callLongInterface (IGen<T> ig, long x) {
+		return ig.longIMethod (x);
+	}
+
+	public float callFloatInterface (IGen<T> ig) {
+		return ig.floatIMethod ();
+	}
+
+	public GenStruct<T> callValueInterface (IGen<T> ig, int x) {
+		return ig.valueIMethod (x);
 	}
 }
 
@@ -347,20 +415,34 @@ public class RGCTXTestSubASubSub<T> : RGCTXTestSubASub {
 }
 
 public class main {
+	delegate void ActionDelegate ();
+
 	static bool haveError = false;
 
-	public static void error (string message) {
+	static void error (string message) {
 		haveError = true;
 		Console.WriteLine (message);
 	}
 
-	public static void typeCheck (String method, Object obj, Type t) {
+	static void typeCheck (String method, Object obj, Type t) {
 		if (obj.GetType () != t)
 			error ("object from " + method + " should have type " + t.ToString () + " but has type " + obj.GetType ().ToString ());
 	}
 
-	public static int callStaticMethod<T> () {
+	static int callStaticMethod<T> () {
 		return GenA<T>.staticMethod ();
+	}
+
+	static void checkException<T> (String method, ActionDelegate action) where T : Exception {
+		try {
+			try {
+				action ();
+			} catch (T) {
+				return;
+			}
+		} catch (Exception exc) {
+			error ("method " + method + " should have thrown " + typeof (T).ToString () + " but did throw " + exc);
+		}
 	}
 
 	public static void work<T> (T obj, bool mustCatch) {
@@ -382,6 +464,11 @@ public class main {
 		if (ga.getNonGenField () != 123)
 			error ("getNonGenField");
 
+		GenStruct<T>.staticField = 321;
+		if (ga.getGenStructStaticField () != 321)
+			error ("getGenStructStaticField");
+		GenStruct<T>.staticField = -1;
+
 		ga.hash (obj);
 
 		if (!comp.Equals (ga.ident (obj), obj))
@@ -389,6 +476,22 @@ public class main {
 
 		if (!comp.Equals (ga.cast (obj), obj))
 			error ("cast");
+		if (typeof (T).IsValueType) {
+			checkException<NullReferenceException> ("cast null value", delegate { ga.cast (null); });
+		} else {
+			if (ga.cast (null) != null)
+				error ("cast null");
+		}
+
+		GenStruct<T> genstructt = new GenStruct<T> (453);
+		if (ga.structCast ((object)genstructt).field != 453)
+			error ("structCast");
+		checkException<NullReferenceException> ("structCast null", delegate { ga.structCast (null); });
+
+		if (ga.makeNullable ((object)genstructt).Value.field != 453)
+			error ("makeNullable");
+		if (ga.makeNullable (null) != null)
+			error ("makeNullable null");
 
 		if (ga.ldtokenT () != typeof (T))
 			error ("ldtokenT");
@@ -443,28 +546,28 @@ public class main {
 		if (GenA<T>.staticFloatMethod () != 1.0)
 			error ("staticFloatMethod");
 
+		if (ga.structCaller (234) != 357)
+			error ("structCaller");
+
+		IGenImpl<T> igi = new IGenImpl<T> ();
+
+		typeCheck ("callInterface", ga.callInterface (igi), typeof (T[]));
+		if (ga.callLongInterface (igi, 345) != 346)
+			error ("callLongInterface");
+		GenStruct<T> gst = ga.callValueInterface (igi, 543);
+		if (gst.field != 543)
+			error ("callValueInterface");
+		ga.callVoidInterface (igi, 654);
+		if (igi.field != 654)
+			error ("callVoidInterface");
+		if (ga.callFloatInterface (igi) != 1.0f)
+			error ("callFloatInterface");
+
 		new GenADeriv<T> ();
 
 		if (mustCatch) {
-			bool didCatch = false;
-
-			try {
-				ga.except ();
-			} catch (GenExc<ClassA>) {
-				didCatch = true;
-			}
-			if (!didCatch)
-				error ("except");
-
-			didCatch = false;
-
-			try {
-				GenA<T>.staticExcept ();
-			} catch (GenExc<ClassA>) {
-				didCatch = true;
-			}
-			if (!didCatch)
-				error ("staticExcept");
+			checkException<GenExc<ClassA>> ("except", delegate { ga.except (); });
+			checkException<GenExc<ClassA>> ("staticExcept", delegate { GenA<T>.staticExcept (); });
 		} else {
 			ga.except ();
 			GenA<T>.staticExcept ();
@@ -529,10 +632,14 @@ public class main {
 	{
 		work<ClassA> (new ClassA (), false);
 		work<ClassB> (new ClassB (), true);
+		work<ClassB> (new ClassB (), true);
 		work<ClassC> (new ClassC (), true);
 		work<GenA<ClassA>> (new GenA<ClassA> (), true);
 		work<int[]> (new int[3], true);
 		work<int> (123, true);
+		work<int?> (123, true);
+		work<GenStruct<ClassA>?> (new GenStruct<ClassA> (123), true);
+		work<GenStruct<ClassA>?> (null, true);
 
 		StaticTest<ClassA> sa = new StaticTest<ClassA> (1234);
 		StaticTest<ClassB> sb = new StaticTest<ClassB> (2345);

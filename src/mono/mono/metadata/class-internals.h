@@ -300,6 +300,7 @@ struct _MonoClass {
 	union {
 		int class_size; /* size of area for static fields */
 		int element_size; /* for array types */
+		int generic_param_token; /* for generic param types, both var and mvar */
 	} sizes;
 
 	/*

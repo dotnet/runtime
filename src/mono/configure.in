@@ -2130,6 +2130,20 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/browscap.ini],
     cd $depth
 ],[LN_S='$LN_S'])
 
+AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/Browsers/Compat.browser],
+[   depth=../../../../..
+    case $srcdir in
+    [[\\/$]]* | ?:[[\\/]]* ) reldir=$srcdir ;;
+    .) reldir=$depth ;;
+    *) reldir=$depth/$srcdir ;;
+    esac
+    $ac_aux_dir/install-sh -d runtime/etc/mono/2.0/Browsers/
+    cd runtime/etc/mono/2.0/Browsers
+    rm -f Compat.browser
+    $LN_S $reldir/data/net_2_0/Browsers/Compat.browser Compat.browser
+    cd $depth
+],[LN_S='$LN_S'])
+
 AC_OUTPUT([
 Makefile
 mono-uninstalled.pc
@@ -2178,6 +2192,7 @@ docs/Makefile
 data/Makefile
 data/net_1_1/Makefile
 data/net_2_0/Makefile
+data/net_2_0/Browsers/Makefile
 data/mint.pc
 data/mono.pc
 data/mono-cairo.pc

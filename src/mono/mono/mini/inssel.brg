@@ -1352,6 +1352,25 @@ reg: CEE_CASTCLASS (reg) {
 
 	MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, obj_reg, 0, object_is_null);
 
+	if (tree->backend.record_cast_details) {
+		int to_klass_reg = mono_regstate_next_int (s->rs);
+		int klass_reg = mono_regstate_next_int (s->rs);
+		MonoInst *tls_get = mono_get_jit_tls_intrinsic (s);
+
+		if (!tls_get) {
+			fprintf (stderr, "error: --debug=casts not supported on this platform.\n.");
+			exit (1);
+		}
+
+		MONO_ADD_INS (s->cbb, tls_get);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), klass_reg);
+		MONO_EMIT_NEW_PCONST (s, to_klass_reg, klass);
+		MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STORE_MEMBASE_REG, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_to), to_klass_reg);
+	}
+
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 		mini_emit_castclass_iface (s, vtable_reg, klass);
@@ -1376,6 +1395,16 @@ reg: CEE_CASTCLASS (reg) {
 	}
 
 	mono_bblock_add_inst (s->cbb, object_is_null);
+
+	/* Reset the variables holding the cast details */
+	if (tree->backend.record_cast_details) {
+		MonoInst *tls_get = mono_get_jit_tls_intrinsic (s);
+
+		MONO_ADD_INS (s->cbb, tls_get);
+		/* It is enough to reset the from field */
+		MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STORE_MEMBASE_IMM, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), 0);
+	}
+
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, obj_reg);
 }
 

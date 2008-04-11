@@ -689,6 +689,16 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		mono_ex = NULL;
 	}
 
+	if (mono_ex && jit_tls->class_cast_to && !strcmp (mono_ex->object.vtable->klass->name, "InvalidCastException")) {
+		char *from_name = mono_type_get_full_name (jit_tls->class_cast_from);
+		char *to_name = mono_type_get_full_name (jit_tls->class_cast_to);
+		char *msg = g_strdup_printf ("Unable to cast object of type '%s' to type '%s'.", from_name, to_name);
+		mono_ex->message = mono_string_new (domain, msg);
+		g_free (from_name);
+		g_free (to_name);
+		g_free (msg);
+	}
+
 	if (!call_filter)
 		call_filter = mono_arch_get_call_filter ();
 
@@ -1049,6 +1059,22 @@ print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, g
 	return FALSE;
 }
 
+static gboolean
+print_stack_frame_to_string (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed,
+			     gpointer data)
+{
+	GString *p = (GString*)data;
+
+	if (method) {
+		gchar *location = mono_debug_print_stack_frame (method, native_offset, mono_domain_get ());
+		g_string_append_printf (p, "  %s\n", location);
+		g_free (location);
+	} else
+		g_string_append_printf (p, "  at <unknown> <0x%05x>\n", native_offset);
+
+	return FALSE;
+}
+
 static gboolean handling_sigsegv = FALSE;
 
 /*
@@ -1152,28 +1178,31 @@ mono_print_thread_dump (void *sigctx)
 #if defined(__i386__) || defined(__x86_64__)
 	MonoContext ctx;
 #endif
+	GString* text = g_string_new (0);
 	char *name;
 	GError *error = NULL;
 
 	if (thread->name) {
 		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &error);
 		g_assert (!error);
-		fprintf (stdout, "\n\"%s\"", name);
+		g_string_append_printf (text, "\n\"%s\"", name);
 		g_free (name);
 	}
 	else
-		fprintf (stdout, "\n\"\"");
+		g_string_append (text, "\n\"\"");
 
-	fprintf (stdout, " tid=0x%p this=0x%p:\n", (gpointer)(gsize)thread->tid, thread);
+	g_string_append_printf (text, " tid=0x%p this=0x%p:\n", (gpointer)(gsize)thread->tid, thread);
 
 	/* FIXME: */
 #if defined(__i386__) || defined(__x86_64__)
 	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 
-	mono_jit_walk_stack_from_ctx (print_stack_frame, &ctx, TRUE, stdout);
+	mono_jit_walk_stack_from_ctx (print_stack_frame_to_string, &ctx, TRUE, text);
 #else
 	printf ("\t<Stack traces in thread dumps not supported on this platform>\n");
 #endif
 
+	fprintf (stdout, text->str);
+	g_string_free (text, TRUE);
 	fflush (stdout);
 }

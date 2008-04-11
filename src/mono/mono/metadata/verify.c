@@ -1,6 +1,7 @@
 
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/verify.h>
+#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/reflection.h>
@@ -159,6 +160,12 @@ get_stack_type (MonoType *type);
 
 static gboolean
 mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
+
+static gboolean
+mono_class_is_valid_generic_instantiation (MonoClass *klass);
+
+static gboolean
+mono_method_is_valid_generic_instantiation (MonoMethod *method);
 //////////////////////////////////////////////////////////////////
 
 
@@ -321,15 +328,164 @@ mono_method_is_constructor (MonoMethod *method)
 }
 
 static gboolean
+mono_class_has_default_constructor (MonoClass *klass)
+{
+	MonoMethod *method;
+	int i;
+
+	mono_class_setup_methods (klass);
+
+	for (i = 0; i < klass->method.count; ++i) {
+		method = klass->methods [i];
+		if (mono_method_is_constructor (method) &&
+			mono_method_signature (method)->param_count == 0 &&
+			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
+mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *interface)
+{
+	int i;
+	if (candidate == interface)
+		return TRUE;
+	for (i = 0; i < candidate->interface_count; ++i) {
+		if (candidate->interfaces [i] == interface || mono_class_interface_implements_interface (candidate->interfaces [i], interface))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/*
+ * Test if @candidate is a subtype of @target using the minimal possible information
+ * TODO move the code for non finished TypeBuilders to here.
+ */
+static gboolean
+mono_class_is_constraint_compatible (MonoClass *candidate, MonoClass *target)
+{
+	if (candidate == target)
+		return TRUE;
+	if (target == mono_defaults.object_class)
+			return TRUE;
+
+	//setup_supertypes don't mono_class_init anything
+	mono_class_setup_supertypes (candidate);
+	mono_class_setup_supertypes (target);
+
+	if (mono_class_has_parent (candidate, target))
+		return TRUE;
+
+	//if target is not a supertype it must be an interface
+	if (!MONO_CLASS_IS_INTERFACE (target))
+			return FALSE;
+
+	if (candidate->image->dynamic && !candidate->wastypebuilder) {
+		MonoReflectionTypeBuilder *tb = candidate->reflection_info;
+		int j;
+		if (tb->interfaces) {
+			for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
+				MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
+				MonoClass *ifaceClass = mono_class_from_mono_type (iface->type);
+				if (mono_class_is_constraint_compatible (ifaceClass, target)) {
+					return TRUE;
+				}
+			}
+		}
+		return FALSE;
+	}
+	return mono_class_interface_implements_interface (candidate, target);
+}
+
+static gboolean
+is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
+{
+	int i;
+
+	if (ginst->type_argc != gc->type_argc)
+		return FALSE;
+
+	for (i = 0; i < gc->type_argc; ++i) {
+		MonoGenericParam *param = &gc->type_params [i];
+		MonoClass *paramClass;
+		MonoClass **constraints;
+
+		if (!param->constraints && !(param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
+			continue;
+		if (ginst->type_argv [i]->type == MONO_TYPE_VAR || ginst->type_argv [i]->type == MONO_TYPE_MVAR)
+			continue; //it's not our job to validate type variables
+
+		paramClass = mono_class_from_mono_type (ginst->type_argv [i]);
+
+		if (paramClass->exception_type != MONO_EXCEPTION_NONE)
+			return FALSE;
+
+		/*it's not safe to call mono_class_init from here*/
+		if (paramClass->generic_class && !paramClass->inited) {
+			if (!mono_class_is_valid_generic_instantiation (paramClass))
+				return FALSE;
+		}
+
+		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && (!paramClass->valuetype || mono_class_is_nullable (paramClass)))
+			return FALSE;
+
+		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && paramClass->valuetype)
+			return FALSE;
+
+		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !paramClass->valuetype && !mono_class_has_default_constructor (paramClass))
+			return FALSE;
+
+		if (!param->constraints)
+			continue;
+
+		for (constraints = param->constraints; *constraints; ++constraints) {
+			MonoClass *ctr = *constraints;
+			MonoType *inflated;
+
+			inflated = mono_class_inflate_generic_type (&ctr->byval_arg, context);
+			ctr = mono_class_from_mono_type (inflated);
+			mono_metadata_free_type (inflated);
+
+			if (!mono_class_is_constraint_compatible (paramClass, ctr))
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+static gboolean
+mono_method_is_valid_generic_instantiation (MonoMethod *method)
+{
+	MonoMethodInflated *gmethod = (MonoMethodInflated *)method;
+	MonoGenericInst *ginst = gmethod->context.method_inst;
+	MonoGenericContainer *gc = gmethod->declaring->generic_container;
+
+	return is_valid_generic_instantiation (gc, &gmethod->context, ginst);
+
+}
+
+static gboolean
+mono_class_is_valid_generic_instantiation (MonoClass *klass)
+{
+	MonoGenericClass *gklass = klass->generic_class;
+	MonoGenericInst *ginst = gklass->context.class_inst;
+	MonoGenericContainer *gc = gklass->container_class->generic_container;
+	return is_valid_generic_instantiation (gc, &gklass->context, ginst);
+}
+
+static gboolean
 verify_type_load_error(VerifyContext *ctx, MonoClass *klass)
 {
 	mono_class_init (klass);
 	if (mono_loader_get_last_error () || klass->exception_type != MONO_EXCEPTION_NONE) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		if (klass->generic_class && !mono_class_is_valid_generic_instantiation (klass))
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		else
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
 
-	//TODO verify if the type can be inflated in the current context
 	return TRUE;
 }
 
@@ -373,7 +529,11 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 	if (!verify_type_load_error (ctx, method->klass))
 		return NULL;
 
-	//TODO verify if the method can be inflated in the current context
+	if (method->is_inflated && !mono_method_is_valid_generic_instantiation (method)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_UNVERIFIABLE_IL);
+		return NULL;
+	}
+
 	return method;
 }
 
@@ -3896,6 +4056,18 @@ do_mkrefany (VerifyContext *ctx, int token)
 	set_stack_value (ctx, stack_push (ctx), &mono_defaults.typed_reference_class->byval_arg, FALSE);
 }
 
+static void
+do_ckfinite (VerifyContext *ctx)
+{
+	ILStackDesc *top;
+	if (!check_underflow (ctx, 1))
+		return;
+
+	top = stack_top (ctx);
+
+	if (stack_slot_get_underlying_type (top) != TYPE_R8)
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Expected float32 or float64 on stack for ckfinit but found %s at 0x%04x", stack_slot_get_name (top), ctx->ip_offset));	
+}
 /*
  * merge_stacks:
  * Merge the stacks and perform compat checks. The merge check if types of @from are mergeable with type of @to 
@@ -4503,6 +4675,8 @@ mono_method_verify (MonoMethod *method, int level)
 			token = read32 (ip + 1);
 			if (in_any_block (ctx.header, ip_offset))
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("jmp cannot escape exception blocks at 0x%04x", ip_offset));
+
+			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Intruction jmp is not verifiable at 0x%04x", ctx.ip_offset));
 			/*
 			 * FIXME: check signature, retval, arguments etc.
 			 */
@@ -4772,22 +4946,6 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 5;
 			break;
 
-		case CEE_UNUSED5:
-		case CEE_UNUSED6:
-		case CEE_UNUSED7:
-		case CEE_UNUSED8:
-		case CEE_UNUSED9:
-		case CEE_UNUSED10:
-		case CEE_UNUSED11:
-		case CEE_UNUSED12:
-		case CEE_UNUSED13:
-		case CEE_UNUSED14:
-		case CEE_UNUSED15:
-		case CEE_UNUSED16:
-		case CEE_UNUSED17:
-			++ip; /* warn, error ? */
-			break;
-
 		case CEE_CONV_OVF_I1:
 		case CEE_CONV_OVF_U1:
 		case CEE_CONV_OVF_I2:
@@ -4810,27 +4968,14 @@ mono_method_verify (MonoMethod *method, int level)
 			++ip;
 			break;
 
-		case CEE_UNUSED50:
-		case CEE_UNUSED18:
-		case CEE_UNUSED19:
-		case CEE_UNUSED20:
-		case CEE_UNUSED21:
-		case CEE_UNUSED22:
-		case CEE_UNUSED23:
-			++ip; /* warn, error ? */
-			break;
 		case CEE_REFANYVAL:
 			do_refanyval (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
+
 		case CEE_CKFINITE:
-			if (!check_underflow (&ctx, 1))
-				break;
+			do_ckfinite (&ctx);
 			++ip;
-			break;
-		case CEE_UNUSED24:
-		case CEE_UNUSED25:
-			++ip; /* warn, error ? */
 			break;
 
 		case CEE_MKREFANY:
@@ -4838,17 +4983,6 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 5;
 			break;
 
-		case CEE_UNUSED59:
-		case CEE_UNUSED60:
-		case CEE_UNUSED61:
-		case CEE_UNUSED62:
-		case CEE_UNUSED63:
-		case CEE_UNUSED64:
-		case CEE_UNUSED65:
-		case CEE_UNUSED66:
-		case CEE_UNUSED67:
-			++ip; /* warn, error ? */
-			break;
 		case CEE_LDTOKEN:
 			do_load_token (&ctx, read32 (ip + 1));
 			ip += 5;
@@ -4873,41 +5007,7 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 2;
 			start = 1;
 			break;
-			
-		case CEE_UNUSED26:
-		case CEE_UNUSED27:
-		case CEE_UNUSED28:
-		case CEE_UNUSED29:
-		case CEE_UNUSED30:
-		case CEE_UNUSED31:
-		case CEE_UNUSED32:
-		case CEE_UNUSED33:
-		case CEE_UNUSED34:
-		case CEE_UNUSED35:
-		case CEE_UNUSED36:
-		case CEE_UNUSED37:
-		case CEE_UNUSED38:
-		case CEE_UNUSED39:
-		case CEE_UNUSED40:
-		case CEE_UNUSED41:
-		case CEE_UNUSED42:
-		case CEE_UNUSED43:
-		case CEE_UNUSED44:
-		case CEE_UNUSED45:
-		case CEE_UNUSED46:
-		case CEE_UNUSED47:
-		case CEE_UNUSED48:
-			++ip;
-			break;
-		case CEE_PREFIX7:
-		case CEE_PREFIX6:
-		case CEE_PREFIX5:
-		case CEE_PREFIX4:
-		case CEE_PREFIX3:
-		case CEE_PREFIX2:
-		case CEE_PREFIXREF:
-			++ip;
-			break;
+
 		case CEE_PREFIX1:
 			++ip;
 			switch (*ip) {
@@ -5052,13 +5152,15 @@ mono_method_verify (MonoMethod *method, int level)
 				++ip;
 				break;
 
-			case CEE_UNUSED53:
-			case CEE_UNUSED54:
-			case CEE_UNUSED55:
-			case CEE_UNUSED70:
+			default:
+				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction FE %x at 0x%04x", *ip, ctx.ip_offset));
 				++ip;
-				break;
 			}
+			break;
+
+		default:
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Invalid instruction %x at 0x%04x", *ip, ctx.ip_offset));
+			++ip;
 		}
 
 		/*TODO we can fast detect a forward branch or exception block targeting code after prefix, we should fail fast*/
@@ -5135,4 +5237,120 @@ mono_verify_corlib ()
 	return NULL;
 }
 
+static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
+static gboolean verify_all = FALSE;
 
+/*
+ * Set the desired level of checks for the verfier.
+ * 
+ */
+void
+mono_verifier_set_mode (MiniVerifierMode mode)
+{
+	verifier_mode = mode;
+}
+
+void
+mono_verifier_enable_verify_all ()
+{
+	verify_all = TRUE;
+}
+
+/*
+ * Returns true if @method needs to be verified.
+ * 
+ */
+gboolean
+mono_verifier_is_enabled_for_method (MonoMethod *method)
+{
+	return mono_verifier_is_enabled_for_class (method->klass) && method->wrapper_type == MONO_WRAPPER_NONE;
+}
+
+/*
+ * Returns true if @klass need to be verified.
+ * 
+ */
+gboolean
+mono_verifier_is_enabled_for_class (MonoClass *klass)
+{
+	return verify_all || (verifier_mode > MONO_VERIFIER_MODE_OFF && !klass->image->assembly->in_gac && klass->image != mono_defaults.corlib);
+}
+
+gboolean
+mono_verifier_is_method_full_trust (MonoMethod *method)
+{
+	return mono_verifier_is_class_full_trust (method->klass);
+}
+
+/*
+ * Returns if @klass is under full trust or not.
+ * 
+ * TODO This code doesn't take CAS into account.
+ * 
+ * This value is only pertinent to assembly verification and has
+ * nothing to do with CoreClr security. 
+ * 
+ * Under verify_all, all code is under full trust if no verifier mode is set. 
+ * 
+ */
+gboolean
+mono_verifier_is_class_full_trust (MonoClass *klass)
+{
+	return verifier_mode < MONO_VERIFIER_MODE_VERIFIABLE || klass->image->assembly->in_gac || klass->image == mono_defaults.corlib;
+}
+
+GSList*
+mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visibility)
+{
+	return mono_method_verify (method, 
+			(verifier_mode != MONO_VERIFIER_MODE_STRICT ? MONO_VERIFY_NON_STRICT: 0)
+			| (!mono_verifier_is_method_full_trust (method) ? MONO_VERIFY_FAIL_FAST : 0)
+			| (skip_visibility ? MONO_VERIFY_SKIP_VISIBILITY : 0));
+}
+
+static gboolean
+verify_class_for_overlapping_reference_fields (MonoClass *class)
+{
+	int i, j, align;
+	if (!(class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT || !class->has_references)
+		return TRUE;
+		
+		//we must check for stuff overlapping reference fields
+	for (i = 0; i < class->field.count; ++i) {
+		MonoClassField *field = &class->fields [i];
+		int fieldEnd = field->offset + mono_type_size (field->type, &align);
+		gboolean is_valuetype = !MONO_TYPE_IS_REFERENCE (field->type);
+		if (mono_field_is_deleted (field))
+			continue;
+
+		for (j = i + 1; j < class->field.count; ++j) {
+			MonoClassField *other = &class->fields [j];
+			int otherEnd = other->offset + mono_type_size (other->type, &align);
+			if (mono_field_is_deleted (other) || (is_valuetype && !MONO_TYPE_IS_REFERENCE (other->type)))
+				continue;
+			if ((otherEnd > field->offset && otherEnd <= fieldEnd) || (other->offset >= field->offset && other->offset < fieldEnd))
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+/*
+ * Check if the class is verifiable.
+ * 
+ * Right now there are no conditions that make a class a valid but not verifiable. Both overlapping reference
+ * field and invalid generic instantiation are fatal errors.
+ * 
+ * This method must be safe to be called from mono_class_init and all code must be carefull about that.
+ * 
+ */
+gboolean
+mono_verifier_verify_class (MonoClass *class)
+{
+	if (!verify_class_for_overlapping_reference_fields (class))
+		return FALSE;
+	
+	if (class->generic_class && !mono_class_is_valid_generic_instantiation (class))
+		return FALSE;
+	return TRUE;
+}

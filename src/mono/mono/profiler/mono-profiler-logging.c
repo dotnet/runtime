@@ -5,8 +5,8 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/io-layer/atomic.h>
-#include <signal.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -399,6 +399,7 @@ struct _MonoProfiler {
 	
 	MonoProfileFlags flags;
 	char *file_name;
+	char *file_name_suffix;
 	FILE_HANDLE_TYPE file;
 	
 	guint64 start_time;
@@ -451,6 +452,43 @@ struct _MonoProfiler {
 	} action_flags;
 };
 static MonoProfiler *profiler;
+
+#ifndef PLATFORM_WIN32
+#include <signal.h>
+
+#ifdef MONO_ARCH_USE_SIGACTION
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
+#elif defined(__sparc__)
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *sigctx)
+#else
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
+#endif
+
+static void
+SIG_HANDLER_SIGNATURE (gc_request_handler) {
+	profiler->heap_shot_was_signalled = TRUE;
+	WRITER_EVENT_RAISE ();
+}
+
+static void
+add_gc_request_handler (int signal_number)
+{
+	struct sigaction sa;
+	
+#ifdef MONO_ARCH_USE_SIGACTION
+	sa.sa_sigaction = gc_request_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = SA_SIGINFO;
+#else
+	sa.sa_handler = gc_request_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+#endif
+	
+	g_assert (sigaction (signal_number, &sa, NULL) != -1);
+}
+#endif
+
 
 
 #define DEBUG_LOAD_EVENTS 0
@@ -1453,7 +1491,7 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 			}
 			g_assert (class_id != NULL);
 			
-			write_uint64 (GPOINTER_TO_UINT (object));
+			write_uint64 (GPOINTER_TO_UINT (value));
 			write_uint32 (class_id->id);
 			write_uint32 (size);
 			write_uint32 (references);
@@ -2792,17 +2830,21 @@ static gboolean
 dump_current_heap_snapshot (void) {
 	gboolean result;
 	
-	profiler_heap_shot_process_command_file ();
-	if (profiler->dump_next_heap_snapshots > 0) {
-		profiler->dump_next_heap_snapshots--;
-		result = TRUE;
-	} else if (profiler->dump_next_heap_snapshots < 0) {
+	if (profiler->heap_shot_was_signalled) {
 		result = TRUE;
 	} else {
-		result = FALSE;
+		profiler_heap_shot_process_command_file ();
+		if (profiler->dump_next_heap_snapshots > 0) {
+			profiler->dump_next_heap_snapshots--;
+			result = TRUE;
+		} else if (profiler->dump_next_heap_snapshots < 0) {
+			result = TRUE;
+		} else {
+			result = FALSE;
+		}
 	}
 	
-	return (result || (profiler->heap_shot_was_signalled));
+	return result;
 }
 
 static void
@@ -3015,12 +3057,7 @@ profiler_heap_scan (ProfilerHeapShotHeapBuffers *heap, ProfilerHeapShotWriteJob 
 			
 			if (current_slot == current_buffer->end_slot) {
 				current_buffer = current_buffer->next;
-				//g_assert (current_buffer != NULL);
-				if (current_buffer == NULL) {
-					printf ("KO\n");
-					G_BREAKPOINT ();
-					g_assert_not_reached ();
-				}
+				g_assert (current_buffer != NULL);
 				current_slot = current_buffer->start_slot;
 			}
 		}
@@ -3140,6 +3177,9 @@ profiler_shutdown (MonoProfiler *prof)
 	CLOSE_FILE();
 	UNLOCK_PROFILER ();
 	g_free (profiler->file_name);
+	if (profiler->file_name_suffix != NULL) {
+		g_free (profiler->file_name_suffix);
+	}
 	
 	method_id_mapping_destroy (profiler->methods);
 	class_id_mapping_destroy (profiler->classes);
@@ -3190,8 +3230,12 @@ profiler_shutdown (MonoProfiler *prof)
 static void
 setup_user_options (const char *arguments) {
 	gchar **arguments_array, **current_argument;
+#ifndef PLATFORM_WIN32
+	int gc_request_signal_number = 0;
+#endif
 	
 	profiler->file_name = NULL;
+	profiler->file_name_suffix = NULL;
 	profiler->per_thread_buffer_size = 10000;
 	profiler->statistical_buffer_size = 10000;
 	profiler->write_buffer_size = 1024;
@@ -3242,6 +3286,10 @@ setup_user_options (const char *arguments) {
 				if (strlen (equals + 1) > 0) {
 					profiler->file_name = g_strdup (equals + 1);
 				}
+			} else if (! (strncmp (argument, "output-suffix", equals_position) && strncmp (argument, "suffix", equals_position) && strncmp (argument, "os", equals_position) && strncmp (argument, "OS", equals_position))) {
+				if (strlen (equals + 1) > 0) {
+					profiler->file_name_suffix = g_strdup (equals + 1);
+				}
 			} else if (! (strncmp (argument, "gc-commands", equals_position) && strncmp (argument, "gc-c", equals_position) && strncmp (argument, "gcc", equals_position))) {
 				if (strlen (equals + 1) > 0) {
 					profiler->heap_shot_command_file_name = g_strdup (equals + 1);
@@ -3250,6 +3298,21 @@ setup_user_options (const char *arguments) {
 				if (strlen (equals + 1) > 0) {
 					profiler->dump_next_heap_snapshots = atoi (equals + 1);
 				}
+#ifndef PLATFORM_WIN32
+			} else if (! (strncmp (argument, "gc-signal", equals_position) && strncmp (argument, "gc-s", equals_position) && strncmp (argument, "gcs", equals_position))) {
+				if (strlen (equals + 1) > 0) {
+					char *signal_name = equals + 1;
+					if (! strcasecmp (signal_name, "SIGUSR1")) {
+						gc_request_signal_number = SIGUSR1;
+					} else if (! strcasecmp (signal_name, "SIGUSR2")) {
+						gc_request_signal_number = SIGUSR2;
+					} else if (! strcasecmp (signal_name, "SIGPROF")) {
+						gc_request_signal_number = SIGPROF;
+					} else {
+						gc_request_signal_number = atoi (signal_name);
+					}
+				}
+#endif
 			} else {
 				g_warning ("Cannot parse valued argument %s\n", argument);
 			}
@@ -3291,6 +3354,18 @@ setup_user_options (const char *arguments) {
 	
 	g_free (arguments_array);
 	
+#ifndef PLATFORM_WIN32
+	if (gc_request_signal_number != 0) {
+		if (((gc_request_signal_number == SIGPROF) && ! (profiler->flags & MONO_PROFILE_STATISTICAL)) ||
+				(gc_request_signal_number == SIGUSR1) ||
+				(gc_request_signal_number == SIGUSR2)) {
+			add_gc_request_handler (gc_request_signal_number);
+		} else {
+			g_error ("Cannot use signal %d", gc_request_signal_number);
+		}
+	}
+#endif
+	
 	if (profiler->file_name == NULL) {
 		char *program_name = g_get_prgname ();
 		
@@ -3323,7 +3398,11 @@ setup_user_options (const char *arguments) {
 				*cursor = 0;
 			}
 			
-			profiler->file_name = g_strdup_printf ("%s.mprof", name_start);
+			if (profiler->file_name_suffix == NULL) {
+				profiler->file_name = g_strdup_printf ("%s.mprof", name_start);
+			} else {
+				profiler->file_name = g_strdup_printf ("%s-%s.mprof", name_start, profiler->file_name_suffix);
+			}
 			g_free (name_buffer);
 		} else {
 			profiler->file_name = g_strdup_printf ("%s.mprof", "profiler-log");
@@ -3370,6 +3449,12 @@ data_writer_thread (gpointer nothing) {
 				thread_attached = TRUE;
 				thread_detached = TRUE;
 			}
+		}
+		
+		if (profiler->heap_shot_was_signalled) {
+			LOG_WRITER_THREAD ("data_writer_thread: starting requested collection");
+			mono_gc_collect (mono_gc_max_generation ());
+			LOG_WRITER_THREAD ("data_writer_thread: requested collection done");
 		}
 		
 		statistical_data = profiler->statistical_data_ready;

@@ -117,6 +117,7 @@ libmonoruntime_la_SOURCES = \
 	metadata-internals.h	\
 	number-formatter.h	\
 	verify.c	\
+	verify-internals.h	\
 	mono-endian.c	\
 	mono-endian.h	\
 	mono-config.c	\

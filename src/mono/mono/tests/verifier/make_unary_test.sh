@@ -58,7 +58,9 @@ sed -e "s/OPCODE/${TEST_OP}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${
                 TYPE1 V_0)
 	ldloc.0
 	OPCODE // VALIDITY.
-	branch_target:
+
+	leave branch_target
+branch_target:
 	ldc.i4.0
 	ret
 }

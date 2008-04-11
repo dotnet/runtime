@@ -455,6 +455,7 @@ struct MonoInst {
 		MonoMemcpyArgs *memcpy_args; /* in OP_MEMSET and OP_MEMCPY */
 		gint shift_amount;
 		gboolean is_pinvoke; /* for variables in the unmanaged marshal format */
+		gboolean record_cast_details; /* For CEE_CASTCLASS */
 		gpointer data;
 	} backend;
 	
@@ -638,6 +639,8 @@ typedef struct {
 	gpointer         stack_ovf_guard_base;
 	guint32          stack_ovf_guard_size;
 	void            (*abort_func) (MonoObject *object);
+	/* Used to implement --debug=casts */
+	MonoClass       *class_cast_from, *class_cast_to;
 } MonoJitTlsData;
 
 typedef enum {
@@ -984,6 +987,7 @@ typedef struct {
 	gboolean keep_delegates;
 	gboolean collect_pagefault_stats;
 	gboolean break_on_unverified;
+	gboolean better_cast_details;
 } MonoDebugOptions;
 
 enum {
@@ -1036,13 +1040,6 @@ enum {
 	MINI_TOKEN_SOURCE_FIELD
 };
 
-typedef enum {
-	MINI_VERIFIER_MODE_OFF,
-	MINI_VERIFIER_MODE_VALID,
-	MINI_VERIFIER_MODE_VERIFIABLE,
-	MINI_VERIFIER_MODE_STRICT
-} MiniVerifierMode;
-
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
@@ -1050,6 +1047,7 @@ int         mono_main                      (int argc, char* argv[]);
 void        mono_set_defaults              (int verbose_level, guint32 opts);
 MonoDomain* mini_init                      (const char *filename, const char *runtime_version) MONO_INTERNAL;
 void        mini_cleanup                   (MonoDomain *domain) MONO_INTERNAL;
+MonoDebugOptions *mini_get_debug_options   (void) MONO_INTERNAL;
 
 /* helper methods */
 MonoJumpInfoToken * mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token) MONO_INTERNAL;
@@ -1088,8 +1086,10 @@ MonoLMF * mono_get_lmf                      (void) MONO_INTERNAL;
 MonoLMF** mono_get_lmf_addr                 (void) MONO_INTERNAL;
 void      mono_jit_thread_attach            (MonoDomain *domain);
 guint32   mono_get_jit_tls_key              (void) MONO_INTERNAL;
+gint32    mono_get_jit_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_tls_offset           (void) MONO_INTERNAL;
 gint32    mono_get_lmf_addr_tls_offset      (void) MONO_INTERNAL;
+MonoInst* mono_get_jit_tls_intrinsic        (MonoCompile *cfg) MONO_INTERNAL;
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, gboolean sort_end) MONO_INTERNAL;
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type) MONO_INTERNAL;
 void      mono_analyze_liveness             (MonoCompile *cfg) MONO_INTERNAL;
@@ -1374,7 +1374,6 @@ MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, Mo
 
 int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align) MONO_INTERNAL;
 
-void mini_verifier_set_mode (MiniVerifierMode mode) MONO_INTERNAL;
 
 
 #endif /* __MONO_MINI_H__ */

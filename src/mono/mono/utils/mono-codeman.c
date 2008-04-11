@@ -8,12 +8,24 @@
 #include <assert.h>
 #include <glib.h>
 
+/* For dlmalloc.h */
+#define USE_DL_PREFIX 1
+
 #include "mono-codeman.h"
 #include "mono-mmap.h"
+#include "dlmalloc.h"
 #include <mono/metadata/class-internals.h>
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
+ 
+/*
+ * AMD64 processors maintain icache coherency only for pages which are 
+ * marked executable. Also, windows DEP requires us to obtain executable memory from
+ * malloc when using dynamic code managers. The system malloc can't do this so we use a 
+ * slighly modified version of Doug Lea's Malloc package for this purpose:
+ * http://g.oswego.edu/dl/html/malloc.html
+ */
 
 #define MIN_PAGES 16
 
@@ -126,7 +138,7 @@ free_chunklist (CodeChunk *chunk)
 			mono_vfree (dead->data, dead->size);
 			/* valgrind_unregister(dead->data); */
 		} else if (dead->flags == CODE_FLAG_MALLOC) {
-			free (dead->data);
+			dlfree (dead->data);
 		}
 		free (dead);
 	}
@@ -247,9 +259,8 @@ new_codechunk (int dynamic, int size)
 	}
 #endif
 
-	/* does it make sense to use the mmap-like API? */
 	if (flags == CODE_FLAG_MALLOC) {
-		ptr = malloc (chunk_size + MIN_ALIGN - 1);
+		ptr = dlmalloc (chunk_size + MIN_ALIGN - 1);
 		if (!ptr)
 			return NULL;
 	} else {
@@ -259,29 +270,16 @@ new_codechunk (int dynamic, int size)
 	}
 
 	if (flags == CODE_FLAG_MALLOC) {
-		/*
-		 * AMD64 processors maintain icache coherency only for pages which are 
-		 * marked executable.
-		 */
-#ifndef PLATFORM_WIN32
-		{
-			char *page_start = (char *) (((gssize) (ptr)) & ~ (pagesize - 1));
-			int pages = ((char*)ptr + chunk_size - page_start + pagesize - 1) / pagesize;
-			int err = mono_mprotect (page_start, pages * pagesize, MONO_PROT_RWX);
-			assert (!err);
-		}
-#endif
-
 #ifdef BIND_ROOM
-			/* Make sure the thunks area is zeroed */
-			memset (ptr, 0, bsize);
+		/* Make sure the thunks area is zeroed */
+		memset (ptr, 0, bsize);
 #endif
 	}
 
 	chunk = malloc (sizeof (CodeChunk));
 	if (!chunk) {
 		if (flags == CODE_FLAG_MALLOC)
-			free (ptr);
+			dlfree (ptr);
 		else
 			mono_vfree (ptr, chunk_size);
 		return NULL;

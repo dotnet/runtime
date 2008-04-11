@@ -659,24 +659,33 @@ update_aliasing_information_on_inst (MonoAliasingInformation *info, MonoAliasing
 		}
 	} else {
 		MonoAliasType father_type = MONO_ALIASING_TYPE_NO_ALIAS;
+		MonoLocalVariableList *affected_variables = NULL;
+		
 		if ((context.subtree_aliases [0].type == MONO_ALIASING_TYPE_LOCAL) || (context.subtree_aliases [0].type == MONO_ALIASING_TYPE_LOCAL_FIELD)) {
-			MonoAliasUsageInformation *use = mono_mempool_alloc (info->mempool, sizeof (MonoAliasUsageInformation));
-			
-			inst->ssa_op = MONO_SSA_INDIRECT_LOAD_STORE;
-			use->inst = inst;
-			use->affected_variables = &(info->variables [context.subtree_aliases [0].variable_index]);
-			APPEND_USE (info, bb_info, use);
+			affected_variables = &(info->variables [context.subtree_aliases [0].variable_index]);
 			ADD_BAD_ALIAS (info, context.subtree_aliases [0].variable_index);
 		}
 		if ((context.subtree_aliases [1].type == MONO_ALIASING_TYPE_LOCAL) || (context.subtree_aliases [1].type == MONO_ALIASING_TYPE_LOCAL_FIELD)) {
+			if (affected_variables == NULL) {
+				affected_variables = &(info->variables [context.subtree_aliases [1].variable_index]);
+			} else if (affected_variables->variable_index != context.subtree_aliases [1].variable_index) {
+				int previous_index = affected_variables->variable_index;
+				affected_variables = NULL;
+				ADD_UNIQUE_VARIABLE (info, affected_variables, previous_index);
+				ADD_UNIQUE_VARIABLE (info, affected_variables, context.subtree_aliases [1].variable_index);
+			}
+			ADD_BAD_ALIAS (info, context.subtree_aliases [1].variable_index);
+		}
+		
+		if (affected_variables != NULL) {
 			MonoAliasUsageInformation *use = mono_mempool_alloc (info->mempool, sizeof (MonoAliasUsageInformation));
 			
 			inst->ssa_op = MONO_SSA_INDIRECT_LOAD_STORE;
 			use->inst = inst;
-			use->affected_variables = &(info->variables [context.subtree_aliases [1].variable_index]);
+			use->affected_variables = affected_variables;
 			APPEND_USE (info, bb_info, use);
-			ADD_BAD_ALIAS (info, context.subtree_aliases [1].variable_index);
 		}
+		
 		if (father_alias != NULL) { 
 			if ((context.subtree_aliases [0].type == MONO_ALIASING_TYPE_ANY) || (context.subtree_aliases [1].type == MONO_ALIASING_TYPE_ANY)) {
 				father_type = MONO_ALIASING_TYPE_ANY;

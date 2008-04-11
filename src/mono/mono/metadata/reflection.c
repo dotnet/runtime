@@ -7533,9 +7533,15 @@ mono_custom_attrs_from_class (MonoClass *klass)
 	
 	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (klass)))
 		return cinfo;
-	idx = mono_metadata_token_index (klass->type_token);
-	idx <<= MONO_CUSTOM_ATTR_BITS;
-	idx |= MONO_CUSTOM_ATTR_TYPEDEF;
+	if (klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR) {
+		idx = mono_metadata_token_index (klass->sizes.generic_param_token);
+		idx <<= MONO_CUSTOM_ATTR_BITS;
+		idx |= MONO_CUSTOM_ATTR_GENERICPAR;
+	} else {
+		idx = mono_metadata_token_index (klass->type_token);
+		idx <<= MONO_CUSTOM_ATTR_BITS;
+		idx |= MONO_CUSTOM_ATTR_TYPEDEF;
+	}
 	return mono_custom_attrs_from_index (klass->image, idx);
 }
 
