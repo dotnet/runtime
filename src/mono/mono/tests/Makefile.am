@@ -648,15 +648,19 @@ test-coreclr-security : coreclr-security.exe
 	$(RUNTIME21) --security=core-clr-test coreclr-security.exe
 endif
 
+EXTRA_DIST += generic-unboxing.2.il
 generic-unboxing.2.dll : generic-unboxing.2.il
 	$(ILASM) /dll /output:generic-unboxing.2.dll $(srcdir)/generic-unboxing.2.il
 
+EXTRA_DIST += generic-boxing.2.il
 generic-boxing.2.dll : generic-boxing.2.il generic-unboxing.2.dll
 	$(ILASM) /dll /output:generic-boxing.2.dll $(srcdir)/generic-boxing.2.il
 
+EXTRA_DIST += generic-unbox.2.cs
 generic-unbox.2.exe : generic-unbox.2.cs generic-unboxing.2.dll
 	$(MCS) -r:generic-unboxing.2.dll $(srcdir)/generic-unbox.2.cs
 
+EXTRA_DIST += generic-box.2.cs
 generic-box.2.exe : generic-box.2.cs generic-unboxing.2.dll generic-boxing.2.dll
 	$(MCS) -r:generic-unboxing.2.dll,generic-boxing.2.dll $(srcdir)/generic-box.2.cs
 
