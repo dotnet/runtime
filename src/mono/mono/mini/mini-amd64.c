@@ -3367,9 +3367,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COS:
 			EMIT_SSE2_FPFUNC (code, fcos, ins->dreg, ins->sreg1);
 			break;		
-		case OP_ABS:
-			EMIT_SSE2_FPFUNC (code, fabs, ins->dreg, ins->sreg1);
+		case OP_ABS: {
+			static guint64 d = 0x7fffffffffffffffUL;
+
+			g_assert (ins->sreg1 == ins->dreg);
+					
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &d);
+			amd64_sse_andpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
 			break;		
+		}
 		case OP_SQRT:
 			EMIT_SSE2_FPFUNC (code, fsqrt, ins->dreg, ins->sreg1);
 			break;
