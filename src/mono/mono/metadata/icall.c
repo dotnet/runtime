@@ -6020,8 +6020,17 @@ ves_icall_System_Environment_GetEnvironmentVariable (MonoString *name)
  */
 #ifndef _MSC_VER
 #ifndef __MINGW32_VERSION
+#ifdef __APPLE__
+/* Apple defines this in crt_externs.h but doesn't provide that header for 
+ * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
+ * in fact exist on all implementations (so far) 
+ */
+gchar ***_NSGetEnviron();
+#define environ *_NSGetEnviron()
+#else
 extern
 char **environ;
+#endif
 #endif
 #endif
 
