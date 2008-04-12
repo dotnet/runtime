@@ -843,14 +843,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		image->assembly_name = mono_metadata_string_heap (image, 
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
 					0, MONO_ASSEMBLY_NAME));
-		/* we don't allow loading different mscorlibs */
-		if (strcmp (image->assembly_name, "mscorlib") == 0 && mono_defaults.corlib) {
-			if (status)
-				*status = MONO_IMAGE_OK;
-			mono_image_close (image);
-			mono_image_addref (mono_defaults.corlib);
-			return mono_defaults.corlib;
-		}
 	}
 
 	image->module_name = mono_metadata_string_heap (image, 
