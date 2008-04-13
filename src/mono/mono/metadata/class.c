@@ -4527,13 +4527,15 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	class->image = image;
 	class->name_space = eclass->name_space;
 	nsize = strlen (eclass->name);
-	name = g_malloc (nsize + 2 + rank);
+	name = g_malloc (nsize + 2 + rank + 1);
 	memcpy (name, eclass->name, nsize);
 	name [nsize] = '[';
 	if (rank > 1)
 		memset (name + nsize + 1, ',', rank - 1);
-	name [nsize + rank] = ']';
-	name [nsize + rank + 1] = 0;
+	if (bounded)
+		name [nsize + rank] = '*';
+	name [nsize + rank + bounded] = ']';
+	name [nsize + rank + bounded + 1] = 0;
 	class->name = mono_mempool_strdup (image->mempool, name);
 	g_free (name);
 
