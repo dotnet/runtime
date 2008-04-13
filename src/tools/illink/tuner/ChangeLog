@@ -1,3 +1,8 @@
+2008-04-13  Jb Evain  <jbevain@novell.com>
+
+	* masterinfos/silverlight/*.info: 2.0 api.
+	* Makefile: update.
+	Merged from the Moonlight 2 branch.
 
 Thu Mar 13 22:32:24 CET 2008 Paolo Molaro <lupus@ximian.com>
 
