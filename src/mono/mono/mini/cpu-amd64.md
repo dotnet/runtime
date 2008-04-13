@@ -307,7 +307,7 @@ sbb_imm: dest:i src1:i len:8 clob:1
 br_reg: src1:i len:3
 sin: dest:f src1:f len:32
 cos: dest:f src1:f len:32
-abs: dest:f src1:f len:32
+abs: dest:f src1:f clob:1 len:32
 tan: dest:f src1:f len:59
 atan: dest:f src1:f len:9
 sqrt: dest:f src1:f len:32

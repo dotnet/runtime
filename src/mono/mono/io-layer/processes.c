@@ -45,7 +45,16 @@
 #include <mono/io-layer/timefuncs-private.h>
 
 /* The process' environment strings */
+#ifdef __APPLE__
+/* Apple defines this in crt_externs.h but doesn't provide that header for 
+ * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
+ * in fact exist on all implementations (so far) 
+ */
+gchar ***_NSGetEnviron();
+#define environ *_NSGetEnviron()
+#else
 extern char **environ;
+#endif
 
 #undef DEBUG
 
@@ -601,13 +610,13 @@ gboolean CreateProcessWithLogonW (const gunichar2 *username,
 				  const gunichar2 *appname,
 				  const gunichar2 *cmdline,
 				  guint32 create_flags,
-				  gpointer environ,
+				  gpointer env,
 				  const gunichar2 *cwd,
 				  WapiStartupInfo *startup,
 				  WapiProcessInformation *process_info)
 {
 	/* FIXME: use user information */
-	return CreateProcess (appname, cmdline, NULL, NULL, FALSE, create_flags, environ, cwd, startup, process_info);
+	return CreateProcess (appname, cmdline, NULL, NULL, FALSE, create_flags, env, cwd, startup, process_info);
 }
 
 static gboolean

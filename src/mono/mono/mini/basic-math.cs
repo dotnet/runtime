@@ -6,7 +6,7 @@ using System.Reflection;
  *
  * Each test needs to be of the form:
  *
- * static int test_<result>_<name> ();
+ * public static int test_<result>_<name> ();
  *
  * where <result> is an integer (the value that needs to be returned by
  * the method to make it pass.
@@ -25,44 +25,44 @@ using System.Reflection;
 
 class Tests {
 
-	static int Main () {
+	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
 	}
 	
-	static int test_0_sin_precision () {
+	public static int test_0_sin_precision () {
 		double d1 = Math.Sin (1);
                 double d2 = Math.Sin (1) - d1;
 		return (d2 == 0) ? 0 : 1;
 	}
 
-	static int test_0_cos_precision () {
+	public static int test_0_cos_precision () {
 		double d1 = Math.Cos (1);
                 double d2 = Math.Cos (1) - d1;
 		return (d2 == 0) ? 0 : 1;
 	}
 
-	static int test_0_tan_precision () {
+	public static int test_0_tan_precision () {
 		double d1 = Math.Tan (1);
                 double d2 = Math.Tan (1) - d1;
 		return (d2 == 0) ? 0 : 1;
 	}
 
-	static int test_0_atan_precision () {
+	public static int test_0_atan_precision () {
 		double d1 = Math.Atan (double.NegativeInfinity);
                 double d2 = Math.Atan (double.NegativeInfinity) - d1;
 		return (d2 == 0) ? 0 : 1;
 	}
 
-	static int test_0_sqrt_precision () {
+	public static int test_0_sqrt_precision () {
 		double d1 = Math.Sqrt (2);
                 double d2 = Math.Sqrt (2) - d1;
 		return (d2 == 0) ? 0 : 1;
 	}
 
-	static int test_2_sqrt () {
+	public static int test_2_sqrt () {
 		return (int) Math.Sqrt (4);
 	}
-	static int test_0_sqrt_precision_and_not_spill () {
+	public static int test_0_sqrt_precision_and_not_spill () {
 		double expected = 0;
 		double[] operands = new double[3];
 		double[] temporaries = new double[3];
@@ -87,7 +87,7 @@ class Tests {
 		return (result == expected) ? 0 : 1;
 	}
 	
-	static int test_0_sqrt_precision_and_spill () {
+	public static int test_0_sqrt_precision_and_spill () {
 		double expected = 0;
 		double[] operands = new double[9];
 		double[] temporaries = new double[9];
@@ -112,7 +112,7 @@ class Tests {
 		return (result == expected) ? 0 : 1;
 	}
 	
-	static int test_0_div_precision_and_spill () {
+	public static int test_0_div_precision_and_spill () {
 		double expected = 0;
 		double[] operands = new double[9];
 		double[] temporaries = new double[9];
@@ -136,27 +136,27 @@ class Tests {
 		return (result == expected) ? 0 : 1;
 	}
 	
-	static int test_0_sqrt_nan () {
+	public static int test_0_sqrt_nan () {
 		return Double.IsNaN (Math.Sqrt (Double.NaN)) ? 0 : 1;
 	}
 	
-	static int test_0_sin_nan () {
+	public static int test_0_sin_nan () {
 		return Double.IsNaN (Math.Sin (Double.NaN)) ? 0 : 1;
 	}
 	
-	static int test_0_cos_nan () {
+	public static int test_0_cos_nan () {
 		return Double.IsNaN (Math.Cos (Double.NaN)) ? 0 : 1;
 	}
 	
-	static int test_0_tan_nan () {
+	public static int test_0_tan_nan () {
 		return Double.IsNaN (Math.Tan (Double.NaN)) ? 0 : 1;
 	}
 	
-	static int test_0_atan_nan () {
+	public static int test_0_atan_nan () {
 		return Double.IsNaN (Math.Atan (Double.NaN)) ? 0 : 1;
 	}
 
-	static int test_0_min () {
+	public static int test_0_min () {
 		if (Math.Min (5, 6) != 5)
 			return 1;
 		if (Math.Min (6, 5) != 5)
@@ -172,7 +172,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_max () {
+	public static int test_0_max () {
 		if (Math.Max (5, 6) != 6)
 			return 1;
 		if (Math.Max (6, 5) != 6)
@@ -187,5 +187,12 @@ class Tests {
 			return 6;
 		return 0;
 	}
-		
+
+	public static int test_0_abs () {
+		double d = -5.0;
+
+		if (Math.Abs (d) != 5.0)
+			return 1;
+		return 0;
+	}
 }
