@@ -11864,8 +11864,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	ip = (guint8 *)header->code;
 
-	if (cfg->verbose_level > 2)
-		g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
+	if (cfg->verbose_level > 2) {
+		if (cfg->generic_sharing_context)
+			g_print ("converting shared method %s\n", mono_method_full_name (method, TRUE));
+		else
+			g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
+	}
 
 	/*
 	 * create MonoInst* which represents arguments and local variables
