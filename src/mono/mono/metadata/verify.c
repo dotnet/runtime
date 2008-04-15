@@ -346,13 +346,13 @@ mono_class_has_default_constructor (MonoClass *klass)
 }
 
 static gboolean
-mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *interface)
+mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *iface)
 {
 	int i;
-	if (candidate == interface)
+	if (candidate == iface)
 		return TRUE;
 	for (i = 0; i < candidate->interface_count; ++i) {
-		if (candidate->interfaces [i] == interface || mono_class_interface_implements_interface (candidate->interfaces [i], interface))
+		if (candidate->interfaces [i] == iface || mono_class_interface_implements_interface (candidate->interfaces [i], iface))
 			return TRUE;
 	}
 	return FALSE;
