@@ -293,6 +293,16 @@ mono_type_is_value_type (MonoType *type, const char *namespace, const char *name
 		!strcmp (namespace, type->data.klass->name_space) &&
 		!strcmp (name, type->data.klass->name);
 }
+
+/*
+ * Returns TURE if @type is VAR or MVAR
+ */
+static gboolean
+mono_type_is_generic_argument (MonoType *type)
+{
+	return type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR;
+}
+
 /*
  * mono_type_get_underlying_type_any:
  * 
@@ -413,7 +423,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 
 		if (!param->constraints && !(param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
 			continue;
-		if (ginst->type_argv [i]->type == MONO_TYPE_VAR || ginst->type_argv [i]->type == MONO_TYPE_MVAR)
+		if (mono_type_is_generic_argument (ginst->type_argv [i]))
 			continue; //it's not our job to validate type variables
 
 		paramClass = mono_class_from_mono_type (ginst->type_argv [i]);
@@ -460,7 +470,8 @@ mono_method_is_valid_generic_instantiation (MonoMethod *method)
 	MonoMethodInflated *gmethod = (MonoMethodInflated *)method;
 	MonoGenericInst *ginst = gmethod->context.method_inst;
 	MonoGenericContainer *gc = gmethod->declaring->generic_container;
-
+	if (!gc) /*non-generic inflated method - it's part of a generic type  */
+		return TRUE;
 	return is_valid_generic_instantiation (gc, &gmethod->context, ginst);
 
 }
@@ -475,7 +486,7 @@ mono_class_is_valid_generic_instantiation (MonoClass *klass)
 }
 
 static gboolean
-verify_type_load_error(VerifyContext *ctx, MonoClass *klass)
+verify_type_load_error (VerifyContext *ctx, MonoClass *klass)
 {
 	mono_class_init (klass);
 	if (mono_loader_get_last_error () || klass->exception_type != MONO_EXCEPTION_NONE) {
@@ -2206,6 +2217,12 @@ handle_enum:
 		return candidate->type == MONO_TYPE_STRING;
 
 	case MONO_TYPE_CLASS:
+		/*
+		 * VAR / MVAR compatibility must be checked by verify_stack_type_compatibility
+		 * to take boxing status into account.
+		 */
+		if (mono_type_is_generic_argument (original_candidate))
+			return FALSE;
 		/* If candidate is an enum it should return true for System.Enum and supertypes.
 		 * That's why here we use the original type and not the underlying type.
 		 */ 
@@ -2269,6 +2286,30 @@ verify_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candi
 }
 
 /*
+ * Returns the generic param bound to the context been verified.
+ * 
+ */
+static MonoGenericParam*
+get_generic_param (VerifyContext *ctx, MonoType *param) 
+{
+	guint16 param_num = param->data.generic_param->num;
+	if (param->type == MONO_TYPE_VAR) {
+		if (!ctx->generic_context->class_inst || ctx->generic_context->class_inst->type_argc <= param_num) {
+			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid generic type argument %d", param_num));
+			return NULL;
+		}
+		return ctx->generic_context->class_inst->type_argv [param_num]->data.generic_param;
+	}
+	
+	/*param must be a MVAR */
+	if (!ctx->generic_context->method_inst || ctx->generic_context->method_inst->type_argc <= param_num) {
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid generic method argument %d", param_num));
+		return NULL;
+	}
+	return ctx->generic_context->method_inst->type_argv [param_num]->data.generic_param;
+	
+}
+/*
  * is_compatible_boxed_valuetype:
  * 
  * Returns TRUE if @candidate / @stack is a valid boxed valuetype. 
@@ -2280,26 +2321,42 @@ verify_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candi
  * 
  */
 static gboolean
-is_compatible_boxed_valuetype (MonoType *type, MonoType *candidate, ILStackDesc *stack, gboolean type_must_be_object)
+is_compatible_boxed_valuetype (VerifyContext *ctx, MonoType *type, MonoType *candidate, ILStackDesc *stack, gboolean type_must_be_object)
 {
-	if (type_must_be_object && type->type != MONO_TYPE_OBJECT)
-		return FALSE;
+	if (mono_type_is_generic_argument (candidate) && stack_slot_is_boxed_value (stack) && !type->byref) {
+		MonoGenericParam *param = get_generic_param (ctx, candidate);
+		MonoClass **class;
+		for (class = param->constraints; class && *class; ++class) {
+			if (verify_type_compatibility_full (ctx, type, mono_type_get_type_byval (& (*class)->byval_arg), FALSE))
+				return TRUE;
+		}
+	}
+	
 	if (!type_must_be_object && !MONO_TYPE_IS_REFERENCE (type))
 		return FALSE;
 	return !type->byref && !candidate->byref && stack_slot_is_boxed_value (stack);
 }
 
 static int
-verify_stack_type_compatibility (VerifyContext *ctx, MonoType *type, ILStackDesc *stack)
+verify_stack_type_compatibility_full (VerifyContext *ctx, MonoType *type, ILStackDesc *stack, gboolean strict, gboolean drop_byref)
 {
 	MonoType *candidate = mono_type_from_stack_slot (stack);
 	if (MONO_TYPE_IS_REFERENCE (type) && !type->byref && stack_slot_is_null_literal (stack))
 		return TRUE;
 
-	if (is_compatible_boxed_valuetype (type, candidate, stack, TRUE))
+	if (is_compatible_boxed_valuetype (ctx, type, candidate, stack, TRUE))
 		return TRUE;
 
-	return verify_type_compatibility_full (ctx, type, candidate, FALSE);
+	if (drop_byref)
+		return verify_type_compatibility_full (ctx, type, mono_type_get_type_byval (candidate), strict);
+
+	return verify_type_compatibility_full (ctx, type, candidate, strict);
+}
+
+static int
+verify_stack_type_compatibility (VerifyContext *ctx, MonoType *type, ILStackDesc *stack)
+{
+	return verify_stack_type_compatibility_full (ctx, type, stack, FALSE, FALSE);
 }
 
 static gboolean
@@ -2514,7 +2571,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	ctx->code [ip_offset].flags |= IL_CODE_DELEGATE_SEQUENCE;
 
 	//general tests
-	if (!verify_type_compatibility (ctx, &method->klass->byval_arg, value->type) && !stack_slot_is_null_literal (value))
+	if (!verify_stack_type_compatibility (ctx, &method->klass->byval_arg, value) && !stack_slot_is_null_literal (value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
 
 	if (stack_slot_get_type (value) != TYPE_COMPLEX)
@@ -3046,7 +3103,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 		if (field->parent->valuetype && stack_slot_is_boxed_value (obj))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is a boxed valuetype and is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
-		if (!stack_slot_is_null_literal (obj) && !verify_type_compatibility (ctx, &field->parent->byval_arg, mono_type_get_type_byval (obj->type)))
+		if (!stack_slot_is_null_literal (obj) && !verify_stack_type_compatibility_full (ctx, &field->parent->byval_arg, obj, FALSE, TRUE))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
 		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, obj->type->data.klass))
@@ -3307,6 +3364,9 @@ do_stobj (VerifyContext *ctx, int token)
 
 	if (!stack_slot_is_managed_pointer (dest)) 
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid destination of stobj operation at 0x%04x", ctx->ip_offset));
+
+	if (stack_slot_is_boxed_value (src) && !MONO_TYPE_IS_REFERENCE (src->type) && !MONO_TYPE_IS_REFERENCE (type))
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use stobj with a boxed source value that is not a reference type at 0x%04x", ctx->ip_offset));
 
 	if (!verify_stack_type_compatibility (ctx, type, src))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Token and source types of stobj don't match at 0x%04x", ctx->ip_offset));
@@ -3760,12 +3820,16 @@ do_stelem (VerifyContext *ctx, int opcode, int token)
 			}
 		}
 	}
-
 	if (opcode == CEE_STELEM_REF) {
 		if (!stack_slot_is_boxed_value (value) && mono_class_from_mono_type (value->type)->valuetype)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value is not a reference type for stelem.ref 0x%04x", ctx->ip_offset));
-	} else if (opcode != CEE_STELEM_REF && !verify_type_compatibility_full (ctx, type, mono_type_from_stack_slot (value), FALSE)) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value on stack for stdelem.X at 0x%04x", ctx->ip_offset));
+	} else if (opcode != CEE_STELEM_REF) {
+		if (!verify_stack_type_compatibility (ctx, type, value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value on stack for stdelem.X at 0x%04x", ctx->ip_offset));
+
+		if (stack_slot_is_boxed_value (value) && !MONO_TYPE_IS_REFERENCE (value->type) && !MONO_TYPE_IS_REFERENCE (type))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use stobj with a boxed source value that is not a reference type at 0x%04x", ctx->ip_offset));
+
 	}
 }
 
@@ -3916,8 +3980,8 @@ do_load_function_ptr (VerifyContext *ctx, guint32 token, gboolean virtual)
 	
 		if (method->flags & METHOD_ATTRIBUTE_STATIC)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use ldvirtftn with a constructor at 0x%04x", ctx->ip_offset));
-	
-		if (!verify_type_compatibility (ctx, &method->klass->byval_arg, top->type))
+
+		if (!verify_stack_type_compatibility (ctx, &method->klass->byval_arg, top))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Unexpected object for ldvirtftn at 0x%04x", ctx->ip_offset));
 	}
 	
@@ -4113,16 +4177,21 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 		MonoClass *match_class = NULL;
 
 		// S := T then U = S (new value is compatible with current value, keep current)
-		if (verify_type_compatibility (ctx, old_type, new_type)) {
+		if (verify_stack_type_compatibility (ctx, old_type, new_slot)) {
 			copy_stack_value (new_slot, old_slot);
 			continue;
 		}
 
 		// T := S then U = T (old value is compatible with current value, use new)
-		if (verify_type_compatibility (ctx, new_type, old_type)) {
+		if (verify_stack_type_compatibility (ctx, new_type, old_slot)) {
 			copy_stack_value (old_slot, new_slot);
 			continue;
 		}
+
+		if (mono_type_is_generic_argument (old_type) || mono_type_is_generic_argument (new_type)) {
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stack at depth %d, types not compatible old [%s] new [%s] at 0x%04x", i, stack_slot_get_name (old_slot), stack_slot_get_name (new_slot), ctx->ip_offset)); 
+			goto end_verify;			
+		} 
 
 		//both are reference types, use closest common super type
 		if (!mono_class_from_mono_type (old_type)->valuetype 
@@ -4149,7 +4218,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 			//No decent super type found, use object
 			match_class = mono_defaults.object_class;
 			goto match_found;
-		} else if (is_compatible_boxed_valuetype (old_type, new_type, new_slot, FALSE) || is_compatible_boxed_valuetype (new_type, old_type, old_slot, FALSE)) {
+		} else if (is_compatible_boxed_valuetype (ctx,old_type, new_type, new_slot, FALSE) || is_compatible_boxed_valuetype (ctx, new_type, old_type, old_slot, FALSE)) {
 			match_class = mono_defaults.object_class;
 			goto match_found;
 		} 
