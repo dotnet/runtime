@@ -1,7 +1,6 @@
 #define MONO_EMIT_NEW_X86_COMPARE_MEMBASE_REG(cfg,basereg,offset,operand) do { \
 		MonoInst *inst; \
-		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		inst->opcode = OP_X86_COMPARE_MEMBASE_REG; \
+		MONO_INST_NEW ((cfg), inst, OP_X86_COMPARE_MEMBASE_REG); \
 		inst->inst_basereg = basereg; \
 		inst->inst_offset = offset; \
 		inst->sreg2 = operand; \
@@ -10,8 +9,7 @@
 
 #define MONO_EMIT_NEW_X86_COMPARE_MEMBASE_IMM(cfg,basereg,offset,operand) do { \
 		MonoInst *inst; \
-		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		inst->opcode = OP_X86_COMPARE_MEMBASE_IMM; \
+		MONO_INST_NEW ((cfg), inst, OP_X86_COMPARE_MEMBASE_IMM); \
 		inst->inst_basereg = basereg; \
 		inst->inst_offset = offset; \
 		inst->inst_imm = operand; \

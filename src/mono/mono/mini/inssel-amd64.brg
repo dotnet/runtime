@@ -1,7 +1,6 @@
 #define MONO_EMIT_NEW_AMD64_ICOMPARE_MEMBASE_REG(cfg,basereg,offset,operand) do { \
 		MonoInst *inst; \
-		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		inst->opcode = OP_AMD64_ICOMPARE_MEMBASE_REG; \
+		MONO_INST_NEW ((cfg), inst, OP_AMD64_ICOMPARE_MEMBASE_REG); \
 		inst->inst_basereg = basereg; \
 		inst->inst_offset = offset; \
 		inst->sreg2 = operand; \
@@ -10,8 +9,7 @@
 
 #define MONO_EMIT_NEW_AMD64_ICOMPARE_MEMBASE_IMM(cfg,basereg,offset,operand) do { \
 		MonoInst *inst; \
-		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		inst->opcode = OP_AMD64_ICOMPARE_MEMBASE_IMM; \
+		MONO_INST_NEW ((cfg), inst, OP_AMD64_ICOMPARE_MEMBASE_IMM); \
 		inst->inst_basereg = basereg; \
 		inst->inst_offset = offset; \
 		inst->inst_imm = operand; \

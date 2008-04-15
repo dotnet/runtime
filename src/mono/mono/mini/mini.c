@@ -440,8 +440,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_PCONST(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_PCONST;	\
+		MONO_INST_NEW ((cfg), (dest), OP_PCONST);	\
 		(dest)->inst_p0 = (val);	\
 		(dest)->type = STACK_PTR;	\
 	} while (0)
@@ -450,14 +449,13 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 #ifdef MONO_ARCH_NEED_GOT_VAR
 
 #define NEW_PATCH_INFO(cfg,dest,el1,el2) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_PATCH_INFO;	\
+		MONO_INST_NEW ((cfg), (dest), OP_PATCH_INFO);	\
 		(dest)->inst_left = (gpointer)(el1);	\
 		(dest)->inst_right = (gpointer)(el2);	\
 	} while (0)
 
 #define NEW_AOTCONST(cfg,dest,patch_type,cons) do {			\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst)); \
+		MONO_INST_NEW ((cfg), (dest), OP_NOP); \
 		(dest)->opcode = cfg->compile_aot ? OP_GOT_ENTRY : OP_PCONST; \
 		if (cfg->compile_aot) {					\
 			MonoInst *group, *got_var, *got_loc;		\
@@ -475,8 +473,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type,stack_class) do { \
 		MonoInst *group, *got_var, *got_loc;			\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst)); \
-		(dest)->opcode = OP_GOT_ENTRY;				\
+		MONO_INST_NEW ((cfg), (dest), OP_GOT_ENTRY); \
 		got_loc = mono_get_got_var (cfg);			\
 		NEW_TEMPLOAD ((cfg), got_var, got_loc->inst_c0);	\
 		NEW_PATCH_INFO ((cfg), group, NULL, patch_type);	\
@@ -490,7 +487,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 #else
 
 #define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->opcode = cfg->compile_aot ? OP_AOTCONST : OP_PCONST;	\
 		(dest)->inst_p0 = (cons);	\
 		(dest)->inst_i1 = (gpointer)(patch_type); \
@@ -498,8 +495,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
     } while (0)
 
 #define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type,stack_class) do { \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_AOTCONST;	\
+		MONO_INST_NEW ((cfg), (dest), OP_AOTCONST);	\
 		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
 		(dest)->inst_p1 = (gpointer)(patch_type); \
 		(dest)->type = (stack_type);	\
@@ -548,7 +544,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_ARGLOAD(cfg,dest,num) do {	\
                 if (arg_array [(num)]->opcode == OP_ICONST) (dest) = arg_array [(num)]; else { \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->ssa_op = MONO_SSA_LOAD;	\
 		(dest)->inst_i0 = arg_array [(num)];	\
 		(dest)->opcode = mini_type_to_ldind ((cfg), (dest)->inst_i0->inst_vtype); \
@@ -557,7 +553,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	}} while (0)
 
 #define NEW_LOCLOAD(cfg,dest,num) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->ssa_op = MONO_SSA_LOAD;	\
 		(dest)->inst_i0 = (cfg)->varinfo [locals_offset + (num)];	\
 		(dest)->opcode = mini_type_to_ldind ((cfg), (dest)->inst_i0->inst_vtype); \
@@ -566,11 +562,10 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_LOCLOADA(cfg,dest,num) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_LDADDR);	\
 		(dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
 		(dest)->inst_i0 = (cfg)->varinfo [locals_offset + (num)];	\
 		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
-		(dest)->opcode = OP_LDADDR;	\
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
         if (!MONO_TYPE_ISSTRUCT (header->locals [(num)])) \
@@ -579,14 +574,14 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_RETLOADA(cfg,dest) do {	\
         if (cfg->vret_addr) { \
-		    (dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		    MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		    (dest)->ssa_op = MONO_SSA_LOAD;	\
 		    (dest)->inst_i0 = cfg->vret_addr; \
 		    (dest)->opcode = mini_type_to_ldind ((cfg), (dest)->inst_i0->inst_vtype); \
             (dest)->type = STACK_MP; \
 		    (dest)->klass = (dest)->inst_i0->klass;	\
         } else { \
-			(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+			MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		    (dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
 		    (dest)->inst_i0 = (cfg)->ret;	\
 		    (dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
@@ -599,18 +594,17 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_ARGLOADA(cfg,dest,num) do {	\
                 if (arg_array [(num)]->opcode == OP_ICONST) goto inline_failure; \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_LDADDR);	\
 		(dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
 		(dest)->inst_i0 = arg_array [(num)];	\
 		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
-		(dest)->opcode = OP_LDADDR;	\
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
                 (cfg)->disable_ssa = TRUE; \
 	} while (0)
 
 #define NEW_TEMPLOAD(cfg,dest,num) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->ssa_op = MONO_SSA_LOAD;	\
 		(dest)->inst_i0 = (cfg)->varinfo [(num)];	\
 		(dest)->opcode = mini_type_to_ldind ((cfg), (dest)->inst_i0->inst_vtype); \
@@ -619,11 +613,10 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_TEMPLOADA(cfg,dest,num) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_LDADDR);	\
 		(dest)->ssa_op = MONO_SSA_ADDRESS_TAKEN;	\
 		(dest)->inst_i0 = (cfg)->varinfo [(num)];	\
 		(dest)->inst_i0->flags |= MONO_INST_INDIRECT;	\
-		(dest)->opcode = OP_LDADDR;	\
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (dest)->inst_i0->klass;	\
         if (!MONO_TYPE_ISSTRUCT (cfg->varinfo [(num)]->inst_vtype)) \
@@ -632,7 +625,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 
 #define NEW_INDLOAD(cfg,dest,addr,vtype) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->inst_left = addr;	\
 		(dest)->opcode = mini_type_to_ldind ((cfg), vtype);	\
 		type_to_eval_stack_type ((cfg), vtype, (dest));	\
@@ -640,7 +633,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_INDSTORE(cfg,dest,addr,value,vtype) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->inst_i0 = addr;	\
 		(dest)->opcode = mini_type_to_stind ((cfg), vtype);	\
 		(dest)->inst_i1 = (value);	\
@@ -648,7 +641,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_TEMPSTORE(cfg,dest,num,inst) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->ssa_op = MONO_SSA_STORE;	\
 		(dest)->inst_i0 = (cfg)->varinfo [(num)];	\
 		(dest)->opcode = mini_type_to_stind ((cfg), (dest)->inst_i0->inst_vtype); \
@@ -657,7 +650,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_LOCSTORE(cfg,dest,num,inst) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->opcode = mini_type_to_stind ((cfg), header->locals [(num)]); \
 		(dest)->ssa_op = MONO_SSA_STORE;	\
 		(dest)->inst_i0 = (cfg)->varinfo [locals_offset + (num)];	\
@@ -667,7 +660,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 
 #define NEW_ARGSTORE(cfg,dest,num,inst) do {	\
                 if (arg_array [(num)]->opcode == OP_ICONST) goto inline_failure; \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->opcode = mini_type_to_stind ((cfg), param_types [(num)]); \
 		(dest)->ssa_op = MONO_SSA_STORE;	\
 		(dest)->inst_i0 = arg_array [(num)];	\
@@ -696,15 +689,13 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
     } while (0)
 
 #define NEW_DUMMY_USE(cfg,dest,load) do { \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_DUMMY_USE; \
+		MONO_INST_NEW ((cfg), (dest), OP_DUMMY_USE);	\
 		(dest)->inst_left = (load); \
     } while (0)
 
 #define NEW_DUMMY_STORE(cfg,dest,num) do { \
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		MONO_INST_NEW ((cfg), (dest), OP_DUMMY_STORE);	\
 		(dest)->inst_i0 = (cfg)->varinfo [(num)];	\
-		(dest)->opcode = OP_DUMMY_STORE; \
 		(dest)->klass = (dest)->inst_i0->klass;	\
 	} while (0)
 
@@ -794,8 +785,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_LDELEMA(cfg,dest,sp,k) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = CEE_LDELEMA;	\
+		MONO_INST_NEW ((cfg), (dest), CEE_LDELEMA);	\
 		(dest)->inst_left = (sp) [0];	\
 		(dest)->inst_right = (sp) [1];	\
 		(dest)->type = STACK_MP;	\
@@ -804,8 +794,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 	} while (0)
 
 #define NEW_GROUP(cfg,dest,el1,el2) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_GROUP;	\
+		MONO_INST_NEW ((cfg), (dest), OP_GROUP);	\
 		(dest)->inst_left = (el1);	\
 		(dest)->inst_right = (el2);	\
 	} while (0)
@@ -5092,6 +5081,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			real_offset = ip - header->code;
 		else
 			real_offset = inline_offset;
+		cfg->ip = ip;
 
 		if (start_new_bblock) {
 			bblock->cil_length = ip - bblock->cil_code;
@@ -9143,6 +9133,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	if (header->init_locals) {
 		MonoInst *store;
+		cfg->ip = header->code;
 		for (i = 0; i < header->num_locals; ++i) {
 			MonoType *ptype = header->locals [i];
 			int t = ptype->type;
@@ -9901,7 +9892,7 @@ print_dfn (MonoCompile *cfg) {
 void
 mono_bblock_add_inst (MonoBasicBlock *bb, MonoInst *inst)
 {
-	MONO_INST_LIST_ADD_TAIL (&inst->node, &bb->ins_list);
+	MONO_ADD_INS (bb, inst);
 }
 
 void
@@ -11348,6 +11339,7 @@ mini_select_instructions (MonoCompile *cfg)
 			}
 #endif
 
+			cfg->ip = tree->cil_code;
 			if (!(mbstate = mono_burg_label (tree, cfg))) {
 				g_warning ("unable to label tree %p", tree);
 				mono_print_tree (tree);

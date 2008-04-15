@@ -100,11 +100,13 @@ enum {
 #define MONO_INST_NEW(cfg,dest,op) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = (op);	\
+        (dest)->cil_code = (cfg)->ip; \
 	} while (0)
 
 #define MONO_INST_NEW_CALL(cfg,dest,op) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallInst));	\
 		(dest)->inst.opcode = (op);	\
+        (dest)->inst.cil_code = (cfg)->ip; \
 		MONO_INST_LIST_INIT (&(dest)->out_args); \
 	} while (0)
 
@@ -768,6 +770,11 @@ typedef struct {
 	 * the vtype is returned in registers this is NULL.
 	 */
 	MonoInst        *vret_addr;
+
+	/*
+	 * This is used to initialize the cil_code field of MonoInst's.
+	 */
+	const unsigned char *ip;
 	
 	struct MonoAliasingInformation *aliasing_info;
 
