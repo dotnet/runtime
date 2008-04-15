@@ -151,7 +151,16 @@ gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 			   __func__, new_pathname);
 #endif
 	}
-	
+
+	size_t len = strlen (new_pathname);
+	if (len > 1 && new_pathname [len - 1] == '/') {
+		new_pathname [len - 1] = 0;
+#ifdef DEBUG
+		g_message ("%s: requested name had a trailing /, rewritten to '%s'\n",
+			   __func__, new_pathname);
+#endif
+	}
+
 	if (last_exists &&
 	    access (new_pathname, F_OK) == 0) {
 #ifdef DEBUG
