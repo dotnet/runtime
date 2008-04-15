@@ -1503,21 +1503,15 @@ struct {
 static void
 disassemble_file (const char *file)
 {
-	MonoAssembly *ass;
 	MonoImageOpenStatus status;
 	MonoImage *img;
 
-	ass = mono_assembly_open (file, &status);
-	if (ass == NULL){
-		img = mono_image_open (file, &status);
-		if (!img) {
-			fprintf (stderr, "Error while trying to process %s\n", file);
-			return;
-		} else {
-			mono_assembly_load_references (img, &status);
-		}
+	img = mono_image_open (file, &status);
+	if (!img) {
+		fprintf (stderr, "Error while trying to process %s\n", file);
+		return;
 	} else {
-		img = ass->image;
+		mono_assembly_load_references (img, &status);
 	}
 
 	setup_filter (img);
