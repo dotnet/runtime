@@ -1175,12 +1175,23 @@ try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
 					const gchar *path3, const gchar *path4,
 					gboolean refonly, gboolean is_private)
 {
-	
 	gchar *fullpath;
-
+	gboolean found = FALSE;
+	
 	*assembly = NULL;
 	fullpath = g_build_filename (path1, path2, path3, path4, NULL);
-	if (g_file_test (fullpath, G_FILE_TEST_IS_REGULAR)) {
+
+	if (IS_PORTABILITY_SET) {
+		gchar *new_fullpath = mono_portability_find_file (fullpath, TRUE);
+		if (new_fullpath) {
+			g_free (fullpath);
+			fullpath = new_fullpath;
+			found = TRUE;
+		}
+	} else
+		found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
+	
+	if (found) {
 		if (is_private) {
 			char *new_path = make_shadow_copy (fullpath);
 			g_free (fullpath);
