@@ -4896,3 +4896,80 @@ do
 done
 
 
+
+
+#interaction between boxed generic arguments and its constraints
+./make_boxed_genarg_test.sh boxed_genarg_cnstr_obj valid "constrained. !0 callvirt instance int32 object::GetHashCode()" "ldloca 0"
+./make_boxed_genarg_test.sh boxed_genarg_cnstr_iface valid "constrained. !0 callvirt instance void class IFace::Tst()" "ldloca 0"
+
+./make_boxed_genarg_test.sh boxed_genarg_delegate valid "ldvirtftn instance void class IFace::Tst()\n\tnewobj instance void class TstDelegate::'.ctor'(object, native int)" "ldloc.0\n\tbox !T\n\tdup"
+
+./make_boxed_genarg_test.sh boxed_genarg_stfld_arg valid "stfld IFace class DriverClass<!0>::ifField" "ldarg.0\n\tldloc.0\n\tbox !T"
+
+./make_boxed_genarg_test.sh boxed_genarg_stfld_this_1 valid "stfld int32 class BaseClass::fld" "ldloc.0\n\tbox !T\n\tldc.i4.1" "BaseClass"
+
+./make_boxed_genarg_test.sh boxed_genarg_stfld_this_2 unverifiable "stfld int32 class BaseClass::fld" "ldloc.0\n\tldc.i4.1" "BaseClass"
+
+./make_boxed_genarg_test.sh boxed_genarg_ldfld_1 valid "ldfld int32 class BaseClass::fld" "ldloc.0\n\tbox !T" "BaseClass"
+
+./make_boxed_genarg_test.sh boxed_genarg_ldfld_2 unverifiable "ldfld int32 class BaseClass::fld" "ldloc.0" "BaseClass"
+
+
+./make_boxed_genarg_test.sh boxed_genarg_initobj_1 unverifiable "initobj IFace" "ldloca 0"
+./make_boxed_genarg_test.sh boxed_genarg_initobj_2 unverifiable "initobj !0" "ldloca 1"
+
+./make_boxed_genarg_test.sh boxed_genarg_stobj_1 unverifiable "stobj IFace" "ldloca 0\n\tldloc.0\n\tbox !T"
+./make_boxed_genarg_test.sh boxed_genarg_stobj_2 unverifiable "stobj !0" "ldloca 0\n\tldloc.0\n\tbox !T"
+./make_boxed_genarg_test.sh boxed_genarg_stobj_3 valid "stobj IFace" "ldloca 1\n\tldloc.0\n\tbox !T"
+./make_boxed_genarg_test.sh boxed_genarg_stobj_4 unverifiable "stobj !0" "ldloca 1\n\tldloc.0\n\tbox !T"
+./make_boxed_genarg_test.sh boxed_genarg_stobj_5 valid "stobj !0" "ldloca 0\n\tldloc.0"
+
+./make_stobj_test.sh stobj_boxing_test_1 valid "int32" "int32\&" "int32" ""
+./make_stobj_test.sh stobj_boxing_test_2 unverifiable "int32" "int32\&" "int32" "box int32"
+./make_stobj_test.sh stobj_boxing_test_3 valid "object" "object\&" "object" "box object"
+
+./make_boxed_genarg_test.sh boxed_genarg_stind_ref_1 unverifiable "stind.ref" "ldloca 0\n\tldloc.0"
+./make_boxed_genarg_test.sh boxed_genarg_stind_ref_2 unverifiable "stind.ref" "ldloca 0\n\tldloc.0\n\tbox !T"
+
+./make_boxed_genarg_test.sh boxed_genarg_stind_ref_3 unverifiable "stind.ref" "ldloca 1\n\tldloc.0"
+./make_boxed_genarg_test.sh boxed_genarg_stind_ref_4 valid "stind.ref" "ldloca 1\n\tldloc.0\n\tbox !T"
+
+./make_boxed_genarg_test.sh boxed_genarg_stelem_1 unverifiable "stelem IFace" "ldloc.2\n\tldc.i4.0\n\tldloc.0\n\tbox !T"
+./make_boxed_genarg_test.sh boxed_genarg_stelem_2 unverifiable "stelem !0" "ldloc.2\n\tldc.i4.0\n\tldloc.0\n\tbox !T"
+
+./make_boxed_genarg_test.sh boxed_genarg_stelem_3 unverifiable "stelem IFace" "ldloc.2\n\tldc.i4.0\n\tldloc.1"
+./make_boxed_genarg_test.sh boxed_genarg_stelem_4 unverifiable "stelem !0" "ldloc.2\n\tldc.i4.0\n\tldloc.1"
+
+./make_boxed_genarg_test.sh boxed_genarg_stelem_5 valid "stelem IFace" "ldloc.3\n\tldc.i4.0\n\tldloc.0\n\tbox !T"
+./make_boxed_genarg_test.sh boxed_genarg_stelem_6 unverifiable "stelem !0" "ldloc.3\n\tldc.i4.0\n\tldloc.0\n\tbox !T"
+
+./make_boxed_genarg_test.sh boxed_genarg_stelem_7 valid "stelem IFace" "ldloc.3\n\tldc.i4.0\n\tldloc.1"
+./make_boxed_genarg_test.sh boxed_genarg_stelem_8 unverifiable "stelem !0" "ldloc.3\n\tldc.i4.0\n\tldloc.1"
+
+./make_boxed_genarg_test.sh boxed_genarg_stelem_9 unverifiable "stelem IFace" "ldloc.2\n\tldc.i4.0\n\tldloc.0"
+./make_boxed_genarg_test.sh boxed_genarg_stelem_10 valid "stelem !0" "ldloc.2\n\tldc.i4.0\n\tldloc.0"
+
+./make_boxed_genarg_test.sh boxed_genarg_stelem_11 unverifiable "stelem IFace" "ldloc.3\n\tldc.i4.0\n\tldloc.0"
+./make_boxed_genarg_test.sh boxed_genarg_stelem_12 unverifiable "stelem !0" "ldloc.3\n\tldc.i4.0\n\tldloc.0"
+
+
+./make_boxed_genarg_test.sh boxed_genarg_stack_merge_1 valid "pop\n\tldloc.1" "ldloc.1\n\tnewobj instance void object::.ctor()\n\tcallvirt instance int32 object::GetHashCode()\n\tbrtrue TARGET"
+
+
+./make_boxed_genarg_test.sh boxed_genarg_stack_merge_2 unverifiable "pop\n\tldloc.1" "ldloc.0\n\tnewobj instance void object::.ctor()\n\tcallvirt instance int32 object::GetHashCode()\n\tbrtrue TARGET"
+
+./make_boxed_genarg_test.sh boxed_genarg_stack_merge_3 valid "pop\n\tldloc.1" "ldloc.0\n\tbox !T\n\tnewobj instance void object::.ctor()\n\tcallvirt instance int32 object::GetHashCode()\n\tbrtrue TARGET"
+
+./make_boxed_genarg_test.sh boxed_genarg_stack_merge_4 unverifiable "pop\n\tldloc.1" "ldloc.0\n\tbox IFace\n\tnewobj instance void object::.ctor()\n\tcallvirt instance int32 object::GetHashCode()\n\tbrtrue TARGET"
+
+
+./make_boxed_genarg_test.sh boxed_genarg_stack_merge_5 unverifiable "pop\n\tldloc.0" "ldloc.1\n\tnewobj instance void object::.ctor()\n\tcallvirt instance int32 object::GetHashCode()\n\tbrtrue TARGET"
+
+./make_boxed_genarg_test.sh boxed_genarg_stack_merge_6 valid "pop\n\tldloc.0\n\tbox !T" "ldloc.1\n\tnewobj instance void object::.ctor()\n\tcallvirt instance int32 object::GetHashCode()\n\tbrtrue TARGET"
+
+./make_boxed_genarg_test.sh boxed_genarg_stack_merge_7 unverifiable "pop\n\tldloc.0\n\tbox IFace" "ldloc.1\n\tnewobj instance void object::.ctor()\n\tcallvirt instance int32 object::GetHashCode()\n\tbrtrue TARGET"
+
+
+
+
+
