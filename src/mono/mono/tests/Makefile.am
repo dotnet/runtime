@@ -658,11 +658,11 @@ generic-boxing.2.dll : generic-boxing.2.il generic-unboxing.2.dll
 
 EXTRA_DIST += generic-unbox.2.cs
 generic-unbox.2.exe : generic-unbox.2.cs generic-unboxing.2.dll
-	$(MCS) -r:generic-unboxing.2.dll $(srcdir)/generic-unbox.2.cs
+	$(MCS) -r:generic-unboxing.2.dll -out:$@ $(srcdir)/generic-unbox.2.cs
 
 EXTRA_DIST += generic-box.2.cs
 generic-box.2.exe : generic-box.2.cs generic-unboxing.2.dll generic-boxing.2.dll
-	$(MCS) -r:generic-unboxing.2.dll,generic-boxing.2.dll $(srcdir)/generic-box.2.cs
+	$(MCS) -r:generic-unboxing.2.dll,generic-boxing.2.dll -out:$@ $(srcdir)/generic-box.2.cs
 
 test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		shared-generic-synchronized.2.exe generic-initobj.2.exe		\
