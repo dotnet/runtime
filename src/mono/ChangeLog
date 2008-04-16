@@ -1,3 +1,8 @@
+2008-04-16  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/mono-find-requires.in: Fix extraneous whitespace that makes
+	some reqs from .config be on the same line as the monodis reqs.
+
 2008-04-16  Jb Evain  <jbevain@novell.com>
 
 	* configure.in, data/Makefile.am: add a smcs.pc file,
