@@ -2198,6 +2198,7 @@ data/mono.pc
 data/mono-cairo.pc
 data/dotnet.pc
 data/cecil.pc
+data/smcs.pc
 samples/Makefile
 support/Makefile
 data/config

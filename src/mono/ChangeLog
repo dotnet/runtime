@@ -1,3 +1,8 @@
+2008-04-16  Jb Evain  <jbevain@novell.com>
+
+	* configure.in, data/Makefile.am: add a smcs.pc file,
+	that moonlight can use to locate smcs.exe.
+
 2008-04-11  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* scripts/Makefile.am : we need genxs2 for generating 2.0 based 
