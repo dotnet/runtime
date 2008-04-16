@@ -401,7 +401,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src;..\..\mono\eglib\src"
+				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\eglib\src;..\..\mono\eglib\src"
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -425,7 +425,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="eglib.lib"
+				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories=".\lib\$(PlatformName)"
@@ -490,8 +490,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src"
-				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\eglib\src;..\..\mono\eglib\src"
+				PreprocessorDefinitions="__x86_64__;WIN64;_WIN64;_DEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -514,7 +514,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
+				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories=".\lib\$(PlatformName)"
@@ -545,7 +545,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runmdesc.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runmdesc.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -579,7 +579,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src"
+				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\eglib\src;..\..\mono\eglib\src"
 				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -602,7 +602,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
+				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories=".\lib\$(PlatformName)"
@@ -668,8 +668,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src"
-				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\eglib\src;..\..\mono\eglib\src"
+				PreprocessorDefinitions="__x86_64__;WIN64;_WIN64;NDEBUG;WIN32;_CONSOLE;__WIN32__;HAVE_CONFIG_H;__i386__;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -691,7 +691,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
+				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories=".\lib\$(PlatformName)"

@@ -515,6 +515,7 @@
 				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(TargetDir)libmono.pdb"
 				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
 				TargetMachine="17"
 			/>
@@ -733,6 +734,14 @@
 		<Filter
 			Name="utils"
 			>
+			<File
+				RelativePath="..\mono\utils\dlmalloc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\dlmalloc.h"
+				>
+			</File>
 			<File
 				RelativePath="..\mono\utils\mono-codeman.c"
 				>

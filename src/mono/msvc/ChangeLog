@@ -1,3 +1,9 @@
+2008-04-15  Jonathan Chambers  <joncham@gmail.com>
+	* mono.sln, libmono.vcproj, monoburg.vcproj, genmdesc.vcproj: Flush Win64
+	  and eglib changes.
+
+	Contributed under MIT/X11 license.
+
 2008-04-04  Bill Holmes  <billholmes54@gmail.com>
 
 	* runburg.bat, runmdesc.bat:  Reverting back to r97888.  The PATH was correct before.
