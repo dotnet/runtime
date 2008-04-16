@@ -494,7 +494,8 @@ mono_analyze_liveness (MonoCompile *cfg)
 	}
 #endif
 
-	optimize_initlocals (cfg);
+	if (!cfg->disable_initlocals_opt)
+		optimize_initlocals (cfg);
 }
 
 static void

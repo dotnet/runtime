@@ -9478,7 +9478,7 @@ g_slist_prepend_mempool (MonoMemPool *mp, GSList   *list,
  * STACK_ALIGN is set to the alignment needed by the locals area.
  */
 gint32*
-mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stack_size, guint32 *stack_align)
+mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
 {
 	int i, slot, offset, size;
 	guint32 align;
@@ -9490,17 +9490,17 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 	MonoType *t;
 	int nvtypes;
 
-	scalar_stack_slots = mono_mempool_alloc0 (m->mempool, sizeof (StackSlotInfo) * MONO_TYPE_PINNED);
+	scalar_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * MONO_TYPE_PINNED);
 	vtype_stack_slots = NULL;
 	nvtypes = 0;
 
-	offsets = mono_mempool_alloc (m->mempool, sizeof (gint32) * m->num_varinfo);
-	for (i = 0; i < m->num_varinfo; ++i)
+	offsets = mono_mempool_alloc (cfg->mempool, sizeof (gint32) * cfg->num_varinfo);
+	for (i = 0; i < cfg->num_varinfo; ++i)
 		offsets [i] = -1;
 
-	for (i = m->locals_start; i < m->num_varinfo; i++) {
-		inst = m->varinfo [i];
-		vmv = MONO_VARINFO (m, i);
+	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+		inst = cfg->varinfo [i];
+		vmv = MONO_VARINFO (cfg, i);
 
 		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR || inst->opcode == OP_REGOFFSET)
 			continue;
@@ -9508,12 +9508,12 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 		vars = g_list_prepend (vars, vmv);
 	}
 
-	vars = mono_varlist_sort (m, vars, 0);
+	vars = mono_varlist_sort (cfg, vars, 0);
 	offset = 0;
 	*stack_align = 0;
 	for (l = vars; l; l = l->next) {
 		vmv = l->data;
-		inst = m->varinfo [vmv->idx];
+		inst = cfg->varinfo [vmv->idx];
 
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structures */
@@ -9539,7 +9539,7 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 				/* Fall through */
 			case MONO_TYPE_VALUETYPE:
 				if (!vtype_stack_slots)
-					vtype_stack_slots = mono_mempool_alloc0 (m->mempool, sizeof (StackSlotInfo) * 256);
+					vtype_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * 256);
 				for (i = 0; i < nvtypes; ++i)
 					if (t->data.klass == vtype_stack_slots [i].vtype)
 						break;
@@ -9574,7 +9574,7 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 		}
 
 		slot = 0xffffff;
-		if (m->comp_done & MONO_COMP_LIVENESS) {
+		if (cfg->comp_done & MONO_COMP_LIVENESS) {
 			//printf ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos);
 			
 			/* expire old intervals in active */
@@ -9587,7 +9587,7 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 				//printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
 
 				slot_info->active = g_list_delete_link (slot_info->active, slot_info->active);
-				slot_info->slots = g_slist_prepend_mempool (m->mempool, slot_info->slots, GINT_TO_POINTER (offsets [amv->idx]));
+				slot_info->slots = g_slist_prepend_mempool (cfg->mempool, slot_info->slots, GINT_TO_POINTER (offsets [amv->idx]));
 			}
 
 			/* 
@@ -9605,7 +9605,7 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 					slot_info->slots = slot_info->slots->next;
 				}
 
-				slot_info->active = mono_varlist_insert_sorted (m, slot_info->active, vmv, TRUE);
+				slot_info->active = mono_varlist_insert_sorted (cfg, slot_info->active, vmv, TRUE);
 			}
 		}
 
@@ -9615,7 +9615,7 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 
 			/*
 			if (count == atoi (getenv ("COUNT")))
-				printf ("LAST: %s\n", mono_method_full_name (m->method, TRUE));
+				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 			if (count > atoi (getenv ("COUNT")))
 				slot = 0xffffff;
 			else {
@@ -9623,6 +9623,10 @@ mono_allocate_stack_slots_full (MonoCompile *m, gboolean backward, guint32 *stac
 				}
 			*/
 		}
+
+		if (cfg->disable_reuse_stack_slots)
+			slot = 0xffffff;
+
 		if (slot == 0xffffff) {
 			/*
 			 * Allways allocate valuetypes to sizeof (gpointer) to allow more
@@ -11844,6 +11848,22 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (try_generic_shared)
 		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
+
+	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
+	if (mono_debug_using_mono_debugger ()) {
+		cfg->disable_reuse_registers = TRUE;
+		cfg->disable_reuse_stack_slots = TRUE;
+		/* 
+		 * This decreases the change the debugger will read registers/stack slots which are
+		 * not yet initialized.
+		 */
+		cfg->disable_initlocals_opt = TRUE;
+
+		// cfg->opt |= MONO_OPT_SHARED;
+		cfg->opt &= ~MONO_OPT_INLINE;
+		cfg->opt &= ~MONO_OPT_COPYPROP;
+		cfg->opt &= ~MONO_OPT_CONSPROP;
+	}
 
 	header = mono_method_get_header (method_to_compile);
 	if (!header) {

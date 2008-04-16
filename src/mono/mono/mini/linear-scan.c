@@ -105,19 +105,21 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 			vmv->range.last_use.abs_pos);
 #endif
 		/* expire old intervals in active */
-		while (active) {
-			amv = (MonoMethodVar *)active->data;
+		if (!cfg->disable_reuse_registers) {
+			while (active) {
+				amv = (MonoMethodVar *)active->data;
 
-			if (amv->range.last_use.abs_pos > vmv->range.first_use.abs_pos)
-				break;
+				if (amv->range.last_use.abs_pos > vmv->range.first_use.abs_pos)
+					break;
 
 #ifdef DEBUG_LSCAN
-			printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, 
-				amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
+				printf ("EXPIR  %2d %08x %08x C%d R%d\n", amv->idx, amv->range.first_use.abs_pos, 
+						amv->range.last_use.abs_pos, amv->spill_costs, amv->reg);
 #endif
-			active = g_list_delete_link (active, active);
-			regs = g_list_prepend (regs, GINT_TO_POINTER (amv->reg));
-			gains [amv->reg] += amv->spill_costs;
+				active = g_list_delete_link (active, active);
+				regs = g_list_prepend (regs, GINT_TO_POINTER (amv->reg));
+				gains [amv->reg] += amv->spill_costs;
+			}
 		}
 
 		if (active && g_list_length (active) == max_regs) {

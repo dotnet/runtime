@@ -817,6 +817,9 @@ typedef struct {
 	guint            ret_var_is_local : 1;
 	guint            unverifiable : 1;
 	guint            skip_visibility : 1;
+	guint            disable_reuse_registers : 1;
+	guint            disable_reuse_stack_slots : 1;
+	guint            disable_initlocals_opt : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	MonoProfileCoverageInfo *coverage_info;
