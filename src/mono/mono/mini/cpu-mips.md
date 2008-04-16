@@ -133,7 +133,6 @@ cgt.un: dest:i len:16
 clt: dest:i len:16
 clt.un: dest:i len:16
 localloc: dest:i src1:i len:60
-rethrow: len:24
 compare: src1:i src2:i len:20
 compare_imm: src1:i len:20
 fcompare: src1:f src2:f len:12

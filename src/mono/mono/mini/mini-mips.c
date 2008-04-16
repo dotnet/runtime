@@ -1830,7 +1830,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		mono_debug_record_line_number (cfg, ins, offset);
 		if (cfg->verbose_level > 2) {
 			g_print ("    @ 0x%x\t", offset);
-			mono_print_ins (ins_cnt++, ins);
+			mono_print_ins_index (ins_cnt++, ins);
 		}
 
 		switch (ins->opcode) {

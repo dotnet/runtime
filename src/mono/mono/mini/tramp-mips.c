@@ -33,8 +33,8 @@
  * this argument. This method returns a pointer to a trampoline which does
  * unboxing before calling the method
  */
-static gpointer
-get_unbox_trampoline (MonoMethod *m, gpointer addr)
+gpointer
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = mips_a0;
@@ -60,6 +60,50 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	return start;
 }
 
+void
+mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
+{
+	guint32 *code = (guint32*)orig_code;
+
+	/* Locate the address of the method-specific trampoline. The call using
+	the vtable slot that took the processing flow to 'arch_create_jit_trampoline' 
+	looks something like this:
+
+		jal	XXXXYYYY
+
+		lui	t9, XXXX
+		addiu	t9, YYYY
+		jalr	t9
+		nop
+
+	On entry, 'code' points just after one of the above sequences.
+	*/
+	
+	/* The jal case */
+	if ((code[-2] >> 26) == 0x03) {
+		//g_print ("direct patching\n");
+		mips_patch ((code-2), (gsize)addr);
+	} else {
+		/* Sanity check: look for the jalr */
+		g_assert((code[-2] & 0xfc1f003f) == 0x00000009);
+
+		//printf ("mips_magic_trampoline: jalr @ 0x%0x, w/ reg %d\n", code-2, reg);
+
+		/* The lui / addiu / jalr case */
+		if ((code [-4] >> 26) == 0x0f && (code [-3] >> 26) == 0x09 && (code [-2] >> 26) == 0) {
+			mips_patch ((code-4), (gsize)addr);
+		} else {
+			g_assert_not_reached ();
+		}
+	}
+}
+
+void
+mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
+{
+	g_assert_not_reached ();
+}
+
 /* Stack size for trampoline function 
  * MIPS_MINIMAL_STACK_SIZE + 16 (args + alignment to mips_magic_trampoline)
  * + MonoLMF + 14 fp regs + 13 gregs + alignment
@@ -69,12 +113,69 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 #define STACK (4*4 + 8 + sizeof(MonoLMF) + 32)
 
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8* code8, gpointer *regs)
+{
+	char *vtable = NULL;
+	int reg, offset = 0;
+	guint32 base = 0;
+	guint32 *code = (guint32*)code8;
+	char *sp;
 
-/* Method-specific trampoline code fragment size */
-#define METHOD_TRAMPOLINE_SIZE 64
+	/* On MIPS, we are passed sp instead of the register array */
+	sp = (char*)regs;
 
-/* Jump-specific trampoline code fragment size */
-#define JUMP_TRAMPOLINE_SIZE   64
+	//printf ("mips_magic_trampoline: 0x%08x @ 0x%0x\n", *(code-2), code-2);
+	
+	/* The jal case */
+	if ((code[-2] >> 26) == 0x03)
+		return NULL;
+
+	/* Sanity check: look for the jalr */
+	g_assert((code[-2] & 0xfc1f003f) == 0x00000009);
+
+	reg = (code[-2] >> 21) & 0x1f;
+
+	//printf ("mips_magic_trampoline: jalr @ 0x%0x, w/ reg %d\n", code-2, reg);
+
+	/* The lui / addiu / jalr case */
+	if ((code [-4] >> 26) == 0x0f && (code [-3] >> 26) == 0x09 && (code [-2] >> 26) == 0) {
+		return NULL;
+	}
+
+	/* Probably a vtable lookup */
+
+	/* Walk backwards to find 'lw reg,XX(base)' */
+	for(; --code;) {
+		guint32 mask = (0x3f << 26) | (0x1f << 16);
+		guint32 match = (0x23 << 26) | (reg << 16);
+		if((*code & mask) == match) {
+			gint16 soff;
+			gint reg_offset;
+
+			/* lw reg,XX(base) */
+			base = (*code >> 21) & 0x1f;
+			soff = (*code & 0xffff);
+			if (soff & 0x8000)
+				soff |= 0xffff0000;
+			offset = soff;
+			reg_offset = STACK - sizeof (MonoLMF)
+				+ G_STRUCT_OFFSET (MonoLMF, iregs[base]);
+			/* o contains now the value of register reg */
+			vtable = *((char**) (sp + reg_offset));
+			return (gpointer*)vtable;
+		}
+	}
+
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void
+mono_arch_nullify_plt_entry (guint8 *code)
+{
+	g_assert_not_reached ();
+}
 
 /**
  * mips_magic_trampoline:
@@ -90,6 +191,7 @@ get_unbox_trampoline (MonoMethod *m, gpointer addr)
  * the newly compiled code and returns this address of the compiled code to
  * 'arch_create_jit_trampoline' 
  */
+#if 0
 static gpointer
 mips_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 {
@@ -191,22 +293,21 @@ mips_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
 		*((gpointer *)vtable) = addr;
 	return addr;
 }
+#endif
 
-static void
-mips_class_init_trampoline (void *vtable, guint32 *code, char *sp)
+void
+mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
-	//g_print ("mips_class_init: vtable=%p code=%p sp=%p\n", vtable, code, sp);
-
-	mono_runtime_class_init (vtable);
+	guint32 *code32 = (guint32*)code;
 
 	/* back up to the jal/jalr instruction */
-	code -= 2;
+	code32 -= 2;
 
 	/* Check for jal/jalr -- and NOP it out */
-	if ((((*code)&0xfc000000) == 0x0c000000)
-	    || (((*code)&0xfc1f003f) == 0x00000009)) {
-		mips_nop (code);
-		mono_arch_flush_icache (code-1, 4);
+	if ((((*code32)&0xfc000000) == 0x0c000000)
+	    || (((*code32)&0xfc1f003f) == 0x00000009)) {
+		mips_nop (code32);
+		mono_arch_flush_icache ((gpointer)(code32 - 1), 4);
 		return;
 	} else {
 		g_assert_not_reached ();
@@ -231,8 +332,8 @@ mips_class_init_trampoline (void *vtable, guint32 *code, char *sp)
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
-	guint8 *buf, *code = NULL;
-	int i, offset, lmf;
+	guint8 *buf, *tramp, *code = NULL;
+	int i, lmf;
 	int max_code_len = 768;
 
 	/* Now we'll create in 'buf' the MIPS trampoline code. This
@@ -292,8 +393,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * Now we're ready to call mips_magic_trampoline ().
 	 */
 
-	/* Arg 1: MonoMethod *method. */
-	mips_lw (code, mips_a0, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, method));
+	/* Arg 1: stack pointer so that the magic trampoline can access the
+	 * registers we saved above
+	 */
+	mips_move (code, mips_a0, mips_sp);
 		
 	/* Arg 2: code (next address to the instruction that called us) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -301,18 +404,16 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	} else {
 		mips_lw (code, mips_a1, mips_sp, STACK + MIPS_RET_ADDR_OFFSET);
 	}
-		
-	/* Arg 3: stack pointer so that the magic trampoline can access the
-	 * registers we saved above
-	 */
-	mips_move (code, mips_a2, mips_sp);
+
+	/* Arg 3: MonoMethod *method. */
+	mips_lw (code, mips_a2, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, method));
+
+	/* Arg 4: Trampoline */
+	mips_move (code, mips_a3, mips_zero);
 		
 	/* Now go to the trampoline */
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
-		mips_load (code, mips_t9, (guint32)mips_class_init_trampoline);
-	} else {
-		mips_load (code, mips_t9, (guint32)mips_magic_trampoline);
-	}
+	tramp = (guint8*)mono_get_trampoline_func (tramp_type);
+	mips_load (code, mips_t9, (guint32)tramp);
 	mips_jalr (code, mips_t9, mips_ra);
 	mips_nop (code);
 		
@@ -345,7 +446,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	mips_lw (code, mips_ra, mips_sp, STACK + MIPS_RET_ADDR_OFFSET);
 	mips_addiu (code, mips_sp, mips_sp, STACK);
-	mips_jr (code, mips_at);
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
+		mips_jr (code, mips_ra);
+	else
+		mips_jr (code, mips_at);
 	mips_nop (code);
 
 	/* Flush instruction cache, since we've generated code */
@@ -357,10 +461,12 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	return buf;
 }
 
-static MonoJitInfo*
-create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain) {
-	guint8 *code, *buf;
-	MonoJitInfo *ji;
+gpointer
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+{
+	guint8 *code, *buf, *tramp;
+
+	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
 	code = buf = mono_code_manager_reserve (domain->code_mp, 32);
@@ -369,7 +475,7 @@ create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain) {
 	/* Prepare the jump to the generic trampoline code
 	 * mono_arch_create_trampoline_code() knows we're putting this in t8
 	 */
-	mips_load (code, mips_t8, method);
+	mips_load (code, mips_t8, arg1);
 	
 	/* Now jump to the generic trampoline code */
 	mips_load (code, mips_at, tramp);
@@ -381,115 +487,8 @@ create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain) {
 
 	g_assert ((code - buf) <= 32);
 
-	ji = g_new0 (MonoJitInfo, 1);
-	ji->method = method;
-	ji->code_start = buf;
-	ji->code_size = code - buf;
-
-	mono_jit_stats.method_trampolines++;
-
-	return ji;
-}
-
-MonoJitInfo*
-mono_arch_create_jump_trampoline (MonoMethod *method)
-{
-	guint8 *tramp;
-	MonoDomain* domain = mono_domain_get ();
-	
-	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_JUMP);
-	return create_specific_tramp (method, tramp, domain);
-}
-
-/**
- * arch_create_jit_trampoline:
- * @method: pointer to the method info
- *
- * Creates a trampoline function for virtual methods. If the created
- * code is called it first starts JIT compilation of method,
- * and then calls the newly created method. It also replaces the
- * corresponding vtable entry (see mips_magic_trampoline).
- *
- * A trampoline consists of two parts: a main fragment, shared by all method
- * trampolines, and some code specific to each method, which hard-codes a
- * reference to that method and then calls the main fragment.
- *
- * The main fragment contains a call to 'mips_magic_trampoline', which performs
- * call to the JIT compiler and substitutes the method-specific fragment with
- * some code that directly calls the JIT-compiled method.
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-mono_arch_create_jit_trampoline (MonoMethod *method)
-{
-	guint8 *tramp;
-	MonoJitInfo *ji;
-	MonoDomain* domain = mono_domain_get ();
-	gpointer code_start;
-
-	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC);
-	/* FIXME: should pass the domain down to this function */
-	ji = create_specific_tramp (method, tramp, domain);
-	code_start = ji->code_start;
-	g_free (ji);
-
-	return code_start;
-}
-
-/**
- * mono_arch_create_class_init_trampoline:
- *  @vtable: the type to initialize
- *
- * Creates a trampoline function to run a type initializer. 
- * If the trampoline is called, it calls mono_runtime_class_init with the
- * given vtable, then patches the caller code so it does not get called any
- * more.
- * 
- * Returns: a pointer to the newly created code 
- */
-gpointer
-mono_arch_create_class_init_trampoline (MonoVTable *vtable)
-{
-	guint8 *code, *buf, *tramp;
-
-	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
-
-	/* This is the method-specific part of the trampoline. Its purpose is
-	to provide the generic part with the MonoMethod *method pointer. We'll
-	use r11 to keep that value, for instance. However, the generic part of
-	the trampoline relies on r11 having the same value it had before coming
-	here, so we must save it before. */
-	mono_domain_lock (vtable->domain);
-	code = buf = mono_code_manager_reserve (vtable->domain->code_mp, METHOD_TRAMPOLINE_SIZE);
-	mono_domain_unlock (vtable->domain);
-
-	//g_print ("mips_class_init_tramp buf=%p tramp=%p\n", buf, tramp);
-
-	mips_addiu (code, mips_sp, mips_sp, -MIPS_MINIMAL_STACK_SIZE);
-	mips_sw (code, mips_ra, mips_sp, MIPS_MINIMAL_STACK_SIZE + MIPS_RET_ADDR_OFFSET);
-
-	/* Probably need to save/restore a0-a3 here */
-
-	mips_load (code, mips_a0, vtable);
-	mips_move (code, mips_a1, mips_ra);
-	mips_move (code, mips_a2, mips_zero);
-
-	mips_load (code, mips_t9, mips_class_init_trampoline);
-	mips_jalr (code, mips_t9, mips_ra);
-	mips_nop (code);
-
-	mips_lw (code, mips_ra, mips_sp, MIPS_MINIMAL_STACK_SIZE + MIPS_RET_ADDR_OFFSET);
-	mips_addiu (code, mips_sp, mips_sp, MIPS_MINIMAL_STACK_SIZE);
-	mips_jr (code, mips_ra);
-	mips_nop (code);
-
-	/* Flush instruction cache, since we've generated code */
-	mono_arch_flush_icache (buf, code - buf);
-		
-	/* Sanity check */
-	g_assert ((code - buf) <= METHOD_TRAMPOLINE_SIZE);
-	mono_jit_stats.method_trampolines++;
+	if (code_len)
+		*code_len = code - buf;
 
 	return buf;
 }

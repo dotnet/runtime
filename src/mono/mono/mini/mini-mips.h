@@ -85,15 +85,23 @@
  * This is true in both big and little endian
  */
 
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define RET_REG1 mips_v0
+#define RET_REG2 mips_v1
+#else
+#define RET_REG1 mips_v1
+#define RET_REG2 mips_v0
+#endif
+
 #define MONO_ARCH_INST_SREG2_MASK(ins)		(0)
 #define MONO_ARCH_INST_IS_REGPAIR(desc)		((desc) == 'V' || (desc) == 'l')
-#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (((desc) == 'l') ? ((hreg1) + 1) : (((desc) == 'V') ? ((hreg1) - 1) : -1))
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (((desc) == 'l') ? ((hreg1) + 1) : (((desc) == 'V') ? RET_REG2 : -1))
 #define MONO_ARCH_INST_IS_FLOAT(desc)		((desc == 'f') || (desc == 'g'))
 
 // This define is called to get specific dest register as defined
 // by md file (letter after "dest"). Overwise return -1
 
-#define MONO_ARCH_INST_FIXED_REG(desc)		(((desc) == '0') ? mips_zero : (((desc) == 'a') ? mips_at : ((((desc) == 'v')) ? mips_v0 : (((desc) == 'V') ? mips_v1 : (((desc) == 'g') ? mips_f0 : -1)))))
+#define MONO_ARCH_INST_FIXED_REG(desc)		(((desc) == '0') ? mips_zero : (((desc) == 'a') ? mips_at : ((((desc) == 'v')) ? mips_v0 : (((desc) == 'V') ? RET_REG1 : (((desc) == 'g') ? mips_f0 : -1)))))
 
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 

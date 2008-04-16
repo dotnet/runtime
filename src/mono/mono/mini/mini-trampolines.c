@@ -611,7 +611,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 {
 	MonoJitInfo *ji;
 	gpointer code;
-	guint32 code_size;
+	guint32 code_size = 0;
 
 	if (add_sync_wrapper && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_create_jump_trampoline (domain, mono_marshal_get_synchronized_wrapper (method), FALSE);
@@ -627,6 +627,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 		return code;
 
 	code = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
+	g_assert (code_size);
 
 	mono_domain_lock (domain);
 	ji = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
@@ -711,7 +712,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 	MonoDomain *domain = mono_domain_get ();
 	gpointer ptr;
-	guint32 code_size;
+	guint32 code_size = 0;
 
 	mono_domain_lock (domain);
 	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, klass);
@@ -720,6 +721,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 		return ptr;
 
     ptr = mono_arch_create_specific_trampoline (klass, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
+	g_assert (code_size);
 
 	/* store trampoline address */
 	mono_domain_lock (domain);
