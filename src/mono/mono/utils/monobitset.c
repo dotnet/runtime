@@ -372,7 +372,7 @@ my_g_bit_nth_msf (gsize mask,
 }
 
 static int
-find_first_unset (gulong mask, gint nth_bit)
+find_first_unset (gsize mask, gint nth_bit)
 {
 	do {
 		nth_bit++;

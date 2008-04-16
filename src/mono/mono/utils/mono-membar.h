@@ -11,6 +11,7 @@
 #define _MONO_UTILS_MONO_MEMBAR_H_
 
 #ifdef __x86_64__
+#ifndef _MSC_VER
 static inline void mono_memory_barrier (void)
 {
 	__asm__ __volatile__ ("mfence" : : : "memory");
@@ -25,6 +26,24 @@ static inline void mono_memory_write_barrier (void)
 {
 	__asm__ __volatile__ ("sfence" : : : "memory");
 }
+#else
+#include <intrin.h>
+
+static inline void mono_memory_barrier (void)
+{
+	_ReadWriteBarrier ();
+}
+
+static inline void mono_memory_read_barrier (void)
+{
+	_ReadBarrier ();
+}
+
+static inline void mono_memory_write_barrier (void)
+{
+	_WriteBarrier ();
+}
+#endif
 #elif defined(__i386__)
 #ifndef _MSC_VER
 static inline void mono_memory_barrier (void)
