@@ -1898,10 +1898,7 @@ esac
 
 AC_SUBST(libsuffix)
 
-if test "x$TARGET" != "xAMD64"; then
-   # valgrind headers don't compile under x86-64
-   AC_CHECK_HEADERS(valgrind/memcheck.h)
-fi
+AC_CHECK_HEADERS(valgrind/memcheck.h)
 
 if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
 	if test "x$with_tls" = "x__thread"; then

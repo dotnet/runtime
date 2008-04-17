@@ -1,3 +1,7 @@
+2008-04-17  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Enable the valgrind header check on amd64 too.
+
 2008-04-16  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/mono-find-requires.in: Fix extraneous whitespace that makes
