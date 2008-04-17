@@ -1689,6 +1689,8 @@ gboolean DeleteFile(const gunichar2 *name)
 	int retval;
 	gboolean ret = FALSE;
 	guint32 attrs;
+	struct stat statbuf;
+	struct _WapiFileShare *shareinfo;
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1715,6 +1717,7 @@ gboolean DeleteFile(const gunichar2 *name)
 		g_message ("%s: file attributes error", __func__);
 #endif
 		/* Error set by GetFileAttributes() */
+		g_free (filename);
 		return(FALSE);
 	}
 
@@ -1723,8 +1726,30 @@ gboolean DeleteFile(const gunichar2 *name)
 		g_message ("%s: file %s is readonly", __func__, filename);
 #endif
 		SetLastError (ERROR_ACCESS_DENIED);
+		g_free (filename);
 		return(FALSE);
 	}
+
+	/* Check to make sure sharing allows us to open the file for
+	 * writing.  See bug 323389.
+	 *
+	 * Do the checks that don't need an open file descriptor, for
+	 * simplicity's sake.  If we really have to do the full checks
+	 * then we can implement that later.
+	 */
+	if (_wapi_stat (filename, &statbuf) < 0) {
+		_wapi_set_last_path_error_from_errno (NULL, filename);
+		g_free (filename);
+		return(FALSE);
+	}
+	
+	if (share_allows_open (&statbuf, 0, GENERIC_WRITE,
+			       &shareinfo) == FALSE) {
+		SetLastError (ERROR_SHARING_VIOLATION);
+		g_free (filename);
+		return FALSE;
+	}
+	_wapi_handle_share_release (shareinfo);
 	
 	retval = _wapi_unlink (filename);
 	
@@ -1806,9 +1831,9 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	 * the same file as src.
 	 */
 	if (_wapi_stat (utf8_name, &stat_src) < 0) {
+		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 		g_free (utf8_name);
 		g_free (utf8_dest_name);
-		_wapi_set_last_path_error_from_errno (NULL, utf8_name);
 		return FALSE;
 	}
 	
