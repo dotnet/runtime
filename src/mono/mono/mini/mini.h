@@ -820,6 +820,7 @@ typedef struct {
 	guint            disable_reuse_registers : 1;
 	guint            disable_reuse_stack_slots : 1;
 	guint            disable_initlocals_opt : 1;
+	guint            disable_omit_fp : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
 	MonoProfileCoverageInfo *coverage_info;

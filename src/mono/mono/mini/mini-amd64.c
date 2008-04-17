@@ -878,9 +878,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	cfg->arch.omit_fp = TRUE;
 	cfg->arch.omit_fp_computed = TRUE;
 
-	/* Temporarily disable this when running in the debugger until we have support
-	 * for this in the debugger. */
-	if (mono_debug_using_mono_debugger ())
+	if (cfg->disable_omit_fp)
 		cfg->arch.omit_fp = FALSE;
 
 	if (!debug_omit_fp ())
@@ -1781,6 +1779,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 
 #define NEW_INS(cfg,ins,dest,op) do {	\
 		MONO_INST_NEW ((cfg), (dest), (op)); \
+        (dest)->cil_code = (ins)->cil_code; \
 		MONO_INST_LIST_ADD_TAIL (&(dest)->node, &(ins)->node); \
 	} while (0)
 

@@ -9175,6 +9175,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
+	cfg->ip = NULL;
+
 	/* resolve backward branches in the middle of an existing basic block */
 	for (tmp = bb_recheck; tmp; tmp = tmp->next) {
 		bblock = tmp->data;
@@ -11357,6 +11359,8 @@ mini_select_instructions (MonoCompile *cfg)
 		mono_mempool_empty (cfg->state_pool); 
 	}
 	mono_mempool_destroy (cfg->state_pool); 
+
+	cfg->ip = NULL;
 }
 
 /*
@@ -11858,6 +11862,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		 * not yet initialized.
 		 */
 		cfg->disable_initlocals_opt = TRUE;
+
+		/* Temporarily disable this when running in the debugger until we have support
+		 * for this in the debugger. */
+		cfg->disable_omit_fp = TRUE;
 
 		// cfg->opt |= MONO_OPT_SHARED;
 		cfg->opt &= ~MONO_OPT_INLINE;
