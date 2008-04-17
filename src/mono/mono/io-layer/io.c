@@ -1688,6 +1688,7 @@ gboolean DeleteFile(const gunichar2 *name)
 	gchar *filename;
 	int retval;
 	gboolean ret = FALSE;
+	guint32 attrs;
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1705,6 +1706,23 @@ gboolean DeleteFile(const gunichar2 *name)
 #endif
 
 		SetLastError (ERROR_INVALID_NAME);
+		return(FALSE);
+	}
+
+	attrs = GetFileAttributes (name);
+	if (attrs == INVALID_FILE_ATTRIBUTES) {
+#ifdef DEBUG
+		g_message ("%s: file attributes error", __func__);
+#endif
+		/* Error set by GetFileAttributes() */
+		return(FALSE);
+	}
+
+	if (attrs & FILE_ATTRIBUTE_READONLY) {
+#ifdef DEBUG
+		g_message ("%s: file %s is readonly", __func__, filename);
+#endif
+		SetLastError (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
 	
