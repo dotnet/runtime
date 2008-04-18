@@ -1808,6 +1808,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		*needed = sizeof(gpointer);
 	} else {
 		mods = load_modules (fp);
+		fclose (fp);
 		count = g_slist_length (mods);
 		
 		/* count + 1 to leave slot 0 for the main module */
@@ -1837,7 +1838,6 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		g_slist_free (mods);
 	}
 
-	fclose (fp);
 	g_free (filename);
 	
 	return(TRUE);
