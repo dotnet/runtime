@@ -1,3 +1,9 @@
+2008-04-18  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/mono-find-requires.in: Add env var to ignore scanning
+	of .config files.
+	Fix extra whitespace when no config reqs are found.
+
 2008-04-17  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Enable the valgrind header check on amd64 too.
