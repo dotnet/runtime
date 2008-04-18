@@ -163,8 +163,8 @@ function incrementCount (cDiv, aCounts, dictTypes)
 	case 'en': case 'en_': case 'd': case 'd_':
 	// members
 	case 'r': case 'r_': case 'x': case 'x_': case 'm': case 'm_':
-	case 'f': 	case 'f_': case 'e': case 'e_': case 'p': 	case 'p_':
-	case 'o': case 'o_':
+	case 'f': case 'f_': case 'e': case 'e_': case 'p': 	case 'p_':
+	case 'o': case 'o_': case 'a': case 'a_':
 		var rgImgs = getChildrenByTagName (cDiv, 'IMG');
 		for (iImg = 0; iImg < rgImgs.length; iImg++) {
 			var cImg = rgImgs [iImg];
