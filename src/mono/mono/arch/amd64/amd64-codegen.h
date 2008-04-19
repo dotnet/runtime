@@ -129,7 +129,7 @@ typedef union {
 #define amd64_rex_x(rex) ((((rex) >> 1) & 0x1) << 3)
 #define amd64_rex_b(rex) ((((rex) >> 0) & 0x1) << 3)
 
-#define amd64_is_imm32(val) ((glong)val >= -((glong)1<<31) && (glong)val <= (((glong)1<<31)-1))
+#define amd64_is_imm32(val) ((gint64)val >= -((gint64)1<<31) && (gint64)val <= (((gint64)1<<31)-1))
 
 #define x86_imm_emit64(inst,imm)     \
 	do {	\
