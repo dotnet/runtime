@@ -752,9 +752,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 static int 
 cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx)
 {
+#ifndef _MSC_VER
 	__asm__ __volatile__ ("cpuid"
 		: "=a" (*p_eax), "=b" (*p_ebx), "=c" (*p_ecx), "=d" (*p_edx)
 		: "a" (id));
+#else
+	int info[4];
+	__cpuid(info, id);
+	*p_eax = info[0];
+	*p_ebx = info[1];
+	*p_ecx = info[2];
+	*p_edx = info[3];
+#endif
 	return 1;
 }
 
@@ -774,7 +783,9 @@ mono_arch_cpu_init (void)
 	__asm__  __volatile__ ("fldcw %0\n": : "m" (fpcw));
 	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
 #else
-	_control87 (_PC_53, MCW_PC);
+	/* TODO: This is crashing on Win64 right now.
+	* _control87 (_PC_53, MCW_PC);
+	*/
 #endif
 }
 

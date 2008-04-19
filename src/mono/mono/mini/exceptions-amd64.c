@@ -350,19 +350,6 @@ get_throw_trampoline (gboolean rethrow)
 
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, 8);
 
-#ifdef PLATFORM_WIN32
-	// FIXME: Sync with the !WIN32 code below
-	NOT_IMPLEMENTED;
-
-	/* align stack */
-	amd64_push_imm (code, 0);
-	amd64_push_imm (code, 0);
-	amd64_push_imm (code, 0);
-	amd64_push_imm (code, 0);
-#else
-	/* No need to align stack */
-	//amd64_push_imm (code, 0);
-
 	/* reverse order */
 	amd64_push_imm (code, rethrow);
 	amd64_push_reg (code, AMD64_RDX);
@@ -386,6 +373,15 @@ get_throw_trampoline (gboolean rethrow)
 
 	/* Exception */
 	amd64_push_reg (code, AMD64_ARG_REG1);
+
+#ifdef PLATFORM_WIN32
+	/* align stack */
+	amd64_push_imm (code, 0);
+	amd64_push_imm (code, 0);
+	amd64_push_imm (code, 0);
+	amd64_push_imm (code, 0);
+	amd64_push_imm (code, 0);
+	amd64_push_imm (code, 0);
 #endif
 
 	amd64_mov_reg_imm (code, AMD64_R11, throw_exception);
@@ -838,8 +834,8 @@ prepare_for_guard_pages (MonoContext *mctx)
 	sp -= 1;
 	/* the return addr */
 	sp [0] = (gpointer)(mctx->rip);
-	mctx->rip = (unsigned long)restore_soft_guard_pages;
-	mctx->rsp = (unsigned long)sp;
+	mctx->rip = (guint64)restore_soft_guard_pages;
+	mctx->rsp = (guint64)sp;
 }
 
 static void
