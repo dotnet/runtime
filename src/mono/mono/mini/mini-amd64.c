@@ -168,15 +168,19 @@ amd64_is_near_call (guint8 *code)
 static inline void 
 amd64_patch (unsigned char* code, gpointer target)
 {
+	guint8 rex = 0;
+
 	/* Skip REX */
-	if ((code [0] >= 0x40) && (code [0] <= 0x4f))
+	if ((code [0] >= 0x40) && (code [0] <= 0x4f)) {
+		rex = code [0];
 		code += 1;
+	}
 
 	if ((code [0] & 0xf8) == 0xb8) {
 		/* amd64_set_reg_template */
 		*(guint64*)(code + 1) = (guint64)target;
 	}
-	else if (code [0] == 0x8b) {
+	else if ((code [0] == 0x8b) && rex && x86_modrm_mod (code [1]) == 0 && x86_modrm_rm (code [1]) == 5) {
 		/* mov 0(%rip), %dreg */
 		*(guint32*)(code + 2) = (guint32)(guint64)target - 7;
 	}
