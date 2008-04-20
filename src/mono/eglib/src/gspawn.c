@@ -69,7 +69,7 @@
  * in fact exist on all implementations (so far) 
  */
 gchar ***_NSGetEnviron();
-#define environ *_NSGetEnviron();
+#define environ (*_NSGetEnviron())
 #endif
 
 static int

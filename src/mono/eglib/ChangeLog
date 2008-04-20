@@ -1,3 +1,8 @@
+2008-04-20  Geoff Norton  <gnorton@novell.com>
+
+	* src/gspan.c: Fix the _NSGetEnviron define to prevent an impropoer
+	pointer dereference.
+
 2007-03-19  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/gpath.c (g_path_is_absolute) : Adding a case for '/'
