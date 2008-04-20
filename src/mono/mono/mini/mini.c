@@ -4368,7 +4368,12 @@ static void
 set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsigned char *ip)
 {
 	char *method_fname = mono_method_full_name (method, TRUE);
-	char *method_code = mono_disasm_code_one (NULL, method, ip, NULL);
+	char *method_code;
+
+	if (mono_method_get_header (method)->code_size == 0)
+		method_code = g_strdup ("method body is empty.");
+	else
+		method_code = mono_disasm_code_one (NULL, method, ip, NULL);
 	cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 	cfg->exception_message = g_strdup_printf ("Invalid IL code in %s: %s\n", method_fname, method_code);
 	g_free (method_fname);
