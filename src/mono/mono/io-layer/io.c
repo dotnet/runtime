@@ -1689,8 +1689,10 @@ gboolean DeleteFile(const gunichar2 *name)
 	int retval;
 	gboolean ret = FALSE;
 	guint32 attrs;
+#if 0
 	struct stat statbuf;
 	struct _WapiFileShare *shareinfo;
+#endif
 	
 	if(name==NULL) {
 #ifdef DEBUG
@@ -1730,6 +1732,7 @@ gboolean DeleteFile(const gunichar2 *name)
 		return(FALSE);
 	}
 
+#if 0
 	/* Check to make sure sharing allows us to open the file for
 	 * writing.  See bug 323389.
 	 *
@@ -1750,7 +1753,8 @@ gboolean DeleteFile(const gunichar2 *name)
 		return FALSE;
 	}
 	_wapi_handle_share_release (shareinfo);
-	
+#endif
+
 	retval = _wapi_unlink (filename);
 	
 	if (retval == -1) {
