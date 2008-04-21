@@ -192,6 +192,40 @@ parse_optimizations (const char* p)
 	return opt;
 }
 
+static gboolean
+parse_debug_options (const char* p)
+{
+	MonoDebugOptions *opt = mini_get_debug_options ();
+
+	do {
+		if (!*p) {
+			fprintf (stderr, "Syntax error; expected debug option name\n");
+			return FALSE;
+		}
+
+		if (!strncmp (p, "casts", 5)) {
+			opt->better_cast_details = TRUE;
+			p += 5;
+		} else if (!strncmp (p, "mdb-optimizations", 17)) {
+			opt->mdb_optimizations = TRUE;
+			p += 17;
+		} else {
+			fprintf (stderr, "Invalid debug option `%s', use --help-debug for details\n", p);
+			return FALSE;
+		}
+
+		if (*p == ',') {
+			p++;
+			if (!*p) {
+				fprintf (stderr, "Syntax error; expected debug option name\n");
+				return FALSE;
+			}
+		}
+	} while (*p);
+
+	return TRUE;
+}
+
 typedef struct {
 	const char name [6];
 	const char desc [18];
@@ -942,7 +976,7 @@ mini_usage (void)
 		"\n"
 		"Development:\n"
 		"    --aot                  Compiles the assembly to native code\n"
-		"    --debug[=<options>]    Enable debugging support. The only valid option is 'casts' which enables more detailed InvalidCastException messages.\n"
+		"    --debug[=<options>]    Enable debugging support, use --help-debug for details\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
 		"    --help-devel           Shows more options available to developers\n"
@@ -978,6 +1012,23 @@ mini_trace_usage (void)
 		 "    -EXPR                Excludes expression\n"
 		 "    disabled             Don't print any output until toggled via SIGUSR2\n");
 }
+
+static void
+mini_debug_usage (void)
+{
+	fprintf (stdout,
+		 "Debugging options:\n"
+		 "   --debug[=OPTIONS]     Enable debugging support, optional OPTIONS is a comma\n"
+		 "                         separated list of options\n"
+		 "\n"
+		 "OPTIONS is composed of:\n"
+		 "    casts                Enable more detailed InvalidCastException messages.\n"
+		 "    mdb-optimizations    Disable some JIT optimizations which are normally\n"
+		 "                         disabled when running inside the debugger.\n"
+		 "                         This is useful if you plan to attach to the running\n"
+		 "                         process with the debugger.\n");
+}
+
 
 static const char info[] =
 #ifdef HAVE_KW_THREAD
@@ -1096,6 +1147,9 @@ mono_main (int argc, char* argv[])
 			return 0;
 		} else if (strcmp (argv [i], "--help-devel") == 0){
 			mini_usage_jitdeveloper ();
+			return 0;
+		} else if (strcmp (argv [i], "--help-debug") == 0){
+			mini_debug_usage ();
 			return 0;
 		} else if (strcmp (argv [i], "--list-opt") == 0){
 			mini_usage_list_opt ();
@@ -1216,12 +1270,8 @@ mono_main (int argc, char* argv[])
 			enable_debugging = TRUE;
 		} else if (strncmp (argv [i], "--debug=", 8) == 0) {
 			enable_debugging = TRUE;
-			if (strcmp (argv [i] + 8, "casts") == 0)
-				mini_get_debug_options ()->better_cast_details = TRUE;
-			else {
-				fprintf (stderr, "Invalid debug option '%s'. The following options are supported: 'casts'.\n", argv [i] + 8);
+			if (!parse_debug_options (argv [i] + 8))
 				return 1;
-			}
 		} else if (strcmp (argv [i], "--security") == 0) {
 			/* fixme enable verifiable code when the verifier works with 2.0
 			* mini_verifier_set_mode (MINI_VERIFIER_MODE_VERIFIABLE);

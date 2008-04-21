@@ -11859,7 +11859,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
-	if (mono_debug_using_mono_debugger ()) {
+	if (mono_debug_using_mono_debugger () || debug_options.mdb_optimizations) {
 		cfg->disable_reuse_registers = TRUE;
 		cfg->disable_reuse_stack_slots = TRUE;
 		/* 

@@ -999,6 +999,7 @@ typedef struct {
 	gboolean collect_pagefault_stats;
 	gboolean break_on_unverified;
 	gboolean better_cast_details;
+	gboolean mdb_optimizations;
 } MonoDebugOptions;
 
 enum {
