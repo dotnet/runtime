@@ -407,6 +407,8 @@ struct _MonoProfiler {
 	guint64 end_time;
 	guint64 end_counter;
 	
+	guint64 last_header_counter;
+	
 	MethodIdMapping *methods;
 	ClassIdMapping *classes;
 	
@@ -1316,7 +1318,17 @@ static void
 write_current_block (guint16 code) {
 	guint32 size = (profiler->full_write_buffers * PROFILER_FILE_WRITE_BUFFER_SIZE) + profiler->current_write_position;
 	ProfilerFileWriteBuffer *current_buffer = profiler->write_buffers;
-	guint8 header [6];
+	guint64 current_counter;
+	guint32 counter_delta;
+	guint8 header [10];
+	
+	MONO_PROFILER_GET_CURRENT_COUNTER (current_counter);
+	if (profiler->last_header_counter != 0) {
+		counter_delta = current_counter - profiler->last_header_counter;
+	} else {
+		counter_delta = 0;
+	}
+	profiler->last_header_counter = current_counter;
 	
 	header [0] = code & 0xff;
 	header [1] = (code >> 8) & 0xff;
@@ -1324,8 +1336,12 @@ write_current_block (guint16 code) {
 	header [3] = (size >> 8) & 0xff;
 	header [4] = (size >> 16) & 0xff;
 	header [5] = (size >> 24) & 0xff;
+	header [6] = counter_delta & 0xff;
+	header [7] = (counter_delta >> 8) & 0xff;
+	header [8] = (counter_delta >> 16) & 0xff;
+	header [9] = (counter_delta >> 24) & 0xff;
 	
-	WRITE_BUFFER (& (header [0]), 6);
+	WRITE_BUFFER (& (header [0]), 10);
 	
 	while ((current_buffer != NULL) && (profiler->full_write_buffers > 0)) {
 		WRITE_BUFFER (& (current_buffer->buffer [0]), PROFILER_FILE_WRITE_BUFFER_SIZE);
@@ -3519,6 +3535,7 @@ mono_profiler_startup (const char *desc)
 	INITIALIZE_PROFILER_MUTEX ();
 	MONO_PROFILER_GET_CURRENT_TIME (profiler->start_time);
 	MONO_PROFILER_GET_CURRENT_COUNTER (profiler->start_counter);
+	profiler->last_header_counter = 0;
 	
 	profiler->methods = method_id_mapping_new ();
 	profiler->classes = class_id_mapping_new ();
