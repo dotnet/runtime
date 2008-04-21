@@ -35,6 +35,7 @@ static guint64 debugger_run_finally (guint64 argument1, guint64 argument2);
 static void debugger_attach (void);
 static void debugger_detach (void);
 static void debugger_initialize (void);
+static guint64 debugger_init_code_buffer (void);
 
 static guint64 debugger_create_string (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
 				       G_GNUC_UNUSED guint64 dummy3, const gchar *string_argument);
@@ -162,7 +163,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	EXECUTABLE_CODE_BUFFER_SIZE,
 	MONO_BREAKPOINT_ARRAY_SIZE,
 
-	debugger_get_method_signature
+	debugger_get_method_signature,
+	debugger_init_code_buffer
 };
 
 static guint64
@@ -451,6 +453,14 @@ debugger_detach (void)
 {
 	mono_debugger_event_handler = NULL;
 	debugger_finalize_threads ();
+}
+
+static guint64
+debugger_init_code_buffer (void)
+{
+	if (!debugger_executable_code_buffer)
+		debugger_executable_code_buffer = mono_global_codeman_reserve (EXECUTABLE_CODE_BUFFER_SIZE);
+	return (guint64) (gsize) debugger_executable_code_buffer;
 }
 
 extern MonoDebuggerInfo *MONO_DEBUGGER__debugger_info_ptr;
