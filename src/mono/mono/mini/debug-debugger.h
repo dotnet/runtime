@@ -11,6 +11,7 @@
 
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <libgc/include/libgc-mono-debugger.h>
 #include "debug-mini.h"
 
 typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
@@ -75,6 +76,14 @@ struct _MonoDebuggerInfo {
 
 	guint64 (*get_method_signature) (guint64 method_argument, G_GNUC_UNUSED guint64 dummy);
 	guint64 (*init_code_buffer) (void);
+
+	/*
+	 * These are only needed when attaching.
+	 */
+	GCThreadFunctions **thread_vtable_ptr;
+	GCThreadFunctions *debugger_thread_vtable;
+	void (**event_handler_ptr) (MonoDebuggerEvent event, guint64 data, guint64 arg);
+	void (*debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 };
 
 struct _MonoDebuggerMetadataInfo {

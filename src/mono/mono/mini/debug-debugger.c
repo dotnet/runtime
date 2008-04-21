@@ -37,6 +37,8 @@ static void debugger_detach (void);
 static void debugger_initialize (void);
 static guint64 debugger_init_code_buffer (void);
 
+static void debugger_event_handler (MonoDebuggerEvent event, guint64 data, guint64 arg);
+
 static guint64 debugger_create_string (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
 				       G_GNUC_UNUSED guint64 dummy3, const gchar *string_argument);
 static gint64 debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
@@ -52,6 +54,8 @@ static guint64 debugger_get_method_signature (guint64 argument1, G_GNUC_UNUSED g
 
 #define EXECUTABLE_CODE_BUFFER_SIZE 4096
 static guint8 *debugger_executable_code_buffer = NULL;
+
+static GCThreadFunctions debugger_thread_vtable;
 
 static MonoDebuggerMetadataInfo debugger_metadata_info = {
 	sizeof (MonoDebuggerMetadataInfo),
@@ -164,7 +168,13 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_BREAKPOINT_ARRAY_SIZE,
 
 	debugger_get_method_signature,
-	debugger_init_code_buffer
+	debugger_init_code_buffer,
+
+	&gc_thread_vtable,
+	&debugger_thread_vtable,
+
+	&mono_debugger_event_handler,
+	debugger_event_handler
 };
 
 static guint64
