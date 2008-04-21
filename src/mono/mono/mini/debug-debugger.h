@@ -46,10 +46,7 @@ struct _MonoDebuggerInfo {
 	MonoInvokeFunc runtime_invoke;
 	guint64 (*class_get_static_field_data) (guint64 klass);
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
-	void (*attach) (void);
-	void (*detach) (void);
 	void (*initialize) (void);
-	void * (*get_lmf_addr) (void);
 
 	guint64 (*create_string) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2,
 				  G_GNUC_UNUSED guint64 dummy3, const gchar *string_argument);

@@ -32,8 +32,6 @@ static guint64 debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg);
 static guint64 debugger_class_get_static_field_data (guint64 klass);
 
 static guint64 debugger_run_finally (guint64 argument1, guint64 argument2);
-static void debugger_attach (void);
-static void debugger_detach (void);
 static void debugger_initialize (void);
 static guint64 debugger_init_code_buffer (void);
 
@@ -116,13 +114,6 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
 extern void MONO_DEBUGGER__notification_function (guint64 command, guint64 data, guint64 data2);
 
 /*
- * Backwards compatibility:
- * The debugger expects a pointer to the function in `MONO_DEBUGGER__debugger_info'.
- */
-static void (*__obsolete_notification_func_ptr) (guint64 command, guint64 data, guint64 data2) =
-	&MONO_DEBUGGER__notification_function;
-
-/*
  * This is a global data symbol which is read by the debugger.
  */
 MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
@@ -132,7 +123,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	sizeof (MonoSymbolTable),
 	MONO_TRAMPOLINE_NUM,
 	mono_trampoline_code,
-	&__obsolete_notification_func_ptr,
+	&MONO_DEBUGGER__notification_function,
 	&mono_symbol_table,
 	&debugger_metadata_info,
 	&mono_debug_debugger_version,
@@ -143,10 +134,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_debugger_runtime_invoke,
 	&debugger_class_get_static_field_data,
 	&debugger_run_finally,
-	&debugger_attach,
-	&debugger_detach,
 	&debugger_initialize,
-	(void*)&mono_get_lmf_addr,
 
 	&debugger_create_string,
 	&debugger_lookup_class,
@@ -446,23 +434,6 @@ static void
 debugger_finalize_threads (void)
 {
 	gc_thread_vtable = NULL;
-}
-
-static void
-debugger_attach (void)
-{
-	mono_debugger_init ();
-
-	mono_debugger_event_handler = debugger_event_handler;
-	debugger_executable_code_buffer = mono_global_codeman_reserve (EXECUTABLE_CODE_BUFFER_SIZE);
-	debugger_init_threads ();
-}
-
-static void
-debugger_detach (void)
-{
-	mono_debugger_event_handler = NULL;
-	debugger_finalize_threads ();
 }
 
 static guint64
