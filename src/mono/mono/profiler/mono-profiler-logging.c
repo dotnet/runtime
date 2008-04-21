@@ -3151,8 +3151,12 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 
 static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
+	gboolean do_heap_profiling = profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot;
+	if (do_heap_profiling && (ev == MONO_GC_EVENT_POST_STOP_WORLD)) {
+		handle_heap_profiling (profiler, ev);
+	}
 	STORE_EVENT_NUMBER_COUNTER (profiler, generation, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, gc_event_code_from_profiler_event (ev), gc_event_kind_from_profiler_event (ev));
-	if (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot) {
+	if (do_heap_profiling && (ev != MONO_GC_EVENT_POST_STOP_WORLD)) {
 		handle_heap_profiling (profiler, ev);
 	}
 }
