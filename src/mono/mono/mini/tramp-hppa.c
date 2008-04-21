@@ -302,21 +302,6 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	return code;
 }
 
-/*
- * This method is only called when running in the Mono Debugger.
- */
-gpointer
-mono_debugger_create_notification_function (void)
-{
-	guint8 *ptr, *buf;
-
-	ptr = buf = mono_global_codeman_reserve (16);
-
-	g_assert_not_reached ();
-
-	return ptr;
-}
-
 /**
  * mono_arch_create_class_init_trampoline:
  *  @vtable: the type to initialize

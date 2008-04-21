@@ -629,28 +629,6 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
         g_assert_not_reached ();
 }
 
-/*
- * This method is only called when running in the Mono Debugger.
- */
-gpointer
-mono_debugger_create_notification_function (void)
-{
-  guint8 *code;
-  unsigned int *buf;
-
-  code = mono_global_codeman_reserve (16);
-  buf = (unsigned int *)code;
-
-  *buf = 0;
-
-  alpha_call_pal(buf, 0x80);
-  alpha_ret(buf, alpha_ra, 1);
-  //x86_breakpoint (buf);
-  //x86_ret (buf);
-
-  return code;
-}
-
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
 {

@@ -366,22 +366,6 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	return code;
 }
 
-/*
- * This method is only called when running in the Mono Debugger.
- */
-gpointer
-mono_debugger_create_notification_function (void)
-{
-	guint8 *ptr, *buf;
-
-	ptr = buf = mono_global_codeman_reserve (8);
-	ppc_break (buf);
-	ppc_blr (buf);
-	mono_arch_flush_icache (ptr, buf - ptr);
-
-	return ptr;
-}
-
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
 {

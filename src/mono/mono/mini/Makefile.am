@@ -243,9 +243,7 @@ if MONO_DEBUGGER_SUPPORTED
 if AMD64
 mono_debugger_arch_sources = mdb-debug-info64.s
 else
-if ALPHA
-mono_debugger_arch_sources = mdb-debug-info64.s
-else
+if X86
 mono_debugger_arch_sources = mdb-debug-info32.s
 endif
 endif

@@ -415,14 +415,6 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 }
 
 gpointer
-mono_debugger_create_notification_function (void)
-{
-	NOT_IMPLEMENTED;
-
-	return NULL;
-}
-
-gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
 {
 	/* FIXME: implement! */

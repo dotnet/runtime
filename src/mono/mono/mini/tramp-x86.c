@@ -523,17 +523,3 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 	x86_push_imm (code, func_arg);
 	x86_call_code (code, (guint8*)func);
 }
-
-/*
- * This method is only called when running in the Mono Debugger.
- */
-gpointer
-mono_debugger_create_notification_function (void)
-{
-	guint8 *buf, *code;
-
-	code = buf = mono_global_codeman_reserve (2);
-	x86_breakpoint (buf);
-	x86_ret (buf);
-	return code;
-}
