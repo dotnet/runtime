@@ -1040,6 +1040,18 @@ typedef struct {
 	MonoReflectionFieldBuilder *fb;
 } MonoReflectionFieldOnTypeBuilderInst;
 
+typedef struct {
+	MonoObject object;
+	MonoReflectionGenericClass *inst;
+	MonoReflectionCtorBuilder *cb;
+} MonoReflectionCtorOnTypeBuilderInst;
+
+typedef struct {
+	MonoObject object;
+	MonoReflectionGenericClass *inst;
+	MonoReflectionMethodBuilder *mb;
+} MonoReflectionMethodOnTypeBuilderInst;
+
 enum {
 	RESOURCE_LOCATION_EMBEDDED = 1,
 	RESOURCE_LOCATION_ANOTHER_ASSEMBLY = 2,
