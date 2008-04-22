@@ -18,7 +18,16 @@
 
 #ifndef PLATFORM_WIN32
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
 #endif
 
 #include <mono/metadata/appdomain.h>
@@ -34,9 +43,6 @@
 
 #include "mini.h"
 #include "trace.h"
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #ifndef MONO_ARCH_CONTEXT_DEF
 #define MONO_ARCH_CONTEXT_DEF
@@ -1105,10 +1111,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
  {
 	void *array [256];
 	char **names;
-	char cmd [1024];
 	int i, size;
-	gchar *out, *err;
-	gint exit_status;
 	const char *signal_str = (signal == SIGSEGV) ? "SIGSEGV" : "SIGABRT";
 
 	fprintf (stderr, "\nNative stacktrace:\n\n");
@@ -1124,16 +1127,66 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 
 	/* Try to get more meaningful information using gdb */
 
-#ifndef PLATFORM_WIN32
+#if !defined(PLATFORM_WIN32) && defined(HAVE_SYS_SYSCALL_H) && defined(SYS_fork)
 	if (!mini_get_debug_options ()->no_gdb_backtrace) {
+		/* From g_spawn_command_line_sync () in eglib */
 		int res;
+		int stdout_pipe [2] = { -1, -1 };
+		pid_t pid;
+		const char *argv [16];
+		char buf1 [128];
+		int status;
+		char buffer [1024];
 
-		sprintf (cmd, "gdb --ex 'attach %ld' --ex 'info threads' --ex 'thread apply all bt' --batch", (long)getpid ());
-		res = g_spawn_command_line_sync (cmd, &out, &err, &exit_status, NULL);
-		if (res) {
-			fprintf (stderr, "\nDebug info from gdb:\n\n");
-			fprintf (stderr, "%s\n", out);
+		res = pipe (stdout_pipe);
+		g_assert (res != -1);
+			
+		//pid = fork ();
+		/*
+		 * glibc fork acquires some locks, so if the crash happened inside malloc/free,
+		 * it will deadlock. Call the syscall directly instead.
+		 */
+		pid = syscall (SYS_fork);
+		if (pid == 0) {
+			close (stdout_pipe [0]);
+			dup2 (stdout_pipe [1], STDOUT_FILENO);
+
+			for (i = getdtablesize () - 1; i >= 3; i--)
+				close (i);
+
+			argv [0] = g_find_program_in_path ("gdb");
+			if (argv [0] == NULL) {
+				close (STDOUT_FILENO);
+				exit (1);
+			}
+
+			argv [1] = "-ex";
+			sprintf (buf1, "attach %ld", (long)getpid ());
+			argv [2] = buf1;
+			argv [3] = "--ex";
+			argv [4] = "info threads";
+			argv [5] = "--ex";
+			argv [6] = "thread apply all bt";
+			argv [7] = "--batch";
+			argv [8] = 0;
+
+			execv (argv [0], (char**)argv);
+			exit (1);
 		}
+
+		close (stdout_pipe [1]);
+
+		fprintf (stderr, "\nDebug info from gdb:\n\n");
+
+		while (1) {
+			int nread = read (stdout_pipe [0], buffer, 1024);
+
+			if (nread <= 0)
+				break;
+			write (STDERR_FILENO, buffer, nread);
+		}		
+
+		waitpid (pid, &status, WNOHANG);
 	}
 #endif
 	/*
