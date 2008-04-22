@@ -299,11 +299,14 @@ globextend(const gchar *path, wapi_glob_t *pglob, size_t *limitp)
 	}
 	pathv[pglob->gl_offs + pglob->gl_pathc] = NULL;
 
+#if 0
+	/* Broken on opensuse 11 */
 	if ((pglob->gl_flags & WAPI_GLOB_LIMIT) &&
 	    newsize + *limitp >= ARG_MAX) {
 		errno = 0;
 		return(WAPI_GLOB_NOSPACE);
 	}
+#endif
 
 	return(copy == NULL ? WAPI_GLOB_NOSPACE : 0);
 }
