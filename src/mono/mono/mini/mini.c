@@ -13339,9 +13339,11 @@ mini_parse_debug_options (void)
 			debug_options.collect_pagefault_stats = TRUE;
 		else if (!strcmp (arg, "break-on-unverified"))
 			debug_options.break_on_unverified = TRUE;
+		else if (!strcmp (arg, "no-gdb-backtrace"))
+			debug_options.no_gdb_backtrace = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace'\n");
 			exit (1);
 		}
 	}

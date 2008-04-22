@@ -1125,10 +1125,11 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	/* Try to get more meaningful information using gdb */
 
 #ifndef PLATFORM_WIN32
-	sprintf (cmd, "gdb --ex 'attach %ld' --ex 'info threads' --ex 'thread apply all bt' --batch", (long)getpid ());
-	{
-		int res = g_spawn_command_line_sync (cmd, &out, &err, &exit_status, NULL);
+	if (!mini_get_debug_options ()->no_gdb_backtrace) {
+		int res;
 
+		sprintf (cmd, "gdb --ex 'attach %ld' --ex 'info threads' --ex 'thread apply all bt' --batch", (long)getpid ());
+		res = g_spawn_command_line_sync (cmd, &out, &err, &exit_status, NULL);
 		if (res) {
 			fprintf (stderr, "\nDebug info from gdb:\n\n");
 			fprintf (stderr, "%s\n", out);

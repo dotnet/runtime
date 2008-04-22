@@ -1000,6 +1000,7 @@ typedef struct {
 	gboolean break_on_unverified;
 	gboolean better_cast_details;
 	gboolean mdb_optimizations;
+	gboolean no_gdb_backtrace;
 } MonoDebugOptions;
 
 enum {
