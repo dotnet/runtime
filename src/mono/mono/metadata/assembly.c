@@ -1253,6 +1253,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	MonoAssembly *ass;
 	MonoImageOpenStatus def_status;
 	gchar *fname;
+	gchar *new_fname;
 	
 	g_return_val_if_fail (filename != NULL, NULL);
 
@@ -1290,7 +1291,15 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	}
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
-			"Assembly Loader probing location: '%s'.", filename);
+			"Assembly Loader probing location: '%s'.", fname);
+	new_fname = mono_make_shadow_copy (fname);
+	if (new_fname && new_fname != fname) {
+		g_free (fname);
+		fname = new_fname;
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
+			    "Assembly Loader shadow-copied assembly to: '%s'.", fname);
+	}
+	
 	image = NULL;
 
 	if (bundles != NULL)

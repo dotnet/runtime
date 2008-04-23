@@ -248,6 +248,8 @@ mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method) MONO_
 void
 mono_domain_register_shared_generic (MonoDomain *domain, MonoMethod *method, MonoJitInfo *jit_info) MONO_INTERNAL;
 
+char *
+mono_make_shadow_copy (const char *filename);
 
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside
