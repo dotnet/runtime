@@ -494,15 +494,15 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(hppa_sources) inssel-hppa.brg cpu-hppa.md
 
 version.h: Makefile
-	if test -d $(srcdir)/.svn; then \
-		(cd $(srcdir); 	\
-			LANG=C; \
-			export LANG;	\
-			branch=`svn info | grep URL | sed -e 's/.*source//' -e 's,mono/mono/mini,,'`; \
-			version=`svn info | grep Revision | sed 's/.*: //'`; \
+	if test -d $(top_srcdir)/.git/svn; then svn_info='git svn info'; fi; \
+	if test -d $(srcdir)/.svn; then svn_info='svn info'; fi; \
+	if test -n "$$svn_info"; then \
+		(cd $(top_srcdir); \
+			LANG=C; export LANG; \
+			branch=`$$svn_info | grep URL | sed -e 's/.*source//' -e 's,mono$$,,'`; \
+			version=`$$svn_info | grep Revision | sed 's/.*: //'`; \
 			echo "#define FULL_VERSION \"$$branch r$$version\""; \
 		); \
 	else \
 		echo "#define FULL_VERSION \"tarball\""; \
 	fi > version.h
-
