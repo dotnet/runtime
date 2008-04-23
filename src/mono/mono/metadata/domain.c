@@ -1124,11 +1124,11 @@ mono_domain_create (void)
 
 	domain->shared_generics_hash = NULL;
 
-	mono_debug_domain_create (domain);
-
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
+
+	mono_debug_domain_create (domain);
 
 	mono_profiler_appdomain_loaded (domain, MONO_PROFILE_OK);
 	
