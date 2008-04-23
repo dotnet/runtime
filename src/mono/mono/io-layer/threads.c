@@ -29,7 +29,7 @@
 #include <mono/io-layer/mono-spinlock.h>
 #include <mono/io-layer/mutex-private.h>
 
-#if HAVE_VALGRIND_MEMCHECK_H
+#ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
 
