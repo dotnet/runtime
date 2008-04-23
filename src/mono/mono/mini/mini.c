@@ -4657,8 +4657,18 @@ static gboolean
 mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 {
 	GSList *tmp, *res;
-	gboolean is_fulltrust = mono_verifier_is_method_full_trust (method);
+	gboolean is_fulltrust;
 	MonoLoaderError *error;
+
+	while (method->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
+		method = imethod->declaring;
+	}
+
+	if (method->verification_success)
+		return FALSE;
+
+	is_fulltrust = mono_verifier_is_method_full_trust (method);
 
 	if (!mono_verifier_is_enabled_for_method (method))
 		return FALSE;
@@ -4690,6 +4700,7 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 		}
 		mono_free_verify_list (res);
 	}
+	method->verification_success = 1;
 	return FALSE;
 }
 
