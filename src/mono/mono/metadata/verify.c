@@ -5389,13 +5389,13 @@ verify_class_for_overlapping_reference_fields (MonoClass *class)
 		MonoClassField *field = &class->fields [i];
 		int fieldEnd = field->offset + mono_type_size (field->type, &align);
 		gboolean is_valuetype = !MONO_TYPE_IS_REFERENCE (field->type);
-		if (mono_field_is_deleted (field))
+		if (mono_field_is_deleted (field) || (field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 
 		for (j = i + 1; j < class->field.count; ++j) {
 			MonoClassField *other = &class->fields [j];
 			int otherEnd = other->offset + mono_type_size (other->type, &align);
-			if (mono_field_is_deleted (other) || (is_valuetype && !MONO_TYPE_IS_REFERENCE (other->type)))
+			if (mono_field_is_deleted (other) || (is_valuetype && !MONO_TYPE_IS_REFERENCE (other->type)) || (other->type->attrs & FIELD_ATTRIBUTE_STATIC))
 				continue;
 			if ((otherEnd > field->offset && otherEnd <= fieldEnd) || (other->offset >= field->offset && other->offset < fieldEnd))
 				return FALSE;
