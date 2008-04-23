@@ -57,7 +57,8 @@ struct _MonoMethod {
 	unsigned int dynamic:1; /* created & destroyed during runtime */
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
-	signed int slot : 20;
+	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
+	signed int slot : 19;
 };
 
 struct _MonoMethodNormal {
