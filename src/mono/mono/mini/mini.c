@@ -7236,7 +7236,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						mono_emit_method_call_spilled (cfg, bblock, stfld_wrapper, mono_method_signature (stfld_wrapper), iargs, ip, NULL);
 					}
 #if HAVE_WRITE_BARRIERS
-				} else if (mini_type_to_stind (cfg, field->type) == CEE_STIND_REF) {
+				} else if (mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
 					/* insert call to write barrier */
 					MonoMethod *write_barrier = mono_marshal_get_write_barrier ();
 					MonoInst *iargs [2];
