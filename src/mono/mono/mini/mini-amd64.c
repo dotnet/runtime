@@ -270,6 +270,9 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 		ainfo->storage = ArgInIReg;
 		ainfo->reg = param_regs [*gr];
 		(*gr) ++;
+#ifdef PLATFORM_WIN32
+		(*stack_size) += sizeof (gpointer);
+#endif
     }
 }
 
@@ -697,9 +700,9 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	}
 
 #ifdef PLATFORM_WIN32
-	if (stack_size < 32) {
+	if (stack_size < 0x20) {
 		/* The Win64 ABI requires 32 bits  */
-		stack_size = 32;
+		stack_size = 0x20;
 	}
 #endif
 
@@ -1286,6 +1289,9 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	int i, n, stack_size;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
+#ifdef PLATFORM_WIN32
+	int args_space = 0, args_offset = 0;
+#endif
 
 	stack_size = 0;
 
@@ -1424,6 +1430,19 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 							if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8)
 								arg->opcode = OP_OUTARG_R8;
 					}
+#ifdef PLATFORM_WIN32
+					arg->opcode = OP_OUTARG_MEMBASE;
+					/* we store in the upper bits of backen.arg_info the needed
+					* esp adjustment and in the lower bits the offset from esp
+					* where the arg needs to be stored
+					*/
+					if (!args_space)
+						args_offset = args_space = n*(sizeof(void*));
+					arg->backend.arg_info = args_space - args_offset + 0x20;
+					args_offset -= sizeof (void*);
+					if (i == n-1)
+						arg->backend.arg_info |= args_space << 16;
+#endif
 					break;
 				default:
 					g_assert_not_reached ();
