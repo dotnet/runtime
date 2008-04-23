@@ -32,7 +32,7 @@
  * We should provide a small memory config with half the sizes
  *
  * We currently try to make as few mono assumptions as possible:
- * 1) 2-word header with no GC pointers in it (firts vtable, second to store the
+ * 1) 2-word header with no GC pointers in it (first vtable, second to store the
  *    forwarding ptr)
  * 2) gc descriptor is the second word in the vtable (first word in the class)
  * 3) 8 byte alignment is the minimum and enough (not true for special structures, FIXME)
@@ -164,6 +164,10 @@ typedef guint64 mword;
 static int gc_initialized = 0;
 static int gc_debug_level = 0;
 static FILE* gc_debug_file;
+/* If set, do a minor collection before every allocation */
+static gboolean collect_before_allocs = FALSE;
+/* If set, do a heap consistency check before each minor collection */
+static gboolean consistency_check_at_minor_collection = FALSE;
 
 void
 mono_gc_flush_info (void)
@@ -324,7 +328,8 @@ struct _RememberedSet {
 enum {
 	REMSET_LOCATION, /* just a pointer to the exact location */
 	REMSET_RANGE,    /* range of pointer fields */
-	REMSET_OBJECT,    /* mark all the object for scanning */
+	REMSET_OBJECT,   /* mark all the object for scanning */
+	REMSET_VTYPE,    /* a valuetype described by a gc descriptor */
 	REMSET_TYPE_MASK = 0x3
 };
 
@@ -846,25 +851,25 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 		(size) &= ~(ALLOC_ALIGN - 1);	\
 	} while (0)
 
-#define OBJ_RUN_LEN_SIZE(size,vt,obj) do {	\
-		(size) = (vt)->desc & 0xfff8;	\
-	} while (0)
+#define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \
+        (size) = (desc) & 0xfff8; \
+    } while (0)
 
-#define OBJ_BITMAP_SIZE(size,vt,obj) do {	\
-		(size) = (vt)->desc & 0xfff8;	\
-	} while (0)
+#define OBJ_BITMAP_SIZE(size,desc,obj) do { \
+        (size) = (desc) & 0xfff8; \
+    } while (0)
 
 //#define PREFETCH(addr) __asm__ __volatile__ ("     prefetchnta     %0": : "m"(*(char *)(addr)))
 #define PREFETCH(addr)
 
 /* code using these macros must define a HANDLE_PTR(ptr) macro that does the work */
-#define OBJ_RUN_LEN_FOREACH_PTR(vt,obj)	do {	\
-		if ((vt)->desc & 0xffff0000) {	\
+#define OBJ_RUN_LEN_FOREACH_PTR(desc,obj)	do {	\
+		if ((desc) & 0xffff0000) {	\
 			/* there are pointers */	\
 			void **_objptr_end;	\
 			void **_objptr = (void**)(obj);	\
-			_objptr += ((vt)->desc >> 16) & 0xff;	\
-			_objptr_end = _objptr + (((vt)->desc >> 24) & 0xff);	\
+			_objptr += ((desc) >> 16) & 0xff;	\
+			_objptr_end = _objptr + (((desc) >> 24) & 0xff);	\
 			while (_objptr < _objptr_end) {	\
 				HANDLE_PTR (_objptr, (obj));	\
 				_objptr++;	\
@@ -875,10 +880,10 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 /* a bitmap desc means that there are pointer references or we'd have
  * choosen run-length, instead: add an assert to check.
  */
-#define OBJ_BITMAP_FOREACH_PTR(vt,obj)	do {	\
+#define OBJ_BITMAP_FOREACH_PTR(desc,obj)	do {	\
 		/* there are pointers */	\
 		void **_objptr = (void**)(obj);	\
-		gsize _bmap = (vt)->desc >> 16;	\
+		gsize _bmap = (desc) >> 16;	\
 		_objptr += OBJECT_HEADER_WORDS;	\
 		while (_bmap) {	\
 			if ((_bmap & 1)) {	\
@@ -1037,6 +1042,7 @@ scan_area (char *start, char *end)
 	size_t skip_size;
 	int type;
 	int type_str = 0, type_rlen = 0, type_bitmap = 0, type_vector = 0, type_lbit = 0, type_complex = 0;
+	guint32 desc;
 	new_obj_references = 0;
 	obj_references_checked = 0;
 	while (start < end) {
@@ -1050,16 +1056,17 @@ scan_area (char *start, char *end)
 			MonoObject *obj = (MonoObject*)start;
 			g_print ("found at %p (0x%zx): %s.%s\n", start, vt->desc, obj->vtable->klass->name_space, obj->vtable->klass->name);
 		}
-		type = vt->desc & 0x7;
+		desc = vt->desc;
+		type = desc & 0x7;
 		if (type == DESC_TYPE_STRING) {
 			STRING_SIZE (skip_size, start);
 			start += skip_size;
 			type_str++;
 			continue;
 		} else if (type == DESC_TYPE_RUN_LENGTH) {
-			OBJ_RUN_LEN_SIZE (skip_size, vt, start);
+			OBJ_RUN_LEN_SIZE (skip_size, desc, start);
 			g_assert (skip_size);
-			OBJ_RUN_LEN_FOREACH_PTR (vt,start);
+			OBJ_RUN_LEN_FOREACH_PTR (desc,start);
 			start += skip_size;
 			type_rlen++;
 			continue;
@@ -1077,9 +1084,9 @@ scan_area (char *start, char *end)
 			type_vector++;
 			continue;
 		} else if (type == DESC_TYPE_SMALL_BITMAP) {
-			OBJ_BITMAP_SIZE (skip_size, vt, start);
+			OBJ_BITMAP_SIZE (skip_size, desc, start);
 			g_assert (skip_size);
-			OBJ_BITMAP_FOREACH_PTR (vt,start);
+			OBJ_BITMAP_FOREACH_PTR (desc,start);
 			start += skip_size;
 			type_bitmap++;
 			continue;
@@ -1129,6 +1136,8 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 	GCVTable *vt;
 	size_t skip_size;
 	int type, remove;
+	guint32 desc;
+
 	while (start < end) {
 		if (!*(void**)start) {
 			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
@@ -1142,14 +1151,15 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 		} else {
 			remove = 0;
 		}
-		type = vt->desc & 0x7;
+		desc = vt->desc;
+		type = desc & 0x7;
 		if (type == DESC_TYPE_STRING) {
 			STRING_SIZE (skip_size, start);
 			if (remove) memset (start, 0, skip_size);
 			start += skip_size;
 			continue;
 		} else if (type == DESC_TYPE_RUN_LENGTH) {
-			OBJ_RUN_LEN_SIZE (skip_size, vt, start);
+			OBJ_RUN_LEN_SIZE (skip_size, desc, start);
 			g_assert (skip_size);
 			if (remove) memset (start, 0, skip_size);
 			start += skip_size;
@@ -1167,7 +1177,7 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 			start += skip_size;
 			continue;
 		} else if (type == DESC_TYPE_SMALL_BITMAP) {
-			OBJ_BITMAP_SIZE (skip_size, vt, start);
+			OBJ_BITMAP_SIZE (skip_size, desc, start);
 			g_assert (skip_size);
 			if (remove) memset (start, 0, skip_size);
 			start += skip_size;
@@ -1353,20 +1363,22 @@ scan_object (char *start, char* from_start, char* from_end)
 {
 	GCVTable *vt;
 	size_t skip_size;
+	guint32 desc;
 
 	vt = (GCVTable*)LOAD_VTABLE (start);
 	//type = vt->desc & 0x7;
 
 	/* gcc should be smart enough to remove the bounds check, but it isn't:( */
-	switch (vt->desc & 0x7) {
+	desc = vt->desc;
+	switch (desc & 0x7) {
 	//if (type == DESC_TYPE_STRING) {
 	case DESC_TYPE_STRING:
 		STRING_SIZE (skip_size, start);
 		return start + skip_size;
 	//} else if (type == DESC_TYPE_RUN_LENGTH) {
 	case DESC_TYPE_RUN_LENGTH:
-		OBJ_RUN_LEN_FOREACH_PTR (vt,start);
-		OBJ_RUN_LEN_SIZE (skip_size, vt, start);
+		OBJ_RUN_LEN_FOREACH_PTR (desc,start);
+		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
 		g_assert (skip_size);
 		return start + skip_size;
 	//} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
@@ -1384,8 +1396,8 @@ scan_object (char *start, char* from_start, char* from_end)
 		return start + skip_size;
 	//} else if (type == DESC_TYPE_SMALL_BITMAP) {
 	case DESC_TYPE_SMALL_BITMAP:
-		OBJ_BITMAP_FOREACH_PTR (vt,start);
-		OBJ_BITMAP_SIZE (skip_size, vt, start);
+		OBJ_BITMAP_FOREACH_PTR (desc,start);
+		OBJ_BITMAP_SIZE (skip_size, desc, start);
 		return start + skip_size;
 	//} else if (type == DESC_TYPE_LARGE_BITMAP) {
 	case DESC_TYPE_LARGE_BITMAP:
@@ -1417,6 +1429,44 @@ scan_object (char *start, char* from_start, char* from_end)
 		return start + skip_size;
 	}
 	g_assert_not_reached ();
+	return NULL;
+}
+
+/*
+ * scan_vtype:
+ *
+ * Scan the valuetype pointed to by START, described by DESC for references to
+ * other objects between @from_start and @from_end and copy them to the gray_objects area.
+ * Returns a pointer to the end of the object.
+ */
+static char*
+scan_vtype (char *start, guint32 desc, char* from_start, char* from_end)
+{
+	size_t skip_size;
+
+	/* The descriptors include info about the MonoObject header as well */
+	start -= sizeof (MonoObject);
+
+	switch (desc & 0x7) {
+	case DESC_TYPE_RUN_LENGTH:
+		OBJ_RUN_LEN_FOREACH_PTR (desc,start);
+		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
+		g_assert (skip_size);
+		return start + skip_size;
+	case DESC_TYPE_SMALL_BITMAP:
+		OBJ_BITMAP_FOREACH_PTR (desc,start);
+		OBJ_BITMAP_SIZE (skip_size, desc, start);
+		return start + skip_size;
+	case DESC_TYPE_LARGE_BITMAP:
+	case DESC_TYPE_COMPLEX:
+		// FIXME:
+		g_assert_not_reached ();
+		break;
+	default:
+		// The other descriptors can't happen with vtypes
+		g_assert_not_reached ();
+		break;
+	}
 	return NULL;
 }
 
@@ -1803,6 +1853,7 @@ alloc_nursery (void)
 	scan_starts = nursery_size / SCAN_START_SIZE;
 	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts);
 	section->num_scan_start = scan_starts;
+	section->role = MEMORY_ROLE_GEN0;
 
 	/* add to the section list */
 	section->next = section_list;
@@ -2095,6 +2146,9 @@ collect_nursery (size_t requested_size)
 	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, nursery_real_end);
+
+	if (consistency_check_at_minor_collection)
+		check_consistency ();
 
 	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", num_minor_gcs, nursery_start, nursery_next, (int)(nursery_next - nursery_start)));
 	max_garbage_amount = nursery_next - nursery_start;
@@ -2398,6 +2452,7 @@ alloc_section (size_t size)
 	scan_starts = new_size / SCAN_START_SIZE;
 	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts);
 	section->num_scan_start = scan_starts;
+	section->role = MEMORY_ROLE_GEN1;
 
 	/* add to the section list */
 	section->next = section_list;
@@ -2953,6 +3008,21 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 
 	g_assert (vtable->gc_descr);
 	LOCK_GC;
+
+	if (collect_before_allocs) {
+		int dummy;
+
+		if (nursery_section) {
+			update_current_thread_stack (&dummy);
+			stop_world ();
+			collect_nursery (0);
+			restart_world ();
+			if (!degraded_mode && !search_fragment_for_size (size)) {
+				// FIXME:
+				g_assert_not_reached ();
+			}
+		}
+	}
 
 	p = (void**)nursery_next;
 	/* FIXME: handle overflow */
@@ -3726,6 +3796,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 {
 	void **ptr;
 	mword count;
+	guint32 desc;
 
 	/* FIXME: exclude stack locations */
 	switch ((*p) & REMSET_TYPE_MASK) {
@@ -3759,6 +3830,13 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 1;
 		scan_object (*ptr, start_nursery, end_nursery);
 		return p + 1;
+	case REMSET_VTYPE:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
+			return p + 2;
+		desc = p [1];
+		scan_vtype ((char*)ptr, desc, start_nursery, end_nursery);
+		return p + 2;
 	default:
 		g_assert_not_reached ();
 	}
@@ -4129,10 +4207,23 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
+	RememberedSet *rs = remembered_set;
 	if ((char*)dest >= nursery_start && (char*)dest < nursery_real_end) {
 		return;
 	}
 	DEBUG (1, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
+
+	if (rs->store_next + 1 < rs->end_set) {
+		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
+		*(rs->store_next++) = (mword)klass->gc_descr;
+		return;
+	}
+	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+	rs->next = remembered_set;
+	remembered_set = rs;
+	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+	*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
+	*(rs->store_next++) = (mword)klass->gc_descr;
 }
 
 /**
@@ -4162,11 +4253,61 @@ mono_gc_wbarrier_object (MonoObject* obj)
  * ######################################################################
  */
 
+const char*descriptor_types [] = {
+	"run_length",
+	"small_bitmap",
+	"string",
+	"complex",
+	"vector",
+	"array",
+	"large_bitmap",
+	"complex_arr"
+};
+
+void
+describe_ptr (char *ptr)
+{
+	GCMemSection *section;
+	MonoVTable *vtable;
+	mword desc;
+	int type;
+
+	if ((ptr >= nursery_start) && (ptr < nursery_real_end)) {
+		printf ("Pointer inside nursery.\n");
+	} else {
+		for (section = section_list; section;) {
+			if (ptr >= section->data && ptr < section->data + section->size)
+				break;
+			section = section->next;
+		}
+
+		if (section) {
+			printf ("Pointer inside oldspace.\n");
+		} else {
+			printf ("Pointer unknown.\n");
+			return;
+		}
+	}
+
+	// FIXME: Handle pointers to the inside of objects
+	vtable = (MonoVTable*)((mword*)ptr) [0];
+
+	printf ("VTable: %p\n", vtable);
+	printf ("Class: %s\n", vtable->klass->name);
+
+	desc = ((GCVTable*)vtable)->desc;
+	printf ("Descriptor: %lx\n", desc);
+
+	type = desc & 0x7;
+	printf ("Descriptor type: %d (%s)\n", type, descriptor_types [type]);
+}
+
 static mword*
 find_in_remset_loc (mword *p, char *addr, gboolean *found)
 {
 	void **ptr;
-	mword count;
+	mword count, desc;
+	size_t skip_size;
 
 	switch ((*p) & REMSET_TYPE_MASK) {
 	case REMSET_LOCATION:
@@ -4188,6 +4329,24 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 		if ((void**)addr >= ptr && (void**)addr < ptr + count)
 			*found = TRUE;
 		return p + 1;
+	case REMSET_VTYPE:
+		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+		desc = p [1];
+
+		switch (desc & 0x7) {
+		case DESC_TYPE_RUN_LENGTH:
+			OBJ_RUN_LEN_SIZE (skip_size, desc, ptr);
+			/* The descriptor includes the size of MonoObject */
+			skip_size -= sizeof (MonoObject);
+			if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
+				*found = TRUE;
+			break;
+		default:
+			// FIXME:
+			g_assert_not_reached ();
+		}
+
+		return p + 2;
 	default:
 		g_assert_not_reached ();
 	}
@@ -4253,6 +4412,7 @@ check_remsets_for_area (char *start, char *end)
 	size_t skip_size;
 	int type;
 	int type_str = 0, type_rlen = 0, type_bitmap = 0, type_vector = 0, type_lbit = 0, type_complex = 0;
+	guint32 desc;
 	new_obj_references = 0;
 	obj_references_checked = 0;
 	while (start < end) {
@@ -4266,16 +4426,17 @@ check_remsets_for_area (char *start, char *end)
 			MonoObject *obj = (MonoObject*)start;
 			g_print ("found at %p (0x%lx): %s.%s\n", start, (long)vt->desc, obj->vtable->klass->name_space, obj->vtable->klass->name);
 		}
-		type = vt->desc & 0x7;
+		desc = vt->desc;
+		type = desc & 0x7;
 		if (type == DESC_TYPE_STRING) {
 			STRING_SIZE (skip_size, start);
 			start += skip_size;
 			type_str++;
 			continue;
 		} else if (type == DESC_TYPE_RUN_LENGTH) {
-			OBJ_RUN_LEN_SIZE (skip_size, vt, start);
+			OBJ_RUN_LEN_SIZE (skip_size, desc, start);
 			g_assert (skip_size);
-			OBJ_RUN_LEN_FOREACH_PTR (vt,start);
+			OBJ_RUN_LEN_FOREACH_PTR (desc,start);
 			start += skip_size;
 			type_rlen++;
 			continue;
@@ -4294,9 +4455,9 @@ check_remsets_for_area (char *start, char *end)
 			type_vector++;
 			continue;
 		} else if (type == DESC_TYPE_SMALL_BITMAP) {
-			OBJ_BITMAP_SIZE (skip_size, vt, start);
+			OBJ_BITMAP_SIZE (skip_size, desc, start);
 			g_assert (skip_size);
-			OBJ_BITMAP_FOREACH_PTR (vt,start);
+			OBJ_BITMAP_FOREACH_PTR (desc,start);
 			start += skip_size;
 			type_bitmap++;
 			continue;
@@ -4523,6 +4684,7 @@ void
 mono_gc_base_init (void)
 {
 	char *env;
+	char **opts, **ptr;
 	struct sigaction sinfo;
 
 	LOCK_INIT (gc_mutex);
@@ -4533,21 +4695,33 @@ mono_gc_base_init (void)
 	}
 	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
-	/* format: MONO_GC_DEBUG=l[,filename] where l is a debug level 0-9 */
+	/* format: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9 */
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
-		if (env [0] >= '0' && env [0] <= '9') {
-			gc_debug_level = atoi (env);
-			env++;
+		opts = g_strsplit (env, ",", -1);
+		for (ptr = opts; ptr && *ptr; ptr ++) {
+			char *opt = *ptr;
+			if (opt [0] >= '0' && opt [0] <= '9') {
+				gc_debug_level = atoi (opt);
+				opt++;
+				if (opt [0] == ':')
+					opt++;
+				if (opt [0]) {
+					char *rf = g_strdup_printf ("%s.%d", opt, getpid ());
+					gc_debug_file = fopen (rf, "wb");
+					if (!gc_debug_file)
+						gc_debug_file = stderr;
+					g_free (rf);
+				}
+			} else if (!strcmp (opt, "collect-before-allocs")) {
+				collect_before_allocs = TRUE;
+			} else if (!strcmp (opt, "check-at-minor-collections")) {
+				consistency_check_at_minor_collection = TRUE;
+			} else {
+				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
+				exit (1);
+			}
 		}
-		if (env [0] == ',')
-			env++;
-		if (env [0]) {
-			char *rf = g_strdup_printf ("%s.%d", env, getpid ());
-			gc_debug_file = fopen (rf, "wb");
-			if (!gc_debug_file)
-				gc_debug_file = stderr;
-			g_free (rf);
-		}
+		g_strfreev (opts);
 	}
 
 	sem_init (&suspend_ack_semaphore, 0, 0);
