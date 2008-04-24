@@ -51,6 +51,19 @@ run-test:
 			if [ $$R2 != 0 ]; then \
 				echo "$$TEST is strict but did not pass under non-strict check, got $${R2} but expected 0"; \
 			fi \
+		elif [ "$$FIRST" == "typeunverifiable" ]; then \
+			#in type unverifiable more it must fail under verifiable mode but it's ok under valid mode \
+			../../metadata/pedump --verify error,warn,cls,code $$TEST.exe  >/dev/null 2>/dev/null; \
+			R1=$$?; \
+			../../metadata/pedump --verify error,warn,cls,code,valid-only $$TEST.exe  >/dev/null 2>/dev/null; \
+			R2=$$?; \
+			if [ $$R1 != 3 ]; then \
+				echo "$$TEST is type unverifiable but did not fail under verifiable check, got $${R1} but expected 3"; \
+			fi \
+			#type unverifiable result \
+			if [ $$R2 != 0 ]; then \
+				echo "$$TEST is type unverifiable but did not pass under non-strict check, got $${R2} but expected 0"; \
+			fi \
 		else \
 			../../metadata/pedump --verify error,warn,cls,code $$TEST.exe >/dev/null 2>/dev/null; \
 			R=$$?; \

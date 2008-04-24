@@ -4864,6 +4864,12 @@ do
 	./make_overlapped_test.sh int_bad_aligned_$I valid 0 4 $I
 done
 
+#Tests for aligned overllaping reference fields.
+./make_overlapped_test.sh ref_only_overlapping_1 typeunverifiable 0 0 8 object
+./make_overlapped_test.sh ref_only_overlapping_2 invalid 0 1 8 object
+./make_overlapped_test.sh ref_only_overlapping_3 invalid 0 2 8 object
+./make_overlapped_test.sh ref_only_overlapping_4 typeunverifiable 0 0 8 "int8[]"
+./make_overlapped_test.sh ref_only_overlapping_5 invalid 0 0 8 int32
 
 #invalid opcodes
 for I in {166..178}
