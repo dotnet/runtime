@@ -121,7 +121,7 @@ struct _WapiHandle_shared_ref
 	guint32 offset;
 };
 
-#define _WAPI_HANDLE_INITIAL_COUNT 4096
+#define _WAPI_HANDLE_INITIAL_COUNT 256
 
 struct _WapiHandleUnshared
 {
