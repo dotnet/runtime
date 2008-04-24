@@ -1719,19 +1719,21 @@ void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 	 * See bugs 75764 and 75891
 	 */
 	for (i = 0; i < _wapi_fd_reserve; i++) {
-		struct _WapiHandleUnshared *handle = &_WAPI_PRIVATE_HANDLES(i);
+		if (_wapi_private_handles [SLOT_INDEX (i)]) {
+			struct _WapiHandleUnshared *handle = &_WAPI_PRIVATE_HANDLES(i);
 
-		if (i != fd &&
-		    handle->type == WAPI_HANDLE_FILE) {
-			struct _WapiHandle_file *file_handle = &handle->u.file;
+			if (i != fd &&
+				handle->type == WAPI_HANDLE_FILE) {
+				struct _WapiHandle_file *file_handle = &handle->u.file;
 
-			if (file_handle->share_info == share_info) {
+				if (file_handle->share_info == share_info) {
 #ifdef DEBUG
-				g_message ("%s: handle 0x%x has this file open!",
-					   __func__, i);
+					g_message ("%s: handle 0x%x has this file open!",
+							   __func__, i);
 #endif
 
-				goto done;
+					goto done;
+				}
 			}
 		}
 	}
