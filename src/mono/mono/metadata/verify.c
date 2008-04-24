@@ -5381,6 +5381,7 @@ static gboolean
 verify_class_for_overlapping_reference_fields (MonoClass *class)
 {
 	int i, j, align;
+	gboolean is_fulltrust = mono_verifier_is_class_full_trust (class);
 	if (!(class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT || !class->has_references)
 		return TRUE;
 		
@@ -5397,6 +5398,10 @@ verify_class_for_overlapping_reference_fields (MonoClass *class)
 			int otherEnd = other->offset + mono_type_size (other->type, &align);
 			if (mono_field_is_deleted (other) || (is_valuetype && !MONO_TYPE_IS_REFERENCE (other->type)) || (other->type->attrs & FIELD_ATTRIBUTE_STATIC))
 				continue;
+
+			if (!is_valuetype && MONO_TYPE_IS_REFERENCE (other->type) && field->offset == other->offset && is_fulltrust)
+				continue;
+
 			if ((otherEnd > field->offset && otherEnd <= fieldEnd) || (other->offset >= field->offset && other->offset < fieldEnd))
 				return FALSE;
 		}
