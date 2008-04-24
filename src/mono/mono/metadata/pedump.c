@@ -352,8 +352,6 @@ dump_verify_info (MonoImage *image, int flags)
 	if (flags & (MONO_VERIFY_ALL + 1)) { /* verify code */
 		int i;
 		MonoTableInfo *m = &image->tables [MONO_TABLE_METHOD];
-		
-		mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
 
 		for (i = 0; i < m->rows; ++i) {
 			MonoMethod *method;
@@ -392,18 +390,20 @@ dump_verify_info (MonoImage *image, int flags)
 static void
 usage (void)
 {
-	printf ("Usage is: pedump [--verify error,warn,cls,all,code,fail-on-verifiable,non-strict] file.exe\n");
+	printf ("Usage is: pedump [--verify error,warn,cls,all,code,fail-on-verifiable,non-strict,valid-only] file.exe\n");
 	exit (1);
 }
 
+#define VALID_ONLY_FLAG 0x08000000
 int
 main (int argc, char *argv [])
 {
 	MonoImage *image;
 	char *file = NULL;
 	char *flags = NULL;
-	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", "fail-on-verifiable", "non-strict", NULL};
-	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, MONO_VERIFY_ALL + 1, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT};
+	MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_VERIFIABLE;
+	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", "fail-on-verifiable", "non-strict", "valid-only", NULL};
+	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, MONO_VERIFY_ALL + 1, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT, VALID_ONLY_FLAG, 0};
 	int i;
 	
 	for (i = 1; i < argc; i++){
@@ -448,7 +448,10 @@ main (int argc, char *argv [])
 		while (tok) {
 			for (i = 0; flag_desc [i]; ++i) {
 				if (strcmp (tok, flag_desc [i]) == 0) {
-					f |= flag_vals [i];
+					if (flag_vals [i] == VALID_ONLY_FLAG)
+						verifier_mode = MONO_VERIFIER_MODE_VALID;
+					else
+						f |= flag_vals [i];
 					break;
 				}
 			}
@@ -456,6 +459,8 @@ main (int argc, char *argv [])
 				g_print ("Unknown verify flag %s\n", tok);
 			tok = strtok (NULL, ",");
 		}
+
+		mono_verifier_set_mode (verifier_mode);
 		mono_init_from_assembly (file, file);
 		assembly = mono_assembly_open (file, NULL);
 
