@@ -1,3 +1,10 @@
+2008-04-24  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Use the three argument form of AC_DEFINE everywhere since it is
+	required by autoheader for parameters not in acconfig.h.
+
+	* acconfig.h: Removed, all the parameters are defined in configure.in now.
+
 2008-04-24  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* runtime/Makefile.am (mcs-compileall): Turn on the verifier.
