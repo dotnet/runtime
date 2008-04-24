@@ -1,3 +1,7 @@
+2008-04-24  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* runtime/Makefile.am (mcs-compileall): Turn on the verifier.
+
 2008-04-18  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/mono-find-requires.in: Add env var to ignore scanning
