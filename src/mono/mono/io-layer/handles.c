@@ -213,6 +213,9 @@ static void shared_init (void)
 	
 	_wapi_fd_reserve = getdtablesize();
 
+	/* This is needed by the code in _wapi_handle_new_internal */
+	_wapi_fd_reserve = (_wapi_fd_reserve + (_WAPI_HANDLE_INITIAL_COUNT - 1)) & ~(_WAPI_HANDLE_INITIAL_COUNT - 1);
+
 	do {
 		/* 
 		 * The entries in _wapi_private_handles reserved for fds are allocated lazily to 
