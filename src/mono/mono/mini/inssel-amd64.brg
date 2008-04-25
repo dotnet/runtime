@@ -199,18 +199,6 @@ stmt: OP_OUTARG (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_OUTARG_MEMBASE (reg) {
-	int esp_displ = (tree->backend.arg_info >> 16) & 0xffff;
-	int esp_offset = tree->backend.arg_info & 0xffff;
-	if (esp_displ)
-		MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, esp_displ);
-	tree->opcode = OP_STOREI8_MEMBASE_REG;
-	tree->sreg1 = state->left->reg1;
-	tree->inst_destbasereg = X86_ESP;
-	tree->inst_offset = esp_offset;
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
 stmt: OP_OUTARG_REG (reg) {	
 	MonoCallInst *call = tree->inst_call;
 
@@ -362,7 +350,7 @@ stmt: OP_OUTARG_VT (reg) {
 }
 
 stmt: OP_AMD64_OUTARG_ALIGN_STACK {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
+	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, tree->inst_c0);
 }	
 
 stmt: OP_AMD64_SAVE_SP_TO_LMF {

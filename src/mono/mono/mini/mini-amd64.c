@@ -62,7 +62,12 @@ static CRITICAL_SECTION mini_arch_mutex;
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
+#ifdef PLATFORM_WIN32
+/* On Win64 always reserve first 32 bytes for first four arguments */
+#define ARGS_OFFSET 48
+#else
 #define ARGS_OFFSET 16
+#endif
 #define GP_SCRATCH_REG AMD64_R11
 
 /*
@@ -270,9 +275,6 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 		ainfo->storage = ArgInIReg;
 		ainfo->reg = param_regs [*gr];
 		(*gr) ++;
-#ifdef PLATFORM_WIN32
-		(*stack_size) += sizeof (gpointer);
-#endif
     }
 }
 
@@ -1289,9 +1291,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	int i, n, stack_size;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
-#ifdef PLATFORM_WIN32
-	int args_space = 0, args_offset = 0;
-#endif
 
 	stack_size = 0;
 
@@ -1430,19 +1429,6 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 							if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8)
 								arg->opcode = OP_OUTARG_R8;
 					}
-#ifdef PLATFORM_WIN32
-					arg->opcode = OP_OUTARG_MEMBASE;
-					/* we store in the upper bits of backen.arg_info the needed
-					* esp adjustment and in the lower bits the offset from esp
-					* where the arg needs to be stored
-					*/
-					if (!args_space)
-						args_offset = args_space = n*(sizeof(void*));
-					arg->backend.arg_info = args_space - args_offset + 0x20;
-					args_offset -= sizeof (void*);
-					if (i == n-1)
-						arg->backend.arg_info |= args_space << 16;
-#endif
 					break;
 				default:
 					g_assert_not_reached ();
@@ -1458,8 +1444,16 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 	if (cinfo->need_stack_align) {
 		MONO_INST_NEW (cfg, arg, OP_AMD64_OUTARG_ALIGN_STACK);
+		arg->inst_c0 = 8;
 		MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 	}
+
+#ifdef PLATFORM_WIN32
+	/* Always reserve 32 bytes of stack space on Win64 */
+	MONO_INST_NEW (cfg, arg, OP_AMD64_OUTARG_ALIGN_STACK);
+	arg->inst_c0 = 32;
+	MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
+#endif
 
 	if (cfg->method->save_lmf) {
 		MONO_INST_NEW (cfg, arg, OP_AMD64_SAVE_SP_TO_LMF);
