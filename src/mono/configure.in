@@ -407,7 +407,8 @@ fi
 # with an ancient tar program (Solaris)
 #
 AC_MSG_CHECKING(Integrity of package)
-if test -f $srcdir/$mcsdir/class/System.Web.Extensions/Test/AUT/System.Web.UI.UpdatePanel.CreateContentTemplateContainer/UpdatePanelCreateContentTemplateContainerCS.aspx; then
+if test -f $srcdir/$mcsdir/class/System.Runtime.Serialization.Formatters.Soap/System.Runtime.Serialization.Formatters.Soap/SoapTypeMapper.cs
+then
    AC_MSG_RESULT(ok)
 else
    errorm="Your mono distribution is incomplete;  if unpacking from a tar file, make sure you use GNU tar;  see http://www.mono-project.com/IncompletePackage for more details"
