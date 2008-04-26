@@ -402,6 +402,18 @@ else
   mcsdir=../mcs
 fi
 
+#
+# A sanity check to catch cases where the package was unpacked
+# with an ancient tar program (Solaris)
+#
+AC_MSG_CHECKING(Integrity of package)
+if test -f $mcsdir/class/System.Web.Extensions/Test/AUT/System.Web.UI.UpdatePanel.CreateContentTemplateContainer/UpdatePanelCreateContentTemplateContainerCS.aspx; then
+   AC_MSG_RESULT(ok)
+else
+   errorm="Your mono distribution is incomplete;  if unpacking from a tar file, make sure you use GNU tar;  see http://www.mono-project.com/IncompletePackage for more details"
+   AC_MSG_ERROR([$errorm])
+fi
+
 mcs_topdir='$(top_srcdir)/'$mcsdir
 mcs_topdir_from_srcdir='$(top_builddir)/'$mcsdir
 
