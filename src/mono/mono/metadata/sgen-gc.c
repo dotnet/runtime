@@ -1042,7 +1042,7 @@ scan_area (char *start, char *end)
 	size_t skip_size;
 	int type;
 	int type_str = 0, type_rlen = 0, type_bitmap = 0, type_vector = 0, type_lbit = 0, type_complex = 0;
-	guint32 desc;
+	mword desc;
 	new_obj_references = 0;
 	obj_references_checked = 0;
 	while (start < end) {
@@ -1136,7 +1136,7 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 	GCVTable *vt;
 	size_t skip_size;
 	int type, remove;
-	guint32 desc;
+	mword desc;
 
 	while (start < end) {
 		if (!*(void**)start) {
@@ -1363,7 +1363,7 @@ scan_object (char *start, char* from_start, char* from_end)
 {
 	GCVTable *vt;
 	size_t skip_size;
-	guint32 desc;
+	mword desc;
 
 	vt = (GCVTable*)LOAD_VTABLE (start);
 	//type = vt->desc & 0x7;
@@ -1440,7 +1440,7 @@ scan_object (char *start, char* from_start, char* from_end)
  * Returns a pointer to the end of the object.
  */
 static char*
-scan_vtype (char *start, guint32 desc, char* from_start, char* from_end)
+scan_vtype (char *start, mword desc, char* from_start, char* from_end)
 {
 	size_t skip_size;
 
@@ -3796,7 +3796,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 {
 	void **ptr;
 	mword count;
-	guint32 desc;
+	mword desc;
 
 	/* FIXME: exclude stack locations */
 	switch ((*p) & REMSET_TYPE_MASK) {
@@ -4412,7 +4412,7 @@ check_remsets_for_area (char *start, char *end)
 	size_t skip_size;
 	int type;
 	int type_str = 0, type_rlen = 0, type_bitmap = 0, type_vector = 0, type_lbit = 0, type_complex = 0;
-	guint32 desc;
+	mword desc;
 	new_obj_references = 0;
 	obj_references_checked = 0;
 	while (start < end) {
