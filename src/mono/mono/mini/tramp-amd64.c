@@ -196,8 +196,9 @@ mono_arch_nullify_plt_entry (guint8 *code)
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
-	guint8 *buf, *code, *tramp, *br [2];
-	int i, lmf_offset, offset, res_offset, arg_offset, tramp_offset, saved_regs_offset, saved_fpregs_offset, rbp_offset, framesize;
+	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
+	int i, lmf_offset, offset, res_offset, arg_offset, tramp_offset, saved_regs_offset;
+	int saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset;
 	gboolean has_caller;
 
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
@@ -228,6 +229,12 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		x86_patch (jump, code);
 	}
 
+	orig_rsp_to_rbp_offset = 0;
+	r11_save_code = code;
+	/* Reserve 5 bytes for the mov_membase_reg to save R11 */
+	code += 5;
+	after_r11_save_code = code;
+
 	/*
 	 * The generic class init trampoline is called directly by
 	 * JITted code, there is no specific trampoline.  The lazy
@@ -238,12 +245,14 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 			tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH) {
 		/* Pop the return address off the stack */
 		amd64_pop_reg (code, AMD64_R11);
+		orig_rsp_to_rbp_offset += 8;
 	}
 
 	/* 
 	 * Allocate a new stack frame
 	 */
 	amd64_push_reg (code, AMD64_RBP);
+	orig_rsp_to_rbp_offset -= 8;
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, 8);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
@@ -278,8 +287,15 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 			/* RAX is already saved */
 			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, rbp_offset, 8);
 			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), AMD64_RAX, 8);
-		} else {
+		} else if (i != AMD64_R11) {
 			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), i, 8);
+		} else {
+			
+			/* We have to save R11 right at the start of
+			   the trampoline code because it's used as a
+			   scratch register */
+			amd64_mov_membase_reg (r11_save_code, AMD64_RSP, saved_regs_offset + orig_rsp_to_rbp_offset + (i * 8), i, 8);
+			g_assert (r11_save_code == after_r11_save_code);
 		}
 	}
 	offset += 8 * 8;
@@ -394,10 +410,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 8);
 	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, 8);
 
-	/* Restore argument registers and r10 (needed to pass rgctx to
-	   static shared generic methods). */
+	/* Restore argument registers, r10 (needed to pass rgctx to
+	   static shared generic methods) and r11 (imt register for
+	   interface calls). */
 	for (i = 0; i < AMD64_NREG; ++i)
-		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10)
+		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_R11)
 			amd64_mov_reg_membase (code, i, AMD64_RBP, saved_regs_offset + (i * 8), 8);
 
 	for (i = 0; i < 8; ++i)
