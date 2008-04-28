@@ -24,25 +24,32 @@
 static int
 type_check_context_used (MonoType *type, gboolean recursive)
 {
-	int t = mono_type_get_type (type);
-	int context_used = 0;
-
-	if (t == MONO_TYPE_VAR)
-		context_used |= MONO_GENERIC_CONTEXT_USED_CLASS;
-	else if (t == MONO_TYPE_MVAR)
-		context_used |= MONO_GENERIC_CONTEXT_USED_METHOD;
-	else if (recursive) {
-		if (t == MONO_TYPE_CLASS)
-			context_used |= mono_class_check_context_used (mono_type_get_class (type));
-		else if (t == MONO_TYPE_GENERICINST) {
+	switch (mono_type_get_type (type)) {
+	case MONO_TYPE_VAR:
+		return MONO_GENERIC_CONTEXT_USED_CLASS;
+	case MONO_TYPE_MVAR:
+		return MONO_GENERIC_CONTEXT_USED_METHOD;
+	case MONO_TYPE_SZARRAY:
+		return mono_class_check_context_used (mono_type_get_class (type));
+	case MONO_TYPE_ARRAY:
+		return mono_class_check_context_used (mono_type_get_array_type (type)->eklass);
+	case MONO_TYPE_CLASS:
+		if (recursive)
+			return mono_class_check_context_used (mono_type_get_class (type));
+		else
+			return 0;
+	case MONO_TYPE_GENERICINST:
+		if (recursive) {
 			MonoGenericClass *gclass = type->data.generic_class;
 
-			context_used |= mono_generic_context_check_used (&gclass->context);
 			g_assert (gclass->container_class->generic_container);
+			return mono_generic_context_check_used (&gclass->context);
+		} else {
+			return 0;
 		}
+	default:
+		return 0;
 	}
-
-	return context_used;
 }
 
 static int
