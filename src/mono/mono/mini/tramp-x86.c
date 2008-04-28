@@ -434,76 +434,101 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 }
 
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 {
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_RGCTX_LAZY_FETCH);
-	gboolean indirect = MONO_RGCTX_OFFSET_IS_INDIRECT (encoded_offset);
-	int offset = indirect ? MONO_RGCTX_OFFSET_INDIRECT_OFFSET (encoded_offset) :
-		MONO_RGCTX_OFFSET_DIRECT_OFFSET (encoded_offset);
-	guint8 *code, *buf, *jump;
-	guint8 *dummy;
+	guint8 *code, *buf;
+	guint8 **rgctx_null_jumps;
+	int tramp_size;
+	int depth, index;
+	int i;
 
 	g_assert (tramp);
-	if (indirect)
-		g_assert (MONO_RGCTX_OFFSET_INDIRECT_SLOT (encoded_offset) == 0);
 
-	code = buf = mono_global_codeman_reserve (32);
+	index = slot;
+	for (depth = 0; ; ++depth) {
+		int size = mono_class_rgctx_get_array_size (depth);
 
-	/* load rgctx ptr */
-	x86_mov_reg_membase (buf, X86_EAX, X86_ESP, 4, 4);
-	if (indirect) {
-		/* if indirect, load extra_other_infos ptr */
-		x86_mov_reg_membase (buf, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoRuntimeGenericContext, extra_other_infos), 4);
+		if (index < size - 1)
+			break;
+		index -= size - 1;
 	}
-	/* fetch slot */
-	x86_mov_reg_membase (buf, X86_EAX, X86_EAX, offset, 4);
 
-	dummy = buf;
+	tramp_size = 36 + 6 * depth;
 
-	/* is slot null? */
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	rgctx_null_jumps = g_malloc (sizeof (guint8*) * (depth + 2));
+
+	/* load vtable ptr */
+	x86_mov_reg_membase (buf, X86_EAX, X86_ESP, 4, 4);
+	/* load rgctx ptr from vtable */
+	x86_mov_reg_membase (buf, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), 4);
+	/* is the rgctx ptr null? */
 	x86_test_reg_reg (buf, X86_EAX, X86_EAX);
-	jump = buf;
 	/* if yes, jump to actual trampoline */
+	rgctx_null_jumps [0] = buf;
 	x86_branch8 (buf, X86_CC_Z, -1, 1);
 
-	/* if no, just return */
+	for (i = 0; i < depth; ++i) {
+		/* load ptr to next array */
+		x86_mov_reg_membase (buf, X86_EAX, X86_EAX, 0, 4);
+		/* is the ptr null? */
+		x86_test_reg_reg (buf, X86_EAX, X86_EAX);
+		/* if yes, jump to actual trampoline */
+		rgctx_null_jumps [i + 1] = buf;
+		x86_branch8 (buf, X86_CC_Z, -1, 1);
+	}
+
+	/* fetch slot */
+	x86_mov_reg_membase (buf, X86_EAX, X86_EAX, sizeof (gpointer) * (index + 1), 4);
+	/* is the slot null? */
+	x86_test_reg_reg (buf, X86_EAX, X86_EAX);
+	/* if yes, jump to actual trampoline */
+	rgctx_null_jumps [depth + 1] = buf;
+	x86_branch8 (buf, X86_CC_Z, -1, 1);
+	/* otherwise return */
 	x86_ret (buf);
+
+	for (i = 0; i <= depth + 1; ++i)
+		x86_patch (rgctx_null_jumps [i], buf);
+
+	g_free (rgctx_null_jumps);
 
 	/*
 	 * our stack looks like this (tos on top):
 	 *
-	 * | ret addr  |
-	 * | rgctx ptr |
-	 * | ...       |
+	 * | ret addr   |
+	 * | vtable ptr |
+	 * | ...        |
 	 *
 	 * the trampoline code expects it to look like this:
 	 *
-	 * | rgctx ptr |
-	 * | ret addr  |
-	 * | ...       |
+	 * | vtable ptr |
+	 * | ret addr   |
+	 * | ...        |
 	 *
 	 * whereas our caller expects to still have one argument on
 	 * the stack when we return, so we transform the stack into
 	 * this:
 	 *
-	 * | rgctx ptr |
-	 * | ret addr  |
-	 * | dummy     |
-	 * | ...       |
+	 * | vtable ptr |
+	 * | ret addr   |
+	 * | dummy      |
+	 * | ...        |
 	 *
-	 * which actually only requires us to push the rgctx ptr, and
-	 * the "old" rgctx ptr becomes the dummy.
+	 * which actually only requires us to push the vtable ptr, and
+	 * the "old" vtable ptr becomes the dummy.
 	 */
 
-	x86_patch (jump, buf);
 	x86_push_membase (buf, X86_ESP, 4);
 
-	x86_mov_reg_imm (buf, X86_EAX, encoded_offset);
+	x86_mov_reg_imm (buf, X86_EAX, slot);
 	x86_jump_code (buf, tramp);
 
 	mono_arch_flush_icache (code, buf - code);
 
-	g_assert (buf - code <= 32);
+	g_assert (buf - code <= tramp_size);
 
 	return code;
 }

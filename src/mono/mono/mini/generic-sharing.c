@@ -280,12 +280,6 @@ mono_method_get_declaring_generic_method (MonoMethod *method)
 	return inflated->declaring;
 }
 
-static gboolean
-inflated_type_is_equal_to_class (MonoType *inflated_type, MonoClass *klass)
-{
-	return klass == mono_class_from_mono_type (inflated_type);
-}
-
 /*
  * mono_class_generic_class_relation:
  * @klass: the class to be investigated
@@ -306,40 +300,11 @@ int
 mono_class_generic_class_relation (MonoClass *klass, int info_type, MonoClass *method_klass,
 	MonoGenericContext *generic_context, int *arg_num)
 {
-	MonoRuntimeGenericContextTemplate *rgctx_template =
-		mono_class_get_runtime_generic_context_template (method_klass);
-	int i;
+	int i = mono_class_lookup_or_register_other_info (method_klass, &klass->byval_arg, info_type, generic_context);
 
-	/* Reflection types can only be handled in the extensible
-	   rgctx part. */
-	if (info_type != MONO_RGCTX_INFO_REFLECTION_TYPE) {
-		for (i = 0; i < rgctx_template->num_arg_infos; ++i) {
-			MonoType *arg_info = rgctx_template->arg_infos [i];
-			MonoType *inflated_arg;
-
-			if (arg_info == NULL)
-				continue;
-
-			inflated_arg = mono_class_inflate_generic_type(arg_info, generic_context);
-
-			if (inflated_type_is_equal_to_class (inflated_arg, klass)) {
-				if (arg_num)
-					*arg_num = i;
-				return MINI_GENERIC_CLASS_RELATION_ARGUMENT;
-			}
-		}
-
-		if (!klass->generic_class && !klass->generic_container)
-			g_assert_not_reached ();
-
-		if (mini_class_get_container_class (klass) == mini_class_get_container_class (method_klass) &&
-				mono_generic_context_equal_deep (mini_class_get_context (klass), generic_context))
-			return MINI_GENERIC_CLASS_RELATION_SELF;
-	}
-
-	i = mono_class_lookup_or_register_other_info (method_klass, &klass->byval_arg, info_type, generic_context);
 	if (arg_num)
 		*arg_num = i;
+
 	return MINI_GENERIC_CLASS_RELATION_OTHER_TABLE;
 }
 
@@ -368,7 +333,7 @@ token_context_equal (MonoTokenAndContext *tc1, MonoTokenAndContext *tc2)
 /*
  * mono_helper_get_rgctx_other_ptr:
  * @caller_class: the klass of the calling method
- * @rgctx: the runtime generic context
+ * @vtable: the vtable with the runtime generic context
  * @token: the token which to look up
  * @token_source: what kind of item the token is for
  * @rgctx_type: the kind of value requested
@@ -379,16 +344,14 @@ token_context_equal (MonoTokenAndContext *tc1, MonoTokenAndContext *tc2)
  * static_data pointer).
  */
 gpointer
-mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoRuntimeGenericContext *rgctx,
+mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *vtable,
 	guint32 token, guint32 token_source, guint32 rgctx_type, gint32 rgctx_index)
 {
 	MonoImage *image = caller_class->image;
-	int depth = caller_class->idepth;
-	MonoRuntimeGenericSuperInfo *super_info = &((MonoRuntimeGenericSuperInfo*)rgctx)[-depth];
-	MonoClass *klass = super_info->klass;
+	MonoClass *klass = vtable->klass;
 	MonoClass *result = NULL;
 	MonoTokenAndContext tc = { token, &klass->generic_class->context };
-	gpointer rgctx_result_ptr, result_ptr;
+	gpointer result_ptr;
 
 	mono_loader_lock ();
 
@@ -455,27 +418,16 @@ mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoRuntimeGenericCont
 		result_ptr = result;
 		break;
 	case MONO_RGCTX_INFO_STATIC_DATA: {
-		MonoVTable *vtable = mono_class_vtable (rgctx->domain, result);
-		result_ptr = vtable->data;
+		MonoVTable *result_vtable = mono_class_vtable (vtable->domain, result);
+		result_ptr = result_vtable->data;
 		break;
 	}
 	case MONO_RGCTX_INFO_VTABLE:
-		result_ptr = mono_class_vtable (rgctx->domain, result);
+		result_ptr = mono_class_vtable (vtable->domain, result);
 		break;
 	default:
 		g_assert_not_reached ();
 	}
-
-	g_assert (rgctx_index >= 0);
-	if (rgctx_index < MONO_RGCTX_MAX_OTHER_INFOS) {
-		rgctx_result_ptr = rgctx->other_infos [rgctx_index];
-	} else {
-		g_assert (rgctx->extra_other_infos);
-
-		rgctx_result_ptr = rgctx->extra_other_infos [rgctx_index - MONO_RGCTX_MAX_OTHER_INFOS];
-	}
-
-	g_assert (rgctx_result_ptr == result);
 
 	return result_ptr;
 }

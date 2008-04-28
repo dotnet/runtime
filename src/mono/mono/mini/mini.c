@@ -117,6 +117,13 @@
 		if (method->klass->valuetype)	\
 			GENERIC_SHARING_FAILURE ((opcode)); \
 	} while (0)
+#define GET_RGCTX(rgctx) do {						\
+		MonoInst *this = NULL;					\
+		GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD(*ip);	\
+		if (!(method->flags & METHOD_ATTRIBUTE_STATIC))		\
+			NEW_ARGLOAD (cfg, this, 0);			\
+		(rgctx) = get_runtime_generic_context (cfg, method, this, ip); \
+	} while (0)
 
 #define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
 
@@ -1807,7 +1814,7 @@ mono_get_got_var (MonoCompile *cfg)
 }
 
 static MonoInst *
-mono_get_rgctx_var (MonoCompile *cfg)
+mono_get_vtable_var (MonoCompile *cfg)
 {
 	g_assert (cfg->generic_sharing_context);
 
@@ -4380,55 +4387,36 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
 	g_free (method_code);
 }
 
-/*
- * Generates this->vtable->runtime_generic_context
- */
-static MonoInst*
-get_runtime_generic_context_from_this (MonoCompile *cfg, MonoInst *this, unsigned char *ip)
-{
-	MonoInst *vtable, *rgc_ptr_addr, *rgc_ptr_offset, *rgc_ptr;
-
-	MONO_INST_NEW (cfg, vtable, CEE_LDIND_I);
-	vtable->cil_code = ip;
-	vtable->inst_left = this;
-	vtable->type = STACK_PTR;
-
-	NEW_ICONST (cfg, rgc_ptr_offset, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
-
-	MONO_INST_NEW (cfg, rgc_ptr_addr, OP_PADD);
-	rgc_ptr_addr->cil_code = ip;
-	rgc_ptr_addr->inst_left = vtable;
-	rgc_ptr_addr->inst_right = rgc_ptr_offset;
-	rgc_ptr_addr->type = STACK_PTR;
-
-	MONO_INST_NEW (cfg, rgc_ptr, CEE_LDIND_I);
-	rgc_ptr->cil_code = ip;
-	rgc_ptr->inst_left = rgc_ptr_addr;
-	rgc_ptr->type = STACK_PTR;
-
-	return rgc_ptr;
-}
-
 static MonoInst*
 get_runtime_generic_context (MonoCompile *cfg, MonoMethod *method, MonoInst *this, unsigned char *ip)
 {
 	g_assert (!method->klass->valuetype);
 
 	if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-		MonoInst *rgctx_loc, *rgctx_var;
+		MonoInst *vtable_loc, *vtable_var;
 
-		rgctx_loc = mono_get_rgctx_var (cfg);
-		NEW_TEMPLOAD (cfg, rgctx_var, rgctx_loc->inst_c0);
+		vtable_loc = mono_get_vtable_var (cfg);
+		NEW_TEMPLOAD (cfg, vtable_var, vtable_loc->inst_c0);
 
-		return rgctx_var;
+		return vtable_var;
 	} else {
-		return get_runtime_generic_context_from_this (cfg, this, ip);
+		MonoInst *vtable;
+
+		MONO_INST_NEW (cfg, vtable, CEE_LDIND_I);
+		vtable->cil_code = ip;
+		vtable->inst_left = this;
+		vtable->type = STACK_PTR;
+
+		return vtable;
 	}
 }
 
 static gpointer
 create_rgctx_lazy_fetch_trampoline (guint32 offset)
 {
+	static gboolean inited = FALSE;
+	static int num_trampolines = 0;
+
 	gpointer tramp, ptr;
 
 	mono_jit_lock ();
@@ -4449,106 +4437,14 @@ create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	g_hash_table_insert (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset), ptr);
 	mono_jit_unlock ();
 
+	if (!inited) {
+		mono_counters_register ("RGCTX num lazy fetch trampolines",
+				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_trampolines);
+		inited = TRUE;
+	}
+	num_trampolines++;
+
 	return ptr;
-}	
-
-static MonoInst*
-lazy_fetch_rgctx_direct_field (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *rgc_ptr, int offset, unsigned char *ip)
-{
-	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
-	guint8 *tramp = create_rgctx_lazy_fetch_trampoline (MONO_RGCTX_ENCODE_DIRECT_OFFSET (offset));
-	int temp;
-	MonoInst *field;
-
-	temp = mono_emit_native_call (cfg, bblock, tramp, sig, &rgc_ptr, ip, FALSE, FALSE); 
-
-	NEW_TEMPLOAD (cfg, field, temp);
-
-	return field;
-}
-
-static MonoInst*
-lazy_fetch_rgctx_indirect_field (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *rgc_ptr, int offset, unsigned char *ip)
-{
-	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
-	guint8 *tramp = create_rgctx_lazy_fetch_trampoline (MONO_RGCTX_ENCODE_INDIRECT_OFFSET (offset));
-	int temp;
-	MonoInst *field;
-
-	temp = mono_emit_native_call (cfg, bblock, tramp, sig, &rgc_ptr, ip, FALSE, FALSE); 
-
-	NEW_TEMPLOAD (cfg, field, temp);
-
-	return field;
-}
-
-/*
- * Generates ((MonoRuntimeGenericSuperInfo*)rgc)[-depth].XXX where XXX
- * is specified by rgctx_type.
- */
-static MonoInst*
-get_runtime_generic_context_super_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
-	MonoInst *rgc_ptr, int depth, int rgctx_type, unsigned char *ip)
-{
-	int field_offset_const, offset;
-
-	g_assert (depth >= 1);
-
-	switch (rgctx_type) {
-	case MONO_RGCTX_INFO_STATIC_DATA :
-		field_offset_const = G_STRUCT_OFFSET (MonoRuntimeGenericSuperInfo, static_data);
-		break;
-	case MONO_RGCTX_INFO_KLASS :
-		field_offset_const = G_STRUCT_OFFSET (MonoRuntimeGenericSuperInfo, klass);
-		break;
-	case MONO_RGCTX_INFO_VTABLE:
-		field_offset_const = G_STRUCT_OFFSET (MonoRuntimeGenericSuperInfo, vtable);
-		break;
-	default :
-		g_assert_not_reached ();
-	}
-
-	offset = -depth * sizeof (MonoRuntimeGenericSuperInfo) + field_offset_const;
-
-	return lazy_fetch_rgctx_direct_field (cfg, bblock, rgc_ptr, offset, ip);
-}
-
-static int
-get_rgctx_arg_info_field_offset (int rgctx_type)
-{
-	switch (rgctx_type) {
-	case MONO_RGCTX_INFO_STATIC_DATA :
-		return G_STRUCT_OFFSET (MonoRuntimeGenericArgInfo, static_data);
-	case MONO_RGCTX_INFO_KLASS:
-		return G_STRUCT_OFFSET (MonoRuntimeGenericArgInfo, klass);
-	case MONO_RGCTX_INFO_VTABLE :
-		return G_STRUCT_OFFSET (MonoRuntimeGenericArgInfo, vtable);
-	default:
-		g_assert_not_reached ();
-	}
-}
-
-/*
- * Generates rgc->arg_infos [arg_num].XXX where XXX is specified by
- * rgctx_type;
- */
-static MonoInst*
-get_runtime_generic_context_arg_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
-	MonoInst *rgc_ptr, int arg_num, int rgctx_type, unsigned char *ip)
-{
-	int arg_info_offset, arg_info_field_offset, offset;
-
-	g_assert (arg_num >= 0);
-	//g_assert (!lazy);
-
-	arg_info_offset = G_STRUCT_OFFSET (MonoRuntimeGenericContext, arg_infos) +
-		arg_num * sizeof (MonoRuntimeGenericArgInfo);
-
-	arg_info_field_offset = get_rgctx_arg_info_field_offset (rgctx_type);
-
-	offset = arg_info_offset + arg_info_field_offset;
-
-	return lazy_fetch_rgctx_direct_field (cfg, bblock, rgc_ptr, offset, ip);
 }
 
 /*
@@ -4558,22 +4454,18 @@ get_runtime_generic_context_arg_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
  */
 static MonoInst*
 get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
-	MonoInst *rgc_ptr, int index, unsigned char *ip)
+	MonoInst *rgc_ptr, int slot, const unsigned char *ip)
 {
-	if (index < MONO_RGCTX_MAX_OTHER_INFOS) {
-		int other_type_offset;
+	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
+	guint8 *tramp = create_rgctx_lazy_fetch_trampoline (slot);
+	int temp;
+	MonoInst *field;
 
-		other_type_offset = G_STRUCT_OFFSET (MonoRuntimeGenericContext, other_infos) +
-			index * sizeof (gpointer);
+	temp = mono_emit_native_call (cfg, bblock, tramp, sig, &rgc_ptr, ip, FALSE, FALSE);
 
-		return lazy_fetch_rgctx_direct_field (cfg, bblock, rgc_ptr, other_type_offset, ip);
-	} else {
-		int slot_offset;
+	NEW_TEMPLOAD (cfg, field, temp);
 
-		slot_offset = (index - MONO_RGCTX_MAX_OTHER_INFOS) * sizeof (gpointer);
-
-		return lazy_fetch_rgctx_indirect_field (cfg, bblock, rgc_ptr, slot_offset, ip);
-	}
+	return field;
 }
 
 static MonoInst*
@@ -4608,12 +4500,6 @@ get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasic
 	int relation = mono_class_generic_class_relation (klass, rgctx_type, method->klass, generic_context, &arg_num);
 
 	switch (relation) {
-	case MINI_GENERIC_CLASS_RELATION_SELF: {
-		int depth = klass->idepth;
-		return get_runtime_generic_context_super_ptr (cfg, bblock, rgctx, depth, rgctx_type, ip);
-	}
-	case MINI_GENERIC_CLASS_RELATION_ARGUMENT:
-		return get_runtime_generic_context_arg_ptr (cfg, bblock, rgctx, arg_num, rgctx_type, ip);
 	case MINI_GENERIC_CLASS_RELATION_OTHER_TABLE:
 		return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, arg_num, ip);
 	case MINI_GENERIC_CLASS_RELATION_OTHER:
@@ -4627,7 +4513,7 @@ get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasic
 
 static MonoInst*
 get_runtime_generic_context_method (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
-	MonoMethod *cmethod, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type, unsigned char *ip)
+	MonoMethod *cmethod, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type, const unsigned char *ip)
 {
 	int arg_num = mono_class_lookup_or_register_other_info (method->klass, cmethod, rgctx_type, generic_context);
 
@@ -4895,7 +4781,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * (for non-static methods) are live.
 				 */
 				if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-					mono_get_rgctx_var (cfg);
+					mono_get_vtable_var (cfg);
 				} else {
 					MonoInst *this, *dummy_use;
 					MonoType *this_type;
@@ -5471,10 +5357,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoMethodSignature *fsig = NULL;
 			int temp, array_rank = 0;
 			int virtual = *ip == CEE_CALLVIRT;
-			MonoInst *rgctx_arg = NULL;
 			gboolean no_spill;
 			int context_used = 0;
-			gboolean pass_rgctx = FALSE;
+			gboolean pass_vtable = FALSE;
+			MonoInst *vtable_arg = NULL;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -5607,7 +5493,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				gboolean context_sharable = mono_generic_context_is_sharable (context, TRUE);
 
 				/*
-				 * Pass rgctx iff target method might
+				 * Pass vtable iff target method might
 				 * be shared, which means that sharing
 				 * is enabled for its class and its
 				 * context is sharable (and it's not a
@@ -5615,7 +5501,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 */
 				if (sharing_enabled && context_sharable &&
 						!mini_method_get_context (cmethod)->method_inst)
-					pass_rgctx = TRUE;
+					pass_vtable = TRUE;
 			}
 
 			if (cfg->generic_sharing_context && cmethod) {
@@ -5633,35 +5519,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
-			if (pass_rgctx) {
+			if (pass_vtable) {
 				if (context_used) {
-					MonoInst *this = NULL, *rgctx, *vtable, *field_offset, *field_addr;
+					MonoInst *rgctx;
 
-					GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
-
-					if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-						NEW_ARGLOAD (cfg, this, 0);
-					rgctx = get_runtime_generic_context (cfg, method, this, ip);
-					vtable = get_runtime_generic_context_ptr (cfg, method, bblock, cmethod->klass,
+					GET_RGCTX (rgctx);
+					vtable_arg = get_runtime_generic_context_ptr (cfg, method, bblock, cmethod->klass,
 						token, MINI_TOKEN_SOURCE_METHOD, generic_context,
 						rgctx, MONO_RGCTX_INFO_VTABLE, ip);
-
-					NEW_ICONST (cfg, field_offset, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
-
-					MONO_INST_NEW (cfg, field_addr, OP_PADD);
-					field_addr->cil_code = ip;
-					field_addr->inst_left = vtable;
-					field_addr->inst_right = field_offset;
-					field_addr->type = STACK_PTR;
-
-					MONO_INST_NEW (cfg, rgctx_arg, CEE_LDIND_I);
-					rgctx_arg->cil_code = ip;
-					rgctx_arg->inst_left = field_addr;
-					rgctx_arg->type = STACK_PTR;
 				} else {
 					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
 
-					NEW_PCONST (cfg, rgctx_arg, vtable->runtime_generic_context);
+					NEW_VTABLECONST (cfg, vtable_arg, vtable);
 				}
 			}
 
@@ -5819,7 +5688,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* tail recursion elimination */
 			if ((cfg->opt & MONO_OPT_TAILC) && *ip == CEE_CALL && cmethod == method && ip [5] == CEE_RET &&
-					!rgctx_arg) {
+					!vtable_arg) {
 				gboolean has_vtargs = FALSE;
 				int i;
 				
@@ -5898,17 +5767,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (*ip == CEE_CALL)
 					g_assert (context_used);
 				else if (*ip == CEE_CALLI)
-					g_assert (!rgctx_arg);
+					g_assert (!vtable_arg);
 				else
 					g_assert_not_reached ();
 
 				/* Prevent inlining of methods with indirect calls */
 				INLINE_FAILURE;
 				if (no_spill) {
-					ins = (MonoInst*)mono_emit_rgctx_calli (cfg, bblock, fsig, sp, addr, rgctx_arg, ip);
+					ins = (MonoInst*)mono_emit_rgctx_calli (cfg, bblock, fsig, sp, addr, vtable_arg, ip);
 					*sp++ = ins;					
 				} else {
-					temp = mono_emit_rgctx_calli_spilled (cfg, bblock, fsig, sp, addr, rgctx_arg, ip);
+					temp = mono_emit_rgctx_calli_spilled (cfg, bblock, fsig, sp, addr, vtable_arg, ip);
 					if (temp != -1) {
 						NEW_TEMPLOAD (cfg, *sp, temp);
 						sp++;
@@ -5995,10 +5864,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						sp++;
 					}
 				} else if (no_spill) {
-					ins = (MonoInst*)mono_emit_rgctx_method_call (cfg, bblock, cmethod, fsig, sp, rgctx_arg, ip, virtual ? sp [0] : NULL);
+					ins = (MonoInst*)mono_emit_rgctx_method_call (cfg, bblock, cmethod, fsig, sp,
+							vtable_arg, ip, virtual ? sp [0] : NULL);
 					*sp++ = ins;
 				} else {
-					if ((temp = mono_emit_rgctx_method_call_spilled (cfg, bblock, cmethod, fsig, sp, rgctx_arg, ip, virtual ? sp [0] : NULL)) != -1) {
+					if ((temp = mono_emit_rgctx_method_call_spilled (cfg, bblock, cmethod, fsig, sp,
+							vtable_arg, ip, virtual ? sp [0] : NULL)) != -1) {
 						MonoInst *load;
 						NEW_TEMPLOAD (cfg, load, temp);
 
@@ -7442,26 +7313,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (mono_class_needs_cctor_run (klass, method)) {
 					MonoMethodSignature *sig = helper_sig_generic_class_init_trampoline;
 					MonoCallInst *call;
-					MonoInst *vtable;
+					MonoInst *vtable, *rgctx;
 
 					if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
 						NEW_ARGLOAD (cfg, this, 0);
 					else
 						this = NULL;
 
-					if (relation == MINI_GENERIC_CLASS_RELATION_SELF && this) {
-						MONO_INST_NEW (cfg, vtable, CEE_LDIND_I);
-						vtable->cil_code = ip;
-						vtable->inst_left = this;
-						vtable->type = STACK_PTR;
-						vtable->klass = klass;
-					} else {
-						MonoInst *rgctx = get_runtime_generic_context (cfg, method, this, ip);
-
-						vtable = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+					rgctx = get_runtime_generic_context (cfg, method, this, ip);
+					vtable = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
 							token, MINI_TOKEN_SOURCE_FIELD, generic_context,
 							rgctx, MONO_RGCTX_INFO_VTABLE, ip);
-					}
 
 					call = mono_emit_call_args (cfg, bblock, sig, NULL, FALSE, FALSE, ip, FALSE);
 					call->inst.opcode = OP_TRAMPCALL_VTABLE;

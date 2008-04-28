@@ -1299,9 +1299,6 @@ mono_image_close (MonoImage *image)
 	if (image->rgctx_template_hash)
 		g_hash_table_destroy (image->rgctx_template_hash);
 
-	if (image->generic_class_open_instances_hash)
-		g_hash_table_destroy (image->generic_class_open_instances_hash);
-
 	if (image->interface_bitset) {
 		mono_unload_interface_ids (image->interface_bitset);
 		mono_bitset_free (image->interface_bitset);

@@ -620,9 +620,9 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 					gi->this_offset);
 
 		if (ji->method->flags & METHOD_ATTRIBUTE_STATIC) {
-			MonoRuntimeGenericContext *rgctx = info;
+			MonoVTable *vtable = info;
 
-			class = rgctx->vtable->klass;
+			class = vtable->klass;
 		} else {
 			MonoObject *this = info;
 

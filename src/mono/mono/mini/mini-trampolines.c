@@ -6,6 +6,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/utils/mono-counters.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -170,9 +171,9 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 		if (m->flags & METHOD_ATTRIBUTE_STATIC) {
 #ifdef MONO_ARCH_RGCTX_REG
-			MonoRuntimeGenericContext *rgctx = mono_arch_find_static_call_rgctx ((gpointer*)regs, code);
+			MonoVTable *vtable = mono_arch_find_static_call_vtable ((gpointer*)regs, code);
 
-			klass = rgctx->vtable->klass;
+			klass = vtable->klass;
 #else
 			g_assert_not_reached ();
 #endif
@@ -405,29 +406,21 @@ mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtab
 }
 
 static gpointer
-mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, MonoRuntimeGenericContext *rgctx, guint8 *tramp)
+mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
-	guint32 encoded_offset = mono_arch_get_rgctx_lazy_fetch_offset ((gpointer*)regs);
-	gpointer result;
+	static gboolean inited = FALSE;
+	static int num_lookups = 0;
 
-	mono_class_fill_runtime_generic_context (rgctx);
+	guint32 slot = mono_arch_get_rgctx_lazy_fetch_offset ((gpointer*)regs);
 
-	if (MONO_RGCTX_OFFSET_IS_INDIRECT (encoded_offset)) {
-		int indirect_slot = MONO_RGCTX_OFFSET_INDIRECT_SLOT (encoded_offset);
-		int offset = MONO_RGCTX_OFFSET_INDIRECT_OFFSET (encoded_offset);
-
-		g_assert (indirect_slot == 0);
-		
-		result = *(gpointer*)((guint8*)rgctx->extra_other_infos + offset);
-	} else {
-		int offset = MONO_RGCTX_OFFSET_DIRECT_OFFSET (encoded_offset);
-
-		result = *(gpointer*)((guint8*)rgctx + offset);
+	if (!inited) {
+		mono_counters_register ("RGCTX unmanaged lookups", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_lookups);
+		inited = TRUE;
 	}
 
-	g_assert (result);
+	num_lookups++;
 
-	return result;
+	return mono_class_fill_runtime_generic_context (vtable, slot);
 }
 
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE

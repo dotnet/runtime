@@ -200,13 +200,6 @@ struct _MonoImage {
 	GHashTable *castclass_cache;
 	GHashTable *proxy_isinst_cache;
 	GHashTable *rgctx_template_hash; /* LOCKING: templates lock */
-	/* Maps from uninstantiated generic classes to GSList's of
-	 * instantiated open generic classes whose container class is the key
-	 * class.
-	 *
-	 * LOCKING: templates lock
-	 */
-	GHashTable *generic_class_open_instances_hash;
 
 	/*
 	 * indexed by token and MonoGenericContext pointer

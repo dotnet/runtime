@@ -1301,21 +1301,6 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	return mono_class_create_runtime_vtable (domain, class);
 }
 
-static gboolean
-class_needs_rgctx (MonoClass *class)
-{
-	if (!mono_class_generic_sharing_enabled (class))
-		return FALSE;
-
-	while (class) {
-		if (class->generic_class)
-			return TRUE;
-		class = class->parent;
-	}
-
-	return FALSE;
-}
-
 static MonoVTable *
 mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 {
@@ -1557,9 +1542,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 			build_imt (class, vt, domain, interface_offsets, NULL);
 		}
 	}
-
-	if (class_needs_rgctx (class))
-		mono_class_setup_runtime_generic_context (class, domain);
 
 	mono_domain_unlock (domain);
 

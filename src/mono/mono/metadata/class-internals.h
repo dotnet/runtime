@@ -190,15 +190,15 @@ typedef struct {
 	MonoVTable *domain_vtables [MONO_ZERO_LEN_ARRAY];
 } MonoClassRuntimeInfo;
 
-#define MONO_RGCTX_MAX_OTHER_INFOS	2
-
 enum {
 	MONO_RGCTX_INFO_STATIC_DATA,
 	MONO_RGCTX_INFO_KLASS,
 	MONO_RGCTX_INFO_VTABLE,
+	MONO_RGCTX_INFO_TYPE,
 	MONO_RGCTX_INFO_REFLECTION_TYPE,
 	MONO_RGCTX_INFO_METHOD,
-	MONO_RGCTX_INFO_GENERIC_METHOD_CODE
+	MONO_RGCTX_INFO_GENERIC_METHOD_CODE,
+	MONO_RGCTX_INFO_CLASS_FIELD
 };
 
 typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
@@ -208,10 +208,8 @@ typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
 } MonoRuntimeGenericContextOtherInfoTemplate;
 
 typedef struct {
-	int num_arg_infos;
 	MonoClass *next_subclass;
 	MonoRuntimeGenericContextOtherInfoTemplate *other_infos;
-	MonoType *arg_infos [MONO_ZERO_LEN_ARRAY];
 } MonoRuntimeGenericContextTemplate;
 
 struct _MonoClass {
@@ -351,37 +349,7 @@ struct _MonoClass {
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && ((k)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
 int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
 
-typedef struct {
-	gpointer static_data;
-	MonoClass *klass;
-	MonoVTable *vtable;
-} MonoRuntimeGenericSuperInfo;
-
-typedef struct {
-	gpointer static_data;
-	MonoClass *klass;
-	MonoVTable *vtable;
-} MonoRuntimeGenericArgInfo;
-
-typedef struct {
-	MonoDomain *domain;
-	MonoVTable *vtable;
-	gpointer other_infos [MONO_RGCTX_MAX_OTHER_INFOS];
-	gpointer *extra_other_infos;
-	MonoRuntimeGenericArgInfo arg_infos [MONO_ZERO_LEN_ARRAY];
-} MonoRuntimeGenericContext;
-
-#define MONO_RGCTX_ENCODE_DIRECT_OFFSET(o)	((guint32)(o) & 0x00ffffff)
-#define MONO_RGCTX_ENCODE_INDIRECT_OFFSET(o)	(((guint32)(o) & 0x00ffffff) | 0x01000000)
-
-#define MONO_RGCTX_OFFSET_INDIRECT_SLOT(s)	((gint32)(((guint32)(s))>>24) - 1)
-#define MONO_RGCTX_OFFSET_IS_INDIRECT(s)	(MONO_RGCTX_OFFSET_INDIRECT_SLOT((s)) >= 0)
-
-#define MONO_RGCTX_OFFSET_OFFSET_PART(s)	((guint32)(s) & 0x00ffffff)
-#define MONO_RGCTX_OFFSET_DIRECT_OFFSET(s)	((MONO_RGCTX_OFFSET_OFFSET_PART((s)) & 0x00800000) ? \
-			(gint32)(MONO_RGCTX_OFFSET_OFFSET_PART((s)) | 0xff000000) : \
-			(gint32)MONO_RGCTX_OFFSET_OFFSET_PART((s)))
-#define MONO_RGCTX_OFFSET_INDIRECT_OFFSET(s)    MONO_RGCTX_OFFSET_DIRECT_OFFSET((s))
+typedef gpointer MonoRuntimeGenericContext;
 
 /* the interface_offsets array is stored in memory before this struct */
 struct MonoVTable {
@@ -973,14 +941,11 @@ mono_type_get_basic_type_from_generic (MonoType *type) MONO_INTERNAL;
 gboolean
 mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
 
-MonoRuntimeGenericContextTemplate*
-mono_class_get_runtime_generic_context_template (MonoClass *class) MONO_INTERNAL;
+gpointer
+mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot) MONO_INTERNAL;
 
-void
-mono_class_setup_runtime_generic_context (MonoClass *class, MonoDomain *domain) MONO_INTERNAL;
-
-void
-mono_class_fill_runtime_generic_context (MonoRuntimeGenericContext *rgctx) MONO_INTERNAL;
+int
+mono_class_rgctx_get_array_size (int n) MONO_INTERNAL;
 
 gboolean
 mono_class_lookup_or_register_other_info (MonoClass *class, gpointer data, int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
@@ -993,9 +958,6 @@ mono_class_check_context_used (MonoClass *class) MONO_INTERNAL;
 
 void
 mono_class_unregister_image_generic_subclasses (MonoImage *image) MONO_INTERNAL;
-
-void
-mono_class_unregister_domain_generic_vtables (MonoDomain *domain) MONO_INTERNAL;
 
 gboolean
 mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, MonoClass *context_klass) MONO_INTERNAL;

@@ -1041,8 +1041,6 @@ enum {
 };
 
 enum {
-	MINI_GENERIC_CLASS_RELATION_SELF,
-	MINI_GENERIC_CLASS_RELATION_ARGUMENT,
 	MINI_GENERIC_CLASS_RELATION_OTHER_TABLE,
 	MINI_GENERIC_CLASS_RELATION_OTHER
 };
@@ -1209,7 +1207,7 @@ guchar*   mono_arch_create_trampoline_code      (MonoTrampolineType tramp_type) 
 gpointer  mono_arch_create_jit_trampoline       (MonoMethod *method) MONO_INTERNAL;
 MonoJitInfo *mono_arch_create_jump_trampoline      (MonoMethod *method) MONO_INTERNAL;
 gpointer  mono_arch_create_class_init_trampoline(MonoVTable *vtable) MONO_INTERNAL;
-gpointer  mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset) MONO_INTERNAL;
+gpointer  mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot) MONO_INTERNAL;
 guint32	  mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs) MONO_INTERNAL;
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg) MONO_INTERNAL;
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg) MONO_INTERNAL;
@@ -1274,7 +1272,7 @@ gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gbool
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
 void        mono_arch_emit_imt_argument         (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
 MonoMethod* mono_arch_find_imt_method           (gpointer *regs, guint8 *code) MONO_INTERNAL;
-MonoRuntimeGenericContext* mono_arch_find_static_call_rgctx (gpointer *regs, guint8 *code) MONO_INTERNAL;
+MonoVTable* mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count) MONO_INTERNAL;
 void    mono_arch_notify_pending_exc (void) MONO_INTERNAL;
 
@@ -1373,7 +1371,7 @@ MonoMethod* mono_method_get_declaring_generic_method (MonoMethod *method) MONO_I
 int mono_class_generic_class_relation (MonoClass *klass, int info_type, MonoClass *method_klass,
 				       MonoGenericContext *generic_context, int *arg_num) MONO_INTERNAL;
 
-gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoRuntimeGenericContext *rgctx,
+gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *vtable,
 					  guint32 token, guint32 token_source, guint32 rgctx_type,
 					  gint32 rgctx_index) MONO_INTERNAL;
 

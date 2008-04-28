@@ -4191,10 +4191,10 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSha
 }
 #endif
 
-MonoRuntimeGenericContext*
-mono_arch_find_static_call_rgctx (gpointer *regs, guint8 *code)
+MonoVTable*
+mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code)
 {
-	return (MonoRuntimeGenericContext*) regs [MONO_ARCH_RGCTX_REG];
+	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
 
 MonoInst*
