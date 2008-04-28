@@ -1813,12 +1813,14 @@ mono_image_strong_name_position (MonoImage *image, guint32 *size)
 {
 	MonoCLIImageInfo *iinfo = image->image_info;
 	MonoPEDirEntry *de = &iinfo->cli_cli_header.ch_strong_name;
+	guint32 pos;
 
 	if (size)
 		*size = de->size;
 	if (!de->size || !de->rva)
 		return 0;
-	return mono_cli_rva_image_map (image, de->rva);
+	pos = mono_cli_rva_image_map (image, de->rva);
+	return pos == INVALID_ADDRESS ? 0 : pos;
 }
 
 /**
