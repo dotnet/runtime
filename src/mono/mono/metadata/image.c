@@ -24,6 +24,7 @@
 #include "metadata-internals.h"
 #include "profiler-private.h"
 #include "loader.h"
+#include "coree.h"
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
@@ -51,9 +52,11 @@ static gboolean debug_assembly_unload = FALSE;
 #define mono_images_unlock() LeaveCriticalSection (&images_mutex)
 static CRITICAL_SECTION images_mutex;
 
+/* returns offset relative to image->raw_data */
 guint32
-mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 addr)
+mono_cli_rva_image_map (MonoImage *image, guint32 addr)
 {
+	MonoCLIImageInfo *iinfo = image->image_info;
 	const int top = iinfo->cli_section_count;
 	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
@@ -61,6 +64,10 @@ mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 addr)
 	for (i = 0; i < top; i++){
 		if ((addr >= tables->st_virtual_address) &&
 		    (addr < tables->st_virtual_address + tables->st_raw_data_size)){
+#ifdef PLATFORM_WIN32
+			if (image->is_module_handle)
+				return addr;
+#endif
 			return addr - tables->st_virtual_address + tables->st_raw_data_ptr;
 		}
 		tables++;
@@ -94,6 +101,10 @@ mono_image_rva_map (MonoImage *image, guint32 addr)
 				if (!mono_image_ensure_section_idx (image, i))
 					return NULL;
 			}
+#ifdef PLATFORM_WIN32
+			if (image->is_module_handle)
+				return image->raw_data + addr;
+#endif
 			return (char*)iinfo->cli_sections [i] +
 				(addr - tables->st_virtual_address);
 		}
@@ -160,6 +171,11 @@ mono_image_ensure_section_idx (MonoImage *image, int section)
 
 	if (sect->st_raw_data_ptr + sect->st_raw_data_size > image->raw_data_len)
 		return FALSE;
+#ifdef PLATFORM_WIN32
+	if (image->is_module_handle)
+		iinfo->cli_sections [section] = image->raw_data + sect->st_virtual_address;
+	else
+#endif
 	/* FIXME: we ignore the writable flag since we don't patch the binary */
 	iinfo->cli_sections [section] = image->raw_data + sect->st_raw_data_ptr;
 	return TRUE;
@@ -230,7 +246,7 @@ load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
 	guint32 offset;
 	
-	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_header.datadir.pe_cli_header.rva);
+	offset = mono_cli_rva_image_map (image, iinfo->cli_header.datadir.pe_cli_header.rva);
 	if (offset == INVALID_ADDRESS)
 		return FALSE;
 
@@ -298,7 +314,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	guint32 pad;
 	char *ptr;
 	
-	offset = mono_cli_rva_image_map (iinfo, iinfo->cli_cli_header.ch_metadata.rva);
+	offset = mono_cli_rva_image_map (image, iinfo->cli_cli_header.ch_metadata.rva);
 	if (offset == INVALID_ADDRESS)
 		return FALSE;
 
@@ -546,6 +562,10 @@ mono_image_load_module (MonoImage *image, int idx)
 			if (image->modules [idx - 1]) {
 				mono_image_addref (image->modules [idx - 1]);
 				image->modules [idx - 1]->assembly = image->assembly;
+#ifdef PLATFORM_WIN32
+				if (image->modules [idx - 1]->is_module_handle)
+					mono_image_fixup_vtable (image->modules [idx - 1]);
+#endif
 				/* g_print ("loaded module %s from %s (%p)\n", module_ref, image->name, image->assembly); */
 			}
 			g_free (module_ref);
@@ -642,6 +662,9 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 {
 	MonoDotNetHeader64 header64;
 
+#ifdef PLATFORM_WIN32
+	if (!image->is_module_handle)
+#endif
 	if (offset + sizeof (MonoDotNetHeader32) > image->raw_data_len)
 		return -1;
 
@@ -760,6 +783,11 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
  	SWAPPDE (header->datadir.pe_cli_header);
 	SWAPPDE (header->datadir.pe_reserved);
 
+#ifdef PLATFORM_WIN32
+	if (image->is_module_handle)
+		image->raw_data_len = header->nt.pe_image_size;
+#endif
+
 	return offset;
 }
 
@@ -782,6 +810,9 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (status)
 		*status = MONO_IMAGE_IMAGE_INVALID;
 
+#ifdef PLATFORM_WIN32
+	if (!image->is_module_handle)
+#endif
 	if (offset + sizeof (msdos) > image->raw_data_len)
 		goto invalid_image;
 	memcpy (&msdos, image->raw_data + offset, sizeof (msdos));
@@ -1043,6 +1074,28 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 	return mono_image_open_from_data_full (data, data_len, need_copy, status, FALSE);
 }
 
+#ifdef PLATFORM_WIN32
+/* fname is not duplicated. */
+MonoImage*
+mono_image_open_from_module_handle (HMODULE module_handle, const char* fname, MonoImageOpenStatus* status)
+{
+	MonoImage* image;
+	MonoCLIImageInfo* iinfo;
+	guint16* fname_utf16;
+
+	image = g_new0 (MonoImage, 1);
+	image->raw_data = (char*) module_handle;
+	image->is_module_handle = TRUE;
+	iinfo = g_new0 (MonoCLIImageInfo, 1);
+	image->image_info = iinfo;
+	image->name = fname;
+	image->ref_count = 1;
+
+	image = do_mono_image_load (image, status, TRUE);
+	image = register_image (image);
+}
+#endif
+
 MonoImage *
 mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean refonly)
 {
@@ -1052,6 +1105,50 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	
 	g_return_val_if_fail (fname != NULL, NULL);
 	
+#ifdef PLATFORM_WIN32
+	/* Load modules using LoadLibrary. */
+	if (!refonly && coree_module_handle) {
+		HMODULE module_handle;
+		guint16 *fname_utf16;
+
+		absfname = mono_path_resolve_symlinks (fname);
+
+		/* There is little overhead because the OS loader lock is held by LoadLibrary. */
+		mono_images_lock ();
+		image = g_hash_table_lookup (loaded_images_hash, absfname);
+		if (image) {
+			mono_image_addref (image);
+			mono_images_unlock ();
+			g_free (absfname);
+			return image;
+		}
+
+		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
+		module_handle = LoadLibrary (fname_utf16);
+
+		/* mono_image_open_from_module_handle is called by _CorDllMain. */
+		image = g_hash_table_lookup (loaded_images_hash, absfname);
+		mono_images_unlock ();
+
+		g_free (fname_utf16);
+
+		if (image) {
+			/* No mono_image_addref required. */;
+			g_free (absfname);
+			return image;
+		}
+
+		if (module_handle == NULL) {
+			g_free (absfname);
+			if (status)
+				*status = MONO_IMAGE_ERROR_ERRNO;
+			return NULL;
+		}
+
+		return mono_image_open_from_module_handle (module_handle, absfname, status);
+	}
+#endif
+
 	absfname = mono_path_canonicalize (fname);
 
 	/*
@@ -1112,6 +1209,57 @@ mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 	g_return_val_if_fail (fname != NULL, NULL);
 	
 	return(do_mono_image_open (fname, status, FALSE, FALSE));
+}
+
+void
+mono_image_fixup_vtable (MonoImage *image)
+{
+#ifdef PLATFORM_WIN32
+	MonoCLIImageInfo *iinfo;
+	MonoPEDirEntry *de;
+	MonoVTableFixup *vtfixup;
+	int count;
+	gpointer slot;
+	guint16 slot_type;
+	int slot_count;
+
+	g_assert (image->is_module_handle);
+
+	iinfo = image->image_info;
+	de = &iinfo->cli_cli_header.ch_vtable_fixups;
+	if (!de->rva || !de->size)
+		return;
+	vtfixup = (MonoVTableFixup*) mono_image_rva_map (image, de->rva);
+	if (!vtfixup)
+		return;
+	
+	count = de->size / sizeof (MonoVTableFixup);
+	while (count--) {
+		if (!vtfixup->rva || !vtfixup->count)
+			continue;
+
+		slot = mono_image_rva_map (image, vtfixup->rva);
+		g_assert (slot);
+		slot_type = vtfixup->type;
+		slot_count = vtfixup->count;
+		if (slot_type & VTFIXUP_TYPE_32BIT)
+			while (slot_count--) {
+				*((guint32*) slot) = mono_marshal_get_vtfixup_ftnptr (image, *((guint32*) slot), slot_type);
+				((guint32*) slot)++;
+			}
+		else if (slot_type & VTFIXUP_TYPE_64BIT)
+			while (slot_count--) {
+				*((guint64*) slot) = mono_marshal_get_vtfixup_ftnptr (image, *((guint64*) slot), slot_type);
+				((guint64*) slot)++;
+			}
+		else
+			g_assert_not_reached();
+
+		vtfixup++;
+	}
+#else
+	g_assert_not_reached();
+#endif
 }
 
 static void
@@ -1218,12 +1366,18 @@ mono_image_close (MonoImage *image)
 
 	mono_images_unlock ();
 
+#ifdef PLATFORM_WIN32
+	if (image->is_module_handle)
+		FreeLibrary ((HMODULE) image->raw_data);
+#endif
+
 	if (image->raw_buffer_used) {
 		if (image->raw_data != NULL)
 			mono_raw_buffer_free (image->raw_data);
 	}
 	
 	if (image->raw_data_allocated) {
+		/* FIXME: do we need this? (image is disposed anyway) */
 		/* image->raw_metadata and cli_sections might lie inside image->raw_data */
 		MonoCLIImageInfo *ii = image->image_info;
 
@@ -1604,6 +1758,10 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 		}
 
 		image->files [fileidx - 1] = res;
+#ifdef PLATFORM_WIN32
+		if (res->is_module_handle)
+			mono_image_fixup_vtable (res);
+#endif
 	}
 	mono_loader_unlock ();
 	g_free (name);
@@ -1655,25 +1813,12 @@ mono_image_strong_name_position (MonoImage *image, guint32 *size)
 {
 	MonoCLIImageInfo *iinfo = image->image_info;
 	MonoPEDirEntry *de = &iinfo->cli_cli_header.ch_strong_name;
-	const int top = iinfo->cli_section_count;
-	MonoSectionTable *tables = iinfo->cli_section_tables;
-	int i;
-	guint32 addr = de->rva;
-	
+
 	if (size)
 		*size = de->size;
 	if (!de->size || !de->rva)
 		return 0;
-	for (i = 0; i < top; i++){
-		if ((addr >= tables->st_virtual_address) &&
-		    (addr < tables->st_virtual_address + tables->st_raw_data_size)){
-			return tables->st_raw_data_ptr +
-				(addr - tables->st_virtual_address);
-		}
-		tables++;
-	}
-
-	return 0;
+	return mono_cli_rva_image_map (image, de->rva);
 }
 
 /**

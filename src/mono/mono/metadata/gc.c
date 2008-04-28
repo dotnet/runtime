@@ -945,11 +945,20 @@ mono_gc_init (void)
 	}
 
 	mono_thread_create (mono_domain_get (), finalizer_thread, NULL);
+
+	/*
+	 * Waiting for a new thread would result in a deadlock when the runtime is
+	 * initialized from _CorDllMain that is called while the OS loader lock is
+	 * held by LoadLibrary. Avoiding waiting for the finalizer thread being
+	 * created should not cause any issues on Windows.
+	 */
+#ifndef PLATFORM_WIN32
 	/*
 	 * Wait until the finalizer thread sets gc_thread since its value is needed
 	 * by mono_thread_attach ()
 	 */
 	WaitForSingleObjectEx (thread_started_event, INFINITE, FALSE);
+#endif
 }
 
 void

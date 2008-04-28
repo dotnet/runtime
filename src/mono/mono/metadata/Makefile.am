@@ -108,6 +108,8 @@ libmonoruntime_la_SOURCES = \
 	console-io.c		\
 	console-io.h	\
 	assembly.c	\
+	coree.c \
+	coree.h \
 	domain.c	\
 	domain-internals.h	\
 	opcodes.c	\

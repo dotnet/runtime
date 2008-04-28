@@ -140,6 +140,9 @@ mono_marshal_get_static_rgctx_invoke (MonoMethod *method) MONO_INTERNAL;
 MonoMethod *
 mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoObject *this) MONO_INTERNAL;
 
+gpointer
+mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type) MONO_INTERNAL;
+
 MonoMethod *
 mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func, gboolean check_exceptions) MONO_INTERNAL;
 

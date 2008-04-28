@@ -218,6 +218,14 @@ typedef struct  {
 #define mono_domain_assemblies_lock(domain)   EnterCriticalSection(&(domain)->assemblies_lock)
 #define mono_domain_assemblies_unlock(domain) LeaveCriticalSection(&(domain)->assemblies_lock)
 
+typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
+
+void
+mono_install_runtime_load  (MonoLoadFunc func) MONO_INTERNAL;
+
+MonoDomain*
+mono_runtime_load (const char *filename, const char *runtime_version) MONO_INTERNAL;
+
 void 
 mono_init_com_types (void) MONO_INTERNAL;
 

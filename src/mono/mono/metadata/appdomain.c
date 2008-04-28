@@ -96,6 +96,21 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *has
 static void
 mono_domain_unload (MonoDomain *domain);
 
+static MonoLoadFunc load_function = NULL;
+
+void
+mono_install_runtime_load (MonoLoadFunc func)
+{
+	load_function = func;
+}
+
+MonoDomain*
+mono_runtime_load (const char *filename, const char *runtime_version)
+{
+	g_assert (load_function);
+	return load_function (filename, runtime_version);
+}
+
 /**
  * mono_runtime_init:
  * @domain: domain returned by mono_init ()

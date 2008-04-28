@@ -19,6 +19,7 @@ while (<SYMS>) {
 	push @symbols, $1;
 }
 close (SYMS);
+push @symbols, "MonoFixupCorEE";
 @symbols = sort @symbols;
 
 open (OUT, ">$outfile") || die "Cannot open '$outfile': $!\n";

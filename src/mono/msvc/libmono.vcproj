@@ -2287,6 +2287,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\metadata\coree.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\coree.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\metadata\culture-info-tables.h"
 				>
 			</File>

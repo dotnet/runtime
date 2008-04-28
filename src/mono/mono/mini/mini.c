@@ -12199,15 +12199,17 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		MonoMethod *nm;
 		MonoMethodPInvoke* piinfo = (MonoMethodPInvoke *) method;
 
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE && !MONO_CLASS_IS_IMPORT(method->klass))
-			g_error ("Method '%s' in assembly '%s' contains native code and mono can't run it. The assembly was probably created by Managed C++.\n", mono_method_full_name (method, TRUE), method->klass->image->name);
-
 		if (!piinfo->addr) {
 			if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 				piinfo->addr = mono_lookup_internal_call (method);
+			else if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
+#ifdef PLATFORM_WIN32
+				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono in modules loaded from byte arrays. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), method->klass->image->name);
+#else
+				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), method->klass->image->name);
+#endif
 			else
-				if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-					mono_lookup_pinvoke_call (method, NULL, NULL);
+				mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
 			nm = mono_marshal_get_native_wrapper (method, check_for_pending_exc);
 			return mono_get_addr_from_ftnptr (mono_compile_method (nm));

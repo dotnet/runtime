@@ -34,6 +34,7 @@
 #include <mono/metadata/threads-types.h>
 #include <metadata/threads.h>
 #include <metadata/profiler-private.h>
+#include <mono/metadata/coree.h>
 
 /* #define DEBUG_DOMAIN_UNLOAD */
 
@@ -1160,6 +1161,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	if (domain)
 		g_assert_not_reached ();
 
+#if defined(PLATFORM_WIN32) && !defined(_WIN64)
+	mono_load_coree ();
+#endif
+
 	mono_perfcounters_init ();
 
 	mono_counters_register ("Max native code in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_size);
@@ -1196,6 +1201,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		 * exe_image, and close it during shutdown.
 		 */
 		get_runtimes_from_exe (exe_filename, &exe_image, runtimes);
+#ifdef PLATFORM_WIN32
+		mono_fixup_exe_image (exe_image);
+#endif
 	} else if (runtime_version != NULL) {
 		runtimes [0] = get_runtime_by_version (runtime_version);
 		runtimes [1] = NULL;

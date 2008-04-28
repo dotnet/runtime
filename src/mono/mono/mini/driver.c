@@ -44,7 +44,9 @@
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/coree.h>
 #include "mono/utils/mono-counters.h"
+#include <mono/os/gc_wrapper.h>
 
 #include "mini.h"
 #include "jit.h"
@@ -1055,6 +1057,27 @@ static const char info[] =
 #define error_if_aot_unsupported() do {fprintf (stderr, "AOT compilation is not supported on this platform.\n"); exit (1);} while (0)
 #else
 #define error_if_aot_unsupported()
+#endif
+
+#ifdef PLATFORM_WIN32
+BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
+{
+	if (!GC_DllMain (module_handle, reason, reserved))
+		return FALSE;
+
+	switch (reason)
+	{
+	case DLL_PROCESS_ATTACH:
+		mono_module_handle = module_handle;
+		mono_install_runtime_load (mini_init);
+		break;
+	case DLL_PROCESS_DETACH:
+		if (coree_module_handle)
+			FreeLibrary (coree_module_handle);
+		break;
+	}
+	return TRUE;
+}
 #endif
 
 int

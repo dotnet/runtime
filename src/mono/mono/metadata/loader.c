@@ -1394,12 +1394,20 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (result->klass == mono_defaults.string_class && !strcmp (result->name, ".ctor"))
 			result->string_ctor = 1;
-	} else if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (!(cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE))) {
+	} else if (cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)result;
-		MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
 
+#ifdef PLATFORM_WIN32
+		/* IJW is P/Invoke with a predefined function pointer. */
+		if (image->is_module_handle && (cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+			piinfo->addr = mono_image_rva_map (image, cols [0]);
+			g_assert (piinfo->addr);
+		}
+#endif
 		piinfo->implmap_idx = mono_metadata_implmap_from_method (image, idx - 1);
-		piinfo->piflags = mono_metadata_decode_row_col (im, piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
+		/* Native methods can have no map. */
+		if (piinfo->implmap_idx)
+			piinfo->piflags = mono_metadata_decode_row_col (&tables [MONO_TABLE_IMPLMAP], piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
 	}
 
 	/* FIXME: lazyness for generics too, but how? */
@@ -1900,7 +1908,7 @@ mono_method_signature (MonoMethod *m)
 
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 		m->signature->pinvoke = 1;
-	else if ((m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (!(m->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE))) {
+	else if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		MonoCallConvention conv = 0;
 		MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)m;
 		m->signature->pinvoke = 1;

@@ -31,6 +31,7 @@
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/coree.h>
 
 #ifndef PLATFORM_WIN32
 #include <sys/types.h>
@@ -550,24 +551,6 @@ set_dirs (char *exe)
 
 #endif /* PLATFORM_WIN32 */
 
-#ifdef UNDER_CE
-#undef GetModuleFileName
-#define GetModuleFileName ceGetModuleFileNameA
-
-DWORD ceGetModuleFileNameA(HMODULE hModule, char* lpFilename, DWORD nSize)
-{
-	DWORD res = 0;
-	wchar_t* wbuff = (wchar_t*)LocalAlloc(LPTR, nSize*2);
-	res = GetModuleFileNameW(hModule, wbuff, nSize);
-	if (res) {
-		int len = wcslen(wbuff);
-		WideCharToMultiByte(CP_ACP, 0, wbuff, len, lpFilename, len, NULL, NULL);
-	}
-	LocalFree(wbuff);
-	return res;
-}
-#endif
-
 /**
  * mono_set_rootdir:
  *
@@ -578,12 +561,10 @@ void
 mono_set_rootdir (void)
 {
 #ifdef PLATFORM_WIN32
-	gunichar2 moddir [MAXPATHLEN];
-	gchar *bindir, *installdir, *root, *utf8name, *config;
+	gchar *bindir, *installdir, *root, *name, *config;
 
-	GetModuleFileNameW (NULL, moddir, MAXPATHLEN);
-	utf8name = g_utf16_to_utf8 (moddir, -1, NULL, NULL, NULL);
-	bindir = g_path_get_dirname (utf8name);
+	name = mono_get_module_file_name (mono_module_handle);
+	bindir = g_path_get_dirname (name);
 	installdir = g_path_get_dirname (bindir);
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
 
@@ -594,7 +575,7 @@ mono_set_rootdir (void)
 	g_free (root);
 	g_free (installdir);
 	g_free (bindir);
-	g_free (utf8name);
+	g_free (name);
 #else
 	char buf [4096];
 	int  s;
@@ -1486,6 +1467,10 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 	if (mono_defaults.internals_visible_class)
 		mono_assembly_load_friends (ass);
+#ifdef PLATFORM_WIN32
+	if (image->is_module_handle)
+		mono_image_fixup_vtable (image);
+#endif
 	mono_assemblies_unlock ();
 
 	mono_assembly_invoke_load_hook (ass);

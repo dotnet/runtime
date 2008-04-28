@@ -246,6 +246,18 @@ typedef struct {
 	MonoPEDatadir     datadir;
 } MonoDotNetHeader64;
 
+#define VTFIXUP_TYPE_32BIT                            0x01
+#define VTFIXUP_TYPE_64BIT                            0x02
+#define VTFIXUP_TYPE_FROM_UNMANAGED                   0x04
+#define VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN  0x08
+#define VTFIXUP_TYPE_CALL_MOST_DERIVED                0x10
+
+typedef struct {
+	guint32 rva;
+	guint16 count;
+	guint16 type;
+} MonoVTableFixup;
+
 typedef struct {
 	char    st_name [8];
 	guint32 st_virtual_size;
@@ -311,6 +323,6 @@ typedef struct {
 	MonoCLIHeader     cli_cli_header;
 } MonoCLIImageInfo;
 
-guint32       mono_cli_rva_image_map (MonoCLIImageInfo *iinfo, guint32 rva);
+guint32       mono_cli_rva_image_map (MonoImage *image, guint32 rva);
 
 #endif /* __MONO_CIL_COFF_H__ */
