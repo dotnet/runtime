@@ -1,6 +1,6 @@
 #!/bin/sh
-ASPEN_ROOT=/Developer/Platforms/Aspen.platform/Developer
-ASPEN_SDK=$ASPEN_ROOT/SDKs/Aspen1.2.sdk/
+ASPEN_ROOT=/Developer/Platforms/iPhoneOS.platform/Developer
+ASPEN_SDK=$ASPEN_ROOT/SDKs/iPhoneOS2.0.sdk/
 
 export PATH=$ASPEN_ROOT/usr/bin:$PATH
 
@@ -8,8 +8,8 @@ export C_INCLUDE_PATH="$ASPEN_SDK/usr/lib/gcc/arm-apple-darwin9/4.0.1/include:$A
 export CPLUS_INCLUDE_PATH="$ASPEN_SDK/usr/lib/gcc/arm-apple-darwin9/4.0.1/include:$ASPEN_SDK/usr/include"
 export CC=arm-apple-darwin9-gcc-4.0.1
 export CXX=arm-apple-darwin9-g++-4.0.1
-export CPP="cpp-4.0 -nostdinc -U__i386__ -D__arm__"
-export CXXPP="cpp-4.0 -nostdinc -U__i386__ -D__arm__"
+export CPP="cpp-4.0 -nostdinc -U__powerpc__ -U__i386__ -D__arm__"
+export CXXPP="cpp-4.0 -nostdinc -U__powerpc__ -U__i386__ -D__arm__"
 export LD=$CC
 export LDFLAGS=-Wl,-syslibroot,$ASPEN_SDK
 
@@ -31,7 +31,7 @@ make
 
 # We dont use monoburg since I nicely provided the inssel's pregenerated above.
 pushd mono/monoburg
-$CC -o monoburg ./monoburg.c parser.c -I../../eglib/src -I../../eglib/src -I. -I../..  -Wl,-syslibroot,/Developer/Platforms/Aspen.platform/Developer/SDKs/Aspen1.2.sdk/ -pthread -L../../eglib/src/.libs -leglib -lm
+touch monoburg
 touch sample.c
 popd
 
