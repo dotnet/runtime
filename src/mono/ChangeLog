@@ -1,3 +1,7 @@
+2008-04-28  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Use lowercase for 'integrity of package' for consistency.
+
 2008-04-28  Geoff Norton  <gnorton@novell.com>
 
 	* build-iphone.sh: Some updates to work with the latest SDK.

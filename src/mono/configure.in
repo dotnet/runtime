@@ -406,7 +406,7 @@ fi
 # A sanity check to catch cases where the package was unpacked
 # with an ancient tar program (Solaris)
 #
-AC_MSG_CHECKING(Integrity of package)
+AC_MSG_CHECKING(integrity of package)
 if test -f $srcdir/$mcsdir/class/System.Runtime.Serialization.Formatters.Soap/System.Runtime.Serialization.Formatters.Soap/SoapTypeMapper.cs
 then
    AC_MSG_RESULT(ok)
