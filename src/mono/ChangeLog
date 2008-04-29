@@ -1,3 +1,8 @@
+2008-04-29  Kornél Pál  <kornelpal@gmail.com>
+
+	* configure.in: Check for sys/utime.h.
+	* winconfig.h: Define HAVE_SYS_UTIME_H, undef HAVE_UTIME_H.
+
 2008-04-28  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Use lowercase for 'integrity of package' for consistency.

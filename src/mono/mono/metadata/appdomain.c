@@ -20,6 +20,10 @@
 #include <sys/types.h>
 #ifdef HAVE_UTIME_H
 #include <utime.h>
+#else
+#ifdef HAVE_SYS_UTIME_H
+#include <sys/utime.h>
+#endif
 #endif
 
 #include <mono/metadata/gc-internal.h>
@@ -43,7 +47,6 @@
 #include <mono/utils/mono-stdlib.h>
 #include <mono/utils/mono-io-portability.h>
 #ifdef PLATFORM_WIN32
-#include <sys/utime.h>
 #include <direct.h>
 #endif
 

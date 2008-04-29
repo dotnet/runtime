@@ -389,6 +389,9 @@
 /* Define to 1 if you have the <sys/un.h> header file. */
 /* #undef HAVE_SYS_UN_H */
 
+/* Define to 1 if you have the <sys/utime.h> header file. */
+#define HAVE_SYS_UTIME_H 1
+
 /* Define to 1 if you have the <sys/vfstab.h> header file. */
 /* #undef HAVE_SYS_VFSTAB_H */
 
@@ -417,7 +420,7 @@
 /* #undef HAVE_UNISTD_H */
 
 /* Define to 1 if you have the <utime.h> header file. */
-#define HAVE_UTIME_H 1
+/* #undef HAVE_UTIME_H */
 
 /* Define to 1 if you have the <valgrind/memcheck.h> header file. */
 /* #undef HAVE_VALGRIND_MEMCHECK_H */
