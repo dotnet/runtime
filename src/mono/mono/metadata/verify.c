@@ -4331,6 +4331,12 @@ verify_clause_relationship (VerifyContext *ctx, MonoExceptionClause *clause, Mon
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Exception clauses overlap"));
 }
 
+#define code_bounds_check(size) \
+	if (ip + size >= end) {\
+		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Code overrun at 0x%04x", ctx.ip_offset)); \
+		break; \
+	} \
+
 /*
  * FIXME: need to distinguish between valid and verifiable.
  * Need to keep track of types on the stack.
@@ -4347,7 +4353,6 @@ mono_method_verify (MonoMethod *method, int level)
 	MonoImage *image;
 	VerifyContext ctx;
 	GSList *tmp;
-
 	VERIFIER_DEBUG ( printf ("Verify IL for method %s %s %s\n",  method->klass->name_space,  method->klass->name, method->name); );
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
@@ -4529,6 +4534,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_LDARG_S:
 		case CEE_LDARGA_S:
+			code_bounds_check (2);
 			push_arg (&ctx, ip [1],  *ip == CEE_LDARGA_S);
 			ip += 2;
 			break;
@@ -4615,11 +4621,13 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_STLOC_S:
+			code_bounds_check (2);
 			store_local (&ctx, ip [1]);
 			ip += 2;
 			break;
 
 		case CEE_STARG_S:
+			code_bounds_check (2);
 			store_arg (&ctx, ip [1]);
 			ip += 2;
 			break;
@@ -4640,30 +4648,35 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_LDC_I4_S:
+			code_bounds_check (2);
 			if (check_overflow (&ctx))
 				stack_push_val (&ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
 			ip += 2;
 			break;
 
 		case CEE_LDC_I4:
+			code_bounds_check (5);
 			if (check_overflow (&ctx))
 				stack_push_val (&ctx,TYPE_I4, &mono_defaults.int32_class->byval_arg);
 			ip += 5;
 			break;
 
 		case CEE_LDC_I8:
+			code_bounds_check (9);
 			if (check_overflow (&ctx))
 				stack_push_val (&ctx,TYPE_I8, &mono_defaults.int64_class->byval_arg);
 			ip += 9;
 			break;
 
 		case CEE_LDC_R4:
+			code_bounds_check (5);
 			if (check_overflow (&ctx))
 				stack_push_val (&ctx, TYPE_R8, &mono_defaults.double_class->byval_arg);
 			ip += 5;
 			break;
 
 		case CEE_LDC_R8:
+			code_bounds_check (9);
 			if (check_overflow (&ctx))
 				stack_push_val (&ctx, TYPE_R8, &mono_defaults.double_class->byval_arg);
 			ip += 9;
@@ -4677,6 +4690,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_BEQ_S:
 		case CEE_BNE_UN_S:
+			code_bounds_check (2);
 			do_branch_op (&ctx, (signed char)ip [1] + 2, cmp_br_eq_op);
 			ip += 2;
 			need_merge = 1;
@@ -4690,6 +4704,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_BGT_UN_S:
 		case CEE_BLE_UN_S:
 		case CEE_BLT_UN_S:
+			code_bounds_check (2);
 			do_branch_op (&ctx, (signed char)ip [1] + 2, cmp_br_op);
 			ip += 2;
 			need_merge = 1;
@@ -4697,6 +4712,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_BEQ:
 		case CEE_BNE_UN:
+			code_bounds_check (5);
 			do_branch_op (&ctx, (gint32)read32 (ip + 1) + 5, cmp_br_eq_op);
 			ip += 5;
 			need_merge = 1;
@@ -4710,6 +4726,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_BGT_UN:
 		case CEE_BLE_UN:
 		case CEE_BLT_UN:
+			code_bounds_check (5);
 			do_branch_op (&ctx, (gint32)read32 (ip + 1) + 5, cmp_br_op);
 			ip += 5;
 			need_merge = 1;
@@ -4717,6 +4734,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_LDLOC_S:
 		case CEE_LDLOCA_S:
+			code_bounds_check (2);
 			push_local (&ctx, ip[1], *ip == CEE_LDLOCA_S);
 			ip += 2;
 			break;
@@ -4739,6 +4757,7 @@ mono_method_verify (MonoMethod *method, int level)
 		}
 
 		case CEE_JMP:
+			code_bounds_check (5);
 			if (ctx.eval.size)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Eval stack must be empty in jmp at 0x%04x", ip_offset));
 			token = read32 (ip + 1);
@@ -4753,11 +4772,13 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 		case CEE_CALL:
 		case CEE_CALLVIRT:
+			code_bounds_check (5);
 			do_invoke_method (&ctx, read32 (ip + 1), *ip == CEE_CALLVIRT);
 			ip += 5;
 			break;
 
 		case CEE_CALLI:
+			code_bounds_check (5);
 			token = read32 (ip + 1);
 			/*
 			 * FIXME: check signature, retval, arguments etc.
@@ -4767,6 +4788,7 @@ mono_method_verify (MonoMethod *method, int level)
 			ip += 5;
 			break;
 		case CEE_BR_S:
+			code_bounds_check (2);
 			do_static_branch (&ctx, (signed char)ip [1] + 2);
 			need_merge = 1;
 			ip += 2;
@@ -4775,12 +4797,14 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_BRFALSE_S:
 		case CEE_BRTRUE_S:
+			code_bounds_check (2);
 			do_boolean_branch_op (&ctx, (signed char)ip [1] + 2);
 			ip += 2;
 			need_merge = 1;
 			break;
 
 		case CEE_BR:
+			code_bounds_check (5);
 			do_static_branch (&ctx, (gint32)read32 (ip + 1) + 5);
 			need_merge = 1;
 			ip += 5;
@@ -4789,13 +4813,17 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_BRFALSE:
 		case CEE_BRTRUE:
+			code_bounds_check (5);
 			do_boolean_branch_op (&ctx, (gint32)read32 (ip + 1) + 5);
 			ip += 5;
 			need_merge = 1;
 			break;
 
 		case CEE_SWITCH:
+			code_bounds_check (5);
 			n = read32 (ip + 1);
+			code_bounds_check (5 + sizeof (guint32) * n);
+			
 			do_switch (&ctx, n, (ip + 5));
 			start = 1;
 			ip += 5 + sizeof (guint32) * n;
@@ -4864,27 +4892,32 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_CPOBJ:
+			code_bounds_check (5);
 			do_cpobj (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_LDOBJ:
+			code_bounds_check (5);
 			do_ldobj_value (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_LDSTR:
+			code_bounds_check (5);
 			do_ldstr (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_NEWOBJ:
+			code_bounds_check (5);
 			do_newobj (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_CASTCLASS:
 		case CEE_ISINST:
+			code_bounds_check (5);
 			do_cast (&ctx, read32 (ip + 1), *ip == CEE_CASTCLASS ? "castclass" : "isinst");
 			ip += 5;
 			break;
@@ -4893,7 +4926,9 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_UNUSED1:
 			++ip; /* warn, error ? */
 			break;
+
 		case CEE_UNBOX:
+			code_bounds_check (5);
 			do_unbox_value (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
@@ -4906,27 +4941,32 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_LDFLD:
 		case CEE_LDFLDA:
+			code_bounds_check (5);
 			do_push_field (&ctx, read32 (ip + 1), *ip == CEE_LDFLDA);
 			ip += 5;
 			break;
 
 		case CEE_LDSFLD:
 		case CEE_LDSFLDA:
+			code_bounds_check (5);
 			do_push_static_field (&ctx, read32 (ip + 1), *ip == CEE_LDSFLDA);
 			ip += 5;
 			break;
 
 		case CEE_STFLD:
+			code_bounds_check (5);
 			do_store_field (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_STSFLD:
+			code_bounds_check (5);
 			do_store_static_field (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_STOBJ:
+			code_bounds_check (5);
 			do_stobj (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
@@ -4954,11 +4994,13 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_BOX:
+			code_bounds_check (5);
 			do_box_value (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_NEWARR:
+			code_bounds_check (5);
 			do_newarr (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
@@ -4969,6 +5011,7 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_LDELEMA:
+			code_bounds_check (5);
 			do_ldelema (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
@@ -5001,16 +5044,19 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_LDELEM_ANY:
+			code_bounds_check (5);
 			do_ldelem (&ctx, *ip, read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_STELEM_ANY:
+			code_bounds_check (5);
 			do_stelem (&ctx, *ip, read32 (ip + 1));
 			ip += 5;
 			break;
 			
 		case CEE_UNBOX_ANY:
+			code_bounds_check (5);
 			do_unbox_any (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
@@ -5038,6 +5084,7 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_REFANYVAL:
+			code_bounds_check (5);
 			do_refanyval (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
@@ -5048,11 +5095,13 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_MKREFANY:
+			code_bounds_check (5);
 			do_mkrefany (&ctx,  read32 (ip + 1));
 			ip += 5;
 			break;
 
 		case CEE_LDTOKEN:
+			code_bounds_check (5);
 			do_load_token (&ctx, read32 (ip + 1));
 			ip += 5;
 			break;
@@ -5066,21 +5115,25 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		case CEE_LEAVE:
+			code_bounds_check (5);
 			do_leave (&ctx, read32 (ip + 1) + 5);
 			ip += 5;
 			start = 1;
 			break;
 
 		case CEE_LEAVE_S:
+			code_bounds_check (2);
 			do_leave (&ctx, (signed char)ip [1] + 2);
 			ip += 2;
 			start = 1;
 			break;
 
 		case CEE_PREFIX1:
+			code_bounds_check (2);
 			++ip;
 			switch (*ip) {
 			case CEE_STLOC:
+				code_bounds_check (3);
 				store_local (&ctx, read16 (ip + 1));
 				ip += 3;
 				break;
@@ -5099,6 +5152,7 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 
 			case CEE_STARG:
+				code_bounds_check (3);
 				store_arg (&ctx, read16 (ip + 1) );
 				ip += 3;
 				break;
@@ -5113,11 +5167,13 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 	
 			case CEE_LDFTN:
+				code_bounds_check (5);
 				do_load_function_ptr (&ctx, read32 (ip + 1), FALSE);
 				ip += 5;
 				break;
 
 			case CEE_LDVIRTFTN:
+				code_bounds_check (5);
 				do_load_function_ptr (&ctx, read32 (ip + 1), TRUE);
 				ip += 5;
 				break;
@@ -5128,12 +5184,14 @@ mono_method_verify (MonoMethod *method, int level)
 
 			case CEE_LDARG:
 			case CEE_LDARGA:
+				code_bounds_check (3);
 				push_arg (&ctx, read16 (ip + 1),  *ip == CEE_LDARGA);
 				ip += 3;
 				break;
 
 			case CEE_LDLOC:
 			case CEE_LDLOCA:
+				code_bounds_check (3);
 				push_local (&ctx, read16 (ip + 1), *ip == CEE_LDLOCA);
 				ip += 3;
 				break;
@@ -5152,6 +5210,7 @@ mono_method_verify (MonoMethod *method, int level)
 				++ip;
 				break;
 			case CEE_UNALIGNED_:
+				code_bounds_check (2);
 				prefix |= PREFIX_UNALIGNED;
 				ip += 2;
 				break;
@@ -5167,11 +5226,13 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 
 			case CEE_INITOBJ:
+				code_bounds_check (5);
 				do_initobj (&ctx, read32 (ip + 1));
 				ip += 5;
 				break;
 
 			case CEE_CONSTRAINED_:
+				code_bounds_check (5);
 				ctx.constrained_type = get_boxable_mono_type (&ctx, read32 (ip + 1), "constrained.");
 				prefix |= PREFIX_CONSTRAINED;
 				ip += 5;
@@ -5212,6 +5273,7 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 
 			case CEE_SIZEOF:
+				code_bounds_check (5);
 				do_sizeof (&ctx, read32 (ip + 1));
 				ip += 5;
 				break;
