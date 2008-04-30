@@ -4332,8 +4332,8 @@ verify_clause_relationship (VerifyContext *ctx, MonoExceptionClause *clause, Mon
 }
 
 #define code_bounds_check(size) \
-	if (ip + size >= end) {\
-		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Code overrun at 0x%04x", ctx.ip_offset)); \
+	if (ip + size > end) {\
+		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Code overrun starting with 0x%x at 0x%04x", *ip, ctx.ip_offset)); \
 		break; \
 	} \
 
