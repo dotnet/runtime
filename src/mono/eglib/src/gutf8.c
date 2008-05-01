@@ -380,18 +380,170 @@ utf16_to_utf8_len (const gunichar2 *str, glong len, glong *items_read, GError **
 	return ret;
 }
 
+static glong
+g_ucs4_to_utf16_len (const gunichar *str, glong len, glong *items_read, GError **error)
+{
+	glong retlen = 0;
+	glong errindex = 0;
+	const gunichar *lstr = str;
+
+	if (!str)
+		return 0;
+
+	while (*lstr != '\0' && len--) {
+		gunichar ch;
+		ch = *lstr++;
+		if (ch <= 0x0000FFFF) { 
+			if (ch >= 0xD800 && ch <= 0xDFFF) {
+				errindex = (glong)(lstr - str)-1;
+				if (error)
+					g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
+					"Invalid sequence in conversion input");
+				if (items_read)
+					*items_read = errindex;
+				return 0;
+			} else {
+				retlen++;
+			}
+		} else if (ch > 0x10FFFF) {
+			errindex = (glong)(lstr - str)-1;
+			if (error)
+				g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
+				"Character out of range for UTF-16");
+			if (items_read)
+				*items_read = errindex;
+			return 0;
+
+		} else {
+			retlen+=2;
+		}
+	}
+
+	if (items_read)
+		*items_read = (glong)(lstr - str);
+	return retlen;
+}
+
 gunichar2*
 g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error)
 {
-	g_assert_not_reached ();
+	glong allocsz;
+	gunichar2 *retstr = 0;
+	gunichar2 *retch = 0;
+	glong nwritten = 0;
+	GError *lerror =0 ;
 
-	return NULL;
+	allocsz = g_ucs4_to_utf16_len (str, len, items_read, &lerror);
+
+	if (!lerror) {
+		retch = retstr = g_malloc ((allocsz+1) * sizeof (gunichar2));
+		retstr[allocsz] = '\0';
+
+		while (*str != '\0' && len--) {
+			gunichar ch;
+			ch = *str++;
+			if (ch <= 0x0000FFFF && (ch < 0xD800 || ch > 0xDFFF)) {
+				*retch++ = (gunichar2)ch;
+				nwritten ++;
+			} else {
+				ch -= 0x0010000UL;
+				*retch++ = (gunichar2)((ch >> 10) + 0xD800);
+				*retch++ = (gunichar2)((ch & 0x3FFUL) + 0xDC00);
+				nwritten +=2;
+			}
+		}
+	}
+
+	if (items_written)
+		*items_written = nwritten;
+	if (error)
+		*error = lerror;
+
+	return retstr;
+}
+
+static glong
+g_utf16_to_ucs4_len (const gunichar2 *str, glong len, glong *items_read, GError **error)
+{
+	glong retlen = 0;
+	glong errindex = 0;
+	const gunichar2 *lstr = str;
+	gunichar2 ch,ch2;
+
+	if (!str)
+		return 0;
+
+	while (*lstr != '\0' && len--) {
+		ch = *lstr++;
+		if (ch >= 0xD800 && ch <= 0xDBFF) {
+			if (!len--) {
+				lstr--;
+				break;
+			}
+			ch2 = *lstr;
+			if (ch2 >= 0xDC00 && ch2 <= 0xDFFF) {
+				lstr++;
+			} else {
+				errindex = (glong)(lstr - str);
+				if (error)
+					g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
+					"Invalid sequence in conversion input");
+				if (items_read)
+					*items_read = errindex;
+				return 0;
+			}
+		} else {
+			if (ch >= 0xDC00 && ch <= 0xDFFF) {
+				errindex = (glong)(lstr - str)-1;
+				if (error)
+					g_set_error (error, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
+					"Invalid sequence in conversion input");
+				if (items_read)
+					*items_read = errindex;
+				return 0;
+			}
+		}
+		retlen++;
+	}
+
+	if (items_read)
+		*items_read = (glong)(lstr - str);
+
+	return retlen;
 }
 
 gunichar*
 g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error)
 {
-	g_assert_not_reached ();
+	glong allocsz;
+	gunichar *retstr = 0;
+	gunichar *retch = 0;
+	glong nwritten = 0;
+	GError *lerror =0 ;
+	gunichar ch,ch2;
 
-	return NULL;
+	allocsz = g_utf16_to_ucs4_len (str, len, items_read, &lerror);
+
+	if (!lerror) {
+		retch = retstr = g_malloc ((allocsz+1) * sizeof (gunichar));
+		retstr[allocsz] = '\0';
+		nwritten = allocsz;
+
+		while (*str != '\0' && allocsz--) {
+			ch = *str++;
+			if (ch >= 0xD800 && ch <= 0xDBFF) {
+				ch2 = *str++;
+				ch = ((ch - (gunichar)0xD800) << 10)
+				      + (ch2 - (gunichar)0xDC00) + (gunichar)0x0010000UL;
+			}
+			*retch++ = ch;
+		}
+	}
+
+	if (items_written)
+		*items_written = nwritten;
+	if (error)
+		*error = lerror;
+
+	return retstr;
 }

@@ -1,9 +1,19 @@
+2008-05-01  Bill Holmes  <billholmes54@gmail.com>
+
+	* src/glib.h : Adding declarations for g_ucs4_to_utf16 and g_utf16_to_ucs4.
+
+	* src/gutf8.c : Adding implementation for g_ucs4_to_utf16 and g_utf16_to_ucs4.
+
+	* test/utf8.c Adding tests for g_ucs4_to_utf16 and g_utf16_to_ucs4.
+
+	Contributed under MIT/X11 license.
+
 2008-04-20  Geoff Norton  <gnorton@novell.com>
 
 	* src/gspan.c: Fix the _NSGetEnviron define to prevent an impropoer
 	pointer dereference.
 
-2007-03-19  Bill Holmes  <billholmes54@gmail.com>
+2008-03-19  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/gpath.c (g_path_is_absolute) : Adding a case for '/'
 	  on Windows.
