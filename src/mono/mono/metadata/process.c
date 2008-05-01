@@ -307,7 +307,12 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 						(trans_data[1] << 8) |
 						(trans_data[2] << 16) |
 						(trans_data[3] << 24);
-					lang_count = VerLanguageName (lang, lang_buf, 128);
+					/* Only give the lower 16 bits
+					 * to VerLanguageName, as
+					 * Windows gets confused
+					 * otherwise
+					 */
+					lang_count = VerLanguageName (lang & 0xFFFF, lang_buf, 128);
 					if (lang_count) {
 						process_set_field_string (filever, "language", lang_buf, lang_count);
 					}
