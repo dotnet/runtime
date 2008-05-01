@@ -1244,6 +1244,16 @@ mono_make_shadow_copy (const char *filename)
 	return shadow;
 }
 
+
+MonoDomain *
+mono_domain_from_appdomain (MonoAppDomain *appdomain)
+{
+	if (appdomain == NULL)
+		return NULL;
+	
+	return appdomain->data;
+}
+
 static gboolean
 try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
 					const gchar *path3, const gchar *path4,

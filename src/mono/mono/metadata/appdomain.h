@@ -82,6 +82,9 @@ mono_domain_set_internal   (MonoDomain *domain);
 gboolean
 mono_domain_is_unloading   (MonoDomain *domain);
 
+MonoDomain *
+mono_domain_from_appdomain (MonoAppDomain *appdomain);
+
 void
 mono_domain_foreach        (MonoDomainFunc func, gpointer user_data);
 
