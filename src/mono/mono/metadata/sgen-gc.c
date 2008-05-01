@@ -144,11 +144,23 @@
 #include "metadata/threads.h"
 #include "metadata/sgen-gc.h"
 #include "metadata/mono-gc.h"
+#include "metadata/method-builder.h"
+#include "metadata/profiler-private.h"
 #include "utils/mono-mmap.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
+
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
+	a = i,
+
+enum {
+#include "mono/cil/opcode.def"
+	CEE_LAST
+};
+
+#undef OPDEF
 
 /*
  * ######################################################################
@@ -176,7 +188,7 @@ mono_gc_flush_info (void)
 }
 
 #define MAX_DEBUG_LEVEL 9
-#define DEBUG(level,a) do {if ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level) a;} while (0)
+#define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
 #define TV_DECLARE(name) struct timeval name
 #define TV_GETTIME(tv) gettimeofday (&(tv), NULL)
@@ -293,6 +305,8 @@ struct _PinnedChunk {
  * We should start assigning threads very small fragments: if there are many
  * threads the nursery will be full of reserved space that the threads may not
  * use at all, slowing down allocation speed.
+ * Thread local allocation is done from areas of memory Hotspot calls Thread Local 
+ * Allocation Buffers (TLABs).
  */
 typedef struct _Fragment Fragment;
 
@@ -417,7 +431,7 @@ safe_object_get_size (MonoObject* o)
 }
 
 static inline gboolean
-is_half_constructed (MonoObject *o)
+is_maybe_half_constructed (MonoObject *o)
 {
 	MonoClass *klass;
 
@@ -539,26 +553,45 @@ static int num_roots_entries = 0;
  * The current allocation cursors
  * We allocate objects in the nursery.
  * The nursery is the area between nursery_start and nursery_real_end.
- * nursery_next is the pointer to the space where the next object will be allocated.
- * nursery_temp_end is the pointer to the end of the temporary space reserved for
- * the allocation: this allows us to allow allocations inside the fragments of the
- * nursery (the empty holes between pinned objects) and it allows us to set the
- * scan starts at reasonable intervals.
- * nursery_next and nursery_temp_end will become per-thread vars to allow lock-free
- * allocations.
+ * Allocation is done from a Thread Local Allocation Buffer (TLAB). TLABs are allocated
+ * from nursery fragments.
+ * tlab_next is the pointer to the space inside the TLAB where the next object will 
+ * be allocated.
+ * tlab_temp_end is the pointer to the end of the temporary space reserved for
+ * the allocation: it allows us to set the scan starts at reasonable intervals.
+ * tlab_real_end points to the end of the TLAB.
+ * nursery_frag_real_end points to the end of the currently used nursery fragment.
  * nursery_first_pinned_start points to the start of the first pinned object in the nursery
  * nursery_last_pinned_end points to the end of the last pinned object in the nursery
  * At the next allocation, the area of the nursery where objects can be present is
  * between MIN(nursery_first_pinned_start, first_fragment_start) and
- * MAX(nursery_last_pinned_end, nursery_temp_end)
+ * MAX(nursery_last_pinned_end, nursery_frag_real_end)
  */
 static char *nursery_start = NULL;
+
+/*
+ * FIXME: What is faster, a TLS variable pointing to a structure, or separate TLS 
+ * variables for next+temp_end ?
+ */
+static __thread char *tlab_start;
+static __thread char *tlab_next;
+static __thread char *tlab_temp_end;
+static __thread char *tlab_real_end;
+/* Used by the managed allocator */
+static __thread char **tlab_next_addr;
 static char *nursery_next = NULL;
-static char *nursery_temp_end = NULL;
-static char *nursery_real_end = NULL;
 static char *nursery_frag_real_end = NULL;
+static char *nursery_real_end = NULL;
 static char *nursery_first_pinned_start = NULL;
 static char *nursery_last_pinned_end = NULL;
+
+/* The size of a TLAB */
+/* The bigger the value, the less often we have to go to the slow path to allocate a new 
+ * one, but the more space is wasted by threads not allocating much memory.
+ * FIXME: Tune this.
+ * FIXME: Make this self-tuning for each thread.
+ */
+static guint32 tlab_size = (1024 * 4);
 
 /* fragments that are free and ready to be used for allocation */
 static Fragment *nursery_fragments = NULL;
@@ -624,6 +657,8 @@ static void null_link_in_range (char *start, char *end);
 static gboolean search_fragment_for_size (size_t size);
 static void mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end);
 static void clear_remsets (void);
+static void clear_tlabs (void);
+static char *find_tlab_next_from_address (char *addr);
 static void sweep_pinned_objects (void);
 static void free_large_object (LOSObject *obj);
 static void free_mem_section (GCMemSection *section);
@@ -1843,7 +1878,6 @@ alloc_nursery (void)
 	data = get_os_memory (nursery_size, TRUE);
 	nursery_start = nursery_next = data;
 	nursery_real_end = data + nursery_size;
-	nursery_temp_end = data + SCAN_START_SIZE;
 	UPDATE_HEAP_BOUNDARIES (nursery_start, nursery_real_end);
 	total_alloc += nursery_size;
 	DEBUG (4, fprintf (gc_debug_file, "Expanding heap size: %zd, total: %zd\n", nursery_size, total_alloc));
@@ -2020,7 +2054,7 @@ drain_gray_stack (char *start_addr, char *end_addr)
 static int last_num_pinned = 0;
 
 static void
-build_nursery_fragments (int start_pin, int end_pin, char *nursery_last_allocated)
+build_nursery_fragments (int start_pin, int end_pin)
 {
 	char *frag_start, *frag_end;
 	size_t frag_size;
@@ -2051,10 +2085,23 @@ build_nursery_fragments (int start_pin, int end_pin, char *nursery_last_allocate
 		 * (zero initialized) object. Find the end of the object by scanning forward.
 		 * 
 		 */
-		if (is_half_constructed (pin_queue [i])) {
-			/* Can't use nursery_next as the limit as it is modified in collect_nursery () */
-			while ((frag_start < nursery_last_allocated) && *(mword*)frag_start == 0)
-				frag_start += sizeof (mword);
+		if (is_maybe_half_constructed (pin_queue [i])) {
+			char *tlab_end;
+
+			/* This is also hit for zero length arrays/strings */
+
+			/* Find the end of the TLAB which contained this allocation */
+			tlab_end = find_tlab_next_from_address (pin_queue [i]);
+
+			if (tlab_end) {
+				while ((frag_start < tlab_end) && *(mword*)frag_start == 0)
+					frag_start += sizeof (mword);
+			} else {
+				/*
+				 * FIXME: The object is either not allocated in a TLAB, or it isn't a
+				 * half constructed object.
+				 */
+			}
 		}
 	}
 	nursery_last_pinned_end = frag_start;
@@ -2069,6 +2116,9 @@ build_nursery_fragments (int start_pin, int end_pin, char *nursery_last_allocate
 		}
 		degraded_mode = 1;
 	}
+
+	/* Clear TLABs for all threads */
+	clear_tlabs ();
 }
 
 /* FIXME: later reduce code duplication here with the above
@@ -2135,14 +2185,12 @@ collect_nursery (size_t requested_size)
 	GCMemSection *section;
 	size_t max_garbage_amount;
 	int i;
-	char *nursery_last_allocated;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
 	degraded_mode = 0;
-	nursery_last_allocated = nursery_next;
 	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, nursery_real_end);
@@ -2210,7 +2258,7 @@ collect_nursery (size_t requested_size)
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
-	build_nursery_fragments (0, next_pin_slot, nursery_last_allocated);
+	build_nursery_fragments (0, next_pin_slot);
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Fragment creation: %d usecs, %zd bytes available\n", TV_ELAPSED (btv, atv), fragment_total));
 
@@ -2404,7 +2452,7 @@ major_collection (void)
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
-	build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_end, nursery_next);
+	build_nursery_fragments (nursery_section->pin_queue_start, nursery_section->pin_queue_end);
 
 	TV_GETTIME (all_btv);
 	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
@@ -2496,11 +2544,13 @@ minor_collect_or_expand_inner (size_t size)
 		if (!search_fragment_for_size (size)) {
 			int i;
 			/* TypeBuilder and MonoMethod are killing mcs with fragmentation */
-			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)", size, last_num_pinned));
+			DEBUG (1, fprintf (gc_debug_file, "nursery collection didn't find enough room for %zd alloc (%d pinned)\n", size, last_num_pinned));
 			for (i = 0; i < last_num_pinned; ++i) {
 				DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], safe_name (pin_queue [i]), safe_object_get_size (pin_queue [i])));
 			}
 			degraded_mode = 1;
+			/* This is needed by collect_nursery () to calculate nursery_last_allocated */
+			nursery_next = nursery_frag_real_end = NULL;
 		}
 	}
 	//report_internal_mem_usage ();
@@ -2951,7 +3001,6 @@ search_fragment_for_size (size_t size)
 				nursery_fragments = frag->next;
 			nursery_next = frag->fragment_start;
 			nursery_frag_real_end = frag->fragment_end;
-			nursery_temp_end = MIN (nursery_frag_real_end, nursery_next + size + SCAN_START_SIZE);
 
 			DEBUG (4, fprintf (gc_debug_file, "Using nursery fragment %p-%p, size: %zd (req: %zd)\n", nursery_next, nursery_frag_real_end, nursery_frag_real_end - nursery_next, size));
 			frag->next = fragment_freelist;
@@ -3002,17 +3051,20 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 {
 	/* FIXME: handle OOM */
 	void **p;
+	char *new_next;
 	int dummy;
+	gboolean res;
 	size += ALLOC_ALIGN - 1;
 	size &= ~(ALLOC_ALIGN - 1);
 
 	g_assert (vtable->gc_descr);
-	LOCK_GC;
 
-	if (collect_before_allocs) {
+	if (G_UNLIKELY (collect_before_allocs)) {
 		int dummy;
 
 		if (nursery_section) {
+			LOCK_GC;
+
 			update_current_thread_stack (&dummy);
 			stop_world ();
 			collect_nursery (0);
@@ -3021,62 +3073,132 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 				// FIXME:
 				g_assert_not_reached ();
 			}
+			UNLOCK_GC;
 		}
 	}
 
-	p = (void**)nursery_next;
+	/* tlab_next and tlab_temp_end are TLS vars so accessing them might be expensive */
+
+	p = (void**)tlab_next;
 	/* FIXME: handle overflow */
-	nursery_next += size;
-	if (nursery_next >= nursery_temp_end) {
-		/* there are two cases: the object is too big or we need to collect */
-		/* there can be another case (from ORP), if we cooperate with the runtime a bit:
-		 * objects that need finalizers can have the high bit set in their size
-		 * so the above check fails and we can readily add the object to the queue.
-		 * This avoids taking again the GC lock when registering, but this is moot when
-		 * doing thread-local allocation, so it may not be a good idea.
+	new_next = (char*)p + size;
+	tlab_next = new_next;
+
+	if (G_LIKELY (new_next < tlab_temp_end)) {
+		/* Fast path */
+
+		/* 
+		 * FIXME: We might need a memory barrier here so the change to tlab_next is 
+		 * visible before the vtable store.
 		 */
-		if (size > MAX_SMALL_OBJ_SIZE) {
-			/* get ready for possible collection */
-			update_current_thread_stack (&dummy);
-			nursery_next -= size;
-			p = alloc_large_inner (vtable, size);
-		} else {
-			if (nursery_next >= nursery_frag_real_end) {
-				nursery_next -= size;
-				/* when running in degraded mode, we continue allocing that way
-				 * for a while, to decrease the number of useless nursery collections.
-				 */
-				if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE) {
-					p = alloc_degraded (vtable, size);
-					UNLOCK_GC;
-					return p;
-				}
-				if (!search_fragment_for_size (size)) {
-					/* get ready for possible collection */
-					update_current_thread_stack (&dummy);
-					minor_collect_or_expand_inner (size);
-					if (degraded_mode) {
-						p = alloc_degraded (vtable, size);
-						UNLOCK_GC;
-						return p;
+
+		DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
+		*p = vtable;
+		
+		return p;
+	}
+
+	/* Slow path */
+
+	/* there are two cases: the object is too big or we run out of space in the TLAB */
+	/* we also reach here when the thread does its first allocation after a minor 
+	 * collection, since the tlab_ variables are initialized to NULL.
+	 * there can be another case (from ORP), if we cooperate with the runtime a bit:
+	 * objects that need finalizers can have the high bit set in their size
+	 * so the above check fails and we can readily add the object to the queue.
+	 * This avoids taking again the GC lock when registering, but this is moot when
+	 * doing thread-local allocation, so it may not be a good idea.
+	 */
+	LOCK_GC;
+	if (size > MAX_SMALL_OBJ_SIZE) {
+		/* get ready for possible collection */
+		update_current_thread_stack (&dummy);
+		tlab_next -= size;
+		p = alloc_large_inner (vtable, size);
+	} else {
+		if (tlab_next >= tlab_real_end) {
+			/* 
+			 * Run out of space in the TLAB. When this happens, some amount of space
+			 * remains in the TLAB, but not enough to satisfy the current allocation
+			 * request. Currently, we retire the TLAB in all cases, later we could
+			 * keep it if the remaining space is above a treshold, and satisfy the
+			 * allocation directly from the nursery.
+			 * FIXME: Currently, tlab_size < SCAN_START_SIZE, so scan_starts are not
+			 * set.
+			 */
+			tlab_next -= size;
+			/* when running in degraded mode, we continue allocing that way
+			 * for a while, to decrease the number of useless nursery collections.
+			 */
+			if (degraded_mode && degraded_mode < DEFAULT_NURSERY_SIZE) {
+				p = alloc_degraded (vtable, size);
+				UNLOCK_GC;
+				return p;
+			}
+
+			if (size > tlab_size) {
+				/* Allocate directly from the nursery */
+				if (nursery_next + size >= nursery_frag_real_end) {
+					if (!search_fragment_for_size (size)) {
+						/* get ready for possible collection */
+						update_current_thread_stack (&dummy);
+						minor_collect_or_expand_inner (size);
+						if (degraded_mode) {
+							p = alloc_degraded (vtable, size);
+							UNLOCK_GC;
+							return p;
+						}
 					}
 				}
-				/* nursery_next changed by minor_collect_or_expand_inner () */
+
 				p = (void*)nursery_next;
 				nursery_next += size;
-				if (nursery_next > nursery_temp_end) {
+				if (nursery_next > nursery_frag_real_end) {
 					// no space left
 					g_assert (0);
 				}
 			} else {
-				/* record the scan start so we can find pinned objects more easily */
+				DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", tlab_start, tlab_real_end, (long)(tlab_real_end - tlab_next)));
+
+				if (nursery_next + tlab_size >= nursery_frag_real_end) {
+					res = search_fragment_for_size (tlab_size);
+					if (!res) {
+						/* get ready for possible collection */
+						update_current_thread_stack (&dummy);
+						minor_collect_or_expand_inner (tlab_size);
+						if (degraded_mode) {
+							p = alloc_degraded (vtable, size);
+							UNLOCK_GC;
+							return p;
+						}
+					}
+				}
+
+				/* Allocate a new TLAB from the current nursery fragment */
+				tlab_start = nursery_next;
+				nursery_next += tlab_size;
+				tlab_next = tlab_start;
+				tlab_real_end = tlab_start + tlab_size;
+				tlab_temp_end = tlab_start + MIN (SCAN_START_SIZE, tlab_size);
+
+				/* Allocate from the TLAB */
+				p = (void*)tlab_next;
+				tlab_next += size;
+				g_assert (tlab_next <= tlab_real_end);
+
 				nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
-				/* we just bump nursery_temp_end as well */
-				nursery_temp_end = MIN (nursery_frag_real_end, nursery_next + SCAN_START_SIZE);
-				DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", nursery_next, nursery_temp_end));
 			}
+		} else {
+			/* Reached tlab_temp_end */
+
+			/* record the scan start so we can find pinned objects more easily */
+			nursery_section->scan_starts [((char*)p - (char*)nursery_section->data)/SCAN_START_SIZE] = (char*)p;
+			/* we just bump tlab_temp_end as well */
+			tlab_temp_end = MIN (tlab_real_end, tlab_next + SCAN_START_SIZE);
+			DEBUG (5, fprintf (gc_debug_file, "Expanding local alloc: %p-%p\n", tlab_next, tlab_temp_end));
 		}
 	}
+
 	DEBUG (6, fprintf (gc_debug_file, "Allocated object %p, vtable: %p (%s), size: %zd\n", p, vtable, vtable->klass->name, size));
 	*p = vtable;
 
@@ -3555,6 +3677,10 @@ struct _SgenThreadInfo {
 	int skip;
 	void *stack_end;
 	void *stack_start;
+	char **tlab_next_addr;
+	char **tlab_start_addr;
+	char **tlab_temp_end_addr;
+	char **tlab_real_end_addr;
 	RememberedSet *remset;
 };
 
@@ -3916,6 +4042,45 @@ clear_remsets (void)
 	}
 }
 
+/*
+ * Clear the thread local TLAB variables for all threads.
+ */
+static void
+clear_tlabs (void)
+{
+	SgenThreadInfo *info;
+	int i;
+
+	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
+		for (info = thread_table [i]; info; info = info->next) {
+			/* A new TLAB will be allocated when the thread does its first allocation */
+			*info->tlab_start_addr = NULL;
+			*info->tlab_next_addr = NULL;
+			*info->tlab_temp_end_addr = NULL;
+			*info->tlab_real_end_addr = NULL;
+		}
+	}
+}
+
+/*
+ * Find the tlab_next value of the TLAB which contains ADDR.
+ */
+static char*
+find_tlab_next_from_address (char *addr)
+{
+	SgenThreadInfo *info;
+	int i;
+
+	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
+		for (info = thread_table [i]; info; info = info->next) {
+			if (addr >= *info->tlab_start_addr && addr < *info->tlab_next_addr)
+				return *info->tlab_next_addr;
+		}
+	}
+
+	return NULL;
+}
+
 /* LOCKING: assumes the GC lock is held */
 static SgenThreadInfo*
 gc_register_current_thread (void *addr)
@@ -3929,6 +4094,12 @@ gc_register_current_thread (void *addr)
 	info->skip = 0;
 	info->signal = 0;
 	info->stack_start = NULL;
+	info->tlab_start_addr = &tlab_start;
+	info->tlab_next_addr = &tlab_next;
+	info->tlab_temp_end_addr = &tlab_temp_end;
+	info->tlab_real_end_addr = &tlab_real_end;
+
+	tlab_next_addr = &tlab_next;
 
 	/* try to get it with attributes first */
 #if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
@@ -4750,22 +4921,184 @@ mono_gc_base_init (void)
 	mono_gc_register_thread (&sinfo);
 }
 
+enum {
+	ATYPE_NORMAL,
+	ATYPE_NUM
+};
+
+/* FIXME: Do this in the JIT, where specialized allocation sequences can be created
+ * for each class. This is currently not easy to do, as it is hard to generate basic 
+ * blocks + branches, but it is easy with the linear IL codebase.
+ */
+static MonoMethod*
+create_allocator (int atype)
+{
+	int tlab_next_addr_offset = -1;
+	int tlab_temp_end_offset = -1;
+	int p_var, size_var, tlab_next_addr_var, new_next_var;
+	guint32 slowpath_branch;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	MonoMethodSignature *csig;
+	static gboolean registered = FALSE;
+
+	MONO_THREAD_VAR_OFFSET (tlab_next_addr, tlab_next_addr_offset);
+	MONO_THREAD_VAR_OFFSET (tlab_temp_end, tlab_temp_end_offset);
+
+	g_assert (tlab_next_addr_offset != -1);
+	g_assert (tlab_temp_end_offset != -1);
+
+	g_assert (atype == ATYPE_NORMAL);
+
+	if (!registered) {
+		mono_register_jit_icall (mono_gc_alloc_obj, "mono_gc_alloc_obj", mono_create_icall_signature ("object ptr int"), FALSE);
+		registered = TRUE;
+	}
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+	csig->ret = &mono_defaults.object_class->byval_arg;
+	csig->params [0] = &mono_defaults.int_class->byval_arg;
+
+	mb = mono_mb_new (mono_defaults.object_class, "Alloc", MONO_WRAPPER_ALLOC);
+	size_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	/* size = vtable->klass->instance_size; */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoVTable, klass));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_icon (mb, G_STRUCT_OFFSET (MonoClass, instance_size));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	/* FIXME: assert instance_size stays a 4 byte integer */
+	mono_mb_emit_byte (mb, CEE_LDIND_U4);
+	mono_mb_emit_stloc (mb, size_var);
+
+	/* size += ALLOC_ALIGN - 1; */
+	mono_mb_emit_ldloc (mb, size_var);
+	mono_mb_emit_icon (mb, ALLOC_ALIGN - 1);
+	mono_mb_emit_byte (mb, CEE_ADD);
+	/* size &= ~(ALLOC_ALIGN - 1); */
+	mono_mb_emit_icon (mb, ~(ALLOC_ALIGN - 1));
+	mono_mb_emit_byte (mb, CEE_AND);
+	mono_mb_emit_stloc (mb, size_var);
+
+	/*
+	 * We need to modify tlab_next, but the JIT only supports reading, so we read
+	 * another tls var holding its address instead.
+	 */
+
+	/* tlab_next_addr (local) = tlab_next_addr (TLS var) */
+	tlab_next_addr_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_TLS);
+	mono_mb_emit_i4 (mb, tlab_next_addr_offset);
+	mono_mb_emit_stloc (mb, tlab_next_addr_var);
+
+	/* p = (void**)tlab_next; */
+	p_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	mono_mb_emit_ldloc (mb, tlab_next_addr_var);
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_stloc (mb, p_var);
+	
+	/* new_next = (char*)p + size; */
+	new_next_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	mono_mb_emit_ldloc (mb, p_var);
+	mono_mb_emit_ldloc (mb, size_var);
+	mono_mb_emit_byte (mb, CEE_CONV_I);
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_stloc (mb, new_next_var);
+
+	/* tlab_next = new_next */
+	mono_mb_emit_ldloc (mb, tlab_next_addr_var);
+	mono_mb_emit_ldloc (mb, new_next_var);
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+
+	/* if (G_LIKELY (new_next < tlab_temp_end)) */
+	mono_mb_emit_ldloc (mb, new_next_var);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_TLS);
+	mono_mb_emit_i4 (mb, tlab_temp_end_offset);
+	slowpath_branch = mono_mb_emit_short_branch (mb, MONO_CEE_BLT_UN_S);
+
+	/* Slowpath */
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
+
+	/* FIXME: mono_gc_alloc_obj takes a 'size_t' as an argument, not an int32 */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldloc (mb, size_var);
+	mono_mb_emit_icall (mb, mono_gc_alloc_obj);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/* Fastpath */
+	mono_mb_patch_short_branch (mb, slowpath_branch);
+
+	/* FIXME: Memory barrier */
+
+	/* *p = vtable; */
+	mono_mb_emit_ldloc (mb, p_var);
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+	
+	/* return p */
+	mono_mb_emit_ldloc (mb, p_var);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_method (mb, csig, 8);
+	mono_mb_free (mb);
+	mono_method_get_header (res)->init_locals = FALSE;
+	return res;
+}
+
+static MonoMethod* alloc_method_cache [ATYPE_NUM];
+
+/*
+ * Generate an allocator method implementing the fast path of mono_gc_alloc_obj ().
+ * The signature of the called method is:
+ * 	object allocate (MonoVTable *vtable)
+ */
 MonoMethod*
 mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 {
-	return NULL;
+	int tlab_next_offset = -1;
+	int tlab_temp_end_offset = -1;
+	MonoClass *klass = vtable->klass;
+	MONO_THREAD_VAR_OFFSET (tlab_next, tlab_next_offset);
+	MONO_THREAD_VAR_OFFSET (tlab_temp_end, tlab_temp_end_offset);
+
+	if (tlab_next_offset == -1 || tlab_temp_end_offset == -1)
+		return NULL;
+	if (klass->instance_size > tlab_size)
+		return NULL;
+	if (klass->has_finalize || klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+		return NULL;
+	if (klass->rank)
+		return NULL;
+	if (klass->byval_arg.type == MONO_TYPE_STRING)
+		return NULL;
+	if (collect_before_allocs)
+		return NULL;
+
+	return mono_gc_get_managed_allocator_by_type (0);
 }
 
 int
 mono_gc_get_managed_allocator_type (MonoMethod *managed_alloc)
 {
-	return -1;
+	return 0;
 }
 
 MonoMethod*
 mono_gc_get_managed_allocator_by_type (int atype)
 {
-	return NULL;
+	MonoMethod *res;
+
+	mono_loader_lock ();
+	res = alloc_method_cache [atype];
+	if (!res)
+		res = alloc_method_cache [atype] = create_allocator (atype);
+	mono_loader_unlock ();
+	return res;
 }
 
 #endif /* HAVE_SGEN_GC */
