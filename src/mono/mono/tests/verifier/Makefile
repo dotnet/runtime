@@ -13,6 +13,7 @@ compile-stamp: generate-stamp BatchCompiler.exe
 		fi \
 	done 
 	MONO_PATH=../../../../mcs/class/lib/net_2_0/ mono BatchCompiler.exe
+	#for $$I in *.il; do ilasm2 $$I; done
 	touch compile-stamp
 
 clean:
@@ -72,7 +73,7 @@ run-test: compile-stamp
 			if [ $$R2 != 0 ]; then \
 				echo "$$TEST is type unverifiable but did not pass under non-strict check, got $${R2} but expected 0"; \
 			fi \
-		elif [ $RES != 99 ]; then \
+		elif [ $$RES != 99 ]; then \
 			../../metadata/pedump --verify error,warn,cls,code $$TEST.exe >/dev/null 2>/dev/null; \
 			R=$$?; \
 			if [ $$R != $$RES ]; then \

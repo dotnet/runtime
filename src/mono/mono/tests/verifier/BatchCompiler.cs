@@ -32,9 +32,14 @@ using System.Reflection;
 
 namespace Verifier {
 	public class BatchCompiler : MarshalByRefObject {
+		static AppDomain current;
+
 		static BatchCompiler NewBatchCompiler () {
-			AppDomain domain = AppDomain.CreateDomain ("test");
-			BatchCompiler compiler = (BatchCompiler) domain.CreateInstanceAndUnwrap(
+			if (current != null)
+				AppDomain.Unload (current);
+
+			current = AppDomain.CreateDomain ("test");
+			BatchCompiler compiler = (BatchCompiler) current.CreateInstanceAndUnwrap(
 				Assembly.GetExecutingAssembly().FullName,
 				"Verifier.BatchCompiler");
 			return compiler;
@@ -45,10 +50,9 @@ namespace Verifier {
 			BatchCompiler bc = NewBatchCompiler ();
 
 			foreach (string src in Directory.GetFiles (".", "*.il")) {
-				if (!bc.Compile (src)) 
-					bc = NewBatchCompiler ();
-				else
+				if (bc.Compile (src)) 
 					++total;
+				bc = NewBatchCompiler ();
 			}
 			Console.WriteLine ("Total compiled successfully {0}", total);
 		}
