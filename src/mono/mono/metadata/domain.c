@@ -1161,8 +1161,11 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	if (domain)
 		g_assert_not_reached ();
 
+	/* FIXME: This causes Win32 build to break. */
+#if 0
 #if defined(PLATFORM_WIN32) && !defined(_WIN64)
 	mono_load_coree ();
+#endif
 #endif
 
 	mono_perfcounters_init ();
