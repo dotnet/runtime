@@ -293,6 +293,18 @@ struct _PinnedChunk {
 	void *data [1]; /* page sizes and free lists are stored here */
 };
 
+/* The method used to clear the nursery */
+/* Clearing at nursery collections is the safest, but has bad interactions with caches.
+ * Clearing at TLAB creation is much faster, but more complex and it might expose hard
+ * to find bugs.
+ */
+typedef enum {
+	CLEAR_AT_GC,
+	CLEAR_AT_TLAB_CREATION
+} NurseryClearPolicy;
+
+static NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
+
 /*
  * The young generation is divided into fragments. This is because
  * we can hand one fragments to a thread for lock-less fast alloc and
@@ -1955,7 +1967,8 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 	Fragment *fragment;
 	DEBUG (4, fprintf (gc_debug_file, "Found empty fragment: %p-%p, size: %zd\n", frag_start, frag_end, frag_size));
 	/* memsetting just the first chunk start is bound to provide better cache locality */
-	memset (frag_start, 0, frag_size);
+	if (nursery_clear_policy == CLEAR_AT_GC)
+		memset (frag_start, 0, frag_size);
 	/* Not worth dealing with smaller fragments: need to tune */
 	if (frag_size >= FRAGMENT_MIN_SIZE) {
 		fragment = alloc_fragment ();
@@ -2185,12 +2198,15 @@ collect_nursery (size_t requested_size)
 	GCMemSection *section;
 	size_t max_garbage_amount;
 	int i;
+	char *orig_nursery_next;
+	Fragment *frag;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
 	degraded_mode = 0;
+	orig_nursery_next = nursery_next;
 	nursery_next = MAX (nursery_next, nursery_last_pinned_end);
 	/* FIXME: optimize later to use the higher address where an object can be present */
 	nursery_next = MAX (nursery_next, nursery_real_end);
@@ -2200,6 +2216,16 @@ collect_nursery (size_t requested_size)
 
 	DEBUG (1, fprintf (gc_debug_file, "Start nursery collection %d %p-%p, size: %d\n", num_minor_gcs, nursery_start, nursery_next, (int)(nursery_next - nursery_start)));
 	max_garbage_amount = nursery_next - nursery_start;
+
+	/* Clear all remaining nursery fragments, pinning depends on this */
+	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+		g_assert (orig_nursery_next <= nursery_frag_real_end);
+		memset (orig_nursery_next, 0, nursery_frag_real_end - orig_nursery_next);
+		for (frag = nursery_fragments; frag; frag = frag->next) {
+			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
+		}
+	}
+
 	/* 
 	 * not enough room in the old generation to store all the possible data from 
 	 * the nursery in a single continuous space.
@@ -2991,6 +3017,11 @@ search_fragment_for_size (size_t size)
 {
 	Fragment *frag, *prev;
 	DEBUG (4, fprintf (gc_debug_file, "Searching nursery fragment %p, size: %zd\n", nursery_frag_real_end, size));
+
+	if (nursery_frag_real_end > nursery_next && nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+		/* Clear the remaining space, pinning depends on this */
+		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
+
 	prev = NULL;
 	for (frag = nursery_fragments; frag; frag = frag->next) {
 		if (size <= (frag->fragment_end - frag->fragment_start)) {
@@ -3123,8 +3154,6 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 			 * request. Currently, we retire the TLAB in all cases, later we could
 			 * keep it if the remaining space is above a treshold, and satisfy the
 			 * allocation directly from the nursery.
-			 * FIXME: Currently, tlab_size < SCAN_START_SIZE, so scan_starts are not
-			 * set.
 			 */
 			tlab_next -= size;
 			/* when running in degraded mode, we continue allocing that way
@@ -3157,8 +3186,11 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 					// no space left
 					g_assert (0);
 				}
+
+				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+					memset (p, 0, size);
 			} else {
-				DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", tlab_start, tlab_real_end, (long)(tlab_real_end - tlab_next)));
+				DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", tlab_start, tlab_real_end, (long)(tlab_real_end - tlab_next - size)));
 
 				if (nursery_next + tlab_size >= nursery_frag_real_end) {
 					res = search_fragment_for_size (tlab_size);
@@ -3180,6 +3212,9 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 				tlab_next = tlab_start;
 				tlab_real_end = tlab_start + tlab_size;
 				tlab_temp_end = tlab_start + MIN (SCAN_START_SIZE, tlab_size);
+
+				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
+					memset (tlab_start, 0, tlab_size);
 
 				/* Allocate from the TLAB */
 				p = (void*)tlab_next;
