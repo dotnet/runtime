@@ -5510,6 +5510,10 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 						MonoClass *param1_class = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [i]);
 						MonoClass *param2_class = mono_class_from_mono_type (oklass->generic_class->context.class_inst->type_argv [i]);
 
+						if (param1_class->valuetype != param2_class->valuetype) {
+							match = FALSE;
+							break;
+						}
 						/*
 						 * The _VARIANT and _COVARIANT constants should read _COVARIANT and
 						 * _CONTRAVARIANT, but they are in a public header so we can't fix it.
@@ -5519,8 +5523,10 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 								;
 							else if (((container->type_params [i].flags & MONO_GEN_PARAM_COVARIANT) && mono_class_is_assignable_from (param2_class, param1_class)))
 								;
-							else
+							else {
 								match = FALSE;
+								break;
+							}
 						}
 					}
 
