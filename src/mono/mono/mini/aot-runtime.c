@@ -496,6 +496,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		 */
 		return;
 
+	if (assembly->image->dynamic)
+		return;
+
 	if (use_aot_cache)
 		assembly->aot_module = load_aot_module_from_cache (assembly, &aot_name);
 	else {
