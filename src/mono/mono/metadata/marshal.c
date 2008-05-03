@@ -12008,3 +12008,124 @@ mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, gu
 	*byte_offset = i;
 	*bitmask = buf [i];
 }
+
+MonoMethod *
+mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
+{
+	MonoMethodBuilder *mb;
+	MonoMethodSignature *sig, *csig;
+	MonoExceptionClause *clause;
+	MonoMethodHeader *header;
+	MonoImage *image;
+	MonoClass *klass;
+	GHashTable *cache;
+	MonoMethod *res;
+	int i, param_count, sig_size, pos_leave;
+
+	g_assert (method);
+
+	klass = method->klass;
+	image = method->klass->image;
+	cache = image->thunk_invoke_cache;
+
+	if ((res = mono_marshal_find_in_cache (cache, method)))
+		return res;
+
+	sig = mono_method_signature (method);
+	mb = mono_mb_new (klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+
+	/* add "this" and exception param */
+	param_count = sig->param_count + sig->hasthis + 1;
+
+	/* dup & extend signature */
+	csig = mono_metadata_signature_alloc (image, param_count);
+	sig_size = sizeof (MonoMethodSignature) + ((sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *));
+	memcpy (csig, sig, sig_size);
+	csig->param_count = param_count;
+	csig->hasthis = 0;
+	csig->pinvoke = 1;
+	csig->call_convention = MONO_CALL_DEFAULT;
+
+	if (sig->hasthis) {
+		/* "this" of value types is actually a ptr */
+		csig->params [0] = klass->valuetype
+			? &mono_ptr_class_get (&klass->byval_arg)->byval_arg
+			: &klass->byval_arg;
+		/* shift params */
+		for (i = 0; i < sig->param_count; i++)
+			csig->params [i + 1] = sig->params [i];
+	}
+
+	/* setup exception param as byref+[out] */
+	csig->params [param_count - 1] = mono_metadata_type_dup (image->mempool,
+		 &mono_defaults.exception_class->byval_arg);
+	csig->params [param_count - 1]->byref = 1;
+	csig->params [param_count - 1]->attrs = PARAM_ATTRIBUTE_OUT;
+
+	/* local 0 (temp for exception object) */
+	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+	/* local 1 (temp for result) */
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_add_local (mb, sig->ret);
+
+	/* clear exception arg */
+	mono_mb_emit_ldarg (mb, param_count - 1);
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+	/* try */
+	mono_loader_lock ();
+	clause = mono_mempool_alloc0 (image->mempool, sizeof (MonoExceptionClause));
+	mono_loader_unlock ();
+	clause->try_offset = mono_mb_get_label (mb);
+
+	/* push method's args */
+	for (i = 0; i < param_count - 1; i++)
+		mono_mb_emit_ldarg (mb, i);
+
+	/* call */
+	if (method->flags & METHOD_ATTRIBUTE_VIRTUAL)
+		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
+	else
+		mono_mb_emit_op (mb, CEE_CALL, method);
+
+	/* save result at local 1 */
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_emit_stloc (mb, 1);
+
+	pos_leave = mono_mb_emit_branch (mb, CEE_LEAVE);
+
+	/* catch */
+	clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
+	clause->try_len = mono_mb_get_pos (mb) - clause->try_offset;
+	clause->data.catch_class = mono_defaults.object_class;
+
+	clause->handler_offset = mono_mb_get_label (mb);
+
+	/* store exception at local 0 */
+	mono_mb_emit_stloc (mb, 0);
+	mono_mb_emit_ldarg (mb, param_count - 1);
+	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_byte (mb, CEE_STIND_REF);
+	mono_mb_emit_branch (mb, CEE_LEAVE);
+
+	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
+
+	mono_mb_patch_branch (mb, pos_leave);
+	/* end-try */
+
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_emit_ldloc (mb, 1);
+
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_and_cache (cache, method, mb, csig, param_count + 16);
+	mono_mb_free (mb);
+
+	header = ((MonoMethodNormal *)res)->header;
+	header->num_clauses = 1;
+	header->clauses = clause;
+
+	return res;
+}

@@ -2089,6 +2089,53 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	return default_mono_runtime_invoke (method, obj, params, exc);
 }
 
+/**
+ * mono_method_get_unmanaged_thunk:
+ * @method: method to generate a thunk for.
+ *
+ * Returns an unmanaged->managed thunk that can be used to call
+ * a managed method directly from C.
+ *
+ * The thunk's C signature closely matches the managed signature:
+ *
+ * C#: public bool Equals (object obj);
+ * C:  typedef MonoBoolean (*Equals)(MonoObject *this,
+ *             MonoObject *obj, MonoException **ex);
+ *
+ * The "this" parameter must not be used with static methods:
+ *
+ * C#: public static bool ReferenceEquals (object a, object b);
+ * C:  typedef MonoBoolean (*ReferenceEquals)(MonoObject *a, MonoObject *b,
+ *             MonoException **ex);
+ *
+ * The last argument must be a non-null pointer of a MonoException* pointer.
+ * It has "out" semantics. After invoking the thunk, *ex will be NULL if no
+ * exception has been thrown in managed code. Otherwise, it will point
+ * to the MonoException* caught by the thunk. In this case, the result of
+ * the thunk is undefined:
+ *
+ * MonoMethod *method = ... // MonoMethod* of System.Object.Equals
+ * MonoException *ex = NULL;
+ * Equals func = mono_method_get_unmanaged_thunk (method);
+ * MonoBoolean res = func (thisObj, objToCompare, &ex);
+ * if (ex) {
+ *    // handle exception
+ * }
+ *
+ * The calling convention of the thunk matches the platform's default
+ * convention. This means that under Windows, C declarations must
+ * contain the __stdcall attribute:
+ *
+ * C:  typedef MonoBoolean (__stdcall *Equals)(MonoObject *this,
+ *             MonoObject *obj, MonoException **ex);
+ */
+gpointer
+mono_method_get_unmanaged_thunk (MonoMethod *method)
+{
+	method = mono_marshal_get_thunk_invoke_wrapper (method);
+	return mono_compile_method (method);
+}
+
 static void
 set_value (MonoType *type, void *dest, void *value, int deref_pointer)
 {

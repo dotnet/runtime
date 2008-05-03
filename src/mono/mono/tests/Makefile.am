@@ -277,7 +277,8 @@ BASE_TEST_CS_SRC=		\
 	bug-322722_patch_bx.2.cs		\
 	bug-348522.2.cs		\
 	bug-340662_bug.cs	\
-	bug-322722_dyn_method_throw.2.cs
+	bug-322722_dyn_method_throw.2.cs	\
+	thunks.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
@@ -710,7 +711,7 @@ patch-libtool:
 
 noinst_LTLIBRARIES = libtest.la
 
-INCLUDES = $(GLIB_CFLAGS)
+INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
 
 if PLATFORM_WIN32
 # gcc-3.4.4 emits incorrect code when making indirect calls to stdcall functions using a tail call
@@ -723,6 +724,6 @@ else
 libtest_la_LDFLAGS = -rpath `pwd`
 endif
 libtest_la_SOURCES = libtest.c
-libtest_la_LIBADD = $(GLIB_LIBS)
+libtest_la_LIBADD = $(GLIB_LIBS) $(GMODULE_LIBS)
 
 CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) $(STRESS_TESTS) *.dll *.stdout *.exe stest.dat

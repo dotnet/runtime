@@ -198,6 +198,9 @@ MonoMethod *
 mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface,
 				       gchar *name, MonoMethod *method) MONO_INTERNAL;
 
+MonoMethod *
+mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method) MONO_INTERNAL;
+
 /* marshaling internal calls */
 
 void * 

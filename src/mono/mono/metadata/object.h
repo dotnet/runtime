@@ -231,6 +231,9 @@ MonoObject*
 mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 			     MonoObject **exc);
 
+gpointer
+mono_method_get_unmanaged_thunk (MonoMethod *method);
+
 MonoArray*
 mono_runtime_get_main_args  (void);
 

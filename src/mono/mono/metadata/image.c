@@ -635,6 +635,7 @@ mono_image_init (MonoImage *image)
 	image->isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->castclass_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->proxy_isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	image->thunk_invoke_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
@@ -1437,6 +1438,7 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->isinst_cache);
 	g_hash_table_destroy (image->castclass_cache);
 	g_hash_table_destroy (image->proxy_isinst_cache);
+	g_hash_table_destroy (image->thunk_invoke_cache);
 	if (image->static_rgctx_invoke_cache)
 		g_hash_table_destroy (image->static_rgctx_invoke_cache);
 
