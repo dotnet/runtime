@@ -1394,7 +1394,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 			void *__old = *(ptr);	\
 			*(ptr) = copy_object (*(ptr), from_start, from_end);	\
 			DEBUG (9, if (__old != *(ptr)) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
-			if (*(ptr) >= (void*)from_start && *(ptr) < (void*)from_end)	\
+			if (G_UNLIKELY (*(ptr) >= (void*)from_start && *(ptr) < (void*)from_end))	\
 				add_to_global_remset ((ptr));	\
 		}	\
 	} while (0)
@@ -1978,6 +1978,9 @@ add_nursery_frag (size_t frag_size, char* frag_start, char* frag_end)
 		fragment->next = nursery_fragments;
 		nursery_fragments = fragment;
 		fragment_total += frag_size;
+	} else {
+		/* Clear unused fragments, pinning depends on this */
+		memset (frag_start, 0, frag_size);
 	}
 }
 
@@ -2308,6 +2311,7 @@ major_collection (void)
 	int i;
 	PinnedChunk *chunk;
 	FinalizeEntry *fin;
+	Fragment *frag;
 	int count;
 	TV_DECLARE (all_atv);
 	TV_DECLARE (all_btv);
@@ -2324,6 +2328,16 @@ major_collection (void)
 	DEBUG (1, fprintf (gc_debug_file, "Start major collection %d\n", num_major_gcs));
 	num_major_gcs++;
 	mono_stats.major_gc_count ++;
+
+	/* Clear all remaining nursery fragments, pinning depends on this */
+	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+		g_assert (nursery_next <= nursery_frag_real_end);
+		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
+		for (frag = nursery_fragments; frag; frag = frag->next) {
+			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
+		}
+	}
+
 	/* 
 	 * FIXME: implement Mark/Compact
 	 * Until that is done, we can just apply mostly the same alg as for the nursery:
@@ -4496,9 +4510,17 @@ describe_ptr (char *ptr)
 	}
 
 	// FIXME: Handle pointers to the inside of objects
-	vtable = (MonoVTable*)((mword*)ptr) [0];
+	vtable = (MonoVTable*)LOAD_VTABLE (ptr);
 
 	printf ("VTable: %p\n", vtable);
+	if (vtable == NULL) {
+		printf ("VTable is invalid (empty).\n");
+		return;
+	}
+	if (((char*)vtable >= nursery_start) && ((char*)vtable < nursery_real_end)) {
+		printf ("VTable is invalid (points inside nursery).\n");
+		return;
+	}
 	printf ("Class: %s\n", vtable->klass->name);
 
 	desc = ((GCVTable*)vtable)->desc;
@@ -4901,7 +4923,6 @@ mono_gc_base_init (void)
 	}
 	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
-	/* format: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9 */
 	if ((env = getenv ("MONO_GC_DEBUG"))) {
 		opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; ptr && *ptr; ptr ++) {
@@ -4924,6 +4945,8 @@ mono_gc_base_init (void)
 				consistency_check_at_minor_collection = TRUE;
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
+				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
+				fprintf (stderr, "Valid options are: collect-before-allocs, check-at-minor-collections.\n");
 				exit (1);
 			}
 		}

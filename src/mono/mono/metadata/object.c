@@ -608,6 +608,8 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 			if (static_fields) {
 				if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
 					continue;
+				if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL)
+					continue;
 			} else {
 				if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 					continue;
