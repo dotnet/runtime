@@ -2903,6 +2903,16 @@ mono_test_marshal_ccw_itest (MonoComObject *pUnk)
  * mono_method_get_unmanaged_thunk tests
  */
 
+
+#define NATIVE_ALIGNMENT(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
+#ifdef __GNUC__
+#define MANAGED_ALIGNMENT __alignof__
+#else
+#define MANAGED_ALIGNMENT NATIVE_ALIGNMENT
+#endif
+
+#define SAME_ALIGNMENT(type) (NATIVE_ALIGNMENT(type) == MANAGED_ALIGNMENT(type))
+
 /* thunks.cs:TestStruct */
 typedef struct _TestStruct {
 	int A;
@@ -3112,17 +3122,14 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 10: {
-
-		break;
-
-		/* disabled temporarily as it fails on linux/mac x86.
-		   struct alignment problem? */
-#if 0
 		/* thunks.cs:Test.Foo10 */
 		int (STDCALL *F)(TestStruct, gpointer*);
 
 		TestStruct a1;
 		int res;
+
+		if (!SAME_ALIGNMENT (double))
+			break;
 
 		a1.A = 42;
 		a1.B = 3.1415;
@@ -3137,8 +3144,6 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 			return 5;
 
 		break;
-#endif
-
 	}
 
 	case 11: {
@@ -3146,6 +3151,9 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 		void (STDCALL *F)(TestStruct*, gpointer*);
 
 		TestStruct a1;
+
+		if (!SAME_ALIGNMENT (double))
+			break;
 
 		F = test_method;
 
@@ -3168,6 +3176,9 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 
 		TestStruct a1;
 
+		if (!SAME_ALIGNMENT (double))
+			break;
+
 		F = test_method;
 
 		a1 = F (&ex);
@@ -3188,6 +3199,10 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 		void (STDCALL *F)(TestStruct*, gpointer*);
 
 		TestStruct a1;
+
+		if (!SAME_ALIGNMENT (double))
+			break;
+
 		a1.A = 42;
 		a1.B = 3.1415;
 
