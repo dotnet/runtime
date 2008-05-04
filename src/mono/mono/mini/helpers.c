@@ -161,7 +161,11 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	fprintf (ofd, "\n");
 	fclose (ofd);
 #ifdef __APPLE__
+#ifdef __ppc64__
+#define DIS_CMD "otool64 -v -t"
+#else
 #define DIS_CMD "otool -v -t"
+#endif
 #else
 #if defined(sparc) && !defined(__GNUC__)
 #define DIS_CMD "dis"
@@ -178,6 +182,10 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #define AS_CMD "as -gstabs"
 #elif defined(__mips__)
 #define AS_CMD "as -mips32"
+#elif defined(__ppc64__)
+#define AS_CMD "as -arch ppc64"
+#elif defined(__powerpc64__)
+#define AS_CMD "as -mppc64"
 #else
 #define AS_CMD "as"
 #endif
