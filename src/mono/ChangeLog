@@ -1,3 +1,9 @@
+2008-05-05  Andreas Färber  <andreas.faerber@web.de>
+
+	* configure.in: Detect ppc64 target architecture.
+	
+	Contributed unter MIT/X11 license.
+
 2008-04-29  Kornél Pál  <kornelpal@gmail.com>
 
 	* configure.in: Check for sys/utime.h.
