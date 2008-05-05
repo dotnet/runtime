@@ -47,6 +47,8 @@
 #define CONFIG_CPU "x86-64"
 #elif defined(sparc) || defined(__sparc__)
 #define CONFIG_CPU "sparc"
+#elif defined(__ppc64__) || defined(__powerpc64__)
+#define CONFIG_CPU "ppc64"
 #elif defined(__ppc__) || defined(__powerpc__)
 #define CONFIG_CPU "ppc"
 #elif defined(__s390x__)
