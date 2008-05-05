@@ -77,7 +77,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 
 	version = read32(ptr);
 	ptr += sizeof(guint32);
-	if ((version != MONO_SYMBOL_FILE_VERSION) && (version != MONO_SYMBOL_FILE_COMPATIBILITY_VERSION)) {
+	if (version != MONO_SYMBOL_FILE_VERSION) {
 		if (!in_the_debugger)
 			g_warning ("Symbol file %s has incorrect version "
 				   "(expected %d, got %ld)", symfile->filename,
