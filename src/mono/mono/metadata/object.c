@@ -5070,7 +5070,7 @@ mono_store_remote_field_new (MonoObject *this, MonoClass *klass, MonoClassField 
  * mono_create_ftnptr:
  *
  *   Given a function address, create a function descriptor for it.
- * This is only needed on IA64.
+ * This is only needed on IA64 and PPC64.
  */
 gpointer
 mono_create_ftnptr (MonoDomain *domain, gpointer addr)
@@ -5086,6 +5086,18 @@ mono_create_ftnptr (MonoDomain *domain, gpointer addr)
 	desc [1] = NULL;
 
 	return desc;
+#elif defined(__ppc64__) || defined(__powerpc64__)
+	gpointer *desc;
+
+	mono_domain_lock (domain);
+	desc = mono_code_manager_reserve (domain->code_mp, 3 * sizeof (gpointer));
+	mono_domain_unlock (domain);
+
+	desc [0] = addr;
+	desc [1] = NULL;
+	desc [2] = NULL;
+
+	return desc;
 #else
 	return addr;
 #endif
@@ -5095,12 +5107,12 @@ mono_create_ftnptr (MonoDomain *domain, gpointer addr)
  * mono_get_addr_from_ftnptr:
  *
  *   Given a pointer to a function descriptor, return the function address.
- * This is only needed on IA64.
+ * This is only needed on IA64 and PPC64.
  */
 gpointer
 mono_get_addr_from_ftnptr (gpointer descr)
 {
-#ifdef __ia64__
+#if defined(__ia64__) || defined(__ppc64__) || defined(__powerpc64__)
 	return *(gpointer*)descr;
 #else
 	return descr;
