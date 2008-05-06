@@ -388,14 +388,14 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) \
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
-test:	assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 test-generic-sharing
+test:	assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 test-generic-sharing test-bug-382986
 else
 # Can't use mkbundle on win32 since there is no static build there
 # Can't run test-unhandled-exception on Windows because of all the debug popups...
 if PLATFORM_WIN32
-test:   assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 test-generic-sharing
+test:   assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 test-generic-sharing test-bug-382986
 else
-test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 custom-modifiers test-generic-sharing
+test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 custom-modifiers test-generic-sharing test-bug-382986 
 endif
 endif
 
@@ -640,6 +640,14 @@ custom-modifiers.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
 	$(MCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.exe $(srcdir)/custom-modifiers.2.cs
 custom-modifiers: custom-modifiers.exe
 	$(RUNTIME) custom-modifiers.exe
+
+EXTRA_DIST += bug-382986.cs  bug-382986-lib.cs
+bug-382986-lib.dll: bug-382986-lib.cs
+	$(MCS) -target:library -out:bug-382986-lib.dll bug-382986-lib.cs
+bug-382986.exe: bug-382986.cs bug-382986-lib.dll
+	$(MCS) -out:bug-382986.exe -r:bug-382986-lib.dll bug-382986.cs
+test-bug-382986: bug-382986.exe
+	$(RUNTIME) bug-382986.exe
 
 EXTRA_DIST += coreclr-security.cs
 
