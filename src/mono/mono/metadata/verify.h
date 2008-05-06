@@ -35,6 +35,10 @@ typedef enum {
 
 	/*Skip all visibility related checks*/
 	MONO_VERIFY_SKIP_VISIBILITY = 64,
+
+	/*Skip all visibility related checks*/
+	MONO_VERIFY_REPORT_ALL_ERRORS = 128,
+
 } MonoVerifyStatus;
 
 typedef struct {
@@ -52,6 +56,8 @@ GSList* mono_image_verify_tables (MonoImage *image, int level);
 GSList* mono_method_verify       (MonoMethod *method, int level);
 void    mono_free_verify_list    (GSList *list);
 char*   mono_verify_corlib       (void);
+
+#define MONO_VERIFIER_DEBUG
 
 G_END_DECLS
 

@@ -442,7 +442,7 @@ main (int argc, char *argv [])
 	if (dump_data)
 		dump_dotnet_iinfo (image);
 	if (verify_pe) {
-		int f = 0;
+		int f = MONO_VERIFY_REPORT_ALL_ERRORS;
 		char *tok = strtok (flags, ",");
 		MonoAssembly *assembly;
 		while (tok) {

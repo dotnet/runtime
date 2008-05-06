@@ -38,8 +38,8 @@ enum {
 #define IS_STRICT_MODE(ctx) (((ctx)->level & MONO_VERIFY_NON_STRICT) == 0)
 #define IS_FAIL_FAST_MODE(ctx) (((ctx)->level & MONO_VERIFY_FAIL_FAST) == MONO_VERIFY_FAIL_FAST)
 #define IS_SKIP_VISIBILITY(ctx) (((ctx)->level & MONO_VERIFY_SKIP_VISIBILITY) == MONO_VERIFY_SKIP_VISIBILITY)
+#define IS_REPORT_ALL_ERRORS(ctx) (((ctx)->level & MONO_VERIFY_REPORT_ALL_ERRORS) == MONO_VERIFY_REPORT_ALL_ERRORS)
 #define CLEAR_PREFIX(ctx, prefix) do { (ctx)->prefix_set &= ~(prefix); } while (0)
-
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
 	do {	\
 		MonoVerifyInfoExtended *vinfo = g_new (MonoVerifyInfoExtended, 1);	\
@@ -57,7 +57,7 @@ enum {
 
 #define CODE_NOT_VERIFIABLE(__ctx, __msg) \
 	do {	\
-		if ((__ctx)->verifiable) { \
+		if ((__ctx)->verifiable || IS_REPORT_ALL_ERRORS (__ctx)) { \
 			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_NOT_VERIFIABLE, MONO_EXCEPTION_UNVERIFIABLE_IL); \
 			(__ctx)->verifiable = 0; \
 			if (IS_FAIL_FAST_MODE (__ctx)) \
@@ -73,7 +73,7 @@ enum {
 
 #define CODE_NOT_VERIFIABLE2(__ctx, __msg, __exception) \
 	do {	\
-		if ((__ctx)->verifiable) { \
+		if ((__ctx)->verifiable || IS_REPORT_ALL_ERRORS (__ctx)) { \
 			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_NOT_VERIFIABLE, __exception); \
 			(__ctx)->verifiable = 0; \
 			if (IS_FAIL_FAST_MODE (__ctx)) \
@@ -2206,11 +2206,21 @@ handle_enum:
 	}
 
 	case MONO_TYPE_GENERICINST: {
+		MonoClass *target_klass;
+		MonoClass *candidate_klass;
 		if (mono_type_is_enum_type (target)) {
 			target = mono_type_get_underlying_type_any (target);
 			goto handle_enum;
 		}
-		return mono_class_is_assignable_from (mono_class_from_mono_type (target), mono_class_from_mono_type (candidate));
+		target_klass = mono_class_from_mono_type (target);
+		candidate_klass = mono_class_from_mono_type (candidate);
+		if (mono_class_is_nullable (target_klass)) {
+			if (!mono_class_is_nullable (candidate_klass))
+				return FALSE;
+			return target_klass == candidate_klass;
+		}
+		
+		return mono_class_is_assignable_from (target_klass, candidate_klass);
 	}
 
 	case MONO_TYPE_STRING:
@@ -4225,6 +4235,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 		} 
 
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stack at depth %d, types not compatible old [%s] new [%s] at 0x%04x", i, stack_slot_get_name (old_slot), stack_slot_get_name (new_slot), ctx->ip_offset)); 
+		set_stack_value (ctx, old_slot, &new_class->byval_arg, stack_slot_is_managed_pointer (old_slot));
 		goto end_verify;
 
 match_found:
