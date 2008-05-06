@@ -5203,7 +5203,10 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 	if (image->dynamic) {
 		if (type_args || method_args)
 			mono_raise_exception (mono_get_exception_not_implemented (NULL));
-		return mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
+		klass = mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL);
+		if (!klass)
+			return NULL;
+		return &klass->byval_arg;
 	}
 
 	if ((index <= 0) || (index > image->tables [table].rows)) {
