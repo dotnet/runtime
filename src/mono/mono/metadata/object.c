@@ -2101,18 +2101,18 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
  * The thunk's C signature closely matches the managed signature:
  *
  * C#: public bool Equals (object obj);
- * C:  typedef MonoBoolean (*Equals)(MonoObject *this,
- *             MonoObject *obj, MonoException **ex);
+ * C:  typedef MonoBoolean (*Equals)(MonoObject*,
+ *             MonoObject*, MonoException**);
  *
- * The "this" parameter must not be used with static methods:
+ * The 1st ("this") parameter must not be used with static methods:
  *
  * C#: public static bool ReferenceEquals (object a, object b);
- * C:  typedef MonoBoolean (*ReferenceEquals)(MonoObject *a, MonoObject *b,
- *             MonoException **ex);
+ * C:  typedef MonoBoolean (*ReferenceEquals)(MonoObject*, MonoObject*,
+ *             MonoException**);
  *
  * The last argument must be a non-null pointer of a MonoException* pointer.
  * It has "out" semantics. After invoking the thunk, *ex will be NULL if no
- * exception has been thrown in managed code. Otherwise, it will point
+ * exception has been thrown in managed code. Otherwise it will point
  * to the MonoException* caught by the thunk. In this case, the result of
  * the thunk is undefined:
  *
@@ -2128,8 +2128,18 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
  * convention. This means that under Windows, C declarations must
  * contain the __stdcall attribute:
  *
- * C:  typedef MonoBoolean (__stdcall *Equals)(MonoObject *this,
- *             MonoObject *obj, MonoException **ex);
+ * C:  typedef MonoBoolean (__stdcall *Equals)(MonoObject*,
+ *             MonoObject*, MonoException**);
+ *
+ * LIMITATIONS
+ *
+ * Value type arguments and return values are treated as they were objects:
+ *
+ * C#: public static Rectangle Intersect (Rectangle a, Rectangle b);
+ * C:  typedef MonoObject* (*Intersect)(MonoObject*, MonoObject*, MonoException**);
+ *
+ * Arguments must be properly boxed upon trunk's invocation, while return
+ * values must be unboxed.
  */
 gpointer
 mono_method_get_unmanaged_thunk (MonoMethod *method)

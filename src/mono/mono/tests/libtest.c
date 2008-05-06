@@ -2903,20 +2903,17 @@ mono_test_marshal_ccw_itest (MonoComObject *pUnk)
  * mono_method_get_unmanaged_thunk tests
  */
 
-
-#define NATIVE_ALIGNMENT(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
-#ifdef __GNUC__
-#define MANAGED_ALIGNMENT __alignof__
+#if defined(__GNUC__) && defined(__i386__) && (defined(__linux__) || defined (__APPLE__))
+#define ALIGN(size) __attribute__ ((aligned(size)))
 #else
-#define MANAGED_ALIGNMENT NATIVE_ALIGNMENT
+#define ALIGN(size)
 #endif
 
-#define SAME_ALIGNMENT(type) (NATIVE_ALIGNMENT(type) == MANAGED_ALIGNMENT(type))
 
 /* thunks.cs:TestStruct */
 typedef struct _TestStruct {
 	int A;
-	double B;
+	double B ALIGN(8);  /* align according to  mono's struct layout */
 } TestStruct;
 
 /* Searches for mono symbols in all loaded modules */
@@ -2933,12 +2930,12 @@ lookup_mono_symbol (char *symbol_name)
 /**
  * test_method_thunk:
  *
- * @id: the method number
+ * @test_id: the test number
  * @test_method_handle: MonoMethod* of the C# test method
  * @create_object_method_handle: MonoMethod* of thunks.cs:Test.CreateObject
  */
 STDCALL int 
-test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_method_handle)
+test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_object_method_handle)
 {
 	gpointer (*mono_method_get_unmanaged_thunk)(gpointer)
 		= lookup_mono_symbol ("mono_method_get_unmanaged_thunk");
@@ -2948,6 +2945,9 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 
 	char* (*mono_string_to_utf8)(gpointer)
 		= lookup_mono_symbol ("mono_string_to_utf8");
+
+	gpointer (*mono_object_unbox)(gpointer)
+		= lookup_mono_symbol ("mono_object_unbox");
 
 	gpointer test_method, ex = NULL;
 	gpointer (STDCALL *CreateObject)(gpointer*);
@@ -2965,17 +2965,17 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 		return 3;
 
 
-	switch (id) {
+	switch (test_id) {
 
 	case 0: {
-		/* thunks.cs:Test.Foo0 */
+		/* thunks.cs:Test.Test0 */
 		void (STDCALL *F)(gpointer*) = test_method;
 		F (&ex);
 		break;
 	}
 
 	case 1: {
-		/* thunks.cs:Test.Foo1 */
+		/* thunks.cs:Test.Test1 */
 		int (STDCALL *F)(gpointer*) = test_method;
 		if (F (&ex) != 42)
 			return 4;
@@ -2983,7 +2983,7 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 2: {
-		/* thunks.cs:Test.Foo2 */
+		/* thunks.cs:Test.Test2 */
 		gpointer (STDCALL *F)(gpointer, gpointer*) = test_method;
 		gpointer str = mono_string_new_wrapper ("foo");
 		if (str != F (str, &ex))
@@ -2992,7 +2992,7 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 3: {
-		/* thunks.cs:Test.Foo3 */
+		/* thunks.cs:Test.Test3 */
 		gpointer (STDCALL *F)(gpointer, gpointer, gpointer*);
 		gpointer obj;
 		gpointer str;
@@ -3007,7 +3007,7 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 4: {
-		/* thunks.cs:Test.Foo4 */
+		/* thunks.cs:Test.Test4 */
 		int (STDCALL *F)(gpointer, gpointer, int, gpointer*);
 		gpointer obj;
 		gpointer str;
@@ -3023,7 +3023,7 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 5: {
-		/* thunks.cs:Test.Foo5 */
+		/* thunks.cs:Test.Test5 */
 		int (STDCALL *F)(gpointer, gpointer, int, gpointer*);
 		gpointer obj;
 		gpointer str;
@@ -3040,11 +3040,11 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 6: {
-		/* thunks.cs:Test.Foo6 */
+		/* thunks.cs:Test.Test6 */
 		int (STDCALL *F)(gpointer, guint8, gint16, gint32, gint64, float, double,
 				 gpointer, gpointer*);
 		gpointer obj;
-		gpointer str = mono_string_new_wrapper ("Foo6");
+		gpointer str = mono_string_new_wrapper ("Test6");
 		int res;
 
 		F = test_method;
@@ -3061,7 +3061,7 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 7: {
-		/* thunks.cs:Test.Foo7 */
+		/* thunks.cs:Test.Test7 */
 		gint64 (STDCALL *F)(gpointer*) = test_method;
 		if (F (&ex) != G_MAXINT64)
 			return 4;
@@ -3069,7 +3069,7 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 8: {
-		/* thunks.cs:Test.Foo8 */
+		/* thunks.cs:Test.Test8 */
 		void (STDCALL *F)(guint8*, gint16*, gint32*, gint64*, float*, double*,
 				 gpointer*, gpointer*);
 
@@ -3093,14 +3093,14 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 		      a4 == 6789600 &&
 		      (fabs (a5 - 3.1415) < 0.001) &&
 		      (fabs (a6 - 3.1415) < 0.001) &&
-		      strcmp (mono_string_to_utf8 (a7), "Foo8") == 0))
+		      strcmp (mono_string_to_utf8 (a7), "Test8") == 0))
 			return 5;
 
 		break;
 	}
 
 	case 9: {
-		/* thunks.cs:Test.Foo9 */
+		/* thunks.cs:Test.Test9 */
 		void (STDCALL *F)(guint8*, gint16*, gint32*, gint64*, float*, double*,
 				 gpointer*, gpointer*);
 
@@ -3122,100 +3122,157 @@ test_method_thunk (int id, gpointer test_method_handle, gpointer create_object_m
 	}
 
 	case 10: {
-		/* thunks.cs:Test.Foo10 */
-		int (STDCALL *F)(TestStruct, gpointer*);
+		/* thunks.cs:Test.Test10 */
+		void (STDCALL *F)(gpointer*, gpointer*);
 
-		TestStruct a1;
+		gpointer obj1, obj2;
+
+		obj1 = obj2 = CreateObject (&ex);
+		if (ex)
+			return 4;
+
+		F = test_method;
+
+		F (&obj1, &ex);
+		if (ex)
+			return 5;
+
+		if (obj1 == obj2)
+			return 6;
+
+		break;
+	}
+
+	case 100: {
+		/* thunks.cs:TestStruct.Test0 */
+		int (STDCALL *F)(gpointer*, gpointer*);
+
+		gpointer obj;
+		TestStruct *a1;
 		int res;
 
-		if (!SAME_ALIGNMENT (double))
-			break;
+		obj = CreateObject (&ex);
+		if (ex)
+			return 4;
 
-		a1.A = 42;
-		a1.B = 3.1415;
+		if (!obj)
+			return 5;
+
+		a1 = mono_object_unbox (obj);
+		if (!a1)
+			return 6;
+
+		a1->A = 42;
+		a1->B = 3.1415;
 
 		F = test_method;
 
-		res = F (a1, &ex);
+		res = F (obj, &ex);
 		if (ex)
-			return 4;
+			return 7;
 
 		if (!res)
-			return 5;
+			return 8;
+
+		/* check whether the call was really by value */
+		if (a1->A != 42 || a1->B != 3.1415)
+			return 9;
 
 		break;
 	}
 
-	case 11: {
-		/* thunks.cs:Test.Foo11 */
-		void (STDCALL *F)(TestStruct*, gpointer*);
+	case 101: {
+		/* thunks.cs:TestStruct.Test1 */
+		void (STDCALL *F)(gpointer, gpointer*);
 
-		TestStruct a1;
+		TestStruct *a1;
+		gpointer obj;
 
-		if (!SAME_ALIGNMENT (double))
-			break;
-
-		F = test_method;
-
-		F (&a1, &ex);
+		obj = CreateObject (&ex);
 		if (ex)
 			return 4;
 
-		if (!a1.A == 42)
+		if (!obj)
 			return 5;
 
-		if (!fabs (a1.B - 3.1415) < 0.001)
+		a1 = mono_object_unbox (obj);
+		if (!a1)
+			return 6;
+
+		F = test_method;
+
+		F (obj, &ex);
+		if (ex)
+			return 7;
+
+		if (a1->A != 42)
+			return 8;
+
+		if (!fabs (a1->B - 3.1415) < 0.001)
+			return 9;
+
+		break;
+	}
+
+	case 102: {
+		/* thunks.cs:TestStruct.Test2 */
+		gpointer (STDCALL *F)(gpointer*);
+
+		TestStruct *a1;
+		gpointer obj;
+
+		F = test_method;
+
+		obj = F (&ex);
+		if (ex)
+			return 4;
+
+		if (!obj)
+			return 5;
+
+		a1 = mono_object_unbox (obj);
+
+		if (a1->A != 42)
+			return 5;
+
+		if (!fabs (a1->B - 3.1415) < 0.001)
 			return 6;
 
 		break;
 	}
 
-	case 12: {
-		/* thunks.cs:Test.Foo12 */
-		TestStruct (STDCALL *F)(gpointer*);
+	case 103: {
+		/* thunks.cs:TestStruct.Test3 */
+		void (STDCALL *F)(gpointer, gpointer*);
 
-		TestStruct a1;
+		TestStruct *a1;
+		gpointer obj;
 
-		if (!SAME_ALIGNMENT (double))
-			break;
-
-		F = test_method;
-
-		a1 = F (&ex);
+		obj = CreateObject (&ex);
 		if (ex)
 			return 4;
 
-		if (!a1.A == 42)
+		if (!obj)
 			return 5;
+		
+		a1 = mono_object_unbox (obj);
 
-		if (!fabs (a1.B - 3.1415) < 0.001)
+		if (!a1)
 			return 6;
 
-		break;
-	}
-
-	case 13: {
-		/* thunks.cs:TestStruct.Foo13 */
-		void (STDCALL *F)(TestStruct*, gpointer*);
-
-		TestStruct a1;
-
-		if (!SAME_ALIGNMENT (double))
-			break;
-
-		a1.A = 42;
-		a1.B = 3.1415;
+		a1->A = 42;
+		a1->B = 3.1415;
 
 		F = test_method;
 
-		F (&a1, &ex);
+		F (obj, &ex);
 		if (ex)
 			return 4;
 
-		if (a1.A != 1)
+		if (a1->A != 1)
 			return 5;
 
-		if (a1.B != 17)
+		if (a1->B != 17)
 			return 6;
 
 		break;

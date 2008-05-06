@@ -12047,11 +12047,9 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	csig->call_convention = MONO_CALL_DEFAULT;
 
 	if (sig->hasthis) {
-		/* "this" of value types is actually a ptr */
-		csig->params [0] = klass->valuetype
-			? &mono_ptr_class_get (&klass->byval_arg)->byval_arg
-			: &klass->byval_arg;
-		/* shift params */
+		/* add "this" */
+		csig->params [0] = &klass->byval_arg;
+		/* move params up by one */
 		for (i = 0; i < sig->param_count; i++)
 			csig->params [i + 1] = sig->params [i];
 	}
@@ -12061,6 +12059,10 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 		 &mono_defaults.exception_class->byval_arg);
 	csig->params [param_count - 1]->byref = 1;
 	csig->params [param_count - 1]->attrs = PARAM_ATTRIBUTE_OUT;
+
+	/* convert struct return to object */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		csig->ret = &mono_defaults.object_class->byval_arg;
 
 	/* local 0 (temp for exception object) */
 	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
@@ -12081,8 +12083,28 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	clause->try_offset = mono_mb_get_label (mb);
 
 	/* push method's args */
-	for (i = 0; i < param_count - 1; i++)
+	for (i = 0; i < param_count - 1; i++) {
+		MonoType *type;
+		MonoClass *klass;
+
 		mono_mb_emit_ldarg (mb, i);
+
+		/* get the byval type of the param */
+		klass = mono_class_from_mono_type (csig->params [i]);
+		type = &klass->byval_arg;
+
+		/* unbox struct args */
+		if (MONO_TYPE_ISSTRUCT (type)) {
+			mono_mb_emit_op (mb, CEE_UNBOX, klass);
+
+			/* byref args & and the "this" arg must remain a ptr.
+			   Otherwise make a copy of the value type */
+			if (!(csig->params [i]->byref || (i == 0 && sig->hasthis)))
+				mono_mb_emit_op (mb, CEE_LDOBJ, klass);
+
+			csig->params [i] = &mono_defaults.object_class->byval_arg;
+		}
+	}
 
 	/* call */
 	if (method->flags & METHOD_ATTRIBUTE_VIRTUAL)
@@ -12115,8 +12137,13 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	mono_mb_patch_branch (mb, pos_leave);
 	/* end-try */
 
-	if (!MONO_TYPE_IS_VOID (sig->ret))
+	if (!MONO_TYPE_IS_VOID (sig->ret)) {
 		mono_mb_emit_ldloc (mb, 1);
+
+		/* box the return value */
+		if (MONO_TYPE_ISSTRUCT (sig->ret))
+			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type (sig->ret));
+	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
