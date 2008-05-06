@@ -1098,7 +1098,6 @@ mono_main (int argc, char* argv[])
 	MonoGraphOptions mono_graph_options = 0;
 	int mini_verbose = 0;
 	gboolean enable_profile = FALSE;
-	gboolean security_enabled = FALSE;
 	char *trace_options = NULL;
 	char *profile_options = NULL;
 	char *aot_options = NULL;
@@ -1239,8 +1238,6 @@ mono_main (int argc, char* argv[])
 			mono_inject_async_exc_pos = atoi (argv [++i]);
 		} else if (strcmp (argv [i], "--verify-all") == 0) {
 			mono_verifier_enable_verify_all ();
-			if (!security_enabled)
-				mono_verifier_set_mode (MONO_VERIFIER_MODE_VALID);
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
@@ -1324,10 +1321,8 @@ mono_main (int argc, char* argv[])
 				mono_activate_security_manager ();
 			} else  if (strcmp (argv [i] + 11, "validil") == 0) {
 				mono_verifier_set_mode (MONO_VERIFIER_MODE_VALID);
-				security_enabled = TRUE;
 			} else  if (strcmp (argv [i] + 11, "verifiable") == 0) {
 				mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
-				security_enabled = TRUE;
 			} else  {
 				fprintf (stderr, "error: --security= option has invalid argument (cas, core-clr, verifiable or validil)\n");
 				return 1;
