@@ -4546,11 +4546,6 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 	gboolean is_fulltrust;
 	MonoLoaderError *error;
 
-	while (method->is_inflated) {
-		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
-		method = imethod->declaring;
-	}
-
 	if (method->verification_success)
 		return FALSE;
 
@@ -4601,7 +4596,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoInst *zero_int32, *zero_int64, *zero_ptr, *zero_obj, *zero_r8;
 	MonoInst *ins, **sp, **stack_start;
 	MonoBasicBlock *bblock, *tblock = NULL, *init_localsbb = NULL;
-	MonoMethod *cmethod;
+	MonoMethod *cmethod, *method_definition;
 	MonoInst **arg_array;
 	MonoMethodHeader *header;
 	MonoImage *image;
@@ -4652,7 +4647,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	end = ip + header->code_size;
 	mono_jit_stats.cil_code_size += header->code_size;
 
-	if (!dont_verify && mini_method_verify (cfg, method))
+	method_definition = method;
+	while (method_definition->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
+		method_definition = imethod->declaring;
+	}
+
+	if (!dont_verify && mini_method_verify (cfg, method_definition))
 		goto exception_exit;
 
 	if (sig->is_inflated)
@@ -5392,8 +5393,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (!cmethod)
 					goto load_error;
-				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cil_method))
-					METHOD_ACCESS_FAILURE;
+				if (!dont_verify && !cfg->skip_visibility) {
+					MonoMethod *target_method = cil_method;
+					if (method->is_inflated) {
+						target_method = mini_get_method (method, token, NULL, &method_definition->generic_container->context);
+					}
+					if (!mono_method_can_access_method (method_definition, target_method) &&
+						!mono_method_can_access_method (method, cil_method))
+						METHOD_ACCESS_FAILURE;
+				}
 
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
 					ensure_method_is_allowed_to_call_method (cfg, method, cil_method, bblock, ip);
