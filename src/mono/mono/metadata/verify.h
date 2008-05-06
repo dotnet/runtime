@@ -57,8 +57,6 @@ GSList* mono_method_verify       (MonoMethod *method, int level);
 void    mono_free_verify_list    (GSList *list);
 char*   mono_verify_corlib       (void);
 
-#define MONO_VERIFIER_DEBUG
-
 G_END_DECLS
 
 #endif  /* __MONO_METADATA_VERIFY_H__ */
