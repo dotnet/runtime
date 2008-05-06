@@ -765,6 +765,8 @@ mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return;
 
+	mono_debugger_lock ();
+
 	mono_thread_get_stack_bounds (&staddr, &stsize);
 
 	info = g_new0 (MonoDebuggerThreadInfo, 1);
@@ -783,6 +785,8 @@ mono_debugger_thread_created (gsize tid, MonoThread *thread, MonoJitTlsData *jit
 
 	mono_debugger_event (MONO_DEBUGGER_EVENT_THREAD_CREATED,
 			     tid, (guint64) (gsize) info);
+
+	mono_debugger_unlock ();
 #endif /* MONO_DEBUGGER_SUPPORTED */
 }
 
@@ -794,6 +798,8 @@ mono_debugger_thread_cleanup (MonoJitTlsData *jit_tls)
 
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return;
+
+	mono_debugger_lock ();
 
 	for (ptr = &mono_debugger_thread_table; *ptr; ptr = &(*ptr)->next) {
 		MonoDebuggerThreadInfo *info = *ptr;
@@ -808,6 +814,8 @@ mono_debugger_thread_cleanup (MonoJitTlsData *jit_tls)
 		g_free (info);
 		break;
 	}
+
+	mono_debugger_unlock ();
 #endif
 }
 
@@ -821,6 +829,8 @@ mono_debugger_extended_notification (MonoDebuggerEvent event, guint64 data, guin
 	if (!mono_debug_using_mono_debugger ())
 		return;
 
+	mono_debugger_lock ();
+
 	for (ptr = &mono_debugger_thread_table; *ptr; ptr = &(*ptr)->next) {
 		MonoDebuggerThreadInfo *info = *ptr;
 
@@ -832,6 +842,8 @@ mono_debugger_extended_notification (MonoDebuggerEvent event, guint64 data, guin
 
 		mono_debugger_event (event, data, arg);
 	}
+
+	mono_debugger_unlock ();
 #endif
 }
 
