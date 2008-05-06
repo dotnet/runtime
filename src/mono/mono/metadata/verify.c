@@ -5439,6 +5439,8 @@ mono_verifier_is_method_full_trust (MonoMethod *method)
 gboolean
 mono_verifier_is_class_full_trust (MonoClass *klass)
 {
+	if (verify_all && verifier_mode == MONO_VERIFIER_MODE_OFF)
+		return klass->image->assembly->in_gac || klass->image == mono_defaults.corlib;
 	return verifier_mode < MONO_VERIFIER_MODE_VERIFIABLE || klass->image->assembly->in_gac || klass->image == mono_defaults.corlib;
 }
 
