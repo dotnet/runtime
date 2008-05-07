@@ -4165,11 +4165,11 @@ mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, Mono
 }
 
 static inline MonoMethod *
-mini_get_method (MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
+mini_get_method (MonoCompile *cfg, MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
 {
 	MonoMethod *method = mini_get_method_allow_open (m, token, klass, context);
 
-	if (method && mono_class_is_open_constructed_type (&method->klass->byval_arg))
+	if (method && cfg && !cfg->generic_sharing_context && mono_class_is_open_constructed_type (&method->klass->byval_arg))
 		return NULL;
 
 	return method;
@@ -4334,7 +4334,7 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 
 		if (newarr->inst_newa_len->opcode != OP_ICONST)
 			return NULL;
-		cmethod = mini_get_method (method, token, NULL, NULL);
+		cmethod = mini_get_method (NULL, method, token, NULL, NULL);
 		if (!cmethod)
 			return NULL;
 		if (strcmp (cmethod->name, "InitializeArray") || strcmp (cmethod->klass->name, "RuntimeHelpers") || cmethod->klass->image != mono_defaults.corlib)
@@ -5343,7 +5343,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, OP_JMP);
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
-			cmethod = mini_get_method (method, token, NULL, generic_context);
+			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 
 			if (!cmethod)
 				goto load_error;
@@ -5398,7 +5398,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context, &cil_method);
 					cil_method = cmethod;
 				} else {
-					cmethod = mini_get_method (method, token, NULL, generic_context);
+					cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 					cil_method = cmethod;
 				}
 
@@ -6554,7 +6554,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
-			cmethod = mini_get_method (method, token, NULL, generic_context);
+			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			if (!cmethod)
 				goto load_error;
 			fsig = mono_method_get_signature (cmethod, image, token);
@@ -8149,7 +8149,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if ((ip + 10 < end) && ip_in_bb (cfg, bblock, ip + 5) &&
 					handle_class == mono_defaults.typehandle_class &&
 					((ip [5] == CEE_CALL) || (ip [5] == CEE_CALLVIRT)) && 
-					(cmethod = mini_get_method (method, read32 (ip + 6), NULL, generic_context)) &&
+					(cmethod = mini_get_method (cfg, method, read32 (ip + 6), NULL, generic_context)) &&
 					(cmethod->klass == mono_defaults.monotype_class->parent) &&
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 					MonoClass *tclass = mono_class_from_mono_type (handle);
@@ -8604,7 +8604,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
-				cmethod = mini_get_method (method, n, NULL, generic_context);
+				cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 				if (!cmethod)
 					goto load_error;
 				mono_class_init (cmethod->klass);
@@ -8633,7 +8633,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #if defined(MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE) && !defined(HAVE_WRITE_BARRIERS)
 				/* FIXME: SGEN support */
 				/* FIXME: handle shared static generic methods */
-				if (!is_shared && (sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
+				if (!is_shared && (sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
 					MonoInst *target_ins;
 
 					ip += 6;
@@ -8672,7 +8672,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK (1);
 				CHECK_OPSIZE (6);
 				n = read32 (ip + 2);
-				cmethod = mini_get_method (method, n, NULL, generic_context);
+				cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 				if (!cmethod)
 					goto load_error;
 				mono_class_init (cmethod->klass);
