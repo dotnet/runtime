@@ -1,3 +1,9 @@
+2008-05-07  Sebastien Pouliot  <sebastien@ximian.com>
+
+	* data/net_[1_1|2_0]/machine.config: Add entry to remap the public 
+	key used by Silverlight 2.0 platform assemblies. Needed in both 
+	profiles since SN uses 1.0.
+
 2008-05-05  Andreas Färber  <andreas.faerber@web.de>
 
 	* configure.in: Detect ppc64 target architecture.
