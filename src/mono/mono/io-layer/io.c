@@ -2906,7 +2906,8 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 {
 	struct _WapiHandle_find *find_handle;
 	gboolean ok;
-	struct stat buf;
+	struct stat buf, linkbuf;
+	int result;
 	gchar *filename;
 	gchar *utf8_filename, *utf8_basename;
 	gunichar2 *utf16_basename;
@@ -2938,9 +2939,26 @@ retry:
 	/* stat next match */
 
 	filename = g_build_filename (find_handle->dir_part, find_handle->namelist[find_handle->count ++], NULL);
-	if (_wapi_lstat (filename, &buf) != 0) {
+
+	result = _wapi_stat (filename, &buf);
+	if (result == -1 && errno == ENOENT) {
+		/* Might be a dangling symlink */
+		result = _wapi_lstat (filename, &buf);
+	}
+	
+	if (result != 0) {
 #ifdef DEBUG
 		g_message ("%s: stat failed: %s", __func__, filename);
+#endif
+
+		g_free (filename);
+		goto retry;
+	}
+
+	result = _wapi_lstat (filename, &linkbuf);
+	if (result != 0) {
+#ifdef DEBUG
+		g_message ("%s: lstat failed: %s", __func__, filename);
 #endif
 
 		g_free (filename);
@@ -2971,7 +2989,7 @@ retry:
 	else
 		create_time = buf.st_ctime;
 	
-	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_filename, &buf, &buf);
+	find_data->dwFileAttributes = _wapi_stat_to_file_attributes (utf8_filename, &buf, &linkbuf);
 
 	_wapi_time_t_to_filetime (create_time, &find_data->ftCreationTime);
 	_wapi_time_t_to_filetime (buf.st_atime, &find_data->ftLastAccessTime);
