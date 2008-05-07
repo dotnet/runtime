@@ -569,15 +569,19 @@ mono_class_get_context (MonoClass *class)
  * @type: a type
  * @context: a generics context
  *
- * Instantiate the generic type @type, using the generics context @context.
+ * If @type is a generic type and @context is not NULL, instantiate it using the 
+ * generics context @context.
  *
- * Returns: the instantiated type. The returned MonoType is allocated on the heap and is 
- * owned by the caller.
+ * Returns: the instantiated type or a copy of @type. The returned MonoType is allocated
+ * on the heap and is owned by the caller.
  */
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 {
-	MonoType *inflated = inflate_generic_type (type, context);
+	MonoType *inflated = NULL; 
+
+	if (context)
+		inflated = inflate_generic_type (type, context);
 
 	if (!inflated)
 		return mono_metadata_type_dup (NULL, type);
