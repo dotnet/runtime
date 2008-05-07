@@ -1,5 +1,12 @@
 SUBDIRS = cas assemblyresolve
 
+# avoid including eglib twice since GLIB_LIBS == GMODULE_LIBS for eglib builds
+if EGLIB_BUILD
+glib_libs = $(GLIB_LIBS)
+else
+glib_libs = $(GLIB_LIBS) $(GMODULE_LIBS)
+endif
+
 check-local: test
 
 TEST_PROG = ../interpreter/mint
@@ -732,6 +739,6 @@ else
 libtest_la_LDFLAGS = -rpath `pwd`
 endif
 libtest_la_SOURCES = libtest.c
-libtest_la_LIBADD = $(GLIB_LIBS) $(GMODULE_LIBS)
+libtest_la_LIBADD = $(glib_libs)
 
 CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) $(STRESS_TESTS) *.dll *.stdout *.exe stest.dat
