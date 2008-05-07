@@ -350,6 +350,25 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_ldvirtftn_generic_method () {
+		new Tests ().ldvirtftn<string> ();		
+
+		return the_type == typeof (string) ? 0 : 1;
+	}
+
+	public static Type the_type;
+
+	public void ldvirtftn<T> () {
+		Foo <T> binding = new Foo <T> (default (T));
+
+		binding.GenericEvent += event_handler;
+		binding.fire ();
+	}
+
+	public virtual void event_handler<T> (Foo<T> sender) {
+		the_type = typeof (T);
+	}
+
 	public class Foo<T1>
 	{
 		public Foo(T1 t1)
@@ -378,6 +397,15 @@ class Tests {
 		}
 		
 		readonly T1 m_t1;
+
+		public delegate void GenericEventHandler (Foo<T1> sender);
+
+		public event GenericEventHandler GenericEvent;
+
+		public void fire () {
+			GenericEvent (this);
+		}
+
 	}
 
 	public interface IMyHandler {
