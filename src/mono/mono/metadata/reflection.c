@@ -8621,14 +8621,19 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 
 	g_assert (tb->generic_container && (tb->generic_container->owner.klass == klass));
 
-	klass->generic_container = tb->generic_container;
+	klass->generic_container = mono_mempool_alloc0 (klass->image->mempool, sizeof (MonoGenericContainer));
 
+	klass->generic_container->owner.klass = klass;
 	klass->generic_container->type_argc = count;
-	klass->generic_container->type_params = g_new0 (MonoGenericParam, count);
+	klass->generic_container->type_params = mono_mempool_alloc0 (klass->image->mempool, sizeof (MonoGenericParam) * count);
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
 		klass->generic_container->type_params [i] = *gparam->type.type->data.generic_param;
+		/*Make sure we are a diferent type instance */
+		klass->generic_container->type_params [i].owner = klass->generic_container;
+		klass->generic_container->type_params [i].pklass = NULL;
+
 		g_assert (klass->generic_container->type_params [i].owner);
 	}
 
