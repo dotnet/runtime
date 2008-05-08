@@ -1,3 +1,7 @@
+2008-05-08  Robert Jordan  <robertjj@gmx.net>
+
+	* scripts/mono-service.in: Replace bash-ism with `sh' syntax.
+
 2008-05-07  Sebastien Pouliot  <sebastien@ximian.com>
 
 	* data/net_[1_1|2_0]/machine.config: Add entry to remap the public 
