@@ -4543,6 +4543,19 @@ generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
 	return MONO_TYPE_IS_REFERENCE (type);
 }
 
+static gboolean
+mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
+{
+	MonoAssembly *assembly = method->klass->image->assembly;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+	if (assembly->in_gac || assembly->image == mono_defaults.corlib)
+		return FALSE;
+	if (mono_security_get_mode () != MONO_SECURITY_MODE_NONE)
+		return FALSE;
+	return mono_assembly_has_skip_verification (assembly);
+}
+
 /*
  * mini_method_verify:
  * 
@@ -4662,6 +4675,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	while (method_definition->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
 		method_definition = imethod->declaring;
+	}
+
+	/* SkipVerification is not allowed if core-clr is enabled */
+	if (!dont_verify && mini_assembly_can_skip_verification (cfg->domain, method)) {
+		dont_verify = TRUE;
+		dont_verify_stloc = TRUE;
 	}
 
 	if (!dont_verify && mini_method_verify (cfg, method_definition))

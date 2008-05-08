@@ -11,6 +11,10 @@
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/monobitset.h"
 
+#define MONO_SECMAN_FLAG_INIT(x)		(x & 0x2)
+#define MONO_SECMAN_FLAG_GET_VALUE(x)		(x & 0x1)
+#define MONO_SECMAN_FLAG_SET_VALUE(x,y)		do { x = ((y) ? 0x3 : 0x2); } while (0)
+
 struct _MonoAssembly {
 	/* 
 	 * The number of appdomains which have this assembly loaded plus the number of 
@@ -35,6 +39,7 @@ struct _MonoAssembly {
 	guint32 aptc:2;		/* Has the [AllowPartiallyTrustedCallers] attributes */
 	guint32 fulltrust:2;	/* Has FullTrust permission */
 	guint32 unmanaged:2;	/* Has SecurityPermissionFlag.UnmanagedCode permission */
+	guint32 skipverification:2;	/* Has SecurityPermissionFlag.SkipVerification permission */
 };
 
 typedef struct {
@@ -421,6 +426,7 @@ mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,
 void mono_dynamic_stream_reset  (MonoDynamicStream* stream) MONO_INTERNAL;
 void mono_assembly_addref       (MonoAssembly *assembly) MONO_INTERNAL;
 void mono_assembly_load_friends (MonoAssembly* ass) MONO_INTERNAL;
+gboolean mono_assembly_has_skip_verification (MonoAssembly* ass) MONO_INTERNAL;
 
 gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2) MONO_INTERNAL;
 
