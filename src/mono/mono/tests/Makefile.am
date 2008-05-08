@@ -356,6 +356,7 @@ TEST_IL_SRC=			\
 	bug-79215.2.il	\
 	bug-79956.2.il	\
 	bug-327438.2.il \
+	bug-387274.2.il	\
 	ldtoken_with_byref_typespec.2.il \
 	resolve_method_bug.2.il \
 	resolve_field_bug.2.il \
