@@ -1,3 +1,7 @@
+2008-05-09  Zoltan Varga  <zovarga@debian.chello.hu>
+
+	* Makefile.am (get-monolite-latest): Create mcs/lib if not existing.
+
 2008-05-08  Robert Jordan  <robertjj@gmx.net>
 
 	* scripts/mono-service.in: Replace bash-ism with `sh' syntax.

@@ -28,6 +28,7 @@ monolite = $(mcslib)/monolite
 monolite_url = http://mono.ximian.com/daily/monolite-latest.tar.gz
 get-monolite-latest:
 	-rm -fr $(mcslib)/monolite-*
+	-mkdir -p $(mcslib)
 	test ! -d $(monolite) || test ! -d $(monolite).old || rm -fr $(monolite).old
 	test ! -d $(monolite) || mv -f $(monolite) $(monolite).old
 	cd $(mcslib) && { (wget -O- $(monolite_url) || curl $(monolite_url)) | gzip -d | tar xf - ; }
