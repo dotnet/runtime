@@ -46,6 +46,7 @@ static MonoGetClassFromName get_class_from_name = NULL;
 
 static MonoClass * mono_class_create_from_typedef (MonoImage *image, guint32 type_token);
 static gboolean mono_class_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res);
+static gboolean can_access_type (MonoClass *access_klass, MonoClass *member_klass);
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
 void (*mono_debugger_class_loaded_methods_func) (MonoClass *klass) = NULL;
@@ -6777,9 +6778,23 @@ get_generic_definition_class (MonoClass *klass)
 }
 
 static gboolean
+can_access_instantiation (MonoClass *access_klass, MonoGenericInst *ginst)
+{
+	int i;
+	for (i = 0; i < ginst->type_argc; ++i) {
+		if (!can_access_type (access_klass, mono_class_from_mono_type (ginst->type_argv[i])))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean
 can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 {
 	int access_level = member_klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+
+	if (member_klass->generic_class && !can_access_instantiation (access_klass, member_klass->generic_class->context.class_inst))
+		return FALSE;
 
 	if (is_nesting_type (access_klass, member_klass) || (access_klass->nested_in && is_nesting_type (access_klass->nested_in, member_klass)))
 		return TRUE;
@@ -6929,7 +6944,7 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 		while (nested) {
 			can = can_access_member (nested, member_class, context_klass, called->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK);
 			if (can)
-				return TRUE;
+				break;
 			nested = nested->nested_in;
 		}
 	}
@@ -6939,6 +6954,13 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 
 	if (!can_access_type (access_class, member_class) && (!access_class->nested_in || !can_access_type (access_class->nested_in, member_class)))
 		return FALSE;
+
+	if (called->is_inflated) {
+		MonoMethodInflated * infl = (MonoMethodInflated*)called;
+		if (infl->context.method_inst && !can_access_instantiation (access_class, infl->context.method_inst))
+		return FALSE;
+	}
+		
 	return TRUE;
 }
 
@@ -6966,7 +6988,7 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 		while (nested) {
 			can = can_access_member (nested, member_class, context_klass, field->type->attrs & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK);
 			if (can)
-				return TRUE;
+				break;
 			nested = nested->nested_in;
 		}
 	}
