@@ -3958,7 +3958,8 @@ do
 
 	./make_call_test.sh call_${I}_non_virtual_compat_this_1 valid "${CTYPE} instance void ClassA::Method1()" "newobj instance void ClassC::.ctor()"
 	./make_call_test.sh call_${I}_non_virtual_compat_this_2 valid "${CTYPE} instance void ClassC::Method1()" "newobj instance void ClassC::.ctor()"
-	./make_call_test.sh call_${I}_non_virtual_compat_this_3 unverifiable "${CTYPE} instance void ClassC::Method1()" "newobj instance void ClassA::.ctor()"
+#This test passes peverify but fails under MS runtime due to a bug on their implementation of method token resolution.
+	./make_call_test.sh call_${I}_non_virtual_compat_this_3 valid "${CTYPE} instance void ClassC::Method1()" "newobj instance void ClassA::.ctor()"
 
 	./make_call_test.sh call_${I}_final_virtual_method_1 valid "${CTYPE} instance void ClassC::VirtMethod()" "newobj instance void ClassC::.ctor()"
 
