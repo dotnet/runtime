@@ -5012,5 +5012,48 @@ done
 
 
 
+#tests for visibility of instantiated generic types and methods
+./make_type_visibility_test.sh type_vis_gist_1 valid "newobj instance void class Foo<[test_lib]ClassC>::.ctor()"
+./make_type_visibility_test.sh type_vis_gist_2 unverifiable "newobj instance void class Foo<[test_lib]NotExportedA>::.ctor()"
+
+
+./make_type_visibility_test.sh type_vis_cast_1 valid "castclass class [test_lib]ClassC"
+./make_type_visibility_test.sh type_vis_cast_2 valid "castclass class [test_lib]NotExportedA"
+./make_type_visibility_test.sh type_vis_cast_gist_1 valid "castclass class Foo<[test_lib]ClassC>"
+./make_type_visibility_test.sh type_vis_cast_gist_2 valid "castclass class Foo<[test_lib]NotExportedA>"
+
+
+./make_type_visibility_test.sh type_vis_sizeof_1 valid "sizeof class [test_lib]ClassC"
+./make_type_visibility_test.sh type_vis_sizeof_2 valid "sizeof class [test_lib]NotExportedA"
+./make_type_visibility_test.sh type_vis_sizeof_gist_1 valid "sizeof class Foo<[test_lib]ClassC>"
+./make_type_visibility_test.sh type_vis_sizeof_gist_2 valid "sizeof class Foo<[test_lib]NotExportedA>"
+
+
+./make_type_visibility_test.sh type_vis_newarr_1 valid "newarr class [test_lib]ClassC" "ldc.i4.1"
+./make_type_visibility_test.sh type_vis_newarr_2 valid "newarr class [test_lib]NotExportedA" "ldc.i4.1"
+./make_type_visibility_test.sh type_vis_newarr_gist_1 valid "newarr class Foo<[test_lib]ClassC>" "ldc.i4.1"
+./make_type_visibility_test.sh type_vis_newarr_gist_2 valid "newarr class Foo<[test_lib]NotExportedA>" "ldc.i4.1"
+
+
+./make_type_visibility_test.sh type_vis_ldelem_1 valid "ldelem class [test_lib]ClassC" "ldc.i4.1\n\tnewarr class [test_lib]ClassC\n\tldc.i4.0"
+./make_type_visibility_test.sh type_vis_ldelem_2 valid "ldelem class [test_lib]NotExportedA" "ldc.i4.1\n\tnewarr class [test_lib]NotExportedA\n\tldc.i4.0"
+./make_type_visibility_test.sh type_vis_ldelem_gist_1 valid "ldelem class Foo<[test_lib]ClassC>" "ldc.i4.1\n\tnewarr class Foo<[test_lib]ClassC>\n\tldc.i4.0"
+./make_type_visibility_test.sh type_vis_ldelem_gist_2 valid "ldelem class Foo<[test_lib]NotExportedA>" "ldc.i4.1\n\tnewarr class Foo<[test_lib]NotExportedA>\n\tldc.i4.0"
+
+
+./make_type_visibility_test.sh type_vis_stelem_1 valid "stelem class [test_lib]ClassC" "ldc.i4.1\n\tnewarr class [test_lib]ClassC\n\tldc.i4.0\n\tldnull"
+./make_type_visibility_test.sh type_vis_stelem_2 valid "stelem class [test_lib]NotExportedA" "ldc.i4.1\n\tnewarr class [test_lib]NotExportedA\n\tldc.i4.0\n\tldnull"
+./make_type_visibility_test.sh type_vis_stelem_gist_1 valid "stelem class Foo<[test_lib]ClassC>" "ldc.i4.1\n\tnewarr class Foo<[test_lib]ClassC>\n\tldc.i4.0\n\tldnull"
+./make_type_visibility_test.sh type_vis_stelem_gist_2 valid "stelem class Foo<[test_lib]NotExportedA>" "ldc.i4.1\n\tnewarr class Foo<[test_lib]NotExportedA>\n\tldc.i4.0\n\tldnull"
+
+
+./make_type_visibility_test.sh type_vis_box_1 valid "box valuetype [test_lib]PublicStruct" "ldloc.1" "valuetype [test_lib]PublicStruct"
+./make_type_visibility_test.sh type_vis_box_2 valid "box valuetype [test_lib]NBStruct" "ldloc.1" "valuetype [test_lib]NBStruct"
+
+
+#generic method
+
+./make_type_visibility_test.sh type_vis_gmethod_1 valid "call void SimpleClass::Generic<[test_lib]ClassC>()"
+./make_type_visibility_test.sh type_vis_gmethod_2 unverifiable "call void SimpleClass::Generic<[test_lib]NotExportedA>()"
 
 
