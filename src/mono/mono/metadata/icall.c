@@ -6176,8 +6176,7 @@ ves_icall_System_Environment_Exit (int result)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	if (!mono_threads_set_shutting_down ())
-		return;
+	mono_threads_set_shutting_down ();
 
 	mono_runtime_set_shutting_down ();
 

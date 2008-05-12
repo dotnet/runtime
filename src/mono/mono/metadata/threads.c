@@ -116,6 +116,13 @@ static StaticDataInfo context_static_info;
  */
 static MonoGHashTable *threads=NULL;
 
+/*
+ * Threads which are starting up and they are not in the 'threads' hash yet.
+ * When handle_store is called for a thread, it will be removed from this hash table.
+ * Protected by mono_threads_lock ().
+ */
+static MonoGHashTable *threads_starting_up = NULL;
+
 /* The TLS key that holds the MonoObject assigned to each thread */
 static guint32 current_object_key = -1;
 
@@ -212,6 +219,9 @@ static gboolean handle_store(MonoThread *thread)
 	mono_threads_lock ();
 
 	THREAD_DEBUG (g_message ("%s: thread %p ID %"G_GSIZE_FORMAT, __func__, thread, (gsize)thread->tid));
+
+	if (threads_starting_up)
+		mono_g_hash_table_remove (threads_starting_up, thread);
 
 	if (shutting_down) {
 		mono_threads_unlock ();
@@ -660,7 +670,19 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 	 * when the new thread is started but not yet registered with the collector.
 	 */
 	MONO_GC_REGISTER_ROOT (start_info->start_arg);
-	
+
+	mono_threads_lock ();
+	if (shutting_down) {
+		mono_threads_unlock ();
+		return;
+	}
+	if (threads_starting_up == NULL) {
+		MONO_GC_REGISTER_ROOT (threads_starting_up);
+		threads_starting_up = mono_g_hash_table_new (NULL, NULL);
+	}
+	mono_g_hash_table_insert (threads_starting_up, thread, thread);
+	mono_threads_unlock ();	
+
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
@@ -670,6 +692,9 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so throw an exception */
 		MONO_GC_UNREGISTER_ROOT (start_info->start_arg);
+		mono_threads_lock ();
+		mono_g_hash_table_remove (threads_starting_up, thread);
+		mono_threads_unlock ();
 		g_free (start_info);
 		mono_raise_exception (mono_get_exception_execution_engine ("Couldn't create thread"));
 		return;
@@ -889,10 +914,21 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 			return(NULL);
 		}
 
+		mono_threads_lock ();
+		if (threads_starting_up == NULL) {
+			MONO_GC_REGISTER_ROOT (threads_starting_up);
+			threads_starting_up = mono_g_hash_table_new (NULL, NULL);
+		}
+		mono_g_hash_table_insert (threads_starting_up, this, this);
+		mono_threads_unlock ();	
+
 		thread=CreateThread(NULL, default_stacksize_for_thread (this), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
 			LeaveCriticalSection (this->synch_cs);
+			mono_threads_lock ();
+			mono_g_hash_table_remove (threads_starting_up, this);
+			mono_threads_unlock ();
 			g_warning("%s: CreateThread error 0x%x", __func__, GetLastError());
 			return(NULL);
 		}
@@ -2514,11 +2550,11 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread);
 /** 
  * mono_threads_set_shutting_down:
  *
- * Is called by a thread that wants to shut down Mono.  Returs whether
- * the thread is allowed to do that.  The reason for not allowing it
- * is because another thread has already commenced shutdown.
+ * Is called by a thread that wants to shut down Mono. If the runtime is already
+ * shutting down, the calling thread is suspended/stopped, and this function never
+ * returns.
  */
-gboolean
+void
 mono_threads_set_shutting_down (void)
 {
 	MonoThread *current_thread = mono_thread_current ();
@@ -2554,8 +2590,6 @@ mono_threads_set_shutting_down (void)
 		SetEvent (background_change_event);
 		
 		mono_threads_unlock ();
-
-		return TRUE;
 	}
 }
 
@@ -2674,11 +2708,20 @@ void mono_thread_abort_all_other_threads (void)
 }
 
 static void
-collect_threads (gpointer key, gpointer value, gpointer user_data)
+collect_threads_for_suspend (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoThread *thread = (MonoThread*)value;
 	struct wait_data *wait = (struct wait_data*)user_data;
 	HANDLE handle;
+
+	/* 
+	 * We try to exclude threads early, to avoid running into the MAXIMUM_WAIT_OBJECTS
+	 * limitation.
+	 * This needs no locking.
+	 */
+	if ((thread->state & ThreadState_Suspended) != 0 || 
+		(thread->state & ThreadState_Stopped) != 0)
+		return;
 
 	if (wait->num<MAXIMUM_WAIT_OBJECTS) {
 		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
@@ -2694,87 +2737,150 @@ collect_threads (gpointer key, gpointer value, gpointer user_data)
 /*
  * mono_thread_suspend_all_other_threads:
  *
- *  Suspend all managed threads except the finalizer thread and this thread.
+ *  Suspend all managed threads except the finalizer thread and this thread. It is
+ * not possible to resume them later.
  */
 void mono_thread_suspend_all_other_threads (void)
 {
 	struct wait_data *wait = g_new0 (struct wait_data, 1);
-	int i, waitnum;
+	int i;
 	gsize self = GetCurrentThreadId ();
 	gpointer *events;
 	guint32 eventidx = 0;
+	gboolean starting, finished;
+
+	/*
+	 * The other threads could be in an arbitrary state at this point, i.e.
+	 * they could be starting up, shutting down etc. This means that there could be
+	 * threads which are not even in the threads hash table yet.
+	 */
 
 	/* 
-	 * Make a copy of the hashtable since we can't do anything with
-	 * threads while threads_mutex is held.
+	 * First we set a barrier which will be checked by all threads before they
+	 * are added to the threads hash table, and they will exit if the flag is set.
+	 * This ensures that no threads could be added to the hash later.
+	 * We will use shutting_down as the barrier for now.
 	 */
-	mono_threads_lock ();
-	mono_g_hash_table_foreach (threads, collect_threads, wait);
-	mono_threads_unlock ();
+	g_assert (shutting_down);
 
-	events = g_new0 (gpointer, wait->num);
-	waitnum = 0;
-	/* Get the suspended events that we'll be waiting for */
-	for (i = 0; i < wait->num; ++i) {
-		MonoThread *thread = wait->threads [i];
+	/*
+	 * We make multiple calls to WaitForMultipleObjects since:
+	 * - we can only wait for MAXIMUM_WAIT_OBJECTS threads
+	 * - some threads could exit without becoming suspended
+	 */
+	finished = FALSE;
+	while (!finished) {
+		/*
+		 * Make a copy of the hashtable since we can't do anything with
+		 * threads while threads_mutex is held.
+		 */
+		wait->num = 0;
+		mono_threads_lock ();
+		mono_g_hash_table_foreach (threads, collect_threads_for_suspend, wait);
+		mono_threads_unlock ();
 
-		if ((thread->tid == self) || mono_gc_is_finalizer_thread (thread)) {
-			//CloseHandle (wait->handles [i]);
-			wait->threads [i] = NULL; /* ignore this thread in next loop */
-			continue;
-		}
+		events = g_new0 (gpointer, wait->num);
+		eventidx = 0;
+		/* Get the suspended events that we'll be waiting for */
+		for (i = 0; i < wait->num; ++i) {
+			MonoThread *thread = wait->threads [i];
 
-		ensure_synch_cs_set (thread);
-		
-		EnterCriticalSection (thread->synch_cs);
-
-		if ((thread->state & ThreadState_Suspended) != 0 || 
-			(thread->state & ThreadState_SuspendRequested) != 0 ||
-			(thread->state & ThreadState_StopRequested) != 0 ||
-			(thread->state & ThreadState_Stopped) != 0) {
-			LeaveCriticalSection (thread->synch_cs);
-			CloseHandle (wait->handles [i]);
-			wait->threads [i] = NULL; /* ignore this thread in next loop */
-			continue;
-		}
-
-		/* Convert abort requests into suspend requests */
-		if ((thread->state & ThreadState_AbortRequested) != 0)
-			thread->state &= ~ThreadState_AbortRequested;
-			
-		thread->state |= ThreadState_SuspendRequested;
-
-		if (thread->suspended_event == NULL) {
-			thread->suspended_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-			if (thread->suspended_event == NULL) {
-				/* Forget this one and go on to the next */
-				LeaveCriticalSection (thread->synch_cs);
+			if ((thread->tid == self) || mono_gc_is_finalizer_thread (thread)) {
+				//CloseHandle (wait->handles [i]);
+				wait->threads [i] = NULL; /* ignore this thread in next loop */
 				continue;
 			}
+
+			ensure_synch_cs_set (thread);
+		
+			EnterCriticalSection (thread->synch_cs);
+
+			if ((thread->state & ThreadState_Suspended) != 0 || 
+				(thread->state & ThreadState_SuspendRequested) != 0 ||
+				(thread->state & ThreadState_StopRequested) != 0 ||
+				(thread->state & ThreadState_Stopped) != 0) {
+				LeaveCriticalSection (thread->synch_cs);
+				CloseHandle (wait->handles [i]);
+				wait->threads [i] = NULL; /* ignore this thread in next loop */
+				continue;
+			}
+
+			/* Convert abort requests into suspend requests */
+			if ((thread->state & ThreadState_AbortRequested) != 0)
+				thread->state &= ~ThreadState_AbortRequested;
+			
+			thread->state |= ThreadState_SuspendRequested;
+
+			if (thread->suspended_event == NULL) {
+				thread->suspended_event = CreateEvent (NULL, TRUE, FALSE, NULL);
+				if (thread->suspended_event == NULL) {
+					/* Forget this one and go on to the next */
+					LeaveCriticalSection (thread->synch_cs);
+					continue;
+				}
+			}
+
+			events [eventidx++] = thread->suspended_event;
+			LeaveCriticalSection (thread->synch_cs);
+
+			/* Signal the thread to suspend */
+			signal_thread_state_change (thread);
 		}
 
-		events [eventidx++] = thread->suspended_event;
-		LeaveCriticalSection (thread->synch_cs);
+		if (eventidx > 0) {
+			WaitForMultipleObjectsEx (eventidx, events, TRUE, 100, FALSE);
+			for (i = 0; i < wait->num; ++i) {
+				MonoThread *thread = wait->threads [i];
 
-		/* Signal the thread to suspend */
-		signal_thread_state_change (thread);
+				if (thread == NULL)
+					continue;
+			
+				EnterCriticalSection (thread->synch_cs);
+				if ((thread->state & ThreadState_Suspended) != 0) {
+					CloseHandle (thread->suspended_event);
+					thread->suspended_event = NULL;
+				}
+				LeaveCriticalSection (thread->synch_cs);
+			}
+		} else {
+			/* 
+			 * If there are threads which are starting up, we wait until they
+			 * are suspended when they try to register in the threads hash.
+			 * This is guaranteed to finish, since the threads which can create new
+			 * threads get suspended after a while.
+			 * FIXME: The finalizer thread can still create new threads.
+			 */
+			mono_threads_lock ();
+			starting = mono_g_hash_table_size (threads_starting_up) > 0;
+			mono_threads_unlock ();
+			if (starting)
+				Sleep (100);
+			else
+				finished = TRUE;
+		}
+
+		g_free (events);
 	}
 
-	WaitForMultipleObjectsEx (eventidx, events, TRUE, INFINITE, FALSE);
-	for (i = 0; i < wait->num; ++i) {
-		MonoThread *thread = wait->threads [i];
-
-		if (thread == NULL)
-			continue;
-
-		EnterCriticalSection (thread->synch_cs);
-		CloseHandle (thread->suspended_event);
-		thread->suspended_event = NULL;
-		LeaveCriticalSection (thread->synch_cs);
-	}
-
-	g_free (events);
 	g_free (wait);
+}
+
+static void
+collect_threads (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoThread *thread = (MonoThread*)value;
+	struct wait_data *wait = (struct wait_data*)user_data;
+	HANDLE handle;
+
+	if (wait->num<MAXIMUM_WAIT_OBJECTS) {
+		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
+		if (handle == NULL)
+			return;
+
+		wait->handles [wait->num] = handle;
+		wait->threads [wait->num] = thread;
+		wait->num++;
+	}
 }
 
 /**
@@ -3397,7 +3503,8 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		return NULL;
 	
 	ensure_synch_cs_set (thread);
-	
+
+	/* FIXME: This is NOT signal safe */
 	EnterCriticalSection (thread->synch_cs);
 	
 	if (thread->interruption_requested) {
@@ -3423,6 +3530,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
+		/* FIXME: This is NOT signal-safe, since it allocates memory and uses locking */
 		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
 		return NULL;
 	}
