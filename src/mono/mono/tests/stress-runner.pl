@@ -78,6 +78,14 @@ my %tests = (
 		'args' => [20],
 		'arg-knob' => 0, # loops
 		'ratio' => 20,
+	},
+	# FIXME: This tests exits, so it has no loops, instead it should be run more times
+	'exit-stress' => {
+		'program' => 'exit-stress.exe',
+		# loops,
+		'args' => [10],
+		'arg-knob' => 0, # loops
+		'ratio' => 20,
 	}
 	# FIXME: This test deadlocks, bug 72740.
 	# We need hang detection
@@ -108,7 +116,7 @@ my $test_rx = shift (@ARGV) || '.';
 # the mono runtime to use and the arguments to pass to it
 my @mono_args = @ARGV;
 my @results = ();
-my %vmmap = qw(VmSize 0 VmLck 1 VmRSS 2 VmData 3 VmStk 4 VmExe 5 VmLib 6);
+my %vmmap = qw(VmSize 0 VmLck 1 VmRSS 2 VmData 3 VmStk 4 VmExe 5 VmLib 6 VmHWM 7 VmPTE 8 VmPeak 9);
 my @vmnames = sort {$vmmap{$a} <=> $vmmap{$b}} keys %vmmap;
 # VmRSS depends on the operating system's decisions
 my %vmignore = qw(VmRSS 1);
