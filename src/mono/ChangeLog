@@ -1,3 +1,7 @@
+2008-05-12  Raja R Harinath  <harinath@hurrynot.org>
+
+	* scripts/mono-service.in: Undo 2008-05-08.  '2>&1' is not a bash-ism.
+
 2008-05-09  Zoltan Varga  <zovarga@debian.chello.hu>
 
 	* Makefile.am (get-monolite-latest): Create mcs/lib if not existing.
