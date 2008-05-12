@@ -2525,12 +2525,6 @@ remove_and_abort_threads (gpointer key, gpointer value, gpointer user)
 		handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
 		if (handle == NULL)
 			return FALSE;
-		
-		if(thread->state & ThreadState_AbortRequested ||
-		   thread->state & ThreadState_Aborted) {
-			THREAD_DEBUG (g_message ("%s: Thread id %"G_GSIZE_FORMAT" already aborting", __func__, (gsize)thread->tid));
-			return(TRUE);
-		}
 
 		/* printf ("A: %d\n", wait->num); */
 		wait->handles[wait->num]=thread->handle;
