@@ -538,8 +538,10 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				break;
 			case MONO_TABLE_EVENT:
 				g_assert (i == 2);
-				field_size = MAX (idx_size (MONO_TABLE_TYPEDEF), idx_size(MONO_TABLE_TYPEREF));
-				field_size = MAX (field_size, idx_size(MONO_TABLE_TYPESPEC));
+				n = MAX (meta->tables [MONO_TABLE_TYPEDEF].rows, meta->tables [MONO_TABLE_TYPEREF].rows);
+				n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
+				/*This is a coded token for 3 tables, so takes 2 bits */
+				field_size = rtsize (n, 16 - MONO_TYPEDEFORREF_BITS);
 				break;
 			case MONO_TABLE_EVENT_POINTER:
 				g_assert (i == 0);
@@ -596,9 +598,11 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				break;
 			case MONO_TABLE_GENERICPARAM:
 				g_assert (i == 2 || i == 4 || i == 5);
-				if (i == 2)
-					field_size = MAX (idx_size (MONO_TABLE_METHOD), idx_size (MONO_TABLE_TYPEDEF));
-				else if (i == 4)
+				if (i == 2) {
+					n = MAX (meta->tables [MONO_TABLE_METHOD].rows, meta->tables [MONO_TABLE_TYPEDEF].rows);
+					/*This is a coded token for 2 tables, so takes 1 bit */
+					field_size = rtsize (n, 16 - MONO_TYPEORMETHOD_BITS);
+				} else if (i == 4)
 					field_size = idx_size (MONO_TABLE_TYPEDEF);
 				else if (i == 5)
 					field_size = idx_size (MONO_TABLE_TYPEDEF);
