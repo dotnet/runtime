@@ -641,6 +641,8 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	MonoGenericContext tmp_context;
 	gboolean is_mb_open = FALSE;
 
+	if (!context)
+		return method;
 	/* The `method' has already been instantiated before => we need to peel out the instantiation and create a new context */
 	while (method->is_inflated) {
 		MonoGenericContext *method_context = mono_method_get_context (method);
@@ -6706,6 +6708,32 @@ is_nesting_type (MonoClass *outer_klass, MonoClass *inner_klass)
 	return FALSE;
 }
 
+static MonoClass *
+mono_class_get_generic_type_definition (MonoClass *klass)
+{
+	return klass->generic_class ? klass->generic_class->container_class : klass;
+}
+
+/*
+ * Check if @klass is a subtype of @parent ignoring generic instantiations.
+ * 
+ * Generic instantiations are ignored for all super types of @klass.
+ * 
+ * Visibility checks ignoring generic instantiations.  
+ */
+static gboolean
+mono_class_has_parent_and_ignore_generics (MonoClass *klass, MonoClass *parent)
+{
+	int i;
+	klass = mono_class_get_generic_type_definition (klass);
+	parent = mono_class_get_generic_type_definition (parent);
+	
+	for (i = 0; i < klass->idepth; ++i) {
+		if (parent == mono_class_get_generic_type_definition (klass->supertypes [i]))
+			return TRUE;
+	}
+	return FALSE;
+}
 /*
  * Subtype can only access parent members with family protection if the site object
  * is subclass of Subtype. For example:
@@ -6724,13 +6752,13 @@ is_nesting_type (MonoClass *outer_klass, MonoClass *inner_klass)
 static gboolean
 is_valid_family_access (MonoClass *access_klass, MonoClass *member_klass, MonoClass *context_klass)
 {
-	if (!mono_class_has_parent (access_klass, member_klass))
+	if (!mono_class_has_parent_and_ignore_generics (access_klass, member_klass))
 		return FALSE;
 
 	if (context_klass == NULL)
 		return TRUE;
 	/*if access_klass is not member_klass context_klass must be type compat*/
-	if (access_klass != member_klass && !mono_class_has_parent (context_klass, access_klass))
+	if (access_klass != member_klass && !mono_class_has_parent_and_ignore_generics (context_klass, access_klass))
 		return FALSE;
 	return TRUE;
 }
@@ -6816,18 +6844,18 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 		return is_nesting_type (member_klass, access_klass);
 
 	case TYPE_ATTRIBUTE_NESTED_FAMILY:
-		return mono_class_has_parent (access_klass, member_klass->nested_in); 
+		return mono_class_has_parent_and_ignore_generics (access_klass, member_klass->nested_in); 
 
 	case TYPE_ATTRIBUTE_NESTED_ASSEMBLY:
 		return can_access_internals (access_klass->image->assembly, member_klass->image->assembly);
 
 	case TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM:
 		return can_access_internals (access_klass->image->assembly, member_klass->nested_in->image->assembly) &&
-			mono_class_has_parent (access_klass, member_klass->nested_in);
+			mono_class_has_parent_and_ignore_generics (access_klass, member_klass->nested_in);
 
 	case TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM:
 		return can_access_internals (access_klass->image->assembly, member_klass->nested_in->image->assembly) ||
-			mono_class_has_parent (access_klass, member_klass->nested_in);
+			mono_class_has_parent_and_ignore_generics (access_klass, member_klass->nested_in);
 	}
 	return FALSE;
 }
