@@ -1220,7 +1220,7 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		values [MONO_CUSTOM_ATTR_PARENT] = idx;
-		token = mono_image_create_token (assembly, (MonoObject*)cattr->ctor, FALSE);
+		token = mono_image_create_token (assembly, (MonoObject*)cattr->ctor, FALSE, FALSE);
 		type = mono_metadata_token_index (token);
 		type <<= MONO_CUSTOM_ATTR_TYPE_BITS;
 		switch (mono_metadata_token_table (token)) {
@@ -1488,7 +1488,7 @@ mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuild
 	values [MONO_METHODIMPL_CLASS] = tb->table_idx;
 	values [MONO_METHODIMPL_BODY] = MONO_METHODDEFORREF_METHODDEF | (mb->table_idx << MONO_METHODDEFORREF_BITS);
 
-	tok = mono_image_create_token (assembly, (MonoObject*)mb->override_method, FALSE);
+	tok = mono_image_create_token (assembly, (MonoObject*)mb->override_method, FALSE, FALSE);
 	switch (mono_metadata_token_table (tok)) {
 	case MONO_TABLE_MEMBERREF:
 		tok = (mono_metadata_token_index (tok) << MONO_METHODDEFORREF_BITS ) | MONO_METHODDEFORREF_METHODREF;
@@ -4268,7 +4268,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 
 		sig = method_builder_encode_signature (assembly, &rmb);
 
-		parent = mono_image_create_token (assembly, obj, TRUE);
+		parent = mono_image_create_token (assembly, obj, TRUE, TRUE);
 		g_assert (mono_metadata_token_table (parent) == MONO_TABLE_METHOD);
 
 		parent = mono_metadata_token_index (parent) << MONO_MEMBERREF_PARENT_BITS;
@@ -4287,27 +4287,16 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
  * mono_image_create_token:
  * @assembly: a dynamic assembly
  * @obj:
+ * @register_token: Whenever to register the token in the assembly->tokens hash. 
  *
  * Get a token to insert in the IL code stream for the given MemberInfo.
- * @obj can be one of:
- * 	ConstructorBuilder
- *      EnumBuilder
- * 	FieldBuilder
- *      GenericTypeParameterBuilder
- * 	MethodBuilder
- *      MonoArrayMethod
- * 	MonoCMethod
- * 	MonoMethod
- * 	MonoField
- *      MonoGenericClass
- *      MonoGenericMethod
- *      MonoGenericCMethod
- * 	MonoType
- *      SignatureHelper
- * 	TypeBuilder
+ * The metadata emission routines need to pass FALSE as REGISTER_TOKEN, since by that time, 
+ * the table_idx-es were recomputed, so registering the token would overwrite an existing 
+ * entry.
  */
 guint32
-mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean create_methodspec)
+mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, 
+						 gboolean create_methodspec, gboolean register_token)
 {
 	MonoClass *klass;
 	guint32 token = 0;
@@ -4420,7 +4409,8 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 		g_error ("requested token for %s\n", klass->name);
 	}
 
-	mono_image_register_token (assembly, token, obj);
+	if (register_token)
+		mono_image_register_token (assembly, token, obj);
 
 	return token;
 }
@@ -4428,12 +4418,19 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 /*
  * mono_image_register_token:
  *
- *   Register the TOKEN->OBJ mapping in the mapping table in ASSEMBLY.
+ *   Register the TOKEN->OBJ mapping in the mapping table in ASSEMBLY. This is required for
+ * the Module.ResolveXXXToken () methods to work.
  */
 void
 mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
 {
-	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
+	MonoObject *prev = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
+	if (prev) {
+		/* There could be multiple MethodInfo objects with the same token */
+		//g_assert (prev == obj);
+	} else {
+		mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
+	}
 }
 
 typedef struct {
@@ -6872,7 +6869,7 @@ mono_reflection_get_token (MonoObject *obj)
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)obj;
 
 		/* Call mono_image_create_token so the object gets added to the tokens hash table */
-		token = mono_image_create_token (((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image, obj, FALSE);
+		token = mono_image_create_token (((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image, obj, FALSE, TRUE);
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)obj;
 		token = tb->table_idx | MONO_TOKEN_TYPE_DEF;

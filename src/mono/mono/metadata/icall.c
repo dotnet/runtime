@@ -1019,7 +1019,7 @@ ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilder *mb, MonoObject *o
 	
 	MONO_CHECK_ARG_NULL (obj);
 	
-	return mono_image_create_token (mb->dynamic_image, obj, TRUE);
+	return mono_image_create_token (mb->dynamic_image, obj, TRUE, TRUE);
 }
 
 static gint32
