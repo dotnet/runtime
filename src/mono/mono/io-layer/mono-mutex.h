@@ -24,11 +24,6 @@
 #ifndef __MONO_MUTEX_H__
 #define __MONO_MUTEX_H__
 
-#ifdef __cplusplus
-extern "C" {
-#pragma }
-#endif /* __cplusplus */
-
 #include <glib.h>
 #include <pthread.h>
 #include <time.h>
@@ -170,8 +165,6 @@ static inline int mono_mutex_unlock_in_cleanup (mono_mutex_t *mutex)
 	return(mono_mutex_unlock (mutex));
 }
 
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
+G_END_DECLS
 
 #endif /* __MONO_MUTEX_H__ */
