@@ -226,7 +226,7 @@ STDAPI _CorValidateImage(PVOID *ImageBase, LPCWSTR FileName)
 	IMAGE_DOS_HEADER* DosHeader;
 	IMAGE_NT_HEADERS* NtHeaders;
 	DWORD* Address;
-	DWORD dwOldProtect;
+	DWORD OldProtect;
 
 	DosHeader = (IMAGE_DOS_HEADER*)*ImageBase;
 	if (DosHeader->e_magic != IMAGE_DOS_SIGNATURE)
@@ -240,13 +240,13 @@ STDAPI _CorValidateImage(PVOID *ImageBase, LPCWSTR FileName)
 		return STATUS_INVALID_IMAGE_FORMAT;
 
 	Address = &NtHeaders->OptionalHeader.AddressOfEntryPoint;
-	if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect))
+	if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &OldProtect))
 		return E_UNEXPECTED;
 	if (NtHeaders->FileHeader.Characteristics & IMAGE_FILE_DLL)
 		*Address = (DWORD)((DWORD_PTR)&_CorDllMain - (DWORD_PTR)DosHeader);
 	else
 		*Address = (DWORD)((DWORD_PTR)&_CorExeMain - (DWORD_PTR)DosHeader);
-	if (!VirtualProtect(Address, sizeof(DWORD), dwOldProtect, &dwOldProtect))
+	if (!VirtualProtect(Address, sizeof(DWORD), OldProtect, &OldProtect))
 		return E_UNEXPECTED;
 
 	return STATUS_SUCCESS;
@@ -302,7 +302,7 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 	WORD* NameOrdinals;
 	EXPORT_FIXUP* ExportFixup;
 	DWORD* Address;
-	DWORD dwOldProtect;
+	DWORD OldProtect;
 	DWORD ProcRVA;
 	DWORD i;
 
@@ -343,10 +343,10 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 			Address = &Functions[NameOrdinals[i]];
 			ProcRVA = (DWORD)(ExportFixup->ProcAddress - (DWORD_PTR)DosHeader);
 			if (*Address != ProcRVA) {
-				if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect))
+				if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &OldProtect))
 					return E_UNEXPECTED;
 				*Address = ProcRVA;
-				if (!VirtualProtect(Address, sizeof(DWORD), dwOldProtect, &dwOldProtect))
+				if (!VirtualProtect(Address, sizeof(DWORD), OldProtect, &OldProtect))
 					return E_UNEXPECTED;
 			}
 			ExportFixup++;
@@ -363,7 +363,7 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 	IMAGE_DOS_HEADER* DosHeader;
 	IMAGE_NT_HEADERS* NtHeaders;
 	DWORD_PTR* Address;
-	DWORD dwOldProtect;
+	DWORD OldProtect;
 	DWORD_PTR BaseDiff;
 
 	DosHeader = (IMAGE_DOS_HEADER*)ModuleHandle;
@@ -401,10 +401,10 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 			return E_FAIL;
 
 		Address = &NtHeaders->OptionalHeader.ImageBase;
-		if (!VirtualProtect(Address, sizeof(DWORD_PTR), PAGE_READWRITE, &dwOldProtect))
+		if (!VirtualProtect(Address, sizeof(DWORD_PTR), PAGE_READWRITE, &OldProtect))
 			return E_UNEXPECTED;
 		*Address = (DWORD_PTR)DosHeader;
-		if (!VirtualProtect(Address, sizeof(DWORD_PTR), dwOldProtect, &dwOldProtect))
+		if (!VirtualProtect(Address, sizeof(DWORD_PTR), OldProtect, &OldProtect))
 			return E_UNEXPECTED;
 
 		if (NtHeaders->OptionalHeader.NumberOfRvaAndSizes > IMAGE_DIRECTORY_ENTRY_BASERELOC)
@@ -450,10 +450,10 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 #else
 							case IMAGE_REL_BASED_HIGHLOW:
 #endif
-								if (!VirtualProtect(RelocFixup, sizeof(DWORD_PTR), PAGE_EXECUTE_READWRITE, &dwOldProtect))
+								if (!VirtualProtect(RelocFixup, sizeof(DWORD_PTR), PAGE_EXECUTE_READWRITE, &OldProtect))
 									return E_UNEXPECTED;
 								*RelocFixup += BaseDiff;
-								if (!VirtualProtect(RelocFixup, sizeof(DWORD_PTR), dwOldProtect, &dwOldProtect))
+								if (!VirtualProtect(RelocFixup, sizeof(DWORD_PTR), OldProtect, &OldProtect))
 									return E_UNEXPECTED;
 								break;
 
@@ -500,10 +500,10 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 					if (ProcAddress == 0)
 						return E_FAIL;
 					Address = (DWORD_PTR*)((DWORD_PTR)ImportThunkData - ImportDesc->OriginalFirstThunk + ImportDesc->FirstThunk);
-					if (!VirtualProtect(Address, sizeof(DWORD_PTR), PAGE_READWRITE, &dwOldProtect))
+					if (!VirtualProtect(Address, sizeof(DWORD_PTR), PAGE_READWRITE, &OldProtect))
 						return E_UNEXPECTED;
 					*Address = ProcAddress;
-					if (!VirtualProtect(Address, sizeof(DWORD_PTR), dwOldProtect, &dwOldProtect))
+					if (!VirtualProtect(Address, sizeof(DWORD_PTR), OldProtect, &OldProtect))
 						return E_UNEXPECTED;
 					ImportThunkData++;
 				}
