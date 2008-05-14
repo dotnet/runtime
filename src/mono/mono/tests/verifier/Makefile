@@ -5,10 +5,14 @@
 BatchCompiler.exe: BatchCompiler.cs
 	gmcs -r:../../../../mcs/class/lib/net_2_0/ilasm.exe BatchCompiler.cs
 
-compile-stamp: generate-stamp BatchCompiler.exe
+test_lib.dll: test_lib.cs
+	gmcs test_lib.cs -target:library
+
+compile-stamp: generate-stamp BatchCompiler.exe test_lib.dll
 	for i in *.cs; do \
 		EXE="`echo $$i | cut -d. -f1`.exe"; \
-		if ! [ -f $$EXE ]; then \
+		DLL="`echo $$i | cut -d. -f1`.dll"; \
+		if ! [ -f $$EXE ] && ! [ -f $$DLL ] then \
 			gmcs /unsafe $$i; \
 		fi \
 	done 
