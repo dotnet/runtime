@@ -31,5 +31,5 @@ int main (array<String^>^ args)
 	pin_ptr<const wchar_t> str = PtrToStringChars (L"WriteStringUnmanaged" + Environment::NewLine);
 	WriteStringUnmanaged (str);
 	WriteStringWrapper (L"WriteStringManaged");
-    return 0;
+	return 0;
 }

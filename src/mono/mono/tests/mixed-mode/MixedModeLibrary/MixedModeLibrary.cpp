@@ -8,7 +8,7 @@ using namespace System::Runtime::InteropServices;
 
 void WriteStringManaged (const wchar_t* str)
 {
-		Console::WriteLine (Marshal::PtrToStringUni ((IntPtr) (void*) str));
+	Console::WriteLine (Marshal::PtrToStringUni ((IntPtr) (void*) str));
 }
 
 #pragma managed(push, off)

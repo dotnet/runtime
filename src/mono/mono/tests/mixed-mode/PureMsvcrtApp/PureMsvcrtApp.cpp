@@ -10,8 +10,8 @@ void WriteStringManaged (const wchar_t* str)
 
 int main (array<System::String^> ^args)
 {
-    Console::WriteLine (L"Pure MSVCRT console application");
+	Console::WriteLine (L"Pure MSVCRT console application");
 	pin_ptr<const wchar_t> str = PtrToStringChars (L"WriteStringManaged");
 	WriteStringManaged (str);
-    return 0;
+	return 0;
 }
