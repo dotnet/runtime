@@ -3116,7 +3116,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 		if (!stack_slot_is_null_literal (obj) && !verify_stack_type_compatibility_full (ctx, &field->parent->byval_arg, obj, FALSE, TRUE))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
-		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, obj->type->data.klass))
+		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, mono_class_from_mono_type (obj->type)))
 			CODE_NOT_VERIFIABLE2 (ctx, g_strdup_printf ("Type at stack is not accessible at 0x%04x", ctx->ip_offset), MONO_EXCEPTION_FIELD_ACCESS);
 	} 
 
