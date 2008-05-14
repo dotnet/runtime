@@ -2212,6 +2212,7 @@ data/mint.pc
 data/mono.pc
 data/mono-cairo.pc
 data/dotnet.pc
+data/dotnet35.pc
 data/cecil.pc
 data/smcs.pc
 samples/Makefile
