@@ -39,6 +39,9 @@ mono_path_canonicalize (const char *path)
 		g_free (tmpdir);
 	}
 
+#ifdef PLATFORM_WIN32
+	g_strdelimit (abspath, "/", '\\');
+#endif
 	abspath = g_strreverse (abspath);
 
 	backc = 0;

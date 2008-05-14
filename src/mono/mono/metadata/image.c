@@ -24,6 +24,7 @@
 #include "metadata-internals.h"
 #include "profiler-private.h"
 #include "loader.h"
+#include "marshal.h"
 #include "coree.h"
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-logger.h>
@@ -1078,11 +1079,10 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 #ifdef PLATFORM_WIN32
 /* fname is not duplicated. */
 MonoImage*
-mono_image_open_from_module_handle (HMODULE module_handle, const char* fname, MonoImageOpenStatus* status)
+mono_image_open_from_module_handle (HMODULE module_handle, char* fname, int ref_count, MonoImageOpenStatus* status)
 {
 	MonoImage* image;
 	MonoCLIImageInfo* iinfo;
-	guint16* fname_utf16;
 
 	image = g_new0 (MonoImage, 1);
 	image->raw_data = (char*) module_handle;
@@ -1090,10 +1090,10 @@ mono_image_open_from_module_handle (HMODULE module_handle, const char* fname, Mo
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->name = fname;
-	image->ref_count = 1;
+	image->ref_count = ref_count;
 
 	image = do_mono_image_load (image, status, TRUE);
-	image = register_image (image);
+	return register_image (image);
 }
 #endif
 
@@ -1111,42 +1111,66 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	if (!refonly && coree_module_handle) {
 		HMODULE module_handle;
 		guint16 *fname_utf16;
+		DWORD last_error;
 
 		absfname = mono_path_resolve_symlinks (fname);
+		fname_utf16 = NULL;
 
 		/* There is little overhead because the OS loader lock is held by LoadLibrary. */
 		mono_images_lock ();
 		image = g_hash_table_lookup (loaded_images_hash, absfname);
 		if (image) {
+			g_assert (image->is_module_handle);
+			if (image->ref_count == 0) {
+				MonoCLIImageInfo *iinfo = image->image_info;
+
+				if (iinfo->cli_header.coff.coff_attributes & COFF_ATTRIBUTE_LIBRARY_IMAGE) {
+					/* Increment reference count on images loaded outside of the runtime. */
+					fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
+					module_handle = LoadLibrary (fname_utf16);
+					g_assert (module_handle != NULL);
+				}
+			}
 			mono_image_addref (image);
 			mono_images_unlock ();
+			if (fname_utf16)
+				g_free (fname_utf16);
 			g_free (absfname);
 			return image;
 		}
 
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
 		module_handle = LoadLibrary (fname_utf16);
+		if (status && module_handle == NULL)
+			last_error = GetLastError ();
 
 		/* mono_image_open_from_module_handle is called by _CorDllMain. */
 		image = g_hash_table_lookup (loaded_images_hash, absfname);
+		if (image)
+			mono_image_addref (image);
 		mono_images_unlock ();
 
 		g_free (fname_utf16);
 
+		if (module_handle == NULL) {
+			g_assert (!image);
+			g_free (absfname);
+			if (status) {
+				if (last_error == ERROR_BAD_EXE_FORMAT || last_error == STATUS_INVALID_IMAGE_FORMAT)
+					*status = MONO_IMAGE_IMAGE_INVALID;
+				else
+					*status = MONO_IMAGE_ERROR_ERRNO;
+			}
+			return NULL;
+		}
+
 		if (image) {
-			/* No mono_image_addref required. */;
+			g_assert (image->is_module_handle);
 			g_free (absfname);
 			return image;
 		}
 
-		if (module_handle == NULL) {
-			g_free (absfname);
-			if (status)
-				*status = MONO_IMAGE_ERROR_ERRNO;
-			return NULL;
-		}
-
-		return mono_image_open_from_module_handle (module_handle, absfname, status);
+		return mono_image_open_from_module_handle (module_handle, absfname, 1, status);
 	}
 #endif
 
@@ -1332,6 +1356,23 @@ mono_image_close (MonoImage *image)
 	if (InterlockedDecrement (&image->ref_count) > 0)
 		return;
 
+#ifdef PLATFORM_WIN32
+	if (image->is_module_handle) {
+		MonoCLIImageInfo *iinfo = image->image_info;
+
+		if (iinfo->cli_header.coff.coff_attributes & COFF_ATTRIBUTE_LIBRARY_IMAGE) {
+			mono_images_lock ();
+			if (image->ref_count == 0) {
+				/* Image will be closed by _CorDllMain. */
+				FreeLibrary ((HMODULE) image->raw_data);
+				mono_images_unlock ();
+				return;
+			}
+			mono_images_unlock ();
+		}
+	}
+#endif
+
 	mono_profiler_module_event (image, MONO_PROFILE_START_UNLOAD);
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
@@ -1365,12 +1406,16 @@ mono_image_close (MonoImage *image)
 	if (image->assembly_name && (g_hash_table_lookup (loaded_images, image->assembly_name) == image))
 		g_hash_table_remove (loaded_images, (char *) image->assembly_name);	
 
-	mono_images_unlock ();
-
 #ifdef PLATFORM_WIN32
-	if (image->is_module_handle)
-		FreeLibrary ((HMODULE) image->raw_data);
+	if (image->is_module_handle) {
+		MonoCLIImageInfo *iinfo = image->image_info;
+
+		if (!(iinfo->cli_header.coff.coff_attributes & COFF_ATTRIBUTE_LIBRARY_IMAGE))
+			FreeLibrary ((HMODULE) image->raw_data);
+	}
 #endif
+
+	mono_images_unlock ();
 
 	if (image->raw_buffer_used) {
 		if (image->raw_data != NULL)

@@ -11,12 +11,21 @@
 
 #ifdef PLATFORM_WIN32
 
+#if _WIN32_WINNT < 0x0501
+/* Required for ACTCTX. */
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0501
+#endif /* _WIN32_WINNT < 0x0501 */
+
 #include <string.h>
 #include <glib.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/utils/mono-path.h>
+#include "cil-coff.h"
 #include "metadata-internals.h"
 #include "image.h"
 #include "assembly.h"
+#include "domain-internals.h"
 #include "appdomain.h"
 #include "object.h"
 #include "loader.h"
@@ -24,17 +33,10 @@
 #include "environment.h"
 #include "coree.h"
 
-#define STATUS_SUCCESS 0x00000000L
-#define STATUS_INVALID_IMAGE_FORMAT 0xC000007BL
-
-typedef struct _EXPORT_FIXUP
-{
-	LPCSTR Name;
-	DWORD_PTR ProcAddress;
-} EXPORT_FIXUP;
-
 HMODULE mono_module_handle = NULL;
 HMODULE coree_module_handle = NULL;
+
+static gboolean init_from_coree = FALSE;
 
 gchar*
 mono_get_module_file_name (HMODULE module_handle)
@@ -84,8 +86,9 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		file_name = mono_get_module_file_name (hInst);
 
 		if (mono_get_root_domain ()) {
-			image = mono_image_open_from_module_handle (hInst, mono_path_resolve_symlinks (file_name), NULL);
+			image = mono_image_open_from_module_handle (hInst, mono_path_resolve_symlinks (file_name), 0, NULL);
 		} else {
+			init_from_coree = TRUE;
 			mono_runtime_load (file_name, NULL);
 			error = (gchar*) mono_check_corlib_version ();
 			if (error) {
@@ -96,6 +99,10 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			}
 
 			image = mono_image_open (file_name, NULL);
+			mono_close_exe_image ();
+			if (image)
+				/* Decrement reference count to zero. (Image will not be closed.) */
+				mono_image_close (image);
 		}
 
 		if (!image) {
@@ -108,8 +115,19 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		 * loader trampolines should be used and assembly loading should
 		 * probably be delayed until the first call to an exported function.
 		 */
-		if (image->tables [MONO_TABLE_ASSEMBLY].rows)
+		if (image->tables [MONO_TABLE_ASSEMBLY].rows && ((MonoCLIImageInfo*) image->image_info)->cli_cli_header.ch_vtable_fixups.rva)
 			assembly = mono_assembly_open (file_name, NULL);
+
+		g_free (file_name);
+		break;
+	case DLL_PROCESS_DETACH:
+		if (lpReserved != NULL)
+			/* The process is terminating. */
+			return TRUE;
+		file_name = mono_get_module_file_name (hInst);
+		image = mono_image_loaded (file_name);
+		if (image)
+			mono_image_close (image);
 
 		g_free (file_name);
 		break;
@@ -119,7 +137,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 }
 
 /* Called by ntdll.dll reagardless of entry point after _CorValidateImage. */
-__int32 STDMETHODCALLTYPE _CorExeMain()
+__int32 STDMETHODCALLTYPE _CorExeMain(void)
 {
 	MonoDomain* domain;
 	MonoAssembly* assembly;
@@ -134,6 +152,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain()
 	int i;
 
 	file_name = mono_get_module_file_name (GetModuleHandle (NULL));
+	init_from_coree = TRUE;
 	domain = mono_runtime_load (file_name, NULL);
 
 	error = (gchar*) mono_check_corlib_version ();
@@ -146,6 +165,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain()
 	}
 
 	assembly = mono_assembly_open (file_name, NULL);
+	mono_close_exe_image ();
 	if (!assembly) {
 		g_free (file_name);
 		MessageBox (NULL, L"Cannot open assembly.", NULL, MB_ICONERROR);
@@ -189,11 +209,14 @@ __int32 STDMETHODCALLTYPE _CorExeMain()
 /* Called by msvcrt.dll when shutting down. */
 void STDMETHODCALLTYPE CorExitProcess(int exitCode)
 {
-	if (!mono_runtime_is_shutting_down ()) {
+	/* FIXME: This is not currently supported by the runtime. */
+#if 0
+	if (mono_get_root_domain () && !mono_runtime_is_shutting_down ()) {
 		mono_runtime_set_shutting_down ();
 		mono_thread_suspend_all_other_threads ();
 		mono_runtime_quit ();
 	}
+#endif
 	ExitProcess (exitCode);
 }
 
@@ -235,11 +258,33 @@ STDAPI_(VOID) _CorImageUnloading(PVOID ImageBase)
 	/* Nothing to do. */
 }
 
+STDAPI CorBindToRuntimeEx(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, DWORD startupFlags, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv)
+{
+	if (ppv == NULL)
+		return E_POINTER;
+
+	*ppv = NULL;
+	return E_NOTIMPL;
+}
+
+STDAPI CorBindToRuntime(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv)
+{
+	return CorBindToRuntimeEx (pwszVersion, pwszBuildFlavor, 0, rclsid, riid, ppv);
+}
+
 /* Fixup exported functions of mscoree.dll to our implementations. */
 STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 {
+	typedef struct _EXPORT_FIXUP
+	{
+		LPCSTR Name;
+		DWORD_PTR ProcAddress;
+	} EXPORT_FIXUP;
+
 	/* Has to be binary ordered. */
 	const EXPORT_FIXUP ExportFixups[] = {
+		{"CorBindToRuntime", (DWORD_PTR)&CorBindToRuntime},
+		{"CorBindToRuntimeEx", (DWORD_PTR)&CorBindToRuntimeEx},
 		{"CorExitProcess", (DWORD_PTR)&CorExitProcess},
 		{"_CorDllMain", (DWORD_PTR)&_CorDllMain},
 		{"_CorExeMain", (DWORD_PTR)&_CorExeMain},
@@ -258,11 +303,14 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 	EXPORT_FIXUP* ExportFixup;
 	DWORD* Address;
 	DWORD dwOldProtect;
-	DWORD_PTR ProcAddress;
+	DWORD ProcRVA;
 	DWORD i;
 
 	DosHeader = (IMAGE_DOS_HEADER*)ModuleHandle;
-	if (DosHeader == NULL || DosHeader->e_magic != IMAGE_DOS_SIGNATURE)
+	if (DosHeader == NULL)
+		return E_POINTER;
+
+	if (DosHeader->e_magic != IMAGE_DOS_SIGNATURE)
 		return E_INVALIDARG;
 
 	NtHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)DosHeader + DosHeader->e_lfanew);
@@ -293,11 +341,11 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 		if (cmp == 0)
 		{
 			Address = &Functions[NameOrdinals[i]];
-			ProcAddress = (DWORD_PTR)DosHeader + *Address;
-			if (ProcAddress != ExportFixup->ProcAddress) {
+			ProcRVA = (DWORD)(ExportFixup->ProcAddress - (DWORD_PTR)DosHeader);
+			if (*Address != ProcRVA) {
 				if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect))
 					return E_UNEXPECTED;
-				*Address = (DWORD)(ExportFixup->ProcAddress - (DWORD_PTR)DosHeader);
+				*Address = ProcRVA;
 				if (!VirtualProtect(Address, sizeof(DWORD), dwOldProtect, &dwOldProtect))
 					return E_UNEXPECTED;
 			}
@@ -331,6 +379,20 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 
 	if (NtHeaders->FileHeader.Characteristics & IMAGE_FILE_DLL)
 		return S_OK;
+
+	if (NtHeaders->OptionalHeader.NumberOfRvaAndSizes > IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR)
+	{
+		IMAGE_DATA_DIRECTORY* CliHeaderDir;
+		MonoCLIHeader* CliHeader;
+
+		CliHeaderDir = &NtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+		if (CliHeaderDir->VirtualAddress && CliHeaderDir->Size)
+		{
+			CliHeader = (MonoCLIHeader*)((DWORD_PTR)DosHeader + CliHeaderDir->VirtualAddress);
+			if (CliHeader->ch_flags & CLI_FLAGS_ILONLY)
+				return S_OK;
+		}
+	}
 
 	BaseDiff = (DWORD_PTR)DosHeader - NtHeaders->OptionalHeader.ImageBase;
 	if (BaseDiff != 0)
@@ -454,8 +516,69 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 	return S_OK;
 }
 
+static void
+mono_set_act_ctx (const char* file_name)
+{
+	typedef HANDLE (WINAPI* CREATEACTCTXW_PROC) (PCACTCTXW pActCtx);
+	typedef BOOL (WINAPI* ACTIVATEACTCTX_PROC) (HANDLE hActCtx, ULONG_PTR* lpCookie);
+
+	HMODULE kernel32_handle;
+	CREATEACTCTXW_PROC CreateActCtx_proc;
+	ACTIVATEACTCTX_PROC ActivateActCtx_proc;
+	gchar* full_path;
+	gunichar2* full_path_utf16;
+	gchar* dir_name;
+	gunichar2* dir_name_utf16;
+	gchar* base_name;
+	gunichar2* base_name_utf16;
+	ACTCTX act_ctx;
+	HANDLE handle;
+	ULONG_PTR cookie;
+
+	kernel32_handle = GetModuleHandle (L"kernel32.dll");
+	if (!kernel32_handle)
+		return;
+	CreateActCtx_proc = (CREATEACTCTXW_PROC) GetProcAddress (kernel32_handle, "CreateActCtxW");
+	if (!CreateActCtx_proc)
+		return;
+	ActivateActCtx_proc = (ACTIVATEACTCTX_PROC) GetProcAddress (kernel32_handle, "ActivateActCtx");
+	if (!ActivateActCtx_proc)
+		return;
+
+	full_path = mono_path_canonicalize (file_name);
+	full_path_utf16 = g_utf8_to_utf16 (full_path, -1, NULL, NULL, NULL);
+	dir_name = g_path_get_dirname (full_path);
+	dir_name_utf16 = g_utf8_to_utf16 (dir_name, -1, NULL, NULL, NULL);
+	base_name = g_path_get_basename (full_path);
+	base_name_utf16 = g_utf8_to_utf16 (base_name, -1, NULL, NULL, NULL);
+	g_free (base_name);
+	g_free (dir_name);
+	g_free (full_path);
+
+	memset (&act_ctx, 0, sizeof (ACTCTX));
+	act_ctx.cbSize = sizeof (ACTCTX);
+	act_ctx.dwFlags = ACTCTX_FLAG_SET_PROCESS_DEFAULT | ACTCTX_FLAG_ASSEMBLY_DIRECTORY_VALID | ACTCTX_FLAG_RESOURCE_NAME_VALID | ACTCTX_FLAG_APPLICATION_NAME_VALID;
+	act_ctx.lpSource = full_path_utf16;
+	act_ctx.lpAssemblyDirectory = dir_name_utf16;
+	act_ctx.lpResourceName = MAKEINTRESOURCE (CREATEPROCESS_MANIFEST_RESOURCE_ID);
+	act_ctx.lpApplicationName = base_name_utf16;
+
+	handle = CreateActCtx_proc (&act_ctx);
+	if (handle == INVALID_HANDLE_VALUE && GetLastError () == ERROR_SXS_PROCESS_DEFAULT_ALREADY_SET) {
+		act_ctx.dwFlags &= ~ACTCTX_FLAG_SET_PROCESS_DEFAULT;
+		handle = CreateActCtx_proc (&act_ctx);
+	}
+
+	g_free (base_name_utf16);
+	g_free (dir_name_utf16);
+	g_free (full_path_utf16);
+
+	if (handle != INVALID_HANDLE_VALUE)
+		ActivateActCtx_proc (handle, &cookie);
+}
+
 void
-mono_load_coree ()
+mono_load_coree (const char* exe_file_name)
 {
 	gunichar2* file_name;
 	UINT required_size;
@@ -463,6 +586,9 @@ mono_load_coree ()
 
 	if (coree_module_handle)
 		return;
+
+	if (!init_from_coree && exe_file_name)
+		mono_set_act_ctx (exe_file_name);
 
 	/* ntdll.dll loads mscoree.dll from the system32 directory. */
 	required_size = GetSystemDirectory (NULL, 0);
@@ -485,7 +611,7 @@ mono_load_coree ()
 void
 mono_fixup_exe_image (MonoImage* image)
 {
-	if (image && image->is_module_handle && (HMODULE) image->raw_data != GetModuleHandle (NULL))
+	if (!init_from_coree && image && image->is_module_handle)
 		MonoFixupExe ((HMODULE) image->raw_data);
 }
 

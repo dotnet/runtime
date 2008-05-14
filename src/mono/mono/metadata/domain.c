@@ -1161,11 +1161,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	if (domain)
 		g_assert_not_reached ();
 
-	/* FIXME: This causes Win32 build to break. */
-#if 0
 #if defined(PLATFORM_WIN32) && !defined(_WIN64)
-	mono_load_coree ();
-#endif
+	mono_load_coree (exe_filename);
 #endif
 
 	mono_perfcounters_init ();
@@ -1205,6 +1202,11 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		 */
 		get_runtimes_from_exe (exe_filename, &exe_image, runtimes);
 #ifdef PLATFORM_WIN32
+		if (!exe_image) {
+			exe_image = mono_assembly_open_from_bundle (exe_filename, NULL, FALSE);
+			if (!exe_image)
+				exe_image = mono_image_open (exe_filename, NULL);
+		}
 		mono_fixup_exe_image (exe_image);
 #endif
 	} else if (runtime_version != NULL) {
@@ -1610,8 +1612,7 @@ mono_init_com_types (void)
 void
 mono_cleanup (void)
 {
-	if (exe_image)
-		mono_image_close (exe_image);
+	mono_close_exe_image ();
 
 	mono_loader_cleanup ();
 	mono_classes_cleanup ();
@@ -1623,6 +1624,13 @@ mono_cleanup (void)
 
 	TlsFree (appdomain_thread_id);
 	DeleteCriticalSection (&appdomains_mutex);
+}
+
+void
+mono_close_exe_image (void)
+{
+	if (exe_image)
+		mono_image_close (exe_image);
 }
 
 /**

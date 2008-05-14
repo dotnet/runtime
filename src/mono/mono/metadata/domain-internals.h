@@ -233,6 +233,9 @@ void
 mono_cleanup (void) MONO_INTERNAL;
 
 void
+mono_close_exe_image (void) MONO_INTERNAL;
+
+void
 mono_jit_info_table_add    (MonoDomain *domain, MonoJitInfo *ji) MONO_INTERNAL;
 
 void
