@@ -1,4 +1,4 @@
-6/*
+/*
  * class.c: Class management for the Mono runtime
  *
  * Author:
