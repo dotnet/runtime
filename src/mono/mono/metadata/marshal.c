@@ -6230,7 +6230,7 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (conv == MONO_MARSHAL_CONV_BSTR_STR)
 			mono_mb_emit_icall (mb, mono_free_bstr);
 		else
-			mono_mb_emit_icall (mb, g_free);
+			mono_mb_emit_icall (mb, mono_marshal_free);
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
