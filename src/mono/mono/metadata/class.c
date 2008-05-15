@@ -1,4 +1,4 @@
-/*
+6/*
  * class.c: Class management for the Mono runtime
  *
  * Author:
@@ -641,8 +641,6 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	MonoGenericContext tmp_context;
 	gboolean is_mb_open = FALSE;
 
-	if (!context)
-		return method;
 	/* The `method' has already been instantiated before => we need to peel out the instantiation and create a new context */
 	while (method->is_inflated) {
 		MonoGenericContext *method_context = mono_method_get_context (method);
