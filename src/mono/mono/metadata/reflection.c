@@ -10026,7 +10026,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		   strcmp (obj->vtable->klass->name, "MonoGenericCMethod") == 0 ||
 		   strcmp (obj->vtable->klass->name, "MonoGenericMethod") == 0) {
 		result = ((MonoReflectionMethod*)obj)->method;
-		result = mono_class_inflate_generic_method (result, context);
+		if (context)
+			result = mono_class_inflate_generic_method (result, context);
 		*handle_class = mono_defaults.methodhandle_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "MethodBuilder") == 0) {
@@ -10048,7 +10049,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 			 */
 			result = mb->mhandle;
 		}
-		result = mono_class_inflate_generic_method (result, context);
+		if (context)
+			result = mono_class_inflate_generic_method (result, context);
 		*handle_class = mono_defaults.methodhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "ConstructorBuilder") == 0) {
 		MonoReflectionCtorBuilder *cb = (MonoReflectionCtorBuilder*)obj;
@@ -10060,7 +10062,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 			mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
 			result = cb->mhandle;
 		}
-		result = mono_class_inflate_generic_method (result, context);
+		if (context)
+			result = mono_class_inflate_generic_method (result, context);
 		*handle_class = mono_defaults.methodhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "MonoField") == 0) {
 		result = ((MonoReflectionField*)obj)->field;
