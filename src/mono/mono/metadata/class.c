@@ -3066,10 +3066,13 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 	/* Try to share the vtable with our parent. */
 	if (class->parent && (class->parent->vtable_size == class->vtable_size) && (memcmp (class->parent->vtable, vtable, sizeof (gpointer) * class->vtable_size) == 0)) {
+		mono_memory_barrier ();
 		class->vtable = class->parent->vtable;
 	} else {
-		class->vtable = mono_mempool_alloc0 (class->image->mempool, sizeof (gpointer) * class->vtable_size);
-		memcpy (class->vtable, vtable,  sizeof (gpointer) * class->vtable_size);
+		MonoMethod **tmp = mono_mempool_alloc0 (class->image->mempool, sizeof (gpointer) * class->vtable_size);
+		memcpy (tmp, vtable,  sizeof (gpointer) * class->vtable_size);
+		mono_memory_barrier ();
+		class->vtable = tmp;
 	}
 
 	DEBUG_INTERFACE_VTABLE (print_vtable_full (class, class->vtable, class->vtable_size, first_non_interface_slot, "FINALLY", FALSE));
