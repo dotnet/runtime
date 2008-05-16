@@ -2021,8 +2021,15 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 		if (!is_proxy)
 		       res = vtable [mono_class_interface_offset (klass, method->klass) + method->slot];
 	} else {
-		if (method->slot != -1)
+		if (method->slot != -1) {
 			res = vtable [method->slot];
+		} else {
+			/* method->slot might not be set for instances of generic methods in the AOT case */
+			if (method->is_inflated) {
+				g_assert (((MonoMethodInflated*)method)->declaring->slot != -1);
+				res = vtable [((MonoMethodInflated*)method)->declaring->slot];
+			}
+		}
 	}
 
 	if (is_proxy) {
