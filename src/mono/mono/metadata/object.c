@@ -1489,6 +1489,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	old_info = class->runtime_info;
 	if (old_info && old_info->max_domain >= domain->domain_id) {
 		/* someone already created a large enough runtime info */
+		mono_memory_barrier ();
 		old_info->domain_vtables [domain->domain_id] = vt;
 	} else {
 		int new_size = domain->domain_id;
@@ -1510,7 +1511,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 			memcpy (runtime_info->domain_vtables, old_info->domain_vtables, (old_info->max_domain + 1) * sizeof (gpointer));
 		}
 		runtime_info->domain_vtables [domain->domain_id] = vt;
-		/* keep this last (add membarrier) */
+		/* keep this last*/
+		mono_memory_barrier ();
 		class->runtime_info = runtime_info;
 	}
 	mono_loader_unlock ();
