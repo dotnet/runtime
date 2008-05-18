@@ -703,10 +703,10 @@ print_field_value (const char *field_ptr, MonoClassField *field, int type_offset
 		g_print ("%u\n", *(guint32*)field_ptr);
 		break;
 	case MONO_TYPE_I8:
-		g_print ("%lld\n", *(gint64*)field_ptr);
+		g_print ("%lld\n", (long long int)*(gint64*)field_ptr);
 		break;
 	case MONO_TYPE_U8:
-		g_print ("%llu\n", *(guint64*)field_ptr);
+		g_print ("%llu\n", (long long unsigned int)*(guint64*)field_ptr);
 		break;
 	case MONO_TYPE_R4:
 		g_print ("%f\n", *(gfloat*)field_ptr);
