@@ -12091,7 +12091,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			inst = cfg->rgctx_var;
 			g_assert (inst->opcode == OP_REGOFFSET);
 		} else {
-			inst = cfg->varinfo [0];
+			inst = cfg->args [0];
 		}
 
 		if (inst->opcode == OP_REGVAR) {
