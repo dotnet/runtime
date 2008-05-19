@@ -1362,7 +1362,7 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
-	if ((action == DO_EXEC) && g_getenv ("MONO_INSIDE_MDB"))
+	if ((action == DO_EXEC) && mono_debug_using_mono_debugger ())
 		action = DO_DEBUGGER;
 
 	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {

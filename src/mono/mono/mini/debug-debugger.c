@@ -162,7 +162,9 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_thread_vtable,
 
 	&mono_debugger_event_handler,
-	debugger_event_handler
+	debugger_event_handler,
+
+	&_mono_debug_using_mono_debugger
 };
 
 static guint64

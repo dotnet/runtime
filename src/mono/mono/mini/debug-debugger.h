@@ -81,6 +81,7 @@ struct _MonoDebuggerInfo {
 	GCThreadFunctions *debugger_thread_vtable;
 	void (**event_handler_ptr) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 	void (*debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
+	gint32 *using_mono_debugger;
 };
 
 struct _MonoDebuggerMetadataInfo {
