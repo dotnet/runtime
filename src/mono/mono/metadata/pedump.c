@@ -28,6 +28,8 @@
 
 gboolean dump_data = TRUE;
 gboolean verify_pe = FALSE;
+gboolean verify_metadata = FALSE;
+gboolean verify_code = FALSE;
 
 /* unused
 static void
@@ -339,17 +341,19 @@ dump_verify_info (MonoImage *image, int flags)
 		"Ok", "Error", "Warning", NULL, "CLS", NULL, NULL, NULL, "Not Verifiable"
 	};
 
-	errors = mono_image_verify_tables (image, flags);
-
-	for (tmp = errors; tmp; tmp = tmp->next) {
-		MonoVerifyInfo *info = tmp->data;
-		g_print ("%s: %s\n", desc [info->status], info->message);
-		if (info->status == MONO_VERIFY_ERROR)
-			count++;
+	if (verify_metadata) {
+		errors = mono_image_verify_tables (image, flags);
+	
+		for (tmp = errors; tmp; tmp = tmp->next) {
+			MonoVerifyInfo *info = tmp->data;
+			g_print ("%s: %s\n", desc [info->status], info->message);
+			if (info->status == MONO_VERIFY_ERROR)
+				count++;
+		}
+		mono_free_verify_list (errors);
 	}
-	mono_free_verify_list (errors);
 
-	if (flags & (MONO_VERIFY_ALL + 1)) { /* verify code */
+	if (verify_code) { /* verify code */
 		int i;
 		MonoTableInfo *m = &image->tables [MONO_TABLE_METHOD];
 
@@ -395,6 +399,7 @@ usage (void)
 }
 
 #define VALID_ONLY_FLAG 0x08000000
+#define VERIFY_CODE_ONLY MONO_VERIFY_ALL + 1 
 int
 main (int argc, char *argv [])
 {
@@ -403,7 +408,7 @@ main (int argc, char *argv [])
 	char *flags = NULL;
 	MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_VERIFIABLE;
 	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", "fail-on-verifiable", "non-strict", "valid-only", NULL};
-	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, MONO_VERIFY_ALL + 1, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT, VALID_ONLY_FLAG, 0};
+	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, VERIFY_CODE_ONLY, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT, VALID_ONLY_FLAG, 0};
 	int i;
 	
 	for (i = 1; i < argc; i++){
@@ -445,9 +450,16 @@ main (int argc, char *argv [])
 		int f = MONO_VERIFY_REPORT_ALL_ERRORS;
 		char *tok = strtok (flags, ",");
 		MonoAssembly *assembly;
+		verify_metadata = 1;
+		verify_code = 0;
 		while (tok) {
 			for (i = 0; flag_desc [i]; ++i) {
 				if (strcmp (tok, flag_desc [i]) == 0) {
+					if (flag_vals [i] == VERIFY_CODE_ONLY) {
+						verify_metadata = 0;
+						verify_code = 1;
+					} else if(flag_vals [i] == MONO_VERIFY_ALL)
+						verify_code = 1;
 					if (flag_vals [i] == VALID_ONLY_FLAG)
 						verifier_mode = MONO_VERIFIER_MODE_VALID;
 					else
