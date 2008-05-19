@@ -36,6 +36,11 @@ else
   gc_default=boehm
 fi
 
+# These variables are the CPPFLAGS/CFLAGS passed to libgc's configure
+# libgc should inherit the original CFLAGS/CPPFLAGS passed to configure, i.e. -O0
+CPPFLAGS_FOR_LIBGC=$CPPFLAGS
+CFLAGS_FOR_LIBGC=$CFLAGS
+
 #
 # These are the flags that need to be stored in the mono.pc file for 
 # compiling code that will embed Mono
@@ -296,6 +301,8 @@ AC_LIBTOOL_WIN32_DLL
 #AC_DISABLE_FAST_INSTALL
 AM_PROG_LIBTOOL
 
+DOLT
+
 # Test whenever ld supports -version-script
 AC_PROG_LD
 AC_PROG_LD_GNU
@@ -394,6 +401,7 @@ else
 	esac
 fi
 CFLAGS="$CFLAGS -g $WARN"
+CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -g"
 
 # Where's the 'mcs' source tree?
 if test -d $srcdir/mcs; then
@@ -564,6 +572,8 @@ if test "x$with_xen_opt" = "xyes"; then
 					   void main () { }
 	], [
 	   AC_MSG_RESULT(yes)
+	   # Pass it to libgc as well
+	   CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -mno-tls-direct-seg-refs"
 	], [
 	   AC_MSG_RESULT(no)
 	   CFLAGS=$ORIG_CFLAGS
@@ -2003,7 +2013,10 @@ case "x$gc" in
 		# We should use a separate variable for this to avoid passing useless and
 		# potentially problematic defines to libgc (like -D_FILE_OFFSET_BITS=64)
 		# This should be executed late so we pick up the final version of CPPFLAGS
-		ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args \"CPPFLAGS=$CPPFLAGS\""
+		# The problem with this approach, is that during a reconfigure, the main
+		# configure scripts gets invoked with these arguments, so we use separate
+		# variables understood by libgc's configure to pass CPPFLAGS and CFLAGS.
+		ac_configure_args="$ac_configure_args --disable-embed-check --with-libgc-threads=$libgc_threads $libgc_configure_args \"CPPFLAGS_FOR_LIBGC=$CPPFLAGS\" \"CFLAGS_FOR_LIBGC=$CFLAGS_FOR_LIBGC\""
 		AC_CONFIG_SUBDIRS(libgc)
 		;;
 esac

@@ -1,3 +1,11 @@
+2008-05-19  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Change the way CPPFLAGS/CFLAGS are passed to libgc one more
+	time. This time, we collect them in two variables and pass these to libgc
+	configure instead of using the standard CPPFLAGS/CFLAGS, to prevent problems
+	during reconfiguring. Also pass '-mno-tls-direct-segment-refs' to libgc 
+	configure, hopefully fixing #385006.
+
 2008-05-15  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add a check for sgen and __thread. Fixes #347171.
