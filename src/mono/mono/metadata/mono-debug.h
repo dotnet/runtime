@@ -125,13 +125,14 @@ struct _MonoDebugVarInfo {
 	MonoType *type;
 };
 
-#define MONO_DEBUGGER_VERSION				69
+#define MONO_DEBUGGER_VERSION				70
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;
 extern MonoDebugFormat mono_debug_format;
 extern GHashTable *mono_debug_handles;
 extern gint32 mono_debug_debugger_version;
+extern gint32 _mono_debug_using_mono_debugger;
 
 void mono_debug_list_add (MonoDebugList **list, gconstpointer data);
 void mono_debug_list_remove (MonoDebugList **list, gconstpointer data);
