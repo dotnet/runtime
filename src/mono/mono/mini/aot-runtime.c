@@ -730,50 +730,6 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	return TRUE;
 }	
 
-gboolean
-mono_aot_init_vtable (MonoVTable *vtable)
-{
-#ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
-	int i;
-	MonoAotModule *aot_module;
-	MonoClass *klass = vtable->klass;
-	guint8 *info, *p;
-	MonoCachedClassInfo class_info;
-	gboolean err;
-
-	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !klass->image->assembly->aot_module)
-		return FALSE;
-
-	mono_aot_lock ();
-
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
-	if (!aot_module) {
-		mono_aot_unlock ();
-		return FALSE;
-	}
-
-	info = &aot_module->class_info [aot_module->class_info_offsets [mono_metadata_token_index (klass->type_token) - 1]];
-	p = info;
-
-	err = decode_cached_class_info (aot_module, &class_info, p, &p);
-	if (!err) {
-		mono_aot_unlock ();
-		return FALSE;
-	}
-
-	mono_aot_unlock ();
-
-	//printf ("VT0: %s.%s %d\n", klass->name_space, klass->name, vtable_size);
-	for (i = 0; i < class_info.vtable_size; ++i) {
-		vtable->vtable [i] = mini_get_vtable_trampoline ();
-	}
-
-	return TRUE;
-#else
-	return FALSE;
-#endif
-}
-
 gpointer
 mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int slot)
 {
@@ -2127,12 +2083,6 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 
 gboolean
 mono_aot_is_got_entry (guint8 *code, guint8 *addr)
-{
-	return FALSE;
-}
-
-gboolean
-mono_aot_init_vtable (MonoVTable *vtable)
 {
 	return FALSE;
 }
