@@ -654,9 +654,9 @@ custom-modifiers: custom-modifiers.exe
 
 EXTRA_DIST += bug-382986.cs  bug-382986-lib.cs
 bug-382986-lib.dll: bug-382986-lib.cs
-	$(MCS) -target:library -out:bug-382986-lib.dll bug-382986-lib.cs
+	$(MCS) -target:library -out:$@ $(srcdir)/bug-382986-lib.cs
 bug-382986.exe: bug-382986.cs bug-382986-lib.dll
-	$(MCS) -out:bug-382986.exe -r:bug-382986-lib.dll bug-382986.cs
+	$(MCS) -out:$@ -r:bug-382986-lib.dll $(srcdir)/bug-382986.cs
 test-bug-382986: bug-382986.exe
 	$(RUNTIME) bug-382986.exe
 
