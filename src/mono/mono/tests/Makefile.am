@@ -270,6 +270,7 @@ BASE_TEST_CS_SRC=		\
 	generic-virtual.2.cs	\
 	generic-interface-methods.2.cs	\
 	generic-array-type.2.cs	\
+	generic-null-call.2.cs	\
 	recursive-generics.2.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
@@ -693,7 +694,8 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-ldtoken.2.exe			\
 		generic-ldtoken-method.2.exe  generic-ldtoken-field.2.exe	\
 		generic-virtual.2.exe generic-tailcall.2.exe			\
-		generic-interface-methods.2.exe generic-array-type.2.exe
+		generic-interface-methods.2.exe generic-array-type.2.exe	\
+		generic-null-call.2.exe
 	$(RUNTIME) -O=gshared,-inline        generics-sharing.2.exe
 	$(RUNTIME) -O=gshared,-inline        shared-generic-methods.2.exe
 	$(RUNTIME) -O=gshared,-inline        shared-generic-synchronized.2.exe
@@ -712,6 +714,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 	$(RUNTIME) -O=gshared,-inline        generic-tailcall.2.exe
 	$(RUNTIME) -O=gshared,-inline        generic-interface-methods.2.exe
 	$(RUNTIME) -O=gshared,-inline        generic-array-type.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-null-call.2.exe
 
 EXTRA_DIST += async-exceptions.cs
 async-exceptions.exe : async-exceptions.cs
