@@ -484,9 +484,6 @@ void
 mono_install_free_method    (MonoFreeMethodFunc func) MONO_INTERNAL;
 
 void
-mono_install_init_vtable    (MonoInitVTableFunc func) MONO_INTERNAL;
-
-void
 mono_type_initialization_init (void) MONO_INTERNAL;
 
 void

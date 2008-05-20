@@ -558,22 +558,6 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_free_method (method);
 }
 
-static MonoInitVTableFunc init_vtable_func = NULL;
-
-/**
- * mono_install_init_vtable:
- * @func: pointer to the function to be installed
- *
- *   Register a function which will be called by the runtime to initialize the
- * method pointers inside a vtable. The JIT can use this function to load the
- * vtable from the AOT file for example.
- */
-void
-mono_install_init_vtable (MonoInitVTableFunc func)
-{
-	init_vtable_func = func;
-}
-
 /*
  * The vtables in the root appdomain are assumed to be reachable by other 
  * roots, and we don't use typed allocation in the other domains.
@@ -1312,7 +1296,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	char *t;
 	int i;
 	int imt_table_bytes = 0;
-	gboolean inited = FALSE;
 	guint32 vtable_size, class_size;
 	guint32 cindex;
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
@@ -1473,10 +1456,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		}
 	}
 
-	/* 
-	 * arch_create_jit_trampoline () can recursively call this function again
-	 * because it compiles icall methods right away.
-	 */
 	/* FIXME: class_vtable_hash is basically obsolete now: remove as soon
 	 * as we change the code in appdomain.c to invalidate vtables by
 	 * looking at the possible MonoClasses created for the domain.
@@ -1517,11 +1496,12 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	}
 	mono_loader_unlock ();
 
-	/* initialize vtable */
-	if (init_vtable_func)
-		inited = init_vtable_func (vt);
-
-	if (!inited) {
+	/* Initialize vtable */
+	if (vtable_trampoline) {
+		for (i = 0; i < class->vtable_size; ++i) {
+			vt->vtable [i] = vtable_trampoline;
+		}
+	} else {
 		mono_class_setup_vtable (class);
 
 		for (i = 0; i < class->vtable_size; ++i) {
@@ -1529,6 +1509,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 
 			if ((cm = class->vtable [i])) {
 				if (mono_method_signature (cm)->generic_param_count)
+					/* FIXME: Why is this needed ? */
 					vt->vtable [i] = cm;
 				else
 					vt->vtable [i] = vtable_trampoline? vtable_trampoline: arch_create_jit_trampoline (cm);
