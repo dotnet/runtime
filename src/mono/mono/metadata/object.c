@@ -1498,7 +1498,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 
 	/* Initialize vtable */
 	// FIXME: This causes System.Runtime.Remoting unit tests to fail
-	if (0 && vtable_trampoline) {
+	if (vtable_trampoline) {
 		// This also covers the AOT case
 		for (i = 0; i < class->vtable_size; ++i) {
 			vt->vtable [i] = vtable_trampoline;
@@ -1639,6 +1639,8 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		if ((cm = class->vtable [i]))
 			pvt->vtable [i] = mono_method_signature (cm)->generic_param_count
 				? cm : arch_create_remoting_trampoline (cm, target_type);
+		else
+			pvt->vtable [i] = NULL;
 	}
 
 	if (class->flags & TYPE_ATTRIBUTE_ABSTRACT) {
