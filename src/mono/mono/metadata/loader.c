@@ -1485,7 +1485,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	MonoMethod *method, *result;
 	MonoClass *ic = NULL;
 	MonoGenericContext *class_context = NULL, *method_context = NULL;
-	MonoMethodSignature *sig;
+	MonoMethodSignature *sig, *original_sig;
 
 	mono_loader_lock ();
 
@@ -1497,12 +1497,26 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 
 	mono_class_init (constrained_class);
 	method = *cil_method;
-	sig = mono_method_signature (method);
+	original_sig = sig = mono_method_signature (method);
 
 	if (method->is_inflated && sig->generic_param_count) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
 		sig = mono_method_signature (imethod->declaring);
 		method_context = mono_method_get_context (method);
+
+		original_sig = sig;
+		/*
+		 * We must inflate the signature with the class instantiation to work on
+		 * cases where a class inherit from a generic type and the override replaces
+		 * and type argument which a concrete type. See #325283.
+		 */
+		if (method_context->class_inst) {
+			MonoGenericContext ctx;
+			ctx.method_inst = NULL;
+			ctx.class_inst = method_context->class_inst;
+		
+			sig = inflate_generic_signature (method->klass->image, sig, &ctx);
+		}
 	}
 
 	if ((constrained_class != method->klass) && (method->klass->interface_id != 0))
@@ -1512,6 +1526,9 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 		class_context = mono_class_get_context (constrained_class);
 
 	result = find_method (constrained_class, ic, method->name, sig, constrained_class);
+	if (sig != original_sig)
+		mono_metadata_free_inflated_signature (sig);
+
 	if (!result) {
 		g_warning ("Missing method %s.%s.%s in assembly %s token %x", method->klass->name_space,
 			   method->klass->name, method->name, image->name, token);
