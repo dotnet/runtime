@@ -1497,7 +1497,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	mono_loader_unlock ();
 
 	/* Initialize vtable */
-	// FIXME: This causes System.Runtime.Remoting unit tests to fail
 	if (vtable_trampoline) {
 		// This also covers the AOT case
 		for (i = 0; i < class->vtable_size; ++i) {
