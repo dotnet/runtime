@@ -301,8 +301,6 @@ AC_LIBTOOL_WIN32_DLL
 #AC_DISABLE_FAST_INSTALL
 AM_PROG_LIBTOOL
 
-DOLT
-
 # Test whenever ld supports -version-script
 AC_PROG_LD
 AC_PROG_LD_GNU
