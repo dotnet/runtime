@@ -1,5 +1,7 @@
 2008-05-21  Zoltan Varga  <vargaz@gmail.com>
 
+	* acinclude.m4: New file, contains a snapshot of dolt.
+
 	* configure.in: Add support for the DOLT libtool replacement.
 
 2008-05-19  Zoltan Varga  <vargaz@gmail.com>
