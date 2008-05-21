@@ -288,6 +288,7 @@ BASE_TEST_CS_SRC=		\
 	bug-340662_bug.cs	\
 	bug-322722_dyn_method_throw.2.cs	\
 	bug-389886-2.cs	\
+	bug-325283.2.cs	\
 	thunks.cs
 
 if AMD64
