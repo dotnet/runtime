@@ -3571,7 +3571,7 @@ mono_class_init (MonoClass *class)
 		}
 
 		setup_interface_offsets (class, cur_slot);
-	} else if (class->rank == 1) {
+	} else if (class->rank == 1 && class->byval_arg.type == MONO_TYPE_SZARRAY) {
 		static int szarray_vtable_size = 0;
 
 		/*
@@ -3589,6 +3589,26 @@ mono_class_init (MonoClass *class)
 
 		//mono_class_setup_vtable (class);
 		setup_interface_offsets (class, class->parent->vtable_size);
+	} else if (class->generic_class && !MONO_CLASS_IS_INTERFACE (class)) {
+		MonoClass *gklass = class->generic_class->container_class;
+
+		/* Avoid creating a generic vtable here too */
+
+		class->ghcimpl = gklass->ghcimpl;
+		class->has_finalize = gklass->has_finalize;
+		class->has_cctor = gklass->has_cctor;
+
+		mono_class_setup_vtable (gklass);
+
+		class->vtable_size = gklass->vtable_size;
+
+		if (class->parent) {
+			mono_class_setup_vtable (class->parent);
+			setup_interface_offsets (class, class->parent->vtable_size);
+		} else {
+			setup_interface_offsets (class, 0);
+		}
+		//mono_class_setup_vtable (class);
 	} else {
 		mono_class_setup_vtable (class);
 
@@ -6584,7 +6604,7 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 
 	mono_class_init (klass);
 
-	if (klass->methods) {
+	if (klass->methods || klass->generic_class) {
 		mono_class_setup_methods (klass);
 		for (i = 0; i < klass->method.count; ++i) {
 			MonoMethod *method = klass->methods [i];
