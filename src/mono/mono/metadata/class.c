@@ -1834,6 +1834,8 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 			"System.Collections.Generic", "IEnumerator`1");
 	}
 
+	mono_class_init (eclass);
+
 	/*
 	 * Arrays in 2.0 need to implement a number of generic interfaces
 	 * (IList`1, ICollection`1, IEnumerable`1 for a number of types depending
@@ -1987,8 +1989,8 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 
 	/* 
 	 * get the implicit generic interfaces for either the arrays or for System.Array/InternalEnumerator<T>
-	 * implicit innterfaces have the property that they are assigned the same slot in the vtables
-	 * for compatible interfaces
+	 * implicit interfaces have the property that they are assigned the same slot in the
+	 * vtables for compatible interfaces
 	 */
 	array_interfaces = get_implicit_generic_array_interfaces (class, &num_array_interfaces, &is_enumerator);
 
@@ -2114,18 +2116,27 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			interface_offsets_count ++;
 		}
 	}
-	class->interface_offsets_count = interface_offsets_count;
-	class->interfaces_packed = mono_mempool_alloc (class->image->mempool, sizeof (MonoClass*) * interface_offsets_count);
-	class->interface_offsets_packed = mono_mempool_alloc (class->image->mempool, sizeof (int) * interface_offsets_count);
-	class->interface_bitmap = mono_mempool_alloc0 (class->image->mempool, (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0));
-	for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
-		if (interface_offsets_full [i] != -1) {
-			class->interface_bitmap [i >> 3] |= (1 << (i & 7));
-			class->interfaces_packed [interface_offsets_count] = interfaces_full [i];
-			class->interface_offsets_packed [interface_offsets_count] = interface_offsets_full [i];
-			/*if (num_array_interfaces)
-				g_print ("type %s has %s offset at %d\n", mono_type_get_name_full (&class->byval_arg, 0), mono_type_get_name_full (&interfaces_full [i]->byval_arg, 0), interface_offsets_full [i]);*/
-			interface_offsets_count ++;
+
+	/*
+	 * We might get called twice: once from mono_class_init () for the class->rank == 1
+	 * case, then once from mono_class_setup_vtable ().
+	 */
+	if (class->interfaces_packed) {
+		g_assert (class->interface_offsets_count == interface_offsets_count);
+	} else {
+		class->interface_offsets_count = interface_offsets_count;
+		class->interfaces_packed = mono_mempool_alloc (class->image->mempool, sizeof (MonoClass*) * interface_offsets_count);
+		class->interface_offsets_packed = mono_mempool_alloc (class->image->mempool, sizeof (int) * interface_offsets_count);
+		class->interface_bitmap = mono_mempool_alloc0 (class->image->mempool, (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0));
+		for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
+			if (interface_offsets_full [i] != -1) {
+				class->interface_bitmap [i >> 3] |= (1 << (i & 7));
+				class->interfaces_packed [interface_offsets_count] = interfaces_full [i];
+				class->interface_offsets_packed [interface_offsets_count] = interface_offsets_full [i];
+				/*if (num_array_interfaces)
+				  g_print ("type %s has %s offset at %d\n", mono_type_get_name_full (&class->byval_arg, 0), mono_type_get_name_full (&interfaces_full [i]->byval_arg, 0), interface_offsets_full [i]);*/
+				interface_offsets_count ++;
+			}
 		}
 	}
 	
@@ -3072,8 +3083,12 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		mono_class_init (gklass);
 
 		class->vtable_size = MAX (gklass->vtable_size, cur_slot);
-	} else
+	} else {
+		/* Check that the vtable_size value computed in mono_class_init () is correct */
+		if (class->rank == 1 && class->vtable_size)
+			g_assert (cur_slot == class->vtable_size);
 		class->vtable_size = cur_slot;
+	}
 
 	/* Try to share the vtable with our parent. */
 	if (class->parent && (class->parent->vtable_size == class->vtable_size) && (memcmp (class->parent->vtable, vtable, sizeof (gpointer) * class->vtable_size) == 0)) {
@@ -3556,6 +3571,24 @@ mono_class_init (MonoClass *class)
 		}
 
 		setup_interface_offsets (class, cur_slot);
+	} else if (class->rank == 1) {
+		static int szarray_vtable_size = 0;
+
+		/*
+		 * No need to create a generic vtable, since all the needed information can be
+		 * computed without it. We do need to compute is vtable_size, since that is 
+		 * needed by mono_class_create_runtime_vtable (). Also need to compute the
+		 * interface related data.
+		 */
+		if (!szarray_vtable_size) {
+			mono_class_setup_vtable (class);
+			szarray_vtable_size = class->vtable_size;
+		} else {
+			class->vtable_size = szarray_vtable_size;
+		}
+
+		//mono_class_setup_vtable (class);
+		setup_interface_offsets (class, class->parent->vtable_size);
 	} else {
 		mono_class_setup_vtable (class);
 

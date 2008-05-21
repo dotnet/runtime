@@ -1324,6 +1324,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	if (class->image->dynamic)
 		mono_class_setup_vtable (class);
 
+	/* 
+	 * For szarrays, mono_class_init () already computed class->vtable_size, and that is
+	 * all that is needed because of the vtable trampolines.
+	 */
+
 	if (ARCH_USE_IMT) {
 		vtable_size = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
 		if (class->interface_offsets_count) {
