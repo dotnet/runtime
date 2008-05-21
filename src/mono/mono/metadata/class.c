@@ -3557,8 +3557,6 @@ mono_class_init (MonoClass *class)
 
 		setup_interface_offsets (class, cur_slot);
 	} else {
-		mono_class_setup_methods (class);
-
 		mono_class_setup_vtable (class);
 
 		if (class->exception_type || mono_loader_get_last_error ()){
@@ -3587,12 +3585,17 @@ mono_class_init (MonoClass *class)
 			}
 		}
 
-		for (i = 0; i < class->method.count; ++i) {
-			MonoMethod *method = class->methods [i];
-			if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
-				(strcmp (".cctor", method->name) == 0)) {
-				class->has_cctor = 1;
-				break;
+		/* C# doesn't allow interfaces to have cctors */
+		if (!MONO_CLASS_IS_INTERFACE (class) || class->image != mono_defaults.corlib) {
+			mono_class_setup_methods (class);
+
+			for (i = 0; i < class->method.count; ++i) {
+				MonoMethod *method = class->methods [i];
+				if ((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && 
+					(strcmp (".cctor", method->name) == 0)) {
+					class->has_cctor = 1;
+					break;
+				}
 			}
 		}
 	}
