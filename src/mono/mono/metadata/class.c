@@ -2151,7 +2151,18 @@ mono_class_setup_interface_offsets (MonoClass *class)
 
 	mono_loader_unlock ();
 }
-
+ 
+/*
+ * mono_class_setup_vtable:
+ *
+ *   Creates the generic vtable of CLASS.
+ * Initializes the following fields in MonoClass:
+ * - vtable
+ * - vtable_size
+ * Plus all the fields initialized by setup_interface_offsets ().
+ *
+ * LOCKING: Acquires the loader lock.
+ */
 void
 mono_class_setup_vtable (MonoClass *class)
 {
@@ -2165,10 +2176,10 @@ mono_class_setup_vtable (MonoClass *class)
 	if (class->vtable)
 		return;
 
-	mono_class_setup_methods (class);
-
 	if (MONO_CLASS_IS_INTERFACE (class))
 		return;
+
+	mono_class_setup_methods (class);
 
 	mono_loader_lock ();
 
@@ -3545,8 +3556,9 @@ mono_class_init (MonoClass *class)
 		}
 
 		setup_interface_offsets (class, cur_slot);
-	}
-	else {
+	} else {
+		mono_class_setup_methods (class);
+
 		mono_class_setup_vtable (class);
 
 		if (class->exception_type || mono_loader_get_last_error ()){
