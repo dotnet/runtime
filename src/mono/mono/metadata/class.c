@@ -4172,9 +4172,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		}
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (klass))
-		setup_interface_offsets (klass, 0);
-
 	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
 	
 	mono_loader_unlock ();
