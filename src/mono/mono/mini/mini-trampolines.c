@@ -213,6 +213,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			else
 				declaring = m;
 
+			mono_class_setup_methods (klass);
 			for (i = 0; i < klass->method.count; ++i) {
 				actual_method = klass->methods [i];
 				if (actual_method->is_inflated) {
