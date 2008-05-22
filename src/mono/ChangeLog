@@ -1,3 +1,7 @@
+2008-05-22 Marek Safar  <marek.safar@gmail.com>
+
+	* Makefile.am: Distribute 2.0 profile specific files.
+
 2008-05-21  Zoltan Varga  <vargaz@gmail.com>
 
 	* acinclude.m4: New file, contains a snapshot of dolt.
