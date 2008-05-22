@@ -8059,43 +8059,96 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			++ip;
 			break;
 		}
-		case CEE_REFANYVAL:
+		case CEE_REFANYVAL: {
+			int context_used = 0;
+
 			CHECK_STACK (1);
-			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			token = read32 (ip + 1);
+			klass = mono_class_get_full (image, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
-			ins->type = STACK_MP;
-			ins->inst_left = *sp;
-			ins->klass = klass;
-			ins->inst_newa_class = klass;
+
+			if (cfg->generic_sharing_context) {
+				context_used = mono_class_check_context_used (klass);
+				if (context_used && cfg->compile_aot)
+					GENERIC_SHARING_FAILURE (*ip);
+			}
+
+			if (context_used) {
+				MonoInst *rgctx;
+
+				MONO_INST_NEW (cfg, ins, OP_REFANYVAL_REG);
+				ins->type = STACK_MP;
+				ins->inst_left = *sp;
+				ins->klass = klass;
+
+				GET_RGCTX (rgctx);
+				ins->inst_right = get_runtime_generic_context_ptr (cfg, method,
+						bblock, klass,
+						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
+						rgctx, MONO_RGCTX_INFO_KLASS, ip);
+			} else {
+				MONO_INST_NEW (cfg, ins, *ip);
+				ins->type = STACK_MP;
+				ins->inst_left = *sp;
+				ins->klass = klass;
+				ins->inst_newa_class = klass;
+			}
 			ins->cil_code = ip;
 			ip += 5;
 			*sp++ = ins;
 			break;
+		}
 		case CEE_MKREFANY: {
-			MonoInst *loc, *klassconst;
+			MonoInst *loc;
+			int context_used = 0;
 
 			CHECK_STACK (1);
-			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_full (image, read32 (ip + 1), generic_context);
+			token = read32 (ip + 1);
+			klass = mono_class_get_full (image, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
-			ins->cil_code = ip;
 
-			if (cfg->generic_sharing_context && mono_class_check_context_used (klass))
-				GENERIC_SHARING_FAILURE (CEE_MKREFANY);
+			if (cfg->generic_sharing_context) {
+				context_used = mono_class_check_context_used (klass);
+				if (context_used && cfg->compile_aot)
+					GENERIC_SHARING_FAILURE (CEE_MKREFANY);
+			}
 
 			loc = mono_compile_create_var (cfg, &mono_defaults.typed_reference_class->byval_arg, OP_LOCAL);
-			NEW_TEMPLOADA (cfg, ins->inst_right, loc->inst_c0);
+			if (context_used) {
+				MonoInst *rgctx, *klass_type, *klass_klass, *loc_load;
 
-			NEW_PCONST (cfg, klassconst, klass);
-			NEW_GROUP (cfg, ins->inst_left, *sp, klassconst);
-			
+				GET_RGCTX (rgctx);
+				klass_klass = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
+						rgctx, MONO_RGCTX_INFO_KLASS, ip);
+				GET_RGCTX (rgctx);
+				klass_type = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
+						rgctx, MONO_RGCTX_INFO_TYPE, ip);
+
+				NEW_TEMPLOADA (cfg, loc_load, loc->inst_c0);
+
+				MONO_INST_NEW (cfg, ins, OP_MKREFANY_REGS);
+				NEW_GROUP (cfg, ins->inst_left, klass_type, klass_klass);
+				NEW_GROUP (cfg, ins->inst_right, *sp, loc_load);
+			} else {
+				MonoInst *klassconst;
+
+				NEW_PCONST (cfg, klassconst, klass);
+
+				MONO_INST_NEW (cfg, ins, *ip);
+				NEW_TEMPLOADA (cfg, ins->inst_right, loc->inst_c0);
+				NEW_GROUP (cfg, ins->inst_left, *sp, klassconst);
+			}
+
+			ins->cil_code = ip;
+
 			MONO_ADD_INS (bblock, ins);
 
 			NEW_TEMPLOAD (cfg, *sp, loc->inst_c0);
@@ -11178,8 +11231,11 @@ emit_state (MonoCompile *cfg, MBState *state, int goal)
 		if (nts [1]) {
 			emit_state (cfg, kids [1], nts [1]);
 			if (nts [2]) {
-				g_assert (!nts [3]);
 				emit_state (cfg, kids [2], nts [2]);
+				if (nts [3]) {
+					g_assert (!nts [4]);
+					emit_state (cfg, kids [3], nts [3]);
+				}
 			}
 		}
 	}

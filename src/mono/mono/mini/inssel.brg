@@ -1647,6 +1647,14 @@ reg: CEE_REFANYVAL (reg) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->reg1, G_STRUCT_OFFSET (MonoTypedRef, value));
 }	
 
+reg: OP_REFANYVAL_REG (reg, reg) {
+	int klass_reg = mono_regstate_next_int (s->rs);
+	g_assert (!s->compile_aot);
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, state->left->reg1, G_STRUCT_OFFSET (MonoTypedRef, klass));
+	MONO_EMIT_NEW_COMPARE_EXC (s, NE_UN, klass_reg, state->right->reg1, "InvalidCastException");
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->reg1, G_STRUCT_OFFSET (MonoTypedRef, value));
+}	
+
 reg: OP_REFANYTYPE (reg) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->reg1, G_STRUCT_OFFSET (MonoTypedRef, type));
 }	
@@ -1667,6 +1675,17 @@ stmt: CEE_MKREFANY (OP_GROUP (reg, OP_I8CONST), reg) {
 		MONO_EMIT_NEW_STORE_MEMBASE_IMM (s, OP_STOREP_MEMBASE_IMM, state->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, klass), klass);
 	}
 	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREP_MEMBASE_REG, state->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, value), state->left->left->reg1);
+}
+
+stmt: OP_MKREFANY_REGS (OP_GROUP (reg, reg), OP_GROUP (reg, reg)) {
+	int class_reg = state->left->right->reg1;
+	g_assert (!s->compile_aot);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREP_MEMBASE_REG,
+			state->right->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, type), state->left->left->reg1);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREP_MEMBASE_REG,
+			state->right->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, klass), state->left->right->reg1);
+	MONO_EMIT_NEW_STORE_MEMBASE (s, OP_STOREP_MEMBASE_REG,
+			state->right->right->reg1, G_STRUCT_OFFSET (MonoTypedRef, value), state->right->left->reg1);
 }
 
 reg: OP_MIN (reg, reg) "2" {

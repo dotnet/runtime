@@ -543,6 +543,9 @@ MINI_OP(OP_CISINST, "cisinst")
 MINI_OP(OP_CCASTCLASS, "ccastclass")
 MINI_OP(OP_SAVE_LMF, "save_lmf")
 MINI_OP(OP_RESTORE_LMF, "restore_lmf")
+/* mkrefany/refanyval for generic sharing */
+MINI_OP(OP_MKREFANY_REGS, "mkrefany_regs")
+MINI_OP(OP_REFANYVAL_REG, "refanyval_reg")
 
 /* arch-dep tls access */
 MINI_OP(OP_TLS_GET,            "tls_get")

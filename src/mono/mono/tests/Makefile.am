@@ -368,6 +368,7 @@ TEST_IL_SRC=			\
 	generics-sharing-other-exc.2.il	\
 	generic-ldobj.2.il	\
 	generic-mkrefany.2.il	\
+	generic-refanyval.2.il	\
 	generic-ldtoken.2.il	\
 	generic-ldtoken-method.2.il	\
 	generic-ldtoken-field.2.il	\
@@ -692,7 +693,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generics-sharing-other-exc.2.exe generic-box.2.exe		\
 		generic-unbox.2.exe generic-delegate.2.exe generic-sizeof.2.exe	\
 		generic-ldobj.2.exe generic-mkrefany.2.exe			\
-		generic-ldtoken.2.exe			\
+		generic-refanyval.2.exe generic-ldtoken.2.exe			\
 		generic-ldtoken-method.2.exe  generic-ldtoken-field.2.exe	\
 		generic-virtual.2.exe generic-tailcall.2.exe			\
 		generic-interface-methods.2.exe generic-array-type.2.exe	\
@@ -708,6 +709,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 	$(RUNTIME) -O=gshared,-inline        generic-sizeof.2.exe
 	$(RUNTIME) -O=gshared,-inline        generic-ldobj.2.exe
 	$(RUNTIME) -O=gshared,-inline        generic-mkrefany.2.exe
+	$(RUNTIME) -O=gshared,-inline        generic-refanyval.2.exe
 	$(RUNTIME) -O=gshared,-inline        generic-ldtoken.2.exe
 	$(RUNTIME) -O=gshared,-inline        generic-ldtoken-method.2.exe
 	$(RUNTIME) -O=gshared,-inline        generic-ldtoken-field.2.exe
