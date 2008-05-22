@@ -3407,6 +3407,9 @@ check_core_clr_inheritance (MonoClass *class)
  * computed at mono_class_get() time. Also compute a generic vtable and 
  * the method slot numbers. We use this infos later to create a domain
  * specific vtable.
+ * NOTE: This class calls setup_vtable () which calls setup_methods (), so it allocates
+ * a LOT of long-living memory. Avoid calling it unless you really need to use the
+ * fields in MonoClass it sets.
  *
  * Returns TRUE on success or FALSE if there was a problem in loading
  * the type (incorrect assemblies, missing assemblies, methods, etc). 

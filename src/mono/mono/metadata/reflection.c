@@ -5750,6 +5750,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 			return klass->reflection_info;
 		}
 	}
+	// FIXME: Get rid of this, do it in the icalls for Type
 	mono_class_init (klass);
 #ifdef HAVE_SGEN_GC
 	res = (MonoReflectionType *)mono_gc_alloc_pinned_obj (mono_class_vtable (domain, mono_defaults.monotype_class), mono_class_instance_size (mono_defaults.monotype_class));
