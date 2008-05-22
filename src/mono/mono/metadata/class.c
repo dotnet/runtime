@@ -1386,6 +1386,39 @@ mono_class_setup_methods (MonoClass *class)
 	mono_loader_unlock ();
 }
 
+/*
+ * mono_class_get_method_by_index:
+ *
+ *   Returns class->methods [index], initializing class->methods if neccesary.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+MonoMethod*
+mono_class_get_method_by_index (MonoClass *class, int index)
+{
+	/* Avoid calling setup_methods () if possible */
+	if (class->generic_class && !class->methods) {
+		MonoClass *gklass = class->generic_class->container_class;
+		MonoMethod *m;
+
+		m = mono_class_inflate_generic_method_full (
+				gklass->methods [index], class, mono_class_get_context (class));
+		/*
+		 * If setup_methods () is called later for this class, no duplicates are created,
+		 * since inflate_generic_method guarantees that only one instance of a method
+		 * is created for each context.
+		 */
+		/*
+		mono_class_setup_methods (class);
+		g_assert (m == class->methods [index]);
+		*/
+		return m;
+	} else {
+		mono_class_setup_methods (class);
+		g_assert (index >= 0 && index < class->method.count);
+		return class->methods [index];
+	}
+}	
 
 static void
 mono_class_setup_properties (MonoClass *class)
@@ -3603,7 +3636,8 @@ mono_class_init (MonoClass *class)
 		class->vtable_size = gklass->vtable_size;
 
 		if (class->parent) {
-			mono_class_setup_vtable (class->parent);
+			/* This will compute class->parent->vtable_size */
+			mono_class_init (class->parent);
 			setup_interface_offsets (class, class->parent->vtable_size);
 		} else {
 			setup_interface_offsets (class, 0);

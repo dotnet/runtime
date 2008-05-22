@@ -667,6 +667,9 @@ mono_class_setup_parent    (MonoClass *klass, MonoClass *parent) MONO_INTERNAL;
 void
 mono_class_setup_supertypes (MonoClass *klass) MONO_INTERNAL;
 
+MonoMethod*
+mono_class_get_method_by_index (MonoClass *class, int index) MONO_INTERNAL;
+
 GPtrArray*
 mono_class_get_implemented_interfaces (MonoClass *klass) MONO_INTERNAL;
 

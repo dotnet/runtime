@@ -520,11 +520,8 @@ find_method_in_class (MonoClass *in_class, const char *name, const char *qname, 
 		}
 	}
 
-	if (i < in_class->method.count) {
-		mono_class_setup_methods (from_class);
-		g_assert (from_class->method.count == in_class->method.count);
-		return from_class->methods [i];
-	}
+	if (i < in_class->method.count)
+		return mono_class_get_method_by_index (from_class, i);
 	return NULL;
 }
 
