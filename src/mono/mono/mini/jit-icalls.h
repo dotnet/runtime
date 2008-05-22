@@ -55,6 +55,8 @@ gpointer mono_class_static_field_address (MonoDomain *domain, MonoClassField *fi
 
 gpointer mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context) MONO_INTERNAL;
 
+gpointer mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoMethod *method) MONO_INTERNAL;
+
 guint64 mono_fconv_u8 (double v) MONO_INTERNAL;
 
 gint64 mono_fconv_i8 (double v) MONO_INTERNAL;

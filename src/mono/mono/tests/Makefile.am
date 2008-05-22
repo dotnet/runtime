@@ -700,27 +700,11 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-interface-methods.2.exe generic-array-type.2.exe	\
 		generic-method-patching.2.exe	\
 		generic-null-call.2.exe
-	$(RUNTIME) -O=gshared,-inline        generics-sharing.2.exe
-	$(RUNTIME) -O=gshared,-inline        shared-generic-methods.2.exe
-	$(RUNTIME) -O=gshared,-inline        shared-generic-synchronized.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-initobj.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-box.2.exe
-	$(RUNTIME) -O=gshared,-inline        generics-sharing-other-exc.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-unbox.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-delegate.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-sizeof.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-ldobj.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-mkrefany.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-refanyval.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-ldtoken.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-ldtoken-method.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-ldtoken-field.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-virtual.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-tailcall.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-interface-methods.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-array-type.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-method-patching.2.exe
-	$(RUNTIME) -O=gshared,-inline        generic-null-call.2.exe
+	for fn in $+ ; do	\
+		echo $$fn;	\
+		$(RUNTIME) -O=gshared,-inline        $$fn;	\
+		$(RUNTIME) -O=gshared,-inline,shared $$fn;	\
+	done
 
 EXTRA_DIST += async-exceptions.cs
 async-exceptions.exe : async-exceptions.cs

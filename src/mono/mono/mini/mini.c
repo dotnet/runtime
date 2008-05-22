@@ -3119,11 +3119,12 @@ handle_alloc (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, gboole
 }
 
 static int
-handle_alloc_from_inst (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, MonoInst *vtable_inst,
+handle_alloc_from_inst (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass, MonoInst *data_inst,
 		gboolean for_box, const guchar *ip)
 {
 	MonoInst *iargs [2];
 	MonoMethod *managed_alloc = NULL;
+	void *alloc_ftn;
 	/*
 	  FIXME: we cannot get managed_alloc here because we can't get
 	  the class's vtable (because it's not a closed class)
@@ -3132,17 +3133,24 @@ handle_alloc_from_inst (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *kla
 	MonoMethod *managed_alloc = mono_gc_get_managed_allocator (vtable, for_box);
 	*/
 
-	g_assert (!(cfg->opt & MONO_OPT_SHARED));
-	g_assert (!cfg->compile_aot);
+	if (cfg->opt & MONO_OPT_SHARED) {
+		NEW_DOMAINCONST (cfg, iargs [0]);
+		iargs [1] = data_inst;
+		alloc_ftn = mono_object_new;
+	} else {
+		g_assert (!cfg->compile_aot);
 
-	if (managed_alloc) {
-		iargs [0] = vtable_inst;
-		return mono_emit_method_call_spilled (cfg, bblock, managed_alloc, mono_method_signature (managed_alloc), iargs, ip, NULL);
+		if (managed_alloc) {
+			iargs [0] = data_inst;
+			return mono_emit_method_call_spilled (cfg, bblock, managed_alloc,
+				mono_method_signature (managed_alloc), iargs, ip, NULL);
+		}
+
+		iargs [0] = data_inst;
+		alloc_ftn = mono_object_new_specific;
 	}
 
-	iargs [0] = vtable_inst;
-
-	return mono_emit_jit_icall (cfg, bblock, mono_object_new_specific, iargs, ip);
+	return mono_emit_jit_icall (cfg, bblock, alloc_ftn, iargs, ip);
 }
 
 /**
@@ -3210,13 +3218,13 @@ handle_box (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const gucha
 
 static MonoInst *
 handle_box_from_inst (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *val, const guchar *ip,
-		MonoClass *klass, MonoInst *vtable_inst)
+		MonoClass *klass, MonoInst *data_inst)
 {
 	int temp;
 
 	g_assert (!mono_class_is_nullable (klass));
 
-	temp = handle_alloc_from_inst (cfg, bblock, klass, vtable_inst, TRUE, ip);
+	temp = handle_alloc_from_inst (cfg, bblock, klass, data_inst, TRUE, ip);
 
 	return handle_box_copy (cfg, bblock, val, ip, klass, temp);
 }
@@ -4527,6 +4535,16 @@ get_runtime_generic_context_method (MonoCompile *cfg, MonoMethod *method, MonoBa
 	MonoMethod *cmethod, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type, const unsigned char *ip)
 {
 	int arg_num = mono_class_lookup_or_register_other_info (method->klass, cmethod, rgctx_type, generic_context);
+
+	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, arg_num, ip);
+}
+
+static MonoInst*
+get_runtime_generic_context_field (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
+	MonoClassField *field, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type,
+	const unsigned char *ip)
+{
+	int arg_num = mono_class_lookup_or_register_other_info (method->klass, field, rgctx_type, generic_context);
 
 	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, arg_num, ip);
 }
@@ -6685,18 +6703,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * will be transformed into a normal call there.
 					 */
 				} else if (generic_shared) {
-					MonoInst *this = NULL, *rgctx, *vtable;
+					MonoInst *rgctx, *data;
+					int rgctx_info;
 
-					GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
-
-					if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-						NEW_ARGLOAD (cfg, this, 0);
-					rgctx = get_runtime_generic_context (cfg, method, this, ip);
-					vtable = get_runtime_generic_context_ptr (cfg, method, bblock, cmethod->klass,
+					GET_RGCTX (rgctx);
+					if (cfg->opt & MONO_OPT_SHARED)
+						rgctx_info = MONO_RGCTX_INFO_KLASS;
+					else
+						rgctx_info = MONO_RGCTX_INFO_VTABLE;
+					data = get_runtime_generic_context_ptr (cfg, method, bblock, cmethod->klass,
 						token, MINI_TOKEN_SOURCE_METHOD, generic_context,
-						rgctx, MONO_RGCTX_INFO_VTABLE, ip);
+						rgctx, rgctx_info, ip);
 
-					temp = handle_alloc_from_inst (cfg, bblock, cmethod->klass, vtable, FALSE, ip);
+					temp = handle_alloc_from_inst (cfg, bblock, cmethod->klass, data, FALSE, ip);
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				} else {
 					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
@@ -7344,7 +7363,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
 			mono_domain_unlock (cfg->domain);
 
-			if (shared_access) {
+			if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
+				int temp;
+				MonoInst *iargs [2];
+				MonoInst *domain_var;
+
+				g_assert (field->parent);
+				/* avoid depending on undefined C behavior in sequence points */
+				domain_var = mono_get_domainvar (cfg);
+				NEW_TEMPLOAD (cfg, iargs [0], domain_var->inst_c0);
+				if (shared_access) {
+					MonoInst *rgctx;
+
+					GET_RGCTX (rgctx);
+					iargs [1] = get_runtime_generic_context_field (cfg, method, bblock, field,
+							generic_context, rgctx, MONO_RGCTX_INFO_CLASS_FIELD, ip);
+				} else {
+					NEW_FIELDCONST (cfg, iargs [1], field);
+				}
+				temp = mono_emit_jit_icall (cfg, bblock, mono_class_static_field_address, iargs, ip);
+				NEW_TEMPLOAD (cfg, ins, temp);
+			} else if (shared_access) {
 				MonoInst *this, *rgctx, *static_data;
 
 				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
@@ -7408,18 +7447,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins->type = STACK_PTR;
 					ins->klass = klass;
 				}
-			} else if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
-				int temp;
-				MonoInst *iargs [2];
-				MonoInst *domain_var;
-				
-				g_assert (field->parent);
-				/* avoid depending on undefined C behavior in sequence points */
-				domain_var = mono_get_domainvar (cfg);
-				NEW_TEMPLOAD (cfg, iargs [0], domain_var->inst_c0);
-				NEW_FIELDCONST (cfg, iargs [1], field);
-				temp = mono_emit_jit_icall (cfg, bblock, mono_class_static_field_address, iargs, ip);
-				NEW_TEMPLOAD (cfg, ins, temp);
 			} else {
 				MonoVTable *vtable;
 				vtable = mono_class_vtable (cfg->domain, klass);
@@ -7607,7 +7634,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_BOX: {
 			MonoInst *val;
-			gboolean generic_shared = FALSE;
+			int context_used = 0;
 
 			CHECK_STACK (1);
 			--sp;
@@ -7617,11 +7644,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_sharing_context && mono_class_check_context_used (klass)) {
-				if (mono_class_is_nullable (klass))
-					GENERIC_SHARING_FAILURE (CEE_BOX);
-				else
-					generic_shared = TRUE;
+			if (cfg->generic_sharing_context) {
+				context_used = mono_class_check_context_used (klass);
+
+				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
+					GENERIC_SHARING_FAILURE (*ip);
 			}
 
 			if (generic_class_is_reference_type (cfg, klass)) {
@@ -7670,19 +7697,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				start_new_bblock = 1;
 				break;
 			}
-			if (generic_shared) {
-				MonoInst *this = NULL, *rgctx, *vtable;
+			if (context_used) {
+				MonoInst *rgctx;
 
-				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
+  				if (mono_class_is_nullable (klass)) {
+					GENERIC_SHARING_FAILURE (CEE_BOX);
+  				} else {
+					MonoInst *data;
+					int rgctx_info;
 
-				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-					NEW_ARGLOAD (cfg, this, 0);
-				rgctx = get_runtime_generic_context (cfg, method, this, ip);
-				vtable = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
-					token, MINI_TOKEN_SOURCE_CLASS, generic_context,
-					rgctx, MONO_RGCTX_INFO_VTABLE, ip);
+					GET_RGCTX (rgctx);
+					if (cfg->opt & MONO_OPT_SHARED)
+						rgctx_info = MONO_RGCTX_INFO_KLASS;
+					else
+						rgctx_info = MONO_RGCTX_INFO_VTABLE;
+					data = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+							token, MINI_TOKEN_SOURCE_CLASS, generic_context,
+							rgctx, rgctx_info, ip);
 
-				*sp++ = handle_box_from_inst (cfg, bblock, val, ip, klass, vtable);
+					*sp++ = handle_box_from_inst (cfg, bblock, val, ip, klass, data);
+  				}
 			} else {
 				*sp++ = handle_box (cfg, bblock, val, ip, klass);
 			}
@@ -8211,14 +8245,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int temp;
 				MonoInst *res, *store, *addr, *vtvar, *iargs [3];
 
-				GENERIC_SHARING_FAILURE (CEE_LDTOKEN);
-
 				vtvar = mono_compile_create_var (cfg, &handle_class->byval_arg, OP_LOCAL); 
 
 				NEW_IMAGECONST (cfg, iargs [0], image);
 				NEW_ICONST (cfg, iargs [1], n);
-				NEW_PCONST (cfg, iargs [2], generic_context);
-				temp = mono_emit_jit_icall (cfg, bblock, mono_ldtoken_wrapper, iargs, ip);
+				if (cfg->generic_sharing_context) {
+					MonoInst *rgctx;
+
+					GET_RGCTX (rgctx);
+					iargs [2] = get_runtime_generic_context_method (cfg, method, bblock, method,
+							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
+					temp = mono_emit_jit_icall (cfg, bblock, mono_ldtoken_wrapper_generic_shared,
+							iargs, ip);
+				} else {
+					NEW_PCONST (cfg, iargs [2], generic_context);
+					temp = mono_emit_jit_icall (cfg, bblock, mono_ldtoken_wrapper, iargs, ip);
+				}
 				NEW_TEMPLOAD (cfg, res, temp);
 				NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 				NEW_INDSTORE (cfg, store, addr, res, &mono_defaults.int_class->byval_arg);
@@ -13576,6 +13618,8 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_class_static_field_address , "mono_class_static_field_address", 
 				 "ptr ptr ptr", FALSE);
 	register_icall (mono_ldtoken_wrapper, "mono_ldtoken_wrapper", "ptr ptr ptr ptr", FALSE);
+	register_icall (mono_ldtoken_wrapper_generic_shared, "mono_ldtoken_wrapper_generic_shared",
+		"ptr ptr ptr ptr", FALSE);
 	register_icall (mono_get_special_static_data, "mono_get_special_static_data", "ptr int", FALSE);
 	register_icall (mono_ldstr, "mono_ldstr", "object ptr ptr int32", FALSE);
 	register_icall (mono_helper_stelem_ref_check, "helper_stelem_ref_check", "void object object", FALSE);
