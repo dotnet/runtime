@@ -400,6 +400,7 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context)
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: {
 		MonoMethod *method = data;
+		MonoMethod *inflated_method;
 
 		if (method->wrapper_type != MONO_WRAPPER_NONE) {
 			g_assert (method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE);
@@ -409,7 +410,9 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context)
 			method = mono_marshal_get_static_rgctx_invoke (method);
 		}
 
-		return mono_class_inflate_generic_method (method, context);
+		inflated_method = mono_class_inflate_generic_method (method, context);
+		mono_class_init (inflated_method->klass);
+		return inflated_method;
 	}
 
 	case MONO_RGCTX_INFO_CLASS_FIELD: {

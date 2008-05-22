@@ -5776,7 +5776,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					(cmethod->klass->valuetype ||
 					(cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) ||
 					((cmethod->flags & METHOD_ATTRIBUTE_STATIC) &&
-						mono_class_generic_sharing_enabled (cmethod->klass)))) {
+						mono_class_generic_sharing_enabled (cmethod->klass)) ||
+					(!mono_method_is_generic_sharable_impl (cmethod) &&
+						(!virtual || cmethod->flags & METHOD_ATTRIBUTE_FINAL ||
+						!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))))) {
 				MonoInst *this = NULL, *rgctx;
 
 				INLINE_FAILURE;
@@ -5802,12 +5805,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (addr) {
-				if (*ip == CEE_CALL)
+				if (*ip == CEE_CALL) {
 					g_assert (context_used);
-				else if (*ip == CEE_CALLI)
+				} else if (*ip == CEE_CALLI) {
 					g_assert (!vtable_arg);
-				else
-					g_assert_not_reached ();
+				} else {
+					g_assert (cmethod->flags & METHOD_ATTRIBUTE_FINAL ||
+							!(cmethod->flags & METHOD_ATTRIBUTE_FINAL));
+				}
 
 				/* Prevent inlining of methods with indirect calls */
 				INLINE_FAILURE;
@@ -6742,7 +6747,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						INLINE_FAILURE;
 						mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, callvirt_this_arg);
 					}
-				} else if (generic_shared && cmethod->klass->valuetype) {
+				} else if (generic_shared &&
+						(cmethod->klass->valuetype ||
+						!mono_method_is_generic_sharable_impl (cmethod))) {
 					MonoInst *this = NULL, *rgctx, *cmethod_addr;
 
 					g_assert (!callvirt_this_arg);
