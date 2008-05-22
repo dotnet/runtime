@@ -213,12 +213,17 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			else
 				declaring = m;
 
-			mono_class_setup_methods (klass);
-			for (i = 0; i < klass->method.count; ++i) {
-				actual_method = klass->methods [i];
-				if (actual_method->is_inflated) {
-					if (mono_method_get_declaring_generic_method (actual_method) == declaring)
-						break;
+			if (klass->generic_class && !klass->methods) {
+				/* Avoid calling setup_methods () if possible */
+				actual_method = mono_class_inflate_generic_method_full (declaring, klass, mono_class_get_context (klass));
+			} else {
+				mono_class_setup_methods (klass);
+				for (i = 0; i < klass->method.count; ++i) {
+					actual_method = klass->methods [i];
+					if (actual_method->is_inflated) {
+						if (mono_method_get_declaring_generic_method (actual_method) == declaring)
+							break;
+					}
 				}
 			}
 
