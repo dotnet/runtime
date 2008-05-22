@@ -1857,6 +1857,7 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	MonoMethod *method = ((MonoCallInst*)tree)->method;
 	int vtable_reg, slot_reg, this_reg;
 	MBState *state = st;
+	int slot;
 
 	this_reg = state->left->reg1;
 	mono_arch_emit_this_vret_args (cfg, (MonoCallInst*)tree, this_reg, state->left->tree->type, novirtop == OP_VCALL? state->right->reg1: -1);
@@ -1909,8 +1910,17 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 		return;
 	}
 
-	/* Initialize method->slot */
-	mono_class_setup_vtable (method->klass);
+	if (method->klass->generic_class && !method->klass->vtable) {
+	   MonoMethod *gmethod = mono_method_get_declaring_generic_method (method);
+	   mono_class_setup_vtable (gmethod->klass);
+
+	   slot = gmethod->slot;
+	   g_assert (slot != -1);
+	} else {
+		/* Initialize method->slot */
+		mono_class_setup_vtable (method->klass);
+		slot = method->slot;
+	}
 
 	vtable_reg = mono_regstate_next_int (cfg->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
@@ -1923,11 +1933,11 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 #else
 		slot_reg = mono_regstate_next_int (cfg->rs);
 		mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
-		tree->inst_offset = method->slot * SIZEOF_VOID_P;
+		tree->inst_offset = slot * SIZEOF_VOID_P;
 #endif
 	} else {
 		slot_reg = vtable_reg;
-		tree->inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) + (method->slot * SIZEOF_VOID_P);
+		tree->inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);
 	}
 	
 	tree->dreg = state->reg1;
