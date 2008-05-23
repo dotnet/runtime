@@ -3421,6 +3421,8 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	 */
 	if (!(cfg->opt & MONO_OPT_SHARED)) {
 		vtable = mono_class_vtable (cfg->domain, method->klass);
+		if (!vtable)
+			return FALSE;
 		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
 				/* This makes so that inline cannot trigger */
@@ -5585,7 +5587,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						rgctx, MONO_RGCTX_INFO_VTABLE, ip);
 				} else {
 					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
-
+					
+					CHECK_TYPELOAD (cmethod->klass);
 					NEW_VTABLECONST (cfg, vtable_arg, vtable);
 				}
 			}
@@ -6719,6 +6722,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_TEMPLOAD (cfg, *sp, temp);
 				} else {
 					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
+
+					CHECK_TYPELOAD (cmethod->klass);
 					if (mini_field_access_needs_cctor_run (cfg, method, vtable) && !(g_slist_find (class_inits, vtable))) {
 						guint8 *tramp = mono_create_class_init_trampoline (vtable);
 						mono_emit_native_call (cfg, bblock, tramp, 
@@ -7356,8 +7361,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* The special_static_fields field is init'd in mono_class_vtable, so it needs
 			 * to be called here.
 			 */
-			if (!(cfg->opt & MONO_OPT_SHARED))
+			if (!(cfg->opt & MONO_OPT_SHARED)) {
 				mono_class_vtable (cfg->domain, klass);
+				CHECK_TYPELOAD (klass);
+			}
 			mono_domain_lock (cfg->domain);
 			if (cfg->domain->special_static_fields)
 				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
@@ -7449,7 +7456,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			} else {
 				MonoVTable *vtable;
+
 				vtable = mono_class_vtable (cfg->domain, klass);
+				CHECK_TYPELOAD (klass);
 				if (!addr) {
 					if (mini_field_access_needs_cctor_run (cfg, method, vtable) && !(g_slist_find (class_inits, vtable))) {
 						guint8 *tramp = mono_create_class_init_trampoline (vtable);
@@ -7517,6 +7526,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+
+				CHECK_TYPELOAD (klass);
 				if (!shared_access && !((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
 				    vtable->initialized && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY)) {
 					gpointer addr = (char*)vtable->data + field->offset;
@@ -9757,6 +9768,7 @@ decompose_foreach (MonoInst *tree, gpointer data)
 		else {
 			MonoVTable *vtable = mono_class_vtable (cfg->domain, mono_array_class_get (tree->inst_newa_class, 1));
 
+			g_assert (vtable);
 			NEW_VTABLECONST (cfg, iargs [0], vtable);
 			iargs [1] = tree->inst_newa_len;
 
@@ -10394,15 +10406,22 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable (domain, patch_info->data.klass);
+		g_assert (target);
 		break;
-	case MONO_PATCH_INFO_CLASS_INIT:
-		target = mono_create_class_init_trampoline (mono_class_vtable (domain, patch_info->data.klass));
+	case MONO_PATCH_INFO_CLASS_INIT: {
+		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.klass);
+
+		g_assert (vtable);
+		target = mono_create_class_init_trampoline (vtable);
 		break;
+	}
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		target = mono_create_delegate_trampoline (patch_info->data.klass);
 		break;
 	case MONO_PATCH_INFO_SFLDA: {
 		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
+
+		g_assert (vtable);
 		if (!vtable->initialized && !(vtable->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) && (method && mono_class_needs_cctor_run (vtable->klass, method)))
 			/* Done by the generated code */
 			;
@@ -12319,6 +12338,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	MonoCompile *cfg;
 	gpointer code = NULL;
 	MonoJitInfo *info;
+	MonoVTable *vtable;
 
 #ifdef MONO_USE_AOT_COMPILER
 	if ((opt & MONO_OPT_AOT) && !(mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)) {
@@ -12329,7 +12349,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_domain_lock (domain);
 		if ((code = mono_aot_get_method (domain, method))) {
 			mono_domain_unlock (domain);
-			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
+			vtable = mono_class_vtable (domain, method->klass);
+			g_assert (vtable);
+			mono_runtime_class_init (vtable);
 			return code;
 		}
 
@@ -12508,7 +12530,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	mono_domain_unlock (target_domain);
 
-	mono_runtime_class_init (mono_class_vtable (target_domain, method->klass));
+	vtable = mono_class_vtable (target_domain, method->klass);
+	mono_runtime_class_init (vtable);
 	return code;
 }
 
@@ -12546,9 +12569,12 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 	if ((info = lookup_method (target_domain, method))) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
+			MonoVTable *vtable;
+
 			mono_domain_unlock (target_domain);
 			mono_jit_stats.methods_lookups++;
-			mono_runtime_class_init (mono_class_vtable (domain, method->klass));
+			vtable = mono_class_vtable (domain, method->klass);
+			mono_runtime_class_init (vtable);
 			return mono_create_ftnptr (target_domain, info->code_start);
 		}
 	}
@@ -12677,6 +12703,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoMethod *invoke;
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc, void* compiled_method);
 	void* compiled_method;
+	MonoVTable *vtable;
 
 	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {
 		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
@@ -12697,7 +12724,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	/* We need this here becuase mono_marshal_get_runtime_invoke can be place 
 	 * the helper method in System.Object and not the target class
 	 */
-	mono_runtime_class_init (mono_class_vtable (mono_domain_get (), method->klass));
+	vtable = mono_class_vtable (mono_domain_get (), method->klass);
+	g_assert (vtable);
+	mono_runtime_class_init (vtable);
 
 	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
