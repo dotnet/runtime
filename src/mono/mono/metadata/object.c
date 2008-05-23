@@ -1272,6 +1272,7 @@ static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoCla
  *
  * VTables are domain specific because we create domain specific code, and 
  * they contain the domain specific static class data.
+ * On failure, NULL is returned, and class->exception_type is set.
  */
 MonoVTable *
 mono_class_vtable (MonoDomain *domain, MonoClass *class)
@@ -1320,14 +1321,17 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 
 	mono_class_init (class);
 
-	/* FIXME: This should be done by mono_class_init () for dynamic classes as well */
-	if (class->image->dynamic)
+	/* 
+	 * For some classes, mono_class_init () already computed class->vtable_size, and 
+	 * that is all that is needed because of the vtable trampolines.
+	 */
+	if (!class->vtable_size)
 		mono_class_setup_vtable (class);
 
-	/* 
-	 * For szarrays, mono_class_init () already computed class->vtable_size, and that is
-	 * all that is needed because of the vtable trampolines.
-	 */
+	if (class->exception_type) {
+		mono_domain_unlock (domain);
+		return NULL;
+	}
 
 	if (ARCH_USE_IMT) {
 		vtable_size = sizeof (MonoVTable) + class->vtable_size * sizeof (gpointer);
@@ -1543,7 +1547,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		mono_raise_exception (exc);
 	}
 
-	/* make sure the the parent is initialized */
+	/* make sure the parent is initialized */
 	if (class->parent)
 		mono_class_vtable (domain, class->parent);
 
