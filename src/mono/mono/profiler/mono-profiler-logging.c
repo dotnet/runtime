@@ -624,6 +624,7 @@ struct _MonoProfiler {
 	ProfilerStatisticalData *statistical_data;
 	ProfilerStatisticalData *statistical_data_ready;
 	ProfilerStatisticalData *statistical_data_second_buffer;
+	int statistical_call_chain_depth;
 	
 	THREAD_TYPE data_writer_thread;
 	EVENT_TYPE statistical_data_writer_event;
@@ -1399,8 +1400,8 @@ profiler_per_thread_data_destroy (ProfilerPerThreadData *data) {
 }
 
 static ProfilerStatisticalData*
-profiler_statistical_data_new (guint32 buffer_size)
-{
+profiler_statistical_data_new (MonoProfiler *profiler) {
+	int buffer_size = profiler->statistical_buffer_size * (profiler->statistical_call_chain_depth + 1);
 	ProfilerStatisticalData *data = g_new (ProfilerStatisticalData, 1);
 
 	data->addresses = g_new0 (gpointer, buffer_size);
@@ -2580,6 +2581,7 @@ typedef enum {
 	MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_ID = 2,
 	MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_NEW_ID = 3,
 	MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_OFFSET_IN_REGION = 4,
+	MONO_PROFILER_STATISTICAL_CODE_CALL_CHAIN = 5,
 	MONO_PROFILER_STATISTICAL_CODE_REGIONS = 7
 } MonoProfilerStatisticalCode;
 
@@ -2650,8 +2652,8 @@ refresh_memory_regions (void) {
 			printf ("[refresh_memory_regions] Wrote region %d (%p-%p[%d] '%s')\n", region->id, region->start, region->end, region->file_offset, region->file_name);
 #endif
 			write_uint32 (region->id);
-			write_uint64 (GPOINTER_TO_INT (region->start));
-			write_uint32 (GPOINTER_TO_INT (region->end) - GPOINTER_TO_INT (region->start));
+			write_uint64 (GPOINTER_TO_UINT (region->start));
+			write_uint32 (GPOINTER_TO_UINT (region->end) - GPOINTER_TO_UINT (region->start));
 			write_uint32 (region->file_offset);
 			write_string (region->file_name);
 		}
@@ -2663,6 +2665,78 @@ refresh_memory_regions (void) {
 	profiler->executable_regions = new_regions;
 }
 
+static gboolean
+write_statistical_hit (MonoDomain *domain, gpointer address, gboolean regions_refreshed) {
+	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (char*) address);
+	
+	if (ji != NULL) {
+		MonoMethod *method = mono_jit_info_get_method (ji);
+		MethodIdMappingElement *element = method_id_mapping_element_get (method);
+		
+		if (element != NULL) {
+#if DEBUG_STATISTICAL_PROFILER
+			printf ("[write_statistical_hit] Wrote method %d\n", element->id);
+#endif
+			write_uint32 ((element->id << 3) | MONO_PROFILER_STATISTICAL_CODE_METHOD);
+		} else {
+#if DEBUG_STATISTICAL_PROFILER
+			printf ("[write_statistical_hit] Wrote unknown method %p\n", method);
+#endif
+			write_uint32 (MONO_PROFILER_STATISTICAL_CODE_METHOD);
+		}
+	} else {
+		ProfilerExecutableMemoryRegionData *region = find_address_region (profiler->executable_regions, address);
+		
+		if (region == NULL && ! regions_refreshed) {
+#if DEBUG_STATISTICAL_PROFILER
+			printf ("[write_statistical_hit] Cannot find region for address %p, refreshing...\n", address);
+#endif
+			refresh_memory_regions ();
+			regions_refreshed = TRUE;
+			region = find_address_region (profiler->executable_regions, address);
+		}
+		
+		if (region != NULL) {
+			guint32 offset = ((guint8*)address) - ((guint8*)region->start);
+			ProfilerUnmanagedSymbol *symbol = executable_memory_region_find_symbol (region, offset);
+			
+			if (symbol != NULL) {
+				if (symbol->id > 0) {
+#if DEBUG_STATISTICAL_PROFILER
+					printf ("[write_statistical_hit] Wrote unmanaged symbol %d\n", symbol->id);
+#endif
+					write_uint32 ((symbol->id << 3) | MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_ID);
+				} else {
+					ProfilerExecutableMemoryRegions *regions = profiler->executable_regions;
+					const char *symbol_name = executable_region_symbol_get_name (region, symbol);
+					symbol->id = regions->next_unmanaged_function_id;
+					regions->next_unmanaged_function_id ++;
+#if DEBUG_STATISTICAL_PROFILER
+					printf ("[write_statistical_hit] Wrote new unmanaged symbol in region %d[%d]\n", region->id, offset);
+#endif
+					write_uint32 ((region->id << 3) | MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_NEW_ID);
+					write_uint32 (symbol->id);
+					write_string (symbol_name);
+				}
+			} else {
+#if DEBUG_STATISTICAL_PROFILER
+				printf ("[write_statistical_hit] Wrote unknown unmanaged hit in region %d[%d] (address %p)\n", region->id, offset, address);
+#endif
+				write_uint32 ((region->id << 3) | MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_OFFSET_IN_REGION);
+				write_uint32 (offset);
+			}
+		} else {
+#if DEBUG_STATISTICAL_PROFILER
+			printf ("[write_statistical_hit] Wrote unknown unmanaged hit %p\n", address);
+#endif
+			write_uint32 (MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_OFFSET_IN_REGION);
+			write_uint64 (GPOINTER_TO_UINT (address));
+		}
+	}
+	
+	return regions_refreshed;
+}
+
 static void
 flush_all_mappings (void);
 
@@ -2671,6 +2745,8 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 	int start_index = data->first_unwritten_index;
 	int end_index = data->next_free_index;
 	gboolean regions_refreshed = FALSE;
+	int call_chain_depth = profiler->statistical_call_chain_depth;
+	MonoDomain *domain = mono_domain_get ();
 	int index;
 	
 	if (end_index > data->end_index)
@@ -2683,77 +2759,43 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 	
 	write_clock_data ();
 	
+#if DEBUG_STATISTICAL_PROFILER
+	printf ("[write_statistical_data_block] Starting loop at index %d\n", start_index);
+#endif
+	
 	for (index = start_index; index < end_index; index ++) {
-		gpointer address = data->addresses [index];
-		MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (char*) address);
+		int base_index = index * (call_chain_depth + 1);
+		gpointer address = data->addresses [base_index];
+		int callers_count;
 		
-		if (ji != NULL) {
-			MonoMethod *method = mono_jit_info_get_method (ji);
-			MethodIdMappingElement *element = method_id_mapping_element_get (method);
-			
-			if (element != NULL) {
-#if DEBUG_STATISTICAL_PROFILER
-				printf ("[write_statistical_data_block] Wrote method %d\n", element->id);
-#endif
-				write_uint32 ((element->id << 3) | MONO_PROFILER_STATISTICAL_CODE_METHOD);
-			} else {
-#if DEBUG_STATISTICAL_PROFILER
-				printf ("[write_statistical_data_block] Wrote unknown method %p\n", method);
-#endif
-				write_uint32 (MONO_PROFILER_STATISTICAL_CODE_METHOD);
+		regions_refreshed = write_statistical_hit (domain, address, regions_refreshed);
+		base_index ++;
+		
+		for (callers_count = 0; callers_count < call_chain_depth; callers_count ++) {
+			address = data->addresses [base_index + callers_count];
+			if (address == NULL) {
+				break;
 			}
-		} else {
-			ProfilerExecutableMemoryRegionData *region = find_address_region (profiler->executable_regions, address);
+		}
+		
+		if (callers_count > 0) {
+			write_uint32 ((callers_count << 3) | MONO_PROFILER_STATISTICAL_CODE_CALL_CHAIN);
 			
-			if (region == NULL && ! regions_refreshed) {
-#if DEBUG_STATISTICAL_PROFILER
-				printf ("[write_statistical_data_block] Cannot find region for address %p, refreshing...\n", address);
-#endif
-				refresh_memory_regions ();
-				regions_refreshed = TRUE;
-				region = find_address_region (profiler->executable_regions, address);
-			}
-			
-			if (region != NULL) {
-				guint32 offset = ((guint8*)address) - ((guint8*)region->start);
-				ProfilerUnmanagedSymbol *symbol = executable_memory_region_find_symbol (region, offset);
-				
-				if (symbol != NULL) {
-					if (symbol->id > 0) {
-#if DEBUG_STATISTICAL_PROFILER
-						printf ("[write_statistical_data_block] Wrote unmanaged symbol %d\n", symbol->id);
-#endif
-						write_uint32 ((symbol->id << 3) | MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_ID);
-					} else {
-						ProfilerExecutableMemoryRegions *regions = profiler->executable_regions;
-						const char *symbol_name = executable_region_symbol_get_name (region, symbol);
-						symbol->id = regions->next_unmanaged_function_id;
-						regions->next_unmanaged_function_id ++;
-#if DEBUG_STATISTICAL_PROFILER
-						printf ("[write_statistical_data_block] Wrote new unmanaged symbol in region %d[%d]\n", region->id, offset);
-#endif
-						write_uint32 ((region->id << 3) | MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_NEW_ID);
-						write_uint32 (symbol->id);
-						write_string (symbol_name);
-					}
+			for (callers_count = 0; callers_count < call_chain_depth; callers_count ++) {
+				address = data->addresses [base_index + callers_count];
+				if (address != NULL) {
+					regions_refreshed = write_statistical_hit (domain, address, regions_refreshed);
 				} else {
-#if DEBUG_STATISTICAL_PROFILER
-					printf ("[write_statistical_data_block] Wrote unknown unmanaged hit in region %d[%d] (address %p)\n", region->id, offset, address);
-#endif
-					write_uint32 ((region->id << 3) | MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_OFFSET_IN_REGION);
-					write_uint32 (offset);
+					break;
 				}
-			} else {
-#if DEBUG_STATISTICAL_PROFILER
-				printf ("[write_statistical_data_block] Wrote unknown unmanaged hit %p\n", address);
-#endif
-				write_uint32 (MONO_PROFILER_STATISTICAL_CODE_UNMANAGED_FUNCTION_OFFSET_IN_REGION);
-				write_uint64 (GPOINTER_TO_INT (address));
 			}
 		}
 	}
 	write_uint32 (MONO_PROFILER_STATISTICAL_CODE_END);
 	
+#if DEBUG_STATISTICAL_PROFILER
+	printf ("[write_statistical_data_block] Ending loop at index %d\n", end_index);
+#endif
 	write_clock_data ();
 	
 	write_current_block (MONO_PROFILER_FILE_BLOCK_KIND_STATISTICAL);
@@ -3256,6 +3298,55 @@ object_allocated (MonoProfiler *profiler, MonoObject *obj, MonoClass *klass) {
 	}
 }
 
+static void
+statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **ips, void *context) {
+	ProfilerStatisticalData *data;
+	int index;
+	
+	do {
+		data = profiler->statistical_data;
+		index = InterlockedIncrement (&data->next_free_index);
+		
+		if (index <= data->end_index) {
+			int base_index = (index - 1) * (profiler->statistical_call_chain_depth + 1);
+			int call_chain_index = 0;
+			
+			//printf ("[statistical_call_chain] (%d)\n", call_chain_depth);
+			while (call_chain_index < call_chain_depth) {
+				//printf ("[statistical_call_chain] [%d] = %p\n", base_index + call_chain_index, ips [call_chain_index]);
+				data->addresses [base_index + call_chain_index] = (gpointer) ips [call_chain_index];
+				call_chain_index ++;
+			}
+			while (call_chain_index <= profiler->statistical_call_chain_depth) {
+				//printf ("[statistical_call_chain] [%d] = NULL\n", base_index + call_chain_index);
+				data->addresses [base_index + call_chain_index] = NULL;
+				call_chain_index ++;
+			}
+		} else {
+			/* Check if we are the one that must swap the buffers */
+			if (index == data->end_index + 1) {
+				ProfilerStatisticalData *new_data;
+
+				/* In the *impossible* case that the writer thread has not finished yet, */
+				/* loop waiting for it and meanwhile lose all statistical events... */
+				do {
+					/* First, wait that it consumed the ready buffer */
+					while (profiler->statistical_data_ready != NULL);
+					/* Then, wait that it produced the free buffer */
+					new_data = profiler->statistical_data_second_buffer;
+				} while (new_data == NULL);
+
+				profiler->statistical_data_ready = data;
+				profiler->statistical_data = new_data;
+				profiler->statistical_data_second_buffer = NULL;
+				WRITER_EVENT_RAISE ();
+			}
+			
+			/* Loop again, hoping to acquire a free slot this time */
+			data = NULL;
+		}
+	} while (data == NULL);
+}
 
 static void
 statistical_hit (MonoProfiler *profiler, guchar *ip, void *context) {
@@ -3806,6 +3897,7 @@ setup_user_options (const char *arguments) {
 	profiler->file_name_suffix = NULL;
 	profiler->per_thread_buffer_size = 10000;
 	profiler->statistical_buffer_size = 10000;
+	profiler->statistical_call_chain_depth = 0;
 	profiler->write_buffer_size = 1024;
 	profiler->heap_shot_command_file_name = NULL;
 	profiler->dump_next_heap_snapshots = 0;
@@ -3839,6 +3931,16 @@ setup_user_options (const char *arguments) {
 				int value = atoi (equals + 1);
 				if (value > 0) {
 					profiler->per_thread_buffer_size = value;
+				}
+			} else if (! (strncmp (argument, "statistical", equals_position) && strncmp (argument, "stat", equals_position) && strncmp (argument, "s", equals_position))) {
+				int value = atoi (equals + 1);
+				if (value > 0) {
+					if (value > 16) {
+						value = 16;
+					}
+					profiler->statistical_call_chain_depth = value;
+					profiler->flags |= MONO_PROFILE_STATISTICAL|MONO_PROFILE_JIT_COMPILATION;
+					profiler->action_flags.jit_time = TRUE;
 				}
 			} else if (! (strncmp (argument, "statistical-thread-buffer-size", equals_position) && strncmp (argument, "sbs", equals_position))) {
 				int value = atoi (equals + 1);
@@ -4097,8 +4199,8 @@ mono_profiler_startup (const char *desc)
 	profiler->loaded_modules = g_hash_table_new_full (g_direct_hash, NULL, NULL, loaded_element_destroy);
 	profiler->loaded_appdomains = g_hash_table_new_full (g_direct_hash, NULL, NULL, loaded_element_destroy);
 	
-	profiler->statistical_data = profiler_statistical_data_new (profiler->statistical_buffer_size);
-	profiler->statistical_data_second_buffer = profiler_statistical_data_new (profiler->statistical_buffer_size);
+	profiler->statistical_data = profiler_statistical_data_new (profiler);
+	profiler->statistical_data_second_buffer = profiler_statistical_data_new (profiler);
 	
 	profiler->write_buffers = g_malloc (sizeof (ProfilerFileWriteBuffer) + PROFILER_FILE_WRITE_BUFFER_SIZE);
 	profiler->write_buffers->next = NULL;
@@ -4146,6 +4248,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_thread (thread_start, thread_end);
 	mono_profiler_install_allocation (object_allocated);
 	mono_profiler_install_statistical (statistical_hit);
+	mono_profiler_install_statistical_call_chain (statistical_call_chain, profiler->statistical_call_chain_depth);
 	mono_profiler_install_gc (gc_event, gc_resize);
 #if (HAS_OPROFILE)
 	mono_profiler_install_jit_end (method_jit_result);
