@@ -2403,13 +2403,14 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 			return FALSE;
 		return mono_delegate_signature_equal (mono_type_get_signature (target), mono_type_get_signature (candidate));
 
-	case MONO_TYPE_GENERICINST:
-		//TODO implement me
-		g_assert_not_reached ();
-		return FALSE;
-
-		return candidate->type == MONO_TYPE_STRING;
-	
+	case MONO_TYPE_GENERICINST: {
+		MonoClass *target_klass;
+		MonoClass *candidate_klass;
+		target_klass = mono_class_from_mono_type (target);
+		candidate_klass = mono_class_from_mono_type (candidate);
+		/*FIXME handle nullables and enum*/
+		return mono_class_is_assignable_from (target_klass, candidate_klass);
+	}
 	case MONO_TYPE_OBJECT:
 		return MONO_TYPE_IS_REFERENCE (candidate);
 
@@ -2429,16 +2430,15 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 		return is_array_type_compatible (target, candidate);
 
 	case MONO_TYPE_VALUETYPE:
+		/*FIXME handle nullables and enum*/
 		return candidate->type == MONO_TYPE_VALUETYPE && target->data.klass == candidate->data.klass;
 
 	case MONO_TYPE_VAR:
-		//TODO implement me
-		g_assert_not_reached ();
+		return candidate->type == MONO_TYPE_VAR && target->data.generic_param->num == candidate->data.generic_param->num; 
 		return FALSE;
 
 	case MONO_TYPE_MVAR:
-		//TODO implement me
-		g_assert_not_reached ();
+		return candidate->type == MONO_TYPE_MVAR && target->data.generic_param->num == candidate->data.generic_param->num;
 		return FALSE;
 
 	default:
@@ -2482,9 +2482,6 @@ mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 	if (sig1->param_count != sig2->param_count) 
 		return FALSE;
 
-	if (sig1->generic_param_count != sig2->generic_param_count)
-		return FALSE;
-	
 	if (sig1->call_convention != sig2->call_convention)
 		return FALSE;
 
