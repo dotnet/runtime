@@ -12900,12 +12900,83 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
+#if defined(__i386__) || defined(__x86_64__)
+#define FULL_STAT_PROFILER_BACKTRACE 1
+#define CURRENT_FRAME_GET_BASE_POINTER(f) (* (gpointer*)(f))
+#define CURRENT_FRAME_GET_RETURN_ADDRESS(f) (* (((gpointer*)(f)) + 1))
+#if MONO_ARCH_STACK_GROWS_UP
+#define IS_BEFORE_ON_STACK <
+#define IS_AFTER_ON_STACK >
+#else
+#define IS_BEFORE_ON_STACK >
+#define IS_AFTER_ON_STACK <
+#endif
+#else
+#define FULL_STAT_PROFILER_BACKTRACE 0
+#endif
+
 static void
 SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 {
+	int call_chain_depth = mono_profiler_stat_get_call_chain_depth ();
 	GET_CONTEXT;
-
-	mono_profiler_stat_hit (mono_arch_ip_from_context (ctx), ctx);
+	
+	if (call_chain_depth == 0) {
+		mono_profiler_stat_hit (mono_arch_ip_from_context (ctx), ctx);
+	} else {
+		MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+		int current_frame_index = 1;
+		MonoContext mono_context;
+#if FULL_STAT_PROFILER_BACKTRACE
+		guchar *current_frame;
+		guchar *stack_bottom;
+		guchar *stack_top;
+#else
+		MonoDomain *domain;
+#endif
+		guchar *ips [call_chain_depth + 1];
+		
+		mono_arch_sigctx_to_monoctx (ctx, &mono_context);
+		ips [0] = MONO_CONTEXT_GET_IP (&mono_context);
+		
+		if (jit_tls != NULL) {
+#if FULL_STAT_PROFILER_BACKTRACE
+			stack_bottom = jit_tls->end_of_stack;
+			stack_top = MONO_CONTEXT_GET_SP (&mono_context);
+			current_frame = MONO_CONTEXT_GET_BP (&mono_context);
+			
+			while ((current_frame_index <= call_chain_depth) &&
+					(stack_bottom IS_BEFORE_ON_STACK (guchar*) current_frame) &&
+					((guchar*) current_frame IS_BEFORE_ON_STACK stack_top)) {
+				ips [current_frame_index] = CURRENT_FRAME_GET_RETURN_ADDRESS (current_frame);
+				current_frame_index ++;
+				stack_top = current_frame;
+				current_frame = CURRENT_FRAME_GET_BASE_POINTER (current_frame);
+			}
+#else
+			domain = mono_domain_get ();
+			if (domain != NULL) {
+				MonoLMF *lmf = NULL;
+				MonoJitInfo *ji;
+				MonoJitInfo res;
+				MonoContext new_mono_context;
+				int native_offset;
+				ji = mono_arch_find_jit_info (domain, jit_tls, &res, NULL, &mono_context,
+						&new_mono_context, NULL, &lmf, &native_offset, NULL);
+				while ((ji != NULL) && (current_frame_index <= call_chain_depth)) {
+					ips [current_frame_index] = MONO_CONTEXT_GET_IP (&new_mono_context);
+					current_frame_index ++;
+					mono_context = new_mono_context;
+					ji = mono_arch_find_jit_info (domain, jit_tls, &res, NULL, &mono_context,
+							&new_mono_context, NULL, &lmf, &native_offset, NULL);
+				}
+			}
+#endif
+		}
+		
+		
+		mono_profiler_stat_call_chain (current_frame_index, & ips [0], ctx);
+	}
 }
 
 static void
