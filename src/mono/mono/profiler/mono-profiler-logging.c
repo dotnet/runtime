@@ -242,6 +242,7 @@ typedef struct _ProfilerHeapShotWriteJob {
 	guint64 start_time;
 	guint64 end_counter;
 	guint64 end_time;
+	guint32 collection;
 } ProfilerHeapShotWriteJob;
 
 typedef struct _ProfilerPerThreadData {
@@ -642,6 +643,7 @@ struct _MonoProfiler {
 	int dump_next_heap_snapshots;
 	guint64 heap_shot_command_file_access_time;
 	gboolean heap_shot_was_signalled;
+	guint32 garbage_collection_counter;
 	
 	ProfilerExecutableMemoryRegions *executable_regions;
 	ProfilerExecutableFiles executable_files;
@@ -1200,7 +1202,7 @@ profiler_heap_shot_object_buffer_new (ProfilerPerThreadData *data) {
 }
 
 static ProfilerHeapShotWriteJob*
-profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled) {
+profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled, guint32 collection) {
 	ProfilerHeapShotWriteJob *job = g_new (ProfilerHeapShotWriteJob, 1);
 	job->next = NULL;
 	job->next_unwritten = NULL;
@@ -1212,6 +1214,7 @@ profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled) {
 	job->end = & (job->buffers->buffer [PROFILER_HEAP_SHOT_WRITE_BUFFER_SIZE]);
 	job->full_buffers = 0;
 	job->heap_shot_was_signalled = heap_shot_was_signalled;
+	job->collection = collection;
 #if DEBUG_HEAP_PROFILER
 	printf ("profiler_heap_shot_write_job_new: created job %p with buffer %p(%p-%p)\n", job, job->buffers, job->start, job->end);
 #endif
@@ -1582,7 +1585,7 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 	write_uint64 (job->start_time);
 	write_uint64 (job->end_counter);
 	write_uint64 (job->end_time);
-	
+	write_uint32 (job->collection);
 	MONO_PROFILER_GET_CURRENT_COUNTER (start_counter);
 	MONO_PROFILER_GET_CURRENT_TIME (start_time);
 	write_uint64 (start_counter);
@@ -3625,7 +3628,7 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 		ProfilerPerThreadData *data;
 		
 		if (dump_current_heap_snapshot ()) {
-			job = profiler_heap_shot_write_job_new (profiler->heap_shot_was_signalled);
+			job = profiler_heap_shot_write_job_new (profiler->heap_shot_was_signalled, profiler->garbage_collection_counter);
 			profiler->heap_shot_was_signalled = FALSE;
 			MONO_PROFILER_GET_CURRENT_COUNTER (job->start_counter);
 			MONO_PROFILER_GET_CURRENT_TIME (job->start_time);
@@ -3678,10 +3681,18 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 	gboolean do_heap_profiling = profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot;
+	guint32 event_value;
+	
+	if (ev == MONO_GC_EVENT_START) {
+		profiler->garbage_collection_counter ++;
+	}
+	
+	event_value = (profiler->garbage_collection_counter << 8) | generation;
+	
 	if (do_heap_profiling && (ev == MONO_GC_EVENT_POST_STOP_WORLD)) {
 		handle_heap_profiling (profiler, ev);
 	}
-	STORE_EVENT_NUMBER_COUNTER (profiler, generation, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, gc_event_code_from_profiler_event (ev), gc_event_kind_from_profiler_event (ev));
+	STORE_EVENT_NUMBER_COUNTER (profiler, event_value, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, gc_event_code_from_profiler_event (ev), gc_event_kind_from_profiler_event (ev));
 	if (do_heap_profiling && (ev != MONO_GC_EVENT_POST_STOP_WORLD)) {
 		handle_heap_profiling (profiler, ev);
 	}
@@ -3689,7 +3700,8 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 
 static void
 gc_resize (MonoProfiler *profiler, gint64 new_size) {
-	STORE_EVENT_NUMBER_COUNTER (profiler, new_size, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, MONO_PROFILER_EVENT_GC_RESIZE, 0);
+	profiler->garbage_collection_counter ++;
+	STORE_EVENT_NUMBER_VALUE (profiler, new_size, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, MONO_PROFILER_EVENT_GC_RESIZE, 0, profiler->garbage_collection_counter);
 }
 
 /* called at the end of the program */
@@ -4095,6 +4107,7 @@ mono_profiler_startup (const char *desc)
 	} else {
 		profiler_heap_buffers_clear (&(profiler->heap));
 	}
+	profiler->garbage_collection_counter = 0;
 	
 	WRITER_EVENT_INIT ();
 	LOG_WRITER_THREAD ("mono_profiler_startup: creating writer thread");
