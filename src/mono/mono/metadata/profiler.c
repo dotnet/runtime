@@ -59,6 +59,8 @@ static MonoProfileMethodFunc   method_free;
 static MonoProfileMethodResult man_unman_transition;
 static MonoProfileAllocFunc    allocation_cb;
 static MonoProfileStatFunc     statistical_cb;
+static MonoProfileStatCallChainFunc statistical_call_chain_cb;
+static int                     statistical_call_chain_depth;
 static MonoProfileMethodFunc   method_enter;
 static MonoProfileMethodFunc   method_leave;
 
@@ -203,6 +205,24 @@ mono_profiler_install_statistical (MonoProfileStatFunc callback)
 	statistical_cb = callback;
 }
 
+void 
+mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth) {
+	statistical_call_chain_cb = callback;
+	statistical_call_chain_depth = call_chain_depth;
+	if (statistical_call_chain_depth > MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH) {
+		statistical_call_chain_depth = MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH;
+	}
+}
+
+int
+mono_profiler_stat_get_call_chain_depth (void) {
+	if (statistical_call_chain_cb != NULL) {
+		return statistical_call_chain_depth;
+	} else {
+		return 0;
+	}
+}
+
 void mono_profiler_install_exception (MonoProfileExceptionFunc throw_callback, MonoProfileMethodFunc exc_method_leave, MonoProfileExceptionClauseFunc clause_callback)
 {
 	exception_throw_cb = throw_callback;
@@ -315,6 +335,13 @@ mono_profiler_stat_hit (guchar *ip, void *context)
 {
 	if ((mono_profiler_events & MONO_PROFILE_STATISTICAL) && statistical_cb)
 		statistical_cb (current_profiler, ip, context);
+}
+
+void
+mono_profiler_stat_call_chain (int call_chain_depth, guchar **ips, void *context)
+{
+	if ((mono_profiler_events & MONO_PROFILE_STATISTICAL) && statistical_call_chain_cb)
+		statistical_call_chain_cb (current_profiler, call_chain_depth, ips, context);
 }
 
 void
