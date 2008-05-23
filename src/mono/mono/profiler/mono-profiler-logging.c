@@ -3611,6 +3611,8 @@ profiler_heap_scan (ProfilerHeapShotHeapBuffers *heap, ProfilerHeapShotWriteJob 
 
 static void
 handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
+	static gboolean create_heap_shot_write_job;
+	
 	switch (ev) {
 	case MONO_GC_EVENT_PRE_STOP_WORLD:
 		// Get the lock, so we are sure nobody is flushing events during the collection,
@@ -3618,8 +3620,16 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 		LOCK_PROFILER ();
 		break;
 	case MONO_GC_EVENT_POST_STOP_WORLD:
-		// Update all mappings, so that we have built all the class descriptors.
-		flush_all_mappings ();
+		create_heap_shot_write_job = dump_current_heap_snapshot ();
+		if (create_heap_shot_write_job) {
+			ProfilerPerThreadData *data;
+			// Update all mappings, so that we have built all the class descriptors.
+			flush_all_mappings ();
+			// Also write all event buffers, so that allocations are recorded.
+			for (data = profiler->per_thread_data; data != NULL; data = data->next) {
+				write_thread_data_block (data);
+			}
+		}
 		// Release lock...
 		UNLOCK_PROFILER ();
 		break;
@@ -3627,7 +3637,7 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 		ProfilerHeapShotWriteJob *job;
 		ProfilerPerThreadData *data;
 		
-		if (dump_current_heap_snapshot ()) {
+		if (create_heap_shot_write_job) {
 			job = profiler_heap_shot_write_job_new (profiler->heap_shot_was_signalled, profiler->garbage_collection_counter);
 			profiler->heap_shot_was_signalled = FALSE;
 			MONO_PROFILER_GET_CURRENT_COUNTER (job->start_counter);
