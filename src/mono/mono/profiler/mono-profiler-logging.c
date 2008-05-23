@@ -58,9 +58,8 @@ typedef struct _ProfilerEventData {
 	unsigned int value:26;
 } ProfilerEventData;
 
-#define EXTENDED_EVENT_VALUE_SHIFT (26)
-#define MAX_EVENT_VALUE ((1<<EXTENDED_EVENT_VALUE_SHIFT)-1)
-#define MAX_EXTENDED_EVENT_VALUE ((((guint64))MAX_EVENT_VALUE<<32)|((guint64)0xffffffff))
+#define EVENT_VALUE_BITS (26)
+#define MAX_EVENT_VALUE ((1<<EVENT_VALUE_BITS)-1)
 
 typedef enum {
 	MONO_PROFILER_EVENT_METHOD_JIT = 0,
@@ -97,17 +96,38 @@ typedef enum {
 	gettimeofday (&current_time, NULL);\
 	(t) = (((guint64)current_time.tv_sec) * 1000000) + current_time.tv_usec;\
 } while (0)
-#if 1
-#define MONO_PROFILER_GET_CURRENT_COUNTER(c) MONO_PROFILER_GET_CURRENT_TIME ((c));
-#else
+
+static gboolean use_fast_timer = FALSE;
+
+#if defined(__i386__) || defined(__x86_64__)
+static void detect_fast_timer (void) {
+	guint32 op = 0x1;
+	guint32 eax,ebx,ecx,edx;
+	__asm__ __volatile__ ("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(op));
+	if (edx & 0x10) {
+		use_fast_timer = TRUE;
+	} else {
+		use_fast_timer = FALSE;
+	}
+}
+
 static __inline__ guint64 rdtsc(void) {
 	guint32 hi, lo;
 	__asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
 	return ((guint64) lo) | (((guint64) hi) << 32);
 }
 #define MONO_PROFILER_GET_CURRENT_COUNTER(c) {\
-	(c) = rdtsc ();\
+	if (use_fast_timer) {\
+		(c) = rdtsc ();\
+	} else {\
+		MONO_PROFILER_GET_CURRENT_TIME ((c));\
+	}\
 } while (0)
+#else
+static detect_fast_timer (void) {
+	use_fast_timer = FALSE;
+}
+#define MONO_PROFILER_GET_CURRENT_COUNTER(c) MONO_PROFILER_GET_CURRENT_TIME ((c))
 #endif
 
 
@@ -1748,13 +1768,6 @@ write_mapping_block (gsize thread_id) {
 #endif
 }
 
-static guint64
-get_extended_event_value (ProfilerEventData *event, ProfilerEventData *next) {
-	guint64 result = next->data.number;
-	result |= (((guint64) event->value) << 32);
-	return result;
-}
-
 typedef enum {
 	MONO_PROFILER_PACKED_EVENT_CODE_METHOD_ENTER = 1,
 	MONO_PROFILER_PACKED_EVENT_CODE_METHOD_EXIT_IMPLICIT = 2,
@@ -1785,8 +1798,8 @@ write_event (ProfilerEventData *event) {
 	guint64 event_value;
 
 	event_value = event->value;
-	if (event_value > MAX_EVENT_VALUE) {
-		event_value = get_extended_event_value (event, next);
+	if (event_value == MAX_EVENT_VALUE) {
+		event_value = *((guint64*)next);
 		next ++;
 	}
 	
@@ -2788,6 +2801,9 @@ update_mapping (ProfilerPerThreadData *data) {
 			}
 		}
 		
+		if (start->value == MAX_EVENT_VALUE) {
+			start ++;
+		}
 		start ++;
 	}
 #if (DEBUG_LOGGING_PROFILER)
@@ -2814,7 +2830,7 @@ flush_full_event_data_buffer (ProfilerPerThreadData *data) {
 	// We flush all mappings because some id definitions could come
 	// from other threads
 	flush_all_mappings ();
-	g_assert (data->first_unmapped_event == data->end_event);
+	g_assert (data->first_unmapped_event >= data->end_event);
 	
 	write_thread_data_block (data);
 	
@@ -3074,13 +3090,16 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 	event->code = (c);\
 	event->kind = (k);\
 	delta = counter - data->last_event_counter;\
+	if (counter < data->last_event_counter) {\
+		printf ("STORE_EVENT_ITEM_COUNTER: counter %ld < data->last_event_counter %ld\n", counter, data->last_event_counter);\
+	}\
 	if (delta < MAX_EVENT_VALUE) {\
 		event->value = delta;\
 	} else {\
 		ProfilerEventData *extension = data->next_free_event;\
 		data->next_free_event ++;\
-		event->value = delta >> 32;\
-		extension->data.number = delta & 0xffffffff;\
+		event->value = MAX_EVENT_VALUE;\
+		*(guint64*)extension = delta;\
 	}\
 	data->last_event_counter = counter;\
 	LOG_EVENT (data->thread_id, event, delta);\
@@ -3099,8 +3118,8 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 	} else {\
 		ProfilerEventData *extension = data->next_free_event;\
 		data->next_free_event ++;\
-		event->value = (v) >> 32;\
-		extension->data.number = (v) & 0xffffffff;\
+		event->value = MAX_EVENT_VALUE;\
+		*(guint64*)extension = (v);\
 	}\
 	LOG_EVENT (data->thread_id, event, (v));\
 }while (0);
@@ -3122,8 +3141,8 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 	} else {\
 		ProfilerEventData *extension = data->next_free_event;\
 		data->next_free_event ++;\
-		event->value = delta >> 32;\
-		extension->data.number = delta & 0xffffffff;\
+		event->value = MAX_EVENT_VALUE;\
+		*(guint64*)extension = delta;\
 	}\
 	data->last_event_counter = counter;\
 	LOG_EVENT (data->thread_id, event, delta);\
@@ -3142,8 +3161,8 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 	} else {\
 		ProfilerEventData *extension = data->next_free_event;\
 		data->next_free_event ++;\
-		event->value = (v) >> 32;\
-		extension->data.number = (v) & 0xffffffff;\
+		event->value = MAX_EVENT_VALUE;\
+		*(guint64*)extension = (v);\
 	}\
 	LOG_EVENT (data->thread_id, event, (v));\
 }while (0);
@@ -3759,6 +3778,7 @@ setup_user_options (const char *arguments) {
 #ifndef PLATFORM_WIN32
 	int gc_request_signal_number = 0;
 #endif
+	detect_fast_timer ();
 	
 	profiler->file_name = NULL;
 	profiler->file_name_suffix = NULL;
@@ -3864,6 +3884,8 @@ setup_user_options (const char *arguments) {
 			} else if (! (strcmp (argument, "statistical") && strcmp (argument, "stat") && strcmp (argument, "s"))) {
 				profiler->flags |= MONO_PROFILE_STATISTICAL|MONO_PROFILE_JIT_COMPILATION;
 				profiler->action_flags.jit_time = TRUE;
+			} else if (! (strcmp (argument, "force-accurate-timer") && strcmp (argument, "fac"))) {
+				use_fast_timer = FALSE;
 #if (HAS_OPROFILE)
 			} else if (! (strcmp (argument, "oprofile") && strcmp (argument, "oprof"))) {
 				profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
