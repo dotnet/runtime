@@ -1399,6 +1399,7 @@ mono_main (int argc, char* argv[])
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 
 	mono_set_defaults (mini_verbose, opt);
+	mono_setup_vtable_in_class_init = FALSE;
 	domain = mini_init (argv [i], forced_version);
 	
 	switch (action) {
