@@ -1,3 +1,8 @@
+2008-05-23  Wade Berrier  <wberrier@novell.com>
+
+	* scripts/Makefile.am: remove mbas script since we don't ship it anymore
+	(fixed bnc#393903)
+
 2008-05-22 Marek Safar  <marek.safar@gmail.com>
 
 	* Makefile.am: Distribute 2.0 profile specific files.
