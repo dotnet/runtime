@@ -2257,6 +2257,7 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 			strings_index = dynstr_index;
 		} else {
 			section_index = 0;
+			strings_index = 0;
 		}
 		
 		if (section_index != 0) {
@@ -3235,9 +3236,6 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 	event->code = (c);\
 	event->kind = (k);\
 	delta = counter - data->last_event_counter;\
-	if (counter < data->last_event_counter) {\
-		printf ("STORE_EVENT_ITEM_COUNTER: counter %ld < data->last_event_counter %ld\n", counter, data->last_event_counter);\
-	}\
 	if (delta < MAX_EVENT_VALUE) {\
 		event->value = delta;\
 	} else {\
