@@ -12,7 +12,7 @@
 
 extern gboolean mono_print_vtable;
 
-extern gboolean mono_no_setup_vtable_in_class_init;
+extern gboolean mono_setup_vtable_in_class_init;
 
 typedef void     (*MonoStackWalkImpl) (MonoStackWalk func, gboolean do_il_offset, gpointer user_data);
 

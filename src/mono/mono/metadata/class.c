@@ -46,7 +46,7 @@ gboolean mono_print_vtable = FALSE;
  * default to avoid breaking embedding apps, but set to FALSE by the runtime executable
  * startup code.
  */
-gboolean mono_no_setup_vtable_in_class_init = TRUE;
+gboolean mono_setup_vtable_in_class_init = TRUE;
 
 /* Function supplied by the runtime to find classes by name using information from the AOT file */
 static MonoGetClassFromName get_class_from_name = NULL;
@@ -3713,7 +3713,7 @@ mono_class_init (MonoClass *class)
 		}
 	}
 
-	if (!mono_no_setup_vtable_in_class_init) {
+	if (!mono_setup_vtable_in_class_init) {
 		/*
 		 * This is an embedding API break, since the caller might assume that 
 		 * mono_class_init () constructs a generic vtable, so vtable construction errors
