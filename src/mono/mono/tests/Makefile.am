@@ -701,9 +701,9 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-method-patching.2.exe	\
 		generic-null-call.2.exe
 	for fn in $+ ; do	\
-		echo $$fn;	\
-		$(RUNTIME) -O=gshared,-inline        $$fn;	\
-		$(RUNTIME) -O=gshared,-inline,shared $$fn;	\
+		echo "Testing $$fn ...";	\
+		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline        $$fn || exit 1;	\
+		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline,shared $$fn || exit 1;	\
 	done
 
 EXTRA_DIST += async-exceptions.cs
