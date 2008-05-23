@@ -99,7 +99,98 @@ typedef enum {
 
 static gboolean use_fast_timer = FALSE;
 
-#if defined(__i386__) || defined(__x86_64__)
+#if (defined(__i386__) || defined(__x86_64__)) && ! defined(PLATFORM_WIN32)
+
+#if defined(__i386__)
+static const guchar cpuid_impl [] = {
+	0x55,                   	/* push   %ebp */
+	0x89, 0xe5,                	/* mov    %esp,%ebp */
+	0x53,                   	/* push   %ebx */
+	0x8b, 0x45, 0x08,             	/* mov    0x8(%ebp),%eax */
+	0x0f, 0xa2,                	/* cpuid   */
+	0x50,                   	/* push   %eax */
+	0x8b, 0x45, 0x10,             	/* mov    0x10(%ebp),%eax */
+	0x89, 0x18,                	/* mov    %ebx,(%eax) */
+	0x8b, 0x45, 0x14,             	/* mov    0x14(%ebp),%eax */
+	0x89, 0x08,                	/* mov    %ecx,(%eax) */
+	0x8b, 0x45, 0x18,             	/* mov    0x18(%ebp),%eax */
+	0x89, 0x10,                	/* mov    %edx,(%eax) */
+	0x58,                   	/* pop    %eax */
+	0x8b, 0x55, 0x0c,             	/* mov    0xc(%ebp),%edx */
+	0x89, 0x02,                	/* mov    %eax,(%edx) */
+	0x5b,                   	/* pop    %ebx */
+	0xc9,                   	/* leave   */
+	0xc3,                   	/* ret     */
+};
+
+typedef void (*CpuidFunc) (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx);
+
+static int 
+cpuid (int id, int* p_eax, int* p_ebx, int* p_ecx, int* p_edx) {
+	int have_cpuid = 0;
+#ifndef _MSC_VER
+	__asm__  __volatile__ (
+		"pushfl\n"
+		"popl %%eax\n"
+		"movl %%eax, %%edx\n"
+		"xorl $0x200000, %%eax\n"
+		"pushl %%eax\n"
+		"popfl\n"
+		"pushfl\n"
+		"popl %%eax\n"
+		"xorl %%edx, %%eax\n"
+		"andl $0x200000, %%eax\n"
+		"movl %%eax, %0"
+		: "=r" (have_cpuid)
+		:
+		: "%eax", "%edx"
+	);
+#else
+	__asm {
+		pushfd
+		pop eax
+		mov edx, eax
+		xor eax, 0x200000
+		push eax
+		popfd
+		pushfd
+		pop eax
+		xor eax, edx
+		and eax, 0x200000
+		mov have_cpuid, eax
+	}
+#endif
+	if (have_cpuid) {
+		CpuidFunc func = (CpuidFunc) cpuid_impl;
+		func (id, p_eax, p_ebx, p_ecx, p_edx);
+		/*
+		 * We use this approach because of issues with gcc and pic code, see:
+		 * http://gcc.gnu.org/cgi-bin/gnatsweb.pl?cmd=view%20audit-trail&database=gcc&pr=7329
+		__asm__ __volatile__ ("cpuid"
+			: "=a" (*p_eax), "=b" (*p_ebx), "=c" (*p_ecx), "=d" (*p_edx)
+			: "a" (id));
+		*/
+		return 1;
+	}
+	return 0;
+}
+
+static void detect_fast_timer (void) {
+	int p_eax, p_ebx, p_ecx, p_edx;
+	
+	if (cpuid (0x1, &p_eax, &p_ebx, &p_ecx, &p_edx)) {
+		if (p_edx & 0x10) {
+			use_fast_timer = TRUE;
+		} else {
+			use_fast_timer = FALSE;
+		}
+	} else {
+		use_fast_timer = FALSE;
+	}
+}
+#endif
+
+#if defined(__x86_64__)
 static void detect_fast_timer (void) {
 	guint32 op = 0x1;
 	guint32 eax,ebx,ecx,edx;
@@ -110,6 +201,7 @@ static void detect_fast_timer (void) {
 		use_fast_timer = FALSE;
 	}
 }
+#endif
 
 static __inline__ guint64 rdtsc(void) {
 	guint32 hi, lo;
@@ -1542,10 +1634,18 @@ write_string (const char *string) {
 	}\
 } while (0)
 
+
 #undef GUINT_TO_POINTER
-#define GUINT_TO_POINTER(u) ((void*)(guint64)(u))
 #undef GPOINTER_TO_UINT
+#if (SIZEOF_VOID_P == 4)
+#define GUINT_TO_POINTER(u) ((void*)(guint32)(u))
+#define GPOINTER_TO_UINT(p) ((guint32)(void*)(p))
+#elif (SIZEOF_VOID_P == 8)
+#define GUINT_TO_POINTER(u) ((void*)(guint64)(u))
 #define GPOINTER_TO_UINT(p) ((guint64)(void*)(p))
+#else
+#error Bad size of void pointer
+#endif
 
 #define WRITE_HEAP_SHOT_JOB_VALUE_WITH_CODE(j,v,c) WRITE_HEAP_SHOT_JOB_VALUE (j, GUINT_TO_POINTER (GPOINTER_TO_UINT (v)|(c)))
 
