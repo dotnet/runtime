@@ -3413,6 +3413,15 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 #endif
 	}
 
+	/* also consider num_locals? */
+	/* Do the size check early to avoid creating vtables */
+	if (getenv ("MONO_INLINELIMIT")) {
+		if (header->code_size >= atoi (getenv ("MONO_INLINELIMIT"))) {
+			return FALSE;
+		}
+	} else if (header->code_size >= INLINE_LENGTH_LIMIT)
+		return FALSE;
+
 	/*
 	 * if we can initialize the class of the method right away, we do,
 	 * otherwise we don't allow inlining if the class needs initialization,
@@ -3420,11 +3429,14 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	 * inside the inlined code
 	 */
 	if (!(cfg->opt & MONO_OPT_SHARED)) {
-		vtable = mono_class_vtable (cfg->domain, method->klass);
-		if (!vtable)
-			return FALSE;
 		if (method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT) {
 			if (cfg->run_cctors && method->klass->has_cctor) {
+				if (!method->klass->runtime_info)
+					/* No vtable created yet */
+					return FALSE;
+				vtable = mono_class_vtable (cfg->domain, method->klass);
+				if (!vtable)
+					return FALSE;
 				/* This makes so that inline cannot trigger */
 				/* .cctors: too many apps depend on them */
 				/* running with a specific order... */
@@ -3432,9 +3444,16 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 					return FALSE;
 				mono_runtime_class_init (vtable);
 			}
+		} else if (mono_class_needs_cctor_run (method->klass, NULL)) {
+			if (!method->klass->runtime_info)
+				/* No vtable created yet */
+				return FALSE;
+			vtable = mono_class_vtable (cfg->domain, method->klass);
+			if (!vtable)
+				return FALSE;
+			if (!vtable->initialized)
+				return FALSE;
 		}
-		else if (!vtable->initialized && mono_class_needs_cctor_run (method->klass, NULL))
-			return FALSE;
 	} else {
 		/* 
 		 * If we're compiling for shared code
@@ -3453,15 +3472,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (mono_method_has_declsec (method))
 		return FALSE;
 
-	/* also consider num_locals? */
-	if (getenv ("MONO_INLINELIMIT")) {
-		if (header->code_size < atoi (getenv ("MONO_INLINELIMIT"))) {
-			return TRUE;
-		}
-	} else if (header->code_size < INLINE_LENGTH_LIMIT)
-		return TRUE;
-
-	return FALSE;
+	return TRUE;
 }
 
 static gboolean
