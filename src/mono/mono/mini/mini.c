@@ -12950,7 +12950,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 #define FULL_STAT_PROFILER_BACKTRACE 0
 #endif
 
-#ifdef __ia64__
+#if defined(__ia64__) || defined(__sparc__) || defined(sparc)
 
 static void
 SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
@@ -13024,7 +13024,7 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 	}
 }
 
-#endif /* !ifdef __ia64__ */
+#endif
 
 static void
 SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
