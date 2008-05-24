@@ -12531,6 +12531,12 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	mono_domain_unlock (target_domain);
 
 	vtable = mono_class_vtable (target_domain, method->klass);
+	if (!vtable) {
+		MonoException *exc;
+		exc = mono_class_get_exception_for_failure (method->klass);
+		g_assert (exc);
+		mono_raise_exception (exc);
+	}
 	mono_runtime_class_init (vtable);
 	return code;
 }
