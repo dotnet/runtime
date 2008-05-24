@@ -4129,6 +4129,10 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 
 	if (type->type == MONO_TYPE_CLASS) {
 		MonoClass *klass = mono_type_get_class (type);
+
+		if (mono_is_security_manager_active () && !klass->exception_type)
+			/* Some security problems are detected during generic vtable construction */
+			mono_class_setup_vtable (klass);
 		/* need to report exceptions ? */
 		if (throwOnError && klass->exception_type) {
 			/* report SecurityException (or others) that occured when loading the assembly */
