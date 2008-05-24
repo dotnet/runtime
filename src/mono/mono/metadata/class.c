@@ -2259,7 +2259,7 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	} else {
 		class->interface_offsets_count = interface_offsets_count;
 		class->interfaces_packed = mono_mempool_alloc (class->image->mempool, sizeof (MonoClass*) * interface_offsets_count);
-		class->interface_offsets_packed = mono_mempool_alloc (class->image->mempool, sizeof (int) * interface_offsets_count);
+		class->interface_offsets_packed = mono_mempool_alloc (class->image->mempool, sizeof (guint16) * interface_offsets_count);
 		class->interface_bitmap = mono_mempool_alloc0 (class->image->mempool, (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0));
 		for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
 			if (interface_offsets_full [i] != -1) {
