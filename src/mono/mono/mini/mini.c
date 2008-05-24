@@ -12950,6 +12950,16 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 #define FULL_STAT_PROFILER_BACKTRACE 0
 #endif
 
+#ifdef __ia64__
+
+static void
+SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
+{
+	NOT_IMPLEMENTED;
+}
+
+#else
+
 static void
 SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 {
@@ -12970,7 +12980,7 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 		MonoDomain *domain;
 #endif
 		guchar *ips [call_chain_depth + 1];
-		
+
 		mono_arch_sigctx_to_monoctx (ctx, &mono_context);
 		ips [0] = MONO_CONTEXT_GET_IP (&mono_context);
 		
@@ -13013,6 +13023,8 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 		mono_profiler_stat_call_chain (current_frame_index, & ips [0], ctx);
 	}
 }
+
+#endif /* !ifdef __ia64__ */
 
 static void
 SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
