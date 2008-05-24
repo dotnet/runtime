@@ -3593,13 +3593,10 @@ mono_class_init (MonoClass *class)
 				
 	/* Initialize arrays */
 	if (class->rank) {
-		int count_generic = 0, first_generic = 0;
-
 		class->method.count = 3 + (class->rank > 1? 2: 1);
 
 		if (class->interface_count) {
-			count_generic = generic_array_methods (class);
-			first_generic = class->method.count;
+			int count_generic = generic_array_methods (class);
 			class->method.count += class->interface_count * count_generic;
 		}
 	}
