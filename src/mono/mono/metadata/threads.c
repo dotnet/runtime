@@ -3530,7 +3530,7 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 
 		/* this will awake the thread if it is in WaitForSingleObject 
 		   or similar */
-		/* FIXME: This is NOT signal-safe, since it allocates memory and uses locking */
+		/* Our implementation of this function ignores the func argument */
 		QueueUserAPC ((PAPCFUNC)dummy_apc, thread->handle, NULL);
 		return NULL;
 	}
