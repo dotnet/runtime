@@ -46,10 +46,10 @@ typedef enum {
 
 struct _WapiHandle_thread
 {
-	WapiThreadState state;
 	guint32 exitstatus;
-	pid_t owner_pid;
-	gboolean joined;
+	WapiThreadState state : 2;
+	guint joined : 1;
+	guint has_apc : 1;
 	guint32 create_flags;
 	/* Fields below this point are only valid for the owning process */
 	pthread_t id;
@@ -58,7 +58,6 @@ struct _WapiHandle_thread
 	MonoSemType suspend_sem;
 	guint32 (*start_routine)(gpointer arg);
 	gpointer start_arg;
-	GSList *apc_queue;
 };
 
 typedef struct

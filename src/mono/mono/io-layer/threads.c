@@ -107,8 +107,7 @@ static void _wapi_thread_abandon_mutexes (gpointer handle)
 		return;
 	}
 	
-	if (thread_handle->owner_pid != pid ||
-	    !pthread_equal (thread_handle->id, tid)) {
+	if (!pthread_equal (thread_handle->id, tid)) {
 		return;
 	}
 	
@@ -225,7 +224,6 @@ static void thread_hash_init(void)
 
 static void _wapi_thread_suspend (struct _WapiHandle_thread *thread)
 {
-	g_assert (thread->owner_pid == _wapi_getpid ());
 	g_assert (pthread_equal (thread->id, pthread_self ()));
 	
 	while (MONO_SEM_WAIT (&thread->suspend_sem) != 0 &&
@@ -234,10 +232,6 @@ static void _wapi_thread_suspend (struct _WapiHandle_thread *thread)
 
 static void _wapi_thread_resume (struct _WapiHandle_thread *thread)
 {
-	if (thread->owner_pid != _wapi_getpid ()) {
-		return;
-	}
-	
 	MONO_SEM_POST (&thread->suspend_sem);
 }
 
@@ -332,7 +326,6 @@ gpointer CreateThread(WapiSecurityAttributes *security G_GNUC_UNUSED, guint32 st
 	}
 
 	thread_handle.state = THREAD_STATE_START;
-	thread_handle.owner_pid = _wapi_getpid ();
 	thread_handle.owned_mutexes = g_ptr_array_new ();
 	thread_handle.create_flags = create;
 	thread_handle.start_routine = start;
@@ -496,20 +489,9 @@ static gboolean find_thread_by_id (gpointer handle, gpointer user_data)
 		}
 		
 #ifdef DEBUG
-		g_message ("%s: looking at thread %ld from process %d", __func__, thread_handle->id, thread_handle->owner_pid);
+		g_message ("%s: looking at thread %ld from process %d", __func__, thread_handle->id, 0);
 #endif
 
-		if (thread_handle->owner_pid != _wapi_getpid ()) {
-			/* Not sure if ms has this limitation with
-			 * OpenThread(), but pthreads IDs are not
-			 * unique across processes
-			 */
-#ifdef DEBUG
-			g_message ("%s: not this process", __func__);
-#endif
-			return(FALSE);
-		}
-		
 		if (pthread_equal (thread_handle->id, tid)) {
 #ifdef DEBUG
 			g_message ("%s: found the thread we are looking for",
@@ -666,7 +648,6 @@ static gpointer thread_attach(gsize *tid)
 	mono_once (&thread_ops_once, thread_ops_init);
 
 	thread_handle.state = THREAD_STATE_START;
-	thread_handle.owner_pid = _wapi_getpid ();
 	thread_handle.owned_mutexes = g_ptr_array_new ();
 
 	handle = _wapi_handle_new (WAPI_HANDLE_THREAD, &thread_handle);
@@ -1060,8 +1041,6 @@ void Sleep(guint32 ms)
 	SleepEx(ms, FALSE);
 }
 
-static mono_mutex_t apc_mutex = MONO_MUTEX_INITIALIZER;
-
 gboolean _wapi_thread_cur_apc_pending (void)
 {
 	gpointer thread = _wapi_thread_handle_from_id (pthread_self ());
@@ -1072,33 +1051,6 @@ gboolean _wapi_thread_cur_apc_pending (void)
 	}
 	
 	return(_wapi_thread_apc_pending (thread));
-}
-
-static void _wapi_thread_queue_apc (struct _WapiHandle_thread *thread,
-				    guint32 (*apc_callback)(gpointer),
-				    gpointer param)
-{
-	ApcInfo *apc;
-	int thr_ret;
-	
-	if (thread->owner_pid != _wapi_getpid ()) {
-		return;
-	}
-
-	apc = (ApcInfo *)g_new (ApcInfo, 1);
-	apc->callback = apc_callback;
-	apc->param = param;
-	
-	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
-			      (void *)&apc_mutex);
-	thr_ret = mono_mutex_lock (&apc_mutex);
-	g_assert (thr_ret == 0);
-	
-	thread->apc_queue = g_slist_append (thread->apc_queue, apc);
-	
-	thr_ret = mono_mutex_unlock (&apc_mutex);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 }
 
 gboolean _wapi_thread_apc_pending (gpointer handle)
@@ -1122,56 +1074,32 @@ gboolean _wapi_thread_apc_pending (gpointer handle)
 		return (FALSE);
 	}
 	
-	if (thread->owner_pid != _wapi_getpid ()) {
-		return(FALSE);
-	}
-	
-	return(thread->apc_queue != NULL);
+	return(thread->has_apc);
 }
 
 gboolean _wapi_thread_dispatch_apc_queue (gpointer handle)
 {
+	/* We don't support calling APC functions */
 	struct _WapiHandle_thread *thread;
 	gboolean ok;
-	ApcInfo *apc;
-	GSList *list;
-	int thr_ret;
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_THREAD,
 				  (gpointer *)&thread);
-	if (ok == FALSE) {
-		g_warning ("%s: error looking up thread handle %p", __func__,
-			   handle);
-		return (FALSE);
-	}
-	
-	if (thread->owner_pid != _wapi_getpid ()) {
-		return(FALSE);
-	}
-	
-	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
-			      (void *)&apc_mutex);
-	thr_ret = mono_mutex_lock (&apc_mutex);
-	g_assert (thr_ret == 0);
-	
-	list = thread->apc_queue;
-	thread->apc_queue = NULL;
-	
-	thr_ret = mono_mutex_unlock (&apc_mutex);
-	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
+	g_assert (ok);
 
-	while (list != NULL) {
-		apc = (ApcInfo *)list->data;
-		apc->callback (apc->param);
-		g_free (apc);
-		list = g_slist_next (list);
-	}
-	g_slist_free (list);
-	
+	thread->has_apc = FALSE;
+
 	return(TRUE);
 }
 
+/*
+ * In this implementation, APC_CALLBACK is ignored, HANDLE can only refer to the current
+ * thread, and the only effect this function has that if called from a signal handler,
+ * and the thread was waiting when receiving the signal, the wait will be broken after
+ * the signal handler returns.
+ * These limitations are not a problem as the runtime only uses this functionality.
+ * This function is async-signal-safe.
+ */
 guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle, 
 		      gpointer param)
 {
@@ -1185,8 +1113,12 @@ guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle,
 			   handle);
 		return (0);
 	}
-	
-	_wapi_thread_queue_apc (thread_handle, apc_callback, param);
+
+	g_assert (thread_handle->id == GetCurrentThreadId ());
+
+	/* No locking/memory barriers are needed here */
+	thread_handle->has_apc = TRUE;
+
 	return(1);
 }
 
