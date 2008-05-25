@@ -702,7 +702,6 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		method->klass->image->dynamic && !method->klass->wastypebuilder && /* that is a MethodBuilder from an unfinished TypeBuilder */
 		context->method_inst == method->generic_container->context.method_inst; /* and it's been instantiated with its own arguments.  */
 
-	mono_stats.inflated_method_count++;
 	iresult = g_new0 (MonoMethodInflated, 1);
 	iresult->context = *context;
 	iresult->declaring = method;
@@ -718,6 +717,8 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		g_free (iresult);
 		return (MonoMethod*)cached;
 	}
+
+	mono_stats.inflated_method_count++;
 
 	sig = mono_method_signature (method);
 	if (sig->pinvoke) {
