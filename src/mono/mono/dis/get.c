@@ -1860,7 +1860,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 	mh = mono_get_method_full (m, token, NULL, (MonoGenericContext *) container);
 	if (mh) {
 		if (mono_method_signature (mh)->is_inflated)
-			container = ((MonoMethodInflated *) mh)->declaring->generic_container;
+			container = mono_method_get_generic_container (((MonoMethodInflated *) mh)->declaring);
 		esname = get_escaped_name (mh->name);
 		sig = dis_stringify_type (m, &mh->klass->byval_arg, TRUE);
 		if (show_tokens)
@@ -1894,11 +1894,11 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 		if (mh) {
 			int arity = 0;
 
-			if (mh->generic_container)
-				arity = mh->generic_container->type_argc;
+			if (mh->is_generic)
+				arity = mono_method_get_generic_container (mh)->type_argc;
 			else
-			if (mh->is_inflated && ((MonoMethodInflated *)mh)->declaring->generic_container)
-				arity = ((MonoMethodInflated*) mh)->declaring->generic_container->type_argc;
+			if (mh->is_inflated && ((MonoMethodInflated *)mh)->declaring->is_generic)
+				arity = mono_method_get_generic_container (((MonoMethodInflated*) mh)->declaring)->type_argc;
 
 			if (arity > 0) {
 				char *str = g_strdup_printf ("%s <[%d]>", name, arity);
@@ -2048,7 +2048,7 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name, Mo
 	
 	mh = mono_get_method_full (m, method_dor_to_token (token), NULL, (MonoGenericContext *) type_container);
 	g_assert (mh);
-	container = mh->generic_container;
+	container = mono_method_get_generic_container (mh);
 	if (!container)
 		container = type_container;
 
