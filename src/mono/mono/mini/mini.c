@@ -4694,7 +4694,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	image = method->klass->image;
 	header = mono_method_get_header (method);
-	generic_container = method->generic_container;
+	generic_container = mono_method_get_generic_container (method);
 	sig = mono_method_signature (method);
 	num_args = sig->hasthis + sig->param_count;
 	ip = (unsigned char*)header->code;
@@ -5457,7 +5457,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!dont_verify && !cfg->skip_visibility) {
 					MonoMethod *target_method = cil_method;
 					if (method->is_inflated) {
-						target_method = mini_get_method_allow_open (method, token, NULL, &method_definition->generic_container->context);
+						target_method = mini_get_method_allow_open (method, token, NULL, &(mono_method_get_generic_container (method_definition)->context));
 					}
 					if (!mono_method_can_access_method (method_definition, target_method) &&
 						!mono_method_can_access_method (method, cil_method))
@@ -11855,7 +11855,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (compile_aot)
 		/* We are passed the original generic method definition */
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
-			(opts & MONO_OPT_GSHARED) && (method->generic_container || method->klass->generic_container);
+			(opts & MONO_OPT_GSHARED) && (method->is_generic || method->klass->generic_container);
 	else
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
 			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method);
@@ -11879,8 +11879,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			g_assert (method->klass->generic_class->container_class == declaring_method->klass);
 		}
 
-		if (declaring_method->generic_container)
-			shared_context = &declaring_method->generic_container->context;
+		if (declaring_method->is_generic)
+			shared_context = &(mono_method_get_generic_container (declaring_method)->context);
 		else
 			shared_context = &declaring_method->klass->generic_container->context;
 

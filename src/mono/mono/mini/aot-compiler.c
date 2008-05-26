@@ -2739,7 +2739,7 @@ compile_method (MonoAotCompile *acfg, int index)
 	//acfg->opts &= ~MONO_OPT_GSHARED;
 
 	if (!(acfg->opts & MONO_OPT_GSHARED)) {
-		if (method->generic_container || method->klass->generic_container) {
+		if (method->is_generic || method->klass->generic_container) {
 			acfg->stats.genericcount ++;
 			return;
 		}

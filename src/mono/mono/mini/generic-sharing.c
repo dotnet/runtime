@@ -31,8 +31,8 @@ mini_method_get_context (MonoMethod *method)
 {
 	if (method->is_inflated)
 		return mono_method_get_context (method);
-	if (method->generic_container)
-		return &method->generic_container->context;
+	if (method->is_generic)
+		return &(mono_method_get_generic_container (method)->context);
 	if (method->klass->generic_container)
 		return &method->klass->generic_container->context;
 	return NULL;
@@ -137,10 +137,10 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 
 		g_assert (inflated->declaring);
 
-		if (inflated->declaring->generic_container) {
-			g_assert (inflated->declaring->generic_container->type_params);
+		if (inflated->declaring->is_generic) {
+			g_assert (mono_method_get_generic_container (inflated->declaring)->type_params);
 
-			if (inflated->declaring->generic_container->type_params->constraints)
+			if (mono_method_get_generic_container (inflated->declaring)->type_params->constraints)
 				return FALSE;
 		}
 	}
