@@ -869,7 +869,7 @@ static const gunichar2 Formatter_DigitUpperTable [] = {
 	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 };
 
-static gint64 Formatter_TenPowersList [] = {
+static const gint64 Formatter_TenPowersList [] = {
 	1LL,
 	10LL,
 	100LL,
@@ -893,7 +893,7 @@ static gint64 Formatter_TenPowersList [] = {
 
 // DecHexDigits s a translation table from a decimal number to its
 // digits hexadecimal representation (e.g. DecHexDigits [34] = 0x34).
-static gint32 Formatter_DecHexDigits [] = {
+static const gint32 Formatter_DecHexDigits [] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 
 	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 
 	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 
