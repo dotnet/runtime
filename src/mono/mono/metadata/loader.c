@@ -1374,6 +1374,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	container = klass->generic_container;
 	generic_container = mono_metadata_load_generic_params (image, token, container);
 	if (generic_container) {
+		result->is_generic = TRUE;
 		generic_container->owner.method = result;
 
 		mono_metadata_load_generic_param_constraints (image, token, generic_container);
@@ -1408,7 +1409,8 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			piinfo->piflags = mono_metadata_decode_row_col (&tables [MONO_TABLE_IMPLMAP], piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
 	}
 
-	result->generic_container = generic_container;
+ 	if (generic_container)
+ 		mono_method_set_generic_container (result, generic_container);
 
 	return result;
 }
@@ -1555,6 +1557,10 @@ mono_free_method  (MonoMethod *method)
 	if (method->dynamic) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
 		int i;
+
+		mono_loader_lock ();
+		mono_property_hash_remove_object (method->klass->image->property_hash, method);
+		mono_loader_unlock ();
 
 		g_free ((char*)method->name);
 		if (mw->method.header) {
@@ -1873,7 +1879,7 @@ mono_method_signature (MonoMethod *m)
 	sig = mono_metadata_blob_heap (img, mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_SIGNATURE));
 
 	g_assert (!m->klass->generic_class);
-	container = m->generic_container;
+	container = mono_method_get_generic_container (m);
 	if (!container)
 		container = m->klass->generic_container;
 
@@ -2018,7 +2024,7 @@ mono_method_get_header (MonoMethod *method)
 
 	g_assert (loc);
 
-	mn->header = mono_metadata_parse_mh_full (img, method->generic_container, loc);
+	mn->header = mono_metadata_parse_mh_full (img, mono_method_get_generic_container (method), loc);
 
 	mono_loader_unlock ();
 	return mn->header;

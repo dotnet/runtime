@@ -642,6 +642,8 @@ mono_image_init (MonoImage *image)
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
 	image->helper_signatures = g_hash_table_new (g_str_hash, g_str_equal);
 	image->method_signatures = g_hash_table_new (NULL, NULL);
+
+	image->property_hash = mono_property_hash_new ();
 }
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
@@ -1499,6 +1501,9 @@ mono_image_close (MonoImage *image)
 
 	if (image->rgctx_template_hash)
 		g_hash_table_destroy (image->rgctx_template_hash);
+
+	if (image->property_hash)
+		mono_property_hash_destroy (image->property_hash);
 
 	if (image->interface_bitset) {
 		mono_unload_interface_ids (image->interface_bitset);

@@ -41,13 +41,14 @@ typedef enum {
 	MONO_REMOTING_TARGET_COMINTEROP
 } MonoRemotingTarget;
 
+#define MONO_METHOD_PROP_GENERIC_CONTAINER 0
+
 struct _MonoMethod {
 	guint16 flags;  /* method flags */
 	guint16 iflags; /* method implementation flags */
 	guint32 token;
 	MonoClass *klass;
 	MonoMethodSignature *signature;
-	MonoGenericContainer *generic_container;
 	/* name is useful mostly for debugging */
 	const char *name;
 	/* this is used by the inlining algorithm */
@@ -57,10 +58,16 @@ struct _MonoMethod {
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
 	unsigned int dynamic:1; /* created & destroyed during runtime */
+	unsigned int is_generic:1; /* whenever this is a generic method definition */
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
 	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
-	signed int slot : 19;
+	signed int slot : 18;
+
+	/*
+	 * If is_generic is TRUE, the generic_container is stored in image->property_hash, 
+	 * using the key MONO_METHOD_PROP_GENERIC_CONTAINER.
+	 */
 };
 
 struct _MonoMethodNormal {
@@ -736,11 +743,18 @@ mono_class_get_context (MonoClass *class) MONO_INTERNAL;
 MonoGenericContext*
 mono_method_get_context (MonoMethod *method) MONO_INTERNAL;
 
+/* Used by monodis, thus cannot be MONO_INTERNAL */
+MonoGenericContainer*
+mono_method_get_generic_container (MonoMethod *method);
+
 MonoGenericContext*
 mono_generic_class_get_context (MonoGenericClass *gclass) MONO_INTERNAL;
 
 MonoClass*
 mono_generic_class_get_class (MonoGenericClass *gclass) MONO_INTERNAL;
+
+void
+mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* container) MONO_INTERNAL;
 
 MonoMethod*
 mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context);

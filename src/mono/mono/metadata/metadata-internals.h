@@ -10,6 +10,7 @@
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/monobitset.h"
+#include "mono/utils/mono-property-hash.h"
 
 #define MONO_SECMAN_FLAG_INIT(x)		(x & 0x2)
 #define MONO_SECMAN_FLAG_GET_VALUE(x)		(x & 0x1)
@@ -216,6 +217,9 @@ struct _MonoImage {
 	 * indexed by token and MonoGenericContext pointer
 	 */
 	GHashTable *generic_class_cache;
+
+	/* Contains rarely used fields of runtime structures belonging to this image */
+	MonoPropertyHash *property_hash;
 
 	void *reflection_info;
 

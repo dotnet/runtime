@@ -665,7 +665,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 		method = imethod->declaring;
 	}
 
-	if (!method->generic_container && !method->klass->generic_container)
+	if (!method->is_generic && !method->klass->generic_container)
 		return method;
 
 	/*
@@ -698,17 +698,17 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	 * everything should behave like a regular type or method.
 	 * 
 	 */
-	is_mb_open = method->generic_container && /* This is a generic method definition */
+	is_mb_open = method->is_generic &&
 		method->klass->image->dynamic && !method->klass->wastypebuilder && /* that is a MethodBuilder from an unfinished TypeBuilder */
-		context->method_inst == method->generic_container->context.method_inst; /* and it's been instantiated with its own arguments.  */
+		context->method_inst == mono_method_get_generic_container (method)->context.method_inst; /* and it's been instantiated with its own arguments.  */
 
 	iresult = g_new0 (MonoMethodInflated, 1);
 	iresult->context = *context;
 	iresult->declaring = method;
 	iresult->is_mb_open = is_mb_open;
 
-	if (!context->method_inst && method->generic_container)
-		iresult->context.method_inst = method->generic_container->context.method_inst;
+	if (!context->method_inst && method->is_generic)
+		iresult->context.method_inst = mono_method_get_generic_container (method)->context.method_inst;
 
 	mono_loader_lock ();
 	cached = mono_method_inflated_lookup (iresult, FALSE);
@@ -729,13 +729,19 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	}
 
 	result = (MonoMethod *) iresult;
-	result->is_inflated = 1;
+	result->is_inflated = TRUE;
+	result->is_generic = FALSE;
 	result->signature = NULL;
 
-	if (context->method_inst)
-		result->generic_container = NULL;
+	if (!context->method_inst) {
+		/* Set the generic_container of the result to the generic_container of method */
+		MonoGenericContainer *generic_container = mono_method_get_generic_container (method);
 
-	/* Due to the memcpy above, !context->method_inst => result->generic_container == method->generic_container */
+		if (generic_container) {
+			result->is_generic = 1;
+			mono_method_set_generic_container (result, generic_container);
+		}
+	}
 
 	if (!klass_hint || !klass_hint->generic_class ||
 	    klass_hint->generic_class->container_class != method->klass ||
@@ -776,6 +782,45 @@ mono_method_get_context (MonoMethod *method)
 		return NULL;
 	imethod = (MonoMethodInflated *) method;
 	return &imethod->context;
+}
+
+/*
+ * mono_method_get_generic_container:
+ *
+ *   Returns the generic container of METHOD, which should be a generic method definition.
+ * Returns NULL if METHOD is not a generic method definition.
+ * LOCKING: Acquires the loader lock.
+ */
+MonoGenericContainer*
+mono_method_get_generic_container (MonoMethod *method)
+{
+	MonoGenericContainer *container;
+
+	if (!method->is_generic)
+		return NULL;
+
+	mono_loader_lock ();
+	container = mono_property_hash_lookup (method->klass->image->property_hash, method, MONO_METHOD_PROP_GENERIC_CONTAINER);
+	mono_loader_unlock ();
+	g_assert (container);
+
+	return container;
+}
+
+/*
+ * mono_method_set_generic_container:
+ *
+ *   Sets the generic container of METHOD to CONTAINER.
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* container)
+{
+	g_assert (method->is_generic);
+
+	mono_loader_lock ();
+	mono_property_hash_insert (method->klass->image->property_hash, method, MONO_METHOD_PROP_GENERIC_CONTAINER, container);
+	mono_loader_unlock ();
 }
 
 /** 

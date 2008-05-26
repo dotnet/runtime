@@ -469,7 +469,7 @@ mono_method_is_valid_generic_instantiation (MonoMethod *method)
 {
 	MonoMethodInflated *gmethod = (MonoMethodInflated *)method;
 	MonoGenericInst *ginst = gmethod->context.method_inst;
-	MonoGenericContainer *gc = gmethod->declaring->generic_container;
+	MonoGenericContainer *gc = mono_method_get_generic_container (gmethod->declaring);
 	if (!gc) /*non-generic inflated method - it's part of a generic type  */
 		return TRUE;
 	return is_valid_generic_instantiation (gc, &gmethod->context, ginst);
@@ -4416,9 +4416,9 @@ mono_method_verify (MonoMethod *method, int level)
 	if (ctx.signature->is_inflated)
 		ctx.generic_context = generic_context = mono_method_get_context (method);
 
-	if (!generic_context && (method->klass->generic_container || method->generic_container)) {
-		if (method->generic_container)
-			ctx.generic_context = generic_context = &method->generic_container->context;
+	if (!generic_context && (method->klass->generic_container || method->is_generic)) {
+		if (method->is_generic)
+			ctx.generic_context = generic_context = &(mono_method_get_generic_container (method)->context);
 		else
 			ctx.generic_context = generic_context = &method->klass->generic_container->context;
 	}

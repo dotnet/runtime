@@ -2729,7 +2729,7 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (method->method->generic_container)
+	if (method->method->is_generic)
 		return method;
 
 	if (!method->method->is_inflated)
@@ -2739,7 +2739,7 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 
 	result = imethod->declaring;
 	/* Not a generic method.  */
-	if (!result->generic_container)
+	if (!result->is_generic)
 		return NULL;
 
 	if (method->method->klass->image->dynamic) {
@@ -2779,7 +2779,7 @@ ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethod *method
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return method->method->generic_container != NULL;
+	return method->method->is_generic;
 }
 
 static MonoArray*
@@ -2810,7 +2810,8 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 	res = mono_array_new (domain, mono_defaults.monotype_class, count);
 
 	for (i = 0; i < count; i++) {
-		MonoGenericParam *param = &method->method->generic_container->type_params [i];
+		MonoGenericContainer *container = mono_method_get_generic_container (method->method);
+		MonoGenericParam *param = &container->type_params [i];
 		MonoClass *pklass = mono_class_from_generic_parameter (
 			param, method->method->klass->image, TRUE);
 		mono_array_setref (res, i,

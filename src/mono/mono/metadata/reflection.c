@@ -8909,7 +8909,11 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		int count = mono_array_length (rmb->generic_params);
 		MonoGenericContainer *container;
 
-		m->generic_container = container = rmb->generic_container;
+		container = rmb->generic_container;
+		if (container) {
+			m->is_generic = TRUE;
+			mono_method_set_generic_container (m, container);
+		}
 		container->type_argc = count;
 		container->type_params = g_new0 (MonoGenericParam, count);
 		container->owner.method = m;
@@ -9251,7 +9255,7 @@ inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
 		imethod = (MonoMethodInflated *) mono_class_inflate_generic_method_full (method, klass, context);
 	}
 
-	if (method->generic_container && method->klass->image->dynamic) {
+	if (method->is_generic && method->klass->image->dynamic) {
 		MonoDynamicImage *image = (MonoDynamicImage*)method->klass->image;
 
 		mono_loader_lock ();
