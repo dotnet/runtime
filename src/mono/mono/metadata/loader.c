@@ -1408,15 +1408,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 			piinfo->piflags = mono_metadata_decode_row_col (&tables [MONO_TABLE_IMPLMAP], piinfo->implmap_idx - 1, MONO_IMPLMAP_FLAGS);
 	}
 
-	/* FIXME: lazyness for generics too, but how? */
-	if (!(result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
-	    !(cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-	    !(result->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) && container) {
-		gpointer loc = mono_image_rva_map (image, cols [0]);
-		g_assert (loc);
-		((MonoMethodNormal *) result)->header = mono_metadata_parse_mh_full (image, container, loc);
-	}
-
 	result->generic_container = generic_container;
 
 	return result;
