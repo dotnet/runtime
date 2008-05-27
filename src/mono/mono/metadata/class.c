@@ -2433,10 +2433,8 @@ check_core_clr_override_method (MonoClass *class, MonoMethod *override, MonoMeth
 	MonoSecurityCoreCLRLevel override_level = mono_security_core_clr_method_level (override, FALSE);
 	MonoSecurityCoreCLRLevel base_level = mono_security_core_clr_method_level (base, FALSE);
 
-	if (override_level != base_level && base_level == MONO_SECURITY_CORE_CLR_CRITICAL) {
-		class->exception_type = MONO_EXCEPTION_TYPE_LOAD;
-		class->exception_data = NULL;
-	}
+	if (override_level != base_level && base_level == MONO_SECURITY_CORE_CLR_CRITICAL)
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 }
 
 
@@ -3459,15 +3457,15 @@ concat_two_strings_with_zero (MonoMemPool *pool, const char *s1, const char *s2)
 static void
 set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 {
-	class->exception_type = error->exception_type;
+	gpointer exception_data = NULL;
 
 	switch (error->exception_type) {
 	case MONO_EXCEPTION_TYPE_LOAD:
-		class->exception_data = concat_two_strings_with_zero (class->image->mempool, error->class_name, error->assembly_name);
+		exception_data = concat_two_strings_with_zero (class->image->mempool, error->class_name, error->assembly_name);
 		break;
 
 	case MONO_EXCEPTION_MISSING_METHOD:
-		class->exception_data = concat_two_strings_with_zero (class->image->mempool, error->class_name, error->member_name);
+		exception_data = concat_two_strings_with_zero (class->image->mempool, error->class_name, error->member_name);
 		break;
 
 	case MONO_EXCEPTION_MISSING_FIELD: {
@@ -3479,7 +3477,7 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 		else
 			class_name = error->klass->name;
 
-		class->exception_data = concat_two_strings_with_zero (class->image->mempool, class_name, error->member_name);
+		exception_data = concat_two_strings_with_zero (class->image->mempool, class_name, error->member_name);
 		
 		if (name_space)
 			g_free ((void*)class_name);
@@ -3494,17 +3492,19 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 		else
 			msg = "Could not load file or assembly '%s' or one of its dependencies.";
 
-		class->exception_data = concat_two_strings_with_zero (class->image->mempool, msg, error->assembly_name);
+		exception_data = concat_two_strings_with_zero (class->image->mempool, msg, error->assembly_name);
 		break;
 	}
 
 	case MONO_EXCEPTION_BAD_IMAGE:
-		class->exception_data = error->msg;
+		exception_data = error->msg;
 		break;
 
 	default :
 		g_assert_not_reached ();
 	}
+
+	mono_class_set_failure (class, error->exception_type, exception_data);
 }
 
 static void
@@ -3519,10 +3519,8 @@ check_core_clr_inheritance (MonoClass *class)
 	class_level = mono_security_core_clr_class_level (class);
 	parent_level = mono_security_core_clr_class_level (parent);
 
-	if (class_level < parent_level) {
-		class->exception_type = MONO_EXCEPTION_TYPE_LOAD;
-		class->exception_data = NULL;
-	}
+	if (class_level < parent_level)
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 }
 
 /**
@@ -6790,15 +6788,40 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
  *
  * Keep a detected failure informations in the class for later processing.
  * Note that only the first failure is kept.
+ *
+ * LOCKING: Acquires the loader lock.
  */
 gboolean
 mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
 {
 	if (klass->exception_type)
 		return FALSE;
+
+	mono_loader_lock ();
 	klass->exception_type = ex_type;
-	klass->exception_data = ex_data;
+	if (ex_data)
+		mono_property_hash_insert (klass->image->property_hash, klass, MONO_CLASS_PROP_EXCEPTION_DATA, ex_data);
+	mono_loader_unlock ();
+
 	return TRUE;
+}
+
+/*
+ * mono_class_get_exception_data:
+ *
+ *   Return the exception_data property of KLASS.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+gpointer
+mono_class_get_exception_data (MonoClass *klass)
+{
+	gpointer res;
+
+	mono_loader_lock ();
+	res = mono_property_hash_lookup (klass->image->property_hash, klass, MONO_CLASS_PROP_EXCEPTION_DATA);
+	mono_loader_unlock ();
+	return res;
 }
 
 /**
@@ -6834,11 +6857,13 @@ mono_classes_cleanup (void)
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass)
 {
+	gpointer exception_data = mono_class_get_exception_data (klass);
+
 	switch (klass->exception_type) {
 	case MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND: {
 		MonoDomain *domain = mono_domain_get ();
 		MonoSecurityManager* secman = mono_security_manager_get_methods ();
-		MonoMethod *method = klass->exception_data;
+		MonoMethod *method = exception_data;
 		guint32 error = (method) ? MONO_METADATA_INHERITANCEDEMAND_METHOD : MONO_METADATA_INHERITANCEDEMAND_CLASS;
 		MonoObject *exc = NULL;
 		gpointer args [4];
@@ -6863,19 +6888,19 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		return ex;
 	}
 	case MONO_EXCEPTION_MISSING_METHOD: {
-		char *class_name = klass->exception_data;
+		char *class_name = exception_data;
 		char *assembly_name = class_name + strlen (class_name) + 1;
 
 		return mono_get_exception_missing_method (class_name, assembly_name);
 	}
 	case MONO_EXCEPTION_MISSING_FIELD: {
-		char *class_name = klass->exception_data;
+		char *class_name = exception_data;
 		char *member_name = class_name + strlen (class_name) + 1;
 
 		return mono_get_exception_missing_field (class_name, member_name);
 	}
 	case MONO_EXCEPTION_FILE_NOT_FOUND: {
-		char *msg_format = klass->exception_data;
+		char *msg_format = exception_data;
 		char *assembly_name = msg_format + strlen (msg_format) + 1;
 		char *msg = g_strdup_printf (msg_format, assembly_name);
 		MonoException *ex;
@@ -6887,7 +6912,7 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 		return ex;
 	}
 	case MONO_EXCEPTION_BAD_IMAGE: {
-		return mono_get_exception_bad_image_format (klass->exception_data);
+		return mono_get_exception_bad_image_format (exception_data);
 	}
 	default: {
 		MonoLoaderError *error;

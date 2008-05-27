@@ -131,8 +131,7 @@ mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent)
 		/* If so check the demands on the klass (inheritor) */
 		if (!mono_secman_inheritance_check (klass, &demands)) {
 			/* Keep flags in MonoClass to be able to throw a SecurityException later (if required) */
-			klass->exception_type = MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND;
-			klass->exception_data = NULL;
+			mono_class_set_failure (klass, MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND, NULL);
 		}
 	}
 }
@@ -156,8 +155,7 @@ mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base)
 		/* If so check the demands on the overriding method */
 		if (!mono_secman_inheritance_check (override->klass, &demands)) {
 			/* Keep flags in MonoClass to be able to throw a SecurityException later (if required) */
-			override->klass->exception_type = MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND;
-			override->klass->exception_data = base;
+			mono_class_set_failure (override->klass, MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND, base);
 		}
 	}
 }

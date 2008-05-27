@@ -221,6 +221,8 @@ typedef struct {
 	MonoRuntimeGenericContextOtherInfoTemplate *other_infos;
 } MonoRuntimeGenericContextTemplate;
 
+#define MONO_CLASS_PROP_EXCEPTION_DATA 0
+
 struct _MonoClass {
 	/* element class for arrays and enum */
 	MonoClass *element_class; 
@@ -277,7 +279,10 @@ struct _MonoClass {
 	guint is_com_object : 1; 
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
-	void*      exception_data;	/* Additional information about the exception */
+
+	/* Additional information about the exception */
+	/* Stored as property MONO_CLASS_PROP_EXCEPTION_DATA */
+	//void       *exception_data;
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -916,6 +921,9 @@ mono_find_jit_icall_by_addr (gconstpointer addr) MONO_INTERNAL;
 
 gboolean
 mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data) MONO_INTERNAL;
+
+gpointer
+mono_class_get_exception_data (MonoClass *klass) MONO_INTERNAL;
 
 MonoException*
 mono_class_get_exception_for_failure (MonoClass *klass) MONO_INTERNAL;
