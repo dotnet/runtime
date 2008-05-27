@@ -580,6 +580,11 @@ MINI_OP(OP_ATOMIC_ADD_IMM_NEW_I8, "atomic_add_imm_new_i8")
 MINI_OP(OP_ATOMIC_EXCHANGE_I8, "atomic_exchange_i8")
 MINI_OP(OP_MEMORY_BARRIER, "memory_barrier")
 
+/* CompareExchange where the value to store is a constant */
+/* backend->data holds the constant value */
+MINI_OP(OP_ATOMIC_CAS_IMM_I4, "atomic_cas_imm_i4")
+MINI_OP(OP_ATOMIC_CAS_IMM_I8, "atomic_cas_imm_i8")
+
 /* Arch specific opcodes */
 #if defined(__i386__) || defined(__x86_64__)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null")

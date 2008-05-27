@@ -3788,6 +3788,23 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		}
 #endif /* MONO_ARCH_HAVE_ATOMIC_EXCHANGE */
 
+#ifdef MONO_ARCH_HAVE_ATOMIC_CAS_IMM
+		/* 
+		 * Can't implement CompareExchange methods this way since they have
+		 * three arguments. We can implement one of the common cases, where the new
+		 * value is a constant.
+		 */
+		if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
+			if (fsig->params [1]->type == MONO_TYPE_I4 && args [2]->opcode == OP_ICONST) {
+				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_IMM_I4);
+				ins->inst_i0 = args [0];
+				ins->inst_i1 = args [1];
+				ins->backend.data = GINT_TO_POINTER (args [2]->inst_c0);
+			}
+			/* The I8 case is hard to detect, since the arg might be a conv.i8 (iconst) tree */
+		}
+#endif /* MONO_ARCH_HAVE_ATOMIC_CAS_IMM */
+
 		if (ins)
 			return ins;
 	} else if (cmethod->klass->image == mono_defaults.corlib) {

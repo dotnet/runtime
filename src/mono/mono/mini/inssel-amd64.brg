@@ -661,6 +661,16 @@ reg: OP_ATOMIC_EXCHANGE_I8 (base, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+reg: OP_ATOMIC_CAS_IMM_I4 (base, reg) {
+	tree->opcode = tree->opcode;
+	tree->dreg = state->reg1;
+	tree->sreg2 = state->right->reg1;
+	tree->inst_basereg = state->left->tree->inst_basereg; 
+	tree->inst_offset = state->left->tree->inst_offset; 
+    
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 # Optimized call instructions
 reg: OP_CALL_REG (CEE_LDIND_I (base)),
 freg: OP_FCALL_REG (CEE_LDIND_I (base)),
