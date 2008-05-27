@@ -32,6 +32,10 @@
 
 #include "mono-value-hash.h"
 
+#ifndef G_MAXINT32
+#define G_MAXINT32 2147483647
+#endif
+
 /*
  * This code is based on eglib/ghashtable.c with work done by Hans Petter Jansson
  * (hpj@novell.com) to make it use internal probing instead of chaining.
