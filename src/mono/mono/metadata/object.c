@@ -3454,7 +3454,7 @@ mono_object_clone (MonoObject *obj)
 void
 mono_array_full_copy (MonoArray *src, MonoArray *dest)
 {
-	int size;
+	mono_array_size_t size;
 	MonoClass *klass = src->obj.vtable->klass;
 
 	MONO_ARCH_SAVE_REGS;
@@ -3490,8 +3490,8 @@ MonoArray*
 mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 {
 	MonoArray *o;
-	guint32 size, i;
-	guint32 *sizes;
+	mono_array_size_t size, i;
+	mono_array_size_t *sizes;
 	MonoClass *klass = array->obj.vtable->klass;
 
 	MONO_ARCH_SAVE_REGS;
@@ -3516,7 +3516,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 		return o;
 	}
 	
-	sizes = alloca (klass->rank * sizeof(guint32) * 2);
+	sizes = alloca (klass->rank * sizeof(mono_array_size_t) * 2);
 	size = mono_array_element_size (klass);
 	for (i = 0; i < klass->rank; ++i) {
 		sizes [i] = array->bounds [i].length;
@@ -3571,9 +3571,9 @@ mono_array_clone (MonoArray *array)
  * lower bounds and type.
  */
 MonoArray*
-mono_array_new_full (MonoDomain *domain, MonoClass *array_class, guint32 *lengths, guint32 *lower_bounds)
+mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size_t *lengths, mono_array_size_t *lower_bounds)
 {
-	guint32 byte_len, len, bounds_size;
+	mono_array_size_t byte_len, len, bounds_size;
 	MonoObject *o;
 	MonoArray *array;
 	MonoVTable *vtable;
@@ -3588,34 +3588,34 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, guint32 *length
 	/* A single dimensional array with a 0 lower bound is the same as an szarray */
 	if (array_class->rank == 1 && ((array_class->byval_arg.type == MONO_TYPE_SZARRAY) || (lower_bounds && lower_bounds [0] == 0))) {
 		len = lengths [0];
-		if ((int) len < 0)
+		if (len > MONO_ARRAY_MAX_SIZE)
 			arith_overflow ();
 		bounds_size = 0;
 	} else {
 		bounds_size = sizeof (MonoArrayBounds) * array_class->rank;
 
 		for (i = 0; i < array_class->rank; ++i) {
-			if ((int) lengths [i] < 0)
+			if (lengths [i] > MONO_ARRAY_MAX_SIZE)
 				arith_overflow ();
 			if (CHECK_MUL_OVERFLOW_UN (len, lengths [i]))
-				mono_gc_out_of_memory (MYGUINT32_MAX);
+				mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 			len *= lengths [i];
 		}
 	}
 
 	if (CHECK_MUL_OVERFLOW_UN (byte_len, len))
-		mono_gc_out_of_memory (MYGUINT32_MAX);
+		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 	byte_len *= len;
 	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
-		mono_gc_out_of_memory (MYGUINT32_MAX);
+		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 	byte_len += sizeof (MonoArray);
 	if (bounds_size) {
 		/* align */
 		if (CHECK_ADD_OVERFLOW_UN (byte_len, 3))
-			mono_gc_out_of_memory (MYGUINT32_MAX);
+			mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 		byte_len = (byte_len + 3) & ~3;
 		if (CHECK_ADD_OVERFLOW_UN (byte_len, bounds_size))
-			mono_gc_out_of_memory (MYGUINT32_MAX);
+			mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 		byte_len += bounds_size;
 	}
 	/* 
@@ -3661,7 +3661,7 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, guint32 *length
  * This routine creates a new szarray with @n elements of type @eclass.
  */
 MonoArray *
-mono_array_new (MonoDomain *domain, MonoClass *eclass, guint32 n)
+mono_array_new (MonoDomain *domain, MonoClass *eclass, mono_array_size_t n)
 {
 	MonoClass *ac;
 
@@ -3682,7 +3682,7 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, guint32 n)
  * can be sure about the domain it operates in.
  */
 MonoArray *
-mono_array_new_specific (MonoVTable *vtable, guint32 n)
+mono_array_new_specific (MonoVTable *vtable, mono_array_size_t n)
 {
 	MonoObject *o;
 	MonoArray *ao;
@@ -3690,15 +3690,15 @@ mono_array_new_specific (MonoVTable *vtable, guint32 n)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if ((int) n < 0)
+	if (n > MONO_ARRAY_MAX_SIZE)
 		arith_overflow ();
 	
 	elem_size = mono_array_element_size (vtable->klass);
 	if (CHECK_MUL_OVERFLOW_UN (n, elem_size))
-		mono_gc_out_of_memory (MYGUINT32_MAX);
+		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 	byte_len = n * elem_size;
 	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
-		mono_gc_out_of_memory (MYGUINT32_MAX);
+		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 	byte_len += sizeof (MonoArray);
 	if (!vtable->klass->has_references) {
 		o = mono_object_allocate_ptrfree (byte_len, vtable);
