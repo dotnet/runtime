@@ -293,10 +293,12 @@ amd64_save_sp_to_lmf: len:16
 tls_get: dest:i len:16
 atomic_add_i4: src1:b src2:i dest:i len:32
 atomic_add_new_i4: src1:b src2:i dest:i len:32
-atomic_exchange_i4: src1:b src2:i dest:i len:32
+atomic_exchange_i4: src1:b src2:i dest:a len:32
 atomic_add_i8: src1:b src2:i dest:i len:32
 atomic_add_new_i8: src1:b src2:i dest:i len:32
-atomic_exchange_i8: src1:b src2:i dest:i len:32
+atomic_exchange_i8: src1:b src2:i dest:a len:32
+atomic_cas_imm_i4: src1:b src2:i dest:a len:32
+atomic_cas_imm_i8: src1:b src2:i dest:a len:32
 memory_barrier: len:16
 adc: dest:i src1:i src2:i len:3 clob:1
 addcc: dest:i src1:i src2:i len:3 clob:1
