@@ -11,6 +11,7 @@
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/monobitset.h"
 #include "mono/utils/mono-property-hash.h"
+#include "mono/utils/mono-value-hash.h"
 
 #define MONO_SECMAN_FLAG_INIT(x)		(x & 0x2)
 #define MONO_SECMAN_FLAG_GET_VALUE(x)		(x & 0x1)
@@ -148,8 +149,12 @@ struct _MonoImage {
 	/*
 	 * Indexed by method tokens and typedef tokens.
 	 */
-	GHashTable *method_cache;
+	MonoValueHashTable *method_cache;
 	MonoInternalHashTable class_cache;
+
+	/* Indexed by memberref + methodspec tokens */
+	GHashTable *methodref_cache;
+
 	/*
 	 * Indexed by fielddef and memberref tokens
 	 */

@@ -1421,6 +1421,14 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	return mono_get_method_full (image, token, klass, NULL);
 }
 
+static gpointer
+get_method_token (gpointer value)
+{
+	MonoMethod *m = (MonoMethod*)value;
+
+	return GUINT_TO_POINTER (m->token);
+}
+
 MonoMethod *
 mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		      MonoGenericContext *context)
@@ -1432,7 +1440,16 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 
 	mono_loader_lock ();
 
-	if ((result = g_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token)))) {
+	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD) {
+		if (!image->method_cache)
+			image->method_cache = mono_value_hash_table_new (NULL, NULL, get_method_token);
+		result = mono_value_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token));
+	} else {
+		if (!image->methodref_cache)
+			image->methodref_cache = g_hash_table_new (NULL, NULL);
+		result = g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
+	}
+	if (result) {
 		mono_loader_unlock ();
 		return result;
 	}
@@ -1451,8 +1468,13 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 	 * used the `context' to get the method.  See bug #80969.
 	 */
 
-	if (!used_context && !(result && result->is_inflated))
-		g_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+	if (!used_context && !(result && result->is_inflated) && result) {
+		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD) {
+			mono_value_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+		} else {
+			g_hash_table_insert (image->methodref_cache, GINT_TO_POINTER (token), result);
+		}
+	}
 
 	mono_loader_unlock ();
 

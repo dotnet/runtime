@@ -601,7 +601,6 @@ void
 mono_image_init (MonoImage *image)
 {
 	image->mempool = mono_mempool_new_size (512);
-	image->method_cache = g_hash_table_new (NULL, NULL);
 	mono_internal_hash_table_init (&image->class_cache,
 				       g_direct_hash,
 				       class_key_extract,
@@ -1450,7 +1449,10 @@ mono_image_close (MonoImage *image)
 		g_free (image->files);
 	}
 
-	g_hash_table_destroy (image->method_cache);
+	if (image->method_cache)
+		mono_value_hash_table_destroy (image->method_cache);
+	if (image->methodref_cache)
+		g_hash_table_destroy (image->methodref_cache);
 	mono_internal_hash_table_destroy (&image->class_cache);
 	g_hash_table_destroy (image->field_cache);
 	if (image->array_cache) {
