@@ -1,3 +1,11 @@
+2008-05-27 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* configure.in: Add configure option for big arrays.
+
+	  Patch by Luis F. Ortiz.
+	  Contributed under X11 license.
+	  http://lists.ximian.com/pipermail/mono-devel-list/2008-May/027995.html
+
 2008-05-23  Wade Berrier  <wberrier@novell.com>
 
 	* scripts/Makefile.am: remove mbas script since we don't ship it anymore
