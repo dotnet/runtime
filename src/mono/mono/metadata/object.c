@@ -3553,12 +3553,23 @@ mono_array_clone (MonoArray *array)
 }
 
 /* helper macros to check for overflow when calculating the size of arrays */
+#ifdef MONO_BIG_ARRAYS
+#define MYGUINT64_MAX 0x0000FFFFFFFFFFFFUL
+#define MYGUINT_MAX MYGUINT64_MAX
+#define CHECK_ADD_OVERFLOW_UN(a,b) \
+        (guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
+#define CHECK_MUL_OVERFLOW_UN(a,b) \
+        ((guint64)(a) == 0) || ((guint64)(b) == 0) ? 0 : \
+        (guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a))
+#else
 #define MYGUINT32_MAX 4294967295U
+#define MYGUINT_MAX MYGUINT32_MAX
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
         (guint32)(MYGUINT32_MAX) - (guint32)(b) < (guint32)(a) ? -1 : 0
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
         ((guint32)(a) == 0) || ((guint32)(b) == 0) ? 0 : \
         (guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a))
+#endif
 
 /**
  * mono_array_new_full:
