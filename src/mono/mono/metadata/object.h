@@ -28,9 +28,19 @@ typedef struct {
 	MonoThreadsSync *synchronisation;
 } MonoObject;
 
+#ifdef MONO_BIG_ARRAYS
+typedef guint64 mono_array_size_t;
+#define MONO_ARRAY_MAX_INDEX G_MAXINT64
+#define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
+#else
+typedef guint32 mono_array_size_t;
+#define MONO_ARRAY_MAX_INDEX G_MAXINT32
+#define MONO_ARRAY_MAX_SIZE  G_MAXUINT32
+#endif
+
 typedef struct {
-	guint32 length;
-	guint32 lower_bound;
+	mono_array_size_t length;
+	mono_array_size_t lower_bound;
 } MonoArrayBounds;
 
 typedef struct {
@@ -38,7 +48,7 @@ typedef struct {
 	/* bounds is NULL for szarrays */
 	MonoArrayBounds *bounds;
 	/* total number of elements of the array */
-	guint32 max_length; 
+	mono_array_size_t max_length; 
 	/* we use double to ensure proper alignment on platforms that need it */
 	double vector [MONO_ZERO_LEN_ARRAY];
 } MonoArray;
