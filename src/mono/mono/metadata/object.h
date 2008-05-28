@@ -34,8 +34,8 @@ typedef guint64 mono_array_size_t;
 #define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
 #else
 typedef guint32 mono_array_size_t;
-#define MONO_ARRAY_MAX_INDEX G_MAXINT32
-#define MONO_ARRAY_MAX_SIZE  G_MAXUINT32
+#define MONO_ARRAY_MAX_INDEX ((gint32) 0x7fffffff)
+#define MONO_ARRAY_MAX_SIZE  ((guint32) 0xffffffff)
 #endif
 
 typedef struct {
