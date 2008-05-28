@@ -509,7 +509,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 {
 	MonoClass *aklass;
 	MonoArray *array;
-	guint32 *sizes, i;
+	mono_array_size_t *sizes, i;
 	gboolean bounded = FALSE;
 
 	MONO_ARCH_SAVE_REGS;
@@ -533,7 +533,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 
 	aklass = mono_bounded_array_class_get (mono_class_from_mono_type (type->type), mono_array_length (lengths), bounded);
 
-	sizes = alloca (aklass->rank * sizeof(guint32) * 2);
+	sizes = alloca (aklass->rank * sizeof(mono_array_size_t) * 2);
 	for (i = 0; i < aklass->rank; ++i) {
 		sizes [i] = mono_array_get (lengths, guint32, i);
 		if (bounds)
@@ -559,6 +559,7 @@ static gint32
 ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 {
 	gint32 rank = ((MonoObject *)this)->vtable->klass->rank;
+	mono_array_size_t length;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -566,9 +567,15 @@ ves_icall_System_Array_GetLength (MonoArray *this, gint32 dimension)
 		mono_raise_exception (mono_get_exception_index_out_of_range ());
 	
 	if (this->bounds == NULL)
-		return this->max_length;
-	
-	return this->bounds [dimension].length;
+		length = this->max_length;
+	else
+		length = this->bounds [dimension].length;
+
+#ifdef MONO_BIG_ARRAYS
+	if (length > G_MAXINT32)
+	        mono_raise_exception (mono_get_exception_overflow ());
+#endif
+	return length;
 }
 
 static gint32
@@ -2904,12 +2911,12 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	
 	if (m->klass->rank && !strcmp (m->name, ".ctor")) {
 		int i;
-		guint32 *lengths;
-		guint32 *lower_bounds;
+		mono_array_size_t *lengths;
+		mono_array_size_t *lower_bounds;
 		pcount = mono_array_length (params);
-		lengths = alloca (sizeof (guint32) * pcount);
+		lengths = alloca (sizeof (mono_array_size_t) * pcount);
 		for (i = 0; i < pcount; ++i)
-			lengths [i] = *(gint32*) ((char*)mono_array_get (params, gpointer, i) + sizeof (MonoObject));
+			lengths [i] = *(mono_array_size_t*) ((char*)mono_array_get (params, gpointer, i) + sizeof (MonoObject));
 
 		if (m->klass->rank == pcount) {
 			/* Only lengths provided. */
