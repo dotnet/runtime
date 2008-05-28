@@ -118,14 +118,14 @@ MonoObject *
 mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token);
 
 MonoArray*
-mono_array_new		    (MonoDomain *domain, MonoClass *eclass, guint32 n);
+mono_array_new		    (MonoDomain *domain, MonoClass *eclass, mono_array_size_t n);
 
 MonoArray*
 mono_array_new_full	    (MonoDomain *domain, MonoClass *array_class,
-			     guint32 *lengths, guint32 *lower_bounds);
+			     mono_array_size_t *lengths, mono_array_size_t *lower_bounds);
 
 MonoArray *
-mono_array_new_specific	    (MonoVTable *vtable, guint32 n);
+mono_array_new_specific	    (MonoVTable *vtable, mono_array_size_t n);
 
 MonoArray*
 mono_array_clone	    (MonoArray *array);
