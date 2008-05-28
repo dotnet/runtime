@@ -721,22 +721,14 @@ lreg: OP_LSHR_UN (lreg, OP_ICONST) "0" {
 }
 
 reg: OP_ATOMIC_ADD_NEW_I4 (base, reg),
-reg: OP_ATOMIC_ADD_I4 (base, reg) {
+reg: OP_ATOMIC_ADD_I4 (base, reg),
+reg: OP_ATOMIC_EXCHANGE_I4 (base, reg),
+reg: OP_ATOMIC_CAS_IMM_I4 (base, reg) {
 	tree->opcode = tree->opcode;
-	tree->inst_basereg = state->left->tree->inst_basereg; 
-	tree->inst_offset = state->left->tree->inst_offset; 
 	tree->dreg = state->reg1;
 	tree->sreg2 = state->right->reg1;
-    
-	mono_bblock_add_inst (s->cbb, tree);
-}
-
-reg: OP_ATOMIC_EXCHANGE_I4 (base, reg) {
-    tree->opcode = OP_ATOMIC_EXCHANGE_I4;
-    tree->dreg = state->reg1;
-    tree->sreg2 = state->right->reg1;
-    tree->inst_basereg = state->left->tree->inst_basereg; 
-    tree->inst_offset = state->left->tree->inst_offset; 
+	tree->inst_basereg = state->left->tree->inst_basereg; 
+	tree->inst_offset = state->left->tree->inst_offset; 
     
 	mono_bblock_add_inst (s->cbb, tree);
 }

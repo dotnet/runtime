@@ -3346,7 +3346,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
-		case OP_ATOMIC_EXCHANGE_I4: {
+		case OP_ATOMIC_EXCHANGE_I4:
+		case OP_ATOMIC_CAS_IMM_I4: {
 			guchar *br[2];
 			int sreg2 = ins->sreg2;
 			int breg = ins->inst_basereg;
@@ -3355,8 +3356,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * hack to overcome limits in x86 reg allocator 
 			 * (req: dreg == eax and sreg2 != eax and breg != eax) 
 			 */
-			if (ins->dreg != X86_EAX)
-				x86_push_reg (code, X86_EAX);
+			g_assert (ins->dreg == X86_EAX);
 			
 			/* We need the EAX reg for the cmpxchg */
 			if (ins->sreg2 == X86_EAX) {
@@ -3371,20 +3371,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				breg = X86_ESI;
 			}
 
-			x86_mov_reg_membase (code, X86_EAX, breg, ins->inst_offset, 4);
+			if (ins->opcode == OP_ATOMIC_CAS_IMM_I4) {
+				x86_mov_reg_imm (code, X86_EAX, ins->backend.data);
 
-			br [0] = code; x86_prefix (code, X86_LOCK_PREFIX);
-			x86_cmpxchg_membase_reg (code, breg, ins->inst_offset, sreg2);
-			br [1] = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
-			x86_patch (br [1], br [0]);
+				x86_prefix (code, X86_LOCK_PREFIX);
+				x86_cmpxchg_membase_reg (code, breg, ins->inst_offset, sreg2);
+			} else {
+				x86_mov_reg_membase (code, X86_EAX, breg, ins->inst_offset, 4);
+
+				br [0] = code; x86_prefix (code, X86_LOCK_PREFIX);
+				x86_cmpxchg_membase_reg (code, breg, ins->inst_offset, sreg2);
+				br [1] = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
+				x86_patch (br [1], br [0]);
+			}
 
 			if (breg != ins->inst_basereg)
 				x86_pop_reg (code, X86_ESI);
-
-			if (ins->dreg != X86_EAX) {
-				x86_mov_reg_reg (code, ins->dreg, X86_EAX, 4);
-				x86_pop_reg (code, X86_EAX);
-			}
 
 			if (ins->sreg2 != sreg2)
 				x86_pop_reg (code, X86_EDX);
