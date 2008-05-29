@@ -1192,6 +1192,7 @@ mono_make_shadow_copy (const char *filename)
 			break;
 		}
 	}
+	g_free (dir_name);
 
 	if (!do_copy)
 		return (char*) filename;
