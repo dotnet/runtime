@@ -485,6 +485,66 @@ class Tests {
 
 		return arr [0] == null ? 0 : 1;
 	}
+
+	public static int test_0_invalid_new_array_size () {
+		int size;
+		object res = null;
+		size = -1;
+		try {
+			res = new float [size];
+		} catch (OverflowException e) {
+
+		} catch (Exception) {
+			return 1;
+		}
+		if (res != null)
+			return 2;
+
+		size = -2147483648;
+		try {
+			res = new float [size];
+		} catch (OverflowException e) {
+
+		} catch (Exception) {
+			return 3;
+		}
+
+		if (res != null)
+			return 4;
+
+		return 0;
+	}
+
+
+	public static int test_0_invalid_new_multi_dym_array_size () {
+		int dym_size = 1;
+		int size;
+		object res = null;
+		size = -1;
+		try {
+			res = new float [dym_size, size];
+		} catch (OverflowException e) {
+
+		} catch (Exception) {
+			return 1;
+		}
+		if (res != null)
+			return 2;
+
+		size = -2147483648;
+		try {
+			res = new float [size, dym_size];
+		} catch (OverflowException e) {
+
+		} catch (Exception) {
+			return 3;
+		}
+
+		if (res != null)
+			return 4;
+
+		return 0;
+	}
 }
 
 
