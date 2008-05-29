@@ -2443,7 +2443,6 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 
 		iface = mono_type_get_object (domain, it);
 		mono_array_setref (res, i, iface);
-		mono_metadata_free_type (it);
 	}
 
 	return res;
