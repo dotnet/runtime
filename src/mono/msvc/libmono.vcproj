@@ -1519,6 +1519,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\utils\mono-property-hash.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-property-hash.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\utils\mono-sha1.c"
 				>
 				<FileConfiguration
@@ -1712,6 +1720,14 @@
 			</File>
 			<File
 				RelativePath="..\mono\utils\mono-uri.h"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-value-hash.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\utils\mono-value-hash.h"
 				>
 			</File>
 			<File
