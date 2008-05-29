@@ -3599,14 +3599,14 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size
 	/* A single dimensional array with a 0 lower bound is the same as an szarray */
 	if (array_class->rank == 1 && ((array_class->byval_arg.type == MONO_TYPE_SZARRAY) || (lower_bounds && lower_bounds [0] == 0))) {
 		len = lengths [0];
-		if (len > MONO_ARRAY_MAX_SIZE)
+		if (len > MONO_ARRAY_MAX_INDEX)//MONO_ARRAY_MAX_INDEX
 			arith_overflow ();
 		bounds_size = 0;
 	} else {
 		bounds_size = sizeof (MonoArrayBounds) * array_class->rank;
 
 		for (i = 0; i < array_class->rank; ++i) {
-			if (lengths [i] > MONO_ARRAY_MAX_SIZE)
+			if (lengths [i] > MONO_ARRAY_MAX_INDEX) //MONO_ARRAY_MAX_INDEX
 				arith_overflow ();
 			if (CHECK_MUL_OVERFLOW_UN (len, lengths [i]))
 				mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
@@ -3701,7 +3701,7 @@ mono_array_new_specific (MonoVTable *vtable, mono_array_size_t n)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (n > MONO_ARRAY_MAX_SIZE)
+	if (n > MONO_ARRAY_MAX_INDEX)
 		arith_overflow ();
 	
 	elem_size = mono_array_element_size (vtable->klass);
