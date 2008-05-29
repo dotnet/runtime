@@ -5620,6 +5620,10 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
 
+	/* FIME: We must check if target is visible to the caller under coreclr.
+	 * The check should be disabled otherwise as it shouldn't raise expection under fulltrust.
+	 */
+
 	delegate = mono_object_new (mono_object_domain (type), delegate_class);
 
 	if (info->method->dynamic)

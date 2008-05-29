@@ -4451,6 +4451,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	if (callvirt) {
 		// From mono_mb_create_and_cache
 		newm = mono_mb_create_method (mb, sig, sig->param_count + 16);
+		newm->skip_visibility = 1;
+		/*We perform double checked locking, so must fence before publishing*/
+		mono_memory_barrier ();
 		mono_marshal_lock ();
 		res = g_hash_table_lookup (cache, &key);
 		if (!res) {
@@ -4467,6 +4470,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		}
 	} else {
 		res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+		res->skip_visibility = 1;
 	}
 	mono_mb_free (mb);
 
