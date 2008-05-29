@@ -1175,8 +1175,10 @@ mono_make_shadow_copy (const char *filename)
 	MonoDomain *domain = mono_domain_get ();
 	set_domain_search_path (domain);
 
-	if (!domain->search_path)
+	if (!domain->search_path) {
+		g_free (dir_name);
 		return (char*) filename;
+	}
 	
 	for (path = domain->search_path; *path; path++) {
 		if (**path == '\0') {
