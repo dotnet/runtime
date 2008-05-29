@@ -77,53 +77,6 @@ struct _MonoValueHashTable {
 	GDestroyNotify value_destroy_func, key_destroy_func;
 };
 
-static const guint prime_tbl[] = {
-	11, 19, 37, 73, 109, 163, 251, 367, 557, 823, 1237,
-	1861, 2777, 4177, 6247, 9371, 14057, 21089, 31627,
-	47431, 71143, 106721, 160073, 240101, 360163,
-	540217, 810343, 1215497, 1823231, 2734867, 4102283,
-	6153409, 9230113, 13845163
-};
-
-static gboolean
-test_prime (int x)
-{
-	if ((x & 1) != 0) {
-		int n;
-		for (n = 3; n< (int)sqrt (x); n += 2) {
-			if ((x % n) == 0)
-				return FALSE;
-		}
-		return TRUE;
-	}
-	// There is only one even prime - 2.
-	return (x == 2);
-}
-
-static int
-calc_prime (int x)
-{
-	int i;
-	
-	for (i = (x & (~1))-1; i< G_MAXINT32; i += 2) {
-		if (test_prime (i))
-			return i;
-	}
-	return x;
-}
-
-guint
-g_spaced_primes_closest (guint x)
-{
-	int i;
-	
-	for (i = 0; i < G_N_ELEMENTS (prime_tbl); i++) {
-		if (x <= prime_tbl [i])
-			return prime_tbl [i];
-	}
-	return calc_prime (x);
-}
-
 static void
 mono_value_hash_table_set_shift (MonoValueHashTable *hash_table, gint shift)
 {
