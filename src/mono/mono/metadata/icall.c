@@ -1958,10 +1958,13 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	for (i = 0; i < ifaces->len; ++i) {
 		MonoClass *ic = g_ptr_array_index (ifaces, i);
 		MonoType *ret = &ic->byval_arg;
+		MonoType *inflated = NULL;
 		if (context && ic->generic_class && ic->generic_class->context.class_inst->is_open)
-			ret = mono_class_inflate_generic_type (ret, context);
+			inflated = ret = mono_class_inflate_generic_type (ret, context);
 		
 		mono_array_setref (intf, i, mono_type_get_object (domain, ret));
+		if (inflated)
+			mono_metadata_free_type (inflated);
 	}
 	g_ptr_array_free (ifaces, TRUE);
 
@@ -2367,10 +2370,11 @@ static MonoReflectionType*
 ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 {
 	MonoDynamicGenericClass *gclass;
-	MonoReflectionType *parent = NULL;
+	MonoReflectionType *parent = NULL, *ret;
 	MonoDomain *domain;
 	MonoType *inflated;
 	MonoClass *klass;
+
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2391,7 +2395,9 @@ ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 	inflated = mono_class_inflate_generic_type (
 		parent->type, mono_generic_class_get_context ((MonoGenericClass *) gclass));
 
-	return mono_type_get_object (domain, inflated);
+	ret = mono_type_get_object (domain, inflated);
+	mono_metadata_free_type (inflated);
+	return ret;
 }
 
 static MonoArray*
@@ -2437,6 +2443,7 @@ ves_icall_MonoGenericClass_GetInterfaces (MonoReflectionGenericClass *type)
 
 		iface = mono_type_get_object (domain, it);
 		mono_array_setref (res, i, iface);
+		mono_metadata_free_type (it);
 	}
 
 	return res;
