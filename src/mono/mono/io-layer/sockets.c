@@ -57,9 +57,10 @@ static void socket_ops_init (void)
 	/* No capabilities to register */
 }
 
-static void socket_close (gpointer handle, gpointer data G_GNUC_UNUSED)
+static void socket_close (gpointer handle, gpointer data)
 {
 	int ret;
+	struct _WapiHandle_socket *socket_handle = (struct _WapiHandle_socket *)data;
 
 #ifdef DEBUG
 	g_message ("%s: closing socket handle %p", __func__, handle);
@@ -88,6 +89,8 @@ static void socket_close (gpointer handle, gpointer data G_GNUC_UNUSED)
 		errnum = errno_to_WSA (errnum, __func__);
 		WSASetLastError (errnum);
 	}
+
+	socket_handle->saved_error = 0;
 }
 
 int WSAStartup(guint32 requested, WapiWSAData *data)
@@ -316,15 +319,19 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 			/* 
 			 * On solaris x86 getsockopt (SO_ERROR) is not set after 
 			 * connect () fails so we need to save this error.
+			 *
+			 * But don't do this for EWOULDBLOCK (bug 317315)
 			 */
-			ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
-						  (gpointer *)&socket_handle);
-			if (ok == FALSE) {
-				g_warning ("%s: error looking up socket handle %p", __func__, handle);
-			} else {
-				socket_handle->saved_error = errnum;
+			if (errnum != WSAEWOULDBLOCK) {
+				ok = _wapi_lookup_handle (handle,
+							  WAPI_HANDLE_SOCKET,
+							  (gpointer *)&socket_handle);
+				if (ok == FALSE) {
+					g_warning ("%s: error looking up socket handle %p", __func__, handle);
+				} else {
+					socket_handle->saved_error = errnum;
+				}
 			}
-		
 			return(SOCKET_ERROR);
 		}
 

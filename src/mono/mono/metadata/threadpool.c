@@ -628,11 +628,10 @@ socket_io_epoll_main (gpointer p)
 void
 mono_thread_pool_remove_socket (int sock)
 {
-#ifdef HAVE_EPOLL
 	MonoMList *list, *next;
 	MonoSocketAsyncResult *state;
 
-	if (socket_io_data.epoll_disabled == TRUE || socket_io_data.inited == FALSE)
+	if (socket_io_data.inited == FALSE)
 		return;
 
 	EnterCriticalSection (&socket_io_data.io_lock);
@@ -656,7 +655,6 @@ mono_thread_pool_remove_socket (int sock)
 
 		list = next;
 	}
-#endif
 }
 
 #ifdef PLATFORM_WIN32
