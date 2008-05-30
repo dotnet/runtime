@@ -4030,9 +4030,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 			}
 
-			if (mono_jit_trace_calls && bb->out_of_line)
+			if (mono_jit_trace_calls && bb == cfg->bb_exit)
 				/* The tracing code can be quite large */
-				bb->max_offset += max_epilog_size;
+				max_offset += max_epilog_size;
 		}
 	}
 
