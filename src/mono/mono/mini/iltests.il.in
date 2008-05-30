@@ -1724,4 +1724,39 @@ HAS_VALUE:	ldc.i4.1
 		ret
 	}
 
+	.field public  static unsigned int64 'ull'
+
+	.field public  static int32 'shift2'
+
+	.method public static int32 test_0_long_shift_regalloc () cil managed
+	{
+		.locals (unsigned int32 'cilsimp.28', unsigned int64 'cilsimp.27', int32 'cilsimp.26')
+
+		.maxstack 4
+
+		ldc.i8	81985529234382576
+		stsfld	unsigned int64 Tests::ull
+	    ldc.i4	60
+		stsfld	int32 Tests::shift2
+
+		ldsfld	unsigned int64 Tests::ull
+		stloc	'cilsimp.27'
+		ldsfld	int32 Tests::shift2
+		stloc	'cilsimp.28'
+		ldloc	'cilsimp.27'
+		ldloc	'cilsimp.28'
+		shr.un
+		ldloc	'cilsimp.27'
+		ldc.i4	64
+		ldloc	'cilsimp.28'
+		sub
+		shl
+		or
+		ldc.i8	1311768467750121216
+		ceq
+		ldc.i4.1
+		xor
+		conv.u4
+		ret
+	}
 }
