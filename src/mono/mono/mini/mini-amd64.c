@@ -3832,6 +3832,25 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	}
 }
 
+static int
+get_max_epilog_size (MonoCompile *cfg)
+{
+	int max_epilog_size = 16;
+	
+	if (cfg->method->save_lmf)
+		max_epilog_size += 256;
+	
+	if (mono_jit_trace_calls != NULL)
+		max_epilog_size += 50;
+
+	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
+		max_epilog_size += 50;
+
+	max_epilog_size += (AMD64_NREG * 2);
+
+	return max_epilog_size;
+}
+
 /*
  * This macro is used for testing whenever the unwinder works correctly at every point
  * where an async exception can happen.
@@ -3852,7 +3871,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *ins;
-	int alloc_size, pos, max_offset, i, quad;
+	int alloc_size, pos, max_offset, i, quad, max_epilog_size;
 	guint8 *code;
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->arch.lmf_offset;
@@ -3993,6 +4012,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* compute max_offset in order to use short forward jumps */
 	max_offset = 0;
+	max_epilog_size = get_max_epilog_size (cfg);
 	if (cfg->opt & MONO_OPT_BRANCH) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 			bb->max_offset = max_offset;
@@ -4009,6 +4029,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				
 				max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 			}
+
+			if (mono_jit_trace_calls && bb->out_of_line)
+				/* The tracing code can be quite large */
+				bb->max_offset += max_epilog_size;
 		}
 	}
 
@@ -4277,20 +4301,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	MonoMethod *method = cfg->method;
 	int quad, pos, i;
 	guint8 *code;
-	int max_epilog_size = 16;
+	int max_epilog_size;
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->arch.lmf_offset;
 	
-	if (cfg->method->save_lmf)
-		max_epilog_size += 256;
-	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 50;
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		max_epilog_size += 50;
-
-	max_epilog_size += (AMD64_NREG * 2);
+	max_epilog_size = get_max_epilog_size (cfg);
 
 	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;
