@@ -5721,6 +5721,13 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	MonoReflectionType *res;
 	MonoClass *klass = mono_class_from_mono_type (type);
 
+	/*we must avoid using @type as it might have come
+	 * from a mono_metadata_type_dup and the caller
+	 * expects that is can be freed.
+	 * Using the right type from 
+	 */
+	type = klass->byval_arg.byref == type->byref ? &klass->byval_arg : &klass->this_arg;
+
 	mono_domain_lock (domain);
 	if (!domain->type_hash)
 		domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mymono_metadata_type_hash, 
