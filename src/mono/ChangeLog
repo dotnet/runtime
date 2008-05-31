@@ -1,3 +1,10 @@
+2008-05-31  Andreas Färber  <andreas.faerber@web.de>
+
+	* configure.in (big-arrays): Output fix.
+	  Display "no" in absence of --enable-big-arrays.
+
+	Contributed unter MIT/X11 license.
+
 2008-05-27 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* configure.in: Add configure option for big arrays.
