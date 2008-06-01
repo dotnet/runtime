@@ -863,7 +863,7 @@ method_count_clauses (MonoReflectionILGen *ilgen)
 }
 
 static MonoExceptionClause*
-method_encode_clauses (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, guint32 num_clauses)
+method_encode_clauses (MonoMemPool *mp, MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, guint32 num_clauses)
 {
 	MonoExceptionClause *clauses;
 	MonoExceptionClause *clause;
@@ -872,7 +872,7 @@ method_encode_clauses (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen, g
 	guint32 finally_start;
 	int i, j, clause_index;;
 
-	clauses = g_new0 (MonoExceptionClause, num_clauses);
+	clauses = mp_g_new0 (mp, MonoExceptionClause, num_clauses);
 
 	clause_index = 0;
 	for (i = mono_array_length (ilgen->ex_handlers) - 1; i >= 0; --i) {
@@ -2448,6 +2448,7 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name,
 											fieldref_encode_signature (assembly, ftype));
 	g_free (name);
+	mono_metadata_free_type (ftype);
 	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER (token));
 	return token;
 }
@@ -4551,8 +4552,11 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		g_hash_table_destroy (di->blob_cache);
 	}
 	g_list_free (di->array_methods);
-	if (di->gen_params)
-		g_ptr_array_free (di->gen_params, TRUE);
+	if (di->gen_params) {
+		for (i = 0; i < di->gen_params->len; i++)
+			g_free (g_ptr_array_index (di->gen_params, i));
+	 	g_ptr_array_free (di->gen_params, TRUE);
+	}
 	if (di->token_fixups)
 		mono_g_hash_table_destroy (di->token_fixups);
 	if (di->method_to_table_idx)
@@ -8905,7 +8909,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 		header->num_clauses = num_clauses;
 		if (num_clauses) {
-			header->clauses = method_encode_clauses ((MonoDynamicImage*)klass->image,
+			header->clauses = method_encode_clauses (mp, (MonoDynamicImage*)klass->image,
 				 rmb->ilgen, num_clauses);
 		}
 
@@ -8922,7 +8926,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			mono_method_set_generic_container (m, container);
 		}
 		container->type_argc = count;
-		container->type_params = g_new0 (MonoGenericParam, count);
+		container->type_params = mp_g_new0 (mp, MonoGenericParam, count);
 		container->owner.method = m;
 
 		for (i = 0; i < count; i++) {
@@ -8964,8 +8968,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			if ((pb = mono_array_get (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
 				if ((i > 0) && (pb->attrs)) {
 					/* Make a copy since it might point to a shared type structure */
-					/* FIXME: Alloc this from a mempool */
-					m->signature->params [i - 1] = mono_metadata_type_dup (NULL, m->signature->params [i - 1]);
+					m->signature->params [i - 1] = mono_metadata_type_dup (mp, m->signature->params [i - 1]);
 					m->signature->params [i - 1]->attrs = pb->attrs;
 				}
 
@@ -9348,11 +9351,11 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 
 	for (i = 0; i < dgclass->count_fields; i++) {
 		MonoObject *obj = mono_array_get (fields, gpointer, i);
-		MonoClassField *field;
+		MonoClassField *field, *inflated_field = NULL;
 		MonoInflatedField *ifield;
 
 		if (!strcmp (obj->vtable->klass->name, "FieldBuilder"))
-			field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
+			inflated_field = field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
 		else if (!strcmp (obj->vtable->klass->name, "MonoField"))
 			field = ((MonoReflectionField *) obj)->field;
 		else {
@@ -9370,6 +9373,9 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		dgclass->fields [i].generic_info = ifield;
 		dgclass->fields [i].type = mono_class_inflate_generic_type (
 			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass));
+
+		if (inflated_field)
+			g_free (inflated_field);
 	}
 
 	for (i = 0; i < dgclass->count_properties; i++) {
