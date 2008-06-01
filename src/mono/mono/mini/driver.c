@@ -1031,6 +1031,15 @@ mini_debug_usage (void)
 		 "                         process with the debugger.\n");
 }
 
+#if defined(__arm__) && defined(__ARM_EABI__)
+/* Redefine ARCHITECTURE to include more information */
+#undef ARCHITECTURE
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define ARCHITECTURE "armel"
+#else
+#define ARCHITECTURE "armeb"
+#endif
+#endif
 
 static const char info[] =
 #ifdef HAVE_KW_THREAD
