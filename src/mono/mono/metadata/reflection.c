@@ -4535,6 +4535,7 @@ void
 mono_dynamic_image_free (MonoDynamicImage *image)
 {
 	MonoDynamicImage *di = image;
+	GList *list;
 	int i;
 
 	if (di->typespec)
@@ -4550,6 +4551,12 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	if (di->blob_cache) {
 		g_hash_table_foreach (di->blob_cache, free_blob_cache_entry, NULL);
 		g_hash_table_destroy (di->blob_cache);
+	}
+	for (list = di->array_methods; list; list = list->next) {
+		ArrayMethod *am = (ArrayMethod *)list->data;
+		g_free (am->sig);
+		g_free (am->name);
+		g_free (am);
 	}
 	g_list_free (di->array_methods);
 	if (di->gen_params) {
@@ -4845,6 +4852,16 @@ resource_tree_encode (ResTreeNode *node, char *begin, char *p, char **endbuf)
 }
 
 static void
+resource_tree_free (ResTreeNode * node)
+{
+	GSList * list;
+	for (list = node->children; list; list = list->next)
+		resource_tree_free ((ResTreeNode*)list->data);
+	g_slist_free(node->children);
+	g_free (node);
+}
+
+static void
 assembly_add_win32_resources (MonoDynamicImage *assembly, MonoReflectionAssemblyBuilder *assemblyb)
 {
 	char *buf;
@@ -4885,6 +4902,7 @@ assembly_add_win32_resources (MonoDynamicImage *assembly, MonoReflectionAssembly
 	memcpy (assembly->win32_res, buf, p - buf);
 
 	g_free (buf);
+	resource_tree_free (tree);
 }
 
 static void
