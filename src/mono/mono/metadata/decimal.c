@@ -573,33 +573,9 @@ my_g_bit_nth_msf (gsize mask)
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
 DECINLINE static int log2_32(guint32 a)
 {
-    int tlog2 = 0;
-
     if (a == 0) return DECIMAL_LOG_NEGINF;
 
-    if ((a >> 16) != 0) {
-        a >>= 16;
-        tlog2 += 16;
-    }
-    if ((a >> 8) != 0) {
-        a >>= 8;
-        tlog2 += 8;
-    }
-    if ((a >> 4) != 0) {
-        a >>= 4;
-        tlog2 += 4;
-    }
-    if ((a >> 2) != 0) {
-        a >>= 2;
-        tlog2 += 2;
-    }
-    if ((a >> 1) != 0) {
-        a >>= 1;
-        tlog2 += 1;
-    }
-    tlog2 += (int) a;
-
-    return tlog2;
+	return my_g_bit_nth_msf (a) + 1;
 }
 
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
