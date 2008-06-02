@@ -3,6 +3,7 @@
 
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/mempool.h>
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -934,8 +935,8 @@ mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format) MONO_INTERNA
 char*
 mono_type_get_full_name (MonoClass *class) MONO_INTERNAL;
 
-MonoArrayType *mono_dup_array_type (MonoArrayType *a) MONO_INTERNAL;
-MonoMethodSignature *mono_metadata_signature_deep_dup (MonoMethodSignature *sig) MONO_INTERNAL;
+MonoArrayType *mono_dup_array_type (MonoMemPool *mp, MonoArrayType *a) MONO_INTERNAL;
+MonoMethodSignature *mono_metadata_signature_deep_dup (MonoMemPool *mp, MonoMethodSignature *sig) MONO_INTERNAL;
 
 void
 mono_image_init_name_cache (MonoImage *image);

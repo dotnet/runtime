@@ -1787,6 +1787,26 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 	return sig;
 }
 
+MonoMethodSignature*
+mono_metadata_signature_dup_full (MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	int sigsize;
+
+	sigsize = sizeof (MonoMethodSignature) + (sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
+
+	if (mp) {
+		MonoMethodSignature *ret;
+		mono_loader_lock ();
+		ret = mono_mempool_alloc (mp, sigsize);
+		mono_loader_unlock ();
+
+		memcpy (ret, sig, sigsize);
+		return ret;
+	} else {
+		return g_memdup (sig, sigsize);
+	}
+}
+
 /*
  * mono_metadata_signature_dup:
  * @sig: method signature
@@ -1799,10 +1819,7 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 MonoMethodSignature*
 mono_metadata_signature_dup (MonoMethodSignature *sig)
 {
-	int sigsize;
-
-	sigsize = sizeof (MonoMethodSignature) + (sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
-	return g_memdup (sig, sigsize);
+	return mono_metadata_signature_dup_full (NULL, sig);
 }
 
 /*
@@ -4099,13 +4116,9 @@ mono_metadata_type_dup (MonoMemPool *mp, const MonoType *o)
 	if (o->type == MONO_TYPE_PTR) {
 		r->data.type = mono_metadata_type_dup (mp, o->data.type);
 	} else if (o->type == MONO_TYPE_ARRAY) {
-		/* FIXME: should mono_dup_array_type() use mempools? */
-		g_assert (!mp);
-		r->data.array = mono_dup_array_type (o->data.array);
+		r->data.array = mono_dup_array_type (mp, o->data.array);
 	} else if (o->type == MONO_TYPE_FNPTR) {
-		/* FIXME: should mono_metadata_signature_deep_dup() use mempools? */
-		g_assert (!mp);
-		r->data.method = mono_metadata_signature_deep_dup (o->data.method);
+		r->data.method = mono_metadata_signature_deep_dup (mp, o->data.method);
 	}
 	return r;
 }

@@ -160,29 +160,48 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 	return mono_class_from_name (image->references [idx - 1]->image, nspace, name);
 }
 
+
+static void *
+mono_mempool_dup (MonoMemPool *mp, void *data, guint size)
+{
+	void *res = mono_mempool_alloc (mp, size);
+	memcpy (res, data, size);
+	return res;
+}
+	
 /* Copy everything mono_metadata_free_array free. */
 MonoArrayType *
-mono_dup_array_type (MonoArrayType *a)
+mono_dup_array_type (MonoMemPool *mp, MonoArrayType *a)
 {
-	a = g_memdup (a, sizeof (MonoArrayType));
-	if (a->sizes)
-		a->sizes = g_memdup (a->sizes, a->numsizes * sizeof (int));
-	if (a->lobounds)
-		a->lobounds = g_memdup (a->lobounds, a->numlobounds * sizeof (int));
+	if (mp) {
+		mono_loader_lock ();
+		a = mono_mempool_dup (mp, a, sizeof (MonoArrayType));
+		if (a->sizes)
+			a->sizes = mono_mempool_dup (mp, a->sizes, a->numsizes * sizeof (int));
+		if (a->lobounds)
+			a->lobounds = mono_mempool_dup (mp, a->lobounds, a->numlobounds * sizeof (int));
+		mono_loader_unlock ();		
+	} else {
+		a = g_memdup (a, sizeof (MonoArrayType));
+		if (a->sizes)
+			a->sizes = g_memdup (a->sizes, a->numsizes * sizeof (int));
+		if (a->lobounds)
+			a->lobounds = g_memdup (a->lobounds, a->numlobounds * sizeof (int));
+	}
 	return a;
 }
 
 /* Copy everything mono_metadata_free_method_signature free. */
 MonoMethodSignature*
-mono_metadata_signature_deep_dup (MonoMethodSignature *sig)
+mono_metadata_signature_deep_dup (MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	int i;
 	
-	sig = mono_metadata_signature_dup (sig);
+	sig = mono_metadata_signature_dup_full (mp, sig);
 	
-	sig->ret = mono_metadata_type_dup (NULL, sig->ret);
+	sig->ret = mono_metadata_type_dup (mp, sig->ret);
 	for (i = 0; i < sig->param_count; ++i)
-		sig->params [i] = mono_metadata_type_dup (NULL, sig->params [i]);
+		sig->params [i] = mono_metadata_type_dup (mp, sig->params [i]);
 	
 	return sig;
 }

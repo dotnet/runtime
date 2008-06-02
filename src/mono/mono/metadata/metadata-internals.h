@@ -454,6 +454,7 @@ void mono_unload_interface_ids (MonoBitSet *bitset) MONO_INTERNAL;
 
 
 MonoType *mono_metadata_type_dup (MonoMemPool *mp, const MonoType *original) MONO_INTERNAL;
+MonoMethodSignature  *mono_metadata_signature_dup_full (MonoMemPool *mp,MonoMethodSignature *sig) MONO_INTERNAL;
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
