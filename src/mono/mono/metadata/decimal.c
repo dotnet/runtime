@@ -400,8 +400,8 @@ DECINLINE static void div192by32(guint64* plo, guint64* pmi, guint64* phi,
 
 /* returns upper 32bit for a(192bit) /= b(32bit)
    a will contain remainder */
-static guint32 div192by96to32withRest(guint64* palo, guint64* pami, guint64* pahi, 
-                                      guint32 blo, guint32 bmi, guint32 bhi)
+DECINLINE static guint32 div192by96to32withRest(guint64* palo, guint64* pami, guint64* pahi, 
+												guint32 blo, guint32 bmi, guint32 bhi)
 {
     guint64 rlo, rmi, rhi; /* remainder */
     guint64 tlo, thi; /* term */
@@ -428,9 +428,9 @@ static guint32 div192by96to32withRest(guint64* palo, guint64* pami, guint64* pah
 
 /* c(128bit) = a(192bit) / b(96bit) 
    b must be >= 2^95 */
-static void div192by96to128(guint64 alo, guint64 ami, guint64 ahi,
-                            guint32 blo, guint32 bmi, guint32 bhi,
-                            guint64* pclo, guint64* pchi)
+DECINLINE static void div192by96to128(guint64 alo, guint64 ami, guint64 ahi,
+									  guint32 blo, guint32 bmi, guint32 bhi,
+									  guint64* pclo, guint64* pchi)
 {
     guint64 rlo, rmi, rhi; /* remainder */
     guint32 h, c;
@@ -464,8 +464,8 @@ DECINLINE static void roundUp128(guint64* pclo, guint64* pchi) {
     if (++(*pclo) == 0) ++(*pchi);
 }
 
-static int normalize128(guint64* pclo, guint64* pchi, int* pScale, 
-                        int roundFlag, int roundBit)
+DECINLINE static int normalize128(guint64* pclo, guint64* pchi, int* pScale, 
+								  int roundFlag, int roundBit)
 {
     guint32 overhang = (guint32)(*pchi >> 32);
     int scale = *pScale;
@@ -520,33 +520,54 @@ DECINLINE static int maxLeftShift(/*[In, Out]*/decimal_repr* pA)
 DECINLINE static void rshift128(guint64* pclo, guint64* pchi)
 {
     *pclo >>= 1;
-    if (*pchi & 1) *pclo |= LIT_GUINT64_HIGHBIT;
+	*pclo |= (*pchi & 1) << 63;
     *pchi >>= 1;
 }
 
 DECINLINE static void lshift96(guint32* pclo, guint32* pcmid, guint32* pchi)
 {
     *pchi <<= 1;
-    if (*pcmid & LIT_GUINT32_HIGHBIT) (*pchi)++;
+	*pchi |= (*pcmid & LIT_GUINT32_HIGHBIT) >> 31;
     *pcmid <<= 1;
-    if (*pclo & LIT_GUINT32_HIGHBIT) (*pcmid)++;
+	*pcmid |= (*pclo & LIT_GUINT32_HIGHBIT) >> 31;
     *pclo <<= 1;
 }
 
 DECINLINE static void lshift128(guint64* pclo, guint64* pchi)
 {
     *pchi <<= 1;
-    if (*pclo & LIT_GUINT64_HIGHBIT) (*pchi)++;
+	*pchi |= (*pclo & LIT_GUINT64_HIGHBIT) >> 63;
     *pclo <<= 1;
 }
 
 DECINLINE static void rshift192(guint64* pclo, guint64* pcmi, guint64* pchi)
 {
     *pclo >>= 1;
-    if (*pcmi & 1) *pclo |= LIT_GUINT64_HIGHBIT;
+	*pclo |= (*pcmi & 1) << 63;
     *pcmi >>= 1;
-    if (*pchi & 1) *pcmi |= LIT_GUINT64_HIGHBIT;
+	*pcmi |= (*pchi & 1) << 63;
     *pchi >>= 1;
+}
+
+static inline gint
+my_g_bit_nth_msf (gsize mask)
+{
+	/* Mask is expected to be != 0 */
+#if defined(__i386__) && defined(__GNUC__)
+	int r;
+
+	__asm__("bsrl %1,%0\n\t"
+			: "=r" (r) : "rm" (mask));
+	return r;
+#elif defined(__x86_64) && defined(__GNUC__)
+	guint64 r;
+
+	__asm__("bsrq %1,%0\n\t"
+			: "=r" (r) : "rm" (mask));
+	return r;
+#else
+	return g_bit_nth_msf (mask, sizeof (gsize) * 8);
+#endif
 }
 
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
@@ -584,37 +605,9 @@ DECINLINE static int log2_32(guint32 a)
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
 DECINLINE static int log2_64(guint64 a)
 {
-    int tlog2 = 0;
-
     if (a == 0) return DECIMAL_LOG_NEGINF;
 
-    if ((a >> 32) != 0) {
-        a >>= 32;
-        tlog2 += 32;
-    }
-    if ((a >> 16) != 0) {
-        a >>= 16;
-        tlog2 += 16;
-    }
-    if ((a >> 8) != 0) {
-        a >>= 8;
-        tlog2 += 8;
-    }
-    if ((a >> 4) != 0) {
-        a >>= 4;
-        tlog2 += 4;
-    }
-    if ((a >> 2) != 0) {
-        a >>= 2;
-        tlog2 += 2;
-    }
-    if ((a >> 1) != 0) {
-        a >>= 1;
-        tlog2 += 1;
-    }
-    tlog2 += (int) a;
-
-    return tlog2;
+	return my_g_bit_nth_msf (a) + 1;
 }
 
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
@@ -683,7 +676,7 @@ DECINLINE static int adjustScale128(guint64* palo, guint64* pahi, int deltaScale
 DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int texp,
                                 int minScale, int maxScale, int roundFlag)
 {
-    guint32 factor, overhang;
+    guint32 factor, overhang, prev_lo;
     int scale, i, rc, roundBit = 0;
 
     PRECONDITION(texp >= 0);
@@ -694,11 +687,15 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
         /* reduce exp */
         while (texp > 0 && scale <= maxScale) {
             overhang = (guint32)(*pchi >> 32);
-            while (texp > 0 && ((*pclo & 1) == 0 || overhang > (2<<DECIMAL_MAX_INTFACTORS))) {
-                if (--texp == 0) roundBit = (int)(*pclo & 1);
+			prev_lo = *pclo;
+            while (texp > 0 && (overhang > (2<<DECIMAL_MAX_INTFACTORS) || (*pclo & 1) == 0)) {
+				--texp;
+				prev_lo = *pclo;
                 rshift128(pclo, pchi);
-                overhang = (guint32)(*pchi >> 32);
+                overhang >>= 1;
             }
+			if (texp == 0)
+				roundBit = (int)(prev_lo & 1);
 
             if (texp > DECIMAL_MAX_INTFACTORS) i = DECIMAL_MAX_INTFACTORS;
             else i = texp;
@@ -779,7 +776,7 @@ gint32 mono_decimalIncr(/*[In, Out]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
         /* Estimate log10 and scale of result for adjusting scales */
         log2A = log2withScale_128(alo, ahi, scaleA);
         log2B = log2withScale_128(blo, bhi, scaleB);
-        log2Result = (log2A >= log2B) ? log2A : log2B;
+        log2Result = MAX (log2A, log2B);
         if (!subFlag) log2Result++; /* result can have one bit more */
         log10Result = (log2Result * 1000) / 3322 + 1;
         /* we will calculate in 128bit, so we may need to adjust scale */
@@ -1298,8 +1295,8 @@ gint32 mono_decimalMult(/*[In, Out]*/decimal_repr* pA, /*[In]*/decimal_repr* pB)
     return pack128toDecimal(pA, low, mid, scale, sign);
 }
 
-static int decimalDivSub(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB,
-                         guint64* pclo, guint64* pchi, int* pExp)
+static DECINLINE int decimalDivSub(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB,
+								   guint64* pclo, guint64* pchi, int* pExp)
 {
     guint64 alo, ami, ahi;
     guint64 tlo, tmi, thi;
@@ -1323,14 +1320,52 @@ static int decimalDivSub(/*[In]*/decimal_repr* pA, /*[In]*/decimal_repr* pB,
     }
 
     /* enlarge dividend to get maximal precision */
-    for (ashift = 0; (ahi & LIT_GUINT64_HIGHBIT) == 0; ++ashift) {
-        lshift128(&ami, &ahi);
-    }
+	if (ahi == 0) {
+		ahi = ami;
+		ami = 0;
+		for (ashift = 64; (ahi & LIT_GUINT64_HIGHBIT) == 0; ++ashift) {
+			ahi <<= 1;
+		}
+	} else {
+		for (ashift = 0; (ahi & LIT_GUINT64_HIGHBIT) == 0; ++ashift) {
+			lshift128(&ami, &ahi);
+		}
+	}
 
     /* ensure that divisor is at least 2^95 */
-    for (bshift = 0; (bhi & LIT_GUINT32_HIGHBIT) == 0; ++bshift) {
-        lshift96(&blo, &bmi, &bhi);
-    }
+	if (bhi == 0) {
+
+		if (bmi == 0) {
+			guint32 hi_shift;
+			bhi = blo;
+			bmi = 0;
+			blo = 0;
+
+			//g_assert (g_bit_nth_msf (bhi, 32) == my_g_bit_nth_msf (bhi));
+
+			hi_shift = 31 - my_g_bit_nth_msf (bhi);
+			bhi <<= hi_shift;
+			bshift = 64 + hi_shift;
+		} else {
+			bhi = bmi;
+			bmi = blo;
+			blo = 0;
+
+			for (bshift = 32; (bhi & LIT_GUINT32_HIGHBIT) == 0; ++bshift) {
+				bhi <<= 1;
+				bhi |= (bmi & LIT_GUINT32_HIGHBIT) >> 31;
+				bmi <<= 1;
+			}
+		}
+	} else {
+		for (bshift = 0; (bhi & LIT_GUINT32_HIGHBIT) == 0; ++bshift) {
+			bhi <<= 1;
+			bhi |= (bmi & LIT_GUINT32_HIGHBIT) >> 31;
+			bmi <<= 1;
+			bmi |= (blo & LIT_GUINT32_HIGHBIT) >> 31;
+			blo <<= 1;
+		}
+	}
 
     thi = ((guint64)bhi)<<32 | bmi;
     tmi = ((guint64)blo)<<32;
