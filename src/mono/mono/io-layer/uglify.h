@@ -36,6 +36,7 @@ typedef gunichar2 TCHAR;
 typedef size_t SIZE_T;
 typedef guint64 ULONG64;
 typedef guint UINT;
+typedef gconstpointer LPCVOID;
 
 typedef gpointer HANDLE;
 typedef gpointer *LPHANDLE;

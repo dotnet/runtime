@@ -112,6 +112,9 @@ ICALL(BUFFER_4, "SetByteInternal", ves_icall_System_Buffer_SetByteInternal)
 ICALL_TYPE(CHAR, "System.Char", CHAR_1)
 ICALL(CHAR_1, "GetDataTablePointers", ves_icall_System_Char_GetDataTablePointers)
 
+ICALL_TYPE (COMPO_W, "System.ComponentModel.Win32Exception", COMPO_W_1)
+ICALL (COMPO_W_1, "W32ErrorMessage", ves_icall_System_ComponentModel_Win32Exception_W32ErrorMessage)
+
 ICALL_TYPE(DEFAULTC, "System.Configuration.DefaultConfig", DEFAULTC_1)
 ICALL(DEFAULTC_1, "get_bundled_machine_config", get_bundled_machine_config)
 ICALL(DEFAULTC_2, "get_machine_config_path", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
