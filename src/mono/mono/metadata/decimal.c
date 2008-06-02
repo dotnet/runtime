@@ -1388,6 +1388,16 @@ gint32 mono_decimalDiv(/*[Out]*/decimal_repr* pC, /*[In]*/decimal_repr* pA, /*[I
 
     MONO_ARCH_SAVE_REGS;
 
+	/* Check for common cases */
+	if (mono_decimalCompare (pA, pB) == 0)
+		/* One */
+		return pack128toDecimal (pC, 1, 0, 0, 0);
+	pA->signscale.sign = pA->signscale.sign ? 0 : 1;
+	if (mono_decimalCompare (pA, pB) == 0)
+		/* Minus one */
+		return pack128toDecimal (pC, 1, 0, 0, 1);
+	pA->signscale.sign = pA->signscale.sign ? 0 : 1;
+
     rc = decimalDivSub(pA, pB, &clo, &chi, &texp);
     if (rc != DECIMAL_SUCCESS) {
         if (rc == DECIMAL_FINISHED) rc = DECIMAL_SUCCESS;
