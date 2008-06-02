@@ -607,7 +607,14 @@ DECINLINE static int log2_64(guint64 a)
 {
     if (a == 0) return DECIMAL_LOG_NEGINF;
 
+#if SIZEOF_VOID_P == 8
 	return my_g_bit_nth_msf (a) + 1;
+#else
+	if ((a >> 32) == 0)
+		return my_g_bit_nth_msf ((guint32)a) + 1;
+	else
+		return my_g_bit_nth_msf ((guint32)(a >> 32)) + 1 + 32;
+#endif
 }
 
 /* returns log2(a) or DECIMAL_LOG_NEGINF for a = 0 */
