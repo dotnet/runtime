@@ -19,8 +19,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -72,9 +72,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
-				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
+				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -103,8 +103,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -157,9 +157,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
-				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
+				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -189,8 +189,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -245,10 +245,10 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
-				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
+				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -277,8 +277,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -334,10 +334,10 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib libgc.lib glib-2.0.lib ws2_32.lib gthread-2.0.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;;&quot;.\lib\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
-				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
+				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -367,8 +367,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug_eglib|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -423,10 +423,10 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
-				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
+				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -455,8 +455,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug_eglib|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -512,11 +512,11 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)libmono.pdb"
-				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
+				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool
@@ -546,8 +546,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release_eglib|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -599,9 +599,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
-				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
+				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -630,8 +630,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release_eglib|x64"
-			OutputDirectory="$(PlatformName)\$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -661,7 +661,7 @@
 				InlineFunctionExpansion="1"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\libgc\include;..\;..\mono\;..\mono\jit;..\mono\eglib\src;..\..\mono\eglib\src"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN64;_WIN64;NDEBUG;WIN32;_WINDOWS;__WIN32__;HAVE_CONFIG_H;PLATFORM_WIN32;GC_NOT_DLL;GC_GCJ_SUPPORT;GC_WIN32_THREADS;_CRT_SECURE_NO_DEPRECATE;__x86_64__"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -684,9 +684,9 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="version.lib libgc.lib eglib.lib ws2_32.lib Psapi.lib winmm.lib"
 				OutputFile="$(OutDir)\mono.dll"
-				AdditionalLibraryDirectories="&quot;.\lib\$(PlatformName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ModuleDefinitionFile="mono.def"
-				ImportLibrary=".\lib\$(PlatformName)\$(TargetName).lib"
+				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 				TargetMachine="17"
 			/>
 			<Tool

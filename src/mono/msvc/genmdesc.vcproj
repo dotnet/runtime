@@ -19,8 +19,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -74,7 +74,7 @@
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -107,8 +107,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -163,7 +163,7 @@
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -196,8 +196,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -251,7 +251,7 @@
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ProgramDatabaseFile=".\Release/genmdesc.pdb"
 				SubSystem="1"
 				TargetMachine="1"
@@ -284,8 +284,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|x64"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -340,7 +340,7 @@
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(MONO_DEPENDENCIES_PREFIX)\lib"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ProgramDatabaseFile=".\Release/genmdesc.pdb"
 				SubSystem="1"
 				TargetMachine="17"
@@ -373,8 +373,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug_eglib|Win32"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -428,7 +428,7 @@
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories=".\lib\$(PlatformName)"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -461,8 +461,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug_eglib|x64"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -517,7 +517,7 @@
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories=".\lib\$(PlatformName)"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -550,8 +550,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release_eglib|Win32"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -605,7 +605,7 @@
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories=".\lib\$(PlatformName)"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ProgramDatabaseFile=".\Release/genmdesc.pdb"
 				SubSystem="1"
 				TargetMachine="1"
@@ -638,8 +638,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release_eglib|x64"
-			OutputDirectory=".\bin\$(PlatformName)"
-			IntermediateDirectory=".\obj\$(ProjectName)\$(PlatformName)"
+			OutputDirectory="$(PlatformName)_$(ConfigurationName)/bin"
+			IntermediateDirectory="$(PlatformName)_$(ConfigurationName)/obj/$(ProjectName)"
 			ConfigurationType="1"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -694,7 +694,7 @@
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories=".\lib\$(PlatformName)"
+				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				ProgramDatabaseFile=".\Release/genmdesc.pdb"
 				SubSystem="1"
 				TargetMachine="17"

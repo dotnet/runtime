@@ -1,4 +1,14 @@
-2008-04-29  Bill Holmes  <billholmes54@gmail.com>
+2008-06-02  Bill Holmes  <billholmes54@gmail.com>
+	* monodiet.vcproj, libgc.vcproj, test_eglib.vcproj,
+	  eglib.vcproj, teste.vcproj, genmdesc.vcproj, monoburg.vcproj,
+	  monograph.vcproj, pedump.vcproj, test-metadata.vcproj,
+	  libmono.vcproj, mono.sln, mono.vcproj, monodis.vcproj,test-invoke.vcproj
+	  Changes to the Visual Studio projects to unify the output directories
+	  for each project and configuration.
+
+	Contributed under MIT/X11 license.
+
+2008-05-29  Bill Holmes  <billholmes54@gmail.com>
 	* libmono.vcproj: Add missing files mono-property-hash and
 	  mono-value-hash.
 
