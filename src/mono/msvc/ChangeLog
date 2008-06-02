@@ -1,4 +1,10 @@
 2008-06-02  Bill Holmes  <billholmes54@gmail.com>
+	* mono.sln, libtest.vcproj:  Adding libtest to the VS solution.
+	  libtest is needed for the marshaling tests.
+
+	Contributed under MIT/X11 license.
+
+2008-06-02  Bill Holmes  <billholmes54@gmail.com>
 	* monodiet.vcproj, libgc.vcproj, test_eglib.vcproj,
 	  eglib.vcproj, teste.vcproj, genmdesc.vcproj, monoburg.vcproj,
 	  monograph.vcproj, pedump.vcproj, test-metadata.vcproj,
