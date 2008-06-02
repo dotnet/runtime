@@ -23,10 +23,16 @@
 #endif
 
 #ifdef WIN32
-extern __declspec(dllimport) __stdcall void CoTaskMemFree(void *ptr);
+extern __declspec(dllimport) void __stdcall CoTaskMemFree(void *ptr);
 #endif
 
 typedef int (STDCALL *SimpleDelegate) (int a);
+
+#if defined(WIN32) && defined (_MSC_VER)
+#define LIBTEST_API __declspec(dllexport)
+#else 
+#define LIBTEST_API
+#endif
 
 static void marshal_free (void *ptr)
 {
@@ -46,7 +52,7 @@ static void* marshal_alloc (gsize size)
 #endif
 }
 
-STDCALL unsigned short*
+LIBTEST_API unsigned short* STDCALL
 test_lpwstr_marshal (unsigned short* chars, long length)
 {
 	int i = 0;
@@ -68,7 +74,7 @@ test_lpwstr_marshal (unsigned short* chars, long length)
 }
 
 
-STDCALL void
+LIBTEST_API void STDCALL
 test_lpwstr_marshal_out (unsigned short** chars)
 {
 	int i = 0;
@@ -91,13 +97,13 @@ typedef struct {
 	int c;
 } union_test_1_type;
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_union_test_1 (union_test_1_type u1) {
 	// printf ("Got values %d %d %d\n", u1.b, u1.a, u1.c);
 	return u1.a + u1.b + u1.c;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_return_int (int a) {
 	// printf ("Got value %d\n", a);
 	return a;
@@ -108,13 +114,13 @@ struct ss
 	int i;
 };
 
-STDCALL int 
+LIBTEST_API int STDCALL 
 mono_return_int_ss (struct ss a) {
 	// printf ("Got value %d\n", a.i);
 	return a.i;
 }
 
-STDCALL struct ss 
+LIBTEST_API struct ss STDCALL
 mono_return_ss (struct ss a) {
 	// printf ("Got value %d\n", a.i);
 	a.i++;
@@ -126,7 +132,7 @@ struct sc1
 	char c[1];
 };
 
-STDCALL struct sc1 
+LIBTEST_API struct sc1 STDCALL
 mono_return_sc1 (struct sc1 a) {
 	// printf ("Got value %d\n", a.c[0]);
 	a.c[0]++;
@@ -139,7 +145,7 @@ struct sc3
 	char c[3];
 };
 
-STDCALL struct sc3 
+LIBTEST_API struct sc3 STDCALL 
 mono_return_sc3 (struct sc3 a) {
 	// printf ("Got values %d %d %d\n", a.c[0], a.c[1], a.c[2]);
 	a.c[0]++;
@@ -153,7 +159,7 @@ struct sc5
 	char c[5];
 };
 
-STDCALL struct sc5 
+LIBTEST_API struct sc5 STDCALL 
 mono_return_sc5 (struct sc5 a) {
 	// printf ("Got values %d %d %d %d %d\n", a.c[0], a.c[1], a.c[2], a.c[3], a.c[4]);
 	a.c[0]++;
@@ -170,59 +176,59 @@ union su
 	int i2;
 };
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_return_int_su (union su a) {
 	// printf ("Got value %d\n", a.i1);
 	return a.i1;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 							  int f, int g, int h, int i, int j);
-STDCALL short 
+LIBTEST_API short STDCALL 
 mono_test_many_short_arguments (short a, short b, short c, short d, short e,
 								short f, short g, short h, short i, short j);
-STDCALL char 
+LIBTEST_API char STDCALL 
 mono_test_many_char_arguments (char a, char b, char c, char d, char e,
 							   char f, char g, char h, char i, char j);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_many_int_arguments (int a, int b, int c, int d, int e, int f, int g, int h, int i, int j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-STDCALL short
+LIBTEST_API short STDCALL 
 mono_test_many_short_arguments (short a, short b, short c, short d, short e, short f, short g, short h, short i, short j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-STDCALL char
+LIBTEST_API char STDCALL 
 mono_test_many_byte_arguments (char a, char b, char c, char d, char e, char f, char g, char h, char i, char j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-STDCALL float
+LIBTEST_API float STDCALL 
 mono_test_many_float_arguments (float a, float b, float c, float d, float e, float f, float g, float h, float i, float j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-STDCALL double
+LIBTEST_API double STDCALL 
 mono_test_many_double_arguments (double a, double b, double c, double d, double e, double f, double g, double h, double i, double j)
 {
 	return a + b + c + d + e + f + g + h + i + j;
 }
 
-STDCALL double
+LIBTEST_API double STDCALL 
 mono_test_split_double_arguments (double a, double b, float c, double d, double e)
 {
 	return a + b + c + d + e;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_puts_static (char *s)
 {
 	// printf ("TEST %s\n", s);
@@ -231,7 +237,7 @@ mono_test_puts_static (char *s)
 
 typedef int (STDCALL *SimpleDelegate3) (int a, int b);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_invoke_delegate (SimpleDelegate3 delegate)
 {
 	int res;
@@ -245,7 +251,7 @@ mono_invoke_delegate (SimpleDelegate3 delegate)
 	return res;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_char (short a1)
 {
 	if (a1 == 'a')
@@ -254,7 +260,7 @@ mono_test_marshal_char (short a1)
 	return 1;
 }
 
-STDCALL void
+LIBTEST_API void STDCALL
 mono_test_marshal_char_array (gunichar2 *s)
 {
 	const char m[] = "abcdef";
@@ -269,13 +275,13 @@ mono_test_marshal_char_array (gunichar2 *s)
 	g_free (s2);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_empty_pinvoke (int i)
 {
 	return i;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_bool_byref (int a, int *b, int c)
 {
     int res = *b;
@@ -285,7 +291,7 @@ mono_test_marshal_bool_byref (int a, int *b, int c)
 	return res;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_bool_in_as_I1_U1 (char bTrue, char bFalse)
 {
 	if (!bTrue)
@@ -295,7 +301,7 @@ mono_test_marshal_bool_in_as_I1_U1 (char bTrue, char bFalse)
         return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_bool_out_as_I1_U1 (char* bTrue, char* bFalse)
 {
         if (!bTrue || !bFalse)
@@ -307,7 +313,7 @@ mono_test_marshal_bool_out_as_I1_U1 (char* bTrue, char* bFalse)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_bool_ref_as_I1_U1 (char* bTrue, char* bFalse)
 {
 	if (!bTrue || !bFalse)
@@ -324,7 +330,7 @@ mono_test_marshal_bool_ref_as_I1_U1 (char* bTrue, char* bFalse)
 	return 0;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_array (int *a1)
 {
 	int i, sum = 0;
@@ -335,7 +341,7 @@ mono_test_marshal_array (int *a1)
 	return sum;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_inout_array (int *a1)
 {
 	int i, sum = 0;
@@ -348,7 +354,7 @@ mono_test_marshal_inout_array (int *a1)
 	return sum;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_out_array (int *a1)
 {
 	int i;
@@ -360,7 +366,7 @@ mono_test_marshal_out_array (int *a1)
 	return 0;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_inout_nonblittable_array (gunichar2 *a1)
 {
 	int i, sum = 0;
@@ -385,7 +391,7 @@ typedef struct {
 	double y;
 } point;
 
-STDCALL simplestruct
+LIBTEST_API simplestruct STDCALL 
 mono_test_return_vtype (int i)
 {
 	simplestruct res;
@@ -400,7 +406,7 @@ mono_test_return_vtype (int i)
 	return res;
 }
 
-STDCALL void
+LIBTEST_API void STDCALL
 mono_test_delegate_struct (void)
 {
 	// printf ("TEST\n");
@@ -408,7 +414,7 @@ mono_test_delegate_struct (void)
 
 typedef char* (STDCALL *ReturnStringDelegate) (const char *s);
 
-STDCALL char *
+LIBTEST_API char * STDCALL 
 mono_test_return_string (ReturnStringDelegate func)
 {
 	char *res;
@@ -424,7 +430,7 @@ mono_test_return_string (ReturnStringDelegate func)
 
 typedef int (STDCALL *RefVTypeDelegate) (int a, simplestruct *ss, int b);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 {
 	if (a == 1 && b == 2 && ss->a == 0 && ss->b == 1 && ss->c == 0 &&
@@ -442,7 +448,7 @@ mono_test_ref_vtype (int a, simplestruct *ss, int b, RefVTypeDelegate func)
 
 typedef int (STDCALL *OutVTypeDelegate) (int a, simplestruct *ss, int b);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate func)
 {
 	/* Check that the input pointer is ignored */
@@ -461,7 +467,7 @@ typedef struct {
 	SimpleDelegate func, func2;
 } DelegateStruct;
 
-STDCALL DelegateStruct
+LIBTEST_API DelegateStruct STDCALL 
 mono_test_marshal_delegate_struct (DelegateStruct ds)
 {
 	DelegateStruct res;
@@ -473,7 +479,7 @@ mono_test_marshal_delegate_struct (DelegateStruct ds)
 	return res;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_struct (simplestruct ss)
 {
 	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
@@ -483,7 +489,7 @@ mono_test_marshal_struct (simplestruct ss)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_byref_struct (simplestruct *ss, int a, int b, int c, char *d)
 {
 	gboolean res = (ss->a == a && ss->b == b && ss->c == c && strcmp (ss->d, d) == 0);
@@ -509,7 +515,7 @@ typedef struct {
 	guint64 h;
 } simplestruct2;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_struct2 (simplestruct2 ss)
 {
 	if (ss.a == 0 && ss.b == 1 && ss.c == 0 &&
@@ -521,7 +527,7 @@ mono_test_marshal_struct2 (simplestruct2 ss)
 }
 
 /* on HP some of the struct should be on the stack and not in registers */
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
 {
 	if (i != 10 || j != 11 || k != 12)
@@ -534,7 +540,7 @@ mono_test_marshal_struct2_2 (int i, int j, int k, simplestruct2 ss)
 	return 1;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_lpstruct (simplestruct *ss)
 {
 	if (ss->a == 0 && ss->b == 1 && ss->c == 0 &&
@@ -544,7 +550,7 @@ mono_test_marshal_lpstruct (simplestruct *ss)
 	return 1;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_lpstruct_blittable (point *p)
 {
 	if (p->x == 1.0 && p->y == 2.0)
@@ -553,7 +559,7 @@ mono_test_marshal_lpstruct_blittable (point *p)
 		return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_struct_array (simplestruct2 *ss)
 {
 	if (! (ss[0].a == 0 && ss[0].b == 1 && ss[0].c == 0 &&
@@ -575,13 +581,13 @@ typedef struct long_align_struct {
 	gint64 c;
 } long_align_struct;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_long_align_struct_array (long_align_struct *ss)
 {
 	return ss[0].a + ss[0].b + ss[0].c + ss[1].a + ss[1].b + ss[1].c;
 }
 
-STDCALL simplestruct2 *
+LIBTEST_API simplestruct2 * STDCALL 
 mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 {
 	simplestruct2 *res;
@@ -602,7 +608,7 @@ mono_test_marshal_class (int i, int j, int k, simplestruct2 *ss, int l)
 	return res;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_byref_class (simplestruct2 **ssp)
 {
 	simplestruct2 *ss = *ssp;
@@ -632,7 +638,7 @@ get_sp (void)
 	return p;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 reliable_delegate (int a)
 {
 	return a;
@@ -653,7 +659,7 @@ is_get_sp_reliable (void)
 	return sp1 == sp2;
 } 
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate (SimpleDelegate delegate)
 {
 	void *sp1, *sp2;
@@ -669,19 +675,19 @@ mono_test_marshal_delegate (SimpleDelegate delegate)
 	return delegate (2);
 }
 
-STDCALL SimpleDelegate
+LIBTEST_API SimpleDelegate STDCALL 
 mono_test_marshal_return_delegate (SimpleDelegate delegate)
 {
 	return delegate;
 }
 
-static STDCALL int
+static int STDCALL
 return_plus_one (int i)
 {
 	return i + 1;
 }
 
-STDCALL SimpleDelegate
+LIBTEST_API SimpleDelegate STDCALL 
 mono_test_marshal_return_delegate_2 (void)
 {
 	return return_plus_one;
@@ -702,7 +708,7 @@ is_utf16_equals (gunichar2 *s1, const char *s2)
 	return res == 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 {
 	simplestruct ss, res;
@@ -722,7 +728,7 @@ mono_test_marshal_delegate2 (SimpleDelegate2 delegate)
 
 typedef simplestruct* (STDCALL *SimpleDelegate4) (simplestruct *ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
 {
 	simplestruct ss;
@@ -752,7 +758,7 @@ mono_test_marshal_delegate4 (SimpleDelegate4 delegate)
 
 typedef int (STDCALL *SimpleDelegate5) (simplestruct **ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
 {
 	simplestruct ss;
@@ -776,7 +782,7 @@ mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
 {
 	int res;
@@ -788,7 +794,7 @@ mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
 
 typedef int (STDCALL *SimpleDelegate7) (simplestruct **ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
 {
 	int res;
@@ -809,7 +815,7 @@ mono_test_marshal_delegate7 (SimpleDelegate7 delegate)
 
 typedef int (STDCALL *InOutByvalClassDelegate) (simplestruct *ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_inout_byval_class_delegate (InOutByvalClassDelegate delegate)
 {
 	int res;
@@ -832,7 +838,7 @@ mono_test_marshal_inout_byval_class_delegate (InOutByvalClassDelegate delegate)
 
 typedef int (STDCALL *SimpleDelegate8) (gunichar2 *s);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 {
 	return delegate (s);
@@ -841,19 +847,19 @@ mono_test_marshal_delegate8 (SimpleDelegate8 delegate, gunichar2 *s)
 typedef int (STDCALL *return_int_fnt) (int i);
 typedef int (STDCALL *SimpleDelegate9) (return_int_fnt d);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate9 (SimpleDelegate9 delegate, gpointer ftn)
 {
 	return delegate (ftn);
 }
 
-STDCALL static int
+static int STDCALL 
 return_self (int i)
 {
 	return i;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
 {
 	return delegate (return_self);
@@ -861,7 +867,7 @@ mono_test_marshal_delegate10 (SimpleDelegate9 delegate)
 
 typedef int (STDCALL *PrimitiveByrefDelegate) (int *i);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate delegate)
 {
 	int i = 1;
@@ -880,13 +886,13 @@ typedef int (STDCALL *return_int_delegate) (int i);
 
 typedef return_int_delegate (STDCALL *ReturnDelegateDelegate) (void);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_return_delegate_delegate (ReturnDelegateDelegate d)
 {
 	return (d ()) (55);
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_stringbuilder (char *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -898,7 +904,7 @@ mono_test_marshal_stringbuilder (char *s, int n)
 	return 0;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_stringbuilder_default (char *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -908,7 +914,7 @@ mono_test_marshal_stringbuilder_default (char *s, int n)
 	return 0;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_marshal_stringbuilder_unicode (gunichar2 *s, int n)
 {
 	const char m[] = "This is my message.  Isn't it nice?";
@@ -933,13 +939,13 @@ typedef struct {
 #endif
 } EmptyStruct;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_empty_string_array (char **array)
 {
 	return (array == NULL) ? 0 : 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_string_array (char **array)
 {
 	if (strcmp (array [0], "ABC"))
@@ -953,7 +959,7 @@ mono_test_marshal_string_array (char **array)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_byref_string_array (char ***array)
 {
 	if (*array == NULL)
@@ -969,7 +975,7 @@ mono_test_marshal_byref_string_array (char ***array)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_stringbuilder_array (char **array)
 {
 	if (strcmp (array [0], "ABC"))
@@ -983,7 +989,7 @@ mono_test_marshal_stringbuilder_array (char **array)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 {
 	GError *error = NULL;
@@ -1015,7 +1021,7 @@ mono_test_marshal_unicode_string_array (gunichar2 **array, char **array2)
 }
 
 /* this does not work on Redhat gcc 2.96 */
-STDCALL int 
+LIBTEST_API int STDCALL  
 mono_test_empty_struct (int a, EmptyStruct es, int b)
 {
 	// printf ("mono_test_empty_struct %d %d\n", a, b);
@@ -1034,7 +1040,7 @@ typedef struct {
        char a[100];
 } ByValStrStruct;
 
-STDCALL ByValStrStruct *
+LIBTEST_API ByValStrStruct * STDCALL 
 mono_test_byvalstr_gen (void)
 {
 	ByValStrStruct *ret;
@@ -1046,7 +1052,7 @@ mono_test_byvalstr_gen (void)
 	return ret;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_byvalstr_check (ByValStrStruct* data, char* correctString)
 {
 	int ret;
@@ -1064,7 +1070,7 @@ typedef struct {
 	int  flag;
 } ByValStrStruct_Unicode;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_byvalstr_check_unicode (ByValStrStruct_Unicode *ref, int test)
 {
 	if (ref->flag != 0x1234abcd){
@@ -1088,55 +1094,55 @@ mono_test_byvalstr_check_unicode (ByValStrStruct_Unicode *ref, int test)
 	return 10;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingAnsi (char *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingAnsiA (char *data)
 {
 	g_assert_not_reached ();
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingAnsiW (char *data)
 {
 	g_assert_not_reached ();
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingAnsi2A (char *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingAnsi2W (char *data)
 {
 	g_assert_not_reached ();
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingUnicode (char *data)
 {
 	g_assert_not_reached ();
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingUnicodeW (gunichar2 *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingUnicode2 (gunichar2 *data)
 {
 	return data [0] + data [1] + data [2];
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingAutoW (char *data)
 {
 #ifdef WIN32
@@ -1146,7 +1152,7 @@ NameManglingAutoW (char *data)
 #endif
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 NameManglingAuto (char *data)
 {
 #ifndef WIN32
@@ -1158,7 +1164,7 @@ NameManglingAuto (char *data)
 
 typedef int (STDCALL *intcharFunc)(const char*);
 
-STDCALL void 
+LIBTEST_API void STDCALL 
 callFunction (intcharFunc f)
 {
 	f ("ABC");
@@ -1169,7 +1175,7 @@ typedef struct {
         int i;
 } SimpleObj;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 class_marshal_test0 (SimpleObj *obj1)
 {
 	// printf ("class_marshal_test0 %s %d\n", obj1->str, obj1->i);
@@ -1182,7 +1188,7 @@ class_marshal_test0 (SimpleObj *obj1)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 class_marshal_test4 (SimpleObj *obj1)
 {
 	if (obj1)
@@ -1191,7 +1197,7 @@ class_marshal_test4 (SimpleObj *obj1)
 	return 0;
 }
 
-STDCALL void
+LIBTEST_API void STDCALL
 class_marshal_test1 (SimpleObj **obj1)
 {
 	SimpleObj *res = malloc (sizeof (SimpleObj));
@@ -1202,7 +1208,7 @@ class_marshal_test1 (SimpleObj **obj1)
 	*obj1 = res;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 class_marshal_test2 (SimpleObj **obj1)
 {
 	// printf ("class_marshal_test2 %s %d\n", (*obj1)->str, (*obj1)->i);
@@ -1215,7 +1221,7 @@ class_marshal_test2 (SimpleObj **obj1)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 string_marshal_test0 (char *str)
 {
 	if (strcmp (str, "TEST0"))
@@ -1224,13 +1230,13 @@ string_marshal_test0 (char *str)
 	return 0;
 }
 
-STDCALL void
+LIBTEST_API void STDCALL
 string_marshal_test1 (const char **str)
 {
 	*str = g_strdup ("TEST1");
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 string_marshal_test2 (char **str)
 {
 	// printf ("string_marshal_test2 %s\n", *str);
@@ -1241,7 +1247,7 @@ string_marshal_test2 (char **str)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 string_marshal_test3 (char *str)
 {
 	if (str)
@@ -1255,7 +1261,7 @@ typedef struct {
 	int b;
 } BlittableClass;
 
-STDCALL BlittableClass* 
+LIBTEST_API BlittableClass* STDCALL 
 TestBlittableClass (BlittableClass *vl)
 {
 	BlittableClass *res;
@@ -1283,7 +1289,7 @@ typedef struct OSVERSIONINFO_STRUCT
 	int b; 
 } OSVERSIONINFO_STRUCT;
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 MyGetVersionEx (OSVERSIONINFO_STRUCT *osvi)
 {
 
@@ -1295,7 +1301,7 @@ MyGetVersionEx (OSVERSIONINFO_STRUCT *osvi)
 	return osvi->a + osvi->b;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSIONINFO_STRUCT *osvi)
 {
 
@@ -1307,7 +1313,7 @@ BugGetVersionEx (int a, int b, int c, int d, int e, int f, int g, int h, OSVERSI
 	return osvi->a + osvi->b;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_point (point pt)
 {
 	// printf("point %g %g\n", pt.x, pt.y);
@@ -1322,7 +1328,7 @@ typedef struct {
 	double y;
 } mixed_point;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_mixed_point (mixed_point pt)
 {
 	// printf("mixed point %d %g\n", pt.x, pt.y);
@@ -1332,7 +1338,7 @@ mono_test_marshal_mixed_point (mixed_point pt)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_mixed_point_2 (mixed_point *pt)
 {
 	if (pt->x != 5 || pt->y != 6.75)
@@ -1344,7 +1350,7 @@ mono_test_marshal_mixed_point_2 (mixed_point *pt)
 	return 0;
 }
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 marshal_test_ref_bool(int i, char *b1, short *b2, int *b3)
 {
     int res = 1;
@@ -1370,7 +1376,7 @@ struct BoolStruct
     int b3;
 };
 
-STDCALL int 
+LIBTEST_API int STDCALL  
 marshal_test_bool_struct(struct BoolStruct *s)
 {
     int res = 1;
@@ -1388,7 +1394,7 @@ marshal_test_bool_struct(struct BoolStruct *s)
     return res;
 }
 
-STDCALL void
+LIBTEST_API void STDCALL
 mono_test_last_error (int err)
 {
 #ifdef WIN32
@@ -1398,7 +1404,7 @@ mono_test_last_error (int err)
 #endif
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_asany (void *ptr, int what)
 {
 	switch (what) {
@@ -1445,7 +1451,7 @@ typedef struct
 	char *s;
 } AsAnyStruct;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_asany_in (void* ptr)
 {
 	AsAnyStruct* asAny = ptr;
@@ -1454,7 +1460,7 @@ mono_test_marshal_asany_in (void* ptr)
 	return res;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_asany_inout (void* ptr)
 {
 	AsAnyStruct* asAny = ptr;
@@ -1470,7 +1476,7 @@ mono_test_marshal_asany_inout (void* ptr)
 	return res;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_asany_out (void* ptr)
 {
 	AsAnyStruct* asAny = ptr;
@@ -1495,7 +1501,7 @@ typedef struct amd64_struct1 {
 	int l;
 } amd64_struct1;
 
-STDCALL amd64_struct1
+LIBTEST_API amd64_struct1 STDCALL 
 mono_test_marshal_amd64_pass_return_struct1 (amd64_struct1 s)
 {
 	s.i ++;
@@ -1511,7 +1517,7 @@ typedef struct amd64_struct2 {
 	int j;
 } amd64_struct2;
 
-STDCALL amd64_struct2
+LIBTEST_API amd64_struct2 STDCALL 
 mono_test_marshal_amd64_pass_return_struct2 (amd64_struct2 s)
 {
 	s.i ++;
@@ -1524,7 +1530,7 @@ typedef struct amd64_struct3 {
 	int i;
 } amd64_struct3;
 
-STDCALL amd64_struct3
+LIBTEST_API amd64_struct3 STDCALL 
 mono_test_marshal_amd64_pass_return_struct3 (amd64_struct3 s)
 {
 	s.i ++;
@@ -1536,7 +1542,7 @@ typedef struct amd64_struct4 {
 	double d1, d2;
 } amd64_struct4;
 
-STDCALL amd64_struct4
+LIBTEST_API amd64_struct4 STDCALL 
 mono_test_marshal_amd64_pass_return_struct4 (amd64_struct4 s)
 {
 	s.d1 ++;
@@ -1552,7 +1558,7 @@ typedef struct test_struct5 {
 	float d1, d2;
 } test_struct5;
 
-STDCALL test_struct5
+LIBTEST_API test_struct5 STDCALL 
 mono_test_marshal_ia64_pass_return_struct5 (double d1, double d2, test_struct5 s, double d3, double d4)
 {
 	s.d1 += d1 + d2;
@@ -1565,7 +1571,7 @@ typedef struct test_struct6 {
 	double d1, d2;
 } test_struct6;
 
-STDCALL test_struct6
+LIBTEST_API test_struct6 STDCALL 
 mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, test_struct6 s, double d3, double d4)
 {
 	s.d1 += d1 + d2;
@@ -1576,7 +1582,7 @@ mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, test_struct6 s
 
 static guint32 custom_res [2];
 
-STDCALL void*
+LIBTEST_API void* STDCALL
 mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 {
 	/* ptr will be freed by CleanupNative, so make a copy */
@@ -1586,7 +1592,7 @@ mono_test_marshal_pass_return_custom (int i, guint32 *ptr, int j)
 	return &custom_res;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_pass_out_custom (int i, guint32 **ptr, int j)
 {
 	custom_res [0] = 0;
@@ -1597,7 +1603,7 @@ mono_test_marshal_pass_out_custom (int i, guint32 **ptr, int j)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_pass_inout_custom (int i, guint32 *ptr, int j)
 {
 	ptr [0] = 0;
@@ -1606,13 +1612,13 @@ mono_test_marshal_pass_inout_custom (int i, guint32 *ptr, int j)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_pass_out_byval_custom (int i, guint32 *ptr, int j)
 {
 	return ptr == NULL ? 0 : 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_pass_byref_custom (int i, guint32 **ptr, int j)
 {
 	(*ptr)[1] += i + j;
@@ -1620,7 +1626,7 @@ mono_test_marshal_pass_byref_custom (int i, guint32 **ptr, int j)
 	return 0;
 }
 
-STDCALL void*
+LIBTEST_API void* STDCALL
 mono_test_marshal_pass_return_custom2 (int i, guint32 *ptr, int j)
 {
 	g_assert_not_reached ();
@@ -1628,7 +1634,7 @@ mono_test_marshal_pass_return_custom2 (int i, guint32 *ptr, int j)
 	return NULL;
 }
 
-STDCALL void*
+LIBTEST_API void* STDCALL
 mono_test_marshal_pass_return_custom_null (int i, guint32 *ptr, int j)
 {
 	g_assert (ptr == NULL);
@@ -1638,7 +1644,7 @@ mono_test_marshal_pass_return_custom_null (int i, guint32 *ptr, int j)
 
 typedef void *(STDCALL *PassReturnPtrDelegate) (void *ptr);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 {
 	guint32 buf [2];
@@ -1661,7 +1667,7 @@ mono_test_marshal_pass_return_custom_in_delegate (PassReturnPtrDelegate del)
 	return res;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_pass_return_custom_null_in_delegate (PassReturnPtrDelegate del)
 {
 	void *ptr = del (NULL);
@@ -1671,7 +1677,7 @@ mono_test_marshal_pass_return_custom_null_in_delegate (PassReturnPtrDelegate del
 
 typedef void (STDCALL *CustomOutParamDelegate) (void **pptr);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_custom_out_param_delegate (CustomOutParamDelegate del)
 {
 	void* pptr = del;
@@ -1686,7 +1692,7 @@ mono_test_marshal_custom_out_param_delegate (CustomOutParamDelegate del)
 
 typedef int (STDCALL *ReturnEnumDelegate) (int e);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_return_enum_delegate (ReturnEnumDelegate func)
 {
 	return func (1);
@@ -1699,7 +1705,7 @@ typedef struct {
 	
 typedef BlittableStruct (STDCALL *SimpleDelegate10) (BlittableStruct ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_blittable_struct_delegate (SimpleDelegate10 delegate)
 {
 	BlittableStruct ss, res;
@@ -1716,7 +1722,7 @@ mono_test_marshal_blittable_struct_delegate (SimpleDelegate10 delegate)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_stdcall_name_mangling (int a, int b, int c)
 {
         return a + b + c;
@@ -1732,7 +1738,7 @@ typedef struct {
 	
 typedef SmallStruct1 (STDCALL *SmallStructDelegate1) (SmallStruct1 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate1 (SmallStructDelegate1 delegate)
 {
 	SmallStruct1 ss, res;
@@ -1752,7 +1758,7 @@ typedef struct {
 	
 typedef SmallStruct2 (STDCALL *SmallStructDelegate2) (SmallStruct2 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate2 (SmallStructDelegate2 delegate)
 {
 	SmallStruct2 ss, res;
@@ -1774,7 +1780,7 @@ typedef struct {
 	
 typedef SmallStruct3 (STDCALL *SmallStructDelegate3) (SmallStruct3 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate3 (SmallStructDelegate3 delegate)
 {
 	SmallStruct3 ss, res;
@@ -1795,7 +1801,7 @@ typedef struct {
 	
 typedef SmallStruct4 (STDCALL *SmallStructDelegate4) (SmallStruct4 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate4 (SmallStructDelegate4 delegate)
 {
 	SmallStruct4 ss, res;
@@ -1815,7 +1821,7 @@ typedef struct {
 	
 typedef SmallStruct5 (STDCALL *SmallStructDelegate5) (SmallStruct5 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate5 (SmallStructDelegate5 delegate)
 {
 	SmallStruct5 ss, res;
@@ -1835,7 +1841,7 @@ typedef struct {
 	
 typedef SmallStruct6 (STDCALL *SmallStructDelegate6) (SmallStruct6 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate6 (SmallStructDelegate6 delegate)
 {
 	SmallStruct6 ss, res;
@@ -1857,7 +1863,7 @@ typedef struct {
 	
 typedef SmallStruct7 (STDCALL *SmallStructDelegate7) (SmallStruct7 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate7 (SmallStructDelegate7 delegate)
 {
 	SmallStruct7 ss, res;
@@ -1878,7 +1884,7 @@ typedef struct {
 	
 typedef SmallStruct8 (STDCALL *SmallStructDelegate8) (SmallStruct8 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate8 (SmallStructDelegate8 delegate)
 {
 	SmallStruct8 ss, res;
@@ -1898,7 +1904,7 @@ typedef struct {
 	
 typedef SmallStruct9 (STDCALL *SmallStructDelegate9) (SmallStruct9 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate9 (SmallStructDelegate9 delegate)
 {
 	SmallStruct9 ss, res;
@@ -1918,7 +1924,7 @@ typedef struct {
 	
 typedef SmallStruct10 (STDCALL *SmallStructDelegate10) (SmallStruct10 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate10 (SmallStructDelegate10 delegate)
 {
 	SmallStruct10 ss, res;
@@ -1940,7 +1946,7 @@ typedef struct {
 	
 typedef SmallStruct11 (STDCALL *SmallStructDelegate11) (SmallStruct11 ss);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_small_struct_delegate11 (SmallStructDelegate11 delegate)
 {
 	SmallStruct11 ss, res;
@@ -1957,13 +1963,13 @@ mono_test_marshal_small_struct_delegate11 (SmallStructDelegate11 delegate)
 
 typedef int (STDCALL *ArrayDelegate) (int i, char *j, void *arr);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_array_delegate (void *arr, int len, ArrayDelegate del)
 {
 	return del (len, NULL, arr);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_out_array_delegate (int *arr, int len, ArrayDelegate del)
 {
 	del (len, NULL, arr);
@@ -1976,7 +1982,7 @@ mono_test_marshal_out_array_delegate (int *arr, int len, ArrayDelegate del)
 
 typedef gunichar2* (STDCALL *UnicodeStringDelegate) (gunichar2 *message);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_return_unicode_string_delegate (UnicodeStringDelegate del)
 {
 	const char m[] = "abcdef";
@@ -1992,7 +1998,7 @@ mono_test_marshal_return_unicode_string_delegate (UnicodeStringDelegate del)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_out_string_array_delegate (char **arr, int len, ArrayDelegate del)
 {
 	del (len, NULL, arr);
@@ -2005,7 +2011,7 @@ mono_test_marshal_out_string_array_delegate (char **arr, int len, ArrayDelegate 
 
 typedef int (*CdeclDelegate) (int i, int j);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_cdecl_delegate (CdeclDelegate del)
 {
 	int i;
@@ -2018,7 +2024,7 @@ mono_test_marshal_cdecl_delegate (CdeclDelegate del)
 
 typedef char** (*ReturnStringArrayDelegate) (int i);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
 {
 	char **arr = d (2);
@@ -2037,19 +2043,19 @@ mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
 	return res;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 add_delegate (int i, int j)
 {
 	return i + j;
 }
 
-STDCALL gpointer
+LIBTEST_API gpointer STDCALL 
 mono_test_marshal_return_fnptr (void)
 {
 	return &add_delegate;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_xr (int code)
 {
 	printf ("codigo %x\n", code);
@@ -2060,7 +2066,7 @@ typedef struct {
 	int handle;
 } HandleRef;
 
-STDCALL HandleRef
+LIBTEST_API HandleRef STDCALL 
 mono_xr_as_handle (int code)
 {
 	HandleRef ref;
@@ -2075,7 +2081,7 @@ typedef struct {
 	int   b;
 } HandleStructs;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_safe_handle_struct_ref (HandleStructs *x)
 {
 	printf ("Dingus Ref! \n");
@@ -2094,7 +2100,7 @@ mono_safe_handle_struct_ref (HandleStructs *x)
 	return 0xf00d;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_safe_handle_struct (HandleStructs x)
 {
 	printf ("Dingus Standard! \n");
@@ -2117,20 +2123,20 @@ typedef struct {
 	void *a;
 } TrivialHandle;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_safe_handle_struct_simple (TrivialHandle x)
 {
 	printf ("The value is %p\n", x.a);
 	return ((int)(gsize)x.a) * 2;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_safe_handle_return (void)
 {
 	return 0x1000f00d;
 }
 
-STDCALL void
+LIBTEST_API void STDCALL
 mono_safe_handle_ref (void **handle)
 {
 	if (*handle != 0){
@@ -2146,7 +2152,7 @@ mono_safe_handle_ref (void **handle)
 
 #ifdef WIN32
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_bstr_in(BSTR bstr)
 {
 	if (!wcscmp(bstr, L"mono_test_marshal_bstr_in"))
@@ -2154,14 +2160,14 @@ mono_test_marshal_bstr_in(BSTR bstr)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_bstr_out(BSTR* bstr)
 {
 	*bstr = SysAllocString(L"mono_test_marshal_bstr_out");
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_bstr_in_null(BSTR bstr)
 {
 	if (!bstr)
@@ -2169,14 +2175,14 @@ mono_test_marshal_bstr_in_null(BSTR bstr)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_bstr_out_null(BSTR* bstr)
 {
 	*bstr = NULL;
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_sbyte(VARIANT variant)
 {
 	if (variant.vt == VT_I1 && variant.cVal == 100)
@@ -2184,7 +2190,7 @@ mono_test_marshal_variant_in_sbyte(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_byte(VARIANT variant)
 {
 	if (variant.vt == VT_UI1 && variant.bVal == 100)
@@ -2192,7 +2198,7 @@ mono_test_marshal_variant_in_byte(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_short(VARIANT variant)
 {
 	if (variant.vt == VT_I2 && variant.iVal == 314)
@@ -2200,7 +2206,7 @@ mono_test_marshal_variant_in_short(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_ushort(VARIANT variant)
 {
 	if (variant.vt == VT_UI2 && variant.uiVal == 314)
@@ -2208,7 +2214,7 @@ mono_test_marshal_variant_in_ushort(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_int(VARIANT variant)
 {
 	if (variant.vt == VT_I4 && variant.lVal == 314)
@@ -2216,7 +2222,7 @@ mono_test_marshal_variant_in_int(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_uint(VARIANT variant)
 {
 	if (variant.vt == VT_UI4 && variant.ulVal == 314)
@@ -2224,7 +2230,7 @@ mono_test_marshal_variant_in_uint(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_long(VARIANT variant)
 {
 	if (variant.vt == VT_I8 && variant.llVal == 314)
@@ -2232,7 +2238,7 @@ mono_test_marshal_variant_in_long(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_ulong(VARIANT variant)
 {
 	if (variant.vt == VT_UI8 && variant.ullVal == 314)
@@ -2240,7 +2246,7 @@ mono_test_marshal_variant_in_ulong(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_float(VARIANT variant)
 {
 	if (variant.vt == VT_R4 && (variant.fltVal - 3.14)/3.14 < .001)
@@ -2248,7 +2254,7 @@ mono_test_marshal_variant_in_float(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_double(VARIANT variant)
 {
 	if (variant.vt == VT_R8 && (variant.dblVal - 3.14)/3.14 < .001)
@@ -2256,7 +2262,7 @@ mono_test_marshal_variant_in_double(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_bstr(VARIANT variant)
 {
 	if (variant.vt == VT_BSTR && !wcscmp(variant.bstrVal, L"PI"))
@@ -2264,7 +2270,7 @@ mono_test_marshal_variant_in_bstr(VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_bool_true (VARIANT variant)
 {
 	if (variant.vt == VT_BOOL && variant.boolVal == VARIANT_TRUE)
@@ -2272,7 +2278,7 @@ mono_test_marshal_variant_in_bool_true (VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_bool_false (VARIANT variant)
 {
 	if (variant.vt == VT_BOOL && variant.boolVal == VARIANT_FALSE)
@@ -2280,7 +2286,7 @@ mono_test_marshal_variant_in_bool_false (VARIANT variant)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_sbyte(VARIANT* variant)
 {
 	variant->vt = VT_I1;
@@ -2289,7 +2295,7 @@ mono_test_marshal_variant_out_sbyte(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_byte(VARIANT* variant)
 {	
 	variant->vt = VT_UI1;
@@ -2298,7 +2304,7 @@ mono_test_marshal_variant_out_byte(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_short(VARIANT* variant)
 {
 	variant->vt = VT_I2;
@@ -2307,7 +2313,7 @@ mono_test_marshal_variant_out_short(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_ushort(VARIANT* variant)
 {
 	variant->vt = VT_UI2;
@@ -2316,7 +2322,7 @@ mono_test_marshal_variant_out_ushort(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_int(VARIANT* variant)
 {
 	variant->vt = VT_I4;
@@ -2325,7 +2331,7 @@ mono_test_marshal_variant_out_int(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_uint(VARIANT* variant)
 {
 	variant->vt = VT_UI4;
@@ -2334,7 +2340,7 @@ mono_test_marshal_variant_out_uint(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_long(VARIANT* variant)
 {
 	variant->vt = VT_I8;
@@ -2343,7 +2349,7 @@ mono_test_marshal_variant_out_long(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_ulong(VARIANT* variant)
 {
 	variant->vt = VT_UI8;
@@ -2352,7 +2358,7 @@ mono_test_marshal_variant_out_ulong(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_float(VARIANT* variant)
 {
 	variant->vt = VT_R4;
@@ -2361,7 +2367,7 @@ mono_test_marshal_variant_out_float(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_double(VARIANT* variant)
 {
 	variant->vt = VT_R8;
@@ -2370,7 +2376,7 @@ mono_test_marshal_variant_out_double(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_bstr(VARIANT* variant)
 {
 	variant->vt = VT_BSTR;
@@ -2379,7 +2385,7 @@ mono_test_marshal_variant_out_bstr(VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_bool_true (VARIANT* variant)
 {
 	variant->vt = VT_BOOL;
@@ -2388,7 +2394,7 @@ mono_test_marshal_variant_out_bool_true (VARIANT* variant)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_bool_false (VARIANT* variant)
 {
 	variant->vt = VT_BOOL;
@@ -2400,7 +2406,7 @@ mono_test_marshal_variant_out_bool_false (VARIANT* variant)
 typedef int (STDCALL *VarFunc) (int vt, VARIANT variant);
 typedef int (STDCALL *VarRefFunc) (int vt, VARIANT* variant);
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_sbyte_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2409,7 +2415,7 @@ mono_test_marshal_variant_in_sbyte_unmanaged(VarFunc func)
 	return func (VT_I1, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_byte_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2418,7 +2424,7 @@ mono_test_marshal_variant_in_byte_unmanaged(VarFunc func)
 	return func (VT_UI1, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_short_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2427,7 +2433,7 @@ mono_test_marshal_variant_in_short_unmanaged(VarFunc func)
 	return func (VT_I2, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_ushort_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2436,7 +2442,7 @@ mono_test_marshal_variant_in_ushort_unmanaged(VarFunc func)
 	return func (VT_UI2, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_int_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2445,7 +2451,7 @@ mono_test_marshal_variant_in_int_unmanaged(VarFunc func)
 	return func (VT_I4, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_uint_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2454,7 +2460,7 @@ mono_test_marshal_variant_in_uint_unmanaged(VarFunc func)
 	return func (VT_UI4, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_long_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2463,7 +2469,7 @@ mono_test_marshal_variant_in_long_unmanaged(VarFunc func)
 	return func (VT_I8, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_ulong_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2472,7 +2478,7 @@ mono_test_marshal_variant_in_ulong_unmanaged(VarFunc func)
 	return func (VT_UI8, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_float_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2481,7 +2487,7 @@ mono_test_marshal_variant_in_float_unmanaged(VarFunc func)
 	return func (VT_R4, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_double_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2490,7 +2496,7 @@ mono_test_marshal_variant_in_double_unmanaged(VarFunc func)
 	return func (VT_R8, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_bstr_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2499,7 +2505,7 @@ mono_test_marshal_variant_in_bstr_unmanaged(VarFunc func)
 	return func (VT_BSTR, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_bool_true_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2508,7 +2514,7 @@ mono_test_marshal_variant_in_bool_true_unmanaged(VarFunc func)
 	return func (VT_BOOL, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_in_bool_false_unmanaged(VarFunc func)
 {
 	VARIANT vt;
@@ -2517,7 +2523,7 @@ mono_test_marshal_variant_in_bool_false_unmanaged(VarFunc func)
 	return func (VT_BOOL, vt);
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_sbyte_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2528,7 +2534,7 @@ mono_test_marshal_variant_out_sbyte_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_byte_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2539,7 +2545,7 @@ mono_test_marshal_variant_out_byte_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_short_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2550,7 +2556,7 @@ mono_test_marshal_variant_out_short_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_ushort_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2561,7 +2567,7 @@ mono_test_marshal_variant_out_ushort_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_int_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2572,7 +2578,7 @@ mono_test_marshal_variant_out_int_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_uint_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2583,7 +2589,7 @@ mono_test_marshal_variant_out_uint_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_long_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2594,7 +2600,7 @@ mono_test_marshal_variant_out_long_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_ulong_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2605,7 +2611,7 @@ mono_test_marshal_variant_out_ulong_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_float_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2616,7 +2622,7 @@ mono_test_marshal_variant_out_float_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_double_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2627,7 +2633,7 @@ mono_test_marshal_variant_out_double_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_bstr_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2638,7 +2644,7 @@ mono_test_marshal_variant_out_bstr_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_bool_true_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2649,7 +2655,7 @@ mono_test_marshal_variant_out_bool_true_unmanaged(VarRefFunc func)
 	return 1;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_variant_out_bool_false_unmanaged(VarRefFunc func)
 {
 	VARIANT vt;
@@ -2692,7 +2698,8 @@ DEFINE_GUID(IID_ITest, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
 DEFINE_GUID(IID_IMonoUnknown, 0, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 DEFINE_GUID(IID_IMonoDispatch, 0x00020400, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 
-int STDCALL MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
+LIBTEST_API int STDCALL
+MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
 {
 	*ppv = NULL;
 	if (!memcmp(riid, &IID_IMonoUnknown, sizeof(GUID))) {
@@ -2710,77 +2717,92 @@ int STDCALL MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv
 	return E_NOINTERFACE;
 }
 
-int STDCALL MonoAddRef(MonoComObject* pUnk)
+LIBTEST_API int STDCALL 
+MonoAddRef(MonoComObject* pUnk)
 {
 	return ++(pUnk->m_ref);
 }
 
-int STDCALL MonoRelease(MonoComObject* pUnk)
+LIBTEST_API int STDCALL 
+MonoRelease(MonoComObject* pUnk)
 {
 	return --(pUnk->m_ref);
 }
 
-int STDCALL SByteIn(MonoComObject* pUnk, char a)
+LIBTEST_API int STDCALL 
+SByteIn(MonoComObject* pUnk, char a)
 {
 	return S_OK;
 }
 
-int STDCALL ByteIn(MonoComObject* pUnk, unsigned char a)
+LIBTEST_API int STDCALL 
+ByteIn(MonoComObject* pUnk, unsigned char a)
 {
 	return S_OK;
 }
 
-int STDCALL ShortIn(MonoComObject* pUnk, short a)
+LIBTEST_API int STDCALL 
+ShortIn(MonoComObject* pUnk, short a)
 {
 	return S_OK;
 }
 
-int STDCALL UShortIn(MonoComObject* pUnk, unsigned short a)
+LIBTEST_API int STDCALL 
+UShortIn(MonoComObject* pUnk, unsigned short a)
 {
 	return S_OK;
 }
 
-int STDCALL IntIn(MonoComObject* pUnk, int a)
+LIBTEST_API int STDCALL 
+IntIn(MonoComObject* pUnk, int a)
 {
 	return S_OK;
 }
 
-int STDCALL UIntIn(MonoComObject* pUnk, unsigned int a)
+LIBTEST_API int STDCALL 
+UIntIn(MonoComObject* pUnk, unsigned int a)
 {
 	return S_OK;
 }
 
-int STDCALL LongIn(MonoComObject* pUnk, LONGLONG a)
+LIBTEST_API int STDCALL 
+LongIn(MonoComObject* pUnk, LONGLONG a)
 {
 	return S_OK;
 }
 
-int STDCALL ULongIn(MonoComObject* pUnk, ULONGLONG a)
+LIBTEST_API int STDCALL 
+ULongIn(MonoComObject* pUnk, ULONGLONG a)
 {
 	return S_OK;
 }
 
-int STDCALL FloatIn(MonoComObject* pUnk, float a)
+LIBTEST_API int STDCALL 
+FloatIn(MonoComObject* pUnk, float a)
 {
 	return S_OK;
 }
 
-int STDCALL DoubleIn(MonoComObject* pUnk, double a)
+LIBTEST_API int STDCALL 
+DoubleIn(MonoComObject* pUnk, double a)
 {
 	return S_OK;
 }
 
-int STDCALL ITestIn(MonoComObject* pUnk, MonoComObject *pUnk2)
+LIBTEST_API int STDCALL 
+ITestIn(MonoComObject* pUnk, MonoComObject *pUnk2)
 {
 	return S_OK;
 }
 
-int STDCALL ITestOut(MonoComObject* pUnk, MonoComObject* *ppUnk)
+LIBTEST_API int STDCALL 
+ITestOut(MonoComObject* pUnk, MonoComObject* *ppUnk)
 {
 	return S_OK;
 }
 
-int STDCALL get_ITest(MonoComObject* pUnk, MonoComObject* *ppUnk)
+LIBTEST_API int STDCALL 
+get_ITest(MonoComObject* pUnk, MonoComObject* *ppUnk)
 {
 	return S_OK;
 }
@@ -2811,7 +2833,7 @@ static void create_com_object (MonoComObject** pOut)
 
 static MonoComObject* same_object = NULL;
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_com_object_create(MonoComObject* *pUnk)
 {
 	create_com_object (pUnk);
@@ -2822,7 +2844,7 @@ mono_test_marshal_com_object_create(MonoComObject* *pUnk)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_com_object_same(MonoComObject* *pUnk)
 {
 	*pUnk = same_object;
@@ -2830,7 +2852,7 @@ mono_test_marshal_com_object_same(MonoComObject* *pUnk)
 	return 0;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_com_object_destroy(MonoComObject *pUnk)
 {
 	int ref = --(pUnk->m_ref);
@@ -2840,13 +2862,13 @@ mono_test_marshal_com_object_destroy(MonoComObject *pUnk)
 	return ref;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_com_object_ref_count(MonoComObject *pUnk)
 {
 	return pUnk->m_ref;
 }
 
-STDCALL int
+LIBTEST_API int STDCALL 
 mono_test_marshal_ccw_itest (MonoComObject *pUnk)
 {
 	int hr = 0;
@@ -2934,7 +2956,7 @@ lookup_mono_symbol (char *symbol_name)
  * @test_method_handle: MonoMethod* of the C# test method
  * @create_object_method_handle: MonoMethod* of thunks.cs:Test.CreateObject
  */
-STDCALL int 
+LIBTEST_API int STDCALL  
 test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_object_method_handle)
 {
 	gpointer (*mono_method_get_unmanaged_thunk)(gpointer)
