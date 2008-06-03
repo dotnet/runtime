@@ -87,15 +87,15 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 	 */
 	if ((((*code) >> 25)  & 7) == 5) {
 		/*g_print ("direct patching\n");*/
-		arm_patch ((char*)code, addr);
-		mono_arch_flush_icache ((char*)code, 4);
+		arm_patch ((guint8*)code, addr);
+		mono_arch_flush_icache ((guint8*)code, 4);
 		return;
 	}
 
 	if ((((*code) >> 20) & 0xFF) == 0x12) {
 		/*g_print ("patching bx\n");*/
-		arm_patch ((char*)code, addr);
-		mono_arch_flush_icache ((char*)(code - 2), 4);
+		arm_patch ((guint8*)code, addr);
+		mono_arch_flush_icache ((guint8*)(code - 2), 4);
 		return;
 	}
 
@@ -112,8 +112,8 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 		((guint32*)code) [0] = ins;
 	else
 		/* Patch the jump address */
-		((guint32*)code) [1] = addr;
-	mono_arch_flush_icache ((char*)code, 4);
+		((guint32*)code) [1] = (guint32)addr;
+	mono_arch_flush_icache ((guint8*)code, 4);
 }
 
 void
@@ -132,7 +132,7 @@ mono_arch_nullify_plt_entry (guint8 *code)
 	ARM_MOV_REG_REG (p, ARMREG_PC, ARMREG_LR);
 
 	((guint32*)code) [0] = ((guint32*)buf) [0];
-	mono_arch_flush_icache ((char*)code, 4);
+	mono_arch_flush_icache ((guint8*)code, 4);
 }
 
 
@@ -146,7 +146,7 @@ mono_arch_nullify_plt_entry (guint8 *code)
 /* Jump-specific trampoline code fragment size */
 #define JUMP_TRAMPOLINE_SIZE   64
 
-#define GEN_TRAMP_SIZE 148
+#define GEN_TRAMP_SIZE 192
 
 /*
  * Stack frame description when the generic trampoline is called.
@@ -159,7 +159,6 @@ guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code = NULL;
-	int i, offset;
 	guint8 *load_get_lmf_addr, *load_trampoline;
 	gpointer *constants;
 
@@ -243,6 +242,18 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 */
 	ARM_STR_IMM (buf, ARMREG_R0, ARMREG_V1, (ARMREG_R12 * 4));
 
+	/* Check for thread interruption */
+	/* This is not perf critical code so no need to check the interrupt flag */
+	/* 
+	 * Have to call the _force_ variant, since there could be a protected wrapper on the top of the stack.
+	 */
+	ARM_LDR_IMM (buf, ARMREG_IP, ARMREG_PC, 0);
+	ARM_B (buf, 0);
+	*(gpointer*)buf = mono_thread_force_interruption_checkpoint;
+	buf += 4;
+	ARM_MOV_REG_REG (buf, ARMREG_LR, ARMREG_PC);
+	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_IP);
+
 	/*
 	 * Now we restore the MonoLMF (see emit_epilogue in mini-arm.c)
 	 * and the rest of the registers, so the method called will see
@@ -274,7 +285,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	constants = (gpointer*)buf;
 	constants [0] = mono_get_lmf_addr;
-	constants [1] = mono_get_trampoline_func (tramp_type);
+	constants [1] = (gpointer)mono_get_trampoline_func (tramp_type);
 
 	/* backpatch by emitting the missing instructions skipped above */
 	ARM_LDR_IMM (load_get_lmf_addr, ARMREG_R0, ARMREG_PC, (buf - load_get_lmf_addr - 8));
