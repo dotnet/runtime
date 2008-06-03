@@ -2251,6 +2251,25 @@ free_generic_class (MonoGenericClass *gclass)
 		g_free (class);
 	} else if (gclass->is_dynamic) {
 		MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass *)gclass;
+
+		for (i = 0; i < dgclass->count_fields; ++i) {
+			MonoClassField *field = dgclass->fields + i;
+			mono_metadata_free_type (field->type);
+			if (field->generic_info) {
+				mono_metadata_free_type (field->generic_info->generic_type);
+				g_free (field->generic_info);
+			}
+			g_free ((char*)field->name);
+		}
+		for (i = 0; i < dgclass->count_properties; ++i) {
+			MonoProperty *property = dgclass->properties + i;
+			g_free ((char*)property->name);
+		}
+		for (i = 0; i < dgclass->count_events; ++i) {
+			MonoEvent *event = dgclass->events + i;
+			g_free ((char*)event->name);
+		}
+		
 		g_free (dgclass->methods);
 		g_free (dgclass->ctors);
 		g_free (dgclass->fields);

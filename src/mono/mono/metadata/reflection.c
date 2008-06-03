@@ -9395,6 +9395,8 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		if (inflated_field) {
 			g_free ((char*)inflated_field->data);
 			g_free (inflated_field);
+		} else {
+			dgclass->fields [i].name = g_strdup (dgclass->fields [i].name);
 		}
 	}
 
@@ -9414,6 +9416,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 				property->set = inflate_method (type, (MonoObject *) pb->set_method);
 		} else if (!strcmp (obj->vtable->klass->name, "MonoProperty")) {
 			*property = *((MonoReflectionProperty *) obj)->property;
+			property->name = g_strdup (property->name);
 
 			if (property->get)
 				property->get = inflate_mono_method (klass, property->get, NULL);
@@ -9439,6 +9442,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 				event->remove = inflate_method (type, (MonoObject *) eb->remove_method);
 		} else if (!strcmp (obj->vtable->klass->name, "MonoEvent")) {
 			*event = *((MonoReflectionEvent *) obj)->event;
+			event->name = g_strdup (event->name);
 
 			if (event->add)
 				event->add = inflate_mono_method (klass, event->add, NULL);
