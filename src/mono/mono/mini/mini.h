@@ -1333,7 +1333,7 @@ int       mono_debugger_main                    (MonoDomain *domain, MonoAssembl
 
 
 /* Tracing */
-MonoTraceSpec *mono_trace_parse_options         (char *options) MONO_INTERNAL;
+MonoTraceSpec *mono_trace_parse_options         (const char *options) MONO_INTERNAL;
 void           mono_trace_set_assembly          (MonoAssembly *assembly) MONO_INTERNAL;
 gboolean       mono_trace_eval                  (MonoMethod *method) MONO_INTERNAL;
 

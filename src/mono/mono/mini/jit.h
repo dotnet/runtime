@@ -24,6 +24,9 @@ mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly,
 void        
 mono_jit_cleanup           (MonoDomain *domain);
 
+gboolean
+mono_jit_set_trace_options (const char* options);
+
 G_END_DECLS
 
 #endif

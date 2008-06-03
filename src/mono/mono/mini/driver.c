@@ -1678,3 +1678,23 @@ mono_jit_cleanup (MonoDomain *domain)
 {
 	mini_cleanup (domain);
 }
+
+/**
+ * mono_jit_set_trace_options:
+ * @options: string representing the trace options
+ *
+ * Set the options of the tracing engine. This function can be called before initializing
+ * the mono runtime. See the --trace mono(1) manpage for the options format.
+ *
+ * Returns: #TRUE if the options where parsed and set correctly, #FALSE otherwise.
+ */
+gboolean
+mono_jit_set_trace_options (const char* options)
+{
+	MonoTraceSpec *trace_opt = mono_trace_parse_options (options);
+	if (trace_opt == NULL)
+		return FALSE;
+	mono_jit_trace_calls = trace_opt;
+	return TRUE;
+}
+

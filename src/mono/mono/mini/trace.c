@@ -214,7 +214,7 @@ get_spec (int *last)
 }
 
 MonoTraceSpec *
-mono_trace_parse_options (char *options)
+mono_trace_parse_options (const char *options)
 {
 	char *p = options;
 	int size = 1;
