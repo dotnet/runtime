@@ -681,6 +681,9 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
             }
 			*/
 
+			/*
+			 * FIXME: This code seems to cause crashes on the x86 buildbot during the
+			 * System.Data.DataSetExtensions tests.
 			prev_lo = *pclo;
 			if (overhang > 0) {
 				int msf = my_g_bit_nth_msf (overhang);
@@ -699,6 +702,7 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
 					g_assert (overhang > (2 << DECIMAL_MAX_INTFACTORS));
 				}
 			}
+			*/
             while (texp > 0 && (overhang > (2<<DECIMAL_MAX_INTFACTORS) || (*pclo & 1) == 0)) {
 				--texp;
 				prev_lo = *pclo;
