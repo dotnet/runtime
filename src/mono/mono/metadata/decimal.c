@@ -673,7 +673,7 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
 
 			/* The original loop was this: */
 			/*
-            while (texp > 1 && (overhang > (2<<DECIMAL_MAX_INTFACTORS) || (*pclo & 1) == 0)) {
+            while (texp > 0 && (overhang > (2<<DECIMAL_MAX_INTFACTORS) || (*pclo & 1) == 0)) {
 				if (--texp == 0)
 					roundBit = (int)(*pclo & 1);
                 rshift128(pclo, pchi);
@@ -681,10 +681,10 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
             }
 			*/
 
+			prev_lo = *pclo;
 			/*
 			 * FIXME: This code seems to cause crashes on the x86 buildbot during the
 			 * System.Data.DataSetExtensions tests.
-			prev_lo = *pclo;
 			if (overhang > 0) {
 				int msf = my_g_bit_nth_msf (overhang);
 				int shift = msf - (DECIMAL_MAX_INTFACTORS + 2);
