@@ -2249,7 +2249,14 @@ free_generic_class (MonoGenericClass *gclass)
 		/* Allocated in mono_generic_class_get_class () */
 		g_free (class->interfaces);
 		g_free (class);
-	}		
+	} else if (gclass->is_dynamic) {
+		MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass *)gclass;
+		g_free (dgclass->methods);
+		g_free (dgclass->ctors);
+		g_free (dgclass->fields);
+		g_free (dgclass->properties);
+		g_free (dgclass->events);
+	}
 	g_free (gclass);
 }
 
