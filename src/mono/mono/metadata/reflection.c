@@ -1125,7 +1125,7 @@ custom_attr_visible (MonoImage *image, MonoReflectionCustomAttr *cattr)
 }
 
 static MonoCustomAttrInfo*
-mono_custom_attrs_from_builders (MonoImage *image, MonoArray *cattrs)
+mono_custom_attrs_from_builders (MonoMemPool *mp, MonoImage *image, MonoArray *cattrs)
 {
 	int i, index, count, not_visible;
 	MonoCustomAttrInfo *ainfo;
@@ -1147,7 +1147,7 @@ mono_custom_attrs_from_builders (MonoImage *image, MonoArray *cattrs)
 	}
 	count -= not_visible;
 
-	ainfo = g_malloc0 (sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (count - MONO_ZERO_LEN_ARRAY));
+	ainfo = mp_g_malloc0 (mp, sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (count - MONO_ZERO_LEN_ARRAY));
 
 	ainfo->image = image;
 	ainfo->num_attrs = count;
@@ -1172,7 +1172,7 @@ mono_custom_attrs_from_builders (MonoImage *image, MonoArray *cattrs)
 static void
 mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 {
-	MonoCustomAttrInfo *ainfo = mono_custom_attrs_from_builders (image, cattrs);
+	MonoCustomAttrInfo *ainfo = mono_custom_attrs_from_builders (NULL, image, cattrs);
 
 	if (!ainfo)
 		return;
@@ -7873,22 +7873,22 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 		cinfo = mono_custom_attrs_from_param (rmethod->method, param->PositionImpl + 1);
 	} else if (strcmp ("AssemblyBuilder", klass->name) == 0) {
 		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)obj;
-		cinfo = mono_custom_attrs_from_builders (assemblyb->assembly.assembly->image, assemblyb->cattrs);
+		cinfo = mono_custom_attrs_from_builders (NULL, assemblyb->assembly.assembly->image, assemblyb->cattrs);
 	} else if (strcmp ("TypeBuilder", klass->name) == 0) {
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)obj;
-		cinfo = mono_custom_attrs_from_builders (&tb->module->dynamic_image->image, tb->cattrs);
+		cinfo = mono_custom_attrs_from_builders (NULL, &tb->module->dynamic_image->image, tb->cattrs);
 	} else if (strcmp ("ModuleBuilder", klass->name) == 0) {
 		MonoReflectionModuleBuilder *mb = (MonoReflectionModuleBuilder*)obj;
-		cinfo = mono_custom_attrs_from_builders (&mb->dynamic_image->image, mb->cattrs);
+		cinfo = mono_custom_attrs_from_builders (NULL, &mb->dynamic_image->image, mb->cattrs);
 	} else if (strcmp ("ConstructorBuilder", klass->name) == 0) {
 		MonoReflectionCtorBuilder *cb = (MonoReflectionCtorBuilder*)obj;
-		cinfo = mono_custom_attrs_from_builders (cb->mhandle->klass->image, cb->cattrs);
+		cinfo = mono_custom_attrs_from_builders (NULL, cb->mhandle->klass->image, cb->cattrs);
 	} else if (strcmp ("MethodBuilder", klass->name) == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder*)obj;
-		cinfo = mono_custom_attrs_from_builders (mb->mhandle->klass->image, mb->cattrs);
+		cinfo = mono_custom_attrs_from_builders (NULL, mb->mhandle->klass->image, mb->cattrs);
 	} else if (strcmp ("FieldBuilder", klass->name) == 0) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder*)obj;
-		cinfo = mono_custom_attrs_from_builders (&((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image->image, fb->cattrs);
+		cinfo = mono_custom_attrs_from_builders (NULL, &((MonoReflectionTypeBuilder*)fb->typeb)->module->dynamic_image->image, fb->cattrs);
 	} else if (strcmp ("MonoGenericClass", klass->name) == 0) {
 		MonoReflectionGenericClass *gclass = (MonoReflectionGenericClass*)obj;
 		cinfo = mono_reflection_get_custom_attrs_info ((MonoObject*)gclass->generic_type);
@@ -8720,12 +8720,12 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 }
 
 static MonoMarshalSpec*
-mono_marshal_spec_from_builder (MonoAssembly *assembly,
+mono_marshal_spec_from_builder (MonoMemPool *mp, MonoAssembly *assembly,
 								MonoReflectionMarshal *minfo)
 {
 	MonoMarshalSpec *res;
 
-	res = g_new0 (MonoMarshalSpec, 1);
+	res = mp_g_new0 (mp, MonoMarshalSpec, 1);
 	res->native = minfo->type;
 
 	switch (minfo->type) {
@@ -8866,7 +8866,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	} else if (m->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		m->signature->pinvoke = 1;
 
-		method_aux = g_new0 (MonoReflectionMethodAux, 1);
+		method_aux = mp_g_new0 (mp, MonoReflectionMethodAux, 1);
 
 		method_aux->dllentry = rmb->dllentry ? mono_string_to_utf8_mp (mp, rmb->dllentry) : mono_mempool_strdup (mp, m->name);
 		method_aux->dll = mono_string_to_utf8_mp (mp, rmb->dll);
@@ -9017,7 +9017,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				if (pb->cattrs) {
 					if (!method_aux->param_cattr)
 						method_aux->param_cattr = mp_g_new0 (mp, MonoCustomAttrInfo*, m->signature->param_count + 1);
-					method_aux->param_cattr [i] = mono_custom_attrs_from_builders (klass->image, pb->cattrs);
+					method_aux->param_cattr [i] = mono_custom_attrs_from_builders (mp, klass->image, pb->cattrs);
 				}
 			}
 		}
@@ -9033,7 +9033,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 					if (specs == NULL)
 						specs = mp_g_new0 (mp, MonoMarshalSpec*, sig->param_count + 1);
 					specs [pb->position] = 
-						mono_marshal_spec_from_builder (klass->image->assembly, pb->marshal_info);
+						mono_marshal_spec_from_builder (mp, klass->image->assembly, pb->marshal_info);
 				}
 			}
 		}

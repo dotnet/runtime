@@ -4144,6 +4144,7 @@ mono_metadata_type_dup (MonoMemPool *mp, const MonoType *o)
 	} else if (o->type == MONO_TYPE_ARRAY) {
 		r->data.array = mono_dup_array_type (mp, o->data.array);
 	} else if (o->type == MONO_TYPE_FNPTR) {
+		/*FIXME the dup'ed signature is leaked mono_metadata_free_type*/
 		r->data.method = mono_metadata_signature_deep_dup (mp, o->data.method);
 	}
 	return r;
