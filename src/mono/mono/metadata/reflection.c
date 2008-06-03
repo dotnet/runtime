@@ -9109,8 +9109,7 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 
 	field->name = mono_string_to_utf8 (fb->name);
 	if (fb->attrs) {
-		/* FIXME: handle type modifiers */
-		field->type = g_memdup (fb->type->type, sizeof (MonoType));
+		field->type = mono_metadata_type_dup (NULL, fb->type->type);
 		field->type->attrs = fb->attrs;
 	} else {
 		field->type = fb->type->type;
@@ -9562,6 +9561,7 @@ typebuilder_setup_fields (MonoClass *klass)
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionFieldBuilder *fb;
 	MonoClassField *field;
+	MonoMemPool *mp = klass->image->mempool;
 	const char *p, *p2;
 	int i;
 	guint32 len, idx;
@@ -9579,8 +9579,7 @@ typebuilder_setup_fields (MonoClass *klass)
 		field = &klass->fields [i];
 		field->name = mono_string_to_utf8 (fb->name);
 		if (fb->attrs) {
-			/* FIXME: handle type modifiers */
-			field->type = g_memdup (fb->type->type, sizeof (MonoType));
+			field->type = mono_metadata_type_dup (mp, fb->type->type);
 			field->type->attrs = fb->attrs;
 		} else {
 			field->type = fb->type->type;
