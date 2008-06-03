@@ -2731,6 +2731,7 @@ mono_image_get_generic_field_token (MonoDynamicImage *assembly, MonoReflectionFi
 	token = MONO_TOKEN_MEMBER_REF | table->next_idx;
 	table->next_idx ++;
 	g_hash_table_insert (assembly->handleref, fb, GUINT_TO_POINTER(token));
+	g_free (name);
 	return token;
 }
 
@@ -9392,8 +9393,10 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		dgclass->fields [i].type = mono_class_inflate_generic_type (
 			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass));
 
-		if (inflated_field)
+		if (inflated_field) {
+			g_free ((char*)inflated_field->data);
 			g_free (inflated_field);
+		}
 	}
 
 	for (i = 0; i < dgclass->count_properties; i++) {
