@@ -344,7 +344,7 @@ emit_state ()
 
 	for (l = nonterm_list; l; l = l->next) {
 		NonTerm *n = (NonTerm *)l->data;
-		g_assert (g_list_length (n->rules) < 256);
+		g_assert (g_list_length (n->rules) < 512);
 		i = g_list_length (n->rules);
 		j = 1;
 		while (i >>= 1)
