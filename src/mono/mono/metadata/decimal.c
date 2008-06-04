@@ -659,7 +659,7 @@ DECINLINE static int adjustScale128(guint64* palo, guint64* pahi, int deltaScale
 DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int texp,
                                 int minScale, int maxScale, int roundFlag)
 {
-    guint32 factor, overhang, prev_lo;
+    guint32 factor, overhang;
     int scale, i, rc, roundBit = 0;
 
     PRECONDITION(texp >= 0);
@@ -681,7 +681,6 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
             }
 			*/
 
-			prev_lo = *pclo;
 			/*
 			 * FIXME: This code seems to cause crashes on the x86 buildbot during the
 			 * System.Data.DataSetExtensions tests.
@@ -695,22 +694,19 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
 
 				if (shift > 0) {
 					texp -= shift;
-					prev_lo = (*pclo >> (shift - 1));
 					*pclo = (*pclo >> shift) | ((*pchi & ((1 << shift) - 1)) << (64 - shift));
 					*pchi >>= shift;
 					overhang >>= shift;
 
+					g_assert (texp > 0);
 					g_assert (overhang > (2 << DECIMAL_MAX_INTFACTORS));
 				}
 			}
             while (texp > 0 && (overhang > (2<<DECIMAL_MAX_INTFACTORS) || (*pclo & 1) == 0)) {
-				--texp;
-				prev_lo = *pclo;
+				if (--texp == 0) roundBit = (int)(*pclo & 1);
                 rshift128(pclo, pchi);
                 overhang >>= 1;
             }
-			if (texp == 0)
-				roundBit = (int)(prev_lo & 1);
 
             if (texp > DECIMAL_MAX_INTFACTORS) i = DECIMAL_MAX_INTFACTORS;
             else i = texp;
