@@ -468,8 +468,13 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 void
 mono_thread_hazardous_try_free_all (void)
 {
-	int len = delayed_free_table->len;
+	int len;
 	int i;
+
+	if (!delayed_free_table)
+		return;
+
+	len = delayed_free_table->len;
 
 	for (i = len - 1; i >= 0; --i)
 		try_free_delayed_free_item (i);
@@ -2313,6 +2318,8 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 
 void mono_thread_cleanup (void)
 {
+	mono_thread_hazardous_try_free_all ();
+
 #if !defined(PLATFORM_WIN32) && !defined(RUN_IN_SUBTHREAD)
 	/* The main thread must abandon any held mutexes (particularly
 	 * important for named mutexes as they are shared across
@@ -2341,6 +2348,7 @@ void mono_thread_cleanup (void)
 #endif
 
 	g_array_free (delayed_free_table, TRUE);
+	delayed_free_table = NULL;
 
 	TlsFree (current_object_key);
 }
