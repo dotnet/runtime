@@ -1325,6 +1325,28 @@ reg: OP_UNBOXCAST (reg) {
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, obj_reg);
 }
 
+reg: OP_UNBOXCAST_REG (reg, reg) {
+	int obj_reg = state->left->reg1;
+     	int element_klass_reg = state->right->reg1;
+	int vtable_reg = mono_regstate_next_int (s->rs);
+	int klass_reg = mono_regstate_next_int (s->rs);
+	int eclass_reg = mono_regstate_next_int (s->rs);
+	int rank_reg = mono_regstate_next_int (s->rs);
+
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, rank));
+
+	// Check rank == 0
+	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, NE_UN, rank_reg, 0, "InvalidCastException");
+
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+	MONO_EMIT_NEW_LOAD_MEMBASE (s, eclass_reg, klass_reg, G_STRUCT_OFFSET (MonoClass, element_class));
+
+	MONO_EMIT_NEW_COMPARE_EXC (s, NE_UN, eclass_reg, element_klass_reg, "InvalidCastException");
+
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, obj_reg);
+}
+
 reg: CEE_CASTCLASS (reg) {
      	MonoClass *klass = tree->inst_newa_class;
 	MonoInst *object_is_null;

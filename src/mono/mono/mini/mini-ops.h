@@ -479,6 +479,7 @@ MINI_OP(OP_GOT_ENTRY, "got_entry")
 
 /* used to impl unbox */
 MINI_OP(OP_UNBOXCAST  , "unboxcast")
+MINI_OP(OP_UNBOXCAST_REG  , "unboxcast_reg")
 
 /* exception related opcodes */
 MINI_OP(OP_CALL_HANDLER  , "call_handler")
