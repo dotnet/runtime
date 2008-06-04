@@ -9576,12 +9576,12 @@ typebuilder_setup_fields (MonoClass *klass)
 	if (!klass->field.count)
 		return;
 	
-	klass->fields = g_new0 (MonoClassField, klass->field.count);
+	klass->fields = mp_g_new0 (mp, MonoClassField, klass->field.count);
 
 	for (i = 0; i < klass->field.count; ++i) {
 		fb = mono_array_get (tb->fields, gpointer, i);
 		field = &klass->fields [i];
-		field->name = mono_string_to_utf8 (fb->name);
+		field->name = mp_string_to_utf8 (mp, fb->name);
 		if (fb->attrs) {
 			field->type = mono_metadata_type_dup (mp, fb->type->type);
 			field->type->attrs = fb->attrs;
@@ -9604,7 +9604,7 @@ typebuilder_setup_fields (MonoClass *klass)
 			p = assembly->blob.data + idx;
 			len = mono_metadata_decode_blob_size (p, &p2);
 			len += p2 - p;
-			field->data = g_malloc (len);
+			field->data = mono_mempool_alloc (mp, len);
 			memcpy ((gpointer)field->data, p, len);
 		}
 	}
@@ -9616,17 +9616,18 @@ typebuilder_setup_properties (MonoClass *klass)
 {
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionPropertyBuilder *pb;
+	MonoMemPool *mp = klass->image->mempool;
 	int i;
 
 	klass->property.count = tb->properties ? mono_array_length (tb->properties) : 0;
 	klass->property.first = 0;
 
-	klass->properties = g_new0 (MonoProperty, klass->property.count);
+	klass->properties = mp_g_new0 (mp, MonoProperty, klass->property.count);
 	for (i = 0; i < klass->property.count; ++i) {
 		pb = mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i);
 		klass->properties [i].parent = klass;
 		klass->properties [i].attrs = pb->attrs;
-		klass->properties [i].name = mono_string_to_utf8 (pb->name);
+		klass->properties [i].name = mp_string_to_utf8 (mp, pb->name);
 		if (pb->get_method)
 			klass->properties [i].get = pb->get_method->mhandle;
 		if (pb->set_method)
@@ -9673,17 +9674,18 @@ typebuilder_setup_events (MonoClass *klass)
 {
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionEventBuilder *eb;
+	MonoMemPool *mp = klass->image->mempool;
 	int i, j;
 
 	klass->event.count = tb->events ? mono_array_length (tb->events) : 0;
 	klass->event.first = 0;
 
-	klass->events = g_new0 (MonoEvent, klass->event.count);
+	klass->events = mp_g_new0 (mp, MonoEvent, klass->event.count);
 	for (i = 0; i < klass->event.count; ++i) {
 		eb = mono_array_get (tb->events, MonoReflectionEventBuilder*, i);
 		klass->events [i].parent = klass;
 		klass->events [i].attrs = eb->attrs;
-		klass->events [i].name = mono_string_to_utf8 (eb->name);
+		klass->events [i].name = mp_string_to_utf8 (mp, eb->name);
 		if (eb->add_method)
 			klass->events [i].add = eb->add_method->mhandle;
 		if (eb->remove_method)
@@ -9692,7 +9694,7 @@ typebuilder_setup_events (MonoClass *klass)
 			klass->events [i].raise = eb->raise_method->mhandle;
 
 		if (eb->other_methods) {
-			klass->events [i].other = g_new0 (MonoMethod*, mono_array_length (eb->other_methods) + 1);
+			klass->events [i].other = mp_g_new0 (mp, MonoMethod*, mono_array_length (eb->other_methods) + 1);
 			for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
 				MonoReflectionMethodBuilder *mb = 
 					mono_array_get (eb->other_methods,
