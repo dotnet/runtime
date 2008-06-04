@@ -373,7 +373,8 @@ TEST_IL_SRC=			\
 	generic-ldtoken-method.2.il	\
 	generic-ldtoken-field.2.il	\
 	generic-tailcall.2.il	\
-	generic-tailcall2.2.il
+	generic-tailcall2.2.il	\
+	generic-array-exc.2.il
 
 #	bug-318677.il
 
@@ -699,7 +700,8 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-virtual.2.exe generic-tailcall.2.exe			\
 		generic-interface-methods.2.exe generic-array-type.2.exe	\
 		generic-method-patching.2.exe	\
-		generic-null-call.2.exe generic-tailcall2.2.exe
+		generic-null-call.2.exe generic-tailcall2.2.exe			\
+		generic-array-exc.2.exe
 	for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline        $$fn || exit 1;	\
