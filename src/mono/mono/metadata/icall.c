@@ -2946,7 +2946,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (this) {
 			if (!mono_object_isinst (this, m->klass)) {
-				*exc = mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException");
+				*exc = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Object does not match target type.");
 				return NULL;
 			}
 			m = mono_object_get_virtual_method (this, m);
@@ -2954,7 +2954,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 			if (m->klass->valuetype)
 				obj = mono_object_unbox (this);
 		} else if (strcmp (m->name, ".ctor") && !m->wrapper_type) {
-			*exc = mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetException");
+			*exc = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Non-static method requires a target.");
 			return NULL;
 		}
 	}
