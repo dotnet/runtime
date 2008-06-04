@@ -4662,15 +4662,17 @@ mono_class_from_mono_type (MonoType *type)
  * @context: the generic context used to evaluate generic instantiations in
  */
 static MonoType *
-mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context)
+mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context, gboolean *did_inflate)
 {
 	MonoType *t = mono_type_create_from_typespec (image, type_spec);
 	if (!t)
 		return NULL;
 	if (context && (context->class_inst || context->method_inst)) {
 		MonoType *inflated = inflate_generic_type (t, context);
-		if (inflated)
+		if (inflated) {
 			t = inflated;
+			*did_inflate = TRUE;
+		}
 	}
 	return t;
 }
@@ -4684,10 +4686,15 @@ mono_type_retrieve_from_typespec (MonoImage *image, guint32 type_spec, MonoGener
 static MonoClass *
 mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGenericContext *context)
 {
-	MonoType *t = mono_type_retrieve_from_typespec (image, type_spec, context);
+	MonoClass *ret;
+	gboolean inflated = FALSE;
+	MonoType *t = mono_type_retrieve_from_typespec (image, type_spec, context, &inflated);
 	if (!t)
 		return NULL;
-	return mono_class_from_mono_type (t);
+	ret = mono_class_from_mono_type (t);
+	if (inflated)
+		mono_metadata_free_type (t);
+	return ret;
 }
 
 /**
@@ -5274,6 +5281,7 @@ MonoType *
 mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
 {
 	MonoType *type = NULL;
+	gboolean inflated = FALSE;
 
 	//FIXME: this will not fix the very issue for which mono_type_get_full exists -but how to do it then?
 	if (image->dynamic)
@@ -5284,14 +5292,21 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 		return class ? mono_class_get_type (class) : NULL;
 	}
 
-	type = mono_type_retrieve_from_typespec (image, type_token, context);
+	type = mono_type_retrieve_from_typespec (image, type_token, context, &inflated);
 
 	if (!type) {
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
+		if (inflated)
+			mono_metadata_free_type (type);
 		mono_loader_set_error_type_load (name, assembly);
 	}
 
+	if (inflated) {
+		MonoType *tmp = type;
+		type = mono_class_get_type (mono_class_from_mono_type (type));
+		mono_metadata_free_type (tmp);
+	}
 	return type;
 }
 
