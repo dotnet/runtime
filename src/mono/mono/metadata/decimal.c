@@ -680,11 +680,6 @@ DECINLINE static int rescale128(guint64* pclo, guint64* pchi, int* pScale, int t
                 overhang = (guint32)(*pchi >> 32);
             }
 			*/
-
-			/*
-			 * FIXME: This code seems to cause crashes on the x86 buildbot during the
-			 * System.Data.DataSetExtensions tests.
-			 */
 			if (overhang > 0) {
 				int msf = my_g_bit_nth_msf (overhang);
 				int shift = msf - (DECIMAL_MAX_INTFACTORS + 2);
