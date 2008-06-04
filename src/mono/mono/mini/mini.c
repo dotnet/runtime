@@ -12692,7 +12692,6 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 
 	if (destroy)
 		mono_code_manager_destroy (ji->code_mp);
-	mono_thread_hazardous_free_or_queue (ji->ji, g_free);
 	g_free (ji);
 }
 

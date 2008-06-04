@@ -621,7 +621,7 @@ free_jit_info_data (ThreadData *td, JitInfoData *free)
 		while (free->next != NULL) {
 			JitInfoData *next = free->next->next;
 
-			g_free (free->next->ji);
+			//g_free (free->next->ji);
 			g_free (free->next);
 			free->next = next;
 
@@ -672,16 +672,26 @@ test_thread_func (ThreadData *td)
 				if (region->num_datas > 0) {
 					JitInfoData **data = choose_random_data (region);
 					guint pos = (*data)->start + random () % (*data)->length;
-					MonoJitInfo *ji = mono_jit_info_table_find (domain, (char*)(gulong) pos);
+					MonoJitInfo *ji;
 
-					g_assert ((*data)->ji == ji);
+					ji = mono_jit_info_table_find (domain, (char*)(gulong) pos);
+
 					g_assert (ji->cas_inited);
+					g_assert ((*data)->ji == ji);
 				}
 			} else {
 				int pos = random () % MAX_ADDR;
 				char *addr = (char*)(gulong) pos;
-				MonoJitInfo *ji = mono_jit_info_table_find (domain, addr);
+				MonoJitInfo *ji;
 
+				ji = mono_jit_info_table_find (domain, addr);
+
+				/*
+				 * FIXME: We are actually not allowed
+				 * to do this.  By the time we examine
+				 * the ji another thread might already
+				 * have removed it.
+				 */
 				if (ji != NULL) {
 					g_assert (addr >= (char*)ji->code_start && addr < (char*)ji->code_start + ji->code_size);
 					++lookup_successes;
@@ -705,7 +715,7 @@ test_thread_func (ThreadData *td)
 
 				mono_jit_info_table_remove (domain, (*data)->ji);
 
-				(*data)->ji->cas_inited = 0; /* marks a free jit info */
+				//(*data)->ji->cas_inited = 0; /* marks a free jit info */
 
 				free = *data;
 				*data = (*data)->next;

@@ -155,7 +155,8 @@ mono_domain_get_tls_offset (void)
 #define JIT_INFO_TABLE_LOW_WATERMARK(n)		((n) / 2)
 #define JIT_INFO_TABLE_HIGH_WATERMARK(n)	((n) * 5 / 6)
 
-#define IS_JIT_INFO_TOMBSTONE(ji)	((ji)->method == NULL)
+#define JIT_INFO_TOMBSTONE_MARKER	((MonoMethod*)NULL)
+#define IS_JIT_INFO_TOMBSTONE(ji)	((ji)->method == JIT_INFO_TOMBSTONE_MARKER)
 
 #define JIT_INFO_TABLE_HAZARD_INDEX		0
 #define JIT_INFO_HAZARD_INDEX			1
@@ -190,10 +191,11 @@ jit_info_table_new_chunk (void)
 }
 
 static MonoJitInfoTable *
-jit_info_table_new (void)
+jit_info_table_new (MonoDomain *domain)
 {
 	MonoJitInfoTable *table = g_malloc0 (sizeof (MonoJitInfoTable) + sizeof (MonoJitInfoTableChunk*));
 
+	table->domain = domain;
 	table->num_chunks = 1;
 	table->chunks [0] = jit_info_table_new_chunk ();
 
@@ -205,6 +207,20 @@ jit_info_table_free (MonoJitInfoTable *table)
 {
 	int i;
 	int num_chunks = table->num_chunks;
+	MonoDomain *domain = table->domain;
+
+	mono_domain_lock (domain);
+
+	table->domain->num_jit_info_tables--;
+	if (table->domain->num_jit_info_tables <= 1) {
+		GSList *list;
+
+		for (list = table->domain->jit_info_free_queue; list; list = list->next)
+			g_free (list->data);
+
+		g_slist_free (table->domain->jit_info_free_queue);
+		table->domain->jit_info_free_queue = NULL;
+	}
 
 	/* At this point we assume that there are no other threads
 	   still accessing the table, so we don't have to worry about
@@ -228,6 +244,8 @@ jit_info_table_free (MonoJitInfoTable *table)
 
 		g_free (chunk);
 	}
+
+	mono_domain_unlock (domain);
 
 	g_free (table);
 }
@@ -460,6 +478,7 @@ jit_info_table_realloc (MonoJitInfoTable *old)
 	num_chunks = (required_size + MONO_JIT_INFO_TABLE_CHUNK_SIZE - 1) / MONO_JIT_INFO_TABLE_CHUNK_SIZE;
 
 	new = g_malloc (sizeof (MonoJitInfoTable) + sizeof (MonoJitInfoTableChunk*) * num_chunks);
+	new->domain = old->domain;
 	new->num_chunks = num_chunks;
 
 	for (i = 0; i < num_chunks; ++i)
@@ -531,6 +550,7 @@ jit_info_table_copy_and_split_chunk (MonoJitInfoTable *table, MonoJitInfoTableCh
 		+ sizeof (MonoJitInfoTableChunk*) * (table->num_chunks + 1));
 	int i, j;
 
+	new_table->domain = table->domain;
 	new_table->num_chunks = table->num_chunks + 1;
 
 	j = 0;
@@ -578,6 +598,7 @@ jit_info_table_copy_and_purify_chunk (MonoJitInfoTable *table, MonoJitInfoTableC
 		+ sizeof (MonoJitInfoTableChunk*) * table->num_chunks);
 	int i, j;
 
+	new_table->domain = table->domain;
 	new_table->num_chunks = table->num_chunks;
 
 	j = 0;
@@ -681,6 +702,7 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 
 		domain->jit_info_table = new_table;
 		mono_memory_barrier ();
+		domain->num_jit_info_tables++;
 		mono_thread_hazardous_free_or_queue (table, (MonoHazardousFreeFunc)jit_info_table_free);
 		table = new_table;
 
@@ -731,9 +753,24 @@ mono_jit_info_make_tombstone (MonoJitInfo *ji)
 
 	tombstone->code_start = ji->code_start;
 	tombstone->code_size = ji->code_size;
-	tombstone->method = NULL;
+	tombstone->method = JIT_INFO_TOMBSTONE_MARKER;
 
 	return tombstone;
+}
+
+/*
+ * LOCKING: domain lock
+ */
+static void
+mono_jit_info_free_or_queue (MonoDomain *domain, MonoJitInfo *ji)
+{
+	if (domain->num_jit_info_tables <= 1) {
+		/* Can it actually happen that we only have one table
+		   but ji is still hazardous? */
+		mono_thread_hazardous_free_or_queue (ji, g_free);
+	} else {
+		domain->jit_info_free_queue = g_slist_prepend (domain->jit_info_free_queue, ji);
+	}
 }
 
 void
@@ -779,6 +816,8 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
 
 	/* Debugging code, should be removed. */
 	//jit_info_table_check (table);
+
+	mono_jit_info_free_or_queue (domain, ji);
 
 	mono_domain_unlock (domain);
 }
@@ -1113,7 +1152,9 @@ mono_domain_create (void)
 	domain->static_data_array = NULL;
 	mono_jit_code_hash_init (&domain->jit_code_hash);
 	domain->ldstr_table = mono_g_hash_table_new ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal);
-	domain->jit_info_table = jit_info_table_new ();
+	domain->num_jit_info_tables = 1;
+	domain->jit_info_table = jit_info_table_new (domain);
+	domain->jit_info_free_queue = NULL;
 	domain->class_init_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -1826,8 +1867,17 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 	mono_g_hash_table_destroy (domain->ldstr_table);
 	domain->ldstr_table = NULL;
+
+	/*
+	 * There might still be jit info tables of this domain which
+	 * are not freed.  Since the domain cannot be in use anymore,
+	 * this will free them.
+	 */
+	mono_thread_hazardous_try_free_all ();
+	g_assert (domain->num_jit_info_tables == 1);
 	jit_info_table_free (domain->jit_info_table);
 	domain->jit_info_table = NULL;
+	g_assert (!domain->jit_info_free_queue);
 
 	/* collect statistics */
 	code_alloc = mono_code_manager_size (domain->code_mp, &code_size);

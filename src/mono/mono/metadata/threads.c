@@ -415,6 +415,32 @@ mono_hazard_pointer_get (void)
 	return &hazard_table [current_thread->small_id];
 }
 
+static void
+try_free_delayed_free_item (int index)
+{
+	if (delayed_free_table->len > index) {
+		DelayedFreeItem item;
+
+		item.p = NULL;
+		EnterCriticalSection (&delayed_free_table_mutex);
+		/* We have to check the length again because another
+		   thread might have freed an item before we acquired
+		   the lock. */
+		if (delayed_free_table->len > index) {
+			item = g_array_index (delayed_free_table, DelayedFreeItem, index);
+
+			if (!is_pointer_hazardous (item.p))
+				g_array_remove_index_fast (delayed_free_table, index);
+			else
+				item.p = NULL;
+		}
+		LeaveCriticalSection (&delayed_free_table_mutex);
+
+		if (item.p != NULL)
+			item.free_func (item.p);
+	}
+}
+
 void
 mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func)
 {
@@ -422,29 +448,8 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 
 	/* First try to free a few entries in the delayed free
 	   table. */
-	for (i = 2; i >= 0; --i) {
-		if (delayed_free_table->len > i) {
-			DelayedFreeItem item;
-
-			item.p = NULL;
-			EnterCriticalSection (&delayed_free_table_mutex);
-			/* We have to check the length again because another
-			   thread might have freed an item before we acquired
-			   the lock. */
-			if (delayed_free_table->len > i) {
-				item = g_array_index (delayed_free_table, DelayedFreeItem, i);
-
-				if (!is_pointer_hazardous (item.p))
-					g_array_remove_index_fast (delayed_free_table, i);
-				else
-					item.p = NULL;
-			}
-			LeaveCriticalSection (&delayed_free_table_mutex);
-
-			if (item.p != NULL)
-				item.free_func (item.p);
-		}
-	}
+	for (i = 2; i >= 0; --i)
+		try_free_delayed_free_item (i);
 
 	/* Now see if the pointer we're freeing is hazardous.  If it
 	   isn't, free it.  Otherwise put it in the delay list. */
@@ -458,6 +463,16 @@ mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func
 		LeaveCriticalSection (&delayed_free_table_mutex);
 	} else
 		free_func (p);
+}
+
+void
+mono_thread_hazardous_try_free_all (void)
+{
+	int len = delayed_free_table->len;
+	int i;
+
+	for (i = len - 1; i >= 0; --i)
+		try_free_delayed_free_item (i);
 }
 
 static void ensure_synch_cs_set (MonoThread *thread)

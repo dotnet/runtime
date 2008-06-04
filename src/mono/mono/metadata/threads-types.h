@@ -157,6 +157,7 @@ typedef struct {
 typedef void (*MonoHazardousFreeFunc) (gpointer p);
 
 void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func);
+void mono_thread_hazardous_try_free_all (void);
 
 MonoThreadHazardPointers* mono_hazard_pointer_get (void);
 
