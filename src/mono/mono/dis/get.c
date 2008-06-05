@@ -2330,6 +2330,11 @@ get_token (MonoImage *m, guint32 token, MonoGenericContainer *container)
 		result = g_strdup_printf ("field %s", temp);
 		g_free (temp);
 		return result;
+	case MONO_TOKEN_METHOD_DEF:
+		temp = get_method (m, token, container);
+		result = g_strdup_printf ("method %s", temp);
+		g_free (temp);
+		return result;
 	case MONO_TOKEN_TYPE_DEF:
 		temp = get_typedef (m, idx);
 		result = get_escaped_name (temp);
