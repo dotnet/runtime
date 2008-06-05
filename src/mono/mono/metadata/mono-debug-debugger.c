@@ -37,6 +37,7 @@ typedef struct
 } MethodBreakpointInfo;
 
 typedef struct {
+	MonoImage *image;
 	guint64 index;
 	guint32 token;
 	gchar *name_space;
@@ -267,6 +268,7 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 void
 mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info)
 {
+	MonoClass *klass;
 	int i;
 
 	if (!method_breakpoints)
@@ -279,6 +281,19 @@ mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *deb
 		MethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
 
 		if (method != info->method)
+			continue;
+
+		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
+				     (guint64) (gsize) debug_info, info->index);
+	}
+
+	if (!class_init_callbacks)
+		return;
+
+	for (i = 0; i < class_init_callbacks->len; i++) {
+		ClassInitCallback *info = g_ptr_array_index (class_init_callbacks, i);
+
+		if ((method->token != info->token) || (method->klass->image != info->image))
 			continue;
 
 		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
@@ -314,6 +329,7 @@ mono_debugger_register_class_init_callback (MonoImage *image, const gchar *full_
 	}
 
 	info = g_new0 (ClassInitCallback, 1);
+	info->image = image;
 	info->index = index;
 	info->token = method_token;
 	info->name_space = name_space;
