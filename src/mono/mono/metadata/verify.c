@@ -2247,8 +2247,8 @@ handle_enum:
 		if (candidate->type != MONO_TYPE_SZARRAY)
 			return FALSE;
 
-		left = target->data.klass;
-		right = candidate->data.klass;
+		left = target->data.array->eklass;
+		right = candidate->data.array->eklass;
 		return mono_class_is_assignable_from(left, right);
 	}
 
@@ -4405,13 +4405,10 @@ mono_method_verify (MonoMethod *method, int level)
 	if (ctx.num_locals > 0 && !ctx.header->init_locals)
 		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Method with locals variable but without init locals set"));
 
-	if (ctx.signature->hasthis) {
-		ctx.params = g_new0 (MonoType*, ctx.max_args);
+	ctx.params = g_new0 (MonoType*, ctx.max_args);
+	if (ctx.signature->hasthis)
 		ctx.params [0] = method->klass->valuetype ? &method->klass->this_arg : &method->klass->byval_arg;
-		memcpy (ctx.params + 1, ctx.signature->params, sizeof (MonoType *) * ctx.signature->param_count);
-	} else {
-		ctx.params = ctx.signature->params;
-	}
+	memcpy (ctx.params + ctx.signature->hasthis, ctx.signature->params, sizeof (MonoType *) * ctx.signature->param_count);
 
 	if (ctx.signature->is_inflated)
 		ctx.generic_context = generic_context = mono_method_get_context (method);
@@ -4423,6 +4420,10 @@ mono_method_verify (MonoMethod *method, int level)
 			ctx.generic_context = generic_context = &method->klass->generic_container->context;
 	}
 
+	for (i = 0; i < ctx.num_locals; ++i)
+		ctx.locals [i] = mono_class_inflate_generic_type (ctx.locals [i], ctx.generic_context);
+	for (i = 0; i < ctx.max_args; ++i)
+		ctx.params [i] = mono_class_inflate_generic_type (ctx.params [i], ctx.generic_context);
 	stack_init (&ctx, &ctx.eval);
 
 	for (i = 0; i < ctx.header->num_clauses && ctx.valid; ++i) {
@@ -5360,12 +5361,16 @@ mono_method_verify (MonoMethod *method, int level)
 		g_free (tmp->data);
 	g_slist_free (ctx.funptrs);
 
+	for (i = 0; i < ctx.num_locals; ++i)
+		mono_metadata_free_type (ctx.locals [i]);
+	for (i = 0; i < ctx.max_args; ++i)
+		mono_metadata_free_type (ctx.params [i]);
+
 	if (ctx.eval.stack)
 		g_free (ctx.eval.stack);
 	if (ctx.code)
 		g_free (ctx.code);
-	if (ctx.signature->hasthis)
-		g_free (ctx.params);
+	g_free (ctx.params);
 
 	return ctx.list;
 }
