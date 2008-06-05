@@ -239,6 +239,7 @@ debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
 		return -1;
 
 	mono_class_init (klass);
+	mono_class_setup_methods (klass);
 	return (gint64) (gssize) klass;
 }
 
