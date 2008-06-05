@@ -5305,7 +5305,16 @@ mono_type_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *co
 	if (inflated) {
 		MonoType *tmp = type;
 		type = mono_class_get_type (mono_class_from_mono_type (type));
-		mono_metadata_free_type (tmp);
+		/* FIXME: This is a workaround fo the fact that a typespec token sometimes reference to the generic type definition.
+		 * A MonoClass::byval_arg of a generic type definion has type CLASS.
+		 * Some parts of mono create a GENERICINST to reference a generic type definition and this generates confict with byval_arg.
+		 *
+		 * The long term solution is to chaise this places and make then set MonoType::type correctly.
+		 * */
+		if (type->type != tmp->type)
+			type = tmp;
+		else
+			mono_metadata_free_type (tmp);
 	}
 	return type;
 }
