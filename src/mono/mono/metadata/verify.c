@@ -4393,19 +4393,19 @@ mono_method_verify (MonoMethod *method, int level)
 	ctx.verifiable = ctx.valid = 1;
 	ctx.level = level;
 
-	ctx.code = g_new0 (ILCodeDesc, ctx.header->code_size);
+	ctx.code = g_new (ILCodeDesc, ctx.header->code_size);
 	ctx.code_size = ctx.header->code_size;
 
 	memset(ctx.code, 0, sizeof (ILCodeDesc) * ctx.header->code_size);
 
 
 	ctx.num_locals = ctx.header->num_locals;
-	ctx.locals = ctx.header->locals;
+	ctx.locals = g_memdup (ctx.header->locals, sizeof (MonoType*) * ctx.header->num_locals);
 
 	if (ctx.num_locals > 0 && !ctx.header->init_locals)
 		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Method with locals variable but without init locals set"));
 
-	ctx.params = g_new0 (MonoType*, ctx.max_args);
+	ctx.params = g_new (MonoType*, ctx.max_args);
 	if (ctx.signature->hasthis)
 		ctx.params [0] = method->klass->valuetype ? &method->klass->this_arg : &method->klass->byval_arg;
 	memcpy (ctx.params + ctx.signature->hasthis, ctx.signature->params, sizeof (MonoType *) * ctx.signature->param_count);
@@ -5370,6 +5370,7 @@ mono_method_verify (MonoMethod *method, int level)
 		g_free (ctx.eval.stack);
 	if (ctx.code)
 		g_free (ctx.code);
+	g_free (ctx.locals);
 	g_free (ctx.params);
 
 	return ctx.list;
