@@ -846,6 +846,9 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	mono_runtime_invoke (assembly_load_method, domain->domain, params, NULL);
 }
 
+/*
+ * LOCKING: Acquires the domain lock.
+ */
 static void
 set_domain_search_path (MonoDomain *domain)
 {
@@ -858,14 +861,22 @@ set_domain_search_path (MonoDomain *domain)
 	GError *error = NULL;
 	gint appbaselen = -1;
 
-	if ((domain->search_path != NULL) && !domain->setup->path_changed)
+	mono_domain_lock (domain);
+
+	if ((domain->search_path != NULL) && !domain->setup->path_changed) {
+		mono_domain_unlock (domain);
 		return;
-	if (!domain->setup)
+	}
+	if (!domain->setup) {
+		mono_domain_unlock (domain);
 		return;
+	}
 
 	setup = domain->setup;
-	if (!setup->application_base)
+	if (!setup->application_base) {
+		mono_domain_unlock (domain);
 		return; /* Must set application base to get private path working */
+	}
 
 	npaths++;
 	
@@ -918,6 +929,7 @@ set_domain_search_path (MonoDomain *domain)
 		 * domain->search_path = g_malloc (sizeof (char *));
 		 * domain->search_path [0] = NULL;
 		*/
+		mono_domain_unlock (domain);
 		return;
 	}
 
@@ -991,6 +1003,8 @@ set_domain_search_path (MonoDomain *domain)
 	domain->setup->path_changed = FALSE;
 
 	g_strfreev (pvt_split);
+
+	mono_domain_unlock (domain);
 }
 
 static gboolean
