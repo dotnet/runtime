@@ -50,7 +50,8 @@ libmonoutils_la_SOURCES = \
 	mono-property-hash.h \
 	mono-property-hash.c \
 	mono-value-hash.h \
-	mono-value-hash.c
+	mono-value-hash.c \
+	dtrace.h
 
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
