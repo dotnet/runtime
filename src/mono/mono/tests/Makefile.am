@@ -290,7 +290,8 @@ BASE_TEST_CS_SRC=		\
 	bug-322722_dyn_method_throw.2.cs	\
 	bug-389886-2.cs	\
 	bug-325283.2.cs	\
-	thunks.cs
+	thunks.cs \
+	winx64structs.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
