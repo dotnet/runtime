@@ -342,7 +342,11 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 		break;
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
+#ifdef PLATFORM_WIN32
+		class2 = ARG_CLASS_INTEGER;
+#else
 		class2 = ARG_CLASS_SSE;
+#endif
 		break;
 
 	case MONO_TYPE_TYPEDBYREF:
@@ -424,6 +428,8 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	 */
 	info = mono_marshal_load_type_info (klass);
 	g_assert (info);
+
+#ifndef PLATFORM_WIN32
 	if (info->native_size > 16) {
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (info->native_size, 8);
@@ -431,6 +437,17 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 
 		return;
 	}
+#else
+	switch (info->native_size) {
+	case 1: case 2: case 4: case 8:
+		break;
+	default:
+		ainfo->offset = *stack_size;
+		*stack_size += ALIGN_TO (info->native_size, 16);
+		ainfo->storage = ArgOnStack;
+		return;
+	}
+#endif
 
 	args [0] = ARG_CLASS_NO_CLASS;
 	args [1] = ARG_CLASS_NO_CLASS;

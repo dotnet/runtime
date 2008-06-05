@@ -206,9 +206,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	else
 		has_caller = TRUE;
 
-	code = buf = mono_global_codeman_reserve (512);
+	code = buf = mono_global_codeman_reserve (524);
 
-	framesize = 512 + sizeof (MonoLMF);
+	framesize = 524 + sizeof (MonoLMF);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
 
 	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
@@ -434,7 +434,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		/* call the compiled method */
 		amd64_jump_reg (code, X86_EAX);
 
-	g_assert ((code - buf) <= 512);
+	g_assert ((code - buf) <= 524);
 
 	mono_arch_flush_icache (buf, code - buf);
 
