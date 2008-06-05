@@ -1689,12 +1689,6 @@ stack_top (VerifyContext *ctx)
 	return ctx->eval.stack + (ctx->eval.size - 1);
 }
 
-static inline ILStackDesc *
-stack_get (VerifyContext *ctx, int distance)
-{
-	return ctx->eval.stack + (ctx->eval.size - distance - 1);
-}
-
 /* Returns the MonoType associated with the token, or NULL if it is invalid.
  * 
  * A boxable type can be either a reference or value type, but cannot be a byref type or an unmanaged pointer   
@@ -2679,14 +2673,14 @@ store_local (VerifyContext *ctx, guint32 arg)
 static void
 do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TYPE_MAX][TYPE_MAX])
 {
-	ILStackDesc *a, *b;
+	ILStackDesc *a, *b, *top;
 	int idxa, idxb, complexMerge = 0;
 	unsigned char res;
 
 	if (!check_underflow (ctx, 2))
 		return;
-	a = stack_get (ctx, 1);
-	b = stack_top (ctx);
+	b = stack_pop (ctx);
+	a = stack_pop (ctx);
 
 	idxa = stack_slot_get_underlying_type (a);
 	if (stack_slot_is_managed_pointer (a)) {
@@ -2707,23 +2701,24 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
 	VERIFIER_DEBUG ( printf ("binop res %d\n", res); );
 	VERIFIER_DEBUG ( printf ("idxa %d idxb %d\n", idxa, idxb); );
 
-	ctx->eval.size--;
+	top = stack_push (ctx);
 	if (res == TYPE_INV) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction applyed to ill formed stack (%s x %s)", stack_slot_get_name (a), stack_slot_get_name (b)));
+		copy_stack_value (top, a);
 		return;
 	}
 
  	if (res & NON_VERIFIABLE_RESULT) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Binary instruction is not verifiable (%s x %s)", stack_slot_get_name (a), stack_slot_get_name (b)));
 
- 		res = res & ~NON_VERIFIABLE_RESULT;
+		res = res & ~NON_VERIFIABLE_RESULT;
  	}
 
  	if (complexMerge && res == TYPE_PTR) {
  		if (complexMerge == 1) 
- 			copy_stack_value (stack_top (ctx), a);
+ 			copy_stack_value (top, a);
  		else if (complexMerge == 2)
- 			copy_stack_value (stack_top (ctx), b);
+ 			copy_stack_value (top, b);
 		/*
 		 * There is no need to merge the type of two pointers.
 		 * The only valid operation is subtraction, that returns a native
@@ -2731,7 +2726,7 @@ do_binop (VerifyContext *ctx, unsigned int opcode, const unsigned char table [TY
 		 * This is valid acording to Patition III 1.1.4
 		 */
  	} else
-		stack_top (ctx)->stype = res;
+ 		top->stype = res;
  	
 }
 
@@ -2765,7 +2760,7 @@ do_boolean_branch_op (VerifyContext *ctx, int delta)
 
 	top = stack_pop (ctx);
 	if (!is_valid_bool_arg (top))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", stack_slot_get_name (stack_get (ctx, -1)), ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Argument type %s not valid for brtrue/brfalse at 0x%04x", stack_slot_get_name (top), ctx->ip_offset));
 
 	check_unmanaged_pointer (ctx, top);
 }
@@ -4760,8 +4755,9 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 			if (!check_overflow (&ctx))
 				break;
-			top = stack_push (&ctx);
-			copy_stack_value (top, stack_get (&ctx, 1)); 
+			top = stack_pop (&ctx);
+			copy_stack_value (stack_push (&ctx), top); 
+			copy_stack_value (stack_push (&ctx), top);
 			++ip;
 			break;
 		}
