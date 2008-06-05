@@ -169,11 +169,23 @@ libmonoruntimeinclude_HEADERS = \
 	debug-helpers.h	\
 	mempool.h
 
+if DTRACE_G_REQUIRED
+
+PEDUMP_DTRACE_OBJECT = pedump-dtrace.$(OBJEXT)
+
+pedump-dtrace.$(OBJEXT): $(top_srcdir)/data/mono.d libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la
+	DTRACE="$(DTRACE)" DTRACEFLAGS="$(DTRACEFLAGS)" AR="$(AR)" $(SHELL) $(top_srcdir)/dtrace-prelink.sh \
+	--pic pedump-dtrace.$(OBJEXT) $(top_srcdir)/data/mono.d libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la
+
+else
+PEDUMP_DTRACE_OBJECT = 
+endif
+
 pedump_SOURCES =		\
 	pedump.c
 
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
-	$(LIBGC_LIBS) $(GLIB_LIBS) -lm
+	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(PEDUMP_DTRACE_OBJECT)
 
 EXTRA_DIST = make-bundle.pl sample-bundle
 

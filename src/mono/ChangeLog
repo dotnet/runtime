@@ -1,3 +1,11 @@
+2008-06-05  Andreas Färber  <andreas.faerber@web.de>
+
+	* configure.in: Add configure option for DTrace.
+	* dtrace-prelink.sh: New file, helper script for DTrace builds.
+	* data/mono.d: New file, defines the DTrace 'mono' provider.
+
+	Contributed unter MIT/X11 license.
+
 2008-05-31  Andreas Färber  <andreas.faerber@web.de>
 
 	* configure.in (big-arrays): Output fix.

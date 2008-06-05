@@ -2,6 +2,15 @@ noinst_LTLIBRARIES = libmonoutils.la
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS)
 
+if ENABLE_DTRACE
+
+BUILT_SOURCES = mono-dtrace.h
+
+mono-dtrace.h: $(top_srcdir)/data/mono.d
+	$(DTRACE) $(DTRACEFLAGS) -h -s $(top_srcdir)/data/mono.d -o $@
+
+endif
+
 if EGLIB_BUILD 
 hash_sources = mono-ehash.c
 else

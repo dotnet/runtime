@@ -80,6 +80,18 @@ endif
 mono_SOURCES = \
 	main.c
 
+if DTRACE_G_REQUIRED
+LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
+if STATIC_MONO
+MONO_DTRACE_OBJECT = mono-dtrace.$(OBJEXT)
+else
+MONO_DTRACE_OBJECT = 
+endif
+else
+MONO_DTRACE_OBJECT = 
+LIBMONO_DTRACE_OBJECT = 
+endif
+
 if STATIC_MONO
 # Link libmono into mono statically
 # This leads to higher performance, especially with TLS
@@ -91,10 +103,23 @@ endif
 mono_LDADD = \
 	$(MONO_LIB)			\
 	$(GLIB_LIBS)		\
-	-lm
+	-lm	\
+	$(MONO_DTRACE_OBJECT)
 
 mono_LDFLAGS = \
 	$(static_flags) -export-dynamic $(monobinldflags)
+
+if DTRACE_G_REQUIRED
+
+mono-dtrace.$(OBJEXT): $(top_srcdir)/data/mono.d mini.lo $(monodir)/mono/metadata/libmonoruntime-static.la
+	DTRACE="$(DTRACE)" DTRACEFLAGS="$(DTRACEFLAGS)" AR="$(AR)" $(SHELL) $(top_srcdir)/dtrace-prelink.sh \
+	$@ $(top_srcdir)/data/mono.d $(monodir)/mono/metadata/libmonoruntime-static.la mini.lo
+
+.libs/mono-dtrace.$(OBJEXT): $(top_srcdir)/data/mono.d mini.lo $(monodir)/mono/metadata/libmonoruntime.la
+	DTRACE="$(DTRACE)" DTRACEFLAGS="$(DTRACEFLAGS)" AR="$(AR)" $(SHELL) $(top_srcdir)/dtrace-prelink.sh \
+	--pic $@ $(top_srcdir)/data/mono.d $(monodir)/mono/metadata/libmonoruntime.la mini.lo
+
+endif
 
 # Create monow.exe, linked for the 'windows' subsystem
 if PLATFORM_WIN32
@@ -350,7 +375,7 @@ nodist_libmono_la_SOURCES = inssel.c inssel.h
 libmono_static_la_SOURCES = $(libmono_la_SOURCES)
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
 libmono_static_la_LDFLAGS = -static
-libmono_static_la_LIBADD = $(static_libs)
+libmono_static_la_LIBADD = $(static_libs) $(MONO_DTRACE_OBJECT)
 
 BURGSRC= $(common_BURGSRC) $(arch_BURGSRC)
 
@@ -359,7 +384,7 @@ libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 libmonoinclude_HEADERS = jit.h
 
 libmono_la_LIBADD = \
-	$(libs)
+	$(libs) $(LIBMONO_DTRACE_OBJECT)
 
 generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
 	$(MCS) -out:$@ $< -r:TestDriver.dll -r:generics-variant-types.dll

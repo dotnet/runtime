@@ -64,6 +64,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/dtrace.h>
 
 #include "mini.h"
 #include <string.h>
@@ -11983,6 +11984,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_stats.methods_compiled++;
 	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
 		mono_profiler_method_jit (method);
+	if (MONO_PROBE_METHOD_COMPILE_BEGIN_ENABLED ())
+		MONO_PROBE_METHOD_COMPILE_BEGIN (method);
  
 	if (compile_aot)
 		/* We are passed the original generic method definition */
@@ -12060,6 +12063,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (!header) {
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 		cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
+		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
 			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
 		return cfg;
@@ -12081,14 +12086,19 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if ((i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0, FALSE)) < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
-			if (compile_aot)
+			if (compile_aot) {
+				if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+					MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 				return cfg;
+			}
 			mono_destroy_compile (cfg);
 			try_generic_shared = FALSE;
 			goto restart_compile;
 		}
 		g_assert (cfg->exception_type != MONO_EXCEPTION_GENERIC_SHARING_FAILED);
 
+		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
 			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
 		/* cfg contains the details of the failure, so let the caller cleanup */
@@ -12150,8 +12160,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	/* after method_to_ir */
-	if (parts == 1)
+	if (parts == 1) {
+		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+			MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
 		return cfg;
+	}
 
 //#define DEBUGSSA "logic_run"
 #define DEBUGSSA_CLASS "Tests"
@@ -12181,8 +12194,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #endif
 
 	/* after SSA translation */
-	if (parts == 2)
+	if (parts == 2) {
+		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+			MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
 		return cfg;
+	}
 
 	if ((cfg->opt & MONO_OPT_CONSPROP) || (cfg->opt & MONO_OPT_COPYPROP)) {
 		if (cfg->comp_done & MONO_COMP_SSA) {
@@ -12221,8 +12237,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #endif
 
 	/* after SSA removal */
-	if (parts == 3)
+	if (parts == 3) {
+		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+			MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
 		return cfg;
+	}
 
 	if (cfg->verbose_level > 4) {
 		printf ("BEFORE DECOMPSE START\n");
@@ -12445,6 +12464,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 	mono_jit_stats.native_code_size += cfg->code_len;
 
+	if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
+		MONO_PROBE_METHOD_COMPILE_END (method, TRUE);
 	if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
 		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
 
@@ -13638,6 +13659,8 @@ mini_init (const char *filename, const char *runtime_version)
 {
 	MonoDomain *domain;
 
+	MONO_PROBE_VES_INIT_BEGIN ();
+
 #ifdef __linux__
 	if (access ("/proc/self/maps", F_OK) != 0) {
 		g_print ("Mono requires /proc to be mounted.\n");
@@ -13913,6 +13936,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_generic_sharing_init ();
 
 	mono_thread_attach (domain);
+	
+	MONO_PROBE_VES_INIT_END ();
+	
 	return domain;
 }
 
