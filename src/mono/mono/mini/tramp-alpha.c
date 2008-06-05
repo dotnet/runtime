@@ -587,8 +587,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
   ALPHA_DEBUG("mono_arch_get_unbox_trampoline");
 
-  if (!mono_method_signature (m)->ret->byref &&
-      MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
+  if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
     this_reg = 17; //R17
 
   mono_domain_lock (domain);

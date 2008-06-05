@@ -95,8 +95,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	MonoDomain *domain = mono_domain_get ();
 
 	start = addr;
-	if ((!mono_method_signature (method)->ret->byref) &&
-	    (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret)))
+	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
 		this_pos = s390_r3;
 
 	mono_domain_lock (domain);
