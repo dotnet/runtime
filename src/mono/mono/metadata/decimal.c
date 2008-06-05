@@ -22,6 +22,9 @@
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 #ifndef DISABLE_DECIMAL
 
@@ -565,6 +568,16 @@ my_g_bit_nth_msf (gsize mask)
 	__asm__("bsrq %1,%0\n\t"
 			: "=r" (r) : "rm" (mask));
 	return r;
+#elif defined(__i386__) && defined(_MSC_VER)
+	unsigned long bIndex = 0;
+	if (_BitScanReverse (&bIndex, mask))
+		return bIndex;
+	return -1;
+#elif defined(__x86_64__) && defined(_MSC_VER)
+	unsigned long bIndex = 0;
+	if (_BitScanReverse64 (&bIndex, mask))
+		return bIndex;
+	return -1;
 #else
 	return g_bit_nth_msf (mask, sizeof (gsize) * 8);
 #endif
