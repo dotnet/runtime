@@ -1144,13 +1144,14 @@ mono_string_to_bstr (MonoString *string_obj)
 #else
 	if (com_provider == MONO_COM_DEFAULT) {
 		int slen = mono_string_length (string_obj);
-		char *ret = g_malloc (slen * 2 + 4 + 2);
+		/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
+		char *ret = g_malloc ((slen + 1) * sizeof(gunichar2) + sizeof(guint32));
 		if (ret == NULL)
 			return NULL;
-		memcpy (ret + 4, mono_string_chars (string_obj), slen * 2);
-		* ((guint32 *) ret) = slen;
-		ret [4 + slen * 2] = 0;
-		ret [5 + slen * 2] = 0;
+		memcpy (ret + sizeof(guint32), mono_string_chars (string_obj), slen * sizeof(gunichar2));
+		* ((guint32 *) ret) = slen * sizeof(gunichar2);
+		ret [4 + slen * sizeof(gunichar2)] = 0;
+		ret [5 + slen * sizeof(gunichar2)] = 0;
 
 		return ret + 4;
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
@@ -1178,7 +1179,7 @@ mono_string_from_bstr (gpointer bstr)
 	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
 #else
 	if (com_provider == MONO_COM_DEFAULT) {
-		return mono_string_new_utf16 (mono_domain_get (), bstr, *(guint32 *)((char *)bstr - 4));
+		return mono_string_new_utf16 (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2));
 	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		MonoString* str = NULL;
 		glong written = 0;
