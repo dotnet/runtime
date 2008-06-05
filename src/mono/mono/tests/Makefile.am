@@ -310,6 +310,11 @@ endif
 if X86
 # bug #71274
 PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
+
+if PLATFORM_WIN32
+PLATFORM_DISABLED_TESTS+=async-exc-compilation.exe
+endif
+
 endif
 
 if POWERPC
