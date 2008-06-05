@@ -387,18 +387,6 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 	return TRUE;
 }
 
-static MonoAssembly*
-search_loaded (MonoAssemblyName* aname, gboolean refonly)
-{
-	MonoAssembly *ass;
-
-	ass = mono_assembly_invoke_search_hook_internal (aname, refonly, FALSE);
-	if (ass)
-		return ass;
-
-	return NULL;
-}
-
 static MonoAssembly *
 load_in_path (const char *basename, const char** search_path, MonoImageOpenStatus *status, MonoBoolean refonly)
 {
@@ -1445,14 +1433,12 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image addref %s %p -> %s %p: %d\n", ass->aname.name, ass, image->name, image, image->ref_count);
 
 	/* 
-	 * Atomically search the loaded list and add ourselves to it if necessary.
+	 * The load hooks might take locks so we can't call them while holding the
+	 * assemblies lock.
 	 */
-	mono_assemblies_lock ();
 	if (ass->aname.name) {
-		/* avoid loading the same assembly twice for now... */
-		ass2 = search_loaded (&ass->aname, refonly);
+		ass2 = mono_assembly_invoke_search_hook_internal (&ass->aname, refonly, FALSE);
 		if (ass2) {
-			mono_assemblies_unlock ();
 			g_free (ass);
 			g_free (base_dir);
 			mono_image_close (image);
@@ -1461,7 +1447,22 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 		}
 	}
 
-	g_assert (image->assembly == NULL);
+	mono_assemblies_lock ();
+
+	if (image->assembly) {
+		/* 
+		 * This means another thread has already loaded the assembly, but not yet
+		 * called the load hooks so the search hook can't find the assembly.
+		 */
+		mono_assemblies_unlock ();
+		ass2 = image->assembly;
+		g_free (ass);
+		g_free (base_dir);
+		mono_image_close (image);
+		*status = MONO_IMAGE_OK;
+		return ass2;
+	}
+
 	image->assembly = ass;
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
@@ -2316,7 +2317,7 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 	aname = mono_assembly_remap_version (aname, &maped_aname);
 
 	mono_assemblies_lock ();
-	res = search_loaded (aname, refonly);
+	res = mono_assembly_invoke_search_hook_internal (aname, refonly, FALSE);
 	mono_assemblies_unlock ();
 
 	return res;
