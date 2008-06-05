@@ -4575,6 +4575,9 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		g_hash_table_destroy (di->method_aux_hash);
 	g_free (di->strong_name);
 	g_free (di->win32_res);
+	if (di->public_key)
+		g_free (di->public_key);
+
 	/*g_print ("string heap destroy for image %p\n", di);*/
 	mono_dynamic_stream_reset (&di->sheap);
 	mono_dynamic_stream_reset (&di->code);
