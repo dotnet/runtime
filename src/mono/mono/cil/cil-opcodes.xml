@@ -277,7 +277,7 @@
 <opcode name="volatile." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x13" flow="meta" type="Prefix" />
 <opcode name="tail." input="Pop0" output="Push0" args="InlineNone" o1="0xFE" o2="0x14" flow="meta" type="Prefix" />
 <opcode name="initobj" input="PopI" output="Push0" args="InlineType" o1="0xFE" o2="0x15" flow="next" type="Objmodel" />
-<opcode name="constrained." input="Pop0" output="Push0" args="InlineTok" o1="0xFE" o2="0x16" flow="next" type="Prefix" />
+<opcode name="constrained." input="Pop0" output="Push0" args="InlineType" o1="0xFE" o2="0x16" flow="next" type="Prefix" />
 <opcode name="cpblk" input="PopI+PopI+PopI" output="Push0" args="InlineNone" o1="0xFE" o2="0x17" flow="next" type="Primitive" />
 <opcode name="initblk" input="PopI+PopI+PopI" output="Push0" args="InlineNone" o1="0xFE" o2="0x18" flow="next" type="Primitive" />
 <opcode name="no." input="Pop0" output="Push0" args="ShortInlineI" o1="0xFE" o2="0x19" flow="next" />

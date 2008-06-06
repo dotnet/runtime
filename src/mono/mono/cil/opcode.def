@@ -276,7 +276,7 @@ OPDEF(CEE_UNALIGNED_, "unaligned.", Pop0, Push0, ShortInlineI, X, 2, 0xFE, 0x12,
 OPDEF(CEE_VOLATILE_, "volatile.", Pop0, Push0, InlineNone, X, 2, 0xFE, 0x13, META)
 OPDEF(CEE_TAIL_, "tail.", Pop0, Push0, InlineNone, X, 2, 0xFE, 0x14, META)
 OPDEF(CEE_INITOBJ, "initobj", PopI, Push0, InlineType, X, 2, 0xFE, 0x15, NEXT)
-OPDEF(CEE_CONSTRAINED_, "constrained.", Pop0, Push0, InlineTok, X, 2, 0xFE, 0x16, NEXT)
+OPDEF(CEE_CONSTRAINED_, "constrained.", Pop0, Push0, InlineType, X, 2, 0xFE, 0x16, NEXT)
 OPDEF(CEE_CPBLK, "cpblk", PopI+PopI+PopI, Push0, InlineNone, X, 2, 0xFE, 0x17, NEXT)
 OPDEF(CEE_INITBLK, "initblk", PopI+PopI+PopI, Push0, InlineNone, X, 2, 0xFE, 0x18, NEXT)
 OPDEF(CEE_NO_, "no.", Pop0, Push0, ShortInlineI, X, 2, 0xFE, 0x19, NEXT)
