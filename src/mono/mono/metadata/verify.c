@@ -1691,11 +1691,14 @@ stack_push_val (VerifyContext *ctx, int stype, MonoType *type)
 ILStackDesc *
 stack_pop (VerifyContext *ctx)
 {
+	return ctx->eval.stack + --ctx->eval.size;;
+	/*
 	ILStackDesc *ret = ctx->eval.stack + --ctx->eval.size;
 	if ((ret->stype & UNINIT_THIS_MASK) == UNINIT_THIS_MASK)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Found use of uninitialized 'this ptr' ref at 0x%04x", ctx->ip_offset));
 		
 	return ret;
+	*/
 }
 
 /* This function allows to safely pop an unititialized this ptr from
@@ -1704,8 +1707,7 @@ stack_pop (VerifyContext *ctx)
 static ILStackDesc *
 stack_pop_safe (VerifyContext *ctx)
 {
-	ILStackDesc * ret = ctx->eval.stack + --ctx->eval.size;
-	return ret;
+	return ctx->eval.stack + --ctx->eval.size;
 }
 
 static ILStackDesc *
@@ -2637,8 +2639,10 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 				ctx->has_this_store = TRUE;
 			else
 				top->stype |= THIS_POINTER_MASK;
+			/*
 			if (mono_method_is_constructor (ctx->method) && !ctx->super_ctor_called && !ctx->method->klass->valuetype)
 				top->stype |= UNINIT_THIS_MASK;
+			*/
 		}
 	} 
 }
@@ -2985,6 +2989,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		MonoType *type = &method->klass->byval_arg;
 		ILStackDesc copy;
 
+		/*
 		if (mono_method_is_constructor (method) && !method->klass->valuetype) {
 			if (!mono_method_is_constructor (ctx->method))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a constructor outside one at 0x%04x", ctx->ip_offset));
@@ -2998,6 +3003,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		} else {
 			value = stack_pop (ctx);
 		}
+		*/
 			
 		copy_stack_value (&copy, value);
 		//TODO we should extract this to a 'drop_byref_argument' and use everywhere
@@ -5398,8 +5404,10 @@ mono_method_verify (MonoMethod *method, int level)
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Invalid call to a non-final virtual function in method with stdarg.0 or ldarga.0 at  0x%04x", i));
 	}
 
+	/*
 	if (mono_method_is_constructor (ctx.method) && !ctx.super_ctor_called && !ctx.method->klass->valuetype && ctx.method->klass != mono_defaults.object_class)
 		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Constructor not calling super\n"));
+	*/
 
 	if (ctx.code) {
 		for (i = 0; i < ctx.header->code_size; ++i) {
