@@ -19,6 +19,11 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-time.h>
 
+#ifndef G_LIKELY
+#define G_LIKELY(a) (a)
+#define G_UNLIKELY(a) (a)
+#endif
+
 /*#define LOCK_DEBUG(a) do { a; } while (0)*/
 #define LOCK_DEBUG(a)
 
@@ -324,7 +329,7 @@ mono_object_hash (MonoObject* obj)
 /* If allow_interruption==TRUE, the method will be interrumped if abort or suspend
  * is requested. In this case it returns -1.
  */ 
-static gint32 
+static inline gint32 
 mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_interruption)
 {
 	MonoThreadsSync *mon;
@@ -333,7 +338,7 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 	guint32 then = 0, now, delta;
 	guint32 waitms;
 	guint32 ret;
-	MonoThread *thread = mono_thread_current ();
+	MonoThread *thread;
 	
 	LOCK_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Trying to lock object %p (%d ms)", id, obj, ms));
@@ -342,7 +347,7 @@ retry:
 	mon = obj->synchronisation;
 
 	/* If the object has never been locked... */
-	if (mon == NULL) {
+	if (G_UNLIKELY (mon == NULL)) {
 		mono_monitor_allocator_lock ();
 		mon = mon_new (id);
 		if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, mon, NULL) == NULL) {
@@ -433,12 +438,12 @@ retry:
 	/* This case differs from Dice's case 3 because we don't
 	 * deflate locks or cache unused lock records
 	 */
-	if (mon->owner == 0) {
+	if (G_LIKELY (mon->owner == 0)) {
 		/* Try to install our ID in the owner field, nest
 		 * should have been left at 1 by the previous unlock
 		 * operation
 		 */
-		if (InterlockedCompareExchangePointer ((gpointer *)&mon->owner, (gpointer)id, 0) == 0) {
+		if (G_LIKELY (InterlockedCompareExchangePointer ((gpointer *)&mon->owner, (gpointer)id, 0) == 0)) {
 			/* Success */
 			g_assert (mon->nest == 1);
 			return 1;
@@ -492,6 +497,8 @@ retry:
 	}
 	
 	InterlockedIncrement (&mon->entry_count);
+
+	thread = mono_thread_current ();
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -559,7 +566,7 @@ mono_monitor_try_enter (MonoObject *obj, guint32 ms)
 	return mono_monitor_try_enter_internal (obj, ms, FALSE) == 1;
 }
 
-void 
+void
 mono_monitor_exit (MonoObject *obj)
 {
 	MonoThreadsSync *mon;
@@ -579,11 +586,11 @@ mono_monitor_exit (MonoObject *obj)
 		mon = lw.sync;
 	}
 #endif
-	if (mon == NULL) {
+	if (G_UNLIKELY (mon == NULL)) {
 		/* No one ever used Enter. Just ignore the Exit request as MS does */
 		return;
 	}
-	if (mon->owner != GetCurrentThreadId ()) {
+	if (G_UNLIKELY (mon->owner != GetCurrentThreadId ())) {
 		return;
 	}
 	
