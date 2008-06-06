@@ -27,6 +27,14 @@
 /*#define LOCK_DEBUG(a) do { a; } while (0)*/
 #define LOCK_DEBUG(a)
 
+/* 
+ * The usual problem: we can't replace GetCurrentThreadId () with a macro because
+ * it is in a public header.
+ */
+#ifndef PLATFORM_WIN32
+#define GetCurrentThreadId() ((gsize)pthread_self ())
+#endif
+
 /*
  * The monitor implementation here is based on
  * http://www.usenix.org/events/jvm01/full_papers/dice/dice.pdf and
