@@ -7566,6 +7566,10 @@ type_from_typename (char *typename)
 		klass = mono_defaults.object_class;
 	else if (!strcmp (typename, "obj"))
 		klass = mono_defaults.object_class;
+	else if (!strcmp (typename, "bool"))
+		klass = mono_defaults.boolean_class;
+	else if (!strcmp (typename, "boolean"))
+		klass = mono_defaults.boolean_class;
 	else {
 		g_error (typename);
 		g_assert_not_reached ();
