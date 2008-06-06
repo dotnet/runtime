@@ -2989,7 +2989,6 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		MonoType *type = &method->klass->byval_arg;
 		ILStackDesc copy;
 
-		/*
 		if (mono_method_is_constructor (method) && !method->klass->valuetype) {
 			if (!mono_method_is_constructor (ctx->method))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a constructor outside one at 0x%04x", ctx->ip_offset));
@@ -3003,7 +3002,6 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		} else {
 			value = stack_pop (ctx);
 		}
-		*/
 			
 		copy_stack_value (&copy, value);
 		//TODO we should extract this to a 'drop_byref_argument' and use everywhere
