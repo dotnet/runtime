@@ -466,8 +466,16 @@ typedef union {
         x86_reg_emit ((inst),1,(reg) & 0x7); \
     } while (0)
 
+/* From the AMD64 Software Optimization Manual */
 #define amd64_padding_size(inst,size) \
-    do { if (size == 1) x86_padding ((inst),(size)); else { amd64_emit_rex ((inst),8,0,0,0); x86_padding((inst),(size) - 1); } } while (0)
+    do { \
+	    switch ((size)) {								  \
+        case 1: *(inst)++ = 0x90; break;						  \
+        case 2: *(inst)++ = 0x66; *(inst)++ = 0x90; break;			  \
+        case 3: *(inst)++ = 0x66; *(inst)++ = 0x66; *(inst)++ = 0x90; break; \
+		default: amd64_emit_rex ((inst),8,0,0,0); x86_padding ((inst), (size) - 1); \
+		}; \
+		} while (0)
 
 #define amd64_fld_membase_size(inst,basereg,disp,is_double,size) do { \
 	amd64_emit_rex ((inst),0,0,0,(basereg)); \
