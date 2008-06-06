@@ -79,8 +79,12 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 
 	if (((code [-13] == 0x49) && (code [-12] == 0xbb)) || (code [-5] == 0xe8)) {
 		if (code [-5] != 0xe8) {
-			if (can_write)
+			if (can_write) {
 				InterlockedExchangePointer ((gpointer*)(orig_code - 11), addr);
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 11, sizeof (gpointer));
+#endif
+			}
 		} else {
 			if ((((guint64)(addr)) >> 32) != 0) {
 				/* Print some diagnostics */
@@ -94,15 +98,23 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 				g_assert_not_reached ();
 			}
 			g_assert ((((guint64)(orig_code)) >> 32) == 0);
-			if (can_write)
+			if (can_write) {
 				InterlockedExchange ((gint32*)(orig_code - 4), ((gint64)addr - (gint64)orig_code));
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, 4);
+#endif
+			}
 		}
 	}
 	else if ((code [-7] == 0x41) && (code [-6] == 0xff) && (code [-5] == 0x15)) {
 		/* call *<OFFSET>(%rip) */
 		gpointer *got_entry = (gpointer*)((guint8*)orig_code + (*(guint32*)(orig_code - 4)));
-		if (can_write)
+		if (can_write) {
 			InterlockedExchangePointer (got_entry, addr);
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+			VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, sizeof (gpointer));
+#endif
+		}
 	}
 }
 
