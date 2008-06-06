@@ -1536,8 +1536,6 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 static guint8*
 emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
 {
-	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
-
 	/* 
 	 * FIXME: Add support for thunks
 	 */
@@ -1616,9 +1614,18 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 #endif
 
 		if (near_call) {
+			/* 
+			 * Align the call displacement to an address divisible by 4 so it does
+			 * not span cache lines. This is required for code patching to work on SMP
+			 * systems.
+			 */
+			if (((guint32)(code + 1 - cfg->native_code) % 4) != 0)
+				amd64_padding (code, 4 - ((guint32)(code + 1 - cfg->native_code) % 4));
+			mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 			amd64_call_code (code, 0);
 		}
 		else {
+			mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 			amd64_set_reg_template (code, GP_SCRATCH_REG);
 			amd64_call_reg (code, GP_SCRATCH_REG);
 		}
@@ -1634,8 +1641,6 @@ emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer dat
 	if (win64_adjust_stack)
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 32);
 #endif
-	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
-
 	code = emit_call_body (cfg, code, patch_type, data);
 #ifdef PLATFORM_WIN32
 	if (win64_adjust_stack)
@@ -4532,11 +4537,10 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 					exc_throw_start [nthrows] = code;
 				}
 				amd64_mov_reg_imm (code, AMD64_ARG_REG1, exc_class->type_token);
-				patch_info->data.name = "mono_arch_throw_corlib_exception";
-				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-				patch_info->ip.i = code - cfg->native_code;
 
-				code = emit_call_body (cfg, code, patch_info->type, patch_info->data.name);
+				patch_info->type = MONO_PATCH_INFO_NONE;
+
+				code = emit_call_body (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_corlib_exception");
 
 				amd64_mov_reg_imm (buf, AMD64_ARG_REG2, (code - cfg->native_code) - throw_ip);
 				while (buf < buf2)
