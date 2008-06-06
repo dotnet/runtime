@@ -5057,3 +5057,38 @@ done
 ./make_type_visibility_test.sh type_vis_gmethod_2 unverifiable "call void SimpleClass::Generic<[test_lib]NotExportedA>()"
 
 
+#Constructor tests
+
+./make_ctor_test.sh ctor_good_ops_1 valid "call instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_good_ops_2 valid "nop\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_good_ops_3 valid "dup\n\tldc.i4.0\n\tstfld int32 Test::val\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_good_ops_4 valid "dup\n\tldfld int32 Test::val\n\tpop\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_good_ops_5 valid "dup\n\tpop\n\tcall instance void object::'.ctor'()"
+
+./make_ctor_test.sh ctor_call_super_2x valid "call instance void object::'.ctor'()\n\tldarg.0\n\tcall instance void object::'.ctor'()"
+
+./make_ctor_test.sh ctor_pass_this_as_arg_1 unverifiable "ldarg.0\n\tcall instance void TestClass::'.ctor'(object)" "other"
+./make_ctor_test.sh ctor_pass_this_as_arg_2 unverifiable "dup\n\tcall instance void TestClass::'.ctor'(object)" "other"
+
+
+./make_ctor_test.sh ctor_no_super_call unverifiable "nop"
+./make_ctor_test.sh ctor_call_invalid_super unverifiable "call instance void TestClass::'.ctor'()"
+./make_call_test.sh ctor_call_outside_ctor unverifiable "call instance void ClassA::.ctor()" "newobj instance void ClassA::.ctor()"
+
+./make_ctor_test.sh ctor_use_non_this_ptr unverifiable "ldloc.0\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_store_this_on_field unverifiable "dup\n\tdup\n\tstfld object Test::obj\n\tcall instance void object::'.ctor'()"
+
+
+./make_ctor_test.sh ctor_use_uninit_this_1 unverifiable "dup\n\tcall void Test::StaticMethod(object)\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_use_uninit_this_2 unverifiable "dup\n\tcall instance void Test::InstanceMethod()\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_use_uninit_this_3 unverifiable "dup\n\tcastclass [mscorlib]System.String\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_use_uninit_this_4 unverifiable "dup\n\tunbox.any Test\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_use_uninit_this_5 unverifiable "dup\n\tcall instance void object::'.ctor'()\n\tcall instance void Test::InstanceMethod()"
+
+./make_ctor_test.sh ctor_bad_ops_1 unverifiable "dup\n\tstloc.0\n\tcall instance void object::'.ctor'()"
+./make_ctor_test.sh ctor_bad_ops_2 unverifiable "dup\n\tcall instance void object::'.ctor'()\n\tcall instance void Test::InstanceMethod()"
+
+#TODO try / catch inside constructor
+
+
+
