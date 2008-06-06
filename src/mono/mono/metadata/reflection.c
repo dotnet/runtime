@@ -1105,6 +1105,7 @@ lookup_custom_attr (void *member)
 		size = sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (ainfo->num_attrs - MONO_ZERO_LEN_ARRAY);
 		res = g_malloc0 (size);
 		memcpy (res, ainfo, size);
+		res->cached = FALSE;
 		return res;
 	}
 	return NULL;
