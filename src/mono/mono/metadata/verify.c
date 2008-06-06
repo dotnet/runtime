@@ -147,6 +147,15 @@ typedef struct {
 	 *on a method that creates a delegate for a non-final virtual method using ldftn*/
 	gboolean has_this_store;
 
+	/*This flag is used to control if the contructor of the parent class has been called.
+	 *If the this pointer is pushed on the eval stack and it's a reference type constructor and
+	 * super_ctor_called is false, the uninitialized flag is set on the pushed value.
+	 * 
+	 * Poping an uninitialized this ptr from the eval stack is an unverifiable operation unless
+	 * the safe variant is used. Only a few opcodes can use it : dup, pop, ldfld, stfld and call to a constructor.
+	 */
+	gboolean super_ctor_called;
+
 	guint32 prefix_set;
 	gboolean has_flags;
 	MonoType *constrained_type;
@@ -207,6 +216,8 @@ enum {
 	/**Signals that this is a boxed value type*/
 	BOXED_MASK = 0x1000,
 
+	/*This is an unitialized this ref*/
+	UNINIT_THIS_MASK = 0x2000,
 };
 
 static const char* const
@@ -1677,10 +1688,24 @@ stack_push_val (VerifyContext *ctx, int stype, MonoType *type)
 	return top;
 }
 
-static ILStackDesc *
+ILStackDesc *
 stack_pop (VerifyContext *ctx)
 {
-	return ctx->eval.stack + --ctx->eval.size;
+	ILStackDesc *ret = ctx->eval.stack + --ctx->eval.size;
+	if ((ret->stype & UNINIT_THIS_MASK) == UNINIT_THIS_MASK)
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Found use of uninitialized 'this ptr' ref at 0x%04x", ctx->ip_offset));
+		
+	return ret;
+}
+
+/* This function allows to safely pop an unititialized this ptr from
+ * the eval stack without marking the method as unverifiable. 
+ */
+static ILStackDesc *
+stack_pop_safe (VerifyContext *ctx)
+{
+	ILStackDesc * ret = ctx->eval.stack + --ctx->eval.size;
+	return ret;
 }
 
 static ILStackDesc *
@@ -2612,6 +2637,8 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 				ctx->has_this_store = TRUE;
 			else
 				top->stype |= THIS_POINTER_MASK;
+			if (mono_method_is_constructor (ctx->method) && !ctx->super_ctor_called && !ctx->method->klass->valuetype)
+				top->stype |= UNINIT_THIS_MASK;
 		}
 	} 
 }
@@ -2638,8 +2665,8 @@ store_arg (VerifyContext *ctx, guint32 arg)
 
 	if (arg >= ctx->max_args) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Method doesn't have argument %d at 0x%04x", arg + 1, ctx->ip_offset));
-		check_underflow (ctx, 1);
-		stack_pop (ctx);
+		if (check_underflow (ctx, 1))
+			stack_pop (ctx);
 		return;
 	}
 
@@ -2957,7 +2984,21 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 	if (sig->hasthis) {
 		MonoType *type = &method->klass->byval_arg;
 		ILStackDesc copy;
-		value = stack_pop (ctx);
+
+		if (mono_method_is_constructor (method) && !method->klass->valuetype) {
+			if (!mono_method_is_constructor (ctx->method))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a constructor outside one at 0x%04x", ctx->ip_offset));
+			if (method->klass != ctx->method->klass->parent && method->klass != ctx->method->klass)
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot call a constructor to a type diferent that this or super at 0x%04x", ctx->ip_offset));
+
+			ctx->super_ctor_called = TRUE;
+			value = stack_pop_safe (ctx);
+			if ((value->stype & THIS_POINTER_MASK) != THIS_POINTER_MASK)
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid 'this ptr' argument for constructor at 0x%04x", ctx->ip_offset));
+		} else {
+			value = stack_pop (ctx);
+		}
+			
 		copy_stack_value (&copy, value);
 		//TODO we should extract this to a 'drop_byref_argument' and use everywhere
 		//Other parts of the code suffer from the same issue of 
@@ -3132,7 +3173,7 @@ do_push_field (VerifyContext *ctx, int token, gboolean take_addr)
 
 	if (!check_underflow (ctx, 1))
 		return;
-	obj = stack_pop (ctx);
+	obj = stack_pop_safe (ctx);
 
 	if (!check_is_valid_type_for_field_ops (ctx, token, obj, &field, take_addr ? "ldflda" : "ldfld"))
 		return;
@@ -3158,7 +3199,7 @@ do_store_field (VerifyContext *ctx, int token)
 		return;
 
 	value = stack_pop (ctx);
-	obj = stack_pop (ctx);
+	obj = stack_pop_safe (ctx);
 
 	if (!check_is_valid_type_for_field_ops (ctx, token, obj, &field, "stfld"))
 		return;
@@ -4609,7 +4650,7 @@ mono_method_verify (MonoMethod *method, int level)
 		case CEE_POP:
 			if (!check_underflow (&ctx, 1))
 				break;
-			stack_pop (&ctx);
+			stack_pop_safe (&ctx);
 			++ip;
 			break;
 
@@ -4766,7 +4807,7 @@ mono_method_verify (MonoMethod *method, int level)
 				break;
 			if (!check_overflow (&ctx))
 				break;
-			top = stack_pop (&ctx);
+			top = stack_pop_safe (&ctx);
 			copy_stack_value (stack_push (&ctx), top); 
 			copy_stack_value (stack_push (&ctx), top);
 			++ip;
@@ -5356,6 +5397,9 @@ mono_method_verify (MonoMethod *method, int level)
 		if ((ctx.code [i].flags & IL_CODE_CALL_NONFINAL_VIRTUAL) && ctx.has_this_store)
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Invalid call to a non-final virtual function in method with stdarg.0 or ldarga.0 at  0x%04x", i));
 	}
+
+	if (mono_method_is_constructor (ctx.method) && !ctx.super_ctor_called && !ctx.method->klass->valuetype && ctx.method->klass != mono_defaults.object_class)
+		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Constructor not calling super\n"));
 
 	if (ctx.code) {
 		for (i = 0; i < ctx.header->code_size; ++i) {
