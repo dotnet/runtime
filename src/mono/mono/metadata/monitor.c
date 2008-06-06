@@ -351,6 +351,9 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 	LOCK_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Trying to lock object %p (%d ms)", id, obj, ms));
 
+	if (G_UNLIKELY (!obj))
+		mono_raise_exception (mono_get_exception_argument_null ("obj"));
+
 retry:
 	mon = obj->synchronisation;
 
@@ -582,6 +585,9 @@ mono_monitor_exit (MonoObject *obj)
 	
 	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Unlocking %p", GetCurrentThreadId (), obj));
 
+	if (G_UNLIKELY (!obj))
+		mono_raise_exception (mono_get_exception_argument_null ("obj"));
+
 	mon = obj->synchronisation;
 
 #ifdef HAVE_MOVING_COLLECTOR
@@ -641,12 +647,6 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter (MonoObject *obj, guint32 m
 	} while (res == -1);
 	
 	return res == 1;
-}
-
-void 
-ves_icall_System_Threading_Monitor_Monitor_exit (MonoObject *obj)
-{
-	mono_monitor_exit (obj);
 }
 
 gboolean 

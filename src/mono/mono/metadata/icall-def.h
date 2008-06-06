@@ -765,8 +765,9 @@ ICALL(ILOCK_19, "Increment(int&)", ves_icall_System_Threading_Interlocked_Increm
 ICALL(ILOCK_20, "Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long)
 ICALL(ILOCK_21, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long)
 
-ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_1)
-ICALL(MONIT_1, "Monitor_exit", ves_icall_System_Threading_Monitor_Monitor_exit)
+ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_8)
+ICALL(MONIT_8, "Enter", mono_monitor_enter)
+ICALL(MONIT_1, "Exit", mono_monitor_exit)
 ICALL(MONIT_2, "Monitor_pulse", ves_icall_System_Threading_Monitor_Monitor_pulse)
 ICALL(MONIT_3, "Monitor_pulse_all", ves_icall_System_Threading_Monitor_Monitor_pulse_all)
 ICALL(MONIT_4, "Monitor_test_owner", ves_icall_System_Threading_Monitor_Monitor_test_owner)
