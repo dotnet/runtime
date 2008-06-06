@@ -2316,9 +2316,7 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
 
-	mono_assemblies_lock ();
 	res = mono_assembly_invoke_search_hook_internal (aname, refonly, FALSE);
-	mono_assemblies_unlock ();
 
 	return res;
 }
