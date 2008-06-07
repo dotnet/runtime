@@ -61,7 +61,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 	const char *ptr, *start;
 	gchar *guid;
 	guint64 magic;
-	long version;
+	int minor, major;
 
 	ptr = start = (const char*)symfile->raw_contents;
 	if (!ptr)
@@ -75,13 +75,17 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 		return FALSE;
 	}
 
-	version = read32(ptr);
+	major = read32(ptr);
 	ptr += sizeof(guint32);
-	if (version != MONO_SYMBOL_FILE_VERSION) {
+	minor = read32(ptr);
+	ptr += sizeof(guint32);
+
+	if ((major != MONO_SYMBOL_FILE_MAJOR_VERSION) || (minor != MONO_SYMBOL_FILE_MINOR_VERSION)) {
 		if (!in_the_debugger)
 			g_warning ("Symbol file %s has incorrect version "
-				   "(expected %d, got %ld)", symfile->filename,
-				   MONO_SYMBOL_FILE_VERSION, version);
+				   "(expected %d.%d, got %d.%d)", symfile->filename,
+				   MONO_SYMBOL_FILE_MAJOR_VERSION, MONO_SYMBOL_FILE_MINOR_VERSION,
+				   major, minor);
 		return FALSE;
 	}
 
@@ -97,7 +101,8 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 		return FALSE;
 	}
 
-	symfile->version = version;
+	symfile->major_version = major;
+	symfile->minor_version = minor;
 
 	symfile->offset_table = (MonoSymbolFileOffsetTable *) ptr;
 
@@ -176,7 +181,7 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 }
 
 static int
-read_leb128 (const char *ptr, const char **rptr)
+read_leb128 (const guint8 *ptr, const guint8 **rptr)
 {
 	int ret = 0;
 	int shift = 0;
@@ -196,10 +201,47 @@ read_leb128 (const char *ptr, const char **rptr)
 }
 
 static gchar *
-read_string (const char *ptr)
+read_string (const guint8 *ptr)
 {
 	int len = read_leb128 (ptr, &ptr);
-	return g_filename_from_utf8 (ptr, len, NULL, NULL, NULL);
+	return g_filename_from_utf8 ((const char *) ptr, len, NULL, NULL, NULL);
+}
+
+typedef struct {
+	MonoSymbolFile *symfile;
+	int line_base, line_range, max_address_incr;
+	guint8 opcode_base;
+	guint32 last_line, last_file, last_offset;
+	guint32 line, file, offset;
+} StatementMachine;
+
+static gboolean
+check_line (StatementMachine *stm, int offset, MonoDebugSourceLocation **location)
+{
+	gchar *source_file = NULL;
+
+	if ((offset > 0) && (stm->offset <= offset)) {
+		stm->last_offset = stm->offset;
+		stm->last_file = stm->file;
+		if (stm->line != 0xfeefee)
+			stm->last_line = stm->line;
+		return FALSE;
+	}
+
+	if (stm->last_file) {
+		int offset = read32(&(stm->symfile->offset_table->_source_table_offset)) +
+			(stm->last_file - 1) * sizeof (MonoSymbolFileSourceEntry);
+		MonoSymbolFileSourceEntry *se = (MonoSymbolFileSourceEntry *)
+			(stm->symfile->raw_contents + offset);
+
+		source_file = read_string (stm->symfile->raw_contents + read32(&(se->_data_offset)));
+	}
+
+	*location = g_new0 (MonoDebugSourceLocation, 1);
+	(*location)->source_file = source_file;
+	(*location)->row = stm->last_line;
+	(*location)->il_offset = stm->last_offset;
+	return TRUE;
 }
 
 /**
@@ -215,47 +257,98 @@ read_string (const char *ptr)
 MonoDebugSourceLocation *
 mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 {
-	MonoSymbolFileLineNumberEntry *lne;
+	MonoDebugSourceLocation *location = NULL;
 	MonoSymbolFile *symfile;
-	gchar *source_file = NULL;
 	const unsigned char *ptr;
-	int count, i;
+	StatementMachine stm;
+
+#define DW_LNS_copy 1
+#define DW_LNS_advance_pc 2
+#define DW_LNS_advance_line 3
+#define DW_LNS_set_file 4
+#define DW_LNS_const_add_pc 8
+
+#define DW_LNE_end_sequence 1
+#define DW_LNE_MONO_negate_is_hidden 0x40
 
 	if ((symfile = minfo->handle->symfile) == NULL)
 		return NULL;
 
+	stm.line_base = symfile->offset_table->_line_number_table_line_base;
+	stm.line_range = symfile->offset_table->_line_number_table_line_range;
+	stm.opcode_base = (guint8) symfile->offset_table->_line_number_table_opcode_base;
+	stm.max_address_incr = (255 - stm.opcode_base) / stm.line_range;
+
 	mono_debugger_lock ();
 
-	if (read32(&(minfo->entry->_source_index))) {
-		int offset = read32(&(symfile->offset_table->_source_table_offset)) +
-			(read32(&(minfo->entry->_source_index)) - 1) * sizeof (MonoSymbolFileSourceEntry);
-		MonoSymbolFileSourceEntry *se = (MonoSymbolFileSourceEntry *) (symfile->raw_contents + offset);
+	ptr = symfile->raw_contents + minfo->lnt_offset;
 
-		source_file = read_string ((const char*)symfile->raw_contents + read32(&(se->_name_offset)));
-	}
+	stm.symfile = symfile;
+	stm.offset = stm.last_offset = 0;
+	stm.file = stm.last_file = 1;
+	stm.line = stm.last_line = 1;
 
-	ptr = symfile->raw_contents + read32(&(minfo->entry->_line_number_table_offset));
+	while (TRUE) {
+		guint8 opcode = *ptr++;
 
-	count = read32(&(minfo->entry->_num_line_numbers));
-	lne = ((MonoSymbolFileLineNumberEntry *) ptr) + count - 1;
+		if (opcode == 0) {
+			guint8 size = *ptr++;
+			const unsigned char *end_ptr = ptr + size;
 
-	for (i = count - 1; i >= 0; i--, lne--) {
-		MonoDebugSourceLocation *location;
+			opcode = *ptr++;
 
-		if (read32(&(lne->_offset)) > offset)
+			if (opcode == DW_LNE_end_sequence) {
+				if (check_line (&stm, -1, &location))
+					goto out_success;
+				break;
+			} else if (opcode == DW_LNE_MONO_negate_is_hidden) {
+				;
+			} else {
+				g_warning ("Unknown extended opcode %x in LNT", opcode);
+			}
+
+			ptr = end_ptr;
 			continue;
+		} else if (opcode < stm.opcode_base) {
+			switch (opcode) {
+			case DW_LNS_copy:
+				if (check_line (&stm, offset, &location))
+					goto out_success;
+				break;
+			case DW_LNS_advance_pc:
+				stm.offset += read_leb128 (ptr, &ptr);
+				break;
+			case DW_LNS_advance_line:
+				stm.line += read_leb128 (ptr, &ptr);
+				break;
+			case DW_LNS_set_file:
+				stm.file = read_leb128 (ptr, &ptr);
+				break;
+			case DW_LNS_const_add_pc:
+				stm.offset += stm.max_address_incr;
+				break;
+			default:
+				g_warning ("Unknown standard opcode %x in LNT", opcode);
+				goto error_out;
+			}
+		} else {
+			opcode -= stm.opcode_base;
 
-		location = g_new0 (MonoDebugSourceLocation, 1);
-		location->source_file = source_file;
-		location->row = read32(&(lne->_row));
-		location->il_offset = read32(&(lne->_offset));
+			stm.offset += opcode / stm.line_range;
+			stm.line += stm.line_base + (opcode % stm.line_range);
 
-		mono_debugger_unlock ();
-		return location;
+			if (check_line (&stm, offset, &location))
+				goto out_success;
+		}
 	}
 
+ error_out:
 	mono_debugger_unlock ();
 	return NULL;
+
+ out_success:
+	mono_debugger_unlock ();
+	return location;
 }
 
 gint32
@@ -282,7 +375,7 @@ static int
 compare_method (const void *key, const void *object)
 {
 	guint32 token = GPOINTER_TO_UINT (key);
-	MonoSymbolFileMethodIndexEntry *me = (MonoSymbolFileMethodIndexEntry*)object;
+	MonoSymbolFileMethodEntry *me = (MonoSymbolFileMethodEntry*)object;
 
 	return token - read32(&(me->_token));
 }
@@ -290,8 +383,7 @@ compare_method (const void *key, const void *object)
 MonoDebugMethodInfo *
 mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 {
-	MonoSymbolFileMethodEntry *me;
-	MonoSymbolFileMethodIndexEntry *first_ie, *ie;
+	MonoSymbolFileMethodEntry *first_ie, *ie;
 	MonoDebugMethodInfo *minfo;
 	MonoSymbolFile *symfile = handle->symfile;
 
@@ -302,29 +394,25 @@ mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 		return NULL;
 
 	mono_debugger_lock ();
-	first_ie = (MonoSymbolFileMethodIndexEntry *)
+	first_ie = (MonoSymbolFileMethodEntry *)
 		(symfile->raw_contents + read32(&(symfile->offset_table->_method_table_offset)));
 
 	ie = bsearch (GUINT_TO_POINTER (mono_method_get_token (method)), first_ie,
 				   read32(&(symfile->offset_table->_method_count)),
-				   sizeof (MonoSymbolFileMethodIndexEntry), compare_method);
+				   sizeof (MonoSymbolFileMethodEntry), compare_method);
 
 	if (!ie) {
 		mono_debugger_unlock ();
 		return NULL;
 	}
 
-	me = (MonoSymbolFileMethodEntry *) (symfile->raw_contents + read32(&(ie->_file_offset)));
-
 	minfo = g_new0 (MonoDebugMethodInfo, 1);
 	minfo->index = (ie - first_ie) + 1;
 	minfo->method = method;
 	minfo->handle = handle;
-	minfo->num_il_offsets = read32(&(me->_num_line_numbers));
-	minfo->il_offsets = (MonoSymbolFileLineNumberEntry *)
-		(symfile->raw_contents + read32(&(me->_line_number_table_offset)));
 
-	minfo->entry = me;
+	minfo->data_offset = read32 (&(ie->_data_offset));
+	minfo->lnt_offset = read32 (&(ie->_line_number_table));
 
 	g_hash_table_insert (symfile->method_hash, method, minfo);
 
