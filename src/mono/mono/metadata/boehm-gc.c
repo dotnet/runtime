@@ -90,8 +90,8 @@ mono_gc_base_init (void)
 	}
 #endif
 
-	GC_init ();
 	GC_no_dls = TRUE;
+	GC_init ();
 	GC_oom_fn = mono_gc_out_of_memory;
 	GC_set_warn_proc (mono_gc_warning);
 	GC_finalize_on_demand = 1;
