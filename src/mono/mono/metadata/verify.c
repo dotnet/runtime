@@ -2639,10 +2639,8 @@ push_arg (VerifyContext *ctx, unsigned int arg, int take_addr)
 				ctx->has_this_store = TRUE;
 			else
 				top->stype |= THIS_POINTER_MASK;
-			/*
 			if (mono_method_is_constructor (ctx->method) && !ctx->super_ctor_called && !ctx->method->klass->valuetype)
 				top->stype |= UNINIT_THIS_MASK;
-			*/
 		}
 	} 
 }
