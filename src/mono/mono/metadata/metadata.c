@@ -2275,6 +2275,8 @@ free_generic_class (MonoGenericClass *gclass)
 		g_free (dgclass->fields);
 		g_free (dgclass->properties);
 		g_free (dgclass->events);
+		if (!mono_generic_class_is_generic_type_definition (gclass))
+			g_free (gclass->cached_class);
 	}
 	g_free (gclass);
 }
