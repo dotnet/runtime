@@ -281,7 +281,7 @@ struct _MonoThread {
 			       pointer table.  Should be changed to a
 			       guint32 at the next corlib version bump. */
 	MonoThreadManageCallback manage_callback;
-	gpointer unused7;
+	MonoException *pending_exception;
 };
 
 typedef struct {
@@ -427,6 +427,8 @@ typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *meth
 
 /* Used to initialize the method pointers inside vtables */
 typedef gboolean    (*MonoInitVTableFunc)    (MonoVTable *vtable);
+
+void mono_set_pending_exception (MonoException *exc) MONO_INTERNAL;
 
 /* remoting and async support */
 
