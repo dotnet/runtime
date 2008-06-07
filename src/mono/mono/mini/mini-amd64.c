@@ -959,6 +959,27 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 	}
 }
 
+/**
+ * mono_arch_compute_simple_lmf:
+ *
+ *   Determine whenever we can use a simple LMF which does not save callee saved
+ * registers.
+ */
+static void
+mono_arch_compute_simple_lmf (MonoCompile *cfg)
+{
+	if (cfg->arch.simple_lmf_computed)
+		return;
+
+	cfg->arch.simple_lmf = FALSE;
+	cfg->arch.simple_lmf_computed = TRUE;
+
+	if (cfg->method->save_lmf) {
+		/* Not yet used */
+		//cfg->arch.simple_lmf = TRUE;
+	}
+}
+
 GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)
 {
@@ -991,13 +1012,19 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 {
 	MonoInst *ins = cfg->varinfo [vmv->idx];
 
-	if (cfg->method->save_lmf)
-		/* The register is already saved */
-		/* substract 1 for the invisible store in the prolog */
-		return (ins->opcode == OP_ARG) ? 0 : 1;
-	else
+	if (cfg->method->save_lmf) {
+		mono_arch_compute_simple_lmf (cfg);
+
+		if (!cfg->arch.simple_lmf)
+			/* The register is already saved */
+			/* substract 1 for the invisible store in the prolog */
+			return (ins->opcode == OP_ARG) ? 0 : 1;
+		else
+			return (ins->opcode == OP_ARG) ? 1 : 2;
+	} else {
 		/* push+pop */
 		return (ins->opcode == OP_ARG) ? 1 : 2;
+	}
 }
  
 void
@@ -1018,6 +1045,16 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cinfo = cfg->arch.cinfo;
 
 	mono_arch_compute_omit_fp (cfg);
+
+	mono_arch_compute_simple_lmf (cfg);
+
+	/*
+	 * We have to generate code to save/restore callee saved registers if we are 
+	 * using no LMF or a simple LMF.
+	 */
+	cfg->arch.save_callee_regs = TRUE;
+	if (cfg->method->save_lmf && !cfg->arch.simple_lmf)
+		cfg->arch.save_callee_regs = FALSE;
 
 	/*
 	 * We use the ABI calling conventions for managed code as well.
@@ -1046,7 +1083,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += sizeof (MonoLMF);
 			cfg->arch.lmf_offset = -offset;
 		}
-	} else {
+	}
+
+	if (cfg->arch.save_callee_regs) {
+		if (cfg->arch.omit_fp)
+			cfg->arch.reg_save_area_offset = offset;
 		/* Reserve space for caller saved registers */
 		for (i = 0; i < AMD64_NREG; ++i)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
@@ -3943,7 +3984,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* Save callee saved registers */
-	if (!cfg->arch.omit_fp && !method->save_lmf) {
+	if (!cfg->arch.omit_fp && cfg->arch.save_callee_regs) {
 		for (i = 0; i < AMD64_NREG; ++i)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				amd64_push_reg (code, i);
@@ -4008,18 +4049,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		 */
 		/* sp is saved right before calls */
 		/* Skip method (only needed for trampoline LMF frames) */
-		/* Save callee saved regs */
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), AMD64_R12, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
+
+		if (!cfg->arch.simple_lmf) {
+			/* Save callee saved regs */
+			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, 8);
+			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
+			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), AMD64_R12, 8);
+			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, 8);
+			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
+			amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
+		}
 	}
 
 	/* Save callee saved registers */
-	if (cfg->arch.omit_fp && !method->save_lmf) {
-		gint32 save_area_offset = 0;
+	if (cfg->arch.omit_fp && cfg->arch.save_callee_regs) {
+		gint32 save_area_offset = cfg->arch.reg_save_area_offset;
 
 		/* Save caller saved registers after sp is adjusted */
 		/* The registers are saved at the bottom of the frame */
@@ -4371,28 +4415,25 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 
 		/* Restore caller saved regs */
-		if (cfg->used_int_regs & (1 << AMD64_RBP)) {
-			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), 8);
+		if (!cfg->arch.simple_lmf) {
+			if (cfg->used_int_regs & (1 << AMD64_RBP))
+				amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), 8);
+			if (cfg->used_int_regs & (1 << AMD64_RBX))
+				amd64_mov_reg_membase (code, AMD64_RBX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), 8);
+			if (cfg->used_int_regs & (1 << AMD64_R12))
+				amd64_mov_reg_membase (code, AMD64_R12, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), 8);
+			if (cfg->used_int_regs & (1 << AMD64_R13))
+				amd64_mov_reg_membase (code, AMD64_R13, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), 8);
+			if (cfg->used_int_regs & (1 << AMD64_R14))
+				amd64_mov_reg_membase (code, AMD64_R14, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), 8);
+			if (cfg->used_int_regs & (1 << AMD64_R15))
+				amd64_mov_reg_membase (code, AMD64_R15, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), 8);
 		}
-		if (cfg->used_int_regs & (1 << AMD64_RBX)) {
-			amd64_mov_reg_membase (code, AMD64_RBX, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_R12)) {
-			amd64_mov_reg_membase (code, AMD64_R12, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_R13)) {
-			amd64_mov_reg_membase (code, AMD64_R13, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_R14)) {
-			amd64_mov_reg_membase (code, AMD64_R14, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), 8);
-		}
-		if (cfg->used_int_regs & (1 << AMD64_R15)) {
-			amd64_mov_reg_membase (code, AMD64_R15, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), 8);
-		}
-	} else {
+	}
 
+	if (cfg->arch.save_callee_regs) {
 		if (cfg->arch.omit_fp) {
-			gint32 save_area_offset = 0;
+			gint32 save_area_offset = cfg->arch.reg_save_area_offset;
 
 			for (i = 0; i < AMD64_NREG; ++i)
 				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
