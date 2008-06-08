@@ -216,7 +216,7 @@ get_spec (int *last)
 MonoTraceSpec *
 mono_trace_parse_options (const char *options)
 {
-	char *p = options;
+	char *p = (char*)options;
 	int size = 1;
 	int last_used;
 	int token;
@@ -229,13 +229,13 @@ mono_trace_parse_options (const char *options)
 		return &trace_spec;
 	}
 		
-	for (p = options; *p != 0; p++)
+	for (p = (char*)options; *p != 0; p++)
 		if (*p == ',')
 			size++;
 	
 	trace_spec.ops = g_new0 (MonoTraceOperation, size);
 
-	input = options;
+	input = (char*)options;
 	last_used = 0;
 	
 	while ((token = (get_spec (&last_used))) != TOKEN_END){
