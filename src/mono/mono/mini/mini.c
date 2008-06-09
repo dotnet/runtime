@@ -12981,7 +12981,7 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 #define FULL_STAT_PROFILER_BACKTRACE 0
 #endif
 
-#if defined(__ia64__) || defined(__sparc__) || defined(sparc)
+#if defined(__ia64__) || defined(__sparc__) || defined(sparc) || defined(__s390__) || defined(s390)
 
 static void
 SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
