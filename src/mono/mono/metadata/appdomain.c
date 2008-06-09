@@ -847,7 +847,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 }
 
 /*
- * LOCKING: Acquires the domain lock.
+ * LOCKING: Acquires the domain assemblies lock.
  */
 static void
 set_domain_search_path (MonoDomain *domain)
@@ -861,20 +861,24 @@ set_domain_search_path (MonoDomain *domain)
 	GError *error = NULL;
 	gint appbaselen = -1;
 
-	mono_domain_lock (domain);
+	/* 
+	 * We use the low-level domain assemblies lock, since this is called from
+	 * assembly loads hooks, which means this thread might hold the loader lock.
+	 */
+	mono_domain_assemblies_lock (domain);
 
 	if ((domain->search_path != NULL) && !domain->setup->path_changed) {
-		mono_domain_unlock (domain);
+		mono_domain_assemblies_unlock (domain);
 		return;
 	}
 	if (!domain->setup) {
-		mono_domain_unlock (domain);
+		mono_domain_assemblies_unlock (domain);
 		return;
 	}
 
 	setup = domain->setup;
 	if (!setup->application_base) {
-		mono_domain_unlock (domain);
+		mono_domain_assemblies_unlock (domain);
 		return; /* Must set application base to get private path working */
 	}
 
@@ -929,7 +933,7 @@ set_domain_search_path (MonoDomain *domain)
 		 * domain->search_path = g_malloc (sizeof (char *));
 		 * domain->search_path [0] = NULL;
 		*/
-		mono_domain_unlock (domain);
+		mono_domain_assemblies_unlock (domain);
 		return;
 	}
 
@@ -1004,7 +1008,7 @@ set_domain_search_path (MonoDomain *domain)
 
 	g_strfreev (pvt_split);
 
-	mono_domain_unlock (domain);
+	mono_domain_assemblies_unlock (domain);
 }
 
 static gboolean
@@ -1353,6 +1357,8 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolea
 /*
  * Try loading the assembly from ApplicationBase and PrivateBinPath 
  * and then from assemblies_path if any.
+ * LOCKING: This is called from the assembly loading code, which means the caller
+ * might hold the loader lock. Thus, this function must not acquire the domain lock.
  */
 static MonoAssembly *
 mono_domain_assembly_preload (MonoAssemblyName *aname,
