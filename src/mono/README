@@ -224,7 +224,7 @@ This is Mono.
 	  	systems do not support this feature, or you might want
 	  	to override the auto-detection.
 
-	--with-static-mono=yes,no
+	--with-static_mono=yes,no
 
 		This controls whether `mono' should link against a
 	  	static library (libmono.a) or a shared library
@@ -352,6 +352,30 @@ This is Mono.
 			allow Mono to run any 2.0 libraries or
 			code that contains generics.
 	  	
+	--enable-big-arrays
+
+		This enables the use arrays whose indexes are larger
+		than Int32.MaxValue.   
+
+		By default Mono has the same limitation as .NET on
+		Win32 and Win64 and limits array indexes to 32-bit
+		values (even on 64-bit systems).
+
+		In certain scenarios where large arrays are required,
+		you can pass this flag and Mono will be built to
+		support 64-bit arrays.
+
+		This is not the default as it breaks the C embedding
+		ABI that we have exposed through the Mono development
+		cycle.
+
+	--enable-dtrace
+
+		On Solaris and MacOS X builds a version of the Mono
+		runtime that contains DTrace probes and can
+		participate in the system profiling using DTrace.
+
+
 	--disable-dev-random
 
 		Mono uses /dev/random to obtain good random data for
