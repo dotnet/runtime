@@ -1085,30 +1085,22 @@ find_index_in_table (MonoDynamicImage *assembly, int table_idx, int col, guint32
 	return 0;
 }
 
-/* protected by reflection_mutex: 
- * maps a mono runtime reflection handle to MonoCustomAttrInfo*
+/*
+ * LOCKING: Acquires the loader lock. 
  */
-static GHashTable *dynamic_custom_attrs = NULL;
-
 static MonoCustomAttrInfo*
-lookup_custom_attr (void *member)
+lookup_custom_attr (MonoImage *image, gpointer member)
 {
-	MonoCustomAttrInfo *ainfo, *res;
-	int size;
+	MonoCustomAttrInfo* res;
 
-	mono_reflection_lock ();
-	ainfo = g_hash_table_lookup (dynamic_custom_attrs, member);
-	mono_reflection_unlock ();
+	mono_loader_lock ();
+	res = mono_property_hash_lookup (image->property_hash, member, MONO_PROP_DYNAMIC_CATTR);
+	mono_loader_unlock ();
 
-	if (ainfo) {
-		/* Need to copy since it will be freed later */
-		size = sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (ainfo->num_attrs - MONO_ZERO_LEN_ARRAY);
-		res = g_malloc0 (size);
-		memcpy (res, ainfo, size);
-		res->cached = FALSE;
-		return res;
-	}
-	return NULL;
+	if (!res)
+		return NULL;
+
+	return g_memdup (res, sizeof (MonoCustomAttrInfo) + sizeof (MonoCustomAttrEntry) * (res->num_attrs - MONO_ZERO_LEN_ARRAY));
 }
 
 static gboolean
@@ -1170,21 +1162,24 @@ mono_custom_attrs_from_builders (MonoMemPool *mp, MonoImage *image, MonoArray *c
 	return ainfo;
 }
 
+/*
+ * LOCKING: Acquires the loader lock. 
+ */
 static void
 mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 {
-	MonoCustomAttrInfo *ainfo = mono_custom_attrs_from_builders (NULL, image, cattrs);
+	MonoCustomAttrInfo *ainfo, *tmp;
 
-	if (!ainfo)
+	if (!cattrs || !mono_array_length (cattrs))
 		return;
 
-	mono_reflection_lock ();
-	if (!dynamic_custom_attrs)
-		dynamic_custom_attrs = g_hash_table_new (NULL, NULL);
-
-	g_hash_table_insert (dynamic_custom_attrs, obj, ainfo);
-	ainfo->cached = TRUE;
-	mono_reflection_unlock ();
+	ainfo = mono_custom_attrs_from_builders (image->mempool, image, cattrs);
+	mono_loader_lock ();
+	tmp = mono_property_hash_lookup (image->property_hash, obj, MONO_PROP_DYNAMIC_CATTR);
+	if (tmp)
+		mono_custom_attrs_free (tmp);
+	mono_property_hash_insert (image->property_hash, obj, MONO_PROP_DYNAMIC_CATTR, ainfo);
+	mono_loader_unlock ();
 }
 
 void
@@ -7627,7 +7622,6 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 MonoCustomAttrInfo*
 mono_custom_attrs_from_method (MonoMethod *method)
 {
-	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 
 	/*
@@ -7639,8 +7633,9 @@ mono_custom_attrs_from_method (MonoMethod *method)
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 	
-	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (method)))
-		return cinfo;
+	if (method->dynamic || method->klass->image->dynamic)
+		return lookup_custom_attr (method->klass->image, method);
+
 	idx = mono_method_get_index (method);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_METHODDEF;
@@ -7650,14 +7645,14 @@ mono_custom_attrs_from_method (MonoMethod *method)
 MonoCustomAttrInfo*
 mono_custom_attrs_from_class (MonoClass *klass)
 {
-	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
-	
-	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (klass)))
-		return cinfo;
+
+	if (klass->image->dynamic)
+		return lookup_custom_attr (klass->image, klass);
+
 	if (klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR) {
 		idx = mono_metadata_token_index (klass->sizes.generic_param_token);
 		idx <<= MONO_CUSTOM_ATTR_BITS;
@@ -7673,11 +7668,10 @@ mono_custom_attrs_from_class (MonoClass *klass)
 MonoCustomAttrInfo*
 mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 {
-	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (assembly)))
-		return cinfo;
+	if (assembly->image->dynamic)
+		return lookup_custom_attr (assembly->image, assembly);
 	idx = 1; /* there is only one assembly */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
@@ -7687,11 +7681,10 @@ mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 static MonoCustomAttrInfo*
 mono_custom_attrs_from_module (MonoImage *image)
 {
-	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (image)))
-		return cinfo;
+	if (image->dynamic)
+		return lookup_custom_attr (image, image);
 	idx = 1; /* there is only one module */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_MODULE;
@@ -7701,11 +7694,10 @@ mono_custom_attrs_from_module (MonoImage *image)
 MonoCustomAttrInfo*
 mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 {
-	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (property)))
-		return cinfo;
+	if (klass->image->dynamic)
+		return lookup_custom_attr (klass->image, property);
 	idx = find_property_index (klass, property);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_PROPERTY;
@@ -7715,11 +7707,10 @@ mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 MonoCustomAttrInfo*
 mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 {
-	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (event)))
-		return cinfo;
+	if (klass->image->dynamic)
+		return lookup_custom_attr (klass->image, event);
 	idx = find_event_index (klass, event);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_EVENT;
@@ -7729,11 +7720,10 @@ mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 MonoCustomAttrInfo*
 mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 {
-	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
 	
-	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (field)))
-		return cinfo;
+	if (klass->image->dynamic)
+		return lookup_custom_attr (klass->image, field);
 	idx = find_field_index (klass, field);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_FIELDDEF;
