@@ -22,6 +22,13 @@ typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;
 typedef struct _MonoMethodPInvoke MonoMethodPInvoke;
 
+/* Properties that applies to a group of structs should better use a higher number
+ * to avoid colision with type specific properties.
+ * 
+ * This prop applies to class, method, property, event, assembly and image.
+ */
+#define MONO_PROP_DYNAMIC_CATTR 0x1000
+
 typedef enum {
 #define WRAPPER(e,n) MONO_WRAPPER_ ## e,
 #include "wrapper-types.h"
