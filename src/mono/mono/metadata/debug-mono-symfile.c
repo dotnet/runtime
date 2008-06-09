@@ -80,7 +80,14 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 	minor = read32(ptr);
 	ptr += sizeof(guint32);
 
-	if ((major != MONO_SYMBOL_FILE_MAJOR_VERSION) || (minor != MONO_SYMBOL_FILE_MINOR_VERSION)) {
+	if (major != MONO_SYMBOL_FILE_MAJOR_VERSION) {
+		if (!in_the_debugger)
+			g_warning ("Symbol file %s has incorrect version (expected %d, got %d)",
+				   symfile->filename, MONO_SYMBOL_FILE_MAJOR_VERSION, major);
+		return FALSE;
+	}
+
+	if (minor != MONO_SYMBOL_FILE_MINOR_VERSION) {
 		if (!in_the_debugger)
 			g_warning ("Symbol file %s has incorrect version "
 				   "(expected %d.%d, got %d.%d)", symfile->filename,
