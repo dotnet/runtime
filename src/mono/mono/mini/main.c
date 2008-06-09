@@ -12,9 +12,10 @@ main ()
 	int i;
 
 	argvw = CommandLineToArgvW (GetCommandLine (), &argc);
-	argv = g_new0 (gchar*, argc);
+	argv = g_new0 (gchar*, argc + 1);
 	for (i = 0; i < argc; i++)
 		argv [i] = g_utf16_to_utf8 (argvw [i], -1, NULL, NULL, NULL);
+	argv [argc] = NULL;
 
 	LocalFree (argvw);
 
