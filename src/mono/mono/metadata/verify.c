@@ -1688,7 +1688,7 @@ stack_push_val (VerifyContext *ctx, int stype, MonoType *type)
 	return top;
 }
 
-ILStackDesc *
+static ILStackDesc *
 stack_pop (VerifyContext *ctx)
 {
 	return ctx->eval.stack + --ctx->eval.size;;
@@ -5400,10 +5400,8 @@ mono_method_verify (MonoMethod *method, int level)
 			CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Invalid call to a non-final virtual function in method with stdarg.0 or ldarga.0 at  0x%04x", i));
 	}
 
-	/*
 	if (mono_method_is_constructor (ctx.method) && !ctx.super_ctor_called && !ctx.method->klass->valuetype && ctx.method->klass != mono_defaults.object_class)
 		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Constructor not calling super\n"));
-	*/
 
 	if (ctx.code) {
 		for (i = 0; i < ctx.header->code_size; ++i) {
