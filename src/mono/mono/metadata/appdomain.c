@@ -678,36 +678,37 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	static MonoClass *System_Reflection_Assembly;
 	MonoArray *res;
 	GSList *tmp;
-	int i, count;
-	
+	int i;
+	GPtrArray *assemblies;
+
 	MONO_ARCH_SAVE_REGS;
 
 	if (!System_Reflection_Assembly)
 		System_Reflection_Assembly = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "Assembly");
 
-	count = 0;
+	/* 
+	 * Make a copy of the list of assemblies because we can't hold the assemblies
+	 * lock while creating objects etc.
+	 */
+	assemblies = g_ptr_array_new ();
 	/* Need to skip internal assembly builders created by remoting */
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
 		if (refonly && !ass->ref_only)
 			continue;
-		if (!ass->corlib_internal)
-			count++;
-	}
-	res = mono_array_new (domain, System_Reflection_Assembly, count);
-	i = 0;
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		ass = tmp->data;
-		if (refonly && !ass->ref_only)
-			continue;
 		if (ass->corlib_internal)
 			continue;
-		mono_array_setref (res, i, mono_assembly_get_object (domain, ass));
-		++i;
+		g_ptr_array_add (assemblies, ass);
 	}
 	mono_domain_assemblies_unlock (domain);
+
+	res = mono_array_new (domain, System_Reflection_Assembly, assemblies->len);
+	for (i = 0; i < assemblies->len; ++i) {
+		ass = g_ptr_array_index (assemblies, i);
+		mono_array_setref (res, i, mono_assembly_get_object (domain, ass));
+	}
 
 	return res;
 }
