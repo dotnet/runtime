@@ -19,21 +19,8 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-time.h>
 
-#ifndef G_LIKELY
-#define G_LIKELY(a) (a)
-#define G_UNLIKELY(a) (a)
-#endif
-
 /*#define LOCK_DEBUG(a) do { a; } while (0)*/
 #define LOCK_DEBUG(a)
-
-/* 
- * The usual problem: we can't replace GetCurrentThreadId () with a macro because
- * it is in a public header.
- */
-#ifndef PLATFORM_WIN32
-#define GetCurrentThreadId() ((gsize)pthread_self ())
-#endif
 
 /*
  * The monitor implementation here is based on
@@ -93,6 +80,22 @@ static MonoThreadsSync *monitor_freelist;
 static MonitorArray *monitor_allocated;
 static int array_size = 16;
 
+#ifdef HAVE_KW_THREAD
+static __thread gsize tls_pthread_self MONO_TLS_FAST;
+#endif
+
+#ifndef PLATFORM_WIN32
+#ifdef HAVE_KW_THREAD
+#define GetCurrentThreadId() tls_pthread_self
+#else
+/* 
+ * The usual problem: we can't replace GetCurrentThreadId () with a macro because
+ * it is in a public header.
+ */
+#define GetCurrentThreadId() ((gsize)pthread_self ())
+#endif
+#endif
+
 void
 mono_monitor_init (void)
 {
@@ -103,6 +106,19 @@ void
 mono_monitor_cleanup (void)
 {
 	/*DeleteCriticalSection (&monitor_mutex);*/
+}
+
+/*
+ * mono_monitor_init_tls:
+ *
+ *   Setup TLS variables used by the monitor code for the current thread.
+ */
+void
+mono_monitor_init_tls (void)
+{
+#if !defined(PLATFORM_WIN32) && defined(HAVE_KW_THREAD)
+	tls_pthread_self = pthread_self ();
+#endif
 }
 
 static int
@@ -347,12 +363,14 @@ mono_monitor_try_enter_internal (MonoObject *obj, guint32 ms, gboolean allow_int
 	guint32 waitms;
 	guint32 ret;
 	MonoThread *thread;
-	
+
 	LOCK_DEBUG (g_message(G_GNUC_PRETTY_FUNCTION
 		  ": (%d) Trying to lock object %p (%d ms)", id, obj, ms));
 
-	if (G_UNLIKELY (!obj))
+	if (G_UNLIKELY (!obj)) {
 		mono_raise_exception (mono_get_exception_argument_null ("obj"));
+		return FALSE;
+	}
 
 retry:
 	mon = obj->synchronisation;
@@ -438,12 +456,6 @@ retry:
 	}
 #endif
 
-	/* If the object is currently locked by this thread... */
-	if (mon->owner == id) {
-		mon->nest++;
-		return 1;
-	}
-
 	/* If the object has previously been locked but isn't now... */
 
 	/* This case differs from Dice's case 3 because we don't
@@ -462,6 +474,12 @@ retry:
 			/* Trumped again! */
 			goto retry;
 		}
+	}
+
+	/* If the object is currently locked by this thread... */
+	if (mon->owner == id) {
+		mon->nest++;
+		return 1;
 	}
 
 	/* The object must be locked by someone else... */
@@ -585,8 +603,10 @@ mono_monitor_exit (MonoObject *obj)
 	
 	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) Unlocking %p", GetCurrentThreadId (), obj));
 
-	if (G_UNLIKELY (!obj))
+	if (G_UNLIKELY (!obj)) {
 		mono_raise_exception (mono_get_exception_argument_null ("obj"));
+		return;
+	}
 
 	mon = obj->synchronisation;
 

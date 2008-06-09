@@ -561,6 +561,8 @@ static guint32 WINAPI start_wrapper(void *data)
 
 	SET_CURRENT_OBJECT (thread);
 
+	mono_monitor_init_tls ();
+
 	/* Every thread references the appdomain which created it */
 	mono_thread_push_appdomain_ref (start_info->domain);
 	
@@ -838,6 +840,8 @@ mono_thread_attach (MonoDomain *domain)
 
 	SET_CURRENT_OBJECT (thread);
 	mono_domain_set (domain, TRUE);
+
+	mono_monitor_init_tls ();
 
 	thread_adjust_static_data (thread);
 

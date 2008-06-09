@@ -21,6 +21,8 @@ void mono_locks_dump (gboolean include_untaken);
 void mono_monitor_init (void) MONO_INTERNAL;
 void mono_monitor_cleanup (void) MONO_INTERNAL;
 
+void mono_monitor_init_tls (void) MONO_INTERNAL;
+
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_try_enter(MonoObject *obj, guint32 ms) MONO_INTERNAL;
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_test_owner(MonoObject *obj) MONO_INTERNAL;
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_test_synchronised(MonoObject *obj) MONO_INTERNAL;
