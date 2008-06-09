@@ -1691,14 +1691,10 @@ stack_push_val (VerifyContext *ctx, int stype, MonoType *type)
 static ILStackDesc *
 stack_pop (VerifyContext *ctx)
 {
-	return ctx->eval.stack + --ctx->eval.size;;
-	/*
 	ILStackDesc *ret = ctx->eval.stack + --ctx->eval.size;
 	if ((ret->stype & UNINIT_THIS_MASK) == UNINIT_THIS_MASK)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Found use of uninitialized 'this ptr' ref at 0x%04x", ctx->ip_offset));
-		
 	return ret;
-	*/
 }
 
 /* This function allows to safely pop an unititialized this ptr from
