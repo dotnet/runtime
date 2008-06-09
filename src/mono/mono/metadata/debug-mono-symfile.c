@@ -82,8 +82,9 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_
 
 	if (major != MONO_SYMBOL_FILE_MAJOR_VERSION) {
 		if (!in_the_debugger)
-			g_warning ("Symbol file %s has incorrect version (expected %d, got %d)",
-				   symfile->filename, MONO_SYMBOL_FILE_MAJOR_VERSION, major);
+			g_warning ("Symbol file %s has incorrect version (expected %d.%d, got %d)",
+				   symfile->filename, MONO_SYMBOL_FILE_MAJOR_VERSION,
+				   MONO_SYMBOL_FILE_MINOR_VERSION, major);
 		return FALSE;
 	}
 
