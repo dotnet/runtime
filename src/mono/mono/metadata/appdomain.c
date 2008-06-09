@@ -710,6 +710,8 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 		mono_array_setref (res, i, mono_assembly_get_object (domain, ass));
 	}
 
+	g_ptr_array_free (assemblies, TRUE);
+
 	return res;
 }
 
