@@ -2,63 +2,13 @@
 <assemblies>
   <assembly name="System" version="2.0.5.0">
     <attributes>
-      <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
-      <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
-      <attribute name="System.Resources.SatelliteContractVersionAttribute" />
-      <attribute name="System.Diagnostics.DebuggableAttribute" />
-      <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
-      <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
-      <attribute name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
       <attribute name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute">
         <properties>
           <property name="WrapNonExceptionThrows" value="True" />
         </properties>
       </attribute>
-      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-        <properties>
-          <property name="Target" value="System.Uri..ctor(System.String)" />
-          <property name="MessageId" value="0#" />
-          <property name="Scope" value="member" />
-        </properties>
-      </attribute>
-      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-        <properties>
-          <property name="Target" value="System.Uri.IsIntranet(System.String):System.Boolean" />
-          <property name="Scope" value="member" />
-        </properties>
-      </attribute>
-      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-        <properties>
-          <property name="Target" value="System.Uri.AllowIdnStatic(System.UriParser,System.Uri+Flags):System.Boolean" />
-          <property name="Scope" value="member" />
-        </properties>
-      </attribute>
-      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-        <properties>
-          <property name="Target" value="System.Uri..cctor()" />
-          <property name="Scope" value="member" />
-        </properties>
-      </attribute>
-      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-        <properties>
-          <property name="Target" value="System.UriParser..cctor()" />
-          <property name="Scope" value="member" />
-        </properties>
-      </attribute>
-      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-        <properties>
-          <property name="Target" value="System.UriParser.InitializeAndValidate(System.Uri,System.UriFormatException&amp;):System.Void" />
-          <property name="MessageId" value="1#" />
-          <property name="Scope" value="member" />
-        </properties>
-      </attribute>
-      <attribute name="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-        <properties>
-          <property name="Target" value="System.UriParser.Resolve(System.Uri,System.Uri,System.UriFormatException&amp;):System.String" />
-          <property name="MessageId" value="2#" />
-          <property name="Scope" value="member" />
-        </properties>
-      </attribute>
+      <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
+      <attribute name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
       <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
       <attribute name="System.CLSCompliantAttribute" />
       <attribute name="System.Reflection.AssemblyTitleAttribute" />
@@ -67,7 +17,102 @@
       <attribute name="System.Reflection.AssemblyCompanyAttribute" />
       <attribute name="System.Reflection.AssemblyProductAttribute" />
       <attribute name="System.Reflection.AssemblyCopyrightAttribute" />
-      <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
+      <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
+      <attribute name="System.Resources.SatelliteContractVersionAttribute" />
+      <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
+      <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
+      <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Diagnostics.DebuggableAttribute" />
     </attributes>
     <namespaces>
       <namespace name="System">
@@ -302,6 +347,12 @@
                   <parameter name="character" position="0" attrib="0" type="System.Char" />
                 </parameters>
               </method>
+              <method name="IsWellFormedUriString(System.String, System.UriKind)" attrib="150" static="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="uriString" position="0" attrib="0" type="System.String" />
+                  <parameter name="uriKind" position="1" attrib="0" type="System.UriKind" />
+                </parameters>
+              </method>
               <method name="MakeRelativeUri(System.Uri)" attrib="134" returntype="System.Uri">
                 <parameters>
                   <parameter name="uri" position="0" attrib="0" type="System.Uri" />
@@ -322,13 +373,6 @@
               <method name="ToString()" attrib="198" virtual="true" returntype="System.String">
                 <parameters />
               </method>
-              <method name="TryCreate(System.Uri, System.Uri, out System.Uri&amp;)" attrib="150" static="true" returntype="System.Boolean">
-                <parameters>
-                  <parameter name="baseUri" position="0" attrib="0" type="System.Uri" />
-                  <parameter name="relativeUri" position="1" attrib="0" type="System.Uri" />
-                  <parameter name="result" position="2" attrib="2" type="System.Uri&amp;" direction="out" />
-                </parameters>
-              </method>
               <method name="TryCreate(System.String, System.UriKind, out System.Uri&amp;)" attrib="150" static="true" returntype="System.Boolean">
                 <parameters>
                   <parameter name="uriString" position="0" attrib="0" type="System.String" />
@@ -340,6 +384,13 @@
                 <parameters>
                   <parameter name="baseUri" position="0" attrib="0" type="System.Uri" />
                   <parameter name="relativeUri" position="1" attrib="0" type="System.String" />
+                  <parameter name="result" position="2" attrib="2" type="System.Uri&amp;" direction="out" />
+                </parameters>
+              </method>
+              <method name="TryCreate(System.Uri, System.Uri, out System.Uri&amp;)" attrib="150" static="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="baseUri" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="relativeUri" position="1" attrib="0" type="System.Uri" />
                   <parameter name="result" position="2" attrib="2" type="System.Uri&amp;" direction="out" />
                 </parameters>
               </method>
@@ -605,6 +656,11 @@
                   <parameter name="schemeName" position="0" attrib="0" type="System.String" />
                 </parameters>
               </method>
+              <method name="IsWellFormedOriginalString(System.Uri)" attrib="452" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="uri" position="0" attrib="0" type="System.Uri" />
+                </parameters>
+              </method>
               <method name="OnNewUri()" attrib="452" virtual="true" returntype="System.UriParser">
                 <parameters />
               </method>
@@ -672,6 +728,212 @@
       </namespace>
       <namespace name="System.Collections.Generic">
         <classes>
+          <class name="LinkedList`1" type="class" base="System.Object" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
+            </attributes>
+            <interfaces>
+              <interface name="System.Collections.Generic.ICollection`1[T]" />
+              <interface name="System.Collections.Generic.IEnumerable`1[T]" />
+              <interface name="System.Collections.ICollection" />
+              <interface name="System.Collections.IEnumerable" />
+            </interfaces>
+            <constructors>
+              <constructor name=".ctor(System.Collections.Generic.IEnumerable`1[T])" attrib="6278">
+                <parameters>
+                  <parameter name="collection" position="0" attrib="0" type="System.Collections.Generic.IEnumerable`1[T]" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Count" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_Count()" attrib="2534" virtual="true" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="First" attrib="0" ptype="System.Collections.Generic.LinkedListNode`1[T]" params="">
+                <methods>
+                  <method name="get_First()" attrib="2182" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Last" attrib="0" ptype="System.Collections.Generic.LinkedListNode`1[T]" params="">
+                <methods>
+                  <method name="get_Last()" attrib="2182" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="AddAfter(System.Collections.Generic.LinkedListNode`1[T], System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                  <parameter name="newNode" position="1" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                </parameters>
+              </method>
+              <method name="AddAfter(System.Collections.Generic.LinkedListNode`1[T], T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                <parameters>
+                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                  <parameter name="value" position="1" attrib="0" type="T" />
+                </parameters>
+              </method>
+              <method name="AddBefore(System.Collections.Generic.LinkedListNode`1[T], System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                  <parameter name="newNode" position="1" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                </parameters>
+              </method>
+              <method name="AddBefore(System.Collections.Generic.LinkedListNode`1[T], T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                <parameters>
+                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                  <parameter name="value" position="1" attrib="0" type="T" />
+                </parameters>
+              </method>
+              <method name="AddFirst(System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                </parameters>
+              </method>
+              <method name="AddFirst(T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="T" />
+                </parameters>
+              </method>
+              <method name="AddLast(System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                </parameters>
+              </method>
+              <method name="AddLast(T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="T" />
+                </parameters>
+              </method>
+              <method name="Clear()" attrib="486" virtual="true" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="Contains(T)" attrib="486" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="T" />
+                </parameters>
+              </method>
+              <method name="CopyTo(T[], System.Int32)" attrib="486" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="array" position="0" attrib="0" type="T[]" />
+                  <parameter name="index" position="1" attrib="0" type="System.Int32" />
+                </parameters>
+              </method>
+              <method name="Find(T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="T" />
+                </parameters>
+              </method>
+              <method name="FindLast(T)" attrib="134" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="T" />
+                </parameters>
+              </method>
+              <method name="GetEnumerator()" attrib="134" returntype="System.Collections.Generic.LinkedList`1+Enumerator[T]">
+                <parameters />
+              </method>
+              <method name="Remove(System.Collections.Generic.LinkedListNode`1[T])" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="node" position="0" attrib="0" type="System.Collections.Generic.LinkedListNode`1[T]" />
+                </parameters>
+              </method>
+              <method name="Remove(T)" attrib="486" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="T" />
+                </parameters>
+              </method>
+              <method name="RemoveFirst()" attrib="134" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="RemoveLast()" attrib="134" returntype="System.Void">
+                <parameters />
+              </method>
+            </methods>
+            <classes>
+              <class name="Enumerator" type="struct" base="System.ValueType" sealed="true" charset="Ansi" layout="Sequential">
+                <interfaces>
+                  <interface name="System.Collections.Generic.IEnumerator`1[T]" />
+                  <interface name="System.IDisposable" />
+                  <interface name="System.Collections.IEnumerator" />
+                </interfaces>
+                <properties>
+                  <property name="Current" attrib="0" ptype="T" params="">
+                    <methods>
+                      <method name="get_Current()" attrib="2534" virtual="true" returntype="T">
+                        <parameters />
+                      </method>
+                    </methods>
+                  </property>
+                </properties>
+                <methods>
+                  <method name="Dispose()" attrib="486" virtual="true" returntype="System.Void">
+                    <parameters />
+                  </method>
+                  <method name="MoveNext()" attrib="486" virtual="true" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                </methods>
+              </class>
+            </classes>
+          </class>
+          <class name="LinkedListNode`1" type="class" base="System.Object" sealed="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(T)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="T" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="List" attrib="0" ptype="System.Collections.Generic.LinkedList`1[T]" params="">
+                <methods>
+                  <method name="get_List()" attrib="2182" returntype="System.Collections.Generic.LinkedList`1[T]">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Next" attrib="0" ptype="System.Collections.Generic.LinkedListNode`1[T]" params="">
+                <methods>
+                  <method name="get_Next()" attrib="2182" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Previous" attrib="0" ptype="System.Collections.Generic.LinkedListNode`1[T]" params="">
+                <methods>
+                  <method name="get_Previous()" attrib="2182" returntype="System.Collections.Generic.LinkedListNode`1[T]">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Value" attrib="0" ptype="T" params="">
+                <methods>
+                  <method name="get_Value()" attrib="2182" returntype="T">
+                    <parameters />
+                  </method>
+                  <method name="set_Value(T)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="T" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
           <class name="Queue`1" type="class" base="System.Object" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
@@ -907,6 +1169,195 @@
               </method>
             </methods>
           </class>
+          <class name="AsyncCompletedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.ComponentModel.AsyncCompletedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.AsyncCompletedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.ComponentModel.AsyncCompletedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.AsyncCompletedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="AsyncOperation" type="class" base="System.Object" sealed="true" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="SynchronizationContext" attrib="0" ptype="System.Threading.SynchronizationContext" params="">
+                <methods>
+                  <method name="get_SynchronizationContext()" attrib="2182" returntype="System.Threading.SynchronizationContext">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="UserSuppliedState" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_UserSuppliedState()" attrib="2182" returntype="System.Object">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="Finalize()" attrib="196" virtual="true" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="OperationCompleted()" attrib="134" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="Post(System.Threading.SendOrPostCallback, System.Object)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="d" position="0" attrib="0" type="System.Threading.SendOrPostCallback" />
+                  <parameter name="arg" position="1" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="PostOperationCompleted(System.Threading.SendOrPostCallback, System.Object)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="d" position="0" attrib="0" type="System.Threading.SendOrPostCallback" />
+                  <parameter name="arg" position="1" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="AsyncOperationManager" type="class" base="System.Object" sealed="true" abstract="true" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="SynchronizationContext" attrib="0" ptype="System.Threading.SynchronizationContext" params="">
+                <methods>
+                  <method name="get_SynchronizationContext()" attrib="2198" static="true" returntype="System.Threading.SynchronizationContext">
+                    <attributes>
+                      <attribute name="System.Security.SecuritySafeCriticalAttribute" />
+                    </attributes>
+                    <parameters />
+                  </method>
+                  <method name="set_SynchronizationContext(System.Threading.SynchronizationContext)" attrib="2198" static="true" returntype="System.Void">
+                    <attributes>
+                      <attribute name="System.Security.SecurityCriticalAttribute" />
+                    </attributes>
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Threading.SynchronizationContext" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="CreateOperation(System.Object)" attrib="150" static="true" returntype="System.ComponentModel.AsyncOperation">
+                <parameters>
+                  <parameter name="userSuppliedState" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="BackgroundWorker" type="class" base="System.Object" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="CancellationPending" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_CancellationPending()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="IsBusy" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsBusy()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="WorkerReportsProgress" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_WorkerReportsProgress()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_WorkerReportsProgress(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="WorkerSupportsCancellation" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_WorkerSupportsCancellation()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_WorkerSupportsCancellation(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <events>
+              <event name="DoWork" attrib="0" eventtype="System.ComponentModel.DoWorkEventHandler" />
+              <event name="ProgressChanged" attrib="0" eventtype="System.ComponentModel.ProgressChangedEventHandler" />
+              <event name="RunWorkerCompleted" attrib="0" eventtype="System.ComponentModel.RunWorkerCompletedEventHandler" />
+            </events>
+            <methods>
+              <method name="CancelAsync()" attrib="134" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="OnDoWork(System.ComponentModel.DoWorkEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.ComponentModel.DoWorkEventArgs" />
+                </parameters>
+              </method>
+              <method name="OnProgressChanged(System.ComponentModel.ProgressChangedEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.ComponentModel.ProgressChangedEventArgs" />
+                </parameters>
+              </method>
+              <method name="OnRunWorkerCompleted(System.ComponentModel.RunWorkerCompletedEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.ComponentModel.RunWorkerCompletedEventArgs" />
+                </parameters>
+              </method>
+              <method name="ReportProgress(System.Int32, System.Object)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="percentProgress" position="0" attrib="0" type="System.Int32" />
+                  <parameter name="userState" position="1" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="ReportProgress(System.Int32)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="percentProgress" position="0" attrib="0" type="System.Int32" />
+                </parameters>
+              </method>
+              <method name="RunWorkerAsync(System.Object)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="argument" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="RunWorkerAsync()" attrib="134" returntype="System.Void">
+                <parameters />
+              </method>
+            </methods>
+          </class>
           <class name="CategoryAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.AttributeUsageAttribute" />
@@ -1044,6 +1495,93 @@
               </method>
             </methods>
           </class>
+          <class name="DefaultValueAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.Double)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Double" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Single)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Single" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Boolean)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Object)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Int64)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Int64" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Char)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Char" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Type, System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="type" position="0" attrib="0" type="System.Type" />
+                  <parameter name="value" position="1" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Byte)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Byte" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Int32)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Int32" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.Int16)" attrib="6278">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Int16" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Value" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_Value()" attrib="2502" virtual="true" returntype="System.Object">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="Equals(System.Object)" attrib="198" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="obj" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="GetHashCode()" attrib="198" virtual="true" returntype="System.Int32">
+                <parameters />
+              </method>
+              <method name="SetValue(System.Object)" attrib="132" returntype="System.Void">
+                <parameters>
+                  <parameter name="value" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
           <class name="DescriptionAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.AttributeUsageAttribute" />
@@ -1093,6 +1631,79 @@
               </method>
             </methods>
           </class>
+          <class name="DoWorkEventArgs" type="class" base="System.EventArgs" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object)" attrib="6278">
+                <parameters>
+                  <parameter name="argument" position="0" attrib="0" type="System.Object" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Argument" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_Argument()" attrib="2182" returntype="System.Object">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Cancel" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_Cancel()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_Cancel(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Result" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_Result()" attrib="2182" returntype="System.Object">
+                    <parameters />
+                  </method>
+                  <method name="set_Result(System.Object)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Object" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="DoWorkEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.ComponentModel.DoWorkEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.DoWorkEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.ComponentModel.DoWorkEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.DoWorkEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
           <class name="EditorBrowsableAttribute" type="class" base="System.Attribute" sealed="true" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.AttributeUsageAttribute" />
@@ -1139,6 +1750,63 @@
               <event name="PropertyChanged" attrib="0" eventtype="System.ComponentModel.PropertyChangedEventHandler" />
             </events>
           </class>
+          <class name="ProgressChangedEventArgs" type="class" base="System.EventArgs" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Int32, System.Object)" attrib="6278">
+                <parameters>
+                  <parameter name="progressPercentage" position="0" attrib="0" type="System.Int32" />
+                  <parameter name="userState" position="1" attrib="0" type="System.Object" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="ProgressPercentage" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_ProgressPercentage()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="UserState" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_UserState()" attrib="2182" returntype="System.Object">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="ProgressChangedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.ComponentModel.ProgressChangedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.ProgressChangedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.ComponentModel.ProgressChangedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.ProgressChangedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
           <class name="PropertyChangedEventArgs" type="class" base="System.EventArgs" charset="Ansi" layout="Auto">
             <constructors>
               <constructor name=".ctor(System.String)" attrib="6278">
@@ -1184,6 +1852,57 @@
                 <parameters>
                   <parameter name="sender" position="0" attrib="0" type="System.Object" />
                   <parameter name="e" position="1" attrib="0" type="System.ComponentModel.PropertyChangedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="RunWorkerCompletedEventArgs" type="class" base="System.ComponentModel.AsyncCompletedEventArgs" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.Exception, System.Boolean)" attrib="6278">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.Object" />
+                  <parameter name="error" position="1" attrib="0" type="System.Exception" />
+                  <parameter name="cancelled" position="2" attrib="0" type="System.Boolean" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Result" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_Result()" attrib="2182" returntype="System.Object">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="RunWorkerCompletedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.ComponentModel.RunWorkerCompletedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.RunWorkerCompletedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.ComponentModel.RunWorkerCompletedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.ComponentModel.RunWorkerCompletedEventArgs" />
                 </parameters>
               </method>
             </methods>
@@ -1245,7 +1964,7 @@
               </constructor>
               <constructor name=".ctor(System.String)" attrib="6278">
                 <parameters>
-                  <parameter name="typeNameVal" position="0" attrib="0" type="System.String" />
+                  <parameter name="typeName" position="0" attrib="0" type="System.String" />
                 </parameters>
               </constructor>
               <constructor name=".ctor()" attrib="6278">

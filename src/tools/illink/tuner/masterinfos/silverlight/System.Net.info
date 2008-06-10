@@ -2,27 +2,118 @@
 <assemblies>
   <assembly name="System.Net" version="2.0.5.0">
     <attributes>
-      <attribute name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
-      <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
       <attribute name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute">
         <properties>
           <property name="WrapNonExceptionThrows" value="True" />
         </properties>
       </attribute>
-      <attribute name="System.Reflection.AssemblyCompanyAttribute" />
-      <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
+      <attribute name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
+      <attribute name="System.Runtime.CompilerServices.ExtensionAttribute" />
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
       <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
       <attribute name="System.CLSCompliantAttribute" />
       <attribute name="System.Reflection.AssemblyTitleAttribute" />
       <attribute name="System.Reflection.AssemblyDescriptionAttribute" />
       <attribute name="System.Reflection.AssemblyDefaultAliasAttribute" />
-      <attribute name="System.Diagnostics.DebuggableAttribute" />
+      <attribute name="System.Reflection.AssemblyCompanyAttribute" />
       <attribute name="System.Reflection.AssemblyProductAttribute" />
       <attribute name="System.Reflection.AssemblyCopyrightAttribute" />
       <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
       <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
       <attribute name="System.Resources.SatelliteContractVersionAttribute" />
       <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
+      <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
+      <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Diagnostics.DebuggableAttribute" />
     </attributes>
     <namespaces>
       <namespace name="System.Net">
@@ -77,6 +168,111 @@
               </method>
               <method name="ToString()" attrib="198" virtual="true" returntype="System.String">
                 <parameters />
+              </method>
+            </methods>
+          </class>
+          <class name="DownloadProgressChangedEventArgs" type="class" base="System.ComponentModel.ProgressChangedEventArgs" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="Address" attrib="0" ptype="System.Uri" params="">
+                <methods>
+                  <method name="get_Address()" attrib="2182" returntype="System.Uri">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="BytesReceived" attrib="0" ptype="System.Int64" params="">
+                <methods>
+                  <method name="get_BytesReceived()" attrib="2182" returntype="System.Int64">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="TotalBytesToReceive" attrib="0" ptype="System.Int64" params="">
+                <methods>
+                  <method name="get_TotalBytesToReceive()" attrib="2182" returntype="System.Int64">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="DownloadProgressChangedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.Net.DownloadProgressChangedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.DownloadProgressChangedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.Net.DownloadProgressChangedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.DownloadProgressChangedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="DownloadStringCompletedEventArgs" type="class" base="System.ComponentModel.AsyncCompletedEventArgs" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="Address" attrib="0" ptype="System.Uri" params="">
+                <methods>
+                  <method name="get_Address()" attrib="2182" returntype="System.Uri">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Result" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Result()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="DownloadStringCompletedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.Net.DownloadStringCompletedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.DownloadStringCompletedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.Net.DownloadStringCompletedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.DownloadStringCompletedEventArgs" />
+                </parameters>
               </method>
             </methods>
           </class>
@@ -164,6 +360,18 @@
               </constructor>
             </constructors>
             <properties>
+              <property name="AllowReadStreamBuffering" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_AllowReadStreamBuffering()" attrib="2502" virtual="true" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_AllowReadStreamBuffering(System.Boolean)" attrib="2502" virtual="true" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
               <property name="ContentType" attrib="0" ptype="System.String" params="">
                 <methods>
                   <method name="get_ContentType()" attrib="2246" virtual="true" returntype="System.String">
@@ -507,6 +715,104 @@
               </method>
             </methods>
           </class>
+          <class name="OpenReadCompletedEventArgs" type="class" base="System.ComponentModel.AsyncCompletedEventArgs" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="Address" attrib="0" ptype="System.Uri" params="">
+                <methods>
+                  <method name="get_Address()" attrib="2182" returntype="System.Uri">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Result" attrib="0" ptype="System.IO.Stream" params="">
+                <methods>
+                  <method name="get_Result()" attrib="2182" returntype="System.IO.Stream">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="OpenReadCompletedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.Net.OpenReadCompletedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.OpenReadCompletedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.Net.OpenReadCompletedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.OpenReadCompletedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="OpenWriteCompletedEventArgs" type="class" base="System.ComponentModel.AsyncCompletedEventArgs" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="Address" attrib="0" ptype="System.Uri" params="">
+                <methods>
+                  <method name="get_Address()" attrib="2182" returntype="System.Uri">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Result" attrib="0" ptype="System.IO.Stream" params="">
+                <methods>
+                  <method name="get_Result()" attrib="2182" returntype="System.IO.Stream">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="OpenWriteCompletedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.Net.OpenWriteCompletedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.OpenWriteCompletedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.Net.OpenWriteCompletedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.OpenWriteCompletedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
           <class name="ProtocolViolationException" type="class" base="System.InvalidOperationException" charset="Ansi" layout="Auto">
             <constructors>
               <constructor name=".ctor(System.String)" attrib="6278">
@@ -581,6 +887,307 @@
               </method>
             </methods>
           </class>
+          <class name="UploadProgressChangedEventArgs" type="class" base="System.ComponentModel.ProgressChangedEventArgs" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="Address" attrib="0" ptype="System.Uri" params="">
+                <methods>
+                  <method name="get_Address()" attrib="2182" returntype="System.Uri">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="BytesReceived" attrib="0" ptype="System.Int64" params="">
+                <methods>
+                  <method name="get_BytesReceived()" attrib="2182" returntype="System.Int64">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="BytesSent" attrib="0" ptype="System.Int64" params="">
+                <methods>
+                  <method name="get_BytesSent()" attrib="2182" returntype="System.Int64">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="TotalBytesToReceive" attrib="0" ptype="System.Int64" params="">
+                <methods>
+                  <method name="get_TotalBytesToReceive()" attrib="2182" returntype="System.Int64">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="TotalBytesToSend" attrib="0" ptype="System.Int64" params="">
+                <methods>
+                  <method name="get_TotalBytesToSend()" attrib="2182" returntype="System.Int64">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="UploadProgressChangedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.Net.UploadProgressChangedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.UploadProgressChangedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.Net.UploadProgressChangedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.UploadProgressChangedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="UploadStringCompletedEventArgs" type="class" base="System.ComponentModel.AsyncCompletedEventArgs" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="Address" attrib="0" ptype="System.Uri" params="">
+                <methods>
+                  <method name="get_Address()" attrib="2182" returntype="System.Uri">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Result" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Result()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="UploadStringCompletedEventHandler" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Object, System.Net.UploadStringCompletedEventArgs, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.UploadStringCompletedEventArgs" />
+                  <parameter name="callback" position="2" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Object, System.Net.UploadStringCompletedEventArgs)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="sender" position="0" attrib="0" type="System.Object" />
+                  <parameter name="e" position="1" attrib="0" type="System.Net.UploadStringCompletedEventArgs" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="WebClient" type="class" base="System.Object" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor()" attrib="6278">
+                <attributes>
+                  <attribute name="System.Security.SecuritySafeCriticalAttribute" />
+                </attributes>
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="AllowReadStreamBuffering" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_AllowReadStreamBuffering()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_AllowReadStreamBuffering(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="BaseAddress" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_BaseAddress()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_BaseAddress(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Encoding" attrib="0" ptype="System.Text.Encoding" params="">
+                <methods>
+                  <method name="get_Encoding()" attrib="2182" returntype="System.Text.Encoding">
+                    <parameters />
+                  </method>
+                  <method name="set_Encoding(System.Text.Encoding)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Text.Encoding" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Headers" attrib="0" ptype="System.Net.WebHeaderCollection" params="">
+                <methods>
+                  <method name="get_Headers()" attrib="2182" returntype="System.Net.WebHeaderCollection">
+                    <parameters />
+                  </method>
+                  <method name="set_Headers(System.Net.WebHeaderCollection)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Net.WebHeaderCollection" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="IsBusy" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsBusy()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <events>
+              <event name="DownloadProgressChanged" attrib="0" eventtype="System.Net.DownloadProgressChangedEventHandler" />
+              <event name="DownloadStringCompleted" attrib="0" eventtype="System.Net.DownloadStringCompletedEventHandler" />
+              <event name="OpenReadCompleted" attrib="0" eventtype="System.Net.OpenReadCompletedEventHandler" />
+              <event name="OpenWriteCompleted" attrib="0" eventtype="System.Net.OpenWriteCompletedEventHandler" />
+              <event name="UploadProgressChanged" attrib="0" eventtype="System.Net.UploadProgressChangedEventHandler" />
+              <event name="UploadStringCompleted" attrib="0" eventtype="System.Net.UploadStringCompletedEventHandler" />
+            </events>
+            <methods>
+              <method name="CancelAsync()" attrib="134" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="DownloadStringAsync(System.Uri, System.Object)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="userToken" position="1" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="DownloadStringAsync(System.Uri)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                </parameters>
+              </method>
+              <method name="GetWebRequest(System.Uri)" attrib="452" virtual="true" returntype="System.Net.WebRequest">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                </parameters>
+              </method>
+              <method name="GetWebResponse(System.Net.WebRequest, System.IAsyncResult)" attrib="452" virtual="true" returntype="System.Net.WebResponse">
+                <parameters>
+                  <parameter name="request" position="0" attrib="0" type="System.Net.WebRequest" />
+                  <parameter name="result" position="1" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="OnDownloadProgressChanged(System.Net.DownloadProgressChangedEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.Net.DownloadProgressChangedEventArgs" />
+                </parameters>
+              </method>
+              <method name="OnDownloadStringCompleted(System.Net.DownloadStringCompletedEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.Net.DownloadStringCompletedEventArgs" />
+                </parameters>
+              </method>
+              <method name="OnOpenReadCompleted(System.Net.OpenReadCompletedEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.Net.OpenReadCompletedEventArgs" />
+                </parameters>
+              </method>
+              <method name="OnOpenWriteCompleted(System.Net.OpenWriteCompletedEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.Net.OpenWriteCompletedEventArgs" />
+                </parameters>
+              </method>
+              <method name="OnUploadProgressChanged(System.Net.UploadProgressChangedEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.Net.UploadProgressChangedEventArgs" />
+                </parameters>
+              </method>
+              <method name="OnUploadStringCompleted(System.Net.UploadStringCompletedEventArgs)" attrib="452" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="e" position="0" attrib="0" type="System.Net.UploadStringCompletedEventArgs" />
+                </parameters>
+              </method>
+              <method name="OpenReadAsync(System.Uri)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                </parameters>
+              </method>
+              <method name="OpenReadAsync(System.Uri, System.Object)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="userToken" position="1" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="OpenWriteAsync(System.Uri, System.String, System.Object)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="method" position="1" attrib="0" type="System.String" />
+                  <parameter name="userToken" position="2" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="OpenWriteAsync(System.Uri)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                </parameters>
+              </method>
+              <method name="OpenWriteAsync(System.Uri, System.String)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="method" position="1" attrib="0" type="System.String" />
+                </parameters>
+              </method>
+              <method name="UploadStringAsync(System.Uri, System.String)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="data" position="1" attrib="0" type="System.String" />
+                </parameters>
+              </method>
+              <method name="UploadStringAsync(System.Uri, System.String, System.String)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="method" position="1" attrib="0" type="System.String" />
+                  <parameter name="data" position="2" attrib="0" type="System.String" />
+                </parameters>
+              </method>
+              <method name="UploadStringAsync(System.Uri, System.String, System.String, System.Object)" attrib="134" returntype="System.Void">
+                <parameters>
+                  <parameter name="address" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="method" position="1" attrib="0" type="System.String" />
+                  <parameter name="data" position="2" attrib="0" type="System.String" />
+                  <parameter name="userToken" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
           <class name="WebException" type="class" base="System.InvalidOperationException" charset="Ansi" layout="Auto">
             <constructors>
               <constructor name=".ctor(System.String, System.Net.WebExceptionStatus)" attrib="6278">
@@ -589,12 +1196,12 @@
                   <parameter name="status" position="1" attrib="0" type="System.Net.WebExceptionStatus" />
                 </parameters>
               </constructor>
-              <constructor name=".ctor(System.String, System.Exception, System.Net.WebExceptionStatus, System.Net.HttpWebResponse)" attrib="6278">
+              <constructor name=".ctor(System.String, System.Exception, System.Net.WebExceptionStatus, System.Net.WebResponse)" attrib="6278">
                 <parameters>
                   <parameter name="message" position="0" attrib="0" type="System.String" />
                   <parameter name="innerException" position="1" attrib="0" type="System.Exception" />
                   <parameter name="status" position="2" attrib="0" type="System.Net.WebExceptionStatus" />
-                  <parameter name="response" position="3" attrib="0" type="System.Net.HttpWebResponse" />
+                  <parameter name="response" position="3" attrib="0" type="System.Net.WebResponse" />
                 </parameters>
               </constructor>
               <constructor name=".ctor(System.String, System.Exception)" attrib="6278">
@@ -613,9 +1220,9 @@
               </constructor>
             </constructors>
             <properties>
-              <property name="Response" attrib="0" ptype="System.Net.HttpWebResponse" params="">
+              <property name="Response" attrib="0" ptype="System.Net.WebResponse" params="">
                 <methods>
-                  <method name="get_Response()" attrib="2182" returntype="System.Net.HttpWebResponse">
+                  <method name="get_Response()" attrib="2182" returntype="System.Net.WebResponse">
                     <parameters />
                   </method>
                 </methods>
@@ -632,6 +1239,7 @@
           <class name="WebExceptionStatus" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
             <fields>
               <field name="ConnectFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="2" />
+              <field name="MessageLengthLimitExceeded" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="17" />
               <field name="Pending" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="13" />
               <field name="RequestCanceled" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="6" />
               <field name="SendFailure" attrib="32854" fieldtype="System.Net.WebExceptionStatus" value="4" />
@@ -842,6 +1450,65 @@
               <field name="Unknown" attrib="32854" fieldtype="System.Net.Sockets.AddressFamily" value="-1" />
               <field name="Unspecified" attrib="32854" fieldtype="System.Net.Sockets.AddressFamily" value="0" />
             </fields>
+          </class>
+          <class name="CrossDomainSocketPolicyManager" type="class" base="System.Net.Sockets.ISocketPolicyManager" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.Security.SecurityCriticalAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.Uri)" attrib="6278">
+                <parameters>
+                  <parameter name="applicationUri" position="0" attrib="0" type="System.Uri" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginPolicyCheck(System.Net.Sockets.ProtocolType, System.Net.IPEndPoint, System.Net.Sockets.SocketPolicyCheckCallback, System.Object)" attrib="198" virtual="true" returntype="System.Net.Sockets.SocketPolicyAsyncResult">
+                <parameters>
+                  <parameter name="protocol" position="0" attrib="0" type="System.Net.Sockets.ProtocolType" />
+                  <parameter name="endPoint" position="1" attrib="0" type="System.Net.IPEndPoint" />
+                  <parameter name="callback" position="2" attrib="0" type="System.Net.Sockets.SocketPolicyCheckCallback" />
+                  <parameter name="userToken" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="DoPolicyCheck(System.Net.Sockets.SocketPolicyAsyncResult)" attrib="150" static="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.Net.Sockets.SocketPolicyAsyncResult" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="ISocketPolicyManager" type="class" base="System.Object" abstract="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.Security.SecurityCriticalAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor()" attrib="6276">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Instance" attrib="0" ptype="System.Net.Sockets.ISocketPolicyManager" params="">
+                <methods>
+                  <method name="get_Instance()" attrib="2198" static="true" returntype="System.Net.Sockets.ISocketPolicyManager">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="BeginPolicyCheck(System.Net.Sockets.ProtocolType, System.Net.IPEndPoint, System.Net.Sockets.SocketPolicyCheckCallback, System.Object)" attrib="1478" abstract="true" virtual="true" returntype="System.Net.Sockets.SocketPolicyAsyncResult">
+                <parameters>
+                  <parameter name="protocol" position="0" attrib="0" type="System.Net.Sockets.ProtocolType" />
+                  <parameter name="endPoint" position="1" attrib="0" type="System.Net.IPEndPoint" />
+                  <parameter name="callback" position="2" attrib="0" type="System.Net.Sockets.SocketPolicyCheckCallback" />
+                  <parameter name="userToken" position="3" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+            </methods>
           </class>
           <class name="ProtocolType" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
             <fields>
@@ -1243,51 +1910,147 @@
               </property>
             </properties>
           </class>
-          <class name="SocketPolicyException" type="class" base="System.Exception" charset="Ansi" layout="Auto">
+          <class name="SocketPolicyAsyncResult" type="class" base="System.Object" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.Security.SecurityCriticalAttribute" />
+            </attributes>
+            <fields>
+              <field name="m_Callback" attrib="4" fieldtype="System.Net.Sockets.SocketPolicyCheckCallback" />
+              <field name="m_UserToken" attrib="4" fieldtype="System.Object" />
+            </fields>
             <constructors>
-              <constructor name=".ctor()" attrib="6278">
-                <parameters />
+              <constructor name=".ctor(System.Net.Sockets.ProtocolType, System.Net.IPEndPoint, System.Net.Sockets.SocketPolicyCheckCallback, System.Object)" attrib="6278">
+                <parameters>
+                  <parameter name="protocol" position="0" attrib="0" type="System.Net.Sockets.ProtocolType" />
+                  <parameter name="endpoint" position="1" attrib="0" type="System.Net.IPEndPoint" />
+                  <parameter name="callback" position="2" attrib="0" type="System.Net.Sockets.SocketPolicyCheckCallback" />
+                  <parameter name="userToken" position="3" attrib="0" type="System.Object" />
+                </parameters>
               </constructor>
             </constructors>
+            <properties>
+              <property name="Aborted" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_Aborted()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_Aborted(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Allowed" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_Allowed()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_Allowed(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="CompletedSynchronously" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_CompletedSynchronously()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_CompletedSynchronously(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="EndPoint" attrib="0" ptype="System.Net.IPEndPoint" params="">
+                <methods>
+                  <method name="get_EndPoint()" attrib="2182" returntype="System.Net.IPEndPoint">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Protocol" attrib="0" ptype="System.Net.Sockets.ProtocolType" params="">
+                <methods>
+                  <method name="get_Protocol()" attrib="2182" returntype="System.Net.Sockets.ProtocolType">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="UserToken" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_UserToken()" attrib="2182" returntype="System.Object">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="Abort()" attrib="454" virtual="true" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="Complete()" attrib="134" returntype="System.Void">
+                <parameters />
+              </method>
+            </methods>
+          </class>
+          <class name="SocketPolicyCheckCallback" type="delegate" base="System.MulticastDelegate" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor(System.Object, System.IntPtr)" attrib="6278">
+                <parameters>
+                  <parameter name="object" position="0" attrib="0" type="System.Object" />
+                  <parameter name="method" position="1" attrib="0" type="System.IntPtr" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="BeginInvoke(System.Net.Sockets.SocketPolicyAsyncResult, System.AsyncCallback, System.Object)" attrib="454" virtual="true" returntype="System.IAsyncResult">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.Net.Sockets.SocketPolicyAsyncResult" />
+                  <parameter name="callback" position="1" attrib="0" type="System.AsyncCallback" />
+                  <parameter name="object" position="2" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="EndInvoke(System.IAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.IAsyncResult" />
+                </parameters>
+              </method>
+              <method name="Invoke(System.Net.Sockets.SocketPolicyAsyncResult)" attrib="454" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="result" position="0" attrib="0" type="System.Net.Sockets.SocketPolicyAsyncResult" />
+                </parameters>
+              </method>
+            </methods>
           </class>
           <class name="SocketSecurityState" type="class" base="System.Security.SecurityState" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.Security.SecurityCriticalAttribute" />
             </attributes>
+            <fields>
+              <field name="m_CreateManager" attrib="6" fieldtype="System.Boolean" />
+              <field name="m_OriginHost" attrib="6" fieldtype="System.Uri" />
+              <field name="m_SocketPolicyManager" attrib="6" fieldtype="System.Net.Sockets.ISocketPolicyManager" />
+            </fields>
             <constructors>
-              <constructor name=".ctor()" attrib="6278">
+              <constructor name=".ctor()" attrib="6276">
                 <parameters />
               </constructor>
             </constructors>
             <properties>
               <property name="OriginHost" attrib="0" ptype="System.String" params="">
                 <methods>
-                  <method name="get_OriginHost()" attrib="2182" returntype="System.String">
-                    <parameters />
-                  </method>
-                  <method name="set_OriginHost(System.String)" attrib="2182" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.String" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
-              <property name="OriginIP" attrib="0" ptype="System.Net.IPAddress" params="">
-                <methods>
-                  <method name="get_OriginIP()" attrib="2182" returntype="System.Net.IPAddress">
+                  <method name="get_OriginHost()" attrib="2198" static="true" returntype="System.String">
                     <parameters />
                   </method>
                 </methods>
               </property>
-              <property name="UIThreadId" attrib="0" ptype="System.Int32" params="">
+              <property name="SocketPolicyManager" attrib="0" ptype="System.Net.Sockets.ISocketPolicyManager" params="">
                 <methods>
-                  <method name="get_UIThreadId()" attrib="2182" returntype="System.Int32">
+                  <method name="get_SocketPolicyManager()" attrib="2198" static="true" returntype="System.Net.Sockets.ISocketPolicyManager">
                     <parameters />
-                  </method>
-                  <method name="set_UIThreadId(System.Int32)" attrib="2182" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Int32" />
-                    </parameters>
                   </method>
                 </methods>
               </property>
