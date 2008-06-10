@@ -10204,11 +10204,16 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		mono_metadata_free_type (type);
 	} else if (strcmp (obj->vtable->klass->name, "FieldOnTypeBuilderInst") == 0) {
 		MonoReflectionFieldOnTypeBuilderInst *f = (MonoReflectionFieldOnTypeBuilderInst*)obj;
-		MonoClass *inflated = mono_class_from_mono_type (f->inst->type.type);
+		MonoClass *inflated;
+		MonoType *type;
+
+		type = mono_class_inflate_generic_type (f->inst->type.type, context);
+		inflated = mono_class_from_mono_type (type);
 
 		g_assert (f->fb->handle);
 		result = mono_class_get_field_from_name (inflated, f->fb->handle->name);
 		g_assert (result);
+		mono_metadata_free_type (type);
 		*handle_class = mono_defaults.fieldhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "ConstructorOnTypeBuilderInst") == 0) {
 		MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)obj;
