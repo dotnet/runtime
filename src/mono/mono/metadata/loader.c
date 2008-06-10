@@ -670,7 +670,6 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 
 	if (table == MONO_TABLE_METHODSPEC) {
 		g_assert (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) &&
-			  !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 			  mono_method_signature (method));
 		g_assert (method->is_inflated);
 
