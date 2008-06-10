@@ -1,9 +1,3 @@
-2008-06-10  Jb Evain  <jbevain@novell.com>
-
-	* Mono.Linker.Steps/MarkStep.cs: when marking a value type,
-	only force the marking of its instance field, instead of
-	all its fields.
-
 2008-03-28  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/XApiReader.cs: deal better with complex names.
