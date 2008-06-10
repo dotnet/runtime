@@ -307,8 +307,10 @@ if IA64
 TEST_CS_SRC+=async-exc-compilation.cs
 endif
 
+if X86
+
 if PLATFORM_WIN32
-PLATFORM_DISABLED_TESTS+=async-exc-compilation.exe
+PLATFORM_DISABLED_TESTS=async-exc-compilation.exe
 endif
 
 endif
