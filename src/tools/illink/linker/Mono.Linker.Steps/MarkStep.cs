@@ -295,7 +295,7 @@ namespace Mono.Linker.Steps {
 			MarkGenericParameterProvider (type);
 
 			if (type.IsValueType)
-				MarkFields (type);
+				MarkInstanceFields (type);
 
 			foreach (TypeReference iface in type.Interfaces)
 				MarkType (iface);
@@ -434,7 +434,19 @@ namespace Mono.Linker.Steps {
 
 		void MarkFields (TypeDefinition type)
 		{
+			MarkFieldCollection (type.Fields);
+		}
+
+		void MarkInstanceFields (TypeDefinition type)
+		{
 			foreach (FieldDefinition field in type.Fields)
+				if (!field.IsStatic)
+					MarkField (field);
+		}
+
+		void MarkFieldCollection (IEnumerable fields)
+		{
+			foreach (FieldDefinition field in fields)
 				MarkField (field);
 		}
 
