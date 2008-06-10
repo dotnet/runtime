@@ -267,7 +267,8 @@ mono_debug_close_method (MonoCompile *cfg)
 	jit->epilogue_begin = cfg->epilog_begin;
 	jit->code_size = cfg->code_len;
 
-	record_line_number (info, jit->epilogue_begin, header->code_size);
+	if (jit->epilogue_begin)
+		   record_line_number (info, jit->epilogue_begin, header->code_size);
 
 	jit->num_params = sig->param_count;
 	jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
