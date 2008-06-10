@@ -2386,10 +2386,11 @@ mono_class_setup_vtable (MonoClass *class)
 	if (class->vtable)
 		return;
 
+	/* This sets method->slot for all methods if this is an interface */
+	mono_class_setup_methods (class);
+
 	if (MONO_CLASS_IS_INTERFACE (class))
 		return;
-
-	mono_class_setup_methods (class);
 
 	mono_loader_lock ();
 
