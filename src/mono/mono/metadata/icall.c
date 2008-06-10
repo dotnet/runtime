@@ -2870,7 +2870,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 
 		if (inst) {
 			count = inst->type_argc;
-			res = mono_array_new (domain, mono_defaults.monotype_class, count);
+			res = mono_array_new (domain, mono_defaults.systemtype_class, count);
 
 			for (i = 0; i < count; i++)
 				mono_array_setref (res, i, mono_type_get_object (domain, inst->type_argv [i]));
@@ -2880,7 +2880,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 	}
 
 	count = mono_method_signature (method->method)->generic_param_count;
-	res = mono_array_new (domain, mono_defaults.monotype_class, count);
+	res = mono_array_new (domain, mono_defaults.systemtype_class, count);
 
 	for (i = 0; i < count; i++) {
 		MonoGenericContainer *container = mono_method_get_generic_container (method->method);
