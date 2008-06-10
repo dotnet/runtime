@@ -307,10 +307,6 @@ if IA64
 TEST_CS_SRC+=async-exc-compilation.cs
 endif
 
-if X86
-# bug #71274
-PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
-
 if PLATFORM_WIN32
 PLATFORM_DISABLED_TESTS+=async-exc-compilation.exe
 endif
@@ -324,7 +320,6 @@ endif
 
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
-	delegate-delegate-exception.exe	\
 	appdomain-unload.exe		\
 	bug-348522.2.exe	\
 	$(PLATFORM_DISABLED_TESTS)
