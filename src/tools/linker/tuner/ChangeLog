@@ -1,3 +1,11 @@
+2008-06-10  Jb Evain  <jbevain@novell.com>
+
+	* masterinfos/silverlight/System.Net.info
+	* masterinfos/silverlight/mscorlib.info
+	* masterinfos/silverlight/System.Xml.info
+	* masterinfos/silverlight/System.info:
+		Update to SL2B2 API.
+
 2008-04-13  Jb Evain  <jbevain@novell.com>
 
 	* masterinfos/silverlight/*.info: 2.0 api.

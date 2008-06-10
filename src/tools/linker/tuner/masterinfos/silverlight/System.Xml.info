@@ -2,9 +2,10 @@
 <assemblies>
   <assembly name="System.Xml" version="2.0.5.0">
     <attributes>
-      <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
       <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
       <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
+      <attribute name="System.Resources.SatelliteContractVersionAttribute" />
+      <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
       <attribute name="System.Diagnostics.DebuggableAttribute" />
       <attribute name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
       <attribute name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute">
@@ -12,18 +13,29 @@
           <property name="WrapNonExceptionThrows" value="True" />
         </properties>
       </attribute>
-      <attribute name="System.Reflection.AssemblyTitleAttribute" />
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
       <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
       <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
       <attribute name="System.CLSCompliantAttribute" />
-      <attribute name="System.Reflection.AssemblyProductAttribute" />
-      <attribute name="System.Resources.SatelliteContractVersionAttribute" />
+      <attribute name="System.Reflection.AssemblyTitleAttribute" />
+      <attribute name="System.Reflection.AssemblyDescriptionAttribute" />
       <attribute name="System.Reflection.AssemblyDefaultAliasAttribute" />
       <attribute name="System.Reflection.AssemblyCompanyAttribute" />
-      <attribute name="System.Reflection.AssemblyDescriptionAttribute" />
+      <attribute name="System.Reflection.AssemblyProductAttribute" />
       <attribute name="System.Reflection.AssemblyCopyrightAttribute" />
       <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
       <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
@@ -1593,18 +1605,6 @@
                   </method>
                 </methods>
               </property>
-              <property name="ReadOnly" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_ReadOnly()" attrib="2181" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                  <method name="set_ReadOnly(System.Boolean)" attrib="2181" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
               <property name="XmlResolver" attrib="0" ptype="System.Xml.XmlResolver" params="System.Xml.XmlResolver">
                 <methods>
                   <method name="set_XmlResolver(System.Xml.XmlResolver)" attrib="2182" returntype="System.Void">
@@ -1616,40 +1616,10 @@
               </property>
             </properties>
             <methods>
-              <method name="CheckReadOnly(System.String)" attrib="132" returntype="System.Void">
-                <parameters>
-                  <parameter name="propertyName" position="0" attrib="0" type="System.String" />
-                </parameters>
-              </method>
-              <method name="Clone()" attrib="454" virtual="true" returntype="System.Xml.XmlReaderSettings">
+              <method name="Clone()" attrib="134" returntype="System.Xml.XmlReaderSettings">
                 <parameters />
               </method>
-              <method name="CreateReader(System.IO.TextReader, System.String, System.Xml.XmlParserContext)" attrib="453" virtual="true" returntype="System.Xml.XmlReader">
-                <parameters>
-                  <parameter name="input" position="0" attrib="0" type="System.IO.TextReader" />
-                  <parameter name="baseUriString" position="1" attrib="0" type="System.String" />
-                  <parameter name="inputContext" position="2" attrib="0" type="System.Xml.XmlParserContext" />
-                </parameters>
-              </method>
-              <method name="CreateReader(System.Xml.XmlReader)" attrib="453" virtual="true" returntype="System.Xml.XmlReader">
-                <parameters>
-                  <parameter name="reader" position="0" attrib="0" type="System.Xml.XmlReader" />
-                </parameters>
-              </method>
-              <method name="CreateReader(System.String, System.Xml.XmlParserContext)" attrib="453" virtual="true" returntype="System.Xml.XmlReader">
-                <parameters>
-                  <parameter name="inputUri" position="0" attrib="0" type="System.String" />
-                  <parameter name="inputContext" position="1" attrib="0" type="System.Xml.XmlParserContext" />
-                </parameters>
-              </method>
-              <method name="CreateReader(System.IO.Stream, System.String, System.Xml.XmlParserContext)" attrib="453" virtual="true" returntype="System.Xml.XmlReader">
-                <parameters>
-                  <parameter name="input" position="0" attrib="0" type="System.IO.Stream" />
-                  <parameter name="baseUriString" position="1" attrib="0" type="System.String" />
-                  <parameter name="inputContext" position="2" attrib="0" type="System.Xml.XmlParserContext" />
-                </parameters>
-              </method>
-              <method name="Reset()" attrib="454" virtual="true" returntype="System.Void">
+              <method name="Reset()" attrib="134" returntype="System.Void">
                 <parameters />
               </method>
             </methods>
@@ -2189,44 +2159,12 @@
                   </method>
                 </methods>
               </property>
-              <property name="ReadOnly" attrib="0" ptype="System.Boolean" params="">
-                <methods>
-                  <method name="get_ReadOnly()" attrib="2181" returntype="System.Boolean">
-                    <parameters />
-                  </method>
-                  <method name="set_ReadOnly(System.Boolean)" attrib="2181" returntype="System.Void">
-                    <parameters>
-                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
-                    </parameters>
-                  </method>
-                </methods>
-              </property>
             </properties>
             <methods>
-              <method name="CheckReadOnly(System.String)" attrib="132" returntype="System.Void">
-                <parameters>
-                  <parameter name="propertyName" position="0" attrib="0" type="System.String" />
-                </parameters>
-              </method>
-              <method name="Clone()" attrib="454" virtual="true" returntype="System.Xml.XmlWriterSettings">
+              <method name="Clone()" attrib="134" returntype="System.Xml.XmlWriterSettings">
                 <parameters />
               </method>
-              <method name="CreateWriter(System.Xml.XmlWriter)" attrib="453" virtual="true" returntype="System.Xml.XmlWriter">
-                <parameters>
-                  <parameter name="output" position="0" attrib="0" type="System.Xml.XmlWriter" />
-                </parameters>
-              </method>
-              <method name="CreateWriter(System.IO.TextWriter)" attrib="453" virtual="true" returntype="System.Xml.XmlWriter">
-                <parameters>
-                  <parameter name="output" position="0" attrib="0" type="System.IO.TextWriter" />
-                </parameters>
-              </method>
-              <method name="CreateWriter(System.IO.Stream)" attrib="453" virtual="true" returntype="System.Xml.XmlWriter">
-                <parameters>
-                  <parameter name="output" position="0" attrib="0" type="System.IO.Stream" />
-                </parameters>
-              </method>
-              <method name="Reset()" attrib="454" virtual="true" returntype="System.Void">
+              <method name="Reset()" attrib="134" returntype="System.Void">
                 <parameters />
               </method>
             </methods>
@@ -2251,13 +2189,7 @@
       </namespace>
       <namespace name="System.Xml.Schema">
         <classes>
-          <class name="XmlSchema" type="class" base="System.Xml.Schema.XmlSchemaObject" charset="Ansi" layout="Auto">
-            <constructors>
-              <constructor name=".ctor()" attrib="6278">
-                <parameters />
-              </constructor>
-            </constructors>
-          </class>
+          <class name="XmlSchema" type="class" base="System.Xml.Schema.XmlSchemaObject" charset="Ansi" layout="Auto" />
           <class name="XmlSchemaObject" type="class" base="System.Object" abstract="true" charset="Ansi" layout="Auto">
             <constructors>
               <constructor name=".ctor()" attrib="6276">
@@ -2265,6 +2197,7 @@
               </constructor>
             </constructors>
           </class>
+          <class name="XmlSchemaSet" type="class" base="System.Object" charset="Ansi" layout="Auto" />
           <class name="XmlSeverityType" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
             <fields>
               <field name="Error" attrib="32854" fieldtype="System.Xml.Schema.XmlSeverityType" value="0" />
@@ -2350,6 +2283,104 @@
                 </parameters>
               </method>
             </methods>
+          </class>
+          <class name="XmlRootAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="elementName" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="DataType" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_DataType()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_DataType(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="ElementName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_ElementName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_ElementName(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="IsNullable" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsNullable()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_IsNullable(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Namespace" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Namespace()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Namespace(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlSchemaProviderAttribute" type="class" base="System.Attribute" sealed="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="methodName" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="IsAny" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsAny()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_IsAny(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="MethodName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_MethodName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
           </class>
         </classes>
       </namespace>
