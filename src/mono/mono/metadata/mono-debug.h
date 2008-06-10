@@ -161,6 +161,10 @@ MonoDebugMethodJitInfo*
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain);
 
 void
+mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit);
+
+
+void
 mono_debug_add_delegate_trampoline (gpointer code, int size);
 
 /*

@@ -79,15 +79,6 @@ record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
 	g_array_append_val (info->line_numbers, lne);
 }
 
-static void
-mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
-{
-	g_free (jit->line_numbers);
-	g_free (jit->this_var);
-	g_free (jit->params);
-	g_free (jit->locals);
-	g_free (jit);
-}
 
 void
 mono_debug_init_method (MonoCompile *cfg, MonoBasicBlock *start_block, guint32 breakpoint_id)
@@ -664,6 +655,7 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 			print_var_info (&jit->locals [i], i, "", "Local");
 		}
 	}
+	mono_debug_free_method_jit_info (jit);
 }
 
 /*

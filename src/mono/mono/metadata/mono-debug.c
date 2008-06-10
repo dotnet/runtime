@@ -738,6 +738,18 @@ read_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	*rptr = ptr;
 }
 
+void
+mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
+{
+	if (!jit)
+		return;
+	g_free (jit->line_numbers);
+	g_free (jit->this_var);
+	g_free (jit->params);
+	g_free (jit->locals);
+	g_free (jit);
+}
+
 static MonoDebugMethodJitInfo *
 mono_debug_read_method (MonoDebugMethodAddress *address)
 {
@@ -937,15 +949,19 @@ il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint32 native_o
 
 	jit = find_method (method, domain);
 	if (!jit || !jit->line_numbers)
-		return -1;
+		goto cleanup_and_fail;
 
 	for (i = jit->num_line_numbers - 1; i >= 0; i--) {
 		MonoDebugLineNumberEntry lne = jit->line_numbers [i];
 
-		if (lne.native_offset <= native_offset)
+		if (lne.native_offset <= native_offset) {
+			mono_debug_free_method_jit_info (jit);
 			return lne.il_offset;
+		}
 	}
 
+cleanup_and_fail:
+	mono_debug_free_method_jit_info (jit);
 	return -1;
 }
 
