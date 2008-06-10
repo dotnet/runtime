@@ -10130,10 +10130,12 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 
 		if (fb->handle && fb->handle->parent->generic_container) {
 			MonoClass *klass = fb->handle->parent;
-			MonoClass *inflated = mono_class_from_mono_type (mono_class_inflate_generic_type (&klass->byval_arg, context));
+			MonoType *type = mono_class_inflate_generic_type (&klass->byval_arg, context);
+			MonoClass *inflated = mono_class_from_mono_type (type);
 
 			result = mono_class_get_field_from_name (inflated, fb->handle->name);
 			g_assert (result);
+			mono_metadata_free_type (type);
 		}
 		*handle_class = mono_defaults.fieldhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "TypeBuilder") == 0) {
@@ -10191,14 +10193,18 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		*handle_class = mono_defaults.methodhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "GenericTypeParameterBuilder") == 0) {
 		MonoReflectionType *tb = (MonoReflectionType*)obj;
-		result = mono_class_from_mono_type (mono_class_inflate_generic_type (tb->type, context));
+		MonoType *type = mono_class_inflate_generic_type (tb->type, context);
+		result = mono_class_from_mono_type (type);
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
+		mono_metadata_free_type (type);
 	} else if (strcmp (obj->vtable->klass->name, "MonoGenericClass") == 0) {
 		MonoReflectionGenericClass *ref = (MonoReflectionGenericClass*)obj;
-		result = mono_class_from_mono_type (mono_class_inflate_generic_type (ref->type.type, context));
+		MonoType *type = mono_class_inflate_generic_type (ref->type.type, context);
+		result = mono_class_from_mono_type (type);
 		*handle_class = mono_defaults.typehandle_class;
 		g_assert (result);
+		mono_metadata_free_type (type);
 	} else if (strcmp (obj->vtable->klass->name, "FieldOnTypeBuilderInst") == 0) {
 		MonoReflectionFieldOnTypeBuilderInst *f = (MonoReflectionFieldOnTypeBuilderInst*)obj;
 		MonoClass *inflated = mono_class_from_mono_type (f->inst->type.type);
@@ -10209,16 +10215,20 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		*handle_class = mono_defaults.fieldhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "ConstructorOnTypeBuilderInst") == 0) {
 		MonoReflectionCtorOnTypeBuilderInst *c = (MonoReflectionCtorOnTypeBuilderInst*)obj;
-		MonoClass *inflated_klass = mono_class_from_mono_type (mono_class_inflate_generic_type (c->inst->type.type, context));
+		MonoType *type = mono_class_inflate_generic_type (c->inst->type.type, context);
+		MonoClass *inflated_klass = mono_class_from_mono_type (type);
 		g_assert (c->cb->mhandle);
 		result = inflate_mono_method (inflated_klass, c->cb->mhandle, (MonoObject*)c->cb);
 		*handle_class = mono_defaults.methodhandle_class;
+		mono_metadata_free_type (type);
 	} else if (strcmp (obj->vtable->klass->name, "MethodOnTypeBuilderInst") == 0) {
 		MonoReflectionMethodOnTypeBuilderInst *m = (MonoReflectionMethodOnTypeBuilderInst*)obj;
-		MonoClass *inflated_klass = mono_class_from_mono_type (mono_class_inflate_generic_type (m->inst->type.type, context));
+		MonoType *type = mono_class_inflate_generic_type (m->inst->type.type, context);
+		MonoClass *inflated_klass = mono_class_from_mono_type (type);
 		g_assert (m->mb->mhandle);
 		result = inflate_mono_method (inflated_klass, m->mb->mhandle, (MonoObject*)m->mb);
 		*handle_class = mono_defaults.methodhandle_class;
+		mono_metadata_free_type (type);
 	} else {
 		g_print (obj->vtable->klass->name);
 		g_assert_not_reached ();
