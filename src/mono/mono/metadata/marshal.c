@@ -11020,6 +11020,9 @@ mono_marshal_load_type_info (MonoClass* klass)
 	loads_list = g_slist_remove (loads_list, klass);
 	TlsSetValue (load_type_info_tls_id, loads_list);
 
+	/*We do double-checking locking on marshal_info */
+	mono_memory_barrier ();
+
 	klass->marshal_info = info;
 
 	mono_loader_unlock ();
