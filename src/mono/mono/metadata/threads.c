@@ -745,8 +745,8 @@ mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 /*
  * mono_thread_get_stack_bounds:
  *
- *   Return the address and size of the current threads stack. Return NULL as the stack
- * address if the stack address cannot be determined.
+ *   Return the address and size of the current threads stack. Return NULL as the 
+ * stack address if the stack address cannot be determined.
  */
 void
 mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
@@ -784,6 +784,9 @@ mono_thread_get_stack_bounds (guint8 **staddr, size_t *stsize)
 
 		pthread_attr_destroy (&attr); 
 #endif
+
+		/* When running under emacs, sometimes staddr is not aligned to a page size */
+		*staddr = (guint8*)((gssize)*staddr & ~(mono_pagesize () - 1));
 }	
 
 MonoThread *
