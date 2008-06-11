@@ -4142,6 +4142,8 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	}
 
 	if (info.assembly.name) {
+		g_free (str);
+		mono_reflection_free_type_info (&info);
 		if (throwOnError) {
 			/* 1.0 and 2.0 throw different exceptions */
 			if (mono_defaults.generic_ilist_class)
