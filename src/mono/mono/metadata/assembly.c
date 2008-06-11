@@ -1323,6 +1323,8 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
  * This is an internal method, we need this because when we load mscorlib
  * we do not have the mono_defaults.internals_visible_class loaded yet,
  * so we need to load these after we initialize the runtime. 
+ *
+ * LOCKING: Acquires the assemblies lock plus the loader lock.
  */
 void
 mono_assembly_load_friends (MonoAssembly* ass)
@@ -1349,7 +1351,9 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		aname = g_new0 (MonoAssemblyName, 1);
 		/*g_print ("friend ass: %s\n", data);*/
 		if (mono_assembly_name_parse_full (data, aname, TRUE, NULL, NULL)) {
+			mono_assemblies_lock ();
 			ass->friend_assembly_names = g_slist_prepend (ass->friend_assembly_names, aname);
+			mono_assemblies_unlock ();
 		} else {
 			g_free (aname);
 		}
@@ -1466,13 +1470,14 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	image->assembly = ass;
 
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
+	mono_assemblies_unlock ();
+
 	if (mono_defaults.internals_visible_class)
 		mono_assembly_load_friends (ass);
 #ifdef PLATFORM_WIN32
 	if (image->is_module_handle)
 		mono_image_fixup_vtable (image);
 #endif
-	mono_assemblies_unlock ();
 
 	mono_assembly_invoke_load_hook (ass);
 
