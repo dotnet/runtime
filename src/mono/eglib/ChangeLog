@@ -1,3 +1,8 @@
+2008-06-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/goutput.c (g_log): Remove unnecessary and incorrect call to 
+	g_strdup_printf (). Fixes #398918.
+
 2008-05-01  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/glib.h : Adding declarations for g_ucs4_to_utf16 and g_utf16_to_ucs4.
