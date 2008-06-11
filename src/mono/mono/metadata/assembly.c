@@ -1630,6 +1630,7 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 
 		/* the constant includes the ending NULL, hence the -1 */
 		if (strlen (token) != (MONO_PUBLIC_KEY_TOKEN_LENGTH - 1)) {
+			mono_assembly_name_free (aname);
 			return FALSE;
 		}
 		lower = g_ascii_strdown (token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
@@ -1716,7 +1717,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			*is_version_defined = TRUE;
 			version = g_strstrip (value + 8);
 			if (strlen (version) == 0) {
-				return FALSE;
+				goto cleanup_and_fail;
 			}
 			tmp++;
 			continue;
@@ -1725,7 +1726,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		if (!g_ascii_strncasecmp (value, "Culture=", 8)) {
 			culture = g_strstrip (value + 8);
 			if (strlen (culture) == 0) {
-				return FALSE;
+				goto cleanup_and_fail;
 			}
 			tmp++;
 			continue;
@@ -1735,7 +1736,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			*is_token_defined = TRUE;
 			token = g_strstrip (value + 15);
 			if (strlen (token) == 0) {
-				return FALSE;
+				goto cleanup_and_fail;
 			}
 			tmp++;
 			continue;
@@ -1744,7 +1745,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		if (!g_ascii_strncasecmp (value, "PublicKey=", 10)) {
 			key = g_strstrip (value + 10);
 			if (strlen (key) == 0) {
-				return FALSE;
+				goto cleanup_and_fail;
 			}
 			tmp++;
 			continue;
@@ -1753,12 +1754,12 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		if (!g_ascii_strncasecmp (value, "Retargetable=", 13)) {
 			retargetable = g_strstrip (value + 13);
 			if (strlen (retargetable) == 0) {
-				return FALSE;
+				goto cleanup_and_fail;
 			}
 			if (!g_ascii_strcasecmp (retargetable, "yes")) {
 				flags |= ASSEMBLYREF_RETARGETABLE_FLAG;
 			} else if (g_ascii_strcasecmp (retargetable, "no")) {
-				return FALSE;
+				goto cleanup_and_fail;
 			}
 			tmp++;
 			continue;
@@ -1776,13 +1777,17 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 
 	/* if retargetable flag is set, then we must have a fully qualified name */
 	if (retargetable != NULL && (version == NULL || culture == NULL || (key == NULL && token == NULL))) {
-		return FALSE;
+		goto cleanup_and_fail;
 	}
 
 	res = build_assembly_name (dllname, version, culture, token, key, flags,
 		aname, save_public_key);
 	g_strfreev (parts);
 	return res;
+
+cleanup_and_fail:
+	g_strfreev (parts);
+	return FALSE;
 }
 
 /**
