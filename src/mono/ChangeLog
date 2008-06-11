@@ -1,3 +1,8 @@
+2008-06-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Remove -D_FILE_OFFSET_BITS=64 from the CPPFLAGS passed to
+	libgc on sparc. Fixes #323138.
+
 2008-06-05  Andreas Färber  <andreas.faerber@web.de>
 
 	* configure.in: Add configure option for DTrace.
