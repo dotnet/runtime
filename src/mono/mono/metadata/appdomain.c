@@ -1135,10 +1135,18 @@ ensure_directory_exists (const char *filename)
 	char *p;
 	gchar *dir = g_path_get_dirname (filename);
 	int retval;
+	struct stat sbuf;
 	
-	if (!dir || !dir [0])
+	if (!dir || !dir [0]) {
+		g_free (dir);
 		return FALSE;
-
+	}
+	
+	if (stat (dir, &sbuf) == 0 && S_ISDIR (sbuf.st_mode)) {
+		g_free (dir);
+		return TRUE;
+	}
+	
 	p = dir;
 	while (*p == '/')
 		p++;
