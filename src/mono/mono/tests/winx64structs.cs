@@ -113,38 +113,38 @@ struct winx64_doubleStruct
 class winx64structs
 {
 	[DllImport ("libtest")]
-	static extern int test_Winx64_struct1_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var);
+	static extern int mono_test_Winx64_struct1_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_struct2_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct2 var);
+	static extern int mono_test_Winx64_struct2_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct2 var);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_struct3_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct3 var);
+	static extern int mono_test_Winx64_struct3_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct3 var);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_struct4_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct4 var);
+	static extern int mono_test_Winx64_struct4_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct4 var);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_struct5_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct5 var);
+	static extern int mono_test_Winx64_struct5_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct5 var);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_struct6_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct6 var);
+	static extern int mono_test_Winx64_struct6_in ([MarshalAs (UnmanagedType.Struct)] winx64_struct6 var);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_structs_in1 ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var1,
+	static extern int mono_test_Winx64_structs_in1 ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var1,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct2 var2,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct3 var3,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct4 var4);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_structs_in2 ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var1,
+	static extern int mono_test_Winx64_structs_in2 ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var1,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct1 var2,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct1 var3,
 					           [MarshalAs (UnmanagedType.Struct)] winx64_struct1 var4,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct1 var5);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_structs_in3 ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var1,
+	static extern int mono_test_Winx64_structs_in3 ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var1,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct5 var2,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct1 var3,
 						   [MarshalAs (UnmanagedType.Struct)] winx64_struct5 var4,
@@ -153,114 +153,80 @@ class winx64structs
 
 	[DllImport ("libtest")]
 	[return:MarshalAs (UnmanagedType.Struct)]
-	static extern winx64_struct1 test_Winx64_struct1_ret ();
+	static extern winx64_struct1 mono_test_Winx64_struct1_ret ();
 
 	[DllImport ("libtest")]
 	[return: MarshalAs (UnmanagedType.Struct)]
-	static extern winx64_struct2 test_Winx64_struct2_ret ();
+	static extern winx64_struct2 mono_test_Winx64_struct2_ret ();
 
 	[DllImport ("libtest")]
 	[return: MarshalAs (UnmanagedType.Struct)]
-	static extern winx64_struct3 test_Winx64_struct3_ret ();
+	static extern winx64_struct3 mono_test_Winx64_struct3_ret ();
 
 	[DllImport ("libtest")]
 	[return: MarshalAs (UnmanagedType.Struct)]
-	static extern winx64_struct4 test_Winx64_struct4_ret ();
+	static extern winx64_struct4 mono_test_Winx64_struct4_ret ();
 
 	[DllImport ("libtest")]
 	[return: MarshalAs (UnmanagedType.Struct)]
-	static extern winx64_struct5 test_Winx64_struct5_ret ();
+	static extern winx64_struct5 mono_test_Winx64_struct5_ret ();
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_floatStruct ([MarshalAs (UnmanagedType.Struct)] winx64_floatStruct var);
+	static extern int mono_test_Winx64_floatStruct ([MarshalAs (UnmanagedType.Struct)] winx64_floatStruct var);
 
 	[DllImport ("libtest")]
-	static extern int test_Winx64_doubleStruct ([MarshalAs (UnmanagedType.Struct)] winx64_doubleStruct var);
+	static extern int mono_test_Winx64_doubleStruct ([MarshalAs (UnmanagedType.Struct)] winx64_doubleStruct var);
 
 	public delegate int managed_struct1_delegate ([MarshalAs (UnmanagedType.Struct)] winx64_struct1 var);
 
 	[DllImport ("libtest")]
-	static extern int test_managed_Winx64_struct1_in (managed_struct1_delegate func);
+	static extern int mono_test_managed_Winx64_struct1_in (managed_struct1_delegate func);
 
 	private static bool enableBroken = false;
 	
 	static int Main (string[] args)
 	{
-		int testCode;
-		bool haveError = false;
-
-		if ((testCode = Test_In_Args_Value_In_RCX ()) != 0)
-			Console.WriteLine ("Test_In_Args_Value_In_RCX Failed with code {0}",
-				testCode, haveError = true);
-
-		if ((testCode = Test_In_Args_Value_On_Stack_ADDR_In_RCX ()) != 0)
-			Console.WriteLine ("Test_In_Args_Value_On_Stack_ADDR_In_RCX Failed with code {0}",
-				testCode, haveError = true);
-
-		if ((testCode = Test_In_Args_Values_In_Multiple_Registers ()) != 0)
-			Console.WriteLine ("Test_In_Args_Values_In_Multiple_Registers Failed with code {0}",
-				testCode, haveError = true);
-
-		if ((testCode = Test_In_Args_Values_In_Registers_with_Stack_and_On_Stack ()) != 0)
-			Console.WriteLine ("Test_In_Args_Values_In_Registers_with_Stack_and_On_Stack Failed with code {0}",
-				testCode, haveError = true);
-
-		if ((testCode = Test_Ret_In_RAX ()) != 0)
-			Console.WriteLine ("Test_Ret_In_RAX Failed with code {0}",
-				testCode, haveError = true);
-
-		if ((testCode = Test_Ret_In_Address ()) != 0)
-			Console.WriteLine ("Test_Ret_In_Address Failed with code {0}",
-				testCode, haveError = true);
-
-		if ((testCode = Test_In_Args_Value_In_RCX_Managed ()) != 0)
-			Console.WriteLine ("Test_In_Args_Value_In_RCX_Managed Failed with code {0}",
-				testCode, haveError = true);
-		
-		if (haveError)
-			return 1;
-
-		return 0;
+		return TestDriver.RunTests (typeof (winx64structs), args);
 	}
 
-	static int Test_In_Args_Value_In_RCX ()
+	public static int test_0_In_Args_Value_In_RCX ()
 	{
 		int retCode;
 
 		winx64_struct1 t_winx64_struct1 = new winx64_struct1 (123);
 
-		if ((retCode = test_Winx64_struct1_in (t_winx64_struct1)) != 0)
+		if ((retCode = mono_test_Winx64_struct1_in (t_winx64_struct1)) != 0)
 			return 100 + retCode;
 
 		winx64_struct2 t_winx64_struct2 = new winx64_struct2 (4, 5);
 
-		if ((retCode = test_Winx64_struct2_in (t_winx64_struct2)) != 0)
+		if ((retCode = mono_test_Winx64_struct2_in (t_winx64_struct2)) != 0)
 			return 200 + retCode;
 
 		winx64_struct3 t_winx64_struct3 = new winx64_struct3 (4, 5, 0x1234);
 
-		if ((retCode = test_Winx64_struct3_in (t_winx64_struct3)) != 0)
+		if ((retCode = mono_test_Winx64_struct3_in (t_winx64_struct3)) != 0)
 			return 300 + retCode;
 
 		winx64_struct4 t_winx64_struct4 = new winx64_struct4 (4, 5, 0x1234, 0x87654321);
 
-		if ((retCode = test_Winx64_struct4_in (t_winx64_struct4)) != 0)
+		if ((retCode = mono_test_Winx64_struct4_in (t_winx64_struct4)) != 0)
 			return 400 + retCode;
 
 		winx64_floatStruct t_winx64_floatStruct = new winx64_floatStruct (5.5F, 9.5F);
 
-		if ((retCode = test_Winx64_floatStruct (t_winx64_floatStruct)) != 0)
+		if ((retCode = mono_test_Winx64_floatStruct (t_winx64_floatStruct)) != 0)
 			return 500 + retCode;
 
 		winx64_doubleStruct t_winx64_doubleStruct = new winx64_doubleStruct (5.5F);
 
-		if ((retCode = test_Winx64_doubleStruct (t_winx64_doubleStruct)) != 0)
+		if ((retCode = mono_test_Winx64_doubleStruct (t_winx64_doubleStruct)) != 0)
 			return 600 + retCode;
 
 		return 0;
 	}
 
-	static int Test_In_Args_Values_In_Multiple_Registers ()
+	public static int test_0_In_Args_Values_In_Multiple_Registers ()
 	{
 		int retCode; 
 		
@@ -269,7 +235,7 @@ class winx64structs
 		winx64_struct3 t_winx64_struct3 = new winx64_struct3 (4, 5, 0x1234);
 		winx64_struct4 t_winx64_struct4 = new winx64_struct4 (4, 5, 0x1234, 0x87654321);
 		
-		if ((retCode = test_Winx64_structs_in1 (t_winx64_struct1, t_winx64_struct2,
+		if ((retCode = mono_test_Winx64_structs_in1 (t_winx64_struct1, t_winx64_struct2,
 							t_winx64_struct3, t_winx64_struct4)) != 0)
 			return 100 + retCode;
 
@@ -277,19 +243,19 @@ class winx64structs
 		return 0;
 	}
 
-	static int Test_Ret_In_RAX ()
+	public static int test_0_Ret_In_RAX ()
 	{
-		winx64_struct1 t_winx64_struct1 = test_Winx64_struct1_ret ();
+		winx64_struct1 t_winx64_struct1 = mono_test_Winx64_struct1_ret ();
 		if (t_winx64_struct1.a != 123)
 			return 101;
 
-		winx64_struct2 t_winx64_struct2 = test_Winx64_struct2_ret ();
+		winx64_struct2 t_winx64_struct2 = mono_test_Winx64_struct2_ret ();
 		if (t_winx64_struct2.a != 4)
 			return 201;
 		if (t_winx64_struct2.b != 5)
 			return 202;
 
-		winx64_struct3 t_winx64_struct3 = test_Winx64_struct3_ret ();
+		winx64_struct3 t_winx64_struct3 = mono_test_Winx64_struct3_ret ();
 		if (t_winx64_struct3.a != 4)
 			return 301;
 		if (t_winx64_struct3.b != 5)
@@ -297,7 +263,7 @@ class winx64structs
 		if (t_winx64_struct3.c != 0x1234)
 			return 303;
 		
-		winx64_struct4 t_winx64_struct4 = test_Winx64_struct4_ret ();
+		winx64_struct4 t_winx64_struct4 = mono_test_Winx64_struct4_ret ();
 		if (t_winx64_struct4.a != 4)
 			return 401;
 		if (t_winx64_struct4.b != 5)
@@ -310,9 +276,9 @@ class winx64structs
 		return 0;
 	}
 
-	static int Test_Ret_In_Address ()
+	public static int test_0_Ret_In_Address ()
 	{
-		winx64_struct5 t_winx64_struct5 = test_Winx64_struct5_ret ();
+		winx64_struct5 t_winx64_struct5 = mono_test_Winx64_struct5_ret ();
 		if (t_winx64_struct5.a != 4)
 			return 101;
 		if (t_winx64_struct5.b != 5)
@@ -323,7 +289,7 @@ class winx64structs
 		return 0;
 	}
 
-	static int Test_In_Args_Values_In_Registers_and_Stack ()
+	public static int test_0_In_Args_Values_In_Registers_and_Stack ()
 	{
 		int retCode;
 
@@ -333,13 +299,13 @@ class winx64structs
 		winx64_struct1 var4 = new winx64_struct1 (4);
 		winx64_struct1 var5 = new winx64_struct1 (5);
 
-		if ((retCode = test_Winx64_structs_in2 (var1, var2, var3, var4, var5)) != 0)
+		if ((retCode = mono_test_Winx64_structs_in2 (var1, var2, var3, var4, var5)) != 0)
 			return 100 + retCode;
 
 		return 0;
 	}
 
-	static int Test_In_Args_Values_In_Registers_with_Stack_and_On_Stack ()
+	public static int test_0_In_Args_Values_In_Registers_with_Stack_and_On_Stack ()
 	{
 		int retCode;
 
@@ -350,13 +316,13 @@ class winx64structs
 		winx64_struct1 var5 = new winx64_struct1 (9);
 		winx64_struct5 var6 = new winx64_struct5 (10, 11, 12);
 
-		if ((retCode = test_Winx64_structs_in3 (var1, var2, var3, var4, var5, var6)) != 0)
+		if ((retCode = mono_test_Winx64_structs_in3 (var1, var2, var3, var4, var5, var6)) != 0)
 			return 100 + retCode;
 
 		return 0;
 	}
 
-	static int Test_In_Args_Value_On_Stack_ADDR_In_RCX ()
+	public static int test_0_In_Args_Value_On_Stack_ADDR_In_RCX ()
 	{
 		int retCode;
 
@@ -365,30 +331,30 @@ class winx64structs
 		t_winx64_struct5.b = 5;
 		t_winx64_struct5.c = 6;
 
-		if ((retCode = test_Winx64_struct5_in (t_winx64_struct5)) != 0)
+		if ((retCode = mono_test_Winx64_struct5_in (t_winx64_struct5)) != 0)
 			return 100 + retCode;
 
 		winx64_struct6 t_winx64_struct6 = new winx64_struct6 (new winx64_struct1 (4), 5, 6);		
 
-		if ((retCode = test_Winx64_struct6_in (t_winx64_struct6)) != 0)
+		if ((retCode = mono_test_Winx64_struct6_in (t_winx64_struct6)) != 0)
 			return 200 + retCode;
 
 		return 0;
 	}
 
-	static int Test_In_Args_Value_In_RCX_Managed ()
+	public static int test_0_In_Args_Value_In_RCX_Managed ()
 	{
 		int retCode;
 
 		managed_struct1_delegate s1Del = new managed_struct1_delegate (managed_struct1_test);
 
-		if ((retCode = test_managed_Winx64_struct1_in (s1Del)) != 0)
+		if ((retCode = mono_test_managed_Winx64_struct1_in (s1Del)) != 0)
 				return 100 + retCode;
 
 		return 0;
 	}
 
-	static int managed_struct1_test (winx64_struct1 var)
+	public static int managed_struct1_test (winx64_struct1 var)
 	{
 		if (var.a != 5)
 			return 1;

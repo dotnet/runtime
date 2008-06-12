@@ -3314,7 +3314,7 @@ typedef struct
 } winx64_struct1;
 
 LIBTEST_API int STDCALL  
-test_Winx64_struct1_in (winx64_struct1 var)
+mono_test_Winx64_struct1_in (winx64_struct1 var)
 {
 	if (var.a != 123)
 		return 1;
@@ -3328,7 +3328,7 @@ typedef struct
 } winx64_struct2;
 
 LIBTEST_API int STDCALL  
-test_Winx64_struct2_in (winx64_struct2 var)
+mono_test_Winx64_struct2_in (winx64_struct2 var)
 {
 	if (var.a != 4)
 		return 1;
@@ -3346,7 +3346,7 @@ typedef struct
 } winx64_struct3;
 
 LIBTEST_API int STDCALL  
-test_Winx64_struct3_in (winx64_struct3 var)
+mono_test_Winx64_struct3_in (winx64_struct3 var)
 {
 	if (var.a != 4)
 		return 1;
@@ -3366,7 +3366,7 @@ typedef struct
 } winx64_struct4;
 
 LIBTEST_API int STDCALL  
-test_Winx64_struct4_in (winx64_struct4 var)
+mono_test_Winx64_struct4_in (winx64_struct4 var)
 {
 	if (var.a != 4)
 		return 1;
@@ -3387,7 +3387,7 @@ typedef struct
 } winx64_struct5;
 
 LIBTEST_API int STDCALL  
-test_Winx64_struct5_in (winx64_struct5 var)
+mono_test_Winx64_struct5_in (winx64_struct5 var)
 {
 	if (var.a != 4)
 		return 1;
@@ -3406,7 +3406,7 @@ typedef struct
 } winx64_struct6;
 
 LIBTEST_API int STDCALL  
-test_Winx64_struct6_in (winx64_struct6 var)
+mono_test_Winx64_struct6_in (winx64_struct6 var)
 {
 	if (var.a.a != 4)
 		return 1;
@@ -3418,7 +3418,7 @@ test_Winx64_struct6_in (winx64_struct6 var)
 }
 
 LIBTEST_API int STDCALL  
-test_Winx64_structs_in1 (winx64_struct1 var1,
+mono_test_Winx64_structs_in1 (winx64_struct1 var1,
 			 winx64_struct2 var2,
 			 winx64_struct3 var3,
 			 winx64_struct4 var4)
@@ -3450,7 +3450,7 @@ test_Winx64_structs_in1 (winx64_struct1 var1,
 }
 
 LIBTEST_API int STDCALL  
-test_Winx64_structs_in2 (winx64_struct1 var1,
+mono_test_Winx64_structs_in2 (winx64_struct1 var1,
 			 winx64_struct1 var2,
 			 winx64_struct1 var3,
 			 winx64_struct1 var4,
@@ -3471,7 +3471,7 @@ test_Winx64_structs_in2 (winx64_struct1 var1,
 }
 
 LIBTEST_API int STDCALL  
-test_Winx64_structs_in3 (winx64_struct1 var1,
+mono_test_Winx64_structs_in3 (winx64_struct1 var1,
 			 winx64_struct5 var2,
 			 winx64_struct1 var3,
 			 winx64_struct5 var4,
@@ -3512,7 +3512,7 @@ test_Winx64_structs_in3 (winx64_struct1 var1,
 }
 
 LIBTEST_API winx64_struct1 STDCALL  
-test_Winx64_struct1_ret ()
+mono_test_Winx64_struct1_ret ()
 {
 	winx64_struct1 ret;
 	ret.a = 123;
@@ -3520,7 +3520,7 @@ test_Winx64_struct1_ret ()
 }
 
 LIBTEST_API winx64_struct2 STDCALL  
-test_Winx64_struct2_ret ()
+mono_test_Winx64_struct2_ret ()
 {
 	winx64_struct2 ret;
 	ret.a = 4;
@@ -3529,7 +3529,7 @@ test_Winx64_struct2_ret ()
 }
 
 LIBTEST_API winx64_struct3 STDCALL  
-test_Winx64_struct3_ret ()
+mono_test_Winx64_struct3_ret ()
 {
 	winx64_struct3 ret;
 	ret.a = 4;
@@ -3539,7 +3539,7 @@ test_Winx64_struct3_ret ()
 }
 
 LIBTEST_API winx64_struct4 STDCALL  
-test_Winx64_struct4_ret ()
+mono_test_Winx64_struct4_ret ()
 {
 	winx64_struct4 ret;
 	ret.a = 4;
@@ -3550,7 +3550,7 @@ test_Winx64_struct4_ret ()
 }
 
 LIBTEST_API winx64_struct5 STDCALL  
-test_Winx64_struct5_ret ()
+mono_test_Winx64_struct5_ret ()
 {
 	winx64_struct5 ret;
 	ret.a = 4;
@@ -3566,7 +3566,7 @@ typedef struct
 } winx64_floatStruct;
 
 LIBTEST_API int STDCALL  
-test_Winx64_floatStruct (winx64_floatStruct a)
+mono_test_Winx64_floatStruct (winx64_floatStruct a)
 {
 	if (a.a > 5.6 || a.a < 5.4)
 		return 1;
@@ -3583,7 +3583,7 @@ typedef struct
 } winx64_doubleStruct;
 
 LIBTEST_API int STDCALL  
-test_Winx64_doubleStruct (winx64_doubleStruct a)
+mono_test_Winx64_doubleStruct (winx64_doubleStruct a)
 {
 	if (a.a > 5.6 || a.a < 5.4)
 		return 1;
@@ -3594,7 +3594,7 @@ test_Winx64_doubleStruct (winx64_doubleStruct a)
 typedef int (STDCALL *managed_struct1_delegate) (winx64_struct1 a);
 
 LIBTEST_API int STDCALL 
-test_managed_Winx64_struct1_in(managed_struct1_delegate func)
+mono_test_managed_Winx64_struct1_in(managed_struct1_delegate func)
 {
 	winx64_struct1 val;
 	val.a = 5;
