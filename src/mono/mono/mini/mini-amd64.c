@@ -215,6 +215,7 @@ typedef enum {
 	ArgInDoubleSSEReg,
 	ArgOnStack,
 	ArgValuetypeInReg,
+	ArgValuetypeAddrInIReg,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
 
@@ -402,8 +403,11 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 		size = mono_type_native_stack_size (&klass->byval_arg, NULL);
 	else 
 		size = mini_type_stack_size (gsctx, &klass->byval_arg, NULL);
-
+#ifndef PLATFORM_WIN32
 	if (!sig->pinvoke || (size == 0) || (size > 16)) {
+#else
+	if (!sig->pinvoke) {
+#endif
 		/* Allways pass in memory */
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
@@ -442,9 +446,26 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	case 1: case 2: case 4: case 8:
 		break;
 	default:
-		ainfo->offset = *stack_size;
-		*stack_size += ALIGN_TO (info->native_size, 16);
-		ainfo->storage = ArgOnStack;
+		if (is_return) {
+			ainfo->storage = ArgOnStack;
+			ainfo->offset = *stack_size;
+			*stack_size += ALIGN_TO (info->native_size, 8);
+		}
+		else {
+			ainfo->storage = ArgValuetypeAddrInIReg;
+
+			if (*gr < PARAM_REGS) {
+				ainfo->pair_storage [0] = ArgInIReg;
+				ainfo->pair_regs [0] = param_regs [*gr];
+				(*gr) ++;
+			} 
+			else {
+				ainfo->pair_storage [0] = ArgOnStack;
+				ainfo->offset = *stack_size;
+				*stack_size += 8;
+			}
+		}
+
 		return;
 	}
 #endif
@@ -1167,6 +1188,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				break;
 			case ArgValuetypeInReg:
 				break;
+			case ArgValuetypeAddrInIReg:
+				break;  /*FIXME: Not sure what to do for this case yet on Winx64*/
 			default:
 				NOT_IMPLEMENTED;
 			}
@@ -1420,6 +1443,42 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 						MONO_INST_LIST_ADD (&arg->node, &call->out_args);
 					}
+				}
+				else if (ainfo->storage == ArgValuetypeAddrInIReg){
+
+					/* Add a temp variable to the method*/
+					MonoInst *load;
+					MonoInst *vtaddr = mono_compile_create_var (cfg, &in->klass->byval_arg, OP_LOCAL);
+					
+					MONO_INST_NEW (cfg, load, OP_LDADDR);
+					load->ssa_op = MONO_SSA_LOAD;
+					load->inst_left = vtaddr;
+					
+					if (ainfo->pair_storage [0] == ArgInIReg) {
+						/* Inserted after the copy.  Load the address of the temp to the argument regster.*/
+						arg->opcode = OP_OUTARG_REG;
+						arg->inst_left = load;
+						arg->inst_call = call;
+						arg->backend.reg3 =  ainfo->pair_regs [0];
+					} 
+					else {
+						/* Inserted after the copy.  Load the address of the temp on the stack.*/
+						arg->opcode = OP_OUTARG_VT;
+						arg->inst_left = load;
+						arg->type = STACK_PTR;
+						arg->klass = mono_defaults.int_class;
+						arg->backend.is_pinvoke = sig->pinvoke;
+						arg->inst_imm = size;
+					}
+
+					/*Copy the argument to the temp variable.*/
+					MONO_INST_NEW (cfg, load, OP_MEMCPY);
+					load->backend.memcpy_args = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoMemcpyArgs));
+					load->backend.memcpy_args->size = mono_class_value_size (in->klass, &align);
+					load->backend.memcpy_args->align = align;
+					load->inst_left = (cfg)->varinfo [vtaddr->inst_c0];
+					load->inst_right = in->inst_i0;
+					MONO_INST_LIST_ADD (&load->node, &call->out_args);
 				}
 				else {
 					arg->opcode = OP_OUTARG_VT;
@@ -4188,7 +4247,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			x86_branch8 (code, X86_CC_NE, 0, 0);
 			amd64_patch (no_domain_branch, code);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-					  (gpointer)"mono_jit_thread_attach", FALSE);
+					  (gpointer)"mono_jit_thread_attach", TRUE);
 			amd64_patch (buf, code);
 		} else {
 			g_assert (!cfg->compile_aot);
@@ -4197,7 +4256,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			else
 				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 8);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD,
-					  (gpointer)"mono_jit_thread_attach", FALSE);
+					  (gpointer)"mono_jit_thread_attach", TRUE);
 		}
 	}
 
@@ -4234,7 +4293,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				 */
 				args_clobbered = TRUE;
 				code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-								  (gpointer)"mono_get_lmf_addr", FALSE);		
+								  (gpointer)"mono_get_lmf_addr", TRUE);		
 			}
 
 			/* Save lmf_addr */
