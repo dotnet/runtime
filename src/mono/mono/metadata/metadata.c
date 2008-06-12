@@ -4214,6 +4214,13 @@ void
 mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
 			  MonoMarshalSpec **marshal_spec)
 {
+	return mono_metadata_field_info_with_mempool (NULL, meta, index, offset, rva, marshal_spec);
+}
+
+void
+mono_metadata_field_info_with_mempool (MonoMemPool *mempool, MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
+			  MonoMarshalSpec **marshal_spec)
+{
 	MonoTableInfo *tdef;
 	locator_t loc;
 
@@ -4252,7 +4259,7 @@ mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint
 		const char *p;
 		
 		if ((p = mono_metadata_get_marshal_info (meta, index, TRUE))) {
-			*marshal_spec = mono_metadata_parse_marshal_spec (meta, p);
+			*marshal_spec = mono_metadata_parse_marshal_spec_with_mempool (mempool, p);
 		}
 	}
 
@@ -4566,8 +4573,27 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 	return type;
 }
 
+
+static char*
+mono_mempool_strndup (MonoMemPool *mp, const char *data, guint len)
+{
+	char *res;
+	if (!mp)
+		return g_strndup (data, len);
+	res = mono_mempool_alloc (mp, len + 1);
+	memcpy (res, data, len);
+	res [len] = 0;
+	return res;
+}
+
 MonoMarshalSpec *
 mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
+{
+	return mono_metadata_parse_marshal_spec_with_mempool (NULL, ptr);
+}
+
+MonoMarshalSpec *
+mono_metadata_parse_marshal_spec_with_mempool (MonoMemPool *mempool, const char *ptr)
 {
 	MonoMarshalSpec *res;
 	int len;
@@ -4575,7 +4601,10 @@ mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 
 	/* fixme: this is incomplete, but I cant find more infos in the specs */
 
-	res = g_new0 (MonoMarshalSpec, 1);
+	if (mempool)
+		res = mono_mempool_alloc0 (mempool, sizeof (MonoMarshalSpec));
+	else
+		res = g_new0 (MonoMarshalSpec, 1);
 	
 	len = mono_metadata_decode_value (ptr, &ptr);
 	res->native = *ptr++;
@@ -4624,11 +4653,11 @@ mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 		ptr += len;
 		/* read custom marshaler type name */
 		len = mono_metadata_decode_value (ptr, &ptr);
-		res->data.custom_data.custom_name = g_strndup (ptr, len);		
+		res->data.custom_data.custom_name = mono_mempool_strndup (mempool, ptr, len);		
 		ptr += len;
 		/* read cookie string */
 		len = mono_metadata_decode_value (ptr, &ptr);
-		res->data.custom_data.cookie = g_strndup (ptr, len);
+		res->data.custom_data.cookie = mono_mempool_strndup (mempool, ptr, len);
 	}
 
 	if (res->native == MONO_NATIVE_SAFEARRAY) {

@@ -465,6 +465,17 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open) MON
 gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only) MONO_INTERNAL;
 
+MonoMarshalSpec *
+mono_metadata_parse_marshal_spec_with_mempool (MonoMemPool *mp, const char *ptr) MONO_INTERNAL;;
+
+void
+mono_metadata_field_info_with_mempool (MonoMemPool *mp, 
+					  MonoImage *meta, 
+				      guint32       table_index,
+				      guint32      *offset,
+				      guint32      *rva,
+				      MonoMarshalSpec **marshal_spec);
+
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
