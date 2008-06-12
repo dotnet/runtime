@@ -1218,7 +1218,7 @@ mono_make_shadow_copy (const char *filename)
 		if (!is_private)
 			continue;
 
-		if (strcmp (dir_name, *path) == 0) {
+		if (strstr (dir_name, *path) == dir_name) {
 			do_copy = TRUE;
 			break;
 		}
