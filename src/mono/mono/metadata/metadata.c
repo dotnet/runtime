@@ -2243,7 +2243,6 @@ free_generic_class (MonoGenericClass *gclass)
 		if (class->fields) {
 			for (i = 0; i < class->field.count; ++i) {
 				g_free (class->fields [i].generic_info);
-				mono_metadata_free_type (class->fields [i].type);
 			}
 		}
 		/* Allocated in mono_generic_class_get_class () */
