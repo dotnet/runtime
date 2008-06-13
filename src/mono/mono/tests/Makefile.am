@@ -271,6 +271,7 @@ BASE_TEST_CS_SRC=		\
 	generic-interface-methods.2.cs	\
 	generic-array-type.2.cs	\
 	generic-method-patching.2.cs	\
+	generic-static-methods.2.cs	\
 	generic-null-call.2.cs	\
 	recursive-generics.2.cs	\
 	bug-80392.2.cs		\
@@ -702,7 +703,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-ldtoken-method.2.exe  generic-ldtoken-field.2.exe	\
 		generic-virtual.2.exe generic-tailcall.2.exe			\
 		generic-interface-methods.2.exe generic-array-type.2.exe	\
-		generic-method-patching.2.exe	\
+		generic-method-patching.2.exe generic-static-methods.2.exe	\
 		generic-null-call.2.exe generic-tailcall2.2.exe			\
 		generic-array-exc.2.exe
 	for fn in $+ ; do	\

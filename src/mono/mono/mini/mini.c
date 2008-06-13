@@ -5691,8 +5691,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * context is sharable (and it's not a
 				 * generic method).
 				 */
-				if (sharing_enabled && context_sharable &&
-						!mini_method_get_context (cmethod)->method_inst)
+				if (sharing_enabled && context_sharable)
 					pass_vtable = TRUE;
 			}
 
