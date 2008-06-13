@@ -3527,7 +3527,8 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
  * the thread. If the result is an exception that needs to be throw, it is 
  * provided as return value.
  */
-MonoException* mono_thread_request_interruption (gboolean running_managed)
+MonoException*
+mono_thread_request_interruption (gboolean running_managed)
 {
 	MonoThread *thread = mono_thread_current ();
 
@@ -3535,16 +3536,8 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 	if (thread == NULL) 
 		return NULL;
 	
-	ensure_synch_cs_set (thread);
-
-	/* FIXME: This is NOT signal safe */
-	EnterCriticalSection (thread->synch_cs);
-	
-	if (thread->interruption_requested) {
-		LeaveCriticalSection (thread->synch_cs);
-		
+	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1)
 		return NULL;
-	}
 
 	if (!running_managed || is_running_protected_wrapper ()) {
 		/* Can't stop while in unmanaged code. Increase the global interruption
@@ -3552,9 +3545,6 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		   checked and the thread will be interrupted. */
 		
 		InterlockedIncrement (&thread_interruption_requested);
-		thread->interruption_requested = TRUE;
-
-		LeaveCriticalSection (thread->synch_cs);
 
 		if (mono_thread_notify_pending_exc_fn && !running_managed)
 			/* The JIT will notify the thread about the interruption */
@@ -3568,8 +3558,6 @@ MonoException* mono_thread_request_interruption (gboolean running_managed)
 		return NULL;
 	}
 	else {
-		LeaveCriticalSection (thread->synch_cs);
-		
 		return mono_thread_execute_interruption (thread);
 	}
 }

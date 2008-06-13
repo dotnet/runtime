@@ -279,7 +279,8 @@ struct _MonoThread {
 	int stack_size;
 	MonoObject *start_obj;
 	GSList *appdomain_refs;
-	MonoBoolean interruption_requested;
+	/* This is modified using atomic ops, so keep it a gint32 */
+	gint32 interruption_requested;
 	gpointer suspend_event;
 	gpointer suspended_event;
 	gpointer resume_event;
@@ -289,19 +290,23 @@ struct _MonoThread {
 	guint8* serialized_ui_culture_info;
 	guint32 serialized_ui_culture_info_len;
 	MonoObject *execution_context;
-	/* 
-	 * These fields are used to avoid having to increment corlib versions
-	 * when a new field is added to the unmanaged MonoThread structure.
-	 */
 	MonoBoolean thread_dump_requested;
 	gpointer end_stack; /* This is only used when running in the debugger. */
 	MonoBoolean thread_interrupt_requested;
 	guint8	apartment_state;
-	gssize small_id;    /* A small, unique id, used for the hazard
-			       pointer table.  Should be changed to a
-			       guint32 at the next corlib version bump. */
+	gint32 critical_region_level;
+	guint32 small_id; /* A small, unique id, used for the hazard pointer table. */
 	MonoThreadManageCallback manage_callback;
 	MonoException *pending_exception;
+	/* 
+	 * These fields are used to avoid having to increment corlib versions
+	 * when a new field is added to the unmanaged MonoThread structure.
+	 */
+	gpointer unused2;
+	gpointer unused3;
+	gpointer unused4;
+	gpointer unused5;
+	gpointer unused6;
 };
 
 typedef struct {
