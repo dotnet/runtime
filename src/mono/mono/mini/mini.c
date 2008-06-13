@@ -8805,7 +8805,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *argconst;
 				MonoMethod *cil_method, *ctor_method;
 				int temp;
-				gboolean is_shared;
+				gboolean is_shared = FALSE;
+				int context_used = 0;
 
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
@@ -8815,12 +8816,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
-				if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod))
-					GENERIC_SHARING_FAILURE (CEE_LDFTN);
+				if (cfg->generic_sharing_context)
+					context_used = mono_method_check_context_used (cmethod);
 
-				is_shared = (cmethod->flags & METHOD_ATTRIBUTE_STATIC) &&
-					(cmethod->klass->generic_class || cmethod->klass->generic_container) &&
-					mono_class_generic_sharing_enabled (cmethod->klass);
+				if (mono_class_generic_sharing_enabled (cmethod->klass)) {
+					if ((cmethod->flags & METHOD_ATTRIBUTE_STATIC) &&
+							(cmethod->klass->generic_class ||
+							cmethod->klass->generic_container)) {
+						is_shared = TRUE;
+					}
+					if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst)
+						is_shared = TRUE;
+				}
 
 				cil_method = cmethod;
 				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
@@ -8839,7 +8846,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #if defined(MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE) && !defined(HAVE_WRITE_BARRIERS)
 				/* FIXME: SGEN support */
 				/* FIXME: handle shared static generic methods */
-				if (!is_shared && (sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
+				/* FIXME: handle this in shared code */
+		 		if (!is_shared && !context_used && (sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
 					MonoInst *target_ins;
 
 					ip += 6;
@@ -8856,10 +8864,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-				if (is_shared)
+				if (context_used) {
+					MonoInst *rgctx;
+
+					if (is_shared)
+						cmethod = mono_marshal_get_static_rgctx_invoke (cmethod);
+
+					GET_RGCTX (rgctx);
+					argconst = get_runtime_generic_context_method (cfg, method,
+							bblock, cmethod,
+							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
+				} else if (is_shared) {
 					NEW_METHODCONST (cfg, argconst, mono_marshal_get_static_rgctx_invoke (cmethod));
-				else
+				} else {
 					NEW_METHODCONST (cfg, argconst, cmethod);
+				}
 				if (method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED)
 					temp = mono_emit_jit_icall (cfg, bblock, mono_ldftn, &argconst, ip);
 				else
