@@ -1257,14 +1257,16 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
 {
 	if (*gr > S390_LAST_ARG_REG) {
 		sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
-		ainfo->reg	= STK_BASE;
-		sz->stack_size += sizeof(gpointer);
+		ainfo->reg	    = STK_BASE;
+		ainfo->offset   = sz->stack_size;
+		sz->stack_size += sizeof (gpointer);
+		sz->parm_size  += sizeof(gpointer);
 		sz->offStruct  += sizeof(gpointer);
 	} else {
 		ainfo->reg      = *gr;
+		ainfo->offset   = sz->stack_size;
 	}
 	(*gr) ++;
-	ainfo->offset   = sz->stack_size;
 	ainfo->offparm  = sz->offset;
 	sz->offset      = S390_ALIGN(sz->offset+size, sizeof(long));
 	ainfo->size     = size;
