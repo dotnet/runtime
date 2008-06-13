@@ -835,6 +835,11 @@ lreg: OP_LCALLVIRT (reg) {
 	mini_emit_virtual_call (s, state, tree, OP_LCALL, OP_LCALL_MEMBASE);
 }
 
+lreg: OP_LCALLVIRT_IMT (reg, reg) {
+	tree->opcode = OP_LCALLVIRT;
+	mini_emit_virtual_imt_call (s, state, tree, OP_LCALL, OP_LCALL_MEMBASE, state->right->reg1);
+}
+
 lreg: OP_LCALL {
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -854,8 +859,6 @@ lreg: OP_LCALL_REG (reg) {
 }
 
 lreg: OP_LCALL_REG_RGCTX (reg, reg) {
-	g_assert_not_reached ();
-
 	emit_rgctx_argument (s, tree, state->right->reg1, OP_LCALL_REG);
 
 	tree->sreg1 = state->left->reg1;

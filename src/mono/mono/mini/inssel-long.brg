@@ -351,6 +351,11 @@ reg: OP_LCALLVIRT (reg) {
 	mini_emit_virtual_call (s, state, tree, OP_LCALL, OP_LCALL_MEMBASE);
 }
 
+reg: OP_LCALLVIRT_IMT (reg, reg) {
+	tree->opcode = OP_LCALLVIRT;
+	mini_emit_virtual_imt_call (s, state, tree, OP_LCALL, OP_LCALL_MEMBASE, state->right->reg1);
+}
+
 reg: OP_LCALL {
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);

@@ -952,13 +952,25 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 
 guint32
 mono_method_get_imt_slot (MonoMethod *method) {
-	MonoMethodSignature *sig = mono_method_signature (method);
-	int hashes_count = sig->param_count + 4;
-	guint32 *hashes_start = malloc (hashes_count * sizeof (guint32));
-	guint32 *hashes = hashes_start;
+	MonoMethodSignature *sig;
+	int hashes_count;
+	guint32 *hashes_start, *hashes;
 	guint32 a, b, c;
 	int i;
-	
+
+	/*
+	 * We do this to simplify generic sharing.  It will hurt
+	 * performance in cases where a class implements two different
+	 * instantiations of the same generic interface.
+	 */
+	if (method->is_inflated)
+		method = ((MonoMethodInflated*)method)->declaring;
+
+	sig = mono_method_signature (method);
+	hashes_count = sig->param_count + 4;
+	hashes_start = malloc (hashes_count * sizeof (guint32));
+	hashes = hashes_start;
+
 	if (! MONO_CLASS_IS_INTERFACE (method->klass)) {
 		printf ("mono_method_get_imt_slot: %s.%s.%s is not an interface MonoMethod\n",
 				method->klass->name_space, method->klass->name, method->name);

@@ -866,6 +866,29 @@ stmt: OP_VCALLVIRT (reg, reg) {
 	mini_emit_virtual_call (s, state, tree, OP_VCALL, OP_VCALL_MEMBASE);
 }
 
+reg: OP_CALLVIRT_IMT (reg, reg) {
+	tree->opcode = OP_CALLVIRT;
+	mini_emit_virtual_imt_call (s, state, tree, OP_CALL, OP_CALL_MEMBASE, state->right->reg1);
+}
+
+stmt: OP_VOIDCALLVIRT_IMT (reg, reg) {
+	tree->opcode = OP_VOIDCALLVIRT;
+	mini_emit_virtual_imt_call (s, state, tree, OP_VOIDCALL, OP_VOIDCALL_MEMBASE, state->right->reg1);
+}
+
+freg: OP_FCALLVIRT_IMT (reg, reg) {
+	tree->opcode = OP_FCALLVIRT;
+	mini_emit_virtual_imt_call (s, state, tree, OP_FCALL, OP_FCALL_MEMBASE, state->right->reg1);
+}
+
+stmt: OP_VCALLVIRT_IMT (OP_GROUP (reg, reg), reg) {
+	int imt_reg = state->left->right->reg1;
+	tree->opcode = OP_VCALLVIRT;
+	tree->inst_left = tree->inst_left->inst_left;
+	state->left = state->left->left;
+	mini_emit_virtual_imt_call (s, state, tree, OP_VCALL, OP_VCALL_MEMBASE, imt_reg);
+}
+
 reg: OP_CALL_REG (reg) {
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = state->reg1;
@@ -1871,18 +1894,23 @@ mini_emit_load_intf_bit_reg_vtable (MonoCompile *s, int intf_bit_reg, int vtable
 
 #ifdef MONO_ARCH_HAVE_IMT
 static void
-emit_imt_argument (MonoCompile *cfg, MonoCallInst *call) {
+emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, gboolean have_imt_arg, int imt_reg) {
 #ifdef MONO_ARCH_IMT_REG
 	int method_reg = mono_regstate_next_int (cfg->rs);
 
 	if (cfg->compile_aot) {
+		g_assert (!have_imt_arg);
 		MONO_EMIT_NEW_AOTCONST (cfg, method_reg, call->method, MONO_PATCH_INFO_METHODCONST);
 	} else {
-		MonoInst *inst;
-		MONO_INST_NEW (cfg, inst, OP_PCONST);
-		inst->inst_p0 = call->method;
-		inst->dreg = method_reg;
-		mono_bblock_add_inst (cfg->cbb, inst);
+		if (have_imt_arg) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_reg);
+		} else {
+			MonoInst *inst;
+			MONO_INST_NEW (cfg, inst, OP_PCONST);
+			inst->inst_p0 = call->method;
+			inst->dreg = method_reg;
+			mono_bblock_add_inst (cfg->cbb, inst);
+		}
 	}
 
 	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
@@ -1893,7 +1921,8 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call) {
 #endif
 
 static void 
-mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop, int virtop)
+mini_emit_virtual_call_internal (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop, int virtop,
+		gboolean have_imt_arg, int imt_reg)
 {
 	MonoMethod *method = ((MonoCallInst*)tree)->method;
 	int vtable_reg, slot_reg, this_reg;
@@ -1968,10 +1997,11 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 #ifdef MONO_ARCH_HAVE_IMT
 		guint32 imt_slot = mono_method_get_imt_slot (method);
-		emit_imt_argument (cfg, (MonoCallInst*)tree);
+		emit_imt_argument (cfg, (MonoCallInst*)tree, have_imt_arg, imt_reg);
 		slot_reg = vtable_reg;
 		tree->inst_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
 #else
+		g_assert (!have_imt_arg);
 		slot_reg = mono_regstate_next_int (cfg->rs);
 		mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
 		tree->inst_offset = slot * SIZEOF_VOID_P;
@@ -1986,6 +2016,18 @@ mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop
 	tree->sreg1 = slot_reg;
 	((MonoCallInst*)tree)->virtual = TRUE;
 	mono_bblock_add_inst (cfg->cbb, tree);
+}
+
+static void 
+mini_emit_virtual_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop, int virtop)
+{
+	mini_emit_virtual_call_internal (cfg, st, tree, novirtop, virtop, FALSE, -1);
+}
+
+static void 
+mini_emit_virtual_imt_call (MonoCompile *cfg, void *st, MonoInst *tree, int novirtop, int virtop, int imt_reg)
+{
+	mini_emit_virtual_call_internal (cfg, st, tree, novirtop, virtop, TRUE, imt_reg);
 }
 
 static void

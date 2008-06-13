@@ -81,6 +81,8 @@ double mono_lconv_to_r8_un (guint64 a) MONO_INTERNAL;
 
 gpointer mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context, gpointer *this_arg) MONO_INTERNAL;
 
+gpointer mono_helper_compile_generic_method_wo_context (MonoObject *obj, MonoMethod *method, gpointer *this_arg) MONO_INTERNAL;
+
 MonoString *mono_helper_ldstr (MonoImage *image, guint32 idx) MONO_INTERNAL;
 
 MonoString *mono_helper_ldstr_mscorlib (guint32 idx) MONO_INTERNAL;

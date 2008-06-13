@@ -2740,9 +2740,11 @@ mono_emit_jit_icall (MonoCompile *cfg, MonoBasicBlock *bblock, gconstpointer fun
 
 static MonoCallInst*
 mono_emit_rgctx_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method, MonoMethodSignature *sig,
-		MonoInst **args, MonoInst *rgctx_arg, const guint8 *ip, MonoInst *this)
+		MonoInst **args, MonoInst *rgctx_arg, MonoInst *imt_arg, const guint8 *ip, MonoInst *this)
 {
 	MonoCallInst *call = mono_emit_method_call_full (cfg, bblock, method, sig, args, ip, this, FALSE);
+
+	g_assert (!(rgctx_arg && imt_arg));
 
 	if (rgctx_arg) {
 		switch (call->inst.opcode) {
@@ -2761,6 +2763,30 @@ mono_emit_rgctx_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMetho
 			g_assert (!call->inst.inst_right);
 			call->inst.inst_right = rgctx_arg;
 		}
+	} else if (imt_arg) {
+		switch (call->inst.opcode) {
+		case OP_CALLVIRT: call->inst.opcode = OP_CALLVIRT_IMT; break;
+		case OP_VOIDCALLVIRT: call->inst.opcode = OP_VOIDCALLVIRT_IMT; break;
+		case OP_FCALLVIRT: call->inst.opcode = OP_FCALLVIRT_IMT; break;
+		case OP_LCALLVIRT: call->inst.opcode = OP_LCALLVIRT_IMT; break;
+		case OP_VCALLVIRT: {
+			MonoInst *group;
+
+			NEW_GROUP (cfg, group, call->inst.inst_left, NULL);
+			call->inst.inst_left = group;
+			call->inst.opcode = OP_VCALLVIRT_IMT;
+			break;
+		}
+		default: g_assert_not_reached ();
+		}
+
+		if (call->inst.opcode != OP_VCALLVIRT_IMT) {
+			g_assert (!call->inst.inst_right);
+			call->inst.inst_right = imt_arg;
+		} else {
+			g_assert (!call->inst.inst_left->inst_right);
+			call->inst.inst_left->inst_right = imt_arg;
+		}
 	}
 
 	return call;
@@ -2768,10 +2794,10 @@ mono_emit_rgctx_method_call (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMetho
 
 inline static int
 mono_emit_rgctx_method_call_spilled (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethod *method,  
-		MonoMethodSignature *signature, MonoInst **args, MonoInst *rgctx_arg, const guint8 *ip,
-		MonoInst *this)
+		MonoMethodSignature *signature, MonoInst **args, MonoInst *rgctx_arg, MonoInst *imt_arg,
+		const guint8 *ip, MonoInst *this)
 {
-	MonoCallInst *call = mono_emit_rgctx_method_call (cfg, bblock, method, signature, args, rgctx_arg, ip, this);
+	MonoCallInst *call = mono_emit_rgctx_method_call (cfg, bblock, method, signature, args, rgctx_arg, imt_arg, ip, this);
 
 	return mono_spill_call (cfg, bblock, call, signature, method->string_ctor, ip, FALSE);
 }
@@ -5546,6 +5572,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			int virtual = *ip == CEE_CALLVIRT;
 			gboolean no_spill;
 			int context_used = 0;
+			gboolean pass_imt_from_rgctx = FALSE;
+			MonoInst *imt_arg = NULL;
 			gboolean pass_vtable = FALSE;
 			MonoInst *vtable_arg = NULL;
 
@@ -5702,10 +5730,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
 					GENERIC_SHARING_FAILURE (*ip);
+				if (context_used && (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+					/* Generic method interface
+					   calls are resolved via a
+					   helper function and don't
+					   need an imt. */
+					if (!cmethod_context || !cmethod_context->method_inst)
+						pass_imt_from_rgctx = TRUE;
+				}
 
 				if (context_used &&
-						((cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) ||
-						(cmethod_context && cmethod_context->method_inst && cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))) {
+						(cmethod_context && cmethod_context->method_inst && cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 					GENERIC_SHARING_FAILURE (*ip);
 				}
 			}
@@ -5724,6 +5759,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					CHECK_TYPELOAD (cmethod->klass);
 					NEW_VTABLECONST (cfg, vtable_arg, vtable);
 				}
+			}
+
+			if (pass_imt_from_rgctx) {
+				MonoInst *rgctx;
+
+				g_assert (!pass_vtable);
+				g_assert (cmethod);
+
+				GET_RGCTX (rgctx);
+				imt_arg = get_runtime_generic_context_method (cfg, method, bblock, cmethod,
+						generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
 			}
 
 			if (cmethod && virtual && 
@@ -5748,10 +5794,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Because of the PCONST below */
 				cfg->disable_aot = TRUE;
 				NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
-				NEW_METHODCONST (cfg, iargs [1], cmethod);
-				NEW_PCONST (cfg, iargs [2], mono_method_get_context (cmethod));
-				NEW_TEMPLOADA (cfg, iargs [3], this_arg_temp->inst_c0);
-				temp = mono_emit_jit_icall (cfg, bblock, mono_helper_compile_generic_method, iargs, ip);
+				if (context_used) {
+					MonoInst *rgctx;
+
+					GET_RGCTX (rgctx);
+					iargs [1] = get_runtime_generic_context_method (cfg, method, bblock, cmethod,
+							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
+					NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
+					temp = mono_emit_jit_icall (cfg, bblock,
+						mono_helper_compile_generic_method_wo_context, iargs, ip);
+				} else {
+					NEW_METHODCONST (cfg, iargs [1], cmethod);
+					NEW_PCONST (cfg, iargs [2], mono_method_get_context (cmethod));
+					NEW_TEMPLOADA (cfg, iargs [3], this_arg_temp->inst_c0);
+					temp = mono_emit_jit_icall (cfg, bblock, mono_helper_compile_generic_method,
+						iargs, ip);
+				}
 
 				NEW_TEMPLOAD (cfg, addr, temp);
 				NEW_TEMPLOAD (cfg, sp [0], this_arg_temp->inst_c0);
@@ -5916,39 +5974,39 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			else
 				no_spill = FALSE;
 
+			/* FIXME: only do this for generic methods if
+			   they are not shared! */
 			if (context_used &&
 					(cmethod->klass->valuetype ||
 					(cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) ||
 					((cmethod->flags & METHOD_ATTRIBUTE_STATIC) &&
 						mono_class_generic_sharing_enabled (cmethod->klass)) ||
-					(!mono_method_is_generic_sharable_impl (cmethod) &&
+					(!imt_arg && !mono_method_is_generic_sharable_impl (cmethod) &&
 						(!virtual || cmethod->flags & METHOD_ATTRIBUTE_FINAL ||
 						!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))))) {
-				MonoInst *this = NULL, *rgctx;
+				MonoInst *rgctx;
 
 				INLINE_FAILURE;
 
 				g_assert (cfg->generic_sharing_context && cmethod);
-				g_assert (addr == NULL);
+				g_assert (!addr);
 
 				/*
-				 * We are compiling a call to a
-				 * generic method from shared code,
-				 * which means that we have to look up
-				 * the method in the rgctx and do an
-				 * indirect call.
+				 * We are compiling a call to
+				 * non-shared generic code from shared
+				 * code, which means that we have to
+				 * look up the method in the rgctx and
+				 * do an indirect call.
 				 */
-
-				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
-
-				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-					NEW_ARGLOAD (cfg, this, 0);
-				rgctx = get_runtime_generic_context (cfg, method, this, ip);
+				GET_RGCTX (rgctx);
 				addr = get_runtime_generic_context_method (cfg, method, bblock, cmethod,
 						generic_context, rgctx, MONO_RGCTX_INFO_GENERIC_METHOD_CODE, ip);
+
 			}
 
 			if (addr) {
+				g_assert (!imt_arg);
+
 				if (*ip == CEE_CALL) {
 					g_assert (context_used);
 				} else if (*ip == CEE_CALLI) {
@@ -6047,11 +6105,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				} else if (no_spill) {
 					ins = (MonoInst*)mono_emit_rgctx_method_call (cfg, bblock, cmethod, fsig, sp,
-							vtable_arg, ip, virtual ? sp [0] : NULL);
+							vtable_arg, imt_arg, ip, virtual ? sp [0] : NULL);
 					*sp++ = ins;
 				} else {
 					if ((temp = mono_emit_rgctx_method_call_spilled (cfg, bblock, cmethod, fsig, sp,
-							vtable_arg, ip, virtual ? sp [0] : NULL)) != -1) {
+							vtable_arg, imt_arg, ip, virtual ? sp [0] : NULL)) != -1) {
 						MonoInst *load;
 						NEW_TEMPLOAD (cfg, load, temp);
 
@@ -13860,6 +13918,8 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_ldftn_nosync, "mono_ldftn_nosync", "ptr ptr", FALSE);
 	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
 	register_icall (mono_helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr ptr", FALSE);
+	register_icall (mono_helper_compile_generic_method_wo_context, "compile_generic_method_wo_context",
+		"ptr object ptr ptr", FALSE);
 	register_icall (mono_helper_ldstr, "helper_ldstr", "object ptr int", FALSE);
 	register_icall (mono_helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
 	register_icall (mono_helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);

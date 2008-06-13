@@ -830,6 +830,14 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGen
 	return addr;
 }
 
+gpointer
+mono_helper_compile_generic_method_wo_context (MonoObject *obj, MonoMethod *method, gpointer *this_arg)
+{
+	MonoGenericContext *context = mono_method_get_context (method);
+
+	return mono_helper_compile_generic_method (obj, method, context, this_arg);
+}
+
 MonoString*
 mono_helper_ldstr (MonoImage *image, guint32 idx)
 {
