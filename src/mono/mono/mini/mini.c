@@ -4678,7 +4678,7 @@ do_return:
 	*_real_offset = real_offset;
 	return return_value;
 exception_exit:
-	return_value = -1;
+	return_value = -2;
 	goto do_return;
 unverified:
 	return_value = -1;
