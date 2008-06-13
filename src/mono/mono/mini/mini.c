@@ -118,12 +118,14 @@
 		if (method->klass->valuetype)	\
 			GENERIC_SHARING_FAILURE ((opcode)); \
 	} while (0)
-#define GET_RGCTX(rgctx) do {						\
+#define GET_RGCTX(rgctx, context_used) do {						\
 		MonoInst *this = NULL;					\
+		g_assert ((context_used) && !((context_used) & MONO_GENERIC_CONTEXT_USED_METHOD)); \
 		GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD(*ip);	\
-		if (!(method->flags & METHOD_ATTRIBUTE_STATIC))		\
+		if (!(method->flags & METHOD_ATTRIBUTE_STATIC) &&	\
+				!((context_used) & MONO_GENERIC_CONTEXT_USED_METHOD)) \
 			NEW_ARGLOAD (cfg, this, 0);			\
-		(rgctx) = get_runtime_generic_context (cfg, method, this, ip); \
+		(rgctx) = get_runtime_generic_context (cfg, method, (context_used), this, ip); \
 	} while (0)
 
 #define MONO_CHECK_THIS(ins) (mono_method_signature (cfg->method)->hasthis && (ins)->ssa_op == MONO_SSA_LOAD && (ins)->inst_left->inst_c0 == 0)
@@ -4439,7 +4441,7 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
 }
 
 static MonoInst*
-get_runtime_generic_context (MonoCompile *cfg, MonoMethod *method, MonoInst *this, unsigned char *ip)
+get_runtime_generic_context (MonoCompile *cfg, MonoMethod *method, int context_used, MonoInst *this, unsigned char *ip)
 {
 	g_assert (!method->klass->valuetype);
 
@@ -4497,14 +4499,9 @@ create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	return ptr;
 }
 
-/*
- * Generates rgc->other_infos [index].XXX if index is non-negative, or
- * rgc->extra_other_infos [-index + 1] if index is negative.  XXX is
- * specified by rgctx_type;
- */
 static MonoInst*
 get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
-	MonoInst *rgc_ptr, int slot, const unsigned char *ip)
+	MonoInst *rgc_ptr, guint32 slot, const unsigned char *ip)
 {
 	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
 	guint8 *tramp = create_rgctx_lazy_fetch_trampoline (slot);
@@ -4519,31 +4516,33 @@ get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoBasicBlock *b
 }
 
 static MonoInst*
-get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
+get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, int context_used, MonoBasicBlock *bblock,
 	MonoClass *klass, guint32 type_token, int token_source, MonoGenericContext *generic_context, MonoInst *rgctx,
 	int rgctx_type, unsigned char *ip)
 {
 	guint32 slot = mono_method_lookup_or_register_other_info (method,
-		FALSE, &klass->byval_arg, rgctx_type, generic_context);
+		context_used & MONO_GENERIC_CONTEXT_USED_METHOD, &klass->byval_arg, rgctx_type, generic_context);
 
 	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, slot, ip);
 }
 
 static MonoInst*
-get_runtime_generic_context_method (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
+get_runtime_generic_context_method (MonoCompile *cfg, MonoMethod *method, int context_used, MonoBasicBlock *bblock,
 	MonoMethod *cmethod, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type, const unsigned char *ip)
 {
-	guint32 slot = mono_method_lookup_or_register_other_info (method, FALSE, cmethod, rgctx_type, generic_context);
+	guint32 slot = mono_method_lookup_or_register_other_info (method,
+		context_used & MONO_GENERIC_CONTEXT_USED_METHOD, cmethod, rgctx_type, generic_context);
 
 	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, slot, ip);
 }
 
 static MonoInst*
-get_runtime_generic_context_field (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
+get_runtime_generic_context_field (MonoCompile *cfg, MonoMethod *method, int context_used, MonoBasicBlock *bblock,
 	MonoClassField *field, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type,
 	const unsigned char *ip)
 {
-	guint32 slot = mono_method_lookup_or_register_other_info (method, FALSE, field, rgctx_type, generic_context);
+	guint32 slot = mono_method_lookup_or_register_other_info (method,
+		context_used & MONO_GENERIC_CONTEXT_USED_METHOD, field, rgctx_type, generic_context);
 
 	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, slot, ip);
 }
@@ -4566,14 +4565,14 @@ generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
  * is generated.
  */
 static int
-handle_unbox_nullable (MonoCompile* cfg, MonoMethod *caller_method, MonoBasicBlock* bblock, MonoInst* val,
-	guchar *ip, MonoClass* klass, MonoGenericContext *generic_context, MonoInst *rgctx)
+handle_unbox_nullable (MonoCompile* cfg, MonoMethod *caller_method, int context_used, MonoBasicBlock* bblock,
+	MonoInst* val, const guchar *ip, MonoClass* klass, MonoGenericContext *generic_context, MonoInst *rgctx)
 {
 	MonoMethod* method = mono_class_get_method_from_name (klass, "Unbox", 1);
 	MonoMethodSignature *signature = mono_method_signature (method);
 
 	if (rgctx) {
-		MonoInst *addr = get_runtime_generic_context_method (cfg, caller_method, bblock, method,
+		MonoInst *addr = get_runtime_generic_context_method (cfg, caller_method, context_used, bblock, method,
 			generic_context, rgctx, MONO_RGCTX_INFO_GENERIC_METHOD_CODE, ip);
 
 		return mono_emit_rgctx_calli_spilled (cfg, bblock, signature, &val, addr, NULL, ip);
@@ -4592,7 +4591,7 @@ handle_box_nullable_from_inst (MonoCompile *cfg, MonoMethod *caller_method, int 
 
 	g_assert (mono_class_is_nullable (klass));
 
-	method_addr = get_runtime_generic_context_method (cfg, caller_method, bblock, method,
+	method_addr = get_runtime_generic_context_method (cfg, caller_method, context_used, bblock, method,
 			generic_context, rgctx, MONO_RGCTX_INFO_GENERIC_METHOD_CODE, ip);
 	temp = mono_emit_rgctx_calli_spilled (cfg, bblock, mono_method_signature (method), &val,
 			method_addr, NULL, ip);
@@ -4616,7 +4615,7 @@ mono_object_castclass (MonoObject *obj, MonoClass *klass)
 }
 
 static int
-emit_castclass (MonoClass *klass, guint32 token, gboolean shared_access, gboolean inst_is_castclass, MonoCompile *cfg,
+emit_castclass (MonoClass *klass, guint32 token, int context_used, gboolean inst_is_castclass, MonoCompile *cfg,
 		MonoMethod *method, MonoInst **arg_array, MonoType **param_types, GList *dont_inline,
 		unsigned char *end, MonoMethodHeader *header, MonoGenericContext *generic_context,
 		MonoBasicBlock **_bblock, unsigned char **_ip, MonoInst ***_sp, int *_inline_costs, guint *_real_offset)
@@ -4628,9 +4627,8 @@ emit_castclass (MonoClass *klass, guint32 token, gboolean shared_access, gboolea
 	guint real_offset = *_real_offset;
 	int return_value = 0;
 
-	if (shared_access) {
-		MonoInst *this = NULL, *rgctx;
-		MonoInst *args [2];
+	if (context_used) {
+		MonoInst *rgctx, *args [2];
 		int temp;
 
 		g_assert (!method->klass->valuetype);
@@ -4639,10 +4637,8 @@ emit_castclass (MonoClass *klass, guint32 token, gboolean shared_access, gboolea
 		args [0] = *sp;
 
 		/* klass */
-		if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-			NEW_ARGLOAD (cfg, this, 0);
-		rgctx = get_runtime_generic_context (cfg, method, this, ip);
-		args [1] = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+		GET_RGCTX (rgctx, context_used);
+		args [1] = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
 				token, MINI_TOKEN_SOURCE_CLASS, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 
 		temp = mono_emit_jit_icall (cfg, bblock, mono_object_castclass, args, ip);
@@ -4707,6 +4703,9 @@ do_return:
 	*_inline_costs = inline_costs;
 	*_real_offset = real_offset;
 	return return_value;
+exception_exit:
+	return_value = -1;
+	goto do_return;
 unverified:
 	return_value = -1;
 	goto do_return;
@@ -4813,6 +4812,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoDeclSecurityActions actions;
 	GSList *class_inits = NULL;
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
+	int context_used;
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
@@ -5185,6 +5185,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			real_offset = inline_offset;
 		cfg->ip = ip;
 
+		context_used = 0;
+
 		if (start_new_bblock) {
 			bblock->cil_length = ip - bblock->cil_code;
 			if (start_new_bblock == 2) {
@@ -5539,7 +5541,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			int temp, array_rank = 0;
 			int virtual = *ip == CEE_CALLVIRT;
 			gboolean no_spill;
-			int context_used = 0;
 			gboolean pass_imt_from_rgctx = FALSE;
 			MonoInst *imt_arg = NULL;
 			gboolean pass_vtable = FALSE;
@@ -5717,8 +5718,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (context_used) {
 					MonoInst *rgctx;
 
-					GET_RGCTX (rgctx);
-					vtable_arg = get_runtime_generic_context_ptr (cfg, method, bblock, cmethod->klass,
+					GET_RGCTX (rgctx, context_used);
+					vtable_arg = get_runtime_generic_context_ptr (cfg, method, context_used,
+						bblock, cmethod->klass,
 						token, MINI_TOKEN_SOURCE_METHOD, generic_context,
 						rgctx, MONO_RGCTX_INFO_VTABLE, ip);
 				} else {
@@ -5735,8 +5737,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_assert (!pass_vtable);
 				g_assert (cmethod);
 
-				GET_RGCTX (rgctx);
-				imt_arg = get_runtime_generic_context_method (cfg, method, bblock, cmethod,
+				GET_RGCTX (rgctx, context_used);
+				imt_arg = get_runtime_generic_context_method (cfg, method, context_used, bblock, cmethod,
 						generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
 			}
 
@@ -5765,8 +5767,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (context_used) {
 					MonoInst *rgctx;
 
-					GET_RGCTX (rgctx);
-					iargs [1] = get_runtime_generic_context_method (cfg, method, bblock, cmethod,
+					GET_RGCTX (rgctx, context_used);
+					iargs [1] = get_runtime_generic_context_method (cfg, method, context_used,
+							bblock, cmethod,
 							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
 					NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
 					temp = mono_emit_jit_icall (cfg, bblock,
@@ -5966,8 +5969,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * look up the method in the rgctx and
 				 * do an indirect call.
 				 */
-				GET_RGCTX (rgctx);
-				addr = get_runtime_generic_context_method (cfg, method, bblock, cmethod,
+				GET_RGCTX (rgctx, context_used);
+				addr = get_runtime_generic_context_method (cfg, method, context_used, bblock, cmethod,
 						generic_context, rgctx, MONO_RGCTX_INFO_GENERIC_METHOD_CODE, ip);
 
 			}
@@ -6728,7 +6731,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoInst *iargs [2];
 			MonoMethodSignature *fsig;
 			int temp;
-			gboolean generic_shared = FALSE;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -6743,13 +6745,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto load_error;
 
 			if (cfg->generic_sharing_context) {
-				int context_used = mono_method_check_context_used (cmethod);
+				context_used = mono_method_check_context_used (cmethod);
 
 				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
 					GENERIC_SHARING_FAILURE (CEE_NEWOBJ);
-
-				if (context_used)
-					generic_shared = TRUE;
 			}
 
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
@@ -6809,12 +6808,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 
 			if (mini_class_is_system_array (cmethod->klass)) {
-				g_assert (!generic_shared);
+				g_assert (!context_used);
 
 				NEW_METHODCONST (cfg, *sp, cmethod);
 				temp = handle_array_new (cfg, bblock, fsig->param_count, sp, ip);
 			} else if (cmethod->string_ctor) {
-				g_assert (!generic_shared);
+				g_assert (!context_used);
 
 				/* we simply pass a null pointer */
 				NEW_PCONST (cfg, *sp, NULL); 
@@ -6838,17 +6837,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					 * iargs [0] to be a boxed instance, but luckily the vcall
 					 * will be transformed into a normal call there.
 					 */
-				} else if (generic_shared) {
+				} else if (context_used) {
 					MonoInst *rgctx, *data;
 					int rgctx_info;
 
-					GET_RGCTX (rgctx);
+					GET_RGCTX (rgctx, context_used);
 					if (cfg->opt & MONO_OPT_SHARED)
 						rgctx_info = MONO_RGCTX_INFO_KLASS;
 					else
 						rgctx_info = MONO_RGCTX_INFO_VTABLE;
-					data = get_runtime_generic_context_ptr (cfg, method, bblock, cmethod->klass,
-						token, MINI_TOKEN_SOURCE_METHOD, generic_context,
+					data = get_runtime_generic_context_ptr (cfg, method, context_used, bblock,
+						cmethod->klass, token, MINI_TOKEN_SOURCE_METHOD, generic_context,
 						rgctx, rgctx_info, ip);
 
 					temp = handle_alloc_from_inst (cfg, bblock, cmethod->klass, data, FALSE, ip);
@@ -6874,7 +6873,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cmethod->klass->marshalbyref)
 					callvirt_this_arg = sp [0];
 				
-				if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !generic_shared &&
+				if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used &&
 				    mono_method_check_inlining (cfg, cmethod) &&
 				    !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE) &&
 				    !g_list_find (dont_inline, cmethod)) {
@@ -6904,19 +6903,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						INLINE_FAILURE;
 						mono_emit_method_call_spilled (cfg, bblock, cmethod, fsig, sp, ip, callvirt_this_arg);
 					}
-				} else if (generic_shared &&
+				} else if (context_used &&
 						(cmethod->klass->valuetype ||
 						!mono_method_is_generic_sharable_impl (cmethod))) {
-					MonoInst *this = NULL, *rgctx, *cmethod_addr;
+					MonoInst *rgctx, *cmethod_addr;
 
 					g_assert (!callvirt_this_arg);
 
-					GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
-
-					if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-						NEW_ARGLOAD (cfg, this, 0);
-					rgctx = get_runtime_generic_context (cfg, method, this, ip);
-					cmethod_addr = get_runtime_generic_context_method (cfg, method, bblock, cmethod,
+					GET_RGCTX (rgctx, context_used);
+					cmethod_addr = get_runtime_generic_context_method (cfg, method, context_used,
+							bblock, cmethod,
 							generic_context, rgctx, MONO_RGCTX_INFO_GENERIC_METHOD_CODE, ip);
 
 					mono_emit_calli_spilled (cfg, bblock, fsig, sp, cmethod_addr, ip);
@@ -6935,9 +6931,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 5;
 			break;
 		}
-		case CEE_ISINST: {
-			gboolean shared_access = FALSE;
-
+		case CEE_ISINST:
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
@@ -6948,34 +6942,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 
 			if (cfg->generic_sharing_context) {
-				int context_used = mono_class_check_context_used (klass);
+				context_used = mono_class_check_context_used (klass);
 
 				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
 					GENERIC_SHARING_FAILURE (CEE_ISINST);
-
-				if (context_used)
-					shared_access = TRUE;
 			}
 
 			/* Needed by the code generated in inssel.brg */
-			if (!shared_access)
+			if (!context_used)
 				mono_get_got_var (cfg);
 
-			if (shared_access) {
-				MonoInst *this = NULL, *rgctx;
-				MonoInst *args [2];
+			if (context_used) {
+				MonoInst *rgctx, *args [2];
 				int temp;
-
-				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
 
 				/* obj */
 				args [0] = *sp;
 
 				/* klass */
-				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-					NEW_ARGLOAD (cfg, this, 0);
-				rgctx = get_runtime_generic_context (cfg, method, this, ip);
-				args [1] = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+				GET_RGCTX (rgctx, context_used);
+				args [1] = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
 					token, MINI_TOKEN_SOURCE_CLASS, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 
 				temp = mono_emit_jit_icall (cfg, bblock, mono_object_isinst, args, ip);
@@ -7023,12 +7009,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 5;
 			}
 			break;
-		}
 		case CEE_UNBOX_ANY: {
 			MonoInst *add, *vtoffset;
 			MonoInst *iargs [3];
 			guint32 align;
-			int context_used = 0;
 
 			CHECK_STACK (1);
 			--sp;
@@ -7045,13 +7029,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (generic_class_is_reference_type (cfg, klass)) {
-				if (context_used)
-					GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (CEE_UNBOX_ANY);
 				switch (emit_castclass (klass, token, context_used, FALSE,
 						cfg, method, arg_array, param_types, dont_inline, end, header,
 						generic_context, &bblock, &ip, &sp, &inline_costs, &real_offset)) {
 				case 0: break;
 				case -1: goto unverified;
+				case -2: goto exception_exit;
 				default: g_assert_not_reached ();
 				}
 				break;
@@ -7061,15 +7044,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				int v;
 				MonoInst *rgctx = NULL;
 
-				if (context_used) {
-					MonoInst *this = NULL;
+				if (context_used)
+					GET_RGCTX (rgctx, context_used);
 
-					if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-						NEW_ARGLOAD (cfg, this, 0);
-					rgctx = get_runtime_generic_context (cfg, method, this, ip);
-				}
-
-				v = handle_unbox_nullable (cfg, method, bblock, *sp, ip, klass, generic_context, rgctx);
+				v = handle_unbox_nullable (cfg, method, context_used, bblock, *sp, ip, klass,
+					generic_context, rgctx);
 				NEW_TEMPLOAD (cfg, *sp, v);
 				sp ++;
 				ip += 5;
@@ -7080,18 +7059,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			mono_get_got_var (cfg);
 
 			if (context_used) {
-				MonoInst *this = NULL, *rgctx;
-				MonoInst *element_class;
-
-				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (CEE_UNBOX_ANY);
+				MonoInst *rgctx, *element_class;
 
 				/* This assertion is from the
 				   unboxcast insn */
 				g_assert (klass->rank == 0);
 
-				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-					NEW_ARGLOAD (cfg, this, 0);
-				rgctx = get_runtime_generic_context (cfg, method, this, ip);
+				GET_RGCTX (rgctx, context_used);
 				/* FIXME: Passing token here is
 				   technically not correct, because we
 				   don't use klass but
@@ -7101,7 +7075,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				   it's not a big deal.  To be correct
 				   we'd have to invent a new token
 				   source. */
-				element_class = get_runtime_generic_context_ptr (cfg, method, bblock,
+				element_class = get_runtime_generic_context_ptr (cfg, method, context_used, bblock,
 					klass->element_class, token, MINI_TOKEN_SOURCE_CLASS,
 					generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 
@@ -7156,11 +7130,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_sharing_context && mono_class_check_context_used (klass))
+			if (cfg->generic_sharing_context) {
+				context_used = mono_class_check_context_used (klass);
 				GENERIC_SHARING_FAILURE (CEE_UNBOX);
+			}
 
 			if (mono_class_is_nullable (klass)) {
-				int v = handle_unbox_nullable (cfg, method, bblock, *sp, ip, klass, generic_context, NULL);
+				int v = handle_unbox_nullable (cfg, method, context_used, bblock, *sp, ip, klass,
+					generic_context, NULL);
 				NEW_TEMPLOAD (cfg, *sp, v);
 				sp ++;
 				ip += 5;
@@ -7187,9 +7164,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 2;
 			break;
 		}
-		case CEE_CASTCLASS: {
-			gboolean shared_access = FALSE;
-
+		case CEE_CASTCLASS:
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
@@ -7200,26 +7175,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				UNVERIFIED;
 
 			if (cfg->generic_sharing_context) {
-				int context_used = mono_class_check_context_used (klass);
+				context_used = mono_class_check_context_used (klass);
 
 				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
 					GENERIC_SHARING_FAILURE (CEE_CASTCLASS);
-
-				if (context_used) {
-					shared_access = TRUE;
-					GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
-				}
 			}
 
-			switch (emit_castclass (klass, token, shared_access, TRUE,
+			switch (emit_castclass (klass, token, context_used, TRUE,
 					cfg, method, arg_array, param_types, dont_inline, end, header,
 					generic_context, &bblock, &ip, &sp, &inline_costs, &real_offset)) {
 			case 0: break;
 			case -1: goto unverified;
+			case -2: goto exception_exit;
 			default: g_assert_not_reached ();
 			}
 			break;
-		}
 		case CEE_THROW:
 			CHECK_STACK (1);
 			MONO_INST_NEW (cfg, ins, OP_THROW);
@@ -7427,7 +7397,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_STSFLD: {
 			MonoClassField *field;
 			gpointer addr = NULL;
-			gboolean shared_access = FALSE;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -7454,14 +7423,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #endif
 
 			if (cfg->generic_sharing_context) {
-				int context_used = mono_class_check_context_used (klass);
+				context_used = mono_class_check_context_used (klass);
 
 				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD ||
 						klass->valuetype)
 					GENERIC_SHARING_FAILURE (*ip);
-
-				if (context_used)
-					shared_access = TRUE;
 			}
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
@@ -7490,21 +7456,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* avoid depending on undefined C behavior in sequence points */
 				domain_var = mono_get_domainvar (cfg);
 				NEW_TEMPLOAD (cfg, iargs [0], domain_var->inst_c0);
-				if (shared_access) {
+				if (context_used) {
 					MonoInst *rgctx;
 
-					GET_RGCTX (rgctx);
-					iargs [1] = get_runtime_generic_context_field (cfg, method, bblock, field,
+					GET_RGCTX (rgctx, context_used);
+					iargs [1] = get_runtime_generic_context_field (cfg, method, context_used,
+							bblock, field,
 							generic_context, rgctx, MONO_RGCTX_INFO_CLASS_FIELD, ip);
 				} else {
 					NEW_FIELDCONST (cfg, iargs [1], field);
 				}
 				temp = mono_emit_jit_icall (cfg, bblock, mono_class_static_field_address, iargs, ip);
 				NEW_TEMPLOAD (cfg, ins, temp);
-			} else if (shared_access) {
-				MonoInst *this, *rgctx, *static_data;
-
-				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
+			} else if (context_used) {
+				MonoInst *rgctx, *static_data;
 
 				/*
 				g_print ("sharing static field access in %s.%s.%s - depth %d offset %d\n",
@@ -7517,13 +7482,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoCallInst *call;
 					MonoInst *vtable, *rgctx;
 
-					if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-						NEW_ARGLOAD (cfg, this, 0);
-					else
-						this = NULL;
-
-					rgctx = get_runtime_generic_context (cfg, method, this, ip);
-					vtable = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+					GET_RGCTX (rgctx, context_used);
+					vtable = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
 							token, MINI_TOKEN_SOURCE_FIELD, generic_context,
 							rgctx, MONO_RGCTX_INFO_VTABLE, ip);
 
@@ -7541,13 +7501,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 *
 				 *   super_info.static_data + field->offset
 				 */
-
-				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-					NEW_ARGLOAD (cfg, this, 0);
-				else
-					this = NULL;
-				rgctx = get_runtime_generic_context (cfg, method, this, ip);
-				static_data = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+				GET_RGCTX (rgctx, context_used);
+				static_data = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
 					token, MINI_TOKEN_SOURCE_FIELD, generic_context,
 					rgctx, MONO_RGCTX_INFO_STATIC_DATA, ip);
 
@@ -7636,7 +7591,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
 
 				CHECK_TYPELOAD (klass);
-				if (!shared_access && !((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
+				if (!context_used && !((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
 				    vtable->initialized && (field->type->attrs & FIELD_ATTRIBUTE_INIT_ONLY)) {
 					gpointer addr = (char*)vtable->data + field->offset;
 					int ro_type = field->type->type;
@@ -7751,7 +7706,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_BOX: {
 			MonoInst *val;
-			int context_used = 0;
 
 			CHECK_STACK (1);
 			--sp;
@@ -7817,19 +7771,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *rgctx;
 
 				if (mono_class_is_nullable (klass)) {
-					GET_RGCTX (rgctx);
+					GET_RGCTX (rgctx, context_used);
 					*sp++ = handle_box_nullable_from_inst (cfg, method, context_used, bblock, val,
 							ip, klass, generic_context, rgctx);
 				} else {
 					MonoInst *data;
 					int rgctx_info;
 
-					GET_RGCTX (rgctx);
+					GET_RGCTX (rgctx, context_used);
 					if (cfg->opt & MONO_OPT_SHARED)
 						rgctx_info = MONO_RGCTX_INFO_KLASS;
 					else
 						rgctx_info = MONO_RGCTX_INFO_VTABLE;
-					data = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+					data = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
 							token, MINI_TOKEN_SOURCE_CLASS, generic_context,
 							rgctx, rgctx_info, ip);
 
@@ -7842,9 +7796,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 1;
 			break;
 		}
-		case CEE_NEWARR: {
-			gboolean shared_access = FALSE;
-
+		case CEE_NEWARR:
 			CHECK_STACK (1);
 			--sp;
 
@@ -7865,30 +7817,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_TYPELOAD (klass);
 
 			if (cfg->generic_sharing_context) {
-				int context_used = mono_class_check_context_used (klass);
+				context_used = mono_class_check_context_used (klass);
 
 				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD || klass->valuetype)
 					GENERIC_SHARING_FAILURE (CEE_NEWARR);
-
-				if (context_used)
-					shared_access = TRUE;
 			}
 
-			if (shared_access) {
-				MonoInst *this = NULL, *rgctx;
-				MonoInst *args [3];
+			if (context_used) {
+				MonoInst *rgctx, *args [3];
 				int temp;
-
-				GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
 
 				/* domain */
 				NEW_DOMAINCONST (cfg, args [0]);
 
 				/* klass */
-				if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-					NEW_ARGLOAD (cfg, this, 0);
-				rgctx = get_runtime_generic_context (cfg, method, this, ip);
-				args [1] = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+				GET_RGCTX (rgctx, context_used);
+				args [1] = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
 					token, MINI_TOKEN_SOURCE_CLASS, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 
 				/* array len */
@@ -7951,7 +7895,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			inline_costs += 1;
 			break;
-		}
 		case CEE_LDLEN:
 			CHECK_STACK (1);
 			--sp;
@@ -8200,9 +8143,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			++ip;
 			break;
 		}
-		case CEE_REFANYVAL: {
-			int context_used = 0;
-
+		case CEE_REFANYVAL:
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
@@ -8225,8 +8166,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->inst_left = *sp;
 				ins->klass = klass;
 
-				GET_RGCTX (rgctx);
-				ins->inst_right = get_runtime_generic_context_ptr (cfg, method,
+				GET_RGCTX (rgctx, context_used);
+				ins->inst_right = get_runtime_generic_context_ptr (cfg, method, context_used,
 						bblock, klass,
 						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
 						rgctx, MONO_RGCTX_INFO_KLASS, ip);
@@ -8240,10 +8181,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip += 5;
 			*sp++ = ins;
 			break;
-		}
 		case CEE_MKREFANY: {
 			MonoInst *loc;
-			int context_used = 0;
 
 			CHECK_STACK (1);
 			--sp;
@@ -8263,12 +8202,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (context_used) {
 				MonoInst *rgctx, *klass_type, *klass_klass, *loc_load;
 
-				GET_RGCTX (rgctx);
-				klass_klass = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+				GET_RGCTX (rgctx, context_used);
+				klass_klass = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
 						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
 						rgctx, MONO_RGCTX_INFO_KLASS, ip);
-				GET_RGCTX (rgctx);
-				klass_type = get_runtime_generic_context_ptr (cfg, method, bblock, klass,
+				GET_RGCTX (rgctx, context_used);
+				klass_type = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
 						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
 						rgctx, MONO_RGCTX_INFO_TYPE, ip);
 
@@ -8297,7 +8236,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDTOKEN: {
 			gpointer handle;
 			MonoClass *handle_class;
-			int context_used = 0;
 
 			CHECK_STACK_OVF (1);
 
@@ -8355,8 +8293,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (method_context_used) {
 					MonoInst *rgctx;
 
-					GET_RGCTX (rgctx);
-					iargs [2] = get_runtime_generic_context_method (cfg, method, bblock, method,
+					GET_RGCTX (rgctx, method_context_used);
+					iargs [2] = get_runtime_generic_context_method (cfg, method, method_context_used,
+							bblock, method,
 							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
 					temp = mono_emit_jit_icall (cfg, bblock, mono_ldtoken_wrapper_generic_shared,
 							iargs, ip);
@@ -8379,13 +8318,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoClass *tclass = mono_class_from_mono_type (handle);
 					mono_class_init (tclass);
 					if (context_used) {
-						MonoInst *this, *rgctx;
+						MonoInst *rgctx;
 
 						g_assert (!cfg->compile_aot);
-						if (!(method->flags & METHOD_ATTRIBUTE_STATIC))
-							NEW_ARGLOAD (cfg, this, 0);
-						rgctx = get_runtime_generic_context (cfg, method, this, ip);
-						ins = get_runtime_generic_context_ptr (cfg, method, bblock, tclass,
+
+						GET_RGCTX (rgctx, context_used);
+						ins = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, tclass,
 							token, MINI_TOKEN_SOURCE_CLASS, generic_context,
 							rgctx, MONO_RGCTX_INFO_REFLECTION_TYPE, ip);
 					} else if (cfg->compile_aot) {
@@ -8404,20 +8342,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						g_assert (!cfg->compile_aot);
 
-						GET_RGCTX (rgctx);
+						GET_RGCTX (rgctx, context_used);
 						if (handle_class == mono_defaults.typehandle_class) {
 							ins = get_runtime_generic_context_ptr (cfg, method,
-									bblock,
+									context_used, bblock,
 									mono_class_from_mono_type (handle), token,
 									MINI_TOKEN_SOURCE_CLASS, generic_context,
 									rgctx, MONO_RGCTX_INFO_TYPE, ip);
 						} else if (handle_class == mono_defaults.methodhandle_class) {
 							ins = get_runtime_generic_context_method (cfg, method,
-									bblock, handle, generic_context,
+									context_used, bblock, handle, generic_context,
 									rgctx, MONO_RGCTX_INFO_METHOD, ip);
 						} else if (handle_class == mono_defaults.fieldhandle_class) {
 							ins = get_runtime_generic_context_field (cfg, method,
-									bblock, handle, generic_context,
+									context_used, bblock, handle, generic_context,
 									rgctx, MONO_RGCTX_INFO_CLASS_FIELD, ip);
 						} else {
 							g_assert_not_reached ();
@@ -8828,7 +8766,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoMethod *cil_method, *ctor_method;
 				int temp;
 				gboolean is_shared = FALSE;
-				int context_used = 0;
 
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
@@ -8892,8 +8829,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (is_shared)
 						cmethod = mono_marshal_get_static_rgctx_invoke (cmethod);
 
-					GET_RGCTX (rgctx);
-					argconst = get_runtime_generic_context_method (cfg, method,
+					GET_RGCTX (rgctx, context_used);
+					argconst = get_runtime_generic_context_method (cfg, method, context_used,
 							bblock, cmethod,
 							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
 				} else if (is_shared) {
@@ -8915,7 +8852,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_LDVIRTFTN: {
 				MonoInst *args [2];
 				int temp;
-				int context_used = 0;
 
 				CHECK_STACK (1);
 				CHECK_OPSIZE (6);
@@ -8943,8 +8879,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (context_used) {
 					MonoInst *rgctx;
 
-					GET_RGCTX (rgctx);
-					args [1] = get_runtime_generic_context_method (cfg, method,
+					GET_RGCTX (rgctx, context_used);
+					args [1] = get_runtime_generic_context_method (cfg, method, context_used,
 							bblock, cmethod,
 							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
 				} else {
