@@ -196,6 +196,7 @@ class Tests {
 				return (int)b;
 			if (Math.Min (b, a) != b)
 				return (int)b;
+		}
 		return 0;
 	}
 
