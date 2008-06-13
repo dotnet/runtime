@@ -414,7 +414,7 @@ else
 if PLATFORM_WIN32
 test:   assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 test-generic-sharing test-bug-382986
 else
-test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 custom-modifiers test-generic-sharing test-bug-382986 
+test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 custom-modifiers test-generic-sharing test-bug-382986 test-modules
 endif
 endif
 
@@ -718,6 +718,14 @@ async-exceptions.exe : async-exceptions.cs
 test-async-exceptions : async-exceptions.exe
 	for i in `echo 0 1 2 3 4 5 6 7 8 9 10`; do $(RUNTIME) --inject-async-exc Tests:foo $$i async-exceptions.exe || exit 1; done
 	for i in `echo 0 1 2 3 4 5 6 7 8 9 10`; do $(RUNTIME) --inject-async-exc Tests:bar $$i async-exceptions.exe || exit 1; done
+
+EXTRA_DIST += modules.cs modules-m1.cs
+modules-m1.netmodule: modules-m1.cs
+	$(MCS) -out:$@ /target:module $(srcdir)/modules-m1.cs
+modules.exe: modules.cs modules-m1.netmodule
+	$(MCS) -out:$@ /addmodule:modules-m1.netmodule -r:TestDriver.dll $(srcdir)/modules.cs
+test-modules: modules.exe
+	$(RUNTIME) modules.exe
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
