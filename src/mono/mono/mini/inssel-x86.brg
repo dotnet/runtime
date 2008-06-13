@@ -692,7 +692,9 @@ reg: CEE_MUL(reg, CEE_LDIND_I4 (base)) {
 } 
 
 reg: OP_IMIN (reg, reg),
-reg: OP_IMAX (reg, reg) {
+reg: OP_IMIN_UN (reg, reg),
+reg: OP_IMAX (reg, reg),
+reg: OP_IMAX_UN (reg, reg) {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 
