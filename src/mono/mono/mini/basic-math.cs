@@ -197,6 +197,21 @@ class Tests {
 			if (Math.Min (b, a) != b)
 				return (int)b;
 		}
+
+		if (Math.Min ((ulong)5, (ulong)6) != 5)
+			return 4;
+		if (Math.Min ((ulong)6, (ulong)5) != 5)
+			return 5;
+
+		ulong la = (ulong)long.MaxValue + 10;
+
+		for (ulong b = 7; b <= 10; ++b) {
+			if (Math.Min (la, b) != b)
+				return (int)b;
+			if (Math.Min (b, la) != b)
+				return (int)b;
+		}
+
 		return 0;
 	}
 
@@ -209,6 +224,21 @@ class Tests {
 			if (Math.Max (b, a) != a)
 				return (int)b;
 		}
+
+		if (Math.Max ((ulong)5, (ulong)6) != 6)
+			return 4;
+		if (Math.Max ((ulong)6, (ulong)5) != 6)
+			return 5;
+
+		ulong la = (ulong)long.MaxValue + 10;
+
+		for (ulong b = 7; b <= 10; ++b) {
+			if (Math.Max (la, b) != la)
+				return (int)b;
+			if (Math.Max (b, la) != la)
+				return (int)b;
+		}
+
 		return 0;
 	}
 

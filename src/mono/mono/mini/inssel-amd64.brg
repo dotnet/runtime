@@ -630,9 +630,13 @@ reg: OP_LREM_UN (reg, reg),
 reg: OP_LMUL_OVF (reg, reg),
 reg: OP_LMUL_OVF_UN (reg, reg),
 reg: OP_IMIN (reg, reg),
+reg: OP_IMIN_UN (reg, reg),
 reg: OP_IMAX (reg, reg),
+reg: OP_IMAX_UN (reg, reg),
 reg: OP_LMIN (reg, reg),
-reg: OP_LMAX (reg, reg) "0" {
+reg: OP_LMIN_UN (reg, reg),
+reg: OP_LMAX (reg, reg),
+reg: OP_LMAX_UN (reg, reg) "0" {
 	MONO_EMIT_BIALU (s, tree, tree->opcode, state->reg1, state->left->reg1, state->right->reg1);
 }
 

@@ -499,6 +499,10 @@ MINI_OP(OP_IMIN, "int_min")
 MINI_OP(OP_IMAX, "int_max")
 MINI_OP(OP_LMIN, "long_min")
 MINI_OP(OP_LMAX, "long_max")
+MINI_OP(OP_IMIN_UN, "int_min_un")
+MINI_OP(OP_IMAX_UN, "int_max_un")
+MINI_OP(OP_LMIN_UN, "long_min_un")
+MINI_OP(OP_LMAX_UN, "long_max_un")
 
 /* opcodes most architecture have */
 MINI_OP(OP_ADC,     "adc")
