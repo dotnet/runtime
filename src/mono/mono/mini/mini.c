@@ -4588,6 +4588,24 @@ handle_unbox_nullable (MonoCompile* cfg, MonoMethod *caller_method, MonoBasicBlo
 	}
 }
 
+static MonoInst*
+handle_box_nullable_from_inst (MonoCompile *cfg, MonoMethod *caller_method, int context_used, MonoBasicBlock *bblock,
+	MonoInst *val, const guchar *ip, MonoClass *klass, MonoGenericContext *generic_context, MonoInst *rgctx)
+{
+	MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
+	MonoInst *dest, *method_addr;
+	int temp;
+
+	g_assert (mono_class_is_nullable (klass));
+
+	method_addr = get_runtime_generic_context_method (cfg, caller_method, bblock, method,
+			generic_context, rgctx, MONO_RGCTX_INFO_GENERIC_METHOD_CODE, ip);
+	temp = mono_emit_rgctx_calli_spilled (cfg, bblock, mono_method_signature (method), &val,
+			method_addr, NULL, ip);
+	NEW_TEMPLOAD (cfg, dest, temp);
+	return dest;
+}
+
 static MonoObject*
 mono_object_castclass (MonoObject *obj, MonoClass *klass)
 {
@@ -7777,9 +7795,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (context_used) {
 				MonoInst *rgctx;
 
-  				if (mono_class_is_nullable (klass)) {
-					GENERIC_SHARING_FAILURE (CEE_BOX);
-  				} else {
+				if (mono_class_is_nullable (klass)) {
+					GET_RGCTX (rgctx);
+					*sp++ = handle_box_nullable_from_inst (cfg, method, context_used, bblock, val,
+							ip, klass, generic_context, rgctx);
+				} else {
 					MonoInst *data;
 					int rgctx_info;
 
