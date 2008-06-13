@@ -8893,6 +8893,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_LDVIRTFTN: {
 				MonoInst *args [2];
 				int temp;
+				int context_used = 0;
 
 				CHECK_STACK (1);
 				CHECK_OPSIZE (6);
@@ -8902,8 +8903,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto load_error;
 				mono_class_init (cmethod->klass);
 
-				if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod))
-					GENERIC_SHARING_FAILURE (CEE_LDVIRTFTN);
+				if (cfg->generic_sharing_context)
+					context_used = mono_method_check_context_used (cmethod);
 
 				if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
 					if (check_linkdemand (cfg, method, cmethod, bblock, ip))
@@ -8917,7 +8918,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				--sp;
 				args [0] = *sp;
-				NEW_METHODCONST (cfg, args [1], cmethod);
+				if (context_used) {
+					MonoInst *rgctx;
+
+					GET_RGCTX (rgctx);
+					args [1] = get_runtime_generic_context_method (cfg, method,
+							bblock, cmethod,
+							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
+				} else {
+					NEW_METHODCONST (cfg, args [1], cmethod);
+				}
 				temp = mono_emit_jit_icall (cfg, bblock, mono_ldvirtfn, args, ip);
 				NEW_TEMPLOAD (cfg, *sp, temp);
 				sp ++;
