@@ -188,6 +188,29 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_min_un () {
+		uint a = (uint)int.MaxValue + 10;
+
+		for (uint b = 7; b <= 10; ++b) {
+			if (Math.Min (a, b) != b)
+				return (int)b;
+			if (Math.Min (b, a) != b)
+				return (int)b;
+		return 0;
+	}
+
+	public static int test_0_max_un () {
+		uint a = (uint)int.MaxValue + 10;
+
+		for (uint b = 7; b <= 10; ++b) {
+			if (Math.Max (a, b) != a)
+				return (int)b;
+			if (Math.Max (b, a) != a)
+				return (int)b;
+		}
+		return 0;
+	}
+
 	public static int test_0_abs () {
 		double d = -5.0;
 
