@@ -447,7 +447,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 
 	index = slot;
 	for (depth = 0; ; ++depth) {
-		int size = mono_class_rgctx_get_array_size (depth);
+		int size = mono_class_rgctx_get_array_size (depth, FALSE);
 
 		if (index < size - 1)
 			break;

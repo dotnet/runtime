@@ -215,7 +215,8 @@ enum {
 	MONO_RGCTX_INFO_REFLECTION_TYPE,
 	MONO_RGCTX_INFO_METHOD,
 	MONO_RGCTX_INFO_GENERIC_METHOD_CODE,
-	MONO_RGCTX_INFO_CLASS_FIELD
+	MONO_RGCTX_INFO_CLASS_FIELD,
+	MONO_RGCTX_INFO_METHOD_RGCTX
 };
 
 typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
@@ -227,7 +228,20 @@ typedef struct _MonoRuntimeGenericContextOtherInfoTemplate {
 typedef struct {
 	MonoClass *next_subclass;
 	MonoRuntimeGenericContextOtherInfoTemplate *other_infos;
+	GSList *method_templates;
 } MonoRuntimeGenericContextTemplate;
+
+typedef struct {
+	MonoVTable *class_vtable; /* must be the first element */
+	MonoGenericInst *method_inst;
+	gpointer infos [MONO_ZERO_LEN_ARRAY];
+} MonoMethodRuntimeGenericContext;
+
+#define MONO_RGCTX_SLOT_MAKE_RGCTX(i)	(i)
+#define MONO_RGCTX_SLOT_MAKE_MRGCTX(i)	((i) | 0x80000000)
+#define MONO_RGCTX_SLOT_INDEX(s)	((s) & 0x7fffffff)
+#define MONO_RGCTX_SLOT_IS_MRGCTX(s)	(((s) & 0x80000000) ? TRUE : FALSE)
+
 
 #define MONO_CLASS_PROP_EXCEPTION_DATA 0
 
@@ -970,6 +984,9 @@ mono_type_get_full        (MonoImage *image, guint32 type_token, MonoGenericCont
 gboolean
 mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass) MONO_INTERNAL;
 
+MonoMethod*
+mono_method_get_declaring_generic_method (MonoMethod *method) MONO_INTERNAL;
+
 MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type) MONO_INTERNAL;
 
@@ -979,11 +996,18 @@ mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
 gpointer
 mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot) MONO_INTERNAL;
 
-int
-mono_class_rgctx_get_array_size (int n) MONO_INTERNAL;
+gpointer
+mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot) MONO_INTERNAL;
 
-gboolean
-mono_class_lookup_or_register_other_info (MonoClass *class, gpointer data, int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
+MonoMethodRuntimeGenericContext*
+mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst) MONO_INTERNAL;
+
+int
+mono_class_rgctx_get_array_size (int n, gboolean mrgctx) MONO_INTERNAL;
+
+guint32
+mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
+	int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
 
 int
 mono_generic_context_check_used (MonoGenericContext *context) MONO_INTERNAL;

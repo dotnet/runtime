@@ -4519,55 +4519,23 @@ get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoBasicBlock *b
 }
 
 static MonoInst*
-get_runtime_generic_context_other_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
-	MonoInst *rgc_ptr, guint32 token, int token_source, int rgctx_type, unsigned char *ip, int index)
-{
-	MonoInst *args [6];
-	int temp;
-	MonoInst *result;
-
-	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
-
-	NEW_CLASSCONST (cfg, args [0], method->klass);
-	args [1] = rgc_ptr;
-	NEW_ICONST (cfg, args [2], token);
-	NEW_ICONST (cfg, args [3], token_source);
-	NEW_ICONST (cfg, args [4], rgctx_type);
-	NEW_ICONST (cfg, args [5], index);
-
-	temp = mono_emit_jit_icall (cfg, bblock, mono_helper_get_rgctx_other_ptr, args, ip);
-	NEW_TEMPLOAD (cfg, result, temp);
-
-	return result;
-}
-
-static MonoInst*
 get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
 	MonoClass *klass, guint32 type_token, int token_source, MonoGenericContext *generic_context, MonoInst *rgctx,
 	int rgctx_type, unsigned char *ip)
 {
-	int arg_num = -1;
-	int relation = mono_class_generic_class_relation (klass, rgctx_type, method->klass, generic_context, &arg_num);
+	guint32 slot = mono_method_lookup_or_register_other_info (method,
+		FALSE, &klass->byval_arg, rgctx_type, generic_context);
 
-	switch (relation) {
-	case MINI_GENERIC_CLASS_RELATION_OTHER_TABLE:
-		return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, arg_num, ip);
-	case MINI_GENERIC_CLASS_RELATION_OTHER:
-		return get_runtime_generic_context_other_ptr (cfg, method, bblock, rgctx,
-			type_token, token_source, rgctx_type, ip, arg_num);
-	default:
-		g_assert_not_reached ();
-		return NULL;
-	}
+	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, slot, ip);
 }
 
 static MonoInst*
 get_runtime_generic_context_method (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *bblock,
 	MonoMethod *cmethod, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type, const unsigned char *ip)
 {
-	int arg_num = mono_class_lookup_or_register_other_info (method->klass, cmethod, rgctx_type, generic_context);
+	guint32 slot = mono_method_lookup_or_register_other_info (method, FALSE, cmethod, rgctx_type, generic_context);
 
-	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, arg_num, ip);
+	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, slot, ip);
 }
 
 static MonoInst*
@@ -4575,9 +4543,9 @@ get_runtime_generic_context_field (MonoCompile *cfg, MonoMethod *method, MonoBas
 	MonoClassField *field, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type,
 	const unsigned char *ip)
 {
-	int arg_num = mono_class_lookup_or_register_other_info (method->klass, field, rgctx_type, generic_context);
+	guint32 slot = mono_method_lookup_or_register_other_info (method, FALSE, field, rgctx_type, generic_context);
 
-	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, arg_num, ip);
+	return get_runtime_generic_context_other_table_ptr (cfg, bblock, rgctx, slot, ip);
 }
 
 static gboolean
@@ -7460,7 +7428,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoClassField *field;
 			gpointer addr = NULL;
 			gboolean shared_access = FALSE;
-			int relation = 0;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -7493,11 +7460,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						klass->valuetype)
 					GENERIC_SHARING_FAILURE (*ip);
 
-				if (context_used) {
-					relation = mono_class_generic_class_relation (klass, MONO_RGCTX_INFO_VTABLE,
-						method->klass, generic_context, NULL);
+				if (context_used)
 					shared_access = TRUE;
-				}
 			}
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
@@ -13924,7 +13888,6 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
 	register_icall (mono_helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);
 	register_icall (mono_value_copy, "mono_value_copy", "void ptr ptr ptr", FALSE);
-	register_icall (mono_helper_get_rgctx_other_ptr, "get_rgctx_other_ptr", "ptr ptr ptr int32 int32 int32 int32", FALSE);
 	register_icall (mono_object_castclass, "mono_object_castclass", "object object ptr", FALSE);
 	register_icall (mono_break, "mono_break", NULL, TRUE);
 	register_icall (mono_create_corlib_exception_0, "mono_create_corlib_exception_0", "object int", TRUE);

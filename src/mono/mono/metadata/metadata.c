@@ -1401,8 +1401,8 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 	return 1;
 }
 
-static guint
-mono_generic_inst_hash (gconstpointer data)
+guint
+mono_metadata_generic_inst_hash (gconstpointer data)
 {
 	const MonoGenericInst *ginst = (const MonoGenericInst *) data;
 	guint hash = 0;
@@ -1437,8 +1437,8 @@ mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b
 	return TRUE;
 }
 
-static gboolean
-mono_generic_inst_equal (gconstpointer ka, gconstpointer kb)
+gboolean
+mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer kb)
 {
 	const MonoGenericInst *a = (const MonoGenericInst *) ka;
 	const MonoGenericInst *b = (const MonoGenericInst *) kb;
@@ -1480,7 +1480,7 @@ mono_metadata_init (void)
 	int i;
 
 	type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
-	generic_inst_cache = g_hash_table_new_full (mono_generic_inst_hash, mono_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
+	generic_inst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
 	generic_class_cache = g_hash_table_new_full (mono_generic_class_hash, mono_generic_class_equal, NULL, (GDestroyNotify)free_generic_class);
 
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)

@@ -203,6 +203,7 @@ struct _MonoDomain {
 	CRITICAL_SECTION    assemblies_lock;
 
 	GHashTable	   *shared_generics_hash;
+	GHashTable	   *method_rgctx_hash;
 };
 
 typedef struct  {
