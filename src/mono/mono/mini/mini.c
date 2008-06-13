@@ -8320,12 +8320,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->opt & MONO_OPT_SHARED) {
 				int temp;
 				MonoInst *res, *store, *addr, *vtvar, *iargs [3];
+				int method_context_used;
+
+				if (cfg->generic_sharing_context)
+					method_context_used = mono_method_check_context_used (method);
+				else
+					method_context_used = 0;
 
 				vtvar = mono_compile_create_var (cfg, &handle_class->byval_arg, OP_LOCAL); 
 
 				NEW_IMAGECONST (cfg, iargs [0], image);
 				NEW_ICONST (cfg, iargs [1], n);
-				if (cfg->generic_sharing_context) {
+				if (method_context_used) {
 					MonoInst *rgctx;
 
 					GET_RGCTX (rgctx);
@@ -8372,12 +8378,35 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					MonoInst *store, *addr, *vtvar;
 
-					GENERIC_SHARING_FAILURE (CEE_LDTOKEN);
+					if (context_used) {
+							MonoInst *rgctx;
 
-					if (cfg->compile_aot)
+						g_assert (!cfg->compile_aot);
+
+						GET_RGCTX (rgctx);
+						if (handle_class == mono_defaults.typehandle_class) {
+							ins = get_runtime_generic_context_ptr (cfg, method,
+									bblock,
+									mono_class_from_mono_type (handle), token,
+									MINI_TOKEN_SOURCE_CLASS, generic_context,
+									rgctx, MONO_RGCTX_INFO_TYPE, ip);
+						} else if (handle_class == mono_defaults.methodhandle_class) {
+							ins = get_runtime_generic_context_method (cfg, method,
+									bblock, handle, generic_context,
+									rgctx, MONO_RGCTX_INFO_METHOD, ip);
+						} else if (handle_class == mono_defaults.fieldhandle_class) {
+							ins = get_runtime_generic_context_field (cfg, method,
+									bblock, handle, generic_context,
+									rgctx, MONO_RGCTX_INFO_CLASS_FIELD, ip);
+						} else {
+							g_assert_not_reached ();
+						}
+					}
+					else if (cfg->compile_aot) {
 						NEW_LDTOKENCONST (cfg, ins, image, n);
-					else
+					} else {
 						NEW_PCONST (cfg, ins, handle);
+					}
 					vtvar = mono_compile_create_var (cfg, &handle_class->byval_arg, OP_LOCAL);
 					NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 					NEW_INDSTORE (cfg, store, addr, ins, &mono_defaults.int_class->byval_arg);
