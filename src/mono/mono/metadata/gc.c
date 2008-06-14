@@ -234,7 +234,7 @@ mono_object_register_finalizer (MonoObject *obj)
 /**
  * mono_domain_finalize:
  * @domain: the domain to finalize
- * @timeout: msects to wait for the finalization to complete
+ * @timeout: msects to wait for the finalization to complete, -1 to wait indefinitely
  *
  *  Request finalization of all finalizable objects inside @domain. Wait
  * @timeout msecs for the finalization to complete.
@@ -284,6 +284,9 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	/* Tell the finalizer thread to finalize this appdomain */
 	mono_gc_finalize_notify ();
+
+	if (timeout == -1)
+		timeout = INFINITE;
 
 	res = WaitForSingleObjectEx (done_event, timeout, TRUE);
 

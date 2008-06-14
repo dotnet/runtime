@@ -3029,6 +3029,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 {
 	abort_appdomain_data user_data;
 	guint32 start_time;
+	int orig_timeout = timeout;
 
 	THREAD_DEBUG (g_message ("%s: starting abort", __func__));
 
@@ -3052,7 +3053,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 		timeout -= mono_msec_ticks () - start_time;
 		start_time = mono_msec_ticks ();
 
-		if (timeout < 0)
+		if (orig_timeout != -1 && timeout < 0)
 			return FALSE;
 	}
 	while (user_data.wait.num > 0);

@@ -1749,13 +1749,13 @@ unload_thread_main (void *arg)
 	 * FIXME: Abort our parent thread last, so we can return a failure 
 	 * indication if aborting times out.
 	 */
-	if (!mono_threads_abort_appdomain_threads (domain, 10000)) {
+	if (!mono_threads_abort_appdomain_threads (domain, -1)) {
 		data->failure_reason = g_strdup_printf ("Aborting of threads in domain %s timed out.", domain->friendly_name);
 		return 1;
 	}
 
 	/* Finalize all finalizable objects in the doomed appdomain */
-	if (!mono_domain_finalize (domain, 10000)) {
+	if (!mono_domain_finalize (domain, -1)) {
 		data->failure_reason = g_strdup_printf ("Finalization of domain %s timed out.", domain->friendly_name);
 		return 1;
 	}
