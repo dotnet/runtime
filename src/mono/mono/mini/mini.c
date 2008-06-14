@@ -6704,6 +6704,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_NEWOBJ: {
 			MonoInst *iargs [2];
 			MonoMethodSignature *fsig;
+			MonoInst this_ins;
 			int temp;
 
 			CHECK_OPSIZE (5);
@@ -6778,6 +6779,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 				sp [1] = sp [0];
 			}
+
+			/* check_call_signature () requires sp[0] to be set */
+			this_ins.type = STACK_OBJ;
+			sp [0] = &this_ins;
+			if (check_call_signature (cfg, fsig, sp))
+				UNVERIFIED;
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 
