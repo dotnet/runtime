@@ -255,7 +255,7 @@ MONO_INST_LIST_SPLICE_TAIL_INIT (MonoInstList *list, MonoInstList *head)
 	mono_container_of(ptr, type, member)*/
 
 #define MONO_INST_LIST_ENTRY(ptr, type, member)	\
-	((type *)(ptr))
+	((type *)(gpointer)(ptr))
 
 #define MONO_INST_LIST_FIRST_ENTRY(ptr, type, member) \
 	MONO_INST_LIST_ENTRY((ptr)->next, type, member)

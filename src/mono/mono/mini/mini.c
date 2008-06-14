@@ -633,7 +633,6 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
            (cfg)->disable_ssa = TRUE; \
 	} while (0)
 
-
 #define NEW_INDLOAD(cfg,dest,addr,vtype) do {	\
 		MONO_INST_NEW ((cfg), (dest), OP_NOP);	\
 		(dest)->inst_left = addr;	\
@@ -2984,11 +2983,23 @@ handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, cons
 			MONO_INST_NEW (cfg, (ins), OP_NOP);	\
 		}	\
 	} while (0)
+
+#define NEW_TEMPLOAD_SOFT_FLOAT(cfg,bblock,ins,num) do {		\
+	if ((ins)->opcode == CEE_LDIND_R4) {						\
+	    int idx = (num);										\
+	    int temp;											\
+	    NEW_TEMPLOADA (cfg, (ins), (idx));							\
+		temp = handle_load_float (cfg, (bblock), (ins), ip);		\
+		NEW_TEMPLOAD (cfg, (ins), (temp));							\
+	}																\
+	} while (0)
+
 #else
 #define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip)
 #define STLOC_SOFT_FLOAT(cfg,ins,idx,ip)
 #define LDARG_SOFT_FLOAT(cfg,ins,idx,ip)
 #define STARG_SOFT_FLOAT(cfg,ins,idx,ip)
+#define NEW_TEMPLOAD_SOFT_FLOAT(cfg,bblock,ins,num)
 #endif
 
 static MonoMethod*
@@ -3988,14 +3999,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 		if (rvar) {
 			NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
-#ifdef MONO_ARCH_SOFT_FLOAT
-			if (ins->opcode == CEE_LDIND_R4) {
-				int temp;
-				NEW_TEMPLOADA (cfg, ins, rvar->inst_c0);
-				temp = handle_load_float (cfg, bblock, ins, ip);
-				NEW_TEMPLOAD (cfg, ins, temp);
-			}
-#endif
+			NEW_TEMPLOAD_SOFT_FLOAT (cfg, ebblock, ins, rvar->inst_c0);
 			*sp++ = ins;
 		}
 		*last_b = ebblock;
@@ -6084,7 +6088,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					//g_assert (returnvar != -1);
 					NEW_TEMPSTORE (cfg, store, return_var->inst_c0, *sp);
 					store->cil_code = sp [0]->cil_code;
-					/* FIXME: handle CEE_STIND_R4 */
 					if (store->opcode == CEE_STOBJ) {
 						g_assert_not_reached ();
 						NEW_TEMPLOADA (cfg, store, return_var->inst_c0);
@@ -6455,6 +6458,31 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_CONV_R_UN:
 			CHECK_STACK (1);
 			ADD_UNOP (*ip);
+
+#ifdef MONO_ARCH_SOFT_FLOAT
+			/*
+			 * Its rather hard to emit the soft float code during the decompose
+			 * pass, so avoid it in some specific cases.
+			 */
+			if (ins->opcode == OP_LCONV_TO_R4) {
+				MonoInst *conv;
+
+				ins->opcode = OP_LCONV_TO_R8;
+				ins->type = STACK_R8;
+
+				--sp;
+				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
+
+				MONO_INST_NEW (cfg, conv, CEE_CONV_R4);
+				conv->inst_left = sp [-1];
+				conv->type = STACK_R8;
+				sp [-1] = ins;
+
+				ip++;
+				break;
+			}
+#endif
+
 			if (mono_find_jit_opcode_emulation (ins->opcode)) {
 				--sp;
 				*sp++ = emit_tree (cfg, bblock, ins, ip + 1);
@@ -7339,6 +7367,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					} else {
 						temp = mono_emit_method_call_spilled (cfg, bblock, wrapper, mono_method_signature (wrapper), iargs, ip, NULL);
 						NEW_TEMPLOAD (cfg, *sp, temp);
+						NEW_TEMPLOAD_SOFT_FLOAT (cfg, bblock, *sp, temp);
 						sp++;
 					}
 				} else {
