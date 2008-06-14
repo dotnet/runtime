@@ -3822,6 +3822,8 @@ static void* internal_realloc(mstate m, void* oldmem, size_t bytes) {
   return 0;
 }
 
+#endif
+
 /* --------------------------- memalign support -------------------------- */
 
 static void* internal_memalign(mstate m, size_t alignment, size_t bytes) {
@@ -3908,6 +3910,8 @@ static void* internal_memalign(mstate m, size_t alignment, size_t bytes) {
   }
   return 0;
 }
+
+#if 0
 
 /* ------------------------ comalloc/coalloc support --------------------- */
 
@@ -4315,9 +4319,13 @@ void* dlrealloc(void* oldmem, size_t bytes) {
   }
 }
 
+#endif
+
 void* dlmemalign(size_t alignment, size_t bytes) {
   return internal_memalign(gm, alignment, bytes);
 }
+
+#if 0
 
 void** dlindependent_calloc(size_t n_elements, size_t elem_size,
                                  void* chunks[]) {

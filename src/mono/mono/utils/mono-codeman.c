@@ -260,7 +260,7 @@ new_codechunk (int dynamic, int size)
 #endif
 
 	if (flags == CODE_FLAG_MALLOC) {
-		ptr = dlmalloc (chunk_size + MIN_ALIGN - 1);
+		ptr = dlmemalign (MIN_ALIGN, chunk_size + MIN_ALIGN - 1);
 		if (!ptr)
 			return NULL;
 	} else {
