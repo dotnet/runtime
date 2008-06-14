@@ -24,6 +24,10 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 
+#ifndef PLATFORM_WIN32
+#include <pthread.h>
+#endif
+
 typedef struct DomainFinalizationReq {
 	MonoDomain *domain;
 	HANDLE done_event;
@@ -67,6 +71,7 @@ add_thread_to_finalize (MonoThread *thread)
 	mono_finalizer_unlock ();
 }
 
+static gboolean suspend_finalizers = FALSE;
 /* 
  * actually, we might want to queue the finalize requests in a separate thread,
  * but we need to be careful about the execution domain of the thread...
@@ -78,6 +83,9 @@ run_finalize (void *obj, void *data)
 	MonoObject *o, *o2;
 	MonoMethod* finalizer = NULL;
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
+
+	if (suspend_finalizers)
+		return;
 
 #ifndef HAVE_SGEN_GC
 	mono_domain_lock (o->vtable->domain);
@@ -979,7 +987,32 @@ mono_gc_cleanup (void)
 			/* Finishing the finalizer thread, so wait a little bit... */
 			/* MS seems to wait for about 2 seconds */
 			if (WaitForSingleObjectEx (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
+				int ret;
+
+				/* Set a flag which the finalizer thread can check */
+				suspend_finalizers = TRUE;
+
+				/* Try to abort the thread, in the hope that it is running managed code */
 				mono_thread_stop (gc_thread);
+
+				/* Wait for it to stop */
+				ret = WaitForSingleObjectEx (gc_thread->handle, 100, TRUE);
+
+				if (ret == WAIT_TIMEOUT) {
+					/* 
+					 * The finalizer thread refused to die. There is not much we 
+					 * can do here, since the runtime is shutting down so the 
+					 * state the finalizer thread depends on will vanish.
+					 */
+					g_warning ("Shutting down finalizer thread timed out.");
+				} else {
+					/*
+					 * FIXME: On unix, when the above wait returns, the thread 
+					 * might still be running io-layer code, or pthreads code.
+					 */
+					Sleep (100);
+				}
+
 			}
 		}
 		gc_thread = NULL;
