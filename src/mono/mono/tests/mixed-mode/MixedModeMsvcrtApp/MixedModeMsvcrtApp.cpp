@@ -16,7 +16,7 @@ void WriteStringManaged (const wchar_t* str)
 void WriteStringUnmanaged (const wchar_t* str)
 {
 	DWORD count;
-	WriteConsole (GetStdHandle (STD_OUTPUT_HANDLE), str, wcslen (str), &count, NULL);
+	WriteConsole (GetStdHandle (STD_OUTPUT_HANDLE), str, (DWORD) wcslen (str), &count, NULL);
 }
 
 void WriteStringWrapper (const wchar_t* str)
