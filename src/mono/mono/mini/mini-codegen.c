@@ -1323,29 +1323,31 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			clob_mask = MONO_ARCH_CALLEE_REGS;
 
-			/*
-			 * Need to avoid spilling the dreg since the dreg is not really
-			 * clobbered by the call.
-			 */
-			if ((prev_dreg != -1) && !reg_is_fp (spec_dest))
-				dreg = rs->vassign [prev_dreg];
-			else
-				dreg = -1;
+			if (rs->ifree_mask != MONO_ARCH_CALLEE_REGS) {
+				/*
+				 * Need to avoid spilling the dreg since the dreg is not really
+				 * clobbered by the call.
+				 */
+				if ((prev_dreg != -1) && !reg_is_fp (spec_dest))
+					dreg = rs->vassign [prev_dreg];
+				else
+					dreg = -1;
 
-			if (MONO_ARCH_INST_IS_REGPAIR (spec_dest))
-				dreg2 = rs->vassign [prev_dreg + 1];
-			else
-				dreg2 = -1;
+				if (MONO_ARCH_INST_IS_REGPAIR (spec_dest))
+					dreg2 = rs->vassign [prev_dreg + 1];
+				else
+					dreg2 = -1;
 
-			for (j = 0; j < MONO_MAX_IREGS; ++j) {
-				s = regmask (j);
-				if ((clob_mask & s) && !(rs->ifree_mask & s) && (j != ins->sreg1) && (j != dreg) && (j != dreg2)) {
-					get_register_force_spilling (cfg, ins, next, rs->isymbolic [j], FALSE);
-					mono_regstate_free_int (rs, j);
+				for (j = 0; j < MONO_MAX_IREGS; ++j) {
+					s = regmask (j);
+					if ((clob_mask & s) && !(rs->ifree_mask & s) && (j != ins->sreg1) && (j != dreg) && (j != dreg2)) {
+						get_register_force_spilling (cfg, ins, next, rs->isymbolic [j], FALSE);
+						mono_regstate_free_int (rs, j);
+					}
 				}
 			}
 
-			if (!use_fpstack) {
+			if (!use_fpstack && rs->ffree_mask != MONO_ARCH_CALLEE_FREGS) {
 				clob_mask = MONO_ARCH_CALLEE_FREGS;
 				if ((prev_dreg != -1) && reg_is_fp (spec_dest))
 					dreg = rs->vassign [prev_dreg];
