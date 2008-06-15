@@ -964,7 +964,7 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 	data = t->base + idx * t->row_size;
 	
 	g_assert (res_size == count);
-	
+
 	for (i = 0; i < count; i++) {
 		int n = mono_metadata_table_size (bitfield, i);
 
@@ -5044,8 +5044,7 @@ guint32
 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner)
 {
 	MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
-	guint32 cols [MONO_GENERICPARAM_SIZE];
-	guint32 i;
+	locator_t loc;
 
 	g_assert (owner);
 	if (!tdef->base)
@@ -5061,13 +5060,18 @@ mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *o
 	}
 	*owner |= mono_metadata_token_index (token) << MONO_TYPEORMETHOD_BITS;
 
-	for (i = 0; i < tdef->rows; ++i) {
-		mono_metadata_decode_row (tdef, i, cols, MONO_GENERICPARAM_SIZE);
-		if (cols [MONO_GENERICPARAM_OWNER] == *owner)
-			return i + 1;
-	}
+	loc.idx = *owner;
+	loc.col_idx = MONO_GENERICPARAM_OWNER;
+	loc.t = tdef;
 
-	return 0;
+	if (!bsearch (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return 0;
+
+	/* Find the first entry by searching backwards */
+	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_GENERICPARAM_OWNER) == loc.idx))
+		loc.result --;
+
+	return loc.result + 1;
 }
 
 gboolean
