@@ -3,6 +3,8 @@ using System;
 public class ClassA {}
 public class ClassB {}
 
+public delegate string[] StringArrayDelegate ();
+
 public class Gen<T> {
 	static bool checkArr<S> (Array arr, int length) {
 		if (arr.GetType () != typeof (S[]))
@@ -43,6 +45,10 @@ public class GenSubSub : GenSub<ClassA> {
 	public override S[] newArr<S> () {
 		return new S[5];
 	}
+
+	public static S[] staticNewArr<S> () {
+		return new S[5];
+	}
 }
 
 public class main {
@@ -57,6 +63,21 @@ public class main {
 			return 1;
 		if (!gss.test ())
 			return 1;
+
+		StringArrayDelegate sad = new StringArrayDelegate (GenSubSub.staticNewArr<string>);
+		string[] arr = sad ();
+		if (arr.GetType () != typeof (string[]))
+			return 1;
+		if (arr.Length != 5)
+			return 1;
+
+		sad = new StringArrayDelegate (gss.newArr<string>);
+		arr = sad ();
+		if (arr.GetType () != typeof (string[]))
+			return 1;
+		if (arr.Length != 5)
+			return 1;
+
 		return 0;
 	}
 }
