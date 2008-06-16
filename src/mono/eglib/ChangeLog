@@ -1,3 +1,9 @@
+2008-06-16  Zoltan Varga  <vargaz@gmail.com>
+
+	* src/vasprintf.c (vasprintf): Applied patch from Michail Ushakov 
+	<migelU@gmail.com>. Workaround broken vsnprintf on windows. Fixes
+	#400445.
+
 2008-06-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/goutput.c (g_log): Remove unnecessary and incorrect call to 

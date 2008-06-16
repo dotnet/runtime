@@ -11,11 +11,11 @@ va_list ap2;
 
 #ifdef _MSC_VER
 ap2 = ap;
+len = _vscprintf(fmt, ap2); // NOTE MS specific extension ( :-( )
 #else
 va_copy(ap2, ap);
-#endif
-
 len = vsnprintf(NULL, 0, fmt, ap2);
+#endif
 
 if (len > 0 && (buf = malloc((buflen = (size_t) (len + 1)))) != NULL) {
 len = vsnprintf(buf, buflen, fmt, ap);
