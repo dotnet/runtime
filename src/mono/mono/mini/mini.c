@@ -714,6 +714,14 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		*sp++ = ins;	\
 		type_from_op (ins);	\
 		CHECK_TYPE (ins);	\
+		/* Have to insert a widening op */		 \
+		/* FIXME: Need to add many more cases */ \
+		if (ins->inst_i0->type == STACK_PTR && ins->inst_i1->type == STACK_I4) { \
+			MonoInst *widen; 
+			MONO_INST_NEW (cfg, widen, CEE_CONV_I); \
+            widen->inst_i0 = ins->inst_i1; \
+			ins->inst_i1 = widen; \
+		} \
 	} while (0)
 
 #define ADD_UNOP(op) do {	\
