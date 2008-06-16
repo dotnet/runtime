@@ -412,12 +412,14 @@ mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtab
 }
 
 static gpointer
-mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
+mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, gpointer data, guint8 *tramp)
 {
 	static gboolean inited = FALSE;
 	static int num_lookups = 0;
 
 	guint32 slot = mono_arch_get_rgctx_lazy_fetch_offset ((gpointer*)regs);
+	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
+	gboolean mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 
 	if (!inited) {
 		mono_counters_register ("RGCTX unmanaged lookups", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_lookups);
@@ -426,7 +428,10 @@ mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable
 
 	num_lookups++;
 
-	return mono_class_fill_runtime_generic_context (vtable, slot);
+	if (mrgctx)
+		return mono_method_fill_runtime_generic_context (data, index);
+	else
+		return mono_class_fill_runtime_generic_context (data, index);
 }
 
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE

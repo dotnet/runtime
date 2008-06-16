@@ -442,12 +442,16 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	int tramp_size;
 	int depth, index;
 	int i;
+	gboolean mrgctx;
 
 	g_assert (tramp);
 
-	index = slot;
+	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
+	index = MONO_RGCTX_SLOT_INDEX (slot);
+	if (mrgctx)
+		index += sizeof (MonoMethodRuntimeGenericContext) / sizeof (gpointer);
 	for (depth = 0; ; ++depth) {
-		int size = mono_class_rgctx_get_array_size (depth, FALSE);
+		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
 
 		if (index < size - 1)
 			break;
@@ -460,19 +464,24 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 
 	rgctx_null_jumps = g_malloc (sizeof (guint8*) * (depth + 2));
 
-	/* load vtable ptr */
+	/* load vtable/mrgctx ptr */
 	x86_mov_reg_membase (buf, X86_EAX, X86_ESP, 4, 4);
-	/* load rgctx ptr from vtable */
-	x86_mov_reg_membase (buf, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), 4);
-	/* is the rgctx ptr null? */
-	x86_test_reg_reg (buf, X86_EAX, X86_EAX);
-	/* if yes, jump to actual trampoline */
-	rgctx_null_jumps [0] = buf;
-	x86_branch8 (buf, X86_CC_Z, -1, 1);
+	if (!mrgctx) {
+		/* load rgctx ptr from vtable */
+		x86_mov_reg_membase (buf, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), 4);
+		/* is the rgctx ptr null? */
+		x86_test_reg_reg (buf, X86_EAX, X86_EAX);
+		/* if yes, jump to actual trampoline */
+		rgctx_null_jumps [0] = buf;
+		x86_branch8 (buf, X86_CC_Z, -1, 1);
+	}
 
 	for (i = 0; i < depth; ++i) {
 		/* load ptr to next array */
-		x86_mov_reg_membase (buf, X86_EAX, X86_EAX, 0, 4);
+		if (mrgctx && i == 0)
+			x86_mov_reg_membase (buf, X86_EAX, X86_EAX, sizeof (MonoMethodRuntimeGenericContext), 4);
+		else
+			x86_mov_reg_membase (buf, X86_EAX, X86_EAX, 0, 4);
 		/* is the ptr null? */
 		x86_test_reg_reg (buf, X86_EAX, X86_EAX);
 		/* if yes, jump to actual trampoline */
@@ -490,7 +499,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	/* otherwise return */
 	x86_ret (buf);
 
-	for (i = 0; i <= depth + 1; ++i)
+	for (i = mrgctx ? 1 : 0; i <= depth + 1; ++i)
 		x86_patch (rgctx_null_jumps [i], buf);
 
 	g_free (rgctx_null_jumps);
