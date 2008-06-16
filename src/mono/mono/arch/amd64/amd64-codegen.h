@@ -582,7 +582,7 @@ typedef union {
 #define amd64_cmpxchg_membase_reg_size(inst,basereg,disp,reg,size) do { amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_cmpxchg_membase_reg((inst),((basereg)&0x7),(disp),((reg)&0x7)); } while (0)
 #define amd64_xchg_reg_reg_size(inst,dreg,reg,size) do { amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_xchg_reg_reg((inst),((dreg)&0x7),((reg)&0x7),(size) == 8 ? 4 : (size)); } while (0)
 #define amd64_xchg_mem_reg_size(inst,mem,reg,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_xchg_mem_reg((inst),(mem),((reg)&0x7),(size) == 8 ? 4 : (size)); } while (0)
-#define amd64_xchg_membase_reg_size(inst,basereg,disp,reg,size) do { amd64_emit_rex ((inst),(size),(reg),0,(basereg))); x86_xchg_membase_reg((inst),((basereg)&0x7),(disp),((reg)&0x7),(size) == 8 ? 4 : (size)); } while (0)
+#define amd64_xchg_membase_reg_size(inst,basereg,disp,reg,size) do { amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_xchg_membase_reg((inst),((basereg)&0x7),(disp),((reg)&0x7),(size) == 8 ? 4 : (size)); } while (0)
 #define amd64_inc_mem_size(inst,mem,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_inc_mem((inst),(mem)); } while (0)
 #define amd64_inc_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_inc_membase((inst),((basereg)&0x7),(disp)); } while (0)
 //#define amd64_inc_reg_size(inst,reg,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_inc_reg((inst),((reg)&0x7)); } while (0)
