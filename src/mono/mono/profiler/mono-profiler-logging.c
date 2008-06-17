@@ -32,7 +32,8 @@ typedef enum {
 	MONO_PROFILER_FILE_BLOCK_KIND_UNLOADED = 5,
 	MONO_PROFILER_FILE_BLOCK_KIND_EVENTS = 6,
 	MONO_PROFILER_FILE_BLOCK_KIND_STATISTICAL = 7,
-	MONO_PROFILER_FILE_BLOCK_KIND_HEAP = 8
+	MONO_PROFILER_FILE_BLOCK_KIND_HEAP_DATA = 8,
+	MONO_PROFILER_FILE_BLOCK_KIND_HEAP_SUMMARY = 9
 } MonoProfilerFileBlockKind;
 
 #define MONO_PROFILER_LOADED_EVENT_MODULE     1
@@ -320,6 +321,22 @@ typedef struct _ProfilerHeapShotWriteBuffer {
 	gpointer buffer [PROFILER_HEAP_SHOT_WRITE_BUFFER_SIZE];
 } ProfilerHeapShotWriteBuffer;
 
+typedef struct _ProfilerHeapShotClassSummary {
+	struct {
+		guint32 instances;
+		guint32 bytes;
+	} reachable;
+	struct {
+		guint32 instances;
+		guint32 bytes;
+	} unreachable;
+} ProfilerHeapShotClassSummary;
+
+typedef struct _ProfilerHeapShotCollectionSummary {
+	ProfilerHeapShotClassSummary *per_class_data;
+	guint32 capacity;
+} ProfilerHeapShotCollectionSummary;
+
 typedef struct _ProfilerHeapShotWriteJob {
 	struct _ProfilerHeapShotWriteJob *next;
 	struct _ProfilerHeapShotWriteJob *next_unwritten;
@@ -335,6 +352,8 @@ typedef struct _ProfilerHeapShotWriteJob {
 	guint64 end_counter;
 	guint64 end_time;
 	guint32 collection;
+	ProfilerHeapShotCollectionSummary summary;
+	gboolean dump_heap_data;
 } ProfilerHeapShotWriteJob;
 
 typedef struct _ProfilerPerThreadData {
@@ -747,6 +766,7 @@ struct _MonoProfiler {
 #endif
 		gboolean jit_time;
 		gboolean unreachable_objects;
+		gboolean collection_summary;
 		gboolean heap_shot;
 	} action_flags;
 };
@@ -1295,19 +1315,39 @@ profiler_heap_shot_object_buffer_new (ProfilerPerThreadData *data) {
 }
 
 static ProfilerHeapShotWriteJob*
-profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled, guint32 collection) {
+profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled, gboolean dump_heap_data, guint32 collection) {
 	ProfilerHeapShotWriteJob *job = g_new (ProfilerHeapShotWriteJob, 1);
 	job->next = NULL;
 	job->next_unwritten = NULL;
-	job->buffers = g_new (ProfilerHeapShotWriteBuffer, 1);
-	job->buffers->next = NULL;
-	job->last_next = & (job->buffers->next);
-	job->start = & (job->buffers->buffer [0]);
-	job->cursor = job->start;
-	job->end = & (job->buffers->buffer [PROFILER_HEAP_SHOT_WRITE_BUFFER_SIZE]);
+	
+	if (profiler->action_flags.unreachable_objects || dump_heap_data) {
+		job->buffers = g_new (ProfilerHeapShotWriteBuffer, 1);
+		job->buffers->next = NULL;
+		job->last_next = & (job->buffers->next);
+		job->start = & (job->buffers->buffer [0]);
+		job->cursor = job->start;
+		job->end = & (job->buffers->buffer [PROFILER_HEAP_SHOT_WRITE_BUFFER_SIZE]);
+	} else {
+		job->buffers = NULL;
+		job->buffers->next = NULL;
+		job->last_next = NULL;
+		job->start = NULL;
+		job->cursor = NULL;
+		job->end = NULL;
+	}
 	job->full_buffers = 0;
+	
+	if (profiler->action_flags.collection_summary) {
+		job->summary.capacity = profiler->classes->next_id;
+		job->summary.per_class_data = g_new0 (ProfilerHeapShotClassSummary, job->summary.capacity);
+	} else {
+		job->summary.capacity = 0;
+		job->summary.per_class_data = NULL;
+	}
+
 	job->heap_shot_was_signalled = heap_shot_was_signalled;
 	job->collection = collection;
+	job->dump_heap_data = dump_heap_data;
 #if DEBUG_HEAP_PROFILER
 	printf ("profiler_heap_shot_write_job_new: created job %p with buffer %p(%p-%p)\n", job, job->buffers, job->start, job->end);
 #endif
@@ -1350,6 +1390,12 @@ profiler_heap_shot_write_job_free_buffers (ProfilerHeapShotWriteJob *job) {
 	}
 	
 	job->buffers = NULL;
+	
+	if (job->summary.per_class_data != NULL) {
+		g_free (job->summary.per_class_data);
+		job->summary.per_class_data = NULL;
+	}
+	job->summary.capacity = 0;
 }
 
 static void
@@ -1415,6 +1461,7 @@ profiler_free_heap_shot_write_jobs (void) {
 			printf ("profiler_free_heap_shot_write_jobs: job %p will be freed\n", current_job);
 #endif
 			next_job = current_job->next;
+			profiler_heap_shot_write_job_free_buffers (current_job);
 			g_free (current_job);
 			current_job = next_job;
 		}
@@ -1478,7 +1525,9 @@ profiler_per_thread_data_new (guint32 buffer_size)
 	data->last_event_counter = data->start_event_counter;
 	data->thread_id = CURRENT_THREAD_ID ();
 	data->heap_shot_object_buffers = NULL;
-	if ((profiler->action_flags.unreachable_objects == TRUE) || (profiler->action_flags.heap_shot == TRUE)) {
+	if ((profiler->action_flags.unreachable_objects == TRUE) ||
+			(profiler->action_flags.heap_shot == TRUE) ||
+			(profiler->action_flags.collection_summary == TRUE)) {
 		profiler_heap_shot_object_buffer_new (data);
 	}
 	return data;
@@ -1673,7 +1722,7 @@ write_string (const char *string) {
 } while (0)
 
 static void
-profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
+profiler_heap_shot_write_data_block (ProfilerHeapShotWriteJob *job) {
 	ProfilerHeapShotWriteBuffer *buffer;
 	gpointer* cursor;
 	gpointer* end;
@@ -1692,7 +1741,7 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 	write_uint64 (start_counter);
 	write_uint64 (start_time);
 #if DEBUG_HEAP_PROFILER
-	printf ("profiler_heap_shot_write_block: working on job %p...\n", job);
+	printf ("profiler_heap_shot_write_data_block: start writing job %p...\n", job);
 #endif
 	buffer = job->buffers;
 	cursor = & (buffer->buffer [0]);
@@ -1705,13 +1754,13 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 		cursor = NULL;
 	}
 #if DEBUG_HEAP_PROFILER
-	printf ("profiler_heap_shot_write_block: in job %p, starting at buffer %p and cursor %p\n", job, buffer, cursor);
+	printf ("profiler_heap_shot_write_data_block: in job %p, starting at buffer %p and cursor %p\n", job, buffer, cursor);
 #endif
 	while (cursor != NULL) {
 		gpointer value = *cursor;
 		HeapProfilerJobValueCode code = GPOINTER_TO_UINT (value) & HEAP_CODE_MASK;
 #if DEBUG_HEAP_PROFILER
-		printf ("profiler_heap_shot_write_block: got value %p and code %d\n", value, code);
+		printf ("profiler_heap_shot_write_data_block: got value %p and code %d\n", value, code);
 #endif
 		
 		UPDATE_JOB_BUFFER_CURSOR ();
@@ -1723,7 +1772,7 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 			
 			class_id = class_id_mapping_element_get (klass);
 			if (class_id == NULL) {
-				printf ("profiler_heap_shot_write_block: unknown class %p", klass);
+				printf ("profiler_heap_shot_write_data_block: unknown class %p", klass);
 			}
 			g_assert (class_id != NULL);
 			write_uint32 ((class_id->id << 2) | HEAP_CODE_FREE_OBJECT_CLASS);
@@ -1732,7 +1781,7 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 			UPDATE_JOB_BUFFER_CURSOR ();
 			write_uint32 (size);
 #if DEBUG_HEAP_PROFILER
-			printf ("profiler_heap_shot_write_block: wrote unreachable object of class %p (id %d, size %d)\n", klass, class_id->id, size);
+			printf ("profiler_heap_shot_write_data_block: wrote unreachable object of class %p (id %d, size %d)\n", klass, class_id->id, size);
 #endif
 		} else if (code == HEAP_CODE_OBJECT) {
 			MonoObject *object = GUINT_TO_POINTER (GPOINTER_TO_UINT (value) & (~ (guint64) HEAP_CODE_MASK));
@@ -1743,7 +1792,7 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 			UPDATE_JOB_BUFFER_CURSOR ();
 			
 			if (class_id == NULL) {
-				printf ("profiler_heap_shot_write_block: unknown class %p", klass);
+				printf ("profiler_heap_shot_write_data_block: unknown class %p", klass);
 			}
 			g_assert (class_id != NULL);
 			
@@ -1752,7 +1801,7 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 			write_uint32 (size);
 			write_uint32 (references);
 #if DEBUG_HEAP_PROFILER
-			printf ("profiler_heap_shot_write_block: writing object %p (references %d)\n", value, references);
+			printf ("profiler_heap_shot_write_data_block: writing object %p (references %d)\n", value, references);
 #endif
 			
 			while (references > 0) {
@@ -1761,12 +1810,12 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 				UPDATE_JOB_BUFFER_CURSOR ();
 				references --;
 #if DEBUG_HEAP_PROFILER
-				printf ("profiler_heap_shot_write_block:   inside object %p, wrote reference %p)\n", value, reference);
+				printf ("profiler_heap_shot_write_data_block:   inside object %p, wrote reference %p)\n", value, reference);
 #endif
 			}
 		} else {
 #if DEBUG_HEAP_PROFILER
-			printf ("profiler_heap_shot_write_block: unknown code %d in value %p\n", code, value);
+			printf ("profiler_heap_shot_write_data_block: unknown code %d in value %p\n", code, value);
 #endif
 			g_assert_not_reached ();
 		}
@@ -1778,7 +1827,64 @@ profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
 	write_uint64 (end_counter);
 	write_uint64 (end_time);
 	
-	write_current_block (MONO_PROFILER_FILE_BLOCK_KIND_HEAP);
+	write_current_block (MONO_PROFILER_FILE_BLOCK_KIND_HEAP_DATA);
+#if DEBUG_HEAP_PROFILER
+	printf ("profiler_heap_shot_write_data_block: writing job %p done.\n", job);
+#endif
+}
+static void
+profiler_heap_shot_write_summary_block (ProfilerHeapShotWriteJob *job) {
+	guint64 start_counter;
+	guint64 start_time;
+	guint64 end_counter;
+	guint64 end_time;
+	int id;
+	
+#if DEBUG_HEAP_PROFILER
+	printf ("profiler_heap_shot_write_summary_block: start writing job %p...\n", job);
+#endif
+	MONO_PROFILER_GET_CURRENT_COUNTER (start_counter);
+	MONO_PROFILER_GET_CURRENT_TIME (start_time);
+	write_uint64 (start_counter);
+	write_uint64 (start_time);
+	
+	write_uint32 (job->collection);
+	
+	for (id = 0; id < job->summary.capacity; id ++) {
+		if ((job->summary.per_class_data [id].reachable.instances > 0) || (job->summary.per_class_data [id].unreachable.instances > 0)) {
+			write_uint32 (id);
+			write_uint32 (job->summary.per_class_data [id].reachable.instances);
+			write_uint32 (job->summary.per_class_data [id].reachable.bytes);
+			write_uint32 (job->summary.per_class_data [id].unreachable.instances);
+			write_uint32 (job->summary.per_class_data [id].unreachable.bytes);
+		}
+	}
+	write_uint32 (0);
+	
+	MONO_PROFILER_GET_CURRENT_COUNTER (end_counter);
+	MONO_PROFILER_GET_CURRENT_TIME (end_time);
+	write_uint64 (end_counter);
+	write_uint64 (end_time);
+	
+	write_current_block (MONO_PROFILER_FILE_BLOCK_KIND_HEAP_SUMMARY);
+#if DEBUG_HEAP_PROFILER
+	printf ("profiler_heap_shot_write_summary_block: writing job %p done.\n", job);
+#endif
+}
+
+static void
+profiler_heap_shot_write_block (ProfilerHeapShotWriteJob *job) {
+#if DEBUG_HEAP_PROFILER
+	printf ("profiler_heap_shot_write_block: working on job %p...\n", job);
+#endif
+	
+	if (profiler->action_flags.collection_summary == TRUE) {
+		profiler_heap_shot_write_summary_block (job);
+	}
+	
+	if ((profiler->action_flags.unreachable_objects == TRUE) || (profiler->action_flags.heap_shot == TRUE)) {
+		profiler_heap_shot_write_data_block (job);
+	}
 	
 	profiler_heap_shot_write_job_free_buffers (job);
 #if DEBUG_HEAP_PROFILER
@@ -3646,64 +3752,74 @@ report_object_references (gpointer *start, ClassIdMappingElement *layout, Profil
 
 static void
 profiler_heap_report_object_reachable (ProfilerHeapShotWriteJob *job, MonoObject *obj) {
-	if (profiler->action_flags.heap_shot && (job != NULL)) {
+	if (job != NULL) {
 		MonoClass *klass = mono_object_get_class (obj);
-		int reference_counter = 0;
-		gpointer *reference_counter_location;
+		ClassIdMappingElement *class_id = class_id_mapping_element_get (klass);
+		if (class_id == NULL) {
+			printf ("profiler_heap_report_object_reachable: class %p (%s.%s) has no id\n", klass, mono_class_get_namespace (klass), mono_class_get_name (klass));
+		}
+		g_assert (class_id != NULL);
 		
-		WRITE_HEAP_SHOT_JOB_VALUE_WITH_CODE (job, obj, HEAP_CODE_OBJECT);
-#if DEBUG_HEAP_PROFILER
-		printf ("profiler_heap_report_object_reachable: reported object %p at cursor %p\n", obj, (job->cursor - 1));
-#endif
-		WRITE_HEAP_SHOT_JOB_VALUE (job, NULL);
-		reference_counter_location = job->cursor - 1;
-		
-		if (mono_class_get_rank (klass)) {
-			MonoArray *array = (MonoArray *) obj;
-			MonoClass *element_class = mono_class_get_element_class (klass);
-			ClassIdMappingElement *element_id = class_id_mapping_element_get (element_class);
+		if (job->summary.capacity > 0) {
+			guint32 id = class_id->id;
+			g_assert (id < job->summary.capacity);
 			
-			g_assert (element_id != NULL);
-			if (element_id->data.layout.slots == CLASS_LAYOUT_NOT_INITIALIZED) {
-				class_id_mapping_element_build_layout_bitmap (element_class, element_id);
-			}
-			if (! mono_class_is_valuetype (element_class)) {
-				int length = mono_array_length (array);
-				int i;
-				for (i = 0; i < length; i++) {
-					MonoObject *array_element = mono_array_get (array, MonoObject*, i);
-					if ((array_element != NULL) && mono_object_is_alive (array_element)) {
-						reference_counter ++;
-						WRITE_HEAP_SHOT_JOB_VALUE (job, array_element);
+			job->summary.per_class_data [id].reachable.instances ++;
+			job->summary.per_class_data [id].reachable.bytes += mono_object_get_size (obj);
+		}
+		if (profiler->action_flags.heap_shot && job->dump_heap_data) {
+			int reference_counter = 0;
+			gpointer *reference_counter_location;
+			
+			WRITE_HEAP_SHOT_JOB_VALUE_WITH_CODE (job, obj, HEAP_CODE_OBJECT);
+#if DEBUG_HEAP_PROFILER
+			printf ("profiler_heap_report_object_reachable: reported object %p at cursor %p\n", obj, (job->cursor - 1));
+#endif
+			WRITE_HEAP_SHOT_JOB_VALUE (job, NULL);
+			reference_counter_location = job->cursor - 1;
+			
+			if (mono_class_get_rank (klass)) {
+				MonoArray *array = (MonoArray *) obj;
+				MonoClass *element_class = mono_class_get_element_class (klass);
+				ClassIdMappingElement *element_id = class_id_mapping_element_get (element_class);
+				
+				g_assert (element_id != NULL);
+				if (element_id->data.layout.slots == CLASS_LAYOUT_NOT_INITIALIZED) {
+					class_id_mapping_element_build_layout_bitmap (element_class, element_id);
+				}
+				if (! mono_class_is_valuetype (element_class)) {
+					int length = mono_array_length (array);
+					int i;
+					for (i = 0; i < length; i++) {
+						MonoObject *array_element = mono_array_get (array, MonoObject*, i);
+						if ((array_element != NULL) && mono_object_is_alive (array_element)) {
+							reference_counter ++;
+							WRITE_HEAP_SHOT_JOB_VALUE (job, array_element);
+						}
+					}
+				} else if (element_id->data.layout.references > 0) {
+					int length = mono_array_length (array);
+					int array_element_size = mono_array_element_size (klass);
+					int i;
+					for (i = 0; i < length; i++) {
+						gpointer array_element_address = mono_array_addr_with_size (array, array_element_size, i);
+						reference_counter += report_object_references (array_element_address, element_id, job);
 					}
 				}
-			} else if (element_id->data.layout.references > 0) {
-				int length = mono_array_length (array);
-				int array_element_size = mono_array_element_size (klass);
-				int i;
-				for (i = 0; i < length; i++) {
-					gpointer array_element_address = mono_array_addr_with_size (array, array_element_size, i);
-					reference_counter += report_object_references (array_element_address, element_id, job);
+			} else {
+				if (class_id->data.layout.slots == CLASS_LAYOUT_NOT_INITIALIZED) {
+					class_id_mapping_element_build_layout_bitmap (klass, class_id);
+				}
+				if (class_id->data.layout.references > 0) {
+					reference_counter += report_object_references ((gpointer)(((char*)obj) + sizeof (MonoObject)), class_id, job);
 				}
 			}
-		} else {
-			ClassIdMappingElement *class_id = class_id_mapping_element_get (klass);
-			if (class_id == NULL) {
-				printf ("profiler_heap_report_object_reachable: class %p (%s.%s) has no id\n", klass, mono_class_get_namespace (klass), mono_class_get_name (klass));
-			}
-			g_assert (class_id != NULL);
-			if (class_id->data.layout.slots == CLASS_LAYOUT_NOT_INITIALIZED) {
-				class_id_mapping_element_build_layout_bitmap (klass, class_id);
-			}
-			if (class_id->data.layout.references > 0) {
-				reference_counter += report_object_references ((gpointer)(((char*)obj) + sizeof (MonoObject)), class_id, job);
-			}
-		}
-		
-		*reference_counter_location = GINT_TO_POINTER (reference_counter);
+			
+			*reference_counter_location = GINT_TO_POINTER (reference_counter);
 #if DEBUG_HEAP_PROFILER
-		printf ("profiler_heap_report_object_reachable: updated reference_counter_location %p with value %d\n", reference_counter_location, reference_counter);
+			printf ("profiler_heap_report_object_reachable: updated reference_counter_location %p with value %d\n", reference_counter_location, reference_counter);
 #endif
+		}
 	}
 }
 static void
@@ -3712,15 +3828,31 @@ profiler_heap_report_object_unreachable (ProfilerHeapShotWriteJob *job, MonoObje
 		MonoClass *klass = mono_object_get_class (obj);
 		guint32 size = mono_object_get_size (obj);
 		
+		if (job->summary.capacity > 0) {
+			ClassIdMappingElement *class_id = class_id_mapping_element_get (klass);
+			guint32 id;
+			
+			if (class_id == NULL) {
+				printf ("profiler_heap_report_object_reachable: class %p (%s.%s) has no id\n", klass, mono_class_get_namespace (klass), mono_class_get_name (klass));
+			}
+			g_assert (class_id != NULL);
+			id = class_id->id;
+			g_assert (id < job->summary.capacity);
+			
+			job->summary.per_class_data [id].unreachable.instances ++;
+			job->summary.per_class_data [id].unreachable.bytes += size;
+		}
+		if (profiler->action_flags.unreachable_objects && job->dump_heap_data) {
 #if DEBUG_HEAP_PROFILER
-		printf ("profiler_heap_report_object_unreachable: at job %p writing klass %p\n", job, klass);
+			printf ("profiler_heap_report_object_unreachable: at job %p writing klass %p\n", job, klass);
 #endif
-		WRITE_HEAP_SHOT_JOB_VALUE_WITH_CODE (job, klass, HEAP_CODE_FREE_OBJECT_CLASS);
+			WRITE_HEAP_SHOT_JOB_VALUE_WITH_CODE (job, klass, HEAP_CODE_FREE_OBJECT_CLASS);
 	
 #if DEBUG_HEAP_PROFILER
-		printf ("profiler_heap_report_object_unreachable: at job %p writing size %p\n", job, GUINT_TO_POINTER (size));
+			printf ("profiler_heap_report_object_unreachable: at job %p writing size %p\n", job, GUINT_TO_POINTER (size));
 #endif
-		WRITE_HEAP_SHOT_JOB_VALUE (job, GUINT_TO_POINTER (size));
+			WRITE_HEAP_SHOT_JOB_VALUE (job, GUINT_TO_POINTER (size));
+		}
 	}
 }
 
@@ -3798,9 +3930,14 @@ profiler_heap_scan (ProfilerHeapShotHeapBuffers *heap, ProfilerHeapShotWriteJob 
 	}
 }
 
+static inline gboolean
+heap_shot_write_job_should_be_created (gboolean dump_heap_data) {
+	return dump_heap_data || profiler->action_flags.unreachable_objects || profiler->action_flags.collection_summary;
+}
+
 static void
 handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
-	static gboolean create_heap_shot_write_job;
+	static gboolean dump_heap_data;
 	
 	switch (ev) {
 	case MONO_GC_EVENT_PRE_STOP_WORLD:
@@ -3809,8 +3946,8 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 		LOCK_PROFILER ();
 		break;
 	case MONO_GC_EVENT_POST_STOP_WORLD:
-		create_heap_shot_write_job = dump_current_heap_snapshot ();
-		if (create_heap_shot_write_job) {
+		dump_heap_data = dump_current_heap_snapshot ();
+		if (heap_shot_write_job_should_be_created (dump_heap_data)) {
 			ProfilerPerThreadData *data;
 			// Update all mappings, so that we have built all the class descriptors.
 			flush_all_mappings ();
@@ -3826,8 +3963,8 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 		ProfilerHeapShotWriteJob *job;
 		ProfilerPerThreadData *data;
 		
-		if (create_heap_shot_write_job) {
-			job = profiler_heap_shot_write_job_new (profiler->heap_shot_was_signalled, profiler->garbage_collection_counter);
+		if (heap_shot_write_job_should_be_created (dump_heap_data)) {
+			job = profiler_heap_shot_write_job_new (profiler->heap_shot_was_signalled, dump_heap_data, profiler->garbage_collection_counter);
 			profiler->heap_shot_was_signalled = FALSE;
 			MONO_PROFILER_GET_CURRENT_COUNTER (job->start_counter);
 			MONO_PROFILER_GET_CURRENT_TIME (job->start_time);
@@ -4092,6 +4229,9 @@ setup_user_options (const char *arguments) {
 				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
 			} else if (! (strcmp (argument, "gc") && strcmp (argument, "g"))) {
 				profiler->flags |= MONO_PROFILE_GC;
+			} else if (! (strcmp (argument, "allocations-summary") && strcmp (argument, "as"))) {
+				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
+				profiler->action_flags.collection_summary = TRUE;
 			} else if (! (strcmp (argument, "heap-shot") && strcmp (argument, "heap") && strcmp (argument, "h"))) {
 				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
 				profiler->action_flags.unreachable_objects = TRUE;
