@@ -28,6 +28,7 @@
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
 #include "mono/metadata/gc-internal.h"
+#include "mono/utils/mono-counters.h"
 #include <string.h>
 #include <errno.h>
 
@@ -4926,15 +4927,19 @@ handle_enum:
  * mono_marshal_get_static_rgctx_invoke:
  * @method: a method
  *
- * Generates a wrapper for calling a static method.  We need this for
- * ldftn when we do generic code sharing.  Instead of producing the
- * address of the static method we produce the address of a wrapper
- * for the method because the wrapper passes the runtime generic
+ * Generates a wrapper for calling a generic shared method, either
+ * static or generic.  We need this for virtual generic method lookup
+ * and ldftn when we do generic code sharing.  Instead of producing
+ * the address of the method we produce the address of a wrapper for
+ * the method because the wrapper passes the (method) runtime generic
  * context argument which calli cannot do.
  */
 MonoMethod *
 mono_marshal_get_static_rgctx_invoke (MonoMethod *method)
 {
+	static gboolean inited = FALSE;
+	static int num_wrappers = 0;
+
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoClass *target_klass = method->klass;
@@ -4956,16 +4961,24 @@ mono_marshal_get_static_rgctx_invoke (MonoMethod *method)
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
+	if (!inited) {
+		mono_counters_register ("static rgctx invoke wrappers",
+				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_wrappers);
+		inited = TRUE;
+	}
+	++num_wrappers;
+
 	name = mono_signature_to_name (mono_method_signature (method), "static_rgctx_invoke");
 	mb = mono_mb_new (target_klass, name, MONO_WRAPPER_STATIC_RGCTX_INVOKE);
 	g_free (name);
 
-	for (i = 0; i < sig->param_count; i++)
+	for (i = 0; i < sig->param_count + sig->hasthis; i++)
 		mono_mb_emit_ldarg (mb, i);
 	mono_mb_emit_op (mb, CEE_CALL, method);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_and_cache (cache, method, mb, mono_method_signature (method), sig->param_count + 4);
+	res = mono_mb_create_and_cache (cache, method, mb, mono_method_signature (method),
+		sig->param_count + sig->hasthis + 4);
 	res->skip_visibility = TRUE;
 	res->flags = method->flags;
 
