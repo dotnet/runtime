@@ -1,3 +1,5 @@
+using System;
+
 public class ClassA {}
 
 public delegate int IntDelegate (int x);
@@ -53,6 +55,13 @@ public class main {
 			return 1;
 		if (stda ().GetType () != typeof (ClassA[]))
 			return 1;
+
+		tda = (TDelegate<ClassA>)Delegate.CreateDelegate (typeof (TDelegate<ClassA>),
+				typeof (Gen<ClassA>).GetMethod ("staticTFunction"));
+
+		if (tda ().GetType () != typeof (ClassA[]))
+			return 1;
+
 		return 0;
 	}
 }

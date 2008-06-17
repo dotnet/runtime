@@ -5627,6 +5627,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
 	MonoObject *delegate;
 	gpointer func;
+	MonoMethod *method = info->method;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -5638,11 +5639,19 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	delegate = mono_object_new (mono_object_domain (type), delegate_class);
 
-	if (info->method->dynamic)
+	g_assert (!method->klass->generic_container);
+	/* FIXME: only do this for methods which can be shared! */
+	if ((method->is_inflated && mono_method_get_context (method)->method_inst &&
+					mono_class_generic_sharing_enabled (method->klass)) ||
+			((method->flags & METHOD_ATTRIBUTE_STATIC) && method->klass->generic_class)) {
+		func = mono_compile_method (mono_marshal_get_static_rgctx_invoke (method));
+	} else if (method->dynamic) {
 		/* Creating a trampoline would leak memory */
-		func = mono_compile_method (info->method);
-	else
-		func = mono_create_ftnptr (mono_domain_get (), mono_runtime_create_jump_trampoline (mono_domain_get (), info->method, TRUE));
+		func = mono_compile_method (method);
+	} else {
+		func = mono_create_ftnptr (mono_domain_get (),
+			mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE));
+	}
 
 	mono_delegate_ctor (delegate, target, func);
 
