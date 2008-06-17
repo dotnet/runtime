@@ -118,10 +118,17 @@
 		if (method->klass->valuetype)	\
 			GENERIC_SHARING_FAILURE ((opcode)); \
 	} while (0)
+#define GENERIC_SHARING_FAILURE_IF_STATIC_GENERIC_METHOD(opcode) do {	\
+		if ((method->flags & METHOD_ATTRIBUTE_STATIC) &&	\
+				method->is_inflated &&			\
+				mono_method_get_context (method)->method_inst) \
+			GENERIC_SHARING_FAILURE ((opcode));		\
+	} while (0)
 #define GET_RGCTX(rgctx, context_used) do {						\
 		MonoInst *this = NULL;					\
 		g_assert ((context_used) && !((context_used) & MONO_GENERIC_CONTEXT_USED_METHOD)); \
 		GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD(*ip);	\
+		GENERIC_SHARING_FAILURE_IF_STATIC_GENERIC_METHOD(*ip);	\
 		if (!(method->flags & METHOD_ATTRIBUTE_STATIC) &&	\
 				!((context_used) & MONO_GENERIC_CONTEXT_USED_METHOD)) \
 			NEW_ARGLOAD (cfg, this, 0);			\
@@ -4696,6 +4703,69 @@ unverified:
 	goto do_return;
 }
 
+static int
+emit_unbox (MonoClass *klass, guint32 token, int context_used,
+		MonoCompile *cfg, MonoMethod *method, MonoInst **arg_array, MonoType **param_types, GList *dont_inline,
+		unsigned char *end, MonoMethodHeader *header, MonoGenericContext *generic_context,
+		MonoBasicBlock **_bblock, unsigned char **_ip, MonoInst ***_sp, int *_inline_costs, guint *_real_offset)
+{
+	MonoBasicBlock *bblock = *_bblock;
+	unsigned char *ip = *_ip;
+	MonoInst **sp = *_sp;
+	int inline_costs = *_inline_costs;
+	guint real_offset = *_real_offset;
+	int return_value = 0;
+
+	MonoInst *add, *vtoffset, *ins;
+
+	/* Needed by the code generated in inssel.brg */
+	mono_get_got_var (cfg);
+
+	if (context_used) {
+		MonoInst *rgctx, *element_class;
+
+		/* This assertion is from the unboxcast insn */
+		g_assert (klass->rank == 0);
+
+		GET_RGCTX (rgctx, context_used);
+		element_class = get_runtime_generic_context_ptr (cfg, method, context_used, bblock,
+				klass->element_class, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
+
+		MONO_INST_NEW (cfg, ins, OP_UNBOXCAST_REG);
+		ins->type = STACK_OBJ;
+		ins->inst_left = *sp;
+		ins->inst_right = element_class;
+		ins->klass = klass;
+		ins->cil_code = ip;
+	} else {
+		MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
+		ins->type = STACK_OBJ;
+		ins->inst_left = *sp;
+		ins->klass = klass;
+		ins->inst_newa_class = klass;
+		ins->cil_code = ip;
+	}
+
+	MONO_INST_NEW (cfg, add, OP_PADD);
+	NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
+	add->inst_left = ins;
+	add->inst_right = vtoffset;
+	add->type = STACK_MP;
+	add->klass = klass;
+	*sp = add;
+
+do_return:
+	*_bblock = bblock;
+	*_ip = ip;
+	*_sp = sp;
+	*_inline_costs = inline_costs;
+	*_real_offset = real_offset;
+	return return_value;
+exception_exit:
+	return_value = -2;
+	goto do_return;
+}
+
 static gboolean
 mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 {
@@ -7023,7 +7093,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			break;
 		case CEE_UNBOX_ANY: {
-			MonoInst *add, *vtoffset;
 			MonoInst *iargs [3];
 			guint32 align;
 
@@ -7068,40 +7137,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
-			/* Needed by the code generated in inssel.brg */
-			mono_get_got_var (cfg);
-
-			if (context_used) {
-				MonoInst *rgctx, *element_class;
-
-				/* This assertion is from the
-				   unboxcast insn */
-				g_assert (klass->rank == 0);
-
-				GET_RGCTX (rgctx, context_used);
-				element_class = get_runtime_generic_context_ptr (cfg, method, context_used, bblock,
-					klass->element_class, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
-
-				MONO_INST_NEW (cfg, ins, OP_UNBOXCAST_REG);
-				ins->type = STACK_OBJ;
-				ins->inst_left = *sp;
-				ins->inst_right = element_class;
-				ins->klass = klass;
-			} else {
-				MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
-				ins->type = STACK_OBJ;
-				ins->inst_left = *sp;
-				ins->klass = klass;
-				ins->inst_newa_class = klass;
+			switch (emit_unbox (klass, token, context_used,
+					cfg, method, arg_array, param_types, dont_inline, end, header,
+					generic_context, &bblock, &ip, &sp, &inline_costs, &real_offset)) {
+			case 0: break;
+			case -1: goto unverified;
+			case -2: goto exception_exit;
+			default: g_assert_not_reached ();
 			}
-
-			MONO_INST_NEW (cfg, add, OP_PADD);
-			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
-			add->inst_left = ins;
-			add->inst_right = vtoffset;
-			add->type = STACK_MP;
-			add->klass = mono_defaults.object_class;
-			*sp = add;
 			ip += 5;
 			/* LDOBJ impl */
 			n = mono_class_value_size (klass, &align);
@@ -7123,9 +7166,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			inline_costs += 2;
 			break;
 		}
-		case CEE_UNBOX: {
-			MonoInst *add, *vtoffset;
-
+		case CEE_UNBOX:
 			CHECK_STACK (1);
 			--sp;
 			CHECK_OPSIZE (5);
@@ -7133,40 +7174,36 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_sharing_context) {
+			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
-				GENERIC_SHARING_FAILURE (CEE_UNBOX);
-			}
 
 			if (mono_class_is_nullable (klass)) {
-				int v = handle_unbox_nullable (cfg, method, context_used, bblock, *sp, ip, klass,
-					generic_context, NULL);
+				int v;
+				MonoInst *rgctx = NULL;
+
+				if (context_used)
+					GET_RGCTX (rgctx, context_used);
+				v = handle_unbox_nullable (cfg, method, context_used, bblock, *sp, ip, klass,
+					generic_context, rgctx);
 				NEW_TEMPLOAD (cfg, *sp, v);
 				sp ++;
 				ip += 5;
 				break;
 			}
 
-			/* Needed by the code generated in inssel.brg */
-			mono_get_got_var (cfg);
+			switch (emit_unbox (klass, token, context_used,
+					cfg, method, arg_array, param_types, dont_inline, end, header,
+					generic_context, &bblock, &ip, &sp, &inline_costs, &real_offset)) {
+			case 0: break;
+			case -1: goto unverified;
+			case -2: goto exception_exit;
+			default: g_assert_not_reached ();
+			}
 
-			MONO_INST_NEW (cfg, ins, OP_UNBOXCAST);
-			ins->type = STACK_OBJ;
-			ins->inst_left = *sp;
-			ins->klass = klass;
-			ins->inst_newa_class = klass;
-
-			MONO_INST_NEW (cfg, add, OP_PADD);
-			NEW_ICONST (cfg, vtoffset, sizeof (MonoObject));
-			add->inst_left = ins;
-			add->inst_right = vtoffset;
-			add->type = STACK_MP;
-			add->klass = klass;
-			*sp++ = add;
+			sp++;
 			ip += 5;
 			inline_costs += 2;
 			break;
-		}
 		case CEE_CASTCLASS:
 			CHECK_STACK (1);
 			--sp;
