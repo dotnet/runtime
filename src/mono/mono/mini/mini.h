@@ -1254,7 +1254,7 @@ gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs) M
 void     mono_arch_create_vars                  (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_arch_save_unwind_info             (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_arch_register_lowlevel_calls      (void) MONO_INTERNAL;
-gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr) MONO_INTERNAL;
+gpointer mono_arch_get_unbox_trampoline         (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr) MONO_INTERNAL;
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_patch_plt_entry              (guint8 *code, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, gssize *regs) MONO_INTERNAL;

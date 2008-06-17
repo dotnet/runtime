@@ -247,7 +247,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
-			addr = mono_arch_get_unbox_trampoline (m, addr);
+			addr = mono_arch_get_unbox_trampoline (get_generic_context (code), m, addr);
 
 		g_assert (*vtable_slot);
 
@@ -323,7 +323,7 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 			if (!method)
 				method = mono_get_method (image, token, NULL);
 			if (method->klass->valuetype)
-				addr = mono_arch_get_unbox_trampoline (method, addr);
+				addr = mono_arch_get_unbox_trampoline (get_generic_context (code), method, addr);
 		}
 	} else {
 		/* This is a normal call through a PLT entry */

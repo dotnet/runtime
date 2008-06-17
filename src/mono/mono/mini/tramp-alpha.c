@@ -570,6 +570,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code, guint8 *addr)
 
 /*
  * mono_arch_get_unbox_trampoline:
+ * @gsctx: the generic sharing context
  * @m: method pointer
  * @addr: pointer to native code for @m
  *
@@ -578,7 +579,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code, guint8 *addr)
  * unboxing before calling the method
  */
 gpointer
-mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr)
 {
   unsigned int *code, *start_code;
   int this_reg = 16; //R16
