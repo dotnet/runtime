@@ -9107,7 +9107,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					store->inst_i0 = sp [0];
 					store->inst_i1 = load;
 				} else {
-					GENERIC_SHARING_FAILURE (CEE_INITOBJ);
 					handle_initobj (cfg, bblock, *sp, NULL, klass, stack_start, sp);
 				}
 				ip += 6;
@@ -9184,8 +9183,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			case CEE_SIZEOF:
-				GENERIC_SHARING_FAILURE (CEE_SIZEOF);
-
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
