@@ -4503,8 +4503,7 @@ get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoBasicBlock *b
 
 static MonoInst*
 get_runtime_generic_context_ptr (MonoCompile *cfg, MonoMethod *method, int context_used, MonoBasicBlock *bblock,
-	MonoClass *klass, guint32 type_token, int token_source, MonoGenericContext *generic_context, MonoInst *rgctx,
-	int rgctx_type, unsigned char *ip)
+	MonoClass *klass, MonoGenericContext *generic_context, MonoInst *rgctx, int rgctx_type, unsigned char *ip)
 {
 	guint32 slot = mono_method_lookup_or_register_other_info (method,
 		context_used & MONO_GENERIC_CONTEXT_USED_METHOD, &klass->byval_arg, rgctx_type, generic_context);
@@ -4625,7 +4624,7 @@ emit_castclass (MonoClass *klass, guint32 token, int context_used, gboolean inst
 		/* klass */
 		GET_RGCTX (rgctx, context_used);
 		args [1] = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
-				token, MINI_TOKEN_SOURCE_CLASS, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
+				generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 
 		temp = mono_emit_jit_icall (cfg, bblock, mono_object_castclass, args, ip);
 		NEW_TEMPLOAD (cfg, *sp, temp);
@@ -5706,9 +5705,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					GET_RGCTX (rgctx, context_used);
 					vtable_arg = get_runtime_generic_context_ptr (cfg, method, context_used,
-						bblock, cmethod->klass,
-						token, MINI_TOKEN_SOURCE_METHOD, generic_context,
-						rgctx, MONO_RGCTX_INFO_VTABLE, ip);
+						bblock, cmethod->klass, generic_context, rgctx, MONO_RGCTX_INFO_VTABLE, ip);
 				} else {
 					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
 					
@@ -6864,8 +6861,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					else
 						rgctx_info = MONO_RGCTX_INFO_VTABLE;
 					data = get_runtime_generic_context_ptr (cfg, method, context_used, bblock,
-						cmethod->klass, token, MINI_TOKEN_SOURCE_METHOD, generic_context,
-						rgctx, rgctx_info, ip);
+						cmethod->klass, generic_context, rgctx, rgctx_info, ip);
 
 					temp = handle_alloc_from_inst (cfg, bblock, cmethod->klass, data, FALSE, ip);
 					NEW_TEMPLOAD (cfg, *sp, temp);
@@ -6979,7 +6975,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* klass */
 				GET_RGCTX (rgctx, context_used);
 				args [1] = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
-					token, MINI_TOKEN_SOURCE_CLASS, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
+					generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 
 				temp = mono_emit_jit_icall (cfg, bblock, mono_object_isinst, args, ip);
 				NEW_TEMPLOAD (cfg, *sp, temp);
@@ -7083,18 +7079,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_assert (klass->rank == 0);
 
 				GET_RGCTX (rgctx, context_used);
-				/* FIXME: Passing token here is
-				   technically not correct, because we
-				   don't use klass but
-				   klass->element_class.  Since it's
-				   only used by code for debugging the
-				   extensible runtime generic context
-				   it's not a big deal.  To be correct
-				   we'd have to invent a new token
-				   source. */
 				element_class = get_runtime_generic_context_ptr (cfg, method, context_used, bblock,
-					klass->element_class, token, MINI_TOKEN_SOURCE_CLASS,
-					generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
+					klass->element_class, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 
 				MONO_INST_NEW (cfg, ins, OP_UNBOXCAST_REG);
 				ins->type = STACK_OBJ;
@@ -7502,8 +7488,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					GET_RGCTX (rgctx, context_used);
 					vtable = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
-							token, MINI_TOKEN_SOURCE_FIELD, generic_context,
-							rgctx, MONO_RGCTX_INFO_VTABLE, ip);
+							generic_context, rgctx, MONO_RGCTX_INFO_VTABLE, ip);
 
 					call = mono_emit_call_args (cfg, bblock, sig, NULL, FALSE, FALSE, ip, FALSE);
 					call->inst.opcode = OP_TRAMPCALL_VTABLE;
@@ -7521,8 +7506,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 */
 				GET_RGCTX (rgctx, context_used);
 				static_data = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
-					token, MINI_TOKEN_SOURCE_FIELD, generic_context,
-					rgctx, MONO_RGCTX_INFO_STATIC_DATA, ip);
+					generic_context, rgctx, MONO_RGCTX_INFO_STATIC_DATA, ip);
 
 				if (field->offset == 0) {
 					ins = static_data;
@@ -7802,8 +7786,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					else
 						rgctx_info = MONO_RGCTX_INFO_VTABLE;
 					data = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
-							token, MINI_TOKEN_SOURCE_CLASS, generic_context,
-							rgctx, rgctx_info, ip);
+							generic_context, rgctx, rgctx_info, ip);
 
 					*sp++ = handle_box_from_inst (cfg, bblock, val, ip, klass, data);
   				}
@@ -7851,7 +7834,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* klass */
 				GET_RGCTX (rgctx, context_used);
 				args [1] = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
-					token, MINI_TOKEN_SOURCE_CLASS, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
+					generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 
 				/* array len */
 				args [2] = *sp;
@@ -8186,9 +8169,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				GET_RGCTX (rgctx, context_used);
 				ins->inst_right = get_runtime_generic_context_ptr (cfg, method, context_used,
-						bblock, klass,
-						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
-						rgctx, MONO_RGCTX_INFO_KLASS, ip);
+						bblock, klass, generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 			} else {
 				MONO_INST_NEW (cfg, ins, *ip);
 				ins->type = STACK_MP;
@@ -8222,12 +8203,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				GET_RGCTX (rgctx, context_used);
 				klass_klass = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
-						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
-						rgctx, MONO_RGCTX_INFO_KLASS, ip);
+						generic_context, rgctx, MONO_RGCTX_INFO_KLASS, ip);
 				GET_RGCTX (rgctx, context_used);
 				klass_type = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, klass,
-						token, MINI_TOKEN_SOURCE_CLASS, generic_context,
-						rgctx, MONO_RGCTX_INFO_TYPE, ip);
+						generic_context, rgctx, MONO_RGCTX_INFO_TYPE, ip);
 
 				NEW_TEMPLOADA (cfg, loc_load, loc->inst_c0);
 
@@ -8342,8 +8321,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 						GET_RGCTX (rgctx, context_used);
 						ins = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, tclass,
-							token, MINI_TOKEN_SOURCE_CLASS, generic_context,
-							rgctx, MONO_RGCTX_INFO_REFLECTION_TYPE, ip);
+							generic_context, rgctx, MONO_RGCTX_INFO_REFLECTION_TYPE, ip);
 					} else if (cfg->compile_aot) {
 						NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n);
 					} else {
@@ -8364,8 +8342,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						if (handle_class == mono_defaults.typehandle_class) {
 							ins = get_runtime_generic_context_ptr (cfg, method,
 									context_used, bblock,
-									mono_class_from_mono_type (handle), token,
-									MINI_TOKEN_SOURCE_CLASS, generic_context,
+									mono_class_from_mono_type (handle), generic_context,
 									rgctx, MONO_RGCTX_INFO_TYPE, ip);
 						} else if (handle_class == mono_defaults.methodhandle_class) {
 							ins = get_runtime_generic_context_method (cfg, method,
