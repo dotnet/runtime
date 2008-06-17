@@ -4461,13 +4461,14 @@ mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig,
+		gssize *regs, guint8 *code)
 {
 	guint32 esp = regs [X86_ESP];
 	CallInfo *cinfo;
 	gpointer res;
 
-	cinfo = get_call_info (NULL, NULL, sig, FALSE);
+	cinfo = get_call_info (gsctx, NULL, sig, FALSE);
 
 	/*
 	 * The stack looks like:

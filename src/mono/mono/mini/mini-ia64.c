@@ -4631,7 +4631,7 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call)
 #endif
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
 	return (gpointer)regs [IA64_R10];
 }
@@ -4639,7 +4639,7 @@ mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8
 MonoObject*
 mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
 }
 
 gpointer

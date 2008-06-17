@@ -456,7 +456,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 
 	/* Obtain the delegate object according to the calling convention */
 
-	delegate = mono_arch_get_this_arg_from_call (mono_method_signature (invoke), regs, code);
+	delegate = mono_arch_get_this_arg_from_call (get_generic_context (code), mono_method_signature (invoke), regs, code);
 
 	if (!delegate->method_ptr && delegate->method) {
 		/* The delegate was initialized by mini_delegate_ctor */

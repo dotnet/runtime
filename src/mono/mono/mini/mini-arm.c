@@ -416,7 +416,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
 	/* FIXME: handle returning a struct */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
@@ -3930,7 +3930,7 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 MonoObject*
 mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
 }
 
 

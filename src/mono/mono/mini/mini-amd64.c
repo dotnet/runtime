@@ -5129,9 +5129,9 @@ mono_arch_get_this_arg_reg (MonoMethodSignature *sig, MonoGenericSharingContext 
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
-	return (gpointer)regs [mono_arch_get_this_arg_reg (sig, NULL)];
+	return (gpointer)regs [mono_arch_get_this_arg_reg (sig, gsctx)];
 }
 
 #define MAX_ARCH_DELEGATE_PARAMS 10
@@ -5431,7 +5431,7 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 MonoObject*
 mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
-	return regs [mono_arch_get_this_arg_reg (mono_method_signature (method), gsctx)];
+	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
 }
 #endif
 

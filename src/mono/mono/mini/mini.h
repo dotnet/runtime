@@ -1260,7 +1260,7 @@ void     mono_arch_patch_plt_entry              (guint8 *code, guint8 *addr) MON
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, gssize *regs) MONO_INTERNAL;
 void     mono_arch_nullify_plt_entry            (guint8 *code) MONO_INTERNAL;
 int      mono_arch_get_this_arg_reg             (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
-gpointer mono_arch_get_this_arg_from_call       (MonoMethodSignature *sig, gssize *regs, guint8 *code) MONO_INTERNAL;
+gpointer mono_arch_get_this_arg_from_call       (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code) MONO_INTERNAL;
 MonoObject* mono_arch_find_this_argument        (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gboolean has_target) MONO_INTERNAL;
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
