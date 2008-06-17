@@ -4065,6 +4065,8 @@ profiler_shutdown (MonoProfiler *prof)
 	MONO_PROFILER_GET_CURRENT_TIME (profiler->end_time);
 	MONO_PROFILER_GET_CURRENT_COUNTER (profiler->end_counter);
 	
+	mono_thread_attach (mono_get_root_domain ());
+	
 	flush_everything ();
 	write_end_block ();
 	FLUSH_FILE ();
