@@ -6005,7 +6005,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					(cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) ||
 					((cmethod->flags & METHOD_ATTRIBUTE_STATIC) &&
 						mono_class_generic_sharing_enabled (cmethod->klass)) ||
-					(!imt_arg && !mono_method_is_generic_sharable_impl (cmethod) &&
+					(!imt_arg && !mono_method_is_generic_sharable_impl (cmethod, TRUE) &&
 						(!virtual || cmethod->flags & METHOD_ATTRIBUTE_FINAL ||
 						!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))))) {
 				MonoInst *rgctx;
@@ -6988,7 +6988,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					}
 				} else if (context_used &&
 						(cmethod->klass->valuetype ||
-						!mono_method_is_generic_sharable_impl (cmethod))) {
+						!mono_method_is_generic_sharable_impl (cmethod, TRUE))) {
 					MonoInst *rgctx, *cmethod_addr;
 
 					g_assert (!callvirt_this_arg);
@@ -11940,7 +11940,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			(opts & MONO_OPT_GSHARED) && (method->is_generic || method->klass->generic_container);
 	else
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
-			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method);
+			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable_impl (method, FALSE);
 
 	if (opts & MONO_OPT_GSHARED) {
 		if (try_generic_shared)
@@ -12424,7 +12424,7 @@ lookup_generic_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoMethod *open_method;
 
-	if (!mono_method_is_generic_sharable_impl (method))
+	if (!mono_method_is_generic_sharable_impl (method, FALSE))
 		return NULL;
 
 	open_method = mono_method_get_declaring_generic_method (method);
@@ -12613,7 +12613,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_internal_hash_table_insert (&target_domain->jit_code_hash, method, cfg->jit_info);
 		code = cfg->native_code;
 
-		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method)) {
+		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method, FALSE)) {
 			/* g_print ("inserting method %s.%s.%s\n", method->klass->name_space, method->klass->name, method->name); */
 			mono_domain_register_shared_generic (target_domain, 
 				mono_method_get_declaring_generic_method (method), cfg->jit_info);
@@ -12828,7 +12828,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 	if ((method->flags & METHOD_ATTRIBUTE_STATIC) &&
 			mono_class_generic_sharing_enabled (method->klass) &&
-			mono_method_is_generic_sharable_impl (method)) {
+			mono_method_is_generic_sharable_impl (method, FALSE)) {
 		to_compile = mono_marshal_get_static_rgctx_invoke (method);
 	} else {
 		to_compile = method;

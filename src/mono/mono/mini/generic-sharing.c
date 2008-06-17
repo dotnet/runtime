@@ -114,13 +114,14 @@ mono_method_is_generic_impl (MonoMethod *method)
 /*
  * mono_method_is_generic_sharable_impl:
  * @method: a method
+ * @allow_type_vars: whether to regard type variables as reference types
  *
  * Returns TRUE iff the method is inflated or part of an inflated
  * class, its context is sharable and it has no constraints on its
  * type parameters.  Otherwise returns FALSE.
  */
 gboolean
-mono_method_is_generic_sharable_impl (MonoMethod *method)
+mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars)
 {
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
@@ -129,7 +130,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
 		MonoGenericContext *context = &inflated->context;
 
-		if (!mono_generic_context_is_sharable (context, FALSE))
+		if (!mono_generic_context_is_sharable (context, allow_type_vars))
 			return FALSE;
 
 		g_assert (inflated->declaring);
@@ -143,7 +144,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method)
 	}
 
 	if (method->klass->generic_class) {
-		if (!mono_generic_context_is_sharable (&method->klass->generic_class->context, FALSE))
+		if (!mono_generic_context_is_sharable (&method->klass->generic_class->context, allow_type_vars))
 			return FALSE;
 
 		g_assert (method->klass->generic_class->container_class &&

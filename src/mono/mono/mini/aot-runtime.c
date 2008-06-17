@@ -1416,7 +1416,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		return NULL;
 
 	if (method->is_inflated) {
-		if (!mono_method_is_generic_sharable_impl (method))
+		if (!mono_method_is_generic_sharable_impl (method, FALSE))
 			return NULL;
 		method = mono_method_get_declaring_generic_method (method);
 	}
