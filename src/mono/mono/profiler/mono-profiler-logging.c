@@ -3165,8 +3165,11 @@ module_end_load (MonoProfiler *profiler, MonoImage *module, int result) {
 	MonoAssemblyName aname;
 	LoadedElement *element;
 	
-	mono_assembly_fill_assembly_name (module, &aname);
-	name = mono_stringify_assembly_name (&aname);
+	if (mono_assembly_fill_assembly_name (module, &aname)) {
+		name = mono_stringify_assembly_name (&aname);
+	} else {
+		name = g_strdup_printf ("Dynamic module \"%p\"", module);
+	}
 	LOCK_PROFILER ();
 	element = loaded_element_load_end (profiler->loaded_modules, module, name);
 	write_element_load_block (element, MONO_PROFILER_LOADED_EVENT_MODULE | RESULT_TO_LOAD_CODE (result), CURRENT_THREAD_ID ());
@@ -3204,8 +3207,11 @@ assembly_end_load (MonoProfiler *profiler, MonoAssembly *assembly, int result) {
 	MonoAssemblyName aname;
 	LoadedElement *element;
 	
-	mono_assembly_fill_assembly_name (mono_assembly_get_image (assembly), &aname);
-	name = mono_stringify_assembly_name (&aname);
+	if (mono_assembly_fill_assembly_name (mono_assembly_get_image (assembly), &aname)) {
+		name = mono_stringify_assembly_name (&aname);
+	} else {
+		name = g_strdup_printf ("Dynamic assembly \"%p\"", assembly);
+	}
 	LOCK_PROFILER ();
 	element = loaded_element_load_end (profiler->loaded_assemblies, assembly, name);
 	write_element_load_block (element, MONO_PROFILER_LOADED_EVENT_ASSEMBLY | RESULT_TO_LOAD_CODE (result), CURRENT_THREAD_ID ());
