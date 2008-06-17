@@ -1144,6 +1144,7 @@ mono_custom_attrs_from_builders (MonoMemPool *mp, MonoImage *image, MonoArray *c
 
 	ainfo->image = image;
 	ainfo->num_attrs = count;
+	ainfo->cached = mp != NULL;
 	index = 0;
 	mono_loader_lock ();
 	for (i = 0; i < count; ++i) {
@@ -9317,6 +9318,7 @@ inflate_method (MonoReflectionGenericClass *type, MonoObject *obj)
 	return inflate_mono_method (mono_class_from_mono_type (type->type.type), method, obj);
 }
 
+/*TODO avoid saving custom attrs for generic classes as it's enough to have them on the generic type definition.*/
 void
 mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, 
 					  MonoArray *ctors, MonoArray *fields, MonoArray *properties,

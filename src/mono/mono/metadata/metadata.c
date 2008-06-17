@@ -2255,7 +2255,6 @@ free_generic_class (MonoGenericClass *gclass)
 			MonoClassField *field = dgclass->fields + i;
 			mono_metadata_free_type (field->type);
 			if (field->generic_info) {
-				mono_metadata_free_type (field->generic_info->generic_type);
 				g_free (field->generic_info);
 			}
 			g_free ((char*)field->name);
