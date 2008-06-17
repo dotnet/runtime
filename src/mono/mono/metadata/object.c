@@ -1730,6 +1730,25 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 }
 
 /**
+ * mono_class_field_is_special_static:
+ *
+ *   Returns whether @field is a thread/context static field.
+ */
+gboolean
+mono_class_field_is_special_static (MonoClassField *field)
+{
+	if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		return FALSE;
+	if (mono_field_is_deleted (field))
+		return FALSE;
+	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
+		if (field_is_special_static (field->parent, field) != SPECIAL_STATIC_NONE)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/**
  * mono_class_has_special_static_fields:
  * 
  *   Returns whenever @klass has any thread/context static fields.
@@ -1742,14 +1761,9 @@ mono_class_has_special_static_fields (MonoClass *klass)
 
 	iter = NULL;
 	while ((field = mono_class_get_fields (klass, &iter))) {
-		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-			continue;
-		if (mono_field_is_deleted (field))
-			continue;
-		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
-			if (field_is_special_static (klass, field) != SPECIAL_STATIC_NONE)
-				return TRUE;
-		}
+		g_assert (field->parent == klass);
+		if (mono_class_field_is_special_static (field))
+			return TRUE;
 	}
 
 	return FALSE;

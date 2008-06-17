@@ -7400,6 +7400,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDSFLDA:
 		case CEE_STSFLD: {
 			MonoClassField *field;
+			gboolean is_special_static;
 			gpointer addr = NULL;
 
 			CHECK_OPSIZE (5);
@@ -7439,27 +7440,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if ((*ip) == CEE_STSFLD)
 				handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-			/* The special_static_fields field is init'd in mono_class_vtable, so it needs
-			 * to be called here.
-			 */
-			if (!(cfg->opt & MONO_OPT_SHARED)) {
-				mono_class_vtable (cfg->domain, klass);
-				CHECK_TYPELOAD (klass);
-			}
-			mono_domain_lock (cfg->domain);
-			if (cfg->domain->special_static_fields)
-				addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
-			mono_domain_unlock (cfg->domain);
+			is_special_static = mono_class_field_is_special_static (field);
 
-			if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
+			if ((cfg->opt & MONO_OPT_SHARED) ||
+					(cfg->compile_aot && is_special_static) ||
+					(context_used && is_special_static)) {
 				int temp;
 				MonoInst *iargs [2];
-				MonoInst *domain_var;
 
 				g_assert (field->parent);
-				/* avoid depending on undefined C behavior in sequence points */
-				domain_var = mono_get_domainvar (cfg);
-				NEW_TEMPLOAD (cfg, iargs [0], domain_var->inst_c0);
+				if ((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) {
+					MonoInst *domain_var;
+					/* avoid depending on undefined C behavior in sequence points */
+					domain_var = mono_get_domainvar (cfg);
+					NEW_TEMPLOAD (cfg, iargs [0], domain_var->inst_c0);
+				} else {
+					NEW_DOMAINCONST (cfg, iargs [0]);
+				}
 				if (context_used) {
 					MonoInst *rgctx;
 
@@ -7526,7 +7523,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				vtable = mono_class_vtable (cfg->domain, klass);
 				CHECK_TYPELOAD (klass);
-				if (!addr) {
+				if (!is_special_static) {
 					if (mini_field_access_needs_cctor_run (cfg, method, vtable) && !(g_slist_find (class_inits, vtable))) {
 						guint8 *tramp = mono_create_class_init_trampoline (vtable);
 						mono_emit_native_call (cfg, bblock, tramp, 
@@ -7552,13 +7549,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					else
 						NEW_PCONST (cfg, ins, addr);
 				} else {
+					int temp;
+					MonoInst *iargs [1];
+
+					/* The special_static_fields
+					 * field is init'd in
+					 * mono_class_vtable, so it
+					 * needs to be called here.
+					 */
+					if (!(cfg->opt & MONO_OPT_SHARED)) {
+						mono_class_vtable (cfg->domain, klass);
+						CHECK_TYPELOAD (klass);
+					}
+					mono_domain_lock (cfg->domain);
+					if (cfg->domain->special_static_fields)
+						addr = g_hash_table_lookup (cfg->domain->special_static_fields, field);
+					mono_domain_unlock (cfg->domain);
+
 					/* 
 					 * insert call to mono_threads_get_static_data (GPOINTER_TO_UINT (addr)) 
 					 * This could be later optimized to do just a couple of
 					 * memory dereferences with constant offsets.
 					 */
-					int temp;
-					MonoInst *iargs [1];
 					NEW_ICONST (cfg, iargs [0], GPOINTER_TO_UINT (addr));
 					temp = mono_emit_jit_icall (cfg, bblock, mono_get_special_static_data, iargs, ip);
 					NEW_TEMPLOAD (cfg, ins, temp);
@@ -7590,7 +7602,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MONO_ADD_INS (bblock, store);
 			} else {
 				gboolean is_const = FALSE;
-				MonoVTable *vtable = mono_class_vtable (cfg->domain, klass);
+				MonoVTable *vtable = NULL;
+
+				if (!context_used)
+					vtable = mono_class_vtable (cfg->domain, klass);
 
 				CHECK_TYPELOAD (klass);
 				if (!context_used && !((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) && 
