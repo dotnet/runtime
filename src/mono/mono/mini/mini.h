@@ -1360,11 +1360,6 @@ gboolean mono_generic_context_is_sharable (MonoGenericContext *context, gboolean
 gboolean mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
 gboolean mono_method_is_generic_sharable_impl (MonoMethod *method) MONO_INTERNAL;
 
-MonoMethod* mono_method_get_declaring_generic_method (MonoMethod *method) MONO_INTERNAL;
-
-int mono_class_generic_class_relation (MonoClass *klass, int info_type, MonoClass *method_klass,
-				       MonoGenericContext *generic_context, int *arg_num) MONO_INTERNAL;
-
 gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *vtable,
 					  guint32 token, guint32 token_source, guint32 rgctx_type,
 					  gint32 rgctx_index) MONO_INTERNAL;
