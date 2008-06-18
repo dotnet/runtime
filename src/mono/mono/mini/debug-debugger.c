@@ -120,7 +120,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_DEBUGGER_MAGIC,
 	MONO_DEBUGGER_MAJOR_VERSION,
 	MONO_DEBUGGER_MINOR_VERSION,
-	0,
+	0, /* dummy */
 	sizeof (MonoDebuggerInfo),
 	sizeof (MonoSymbolTable),
 	MONO_TRAMPOLINE_NUM,
