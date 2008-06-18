@@ -30,7 +30,9 @@ extern guint8 *mono_trampoline_code [];
  */
 struct _MonoDebuggerInfo {
 	guint64 magic;
-	guint32 version;
+	guint32 major_version;
+	guint32 minor_version;
+	guint32 dummy;
 	guint32 total_size;
 	guint32 symbol_table_size;
 	guint32 mono_trampoline_num;

@@ -118,7 +118,9 @@ extern void MONO_DEBUGGER__notification_function (guint64 command, guint64 data,
  */
 MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_DEBUGGER_MAGIC,
-	MONO_DEBUGGER_VERSION,
+	MONO_DEBUGGER_MAJOR_VERSION,
+	MONO_DEBUGGER_MINOR_VERSION,
+	0,
 	sizeof (MonoDebuggerInfo),
 	sizeof (MonoSymbolTable),
 	MONO_TRAMPOLINE_NUM,
