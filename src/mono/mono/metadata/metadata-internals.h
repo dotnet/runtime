@@ -479,6 +479,14 @@ mono_metadata_field_info_with_mempool (MonoMemPool *mp,
 				      guint32      *rva,
 				      MonoMarshalSpec **marshal_spec);
 
+MonoClassField*
+mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassField *field) MONO_INTERNAL;
+
+MonoEvent*
+mono_metadata_get_corresponding_event_from_generic_type_definition (MonoEvent *event) MONO_INTERNAL;
+
+MonoProperty*
+mono_metadata_get_corresponding_property_from_generic_type_definition (MonoProperty *property) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

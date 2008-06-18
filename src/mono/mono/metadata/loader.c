@@ -333,24 +333,6 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 	return ex;
 }
 
-/*
- * If @field belongs to an inflated generic class, return the corresponding field of the
- * generic type definition class.
- */
-static MonoClassField*
-mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassField *field)
-{
-	MonoClass *gtd;
-	int offset;
-
-	if (!field->parent->generic_class)
-		return field;
-
-	gtd = field->parent->generic_class->container_class;
-	offset = field - field->parent->fields;
-	return gtd->fields + offset;
-}
-
 static MonoClassField*
 field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		      MonoGenericContext *context)

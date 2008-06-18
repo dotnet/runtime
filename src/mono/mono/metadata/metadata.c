@@ -5310,3 +5310,57 @@ mono_aligned_addr_hash (gconstpointer ptr)
 	return GPOINTER_TO_UINT (ptr) >> 3;
 }
 
+/*
+ * If @field belongs to an inflated generic class, return the corresponding field of the
+ * generic type definition class.
+ */
+MonoClassField*
+mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassField *field)
+{
+	MonoClass *gtd;
+	int offset;
+
+	if (!field->parent->generic_class)
+		return field;
+
+	gtd = field->parent->generic_class->container_class;
+	offset = field - field->parent->fields;
+	return gtd->fields + offset;
+}
+
+/*
+ * If @event belongs to an inflated generic class, return the corresponding event of the
+ * generic type definition class.
+ */
+MonoEvent*
+mono_metadata_get_corresponding_event_from_generic_type_definition (MonoEvent *event)
+{
+	MonoClass *gtd;
+	int offset;
+
+	if (!event->parent->generic_class)
+		return event;
+
+	gtd = event->parent->generic_class->container_class;
+	offset = event - event->parent->events;
+	return gtd->events + offset;
+}
+
+/*
+ * If @property belongs to an inflated generic class, return the corresponding property of the
+ * generic type definition class.
+ */
+MonoProperty*
+mono_metadata_get_corresponding_property_from_generic_type_definition (MonoProperty *property)
+{
+	MonoClass *gtd;
+	int offset;
+
+	if (!property->parent->generic_class)
+		return property;
+
+	gtd = property->parent->generic_class->container_class;
+	offset = property - property->parent->properties;
+	return gtd->properties + offset;
+}
+

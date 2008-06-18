@@ -7694,8 +7694,10 @@ mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 {
 	guint32 idx;
 	
-	if (klass->image->dynamic)
+	if (klass->image->dynamic) {
+		property = mono_metadata_get_corresponding_property_from_generic_type_definition (property);
 		return lookup_custom_attr (klass->image, property);
+	}
 	idx = find_property_index (klass, property);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_PROPERTY;
@@ -7707,8 +7709,10 @@ mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 {
 	guint32 idx;
 	
-	if (klass->image->dynamic)
+	if (klass->image->dynamic) {
+		event = mono_metadata_get_corresponding_event_from_generic_type_definition (event);
 		return lookup_custom_attr (klass->image, event);
+	}
 	idx = find_event_index (klass, event);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_EVENT;
@@ -7719,9 +7723,10 @@ MonoCustomAttrInfo*
 mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 {
 	guint32 idx;
-	
-	if (klass->image->dynamic)
+	if (klass->image->dynamic) {
+		field = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
 		return lookup_custom_attr (klass->image, field);
+	}
 	idx = find_field_index (klass, field);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_FIELDDEF;
@@ -9703,6 +9708,7 @@ typebuilder_setup_events (MonoClass *klass)
 				klass->events [i].other [j] = mb->mhandle;
 			}
 		}
+		mono_save_custom_attrs (klass->image, &klass->events [i], eb->cattrs);
 	}
 }
 
