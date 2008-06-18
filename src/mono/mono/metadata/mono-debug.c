@@ -96,7 +96,7 @@ typedef struct {
 
 MonoSymbolTable *mono_symbol_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
-gint32 mono_debug_debugger_version = 3;
+gint32 mono_debug_debugger_version = 4;
 gint32 _mono_debug_using_mono_debugger = 0;
 
 static gboolean mono_debug_initialized = FALSE;
@@ -222,7 +222,7 @@ mono_debug_init (MonoDebugFormat format)
 
 	mono_symbol_table = g_new0 (MonoSymbolTable, 1);
 	mono_symbol_table->magic = MONO_DEBUGGER_MAGIC;
-	mono_symbol_table->version = MONO_DEBUGGER_VERSION;
+	mono_symbol_table->version = MONO_DEBUGGER_MAJOR_VERSION;
 	mono_symbol_table->total_size = sizeof (MonoSymbolTable);
 
 	mono_debug_handles = g_hash_table_new_full
@@ -903,7 +903,7 @@ mono_debug_lookup_method_addresses (MonoMethod *method)
 	GSList *list;
 	guint8 *ptr;
 
-	g_assert (mono_debug_debugger_version == 3);
+	g_assert (mono_debug_debugger_version == 4);
 
 	mono_debugger_lock ();
 
