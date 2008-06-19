@@ -5210,6 +5210,17 @@ ves_icall_System_Reflection_Module_GetGuidInternal (MonoReflectionModule *module
 	return mono_string_new (domain, module->image->guid);
 }
 
+static gpointer
+ves_icall_System_Reflection_Module_GetHINSTANCE (MonoReflectionModule *module)
+{
+#ifdef PLATFORM_WIN32
+	if (module->image && module->image->is_module_handle)
+		return module->image->raw_data;
+#endif
+
+	return (gpointer) (-1);
+}
+
 static void
 ves_icall_System_Reflection_Module_GetPEKind (MonoImage *image, gint32 *pe_kind, gint32 *machine)
 {
