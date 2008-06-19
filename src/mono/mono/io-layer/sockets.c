@@ -1313,3 +1313,68 @@ void _wapi_FD_SET(guint32 fd, fd_set *set)
 	FD_SET (fd, set);
 }
 
+int WSARecv (guint32 fd, WapiWSABuf *buffers, guint32 count, guint32 *received,
+	     guint32 *flags, WapiOverlapped *overlapped,
+	     WapiOverlappedCB *complete)
+{
+	int ret, i, buflen = 0, offset = 0, copylen;
+	gint8 *recvbuf;
+
+	g_assert (overlapped == NULL);
+	g_assert (complete == NULL);
+	
+	for(i = 0; i < count; i++) {
+		buflen += buffers[i].len;
+	}
+
+	recvbuf = g_new0 (gint8, buflen);
+	ret = _wapi_recvfrom (fd, recvbuf, buflen, *flags, NULL, 0);
+	if(ret == SOCKET_ERROR) {
+		g_free (recvbuf);
+		return(ret);
+	}
+	
+	for(i = 0; i < count; i++) {
+		copylen = buffers[i].len > (buflen - offset)? (buflen - offset):buffers[i].len;
+		memcpy (buffers[i].buf, recvbuf + offset, copylen);
+
+		if (copylen != buffers[i].len) {
+			break;
+		}
+		offset += copylen;
+	}
+	
+	*received = ret;
+	return(0);
+}
+
+int WSASend (guint32 fd, WapiWSABuf *buffers, guint32 count, guint32 *sent,
+	     guint32 flags, WapiOverlapped *overlapped,
+	     WapiOverlappedCB *complete)
+{
+	int ret, i, buflen = 0, offset = 0, copylen;
+	gint8 *sendbuf;
+
+	g_assert (overlapped == NULL);
+	g_assert (complete == NULL);
+	
+	for(i = 0; i < count; i++) {
+		buflen += buffers[i].len;
+	}
+	
+	sendbuf = g_new0 (gint8, buflen);
+	for(i = 0; i < count; i++) {
+		copylen = buffers[i].len;
+		memcpy (sendbuf + offset, buffers[i].buf, copylen);
+		offset += copylen;
+	}
+
+	ret = _wapi_sendto (fd, sendbuf, buflen, flags, NULL, 0);
+	if(ret == SOCKET_ERROR) {
+		g_free (sendbuf);
+		return(ret);
+	}
+	
+	*sent = ret;
+	return(0);
+}

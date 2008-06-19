@@ -59,6 +59,8 @@ typedef WapiSystemTime SYSTEMTIME;
 typedef WapiSystemTime *LPSYSTEMTIME;
 typedef WapiWSAData WSADATA;
 typedef WapiWSAData *LDWSADATA;
+typedef WapiWSABuf WSABUF;
+typedef WapiWSABuf *LPWSABUF;
 typedef WapiLargeInteger LARGE_INTEGER;
 typedef WapiLargeInteger *PLARGE_INTEGER;
 typedef WapiSystemInfo SYSTEM_INFO;

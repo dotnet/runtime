@@ -67,6 +67,12 @@ typedef enum {
 	TF_USE_KERNEL_APC	= 0x20
 } WapiTransmitFileFlags;
 
+typedef struct
+{
+	guint32 len;
+	gpointer buf;
+} WapiWSABuf;
+
 /* If we need to support more WSAIoctl commands then define these
  * using the bitfield flags method
  */
@@ -91,6 +97,12 @@ extern int WSAIoctl (guint32 handle, gint32 command,
 		     gchar *input, gint i_len,
 		     gchar *output, gint o_len, glong *written,
 		     void *unused1, void *unused2);
+extern int WSARecv (guint32 handle, WapiWSABuf *buffers, guint32 count,
+		    guint32 *received, guint32 *flags,
+		    WapiOverlapped *overlapped, WapiOverlappedCB *complete);
+extern int WSASend (guint32 handle, WapiWSABuf *buffers, guint32 count,
+		    guint32 *sent, guint32 flags,
+		    WapiOverlapped *overlapped, WapiOverlappedCB *complete);
 
 G_END_DECLS
 #endif /* _WAPI_SOCKETS_H_ */

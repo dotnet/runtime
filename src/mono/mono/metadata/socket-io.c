@@ -1345,6 +1345,35 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 	return(ret);
 }
 
+gint32 ves_icall_System_Net_Sockets_Socket_Receive_array_internal(SOCKET sock, MonoArray *buffers, gint32 flags, gint32 *error)
+{
+	int ret, count;
+	DWORD recv;
+	WSABUF *wsabufs;
+	DWORD recvflags = 0;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	*error = 0;
+	
+	wsabufs = mono_array_addr (buffers, WSABUF, 0);
+	count = mono_array_length (buffers);
+	
+	recvflags = convert_socketflags (flags);
+	if (recvflags == -1) {
+		*error = WSAEOPNOTSUPP;
+		return(0);
+	}
+	
+	ret = WSARecv (sock, wsabufs, count, &recv, &recvflags, NULL, NULL);
+	if (ret == SOCKET_ERROR) {
+		*error = WSAGetLastError ();
+		return(0);
+	}
+	
+	return(recv);
+}
+
 gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr, gint32 *error)
 {
 	int ret;
@@ -1436,6 +1465,35 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 	}
 
 	return(ret);
+}
+
+gint32 ves_icall_System_Net_Sockets_Socket_Send_array_internal(SOCKET sock, MonoArray *buffers, gint32 flags, gint32 *error)
+{
+	int ret, count;
+	DWORD sent;
+	WSABUF *wsabufs;
+	DWORD sendflags = 0;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	*error = 0;
+	
+	wsabufs = mono_array_addr (buffers, WSABUF, 0);
+	count = mono_array_length (buffers);
+	
+	sendflags = convert_socketflags (flags);
+	if (sendflags == -1) {
+		*error = WSAEOPNOTSUPP;
+		return(0);
+	}
+	
+	ret = WSASend (sock, wsabufs, count, &sent, sendflags, NULL, NULL);
+	if (ret == SOCKET_ERROR) {
+		*error = WSAGetLastError ();
+		return(0);
+	}
+	
+	return(sent);
 }
 
 gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject *sockaddr, gint32 *error)
