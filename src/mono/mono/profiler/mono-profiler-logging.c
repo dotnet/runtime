@@ -707,10 +707,15 @@ typedef struct _ProfilerFileWriteBuffer {
 	guint8 buffer [];
 } ProfilerFileWriteBuffer;
 
+#define CHECK_PROFILER_ENABLED() do {\
+	if (! profiler->profiler_enabled)\
+		return;\
+} while (0)
 struct _MonoProfiler {
 	MUTEX_TYPE mutex;
 	
 	MonoProfileFlags flags;
+	gboolean profiler_enabled;
 	char *file_name;
 	char *file_name_suffix;
 	FILE_HANDLE_TYPE file;
@@ -800,6 +805,33 @@ add_gc_request_handler (int signal_number)
 	sa.sa_flags = SA_SIGINFO;
 #else
 	sa.sa_handler = gc_request_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+#endif
+	
+	g_assert (sigaction (signal_number, &sa, NULL) != -1);
+}
+
+static void
+SIG_HANDLER_SIGNATURE (toggle_handler) {
+	if (profiler->profiler_enabled) {
+		profiler->profiler_enabled = FALSE;
+	} else {
+		profiler->profiler_enabled = TRUE;
+	}
+}
+
+static void
+add_toggle_handler (int signal_number)
+{
+	struct sigaction sa;
+	
+#ifdef MONO_ARCH_USE_SIGACTION
+	sa.sa_sigaction = toggle_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = SA_SIGINFO;
+#else
+	sa.sa_handler = toggle_handler;
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 #endif
@@ -3476,10 +3508,12 @@ method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, i
 
 static void
 method_enter (MonoProfiler *profiler, MonoMethod *method) {
+	CHECK_PROFILER_ENABLED ();
 	STORE_EVENT_ITEM_COUNTER (profiler, method, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_CALL, MONO_PROFILER_EVENT_KIND_START);
 }
 static void
 method_leave (MonoProfiler *profiler, MonoMethod *method) {
+	CHECK_PROFILER_ENABLED ();
 	STORE_EVENT_ITEM_COUNTER (profiler, method, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_CALL, MONO_PROFILER_EVENT_KIND_END);
 }
 
@@ -3513,6 +3547,7 @@ statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **i
 	ProfilerStatisticalData *data;
 	int index;
 	
+	CHECK_PROFILER_ENABLED ();
 	do {
 		data = profiler->statistical_data;
 		index = InterlockedIncrement (&data->next_free_index);
@@ -3563,6 +3598,7 @@ statistical_hit (MonoProfiler *profiler, guchar *ip, void *context) {
 	ProfilerStatisticalData *data;
 	int index;
 	
+	CHECK_PROFILER_ENABLED ();
 	do {
 		data = profiler->statistical_data;
 		index = InterlockedIncrement (&data->next_free_index);
@@ -4127,12 +4163,38 @@ profiler_shutdown (MonoProfiler *prof)
 	profiler = NULL;
 }
 
+#ifndef PLATFORM_WIN32
+static int
+parse_signal_name (const char *signal_name) {
+	if (! strcasecmp (signal_name, "SIGUSR1")) {
+		return SIGUSR1;
+	} else if (! strcasecmp (signal_name, "SIGUSR2")) {
+		return SIGUSR2;
+	} else if (! strcasecmp (signal_name, "SIGPROF")) {
+		return SIGPROF;
+	} else {
+		return atoi (signal_name);
+	}
+}
+static gboolean
+check_signal_number (int signal_number) {
+	if (((signal_number == SIGPROF) && ! (profiler->flags & MONO_PROFILE_STATISTICAL)) ||
+			(signal_number == SIGUSR1) ||
+			(signal_number == SIGUSR2)) {
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+#endif
+
 #define DEFAULT_ARGUMENTS "s"
 static void
 setup_user_options (const char *arguments) {
 	gchar **arguments_array, **current_argument;
 #ifndef PLATFORM_WIN32
 	int gc_request_signal_number = 0;
+	int toggle_signal_number = 0;
 #endif
 	detect_fast_timer ();
 	
@@ -4151,6 +4213,7 @@ setup_user_options (const char *arguments) {
 			MONO_PROFILE_MODULE_EVENTS|
 			MONO_PROFILE_CLASS_EVENTS|
 			MONO_PROFILE_METHOD_EVENTS;
+	profiler->profiler_enabled = TRUE;
 	
 	if (arguments == NULL) {
 		arguments = DEFAULT_ARGUMENTS;
@@ -4215,15 +4278,12 @@ setup_user_options (const char *arguments) {
 			} else if (! (strncmp (argument, "gc-signal", equals_position) && strncmp (argument, "gc-s", equals_position) && strncmp (argument, "gcs", equals_position))) {
 				if (strlen (equals + 1) > 0) {
 					char *signal_name = equals + 1;
-					if (! strcasecmp (signal_name, "SIGUSR1")) {
-						gc_request_signal_number = SIGUSR1;
-					} else if (! strcasecmp (signal_name, "SIGUSR2")) {
-						gc_request_signal_number = SIGUSR2;
-					} else if (! strcasecmp (signal_name, "SIGPROF")) {
-						gc_request_signal_number = SIGPROF;
-					} else {
-						gc_request_signal_number = atoi (signal_name);
-					}
+					gc_request_signal_number = parse_signal_name (signal_name);
+				}
+			} else if (! (strncmp (argument, "toggle-signal", equals_position) && strncmp (argument, "ts", equals_position))) {
+				if (strlen (equals + 1) > 0) {
+					char *signal_name = equals + 1;
+					toggle_signal_number = parse_signal_name (signal_name);
 				}
 #endif
 			} else {
@@ -4252,8 +4312,12 @@ setup_user_options (const char *arguments) {
 			} else if (! (strcmp (argument, "enter-leave") && strcmp (argument, "calls") && strcmp (argument, "c"))) {
 				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
 			} else if (! (strcmp (argument, "statistical") && strcmp (argument, "stat") && strcmp (argument, "s"))) {
-				profiler->flags |= MONO_PROFILE_STATISTICAL|MONO_PROFILE_JIT_COMPILATION;
+				profiler->profiler_enabled = MONO_PROFILE_STATISTICAL|MONO_PROFILE_JIT_COMPILATION;
 				profiler->action_flags.jit_time = TRUE;
+			} else if (! (strcmp (argument, "start-enabled") && strcmp (argument, "se"))) {
+				profiler->profiler_enabled = TRUE;
+			} else if (! (strcmp (argument, "start-disabled") && strcmp (argument, "sd"))) {
+				profiler->profiler_enabled = FALSE;
 			} else if (! (strcmp (argument, "force-accurate-timer") && strcmp (argument, "fac"))) {
 				use_fast_timer = FALSE;
 #if (HAS_OPROFILE)
@@ -4274,10 +4338,15 @@ setup_user_options (const char *arguments) {
 	
 #ifndef PLATFORM_WIN32
 	if (gc_request_signal_number != 0) {
-		if (((gc_request_signal_number == SIGPROF) && ! (profiler->flags & MONO_PROFILE_STATISTICAL)) ||
-				(gc_request_signal_number == SIGUSR1) ||
-				(gc_request_signal_number == SIGUSR2)) {
+		if (check_signal_number (gc_request_signal_number) && (gc_request_signal_number != toggle_signal_number)) {
 			add_gc_request_handler (gc_request_signal_number);
+		} else {
+			g_error ("Cannot use signal %d", gc_request_signal_number);
+		}
+	}
+	if (toggle_signal_number != 0) {
+		if (check_signal_number (toggle_signal_number) && (toggle_signal_number != gc_request_signal_number)) {
+			add_toggle_handler (toggle_signal_number);
 		} else {
 			g_error ("Cannot use signal %d", gc_request_signal_number);
 		}
@@ -4432,7 +4501,7 @@ mono_profiler_startup (const char *desc)
 {
 	profiler = g_new0 (MonoProfiler, 1);
 	
-	setup_user_options ((desc != NULL) ? desc : "");
+	setup_user_options ((desc != NULL) ? desc : DEFAULT_ARGUMENTS);
 	
 	INITIALIZE_PROFILER_MUTEX ();
 	MONO_PROFILER_GET_CURRENT_TIME (profiler->start_time);
