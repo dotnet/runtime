@@ -2874,7 +2874,7 @@ refresh_memory_regions (void) {
 
 static gboolean
 write_statistical_hit (MonoDomain *domain, gpointer address, gboolean regions_refreshed) {
-	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (char*) address);
+	MonoJitInfo *ji = mono_jit_info_table_find (domain, (char*) address);
 	
 	if (ji != NULL) {
 		MonoMethod *method = mono_jit_info_get_method (ji);
