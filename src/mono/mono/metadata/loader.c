@@ -912,6 +912,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	else
 		method = method_from_memberref (image, nindex, context, NULL);
 
+	if (!method)
+		return NULL;
+
 	klass = method->klass;
 
 	if (klass->generic_class) {
