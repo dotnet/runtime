@@ -608,18 +608,45 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 	return(0);
 }
 
-#define STASH_SYS_ASS(this) \
-	if(system_assembly == NULL) { \
-		system_assembly=mono_image_loaded ("System"); \
-		if (!system_assembly) {	\
-			MonoAssembly *sa = mono_assembly_open ("System.dll", NULL);	\
-			if (!sa) g_assert_not_reached ();	\
-			else {system_assembly = mono_assembly_get_image (sa);}	\
-		}	\
+static MonoImage *get_socket_assembly (void)
+{
+	static const char *version = NULL;
+	gboolean moonlight;
+	static MonoImage *socket_assembly = NULL;
+	
+	if (version == NULL) {
+		version = mono_get_runtime_info ()->framework_version;
+		moonlight = !strcmp (version, "2.1");
 	}
-
-static MonoImage *system_assembly=NULL;
-
+	
+	if (socket_assembly == NULL) {
+		if (moonlight) {
+			socket_assembly = mono_image_loaded ("System.Net");
+			if (!socket_assembly) {
+				MonoAssembly *sa = mono_assembly_open ("System.Net.dll", NULL);
+			
+				if (!sa) {
+					g_assert_not_reached ();
+				} else {
+					socket_assembly = mono_assembly_get_image (sa);
+				}
+			}
+		} else {
+			socket_assembly = mono_image_loaded ("System");
+			if (!socket_assembly) {
+				MonoAssembly *sa = mono_assembly_open ("System.dll", NULL);
+			
+				if (!sa) {
+					g_assert_not_reached ();
+				} else {
+					socket_assembly = mono_assembly_get_image (sa);
+				}
+			}
+		}
+	}
+	
+	return(socket_assembly);
+}
 
 #ifdef AF_INET6
 static gint32 get_family_hint(void)
@@ -632,7 +659,7 @@ static gint32 get_family_hint(void)
 		gint32 ipv6_enabled = -1, ipv4_enabled = -1;
 		MonoVTable *vtable;
 
-		socket_class = mono_class_from_name (system_assembly, "System.Net.Sockets", "Socket");
+		socket_class = mono_class_from_name (get_socket_assembly (), "System.Net.Sockets", "Socket");
 		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4Supported");
 		ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6Supported");
 		vtable = mono_class_vtable (mono_domain_get (), socket_class);
@@ -670,8 +697,6 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 	
 	MONO_ARCH_SAVE_REGS;
 
-	STASH_SYS_ASS(this);
-	
 	*error = 0;
 	
 	sock_family=convert_family(family);
@@ -830,7 +855,7 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 	MonoAddressFamily family;
 
 	/* Build a System.Net.SocketAddress object instance */
-	sockaddr_class=mono_class_from_name(system_assembly, "System.Net", "SocketAddress");
+	sockaddr_class=mono_class_from_name(get_socket_assembly (), "System.Net", "SocketAddress");
 	sockaddr_obj=mono_object_new(domain, sockaddr_class);
 	
 	/* Locate the SocketAddress data buffer in the object */
@@ -1764,7 +1789,7 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	switch(name) {
 	case SocketOptionName_Linger:
 		/* build a System.Net.Sockets.LingerOption */
-		obj_class=mono_class_from_name(system_assembly,
+		obj_class=mono_class_from_name(get_socket_assembly (),
 					       "System.Net.Sockets",
 					       "LingerOption");
 		obj=mono_object_new(domain, obj_class);
