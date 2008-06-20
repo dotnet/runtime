@@ -137,7 +137,7 @@ static void reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder 
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
 static guint32 mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec);
 static guint32 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method);
-static guint32 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb);
+static guint32 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb, gboolean create_methodspec);
 static guint32 mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *cb);
 static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper);
 static void    mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly);
@@ -2369,17 +2369,90 @@ mono_image_get_varargs_method_token (MonoDynamicImage *assembly, guint32 origina
 }
 
 static guint32
-mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb)
+encode_generic_method_definition_sig (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb)
+{
+	SigBuffer buf;
+	int i;
+	guint32 nparams = mono_array_length (mb->generic_params);
+	guint32 idx;
+
+	if (!assembly->save)
+		return 0;
+
+	sigbuffer_init (&buf, 32);
+
+	sigbuffer_add_value (&buf, 0xa);
+	sigbuffer_add_value (&buf, nparams);
+
+	for (i = 0; i < nparams; i++) {
+		sigbuffer_add_value (&buf, MONO_TYPE_MVAR);
+		sigbuffer_add_value (&buf, i);
+	}
+
+	idx = sigbuffer_add_to_blob_cached (assembly, &buf);
+	sigbuffer_free (&buf);
+	return idx;
+}
+
+static guint32
+mono_image_get_methodspec_token_for_generic_method_definition (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb)
+{
+	MonoDynamicTable *table;
+	guint32 *values;
+	guint32 token, mtoken = 0, sig;
+	MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
+
+	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->methodspec, mb));
+	if (token)
+		return token;
+
+	table = &assembly->tables [MONO_TABLE_METHODSPEC];
+
+	if (tb->module->dynamic_image == assembly) {
+		mtoken = (mb->table_idx << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODDEF;
+	} else {
+		ReflectionMethodBuilder rmb;
+		char *name = mono_string_to_utf8 (mb->name);
+
+		reflection_methodbuilder_from_method_builder (&rmb, mb);
+		mtoken = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
+				name, method_builder_encode_signature (assembly, &rmb));
+		mtoken = (mono_metadata_token_index (mtoken) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODREF;
+		g_free (name);
+	}
+
+	sig = encode_generic_method_definition_sig (assembly, mb);
+
+	if (assembly->save) {
+		alloc_table (table, table->rows + 1);
+		values = table->values + table->next_idx * MONO_METHODSPEC_SIZE;
+		values [MONO_METHODSPEC_METHOD] = mtoken;
+		values [MONO_METHODSPEC_SIGNATURE] = sig;
+	}
+
+	token = MONO_TOKEN_METHOD_SPEC | table->next_idx;
+	table->next_idx ++;
+
+	mono_g_hash_table_insert (assembly->methodspec, mb, GUINT_TO_POINTER(token));
+	return token;
+}
+
+static guint32
+mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb, gboolean create_methodspec)
 {
 	guint32 token;
 	ReflectionMethodBuilder rmb;
 	
+	if (mb->generic_params && create_methodspec) 
+		return mono_image_get_methodspec_token_for_generic_method_definition (assembly, mb);
+
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, mb));
 	if (token)
 		return token;
 
 	reflection_methodbuilder_from_method_builder (&rmb, mb);
 	
+	/*FIXME we leak the mono_string_to_utf8 here*/
 	token = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
 		mono_string_to_utf8 (rmb.name), method_builder_encode_signature (assembly, &rmb));
 	g_hash_table_insert (assembly->handleref, mb, GUINT_TO_POINTER(token));
@@ -3743,6 +3816,8 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				g_assert (mono_method_signature (m)->generic_param_count);
 				continue;
+			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
+				continue;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -4302,10 +4377,10 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
 
-		if (tb->module->dynamic_image == assembly && !tb->generic_params)
+		if (tb->module->dynamic_image == assembly && !tb->generic_params && !mb->generic_params)
 			token = mb->table_idx | MONO_TOKEN_METHOD_DEF;
 		else
-			token = mono_image_get_methodbuilder_token (assembly, mb);
+			token = mono_image_get_methodbuilder_token (assembly, mb, create_methodspec);
 		/*g_print ("got token 0x%08x for %s\n", token, mono_string_to_utf8 (mb->name));*/
 	} else if (strcmp (klass->name, "ConstructorBuilder") == 0) {
 		MonoReflectionCtorBuilder *mb = (MonoReflectionCtorBuilder *)obj;
@@ -4483,6 +4558,7 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->handleref = g_hash_table_new (NULL, NULL);
 	image->tokens = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 	image->generic_def_objects = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
+	image->methodspec = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
 	image->typespec = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->typeref = g_hash_table_new ((GHashFunc)mono_metadata_type_hash, (GCompareFunc)mono_metadata_type_equal);
 	image->blob_cache = g_hash_table_new ((GHashFunc)mono_blob_entry_hash, (GCompareFunc)mono_blob_entry_equal);
@@ -4533,6 +4609,8 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	GList *list;
 	int i;
 
+	if (di->methodspec)
+		mono_g_hash_table_destroy (di->methodspec);
 	if (di->typespec)
 		g_hash_table_destroy (di->typespec);
 	if (di->typeref)

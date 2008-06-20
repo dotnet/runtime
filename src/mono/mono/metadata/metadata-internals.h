@@ -302,6 +302,7 @@ struct _MonoDynamicImage {
 	GHashTable *field_to_table_idx;
 	GHashTable *method_aux_hash;
 	MonoGHashTable *generic_def_objects;
+	MonoGHashTable *methodspec;
 	gboolean run;
 	gboolean save;
 	gboolean initial_image;
