@@ -56,9 +56,15 @@ guint32 loader_error_thread_id;
 void
 mono_loader_init ()
 {
-	InitializeCriticalSection (&loader_mutex);
+	static gboolean inited;
 
-	loader_error_thread_id = TlsAlloc ();
+	if (!inited) {
+		InitializeCriticalSection (&loader_mutex);
+
+		loader_error_thread_id = TlsAlloc ();
+
+		inited = TRUE;
+	}
 }
 
 void
@@ -981,9 +987,20 @@ mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, cons
 	return mono_dllmap_lookup_list (global_dll_map, dll, func, rdll, rfunc);
 }
 
+/*
+ * mono_dllmap_insert:
+ *
+ * LOCKING: Acquires the loader lock.
+ *
+ * NOTE: This can be called before the runtime is initialized, for example from
+ * mono_config_parse ().
+ */
 void
-mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc) {
+mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc)
+{
 	MonoDllMap *entry;
+
+	mono_loader_init ();
 
 	mono_loader_lock ();
 
