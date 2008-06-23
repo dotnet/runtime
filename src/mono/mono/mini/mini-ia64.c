@@ -310,6 +310,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 			ainfo->nregs = info->num_fields;
 			ainfo->nslots = ainfo->nregs;
 			(*fr) += info->num_fields;
+			(*gr) += info->num_fields;
 			return;
 		}
 	}
