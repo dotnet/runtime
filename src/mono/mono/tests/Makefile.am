@@ -274,6 +274,7 @@ BASE_TEST_CS_SRC=		\
 	generic-static-methods.2.cs	\
 	generic-null-call.2.cs	\
 	generic-special.2.cs	\
+	generic-exceptions.2.cs	\
 	recursive-generics.2.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
@@ -707,7 +708,8 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-interface-methods.2.exe generic-array-type.2.exe	\
 		generic-method-patching.2.exe generic-static-methods.2.exe	\
 		generic-null-call.2.exe generic-tailcall2.2.exe			\
-		generic-array-exc.2.exe generic-special.2.exe
+		generic-array-exc.2.exe generic-special.2.exe			\
+		generic-exceptions.2.exe
 	for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared                $$fn || exit 1;	\

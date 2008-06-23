@@ -5025,6 +5025,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					clause->data.catch_class &&
 					cfg->generic_sharing_context &&
 					mono_class_check_context_used (clause->data.catch_class)) {
+				if (mono_method_get_context (method)->method_inst)
+					GENERIC_SHARING_FAILURE (CEE_NOP);
+
 				/*
 				 * In shared generic code with catch
 				 * clauses containing type variables
