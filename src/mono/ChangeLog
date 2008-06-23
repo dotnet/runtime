@@ -1,3 +1,9 @@
+2008-06-23  Andreas Färber  <andreas.faerber@web.de>
+
+	* data/Makefile.am (EXTRA_DIST): Distribute mono.d.
+
+	Contributed unter MIT/X11 license.
+
 2008-06-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Remove -D_FILE_OFFSET_BITS=64 from the CPPFLAGS passed to
