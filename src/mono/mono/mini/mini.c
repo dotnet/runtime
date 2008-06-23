@@ -11903,6 +11903,18 @@ remove_critical_edges (MonoCompile *cfg) {
 	}
 }
 
+static MonoGenericInst*
+get_object_generic_inst (int type_argc)
+{
+	MonoType *type_argv [type_argc];
+	int i;
+
+	for (i = 0; i < type_argc; ++i)
+		type_argv [i] = &mono_defaults.object_class->byval_arg;
+
+	return mono_metadata_get_generic_inst (type_argc, type_argv);
+}
+
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -11925,7 +11937,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	int dfn = 0, i, code_size_ratio;
 	gboolean deadce_has_run = FALSE;
 	gboolean try_generic_shared;
-	MonoMethod *method_to_compile;
+	MonoMethod *method_to_compile, *method_to_register;
 	int generic_info_size;
 
 	mono_jit_stats.methods_compiled++;
@@ -12295,7 +12307,35 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_domain_unlock (cfg->domain);
 	}
 
-	jinfo->method = method;
+	if (cfg->generic_sharing_context) {
+		MonoGenericContext object_context;
+
+		g_assert (!method_to_compile->klass->generic_class);
+		if (method_to_compile->klass->generic_container) {
+			int type_argc = method_to_compile->klass->generic_container->type_argc;
+
+			object_context.class_inst = get_object_generic_inst (type_argc);
+		} else {
+			object_context.class_inst = NULL;
+		}
+
+		if (mini_method_get_context (method_to_compile)->method_inst) {
+			int type_argc = mini_method_get_context (method_to_compile)->method_inst->type_argc;
+
+			object_context.method_inst = get_object_generic_inst (type_argc);
+		} else {
+			object_context.method_inst = NULL;
+		}
+
+		g_assert (object_context.class_inst || object_context.method_inst);
+
+		method_to_register = mono_class_inflate_generic_method (method_to_compile, &object_context);
+	} else {
+		g_assert (method == method_to_compile);
+		method_to_register = method;
+	}
+
+	jinfo->method = method_to_register;
 	jinfo->code_start = cfg->native_code;
 	jinfo->code_size = cfg->code_len;
 	jinfo->used_regs = cfg->used_int_regs;
@@ -12610,7 +12650,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 	
 	if (code == NULL) {
-		mono_internal_hash_table_insert (&target_domain->jit_code_hash, method, cfg->jit_info);
+		mono_internal_hash_table_insert (&target_domain->jit_code_hash, cfg->jit_info->method, cfg->jit_info);
 		code = cfg->native_code;
 
 		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method, FALSE)) {
