@@ -1063,16 +1063,16 @@ public class Tests {
 	}
 	
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_ia64_pass_return_struct6")]
-	public static extern TestStruct6 mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, TestStruct6 s, double f3, double f4);
+	public static extern TestStruct6 mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, TestStruct6 s, int i, double f3, double f4);
 
 	public static int test_0_ia64_struct6 () {
 		TestStruct6 s = new TestStruct6 ();
 		s.d1 = 6.0;
 		s.d2 = -6.0;
 
-		TestStruct6 s2 = mono_test_marshal_ia64_pass_return_struct6 (1.0, 2.0, s, 3.0, 4.0);
+		TestStruct6 s2 = mono_test_marshal_ia64_pass_return_struct6 (1.0, 2.0, s, 3, 4.0, 5.0);
 
-		return (s2.d1 == 9.0 && s2.d2 == 1.0) ? 0 : 1;
+		return (s2.d1 == 12.0 && s2.d2 == 3.0) ? 0 : 1;
 	}
 	
 	/* Blittable class */

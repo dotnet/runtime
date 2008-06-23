@@ -1572,9 +1572,9 @@ typedef struct test_struct6 {
 } test_struct6;
 
 LIBTEST_API test_struct6 STDCALL 
-mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, test_struct6 s, double d3, double d4)
+mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, test_struct6 s, int i, double d3, double d4)
 {
-	s.d1 += d1 + d2;
+	s.d1 += d1 + d2 + i;
 	s.d2 += d3 + d4;
 
 	return s;
