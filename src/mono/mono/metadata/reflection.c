@@ -2467,6 +2467,7 @@ mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMe
 {
 	guint32 token;
 	ReflectionMethodBuilder rmb;
+	char *name;
 	
 	if (mb->generic_params && create_methodspec) 
 		return mono_image_get_methodspec_token_for_generic_method_definition (assembly, mb);
@@ -2477,10 +2478,11 @@ mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMe
 
 	reflection_methodbuilder_from_method_builder (&rmb, mb);
 	
-	/*FIXME we leak the mono_string_to_utf8 here*/
+	name = mono_string_to_utf8 (rmb.name);
 	token = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
-		mono_string_to_utf8 (rmb.name), method_builder_encode_signature (assembly, &rmb));
+		name, method_builder_encode_signature (assembly, &rmb));
 	g_hash_table_insert (assembly->handleref, mb, GUINT_TO_POINTER(token));
+	g_free (name);
 	return token;
 }
 
@@ -2489,6 +2491,7 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 {
 	guint32 token;
 	ReflectionMethodBuilder rmb;
+	char *name;
 	
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, mb));
 	if (token)
@@ -2496,8 +2499,11 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 
 	reflection_methodbuilder_from_ctor_builder (&rmb, mb);
 
+	name = mono_string_to_utf8 (rmb.name);
 	token = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
-		mono_string_to_utf8 (rmb.name), method_builder_encode_signature (assembly, &rmb));
+		name, method_builder_encode_signature (assembly, &rmb));
+
+	g_free (name);
 	g_hash_table_insert (assembly->handleref, mb, GUINT_TO_POINTER(token));
 	return token;
 }
@@ -4358,7 +4364,8 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
 		ReflectionMethodBuilder rmb;
 		guint32 parent, sig;
-	
+		char *name;
+
 		reflection_methodbuilder_from_method_builder (&rmb, mb);
 		rmb.opt_types = opt_param_types;
 
@@ -4370,8 +4377,10 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 		parent = mono_metadata_token_index (parent) << MONO_MEMBERREF_PARENT_BITS;
 		parent |= MONO_MEMBERREF_PARENT_METHODDEF;
 
+		name = mono_string_to_utf8 (rmb.name);
 		token = mono_image_get_varargs_method_token (
-			assembly, parent, mono_string_to_utf8 (rmb.name), sig);
+			assembly, parent, name, sig);
+		g_free (name);
 	} else {
 		g_error ("requested method token for %s\n", klass->name);
 	}
