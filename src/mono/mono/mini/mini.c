@@ -12445,13 +12445,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	/* collect statistics */
 	mono_jit_stats.allocated_code_size += cfg->code_len;
 	code_size_ratio = cfg->code_len;
-	if (code_size_ratio > mono_jit_stats.biggest_method_size) {
+	if (code_size_ratio > mono_jit_stats.biggest_method_size && mono_jit_stats.enabled) {
 		mono_jit_stats.biggest_method_size = code_size_ratio;
 		g_free (mono_jit_stats.biggest_method);
 		mono_jit_stats.biggest_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
 	}
 	code_size_ratio = (code_size_ratio * 100) / mono_method_get_header (method)->code_size;
-	if (code_size_ratio > mono_jit_stats.max_code_size_ratio) {
+	if (code_size_ratio > mono_jit_stats.max_code_size_ratio && mono_jit_stats.enabled) {
 		mono_jit_stats.max_code_size_ratio = code_size_ratio;
 		g_free (mono_jit_stats.max_ratio_method);
 		mono_jit_stats.max_ratio_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
