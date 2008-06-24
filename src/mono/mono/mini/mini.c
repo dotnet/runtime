@@ -12446,13 +12446,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_stats.allocated_code_size += cfg->code_len;
 	code_size_ratio = cfg->code_len;
 	if (code_size_ratio > mono_jit_stats.biggest_method_size) {
-			mono_jit_stats.biggest_method_size = code_size_ratio;
-			mono_jit_stats.biggest_method = method;
+		mono_jit_stats.biggest_method_size = code_size_ratio;
+		g_free (mono_jit_stats.biggest_method);
+		mono_jit_stats.biggest_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
 	}
 	code_size_ratio = (code_size_ratio * 100) / mono_method_get_header (method)->code_size;
 	if (code_size_ratio > mono_jit_stats.max_code_size_ratio) {
 		mono_jit_stats.max_code_size_ratio = code_size_ratio;
-		mono_jit_stats.max_ratio_method = method;
+		g_free (mono_jit_stats.max_ratio_method);
+		mono_jit_stats.max_ratio_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
 	}
 	mono_jit_stats.native_code_size += cfg->code_len;
 
@@ -13952,10 +13954,10 @@ print_jit_stats (void)
 		g_print ("Analyze stack repeat:   %ld\n", mono_jit_stats.analyze_stack_repeat);
 		g_print ("Compiled CIL code size: %ld\n", mono_jit_stats.cil_code_size);
 		g_print ("Native code size:       %ld\n", mono_jit_stats.native_code_size);
-		g_print ("Max code size ratio:    %.2f (%s::%s)\n", mono_jit_stats.max_code_size_ratio/100.0,
-				mono_jit_stats.max_ratio_method->klass->name, mono_jit_stats.max_ratio_method->name);
-		g_print ("Biggest method:         %ld (%s::%s)\n", mono_jit_stats.biggest_method_size,
-				mono_jit_stats.biggest_method->klass->name, mono_jit_stats.biggest_method->name);
+		g_print ("Max code size ratio:    %.2f (%s)\n", mono_jit_stats.max_code_size_ratio/100.0,
+				 mono_jit_stats.max_ratio_method);
+		g_print ("Biggest method:         %ld (%s)\n", mono_jit_stats.biggest_method_size,
+				 mono_jit_stats.biggest_method);
 		g_print ("Code reallocs:          %ld\n", mono_jit_stats.code_reallocs);
 		g_print ("Allocated code size:    %ld\n", mono_jit_stats.allocated_code_size);
 		g_print ("Inlineable methods:     %ld\n", mono_jit_stats.inlineable_methods);
@@ -14020,6 +14022,11 @@ print_jit_stats (void)
 			g_print ("Metadata pagefaults   : %d\n", mono_raw_buffer_get_n_pagefaults ());
 			g_print ("AOT pagefaults        : %d\n", mono_aot_get_n_pagefaults ());
 		}
+
+		g_free (mono_jit_stats.max_ratio_method);
+		mono_jit_stats.max_ratio_method = NULL;
+		g_free (mono_jit_stats.biggest_method);
+		mono_jit_stats.biggest_method = NULL;
 	}
 }
 
