@@ -151,6 +151,7 @@ static void get_default_param_value_blobs (MonoMethod *method, char **blobs, gui
 static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob);
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
+static guint32 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method);
 
 #define mono_reflection_lock() EnterCriticalSection (&reflection_mutex)
 #define mono_reflection_unlock() LeaveCriticalSection (&reflection_mutex)
@@ -2345,6 +2346,34 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method)
 }
 
 static guint32
+mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method)
+{
+	guint32 token;
+	ReflectionMethodBuilder rmb;
+	char *name;
+	
+	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
+	if (token)
+		return token;
+
+	name = mono_string_to_utf8 (method->name);
+	reflection_methodbuilder_from_method_builder (&rmb, method);
+
+	/*
+	 * A methodref signature can't contain an unmanaged calling convention.
+	 * Since some flags are encoded as part of call_conv, we need to check against it.
+	*/
+	if ((rmb.call_conv & ~0x60) != MONO_CALL_DEFAULT && (rmb.call_conv & ~0x60) != MONO_CALL_VARARG)
+		rmb.call_conv = (rmb.call_conv & 0x60) | MONO_CALL_DEFAULT;
+	token = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
+					name, method_builder_encode_signature (assembly, &rmb));
+
+	g_free (name);
+	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
+	return token;
+}
+
+static guint32
 mono_image_get_varargs_method_token (MonoDynamicImage *assembly, guint32 original,
 				     const gchar *name, guint32 sig)
 {
@@ -2399,8 +2428,7 @@ mono_image_get_methodspec_token_for_generic_method_definition (MonoDynamicImage 
 {
 	MonoDynamicTable *table;
 	guint32 *values;
-	guint32 token, mtoken = 0, sig;
-	MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
+	guint32 token, mtoken = 0;
 
 	token = GPOINTER_TO_UINT (mono_g_hash_table_lookup (assembly->methodspec, mb));
 	if (token)
@@ -2408,26 +2436,23 @@ mono_image_get_methodspec_token_for_generic_method_definition (MonoDynamicImage 
 
 	table = &assembly->tables [MONO_TABLE_METHODSPEC];
 
-	if (tb->module->dynamic_image == assembly) {
-		mtoken = (mb->table_idx << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODDEF;
-	} else {
-		ReflectionMethodBuilder rmb;
-		char *name = mono_string_to_utf8 (mb->name);
-
-		reflection_methodbuilder_from_method_builder (&rmb, mb);
-		mtoken = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
-				name, method_builder_encode_signature (assembly, &rmb));
+	mtoken = mono_image_get_methodref_token_for_methodbuilder (assembly, mb);
+	switch (mono_metadata_token_table (mtoken)) {
+	case MONO_TABLE_MEMBERREF:
 		mtoken = (mono_metadata_token_index (mtoken) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODREF;
-		g_free (name);
+		break;
+	case MONO_TABLE_METHOD:
+		mtoken = (mono_metadata_token_index (mtoken) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODDEF;
+		break;
+	default:
+		g_assert_not_reached ();
 	}
-
-	sig = encode_generic_method_definition_sig (assembly, mb);
 
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
 		values = table->values + table->next_idx * MONO_METHODSPEC_SIZE;
 		values [MONO_METHODSPEC_METHOD] = mtoken;
-		values [MONO_METHODSPEC_SIGNATURE] = sig;
+		values [MONO_METHODSPEC_SIGNATURE] = encode_generic_method_definition_sig (assembly, mb);
 	}
 
 	token = MONO_TOKEN_METHOD_SPEC | table->next_idx;
