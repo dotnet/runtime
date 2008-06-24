@@ -108,24 +108,6 @@ mono_double_ParseImpl (char *ptr, double *result)
 	return TRUE;
 }
 
-static MonoClass *
-mono_class_get_throw (MonoImage *image, guint32 type_token)
-{
-	MonoClass *class = mono_class_get (image, type_token);
-	MonoLoaderError *error;
-	MonoException *ex;
-	
-	if (class != NULL)
-		return class;
-
-	error = mono_loader_get_last_error ();
-	g_assert (error != NULL);
-	
-	ex = mono_loader_error_prepare_exception (error);
-	mono_raise_exception (ex);
-	return NULL;
-}
-
 static MonoObject *
 ves_icall_System_Array_GetValueImpl (MonoObject *this, guint32 pos)
 {
@@ -5027,7 +5009,7 @@ ves_icall_System_Reflection_Assembly_LoadPermissions (MonoReflectionAssembly *as
 }
 
 static MonoArray*
-mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoBoolean exportedOnly)
+mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **exceptions, MonoBoolean exportedOnly)
 {
 	MonoArray *res;
 	MonoClass *klass;
@@ -5048,15 +5030,27 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoBoolean exporte
 		count = tdef->rows - 1;
 	}
 	res = mono_array_new (domain, mono_defaults.monotype_class, count);
+	*exceptions = mono_array_new (domain, mono_defaults.exception_class, count);
 	count = 0;
 	for (i = 1; i < tdef->rows; ++i) {
 		attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
 		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 		if (!exportedOnly || (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)) {
-			klass = mono_class_get_throw (image, (i + 1) | MONO_TOKEN_TYPE_DEF);
+			klass = mono_class_get (image, (i + 1) | MONO_TOKEN_TYPE_DEF);
+			if (klass) {
+				mono_array_setref (res, count, mono_type_get_object (domain, &klass->byval_arg));
+			} else {
+				MonoLoaderError *error;
+				MonoException *ex;
+				
+				error = mono_loader_get_last_error ();
+				g_assert (error != NULL);
+	
+				ex = mono_loader_error_prepare_exception (error);
+				mono_array_setref (*exceptions, count, ex);
+			}
 			if (mono_loader_get_last_error ())
 				mono_loader_clear_error ();
-			mono_array_setref (res, count, mono_type_get_object (domain, &klass->byval_arg));
 			count++;
 		}
 	}
@@ -5068,11 +5062,12 @@ static MonoArray*
 ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly, MonoBoolean exportedOnly)
 {
 	MonoArray *res = NULL;
+	MonoArray *exceptions = NULL;
 	MonoImage *image = NULL;
 	MonoTableInfo *table = NULL;
 	MonoDomain *domain;
 	GList *list = NULL;
-	int i, len;
+	int i, len, ex_count;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -5081,25 +5076,32 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 	g_assert (!assembly->assembly->dynamic);
 	image = assembly->assembly->image;
 	table = &image->tables [MONO_TABLE_FILE];
-	res = mono_module_get_types (domain, image, exportedOnly);
+	res = mono_module_get_types (domain, image, &exceptions, exportedOnly);
 
 	/* Append data from all modules in the assembly */
 	for (i = 0; i < table->rows; ++i) {
 		if (!(mono_metadata_decode_row_col (table, i, MONO_FILE_FLAGS) & FILE_CONTAINS_NO_METADATA)) {
 			MonoImage *loaded_image = mono_assembly_load_module (image->assembly, i + 1);
 			if (loaded_image) {
-				MonoArray *res2 = mono_module_get_types (domain, loaded_image, exportedOnly);
+				MonoArray *ex2;
+				MonoArray *res2 = mono_module_get_types (domain, loaded_image, &ex2, exportedOnly);
 				/* Append the new types to the end of the array */
 				if (mono_array_length (res2) > 0) {
 					guint32 len1, len2;
-					MonoArray *res3;
+					MonoArray *res3, *ex3;
 
 					len1 = mono_array_length (res);
 					len2 = mono_array_length (res2);
+
 					res3 = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
 					mono_array_memcpy_refs (res3, 0, res, 0, len1);
 					mono_array_memcpy_refs (res3, len1, res2, 0, len2);
 					res = res3;
+
+					ex3 = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
+					mono_array_memcpy_refs (ex3, 0, exceptions, 0, len1);
+					mono_array_memcpy_refs (ex3, len1, ex2, 0, len2);
+					exceptions = ex3;
 				}
 			}
 		}
@@ -5112,29 +5114,46 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 
 	len = mono_array_length (res);
 
+	ex_count = 0;
 	for (i = 0; i < len; i++) {
 		MonoReflectionType *t = mono_array_get (res, gpointer, i);
-		MonoClass *klass = mono_type_get_class (t->type);
-		if ((klass != NULL) && klass->exception_type) {
-			/* keep the class in the list */
-			list = g_list_append (list, klass);
-			/* and replace Type with NULL */
-			mono_array_setref (res, i, NULL);
+		MonoClass *klass;
+
+		if (t) {
+			klass = mono_type_get_class (t->type);
+			if ((klass != NULL) && klass->exception_type) {
+				/* keep the class in the list */
+				list = g_list_append (list, klass);
+				/* and replace Type with NULL */
+				mono_array_setref (res, i, NULL);
+			}
+		} else {
+			ex_count ++;
 		}
 	}
 
-	if (list) {
+	if (list || ex_count) {
 		GList *tmp = NULL;
 		MonoException *exc = NULL;
 		MonoArray *exl = NULL;
-		int length = g_list_length (list);
+		int j, length = g_list_length (list) + ex_count;
 
 		mono_loader_clear_error ();
 
 		exl = mono_array_new (domain, mono_defaults.exception_class, length);
-		for (i = 0, tmp = list; i < length; i++, tmp = tmp->next) {
+		/* Types for which mono_class_get () succeeded */
+		for (i = 0, tmp = list; tmp; i++, tmp = tmp->next) {
 			MonoException *exc = mono_class_get_exception_for_failure (tmp->data);
 			mono_array_setref (exl, i, exc);
+		}
+		/* Types for which it don't */
+		for (j = 0; j < mono_array_length (exceptions); ++j) {
+			MonoException *exc = mono_array_get (exceptions, MonoException*, j);
+			if (exc) {
+				g_assert (i < length);
+				mono_array_setref (exl, i, exc);
+				i ++;
+			}
 		}
 		g_list_free (list);
 		list = NULL;
@@ -5244,12 +5263,22 @@ ves_icall_System_Reflection_Module_GetMDStreamVersion (MonoImage *image)
 static MonoArray*
 ves_icall_System_Reflection_Module_InternalGetTypes (MonoReflectionModule *module)
 {
+	MonoArray *exceptions;
+	int i;
+
 	MONO_ARCH_SAVE_REGS;
 
 	if (!module->image)
 		return mono_array_new (mono_object_domain (module), mono_defaults.monotype_class, 0);
-	else
-		return mono_module_get_types (mono_object_domain (module), module->image, FALSE);
+	else {
+		MonoArray *res = mono_module_get_types (mono_object_domain (module), module->image, &exceptions, FALSE);
+		for (i = 0; i < mono_array_length (exceptions); ++i) {
+			MonoException *ex = mono_array_get (exceptions, MonoException *, i);
+			if (ex)
+				mono_raise_exception (ex);
+		}
+		return res;
+	}
 }
 
 static gboolean
