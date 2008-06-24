@@ -872,8 +872,8 @@ typedef struct {
 	gulong cas_linkdemand;
 	gulong cas_demand_generation;
 	gulong generic_virtual_invocations;
-	MonoMethod *max_ratio_method;
-	MonoMethod *biggest_method;
+	char *max_ratio_method;
+	char *biggest_method;
 	gboolean enabled;
 } MonoJitStats;
 
