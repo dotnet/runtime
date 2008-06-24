@@ -11909,8 +11909,10 @@ remove_critical_edges (MonoCompile *cfg) {
 static MonoGenericInst*
 get_object_generic_inst (int type_argc)
 {
-	MonoType *type_argv [type_argc];
+	MonoType **type_argv;
 	int i;
+
+	type_argv = alloca (sizeof (MonoType*) * type_argc);
 
 	for (i = 0; i < type_argc; ++i)
 		type_argv [i] = &mono_defaults.object_class->byval_arg;
