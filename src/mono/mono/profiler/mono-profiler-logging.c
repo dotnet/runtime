@@ -369,8 +369,13 @@ typedef struct _ProfilerPerThreadData {
 	struct _ProfilerPerThreadData* next;
 } ProfilerPerThreadData;
 
+typedef struct _ProfilerStatisticalHit {
+	gpointer *address;
+	MonoDomain *domain;
+} ProfilerStatisticalHit;
+
 typedef struct _ProfilerStatisticalData {
-	gpointer *addresses;
+	ProfilerStatisticalHit *hits;
 	int next_free_index;
 	int end_index;
 	int first_unwritten_index;
@@ -1596,7 +1601,7 @@ profiler_statistical_data_new (MonoProfiler *profiler) {
 	int buffer_size = profiler->statistical_buffer_size * (profiler->statistical_call_chain_depth + 1);
 	ProfilerStatisticalData *data = g_new (ProfilerStatisticalData, 1);
 
-	data->addresses = g_new0 (gpointer, buffer_size);
+	data->hits = g_new0 (ProfilerStatisticalHit, buffer_size);
 	data->next_free_index = 0;
 	data->end_index = buffer_size;
 	data->first_unwritten_index = 0;
@@ -1606,7 +1611,7 @@ profiler_statistical_data_new (MonoProfiler *profiler) {
 
 static void
 profiler_statistical_data_destroy (ProfilerStatisticalData *data) {
-	g_free (data->addresses);
+	g_free (data->hits);
 	g_free (data);
 }
 
@@ -2925,7 +2930,7 @@ refresh_memory_regions (void) {
 
 static gboolean
 write_statistical_hit (MonoDomain *domain, gpointer address, gboolean regions_refreshed) {
-	MonoJitInfo *ji = mono_jit_info_table_find (domain, (char*) address);
+	MonoJitInfo *ji = (domain != NULL) ? mono_jit_info_table_find (domain, (char*) address) : NULL;
 	
 	if (ji != NULL) {
 		MonoMethod *method = mono_jit_info_get_method (ji);
@@ -3004,7 +3009,6 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 	int end_index = data->next_free_index;
 	gboolean regions_refreshed = FALSE;
 	int call_chain_depth = profiler->statistical_call_chain_depth;
-	MonoDomain *domain = mono_domain_get ();
 	int index;
 	
 	if (end_index > data->end_index)
@@ -3023,15 +3027,15 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 	
 	for (index = start_index; index < end_index; index ++) {
 		int base_index = index * (call_chain_depth + 1);
-		gpointer address = data->addresses [base_index];
+		ProfilerStatisticalHit hit = data->hits [base_index];
 		int callers_count;
 		
-		regions_refreshed = write_statistical_hit (domain, address, regions_refreshed);
+		regions_refreshed = write_statistical_hit (hit.domain, hit.address, regions_refreshed);
 		base_index ++;
 		
 		for (callers_count = 0; callers_count < call_chain_depth; callers_count ++) {
-			address = data->addresses [base_index + callers_count];
-			if (address == NULL) {
+			hit = data->hits [base_index + callers_count];
+			if (hit.address == NULL) {
 				break;
 			}
 		}
@@ -3040,9 +3044,9 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 			write_uint32 ((callers_count << 3) | MONO_PROFILER_STATISTICAL_CODE_CALL_CHAIN);
 			
 			for (callers_count = 0; callers_count < call_chain_depth; callers_count ++) {
-				address = data->addresses [base_index + callers_count];
-				if (address != NULL) {
-					regions_refreshed = write_statistical_hit (domain, address, regions_refreshed);
+				hit = data->hits [base_index + callers_count];
+				if (hit.address != NULL) {
+					regions_refreshed = write_statistical_hit (hit.domain, hit.address, regions_refreshed);
 				} else {
 					break;
 				}
@@ -3567,6 +3571,7 @@ object_allocated (MonoProfiler *profiler, MonoObject *obj, MonoClass *klass) {
 
 static void
 statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **ips, void *context) {
+	MonoDomain *domain = mono_domain_get ();
 	ProfilerStatisticalData *data;
 	int index;
 	
@@ -3581,13 +3586,17 @@ statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **i
 			
 			//printf ("[statistical_call_chain] (%d)\n", call_chain_depth);
 			while (call_chain_index < call_chain_depth) {
+				ProfilerStatisticalHit *hit = & (data->hits [base_index + call_chain_index]);
 				//printf ("[statistical_call_chain] [%d] = %p\n", base_index + call_chain_index, ips [call_chain_index]);
-				data->addresses [base_index + call_chain_index] = (gpointer) ips [call_chain_index];
+				hit->address = (gpointer) ips [call_chain_index];
+				hit->domain = domain;
 				call_chain_index ++;
 			}
 			while (call_chain_index <= profiler->statistical_call_chain_depth) {
+				ProfilerStatisticalHit *hit = & (data->hits [base_index + call_chain_index]);
 				//printf ("[statistical_call_chain] [%d] = NULL\n", base_index + call_chain_index);
-				data->addresses [base_index + call_chain_index] = NULL;
+				hit->address = NULL;
+				hit->domain = NULL;
 				call_chain_index ++;
 			}
 		} else {
@@ -3618,6 +3627,7 @@ statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **i
 
 static void
 statistical_hit (MonoProfiler *profiler, guchar *ip, void *context) {
+	MonoDomain *domain = mono_domain_get ();
 	ProfilerStatisticalData *data;
 	int index;
 	
@@ -3627,7 +3637,9 @@ statistical_hit (MonoProfiler *profiler, guchar *ip, void *context) {
 		index = InterlockedIncrement (&data->next_free_index);
 		
 		if (index <= data->end_index) {
-			data->addresses [index - 1] = (gpointer) ip;
+			ProfilerStatisticalHit *hit = & (data->hits [index - 1]);
+			hit->address = (gpointer) ip;
+			hit->domain = domain;
 		} else {
 			/* Check if we are the one that must swap the buffers */
 			if (index == data->end_index + 1) {
