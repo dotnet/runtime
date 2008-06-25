@@ -1,3 +1,7 @@
+2008-06-25  Zoltan Varga  <vargaz@gmail.com>
+
+	* acinclude.m4: Update dolt to the latest git version.
+
 2008-06-23  Andreas Färber  <andreas.faerber@web.de>
 
 	* data/Makefile.am (EXTRA_DIST): Distribute mono.d.

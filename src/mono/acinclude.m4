@@ -13,6 +13,8 @@ AC_REQUIRE([AC_CANONICAL_HOST])
 # dolt, a replacement for libtool
 # Josh Triplett <josh@freedesktop.org>
 AC_PATH_PROG(DOLT_BASH, bash)
+AC_MSG_CHECKING([if libtool sucks])
+AC_MSG_RESULT([yup, it does])
 AC_MSG_CHECKING([if dolt supports this host])
 dolt_supported=yes
 if test x$DOLT_BASH = x; then
@@ -22,14 +24,11 @@ if test x$GCC != xyes; then
     dolt_supported=no
 fi
 case $host in
-i?86-*-linux*|x86_64-*-linux*|powerpc-*-linux*) ;;
-amd64-*-freebsd*|i?86-*-freebsd*|ia64-*-freebsd*) ;;
+i?86-*-linux*|x86_64-*-linux*) ;;
 *) dolt_supported=no ;;
 esac
 if test x$dolt_supported = xno ; then
     AC_MSG_RESULT([no, falling back to libtool])
-    LTCOMPILE='$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(COMPILE)'
-    LTCXXCOMPILE='$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXXCOMPILE)'
 else
     AC_MSG_RESULT([yes, replacing libtool])
 
@@ -63,16 +62,15 @@ dnl Write out shared compilation code.
         cat <<'__DOLTCOMPILE__EOF__' >>doltcompile
 libobjdir="${obj%$objbase}.libs"
 if test ! -d "$libobjdir" ; then
-    mkdir_out="$(mkdir "$libobjdir" 2>&1)"
+    mkdir "$libobjdir"
     mkdir_ret=$?
     if test "$mkdir_ret" -ne 0 && test ! -d "$libobjdir" ; then
-	echo "$mkdir_out" 1>&2
         exit $mkdir_ret
     fi
 fi
 pic_object="$libobjdir/$objbase.o"
 args@<:@$objarg@:>@="$pic_object"
-"${args@<:@@@:>@}" -fPIC -DPIC || exit $?
+"${args@<:@@@:>@}" -fPIC -DPIC
 __DOLTCOMPILE__EOF__
     fi
 
@@ -85,11 +83,11 @@ args@<:@$objarg@:>@="$non_pic_object"
 __DOLTCOMPILE__EOF__
         if test x$enable_shared = xyes; then
             cat <<'__DOLTCOMPILE__EOF__' >>doltcompile
-"${args@<:@@@:>@}" >/dev/null 2>&1 || exit $?
+"${args@<:@@@:>@}" >/dev/null 2>&1
 __DOLTCOMPILE__EOF__
         else
             cat <<'__DOLTCOMPILE__EOF__' >>doltcompile
-"${args@<:@@@:>@}" || exit $?
+"${args@<:@@@:>@}"
 __DOLTCOMPILE__EOF__
         fi
     fi
@@ -129,9 +127,9 @@ __DOLTCOMPILE__EOF__
 dnl Done writing out doltcompile; substitute it for libtool compilation.
     chmod +x doltcompile
     LTCOMPILE='$(top_builddir)/doltcompile $(COMPILE)'
+    AC_SUBST(LTCOMPILE)
     LTCXXCOMPILE='$(top_builddir)/doltcompile $(CXXCOMPILE)'
+    AC_SUBST(LTCXXCOMPILE)
 fi
-AC_SUBST(LTCOMPILE)
-AC_SUBST(LTCXXCOMPILE)
 # end dolt
 ])
