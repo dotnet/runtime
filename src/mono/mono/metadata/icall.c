@@ -4726,14 +4726,46 @@ ves_icall_GetCurrentMethod (void)
 	return mono_method_get_object (mono_domain_get (), m, NULL);
 }
 
+
+static MonoMethod*
+mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
+{
+	int offset = -1, i;
+	if (method->is_inflated && ((MonoMethodInflated*)method)->context.method_inst) {
+		MonoMethodInflated *inflated = method;
+		//method is inflated, we should inflate it on the other class
+		MonoGenericContext ctx;
+		ctx.method_inst = inflated->context.method_inst;
+		ctx.class_inst = inflated->context.class_inst;
+		if (klass->generic_class)
+			ctx.class_inst = klass->generic_class->context.class_inst;
+		else if (klass->generic_container)
+			ctx.class_inst = klass->generic_container->context.class_inst;
+		return mono_class_inflate_generic_method_full (inflated->declaring, klass, &ctx);
+	}
+
+	for (i = 0; i < method->klass->method.count; ++i) {
+		if (method->klass->methods [i] == method) {
+			offset = i;
+			break;
+		}	
+	}
+	mono_class_setup_methods (klass);
+	g_assert (offset >= 0 && offset < klass->method.count);
+	return klass->methods [offset];
+}
+
 static MonoReflectionMethod*
 ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType (MonoMethod *method, MonoType *type)
 {
-	/* FIXME check that method belongs to klass or a parent */
 	MonoClass *klass;
-	if (type)
+	if (type) {
 		klass = mono_class_from_mono_type (type);
-	else
+		if (mono_class_get_generic_type_definition (method->klass) != mono_class_get_generic_type_definition (klass)) 
+			return NULL;
+		if (method->klass != klass)
+			method = mono_method_get_equivalent_method (method, klass);
+	} else
 		klass = method->klass;
 	return mono_method_get_object (mono_domain_get (), method, klass);
 }

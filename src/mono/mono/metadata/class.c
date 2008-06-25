@@ -7022,7 +7022,7 @@ is_nesting_type (MonoClass *outer_klass, MonoClass *inner_klass)
 	return FALSE;
 }
 
-static MonoClass *
+MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass)
 {
 	return klass->generic_class ? klass->generic_class->container_class : klass;

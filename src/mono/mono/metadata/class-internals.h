@@ -1027,4 +1027,7 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 gboolean
 mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, MonoClass *context_klass) MONO_INTERNAL;
 
+MonoClass *
+mono_class_get_generic_type_definition (MonoClass *klass) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
