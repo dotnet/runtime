@@ -1,5 +1,7 @@
 2008-06-25  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Enable dolt by default as an experiment.
+
 	* acinclude.m4: Update dolt to the latest git version.
 
 2008-06-23  Andreas Färber  <andreas.faerber@web.de>
