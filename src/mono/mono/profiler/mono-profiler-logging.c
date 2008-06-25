@@ -623,10 +623,18 @@ make_pthread_profiler_key (void) {
 #endif
 
 #define EVENT_TYPE sem_t
-#define WRITER_EVENT_INIT() (void) sem_init (&(profiler->statistical_data_writer_event), 0, 0)
-#define WRITER_EVENT_DESTROY() (void) sem_destroy (&(profiler->statistical_data_writer_event))
-#define WRITER_EVENT_WAIT() (void) sem_wait (&(profiler->statistical_data_writer_event))
-#define WRITER_EVENT_RAISE() (void) sem_post (&(profiler->statistical_data_writer_event))
+#define WRITER_EVENT_INIT() do {\
+	sem_init (&(profiler->enable_data_writer_event), 0, 0);\
+	sem_init (&(profiler->wake_data_writer_event), 0, 0);\
+} while (0)
+#define WRITER_EVENT_DESTROY() do {\
+	sem_destroy (&(profiler->enable_data_writer_event));\
+	sem_destroy (&(profiler->wake_data_writer_event));\
+} while (0)
+#define WRITER_EVENT_WAIT() (void) sem_wait (&(profiler->wake_data_writer_event))
+#define WRITER_EVENT_RAISE() (void) sem_post (&(profiler->wake_data_writer_event))
+#define WRITER_EVENT_ENABLE_WAIT() (void) sem_wait (&(profiler->enable_data_writer_event))
+#define WRITER_EVENT_ENABLE_RAISE() (void) sem_post (&(profiler->enable_data_writer_event))
 
 #if 0
 #define FILE_HANDLE_TYPE FILE*
@@ -667,10 +675,19 @@ static guint32 profiler_thread_id = -1;
 #endif
 
 #define EVENT_TYPE HANDLE
-#define WRITER_EVENT_INIT() profiler->statistical_data_writer_event = CreateEvent (NULL, FALSE, FALSE, NULL)
+#define WRITER_EVENT_INIT() (void) do {\
+	profiler->enable_data_writer_event = CreateEvent (NULL, FALSE, FALSE, NULL);\
+	profiler->wake_data_writer_event = CreateEvent (NULL, FALSE, FALSE, NULL);\
+} while (0)
 #define WRITER_EVENT_DESTROY() CloseHandle (profiler->statistical_data_writer_event)
-#define WRITER_EVENT_WAIT() WaitForSingleObject (profiler->statistical_data_writer_event, INFINITE)
-#define WRITER_EVENT_RAISE() SetEvent (profiler->statistical_data_writer_event)
+#define WRITER_EVENT_INIT() (void) do {\
+	CloseHandle (profiler->enable_data_writer_event);\
+	CloseHandle (profiler->wake_data_writer_event);\
+} while (0)
+#define WRITER_EVENT_WAIT() WaitForSingleObject (profiler->wake_data_writer_event, INFINITE)
+#define WRITER_EVENT_RAISE() SetEvent (profiler->wake_data_writer_event)
+#define WRITER_EVENT_ENABLE_WAIT() WaitForSingleObject (profiler->enable_data_writer_event, INFINITE)
+#define WRITER_EVENT_ENABLE_RAISE() SetEvent (profiler->enable_data_writer_event)
 
 #define FILE_HANDLE_TYPE FILE*
 #define OPEN_FILE() profiler->file = fopen (profiler->file_name, "wb");
@@ -743,9 +760,11 @@ struct _MonoProfiler {
 	int statistical_call_chain_depth;
 	
 	THREAD_TYPE data_writer_thread;
-	EVENT_TYPE statistical_data_writer_event;
+	EVENT_TYPE enable_data_writer_event;
+	EVENT_TYPE wake_data_writer_event;
 	gboolean terminate_writer_thread;
 	gboolean detach_writer_thread;
+	gboolean writer_thread_enabled;
 	
 	ProfilerFileWriteBuffer *write_buffers;
 	ProfilerFileWriteBuffer *current_write_buffer;
@@ -3483,6 +3502,10 @@ method_end_jit (MonoProfiler *profiler, MonoMethod *method, int result) {
 	if (profiler->action_flags.jit_time) {
 		STORE_EVENT_ITEM_COUNTER (profiler, method, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_JIT | RESULT_TO_EVENT_CODE (result), MONO_PROFILER_EVENT_KIND_END);
 	}
+	
+	if (! profiler->writer_thread_enabled) {
+		WRITER_EVENT_ENABLE_RAISE ();
+	}
 }
 
 #if (HAS_OPROFILE)
@@ -3618,7 +3641,7 @@ statistical_hit (MonoProfiler *profiler, guchar *ip, void *context) {
 					/* Then, wait that it produced the free buffer */
 					new_data = profiler->statistical_data_second_buffer;
 				} while (new_data == NULL);
-
+				
 				profiler->statistical_data_ready = data;
 				profiler->statistical_data = new_data;
 				profiler->statistical_data_second_buffer = NULL;
@@ -4212,7 +4235,8 @@ setup_user_options (const char *arguments) {
 			MONO_PROFILE_ASSEMBLY_EVENTS|
 			MONO_PROFILE_MODULE_EVENTS|
 			MONO_PROFILE_CLASS_EVENTS|
-			MONO_PROFILE_METHOD_EVENTS;
+			MONO_PROFILE_METHOD_EVENTS|
+			MONO_PROFILE_JIT_COMPILATION;
 	profiler->profiler_enabled = TRUE;
 	
 	if (arguments == NULL) {
@@ -4312,7 +4336,7 @@ setup_user_options (const char *arguments) {
 			} else if (! (strcmp (argument, "enter-leave") && strcmp (argument, "calls") && strcmp (argument, "c"))) {
 				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
 			} else if (! (strcmp (argument, "statistical") && strcmp (argument, "stat") && strcmp (argument, "s"))) {
-				profiler->profiler_enabled = MONO_PROFILE_STATISTICAL|MONO_PROFILE_JIT_COMPILATION;
+				profiler->flags |= MONO_PROFILE_STATISTICAL;
 				profiler->action_flags.jit_time = TRUE;
 			} else if (! (strcmp (argument, "start-enabled") && strcmp (argument, "se"))) {
 				profiler->profiler_enabled = TRUE;
@@ -4412,6 +4436,24 @@ data_writer_thread (gpointer nothing) {
 	static gboolean thread_detached = FALSE;
 	static MonoThread *this_thread = NULL;
 	
+	WRITER_EVENT_ENABLE_WAIT ();
+	if (! profiler->terminate_writer_thread) {
+		MonoDomain * root_domain = mono_get_root_domain ();
+		if (root_domain != NULL) {
+			LOG_WRITER_THREAD ("data_writer_thread: attaching thread");
+			this_thread = mono_thread_attach (root_domain);
+			mono_thread_set_manage_callback (this_thread, thread_detach_callback);
+			thread_attached = TRUE;
+		} else {
+			g_error ("Cannot get root domain\n");
+		}
+	} else {
+		/* Execution was too short, pretend we attached and detached. */
+		thread_attached = TRUE;
+		thread_detached = TRUE;
+	}
+	profiler->writer_thread_enabled = TRUE;
+	
 	for (;;) {
 		ProfilerStatisticalData *statistical_data;
 		gboolean done;
@@ -4419,24 +4461,6 @@ data_writer_thread (gpointer nothing) {
 		LOG_WRITER_THREAD ("data_writer_thread: going to sleep");
 		WRITER_EVENT_WAIT ();
 		LOG_WRITER_THREAD ("data_writer_thread: just woke up");
-		
-		if (! thread_attached) {
-			if (! profiler->terminate_writer_thread) {
-				MonoDomain * root_domain = mono_get_root_domain ();
-				if (root_domain != NULL) {
-					LOG_WRITER_THREAD ("data_writer_thread: attaching thread");
-					this_thread = mono_thread_attach (root_domain);
-					mono_thread_set_manage_callback (this_thread, thread_detach_callback);
-					thread_attached = TRUE;
-				} else {
-					g_error ("Cannot get root domain\n");
-				}
-			} else {
-				/* Execution was too short, pretend we attached and detached. */
-				thread_attached = TRUE;
-				thread_detached = TRUE;
-			}
-		}
 		
 		if (profiler->heap_shot_was_signalled) {
 			LOG_WRITER_THREAD ("data_writer_thread: starting requested collection");
@@ -4447,7 +4471,7 @@ data_writer_thread (gpointer nothing) {
 		statistical_data = profiler->statistical_data_ready;
 		done = (statistical_data == NULL) && (profiler->heap_shot_write_jobs == NULL);
 		
-		if (!done) {
+		if ((!done) && thread_attached) {
 			LOG_WRITER_THREAD ("data_writer_thread: acquiring lock and writing data");
 			LOCK_PROFILER ();
 			
