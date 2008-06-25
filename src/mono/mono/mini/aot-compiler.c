@@ -39,6 +39,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/method-builder.h>
 #include <mono/utils/mono-logger.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -71,6 +72,7 @@ typedef struct MonoAotOptions {
 	gboolean write_symbols;
 	gboolean metadata_only;
 	gboolean bind_to_runtime_version;
+	gboolean full_aot;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -107,6 +109,8 @@ enum {
 
 typedef struct MonoAotCompile {
 	MonoImage *image;
+	GPtrArray *methods;
+	GHashTable *method_indexes;
 	MonoCompile **cfgs;
 	GHashTable *patch_to_plt_offset;
 	GHashTable **patch_to_plt_offset_wrapper;
@@ -954,7 +958,7 @@ resolve_relocations (MonoAotCompile *acfg)
 	return rr;
 }
 
-static void
+static int
 emit_writeout (MonoAotCompile *acfg)
 {
 	char *outfile_name, *tmp_outfile_name;
@@ -1224,6 +1228,8 @@ emit_writeout (MonoAotCompile *acfg)
 
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
+
+	return 0;
 }
 
 #endif /* USE_ELF_WRITER */
@@ -1445,7 +1451,7 @@ emit_zero_bytes (MonoAotCompile *acfg, int num)
 	fprintf (acfg->fp, "\t.skip %d\n", num);
 }
 
-static void
+static int
 emit_writeout (MonoAotCompile *acfg)
 {
 	char *command, *objfile;
@@ -1464,7 +1470,7 @@ emit_writeout (MonoAotCompile *acfg)
 	printf ("Executing the native assembler: %s\n", command);
 	if (system (command) != 0) {
 		g_free (command);
-		return;
+		return 1;
 	}
 
 	g_free (command);
@@ -1490,7 +1496,7 @@ emit_writeout (MonoAotCompile *acfg)
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
 		g_free (command);
-		return;
+		return 1;
 	}
 
 	g_free (command);
@@ -1512,6 +1518,7 @@ emit_writeout (MonoAotCompile *acfg)
 	else
 		unlink (acfg->tmpfname);
 
+	return 0;
 }
 
 #endif /* ASM_WRITER */
@@ -1837,18 +1844,23 @@ get_shared_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 	return get_got_offset (acfg, ji);
 }
 
+/* Add a method to the list of methods which need to be emitted */
+static void
+add_method (MonoAotCompile *acfg, MonoMethod *method, int index)
+{
+	g_ptr_array_add (acfg->methods, method);
+	g_assert (g_hash_table_lookup (acfg->method_indexes, method) == NULL);
+	g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index));
+}
+
 static guint32
 get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 {
-	int method_index = mono_metadata_token_index (method->token);
+	int index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_indexes, method));
+	
+	g_assert (index);
 
-	if (method_index == 0) {
-		MonoMethod *wrapped = g_hash_table_lookup (acfg->wrapper_to_method, method);
-		g_assert (wrapped);
-		method_index = mono_metadata_token_index (wrapped->token);
-	}
-
-	return method_index;
+	return index;
 }
 
 static void
@@ -2669,6 +2681,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->metadata_only = TRUE;
 		} else if (str_begins_with (arg, "bind-to-runtime-version")) {
 			opts->bind_to_runtime_version = TRUE;
+		} else if (str_begins_with (arg, "full")) {
+			opts->full_aot = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -3075,7 +3089,7 @@ emit_code (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
 			symbol = g_strdup_printf (".Lm_%x", i + 1);
 			emit_symbol_diff (acfg, symbol, "methods", 0);
@@ -3117,7 +3131,7 @@ emit_info (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
 			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
 			emit_symbol_diff (acfg, symbol, "mi", 0);
@@ -3191,7 +3205,7 @@ emit_exception_info (MonoAotCompile *acfg)
 	symbol = g_strdup_printf ("ex");
 	emit_label (acfg, symbol);
 
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i])
 			emit_exception_debug_info (acfg, acfg->cfgs [i]);
 	}
@@ -3202,7 +3216,7 @@ emit_exception_info (MonoAotCompile *acfg)
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
 			symbol = g_strdup_printf (".Le_%x_p", i + 1);
 			emit_symbol_diff (acfg, symbol, "ex", 0);
@@ -3463,13 +3477,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	MonoImage *image = ass->image;
 	char *symbol;
-	int i;
+	int i, res;
 	MonoAotCompile *acfg;
-	MonoCompile **cfgs;
 
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
 	acfg = g_new0 (MonoAotCompile, 1);
+	acfg->methods = g_ptr_array_new ();
+	acfg->method_indexes = g_hash_table_new (NULL, NULL);
 	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
 	acfg->patch_to_plt_offset = g_hash_table_new (NULL, NULL);
 	acfg->patch_to_plt_offset_wrapper = g_malloc0 (sizeof (GHashTable*) * 128);
@@ -3490,20 +3505,23 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_start (acfg);
 
-	cfgs = g_new0 (MonoCompile*, image->tables [MONO_TABLE_METHOD].rows + 32);
-	acfg->cfgs = cfgs;
-	acfg->nmethods = image->tables [MONO_TABLE_METHOD].rows;
-	acfg->method_got_offsets = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 32);
+	/* Collect methods */
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+
+		add_method (acfg, mono_get_method (acfg->image, token, NULL), i + 1);
+	}
+
+	acfg->nmethods = acfg->methods->len;
+	acfg->cfgs = g_new0 (MonoCompile*, acfg->nmethods + 32);
+	acfg->method_got_offsets = g_new0 (guint32, acfg->nmethods + 32);
 
 	/* PLT offset 0 is reserved for the PLT trampoline */
 	acfg->plt_offset = 1;
 
 	/* Compile methods */
-	for (i = 0; i < acfg->nmethods; ++i) {
-		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
-		MonoMethod *method = mono_get_method (acfg->image, token, NULL);
-
-		compile_method (acfg, method);
+	for (i = 0; i < acfg->methods->len; ++i) {
+		compile_method (acfg, g_ptr_array_index (acfg->methods, i));
 	}
 
 	alloc_got_slots (acfg);
@@ -3538,7 +3556,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	printf ("Code: %d Info: %d Ex Info: %d Class Info: %d PLT: %d GOT Info: %d GOT Info Offsets: %d GOT: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, acfg->stats.got_info_offsets_size, (int)(acfg->got_offset * sizeof (gpointer)));
 
-	emit_writeout (acfg);
+	res = emit_writeout (acfg);
+	if (res != 0)
+		return res;
 
 	printf ("Compiled %d out of %d methods (%d%%)\n", acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100);
 	printf ("%d methods are generic (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
