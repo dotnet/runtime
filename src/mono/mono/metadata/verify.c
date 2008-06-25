@@ -3985,8 +3985,10 @@ do_switch (VerifyContext *ctx, int count, const unsigned char *data)
 	for (i = 0; i < count; ++i) {
 		int target = base + read32 (data + i * 4);
 
-		if (target < 0 || target >= ctx->code_size)
+		if (target < 0 || target >= ctx->code_size) {
 			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Switch target %x out of code at 0x%04x", i, ctx->ip_offset));
+			return;
+		}
 
 		switch (is_valid_branch_instruction (ctx->header, ctx->ip_offset, target)) {
 		case 1:
@@ -3994,7 +3996,7 @@ do_switch (VerifyContext *ctx, int count, const unsigned char *data)
 			break;
 		case 2:
 			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Switch target %x escapes out of exception block at 0x%04x", i, ctx->ip_offset));
-			break;
+			return;
 		}
 		merge_stacks (ctx, &ctx->eval, &ctx->code [target], FALSE, TRUE);
 	}
