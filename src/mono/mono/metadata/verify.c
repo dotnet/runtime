@@ -28,7 +28,6 @@ enum {
 };
 #undef OPDEF
 
-#define MONO_VERIFIER_DEBUG
 #ifdef MONO_VERIFIER_DEBUG
 #define VERIFIER_DEBUG(code) do { code } while (0)
 #else
