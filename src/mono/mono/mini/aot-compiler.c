@@ -121,7 +121,6 @@ typedef struct MonoAotCompile {
 	GList *method_order;
 	guint32 got_offset, plt_offset;
 	guint32 *method_got_offsets;
-	gboolean *has_got_slots;
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
@@ -1936,8 +1935,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				if ((patch_info->type == MONO_PATCH_INFO_METHOD) && (patch_info->data.method->klass->image == cfg->method->klass->image)) {
 					MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
 					if (callee_cfg) {
-						guint32 callee_idx = mono_metadata_token_index (callee_cfg->method->token);
-						if (!acfg->has_got_slots [callee_idx] && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)) {
+						if (!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)) {
 							//printf ("DIRECT: %s %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (callee_cfg->method, TRUE));
 							direct_call_target = g_strdup_printf (".Lm_%x", mono_metadata_token_index (callee_cfg->method->token));
 							patch_info->type = MONO_PATCH_INFO_NONE;
@@ -2245,7 +2243,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	if (n_patches)
-		g_assert (acfg->has_got_slots [method_index]);
+		g_assert (cfg->has_got_slots);
 
 	encode_value (n_patches, p, &p);
 
@@ -2390,6 +2388,8 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	g_assert (klass);
 
 	mono_class_init (klass);
+
+	mono_class_setup_vtable (klass);
 
 	/* 
 	 * Emit all the information which is required for creating vtables so
@@ -2690,22 +2690,18 @@ add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-compile_method (MonoAotCompile *acfg, int index)
+compile_method (MonoAotCompile *acfg, MonoMethod *method)
 {
 	MonoCompile *cfg;
-	MonoMethod *method;
 	MonoJumpInfo *patch_info;
 	gboolean skip;
-	guint32 token = MONO_TOKEN_METHOD_DEF | (index + 1);
-	guint32 method_idx;
+	int index;
 
 	if (acfg->aot_opts.metadata_only)
 		return;
 
-	method = mono_get_method (acfg->image, token, NULL);
+	index = get_method_index (acfg, method) - 1;
 
-	method_idx = mono_metadata_token_index (method->token);	
-		
 	/* fixme: maybe we can also precompile wrapper methods */
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
@@ -2897,12 +2893,12 @@ compile_method (MonoAotCompile *acfg, int index)
 				break;
 			/* Fall through */
 		default:
-			acfg->has_got_slots [method_idx] = TRUE;
+			cfg->has_got_slots = TRUE;
 			break;
 		}
 	}
 
-	if (!acfg->has_got_slots [method_idx])
+	if (!cfg->has_got_slots)
 		acfg->stats.methods_without_got_slots ++;
 
 	/* Make a copy of the patch info which is in the mempool */
@@ -3498,14 +3494,17 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->cfgs = cfgs;
 	acfg->nmethods = image->tables [MONO_TABLE_METHOD].rows;
 	acfg->method_got_offsets = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 32);
-	acfg->has_got_slots = g_new0 (gboolean, image->tables [MONO_TABLE_METHOD].rows + 32);
 
 	/* PLT offset 0 is reserved for the PLT trampoline */
 	acfg->plt_offset = 1;
 
 	/* Compile methods */
-	for (i = 0; i < acfg->nmethods; ++i)
-		compile_method (acfg, i);
+	for (i = 0; i < acfg->nmethods; ++i) {
+		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		MonoMethod *method = mono_get_method (acfg->image, token, NULL);
+
+		compile_method (acfg, method);
+	}
 
 	alloc_got_slots (acfg);
 
