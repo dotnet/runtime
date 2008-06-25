@@ -2466,8 +2466,6 @@ static guint32
 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb, gboolean create_methodspec)
 {
 	guint32 token;
-	ReflectionMethodBuilder rmb;
-	char *name;
 	
 	if (mb->generic_params && create_methodspec) 
 		return mono_image_get_methodspec_token_for_generic_method_definition (assembly, mb);
@@ -2476,13 +2474,8 @@ mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMe
 	if (token)
 		return token;
 
-	reflection_methodbuilder_from_method_builder (&rmb, mb);
-	
-	name = mono_string_to_utf8 (rmb.name);
-	token = mono_image_get_memberref_token (assembly, ((MonoReflectionTypeBuilder*)rmb.type)->type.type,
-		name, method_builder_encode_signature (assembly, &rmb));
+	token = mono_image_get_methodref_token_for_methodbuilder (assembly, mb);
 	g_hash_table_insert (assembly->handleref, mb, GUINT_TO_POINTER(token));
-	g_free (name);
 	return token;
 }
 
@@ -2591,7 +2584,6 @@ mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionM
 	guint32 sig, token;
 	MonoClass *klass;
 	MonoGenericClass *gclass;
-	MonoDynamicGenericClass *dgclass;
 	MonoReflectionMethodBuilder *mb = m->mb;
 	ReflectionMethodBuilder rmb;
 	char *name;
@@ -2606,7 +2598,6 @@ mono_image_get_method_on_inst_token (MonoDynamicImage *assembly, MonoReflectionM
 	klass = mono_class_from_mono_type (m->inst->type.type);
 	gclass = m->inst->type.type->data.generic_class;
 	g_assert (gclass->is_dynamic);
-	dgclass = (MonoDynamicGenericClass *) gclass;
 
 	reflection_methodbuilder_from_method_builder (&rmb, mb);
 
