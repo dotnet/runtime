@@ -52,9 +52,14 @@
     .method public hidebysig instance default int32 checkEqual () cil managed
     {
         ldtoken method instance int32 class Gen`1<!T>::checkEqual()
-	call [mscorlib]System.Reflection.MethodBase [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle (valuetype [mscorlib]System.RuntimeMethodHandle)
+		ldtoken class Gen`1<!T>
+	call [mscorlib]System.Reflection.MethodBase [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle (valuetype [mscorlib]System.RuntimeMethodHandle,
+	valuetype [mscorlib]System.RuntimeTypeHandle)
+
         ldtoken method instance int32 class Gen`1<class ClassA>::checkEqual ()
-	call [mscorlib]System.Reflection.MethodBase [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle (valuetype [mscorlib]System.RuntimeMethodHandle)
+		ldtoken class Gen`1<class ClassA>
+	call [mscorlib]System.Reflection.MethodBase [mscorlib]System.Reflection.MethodBase::GetMethodFromHandle (valuetype [mscorlib]System.RuntimeMethodHandle,
+	valuetype [mscorlib]System.RuntimeTypeHandle)
 	//	call instance int32 [mscorlib]System.RuntimeMethodHandle::Equals ([mscorlib]System.RuntimeMethodHandle)
 	ceq
 	ret
