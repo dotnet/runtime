@@ -297,7 +297,8 @@ BASE_TEST_CS_SRC=		\
 	bug-325283.2.cs	\
 	thunks.cs \
 	winx64structs.cs \
-	bug-349190.2.cs
+	bug-349190.2.cs	\
+	nullable_boxing.2.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
