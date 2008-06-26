@@ -150,14 +150,14 @@ __DOLTLIBTOOL__EOF__
     cat <<'__DOLTLIBTOOL__EOF__' >>doltlibtool
 top_builddir_slash="${0%%doltlibtool}"
 : ${top_builddir_slash:=./}
-args=()
+args=
 modeok=false
 tagok=false
 for arg in "$[]@"; do
     case "$arg" in
         --mode=compile) modeok=true ;;
         --tag=CC|--tag=CXX) tagok=true ;;
-        *) args+=("$arg") ;;
+        *) args="$args $arg" ;;
     esac
 done
 if $modeok && $tagok ; then
