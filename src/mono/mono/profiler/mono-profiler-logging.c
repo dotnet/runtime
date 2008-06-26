@@ -873,7 +873,8 @@ add_toggle_handler (int signal_number)
 #define DEBUG_CLASS_BITMAPS 0
 #define DEBUG_STATISTICAL_PROFILER 0
 #define DEBUG_WRITER_THREAD 0
-#if (DEBUG_LOGGING_PROFILER || DEBUG_STATISTICAL_PROFILER || DEBUG_HEAP_PROFILER || DEBUG_WRITER_THREAD)
+#define DEBUG_FILE_WRITES 0
+#if (DEBUG_LOGGING_PROFILER || DEBUG_STATISTICAL_PROFILER || DEBUG_HEAP_PROFILER || DEBUG_WRITER_THREAD || DEBUG_FILE_WRITES)
 #define LOG_WRITER_THREAD(m) printf ("WRITER-THREAD-LOG %s\n", m)
 #else
 #define LOG_WRITER_THREAD(m)
@@ -1405,7 +1406,7 @@ profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled, gboolean dum
 	job->collection = collection;
 	job->dump_heap_data = dump_heap_data;
 #if DEBUG_HEAP_PROFILER
-	printf ("profiler_heap_shot_write_job_new: created job %p with buffer %p(%p-%p)\n", job, job->buffers, job->start, job->end);
+	printf ("profiler_heap_shot_write_job_new: created job %p with buffer %p(%p-%p) (collection %d, dump %d)\n", job, job->buffers, job->start, job->end, collection, dump_heap_data);
 #endif
 	return job;
 }
@@ -1678,17 +1679,29 @@ write_current_block (guint16 code) {
 	header [8] = (counter_delta >> 16) & 0xff;
 	header [9] = (counter_delta >> 24) & 0xff;
 	
+#if (DEBUG_FILE_WRITES)
+	printf ("write_current_block: writing header (code %d)\n", code);
+#endif
 	WRITE_BUFFER (& (header [0]), 10);
 	
 	while ((current_buffer != NULL) && (profiler->full_write_buffers > 0)) {
+#if (DEBUG_FILE_WRITES)
+		printf ("write_current_block: writing buffer (size %d)\n", PROFILER_FILE_WRITE_BUFFER_SIZE);
+#endif
 		WRITE_BUFFER (& (current_buffer->buffer [0]), PROFILER_FILE_WRITE_BUFFER_SIZE);
 		profiler->full_write_buffers --;
 		current_buffer = current_buffer->next;
 	}
 	if (profiler->current_write_position > 0) {
+#if (DEBUG_FILE_WRITES)
+		printf ("write_current_block: writing last buffer (size %d)\n", profiler->current_write_position);
+#endif
 		WRITE_BUFFER (& (current_buffer->buffer [0]), profiler->current_write_position);
 	}
 	FLUSH_FILE ();
+#if (DEBUG_FILE_WRITES)
+	printf ("write_current_block: buffers flushed\n");
+#endif
 	
 	profiler->current_write_buffer = profiler->write_buffers;
 	profiler->current_write_position = 0;
@@ -1797,7 +1810,7 @@ profiler_heap_shot_write_data_block (ProfilerHeapShotWriteJob *job) {
 	write_uint64 (start_counter);
 	write_uint64 (start_time);
 #if DEBUG_HEAP_PROFILER
-	printf ("profiler_heap_shot_write_data_block: start writing job %p...\n", job);
+	printf ("profiler_heap_shot_write_data_block: start writing job %p (start %p, end %p)...\n", job, & (job->buffers->buffer [0]), job->cursor);
 #endif
 	buffer = job->buffers;
 	cursor = & (buffer->buffer [0]);
@@ -1990,7 +2003,7 @@ write_mapping_block (gsize thread_id) {
 	if ((profiler->classes->unwritten == NULL) && (profiler->methods->unwritten == NULL))
 		return;
 	
-#if (DEBUG_MAPPING_EVENTS)
+#if (DEBUG_MAPPING_EVENTS || DEBUG_FILE_WRITES)
 	printf ("[write_mapping_block][TID %ld] START\n", thread_id);
 #endif
 	
@@ -2029,7 +2042,7 @@ write_mapping_block (gsize thread_id) {
 	write_clock_data ();
 	write_current_block (MONO_PROFILER_FILE_BLOCK_KIND_MAPPING);
 	
-#if (DEBUG_MAPPING_EVENTS)
+#if (DEBUG_MAPPING_EVENTS || DEBUG_FILE_WRITES)
 	printf ("[write_mapping_block][TID %ld] END\n", thread_id);
 #endif
 }
@@ -2121,7 +2134,9 @@ write_thread_data_block (ProfilerPerThreadData *data) {
 	
 	if (start == end)
 		return;
-	
+#if (DEBUG_FILE_WRITES)
+	printf ("write_thread_data_block: preparing buffer for thread %ld\n", (guint64) data->thread_id);
+#endif
 	write_clock_data ();
 	write_uint64 (data->thread_id);
 	
@@ -2135,6 +2150,9 @@ write_thread_data_block (ProfilerPerThreadData *data) {
 	
 	write_clock_data ();
 	write_current_block (MONO_PROFILER_FILE_BLOCK_KIND_EVENTS);
+#if (DEBUG_FILE_WRITES)
+	printf ("write_thread_data_block: buffer for thread %ld written\n", (guint64) data->thread_id);
+#endif
 }
 
 static ProfilerExecutableMemoryRegionData*
