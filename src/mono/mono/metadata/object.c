@@ -3898,6 +3898,8 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	MonoVTable *vtable;
 
 	g_assert (class->valuetype);
+	if (mono_class_is_nullable (class))
+		return mono_nullable_box (value, class);
 
 	vtable = mono_class_vtable (domain, class);
 	size = mono_class_instance_size (class);
