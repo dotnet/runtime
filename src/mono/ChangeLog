@@ -1,3 +1,8 @@
+2008-06-26  Alp Toker  <alp@nuanti.com>
+
+	* acinclude.m4: Update dolt to the latest git version 5e9eef10. (The one we
+	had wasn't in fact the latest version and had a known bug.)
+
 2008-06-25  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Enable dolt by default as an experiment.
