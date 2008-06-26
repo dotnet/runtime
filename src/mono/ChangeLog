@@ -1,5 +1,10 @@
 2008-06-26  Alp Toker  <alp@nuanti.com>
 
+	* acinclude.m4: Prospective dolt fix for the build bot. Fix syntax to work
+	with older bash versions.
+
+2008-06-26  Alp Toker  <alp@nuanti.com>
+
 	* acinclude.m4: Update dolt to the latest git version 5e9eef10. (The one we
 	had wasn't in fact the latest version and had a known bug.)
 
