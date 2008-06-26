@@ -177,6 +177,8 @@ gboolean mono_break_on_exc = FALSE;
 #ifndef DISABLE_AOT
 gboolean mono_compile_aot = FALSE;
 #endif
+/* If this is set, no code is generated dynamically, everything is taken from AOT files */
+gboolean mono_aot_only = FALSE;
 MonoMethodDesc *mono_inject_async_exc_method = NULL;
 int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method = NULL;
@@ -381,6 +383,9 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 void *mono_global_codeman_reserve (int size)
 {
 	void *ptr;
+
+	if (mono_aot_only)
+		g_error ("Attempting to allocate from the global code manager while running with --aot-only.\n");
 
 	if (!global_codeman) {
 		/* This can happen during startup */
@@ -10302,6 +10307,19 @@ mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpoin
 	cfg->patch_info = ji;
 }
 
+MonoJumpInfo *
+mono_patch_info_list_prepend (MonoJumpInfo *list, int ip, MonoJumpInfoType type, gconstpointer target)
+{
+	MonoJumpInfo *ji = g_new0 (MonoJumpInfo, 1);
+
+	ji->ip.i = ip;
+	ji->type = type;
+	ji->data.target = target;
+	ji->next = list;
+
+	return ji;
+}
+
 void
 mono_remove_patch_info (MonoCompile *cfg, int ip)
 {
@@ -12516,6 +12534,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_domain_unlock (domain);
 	}
 #endif
+
+	if (mono_aot_only)
+		g_error ("Attempting to JIT compile method '%s' while running with --aot-only.\n", mono_method_full_name (method, TRUE));
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
