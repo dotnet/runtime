@@ -1203,7 +1203,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	if (domain)
 		g_assert_not_reached ();
 
-#if defined(PLATFORM_WIN32) && !defined(_WIN64)
+#ifdef PLATFORM_WIN32
+	/* Avoid system error message boxes. */
+	SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+
 	mono_load_coree (exe_filename);
 #endif
 

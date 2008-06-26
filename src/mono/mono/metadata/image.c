@@ -1080,7 +1080,7 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 #ifdef PLATFORM_WIN32
 /* fname is not duplicated. */
 MonoImage*
-mono_image_open_from_module_handle (HMODULE module_handle, char* fname, int ref_count, MonoImageOpenStatus* status)
+mono_image_open_from_module_handle (HMODULE module_handle, char* fname, gboolean has_entry_point, MonoImageOpenStatus* status)
 {
 	MonoImage* image;
 	MonoCLIImageInfo* iinfo;
@@ -1091,9 +1091,13 @@ mono_image_open_from_module_handle (HMODULE module_handle, char* fname, int ref_
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->name = fname;
-	image->ref_count = ref_count;
+	image->ref_count = has_entry_point ? 0 : 1;
+	image->has_entry_point = has_entry_point;
 
 	image = do_mono_image_load (image, status, TRUE);
+	if (image == NULL)
+		return NULL;
+
 	return register_image (image);
 }
 #endif
@@ -1122,15 +1126,11 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 		image = g_hash_table_lookup (loaded_images_hash, absfname);
 		if (image) {
 			g_assert (image->is_module_handle);
-			if (image->ref_count == 0) {
-				MonoCLIImageInfo *iinfo = image->image_info;
-
-				if (iinfo->cli_header.coff.coff_attributes & COFF_ATTRIBUTE_LIBRARY_IMAGE) {
-					/* Increment reference count on images loaded outside of the runtime. */
-					fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
-					module_handle = LoadLibrary (fname_utf16);
-					g_assert (module_handle != NULL);
-				}
+			if (image->has_entry_point && image->ref_count == 0) {
+				/* Increment reference count on images loaded outside of the runtime. */
+				fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
+				module_handle = LoadLibrary (fname_utf16);
+				g_assert (module_handle != NULL);
 			}
 			mono_image_addref (image);
 			mono_images_unlock ();
@@ -1167,11 +1167,12 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 
 		if (image) {
 			g_assert (image->is_module_handle);
+			g_assert (image->has_entry_point);
 			g_free (absfname);
 			return image;
 		}
 
-		return mono_image_open_from_module_handle (module_handle, absfname, 1, status);
+		return mono_image_open_from_module_handle (module_handle, absfname, FALSE, status);
 	}
 #endif
 
@@ -1270,12 +1271,12 @@ mono_image_fixup_vtable (MonoImage *image)
 		slot_count = vtfixup->count;
 		if (slot_type & VTFIXUP_TYPE_32BIT)
 			while (slot_count--) {
-				*((guint32*) slot) = mono_marshal_get_vtfixup_ftnptr (image, *((guint32*) slot), slot_type);
+				*((guint32*) slot) = (guint32) mono_marshal_get_vtfixup_ftnptr (image, *((guint32*) slot), slot_type);
 				((guint32*) slot)++;
 			}
 		else if (slot_type & VTFIXUP_TYPE_64BIT)
 			while (slot_count--) {
-				*((guint64*) slot) = mono_marshal_get_vtfixup_ftnptr (image, *((guint64*) slot), slot_type);
+				*((guint64*) slot) = (guint64) mono_marshal_get_vtfixup_ftnptr (image, *((guint64*) slot), slot_type);
 				((guint64*) slot)++;
 			}
 		else
@@ -1358,19 +1359,15 @@ mono_image_close (MonoImage *image)
 		return;
 
 #ifdef PLATFORM_WIN32
-	if (image->is_module_handle) {
-		MonoCLIImageInfo *iinfo = image->image_info;
-
-		if (iinfo->cli_header.coff.coff_attributes & COFF_ATTRIBUTE_LIBRARY_IMAGE) {
-			mono_images_lock ();
-			if (image->ref_count == 0) {
-				/* Image will be closed by _CorDllMain. */
-				FreeLibrary ((HMODULE) image->raw_data);
-				mono_images_unlock ();
-				return;
-			}
+	if (image->is_module_handle && image->has_entry_point) {
+		mono_images_lock ();
+		if (image->ref_count == 0) {
+			/* Image will be closed by _CorDllMain. */
+			FreeLibrary ((HMODULE) image->raw_data);
 			mono_images_unlock ();
+			return;
 		}
+		mono_images_unlock ();
 	}
 #endif
 
@@ -1408,12 +1405,8 @@ mono_image_close (MonoImage *image)
 		g_hash_table_remove (loaded_images, (char *) image->assembly_name);	
 
 #ifdef PLATFORM_WIN32
-	if (image->is_module_handle) {
-		MonoCLIImageInfo *iinfo = image->image_info;
-
-		if (!(iinfo->cli_header.coff.coff_attributes & COFF_ATTRIBUTE_LIBRARY_IMAGE))
-			FreeLibrary ((HMODULE) image->raw_data);
-	}
+	if (image->is_module_handle && !image->has_entry_point)
+		FreeLibrary ((HMODULE) image->raw_data);
 #endif
 
 	mono_images_unlock ();

@@ -33,7 +33,6 @@
 #include "environment.h"
 #include "coree.h"
 
-HMODULE mono_module_handle = NULL;
 HMODULE coree_module_handle = NULL;
 
 static gboolean init_from_coree = FALSE;
@@ -86,7 +85,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		file_name = mono_get_module_file_name (hInst);
 
 		if (mono_get_root_domain ()) {
-			image = mono_image_open_from_module_handle (hInst, mono_path_resolve_symlinks (file_name), 0, NULL);
+			image = mono_image_open_from_module_handle (hInst, mono_path_resolve_symlinks (file_name), TRUE, NULL);
 		} else {
 			init_from_coree = TRUE;
 			mono_runtime_load (file_name, NULL);
@@ -99,10 +98,12 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			}
 
 			image = mono_image_open (file_name, NULL);
-			mono_close_exe_image ();
-			if (image)
+			if (image) {
+				image->has_entry_point = TRUE;
+				mono_close_exe_image ();
 				/* Decrement reference count to zero. (Image will not be closed.) */
 				mono_image_close (image);
+			}
 		}
 
 		if (!image) {
@@ -151,7 +152,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	gchar** argv;
 	int i;
 
-	file_name = mono_get_module_file_name (GetModuleHandle (NULL));
+	file_name = mono_get_module_file_name (NULL);
 	init_from_coree = TRUE;
 	domain = mono_runtime_load (file_name, NULL);
 
@@ -224,7 +225,11 @@ void STDMETHODCALLTYPE CorExitProcess(int exitCode)
 STDAPI _CorValidateImage(PVOID *ImageBase, LPCWSTR FileName)
 {
 	IMAGE_DOS_HEADER* DosHeader;
-	IMAGE_NT_HEADERS* NtHeaders;
+	IMAGE_NT_HEADERS32* NtHeaders32;
+	IMAGE_NT_HEADERS64* NtHeaders64;
+	IMAGE_DATA_DIRECTORY* CliHeaderDir;
+	MonoCLIHeader* CliHeader;
+	DWORD SizeOfHeaders;
 	DWORD* Address;
 	DWORD OldProtect;
 
@@ -232,22 +237,127 @@ STDAPI _CorValidateImage(PVOID *ImageBase, LPCWSTR FileName)
 	if (DosHeader->e_magic != IMAGE_DOS_SIGNATURE)
 		return STATUS_INVALID_IMAGE_FORMAT;
 
-	NtHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)DosHeader + DosHeader->e_lfanew);
-	if (NtHeaders->Signature != IMAGE_NT_SIGNATURE)
+	NtHeaders32 = (IMAGE_NT_HEADERS32*)((DWORD_PTR)DosHeader + DosHeader->e_lfanew);
+	if (NtHeaders32->Signature != IMAGE_NT_SIGNATURE)
 		return STATUS_INVALID_IMAGE_FORMAT;
 
-	if (NtHeaders->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+#ifdef _WIN64
+	NtHeaders64 = (IMAGE_NT_HEADERS64*)NtHeaders32;
+	if (NtHeaders64->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+	{
+		if (NtHeaders64->OptionalHeader.NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR)
+			return STATUS_INVALID_IMAGE_FORMAT;
+
+		CliHeaderDir = &NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+		if (!CliHeaderDir->VirtualAddress)
+			return STATUS_INVALID_IMAGE_FORMAT;
+
+		return STATUS_SUCCESS;
+	}
+
+	if (NtHeaders32->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
 		return STATUS_INVALID_IMAGE_FORMAT;
 
-	Address = &NtHeaders->OptionalHeader.AddressOfEntryPoint;
+	if (NtHeaders32->OptionalHeader.NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR)
+		return STATUS_INVALID_IMAGE_FORMAT;
+
+	CliHeaderDir = &NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+	if (!CliHeaderDir->VirtualAddress)
+		return STATUS_INVALID_IMAGE_FORMAT;
+
+	CliHeader = (MonoCLIHeader*)((DWORD_PTR)DosHeader + CliHeaderDir->VirtualAddress);
+	if (!(CliHeader->ch_flags & CLI_FLAGS_ILONLY) || (CliHeader->ch_flags & CLI_FLAGS_32BITREQUIRED))
+		return STATUS_INVALID_IMAGE_FORMAT;
+
+	/* Fixup IMAGE_NT_HEADERS32 to IMAGE_NT_HEADERS64. */
+	SizeOfHeaders = NtHeaders32->OptionalHeader.SizeOfHeaders;
+	if (SizeOfHeaders < DosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS64) + (sizeof(IMAGE_SECTION_HEADER) * NtHeaders32->FileHeader.NumberOfSections))
+		return STATUS_INVALID_IMAGE_FORMAT;
+
+	if (!VirtualProtect(DosHeader, SizeOfHeaders, PAGE_READWRITE, &OldProtect))
+		return E_UNEXPECTED;
+
+	memmove(NtHeaders64 + 1, IMAGE_FIRST_SECTION(NtHeaders32), sizeof(IMAGE_SECTION_HEADER) * NtHeaders32->FileHeader.NumberOfSections);
+
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES - 1].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES - 1].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].Size;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_GLOBALPTR].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_GLOBALPTR].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].Size = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].Size;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].Size;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress = 0;
+
+	NtHeaders64->OptionalHeader.NumberOfRvaAndSizes = IMAGE_NUMBEROF_DIRECTORY_ENTRIES;
+	NtHeaders64->OptionalHeader.LoaderFlags = NtHeaders32->OptionalHeader.LoaderFlags;
+	NtHeaders64->OptionalHeader.SizeOfHeapCommit = (ULONGLONG)NtHeaders32->OptionalHeader.SizeOfHeapCommit;
+	NtHeaders64->OptionalHeader.SizeOfHeapReserve = (ULONGLONG)NtHeaders32->OptionalHeader.SizeOfHeapReserve;
+	NtHeaders64->OptionalHeader.SizeOfStackCommit = (ULONGLONG)NtHeaders32->OptionalHeader.SizeOfStackCommit;
+	NtHeaders64->OptionalHeader.SizeOfStackReserve = (ULONGLONG)NtHeaders32->OptionalHeader.SizeOfStackReserve;
+	NtHeaders64->OptionalHeader.DllCharacteristics = NtHeaders32->OptionalHeader.DllCharacteristics;
+	NtHeaders64->OptionalHeader.Subsystem = NtHeaders32->OptionalHeader.Subsystem;
+	NtHeaders64->OptionalHeader.CheckSum = NtHeaders32->OptionalHeader.CheckSum;
+	NtHeaders64->OptionalHeader.SizeOfHeaders = NtHeaders32->OptionalHeader.SizeOfHeaders;
+	NtHeaders64->OptionalHeader.SizeOfImage = NtHeaders32->OptionalHeader.SizeOfImage;
+	NtHeaders64->OptionalHeader.Win32VersionValue = NtHeaders32->OptionalHeader.Win32VersionValue;
+	NtHeaders64->OptionalHeader.MinorSubsystemVersion = NtHeaders32->OptionalHeader.MinorSubsystemVersion;
+	NtHeaders64->OptionalHeader.MajorSubsystemVersion = NtHeaders32->OptionalHeader.MajorSubsystemVersion;
+	NtHeaders64->OptionalHeader.MinorImageVersion = NtHeaders32->OptionalHeader.MinorImageVersion;
+	NtHeaders64->OptionalHeader.MajorImageVersion = NtHeaders32->OptionalHeader.MajorImageVersion;
+	NtHeaders64->OptionalHeader.MinorOperatingSystemVersion = NtHeaders32->OptionalHeader.MinorOperatingSystemVersion;
+	NtHeaders64->OptionalHeader.MajorOperatingSystemVersion = NtHeaders32->OptionalHeader.MajorOperatingSystemVersion;
+	NtHeaders64->OptionalHeader.FileAlignment = NtHeaders32->OptionalHeader.FileAlignment;
+	NtHeaders64->OptionalHeader.SectionAlignment = NtHeaders32->OptionalHeader.SectionAlignment;
+	NtHeaders64->OptionalHeader.ImageBase = (ULONGLONG)NtHeaders32->OptionalHeader.ImageBase;
+	/* BaseOfCode is at the same offset. */
+	NtHeaders64->OptionalHeader.AddressOfEntryPoint = 0;
+	NtHeaders64->OptionalHeader.Magic = IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+	NtHeaders64->FileHeader.SizeOfOptionalHeader = sizeof(IMAGE_OPTIONAL_HEADER64);
+
+	if (!VirtualProtect(DosHeader, SizeOfHeaders, OldProtect, &OldProtect))
+		return E_UNEXPECTED;
+#else
+	if (NtHeaders32->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+		return STATUS_INVALID_IMAGE_FORMAT;
+
+	CliHeaderDir = &NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+	if (!CliHeaderDir->VirtualAddress)
+		return STATUS_INVALID_IMAGE_FORMAT;
+
+	Address = &NtHeaders32->OptionalHeader.AddressOfEntryPoint;
 	if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &OldProtect))
 		return E_UNEXPECTED;
-	if (NtHeaders->FileHeader.Characteristics & IMAGE_FILE_DLL)
+	if (NtHeaders32->FileHeader.Characteristics & IMAGE_FILE_DLL)
 		*Address = (DWORD)((DWORD_PTR)&_CorDllMain - (DWORD_PTR)DosHeader);
 	else
 		*Address = (DWORD)((DWORD_PTR)&_CorExeMain - (DWORD_PTR)DosHeader);
 	if (!VirtualProtect(Address, sizeof(DWORD), OldProtect, &OldProtect))
 		return E_UNEXPECTED;
+#endif
 
 	return STATUS_SUCCESS;
 }
@@ -272,27 +382,40 @@ STDAPI CorBindToRuntime(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, REFCLSID r
 	return CorBindToRuntimeEx (pwszVersion, pwszBuildFlavor, 0, rclsid, riid, ppv);
 }
 
+typedef struct _EXPORT_FIXUP
+{
+	LPCSTR Name;
+	union
+	{
+		PVOID Pointer;
+		DWORD_PTR DWordPtr;
+		BYTE Bytes[sizeof(PVOID)];
+#ifdef _M_IA64
+		PLABEL_DESCRIPTOR* PLabel;
+#endif
+	} ProcAddress;
+} EXPORT_FIXUP;
+
+/* Has to be binary ordered. */
+static const EXPORT_FIXUP ExportFixups[] = {
+	{"CorBindToRuntime", &CorBindToRuntime},
+	{"CorBindToRuntimeEx", &CorBindToRuntimeEx},
+	{"CorExitProcess", &CorExitProcess},
+	{"_CorDllMain", &_CorDllMain},
+	{"_CorExeMain", &_CorExeMain},
+	{"_CorImageUnloading", &_CorImageUnloading},
+	{"_CorValidateImage", &_CorValidateImage},
+	{NULL, NULL}
+};
+
+#define EXPORT_FIXUP_COUNT (sizeof(ExportFixups) / sizeof(EXPORT_FIXUP) - 1)
+
+static HMODULE ExportFixupModuleHandle = NULL;
+static DWORD ExportFixupRvas[EXPORT_FIXUP_COUNT];
+
 /* Fixup exported functions of mscoree.dll to our implementations. */
 STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 {
-	typedef struct _EXPORT_FIXUP
-	{
-		LPCSTR Name;
-		DWORD_PTR ProcAddress;
-	} EXPORT_FIXUP;
-
-	/* Has to be binary ordered. */
-	const EXPORT_FIXUP ExportFixups[] = {
-		{"CorBindToRuntime", (DWORD_PTR)&CorBindToRuntime},
-		{"CorBindToRuntimeEx", (DWORD_PTR)&CorBindToRuntimeEx},
-		{"CorExitProcess", (DWORD_PTR)&CorExitProcess},
-		{"_CorDllMain", (DWORD_PTR)&_CorDllMain},
-		{"_CorExeMain", (DWORD_PTR)&_CorExeMain},
-		{"_CorImageUnloading", (DWORD_PTR)&_CorImageUnloading},
-		{"_CorValidateImage", (DWORD_PTR)&_CorValidateImage},
-		{NULL, 0}
-	};
-
 	IMAGE_DOS_HEADER* DosHeader;
 	IMAGE_NT_HEADERS* NtHeaders;
 	IMAGE_DATA_DIRECTORY* ExportDataDir;
@@ -301,10 +424,34 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 	DWORD* Names;
 	WORD* NameOrdinals;
 	EXPORT_FIXUP* ExportFixup;
+	DWORD* ExportFixupRva;
 	DWORD* Address;
 	DWORD OldProtect;
-	DWORD ProcRVA;
+	DWORD ProcRva;
 	DWORD i;
+	int cmp;
+#ifdef _WIN64
+	MEMORY_BASIC_INFORMATION MemoryInfo;
+	PVOID Region;
+	PVOID RegionBase;
+	PVOID MaxRegionBase;
+#ifdef _M_IA64
+	PLABEL_DESCRIPTOR* PLabel;
+
+#define ELEMENT_SIZE sizeof(PLABEL_DESCRIPTOR)
+#define REGION_WRITE_PROTECT PAGE_READWRITE
+#define REGION_PROTECT PAGE_READ
+#else
+	BYTE* Trampoline;
+
+#define ELEMENT_SIZE 13
+#define REGION_WRITE_PROTECT PAGE_EXECUTE_READWRITE
+#define REGION_PROTECT PAGE_EXECUTE_READ
+#endif
+#endif
+
+	if (ExportFixupModuleHandle != NULL)
+		return ModuleHandle == ExportFixupModuleHandle ? S_OK : E_FAIL;
 
 	DosHeader = (IMAGE_DOS_HEADER*)ModuleHandle;
 	if (DosHeader == NULL)
@@ -324,34 +471,95 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle)
 		return E_FAIL;
 
 	ExportDataDir = &NtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-	if (!ExportDataDir->VirtualAddress || !ExportDataDir->Size)
+	if (!ExportDataDir->VirtualAddress)
 		return E_FAIL;
+
+#ifdef _WIN64
+	/* Allocate memory after base address because RVAs are 32-bit unsigned integers. */
+	RegionBase = DosHeader;
+	MaxRegionBase = (PVOID)((DWORD_PTR)RegionBase + (DWORD_PTR)(0x100000000L - (ELEMENT_SIZE * (EXPORT_FIXUP_COUNT - 1))));
+	for (;;)
+	{
+		if (!VirtualQuery(RegionBase, &MemoryInfo, sizeof(MEMORY_BASIC_INFORMATION)))
+			return E_UNEXPECTED;
+		if (MemoryInfo.State == MEM_FREE && MemoryInfo.RegionSize >= ELEMENT_SIZE * EXPORT_FIXUP_COUNT)
+		{
+			Region = VirtualAlloc(RegionBase, ELEMENT_SIZE * EXPORT_FIXUP_COUNT, MEM_COMMIT | MEM_RESERVE, REGION_WRITE_PROTECT);
+			if (Region != NULL)
+				break;
+		}
+		RegionBase = (PVOID)((DWORD_PTR)MemoryInfo.BaseAddress + (DWORD_PTR)MemoryInfo.RegionSize);
+		if (RegionBase > MaxRegionBase)
+			return E_OUTOFMEMORY;
+	}
+
+#ifdef _M_IA64
+	PLabel = (PLABEL_DESCRIPTOR*)Region;
+#else
+	Trampoline = (BYTE*)Region;
+#endif
+#endif
 
 	ExportDir = (IMAGE_EXPORT_DIRECTORY*)((DWORD_PTR)DosHeader + ExportDataDir->VirtualAddress);
 	Functions = (DWORD*)((DWORD_PTR)DosHeader + ExportDir->AddressOfFunctions);
 	Names = (DWORD*)((DWORD_PTR)DosHeader + ExportDir->AddressOfNames);
 	NameOrdinals = (WORD*)((DWORD_PTR)DosHeader + ExportDir->AddressOfNameOrdinals);
 	ExportFixup = (EXPORT_FIXUP*)&ExportFixups;
+	ExportFixupRva = (DWORD*)&ExportFixupRvas;
 
 	for (i = 0; i < ExportDir->NumberOfNames; i++)
 	{
-		int cmp = strcmp((LPCSTR)((DWORD_PTR)DosHeader + Names[i]), ExportFixup->Name);
+		cmp = strcmp((LPCSTR)((DWORD_PTR)DosHeader + Names[i]), ExportFixup->Name);
 		if (cmp > 0)
 			return E_FAIL;
+
 		if (cmp == 0)
 		{
+#ifdef _WIN64
+#if defined(_M_IA64)
+			ProcRva = (DWORD)((DWORD_PTR)PLabel - (DWORD_PTR)DosHeader);
+			*(PLabel)++ = *ExportFixup->ProcAddress.PLabel;
+#elif defined(_M_AMD64)
+			ProcRva = (DWORD)((DWORD_PTR)Trampoline - (DWORD_PTR)DosHeader);
+			/* mov r11, ExportFixup->ProcAddress */
+			*(Trampoline)++ = 0x49;
+			*(Trampoline)++ = 0xBB;
+			*(Trampoline)++ = ExportFixup->ProcAddress.Bytes[0];
+			*(Trampoline)++ = ExportFixup->ProcAddress.Bytes[1];
+			*(Trampoline)++ = ExportFixup->ProcAddress.Bytes[2];
+			*(Trampoline)++ = ExportFixup->ProcAddress.Bytes[3];
+			*(Trampoline)++ = ExportFixup->ProcAddress.Bytes[4];
+			*(Trampoline)++ = ExportFixup->ProcAddress.Bytes[5];
+			*(Trampoline)++ = ExportFixup->ProcAddress.Bytes[6];
+			*(Trampoline)++ = ExportFixup->ProcAddress.Bytes[7];
+			/* jmp r11 */
+			*(Trampoline)++ = 0x41;
+			*(Trampoline)++ = 0xFF;
+			*(Trampoline)++ = 0xE3;
+#else
+#error Unsupported architecture.
+#endif
+#else
+			ProcRva = (DWORD)(ExportFixup->ProcAddress.DWordPtr - (DWORD_PTR)DosHeader);
+#endif
 			Address = &Functions[NameOrdinals[i]];
-			ProcRVA = (DWORD)(ExportFixup->ProcAddress - (DWORD_PTR)DosHeader);
-			if (*Address != ProcRVA) {
-				if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &OldProtect))
-					return E_UNEXPECTED;
-				*Address = ProcRVA;
-				if (!VirtualProtect(Address, sizeof(DWORD), OldProtect, &OldProtect))
-					return E_UNEXPECTED;
-			}
+			if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &OldProtect))
+				return E_UNEXPECTED;
+			*ExportFixupRva = *Address;
+			*Address = ProcRva;
+			if (!VirtualProtect(Address, sizeof(DWORD), OldProtect, &OldProtect))
+				return E_UNEXPECTED;
 			ExportFixup++;
-			if (ExportFixup->Name == NULL)
+			if (ExportFixup->Name == NULL) {
+#ifdef _WIN64
+				if (!VirtualProtect(Region, ELEMENT_SIZE * EXPORT_FIXUP_COUNT, REGION_PROTECT, &OldProtect))
+					return E_UNEXPECTED;
+#endif
+
+				ExportFixupModuleHandle = ModuleHandle;
 				return S_OK;
+			}
+			ExportFixupRva++;
 		}
 	}
 	return E_FAIL;
@@ -367,7 +575,10 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 	DWORD_PTR BaseDiff;
 
 	DosHeader = (IMAGE_DOS_HEADER*)ModuleHandle;
-	if (DosHeader == NULL || DosHeader->e_magic != IMAGE_DOS_SIGNATURE)
+	if (DosHeader == NULL)
+		return E_POINTER;
+
+	if (DosHeader->e_magic != IMAGE_DOS_SIGNATURE)
 		return E_INVALIDARG;
 
 	NtHeaders = (IMAGE_NT_HEADERS*)((DWORD_PTR)DosHeader + DosHeader->e_lfanew);
@@ -386,7 +597,7 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 		MonoCLIHeader* CliHeader;
 
 		CliHeaderDir = &NtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
-		if (CliHeaderDir->VirtualAddress && CliHeaderDir->Size)
+		if (CliHeaderDir->VirtualAddress)
 		{
 			CliHeader = (MonoCLIHeader*)((DWORD_PTR)DosHeader + CliHeaderDir->VirtualAddress);
 			if (CliHeader->ch_flags & CLI_FLAGS_ILONLY)
@@ -418,7 +629,7 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 			DWORD_PTR UNALIGNED *RelocFixup;
 
 			BaseRelocDir = &NtHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC];
-			if (BaseRelocDir->VirtualAddress && BaseRelocDir->Size)
+			if (BaseRelocDir->VirtualAddress)
 			{
 				BaseReloc = (IMAGE_BASE_RELOCATION*)((DWORD_PTR)DosHeader + BaseRelocDir->VirtualAddress);
 				BaseRelocSize = BaseRelocDir->Size;

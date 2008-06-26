@@ -551,7 +551,7 @@ mono_set_rootdir (void)
 #ifdef PLATFORM_WIN32
 	gchar *bindir, *installdir, *root, *name, *config;
 
-	name = mono_get_module_file_name (mono_module_handle);
+	name = mono_get_module_file_name ((HMODULE) &__ImageBase);
 	bindir = g_path_get_dirname (name);
 	installdir = g_path_get_dirname (bindir);
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", NULL);
