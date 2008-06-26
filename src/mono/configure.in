@@ -307,7 +307,7 @@ AC_ARG_ENABLE(dolt, [ --enable-dolt	Use dolt (http://dolt.freedesktop.org/) inst
 if test "x$enable_dolt" = "xyes"; then
    DOLT
  else
-+	# The DOLT macro contains AC_SUBST's for these so we must define them because of
+	# The DOLT macro contains AC_SUBST's for these so we must define them because of
 	# autoconf brokeness
     LTCOMPILE='$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(COMPILE)'
     LTCXXCOMPILE='$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXXCOMPILE)'
