@@ -983,6 +983,9 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 
 	klass = mono_object_class (this);
 
+	if (klass->enumtype && klass->enum_basetype && klass->enum_basetype->type == MONO_TYPE_I4)
+		return (*(gint32*)((guint8*)this + sizeof (MonoObject)) == *(gint32*)((guint8*)that + sizeof (MonoObject)));
+
 	/*
 	 * Do the comparison for fields of primitive type and return a result if
 	 * possible. Otherwise, return the remaining fields in an array to the 
