@@ -24,6 +24,7 @@
 #include <sys/resource.h>
 #include <fcntl.h>
 #include <sys/param.h>
+#include <ctype.h>
 
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
@@ -87,6 +88,8 @@ static gboolean process_set_termination_details (gpointer handle, int status)
 	gboolean ok;
 	int thr_ret;
 	
+	g_assert ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
+	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
 				  (gpointer *)&process_handle);
 	if (ok == FALSE) {
@@ -137,6 +140,8 @@ static gboolean waitfor_pid (gpointer test, gpointer user_data)
 	gboolean ok;
 	int status;
 	pid_t ret;
+	
+	g_assert ((GPOINTER_TO_UINT (test) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
 	
 	ok = _wapi_lookup_handle (test, WAPI_HANDLE_PROCESS,
 				  (gpointer *)&process);
@@ -213,6 +218,8 @@ static guint32 process_wait (gpointer handle, guint32 timeout)
 	gboolean ok;
 	pid_t pid, ret;
 	int status;
+	
+	g_assert ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
 	
 #ifdef DEBUG
 	g_message ("%s: Waiting for process %p", __func__, handle);
@@ -1323,6 +1330,11 @@ guint32 GetProcessId (gpointer handle)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
+
+	if ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle */
+		return(GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED_PID_MASK);
+	}
 	
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_PROCESS,
 				  (gpointer *)&process_handle);
@@ -1346,6 +1358,8 @@ static pid_t signal_process_if_gone (gpointer handle)
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
+	
+	g_assert ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) != _WAPI_PROCESS_UNHANDLED);
 	
 	/* Make sure the process is signalled if it has exited - if
 	 * the parent process didn't wait for it then it won't be
@@ -1380,6 +1394,7 @@ static pid_t signal_process_if_gone (gpointer handle)
 	return (process_handle->id);
 }
 
+#ifdef UNUSED_CODE
 static gboolean process_enum (gpointer handle, gpointer user_data)
 {
 	GArray *processes=user_data;
@@ -1415,17 +1430,36 @@ static gboolean process_enum (gpointer handle, gpointer user_data)
 	/* Return false to keep searching */
 	return(FALSE);
 }
+#endif /* UNUSED_CODE */
 
 gboolean EnumProcesses (guint32 *pids, guint32 len, guint32 *needed)
 {
 	GArray *processes = g_array_new (FALSE, FALSE, sizeof(pid_t));
 	guint32 fit, i, j;
+	DIR *dir;
+	struct dirent *entry;
 	
 	mono_once (&process_current_once, process_set_current);
-	
-	_wapi_search_handle (WAPI_HANDLE_PROCESS, process_enum, processes,
-			     NULL, TRUE);
-	
+
+	dir = opendir ("/proc");
+	if (dir == NULL) {
+		return(FALSE);
+	}
+	while((entry = readdir (dir)) != NULL) {
+		if (isdigit (entry->d_name[0])) {
+			char *endptr;
+			pid_t pid = (pid_t)strtol (entry->d_name, &endptr, 10);
+
+			if (*endptr == '\0') {
+				/* Name was entirely numeric, so was a
+				 * process ID
+				 */
+				g_array_append_val (processes, pid);
+			}
+		}
+	}
+	closedir (dir);
+
 	fit=len/sizeof(guint32);
 	for (i = 0, j = 0; j < fit && i < processes->len; i++) {
 		pids[j++] = g_array_index (processes, pid_t, i);
@@ -1465,7 +1499,7 @@ static gboolean process_open_compare (gpointer handle, gpointer user_data)
 	}
 }
 
-gpointer OpenProcess (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 pid)
+gpointer OpenProcess (guint32 req_access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUSED, guint32 pid)
 {
 	/* Find the process handle that corresponds to pid */
 	gpointer handle;
@@ -1480,13 +1514,21 @@ gpointer OpenProcess (guint32 access G_GNUC_UNUSED, gboolean inherit G_GNUC_UNUS
 				      process_open_compare,
 				      GUINT_TO_POINTER (pid), NULL, TRUE);
 	if (handle == 0) {
+		gchar *dir = g_strdup_printf ("/proc/%d", pid);
+		if (!access (dir, F_OK)) {
+			/* Return a pseudo handle for processes we
+			 * don't have handles for
+			 */
+			return((gpointer)(_WAPI_PROCESS_UNHANDLED + pid));
+		} else {
 #ifdef DEBUG
-		g_message ("%s: Can't find pid %d", __func__, pid);
+			g_message ("%s: Can't find pid %d", __func__, pid);
 #endif
 
-		SetLastError (ERROR_PROC_NOT_FOUND);
+			SetLastError (ERROR_PROC_NOT_FOUND);
 	
-		return(NULL);
+			return(NULL);
+		}
 	}
 
 	_wapi_handle_ref (handle);
@@ -1502,6 +1544,13 @@ gboolean GetExitCodeProcess (gpointer process, guint32 *code)
 	mono_once (&process_current_once, process_set_current);
 
 	if(code==NULL) {
+		return(FALSE);
+	}
+	
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle, so we don't know what the
+		 * exit code was
+		 */
 		return(FALSE);
 	}
 	
@@ -1545,6 +1594,12 @@ gboolean GetProcessTimes (gpointer process, WapiFileTime *create_time,
 	if(create_time==NULL || exit_time==NULL || kernel_time==NULL ||
 	   user_time==NULL) {
 		/* Not sure if w32 allows NULLs here or not */
+		return(FALSE);
+	}
+	
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle, so just fail for now
+		 */
 		return(FALSE);
 	}
 	
@@ -1776,6 +1831,8 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 	WapiProcModule *module;
 	guint32 count, avail = size / sizeof(gpointer);
 	int i;
+	pid_t pid;
+	gchar *proc_name = NULL;
 	
 	/* Store modules in an array of pointers (main module as
 	 * modules[0]), using the load address for each module as a
@@ -1789,17 +1846,24 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		return(FALSE);
 	}
 
-	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
-				  (gpointer *)&process_handle);
-	if (ok == FALSE) {
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle */
+		pid = (pid_t)(GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED_PID_MASK);
+	} else {
+		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+					  (gpointer *)&process_handle);
+		if (ok == FALSE) {
 #ifdef DEBUG
-		g_message ("%s: Can't find process %p", __func__, process);
+			g_message ("%s: Can't find process %p", __func__, process);
 #endif
 		
-		return(FALSE);
+			return(FALSE);
+		}
+		pid = process_handle->id;
+		proc_name = process_handle->proc_name;
 	}
 	
-	filename = g_strdup_printf ("/proc/%d/maps", process_handle->id);
+	filename = g_strdup_printf ("/proc/%d/maps", pid);
 	if ((fp = fopen (filename, "r")) == NULL) {
 		/* No /proc/<pid>/maps so just return the main module
 		 * shortcut for now
@@ -1826,7 +1890,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 			module = (WapiProcModule *)g_slist_nth_data (mods, i);
 			if (modules[0] != NULL)
 				modules[i] = module->address_start;
-			else if (match_procname_to_modulename (process_handle->proc_name, module->filename))
+			else if (match_procname_to_modulename (proc_name, module->filename))
 				modules[0] = module->address_start;
 			else
 				modules[i + 1] = module->address_start;
@@ -1841,6 +1905,66 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 	g_free (filename);
 	
 	return(TRUE);
+}
+
+static gchar *get_process_name_from_proc (pid_t pid)
+{
+	gchar *filename;
+	gchar *ret = NULL;
+	gchar buf[256];
+	FILE *fp;
+	
+	memset (buf, '\0', sizeof(buf));
+	
+	filename = g_strdup_printf ("/proc/%d/exe", pid);
+	if (readlink (filename, buf, 255) > 0) {
+		ret = g_strdup (buf);
+	}
+	g_free (filename);
+
+	if (ret != NULL) {
+		return(ret);
+	}
+	
+	filename = g_strdup_printf ("/proc/%d/cmdline", pid);
+	if ((fp = fopen (filename, "r")) != NULL) {
+		if (fgets (buf, 256, fp) != NULL) {
+			ret = g_strdup (buf);
+		}
+		
+		fclose (fp);
+	}
+	g_free (filename);
+
+	if (ret != NULL) {
+		return(ret);
+	}
+	
+	filename = g_strdup_printf ("/proc/%d/stat", pid);
+	if ((fp = fopen (filename, "r")) != NULL) {
+		if (fgets (buf, 256, fp) != NULL) {
+			gchar *start, *end;
+			
+			start = strchr (buf, '(');
+			if (start != NULL) {
+				end = strchr (start + 1, ')');
+				
+				if (end != NULL) {
+					ret = g_strndup (start + 1,
+							 end - start - 1);
+				}
+			}
+		}
+		
+		fclose (fp);
+	}
+	g_free (filename);
+
+	if (ret != NULL) {
+		return(ret);
+	}
+
+	return(NULL);
 }
 
 static guint32 get_module_name (gpointer process, gpointer module,
@@ -1860,6 +1984,7 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	WapiProcModule *found_module;
 	guint32 count;
 	int i;
+	gchar *proc_name = NULL;
 	
 	mono_once (&process_current_once, process_set_current);
 
@@ -1872,25 +1997,38 @@ static guint32 get_module_name (gpointer process, gpointer module,
 		return(0);
 	}
 	
-	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
-				  (gpointer *)&process_handle);
-	if (ok == FALSE) {
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle */
+		pid = (pid_t)(GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED_PID_MASK);
+		proc_name = get_process_name_from_proc (pid);
+	} else {
+		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+					  (gpointer *)&process_handle);
+		if (ok == FALSE) {
 #ifdef DEBUG
-		g_message ("%s: Can't find process %p", __func__, process);
+			g_message ("%s: Can't find process %p", __func__,
+				   process);
 #endif
-		
-		return(0);
+			
+			return(0);
+		}
+		pid = process_handle->id;
+		proc_name = g_strdup (process_handle->proc_name);
 	}
-	pid = process_handle->id;
 
 	/* Look up the address in /proc/<pid>/maps */
 	filename = g_strdup_printf ("/proc/%d/maps", pid);
 	if ((fp = fopen (filename, "r")) == NULL) {
-		/* No /proc/<pid>/maps, so just return failure
-		 * for now
-		 */
-		g_free (filename);
-		return(0);
+		if (errno == EACCES && module == NULL && base == TRUE) {
+			procname_ext = get_process_name_from_proc (pid);
+		} else {
+			/* No /proc/<pid>/maps, so just return failure
+			 * for now
+			 */
+			g_free (proc_name);
+			g_free (filename);
+			return(0);
+		}
 	} else {
 		mods = load_modules (fp);
 		fclose (fp);
@@ -1903,7 +2041,7 @@ static guint32 get_module_name (gpointer process, gpointer module,
 		for (i = 0; i < count; i++) {
 			found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
 			if (procname_ext == NULL &&
-			    ((module == NULL && match_procname_to_modulename (process_handle->proc_name, found_module->filename)) ||	
+			    ((module == NULL && match_procname_to_modulename (proc_name, found_module->filename)) ||	
 			     (module != NULL && found_module->address_start == module))) {
 				if (base) {
 					procname_ext = g_path_get_basename (found_module->filename);
@@ -1917,6 +2055,7 @@ static guint32 get_module_name (gpointer process, gpointer module,
 
 		g_slist_free (mods);
 		g_free (filename);
+		g_free (proc_name);
 	}
 
 	if (procname_ext != NULL) {
@@ -1986,6 +2125,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 	guint32 count;
 	int i;
 	gboolean ret = FALSE;
+	gchar *proc_name = NULL;
 	
 	mono_once (&process_current_once, process_set_current);
 	
@@ -1998,16 +2138,24 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 		return(FALSE);
 	}
 	
-	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
-				  (gpointer *)&process_handle);
-	if (ok == FALSE) {
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle */
+		pid = (pid_t)(GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED_PID_MASK);
+		proc_name = get_process_name_from_proc (pid);
+	} else {
+		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+					  (gpointer *)&process_handle);
+		if (ok == FALSE) {
 #ifdef DEBUG
-		g_message ("%s: Can't find process %p", __func__, process);
+			g_message ("%s: Can't find process %p", __func__,
+				   process);
 #endif
-
-		return(FALSE);
+			
+			return(FALSE);
+		}
+		pid = process_handle->id;
+		proc_name = g_strdup (process_handle->proc_name);
 	}
-	pid = process_handle->id;
 
 	/* Look up the address in /proc/<pid>/maps */
 	filename = g_strdup_printf ("/proc/%d/maps", pid);
@@ -2015,6 +2163,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 		/* No /proc/<pid>/maps, so just return failure
 		 * for now
 		 */
+		g_free (proc_name);
 		g_free (filename);
 		return(FALSE);
 	} else {
@@ -2029,7 +2178,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 		for (i = 0; i < count; i++) {
 			found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
 			if ( ret == FALSE &&
-			     ((module == NULL && match_procname_to_modulename (process_handle->proc_name, found_module->filename)) ||
+			     ((module == NULL && match_procname_to_modulename (proc_name, found_module->filename)) ||
 			      (module != NULL && found_module->address_start == module))) {
 				modinfo->lpBaseOfDll = found_module->address_start;
 				modinfo->SizeOfImage = (gsize)(found_module->address_end) - (gsize)(found_module->address_start);
@@ -2040,8 +2189,9 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 			free_procmodule (found_module);
 		}
 
-			g_slist_free (mods);
-			g_free (filename);
+		g_slist_free (mods);
+		g_free (filename);
+		g_free (proc_name);
 	}
 
 	return(ret);
@@ -2056,6 +2206,12 @@ gboolean GetProcessWorkingSetSize (gpointer process, size_t *min, size_t *max)
 
 	if(min==NULL || max==NULL) {
 		/* Not sure if w32 allows NULLs here or not */
+		return(FALSE);
+	}
+	
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle, so just fail for now
+		 */
 		return(FALSE);
 	}
 	
@@ -2081,6 +2237,12 @@ gboolean SetProcessWorkingSetSize (gpointer process, size_t min, size_t max)
 	gboolean ok;
 
 	mono_once (&process_current_once, process_set_current);
+	
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle, so just fail for now
+		 */
+		return(FALSE);
+	}
 
 	ok=_wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
 				(gpointer *)&process_handle);
@@ -2106,20 +2268,28 @@ TerminateProcess (gpointer process, gint32 exitCode)
 	gboolean ok;
 	int signo;
 	int ret;
+	pid_t pid;
+	
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle */
+		pid = (pid_t)(GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED_PID_MASK);
+	} else {
+		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+					  (gpointer *) &process_handle);
 
-	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
-				  (gpointer *) &process_handle);
-
-	if (ok == FALSE) {
+		if (ok == FALSE) {
 #ifdef DEBUG
-		g_message ("%s: Can't find process %p", __func__, process);
+			g_message ("%s: Can't find process %p", __func__,
+				   process);
 #endif
-		SetLastError (ERROR_INVALID_HANDLE);
-		return FALSE;
+			SetLastError (ERROR_INVALID_HANDLE);
+			return FALSE;
+		}
+		pid = process_handle->id;
 	}
 
 	signo = (exitCode == -1) ? SIGKILL : SIGTERM;
-	ret = kill (process_handle->id, signo);
+	ret = kill (pid, signo);
 	if (ret == -1) {
 		switch (errno) {
 		case EINVAL:
@@ -2146,17 +2316,24 @@ GetPriorityClass (gpointer process)
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 	int ret;
+	pid_t pid;
+	
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle */
+		pid = (pid_t)(GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED_PID_MASK);
+	} else {
+		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+					  (gpointer *) &process_handle);
 
-	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
-				  (gpointer *) &process_handle);
-
-	if (!ok) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return FALSE;
+		if (!ok) {
+			SetLastError (ERROR_INVALID_HANDLE);
+			return FALSE;
+		}
+		pid = process_handle->id;
 	}
 
 	errno = 0;
-	ret = getpriority (PRIO_PROCESS, process_handle->id);
+	ret = getpriority (PRIO_PROCESS, pid);
 	if (ret == -1 && errno != 0) {
 		switch (errno) {
 		case EPERM:
@@ -2200,13 +2377,20 @@ SetPriorityClass (gpointer process, guint32  priority_class)
 	gboolean ok;
 	int ret;
 	int prio;
+	pid_t pid;
+	
+	if ((GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		/* This is a pseudo handle */
+		pid = (pid_t)(GPOINTER_TO_UINT (process) & _WAPI_PROCESS_UNHANDLED_PID_MASK);
+	} else {
+		ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
+					  (gpointer *) &process_handle);
 
-	ok = _wapi_lookup_handle (process, WAPI_HANDLE_PROCESS,
-				  (gpointer *) &process_handle);
-
-	if (!ok) {
-		SetLastError (ERROR_INVALID_HANDLE);
-		return FALSE;
+		if (!ok) {
+			SetLastError (ERROR_INVALID_HANDLE);
+			return FALSE;
+		}
+		pid = process_handle->id;
 	}
 
 	switch (priority_class) {
@@ -2233,7 +2417,7 @@ SetPriorityClass (gpointer process, guint32  priority_class)
 		return FALSE;
 	}
 
-	ret = setpriority (PRIO_PROCESS, process_handle->id, prio);
+	ret = setpriority (PRIO_PROCESS, pid, prio);
 	if (ret == -1) {
 		switch (errno) {
 		case EPERM:

@@ -106,6 +106,11 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 			return(WAIT_FAILED);
 		}
 	}
+
+	if ((GPOINTER_TO_UINT (handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(WAIT_FAILED);
+	}
 	
 	if (_wapi_handle_test_capabilities (handle,
 					    WAPI_HANDLE_CAP_WAIT) == FALSE) {
@@ -320,6 +325,16 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 			SetLastError (ERROR_INVALID_HANDLE);
 			return(WAIT_FAILED);
 		}
+	}
+
+	if ((GPOINTER_TO_UINT (signal_handle) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(WAIT_FAILED);
+	}
+
+	if ((GPOINTER_TO_UINT (wait) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+		SetLastError (ERROR_INVALID_HANDLE);
+		return(WAIT_FAILED);
 	}
 	
 	if (_wapi_handle_test_capabilities (signal_handle,
@@ -580,6 +595,16 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 				bogustype = TRUE;
 				break;
 			}
+		}
+
+		if ((GPOINTER_TO_UINT (handles[i]) & _WAPI_PROCESS_UNHANDLED) == _WAPI_PROCESS_UNHANDLED) {
+#ifdef DEBUG
+			g_message ("%s: Handle %d pseudo process", __func__,
+				   i);
+#endif
+
+			bogustype = TRUE;
+			break;
 		}
 		
 		exists = g_hash_table_lookup (dups, handles[i]);
