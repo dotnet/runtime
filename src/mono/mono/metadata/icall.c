@@ -1028,6 +1028,10 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 			o = mono_field_get_value_object (mono_object_domain (this), field, that);
 			values [count++] = o;
 		}
+
+		if (klass->enumtype)
+			/* enums only have one non-static field */
+			break;
 	}
 
 	if (values) {
