@@ -4468,6 +4468,8 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 	CallInfo *cinfo;
 	gpointer res;
 
+	if (!gsctx && code)
+		gsctx = mono_get_generic_context_from_code (code);
 	cinfo = get_call_info (gsctx, NULL, sig, FALSE);
 
 	/*

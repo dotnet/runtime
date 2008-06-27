@@ -46,7 +46,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 
 	MonoDomain *domain = mono_domain_get ();
 
-	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (m), gsctx);
+	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (m), gsctx, NULL);
 
 	mono_domain_lock (domain);
 	start = code = mono_code_manager_reserve (domain->code_mp, 20);

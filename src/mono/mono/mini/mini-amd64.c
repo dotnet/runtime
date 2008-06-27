@@ -5113,12 +5113,17 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 }
 
 int
-mono_arch_get_this_arg_reg (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx)
+mono_arch_get_this_arg_reg (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx, guint8 *code)
 {
 	int this_reg = AMD64_ARG_REG1;
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		CallInfo *cinfo = get_call_info (gsctx, NULL, sig, FALSE);
+		CallInfo *cinfo;
+
+		if (!gsctx && code)
+			gsctx = mono_get_generic_context_from_code (code);
+
+		cinfo = get_call_info (gsctx, NULL, sig, FALSE);
 		
 		if (cinfo->ret.storage != ArgValuetypeInReg)
 			this_reg = AMD64_ARG_REG2;
@@ -5131,7 +5136,7 @@ mono_arch_get_this_arg_reg (MonoMethodSignature *sig, MonoGenericSharingContext 
 gpointer
 mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
-	return (gpointer)regs [mono_arch_get_this_arg_reg (sig, gsctx)];
+	return (gpointer)regs [mono_arch_get_this_arg_reg (sig, gsctx, code)];
 }
 
 #define MAX_ARCH_DELEGATE_PARAMS 10

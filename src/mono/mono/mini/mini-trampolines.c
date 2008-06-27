@@ -28,22 +28,12 @@ static GHashTable *delegate_trampoline_hash_addr = NULL;
 #define mono_trampolines_unlock() LeaveCriticalSection (&trampolines_mutex)
 static CRITICAL_SECTION trampolines_mutex;
 
-static MonoGenericSharingContext*
-get_generic_context (guint8 *code)
-{
-	MonoJitInfo *jit_info = mono_jit_info_table_find (mono_domain_get (), (char*)code);
-
-	g_assert (jit_info);
-
-	return mono_jit_info_get_generic_sharing_context (jit_info);
-}
-
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
 mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method)
 {
-	MonoGenericSharingContext *gsctx = get_generic_context (code);
+	MonoGenericSharingContext *gsctx = mono_get_generic_context_from_code (code);
 	MonoObject *this_argument = mono_arch_find_this_argument (regs, method, gsctx);
 	MonoVTable *vt = this_argument->vtable;
 	int displacement = slot - ((gpointer*)vt);
@@ -180,7 +170,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		} else {
 #ifdef MONO_ARCH_HAVE_IMT
 			MonoObject *this_argument = mono_arch_find_this_argument ((gpointer*)regs, m,
-				get_generic_context (code));
+				mono_get_generic_context_from_code (code));
 
 			vt = this_argument->vtable;
 			vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
@@ -247,7 +237,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
-			addr = mono_arch_get_unbox_trampoline (get_generic_context (code), m, addr);
+			addr = mono_arch_get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);
 
 		g_assert (*vtable_slot);
 
@@ -323,7 +313,7 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 			if (!method)
 				method = mono_get_method (image, token, NULL);
 			if (method->klass->valuetype)
-				addr = mono_arch_get_unbox_trampoline (get_generic_context (code), method, addr);
+				addr = mono_arch_get_unbox_trampoline (mono_get_generic_context_from_code (code), method, addr);
 		}
 	} else {
 		/* This is a normal call through a PLT entry */
@@ -456,7 +446,11 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 
 	/* Obtain the delegate object according to the calling convention */
 
-	delegate = mono_arch_get_this_arg_from_call (get_generic_context (code), mono_method_signature (invoke), regs, code);
+	/* 
+	 * Avoid calling mono_get_generic_context_from_code () now since it is expensive, 
+	 * get_this_arg_from_call will call it if needed.
+	 */
+	delegate = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (invoke), regs, code);
 
 	if (!delegate->method_ptr && delegate->method) {
 		/* The delegate was initialized by mini_delegate_ctor */

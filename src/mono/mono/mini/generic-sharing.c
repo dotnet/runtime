@@ -15,6 +15,22 @@
 #include "mini.h"
 
 /*
+ * mono_get_generic_context_from_code:
+ *
+ *   Return the runtime generic context belonging to the method whose native code
+ * contains CODE.
+ */
+MonoGenericSharingContext*
+mono_get_generic_context_from_code (guint8 *code)
+{
+	MonoJitInfo *jit_info = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+
+	g_assert (jit_info);
+
+	return mono_jit_info_get_generic_sharing_context (jit_info);
+}
+
+/*
  * mini_method_get_context:
  * @method: a method
  *

@@ -1259,7 +1259,7 @@ void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *c
 void     mono_arch_patch_plt_entry              (guint8 *code, guint8 *addr) MONO_INTERNAL;
 void     mono_arch_nullify_class_init_trampoline(guint8 *code, gssize *regs) MONO_INTERNAL;
 void     mono_arch_nullify_plt_entry            (guint8 *code) MONO_INTERNAL;
-int      mono_arch_get_this_arg_reg             (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
+int      mono_arch_get_this_arg_reg             (MonoMethodSignature *sig, MonoGenericSharingContext *gsctx, guint8 *code) MONO_INTERNAL;
 gpointer mono_arch_get_this_arg_from_call       (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code) MONO_INTERNAL;
 MonoObject* mono_arch_find_this_argument        (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gboolean has_target) MONO_INTERNAL;
@@ -1348,6 +1348,8 @@ int mini_wapi_semdel  (int argc, char **argv);
 int mini_wapi_seminfo (int argc, char **argv);
 
 /* Generic sharing */
+
+MonoGenericSharingContext* mono_get_generic_context_from_code (guint8 *code) MONO_INTERNAL;
 
 MonoGenericContext* mini_method_get_context (MonoMethod *method) MONO_INTERNAL;
 
