@@ -1224,6 +1224,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
  * mono_print_thread_dump:
  *
  *   Print information about the current thread to stdout.
+ * SIGCTX can be NULL, allowing this to be called from gdb.
  */
 void
 mono_print_thread_dump (void *sigctx)
@@ -1249,7 +1250,10 @@ mono_print_thread_dump (void *sigctx)
 
 	/* FIXME: */
 #if defined(__i386__) || defined(__x86_64__)
-	mono_arch_sigctx_to_monoctx (sigctx, &ctx);
+	if (!sigctx)
+		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, mono_print_thread_dump);
+	else
+		mono_arch_sigctx_to_monoctx (sigctx, &ctx);
 
 	mono_jit_walk_stack_from_ctx (print_stack_frame_to_string, &ctx, TRUE, text);
 #else
