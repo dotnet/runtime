@@ -4624,6 +4624,7 @@ MonoObject *
 mono_message_invoke (MonoObject *target, MonoMethodMessage *msg, 
 		     MonoObject **exc, MonoArray **out_args) 
 {
+	static MonoClass *object_array_klass;
 	MonoDomain *domain; 
 	MonoMethod *method;
 	MonoMethodSignature *sig;
@@ -4649,8 +4650,18 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 			outarg_count++;
 	}
 
+	if (!object_array_klass) {
+		MonoClass *klass;
+
+		klass = mono_array_class_get (mono_defaults.object_class, 1);
+		g_assert (klass);
+
+		mono_memory_barrier ();
+		object_array_klass = klass;
+	}
+
 	/* FIXME: GC ensure we insert a write barrier for out_args, maybe in the caller? */
-	*out_args = mono_array_new (domain, mono_defaults.object_class, outarg_count);
+	*out_args = mono_array_new_specific (mono_class_vtable (domain, object_array_klass), outarg_count);
 	*exc = NULL;
 
 	ret = mono_runtime_invoke_array (method, method->klass->valuetype? mono_object_unbox (target): target, msg->args, exc);
