@@ -4540,31 +4540,55 @@ mono_message_init (MonoDomain *domain,
 		   MonoReflectionMethod *method,
 		   MonoArray *out_args)
 {
+	static MonoClass *object_array_klass;
+	static MonoClass *byte_array_klass;
+	static MonoClass *string_array_klass;
 	MonoMethodSignature *sig = mono_method_signature (method->method);
 	MonoString *name;
 	int i, j;
 	char **names;
 	guint8 arg_type;
 
+	if (!object_array_klass) {
+		MonoClass *klass;
+
+		klass = mono_array_class_get (mono_defaults.object_class, 1);
+		g_assert (klass);
+
+		mono_memory_barrier ();
+		object_array_klass = klass;
+
+		klass = mono_array_class_get (mono_defaults.byte_class, 1);
+		g_assert (klass);
+
+		mono_memory_barrier ();
+		byte_array_klass = klass;
+
+		klass = mono_array_class_get (mono_defaults.string_class, 1);
+		g_assert (klass);
+
+		mono_memory_barrier ();
+		string_array_klass = klass;
+	}
+
 	MONO_OBJECT_SETREF (this, method, method);
 
-	MONO_OBJECT_SETREF (this, args, mono_array_new (domain, mono_defaults.object_class, sig->param_count));
-	MONO_OBJECT_SETREF (this, arg_types, mono_array_new (domain, mono_defaults.byte_class, sig->param_count));
+	MONO_OBJECT_SETREF (this, args, mono_array_new_specific (mono_class_vtable (domain, object_array_klass), sig->param_count));
+	MONO_OBJECT_SETREF (this, arg_types, mono_array_new_specific (mono_class_vtable (domain, byte_array_klass), sig->param_count));
 	this->async_result = NULL;
 	this->call_type = CallType_Sync;
 
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method->method, (const char **) names);
-	MONO_OBJECT_SETREF (this, names, mono_array_new (domain, mono_defaults.string_class, sig->param_count));
+	MONO_OBJECT_SETREF (this, names, mono_array_new_specific (mono_class_vtable (domain, string_array_klass), sig->param_count));
 	
 	for (i = 0; i < sig->param_count; i++) {
-		 name = mono_string_new (domain, names [i]);
-		 mono_array_setref (this->names, i, name);	
+		name = mono_string_new (domain, names [i]);
+		mono_array_setref (this->names, i, name);	
 	}
 
 	g_free (names);
 	for (i = 0, j = 0; i < sig->param_count; i++) {
-
 		if (sig->params [i]->byref) {
 			if (out_args) {
 				MonoObject* arg = mono_array_get (out_args, gpointer, j);
