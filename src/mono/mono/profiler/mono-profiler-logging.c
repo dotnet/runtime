@@ -3273,7 +3273,7 @@ static void
 module_start_unload (MonoProfiler *profiler, MonoImage *module) {
 	LOCK_PROFILER ();
 	loaded_element_unload_start (profiler->loaded_modules, module);
-	flush_everything ();
+	writer_thread_flush_everything ();
 	UNLOCK_PROFILER ();
 }
 
@@ -3315,7 +3315,7 @@ static void
 assembly_start_unload (MonoProfiler *profiler, MonoAssembly *assembly) {
 	LOCK_PROFILER ();
 	loaded_element_unload_start (profiler->loaded_assemblies, assembly);
-	flush_everything ();
+	writer_thread_flush_everything ();
 	UNLOCK_PROFILER ();
 }
 static void
@@ -4176,17 +4176,14 @@ profiler_shutdown (MonoProfiler *prof)
 	WRITER_EVENT_DESTROY ();
 	
 	LOCK_PROFILER ();
-	
+	writer_thread_flush_everything ();
 	MONO_PROFILER_GET_CURRENT_TIME (profiler->end_time);
 	MONO_PROFILER_GET_CURRENT_COUNTER (profiler->end_counter);
-	
-	mono_thread_attach (mono_get_root_domain ());
-	
-	flush_everything ();
 	write_end_block ();
 	FLUSH_FILE ();
 	CLOSE_FILE();
 	UNLOCK_PROFILER ();
+	
 	g_free (profiler->file_name);
 	if (profiler->file_name_suffix != NULL) {
 		g_free (profiler->file_name_suffix);
@@ -4523,11 +4520,18 @@ data_writer_thread (gpointer nothing) {
 		
 		if ((!done) && thread_attached) {
 			if (profiler->writer_thread_flush_everything) {
-				LOG_WRITER_THREAD ("data_writer_thread: flushing everything...");
-				flush_everything ();
-				profiler->writer_thread_flush_everything = FALSE;
-				WRITER_EVENT_DONE_RAISE ();
-				LOG_WRITER_THREAD ("data_writer_thread: flushed everything.");
+				if (! thread_detached) {
+					LOG_WRITER_THREAD ("data_writer_thread: flushing everything...");
+					flush_everything ();
+					profiler->writer_thread_flush_everything = FALSE;
+					WRITER_EVENT_DONE_RAISE ();
+					LOG_WRITER_THREAD ("data_writer_thread: flushed everything.");
+				} else {
+					LOG_WRITER_THREAD ("data_writer_thread: flushing requested, but thread is detached...");
+					profiler->writer_thread_flush_everything = FALSE;
+					WRITER_EVENT_DONE_RAISE ();
+					LOG_WRITER_THREAD ("data_writer_thread: done event raised.");
+				}
 			} else {
 				LOG_WRITER_THREAD ("data_writer_thread: acquiring lock and writing data");
 				LOCK_PROFILER ();
@@ -4552,10 +4556,22 @@ data_writer_thread (gpointer nothing) {
 				UNLOCK_PROFILER ();
 				LOG_WRITER_THREAD ("data_writer_thread: wrote data and released lock");
 			}
+		} else {
+			if (profiler->writer_thread_flush_everything) {
+				LOG_WRITER_THREAD ("data_writer_thread: flushing requested, but thread is not attached...");
+				profiler->writer_thread_flush_everything = FALSE;
+				WRITER_EVENT_DONE_RAISE ();
+				LOG_WRITER_THREAD ("data_writer_thread: done event raised.");
+			}
 		}
 		
 		if (profiler->detach_writer_thread) {
 			if (this_thread != NULL) {
+				LOG_WRITER_THREAD ("data_writer_thread: detach requested, acquiring lock and flushing data");
+				LOCK_PROFILER ();
+				flush_everything ();
+				UNLOCK_PROFILER ();
+				LOG_WRITER_THREAD ("data_writer_thread: flushed data and released lock");
 				LOG_WRITER_THREAD ("data_writer_thread: detaching thread");
 				mono_thread_detach (this_thread);
 				this_thread = NULL;
