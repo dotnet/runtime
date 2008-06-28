@@ -610,6 +610,8 @@ typedef struct _ProfilerExecutableFiles {
 
 #define THREAD_TYPE pthread_t
 #define CREATE_WRITER_THREAD(f) pthread_create (&(profiler->data_writer_thread), NULL, ((void*(*)(void*))f), NULL)
+#define CHECK_WRITER_THREAD() (profiler->data_writer_thread != 0)
+#define CLEANUP_WRITER_THREAD() do {profiler->data_writer_thread = 0;} while (0)
 #define EXIT_THREAD() pthread_exit (NULL);
 #define WAIT_WRITER_THREAD() pthread_join (profiler->data_writer_thread, NULL)
 #define CURRENT_THREAD_ID() (gsize) pthread_self ()
@@ -671,6 +673,8 @@ make_pthread_profiler_key (void) {
 
 #define THREAD_TYPE HANDLE
 #define CREATE_WRITER_THREAD(f) CreateThread (NULL, (1*1024*1024), (f), NULL, 0, NULL);
+#define CHECK_WRITER_THREAD() (profiler->data_writer_thread != NULL)
+#define CLEANUP_WRITER_THREAD() do {profiler->data_writer_thread = NULL;} while (0)
 #define EXIT_THREAD() ExitThread (0);
 #define WAIT_WRITER_THREAD() WaitForSingleObject (profiler->data_writer_thread, INFINITE)
 #define CURRENT_THREAD_ID() (gsize) GetCurrentThreadId ()
@@ -3199,12 +3203,16 @@ flush_everything (void) {
 
 static void
 writer_thread_flush_everything (void) {
-	profiler->writer_thread_flush_everything = TRUE;
-	LOG_WRITER_THREAD ("writer_thread_flush_everything: raising event...");
-	WRITER_EVENT_RAISE ();
-	LOG_WRITER_THREAD ("writer_thread_flush_everything: waiting event...");
-	WRITER_EVENT_DONE_WAIT ();
-	LOG_WRITER_THREAD ("writer_thread_flush_everything: got event.");
+	if (CHECK_WRITER_THREAD ()) {
+		profiler->writer_thread_flush_everything = TRUE;
+		LOG_WRITER_THREAD ("writer_thread_flush_everything: raising event...");
+		WRITER_EVENT_RAISE ();
+		LOG_WRITER_THREAD ("writer_thread_flush_everything: waiting event...");
+		WRITER_EVENT_DONE_WAIT ();
+		LOG_WRITER_THREAD ("writer_thread_flush_everything: got event.");
+	} else {
+		LOG_WRITER_THREAD ("writer_thread_flush_everything: no thread.");
+	}
 }
 
 #define RESULT_TO_LOAD_CODE(r) (((r)==MONO_PROFILE_OK)?MONO_PROFILER_LOADED_EVENT_SUCCESS:MONO_PROFILER_LOADED_EVENT_FAILURE)
@@ -4584,6 +4592,7 @@ data_writer_thread (gpointer nothing) {
 		
 		if (profiler->terminate_writer_thread) {
 		LOG_WRITER_THREAD ("data_writer_thread: exiting thread");
+			CLEANUP_WRITER_THREAD ();
 			EXIT_THREAD ();
 		}
 	}
