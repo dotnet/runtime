@@ -68,6 +68,8 @@ static guint16 appdomain_next = 0;
 static MonoDomain **appdomains_list = NULL;
 static MonoImage *exe_image;
 
+gboolean mono_dont_free_domains;
+
 #define mono_appdomains_lock() EnterCriticalSection (&appdomains_mutex)
 #define mono_appdomains_unlock() LeaveCriticalSection (&appdomains_mutex)
 static CRITICAL_SECTION appdomains_mutex;
@@ -1816,6 +1818,9 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		g_warning ("cant unload root domain");
 		return;
 	}
+
+	if (mono_dont_free_domains)
+		return;
 
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_UNLOAD);
 
