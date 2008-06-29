@@ -75,6 +75,8 @@ mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig);
 #define ldstr_unlock() LeaveCriticalSection (&ldstr_section)
 static CRITICAL_SECTION ldstr_section;
 
+static gboolean profile_allocs = TRUE;
+
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -3330,10 +3332,11 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
 /*		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name); */
 		o = mono_object_allocate (vtable->klass->instance_size, vtable);
 	}
-	if (vtable->klass->has_finalize)
+	if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer (o);
 	
-	mono_profiler_allocation (o, vtable->klass);
+	if (G_UNLIKELY (profile_allocs))
+		mono_profiler_allocation (o, vtable->klass);
 	return o;
 }
 
@@ -3391,6 +3394,9 @@ void*
 mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words)
 {
 	*pass_size_in_words = FALSE;
+
+	if (!(mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+		profile_allocs = FALSE;
 
 	if (vtable->klass->has_finalize || vtable->klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return mono_object_new_specific;
@@ -3463,7 +3469,8 @@ mono_object_clone (MonoObject *obj)
 	if (obj->vtable->klass->has_references)
 		mono_gc_wbarrier_object (o);
 #endif
-	mono_profiler_allocation (o, obj->vtable->klass);
+	if (G_UNLIKELY (profile_allocs))
+		mono_profiler_allocation (o, obj->vtable->klass);
 
 	if (obj->vtable->klass->has_finalize)
 		mono_object_register_finalizer (o);
@@ -3583,18 +3590,18 @@ mono_array_clone (MonoArray *array)
 #define MYGUINT64_MAX 0x0000FFFFFFFFFFFFUL
 #define MYGUINT_MAX MYGUINT64_MAX
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
-        (guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a) ? -1 : 0
+	    (G_UNLIKELY ((guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a))
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
-        ((guint64)(a) == 0) || ((guint64)(b) == 0) ? 0 : \
-        (guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a))
+	    (G_UNLIKELY (((guint64)(a) > 0) && ((guint64)(b) > 0) &&	\
+					 ((guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a)))))
 #else
 #define MYGUINT32_MAX 4294967295U
 #define MYGUINT_MAX MYGUINT32_MAX
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
-        (guint32)(MYGUINT32_MAX) - (guint32)(b) < (guint32)(a) ? -1 : 0
+	    (G_UNLIKELY ((guint32)(MYGUINT32_MAX) - (guint32)(b) < (guint32)(a)))
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
-        ((guint32)(a) == 0) || ((guint32)(b) == 0) ? 0 : \
-        (guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a))
+	    (G_UNLIKELY (((guint32)(a) > 0) && ((guint32)(b) > 0) &&			\
+					 ((guint32)(b) > ((MYGUINT32_MAX) / (guint32)(a)))))
 #endif
 
 /**
@@ -3684,7 +3691,8 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, mono_array_size
 		}
 	}
 
-	mono_profiler_allocation (o, array_class);
+	if (G_UNLIKELY (profile_allocs))
+		mono_profiler_allocation (o, array_class);
 
 	return array;
 }
@@ -3705,7 +3713,7 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, mono_array_size_t n)
 	MONO_ARCH_SAVE_REGS;
 
 	ac = mono_array_class_get (eclass, 1);
-	g_assert (ac != NULL);
+	g_assert (ac);
 
 	return mono_array_new_specific (mono_class_vtable (domain, ac), n);
 }
@@ -3727,19 +3735,26 @@ mono_array_new_specific (MonoVTable *vtable, mono_array_size_t n)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (n > MONO_ARRAY_MAX_INDEX)
+	if (G_UNLIKELY (n > MONO_ARRAY_MAX_INDEX)) {
 		arith_overflow ();
+		return NULL;
+	}
 	
 	elem_size = mono_array_element_size (vtable->klass);
-	if (CHECK_MUL_OVERFLOW_UN (n, elem_size))
+	if (CHECK_MUL_OVERFLOW_UN (n, elem_size)) {
 		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
+		return NULL;
+	}
 	byte_len = n * elem_size;
-	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray)))
+	if (CHECK_ADD_OVERFLOW_UN (byte_len, sizeof (MonoArray))) {
 		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
+		return NULL;
+	}
 	byte_len += sizeof (MonoArray);
 	if (!vtable->klass->has_references) {
 		o = mono_object_allocate_ptrfree (byte_len, vtable);
 #if NEED_TO_ZERO_PTRFREE
+		((MonoArray*)o)->bounds = NULL;
 		memset ((char*)o + sizeof (MonoObject), 0, byte_len - sizeof (MonoObject));
 #endif
 	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
@@ -3750,9 +3765,9 @@ mono_array_new_specific (MonoVTable *vtable, mono_array_size_t n)
 	}
 
 	ao = (MonoArray *)o;
-	ao->bounds = NULL;
 	ao->max_length = n;
-	mono_profiler_allocation (o, vtable->klass);
+	if (G_UNLIKELY (profile_allocs))
+		mono_profiler_allocation (o, vtable->klass);
 
 	return ao;
 }
@@ -3803,7 +3818,8 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 #if NEED_TO_ZERO_PTRFREE
 	s->chars [len] = 0;
 #endif
-	mono_profiler_allocation ((MonoObject*)s, mono_defaults.string_class);
+	if (G_UNLIKELY (profile_allocs))
+		mono_profiler_allocation ((MonoObject*)s, mono_defaults.string_class);
 
 	return s;
 }
@@ -3904,7 +3920,8 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	vtable = mono_class_vtable (domain, class);
 	size = mono_class_instance_size (class);
 	res = mono_object_new_alloc_specific (vtable);
-	mono_profiler_allocation (res, class);
+	if (G_UNLIKELY (profile_allocs))
+		mono_profiler_allocation (res, class);
 
 	size = size - sizeof (MonoObject);
 
