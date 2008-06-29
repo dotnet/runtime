@@ -369,6 +369,15 @@ This is Mono.
 		ABI that we have exposed through the Mono development
 		cycle.
 
+	--enable-parallel-mark
+
+		Use this option to enable the garbage collector to use
+		multiple CPUs to do its work.  This helps performance
+		on multi-CPU machines as the work is divided across CPUS.
+
+		This option is not currently the default as we have
+		not done much testing with Mono.
+
 	--enable-dtrace
 
 		On Solaris and MacOS X builds a version of the Mono
