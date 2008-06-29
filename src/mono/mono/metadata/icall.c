@@ -1001,10 +1001,38 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 			continue;
 		/* FIXME: Add more types */
 		switch (field->type->type) {
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_BOOLEAN:
+			if (*((guint8*)this + field->offset) != *((guint8*)that + field->offset))
+				return FALSE;
+			break;
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_CHAR:
+			if (*(gint16*)((guint8*)this + field->offset) != *(gint16*)((guint8*)that + field->offset))
+				return FALSE;
+			break;
+		case MONO_TYPE_U4:
 		case MONO_TYPE_I4:
 			if (*(gint32*)((guint8*)this + field->offset) != *(gint32*)((guint8*)that + field->offset))
 				return FALSE;
 			break;
+		case MONO_TYPE_U8:
+		case MONO_TYPE_I8:
+			if (*(gint64*)((guint8*)this + field->offset) != *(gint64*)((guint8*)that + field->offset))
+				return FALSE;
+			break;
+		case MONO_TYPE_R4:
+			if (*(float*)((guint8*)this + field->offset) != *(float*)((guint8*)that + field->offset))
+				return FALSE;
+			break;
+		case MONO_TYPE_R8:
+			if (*(double*)((guint8*)this + field->offset) != *(double*)((guint8*)that + field->offset))
+				return FALSE;
+			break;
+
+
 		case MONO_TYPE_STRING: {
 			MonoString *s1, *s2;
 			guint32 s1len, s2len;
