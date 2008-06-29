@@ -3231,6 +3231,14 @@ ves_icall_System_Enum_get_value (MonoObject *this)
 	return res;
 }
 
+static MonoReflectionType *
+ves_icall_System_Enum_get_underlying_type (MonoReflectionType *type)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	return mono_type_get_object (mono_object_domain (type), mono_class_from_mono_type (type->type)->enum_basetype);
+}
+
 static void
 ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 {
@@ -4739,7 +4747,7 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 {
 	int offset = -1, i;
 	if (method->is_inflated && ((MonoMethodInflated*)method)->context.method_inst) {
-		MonoMethodInflated *inflated = method;
+		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
 		//method is inflated, we should inflate it on the other class
 		MonoGenericContext ctx;
 		ctx.method_inst = inflated->context.method_inst;
