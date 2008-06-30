@@ -1,3 +1,9 @@
+2008-06-30  Alp Toker  <alp@nuanti.com>
+
+	* configure.in:
+	* acinclude.m4: Remove concatenation syntax from doltlibtool to support
+	old versions of bash and re-enable dolt.
+
 2008-06-26  Alp Toker  <alp@nuanti.com>
 
 	* acinclude.m4: Prospective dolt fix for the build bot. Fix syntax to work

@@ -300,18 +300,8 @@ AC_LIBTOOL_WIN32_DLL
 # This causes monodis to not link correctly
 #AC_DISABLE_FAST_INSTALL
 AM_PROG_LIBTOOL
- 
 # Use dolt (http://dolt.freedesktop.org/) instead of libtool for building.
-AC_ARG_ENABLE(dolt, [ --enable-dolt	Use dolt (http://dolt.freedesktop.org/) instead of libtool for building.])
- 
-if test "x$enable_dolt" = "xyes"; then
-   DOLT
- else
-	# The DOLT macro contains AC_SUBST's for these so we must define them because of
-	# autoconf brokeness
-    LTCOMPILE='$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(COMPILE)'
-    LTCXXCOMPILE='$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXXCOMPILE)'
-fi
+DOLT
 
 # Test whenever ld supports -version-script
 AC_PROG_LD
