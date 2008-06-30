@@ -301,8 +301,8 @@ STDAPI _CorValidateImage(PVOID *ImageBase, LPCWSTR FileName)
 	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
 	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
 	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
-	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].Size = 0;
-	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress = 0;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].Size = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].Size;
+	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY].VirtualAddress;
 	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = 0;
 	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
 	NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].Size;
@@ -344,6 +344,9 @@ STDAPI _CorValidateImage(PVOID *ImageBase, LPCWSTR FileName)
 	if (NtHeaders32->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
 		return STATUS_INVALID_IMAGE_FORMAT;
 
+	if (NtHeaders32->OptionalHeader.NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR)
+		return STATUS_INVALID_IMAGE_FORMAT;
+
 	CliHeaderDir = &NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
 	if (!CliHeaderDir->VirtualAddress)
 		return STATUS_INVALID_IMAGE_FORMAT;
@@ -380,6 +383,79 @@ STDAPI CorBindToRuntimeEx(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, DWORD st
 STDAPI CorBindToRuntime(LPCWSTR pwszVersion, LPCWSTR pwszBuildFlavor, REFCLSID rclsid, REFIID riid, LPVOID FAR *ppv)
 {
 	return CorBindToRuntimeEx (pwszVersion, pwszBuildFlavor, 0, rclsid, riid, ppv);
+}
+
+HMODULE WINAPI MonoLoadImage(LPCWSTR FileName)
+{
+	HANDLE FileHandle;
+	DWORD FileSize;
+	HANDLE MapHandle;
+	IMAGE_DOS_HEADER* DosHeader;
+	IMAGE_NT_HEADERS32* NtHeaders32;
+	IMAGE_NT_HEADERS64* NtHeaders64;
+	HMODULE ModuleHandle;
+
+	FileHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	if (FileHandle == INVALID_HANDLE_VALUE)
+		return NULL;
+
+	FileSize = GetFileSize(FileHandle, NULL); 
+	if (FileSize == INVALID_FILE_SIZE)
+		goto CloseFile;
+
+	MapHandle = CreateFileMapping(FileHandle, NULL, PAGE_READONLY, 0, 0, NULL);
+	if (MapHandle == NULL)
+		goto CloseFile;
+
+	DosHeader = (IMAGE_DOS_HEADER*)MapViewOfFile(MapHandle, FILE_MAP_READ, 0, 0, 0);
+	if (DosHeader == NULL)
+		goto CloseMap;
+
+	if (FileSize < sizeof(IMAGE_DOS_HEADER) || DosHeader->e_magic != IMAGE_DOS_SIGNATURE || FileSize < DosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS32))
+		goto InvalidImageFormat;
+
+	NtHeaders32 = (IMAGE_NT_HEADERS32*)((DWORD_PTR)DosHeader + DosHeader->e_lfanew);
+	if (NtHeaders32->Signature != IMAGE_NT_SIGNATURE)
+		goto InvalidImageFormat;
+
+#ifdef _WIN64
+	NtHeaders64 = (IMAGE_NT_HEADERS64*)NtHeaders32;
+	if (NtHeaders64->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+	{
+		if (FileSize < DosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS64) ||
+			NtHeaders64->OptionalHeader.NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR ||
+			!NtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress)
+				goto InvalidImageFormat;
+
+		goto ValidImage;
+	}
+#endif
+
+	if (NtHeaders32->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC ||
+		NtHeaders32->OptionalHeader.NumberOfRvaAndSizes <= IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR ||
+		!NtHeaders32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress)
+	{
+InvalidImageFormat:
+		SetLastError(STATUS_INVALID_IMAGE_FORMAT);
+		goto UnmapView;
+	}
+
+ValidImage:
+	UnmapViewOfFile(DosHeader);
+	CloseHandle(MapHandle);
+
+	ModuleHandle = LoadLibrary(FileName);
+
+	CloseHandle(FileHandle);
+	return ModuleHandle;
+
+UnmapView:
+	UnmapViewOfFile(DosHeader);
+CloseMap:
+	CloseHandle(MapHandle);
+CloseFile:
+	CloseHandle(FileHandle);
+	return NULL;
 }
 
 typedef struct _EXPORT_FIXUP

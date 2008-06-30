@@ -1129,8 +1129,9 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 			if (image->has_entry_point && image->ref_count == 0) {
 				/* Increment reference count on images loaded outside of the runtime. */
 				fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
+				/* The image is already loaded because _CorDllMain removes images from the hash. */
 				module_handle = LoadLibrary (fname_utf16);
-				g_assert (module_handle != NULL);
+				g_assert (module_handle == (HMODULE) image->raw_data);
 			}
 			mono_image_addref (image);
 			mono_images_unlock ();
@@ -1141,7 +1142,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 		}
 
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
-		module_handle = LoadLibrary (fname_utf16);
+		module_handle = MonoLoadImage (fname_utf16);
 		if (status && module_handle == NULL)
 			last_error = GetLastError ();
 

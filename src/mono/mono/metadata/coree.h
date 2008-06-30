@@ -28,6 +28,8 @@ extern IMAGE_DOS_HEADER __ImageBase MONO_INTERNAL;
 
 extern HMODULE coree_module_handle MONO_INTERNAL;
 
+HMODULE WINAPI MonoLoadImage(LPCWSTR FileName) MONO_INTERNAL;
+
 gchar* mono_get_module_file_name (HMODULE module_handle) MONO_INTERNAL;
 void mono_load_coree (const char* file_name) MONO_INTERNAL;
 void mono_fixup_exe_image (MonoImage* image) MONO_INTERNAL;
