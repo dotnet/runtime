@@ -12497,15 +12497,30 @@ lookup_generic_method (MonoDomain *domain, MonoMethod *method)
 	return mono_domain_lookup_shared_generic (domain, open_method);
 }
 
+/*
+ * LOCKING: Assumes domain->jit_code_hash_lock is held.
+ */
 static MonoJitInfo*
-lookup_method (MonoDomain *domain, MonoMethod *method)
+lookup_method_inner (MonoDomain *domain, MonoMethod *method)
 {
 	MonoJitInfo *ji = mono_internal_hash_table_lookup (&domain->jit_code_hash, method);
 
-	if (ji != NULL)
+	if (ji)
 		return ji;
 
 	return lookup_generic_method (domain, method);
+}
+
+static MonoJitInfo*
+lookup_method (MonoDomain *domain, MonoMethod *method)
+{
+	MonoJitInfo *info;
+
+	mono_domain_jit_code_hash_lock (domain);
+	info = lookup_method_inner (domain, method);
+	mono_domain_jit_code_hash_unlock (domain);
+
+	return info;
 }
 
 static gpointer
@@ -12669,7 +12684,10 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	/* Check if some other thread already did the job. In this case, we can
        discard the code this thread generated. */
 
-	if ((info = lookup_method (target_domain, method))) {
+	mono_domain_jit_code_hash_lock (target_domain);
+
+	info = lookup_method_inner (target_domain, method);
+	if (info) {
 		/* We can't use a domain specific method in another domain */
 		if ((target_domain == mono_domain_get ()) || info->domain_neutral) {
 			code = info->code_start;
@@ -12679,6 +12697,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	
 	if (code == NULL) {
 		mono_internal_hash_table_insert (&target_domain->jit_code_hash, cfg->jit_info->method, cfg->jit_info);
+		mono_domain_jit_code_hash_unlock (target_domain);
 		code = cfg->native_code;
 
 		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method, FALSE)) {
@@ -12687,6 +12706,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				mono_method_get_declaring_generic_method (method), cfg->jit_info);
 			mono_stats.generics_shared_methods++;
 		}
+	} else {
+		mono_domain_jit_code_hash_unlock (target_domain);
 	}
 
 	mono_destroy_compile (cfg);
@@ -12749,14 +12770,12 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 	else 
 		target_domain = domain;
 
-	mono_domain_lock (target_domain);
-
-	if ((info = lookup_method (target_domain, method))) {
+	info = lookup_method (target_domain, method);
+	if (info) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			MonoVTable *vtable;
 
-			mono_domain_unlock (target_domain);
 			mono_jit_stats.methods_lookups++;
 			vtable = mono_class_vtable (domain, method->klass);
 			mono_runtime_class_init (vtable);
@@ -12764,7 +12783,6 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 		}
 	}
 
-	mono_domain_unlock (target_domain);
 	p = mono_create_ftnptr (target_domain, mono_jit_compile_method_inner (method, target_domain, opt));
 
 	if (callinfo) {
@@ -12857,18 +12875,14 @@ mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 	else 
 		target_domain = domain;
 
-	mono_domain_lock (target_domain);
-
-	if ((info = lookup_method (target_domain, method))) {
+	info = lookup_method (target_domain, method);
+	if (info) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
-			mono_domain_unlock (target_domain);
 			mono_jit_stats.methods_lookups++;
 			return info->code_start;
 		}
 	}
-
-	mono_domain_unlock (target_domain);
 
 	return NULL;
 }
