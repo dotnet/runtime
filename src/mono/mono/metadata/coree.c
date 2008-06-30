@@ -867,6 +867,7 @@ mono_set_act_ctx (const char* file_name)
 void
 mono_load_coree (const char* exe_file_name)
 {
+	HMODULE module_handle;
 	gunichar2* file_name;
 	UINT required_size;
 	UINT size;
@@ -886,13 +887,15 @@ mono_load_coree (const char* exe_file_name)
 		file_name [size++] = L'\\';
 	memcpy (&file_name [size], L"mscoree.dll", 12 * sizeof (gunichar2));
 
-	coree_module_handle = LoadLibrary (file_name);
+	module_handle = LoadLibrary (file_name);
 	g_free (file_name);
 
-	if (coree_module_handle && !SUCCEEDED (MonoFixupCorEE (coree_module_handle))) {
-		FreeLibrary (coree_module_handle);
-		coree_module_handle = NULL;
+	if (module_handle && !SUCCEEDED (MonoFixupCorEE (module_handle))) {
+		FreeLibrary (module_handle);
+		module_handle = NULL;
 	}
+
+	coree_module_handle = module_handle;
 }
 
 void

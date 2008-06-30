@@ -21,7 +21,6 @@
 #define STATUS_INVALID_IMAGE_FORMAT 0xC000007BL
 
 STDAPI MonoFixupCorEE(HMODULE ModuleHandle);
-STDAPI MonoFixupExe(HMODULE ModuleHandle);
 
 /* Defined by the linker. */
 extern IMAGE_DOS_HEADER __ImageBase MONO_INTERNAL;
@@ -29,6 +28,7 @@ extern IMAGE_DOS_HEADER __ImageBase MONO_INTERNAL;
 extern HMODULE coree_module_handle MONO_INTERNAL;
 
 HMODULE WINAPI MonoLoadImage(LPCWSTR FileName) MONO_INTERNAL;
+STDAPI MonoFixupExe(HMODULE ModuleHandle) MONO_INTERNAL;
 
 gchar* mono_get_module_file_name (HMODULE module_handle) MONO_INTERNAL;
 void mono_load_coree (const char* file_name) MONO_INTERNAL;
