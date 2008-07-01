@@ -556,6 +556,7 @@ mono_marshal_init (void)
 		if (com_provider_env && !strcmp(com_provider_env, "MS"))
 			com_provider = MONO_COM_MS;
 
+		register_icall (ves_icall_System_Threading_Thread_ResetAbort, "ves_icall_System_Threading_Thread_ResetAbort", "void", TRUE);
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);
 		register_icall (mono_marshal_string_to_utf16_copy, "mono_marshal_string_to_utf16_copy", "ptr obj", FALSE);
 		register_icall (mono_string_to_utf16, "mono_string_to_utf16", "ptr obj", FALSE);
@@ -4567,7 +4568,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	MonoClass *target_klass;
 	MonoMethod *res = NULL;
 	static MonoString *string_dummy = NULL;
-	static MonoMethodSignature *delay_abort_sig = NULL;
 	static MonoMethodSignature *cctor_signature = NULL;
 	static MonoMethodSignature *finalize_signature = NULL;
 	int i, pos, posna;
@@ -4661,12 +4661,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 
 	if (res) {
 		return res;
-	}
-
-	if (!delay_abort_sig) {
-		delay_abort_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-		delay_abort_sig->ret = &mono_defaults.void_class->byval_arg;
-		delay_abort_sig->pinvoke = 0;
 	}
 	
 	/* to make it work with our special string constructors */
@@ -4874,7 +4868,7 @@ handle_enum:
 	posna = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
 	/* Delay the abort exception */
-	mono_mb_emit_native_call (mb, delay_abort_sig, ves_icall_System_Threading_Thread_ResetAbort);
+	mono_mb_emit_icall (mb, ves_icall_System_Threading_Thread_ResetAbort);
 
 	mono_mb_patch_short_branch (mb, posna);
 	mono_mb_emit_branch (mb, CEE_LEAVE);
