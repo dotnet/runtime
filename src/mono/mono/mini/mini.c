@@ -384,8 +384,10 @@ void *mono_global_codeman_reserve (int size)
 {
 	void *ptr;
 
+	/*
 	if (mono_aot_only)
 		g_error ("Attempting to allocate from the global code manager while running with --aot-only.\n");
+	*/
 
 	if (!global_codeman) {
 		/* This can happen during startup */
@@ -8607,7 +8609,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				token = read32 (ip + 2);
 
 				ptr = mono_method_get_wrapper_data (method, token);
-				if (cfg->compile_aot && cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+				if (cfg->compile_aot && (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE || cfg->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
 					MonoMethod *wrapped = mono_marshal_method_from_wrapper (cfg->method);
 
 					if (wrapped && ptr != NULL && mono_lookup_internal_call (wrapped) == ptr) {
@@ -8616,6 +8618,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ip += 6;
 						break;
 					}
+				}
+				/* FIXME: Generalize this */
+				if (cfg->compile_aot && ptr == mono_thread_interruption_request_flag ()) {
+					NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
+					*sp++ = ins;
+					ip += 6;
+					break;
 				}
 				NEW_PCONST (cfg, ins, ptr);
 				*sp++ = ins;
@@ -10588,6 +10597,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_ICALL_ADDR:
 		target = mono_lookup_internal_call (patch_info->data.method);
+		break;
+	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
+		target = mono_thread_interruption_request_flag ();
 		break;
 	case MONO_PATCH_INFO_BB_OVF:
 	case MONO_PATCH_INFO_EXC_OVF:
