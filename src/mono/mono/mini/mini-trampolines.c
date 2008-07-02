@@ -654,6 +654,10 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 {
 	gpointer tramp;
 
+	if (mono_aot_only)
+		/* Load the method from AOT right away */
+		return mono_compile_method (method);
+
 	mono_domain_lock (domain);
 	tramp = g_hash_table_lookup (domain->jit_trampoline_hash, method);
 	mono_domain_unlock (domain);

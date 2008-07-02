@@ -129,6 +129,7 @@ typedef struct MonoAotCompile {
 	guint32 opts;
 	MonoMemPool *mempool;
 	MonoAotStats stats;
+	int method_index;
 #ifdef USE_BIN_WRITER
 	BinSymbol *symbols;
 	BinSection *sections;
@@ -1856,19 +1857,6 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index)
 	g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
 }
 
-static int
-add_method (MonoAotCompile *acfg, MonoMethod *method)
-{
-	int index = acfg->methods->len;
-
-	add_method_with_index (acfg, method, index);
-
-	/* FIXME: Fix quadratic behavior */
-	acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (index));
-
-	return index;
-}
-
 static guint32
 get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 {
@@ -1877,6 +1865,21 @@ get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 	g_assert (index);
 
 	return index - 1;
+}
+
+static int
+add_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	int index = acfg->method_index;
+
+	add_method_with_index (acfg, method, index);
+
+	/* FIXME: Fix quadratic behavior */
+	acfg->method_order = g_list_append (acfg->method_order, GUINT_TO_POINTER (index));
+
+	acfg->method_index ++;
+
+	return index;
 }
 
 static void
@@ -1897,11 +1900,21 @@ add_jit_icall_wrapper (gpointer key, gpointer value, gpointer user_data)
 	add_method (acfg, wrapper);
 }
 
+static MonoMethod*
+get_runtime_invoke (const char *signature)
+{
+	MonoMethodBuilder *mb;
+	MonoMethod *m;
+
+	mb = mono_mb_new (mono_defaults.object_class, "FOO", MONO_WRAPPER_NONE);
+	m = mono_mb_create_method (mb, mono_create_icall_signature (signature), 16);
+	return mono_marshal_get_runtime_invoke (m);
+}
+
 static void
 add_wrappers (MonoAotCompile *acfg)
 {
 	MonoMethod *m;
-	MonoClass *klass;
 	int i, nallocators;
 
 	/* 
@@ -1912,18 +1925,22 @@ add_wrappers (MonoAotCompile *acfg)
 
 	/* FIXME: Collect these automatically */
 
-	if (strstr (acfg->image->name, "mscorlib.dll")) {
-		/* void runtime-invoke (object, string) */
-		klass = mono_class_from_name (mono_defaults.corlib, "System", "OutOfMemoryException");
-		m = mono_class_get_method_from_name (klass, ".ctor", 1);
-		m = mono_marshal_get_runtime_invoke (m);
-		add_method (acfg, m);
+	/* Runtime invoke wrappers */
 
-		/* void runtime-invoke (object) */
-		klass = mono_class_from_name (mono_defaults.corlib, "System", "String");
-		m = mono_class_get_method_from_name (klass, ".cctor", 0);
-		m = mono_marshal_get_runtime_invoke (m);
-		add_method (acfg, m);
+	/* void runtime-invoke () [.cctor] */
+	add_method (acfg, get_runtime_invoke ("void"));
+
+	/* void runtime-invoke (string) [exception ctor] */
+	add_method (acfg, get_runtime_invoke ("void string"));
+
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		MonoMethod *method;
+		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+
+		method = mono_get_method (acfg->image, token, NULL);
+
+		if (!strcmp (method->name, "Main"))
+			add_method (acfg, mono_marshal_get_runtime_invoke (method));
 	}
 
 	/* JIT icall wrappers */
@@ -3644,6 +3661,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_start (acfg);
 
+	acfg->method_index = 0;
+
 	/* Collect methods */
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		MonoMethod *method;
@@ -3658,7 +3677,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			method = wrapper;
 		}
 
-		add_method_with_index (acfg, method, i + 1);
+		/* Since we add the normal methods first, their index will be equal to their zero based token index */
+		add_method_with_index (acfg, method, acfg->method_index);
+		acfg->method_index ++;
 	}
 
 	if (acfg->aot_opts.full_aot)

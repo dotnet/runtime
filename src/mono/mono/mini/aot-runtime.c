@@ -943,7 +943,7 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 	used_int_regs = decode_value (p, &p);
 
 	/* Exception table */
-	if (header->num_clauses) {
+	if (header && header->num_clauses) {
 		jinfo = 
 			mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + (sizeof (MonoJitExceptionInfo) * header->num_clauses));
 		jinfo->num_clauses = header->num_clauses;
