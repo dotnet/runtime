@@ -944,6 +944,9 @@ mono_find_jit_icall_by_name (const char *name) MONO_INTERNAL;
 MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr) MONO_INTERNAL;
 
+GHashTable*
+mono_get_jit_icall_info (void) MONO_INTERNAL;
+
 gboolean
 mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data) MONO_INTERNAL;
 

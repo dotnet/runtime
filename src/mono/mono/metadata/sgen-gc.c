@@ -5159,5 +5159,11 @@ mono_gc_get_managed_allocator_by_type (int atype)
 	return res;
 }
 
+guint32
+mono_gc_get_managed_allocator_types (void)
+{
+	return ATYPE_NUM;
+}
+
 #endif /* HAVE_SGEN_GC */
 

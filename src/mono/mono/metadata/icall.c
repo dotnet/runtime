@@ -7781,6 +7781,18 @@ mono_find_jit_icall_by_addr (gconstpointer addr)
 	return info;
 }
 
+/*
+ * mono_get_jit_icall_info:
+ *
+ *   Return the hashtable mapping JIT icall names to MonoJitICallInfo structures. The
+ * caller should access it while holding the loader lock.
+ */
+GHashTable*
+mono_get_jit_icall_info (void)
+{
+	return jit_icall_hash_name;
+}
+
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 {

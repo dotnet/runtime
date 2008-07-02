@@ -206,5 +206,11 @@ mono_gc_get_managed_allocator_by_type (int atype)
 	return NULL;
 }
 
+guint32
+mono_gc_get_managed_allocator_types (void)
+{
+	return 0;
+}
+
 #endif
 
