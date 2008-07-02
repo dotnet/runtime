@@ -430,6 +430,7 @@ mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, gpointer data, gui
  * mono_delegate_trampoline:
  *
  *   This trampoline handles calls made to Delegate:Invoke ().
+ * This is called once the first time a delegate is invoked, so it must be fast.
  */
 gpointer
 mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* tramp)
