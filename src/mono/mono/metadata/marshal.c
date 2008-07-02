@@ -4898,7 +4898,7 @@ handle_enum:
 			if (!res) {
 				res = newm;
 				g_hash_table_insert (cache, callsig, res);
-				g_hash_table_insert (wrapper_hash, res, callsig);
+				/* Can't insert it into wrapper_hash since the key is a signature */
 			} else {
 				mono_free_method (newm);
 			}

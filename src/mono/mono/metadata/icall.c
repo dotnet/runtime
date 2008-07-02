@@ -7696,6 +7696,8 @@ type_from_typename (char *typename)
 		klass = mono_defaults.object_class;
 	else if (!strcmp (typename, "obj"))
 		klass = mono_defaults.object_class;
+	else if (!strcmp (typename, "string"))
+		klass = mono_defaults.string_class;
 	else if (!strcmp (typename, "bool"))
 		klass = mono_defaults.boolean_class;
 	else if (!strcmp (typename, "boolean"))
