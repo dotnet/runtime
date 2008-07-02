@@ -1,3 +1,8 @@
+2008-07-02  Gert Driesen  <drieseng@users.sourceforge.net>
+
+	* data/net_1_1/machine.config: Ignore system.windows.forms section.
+	* data/net_2_0/machine.config: Define system.windows.forms section.
+
 2008-06-30  Alp Toker  <alp@nuanti.com>
 
 	* configure.in:
