@@ -74,6 +74,7 @@ typedef struct MonoAotModule {
 	gpointer *got;
 	guint32 got_size;
 	GHashTable *name_cache;
+	GHashTable *wrappers;
 	MonoAssemblyName *image_names;
 	char **image_guids;
 	MonoImage **image_table;
@@ -102,6 +103,7 @@ typedef struct MonoAotModule {
 	guint32 *class_info_offsets;
 	guint32 *methods_loaded;
 	guint16 *class_name_table;
+	guint8 *wrapper_info;
 } MonoAotModule;
 
 static GHashTable *aot_modules;
@@ -142,7 +144,7 @@ static gsize aot_code_low_addr = (gssize)-1;
 static gsize aot_code_high_addr = 0;
 
 static gpointer
-mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod *method, guint8 *code, guint8 *info);
+mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod *method, guint8 *code, guint8 *info, int method_index);
 
 static void
 init_plt (MonoAotModule *info);
@@ -617,6 +619,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_dl_symbol (assembly->aot_module, "class_name_table", (gpointer *)&info->class_name_table);
 	mono_dl_symbol (assembly->aot_module, "got_info", (gpointer*)&info->got_info);
 	mono_dl_symbol (assembly->aot_module, "got_info_offsets", (gpointer*)&info->got_info_offsets);
+	mono_dl_symbol (assembly->aot_module, "wrapper_info", (gpointer*)&info->wrapper_info);
 	mono_dl_symbol (assembly->aot_module, "mem_end", (gpointer*)&info->mem_end);
 
 	info->mem_begin = info->code;
@@ -1079,8 +1082,19 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	method_index = table [pos];
 
-	token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
-	method = mono_get_method (image, token, NULL);
+	/* Might be a wrapper */
+	if (aot_module->wrappers) {
+		mono_aot_lock ();
+		method = g_hash_table_lookup (aot_module->wrappers, GUINT_TO_POINTER (method_index));
+		mono_aot_unlock ();
+	} else {
+		method = NULL;
+	}
+
+	if (!method) {
+		token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
+		method = mono_get_method (image, token, NULL);
+	}
 
 	/* FIXME: */
 	g_assert (method);
@@ -1209,7 +1223,8 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		}
 		break;
 	}
-	case MONO_PATCH_INFO_INTERNAL_METHOD: {
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR: {
 		guint32 len = decode_value (p, &p);
 
 		ji->data.name = (char*)p;
@@ -1314,6 +1329,8 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 	case MONO_PATCH_INFO_METHOD_REL:
 		ji->data.offset = decode_value (p, &p);
 		break;
+	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
+		break;
 	default:
 		g_warning ("unhandled type %d", ji->type);
 		g_assert_not_reached ();
@@ -1392,9 +1409,6 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (!module)
 		return NULL;
 
-	if (!method->token)
-		return NULL;
-
 	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE)
 		return NULL;
 
@@ -1419,6 +1433,41 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		if (!mono_method_is_generic_sharable_impl (method, FALSE))
 			return NULL;
 		method = mono_method_get_declaring_generic_method (method);
+	}
+
+	if (!method->token) {
+		char *full_name;
+		char *p;
+
+		if (!method->wrapper_type || !aot_module->wrapper_info)
+			return NULL;
+
+		/* Try to find the wrapper among the wrapper info */
+		full_name = mono_method_full_name (method, TRUE);
+		p = (char*)aot_module->wrapper_info;
+		while (*p) {
+			char *end;
+
+			end = p + strlen (p) + 1;
+			end = ALIGN_PTR_TO (end, 4);
+			method_index = *(guint32*)end;
+			end += 4;
+			if (strcmp (full_name, p) == 0)
+				break;
+			p = end;
+		}
+		g_free (full_name);
+
+		if (!(*p))
+			/* Not found */
+			return NULL;
+
+		/* Needed by find_jit_info */
+		mono_aot_lock ();
+		if (!aot_module->wrappers)
+			aot_module->wrappers = g_hash_table_new (NULL, NULL);
+		g_hash_table_insert (aot_module->wrappers, GUINT_TO_POINTER (method_index), method);
+		mono_aot_unlock ();
 	}
 
 	if (aot_module->code_offsets [method_index] == 0xffffffff) {
@@ -1447,18 +1496,17 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 				printf ("LAST AOT METHOD: %s.%s.%s.\n", klass->name_space, klass->name, method->name);
 	}
 
-	return mono_aot_load_method (domain, aot_module, method, code, info);
+	return mono_aot_load_method (domain, aot_module, method, code, info, method_index);
 }
 
 static gpointer
-mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod *method, guint8 *code, guint8 *info)
+mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod *method, guint8 *code, guint8 *info, int method_index)
 {
 	MonoClass *klass = method->klass;
 	MonoJumpInfo *patch_info = NULL;
 	MonoMemPool *mp;
 	int i, pindex, got_index = 0, n_patches, used_strings;
 	gboolean non_got_patches, keep_patches = TRUE;
-	guint32 method_index = mono_metadata_token_index (method->token) - 1;
 	guint8 *p, *ex_info;
 	MonoJitInfo *jinfo = NULL;
 

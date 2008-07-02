@@ -8618,6 +8618,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ip += 6;
 						break;
 					}
+
+					if ((method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (strstr (method->name, "__icall_wrapper_") == method->name)) {
+						MonoJitICallInfo *callinfo;
+						const char *icall_name;
+
+						icall_name = method->name + strlen ("__icall_wrapper_");
+						g_assert (icall_name);
+						callinfo = mono_find_jit_icall_by_name (icall_name);
+						g_assert (callinfo);
+
+						if (ptr == callinfo->func) {
+							/* Will be transformed into an AOTCONST later */
+							NEW_PCONST (cfg, ins, ptr);
+							*sp++ = ins;
+							ip += 6;
+							break;
+						}
+					}
 				}
 				/* FIXME: Generalize this */
 				if (cfg->compile_aot && ptr == mono_thread_interruption_request_flag ()) {
@@ -10598,6 +10616,15 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_ICALL_ADDR:
 		target = mono_lookup_internal_call (patch_info->data.method);
 		break;
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR: {
+		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
+		if (!mi) {
+			g_warning ("unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
+			g_assert_not_reached ();
+		}
+		target = mi->func;
+		break;
+	}
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 		target = mono_thread_interruption_request_flag ();
 		break;
@@ -11705,13 +11732,16 @@ mono_codegen (MonoCompile *cfg)
 			if (info) {
 				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
 				if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 
-					strstr (cfg->method->name, info->name))
+					strstr (cfg->method->name, info->name)) {
 					/*
 					 * This is an icall wrapper, and this is a call to the
 					 * wrapped function.
 					 */
-					;
-				else {
+					if (cfg->compile_aot) {
+						patch_info->type = MONO_PATCH_INFO_JIT_ICALL_ADDR;
+						patch_info->data.name = info->name;
+					}
+				} else {
 					/* for these array methods we currently register the same function pointer
 					 * since it's a vararg function. But this means that mono_find_jit_icall_by_addr ()
 					 * will return the incorrect one depending on the order they are registered.
