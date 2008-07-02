@@ -12592,9 +12592,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 #endif
 
-	if (mono_aot_only)
-		g_error ("Attempting to JIT compile method '%s' while running with --aot-only.\n", mono_method_full_name (method, TRUE));
-
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		MonoMethod *nm;
@@ -12643,6 +12640,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		}
 		return NULL;
 	}
+
+	if (mono_aot_only)
+		g_error ("Attempting to JIT compile method '%s' while running with --aot-only.\n", mono_method_full_name (method, TRUE));
 
 	cfg = mini_method_compile (method, opt, target_domain, TRUE, FALSE, 0);
 

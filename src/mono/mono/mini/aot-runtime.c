@@ -1135,7 +1135,7 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 			goto cleanup;
 
 #ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
-		if ((ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
+		if (!mono_aot_only && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
 			ji->data.target = mono_create_jit_trampoline_from_token (image, token);
 			ji->type = MONO_PATCH_INFO_ABS;
 		}
@@ -1597,7 +1597,7 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		char *full_name = mono_method_full_name (method, TRUE);
 
 		if (!jinfo) {
-			ex_info = &aot_module->ex_info [aot_module->ex_info_offsets [mono_metadata_token_index (method->token) - 1]];
+			ex_info = &aot_module->ex_info [aot_module->ex_info_offsets [method_index]];
 			jinfo = decode_exception_debug_info (aot_module, domain, method, ex_info, code);
 		}
 
