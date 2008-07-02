@@ -4492,6 +4492,13 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 {
 	guint8 *code, *start;
 
+	if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
+		return NULL;
+
+	/* FIXME: Support more cases */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
+
 	/*
 	 * The stack contains:
 	 * <delegate>
@@ -4500,17 +4507,12 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 	if (has_target) {
 		static guint8* cached = NULL;
-
-		if (cached)
+		mono_mini_arch_lock ();
+		if (cached) {
+			mono_mini_arch_unlock ();
 			return cached;
-
-		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
-			return NULL;
-
-		/* FIXME: Support more cases */
-		if (MONO_TYPE_ISSTRUCT (sig->ret))
-			return NULL;
-
+		}
+		
 		start = code = mono_global_codeman_reserve (64);
 
 		/* Replace the this argument with the target */
@@ -4521,31 +4523,25 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		g_assert ((code - start) < 64);
 
-		mono_debug_add_delegate_trampoline (start, code - start);
-
-		mono_memory_barrier ();
-
 		cached = start;
+		mono_debug_add_delegate_trampoline (start, code - start);
+		mono_mini_arch_unlock ();
 	} else {
 		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
 		int i = 0;
 		/* 8 for mov_reg and jump, plus 8 for each parameter */
 		int code_reserve = 8 + (sig->param_count * 8);
 
-		code = cache [sig->param_count];
-		if (code)
-			return code;
-
 		for (i = 0; i < sig->param_count; ++i)
 			if (!mono_is_regsize_var (sig->params [i]))
 				return NULL;
 
-		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
-			return NULL;
-
-		/* FIXME: Support more cases */
-		if (MONO_TYPE_ISSTRUCT (sig->ret))
-			return NULL;
+		mono_mini_arch_lock ();
+		code = cache [sig->param_count];
+		if (code) {
+			mono_mini_arch_unlock ();
+			return code;
+		}
 
 		/*
 		 * The stack contains:
@@ -4578,11 +4574,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		g_assert ((code - start) < code_reserve);
 
-		mono_debug_add_delegate_trampoline (start, code - start);
-
-		mono_memory_barrier ();
-
 		cache [sig->param_count] = start;
+
+		mono_debug_add_delegate_trampoline (start, code - start);
+		mono_mini_arch_unlock ();
 	}
 
 	return start;

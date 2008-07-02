@@ -24,7 +24,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-math.h>
-#include <mono/utils/mono-membar.h>
 
 #include "trace.h"
 #include "mini-amd64.h"
@@ -5142,25 +5141,26 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 
 #define MAX_ARCH_DELEGATE_PARAMS 10
 
-/* This is called by the delegate trampolines so it must be fast */
-
 gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {
 	guint8 *code, *start;
 	int i;
 
+	if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
+		return NULL;
+
+	/* FIXME: Support more cases */
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		return NULL;
+
 	if (has_target) {
 		static guint8* cached = NULL;
-
-		if (cached)
+		mono_mini_arch_lock ();
+		if (cached) {
+			mono_mini_arch_unlock ();
 			return cached;
-
-		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
-			return NULL;
-
-		if (MONO_TYPE_ISSTRUCT (sig->ret))
-			return NULL;
+		}
 
 		start = code = mono_global_codeman_reserve (64);
 
@@ -5171,30 +5171,23 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 		g_assert ((code - start) < 64);
 
-		mono_debug_add_delegate_trampoline (start, code - start);
-
-		mono_memory_barrier ();
-
 		cached = start;
+		mono_debug_add_delegate_trampoline (start, code - start);
+		mono_mini_arch_unlock ();
 	} else {
 		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
-
-		if (sig->param_count > 4)
-			return NULL;
-
-		code = cache [sig->param_count];
-		if (code)
-			return code;
-
-		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
-			return NULL;
-
-		if (MONO_TYPE_ISSTRUCT (sig->ret))
-			return NULL;
-
 		for (i = 0; i < sig->param_count; ++i)
 			if (!mono_is_regsize_var (sig->params [i]))
 				return NULL;
+		if (sig->param_count > 4)
+			return NULL;
+
+		mono_mini_arch_lock ();
+		code = cache [sig->param_count];
+		if (code) {
+			mono_mini_arch_unlock ();
+			return code;
+		}
 
 		start = code = mono_global_codeman_reserve (64);
 
@@ -5210,11 +5203,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		}
 		g_assert ((code - start) < 64);
 
-		mono_debug_add_delegate_trampoline (start, code - start);
-
-		mono_memory_barrier ();
-
 		cache [sig->param_count] = start;
+		
+		mono_debug_add_delegate_trampoline (start, code - start);
+		mono_mini_arch_unlock ();
 	}
 
 	return start;
