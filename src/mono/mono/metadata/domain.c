@@ -398,13 +398,14 @@ mono_jit_info_table_find (MonoDomain *domain, char *addr)
 			   beyond what we're looking for, we have to end the
 			   search. */
 			if ((gint8*)addr < (gint8*)ji->code_start)
-				break;
+				goto not_found;
 		}
 
 		++chunk_pos;
 		pos = 0;
-	 } while (chunk_pos < table->num_chunks);
+	} while (chunk_pos < table->num_chunks);
 
+ not_found:
 	mono_hazard_pointer_clear (hp, JIT_INFO_TABLE_HAZARD_INDEX);
 	mono_hazard_pointer_clear (hp, JIT_INFO_HAZARD_INDEX);
 
