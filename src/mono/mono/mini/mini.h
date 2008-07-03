@@ -1375,6 +1375,11 @@ MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, Mo
 
 int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align) MONO_INTERNAL;
 
+/* wapihandles.c */
+int mini_wapi_hps (int argc, char **argv) MONO_INTERNAL;
 
+int mini_wapi_semdel (int argc, char **argv) MONO_INTERNAL;
+
+int mini_wapi_seminfo (int argc, char **argv) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_H__ */

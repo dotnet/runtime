@@ -136,6 +136,8 @@ replace_usage (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, MonoInst **
 	}
 }
 
+#if 0
+
 static int
 extends_live (MonoInst *inst)
 {
@@ -191,6 +193,8 @@ replace_usage_new (MonoCompile *cfg, MonoInst *inst, int varnum, MonoInst *rep)
 
 	return 0;
 }
+
+#endif
 
 static void
 mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, MonoInst **stack) 

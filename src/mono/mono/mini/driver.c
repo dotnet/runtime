@@ -1662,7 +1662,7 @@ mono_jit_init (const char *file)
 
 /**
  * mono_jit_init_version:
- * @file: the initial assembly to load
+ * @domain_name: the name of the root domain
  * @runtime_version: the version of the runtime to load
  *
  * Use this version when you want to force a particular runtime
@@ -1680,9 +1680,9 @@ mono_jit_init (const char *file)
  * was loaded.
  */
 MonoDomain * 
-mono_jit_init_version (const char *file, const char *runtime_version)
+mono_jit_init_version (const char *domain_name, const char *runtime_version)
 {
-	return mini_init (file, runtime_version);
+	return mini_init (domain_name, runtime_version);
 }
 
 void        

@@ -16,7 +16,7 @@ MonoDomain *
 mono_jit_init              (const char *file);
 
 MonoDomain * 
-mono_jit_init_version      (const char *file, const char *runtime_version);
+mono_jit_init_version      (const char *root_domain_name, const char *runtime_version);
 
 int
 mono_jit_exec              (MonoDomain *domain, MonoAssembly *assembly, 

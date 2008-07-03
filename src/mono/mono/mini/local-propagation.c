@@ -855,7 +855,7 @@ mono_local_cprop_bb (MonoCompile *cfg, TreeMover *tree_mover, MonoBasicBlock *bb
 
 			acp [tree->inst_i0->inst_c0] = NULL;
 			if (MONO_DEBUG_TREE_MOVER) {
-				printf ("Assignment clears ACP[%d] at tree ", tree->inst_i0->inst_c0);
+				printf ("Assignment clears ACP[%d] at tree ", (int)tree->inst_i0->inst_c0);
 				mono_print_tree (tree);
 				printf ("\n");
 			}
@@ -893,7 +893,7 @@ mono_local_cprop_bb (MonoCompile *cfg, TreeMover *tree_mover, MonoBasicBlock *bb
 				acp [tree->inst_i0->inst_c0] = i1->inst_i0;
 				tree_can_be_moved = FALSE;
 				if (MONO_DEBUG_LOCAL_PROP) {
-					printf ("  Consequently, ACP[%d] becomes local ", tree->inst_i0->inst_c0);
+					printf ("  Consequently, ACP[%d] becomes local ", (int)tree->inst_i0->inst_c0);
 					mono_print_tree (i1->inst_i0);
 					printf ("\n");
 				}
