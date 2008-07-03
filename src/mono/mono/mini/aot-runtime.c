@@ -545,6 +545,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	if (!usable) {
+		if (mono_aot_only)
+			g_error ("Failed to load AOT module '%s' while running with --aot-only.\n", aot_name);
 		g_free (aot_name);
 		mono_dl_close (assembly->aot_module);
 		assembly->aot_module = NULL;
