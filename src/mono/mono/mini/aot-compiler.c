@@ -2061,7 +2061,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 					if (callee_cfg) {
 						if (!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)) {
 							//printf ("DIRECT: %s %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (callee_cfg->method, TRUE));
-							direct_call_target = g_strdup_printf (".Lm_%x", mono_metadata_token_index (callee_cfg->method->token));
+							direct_call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, callee_cfg->method));
 							patch_info->type = MONO_PATCH_INFO_NONE;
 							acfg->stats.direct_calls ++;
 						}
@@ -2830,7 +2830,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (acfg->aot_opts.metadata_only)
 		return;
 
-	index = get_method_index (acfg, method) - 1;
+	index = get_method_index (acfg, method);
 
 	/* fixme: maybe we can also precompile wrapper methods */
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
@@ -3211,7 +3211,7 @@ emit_code (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			symbol = g_strdup_printf (".Lm_%x", i + 1);
+			symbol = g_strdup_printf (".Lm_%x", i);
 			emit_symbol_diff (acfg, symbol, "methods", 0);
 		} else {
 			emit_int32 (acfg, 0xffffffff);
@@ -3253,7 +3253,7 @@ emit_info (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			symbol = g_strdup_printf (".Lm_%x_p", i + 1);
+			symbol = g_strdup_printf (".Lm_%x_p", i);
 			emit_symbol_diff (acfg, symbol, "mi", 0);
 		} else {
 			emit_int32 (acfg, 0);
@@ -3285,7 +3285,7 @@ emit_wrapper_info (MonoAotCompile *acfg)
 		if (!cfg || !cfg->method->wrapper_type)
 			continue;
 
-		index = get_method_index (acfg, cfg->method) - 1;
+		index = get_method_index (acfg, cfg->method);
 
 		// FIXME: Optimize disk usage and lookup speed
 		name = mono_method_full_name (cfg->method, TRUE);
@@ -3375,7 +3375,7 @@ emit_exception_info (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			symbol = g_strdup_printf (".Le_%x_p", i + 1);
+			symbol = g_strdup_printf (".Le_%x_p", i);
 			emit_symbol_diff (acfg, symbol, "ex", 0);
 		} else {
 			emit_int32 (acfg, 0);
@@ -3661,7 +3661,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_start (acfg);
 
-	acfg->method_index = 0;
+	acfg->method_index = 1;
 
 	/* Collect methods */
 	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
@@ -3678,7 +3678,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 
 		/* Since we add the normal methods first, their index will be equal to their zero based token index */
-		add_method_with_index (acfg, method, acfg->method_index);
+		add_method_with_index (acfg, method, i);
 		acfg->method_index ++;
 	}
 
