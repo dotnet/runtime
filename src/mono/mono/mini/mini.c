@@ -8870,6 +8870,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						is_shared = TRUE;
 				}
 
+				if (cmethod->is_generic)
+					UNVERIFIED;
+
 				cil_method = cmethod;
 				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
 					METHOD_ACCESS_FAILURE;
@@ -8942,6 +8945,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!cmethod)
 					goto load_error;
 				mono_class_init (cmethod->klass);
+
+				if (cmethod->is_generic)
+					UNVERIFIED;
 
 				if (cfg->generic_sharing_context)
 					context_used = mono_method_check_context_used (cmethod);
