@@ -1,3 +1,7 @@
+2008-07-03  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/patch-quiet.sh: New helper script.
+
 2008-07-02  Gert Driesen  <drieseng@users.sourceforge.net>
 
 	* data/net_1_1/machine.config: Ignore system.windows.forms section.
