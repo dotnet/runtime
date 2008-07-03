@@ -333,6 +333,9 @@ make_writable (guint8* addr, guint32 len)
 	guint8 *page_start;
 	int pages, err;
 
+	if (mono_aot_only)
+		g_error ("Attempt to make AOT memory writable while running with --aot-only.\n");
+
 	page_start = (guint8 *) (((gssize) (addr)) & ~ (PAGESIZE - 1));
 	pages = (addr + len - page_start + PAGESIZE - 1) / PAGESIZE;
 	err = mprotect (page_start, pages * PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
