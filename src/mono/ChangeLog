@@ -1,3 +1,9 @@
+2008-07-03  Mark Probst  <mark.probst@gmail.com>
+
+	* docs/generic-sharing: New documentation file about generic code
+	sharing.  Currently contains information about examining stack
+	frames of generic shared code.
+
 2008-07-03  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/patch-quiet.sh: New helper script.
