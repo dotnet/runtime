@@ -161,6 +161,8 @@ compute_dominators (MonoCompile *cfg)
 #endif
 }
 
+#if 0
+
 static void
 check_dominance_frontier (MonoBasicBlock *x, MonoBasicBlock *t)
 {
@@ -188,6 +190,8 @@ check_dominance_frontier (MonoBasicBlock *x, MonoBasicBlock *t)
 		}
 	}
 } 
+
+#endif
 
 /**
  * Compute dominance frontiers using the algorithm from the same paper.
