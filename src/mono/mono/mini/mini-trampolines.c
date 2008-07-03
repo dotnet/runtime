@@ -433,17 +433,17 @@ mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, gpointer data, gui
  * This is called once the first time a delegate is invoked, so it must be fast.
  */
 gpointer
-mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* tramp)
+mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guint8* tramp)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoDelegate *delegate;
 	MonoJitInfo *ji;
-	MonoMethod *invoke, *m;
+	MonoMethod *m;
 	MonoMethod *method = NULL;
 	gboolean multicast, callvirt;
-
-	invoke = mono_get_delegate_invoke (klass);
-	g_assert (invoke);
+	MonoMethod *invoke = tramp_data [0];
+	guint8 *impl_this = tramp_data [1];
+	guint8 *impl_nothis = tramp_data [2];
 
 	/* Obtain the delegate object according to the calling convention */
 
@@ -479,7 +479,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, MonoClass *klass, guint8* 
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
 	if (!multicast && !callvirt) {
-		code = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), delegate->target != NULL);
+		code = delegate->target ? impl_this : impl_nothis;
 
 		if (code) {
 			delegate->invoke_impl = code;
@@ -716,6 +716,8 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	MonoDomain *domain = mono_domain_get ();
 	gpointer ptr;
 	guint32 code_size = 0;
+	gpointer *tramp_data;
+	MonoMethod *invoke;
 
 	mono_domain_lock (domain);
 	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, klass);
@@ -723,7 +725,18 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	if (ptr)
 		return ptr;
 
-    ptr = mono_arch_create_specific_trampoline (klass, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
+	// Precompute the delegate invoke impl and pass it to the delegate trampoline
+	invoke = mono_get_delegate_invoke (klass);
+	g_assert (invoke);
+
+	mono_domain_lock (domain );
+	tramp_data = mono_mempool_alloc (domain->mp, sizeof (gpointer) * 3);
+	mono_domain_unlock (domain);
+	tramp_data [0] = invoke;
+	tramp_data [1] = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), TRUE);
+	tramp_data [2] = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), FALSE);
+
+    ptr = mono_arch_create_specific_trampoline (tramp_data, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
 	g_assert (code_size);
 
 	/* store trampoline address */

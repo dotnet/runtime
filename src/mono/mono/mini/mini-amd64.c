@@ -62,8 +62,6 @@ static CRITICAL_SECTION mini_arch_mutex;
 MonoBreakpointInfo
 mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
-static void init_is_regsize (void);
-
 #ifdef PLATFORM_WIN32
 /* On Win64 always reserve first 32 bytes for first four arguments */
 #define ARGS_OFFSET 48
@@ -839,7 +837,6 @@ void
 mono_arch_init (void)
 {
 	InitializeCriticalSection (&mini_arch_mutex);
-	init_is_regsize ();
 }
 
 /*
@@ -5142,50 +5139,6 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 	return (gpointer)regs [mono_arch_get_this_arg_reg (sig, gsctx, code)];
 }
 
-static gboolean is_regsize [128];
-
-static void
-init_is_regsize (void)
-{
-	int i;
-
-	for (i = 0; i < 128; ++i) {
-		switch (i) {
-		case MONO_TYPE_BOOLEAN:
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_FNPTR:
-#if SIZEOF_VOID_P == 8
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-#endif
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_ARRAY:
-			is_regsize [i] = TRUE;
-			break;
-		}
-	}
-}
-
-static inline gboolean
-is_regsize_var (MonoType *t)
-{
-	if (G_UNLIKELY (t->byref || t->type == MONO_TYPE_VALUETYPE || t->type == MONO_TYPE_GENERICINST))
-		return mono_is_regsize_var (t);
-	return is_regsize [t->type];
-}
-
 #define MAX_ARCH_DELEGATE_PARAMS 10
 
 gpointer
@@ -5224,7 +5177,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	} else {
 		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
 		for (i = 0; i < sig->param_count; ++i)
-			if (!is_regsize_var (sig->params [i]))
+			if (!mono_is_regsize_var (sig->params [i]))
 				return NULL;
 		if (sig->param_count > 4)
 			return NULL;
