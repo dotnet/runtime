@@ -64,11 +64,15 @@ int
 mono_method_check_context_used (MonoMethod *method)
 {
 	MonoGenericContext *method_context = mini_method_get_context (method);
+	int context_used;
 
 	if (!method_context)
 		return 0;
 
-	return mono_generic_context_check_used (method_context);
+	context_used = mono_generic_context_check_used (method_context);
+	context_used |= mono_class_check_context_used (method->klass);
+
+	return context_used;
 }
 
 static gboolean
@@ -118,13 +122,25 @@ mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_ty
  * mono_method_is_generic_impl:
  * @method: a method
  *
- * Returns whether the method is either inflated or part of an
- * inflated class.
+ * Returns whether the method is either generic or part of a generic
+ * class.
  */
 gboolean
 mono_method_is_generic_impl (MonoMethod *method)
 {
-	return method->klass->generic_class != NULL && method->is_inflated;
+	if (method->is_inflated) {
+		g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
+		return TRUE;
+	}
+	/* We don't treat wrappers as generic code, i.e., we never
+	   apply generic sharing to them.  This is especially
+	   important for static rgctx invoke wrappers, which only work
+	   if not compiled with sharing. */
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+	if (method->klass->generic_container)
+		return TRUE;
+	return FALSE;
 }
 
 /*
@@ -170,6 +186,9 @@ mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_va
 		if (method->klass->generic_class->container_class->generic_container->type_params->constraints)
 			return FALSE;
 	}
+
+	if (method->klass->generic_container && !allow_type_vars)
+		return FALSE;
 
 	return TRUE;
 }

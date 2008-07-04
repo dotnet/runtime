@@ -466,6 +466,54 @@ mono_method_get_declaring_generic_method (MonoMethod *method)
 	return inflated->declaring;
 }
 
+/*
+ * mono_class_get_method_generic:
+ * @klass: a class
+ * @method: a method
+ *
+ * Given a class and a generic method, which has to be of an
+ * instantiation of the same class that klass is an instantiation of,
+ * returns the corresponding method in klass.  Example:
+ *
+ * klass is Gen<string>
+ * method is Gen<object>.work<int>
+ *
+ * returns: Gen<string>.work<int>
+ */
+MonoMethod*
+mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
+{
+	MonoMethod *declaring, *m;
+	int i;
+
+	if (method->is_inflated)
+		declaring = mono_method_get_declaring_generic_method (method);
+	else
+		declaring = method;
+
+	mono_class_setup_methods (klass);
+	for (i = 0; i < klass->method.count; ++i) {
+		m = klass->methods [i];
+		if (m == declaring)
+			break;
+		if (m->is_inflated && mono_method_get_declaring_generic_method (m) == declaring)
+			break;
+	}
+	if (i >= klass->method.count)
+		return NULL;
+
+	if (method != declaring) {
+		MonoGenericContext context;
+
+		context.class_inst = NULL;
+		context.method_inst = mono_method_get_context (method)->method_inst;
+
+		m = mono_class_inflate_generic_method (m, &context);
+	}
+
+	return m;
+}
+
 static gpointer
 inflate_other_data (gpointer data, int info_type, MonoGenericContext *context)
 {
@@ -513,7 +561,7 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context)
 		MonoType *inflated_type = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
 		MonoClass *inflated_class = mono_class_from_mono_type (inflated_type);
 		int i = field - field->parent->fields;
-		gpointer dummy;
+		gpointer dummy = NULL;
 
 		mono_class_get_fields (inflated_class, &dummy);
 		g_assert (inflated_class->fields);
@@ -918,6 +966,15 @@ mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgct
 		return MONO_RGCTX_SLOT_MAKE_RGCTX (index);
 }
 
+/*
+ * mono_class_rgctx_get_array_size:
+ * @n: The number of the array
+ * @mrgctx: Whether it's an MRGCTX as opposed to a RGCTX.
+ *
+ * Returns the number of slots in the n'th array of a (M)RGCTX.  That
+ * number includes the slot for linking and - for MRGCTXs - the two
+ * slots in the first array for additional information.
+ */
 int
 mono_class_rgctx_get_array_size (int n, gboolean mrgctx)
 {
@@ -1063,6 +1120,13 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 	return info;
 }
 
+/*
+ * mono_method_fill_runtime_generic_context:
+ * @mrgctx: an MRGCTX
+ * @slot: a slot index to be instantiated
+ *
+ * Instantiates a slot in the MRGCTX.
+ */
 gpointer
 mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot)
 {
@@ -1097,6 +1161,14 @@ mrgctx_equal_func (gconstpointer a, gconstpointer b)
 		mono_metadata_generic_inst_equal (mrgctx1->method_inst, mrgctx2->method_inst);
 }
 
+/*
+ * mono_method_lookup_rgctx:
+ * @class_vtable: a vtable
+ * @method_inst: the method inst of a generic method
+ *
+ * Returns the MRGCTX for the generic method(s) with the given
+ * method_inst of the given class_vtable.
+ */
 MonoMethodRuntimeGenericContext*
 mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst)
 {

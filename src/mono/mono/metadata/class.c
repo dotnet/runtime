@@ -739,6 +739,14 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	if (!context->method_inst && method->is_generic)
 		iresult->context.method_inst = mono_method_get_generic_container (method)->context.method_inst;
 
+	if (!context->class_inst) {
+		g_assert (!iresult->declaring->klass->generic_class);
+		if (iresult->declaring->klass->generic_container)
+			iresult->context.class_inst = iresult->declaring->klass->generic_container->context.class_inst;
+		else if (iresult->declaring->klass->generic_class)
+			iresult->context.class_inst = iresult->declaring->klass->generic_class->context.class_inst;
+	}
+
 	mono_loader_lock ();
 	cached = mono_method_inflated_lookup (iresult, FALSE);
 	if (cached) {

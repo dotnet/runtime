@@ -40,17 +40,49 @@ mono_ldftn_nosync (MonoMethod *method)
 	return mono_create_ftnptr (mono_domain_get (), addr);
 }
 
-void*
-mono_ldvirtfn (MonoObject *obj, MonoMethod *method) 
+static void*
+ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 {
+	MonoMethod *res;
+
 	MONO_ARCH_SAVE_REGS;
 
 	if (obj == NULL)
 		mono_raise_exception (mono_get_exception_null_reference ());
 
-	method = mono_object_get_virtual_method (obj, method);
+	res = mono_object_get_virtual_method (obj, method);
 
-	return mono_ldftn (method);
+	if (gshared && method->is_inflated && mono_method_get_context (method)->method_inst) {
+		MonoGenericContext context = { NULL, NULL };
+
+		if (res->klass->generic_class)
+			context.class_inst = res->klass->generic_class->context.class_inst;
+		else if (res->klass->generic_container)
+			context.class_inst = res->klass->generic_container->context.class_inst;
+		context.method_inst = mono_method_get_context (method)->method_inst;
+
+		res = mono_class_inflate_generic_method (res, &context);
+	}
+
+	/* FIXME: only do this for methods which can be shared! */
+	if (res->is_inflated && mono_method_get_context (res)->method_inst &&
+			mono_class_generic_sharing_enabled (res->klass)) {
+		res = mono_marshal_get_static_rgctx_invoke (res);
+	}
+
+	return mono_ldftn (res);
+}
+
+void*
+mono_ldvirtfn (MonoObject *obj, MonoMethod *method) 
+{
+	return ldvirtfn_internal (obj, method, FALSE);
+}
+
+void*
+mono_ldvirtfn_gshared (MonoObject *obj, MonoMethod *method) 
+{
+	return ldvirtfn_internal (obj, method, TRUE);
 }
 
 void
@@ -819,6 +851,12 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGen
 	g_assert (!vmethod->klass->generic_class || !vmethod->klass->generic_class->context.class_inst->is_open);
 	g_assert (!context->method_inst || !context->method_inst->is_open);
 	inflated = mono_class_inflate_generic_method (vmethod, context);
+	if (mono_class_generic_sharing_enabled (inflated->klass) &&
+			mono_method_is_generic_sharable_impl (method, FALSE)) {
+		/* The method is shared generic code, so it needs a
+		   MRGCTX. */
+		inflated = mono_marshal_get_static_rgctx_invoke (inflated);
+	}
 	addr = mono_compile_method (inflated);
 
 	/* Since this is a virtual call, have to unbox vtypes */

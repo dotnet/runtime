@@ -1114,6 +1114,16 @@ stmt: OP_CHECK_THIS (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
+reg: OP_CHECK_THIS_PASSTHROUGH (reg) {
+	MonoInst *check;
+
+	MONO_INST_NEW (s, check, OP_CHECK_THIS);
+	check->sreg1 = state->left->reg1;
+	mono_bblock_add_inst (s->cbb, check);
+
+	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
+}
+
 # object related opcodes 
 
 reg: CEE_ISINST (reg) {

@@ -95,6 +95,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	gpointer *vtable_slot;
 	gboolean generic_shared = FALSE;
 	MonoMethod *declaring = NULL;
+	int context_used;
 
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	if (m == MONO_FAKE_VTABLE_METHOD) {
@@ -148,18 +149,27 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	}
 #endif
 
-	if (mono_method_check_context_used (m)) {
+	if ((context_used = mono_method_check_context_used (m))) {
 		MonoClass *klass = NULL;
 		MonoMethod *actual_method = NULL;
 		MonoVTable *vt = NULL;
+		MonoGenericInst *method_inst = NULL;
 
 		vtable_slot = NULL;
 		generic_shared = TRUE;
 
 		g_assert (code);
 
+		if (m->is_inflated && mono_method_get_context (m)->method_inst) {
+#ifdef MONO_ARCH_RGCTX_REG
+			MonoMethodRuntimeGenericContext *mrgctx = (MonoMethodRuntimeGenericContext*)mono_arch_find_static_call_vtable ((gpointer*)regs, code);
 
-		if (m->flags & METHOD_ATTRIBUTE_STATIC) {
+			klass = mrgctx->class_vtable->klass;
+			method_inst = mrgctx->method_inst;
+#else
+			g_assert_not_reached ();
+#endif
+		} else if (m->flags & METHOD_ATTRIBUTE_STATIC) {
 #ifdef MONO_ARCH_RGCTX_REG
 			MonoVTable *vtable = mono_arch_find_static_call_vtable ((gpointer*)regs, code);
 
@@ -195,32 +205,35 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			g_assert (displacement > 0);
 
 			actual_method = vt->klass->vtable [displacement];
-		} else {
-			int i;
+		}
+
+		if (method_inst) {
+			MonoGenericContext context = { NULL, NULL };
 
 			if (m->is_inflated)
 				declaring = mono_method_get_declaring_generic_method (m);
 			else
 				declaring = m;
 
-			if (klass->generic_class && !klass->methods) {
-				/* Avoid calling setup_methods () if possible */
-				actual_method = mono_class_inflate_generic_method_full (declaring, klass, mono_class_get_context (klass));
-			} else {
-				mono_class_setup_methods (klass);
-				for (i = 0; i < klass->method.count; ++i) {
-					actual_method = klass->methods [i];
-					if (actual_method->is_inflated) {
-						if (mono_method_get_declaring_generic_method (actual_method) == declaring)
-							break;
-					}
-				}
-			}
+			if (klass->generic_class)
+				context.class_inst = klass->generic_class->context.class_inst;
+			else if (klass->generic_container)
+				context.class_inst = klass->generic_container->context.class_inst;
+			context.method_inst = method_inst;
 
-			g_assert (mono_method_get_declaring_generic_method (actual_method) == declaring);
+			actual_method = mono_class_inflate_generic_method (declaring, &context);
+		} else {
+			actual_method = mono_class_get_method_generic (klass, m);
 		}
 
-		g_assert (actual_method);
+		g_assert (klass);
+		g_assert (actual_method->klass == klass);
+
+		if (actual_method->is_inflated)
+			declaring = mono_method_get_declaring_generic_method (actual_method);
+		else
+			declaring = NULL;
+
 		m = actual_method;
 	}
 
@@ -250,6 +263,9 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	}
 	else if (!generic_shared || mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
+
+		if (generic_shared)
+			g_assert (mono_method_is_generic_sharable_impl (m, FALSE));
 
 		/* Patch calling code */
 		if (plt_entry) {
@@ -394,11 +410,9 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
 void
 mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
-	//g_print ("generic class init for class %s.%s\n", vtable->klass->name_space, vtable->klass->name);
+	g_assert (!vtable->initialized);
 
 	mono_runtime_class_init (vtable);
-
-	//g_print ("done initing generic\n");
 }
 
 static gpointer
@@ -461,6 +475,8 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 			method = mono_marshal_get_remoting_invoke (method);
 		else if (mono_method_signature (method)->hasthis && method->klass->valuetype)
 			method = mono_marshal_get_unbox_wrapper (method);
+	} else if (delegate->method) {
+		method = delegate->method;
 	} else {
 		ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
 		if (ji)

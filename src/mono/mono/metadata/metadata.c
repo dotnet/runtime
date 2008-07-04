@@ -3765,6 +3765,11 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	case MONO_TYPE_ARRAY:
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer);
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		g_assert (allow_open);
+		*align = __alignof__(gpointer);
+		return sizeof (gpointer);
 	case MONO_TYPE_TYPEDBYREF:
 		*align = __alignof__(gpointer);
 		return sizeof (gpointer) * 3;

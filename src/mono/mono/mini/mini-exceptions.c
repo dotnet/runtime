@@ -612,6 +612,9 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 	MonoType *inflated_type;
 	MonoGenericContext context = { NULL, NULL };
 
+	if (!catch_class)
+		return NULL;
+
 	if (!ji->has_generic_jit_info)
 		return catch_class;
 
@@ -627,7 +630,13 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 
 	g_assert (ji->method->is_inflated);
 
-	if (ji->method->flags & METHOD_ATTRIBUTE_STATIC) {
+	if (mono_method_get_context (ji->method)->method_inst) {
+		MonoMethodRuntimeGenericContext *mrgctx = info;
+
+		class = mrgctx->class_vtable->klass;
+		context.method_inst = mrgctx->method_inst;
+		g_assert (context.method_inst);
+	} else if (ji->method->flags & METHOD_ATTRIBUTE_STATIC) {
 		MonoVTable *vtable = info;
 
 		class = vtable->klass;
