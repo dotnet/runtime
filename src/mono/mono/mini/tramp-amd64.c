@@ -209,6 +209,12 @@ mono_arch_nullify_plt_entry (guint8 *code)
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
+	return mono_arch_create_trampoline_code_full (tramp_type, FALSE);
+}
+
+guchar*
+mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean aot)
+{
 	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
 	int i, lmf_offset, offset, res_offset, arg_offset, tramp_offset, saved_regs_offset;
 	int saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset;
@@ -281,8 +287,13 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT &&
 			tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH) {
 		/* Compute the trampoline address from the return address */
-		/* 5 = length of amd64_call_membase () */
-		amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 5);
+		if (aot) {
+			/* 7 = length of call *<offset>(rip) */
+			amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 7);
+		} else {
+			/* 5 = length of amd64_call_membase () */
+			amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 5);
+		}
 		amd64_mov_membase_reg (code, AMD64_RBP, tramp_offset, AMD64_R11, 8);
 	} else {
 		amd64_mov_membase_imm (code, AMD64_RBP, tramp_offset, 0, 8);
@@ -319,20 +330,30 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT &&
 			tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH) {
 		/* Obtain the trampoline argument which is encoded in the instruction stream */
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, tramp_offset, 8);
-		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 5, 1);
-		amd64_widen_reg (code, AMD64_RAX, AMD64_RAX, TRUE, FALSE);
-		amd64_alu_reg_imm_size (code, X86_CMP, AMD64_RAX, 4, 1);
-		br [0] = code;
-		x86_branch8 (code, X86_CC_NE, 6, FALSE);
-		/* 32 bit immediate */
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 6, 4);
-		br [1] = code;
-		x86_jump8 (code, 10);
-		/* 64 bit immediate */
-		mono_amd64_patch (br [0], code);
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 6, 8);
-		mono_amd64_patch (br [1], code);
+		if (aot) {
+			/* Load the GOT offset */
+			amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, tramp_offset, 8);
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 7, 4);
+			/* Compute the address of the GOT slot */
+			amd64_alu_reg_reg_size (code, X86_ADD, AMD64_R11, AMD64_RAX, 8);
+			/* Load the value */
+			amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, 8);
+		} else {			
+			amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, tramp_offset, 8);
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 5, 1);
+			amd64_widen_reg (code, AMD64_RAX, AMD64_RAX, TRUE, FALSE);
+			amd64_alu_reg_imm_size (code, X86_CMP, AMD64_RAX, 4, 1);
+			br [0] = code;
+			x86_branch8 (code, X86_CC_NE, 6, FALSE);
+			/* 32 bit immediate */
+			amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 6, 4);
+			br [1] = code;
+			x86_jump8 (code, 10);
+			/* 64 bit immediate */
+			mono_amd64_patch (br [0], code);
+			amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 6, 8);
+			mono_amd64_patch (br [1], code);
+		}
 		amd64_mov_membase_reg (code, AMD64_RBP, arg_offset, AMD64_R11, 8);
 	} else {
 		amd64_mov_membase_reg (code, AMD64_RBP, arg_offset, MONO_ARCH_VTABLE_REG, 8);

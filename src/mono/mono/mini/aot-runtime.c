@@ -73,6 +73,7 @@ typedef struct MonoAotModule {
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
 	guint32 got_size;
+	guint32 num_trampolines, first_trampoline_got_offset, trampoline_index;
 	GHashTable *name_cache;
 	GHashTable *wrappers;
 	MonoAssemblyName *image_names;
@@ -104,6 +105,7 @@ typedef struct MonoAotModule {
 	guint32 *methods_loaded;
 	guint16 *class_name_table;
 	guint8 *wrapper_info;
+	guint8 *trampolines;
 } MonoAotModule;
 
 static GHashTable *aot_modules;
@@ -486,6 +488,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *opt_flags = NULL;
 	gpointer *plt_jump_table_addr = NULL;
 	guint32 *plt_jump_table_size = NULL;
+	guint32 *trampolines_info = NULL;
 	gpointer *got_addr = NULL;
 	gpointer *got = NULL;
 	guint32 *got_size_ptr = NULL;
@@ -625,6 +628,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_dl_symbol (assembly->aot_module, "got_info", (gpointer*)&info->got_info);
 	mono_dl_symbol (assembly->aot_module, "got_info_offsets", (gpointer*)&info->got_info_offsets);
 	mono_dl_symbol (assembly->aot_module, "wrapper_info", (gpointer*)&info->wrapper_info);
+	mono_dl_symbol (assembly->aot_module, "trampolines", (gpointer*)&info->trampolines);
 	mono_dl_symbol (assembly->aot_module, "mem_end", (gpointer*)&info->mem_end);
 
 	info->mem_begin = info->code;
@@ -641,6 +645,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	mono_dl_symbol (assembly->aot_module, "plt_jump_table_size", (gpointer *)&plt_jump_table_size);
 	g_assert (plt_jump_table_size);
 	info->plt_jump_table_size = *plt_jump_table_size;
+
+	mono_dl_symbol (assembly->aot_module, "trampolines_info", (gpointer *)&trampolines_info);
+	if (trampolines_info) {
+		info->num_trampolines = trampolines_info [0];
+		info->first_trampoline_got_offset = trampolines_info [1];
+	}
 
 	if (make_unreadable) {
 #ifndef PLATFORM_WIN32
@@ -2110,6 +2120,45 @@ mono_aot_get_plt_entry (guint8 *code)
 }
 
 /*
+ * Return a specific trampoline from the AOT file.
+ */
+gpointer
+mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+{
+	MonoAotModule *amodule;
+	int index;
+	guint8 *code;
+
+	/* Currently, we keep all trampolines in the mscorlib AOT image */
+	image = mono_defaults.corlib;
+	g_assert (image);
+
+	mono_aot_lock ();
+
+	g_assert (image->assembly);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, image->assembly);
+	g_assert (amodule);
+
+	if (amodule->trampoline_index == amodule->num_trampolines)
+		g_error ("Ran out of trampolines in '%s' (%d)\n", image->name, amodule->num_trampolines);
+
+	index = amodule->trampoline_index ++;
+
+	mono_aot_unlock ();
+
+	amodule->got [amodule->first_trampoline_got_offset + (index *2)] = mono_get_aot_trampoline_code (tramp_type);
+	amodule->got [amodule->first_trampoline_got_offset + (index *2) + 1] = arg1;
+
+#ifdef __x86_64__
+	code = amodule->trampolines + (index * 16);
+#else
+	g_assert_not_reached ();
+#endif
+
+	return code;
+}
+
+/*
  * mono_aot_get_n_pagefaults:
  *
  *   Return the number of times handle_pagefault is called.
@@ -2203,4 +2252,10 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 {
 	return NULL;
 }
+
+gpointer mono_aot_create_specific_trampolines (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+{
+	g_assert_not_reached ();
+}
+
 #endif

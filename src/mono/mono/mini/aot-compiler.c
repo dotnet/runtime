@@ -122,7 +122,11 @@ typedef struct MonoAotCompile {
 	GHashTable *token_info_hash;
 	GPtrArray *image_table;
 	GList *method_order;
+	/* Number of trampolines emitted into the AOT file */
+	guint32 num_aot_trampolines;
 	guint32 got_offset, plt_offset;
+	/* Number of GOT entries reserved for trampolines */
+	guint32 num_trampoline_got_entries;
 	guint32 *method_got_offsets;
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
@@ -1852,9 +1856,10 @@ get_shared_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 static void
 add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index)
 {
-	g_ptr_array_add (acfg->methods, method);
-	g_assert (g_hash_table_lookup (acfg->method_indexes, method) == NULL);
-	g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
+	if (!g_hash_table_lookup (acfg->method_indexes, method)) {
+		g_ptr_array_add (acfg->methods, method);
+		g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
+	}
 }
 
 static guint32
@@ -2767,6 +2772,75 @@ emit_plt (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 }
 
+/*
+ * When running in aot-only mode, we can't create trampolines at runtime, so we create 
+ * a few, and save them in the AOT file. Normal trampolines embed their argument as a 
+ * literal inside the trampoline code, we can't do that here, so instead we embed an offset
+ * which needs to be added to the trampoline address to get the address of the GOT slot
+ * which contains the argument value.
+ * The generated trampolines jump to the generic trampolines using another GOT slot, which
+ * will be setup by the AOT loader to point to the generic trampoline code of the given 
+ * type.
+ * Currently, we only emit trampolines into the mscorlib AOT image.
+ */
+static void
+emit_trampolines (MonoAotCompile *acfg)
+{
+	char *symbol;
+	int i, offset;
+
+	if (!acfg->aot_opts.full_aot)
+		return;
+	
+	g_assert (acfg->image->assembly);
+	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") != 0)
+		return;
+
+	/*
+	 * FIXME: Maybe we should use more specific trampolines (i.e. one class init for each
+	 * class).
+	 */
+
+	/* Reserve some entries at the end of the GOT for our use */
+	acfg->num_trampoline_got_entries = acfg->num_aot_trampolines * 2;
+
+	symbol = g_strdup_printf ("trampolines");
+
+	emit_section_change (acfg, ".text", 0);
+	emit_global (acfg, symbol, TRUE);
+	emit_alignment (acfg, PAGESIZE);
+	emit_label (acfg, symbol);
+
+	for (i = 0; i < acfg->num_aot_trampolines; ++i) {
+		offset = acfg->got_offset + (i * 2);
+
+#if defined(__x86_64__)
+		/* This should be exactly 16 bytes long */
+		/* It should work together with the generic trampoline code in tramp-amd64.c */
+		/* call *<offset>(%rip) */
+		emit_byte (acfg, '\x41');
+		emit_byte (acfg, '\xff');
+		emit_byte (acfg, '\x15');
+		emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
+		/* This should be relative to the start of the trampoline */
+		emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 19);
+		emit_zero_bytes (acfg, 5);
+#else
+		g_assert_not_reached ();
+#endif
+	}
+
+	symbol = g_strdup_printf ("trampolines_info");
+
+	emit_section_change (acfg, ".text", 0);
+	emit_global (acfg, symbol, TRUE);
+	emit_alignment (acfg, PAGESIZE);
+	emit_label (acfg, symbol);
+
+	emit_int32 (acfg, acfg->num_aot_trampolines);
+	emit_int32 (acfg, acfg->got_offset);
+}
+
 static gboolean
 str_begins_with (const char *str1, const char *str2)
 {
@@ -3592,8 +3666,8 @@ emit_got (MonoAotCompile *acfg)
 	emit_section_change (acfg, ".bss", 1);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
-	if (acfg->got_offset > 0)
-		emit_zero_bytes (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
+	if ((acfg->got_offset + acfg->num_trampoline_got_entries) > 0)
+		emit_zero_bytes (acfg, (int)((acfg->got_offset + acfg->num_trampoline_got_entries) * sizeof (gpointer)));
 
 	symbol = g_strdup_printf ("got_addr");
 	emit_section_change (acfg, ".data", 1);
@@ -3661,6 +3735,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_start (acfg);
 
+	acfg->num_aot_trampolines = acfg->aot_opts.full_aot ? 1024 : 0;
+
 	acfg->method_index = 1;
 
 	/* Collect methods */
@@ -3706,6 +3782,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_wrapper_info (acfg);
 
 	emit_method_order (acfg);
+
+	emit_trampolines (acfg);
 
 	emit_class_name_table (acfg);
 

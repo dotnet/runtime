@@ -1127,6 +1127,7 @@ void mono_aot_handle_pagefault              (void *ptr) MONO_INTERNAL;
 guint32 mono_aot_get_n_pagefaults           (void) MONO_INTERNAL;
 gpointer mono_aot_plt_resolve               (gpointer aot_module, guint32 plt_info_offset, guint8 *code) MONO_INTERNAL;
 gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot) MONO_INTERNAL;
+gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;
@@ -1166,7 +1167,7 @@ void              mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVT
 void              mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (void) MONO_INTERNAL;
-
+gpointer          mono_get_aot_trampoline_code (MonoTrampolineType tramp_type) MONO_INTERNAL;
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;
 void*             mono_global_codeman_reserve (int size) MONO_INTERNAL;
@@ -1201,6 +1202,7 @@ gpointer  mono_arch_get_rethrow_exception       (void) MONO_INTERNAL;
 gpointer  mono_arch_get_throw_exception_by_name (void) MONO_INTERNAL;
 gpointer  mono_arch_get_throw_corlib_exception  (void) MONO_INTERNAL;
 guchar*   mono_arch_create_trampoline_code      (MonoTrampolineType tramp_type) MONO_INTERNAL;
+guchar*   mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean aot) MONO_INTERNAL;
 gpointer  mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot) MONO_INTERNAL;
 guint32	  mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs) MONO_INTERNAL;
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg) MONO_INTERNAL;
