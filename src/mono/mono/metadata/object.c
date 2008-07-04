@@ -4767,28 +4767,27 @@ mono_print_unhandled_exception (MonoObject *exc)
  * @this: pointer to an uninitialized delegate object
  * @target: target object
  * @addr: pointer to native code
+ * @method: method
  *
- * This is used to initialize a delegate.
+ * Initialize a delegate and sets a specific method, not the one
+ * associated with addr.  This is useful when sharing generic code.
+ * In that case addr will most probably not be associated with the
+ * correct instantiation of the method.
  */
 void
-mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
+mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer addr, MonoMethod *method)
 {
-	MonoDomain *domain = mono_domain_get ();
 	MonoDelegate *delegate = (MonoDelegate *)this;
-	MonoMethod *method = NULL;
 	MonoClass *class;
-	MonoJitInfo *ji;
 
 	g_assert (this);
 	g_assert (addr);
 
+	if (method)
+		delegate->method = method;
+
 	class = this->vtable->klass;
 	mono_stats.delegate_creations++;
-
-	if ((ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr)))) {
-		method = ji->method;
-		delegate->method = method;
-	}
 
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
 		g_assert (method);
@@ -4805,6 +4804,31 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 	}
 
 	delegate->invoke_impl = arch_create_delegate_trampoline (delegate->object.vtable->klass);
+}
+
+/**
+ * mono_delegate_ctor:
+ * @this: pointer to an uninitialized delegate object
+ * @target: target object
+ * @addr: pointer to native code
+ *
+ * This is used to initialize a delegate.
+ */
+void
+mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoJitInfo *ji;
+	MonoMethod *method = NULL;
+
+	g_assert (addr);
+
+	if ((ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr)))) {
+		method = ji->method;
+		g_assert (!method->klass->generic_container);
+	}
+
+	mono_delegate_ctor_with_method (this, target, addr, method);
 }
 
 /**

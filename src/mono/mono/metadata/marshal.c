@@ -813,7 +813,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		g_free (sig);
 
 		d = (MonoDelegate*)mono_object_new (mono_domain_get (), klass);
-		mono_delegate_ctor ((MonoObject*)d, NULL, mono_compile_method (wrapper));
+		mono_delegate_ctor_with_method ((MonoObject*)d, NULL, mono_compile_method (wrapper), wrapper);
 	}
 
 	if (d->object.vtable->domain != mono_domain_get ())
@@ -4323,6 +4323,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	int pos0;
 	char *name;
 	MonoMethod *target_method = NULL;
+	MonoClass *target_class = NULL;
 	gboolean callvirt = FALSE;
 
 	/*
@@ -4333,6 +4334,16 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	if (del && !del->target && del->method && mono_method_signature (del->method)->hasthis) {
 		callvirt = TRUE;
 		target_method = del->method;
+		if (target_method->is_inflated) {
+			MonoType *target_type;
+
+			g_assert (method->signature->hasthis);
+			target_type = mono_class_inflate_generic_type (method->signature->params [0],
+				mono_method_get_context (method));
+			target_class = mono_class_from_mono_type (target_type);
+		} else {
+			target_class = del->method->klass;
+		}
 	}
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
@@ -4436,7 +4447,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 
 	if (callvirt) {
 		mono_mb_emit_ldarg (mb, 1);
-		mono_mb_emit_op (mb, CEE_CASTCLASS, target_method->klass);
+		mono_mb_emit_op (mb, CEE_CASTCLASS, target_class);
 		for (i = 1; i < sig->param_count; ++i)
 			mono_mb_emit_ldarg (mb, i + 1);
 		mono_mb_emit_op (mb, CEE_CALLVIRT, target_method);

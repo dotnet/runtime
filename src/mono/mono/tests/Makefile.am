@@ -703,6 +703,12 @@ EXTRA_DIST += generic-box.2.cs
 generic-box.2.exe : generic-box.2.cs generic-unboxing.2.dll generic-boxing.2.dll
 	$(MCS) -r:generic-unboxing.2.dll,generic-boxing.2.dll -out:$@ $(srcdir)/generic-box.2.cs
 
+EXTRA_DIST += generic-delegate2.2.cs generic-delegate2-lib.2.il
+generic-delegate2-lib.2.dll : generic-delegate2-lib.2.il
+	$(ILASM) /dll /output:$@ $(srcdir)/generic-delegate2-lib.2.il
+generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
+	$(MCS) -r:generic-delegate2-lib.2.dll -out:$@ $(srcdir)/generic-delegate2.2.cs
+
 test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		shared-generic-synchronized.2.exe generic-initobj.2.exe		\
 		generics-sharing-other-exc.2.exe generic-box.2.exe		\
@@ -715,7 +721,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-method-patching.2.exe generic-static-methods.2.exe	\
 		generic-null-call.2.exe generic-tailcall2.2.exe			\
 		generic-array-exc.2.exe generic-special.2.exe			\
-		generic-exceptions.2.exe	\
+		generic-exceptions.2.exe generic-delegate2.2.exe		\
 		generic-virtual2.2.exe generic-valuetype-interface.2.exe	\
 		generic-valuetype-newobj.2.exe generic-valuetype-newobj2.2.exe
 	for fn in $+ ; do	\

@@ -487,6 +487,9 @@ void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args) MONO_INTERNAL;
 
 void
+mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer addr, MonoMethod *method) MONO_INTERNAL;
+
+void
 mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr) MONO_INTERNAL;
 
 void*

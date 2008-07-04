@@ -5759,7 +5759,8 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	if ((method->is_inflated && mono_method_get_context (method)->method_inst &&
 					mono_class_generic_sharing_enabled (method->klass)) ||
 			((method->flags & METHOD_ATTRIBUTE_STATIC) && method->klass->generic_class)) {
-		func = mono_compile_method (mono_marshal_get_static_rgctx_invoke (method));
+		method = mono_marshal_get_static_rgctx_invoke (method);
+		func = mono_compile_method (method);
 	} else if (method->dynamic) {
 		/* Creating a trampoline would leak memory */
 		func = mono_compile_method (method);
@@ -5768,7 +5769,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 			mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE));
 	}
 
-	mono_delegate_ctor (delegate, target, func);
+	mono_delegate_ctor_with_method (delegate, target, func, method);
 
 	return delegate;
 }
