@@ -1634,7 +1634,7 @@ profiler_statistical_data_new (MonoProfiler *profiler) {
 
 	data->hits = g_new0 (ProfilerStatisticalHit, buffer_size);
 	data->next_free_index = 0;
-	data->end_index = buffer_size;
+	data->end_index = profiler->statistical_buffer_size;
 	data->first_unwritten_index = 0;
 	
 	return data;
