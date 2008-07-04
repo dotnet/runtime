@@ -606,40 +606,60 @@ static MonoClass*
 get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContext *ctx)
 {
 	MonoClass *catch_class = ei->data.catch_class;
+	MonoGenericJitInfo *gi;
+	gpointer info;
+	MonoClass *class, *method_container_class;
+	MonoType *inflated_type;
+	MonoGenericContext context = { NULL, NULL };
 
-	if (ji->has_generic_jit_info) {
-		MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (ji);
-		gpointer info;
-		MonoClass *class;
-		MonoType *inflated_type;
+	if (!ji->has_generic_jit_info)
+		return catch_class;
 
-		if (gi->this_in_reg)
-			info = mono_arch_context_get_int_reg (ctx, gi->this_reg);
-		else
-			info = *(gpointer*)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
-					gi->this_offset);
+	gi = mono_jit_info_get_generic_jit_info (ji);
+	if (!gi->has_this)
+		return catch_class;
 
-		if (ji->method->flags & METHOD_ATTRIBUTE_STATIC) {
-			MonoVTable *vtable = info;
+	if (gi->this_in_reg)
+		info = mono_arch_context_get_int_reg (ctx, gi->this_reg);
+	else
+		info = *(gpointer*)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
+				gi->this_offset);
 
-			class = vtable->klass;
-		} else {
-			MonoObject *this = info;
+	g_assert (ji->method->is_inflated);
 
-			class = this->vtable->klass;
-		}
+	if (ji->method->flags & METHOD_ATTRIBUTE_STATIC) {
+		MonoVTable *vtable = info;
 
-		/* FIXME: we shouldn't inflate but instead put the
-		   type in the rgctx and fetch it from there.  It
-		   might be a good idea to do this lazily, i.e. only
-		   when the exception is actually thrown, so as not to
-		   waste space for exception clauses which might never
-		   be encountered. */
-		inflated_type = mono_class_inflate_generic_type (&catch_class->byval_arg,
-				mini_class_get_context (class));
-		catch_class = mono_class_from_mono_type (inflated_type);
-		g_free (inflated_type);
+		class = vtable->klass;
+	} else {
+		MonoObject *this = info;
+
+		class = this->vtable->klass;
 	}
+
+	if (class->generic_class || class->generic_container)
+		context.class_inst = mini_class_get_context (class)->class_inst;
+
+	g_assert (!ji->method->klass->generic_container);
+	if (ji->method->klass->generic_class)
+		method_container_class = ji->method->klass->generic_class->container_class;
+	else
+		method_container_class = ji->method->klass;
+
+	if (class->generic_class)
+		g_assert (class->generic_class->container_class == method_container_class);
+	else
+		g_assert (!class->generic_container && class == method_container_class);
+
+	/* FIXME: we shouldn't inflate but instead put the
+	   type in the rgctx and fetch it from there.  It
+	   might be a good idea to do this lazily, i.e. only
+	   when the exception is actually thrown, so as not to
+	   waste space for exception clauses which might never
+	   be encountered. */
+	inflated_type = mono_class_inflate_generic_type (&catch_class->byval_arg, &context);
+	catch_class = mono_class_from_mono_type (inflated_type);
+	g_free (inflated_type);
 
 	return catch_class;
 }

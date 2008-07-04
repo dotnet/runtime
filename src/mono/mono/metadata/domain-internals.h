@@ -94,6 +94,7 @@ typedef struct
 	MonoGenericSharingContext *generic_sharing_context;
 	gint32 this_offset;
 	guint8 this_reg;
+	gboolean has_this:1;
 	gboolean this_in_reg:1;
 } MonoGenericJitInfo;
 

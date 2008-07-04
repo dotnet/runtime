@@ -12414,13 +12414,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
 	jinfo->num_clauses = header->num_clauses;
 
-	/*
-	 * Static methods only get a generic JIT info if they use the
-	 * rgctx variable (which they are forced to if they have any
-	 * open catch clauses).
-	 */
-	if (cfg->generic_sharing_context &&
-			(cfg->rgctx_var || !(method_to_compile->flags & METHOD_ATTRIBUTE_STATIC))) {
+	if (cfg->generic_sharing_context) {
 		MonoInst *inst;
 		MonoGenericJitInfo *gi;
 
@@ -12431,32 +12425,43 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		gi->generic_sharing_context = cfg->generic_sharing_context;
 
-		if (method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) {
-			inst = cfg->rgctx_var;
-			g_assert (inst->opcode == OP_REGOFFSET);
-		} else {
-			inst = cfg->args [0];
-		}
+		/*
+		 * Non-generic static methods only get a "this" info
+		 * if they use the rgctx variable (which they are
+		 * forced to if they have any open catch clauses).
+		 */
+		if (cfg->rgctx_var || !(method_to_compile->flags & METHOD_ATTRIBUTE_STATIC)) {
+			gi->has_this = 1;
 
-		if (inst->opcode == OP_REGVAR) {
-			gi->this_in_reg = 1;
-			gi->this_reg = inst->dreg;
+			if (method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) {
+				inst = cfg->rgctx_var;
+				g_assert (inst->opcode == OP_REGOFFSET);
+			} else {
+				inst = cfg->args [0];
+			}
 
-			//g_print ("this in reg %d\n", inst->dreg);
-		} else {
-			g_assert (inst->opcode == OP_REGOFFSET);
+			if (inst->opcode == OP_REGVAR) {
+				gi->this_in_reg = 1;
+				gi->this_reg = inst->dreg;
+
+				//g_print ("this in reg %d\n", inst->dreg);
+			} else {
+				g_assert (inst->opcode == OP_REGOFFSET);
 #ifdef __i386__
-			g_assert (inst->inst_basereg == X86_EBP);
+				g_assert (inst->inst_basereg == X86_EBP);
 #elif defined(__x86_64__)
-			g_assert (inst->inst_basereg == X86_EBP || inst->inst_basereg == X86_ESP);
+				g_assert (inst->inst_basereg == X86_EBP || inst->inst_basereg == X86_ESP);
 #endif
-			g_assert (inst->inst_offset >= G_MININT32 && inst->inst_offset <= G_MAXINT32);
+				g_assert (inst->inst_offset >= G_MININT32 && inst->inst_offset <= G_MAXINT32);
 
-			gi->this_in_reg = 0;
-			gi->this_reg = inst->inst_basereg;
-			gi->this_offset = inst->inst_offset;
+				gi->this_in_reg = 0;
+				gi->this_reg = inst->inst_basereg;
+				gi->this_offset = inst->inst_offset;
 
-			//g_print ("this at offset %d\n", inst->inst_offset);
+				//g_print ("this at offset %d from reg %d\n", gi->this_offset, gi->this_reg);
+			}
+		} else {
+			gi->has_this = 0;
 		}
 	}
 
