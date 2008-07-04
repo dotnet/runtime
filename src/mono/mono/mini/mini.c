@@ -13764,7 +13764,7 @@ mini_get_imt_trampoline (void)
 {
 	static gpointer tramp = NULL;
 	if (!tramp)
-		tramp =  mono_arch_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_GENERIC, mono_get_root_domain (), NULL);
+		tramp =  mono_arch_create_specific_trampoline (MONO_FAKE_IMT_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
 	return tramp;
 }
 #endif
@@ -13775,7 +13775,7 @@ mini_get_vtable_trampoline (void)
 {
 	static gpointer tramp = NULL;
 	if (!tramp)
-		tramp =  mono_arch_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_GENERIC, mono_get_root_domain (), NULL);
+		tramp =  mono_arch_create_specific_trampoline (MONO_FAKE_VTABLE_METHOD, MONO_TRAMPOLINE_JIT, mono_get_root_domain (), NULL);
 	return tramp;
 }
 #endif

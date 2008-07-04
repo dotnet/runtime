@@ -228,7 +228,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		 * in r5 as it's the third argument to the function)
 		 */
 		ppc_lwz (buf, ppc_r5, GREGS_OFFSET, ppc_r1);
-		if ((tramp_type == MONO_TRAMPOLINE_GENERIC) || (tramp_type == MONO_TRAMPOLINE_JUMP))
+		if ((tramp_type == MONO_TRAMPOLINE_JIT) || (tramp_type == MONO_TRAMPOLINE_JUMP))
 			ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
 		ppc_stw (buf, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
 		/* save the IP (caller ip) */

@@ -201,7 +201,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* *(lmf_addr) = r1 */
 	ARM_STR_IMM (buf, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoLMF, previous_lmf));
 	/* save method info (it's in v2) */
-	if ((tramp_type == MONO_TRAMPOLINE_GENERIC) || (tramp_type == MONO_TRAMPOLINE_JUMP))
+	if ((tramp_type == MONO_TRAMPOLINE_JIT) || (tramp_type == MONO_TRAMPOLINE_JUMP))
 		ARM_STR_IMM (buf, ARMREG_V2, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, method));
 	ARM_STR_IMM (buf, ARMREG_SP, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, ebp));
 	/* save the IP (caller ip) */

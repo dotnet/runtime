@@ -378,7 +378,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean a
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, framesize + 16);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_R11, 8);
 	/* Save method */
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC || tramp_type == MONO_TRAMPOLINE_JUMP) {
+	if (tramp_type == MONO_TRAMPOLINE_JIT || tramp_type == MONO_TRAMPOLINE_JUMP) {
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, arg_offset, 8);
 		amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, method), AMD64_R11, 8);
 	} else {

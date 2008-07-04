@@ -267,7 +267,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	pushed_args ++;
 
 	/* save method info */
-	if ((tramp_type == MONO_TRAMPOLINE_GENERIC) || (tramp_type == MONO_TRAMPOLINE_JUMP))
+	if ((tramp_type == MONO_TRAMPOLINE_JIT) || (tramp_type == MONO_TRAMPOLINE_JUMP))
 		x86_push_membase (buf, X86_ESP, pushed_args * sizeof (gpointer));
 	else
 		x86_push_imm (buf, 0);

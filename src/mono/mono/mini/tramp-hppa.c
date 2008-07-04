@@ -427,7 +427,7 @@ mono_arch_create_jit_trampoline (MonoMethod *method)
 	MonoDomain* domain = mono_domain_get ();
 	gpointer code_start;
 
-	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_JIT);
 	ji = create_specific_tramp (method, tramp, domain);
 	code_start = ji->code_start;
 	g_free (ji);

@@ -528,7 +528,7 @@ gconstpointer
 mono_get_trampoline_func (MonoTrampolineType tramp_type)
 {
 	switch (tramp_type) {
-	case MONO_TRAMPOLINE_GENERIC:
+	case MONO_TRAMPOLINE_JIT:
 	case MONO_TRAMPOLINE_JUMP:
 		return mono_magic_trampoline;
 	case MONO_TRAMPOLINE_CLASS_INIT:
@@ -558,7 +558,7 @@ mono_trampolines_init (void)
 {
 	InitializeCriticalSection (&trampolines_mutex);
 
-	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC);
+	mono_trampoline_code [MONO_TRAMPOLINE_JIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JIT);
 	mono_trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 	mono_trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
  	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
@@ -690,7 +690,7 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		return mono_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
-	tramp = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC, domain, NULL);
+	tramp = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_JIT, domain, NULL);
 	
 	mono_domain_lock (domain);
 	g_hash_table_insert (domain->jit_trampoline_hash, method, tramp);
