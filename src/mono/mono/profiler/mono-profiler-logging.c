@@ -587,6 +587,9 @@ typedef struct _ProfilerExecutableFiles {
 } ProfilerExecutableFiles;
 
 
+#define CLEANUP_WRITER_THREAD() do {profiler->writer_thread_terminated = TRUE;} while (0)
+#define CHECK_WRITER_THREAD() (! profiler->writer_thread_terminated)
+
 #ifndef PLATFORM_WIN32
 #include <sys/types.h>
 #include <sys/time.h>
@@ -610,10 +613,12 @@ typedef struct _ProfilerExecutableFiles {
 
 #define THREAD_TYPE pthread_t
 #define CREATE_WRITER_THREAD(f) pthread_create (&(profiler->data_writer_thread), NULL, ((void*(*)(void*))f), NULL)
-#define CHECK_WRITER_THREAD() (profiler->data_writer_thread != 0)
-#define CLEANUP_WRITER_THREAD() do {profiler->data_writer_thread = 0;} while (0)
 #define EXIT_THREAD() pthread_exit (NULL);
-#define WAIT_WRITER_THREAD() pthread_join (profiler->data_writer_thread, NULL)
+#define WAIT_WRITER_THREAD() do {\
+	if (CHECK_WRITER_THREAD ()) {\
+		pthread_join (profiler->data_writer_thread, NULL);\
+	}\
+} while (0)
 #define CURRENT_THREAD_ID() (gsize) pthread_self ()
 
 #ifndef HAVE_KW_THREAD
@@ -644,7 +649,11 @@ make_pthread_profiler_key (void) {
 #define WRITER_EVENT_RAISE() (void) sem_post (&(profiler->wake_data_writer_event))
 #define WRITER_EVENT_ENABLE_WAIT() (void) sem_wait (&(profiler->enable_data_writer_event))
 #define WRITER_EVENT_ENABLE_RAISE() (void) sem_post (&(profiler->enable_data_writer_event))
-#define WRITER_EVENT_DONE_WAIT() (void) sem_wait (&(profiler->done_data_writer_event))
+#define WRITER_EVENT_DONE_WAIT() do {\
+	if (CHECK_WRITER_THREAD ()) {\
+		(void) sem_wait (&(profiler->done_data_writer_event));\
+	}\
+} while (0)
 #define WRITER_EVENT_DONE_RAISE() (void) sem_post (&(profiler->done_data_writer_event))
 
 #if 0
@@ -673,10 +682,12 @@ make_pthread_profiler_key (void) {
 
 #define THREAD_TYPE HANDLE
 #define CREATE_WRITER_THREAD(f) CreateThread (NULL, (1*1024*1024), (f), NULL, 0, NULL);
-#define CHECK_WRITER_THREAD() (profiler->data_writer_thread != NULL)
-#define CLEANUP_WRITER_THREAD() do {profiler->data_writer_thread = NULL;} while (0)
 #define EXIT_THREAD() ExitThread (0);
-#define WAIT_WRITER_THREAD() WaitForSingleObject (profiler->data_writer_thread, INFINITE)
+#define WAIT_WRITER_THREAD() do {\
+	if (CHECK_WRITER_THREAD ()) {\
+		 WaitForSingleObject (profiler->data_writer_thread, INFINITE);\
+	}\
+} while (0)
 #define CURRENT_THREAD_ID() (gsize) GetCurrentThreadId ()
 
 #ifndef HAVE_KW_THREAD
@@ -703,7 +714,11 @@ static guint32 profiler_thread_id = -1;
 #define WRITER_EVENT_RAISE() SetEvent (profiler->wake_data_writer_event)
 #define WRITER_EVENT_ENABLE_WAIT() WaitForSingleObject (profiler->enable_data_writer_event, INFINITE)
 #define WRITER_EVENT_ENABLE_RAISE() SetEvent (profiler->enable_data_writer_event)
-#define WRITER_EVENT_DONE_WAIT() WaitForSingleObject (profiler->done_data_writer_event, INFINITE)
+#define WRITER_EVENT_DONE_WAIT() do {\
+	if (CHECK_WRITER_THREAD ()) {\
+		WaitForSingleObject (profiler->done_data_writer_event, INFINITE);\
+	}\
+} while (0)
 #define WRITER_EVENT_DONE_RAISE() SetEvent (profiler->done_data_writer_event)
 
 #define FILE_HANDLE_TYPE FILE*
@@ -781,6 +796,7 @@ struct _MonoProfiler {
 	EVENT_TYPE wake_data_writer_event;
 	EVENT_TYPE done_data_writer_event;
 	gboolean terminate_writer_thread;
+	gboolean writer_thread_terminated;
 	gboolean detach_writer_thread;
 	gboolean writer_thread_enabled;
 	gboolean writer_thread_flush_everything;
