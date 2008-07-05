@@ -1,3 +1,7 @@
+2008-07-05  Mark Probst  <mark.probst@gmail.com>
+
+	* docs/generic-sharing: Docs about porting generic sharing.
+
 2008-07-04  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/patch-quiet.sh (src): Fix verbose mode.
