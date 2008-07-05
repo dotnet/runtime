@@ -673,7 +673,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 }
 
 gpointer
-mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
+mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
 {
 	gpointer tramp;
 
@@ -687,7 +687,7 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 	if (tramp)
 		return tramp;
 
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && add_sync_wrapper)
 		return mono_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
 	tramp = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_JIT, domain, NULL);
@@ -704,7 +704,7 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 gpointer
 mono_create_jit_trampoline (MonoMethod *method)
 {
-	return mono_create_jit_trampoline_in_domain (mono_domain_get (), method);
+	return mono_create_jit_trampoline_in_domain (mono_domain_get (), method, TRUE);
 }
 
 #ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN

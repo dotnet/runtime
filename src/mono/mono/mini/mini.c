@@ -9645,7 +9645,7 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_for_pending_exc);
 	g_free (name);
 
-	trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper));
+	trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper, TRUE));
 	mono_register_jit_icall_wrapper (callinfo, trampoline);
 
 	callinfo->trampoline = trampoline;
@@ -10574,10 +10574,12 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			target = code;
 		} else {
 			/* get the trampoline to the method from the domain */
-			if (method && method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
-				target = mono_ldftn_nosync (patch_info->data.method);
-			else
+			if (method && method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE) {
+				target = mono_create_jit_trampoline_in_domain (mono_domain_get (),
+					patch_info->data.method, FALSE);
+			} else {
 				target = mono_create_jit_trampoline (patch_info->data.method);
+			}
 		}
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
