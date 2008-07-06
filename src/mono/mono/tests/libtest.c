@@ -1512,6 +1512,17 @@ mono_test_marshal_amd64_pass_return_struct1 (amd64_struct1 s)
 	return s;
 }
 
+LIBTEST_API amd64_struct1 STDCALL 
+mono_test_marshal_amd64_pass_return_struct1_many_args (amd64_struct1 s, int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8)
+{
+	s.i ++;
+	s.j ++;
+	s.k ++;
+	s.l += 1 + i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8;
+
+	return s;
+}
+
 typedef struct amd64_struct2 {
 	int i;
 	int j;

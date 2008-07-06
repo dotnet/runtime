@@ -958,6 +958,9 @@ public class Tests {
 	
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct1")]
 	public static extern Amd64Struct1 mono_test_marshal_amd64_pass_return_struct1 (Amd64Struct1 s);
+	
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct1_many_args")]
+	public static extern Amd64Struct1 mono_test_marshal_amd64_pass_return_struct1_many_args (Amd64Struct1 s, int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8);
 
 	public static int test_0_amd64_struct1 () {
 		Amd64Struct1 s = new Amd64Struct1 ();
@@ -969,6 +972,18 @@ public class Tests {
 		Amd64Struct1 s2 = mono_test_marshal_amd64_pass_return_struct1 (s);
 
 		return ((s2.i == 6) && (s2.j == -4) && (s2.k == 0x1000000) && (s2.l == 0x10000000)) ? 0 : 1;
+	}
+
+	public static int test_0_amd64_struct1_many_args () {
+		Amd64Struct1 s = new Amd64Struct1 ();
+		s.i = 5;
+		s.j = -5;
+		s.k = 0xffffff;
+		s.l = 0xfffffff;
+
+		Amd64Struct1 s2 = mono_test_marshal_amd64_pass_return_struct1_many_args (s, 1, 2, 3, 4, 5, 6, 7, 8);
+
+		return ((s2.i == 6) && (s2.j == -4) && (s2.k == 0x1000000) && (s2.l == 0x10000000 + 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8)) ? 0 : 1;
 	}
 
 	/* TEST 2: 8 byte long INTEGER struct */
