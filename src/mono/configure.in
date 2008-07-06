@@ -2317,7 +2317,8 @@ if test x$platform_win32 = xyes; then
 fi
 
 if test x$enable_quiet_build = xyes; then
-   make patch-quiet   
+   find mono -name Makefile -exec scripts/patch-quiet.sh {} \;
+   find libgc -name Makefile -exec scripts/patch-quiet.sh {} \;
 fi
 
 (
