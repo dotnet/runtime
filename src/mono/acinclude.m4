@@ -157,6 +157,7 @@ for arg in "$[]@"; do
     case "$arg" in
         --mode=compile) modeok=true ;;
         --tag=CC|--tag=CXX) tagok=true ;;
+        --quiet) ;;
         *) args@<:@${#args[@]}@:>@="$arg" ;;
     esac
 done

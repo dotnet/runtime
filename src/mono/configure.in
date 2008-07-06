@@ -580,6 +580,8 @@ if test "x$with_xen_opt" = "xyes"; then
 	])
 fi
 
+AC_ARG_ENABLE(quiet-build, [  --enable-quiet-build  Enable quiet runtime build], enable_quiet_build=$enableval, enable_quiet_build=yes)
+
 DISABLED_FEATURES=none
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
@@ -2312,6 +2314,10 @@ if test x$platform_win32 = xyes; then
    # wrapper scripts which use exec(). gcc has no problem compiling+linking this, but the resulting
    # executable doesn't work...
    sed -e "s,-mno-cygwin,,g" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
+fi
+
+if test x$enable_quiet_build = xyes; then
+   make patch-quiet   
 fi
 
 (

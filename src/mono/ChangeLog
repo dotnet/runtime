@@ -1,3 +1,11 @@
+2008-07-06  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add an --enable-quiet-build option.
+
+	* Makefile.am (patch-quiet): New target.
+
+	* acinclude.m4: Handle --quiet.
+
 2008-07-05  Mark Probst  <mark.probst@gmail.com>
 
 	* docs/generic-sharing: Docs about porting generic sharing.

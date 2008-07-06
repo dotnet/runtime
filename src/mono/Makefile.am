@@ -82,3 +82,7 @@ win32setup:
 bootstrap: all
 	@echo "*** 'make bootstrap' is obsolete.  Just run 'make' to perform a combined mono+mcs build"
 	exit 1
+
+patch-quiet:
+	find mono -name Makefile -exec scripts/patch-quiet.sh {} \;
+	find libgc -name Makefile -exec scripts/patch-quiet.sh {} \;
