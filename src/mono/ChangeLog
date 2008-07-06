@@ -1,3 +1,7 @@
+2008-07-07  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/patch-quiet.sh: Make this more precise.
+
 2008-07-06  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add an --enable-quiet-build option.
