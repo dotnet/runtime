@@ -1189,7 +1189,7 @@ mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst
 	mrgctx = g_hash_table_lookup (domain->method_rgctx_hash, &key);
 
 	if (!mrgctx) {
-		int i;
+		//int i;
 
 		mrgctx = (MonoMethodRuntimeGenericContext*)alloc_rgctx_array (domain, 0, TRUE);
 		mrgctx->class_vtable = class_vtable;
