@@ -1518,6 +1518,15 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 		emit_sig_cookie (cfg, call, cinfo);
 	}
 
+	if (cinfo->ret.storage == ArgValuetypeInReg) {
+		/* This is needed by mono_arch_emit_this_vret_args () */
+		if (!cfg->arch.vret_addr_loc) {
+			cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			/* Prevent it from being register allocated or optimized away */
+			((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
+		}
+	}
+
 	if (cinfo->need_stack_align) {
 		MONO_INST_NEW (cfg, arg, OP_AMD64_OUTARG_ALIGN_STACK);
 		arg->inst_c0 = 8;
@@ -2123,10 +2132,12 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	case OP_VCALL_MEMBASE:
 		cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, ((MonoCallInst*)ins)->signature, FALSE);
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
-			/* Pop the destination address from the stack */
-			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 8);
-			amd64_pop_reg (code, AMD64_RCX);
-			
+			MonoInst *loc = cfg->arch.vret_addr_loc;
+
+			/* Load the destination address */
+			g_assert (loc->opcode == OP_REGOFFSET);
+			amd64_mov_reg_membase (code, AMD64_RCX, loc->inst_basereg, loc->inst_offset, 8);
+
 			for (quad = 0; quad < 2; quad ++) {
 				switch (cinfo->ret.pair_storage [quad]) {
 				case ArgInIReg:
@@ -5249,17 +5260,16 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
 			/*
 			 * The valuetype is in RAX:RDX after the call, need to be copied to
-			 * the stack. Push the address here, so the call instruction can
+			 * the stack. Save the address here, so the call instruction can
 			 * access it.
 			 */
-			MONO_INST_NEW (cfg, vtarg, OP_X86_PUSH);
-			vtarg->sreg1 = vt_reg;
-			mono_bblock_add_inst (cfg->cbb, vtarg);
+			MonoInst *loc = cfg->arch.vret_addr_loc;
 
-			/* Align stack */
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
-		}
-		else {
+			g_assert (loc);
+			g_assert (loc->opcode == OP_REGOFFSET);
+
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, loc->inst_basereg, loc->inst_offset, vt_reg);
+		} else {
 			MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 			vtarg->sreg1 = vt_reg;
 			vtarg->dreg = mono_regstate_next_int (cfg->rs);

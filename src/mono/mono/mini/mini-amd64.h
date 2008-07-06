@@ -153,6 +153,7 @@ typedef struct MonoCompileArch {
 	gboolean omit_fp, omit_fp_computed;
 	gpointer cinfo;
 	gint32 async_point_count;
+	gpointer vret_addr_loc;
 } MonoCompileArch;
 
 typedef struct {
