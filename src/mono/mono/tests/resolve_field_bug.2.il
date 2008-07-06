@@ -54,7 +54,7 @@
 			ldc.i4.1
 			stloc.2
 			leave END
-		} catch [mscorlib]System.MissingFieldException {
+		} catch [mscorlib]System.ArgumentException {
 			ldc.i4.0
 			stloc.2
 			leave END
