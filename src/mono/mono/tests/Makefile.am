@@ -9,13 +9,15 @@ endif
 
 check-local: test
 
+aotcheck: testaot
+
 TEST_PROG = ../interpreter/mint
 JITTEST_PROG = ../mini/mono
 
 TEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime MONO_CFG_DIR=$(mono_build_root)/runtime/etc $(LIBTOOL) --mode=execute $(TEST_PROG)
 JITTEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime MONO_CFG_DIR=$(mono_build_root)/runtime/etc $(LIBTOOL) --mode=execute $(JITTEST_PROG)
 
-RUNTIME_ARGS=--config tests-config --optimize=all
+RUNTIME_ARGS=--config tests-config --optimize=all --debug
 
 with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 with_mono_path21 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_1
@@ -27,7 +29,7 @@ MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
 	$(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/mkbundle.exe
 
-MCS = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
+MCS = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug
 SMCS = $(RUNTIME21) --runtime=moonlight --security=temporary-smcs-hack $(mcs_topdir)/class/lib/net_2_1/smcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/ilasm.exe
 
@@ -498,7 +500,7 @@ testaot: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL) $(TESTBS); do	\
 		rm -f $${i}.so; \
-		$(JITTEST_PROG_RUN) --aot $${i} > /dev/null; \
+		$(JITTEST_PROG_RUN) --aot --debug $${i} > /dev/null || exit 1; \
 		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
