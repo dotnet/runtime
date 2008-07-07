@@ -48,8 +48,8 @@ static gboolean optimize_for_xen = TRUE;
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
 #ifdef PLATFORM_WIN32
-/* Under windows, the default pinvoke calling convention is stdcall */
-#define CALLCONV_IS_STDCALL(call_conv) (((call_conv) == MONO_CALL_STDCALL) || ((call_conv) == MONO_CALL_DEFAULT))
+/* Under windows, the calling convention is never stdcall */
+#define CALLCONV_IS_STDCALL(call_conv) (FALSE)
 #else
 #define CALLCONV_IS_STDCALL(call_conv) ((call_conv) == MONO_CALL_STDCALL)
 #endif
