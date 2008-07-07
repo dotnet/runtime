@@ -1934,6 +1934,9 @@ void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this)
 	gboolean throw = FALSE;
 	
 	ensure_synch_cs_set (this);
+
+	if (this == mono_thread_current ())
+		return;
 	
 	EnterCriticalSection (this->synch_cs);
 	
@@ -3510,6 +3513,7 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 		return NULL;
 	} else if (thread->thread_interrupt_requested) {
 
+		thread->thread_interrupt_requested = FALSE;
 		LeaveCriticalSection (thread->synch_cs);
 		
 		return(mono_get_exception_thread_interrupted ());
