@@ -13895,7 +13895,7 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_INVOKE_WORKS
 #ifdef JIT_INVOKE_WORKS
 	mono_install_runtime_invoke (mono_jit_runtime_invoke);
-	mono_install_handler (mono_arch_get_throw_exception ());
+	mono_install_handler (mono_get_throw_exception ());
 #endif
 	mono_install_stack_walk (mono_jit_walk_stack);
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
@@ -13950,11 +13950,11 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_jit_thread_attach, "mono_jit_thread_attach", "void", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
-	register_icall (mono_arch_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
-	register_icall (mono_arch_get_rethrow_exception (), "mono_arch_rethrow_exception", "void object", TRUE);
-	register_icall (mono_arch_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", "void ptr", TRUE); 
+	register_icall (mono_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
+	register_icall (mono_get_rethrow_exception (), "mono_arch_rethrow_exception", "void object", TRUE);
+	register_icall (mono_get_throw_exception_by_name (), "mono_arch_throw_exception_by_name", "void ptr", TRUE); 
 #if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
-	register_icall (mono_arch_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", 
+	register_icall (mono_get_throw_corlib_exception (), "mono_arch_throw_corlib_exception", 
 				 "void ptr", TRUE);
 #endif
 	register_icall (mono_thread_get_undeniable_exception, "mono_thread_get_undeniable_exception", "object", FALSE);

@@ -48,15 +48,87 @@
 #define MONO_ARCH_CONTEXT_DEF
 #endif
 
+static gpointer restore_context_func, call_filter_func;
+static gpointer throw_exception_func, rethrow_exception_func;
+static gpointer throw_exception_by_name_func, throw_corlib_exception_func;
+
 void
 mono_exceptions_init (void)
 {
+#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
+	restore_context_func = mono_arch_get_restore_context_full (&code_size, &ji, FALSE);
+	call_filter_func = mono_arch_get_call_filter_full (&code_size, &ji, FALSE);
+	throw_exception_func = mono_arch_get_throw_exception_full (&code_size, &ji, FALSE);
+	rethrow_exception_func = mono_arch_get_rethrow_exception_full (&code_size, &ji, FALSE);
+	throw_exception_by_name_func = mono_arch_get_throw_exception_by_name ();
+#else
 #ifndef CUSTOM_EXCEPTION_HANDLING
-	mono_arch_get_restore_context ();
-	mono_arch_get_call_filter ();
-	mono_arch_get_throw_exception ();
-	mono_arch_get_rethrow_exception ();
+	restore_context_func = mono_arch_get_restore_context ();
+	call_filter_func = mono_arch_get_call_filter ();
+	throw_exception_func = mono_arch_get_throw_exception ();
+	rethrow_exception_func = mono_arch_get_rethrow_exception ();
+	throw_exception_by_name_func = mono_arch_get_throw_exception_by_name ();
 #endif
+#endif
+}
+
+gpointer
+mono_get_throw_exception (void)
+{
+	g_assert (throw_exception_func);
+	return throw_exception_func;
+}
+
+gpointer
+mono_get_rethrow_exception (void)
+{
+	g_assert (rethrow_exception_func);
+	return rethrow_exception_func;
+}
+
+gpointer
+mono_get_call_filter (void)
+{
+	g_assert (call_filter_func);
+	return call_filter_func;
+}
+
+gpointer
+mono_get_restore_context (void)
+{
+	g_assert (restore_context_func);
+	return restore_context_func;
+}
+
+gpointer
+mono_get_throw_exception_by_name (void)
+{
+	return throw_exception_by_name_func;
+}
+
+gpointer
+mono_get_throw_corlib_exception (void)
+{
+	gpointer code = NULL;
+
+	/* This depends on corlib classes so cannot be inited in mono_exceptions_init () */
+	if (throw_corlib_exception_func)
+		return throw_corlib_exception_func;
+
+#if MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION
+	code = mono_arch_get_throw_corlib_exception ();
+#else
+	g_assert_not_reached ();
+#endif
+
+	mono_memory_barrier ();
+
+	throw_corlib_exception_func = code;
+
+	return throw_corlib_exception_func;
 }
 
 #ifndef mono_find_jit_info
@@ -735,10 +807,10 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 	}
 
 	if (!call_filter)
-		call_filter = mono_arch_get_call_filter ();
+		call_filter = mono_get_call_filter ();
 
 	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
+		restore_context = mono_get_restore_context ();
 
 	g_assert (jit_tls->end_of_stack);
 	g_assert (jit_tls->abort_func);
@@ -969,7 +1041,7 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 		return;
 
 	if (!call_filter)
-		call_filter = mono_arch_get_call_filter ();
+		call_filter = mono_get_call_filter ();
 
 	for (i = 0; i < ji->num_clauses; i++) {
 		MonoJitExceptionInfo *ei = &ji->clauses [i];
