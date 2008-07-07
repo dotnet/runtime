@@ -868,6 +868,10 @@ MonoDebugMethodJitInfo *
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain)
 {
 	MonoDebugMethodJitInfo *res;
+
+	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+		return NULL;
+
 	mono_debugger_lock ();
 	res = find_method (method, domain);
 	mono_debugger_unlock ();
