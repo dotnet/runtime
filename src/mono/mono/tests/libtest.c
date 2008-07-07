@@ -3570,6 +3570,24 @@ mono_test_Winx64_struct5_ret ()
 	return ret;
 }
 
+LIBTEST_API winx64_struct1 STDCALL  
+mono_test_Winx64_struct1_ret_5_args (char a, char b, char c, char d, char e)
+{
+	winx64_struct1 ret;
+	ret.a = a + b + c + d + e;
+	return ret;
+}
+
+LIBTEST_API winx64_struct5 STDCALL
+mono_test_Winx64_struct5_ret6_args (char a, char b, char c, char d, char e)
+{
+	winx64_struct5 ret;
+	ret.a = a + b;
+	ret.b = c + d;
+	ret.c = e;
+	return ret;
+}
+
 typedef struct
 {
 	float a;
@@ -3611,4 +3629,6 @@ mono_test_managed_Winx64_struct1_in(managed_struct1_delegate func)
 	val.a = 5;
 	return func (val);
 }
+
+
 

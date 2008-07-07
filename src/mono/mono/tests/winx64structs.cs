@@ -172,6 +172,14 @@ class winx64structs
 	static extern winx64_struct5 mono_test_Winx64_struct5_ret ();
 
 	[DllImport ("libtest")]
+	[return: MarshalAs (UnmanagedType.Struct)]
+	static extern winx64_struct1 mono_test_Winx64_struct1_ret_5_args (byte a, byte b, byte c, byte d, byte e);
+
+	[DllImport ("libtest")]
+	[return: MarshalAs (UnmanagedType.Struct)]
+	static extern winx64_struct5 mono_test_Winx64_struct5_ret6_args (byte a, byte b, byte c, byte d, byte e	); 
+
+	[DllImport ("libtest")]
 	static extern int mono_test_Winx64_floatStruct ([MarshalAs (UnmanagedType.Struct)] winx64_floatStruct var);
 
 	[DllImport ("libtest")]
@@ -273,6 +281,10 @@ class winx64structs
 		if (t_winx64_struct4.d != 0x87654321)
 			return 404;
 
+		t_winx64_struct1 = mono_test_Winx64_struct1_ret_5_args (0x1, 0x0, 0x4, 0x10, 0x40);
+		if (t_winx64_struct1.a != 0x55)
+			return 501;
+
 		return 0;
 	}
 
@@ -285,6 +297,14 @@ class winx64structs
 			return 102;
 		if (t_winx64_struct5.c != 6)
 			return 103;
+
+		t_winx64_struct5 = mono_test_Winx64_struct5_ret6_args (0x1, 0x4, 0x2, 0x8, 0x30);
+		if (t_winx64_struct5.a != 0x5)
+			return 201;
+		if (t_winx64_struct5.b != 0xa)
+			return 202;
+		if (t_winx64_struct5.c != 0x30)
+			return 203;
 
 		return 0;
 	}
