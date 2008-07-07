@@ -143,7 +143,7 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
  * Returns a pointer to a method which restores a previously saved sigcontext.
  */
 gpointer
-mono_arch_get_restore_context (void)
+mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	static guint8 *start = NULL;
 	static gboolean inited = FALSE;
@@ -153,6 +153,8 @@ mono_arch_get_restore_context (void)
 		return start;
 
 	/* restore_contect (MonoContext *ctx) */
+
+	*ji = NULL;
 
 	start = code = mono_global_codeman_reserve (256);
 
@@ -182,6 +184,10 @@ mono_arch_get_restore_context (void)
 	/* jump to the saved IP */
 	amd64_jump_reg (code, AMD64_R11);
 
+	mono_arch_flush_icache (start, code - start);
+
+	*code_size = code - start;
+
 	inited = TRUE;
 
 	return start;
@@ -195,7 +201,7 @@ mono_arch_get_restore_context (void)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter (void)
+mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	static guint8 *start;
 	static gboolean inited = FALSE;
@@ -205,6 +211,8 @@ mono_arch_get_call_filter (void)
 
 	if (inited)
 		return start;
+
+	*ji = NULL;
 
 	start = code = mono_global_codeman_reserve (128);
 
@@ -263,6 +271,10 @@ mono_arch_get_call_filter (void)
 
 	g_assert ((code - start) < 128);
 
+	mono_arch_flush_icache (start, code - start);
+
+	*code_size = code - start;
+
 	inited = TRUE;
 
 	return start;
@@ -285,7 +297,7 @@ throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 	MonoContext ctx;
 
 	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
+		restore_context = mono_get_restore_context ();
 
 	ctx.rsp = rsp;
 	ctx.rip = rip;
@@ -388,6 +400,8 @@ get_throw_trampoline (gboolean rethrow)
 	amd64_call_reg (code, AMD64_R11);
 	amd64_breakpoint (code);
 
+	mono_arch_flush_icache (start, code - start);
+
 	g_assert ((code - start) < 64);
 
 	return start;
@@ -402,7 +416,7 @@ get_throw_trampoline (gboolean rethrow)
  *
  */
 gpointer 
-mono_arch_get_throw_exception (void)
+mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	static guint8* start;
 	static gboolean inited = FALSE;
@@ -418,7 +432,7 @@ mono_arch_get_throw_exception (void)
 }
 
 gpointer 
-mono_arch_get_rethrow_exception (void)
+mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	static guint8* start;
 	static gboolean inited = FALSE;
@@ -447,6 +461,8 @@ mono_arch_get_throw_exception_by_name (void)
 
 	/* Not used on amd64 */
 	amd64_breakpoint (code);
+
+	mono_arch_flush_icache (start, code - start);
 
 	return start;
 }
@@ -492,7 +508,7 @@ mono_arch_get_throw_corlib_exception (void)
 	/* Put the throw_ip at the top of the misaligned stack */
 	amd64_push_reg (code, AMD64_ARG_REG3);
 
-	throw_ex = (guint64)mono_arch_get_throw_exception ();
+	throw_ex = (guint64)mono_get_throw_exception ();
 
 	/* Call throw_exception */
 	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_RAX, 8);
@@ -501,6 +517,8 @@ mono_arch_get_throw_corlib_exception (void)
 	amd64_jump_reg (code, AMD64_R11);
 
 	g_assert ((code - start) < 64);
+
+	mono_arch_flush_icache (start, code - start);
 
 	inited = TRUE;
 
@@ -844,7 +862,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 	void (*restore_context) (MonoContext *);
 	MonoContext mctx;
 
-	restore_context = mono_arch_get_restore_context ();
+	restore_context = mono_get_restore_context ();
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
 	mono_handle_exception (&mctx, obj, MONO_CONTEXT_GET_IP (&mctx), FALSE);
 	if (stack_ovf)
@@ -969,7 +987,7 @@ get_throw_pending_exception (void)
 	amd64_push_reg (code, AMD64_RAX);
 
 	/* Call the throw trampoline */
-	throw_trampoline = mono_arch_get_throw_exception ();
+	throw_trampoline = mono_get_throw_exception ();
 	amd64_mov_reg_imm (code, AMD64_R11, throw_trampoline);
 	/* We use a jump instead of a call so we can push the original ip on the stack */
 	amd64_jump_reg (code, AMD64_R11);
