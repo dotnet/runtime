@@ -437,18 +437,17 @@ serialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 void
 mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *buf_len)
 {
-	MiniDebugMethodInfo *info;
 	MonoDebugMethodJitInfo *jit;
 	guint32 size, prev_offset, prev_native_offset;
 	guint8 *buf, *p;
 	int i;
 
-	info = (MiniDebugMethodInfo *) cfg->debug_info;
-	if (!info || !info->jit) {
+	/* Can't use cfg->debug_info as it is freed by close_method () */
+	jit = mono_debug_find_method (cfg->method, mono_domain_get ());
+	if (!jit) {
 		*buf_len = 0;
 		return;
 	}
-	jit = info->jit;
 
 	size = ((jit->num_params + jit->num_locals + 1) * 10) + (jit->num_line_numbers * 10) + 64;
 	p = buf = g_malloc (size);

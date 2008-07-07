@@ -2460,7 +2460,9 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	/* Make the labels local */
 	symbol = g_strdup_printf (".Le_%x_p", method_index);
 
-	buf_size = header->num_clauses * 256 + 128;
+	mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
+
+	buf_size = header->num_clauses * 256 + debug_info_size + 128;
 	p = buf = g_malloc (buf_size);
 
 	encode_value (cfg->code_len, p, &p);
@@ -2484,7 +2486,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 	}
 
-	mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
+	g_assert (debug_info_size < buf_size);
 
 	encode_value (debug_info_size, p, &p);
 	if (debug_info_size) {
