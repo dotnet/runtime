@@ -209,11 +209,14 @@ mono_arch_nullify_plt_entry (guint8 *code)
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
-	return mono_arch_create_trampoline_code_full (tramp_type, FALSE);
+	MonoJumpInfo *ji;
+	guint32 code_size;
+
+	return mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, FALSE);
 }
 
 guchar*
-mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean aot)
+mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
 	int i, lmf_offset, offset, res_offset, arg_offset, tramp_offset, saved_regs_offset;
@@ -226,6 +229,8 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean a
 		has_caller = TRUE;
 
 	code = buf = mono_global_codeman_reserve (524);
+
+	*ji = NULL;
 
 	framesize = 524 + sizeof (MonoLMF);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
@@ -395,7 +400,12 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean a
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
 
-	amd64_mov_reg_imm (code, AMD64_R11, mono_get_lmf_addr);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_R11, mono_get_lmf_addr);
+	}
 	amd64_call_reg (code, AMD64_R11);
 
 	/* Save lmf_addr */
@@ -426,8 +436,14 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean a
 	/* Arg4 is the trampoline address */
 	amd64_mov_reg_membase (code, AMD64_ARG_REG4, AMD64_RBP, tramp_offset, 8);
 
-	tramp = (guint8*)mono_get_trampoline_func (tramp_type);
-	amd64_mov_reg_imm (code, AMD64_RAX, tramp);
+	if (aot) {
+		char *icall_name = g_strdup_printf ("trampoline_func_%d", tramp_type);
+		*ji = mono_patch_info_list_prepend (*ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RIP, 0, 8);
+	} else {
+		tramp = (guint8*)mono_get_trampoline_func (tramp_type);
+		amd64_mov_reg_imm (code, AMD64_RAX, tramp);
+	}
 	amd64_call_reg (code, AMD64_RAX);
 
 	/* Check for thread interruption */
@@ -436,7 +452,12 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean a
 	 * Have to call the _force_ variant, since there could be a protected wrapper on the top of the stack.
 	 */
 	amd64_mov_membase_reg (code, AMD64_RBP, res_offset, AMD64_RAX, 8);
-	amd64_mov_reg_imm (code, AMD64_RAX, (guint8*)mono_thread_force_interruption_checkpoint);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RIP, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_RAX, (guint8*)mono_thread_force_interruption_checkpoint);
+	}
 	amd64_call_reg (code, AMD64_RAX);
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, res_offset, 8);	
 
@@ -477,6 +498,8 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean a
 		nullified_class_init_trampoline = code = mono_global_codeman_reserve (16);
 		x86_ret (code);
 	}
+
+	*code_size = code - buf;
 
 	return buf;
 }

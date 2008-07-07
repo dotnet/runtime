@@ -1147,6 +1147,7 @@ gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo) MONO
 void              mono_trampolines_init (void) MONO_INTERNAL;
 void              mono_trampolines_cleanup (void) MONO_INTERNAL;
 guint8 *          mono_get_trampoline_code (MonoTrampolineType tramp_type) MONO_INTERNAL;
+gpointer          mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
 gpointer          mono_create_jump_trampoline (MonoDomain *domain, 
 											   MonoMethod *method, 
 											   gboolean add_sync_wrapper) MONO_INTERNAL;
@@ -1202,7 +1203,7 @@ gpointer  mono_arch_get_rethrow_exception       (void) MONO_INTERNAL;
 gpointer  mono_arch_get_throw_exception_by_name (void) MONO_INTERNAL;
 gpointer  mono_arch_get_throw_corlib_exception  (void) MONO_INTERNAL;
 guchar*   mono_arch_create_trampoline_code      (MonoTrampolineType tramp_type) MONO_INTERNAL;
-guchar*   mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, gboolean aot) MONO_INTERNAL;
+guchar*   mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *code_size, MonoJumpInfo **ji, gboolean aot) MONO_INTERNAL;
 gpointer  mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot) MONO_INTERNAL;
 guint32	  mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs) MONO_INTERNAL;
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg) MONO_INTERNAL;

@@ -558,6 +558,9 @@ mono_trampolines_init (void)
 {
 	InitializeCriticalSection (&trampolines_mutex);
 
+	if (mono_aot_only)
+		return;
+
 	mono_trampoline_code [MONO_TRAMPOLINE_JIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JIT);
 	mono_trampoline_code [MONO_TRAMPOLINE_JUMP] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_JUMP);
 	mono_trampoline_code [MONO_TRAMPOLINE_CLASS_INIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
@@ -586,7 +589,18 @@ mono_trampolines_cleanup (void)
 guint8 *
 mono_get_trampoline_code (MonoTrampolineType tramp_type)
 {
+	g_assert (mono_trampoline_code [tramp_type]);
+
 	return mono_trampoline_code [tramp_type];
+}
+
+gpointer
+mono_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+{
+	if (mono_aot_only)
+		return mono_aot_create_specific_trampoline (mono_defaults.corlib, arg1, tramp_type, domain, code_len);
+	else
+		return mono_arch_create_specific_trampoline (arg1, tramp_type, domain, code_len);
 }
 
 gpointer
@@ -817,17 +831,21 @@ mono_get_aot_trampoline_code (MonoTrampolineType tramp_type)
 {
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	guint8 *code;
+	guint32 code_size;
+	MonoJumpInfo *ji;
 
 	if (mono_aot_trampoline_code [tramp_type])
 		return mono_aot_trampoline_code [tramp_type];
 
 	mono_trampolines_lock ();
 
-	code = mono_arch_create_trampoline_code_full (tramp_type, TRUE);
+	code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, TRUE);
 
 	mono_memory_barrier ();
 
 	mono_aot_trampoline_code [tramp_type] = code;
+
+	mono_trampolines_unlock ();
 
 	return code;
 #else
