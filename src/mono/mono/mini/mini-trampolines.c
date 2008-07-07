@@ -21,10 +21,6 @@
  */
 guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 
-#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-guint8* mono_aot_trampoline_code [MONO_TRAMPOLINE_NUM];
-#endif
-
 static GHashTable *class_init_hash_addr = NULL;
 static GHashTable *delegate_trampoline_hash_addr = NULL;
 
@@ -820,35 +816,4 @@ mono_find_delegate_trampoline_by_addr (gconstpointer addr)
 		res = NULL;
 	mono_trampolines_unlock ();
 	return res;
-}
-
-/*
- * Return the generic trampoline of type TRAMP_TYPE which can be called from AOT code in
- * aot-only mode.
- */
-gpointer
-mono_get_aot_trampoline_code (MonoTrampolineType tramp_type)
-{
-#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-	guint8 *code;
-	guint32 code_size;
-	MonoJumpInfo *ji;
-
-	if (mono_aot_trampoline_code [tramp_type])
-		return mono_aot_trampoline_code [tramp_type];
-
-	mono_trampolines_lock ();
-
-	code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, TRUE);
-
-	mono_memory_barrier ();
-
-	mono_aot_trampoline_code [tramp_type] = code;
-
-	mono_trampolines_unlock ();
-
-	return code;
-#else
-	g_assert_not_reached ();
-#endif
 }
