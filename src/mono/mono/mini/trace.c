@@ -405,7 +405,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 				} else if (class == mono_defaults.int32_class) {
 					printf ("[INT32:%p:%d], ", o, *(gint32 *)((char *)o + sizeof (MonoObject)));
 				} else if (class == mono_defaults.monotype_class) {
-					printf ("[TYPE:%s", mono_type_full_name (((MonoReflectionType*)o)->type));
+					printf ("[TYPE:%s], ", mono_type_full_name (((MonoReflectionType*)o)->type));
 				} else
 					printf ("[%s.%s:%p], ", class->name_space, class->name, o);
 			} else {
