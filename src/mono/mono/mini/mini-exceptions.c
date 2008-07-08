@@ -63,14 +63,12 @@ mono_exceptions_init (void)
 	call_filter_func = mono_arch_get_call_filter_full (&code_size, &ji, FALSE);
 	throw_exception_func = mono_arch_get_throw_exception_full (&code_size, &ji, FALSE);
 	rethrow_exception_func = mono_arch_get_rethrow_exception_full (&code_size, &ji, FALSE);
-	throw_exception_by_name_func = mono_arch_get_throw_exception_by_name ();
 #else
 #ifndef CUSTOM_EXCEPTION_HANDLING
 	restore_context_func = mono_arch_get_restore_context ();
 	call_filter_func = mono_arch_get_call_filter ();
 	throw_exception_func = mono_arch_get_throw_exception ();
 	rethrow_exception_func = mono_arch_get_rethrow_exception ();
-	throw_exception_by_name_func = mono_arch_get_throw_exception_by_name ();
 #endif
 #endif
 }
@@ -106,6 +104,18 @@ mono_get_restore_context (void)
 gpointer
 mono_get_throw_exception_by_name (void)
 {
+	gpointer code = NULL;
+
+	/* This depends on corlib classes so cannot be inited in mono_exceptions_init () */
+	if (throw_exception_by_name_func)
+		return throw_exception_by_name_func;
+
+	code = mono_arch_get_throw_exception_by_name ();
+
+	mono_memory_barrier ();
+
+	throw_exception_by_name_func = code;
+
 	return throw_exception_by_name_func;
 }
 
