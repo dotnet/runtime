@@ -382,14 +382,13 @@ reg: OP_LCALL_REG_RGCTX (reg, reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-reg: OP_LCALL_REG (OP_ICONST) {
+reg: OP_LCALL_REG (OP_ICONST),
+reg: OP_LCALL_REG (OP_I8CONST) {
 	tree->opcode = OP_LCALL;
 	((MonoCallInst*)tree)->fptr = state->left->tree->inst_p0;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
-
-
 
 stmt: CEE_STIND_I4 (OP_REGVAR, OP_ICONST) {
 	tree->inst_c0 = state->right->tree->inst_c0;
