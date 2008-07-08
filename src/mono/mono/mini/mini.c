@@ -3330,12 +3330,12 @@ handle_delegate_ctor (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass
 	return obj;
 }
 
-static int
-handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst **sp, unsigned char *ip)
+static MonoJitICallInfo*
+mono_get_array_new_va_icall (int rank)
 {
-	MonoMethodSignature *esig;
 	char icall_name [256];
 	char *name;
+	MonoMethodSignature *esig;
 	MonoJitICallInfo *info;
 
 	/* Need to register the icall so it gets an icall wrapper */
@@ -3351,6 +3351,16 @@ handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst *
 		g_hash_table_insert (jit_icall_name_hash, name, name);
 	}
 	mono_jit_unlock ();
+
+	return info;
+}
+
+static int
+handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst **sp, unsigned char *ip)
+{
+	MonoJitICallInfo *info;
+
+	info = mono_get_array_new_va_icall (rank);
 
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
 
@@ -7000,7 +7010,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_assert (!context_used);
 
 				NEW_METHODCONST (cfg, *sp, cmethod);
-				temp = handle_array_new (cfg, bblock, fsig->param_count, sp, ip);
+
+				if (fsig->param_count == 2)
+					/* Avoid varargs in the common case */
+					temp = mono_emit_jit_icall (cfg, bblock, mono_array_new_2, sp, ip);
+				else
+					temp = handle_array_new (cfg, bblock, fsig->param_count, sp, ip);
 			} else if (cmethod->string_ctor) {
 				g_assert (!context_used);
 
@@ -11802,6 +11817,7 @@ mono_codegen (MonoCompile *cfg)
 			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (patch_info->data.target);
 			if (info) {
 				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
+				// FIXME: CLEAN UP THIS MESS.
 				if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 
 					strstr (cfg->method->name, info->name)) {
 					/*
@@ -14095,6 +14111,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_create_corlib_exception_0, "mono_create_corlib_exception_0", "object int", TRUE);
 	register_icall (mono_create_corlib_exception_1, "mono_create_corlib_exception_1", "object int object", TRUE);
 	register_icall (mono_create_corlib_exception_2, "mono_create_corlib_exception_2", "object int object object", TRUE);
+	register_icall (mono_array_new_2, "mono_array_new_2", "object ptr int int", FALSE);
 #endif
 
 #define JIT_RUNTIME_WORKS
