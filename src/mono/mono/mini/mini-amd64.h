@@ -293,6 +293,15 @@ typedef struct {
 void 
 mono_amd64_patch (unsigned char* code, gpointer target) MONO_INTERNAL;
 
+void
+mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
+							guint64 dummy5, guint64 dummy6,
+							MonoObject *exc, guint64 rip, guint64 rsp,
+							guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
+							guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
+							guint64 rax, guint64 rcx, guint64 rdx,
+							guint64 rethrow);
+
 typedef struct {
 	guint8 *address;
 	guint8 saved_byte;
