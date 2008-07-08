@@ -13868,8 +13868,6 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_trampolines_init ();
 
-	mono_exceptions_init ();
-
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 
@@ -13911,7 +13909,6 @@ mini_init (const char *filename, const char *runtime_version)
 #define JIT_INVOKE_WORKS
 #ifdef JIT_INVOKE_WORKS
 	mono_install_runtime_invoke (mono_jit_runtime_invoke);
-	mono_install_handler (mono_get_throw_exception ());
 #endif
 	mono_install_stack_walk (mono_jit_walk_stack);
 	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
@@ -13934,6 +13931,11 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
 #endif
 #endif
+
+	/* This must come after mono_init () in the aot-only case */
+	mono_exceptions_init ();
+	mono_install_handler (mono_get_throw_exception ());
+
 	mono_icall_init ();
 
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", 

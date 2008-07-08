@@ -77,6 +77,7 @@ typedef struct MonoAotModule {
 	GHashTable *wrappers;
 	MonoAssemblyName *image_names;
 	char **image_guids;
+	MonoAssembly *assembly;
 	MonoImage **image_table;
 	guint32 image_table_len;
 	gboolean out_of_date;
@@ -557,8 +558,10 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	if (!usable) {
-		if (mono_aot_only)
-			g_error ("Failed to load AOT module '%s' while running with --aot-only.\n", aot_name);
+		if (mono_aot_only) {
+			fprintf (stderr, "Failed to load AOT module '%s' while running with --aot-only.\n", aot_name);
+			exit (1);
+		}
 		g_free (aot_name);
 		mono_dl_close (assembly->aot_module);
 		assembly->aot_module = NULL;
@@ -574,6 +577,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	info = g_new0 (MonoAotModule, 1);
 	info->aot_name = aot_name;
+	info->assembly = assembly;
 	info->got = got;
 	info->got_size = *got_size_ptr;
 	info->got [0] = assembly->image;
@@ -1292,6 +1296,8 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		ji->data.image = load_image (aot_module, decode_value (p, &p));
 		if (!ji->data.image)
 			goto cleanup;
+		if (ji->data.image == aot_module->assembly->image)
+			*got_offset = 0;
 		break;
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
@@ -2140,16 +2146,31 @@ mono_aot_get_plt_entry (guint8 *code)
 }
 
 /*
- * Return the piece of code identified by NAME from the AOT file.
+ * Return the piece of code identified by NAME from the mscorlib AOT file.
  */
-static gpointer
-mono_aot_get_named_code (MonoAssembly *assembly, MonoAotModule *aot_module, char *name)
+gpointer
+mono_aot_get_named_code (const char *name)
 {
 	char *symbol;
 	guint8 *p;
 	int n_patches, got_index, pindex;
 	MonoMemPool *mp;
 	gpointer code;
+	MonoImage *image;
+	MonoAssembly *assembly;
+	MonoAotModule *amodule;
+
+	image = mono_defaults.corlib;
+	g_assert (image);
+
+	mono_aot_lock ();
+
+	assembly = image->assembly;
+	g_assert (assembly);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, assembly);
+	g_assert (amodule);
+
+	mono_aot_unlock ();
 
 	/* Load the code */
 
@@ -2177,33 +2198,46 @@ mono_aot_get_named_code (MonoAssembly *assembly, MonoAotModule *aot_module, char
 
 		got_index = decode_value (p, &p);
 
-		patches = load_patch_info (aot_module, mp, n_patches, got_index, &got_slots, p, &p);
+		patches = load_patch_info (amodule, mp, n_patches, got_index, &got_slots, p, &p);
 		g_assert (patches);
 
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
 			gpointer target;
 
-			g_assert (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR);
-
 			/*
 			 * When this code is executed, the runtime may not yet initalized, so
 			 * resolve the patch info by hand.
 			 */
-			if (!strcmp (ji->data.name, "mono_get_lmf_addr")) {
-				target = mono_get_lmf_addr;
-			} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint")) {
-				target = mono_thread_force_interruption_checkpoint;
-			} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
-				int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));
-				target = (gpointer)mono_get_trampoline_func (tramp_type2);
+			if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+				if (!strcmp (ji->data.name, "mono_get_lmf_addr")) {
+					target = mono_get_lmf_addr;
+				} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint")) {
+					target = mono_thread_force_interruption_checkpoint;
+				} else if (!strcmp (ji->data.name, "mono_exception_from_token")) {
+					target = mono_exception_from_token;
+				} else if (!strcmp (ji->data.name, "mono_throw_exception")) {
+					target = mono_get_throw_exception ();
+#ifdef __x86_64__
+				} else if (!strcmp (ji->data.name, "mono_amd64_throw_exception")) {
+					target = mono_amd64_throw_exception;
+#endif
+				} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
+					int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));
+					target = (gpointer)mono_get_trampoline_func (tramp_type2);
+				} else {
+					fprintf (stderr, "%s\n", ji->data.name);
+					g_assert_not_reached ();
+					target = NULL;
+				}
 			} else {
-				fprintf (stderr, "%s\n", ji->data.name);
-				g_assert_not_reached ();
-				target = NULL;
+				/* Hopefully the code doesn't have patches which need method or 
+				 * domain to be set.
+				 */
+				target = mono_resolve_patch_target (NULL, NULL, code, ji, FALSE);
 			}
 
-			aot_module->got [got_slots [pindex]] = target;
+			amodule->got [got_slots [pindex]] = target;
 		}
 
 		g_free (got_slots);
@@ -2246,7 +2280,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 		char *symbol;
 
 		symbol = g_strdup_printf ("generic_trampoline_%d", tramp_type);
-		generic_trampolines [tramp_type] = mono_aot_get_named_code (image->assembly, amodule, symbol);
+		generic_trampolines [tramp_type] = mono_aot_get_named_code (symbol);
 		g_free (symbol);
 	}
 
@@ -2258,6 +2292,8 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 
 #ifdef __x86_64__
 	code = amodule->trampolines + (index * 16);
+	if (code_len)
+		*code_len = 16;
 #else
 	g_assert_not_reached ();
 #endif
@@ -2361,6 +2397,12 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 }
 
 gpointer mono_aot_create_specific_trampolines (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+{
+	g_assert_not_reached ();
+}
+
+gpointer
+mono_aot_get_named_code (char *name)
 {
 	g_assert_not_reached ();
 }

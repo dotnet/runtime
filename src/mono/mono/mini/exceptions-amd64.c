@@ -145,12 +145,8 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 gpointer
 mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8 *start = NULL;
-	static gboolean inited = FALSE;
+	guint8 *start = NULL;
 	guint8 *code;
-
-	if (inited)
-		return start;
 
 	/* restore_contect (MonoContext *ctx) */
 
@@ -188,8 +184,6 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 
 	*code_size = code - start;
 
-	inited = TRUE;
-
 	return start;
 }
 
@@ -203,14 +197,10 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 gpointer
 mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8 *start;
-	static gboolean inited = FALSE;
+	guint8 *start;
 	int i;
 	guint8 *code;
 	guint32 pos;
-
-	if (inited)
-		return start;
 
 	*ji = NULL;
 
@@ -275,8 +265,6 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 
 	*code_size = code - start;
 
-	inited = TRUE;
-
 	return start;
 }
 
@@ -284,14 +272,14 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
  * The first few arguments are dummy, to force the other arguments to be passed on
  * the stack, this avoids overwriting the argument registers in the throw trampoline.
  */
-static void
-throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
-				 guint64 dummy5, guint64 dummy6,
-				 MonoObject *exc, guint64 rip, guint64 rsp,
-				 guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
-				 guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
-				 guint64 rax, guint64 rcx, guint64 rdx,
-				 guint64 rethrow)
+void
+mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
+							guint64 dummy5, guint64 dummy6,
+							MonoObject *exc, guint64 rip, guint64 rsp,
+							guint64 rbx, guint64 rbp, guint64 r12, guint64 r13, 
+							guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
+							guint64 rax, guint64 rcx, guint64 rdx,
+							guint64 rethrow)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
@@ -351,7 +339,7 @@ throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 }
 
 static gpointer
-get_throw_trampoline (gboolean rethrow)
+get_throw_trampoline (gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	guint8* start;
 	guint8 *code;
@@ -359,6 +347,8 @@ get_throw_trampoline (gboolean rethrow)
 	start = code = mono_global_codeman_reserve (64);
 
 	code = start;
+
+	*ji = NULL;
 
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, 8);
 
@@ -396,13 +386,20 @@ get_throw_trampoline (gboolean rethrow)
 	amd64_push_imm (code, 0);
 #endif
 
-	amd64_mov_reg_imm (code, AMD64_R11, throw_exception);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_throw_exception");
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_throw_exception);
+	}
 	amd64_call_reg (code, AMD64_R11);
 	amd64_breakpoint (code);
 
 	mono_arch_flush_icache (start, code - start);
 
 	g_assert ((code - start) < 64);
+
+	*code_size = code - start;
 
 	return start;
 }
@@ -418,51 +415,31 @@ get_throw_trampoline (gboolean rethrow)
 gpointer 
 mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8* start;
-	static gboolean inited = FALSE;
-
-	if (inited)
-		return start;
-
-	start = get_throw_trampoline (FALSE);
-
-	inited = TRUE;
-
-	return start;
+	return get_throw_trampoline (FALSE, code_size, ji, aot);
 }
 
 gpointer 
 mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8* start;
-	static gboolean inited = FALSE;
-
-	if (inited)
-		return start;
-
-	start = get_throw_trampoline (TRUE);
-
-	inited = TRUE;
-
-	return start;
+	return get_throw_trampoline (TRUE, code_size, ji, aot);
 }
 
 gpointer 
-mono_arch_get_throw_exception_by_name (void)
+mono_arch_get_throw_exception_by_name_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {	
-	static guint8* start;
-	static gboolean inited = FALSE;
+	guint8* start;
 	guint8 *code;
 
-	if (inited)
-		return start;
-
 	start = code = mono_global_codeman_reserve (64);
+
+	*ji = NULL;
 
 	/* Not used on amd64 */
 	amd64_breakpoint (code);
 
 	mono_arch_flush_icache (start, code - start);
+
+	*code_size = code - start;
 
 	return start;
 }
@@ -478,25 +455,30 @@ mono_arch_get_throw_exception_by_name (void)
  * needs no relocations in the caller.
  */
 gpointer 
-mono_arch_get_throw_corlib_exception (void)
+mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	static guint8* start;
-	static gboolean inited = FALSE;
 	guint8 *code;
 	guint64 throw_ex;
 
-	if (inited)
-		return start;
-
 	start = code = mono_global_codeman_reserve (64);
+
+	*ji = NULL;
 
 	/* Push throw_ip */
 	amd64_push_reg (code, AMD64_ARG_REG2);
 
 	/* Call exception_from_token */
 	amd64_mov_reg_reg (code, AMD64_ARG_REG2, AMD64_ARG_REG1, 8);
-	amd64_mov_reg_imm (code, AMD64_ARG_REG1, mono_defaults.exception_class->image);
-	amd64_mov_reg_imm (code, AMD64_R11, mono_exception_from_token);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_IMAGE, mono_defaults.exception_class->image);
+		amd64_mov_reg_membase (code, AMD64_ARG_REG1, AMD64_RIP, 0, 8);
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_ARG_REG1, mono_defaults.exception_class->image);
+		amd64_mov_reg_imm (code, AMD64_R11, mono_exception_from_token);
+	}
 	amd64_call_reg (code, AMD64_R11);
 
 	/* Compute throw_ip */
@@ -512,7 +494,12 @@ mono_arch_get_throw_corlib_exception (void)
 
 	/* Call throw_exception */
 	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_RAX, 8);
-	amd64_mov_reg_imm (code, AMD64_R11, throw_ex);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_throw_exception");
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_R11, throw_ex);
+	}
 	/* The original IP is on the stack */
 	amd64_jump_reg (code, AMD64_R11);
 
@@ -520,7 +507,7 @@ mono_arch_get_throw_corlib_exception (void)
 
 	mono_arch_flush_icache (start, code - start);
 
-	inited = TRUE;
+	*code_size = code - start;
 
 	return start;
 }

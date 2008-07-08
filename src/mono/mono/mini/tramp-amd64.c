@@ -203,6 +203,9 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 void
 mono_arch_nullify_plt_entry (guint8 *code)
 {
+	if (mono_aot_only && !nullified_class_init_trampoline)
+		nullified_class_init_trampoline = mono_aot_get_named_code ("nullified_class_init_trampoline");
+
 	mono_arch_patch_plt_entry (code, nullified_class_init_trampoline);
 }
 
@@ -475,6 +478,14 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_R11)
 			amd64_mov_reg_membase (code, i, AMD64_RBP, saved_regs_offset + (i * 8), 8);
 
+	/* 
+	 * FIXME: When using aot-only, the called code might be a C vararg function 
+	 * which uses %rax as well.
+	 * We could restore it, but we would have to use another register to store the
+	 * target address, and we don't have any left.
+	 * Also, the default AOT plt trampolines overwrite 'rax'.
+	 */
+
 	for (i = 0; i < 8; ++i)
 		amd64_movsd_reg_membase (code, i, AMD64_RBP, saved_fpregs_offset + (i * 8));
 
@@ -485,21 +496,38 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 			tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||
 			tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 		amd64_ret (code);
-	else
+	else {
 		/* call the compiled method */
-		amd64_jump_reg (code, X86_EAX);
+		amd64_jump_reg (code, AMD64_RAX);
+	}
 
 	g_assert ((code - buf) <= 524);
 
 	mono_arch_flush_icache (buf, code - buf);
 
+	*code_size = code - buf;
+
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
+		guint32 code_len;
+
 		/* Initialize the nullified class init trampoline used in the AOT case */
-		nullified_class_init_trampoline = code = mono_global_codeman_reserve (16);
-		x86_ret (code);
+		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (&code_len);
 	}
 
-	*code_size = code - buf;
+	return buf;
+}
+
+gpointer
+mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
+{
+	guint8 *code, *buf;
+
+	code = buf = mono_global_codeman_reserve (16);
+	amd64_ret (code);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	*code_len = code - buf;
 
 	return buf;
 }

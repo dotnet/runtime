@@ -1722,6 +1722,19 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		encode_value ((255 << 24), buf, &buf);
 		encode_value (image_index, buf, &buf);
 		encode_value (token, buf, &buf);
+	} else if (token == 0) {
+		/* This might be a method of a constructed type like int[,].Set */
+		/* Obtain the token from information recorded by the JIT */
+		ji = g_hash_table_lookup (acfg->token_info_hash, method);
+		g_assert (ji);
+		image_index = get_image_index (acfg, ji->image);
+		g_assert (image_index < 255);
+		token = ji->token;
+
+		/* Marker */
+		encode_value ((255 << 24), buf, &buf);
+		encode_value (image_index, buf, &buf);
+		encode_value (token, buf, &buf);
 	} else {
 		g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
 		encode_value ((image_index << 24) | mono_metadata_token_index (token), buf, &buf);
@@ -1906,14 +1919,20 @@ add_jit_icall_wrapper (gpointer key, gpointer value, gpointer user_data)
 }
 
 static MonoMethod*
-get_runtime_invoke (const char *signature)
+get_runtime_invoke_sig (MonoMethodSignature *sig)
 {
 	MonoMethodBuilder *mb;
 	MonoMethod *m;
 
 	mb = mono_mb_new (mono_defaults.object_class, "FOO", MONO_WRAPPER_NONE);
-	m = mono_mb_create_method (mb, mono_create_icall_signature (signature), 16);
+	m = mono_mb_create_method (mb, sig, 16);
 	return mono_marshal_get_runtime_invoke (m);
+}
+
+static MonoMethod*
+get_runtime_invoke (const char *signature)
+{
+	return get_runtime_invoke_sig (mono_create_icall_signature (signature));
 }
 
 static void
@@ -1921,6 +1940,7 @@ add_wrappers (MonoAotCompile *acfg)
 {
 	MonoMethod *m;
 	int i, nallocators;
+	MonoMethodSignature *csig;
 
 	/* 
 	 * FIXME: Instead of AOTing all the wrappers, it might be better to redesign them
@@ -1937,6 +1957,29 @@ add_wrappers (MonoAotCompile *acfg)
 
 	/* void runtime-invoke (string) [exception ctor] */
 	add_method (acfg, get_runtime_invoke ("void string"));
+
+	/* void runtime-invoke (string, string) [exception ctor] */
+	add_method (acfg, get_runtime_invoke ("void string string"));
+
+	/* string runtime-invoke () [Exception.ToString ()] */
+	add_method (acfg, get_runtime_invoke ("string"));
+
+	/* void runtime-invoke (string, Exception) [exception ctor] */
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	csig->hasthis = 1;
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	csig->params [0] = &mono_defaults.string_class->byval_arg;
+	csig->params [1] = &mono_defaults.exception_class->byval_arg;
+	add_method (acfg, get_runtime_invoke_sig (csig));
+
+	/* Assembly runtime-invoke (string, bool) [DoAssemblyResolve] */
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	csig->hasthis = 1;
+	csig->ret = &(mono_class_from_name (
+										mono_defaults.corlib, "System.Reflection", "Assembly"))->byval_arg;
+	csig->params [0] = &mono_defaults.string_class->byval_arg;
+	csig->params [1] = &mono_defaults.boolean_class->byval_arg;
+	add_method (acfg, get_runtime_invoke_sig (csig));
 
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		MonoMethod *method;
@@ -2141,118 +2184,6 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	acfg->method_got_offsets [method_index] = acfg->got_offset;
 
 	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE);
-
-#if 0
-	/* Collect and sort relocations */
-	patches = g_ptr_array_new ();
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next)
-		g_ptr_array_add (patches, patch_info);
-	g_ptr_array_sort (patches, compare_patches);
-
-	start_index = 0;
-	for (i = 0; i < cfg->code_len; i++) {
-		patch_info = NULL;
-		for (pindex = start_index; pindex < patches->len; ++pindex) {
-			patch_info = g_ptr_array_index (patches, pindex);
-			if (patch_info->ip.i >= i)
-				break;
-		}
-
-#ifdef MONO_ARCH_AOT_SUPPORTED
-		skip = FALSE;
-		if (patch_info && (patch_info->ip.i == i) && (pindex < patches->len)) {
-			start_index = pindex;
-
-			switch (patch_info->type) {
-			case MONO_PATCH_INFO_NONE:
-				break;
-			case MONO_PATCH_INFO_GOT_OFFSET: {
-				guint32 offset = mono_arch_get_patch_offset (code + i);
-				emit_bytes (acfg, code + i, offset);
-				emit_symbol_diff (acfg, "got", ".", offset);
-
-				i += offset + 4 - 1;
-				skip = TRUE;
-				break;
-			}
-			default: {
-				int plt_index;
-				char *direct_call_target;
-
-				if (!is_got_patch (patch_info->type))
-					break;
-
-				/*
-				 * If this patch is a call, try emitting a direct call instead of
-				 * through a PLT entry. This is possible if the called method is in
-				 * the same assembly and requires no initialization.
-				 */
-				direct_call_target = NULL;
-				if ((patch_info->type == MONO_PATCH_INFO_METHOD) && (patch_info->data.method->klass->image == cfg->method->klass->image)) {
-					MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
-					if (callee_cfg) {
-						if (!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)) {
-							//printf ("DIRECT: %s %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (callee_cfg->method, TRUE));
-							direct_call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, callee_cfg->method));
-							patch_info->type = MONO_PATCH_INFO_NONE;
-							acfg->stats.direct_calls ++;
-						}
-					}
-
-					acfg->stats.all_calls ++;
-				}
-
-				if (!direct_call_target) {
-					plt_index = get_plt_index (acfg, patch_info);
-					if (plt_index != -1) {
-						/* This patch has a PLT entry, so we must emit a call to the PLT entry */
-						direct_call_target = g_strdup_printf (".Lp_%d", plt_index);
-					}
-				}
-
-				if (direct_call_target) {
-#if defined(__i386__) || defined(__x86_64__)
-					g_assert (code [i] == 0xe8);
-					/* Need to make sure this is exactly 5 bytes long */
-					emit_byte (acfg, '\xe8');
-					emit_symbol_diff (acfg, direct_call_target, ".", -4);
-					i += 4;
-#elif defined(__arm__)
-#ifdef USE_BIN_WRITER
-					/* FIXME: Can't encode this using the current symbol writer functions */
-					g_assert_not_reached ();
-#else
-					emit_unset_mode (acfg);
-					fprintf (acfg->fp, "bl %s\n", direct_call_target);
-					i += 4 - 1;
-#endif
-#endif
-				} else {
-					got_slot = get_got_offset (acfg, patch_info);
-
-					emit_bytes (acfg, code + i, mono_arch_get_patch_offset (code + i));
-#ifdef __x86_64__
-					emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
-#elif defined(__i386__)
-					emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
-#elif defined(__arm__)
-					emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
-#else
-					g_assert_not_reached ();
-#endif
-					
-					i += mono_arch_get_patch_offset (code + i) + 4 - 1;
-				}
-				skip = TRUE;
-			}
-			}
-		}
-#endif /* MONO_ARCH_AOT_SUPPORTED */
-
-		if (!skip)
-			emit_bytes (acfg, code + i, 1);
-	}
-#endif
 
 	emit_line (acfg);
 }
@@ -2900,8 +2831,8 @@ emit_plt (MonoAotCompile *acfg)
 }
 
 static void
-emit_named_code (MonoAotCompile *acfg, char *name, guint8 *code, guint32 code_size,
-				 int got_offset, MonoJumpInfo *ji)
+emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code, 
+				 guint32 code_size, int got_offset, MonoJumpInfo *ji)
 {
 	char *symbol;
 	guint32 buf_size;
@@ -2932,7 +2863,7 @@ emit_named_code (MonoAotCompile *acfg, char *name, guint8 *code, guint32 code_si
 		g_ptr_array_add (patches, patch_info);
 	g_ptr_array_sort (patches, compare_patches);
 
-	buf_size = patches->len * 128;
+	buf_size = patches->len * 128 + 128;
 	buf = g_malloc (buf_size);
 	p = buf;
 
@@ -2965,6 +2896,11 @@ emit_trampolines (MonoAotCompile *acfg)
 {
 	char *symbol;
 	int tramp_type, i, offset;
+#ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+	guint32 code_size;
+	MonoJumpInfo *ji;
+	guint8 *code;
+#endif
 
 	if (!acfg->aot_opts.full_aot)
 		return;
@@ -2982,10 +2918,6 @@ emit_trampolines (MonoAotCompile *acfg)
 	 * method.
 	 */
 	for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
-		guint32 code_size;
-		MonoJumpInfo *ji;
-		guint8 *code;
-
 		code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, TRUE);
 
 		/* Emit trampoline code */
@@ -2996,6 +2928,23 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		g_free (symbol);
 	}
+
+	code = mono_arch_get_nullified_class_init_trampoline (&code_size);
+	emit_named_code (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL);
+
+	/* Emit the exception related code pieces */
+	code = mono_arch_get_restore_context_full (&code_size, &ji, TRUE);
+	emit_named_code (acfg, "restore_context", code, code_size, acfg->got_offset, ji);
+    code = mono_arch_get_call_filter_full (&code_size, &ji, TRUE);
+	emit_named_code (acfg, "call_filter", code, code_size, acfg->got_offset, ji);
+	code = mono_arch_get_throw_exception_full (&code_size, &ji, TRUE);
+	emit_named_code (acfg, "throw_exception", code, code_size, acfg->got_offset, ji);
+	code = mono_arch_get_rethrow_exception_full (&code_size, &ji, TRUE);
+	emit_named_code (acfg, "rethrow_exception", code, code_size, acfg->got_offset, ji);
+	code = mono_arch_get_throw_exception_by_name_full (&code_size, &ji, TRUE);
+	emit_named_code (acfg, "throw_exception_by_name", code, code_size, acfg->got_offset, ji);
+	code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
+	emit_named_code (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji);
 #endif
 
 	/*
@@ -3253,14 +3202,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				skip = TRUE;
 				break;
 			}
-			if (!patch_info->data.method->token)
-				/*
-				 * The method is part of a constructed type like Int[,].Set (). It doesn't
-				 * have a token, and we can't make one, since the parent type is part of
-				 * assembly which contains the element type, and not the assembly which
-				 * referenced this type.
-				 */
-				skip = TRUE;
+			if (!patch_info->data.method->token) {
+				/* The method is part of a constructed type like Int[,].Set (). */
+				if (!g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method))
+					skip = TRUE;
+			}
 			if (patch_info->data.method->is_inflated && !g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method))
 				/* FIXME: Can't encode these */
 				skip = TRUE;
