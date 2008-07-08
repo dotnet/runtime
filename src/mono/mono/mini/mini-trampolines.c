@@ -615,10 +615,7 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 	if (ptr)
 		return ptr;
 
-	if (mono_aot_only)
-		code = mono_aot_create_specific_trampoline (vtable->klass->image, vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain, NULL);
-	else
-		code = mono_arch_create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain, NULL);
+	code = mono_create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain, NULL);
 
 	ptr = mono_create_ftnptr (vtable->domain, code);
 
@@ -658,7 +655,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method,
 	if (code)
 		return code;
 
-	code = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
+	code = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_JUMP, mono_domain_get (), &code_size);
 	g_assert (code_size);
 
 	mono_domain_lock (domain);
@@ -700,7 +697,7 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method, gb
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && add_sync_wrapper)
 		return mono_create_jit_trampoline (mono_marshal_get_synchronized_wrapper (method));
 
-	tramp = mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_JIT, domain, NULL);
+	tramp = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_JIT, domain, NULL);
 	
 	mono_domain_lock (domain);
 	g_hash_table_insert (domain->jit_trampoline_hash, method, tramp);
@@ -734,7 +731,7 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	buf += sizeof (gpointer);
 	*(guint32*)(gpointer)buf = token;
 
-	tramp = mono_arch_create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
+	tramp = mono_create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
 
 	mono_jit_stats.method_trampolines++;
 
@@ -769,7 +766,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	tramp_data [1] = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), TRUE);
 	tramp_data [2] = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), FALSE);
 
-    ptr = mono_arch_create_specific_trampoline (tramp_data, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
+	ptr = mono_create_specific_trampoline (tramp_data, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
 	g_assert (code_size);
 
 	/* store trampoline address */

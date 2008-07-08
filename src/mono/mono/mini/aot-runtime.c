@@ -66,12 +66,6 @@
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
-typedef struct
-{
-	guint32 num_trampolines, first_trampoline_got_offset, trampoline_index;
-	guint8 *generic_trampolines [MONO_TRAMPOLINE_NUM];
-} TrampolineInfo;
-
 typedef struct MonoAotModule {
 	char *aot_name;
 	/* Optimization flags used to compile the module */
@@ -111,7 +105,7 @@ typedef struct MonoAotModule {
 	guint16 *class_name_table;
 	guint8 *wrapper_info;
 	guint8 *trampolines;
-	TrampolineInfo *tramp_info;
+	guint32 num_trampolines, first_trampoline_got_offset, trampoline_index;
 } MonoAotModule;
 
 static GHashTable *aot_modules;
@@ -663,81 +657,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	mono_dl_symbol (assembly->aot_module, "trampolines_info", (gpointer *)&trampolines_info);
 	if (trampolines_info) {
-		TrampolineInfo *tramp_info;
-		int tramp_type;
-
-		info->tramp_info = tramp_info = g_new0 (TrampolineInfo, 1);
-
-		tramp_info->num_trampolines = trampolines_info [0];
-		tramp_info->first_trampoline_got_offset = trampolines_info [1];
-
-		for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
-			char *symbol;
-			guint8 *p;
-			int n_patches, got_index, pindex;
-			MonoMemPool *mp;
-			MonoAotModule *aot_module = info;
-
-			/* Load trampoline code */
-
-			symbol = g_strdup_printf ("generic_trampoline_%d", tramp_type);
-			mono_dl_symbol (assembly->aot_module, symbol, (gpointer *)&(tramp_info->generic_trampolines [tramp_type]));
-			g_free (symbol);
-			g_assert (tramp_info->generic_trampolines [tramp_type]);
-
-			/* Load trampoline info */
-
-			symbol = g_strdup_printf ("generic_trampoline_%d_p", tramp_type);
-			mono_dl_symbol (assembly->aot_module, symbol, (gpointer *)&p);
-			g_free (symbol);
-			g_assert (p);
-
-			/* Similar to mono_aot_load_method () */
-
-			n_patches = decode_value (p, &p);
-
-			if (n_patches) {
-				MonoJumpInfo *patches;
-				guint32 *got_slots;
-
-				mp = mono_mempool_new ();
-
-				got_index = decode_value (p, &p);
-
-				patches = load_patch_info (info, mp, n_patches, got_index, &got_slots, p, &p);
-				g_assert (patches);
-
-				/*
-				 * When this code is executed, the runtime is not yet initalized, so
-				 * resolve the patch info by hand.
-				 */
-				for (pindex = 0; pindex < n_patches; ++pindex) {
-					MonoJumpInfo *ji = &patches [pindex];
-					gpointer target;
-
-					g_assert (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR);
-
-					if (!strcmp (ji->data.name, "mono_get_lmf_addr")) {
-						target = mono_get_lmf_addr;
-					} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint")) {
-						target = mono_thread_force_interruption_checkpoint;
-					} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
-						int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));
-						target = (gpointer)mono_get_trampoline_func (tramp_type2);
-					} else {
-						fprintf (stderr, "%s\n", ji->data.name);
-						g_assert_not_reached ();
-						target = NULL;
-					}
-
-					aot_module->got [got_slots [pindex]] = target;
-				}
-
-				g_free (got_slots);
-
-				mono_mempool_destroy (mp);
-			}
-		}
+		info->num_trampolines = trampolines_info [0];
+		info->first_trampoline_got_offset = trampolines_info [1];
 	}
 
 	if (mono_aot_only) {
@@ -2219,6 +2140,81 @@ mono_aot_get_plt_entry (guint8 *code)
 }
 
 /*
+ * Return the piece of code identified by NAME from the AOT file.
+ */
+static gpointer
+mono_aot_get_named_code (MonoAssembly *assembly, MonoAotModule *aot_module, char *name)
+{
+	char *symbol;
+	guint8 *p;
+	int n_patches, got_index, pindex;
+	MonoMemPool *mp;
+	gpointer code;
+
+	/* Load the code */
+
+	symbol = g_strdup_printf ("%s", name);
+	mono_dl_symbol (assembly->aot_module, symbol, (gpointer *)&code);
+	g_free (symbol);
+	g_assert (code);
+
+	/* Load info */
+
+	symbol = g_strdup_printf ("%s_p", name);
+	mono_dl_symbol (assembly->aot_module, symbol, (gpointer *)&p);
+	g_free (symbol);
+	g_assert (p);
+
+	/* Similar to mono_aot_load_method () */
+
+	n_patches = decode_value (p, &p);
+
+	if (n_patches) {
+		MonoJumpInfo *patches;
+		guint32 *got_slots;
+
+		mp = mono_mempool_new ();
+
+		got_index = decode_value (p, &p);
+
+		patches = load_patch_info (aot_module, mp, n_patches, got_index, &got_slots, p, &p);
+		g_assert (patches);
+
+		for (pindex = 0; pindex < n_patches; ++pindex) {
+			MonoJumpInfo *ji = &patches [pindex];
+			gpointer target;
+
+			g_assert (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR);
+
+			/*
+			 * When this code is executed, the runtime may not yet initalized, so
+			 * resolve the patch info by hand.
+			 */
+			if (!strcmp (ji->data.name, "mono_get_lmf_addr")) {
+				target = mono_get_lmf_addr;
+			} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint")) {
+				target = mono_thread_force_interruption_checkpoint;
+			} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
+				int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));
+				target = (gpointer)mono_get_trampoline_func (tramp_type2);
+			} else {
+				fprintf (stderr, "%s\n", ji->data.name);
+				g_assert_not_reached ();
+				target = NULL;
+			}
+
+			aot_module->got [got_slots [pindex]] = target;
+		}
+
+		g_free (got_slots);
+
+		mono_mempool_destroy (mp);
+	}
+
+	return code;
+}
+
+/*
  * Return a specific trampoline from the AOT file.
  */
 gpointer
@@ -2227,7 +2223,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	MonoAotModule *amodule;
 	int index;
 	guint8 *code, *tramp;
-	TrampolineInfo *tramp_info;
+	static gpointer generic_trampolines [MONO_TRAMPOLINE_NUM];
 
 	/* Currently, we keep all trampolines in the mscorlib AOT image */
 	image = mono_defaults.corlib;
@@ -2239,21 +2235,26 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, image->assembly);
 	g_assert (amodule);
 
-	tramp_info = amodule->tramp_info;
-	g_assert (tramp_info);
+	if (amodule->trampoline_index == amodule->num_trampolines)
+		g_error ("Ran out of trampolines in '%s' (%d)\n", image->name, amodule->num_trampolines);
 
-	if (tramp_info->trampoline_index == tramp_info->num_trampolines)
-		g_error ("Ran out of trampolines in '%s' (%d)\n", image->name, tramp_info->num_trampolines);
-
-	index = tramp_info->trampoline_index ++;
+	index = amodule->trampoline_index ++;
 
 	mono_aot_unlock ();
 
-	tramp = tramp_info->generic_trampolines [tramp_type];
+	if (!generic_trampolines [tramp_type]) {
+		char *symbol;
+
+		symbol = g_strdup_printf ("generic_trampoline_%d", tramp_type);
+		generic_trampolines [tramp_type] = mono_aot_get_named_code (image->assembly, amodule, symbol);
+		g_free (symbol);
+	}
+
+	tramp = generic_trampolines [tramp_type];
 	g_assert (tramp);
 
-	amodule->got [tramp_info->first_trampoline_got_offset + (index *2)] = tramp;
-	amodule->got [tramp_info->first_trampoline_got_offset + (index *2) + 1] = arg1;
+	amodule->got [amodule->first_trampoline_got_offset + (index *2)] = tramp;
+	amodule->got [amodule->first_trampoline_got_offset + (index *2) + 1] = arg1;
 
 #ifdef __x86_64__
 	code = amodule->trampolines + (index * 16);

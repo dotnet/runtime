@@ -2899,6 +2899,56 @@ emit_plt (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 }
 
+static void
+emit_named_code (MonoAotCompile *acfg, char *name, guint8 *code, guint32 code_size,
+				 int got_offset, MonoJumpInfo *ji)
+{
+	char *symbol;
+	guint32 buf_size;
+	MonoJumpInfo *patch_info;
+	guint8 *buf, *p;
+	GPtrArray *patches;
+
+	/* Emit code */
+
+	symbol = g_strdup_printf ("%s", name);
+
+	emit_section_change (acfg, ".text", 0);
+	emit_global (acfg, symbol, TRUE);
+	emit_label (acfg, symbol);
+	g_free (symbol);
+
+	/* 
+	 * The code should access everything through the GOT, so we pass
+	 * TRUE here.
+	 */
+	emit_and_reloc_code (acfg, NULL, code, code_size, ji, TRUE);
+
+	/* Emit info */
+
+	/* Sort relocations */
+	patches = g_ptr_array_new ();
+	for (patch_info = ji; patch_info; patch_info = patch_info->next)
+		g_ptr_array_add (patches, patch_info);
+	g_ptr_array_sort (patches, compare_patches);
+
+	buf_size = patches->len * 128;
+	buf = g_malloc (buf_size);
+	p = buf;
+
+	encode_patch_list (acfg, patches, patches->len, got_offset, p, &p);
+	g_assert (p - buf < buf_size);
+
+	symbol = g_strdup_printf ("%s_p", name);
+
+	emit_section_change (acfg, ".text", 0);
+	emit_global (acfg, symbol, TRUE);
+	emit_label (acfg, symbol);
+	g_free (symbol);
+		
+	emit_bytes (acfg, buf, p - buf);
+}
+
 /*
  * When running in aot-only mode, we can't create trampolines at runtime, so we create 
  * a few, and save them in the AOT file. Normal trampolines embed their argument as a 
@@ -2915,7 +2965,6 @@ emit_trampolines (MonoAotCompile *acfg)
 {
 	char *symbol;
 	int tramp_type, i, offset;
-	int generic_tramp_got_offsets [MONO_TRAMPOLINE_NUM];
 
 	if (!acfg->aot_opts.full_aot)
 		return;
@@ -2923,8 +2972,6 @@ emit_trampolines (MonoAotCompile *acfg)
 	g_assert (acfg->image->assembly);
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") != 0)
 		return;
-
-	memset (generic_tramp_got_offsets, 0, sizeof (generic_tramp_got_offsets));
 
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	/*
@@ -2935,10 +2982,9 @@ emit_trampolines (MonoAotCompile *acfg)
 	 * method.
 	 */
 	for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
-		guint32 code_size, buf_size;
-		MonoJumpInfo *ji, *patch_info;
-		guint8 *code, *buf, *p;
-		GPtrArray *patches;
+		guint32 code_size;
+		MonoJumpInfo *ji;
+		guint8 *code;
 
 		code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, TRUE);
 
@@ -2946,41 +2992,9 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		symbol = g_strdup_printf ("generic_trampoline_%d", tramp_type);
 
-		emit_section_change (acfg, ".text", 0);
-		emit_global (acfg, symbol, TRUE);
-		emit_label (acfg, symbol);
+		emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji);
+
 		g_free (symbol);
-
-		/* 
-		 * The trampoline code should access everything through the GOT, so we pass
-		 * TRUE here.
-		 */
-		generic_tramp_got_offsets [tramp_type] = acfg->got_offset;
-		emit_and_reloc_code (acfg, NULL, code, code_size, ji, TRUE);
-
-		/* Emit trampoline info */
-
-		/* Sort relocations */
-		patches = g_ptr_array_new ();
-		for (patch_info = ji; patch_info; patch_info = patch_info->next)
-			g_ptr_array_add (patches, patch_info);
-		g_ptr_array_sort (patches, compare_patches);
-
-		buf_size = patches->len * 128;
-		buf = g_malloc (buf_size);
-		p = buf;
-
-		encode_patch_list (acfg, patches, patches->len, generic_tramp_got_offsets [tramp_type], p, &p);
-		g_assert (p - buf < buf_size);
-
-		symbol = g_strdup_printf ("generic_trampoline_%d_p", tramp_type);
-
-		emit_section_change (acfg, ".text", 0);
-		emit_global (acfg, symbol, TRUE);
-		emit_label (acfg, symbol);
-		g_free (symbol);
-
-		emit_bytes (acfg, buf, p - buf);
 	}
 #endif
 
@@ -3026,8 +3040,6 @@ emit_trampolines (MonoAotCompile *acfg)
 
 	emit_int32 (acfg, acfg->num_aot_trampolines);
 	emit_int32 (acfg, acfg->got_offset);
-	for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type)
-		emit_int32 (acfg, generic_tramp_got_offsets [tramp_type]);
 }
 
 static gboolean
