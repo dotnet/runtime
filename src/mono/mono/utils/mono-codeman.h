@@ -7,6 +7,7 @@ MonoCodeManager* mono_code_manager_new     (void);
 MonoCodeManager* mono_code_manager_new_dynamic (void);
 void             mono_code_manager_destroy (MonoCodeManager *cman);
 void             mono_code_manager_invalidate (MonoCodeManager *cman);
+void             mono_code_manager_set_read_only (MonoCodeManager *cman);
 
 void*            mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment);
 

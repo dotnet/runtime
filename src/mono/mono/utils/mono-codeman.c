@@ -70,6 +70,7 @@ struct _CodeChunck {
 
 struct _MonoCodeManager {
 	int dynamic;
+	int read_only;
 	CodeChunk *current;
 	CodeChunk *full;
 };
@@ -181,6 +182,18 @@ mono_code_manager_invalidate (MonoCodeManager *cman)
 		memset (chunk->data, fill_value, chunk->size);
 	for (chunk = cman->full; chunk; chunk = chunk->next)
 		memset (chunk->data, fill_value, chunk->size);
+}
+
+/**
+ * mono_code_manager_set_read_only:
+ * @cman: a code manager
+ *
+ * Make the code manager read only, so further allocation requests cause an assert.
+ */
+void             
+mono_code_manager_set_read_only (MonoCodeManager *cman)
+{
+	cman->read_only = TRUE;
 }
 
 /**
@@ -310,6 +323,8 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 {
 	CodeChunk *chunk, *prev;
 	void *ptr;
+
+	g_assert (!cman->read_only);
 
 	/* eventually allow bigger alignments, but we need to fix the dynamic alloc code to
 	 * handle this before
