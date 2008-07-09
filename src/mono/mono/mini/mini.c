@@ -10603,7 +10603,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			jump_table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
 			mono_domain_lock (domain);
-			jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
+			if (mono_aot_only)
+				jump_table = mono_mempool_alloc (domain->mp, sizeof (gpointer) * patch_info->data.table->table_size);
+			else
+				jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 			mono_domain_unlock (domain);
 		}
 
