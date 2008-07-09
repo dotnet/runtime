@@ -1,3 +1,7 @@
+2008-07-10  Raja R Harinath  <harinath@hurrynot.org>
+
+	* configure.in (enable_quiet_build): Work better on a non-srcdir build.
+
 2008-07-07  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Make the patching done by --enable-quiet quiet.
