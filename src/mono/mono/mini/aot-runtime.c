@@ -712,8 +712,13 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	for (i = 0; i < info->image_table_len; ++i)
 		load_image (info, i);
 
-	if (info->out_of_date)
+	if (info->out_of_date) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT Module %s is unusable because a dependency is out-of-date.\n", assembly->image->name);
+		if (mono_aot_only) {
+			fprintf (stderr, "Failed to load AOT module '%s' while running with --aot-only because a dependency cannot be found or it is out of date.\n", aot_name);
+			exit (1);
+		}
+	}
 	else
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT loaded AOT Module for %s.\n", assembly->image->name);
 }
