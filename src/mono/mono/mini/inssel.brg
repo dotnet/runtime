@@ -1798,7 +1798,6 @@ mini_emit_max_iid_check_class (MonoCompile *s, int klass_reg, MonoClass *klass,
 /* Emit code which loads interface_offsets [klass->interface_id]
  * The array is stored in memory before vtable.
  */
-#ifndef MONO_ARCH_HAVE_IMT
 static void
 mini_emit_load_intf_reg_vtable (MonoCompile *s, int intf_reg, int vtable_reg, MonoClass *klass)
 {
@@ -1812,7 +1811,6 @@ mini_emit_load_intf_reg_vtable (MonoCompile *s, int intf_reg, int vtable_reg, Mo
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, intf_reg, vtable_reg, -((klass->interface_id + 1) * SIZEOF_VOID_P));
 	}
 }
-#endif
 
 /* 
  * Emit code which loads into "intf_bit_reg" a nonzero value if the MonoClass
@@ -1982,17 +1980,21 @@ mini_emit_virtual_call_internal (MonoCompile *cfg, void *st, MonoInst *tree, int
 	vtable_reg = mono_regstate_next_int (cfg->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, this_reg, G_STRUCT_OFFSET (MonoObject, vtable));
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		slot_reg = -1;
 #ifdef MONO_ARCH_HAVE_IMT
-		guint32 imt_slot = mono_method_get_imt_slot (method);
-		emit_imt_argument (cfg, (MonoCallInst*)tree, have_imt_arg, imt_reg);
-		slot_reg = vtable_reg;
-		tree->inst_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
-#else
-		g_assert (!have_imt_arg);
-		slot_reg = mono_regstate_next_int (cfg->rs);
-		mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
-		tree->inst_offset = slot * SIZEOF_VOID_P;
+		if (mono_use_imt) {
+			guint32 imt_slot = mono_method_get_imt_slot (method);
+			emit_imt_argument (cfg, (MonoCallInst*)tree, have_imt_arg, imt_reg);
+			slot_reg = vtable_reg;
+			tree->inst_offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
+		}
 #endif
+		if (slot_reg == -1) {
+			g_assert (!have_imt_arg);
+			slot_reg = mono_regstate_next_int (cfg->rs);
+			mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
+			tree->inst_offset = slot * SIZEOF_VOID_P;
+		}
 	} else {
 		slot_reg = vtable_reg;
 		tree->inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) + (slot * SIZEOF_VOID_P);

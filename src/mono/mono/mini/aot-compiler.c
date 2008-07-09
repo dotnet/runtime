@@ -3127,6 +3127,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		}
 	}
 
+	if (acfg->aot_opts.full_aot)
+		mono_use_imt = FALSE;
+
 	/*
 	 * Since these methods are the only ones which are compiled with
 	 * AOT support, and they are not used by runtime startup/shutdown code,
@@ -3925,7 +3928,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_start (acfg);
 
-	acfg->num_aot_trampolines = acfg->aot_opts.full_aot ? 1024 : 0;
+	acfg->num_aot_trampolines = acfg->aot_opts.full_aot ? 10240 : 0;
 
 	acfg->method_index = 1;
 

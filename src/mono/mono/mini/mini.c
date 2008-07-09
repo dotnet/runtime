@@ -173,6 +173,12 @@ gboolean mono_compile_aot = FALSE;
 #endif
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
 gboolean mono_aot_only = FALSE;
+/* Whenever to use IMT */
+#ifdef MONO_ARCH_HAVE_IMT
+gboolean mono_use_imt = TRUE;
+#else
+gboolean mono_use_imt = FALSE;
+#endif
 MonoMethodDesc *mono_inject_async_exc_method = NULL;
 int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method = NULL;
@@ -13936,12 +13942,19 @@ mini_init (const char *filename, const char *runtime_version)
 		domain = mono_init_version (filename, runtime_version);
 	else
 		domain = mono_init_from_assembly (filename, filename);
+
+	if (mono_aot_only)
+		/* The IMT tables are very dynamic thus they are hard to AOT */
+		mono_use_imt = FALSE;
+
 #ifdef MONO_ARCH_HAVE_IMT
-	mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
-	mono_install_imt_trampoline (mini_get_imt_trampoline ());
+	if (mono_use_imt) {
+		mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
+		mono_install_imt_trampoline (mini_get_imt_trampoline ());
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
-	mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
+		mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
 #endif
+	}
 #endif
 
 	/* This must come after mono_init () in the aot-only case */
