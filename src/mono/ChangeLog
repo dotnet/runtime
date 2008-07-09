@@ -1,6 +1,8 @@
 2008-07-10  Raja R Harinath  <harinath@hurrynot.org>
 
 	* configure.in (enable_quiet_build): Work better on a non-srcdir build.
+	(mono_cv_sizeof_sunpath): Rename cacheval from 'cv_mono_sizeof_sunpath'
+	to placate autoconf.
 
 2008-07-07  Zoltan Varga  <vargaz@gmail.com>
 

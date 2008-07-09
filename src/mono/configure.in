@@ -1041,7 +1041,7 @@ if test x$platform_win32 = xno; then
 	dnl ***********************************************
 	# AC_CHECK_SIZEOF can't cope with struct members :-(
 	AC_MSG_CHECKING(size of sockaddr_un.sun_path)
-	AC_CACHE_VAL(cv_mono_sizeof_sunpath,
+	AC_CACHE_VAL(mono_cv_sizeof_sunpath,
 		[AC_TRY_RUN([
 			#include <sys/types.h>
 			#include <stdio.h>
@@ -1054,11 +1054,11 @@ if test x$platform_win32 = xno; then
 				fprintf(f, "%d\n", sizeof(sock_un.sun_path));
 				exit(0);
 			}
-		], cv_mono_sizeof_sunpath=`cat conftestval`,
-		   cv_mono_sizeof_sunpath=0,
-		   cv_mono_sizeof_sunpath=0)])dnl
-	AC_MSG_RESULT($cv_mono_sizeof_sunpath)
-	AC_DEFINE_UNQUOTED(MONO_SIZEOF_SUNPATH, $cv_mono_sizeof_sunpath, [Sizeof sock_un.sun_path])
+		], mono_cv_sizeof_sunpath=`cat conftestval`,
+		   mono_cv_sizeof_sunpath=0,
+		   mono_cv_sizeof_sunpath=0)])dnl
+	AC_MSG_RESULT($mono_cv_sizeof_sunpath)
+	AC_DEFINE_UNQUOTED(MONO_SIZEOF_SUNPATH, $mono_cv_sizeof_sunpath, [Sizeof sock_un.sun_path])
 
 	dnl *************************************
 	dnl *** Checks for zero length arrays ***
