@@ -1360,10 +1360,6 @@ mono_local_cprop (MonoCompile *cfg) MONO_INTERNAL;
 MonoSecurityFrame* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip) MONO_INTERNAL;
 MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip) MONO_INTERNAL;
 
-int mini_wapi_hps     (int argc, char **argv);
-int mini_wapi_semdel  (int argc, char **argv);
-int mini_wapi_seminfo (int argc, char **argv);
-
 /* Generic sharing */
 
 MonoGenericSharingContext* mono_get_generic_context_from_code (guint8 *code) MONO_INTERNAL;
