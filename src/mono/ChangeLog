@@ -1,7 +1,9 @@
 2008-07-09  Zoltan Varga  <vargaz@gmail.com>
 
-	* scripts/patch-quiet.sh: Use \\t to encode \t.
+	* scripts/patch-quiet.sh: Another try to fix this on osx.
 	
+	* scripts/patch-quiet.sh: Use \\t to encode \t.
+
 	* scripts/patch-quiet.sh: Remove a stray \t.
 
 2008-07-10  Raja R Harinath  <harinath@hurrynot.org>
