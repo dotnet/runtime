@@ -13943,9 +13943,12 @@ mini_init (const char *filename, const char *runtime_version)
 	else
 		domain = mono_init_from_assembly (filename, filename);
 
-	if (mono_aot_only)
+	if (mono_aot_only) {
 		/* The IMT tables are very dynamic thus they are hard to AOT */
 		mono_use_imt = FALSE;
+		/* This helps catch code allocation requests */
+		mono_code_manager_set_read_only (domain->code_mp);
+	}
 
 #ifdef MONO_ARCH_HAVE_IMT
 	if (mono_use_imt) {
