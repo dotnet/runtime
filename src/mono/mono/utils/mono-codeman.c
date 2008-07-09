@@ -97,6 +97,7 @@ mono_code_manager_new (void)
 	cman->current = NULL;
 	cman->full = NULL;
 	cman->dynamic = 0;
+	cman->read_only = 0;
 	return cman;
 }
 
