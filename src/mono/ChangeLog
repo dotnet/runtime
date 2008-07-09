@@ -1,3 +1,7 @@
+2008-07-09  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/patch-quiet.sh: Remove a stray \t.
+
 2008-07-10  Raja R Harinath  <harinath@hurrynot.org>
 
 	* configure.in (enable_quiet_build): Work better on a non-srcdir build.
