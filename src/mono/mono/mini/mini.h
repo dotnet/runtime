@@ -1129,7 +1129,8 @@ guint32 mono_aot_get_n_pagefaults           (void) MONO_INTERNAL;
 gpointer mono_aot_plt_resolve               (gpointer aot_module, guint32 plt_info_offset, guint8 *code) MONO_INTERNAL;
 gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vtable, int slot) MONO_INTERNAL;
 gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
-gpointer mono_aot_get_named_code (const char *name) MONO_INTERNAL;
+gpointer mono_aot_get_named_code            (const char *name) MONO_INTERNAL;
+gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method) MONO_INTERNAL;
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;

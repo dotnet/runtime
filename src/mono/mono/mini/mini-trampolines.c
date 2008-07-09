@@ -28,6 +28,15 @@ static GHashTable *delegate_trampoline_hash_addr = NULL;
 #define mono_trampolines_unlock() LeaveCriticalSection (&trampolines_mutex)
 static CRITICAL_SECTION trampolines_mutex;
 
+static gpointer
+get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer addr)
+{
+	if (mono_aot_only)
+		return mono_aot_get_unbox_trampoline (m);
+	else
+		return mono_arch_get_unbox_trampoline (gsctx, m, addr);
+}
+
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
@@ -250,7 +259,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
-			addr = mono_arch_get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);
+			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);
 
 		g_assert (*vtable_slot);
 
@@ -329,7 +338,7 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 			if (!method)
 				method = mono_get_method (image, token, NULL);
 			if (method->klass->valuetype)
-				addr = mono_arch_get_unbox_trampoline (mono_get_generic_context_from_code (code), method, addr);
+				addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), method, addr);
 		}
 	} else {
 		/* This is a normal call through a PLT entry */

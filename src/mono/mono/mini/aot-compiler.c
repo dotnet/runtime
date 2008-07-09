@@ -2889,7 +2889,6 @@ emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code,
  * The generated trampolines jump to the generic trampolines using another GOT slot, which
  * will be setup by the AOT loader to point to the generic trampoline code of the given 
  * type.
- * Currently, we only emit trampolines into the mscorlib AOT image.
  */
 static void
 emit_trampolines (MonoAotCompile *acfg)
@@ -2906,75 +2905,116 @@ emit_trampolines (MonoAotCompile *acfg)
 		return;
 	
 	g_assert (acfg->image->assembly);
-	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") != 0)
-		return;
 
+	/* Currently, we only most trampolines into the mscorlib AOT image. */
+	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-	/*
-	 * Emit the generic trampolines.
-	 *
-	 * We could save some code by treating the generic trampolines as a wrapper
-	 * method, but that approach has its own complexities, so we choose the simpler
-	 * method.
-	 */
-	for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
-		code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, TRUE);
+		/*
+		 * Emit the generic trampolines.
+		 *
+		 * We could save some code by treating the generic trampolines as a wrapper
+		 * method, but that approach has its own complexities, so we choose the simpler
+		 * method.
+		 */
+		for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
+			code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, TRUE);
 
-		/* Emit trampoline code */
+			/* Emit trampoline code */
 
-		symbol = g_strdup_printf ("generic_trampoline_%d", tramp_type);
+			symbol = g_strdup_printf ("generic_trampoline_%d", tramp_type);
 
-		emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji);
+			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji);
 
-		g_free (symbol);
-	}
+			g_free (symbol);
+		}
 
-	code = mono_arch_get_nullified_class_init_trampoline (&code_size);
-	emit_named_code (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL);
+		code = mono_arch_get_nullified_class_init_trampoline (&code_size);
+		emit_named_code (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL);
 
-	/* Emit the exception related code pieces */
-	code = mono_arch_get_restore_context_full (&code_size, &ji, TRUE);
-	emit_named_code (acfg, "restore_context", code, code_size, acfg->got_offset, ji);
-    code = mono_arch_get_call_filter_full (&code_size, &ji, TRUE);
-	emit_named_code (acfg, "call_filter", code, code_size, acfg->got_offset, ji);
-	code = mono_arch_get_throw_exception_full (&code_size, &ji, TRUE);
-	emit_named_code (acfg, "throw_exception", code, code_size, acfg->got_offset, ji);
-	code = mono_arch_get_rethrow_exception_full (&code_size, &ji, TRUE);
-	emit_named_code (acfg, "rethrow_exception", code, code_size, acfg->got_offset, ji);
-	code = mono_arch_get_throw_exception_by_name_full (&code_size, &ji, TRUE);
-	emit_named_code (acfg, "throw_exception_by_name", code, code_size, acfg->got_offset, ji);
-	code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
-	emit_named_code (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji);
+		/* Emit the exception related code pieces */
+		code = mono_arch_get_restore_context_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "restore_context", code, code_size, acfg->got_offset, ji);
+		code = mono_arch_get_call_filter_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "call_filter", code, code_size, acfg->got_offset, ji);
+		code = mono_arch_get_throw_exception_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "throw_exception", code, code_size, acfg->got_offset, ji);
+		code = mono_arch_get_rethrow_exception_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "rethrow_exception", code, code_size, acfg->got_offset, ji);
+		code = mono_arch_get_throw_exception_by_name_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "throw_exception_by_name", code, code_size, acfg->got_offset, ji);
+		code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji);
 #endif
 
-	/*
-	 * FIXME: Maybe we should use more specific trampolines (i.e. one class init for each
-	 * class).
-	 */
+		/*
+		 * FIXME: Maybe we should use more specific trampolines (i.e. one class init for
+		 * each class).
+		 */
 
-	/* Reserve some entries at the end of the GOT for our use */
-	acfg->num_trampoline_got_entries = acfg->num_aot_trampolines * 2;
+		/* Reserve some entries at the end of the GOT for our use */
+		acfg->num_trampoline_got_entries = acfg->num_aot_trampolines * 2;
 
-	symbol = g_strdup_printf ("trampolines");
+		symbol = g_strdup_printf ("trampolines");
 
-	emit_section_change (acfg, ".text", 0);
-	emit_global (acfg, symbol, TRUE);
-	emit_label (acfg, symbol);
+		emit_section_change (acfg, ".text", 0);
+		emit_global (acfg, symbol, TRUE);
+		emit_label (acfg, symbol);
 
-	for (i = 0; i < acfg->num_aot_trampolines; ++i) {
-		offset = acfg->got_offset + (i * 2);
+		for (i = 0; i < acfg->num_aot_trampolines; ++i) {
+			offset = acfg->got_offset + (i * 2);
 
 #if defined(__x86_64__)
-		/* This should be exactly 16 bytes long */
-		/* It should work together with the generic trampoline code in tramp-amd64.c */
-		/* call *<offset>(%rip) */
-		emit_byte (acfg, '\x41');
-		emit_byte (acfg, '\xff');
-		emit_byte (acfg, '\x15');
-		emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
-		/* This should be relative to the start of the trampoline */
-		emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 19);
-		emit_zero_bytes (acfg, 5);
+			/* This should be exactly 16 bytes long */
+			/* It should work together with the generic trampoline code in tramp-amd64.c */
+			/* call *<offset>(%rip) */
+			emit_byte (acfg, '\x41');
+			emit_byte (acfg, '\xff');
+			emit_byte (acfg, '\x15');
+			emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
+			/* This should be relative to the start of the trampoline */
+			emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 19);
+			emit_zero_bytes (acfg, 5);
+#else
+			g_assert_not_reached ();
+#endif
+		}
+	}
+
+	/* Unbox trampolines */
+
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		MonoMethod *method;
+		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		MonoCompile *cfg;
+		int this_reg;
+
+		method = mono_get_method (acfg->image, token, NULL);
+
+		cfg = g_hash_table_lookup (acfg->method_to_cfg, method);
+		if (!cfg || !cfg->method->klass->valuetype || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL))
+			continue;
+
+		symbol = g_strdup_printf ("unbox_trampoline_%d", i);
+
+		emit_section_change (acfg, ".text", 0);
+		emit_global (acfg, symbol, TRUE);
+		emit_label (acfg, symbol);
+
+#if defined(__x86_64__)
+		{
+			guint8 buf [32];
+			char *call_target;
+
+			this_reg = mono_arch_get_this_arg_reg (mono_method_signature (cfg->method), cfg->generic_sharing_context, NULL);
+			code = buf;
+			amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
+
+			emit_bytes (acfg, buf, code - buf);
+			/* jump <method> */
+			call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, cfg->method));
+			emit_byte (acfg, '\xe9');
+			emit_symbol_diff (acfg, call_target, ".", -4);
+		}
 #else
 		g_assert_not_reached ();
 #endif

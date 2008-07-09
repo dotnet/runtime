@@ -1441,7 +1441,7 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 
 	return NULL;
 }
- 
+
 static gpointer
 mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 {
@@ -2150,32 +2150,15 @@ mono_aot_get_plt_entry (guint8 *code)
 	return NULL;
 }
 
-/*
- * Return the piece of code identified by NAME from the mscorlib AOT file.
- */
-gpointer
-mono_aot_get_named_code (const char *name)
+static gpointer
+load_named_code (MonoAotModule *amodule, const char *name)
 {
 	char *symbol;
 	guint8 *p;
 	int n_patches, got_index, pindex;
 	MonoMemPool *mp;
 	gpointer code;
-	MonoImage *image;
-	MonoAssembly *assembly;
-	MonoAotModule *amodule;
-
-	image = mono_defaults.corlib;
-	g_assert (image);
-
-	mono_aot_lock ();
-
-	assembly = image->assembly;
-	g_assert (assembly);
-	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, assembly);
-	g_assert (amodule);
-
-	mono_aot_unlock ();
+	MonoAssembly *assembly = amodule->assembly;
 
 	/* Load the code */
 
@@ -2189,7 +2172,9 @@ mono_aot_get_named_code (const char *name)
 	symbol = g_strdup_printf ("%s_p", name);
 	mono_dl_symbol (assembly->aot_module, symbol, (gpointer *)&p);
 	g_free (symbol);
-	g_assert (p);
+	if (!p)
+		/* Nothing to patch */
+		return code;
 
 	/* Similar to mono_aot_load_method () */
 
@@ -2254,6 +2239,31 @@ mono_aot_get_named_code (const char *name)
 }
 
 /*
+ * Return the piece of code identified by NAME from the mscorlib AOT file.
+ */
+gpointer
+mono_aot_get_named_code (const char *name)
+{
+	MonoImage *image;
+	MonoAssembly *assembly;
+	MonoAotModule *amodule;
+
+	image = mono_defaults.corlib;
+	g_assert (image);
+
+	mono_aot_lock ();
+
+	assembly = image->assembly;
+	g_assert (assembly);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, assembly);
+	g_assert (amodule);
+
+	mono_aot_unlock ();
+
+	return load_named_code (amodule, name);
+}
+
+/*
  * Return a specific trampoline from the AOT file.
  */
 gpointer
@@ -2303,6 +2313,30 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	g_assert_not_reached ();
 #endif
 
+	return code;
+}
+
+gpointer
+mono_aot_get_unbox_trampoline (MonoMethod *method)
+{
+	MonoClass *klass = method->klass;
+	MonoAssembly *ass = klass->image->assembly;
+	guint32 method_index = mono_metadata_token_index (method->token) - 1;
+	MonoAotModule *amodule;
+	char *symbol;
+	gpointer code;
+
+	mono_aot_lock ();
+
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
+
+	mono_aot_unlock ();
+
+	g_assert (amodule);
+
+	symbol = g_strdup_printf ("unbox_trampoline_%d", method_index);
+	code = load_named_code (amodule, symbol);
+	g_free (symbol);
 	return code;
 }
 
@@ -2401,15 +2435,25 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	return NULL;
 }
 
-gpointer mono_aot_create_specific_trampolines (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+gpointer
+mono_aot_create_specific_trampolines (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
 	g_assert_not_reached ();
+	return NULL;
 }
 
 gpointer
 mono_aot_get_named_code (char *name)
 {
 	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_aot_get_unbox_trampoline (MonoMethod *method)
+{
+	g_assert_not_reached ();
+	return NULL;
 }
 
 #endif
