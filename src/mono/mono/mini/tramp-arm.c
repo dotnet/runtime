@@ -159,9 +159,20 @@ mono_arch_nullify_plt_entry (guint8 *code)
 guchar*
 mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
+	MonoJumpInfo *ji;
+	guint32 code_size;
+
+	return mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, FALSE);
+}
+	
+guchar*
+mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+{
 	guint8 *buf, *code = NULL;
 	guint8 *load_get_lmf_addr, *load_trampoline;
 	gpointer *constants;
+
+	*ji = NULL;
 
 	/* Now we'll create in 'buf' the ARM trampoline code. This
 	 is the trampoline code common to all methods  */
@@ -301,6 +312,22 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	g_assert ((buf - code) <= GEN_TRAMP_SIZE);
 
 	return code;
+}
+
+gpointer
+mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
+{
+	guint8 *buf, *code;
+
+	code = buf = mono_global_codeman_reserve (16);
+
+	// FIXME:
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	*code_len = code - buf;
+
+	return buf;
 }
 
 #define SPEC_TRAMP_SIZE 24

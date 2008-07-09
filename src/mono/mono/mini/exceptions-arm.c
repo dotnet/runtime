@@ -99,7 +99,6 @@ typedef struct my_ucontext {
 #endif
 
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
-		int reg;	\
 		ARM_LDR_IMM (code, ip_reg, ctx_reg, G_STRUCT_OFFSET (MonoContext, eip));	\
 		ARM_ADD_REG_IMM8 (code, tmp_reg, ctx_reg, G_STRUCT_OFFSET(MonoContext, regs));	\
 		ARM_LDMIA (code, tmp_reg, MONO_ARM_REGSAVE_MASK);	\
@@ -115,17 +114,15 @@ typedef struct my_ucontext {
  * The first argument in r0 is the pointer to the context.
  */
 gpointer
-mono_arch_get_restore_context (void)
+mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	guint8 *code;
-	static guint8 start [128];
-	static int inited = 0;
+	guint8 *start;
 
-	if (inited)
-		return start;
-	inited = 1;
+	*ji = NULL;
 
-	code = start;
+	start = code = mono_global_codeman_reserve (128);
+
 	restore_regs_from_context (ARMREG_R0, ARMREG_R1, ARMREG_R2);
 	/* restore also the stack pointer, FIXME: handle sp != fp */
 	ARM_LDR_IMM (code, ARMREG_SP, ARMREG_R0, G_STRUCT_OFFSET (MonoContext, ebp));
@@ -136,8 +133,12 @@ mono_arch_get_restore_context (void)
 	/* never reached */
 	ARM_DBRK (code);
 
-	g_assert ((code - start) < sizeof(start));
+	g_assert ((code - start) < 128);
+
 	mono_arch_flush_icache (start, code - start);
+
+	*code_size = code - start;
+
 	return start;
 }
 
@@ -149,19 +150,13 @@ mono_arch_get_restore_context (void)
  * @exc object in this case).
  */
 gpointer
-mono_arch_get_call_filter (void)
+mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8 start [320];
-	static int inited = 0;
 	guint8 *code;
-	int alloc_size, pos, i;
+	guint8* start;
 
-	if (inited)
-		return start;
-
-	inited = 1;
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
-	code = start;
+	start = code = mono_global_codeman_reserve (320);
 
 	/* save all the regs on the stack */
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
@@ -177,8 +172,12 @@ mono_arch_get_call_filter (void)
 	/* epilog */
 	ARM_POP_NWB (code, 0xff0 | ((1 << ARMREG_SP) | (1 << ARMREG_PC)));
 
-	g_assert ((code - start) < sizeof(start));
+	g_assert ((code - start) < 320);
+
 	mono_arch_flush_icache (start, code - start);
+
+	*code_size = code - start;
+
 	return start;
 }
 
@@ -190,7 +189,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	gboolean rethrow = eip & 1;
 
 	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
+		restore_context = mono_get_restore_context ();
 
 	eip &= ~1; /* clear the optional rethrow bit */
 	/* adjust eip so that it point into the call instruction */
@@ -225,12 +224,14 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
  *
  */
 static gpointer 
-mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_token, gboolean rethrow)
+mono_arch_get_throw_exception_generic (int size, int by_token, gboolean rethrow, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
+	guint8 *start;
 	guint8 *code;
-	int alloc_size, pos, i;
 
-	code = start;
+	*ji = NULL;
+
+	code = start = mono_global_codeman_reserve (size);
 
 	/* save all the regs on the stack */
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
@@ -271,6 +272,9 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_token, gb
 	ARM_DBRK (code);
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
+
+	*code_size = code - start;
+
 	return start;
 }
 
@@ -283,17 +287,11 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_token, gb
  *
  */
 gpointer
-mono_arch_get_rethrow_exception (void)
+mono_arch_get_rethrow_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8 start [132];
-	static int inited = 0;
-
-	if (inited)
-		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, TRUE);
-	inited = 1;
-	return start;
+	return mono_arch_get_throw_exception_generic (132, FALSE, TRUE, code_size, ji, aot);
 }
+
 /**
  * arch_get_throw_exception:
  *
@@ -307,32 +305,25 @@ mono_arch_get_rethrow_exception (void)
  *
  */
 gpointer 
-mono_arch_get_throw_exception (void)
+mono_arch_get_throw_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8 start [132];
-	static int inited = 0;
-
-	if (inited)
-		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, FALSE);
-	inited = 1;
-	return start;
+	return mono_arch_get_throw_exception_generic (132, FALSE, FALSE, code_size, ji, aot);
 }
 
 gpointer 
-mono_arch_get_throw_exception_by_name (void)
+mono_arch_get_throw_exception_by_name_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {	
-	static guint8* start;
-	static gboolean inited = FALSE;
+	guint8* start;
 	guint8 *code;
 
-	if (inited)
-		return start;
+	*ji = NULL;
 
 	start = code = mono_global_codeman_reserve (64);
 
 	/* Not used on ARM */
 	ARM_DBRK (code);
+
+	*code_size = code - start;
 
 	return start;
 }
@@ -349,16 +340,9 @@ mono_arch_get_throw_exception_by_name (void)
  * On ARM, the ip is passed instead of an offset.
  */
 gpointer 
-mono_arch_get_throw_corlib_exception (void)
+mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8 start [168];
-	static int inited = 0;
-
-	if (inited)
-		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE, FALSE);
-	inited = 1;
-	return start;
+	return mono_arch_get_throw_exception_generic (168, TRUE, FALSE, code_size, ji, aot);
 }	
 
 /* mono_arch_find_jit_info:

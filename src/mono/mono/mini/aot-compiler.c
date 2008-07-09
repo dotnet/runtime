@@ -2986,7 +2986,6 @@ emit_trampolines (MonoAotCompile *acfg)
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		MonoCompile *cfg;
-		int this_reg;
 
 		method = mono_get_method (acfg->image, token, NULL);
 
@@ -3004,6 +3003,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		{
 			guint8 buf [32];
 			char *call_target;
+			int this_reg;
 
 			this_reg = mono_arch_get_this_arg_reg (mono_method_signature (cfg->method), cfg->generic_sharing_context, NULL);
 			code = buf;
