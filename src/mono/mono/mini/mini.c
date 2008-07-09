@@ -1603,6 +1603,86 @@ stelem_to_stind [] = {
 	CEE_STIND_REF
 };
 
+
+#ifdef MONO_ARCH_SOFT_FLOAT
+static void
+handle_store_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, MonoInst *val, const unsigned char *ip)
+{
+	MonoInst *iargs [2];
+	iargs [0] = val;
+	iargs [1] = ptr;
+
+	mono_emit_jit_icall (cfg, bblock, mono_fstore_r4, iargs, ip);
+}
+
+static int
+handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, const unsigned char *ip)
+{
+	MonoInst *iargs [1];
+	iargs [0] = ptr;
+
+	return mono_emit_jit_icall (cfg, bblock, mono_fload_r4, iargs, ip);
+}
+
+#define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip) do {\
+		if (header->locals [(idx)]->type == MONO_TYPE_R4 && !header->locals [(idx)]->byref) {	\
+			int temp;	\
+			NEW_LOCLOADA (cfg, (ins), (idx));	\
+			temp = handle_load_float (cfg, bblock, (ins), (ip));	\
+			NEW_TEMPLOAD (cfg, (ins), temp);	\
+		}	\
+	} while (0)
+#define STLOC_SOFT_FLOAT(cfg,ins,idx,ip) do {\
+		if (header->locals [(idx)]->type == MONO_TYPE_R4 && !header->locals [(idx)]->byref) {	\
+			NEW_LOCLOADA (cfg, (ins), (idx));	\
+			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
+			MONO_INST_NEW (cfg, (ins), OP_NOP);	\
+		}	\
+	} while (0)
+#define LDARG_SOFT_FLOAT(cfg,ins,idx,ip) do {\
+		if (param_types [(idx)]->type == MONO_TYPE_R4 && !param_types [(idx)]->byref) {	\
+			int temp;	\
+			NEW_ARGLOADA (cfg, (ins), (idx));	\
+			temp = handle_load_float (cfg, bblock, (ins), (ip));	\
+			NEW_TEMPLOAD (cfg, (ins), temp);	\
+		}	\
+	} while (0)
+#define STARG_SOFT_FLOAT(cfg,ins,idx,ip) do {\
+		if (param_types [(idx)]->type == MONO_TYPE_R4 && !param_types [(idx)]->byref) {	\
+			NEW_ARGLOADA (cfg, (ins), (idx));	\
+			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
+			MONO_INST_NEW (cfg, (ins), OP_NOP);	\
+		}	\
+	} while (0)
+
+#define NEW_TEMPLOAD_SOFT_FLOAT(cfg,bblock,ins,num,ip) do {		\
+	if ((ins)->opcode == CEE_LDIND_R4) {						\
+	    int idx = (num);										\
+	    int temp;											\
+	    NEW_TEMPLOADA (cfg, (ins), (idx));							\
+		temp = handle_load_float (cfg, (bblock), (ins), ip);		\
+		NEW_TEMPLOAD (cfg, (ins), (temp));							\
+	}																\
+	} while (0)
+
+#define NEW_TEMPSTORE_SOFT_FLOAT(cfg,bblock,ins,num,val,ip) do {		\
+	if ((ins)->opcode == CEE_STIND_R4) {								\
+	    int idx = (num);										\
+		NEW_TEMPLOADA (cfg, (ins), (idx)); \
+		handle_store_float ((cfg), (bblock), (ins), (val), (ip));	\
+	} \
+	} while (0)
+
+#else
+
+#define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip)
+#define STLOC_SOFT_FLOAT(cfg,ins,idx,ip)
+#define LDARG_SOFT_FLOAT(cfg,ins,idx,ip)
+#define STARG_SOFT_FLOAT(cfg,ins,idx,ip)
+#define NEW_TEMPLOAD_SOFT_FLOAT(cfg,bblock,ins,num,ip)
+#define NEW_TEMPSTORE_SOFT_FLOAT(cfg,bblock,ins,num,val,ip)
+#endif
+
 #if 0
 
 static const char
@@ -2951,77 +3031,6 @@ mono_get_array_new_va_signature (int arity)
 	return res;
 }
 
-#ifdef MONO_ARCH_SOFT_FLOAT
-static void
-handle_store_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, MonoInst *val, const unsigned char *ip)
-{
-	MonoInst *iargs [2];
-	iargs [0] = val;
-	iargs [1] = ptr;
-
-	mono_emit_jit_icall (cfg, bblock, mono_fstore_r4, iargs, ip);
-}
-
-static int
-handle_load_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, const unsigned char *ip)
-{
-	MonoInst *iargs [1];
-	iargs [0] = ptr;
-
-	return mono_emit_jit_icall (cfg, bblock, mono_fload_r4, iargs, ip);
-}
-
-#define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip) do {\
-		if (header->locals [(idx)]->type == MONO_TYPE_R4 && !header->locals [(idx)]->byref) {	\
-			int temp;	\
-			NEW_LOCLOADA (cfg, (ins), (idx));	\
-			temp = handle_load_float (cfg, bblock, (ins), (ip));	\
-			NEW_TEMPLOAD (cfg, (ins), temp);	\
-		}	\
-	} while (0)
-#define STLOC_SOFT_FLOAT(cfg,ins,idx,ip) do {\
-		if (header->locals [(idx)]->type == MONO_TYPE_R4 && !header->locals [(idx)]->byref) {	\
-			int temp;	\
-			NEW_LOCLOADA (cfg, (ins), (idx));	\
-			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
-			MONO_INST_NEW (cfg, (ins), OP_NOP);	\
-		}	\
-	} while (0)
-#define LDARG_SOFT_FLOAT(cfg,ins,idx,ip) do {\
-		if (param_types [(idx)]->type == MONO_TYPE_R4 && !param_types [(idx)]->byref) {	\
-			int temp;	\
-			NEW_ARGLOADA (cfg, (ins), (idx));	\
-			temp = handle_load_float (cfg, bblock, (ins), (ip));	\
-			NEW_TEMPLOAD (cfg, (ins), temp);	\
-		}	\
-	} while (0)
-#define STARG_SOFT_FLOAT(cfg,ins,idx,ip) do {\
-		if (param_types [(idx)]->type == MONO_TYPE_R4 && !param_types [(idx)]->byref) {	\
-			int temp;	\
-			NEW_ARGLOADA (cfg, (ins), (idx));	\
-			handle_store_float (cfg, bblock, (ins), *sp, (ip));	\
-			MONO_INST_NEW (cfg, (ins), OP_NOP);	\
-		}	\
-	} while (0)
-
-#define NEW_TEMPLOAD_SOFT_FLOAT(cfg,bblock,ins,num) do {		\
-	if ((ins)->opcode == CEE_LDIND_R4) {						\
-	    int idx = (num);										\
-	    int temp;											\
-	    NEW_TEMPLOADA (cfg, (ins), (idx));							\
-		temp = handle_load_float (cfg, (bblock), (ins), ip);		\
-		NEW_TEMPLOAD (cfg, (ins), (temp));							\
-	}																\
-	} while (0)
-
-#else
-#define LDLOC_SOFT_FLOAT(cfg,ins,idx,ip)
-#define STLOC_SOFT_FLOAT(cfg,ins,idx,ip)
-#define LDARG_SOFT_FLOAT(cfg,ins,idx,ip)
-#define STARG_SOFT_FLOAT(cfg,ins,idx,ip)
-#define NEW_TEMPLOAD_SOFT_FLOAT(cfg,bblock,ins,num)
-#endif
-
 static MonoMethod*
 get_memcpy_method (void)
 {
@@ -4029,7 +4038,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 
 		if (rvar) {
 			NEW_TEMPLOAD (cfg, ins, rvar->inst_c0);
-			NEW_TEMPLOAD_SOFT_FLOAT (cfg, ebblock, ins, rvar->inst_c0);
+			NEW_TEMPLOAD_SOFT_FLOAT (cfg, ebblock, ins, rvar->inst_c0, ip);
 			*sp++ = ins;
 		}
 		*last_b = ebblock;
@@ -6172,6 +6181,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					temp = mono_emit_rgctx_calli_spilled (cfg, bblock, fsig, sp, addr, vtable_arg, ip);
 					if (temp != -1) {
 						NEW_TEMPLOAD (cfg, *sp, temp);
+						NEW_TEMPLOAD_SOFT_FLOAT (cfg, bblock, *sp, temp, ip);
 						sp++;
 					}
 				}			
@@ -7510,7 +7520,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					} else {
 						temp = mono_emit_method_call_spilled (cfg, bblock, wrapper, mono_method_signature (wrapper), iargs, ip, NULL);
 						NEW_TEMPLOAD (cfg, *sp, temp);
-						NEW_TEMPLOAD_SOFT_FLOAT (cfg, bblock, *sp, temp);
+						NEW_TEMPLOAD_SOFT_FLOAT (cfg, bblock, *sp, temp, ip);
 						sp++;
 					}
 				} else {
@@ -12974,6 +12984,7 @@ mono_jit_compile_method (MonoMethod *method)
 	return mono_jit_compile_method_with_opt (method, default_opt);
 }
 
+#ifdef MONO_ARCH_HAVE_INVALIDATE_METHOD
 static void
 invalidated_delegate_trampoline (char *desc)
 {
@@ -12981,6 +12992,7 @@ invalidated_delegate_trampoline (char *desc)
 		 "See http://www.go-mono.com/delegate.html for an explanation and ways to fix this.",
 		 desc);
 }
+#endif
 
 /*
  * mono_jit_free_method:
