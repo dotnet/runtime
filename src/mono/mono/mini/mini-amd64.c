@@ -4036,8 +4036,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (!cfg->arch.omit_fp) {
 		amd64_push_reg (code, AMD64_RBP);
 		async_exc_point (code);
+#ifdef PLATFORM_WIN32
+		mono_arch_unwindinfo_add_push_nonvol (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
+#endif
+		
 		amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
 		async_exc_point (code);
+#ifdef PLATFORM_WIN32
+		mono_arch_unwindinfo_add_set_fpreg (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
+#endif
 	}
 
 	/* Save callee saved registers */

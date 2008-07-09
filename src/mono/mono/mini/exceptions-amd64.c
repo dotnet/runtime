@@ -479,7 +479,13 @@ mono_arch_get_throw_corlib_exception_full (guint32 *code_size, MonoJumpInfo **ji
 		amd64_mov_reg_imm (code, AMD64_ARG_REG1, mono_defaults.exception_class->image);
 		amd64_mov_reg_imm (code, AMD64_R11, mono_exception_from_token);
 	}
+#ifdef PLATFORM_WIN32
+	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 32);
+#endif
 	amd64_call_reg (code, AMD64_R11);
+#ifdef PLATFORM_WIN32
+	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 32);
+#endif
 
 	/* Compute throw_ip */
 	amd64_pop_reg (code, AMD64_ARG_REG2);
@@ -1030,3 +1036,227 @@ mono_arch_notify_pending_exc (void)
 
 	*(gpointer*)(lmf->rsp - 8) = get_throw_pending_exception ();
 }
+
+#ifdef PLATFORM_WIN32
+
+/*
+ * The mono_arch_unwindinfo* methods are used to build and add
+ * function table info for each emitted method from mono.  On Winx64
+ * the seh handler will not be called if the mono methods are not
+ * added to the function table.  
+ *
+ * We should not need to add non-volatile register info to the 
+ * table since mono stores that info elsewhere. (Except for the register 
+ * used for the fp.)
+ */
+
+#define MONO_MAX_UNWIND_CODES 22
+
+typedef union _UNWIND_CODE {
+    struct {
+        guchar CodeOffset;
+        guchar UnwindOp : 4;
+        guchar OpInfo   : 4;
+    };
+    gushort FrameOffset;
+} UNWIND_CODE, *PUNWIND_CODE;
+
+typedef struct _UNWIND_INFO {
+	guchar Version       : 3;
+	guchar Flags         : 5;
+	guchar SizeOfProlog;
+	guchar CountOfCodes;
+	guchar FrameRegister : 4;
+	guchar FrameOffset   : 4;
+	/* custom size for mono allowing for mono allowing for*/
+	/*UWOP_PUSH_NONVOL ebp offset = 21*/
+	/*UWOP_ALLOC_LARGE : requires 2 or 3 offset = 20*/
+	/*UWOP_SET_FPREG : requires 2 offset = 17*/
+	/*UWOP_PUSH_NONVOL offset = 15-0*/
+	UNWIND_CODE UnwindCode[MONO_MAX_UNWIND_CODES]; 
+
+/*  	UNWIND_CODE MoreUnwindCode[((CountOfCodes + 1) & ~1) - 1];
+ *   	union {
+ *   	    OPTIONAL ULONG ExceptionHandler;
+ *   	    OPTIONAL ULONG FunctionEntry;
+ *   	};
+ *   	OPTIONAL ULONG ExceptionData[]; */
+} UNWIND_INFO, *PUNWIND_INFO;
+
+typedef struct
+{
+	RUNTIME_FUNCTION runtimeFunction;
+	UNWIND_INFO unwindInfo;
+} MonoUnwindInfo, *PMonoUnwindInfo;
+
+static void
+mono_arch_unwindinfo_create (gpointer* monoui)
+{
+	PMonoUnwindInfo newunwindinfo;
+	*monoui = newunwindinfo = g_new0 (MonoUnwindInfo, 1);
+	newunwindinfo->unwindInfo.Version = 1;
+}
+
+void
+mono_arch_unwindinfo_add_push_nonvol (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg )
+{
+	PMonoUnwindInfo unwindinfo;
+	PUNWIND_CODE unwindcode;
+	guchar codeindex;
+	if (!*monoui)
+		mono_arch_unwindinfo_create (monoui);
+	
+	unwindinfo = (MonoUnwindInfo*)*monoui;
+
+	if (unwindinfo->unwindInfo.CountOfCodes >= MONO_MAX_UNWIND_CODES)
+		g_error ("Larger allocation needed for the unwind information.");
+
+	codeindex = MONO_MAX_UNWIND_CODES - (++unwindinfo->unwindInfo.CountOfCodes);
+	unwindcode = &unwindinfo->unwindInfo.UnwindCode[codeindex];
+	unwindcode->UnwindOp = 0; /*UWOP_PUSH_NONVOL*/
+	unwindcode->CodeOffset = (((guchar*)nextip)-((guchar*)codebegin));
+	unwindcode->OpInfo = reg;
+
+	if (unwindinfo->unwindInfo.SizeOfProlog >= unwindcode->CodeOffset)
+		g_error ("Adding unwind info in wrong order.");
+	
+	unwindinfo->unwindInfo.SizeOfProlog = unwindcode->CodeOffset;
+}
+
+void
+mono_arch_unwindinfo_add_set_fpreg (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg )
+{
+	PMonoUnwindInfo unwindinfo;
+	PUNWIND_CODE unwindcode;
+	guchar codeindex;
+	if (!*monoui)
+		mono_arch_unwindinfo_create (monoui);
+	
+	unwindinfo = (MonoUnwindInfo*)*monoui;
+
+	if (unwindinfo->unwindInfo.CountOfCodes + 1 >= MONO_MAX_UNWIND_CODES)
+		g_error ("Larger allocation needed for the unwind information.");
+
+	codeindex = MONO_MAX_UNWIND_CODES - (unwindinfo->unwindInfo.CountOfCodes += 2);
+	unwindcode = &unwindinfo->unwindInfo.UnwindCode[codeindex];
+	unwindcode->FrameOffset = 0; /*Assuming no frame pointer offset for mono*/
+	unwindcode++;
+	unwindcode->UnwindOp = 3; /*UWOP_SET_FPREG*/
+	unwindcode->CodeOffset = (((guchar*)nextip)-((guchar*)codebegin));
+	unwindcode->OpInfo = reg;
+	
+	unwindinfo->unwindInfo.FrameRegister = reg;
+
+	if (unwindinfo->unwindInfo.SizeOfProlog >= unwindcode->CodeOffset)
+		g_error ("Adding unwind info in wrong order.");
+	
+	unwindinfo->unwindInfo.SizeOfProlog = unwindcode->CodeOffset;
+}
+
+void
+mono_arch_unwindinfo_add_alloc_stack (gpointer* monoui, gpointer codebegin, gpointer nextip, guint size )
+{
+	PMonoUnwindInfo unwindinfo;
+	PUNWIND_CODE unwindcode;
+	guchar codeindex;
+	guchar codesneeded;
+	if (!*monoui)
+		mono_arch_unwindinfo_create (monoui);
+	
+	unwindinfo = (MonoUnwindInfo*)*monoui;
+
+	if (size < 0x8)
+		g_error ("Stack allocation must be equal to or greater than 0x8.");
+	
+	if (size <= 0x80)
+		codesneeded = 1;
+	else if (size <= 0x7FFF8)
+		codesneeded = 2;
+	else
+		codesneeded = 3;
+	
+	if (unwindinfo->unwindInfo.CountOfCodes + codesneeded > MONO_MAX_UNWIND_CODES)
+		g_error ("Larger allocation needed for the unwind information.");
+
+	codeindex = MONO_MAX_UNWIND_CODES - (unwindinfo->unwindInfo.CountOfCodes += codesneeded);
+	unwindcode = &unwindinfo->unwindInfo.UnwindCode[codeindex];
+
+	if (codesneeded == 1) {
+		/*The size of the allocation is 
+		  (the number in the OpInfo member) times 8 plus 8*/
+		unwindcode->OpInfo = (size - 8)/8;
+		unwindcode->UnwindOp = 2; /*UWOP_ALLOC_SMALL*/
+	}
+	else {
+		if (codesneeded == 3) {
+			/*the unscaled size of the allocation is recorded
+			  in the next two slots in little-endian format*/
+			*((unsigned int*)(&unwindcode->FrameOffset)) = size;
+			unwindcode += 2;
+			unwindcode->OpInfo = 1;
+		}
+		else {
+			/*the size of the allocation divided by 8
+			  is recorded in the next slot*/
+			unwindcode->FrameOffset = size/8; 
+			unwindcode++;	
+			unwindcode->OpInfo = 0;
+			
+		}
+		unwindcode->UnwindOp = 1; /*UWOP_ALLOC_LARGE*/
+	}
+
+	unwindcode->CodeOffset = (((guchar*)nextip)-((guchar*)codebegin));
+
+	if (unwindinfo->unwindInfo.SizeOfProlog >= unwindcode->CodeOffset)
+		g_error ("Adding unwind info in wrong order.");
+	
+	unwindinfo->unwindInfo.SizeOfProlog = unwindcode->CodeOffset;
+}
+
+guint
+mono_arch_unwindinfo_get_size (gpointer monoui)
+{
+	PMonoUnwindInfo unwindinfo;
+	if (!monoui)
+		return 0;
+	
+	unwindinfo = (MonoUnwindInfo*)monoui;
+	return (8 + sizeof (MonoUnwindInfo)) - 
+		(sizeof (UNWIND_CODE) * (MONO_MAX_UNWIND_CODES - unwindinfo->unwindInfo.CountOfCodes));
+}
+
+void
+mono_arch_unwindinfo_install_unwind_info (gpointer* monoui, gpointer code, guint code_size)
+{
+	PMonoUnwindInfo unwindinfo, targetinfo;
+	guchar codecount;
+	guint64 targetlocation;
+	if (!*monoui)
+		return;
+
+	unwindinfo = (MonoUnwindInfo*)*monoui;
+	targetlocation = (guint64)&(((guchar*)code)[code_size]);
+	targetinfo = (PMonoUnwindInfo) ALIGN_TO(targetlocation, 8);
+
+	unwindinfo->runtimeFunction.EndAddress = code_size;
+	unwindinfo->runtimeFunction.UnwindData = ((guchar*)&targetinfo->unwindInfo) - ((guchar*)code);
+	
+	memcpy (targetinfo, unwindinfo, sizeof (MonoUnwindInfo) - (sizeof (UNWIND_CODE) * MONO_MAX_UNWIND_CODES));
+	
+	codecount = unwindinfo->unwindInfo.CountOfCodes;
+	if (codecount) {
+		memcpy (&targetinfo->unwindInfo.UnwindCode[0], &unwindinfo->unwindInfo.UnwindCode[MONO_MAX_UNWIND_CODES-codecount], 
+			sizeof (UNWIND_CODE) * unwindinfo->unwindInfo.CountOfCodes);
+	}
+
+	g_free (unwindinfo);
+	*monoui = 0;
+
+	RtlAddFunctionTable (&targetinfo->runtimeFunction, 1, (DWORD64)code);
+}
+
+#endif
+
+
+

@@ -11789,6 +11789,10 @@ mono_codegen (MonoCompile *cfg)
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
 
 	if (cfg->method->dynamic) {
+		guint unwindlen = 0;
+#ifdef WIN64
+		unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
+#endif
 		/* Allocate the code into a separate memory pool so it can be freed */
 		cfg->dynamic_info = g_new0 (MonoJitDynamicMethodInfo, 1);
 		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic ();
@@ -11796,10 +11800,14 @@ mono_codegen (MonoCompile *cfg)
 		mono_dynamic_code_hash_insert (cfg->domain, cfg->method, cfg->dynamic_info);
 		mono_domain_unlock (cfg->domain);
 
-		code = mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size);
+		code = mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + unwindlen);
 	} else {
+		guint unwindlen = 0;
+#ifdef MONO_ARCH_HAVE_UNWIND_TABLE
+		unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
+#endif
 		mono_domain_lock (cfg->domain);
-		code = mono_code_manager_reserve (cfg->domain->code_mp, cfg->code_size);
+		code = mono_code_manager_reserve (cfg->domain->code_mp, cfg->code_size + unwindlen);
 		mono_domain_unlock (cfg->domain);
 	}
 
@@ -11923,6 +11931,9 @@ if (valgrind_register){
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
 
 	mono_debug_close_method (cfg);
+#ifdef MONO_ARCH_HAVE_UNWIND_TABLE
+	mono_arch_unwindinfo_install_unwind_info (&cfg->arch.unwindinfo, cfg->native_code, cfg->code_len);
+#endif
 }
 
 
