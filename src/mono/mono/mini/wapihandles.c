@@ -1,7 +1,7 @@
 #include <config.h>
 #include <glib.h>
 
-#include <mini.h>
+#include "mini.h"
 
 #ifdef PLATFORM_WIN32
 
