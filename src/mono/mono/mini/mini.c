@@ -378,10 +378,8 @@ void *mono_global_codeman_reserve (int size)
 {
 	void *ptr;
 
-	/*
 	if (mono_aot_only)
 		g_error ("Attempting to allocate from the global code manager while running with --aot-only.\n");
-	*/
 
 	if (!global_codeman) {
 		/* This can happen during startup */

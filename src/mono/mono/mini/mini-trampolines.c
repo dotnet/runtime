@@ -763,8 +763,13 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	tramp_data = mono_mempool_alloc (domain->mp, sizeof (gpointer) * 3);
 	mono_domain_unlock (domain);
 	tramp_data [0] = invoke;
-	tramp_data [1] = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), TRUE);
-	tramp_data [2] = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), FALSE);
+	if (mono_aot_only) {
+		tramp_data [1] = NULL;
+		tramp_data [2] = NULL;
+	} else {
+		tramp_data [1] = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), TRUE);
+		tramp_data [2] = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), FALSE);
+	}
 
 	ptr = mono_create_specific_trampoline (tramp_data, MONO_TRAMPOLINE_DELEGATE, mono_domain_get (), &code_size);
 	g_assert (code_size);
