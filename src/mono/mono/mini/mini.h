@@ -1279,9 +1279,10 @@ gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gbool
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
 void        mono_arch_emit_imt_argument         (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
 MonoMethod* mono_arch_find_imt_method           (gpointer *regs, guint8 *code) MONO_INTERNAL;
-MonoVTable* mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code) MONO_INTERNAL;
+MonoVTable* mono_arch_find_static_call_vtable   (gpointer *regs, guint8 *code) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count) MONO_INTERNAL;
-void    mono_arch_notify_pending_exc (void) MONO_INTERNAL;
+void    mono_arch_notify_pending_exc            (void) MONO_INTERNAL;
+void    mono_arch_fixup_jinfo                   (MonoCompile *cfg) MONO_INTERNAL;
 
 /* Exception handling */
 void     mono_exceptions_init                   (void) MONO_INTERNAL;
