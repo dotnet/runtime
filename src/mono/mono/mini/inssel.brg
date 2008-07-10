@@ -1456,6 +1456,7 @@ reg: OP_CCASTCLASS (reg) {
 	MonoInst *end_label, *fail_label, *no_proxy_label, *ok_result_label;
 	int obj_reg = state->left->reg1;
 	int tmp_reg = mono_regstate_next_int (s->rs);
+	int tmp2_reg = mono_regstate_next_int (s->rs);
 	int klass_reg = mono_regstate_next_int (s->rs);
 
 	MONO_NEW_LABEL (s, end_label);
@@ -1486,8 +1487,8 @@ reg: OP_CCASTCLASS (reg) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
 		
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, tmp_reg, 0, "InvalidCastException");
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp2_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, tmp2_reg, 0, "InvalidCastException");
 		
 		MONO_EMIT_NEW_ICONST (s, state->reg1, 1);
 		MONO_EMIT_NEW_BRANCH_LABEL (s, OP_BR, end_label);
@@ -1512,8 +1513,8 @@ reg: OP_CCASTCLASS (reg) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
 		
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
-		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, tmp_reg, 0, no_proxy_label);
+		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp2_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
+		MONO_EMIT_NEW_COMPARE_IMM_BRANCH_LABEL (s, CEE_BEQ, tmp2_reg, 0, no_proxy_label);
 		
 		mini_emit_isinst (s, klass_reg, klass, fail_label, ok_result_label);
 		mono_bblock_add_inst (s->cbb, fail_label);

@@ -8315,6 +8315,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 
+			/* Needed by the code generated in inssel.brg */
+			mono_get_got_var (cfg);
+
 			if (cfg->generic_sharing_context) {
 				context_used = mono_class_check_context_used (klass);
 				if (context_used && cfg->compile_aot)
