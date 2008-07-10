@@ -442,7 +442,6 @@ TestDriver.dll:
 test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
 	passed=0; \
-	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS); do	\
 		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
 		then \
@@ -457,7 +456,6 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	@failed=0; \
 	passed=0; \
-	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_IL); do	\
 		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
@@ -497,10 +495,9 @@ testaot: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL) $(TESTBS); do	\
 		rm -f $${i}.so; \
-		$(JITTEST_PROG_RUN) --aot --debug $${i} > /dev/null || exit 1; \
+		$(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > /dev/null || exit 1; \
 		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
@@ -521,7 +518,6 @@ testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
-	export LD_LIBRARY_PATH="`pwd`/.libs:$${LD_LIBRARY_PATH}"; \
 	for i in $(TESTSI_CS) $(TESTSI_IL); do \
 		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
 		then \
