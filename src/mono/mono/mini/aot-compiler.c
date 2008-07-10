@@ -1393,7 +1393,7 @@ emit_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 		if ((acfg->col_count % 32) == 0)
 			fprintf (acfg->fp, "\n\t.byte ");
 		else
-			fprintf (acfg->fp, ", ");
+			fprintf (acfg->fp, ",");
 		fprintf (acfg->fp, "0x%x", buf [i]);
 	}
 }
@@ -1427,7 +1427,7 @@ emit_int32 (MonoAotCompile *acfg, int value)
 	if ((acfg->col_count++ % 8) == 0)
 		fprintf (acfg->fp, "\n\t.long ");
 	else
-		fprintf (acfg->fp, ", ");
+		fprintf (acfg->fp, ",");
 	fprintf (acfg->fp, "%d", value);
 }
 
@@ -1441,9 +1441,11 @@ emit_symbol_diff (MonoAotCompile *acfg, const char *end, const char* start, int 
 	if ((acfg->col_count++ % 8) == 0)
 		fprintf (acfg->fp, "\n\t.long ");
 	else
-		fprintf (acfg->fp, ", ");
-	if (offset)
-		fprintf (acfg->fp, "%s - %s %c %d", end, start, offset < 0? ' ': '+', offset);
+		fprintf (acfg->fp, ",");
+	if (offset > 0)
+		fprintf (acfg->fp, "%s - %s + %d", end, start, offset);
+	else if (offset < 0)
+		fprintf (acfg->fp, "%s - %s %d", end, start, offset);
 	else
 		fprintf (acfg->fp, "%s - %s", end, start);
 }
