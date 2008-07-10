@@ -12214,6 +12214,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->opt &= ~MONO_OPT_INLINE;
 		cfg->opt &= ~MONO_OPT_COPYPROP;
 		cfg->opt &= ~MONO_OPT_CONSPROP;
+		cfg->opt &= ~MONO_OPT_GSHARED;
 	}
 
 	header = mono_method_get_header (method_to_compile);
