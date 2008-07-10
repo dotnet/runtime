@@ -276,8 +276,9 @@ reg: OP_LCONV_TO_OVF_U2_UN (reg) {
 }
 
 reg: OP_LCONV_TO_OVF_I4 (reg) {
+	/* The int cast is needed for the VS compiler.  See Compiler Warning (level 2) C4146. */
 	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, GT, state->left->reg1, 0x7fffffff, "OverflowException");
-	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, LT, state->left->reg1, -2147483648, "OverflowException");
+	MONO_EMIT_NEW_COMPARE_IMM_EXC (s, LT, state->left->reg1, ((int)-2147483648), "OverflowException");
 	MONO_EMIT_UNALU (s, tree, OP_MOVE, state->reg1, state->left->reg1);
 }
 
