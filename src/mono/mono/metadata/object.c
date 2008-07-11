@@ -3860,6 +3860,24 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 MonoString*
 mono_string_new (MonoDomain *domain, const char *text)
 {
+    GError *error = NULL;
+    MonoString *o = NULL;
+    guint16 *ut;
+    glong items_written;
+    int l;
+
+    l = strlen (text);
+   
+    ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &error);
+
+    if (!error)
+        o = mono_string_new_utf16 (domain, ut, items_written);
+    else
+        g_error_free (error);
+
+    g_free (ut);
+/*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
+#if 0
 	gunichar2 *str;
 	const gchar *end;
 	int len;
@@ -3876,6 +3894,7 @@ mono_string_new (MonoDomain *domain, const char *text)
 		*str++ = g_utf8_get_char (text);
 		text = g_utf8_next_char (text);
 	}
+#endif
 	return o;
 }
 
