@@ -2074,7 +2074,7 @@ init_plt (MonoAotModule *info)
 	/* Initialize the first PLT entry */
 	make_writable (info->plt, info->plt_end - info->plt);
 	x86_jump_code (buf, tramp);
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) || defined(__arm__)
 	/*
 	 * Initialize the entries in the plt_jump_table to point to the default targets.
 	 */
@@ -2083,8 +2083,13 @@ init_plt (MonoAotModule *info)
 	 /* The first entry points to the AOT trampoline */
 	 ((gpointer*)info->plt_jump_table)[0] = tramp;
 	 for (i = 1; i < n_entries; ++i)
+#ifdef __arm__
+		 /* All the default entries point to the first entry */
+		 ((gpointer*)info->plt_jump_table)[i] = info->plt;
+#else
 		 /* Each PLT entry is 16 bytes long, the default entry begins at offset 6 */
 		 ((gpointer*)info->plt_jump_table)[i] = info->plt + (i * 16) + 6;
+#endif
 #elif defined(__arm__)
 	 /* Initialize the first PLT entry */
 	 make_writable (info->plt, info->plt_end - info->plt);
@@ -2148,6 +2153,29 @@ mono_aot_get_plt_entry (guint8 *code)
 #endif
 
 	return NULL;
+}
+
+/*
+ * mono_aot_get_plt_info_offset:
+ *
+ *   Return the PLT info offset belonging to the plt entry called by CODE.
+ */
+guint32
+mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
+{
+#if defined(__i386__) || defined(__x86_64__)
+	return regs [MONO_ARCH_AOT_PLT_OFFSET_REG];
+#elif defined(__arm__)
+	guint8 *plt_entry = mono_aot_get_plt_entry (code);
+
+	g_assert (plt_entry);
+
+	/* The offset is stored as the 5th word of the plt entry */
+	return ((guint32*)plt_entry) [4];
+#else
+	g_assert_not_reached ();
+	return NULL;
+#endif
 }
 
 static gpointer

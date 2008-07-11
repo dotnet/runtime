@@ -2684,6 +2684,7 @@ emit_plt (MonoAotCompile *acfg)
 	g_assert_not_reached ();
 #endif
 
+#if 0
 	/* 
 	 * The first plt entry is used to transfer code to the AOT loader. 
 	 */
@@ -2699,27 +2700,55 @@ emit_plt (MonoAotCompile *acfg)
 	emit_symbol_diff (acfg, "plt_jump_table", ".", -4);
 	emit_zero_bytes (acfg, 10);
 #elif defined(__arm__)
-	/* This is 8 bytes long, init_plt () depends on this */
-	emit_unset_mode (acfg);
-	fprintf (acfg->fp, "\tldr pc, [pc, #-4]\n");
-	/* This is filled up during loading by the AOT loader */
-	fprintf (acfg->fp, "\t.word 0\n");
+	if (1 || acfg->aot_opts.full_aot) {
+		/* Generate non-patchable code */
+		/* FIXME: Use this for the non-aot-only case as well */
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "\tldr ip, [pc, #4]\n");
+		fprintf (acfg->fp, "\tadd ip, pc, ip\n");
+		fprintf (acfg->fp, "\tldr pc, [ip, #0]\n");
+		emit_symbol_diff (acfg, "plt_jump_table", ".", 4);
+
+		/* Default entry */
+		/* This is 12 bytes long, init_plt () depends on this */
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "\tldr ip, [pc, #0]\n");
+		fprintf (acfg->fp, "\tb .Lp_0\n");
+		fprintf (acfg->fp, "\t.word %d\n", plt_info_offsets [i]);
+	} else {
+		/* This is 8 bytes long, init_plt () depends on this */
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "\tldr pc, [pc, #-4]\n");
+		/* This is filled up during loading by the AOT loader */
+		fprintf (acfg->fp, "\t.word 0\n");
+	}
 #else
 	g_assert_not_reached ();
 #endif
+#endif
 
-	for (i = 1; i < acfg->plt_offset; ++i) {
+	for (i = 0; i < acfg->plt_offset; ++i) {
 		char *label;
 
 		label = g_strdup_printf (".Lp_%d", i);
 		emit_label (acfg, label);
 		g_free (label);
+
+		/* 
+		 * The first plt entry is used to transfer code to the AOT loader. 
+		 */
+
 #if defined(__i386__)
-		/* Need to make sure this is 5 bytes long */
-		emit_byte (acfg, '\xe9');
-		label = g_strdup_printf (".Lpd_%d", i);
-		emit_symbol_diff (acfg, label, ".", -4);
-		g_free (label);
+		if (i == 0) {
+			/* It is filled up during loading by the AOT loader. */
+			emit_zero_bytes (acfg, 16);
+		} else {
+			/* Need to make sure this is 5 bytes long */
+			emit_byte (acfg, '\xe9');
+			label = g_strdup_printf (".Lpd_%d", i);
+			emit_symbol_diff (acfg, label, ".", -4);
+			g_free (label);
+		}
 #elif defined(__x86_64__)
 		/*
 		 * We can't emit jumps because they are 32 bits only so they can't be patched.
@@ -2750,11 +2779,21 @@ emit_plt (MonoAotCompile *acfg)
 		 * - optimize SWITCH AOT implementation
 		 * - implement IMT support
 		 */
-		/* This is 8 bytes long, init_plt () depends on this */
-		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "\tldr pc, [pc, #-4]\n");
-		/* This is filled up during loading by the AOT loader */
-		fprintf (acfg->fp, "\t.word 0\n");
+		if (1 || acfg->aot_opts.full_aot) {
+			emit_unset_mode (acfg);
+			fprintf (acfg->fp, "\tldr ip, [pc, #4]\n");
+			fprintf (acfg->fp, "\tadd ip, pc, ip\n");
+			fprintf (acfg->fp, "\tldr pc, [ip, #0]\n");
+			emit_symbol_diff (acfg, "plt_jump_table", ".", 0);
+			/* Used by mono_aot_get_plt_info_offset */
+			fprintf (acfg->fp, "\n\t.word %d\n", plt_info_offsets [i]);
+		} else {
+			/* This is 8 bytes long, init_plt () depends on this */
+			emit_unset_mode (acfg);
+			fprintf (acfg->fp, "\tldr pc, [pc, #-4]\n");
+			/* This is filled up during loading by the AOT loader */
+			fprintf (acfg->fp, "\t.word 0\n");
+		}
 #else
 		g_assert_not_reached ();
 #endif
@@ -2786,11 +2825,14 @@ emit_plt (MonoAotCompile *acfg)
 #elif defined(__x86_64__)
 		/* Emitted along with the PLT entries since they will not be patched */
 #elif defined(__arm__)
+		/* Emitted along with the PLT entries since they will not be patched */
+#if 0
 		/* This is 12 bytes long, init_plt () depends on this */
 		emit_unset_mode (acfg);
 		fprintf (acfg->fp, "\tldr ip, [pc, #0]\n");
 		fprintf (acfg->fp, "\tb .Lp_0\n");
 		fprintf (acfg->fp, "\t.word %d\n", plt_info_offsets [i]);
+#endif
 #else
 		g_assert_not_reached ();
 #endif
@@ -2824,7 +2866,7 @@ emit_plt (MonoAotCompile *acfg)
 	emit_section_change (acfg, ".bss", 0);
 	emit_label (acfg, symbol);
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__arm__)
 	emit_zero_bytes (acfg, (int)(acfg->plt_offset * sizeof (gpointer)));
 #endif	
 

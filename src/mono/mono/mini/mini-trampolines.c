@@ -378,11 +378,7 @@ gpointer
 mono_aot_plt_trampoline (gssize *regs, guint8 *code, guint8 *aot_module, 
 						 guint8* tramp)
 {
-#ifdef MONO_ARCH_AOT_PLT_OFFSET_REG
-	guint32 plt_info_offset = regs [MONO_ARCH_AOT_PLT_OFFSET_REG];
-#else
-	guint32 plt_info_offset = -1;
-#endif
+	guint32 plt_info_offset = mono_aot_get_plt_info_offset (regs, code);
 
 	return mono_aot_plt_resolve (aot_module, plt_info_offset, code);
 }

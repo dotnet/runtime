@@ -18,6 +18,8 @@
 #include "mini.h"
 #include "mini-arm.h"
 
+static guint8* nullified_class_init_trampoline;
+
 /*
  * Return the instruction to jump from code to target, 0 if not
  * reachable with a single instruction
@@ -106,15 +108,11 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 void
 mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 {
-	guint32 ins = branch_for_target_reachable (code, addr);
+	/* Patch the jump table entry used by the plt entry */
+	guint32 offset = ((guint32*)code)[3];
+	guint8 *jump_entry = code + offset + 16;
 
-	if (ins)
-		/* Patch the branch */
-		((guint32*)code) [0] = ins;
-	else
-		/* Patch the jump address */
-		((guint32*)code) [1] = (guint32)addr;
-	mono_arch_flush_icache ((guint8*)code, 4);
+	*(guint8**)jump_entry = addr;
 }
 
 void
@@ -126,16 +124,11 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 void
 mono_arch_nullify_plt_entry (guint8 *code)
 {
-	guint8 buf [4];
-	guint8 *p;
+	if (mono_aot_only && !nullified_class_init_trampoline)
+		nullified_class_init_trampoline = mono_aot_get_named_code ("nullified_class_init_trampoline");
 
-	p = buf;
-	ARM_MOV_REG_REG (p, ARMREG_PC, ARMREG_LR);
-
-	((guint32*)code) [0] = ((guint32*)buf) [0];
-	mono_arch_flush_icache ((guint8*)code, 4);
+	mono_arch_patch_plt_entry (code, nullified_class_init_trampoline);
 }
-
 
 /* Stack size for trampoline function 
  */
@@ -311,6 +304,15 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	/* Sanity check */
 	g_assert ((buf - code) <= GEN_TRAMP_SIZE);
 
+	*code_size = buf - code;
+
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
+		guint32 code_len;
+
+		/* Initialize the nullified class init trampoline used in the AOT case */
+		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (&code_len);
+	}
+
 	return code;
 }
 
@@ -321,7 +323,7 @@ mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
 
 	code = buf = mono_global_codeman_reserve (16);
 
-	// FIXME:
+	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_LR);
 
 	mono_arch_flush_icache (buf, code - buf);
 

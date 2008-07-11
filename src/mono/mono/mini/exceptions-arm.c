@@ -155,6 +155,8 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 	guint8 *code;
 	guint8* start;
 
+	*ji = NULL;
+
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	start = code = mono_global_codeman_reserve (320);
 
