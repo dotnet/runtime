@@ -8485,6 +8485,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ins = get_runtime_generic_context_ptr (cfg, method, context_used, bblock, tclass,
 							generic_context, rgctx, MONO_RGCTX_INFO_REFLECTION_TYPE, ip);
 					} else if (cfg->compile_aot) {
+						/*
+						 * FIXME: We would have to include the context into the
+						 * aot constant too (tests/generic-array-type.2.exe).
+						 */
+						if (generic_context)
+							cfg->disable_aot = TRUE;
 						NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n);
 					} else {
 						NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
