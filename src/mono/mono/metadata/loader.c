@@ -405,7 +405,8 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		if (retklass)
 			*retklass = klass;
 		field = mono_class_get_field_from_name (klass, fname);
-		sig_field = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
+		if (field)
+			sig_field = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
 		break;
 	}
 	default:
