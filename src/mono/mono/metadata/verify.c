@@ -539,20 +539,66 @@ mono_class_is_valid_generic_instantiation (VerifyContext *ctx, MonoClass *klass)
 }
 
 static gboolean
-verify_type_load_error (VerifyContext *ctx, MonoClass *klass)
+mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 {
+	MonoClass *klass;
+
+	if (!is_valid_type_in_context (ctx, type)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid type %x at 0x%04x", type->type, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		return FALSE;
+	}
+
+	klass = mono_class_from_mono_type (type);
 	mono_class_init (klass);
 	if (mono_loader_get_last_error () || klass->exception_type != MONO_EXCEPTION_NONE) {
-		if (klass->generic_class && !mono_class_is_valid_generic_instantiation (ctx, klass))
+		if (klass->generic_class && !mono_class_is_valid_generic_instantiation (NULL, klass))
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		else
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
+	if (!klass->generic_class)
+		return TRUE;
+
+	if (!mono_class_is_valid_generic_instantiation (ctx, klass)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		return FALSE;
+	}
+
+	if (!is_valid_generic_instantiation_in_context (ctx, mono_class_get_context (klass)->class_inst)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		return FALSE;
+	}
 
 	return TRUE;
 }
+static gboolean
+mono_method_is_valid_in_context (VerifyContext *ctx, MonoMethod *method)
+{
+	MonoGenericInst *ginst;
 
+	if (!mono_type_is_valid_in_context (ctx, &method->klass->byval_arg)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		return FALSE;
+	}
+
+	if (!method->is_inflated)
+		return TRUE;
+
+	if (!mono_method_is_valid_generic_instantiation (ctx, method)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_UNVERIFIABLE_IL);
+		return FALSE;
+	}
+
+	ginst = mono_method_get_context (method)->method_inst;
+	if (ginst && !is_valid_generic_instantiation_in_context (ctx, ginst)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+	
 static MonoClassField*
 verifier_load_field (VerifyContext *ctx, int token, MonoClass **klass, const char *opcode) {
 	MonoClassField *field;
@@ -568,7 +614,7 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **klass, const cha
 		return NULL;
 	}
 
-	if (!verify_type_load_error (ctx, field->parent))
+	if (!mono_type_is_valid_in_context (ctx, &field->parent->byval_arg))
 		return NULL;
 
 	return field;
@@ -590,13 +636,8 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 		return NULL;
 	}
 	
-	if (!verify_type_load_error (ctx, method->klass))
+	if (!mono_method_is_valid_in_context (ctx, method))
 		return NULL;
-
-	if (method->is_inflated && !mono_method_is_valid_generic_instantiation (ctx, method)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_UNVERIFIABLE_IL);
-		return NULL;
-	}
 
 	return method;
 }
@@ -617,7 +658,7 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 		return NULL;
 	}
 
-	if (!verify_type_load_error (ctx, mono_class_from_mono_type (type)))
+	if (!mono_type_is_valid_in_context (ctx, type))
 		return NULL;
 
 	return type;
@@ -3399,7 +3440,15 @@ do_load_token (VerifyContext *ctx, int token)
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid token 0x%x for ldtoken at 0x%04x", token, ctx->ip_offset));
 		return;
 	}
-	//FIXME verify loaded token type 
+	if (handle_class == mono_defaults.typehandle_class) {
+		mono_type_is_valid_in_context (ctx, (MonoType*)handle);
+	} else if (handle_class == mono_defaults.methodhandle_class) {
+		mono_method_is_valid_in_context (ctx, (MonoMethod*)handle);		
+	} else if (handle_class == mono_defaults.fieldhandle_class) {
+		mono_type_is_valid_in_context (ctx, &((MonoClassField*)handle)->parent->byval_arg);				
+	} else {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid ldtoken type %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+	}
 	stack_push_val (ctx, TYPE_COMPLEX, mono_class_get_type (handle_class));
 }
 
