@@ -5418,7 +5418,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	for (tmp = ctx.exception_types; tmp; tmp = tmp->next)
 		mono_metadata_free_type (tmp->data);
-	g_slist_free (ctx.funptrs);
+	g_slist_free (ctx.exception_types);
 
 	for (i = 0; i < ctx.num_locals; ++i)
 		mono_metadata_free_type (ctx.locals [i]);
