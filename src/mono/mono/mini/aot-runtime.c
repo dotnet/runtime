@@ -2151,19 +2151,16 @@ mono_aot_get_plt_entry (guint8 *code)
 guint32
 mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
 {
-#if defined(__i386__)
-	return regs [MONO_ARCH_AOT_PLT_OFFSET_REG];
-#elif defined(__x86_64__)
 	guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
 	g_assert (plt_entry);
 
+	/* The offset is embedded inside the code after the plt entry */
+#if defined(__i386__)
+	return *(guint32*)(plt_entry + 5);
+#elif defined(__x86_64__)
 	return *(guint32*)(plt_entry + 6);
 #elif defined(__arm__)
-	guint8 *plt_entry = mono_aot_get_plt_entry (code);
-
-	g_assert (plt_entry);
-
 	/* The offset is stored as the 5th word of the plt entry */
 	return ((guint32*)plt_entry) [4];
 #else

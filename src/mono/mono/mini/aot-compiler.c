@@ -2729,11 +2729,10 @@ emit_plt (MonoAotCompile *acfg)
 			/* It is filled up during loading by the AOT loader. */
 			emit_zero_bytes (acfg, 16);
 		} else {
-			/* Need to make sure this is 5 bytes long */
+			/* Need to make sure this is 9 bytes long */
 			emit_byte (acfg, '\xe9');
-			label = g_strdup_printf (".Lpd_%d", i);
-			emit_symbol_diff (acfg, label, ".", -4);
-			g_free (label);
+			emit_symbol_diff (acfg, "plt", ".", -4);
+			emit_int32 (acfg, plt_info_offsets [i]);
 		}
 #elif defined(__x86_64__)
 		/*
@@ -2772,41 +2771,6 @@ emit_plt (MonoAotCompile *acfg)
 	symbol = g_strdup_printf ("plt_end");
 	emit_global (acfg, symbol, TRUE);
 	emit_label (acfg, symbol);
-
-	/* 
-	 * Emit the default targets for the PLT entries separately since these will not
-	 * be modified at runtime.
-	 */
-	for (i = 1; i < acfg->plt_offset; ++i) {
-		char *label;
-
-		label = g_strdup_printf (".Lpd_%d", i);
-		emit_label (acfg, label);
-		g_free (label);
-
-		/* Put the offset into the register expected by mono_aot_plt_trampoline */
-#if defined(__i386__)
-		/* movl $const, %eax */
-		emit_byte (acfg, '\xb8');
-		emit_int32 (acfg, plt_info_offsets [i]);
-		/* jmp .Lp_0 */
-		emit_byte (acfg, '\xe9');
-		emit_symbol_diff (acfg, ".Lp_0", ".", -4);
-#elif defined(__x86_64__)
-		/* Emitted along with the PLT entries since they will not be patched */
-#elif defined(__arm__)
-		/* Emitted along with the PLT entries since they will not be patched */
-#if 0
-		/* This is 12 bytes long, init_plt () depends on this */
-		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "\tldr ip, [pc, #0]\n");
-		fprintf (acfg->fp, "\tb .Lp_0\n");
-		fprintf (acfg->fp, "\t.word %d\n", plt_info_offsets [i]);
-#endif
-#else
-		g_assert_not_reached ();
-#endif
-	}
 
 	/* Emit PLT info */
 	symbol = g_strdup_printf ("plt_info");
