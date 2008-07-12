@@ -179,15 +179,33 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	 */
 #define LR_OFFSET (sizeof (gpointer) * 13)
 	ARM_MOV_REG_REG (buf, ARMREG_V1, ARMREG_SP);
-	ARM_LDR_IMM (buf, ARMREG_V2, ARMREG_LR, 0);
+	if (aot) {
+		/* 
+		 * The trampoline contains a pc-relative offset to the got slot where the
+		 * value is stored. The offset can be found at [lr + 4].
+		 */
+		ARM_LDR_IMM (buf, ARMREG_V2, ARMREG_LR, 4);
+		ARM_LDR_REG_REG (buf, ARMREG_V2, ARMREG_V2, ARMREG_LR);
+	} else {
+		ARM_LDR_IMM (buf, ARMREG_V2, ARMREG_LR, 0);
+	}
 	ARM_LDR_IMM (buf, ARMREG_V3, ARMREG_SP, LR_OFFSET);
 
 	/* ok, now we can continue with the MonoLMF setup, mostly untouched 
 	 * from emit_prolog in mini-arm.c
-	 * This is a sinthetized call to mono_get_lmf_addr ()
+	 * This is a synthetized call to mono_get_lmf_addr ()
 	 */
-	load_get_lmf_addr = buf;
-	buf += 4;
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, buf - code, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
+		ARM_LDR_IMM (buf, ARMREG_R0, ARMREG_PC, 0);
+		ARM_B (buf, 0);
+		*(gpointer*)buf = NULL;
+		buf += 4;
+		ARM_LDR_REG_REG (buf, ARMREG_R0, ARMREG_PC, ARMREG_R0);
+	} else {
+		load_get_lmf_addr = buf;
+		buf += 4;
+	}
 	ARM_MOV_REG_REG (buf, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_R0);
 
@@ -234,8 +252,18 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	 */
 	ARM_MOV_REG_REG (buf, ARMREG_R2, ARMREG_V2);
 
-	load_trampoline = buf;
-	buf += 4;
+	if (aot) {
+		char *icall_name = g_strdup_printf ("trampoline_func_%d", tramp_type);
+		*ji = mono_patch_info_list_prepend (*ji, buf - code, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
+		ARM_LDR_IMM (buf, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (buf, 0);
+		*(gpointer*)buf = NULL;
+		buf += 4;
+		ARM_LDR_REG_REG (buf, ARMREG_IP, ARMREG_PC, ARMREG_IP);
+	} else {
+		load_trampoline = buf;
+		buf += 4;
+	}
 
 	ARM_MOV_REG_REG (buf, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_IP);
@@ -252,10 +280,19 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	/* 
 	 * Have to call the _force_ variant, since there could be a protected wrapper on the top of the stack.
 	 */
-	ARM_LDR_IMM (buf, ARMREG_IP, ARMREG_PC, 0);
-	ARM_B (buf, 0);
-	*(gpointer*)buf = mono_thread_force_interruption_checkpoint;
-	buf += 4;
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, buf - code, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint");
+		ARM_LDR_IMM (buf, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (buf, 0);
+		*(gpointer*)buf = NULL;
+		buf += 4;
+		ARM_LDR_REG_REG (buf, ARMREG_IP, ARMREG_PC, ARMREG_IP);
+	} else {
+		ARM_LDR_IMM (buf, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (buf, 0);
+		*(gpointer*)buf = mono_thread_force_interruption_checkpoint;
+		buf += 4;
+	}
 	ARM_MOV_REG_REG (buf, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_IP);
 
@@ -292,9 +329,11 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	constants [0] = mono_get_lmf_addr;
 	constants [1] = (gpointer)mono_get_trampoline_func (tramp_type);
 
-	/* backpatch by emitting the missing instructions skipped above */
-	ARM_LDR_IMM (load_get_lmf_addr, ARMREG_R0, ARMREG_PC, (buf - load_get_lmf_addr - 8));
-	ARM_LDR_IMM (load_trampoline, ARMREG_IP, ARMREG_PC, (buf + 4 - load_trampoline - 8));
+	if (!aot) {
+		/* backpatch by emitting the missing instructions skipped above */
+		ARM_LDR_IMM (load_get_lmf_addr, ARMREG_R0, ARMREG_PC, (buf - load_get_lmf_addr - 8));
+		ARM_LDR_IMM (load_trampoline, ARMREG_IP, ARMREG_PC, (buf + 4 - load_trampoline - 8));
+	}
 
 	buf += 8;
 
@@ -325,9 +364,9 @@ mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
 
 	ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_LR);
 
-	mono_arch_flush_icache (buf, code - buf);
+	mono_arch_flush_icache (code, buf - code);
 
-	*code_len = code - buf;
+	*code_len = buf - code;
 
 	return buf;
 }

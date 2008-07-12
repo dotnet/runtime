@@ -8,6 +8,16 @@
  * (C) 2002 Ximian, Inc.
  */
 
+/* Remaining AOT-only work:
+ * - reduce the length of the wrapper names.
+ * - during loading, collect the names into a hashtable to avoid linear
+ *   searches.
+ * - aot IMT tables, so we don't have two kinds of aot code.
+ * - optimize the trampolines, generate more code in the arch files.
+ * - make things more consistent with how elf works, for example, use ELF 
+ *   relocations.
+ */
+
 #include "config.h"
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
@@ -1931,12 +1941,6 @@ get_runtime_invoke_sig (MonoMethodSignature *sig)
 	return mono_marshal_get_runtime_invoke (m);
 }
 
-static MonoMethod*
-get_runtime_invoke (const char *signature)
-{
-	return get_runtime_invoke_sig (mono_create_icall_signature (signature));
-}
-
 static void
 add_wrappers (MonoAotCompile *acfg)
 {
@@ -1950,21 +1954,46 @@ add_wrappers (MonoAotCompile *acfg)
 	 * callers.
 	 */
 
+	/* 
+	 * FIXME: This depends on the fact that different wrappers have different 
+	 * names.
+	 */
+
 	/* FIXME: Collect these automatically */
 
 	/* Runtime invoke wrappers */
 
 	/* void runtime-invoke () [.cctor] */
-	add_method (acfg, get_runtime_invoke ("void"));
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	add_method (acfg, get_runtime_invoke_sig (csig));
+
+	/* void runtime-invoke () [Finalize] */
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+	csig->hasthis = 1;
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	add_method (acfg, get_runtime_invoke_sig (csig));
 
 	/* void runtime-invoke (string) [exception ctor] */
-	add_method (acfg, get_runtime_invoke ("void string"));
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+	csig->hasthis = 1;
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	csig->params [0] = &mono_defaults.string_class->byval_arg;
+	add_method (acfg, get_runtime_invoke_sig (csig));
 
 	/* void runtime-invoke (string, string) [exception ctor] */
-	add_method (acfg, get_runtime_invoke ("void string string"));
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	csig->hasthis = 1;
+	csig->ret = &mono_defaults.void_class->byval_arg;
+	csig->params [0] = &mono_defaults.string_class->byval_arg;
+	csig->params [1] = &mono_defaults.string_class->byval_arg;
+	add_method (acfg, get_runtime_invoke_sig (csig));
 
 	/* string runtime-invoke () [Exception.ToString ()] */
-	add_method (acfg, get_runtime_invoke ("string"));
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+	csig->hasthis = 1;
+	csig->ret = &mono_defaults.string_class->byval_arg;
+	add_method (acfg, get_runtime_invoke_sig (csig));
 
 	/* void runtime-invoke (string, Exception) [exception ctor] */
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
@@ -2839,6 +2868,7 @@ emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code,
 
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, symbol, TRUE);
+	emit_alignment (acfg, 16);
 	emit_label (acfg, symbol);
 	g_free (symbol);
 
@@ -2866,7 +2896,7 @@ emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code,
 	symbol = g_strdup_printf ("%s_p", name);
 
 	emit_section_change (acfg, ".text", 0);
-	emit_global (acfg, symbol, TRUE);
+	emit_global (acfg, symbol, FALSE);
 	emit_label (acfg, symbol);
 	g_free (symbol);
 		
@@ -2951,11 +2981,23 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		emit_section_change (acfg, ".text", 0);
 		emit_global (acfg, symbol, TRUE);
+		emit_alignment (acfg, 16);
 		emit_label (acfg, symbol);
 
 		for (i = 0; i < acfg->num_aot_trampolines; ++i) {
 			offset = acfg->got_offset + (i * 2);
 
+			/*
+			 * The trampolines created here are variations of the specific 
+			 * trampolines created in mono_arch_create_specific_trampoline (). The 
+			 * differences are:
+			 * - the generic trampoline address is taken from a got slot.
+			 * - the offset of the got slot where the trampoline argument is stored
+			 *   is embedded in the instruction stream, and the generic trampoline
+			 *   can load the argument by loading the offset, adding it to the
+			 *   address of the trampoline to get the address of the got slot, and
+			 *   loading the argument from the there.
+			 */
 #if defined(__x86_64__)
 			/* This should be exactly 16 bytes long */
 			/* It should work together with the generic trampoline code in tramp-amd64.c */
@@ -2967,6 +3009,29 @@ emit_trampolines (MonoAotCompile *acfg)
 			/* This should be relative to the start of the trampoline */
 			emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 19);
 			emit_zero_bytes (acfg, 5);
+#elif defined(__arm__)
+			{
+				guint8 buf [128];
+
+				/* Generate the trampoline code */
+				/* This should be exactly 28 bytes long */
+
+				code = buf;
+				ARM_PUSH (code, 0x5fff);
+				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8);
+				/* Load the value from the GOT */
+				ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_PC, ARMREG_R1);
+				/* Branch to it */
+				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+				ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+
+				g_assert (code - buf == 20);
+
+				/* Emit it */
+				emit_bytes (acfg, buf, code - buf);
+				emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 8);
+				emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
+			}
 #else
 			g_assert_not_reached ();
 #endif
@@ -2979,6 +3044,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		MonoCompile *cfg;
+		char *call_target;
 
 		method = mono_get_method (acfg->image, token, NULL);
 
@@ -2992,10 +3058,11 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_global (acfg, symbol, TRUE);
 		emit_label (acfg, symbol);
 
+		call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, cfg->method));
+
 #if defined(__x86_64__)
 		{
 			guint8 buf [32];
-			char *call_target;
 			int this_reg;
 
 			this_reg = mono_arch_get_this_arg_reg (mono_method_signature (cfg->method), cfg->generic_sharing_context, NULL);
@@ -3004,9 +3071,28 @@ emit_trampolines (MonoAotCompile *acfg)
 
 			emit_bytes (acfg, buf, code - buf);
 			/* jump <method> */
-			call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, cfg->method));
 			emit_byte (acfg, '\xe9');
 			emit_symbol_diff (acfg, call_target, ".", -4);
+		}
+#elif defined(__arm__)
+		{
+			guint8 buf [128];
+			int this_pos = 0;
+
+			code = buf;
+
+			if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->method)->ret))
+				this_pos = 1;
+
+			ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
+
+			emit_bytes (acfg, buf, code - buf);
+			/* jump to method */
+#if defined(USE_BIN_WRITER)
+			/* FIXME: */
+			g_assert_not_reached ();
+#endif
+			fprintf (acfg->fp, "\n\tb %s\n", call_target);
 		}
 #else
 		g_assert_not_reached ();

@@ -2298,7 +2298,7 @@ gpointer
 mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
 	MonoAotModule *amodule;
-	int index;
+	int index, tramp_size;
 	guint8 *code, *tramp;
 	static gpointer generic_trampolines [MONO_TRAMPOLINE_NUM];
 
@@ -2334,12 +2334,17 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	amodule->got [amodule->first_trampoline_got_offset + (index *2) + 1] = arg1;
 
 #ifdef __x86_64__
-	code = amodule->trampolines + (index * 16);
-	if (code_len)
-		*code_len = 16;
+	tramp_size = 16;
+#elif defined(__arm__)
+	tramp_size = 28;
 #else
+	tramp_size = -1;
 	g_assert_not_reached ();
 #endif
+
+	code = amodule->trampolines + (index * tramp_size);
+	if (code_len)
+		*code_len = tramp_size;
 
 	return code;
 }
