@@ -2536,6 +2536,9 @@ mono_signature_to_name (MonoMethodSignature *sig, const char *prefix)
 
 	mono_type_get_desc (res, sig->ret, FALSE);
 
+	if (sig->hasthis)
+		g_string_append (res, "__this__");
+
 	for (i = 0; i < sig->param_count; ++i) {
 		g_string_append_c (res, '_');
 		mono_type_get_desc (res, sig->params [i], FALSE);
