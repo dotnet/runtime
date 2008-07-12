@@ -20,6 +20,7 @@ static guint32 debugger_lock_level = 0;
 static CRITICAL_SECTION debugger_lock_mutex;
 static gboolean mono_debugger_use_debugger = FALSE;
 static MonoObject *last_exception = NULL;
+volatile gint32 _mono_debugger_interruption_request = 0;
 
 void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg) = NULL;
 
@@ -212,6 +213,16 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	return retval;
 }
 
+void
+mono_debugger_check_interruption (void)
+{
+	if (!_mono_debugger_interruption_request)
+		return;
+
+	mono_debugger_lock ();
+	mono_debugger_event (MONO_DEBUGGER_EVENT_INTERRUPTION_REQUEST, 0, 0);
+	mono_debugger_unlock ();
+}
 
 /*
  * Debugger breakpoint interface.

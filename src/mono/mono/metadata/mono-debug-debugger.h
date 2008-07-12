@@ -36,10 +36,13 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_DOMAIN_CREATE,
 	MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD,
 	MONO_DEBUGGER_EVENT_CLASS_INITIALIZED,
+	MONO_DEBUGGER_EVENT_INTERRUPTION_REQUEST,
 
 	/* Extended per-thread notifications */
 	MONO_DEBUGGER_EVENT_TRAMPOLINE			= 256,
 } MonoDebuggerEvent;
+
+extern volatile gint32 _mono_debugger_interruption_request;
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
@@ -61,6 +64,9 @@ mono_debugger_check_runtime_version (const char *filename);
 
 void
 mono_debugger_class_initialized (MonoClass *klass);
+
+void
+mono_debugger_check_interruption (void);
 
 MonoDebugMethodAddressList *
 mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 idx);

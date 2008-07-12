@@ -166,7 +166,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&mono_debugger_event_handler,
 	debugger_event_handler,
 
-	&_mono_debug_using_mono_debugger
+	&_mono_debug_using_mono_debugger,
+	&_mono_debugger_interruption_request
 };
 
 static guint64
