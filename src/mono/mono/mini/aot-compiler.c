@@ -2742,24 +2742,16 @@ emit_plt (MonoAotCompile *acfg)
 		 * point to .Lpd entries. ELF stores these in the GOT too, but we don't, since
 		 * methods with GOT entries can't be called directly.
 		 * We also emit the default PLT code here since the PLT code will not be patched.
-		 * An x86_64 plt entry is 16 bytes long, init_plt () depends on this.
+		 * An x86_64 plt entry is 10 bytes long, init_plt () depends on this.
 		 */
 		/* jmpq *<offset>(%rip) */
 		emit_byte (acfg, '\xff');
 		emit_byte (acfg, '\x25');
 		emit_symbol_diff (acfg, "plt_jump_table", ".", (i * sizeof (gpointer)) -4);
-		/* mov <plt info offset>, %eax */
-		emit_byte (acfg, '\xb8');
+		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, plt_info_offsets [i]);
-		/* jmp .Lp_0 */
-		emit_byte (acfg, '\xe9');
-		emit_symbol_diff (acfg, ".Lp_0", ".", -4);
 #elif defined(__arm__)
-		/* 
-		 * Emit an indirect call since branch displacements are limited to 24 bits on 
-		 * ARM. Put the jump table entries inline since offsets are even smaller on
-		 * ARM.
-		 * FIXME:
+		/* FIXME:
 		 * - optimize OP_AOTCONST implementation
 		 * - optimize the PLT entries
 		 * - optimize SWITCH AOT implementation
