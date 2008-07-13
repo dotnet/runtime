@@ -1483,10 +1483,6 @@ reg: OP_CCASTCLASS (reg) {
 			MONO_EMIT_NEW_COMPARE_IMM_EXC (s, NE_UN, klass_reg, mono_defaults.transparent_proxy_class, "InvalidCastException");
 		}
 		
-		
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
-		MONO_EMIT_NEW_LOAD_MEMBASE (s, klass_reg, tmp_reg, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
-		
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, tmp2_reg, obj_reg, G_STRUCT_OFFSET (MonoTransparentProxy, custom_type_info));
 		MONO_EMIT_NEW_COMPARE_IMM_EXC (s, EQ, tmp2_reg, 0, "InvalidCastException");
 		
