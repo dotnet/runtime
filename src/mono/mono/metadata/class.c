@@ -7441,14 +7441,21 @@ gboolean
 mono_class_generic_sharing_enabled (MonoClass *class)
 {
 #if defined(__i386__) || defined(__x86_64__)
-	static int generic_sharing = MONO_GENERIC_SHARING_COLLECTIONS;
+	static gboolean supported = TRUE;
 #else
-	static int generic_sharing = MONO_GENERIC_SHARING_NONE;
+	/* Not supported by the JIT backends */
+	static gboolean supported = FALSE;
 #endif
+	static int generic_sharing = MONO_GENERIC_SHARING_NONE;
 	static gboolean inited = FALSE;
 
 	if (!inited) {
 		const char *option;
+
+		if (supported)
+			generic_sharing = MONO_GENERIC_SHARING_COLLECTIONS;
+		else
+			generic_sharing = MONO_GENERIC_SHARING_NONE;
 
 		if ((option = g_getenv ("MONO_GENERIC_SHARING"))) {
 			if (strcmp (option, "corlib") == 0)
@@ -7462,6 +7469,9 @@ mono_class_generic_sharing_enabled (MonoClass *class)
 			else
 				g_warning ("Unknown generic sharing option `%s'.", option);
 		}
+
+		if (!supported)
+			generic_sharing = MONO_GENERIC_SHARING_NONE;
 
 		inited = TRUE;
 	}
