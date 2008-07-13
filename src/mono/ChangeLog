@@ -1,3 +1,7 @@
+2008-07-13  Zoltan Varga  <vargaz@gmail.com>
+
+	* docs/aot-compiler.txt: Update docs.
+
 2008-07-09  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/patch-quiet.sh: Another try to fix this on osx.
