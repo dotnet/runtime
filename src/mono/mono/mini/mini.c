@@ -8836,6 +8836,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				token = read32 (ip + 2);
 				/* Needed by the code generated in inssel.brg */
 				mono_get_got_var (cfg);
+
+#ifdef __i386__
+				/* 
+				 * The code generated for CCASTCLASS has too much register pressure
+				 * (obj+vtable+ibitmap_byte_reg+iid_reg), leading to the usual
+				 * branches-inside-bblocks problem.
+				 */
+				cfg->disable_aot = TRUE;
+#endif
 		
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 				MONO_INST_NEW (cfg, ins, (ip [1] == CEE_MONO_CISINST) ? OP_CISINST : OP_CCASTCLASS);
