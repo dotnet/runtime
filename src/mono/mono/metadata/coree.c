@@ -33,6 +33,7 @@
 #include "environment.h"
 #include "coree.h"
 
+HMODULE mono_module_handle = NULL;
 HMODULE coree_module_handle = NULL;
 
 static gboolean init_from_coree = FALSE;
