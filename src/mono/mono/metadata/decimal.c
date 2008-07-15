@@ -579,7 +579,15 @@ my_g_bit_nth_msf (gsize mask)
 		return bIndex;
 	return -1;
 #else
-	return g_bit_nth_msf (mask, sizeof (gsize) * 8);
+	int i;
+
+	i = sizeof (gsize) * 8;
+	while (i > 0) {
+		i --;
+		if (mask & (1UL << i))
+			return i;
+	}
+	return -1;
 #endif
 }
 
