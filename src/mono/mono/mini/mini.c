@@ -13881,6 +13881,8 @@ mini_parse_debug_options (void)
 			exit (1);
 		}
 	}
+
+	g_strfreev (args);
 }
 
 MonoDebugOptions *
