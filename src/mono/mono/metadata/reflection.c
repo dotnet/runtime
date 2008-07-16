@@ -5859,6 +5859,19 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	 */
 	type = klass->byval_arg.byref == type->byref ? &klass->byval_arg : &klass->this_arg;
 
+	/*
+	 * If the vtable of the given class was already created, we can use
+	 * the MonoType from there and avoid all locking and hash table lookups.
+	 * 
+	 * We cannot do this for TypeBuilders as mono_reflection_create_runtime_class expects
+	 * that the resulting object is diferent.   
+	 */
+	if (type == &klass->byval_arg && !klass->image->dynamic) {
+		MonoVTable *vtable = mono_class_try_get_vtable (domain, klass);
+		if (vtable && vtable->type)
+			return vtable->type;
+	}
+
 	mono_domain_lock (domain);
 	if (!domain->type_hash)
 		domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mymono_metadata_type_hash, 

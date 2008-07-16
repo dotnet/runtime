@@ -1245,5 +1245,8 @@ mono_runtime_unhandled_exception_policy_get (void) MONO_INTERNAL;
 void
 mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy) MONO_INTERNAL;
 
+MonoVTable *
+mono_class_try_get_vtable (MonoDomain *domain, MonoClass *class) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

@@ -1302,6 +1302,27 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	return mono_class_create_runtime_vtable (domain, class);
 }
 
+/**
+ * mono_class_try_get_vtable:
+ * @domain: the application domain
+ * @class: the class to initialize
+ *
+ * This function tries to get the associated vtable from @class if
+ * it was already created.
+ */
+MonoVTable *
+mono_class_try_get_vtable (MonoDomain *domain, MonoClass *class)
+{
+	MonoClassRuntimeInfo *runtime_info;
+
+	g_assert (class);
+
+	runtime_info = class->runtime_info;
+	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
+		return runtime_info->domain_vtables [domain->domain_id];
+	return NULL;
+}
+
 static MonoVTable *
 mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 {
