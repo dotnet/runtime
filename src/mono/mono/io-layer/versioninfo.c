@@ -399,6 +399,7 @@ static gpointer map_pe_file (gunichar2 *filename, guint32 *map_size)
 
 	/* Don't need the fd any more */
 	close (fd);
+	g_free (filename_ext);
 
 	return(file_map);
 }
