@@ -1089,7 +1089,6 @@ BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 	switch (reason)
 	{
 	case DLL_PROCESS_ATTACH:
-		mono_module_handle = module_handle;
 		mono_install_runtime_load (mini_init);
 		break;
 	case DLL_PROCESS_DETACH:

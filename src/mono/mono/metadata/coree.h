@@ -22,7 +22,12 @@
 
 STDAPI MonoFixupCorEE(HMODULE ModuleHandle);
 
-extern HMODULE mono_module_handle MONO_INTERNAL;
+/* Defined by the linker. */
+#ifndef _MSC_VER
+#define __ImageBase _image_base__
+#endif
+extern IMAGE_DOS_HEADER __ImageBase MONO_INTERNAL;
+
 extern HMODULE coree_module_handle MONO_INTERNAL;
 
 HMODULE WINAPI MonoLoadImage(LPCWSTR FileName) MONO_INTERNAL;
