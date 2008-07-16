@@ -12652,12 +12652,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_arch_fixup_jinfo (cfg);
 #endif
 
-	mono_domain_lock (cfg->domain);
-	mono_jit_info_table_add (cfg->domain, jinfo);
+	if (!cfg->compile_aot) {
+		mono_domain_lock (cfg->domain);
+		mono_jit_info_table_add (cfg->domain, jinfo);
 
-	if (cfg->method->dynamic)
-		mono_dynamic_code_hash_lookup (cfg->domain, cfg->method)->ji = jinfo;
-	mono_domain_unlock (cfg->domain);
+		if (cfg->method->dynamic)
+			mono_dynamic_code_hash_lookup (cfg->domain, cfg->method)->ji = jinfo;
+		mono_domain_unlock (cfg->domain);
+	}
 
 	/* collect statistics */
 	mono_jit_stats.allocated_code_size += cfg->code_len;
