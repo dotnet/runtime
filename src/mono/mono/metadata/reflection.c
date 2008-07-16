@@ -9,6 +9,7 @@
  */
 #include <config.h>
 #include "mono/utils/mono-digest.h"
+#include "mono/utils/mono-membar.h"
 #include "mono/metadata/reflection.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/metadata-internals.h"
@@ -6111,6 +6112,7 @@ MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
 	static MonoClass *System_Reflection_ParameterInfo;
+	static MonoClass *System_Reflection_ParameterInfo_array;
 	MonoArray *res = NULL;
 	MonoReflectionMethod *member = NULL;
 	MonoReflectionParameter *param = NULL;
@@ -6121,14 +6123,23 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	MonoObject *missing = NULL;
 	MonoMarshalSpec **mspecs;
 	MonoMethodSignature *sig;
+	MonoVTable *pinfo_vtable;
 	int i;
 
-	if (!System_Reflection_ParameterInfo)
-		System_Reflection_ParameterInfo = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "ParameterInfo");
+	if (!System_Reflection_ParameterInfo_array) {
+		MonoClass *klass;
+
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "ParameterInfo");
+		mono_memory_barrier ();
+		System_Reflection_ParameterInfo = klass; 
+	
+		klass = mono_array_class_get (klass, 1);
+		mono_memory_barrier ();
+		System_Reflection_ParameterInfo_array = klass;
+	}
 	
 	if (!mono_method_signature (method)->param_count)
-		return mono_array_new (domain, System_Reflection_ParameterInfo, 0);
+		return mono_array_new_specific (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), 0);
 
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
@@ -6143,9 +6154,10 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	res = mono_array_new (domain, System_Reflection_ParameterInfo, sig->param_count);
+	res = mono_array_new_specific (mono_class_vtable (domain, System_Reflection_ParameterInfo_array), sig->param_count);
+	pinfo_vtable = mono_class_vtable (domain, System_Reflection_ParameterInfo);
 	for (i = 0; i < sig->param_count; ++i) {
-		param = (MonoReflectionParameter *)mono_object_new (domain, System_Reflection_ParameterInfo);
+		param = (MonoReflectionParameter *)mono_object_new_specific (pinfo_vtable);
 		MONO_OBJECT_SETREF (param, ClassImpl, mono_type_get_object (domain, sig->params [i]));
 		MONO_OBJECT_SETREF (param, MemberImpl, (MonoObject*)member);
 		MONO_OBJECT_SETREF (param, NameImpl, mono_string_new (domain, names [i]));

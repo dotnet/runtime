@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <string.h>
+#include "mono/utils/mono-membar.h"
 #include <mono/metadata/string-icalls.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/appdomain.h>
@@ -106,6 +107,7 @@ typedef enum {
 MonoArray * 
 ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gint32 count, gint32 options)
 {
+	static MonoClass *String_array;
 	MonoString * tmpstr;
 	MonoArray * retarr;
 	gunichar2 *src;
@@ -120,6 +122,12 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	src = mono_string_chars (me);
 	srcsize = mono_string_length (me);
 	arrsize = mono_array_length (separator);
+
+	if (!String_array) {
+		MonoClass *klass = mono_array_class_get (mono_get_string_class (), 1);
+		mono_memory_barrier ();
+		String_array = klass;
+	}
 
 	splitsize = 1;
 	/* Count the number of elements we will return. Note that this operation
@@ -152,7 +160,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 
 		/* Nothing but separators */
 		if (lastpos == 0) {
-			retarr = mono_array_new (mono_domain_get (), mono_get_string_class (), 0);
+			retarr = mono_array_new_specific (mono_class_vtable (mono_domain_get (), String_array), 0);
 			return retarr;
 		}
 	}
@@ -161,7 +169,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	if (splitsize == 1) {
 		if (remempty == 0 || count == 1) {
 			/* Copy the whole string */
-			retarr = mono_array_new (mono_domain_get (), mono_get_string_class (), 1);
+			retarr = mono_array_new_specific (mono_class_vtable (mono_domain_get (), String_array), 1);
 			mono_array_setref (retarr, 0, me);
 		} else {
 			/* otherwise we have to filter out leading & trailing delims */
@@ -180,7 +188,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 			tmpstrptr = mono_string_chars (tmpstr);
 
 			memcpy (tmpstrptr, src, srcsize * sizeof (gunichar2));
-			retarr = mono_array_new (mono_domain_get (), mono_get_string_class (), 1);
+			retarr = mono_array_new_specific (mono_class_vtable (mono_domain_get (), String_array), 1);
 			mono_array_setref (retarr, 0, tmpstr);
 		}
 		return retarr;
@@ -189,7 +197,7 @@ ves_icall_System_String_InternalSplit (MonoString *me, MonoArray *separator, gin
 	lastpos = 0;
 	arrpos = 0;
 	
-	retarr = mono_array_new (mono_domain_get (), mono_get_string_class (), splitsize);
+	retarr = mono_array_new_specific (mono_class_vtable (mono_domain_get (), String_array), splitsize);
 
 	for (i = 0; i != srcsize && arrpos != splitsize; i++) {
 		if (string_icall_is_in_array (separator, arrsize, src [i])) {

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #endif
 
+#include "mono/utils/mono-membar.h"
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
@@ -3533,6 +3534,7 @@ method_nonpublic (MonoMethod* method, gboolean start_klass)
 static MonoArray*
 ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoBoolean ignore_case, MonoReflectionType *reftype)
 {
+	static MonoClass *MethodInfo_array;
 	MonoDomain *domain; 
 	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
@@ -3544,12 +3546,20 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	guint32 *method_slots;
 	gchar *mname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
+	MonoVTable *array_vtable;
 		
 	MONO_ARCH_SAVE_REGS;
 
+	if (!MethodInfo_array) {
+		MonoClass *klass = mono_array_class_get (mono_defaults.method_info_class, 1);
+		mono_memory_barrier ();
+		MethodInfo_array = klass;
+	}
+
 	domain = ((MonoObject *)type)->vtable->domain;
+	array_vtable = mono_class_vtable (domain, MethodInfo_array);
 	if (type->type->byref)
-		return mono_array_new (domain, mono_defaults.method_info_class, 0);
+		return mono_array_new_specific (array_vtable, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 	len = 0;
@@ -3572,7 +3582,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	}
 	i = 0;
 	len = 1;
-	res = mono_array_new (domain, mono_defaults.method_info_class, len);
+	res = mono_array_new_specific (array_vtable, len);
 handle_parent:
 	mono_class_setup_vtable (klass);
 	if (klass->exception_type != MONO_EXCEPTION_NONE)
@@ -3620,7 +3630,7 @@ handle_parent:
 		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
 		
 		if (i >= len) {
-			MonoArray *new_res = mono_array_new (domain, mono_defaults.method_info_class, len * 2);
+			MonoArray *new_res = mono_array_new_specific (array_vtable, len * 2);
 			mono_array_memcpy_refs (new_res, 0, res, 0, len);
 			len *= 2;
 			res = new_res;
