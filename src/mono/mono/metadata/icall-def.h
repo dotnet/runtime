@@ -566,6 +566,7 @@ ICALL(MGENCL_7, "GetInterfaces_internal", ves_icall_MonoGenericClass_GetInterfac
 ICALL(MGENCL_8, "GetMethods_internal", ves_icall_MonoGenericClass_GetMethods)
 ICALL(MGENCL_9, "GetParentType", ves_icall_MonoGenericClass_GetParentType)
 ICALL(MGENCL_10, "GetProperties_internal", ves_icall_MonoGenericClass_GetProperties)
+ICALL(MGENCL_12, "InflateType_internal", ves_icall_MonoGenericClass_InflateType)
 ICALL(MGENCL_11, "initialize", mono_reflection_generic_class_initialize)
 
 /* note this is the same as above: unify */
