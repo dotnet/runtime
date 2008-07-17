@@ -214,7 +214,6 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	return ex;
 }
-
 /*
  * mono_runtime_class_init:
  * @vtable: vtable that needs to be initialized
@@ -223,6 +222,18 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
  */
 void
 mono_runtime_class_init (MonoVTable *vtable)
+{
+	mono_runtime_class_init_full (vtable, TRUE);
+}
+
+/*
+ * mono_runtime_class_init_full:
+ * @vtable that neeeds to be initialized
+ * @raise_exception is TRUE, exceptions are raised intead of returned 
+ * 
+ */
+MonoException *
+mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 {
 	MonoException *exc;
 	MonoException *exc_to_throw;
@@ -233,7 +244,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 	MONO_ARCH_SAVE_REGS;
 
 	if (vtable->initialized)
-		return;
+		return NULL;
 
 	exc = NULL;
 	klass = vtable->klass;
@@ -258,14 +269,15 @@ mono_runtime_class_init (MonoVTable *vtable)
 		/* double check... */
 		if (vtable->initialized) {
 			mono_type_initialization_unlock ();
-			return;
+			return NULL;
 		}
 		if (vtable->init_failed) {
 			mono_type_initialization_unlock ();
 
 			/* The type initialization already failed once, rethrow the same exception */
-			mono_raise_exception (get_type_init_exception_for_vtable (vtable));
-			return;
+			if (raise_exception)
+				mono_raise_exception (get_type_init_exception_for_vtable (vtable));
+			return get_type_init_exception_for_vtable (vtable);
 		}			
 		lock = g_hash_table_lookup (type_initialization_hash, vtable);
 		if (lock == NULL) {
@@ -276,7 +288,9 @@ mono_runtime_class_init (MonoVTable *vtable)
 				if (!mono_domain_set (domain, FALSE)) {
 					vtable->initialized = 1;
 					mono_type_initialization_unlock ();
-					mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+					if (raise_exception)
+						mono_raise_exception (mono_get_exception_appdomain_unloaded ());
+					return mono_get_exception_appdomain_unloaded ();
 				}
 			}
 			lock = g_malloc (sizeof(TypeInitializationLock));
@@ -294,7 +308,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 
 			if (lock->initializing_tid == tid || lock->done) {
 				mono_type_initialization_unlock ();
-				return;
+				return NULL;
 			}
 			/* see if the thread doing the initialization is already blocked on this thread */
 			blocked = GUINT_TO_POINTER (lock->initializing_tid);
@@ -302,7 +316,7 @@ mono_runtime_class_init (MonoVTable *vtable)
 				if (pending_lock->initializing_tid == tid) {
 					if (!pending_lock->done) {
 						mono_type_initialization_unlock ();
-						return;
+						return NULL;
 					} else {
 						/* the thread doing the initialization is blocked on this thread,
 						   but on a lock that has already been freed. It just hasn't got
@@ -372,12 +386,15 @@ mono_runtime_class_init (MonoVTable *vtable)
 
 		if (vtable->init_failed) {
 			/* Either we were the initializing thread or we waited for the initialization */
-			mono_raise_exception (get_type_init_exception_for_vtable (vtable));
+			if (raise_exception)
+				mono_raise_exception (get_type_init_exception_for_vtable (vtable));
+			return get_type_init_exception_for_vtable (vtable);
 		}
 	} else {
 		vtable->initialized = 1;
-		return;
+		return NULL;
 	}
+	return NULL;
 }
 
 static
