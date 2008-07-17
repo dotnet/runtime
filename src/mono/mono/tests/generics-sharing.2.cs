@@ -98,7 +98,7 @@ public class IGenImpl<T> : IGen<T> {
 public class GenA<T> {
 	public static T[] arr;
 
-	public static GenA () {
+	static GenA () {
 		arr = new T [3];
 	}
 
