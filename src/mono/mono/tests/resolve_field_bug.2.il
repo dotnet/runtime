@@ -48,13 +48,13 @@
 			stloc.1 
 			ldstr "field {0}"
 			ldloc.1 
-			ldc.i4 0xA000001
+			ldc.i4 0xA000001	/* Has to match FieldThatDontExist TOKEN */
 			callvirt instance class [mscorlib]System.Reflection.FieldInfo class [mscorlib]System.Reflection.Module::ResolveField(int32)
 			call void class [mscorlib]System.Console::WriteLine(string, object)
 			ldc.i4.1
 			stloc.2
 			leave END
-		} catch [mscorlib]System.ArgumentException {
+		} catch [mscorlib]System.MissingFieldException {
 			ldc.i4.0
 			stloc.2
 			leave END
