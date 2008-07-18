@@ -289,7 +289,7 @@ public class GenB<T> {
 public class GenC<T> {
 	public static int field ;
 
-	public static GenC () {
+	static GenC () {
 		field = 1234;
 	}
 }
