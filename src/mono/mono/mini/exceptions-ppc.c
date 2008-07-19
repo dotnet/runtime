@@ -12,6 +12,7 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
+#include <stddef.h>
 #include <ucontext.h>
 
 #include <mono/arch/ppc/ppc-codegen.h>
@@ -790,7 +791,7 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	uc_copy = (ucontext_t*)(sp + 16);
 	memcpy (uc_copy, uc, sizeof (os_ucontext));
 #ifdef __linux__
-	uc_copy->uc_mcontext.uc_regs = (char*)uc_copy + ((char*)uc->uc_mcontext.uc_regs - (char*)uc);
+	uc_copy->uc_mcontext.uc_regs = (char*)uc_copy + offsetof(ucontext_t, uc_mcontext.uc_regs);
 #endif
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
 	UCONTEXT_REG_LNK(uc) = UCONTEXT_REG_NIP(uc);
