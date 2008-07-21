@@ -658,6 +658,14 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 		MonoType *ptype;
 
+#ifdef PLATFORM_WIN32
+		/* The float param registers and other param registers must be the same index on Windows x64.*/
+		if (gr > fr)
+			fr = gr;
+		else if (fr > gr)
+			gr = fr;
+#endif
+
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* We allways pass the sig cookie on the stack for simplicity */
 			/* 
