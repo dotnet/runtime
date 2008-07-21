@@ -510,7 +510,7 @@ get_register_spilling (MonoCompile *cfg, MonoInst *ins, MonoInstList *next, regm
 
 	DEBUG (printf ("\t\tavailable regmask: 0x%08" G_GUINT64_FORMAT "\n", (guint64)regmask));
 	g_assert (regmask); /* need at least a register we can free */
-	sel = -1;
+	sel = 0;
 
 	/* vassign contains 16 bit values */
 	g_assert (cfg->spill_count < (1 << 15));
