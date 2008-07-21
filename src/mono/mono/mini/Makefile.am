@@ -524,7 +524,7 @@ version.h: Makefile
 	if test -n "$$svn_info"; then \
 		(cd $(top_srcdir); \
 			LANG=C; export LANG; \
-			branch=`$$svn_info | grep URL | sed -e 's/.*source//' -e 's,mono$$,,'`; \
+			branch=`$$svn_info | grep URL | sed -e 's/.*source//' -e 's,mono/?$$,,'`; \
 			version=`$$svn_info | grep Revision | sed 's/.*: //'`; \
 			echo "#define FULL_VERSION \"$$branch r$$version\""; \
 		); \
