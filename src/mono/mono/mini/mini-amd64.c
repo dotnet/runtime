@@ -713,8 +713,12 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_TYPEDBYREF:
+#ifdef PLATFORM_WIN32
+			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
+#else
 			stack_size += sizeof (MonoTypedRef);
 			ainfo->storage = ArgOnStack;
+#endif
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
