@@ -1,3 +1,8 @@
+2008-07-21  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Invoke patch-quiet.sh using AC_CONFIG_COMMANDS so it
+	runs during a reconfigure too.
+
 2008-07-13  Zoltan Varga  <vargaz@gmail.com>
 
 	* docs/aot-compiler.txt: Update docs.

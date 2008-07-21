@@ -2242,6 +2242,10 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/Browsers/Compat.browser],
     cd $depth
 ],[LN_S='$LN_S'])
 
+if test x$enable_quiet_build = xyes; then
+   AC_CONFIG_COMMANDS([quiet], [find mono libgc support -name Makefile -exec $shell $srcdir/scripts/patch-quiet.sh {} \;], [shell=$SHELL])
+fi
+
 AC_OUTPUT([
 Makefile
 mono-uninstalled.pc
@@ -2314,11 +2318,6 @@ if test x$platform_win32 = xyes; then
    # wrapper scripts which use exec(). gcc has no problem compiling+linking this, but the resulting
    # executable doesn't work...
    sed -e "s,-mno-cygwin,,g" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
-fi
-
-if test x$enable_quiet_build = xyes; then
-   find mono -name Makefile -exec $SHELL $srcdir/scripts/patch-quiet.sh {} \;
-   find libgc -name Makefile -exec $SHELL $srcdir/scripts/patch-quiet.sh {} \;
 fi
 
 (
