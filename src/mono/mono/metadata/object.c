@@ -1316,6 +1316,8 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
 	runtime_info = class->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
 		return runtime_info->domain_vtables [domain->domain_id];
+	if (class->exception_type)
+		return NULL;
 	return mono_class_create_runtime_vtable (domain, class);
 }
 
