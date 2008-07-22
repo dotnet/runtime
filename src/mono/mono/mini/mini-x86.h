@@ -65,19 +65,16 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 /* we should lower this size and make sure we don't call heavy stack users in the segv handler */
 #define MONO_ARCH_SIGNAL_STACK_SIZE (16 * 1024)
 
-/* Enables OP_LSHL, OP_LSHL_IMM, OP_LSHR, OP_LSHR_IMM, OP_LSHR_UN, OP_LSHR_UN_IMM */
-#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
-
 #define MONO_ARCH_CPU_SPEC x86_desc
 
 #define MONO_MAX_IREGS 8
-#define MONO_MAX_FREGS 6
+#define MONO_MAX_FREGS 8
 
 /* Parameters used by the register allocator */
 #define MONO_ARCH_CALLEE_REGS X86_CALLEE_REGS
 #define MONO_ARCH_CALLEE_SAVED_REGS X86_CALLER_REGS
 
-#define MONO_ARCH_CALLEE_FREGS 0
+#define MONO_ARCH_CALLEE_FREGS (0xff & ~(regmask (MONO_ARCH_FPSTACK_SIZE)))
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
 
 #define MONO_ARCH_USE_FPSTACK TRUE
@@ -88,7 +85,12 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_INST_FIXED_MASK(desc) ((desc == 'y') ? (X86_BYTE_REGS) : 0)
 
 /* RDX is clobbered by the opcode implementation before accessing sreg2 */
-#define MONO_ARCH_INST_SREG2_MASK(ins) (((ins [MONO_INST_CLOB] == 'a') || (ins [MONO_INST_CLOB] == 'd')) ? (1 << X86_EDX) : 0)
+/* 
+ * Originally this contained X86_EDX for div/rem opcodes, but that led to unsolvable 
+ * situations since there are only 3 usable registers for local register allocation.
+ * Instead, we handle the sreg2==edx case in the opcodes.
+ */
+#define MONO_ARCH_INST_SREG2_MASK(ins) 0
 
 /*
  * L is a generic register pair, while l means eax:rdx
@@ -96,11 +98,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_INST_IS_REGPAIR(desc) (desc == 'l' || desc == 'L')
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l' ? X86_EDX : -1)
 
-#if defined(__APPLE__)
-#define MONO_ARCH_FRAME_ALIGNMENT 16
-#else
 #define MONO_ARCH_FRAME_ALIGNMENT 4
-#endif
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
  * reproduceable results for benchmarks */
@@ -258,6 +256,9 @@ typedef struct {
 
 #endif
 
+/* Enables OP_LSHL, OP_LSHL_IMM, OP_LSHR, OP_LSHR_IMM, OP_LSHR_UN, OP_LSHR_UN_IMM */
+#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
+
 #define MONO_ARCH_BIGMUL_INTRINS 1
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
@@ -279,9 +280,24 @@ typedef struct {
 #define MONO_ARCH_RGCTX_REG X86_EDX
 #define MONO_ARCH_ENABLE_NORMALIZE_OPCODES 1
 
+#define MONO_ARCH_HAVE_CMOV_OPS 1
+
 #if !defined(__APPLE__)
 #define MONO_ARCH_AOT_SUPPORTED 1
 #endif
+
+/* Used for optimization, not complete */
+#define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
+
+#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) do { \
+            MonoInst *inst; \
+            MONO_INST_NEW ((cfg), inst, OP_X86_COMPARE_MEMBASE_REG); \
+            inst->inst_basereg = array_reg; \
+            inst->inst_offset = offset; \
+            inst->sreg2 = index_reg; \
+            MONO_ADD_INS ((cfg)->cbb, inst); \
+			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+	} while (0)
 
 typedef struct {
 	guint8 *address;

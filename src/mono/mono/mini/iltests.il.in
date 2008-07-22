@@ -1759,4 +1759,23 @@ HAS_VALUE:	ldc.i4.1
 		conv.u4
 		ret
 	}
+
+	// Test calling ldfld directly on a vtype instead of a vtype address
+	.method public static int32 test_5_call_ldfld_vtype () cil managed
+	{
+		.maxstack 16
+		.locals init (
+			valuetype Tests/TailCallStruct arg
+		)
+		ldloca 0
+		ldc.i4.2
+		stfld int32 Tests/TailCallStruct::a
+		ldloca 0
+		ldc.i4.4
+		stfld int32 Tests/TailCallStruct::b
+		ldloc.0
+		call valuetype Tests/TailCallStruct Tests::tail2 (valuetype Tests/TailCallStruct)
+		ldfld int32 Tests/TailCallStruct::a
+		ret
+	}
 }

@@ -136,9 +136,9 @@ typedef struct MonoCompileArch {
 		MonoInst *target_label; \
 		target_label = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		target_label->opcode = OP_LABEL;	\
-		MONO_INST_LIST_ADD (&target_label->node, \
-				   &(targetbb)->ins_list); \
+	        target_label->next = (targetbb)->code; \
 		target_label->inst_c0 = (targetbb)->native_offset; \
+	        (targetbb)->code = target_label; \
 		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		g_assert (op >= CEE_BEQ && op <= CEE_BLT_UN); \
 		inst->opcode = OP_HPPA_BEQ + (op - CEE_BEQ); \

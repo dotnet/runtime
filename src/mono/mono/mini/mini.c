@@ -142,6 +142,10 @@ static void handle_stobj (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *de
 
 static void dec_foreach (MonoInst *tree, MonoCompile *cfg);
 
+int mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
+		   MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
+		   guint inline_offset, gboolean is_virtual_call);
+
 static int mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
 		   int locals_offset, MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
 		   guint inline_offset, gboolean is_virtual_call);
@@ -152,10 +156,11 @@ handle_store_float (MonoCompile *cfg, MonoBasicBlock *bblock, MonoInst *ptr, Mon
 #endif
 
 /* helper methods signature */
-static MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
-static MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
-static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
-static MonoMethodSignature *helper_sig_domain_get = NULL;
+/* FIXME: Make these static again */
+MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
+MonoMethodSignature *helper_sig_domain_get = NULL;
+MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
+MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
 
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
@@ -194,7 +199,8 @@ static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
 
 static MonoCodeManager *global_codeman = NULL;
 
-static GHashTable *jit_icall_name_hash = NULL;
+/* FIXME: Make this static again */
+GHashTable *jit_icall_name_hash = NULL;
 
 static MonoDebugOptions debug_options;
 
@@ -212,6 +218,9 @@ mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
 
 /* Whenever to check for pending exceptions in managed-to-native wrappers */
 gboolean check_for_pending_exc = TRUE;
+
+/* Whenever to disable passing/returning small valuetypes in registers for managed methods */
+gboolean disable_vtypes_in_regs = FALSE;
 
 gboolean
 mono_running_on_valgrind (void)
@@ -424,11 +433,7 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
  * dfn: Depth First Number
  * block_num: unique ID assigned at bblock creation
  */
-#define NEW_BBLOCK(cfg,new_bb) do {	\
-		new_bb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock)); \
-		MONO_INST_LIST_INIT (&new_bb->ins_list); \
-	} while (0)
-
+#define NEW_BBLOCK(cfg) (mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock)))
 #define ADD_BBLOCK(cfg,b) do {	\
 		cfg->cil_offset_to_bb [(b)->cil_code - cfg->cil_start] = (b);	\
 		(b)->block_num = cfg->num_bblocks++;	\
@@ -439,19 +444,17 @@ mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
 		(tblock) = cfg->cil_offset_to_bb [(ip) - cfg->cil_start]; \
 		if (!(tblock)) {	\
 			if ((ip) >= end || (ip) < header->code) UNVERIFIED; \
-			NEW_BBLOCK (cfg, (tblock));	\
+			(tblock) = NEW_BBLOCK (cfg);	\
 			(tblock)->cil_code = (ip);	\
 			ADD_BBLOCK (cfg, (tblock));	\
 		} \
 	} while (0)
 
 #define CHECK_BBLOCK(target,ip,tblock) do {	\
-		if ((target) < (ip) && \
-				MONO_INST_LIST_EMPTY (&(tblock)->ins_list)) { \
-			bb_recheck = g_list_prepend (bb_recheck, (tblock)); \
-			if (cfg->verbose_level > 2) \
-				g_print ("queued block %d for check at IL%04x from IL%04x\n", (tblock)->block_num, (int)((target) - header->code), (int)((ip) - header->code));	\
-		} \
+		if ((target) < (ip) && !(tblock)->code)	{	\
+			bb_recheck = g_list_prepend (bb_recheck, (tblock));	\
+			if (cfg->verbose_level > 2) g_print ("queued block %d for check at IL%04x from IL%04x\n", (tblock)->block_num, (int)((target) - header->code), (int)((ip) - header->code));	\
+		}	\
 	} while (0)
 
 #define NEW_ICONST(cfg,dest,val) do {	\
@@ -901,7 +904,7 @@ link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
  *
  *   Unlink two basic blocks.
  */
-static void
+void
 mono_unlink_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 {
 	int i, pos;
@@ -940,6 +943,24 @@ mono_unlink_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 		g_assert (pos == to->in_count - 1);
 		to->in_count--;
 	}
+}
+
+/*
+ * mono_bblocks_linked:
+ *
+ *   Return whenever BB1 and BB2 are linked in the CFG.
+ */
+static gboolean
+mono_bblocks_linked (MonoBasicBlock *bb1, MonoBasicBlock *bb2)
+{
+	int i;
+
+	for (i = 0; i < bb1->out_count; ++i) {
+		if (bb1->out_bb [i] == bb2)
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 /**
@@ -1067,7 +1088,7 @@ df_visit (MonoBasicBlock *start, int *dfn, MonoBasicBlock **array)
 	int i;
 
 	array [*dfn] = start;
-	/*g_print ("visit %d at %p (BB%ld)\n", *dfn, start->cil_code, start->block_num);*/
+	/* g_print ("visit %d at %p (BB%ld)\n", *dfn, start->cil_code, start->block_num); */
 	for (i = 0; i < start->out_count; ++i) {
 		if (start->out_bb [i]->dfn)
 			continue;
@@ -1103,7 +1124,7 @@ split_bblock (MonoCompile *cfg, MonoBasicBlock *first, MonoBasicBlock *second) {
 	MonoInst *inst;
 	MonoBasicBlock *bb;
 
-	if (!MONO_INST_LIST_EMPTY (&second->ins_list))
+	if (second->code)
 		return;
 	
 	/* 
@@ -1125,33 +1146,23 @@ split_bblock (MonoCompile *cfg, MonoBasicBlock *first, MonoBasicBlock *second) {
 	first->out_bb = NULL;
 	link_bblock (cfg, first, second);
 
+	second->last_ins = first->last_ins;
+
 	/*g_print ("start search at %p for %p\n", first->cil_code, second->cil_code);*/
 	MONO_BB_FOR_EACH_INS (first, inst) {
-		MonoInst *inst_next;
-
 		/*char *code = mono_disasm_code_one (NULL, cfg->method, inst->next->cil_code, NULL);
 		g_print ("found %p: %s", inst->next->cil_code, code);
 		g_free (code);*/
-		if (inst->cil_code >= second->cil_code)
-			continue;
-
-		inst_next = mono_inst_list_next (&inst->node, &first->ins_list);
-		if (!inst_next)
-			break;
-
-		if (inst_next->cil_code < second->cil_code)
-			continue;
-			
-		second->ins_list.next = inst->node.next;
-		second->ins_list.prev = first->ins_list.prev;
-		inst->node.next = &first->ins_list;
-		first->ins_list.prev = &inst->node;
-
-		second->next_bb = first->next_bb;
-		first->next_bb = second;
-		return;
+		if (inst->cil_code < second->cil_code && inst->next->cil_code >= second->cil_code) {
+			second->code = inst->next;
+			inst->next = NULL;
+			first->last_ins = inst;
+			second->next_bb = first->next_bb;
+			first->next_bb = second;
+			return;
+		}
 	}
-	if (MONO_INST_LIST_EMPTY (&second->ins_list)) {
+	if (!second->code) {
 		g_warning ("bblock split failed in %s::%s\n", cfg->method->klass->name, cfg->method->name);
 		//G_BREAKPOINT ();
 	}
@@ -1189,6 +1200,130 @@ reverse_branch_op (guint32 opcode)
 		g_assert_not_reached ();
 
 	return opcode;
+}
+
+guint
+mono_type_to_store_membase (MonoCompile *cfg, MonoType *type)
+{
+	if (type->byref)
+		return OP_STORE_MEMBASE_REG;
+
+handle_enum:
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		return OP_STOREI1_MEMBASE_REG;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		return OP_STOREI2_MEMBASE_REG;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_STOREI4_MEMBASE_REG;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		return OP_STORE_MEMBASE_REG;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		return OP_STORE_MEMBASE_REG;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_STOREI8_MEMBASE_REG;
+	case MONO_TYPE_R4:
+		return OP_STORER4_MEMBASE_REG;
+	case MONO_TYPE_R8:
+		return OP_STORER8_MEMBASE_REG;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype) {
+			type = type->data.klass->enum_basetype;
+			goto handle_enum;
+		}
+		return OP_STOREV_MEMBASE;
+	case MONO_TYPE_TYPEDBYREF:
+		return OP_STOREV_MEMBASE;
+	case MONO_TYPE_GENERICINST:
+		type = &type->data.generic_class->container_class->byval_arg;
+		goto handle_enum;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		/* FIXME: all the arguments must be references for now,
+		 * later look inside cfg and see if the arg num is
+		 * really a reference
+		 */
+		g_assert (cfg->generic_sharing_context);
+		return OP_STORE_MEMBASE_REG;
+	default:
+		g_error ("unknown type 0x%02x in type_to_store_membase", type->type);
+	}
+	return -1;
+}
+
+guint
+mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
+{
+	if (type->byref)
+		return OP_LOAD_MEMBASE;
+
+	switch (mono_type_get_underlying_type (type)->type) {
+	case MONO_TYPE_I1:
+		return OP_LOADI1_MEMBASE;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+		return OP_LOADU1_MEMBASE;
+	case MONO_TYPE_I2:
+		return OP_LOADI2_MEMBASE;
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+		return OP_LOADU2_MEMBASE;
+	case MONO_TYPE_I4:
+		return OP_LOADI4_MEMBASE;
+	case MONO_TYPE_U4:
+		return OP_LOADU4_MEMBASE;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		return OP_LOAD_MEMBASE;
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:    
+		return OP_LOAD_MEMBASE;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_LOADI8_MEMBASE;
+	case MONO_TYPE_R4:
+		return OP_LOADR4_MEMBASE;
+	case MONO_TYPE_R8:
+		return OP_LOADR8_MEMBASE;
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_TYPEDBYREF:
+		return OP_LOADV_MEMBASE;
+	case MONO_TYPE_GENERICINST:
+		if (mono_type_generic_inst_is_valuetype (type))
+			return OP_LOADV_MEMBASE;
+		else
+			return OP_LOAD_MEMBASE;
+		break;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		/* FIXME: all the arguments must be references for now,
+		 * later look inside cfg and see if the arg num is
+		 * really a reference
+		 */
+		g_assert (cfg->generic_sharing_context);
+		return OP_LOAD_MEMBASE;
+	default:
+		g_error ("unknown type 0x%02x in type_to_load_membase", type->type);
+	}
+	return -1;
 }
 
 #ifdef MONO_ARCH_SOFT_FLOAT
@@ -1761,7 +1896,7 @@ mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 	return mono_type_to_ldind (type);
 }
 
-static guint
+guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
 	if (cfg->generic_sharing_context && !type->byref) {
@@ -1780,7 +1915,11 @@ mono_op_imm_to_op (int opcode)
 {
 	switch (opcode) {
 	case OP_ADD_IMM:
-		return OP_PADD;
+#if SIZEOF_VOID_P == 4
+		return OP_IADD;
+#else
+		return OP_LADD;
+#endif
 	case OP_IADD_IMM:
 		return OP_IADD;
 	case OP_LADD_IMM:
@@ -1855,9 +1994,12 @@ mono_op_imm_to_op (int opcode)
 		return OP_COMPARE;
 	case OP_ICOMPARE_IMM:
 		return OP_ICOMPARE;
+	case OP_LOCALLOC_IMM:
+		return OP_LOCALLOC;
 	default:
 		printf ("%s\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
+		return -1;
 	}
 }
 
@@ -1867,16 +2009,21 @@ mono_op_imm_to_op (int opcode)
  *   Replace the OP_.._IMM INS with its non IMM variant.
  */
 void
-mono_decompose_op_imm (MonoCompile *cfg, MonoInst *ins)
+mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
 	MonoInst *temp;
 
 	MONO_INST_NEW (cfg, temp, OP_ICONST);
 	temp->inst_c0 = ins->inst_imm;
 	temp->dreg = mono_regstate_next_int (cfg->rs);
-	MONO_INST_LIST_ADD_TAIL (&(temp)->node, &(ins)->node);
+	mono_bblock_insert_before_ins (bb, ins, temp);
 	ins->opcode = mono_op_imm_to_op (ins->opcode);
-	ins->sreg2 = temp->dreg;
+	if (ins->opcode == OP_LOCALLOC)
+		ins->sreg1 = temp->dreg;
+	else
+		ins->sreg2 = temp->dreg;
+
+	bb->max_vreg = MAX (bb->max_vreg, cfg->rs->next_vreg);
 }
 
 /*
@@ -1925,38 +2072,131 @@ mono_get_vtable_var (MonoCompile *cfg)
 	return cfg->rgctx_var;
 }
 
+static void
+set_vreg_to_inst (MonoCompile *cfg, int vreg, MonoInst *inst)
+{
+	if (vreg >= cfg->vreg_to_inst_len) {
+		MonoInst **tmp = cfg->vreg_to_inst;
+		int size = cfg->vreg_to_inst_len;
+
+		while (vreg >= cfg->vreg_to_inst_len)
+			cfg->vreg_to_inst_len = cfg->vreg_to_inst_len ? cfg->vreg_to_inst_len * 2 : 32;
+		cfg->vreg_to_inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * cfg->vreg_to_inst_len);
+		if (size)
+			memcpy (cfg->vreg_to_inst, tmp, size * sizeof (MonoInst*));
+	}
+	cfg->vreg_to_inst [vreg] = inst;
+}
+
+#define mono_type_is_long(type) (!(type)->byref && ((mono_type_get_underlying_type (type)->type == MONO_TYPE_I8) || (mono_type_get_underlying_type (type)->type == MONO_TYPE_U8)))
+#define mono_type_is_float(type) (!(type)->byref && (((type)->type == MONO_TYPE_R8) || ((type)->type == MONO_TYPE_R4)))
+
 MonoInst*
-mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
+mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, int vreg)
 {
 	MonoInst *inst;
 	int num = cfg->num_varinfo;
+	gboolean regpair;
 
 	if ((num + 1) >= cfg->varinfo_count) {
 		int orig_count = cfg->varinfo_count;
-		cfg->varinfo_count = (cfg->varinfo_count + 2) * 2;
+		cfg->varinfo_count = cfg->varinfo_count ? (cfg->varinfo_count * 2) : 64;
 		cfg->varinfo = (MonoInst **)g_realloc (cfg->varinfo, sizeof (MonoInst*) * cfg->varinfo_count);
 		cfg->vars = (MonoMethodVar *)g_realloc (cfg->vars, sizeof (MonoMethodVar) * cfg->varinfo_count);
 		memset (&cfg->vars [orig_count], 0, (cfg->varinfo_count - orig_count) * sizeof (MonoMethodVar));
 	}
 
-	/*g_print ("created temp %d of type 0x%x\n", num, type->type);*/
 	mono_jit_stats.allocate_var++;
 
 	MONO_INST_NEW (cfg, inst, opcode);
 	inst->inst_c0 = num;
 	inst->inst_vtype = type;
 	inst->klass = mono_class_from_mono_type (type);
+	type_to_eval_stack_type (cfg, type, inst);
 	/* if set to 1 the variable is native */
 	inst->backend.is_pinvoke = 0;
+	inst->dreg = vreg;
 
 	cfg->varinfo [num] = inst;
 
 	MONO_INIT_VARINFO (&cfg->vars [num], num);
 
+	if (vreg != -1)
+		set_vreg_to_inst (cfg, vreg, inst);
+
+#if SIZEOF_VOID_P == 4
+#ifdef MONO_ARCH_SOFT_FLOAT
+	regpair = mono_type_is_long (type) || mono_type_is_float (type);
+#else
+	regpair = mono_type_is_long (type);
+#endif
+#else
+	regpair = FALSE;
+#endif
+
+	if (regpair) {
+		MonoInst *tree;
+
+		/* 
+		 * These two cannot be allocated using create_var_for_vreg since that would
+		 * put it into the cfg->varinfo array, confusing many parts of the JIT.
+		 */
+
+		/* 
+		 * Set flags to VOLATILE so SSA skips it.
+		 */
+
+		if (cfg->verbose_level >= 4) {
+			printf ("  Create LVAR R%d (R%d, R%d)\n", inst->dreg, inst->dreg + 1, inst->dreg + 2);
+		}
+
+		/* Allocate a dummy MonoInst for the first vreg */
+		MONO_INST_NEW (cfg, tree, OP_LOCAL);
+		tree->dreg = inst->dreg + 1;
+		if (cfg->opt & MONO_OPT_SSA)
+			tree->flags = MONO_INST_VOLATILE;
+		tree->inst_c0 = num;
+		tree->type = STACK_I4;
+		tree->inst_vtype = &mono_defaults.int32_class->byval_arg;
+		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
+
+		set_vreg_to_inst (cfg, inst->dreg + 1, tree);
+
+		/* Allocate a dummy MonoInst for the second vreg */
+		MONO_INST_NEW (cfg, tree, OP_LOCAL);
+		tree->dreg = inst->dreg + 2;
+		if (cfg->opt & MONO_OPT_SSA)
+			tree->flags = MONO_INST_VOLATILE;
+		tree->inst_c0 = num;
+		tree->type = STACK_I4;
+		tree->inst_vtype = &mono_defaults.int32_class->byval_arg;
+		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
+
+		set_vreg_to_inst (cfg, inst->dreg + 2, tree);
+	}
+
 	cfg->num_varinfo++;
 	if (cfg->verbose_level > 2)
-		g_print ("created temp %d of type %s\n", num, mono_type_get_name (type));
+		g_print ("created temp %d (R%d) of type %s\n", num, vreg, mono_type_get_name (type));
 	return inst;
+}
+
+MonoInst*
+mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
+{
+	int dreg;
+
+	if (mono_type_is_long (type))
+		dreg = mono_alloc_dreg (cfg, STACK_I8);
+#ifdef MONO_ARCH_SOFT_FLOAT
+	else if (mono_type_is_float (type))
+		dreg = mono_alloc_dreg (cfg, STACK_R8);
+#endif
+	else
+		/* All the others are unified */
+		dreg = mono_alloc_preg (cfg);
+
+	return mono_compile_create_var_for_vreg (cfg, type, opcode, dreg);
 }
 
 /*
@@ -2073,18 +2313,181 @@ array_access_to_klass (int opcode, MonoInst *array_obj)
 	return NULL;
 }
 
+/*
+ * mono_add_ins_to_end:
+ *
+ *   Same as MONO_ADD_INS, but add INST before any branches at the end of BB.
+ */
 void
 mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 {
-	MonoInst *last = mono_inst_list_last (&bb->ins_list);
+	int opcode;
 
-	if (last && ((last->opcode >= CEE_BEQ &&
-			last->opcode <= CEE_BLT_UN) ||
-			last->opcode == OP_BR ||
-			last->opcode == OP_SWITCH)) {
-		MONO_INST_LIST_ADD_TAIL (&inst->node, &last->node);
-	} else {
+	if (!bb->code) {
 		MONO_ADD_INS (bb, inst);
+		return;
+	}
+
+	switch (bb->last_ins->opcode) {
+	case OP_BR:
+	case OP_BR_REG:
+	case CEE_BEQ:
+	case CEE_BGE:
+	case CEE_BGT:
+	case CEE_BLE:
+	case CEE_BLT:
+	case CEE_BNE_UN:
+	case CEE_BGE_UN:
+	case CEE_BGT_UN:
+	case CEE_BLE_UN:
+	case CEE_BLT_UN:
+	case OP_SWITCH:
+		mono_bblock_insert_before_ins (bb, bb->last_ins, inst);
+		break;
+	default:
+		if (MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
+			/* Need to insert the ins before the compare */
+			if (bb->code == bb->last_ins) {
+				mono_bblock_insert_before_ins (bb, bb->last_ins, inst);
+				return;
+			}
+
+			if (bb->code->next == bb->last_ins) {
+				/* Only two instructions */
+				opcode = bb->code->opcode;
+
+				if ((opcode == OP_COMPARE) || (opcode == OP_COMPARE_IMM) || (opcode == OP_ICOMPARE) || (opcode == OP_ICOMPARE_IMM) || (opcode == OP_FCOMPARE) || (opcode == OP_LCOMPARE) || (opcode == OP_LCOMPARE_IMM)) {
+					/* NEW IR */
+					mono_bblock_insert_before_ins (bb, bb->code, inst);
+				} else {
+					mono_bblock_insert_before_ins (bb, bb->last_ins, inst);
+				}
+			} else {
+				opcode = bb->last_ins->prev->opcode;
+
+				if ((opcode == OP_COMPARE) || (opcode == OP_COMPARE_IMM) || (opcode == OP_ICOMPARE) || (opcode == OP_ICOMPARE_IMM) || (opcode == OP_FCOMPARE) || (opcode == OP_LCOMPARE) || (opcode == OP_LCOMPARE_IMM)) {
+					/* NEW IR */
+					mono_bblock_insert_before_ins (bb, bb->last_ins->prev, inst);
+				} else {
+					mono_bblock_insert_before_ins (bb, bb->last_ins, inst);
+				}					
+			}
+		}
+		else
+			MONO_ADD_INS (bb, inst);
+		break;
+	}
+}
+
+/**
+ * mono_replace_ins:
+ *
+ *   Replace INS with its decomposition which is stored in a series of bblocks starting
+ * at FIRST_BB and ending at LAST_BB. On enter, PREV points to the predecessor of INS. 
+ * On return, it will be set to the last ins of the decomposition.
+ */
+void
+mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **prev, MonoBasicBlock *first_bb, MonoBasicBlock *last_bb)
+{
+	MonoInst *next = ins->next;
+
+	if (next && next->opcode == OP_NOP) {
+		/* Avoid NOPs following branches */
+		ins->next = next->next;
+		next = next->next;
+	}
+
+	if (first_bb == last_bb) {
+		/* 
+		 * Only one replacement bb, merge the code into
+		 * the current bb.
+		 */
+
+		/* Delete links between the first_bb and its successors */
+		while (first_bb->out_count)
+			mono_unlink_bblock (cfg, first_bb, first_bb->out_bb [0]);
+
+		/* Head */
+		if (*prev) {
+			(*prev)->next = first_bb->code;
+			first_bb->code->prev = (*prev);
+		} else {
+			bb->code = first_bb->code;
+		}
+
+		/* Tail */
+		last_bb->last_ins->next = next;
+		if (next)
+			next->prev = last_bb->last_ins;
+		else
+			bb->last_ins = last_bb->last_ins;
+		*prev = last_bb->last_ins;
+	} else {
+		int i, count;
+		MonoBasicBlock **tmp_bblocks, *tmp;
+		MonoInst *last;
+
+		/* Multiple BBs */
+
+		/* Set region */
+		for (tmp = first_bb; tmp; tmp = tmp->next_bb)
+			tmp->region = bb->region;
+
+		/* Split the original bb */
+		if (ins->next)
+			ins->next->prev = NULL;
+		ins->next = NULL;
+		bb->last_ins = ins;
+
+		/* Merge the second part of the original bb into the last bb */
+		if (last_bb->last_ins) {
+			last_bb->last_ins->next = next;
+			if (next)
+				next->prev = last_bb->last_ins;
+		} else {
+			last_bb->code = next;
+		}
+
+		if (next) {
+			for (last = next; last->next != NULL; last = last->next)
+				;
+			last_bb->last_ins = last;
+		}
+
+		for (i = 0; i < bb->out_count; ++i)
+			link_bblock (cfg, last_bb, bb->out_bb [i]);
+
+		/* Merge the first (dummy) bb to the original bb */
+		if (*prev) {
+			(*prev)->next = first_bb->code;
+			first_bb->code->prev = (*prev);
+		} else {
+			bb->code = first_bb->code;
+		}
+		bb->last_ins = first_bb->last_ins;
+
+		/* Delete the links between the original bb and its successors */
+		tmp_bblocks = bb->out_bb;
+		count = bb->out_count;
+		for (i = 0; i < count; ++i)
+			mono_unlink_bblock (cfg, bb, tmp_bblocks [i]);
+
+		/* Add links between the original bb and the first_bb's successors */
+		for (i = 0; i < first_bb->out_count; ++i) {
+			MonoBasicBlock *out_bb = first_bb->out_bb [i];
+
+			link_bblock (cfg, bb, out_bb);
+		}
+		/* Delete links between the first_bb and its successors */
+		for (i = 0; i < bb->out_count; ++i) {
+			MonoBasicBlock *out_bb = bb->out_bb [i];
+
+			mono_unlink_bblock (cfg, first_bb, out_bb);
+		}
+		last_bb->next_bb = bb->next_bb;
+		bb->next_bb = first_bb->next_bb;
+
+		*prev = NULL;
 	}
 }
 
@@ -2657,7 +3060,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 		     MonoInst **args, int calli, int virtual, const guint8 *ip, gboolean to_end)
 {
 	MonoCallInst *call;
-	MonoInst *arg, *n;
+	MonoInst *arg;
 
 	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (sig->ret, calli, virtual, cfg->generic_sharing_context));
 
@@ -2685,13 +3088,16 @@ mono_emit_call_args (MonoCompile *cfg, MonoBasicBlock *bblock, MonoMethodSignatu
 	call = mono_arch_call_opcode (cfg, bblock, call, virtual);
 	type_to_eval_stack_type (cfg, sig->ret, &call->inst);
 
-	MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (arg, n, &call->out_args, node) {
+	for (arg = call->out_args; arg;) {
+		MonoInst *narg = arg->next;
+		arg->next = NULL;
 		if (!arg->cil_code)
 			arg->cil_code = ip;
 		if (to_end)
 			mono_add_ins_to_end (bblock, arg);
 		else
 			MONO_ADD_INS (bblock, arg);
+		arg = narg;
 	}
 	return call;
 }
@@ -2906,8 +3312,8 @@ mono_emit_rgctx_method_call_spilled (MonoCompile *cfg, MonoBasicBlock *bblock, M
 static void
 mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJitICallInfo *info)
 {
-	MonoInst *ins, *temp = NULL, *store, *load;
-	MonoInstList *head, *list;
+	MonoInst *ins, *temp = NULL, *store, *load, *begin;
+	MonoInst *last_arg = NULL;
 	int nargs;
 	MonoCallInst *call;
 
@@ -2915,7 +3321,6 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 	//mono_print_tree_nl (tree);
 	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (info->sig->ret, FALSE, FALSE, cfg->generic_sharing_context));
 	ins = (MonoInst*)call;
-	MONO_INST_LIST_INIT (&ins->node);
 	
 	call->inst.cil_code = tree->cil_code;
 	call->args = iargs;
@@ -2927,7 +3332,6 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 		temp = mono_compile_create_var (cfg, info->sig->ret, OP_LOCAL);
 		temp->flags |= MONO_INST_IS_TEMP;
 		NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
-		MONO_INST_LIST_INIT (&store->node);
 		/* FIXME: handle CEE_STIND_R4 */
 		store->cil_code = tree->cil_code;
 	} else {
@@ -2936,13 +3340,15 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 
 	nargs = info->sig->param_count + info->sig->hasthis;
 
-	if (nargs) {
-		MONO_INST_LIST_ADD_TAIL (&store->node,
-					&call->out_args);
-		list = &call->out_args;
-	} else {
-		list = &store->node;
-	}
+	for (last_arg = call->out_args; last_arg && last_arg->next; last_arg = last_arg->next) ;
+
+	if (nargs)
+		last_arg->next = store;
+
+	if (nargs)
+		begin = call->out_args;
+	else
+		begin = store;
 
 	if (cfg->prev_ins) {
 		/* 
@@ -2950,12 +3356,12 @@ mono_emulate_opcode (MonoCompile *cfg, MonoInst *tree, MonoInst **iargs, MonoJit
 		 * node before it is called for its children. dec_foreach needs to
 		 * take this into account.
 		 */
-		head = &cfg->prev_ins->node;
+		store->next = cfg->prev_ins->next;
+		cfg->prev_ins->next = begin;
 	} else {
-		head = &cfg->cbb->ins_list;
+		store->next = cfg->cbb->code;
+		cfg->cbb->code = begin;
 	}
-
-	MONO_INST_LIST_SPLICE_INIT (list, head);
 
 	call->fptr = mono_icall_get_wrapper (info);
 
@@ -3023,12 +3429,37 @@ mono_get_array_new_va_signature (int arity)
 	for (i = 0; i < arity; i++)
 		res->params [i + 1] = &mono_defaults.int_class->byval_arg;
 
-	res->ret = &mono_defaults.int_class->byval_arg;
+	res->ret = &mono_defaults.object_class->byval_arg;
 
 	g_hash_table_insert (sighash, GINT_TO_POINTER (arity), res);
 	mono_jit_unlock ();
 
 	return res;
+}
+
+MonoJitICallInfo *
+mono_get_array_new_va_icall (int rank)
+{
+	MonoMethodSignature *esig;
+	char icall_name [256];
+	char *name;
+	MonoJitICallInfo *info;
+
+	/* Need to register the icall so it gets an icall wrapper */
+	sprintf (icall_name, "ves_array_new_va_%d", rank);
+
+	mono_jit_lock ();
+	info = mono_find_jit_icall_by_name (icall_name);
+	if (info == NULL) {
+		esig = mono_get_array_new_va_signature (rank);
+		name = g_strdup (icall_name);
+		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
+
+		g_hash_table_insert (jit_icall_name_hash, name, name);
+	}
+	mono_jit_unlock ();
+
+	return info;
 }
 
 static MonoMethod*
@@ -3343,31 +3774,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoBasicBlock *bblock, MonoClass *klass
 	return obj;
 }
 
-static MonoJitICallInfo*
-mono_get_array_new_va_icall (int rank)
-{
-	char icall_name [256];
-	char *name;
-	MonoMethodSignature *esig;
-	MonoJitICallInfo *info;
-
-	/* Need to register the icall so it gets an icall wrapper */
-	sprintf (icall_name, "ves_array_new_va_%d", rank);
-
-	mono_jit_lock ();
-	info = mono_find_jit_icall_by_name (icall_name);
-	if (info == NULL) {
-		esig = mono_get_array_new_va_signature (rank);
-		name = g_strdup (icall_name);
-		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
-
-		g_hash_table_insert (jit_icall_name_hash, name, name);
-	}
-	mono_jit_unlock ();
-
-	return info;
-}
-
 static int
 handle_array_new (MonoCompile *cfg, MonoBasicBlock *bblock, int rank, MonoInst **sp, unsigned char *ip)
 {
@@ -3394,7 +3800,12 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 	NEW_TEMPSTORE (cfg, store, cfg->got_var->inst_c0, get_got);
 
 	/* Add it to the start of the first bblock */
-	MONO_INST_LIST_ADD (&store->node, &cfg->bb_entry->ins_list);
+	if (cfg->bb_entry->code) {
+		store->next = cfg->bb_entry->code;
+		cfg->bb_entry->code = store;
+	}
+	else
+		MONO_ADD_INS (cfg->bb_entry, store);
 
 	cfg->got_var_allocated = TRUE;
 
@@ -3411,7 +3822,7 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 
 #define CODE_IS_STLOC(ip) (((ip) [0] >= CEE_STLOC_0 && (ip) [0] <= CEE_STLOC_3) || ((ip) [0] == CEE_STLOC_S))
 
-static gboolean
+gboolean
 mini_class_is_system_array (MonoClass *klass)
 {
 	if (klass->parent == mono_defaults.array_class)
@@ -4001,11 +4412,11 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		mono_compile_create_var (cfg, cheader->locals [i], OP_LOCAL);
 
 	/* allocate starte and end blocks */
-	NEW_BBLOCK (cfg, sbblock);
+	sbblock = NEW_BBLOCK (cfg);
 	sbblock->block_num = cfg->num_bblocks++;
 	sbblock->real_offset = real_offset;
 
-	NEW_BBLOCK (cfg, ebblock);
+	ebblock = NEW_BBLOCK (cfg);
 	ebblock->block_num = cfg->num_bblocks++;
 	ebblock->real_offset = real_offset;
 
@@ -4513,8 +4924,8 @@ get_runtime_generic_context (MonoCompile *cfg, MonoMethod *method, int context_u
 	}
 }
 
-static gpointer
-create_rgctx_lazy_fetch_trampoline (guint32 offset)
+gpointer
+mini_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 {
 	static gboolean inited = FALSE;
 	static int num_trampolines = 0;
@@ -4554,7 +4965,7 @@ get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoBasicBlock *b
 	MonoInst *rgc_ptr, guint32 slot, const unsigned char *ip)
 {
 	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
-	guint8 *tramp = create_rgctx_lazy_fetch_trampoline (slot);
+	guint8 *tramp = mini_create_rgctx_lazy_fetch_trampoline (slot);
 	int temp;
 	MonoInst *field;
 
@@ -4657,21 +5068,6 @@ handle_box_nullable_from_inst (MonoCompile *cfg, MonoMethod *caller_method, int 
 			method_addr, NULL, ip);
 	NEW_TEMPLOAD (cfg, dest, temp);
 	return dest;
-}
-
-static MonoObject*
-mono_object_castclass (MonoObject *obj, MonoClass *klass)
-{
-	if (!obj)
-		return NULL;
-
-	if (mono_object_isinst (obj, klass))
-		return obj;
-
-	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
-					"System", "InvalidCastException"));
-
-	return NULL;
 }
 
 static int
@@ -4834,7 +5230,7 @@ exception_exit:
 	goto do_return;
 }
 
-static gboolean
+gboolean
 mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 {
 	MonoAssembly *assembly = method->klass->image->assembly;
@@ -4854,7 +5250,7 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
  * 
  * Returns true if the method is invalid. 
  */
-static gboolean
+gboolean
 mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 {
 	GSList *tmp, *res;
@@ -5011,15 +5407,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
 
 		/* ENTRY BLOCK */
-		NEW_BBLOCK (cfg, start_bblock);
-		cfg->bb_entry = start_bblock;
+		cfg->bb_entry = start_bblock = NEW_BBLOCK (cfg);
 		start_bblock->cil_code = NULL;
 		start_bblock->cil_length = 0;
 		start_bblock->block_num = cfg->num_bblocks++;
 
 		/* EXIT BLOCK */
-		NEW_BBLOCK (cfg, end_bblock);
-		cfg->bb_exit = end_bblock;
+		cfg->bb_exit = end_bblock = NEW_BBLOCK (cfg);
 		end_bblock->cil_code = NULL;
 		end_bblock->cil_length = 0;
 		end_bblock->block_num = cfg->num_bblocks++;
@@ -5148,7 +5542,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	/* FIRST CODE BLOCK */
-	NEW_BBLOCK (cfg, bblock);
+	bblock = NEW_BBLOCK (cfg);
 	bblock->cil_code = ip;
 
 	ADD_BBLOCK (cfg, bblock);
@@ -5203,8 +5597,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	
 	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || cfg->compile_aot || security || pinvoke) {
 		/* we use a separate basic block for the initialization code */
-		NEW_BBLOCK (cfg, init_localsbb);
-		cfg->bb_init = init_localsbb;
+		cfg->bb_init = init_localsbb = NEW_BBLOCK (cfg);
 		init_localsbb->real_offset = real_offset;
 		start_bblock->next_bb = init_localsbb;
 		init_localsbb->next_bb = bblock;
@@ -6648,7 +7041,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 */
 			if ((ins->opcode == OP_LSHR_UN) && (ins->type == STACK_I8) 
 					&& (ins->inst_right->opcode == OP_ICONST) && (ins->inst_right->inst_c0 == 32)) {
-				ins->opcode = OP_LONG_SHRUN_32;
+				ins->opcode = OP_LSHR_UN_32;
 				/*g_print ("applied long shr speedup to %s\n", cfg->method->name);*/
 				ip++;
 				break;
@@ -9737,7 +10130,7 @@ mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 
 typedef struct {
 	MonoClass *vtype;
-	GList *active;
+	GList *active, *inactive;
 	GSList *slots;
 } StackSlotInfo;
 
@@ -9752,6 +10145,295 @@ g_slist_prepend_mempool (MonoMemPool *mp, GSList   *list,
   new_list->next = list;
 
   return new_list;
+}
+
+static gint 
+compare_by_interval_start_pos_func (gconstpointer a, gconstpointer b)
+{
+	MonoMethodVar *v1 = (MonoMethodVar*)a;
+	MonoMethodVar *v2 = (MonoMethodVar*)b;
+
+	if (v1 == v2)
+		return 0;
+	else if (v1->interval->range && v2->interval->range)
+		return v1->interval->range->from - v2->interval->range->from;
+	else if (v1->interval->range)
+		return -1;
+	else
+		return 1;
+}
+
+#if 0
+#define LSCAN_DEBUG(a) do { a; } while (0)
+#else
+#define LSCAN_DEBUG(a)
+#endif
+
+static gint32*
+mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
+{
+	int i, slot, offset, size;
+	guint32 align;
+	MonoMethodVar *vmv;
+	MonoInst *inst;
+	gint32 *offsets;
+	GList *vars = NULL, *l, *unhandled;
+	StackSlotInfo *scalar_stack_slots, *vtype_stack_slots, *slot_info;
+	MonoType *t;
+	int nvtypes;
+
+	LSCAN_DEBUG (printf ("Allocate Stack Slots 2 for %s:\n", mono_method_full_name (cfg->method, TRUE)));
+
+	scalar_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * MONO_TYPE_PINNED);
+	vtype_stack_slots = NULL;
+	nvtypes = 0;
+
+	offsets = mono_mempool_alloc (cfg->mempool, sizeof (gint32) * cfg->num_varinfo);
+	for (i = 0; i < cfg->num_varinfo; ++i)
+		offsets [i] = -1;
+
+	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+		inst = cfg->varinfo [i];
+		vmv = MONO_VARINFO (cfg, i);
+
+		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR || inst->opcode == OP_REGOFFSET)
+			continue;
+
+		vars = g_list_prepend (vars, vmv);
+	}
+
+	vars = g_list_sort (g_list_copy (vars), compare_by_interval_start_pos_func);
+
+	/* Sanity check */
+	/*
+	i = 0;
+	for (unhandled = vars; unhandled; unhandled = unhandled->next) {
+		MonoMethodVar *current = unhandled->data;
+
+		if (current->interval->range) {
+			g_assert (current->interval->range->from >= i);
+			i = current->interval->range->from;
+		}
+	}
+	*/
+
+	offset = 0;
+	*stack_align = 0;
+	for (unhandled = vars; unhandled; unhandled = unhandled->next) {
+		MonoMethodVar *current = unhandled->data;
+
+		vmv = current;
+		inst = cfg->varinfo [vmv->idx];
+
+		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
+		* pinvoke wrappers when they call functions returning structures */
+		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
+			size = mono_class_native_size (inst->inst_vtype->data.klass, &align);
+		else {
+			int ialign;
+
+			size = mono_type_size (inst->inst_vtype, &ialign);
+			align = ialign;
+		}
+
+		t = mono_type_get_underlying_type (inst->inst_vtype);
+		switch (t->type) {
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (t)) {
+				slot_info = &scalar_stack_slots [t->type];
+				break;
+			}
+			/* Fall through */
+		case MONO_TYPE_VALUETYPE:
+			if (!vtype_stack_slots)
+				vtype_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * 256);
+			for (i = 0; i < nvtypes; ++i)
+				if (t->data.klass == vtype_stack_slots [i].vtype)
+					break;
+			if (i < nvtypes)
+				slot_info = &vtype_stack_slots [i];
+			else {
+				g_assert (nvtypes < 256);
+				vtype_stack_slots [nvtypes].vtype = t->data.klass;
+				slot_info = &vtype_stack_slots [nvtypes];
+				nvtypes ++;
+			}
+			break;
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_I4:
+#else
+		case MONO_TYPE_I8:
+			/* Share non-float stack slots of the same size */
+			slot_info = &scalar_stack_slots [MONO_TYPE_CLASS];
+			break;
+#endif
+		default:
+			slot_info = &scalar_stack_slots [t->type];
+		}
+
+		slot = 0xffffff;
+		if (cfg->comp_done & MONO_COMP_LIVENESS) {
+			int pos;
+			gboolean changed;
+
+			//printf ("START  %2d %08x %08x\n",  vmv->idx, vmv->range.first_use.abs_pos, vmv->range.last_use.abs_pos);
+
+			if (!current->interval->range) {
+				if (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))
+					pos = ~0;
+				else {
+					/* Dead */
+					inst->flags |= MONO_INST_IS_DEAD;
+					continue;
+				}
+			}
+			else
+				pos = current->interval->range->from;
+
+			LSCAN_DEBUG (printf ("process R%d ", inst->dreg));
+			if (current->interval->range)
+				LSCAN_DEBUG (mono_linterval_print (current->interval));
+			LSCAN_DEBUG (printf ("\n"));
+
+			/* Check for intervals in active which expired or inactive */
+			changed = TRUE;
+			/* FIXME: Optimize this */
+			while (changed) {
+				changed = FALSE;
+				for (l = slot_info->active; l != NULL; l = l->next) {
+					MonoMethodVar *v = (MonoMethodVar*)l->data;
+
+					if (v->interval->last_range->to < pos) {
+						slot_info->active = g_list_delete_link (slot_info->active, l);
+						slot_info->slots = g_slist_prepend_mempool (cfg->mempool, slot_info->slots, GINT_TO_POINTER (offsets [v->idx]));
+						LSCAN_DEBUG (printf ("Interval R%d has expired, adding 0x%x to slots\n", cfg->varinfo [v->idx]->dreg, offsets [v->idx]));
+						changed = TRUE;
+						break;
+					}
+					else if (!mono_linterval_covers (v->interval, pos)) {
+						slot_info->inactive = g_list_append (slot_info->inactive, v);
+						slot_info->active = g_list_delete_link (slot_info->active, l);
+						LSCAN_DEBUG (printf ("Interval R%d became inactive\n", cfg->varinfo [v->idx]->dreg));
+						changed = TRUE;
+						break;
+					}
+				}
+			}
+
+			/* Check for intervals in inactive which expired or active */
+			changed = TRUE;
+			/* FIXME: Optimize this */
+			while (changed) {
+				changed = FALSE;
+				for (l = slot_info->inactive; l != NULL; l = l->next) {
+					MonoMethodVar *v = (MonoMethodVar*)l->data;
+
+					if (v->interval->last_range->to < pos) {
+						slot_info->inactive = g_list_delete_link (slot_info->inactive, l);
+						// FIXME: Enabling this seems to cause impossible to debug crashes
+						//slot_info->slots = g_slist_prepend_mempool (cfg->mempool, slot_info->slots, GINT_TO_POINTER (offsets [v->idx]));
+						LSCAN_DEBUG (printf ("Interval R%d has expired, adding 0x%x to slots\n", cfg->varinfo [v->idx]->dreg, offsets [v->idx]));
+						changed = TRUE;
+						break;
+					}
+					else if (mono_linterval_covers (v->interval, pos)) {
+						slot_info->active = g_list_append (slot_info->active, v);
+						slot_info->inactive = g_list_delete_link (slot_info->inactive, l);
+						LSCAN_DEBUG (printf ("\tInterval R%d became active\n", cfg->varinfo [v->idx]->dreg));
+						changed = TRUE;
+						break;
+					}
+				}
+			}
+
+			/* 
+			 * This also handles the case when the variable is used in an
+			 * exception region, as liveness info is not computed there.
+			 */
+			/* 
+			 * FIXME: All valuetypes are marked as INDIRECT because of LDADDR
+			 * opcodes.
+			 */
+			if (! (inst->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
+				if (slot_info->slots) {
+					slot = GPOINTER_TO_INT (slot_info->slots->data);
+
+					slot_info->slots = slot_info->slots->next;
+				}
+
+				/* FIXME: We might want to consider the inactive intervals as well if slot_info->slots is empty */
+
+				slot_info->active = mono_varlist_insert_sorted (cfg, slot_info->active, vmv, TRUE);
+			}
+		}
+
+#if 0
+		{
+			static int count = 0;
+			count ++;
+
+			if (count == atoi (getenv ("COUNT3")))
+				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+			if (count > atoi (getenv ("COUNT3")))
+				slot = 0xffffff;
+			else {
+				mono_print_tree_nl (inst);
+				}
+		}
+#endif
+
+		LSCAN_DEBUG (printf ("R%d %s -> 0x%x\n", inst->dreg, mono_type_full_name (t), slot));
+
+		if (slot == 0xffffff) {
+			/*
+			 * Allways allocate valuetypes to sizeof (gpointer) to allow more
+			 * efficient copying (and to work around the fact that OP_MEMCPY
+			 * and OP_MEMSET ignores alignment).
+			 */
+			if (MONO_TYPE_ISSTRUCT (t))
+				align = sizeof (gpointer);
+
+			if (backward) {
+				offset += size;
+				offset += align - 1;
+				offset &= ~(align - 1);
+				slot = offset;
+			}
+			else {
+				offset += align - 1;
+				offset &= ~(align - 1);
+				slot = offset;
+				offset += size;
+			}
+
+			if (*stack_align == 0)
+				*stack_align = align;
+		}
+
+		offsets [vmv->idx] = slot;
+	}
+	g_list_free (vars);
+	for (i = 0; i < MONO_TYPE_PINNED; ++i) {
+		if (scalar_stack_slots [i].active)
+			g_list_free (scalar_stack_slots [i].active);
+	}
+	for (i = 0; i < nvtypes; ++i) {
+		if (vtype_stack_slots [i].active)
+			g_list_free (vtype_stack_slots [i].active);
+	}
+
+	mono_jit_stats.locals_stack_size += offset;
+
+	*stack_size = offset;
+	return offsets;
 }
 
 /*
@@ -9775,6 +10457,9 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 	StackSlotInfo *scalar_stack_slots, *vtype_stack_slots, *slot_info;
 	MonoType *t;
 	int nvtypes;
+
+	if ((cfg->num_varinfo > 0) && MONO_VARINFO (cfg, 0)->interval)
+		return mono_allocate_stack_slots_full2 (cfg, backward, stack_size, stack_align);
 
 	scalar_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * MONO_TYPE_PINNED);
 	vtype_stack_slots = NULL;
@@ -10130,12 +10815,11 @@ print_dfn (MonoCompile *cfg) {
 	int i, j;
 	char *code;
 	MonoBasicBlock *bb;
+	MonoInst *c;
 
 	g_print ("IR code for method %s\n", mono_method_full_name (cfg->method, TRUE));
 
 	for (i = 0; i < cfg->num_bblocks; ++i) {
-		MonoInst *c;
-
 		bb = cfg->bblocks [i];
 		/*if (bb->cil_code) {
 			char* code1, *code2;
@@ -10151,10 +10835,14 @@ print_dfn (MonoCompile *cfg) {
 			g_free (code2);
 		} else*/
 			code = g_strdup ("\n");
-		g_print ("\nBB%d DFN%d (len: %d): %s", bb->block_num, i, bb->cil_length, code);
+		g_print ("\nBB%d (%d) (len: %d): %s", bb->block_num, i, bb->cil_length, code);
 		MONO_BB_FOR_EACH_INS (bb, c) {
-			mono_print_tree (c);
-			g_print ("\n");
+			if (cfg->new_ir) {
+				mono_print_ins_index (-1, c);
+			} else {
+				mono_print_tree (c);
+				g_print ("\n");
+			}
 		}
 
 		g_print ("\tprev:");
@@ -10187,6 +10875,88 @@ mono_bblock_add_inst (MonoBasicBlock *bb, MonoInst *inst)
 }
 
 void
+mono_bblock_insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *ins_to_insert)
+{
+	if (ins == NULL) {
+		ins = bb->code;
+		bb->code = ins_to_insert;
+		ins_to_insert->next = ins;
+		if (bb->last_ins == NULL)
+			bb->last_ins = ins_to_insert;
+	} else {
+		/* Link with next */
+		ins_to_insert->next = ins->next;
+		if (ins->next)
+			ins->next->prev = ins_to_insert;
+
+		/* Link with previous */
+		ins->next = ins_to_insert;
+		ins_to_insert->prev = ins;
+
+		if (bb->last_ins == ins)
+			bb->last_ins = ins_to_insert;
+	}
+}
+
+void
+mono_bblock_insert_before_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *ins_to_insert)
+{
+	if (ins == NULL) {
+		NOT_IMPLEMENTED;
+		ins = bb->code;
+		bb->code = ins_to_insert;
+		ins_to_insert->next = ins;
+		if (bb->last_ins == NULL)
+			bb->last_ins = ins_to_insert;
+	} else {
+		/* Link with previous */
+		if (ins->prev)
+			ins->prev->next = ins_to_insert;
+		ins_to_insert->prev = ins->prev;
+
+		/* Link with next */
+		ins->prev = ins_to_insert;
+		ins_to_insert->next = ins;
+
+		if (bb->code == ins)
+			bb->code = ins_to_insert;
+	}
+}
+
+/*
+ * mono_verify_bblock:
+ *
+ *   Verify that the next and prev pointers are consistent inside the instructions in BB.
+ */
+void
+mono_verify_bblock (MonoBasicBlock *bb)
+{
+	MonoInst *ins, *prev;
+
+	prev = NULL;
+	for (ins = bb->code; ins; ins = ins->next) {
+		g_assert (ins->prev == prev);
+		prev = ins;
+	}
+	if (bb->last_ins)
+		g_assert (!bb->last_ins->next);
+}
+
+/*
+ * mono_verify_cfg:
+ *
+ *   Perform consistency checks on the JIT data structures and the IR
+ */
+void
+mono_verify_cfg (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+		mono_verify_bblock (bb);
+}
+
+void
 mono_destroy_compile (MonoCompile *cfg)
 {
 	//mono_mempool_stats (cfg->mempool);
@@ -10200,6 +10970,8 @@ mono_destroy_compile (MonoCompile *cfg)
 	mono_mempool_destroy (cfg->mempool);
 	g_list_free (cfg->ldstr_list);
 	g_hash_table_destroy (cfg->token_info_hash);
+
+	g_free (cfg->reverse_inst_list);
 
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
@@ -10594,6 +11366,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 
 	switch (patch_info->type) {
 	case MONO_PATCH_INFO_BB:
+		g_assert (patch_info->data.bb->native_offset);
 		target = patch_info->data.bb->native_offset + code;
 		break;
 	case MONO_PATCH_INFO_ABS:
@@ -10657,9 +11430,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			mono_domain_unlock (domain);
 		}
 
-		for (i = 0; i < patch_info->data.table->table_size; i++) {
+		for (i = 0; i < patch_info->data.table->table_size; i++)
 			jump_table [i] = code + GPOINTER_TO_INT (patch_info->data.table->table [i]);
-		}
 		target = jump_table;
 		break;
 	}
@@ -10856,7 +11628,7 @@ nullify_basic_block (MonoBasicBlock *bb)
 	bb->in_bb = NULL;
 	bb->out_bb = NULL;
 	bb->next_bb = NULL;
-	MONO_INST_LIST_INIT (&bb->ins_list);
+	bb->code = bb->last_ins = NULL;
 	bb->cil_code = NULL;
 }
 
@@ -10902,67 +11674,45 @@ replace_in_block (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl
 
 static void
 replace_out_block_in_code (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl) {
-	MonoInst *inst;
+	MonoInst *ins;
 	
-	MONO_BB_FOR_EACH_INS (bb, inst) {
-		if (inst->opcode == OP_CALL_HANDLER) {
-			if (inst->inst_target_bb == orig)
-				inst->inst_target_bb = repl;
-		}
-	}
-
-	inst = mono_inst_list_last (&bb->ins_list);
-	if (!inst)
-		return;
-
-	switch (inst->opcode) {
-	case OP_BR:
-		if (inst->inst_target_bb == orig)
-			inst->inst_target_bb = repl;
-		break;
-	case OP_SWITCH: {
-		int i;
-		int n = GPOINTER_TO_INT (inst->klass);
-		for (i = 0; i < n; i++ ) {
-			if (inst->inst_many_bb [i] == orig)
-				inst->inst_many_bb [i] = repl;
-		}
-		break;
-	}
-	case CEE_BNE_UN:
-	case CEE_BEQ:
-	case CEE_BLT:
-	case CEE_BLT_UN:
-	case CEE_BGT:
-	case CEE_BGT_UN:
-	case CEE_BGE:
-	case CEE_BGE_UN:
-	case CEE_BLE:
-	case CEE_BLE_UN:
-		if (inst->inst_true_bb == orig)
-			inst->inst_true_bb = repl;
-		if (inst->inst_false_bb == orig)
-			inst->inst_false_bb = repl;
-		break;
-	default:
-		break;
-	}
-}
-
-static void 
-replace_basic_block (MonoBasicBlock *bb, MonoBasicBlock *orig,  MonoBasicBlock *repl)
-{
-	int i, j;
-
-	for (i = 0; i < bb->out_count; i++) {
-		MonoBasicBlock *ob = bb->out_bb [i];
-		for (j = 0; j < ob->in_count; j++) {
-			if (ob->in_bb [j] == orig) {
-				ob->in_bb [j] = repl;
+	for (ins = bb->code; ins != NULL; ins = ins->next) {
+		switch (ins->opcode) {
+		case OP_BR:
+			if (ins->inst_target_bb == orig)
+				ins->inst_target_bb = repl;
+			break;
+		case OP_CALL_HANDLER:
+			if (ins->inst_target_bb == orig)
+				ins->inst_target_bb = repl;
+			break;
+		case OP_SWITCH: {
+			int i;
+			int n = GPOINTER_TO_INT (ins->klass);
+			for (i = 0; i < n; i++ ) {
+				if (ins->inst_many_bb [i] == orig)
+					ins->inst_many_bb [i] = repl;
 			}
+			break;
+		}
+		default:
+			if (MONO_IS_COND_BRANCH_OP (ins)) {
+				if (ins->inst_true_bb == orig)
+					ins->inst_true_bb = repl;
+				if (ins->inst_false_bb == orig)
+					ins->inst_false_bb = repl;
+			} else if (MONO_IS_JUMP_TABLE (ins)) {
+				int i;
+				MonoJumpInfoBBTable *table = MONO_JUMP_TABLE_FROM_INS (ins);
+				for (i = 0; i < table->table_size; i++ ) {
+					if (table->table [i] == orig)
+						table->table [i] = repl;
+				}
+			}
+
+			break;
 		}
 	}
-
 }
 
 /**
@@ -10975,7 +11725,7 @@ static gboolean
 remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *previous_bb) {
 	MonoBasicBlock *target_bb = NULL;
 	MonoInst *inst;
-	
+
 	/* Do not touch handlers */
 	if (bb->region != -1) {
 		bb->not_useless = TRUE;
@@ -11005,9 +11755,9 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	}
 	
 	/* Do not touch BBs following a switch (they are the "default" branch) */
-	inst = mono_inst_list_last (&previous_bb->ins_list);
-	if (inst && inst->opcode == OP_SWITCH)
+	if ((previous_bb->last_ins != NULL) && (previous_bb->last_ins->opcode == OP_SWITCH)) {
 		return FALSE;
+	}
 	
 	/* Do not touch BBs following the entry BB and jumping to something that is not */
 	/* thiry "next" bb (the entry BB cannot contain the branch) */
@@ -11024,7 +11774,6 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	
 	/* Check that there is a target BB, and that bb is not an empty loop (Bug 75061) */
 	if ((target_bb != NULL) && (target_bb != bb)) {
-		MonoInst *last_ins;
 		int i;
 
 		if (cfg->verbose_level > 1) {
@@ -11041,14 +11790,12 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		
 		mono_unlink_bblock (cfg, bb, target_bb);
 		
-		last_ins = mono_inst_list_last (&previous_bb->ins_list);
-
 		if ((previous_bb != cfg->bb_entry) &&
 				(previous_bb->region == bb->region) &&
-				((last_ins == NULL) ||
-				((last_ins->opcode != OP_BR) &&
-				(!(MONO_IS_COND_BRANCH_OP (last_ins))) &&
-				(last_ins->opcode != OP_SWITCH)))) {
+				((previous_bb->last_ins == NULL) ||
+				((previous_bb->last_ins->opcode != OP_BR) &&
+				(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
+				(previous_bb->last_ins->opcode != OP_SWITCH)))) {
 			for (i = 0; i < previous_bb->out_count; i++) {
 				if (previous_bb->out_bb [i] == target_bb) {
 					MonoInst *jump;
@@ -11070,25 +11817,67 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	}
 }
 
-static void
-merge_basic_blocks (MonoBasicBlock *bb, MonoBasicBlock *bbn) 
+void
+mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *bbn) 
 {
-	MonoInst *last_ins;
+	MonoInst *inst;
+	MonoBasicBlock *prev_bb;
+	int i;
 
-	bb->out_count = bbn->out_count;
-	bb->out_bb = bbn->out_bb;
+	bb->has_array_access |= bbn->has_array_access;
+	bb->extended |= bbn->extended;
 
-	replace_basic_block (bb, bbn, bb);
+	mono_unlink_bblock (cfg, bb, bbn);
+	for (i = 0; i < bbn->out_count; ++i)
+		mono_link_bblock (cfg, bb, bbn->out_bb [i]);
+	while (bbn->out_count)
+		mono_unlink_bblock (cfg, bbn, bbn->out_bb [0]);
 
-	last_ins = mono_inst_list_last (&bb->ins_list);
+	/* Handle the branch at the end of the bb */
+	for (inst = bb->code; inst != NULL; inst = inst->next) {
+		if (inst->opcode == OP_CALL_HANDLER) {
+			g_assert (inst->inst_target_bb == bbn);
+			NULLIFY_INS (inst);
+		}
+		if (MONO_IS_JUMP_TABLE (inst)) {
+			int i;
+			MonoJumpInfoBBTable *table = MONO_JUMP_TABLE_FROM_INS (inst);
+			for (i = 0; i < table->table_size; i++ ) {
+				/* Might be already NULL from a previous merge */
+				if (table->table [i])
+					g_assert (table->table [i] == bbn);
+				table->table [i] = NULL;
+			}
+			/* Can't nullify this as later instructions depend on it */
+		}
+	}
+	if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
+		g_assert (bb->last_ins->inst_false_bb == bbn);
+		bb->last_ins->inst_false_bb = NULL;
+		bb->extended = TRUE;
+	} else if (bb->last_ins && MONO_IS_BRANCH_OP (bb->last_ins)) {
+		NULLIFY_INS (bb->last_ins);
+	}
 
-	/* Nullify branch at the end of bb */
-	if (last_ins && MONO_IS_BRANCH_OP (last_ins))
-		last_ins->opcode = OP_NOP;
-
-	MONO_INST_LIST_SPLICE_TAIL_INIT (&bbn->ins_list, &bb->ins_list);
-
-	bb->next_bb = bbn->next_bb;
+	if (bb->last_ins) {
+		if (bbn->code) {
+			bb->last_ins->next = bbn->code;
+			bbn->code->prev = bb->last_ins;
+			bb->last_ins = bbn->last_ins;
+		}
+	} else {
+		bb->code = bbn->code;
+		bb->last_ins = bbn->last_ins;
+	}
+	for (prev_bb = cfg->bb_entry; prev_bb && prev_bb->next_bb != bbn; prev_bb = prev_bb->next_bb)
+		;
+	if (prev_bb) {
+		prev_bb->next_bb = bbn->next_bb;
+	} else {
+		/* bbn might not be in the bb list yet */
+		if (bb->next_bb == bbn)
+			bb->next_bb = bbn->next_bb;
+	}
 	nullify_basic_block (bbn);
 }
 
@@ -11096,7 +11885,6 @@ static void
 move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoBasicBlock *bbn, *next;
-	MonoInst *last_ins;
 
 	next = bb->next_bb;
 
@@ -11113,10 +11901,8 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 	bbn->next_bb = bb;
 	bb->next_bb = NULL;
 
-	last_ins = mono_inst_list_last (&bb->ins_list);
-
 	/* Add a branch */
-	if (next && (!last_ins || (last_ins->opcode != OP_NOT_REACHED))) {
+	if (next && (!bb->last_ins || ((bb->last_ins->opcode != OP_NOT_REACHED) && (bb->last_ins->opcode != OP_BR) && (bb->last_ins->opcode != OP_BR_REG) && (!MONO_IS_COND_BRANCH_OP (bb->last_ins))))) {
 		MonoInst *ins;
 
 		MONO_INST_NEW (cfg, ins, OP_BR);
@@ -11124,6 +11910,23 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 		link_bblock (cfg, bb, next);
 		ins->inst_target_bb = next;
 	}		
+}
+
+/*
+ * mono_remove_block:
+ *
+ *   Remove BB from the control flow graph
+ */
+void
+mono_remove_bblock (MonoCompile *cfg, MonoBasicBlock *bb) 
+{
+	MonoBasicBlock *tmp_bb;
+
+	for (tmp_bb = cfg->bb_entry; tmp_bb && tmp_bb->next_bb != bb; tmp_bb = tmp_bb->next_bb)
+		;
+
+	g_assert (tmp_bb);
+	tmp_bb->next_bb = bb->next_bb;
 }
 
 /* checks that a and b represent the same instructions, conservatively,
@@ -11198,20 +12001,20 @@ tree_is_unsigned (MonoInst* ins) {
  * Note that this can't be applied if the second arg is not positive...
  */
 static int
-try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *bb_last)
+try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoBasicBlock *truet, *falset;
-	MonoInst *cmp_inst = bb_last->inst_left;
+	MonoInst *cmp_inst = bb->last_ins->inst_left;
 	MonoInst *condb;
 	if (!cmp_inst->inst_right->inst_c0 == 0)
 		return FALSE;
-	truet = bb_last->inst_true_bb;
-	falset = bb_last->inst_false_bb;
+	truet = bb->last_ins->inst_true_bb;
+	falset = bb->last_ins->inst_false_bb;
 	if (falset->in_count != 1)
 		return FALSE;
-	condb = mono_inst_list_last (&falset->ins_list);
+	condb = falset->last_ins;
 	/* target bb must have one instruction */
-	if (!condb || (condb->node.next != &falset->ins_list))
+	if (!condb || (condb != falset->code))
 		return FALSE;
 	if ((((condb->opcode == CEE_BLE || condb->opcode == CEE_BLT) && (condb->inst_false_bb == truet))
 			|| ((condb->opcode == CEE_BGE || condb->opcode == CEE_BGT) && (condb->inst_true_bb == truet)))
@@ -11220,8 +12023,8 @@ try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *bb_last)
 			return FALSE;
 		condb->opcode = get_unsigned_condbranch (condb->opcode);
 		/* change the original condbranch to just point to the new unsigned check */
-		bb_last->opcode = OP_BR;
-		bb_last->inst_target_bb = falset;
+		bb->last_ins->opcode = OP_BR;
+		bb->last_ins->inst_target_bb = falset;
 		replace_out_block (bb, truet, NULL);
 		replace_in_block (truet, bb, NULL);
 		return TRUE;
@@ -11233,8 +12036,8 @@ try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *bb_last)
  * Optimizes the branches on the Control Flow Graph
  *
  */
-static void
-optimize_branches (MonoCompile *cfg)
+void
+mono_optimize_branches (MonoCompile *cfg)
 {
 	int i, changed = FALSE;
 	MonoBasicBlock *bb, *bbn;
@@ -11249,7 +12052,7 @@ optimize_branches (MonoCompile *cfg)
 		niterations = cfg->num_bblocks * 2;
 	else
 		niterations = 1000;
-
+	
 	do {
 		MonoBasicBlock *previous_bb;
 		changed = FALSE;
@@ -11257,8 +12060,6 @@ optimize_branches (MonoCompile *cfg)
 
 		/* we skip the entry block (exit is handled specially instead ) */
 		for (previous_bb = cfg->bb_entry, bb = cfg->bb_entry->next_bb; bb; previous_bb = bb, bb = bb->next_bb) {
-			MonoInst *last_ins;
-
 			/* dont touch code inside exception clauses */
 			if (bb->region != -1)
 				continue;
@@ -11281,21 +12082,22 @@ optimize_branches (MonoCompile *cfg)
 				changed = TRUE;
 			}
 
-			last_ins = mono_inst_list_last (&bb->ins_list);
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
 				/* conditional branches where true and false targets are the same can be also replaced with OP_BR */
-				if (last_ins && MONO_IS_COND_BRANCH_OP (last_ins)) {
-					MonoInst *pop;
-					MONO_INST_NEW (cfg, pop, CEE_POP);
-					pop->inst_left = last_ins->inst_left->inst_left;
-					mono_add_ins_to_end (bb, pop);
-					MONO_INST_NEW (cfg, pop, CEE_POP);
-					pop->inst_left = last_ins->inst_left->inst_right;
-					mono_add_ins_to_end (bb, pop);
-					last_ins->opcode = OP_BR;
-					last_ins->inst_target_bb = last_ins->inst_true_bb;
+				if (bb->last_ins && (bb->last_ins->opcode != OP_BR) && MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
+					if (!cfg->new_ir) {
+						MonoInst *pop;
+						MONO_INST_NEW (cfg, pop, CEE_POP);
+						pop->inst_left = bb->last_ins->inst_left->inst_left;
+						mono_add_ins_to_end (bb, pop);
+						MONO_INST_NEW (cfg, pop, CEE_POP);
+						pop->inst_left = bb->last_ins->inst_left->inst_right;
+						mono_add_ins_to_end (bb, pop);
+					}
+					bb->last_ins->opcode = OP_BR;
+					bb->last_ins->inst_target_bb = bb->last_ins->inst_true_bb;
 					changed = TRUE;
 					if (cfg->verbose_level > 2)
 						g_print ("cond branch removal triggered in %d %d\n", bb->block_num, bb->out_count);
@@ -11305,19 +12107,18 @@ optimize_branches (MonoCompile *cfg)
 					/* the block are in sequence anyway ... */
 
 					/* branches to the following block can be removed */
-					if (last_ins && last_ins->opcode == OP_BR) {
-						last_ins->opcode = OP_NOP;
+					if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
+						bb->last_ins->opcode = OP_NOP;
 						changed = TRUE;
 						if (cfg->verbose_level > 2)
 							g_print ("br removal triggered %d -> %d\n", bb->block_num, bbn->block_num);
 					}
 
-					if (bbn->in_count == 1) {
-
+					if (bbn->in_count == 1 && !bb->extended) {
 						if (bbn != cfg->bb_exit) {
 							if (cfg->verbose_level > 2)
 								g_print ("block merge triggered %d -> %d\n", bb->block_num, bbn->block_num);
-							merge_basic_blocks (bb, bbn);
+							mono_merge_basic_blocks (cfg, bb, bbn);
 							changed = TRUE;
 							continue;
 						}
@@ -11326,6 +12127,7 @@ optimize_branches (MonoCompile *cfg)
 					}
 				}
 			}
+
 			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bb->region == bbn->region) {
 				if (cfg->verbose_level > 2) {
 					g_print ("nullify block triggered %d\n", bbn->block_num);
@@ -11343,115 +12145,137 @@ optimize_branches (MonoCompile *cfg)
 			if (bb->out_count == 1) {
 				bbn = bb->out_bb [0];
 
-				if (last_ins && last_ins->opcode == OP_BR) {
-					MonoInst *bbn_code;
-
-					bbn = last_ins->inst_target_bb;
-					bbn_code = mono_inst_list_first (&bbn->ins_list);
-					if (bb->region == bbn->region && bbn_code &&
-							bbn_code->opcode == OP_BR &&
-							bbn_code->inst_target_bb->region == bb->region) {
+				if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
+					bbn = bb->last_ins->inst_target_bb;
+					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
+					    bbn->code->inst_target_bb->region == bb->region) {
+						
 						if (cfg->verbose_level > 2)
-							g_print ("in %s branch to branch triggered %d -> %d -> %d\n", cfg->method->name, 
-								 bb->block_num, bbn->block_num, bbn_code->inst_target_bb->block_num);
+							g_print ("branch to branch triggered %d -> %d -> %d\n", bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num);
 
 						replace_in_block (bbn, bb, NULL);
-						replace_out_block (bb, bbn, bbn_code->inst_target_bb);
-						link_bblock (cfg, bb, bbn_code->inst_target_bb);
-						last_ins->inst_target_bb = bbn_code->inst_target_bb;
+						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
+						link_bblock (cfg, bb, bbn->code->inst_target_bb);
+						bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
 						changed = TRUE;
 						continue;
 					}
 				}
 			} else if (bb->out_count == 2) {
-				if (last_ins && MONO_IS_COND_BRANCH_NOFP (last_ins)) {
-					int branch_result = mono_eval_cond_branch (last_ins);
+				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
+					int branch_result;
 					MonoBasicBlock *taken_branch_target = NULL, *untaken_branch_target = NULL;
-					MonoInst *bbn_code;
+
+					if (cfg->new_ir) {
+						if (bb->last_ins->flags & MONO_INST_CFOLD_TAKEN)
+							branch_result = BRANCH_TAKEN;
+						else if (bb->last_ins->flags & MONO_INST_CFOLD_NOT_TAKEN)
+							branch_result = BRANCH_NOT_TAKEN;
+						else
+							branch_result = BRANCH_UNDEF;
+					}
+					else
+						branch_result = mono_eval_cond_branch (bb->last_ins);
 
 					if (branch_result == BRANCH_TAKEN) {
-						taken_branch_target = last_ins->inst_true_bb;
-						untaken_branch_target = last_ins->inst_false_bb;
+						taken_branch_target = bb->last_ins->inst_true_bb;
+						untaken_branch_target = bb->last_ins->inst_false_bb;
 					} else if (branch_result == BRANCH_NOT_TAKEN) {
-						taken_branch_target = last_ins->inst_false_bb;
-						untaken_branch_target = last_ins->inst_true_bb;
+						taken_branch_target = bb->last_ins->inst_false_bb;
+						untaken_branch_target = bb->last_ins->inst_true_bb;
 					}
 					if (taken_branch_target) {
 						/* if mono_eval_cond_branch () is ever taken to handle 
 						 * non-constant values to compare, issue a pop here.
 						 */
-						last_ins->opcode = OP_BR;
-						last_ins->inst_target_bb = taken_branch_target;
-						mono_unlink_bblock (cfg, bb, untaken_branch_target);
+						bb->last_ins->opcode = OP_BR;
+						bb->last_ins->inst_target_bb = taken_branch_target;
+						if (!bb->extended)
+							mono_unlink_bblock (cfg, bb, untaken_branch_target);
 						changed = TRUE;
 						continue;
 					}
-					bbn = last_ins->inst_true_bb;
-					bbn_code = mono_inst_list_first (&bbn->ins_list);
-					if (bb->region == bbn->region && bbn_code && bbn_code->opcode == OP_BR &&
-							bbn_code->inst_target_bb->region == bb->region) {
+					bbn = bb->last_ins->inst_true_bb;
+					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
+					    bbn->code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)		
 							g_print ("cbranch1 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn_code->inst_target_bb->block_num, 
-								 bbn_code->opcode);
+								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
+								 bbn->code->opcode);
 
 						/* 
 						 * Unlink, then relink bblocks to avoid various
 						 * tricky situations when the two targets of the branch
 						 * are equal, or will become equal after the change.
 						 */
-						mono_unlink_bblock (cfg, bb, last_ins->inst_true_bb);
-						mono_unlink_bblock (cfg, bb, last_ins->inst_false_bb);
+						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
+						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
-						last_ins->inst_true_bb = bbn_code->inst_target_bb;
+						bb->last_ins->inst_true_bb = bbn->code->inst_target_bb;
 
-						link_bblock (cfg, bb, last_ins->inst_true_bb);
-						link_bblock (cfg, bb, last_ins->inst_false_bb);
+						link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
+						link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
 						changed = TRUE;
 						continue;
 					}
 
-					bbn = last_ins->inst_false_bb;
-					bbn_code = mono_inst_list_first (&bbn->ins_list);
-					if (bb->region == bbn->region && bbn_code && bbn_code->opcode == OP_BR &&
-							bbn_code->inst_target_bb->region == bb->region) {
+					bbn = bb->last_ins->inst_false_bb;
+					if (bbn && bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
+					    bbn->code->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
 							g_print ("cbranch2 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn_code->inst_target_bb->block_num, 
-								 bbn_code->opcode);
+								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
+								 bbn->code->opcode);
 
-						mono_unlink_bblock (cfg, bb, last_ins->inst_true_bb);
-						mono_unlink_bblock (cfg, bb, last_ins->inst_false_bb);
+						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
+						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
-						last_ins->inst_false_bb = bbn_code->inst_target_bb;
+						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
 
-						link_bblock (cfg, bb, last_ins->inst_true_bb);
-						link_bblock (cfg, bb, last_ins->inst_false_bb);
+						link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
+						link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
+						changed = TRUE;
+						continue;
+					}
+
+					bbn = bb->last_ins->inst_false_bb;
+					/*
+					 * If bb is an extended bb, it could contain an inside branch to bbn.
+					 * FIXME: Enable the optimization if that is not true.
+					 * If bblocks_linked () is true, then merging bb and bbn
+					 * would require addition of an extra branch at the end of bbn 
+					 * slowing down loops.
+					 */
+					if (cfg->new_ir && bbn && bb->region == bbn->region && bbn->in_count == 1 && cfg->enable_extended_bblocks && bbn != cfg->bb_exit && !bb->extended && !bbn->out_of_line && !mono_bblocks_linked (bbn, bb)) {
+						g_assert (bbn->in_bb [0] == bb);
+						if (cfg->verbose_level > 2)
+							g_print ("merge false branch target triggered BB%d -> BB%d\n", bb->block_num, bbn->block_num);
+						mono_merge_basic_blocks (cfg, bb, bbn);
 						changed = TRUE;
 						continue;
 					}
 				}
 
 				/* detect and optimize to unsigned compares checks like: if (v < 0 || v > limit */
-				if (last_ins && last_ins->opcode == CEE_BLT && last_ins->inst_left->inst_right->opcode == OP_ICONST) {
-					if (try_unsigned_compare (cfg, bb, last_ins)) {
-						/*g_print ("applied in bb %d (->%d) %s\n", bb->block_num, last_ins->inst_target_bb->block_num, mono_method_full_name (cfg->method, TRUE));*/
+				if (bb->last_ins && bb->last_ins->opcode == CEE_BLT && !cfg->new_ir && bb->last_ins->inst_left->inst_right->opcode == OP_ICONST) {
+					if (try_unsigned_compare (cfg, bb)) {
+						/*g_print ("applied in bb %d (->%d) %s\n", bb->block_num, bb->last_ins->inst_target_bb->block_num, mono_method_full_name (cfg->method, TRUE));*/
 						changed = TRUE;
 						continue;
 					}
 				}
 
-				if (last_ins && MONO_IS_COND_BRANCH_NOFP (last_ins)) {
-					if (last_ins->inst_false_bb->out_of_line && (bb->region == last_ins->inst_false_bb->region)) {
+				if (bb->last_ins && MONO_IS_COND_BRANCH_NOFP (bb->last_ins)) {
+					if (bb->last_ins->inst_false_bb && bb->last_ins->inst_false_bb->out_of_line && (bb->region == bb->last_ins->inst_false_bb->region)) {
 						/* Reverse the branch */
-						last_ins->opcode = reverse_branch_op (last_ins->opcode);
-						bbn = last_ins->inst_false_bb;
-						last_ins->inst_false_bb = last_ins->inst_true_bb;
-						last_ins->inst_true_bb = bbn;
+						bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
+						bbn = bb->last_ins->inst_false_bb;
+						bb->last_ins->inst_false_bb = bb->last_ins->inst_true_bb;
+						bb->last_ins->inst_true_bb = bbn;
 
-						move_basic_block_to_end (cfg, last_ins->inst_true_bb);
+						move_basic_block_to_end (cfg, bb->last_ins->inst_true_bb);
 						if (cfg->verbose_level > 2)
 							g_print ("cbranch to throw block triggered %d.\n", 
 									 bb->block_num);
@@ -11460,7 +12284,6 @@ optimize_branches (MonoCompile *cfg)
 			}
 		}
 	} while (changed && (niterations > 0));
-
 }
 
 static void
@@ -11475,10 +12298,16 @@ mono_compile_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 	
 	if (!MONO_TYPE_IS_VOID (sig->ret)) {
-		cfg->ret = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
-		cfg->ret->opcode = OP_RETARG;
-		cfg->ret->inst_vtype = sig->ret;
-		cfg->ret->klass = mono_class_from_mono_type (sig->ret);
+		if (cfg->new_ir) {
+			cfg->ret = mono_compile_create_var (cfg, sig->ret, OP_ARG);
+			/* Inhibit optimizations */
+			cfg->ret->flags |= MONO_INST_VOLATILE;
+		} else {
+			cfg->ret = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
+			cfg->ret->opcode = OP_RETARG;
+			cfg->ret->inst_vtype = sig->ret;
+			cfg->ret->klass = mono_class_from_mono_type (sig->ret);
+		}
 	}
 	if (cfg->verbose_level > 2)
 		g_print ("creating vars\n");
@@ -11491,17 +12320,36 @@ mono_compile_create_vars (MonoCompile *cfg)
 	for (i = 0; i < sig->param_count; ++i) {
 		cfg->args [i + sig->hasthis] = mono_compile_create_var (cfg, sig->params [i], OP_ARG);
 		if (sig->params [i]->byref) {
-			cfg->disable_ssa = TRUE;
+			if (!cfg->new_ir) cfg->disable_ssa = TRUE;
+		}
+	}
+
+	if (cfg->new_ir && cfg->verbose_level > 2) {
+		if (cfg->ret) {
+			printf ("\treturn : ");
+			mono_print_ins (cfg->ret);
+		}
+
+		if (sig->hasthis) {
+			printf ("\tthis: ");
+			mono_print_ins (cfg->args [0]);
+		}
+
+		for (i = 0; i < sig->param_count; ++i) {
+			printf ("\targ [%d]: ", i);
+			mono_print_ins (cfg->args [i + sig->hasthis]);
 		}
 	}
 
 	cfg->locals_start = cfg->num_varinfo;
+	cfg->locals = mono_mempool_alloc0 (cfg->mempool, header->num_locals * sizeof (MonoInst*));
 
 	if (cfg->verbose_level > 2)
 		g_print ("creating locals\n");
 
 	for (i = 0; i < header->num_locals; ++i)
-		mono_compile_create_var (cfg, header->locals [i], OP_LOCAL);
+		cfg->locals [i] = mono_compile_create_var (cfg, header->locals [i], OP_LOCAL);
+
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
 
@@ -11509,20 +12357,25 @@ mono_compile_create_vars (MonoCompile *cfg)
 }
 
 void
-mono_print_code (MonoCompile *cfg)
+mono_print_code (MonoCompile *cfg, const char* msg)
 {
 	MonoBasicBlock *bb;
 	
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *tree;
+		MonoInst *tree = bb->code;	
 
-		if (!MONO_INST_LIST_EMPTY (&bb->ins_list))
-			g_print ("CODE BLOCK %d (nesting %d):\n",
-				 bb->block_num, bb->nesting);
+		if (cfg->new_ir) {
+			mono_print_bb (bb, msg);
+		} else {
+			if (!tree)
+				continue;
+			
+			g_print ("%s CODE BLOCK %d (nesting %d):\n", msg, bb->block_num, bb->nesting);
 
-		MONO_BB_FOR_EACH_INS (bb, tree) {
-			mono_print_tree (tree);
-			g_print ("\n");
+			MONO_BB_FOR_EACH_INS (bb, tree) {
+				mono_print_tree (tree);
+				g_print ("\n");
+			}
 		}
 	}
 }
@@ -11608,52 +12461,49 @@ mini_select_instructions (MonoCompile *cfg)
 	cfg->rs = mono_regstate_new ();
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *last_ins = mono_inst_list_last (&bb->ins_list);
-
-		if (last_ins && MONO_IS_COND_BRANCH_OP (last_ins) &&
-				bb->next_bb != last_ins->inst_false_bb) {
+		if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins) &&
+		    bb->last_ins->inst_false_bb && bb->next_bb != bb->last_ins->inst_false_bb) {
 
 			/* we are careful when inverting, since bugs like #59580
 			 * could show up when dealing with NaNs.
 			 */
-			if (MONO_IS_COND_BRANCH_NOFP(last_ins) && bb->next_bb == last_ins->inst_true_bb) {
-				MonoBasicBlock *tmp =  last_ins->inst_true_bb;
-				last_ins->inst_true_bb = last_ins->inst_false_bb;
-				last_ins->inst_false_bb = tmp;
+			if (MONO_IS_COND_BRANCH_NOFP(bb->last_ins) && bb->next_bb == bb->last_ins->inst_true_bb) {
+				MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
+				bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
+				bb->last_ins->inst_false_bb = tmp;
 
-				last_ins->opcode = reverse_branch_op (last_ins->opcode);
+				bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
 			} else {			
-				MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
-				inst->opcode = OP_BR;
-				inst->inst_target_bb = last_ins->inst_false_bb;
-				mono_bblock_add_inst (bb, inst);
+				MonoInst *ins;
+
+				MONO_INST_NEW (cfg, ins, OP_BR);
+				ins->inst_target_bb = bb->last_ins->inst_false_bb;
+				MONO_ADD_INS (bb, ins);
 			}
 		}
 	}
 
 #ifdef DEBUG_SELECTION
 	if (cfg->verbose_level >= 4) {
-	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *tree;	
-		g_print ("DUMP BLOCK %d:\n", bb->block_num);
-
-		MONO_BB_FOR_EACH_INS (bb, tree) {
-			mono_print_tree (tree);
-			g_print ("\n");
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			MonoInst *tree;
+			g_print ("DUMP BLOCK %d:\n", bb->block_num);
+			MONO_BB_FOR_EACH_INS (bb, tree) {
+				mono_print_tree (tree);
+				g_print ("\n");
+			}
 		}
-	}
 	}
 #endif
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *tree, *n;	
-		MonoInstList head;
+		MonoInst *tree = bb->code, *next;	
 		MBState *mbstate;
 
-		MONO_INST_LIST_INIT (&head);
-		if (MONO_INST_LIST_EMPTY (&bb->ins_list))
+		if (!tree)
 			continue;
-		MONO_INST_LIST_SPLICE_INIT (&bb->ins_list, &head);
+		bb->code = NULL;
+		bb->last_ins = NULL;
 		
 		cfg->cbb = bb;
 		mono_regstate_reset (cfg->rs);
@@ -11662,7 +12512,8 @@ mini_select_instructions (MonoCompile *cfg)
 		if (cfg->verbose_level >= 3)
 			g_print ("LABEL BLOCK %d:\n", bb->block_num);
 #endif
-		MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (tree, n, &head, node) {
+		for (; tree; tree = next) {
+			next = tree->next;
 #ifdef DEBUG_SELECTION
 			if (cfg->verbose_level >= 3) {
 				mono_print_tree (tree);
@@ -11680,6 +12531,9 @@ mini_select_instructions (MonoCompile *cfg)
 			emit_state (cfg, mbstate, MB_NTERM_stmt);
 		}
 		bb->max_vreg = cfg->rs->next_vreg;
+
+		if (bb->last_ins)
+			bb->last_ins->next = NULL;
 
 		mono_mempool_empty (cfg->state_pool); 
 	}
@@ -11782,7 +12636,8 @@ mono_codegen (MonoCompile *cfg)
 		/* we reuse dfn here */
 		/* bb->dfn = bb_count++; */
 #ifdef MONO_ARCH_ENABLE_NORMALIZE_OPCODES
-		mono_normalize_opcodes (cfg, bb);
+		if (!cfg->new_ir)
+			mono_normalize_opcodes (cfg, bb);
 #endif
 
 		mono_arch_lowering_pass (cfg, bb);
@@ -11790,7 +12645,8 @@ mono_codegen (MonoCompile *cfg)
 		if (cfg->opt & MONO_OPT_PEEPHOLE)
 			mono_arch_peephole_pass_1 (cfg, bb);
 
-		mono_local_regalloc (cfg, bb);
+		if (!cfg->globalra)
+			mono_local_regalloc (cfg, bb);
 
 		if (cfg->opt & MONO_OPT_PEEPHOLE)
 			mono_arch_peephole_pass_2 (cfg, bb);
@@ -11812,7 +12668,8 @@ mono_codegen (MonoCompile *cfg)
 	/* emit code all basic blocks */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		bb->native_offset = cfg->code_len;
-		mono_arch_output_basic_block (cfg, bb);
+		//if ((bb == cfg->bb_entry) || !(bb->region == -1 && !bb->dfn))
+			mono_arch_output_basic_block (cfg, bb);
 
 		if (bb == cfg->bb_exit) {
 			cfg->epilog_begin = cfg->code_len;
@@ -11921,11 +12778,17 @@ mono_codegen (MonoCompile *cfg)
 				mono_domain_unlock (cfg->domain);
 			}
 
-			if (!cfg->compile_aot)
+			if (!cfg->compile_aot && !cfg->new_ir)
 				/* In the aot case, the patch already points to the correct location */
 				patch_info->ip.i = patch_info->ip.label->inst_c0;
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
-				table [i] = GINT_TO_POINTER (patch_info->data.table->table [i]->native_offset);
+				/* Might be NULL if the switch is eliminated */
+				if (patch_info->data.table->table [i]) {
+					g_assert (patch_info->data.table->table [i]->native_offset);
+					table [i] = GINT_TO_POINTER (patch_info->data.table->table [i]->native_offset);
+				} else {
+					table [i] = NULL;
+				}
 			}
 			patch_info->data.table->table = (MonoBasicBlock**)table;
 			break;
@@ -11986,18 +12849,16 @@ if (valgrind_register){
 #endif
 }
 
-
-
-static void
-remove_critical_edges (MonoCompile *cfg) {
+void
+mono_remove_critical_edges (MonoCompile *cfg)
+{
 	MonoBasicBlock *bb;
 	MonoBasicBlock *previous_bb;
 	
 	if (cfg->verbose_level > 3) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *last_ins;
 			int i;
-			printf ("remove_critical_edges %s, BEFORE BB%d (in:", mono_method_full_name (cfg->method, TRUE), bb->block_num);
+			printf ("remove_critical_edges, BEFORE BB%d (in:", bb->block_num);
 			for (i = 0; i < bb->in_count; i++) {
 				printf (" %d", bb->in_bb [i]->block_num);
 			}
@@ -12006,10 +12867,9 @@ remove_critical_edges (MonoCompile *cfg) {
 				printf (" %d", bb->out_bb [i]->block_num);
 			}
 			printf (")");
-			last_ins = mono_inst_list_last (&bb->ins_list);
-			if (last_ins) {
+			if (bb->last_ins != NULL) {
 				printf (" ");
-				mono_print_tree (last_ins);
+				mono_print_tree (bb->last_ins);
 			}
 			printf ("\n");
 		}
@@ -12022,7 +12882,6 @@ remove_critical_edges (MonoCompile *cfg) {
 				MonoBasicBlock *in_bb = bb->in_bb [in_bb_index];
 				if (in_bb->out_count > 1) {
 					MonoBasicBlock *new_bb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
-					MONO_INST_LIST_INIT (&new_bb->ins_list);
 					new_bb->block_num = cfg->num_bblocks++;
 //					new_bb->real_offset = bb->real_offset;
 					new_bb->region = bb->region;
@@ -12030,14 +12889,12 @@ remove_critical_edges (MonoCompile *cfg) {
 					/* Do not alter the CFG while altering the BB list */
 					if (previous_bb->region == bb->region) {
 						if (previous_bb != cfg->bb_entry) {
-							MonoInst *last_ins;
 							/* If previous_bb "followed through" to bb, */
 							/* keep it linked with a OP_BR */
-							last_ins = mono_inst_list_last (&previous_bb->ins_list);
-							if ((last_ins == NULL) ||
-									((last_ins->opcode != OP_BR) &&
-									(!(MONO_IS_COND_BRANCH_OP (last_ins))) &&
-									(last_ins->opcode != OP_SWITCH))) {
+							if ((previous_bb->last_ins == NULL) ||
+									((previous_bb->last_ins->opcode != OP_BR) &&
+									(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
+									(previous_bb->last_ins->opcode != OP_SWITCH))) {
 								int i;
 								/* Make sure previous_bb really falls through bb */
 								for (i = 0; i < previous_bb->out_count; i++) {
@@ -12056,7 +12913,6 @@ remove_critical_edges (MonoCompile *cfg) {
 							/* put a new BB in the middle to hold the OP_BR */
 							MonoInst *jump;
 							MonoBasicBlock *new_bb_after_entry = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
-							MONO_INST_LIST_INIT (&new_bb_after_entry->ins_list);
 							new_bb_after_entry->block_num = cfg->num_bblocks++;
 //							new_bb_after_entry->real_offset = bb->real_offset;
 							new_bb_after_entry->region = bb->region;
@@ -12070,7 +12926,7 @@ remove_critical_edges (MonoCompile *cfg) {
 							previous_bb = new_bb_after_entry;
 							
 							if (cfg->verbose_level > 2) {
-								printf ("remove_critical_edges %s, added helper BB%d jumping to BB%d\n", mono_method_full_name (cfg->method, TRUE), new_bb_after_entry->block_num, bb->block_num);
+								printf ("remove_critical_edges, added helper BB%d jumping to BB%d\n", new_bb_after_entry->block_num, bb->block_num);
 							}
 						}
 					}
@@ -12094,7 +12950,7 @@ remove_critical_edges (MonoCompile *cfg) {
 					replace_in_block (bb, in_bb, new_bb);
 					
 					if (cfg->verbose_level > 2) {
-						printf ("remove_critical_edges %s, removed critical edge from BB%d to BB%d (added BB%d)\n", mono_method_full_name (cfg->method, TRUE), in_bb->block_num, bb->block_num, new_bb->block_num);
+						printf ("remove_critical_edges, removed critical edge from BB%d to BB%d (added BB%d)\n", in_bb->block_num, bb->block_num, new_bb->block_num);
 					}
 				}
 			}
@@ -12103,9 +12959,8 @@ remove_critical_edges (MonoCompile *cfg) {
 	
 	if (cfg->verbose_level > 3) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *last_ins;
 			int i;
-			printf ("remove_critical_edges %s, AFTER BB%d (in:", mono_method_full_name (cfg->method, TRUE), bb->block_num);
+			printf ("remove_critical_edges, AFTER BB%d (in:", bb->block_num);
 			for (i = 0; i < bb->in_count; i++) {
 				printf (" %d", bb->in_bb [i]->block_num);
 			}
@@ -12114,10 +12969,9 @@ remove_critical_edges (MonoCompile *cfg) {
 				printf (" %d", bb->out_bb [i]->block_num);
 			}
 			printf (")");
-			last_ins = mono_inst_list_last (&bb->ins_list);
-			if (last_ins) {
+			if (bb->last_ins != NULL) {
 				printf (" ");
-				mono_print_tree (last_ins);
+				mono_print_tree (bb->last_ins);
 			}
 			printf ("\n");
 		}
@@ -12157,7 +13011,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	guint8 *ip;
 	MonoCompile *cfg;
 	MonoJitInfo *jinfo;
-	int dfn = 0, i, code_size_ratio;
+	int dfn, i, code_size_ratio;
 	gboolean deadce_has_run = FALSE;
 	gboolean try_generic_shared;
 	MonoMethod *method_to_compile, *method_to_register;
@@ -12256,7 +13110,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
+	if (getenv ("MONO_VERBOSE_METHOD")) {
+		if (strcmp (cfg->method->name, getenv ("MONO_VERBOSE_METHOD")) == 0)
+			cfg->verbose_level = 4;
+	}
+
 	ip = (guint8 *)header->code;
+
+	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * header->max_stack);
 
 	if (cfg->verbose_level > 2) {
 		if (cfg->generic_sharing_context)
@@ -12265,12 +13126,111 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
 	}
 
+	if (cfg->opt & (MONO_OPT_ABCREM | MONO_OPT_SSAPRE))
+		cfg->opt |= MONO_OPT_SSA;
+
+	{
+		static int count = 0;
+
+		count ++;
+
+		if (getenv ("MONO_COUNT")) {
+			if (count == atoi (getenv ("MONO_COUNT"))) {
+				printf ("LAST: %s\n", mono_method_full_name (method, TRUE));
+				//cfg->verbose_level = 5;
+			}
+			if (count <= atoi (getenv ("MONO_COUNT")))
+				cfg->new_ir = TRUE;
+
+			/*
+			 * Passing/returning vtypes in registers in managed methods is an ABI change 
+			 * from the old JIT.
+			 */
+			disable_vtypes_in_regs = TRUE;
+		}
+		else
+			cfg->new_ir = TRUE;
+	}
+
+	/* 
+	if ((cfg->method->klass->image != mono_defaults.corlib) || (strstr (cfg->method->klass->name, "StackOverflowException") && strstr (cfg->method->name, ".ctor")) || (strstr (cfg->method->klass->name, "OutOfMemoryException") && strstr (cfg->method->name, ".ctor")))
+		cfg->globalra = TRUE;
+	*/
+
+	//cfg->globalra = TRUE;
+
+	//if (!strcmp (cfg->method->klass->name, "Tests") && !cfg->method->wrapper_type)
+	//	cfg->globalra = TRUE;
+
+	{
+		static int count = 0;
+		count ++;
+
+		if (getenv ("COUNT2")) {
+			if (count == atoi (getenv ("COUNT2")))
+				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+			if (count > atoi (getenv ("COUNT2")))
+				cfg->globalra = FALSE;
+		}
+	}
+
+	if (header->clauses)
+		cfg->globalra = FALSE;
+
+	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+		/* The code in the prolog clobbers caller saved registers */
+		cfg->globalra = FALSE;
+
+	// FIXME: Disable globalra in case of tracing/profiling
+
+	if (cfg->method->save_lmf)
+		/* The LMF saving code might clobber caller saved registers */
+		cfg->globalra = FALSE;
+
+	// FIXME:
+	if (!strcmp (cfg->method->name, "CompareInternal"))
+		cfg->globalra = FALSE;
+
+	/*
+	if (strstr (cfg->method->name, "LoadData"))
+		cfg->new_ir = FALSE;
+	*/
+
+	if (cfg->new_ir) {
+		cfg->rs = mono_regstate_new ();
+		cfg->next_vreg = cfg->rs->next_vreg;
+	}
+
+	/* FIXME: Fix SSA to handle branches inside bblocks */
+	if (cfg->opt & MONO_OPT_SSA)
+		cfg->enable_extended_bblocks = FALSE;
+
+	/*
+	 * FIXME: This confuses liveness analysis because variables which are assigned after
+	 * a branch inside a bblock become part of the kill set, even though the assignment
+	 * might not get executed. This causes the optimize_initlocals pass to delete some
+	 * assignments which are needed.
+	 * Also, the mono_if_conversion pass needs to be modified to recognize the code
+	 * created by this.
+	 */
+	//cfg->enable_extended_bblocks = TRUE;
+
 	/*
 	 * create MonoInst* which represents arguments and local variables
 	 */
 	mono_compile_create_vars (cfg);
 
-	if ((i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0, FALSE)) < 0) {
+	if (cfg->new_ir) {
+		/* SSAPRE is not supported on linear IR */
+		cfg->opt &= ~MONO_OPT_SSAPRE;
+
+		i = mono_method_to_ir2 (cfg, method_to_compile, NULL, NULL, NULL, NULL, NULL, 0, FALSE);
+	}
+	else {
+		i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, cfg->locals_start, NULL, NULL, NULL, 0, FALSE);
+	}
+
+	if (i < 0) {
 		if (try_generic_shared && cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 			if (compile_aot) {
 				if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
@@ -12294,7 +13254,62 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_stats.basic_blocks += cfg->num_bblocks;
 	mono_jit_stats.max_basic_blocks = MAX (cfg->num_bblocks, mono_jit_stats.max_basic_blocks);
 
-	if ((cfg->num_varinfo > 2000) && !cfg->compile_aot) {
+	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
+
+	if (cfg->new_ir) {
+		mono_decompose_long_opts (cfg);
+
+		/* Should be done before branch opts */
+		if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
+			mono_local_cprop2 (cfg);
+	}
+
+	if (cfg->opt & MONO_OPT_BRANCH)
+		mono_optimize_branches (cfg);
+
+	if (cfg->new_ir) {
+		/* This must be done _before_ global reg alloc and _after_ decompose */
+		mono_handle_global_vregs (cfg);
+		mono_local_deadce (cfg);
+		mono_if_conversion (cfg);
+	}
+
+	if ((cfg->opt & MONO_OPT_SSAPRE) || cfg->globalra)
+		mono_remove_critical_edges (cfg);
+
+	/* Depth-first ordering on basic blocks */
+	cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
+
+	dfn = 0;
+	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
+	if (cfg->num_bblocks != dfn + 1) {
+		MonoBasicBlock *bb;
+
+		cfg->num_bblocks = dfn + 1;
+
+		/* remove unreachable code, because the code in them may be 
+		 * inconsistent  (access to dead variables for example) */
+		for (bb = cfg->bb_entry; bb;) {
+			MonoBasicBlock *bbn = bb->next_bb;
+
+			/* 
+			 * FIXME: Can't use the second case in methods with clauses, since the 
+			 * bblocks inside the clauses are not processed during dfn computation.
+			 */
+			if ((header->clauses && (bbn && bbn->region == -1 && bbn->in_count == 0)) ||
+				(!header->clauses && (bbn && bbn->region == -1 && !bbn->dfn))) {
+				if (cfg->verbose_level > 1)
+					g_print ("found unreachable code in BB%d\n", bbn->block_num);
+				/* There may exist unreachable branches to this bb */
+				bb->next_bb = bbn->next_bb;
+				nullify_basic_block (bbn);			
+			} else {
+				bb = bb->next_bb;
+			}
+		}
+	}
+
+	if (((cfg->num_varinfo > 2000) || (cfg->num_bblocks > 1000)) && !cfg->compile_aot) {
 		/* 
 		 * we disable some optimizations if there are too many variables
 		 * because JIT time may become too expensive. The actual number needs 
@@ -12302,42 +13317,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		 */
 		cfg->opt &= ~ (MONO_OPT_LINEARS | MONO_OPT_COPYPROP | MONO_OPT_CONSPROP);
 		cfg->disable_ssa = TRUE;
-	}
-
-	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
-
-	if (cfg->opt & MONO_OPT_BRANCH)
-		optimize_branches (cfg);
-
-	if (cfg->opt & MONO_OPT_SSAPRE) {
-		remove_critical_edges (cfg);
-	}
-
-	/* Depth-first ordering on basic blocks */
-	cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
-
-	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
-	if (cfg->num_bblocks != dfn + 1) {
-		MonoBasicBlock *bb;
-
-		cfg->num_bblocks = dfn + 1;
-
-		if (!header->clauses) {
-			/* remove unreachable code, because the code in them may be 
-			 * inconsistent  (access to dead variables for example) */
-			for (bb = cfg->bb_entry; bb;) {
-				MonoBasicBlock *bbn = bb->next_bb;
-
-				if (bbn && bbn->region == -1 && !bbn->dfn) {
-					if (cfg->verbose_level > 1)
-						g_print ("found unreachable code in BB%d\n", bbn->block_num);
-					bb->next_bb = bbn->next_bb;
-					nullify_basic_block (bbn);			
-				} else {
-					bb = bb->next_bb;
-				}
-			}
-		}
 	}
 
 	if (cfg->opt & MONO_OPT_LOOP) {
@@ -12358,18 +13337,24 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (!header->num_clauses && !cfg->disable_ssa) {
 		mono_local_cprop (cfg);
+
 #ifndef DISABLE_SSA
-		mono_ssa_compute (cfg);
+		if (cfg->new_ir)
+			mono_ssa_compute2 (cfg);
+		else
+			mono_ssa_compute (cfg);
 #endif
 	}
 #else 
-
-	/* fixme: add all optimizations which requires SSA */
-	if (cfg->opt & (MONO_OPT_SSA | MONO_OPT_ABCREM | MONO_OPT_SSAPRE)) {
+	if (cfg->opt & MONO_OPT_SSA) {
 		if (!(cfg->comp_done & MONO_COMP_SSA) && !header->num_clauses && !cfg->disable_ssa) {
-			mono_local_cprop (cfg);
 #ifndef DISABLE_SSA
-			mono_ssa_compute (cfg);
+			if (!cfg->new_ir)
+				mono_local_cprop (cfg);
+			if (cfg->new_ir)
+				mono_ssa_compute2 (cfg);
+			else
+				mono_ssa_compute (cfg);
 #endif
 
 			if (cfg->verbose_level >= 2) {
@@ -12389,36 +13374,71 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if ((cfg->opt & MONO_OPT_CONSPROP) || (cfg->opt & MONO_OPT_COPYPROP)) {
 		if (cfg->comp_done & MONO_COMP_SSA) {
 #ifndef DISABLE_SSA
-			mono_ssa_cprop (cfg);
+			if (cfg->new_ir)
+				mono_ssa_cprop2 (cfg);
+			else
+				mono_ssa_cprop (cfg);
 #endif
 		} else {
-			mono_local_cprop (cfg);
+			if (!cfg->new_ir)
+				mono_local_cprop (cfg);
 		}
 	}
 
 #ifndef DISABLE_SSA
 	if (cfg->comp_done & MONO_COMP_SSA) {			
-		//mono_ssa_deadce (cfg);
-
 		//mono_ssa_strength_reduction (cfg);
 
 		if (cfg->opt & MONO_OPT_SSAPRE) {
 			mono_perform_ssapre (cfg);
 			//mono_local_cprop (cfg);
 		}
-		
+
 		if (cfg->opt & MONO_OPT_DEADCE) {
-			mono_ssa_deadce (cfg);
+			if (cfg->new_ir)
+				mono_ssa_deadce2 (cfg);
+			else
+				mono_ssa_deadce (cfg);
 			deadce_has_run = TRUE;
 		}
-		
-		if ((cfg->flags & MONO_CFG_HAS_LDELEMA) && (cfg->opt & MONO_OPT_ABCREM))
-			mono_perform_abc_removal (cfg);
-		
-		mono_ssa_remove (cfg);
 
-		if (cfg->opt & MONO_OPT_BRANCH)
-			optimize_branches (cfg);
+		if (cfg->new_ir) {
+			if ((cfg->flags & (MONO_CFG_HAS_LDELEMA|MONO_CFG_HAS_CHECK_THIS)) && (cfg->opt & MONO_OPT_ABCREM))
+				mono_perform_abc_removal2 (cfg);
+		} else {
+			if ((cfg->flags & MONO_CFG_HAS_LDELEMA) && (cfg->opt & MONO_OPT_ABCREM))
+				mono_perform_abc_removal (cfg);
+		}
+
+		if (cfg->new_ir) {
+			mono_ssa_remove2 (cfg);
+			mono_local_cprop2 (cfg);
+			mono_handle_global_vregs (cfg);
+			mono_local_deadce (cfg);
+		}
+		else
+			mono_ssa_remove (cfg);
+
+		if (cfg->opt & MONO_OPT_BRANCH) {
+			MonoBasicBlock *bb;
+
+			mono_optimize_branches (cfg);
+
+			/* Have to recompute cfg->bblocks and bb->dfn */
+			if (cfg->globalra) {
+				mono_remove_critical_edges (cfg);
+
+				for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+					bb->dfn = 0;
+
+				/* Depth-first ordering on basic blocks */
+				cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
+
+				dfn = 0;
+				df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
+				cfg->num_bblocks = dfn + 1;
+			}
+		}
 	}
 #endif
 
@@ -12429,13 +13449,21 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		return cfg;
 	}
 
-	if (cfg->verbose_level > 4) {
-		printf ("BEFORE DECOMPSE START\n");
-		mono_print_code (cfg);
-		printf ("BEFORE DECOMPSE END\n");
+	if (cfg->new_ir) {
+#ifdef MONO_ARCH_SOFT_FLOAT
+		mono_handle_soft_float (cfg);
+#endif
+		mono_decompose_vtype_opts (cfg);
+		if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
+			mono_decompose_array_access_opts (cfg);
 	}
-	
-	decompose_pass (cfg);
+
+	if (!cfg->new_ir) {
+		if (cfg->verbose_level > 4)
+			mono_print_code (cfg, "BEFORE DECOMPOSE");
+
+		decompose_pass (cfg);
+	}
 
 	if (cfg->got_var) {
 		GList *regs;
@@ -12467,11 +13495,21 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	 */
 	mono_liveness_handle_exception_clauses (cfg);
 
-	if (cfg->opt & MONO_OPT_LINEARS) {
+	if (cfg->globalra) {
+		MonoBasicBlock *bb;
+
+		/* Have to do this before regalloc since it can create vregs */
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+			mono_arch_lowering_pass (cfg, bb);
+
+		mono_global_regalloc (cfg);
+	}
+
+	if ((cfg->opt & MONO_OPT_LINEARS) && !cfg->globalra) {
 		GList *vars, *regs;
 		
 		/* For now, compute aliasing info only if needed for deadce... */
-		if ((cfg->opt & MONO_OPT_DEADCE) && (! deadce_has_run) && (header->num_clauses == 0)) {
+		if (!cfg->new_ir && (cfg->opt & MONO_OPT_DEADCE) && (! deadce_has_run) && (header->num_clauses == 0)) {
 			cfg->aliasing_info = mono_build_aliasing_information (cfg);
 		}
 
@@ -12503,12 +13541,67 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
     //print_dfn (cfg);
 	
 	/* variables are allocated after decompose, since decompose could create temps */
-	mono_arch_allocate_vars (cfg);
+	if (!cfg->globalra)
+		mono_arch_allocate_vars (cfg);
 
-	if (cfg->opt & MONO_OPT_CFOLD)
+	if (!cfg->new_ir && cfg->opt & MONO_OPT_CFOLD)
 		mono_constant_fold (cfg);
 
-	mini_select_instructions (cfg);
+	if (cfg->new_ir) {
+		MonoBasicBlock *bb;
+		gboolean need_local_opts;
+
+		if (!cfg->globalra) {
+			mono_spill_global_vars (cfg, &need_local_opts);
+
+			if (need_local_opts || cfg->compile_aot) {
+				/* To optimize code created by spill_global_vars */
+				mono_local_cprop2 (cfg);
+				mono_local_deadce (cfg);
+			}
+		}
+
+		/* Add branches between non-consecutive bblocks */
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins) &&
+				bb->last_ins->inst_false_bb && bb->next_bb != bb->last_ins->inst_false_bb) {
+				/* we are careful when inverting, since bugs like #59580
+				 * could show up when dealing with NaNs.
+				 */
+				if (MONO_IS_COND_BRANCH_NOFP(bb->last_ins) && bb->next_bb == bb->last_ins->inst_true_bb) {
+					MonoBasicBlock *tmp =  bb->last_ins->inst_true_bb;
+					bb->last_ins->inst_true_bb = bb->last_ins->inst_false_bb;
+					bb->last_ins->inst_false_bb = tmp;
+
+					bb->last_ins->opcode = reverse_branch_op (bb->last_ins->opcode);
+				} else {			
+					MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
+					inst->opcode = OP_BR;
+					inst->inst_target_bb = bb->last_ins->inst_false_bb;
+					mono_bblock_add_inst (bb, inst);
+				}
+			}
+		}
+
+		if (cfg->verbose_level >= 4 && !cfg->globalra) {
+			for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+				MonoInst *tree = bb->code;	
+				g_print ("DUMP BLOCK %d:\n", bb->block_num);
+				if (!tree)
+					continue;
+				for (; tree; tree = tree->next) {
+					mono_print_ins_index (-1, tree);
+				}
+			}
+		}
+
+		/* FIXME: */
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			bb->max_vreg = cfg->next_vreg;
+		}
+	}
+	else
+		mini_select_instructions (cfg);
 
 	mono_codegen (cfg);
 	if (cfg->verbose_level >= 2) {
@@ -14090,12 +15183,19 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_register_opcode_emulation (CEE_DIV_UN, "__emul_idiv_un", "int32 int32 int32", mono_idiv_un, FALSE);
 	mono_register_opcode_emulation (CEE_REM, "__emul_irem", "int32 int32 int32", mono_irem, FALSE);
 	mono_register_opcode_emulation (CEE_REM_UN, "__emul_irem_un", "int32 int32 int32", mono_irem_un, FALSE);
+	mono_register_opcode_emulation (OP_IDIV, "__emul_op_idiv", "int32 int32 int32", mono_idiv, FALSE);
+	mono_register_opcode_emulation (OP_IDIV_UN, "__emul_op_idiv_un", "int32 int32 int32", mono_idiv_un, FALSE);
+	mono_register_opcode_emulation (OP_IREM, "__emul_op_irem", "int32 int32 int32", mono_irem, FALSE);
+	mono_register_opcode_emulation (OP_IREM_UN, "__emul_op_irem_un", "int32 int32 int32", mono_irem_un, FALSE);
 #endif
 
 #ifdef MONO_ARCH_EMULATE_MUL_DIV
 	mono_register_opcode_emulation (CEE_MUL_OVF, "__emul_imul_ovf", "int32 int32 int32", mono_imul_ovf, FALSE);
 	mono_register_opcode_emulation (CEE_MUL_OVF_UN, "__emul_imul_ovf_un", "int32 int32 int32", mono_imul_ovf_un, FALSE);
 	mono_register_opcode_emulation (CEE_MUL, "__emul_imul", "int32 int32 int32", mono_imul, TRUE);
+	mono_register_opcode_emulation (OP_IMUL, "__emul_op_imul", "int32 int32 int32", mono_imul, TRUE);
+	mono_register_opcode_emulation (OP_IMUL_OVF, "__emul_op_imul_ovf", "int32 int32 int32", mono_imul_ovf, FALSE);
+	mono_register_opcode_emulation (OP_IMUL_OVF_UN, "__emul_op_imul_ovf_un", "int32 int32 int32", mono_imul_ovf_un, FALSE);
 #endif
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT)
 	mono_register_opcode_emulation (OP_FDIV, "__emul_fdiv", "double double double", mono_fdiv, FALSE);
@@ -14111,6 +15211,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 #ifdef MONO_ARCH_EMULATE_CONV_R8_UN
 	mono_register_opcode_emulation (CEE_CONV_R_UN, "__emul_conv_r_un", "double int32", mono_conv_to_r8_un, FALSE);
+	mono_register_opcode_emulation (OP_ICONV_TO_R_UN, "__emul_iconv_to_r_un", "double int32", mono_conv_to_r8_un, FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
 	mono_register_opcode_emulation (OP_LCONV_TO_R8, "__emul_lconv_to_r8", "double long", mono_lconv_to_r8, FALSE);
@@ -14131,7 +15232,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_register_opcode_emulation (OP_FMUL, "__emul_fmul", "double double double", mono_fmul, FALSE);
 	mono_register_opcode_emulation (OP_FNEG, "__emul_fneg", "double double", mono_fneg, FALSE);
 	mono_register_opcode_emulation (CEE_CONV_R8, "__emul_conv_r8", "double int32", mono_conv_to_r8, FALSE);
+	mono_register_opcode_emulation (OP_ICONV_TO_R8, "__emul_iconv_to_r8", "double int32", mono_conv_to_r8, FALSE);
 	mono_register_opcode_emulation (CEE_CONV_R4, "__emul_conv_r4", "double int32", mono_conv_to_r4, FALSE);
+	mono_register_opcode_emulation (OP_ICONV_TO_R4, "__emul_iconv_to_r4", "double int32", mono_conv_to_r4, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_R4, "__emul_fconv_to_r4", "double double", mono_fconv_r4, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_I1, "__emul_fconv_to_i1", "int8 double", mono_fconv_i1, FALSE);
 	mono_register_opcode_emulation (OP_FCONV_TO_I2, "__emul_fconv_to_i2", "int16 double", mono_fconv_i2, FALSE);
@@ -14239,6 +15342,7 @@ print_jit_stats (void)
 		g_print ("Allocated code size:    %ld\n", mono_jit_stats.allocated_code_size);
 		g_print ("Inlineable methods:     %ld\n", mono_jit_stats.inlineable_methods);
 		g_print ("Inlined methods:        %ld\n", mono_jit_stats.inlined_methods);
+		g_print ("Regvars:                %ld\n", mono_jit_stats.regvars);
 		g_print ("Locals stack size:      %ld\n", mono_jit_stats.locals_stack_size);
 
 		g_print ("\nCreated object count:   %ld\n", mono_stats.new_object_count);

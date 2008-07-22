@@ -1003,9 +1003,7 @@ mono_aliasing_deadce (MonoAliasingInformation *info) {
 	possibly_dead_assignments = alloca (cfg->num_varinfo * sizeof (MonoInst*));
 	
 	if (LOG_DEADCE) {
-		printf ("BEFORE DEADCE START\n");
-		mono_print_code (cfg);
-		printf ("BEFORE DEADCE END\n");
+		mono_print_code (cfg, "BEFORE DEADCE START");
 	}
 	
 #if (MONO_APPLY_DEADCE_TO_SINGLE_METHOD)
@@ -1062,8 +1060,6 @@ mono_aliasing_deadce (MonoAliasingInformation *info) {
 	}
 	
 	if (LOG_DEADCE) {
-		printf ("AFTER DEADCE START\n");
-		mono_print_code (cfg);
-		printf ("AFTER DEADCE END\n");
+		mono_print_code (cfg, "AFTER DEADCE");
 	}
 }

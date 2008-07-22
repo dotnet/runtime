@@ -123,7 +123,10 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 
 	if (inst->opcode == OP_REGVAR)
 		var->index = inst->dreg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
-	else {
+	else if (inst->flags & MONO_INST_IS_DEAD) {
+		// FIXME:
+		var->index = 0 | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
+	} else {
 		/* the debug interface needs fixing to allow 0(%base) address */
 		var->index = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET;
 		var->offset = inst->inst_offset;
@@ -265,15 +268,15 @@ mono_debug_close_method (MonoCompile *cfg)
 	jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
 
 	for (i = 0; i < jit->num_locals; i++)
-		write_variable (cfg->varinfo [cfg->locals_start + i], &jit->locals [i]);
+		write_variable (cfg->locals [i], &jit->locals [i]);
 
 	if (sig->hasthis) {
 		jit->this_var = g_new0 (MonoDebugVarInfo, 1);
-		write_variable (cfg->varinfo [0], jit->this_var);
+		write_variable (cfg->args [0], jit->this_var);
 	}
 
 	for (i = 0; i < jit->num_params; i++)
-		write_variable (cfg->varinfo [i + sig->hasthis], &jit->params [i]);
+		write_variable (cfg->args [i + sig->hasthis], &jit->params [i]);
 
 	jit->num_line_numbers = info->line_numbers->len;
 	jit->line_numbers = g_new0 (MonoDebugLineNumberEntry, jit->num_line_numbers);

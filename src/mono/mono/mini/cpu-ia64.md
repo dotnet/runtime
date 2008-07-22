@@ -366,3 +366,34 @@ ia64_loadu4_membase_inc: dest:b src1:i len:48
 ia64_loadi8_membase_inc: dest:b src1:i len:48
 ia64_loadr4_membase_inc: dest:b src1:i len:48
 ia64_loadr8_membase_inc: dest:b src1:i len:48
+
+# Linear IR opcodes
+nop: len:0
+dummy_use: len:0
+dummy_store: len:0
+not_reached: len:0
+not_null: src1:i len:0
+
+jump_table: dest:i len:48
+
+localloc_imm: dest:i len:92
+
+vcall2: len:80 clob:c
+vcall2_reg: src1:i len:80 clob:c
+vcall2_membase: src1:b len:80 clob:c
+
+int_conv_to_i1: dest:i src1:i len:48
+int_conv_to_u1: dest:i src1:i len:48
+int_conv_to_i2: dest:i src1:i len:48
+int_conv_to_u2: dest:i src1:i len:48
+int_conv_to_i4: dest:i src1:i len:48
+int_conv_to_u4: dest:i src1:i len:48
+int_conv_to_i8: dest:i src1:i len:48
+int_conv_to_u8: dest:i src1:i len:48
+
+long_add_imm: dest:i src1:i len:48
+long_sub_imm: dest:i src1:i len:48
+long_and_imm: dest:i src1:i len:48
+long_or_imm: dest:i src1:i len:48
+long_xor_imm: dest:i src1:i len:48
+

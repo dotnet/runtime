@@ -167,7 +167,7 @@ MINI_OP(OP_ISHR_UN_IMM, "int_shr_un_imm")
 MINI_OP(OP_INEG,       "int_neg")
 MINI_OP(OP_INOT,       "int_not")
 
-MINI_OP(OP_LONG_SHRUN_32, "long_shr_un_32")
+MINI_OP(OP_LSHR_UN_32, "long_shr_un_32")
 
 MINI_OP(OP_FADD,   "float_add")
 MINI_OP(OP_FSUB,   "float_sub")

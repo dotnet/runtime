@@ -55,6 +55,7 @@
 #
 break: len:2
 jmp: len:120
+tailcall: len:120 clob:c
 br: len:6
 label: len:0
 
@@ -381,3 +382,122 @@ int_bge_un: len:8
 int_ble: len:8
 int_ble_un: len:8
 
+# Linear IR opcodes
+nop: len:0
+dummy_use: len:0
+dummy_store: len:0
+not_reached: len:0
+not_null: src1:i len:0
+
+long_ceq: dest:c len:64
+long_cgt: dest:c len:64
+long_cgt_un: dest:c len:64
+long_clt: dest:c len:64
+long_clt_un: dest:c len:64
+
+int_conv_to_i1: dest:i src1:i len:4
+int_conv_to_i2: dest:i src1:i len:4
+int_conv_to_i4: dest:i src1:i len:3
+int_conv_to_i8: dest:i src1:i len:3
+int_conv_to_u4: dest:i src1:i len:3
+int_conv_to_u8: dest:i src1:i len:3
+
+int_conv_to_u: dest:i src1:i len:4
+int_conv_to_u2: dest:i src1:i len:4
+int_conv_to_u1: dest:i src1:i len:4
+int_conv_to_i: dest:i src1:i len:4
+
+cond_exc_ieq: len:8
+cond_exc_ine_un: len:8
+cond_exc_ilt: len:8
+cond_exc_ilt_un: len:8
+cond_exc_igt: len:8
+cond_exc_igt_un: len:8
+cond_exc_ige: len:8
+cond_exc_ige_un: len:8
+cond_exc_ile: len:8
+cond_exc_ile_un: len:8
+cond_exc_ino: len:8
+cond_exc_inc: len:8
+
+x86_compare_membase8_imm: src1:b len:9
+
+jump_table: dest:i len:18
+
+cmov_ieq: dest:i src1:i src2:i len:16 clob:1
+cmov_ige: dest:i src1:i src2:i len:16 clob:1
+cmov_igt: dest:i src1:i src2:i len:16 clob:1
+cmov_ile: dest:i src1:i src2:i len:16 clob:1
+cmov_ilt: dest:i src1:i src2:i len:16 clob:1
+cmov_ine_un: dest:i src1:i src2:i len:16 clob:1
+cmov_ige_un: dest:i src1:i src2:i len:16 clob:1
+cmov_igt_un: dest:i src1:i src2:i len:16 clob:1
+cmov_ile_un: dest:i src1:i src2:i len:16 clob:1
+cmov_ilt_un: dest:i src1:i src2:i len:16 clob:1
+
+cmov_leq: dest:i src1:i src2:i len:16 clob:1
+cmov_lge: dest:i src1:i src2:i len:16 clob:1
+cmov_lgt: dest:i src1:i src2:i len:16 clob:1
+cmov_lle: dest:i src1:i src2:i len:16 clob:1
+cmov_llt: dest:i src1:i src2:i len:16 clob:1
+cmov_lne_un: dest:i src1:i src2:i len:16 clob:1
+cmov_lge_un: dest:i src1:i src2:i len:16 clob:1
+cmov_lgt_un: dest:i src1:i src2:i len:16 clob:1
+cmov_lle_un: dest:i src1:i src2:i len:16 clob:1
+cmov_llt_un: dest:i src1:i src2:i len:16 clob:1
+
+long_add_imm: dest:i src1:i clob:1 len:12
+long_sub_imm: dest:i src1:i clob:1 len:12
+long_and_imm: dest:i src1:i clob:1 len:12
+long_or_imm: dest:i src1:i clob:1 len:12
+long_xor_imm: dest:i src1:i clob:1 len:12
+
+lcompare_imm: src1:i len:13
+
+amd64_compare_membase_reg: src1:b src2:i len:9
+amd64_compare_membase_imm: src1:b len:14
+amd64_compare_reg_membase: src1:i src2:b len:9
+
+amd64_add_reg_membase: dest:i src1:i src2:b clob:1 len:14
+amd64_sub_reg_membase: dest:i src1:i src2:b clob:1 len:14
+amd64_and_reg_membase: dest:i src1:i src2:b clob:1 len:14
+amd64_or_reg_membase: dest:i src1:i src2:b clob:1 len:14
+amd64_xor_reg_membase: dest:i src1:i src2:b clob:1 len:14
+
+amd64_add_membase_imm: src1:b len:16
+amd64_sub_membase_imm: src1:b len:16
+amd64_and_membase_imm: src1:b len:13
+amd64_or_membase_imm: src1:b len:13
+amd64_xor_membase_imm: src1:b len:13
+
+x86_and_membase_imm: src1:b len:12
+x86_or_membase_imm: src1:b len:12
+x86_xor_membase_imm: src1:b len:12
+
+x86_add_membase_reg: src1:b src2:i len:12
+x86_sub_membase_reg: src1:b src2:i len:12
+x86_and_membase_reg: src1:b src2:i len:12
+x86_or_membase_reg: src1:b src2:i len:12
+x86_xor_membase_reg: src1:b src2:i len:12
+x86_mul_membase_reg: src1:b src2:i len:14
+
+amd64_add_membase_reg: src1:b src2:i len:13
+amd64_sub_membase_reg: src1:b src2:i len:13
+amd64_and_membase_reg: src1:b src2:i len:13
+amd64_or_membase_reg: src1:b src2:i len:13
+amd64_xor_membase_reg: src1:b src2:i len:13
+amd64_mul_membase_reg: src1:b src2:i len:15
+
+float_conv_to_r4: dest:f src1:f
+
+vcall2: len:64 clob:c
+vcall2_reg: src1:i len:64 clob:c
+vcall2_membase: src1:b len:64 clob:c
+
+localloc_imm: dest:i len:84
+
+load_mem: dest:i len:16
+loadi8_mem: dest:i len:16
+loadi4_mem: dest:i len:16
+loadu1_mem: dest:i len:16
+loadu2_mem: dest:i len:16

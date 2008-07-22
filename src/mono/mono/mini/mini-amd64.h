@@ -82,6 +82,8 @@ struct sigcontext {
 
 #define MONO_MAX_FREGS AMD64_XMM_NREG
 
+#define MONO_ARCH_FP_RETURN_REG AMD64_XMM0
+
 /* xmm15 is reserved for use by some opcodes */
 #define MONO_ARCH_CALLEE_FREGS 0xef
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
@@ -286,10 +288,25 @@ typedef struct {
  */
 #define MONO_ARCH_RGCTX_REG AMD64_R10
 #define MONO_ARCH_COMMON_VTABLE_TRAMPOLINE 1
+#define MONO_ARCH_HAVE_CMOV_OPS 1
 #define MONO_ARCH_HAVE_NOTIFY_PENDING_EXC 1
 #define MONO_ARCH_ENABLE_NORMALIZE_OPCODES 1
+#define MONO_ARCH_ENABLE_GLOBAL_RA 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
+
+/* Used for optimization, not complete */
+#define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
+
+#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) do { \
+            MonoInst *inst; \
+            MONO_INST_NEW ((cfg), inst, OP_AMD64_ICOMPARE_MEMBASE_REG); \
+            inst->inst_basereg = array_reg; \
+            inst->inst_offset = offset; \
+            inst->sreg2 = index_reg; \
+            MONO_ADD_INS ((cfg)->cbb, inst); \
+            MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+       } while (0)
 
 void 
 mono_amd64_patch (unsigned char* code, gpointer target) MONO_INTERNAL;

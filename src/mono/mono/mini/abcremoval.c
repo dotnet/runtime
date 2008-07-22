@@ -568,9 +568,8 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 	
 	if (bb->in_count == 1) { /* Should write the code to "sum" conditions... */
 		in_bb = bb->in_bb [0];
-		branch = mono_inst_list_last (&in_bb->ins_list);
-		if (branch == NULL)
-			return;
+		branch = in_bb->last_ins;
+		if (branch == NULL) return;
 		branch_relation = get_relation_from_branch_instruction (branch->opcode);
 		if ((branch_relation != MONO_ANY_RELATION) && (branch->inst_left->opcode == OP_COMPARE)) {
 			MonoSummarizedValue left_value;
@@ -1276,6 +1275,7 @@ process_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
 		
 		process_inst (current_inst, area);
 	}
+	
 	
 	if (TRACE_ABC_REMOVAL) {
 		printf ("Processing block %d [dfn %d] done.\n", bb->block_num, bb->dfn);

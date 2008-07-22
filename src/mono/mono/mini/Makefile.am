@@ -206,6 +206,9 @@ hppa_sources = \
 
 common_sources = \
 	mini.c		\
+	ir-emit.h	\
+	method-to-ir.c	\
+	decompose.c	\
 	mini.h		\
 	version.h	\
 	optflags-def.h		\
@@ -246,7 +249,10 @@ common_sources = \
 	declsec.h	\
 	wapihandles.c	\
 	branch-opts.c	\
-	generic-sharing.c
+	generic-sharing.c	\
+	ssa2.c	\
+	abcremoval2.c	\
+	regalloc2.c
 
 test_sources = 		\
 	basic-calls.cs 	\
@@ -277,7 +283,7 @@ else
 mono_debugger_sources =
 endif
 
-regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe bench.exe
+regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe
 
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
 

@@ -945,7 +945,12 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
 					gboolean filtered = FALSE;
 
-#ifdef __s390__
+#if defined(__s390__) || defined(__ia64__)
+					/* 
+					 * This is required in cases where a try block starts immediately after
+					 * a call which causes an exception. Testcase: tests/exception8.cs.
+					 * FIXME: Clean this up.
+					 */
 					if (ei->try_start < MONO_CONTEXT_GET_IP (ctx) && 
 #else
 					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 

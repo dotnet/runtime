@@ -386,45 +386,55 @@ stmt: OP_OUTARG_VT (reg) {
 stmt: CEE_STIND_R8 (OP_REGVAR, freg) {
 	/* nothing to do: the value is already on the FP stack */
 }
-
-stmt: CEE_BNE_UN (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBNE_UN, -1, state->left->left->reg1, state->left->right->reg1);
+ 
+stmt: CEE_BNE_UN (fpcflags) {
+	tree->opcode = OP_FBNE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BEQ (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBEQ, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BEQ (fpcflags) {
+	tree->opcode = OP_FBEQ;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BLT (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBLT, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BLT (fpcflags) {
+	tree->opcode = OP_FBLT;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BLT_UN (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBLT_UN, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BLT_UN (fpcflags) {
+	tree->opcode = OP_FBLT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BGT (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBGT, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BGT (fpcflags) {
+	tree->opcode = OP_FBGT;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BGT_UN (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBGT_UN, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BGT_UN (fpcflags) {
+	tree->opcode = OP_FBGT_UN;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BGE  (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBGE, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BGE  (fpcflags) {
+	tree->opcode = OP_FBGE;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BGE_UN (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBGE_UN, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BGE_UN (fpcflags) {
+	tree->opcode = OP_FBGE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BLE  (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBLE, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BLE  (fpcflags) {
+	tree->opcode = OP_FBLE;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: CEE_BLE_UN (OP_COMPARE (freg, freg)) {
-	MONO_EMIT_BIALU (s, tree, OP_FBLE_UN, -1, state->left->left->reg1, state->left->right->reg1);
+stmt: CEE_BLE_UN (fpcflags) {
+	tree->opcode = OP_FBLE_UN;
+	mono_bblock_add_inst (s->cbb, tree);
 }
 
 stmt: CEE_POP (freg) "0" {

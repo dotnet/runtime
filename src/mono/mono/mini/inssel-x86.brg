@@ -48,8 +48,12 @@
 #
 
 stmt: OP_START_HANDLER,
-stmt: OP_ENDFINALLY,
+stmt: OP_ENDFINALLY {
+	mono_bblock_add_inst (s->cbb, tree);
+}
+
 stmt: OP_ENDFILTER (reg) {
+	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
@@ -394,10 +398,6 @@ stmt: OP_OUTARG_VT (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-stmt: OP_X86_OUTARG_ALIGN_STACK {
-	MONO_EMIT_NEW_BIALU_IMM (s, OP_SUB_IMM, X86_ESP, X86_ESP, tree->inst_c0);
-}	
-
 reg: OP_LDADDR (OP_REGOFFSET),
 reg: CEE_LDOBJ (OP_REGOFFSET) {
 	if (state->left->tree->inst_offset) {
@@ -649,14 +649,6 @@ stmt: CEE_POP (freg) "0" {
 }     
 
 # override the rules in inssel-float.brg that work for machines with FP registers 
-
-freg: OP_FCONV_TO_R8 (freg) "0" {
-	/* nothing to do */
-}
-
-freg: OP_FCONV_TO_R4 (freg) "0" {
-	/* fixme: nothing to do ??*/
-}
 
 reg: CEE_ADD(reg, CEE_LDIND_I4 (base)) {
 	MonoInst *base = state->right->left->tree;

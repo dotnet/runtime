@@ -387,6 +387,28 @@ class Tests {
 		return 0;
 	}
 
+	// 128 bits
+	struct Struct3 {
+		public long i, j, k, l;
+	}
+
+	static int pass_struct3 (int i, int j, int k, int l, int m, int n, int o, int p, Struct3 s, int q) {
+		if (s.i + s.j + s.k + s.l != 10)
+			return 1;
+		else
+			return 0;
+	}
+
+	static int test_0_struct3_args () {
+		Struct3 s = new Struct3 ();
+		s.i = 1;
+		s.j = 2;
+		s.k = 3;
+		s.l = 4;
+
+		return pass_struct3 (1, 2, 3, 4, 5, 6, 7, 8, s, 9);
+	}
+
 	struct AStruct {
 		public int i;
 

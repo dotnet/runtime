@@ -20,6 +20,24 @@
 #include <mono/metadata/opcodes.h>
 #include "mini.h"
 
+/* FIXME: Get rid of these */
+#define NEW_BIALU(cfg,dest,op,dr,sr1,sr2) do { \
+        MONO_INST_NEW ((cfg), (dest), (op)); \
+        (dest)->dreg = (dr); \
+        (dest)->sreg1 = (sr1); \
+        (dest)->sreg2 = (sr2); \
+	} while (0)
+
+#define NEW_BIALU_IMM(cfg,dest,op,dr,sr,imm) do { \
+        MONO_INST_NEW ((cfg), (dest), (op)); \
+        (dest)->dreg = (dr);				 \
+        (dest)->sreg1 = (sr);					   \
+        (dest)->inst_p1 = (gpointer)(gssize)(imm); \
+	} while (0)
+
+#ifndef MONO_ARCH_IS_OP_MEMBASE
+#define MONO_ARCH_IS_OP_MEMBASE(opcode) FALSE
+#endif
 
 #define MONO_DEBUG_LOCAL_PROP 0
 #define MONO_DEBUG_TREE_MOVER 0
@@ -817,10 +835,10 @@ mono_cprop_invalidate_values (MonoInst *tree, TreeMover *tree_mover, MonoInst **
 static void
 mono_local_cprop_bb (MonoCompile *cfg, TreeMover *tree_mover, MonoBasicBlock *bb, MonoInst **acp, int acp_size)
 {
-	MonoInst *tree;
+	MonoInst *tree = bb->code;
 	int i;
 
-	if (MONO_INST_LIST_EMPTY (&bb->ins_list))
+	if (!tree)
 		return;
 
 	if (tree_mover != NULL) {
@@ -1207,21 +1225,549 @@ mono_local_cprop (MonoCompile *cfg) {
 		TreeMoverTreeMove *move;
 		/* Move the movable trees */
 		if (MONO_DEBUG_TREE_MOVER) {
-			printf ("BEFORE TREE MOVER START\n");
-			mono_print_code (cfg);
-			printf ("BEFORE TREE MOVER END\n");
+			mono_print_code (cfg, "BEFORE TREE MOVER");
 			printf ("Applying tree mover...\n");
 		}
 		for (move = tree_mover->scheduled_moves; move != NULL; move = move->next) {
 			apply_tree_mover (tree_mover, move);
 		}
 		if (MONO_DEBUG_TREE_MOVER) {
-			printf ("AFTER TREE MOVER START\n");
-			mono_print_code (cfg);
-			printf ("AFTER TREE MOVER END\n");
+			mono_print_code (cfg, "AFTER TREE MOVER");
 		}
 		
 		/* Global cleanup of tree mover memory */
 		mono_mempool_destroy(tree_mover->pool);
 	}
+}
+
+static inline MonoBitSet* 
+mono_bitset_mp_new_noinit (MonoMemPool *mp,  guint32 max_size)
+{
+	int size = mono_bitset_alloc_size (max_size, 0);
+	gpointer mem;
+
+	mem = mono_mempool_alloc (mp, size);
+	return mono_bitset_mem_new (mem, max_size, MONO_BITSET_DONT_FREE);
+}
+
+/*
+ * mono_local_cprop2:
+ *
+ *  A combined local copy and constant propagation pass.
+ */
+void
+mono_local_cprop2 (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+	MonoInst **defs;
+	gint32 *def_index;
+	int max;
+
+restart:
+
+	max = cfg->next_vreg;
+	defs = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * (cfg->next_vreg + 1));
+	def_index = mono_mempool_alloc (cfg->mempool, sizeof (guint32) * (cfg->next_vreg + 1));
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		MonoInst *ins;
+		int ins_index;
+		int last_call_index;
+
+		/* Manually init the defs entries used by the bblock */
+		MONO_BB_FOR_EACH_INS (bb, ins) {
+			if ((ins->dreg != -1) && (ins->dreg < max)) {
+				defs [ins->dreg] = NULL;
+#if SIZEOF_VOID_P == 4
+				defs [ins->dreg + 1] = NULL;
+#endif
+			}
+			if ((ins->sreg1 != -1) && (ins->sreg1 < max)) {
+				defs [ins->sreg1] = NULL;
+#if SIZEOF_VOID_P == 4
+				defs [ins->sreg1 + 1] = NULL;
+#endif
+			}
+			if ((ins->sreg2 != -1) && (ins->sreg2 < max)) {
+				defs [ins->sreg2] = NULL;
+#if SIZEOF_VOID_P == 4
+				defs [ins->sreg2 + 1] = NULL;
+#endif
+			}
+		}
+
+		ins_index = 0;
+		last_call_index = -1;
+		MONO_BB_FOR_EACH_INS (bb, ins) {
+			const char *spec = INS_INFO (ins->opcode);
+			int regtype, srcindex, sreg;
+
+			if (ins->opcode == OP_NOP) {
+				MONO_DELETE_INS (bb, ins);
+				continue;
+			}
+
+			g_assert (ins->opcode > MONO_CEE_LAST);
+
+			/* FIXME: Optimize this */
+			if (ins->opcode == OP_LDADDR) {
+				MonoInst *var = ins->inst_p0;
+
+				defs [var->dreg] = NULL;
+				/*
+				if (!MONO_TYPE_ISSTRUCT (var->inst_vtype))
+					break;
+				*/
+			}
+
+			if (MONO_IS_STORE_MEMBASE (ins)) {
+				sreg = ins->dreg;
+				regtype = 'i';
+
+				if ((regtype == 'i') && (sreg != -1) && defs [sreg]) {
+					MonoInst *def = defs [sreg];
+
+					if ((def->opcode == OP_MOVE) && (!defs [def->sreg1] || (def_index [def->sreg1] < def_index [sreg])) && !vreg_is_volatile (cfg, def->sreg1)) {
+						int vreg = def->sreg1;
+						//printf ("CCOPY: R%d -> R%d\n", sreg, vreg);
+						ins->dreg = vreg;
+					}
+				}
+			}
+
+			for (srcindex = 0; srcindex < 2; ++srcindex) {
+				MonoInst *def;
+
+				regtype = srcindex == 0 ? spec [MONO_INST_SRC1] : spec [MONO_INST_SRC2];
+				sreg = srcindex == 0 ? ins->sreg1 : ins->sreg2;
+
+				if ((regtype == ' ') || (sreg == -1) || (!defs [sreg]))
+					continue;
+
+				def = defs [sreg];
+
+				/* Copy propagation */
+				/* 
+				 * The first check makes sure the source of the copy did not change since 
+				 * the copy was made.
+				 * The second check avoids volatile variables.
+				 * The third check avoids copy propagating local vregs through a call, 
+				 * since the lvreg will be spilled 
+				 * The fourth check avoids copy propagating a vreg in cases where
+				 * it would be eliminated anyway by reverse copy propagation later,
+				 * because propagating it would create another use for it, thus making 
+				 * it impossible to use reverse copy propagation.
+				 */
+				/* Enabling this for floats trips up the fp stack */
+				/* 
+				 * Enabling this for floats on amd64 seems to cause a failure in 
+				 * basic-math.cs, most likely because it gets rid of some r8->r4 
+				 * conversions.
+				 */
+				if (MONO_IS_MOVE (def) &&
+					(!defs [def->sreg1] || (def_index [def->sreg1] < def_index [sreg])) &&
+					!vreg_is_volatile (cfg, def->sreg1) &&
+					/* This avoids propagating local vregs across calls */
+					((get_vreg_to_inst (cfg, def->sreg1) || !defs [def->sreg1] || (def_index [def->sreg1] >= last_call_index) || (def->opcode == OP_VMOVE))) &&
+					!(defs [def->sreg1] && defs [def->sreg1]->next == def) &&
+					(!MONO_ARCH_USE_FPSTACK || (def->opcode != OP_FMOVE)) &&
+					(def->opcode != OP_FMOVE)) {
+					int vreg = def->sreg1;
+
+					//printf ("CCOPY: R%d -> R%d\n", sreg, vreg);
+					if (srcindex == 0)
+						ins->sreg1 = vreg;
+					else
+						ins->sreg2 = vreg;
+
+					/* Allow further iterations */
+					srcindex = -1;
+					continue;
+				}
+
+				/* Constant propagation */
+				/* FIXME: Make is_inst_imm a macro */
+				/* FIXME: Make is_inst_imm take an opcode argument */
+				/* is_inst_imm is only needed for binops */
+				if ((((def->opcode == OP_ICONST) || ((sizeof (gpointer) == 8) && (def->opcode == OP_I8CONST))) &&
+					 (((srcindex == 0) && (ins->sreg2 == -1)) || mono_arch_is_inst_imm (def->inst_c0))) || 
+					(!MONO_ARCH_USE_FPSTACK && (def->opcode == OP_R8CONST))) {
+					guint32 opcode2;
+
+					/* srcindex == 1 -> binop, ins->sreg2 == -1 -> unop */
+					if ((srcindex == 1) && (ins->sreg1 != -1) && defs [ins->sreg1] && (defs [ins->sreg1]->opcode == OP_ICONST) && defs [ins->sreg2]) {
+						/* Both arguments are constants, perform cfold */
+						mono_constant_fold_ins2 (cfg, ins, defs [ins->sreg1], defs [ins->sreg2], TRUE);
+					} else if ((srcindex == 0) && (ins->sreg2 != -1) && defs [ins->sreg2]) {
+						/* Arg 1 is constant, swap arguments if possible */
+						int opcode = ins->opcode;
+						mono_constant_fold_ins2 (cfg, ins, defs [ins->sreg1], defs [ins->sreg2], TRUE);
+						if (ins->opcode != opcode) {
+							/* Allow further iterations */
+							srcindex = -1;
+							continue;
+						}
+					} else if ((srcindex == 0) && (ins->sreg2 == -1)) {
+						/* Constant unop, perform cfold */
+						mono_constant_fold_ins2 (cfg, ins, defs [ins->sreg1], NULL, TRUE);
+					}
+
+					opcode2 = mono_op_to_op_imm (ins->opcode);
+					if ((opcode2 != -1) && mono_arch_is_inst_imm (def->inst_c0) && ((srcindex == 1) || (ins->sreg2 == -1))) {
+						ins->opcode = opcode2;
+						if ((def->opcode == OP_I8CONST) && (sizeof (gpointer) == 4)) {
+							ins->inst_ls_word = def->inst_ls_word;
+							ins->inst_ms_word = def->inst_ms_word;
+						} else {
+							ins->inst_imm = def->inst_c0;
+						}
+						if (srcindex == 0)
+							ins->sreg1 = -1;
+						else
+							ins->sreg2 = -1;
+
+						if ((opcode2 == OP_VOIDCALL) || (opcode2 == OP_CALL) || (opcode2 == OP_LCALL) || (opcode2 == OP_FCALL))
+							((MonoCallInst*)ins)->fptr = (gpointer)ins->inst_imm;
+
+						/* Allow further iterations */
+						srcindex = -1;
+						continue;
+					}
+					else {
+						/* Special cases */
+#if defined(__i386__) || defined(__x86__64__)
+						if ((ins->opcode == OP_X86_LEA) && (srcindex == 1)) {
+#if SIZEOF_VOID_P == 8
+							/* FIXME: Use OP_PADD_IMM when the new JIT is done */
+							ins->opcode = OP_LADD_IMM;
+#else
+							ins->opcode = OP_ADD_IMM;
+#endif
+							ins->inst_imm += def->inst_c0 << ins->backend.shift_amount;
+							ins->sreg2 = -1;
+						}
+#endif
+						opcode2 = mono_load_membase_to_load_mem (ins->opcode);
+						if ((srcindex == 0) && (opcode2 != -1) && mono_arch_is_inst_imm (def->inst_c0)) {
+							ins->opcode = opcode2;
+							ins->inst_imm = def->inst_c0 + ins->inst_offset;
+							ins->sreg1 = -1;
+						}
+					}
+				}
+				else if (((def->opcode == OP_ADD_IMM) || (def->opcode == OP_LADD_IMM)) && (MONO_IS_LOAD_MEMBASE (ins) || MONO_ARCH_IS_OP_MEMBASE (ins->opcode))) {
+					/* ADD_IMM is created by spill_global_vars */
+					/* 
+					 * We have to guarantee that def->sreg1 haven't changed since def->dreg
+					 * was defined. cfg->frame_reg is assumed to remain constant.
+					 */
+					if ((def->sreg1 == cfg->frame_reg) || ((def->next == ins) && (def->dreg != def->sreg1))) {
+						ins->inst_basereg = def->sreg1;
+						ins->inst_offset += def->inst_imm;
+					}
+				} else if ((ins->opcode == OP_ISUB_IMM) && (def->opcode == OP_IADD_IMM) && (def->next == ins)) {
+					ins->sreg1 = def->sreg1;
+					ins->inst_imm -= def->inst_imm;
+				} else if ((ins->opcode == OP_IADD_IMM) && (def->opcode == OP_ISUB_IMM) && (def->next == ins)) {
+					ins->sreg1 = def->sreg1;
+					ins->inst_imm -= def->inst_imm;
+				} else if (ins->opcode == OP_STOREI1_MEMBASE_REG &&
+						   (def->opcode == OP_ICONV_TO_U1 || def->opcode == OP_ICONV_TO_I1 || def->opcode == OP_SEXT_I4 || (SIZEOF_VOID_P == 8 && def->opcode == OP_LCONV_TO_U1)) &&
+						   (!defs [def->sreg1] || (def_index [def->sreg1] < def_index [sreg]))) {
+					/* Avoid needless sign extension */
+					ins->sreg1 = def->sreg1;
+				} else if (ins->opcode == OP_STOREI2_MEMBASE_REG &&
+						   (def->opcode == OP_ICONV_TO_U2 || def->opcode == OP_ICONV_TO_I2 || def->opcode == OP_SEXT_I4 || (SIZEOF_VOID_P == 8 && def->opcode == OP_LCONV_TO_I2)) &&
+						   (!defs [def->sreg1] || (def_index [def->sreg1] < def_index [sreg]))) {
+					/* Avoid needless sign extension */
+					ins->sreg1 = def->sreg1;
+				}
+			}
+
+			/* Do strength reduction here */
+			/* FIXME: Add long/float */
+			switch (ins->opcode) {
+			case OP_MOVE:
+				if (ins->dreg == ins->sreg1) {
+					MONO_DELETE_INS (bb, ins);
+					spec = INS_INFO (ins->opcode);
+				}
+				break;
+			case OP_ADD_IMM:
+			case OP_IADD_IMM:
+			case OP_SUB_IMM:
+			case OP_ISUB_IMM:
+#if SIZEOF_VOID_P == 8
+			case OP_LADD_IMM:
+			case OP_LSUB_IMM:
+#endif
+				if (ins->inst_imm == 0) {
+					ins->opcode = OP_MOVE;
+					spec = INS_INFO (ins->opcode);
+				}
+				break;
+			case OP_MUL_IMM:
+			case OP_IMUL_IMM:
+#if SIZEOF_VOID_P == 8
+			case OP_LMUL_IMM:
+#endif
+				if (ins->inst_imm == 0) {
+					ins->opcode = (ins->opcode == OP_LMUL_IMM) ? OP_I8CONST : OP_ICONST;
+					ins->inst_c0 = 0;
+					ins->sreg1 = -1;
+				} else if (ins->inst_imm == 1) {
+					ins->opcode = OP_MOVE;
+				} else if ((ins->opcode == OP_IMUL_IMM) && (ins->inst_imm == -1)) {
+					ins->opcode = OP_INEG;
+				} else if ((ins->opcode == OP_LMUL_IMM) && (ins->inst_imm == -1)) {
+					ins->opcode = OP_LNEG;
+				} else {
+					int power2 = mono_is_power_of_two (ins->inst_imm);
+					if (power2 >= 0) {
+						ins->opcode = (ins->opcode == OP_MUL_IMM) ? OP_SHL_IMM : ((ins->opcode == OP_LMUL_IMM) ? OP_LSHL_IMM : OP_ISHL_IMM);
+						ins->inst_imm = power2;
+					}
+				}
+				spec = INS_INFO (ins->opcode);
+				break;
+			case OP_IREM_UN_IMM:
+			case OP_IDIV_UN_IMM: {
+				int c = ins->inst_imm;
+				int power2 = mono_is_power_of_two (c);
+
+				if (power2 >= 0) {
+					if (ins->opcode == OP_IREM_UN_IMM) {
+						ins->opcode = OP_IAND_IMM;
+						ins->sreg2 = -1;
+						ins->inst_imm = (1 << power2) - 1;
+					} else if (ins->opcode == OP_IDIV_UN_IMM) {
+						ins->opcode = OP_ISHR_UN_IMM;
+						ins->sreg2 = -1;
+						ins->inst_imm = power2;
+					}
+				}
+				spec = INS_INFO (ins->opcode);
+				break;
+			}
+			case OP_IDIV_IMM: {
+				int c = ins->inst_imm;
+				int power2 = mono_is_power_of_two (c);
+				MonoInst *tmp1, *tmp2, *tmp3, *tmp4;
+
+				/* FIXME: Move this elsewhere cause its hard to implement it here */
+				if (power2 == 1) {
+					int r1 = mono_alloc_ireg (cfg);
+
+					NEW_BIALU_IMM (cfg, tmp1, OP_ISHR_UN_IMM, r1, ins->sreg1, 31);
+					mono_bblock_insert_after_ins (bb, ins, tmp1);
+					NEW_BIALU (cfg, tmp2, OP_IADD, r1, r1, ins->sreg1);
+					mono_bblock_insert_after_ins (bb, tmp1, tmp2);
+					NEW_BIALU_IMM (cfg, tmp3, OP_ISHR_IMM, ins->dreg, r1, 1);
+					mono_bblock_insert_after_ins (bb, tmp2, tmp3);
+
+					NULLIFY_INS (ins);
+
+					// We allocated a new vreg, so need to restart
+					goto restart;
+				} else if (power2 > 0) {
+					int r1 = mono_alloc_ireg (cfg);
+
+					NEW_BIALU_IMM (cfg, tmp1, OP_ISHR_IMM, r1, ins->sreg1, 31);
+					mono_bblock_insert_after_ins (bb, ins, tmp1);
+					NEW_BIALU_IMM (cfg, tmp2, OP_ISHR_UN_IMM, r1, r1, (32 - power2));
+					mono_bblock_insert_after_ins (bb, tmp1, tmp2);
+					NEW_BIALU (cfg, tmp3, OP_IADD, r1, r1, ins->sreg1);
+					mono_bblock_insert_after_ins (bb, tmp2, tmp3);
+					NEW_BIALU_IMM (cfg, tmp4, OP_ISHR_IMM, ins->dreg, r1, power2);
+					mono_bblock_insert_after_ins (bb, tmp3, tmp4);
+
+					NULLIFY_INS (ins);
+
+					// We allocated a new vreg, so need to restart
+					goto restart;
+				}
+				break;
+			}
+			}
+			
+			if (spec [MONO_INST_DEST] != ' ') {
+				MonoInst *def = defs [ins->dreg];
+
+				if (def && (def->opcode == OP_ADD_IMM) && (def->sreg1 == cfg->frame_reg) && (MONO_IS_STORE_MEMBASE (ins))) {
+					/* ADD_IMM is created by spill_global_vars */
+					/* cfg->frame_reg is assumed to remain constant */
+					ins->inst_destbasereg = def->sreg1;
+					ins->inst_offset += def->inst_imm;
+				}
+			}
+			
+			if ((spec [MONO_INST_DEST] != ' ') && !MONO_IS_STORE_MEMBASE (ins) && !vreg_is_volatile (cfg, ins->dreg)) {
+				defs [ins->dreg] = ins;
+				def_index [ins->dreg] = ins_index;
+			}
+
+			if (MONO_IS_CALL (ins))
+				last_call_index = ins_index;
+
+			ins_index ++;
+		}
+	}
+}
+
+/**
+ * mono_local_deadce:
+ *
+ *   Get rid of the dead assignments to local vregs like the ones created by the 
+ * copyprop pass.
+ */
+void
+mono_local_deadce (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+	MonoInst *ins, *prev;
+	MonoBitSet *used, *defined;
+
+	//mono_print_code (cfg, "BEFORE LOCAL-DEADCE");
+
+	/*
+	 * Assignments to global vregs can't be eliminated so this pass must come
+	 * after the handle_global_vregs () pass.
+	 */
+
+	used = mono_bitset_mp_new_noinit (cfg->mempool, cfg->next_vreg + 1);
+	defined = mono_bitset_mp_new_noinit (cfg->mempool, cfg->next_vreg + 1);
+
+	/* First pass: collect liveness info */
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		/* Manually init the defs entries used by the bblock */
+		MONO_BB_FOR_EACH_INS (bb, ins) {
+			const char *spec = INS_INFO (ins->opcode);
+
+			if (spec [MONO_INST_DEST] != ' ') {
+				mono_bitset_clear_fast (used, ins->dreg);
+				mono_bitset_clear_fast (defined, ins->dreg);
+#if SIZEOF_VOID_P == 4
+				/* Regpairs */
+				mono_bitset_clear_fast (used, ins->dreg + 1);
+				mono_bitset_clear_fast (defined, ins->dreg + 1);
+#endif
+			}
+			if (spec [MONO_INST_SRC1] != ' ') {
+				mono_bitset_clear_fast (used, ins->sreg1);
+#if SIZEOF_VOID_P == 4
+				mono_bitset_clear_fast (used, ins->sreg1 + 1);
+#endif
+			}
+			if (spec [MONO_INST_SRC2] != ' ') {
+				mono_bitset_clear_fast (used, ins->sreg2);
+#if SIZEOF_VOID_P == 4
+				mono_bitset_clear_fast (used, ins->sreg2 + 1);
+#endif
+			}
+		}
+
+		/*
+		 * Make a reverse pass over the instruction list
+		 */
+		MONO_BB_FOR_EACH_INS_REVERSE_SAFE (bb, prev, ins) {
+			const char *spec = INS_INFO (ins->opcode);
+
+			if (ins->opcode == OP_NOP) {
+				MONO_DELETE_INS (bb, ins);
+				continue;
+			}
+
+			g_assert (ins->opcode > MONO_CEE_LAST);
+
+			if (((ins->opcode == OP_MOVE) || (ins->opcode == OP_VMOVE)) && ins->prev) {
+				MonoInst *def;
+				const char *spec2;
+
+				def = ins->prev;
+				while (def->prev && (def->opcode == OP_NOP))
+					def = def->prev;
+				spec2 = INS_INFO (def->opcode);
+
+				/* 
+				 * Perform a limited kind of reverse copy propagation, i.e.
+				 * transform B <- FOO; A <- B into A <- FOO
+				 * This isn't copyprop, not deadce, but it can only be performed
+				 * after handle_global_vregs () has run.
+				 */
+				if (!get_vreg_to_inst (cfg, ins->sreg1) && (spec2 [MONO_INST_DEST] != ' ') && (def->dreg == ins->sreg1) && !mono_bitset_test_fast (used, ins->sreg1) && !MONO_IS_STORE_MEMBASE (def) && ((spec [MONO_INST_DEST] == 'f' && ins->sreg1 > MONO_MAX_FREGS) || (spec [MONO_INST_DEST] == 'i' && ins->sreg1 > MONO_MAX_IREGS) || (spec [MONO_INST_DEST] == 'v'))) {
+					if (cfg->verbose_level > 2) {
+						printf ("\tReverse copyprop in BB%d on ", bb->block_num);
+						mono_print_ins (ins);
+					}
+
+					def->dreg = ins->dreg;
+					MONO_DELETE_INS (bb, ins);
+					spec = INS_INFO (ins->opcode);
+				}
+			}
+
+			/* Enabling this on x86 could screw up the fp stack */
+			if (((spec [MONO_INST_DEST] == 'i') && (ins->dreg >= MONO_MAX_IREGS)) ||
+				((spec [MONO_INST_DEST] == 'f') && (ins->dreg >= MONO_MAX_FREGS) && !MONO_ARCH_USE_FPSTACK) ||
+				(spec [MONO_INST_DEST] == 'v')) {
+				/* 
+				 * Assignments to global vregs can only be eliminated if there is another
+				 * assignment to the same vreg later in the same bblock.
+				 */
+				if (!mono_bitset_test_fast (used, ins->dreg) && 
+					(!get_vreg_to_inst (cfg, ins->dreg) || (!bb->extended && !vreg_is_volatile (cfg, ins->dreg) && mono_bitset_test_fast (defined, ins->dreg))) &&
+					MONO_INS_HAS_NO_SIDE_EFFECT (ins)) {
+					/* Happens with CMOV instructions */
+					if (ins->prev && ins->prev->opcode == OP_ICOMPARE_IMM) {
+						MonoInst *prev = ins->prev;
+						MONO_DELETE_INS (bb, prev);
+					}
+					//printf ("DEADCE: "); mono_print_ins (ins);
+					MONO_DELETE_INS (bb, ins);
+					spec = INS_INFO (ins->opcode);
+				}
+
+				if (spec [MONO_INST_DEST] != ' ')
+					mono_bitset_clear_fast (used, ins->dreg);
+			}
+
+			if (spec [MONO_INST_DEST] != ' ')
+				mono_bitset_set_fast (defined, ins->dreg);
+			if (spec [MONO_INST_SRC1] != ' ')
+				mono_bitset_set_fast (used, ins->sreg1);
+			if (spec [MONO_INST_SRC2] != ' ')
+				mono_bitset_set_fast (used, ins->sreg2);
+			if (MONO_IS_STORE_MEMBASE (ins))
+				mono_bitset_set_fast (used, ins->dreg);
+
+			if (MONO_IS_CALL (ins)) {
+				MonoCallInst *call = (MonoCallInst*)ins;
+				GSList *l;
+
+				if (call->out_ireg_args) {
+					for (l = call->out_ireg_args; l; l = l->next) {
+						guint32 regpair, reg;
+
+						regpair = (guint32)(gssize)(l->data);
+						reg = regpair & 0xffffff;
+					
+						mono_bitset_set_fast (used, reg);
+					}
+				}
+
+				if (call->out_freg_args) {
+					for (l = call->out_freg_args; l; l = l->next) {
+						guint32 regpair, reg;
+
+						regpair = (guint32)(gssize)(l->data);
+						reg = regpair & 0xffffff;
+					
+						mono_bitset_set_fast (used, reg);
+					}
+				}
+			}
+		}
+	}
+
+	//mono_print_code (cfg, "AFTER LOCAL-DEADCE");
 }

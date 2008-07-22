@@ -19,23 +19,23 @@
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
-#define MINI_OP(a,b) char MSGSTRFIELD(__LINE__) [sizeof (b)];
+#define MINI_OP(a,b,dest,src1,src2) char MSGSTRFIELD(__LINE__) [sizeof (b)];
 #include "mini-ops.h"
 #undef MINI_OP
 } opstr = {
-#define MINI_OP(a,b) b,
+#define MINI_OP(a,b,dest,src1,src2) b,
 #include "mini-ops.h"
 #undef MINI_OP
 };
 static const gint16 opidx [] = {
-#define MINI_OP(a,b) [a - OP_LOAD] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define MINI_OP(a,b,dest,src1,src2) [a - OP_LOAD] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "mini-ops.h"
 #undef MINI_OP
 };
 
 #else
 
-#define MINI_OP(a,b) b,
+#define MINI_OP(a,b,dest,src1,src2) b,
 /* keep in sync with the enum in mini.h */
 static const char* const
 opnames[] = {
@@ -160,6 +160,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	}
 	fprintf (ofd, "\n");
 	fclose (ofd);
+
 #ifdef __APPLE__
 #ifdef __ppc64__
 #define DIS_CMD "otool64 -v -t"

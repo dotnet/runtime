@@ -277,9 +277,9 @@ typedef struct {
         	MonoInst *target_label; \
 		target_label = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		target_label->opcode = OP_LABEL;	\
-		MONO_INST_LIST_ADD (&target_label->node, \
-				   &(targetbb)->ins_list); \
+	        target_label->next = (targetbb)->code; \
 		target_label->inst_c0 = (targetbb)->native_offset; \
+	        (targetbb)->code = target_label; \
 		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		inst->opcode = op;	\
                 (inst)->sreg1 = sr1; \
@@ -294,9 +294,9 @@ typedef struct {
         	MonoInst *target_label; \
 		target_label = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		target_label->opcode = OP_LABEL;	\
-		MONO_INST_LIST_ADD (&target_label->node, \
-				   &(targetbb)->ins_list); \
+	        target_label->next = (targetbb)->code; \
 		target_label->inst_c0 = (targetbb)->native_offset; \
+	        (targetbb)->code = target_label; \
 		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		inst->opcode = op;	\
                 (inst)->sreg1 = sr1; \

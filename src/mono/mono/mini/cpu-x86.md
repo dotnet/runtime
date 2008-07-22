@@ -126,7 +126,7 @@ outarg: src1:i len:1
 outarg_imm: len:5
 setret: dest:a src1:i len:2
 setlret: dest:l src1:i src2:i len:4
-checkthis: src1:b len:2
+checkthis: src1:b len:3
 voidcall: len:17 clob:c
 voidcall_reg: src1:i len:11 clob:c
 voidcall_membase: src1:b len:16 clob:c
@@ -308,3 +308,99 @@ atomic_exchange_i4: src1:b src2:i dest:a len:24
 atomic_cas_imm_i4: src1:b src2:i dest:a len:24
 memory_barrier: len:16
 
+# Linear IR opcodes
+nop: len:0
+dummy_use: len:0
+dummy_store: len:0
+not_reached: len:0
+not_null: src1:i len:0
+
+jump_table: dest:i len:5
+
+int_adc: dest:i src1:i src2:i len:2 clob:1
+int_addcc: dest:i src1:i src2:i len:2 clob:1
+int_subcc: dest:i src1:i src2:i len:2 clob:1
+int_sbb: dest:i src1:i src2:i len:2 clob:1
+
+int_add_imm: dest:i src1:i len:6 clob:1
+int_sub_imm: dest:i src1:i len:6 clob:1
+int_mul_imm: dest:i src1:i len:9
+int_div_imm: dest:a src1:a len:15 clob:d
+int_div_un_imm: dest:a src1:a len:15 clob:d
+int_rem_imm: dest:a src1:a len:15 clob:d
+int_rem_un_imm: dest:d src1:a len:15 clob:a
+int_and_imm: dest:i src1:i len:6 clob:1
+int_or_imm: dest:i src1:i len:6 clob:1
+int_xor_imm: dest:i src1:i len:6 clob:1
+int_shl_imm: dest:i src1:i len:6 clob:1
+int_shr_imm: dest:i src1:i len:6 clob:1
+int_shr_un_imm: dest:i src1:i len:6 clob:1
+
+int_conv_to_r_un: dest:f src1:i len:32
+
+int_ceq: dest:y len:6
+int_cgt: dest:y len:6
+int_cgt_un: dest:y len:6
+int_clt: dest:y len:6
+int_clt_un: dest:y len:6
+
+cond_exc_ieq: len:6
+cond_exc_ine_un: len:6
+cond_exc_ilt: len:6
+cond_exc_ilt_un: len:6
+cond_exc_igt: len:6
+cond_exc_igt_un: len:6
+cond_exc_ige: len:6
+cond_exc_ige_un: len:6
+cond_exc_ile: len:6
+cond_exc_ile_un: len:6
+cond_exc_iov: len:6
+cond_exc_ino: len:6
+cond_exc_ic: len:6
+cond_exc_inc: len:6
+
+icompare: src1:i src2:i len:2
+icompare_imm: src1:i len:6
+
+cmov_ieq: dest:i src1:i src2:i len:16 clob:1
+cmov_ige: dest:i src1:i src2:i len:16 clob:1
+cmov_igt: dest:i src1:i src2:i len:16 clob:1
+cmov_ile: dest:i src1:i src2:i len:16 clob:1
+cmov_ilt: dest:i src1:i src2:i len:16 clob:1
+cmov_ine_un: dest:i src1:i src2:i len:16 clob:1
+cmov_ige_un: dest:i src1:i src2:i len:16 clob:1
+cmov_igt_un: dest:i src1:i src2:i len:16 clob:1
+cmov_ile_un: dest:i src1:i src2:i len:16 clob:1
+cmov_ilt_un: dest:i src1:i src2:i len:16 clob:1
+
+long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
+long_conv_to_r8_2: dest:f src1:i src2:i len:37 
+long_conv_to_r4_2: dest:f src1:i src2:i len:64
+long_conv_to_r_un_2: dest:f src1:i src2:i len:37 
+
+fmove: dest:f src1:f
+float_conv_to_r4: dest:f src1:f
+
+load_mem: dest:i len:9
+loadi4_mem: dest:i len:9
+loadu1_mem: dest:i len:9
+loadu2_mem: dest:i len:9
+
+vcall2: len:17 clob:c
+vcall2_reg: src1:i len:11 clob:c
+vcall2_membase: src1:b len:16 clob:c
+
+localloc_imm: dest:i len:120
+
+x86_add_membase_reg: src1:b src2:i len:11
+x86_sub_membase_reg: src1:b src2:i len:11
+x86_and_membase_reg: src1:b src2:i len:11
+x86_or_membase_reg: src1:b src2:i len:11
+x86_xor_membase_reg: src1:b src2:i len:11
+x86_mul_membase_reg: src1:b src2:i len:13
+
+x86_and_reg_membase: dest:i src1:i src2:b clob:1 len:6
+x86_or_reg_membase: dest:i src1:i src2:b clob:1 len:6
+x86_xor_reg_membase: dest:i src1:i src2:b clob:1 len:6
+
+x86_fxch: len:2

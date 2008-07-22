@@ -260,27 +260,27 @@ lreg: OP_BIGMUL_UN (reg, reg) {
 	MONO_EMIT_NEW_BIALU (s, tree->opcode, state->reg1, state->left->reg1, state->right->reg1); 
 }
 
-lreg: OP_LONG_SHRUN_32 (lreg) {
+lreg: OP_LSHR_UN_32 (lreg) {
 	/* just move the upper half to the lower and zero the high word */
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->reg2);
      	MONO_EMIT_NEW_ICONST (s, state->reg2, 0);
 }
 
-reg: OP_LCONV_TO_I4 (OP_LONG_SHRUN_32 (lreg)),
-reg: OP_LCONV_TO_U4 (OP_LONG_SHRUN_32 (lreg)) {
+reg: OP_LCONV_TO_I4 (OP_LSHR_UN_32 (lreg)),
+reg: OP_LCONV_TO_U4 (OP_LSHR_UN_32 (lreg)) {
 	MONO_EMIT_NEW_UNALU (s, OP_MOVE, state->reg1, state->left->left->reg2);
 }
 
 
-lreg: OP_LONG_SHRUN_32 (CEE_LDIND_I8 (base)) {
+lreg: OP_LSHR_UN_32 (CEE_LDIND_I8 (base)) {
 	/* just move the upper half to the lower and zero the high word */
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, state->reg1, 
 	                               state->left->left->tree->inst_basereg, state->left->left->tree->inst_offset + MINI_MS_WORD_OFFSET);
      	MONO_EMIT_NEW_ICONST (s, state->reg2, 0);
 }
 
-reg: OP_LCONV_TO_I4 (OP_LONG_SHRUN_32 (CEE_LDIND_I8 (base))),
-reg: OP_LCONV_TO_U4 (OP_LONG_SHRUN_32 (CEE_LDIND_I8 (base))) {
+reg: OP_LCONV_TO_I4 (OP_LSHR_UN_32 (CEE_LDIND_I8 (base))),
+reg: OP_LCONV_TO_U4 (OP_LSHR_UN_32 (CEE_LDIND_I8 (base))) {
 	/* just move the upper half to the lower and zero the high word */
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADI4_MEMBASE, state->reg1, 
 	                               state->left->left->left->tree->inst_basereg,

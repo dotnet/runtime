@@ -262,9 +262,7 @@ static void indent (int diff) {
 	if (diff < 0)
 		indent_level += diff;
 	v = indent_level;
-	while (v-- > 0) {
-		printf (". ");
-	}
+	printf ("[%d] ", indent_level);
 	if (diff > 0)
 		indent_level += diff;
 }

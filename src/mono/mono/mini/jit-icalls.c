@@ -600,7 +600,7 @@ mono_fcgt (double a, double b)
 gboolean
 mono_fcgt_un (double a, double b)
 {
-	return a > b;
+	return isunordered (a, b) || a > b;
 }
 
 gboolean
@@ -612,7 +612,7 @@ mono_fclt (double a, double b)
 gboolean
 mono_fclt_un (double a, double b)
 {
-	return a < b;
+	return isunordered (a, b) || a < b;
 }
 
 double
@@ -954,4 +954,19 @@ MonoException *
 mono_create_corlib_exception_2 (guint32 token, MonoString *arg1, MonoString *arg2)
 {
 	return mono_exception_from_token_two_strings (mono_defaults.corlib, token, arg1, arg2);
+}
+
+MonoObject*
+mono_object_castclass (MonoObject *obj, MonoClass *klass)
+{
+	if (!obj)
+		return NULL;
+
+	if (mono_object_isinst (obj, klass))
+		return obj;
+
+	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
+					"System", "InvalidCastException"));
+
+	return NULL;
 }

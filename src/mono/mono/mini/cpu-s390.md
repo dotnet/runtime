@@ -223,10 +223,9 @@ int_mul_ovf_un: dest:i src1:i src2:i len:20
 
 int_neg: dest:i src1:i len:4
 int_not: dest:i src1:i len:8
-int_conv_to_i1: dest:i src1:i len:26
-int_conv_to_i2: dest:i src1:i len:26
+int_conv_to_i1: dest:i src1:i len:16
+int_conv_to_i2: dest:i src1:i len:16
 int_conv_to_i4: dest:i src1:i len:2
-int_conv_to_i: dest:i src1:i len:2
 int_conv_to_r4: dest:f src1:i len:4
 int_conv_to_r8: dest:f src1:i len:4
 int_conv_to_u1: dest:i src1:i len:8
@@ -251,11 +250,11 @@ adc_imm: dest:i src1:i len:18
 add_imm: dest:i src1:i len:18
 addcc_imm: dest:i src1:i len:18
 and_imm: dest:i src1:i len:16
-div_imm: dest:i src1:i src2:i len:24
-div_un_imm: dest:i src1:i src2:i len:24
+div_imm: dest:i src1:i len:24
+div_un_imm: dest:i src1:i len:24
 or_imm: dest:i src1:i len:16
-rem_imm: dest:i src1:i src2:i len:24
-rem_un_imm: dest:i src1:i src2:i len:24
+rem_imm: dest:i src1:i len:24
+rem_un_imm: dest:i src1:i len:24
 sbb_imm: dest:i src1:i len:18
 shl_imm: dest:i src1:i len:8
 shr_imm: dest:i src1:i len:8
@@ -263,3 +262,75 @@ shr_un_imm: dest:i src1:i len:8
 sub_imm: dest:i src1:i len:18
 subcc_imm: dest:i src1:i len:18
 xor_imm: dest:i src1:i len:16
+
+# Linear IR opcodes
+dummy_use: len:0
+dummy_store: len:0
+not_reached: len:0
+not_null: src1:i len:0
+
+jump_table: dest:i len:16
+
+icompare: src1:i src2:i len:4
+icompare_imm: src1:i len:14
+
+int_ceq: dest:i len:12
+int_cgt_un: dest:i len:12
+int_cgt: dest:i len:12
+int_clt_un: dest:i len:12
+int_clt: dest:i len:12
+
+cond_exc_ic: len:8
+cond_exc_ieq: len:8
+cond_exc_ige: len:8
+cond_exc_ige_un: len:8
+cond_exc_igt: len:8
+cond_exc_igt_un: len:8
+cond_exc_ile: len:8
+cond_exc_ile_un: len:8
+cond_exc_ilt: len:8
+cond_exc_ilt_un: len:8
+cond_exc_inc: len:8
+cond_exc_ine_un: len:8
+cond_exc_ino: len:8
+cond_exc_iov: len:8
+
+int_add_imm: dest:i src1:i len:18
+int_sub_imm: dest:i src1:i len:18
+int_mul_imm: dest:i src1:i len:20
+int_div_imm: dest:i src1:i len:24
+int_div_un_imm: dest:i src1:i len:24
+int_rem_imm: dest:i src1:i len:24
+int_rem_un_imm: dest:i src1:i len:24
+int_and_imm: dest:i src1:i len:16
+int_or_imm: dest:i src1:i len:16
+int_xor_imm: dest:i src1:i len:16
+int_adc_imm: dest:i src1:i len:18
+int_sbb_imm: dest:i src1:i len:18
+int_shl_imm: dest:i src1:i len:8
+int_shr_imm: dest:i src1:i len:8
+int_shr_un_imm: dest:i src1:i len:8
+
+int_adc: dest:i src1:i src2:i len:6
+int_sbb: dest:i src1:i src2:i len:8
+int_addcc: dest:i src1:i src2:i len:6
+int_subcc: dest:i src1:i src2:i len:6
+
+long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:44
+
+vcall2: len:8 clob:c
+vcall2_membase: src1:b len:12 clob:c
+vcall2_reg: src1:i len:8 clob:c
+
+s390_long_add: dest:l src1:i src2:i len:18
+s390_long_add_ovf: dest:l src1:i src2:i len:32
+s390_long_add_ovf_un: dest:l src1:i src2:i len:32
+s390_long_sub: dest:l src1:i src2:i len:18
+s390_long_sub_ovf: dest:l src1:i src2:i len:32
+s390_long_sub_ovf_un: dest:l src1:i src2:i len:32
+s390_long_neg: dest:l src1:i src2:i len:18
+
+s390_int_add_ovf: len:24 dest:i src1:i src2:i
+s390_int_add_ovf_un: len:10 dest:i src1:i src2:i 
+s390_int_sub_ovf: len:24 dest:i src1:i src2:i
+s390_int_sub_ovf_un: len:10 dest:i src1:i src2:i 

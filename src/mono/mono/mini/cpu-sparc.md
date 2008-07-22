@@ -288,3 +288,35 @@ sparc_cond_exc_ltz: src1:i len:64
 sparc_cond_exc_gtz: src1:i len:64
 sparc_cond_exc_gez: src1:i len:64
 sparc_cond_exc_lez: src1:i len:64
+
+# Linear IR opcodes
+nop: len:0
+dummy_use: len:0
+dummy_store: len:0
+not_reached: len:0
+not_null: src1:i len:0
+
+jump_table: dest:i len:64
+
+cond_exc_ieq: len:64
+cond_exc_ine_un: len:64
+cond_exc_ilt: len:64
+cond_exc_ilt_un: len:64
+cond_exc_igt: len:64
+cond_exc_igt_un: len:64
+cond_exc_ige: len:64
+cond_exc_ige_un: len:64
+cond_exc_ile: len:64
+cond_exc_ile_un: len:64
+cond_exc_iov: len:64
+cond_exc_ino: len:64
+cond_exc_ic: len:64
+cond_exc_inc: len:64
+
+long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:48
+
+vcall2: len:40 clob:c
+vcall2_reg: src1:i len:64 clob:c
+vcall2_membase: src1:b len:64 clob:c
+
+localloc_imm: dest:i len:64

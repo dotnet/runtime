@@ -41,11 +41,11 @@
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)
 
 #ifdef MONO_ARCH_SOFT_FLOAT
-#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l' || (desc == 'f') || (desc == 'g'))? ARM_LSW_REG: -1)
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l' || (desc == 'f') || (desc == 'g')) ? ARM_LSW_REG: (((desc) == 'a') ? ARMREG_R0 : -1))
 #define MONO_ARCH_INST_IS_REGPAIR(desc) ((desc) == 'l' || (desc) == 'L' || (desc) == 'f' || (desc) == 'g')
 #define MONO_ARCH_INST_IS_FLOAT(desc) (FALSE)
 #else
-#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l')? ARM_LSW_REG: -1)
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l')? ARM_LSW_REG: (((desc) == 'a') ? ARMREG_R0 : -1))
 #define MONO_ARCH_INST_IS_REGPAIR(desc) (desc == 'l' || desc == 'L')
 #define MONO_ARCH_INST_IS_FLOAT(desc) ((desc == 'f') || (desc == 'g'))
 #endif

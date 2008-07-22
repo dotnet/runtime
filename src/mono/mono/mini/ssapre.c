@@ -1905,11 +1905,11 @@ static void code_motion (MonoSsapreWorkArea *area) {
 			}
 			store = mono_compile_create_var_store (area->cfg, current_bb->phi_variable_index, phi);
 			if (current_bb->phi_insertion_point != NULL) {
-				MONO_INST_LIST_ADD (&store->node,
-					&current_bb->phi_insertion_point->node);
+				store->next = current_bb->phi_insertion_point->next;
+				current_bb->phi_insertion_point->next = store;
 			} else {
-				MONO_INST_LIST_ADD (&store->node,
-					&current_bb->bb->ins_list);
+				store->next = current_bb->bb->code;
+				current_bb->bb->code = store;
 			}
 			MONO_VARINFO (area->cfg, current_bb->phi_variable_index)->def = store;
 			current_bb->phi_insertion_point = store;
@@ -1925,11 +1925,11 @@ static void code_motion (MonoSsapreWorkArea *area) {
 	 			*moved_expression = *(current_expression->occurrence);
 	 			store = mono_compile_create_var_store (area->cfg, current_expression->variable_index, moved_expression);
 	 			if (current_expression->previous_tree != NULL) {
-		 			MONO_INST_LIST_ADD (&store->node,
-						&current_expression->previous_tree->node);
+		 			store->next = current_expression->previous_tree->next;
+		 			current_expression->previous_tree->next = store;
 	 			} else {
-					MONO_INST_LIST_ADD (&store->node,
-						&current_bb->bb->ins_list);
+		 			store->next = current_bb->bb->code;
+		 			current_bb->bb->code = store;
 	 			}
 				MONO_VARINFO (area->cfg, current_expression->variable_index)->def = store;
 	 			mono_compile_make_var_load (area->cfg, current_expression->occurrence, current_expression->variable_index);
@@ -1981,7 +1981,7 @@ static void code_motion (MonoSsapreWorkArea *area) {
 	 		inserted_expression = create_expression (area, &expression_description, &prototype_occurrence);
 	 		store = mono_compile_create_var_store (area->cfg, current_bb->phi_argument_variable_index, inserted_expression);
 			MONO_VARINFO (area->cfg, current_bb->phi_argument_variable_index)->def = store;
-			MONO_INST_LIST_INIT (&store->node);
+	 		store->next = NULL;
 	 		mono_add_ins_to_end (current_bb->bb, store);
 	 		
 	 		area->inserted_occurrences ++;
@@ -2103,9 +2103,7 @@ mono_perform_ssapre (MonoCompile *cfg) {
 		printf ("SSAPRE STARTS PROCESSING METHOD %s\n", mono_method_full_name (cfg->method, TRUE));
 	}
 	if (area.cfg->verbose_level >= DUMP_LEVEL) {
-		printf ("BEFORE SSAPRE START\n");
-		mono_print_code (area.cfg);
-		printf ("BEFORE SSAPRE END\n");
+		mono_print_code (area.cfg, "BEFORE SSAPRE");
 	}
 	
 	area.first_in_queue = NULL;
@@ -2145,9 +2143,7 @@ mono_perform_ssapre (MonoCompile *cfg) {
 	}
 	
 	if (area.cfg->verbose_level >= DUMP_LEVEL) {
-		printf ("AFTER SSAPRE START\n");
-		mono_print_code (area.cfg);
-		printf ("AFTER SSAPRE END\n");
+		mono_print_code (area.cfg, "AFTER SSAPRE");
 	}
 	if (area.cfg->verbose_level >= TRACE_LEVEL) {
 		printf ("SSAPRE ENDS PROCESSING METHOD %s\n", mono_method_full_name (cfg->method, TRUE));
