@@ -10,7 +10,7 @@
 #ifndef _MONO_UTILS_MONO_MEMBAR_H_
 #define _MONO_UTILS_MONO_MEMBAR_H_
 
-#include "glib.h"
+#include <glib.h>
 
 #ifdef __x86_64__
 #ifndef _MSC_VER
