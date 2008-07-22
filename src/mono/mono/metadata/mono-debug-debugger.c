@@ -279,7 +279,6 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 void
 mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info)
 {
-	MonoClass *klass;
 	int i;
 
 	if (!method_breakpoints)
