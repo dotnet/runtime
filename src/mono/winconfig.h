@@ -487,4 +487,4 @@
 #define USED_GC_NAME "Included Boehm (with typed GC)"
 
 /* Version number of package */
-#define VERSION "1.9"
+#define VERSION "2.0"

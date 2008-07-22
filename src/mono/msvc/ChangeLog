@@ -1,3 +1,8 @@
+2008-07-23  Robert Jordan  <robertj@gmx.net>
+
+	* libmono.vcproj: Reflect Linear IL changes.
+	* ../winconfig.h: Bump Mono version.
+
 2008-06-02  Bill Holmes  <billholmes54@gmail.com>
 	* mono.sln, libtest.vcproj:  Adding libtest to the VS solution.
 	  libtest is needed for the marshaling tests.
