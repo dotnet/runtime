@@ -4552,7 +4552,12 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	MonoDynamicImage *image;
 	int i;
 
-	const char *version = mono_get_runtime_info ()->runtime_version;
+	const char *version;
+
+	if (!strcmp (mono_get_runtime_info ()->framework_version, "2.1"))
+		version = "v2.0.50727"; /* HACK: SL 2 enforces the .net 2 metadata version */
+	else
+		version = mono_get_runtime_info ()->runtime_version;
 
 #if HAVE_BOEHM_GC
 	image = GC_MALLOC (sizeof (MonoDynamicImage));
