@@ -238,7 +238,7 @@ g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
  * to the variable size in bytes and its kind (signed or unsigned).
  * If the delta is not safe, make the value an "any".
  */
-static void
+static G_GNUC_UNUSED void
 check_delta_safety (MonoVariableRelationsEvaluationArea *area, MonoSummarizedValue *value) {
 	if (value->type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 		int variable = value->value.variable.variable;
