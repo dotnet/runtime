@@ -2110,6 +2110,14 @@ AC_ARG_WITH(oprofile,[ --with-oprofile=no,<path>   Enable oprofile support (defa
 	fi
 ])
 
+MALLOC_MEMPOOLS=no
+AC_ARG_WITH(malloc_mempools,[ --with-malloc-mempools=yes,no  Use malloc for each single mempool allocation (only for runtime debugging, defaults to NO)],[
+	if test x$with_malloc_mempools = xyes; then
+		MALLOC_MEMPOOLS=yes
+		AC_DEFINE(USE_MALLOC_FOR_MEMPOOLS,1,[Use malloc for each single mempool allocation])
+	fi
+])
+
 AM_CONDITIONAL(HAVE_OPROFILE, test x$OPROFILE = xyes)
 AC_SUBST(OPROFILE_CFLAGS)
 AC_SUBST(OPROFILE_LIBS)

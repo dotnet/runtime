@@ -1,3 +1,9 @@
+2008-07-22  Mark Probst  <mark.probst@gmail.com>
+
+	* configure.in: New configure option (--with-malloc-mempools) to
+	make mempools use malloc for every single allocation, which makes
+	it easier to use debugging/profiling tools like Valgrind.
+
 2008-07-21  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Invoke patch-quiet.sh using AC_CONFIG_COMMANDS so it
