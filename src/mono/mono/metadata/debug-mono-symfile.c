@@ -38,23 +38,6 @@ free_method_info (MonoDebugMethodInfo *minfo)
 	g_free (minfo);
 }
 
-static gchar *
-get_class_name (MonoClass *klass)
-{
-	MonoClass *nested_in = mono_class_get_nesting_type (klass);
-	const char *name_space;
-	if (nested_in) {
-		gchar *parent_name = get_class_name (nested_in);
-		gchar *name = g_strdup_printf ("%s.%s", parent_name, mono_class_get_name (klass));
-		g_free (parent_name);
-		return name;
-	}
-
-	name_space = mono_class_get_namespace (klass);
-	return g_strdup_printf ("%s%s%s", name_space,
-				name_space [0] ? "." : "", mono_class_get_name (klass));
-}
-
 static int
 load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, gboolean in_the_debugger)
 {
