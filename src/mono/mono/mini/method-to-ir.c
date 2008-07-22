@@ -7480,6 +7480,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					/* Have to compute the address of the variable */
 
 					var = cfg->vreg_to_inst [sp [0]->dreg];
+					if (!var && sp [0]->opcode == OP_VMOVE)
+						var = cfg->vreg_to_inst [sp [0]->sreg1];
 					g_assert (var);
 					
 					EMIT_NEW_VARLOADA (cfg, ins, var, &var->klass->byval_arg);
