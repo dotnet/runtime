@@ -1275,6 +1275,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					add_outarg_reg (cfg, call, arg, ainfo->storage, cfg->arch.reg_out0 + ainfo->reg, in);
 					break;
 				case ArgInFloatReg:
+				case ArgInFloatRegR4:
 					add_outarg_reg (cfg, call, arg, ainfo->storage, ainfo->reg, in);
 					break;
 				case ArgOnStack:
@@ -1521,7 +1522,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			MONO_ADD_INS (cfg->cbb, store);
 		}
 	} else {
-		mini_emit_memcpy2 (cfg, IA64_SP, 16 + ainfo->offset, src->dreg, 0, size, 0);
+		mini_emit_memcpy2 (cfg, IA64_SP, 16 + ainfo->offset, src->dreg, 0, size, 4);
 	}
 }
 
@@ -3052,7 +3053,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ia64_is_imm14 (ins->inst_offset))
 				ia64_adds_imm (code, IA64_R8, ins->inst_offset, ins->sreg1);
 			else {
-				printf ("A: %lx\n", ins->inst_offset);
 				ia64_movl (code, GP_SCRATCH_REG, ins->inst_offset);
 				ia64_add (code, IA64_R8, GP_SCRATCH_REG, ins->sreg1);
 			}
@@ -4207,6 +4207,31 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		arg_type = mono_type_get_underlying_type (arg_type);
 
 		stack_offset = ainfo->offset + ARGS_OFFSET;
+
+		/*
+		 * FIXME: Native code might pass non register sized integers 
+		 * without initializing the upper bits.
+		 */
+		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && !arg_type->byref && ainfo->storage == ArgInIReg) {
+			int reg = cfg->arch.reg_in0 + ainfo->reg;
+
+			switch (mono_type_to_load_membase (cfg, arg_type)) {
+			case OP_LOADI1_MEMBASE:
+				ia64_sxt1 (code, reg, reg);
+				break;
+			case OP_LOADU1_MEMBASE:
+				ia64_zxt1 (code, reg, reg);
+				break;
+			case OP_LOADI2_MEMBASE:
+				ia64_sxt2 (code, reg, reg);
+				break;
+			case OP_LOADU2_MEMBASE:
+				ia64_zxt2 (code, reg, reg);
+				break;
+			default:
+				break;
+			}
+		}
 
 		/* Save volatile arguments to the stack */
 		if (inst->opcode != OP_REGVAR) {

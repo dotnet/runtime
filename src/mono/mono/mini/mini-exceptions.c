@@ -736,7 +736,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 	if (gi->this_in_reg)
 		info = mono_arch_context_get_int_reg (ctx, gi->this_reg);
 	else
-		info = *(gpointer*)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
+		info = *(gpointer*)(gpointer)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
 				gi->this_offset);
 
 	g_assert (ji->method->is_inflated);
@@ -945,7 +945,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 					MonoJitExceptionInfo *ei = &ji->clauses [i];
 					gboolean filtered = FALSE;
 
-#if defined(__s390__) || defined(__ia64__)
+#if defined(__s390__)
 					/* 
 					 * This is required in cases where a try block starts immediately after
 					 * a call which causes an exception. Testcase: tests/exception8.cs.
@@ -1210,7 +1210,7 @@ print_stack_frame (MonoMethod *method, gint32 native_offset, gint32 il_offset, g
 	return FALSE;
 }
 
-static gboolean
+static G_GNUC_UNUSED gboolean
 print_stack_frame_to_string (MonoMethod *method, gint32 native_offset, gint32 il_offset, gboolean managed,
 			     gpointer data)
 {
