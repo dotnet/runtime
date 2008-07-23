@@ -5605,25 +5605,35 @@ mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visi
 			| (skip_visibility ? MONO_VERIFY_SKIP_VISIBILITY : 0));
 }
 
+static int
+get_field_end (MonoClassField *field)
+{
+	int align;
+	int size = mono_type_size (field->type, &align);
+	if (size == 0)
+		size = 4; /*FIXME Is this a safe bet?*/
+	return size + field->offset;
+}
+
 static gboolean
 verify_class_for_overlapping_reference_fields (MonoClass *class)
 {
-	int i, j, align;
+	int i, j;
 	gboolean is_fulltrust = mono_verifier_is_class_full_trust (class);
-	if (!(class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT || !class->has_references)
+	if (!((class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) || !class->has_references)
 		return TRUE;
 		
 		//we must check for stuff overlapping reference fields
 	for (i = 0; i < class->field.count; ++i) {
 		MonoClassField *field = &class->fields [i];
-		int fieldEnd = field->offset + mono_type_size (field->type, &align);
+		int fieldEnd = get_field_end (field);
 		gboolean is_valuetype = !MONO_TYPE_IS_REFERENCE (field->type);
 		if (mono_field_is_deleted (field) || (field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 
 		for (j = i + 1; j < class->field.count; ++j) {
 			MonoClassField *other = &class->fields [j];
-			int otherEnd = other->offset + mono_type_size (other->type, &align);
+			int otherEnd = get_field_end (other);
 			if (mono_field_is_deleted (other) || (is_valuetype && !MONO_TYPE_IS_REFERENCE (other->type)) || (other->type->attrs & FIELD_ATTRIBUTE_STATIC))
 				continue;
 
