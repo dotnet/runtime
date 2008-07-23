@@ -8576,7 +8576,13 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				token = read32 (ip + 2);    
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 
-				EMIT_NEW_RETLOADA (cfg, ins);
+				if (!cfg->vret_addr) {
+					g_assert (cfg->ret_var_is_local);
+
+					EMIT_NEW_VARLOADA (cfg, ins, cfg->ret, cfg->ret->inst_vtype);
+				} else {
+					EMIT_NEW_RETLOADA (cfg, ins);
+				}
 				mini_emit_stobj (cfg, ins, sp [0], klass, TRUE);
 				
 				if (sp != stack_start)
