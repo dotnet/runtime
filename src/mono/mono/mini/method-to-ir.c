@@ -333,7 +333,7 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		} \
 	} while (0)
 #else
-#define ADD_WIDEN_OP(arg1, arg2)
+#define ADD_WIDEN_OP(ins, arg1, arg2)
 #endif
 
 #define ADD_BINOP(op) do {	\
