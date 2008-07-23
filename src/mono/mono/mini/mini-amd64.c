@@ -3776,7 +3776,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->sreg1 = AMD64_R11;
 				}
 				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
+			} else if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (cfg->method->klass->image != mono_defaults.corlib)) {
+				/* 
+				 * Since the unmanaged calling convention doesn't contain a 
+				 * 'vararg' entry, we have to treat every pinvoke call as a
+				 * potential vararg call.
+				 */
+				guint32 nregs, i;
+				nregs = 0;
+				for (i = 0; i < AMD64_XMM_NREG; ++i)
+					if (call->used_fregs & (1 << i))
+						nregs ++;
+				if (ins->sreg1 == AMD64_RAX) {
+					amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
+					ins->sreg1 = AMD64_R11;
+				}
+				if (!nregs)
+					amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
+				else
+					amd64_mov_reg_imm (code, AMD64_RAX, nregs);
 			}
+
 			amd64_call_reg (code, ins->sreg1);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
