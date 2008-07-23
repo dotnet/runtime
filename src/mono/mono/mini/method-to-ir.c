@@ -321,7 +321,21 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		MONO_ADD_INS ((cfg)->cbb, (dest)); \
 	} while (0)
 #endif
-			
+
+#if SIZEOF_VOID_P == 8
+#define ADD_WIDEN_OP(ins, arg1, arg2) do { \
+		/* FIXME: Need to add many more cases */ \
+		if ((arg1)->type == STACK_PTR && (arg2)->type == STACK_I4) { \
+			MonoInst *widen; \
+			int dr = alloc_preg (cfg); \
+			EMIT_NEW_UNALU (cfg, widen, OP_SEXT_I4, dr, (arg2)->dreg); \
+			(ins)->sreg2 = widen->dreg; \
+		} \
+	} while (0)
+#else
+#define ADD_WIDEN_OP(arg1, arg2)
+#endif
+
 #define ADD_BINOP(op) do {	\
 		MONO_INST_NEW (cfg, ins, (op));	\
 		sp -= 2;	\
@@ -329,6 +343,8 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		ins->sreg2 = sp [1]->dreg;	\
 		type_from_op (ins, sp [0], sp [1]);	\
 		CHECK_TYPE (ins);	\
+		/* Have to insert a widening op */		 \
+        ADD_WIDEN_OP (ins, sp [0], sp [1]); \
         ins->dreg = alloc_dreg ((cfg), (ins)->type); \
         MONO_ADD_INS ((cfg)->cbb, (ins)); \
 		*sp++ = ins;	\
@@ -6602,6 +6618,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			ins->sreg2 = sp [1]->dreg;
 			type_from_op (ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
+			ADD_WIDEN_OP (ins, sp [0], sp [1]);
 			ins->dreg = alloc_dreg ((cfg), (ins)->type);
 
 			/* FIXME: Pass opcode to is_inst_imm */
