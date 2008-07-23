@@ -1094,6 +1094,25 @@ COND:   ldloc.0
 		ret
 	}
 
+	.method public static int32 test_0_newobj_vtype_primitive () {
+		.maxstack 6
+		.locals init (
+			native int V_0
+		)
+
+		ldc.i4.s 10
+		newobj instance void native int::'.ctor'(int32)
+		stloc.0
+		ldloc.0
+		ldc.i4.s 10
+		beq OK
+		ldc.i4.s 1
+		ret
+	OK:
+		ldc.i4.s 0
+		ret
+	}
+
 	.method public static int32 test_1_filters () {
 		.maxstack 16
 		.locals init (

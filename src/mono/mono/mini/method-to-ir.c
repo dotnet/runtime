@@ -7084,8 +7084,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			if (alloc == NULL) {
 				/* Valuetype */
 				EMIT_NEW_TEMPLOAD (cfg, ins, iargs [0]->inst_c0);
-				ins->type = STACK_VTYPE;
-				ins->klass = ins->klass;
+				type_to_eval_stack_type (cfg, &ins->klass->byval_arg, ins);
 				*sp++= ins;
 			}
 			else
