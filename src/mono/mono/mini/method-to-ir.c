@@ -9394,9 +9394,12 @@ mono_load_membase_to_load_mem (int opcode)
 }
 
 static inline int
-op_to_op_dest_membase (int opcode)
+op_to_op_dest_membase (int store_opcode, int opcode)
 {
 #if defined(__i386__)
+	if (!((store_opcode == OP_STORE_MEMBASE_REG) || (store_opcode == OP_STOREU4_MEMBASE)))
+		return -1;
+
 	switch (opcode) {
 	case OP_IADD:
 		return OP_X86_ADD_MEMBASE_REG;
@@ -9429,6 +9432,9 @@ op_to_op_dest_membase (int opcode)
 #endif
 
 #if defined(__x86_64__)
+	if (!((store_opcode == OP_STORE_MEMBASE_REG) || (store_opcode == OP_STOREI4_MEMBASE_REG) || (store_opcode == OP_STOREI8_MEMBASE_REG)))
+		return -1;
+
 	switch (opcode) {
 	case OP_IADD:
 		return OP_X86_ADD_MEMBASE_REG;
@@ -10044,9 +10050,11 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				MonoInst *store_ins;
 				int store_opcode;
 
+				store_opcode = mono_type_to_store_membase (cfg, var->inst_vtype);
+
 				if (var->opcode == OP_REGVAR) {
 					ins->dreg = var->dreg;
-				} else if ((ins->dreg == ins->sreg1) && (spec [MONO_INST_DEST] == 'i') && (spec [MONO_INST_SRC1] == 'i') && !vreg_to_lvreg [ins->dreg] && (op_to_op_dest_membase (ins->opcode) != -1)) {
+				} else if ((ins->dreg == ins->sreg1) && (spec [MONO_INST_DEST] == 'i') && (spec [MONO_INST_SRC1] == 'i') && !vreg_to_lvreg [ins->dreg] && (op_to_op_dest_membase (store_opcode, ins->opcode) != -1)) {
 					/* 
 					 * Instead of emitting a load+store, use a _membase opcode.
 					 */
@@ -10054,7 +10062,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					if (ins->opcode == OP_MOVE) {
 						NULLIFY_INS (ins);
 					} else {
-						ins->opcode = op_to_op_dest_membase (ins->opcode);
+						ins->opcode = op_to_op_dest_membase (store_opcode, ins->opcode);
 						ins->inst_basereg = var->inst_basereg;
 						ins->inst_offset = var->inst_offset;
 						ins->dreg = -1;
@@ -10062,7 +10070,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					spec = INS_INFO (ins->opcode);
 				} else {
 					guint32 lvreg;
-					store_opcode = mono_type_to_store_membase (cfg, var->inst_vtype);
 
 					g_assert (var->opcode == OP_REGOFFSET);
 
