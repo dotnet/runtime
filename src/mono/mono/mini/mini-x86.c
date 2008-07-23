@@ -1262,7 +1262,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 					size = mono_type_native_stack_size (&in->klass->byval_arg, &ialign);
 					align = ialign;
 				} else {
-					size = mono_type_stack_size (&in->klass->byval_arg, &align);
+					size = mini_type_stack_size (cfg->generic_sharing_context, &in->klass->byval_arg, &align);
 				}
 
 			if (size > 0) {
