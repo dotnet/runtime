@@ -2069,9 +2069,11 @@ ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state)
 	LeaveCriticalSection (thread->synch_cs);
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Abort requested for %p (%"G_GSIZE_FORMAT")", __func__, GetCurrentThreadId (), thread, (gsize)thread->tid));
-	
-	/* Make sure the thread is awake */
-	mono_thread_resume (thread);
+
+	/* During shutdown, we can't wait for other threads */
+	if (!shutting_down)
+		/* Make sure the thread is awake */
+		mono_thread_resume (thread);
 	
 	signal_thread_state_change (thread);
 }
