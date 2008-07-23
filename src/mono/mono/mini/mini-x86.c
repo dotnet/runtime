@@ -132,6 +132,7 @@ typedef struct {
 	guint32 reg_usage;
 	guint32 freg_usage;
 	gboolean need_stack_align;
+	guint32 stack_align_amount;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];

@@ -721,6 +721,7 @@ MINI_OP(OP_X86_SETEQ_MEMBASE,      "x86_seteq_membase", NONE, IREG, NONE)
 MINI_OP(OP_X86_SETNE_MEMBASE,      "x86_setne_membase", NONE, IREG, NONE)
 MINI_OP(OP_X86_SHRD,               "x86_shrd", IREG, IREG, IREG)
 MINI_OP(OP_X86_FXCH,               "x86_fxch", NONE, NONE, NONE)
+MINI_OP(OP_X86_OUTARG_ALIGN_STACK, "x86_outarg_align_stack", NONE, NONE, NONE)
 #endif
 
 #if defined(__x86_64__)
