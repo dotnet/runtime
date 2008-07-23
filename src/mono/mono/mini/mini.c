@@ -10880,7 +10880,12 @@ mono_bblock_insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *ins_t
 	if (ins == NULL) {
 		ins = bb->code;
 		bb->code = ins_to_insert;
+
+		/* Link with next */
 		ins_to_insert->next = ins;
+		if (ins)
+			ins->prev = ins_to_insert;
+
 		if (bb->last_ins == NULL)
 			bb->last_ins = ins_to_insert;
 	} else {
