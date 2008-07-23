@@ -9397,7 +9397,7 @@ static inline int
 op_to_op_dest_membase (int store_opcode, int opcode)
 {
 #if defined(__i386__)
-	if (!((store_opcode == OP_STORE_MEMBASE_REG) || (store_opcode == OP_STOREU4_MEMBASE)))
+	if (!((store_opcode == OP_STORE_MEMBASE_REG) || (store_opcode == OP_STOREI4_MEMBASE)))
 		return -1;
 
 	switch (opcode) {
