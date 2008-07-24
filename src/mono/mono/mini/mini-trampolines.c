@@ -494,8 +494,15 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 	 * further calls don't have to go through the trampoline.
 	 */
 	if (method && !callvirt) {
-		delegate->method_ptr = mono_compile_method (method);
-		mono_debugger_trampoline_compiled (method, delegate->method_ptr);
+		/* Avoid the overhead of looking up an already compiled method if possible */
+		if (delegate->method_code && *delegate->method_code) {
+			delegate->method_ptr = *delegate->method_code;
+		} else {
+			delegate->method_ptr = mono_compile_method (method);
+			if (delegate->method_code)
+				*delegate->method_code = delegate->method_ptr;
+			mono_debugger_trampoline_compiled (method, delegate->method_ptr);
+		}
 	}
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;

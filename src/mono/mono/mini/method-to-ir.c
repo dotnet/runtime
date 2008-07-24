@@ -3171,6 +3171,8 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 {
 	gpointer *trampoline;
 	MonoInst *obj, *method_ins, *tramp_ins;
+	MonoDomain *domain;
+	guint8 **code_slot;
 
 	obj = handle_alloc (cfg, klass, FALSE);
 
@@ -3184,6 +3186,29 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	/* Set method field */
 	EMIT_NEW_METHODCONST (cfg, method_ins, method);
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
+
+	/* 
+	 * To avoid looking up the compiled code belonging to the target method
+	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
+	 * store it, and we fill it after the method has been compiled.
+	 */
+	if (!cfg->compile_aot) {
+		MonoInst *code_slot_ins;
+
+		domain = mono_domain_get ();
+		mono_domain_lock (domain);
+		if (!domain->method_code_hash)
+			domain->method_code_hash = g_hash_table_new (NULL, NULL);
+		code_slot = g_hash_table_lookup (domain->method_code_hash, method);
+		if (!code_slot) {
+			code_slot = mono_mempool_alloc0 (domain->mp, sizeof (gpointer));
+			g_hash_table_insert (domain->method_code_hash, method, code_slot);
+		}
+		mono_domain_unlock (domain);
+
+		EMIT_NEW_PCONST (cfg, code_slot_ins, code_slot);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);		
+	}
 
 	/* Set invoke_impl field */
 	trampoline = mono_create_delegate_trampoline (klass);
