@@ -123,6 +123,7 @@ void mono_profiler_install_exception   (MonoProfileExceptionFunc throw_callback,
 void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
 void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
 void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
+void mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback);
 
 void mono_profiler_load             (const char *desc);
 

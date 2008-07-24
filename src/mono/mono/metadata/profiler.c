@@ -78,6 +78,8 @@ static MonoProfileFunc shutdown_callback;
 static MonoProfileGCFunc        gc_event;
 static MonoProfileGCResizeFunc  gc_heap_resize;
 
+static MonoProfileFunc          runtime_initialized_event;
+
 #define mono_profiler_coverage_lock() EnterCriticalSection (&profiler_coverage_mutex)
 #define mono_profiler_coverage_unlock() LeaveCriticalSection (&profiler_coverage_mutex)
 static CRITICAL_SECTION profiler_coverage_mutex;
@@ -531,6 +533,19 @@ mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc he
 	gc_event = callback;
 	gc_heap_resize = heap_resize_callback;
 }
+
+void
+mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback)
+{
+	runtime_initialized_event = runtime_initialized_callback;
+}
+
+void
+mono_profiler_runtime_initialized (void) {
+	if (runtime_initialized_event)
+		runtime_initialized_event (current_profiler);
+}
+
 
 static GHashTable *coverage_hash = NULL;
 
