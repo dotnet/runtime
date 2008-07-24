@@ -362,11 +362,12 @@ dump_verify_info (MonoImage *image, int flags)
 			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i+1), NULL);
 			errors = mono_method_verify (method, flags);
 			if (errors) {
-				char *sig;
+				char *sig, *name;
 				MonoClass *klass = mono_method_get_class (method);
 				sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
-				//FIXME report the class name taking nesting into account
-				g_print ("In method: %s.%s::%s(%s)\n", mono_class_get_namespace (klass), mono_class_get_name (klass), mono_method_get_name (method), sig);
+				name = mono_type_full_name (&klass->byval_arg);
+				g_print ("In method: %s::%s(%s)\n", name, mono_method_get_name (method), sig);
+				g_free (name);
 				g_free (sig);
 			}
 
