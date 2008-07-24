@@ -250,6 +250,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 			int i;
 			MonoGenericContext ctx;
 			MonoGenericInst inst;
+			MonoType *type;
 
 			gclass = decode_klass_ref (module, buf, &buf);
 			g_assert (gclass->generic_container);
@@ -267,7 +268,9 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				}
 				inst.type_argv [i] = &pclass->byval_arg;
 			}
-			klass = mono_class_from_mono_type (mono_class_inflate_generic_type (&gclass->byval_arg, &ctx));
+			type = mono_class_inflate_generic_type (&gclass->byval_arg, &ctx);
+			klass = mono_class_from_mono_type (type);
+			mono_metadata_free_type (type);
 		} else {
 			image = load_image (module, decode_value (buf, &buf));
 			if (!image)

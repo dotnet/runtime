@@ -779,7 +779,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 	   be encountered. */
 	inflated_type = mono_class_inflate_generic_type (&catch_class->byval_arg, &context);
 	catch_class = mono_class_from_mono_type (inflated_type);
-	g_free (inflated_type);
+	mono_metadata_free_type (inflated_type);
 
 	return catch_class;
 }
