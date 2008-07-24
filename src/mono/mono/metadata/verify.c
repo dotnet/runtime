@@ -2880,6 +2880,11 @@ do_boolean_branch_op (VerifyContext *ctx, int delta)
 	check_unmanaged_pointer (ctx, top);
 }
 
+static gboolean
+stack_slot_is_complex_type_not_reference_type (ILStackDesc *slot)
+{
+	return stack_slot_get_type (slot) == TYPE_COMPLEX && !MONO_TYPE_IS_REFERENCE (slot->type);
+}
 
 static void
 do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [TYPE_MAX][TYPE_MAX])
@@ -2897,7 +2902,7 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 	}
 
 	switch (is_valid_cmp_branch_instruction (ctx->header, ctx->ip_offset, target)) {
-	case 1:
+	case 1: /*FIXME use constants and not magic numbers.*/
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Branch target escapes out of exception block at 0x%04x", ctx->ip_offset));
 		break;
 	case 2:
@@ -2921,9 +2926,13 @@ do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [T
 	if (stack_slot_is_managed_pointer (b))
 		idxb = TYPE_PTR;
 
-	--idxa;
-	--idxb;
-	res = table [idxa][idxb];
+	if (stack_slot_is_complex_type_not_reference_type (a) || stack_slot_is_complex_type_not_reference_type (b)) {
+		res = TYPE_INV;
+	} else {
+		--idxa;
+		--idxb;
+		res = table [idxa][idxb];
+	}
 
 	VERIFIER_DEBUG ( printf ("branch res %d\n", res); );
 	VERIFIER_DEBUG ( printf ("idxa %d idxb %d\n", idxa, idxb); );
@@ -2964,9 +2973,13 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX], g
 	if (stack_slot_is_managed_pointer (b)) 
 		idxb = TYPE_PTR;
 
-	--idxa;
-	--idxb;
-	res = table [idxa][idxb];
+	if (stack_slot_is_complex_type_not_reference_type (a) || stack_slot_is_complex_type_not_reference_type (b)) {
+		res = TYPE_INV;
+	} else {
+		--idxa;
+		--idxb;
+		res = table [idxa][idxb];
+	}
 
 	if(res == TYPE_INV) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset));
