@@ -936,7 +936,7 @@ static ClassIdMappingElement*
 class_id_mapping_element_new (MonoClass *klass) {
 	ClassIdMappingElement *result = g_new (ClassIdMappingElement, 1);
 	
-	result->name = g_strdup_printf ("%s.%s", mono_class_get_namespace (klass), mono_class_get_name (klass));
+	result->name = mono_type_full_name (mono_class_get_type (klass));
 	result->klass = klass;
 	result->next_unwritten = profiler->classes->unwritten;
 	profiler->classes->unwritten = result;
