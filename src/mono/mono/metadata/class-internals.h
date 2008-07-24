@@ -797,6 +797,9 @@ mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache) MONO_IN
 MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
 
+MonoType*
+mono_class_inflate_generic_type_with_mempool (MonoMemPool *mempool, MonoType *type, MonoGenericContext *context) MONO_INTERNAL;
+
 void
 mono_metadata_free_inflated_signature (MonoMethodSignature *sig);
 

@@ -595,9 +595,16 @@ mono_class_get_context (MonoClass *class)
 }
 
 /*
- * This method allows specifying a mempool to do type duping, if needed. 
+ * mono_class_inflate_generic_type_with_mempool:
+ * @mempool: a mempool
+ * @type: a type
+ * @context: a generics context
+ *
+ * The same as mono_class_inflate_generic_type, but allocates the MonoType
+ * from mempool if it is non-NULL.  If it is NULL, the MonoType is
+ * allocated on the heap and is owned by the caller.
  */
-static MonoType*
+MonoType*
 mono_class_inflate_generic_type_with_mempool (MonoMemPool *mempool, MonoType *type, MonoGenericContext *context)
 {
 	MonoType *inflated = NULL; 
