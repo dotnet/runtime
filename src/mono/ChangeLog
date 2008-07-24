@@ -1,3 +1,8 @@
+2008-07-24  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Patch libtool to avoid the 
+	'copying selected object files ...' messages.
+
 2008-07-24  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* configure.in: Change USED_GC_NAME to show if parallel mark is used.

@@ -2256,6 +2256,7 @@ AC_CONFIG_COMMANDS([runtime/etc/mono/2.0/Browsers/Compat.browser],
 
 if test x$enable_quiet_build = xyes; then
    AC_CONFIG_COMMANDS([quiet], [find mono libgc support -name Makefile -exec $shell $srcdir/scripts/patch-quiet.sh {} \;], [shell=$SHELL])
+   AC_CONFIG_COMMANDS([quiet-libtool], [sed -e 's/$echo "copying selected/$show "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool])
 fi
 
 AC_OUTPUT([
