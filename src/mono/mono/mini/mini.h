@@ -66,7 +66,7 @@
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "35"
+#define MONO_AOT_FILE_VERSION "36"
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
@@ -1285,6 +1285,8 @@ gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vta
 gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
 gpointer mono_aot_get_named_code            (const char *name) MONO_INTERNAL;
 gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method) MONO_INTERNAL;
+/* This is an exported function */
+void     mono_aot_register_globals          (gpointer *globals);
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;

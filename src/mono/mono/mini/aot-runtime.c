@@ -107,6 +107,7 @@ typedef struct MonoAotModule {
 	guint8 *wrapper_info;
 	guint8 *trampolines;
 	guint32 num_trampolines, first_trampoline_got_offset, trampoline_index;
+	gpointer *globals;
 } MonoAotModule;
 
 static GHashTable *aot_modules;
@@ -146,6 +147,9 @@ static guint32 name_table_accesses = 0;
 static gsize aot_code_low_addr = (gssize)-1;
 static gsize aot_code_high_addr = 0;
 
+/* Used to communicate with mono_aot_register_globals () */
+static guint32 globals_tls_id = -1;
+
 static gpointer
 mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod *method, guint8 *code, guint8 *info, int method_index);
 
@@ -182,6 +186,7 @@ load_image (MonoAotModule *module, int index)
 
 	assembly = mono_assembly_load (&module->image_names [index], NULL, &status);
 	if (!assembly) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable because dependency %s is not found.\n", module->aot_name, module->image_names [index].name);
 		module->out_of_date = TRUE;
 		return NULL;
 	}
@@ -486,15 +491,35 @@ load_aot_module_from_cache (MonoAssembly *assembly, char **aot_name)
 }
 
 static void
+find_symbol (MonoDl *module, gpointer *globals, const char *name, gpointer *value)
+{
+	if (globals) {
+		int i = 0;
+
+		*value = NULL;
+		for (i = 0; globals [i]; i+= 2) {
+			if (strcmp (globals [i], name) == 0) {
+				*value = globals [i + 1];
+				break;
+			}
+		}
+	} else {
+		mono_dl_symbol (module, name, value);
+	}
+}
+
+static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
 	char *aot_name;
 	MonoAotModule *amodule;
+	MonoDl *sofile;
 	gboolean usable = TRUE;
 	char *saved_guid = NULL;
 	char *aot_version = NULL;
 	char *runtime_version;
 	char *opt_flags = NULL;
+	gpointer *globals;
 	gboolean full_aot = FALSE;
 	gpointer *plt_jump_table_addr = NULL;
 	guint32 *plt_jump_table_size = NULL;
@@ -516,6 +541,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	if (assembly->image->dynamic)
 		return;
+
+	TlsSetValue (globals_tls_id, NULL);
 
 	if (use_aot_cache)
 		assembly->aot_module = load_aot_module_from_cache (assembly, &aot_name);
@@ -540,10 +567,21 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
-	mono_dl_symbol (assembly->aot_module, "mono_assembly_guid", (gpointer *) &saved_guid);
-	mono_dl_symbol (assembly->aot_module, "mono_aot_version", (gpointer *) &aot_version);
-	mono_dl_symbol (assembly->aot_module, "mono_aot_opt_flags", (gpointer *)&opt_flags);
-	mono_dl_symbol (assembly->aot_module, "mono_runtime_version", (gpointer *)&runtime_version);
+	/* 
+	 * If the image was compiled in no-dlsym mode, it contains no global symbols,
+	 * instead it contains an ELF ctor functions which is called by dlopen () which 
+	 * in turn calls mono_aot_register_globals () to register a table which contains
+	 * the name and address of the globals.
+	 */
+	globals = TlsGetValue (globals_tls_id);
+	TlsSetValue (globals_tls_id, NULL);
+
+	sofile = assembly->aot_module;
+
+	find_symbol (sofile, globals, "mono_assembly_guid", (gpointer *) &saved_guid);
+	find_symbol (sofile, globals, "mono_aot_version", (gpointer *) &aot_version);
+	find_symbol (sofile, globals, "mono_aot_opt_flags", (gpointer *)&opt_flags);
+	find_symbol (sofile, globals, "mono_runtime_version", (gpointer *)&runtime_version);
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
@@ -564,7 +602,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	{
 		char *full_aot_str;
 
-		mono_dl_symbol (assembly->aot_module, "mono_aot_full_aot", (gpointer *)&full_aot_str);
+		find_symbol (sofile, globals, "mono_aot_full_aot", (gpointer *)&full_aot_str);
 
 		if (full_aot_str && !strcmp (full_aot_str, "TRUE"))
 			full_aot = TRUE;
@@ -575,7 +613,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		exit (1);
 	}
 	if (!mono_aot_only && full_aot) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled with --aot=full.\n");
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled with --aot=full.\n", aot_name);
 		usable = FALSE;
 	}
 
@@ -585,16 +623,16 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			exit (1);
 		}
 		g_free (aot_name);
-		mono_dl_close (assembly->aot_module);
+		mono_dl_close (sofile);
 		assembly->aot_module = NULL;
 		return;
 	}
 
-	mono_dl_symbol (assembly->aot_module, "got_addr", (gpointer *)&got_addr);
+	find_symbol (sofile, globals, "got_addr", (gpointer *)&got_addr);
 	g_assert (got_addr);
 	got = (gpointer*)*got_addr;
 	g_assert (got);
-	mono_dl_symbol (assembly->aot_module, "got_size", (gpointer *)&got_size_ptr);
+	find_symbol (sofile, globals, "got_size", (gpointer *)&got_size_ptr);
 	g_assert (got_size_ptr);
 
 	amodule = g_new0 (MonoAotModule, 1);
@@ -603,6 +641,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->got = got;
 	amodule->got_size = *got_size_ptr;
 	amodule->got [0] = assembly->image;
+	amodule->globals = globals;
 
 	sscanf (opt_flags, "%d", &amodule->opts);		
 
@@ -611,7 +650,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		guint32 table_len, i;
 		char *table = NULL;
 
-		mono_dl_symbol (assembly->aot_module, "mono_image_table", (gpointer *)&table);
+		find_symbol (sofile, globals, "mono_image_table", (gpointer *)&table);
 		g_assert (table);
 
 		table_len = *(guint32*)table;
@@ -648,40 +687,40 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 
 	/* Read method and method_info tables */
-	mono_dl_symbol (assembly->aot_module, "method_offsets", (gpointer*)&amodule->code_offsets);
-	mono_dl_symbol (assembly->aot_module, "methods", (gpointer*)&amodule->code);
-	mono_dl_symbol (assembly->aot_module, "methods_end", (gpointer*)&amodule->code_end);
-	mono_dl_symbol (assembly->aot_module, "method_info_offsets", (gpointer*)&amodule->method_info_offsets);
-	mono_dl_symbol (assembly->aot_module, "method_info", (gpointer*)&amodule->method_info);
-	mono_dl_symbol (assembly->aot_module, "ex_info_offsets", (gpointer*)&amodule->ex_info_offsets);
-	mono_dl_symbol (assembly->aot_module, "ex_info", (gpointer*)&amodule->ex_info);
-	mono_dl_symbol (assembly->aot_module, "method_order", (gpointer*)&amodule->method_order);
-	mono_dl_symbol (assembly->aot_module, "method_order_end", (gpointer*)&amodule->method_order_end);
-	mono_dl_symbol (assembly->aot_module, "class_info", (gpointer*)&amodule->class_info);
-	mono_dl_symbol (assembly->aot_module, "class_info_offsets", (gpointer*)&amodule->class_info_offsets);
-	mono_dl_symbol (assembly->aot_module, "class_name_table", (gpointer *)&amodule->class_name_table);
-	mono_dl_symbol (assembly->aot_module, "got_info", (gpointer*)&amodule->got_info);
-	mono_dl_symbol (assembly->aot_module, "got_info_offsets", (gpointer*)&amodule->got_info_offsets);
-	mono_dl_symbol (assembly->aot_module, "wrapper_info", (gpointer*)&amodule->wrapper_info);
-	mono_dl_symbol (assembly->aot_module, "trampolines", (gpointer*)&amodule->trampolines);
-	mono_dl_symbol (assembly->aot_module, "mem_end", (gpointer*)&amodule->mem_end);
+	find_symbol (sofile, globals, "method_offsets", (gpointer*)&amodule->code_offsets);
+	find_symbol (sofile, globals, "methods", (gpointer*)&amodule->code);
+	find_symbol (sofile, globals, "methods_end", (gpointer*)&amodule->code_end);
+	find_symbol (sofile, globals, "method_info_offsets", (gpointer*)&amodule->method_info_offsets);
+	find_symbol (sofile, globals, "method_info", (gpointer*)&amodule->method_info);
+	find_symbol (sofile, globals, "ex_info_offsets", (gpointer*)&amodule->ex_info_offsets);
+	find_symbol (sofile, globals, "ex_info", (gpointer*)&amodule->ex_info);
+	find_symbol (sofile, globals, "method_order", (gpointer*)&amodule->method_order);
+	find_symbol (sofile, globals, "method_order_end", (gpointer*)&amodule->method_order_end);
+	find_symbol (sofile, globals, "class_info", (gpointer*)&amodule->class_info);
+	find_symbol (sofile, globals, "class_info_offsets", (gpointer*)&amodule->class_info_offsets);
+	find_symbol (sofile, globals, "class_name_table", (gpointer *)&amodule->class_name_table);
+	find_symbol (sofile, globals, "got_info", (gpointer*)&amodule->got_info);
+	find_symbol (sofile, globals, "got_info_offsets", (gpointer*)&amodule->got_info_offsets);
+	find_symbol (sofile, globals, "wrapper_info", (gpointer*)&amodule->wrapper_info);
+	find_symbol (sofile, globals, "trampolines", (gpointer*)&amodule->trampolines);
+	find_symbol (sofile, globals, "mem_end", (gpointer*)&amodule->mem_end);
 
 	amodule->mem_begin = amodule->code;
 
-	mono_dl_symbol (assembly->aot_module, "plt", (gpointer*)&amodule->plt);
-	mono_dl_symbol (assembly->aot_module, "plt_end", (gpointer*)&amodule->plt_end);
-	mono_dl_symbol (assembly->aot_module, "plt_info", (gpointer*)&amodule->plt_info);
+	find_symbol (sofile, globals, "plt", (gpointer*)&amodule->plt);
+	find_symbol (sofile, globals, "plt_end", (gpointer*)&amodule->plt_end);
+	find_symbol (sofile, globals, "plt_info", (gpointer*)&amodule->plt_info);
 
-	mono_dl_symbol (assembly->aot_module, "plt_jump_table_addr", (gpointer *)&plt_jump_table_addr);
+	find_symbol (sofile, globals, "plt_jump_table_addr", (gpointer *)&plt_jump_table_addr);
 	g_assert (plt_jump_table_addr);
 	amodule->plt_jump_table = (guint8*)*plt_jump_table_addr;
 	g_assert (amodule->plt_jump_table);
 
-	mono_dl_symbol (assembly->aot_module, "plt_jump_table_size", (gpointer *)&plt_jump_table_size);
+	find_symbol (sofile, globals, "plt_jump_table_size", (gpointer *)&plt_jump_table_size);
 	g_assert (plt_jump_table_size);
 	amodule->plt_jump_table_size = *plt_jump_table_size;
 
-	mono_dl_symbol (assembly->aot_module, "trampolines_info", (gpointer *)&trampolines_info);
+	find_symbol (sofile, globals, "trampolines_info", (gpointer *)&trampolines_info);
 	if (trampolines_info) {
 		amodule->num_trampolines = trampolines_info [0];
 		amodule->first_trampoline_got_offset = trampolines_info [1];
@@ -734,11 +773,24 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT loaded AOT Module for %s.\n", assembly->image->name);
 }
 
+/*
+ * mono_aot_register_globals:
+ *
+ *   This is called by the ctor function in AOT images compiled with the
+ * 'no-dlsym' option.
+ */
+void
+mono_aot_register_globals (gpointer *globals)
+{
+	TlsSetValue (globals_tls_id, globals);
+}
+
 void
 mono_aot_init (void)
 {
 	InitializeCriticalSection (&aot_mutex);
 	aot_modules = g_hash_table_new (NULL, NULL);
+	globals_tls_id = TlsAlloc ();
 
 	mono_install_assembly_load_hook (load_aot_module, NULL);
 
@@ -2185,14 +2237,16 @@ load_named_code (MonoAotModule *amodule, const char *name)
 	/* Load the code */
 
 	symbol = g_strdup_printf ("%s", name);
-	mono_dl_symbol (assembly->aot_module, symbol, (gpointer *)&code);
+	find_symbol (assembly->aot_module, amodule->globals, symbol, (gpointer *)&code);
 	g_free (symbol);
 	g_assert (code);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND function '%s' in AOT file '%s'.\n", name, amodule->aot_name);
 
 	/* Load info */
 
 	symbol = g_strdup_printf ("%s_p", name);
-	mono_dl_symbol (assembly->aot_module, symbol, (gpointer *)&p);
+	find_symbol (assembly->aot_module, amodule->globals, symbol, (gpointer *)&p);
 	g_free (symbol);
 	if (!p)
 		/* Nothing to patch */
