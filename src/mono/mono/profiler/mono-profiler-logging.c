@@ -3217,6 +3217,7 @@ flush_everything (void) {
 	write_statistical_data_block (profiler->statistical_data);
 }
 
+/* This assumes the lock is held: it just offloads the work to the writer thread. */
 static void
 writer_thread_flush_everything (void) {
 	if (CHECK_WRITER_THREAD ()) {
@@ -3567,10 +3568,6 @@ static void
 method_end_jit (MonoProfiler *profiler, MonoMethod *method, int result) {
 	if (profiler->action_flags.jit_time) {
 		STORE_EVENT_ITEM_COUNTER (profiler, method, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_JIT | RESULT_TO_EVENT_CODE (result), MONO_PROFILER_EVENT_KIND_END);
-	}
-	
-	if (! profiler->writer_thread_enabled) {
-		WRITER_EVENT_ENABLE_RAISE ();
 	}
 }
 
@@ -4179,6 +4176,15 @@ gc_resize (MonoProfiler *profiler, gint64 new_size) {
 	STORE_EVENT_NUMBER_VALUE (profiler, new_size, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, MONO_PROFILER_EVENT_GC_RESIZE, 0, profiler->garbage_collection_counter);
 }
 
+static void
+runtime_initialized (MonoProfiler *profiler) {
+	LOG_WRITER_THREAD ("runtime_initialized: waking writer thread to enable it...\n");
+	WRITER_EVENT_ENABLE_RAISE ();
+	LOG_WRITER_THREAD ("runtime_initialized: waiting writer thread...\n");
+	WRITER_EVENT_DONE_WAIT ();
+	LOG_WRITER_THREAD ("runtime_initialized: writer thread enabled.\n");
+}
+
 /* called at the end of the program */
 static void
 profiler_shutdown (MonoProfiler *prof)
@@ -4507,6 +4513,7 @@ data_writer_thread (gpointer nothing) {
 	static gboolean thread_detached = FALSE;
 	static MonoThread *this_thread = NULL;
 	
+	/* Wait for the OK to attach to the runtime */
 	WRITER_EVENT_ENABLE_WAIT ();
 	if (! profiler->terminate_writer_thread) {
 		MonoDomain * root_domain = mono_get_root_domain ();
@@ -4524,6 +4531,8 @@ data_writer_thread (gpointer nothing) {
 		thread_detached = TRUE;
 	}
 	profiler->writer_thread_enabled = TRUE;
+	/* Notify that we are attached to the runtime */
+	WRITER_EVENT_DONE_RAISE ();
 	
 	for (;;) {
 		ProfilerStatisticalData *statistical_data;
@@ -4544,6 +4553,7 @@ data_writer_thread (gpointer nothing) {
 		
 		if ((!done) && thread_attached) {
 			if (profiler->writer_thread_flush_everything) {
+				/* Note that this assumes the lock is held by the thread that woke us up! */
 				if (! thread_detached) {
 					LOG_WRITER_THREAD ("data_writer_thread: flushing everything...");
 					flush_everything ();
@@ -4688,6 +4698,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_statistical (statistical_hit);
 	mono_profiler_install_statistical_call_chain (statistical_call_chain, profiler->statistical_call_chain_depth);
 	mono_profiler_install_gc (gc_event, gc_resize);
+	mono_profiler_install_runtime_initialized (runtime_initialized);
 #if (HAS_OPROFILE)
 	mono_profiler_install_jit_end (method_jit_result);
 #endif
