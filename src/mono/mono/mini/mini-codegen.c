@@ -1944,6 +1944,19 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			prev = ins;
 		}
+
+		if (sp && bb != cfg->bb_exit && !(bb->out_count == 1 && bb->out_bb [0] == cfg->bb_exit)) {
+			/* Remove remaining items from the fp stack */
+			/* 
+			 * These can remain for example as a result of a dead fmove like in
+			 * System.Collections.Generic.EqualityComparer<double>.Equals ().
+			 */
+			while (sp) {
+				MONO_INST_NEW (cfg, ins, OP_X86_FPOP);
+				mono_add_ins_to_end (bb, ins);
+				sp --;
+			}
+		}
 	}
 #endif
 }
