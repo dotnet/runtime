@@ -215,6 +215,7 @@ struct _MonoDomain {
 
 	GHashTable	   *shared_generics_hash;
 	GHashTable	   *method_rgctx_hash;
+	GHashTable     *method_code_hash;
 };
 
 typedef struct  {

@@ -1170,6 +1170,7 @@ mono_domain_create (void)
 
 	domain->shared_generics_hash = NULL;
 	domain->method_rgctx_hash = NULL;
+	domain->method_code_hash = NULL;
 
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
@@ -1939,6 +1940,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	if (domain->method_rgctx_hash) {
 		g_hash_table_destroy (domain->method_rgctx_hash);
 		domain->method_rgctx_hash = NULL;
+	}
+	if (domain->method_code_hash) {
+		g_hash_table_destroy (domain->method_code_hash);
+		domain->method_code_hash = NULL;
 	}
 
 	DeleteCriticalSection (&domain->assemblies_lock);

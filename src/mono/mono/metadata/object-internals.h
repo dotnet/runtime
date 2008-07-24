@@ -551,15 +551,21 @@ struct _MonoReflectionGenericMethod {
 
 struct _MonoDelegate {
 	MonoObject object;
+	/* The compiled code of the target method */
 	gpointer method_ptr;
+	/* The invoke code */
 	gpointer invoke_impl;
 	MonoObject *target;
 	MonoMethod *method;
-	MonoObject *target_type;
-	MonoString *method_name;
 	gpointer delegate_trampoline;
+	/* 
+	 * If non-NULL, this points to a memory location which stores the address of 
+	 * the compiled code of the method, or NULL if it is not yet compiled.
+	 */
+	guint8 **method_code;
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
+	MonoObject *data;
 };
 
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
