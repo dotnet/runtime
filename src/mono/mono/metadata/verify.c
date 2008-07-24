@@ -3636,6 +3636,7 @@ do_cast (VerifyContext *ctx, int token, const char *opcode) {
 	ILStackDesc *value;
 	MonoType *type;
 	gboolean is_boxed;
+	gboolean do_box;
 
 	if (!check_underflow (ctx, 1))
 		return;
@@ -3663,7 +3664,8 @@ do_cast (VerifyContext *ctx, int token, const char *opcode) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value for %s at 0x%04x", opcode, ctx->ip_offset));
 	}
 
-	stack_push_val (ctx, TYPE_COMPLEX | (mono_class_from_mono_type (type)->valuetype || is_boxed ? BOXED_MASK : 0), type);
+	do_box = is_boxed || mono_type_is_generic_argument(type) || mono_class_from_mono_type (type)->valuetype;
+	stack_push_val (ctx, TYPE_COMPLEX | (do_box ? BOXED_MASK : 0), type);
 }
 
 static MonoType *

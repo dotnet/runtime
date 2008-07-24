@@ -7022,6 +7022,8 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 static gboolean
 is_nesting_type (MonoClass *outer_klass, MonoClass *inner_klass)
  {
+	outer_klass = mono_class_get_generic_type_definition (outer_klass);
+	inner_klass = mono_class_get_generic_type_definition (inner_klass);
 	do {
 		if (outer_klass == inner_klass)
 			return TRUE;
@@ -7132,7 +7134,10 @@ can_access_instantiation (MonoClass *access_klass, MonoGenericInst *ginst)
 {
 	int i;
 	for (i = 0; i < ginst->type_argc; ++i) {
-		if (!can_access_type (access_klass, mono_class_from_mono_type (ginst->type_argv[i])))
+		MonoType *type = ginst->type_argv[i];
+		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)
+			continue;
+		if (!can_access_type (access_klass, mono_class_from_mono_type (type)))
 			return FALSE;
 	}
 	return TRUE;
