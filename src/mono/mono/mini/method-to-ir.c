@@ -7902,6 +7902,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					MONO_ADD_INS (cfg->cbb, ins);
 					cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
 					cfg->cbb->has_array_access = TRUE;
+
+					/* Needed so mono_emit_load_get_addr () gets called */
+					mono_get_got_var (cfg);
 				}
 			}
 
