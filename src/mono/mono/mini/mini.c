@@ -15317,6 +15317,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_thread_attach (domain);
 	
+	mono_profiler_runtime_initialized ();
+	
 	MONO_PROBE_VES_INIT_END ();
 	
 	return domain;
