@@ -654,6 +654,11 @@ AC_TRY_COMPILE([], [
    AC_MSG_RESULT(no)
 ])
 
+AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables GC Parallel Marking])
+if test x$enable_parallel_mark = xyes; then
+	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
+fi
+
 LIBGC_CFLAGS=
 LIBGC_LIBS=
 LIBGC_STATIC_LIBS=
@@ -708,7 +713,11 @@ case "x$gc" in
 		# The included libgc contains GCJ support
 		AC_DEFINE(HAVE_GC_GCJ_MALLOC, 1, [Have GC_gcj_malloc])
 		AC_DEFINE(HAVE_GC_ENABLE, 1, [Have GC_enable])
-		AC_DEFINE_UNQUOTED(USED_GC_NAME, "Included Boehm (with typed GC)", [GC description])
+		if test x$enable_parallel_mark = xyes; then
+			AC_DEFINE_UNQUOTED(USED_GC_NAME, "Included Boehm (with typed GC and Parallel Mark)", [GC description])
+		else
+			AC_DEFINE_UNQUOTED(USED_GC_NAME, "Included Boehm (with typed GC)", [GC description])
+		fi
 		;;
 
 	xsgen)
@@ -2061,11 +2070,6 @@ fi
 
 if test ${ACCESS_UNALIGNED} = no; then
 	CPPFLAGS="$CPPFLAGS -DNO_UNALIGNED_ACCESS"
-fi
-
-AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables GC Parallel Marking])
-if test x$enable_parallel_mark = xyes; then
-	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
 fi
 
 case "x$gc" in

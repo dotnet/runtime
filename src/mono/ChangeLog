@@ -1,3 +1,8 @@
+2008-07-24  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* configure.in: Change USED_GC_NAME to show if parallel mark is used.
+	This is shown in mono --version.
+
 2008-07-22  Mark Probst  <mark.probst@gmail.com>
 
 	* configure.in: New configure option (--with-malloc-mempools) to
