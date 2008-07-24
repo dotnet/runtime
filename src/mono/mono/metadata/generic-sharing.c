@@ -774,24 +774,10 @@ fill_in_rgctx_template_slot (MonoClass *class, int type_argc, int index, gpointe
 {
 	MonoRuntimeGenericContextTemplate *template = mono_class_get_runtime_generic_context_template (class);
 	MonoClass *subclass;
-	int old_length, new_length;
-	int old_instances_length = -1;
 
 	g_assert (!class->generic_class);
 
-	old_length = rgctx_template_num_other_infos (template, type_argc);
 	rgctx_template_set_other_slot (class->image, template, type_argc, index, data, info_type);
-	new_length = rgctx_template_num_other_infos (template, type_argc);
-
-	if (old_instances_length < 0)
-		old_instances_length = old_length;
-
-	/* The reason why the instance's other_infos list can be
-	 * shorter than the uninstanted class's is that when we mark
-	 * slots as used in superclasses we only do that in the
-	 * uninstantiated classes, not in the instances.
-	 */
-	g_assert (old_instances_length <= old_length);
 
 	/* Recurse for all subclasses */
 	if (generic_subclass_hash)
