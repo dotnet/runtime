@@ -8748,7 +8748,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			case CEE_LDFTN: {
 				MonoInst *argconst;
 				MonoMethod *cil_method, *ctor_method;
-				gboolean is_shared;
+				gboolean is_shared = FALSE;
 
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
