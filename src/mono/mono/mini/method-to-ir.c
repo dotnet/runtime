@@ -7845,7 +7845,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			MonoInst *len_ins;
 			const char *data_ptr;
 			int data_size = 0;
-			gboolean shared_access = FALSE;
 
 			CHECK_STACK (1);
 			--sp;
@@ -7857,32 +7856,27 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			CHECK_TYPELOAD (klass);
 
 			if (cfg->generic_sharing_context) {
-				int context_used = mono_class_check_context_used (klass);
+				context_used = mono_class_check_context_used (klass);
 
+				// FIXME: Why is this needed ?
 				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
 					GENERIC_SHARING_FAILURE (CEE_NEWARR);
-
-				if (context_used)
-					shared_access = TRUE;
 			}
 
-			if (shared_access) {
+			if (context_used) {
 				MonoInst *rgctx;
-				MonoInst *args [3];
+				MonoInst *args [2];
 
 				/* FIXME: Decompose later to help abcrem */
 
-				/* domain */
-				EMIT_NEW_DOMAINCONST (cfg, args [0]);
-
-				/* klass */
+				/* vtable */
 				EMIT_GET_RGCTX (rgctx, context_used);
-				args [1] = emit_get_rgctx_klass (cfg, context_used, rgctx, klass, MONO_RGCTX_INFO_KLASS);
+				args [0] = emit_get_rgctx_klass (cfg, context_used, rgctx, mono_array_class_get (klass, 1), MONO_RGCTX_INFO_VTABLE);
 
 				/* array len */
-				args [2] = sp [0];
+				args [1] = sp [0];
 
-				ins = mono_emit_jit_icall (cfg, mono_array_new, args);
+				ins = mono_emit_jit_icall (cfg, mono_array_new_specific, args);
 			} else {
 				if (cfg->opt & MONO_OPT_SHARED) {
 					/* Decompose now to avoid problems with references to the domainvar */
