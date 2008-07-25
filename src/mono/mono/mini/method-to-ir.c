@@ -3944,6 +3944,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	int i, costs;
 	MonoMethod *prev_inlined_method;
 	MonoInst **prev_locals, **prev_args;
+	MonoType **prev_arg_types;
 	guint prev_real_offset;
 	GHashTable *prev_cbb_hash;
 	MonoBasicBlock **prev_cil_offset_to_bb;
@@ -3983,8 +3984,6 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	for (i = 0; i < cheader->num_locals; ++i)
 		cfg->locals [i] = mono_compile_create_var (cfg, cheader->locals [i], OP_LOCAL);
 
-	prev_args = cfg->args;
-	
 	/* allocate start and end blocks */
 	/* This is needed so if the inline is aborted, we can clean up */
 	NEW_BBLOCK (cfg, sbblock);
@@ -3994,6 +3993,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	ebblock->block_num = cfg->num_bblocks++;
 	ebblock->real_offset = real_offset;
 
+	prev_args = cfg->args;
+	prev_arg_types = cfg->arg_types;
 	prev_inlined_method = cfg->inlined_method;
 	cfg->inlined_method = cmethod;
 	cfg->ret_var_set = FALSE;
@@ -4016,6 +4017,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->cil_start = prev_cil_start;
 	cfg->locals = prev_locals;
 	cfg->args = prev_args;
+	cfg->arg_types = prev_arg_types;
 	cfg->current_method = prev_current_method;
 	cfg->generic_context = prev_generic_context;
 
@@ -4979,9 +4981,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 		end_bblock->cil_length = 0;
 		g_assert (cfg->num_bblocks == 2);
 
-		arg_array = alloca (sizeof (MonoInst *) * num_args);
-		for (i = num_args - 1; i >= 0; i--)
-			arg_array [i] = cfg->args [i];
+		arg_array = cfg->args;
 
 		if (header->num_clauses) {
 			cfg->spvars = g_hash_table_new (NULL, NULL);
@@ -5080,6 +5080,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 		arg_array = alloca (sizeof (MonoInst *) * num_args);
 		cfg->cbb = start_bblock;
 		mono_save_args (cfg, sig, inline_args, arg_array);
+		cfg->args = arg_array;
 	}
 
 	/* FIRST CODE BLOCK */
@@ -5219,6 +5220,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 		param_types [0] = method->klass->valuetype?&method->klass->this_arg:&method->klass->byval_arg;
 	for (n = 0; n < sig->param_count; ++n)
 		param_types [n + sig->hasthis] = sig->params [n];
+	cfg->arg_types = param_types;
 	for (n = 0; n < header->num_locals; ++n) {
 		if (header->locals [n]->type == MONO_TYPE_VOID && !header->locals [n]->byref)
 			UNVERIFIED;
