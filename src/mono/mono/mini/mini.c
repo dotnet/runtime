@@ -6222,7 +6222,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * generic method).
 				 */
 				if (sharing_enabled && context_sharable &&
-						!mini_method_get_context (cmethod)->method_inst)
+					!(mini_method_get_context (cmethod) && mini_method_get_context (cmethod)->method_inst))
 					pass_vtable = TRUE;
 			}
 
