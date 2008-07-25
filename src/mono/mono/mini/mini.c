@@ -13917,11 +13917,13 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	cfg = mini_method_compile (method, opt, target_domain, TRUE, FALSE, 0);
 
 	switch (cfg->exception_type) {
-	case MONO_EXCEPTION_NONE: break;
+	case MONO_EXCEPTION_NONE:
+		break;
 	case MONO_EXCEPTION_TYPE_LOAD:
 	case MONO_EXCEPTION_MISSING_FIELD:
 	case MONO_EXCEPTION_MISSING_METHOD:
-	case MONO_EXCEPTION_FILE_NOT_FOUND: {
+	case MONO_EXCEPTION_FILE_NOT_FOUND:
+	case MONO_EXCEPTION_BAD_IMAGE: {
 		/* Throw a type load exception if needed */
 		MonoLoaderError *error = mono_loader_get_last_error ();
 		MonoException *ex;
@@ -13940,6 +13942,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", cfg->exception_message);
 				else if (cfg->exception_type == MONO_EXCEPTION_FILE_NOT_FOUND)
 					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FileNotFoundException", cfg->exception_message);
+				else if (cfg->exception_type == MONO_EXCEPTION_BAD_IMAGE)
+					ex = mono_get_exception_bad_image_format (cfg->exception_message);
 				else
 					g_assert_not_reached ();
 			}
