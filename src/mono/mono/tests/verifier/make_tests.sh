@@ -5091,4 +5091,43 @@ done
 #TODO try / catch inside constructor
 
 
+#TODO methods cannot have variance, but this should be checked at load time
+#TODO check for variance compatibility between types
+
+#generic delegate validation
+
+./make_generic_argument_constraints_test.sh no_constraints valid "" ""
+
+I=1
+for SRC in "(IfaceA)" "(IfaceB)" "(IfaceA, IfaceB)" ".ctor" "class" 
+do
+	./make_generic_argument_constraints_test.sh src_ctrs_only_${I} unverifiable "$SRC" ""
+	I=`expr $I + 1`
+done
+
+./make_generic_argument_constraints_test.sh src_ctrs_only_vt unverifiable "valuetype" "" "int32"
+
+
+#Type arg compatibility
+./make_generic_argument_constraints_test.sh type_ctrs_1 valid "(IfaceA)" "(IfaceA)"
+./make_generic_argument_constraints_test.sh type_ctrs_2 valid "(IfaceA)" "(IfaceB, IfaceA)"
+./make_generic_argument_constraints_test.sh type_ctrs_3 unverifiable "(IfaceA)" "(IfaceB)"
+./make_generic_argument_constraints_test.sh type_ctrs_4 unverifiable "(IfaceA, IfaceB)" "(IfaceA)"
+
+#DefaultArgument implements IfaceA
+./make_generic_argument_constraints_test.sh type_ctrs_5 valid "(IfaceA)" "(DefaultArgument)"
+
+
+./make_generic_argument_constraints_test.sh type_ctor_1 valid ".ctor" ".ctor"
+
+./make_generic_argument_constraints_test.sh type_class_1 valid "class" "class"
+
+./make_generic_argument_constraints_test.sh type_valuetype_1 valid "valuetype" "valuetype" "int32"
+
+./make_generic_argument_constraints_test.sh type_mixed_1 valid "class (IfaceA)" "class (IfaceA)"
+./make_generic_argument_constraints_test.sh type_mixed_2 valid "(IfaceA)" "class (IfaceA)"
+
+./make_generic_argument_constraints_test.sh type_mixed_3 valid "" "(IfaceA)"
+./make_generic_argument_constraints_test.sh type_mixed_4 valid "" "class (IfaceA)"
+
 
