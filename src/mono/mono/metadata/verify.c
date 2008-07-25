@@ -478,6 +478,64 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 }
 
 /*
+ * Return true if @candidate is constraint compatible with @target.
+ * 
+ * This means that @candidate constraints are a super set of @target constaints
+ */
+static gboolean
+mono_generic_param_is_constraint_compatible (MonoGenericParam *target, MonoGenericParam *candidate)
+{
+	int tmask = target->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
+	int cmask = candidate->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;	
+	if ((tmask & cmask) != tmask)
+		return FALSE;
+
+	if (target->constraints) {
+		MonoClass **target_class, **candidate_class;
+		if (!candidate->constraints)
+			return FALSE;
+		for (target_class = target->constraints; *target_class; ++target_class) {
+			MonoClass *tc = *target_class;
+			for (candidate_class = candidate->constraints; *candidate_class; ++candidate_class) {
+				MonoClass *cc = *candidate_class;
+				if (mono_class_is_assignable_from (tc, cc))
+					break;
+			}
+			if (!*candidate_class)
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+static MonoGenericParam*
+verifier_get_generic_param_from_type (VerifyContext *ctx, MonoType *type)
+{
+	MonoGenericContainer *gc;
+	MonoMethod *method = ctx->method;
+	int num;
+
+	num = type->data.generic_param->num;
+
+	if (type->type == MONO_TYPE_VAR) {
+		MonoClass *gtd = method->klass;
+		if (gtd->generic_class)
+			gtd = gtd->generic_class->container_class;
+		gc = gtd->generic_container;
+	} else { //MVAR
+		MonoMethod *gmd = method;
+		if (method->is_inflated)
+			gmd = ((MonoMethodInflated*)method)->declaring;
+		gc = mono_method_get_generic_container (gmd);
+	}
+	if (!gc)
+		return FALSE;
+	return &gc->type_params [num];
+}
+
+
+
+/*
  * Verify if @type is valid for the given @ctx verification context.
  * this function checks for VAR and MVAR types that are invalid under the current verifier,
  * This means that it either 
@@ -511,6 +569,47 @@ is_valid_generic_instantiation_in_context (VerifyContext *ctx, MonoGenericInst *
 			return FALSE;
 	}
 	return TRUE;
+}
+
+static gboolean
+generic_arguments_respect_constraints (VerifyContext *ctx, MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
+{
+	int i;
+	for (i = 0; i < ginst->type_argc; ++i) {
+		MonoType *type = ginst->type_argv [i];
+		MonoGenericParam *target = &gc->type_params [i];
+		MonoGenericParam *candidate;
+
+		if (!mono_type_is_generic_argument (type))
+			continue;
+
+		if (!is_valid_type_in_context (ctx, type))
+			return FALSE;
+
+		candidate = verifier_get_generic_param_from_type (ctx, type);
+
+		if (!mono_generic_param_is_constraint_compatible (target, candidate))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean
+mono_method_repect_method_constraints (VerifyContext *ctx, MonoMethod *method)
+{
+	MonoMethodInflated *gmethod = (MonoMethodInflated *)method;
+	MonoGenericInst *ginst = gmethod->context.method_inst;
+	MonoGenericContainer *gc = mono_method_get_generic_container (gmethod->declaring);
+	return !gc || generic_arguments_respect_constraints (ctx, gc, &gmethod->context, ginst);
+}
+
+static gboolean
+mono_class_repect_method_constraints (VerifyContext *ctx, MonoClass *klass)
+{
+	MonoGenericClass *gklass = klass->generic_class;
+	MonoGenericInst *ginst = gklass->context.class_inst;
+	MonoGenericContainer *gc = gklass->container_class->generic_container;
+	return !gc || generic_arguments_respect_constraints (ctx, gc, &gklass->context, ginst);
 }
 
 static gboolean
@@ -561,12 +660,12 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 		return TRUE;
 
 	if (!mono_class_is_valid_generic_instantiation (ctx, klass)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic type instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
 
-	if (!is_valid_generic_instantiation_in_context (ctx, mono_class_get_context (klass)->class_inst)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+	if (!mono_class_repect_method_constraints (ctx, klass)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic type instantiation of type %s.%s (generic args don't respect target's constraints) at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
 
@@ -575,8 +674,6 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 static gboolean
 mono_method_is_valid_in_context (VerifyContext *ctx, MonoMethod *method)
 {
-	MonoGenericInst *ginst;
-
 	if (!mono_type_is_valid_in_context (ctx, &method->klass->byval_arg)) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return FALSE;
@@ -586,13 +683,12 @@ mono_method_is_valid_in_context (VerifyContext *ctx, MonoMethod *method)
 		return TRUE;
 
 	if (!mono_method_is_valid_generic_instantiation (ctx, method)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_UNVERIFIABLE_IL);
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic method instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_UNVERIFIABLE_IL);
 		return FALSE;
 	}
 
-	ginst = mono_method_get_context (method)->method_inst;
-	if (ginst && !is_valid_generic_instantiation_in_context (ctx, ginst)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+	if (!mono_method_repect_method_constraints (ctx, method)) {
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid generic method instantiation of method %s.%s::%s (generic args don't respect target's constraints) at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset));
 		return FALSE;
 	}
 	return TRUE;
