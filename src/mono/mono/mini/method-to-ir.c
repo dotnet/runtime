@@ -2549,9 +2549,14 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 }
 
 static MonoInst*
-emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used, MonoInst *this)
+emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 {
+	MonoInst *this = NULL;
+
 	g_assert (!method->klass->valuetype);
+
+	if (!(method->flags & METHOD_ATTRIBUTE_STATIC) && !(context_used & MONO_GENERIC_CONTEXT_USED_METHOD))
+		EMIT_NEW_ARGLOAD (cfg, this, 0);
 
 	if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD) {
 		MonoInst *mrgctx_loc, *mrgctx_var;
@@ -2593,11 +2598,8 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used, MonoInst
 }
 
 #define EMIT_GET_RGCTX(rgctx, context_used) do {				\
-		MonoInst *this = NULL;					\
 		GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD(*ip);	\
-		if (!(method->flags & METHOD_ATTRIBUTE_STATIC) && !((context_used) & MONO_GENERIC_CONTEXT_USED_METHOD))	\
-			EMIT_NEW_ARGLOAD (cfg, this, 0);			\
-		(rgctx) = emit_get_rgctx (cfg, method, (context_used), this); \
+		(rgctx) = emit_get_rgctx (cfg, method, (context_used)); \
 	} while (0)
 
 static MonoInst*
@@ -2661,7 +2663,7 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 	// Can't encode method ref
 	cfg->disable_aot = TRUE;
 
-	if (rgctx) {
+	if (context_used) {
 		MonoInst *addr = emit_get_rgctx_method (cfg, context_used, rgctx, method,
 												MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 
