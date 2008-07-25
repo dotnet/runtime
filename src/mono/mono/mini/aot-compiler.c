@@ -179,9 +179,6 @@ static const gint16 opidx [] = {
 #undef PATCH_INFO
 };
 
-static void
-emit_global (MonoAotCompile *acfg, const char *name, gboolean func);
-
 static const char*
 get_patch_name (int info)
 {
@@ -203,6 +200,9 @@ get_patch_name (int info)
 }
 
 #endif
+
+static void
+emit_global (MonoAotCompile *acfg, const char *name, gboolean func);
 
 static gboolean 
 is_got_patch (MonoJumpInfoType patch_type)
