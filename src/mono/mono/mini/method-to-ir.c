@@ -7857,13 +7857,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
-			if (cfg->generic_sharing_context) {
+			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
-
-				// FIXME: Why is this needed ?
-				if (context_used & MONO_GENERIC_CONTEXT_USED_METHOD)
-					GENERIC_SHARING_FAILURE (CEE_NEWARR);
-			}
 
 			if (context_used) {
 				MonoInst *rgctx;
