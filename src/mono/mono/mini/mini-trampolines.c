@@ -270,7 +270,8 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			*vtable_slot = mono_get_addr_from_ftnptr (addr);
 		}
 	}
-	else if (!generic_shared || mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
+	else if (!generic_shared || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+			mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
 		if (generic_shared)
