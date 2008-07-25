@@ -3194,7 +3194,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
 	 * store it, and we fill it after the method has been compiled.
 	 */
-	if (!cfg->compile_aot) {
+	if (!cfg->compile_aot && !method->dynamic) {
 		MonoInst *code_slot_ins;
 
 		domain = mono_domain_get ();
