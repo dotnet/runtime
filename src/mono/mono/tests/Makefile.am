@@ -473,12 +473,13 @@ testb: $(TEST_PROG) $(TESTBS)
 		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS);	\
 	done
 
-testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@failed=0; \
 	passed=0; \
 	failed_tests="";\
 	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
 		rm -f $${i}.so; \
+		if [ x$(AOT) = x1 ]; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > /dev/null || exit 1; fi; \
 		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
@@ -492,46 +493,17 @@ testjit: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
-testaot: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	for i in $(TESTSI_CS) $(TESTSI_IL) $(TESTBS); do	\
-		rm -f $${i}.so; \
-		$(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > /dev/null || exit 1; \
-		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
-		then \
-			passed=`expr $${passed} + 1`; \
-		else \
-			if [ $$? = 2 ]; then break; fi; \
-			failed=`expr $${failed} + 1`; \
-			failed_tests="$${failed_tests} $$i"; \
-		fi \
-	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+testjit:
+	@$(MAKE) runtest
+
+testaot:
+	@$(MAKE) AOT=1 runtest
 
 testtrace:
-	$(MAKE) RUNTIME_ARGS="$${RUNTIME_ARGS} --trace" testjit
+	@$(MAKE) RUNTIME_ARGS="$${RUNTIME_ARGS} --trace" runtest
 
-testinterp: $(TESTSI_CS) $(TESTSI_IL) libtest.la
-	@failed=0; \
-	passed=0; \
-	failed_tests="";\
-	for i in $(TESTSI_CS) $(TESTSI_IL); do \
-		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
-		then \
-			passed=`expr $${passed} + 1`; \
-		else \
-			if [ $$? = 2 ]; then break; fi; \
-			failed=`expr $${failed} + 1`; \
-			failed_tests="$${failed_tests} $$i"; \
-		fi \
-	done; \
-	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
-	if [ $$failed != 0 ]; then echo -e "\nFailed tests:\n"; \
-	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+testinterp:
+	@$(MAKE) JITTEST_PROG_RUN="$(TEST_PROG_RUN)" runtest
 
 testjitspeed: $(JITTEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
