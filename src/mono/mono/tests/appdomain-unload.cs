@@ -152,6 +152,8 @@ public class Tests
 		return 0;
 	}
 
+	/* In recent mono versions, there is no unload timeout */
+	/*
 	public static int test_0_unload_with_active_threads_timeout () {
 		AppDomain domain = AppDomain.CreateDomain ("Test4");
 		BThread o = (BThread)domain.CreateInstanceFromAndUnwrap (typeof (Tests).Assembly.Location, "BThread");
@@ -169,6 +171,7 @@ public class Tests
 
 		return 1;
 	}
+	*/
 
 	static void Worker (object x) {
 		Thread.Sleep (100000);
