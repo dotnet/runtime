@@ -1011,10 +1011,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				MonoInst *indir;
 				MONO_INST_NEW (cfg, indir, 0);
 				*indir = *inst;
-				if (cfg->new_ir)
-					inst->opcode = OP_VTARG_ADDR;
-				else
-					inst->opcode = OP_SPARC_INARG_VT;
+				inst->opcode = OP_VTARG_ADDR;
 				inst->inst_left = indir;
 			}
 		}
@@ -1995,7 +1992,6 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (v64 && (mono_method_get_header (cfg->method)->code_size < 10000) && last_ins && 
 				(last_ins->opcode == OP_COMPARE_IMM) &&
 				(last_ins->inst_imm == 0)) {
-				MonoInst *next = ins->next;
 				switch (ins->opcode) {
 				case OP_IBEQ:
 					ins->opcode = OP_SPARC_BRZ;
@@ -3318,7 +3314,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_LOCALLOC_IMM: {
 			gint32 offset = ins->inst_imm;
-
+			gint32 offset2;
+			
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 			/* Perform stack touching */
 			NOT_IMPLEMENTED;
