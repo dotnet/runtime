@@ -9792,14 +9792,14 @@ mono_handle_global_vregs (MonoCompile *cfg)
 
 						if (cfg->verbose_level > 1)
 							printf ("LONG VREG R%d made global.\n", vreg);
-
-						/*
-						 * Make the component vregs volatile since the optimizations can
-						 * get confused otherwise.
-						 */
-						get_vreg_to_inst (cfg, vreg + 1)->flags |= MONO_INST_VOLATILE;
-						get_vreg_to_inst (cfg, vreg + 2)->flags |= MONO_INST_VOLATILE;
 					}
+
+					/*
+					 * Make the component vregs volatile since the optimizations can
+					 * get confused otherwise.
+					 */
+					get_vreg_to_inst (cfg, vreg + 1)->flags |= MONO_INST_VOLATILE;
+					get_vreg_to_inst (cfg, vreg + 2)->flags |= MONO_INST_VOLATILE;
 				}
 #endif
 

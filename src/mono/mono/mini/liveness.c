@@ -21,7 +21,15 @@
 #define BITS_PER_CHUNK 32
 #endif
 
+/* 
+ * The liveness2 pass can't handle long vars on 32 bit platforms because the component
+ * vars have the same 'idx'.
+ */
+#if SIZEOF_VOID_P == 8
+#define ENABLE_LIVENESS2
+
 static void mono_analyze_liveness2 (MonoCompile *cfg);
+#endif
 
 static void
 optimize_initlocals (MonoCompile *cfg);
@@ -621,9 +629,11 @@ mono_analyze_liveness (MonoCompile *cfg)
 		if (!cfg->disable_initlocals_opt)
 			optimize_initlocals2 (cfg);
 
+#ifdef ENABLE_LIVENESS2
 		/* This improves code size by about 5% but slows down compilation too much */
 		if (cfg->compile_aot)
 			mono_analyze_liveness2 (cfg);
+#endif
 	}
 	else {
 		if (!cfg->disable_initlocals_opt)
@@ -823,6 +833,8 @@ mono_linterval_split (MonoCompile *cfg, MonoLiveInterval *interval, MonoLiveInte
 	}
 }
 
+#ifdef ENABLE_LIVENESS2
+
 #if 0
 #define LIVENESS_DEBUG(a) do { a; } while (0)
 #else
@@ -859,7 +871,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 			}
 			else {
 				/* Try dead code elimination */
-				if ((var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST))) {
+				if ((var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST)) && !(var->flags & MONO_INST_VOLATILE)) {
 					LIVENESS_DEBUG (printf ("\tdead def of R%d, eliminated\n", ins->dreg));
 					ins->opcode = OP_NOP;
 					ins->dreg = ins->sreg1 = ins->sreg2 = -1;
@@ -1027,6 +1039,8 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 
 	g_free (last_use);
 }
+
+#endif
 
 static void
 update_used (MonoCompile *cfg, MonoInst *inst, MonoBitSet *used)
