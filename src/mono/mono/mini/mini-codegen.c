@@ -242,17 +242,14 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, gboolean fp)
 #define is_hard_reg(r,fp) (G_UNLIKELY (fp) ? ((r) < MONO_MAX_FREGS) : ((r) < MONO_MAX_IREGS))
 #define is_soft_reg(r,fp) (!is_hard_reg((r),(fp)))
 
-#ifdef MONO_ARCH_INST_IS_FLOAT
+#ifndef MONO_ARCH_INST_IS_FLOAT
+#define MONO_ARCH_INST_IS_FLOAT(desc) ((desc) == 'f')
+#endif
+
 #define reg_is_fp(desc) (MONO_ARCH_INST_IS_FLOAT (desc))
 #define dreg_is_fp(spec)  (MONO_ARCH_INST_IS_FLOAT (spec [MONO_INST_DEST]))
 #define sreg1_is_fp(spec) (MONO_ARCH_INST_IS_FLOAT (spec [MONO_INST_SRC1]))
 #define sreg2_is_fp(spec) (MONO_ARCH_INST_IS_FLOAT (spec [MONO_INST_SRC2]))
-#else
-#define reg_is_fp(desc) ((desc) == 'f')
-#define sreg1_is_fp(spec) (G_UNLIKELY (spec [MONO_INST_SRC1] == 'f'))
-#define sreg2_is_fp(spec) (G_UNLIKELY (spec [MONO_INST_SRC2] == 'f'))
-#define dreg_is_fp(spec)  (G_UNLIKELY (spec [MONO_INST_DEST] == 'f'))
-#endif
 
 #define sreg1_is_fp_ins(ins) (sreg1_is_fp (ins_get_spec ((ins)->opcode)))
 #define sreg2_is_fp_ins(ins) (sreg2_is_fp (ins_get_spec ((ins)->opcode)))
@@ -698,22 +695,12 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 }
 
 static void
-free_up_ireg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins, int hreg)
-{
-	if (!(cfg->rs->ifree_mask & (regmask (hreg)))) {
-		DEBUG (printf ("\tforced spill of R%d\n", cfg->rs->isymbolic [hreg]));
-		get_register_force_spilling (cfg, bb, last, ins, cfg->rs->isymbolic [hreg], FALSE);
-		mono_regstate_free_int (cfg->rs, hreg);
-	}
-}
-
-static void
 free_up_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins, int hreg, gboolean fp)
 {
 	if (fp) {
 		if (!(cfg->rs->ffree_mask & (regmask (hreg)))) {
-			DEBUG (printf ("\tforced spill of R%d\n", cfg->rs->isymbolic [hreg]));
-			get_register_force_spilling (cfg, bb, last, ins, cfg->rs->isymbolic [hreg], fp);
+			DEBUG (printf ("\tforced spill of R%d\n", cfg->rs->fsymbolic [hreg]));
+			get_register_force_spilling (cfg, bb, last, ins, cfg->rs->fsymbolic [hreg], fp);
 			mono_regstate_free_float (cfg->rs, hreg);
 		}
 	}
@@ -1280,13 +1267,13 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (dest_dreg != -1) {
 				if (rs->vassign [ins->dreg] != dest_dreg)
-					free_up_ireg (cfg, bb, tmp, ins, dest_dreg);
+					free_up_reg (cfg, bb, tmp, ins, dest_dreg, FALSE);
 
 				dreg2 = ins->dreg + 1;
 				dest_dreg2 = MONO_ARCH_INST_REGPAIR_REG2 (spec_dest, dest_dreg);
 				if (dest_dreg2 != -1) {
 					if (rs->vassign [dreg2] != dest_dreg2)
-						free_up_ireg (cfg, bb, tmp, ins, dest_dreg2);
+						free_up_reg (cfg, bb, tmp, ins, dest_dreg2, FALSE);
 				}
 			}
 		}
