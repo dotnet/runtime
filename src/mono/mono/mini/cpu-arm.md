@@ -120,7 +120,7 @@ loadi4_membase: dest:i src1:b len:4
 loadu4_membase: dest:i src1:b len:4
 loadi8_membase: dest:i src1:b
 loadr4_membase: dest:f src1:b len:4
-loadr8_membase: dest:f src1:b len:4
+loadr8_membase: dest:f src1:b len:20
 load_memindex: dest:i src1:b src2:i len:4
 loadi1_memindex: dest:i src1:b src2:i len:4
 loadu1_memindex: dest:i src1:b src2:i len:4
