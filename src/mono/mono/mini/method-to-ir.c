@@ -7529,7 +7529,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 					/* Have to compute the address of the variable */
 
-					var = cfg->vreg_to_inst [sp [0]->dreg];
+					var = get_vreg_to_inst (cfg, sp [0]->dreg);
 					if (!var)
 						var = mono_compile_create_var_for_vreg (cfg, &klass->byval_arg, OP_LOCAL, sp [0]->dreg);
 					else
