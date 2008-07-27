@@ -128,10 +128,10 @@ int mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *st
 		   guint inline_offset, gboolean is_virtual_call);
 
 /* helper methods signature */
-MonoMethodSignature *helper_sig_class_init_trampoline;
-MonoMethodSignature *helper_sig_domain_get;
-MonoMethodSignature *helper_sig_generic_class_init_trampoline;
-MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
+extern MonoMethodSignature *helper_sig_class_init_trampoline;
+extern MonoMethodSignature *helper_sig_domain_get;
+extern MonoMethodSignature *helper_sig_generic_class_init_trampoline;
+extern MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 
 /*
  * Instruction metadata
