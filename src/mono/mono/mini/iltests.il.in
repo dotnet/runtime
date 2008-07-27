@@ -709,6 +709,15 @@ COND:   ldloc.0
 		ret
 	}
 
+	.method public static int32 test_1234_conv_ovf_i8_un () cil managed {
+		.maxstack 16
+
+		ldc.i4 1234
+		conv.ovf.i8.un
+		conv.i4
+		ret
+	}
+
 	.method public static int32 test_0_lconv_ovf_i () cil managed {
 		.maxstack 16
 
