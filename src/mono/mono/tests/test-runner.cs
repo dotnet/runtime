@@ -118,6 +118,8 @@ public class TestRunner
 
 		object monitor = new object ();
 
+		var terminated = new List<Process> ();
+
 		if (concurrency != 1)
 			Console.WriteLine ("Running tests: ");
 
@@ -127,6 +129,15 @@ public class TestRunner
 					/* Wait for one process to terminate */
 					Monitor.Wait (monitor);
 				}
+
+				/* Cleaup terminated processes */
+				foreach (Process dead in terminated) {
+					process_data [dead].stdout.Close ();
+					process_data [dead].stderr.Close ();
+					// This is needed to avoid CreateProcess failed errors :(
+					dead.Close ();
+				}
+				terminated.Clear ();
 			}
 
 			if (concurrency == 1)
@@ -165,10 +176,7 @@ public class TestRunner
 						nfailed ++;
 					}
 					processes.Remove (dead);
-					process_data [dead].stdout.Close ();
-					process_data [dead].stderr.Close ();
-					// This is needed to avoid CreateProcess failed errors :(
-					dead.Close ();
+					terminated.Add (dead);
 					Monitor.Pulse (monitor);
 				}
 			};
