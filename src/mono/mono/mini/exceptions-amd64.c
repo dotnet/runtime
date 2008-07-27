@@ -172,10 +172,16 @@ mono_arch_get_restore_context_full (guint32 *code_size, MonoJumpInfo **ji, gbool
 	amd64_mov_reg_membase (code, AMD64_R14, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r14), 8);
 	amd64_mov_reg_membase (code, AMD64_R15, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, r15), 8);
 
-	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rsp), 8);
-
-	/* get return address */
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rip), 8);
+	if (mono_running_on_valgrind ()) {
+		/* Prevent 'Address 0x... is just below the stack ptr.' errors */
+		amd64_mov_reg_membase (code, AMD64_R8, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rsp), 8);
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rip), 8);
+		amd64_mov_reg_reg (code, AMD64_RSP, AMD64_R8, 8);
+	} else {
+		amd64_mov_reg_membase (code, AMD64_RSP, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rsp), 8);
+		/* get return address */
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11,  G_STRUCT_OFFSET (MonoContext, rip), 8);
+	}
 
 	/* jump to the saved IP */
 	amd64_jump_reg (code, AMD64_R11);
