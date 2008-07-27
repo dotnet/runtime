@@ -2197,6 +2197,8 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 static guint8*
 emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
 {
+	gboolean no_patch = FALSE;
+
 	/* 
 	 * FIXME: Add support for thunks
 	 */
@@ -2246,6 +2248,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 						/* A call to the wrapped function */
 						if ((((guint64)data) >> 32) == 0)
 							near_call = TRUE;
+						no_patch = TRUE;
 					}
 					else if (info->func == info->wrapper) {
 						/* No wrapper */
@@ -2280,7 +2283,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 			 * not span cache lines. This is required for code patching to work on SMP
 			 * systems.
 			 */
-			if (((guint32)(code + 1 - cfg->native_code) % 4) != 0)
+			if (!no_patch && ((guint32)(code + 1 - cfg->native_code) % 4) != 0)
 				amd64_padding (code, 4 - ((guint32)(code + 1 - cfg->native_code) % 4));
 			mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 			amd64_call_code (code, 0);
