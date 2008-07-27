@@ -3630,7 +3630,7 @@ mono_array_clone (MonoArray *array)
 #define MYGUINT64_MAX 0x0000FFFFFFFFFFFFUL
 #define MYGUINT_MAX MYGUINT64_MAX
 #define CHECK_ADD_OVERFLOW_UN(a,b) \
-	    (G_UNLIKELY ((guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a))
+	    (G_UNLIKELY ((guint64)(MYGUINT64_MAX) - (guint64)(b) < (guint64)(a)))
 #define CHECK_MUL_OVERFLOW_UN(a,b) \
 	    (G_UNLIKELY (((guint64)(a) > 0) && ((guint64)(b) > 0) &&	\
 					 ((guint64)(b) > ((MYGUINT64_MAX) / (guint64)(a)))))
