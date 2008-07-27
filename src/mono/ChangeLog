@@ -1,3 +1,8 @@
+2008-07-27  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/patch-quiet.sh: Make the libtool --quiet flag configurable by
+	V=1 as well.
+
 2008-07-24  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Patch libtool to avoid the 
