@@ -1745,7 +1745,7 @@ unload_thread_main (void *arg)
 	unload_data *data = (unload_data*)arg;
 	MonoDomain *domain = data->domain;
 
-	/* Have to attac to the runtime so shutdown can wait for this thread */
+	/* Have to attach to the runtime so shutdown can wait for this thread */
 	mono_thread_attach (mono_get_root_domain ());
 
 	/* 
