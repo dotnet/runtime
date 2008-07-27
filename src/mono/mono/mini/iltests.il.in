@@ -1806,4 +1806,49 @@ HAS_VALUE:	ldc.i4.1
 		ldfld int32 Tests/TailCallStruct::a
 		ret
 	}
+
+	.method public static int32 throw_ret () cil managed
+	{
+		ldstr "FOO"
+		newobj instance void class [mscorlib]System.OverflowException::.ctor(string)
+		throw
+		ldc.i4.4
+		ret
+	}
+
+	.method public static int32 throw2_ret () cil managed
+	{
+		// Disable inlining
+		ldc.i4.5
+		localloc
+		pop
+
+		call int32 Tests::throw_ret ()
+		ret
+	}
+
+	// Test inlining a method which contains just a throw
+	.method public static int32 test_0_inline_throw () cil managed
+	{
+		.maxstack 16
+		.locals init (
+				int32 v_0
+		)
+
+		.try {
+			call int32 Tests::throw2_ret ()
+			stloc.0
+			leave L0
+		} catch [mscorlib]System.OverflowException {
+			pop
+			leave L1
+		}
+
+		L0:
+			ldc.i4.1
+			ret
+		L1:
+			ldc.i4.0
+			ret			
+	}
 }

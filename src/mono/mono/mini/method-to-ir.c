@@ -6246,7 +6246,13 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 		case CEE_RET:
 			if (cfg->method != method) {
 				/* return from inlined method */
-				if (return_var) {
+				/* 
+				 * If in_count == 0, that means the ret is unreachable due to
+				 * being preceeded by a throw. In that case, inline_method () will
+				 * handle setting the return value 
+				 * (test case: test_0_inline_throw ()).
+				 */
+				if (return_var && cfg->cbb->in_count) {
 					MonoInst *store;
 					CHECK_STACK (1);
 					--sp;
