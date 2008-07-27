@@ -3746,7 +3746,8 @@ mono_class_init (MonoClass *class)
 		}
 		*/
 
-		if (!MONO_CLASS_IS_INTERFACE (class)) {
+		/* Interfaces and valuetypes are not supposed to have finalizers */
+		if (!(MONO_CLASS_IS_INTERFACE (class) || class->valuetype)) {
 			MonoMethod *cmethod = NULL;
 
 			if (class->type_token) {
