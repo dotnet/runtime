@@ -301,8 +301,16 @@ BASE_TEST_CS_SRC=		\
 	thunks.cs \
 	winx64structs.cs \
 	bug-349190.2.cs	\
-	nullable_boxing.2.cs \
-	valuetype-equals.cs
+	nullable_boxing.2.cs	\
+	valuetype-equals.cs	\
+	custom-modifiers.cs	\
+	bug-382986.cs	\
+	test-inline-call-stack.cs	\
+	bug-324535.cs	\
+	modules.cs	\
+	bug-81673.cs	\
+	bug-81691.cs	\
+	bug-80307.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
@@ -390,7 +398,8 @@ TEST_IL_SRC=			\
 	generic-tailcall2.2.il	\
 	generic-array-exc.2.il	\
 	generic-valuetype-newobj2.2.il	\
-	generic-valuetype-newobj.2.il
+	generic-valuetype-newobj.2.il	\
+	bug-81466.il
 
 #	bug-318677.il
 
@@ -419,20 +428,24 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) \
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
-test:	assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 test-generic-sharing test-bug-382986
+test_platform:
 else
 # Can't use mkbundle on win32 since there is no static build there
 # Can't run test-unhandled-exception on Windows because of all the debug popups...
 if PLATFORM_WIN32
-test:   assemblyresolve/test/asm.dll testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 test-generic-sharing test-bug-382986
+test_platform:
 else
-test:	assemblyresolve/test/asm.dll testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691 test-bug-81466 test-bug-324535 custom-modifiers test-generic-sharing test-bug-382986 test-modules
+test_platform:	testbundle test-iomap-regression
 endif
 endif
 
 if INSTALL_2_1
-test : test-coreclr-security
+test_2_1 : test-coreclr-security
+else
+test_2_1 :
 endif
+
+test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -515,8 +528,9 @@ testjitspeed: $(JITTEST_PROG) $(TESTBS)
 	done
 
 test-iomap-regression: exists.cs
-	$(MCS) $(srcdir)/exists.cs -out:exists.exe
-	MONO_IOMAP=all $(RUNTIME) exists.exe
+	@$(MCS) $(srcdir)/exists.cs -out:exists.exe
+	@echo "Testing exists.exe..."
+	@MONO_IOMAP=all $(RUNTIME) exists.exe
 
 stresstest: $(STRESS_TESTS)
 	@failed=0; \
@@ -537,26 +551,25 @@ stresstest: $(STRESS_TESTS)
 	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
 
 testbundle: console.exe
-	$(MKBUNDLE) --static console.exe
-	$(with_mono_path) MONO_CFG_DIR=$(mono_cfg_dir) MONO_SHARED_DIR=$(mono_build_root)/runtime ./a.out
-	- rm -rf a.out
+	@echo "Testing mkbundle..."
+	@$(MKBUNDLE) --static console.exe > mkbundle.stdout
+	@$(with_mono_path) MONO_CFG_DIR=$(mono_cfg_dir) MONO_SHARED_DIR=$(mono_build_root)/runtime ./a.out >> mkbundle.stdout
+	@- rm -rf a.out
 
 EXTRA_DIST += load-missing.il t-missing.cs load-exceptions.cs
 test-type-load: TestDriver.dll
-	$(ILASM) /dll /output:load-missing.dll $(srcdir)/load-missing.il
-	$(MCS) -t:library -out:t.dll -d:FOUND $(srcdir)/t-missing.cs
-	$(MCS) -r:TestDriver.dll -r:load-missing.dll -r:t.dll -out:load-exceptions.exe $(srcdir)/load-exceptions.cs
-	$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
-	$(RUNTIME) load-exceptions.exe
+	@$(ILASM) /dll /output:load-missing.dll $(srcdir)/load-missing.il > /dev/null
+	@$(MCS) -t:library -out:t.dll -d:FOUND $(srcdir)/t-missing.cs
+	@$(MCS) -r:TestDriver.dll -r:load-missing.dll -r:t.dll -out:load-exceptions.exe $(srcdir)/load-exceptions.cs
+	@$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
+	@echo "Testing load-exception.exe..."
+	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
 
 EXTRA_DIST += test-inline-call-stack-library.cs test-inline-call-stack.cs
 test-inline-call-stack-library.dll: TestDriver.dll $(srcdir)/test-inline-call-stack-library.cs
 	$(MCS) -t:library -out:test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack-library.cs
 test-inline-call-stack.exe: TestDriver.dll test-inline-call-stack-library.dll $(srcdir)/test-inline-call-stack.cs
 	$(MCS) -r:TestDriver.dll -r:test-inline-call-stack-library.dll -out:test-inline-call-stack.exe $(srcdir)/test-inline-call-stack.cs
-test-inline-call-stack: TestDriver.dll test-inline-call-stack-library.dll test-inline-call-stack.exe
-	$(RUNTIME) test-inline-call-stack.exe
-
 
 EXTRA_DIST += unhandled-exception-base-configuration.config
 EXTRA_DIST += unhandled-exception-legacy-configuration.config
@@ -587,49 +600,35 @@ unhandled-exception-test-runner.2.exe: unhandled-exception-test-runner.2.cs
 test-unhandled-exception: unhandled-exception-test-runner.2.exe unhandled-exception-config_files unhandled-exception-test-case.1.exe unhandled-exception-test-case-legacy.1.exe  unhandled-exception-test-case.2.exe unhandled-exception-test-case-legacy.2.exe
 	$(RUNTIME) unhandled-exception-test-runner.2.exe RUNTIME:../mini/mono,GTC:F
 
-EXTRA_DIST += bug-80307.cs
+# We use 'test-support-files' to handle an ordering issue between the 'mono/' and 'runtime/' directories
 bug-80307.exe: $(srcdir)/bug-80307.cs
 	$(MCS) -r:System.Web -out:$@ $(srcdir)/bug-80307.cs
-
-# We use 'test-support-files' to handle an ordering issue between the 'mono/' and 'runtime/' directories
-test-bug-80307: bug-80307.exe
 	cd $(top_builddir)/runtime && $(MAKE) test-support-files
-	$(RUNTIME) bug-80307.exe
 
-EXTRA_DIST += bug-81673.cs bug-81673-interface.cs
+EXTRA_DIST += bug-81673-interface.cs
 bug-81673.exe bug-81673-interface.dll: $(srcdir)/bug-81673.cs $(srcdir)/bug-81673-interface.cs
 	$(MCS) -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
 	$(MCS) -out:bug-81673.exe -r:bug-81673-interface.dll $(srcdir)/bug-81673.cs
 	$(MCS) -define:WITH_STOP -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
 
-test-bug-81673 : bug-81673.exe bug-81673-interface.dll
-	$(RUNTIME) bug-81673.exe
-
-EXTRA_DIST += bug-81691.cs bug-81691-a.cs bug-81691-b.cs
+EXTRA_DIST += bug-81691-a.cs bug-81691-b.cs
 bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $(srcdir)/bug-81691-b.cs
 	$(MCS) -target:library -out:bug-81691-a.dll $(srcdir)/bug-81691-a.cs
 	$(MCS) -target:library -out:bug-81691-b.dll -r:bug-81691-a.dll $(srcdir)/bug-81691-b.cs
 	$(MCS) -r:bug-81691-b.dll -out:bug-81691.exe $(srcdir)/bug-81691.cs
 	rm -f bug-81691-a.dll
 
-test-bug-81691 : bug-81691.exe bug-81691-b.dll
-	$(RUNTIME) bug-81691.exe
-
-EXTRA_DIST += bug-81466.il bug-81466-lib.il
+EXTRA_DIST += bug-81466-lib.il
 bug-81466-lib.dll: bug-81466-lib.il
 	$(ILASM) /dll /output:bug-81466-lib.dll $(srcdir)/bug-81466-lib.il
 bug-81466.exe: bug-81466.il bug-81466-lib.dll
 	$(ILASM) /exe /output:bug-81466.exe $(srcdir)/bug-81466.il
-test-bug-81466: bug-81466.exe bug-81466-lib.dll
-	$(RUNTIME) bug-81466.exe
 
-EXTRA_DIST += bug-324535-il.il bug-324535.cs
+EXTRA_DIST += bug-324535-il.il
 bug-324535-il.dll : bug-324535-il.il
 	$(ILASM) /dll /output:bug-324535-il.dll $(srcdir)/bug-324535-il.il
 bug-324535.exe : bug-324535.cs bug-324535-il.dll
 	$(MCS) -r:bug-324535-il.dll -out:bug-324535.exe $(srcdir)/bug-324535.cs
-test-bug-324535 : bug-324535.exe bug-324535-il.dll
-	$(RUNTIME) bug-324535.exe
 
 EXTRA_DIST += make_imt_test.sh
 imt_big_iface_test.cs: $(srcdir)/make_imt_test.sh
@@ -640,16 +639,12 @@ custom-modifiers-lib.dll: custom-modifiers-lib.il
 	$(ILASM) /dll /output:custom-modifiers-lib.dll $(srcdir)/custom-modifiers-lib.il
 custom-modifiers.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
 	$(MCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.exe $(srcdir)/custom-modifiers.2.cs
-custom-modifiers: custom-modifiers.exe
-	$(RUNTIME) custom-modifiers.exe
 
-EXTRA_DIST += bug-382986.cs  bug-382986-lib.cs
+EXTRA_DIST += bug-382986-lib.cs
 bug-382986-lib.dll: bug-382986-lib.cs
 	$(MCS) -target:library -out:$@ $(srcdir)/bug-382986-lib.cs
 bug-382986.exe: bug-382986.cs bug-382986-lib.dll
 	$(MCS) -out:$@ -r:bug-382986-lib.dll $(srcdir)/bug-382986.cs
-test-bug-382986: bug-382986.exe
-	$(RUNTIME) bug-382986.exe
 
 EXTRA_DIST += coreclr-security.cs
 
@@ -658,7 +653,8 @@ coreclr-security.exe : coreclr-security.cs
 	$(SMCS) -out:coreclr-security.exe $(srcdir)/coreclr-security.cs
 
 test-coreclr-security : coreclr-security.exe
-	$(RUNTIME21) --security=core-clr-test coreclr-security.exe
+	@echo "Testing coreclr-security.exe..."
+	@$(RUNTIME21) --security=core-clr-test coreclr-security.exe
 endif
 
 EXTRA_DIST += generic-unboxing.2.il
@@ -683,6 +679,8 @@ generic-delegate2-lib.2.dll : generic-delegate2-lib.2.il
 generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
 	$(MCS) -r:generic-delegate2-lib.2.dll -out:$@ $(srcdir)/generic-delegate2.2.cs
 
+gshared: test-generic-sharing
+
 test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		shared-generic-synchronized.2.exe generic-initobj.2.exe		\
 		generics-sharing-other-exc.2.exe generic-box.2.exe		\
@@ -699,12 +697,12 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-virtual2.2.exe generic-valuetype-interface.2.exe	\
 		generic-valuetype-newobj.2.exe generic-valuetype-newobj2.2.exe	\
 		generic-getgenericarguments.2.exe
-	for fn in $+ ; do	\
+	@for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
-		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared                $$fn || exit 1;	\
-		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,shared         $$fn || exit 1;	\
-		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline        $$fn || exit 1;	\
-		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline,shared $$fn || exit 1;	\
+		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared                $$fn > $$fn.stdout || exit 1;	\
+		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,shared         $$fn > $$fn.stdout || exit 1;	\
+		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline        $$fn > $$fn.stdout || exit 1;	\
+		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline,shared $$fn > $fn.stdout || exit 1;	\
 	done
 
 EXTRA_DIST += async-exceptions.cs
@@ -719,8 +717,6 @@ modules-m1.netmodule: modules-m1.cs
 	$(MCS) -out:$@ /target:module $(srcdir)/modules-m1.cs
 modules.exe: modules.cs modules-m1.netmodule
 	$(MCS) -out:$@ /addmodule:modules-m1.netmodule -r:TestDriver.dll $(srcdir)/modules.cs
-test-modules: modules.exe
-	$(RUNTIME) modules.exe
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:
