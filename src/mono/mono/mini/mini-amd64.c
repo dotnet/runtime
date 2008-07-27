@@ -2261,8 +2261,10 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 							near_call = TRUE;
 					}
 				}
-				else if ((((guint64)data) >> 32) == 0)
+				else if ((((guint64)data) >> 32) == 0) {
 					near_call = TRUE;
+					no_patch = TRUE;
+				}
 			}
 		}
 
