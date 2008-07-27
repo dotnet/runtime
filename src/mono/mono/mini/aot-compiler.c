@@ -2845,7 +2845,7 @@ emit_plt (MonoAotCompile *acfg)
 	g_free (symbol);
 }
 
-static void
+static G_GNUC_UNUSED void
 emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code, 
 				 guint32 code_size, int got_offset, MonoJumpInfo *ji)
 {
@@ -2910,8 +2910,9 @@ static void
 emit_trampolines (MonoAotCompile *acfg)
 {
 	char *symbol;
-	int tramp_type, i, offset;
+	int i, offset;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+	int tramp_type;
 	guint32 code_size;
 	MonoJumpInfo *ji;
 	guint8 *code;

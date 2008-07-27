@@ -460,7 +460,9 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 2, 0);
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1);
 				break;
+			case OP_ICONV_TO_OVF_I8_UN:
 			case OP_ICONV_TO_OVF_U8_UN:
+				/* an unsigned 32 bit num always fits in an (un)signed 64 bit one */
 				MONO_EMIT_NEW_ICONST (cfg, tree->dreg + 2, 0);
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, tree->dreg + 1, tree->sreg1);
 				break;
