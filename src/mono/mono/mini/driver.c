@@ -962,7 +962,7 @@ mini_usage_jitdeveloper (void)
 		 "    --regression           Runs the regression test contained in the assembly\n"
 		 "    --statfile FILE        Sets the stat file to FILE\n"
 		 "    --stats                Print statistics about the JIT operations\n"
-		 "    --wapi=hps|semdel      IO-layer maintenance\n"
+		 "    --wapi=hps|semdel|seminfo IO-layer maintenance\n"
 		 "    --inject-async-exc METHOD OFFSET Inject an asynchronous exception at METHOD\n"
 		 "    --verify-all           Run the verifier on all methods\n"
 		 "    --full-aot             Avoid JITting any code\n"
@@ -1352,7 +1352,9 @@ mono_main (int argc, char* argv[])
 				return 1;
 			}
 		} else if (strcmp (argv [i], "--desktop") == 0) {
+#if defined (HAVE_BOEHM_GC)
 			GC_dont_expand = 1;
+#endif
 			/* Put desktop-specific optimizations here */
 		} else if (strcmp (argv [i], "--server") == 0){
 			/* Put server-specific optimizations here */
