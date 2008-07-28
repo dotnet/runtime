@@ -1,6 +1,7 @@
 #include <config.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/class.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
@@ -1416,7 +1417,6 @@ profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled, gboolean dum
 		job->end = & (job->buffers->buffer [PROFILER_HEAP_SHOT_WRITE_BUFFER_SIZE]);
 	} else {
 		job->buffers = NULL;
-		job->buffers->next = NULL;
 		job->last_next = NULL;
 		job->start = NULL;
 		job->cursor = NULL;
@@ -1439,6 +1439,11 @@ profiler_heap_shot_write_job_new (gboolean heap_shot_was_signalled, gboolean dum
 	printf ("profiler_heap_shot_write_job_new: created job %p with buffer %p(%p-%p) (collection %d, dump %d)\n", job, job->buffers, job->start, job->end, collection, dump_heap_data);
 #endif
 	return job;
+}
+
+static gboolean
+profiler_heap_shot_write_job_has_data (ProfilerHeapShotWriteJob *job) {
+	return ((job->buffers != NULL) || (job->summary.capacity > 0));
 }
 
 static void
@@ -1502,15 +1507,15 @@ profiler_process_heap_shot_write_jobs (void) {
 			next_job = current_job->next_unwritten;
 			
 			if (next_job != NULL) {
-				if (current_job->buffers != NULL) {
+				if (profiler_heap_shot_write_job_has_data (current_job)) {
 					done = FALSE;
 				}
-				if (next_job->buffers == NULL) {
+				if (! profiler_heap_shot_write_job_has_data (next_job)) {
 					current_job->next_unwritten = NULL;
 					next_job = NULL;
 				}
 			} else {
-				if (current_job->buffers != NULL) {
+				if (profiler_heap_shot_write_job_has_data (current_job)) {
 					LOG_WRITER_THREAD ("profiler_process_heap_shot_write_jobs: writing...");
 					profiler_heap_shot_write_block (current_job);
 					LOG_WRITER_THREAD ("profiler_process_heap_shot_write_jobs: done");
@@ -3622,7 +3627,7 @@ object_allocated (MonoProfiler *profiler, MonoObject *obj, MonoClass *klass) {
 	ProfilerPerThreadData *thread_data;
 	
 	STORE_EVENT_ITEM_VALUE (profiler, klass, MONO_PROFILER_EVENT_DATA_TYPE_CLASS, MONO_PROFILER_EVENT_CLASS_ALLOCATION, 0, (guint64) mono_object_get_size (obj));
-	if (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot) {
+	if (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot || profiler->action_flags.collection_summary) {
 		GET_PROFILER_THREAD_DATA (thread_data);
 		STORE_ALLOCATED_OBJECT (thread_data, obj);
 	}
@@ -4152,7 +4157,7 @@ handle_heap_profiling (MonoProfiler *profiler, MonoGCEvent ev) {
 
 static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
-	gboolean do_heap_profiling = profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot;
+	gboolean do_heap_profiling = profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot || profiler->action_flags.collection_summary;
 	guint32 event_value;
 	
 	if (ev == MONO_GC_EVENT_START) {
@@ -4662,7 +4667,7 @@ mono_profiler_startup (const char *desc)
 	profiler->executable_files.new_files = NULL; 
 	
 	profiler->heap_shot_write_jobs = NULL;
-	if (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot) {
+	if (profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot || profiler->action_flags.collection_summary) {
 		profiler_heap_buffers_setup (&(profiler->heap));
 	} else {
 		profiler_heap_buffers_clear (&(profiler->heap));
