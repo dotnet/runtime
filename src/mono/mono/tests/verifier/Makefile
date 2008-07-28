@@ -12,7 +12,7 @@ compile-stamp: generate-stamp BatchCompiler.exe test_lib.dll
 	for i in *.cs; do \
 		EXE="`echo $$i | cut -d. -f1`.exe"; \
 		DLL="`echo $$i | cut -d. -f1`.dll"; \
-		if ! [ -f $$EXE ] && ! [ -f $$DLL ] then \
+		if ! [ -f $$EXE ] && ! [ -f $$DLL ]; then \
 			gmcs /unsafe $$i; \
 		fi \
 	done 
