@@ -1187,6 +1187,16 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		sentinelpos = sig->sentinelpos + (sig->hasthis ? 1 : 0);
 
+#if defined(__APPLE__)
+	if (cinfo->need_stack_align) {
+		MONO_INST_NEW (cfg, arg, OP_SUB_IMM);
+		arg->dreg = X86_ESP;
+		arg->sreg1 = X86_ESP;
+		arg->inst_imm = cinfo->stack_align_amount;
+		MONO_ADD_INS (cfg->cbb, arg);
+	}
+#endif 
+
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoInst *vtarg;
 
@@ -1210,16 +1220,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 		}
 	}
-
-#if defined(__APPLE__)
-	if (cinfo->need_stack_align) {
-		MONO_INST_NEW (cfg, arg, OP_SUB_IMM);
-		arg->dreg = X86_ESP;
-		arg->sreg1 = X86_ESP;
-		arg->inst_imm = cinfo->stack_align_amount;
-		MONO_ADD_INS (cfg->cbb, arg);
-	}
-#endif 
 
 	/* Handle the case where there are no implicit arguments */
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sentinelpos)) {
