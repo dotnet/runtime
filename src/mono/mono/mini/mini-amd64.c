@@ -685,6 +685,14 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		ArgInfo *ainfo = &cinfo->args [sig->hasthis + i];
 		MonoType *ptype;
 
+#ifdef PLATFORM_WIN32
+		/* The float param registers and other param registers must be the same index on Windows x64.*/
+		if (gr > fr)
+			fr = gr;
+		else if (fr > gr)
+			gr = fr;
+#endif
+
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* We allways pass the sig cookie on the stack for simplicity */
 			/* 
@@ -1429,13 +1437,33 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				break;
 			case ArgValuetypeInReg:
 				break;
-			case ArgValuetypeAddrInIReg:
-				break;  /*FIXME: Not sure what to do for this case yet on Winx64*/
+			case ArgValuetypeAddrInIReg: {
+				MonoInst *indir;
+				g_assert (!cfg->arch.omit_fp);
+				
+				MONO_INST_NEW (cfg, indir, 0);
+				indir->opcode = OP_REGOFFSET;
+				if (ainfo->pair_storage [0] == ArgInIReg) {
+					indir->inst_basereg = cfg->frame_reg;
+					offset = ALIGN_TO (offset, sizeof (gpointer));
+					offset += (sizeof (gpointer));
+					indir->inst_offset = - offset;
+				}
+				else {
+					indir->inst_basereg = cfg->frame_reg;
+					indir->inst_offset = ainfo->offset + ARGS_OFFSET;
+				}
+				
+				ins->opcode = OP_VTARG_ADDR;
+				ins->inst_left = indir;
+				
+				break;
+			}
 			default:
 				NOT_IMPLEMENTED;
 			}
 
-			if (!inreg && (ainfo->storage != ArgOnStack)) {
+			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg)) {
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
@@ -1780,7 +1808,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					/*Copy the argument to the temp variable.*/
 					MONO_INST_NEW (cfg, load, OP_MEMCPY);
 					load->backend.memcpy_args = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoMemcpyArgs));
-					load->backend.memcpy_args->size = mono_class_value_size (in->klass, &align);
+					load->backend.memcpy_args->size = size;
 					load->backend.memcpy_args->align = align;
 					load->inst_left = (cfg)->varinfo [vtaddr->inst_c0];
 					load->inst_right = in->inst_i0;
@@ -1846,9 +1874,10 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 
 #ifdef PLATFORM_WIN32
 	/* Always reserve 32 bytes of stack space on Win64 */
-	MONO_INST_NEW (cfg, arg, OP_AMD64_OUTARG_ALIGN_STACK);
+	/*MONO_INST_NEW (cfg, arg, OP_AMD64_OUTARG_ALIGN_STACK);
 	arg->inst_c0 = 32;
-	MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);
+	MONO_INST_LIST_ADD_TAIL (&arg->node, &call->out_args);*/
+	NOT_IMPLEMENTED;
 #endif
 
 #if 0
@@ -1949,6 +1978,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		case ArgOnStack:
 		case ArgValuetypeInReg:
+		case ArgValuetypeAddrInIReg:
 			if (ainfo->storage == ArgOnStack && call->tail_call)
 				NOT_IMPLEMENTED;
 			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
@@ -2058,8 +2088,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 #ifdef PLATFORM_WIN32
-	// FIXME:
-	NOT_IMPLEMENTED;
+	if (call->inst.opcode != OP_JMP && OP_TAILCALL != call->inst.opcode) {
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 0x20);
+	}
 #endif
 
 	if (cfg->method->save_lmf) {
@@ -2104,6 +2135,30 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			MONO_ADD_INS (cfg->cbb, load);
 
 			add_outarg_reg2 (cfg, call, ainfo->pair_storage [part], ainfo->pair_regs [part], load);
+		}
+	} else if (ainfo->storage == ArgValuetypeAddrInIReg) {
+		MonoInst *vtaddr, *load;
+		vtaddr = mono_compile_create_var (cfg, &ins->klass->byval_arg, OP_LOCAL);
+		
+		MONO_INST_NEW (cfg, load, OP_LDADDR);
+		load->inst_p0 = vtaddr;
+		vtaddr->flags |= MONO_INST_INDIRECT;
+		load->type = STACK_MP;
+		load->klass = vtaddr->klass;
+		load->dreg = mono_alloc_ireg (cfg);
+		MONO_ADD_INS (cfg->cbb, load);
+		mini_emit_memcpy2 (cfg, load->dreg, 0, src->dreg, 0, size, 4);
+
+		if (ainfo->pair_storage [0] == ArgInIReg) {
+			MONO_INST_NEW (cfg, arg, OP_X86_LEA_MEMBASE);
+			arg->dreg = ainfo->pair_regs [0];
+			arg->sreg1 = load->dreg;
+			arg->inst_imm = 0;
+			MONO_ADD_INS (cfg->cbb, arg);
+		} else {
+			MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
+			arg->sreg1 = load->dreg;
+			MONO_ADD_INS (cfg->cbb, arg);
 		}
 	} else {
 		if (size == 8) {
@@ -2857,6 +2912,10 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 						g_assert_not_reached ();
 					}
 				}
+				break;
+			case ArgValuetypeAddrInIReg:
+				if (ainfo->pair_storage [0] == ArgInIReg)
+					amd64_mov_reg_membase (code, ainfo->pair_regs [0], ins->inst_left->inst_basereg, ins->inst_left->inst_offset,  sizeof (gpointer));
 				break;
 			default:
 				break;
@@ -4781,12 +4840,21 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		while (remaining_size >= 0x1000) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
 			async_exc_point (code);
+#ifdef PLATFORM_WIN32
+			if (cfg->arch.omit_fp) 
+				mono_arch_unwindinfo_add_alloc_stack (&cfg->arch.unwindinfo, cfg->native_code, code, 0x1000);
+#endif
+
 			amd64_test_membase_reg (code, AMD64_RSP, 0, AMD64_RSP);
 			remaining_size -= 0x1000;
 		}
 		if (remaining_size) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, remaining_size);
 			async_exc_point (code);
+#ifdef PLATFORM_WIN32
+			if (cfg->arch.omit_fp) 
+				mono_arch_unwindinfo_add_alloc_stack (&cfg->arch.unwindinfo, cfg->native_code, code, remaining_size);
+#endif
 		}
 #else
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, alloc_size);
@@ -4977,6 +5045,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 						g_assert_not_reached ();
 					}
 				}
+				break;
+			case ArgValuetypeAddrInIReg:
+				if (ainfo->pair_storage [0] == ArgInIReg)
+					amd64_mov_membase_reg (code, ins->inst_left->inst_basereg, ins->inst_left->inst_offset, ainfo->pair_regs [0],  sizeof (gpointer));
 				break;
 			default:
 				break;
