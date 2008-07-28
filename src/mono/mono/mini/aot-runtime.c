@@ -748,7 +748,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	aot_code_low_addr = MIN (aot_code_low_addr, (gsize)amodule->code);
 	aot_code_high_addr = MAX (aot_code_high_addr, (gsize)amodule->code_end);
 
-	g_hash_table_insert (aot_modules, assembly, amodule);
+	g_hash_table_insert (aot_modules, assembly->image, amodule);
 	mono_aot_unlock ();
 
 	mono_jit_info_add_aot_module (assembly->image, amodule->code, amodule->code_end);
@@ -857,7 +857,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 
 	mono_aot_lock ();
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image);
 	if (!aot_module) {
 		mono_aot_unlock ();
 		return NULL;
@@ -898,7 +898,7 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 
 	mono_aot_lock ();
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image);
 	if (!aot_module) {
 		mono_aot_unlock ();
 		return FALSE;
@@ -946,7 +946,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 
 	mono_aot_lock ();
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image->assembly);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
 	if (!aot_module || !aot_module->class_name_table) {
 		mono_aot_unlock ();
 		return FALSE;
@@ -1105,7 +1105,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	if (!module)
 		return NULL;
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
 
 	if (domain != mono_get_root_domain ())
 		/* FIXME: */
@@ -1527,7 +1527,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		return NULL;
 	
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image);
 
 	g_assert (klass->inited);
 
@@ -1765,7 +1765,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE)
 		return NULL;
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
 
 	if (domain != mono_get_root_domain ())
 		return NULL;
@@ -2331,7 +2331,7 @@ mono_aot_get_named_code (const char *name)
 
 	assembly = image->assembly;
 	g_assert (assembly);
-	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, assembly);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
 	g_assert (amodule);
 
 	mono_aot_unlock ();
@@ -2357,7 +2357,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	mono_aot_lock ();
 
 	g_assert (image->assembly);
-	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, image->assembly);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
 	g_assert (amodule);
 
 	if (amodule->trampoline_index == amodule->num_trampolines)
@@ -2401,7 +2401,6 @@ gpointer
 mono_aot_get_unbox_trampoline (MonoMethod *method)
 {
 	MonoClass *klass = method->klass;
-	MonoAssembly *ass = klass->image->assembly;
 	guint32 method_index = mono_metadata_token_index (method->token) - 1;
 	MonoAotModule *amodule;
 	char *symbol;
@@ -2409,7 +2408,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 
 	mono_aot_lock ();
 
-	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image);
 
 	mono_aot_unlock ();
 
