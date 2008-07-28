@@ -643,7 +643,14 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 	MonoClass *klass;
 
 	if (!is_valid_type_in_context (ctx, type)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid type %x at 0x%04x", type->type, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+		char *str = mono_type_full_name (type);
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic type (%s%s) (argument out of range or %s is not generic) at 0x%04x",
+			type->type == MONO_TYPE_VAR ? "!" : "!!",
+			str,
+			type->type == MONO_TYPE_VAR ? "class" : "method",
+			ctx->ip_offset),
+			MONO_EXCEPTION_BAD_IMAGE);		
+		g_free (str);
 		return FALSE;
 	}
 
@@ -656,6 +663,12 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
 		return FALSE;
 	}
+
+	if (klass->exception_type != MONO_EXCEPTION_NONE || (klass->generic_class && klass->generic_class->container_class->exception_type != MONO_EXCEPTION_NONE)) {
+		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Could not load type %s.%s at 0x%04x", klass->name_space, klass->name, ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
+		return FALSE;
+	}
+
 	if (!klass->generic_class)
 		return TRUE;
 
@@ -674,10 +687,8 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 static gboolean
 mono_method_is_valid_in_context (VerifyContext *ctx, MonoMethod *method)
 {
-	if (!mono_type_is_valid_in_context (ctx, &method->klass->byval_arg)) {
-		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
+	if (!mono_type_is_valid_in_context (ctx, &method->klass->byval_arg))
 		return FALSE;
-	}
 
 	if (!method->is_inflated)
 		return TRUE;
