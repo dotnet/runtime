@@ -2033,7 +2033,7 @@ mono_test_marshal_cdecl_delegate (CdeclDelegate del)
 	return 0;
 }
 
-typedef char** (*ReturnStringArrayDelegate) (int i);
+typedef char** (STDCALL *ReturnStringArrayDelegate) (int i);
 
 LIBTEST_API int STDCALL 
 mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
@@ -3628,6 +3628,71 @@ mono_test_managed_Winx64_struct1_in(managed_struct1_delegate func)
 	winx64_struct1 val;
 	val.a = 5;
 	return func (val);
+}
+
+typedef int (STDCALL *managed_struct5_delegate) (winx64_struct5 a);
+
+LIBTEST_API int STDCALL 
+mono_test_managed_Winx64_struct5_in(managed_struct5_delegate func)
+{
+	winx64_struct5 val;
+	val.a = 5;
+	val.b = 0x10;
+	val.c = 0x99;
+	return func (val);
+}
+
+typedef int (STDCALL *managed_struct1_struct5_delegate) (winx64_struct1 a, winx64_struct5 b,
+							 winx64_struct1 c, winx64_struct5 d,
+							 winx64_struct1 e, winx64_struct5 f);
+
+LIBTEST_API int STDCALL 
+mono_test_managed_Winx64_struct1_struct5_in(managed_struct1_struct5_delegate func)
+{
+	winx64_struct1 a, c, e;
+	winx64_struct5 b, d, f;
+	a.a = 1;
+	b.a = 2; b.b = 3; b.c = 4;
+	c.a = 5;
+	d.a = 6; d.b = 7; d.c = 8;
+	e.a = 9;
+	f.a = 10; f.b = 11; f.c = 12;
+
+	return func (a, b, c, d, e, f);
+}
+
+typedef winx64_struct1 (STDCALL *managed_struct1_ret_delegate) ();
+
+LIBTEST_API int STDCALL 
+mono_test_Winx64_struct1_ret_managed (managed_struct1_ret_delegate func)
+{
+	winx64_struct1 ret;
+
+	ret = func ();
+
+	if (ret.a != 0x45)
+		return 1;
+	
+	return 0;
+}
+
+typedef winx64_struct5 (STDCALL *managed_struct5_ret_delegate) ();
+
+LIBTEST_API int STDCALL 
+mono_test_Winx64_struct5_ret_managed (managed_struct5_ret_delegate func)
+{
+	winx64_struct5 ret;
+
+	ret = func ();
+
+	if (ret.a != 0x12)
+		return 1;
+	if (ret.b != 0x34)
+		return 2;
+	if (ret.c != 0x56)
+		return 3;
+	
+	return 0;
 }
 
 
