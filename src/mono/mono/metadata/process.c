@@ -985,3 +985,32 @@ ves_icall_System_Diagnostics_Process_SetPriorityClass (HANDLE process, gint32 pr
 	*error = ret == 0 ? GetLastError () : 0;
 	return ret;
 }
+
+HANDLE
+ves_icall_System_Diagnostics_Process_ProcessHandle_duplicate (HANDLE process)
+{
+	HANDLE ret;
+
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef DEBUG
+	g_message ("%s: Duplicating process handle %p", __func__, process);
+#endif
+	
+	DuplicateHandle (GetCurrentProcess (), process, GetCurrentProcess (),
+			 &ret, THREAD_ALL_ACCESS, TRUE, 0);
+	
+	return ret;
+}
+
+void
+ves_icall_System_Diagnostics_Process_ProcessHandle_close (HANDLE process)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef DEBUG
+	g_message ("%s: Closing process handle %p", __func__, process);
+#endif
+
+	CloseHandle (process);
+}
