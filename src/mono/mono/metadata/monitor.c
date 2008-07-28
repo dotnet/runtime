@@ -530,8 +530,12 @@ retry:
 	thread = mono_thread_current ();
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
-	
-	ret = WaitForSingleObjectEx (mon->entry_sem, waitms, allow_interruption);
+
+	/*
+	 * We pass TRUE instead of allow_interruption since we have to check for the
+	 * StopRequested case below.
+	 */
+	ret = WaitForSingleObjectEx (mon->entry_sem, waitms, TRUE);
 
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
@@ -564,6 +568,13 @@ retry:
 		}
 	} else {
 		if (ret == WAIT_TIMEOUT || (ret == WAIT_IO_COMPLETION && !allow_interruption)) {
+			if (ret == WAIT_IO_COMPLETION && mono_thread_test_state (mono_thread_current (), ThreadState_StopRequested)) {
+				/* 
+				 * We have to obey a stop request even if allow_interruption is
+				 * FALSE to avoid hangs at shutdown.
+				 */
+				return -1;
+			}
 			/* Infinite wait, so just try again */
 			goto retry;
 		}
