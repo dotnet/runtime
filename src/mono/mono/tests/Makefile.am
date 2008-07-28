@@ -303,7 +303,7 @@ BASE_TEST_CS_SRC=		\
 	bug-349190.2.cs	\
 	nullable_boxing.2.cs	\
 	valuetype-equals.cs	\
-	custom-modifiers.cs	\
+	custom-modifiers.2.cs	\
 	bug-382986.cs	\
 	test-inline-call-stack.cs	\
 	bug-324535.cs	\
@@ -637,8 +637,8 @@ imt_big_iface_test.cs: $(srcdir)/make_imt_test.sh
 EXTRA_DIST += custom-modifiers.2.cs custom-modifiers-lib.il
 custom-modifiers-lib.dll: custom-modifiers-lib.il
 	$(ILASM) /dll /output:custom-modifiers-lib.dll $(srcdir)/custom-modifiers-lib.il
-custom-modifiers.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
-	$(MCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.exe $(srcdir)/custom-modifiers.2.cs
+custom-modifiers.2.exe: custom-modifiers.2.cs custom-modifiers-lib.dll
+	$(MCS) -r:custom-modifiers-lib.dll -out:custom-modifiers.2.exe $(srcdir)/custom-modifiers.2.cs
 
 EXTRA_DIST += bug-382986-lib.cs
 bug-382986-lib.dll: bug-382986-lib.cs
