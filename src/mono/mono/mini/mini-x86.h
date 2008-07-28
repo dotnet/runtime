@@ -98,7 +98,11 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_INST_IS_REGPAIR(desc) (desc == 'l' || desc == 'L')
 #define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l' ? X86_EDX : -1)
 
+#if __APPLE__
+#define MONO_ARCH_FRAME_ALIGNMENT 16
+#else
 #define MONO_ARCH_FRAME_ALIGNMENT 4
+#endif
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
  * reproduceable results for benchmarks */
