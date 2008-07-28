@@ -5564,6 +5564,36 @@ return_nested_in (MonoClass *class, char *nested) {
 	return NULL;
 }
 
+static MonoClass*
+search_modules (MonoImage *image, const char *name_space, const char *name)
+{
+	MonoTableInfo *file_table = &image->tables [MONO_TABLE_FILE];
+	MonoImage *file_image;
+	MonoClass *class;
+	int i;
+
+	/* 
+	 * The EXPORTEDTYPES table only contains public types, so have to search the
+	 * modules as well.
+	 * Note: image->modules contains the contents of the MODULEREF table, while
+	 * the real module list is in the FILE table.
+	 */
+	for (i = 0; i < file_table->rows; i++) {
+		guint32 cols [MONO_FILE_SIZE];
+		mono_metadata_decode_row (file_table, i, cols, MONO_FILE_SIZE);
+		if (cols [MONO_FILE_FLAGS] == FILE_CONTAINS_NO_METADATA)
+			continue;
+
+		file_image = mono_image_load_file_for_image (image, i + 1);
+		if (file_image) {
+			class = mono_class_from_name (file_image, name_space, name);
+			if (class)
+				return class;
+		}
+	}
+
+	return NULL;
+}
 
 /**
  * mono_class_from_name:
@@ -5599,6 +5629,8 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	if (get_class_from_name) {
 		gboolean res = get_class_from_name (image, name_space, name, &class);
 		if (res) {
+			if (!class)
+				class = search_modules (image, name_space, name);
 			if (nested)
 				return class ? return_nested_in (class, nested) : NULL;
 			else
@@ -5630,28 +5662,9 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	}
 
 	if (!token) {
-		/* 
-		 * The EXPORTEDTYPES table only contains public types, so have to search the
-		 * modules as well.
-		 * Note: image->modules contains the contents of the MODULEREF table, while
-		 * the real module list is in the FILE table.
-		 */
-		MonoTableInfo *file_table = &image->tables [MONO_TABLE_FILE];
-		MonoImage *file_image;
-
-		for (i = 0; i < file_table->rows; i++) {
-			guint32 cols [MONO_FILE_SIZE];
-			mono_metadata_decode_row (file_table, i, cols, MONO_FILE_SIZE);
-			if (cols [MONO_FILE_FLAGS] == FILE_CONTAINS_NO_METADATA)
-				continue;
-
-			file_image = mono_image_load_file_for_image (image, i + 1);
-			if (file_image) {
-				class = mono_class_from_name (file_image, name_space, name);
-				if (class)
-					return class;
-			}
-		}
+		class = search_modules (image, name_space, name);
+		if (class)
+			return class;
 	}
 
 	if (!token)
