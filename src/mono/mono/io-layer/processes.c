@@ -2053,6 +2053,15 @@ static guint32 get_module_name (gpointer process, gpointer module,
 			free_procmodule (found_module);
 		}
 
+		if (procname_ext == NULL)
+		{
+			/* If it's *still* null, we might have hit the
+			 * case where reading /proc/$pid/maps gives an
+			 * empty file for this user.
+			 */
+			procname_ext = get_process_name_from_proc (pid);
+		}
+
 		g_slist_free (mods);
 		g_free (filename);
 		g_free (proc_name);
