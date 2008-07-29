@@ -3058,6 +3058,7 @@ flush_all_mappings (void);
 
 static void
 write_statistical_data_block (ProfilerStatisticalData *data) {
+	MonoThread *current_thread = mono_thread_current ();
 	int start_index = data->first_unwritten_index;
 	int end_index = data->next_free_index;
 	gboolean regions_refreshed = FALSE;
@@ -3083,7 +3084,7 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 		ProfilerStatisticalHit hit = data->hits [base_index];
 		int callers_count;
 		
-		regions_refreshed = write_statistical_hit (hit.domain, hit.address, regions_refreshed);
+		regions_refreshed = write_statistical_hit ((current_thread != NULL) ? hit.domain : NULL, hit.address, regions_refreshed);
 		base_index ++;
 		
 		for (callers_count = 0; callers_count < call_chain_depth; callers_count ++) {
@@ -3099,7 +3100,7 @@ write_statistical_data_block (ProfilerStatisticalData *data) {
 			for (callers_count = 0; callers_count < call_chain_depth; callers_count ++) {
 				hit = data->hits [base_index + callers_count];
 				if (hit.address != NULL) {
-					regions_refreshed = write_statistical_hit (hit.domain, hit.address, regions_refreshed);
+					regions_refreshed = write_statistical_hit ((current_thread != NULL) ? hit.domain : NULL, hit.address, regions_refreshed);
 				} else {
 					break;
 				}
@@ -4211,7 +4212,7 @@ profiler_shutdown (MonoProfiler *prof)
 	WRITER_EVENT_DESTROY ();
 	
 	LOCK_PROFILER ();
-	writer_thread_flush_everything ();
+	flush_everything ();
 	MONO_PROFILER_GET_CURRENT_TIME (profiler->end_time);
 	MONO_PROFILER_GET_CURRENT_COUNTER (profiler->end_counter);
 	write_end_block ();
