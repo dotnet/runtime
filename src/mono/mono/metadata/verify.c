@@ -100,6 +100,12 @@ enum {
 	IL_CODE_CALL_NONFINAL_VIRTUAL = 0x40,
 };
 
+typedef enum {
+	RESULT_VALID,
+	RESULT_UNVERIFIABLE,
+	RESULT_INVALID
+} verify_result_t;
+
 typedef struct {
 	MonoType *type;
 	int stype;
@@ -476,23 +482,6 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 	}
 	return TRUE;
 }
-static void
-dump_ginst (const char *prefix, MonoGenericInst *ginst)
-{
-	int i;
-	char *name;
-
-	g_print ("Ginst (%s): <", prefix);
-	for (i = 0; i < ginst->type_argc; ++i) {
-		if (i != 0)
-			g_print (", ");
-		name = mono_type_full_name (ginst->type_argv [i]);
-		g_print ("%s", name);
-		g_free (name);
-	}
-	g_print (">\n");
-}
-
 
 /*
  * Return true if @candidate is constraint compatible with @target.
@@ -709,25 +698,26 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 
 	return TRUE;
 }
-static gboolean
+
+static verify_result_t
 mono_method_is_valid_in_context (VerifyContext *ctx, MonoMethod *method)
 {
 	if (!mono_type_is_valid_in_context (ctx, &method->klass->byval_arg))
-		return FALSE;
+		return RESULT_INVALID;
 
 	if (!method->is_inflated)
-		return TRUE;
+		return RESULT_VALID;
 
 	if (!mono_method_is_valid_generic_instantiation (ctx, method)) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic method instantiation of method %s.%s::%s at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset), MONO_EXCEPTION_UNVERIFIABLE_IL);
-		return FALSE;
+		return RESULT_INVALID;
 	}
 
 	if (!mono_method_repect_method_constraints (ctx, method)) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid generic method instantiation of method %s.%s::%s (generic args don't respect target's constraints) at 0x%04x", method->klass->name_space, method->klass->name, method->name, ctx->ip_offset));
-		return FALSE;
+		return RESULT_UNVERIFIABLE;
 	}
-	return TRUE;
+	return RESULT_VALID;
 }
 
 	
@@ -768,7 +758,7 @@ verifier_load_method (VerifyContext *ctx, int token, const char *opcode) {
 		return NULL;
 	}
 	
-	if (!mono_method_is_valid_in_context (ctx, method))
+	if (mono_method_is_valid_in_context (ctx, method) == RESULT_INVALID)
 		return NULL;
 
 	return method;
