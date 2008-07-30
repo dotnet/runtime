@@ -4689,6 +4689,23 @@ mono_method_verify (MonoMethod *method, int level)
 		ctx.params [i] = mono_class_inflate_generic_type (ctx.params [i], ctx.generic_context);
 	stack_init (&ctx, &ctx.eval);
 
+	for (i = 0; i < ctx.num_locals; ++i) {
+		if (!mono_type_is_valid_in_context (&ctx, ctx.locals [i])) {
+			ADD_VERIFY_ERROR2 (&ctx, g_strdup_printf ("Invalid local variable %d", i), MONO_EXCEPTION_BAD_IMAGE);
+			break;
+		}
+	}
+
+	for (i = 0; i < ctx.max_args; ++i) {
+		if (!mono_type_is_valid_in_context (&ctx, ctx.params [i])) {
+			ADD_VERIFY_ERROR2 (&ctx, g_strdup_printf ("Invalid parameter %d", i), MONO_EXCEPTION_BAD_IMAGE);
+			break;
+		}
+	}
+
+	if (!ctx.valid)
+		goto cleanup;
+
 	for (i = 0; i < ctx.header->num_clauses && ctx.valid; ++i) {
 		MonoExceptionClause *clause = ctx.header->clauses + i;
 		VERIFIER_DEBUG (printf ("clause try %x len %x filter at %x handler at %x len %x\n", clause->try_offset, clause->try_len, clause->data.filter_offset, clause->handler_offset, clause->handler_len); );
@@ -5617,6 +5634,7 @@ mono_method_verify (MonoMethod *method, int level)
 	if (mono_method_is_constructor (ctx.method) && !ctx.super_ctor_called && !ctx.method->klass->valuetype && ctx.method->klass != mono_defaults.object_class)
 		CODE_NOT_VERIFIABLE (&ctx, g_strdup_printf ("Constructor not calling super\n"));
 
+cleanup:
 	if (ctx.code) {
 		for (i = 0; i < ctx.header->code_size; ++i) {
 			if (ctx.code [i].stack)
@@ -5781,6 +5799,8 @@ verify_class_for_overlapping_reference_fields (MonoClass *class)
 gboolean
 mono_verifier_verify_class (MonoClass *class)
 {
+	if (class->generic_container && (class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
+		return FALSE;
 	if (!verify_class_for_overlapping_reference_fields (class))
 		return FALSE;
 	
