@@ -476,6 +476,23 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 	}
 	return TRUE;
 }
+static void
+dump_ginst (const char *prefix, MonoGenericInst *ginst)
+{
+	int i;
+	char *name;
+
+	g_print ("Ginst (%s): <", prefix);
+	for (i = 0; i < ginst->type_argc; ++i) {
+		if (i != 0)
+			g_print (", ");
+		name = mono_type_full_name (ginst->type_argv [i]);
+		g_print ("%s", name);
+		g_free (name);
+	}
+	g_print (">\n");
+}
+
 
 /*
  * Return true if @candidate is constraint compatible with @target.
@@ -483,7 +500,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
  * This means that @candidate constraints are a super set of @target constaints
  */
 static gboolean
-mono_generic_param_is_constraint_compatible (MonoGenericParam *target, MonoGenericParam *candidate)
+mono_generic_param_is_constraint_compatible (MonoGenericParam *target, MonoGenericParam *candidate, MonoGenericContext *context)
 {
 	int tmask = target->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 	int cmask = candidate->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;	
@@ -495,9 +512,17 @@ mono_generic_param_is_constraint_compatible (MonoGenericParam *target, MonoGener
 		if (!candidate->constraints)
 			return FALSE;
 		for (target_class = target->constraints; *target_class; ++target_class) {
-			MonoClass *tc = *target_class;
+			MonoType *inflated = mono_class_inflate_generic_type (&(*target_class)->byval_arg, context);
+			MonoClass *tc = mono_class_from_mono_type (inflated);
+			mono_metadata_free_type (inflated);
+
 			for (candidate_class = candidate->constraints; *candidate_class; ++candidate_class) {
-				MonoClass *cc = *candidate_class;
+				MonoClass *cc;
+
+				inflated = mono_class_inflate_generic_type (&(*candidate_class)->byval_arg, context);
+				cc = mono_class_from_mono_type (inflated);
+				mono_metadata_free_type (inflated);
+
 				if (mono_class_is_assignable_from (tc, cc))
 					break;
 			}
@@ -588,7 +613,7 @@ generic_arguments_respect_constraints (VerifyContext *ctx, MonoGenericContainer 
 
 		candidate = verifier_get_generic_param_from_type (ctx, type);
 
-		if (!mono_generic_param_is_constraint_compatible (target, candidate))
+		if (!mono_generic_param_is_constraint_compatible (target, candidate, context))
 			return FALSE;
 	}
 	return TRUE;
