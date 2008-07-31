@@ -29,7 +29,7 @@ struct _MonoAssembly {
 	int ref_count; /* use atomic operations only */
 	char *basedir;
 	MonoAssemblyName aname;
-	MonoDl *aot_module;
+	gpointer aot_module;
 	MonoImage *image;
 	GSList *friend_assembly_names;
 	guint8 in_gac;
