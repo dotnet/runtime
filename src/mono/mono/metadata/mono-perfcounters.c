@@ -829,6 +829,17 @@ predef_readonly_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 	}
 	sample->counterType = predef_counters [predef_categories [cat_id].first_counter + id].type;
 	switch (cat_id) {
+	case CATEGORY_JIT:
+		switch (id) {
+		case COUNTER_JIT_BYTES:
+		case COUNTER_JIT_BYTES_PSEC:
+			sample->rawValue = vt->counters->jit_bytes;
+			return TRUE;
+		case COUNTER_JIT_METHODS:
+			sample->rawValue = vt->counters->jit_methods;
+			return TRUE;
+		}
+		break;
 	case CATEGORY_EXC:
 		switch (id) {
 		case COUNTER_EXC_THROWN:
