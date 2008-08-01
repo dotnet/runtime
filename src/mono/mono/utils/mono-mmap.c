@@ -11,6 +11,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <errno.h>
 #endif
 
 #include "mono-mmap.h"
@@ -22,6 +24,29 @@
 #ifndef MAP_32BIT
 #define MAP_32BIT 0
 #endif
+
+typedef struct {
+	int size;
+	int pid;
+	int reserved;
+	short stats_start;
+	short stats_end;
+} SAreaHeader;
+
+static void* malloced_shared_area = NULL;
+
+static void*
+malloc_shared_area (int pid)
+{
+	int size = mono_pagesize ();
+	SAreaHeader *sarea = g_malloc0 (size);
+	sarea->size = size;
+	sarea->pid = pid;
+	sarea->stats_start = sizeof (SAreaHeader);
+	sarea->stats_end = sizeof (SAreaHeader);
+
+	return sarea;
+}
 
 #ifdef PLATFORM_WIN32
 
@@ -134,6 +159,31 @@ mono_mprotect (void *addr, size_t length, int flags)
 		return 0;
 	}
 	return VirtualProtect (addr, length, prot, &oldprot) == 0;
+}
+
+void*
+mono_shared_area (void)
+{
+	/* get the pid here */
+	return malloc_shared_area (0);
+}
+
+void
+mono_shared_area_remove (void)
+{
+	if (malloced_shared_area)
+		g_free (malloced_shared_area);
+}
+
+void*
+mono_shared_area_for_pid (void *pid)
+{
+	return NULL;
+}
+
+void
+mono_shared_area_unload (void *area)
+{
 }
 
 #elif defined(HAVE_MMAP)
@@ -316,6 +366,122 @@ mono_mprotect (void *addr, size_t length, int flags)
 	return mprotect (addr, length, prot);
 }
 
+static void
+shared_cleanup (void)
+{
+	const char *name;
+	GDir *dir = g_dir_open ("/dev/shm/", 0, NULL);
+	if (!dir)
+		return;
+	while ((name = g_dir_read_name (dir))) {
+		int pid;
+		char *nend;
+		if (strncmp (name, "mono.", 5))
+			continue;
+		pid = strtol (name + 5, &nend, 10);
+		if (pid <= 0 || nend == name + 5 || *nend)
+			continue;
+		if (kill (pid, SIGCONT) == -1 && errno == ESRCH) {
+			char buf [128];
+			g_snprintf (buf, sizeof (buf), "/mono.%d", pid);
+			shm_unlink (buf);
+		}
+	}
+	g_dir_close (dir);
+}
+
+void*
+mono_shared_area (void)
+{
+	int fd;
+	int pid = getpid ();
+	/* we should allow the user to configure the size */
+	int size = mono_pagesize ();
+	char buf [128];
+	void *res;
+	SAreaHeader *header;
+
+	/* perform cleanup of segments left over from dead processes */
+	shared_cleanup ();
+
+	g_snprintf (buf, sizeof (buf), "/mono.%d", pid);
+
+	fd = shm_open (buf, O_CREAT|O_EXCL|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP);
+	if (fd == -1 && errno == EEXIST) {
+		/* leftover */
+		shm_unlink (buf);
+		fd = shm_open (buf, O_CREAT|O_EXCL|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP);
+	}
+	/* in case of failure we try to return a memory area anyway,
+	 * even if it means the data can't be read by other processes
+	 */
+	if (fd == -1)
+		return malloc_shared_area (pid);
+	if (ftruncate (fd, size) != 0) {
+		shm_unlink (buf);
+		close (fd);
+	}
+	res = mmap (NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if (res == MAP_FAILED) {
+		shm_unlink (buf);
+		close (fd);
+		return malloc_shared_area (pid);
+	}
+	/* we don't need the file descriptor anymore */
+	close (fd);
+	header = res;
+	header->size = size;
+	header->pid = pid;
+	header->stats_start = sizeof (SAreaHeader);
+	header->stats_end = sizeof (SAreaHeader);
+
+	atexit (mono_shared_area_remove);
+	return res;
+}
+
+void
+mono_shared_area_remove (void)
+{
+	char buf [128];
+	g_snprintf (buf, sizeof (buf), "/mono.%d", getpid ());
+	shm_unlink (buf);
+	if (malloced_shared_area)
+		g_free (malloced_shared_area);
+}
+
+void*
+mono_shared_area_for_pid (void *pid)
+{
+	int fd;
+	/* we should allow the user to configure the size */
+	int size = mono_pagesize ();
+	char buf [128];
+	void *res;
+	SAreaHeader *header;
+
+	g_snprintf (buf, sizeof (buf), "/mono.%d", GPOINTER_TO_INT (pid));
+
+	fd = shm_open (buf, O_RDONLY, S_IRUSR|S_IRGRP);
+	if (fd == -1)
+		return NULL;
+	res = mmap (NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+	if (res == MAP_FAILED) {
+		close (fd);
+		return NULL;
+	}
+	/* FIXME: validate the area */
+	/* we don't need the file descriptor anymore */
+	close (fd);
+	return res;
+}
+
+void
+mono_shared_area_unload  (void *area)
+{
+	/* FIXME: currently we load only a page */
+	munmap (area, mono_pagesize ());
+}
+
 #else
 
 /* dummy malloc-based implementation */
@@ -371,6 +537,31 @@ mono_mprotect (void *addr, size_t length, int flags)
 		memset (addr, 0, length);
 	}
 	return 0;
+}
+
+void*
+mono_shared_area (void)
+{
+	return malloc_shared_area (getpid ());
+}
+
+void
+mono_shared_area_remove (void)
+{
+	if (malloced_shared_area)
+		g_free (malloced_shared_area);
+	malloced_shared_area = NULL;
+}
+
+void*
+mono_shared_area_for_pid (void *pid)
+{
+	return NULL;
+}
+
+void
+mono_shared_area_unload (void *area)
+{
 }
 
 #endif
