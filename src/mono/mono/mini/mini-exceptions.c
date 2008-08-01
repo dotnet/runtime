@@ -1107,6 +1107,8 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 gboolean
 mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gboolean test_only)
 {
+	if (!test_only)
+		mono_perfcounters->exceptions_thrown++;
 	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, NULL);
 }
 
