@@ -619,8 +619,15 @@ typedef struct {
  * Size of fields and type should not be changed as well.
  */
 typedef struct {
-	gulong methods_jitted;
-	gulong aspnet_requests_queued;
+	guint32 jit_methods;
+	guint32 jit_bytes;
+	guint32 jit_time;
+	guint32 jit_failures;
+	guint32 exceptions_thrown;
+	guint32 exceptions_filters;
+	guint32 exceptions_finallys;
+	guint32 exceptions_depth;
+	guint32 aspnet_requests_queued;
 } MonoPerfCounters;
 
 extern MonoPerfCounters *mono_perfcounters MONO_INTERNAL;
