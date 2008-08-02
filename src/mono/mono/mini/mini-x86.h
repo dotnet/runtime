@@ -101,7 +101,8 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #if __APPLE__
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 #else
-#define MONO_ARCH_FRAME_ALIGNMENT 4
+/* For storing doubles on the stack */
+#define MONO_ARCH_FRAME_ALIGNMENT 8
 #endif
 
 /* fixme: align to 16byte instead of 32byte (we align to 32byte to get 

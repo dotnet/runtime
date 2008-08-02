@@ -464,12 +464,12 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
  * Gathers information on parameters such as size, alignment and
  * padding. arg_info should be large enought to hold param_count + 1 entries. 
  *
- * Returns the size of the activation frame.
+ * Returns the size of the argument area on the stack.
  */
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
-	int k, frame_size = 0;
+	int k, args_size = 0;
 	int size, pad;
 	guint32 align;
 	int offset = 8;
@@ -478,18 +478,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	cinfo = get_call_info (NULL, NULL, csig, FALSE);
 
 	if (MONO_TYPE_ISSTRUCT (csig->ret) && (cinfo->ret.storage == ArgOnStack)) {
-		frame_size += sizeof (gpointer);
+		args_size += sizeof (gpointer);
 		offset += 4;
 	}
 
 	arg_info [0].offset = offset;
 
 	if (csig->hasthis) {
-		frame_size += sizeof (gpointer);
+		args_size += sizeof (gpointer);
 		offset += 4;
 	}
 
-	arg_info [0].size = frame_size;
+	arg_info [0].size = args_size;
 
 	for (k = 0; k < param_count; k++) {
 		
@@ -504,9 +504,9 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		/* ignore alignment for now */
 		align = 1;
 
-		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
+		args_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
 		arg_info [k].pad = pad;
-		frame_size += size;
+		args_size += size;
 		arg_info [k + 1].pad = 0;
 		arg_info [k + 1].size = size;
 		offset += pad;
@@ -514,13 +514,13 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		offset += size;
 	}
 
-	align = MONO_ARCH_FRAME_ALIGNMENT;
-	frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
+	align = 4;
+	args_size += pad = (align - (args_size & (align - 1))) & (align - 1);
 	arg_info [k].pad = pad;
 
 	g_free (cinfo);
 
-	return frame_size;
+	return args_size;
 }
 
 static const guchar cpuid_impl [] = {
