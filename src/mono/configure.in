@@ -65,6 +65,7 @@ need_link_unlink=no
 # Thread configuration inspired by sleepycat's db
 AC_MSG_CHECKING([host platform characteristics])
 libgc_threads=no
+has_dtrace=no
 case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
@@ -224,6 +225,7 @@ case "$host" in
 		libgc_threads=pthreads
 		# This doesn't seem to work on solaris/x86, but the configure test runs
 		with_tls=pthread
+		has_dtrace=yes
 		;;
 	*-*-darwin*)
 		platform_win32=no
@@ -238,6 +240,7 @@ case "$host" in
 		no_version_script=yes
 		libdl=
 		libgc_threads=pthreads
+		has_dtrace=yes
 		if test "x$cross_compiling" = "xyes"; then
 			has_broken_apple_cpp=yes
 		fi
@@ -1686,16 +1689,26 @@ if test "x$enable_big_arrays" = "xyes" ; then
 	AC_DEFINE(MONO_BIG_ARRAYS,1,[Enable the allocation and indexing of arrays greater than Int32.MaxValue])
 fi
 
-AC_MSG_CHECKING([if DTrace support is requested])
-AC_ARG_ENABLE(dtrace,[  --enable-dtrace	Enable DTrace probes], enable_dtrace=$enableval, enable_dtrace=no)
-AC_MSG_RESULT($enable_dtrace)
+dnl **************
+dnl *** DTRACE ***
+dnl **************
+
+AC_ARG_ENABLE(dtrace,[  --enable-dtrace	Enable DTrace probes], enable_dtrace=$enableval, enable_dtrace=$has_dtrace)
+
+if test "x$enable_dtrace" = "xyes"; then
+   if test "x$has_dtrace" = "xno"; then
+   	  AC_MSG_ERROR([DTrace probes are not supported on this platform.])
+   fi
+   AC_PATH_PROG(DTRACE, [dtrace], [no], [$PATH:/usr/sbin])
+   if test "x$DTRACE" = "xno"; then
+   	  AC_MSG_RESULT([dtrace utility not found, dtrace support disabled.])
+	  enable_dtrace=no
+   fi
+fi
+
 dtrace_g=no
 if test "x$enable_dtrace" = "xyes"; then
 	AC_DEFINE(ENABLE_DTRACE, 1, [Enable DTrace probes])
-	AC_PATH_PROG(DTRACE, [dtrace], [no], [$PATH:/usr/sbin])
-	if test "x$DTRACE" = "xno"; then
-		AC_MSG_FAILURE([DTrace requested but not found])
-	fi
 	DTRACEFLAGS=
 	if test "x$ac_cv_sizeof_void_p" = "x8"; then
 		case "$host" in
@@ -2412,6 +2425,7 @@ echo "
 	zlib:        $zlib_msg
 	oprofile:    $OPROFILE
 	BigArrays:   $enable_big_arrays
+	DTrace:      $enable_dtrace
 	$disabled
 
 "
