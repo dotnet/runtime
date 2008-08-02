@@ -504,7 +504,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		/* ignore alignment for now */
 		align = 1;
 
-		args_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
+		args_size += pad = (align - (args_size & (align - 1))) & (align - 1);	
 		arg_info [k].pad = pad;
 		args_size += size;
 		arg_info [k + 1].pad = 0;
