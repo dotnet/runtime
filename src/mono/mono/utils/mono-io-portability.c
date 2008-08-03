@@ -110,6 +110,7 @@ gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 	gchar *new_pathname, **components, **new_components;
 	int num_components = 0, component = 0;
 	DIR *scanning = NULL;
+	size_t len;
 
 	if (IS_PORTABILITY_NONE) {
 		return(NULL);
@@ -152,7 +153,7 @@ gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists)
 #endif
 	}
 
-	size_t len = strlen (new_pathname);
+	len = strlen (new_pathname);
 	if (len > 1 && new_pathname [len - 1] == '/') {
 		new_pathname [len - 1] = 0;
 #ifdef DEBUG
