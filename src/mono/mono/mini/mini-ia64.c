@@ -310,7 +310,15 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 			ainfo->nregs = info->num_fields;
 			ainfo->nslots = ainfo->nregs;
 			(*fr) += info->num_fields;
-			(*gr) += info->num_fields;
+			if (ainfo->atype == AggregateSingleHFA) {
+				/*
+				 * FIXME: Have to keep track of the parameter slot number, which is
+				 * not the same as *gr.
+				 */
+				(*gr) += ALIGN_TO (info->num_fields, 2) / 2;
+			} else {
+				(*gr) += info->num_fields;
+			}
 			return;
 		}
 	}
