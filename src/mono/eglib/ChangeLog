@@ -1,5 +1,12 @@
 2008-08-04  Bill Holmes  <billholmes54@gmail.com>
 
+	* test/tests.h, test/Makefile.am, test/memory.c : Adding memory tests to test
+	  allocation routines return NULL when 0 size is passed in.
+
+	Contributed under MIT/X11 license.
+
+2008-08-04  Bill Holmes  <billholmes54@gmail.com>
+
 	* src/glib.h : Changing the allocation routines to return null if 0 size is
 	  passed in.
 
