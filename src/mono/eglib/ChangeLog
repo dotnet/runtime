@@ -1,3 +1,10 @@
+2008-08-04  Bill Holmes  <billholmes54@gmail.com>
+
+	* src/glib.h : Changing the allocation routines to return null if 0 size is
+	  passed in.
+
+	Contributed under MIT/X11 license.
+
 2008-06-16  Zoltan Varga  <vargaz@gmail.com>
 
 	* src/vasprintf.c (vasprintf): Applied patch from Michail Ushakov 
@@ -1131,5 +1138,6 @@ Mon Oct 9 12:59:16 CEST 2006 Paolo Molaro <lupus@ximian.com>
 
 	* src/ghashtable.c: Implement most of this, it is completely
 	untested at this point.
+
 
 

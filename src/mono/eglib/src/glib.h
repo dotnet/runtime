@@ -101,18 +101,20 @@ typedef uint16_t       gunichar2;
 /*
  * Allocation
  */
-#define g_new(type,size)        ((type *) malloc (sizeof (type) * (size)))
-#define g_new0(type,size)       ((type *) calloc (sizeof (type), (size)))
-#define g_newa(type,size)       ((type *) alloca (sizeof (type) * (size)))
-#define g_realloc(obj,size)     realloc((obj), (size))
-#define g_malloc(x)             malloc(x)
-#define g_try_malloc(x)         malloc(x)
-#define g_try_realloc(obj,size) realloc((obj),(size))
-#define g_malloc0(x)            calloc(1,x)
-#define g_memmove(dest,src,len) memmove (dest, src, len)
-#define g_renew(struct_type, mem, n_structs) realloc (mem, sizeof (struct_type) * n_structs)
-#define g_alloca(size)		alloca (size)
 #define g_free                  free
+static inline gpointer g_realloc (gpointer obj, gsize size) { if (!size) {g_free (obj); return 0;} return  realloc (obj, size);}
+static inline gpointer g_malloc (gsize x) {if (x) return malloc (x); else return 0;}
+static inline gpointer g_malloc0 (gsize x) {if (x) return calloc(1,x); else return 0;}
+#define g_try_malloc(x)         g_malloc(x)
+#define g_try_realloc(obj,size) g_realloc((obj),(size))
+
+#define g_new(type,size)        ((type *) g_malloc (sizeof (type) * (size)))
+#define g_new0(type,size)       ((type *) g_malloc0 (sizeof (type)* (size)))
+#define g_newa(type,size)       ((type *) alloca (sizeof (type) * (size)))
+
+#define g_memmove(dest,src,len) memmove (dest, src, len)
+#define g_renew(struct_type, mem, n_structs) g_realloc (mem, sizeof (struct_type) * n_structs)
+#define g_alloca(size)		alloca (size)
 
 gpointer g_memdup (gconstpointer mem, guint byte_size);
 gchar   *g_strdup (const gchar *str);
@@ -820,5 +822,6 @@ gboolean  g_utf8_validate      (const gchar *str, gssize max_len, const gchar **
 #define GLIB_CHECK_VERSION(a,b,c) ((a < _EGLIB_MAJOR) || (a == _EGLIB_MAJOR && (b < _EGLIB_MIDDLE || (b == _EGLIB_MIDDLE && c <= _EGLIB_MINOR))))
  
 #endif
+
 
 
