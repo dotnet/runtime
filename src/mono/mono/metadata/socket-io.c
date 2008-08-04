@@ -611,7 +611,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 static MonoImage *get_socket_assembly (void)
 {
 	static const char *version = NULL;
-	gboolean moonlight;
+	static gboolean moonlight;
 	static MonoImage *socket_assembly = NULL;
 	
 	if (version == NULL) {
