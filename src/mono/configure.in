@@ -78,8 +78,8 @@ case "$host" in
 		HOST_CC="gcc"
 		# Windows 2000 is required that includes Internet Explorer 5.01
 		CPPFLAGS="$CPPFLAGS -DWINVER=0x0500 -D_WIN32_WINNT=0x0500 -D_WIN32_IE=0x0501 -D_UNICODE -DUNICODE -DWIN32_THREADS -DFD_SETSIZE=1024"
-		libmono_cflags="-mno-cygwin"
-		libmono_ldflags="-mno-cygwin"
+		libmono_cflags="-mno-cygwin -mms-bitfields -mwindows"
+		libmono_ldflags="-mno-cygwin -mms-bitfields -mwindows"
 		libdl=
 		libgc_threads=win32
 		gc_default=included
@@ -296,6 +296,7 @@ AC_SUBST(HOST_CC)
 AC_SUBST(BUILD_EXEEXT)
 
 AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
+AM_CONDITIONAL(USE_BATCH_FILES, [test x$platform_win32 = xyes -a x$cross_compiling = xyes])
 
 # Set STDC_HEADERS
 AC_HEADER_STDC
@@ -494,9 +495,13 @@ embedded)
   AC_CONFIG_SUBDIRS(eglib)
   ;;
 system)
+  pkg_config_path="$PKG_CONFIG_PATH"
+  unset PKG_CONFIG_PATH
   BUILD_GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
   BUILD_GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-
+  PKG_CONFIG_PATH=$pkg_config_path
+  export PKG_CONFIG_PATH
+  
   ## Versions of dependencies
   GLIB_REQUIRED_VERSION=1.3.11
   
@@ -2188,7 +2193,11 @@ AC_SUBST(mono_runtime)
 
 mono_cfg_root=$mono_build_root/runtime
 if test x$platform_win32 = xyes; then
-  mono_cfg_dir=`cygpath -w -a $mono_cfg_root`\\etc
+  if test "x$cross_compiling" = "xno"; then
+    mono_cfg_dir=`cygpath -w -a $mono_cfg_root`\\etc
+  else
+    mono_cfg_dir=`echo $mono_cfg_root | tr '/' '\\\'`\\etc
+  fi
 else
   mono_cfg_dir=$mono_cfg_root/etc
 fi

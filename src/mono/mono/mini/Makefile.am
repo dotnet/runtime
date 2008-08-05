@@ -416,7 +416,7 @@ generics-variant-types.dll: generics-variant-types.il
 # $(arch_define) is the preprocessor symbol that enables all the opcodes
 # for the specific platform in mini-ops.h
 if CROSS_COMPILING
-GENMDESC_PRG=perl genmdesc.pl $(arch_define) $(srcdir)
+GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir)
 else !CROSS_COMPILING
 GENMDESC_PRG=./genmdesc
 endif !CROSS_COMPILING

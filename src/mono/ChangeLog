@@ -1,3 +1,26 @@
+2008-08-05  Marek Habersack  <mhabersack@novell.com>
+
+	* configure.in: added support for cross-compilation
+
+2008-08-05  Marek Habersack  <mhabersack@novell.com>
+
+	* build-mingw32.sh: added a script to build Mono for Windows on a
+	Linux host using mingw.
+
+2008-08-05  Marek Habersack  <mhabersack@novell.com>
+
+	* scripts/Makefile.am: added support for cross-compilation,
+	including .bat generation for windows targets.
+
+2008-08-05  Marek Habersack  <mhabersack@novell.com>
+
+	* scripts/smcs.bat.in, scripts/script.bat.in,
+	scripts/script_umask.bat.in: added .bat templates.
+
+2008-08-05  Marek Habersack  <mhabersack@novell.com>
+
+	* runtime/Makefile.am: mingw cross-compilation support.
+
 2008-08-05  Andreas Färber  <andreas.faerber@web.de>
 
 	* autogen.sh: Suppress arguments warning for NOCONFIGURE.
