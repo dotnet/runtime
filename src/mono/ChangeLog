@@ -1,5 +1,9 @@
 2008-08-05  Marek Habersack  <mhabersack@novell.com>
 
+	* configure.in: use the PKG_CONFIG_PATH only when cross-compiling.
+
+2008-08-05  Marek Habersack  <mhabersack@novell.com>
+
 	* configure.in: added support for cross-compilation
 
 2008-08-05  Marek Habersack  <mhabersack@novell.com>
