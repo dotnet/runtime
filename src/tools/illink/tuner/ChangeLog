@@ -1,3 +1,7 @@
+2008-08-05  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/CheckVisibility.cs: properly verify famorassem.
+
 2008-06-10  Jb Evain  <jbevain@novell.com>
 
 	* masterinfos/silverlight/System.Net.info
