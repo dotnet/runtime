@@ -1,3 +1,9 @@
+2008-08-05  Andreas Färber  <andreas.faerber@web.de>
+
+	* autogen.sh: Suppress arguments warning for NOCONFIGURE.
+	
+	Contributed under MIT/X11 license.
+
 2008-08-02  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Enable dtrace by default on platforms which support it.

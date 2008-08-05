@@ -1,3 +1,9 @@
+2008-08-05  Andreas Faerber  <andreas.faerber@web.de>
+
+	* autogen.sh: Suppress arguments warning for NOCONFIGURE.
+	
+	Contributed under MIT/X11 license.
+
 2008-08-04  Bill Holmes  <billholmes54@gmail.com>
 
 	* test/tests.h, test/Makefile.am, test/memory.c : Adding memory tests to test
