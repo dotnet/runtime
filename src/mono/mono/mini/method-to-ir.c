@@ -6460,10 +6460,12 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			MonoBasicBlock **targets;
 			MonoBasicBlock *default_bblock;
 			MonoJumpInfoBBTable *table;
+#ifndef __arm__
 			int offset_reg = alloc_preg (cfg);
 			int target_reg = alloc_preg (cfg);
 			int table_reg = alloc_preg (cfg);
 			int sum_reg = alloc_preg (cfg);
+#endif
 
 			CHECK_OPSIZE (5);
 			CHECK_STACK (1);

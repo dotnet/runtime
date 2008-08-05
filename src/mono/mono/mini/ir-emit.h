@@ -411,13 +411,13 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         } \
     } while (0)
 
-#define EMIT_NEW_ARGLOAD(cfg,dest,num) EMIT_NEW_VARLOAD_SFLOAT ((cfg), (dest), arg_array [(num)], param_types [(num)])
+#define EMIT_NEW_ARGLOAD(cfg,dest,num) EMIT_NEW_VARLOAD_SFLOAT ((cfg), (dest), cfg->args [(num)], cfg->arg_types [(num)])
 
 #define EMIT_NEW_LOCLOAD(cfg,dest,num) EMIT_NEW_VARLOAD_SFLOAT ((cfg), (dest), cfg->locals [(num)], header->locals [(num)])
 
 #define EMIT_NEW_LOCSTORE(cfg,dest,num,inst) EMIT_NEW_VARSTORE_SFLOAT ((cfg), (dest), (cfg)->locals [(num)], (cfg)->locals [(num)]->inst_vtype, (inst))
 
-#define EMIT_NEW_ARGSTORE(cfg,dest,num,inst) EMIT_NEW_VARSTORE_SFLOAT ((cfg), (dest), arg_array [(num)], param_types [(num)], (inst))
+#define EMIT_NEW_ARGSTORE(cfg,dest,num,inst) EMIT_NEW_VARSTORE_SFLOAT ((cfg), (dest), cfg->args [(num)], cfg->arg_types [(num)], (inst))
 
 #else
 
