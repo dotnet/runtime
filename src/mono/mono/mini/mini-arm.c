@@ -3420,30 +3420,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LCONV_TO_OVF_I:
 		case OP_LCONV_TO_OVF_I4_2: {
-#if ARM_PORT
-			guint32 *negative_branch, *msword_positive_branch, *msword_negative_branch, *ovf_ex_target;
-			// Check if its negative
-			ppc_cmpi (code, 0, 0, ins->sreg1, 0);
-			negative_branch = code;
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 0);
-			// Its positive msword == 0
-			ppc_cmpi (code, 0, 0, ins->sreg2, 0);
-			msword_positive_branch = code;
-			ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+			guint32 *high_bit_not_set, *valid_negative, *invalid_negative, *valid_positive;
+			/* 
+			 * Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000
+			 */
 
-			ovf_ex_target = code;
-			//EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_ALWAYS, 0, "OverflowException");
-			// Negative
-			ppc_patch (negative_branch, code);
-			ppc_cmpi (code, 0, 0, ins->sreg2, -1);
-			msword_negative_branch = code;
-			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-			ppc_patch (msword_negative_branch, ovf_ex_target);
+			ARM_CMP_REG_IMM8 (code, ins->sreg1, 0);
+			high_bit_not_set = code;
+			ARM_B_COND (code, ARMCOND_GE, 0); /*branch if bit 31 of the lower part is not set*/
+
+			ARM_CMN_REG_IMM8 (code, ins->sreg2, 1); /*This have the same effect as CMP reg, 0xFFFFFFFF */
+			valid_negative = code;
+			ARM_B_COND (code, ARMCOND_EQ, 0); /*branch if upper part == 0xFFFFFFFF (lower part has bit 31 set) */
+			invalid_negative = code;
+			ARM_B_COND (code, ARMCOND_AL, 0);
 			
-			ppc_patch (msword_positive_branch, code);
-			if (ins->dreg != ins->sreg1)
-				ppc_mr (code, ins->dreg, ins->sreg1);
-#endif
+			arm_patch (high_bit_not_set, code);
+
+			ARM_CMP_REG_IMM8 (code, ins->sreg2, 0);
+			valid_positive = code;
+			ARM_B_COND (code, ARMCOND_EQ, 0); /*branch if upper part == 0 (lower part has bit 31 clear)*/
+
+			arm_patch (invalid_negative, code);
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_AL, "OverflowException");
+
+			arm_patch (valid_negative, code);
+			arm_patch (valid_positive, code);
+
 			if (ins->dreg != ins->sreg1)
 				ARM_MOV_REG_REG (code, ins->dreg, ins->sreg1);
 			break;
