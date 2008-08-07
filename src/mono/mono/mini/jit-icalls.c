@@ -9,6 +9,7 @@
  */
 
 #include <math.h>
+#include <limits.h>
 
 #include "jit-icalls.h"
 
@@ -818,12 +819,26 @@ mono_fconv_ovf_u8 (double v)
 	guint64 res;
 
 	MONO_ARCH_SAVE_REGS;
-    
+/*
+ * The soft-float implementation of some ARM devices have a buggy guin64 to double
+ * conversion that it looses precision even when the integer if fully representable
+ * as a double.
+ * 
+ * This was found with 4294967295ull, converting to double and back looses one bit of precision.
+ * 
+ * To work around this issue we test for value boundaries instead. 
+ */
+#if defined(__arm__) && MONO_ARCH_SOFT_FLOAT 
+	if (isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {
+		mono_raise_exception (mono_get_exception_overflow ());
+	}
 	res = (guint64)v;
-
+#else
+	res = (guint64)v;
 	if (isnan(v) || trunc (v) != res) {
 		mono_raise_exception (mono_get_exception_overflow ());
 	}
+#endif
 	return res;
 }
 
