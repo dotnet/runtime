@@ -104,3 +104,6 @@ gac-%: $(OUTPUT_DIR)/%.dll
 
 Mono.Tuner.dll: $(TUNER_SOURCES)
 	$(CSCOMPILE) /out:Mono.Tuner.dll /t:library $(TUNER_SOURCES)
+
+retune:
+	rm -f tune.stamp && $(MAKE) tune.stamp
