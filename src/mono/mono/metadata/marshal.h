@@ -147,7 +147,7 @@ MonoMethod *
 mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func, gboolean check_exceptions) MONO_INTERNAL;
 
 MonoMethod *
-mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions) MONO_INTERNAL;
+mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, gboolean aot) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func) MONO_INTERNAL;
