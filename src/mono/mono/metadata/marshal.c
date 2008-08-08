@@ -3063,10 +3063,15 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 		for (i=0; i<count; i++) {
 			MonoClass *class = mono_class_from_mono_type (sig->params [i]);
 			if (class->valuetype) {
-				if (sig->params [i]->byref)
+				if (sig->params [i]->byref) {
 					mparams[i] = *((gpointer *)params [i]);
-				else 
-					mparams[i] = params [i];
+				} else {
+					/* runtime_invoke expects a boxed instance */
+					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i])))
+						mparams[i] = mono_nullable_box (params [i], class);
+					else
+						mparams[i] = params [i];
+				}
 			} else {
 				mparams[i] = *((gpointer**)params [i]);
 			}
