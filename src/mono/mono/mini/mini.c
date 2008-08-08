@@ -9164,6 +9164,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cfg->disable_aot = 1;
 				break;
 			}
+			case CEE_MONO_ICALL_ADDR: {
+				MonoMethod *cmethod;
+
+				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
+				token = read32 (ip + 2);
+
+				cmethod = mono_method_get_wrapper_data (method, token);
+
+				g_assert (cfg->compile_aot);
+
+				NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_ICALL_ADDR, cmethod);
+				*sp++ = ins;
+				ip += 6;
+				break;
+			}
 			case CEE_MONO_VTADDR:
 				CHECK_STACK (1);
 				--sp;
@@ -11526,6 +11542,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_ICALL_ADDR:
 		target = mono_lookup_internal_call (patch_info->data.method);
+		/* run_cctors == 0 -> AOT */
+		if (!target && run_cctors)
+			g_error ("Unregistered icall '%s'\n", mono_method_full_name (patch_info->data.method, TRUE));
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR: {
 		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);

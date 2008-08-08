@@ -8525,6 +8525,27 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				cfg->disable_aot = 1;
 				break;
 			}
+			case CEE_MONO_ICALL_ADDR: {
+				MonoMethod *cmethod;
+				gpointer ptr;
+
+				CHECK_STACK_OVF (1);
+				CHECK_OPSIZE (6);
+				token = read32 (ip + 2);
+
+				cmethod = mono_method_get_wrapper_data (method, token);
+
+				if (cfg->compile_aot) {
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_ICALL_ADDR, cmethod);
+				} else {
+					ptr = mono_lookup_internal_call (cmethod);
+					g_assert (ptr);
+					EMIT_NEW_PCONST (cfg, ins, ptr);
+				}
+				*sp++ = ins;
+				ip += 6;
+				break;
+			}
 			case CEE_MONO_VTADDR: {
 				MonoInst *src_var, *src;
 
