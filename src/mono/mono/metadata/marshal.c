@@ -8474,7 +8474,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
  * calls the unmanaged code in piinfo->addr)
  */
 MonoMethod *
-mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions)
+mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, gboolean aot)
 {
 	MonoMethodSignature *sig, *csig;
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
@@ -8560,8 +8560,12 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions)
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
 	mb->method->save_lmf = 1;
-	
-	if (!piinfo->addr) {
+
+	/*
+	 * In AOT mode and embedding scenarios, it is possible that the icall is not
+	 * registered in the runtime doing the AOT compilation.
+	 */
+	if (!piinfo->addr && !aot) {
 		mono_mb_emit_exception (mb, exc_class, exc_arg);
 		csig = signature_dup (method->klass->image, sig);
 		csig->pinvoke = 0;
@@ -8587,8 +8591,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions)
 		for (i = 0; i < sig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-		g_assert (piinfo->addr);
-		mono_mb_emit_native_call (mb, csig, piinfo->addr);
+		if (aot) {
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
+			mono_mb_emit_calli (mb, csig);
+		} else {
+			g_assert (piinfo->addr);
+			mono_mb_emit_native_call (mb, csig, piinfo->addr);
+		}
 		if (check_exceptions)
 			emit_thread_interrupt_checkpoint (mb);
 		mono_mb_emit_byte (mb, CEE_RET);
@@ -8602,6 +8612,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions)
 	}
 
 	g_assert (pinvoke);
+	g_assert (piinfo->addr);
 
 	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
