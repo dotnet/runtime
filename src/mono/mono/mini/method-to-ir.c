@@ -9727,7 +9727,7 @@ int
 mono_op_to_op_imm_noemul (int opcode)
 {
 	switch (opcode) {
-#if SIZEOF_VOID_P == 4 && !defined(MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPTS)
+#if SIZEOF_VOID_P == 4 && !defined(MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS)
 	case OP_LSHR:
 	case OP_LSHL:
 	case OP_LSHR_UN:
