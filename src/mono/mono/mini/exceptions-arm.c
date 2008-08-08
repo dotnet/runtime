@@ -183,8 +183,8 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 	return start;
 }
 
-static void
-throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
+void
+mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
 {
 	static void (*restore_context) (MonoContext *);
 	MonoContext ctx;
@@ -267,7 +267,16 @@ mono_arch_get_throw_exception_generic (int size, int by_token, gboolean rethrow,
 	/* we encode rethrow in the ip, so we avoid args on the stack */
 	ARM_ORR_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, rethrow);
 
-	code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (throw_exception));
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_arm_throw_exception");
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+		ARM_B (code, 0);
+		*(gpointer*)(gpointer)code = NULL;
+		code += 4;
+		ARM_LDR_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
+	} else {
+		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (mono_arm_throw_exception));
+	}
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
 	/* we should never reach this breakpoint */

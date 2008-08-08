@@ -148,5 +148,8 @@ typedef struct MonoCompileArch {
 	#define UCONTEXT_REG_R4(ctx) ((ctx)->sig_ctx.arm_r4)
 #endif
 
+void
+mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
+
 #endif /* __MONO_MINI_ARM_H__ */
 
