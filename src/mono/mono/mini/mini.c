@@ -6129,7 +6129,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				if (mono_method_signature (cmethod)->pinvoke) {
-					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc);
+					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc, FALSE);
 					fsig = mono_method_signature (wrapper);
 				} else if (constrained_call) {
 					fsig = mono_method_signature (cmethod);
@@ -6458,7 +6458,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					(cmethod->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 					/* Prevent inlining of methods that call wrappers */
 					INLINE_FAILURE;
-					cmethod = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc);
+					cmethod = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc, FALSE);
 					allways = TRUE;
 				}
 
@@ -13881,11 +13881,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			else
 				mono_lookup_pinvoke_call (method, NULL, NULL);
 		}
-			nm = mono_marshal_get_native_wrapper (method, check_for_pending_exc);
-			return mono_get_addr_from_ftnptr (mono_compile_method (nm));
+		nm = mono_marshal_get_native_wrapper (method, check_for_pending_exc, FALSE);
+		return mono_get_addr_from_ftnptr (mono_compile_method (nm));
 
-			//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
-			//mono_debug_add_wrapper (method, nm);
+		//if (mono_debug_format != MONO_DEBUG_FORMAT_NONE) 
+		//mono_debug_add_wrapper (method, nm);
 	} else if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		const char *name = method->name;
 		MonoMethod *nm;

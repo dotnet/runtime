@@ -1585,7 +1585,7 @@ mono_main (int argc, char* argv[])
 		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 			(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 			MonoMethod *nm;
-			nm = mono_marshal_get_native_wrapper (method, TRUE);
+			nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
 			cfg = mini_method_compile (nm, opt, mono_get_root_domain (), FALSE, FALSE, part);
 		}
 		else
@@ -1642,7 +1642,7 @@ mono_main (int argc, char* argv[])
 			for (i = 0; i < count; ++i) {
 				if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 					(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-					method = mono_marshal_get_native_wrapper (method, TRUE);
+					method = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
 
 				cfg = mini_method_compile (method, opt, mono_get_root_domain (), FALSE, FALSE, 0);
 				mono_destroy_compile (cfg);
