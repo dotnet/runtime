@@ -8482,32 +8482,21 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				token = read32 (ip + 2);
 
 				ptr = mono_method_get_wrapper_data (method, token);
-				if (cfg->compile_aot && (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE || cfg->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
-					MonoMethod *wrapped = mono_marshal_method_from_wrapper (cfg->method);
+				if (cfg->compile_aot && (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (strstr (method->name, "__icall_wrapper_") == method->name)) {
+					MonoJitICallInfo *callinfo;
+					const char *icall_name;
 
-					if (wrapped && ptr != NULL && mono_lookup_internal_call (wrapped) == ptr) {
-						EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_ICALL_ADDR, wrapped);
+					icall_name = method->name + strlen ("__icall_wrapper_");
+					g_assert (icall_name);
+					callinfo = mono_find_jit_icall_by_name (icall_name);
+					g_assert (callinfo);
+						
+					if (ptr == callinfo->func) {
+						/* Will be transformed into an AOTCONST later */
+						EMIT_NEW_PCONST (cfg, ins, ptr);
 						*sp++ = ins;
 						ip += 6;
 						break;
-					}
-
-					if ((method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (strstr (method->name, "__icall_wrapper_") == method->name)) {
-						MonoJitICallInfo *callinfo;
-						const char *icall_name;
-
-						icall_name = method->name + strlen ("__icall_wrapper_");
-						g_assert (icall_name);
-						callinfo = mono_find_jit_icall_by_name (icall_name);
-						g_assert (callinfo);
-
-						if (ptr == callinfo->func) {
-							/* Will be transformed into an AOTCONST later */
-							EMIT_NEW_PCONST (cfg, ins, ptr);
-							*sp++ = ins;
-							ip += 6;
-							break;
-						}
 					}
 				}
 				/* FIXME: Generalize this */
