@@ -66,12 +66,19 @@
 #define SHARED_EXT ".so"
 #endif
 
-#if defined(sparc) || defined(__ppc__)
+#if defined(sparc) || defined(__ppc__) || defined(__MACH__)
 #define AS_STRING_DIRECTIVE ".asciz"
 #else
 /* GNU as */
 #define AS_STRING_DIRECTIVE ".string"
 #endif
+
+
+// __MACH__
+// .byte generates 1 byte per expression.
+// .short generates 2 bytes per expression.
+// .long generates 4 bytes per expression.
+// .quad generates 8 bytes per expression.
 
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
@@ -84,6 +91,7 @@ typedef struct MonoAotOptions {
 	gboolean bind_to_runtime_version;
 	gboolean full_aot;
 	gboolean no_dlsym;
+	gboolean static_link;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -146,6 +154,7 @@ typedef struct MonoAotCompile {
 	MonoMemPool *mempool;
 	MonoAotStats stats;
 	int method_index;
+	char *static_linking_symbol;
 #ifdef USE_BIN_WRITER
 	BinSymbol *symbols;
 	BinSection *sections;
@@ -1282,12 +1291,12 @@ emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsect
 	emit_unset_mode (acfg);
 #if defined(PLATFORM_WIN32)
 	fprintf (acfg->fp, ".section %s\n", section_name);
+#elif defined(__MACH__)
+	/* This needs to be made more precise on mach. */
+	fprintf (acfg->fp, "%s\n", subsection_index == 0 ? ".text" : ".data");
 #elif defined(sparc) || defined(__arm__)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (acfg->fp, ".section \"%s\"\n", section_name);
-#elif defined(__ppc__) && defined(__MACH__)
-	/* This needs to be made more precise on mach. */
-	fprintf (acfg->fp, "%s\n", subsection_index == 0 ? ".text" : ".data");
 #else
 	fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);
 #endif
@@ -1304,13 +1313,15 @@ emit_symbol_type (MonoAotCompile *acfg, const char *name, gboolean func)
 		stype = "object";
 
 	emit_unset_mode (acfg);
-#if defined(sparc) || defined(__arm__)
+#if defined(__MACH__)
+
+#elif defined(sparc) || defined(__arm__)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
 #elif defined(PLATFORM_WIN32)
 
-#elif !(defined(__ppc__) && defined(__MACH__))
-	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
 #elif defined(__x86_64__) || defined(__i386__)
+	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
+#else
 	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
 #endif
 }
@@ -1425,7 +1436,9 @@ emit_int16 (MonoAotCompile *acfg, int value)
 		acfg->col_count = 0;
 	}
 	if ((acfg->col_count++ % 8) == 0)
-#if defined(__arm__)
+#if defined(__MACH__)
+		fprintf (acfg->fp, "\n\t.short ");
+#elif defined(__arm__)
 		/* FIXME: Use .hword on other archs as well */
 		fprintf (acfg->fp, "\n\t.hword ");
 #else
@@ -1473,7 +1486,11 @@ static void
 emit_zero_bytes (MonoAotCompile *acfg, int num)
 {
 	emit_unset_mode (acfg);
+#if defined(__MACH__)
+	fprintf (acfg->fp, "\t.space %d\n", num);
+#else
 	fprintf (acfg->fp, "\t.skip %d\n", num);
+#endif
 }
 
 static int
@@ -1491,14 +1508,31 @@ emit_writeout (MonoAotCompile *acfg)
 #else
 #define AS_OPTIONS ""
 #endif
-	command = g_strdup_printf ("as %s %s -o %s.o", AS_OPTIONS, acfg->tmpfname, acfg->tmpfname);
+
+	if (acfg->aot_opts.static_link) {
+		if (acfg->aot_opts.outfile)
+			objfile = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+		else
+			objfile = g_strdup_printf ("%s.o", acfg->image->name);
+	} else {
+		objfile = g_strdup_printf ("%s.o", acfg->tmpfname);
+	}
+	command = g_strdup_printf ("as %s %s -o %s", AS_OPTIONS, acfg->tmpfname, objfile);
 	printf ("Executing the native assembler: %s\n", command);
 	if (system (command) != 0) {
 		g_free (command);
+		g_free (objfile);
 		return 1;
 	}
 
 	g_free (command);
+
+	if (acfg->aot_opts.static_link) {
+		printf ("Output file: '%s'.\n", objfile);
+		printf ("Linking symbol: '%s'.\n", acfg->static_linking_symbol);
+		g_free (objfile);
+		return 0;
+	}
 
 	if (acfg->aot_opts.outfile)
 		outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
@@ -1528,13 +1562,12 @@ emit_writeout (MonoAotCompile *acfg)
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
 		g_free (command);
+		g_free (objfile);
 		return 1;
 	}
 
 	g_free (command);
-	objfile = g_strdup_printf ("%s.o", acfg->tmpfname);
 	unlink (objfile);
-	g_free (objfile);
 	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", acfg->image->name, SHARED_EXT);
 	printf ("Stripping the binary: %s\n", com);
 	system (com);
@@ -1544,6 +1577,7 @@ emit_writeout (MonoAotCompile *acfg)
 
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
+	g_free (objfile);
 
 	if (acfg->aot_opts.save_temps)
 		printf ("Retained input file.\n");
@@ -2048,20 +2082,22 @@ add_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, mono_marshal_get_runtime_invoke (method));
 	}
 
-	/* JIT icall wrappers */
-	/* FIXME: locking */
-	g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
+	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+		/* JIT icall wrappers */
+		/* FIXME: locking */
+		g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
 
-	/* Managed Allocators */
-	nallocators = mono_gc_get_managed_allocator_types ();
-	for (i = 0; i < nallocators; ++i) {
-		m = mono_gc_get_managed_allocator_by_type (i);
-		if (m)
-			add_method (acfg, m);
+		/* Managed Allocators */
+		nallocators = mono_gc_get_managed_allocator_types ();
+		for (i = 0; i < nallocators; ++i) {
+			m = mono_gc_get_managed_allocator_by_type (i);
+			if (m)
+				add_method (acfg, m);
+		}
+
+		/* stelemref */
+		add_method (acfg, mono_marshal_get_stelemref ());
 	}
-
-	/* stelemref */
-	add_method (acfg, mono_marshal_get_stelemref ());
 
 	/* remoting-invoke wrappers */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
@@ -2791,7 +2827,12 @@ emit_plt (MonoAotCompile *acfg)
 		fprintf (acfg->fp, "\tldr pc, [ip, #0]\n");
 		emit_symbol_diff (acfg, "plt_jump_table", ".", 0);
 		/* Used by mono_aot_get_plt_info_offset */
+    #if defined(__MACH__)
+		fprintf (acfg->fp, "\n\t.long %d\n", plt_info_offsets [i]);
+    #else
 		fprintf (acfg->fp, "\n\t.word %d\n", plt_info_offsets [i]);
+    #endif
+
 #else
 		g_assert_not_reached ();
 #endif
@@ -2845,7 +2886,7 @@ emit_plt (MonoAotCompile *acfg)
 	g_free (symbol);
 }
 
-static G_GNUC_UNUSED void
+static void
 emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code, 
 				 guint32 code_size, int got_offset, MonoJumpInfo *ji)
 {
@@ -2910,9 +2951,8 @@ static void
 emit_trampolines (MonoAotCompile *acfg)
 {
 	char *symbol;
-	int i, offset;
+	int tramp_type, i, offset;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-	int tramp_type;
 	guint32 code_size;
 	MonoJumpInfo *ji;
 	guint8 *code;
@@ -2923,7 +2963,7 @@ emit_trampolines (MonoAotCompile *acfg)
 	
 	g_assert (acfg->image->assembly);
 
-	/* Currently, we only most trampolines into the mscorlib AOT image. */
+	/* Currently, we only emit most trampolines into the mscorlib AOT image. */
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 		/*
@@ -3136,7 +3176,17 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->bind_to_runtime_version = TRUE;
 		} else if (str_begins_with (arg, "full")) {
 			opts->full_aot = TRUE;
+			/*
+			 * The no-dlsym option is only useful on the iphone, and even there,
+			 * do to other limitations of the dynamic linker, it doesn't seem to
+			 * work. So disable it for now so we don't have to support it.
+			 */
+			/*
 		} else if (str_begins_with (arg, "no-dlsym")) {
+			opts->no_dlsym = TRUE;
+			*/
+		} else if (str_begins_with (arg, "static")) {
+			opts->static_link = TRUE;
 			opts->no_dlsym = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
@@ -4006,10 +4056,15 @@ emit_globals (MonoAotCompile *acfg)
 	 * we create an ELF ctor function which will be invoked by dlopen, and which
 	 * will call a function in the AOT loader to register the symbols used by the
 	 * image.
+	 * When static linking, we emit a global which will point to the symbol table.
 	 */
 	if (acfg->aot_opts.no_dlsym) {
 		int i;
 		char *symbol;
+
+		if (acfg->aot_opts.static_link)
+			/* Emit a string holding the assembly name */
+			emit_string_symbol (acfg, "mono_aot_assembly_name", acfg->image->assembly->aname.name);
 
 		/* Emit the names */
 		for (i = 0; i < acfg->globals->len; ++i) {
@@ -4044,46 +4099,59 @@ emit_globals (MonoAotCompile *acfg)
 		emit_pointer (acfg, NULL);
 		emit_pointer (acfg, NULL);
 
-		symbol = g_strdup_printf ("init_%s", acfg->image->assembly->aname.name);
-		emit_section_change (acfg, ".text", 1);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
+		if (acfg->aot_opts.static_link) {
+			/* 
+			 * Emit a global symbol which can be passed by an embedding app to
+			 * mono_aot_register_module ().
+			 */
+			symbol = g_strdup_printf ("mono_aot_module_%s_info", acfg->image->assembly->aname.name);
+			acfg->static_linking_symbol = g_strdup (symbol);
+			emit_global_inner (acfg, symbol, FALSE);
+			emit_alignment (acfg, 8);
+			emit_label (acfg, symbol);
+			emit_pointer (acfg, "globals");
+		} else {
+			symbol = g_strdup_printf ("init_%s", acfg->image->assembly->aname.name);
+			emit_section_change (acfg, ".text", 1);
+			emit_alignment (acfg, 8);
+			emit_label (acfg, symbol);
 #ifdef USE_BIN_WRITER
-		g_assert_not_reached ();
+			g_assert_not_reached ();
 #else
 #ifdef __x86_64__
-		fprintf (acfg->fp, "leaq globals(%%rip), %%rdi\n");
-		fprintf (acfg->fp, "call mono_aot_register_globals@PLT\n");
-		fprintf (acfg->fp, "ret\n");
-		fprintf (acfg->fp, ".section .ctors,\"aw\",@progbits\n");
-		emit_alignment (acfg, 8);
-		emit_pointer (acfg, symbol);
+			fprintf (acfg->fp, "leaq globals(%%rip), %%rdi\n");
+			fprintf (acfg->fp, "call mono_aot_register_globals@PLT\n");
+			fprintf (acfg->fp, "ret\n");
+			fprintf (acfg->fp, ".section .ctors,\"aw\",@progbits\n");
+			emit_alignment (acfg, 8);
+			emit_pointer (acfg, symbol);
 #elif defined(__arm__)
-		/* 
-		 * Taken from gcc generated code for:
-		 * static int i;
-		 * void foo () { bar (&i); }
-		 * gcc --shared -fPIC -O2
-		 */
-		fprintf (acfg->fp, "ldr	r3, .L5\n");
-		fprintf (acfg->fp, "ldr	r0, .L5+4\n");
-		fprintf (acfg->fp, ".LPIC0:\n");
-		fprintf (acfg->fp, "add	r3, pc, r3\n");
-		fprintf (acfg->fp, "add	r0, r3, r0\n");
-		fprintf (acfg->fp, "b	mono_aot_register_globals(PLT)\n");
+			/* 
+			 * Taken from gcc generated code for:
+			 * static int i;
+			 * void foo () { bar (&i); }
+			 * gcc --shared -fPIC -O2
+			 */
+			fprintf (acfg->fp, "ldr	r3, .L5\n");
+			fprintf (acfg->fp, "ldr	r0, .L5+4\n");
+			fprintf (acfg->fp, ".LPIC0:\n");
+			fprintf (acfg->fp, "add	r3, pc, r3\n");
+			fprintf (acfg->fp, "add	r0, r3, r0\n");
+			fprintf (acfg->fp, "b	mono_aot_register_globals(PLT)\n");
 
-		fprintf (acfg->fp, ".L5:\n");
-		fprintf (acfg->fp, ".word	_GLOBAL_OFFSET_TABLE_-(.LPIC0+8)\n");
-		fprintf (acfg->fp, ".word	globals(GOTOFF)\n");
+			fprintf (acfg->fp, ".L5:\n");
+			fprintf (acfg->fp, ".word	_GLOBAL_OFFSET_TABLE_-(.LPIC0+8)\n");
+			fprintf (acfg->fp, ".word	globals(GOTOFF)\n");
 
-		fprintf (acfg->fp, ".section	.init_array,\"aw\",%%init_array\n");
-		fprintf (acfg->fp, ".align	2\n");
-		fprintf (acfg->fp, ".word	%s(target1)\n", symbol);
+			fprintf (acfg->fp, ".section	.init_array,\"aw\",%%init_array\n");
+			fprintf (acfg->fp, ".align	2\n");
+			fprintf (acfg->fp, ".word	%s(target1)\n", symbol);
 #else
-		g_assert_not_reached ();
+			g_assert_not_reached ();
 #endif
 #endif
-		g_free (symbol);
+			g_free (symbol);
+		}
 	}
 }
 
@@ -4098,6 +4166,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_free (acfg->cfgs);
 	g_free (acfg->method_got_offsets);
 	g_free (acfg->patch_to_plt_offset_wrapper);
+	g_free (acfg->static_linking_symbol);
 	g_ptr_array_free (acfg->methods, TRUE);
 	g_ptr_array_free (acfg->shared_patches, TRUE);
 	g_ptr_array_free (acfg->image_table, TRUE);
@@ -4110,7 +4179,6 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->token_info_hash);
 	g_hash_table_destroy (acfg->image_hash);
 	mono_mempool_destroy (acfg->mempool);
-
 	g_free (acfg);
 }
 
@@ -4173,7 +4241,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->aot_opts.full_aot)
 		add_wrappers (acfg);
 
-	acfg->nmethods = acfg->methods->len;
+	acfg->nmethods = acfg->methods->len + 1;
 	acfg->cfgs = g_new0 (MonoCompile*, acfg->nmethods + 32);
 	acfg->method_got_offsets = g_new0 (guint32, acfg->nmethods + 32);
 

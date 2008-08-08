@@ -57,7 +57,7 @@
 
 #ifdef PLATFORM_WIN32
 #define SHARED_EXT ".dll"
-#elif (defined(__ppc__) || defined(__ppc64__)) && defined(__MACH__)
+#elif (defined(__ppc__) || defined(__ppc64__)) || defined(__MACH__)
 #define SHARED_EXT ".dylib"
 #else
 #define SHARED_EXT ".so"
@@ -108,12 +108,19 @@ typedef struct MonoAotModule {
 	guint8 *trampolines;
 	guint32 num_trampolines, first_trampoline_got_offset, trampoline_index;
 	gpointer *globals;
+	MonoDl *sofile;
 } MonoAotModule;
 
 static GHashTable *aot_modules;
 #define mono_aot_lock() EnterCriticalSection (&aot_mutex)
 #define mono_aot_unlock() LeaveCriticalSection (&aot_mutex)
 static CRITICAL_SECTION aot_mutex;
+
+/* 
+ * Maps assembly names to the mono_aot_module_<NAME>_info symbols in the
+ * AOT modules registered by mono_aot_register_module ().
+ */
+static GHashTable *static_aot_modules;
 
 /*
  * Disabling this will make a copy of the loaded code and use the copy instead 
@@ -542,23 +549,46 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	if (assembly->image->dynamic)
 		return;
 
-	TlsSetValue (globals_tls_id, NULL);
+	mono_aot_lock ();
+	if (static_aot_modules)
+		globals = g_hash_table_lookup (static_aot_modules, assembly->aname.name);
+	else
+		globals = NULL;
+	mono_aot_unlock ();
 
-	if (use_aot_cache)
-		assembly->aot_module = load_aot_module_from_cache (assembly, &aot_name);
-	else {
-		char *err;
-		aot_name = g_strdup_printf ("%s%s", assembly->image->name, SHARED_EXT);
+	if (globals) {
+		/* Statically linked AOT module */
+		sofile = NULL;
+		aot_name = g_strdup_printf ("%s", assembly->aname.name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Found statically linked AOT module '%s'.\n", aot_name);
+	} else {
+		TlsSetValue (globals_tls_id, NULL);
 
-		assembly->aot_module = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
+		if (use_aot_cache)
+			sofile = load_aot_module_from_cache (assembly, &aot_name);
+		else {
+			char *err;
+			aot_name = g_strdup_printf ("%s%s", assembly->image->name, SHARED_EXT);
 
-		if (!assembly->aot_module) {
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed to load AOT module %s: %s\n", aot_name, err);
-			g_free (err);
+			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
+
+			if (!sofile) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT failed to load AOT module %s: %s\n", aot_name, err);
+				g_free (err);
+			}
 		}
+
+		/*
+		 * If the image was compiled in no-dlsym mode, it contains no global symbols,
+		 * instead it contains an ELF ctor function which is called by dlopen () which 
+		 * in turn calls mono_aot_register_globals () to register a table which contains
+		 * the name and address of the globals.
+		 */
+		globals = TlsGetValue (globals_tls_id);
+		TlsSetValue (globals_tls_id, NULL);
 	}
 
-	if (!assembly->aot_module) {
+	if (!sofile && !globals) {
 		if (mono_aot_only) {
 			fprintf (stderr, "Failed to load AOT module '%s' in aot-only mode.\n", aot_name);
 			exit (1);
@@ -566,17 +596,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		g_free (aot_name);
 		return;
 	}
-
-	/* 
-	 * If the image was compiled in no-dlsym mode, it contains no global symbols,
-	 * instead it contains an ELF ctor functions which is called by dlopen () which 
-	 * in turn calls mono_aot_register_globals () to register a table which contains
-	 * the name and address of the globals.
-	 */
-	globals = TlsGetValue (globals_tls_id);
-	TlsSetValue (globals_tls_id, NULL);
-
-	sofile = assembly->aot_module;
 
 	find_symbol (sofile, globals, "mono_assembly_guid", (gpointer *) &saved_guid);
 	find_symbol (sofile, globals, "mono_aot_version", (gpointer *) &aot_version);
@@ -623,7 +642,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			exit (1);
 		}
 		g_free (aot_name);
-		mono_dl_close (sofile);
+		if (sofile)
+			mono_dl_close (sofile);
 		assembly->aot_module = NULL;
 		return;
 	}
@@ -642,6 +662,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->got_size = *got_size_ptr;
 	amodule->got [0] = assembly->image;
 	amodule->globals = globals;
+	amodule->sofile = sofile;
 
 	sscanf (opt_flags, "%d", &amodule->opts);		
 
@@ -748,10 +769,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	aot_code_low_addr = MIN (aot_code_low_addr, (gsize)amodule->code);
 	aot_code_high_addr = MAX (aot_code_high_addr, (gsize)amodule->code_end);
 
-	g_hash_table_insert (aot_modules, assembly->image, amodule);
+	g_hash_table_insert (aot_modules, assembly, amodule);
 	mono_aot_unlock ();
 
 	mono_jit_info_add_aot_module (assembly->image, amodule->code, amodule->code_end);
+
+	assembly->aot_module = amodule;
 
 	/*
 	 * Since we store methoddef and classdef tokens when referring to methods/classes in
@@ -783,6 +806,39 @@ void
 mono_aot_register_globals (gpointer *globals)
 {
 	TlsSetValue (globals_tls_id, globals);
+}
+
+/*
+ * mono_aot_register_module:
+ *
+ *   This should be called by embedding code to register AOT modules statically linked
+ * into the executable. AOT_INFO should be the value of the 
+ * 'mono_aot_module_<ASSEMBLY_NAME>_info' global symbol from the AOT module.
+ */
+void
+mono_aot_register_module (gpointer *aot_info)
+{
+	gpointer *globals;
+	char *aname;
+
+	globals = aot_info;
+	g_assert (globals);
+
+	/* Determine the assembly name */
+	find_symbol (NULL, globals, "mono_aot_assembly_name", (gpointer*)&aname);
+	g_assert (aname);
+
+	/* This could be called before startup */
+	if (aot_modules)
+		mono_aot_lock ();
+
+	if (!static_aot_modules)
+		static_aot_modules = g_hash_table_new (g_str_hash, g_str_equal);
+
+	g_hash_table_insert (static_aot_modules, aname, globals);
+
+	if (aot_modules)
+		mono_aot_unlock ();
 }
 
 void
@@ -857,7 +913,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 
 	mono_aot_lock ();
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
 	if (!aot_module) {
 		mono_aot_unlock ();
 		return NULL;
@@ -898,7 +954,7 @@ mono_aot_get_cached_class_info (MonoClass *klass, MonoCachedClassInfo *res)
 
 	mono_aot_lock ();
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image->assembly);
 	if (!aot_module) {
 		mono_aot_unlock ();
 		return FALSE;
@@ -946,7 +1002,7 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 
 	mono_aot_lock ();
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image->assembly);
 	if (!aot_module || !aot_module->class_name_table) {
 		mono_aot_unlock ();
 		return FALSE;
@@ -1105,7 +1161,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	if (!module)
 		return NULL;
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
 
 	if (domain != mono_get_root_domain ())
 		/* FIXME: */
@@ -1527,7 +1583,7 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		return NULL;
 	
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
 
 	g_assert (klass->inited);
 
@@ -1765,7 +1821,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE)
 		return NULL;
 
-	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
+	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
 
 	if (domain != mono_get_root_domain ())
 		return NULL;
@@ -2232,12 +2288,11 @@ load_named_code (MonoAotModule *amodule, const char *name)
 	int n_patches, got_index, pindex;
 	MonoMemPool *mp;
 	gpointer code;
-	MonoAssembly *assembly = amodule->assembly;
 
 	/* Load the code */
 
 	symbol = g_strdup_printf ("%s", name);
-	find_symbol (assembly->aot_module, amodule->globals, symbol, (gpointer *)&code);
+	find_symbol (amodule->sofile, amodule->globals, symbol, (gpointer *)&code);
 	g_free (symbol);
 	g_assert (code);
 
@@ -2246,7 +2301,7 @@ load_named_code (MonoAotModule *amodule, const char *name)
 	/* Load info */
 
 	symbol = g_strdup_printf ("%s_p", name);
-	find_symbol (assembly->aot_module, amodule->globals, symbol, (gpointer *)&p);
+	find_symbol (amodule->sofile, amodule->globals, symbol, (gpointer *)&p);
 	g_free (symbol);
 	if (!p)
 		/* Nothing to patch */
@@ -2287,6 +2342,10 @@ load_named_code (MonoAotModule *amodule, const char *name)
 #ifdef __x86_64__
 				} else if (!strcmp (ji->data.name, "mono_amd64_throw_exception")) {
 					target = mono_amd64_throw_exception;
+#endif
+#ifdef __arm__
+				} else if (!strcmp (ji->data.name, "mono_arm_throw_exception")) {
+					target = mono_arm_throw_exception;
 #endif
 				} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
 					int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));
@@ -2331,7 +2390,7 @@ mono_aot_get_named_code (const char *name)
 
 	assembly = image->assembly;
 	g_assert (assembly);
-	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, assembly);
 	g_assert (amodule);
 
 	mono_aot_unlock ();
@@ -2357,7 +2416,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	mono_aot_lock ();
 
 	g_assert (image->assembly);
-	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, image);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, image->assembly);
 	g_assert (amodule);
 
 	if (amodule->trampoline_index == amodule->num_trampolines)
@@ -2401,6 +2460,7 @@ gpointer
 mono_aot_get_unbox_trampoline (MonoMethod *method)
 {
 	MonoClass *klass = method->klass;
+	MonoAssembly *ass = klass->image->assembly;
 	guint32 method_index = mono_metadata_token_index (method->token) - 1;
 	MonoAotModule *amodule;
 	char *symbol;
@@ -2408,7 +2468,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 
 	mono_aot_lock ();
 
-	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, klass->image);
+	amodule = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
 
 	mono_aot_unlock ();
 

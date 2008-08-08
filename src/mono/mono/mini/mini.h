@@ -1288,6 +1288,8 @@ gpointer mono_aot_get_named_code            (const char *name) MONO_INTERNAL;
 gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method) MONO_INTERNAL;
 /* This is an exported function */
 void     mono_aot_register_globals          (gpointer *globals);
+/* This too */
+void     mono_aot_register_module           (gpointer *aot_info);
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;
