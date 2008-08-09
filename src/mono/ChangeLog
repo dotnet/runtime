@@ -1,3 +1,7 @@
+2008-08-09  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* docs/generic-sharing: Some updates from an irc talk with Mark.
+
 2008-08-06  Zoltan Varga  <vargaz@gmail.com>
 
 	* Makefile.am (EXTRA_DIST): Add dtrace-prelink.sh and build-mingw32.sh.
