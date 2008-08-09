@@ -164,6 +164,8 @@ typedef struct {
 
 #endif
 
+#define MONO_INIT_CONTEXT_FROM_CURRENT(ctx) MONO_INIT_CONTEXT_FROM_FUNC ((ctx), NULL)
+
 #define mono_find_jit_info mono_arch_find_jit_info
 #define CUSTOM_STACK_WALK 1
 #define CUSTOM_EXCEPTION_HANDLING 1

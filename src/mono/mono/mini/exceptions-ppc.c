@@ -594,22 +594,12 @@ mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_da
 	MonoJitInfo *ji, rji;
 	gint native_offset, il_offset;
 	gboolean managed;
-	MonoPPCStackFrame *sframe;
-
 	MonoContext ctx, new_ctx;
 
 	setup_context (&ctx);
 	setup_context (&new_ctx);
 
-#ifdef __APPLE__
-	__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));
-#else
-	__asm__ volatile("lwz   %0,0(1)" : "=r" (sframe));
-#endif
-	//MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
-	MONO_CONTEXT_SET_BP (&ctx, sframe->sp);
-	sframe = (MonoPPCStackFrame*)sframe->sp;
-	MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
+	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
 
 	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
 		
@@ -647,19 +637,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoLMF *lmf = jit_tls->lmf;
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
-	MonoPPCStackFrame *sframe;
 	MonoDebugSourceLocation *location;
 
-#ifdef __APPLE__
-	__asm__ volatile("lwz   %0,0(r1)" : "=r" (sframe));
-#else
-	__asm__ volatile("lwz   %0,0(1)" : "=r" (sframe));
-#endif
-	MONO_CONTEXT_SET_BP (&ctx, sframe->sp);
-	sframe = (MonoPPCStackFrame*)sframe->sp;
-	MONO_CONTEXT_SET_IP (&ctx, sframe->lr);
-	/*MONO_CONTEXT_SET_IP (&ctx, ves_icall_get_frame_info);
-	MONO_CONTEXT_SET_BP (&ctx, __builtin_frame_address (0));*/
+	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
 
 	skip++;
 
