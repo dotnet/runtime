@@ -71,10 +71,8 @@ mono_exceptions_init (void)
 		rethrow_exception_func = mono_arch_get_rethrow_exception_full (&code_size, &ji, FALSE);
 	}
 #else
-#ifndef CUSTOM_EXCEPTION_HANDLING
 	restore_context_func = mono_arch_get_restore_context ();
 	call_filter_func = mono_arch_get_call_filter ();
-#endif
 	throw_exception_func = mono_arch_get_throw_exception ();
 	rethrow_exception_func = mono_arch_get_rethrow_exception ();
 #endif

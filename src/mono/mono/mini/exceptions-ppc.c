@@ -203,14 +203,14 @@ mono_arch_get_restore_context (void)
 }
 
 /*
- * arch_get_call_filter:
+ * mono_arch_get_call_filter:
  *
  * Returns a pointer to a method which calls an exception filter. We
  * also use this function to call finally handlers (we pass NULL as 
  * @exc object in this case).
  */
-static gpointer
-arch_get_call_filter (void)
+gpointer
+mono_arch_get_call_filter (void)
 {
 	static guint8 *start = NULL;
 	guint8 *code;
@@ -860,7 +860,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 
 
 	if (!call_filter)
-		call_filter = arch_get_call_filter ();
+		call_filter = mono_arch_get_call_filter ();
 
 	g_assert (jit_tls->end_of_stack);
 	g_assert (jit_tls->abort_func);
