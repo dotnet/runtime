@@ -3998,7 +3998,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 	}
 
-#if __APPLE_
+#if __APPLE__
 	/* check the stack is aligned */
 	x86_mov_reg_reg (code, X86_EDX, X86_ESP, 4);
 	x86_alu_reg_imm (code, X86_AND, X86_EDX, 15);

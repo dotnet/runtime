@@ -1435,7 +1435,7 @@ restart:
 					}
 					else {
 						/* Special cases */
-#if defined(__i386__) || defined(__x86__64__)
+#if defined(__i386__) || defined(__x86_64__)
 						if ((ins->opcode == OP_X86_LEA) && (srcindex == 1)) {
 #if SIZEOF_VOID_P == 8
 							/* FIXME: Use OP_PADD_IMM when the new JIT is done */
