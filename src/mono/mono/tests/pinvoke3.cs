@@ -5,6 +5,7 @@
 //
 
 using System;
+using System.Text;
 using System.Runtime.InteropServices;
 
 public class Tests {
@@ -119,6 +120,14 @@ public class Tests {
 		return s == "ABC" ? 0 : 1;
 	}
 
+	public static int delegate_test_string_builder_marshalling (StringBuilder s)
+	{
+		if (s == null)
+			return 2;
+		else
+			return s.ToString () == "ABC" ? 0 : 1;
+	}
+
 	[DllImport ("libtest", EntryPoint="mono_test_ref_vtype")]
 	public static extern int mono_test_ref_vtype (int a, ref SimpleStruct ss, int b, TestDelegate d);
 
@@ -151,6 +160,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate10")]
 	public static extern int mono_test_marshal_delegate10 (SimpleDelegate9 d);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_delegate8")]
+	public static extern int mono_test_marshal_delegate11 (SimpleDelegate11 d, string s);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_primitive_byref_delegate")]
 	public static extern int mono_test_marshal_primitive_byref_delegate (PrimitiveByrefDelegate d);
 
@@ -172,6 +184,8 @@ public class Tests {
 	public delegate int return_int_delegate (int i);
 
 	public delegate int SimpleDelegate9 (return_int_delegate del);
+
+	public delegate int SimpleDelegate11 (StringBuilder s1);
 
 	public delegate int PrimitiveByrefDelegate (ref int i);
 
@@ -239,6 +253,16 @@ public class Tests {
 		SimpleDelegate8 d = new SimpleDelegate8 (delegate_test_string_marshalling);
 
 		return mono_test_marshal_delegate8 (d, "ABC");
+	}
+
+	/* Test string builder marshalling with delegates */
+	public static int test_0_marshal_string_builder_delegate () {
+		SimpleDelegate11 d = new SimpleDelegate11 (delegate_test_string_builder_marshalling);
+
+		if (mono_test_marshal_delegate11 (d, null) != 2)
+			return 2;
+
+		return mono_test_marshal_delegate11 (d, "ABC");
 	}
 
 	/* Test that the delegate wrapper correctly catches null byref arguments */
