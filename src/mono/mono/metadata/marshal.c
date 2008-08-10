@@ -112,6 +112,9 @@ mono_string_from_bstr (gpointer bstr);
 static void 
 mono_free_bstr (gpointer bstr);
 
+static MonoStringBuilder *
+mono_string_utf8_to_builder2 (char *text);
+
 static void
 mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype, guint32 elnum);
 
@@ -583,6 +586,7 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_set_last_error, "mono_marshal_set_last_error", "void", FALSE);
 		register_icall (mono_marshal_set_last_error_windows, "mono_marshal_set_last_error_windows", "void int32", FALSE);
 		register_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", "void ptr ptr", FALSE);
+		register_icall (mono_string_utf8_to_builder2, "mono_string_utf8_to_builder2", "object ptr", FALSE);
 		register_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_marshal_free_array, "mono_marshal_free_array", "void ptr int32", FALSE);
 		register_icall (mono_string_to_byvalstr, "mono_string_to_byvalstr", "void ptr ptr int32", FALSE);
@@ -941,6 +945,43 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 		g_error_free (error);
 
 	g_free (ut);
+}
+
+MonoStringBuilder *
+mono_string_utf8_to_builder2 (char *text)
+{
+	int l;
+	MonoStringBuilder *sb;
+	static MonoClass *string_builder_class;
+	static MonoMethod *sb_ctor;
+	void *args [1];
+	MonoObject *exc;
+
+	if (!text)
+		return NULL;
+
+	if (!string_builder_class) {
+		MonoMethodDesc *desc;
+
+		string_builder_class = mono_class_from_name (mono_defaults.corlib, "System.Text", "StringBuilder");
+		g_assert (string_builder_class);
+		desc = mono_method_desc_new (":.ctor(int)", FALSE);
+		sb_ctor = mono_method_desc_search_in_class (desc, string_builder_class);
+		g_assert (sb_ctor);
+		mono_method_desc_free (desc);
+	}
+
+	l = strlen (text);
+
+	sb = (MonoStringBuilder*)mono_object_new (mono_domain_get (), string_builder_class);
+	g_assert (sb);
+	args [0] = &l;
+	mono_runtime_invoke (sb_ctor, sb, args, &exc);
+	g_assert (!exc);
+
+	mono_string_utf8_to_builder (sb, text);
+
+	return sb;
 }
 
 /*
@@ -6800,6 +6841,23 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
+			mono_mb_emit_stloc (mb, conv_arg);
+			break;
+		}
+
+		if (klass == mono_defaults.stringbuilder_class) {
+			MonoMarshalNative encoding;
+
+			encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
+
+			// FIXME:
+			g_assert (encoding == MONO_NATIVE_LPSTR);
+
+			g_assert (!t->byref);
+			g_assert (encoding != -1);
+
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_icall (mb, mono_string_utf8_to_builder2);
 			mono_mb_emit_stloc (mb, conv_arg);
 			break;
 		}
