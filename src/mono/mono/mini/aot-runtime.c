@@ -1561,8 +1561,8 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 	return NULL;
 }
 
-static gpointer
-mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
+gpointer
+mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoClass *klass = method->klass;
 	MonoAssembly *ass = klass->image->assembly;
@@ -1582,8 +1582,10 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		return NULL;
-	
+
+	mono_aot_lock ();
 	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
+	mono_aot_unlock ();
 
 	g_assert (klass->inited);
 
@@ -1647,8 +1649,10 @@ mono_aot_get_method_inner (MonoDomain *domain, MonoMethod *method)
 	code = &aot_module->code [aot_module->code_offsets [method_index]];
 	info = &aot_module->method_info [aot_module->method_info_offsets [method_index]];
 
+	mono_aot_lock ();
 	if (!aot_module->methods_loaded)
 		aot_module->methods_loaded = g_new0 (guint32, klass->image->tables [MONO_TABLE_METHOD].rows + 1);
+	mono_aot_unlock ();
 
 	if ((aot_module->methods_loaded [method_index / 32] >> (method_index % 32)) & 0x1)
 		return code;
@@ -1686,7 +1690,9 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			jinfo = decode_exception_debug_info (aot_module, domain, method, ex_info, code);
 		}
 
+		mono_domain_lock (domain);
 		code2 = mono_code_manager_reserve (domain->code_mp, jinfo->code_size);
+		mono_domain_unlock (domain);
 		memcpy (code2, code, jinfo->code_size);
 		mono_arch_flush_icache (code2, jinfo->code_size);
 		code = code2;
@@ -1724,8 +1730,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		if (patches == NULL)
 			goto cleanup;
 
-		/* Do this outside the lock to avoid deadlocks */
-		mono_aot_unlock ();
 		non_got_patches = FALSE;
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
@@ -1748,13 +1752,14 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			make_writable (code, jinfo->code_size);
 			mono_arch_patch_code (method, domain, code, patch_info, TRUE);
 		}
-		mono_aot_lock ();
 
 		g_free (got_slots);
 
 		if (!keep_patches)
 			mono_mempool_destroy (mp);
 	}
+
+	mono_aot_lock ();
 
 	mono_jit_stats.methods_aot++;
 
@@ -1774,6 +1779,8 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 
 	init_plt (aot_module);
 
+	mono_aot_unlock ();
+
 	return code;
 
  cleanup:
@@ -1786,18 +1793,6 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 		g_free (jinfo);
 
 	return NULL;
-}
-
-gpointer
-mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
-{
-	gpointer code;
-
-	mono_aot_lock ();
-	code = mono_aot_get_method_inner (domain, method);
-	mono_aot_unlock ();
-
-	return code;
 }
 
 static gpointer
