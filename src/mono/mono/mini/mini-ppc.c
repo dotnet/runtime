@@ -558,6 +558,11 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	asm ("isync");
 }
 
+void
+mono_arch_flush_register_windows (void)
+{
+}
+
 #ifdef __APPLE__
 #define ALWAYS_ON_STACK(s) s
 #define FP_ALSO_IN_REG(s) s
