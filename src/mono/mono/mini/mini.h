@@ -1420,9 +1420,7 @@ MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain,
 						 MonoJitInfo *prev_ji, 
 						 MonoContext *ctx, 
 						 MonoContext *new_ctx, 
-						 char **trace, 
 						 MonoLMF **lmf, 
-						 int *native_offset,
 						 gboolean *managed) MONO_INTERNAL;
 gpointer mono_arch_get_call_filter              (void) MONO_INTERNAL;
 gpointer mono_arch_get_restore_context          (void) MONO_INTERNAL;

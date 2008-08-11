@@ -195,7 +195,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	if (managed)
 		*managed = FALSE;
 
-	ji = mono_arch_find_jit_info (domain, jit_tls, res, prev_ji, ctx, new_ctx, NULL, lmf, NULL, &managed2);
+	ji = mono_arch_find_jit_info (domain, jit_tls, res, prev_ji, ctx, new_ctx, lmf, &managed2);
 
 	if (ji == (gpointer)-1)
 		return ji;

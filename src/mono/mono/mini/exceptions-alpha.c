@@ -780,9 +780,9 @@ mono_arch_get_throw_exception_by_name (void)
 MonoJitInfo *
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
                          MonoJitInfo *res, MonoJitInfo *prev_ji,
-			 MonoContext *ctx,
-                         MonoContext *new_ctx, char **trace, MonoLMF **lmf,
-                         int *native_offset, gboolean *managed)
+						 MonoContext *ctx,
+                         MonoContext *new_ctx, MonoLMF **lmf,
+                         gboolean *managed)
 {
   MonoJitInfo *ji;
   int i;

@@ -414,8 +414,7 @@ MonoJitInfo *
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			 MonoJitInfo *res, MonoJitInfo *prev_ji,
 			 MonoContext *ctx, MonoContext *new_ctx,
-			 char **trace, MonoLMF **lmf,
-			 int *native_offset, gboolean *managed)
+			 MonoLMF **lmf, gboolean *managed)
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -427,12 +426,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		ji = prev_ji;
 	else
 		ji = mono_jit_info_table_find (domain, ip);
-
-	if (trace)
-		*trace = NULL;
-
-	if (native_offset)
-		*native_offset = -1;
 
 	if (managed)
 		*managed = FALSE;
@@ -452,16 +445,9 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		address = (char *)ip - (char *)ji->code_start;
 
-		if (native_offset)
-			*native_offset = address;
-
 		if (managed)
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
-
-		if (trace) {
-			*trace = mono_debug_print_stack_frame (ji->method, offset, domain);
-		}
 
 		/* My stack frame */
 		fp = MONO_CONTEXT_GET_BP (ctx);
@@ -522,12 +508,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 		g_assert (((*lmf)->magic == MIPS_LMF_MAGIC1) || ((*lmf)->magic == MIPS_LMF_MAGIC2));
 
-		if (trace) {
-			char *fname = mono_method_full_name ((*lmf)->method, TRUE);
-			*trace = g_strdup_printf ("in (unmanaged) %s", fname);
-			g_free (fname);
-		}
-		
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
 		} else {
 			memset (res, 0, sizeof (MonoJitInfo));

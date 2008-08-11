@@ -436,8 +436,7 @@ mono_arch_get_throw_exception_by_name (void)
 MonoJitInfo *
 mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 			 MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
-			 MonoContext *new_ctx, char **trace, MonoLMF **lmf, 
-			 int *native_offset, gboolean *managed)
+			 MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
 {
 	MonoJitInfo *ji;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -449,12 +448,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		ji = prev_ji;
 	else
 		ji = mono_jit_info_table_find (domain, ip);
-
-	if (trace)
-		*trace = NULL;
-
-	if (native_offset)
-		*native_offset = -1;
 
 	if (managed)
 		*managed = FALSE;
@@ -470,9 +463,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		}
 
 		address = (char *)ip - (char *)ji->code_start;
-
-		if (native_offset)
-			*native_offset = address;
 
 		if (managed)
 			if (!ji->method->wrapper_type)
