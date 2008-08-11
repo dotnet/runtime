@@ -1795,8 +1795,12 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 	return NULL;
 }
 
-static gpointer
-mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guint32 token, MonoClass **klass)
+/**
+ * Same as mono_aot_get_method, but we try to avoid loading any metadata from the
+ * method.
+ */
+gpointer
+mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 token)
 {
 	MonoAssembly *ass = image->assembly;
 	MonoMemPool *mp;
@@ -1807,8 +1811,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	guint8 *code = NULL;
 	guint8 *info;
 	MonoAotModule *aot_module;
-
-	*klass = NULL;
+	MonoClass *klass;
 
 	if (!module)
 		return NULL;
@@ -1816,7 +1819,9 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	if (mono_profiler_get_events () & MONO_PROFILE_ENTER_LEAVE)
 		return NULL;
 
+	mono_aot_lock ();
 	aot_module = (MonoAotModule*) g_hash_table_lookup (aot_modules, ass);
+	mono_aot_unlock ();
 
 	if (domain != mono_get_root_domain ())
 		return NULL;
@@ -1832,8 +1837,10 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	code = &aot_module->code [aot_module->code_offsets [method_index]];
 	info = &aot_module->method_info [aot_module->method_info_offsets [method_index]];
 
+	mono_aot_lock ();
 	if (!aot_module->methods_loaded)
 		aot_module->methods_loaded = g_new0 (guint32, image->tables [MONO_TABLE_METHOD].rows + 1);
+	mono_aot_unlock ();
 
 	if ((aot_module->methods_loaded [method_index / 32] >> (method_index % 32)) & 0x1)
 		return code;
@@ -1849,7 +1856,7 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 	}
 
 	p = info;
-	*klass = decode_klass_ref (aot_module, p, &p);
+	klass = decode_klass_ref (aot_module, p, &p);
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 		MonoMethod *method = mono_get_method (image, token, NULL);
@@ -1890,9 +1897,6 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 		if (patches == NULL)
 			goto cleanup;
 
-		/* Do this outside the lock to avoid deadlocks */
-		mono_aot_unlock ();
-
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
 
@@ -1903,8 +1907,6 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 			}
 		}
 
-		mono_aot_lock ();
-
 		g_free (got_slots);
 
 		if (!keep_patches)
@@ -1913,9 +1915,16 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 
 	mono_jit_stats.methods_aot++;
 
+	mono_aot_lock ();
+
 	aot_module->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
 
 	init_plt (aot_module);
+
+	mono_aot_unlock ();
+
+	if (klass)
+		mono_runtime_class_init (mono_class_vtable (domain, klass));
 
 	return code;
 
@@ -1926,29 +1935,6 @@ mono_aot_get_method_from_token_inner (MonoDomain *domain, MonoImage *image, guin
 		mono_mempool_destroy (mp);
 
 	return NULL;
-}
-
-/**
- * Same as mono_aot_get_method, but we try to avoid loading any metadata from the
- * method.
- */
-gpointer
-mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 token)
-{
-	gpointer res;	
-	MonoClass *klass;
-
-	mono_aot_lock ();
-	res = mono_aot_get_method_from_token_inner (domain, image, token, &klass);
-	mono_aot_unlock ();
-
-	if (!res)
-		return NULL;
-
-	if (klass)
-		mono_runtime_class_init (mono_class_vtable (domain, klass));
-
-	return res;
 }
 
 typedef struct {
