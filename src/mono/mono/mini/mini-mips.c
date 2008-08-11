@@ -122,12 +122,10 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	cacheflush (code, size, BCACHE);
 }
 
-#ifndef CUSTOM_STACK_WALK
 void
 mono_arch_flush_register_windows (void)
 {
 }
-#endif
 
 static guint8 *
 mips_emit_exc_by_name(guint8 *code, const char *name)

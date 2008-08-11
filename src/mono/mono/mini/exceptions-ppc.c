@@ -586,107 +586,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	return NULL;
 }
 
-void
-mono_jit_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data) {
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;
-	MonoJitInfo *ji, rji;
-	gint native_offset, il_offset;
-	gboolean managed;
-	MonoContext ctx, new_ctx;
-
-	setup_context (&ctx);
-	setup_context (&new_ctx);
-
-	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
-
-	while (MONO_CONTEXT_GET_BP (&ctx) < jit_tls->end_of_stack) {
-		
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, &native_offset, &managed);
-		g_assert (ji);
-
-		if (ji == (gpointer)-1)
-			return;
-
-		if (do_il_offset) {
-			MonoDebugSourceLocation *source;
-
-			source = mono_debug_lookup_source_location (ji->method, native_offset, domain);
-			il_offset = source ? source->il_offset : -1;
-			mono_debug_free_source_location (source);
-		} else
-			il_offset = -1;
-
-		if (func (ji->method, native_offset, il_offset, managed, user_data))
-			return;
-		
-		ctx = new_ctx;
-		setup_context (&ctx);
-	}
-}
-
-MonoBoolean
-ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
-			  MonoReflectionMethod **method, 
-			  gint32 *iloffset, gint32 *native_offset,
-			  MonoString **file, gint32 *line, gint32 *column)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;
-	MonoJitInfo *ji, rji;
-	MonoContext ctx, new_ctx;
-	MonoDebugSourceLocation *location;
-
-	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
-
-	skip++;
-
-	do {
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
-
-		ctx = new_ctx;
-		
-		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_BP (&ctx) >= jit_tls->end_of_stack)
-			return FALSE;
-
-		/* skip all wrappers ??*/
-		if (ji->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
-		    ji->method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
-		    ji->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE)
-			continue;
-
-		skip--;
-
-	} while (skip >= 0);
-
-	*method = mono_method_get_object (domain, ji->method, NULL);
-
-	location = mono_debug_lookup_source_location (ji->method, *native_offset, domain);
-	if (location)
-		*iloffset = location->il_offset;
-	else
-		*iloffset = 0;
-
-	if (need_file_info) {
-		if (location) {
-			*file = mono_string_new (domain, location->source_file);
-			*line = location->row;
-			*column = location->column;
-		} else {
-			*file = NULL;
-			*line = *column = 0;
-		}
-	}
-
-	mono_debug_free_source_location (location);
-
-	return TRUE;
-}
-
 /*
  * This is the function called from the signal handler
  */
@@ -863,7 +762,7 @@ arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
 		MonoContext new_ctx;
 
 		setup_context (&new_ctx);
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
+		ji = mono_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
 					      NULL, &lmf, NULL, NULL);
 		if (!ji) {
 			g_warning ("Exception inside function without unwind info");

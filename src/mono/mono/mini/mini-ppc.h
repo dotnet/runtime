@@ -68,7 +68,8 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_USE_FPSTACK FALSE
 #define MONO_ARCH_FPSTACK_SIZE 0
 
-#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'l')? ppc_r4:\
+#define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'a')? ppc_r3:\
+					((desc) == 'l')? ppc_r4:\
 					((desc) == 'g'? ppc_f1:-1))
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)
 
@@ -166,8 +167,6 @@ typedef struct {
 
 #define MONO_INIT_CONTEXT_FROM_CURRENT(ctx) MONO_INIT_CONTEXT_FROM_FUNC ((ctx), NULL)
 
-#define mono_find_jit_info mono_arch_find_jit_info
-#define CUSTOM_STACK_WALK 1
 #define CUSTOM_EXCEPTION_HANDLING 1
 
 typedef struct {

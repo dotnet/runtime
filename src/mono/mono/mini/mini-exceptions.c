@@ -168,8 +168,6 @@ mono_get_throw_corlib_exception (void)
 	return throw_corlib_exception_func;
 }
 
-#ifndef mono_find_jit_info
-
 /* mono_find_jit_info:
  *
  * This function is used to gather information from @ctx. It return the 
@@ -179,7 +177,7 @@ mono_get_throw_corlib_exception (void)
  * the @lmf if necessary. @native_offset return the IP offset from the 
  * start of the function or -1 if that info is not available.
  */
-static MonoJitInfo *
+MonoJitInfo *
 mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
 		    MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
 		    gboolean *managed)
@@ -237,8 +235,6 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 
 	return ji;
 }
-
-#endif /* mono_find_jit_info */
 
 MonoString *
 ves_icall_System_Exception_get_trace (MonoException *ex)
@@ -397,8 +393,6 @@ mono_walk_stack (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoContext *start
 	}
 }
 
-#ifndef CUSTOM_STACK_WALK
-
 void
 mono_jit_walk_stack_from_ctx (MonoStackWalk func, MonoContext *start_ctx, gboolean do_il_offset, gpointer user_data)
 {
@@ -532,8 +526,6 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	return TRUE;
 }
-
-#endif /* CUSTOM_STACK_WALK */
 
 typedef struct {
 	guint32 skips;

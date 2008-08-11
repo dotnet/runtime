@@ -238,11 +238,6 @@ typedef struct {
 		MONO_CONTEXT_SET_SP ((ctx), MONO_CONTEXT_GET_BP (ctx));	\
 	} while (0)
 
-#if 0
-#define mono_find_jit_info mono_arch_find_jit_info
-#define CUSTOM_STACK_WALK
-#endif
-
 /* re-attaches with gdb - sometimes causes executable to hang */
 #undef HAVE_BACKTRACE_SYMBOLS
 
