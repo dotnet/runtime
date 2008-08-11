@@ -2257,7 +2257,7 @@ mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
 	return ((guint32*)plt_entry) [4];
 #else
 	g_assert_not_reached ();
-	return NULL;
+	return 0;
 #endif
 }
 
