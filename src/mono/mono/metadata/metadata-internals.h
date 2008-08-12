@@ -29,7 +29,6 @@ struct _MonoAssembly {
 	int ref_count; /* use atomic operations only */
 	char *basedir;
 	MonoAssemblyName aname;
-	gpointer aot_module;
 	MonoImage *image;
 	GSList *friend_assembly_names;
 	guint8 in_gac;
@@ -143,6 +142,8 @@ struct _MonoImage {
 	gboolean *modules_loaded;
 
 	MonoImage **files;
+
+	gpointer aot_module;
 
 	/*
 	 * The Assembly this image was loaded from.
