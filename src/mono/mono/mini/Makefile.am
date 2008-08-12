@@ -468,7 +468,8 @@ rcheck: mono $(regtests)
 	$(RUNTIME) --regression $(regtests)
 
 aotcheck: mono $(regtests)
-	for i in $(regtests); do $(RUNTIME) --aot $$i || exit 1; done
+	rm -f *.exe.so
+	$(RUNTIME) --aot $(regtests) || exit 1
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
 	rm -f *.exe.so
 

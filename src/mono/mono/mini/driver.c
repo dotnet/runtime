@@ -924,16 +924,29 @@ static void main_thread_handler (gpointer user_data)
 	MainThreadArgs *main_args = user_data;
 	MonoAssembly *assembly;
 
-	assembly = mono_domain_assembly_open (main_args->domain, main_args->file);
-	if (!assembly){
-		fprintf (stderr, "Can not open image %s\n", main_args->file);
-		exit (1);
-	}
-
 	if (mono_compile_aot) {
-		int res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options);
-		printf ("AOT RESULT %d\n", res);
+		int i, res;
+
+		/* Treat the other arguments as assemblies to compile too */
+		for (i = 0; i < main_args->argc; ++i) {
+			assembly = mono_domain_assembly_open (main_args->domain, main_args->argv [i]);
+			if (!assembly) {
+				fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
+				exit (1);
+			}
+			res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options);
+			if (res != 0) {
+				fprintf (stderr, "AOT of image %s failed.\n", main_args->argv [i]);
+				exit (1);
+			}
+		}
 	} else {
+		assembly = mono_domain_assembly_open (main_args->domain, main_args->file);
+		if (!assembly){
+			fprintf (stderr, "Can not open image %s\n", main_args->file);
+			exit (1);
+		}
+
 		/* 
 		 * This must be done in a thread managed by mono since it can invoke
 		 * managed code.
