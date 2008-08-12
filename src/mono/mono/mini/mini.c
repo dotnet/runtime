@@ -14375,6 +14375,10 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 	}
 #endif
 
+	/* The thread might no be registered with the runtime */
+	if (!mono_domain_get () || !jit_tls)
+		mono_handle_native_sigsegv (SIGSEGV, ctx);
+
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK

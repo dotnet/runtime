@@ -1232,17 +1232,22 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 #ifndef PLATFORM_WIN32
 	struct sigaction sa;
 #endif
+	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
+
 	if (handling_sigsegv)
 		return;
 
 	/* To prevent infinite loops when the stack walk causes a crash */
 	handling_sigsegv = TRUE;
 
-	fprintf (stderr, "Stacktrace:\n\n");
+	/* !jit_tls means the thread was not registered with the runtime */
+	if (jit_tls) {
+		fprintf (stderr, "Stacktrace:\n\n");
 
-	mono_jit_walk_stack (print_stack_frame, TRUE, stderr);
+		mono_jit_walk_stack (print_stack_frame, TRUE, stderr);
 
-	fflush (stderr);
+		fflush (stderr);
+	}
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
  {
