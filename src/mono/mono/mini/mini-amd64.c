@@ -2271,7 +2271,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 			near_call = TRUE;
 
 			if ((patch_type == MONO_PATCH_INFO_METHOD) || (patch_type == MONO_PATCH_INFO_METHOD_JUMP)) {
-				if (((MonoMethod*)data)->klass->image->assembly->aot_module)
+				if (((MonoMethod*)data)->klass->image->aot_module)
 					/* The callee might be an AOT method */
 					near_call = FALSE;
 				if (((MonoMethod*)data)->dynamic)
