@@ -12721,7 +12721,7 @@ mono_codegen (MonoCompile *cfg)
 
 	if (cfg->method->dynamic) {
 		guint unwindlen = 0;
-#ifdef _WIN64
+#ifdef MONO_ARCH_HAVE_UNWIND_TABLE
 		unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
 #endif
 		/* Allocate the code into a separate memory pool so it can be freed */
