@@ -910,6 +910,10 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 		} else
 			*exclude_mask |= MONO_OPT_CMOV;
 	}
+#ifdef PLATFORM_WIN32
+	/* FIXME */
+	*exclude_mask |= (MONO_OPT_PEEPHOLE | MONO_OPT_BRANCH);
+#endif
 	return opts;
 }
 
@@ -2833,6 +2837,11 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 static guint8*
 emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
+#ifdef PLATFORM_WIN32
+	g_assert (tls_offset < 64);
+	x86_prefix (code, X86_GS_PREFIX);
+	amd64_mov_reg_mem (code, dreg, (tls_offset * 8) + 0x1480, 8);
+#else
 	if (optimize_for_xen) {
 		x86_prefix (code, X86_FS_PREFIX);
 		amd64_mov_reg_mem (code, dreg, 0, 8);
@@ -2841,6 +2850,7 @@ emit_tls_get (guint8* code, int dreg, int tls_offset)
 		x86_prefix (code, X86_FS_PREFIX);
 		amd64_mov_reg_mem (code, dreg, tls_offset, 8);
 	}
+#endif
 	return code;
 }
 
@@ -5097,6 +5107,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 					  (gpointer)"mono_jit_thread_attach", TRUE);
 			amd64_patch (buf, code);
+#ifdef PLATFORM_WIN32
+			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
+			/* FIXME: Add a separate key for LMF to avoid this */
+			amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#endif
 		} else {
 			g_assert (!cfg->compile_aot);
 			if ((domain >> 32) == 0)
@@ -5133,6 +5148,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			if (lmf_addr_tls_offset != -1) {
 				/* Load lmf quicky using the FS register */
 				code = emit_tls_get (code, AMD64_RAX, lmf_addr_tls_offset);
+#ifdef PLATFORM_WIN32
+				/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
+				/* FIXME: Add a separate key for LMF to avoid this */
+				amd64_alu_reg_imm (code, X86_ADD, AMD64_RAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
+#endif
 			}
 			else {
 				/* 
@@ -6054,6 +6074,24 @@ void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
 	if (!tls_offset_inited) {
+#ifdef PLATFORM_WIN32
+		/* 
+		 * We need to init this multiple times, since when we are first called, the key might not
+		 * be initialized yet.
+		 */
+		appdomain_tls_offset = mono_domain_get_tls_key ();
+		lmf_tls_offset = mono_get_jit_tls_key ();
+		thread_tls_offset = mono_thread_get_tls_key ();
+		lmf_addr_tls_offset = mono_get_jit_tls_key ();
+
+		/* Only 64 tls entries can be accessed using inline code */
+		if (appdomain_tls_offset >= 64)
+			appdomain_tls_offset = -1;
+		if (lmf_tls_offset >= 64)
+			lmf_tls_offset = -1;
+		if (thread_tls_offset >= 64)
+			thread_tls_offset = -1;
+#else
 		tls_offset_inited = TRUE;
 #ifdef MONO_XEN_OPT
 		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
@@ -6062,6 +6100,7 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
   		lmf_tls_offset = mono_get_lmf_tls_offset ();
 		lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 		thread_tls_offset = mono_thread_get_tls_offset ();
+#endif
 	}		
 }
 

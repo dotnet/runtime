@@ -1,3 +1,10 @@
+2008-08-12  Bill Holmes  <billholmes54@gmail.com>
+
+	* winconfig.h:  Updating the config file for MSVC builds to match
+ 	  the config file used when compiling with gcc in Cygwin.
+
+	Contributed under MIT/X11 license.
+
 2008-08-09  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* docs/generic-sharing: Some updates from an irc talk with Mark.

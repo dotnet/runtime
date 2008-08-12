@@ -1,3 +1,13 @@
+2008-08-12  Bill Holmes  <billholmes54@gmail.com>
+
+	* eglib.vcproj, genmdesc.vcproj, libgc.vcproj, libmono.vcproj, libtest.vcproj,
+	  mono.vcproj, monoburg.vcproj, monodiet.vcproj, monodis.vcproj, monograph.vcproj,
+	  pedump.vcproj, test_eglib.vcproj, teste.vcproj, test-invoke.vcproj,
+	  test-metadata.vcproj:  Updating the preprocessor definitions for MSVC builds to
+	  match the gcc build in Cygwin.
+
+	Contributed under MIT/X11 license.
+
 2008-07-23  Robert Jordan  <robertj@gmx.net>
 
 	* libmono.vcproj: Reflect Linear IL changes.
