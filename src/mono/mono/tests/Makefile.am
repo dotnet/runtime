@@ -341,7 +341,6 @@ endif
 
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
-	appdomain-unload.exe		\
 	bug-348522.2.exe	\
 	$(PLATFORM_DISABLED_TESTS)
 
