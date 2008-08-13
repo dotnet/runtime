@@ -3270,8 +3270,6 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 	MONO_ADD_INS (cfg->bb_exit, dummy_use);
 }
 
-#define CODE_IS_STLOC(ip) (((ip) [0] >= CEE_STLOC_0 && (ip) [0] <= CEE_STLOC_3) || ((ip) [0] == CEE_STLOC_S))
-
 static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
@@ -3889,50 +3887,62 @@ mono_save_args (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **sp, MonoI
 #define MONO_INLINE_CALLER_LIMITED_METHODS 1
 
 #if (MONO_INLINE_CALLED_LIMITED_METHODS)
-static char*
-mono_inline_called_method_name_limit = NULL;
-static gboolean check_inline_called_method_name_limit (MonoMethod *called_method) {
-	char *called_method_name = mono_method_full_name (called_method, TRUE);
+static gboolean
+check_inline_called_method_name_limit (MonoMethod *called_method)
+{
 	int strncmp_result;
+	static char *limit = NULL;
 	
-	if (mono_inline_called_method_name_limit == NULL) {
+	if (limit == NULL) {
 		char *limit_string = getenv ("MONO_INLINE_CALLED_METHOD_NAME_LIMIT");
-		if (limit_string != NULL) {
-			mono_inline_called_method_name_limit = limit_string;
-		} else {
-			mono_inline_called_method_name_limit = (char *) "";
-		}
+
+		if (limit_string != NULL)
+			limit = limit_string;
+		else
+			limit = (char *) "";
 	}
+
+	if (limit [0] != '\0') {
+		char *called_method_name = mono_method_full_name (called_method, TRUE);
+
+		strncmp_result = strncmp (called_method_name, limit, strlen (limit));
+		g_free (called_method_name);
 	
-	strncmp_result = strncmp (called_method_name, mono_inline_called_method_name_limit, strlen (mono_inline_called_method_name_limit));
-	g_free (called_method_name);
-	
-	//return (strncmp_result <= 0);
-	return (strncmp_result == 0);
+		//return (strncmp_result <= 0);
+		return (strncmp_result == 0);
+	} else {
+		return FALSE;
+	}
 }
 #endif
 
 #if (MONO_INLINE_CALLER_LIMITED_METHODS)
-static char*
-mono_inline_caller_method_name_limit = NULL;
-static gboolean check_inline_caller_method_name_limit (MonoMethod *caller_method) {
-	char *caller_method_name = mono_method_full_name (caller_method, TRUE);
+static gboolean
+check_inline_caller_method_name_limit (MonoMethod *caller_method)
+{
 	int strncmp_result;
+	static char *limit = NULL;
 	
-	if (mono_inline_caller_method_name_limit == NULL) {
+	if (limit == NULL) {
 		char *limit_string = getenv ("MONO_INLINE_CALLER_METHOD_NAME_LIMIT");
 		if (limit_string != NULL) {
-			mono_inline_caller_method_name_limit = limit_string;
+			limit = limit_string;
 		} else {
-			mono_inline_caller_method_name_limit = (char *) "";
+			limit = (char *) "";
 		}
 	}
+
+	if (limit [0] != '\0') {
+		char *caller_method_name = mono_method_full_name (caller_method, TRUE);
+
+		strncmp_result = strncmp (caller_method_name, limit, strlen (limit));
+		g_free (caller_method_name);
 	
-	strncmp_result = strncmp (caller_method_name, mono_inline_caller_method_name_limit, strlen (mono_inline_caller_method_name_limit));
-	g_free (caller_method_name);
-	
-	//return (strncmp_result <= 0);
-	return (strncmp_result == 0);
+		//return (strncmp_result <= 0);
+		return (strncmp_result == 0);
+	} else {
+		return FALSE;
+	}
 }
 #endif
 
