@@ -2064,6 +2064,12 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				 * result there.
 				 */
 				call->vret_in_reg = TRUE;
+				/* 
+				 * Nullify the instruction computing the vret addr to enable 
+				 * future optimizations.
+				 */
+				if (call->vret_var)
+					NULLIFY_INS (call->vret_var);
 			} else {
 				if (call->tail_call)
 					NOT_IMPLEMENTED;

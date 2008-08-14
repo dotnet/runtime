@@ -1112,8 +1112,8 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 
 						/* Compute the vtype location */
 						dest_var = get_vreg_to_inst (cfg, call->inst.dreg);
-						/* This was already created when OP_OUTARG_VTRETADDR was processed */
-						g_assert (dest_var);
+						if (!dest_var)
+							dest_var = mono_compile_create_var_for_vreg (cfg, call->signature->ret, OP_LOCAL, call->inst.dreg);
 						EMIT_NEW_VARLOADA (cfg, dest, dest_var, dest_var->inst_vtype);
 
 						/* Save the result */
