@@ -847,6 +847,13 @@ predef_readonly_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 			return TRUE;
 		}
 		break;
+
+	case CATEGORY_ASPNET:
+		switch (id) {
+		case COUNTER_ASPNET_REQ_Q:
+			sample->rawValue = vt->counters->aspnet_requests_queued;
+			return TRUE;
+		}
 	}
 	return FALSE;
 }
