@@ -14547,13 +14547,13 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 				MonoJitInfo res;
 				MonoContext new_mono_context;
 				int native_offset;
-				ji = mono_arch_find_jit_info (domain, jit_tls, &res, NULL, &mono_context,
+				ji = mono_find_jit_info (domain, jit_tls, &res, NULL, &mono_context,
 						&new_mono_context, NULL, &lmf, &native_offset, NULL);
 				while ((ji != NULL) && (current_frame_index <= call_chain_depth)) {
 					ips [current_frame_index] = MONO_CONTEXT_GET_IP (&new_mono_context);
 					current_frame_index ++;
 					mono_context = new_mono_context;
-					ji = mono_arch_find_jit_info (domain, jit_tls, &res, NULL, &mono_context,
+					ji = mono_find_jit_info (domain, jit_tls, &res, NULL, &mono_context,
 							&new_mono_context, NULL, &lmf, &native_offset, NULL);
 				}
 			}
