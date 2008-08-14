@@ -13103,6 +13103,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 
+	if (cfg->compile_aot && !try_generic_shared && (method->is_generic || method->klass->generic_container)) {
+		cfg->exception_type = MONO_EXCEPTION_GENERIC_SHARING_FAILED;
+		return cfg;
+	}
+
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mono_debug_using_mono_debugger () || debug_options.mdb_optimizations) {
 		cfg->disable_reuse_registers = TRUE;
