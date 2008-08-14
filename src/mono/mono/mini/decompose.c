@@ -1088,6 +1088,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				case OP_VCALL_REG:
 				case OP_VCALL_MEMBASE: {
 					MonoCallInst *call = (MonoCallInst*)ins;
+					int size;
 
 					if (call->vret_in_reg) {
 						MonoCallInst *call2;
@@ -1116,8 +1117,28 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 						EMIT_NEW_VARLOADA (cfg, dest, dest_var, dest_var->inst_vtype);
 
 						/* Save the result */
-						/* This assumes the vtype is sizeof (gpointer) long */
-						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+						if (dest_var->backend.is_pinvoke)
+							size = mono_class_native_size (dest->inst_vtype->data.klass, NULL);
+						else
+							size = mono_type_size (dest_var->inst_vtype, NULL);
+						switch (size) {
+						case 1:
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+							break;
+						case 2:
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+							break;
+						case 4:
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+							break;
+						case 8:
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+							break;
+						default:
+							/* This assumes the vtype is sizeof (gpointer) long */
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, dest->dreg, 0, call2->inst.dreg);
+							break;
+						}
 					} else {
 						switch (ins->opcode) {
 						case OP_VCALL:
