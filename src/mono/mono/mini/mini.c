@@ -6297,6 +6297,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mrgctx = mono_method_lookup_rgctx (mono_class_vtable (cfg->domain, cmethod->klass),
 						mini_method_get_context (cmethod)->method_inst);
 
+					cfg->disable_aot = TRUE;
 					NEW_PCONST (cfg, vtable_arg, mrgctx);
 				}
 
