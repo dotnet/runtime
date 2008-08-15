@@ -879,7 +879,7 @@ predef_vtable (void *arg, MonoString *instance)
 	vtable->counters = &area->counters;
 	vtable->pid = pid;
 
-	return vtable;
+	return (ImplVtable*)vtable;
 }
 
 /* consider storing the pointer directly in vtable->arg, so the runtime overhead is lower:
@@ -967,7 +967,6 @@ custom_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 static gint64
 custom_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 {
-	SharedCounter *scounter = vtable->arg;
 	/* FIXME */
 	guint32 *ptr = NULL;
 	if (ptr) {
