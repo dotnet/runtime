@@ -3982,12 +3982,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			size = (size + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
 
 			if (ins->flags & MONO_INST_INIT) {
-				/* FIXME: Optimize this */
-				amd64_mov_reg_imm (code, ins->dreg, size);
-				ins->sreg1 = ins->dreg;
+				if (size < 64) {
+					int i;
 
-				code = mono_emit_stack_alloc (code, ins);
-				amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
+					amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, size);
+					amd64_alu_reg_reg (code, X86_XOR, ins->dreg, ins->dreg);
+
+					for (i = 0; i < size; i += 8)
+						amd64_mov_membase_reg (code, AMD64_RSP, i, ins->dreg, 8);
+					amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);					
+				} else {
+					amd64_mov_reg_imm (code, ins->dreg, size);
+					ins->sreg1 = ins->dreg;
+
+					code = mono_emit_stack_alloc (code, ins);
+					amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
+				}
 			} else {
 				amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, size);
 				amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
