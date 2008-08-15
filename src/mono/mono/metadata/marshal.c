@@ -2894,14 +2894,11 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
 	g_free (name);
 
-	mb->method->save_lmf = 1;
-
 	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldloc (mb, params_var);
 	mono_mb_emit_icall (mb, mono_delegate_begin_invoke);
-	emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
@@ -3056,14 +3053,11 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name, MONO_WRAPPER_DELEGATE_END_INVOKE);
 	g_free (name);
 
-	mb->method->save_lmf = 1;
-
 	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldloc (mb, params_var);
 	mono_mb_emit_icall (mb, mono_delegate_end_invoke);
-	emit_thread_interrupt_checkpoint (mb);
 
 	if (sig->ret->type == MONO_TYPE_VOID) {
 		mono_mb_emit_byte (mb, CEE_POP);
