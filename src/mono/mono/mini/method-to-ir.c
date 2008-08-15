@@ -5859,13 +5859,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					EMIT_GET_RGCTX (rgctx, context_used);
 					vtable_arg = emit_get_rgctx_method_rgctx (cfg, context_used, rgctx, cmethod);
 				} else {
-					MonoMethodRuntimeGenericContext *mrgctx;
-
-					mrgctx = mono_method_lookup_rgctx (mono_class_vtable (cfg->domain, cmethod->klass),
-						mini_method_get_context (cmethod)->method_inst);
-
-					cfg->disable_aot = TRUE;
-					EMIT_NEW_PCONST (cfg, vtable_arg, mrgctx);
+					EMIT_NEW_METHOD_RGCTX_CONST (cfg, vtable_arg, cmethod);
 				}
 
 				if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) ||

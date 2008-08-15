@@ -239,6 +239,16 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		} \
 	} while (0)
 
+#define NEW_METHOD_RGCTX_CONST(cfg,dest,method) do { \
+		if (cfg->compile_aot) {											\
+			NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_METHOD_RGCTX, (method)); \
+		} else {														\
+			MonoMethodRuntimeGenericContext *mrgctx;					\
+			mrgctx = mono_method_lookup_rgctx (mono_class_vtable ((cfg)->domain, (method)->klass), mini_method_get_context ((method))->method_inst); \
+			NEW_PCONST ((cfg), (dest), (mrgctx));						\
+		}																\
+	} while (0)
+
 #define NEW_DOMAINCONST(cfg,dest) do { \
 		if (cfg->opt & MONO_OPT_SHARED) { \
 			/* avoid depending on undefined C behavior in sequence points */ \
@@ -375,6 +385,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 #define EMIT_NEW_DOMAINCONST(cfg,dest) do { NEW_DOMAINCONST ((cfg), (dest)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_DECLSECCONST(cfg,dest,image,entry) do { NEW_DECLSECCONST ((cfg), (dest), (image), (entry)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+
+#define EMIT_NEW_METHOD_RGCTX_CONST(cfg,dest,method) do { NEW_METHOD_RGCTX_CONST ((cfg), (dest), (method)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_VARLOAD(cfg,dest,var,vartype) do { NEW_VARLOAD ((cfg), (dest), (var), (vartype)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
