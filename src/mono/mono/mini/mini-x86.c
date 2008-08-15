@@ -2902,7 +2902,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CALL_HANDLER:
 #if __APPLE__
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 12);
 #endif
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			x86_call_imm (code, 0);
@@ -3998,7 +3998,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #endif
 	}
 
-#if __APPLE__
+#if __APPLE__ && DEBUG_APPLE_ALIGNMENT
 	/* check the stack is aligned */
 	x86_mov_reg_reg (code, X86_EDX, X86_ESP, 4);
 	x86_alu_reg_imm (code, X86_AND, X86_EDX, 15);
