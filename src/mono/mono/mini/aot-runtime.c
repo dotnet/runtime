@@ -324,28 +324,66 @@ decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 }
 
 static inline MonoImage*
-decode_method_ref (MonoAotModule *module, guint32 *token, guint8 *buf, guint8 **endbuf)
+decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, guint8 *buf, guint8 **endbuf)
 {
 	guint32 image_index, value;
 	MonoImage *image;
 
+	if (method)
+		*method = NULL;
+
 	value = decode_value (buf, &buf);
 	image_index = value >> 24;
-	*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
 	if (image_index == 255) {
 		/* Methodspec */
 		image_index = decode_value (buf, &buf);
 		*token = decode_value (buf, &buf);
+
+		image = load_image (module, image_index);
+		if (!image)
+			return NULL;
+	} else if (image_index == 254) {
+		/* Method on generic instance */
+		MonoClass *klass;
+		guint32 token2;
+		MonoGenericContext context;
+
+		/* 
+		 * These methods do not have a token which resolves them, so we 
+		 * resolve them immediately.
+		 */
+		klass = decode_klass_ref (module, buf, &buf);
+		if (!klass)
+			return NULL;
+
+		image_index = decode_value (buf, &buf);
+		token2 = decode_value (buf, &buf);
+
+		image = load_image (module, image_index);
+		if (!image)
+			return NULL;
+
+		g_assert (method);
+		*method = mono_get_method_full (image, token2, NULL, NULL);
+		g_assert (*method);
+
+		g_assert (klass->generic_class);
+		context.class_inst = klass->generic_class->context.class_inst;
+		context.method_inst = NULL;
+
+		*method = mono_class_inflate_generic_method_full (*method, klass, &context);
+	} else {
+		*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
+
+		image = load_image (module, image_index);
+		if (!image)
+			return NULL;
 	}
 
 	*endbuf = buf;
 
-	image = load_image (module, image_index);
-	if (!image)
-		return NULL;
-	else
-		return image;
+	return image;
 }
 
 G_GNUC_UNUSED
@@ -876,12 +914,12 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->no_special_static_fields = (flags >> 7) & 0x1;
 
 	if (info->has_cctor) {
-		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, buf, &buf);
+		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, NULL, buf, &buf);
 		if (!cctor_image)
 			return FALSE;
 	}
 	if (info->has_finalize) {
-		info->finalize_image = decode_method_ref (module, &info->finalize_token, buf, &buf);
+		info->finalize_image = decode_method_ref (module, &info->finalize_token, NULL, buf, &buf);
 		if (!info->finalize_image)
 			return FALSE;
 	}
@@ -919,9 +957,9 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 		return NULL;
 
 	for (i = 0; i < slot; ++i)
-		decode_method_ref (aot_module, &token, p, &p);
+		decode_method_ref (aot_module, &token, NULL, p, &p);
 
-	image = decode_method_ref (aot_module, &token, p, &p);
+	image = decode_method_ref (aot_module, &token, NULL, p, &p);
 	if (!image)
 		return NULL;
 
@@ -1257,18 +1295,22 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_METHOD_RGCTX: {
 		guint32 token;
+		MonoMethod *method;
 
-		image = decode_method_ref (aot_module, &token, p, &p);
+		image = decode_method_ref (aot_module, &token, &method, p, &p);
 		if (!image)
 			goto cleanup;
 
 #ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
-		if (!mono_aot_only && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
+		if (!method && !mono_aot_only && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
 			ji->data.target = mono_create_jit_trampoline_from_token (image, token);
 			ji->type = MONO_PATCH_INFO_ABS;
 		}
 		else {
-			ji->data.method = mono_get_method (image, token, NULL);
+			if (method)
+				ji->data.method = method;
+			else
+				ji->data.method = mono_get_method (image, token, NULL);
 			g_assert (ji->data.method);
 			mono_class_init (ji->data.method->klass);
 		}

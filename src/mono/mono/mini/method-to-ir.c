@@ -2660,8 +2660,6 @@ static MonoInst*
 handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int context_used, MonoInst *rgctx)
 {
 	MonoMethod* method = mono_class_get_method_from_name (klass, "Unbox", 1);
-	// Can't encode method ref
-	cfg->disable_aot = TRUE;
 
 	if (context_used) {
 		MonoInst *addr = emit_get_rgctx_method (cfg, context_used, rgctx, method,
@@ -2803,8 +2801,6 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass)
 
 	if (mono_class_is_nullable (klass)) {
 		MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
-		// Can't encode method ref
-		cfg->disable_aot = TRUE;
 		return mono_emit_method_call (cfg, method, mono_method_signature (method), &val, NULL);
 	}
 
@@ -7244,6 +7240,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
  
+			mono_save_token_info (cfg, image, token, klass);
+
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
 
@@ -7325,6 +7323,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
+
+			mono_save_token_info (cfg, image, token, klass);
 
 			if (cfg->generic_sharing_context) {
 				context_used = mono_class_check_context_used (klass);
@@ -7415,6 +7415,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
+
+			mono_save_token_info (cfg, image, token, klass);
 
 			if (cfg->generic_sharing_context)
 				context_used = mono_class_check_context_used (klass);
