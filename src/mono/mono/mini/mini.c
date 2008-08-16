@@ -6361,11 +6361,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							generic_context, rgctx, MONO_RGCTX_INFO_METHOD, ip);
 					NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
 					temp = mono_emit_jit_icall (cfg, bblock,
-						mono_helper_compile_generic_method_wo_context, iargs, ip);
+						mono_helper_compile_generic_method, iargs, ip);
 				} else {
 					NEW_METHODCONST (cfg, iargs [1], cmethod);
-					NEW_PCONST (cfg, iargs [2], mono_method_get_context (cmethod));
-					NEW_TEMPLOADA (cfg, iargs [3], this_arg_temp->inst_c0);
+					NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
 					temp = mono_emit_jit_icall (cfg, bblock, mono_helper_compile_generic_method,
 						iargs, ip);
 				}
@@ -15361,9 +15360,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_ldftn_nosync, "mono_ldftn_nosync", "ptr ptr", FALSE);
 	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
 	register_icall (mono_ldvirtfn_gshared, "mono_ldvirtfn_gshared", "ptr object ptr", FALSE);
-	register_icall (mono_helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr ptr", FALSE);
-	register_icall (mono_helper_compile_generic_method_wo_context, "compile_generic_method_wo_context",
-		"ptr object ptr ptr", FALSE);
+	register_icall (mono_helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr", FALSE);
 	register_icall (mono_helper_ldstr, "helper_ldstr", "object ptr int", FALSE);
 	register_icall (mono_helper_ldstr_mscorlib, "helper_ldstr_mscorlib", "object int", FALSE);
 	register_icall (mono_helper_newobj_mscorlib, "helper_newobj_mscorlib", "object int", FALSE);

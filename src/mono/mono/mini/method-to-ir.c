@@ -5928,8 +5928,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				/* FIXME: This should be a managed pointer */
 				this_arg_temp = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
-				/* Because of the PCONST below */
-				cfg->disable_aot = TRUE;
 				EMIT_NEW_TEMPLOAD (cfg, iargs [0], this_temp->inst_c0);
 				if (context_used) {
 					MonoInst *rgctx;
@@ -5938,11 +5936,10 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					iargs [1] = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod, MONO_RGCTX_INFO_METHOD);
 					EMIT_NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
 					addr = mono_emit_jit_icall (cfg,
-						mono_helper_compile_generic_method_wo_context, iargs);
+						mono_helper_compile_generic_method, iargs);
 				} else {
 					EMIT_NEW_METHODCONST (cfg, iargs [1], cmethod);
-					EMIT_NEW_PCONST (cfg, iargs [2], mono_method_get_context (cmethod));
-					EMIT_NEW_TEMPLOADA (cfg, iargs [3], this_arg_temp->inst_c0);
+					EMIT_NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
 					addr = mono_emit_jit_icall (cfg, mono_helper_compile_generic_method, iargs);
 				}
 
@@ -7856,9 +7853,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					load->flags |= ins_flag;
 					ins_flag = 0;
 					*sp++ = load;
-
-					/* fixme: dont see the problem why this does not work */
-					//cfg->disable_aot = TRUE;
 				}
 			}
 			ip += 5;
@@ -8805,6 +8799,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (!cmethod)
 					goto load_error;
 				mono_class_init (cmethod->klass);
+
+				mono_save_token_info (cfg, image, n, cmethod);
 
 				if (cfg->generic_sharing_context)
 					context_used = mono_method_check_context_used (cmethod);

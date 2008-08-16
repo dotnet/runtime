@@ -903,10 +903,11 @@ mono_lconv_to_r8_un (guint64 a)
 #endif
 
 gpointer
-mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGenericContext *context, gpointer *this_arg)
+mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg)
 {
 	MonoMethod *vmethod, *inflated;
 	gpointer addr;
+	MonoGenericContext *context = mono_method_get_context (method);
 
 	mono_jit_stats.generic_virtual_invocations++;
 
@@ -939,14 +940,6 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, MonoGen
 		*this_arg = obj;
 
 	return addr;
-}
-
-gpointer
-mono_helper_compile_generic_method_wo_context (MonoObject *obj, MonoMethod *method, gpointer *this_arg)
-{
-	MonoGenericContext *context = mono_method_get_context (method);
-
-	return mono_helper_compile_generic_method (obj, method, context, this_arg);
 }
 
 MonoString*
