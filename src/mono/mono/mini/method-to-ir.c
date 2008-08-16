@@ -2306,8 +2306,8 @@ mono_emit_rgctx_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **ar
 }
 
 static MonoInst*
-mono_emit_imt_method_call (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
-						   MonoInst **args, MonoInst *this, MonoInst *imt_arg)
+mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
+							MonoInst **args, MonoInst *this, MonoInst *imt_arg)
 {
 	gboolean virtual = this != NULL;
 	gboolean enable_for_aot = TRUE;
@@ -2431,10 +2431,9 @@ mono_emit_imt_method_call (MonoCompile *cfg, MonoMethod *method, MonoMethodSigna
 }
 
 static inline MonoInst*
-mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
-					   MonoInst **args, MonoInst *this)
+mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this)
 {
-	return mono_emit_imt_method_call (cfg, method, sig, args, this, NULL);
+	return mono_emit_method_call_full (cfg, method, mono_method_signature (method), args, this, NULL);
 }
 
 MonoInst*
@@ -2507,7 +2506,7 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 		EMIT_NEW_ICONST (cfg, iargs [2], n);
 		
 		memcpy_method = get_memcpy_method ();
-		mono_emit_method_call (cfg, memcpy_method, memcpy_method->signature, iargs, NULL);
+		mono_emit_method_call (cfg, memcpy_method, iargs, NULL);
 	}
 }
 
@@ -2544,7 +2543,7 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 		iargs [0] = dest;
 		EMIT_NEW_ICONST (cfg, iargs [1], 0);
 		EMIT_NEW_ICONST (cfg, iargs [2], n);
-		mono_emit_method_call (cfg, memset_method, memset_method->signature, iargs, NULL);
+		mono_emit_method_call (cfg, memset_method, iargs, NULL);
 	}
 }
 
@@ -2667,7 +2666,7 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 
 		return mono_emit_rgctx_calli (cfg, mono_method_signature (method), &val, addr, rgctx);
 	} else {
-		return mono_emit_method_call (cfg, method, mono_method_signature (method), &val, NULL);
+		return mono_emit_method_call (cfg, method, &val, NULL);
 	}
 }
 
@@ -2741,7 +2740,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box)
 
 		if (managed_alloc) {
 			EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
-			return mono_emit_method_call (cfg, managed_alloc, mono_method_signature (managed_alloc), iargs, NULL);
+			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
 		}
 		alloc_ftn = mono_class_get_allocation_ftn (vtable, for_box, &pass_lw);
 		if (pass_lw) {
@@ -2783,8 +2782,7 @@ handle_alloc_from_inst (MonoCompile *cfg, MonoClass *klass, MonoInst *data_inst,
 
 		if (managed_alloc) {
 			iargs [0] = data_inst;
-			return mono_emit_method_call (cfg, managed_alloc,
-										  mono_method_signature (managed_alloc), iargs, NULL);
+			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
 		}
 
 		iargs [0] = data_inst;
@@ -2801,7 +2799,7 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass)
 
 	if (mono_class_is_nullable (klass)) {
 		MonoMethod* method = mono_class_get_method_from_name (klass, "Box", 1);
-		return mono_emit_method_call (cfg, method, mono_method_signature (method), &val, NULL);
+		return mono_emit_method_call (cfg, method, &val, NULL);
 	}
 
 	alloc = handle_alloc (cfg, klass, TRUE);
@@ -3511,7 +3509,7 @@ mini_emit_ldelema_ins (MonoCompile *cfg, MonoMethod *cmethod, MonoInst **sp, uns
 
 	element_size = mono_class_array_element_size (cmethod->klass->element_class);
 	addr_method = mono_marshal_get_array_address (rank, element_size);
-	addr = mono_emit_method_call (cfg, addr_method, addr_method->signature, sp, NULL);
+	addr = mono_emit_method_call (cfg, addr_method, sp, NULL);
 
 	return addr;
 }
@@ -3848,7 +3846,7 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 				return NULL;
 			EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
 			iargs [1] = args [0];
-			return mono_emit_method_call (cfg, managed_alloc, mono_method_signature (managed_alloc), iargs, this);
+			return mono_emit_method_call (cfg, managed_alloc, iargs, this);
 		}
 	}
 	return NULL;
@@ -4308,7 +4306,7 @@ gboolean check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *cal
 
 		NEW_ICONST (cfg, args [0], 4);
 		NEW_METHODCONST (cfg, args [1], caller);
-		mono_emit_method_call (cfg, secman->linkdemandsecurityexception, mono_method_signature (secman->linkdemandsecurityexception), args, NULL);
+		mono_emit_method_call (cfg, secman->linkdemandsecurityexception, args, NULL);
 	} else if (cfg->exception_type == MONO_EXCEPTION_NONE) {
 		 /* don't hide previous results */
 		cfg->exception_type = MONO_EXCEPTION_SECURITY_LINKDEMAND;
@@ -4342,7 +4340,7 @@ emit_throw_method_access_exception (MonoCompile *cfg, MonoMethod *caller, MonoMe
 
 	EMIT_NEW_METHODCONST (cfg, args [0], caller);
 	EMIT_NEW_METHODCONST (cfg, args [1], callee);
-	mono_emit_method_call (cfg, thrower, mono_method_signature (thrower), args, NULL);
+	mono_emit_method_call (cfg, thrower, args, NULL);
 }
 
 static MonoMethod*
@@ -4364,7 +4362,7 @@ emit_throw_verification_exception (MonoCompile *cfg, MonoBasicBlock *bblock, uns
 {
 	MonoMethod *thrower = verification_exception ();
 
-	mono_emit_method_call (cfg, thrower, mono_method_signature (thrower), NULL, NULL);
+	mono_emit_method_call (cfg, thrower, NULL, NULL);
 }
 
 static void
@@ -5174,7 +5172,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			EMIT_NEW_DECLSECCONST (cfg, args[0], image, actions.demand);
 			EMIT_NEW_ICONST (cfg, args [1], actions.demand.size);
 			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
-			mono_emit_method_call (cfg, secman->demand, mono_method_signature (secman->demand), args, NULL);
+			mono_emit_method_call (cfg, secman->demand, args, NULL);
 		}
 		if (actions.noncasdemand.blob) {
 			/* CLR 1.x uses a .noncasdemand (but 2.x doesn't) */
@@ -5182,20 +5180,20 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			EMIT_NEW_DECLSECCONST (cfg, args[0], image, actions.noncasdemand);
 			EMIT_NEW_ICONST (cfg, args [1], actions.noncasdemand.size);
 			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
-			mono_emit_method_call (cfg, secman->demand, mono_method_signature (secman->demand), args, NULL);
+			mono_emit_method_call (cfg, secman->demand, args, NULL);
 		}
 		if (actions.demandchoice.blob) {
 			/* New in 2.0, Demand must succeed for one of the permissions (i.e. not all) */
 			EMIT_NEW_DECLSECCONST (cfg, args[0], image, actions.demandchoice);
 			EMIT_NEW_ICONST (cfg, args [1], actions.demandchoice.size);
 			/* Calls static void SecurityManager.InternalDemandChoice (byte* permissions, int size); */
-			mono_emit_method_call (cfg, secman->demandchoice, mono_method_signature (secman->demandchoice), args, NULL);
+			mono_emit_method_call (cfg, secman->demandchoice, args, NULL);
 		}
 	}
 
 	/* we must Demand SecurityPermission.Unmanaged before p/invoking */
 	if (pinvoke) {
-		mono_emit_method_call (cfg, secman->demandunmanaged, mono_method_signature (secman->demandunmanaged), NULL, NULL);
+		mono_emit_method_call (cfg, secman->demandunmanaged, NULL, NULL);
 	}
 
 	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
@@ -6241,16 +6239,16 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				int rgctx_reg = mono_alloc_preg (cfg);
 
 				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, vtable_arg->dreg);
-				ins = (MonoInst*)mono_emit_method_call (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL);
+				ins = (MonoInst*)mono_emit_method_call_full (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL, NULL);
 				call = (MonoCallInst*)ins;
 				mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
 #else
 				GENERIC_SHARING_FAILURE (*ip);				
 #endif
 			} else if (imt_arg) {
-				ins = (MonoInst*)mono_emit_imt_method_call (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL, imt_arg);
+				ins = (MonoInst*)mono_emit_method_call_full (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL, imt_arg);
 			} else {
-				ins = (MonoInst*)mono_emit_method_call (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL);
+				ins = (MonoInst*)mono_emit_method_call_full (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL, NULL);
 			}
 
 			if (!MONO_TYPE_IS_VOID (fsig->ret))
@@ -7044,7 +7042,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				/* we simply pass a null pointer */
 				EMIT_NEW_PCONST (cfg, *sp, NULL); 
 				/* now call the string ctor */
-				alloc = mono_emit_method_call (cfg, cmethod, fsig, sp, NULL);
+				alloc = mono_emit_method_call_full (cfg, cmethod, fsig, sp, NULL, NULL);
 			} else {
 				MonoInst* callvirt_this_arg = NULL;
 				
@@ -7118,7 +7116,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 						inline_costs += costs - 5;
 					} else {
 						INLINE_FAILURE;
-						mono_emit_method_call (cfg, cmethod, fsig, sp, callvirt_this_arg);
+						mono_emit_method_call_full (cfg, cmethod, fsig, sp, callvirt_this_arg, NULL);
 					}
 				} else if (context_used &&
 						(cmethod->klass->valuetype ||
@@ -7134,7 +7132,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					mono_emit_calli (cfg, fsig, sp, cmethod_addr);
 				} else {
 					INLINE_FAILURE;
-					mono_emit_method_call (cfg, cmethod, fsig, sp, callvirt_this_arg);
+					mono_emit_method_call_full (cfg, cmethod, fsig, sp, callvirt_this_arg, NULL);
 				}
 			}
 
@@ -7518,7 +7516,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 						inline_costs += costs;
 						break;
 					} else {
-						mono_emit_method_call (cfg, stfld_wrapper, mono_method_signature (stfld_wrapper), iargs, NULL);
+						mono_emit_method_call (cfg, stfld_wrapper, iargs, NULL);
 					}
 				} else {
 					MonoInst *store;
@@ -7554,7 +7552,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					inline_costs += costs;
 					break;
 				} else {
-					ins = mono_emit_method_call (cfg, wrapper, mono_method_signature (wrapper), iargs, NULL);
+					ins = mono_emit_method_call (cfg, wrapper, iargs, NULL);
 					*sp++ = ins;
 				}
 			} else {
@@ -7956,7 +7954,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					EMIT_NEW_PCONST (cfg, iargs [1], (char*)data_ptr);
 				}
 				EMIT_NEW_ICONST (cfg, iargs [2], data_size);
-				mono_emit_method_call (cfg, memcpy_method, memcpy_method->signature, iargs, NULL);
+				mono_emit_method_call (cfg, memcpy_method, iargs, NULL);
 				ip += 11;
 			}
 
@@ -8096,7 +8094,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				iargs [1] = sp [1];
 				iargs [0] = sp [0];
 				
-				mono_emit_method_call (cfg, helper, mono_method_signature (helper), iargs, NULL);
+				mono_emit_method_call (cfg, helper, iargs, NULL);
 			} else {
 				if (sp [1]->opcode == OP_ICONST) {
 					int array_reg = sp [0]->dreg;
@@ -9077,10 +9075,10 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					iargs [2] = sp [2];
 					if (ip [1] == CEE_CPBLK) {
 						MonoMethod *memcpy_method = get_memcpy_method ();
-						mono_emit_method_call (cfg, memcpy_method, memcpy_method->signature, iargs, NULL);
+						mono_emit_method_call (cfg, memcpy_method, iargs, NULL);
 					} else {
 						MonoMethod *memset_method = get_memset_method ();
-						mono_emit_method_call (cfg, memset_method, memset_method->signature, iargs, NULL);
+						mono_emit_method_call (cfg, memset_method, iargs, NULL);
 					}
 				}
 				ip += 2;
