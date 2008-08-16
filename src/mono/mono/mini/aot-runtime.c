@@ -1423,6 +1423,9 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		if (!ji->data.klass)
 			goto cleanup;
 		break;
+	case MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE:
+		ji->data.offset = decode_value (p, &p);
+		break;
 	case MONO_PATCH_INFO_IMAGE:
 		ji->data.image = load_image (aot_module, decode_value (p, &p));
 		if (!ji->data.image)

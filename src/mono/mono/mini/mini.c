@@ -11437,6 +11437,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		target = mono_create_delegate_trampoline (patch_info->data.klass);
 		break;
+	case MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE:
+		target = mono_create_rgctx_lazy_fetch_trampoline (patch_info->data.offset);
+		break;
 	case MONO_PATCH_INFO_SFLDA: {
 		MonoVTable *vtable = mono_class_vtable (domain, patch_info->data.field->parent);
 
@@ -12743,6 +12746,12 @@ mono_codegen (MonoCompile *cfg)
 					if (klass) {
 						patch_info->type = MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
 						patch_info->data.klass = klass;
+					} else {
+						int offset = mono_find_rgctx_lazy_fetch_trampoline_by_addr (patch_info->data.target);
+						if (offset != -1) {
+							patch_info->type = MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE;
+							patch_info->data.offset = offset;
+						}
 					}
 				}
 			}
@@ -13068,6 +13077,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->verbose_level = mini_verbose;
 	cfg->compile_aot = compile_aot;
 	cfg->skip_visibility = method->skip_visibility;
+	cfg->orig_method = method;
 	if (try_generic_shared)
 		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);

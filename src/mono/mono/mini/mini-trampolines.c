@@ -24,6 +24,7 @@ guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 static GHashTable *class_init_hash_addr = NULL;
 static GHashTable *delegate_trampoline_hash_addr = NULL;
 static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
+static GHashTable *rgctx_lazy_fetch_trampoline_hash_addr = NULL;
 
 #define mono_trampolines_lock() EnterCriticalSection (&trampolines_mutex)
 #define mono_trampolines_unlock() LeaveCriticalSection (&trampolines_mutex)
@@ -855,9 +856,13 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
 
 	mono_trampolines_lock ();
-	if (!rgctx_lazy_fetch_trampoline_hash)
+	if (!rgctx_lazy_fetch_trampoline_hash) {
 		rgctx_lazy_fetch_trampoline_hash = g_hash_table_new (NULL, NULL);
+		rgctx_lazy_fetch_trampoline_hash_addr = g_hash_table_new (NULL, NULL);
+	}
 	g_hash_table_insert (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset), ptr);
+	g_assert (offset != -1);
+	g_hash_table_insert (rgctx_lazy_fetch_trampoline_hash_addr, ptr, GUINT_TO_POINTER (offset + 1));
 	mono_trampolines_unlock ();
 
 	if (!inited) {
@@ -896,4 +901,24 @@ mono_find_delegate_trampoline_by_addr (gconstpointer addr)
 		res = NULL;
 	mono_trampolines_unlock ();
 	return res;
+}
+
+guint32
+mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr)
+{
+	int offset;
+
+	mono_trampolines_lock ();
+	if (rgctx_lazy_fetch_trampoline_hash_addr) {
+		/* We store the real offset + 1 so we can detect when the lookup fails */
+		offset = GPOINTER_TO_INT (g_hash_table_lookup (rgctx_lazy_fetch_trampoline_hash_addr, addr));
+		if (offset)
+			offset -= 1;
+		else
+			offset = -1;
+	} else {
+		offset = -1;
+	}
+	mono_trampolines_unlock ();
+	return offset;
 }

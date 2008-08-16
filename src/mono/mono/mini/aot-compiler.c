@@ -1870,7 +1870,8 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_WRAPPER:
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_CLASS_INIT: {
+	case MONO_PATCH_INFO_CLASS_INIT:
+	case MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE: {
 		MonoJumpInfo *new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
 		gpointer patch_id = NULL;
 
@@ -1884,6 +1885,9 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			break;
 		case MONO_PATCH_INFO_CLASS_INIT:
 			patch_id = patch_info->data.klass;
+			break;
+		case MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE:
+			patch_id = GUINT_TO_POINTER (patch_info->data.offset + 1);
 			break;
 		case MONO_PATCH_INFO_WRAPPER:
 			hash = acfg->patch_to_plt_offset_wrapper [patch_info->data.method->wrapper_type];
@@ -2284,7 +2288,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	int func_alignment = 16;
 	MonoMethodHeader *header;
 
-	method = cfg->method;
+	method = cfg->orig_method;
 	code = cfg->native_code;
 	header = mono_method_get_header (method);
 
@@ -2410,6 +2414,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		encode_klass_ref (acfg, patch_info->data.klass, p, &p);
 		break;
+	case MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE:
+		encode_value (patch_info->data.offset, p, &p);
+		break;
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
 		if (shared) {
@@ -2531,7 +2538,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	guint8 *p, *buf;
 	guint32 first_got_offset;
 
-	method = cfg->method;
+	method = cfg->orig_method;
 	code = cfg->native_code;
 	header = mono_method_get_header (method);
 
@@ -2630,7 +2637,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	MonoMethodHeader *header;
 	guint8 *p, *buf, *debug_info;
 
-	method = cfg->method;
+	method = cfg->orig_method;
 	code = cfg->native_code;
 	header = mono_method_get_header (method);
 
@@ -3111,7 +3118,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		method = mono_get_method (acfg->image, token, NULL);
 
 		cfg = g_hash_table_lookup (acfg->method_to_cfg, method);
-		if (!cfg || !cfg->method->klass->valuetype || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL))
+		if (!cfg || !cfg->orig_method->klass->valuetype || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			continue;
 
 		symbol = g_strdup_printf ("unbox_trampoline_%d", i);
@@ -3120,14 +3127,14 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_global (acfg, symbol, TRUE);
 		emit_label (acfg, symbol);
 
-		call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, cfg->method));
+		call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, cfg->orig_method));
 
 #if defined(__x86_64__)
 		{
 			guint8 buf [32];
 			int this_reg;
 
-			this_reg = mono_arch_get_this_arg_reg (mono_method_signature (cfg->method), cfg->generic_sharing_context, NULL);
+			this_reg = mono_arch_get_this_arg_reg (mono_method_signature (cfg->orig_method), cfg->generic_sharing_context, NULL);
 			code = buf;
 			amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
 
@@ -3143,7 +3150,7 @@ emit_trampolines (MonoAotCompile *acfg)
 
 			code = buf;
 
-			if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->method)->ret))
+			if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->orig_method)->ret))
 				this_pos = 1;
 
 			ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
@@ -3275,12 +3282,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	//acfg->opts &= ~MONO_OPT_GSHARED;
 
 	// FIXME: GSHARED is on by default
+#if 1
 	if (TRUE || !(acfg->opts & MONO_OPT_GSHARED)) {
 		if (method->is_generic || method->klass->generic_container) {
 			acfg->stats.genericcount ++;
 			return;
 		}
 	}
+#endif
 
 	if (acfg->aot_opts.full_aot)
 		mono_use_imt = FALSE;
@@ -3478,7 +3487,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	acfg->cfgs [index] = cfg;
 
-	g_hash_table_insert (acfg->method_to_cfg, cfg->method, cfg);
+	g_hash_table_insert (acfg->method_to_cfg, cfg->orig_method, cfg);
 
 	acfg->stats.ccount++;
 }
@@ -3705,13 +3714,13 @@ emit_wrapper_info (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->nmethods; ++i) {
 		MonoCompile *cfg = acfg->cfgs [i];
 
-		if (!cfg || !cfg->method->wrapper_type)
+		if (!cfg || !cfg->orig_method->wrapper_type)
 			continue;
 
-		index = get_method_index (acfg, cfg->method);
+		index = get_method_index (acfg, cfg->orig_method);
 
 		// FIXME: Optimize disk usage and lookup speed
-		name = mono_method_full_name (cfg->method, TRUE);
+		name = mono_method_full_name (cfg->orig_method, TRUE);
 		emit_string (acfg, name);
 		emit_alignment (acfg, 4);
 		emit_int32 (acfg, index);
