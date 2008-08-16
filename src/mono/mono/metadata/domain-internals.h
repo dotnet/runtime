@@ -216,6 +216,9 @@ struct _MonoDomain {
 	GHashTable	   *shared_generics_hash;
 	GHashTable	   *method_rgctx_hash;
 	GHashTable     *method_code_hash;
+
+	/* Information maintained by the JIT engine */
+	gpointer runtime_info;
 };
 
 typedef struct  {
@@ -243,6 +246,16 @@ mono_install_runtime_load  (MonoLoadFunc func) MONO_INTERNAL;
 
 MonoDomain*
 mono_runtime_load (const char *filename, const char *runtime_version) MONO_INTERNAL;
+
+typedef void (*MonoCreateDomainFunc) (MonoDomain *domain);
+
+void
+mono_install_create_domain_hook (MonoCreateDomainFunc func) MONO_INTERNAL;
+
+typedef void (*MonoFreeDomainFunc) (MonoDomain *domain);
+
+void
+mono_install_free_domain_hook (MonoFreeDomainFunc func) MONO_INTERNAL;
 
 void 
 mono_init_com_types (void) MONO_INTERNAL;

@@ -122,6 +122,10 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 /* The stable runtime version */
 #define DEFAULT_RUNTIME_VERSION "v1.1.4322"
 
+/* Callbacks installed by the JIT */
+static MonoCreateDomainFunc create_domain_hook;
+static MonoFreeDomainFunc free_domain_hook;
+
 /* This is intentionally not in the header file, so people don't misuse it. */
 extern void _mono_debug_init_corlib (MonoDomain *domain);
 
@@ -998,6 +1002,18 @@ mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingCo
 
 	gi->generic_sharing_context = gsctx;
 }
+ 
+void
+mono_install_create_domain_hook (MonoCreateDomainFunc func)
+{
+	create_domain_hook = func;
+}
+
+void
+mono_install_free_domain_hook (MonoFreeDomainFunc func)
+{
+	free_domain_hook = func;
+}
 
 /**
  * mono_string_equal:
@@ -1177,6 +1193,9 @@ mono_domain_create (void)
 	mono_appdomains_unlock ();
 
 	mono_debug_domain_create (domain);
+
+	if (create_domain_hook)
+		create_domain_hook (domain);
 
 	mono_profiler_appdomain_loaded (domain, MONO_PROFILE_OK);
 	
@@ -1826,6 +1845,9 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		return;
 
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_UNLOAD);
+
+	if (free_domain_hook)
+		free_domain_hook (domain);
 
 	mono_debug_domain_unload (domain);
 
