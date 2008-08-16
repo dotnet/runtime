@@ -681,6 +681,34 @@ mono_array_new_va (MonoMethod *cm, ...)
 
 /* Specialized version of mono_array_new_va () which avoids varargs */
 MonoArray *
+mono_array_new_1 (MonoMethod *cm, guint32 length)
+{
+	MonoDomain *domain = mono_domain_get ();
+	guint32 lengths [1];
+	guint32 *lower_bounds;
+	int pcount;
+	int rank;
+
+	MONO_ARCH_SAVE_REGS;
+
+	pcount = mono_method_signature (cm)->param_count;
+	rank = cm->klass->rank;
+
+	lengths [0] = length;
+
+	g_assert (rank == pcount);
+
+	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+		lower_bounds = alloca (sizeof (guint32) * rank);
+		memset (lower_bounds, 0, sizeof (guint32) * rank);
+	} else {
+		lower_bounds = NULL;
+	}
+
+	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
+}
+
+MonoArray *
 mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 {
 	MonoDomain *domain = mono_domain_get ();

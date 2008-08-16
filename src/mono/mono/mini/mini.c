@@ -15373,6 +15373,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_create_corlib_exception_0, "mono_create_corlib_exception_0", "object int", TRUE);
 	register_icall (mono_create_corlib_exception_1, "mono_create_corlib_exception_1", "object int object", TRUE);
 	register_icall (mono_create_corlib_exception_2, "mono_create_corlib_exception_2", "object int object object", TRUE);
+	register_icall (mono_array_new_1, "mono_array_new_1", "object ptr int", FALSE);
 	register_icall (mono_array_new_2, "mono_array_new_2", "object ptr int int", FALSE);
 #endif
 

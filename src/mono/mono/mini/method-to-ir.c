@@ -7034,8 +7034,11 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			if (mini_class_is_system_array (cmethod->klass)) {
 				g_assert (!context_used);
 				EMIT_NEW_METHODCONST (cfg, *sp, cmethod);
-				if (fsig->param_count == 2)
-					/* Avoid varargs in the common case */
+
+				/* Avoid varargs in the common case */
+				if (fsig->param_count == 1)
+					alloc = mono_emit_jit_icall (cfg, mono_array_new_1, sp);
+				else if (fsig->param_count == 2)
 					alloc = mono_emit_jit_icall (cfg, mono_array_new_2, sp);
 				else
 					alloc = handle_array_new (cfg, fsig->param_count, sp, ip);
