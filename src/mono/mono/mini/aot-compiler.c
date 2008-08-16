@@ -3343,24 +3343,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 
-	skip = FALSE;
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (patch_info->type == MONO_PATCH_INFO_METHOD_JUMP) {
-			/* 
-			 * FIXME: We can't handle this because mono_jit_compile_method_inner will try
-			 * to patch the AOT code when the target of the jump is compiled.
-			 */
-			skip = TRUE;
-			break;
-		}
-	}
-
-	if (skip) {
-		acfg->stats.ocount++;
-		mono_destroy_compile (cfg);
-		return;
-	}
-
 	/* Convert method patches referring to wrapper methods to MONO_PATCH_INFO_WRAPPER */
 	skip = FALSE;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {

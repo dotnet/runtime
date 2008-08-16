@@ -252,8 +252,32 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	mono_debugger_trampoline_compiled (m, addr);
 
 	/* the method was jumped to */
-	if (!code)
+	if (!code) {
+		MonoDomain *domain = mono_domain_get ();
+
+		/* Patch the got entries pointing to this method */
+		/* 
+		 * We do this here instead of in mono_codegen () to cover the case when m
+		 * was loaded from an aot image.
+		 */
+		if (jit_domain_info (domain)->jump_target_got_slot_hash) {
+			GSList *list, *tmp;
+
+			mono_domain_lock (domain);
+			list = g_hash_table_lookup (jit_domain_info (domain)->jump_target_got_slot_hash, m);
+			if (list) {
+				for (tmp = list; tmp; tmp = tmp->next) {
+					gpointer *got_slot = tmp->data;
+					*got_slot = addr;
+				}
+				g_hash_table_remove (jit_domain_info (domain)->jump_target_got_slot_hash, m);
+				g_slist_free (list);
+			}
+			mono_domain_unlock (domain);
+		}
+
 		return addr;
+	}
 
 	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 

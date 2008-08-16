@@ -1568,6 +1568,27 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 	return NULL;
 }
 
+static void
+register_jump_target_got_slot (MonoDomain *domain, MonoMethod *method, gpointer *got_slot)
+{
+	/*
+	 * Jump addresses cannot be patched by the trampoline code since it
+	 * does not have access to the caller's address. Instead, we collect
+	 * the addresses of the GOT slots pointing to a method, and patch
+	 * them after the method has been compiled.
+	 */
+	MonoJitDomainInfo *info = jit_domain_info (domain);
+	GSList *list;
+		
+	mono_domain_lock (domain);
+	if (!info->jump_target_got_slot_hash)
+		info->jump_target_got_slot_hash = g_hash_table_new (NULL, NULL);
+	list = g_hash_table_lookup (info->jump_target_got_slot_hash, method);
+	list = g_slist_prepend (list, got_slot);
+	g_hash_table_insert (info->jump_target_got_slot_hash, method, list);
+	mono_domain_unlock (domain);
+}
+
 gpointer
 mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
@@ -1736,8 +1757,11 @@ mono_aot_load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoMethod 
 			MonoJumpInfo *ji = &patches [pindex];
 
 			if (is_got_patch (ji->type)) {
-				if (!aot_module->got [got_slots [pindex]])
+				if (!aot_module->got [got_slots [pindex]]) {
 					aot_module->got [got_slots [pindex]] = mono_resolve_patch_target (method, domain, code, ji, TRUE);
+					if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
+						register_jump_target_got_slot (domain, ji->data.method, &(aot_module->got [got_slots [pindex]]));
+				}
 				ji->type = MONO_PATCH_INFO_NONE;
 			}
 			else
@@ -1896,8 +1920,11 @@ mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 to
 			MonoJumpInfo *ji = &patches [pindex];
 
 			if (is_got_patch (ji->type)) {
-				if (!aot_module->got [got_slots [pindex]])
+				if (!aot_module->got [got_slots [pindex]]) {
 					aot_module->got [got_slots [pindex]] = mono_resolve_patch_target (NULL, domain, code, ji, TRUE);
+					if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
+						register_jump_target_got_slot (domain, ji->data.method, &(aot_module->got [got_slots [pindex]]));
+				}
 				ji->type = MONO_PATCH_INFO_NONE;
 			}
 		}
