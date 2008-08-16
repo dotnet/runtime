@@ -5601,8 +5601,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			CHECK_OPSIZE (5);
 			if (stack_start != sp)
 				UNVERIFIED;
-			MONO_INST_NEW_CALL (cfg, call, OP_JMP);
-			ins = (MonoInst*)call;
 			token = read32 (ip + 1);
 			/* FIXME: check the signature matches */
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
@@ -5619,8 +5617,35 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				CHECK_CFG_EXCEPTION;
  			}
 
+#ifdef __x86_64__
+			{
+				MonoMethodSignature *fsig = mono_method_signature (cmethod);
+				int i, n;
+
+				/* FIXME: Remove OP_JMP from mini-amd64.c when the old JIT is removed */
+
+				/* Handle tail calls similarly to calls */
+				n = fsig->param_count + fsig->hasthis;
+
+				MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
+				call->method = cmethod;
+				call->tail_call = TRUE;
+				call->signature = mono_method_signature (cmethod);
+				call->args = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
+				call->inst.inst_p0 = cmethod;
+				for (i = 0; i < n; ++i)
+					EMIT_NEW_ARGLOAD (cfg, call->args [i], i);
+
+				mono_arch_emit_call (cfg, call);
+				MONO_ADD_INS (bblock, (MonoInst*)call);
+			}
+#else
+			MONO_INST_NEW_CALL (cfg, call, OP_JMP);
+			ins = (MonoInst*)call;
 			ins->inst_p0 = cmethod;
 			MONO_ADD_INS (bblock, ins);
+#endif
+
 			ip += 5;
 			start_new_bblock = 1;
 
