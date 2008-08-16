@@ -354,7 +354,6 @@ TEST_IL_SRC=			\
 	ldftn-access.il		\
 	cpblkTest.il		\
 	vbinterface.il		\
-	jmpTest.il		\
 	calliTest.il		\
 	ckfiniteTest.il		\
 	fault-handler.il		\
