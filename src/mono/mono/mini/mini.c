@@ -15049,6 +15049,32 @@ mini_get_debug_options (void)
 {
 	return &debug_options;
 }
+ 
+static void
+mini_create_jit_domain_info (MonoDomain *domain)
+{
+	MonoJitDomainInfo *info = g_new0 (MonoJitDomainInfo, 1);
+
+	domain->runtime_info = info;
+}
+
+static void
+delete_jump_list (gpointer key, gpointer value, gpointer user_data)
+{
+	g_slist_free (value);
+}
+
+static void
+mini_free_jit_domain_info (MonoDomain *domain)
+{
+	MonoJitDomainInfo *info = jit_domain_info (domain);
+
+	if (info->jump_target_got_slot_hash) {
+		g_hash_table_foreach (info->jump_target_got_slot_hash, delete_jump_list, NULL);
+		g_hash_table_destroy (info->jump_target_got_slot_hash);
+	}
+	g_free (domain->runtime_info);
+}
 
 MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
@@ -15117,6 +15143,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_jump_trampoline (mono_create_jump_trampoline);
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
 	mono_install_delegate_trampoline (mono_create_delegate_trampoline);
+	mono_install_create_domain_hook (mini_create_jit_domain_info);
+	mono_install_free_domain_hook (mini_free_jit_domain_info);
 #endif
 #define JIT_INVOKE_WORKS
 #ifdef JIT_INVOKE_WORKS

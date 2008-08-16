@@ -67,6 +67,15 @@
 
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "36"
+ 
+/* Per-domain information maintained by the JIT */
+typedef struct
+{
+	/* Maps MonoMethod's to a GSList of GOT slot addresses pointing to its code */
+	GHashTable *jump_target_got_slot_hash;
+} MonoJitDomainInfo;
+
+#define jit_domain_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
