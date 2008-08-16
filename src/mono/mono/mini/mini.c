@@ -195,8 +195,6 @@ static int mini_verbose = 0;
 #define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
 static CRITICAL_SECTION jit_mutex;
 
-static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
-
 static MonoCodeManager *global_codeman = NULL;
 
 /* FIXME: Make this static again */
@@ -4924,48 +4922,12 @@ get_runtime_generic_context (MonoCompile *cfg, MonoMethod *method, int context_u
 	}
 }
 
-gpointer
-mini_create_rgctx_lazy_fetch_trampoline (guint32 offset)
-{
-	static gboolean inited = FALSE;
-	static int num_trampolines = 0;
-
-	gpointer tramp, ptr;
-
-	mono_jit_lock ();
-	if (rgctx_lazy_fetch_trampoline_hash)
-		tramp = g_hash_table_lookup (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset));
-	else
-		tramp = NULL;
-	mono_jit_unlock ();
-	if (tramp)
-		return tramp;
-
-	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset);
-	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
-
-	mono_jit_lock ();
-	if (!rgctx_lazy_fetch_trampoline_hash)
-		rgctx_lazy_fetch_trampoline_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset), ptr);
-	mono_jit_unlock ();
-
-	if (!inited) {
-		mono_counters_register ("RGCTX num lazy fetch trampolines",
-				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_trampolines);
-		inited = TRUE;
-	}
-	num_trampolines++;
-
-	return ptr;
-}
-
 static MonoInst*
 get_runtime_generic_context_other_table_ptr (MonoCompile *cfg, MonoBasicBlock *bblock,
 	MonoInst *rgc_ptr, guint32 slot, const unsigned char *ip)
 {
 	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
-	guint8 *tramp = mini_create_rgctx_lazy_fetch_trampoline (slot);
+	guint8 *tramp = mono_create_rgctx_lazy_fetch_trampoline (slot);
 	int temp;
 	MonoInst *field;
 

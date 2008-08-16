@@ -2605,7 +2605,7 @@ static MonoInst*
 emit_get_rgctx_other_table_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int slot)
 {
 	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
-	guint8 *tramp = mini_create_rgctx_lazy_fetch_trampoline (slot);
+	guint8 *tramp = mono_create_rgctx_lazy_fetch_trampoline (slot);
 
 	return mono_emit_native_call (cfg, tramp, sig, &rgc_ptr);
 }

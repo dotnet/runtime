@@ -23,6 +23,7 @@ guint8* mono_trampoline_code [MONO_TRAMPOLINE_NUM];
 
 static GHashTable *class_init_hash_addr = NULL;
 static GHashTable *delegate_trampoline_hash_addr = NULL;
+static GHashTable *rgctx_lazy_fetch_trampoline_hash = NULL;
 
 #define mono_trampolines_lock() EnterCriticalSection (&trampolines_mutex)
 #define mono_trampolines_unlock() LeaveCriticalSection (&trampolines_mutex)
@@ -831,6 +832,42 @@ mono_create_delegate_trampoline (MonoClass *klass)
 #else
 	return NULL;
 #endif
+}
+
+gpointer
+mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
+{
+	static gboolean inited = FALSE;
+	static int num_trampolines = 0;
+
+	gpointer tramp, ptr;
+
+	mono_trampolines_lock ();
+	if (rgctx_lazy_fetch_trampoline_hash)
+		tramp = g_hash_table_lookup (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset));
+	else
+		tramp = NULL;
+	mono_trampolines_unlock ();
+	if (tramp)
+		return tramp;
+
+	tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset);
+	ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
+
+	mono_trampolines_lock ();
+	if (!rgctx_lazy_fetch_trampoline_hash)
+		rgctx_lazy_fetch_trampoline_hash = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset), ptr);
+	mono_trampolines_unlock ();
+
+	if (!inited) {
+		mono_counters_register ("RGCTX num lazy fetch trampolines",
+				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_trampolines);
+		inited = TRUE;
+	}
+	num_trampolines++;
+
+	return ptr;
 }
 
 MonoVTable*
