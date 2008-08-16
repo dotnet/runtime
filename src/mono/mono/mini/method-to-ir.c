@@ -5648,9 +5648,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 			ip += 5;
 			start_new_bblock = 1;
-
-			/* FIXME: */
-			cfg->disable_aot = 1;
 			break;
 		}
 		case CEE_CALLI:
@@ -5994,9 +5991,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					EMIT_NEW_ARGSTORE (cfg, ins, i, sp [i]);
 				}
 #endif
-
-				/* FIXME: */
-				cfg->disable_aot = 1;
 
 				ins = (MonoInst*)call;
 				ins->inst_p0 = cmethod;
