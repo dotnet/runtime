@@ -11412,18 +11412,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_icall_get_wrapper (mi);
 		break;
 	}
-	case MONO_PATCH_INFO_METHOD_JUMP: {
-		GSList *list;
-
-		/* get the trampoline to the method from the domain */
+	case MONO_PATCH_INFO_METHOD_JUMP:
 		target = mono_create_jump_trampoline (domain, patch_info->data.method, TRUE);
-		if (!domain->jump_target_hash)
-			domain->jump_target_hash = g_hash_table_new (NULL, NULL);
-		list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
-		list = g_slist_prepend (list, ip);
-		g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
 		break;
-	}
 	case MONO_PATCH_INFO_METHOD:
 		if (patch_info->data.method == method) {
 			target = code;
@@ -12819,6 +12810,20 @@ mono_codegen (MonoCompile *cfg)
 				}
 			}
 			patch_info->data.table->table = (MonoBasicBlock**)table;
+			break;
+		}
+		case MONO_PATCH_INFO_METHOD_JUMP: {
+			GSList *list;
+			MonoDomain *domain = cfg->domain;
+			unsigned char *ip = cfg->native_code + patch_info->ip.i;
+
+			mono_domain_lock (domain);
+			if (!domain->jump_target_hash)
+				domain->jump_target_hash = g_hash_table_new (NULL, NULL);
+			list = g_hash_table_lookup (domain->jump_target_hash, patch_info->data.method);
+			list = g_slist_prepend (list, ip);
+			g_hash_table_insert (domain->jump_target_hash, patch_info->data.method, list);
+			mono_domain_unlock (domain);
 			break;
 		}
 		default:
