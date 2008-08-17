@@ -1870,8 +1870,7 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_WRAPPER:
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_CLASS_INIT:
-	case MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE: {
+	case MONO_PATCH_INFO_CLASS_INIT: {
 		MonoJumpInfo *new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
 		gpointer patch_id = NULL;
 
@@ -1885,9 +1884,6 @@ get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			break;
 		case MONO_PATCH_INFO_CLASS_INIT:
 			patch_id = patch_info->data.klass;
-			break;
-		case MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE:
-			patch_id = GUINT_TO_POINTER (patch_info->data.offset + 1);
 			break;
 		case MONO_PATCH_INFO_WRAPPER:
 			hash = acfg->patch_to_plt_offset_wrapper [patch_info->data.method->wrapper_type];
@@ -2413,9 +2409,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_CLASS_INIT:
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 		encode_klass_ref (acfg, patch_info->data.klass, p, &p);
-		break;
-	case MONO_PATCH_INFO_RGCTX_LAZY_FETCH_TRAMPOLINE:
-		encode_value (patch_info->data.offset, p, &p);
 		break;
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:

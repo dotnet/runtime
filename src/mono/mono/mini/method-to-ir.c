@@ -2778,8 +2778,6 @@ handle_alloc_from_inst (MonoCompile *cfg, MonoClass *klass, MonoInst *data_inst,
 		iargs [1] = data_inst;
 		alloc_ftn = mono_object_new;
 	} else {
-		g_assert (!cfg->compile_aot);
-
 		if (managed_alloc) {
 			iargs [0] = data_inst;
 			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
@@ -8295,7 +8293,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					if (context_used) {
 						MonoInst *rgctx;
 
-						g_assert (!cfg->compile_aot);
 						EMIT_GET_RGCTX (rgctx, context_used);
 						ins = emit_get_rgctx_klass (cfg, context_used, rgctx, tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
 					} else if (cfg->compile_aot) {
@@ -8319,8 +8316,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 					if (context_used) {
 							MonoInst *rgctx;
-
-						g_assert (!cfg->compile_aot);
 
 						EMIT_GET_RGCTX (rgctx, context_used);
 						if (handle_class == mono_defaults.typehandle_class) {
