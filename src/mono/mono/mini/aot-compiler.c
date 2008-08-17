@@ -1878,8 +1878,34 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	}
 }
 
+/*
+ * is_shared_got_patch:
+ *
+ *   Return whenever PATCH_INFO refers to a patch which needs a shared GOT
+ * entry.
+ */
+static inline gboolean
+is_shared_got_patch (MonoJumpInfo *patch_info)
+{
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_ADJUSTED_IID:
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_SFLDA:
+	case MONO_PATCH_INFO_DECLSEC:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_RVA:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 static int
-get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+get_plt_offset (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 {
 	int res = -1;
 
@@ -2171,7 +2197,6 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				break;
 			}
 			default: {
-				int plt_index;
 				char *direct_call_target;
 
 				if (!is_got_patch (patch_info->type))
@@ -2198,10 +2223,10 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				}
 
 				if (!got_only && !direct_call_target) {
-					plt_index = get_plt_index (acfg, patch_info);
-					if (plt_index != -1) {
+					int plt_offset = get_plt_offset (acfg, patch_info);
+					if (plt_offset != -1) {
 						/* This patch has a PLT entry, so we must emit a call to the PLT entry */
-						direct_call_target = g_strdup_printf (".Lp_%d", plt_index);
+						direct_call_target = g_strdup_printf (".Lp_%d", plt_offset);
 		
 						/* Nullify the patch */
 						patch_info->type = MONO_PATCH_INFO_NONE;
@@ -2294,11 +2319,10 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 /**
  * encode_patch:
  *
- *  Encode PATCH_INFO into its disk representation. If SHARED is true, encode some types
- * of patches by allocating a GOT entry for them, and encode the GOT offset instead.
+ *  Encode PATCH_INFO into its disk representation.
  */
 static void
-encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint8 **endbuf, gboolean shared)
+encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
 
@@ -2350,13 +2374,8 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_DECLSEC:
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		if (shared) {
-			guint32 offset = get_got_offset (acfg, patch_info);
-			encode_value (offset, p, &p);
-		} else {
-			encode_value (get_image_index (acfg, patch_info->data.token->image), p, &p);
-			encode_value (patch_info->data.token->token, p, &p);
-		}
+		encode_value (get_image_index (acfg, patch_info->data.token->image), p, &p);
+		encode_value (patch_info->data.token->token, p, &p);
 		break;
 	case MONO_PATCH_INFO_EXC_NAME: {
 		MonoClass *ex_class;
@@ -2379,12 +2398,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
 	case MONO_PATCH_INFO_ADJUSTED_IID:
-		if (shared) {
-			guint32 offset = get_got_offset (acfg, patch_info);
-			encode_value (offset, p, &p);
-		} else {
-			encode_klass_ref (acfg, patch_info->data.klass, p, &p);
-		}
+		encode_klass_ref (acfg, patch_info->data.klass, p, &p);
 		break;
 	case MONO_PATCH_INFO_CLASS_INIT:
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
@@ -2392,12 +2406,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		break;
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
-		if (shared) {
-			guint32 offset = get_got_offset (acfg, patch_info);
-			encode_value (offset, p, &p);
-		} else {
-			encode_field_info (acfg, patch_info->data.field, p, &p);
-		}
+		encode_field_info (acfg, patch_info->data.field, p, &p);
 		break;
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 		break;
@@ -2490,7 +2499,12 @@ encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, int 
 	for (pindex = 0; pindex < patches->len; ++pindex) {
 		patch_info = g_ptr_array_index (patches, pindex);
 
-		encode_patch (acfg, patch_info, p, &p, TRUE);
+		if (is_shared_got_patch (patch_info)) {
+			guint32 offset = get_got_offset (acfg, patch_info);
+			encode_value (offset, p, &p);
+		} else {
+			encode_patch (acfg, patch_info, p, &p);
+		}
 	}
 
 	*endbuf = p;
@@ -2768,7 +2782,7 @@ emit_plt (MonoAotCompile *acfg)
 
 		plt_info_offsets [i] = p - buf;
 		encode_value (patch_info->type, p, &p);
-		encode_patch (acfg, patch_info, p, &p, FALSE);
+		encode_patch (acfg, patch_info, p, &p);
 	}
 
 	emit_line (acfg);
@@ -3552,22 +3566,8 @@ alloc_got_slots (MonoAotCompile *acfg)
 			MonoCompile *cfg = acfg->cfgs [i];
 
 			for (ji = cfg->patch_info; ji; ji = ji->next) {
-				switch (ji->type) {
-				case MONO_PATCH_INFO_VTABLE:
-				case MONO_PATCH_INFO_CLASS:
-				case MONO_PATCH_INFO_IID:
-				case MONO_PATCH_INFO_ADJUSTED_IID:
-				case MONO_PATCH_INFO_FIELD:
-				case MONO_PATCH_INFO_SFLDA:
-				case MONO_PATCH_INFO_DECLSEC:
-				case MONO_PATCH_INFO_LDTOKEN:
-				case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-				case MONO_PATCH_INFO_RVA:
+				if (is_shared_got_patch (ji))
 					get_shared_got_offset (acfg, ji);
-					break;
-				default:
-					break;
-				}
 			}
 		}
 	}
@@ -3970,7 +3970,7 @@ emit_got_info (MonoAotCompile *acfg)
 
 		/* No need to encode the patch type */
 		got_info_offsets [i] = p - buf;
-		encode_patch (acfg, ji, p, &p, FALSE);
+		encode_patch (acfg, ji, p, &p);
 	}
 
 	g_assert (p - buf <= buf_size);
