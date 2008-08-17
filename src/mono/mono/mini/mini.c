@@ -11293,16 +11293,17 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
 	case MONO_PATCH_INFO_ADJUSTED_IID:
-		return (ji->type << 8) | (gssize)ji->data.klass;
-	case MONO_PATCH_INFO_FIELD:
-	case MONO_PATCH_INFO_SFLDA:
-		return (ji->type << 8) | (gssize)ji->data.field;
+	case MONO_PATCH_INFO_CLASS_INIT:
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
-		return (ji->type << 8) | (gssize)ji->data.method;
 	case MONO_PATCH_INFO_IMAGE:
-		return (ji->type << 8) | (gssize)ji->data.image;		
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_WRAPPER:
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_SFLDA:
+		return (ji->type << 8) | (gssize)ji->data.target;
 	default:
 		return (ji->type << 8);
 	}
@@ -11335,7 +11336,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 			return 0;
 		break;
 	default:
-		if (ji1->data.name != ji2->data.name)
+		if (ji1->data.target != ji2->data.target)
 			return 0;
 		break;
 	}

@@ -132,7 +132,6 @@ typedef struct MonoAotCompile {
 	GHashTable *method_indexes;
 	MonoCompile **cfgs;
 	GHashTable *patch_to_plt_offset;
-	GHashTable **patch_to_plt_offset_wrapper;
 	GHashTable *plt_offset_to_patch;
 	GHashTable *patch_to_shared_got_offset;
 	GPtrArray *shared_patches;
@@ -1858,70 +1857,48 @@ compare_patches (gconstpointer a, gconstpointer b)
 		return 0;
 }
 
-static int
-get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+/*
+ * is_plt_patch:
+ *
+ *   Return whenever PATCH_INFO refers to a direct call, and thus requires a
+ * PLT entry.
+ */
+static inline gboolean
+is_plt_patch (MonoJumpInfo *patch_info)
 {
-	int res = -1;
-	int idx;
-	GHashTable *hash = acfg->patch_to_plt_offset;
-
 	switch (patch_info->type) {
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_WRAPPER:
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_CLASS_INIT: {
-		MonoJumpInfo *new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
-		gpointer patch_id = NULL;
+	case MONO_PATCH_INFO_CLASS_INIT:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
 
-		/* First check for an existing patch */
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_METHOD:
-			patch_id = patch_info->data.method;
-			break;
-		case MONO_PATCH_INFO_INTERNAL_METHOD:
-			patch_id = (gpointer)patch_info->data.name;
-			break;
-		case MONO_PATCH_INFO_CLASS_INIT:
-			patch_id = patch_info->data.klass;
-			break;
-		case MONO_PATCH_INFO_WRAPPER:
-			hash = acfg->patch_to_plt_offset_wrapper [patch_info->data.method->wrapper_type];
-			if (!hash) {
-				acfg->patch_to_plt_offset_wrapper [patch_info->data.method->wrapper_type] = g_hash_table_new (NULL, NULL);
-				hash = acfg->patch_to_plt_offset_wrapper [patch_info->data.method->wrapper_type];
-			}
-			patch_id = patch_info->data.method;
-			break;
-		case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-			/* Each addr should only occur once */
-			break;
-		default:
-			g_assert_not_reached ();
-		}
+static int
+get_plt_index (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+{
+	int res = -1;
 
-		if (patch_id) {
-			idx = GPOINTER_TO_UINT (g_hash_table_lookup (hash, patch_id));
-			if (idx)
-				res = idx;
-			else
-				g_hash_table_insert (hash, patch_id, GUINT_TO_POINTER (acfg->plt_offset));
-		}
+	if (is_plt_patch (patch_info)) {
+		int idx = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_plt_offset, patch_info));
 
-		if (res == -1) {
+		if (idx) {
+			res = idx;
+		} else {
+			MonoJumpInfo *new_ji = mono_patch_info_dup_mp (acfg->mempool, patch_info);
+
 			res = acfg->plt_offset;
-			g_hash_table_insert (acfg->plt_offset_to_patch, GUINT_TO_POINTER (acfg->plt_offset), new_ji);
+			g_hash_table_insert (acfg->plt_offset_to_patch, GUINT_TO_POINTER (res), new_ji);
+			g_hash_table_insert (acfg->patch_to_plt_offset, new_ji, GUINT_TO_POINTER (res));
 			acfg->plt_offset ++;
 		}
-
-		/* Nullify the patch */
-		patch_info->type = MONO_PATCH_INFO_NONE;
-
-		return res;
 	}
-	default:
-		return -1;
-	}
+
+	return res;
 }
 
 /**
@@ -2225,6 +2202,9 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					if (plt_index != -1) {
 						/* This patch has a PLT entry, so we must emit a call to the PLT entry */
 						direct_call_target = g_strdup_printf (".Lp_%d", plt_index);
+		
+						/* Nullify the patch */
+						patch_info->type = MONO_PATCH_INFO_NONE;
 					}
 				}
 
@@ -4186,7 +4166,6 @@ acfg_free (MonoAotCompile *acfg)
 			g_free (acfg->cfgs [i]);
 	g_free (acfg->cfgs);
 	g_free (acfg->method_got_offsets);
-	g_free (acfg->patch_to_plt_offset_wrapper);
 	g_free (acfg->static_linking_symbol);
 	g_ptr_array_free (acfg->methods, TRUE);
 	g_ptr_array_free (acfg->shared_patches, TRUE);
@@ -4217,8 +4196,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->methods = g_ptr_array_new ();
 	acfg->method_indexes = g_hash_table_new (NULL, NULL);
 	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
-	acfg->patch_to_plt_offset = g_hash_table_new (NULL, NULL);
-	acfg->patch_to_plt_offset_wrapper = g_malloc0 (sizeof (GHashTable*) * 128);
+	acfg->patch_to_plt_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->patch_to_shared_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	acfg->shared_patches = g_ptr_array_new ();
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
