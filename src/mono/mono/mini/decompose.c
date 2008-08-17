@@ -194,7 +194,6 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		g_assert_not_reached ();
 		break;
 #else
-#error bla
 	case OP_LADD_OVF:
 		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
