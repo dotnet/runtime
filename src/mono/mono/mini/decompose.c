@@ -164,6 +164,37 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, ins->dreg, ins->sreg1, 0);
 		ins->opcode = OP_NOP;
 		break;
+#if defined(__ppc__)
+	case OP_LADD_OVF:
+		/* ADC sets the condition code */
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		ins->opcode = OP_NOP;
+		g_assert_not_reached ();
+		break;
+	case OP_LADD_OVF_UN:
+		/* ADC sets the condition code */
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_UN_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		ins->opcode = OP_NOP;
+		g_assert_not_reached ();
+		break;
+	case OP_LSUB_OVF:
+		/* SBB sets the condition code */
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		ins->opcode = OP_NOP;
+		g_assert_not_reached ();
+		break;
+	case OP_LSUB_OVF_UN:
+		/* SBB sets the condition code */
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_UN_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		ins->opcode = OP_NOP;
+		g_assert_not_reached ();
+		break;
+#else
+#error bla
 	case OP_LADD_OVF:
 		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
@@ -184,6 +215,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		ins->opcode = OP_NOP;
 		break;
+#endif
 		
 	case OP_ICONV_TO_OVF_I8:
 	case OP_ICONV_TO_OVF_I:
@@ -634,6 +666,29 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISUBCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
 				break;
+
+#if defined(__ppc__)
+			case OP_LADD_OVF:
+				/* ADC sets the condition code */
+				MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
+				MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_CARRY, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				break;
+			case OP_LADD_OVF_UN:
+				/* ADC sets the condition code */
+				MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
+				MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_UN_CARRY, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				break;
+			case OP_LSUB_OVF:
+				/* SBB sets the condition code */
+				MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
+				MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_CARRY, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				break;
+			case OP_LSUB_OVF_UN:
+				/* SBB sets the condition code */
+				MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
+				MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_UN_CARRY, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
+				break;
+#else
 			case OP_LADD_OVF:
 				/* ADC sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_IADDCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
@@ -658,6 +713,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
 				MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 				break;
+#endif
 			case OP_LAND:
 				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
 				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
@@ -690,6 +746,13 @@ mono_decompose_long_opts (MonoCompile *cfg)
 #elif defined(__arm__)
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSBS_IMM, tree->dreg + 1, tree->sreg1 + 1, 0);
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSC_IMM, tree->dreg + 2, tree->sreg1 + 2, 0);
+#elif defined(__ppc__)
+				/* This is the old version from inssel-long32.brg */
+				MONO_EMIT_NEW_UNALU (cfg, OP_INOT, tree->dreg + 1, tree->sreg1 + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_INOT, tree->dreg + 2, tree->sreg1 + 2);
+				/* ADC sets the condition codes */
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, tree->dreg + 1, tree->dreg + 1, 1);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, tree->dreg + 2, tree->dreg + 2, 0);
 #else
 				NOT_IMPLEMENTED;
 #endif

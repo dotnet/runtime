@@ -53,7 +53,7 @@ call: dest:a clob:c len:16
 br: len:4
 throw: src1:i len:20
 rethrow: src1:i len:20
-ckfinite: src1:f
+ckfinite: dest:f src1:f
 ppc_check_finite: src1:i len:16
 add_ovf_carry: dest:i src1:i src2:i len:16
 sub_ovf_carry: dest:i src1:i src2:i len:16
@@ -94,21 +94,21 @@ iconst: dest:i len:8
 r4const: dest:f len:12
 r8const: dest:f len:12
 label: len:0
-store_membase_reg: dest:b src1:i len:4
-storei1_membase_reg: dest:b src1:i len:4
-storei2_membase_reg: dest:b src1:i len:4
-storei4_membase_reg: dest:b src1:i len:4
-storer4_membase_reg: dest:b src1:f len:8
-storer8_membase_reg: dest:b src1:f len:4
-load_membase: dest:i src1:b len:4
-loadi1_membase: dest:i src1:b len:8
-loadu1_membase: dest:i src1:b len:4
-loadi2_membase: dest:i src1:b len:4
-loadu2_membase: dest:i src1:b len:4
-loadi4_membase: dest:i src1:b len:4
-loadu4_membase: dest:i src1:b len:4
-loadr4_membase: dest:f src1:b len:4
-loadr8_membase: dest:f src1:b len:4
+store_membase_reg: dest:b src1:i len:12
+storei1_membase_reg: dest:b src1:i len:12
+storei2_membase_reg: dest:b src1:i len:12
+storei4_membase_reg: dest:b src1:i len:12
+storer4_membase_reg: dest:b src1:f len:16
+storer8_membase_reg: dest:b src1:f len:12
+load_membase: dest:i src1:b len:12
+loadi1_membase: dest:i src1:b len:16
+loadu1_membase: dest:i src1:b len:12
+loadi2_membase: dest:i src1:b len:12
+loadu2_membase: dest:i src1:b len:12
+loadi4_membase: dest:i src1:b len:12
+loadu4_membase: dest:i src1:b len:12
+loadr4_membase: dest:f src1:b len:12
+loadr8_membase: dest:f src1:b len:12
 load_memindex: dest:i src1:b src2:i len:4
 loadi1_memindex: dest:i src1:b src2:i len:8
 loadu1_memindex: dest:i src1:b src2:i len:4
@@ -303,7 +303,7 @@ cond_exc_inc: len:8
 icompare: src1:i src2:i len:4
 icompare_imm: src1:i len:12
 
-long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
+long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:32
 
 vcall2: len:20 clob:c
 vcall2_reg: src1:i len:8 clob:c

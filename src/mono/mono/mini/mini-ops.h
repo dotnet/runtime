@@ -569,10 +569,10 @@ MINI_OP(OP_ZEXT_I2,  "zext_i2", IREG, IREG, NONE)
 MINI_OP(OP_ZEXT_I4,  "zext_i4", IREG, IREG, NONE)
 MINI_OP(OP_CNE,      "cne", NONE, NONE, NONE)
 /* to implement the upper half of long32 add and sub */
-MINI_OP(OP_ADD_OVF_CARRY,   "add_ovf_carry", NONE, NONE, NONE)
-MINI_OP(OP_SUB_OVF_CARRY,   "sub_ovf_carry", NONE, NONE, NONE)
-MINI_OP(OP_ADD_OVF_UN_CARRY,   "add_ovf_un_carry", NONE, NONE, NONE)
-MINI_OP(OP_SUB_OVF_UN_CARRY,   "sub_ovf_un_carry", NONE, NONE, NONE)
+MINI_OP(OP_ADD_OVF_CARRY,   "add_ovf_carry", IREG, IREG, IREG)
+MINI_OP(OP_SUB_OVF_CARRY,   "sub_ovf_carry", IREG, IREG, IREG)
+MINI_OP(OP_ADD_OVF_UN_CARRY,   "add_ovf_un_carry", IREG, IREG, IREG)
+MINI_OP(OP_SUB_OVF_UN_CARRY,   "sub_ovf_un_carry", IREG, IREG, IREG)
 
 /* FP functions usually done by the CPU */
 MINI_OP(OP_SIN,     "sin", FREG, FREG, NONE)

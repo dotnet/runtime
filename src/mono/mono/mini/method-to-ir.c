@@ -8127,6 +8127,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			MONO_ADD_INS (bblock, ins);
 			*sp++ = ins;
 
+			mono_decompose_opcode (cfg, ins);
+
 			++ip;
 			break;
 		}

@@ -1,9 +1,9 @@
 #define MONO_EMIT_NEW_LOAD_R8(cfg,dr,addr) do { \
-		MonoInst *inst; \
-		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst)); \
-		inst->opcode = OP_R8CONST; \
-		inst->dreg = dr; \
-		inst->inst_p0 = addr; \
+		MonoInst *inst;				   \
+		MONO_INST_NEW ((cfg), (inst), OP_R8CONST); \
+		inst->type = STACK_R8;			   \
+		inst->dreg = (dr);		       \
+		inst->inst_p0 = (void*)(addr);	       \
 		mono_bblock_add_inst (cfg->cbb, inst); \
 	} while (0)
 

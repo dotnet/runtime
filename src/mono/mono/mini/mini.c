@@ -1926,6 +1926,8 @@ mono_op_imm_to_op (int opcode)
 		return OP_ISUB;
 	case OP_LSUB_IMM:
 		return OP_LSUB;
+	case OP_IMUL_IMM:
+		return OP_IMUL;
 	case OP_AND_IMM:
 #if SIZEOF_VOID_P == 4
 		return OP_IAND;
