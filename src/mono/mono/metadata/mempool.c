@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "mempool.h"
+#include "mempool-internals.h"
 
 #if USE_MALLOC_FOR_MEMPOOLS
 #define MALLOC_ALLOCATION
@@ -230,7 +231,7 @@ get_next_size (MonoMemPool *pool, int size)
 
 /**
  * mono_mempool_alloc:
- * @pool: the momory pool to destroy
+ * @pool: the momory pool to use
  * @size: size of the momory block
  *
  * Allocates a new block of memory in @pool.
@@ -396,4 +397,34 @@ mono_mempool_get_allocated (MonoMemPool *pool)
 #else
 	return pool->d.allocated;
 #endif
+}
+
+GList*
+g_list_prepend_mempool (MonoMemPool *mp, GList *list, gpointer data)
+{
+	GList *new_list;
+	
+	new_list = mono_mempool_alloc (mp, sizeof (GList));
+	new_list->data = data;
+	new_list->prev = list ? list->prev : NULL;
+    new_list->next = list;
+
+    if (new_list->prev)
+            new_list->prev->next = new_list;
+    if (list)
+            list->prev = new_list;
+
+	return new_list;
+}
+
+GSList*
+g_slist_prepend_mempool (MonoMemPool *mp, GSList *list, gpointer  data)
+{
+	GSList *new_list;
+	
+	new_list = mono_mempool_alloc (mp, sizeof (GSList));
+	new_list->data = data;
+	new_list->next = list;
+
+	return new_list;
 }
