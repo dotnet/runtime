@@ -10956,8 +10956,6 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_list_free (cfg->ldstr_list);
 	g_hash_table_destroy (cfg->token_info_hash);
 
-	g_free (cfg->reverse_inst_list);
-
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
 	g_free (cfg->exception_message);

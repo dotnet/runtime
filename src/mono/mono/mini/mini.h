@@ -893,9 +893,7 @@ typedef struct {
 
 	/* Fields used by the local reg allocator */
 	void*            reginfo;
-	void*            reverse_inst_list;
 	int              reginfo_len;
-	int              reverse_inst_list_len;
 
 	/* Maps vregs to their associated MonoInst's */
 	/* vregs with an associated MonoInst are 'global' while others are 'local' */
@@ -1212,11 +1210,15 @@ guint32   mono_alloc_ireg                   (MonoCompile *cfg) MONO_INTERNAL;
 guint32   mono_alloc_freg                   (MonoCompile *cfg) MONO_INTERNAL;
 guint32   mono_alloc_preg                   (MonoCompile *cfg) MONO_INTERNAL;
 guint32   mono_alloc_dreg                   (MonoCompile *cfg, MonoStackType stack_type) MONO_INTERNAL;
+
 void      mono_link_bblock                  (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to) MONO_INTERNAL;
 void      mono_unlink_bblock                (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to) MONO_INTERNAL;
+gboolean  mono_bblocks_linked               (MonoBasicBlock *bb1, MonoBasicBlock *bb2) MONO_INTERNAL;
 void      mono_remove_bblock                (MonoCompile *cfg, MonoBasicBlock *bb) MONO_INTERNAL;
+void      mono_nullify_basic_block          (MonoBasicBlock *bb) MONO_INTERNAL;
 void      mono_merge_basic_blocks           (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *bbn) MONO_INTERNAL;
 void      mono_optimize_branches            (MonoCompile *cfg) MONO_INTERNAL;
+
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom) MONO_INTERNAL;
 void      mono_print_tree                   (MonoInst *tree) MONO_INTERNAL;
 void      mono_print_tree_nl                (MonoInst *tree) MONO_INTERNAL;
@@ -1234,6 +1236,7 @@ int       mono_load_membase_to_load_mem     (int opcode) MONO_INTERNAL;
 guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 guint     mini_type_to_stind                (MonoCompile* cfg, MonoType *type) MONO_INTERNAL;
+guint32   mono_reverse_branch_op            (guint32 opcode) MONO_INTERNAL;
 void      mono_inst_foreach                 (MonoInst *tree, MonoInstFunc func, gpointer data) MONO_INTERNAL;
 void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id) MONO_INTERNAL;
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target) MONO_INTERNAL;
