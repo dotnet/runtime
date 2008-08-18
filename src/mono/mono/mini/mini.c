@@ -11270,6 +11270,11 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 		res->data.table = mono_mempool_alloc (mp, sizeof (MonoJumpInfoBBTable));
 		memcpy (res->data.table, patch_info->data.table, sizeof (MonoJumpInfoBBTable));
 		break;
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+		res->data.rgctx_entry = mono_mempool_alloc (mp, sizeof (MonoJumpInfoRgctxEntry));
+		memcpy (res->data.rgctx_entry, patch_info->data.rgctx_entry, sizeof (MonoJumpInfoRgctxEntry));
+		res->data.rgctx_entry->data = mono_patch_info_dup_mp (mp, res->data.rgctx_entry->data);
+		break;
 	default:
 		break;
 	}

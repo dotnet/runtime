@@ -1691,8 +1691,19 @@ find_typespec_for_class (MonoAotCompile *acfg, MonoClass *klass)
 }
 
 static void
+encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8 **endbuf);
+
+/*
+ * encode_klass_ref:
+ *
+ *   Encode a reference to KLASS. We use our home-grown encoding instead of the
+ * standard metadata encoding.
+ */
+static void
 encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **endbuf)
 {
+	guint8 *p = buf;
+
 	if (klass->generic_class) {
 		guint32 token;
 		g_assert (klass->type_token);
@@ -1700,8 +1711,8 @@ encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **
 		/* Find a typespec for a class if possible */
 		token = find_typespec_for_class (acfg, klass);
 		if (token) {
-			encode_value (token, buf, &buf);
-			encode_value (get_image_index (acfg, acfg->image), buf, &buf);
+			encode_value (token, p, &p);
+			encode_value (get_image_index (acfg, acfg->image), p, &p);
 		} else {
 			MonoClass *gclass = klass->generic_class->container_class;
 			MonoGenericInst *inst = klass->generic_class->context.class_inst;
@@ -1709,36 +1720,52 @@ encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **
 
 			/* Encode it ourselves */
 			/* Marker */
-			encode_value (MONO_TOKEN_TYPE_SPEC, buf, &buf);
-			encode_klass_ref (acfg, gclass, buf, &buf);
-			encode_value (inst->type_argc, buf, &buf);
+			encode_value (MONO_TOKEN_TYPE_SPEC, p, &p);
+			encode_value (MONO_TYPE_GENERICINST, p, &p);
+			encode_klass_ref (acfg, gclass, p, &p);
+			encode_value (inst->type_argc, p, &p);
 			for (i = 0; i < inst->type_argc; ++i)
-				encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), buf, &buf);
+				encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), p, &p);
 		}
 	} else if (klass->type_token) {
 		g_assert (mono_metadata_token_code (klass->type_token) == MONO_TOKEN_TYPE_DEF);
-		encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, buf, &buf);
-		encode_value (get_image_index (acfg, klass->image), buf, &buf);
+		encode_value (klass->type_token - MONO_TOKEN_TYPE_DEF, p, &p);
+		encode_value (get_image_index (acfg, klass->image), p, &p);
+	} else if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR)) {
+		MonoGenericParam *param = klass->byval_arg.data.generic_param;
+
+		/* Marker */
+		encode_value (MONO_TOKEN_TYPE_SPEC, p, &p);
+		encode_value (klass->byval_arg.type, p, &p);
+
+		encode_value (param->num, p, &p);
+		
+		g_assert (param->owner);
+		if (param->owner->is_method)
+			encode_method_ref (acfg, param->owner->owner.method, p, &p);
+		else
+			encode_klass_ref (acfg, param->owner->owner.klass, p, &p);
 	} else {
 		/* Array class */
 		g_assert (klass->rank > 0);
-		encode_value (MONO_TOKEN_TYPE_DEF, buf, &buf);
-		encode_value (get_image_index (acfg, klass->image), buf, &buf);
-		encode_value (klass->rank, buf, &buf);
-		encode_klass_ref (acfg, klass->element_class, buf, &buf);
+		encode_value (MONO_TOKEN_TYPE_DEF, p, &p);
+		encode_value (get_image_index (acfg, klass->image), p, &p);
+		encode_value (klass->rank, p, &p);
+		encode_klass_ref (acfg, klass->element_class, p, &p);
 	}
-	*endbuf = buf;
+	*endbuf = p;
 }
 
 static void
 encode_field_info (MonoAotCompile *cfg, MonoClassField *field, guint8 *buf, guint8 **endbuf)
 {
 	guint32 token = mono_get_field_token (field);
+	guint8 *p = buf;
 
-	encode_klass_ref (cfg, field->parent, buf, &buf);
+	encode_klass_ref (cfg, field->parent, p, &p);
 	g_assert (mono_metadata_token_code (token) == MONO_TOKEN_FIELD_DEF);
-	encode_value (token - MONO_TOKEN_FIELD_DEF, buf, &buf);
-	*endbuf = buf;
+	encode_value (token - MONO_TOKEN_FIELD_DEF, p, &p);
+	*endbuf = p;
 }
 
 #if 0
@@ -1770,6 +1797,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	guint32 image_index = get_image_index (acfg, method->klass->image);
 	guint32 token = method->token;
 	MonoJumpInfoToken *ji;
+	guint8 *p = buf;
 
 	g_assert (image_index < MAX_IMAGE_INDEX);
 
@@ -1799,26 +1827,26 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			 */
 
 			/* Marker */
-			encode_value ((254 << 24), buf, &buf);
+			encode_value ((254 << 24), p, &p);
 			/* Encode the klass */
-			encode_klass_ref (acfg, method->klass, buf, &buf);
+			encode_klass_ref (acfg, method->klass, p, &p);
 			/* Encode the method */
 			image_index = get_image_index (acfg, method->klass->image);
 			g_assert (image_index < MAX_IMAGE_INDEX);
 			g_assert (declaring->token);
 			token = declaring->token;
 			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
-			encode_value (image_index, buf, &buf);
-			encode_value (token, buf, &buf);
+			encode_value (image_index, p, &p);
+			encode_value (token, p, &p);
 		} else {
 			image_index = get_image_index (acfg, ji->image);
 			g_assert (image_index < MAX_IMAGE_INDEX);
 			token = ji->token;
 
 			/* Marker */
-			encode_value ((255 << 24), buf, &buf);
-			encode_value (image_index, buf, &buf);
-			encode_value (token, buf, &buf);
+			encode_value ((255 << 24), p, &p);
+			encode_value (image_index, p, &p);
+			encode_value (token, p, &p);
 		}
 	} else if (token == 0) {
 		/* This might be a method of a constructed type like int[,].Set */
@@ -1830,14 +1858,14 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		token = ji->token;
 
 		/* Marker */
-		encode_value ((255 << 24), buf, &buf);
-		encode_value (image_index, buf, &buf);
-		encode_value (token, buf, &buf);
+		encode_value ((255 << 24), p, &p);
+		encode_value (image_index, p, &p);
+		encode_value (token, p, &p);
 	} else {
 		g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
-		encode_value ((image_index << 24) | mono_metadata_token_index (token), buf, &buf);
+		encode_value ((image_index << 24) | mono_metadata_token_index (token), p, &p);
 	}
-	*endbuf = buf;
+	*endbuf = p;
 }
 
 static gint
@@ -1872,6 +1900,8 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_CLASS_INIT:
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2455,6 +2485,18 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		default:
 			g_assert_not_reached ();
 		}
+		break;
+	case MONO_PATCH_INFO_RGCTX_FETCH: {
+		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
+
+		encode_method_ref (acfg, entry->method, p, &p);
+		encode_value (entry->in_mrgctx, p, &p);
+		encode_value (entry->info_type, p, &p);
+		encode_value (entry->data->type, p, &p);
+		encode_patch (acfg, entry->data, p, &p);
+		break;
+	}
+	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 		break;
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
