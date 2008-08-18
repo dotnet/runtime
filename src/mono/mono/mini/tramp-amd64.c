@@ -247,7 +247,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		if (byte_offset < 0)
 			mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
 
-		amd64_test_membase_imm_size (code, MONO_ARCH_VTABLE_REG, byte_offset, bitmask, 1);
+		amd64_test_membase_imm_size (code, MONO_AMD64_ARG_REG1, byte_offset, bitmask, 1);
 		jump = code;
 		amd64_branch8 (code, X86_CC_Z, -1, 1);
 
@@ -359,7 +359,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		}
 		amd64_mov_membase_reg (code, AMD64_RBP, arg_offset, AMD64_R11, 8);
 	} else {
-		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, saved_regs_offset + (MONO_ARCH_VTABLE_REG * 8), 8);
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, saved_regs_offset + (MONO_AMD64_ARG_REG1 * 8), 8);
 		amd64_mov_membase_reg (code, AMD64_RBP, arg_offset, AMD64_R11, 8);
 	}
 
@@ -640,9 +640,9 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	g_free (rgctx_null_jumps);
 
 	/* move the rgctx pointer to the VTABLE register */
-	amd64_mov_reg_reg (buf, MONO_ARCH_VTABLE_REG, AMD64_ARG_REG1, 8);
-	/* store the slot in RCX */
-	amd64_mov_reg_imm (buf, AMD64_RCX, slot);
+	amd64_mov_reg_reg (buf, MONO_AMD64_ARG_REG1, AMD64_ARG_REG1, 8);
+	/* store the slot in the second argument register */
+	amd64_mov_reg_imm (buf, MONO_AMD64_ARG_REG2, slot);
 	/* jump to the actual trampoline */
 	amd64_call_code (buf, tramp);
 
@@ -656,7 +656,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 guint32
 mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs)
 {
-	return (guint32)(gulong)(regs [AMD64_RCX]);
+	return (guint32)(gulong)(regs [MONO_AMD64_ARG_REG2]);
 }
 
 void
