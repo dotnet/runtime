@@ -2303,9 +2303,15 @@ emit_call_body (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointe
 			}
 		}
 		else {
-			if (mono_find_class_init_trampoline_by_addr (data))
+			if (!cfg->new_ir && mono_find_class_init_trampoline_by_addr (data))
 				near_call = TRUE;
-			else {
+			else if (cfg->abs_patches && g_hash_table_lookup (cfg->abs_patches, data)) {
+				/* 
+				 * This is not really an optimization, but required because the
+				 * generic class init trampolines use R11 to pass the vtable.
+				 */
+				near_call = TRUE;
+			} else {
 				MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
 				if (info) {
 					if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 

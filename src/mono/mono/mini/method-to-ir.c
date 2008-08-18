@@ -2484,6 +2484,7 @@ mono_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer
 					MonoMethodSignature *sig, MonoInst **args)
 {
 	MonoJumpInfo *ji = mono_patch_info_new (cfg->mempool, 0, patch_type, data);
+	MonoInst *ins;
 
 	/* 
 	 * We pass ji as the call address, the PATCH_INFO_ABS resolving code will
@@ -2492,7 +2493,9 @@ mono_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer
 	if (cfg->abs_patches == NULL)
 		cfg->abs_patches = g_hash_table_new (NULL, NULL);
 	g_hash_table_insert (cfg->abs_patches, ji, ji);
-	return mono_emit_native_call (cfg, ji, sig, args);
+	ins = mono_emit_native_call (cfg, ji, sig, args);
+	((MonoCallInst*)ins)->fptr_is_patch = TRUE;
+	return ins;
 }
 
 static MonoMethod*
@@ -7712,7 +7715,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					 * the calling convention, so assign it manually, and make a call
 					 * using a signature without parameters.
 					 */					
-					call = (MonoCallInst*)mono_emit_native_call (cfg, mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT), helper_sig_generic_class_init_trampoline, &vtable);
+					call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline, &vtable);
 #ifdef MONO_ARCH_VTABLE_REG
 					mono_call_inst_add_outarg_reg (cfg, call, vtable->dreg, MONO_ARCH_VTABLE_REG, FALSE);
 #else

@@ -539,6 +539,8 @@ struct MonoCallInst {
 	guint stack_usage;
 	guint virtual : 1;
 	guint tail_call : 1;
+	/* If this is TRUE, 'fptr' points to a MonoJumpInfo instead of an address. */
+	guint fptr_is_patch : 1;
 	/*
 	 * If this is true, then the call returns a vtype in a register using the same 
 	 * calling convention as OP_CALL.

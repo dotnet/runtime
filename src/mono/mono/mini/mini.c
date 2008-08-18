@@ -11544,6 +11544,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_create_rgctx_lazy_fetch_trampoline (slot);
 		break;
 	}
+	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
+		target = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+		break;
 	default:
 		g_assert_not_reached ();
 	}
