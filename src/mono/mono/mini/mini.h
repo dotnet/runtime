@@ -707,6 +707,8 @@ typedef struct MonoJumpInfoBBTable {
 	int table_size;
 } MonoJumpInfoBBTable;
 
+typedef struct MonoJumpInfoRgctxEntry MonoJumpInfoRgctxEntry;
+
 typedef struct MonoJumpInfo MonoJumpInfo;
 struct MonoJumpInfo {
 	MonoJumpInfo *next;
@@ -734,7 +736,16 @@ struct MonoJumpInfo {
 		const char     *name;
 		MonoJumpInfoToken  *token;
 		MonoJumpInfoBBTable *table;
+		MonoJumpInfoRgctxEntry *rgctx_entry;
 	} data;
+};
+ 
+/* Contains information describing an rgctx entry */
+struct MonoJumpInfoRgctxEntry {
+	MonoMethod *method;
+	gboolean in_mrgctx;
+	MonoJumpInfo *data; /* describes the data to be loaded */
+	int info_type;
 };
 
 typedef enum {
@@ -907,6 +918,9 @@ typedef struct {
 	 * sharing.
 	 */
 	MonoMethod *orig_method;
+
+	/* Patches which describe absolute addresses embedded into the native code */
+	GHashTable *abs_patches;
 } MonoCompile;
 
 typedef enum {

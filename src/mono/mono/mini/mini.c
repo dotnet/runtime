@@ -10955,6 +10955,8 @@ mono_destroy_compile (MonoCompile *cfg)
 	mono_mempool_destroy (cfg->mempool);
 	g_list_free (cfg->ldstr_list);
 	g_hash_table_destroy (cfg->token_info_hash);
+	if (cfg->abs_patches)
+		g_hash_table_destroy (cfg->abs_patches);
 
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);
@@ -11520,6 +11522,28 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_GOT_OFFSET:
 	case MONO_PATCH_INFO_NONE:
 		break;
+	case MONO_PATCH_INFO_RGCTX_FETCH: {
+		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
+		guint32 slot = -1;
+
+		switch (entry->data->type) {
+		case MONO_PATCH_INFO_CLASS:
+			slot = mono_method_lookup_or_register_other_info (entry->method, entry->in_mrgctx, &entry->data->data.klass->byval_arg, entry->info_type, mono_method_get_context (entry->method));
+			break;
+		case MONO_PATCH_INFO_METHOD:
+			slot = mono_method_lookup_or_register_other_info (entry->method, entry->in_mrgctx, entry->data->data.method, entry->info_type, mono_method_get_context (entry->method));
+			break;
+		case MONO_PATCH_INFO_FIELD:
+			slot = mono_method_lookup_or_register_other_info (entry->method, entry->in_mrgctx, entry->data->data.field, entry->info_type, mono_method_get_context (entry->method));
+			break;
+		default:
+			g_assert_not_reached ();
+			break;
+		}
+
+		target = mono_create_rgctx_lazy_fetch_trampoline (slot);
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -12043,6 +12067,11 @@ mono_codegen (MonoCompile *cfg)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_ABS: {
 			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (patch_info->data.target);
+
+			/*
+			 * Change patches of type MONO_PATCH_INFO_ABS into patches describing the 
+			 * absolute address.
+			 */
 			if (info) {
 				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
 				// FIXME: CLEAN UP THIS MESS.
@@ -12068,19 +12097,33 @@ mono_codegen (MonoCompile *cfg)
 					}
 				}
 			}
-			else {
+			
+			if (patch_info->type == MONO_PATCH_INFO_ABS && !cfg->new_ir) {
 				MonoVTable *vtable = mono_find_class_init_trampoline_by_addr (patch_info->data.target);
 				if (vtable) {
 					patch_info->type = MONO_PATCH_INFO_CLASS_INIT;
 					patch_info->data.klass = vtable->klass;
-				} else {
-					MonoClass *klass = mono_find_delegate_trampoline_by_addr (patch_info->data.target);
-					if (klass) {
-						patch_info->type = MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
-						patch_info->data.klass = klass;
+				}
+			}
+
+			if (patch_info->type == MONO_PATCH_INFO_ABS) {
+				MonoClass *klass = mono_find_delegate_trampoline_by_addr (patch_info->data.target);
+				if (klass) {
+					patch_info->type = MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
+					patch_info->data.klass = klass;
+				}
+			}
+
+			if (patch_info->type == MONO_PATCH_INFO_ABS) {
+				if (cfg->abs_patches) {
+					MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, patch_info->data.target);
+					if (abs_ji) {
+						patch_info->type = abs_ji->type;
+						patch_info->data.target = abs_ji->data.target;
 					}
 				}
 			}
+
 			break;
 		}
 		case MONO_PATCH_INFO_SWITCH: {

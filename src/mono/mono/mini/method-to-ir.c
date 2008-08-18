@@ -2193,6 +2193,18 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 }
 #endif
 
+static MonoJumpInfo *
+mono_patch_info_new (MonoMemPool *mp, int ip, MonoJumpInfoType type, gconstpointer target)
+{
+	MonoJumpInfo *ji = mono_mempool_alloc (mp, sizeof (MonoJumpInfo));
+
+	ji->ip.i = ip;
+	ji->type = type;
+	ji->data.target = target;
+
+	return ji;
+}
+
 inline static MonoInst*
 mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args);
 
@@ -2462,6 +2474,27 @@ mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args)
 	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
 }
 
+/*
+ * mono_emit_abs_call:
+ *
+ *   Emit a call to the runtime function described by PATCH_TYPE and DATA.
+ */
+inline static MonoInst*
+mono_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer data, 
+					MonoMethodSignature *sig, MonoInst **args)
+{
+	MonoJumpInfo *ji = mono_patch_info_new (cfg->mempool, 0, patch_type, data);
+
+	/* 
+	 * We pass ji as the call address, the PATCH_INFO_ABS resolving code will
+	 * handle it.
+	 */
+	if (cfg->abs_patches == NULL)
+		cfg->abs_patches = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (cfg->abs_patches, ji, ji);
+	return mono_emit_native_call (cfg, ji, sig, args);
+}
+
 static MonoMethod*
 get_memcpy_method (void)
 {
@@ -2601,54 +2634,51 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 		(rgctx) = emit_get_rgctx (cfg, method, (context_used)); \
 	} while (0)
 
-static MonoInst*
-emit_get_rgctx_other_table_ptr (MonoCompile *cfg, MonoInst *rgc_ptr, int slot)
+static MonoJumpInfoRgctxEntry *
+mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean in_mrgctx, MonoJumpInfoType patch_type, gconstpointer patch_data, int info_type)
 {
-	MonoMethodSignature *sig = helper_sig_rgctx_lazy_fetch_trampoline;
-	guint8 *tramp = mono_create_rgctx_lazy_fetch_trampoline (slot);
+	MonoJumpInfoRgctxEntry *res = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoRgctxEntry));
+	res->method = method;
+	res->in_mrgctx = in_mrgctx;
+	res->data = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
+	res->data->type = patch_type;
+	res->data->data.target = patch_data;
+	res->info_type = info_type;
 
-	return mono_emit_native_call (cfg, tramp, sig, &rgc_ptr);
+	return res;
+}
+
+static inline MonoInst*
+emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
+{
+	return mono_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, helper_sig_rgctx_lazy_fetch_trampoline, &rgctx);
 }
 
 static MonoInst*
 emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
 					  MonoInst *rgctx, MonoClass *klass, int rgctx_type)
 {
-	guint32 slot = mono_method_lookup_or_register_other_info (cfg->current_method,
-		context_used & MONO_GENERIC_CONTEXT_USED_METHOD, &klass->byval_arg, rgctx_type, cfg->generic_context);
+	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_CLASS, klass, rgctx_type);
 
-	return emit_get_rgctx_other_table_ptr (cfg, rgctx, slot);
+	return emit_rgctx_fetch (cfg, rgctx, entry);
 }
 
 static MonoInst*
 emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 					   MonoInst *rgctx, MonoMethod *cmethod, int rgctx_type)
 {
-	guint32 slot = mono_method_lookup_or_register_other_info (cfg->current_method,
-		context_used & MONO_GENERIC_CONTEXT_USED_METHOD, cmethod, rgctx_type, cfg->generic_context);
+	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_METHOD, cmethod, rgctx_type);
 
-	return emit_get_rgctx_other_table_ptr (cfg, rgctx, slot);
+	return emit_rgctx_fetch (cfg, rgctx, entry);
 }
 
 static MonoInst*
 emit_get_rgctx_field (MonoCompile *cfg, int context_used,
 					  MonoInst *rgctx, MonoClassField *field, int rgctx_type)
 {
-	guint32 slot = mono_method_lookup_or_register_other_info (cfg->current_method,
-		context_used & MONO_GENERIC_CONTEXT_USED_METHOD, field, rgctx_type, cfg->generic_context);
+	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_FIELD, field, rgctx_type);
 
-	return emit_get_rgctx_other_table_ptr (cfg, rgctx, slot);
-}
-
-static MonoInst*
-emit_get_rgctx_method_rgctx (MonoCompile *cfg, int context_used,
-							 MonoInst *rgctx, MonoMethod *rgctx_method)
-{
-	guint32 slot = mono_method_lookup_or_register_other_info (cfg->current_method,
-		context_used & MONO_GENERIC_CONTEXT_USED_METHOD, rgctx_method,
-		MONO_RGCTX_INFO_METHOD_RGCTX, cfg->generic_context);
-
-	return emit_get_rgctx_other_table_ptr (cfg, rgctx, slot);
+	return emit_rgctx_fetch (cfg, rgctx, entry);
 }
 
 /**
@@ -5872,7 +5902,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					MonoInst *rgctx;
 
 					EMIT_GET_RGCTX (rgctx, context_used);
-					vtable_arg = emit_get_rgctx_method_rgctx (cfg, context_used, rgctx, cmethod);
+					vtable_arg = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 				} else {
 					EMIT_NEW_METHOD_RGCTX_CONST (cfg, vtable_arg, cmethod);
 				}
@@ -7081,10 +7111,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					 * As a workaround, we call class cctors before allocating objects.
 					 */
 					if (mini_field_access_needs_cctor_run (cfg, method, vtable) && !(g_slist_find (class_inits, vtable))) {
-						guint8 *tramp = mono_create_class_init_trampoline (vtable);
-						mono_emit_native_call (cfg, tramp, 
-											   helper_sig_class_init_trampoline,
-											   NULL);
+						mono_emit_abs_call (cfg, MONO_PATCH_INFO_CLASS_INIT, vtable->klass, helper_sig_class_init_trampoline, NULL);
 						if (cfg->verbose_level > 2)
 							printf ("class %s.%s needs init call for ctor\n", cmethod->klass->name_space, cmethod->klass->name);
 						class_inits = g_slist_prepend (class_inits, vtable);
@@ -7720,10 +7747,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				CHECK_TYPELOAD (klass);
 				if (!addr) {
 					if (mini_field_access_needs_cctor_run (cfg, method, vtable) && !(g_slist_find (class_inits, vtable))) {
-						guint8 *tramp = mono_create_class_init_trampoline (vtable);
-						mono_emit_native_call (cfg, tramp, 
-											   helper_sig_class_init_trampoline,
-											   NULL);
+						mono_emit_abs_call (cfg, MONO_PATCH_INFO_CLASS_INIT, vtable->klass, helper_sig_class_init_trampoline, NULL);
 						if (cfg->verbose_level > 2)
 							printf ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
 						class_inits = g_slist_prepend (class_inits, vtable);
