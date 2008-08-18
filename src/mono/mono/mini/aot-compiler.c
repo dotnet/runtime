@@ -1898,6 +1898,7 @@ is_shared_got_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 	case MONO_PATCH_INFO_RVA:
+	case MONO_PATCH_INFO_METHODCONST:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2583,11 +2584,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			continue;
 		}
 
-		if ((patch_info->type == MONO_PATCH_INFO_METHOD) ||
-			(patch_info->type == MONO_PATCH_INFO_INTERNAL_METHOD) ||
-			(patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) ||
-			(patch_info->type == MONO_PATCH_INFO_WRAPPER) ||
-			(patch_info->type == MONO_PATCH_INFO_CLASS_INIT)) {
+		if (is_plt_patch (patch_info)) {
 			/* Calls are made through the PLT */
 			patch_info->type = MONO_PATCH_INFO_NONE;
 			continue;
@@ -3423,18 +3420,15 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_GOT_OFFSET:
 		case MONO_PATCH_INFO_NONE:
-		case MONO_PATCH_INFO_METHOD:
-		case MONO_PATCH_INFO_INTERNAL_METHOD:
-		case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-		case MONO_PATCH_INFO_WRAPPER:
 			break;
 		case MONO_PATCH_INFO_IMAGE:
-			if (patch_info->data.image == acfg->image)
-				/* Stored in GOT slot 0 */
-				break;
-			/* Fall through */
+			/* The assembly is stored in GOT slot 0 */
+			if (patch_info->data.image != acfg->image)
+				cfg->has_got_slots = TRUE;
+			break;
 		default:
-			cfg->has_got_slots = TRUE;
+			if (!is_plt_patch (patch_info))
+				cfg->has_got_slots = TRUE;
 			break;
 		}
 	}
