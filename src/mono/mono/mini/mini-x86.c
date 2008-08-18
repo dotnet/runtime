@@ -3823,6 +3823,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_INTERNAL_METHOD:
 		case MONO_PATCH_INFO_BB:
 		case MONO_PATCH_INFO_LABEL:
+		case MONO_PATCH_INFO_RGCTX_FETCH:
+		case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 			x86_patch (ip, target);
 			break;
 		case MONO_PATCH_INFO_NONE:
