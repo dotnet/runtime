@@ -631,7 +631,8 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 #ifdef ENABLE_LIVENESS2
 		/* This improves code size by about 5% but slows down compilation too much */
-		if (cfg->compile_aot)
+		/* FIXME: This crashes when compiling 2.0 mscorlib */
+		if (FALSE && cfg->compile_aot)
 			mono_analyze_liveness2 (cfg);
 #endif
 	}

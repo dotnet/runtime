@@ -1898,7 +1898,6 @@ is_shared_got_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 	case MONO_PATCH_INFO_RVA:
-	case MONO_PATCH_INFO_METHODCONST:
 		return TRUE;
 	default:
 		return FALSE;
