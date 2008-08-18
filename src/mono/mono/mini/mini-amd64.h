@@ -280,7 +280,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_IMT 1
 #define MONO_ARCH_HAVE_TLS_GET 1
 #define MONO_ARCH_IMT_REG AMD64_R11
-#define MONO_ARCH_VTABLE_REG AMD64_R11
+#define MONO_ARCH_VTABLE_REG AMD64_RAX
 /*
  * We use r10 for the rgctx register rather than r11 because r11 is
  * used by the trampoline as a scratch register and hence might be

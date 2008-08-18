@@ -318,7 +318,6 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		} else if (i != AMD64_R11) {
 			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * 8), i, 8);
 		} else {
-			
 			/* We have to save R11 right at the start of
 			   the trampoline code because it's used as a
 			   scratch register */
@@ -361,7 +360,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		amd64_mov_membase_reg (code, AMD64_RBP, arg_offset, AMD64_R11, 8);
 	} else {
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, saved_regs_offset + (MONO_ARCH_VTABLE_REG * 8), 8);
-		amd64_mov_membase_reg (code, AMD64_RBP, arg_offset, MONO_ARCH_VTABLE_REG, 8);
+		amd64_mov_membase_reg (code, AMD64_RBP, arg_offset, AMD64_R11, 8);
 	}
 
 	/* Save LMF begin */
@@ -642,8 +641,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 
 	/* move the rgctx pointer to the VTABLE register */
 	amd64_mov_reg_reg (buf, MONO_ARCH_VTABLE_REG, AMD64_ARG_REG1, 8);
-	/* store the slot in RAX */
-	amd64_mov_reg_imm (buf, AMD64_RAX, slot);
+	/* store the slot in RCX */
+	amd64_mov_reg_imm (buf, AMD64_RCX, slot);
 	/* jump to the actual trampoline */
 	amd64_call_code (buf, tramp);
 
@@ -657,7 +656,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 guint32
 mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs)
 {
-	return (guint32)(gulong)(regs [AMD64_RAX]);
+	return (guint32)(gulong)(regs [AMD64_RCX]);
 }
 
 void
