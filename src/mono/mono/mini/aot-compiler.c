@@ -1883,6 +1883,7 @@ is_plt_patch (MonoJumpInfo *patch_info)
  *
  *   Return whenever PATCH_INFO refers to a patch which needs a shared GOT
  * entry.
+ * Keep it in sync with the version in aot-runtime.c.
  */
 static inline gboolean
 is_shared_got_patch (MonoJumpInfo *patch_info)
@@ -1898,6 +1899,7 @@ is_shared_got_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 	case MONO_PATCH_INFO_RVA:
+	case MONO_PATCH_INFO_METHODCONST:
 		return TRUE;
 	default:
 		return FALSE;

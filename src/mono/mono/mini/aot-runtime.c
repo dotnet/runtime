@@ -1280,17 +1280,52 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	return jinfo;
 }
 
+/* Keep it in sync with the version in aot-compiler.c */
+static inline gboolean
+is_shared_got_patch (MonoJumpInfo *patch_info)
+{
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_ADJUSTED_IID:
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_SFLDA:
+	case MONO_PATCH_INFO_DECLSEC:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_RVA:
+	case MONO_PATCH_INFO_METHODCONST:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 static gboolean
 decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guint8 *buf, guint8 **endbuf, guint32 *got_offset)
 {
 	guint8 *p = buf;
 	gpointer *table;
 	MonoImage *image;
+	guint8 *shared_p;
 	int i;
+
+	if (is_shared_got_patch (ji)) {
+		*got_offset = decode_value (p, &p);
+
+		if (aot_module->got [*got_offset]) {
+			/* Already loaded */
+			//printf ("HIT!\n");
+			*endbuf = p;
+			return TRUE;
+		} else {
+			shared_p = aot_module->got_info + aot_module->got_info_offsets [*got_offset];
+		}
+	}
 
 	switch (ji->type) {
 	case MONO_PATCH_INFO_METHOD:
-	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_METHOD_RGCTX: {
@@ -1401,21 +1436,31 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		p += len + 1;
 		break;
 	}
+	case MONO_PATCH_INFO_METHODCONST: {
+		guint32 token;
+		MonoMethod *method;
+
+		/* Shared */
+		image = decode_method_ref (aot_module, &token, &method, shared_p, &shared_p);
+		if (!image)
+			goto cleanup;
+
+		if (method)
+			ji->data.method = method;
+		else
+			ji->data.method = mono_get_method (image, token, NULL);
+		if (!ji->data.method)
+			goto cleanup;
+		break;
+	}
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
 	case MONO_PATCH_INFO_ADJUSTED_IID:
-		*got_offset = decode_value (p, &p);
-
-		if (aot_module->got [*got_offset]) {
-			/* Already loaded */
-			//printf ("HIT!\n");
-		} else {
-			guint8 *tmp = aot_module->got_info + aot_module->got_info_offsets [*got_offset];
-			ji->data.klass = decode_klass_ref (aot_module, tmp, &tmp);
-			if (!ji->data.klass)
-				goto cleanup;
-		}
+		/* Shared */
+		ji->data.klass = decode_klass_ref (aot_module, shared_p, &shared_p);
+		if (!ji->data.klass)
+			goto cleanup;
 		break;
 	case MONO_PATCH_INFO_CLASS_INIT:
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
@@ -1432,17 +1477,10 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 		break;
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
-		*got_offset = decode_value (p, &p);
-
-		if (aot_module->got [*got_offset]) {
-			/* Already loaded */
-			//printf ("HIT2!\n");
-		} else {
-			guint8 *tmp = aot_module->got_info + aot_module->got_info_offsets [*got_offset];
-			ji->data.field = decode_field_info (aot_module, tmp, &tmp);
-			if (!ji->data.field)
-				goto cleanup;
-		}
+		/* Shared */
+		ji->data.field = decode_field_info (aot_module, shared_p, &shared_p);
+		if (!ji->data.field)
+			goto cleanup;
 		break;
 	case MONO_PATCH_INFO_SWITCH:
 		ji->data.table = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoBBTable));
@@ -1480,17 +1518,11 @@ decode_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji,
 	case MONO_PATCH_INFO_DECLSEC:
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		*got_offset = decode_value (p, &p);
-
-		if (aot_module->got [*got_offset]) {
-			/* Already loaded */
-		} else {
-			guint8 *tmp = aot_module->got_info + aot_module->got_info_offsets [*got_offset];
-			image = load_image (aot_module, decode_value (tmp, &tmp));
-			if (!image)
-				goto cleanup;
-			ji->data.token = mono_jump_info_token_new (mp, image, decode_value (tmp, &tmp));
-		}
+		/* Shared */
+		image = load_image (aot_module, decode_value (shared_p, &shared_p));
+		if (!image)
+			goto cleanup;
+		ji->data.token = mono_jump_info_token_new (mp, image, decode_value (shared_p, &shared_p));
 		break;
 	case MONO_PATCH_INFO_EXC_NAME:
 		ji->data.klass = decode_klass_ref (aot_module, p, &p);
