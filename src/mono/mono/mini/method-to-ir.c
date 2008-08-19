@@ -5674,6 +5674,10 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				MONO_ADD_INS (bblock, (MonoInst*)call);
 			}
 #else
+			for (i = 0; i < num_args; ++i)
+				/* Prevent arguments from being optimized away */
+				arg_array [i]->flags |= MONO_INST_VOLATILE;
+
 			MONO_INST_NEW_CALL (cfg, call, OP_JMP);
 			ins = (MonoInst*)call;
 			ins->inst_p0 = cmethod;
