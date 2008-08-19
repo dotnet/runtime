@@ -239,6 +239,9 @@ decode_value (guint8 *ptr, guint8 **rptr)
 	return len;
 }
 
+static MonoMethod*
+decode_method_ref_2 (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
+
 static MonoClass*
 decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
@@ -288,7 +291,35 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				klass = mono_class_from_mono_type (type);
 				mono_metadata_free_type (type);
 			} else if ((type == MONO_TYPE_VAR) || (type == MONO_TYPE_MVAR)) {
-				g_assert_not_reached ();
+				MonoType *t;
+				gboolean is_method;
+
+				// FIXME: Maybe use types directly to avoid
+				// the overhead of creating MonoClass-es
+
+				// FIXME: Memory management
+				t = g_new0 (MonoType, 1);
+				t->type = type;
+				t->data.generic_param = g_new0 (MonoGenericParam, 1);
+				t->data.generic_param->num = decode_value (p, &p);
+
+				is_method = decode_value (p, &p);
+				if (is_method) {
+					g_assert_not_reached ();
+				} else {
+					MonoClass *class_def = decode_klass_ref (module, p, &p);
+					
+					if (!class_def) {
+						g_free (t->data.generic_param);
+						g_free (t);
+						return NULL;
+					}
+
+					g_assert (class_def->generic_container);
+					t->data.generic_param->owner = class_def->generic_container;
+				}
+
+				klass = mono_class_from_mono_type (t);
 			} else {
 				g_assert_not_reached ();
 			}
@@ -408,7 +439,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
  *
  *   Similar to decode_method_ref, but resolve and return the method itself.
  */
-static inline MonoMethod*
+static MonoMethod*
 decode_method_ref_2 (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoMethod *method;

@@ -1741,6 +1741,7 @@ encode_klass_ref (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, guint8 **
 		encode_value (param->num, p, &p);
 		
 		g_assert (param->owner);
+		encode_value (param->owner->is_method, p, &p);
 		if (param->owner->is_method)
 			encode_method_ref (acfg, param->owner->owner.method, p, &p);
 		else
