@@ -2670,7 +2670,7 @@ static MonoInst*
 emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 					   MonoInst *rgctx, MonoMethod *cmethod, int rgctx_type)
 {
-	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_METHOD, cmethod, rgctx_type);
+	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_METHODCONST, cmethod, rgctx_type);
 
 	return emit_rgctx_fetch (cfg, rgctx, entry);
 }
