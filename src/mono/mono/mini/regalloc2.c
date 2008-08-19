@@ -191,19 +191,6 @@ typedef struct MonoRegallocContext {
 #endif
 
 static inline GSList*
-g_slist_prepend_mempool (MonoMemPool *mp, GSList   *list,
-						 gpointer  data)
-{
-  GSList *new_list;
-
-  new_list = mono_mempool_alloc (mp, sizeof (GSList));
-  new_list->data = data;
-  new_list->next = list;
-
-  return new_list;
-}
-
-static inline GSList*
 g_slist_append_mempool (MonoMemPool *mp, GSList   *list,
 						gpointer  data)
 {

@@ -59,6 +59,7 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/mempool-internals.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -10113,19 +10114,6 @@ typedef struct {
 	GList *active, *inactive;
 	GSList *slots;
 } StackSlotInfo;
-
-static inline GSList*
-g_slist_prepend_mempool (MonoMemPool *mp, GSList   *list,
-						 gpointer  data)
-{
-  GSList *new_list;
-
-  new_list = mono_mempool_alloc (mp, sizeof (GSList));
-  new_list->data = data;
-  new_list->next = list;
-
-  return new_list;
-}
 
 static gint 
 compare_by_interval_start_pos_func (gconstpointer a, gconstpointer b)

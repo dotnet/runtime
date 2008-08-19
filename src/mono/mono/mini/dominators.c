@@ -9,6 +9,8 @@
  */
 #include <string.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mempool.h>
+#include <mono/metadata/mempool-internals.h>
 
 #include "mini.h"
 
@@ -19,19 +21,6 @@
  * it is the entry bblock.
  */
 #define HAS_DFN(bb, entry) ((bb)->dfn || ((bb) == entry))
-
-static inline GSList*
-g_slist_prepend_mempool (MonoMemPool *mp, GSList   *list,
-						 gpointer  data)
-{
-  GSList *new_list;
-
-  new_list = mono_mempool_alloc (mp, sizeof (GSList));
-  new_list->data = data;
-  new_list->next = list;
-
-  return new_list;
-}
 
 /*
  * Compute dominators and immediate dominators using the algorithm in the

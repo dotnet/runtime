@@ -8,6 +8,8 @@
  */
 #include <string.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mempool.h>
+#include <mono/metadata/mempool-internals.h>
 
 #include "mini.h"
 
@@ -30,17 +32,6 @@
 		(dest)->inst_c0 = (val);	\
 		(dest)->type = STACK_I4;	\
 	} while (0)
-
-
-static GList*
-g_list_prepend_mempool (GList* l, MonoMemPool* mp, gpointer datum)
-{
-	GList* n = mono_mempool_alloc (mp, sizeof (GList));
-	n->next = l;
-	n->prev = NULL;
-	n->data = datum;
-	return n;
-}
 
 static void 
 unlink_target (MonoBasicBlock *bb, MonoBasicBlock *target)
@@ -640,7 +631,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 				//printf ("FOUND %d\n", idx);
 				ui->bb = bb;
 				ui->inst = root;
-				info->uses = g_list_prepend_mempool (info->uses, cfg->mempool, ui);
+				info->uses = g_list_prepend_mempool (cfg->mempool, info->uses, ui);
 			}
 		}
 	}
@@ -653,7 +644,7 @@ analyze_dev_use (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *root, MonoInst 
 		//printf ("FOUND %d\n", idx);
 		ui->bb = bb;
 		ui->inst = root;
-		info->uses = g_list_prepend_mempool (info->uses, cfg->mempool, ui);
+		info->uses = g_list_prepend_mempool (cfg->mempool, info->uses, ui);
 	} else {
 		if (arity) {
 			//if (inst->ssa_op != MONO_SSA_STORE)

@@ -8,6 +8,8 @@
  */
 #include <string.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mempool.h>
+#include <mono/metadata/mempool-internals.h>
 
 #define NEW_IR
 #include "mini.h"
@@ -36,16 +38,6 @@ typedef struct {
 	MonoBasicBlock *bb;
 	MonoInst *inst;
 } MonoVarUsageInfo;
-
-static inline GList*
-g_list_prepend_mempool (GList* l, MonoMemPool* mp, gpointer datum)
-{
-	GList* n = mono_mempool_alloc (mp, sizeof (GList));
-	n->next = l;
-	n->prev = NULL;
-	n->data = datum;
-	return n;
-}
 
 static void 
 unlink_target (MonoBasicBlock *bb, MonoBasicBlock *target)
@@ -158,7 +150,7 @@ record_use (MonoCompile *cfg, MonoInst *var, MonoBasicBlock *bb, MonoInst *ins)
 	
 	ui->bb = bb;
 	ui->inst = ins;
-	info->uses = g_list_prepend_mempool (info->uses, cfg->mempool, ui);
+	info->uses = g_list_prepend_mempool (cfg->mempool, info->uses, ui);
 }	
 
 typedef struct {
@@ -1276,7 +1268,7 @@ add_to_dce_worklist (MonoCompile *cfg, MonoMethodVar *var, MonoMethodVar *use, G
 {
 	GList *tmp;
 
-	*wl = g_list_prepend_mempool (*wl, cfg->mempool, use);
+	*wl = g_list_prepend_mempool (cfg->mempool, *wl, use);
 
 	for (tmp = use->uses; tmp; tmp = tmp->next) {
 		MonoVarUsageInfo *ui = (MonoVarUsageInfo *)tmp->data;
@@ -1306,7 +1298,7 @@ mono_ssa_deadce2 (MonoCompile *cfg)
 	work_list = NULL;
 	for (i = 0; i < cfg->num_varinfo; i++) {
 		MonoMethodVar *info = MONO_VARINFO (cfg, i);
-		work_list = g_list_prepend_mempool (work_list, cfg->mempool, info);
+		work_list = g_list_prepend_mempool (cfg->mempool, work_list, info);
 	}
 
 	while (work_list) {
