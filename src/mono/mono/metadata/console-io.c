@@ -255,7 +255,6 @@ sigcont_handler (int signo)
 {
 	struct termios attr;
 
-	printf ("SIGCONTING!\n");
 	attr = initial_attr;
 	attr.c_lflag &= ~ICANON;
 	attr.c_cc [VMIN] = 1;
