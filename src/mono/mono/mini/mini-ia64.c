@@ -2956,6 +2956,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_fnorm_s_sf (code, ins->dreg, ins->sreg1, 0);
 			break;
 		case OP_FCONV_TO_I8:
+		case OP_FCONV_TO_I:
 			ia64_fcvt_fx_trunc_sf (code, FP_SCRATCH_REG, ins->sreg1, 0);
 			ia64_getf_sig (code, ins->dreg, FP_SCRATCH_REG);
 			break;
