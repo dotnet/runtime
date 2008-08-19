@@ -2743,6 +2743,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			offset = code - cfg->native_code;
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			x86_jump32 (code, 0);
+
+			cfg->disable_aot = TRUE;
 			break;
 		}
 		case OP_CHECK_THIS:
