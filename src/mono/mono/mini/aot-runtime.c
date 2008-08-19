@@ -293,6 +293,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 			} else if ((type == MONO_TYPE_VAR) || (type == MONO_TYPE_MVAR)) {
 				MonoType *t;
 				gboolean is_method;
+				MonoGenericContainer *container;
 
 				// FIXME: Maybe use types directly to avoid
 				// the overhead of creating MonoClass-es
@@ -305,7 +306,15 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 
 				is_method = decode_value (p, &p);
 				if (is_method) {
-					g_assert_not_reached ();
+					MonoMethod *method_def = decode_method_ref_2 (module, p, &p);
+
+					if (!method_def) {
+						g_free (t->data.generic_param);
+						g_free (t);
+						return NULL;
+					}
+
+					container = mono_method_get_generic_container (method_def);
 				} else {
 					MonoClass *class_def = decode_klass_ref (module, p, &p);
 					
@@ -315,9 +324,11 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 						return NULL;
 					}
 
-					g_assert (class_def->generic_container);
-					t->data.generic_param->owner = class_def->generic_container;
+					container = class_def->generic_container;
 				}
+
+				g_assert (container);
+				t->data.generic_param->owner = container;
 
 				klass = mono_class_from_mono_type (t);
 			} else {
@@ -375,17 +386,18 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 {
 	guint32 image_index, value;
 	MonoImage *image;
+	guint8 *p = buf;
 
 	if (method)
 		*method = NULL;
 
-	value = decode_value (buf, &buf);
+	value = decode_value (p, &p);
 	image_index = value >> 24;
 
 	if (image_index == 255) {
 		/* Methodspec */
-		image_index = decode_value (buf, &buf);
-		*token = decode_value (buf, &buf);
+		image_index = decode_value (p, &p);
+		*token = decode_value (p, &p);
 
 		image = load_image (module, image_index);
 		if (!image)
@@ -393,34 +405,67 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 	} else if (image_index == 254) {
 		/* Method on generic instance */
 		MonoClass *klass;
-		MonoGenericContext context;
+		MonoGenericContext ctx;
+		MonoGenericInst *inst;
+		int i;
+		gboolean has_class_inst, has_method_inst;
 
 		/* 
 		 * These methods do not have a token which resolves them, so we 
 		 * resolve them immediately.
 		 */
-		klass = decode_klass_ref (module, buf, &buf);
+		klass = decode_klass_ref (module, p, &p);
 		if (!klass)
 			return NULL;
 
-		image_index = decode_value (buf, &buf);
-		*token = decode_value (buf, &buf);
+		image_index = decode_value (p, &p);
+		*token = decode_value (p, &p);
 
 		image = load_image (module, image_index);
 		if (!image)
 			return NULL;
 
-		if (klass->generic_class) {
-			g_assert (method);
-			*method = mono_get_method_full (image, *token, NULL, NULL);
-			g_assert (*method);
+		*method = mono_get_method_full (image, *token, NULL, NULL);
+		if (!(*method))
+			return NULL;
 
-			g_assert (klass->generic_class);
-			context.class_inst = klass->generic_class->context.class_inst;
-			context.method_inst = NULL;
+		memset (&ctx, 0, sizeof (ctx));
 
-			*method = mono_class_inflate_generic_method_full (*method, klass, &context);
-		}			
+		// FIXME: Memory management
+		has_class_inst = decode_value (p, &p);
+		if (has_class_inst) {
+			inst = g_new0 (MonoGenericInst, 1);
+			ctx.class_inst = inst;
+			inst->type_argc = decode_value (p, &p);
+			inst->type_argv = g_new0 (MonoType*, inst->type_argc);
+			for (i = 0; i < inst->type_argc; ++i) {
+				MonoClass *pclass = decode_klass_ref (module, p, &p);
+				if (!pclass) {
+					g_free (inst->type_argv);
+					g_free (inst);
+					return NULL;
+				}
+				inst->type_argv [i] = &pclass->byval_arg;
+			}
+		}
+		has_method_inst = decode_value (p, &p);
+		if (has_method_inst) {
+			inst = g_new0 (MonoGenericInst, 1);
+			ctx.method_inst = inst;
+			inst->type_argc = decode_value (p, &p);
+			inst->type_argv = g_new0 (MonoType*, inst->type_argc);
+			for (i = 0; i < inst->type_argc; ++i) {
+				MonoClass *pclass = decode_klass_ref (module, p, &p);
+				if (!pclass) {
+					g_free (inst->type_argv);
+					g_free (inst);
+					return NULL;
+				}
+				inst->type_argv [i] = &pclass->byval_arg;
+			}
+		}
+
+		*method = mono_class_inflate_generic_method_full (*method, klass, &ctx);
 	} else {
 		*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
@@ -429,7 +474,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			return NULL;
 	}
 
-	*endbuf = buf;
+	*endbuf = p;
 
 	return image;
 }
