@@ -35,6 +35,7 @@
 #include "rawbuffer.h"
 #include "mono-endian.h"
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/mempool-internals.h>
 
 typedef struct {
 	char *p;
@@ -9919,7 +9920,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	if (tb->subtypes) {
 		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
 			MonoReflectionTypeBuilder *subtb = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
-			klass->nested_classes = g_list_prepend (klass->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
+			klass->nested_classes = g_list_prepend_mempool (klass->image->mempool, klass->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
 		}
 	}
 
