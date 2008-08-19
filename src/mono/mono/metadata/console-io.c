@@ -1,3 +1,4 @@
+
 /*
  * console-io.c: ConsoleDriver internal calls
  *
@@ -249,6 +250,52 @@ sigint_handler (int signo)
 	in_sigint = FALSE;
 }
 
+static void
+sigcont_handler (int signo)
+{
+	struct termios attr;
+
+	printf ("SIGCONTING!\n");
+	attr = initial_attr;
+	attr.c_lflag &= ~ICANON;
+	attr.c_cc [VMIN] = 1;
+	attr.c_cc [VTIME] = 0;
+
+	// Ignore error, there is not much we can do in the sigcont handler.
+	tcsetattr (STDIN_FILENO, TCSANOW, &attr);
+}
+
+static struct sigaction save_sigcont, save_sigint;
+
+void
+console_set_signal_handlers ()
+{
+	struct sigaction sigcont, sigint;
+
+	// Stopping and continuing
+	sigcont.sa_handler = sigcont_handler;
+	sigcont.sa_flags = 0;
+	sigemptyset (&sigcont.sa_mask);
+	sigaction (SIGCONT, &sigcont, &save_sigcont);
+	
+	// Interrupt handler
+	sigint.sa_handler = sigint_handler;
+	sigint.sa_flags = 0;
+	sigemptyset (&sigint.sa_mask);
+	sigaction (SIGINT, &sigint, &save_sigint);
+}
+
+//
+// Currently unused, should we ever call the restore handler?
+// Perhaps before calling into Process.Start?
+//
+void
+console_restore_signal_handlers ()
+{
+	sigaction (SIGCONT, &save_sigcont, NULL);
+	sigaction (SIGINT, &save_sigint, NULL);
+}
+
 MonoBoolean
 ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, char *vsusp, char*intr)
 {
@@ -256,14 +303,12 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, cha
 	
 	MONO_ARCH_SAVE_REGS;
 
-
 	*verase = '\0';
 	*vsusp = '\0';
 	*intr = '\0';
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
 		return FALSE;
 
-	/* TODO: handle SIGTSTP - Ctrl-Z */
 	attr = initial_attr;
 	attr.c_lflag &= ~ICANON;
 	attr.c_cc [VMIN] = 1;
@@ -278,7 +323,7 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, cha
 	if (setup_finished)
 		return TRUE;
 
-	signal (SIGINT, sigint_handler);
+	console_set_signal_handlers ();
 	setup_finished = TRUE;
 	if (!atexit_called) {
 		if (teardown != NULL)

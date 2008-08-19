@@ -26,6 +26,9 @@ MonoBoolean ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char 
 MonoBoolean ves_icall_System_ConsoleDriver_GetTtySize (HANDLE handle, gint32 *width, gint32 *height) MONO_INTERNAL;
 void ves_icall_System_ConsoleDriver_Suspend (void) MONO_INTERNAL;
 
+void console_restore_signal_handlers (void);
+void console_set_signal_handlers (void);
+
 G_END_DECLS
 
 #endif /* _MONO_METADATA_CONSOLEIO_H */
