@@ -26,8 +26,10 @@
  * vars have the same 'idx'.
  */
 #if SIZEOF_VOID_P == 8
-#define ENABLE_LIVENESS2
+//#define ENABLE_LIVENESS2
+#endif
 
+#ifdef ENABLE_LIVENESS2
 static void mono_analyze_liveness2 (MonoCompile *cfg);
 #endif
 

@@ -9,6 +9,7 @@
 
 #include "mini.h"
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/mempool-internals.h>
 
 #ifdef MONO_ARCH_ENABLE_GLOBAL_RA
 
