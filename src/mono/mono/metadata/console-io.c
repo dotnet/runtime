@@ -59,8 +59,10 @@ static gchar *teardown_str;
 /* The string used to set the terminal into keypad xmit mode after SIGCONT is received */
 static gchar *keypad_xmit_str;
 
+#ifdef HAVE_TERMIOS_H
 /* This is the last state used by Mono, used after a CONT signal is received */
 static struct termios mono_attr;
+#endif
 
 #ifdef PLATFORM_WIN32
 MonoBoolean
