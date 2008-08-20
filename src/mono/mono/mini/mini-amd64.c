@@ -405,6 +405,15 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	ArgumentClass args [2];
 	MonoMarshalType *info;
 	MonoClass *klass;
+	MonoGenericSharingContext tmp_gsctx;
+
+	/* 
+	 * The gsctx currently contains no data, it is only used for checking whenever
+	 * open types are allowed, some callers like mono_arch_get_argument_info ()
+	 * don't pass it to us, so work around that.
+	 */
+	if (!gsctx)
+		gsctx = &tmp_gsctx;
 
 	klass = mono_class_from_mono_type (type);
 	if (sig->pinvoke) 
