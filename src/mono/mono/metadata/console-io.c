@@ -52,7 +52,15 @@
 
 static gboolean setup_finished;
 static gboolean atexit_called;
+
+/* The string used to return the terminal to its previous state */
 static gchar *teardown_str;
+
+/* The string used to set the terminal into keypad xmit mode after SIGCONT is received */
+static gchar *keypad_xmit_str;
+
+/* This is the last state used by Mono, used after a CONT signal is received */
+static struct termios mono_attr;
 
 #ifdef PLATFORM_WIN32
 MonoBoolean
@@ -131,12 +139,14 @@ set_property (gint property, gboolean value)
 	if (tcsetattr (STDIN_FILENO, TCSANOW, &attr) == -1)
 		return FALSE;
 
+	mono_attr = attr;
 	return TRUE;
 }
 
 MonoBoolean
 ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean want_echo)
 {
+	
 	return set_property (ECHO, want_echo);
 }
 
@@ -253,15 +263,11 @@ sigint_handler (int signo)
 static void
 sigcont_handler (int signo)
 {
-	struct termios attr;
-
-	attr = initial_attr;
-	attr.c_lflag &= ~ICANON;
-	attr.c_cc [VMIN] = 1;
-	attr.c_cc [VTIME] = 0;
-
 	// Ignore error, there is not much we can do in the sigcont handler.
-	tcsetattr (STDIN_FILENO, TCSANOW, &attr);
+	tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr);
+
+	if (keypad_xmit_str != NULL)
+		write (STDOUT_FILENO, keypad_xmit_str, strlen (keypad_xmit_str));
 }
 
 static struct sigaction save_sigcont, save_sigint;
@@ -269,9 +275,9 @@ static struct sigaction save_sigcont, save_sigint;
 void
 console_set_signal_handlers ()
 {
-	struct sigaction sigcont, sigint;
+	struct sigaction sigcont, sigint, sigstop;
 
-	// Stopping and continuing
+	// Continuing
 	sigcont.sa_handler = sigcont_handler;
 	sigcont.sa_flags = 0;
 	sigemptyset (&sigcont.sa_mask);
@@ -296,10 +302,8 @@ console_restore_signal_handlers ()
 }
 
 MonoBoolean
-ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, char *vsusp, char*intr)
+ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, char *verase, char *vsusp, char*intr)
 {
-	struct termios attr;
-	
 	MONO_ARCH_SAVE_REGS;
 
 	*verase = '\0';
@@ -308,11 +312,11 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, cha
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
 		return FALSE;
 
-	attr = initial_attr;
-	attr.c_lflag &= ~ICANON;
-	attr.c_cc [VMIN] = 1;
-	attr.c_cc [VTIME] = 0;
-	if (tcsetattr (STDIN_FILENO, TCSANOW, &attr) == -1)
+	mono_attr = initial_attr;
+	mono_attr.c_lflag &= ~ICANON;
+	mono_attr.c_cc [VMIN] = 1;
+	mono_attr.c_cc [VTIME] = 0;
+	if (tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr) == -1)
 		return FALSE;
 
 	*verase = initial_attr.c_cc [VERASE];
@@ -322,6 +326,8 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *teardown, char *verase, cha
 	if (setup_finished)
 		return TRUE;
 
+	keypad_xmit_str = keypad != NULL ? mono_string_to_utf8 (keypad) : NULL;
+	
 	console_set_signal_handlers ();
 	setup_finished = TRUE;
 	if (!atexit_called) {
