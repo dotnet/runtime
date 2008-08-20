@@ -78,7 +78,10 @@ append_class_name (GString *res, MonoClass *class, gboolean include_namespace)
 }
 
 void
-mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
+mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
+{
+	int i;
+
 	switch (type->type) {
 	case MONO_TYPE_VOID:
 		g_string_append (res, "void"); break;
@@ -132,9 +135,23 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace) {
 	case MONO_TYPE_VALUETYPE:
 		append_class_name (res, type->data.klass, include_namespace);
 		break;
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
+		MonoGenericContext *context;
+
 		mono_type_get_desc (res, &type->data.generic_class->container_class->byval_arg, include_namespace);
+		g_string_append (res, "<");
+		context = &type->data.generic_class->context;
+		if (context->class_inst) {
+			for (i = 0; i < context->class_inst->type_argc; ++i)
+				mono_type_get_desc (res, context->class_inst->type_argv [i], include_namespace);
+		}
+		if (context->method_inst) {
+			for (i = 0; i < context->method_inst->type_argc; ++i)
+				mono_type_get_desc (res, context->method_inst->type_argv [i], include_namespace);
+		}
+		g_string_append (res, ">");
 		break;
+	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		g_string_append (res, type->data.generic_param->name);
@@ -176,6 +193,31 @@ mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace)
 	g_string_free (res, FALSE);
 	return result;
 }
+
+char*
+mono_context_get_desc (MonoGenericContext *context)
+{
+	GString *str;
+	char *res;
+	int i;
+
+	str = g_string_new ("");
+	g_string_append (str, "<");
+
+	if (context->class_inst) {
+		for (i = 0; i < context->class_inst->type_argc; ++i)
+			mono_type_get_desc (str, context->class_inst->type_argv [i], TRUE);
+	}
+	if (context->method_inst) {
+		for (i = 0; i < context->method_inst->type_argc; ++i)
+			mono_type_get_desc (str, context->method_inst->type_argv [i], TRUE);
+	}
+
+	g_string_append (str, ">");
+	res = g_strdup (str->str);
+	g_string_free (str, TRUE);
+	return res;
+}	
 
 /**
  * mono_method_desc_new:
@@ -574,7 +616,7 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 {
 	char *res;
 	char wrapper [64];
-	const char *nspace = method->klass->name_space;
+	char *klass_desc = mono_type_full_name (&method->klass->byval_arg);
 
 	if (signature) {
 		char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
@@ -583,16 +625,16 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 			sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
 		else
 			strcpy (wrapper, "");
-		res = g_strdup_printf ("%s%s%s%s:%s (%s)", wrapper, 
-							   nspace, *nspace ? "." : "",
-							   method->klass->name, method->name, tmpsig);
+		res = g_strdup_printf ("%s%s:%s (%s)", wrapper, klass_desc, 
+							   method->name, tmpsig);
 		g_free (tmpsig);
 	} else {
 
-		res = g_strdup_printf ("%02d %s%s%s:%s", method->wrapper_type,
-							   nspace, *nspace ? "." : "",
-							   method->klass->name, method->name);
+		res = g_strdup_printf ("%02d %s:%s", method->wrapper_type, klass_desc,
+							   method->name);
 	}
+
+	g_free (klass_desc);
 
 	return res;
 }
