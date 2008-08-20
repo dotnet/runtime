@@ -6077,8 +6077,16 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		} else {
 			/* We have to shift the arguments left */
 			amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
-			for (i = 0; i < sig->param_count; ++i)
+			for (i = 0; i < sig->param_count; ++i) {
+#ifdef PLATFORM_WIN32
+				if (i < 3)
+					amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
+				else
+					amd64_mov_reg_membase (code, param_regs [i], AMD64_RSP, 0x28, 8);
+#else
 				amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
+#endif
+			}
 
 			amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		}
