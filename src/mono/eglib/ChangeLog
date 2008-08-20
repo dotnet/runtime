@@ -1,3 +1,13 @@
+2008-08-20  Mike Voorhees <vernish13@gmail.com>
+
+	* Patch from Mike Voorhees to fix various problems with
+	g_utf8_validate compared to the glib implementation and unit tests
+	to ensure that there are no regressions.
+
+	From a mailing list post to mono-devel-list on August 19th, 2008
+
+	[Mono-dev] utf8 related patches. Please review.
+
 2008-08-05  Andreas Faerber  <andreas.faerber@web.de>
 
 	* autogen.sh: Suppress arguments warning for NOCONFIGURE.

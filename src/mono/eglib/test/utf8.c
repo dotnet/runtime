@@ -483,6 +483,158 @@ test_utf16_to_ucs4 ()
 
 	return OK;
 }
+RESULT
+test_utf8_strlen ()
+{
+	gchar word1 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'};//Valid, len = 5
+	gchar word2 [] = {0xF1, 0x82, 0x82, 0x82,0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,'\0'};//Valid, len = 5
+	gchar word3 [] = {'h','e',0xC2, 0x82,0x45,'\0'};										//Valid, len = 4
+	gchar word4 [] = {0x62,0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,'\0'}; 					//Valid, len = 5
+	
+	glong len = 0;
+	
+	//Test word1
+	len = g_utf8_strlen (word1,-1);
+	if (len != 5)
+		return FAILED ("Word1 expected length of 5, but was %i", len);
+	//Do tests with different values for max parameter.
+	len = g_utf8_strlen (word1,1);
+	if (len != 0)
+		return FAILED ("Word1, max = 1, expected length of 0, but was %i", len);
+	len = g_utf8_strlen (word1,2);
+	if (len != 1)
+		return FAILED ("Word1, max = 1, expected length of 1, but was %i", len);
+	len = g_utf8_strlen (word1,3);
+	if (len != 2)
+		return FAILED ("Word1, max = 2, expected length of 2, but was %i", len);
+		
+	//Test word2
+	len = g_utf8_strlen (word2,-1);
+	if (len != 5)
+		return FAILED ("Word2 expected length of 5, but was %i", len);
+		
+	//Test word3
+	len = g_utf8_strlen (word3,-1);
+	if (len != 4)
+		return FAILED ("Word3 expected length of 4, but was %i", len);
+		
+	//Test word4
+	len = g_utf8_strlen (word4,-1);
+	if (len != 5)
+		return FAILED ("Word4 expected length of 5, but was %i", len);
+		
+	//Test null case
+	len = g_utf8_strlen(NULL,0);
+	if (len != 0)
+		return FAILED ("Expected passing null to result in a length of 0");
+	return OK;
+}
+
+RESULT
+test_utf8_get_char()
+{
+	gchar word1 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'}; //Valid, len = 5
+
+	gunichar value = g_utf8_get_char (&word1 [0]);
+	if (value != 0x82UL)
+		return FAILED ("Expected value of 0x82, but was %x", value);
+	value = g_utf8_get_char (&word1 [2]);
+	if (value != 0x45UL)
+		return FAILED ("Expected value of 0x45, but was %x", value);
+	value = g_utf8_get_char (&word1 [3]);
+	if (value != 0x1043UL)
+		return FAILED ("Expected value of 0x1043, but was %x", value);
+	value = g_utf8_get_char (&word1 [6]);
+	if (value != 0x58UL)
+		return FAILED ("Expected value of 0x58, but was %x", value);
+	value = g_utf8_get_char (&word1 [7]);
+	if (value != 0x42082UL)
+		return FAILED ("Expected value of 0x42082, but was %x", value);
+
+	return OK;
+}
+
+RESULT
+test_utf8_next_char()
+{
+	gchar word1 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'}; //Valid, len = 5
+	gchar word2 [] = {0xF1, 0x82, 0x82, 0x82,0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,'\0'}; //Valid, len = 5
+	gchar word1ExpectedValues [] = {0xC2, 0x45,0xE1, 0x58, 0xF1};
+	gchar word2ExpectedValues [] = {0xF1, 0xC2, 0x45, 0xE1, 0x58};
+	
+	gchar* ptr = word1;
+	gint count = 0;
+	//Test word1
+	while (*ptr != 0) {
+		if (count > 4)
+			return FAILED ("Word1 has gone past its expected length");
+		if (*ptr != word1ExpectedValues[count])
+			return FAILED ("Word1 has an incorrect next_char at index %i", count);
+		ptr = g_utf8_next_char (ptr);
+		count++;
+	}
+	
+	//Test word2
+	count = 0;
+	ptr = word2;
+	while (*ptr != 0) {
+		if (count > 4)
+			return FAILED ("Word2 has gone past its expected length");
+		if (*ptr != word2ExpectedValues[count])
+			return FAILED ("Word2 has an incorrect next_char at index %i", count);
+		ptr = g_utf8_next_char (ptr);
+		count++;
+	}
+	
+	return OK;
+}
+
+RESULT
+test_utf8_validate()
+{
+	gchar invalidWord1 [] = {0xC3, 0x82, 0xC1,0x90,'\0'}; //Invalid, 1nd oct Can't be 0xC0 or 0xC1
+	gchar invalidWord2 [] = {0xC1, 0x89, 0x60, '\0'}; //Invalid, 1st oct can not be 0xC1
+	gchar invalidWord3 [] = {0xC2, 0x45,0xE1, 0x81, 0x83,0x58,'\0'}; //Invalid, oct after 0xC2 must be > 0x80
+
+	gchar validWord1 [] = {0xC2, 0x82, 0xC3,0xA0,'\0'}; //Valid
+	gchar validWord2 [] = {0xC2, 0x82,0x45,0xE1, 0x81, 0x83,0x58,0xF1, 0x82, 0x82, 0x82,'\0'}; //Valid
+	
+	const gchar* end;
+	gboolean retVal = g_utf8_validate (invalidWord1, -1, &end);
+	if (retVal != FALSE)
+		return FAILED ("Expected invalidWord1 to be invalid");
+	if (end != &invalidWord1 [2])
+		return FAILED ("Expected end parameter to be pointing to invalidWord1[2]");
+
+	end = NULL;
+	retVal = g_utf8_validate (invalidWord2, -1, &end);
+	if (retVal != FALSE)
+		return FAILED ("Expected invalidWord2 to be invalid");
+	if (end != &invalidWord2 [0])
+		return FAILED ("Expected end parameter to be pointing to invalidWord2[0]");
+
+	end = NULL;
+	retVal = g_utf8_validate (invalidWord3, -1, &end);
+	if (retVal != FALSE)
+		return FAILED ("Expected invalidWord3 to be invalid");
+	if (end != &invalidWord3 [0])
+		return FAILED ("Expected end parameter to be pointing to invalidWord3[1]");
+
+	end = NULL;
+	retVal = g_utf8_validate (validWord1, -1, &end);
+	if (retVal != TRUE)
+		return FAILED ("Expected validWord1 to be valid");
+	if (end != &validWord1 [4])
+		return FAILED ("Expected end parameter to be pointing to validWord1[4]");
+
+	end = NULL;
+	retVal = g_utf8_validate (validWord2, -1, &end);
+	if (retVal != TRUE)
+		return FAILED ("Expected validWord2 to be valid");
+	if (end != &validWord2 [11])
+		return FAILED ("Expected end parameter to be pointing to validWord2[11]");
+	return OK;
+}
 
 /*
  * test initialization
@@ -496,6 +648,10 @@ static Test utf8_tests [] = {
 	{"g_unichar_xdigit_value", test_xdigit },
 	{"g_ucs4_to_utf16", test_ucs4_to_utf16 },
 	{"g_utf16_to_ucs4", test_utf16_to_ucs4 },
+	{"g_utf8_strlen", test_utf8_strlen },
+	{"g_utf8_get_char", test_utf8_get_char },
+	{"g_utf8_next_char", test_utf8_next_char },
+	{"g_utf8_validate", test_utf8_validate },
 	{NULL, NULL}
 };
 
