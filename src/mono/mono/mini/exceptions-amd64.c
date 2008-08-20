@@ -93,15 +93,22 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep)
 	}
 
 	/* Copy context back */
-	ctx->Rax = sctx->rax;
-	ctx->Rbx = sctx->rbx;
-	ctx->Rcx = sctx->rcx;
-	ctx->Rdx = sctx->rdx;
+	/* Nonvolatile */
+	ctx->Rsp = sctx->rsp; 
+	ctx->Rdi = sctx->rdi; 
+	ctx->Rsi = sctx->rsi; 
+	ctx->Rbx = sctx->rbx; 
 	ctx->Rbp = sctx->rbp;
-	ctx->Rsp = sctx->rsp;
-	ctx->Rsi = sctx->rsi;
-	ctx->Rdi = sctx->rdi;
-	ctx->Rip = sctx->rip;
+	ctx->R12 = sctx->r12; 
+	ctx->R13 = sctx->r13; 
+	ctx->R14 = sctx->r14;
+	ctx->R15 = sctx->r15;
+	ctx->Rip = sctx->rip; 
+
+	/* Volatile But should not matter?*/
+	ctx->Rax = sctx->rax; 
+	ctx->Rcx = sctx->rcx; 
+	ctx->Rdx = sctx->rdx;
 
 	g_free (sctx);
 
