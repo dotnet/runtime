@@ -6582,9 +6582,13 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		m->orig_conv_args [argnum] = 0;
 		
 		if (klass->delegate) {
-			if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_OUT)) {
-				char *msg = g_strdup_printf ("Byref marshalling of delegates is not implemented.");
-				mono_mb_emit_exception_marshal_directive (mb, msg);
+			if (t->byref) {
+				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
+					char *msg = g_strdup_printf ("Byref marshalling of delegates is not implemented.");
+					mono_mb_emit_exception_marshal_directive (mb, msg);
+				}
+				mono_mb_emit_byte (mb, CEE_LDNULL);
+				mono_mb_emit_stloc (mb, conv_arg);
 			} else {
 				mono_mb_emit_ldarg (mb, argnum);
 				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN));
