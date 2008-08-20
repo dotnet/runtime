@@ -675,6 +675,19 @@ mono_test_marshal_delegate (SimpleDelegate delegate)
 	return delegate (2);
 }
 
+static int STDCALL inc_cb (int i)
+{
+	return i + 1;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_out_delegate (SimpleDelegate *delegate)
+{
+	*delegate = inc_cb;
+
+	return 0;
+}
+
 LIBTEST_API SimpleDelegate STDCALL 
 mono_test_marshal_return_delegate (SimpleDelegate delegate)
 {
@@ -2951,7 +2964,7 @@ typedef struct _TestStruct {
 
 /* Searches for mono symbols in all loaded modules */
 static gpointer
-lookup_mono_symbol (char *symbol_name)
+lookup_mono_symbol (const char *symbol_name)
 {
 	gpointer symbol;
 	if (g_module_symbol (g_module_open (NULL, G_MODULE_BIND_LAZY), symbol_name, &symbol))
@@ -2973,7 +2986,7 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 	gpointer (*mono_method_get_unmanaged_thunk)(gpointer)
 		= lookup_mono_symbol ("mono_method_get_unmanaged_thunk");
 
-	gpointer (*mono_string_new_wrapper)(char *)
+	gpointer (*mono_string_new_wrapper)(const char *)
 		= lookup_mono_symbol ("mono_string_new_wrapper");
 
 	char* (*mono_string_to_utf8)(gpointer)
@@ -3523,7 +3536,7 @@ mono_test_Winx64_structs_in3 (winx64_struct1 var1,
 }
 
 LIBTEST_API winx64_struct1 STDCALL  
-mono_test_Winx64_struct1_ret ()
+mono_test_Winx64_struct1_ret (void)
 {
 	winx64_struct1 ret;
 	ret.a = 123;
@@ -3531,7 +3544,7 @@ mono_test_Winx64_struct1_ret ()
 }
 
 LIBTEST_API winx64_struct2 STDCALL  
-mono_test_Winx64_struct2_ret ()
+mono_test_Winx64_struct2_ret (void)
 {
 	winx64_struct2 ret;
 	ret.a = 4;
@@ -3540,7 +3553,7 @@ mono_test_Winx64_struct2_ret ()
 }
 
 LIBTEST_API winx64_struct3 STDCALL  
-mono_test_Winx64_struct3_ret ()
+mono_test_Winx64_struct3_ret (void)
 {
 	winx64_struct3 ret;
 	ret.a = 4;
@@ -3550,7 +3563,7 @@ mono_test_Winx64_struct3_ret ()
 }
 
 LIBTEST_API winx64_struct4 STDCALL  
-mono_test_Winx64_struct4_ret ()
+mono_test_Winx64_struct4_ret (void)
 {
 	winx64_struct4 ret;
 	ret.a = 4;
@@ -3561,7 +3574,7 @@ mono_test_Winx64_struct4_ret ()
 }
 
 LIBTEST_API winx64_struct5 STDCALL  
-mono_test_Winx64_struct5_ret ()
+mono_test_Winx64_struct5_ret (void)
 {
 	winx64_struct5 ret;
 	ret.a = 4;
@@ -3661,7 +3674,7 @@ mono_test_managed_Winx64_struct1_struct5_in(managed_struct1_struct5_delegate fun
 	return func (a, b, c, d, e, f);
 }
 
-typedef winx64_struct1 (STDCALL *managed_struct1_ret_delegate) ();
+typedef winx64_struct1 (STDCALL *managed_struct1_ret_delegate) (void);
 
 LIBTEST_API int STDCALL 
 mono_test_Winx64_struct1_ret_managed (managed_struct1_ret_delegate func)
@@ -3676,7 +3689,7 @@ mono_test_Winx64_struct1_ret_managed (managed_struct1_ret_delegate func)
 	return 0;
 }
 
-typedef winx64_struct5 (STDCALL *managed_struct5_ret_delegate) ();
+typedef winx64_struct5 (STDCALL *managed_struct5_ret_delegate) (void);
 
 LIBTEST_API int STDCALL 
 mono_test_Winx64_struct5_ret_managed (managed_struct5_ret_delegate func)

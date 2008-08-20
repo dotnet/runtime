@@ -560,6 +560,17 @@ public class Tests {
 		return 0;
 	}
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_delegate")]
+	public static extern int mono_test_marshal_out_delegate (out SimpleDelegate d);
+
+	public static int test_3_marshal_out_delegate () {
+		SimpleDelegate d = null;
+
+		mono_test_marshal_out_delegate (out d);
+
+		return d (2);
+	}
+
 	public static int test_0_marshal_byref_struct () {
 		SimpleStruct s = new SimpleStruct ();
 		s.a = true;
