@@ -2174,10 +2174,10 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 #ifdef MONO_ARCH_IMT_REG
 	int method_reg = alloc_preg (cfg);
 
-	if (cfg->compile_aot) {
-		MONO_EMIT_NEW_AOTCONST (cfg, method_reg, call->method, MONO_PATCH_INFO_METHODCONST);
-	} else if (imt_arg) {
+	if (imt_arg) {
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
+	} else if (cfg->compile_aot) {
+		MONO_EMIT_NEW_AOTCONST (cfg, method_reg, call->method, MONO_PATCH_INFO_METHODCONST);
 	} else {
 		MonoInst *ins;
 		MONO_INST_NEW (cfg, ins, OP_PCONST);

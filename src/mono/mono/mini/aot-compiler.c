@@ -16,6 +16,15 @@
  * - optimize the trampolines, generate more code in the arch files.
  * - make things more consistent with how elf works, for example, use ELF 
  *   relocations.
+ * Remaining generics sharing work:
+ * - optimize the size of the data which is encoded.
+ * - optimize the runtime loading of data:
+ *   - the trampoline code calls mono_jit_info_table_find () to find the rgctx, 
+ *     which loads the debugging+exception handling info for the method. This is a 
+ *     huge waste of time and code, since the rgctx structure is currently empty.
+ *   - every shared method has a MonoGenericJitInfo structure which is only really
+ *     used for handling catch clauses with open types, not a very common use case.
+ * - disable_aot in LDTOKEN.
  */
 
 #include "config.h"
@@ -1769,27 +1778,6 @@ encode_field_info (MonoAotCompile *cfg, MonoClassField *field, guint8 *buf, guin
 	*endbuf = p;
 }
 
-#if 0
-static guint32
-find_methodspec_for_method (MonoAotCompile *acfg, MonoMethod *method)
-{
-	int i;
-	MonoMethod *m = NULL;
-
-	/* FIXME: Search referenced images as well */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
-		/* Since we don't compile generic methods, the context is empty */
-		m = mono_get_method_full (acfg->image, MONO_TOKEN_METHOD_SPEC | (i + 1), NULL, NULL);
-		if (m == method)
-			break;
-	}
-
-	g_assert (i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows);
-
-	return MONO_TOKEN_METHOD_SPEC | (i + 1);
-}
-#endif
-
 #define MAX_IMAGE_INDEX 250
 
 static void
@@ -1806,14 +1794,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		/* 
 		 * This is a generic method, find the original token which referenced it and
 		 * encode that.
+		 * Obtain the token from information recorded by the JIT.
 		 */
-		/* This doesn't work for some reason */
-		/*
-		image_index = get_image_index (acfg, acfg->image);
-		g_assert (image_index < 255);
-		token = find_methodspec_for_method (acfg, method);
-		*/
-		/* Obtain the token from information recorded by the JIT */
 		ji = g_hash_table_lookup (acfg->token_info_hash, method);
 		if (ji) {
 			image_index = get_image_index (acfg, ji->image);
@@ -2265,7 +2247,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					if (callee_cfg) {
 						if (!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)) {
 							//printf ("DIRECT: %s %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (callee_cfg->method, TRUE));
-							direct_call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, callee_cfg->method));
+							direct_call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, callee_cfg->orig_method));
 							patch_info->type = MONO_PATCH_INFO_NONE;
 							acfg->stats.direct_calls ++;
 						}
@@ -2703,10 +2685,6 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	encode_value (cfg->used_int_regs, p, &p);
 	encode_value (jinfo->has_generic_jit_info, p, &p);
 
-	if (jinfo->has_generic_jit_info) {
-		/* FIXME: Save info */
-	}
-
 	/* Exception table */
 	if (header->num_clauses) {
 		for (k = 0; k < header->num_clauses; ++k) {
@@ -2721,6 +2699,20 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			encode_value ((gint)((guint8*)ei->try_end - code), p, &p);
 			encode_value ((gint)((guint8*)ei->handler_start - code), p, &p);
 		}
+	}
+
+	if (jinfo->has_generic_jit_info) {
+		MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (jinfo);
+
+		encode_value (gi->has_this ? 1 : 0, p, &p);
+		encode_value (gi->this_reg, p, &p);
+		encode_value (gi->this_offset, p, &p);
+
+		/* 
+		 * Need to encode jinfo->method too, since it is not equal to 'method'
+		 * when using generic sharing.
+		 */
+		encode_method_ref (acfg, jinfo->method, p, &p);
 	}
 
 	g_assert (debug_info_size < buf_size);

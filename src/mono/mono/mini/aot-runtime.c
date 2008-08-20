@@ -1279,8 +1279,14 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 		gi = mono_jit_info_get_generic_jit_info (jinfo);
 		g_assert (gi);
 
+		gi->has_this = decode_value (p, &p);
+		gi->this_reg = decode_value (p, &p);
+		gi->this_offset = decode_value (p, &p);
+
 		/* This currently contains no data */
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
+
+		jinfo->method = decode_method_ref_2 (aot_module, p, &p);
 	}
 
 	/* Load debug info */
