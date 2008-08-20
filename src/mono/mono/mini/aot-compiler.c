@@ -2683,6 +2683,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	char *symbol;
 	MonoMethodHeader *header;
 	guint8 *p, *buf, *debug_info;
+	MonoJitInfo *jinfo = cfg->jit_info;
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
@@ -2700,11 +2701,14 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	encode_value (cfg->code_len, p, &p);
 	encode_value (cfg->used_int_regs, p, &p);
+	encode_value (jinfo->has_generic_jit_info, p, &p);
+
+	if (jinfo->has_generic_jit_info) {
+		/* FIXME: Save info */
+	}
 
 	/* Exception table */
 	if (header->num_clauses) {
-		MonoJitInfo *jinfo = cfg->jit_info;
-
 		for (k = 0; k < header->num_clauses; ++k) {
 			MonoJitExceptionInfo *ei = &jinfo->clauses [k];
 

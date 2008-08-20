@@ -243,6 +243,37 @@ static MonoMethod*
 decode_method_ref_2 (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
 
 static MonoClass*
+decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
+
+static MonoGenericInst*
+decode_generic_inst (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
+{
+	int type_argc, i;
+	MonoType **type_argv;
+	MonoGenericInst *inst;
+	guint8 *p = buf;
+
+	type_argc = decode_value (p, &p);
+	type_argv = g_new0 (MonoType*, type_argc);
+
+	for (i = 0; i < type_argc; ++i) {
+		MonoClass *pclass = decode_klass_ref (module, p, &p);
+		if (!pclass) {
+			g_free (type_argv);
+			return NULL;
+		}
+		type_argv [i] = &pclass->byval_arg;
+	}
+
+	inst = mono_metadata_get_generic_inst (type_argc, type_argv);
+	g_free (type_argv);
+
+	*endbuf = p;
+
+	return inst;
+}
+
+static MonoClass*
 decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoImage *image;
@@ -266,27 +297,16 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 
 			if (type == MONO_TYPE_GENERICINST) {
 				MonoClass *gclass;
-				int i;
 				MonoGenericContext ctx;
-				MonoGenericInst inst;
 				MonoType *type;
 
 				gclass = decode_klass_ref (module, p, &p);
 				g_assert (gclass->generic_container);
 
 				memset (&ctx, 0, sizeof (ctx));
-				memset (&inst, 0, sizeof (inst));
-				ctx.class_inst = &inst;
-				inst.type_argc = decode_value (p, &p);
-				inst.type_argv = g_new0 (MonoType*, inst.type_argc);
-				for (i = 0; i < inst.type_argc; ++i) {
-					MonoClass *pclass = decode_klass_ref (module, p, &p);
-					if (!pclass) {
-						g_free (inst.type_argv);
-						return NULL;
-					}
-					inst.type_argv [i] = &pclass->byval_arg;
-				}
+				ctx.class_inst = decode_generic_inst (module, p, &p);
+				if (!ctx.class_inst)
+					return NULL;
 				type = mono_class_inflate_generic_type (&gclass->byval_arg, &ctx);
 				klass = mono_class_from_mono_type (type);
 				mono_metadata_free_type (type);
@@ -303,6 +323,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				t->type = type;
 				t->data.generic_param = g_new0 (MonoGenericParam, 1);
 				t->data.generic_param->num = decode_value (p, &p);
+				t->data.generic_param->name = "T";
 
 				is_method = decode_value (p, &p);
 				if (is_method) {
@@ -363,13 +384,14 @@ decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoClass *klass = decode_klass_ref (module, buf, &buf);
 	guint32 token;
+	guint8 *p = buf;
 
 	if (!klass)
 		return NULL;
 
-	token = MONO_TOKEN_FIELD_DEF + decode_value (buf, &buf);
+	token = MONO_TOKEN_FIELD_DEF + decode_value (p, &p);
 
-	*endbuf = buf;
+	*endbuf = p;
 
 	return mono_class_get_field (klass, token);
 }
@@ -406,8 +428,6 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		/* Method on generic instance */
 		MonoClass *klass;
 		MonoGenericContext ctx;
-		MonoGenericInst *inst;
-		int i;
 		gboolean has_class_inst, has_method_inst;
 
 		/* 
@@ -431,38 +451,27 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 
 		memset (&ctx, 0, sizeof (ctx));
 
+		if (FALSE && klass->generic_class) {
+			ctx.class_inst = klass->generic_class->context.class_inst;
+			ctx.method_inst = NULL;
+ 
+			*method = mono_class_inflate_generic_method_full (*method, klass, &ctx);
+		}			
+
+		memset (&ctx, 0, sizeof (ctx));
+
 		// FIXME: Memory management
 		has_class_inst = decode_value (p, &p);
 		if (has_class_inst) {
-			inst = g_new0 (MonoGenericInst, 1);
-			ctx.class_inst = inst;
-			inst->type_argc = decode_value (p, &p);
-			inst->type_argv = g_new0 (MonoType*, inst->type_argc);
-			for (i = 0; i < inst->type_argc; ++i) {
-				MonoClass *pclass = decode_klass_ref (module, p, &p);
-				if (!pclass) {
-					g_free (inst->type_argv);
-					g_free (inst);
-					return NULL;
-				}
-				inst->type_argv [i] = &pclass->byval_arg;
-			}
+			ctx.class_inst = decode_generic_inst (module, p, &p);
+			if (!ctx.class_inst)
+				return NULL;
 		}
 		has_method_inst = decode_value (p, &p);
 		if (has_method_inst) {
-			inst = g_new0 (MonoGenericInst, 1);
-			ctx.method_inst = inst;
-			inst->type_argc = decode_value (p, &p);
-			inst->type_argv = g_new0 (MonoType*, inst->type_argc);
-			for (i = 0; i < inst->type_argc; ++i) {
-				MonoClass *pclass = decode_klass_ref (module, p, &p);
-				if (!pclass) {
-					g_free (inst->type_argv);
-					g_free (inst);
-					return NULL;
-				}
-				inst->type_argv [i] = &pclass->byval_arg;
-			}
+			ctx.method_inst = decode_generic_inst (module, p, &p);
+			if (!ctx.method_inst)
+				return NULL;
 		}
 
 		*method = mono_class_inflate_generic_method_full (*method, klass, &ctx);
@@ -1212,8 +1221,10 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 	int i, buf_len;
 	MonoJitInfo *jinfo;
 	guint code_len, used_int_regs;
+	gboolean has_generic_jit_info;
 	guint8 *p;
 	MonoMethodHeader *header;
+	int generic_info_size;
 
 	header = mono_method_get_header (method);
 
@@ -1222,11 +1233,16 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 	p = ex_info;
 	code_len = decode_value (p, &p);
 	used_int_regs = decode_value (p, &p);
+	has_generic_jit_info = decode_value (p, &p);
+	if (has_generic_jit_info)
+		generic_info_size = sizeof (MonoGenericJitInfo);
+	else
+		generic_info_size = 0;
 
 	/* Exception table */
 	if (header && header->num_clauses) {
 		jinfo = 
-			mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + (sizeof (MonoJitExceptionInfo) * header->num_clauses));
+			mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + (sizeof (MonoJitExceptionInfo) * header->num_clauses) + generic_info_size);
 		jinfo->num_clauses = header->num_clauses;
 
 		for (i = 0; i < header->num_clauses; ++i) {
@@ -1247,13 +1263,25 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 		}
 	}
 	else
-		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
+		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + generic_info_size);
 
 	jinfo->code_size = code_len;
 	jinfo->used_regs = used_int_regs;
 	jinfo->method = method;
 	jinfo->code_start = code;
 	jinfo->domain_neutral = 0;
+
+	if (has_generic_jit_info) {
+		MonoGenericJitInfo *gi;
+
+		jinfo->has_generic_jit_info = 1;
+
+		gi = mono_jit_info_get_generic_jit_info (jinfo);
+		g_assert (gi);
+
+		/* This currently contains no data */
+		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
+	}
 
 	/* Load debug info */
 	buf_len = decode_value (p, &p);
