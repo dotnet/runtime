@@ -11293,7 +11293,6 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_IMAGE:
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_WRAPPER:
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
 		return (ji->type << 8) | (gssize)ji->data.target;

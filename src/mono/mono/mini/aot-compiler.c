@@ -1789,7 +1789,55 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 
 	g_assert (image_index < MAX_IMAGE_INDEX);
 
-	if (mono_method_signature (method)->is_inflated) {
+	if (method->wrapper_type) {
+		/* Marker */
+		encode_value ((253 << 24), p, &p);
+
+		encode_value (method->wrapper_type, p, &p);
+
+		switch (method->wrapper_type) {
+		case MONO_WRAPPER_REMOTING_INVOKE:
+		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
+		case MONO_WRAPPER_XDOMAIN_INVOKE: {
+			MonoMethod *m;
+
+			m = mono_marshal_method_from_wrapper (method);
+			g_assert (m);
+			encode_method_ref (acfg, m, p, &p);
+			break;
+		}
+		case MONO_WRAPPER_PROXY_ISINST:
+		case MONO_WRAPPER_LDFLD:
+		case MONO_WRAPPER_LDFLDA:
+		case MONO_WRAPPER_STFLD:
+		case MONO_WRAPPER_ISINST: {
+			MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (method);
+			encode_klass_ref (acfg, proxy_class, p, &p);
+			break;
+		}
+		case MONO_WRAPPER_LDFLD_REMOTE:
+		case MONO_WRAPPER_STFLD_REMOTE:
+			break;
+		case MONO_WRAPPER_ALLOC: {
+			int alloc_type = mono_gc_get_managed_allocator_type (method);
+			g_assert (alloc_type != -1);
+			encode_value (alloc_type, p, &p);
+			break;
+		}
+		case MONO_WRAPPER_STELEMREF:
+			break;
+		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
+			MonoMethod *m;
+
+			m = mono_marshal_method_from_wrapper (method);
+			g_assert (m);
+			encode_method_ref (acfg, m, p, &p);
+			break;
+		}
+		default:
+			g_assert_not_reached ();
+		}
+	} else if (mono_method_signature (method)->is_inflated) {
 		/* 
 		 * This is a generic method, find the original token which referenced it and
 		 * encode that.
@@ -1897,7 +1945,6 @@ is_plt_patch (MonoJumpInfo *patch_info)
 {
 	switch (patch_info->type) {
 	case MONO_PATCH_INFO_METHOD:
-	case MONO_PATCH_INFO_WRAPPER:
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_CLASS_INIT:
@@ -2442,58 +2489,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_field_info (acfg, patch_info->data.field, p, &p);
 		break;
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
-		break;
-	case MONO_PATCH_INFO_WRAPPER:
-		encode_value (patch_info->data.method->wrapper_type, p, &p);
-
-		switch (patch_info->data.method->wrapper_type) {
-		case MONO_WRAPPER_REMOTING_INVOKE:
-		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-		case MONO_WRAPPER_XDOMAIN_INVOKE: {
-			MonoMethod *m;
-			guint32 image_index;
-			guint32 token;
-
-			m = mono_marshal_method_from_wrapper (patch_info->data.method);
-			image_index = get_image_index (acfg, m->klass->image);
-			token = m->token;
-			g_assert (image_index < 256);
-			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
-
-			encode_value ((image_index << 24) + (mono_metadata_token_index (token)), p, &p);
-			break;
-		}
-		case MONO_WRAPPER_PROXY_ISINST:
-		case MONO_WRAPPER_LDFLD:
-		case MONO_WRAPPER_LDFLDA:
-		case MONO_WRAPPER_STFLD:
-		case MONO_WRAPPER_ISINST: {
-			MonoClass *proxy_class = (MonoClass*)mono_marshal_method_from_wrapper (patch_info->data.method);
-			encode_klass_ref (acfg, proxy_class, p, &p);
-			break;
-		}
-		case MONO_WRAPPER_LDFLD_REMOTE:
-		case MONO_WRAPPER_STFLD_REMOTE:
-			break;
-		case MONO_WRAPPER_ALLOC: {
-			int alloc_type = mono_gc_get_managed_allocator_type (patch_info->data.method);
-			g_assert (alloc_type != -1);
-			encode_value (alloc_type, p, &p);
-			break;
-		}
-		case MONO_WRAPPER_STELEMREF:
-			break;
-		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
-			MonoMethod *m;
-
-			m = mono_marshal_method_from_wrapper (patch_info->data.method);
-			g_assert (m);
-			encode_method_ref (acfg, m, p, &p);
-			break;
-		}
-		default:
-			g_assert_not_reached ();
-		}
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
@@ -3384,6 +3379,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	/* Collect method->token associations from the cfg */
 	g_hash_table_foreach (cfg->token_info_hash, add_token_info_hash, acfg);
 
+	/*
+	 * Check for absolute addresses.
+	 */
 	skip = FALSE;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
@@ -3403,13 +3401,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 
-	/* Convert method patches referring to wrapper methods to MONO_PATCH_INFO_WRAPPER */
+	/*
+	 * Check for wrapper methods we can't encode.
+	 */
 	skip = FALSE;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if ((patch_info->type == MONO_PATCH_INFO_METHODCONST) || (patch_info->type == MONO_PATCH_INFO_METHOD)) {
 			switch (patch_info->data.method->wrapper_type) {
 			case MONO_WRAPPER_NONE:
-				break;
 			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
 			case MONO_WRAPPER_XDOMAIN_INVOKE:
 			case MONO_WRAPPER_STFLD:
@@ -3423,7 +3422,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_ALLOC:
 			case MONO_WRAPPER_REMOTING_INVOKE:
 			case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
-				patch_info->type = MONO_PATCH_INFO_WRAPPER;
 				break;
 			default:
 				/* unable to handle this */
@@ -3434,8 +3432,15 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		} else if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH) {
 			MonoJumpInfo *child = patch_info->data.rgctx_entry->data;
 
-			if (child->type == MONO_PATCH_INFO_METHODCONST && child->data.method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
-				child->type = MONO_PATCH_INFO_WRAPPER;
+			if (child->type == MONO_PATCH_INFO_METHODCONST) {
+				switch (child->data.method->wrapper_type) {
+				case MONO_WRAPPER_NONE:
+				case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
+					break;
+				default:
+					skip = TRUE;
+				}
+			}
 		}
 	}
 
@@ -3445,11 +3450,16 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 
+	/*
+	 * Check for methods/klasses we can't encode.
+	 */
 	skip = FALSE;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_METHOD:
 		case MONO_PATCH_INFO_METHODCONST:
+			if (patch_info->data.method->wrapper_type)
+				break;
 			if (!patch_info->data.method->token) {
 				/* The method is part of a constructed type like Int[,].Set (). */
 				if (!g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method))

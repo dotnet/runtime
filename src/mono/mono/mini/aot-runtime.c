@@ -416,7 +416,78 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 	value = decode_value (p, &p);
 	image_index = value >> 24;
 
-	if (image_index == 255) {
+	if (image_index == 253) {
+		/* Wrapper */
+		guint32 wrapper_type;
+
+		wrapper_type = decode_value (p, &p);
+
+		/* Doesn't matter */
+		image = mono_defaults.corlib;
+
+		switch (wrapper_type) {
+		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
+			MonoMethod *m = decode_method_ref_2 (module, p, &p);
+
+			if (!m)
+				return NULL;
+			mono_class_init (m->klass);
+			*method = mono_marshal_get_remoting_invoke_with_check (m);
+			break;
+		}
+		case MONO_WRAPPER_PROXY_ISINST: {
+			MonoClass *klass = decode_klass_ref (module, p, &p);
+			if (!klass)
+				return NULL;
+			*method = mono_marshal_get_proxy_cancast (klass);
+			break;
+		}
+		case MONO_WRAPPER_LDFLD:
+		case MONO_WRAPPER_LDFLDA:
+		case MONO_WRAPPER_STFLD:
+		case MONO_WRAPPER_ISINST: {
+			MonoClass *klass = decode_klass_ref (module, p, &p);
+			if (!klass)
+				return NULL;
+			if (wrapper_type == MONO_WRAPPER_LDFLD)
+				*method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
+			else if (wrapper_type == MONO_WRAPPER_LDFLDA)
+				*method = mono_marshal_get_ldflda_wrapper (&klass->byval_arg);
+			else if (wrapper_type == MONO_WRAPPER_STFLD)
+				*method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
+			else if (wrapper_type == MONO_WRAPPER_ISINST)
+				*method = mono_marshal_get_isinst (klass);
+			else
+				g_assert_not_reached ();
+			break;
+		}
+		case MONO_WRAPPER_LDFLD_REMOTE:
+			*method = mono_marshal_get_ldfld_remote_wrapper (NULL);
+			break;
+		case MONO_WRAPPER_STFLD_REMOTE:
+			*method = mono_marshal_get_stfld_remote_wrapper (NULL);
+			break;
+		case MONO_WRAPPER_ALLOC: {
+			int atype = decode_value (p, &p);
+
+			*method = mono_gc_get_managed_allocator_by_type (atype);
+			break;
+		}
+		case MONO_WRAPPER_STELEMREF:
+			*method = mono_marshal_get_stelemref ();
+			break;
+		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
+			MonoMethod *m = decode_method_ref_2 (module, p, &p);
+
+			if (!m)
+				return NULL;
+			*method = mono_marshal_get_static_rgctx_invoke (m);
+			break;
+		}
+		default:
+			g_assert_not_reached ();
+		}
+	} else if (image_index == 255) {
 		/* Methodspec */
 		image_index = decode_value (p, &p);
 		*token = decode_value (p, &p);
@@ -1487,85 +1558,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		mono_class_init (ji->data.method->klass);
 #endif
 
-		break;
-	}
-	case MONO_PATCH_INFO_WRAPPER: {
-		guint32 wrapper_type;
-
-		wrapper_type = decode_value (p, &p);
-
-		ji->type = MONO_PATCH_INFO_METHOD;
-
-		switch (wrapper_type) {
-		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
-			guint32 image_index, token, value;
-
-			value = decode_value (p, &p);
-			image_index = value >> 24;
-			token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
-
-			image = load_image (aot_module, image_index);
-			if (!image)
-				goto cleanup;
-			ji->data.method = mono_get_method (image, token, NULL);
-			g_assert (ji->data.method);
-			mono_class_init (ji->data.method->klass);
-
-			ji->data.method = mono_marshal_get_remoting_invoke_with_check (ji->data.method);
-			break;
-		}
-		case MONO_WRAPPER_PROXY_ISINST: {
-			MonoClass *klass = decode_klass_ref (aot_module, p, &p);
-			if (!klass)
-				goto cleanup;
-			ji->data.method = mono_marshal_get_proxy_cancast (klass);
-			break;
-		}
-		case MONO_WRAPPER_LDFLD:
-		case MONO_WRAPPER_LDFLDA:
-		case MONO_WRAPPER_STFLD:
-		case MONO_WRAPPER_ISINST: {
-			MonoClass *klass = decode_klass_ref (aot_module, p, &p);
-			if (!klass)
-				goto cleanup;
-			if (wrapper_type == MONO_WRAPPER_LDFLD)
-				ji->data.method = mono_marshal_get_ldfld_wrapper (&klass->byval_arg);
-			else if (wrapper_type == MONO_WRAPPER_LDFLDA)
-				ji->data.method = mono_marshal_get_ldflda_wrapper (&klass->byval_arg);
-			else if (wrapper_type == MONO_WRAPPER_STFLD)
-				ji->data.method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
-			else if (wrapper_type == MONO_WRAPPER_ISINST)
-				ji->data.method = mono_marshal_get_isinst (klass);
-			else
-				g_assert_not_reached ();
-			break;
-		}
-		case MONO_WRAPPER_LDFLD_REMOTE:
-			ji->data.method = mono_marshal_get_ldfld_remote_wrapper (NULL);
-			break;
-		case MONO_WRAPPER_STFLD_REMOTE:
-			ji->data.method = mono_marshal_get_stfld_remote_wrapper (NULL);
-			break;
-		case MONO_WRAPPER_ALLOC: {
-			int atype = decode_value (p, &p);
-
-			ji->data.method = mono_gc_get_managed_allocator_by_type (atype);
-			break;
-		}
-		case MONO_WRAPPER_STELEMREF:
-			ji->data.method = mono_marshal_get_stelemref ();
-			break;
-		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
-			MonoMethod *m = decode_method_ref_2 (aot_module, p, &p);
-
-			if (!m)
-				goto cleanup;
-			ji->data.method = mono_marshal_get_static_rgctx_invoke (m);
-			break;
-		}
-		default:
-			g_assert_not_reached ();
-		}
 		break;
 	}
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
