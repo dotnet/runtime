@@ -24,7 +24,6 @@
  *     huge waste of time and code, since the rgctx structure is currently empty.
  *   - every shared method has a MonoGenericJitInfo structure which is only really
  *     used for handling catch clauses with open types, not a very common use case.
- * - disable_aot in LDTOKEN.
  */
 
 #include "config.h"
@@ -2484,6 +2483,14 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		}
 		case MONO_WRAPPER_STELEMREF:
 			break;
+		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
+			MonoMethod *m;
+
+			m = mono_marshal_method_from_wrapper (patch_info->data.method);
+			g_assert (m);
+			encode_method_ref (acfg, m, p, &p);
+			break;
+		}
 		default:
 			g_assert_not_reached ();
 		}
@@ -3415,6 +3422,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_PROXY_ISINST:
 			case MONO_WRAPPER_ALLOC:
 			case MONO_WRAPPER_REMOTING_INVOKE:
+			case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
 				patch_info->type = MONO_PATCH_INFO_WRAPPER;
 				break;
 			default:
@@ -3423,6 +3431,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				skip = TRUE;
 				break;
 			}
+		} else if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH) {
+			MonoJumpInfo *child = patch_info->data.rgctx_entry->data;
+
+			if (child->type == MONO_PATCH_INFO_METHODCONST && child->data.method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
+				child->type = MONO_PATCH_INFO_WRAPPER;
 		}
 	}
 

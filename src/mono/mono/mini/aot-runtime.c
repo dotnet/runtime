@@ -1555,6 +1555,14 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		case MONO_WRAPPER_STELEMREF:
 			ji->data.method = mono_marshal_get_stelemref ();
 			break;
+		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
+			MonoMethod *m = decode_method_ref_2 (aot_module, p, &p);
+
+			if (!m)
+				goto cleanup;
+			ji->data.method = mono_marshal_get_static_rgctx_invoke (m);
+			break;
+		}
 		default:
 			g_assert_not_reached ();
 		}
