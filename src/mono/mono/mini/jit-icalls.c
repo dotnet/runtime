@@ -20,22 +20,6 @@ mono_ldftn (MonoMethod *method)
 
 	MONO_ARCH_SAVE_REGS;
 
-	addr = mono_create_jump_trampoline (mono_domain_get (), method, TRUE);
-
-	return mono_create_ftnptr (mono_domain_get (), addr);
-}
-
-/*
- * Same as mono_ldftn, but do not add a synchronized wrapper. Used in the
- * synchronized wrappers to avoid infinite recursion.
- */
-void*
-mono_ldftn_nosync (MonoMethod *method)
-{
-	gpointer addr;
-
-	MONO_ARCH_SAVE_REGS;
-
 	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE);
 
 	return mono_create_ftnptr (mono_domain_get (), addr);

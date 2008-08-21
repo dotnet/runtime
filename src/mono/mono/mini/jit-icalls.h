@@ -7,8 +7,6 @@
 
 void* mono_ldftn (MonoMethod *method) MONO_INTERNAL;
 
-void* mono_ldftn_nosync (MonoMethod *method) MONO_INTERNAL;
-
 void* mono_ldvirtfn (MonoObject *obj, MonoMethod *method) MONO_INTERNAL;
 
 void* mono_ldvirtfn_gshared (MonoObject *obj, MonoMethod *method) MONO_INTERNAL;

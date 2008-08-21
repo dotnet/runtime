@@ -9422,10 +9422,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					NEW_METHODCONST (cfg, argconst, cmethod);
 				}
-				if (method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED)
-					temp = mono_emit_jit_icall (cfg, bblock, mono_ldftn, &argconst, ip);
-				else
-					temp = mono_emit_jit_icall (cfg, bblock, mono_ldftn_nosync, &argconst, ip);
+				temp = mono_emit_jit_icall (cfg, bblock, mono_ldftn, &argconst, ip);
 				NEW_TEMPLOAD (cfg, *sp, temp);
 				sp ++;
 				
@@ -10079,7 +10076,7 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_for_pending_exc);
 	g_free (name);
 
-	trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper, TRUE));
+	trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper));
 	mono_register_jit_icall_wrapper (callinfo, trampoline);
 
 	callinfo->trampoline = trampoline;
@@ -11369,7 +11366,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_METHOD_JUMP:
-		target = mono_create_jump_trampoline (domain, patch_info->data.method, TRUE);
+		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE);
 		break;
 	case MONO_PATCH_INFO_METHOD:
 		if (patch_info->data.method == method) {
@@ -11378,7 +11375,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			/* get the trampoline to the method from the domain */
 			if (method && method->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE) {
 				target = mono_create_jit_trampoline_in_domain (mono_domain_get (),
-					patch_info->data.method, FALSE);
+					patch_info->data.method);
 			} else {
 				target = mono_create_jit_trampoline (patch_info->data.method);
 			}
@@ -14565,7 +14562,6 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_array_new_specific, "mono_array_new_specific", "object ptr int32", FALSE);
 	register_icall (mono_runtime_class_init, "mono_runtime_class_init", "void ptr", FALSE);
 	register_icall (mono_ldftn, "mono_ldftn", "ptr ptr", FALSE);
-	register_icall (mono_ldftn_nosync, "mono_ldftn_nosync", "ptr ptr", FALSE);
 	register_icall (mono_ldvirtfn, "mono_ldvirtfn", "ptr object ptr", FALSE);
 	register_icall (mono_ldvirtfn_gshared, "mono_ldvirtfn_gshared", "ptr object ptr", FALSE);
 	register_icall (mono_helper_compile_generic_method, "compile_generic_method", "ptr object ptr ptr", FALSE);

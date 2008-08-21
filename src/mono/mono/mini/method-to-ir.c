@@ -8898,10 +8898,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				} else {
 					EMIT_NEW_METHODCONST (cfg, argconst, cmethod);
 				}
-				if (method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED)
-					ins = mono_emit_jit_icall (cfg, mono_ldftn, &argconst);
-				else
-					ins = mono_emit_jit_icall (cfg, mono_ldftn_nosync, &argconst);
+				ins = mono_emit_jit_icall (cfg, mono_ldftn, &argconst);
 				*sp++ = ins;
 				
 				ip += 6;
