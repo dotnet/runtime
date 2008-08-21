@@ -277,7 +277,7 @@ static struct sigaction save_sigcont, save_sigint;
 void
 console_set_signal_handlers ()
 {
-	struct sigaction sigcont, sigint, sigstop;
+	struct sigaction sigcont, sigint;
 
 	// Continuing
 	sigcont.sa_handler = sigcont_handler;
