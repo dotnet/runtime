@@ -24,15 +24,4 @@ popd
 
 ./autogen.sh --disable-mcs-build --host=arm-apple-darwin9 --disable-shared-handles --with-tls=pthread --with-sigaltstack=no --with-glib=embedded --with-gc=none $@
 
-curl -o mono/mini/inssel.c http://primates.ximian.com/~gnorton/iphone/inssel.c
-curl -o mono/mini/inssel.h http://primates.ximian.com/~gnorton/iphone/inssel.h
-
-make
-
-# We dont use monoburg since I nicely provided the inssel's pregenerated above.
-pushd mono/monoburg
-touch monoburg
-touch sample.c
-popd
-
 make
