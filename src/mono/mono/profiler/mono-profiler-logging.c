@@ -75,7 +75,8 @@ typedef enum {
 	MONO_PROFILER_EVENT_METHOD_JIT = 0,
 	MONO_PROFILER_EVENT_METHOD_FREED = 1,
 	MONO_PROFILER_EVENT_METHOD_CALL = 2,
-	MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER = 3
+	MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER = 3,
+	MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER = 4
 } MonoProfilerMethodEvents;
 typedef enum {
 	MONO_PROFILER_EVENT_CLASS_LOAD = 0,
@@ -95,7 +96,8 @@ typedef enum {
 	MONO_PROFILER_EVENT_GC_SWEEP = 4,
 	MONO_PROFILER_EVENT_GC_RESIZE = 5,
 	MONO_PROFILER_EVENT_GC_STOP_WORLD = 6,
-	MONO_PROFILER_EVENT_GC_START_WORLD = 7
+	MONO_PROFILER_EVENT_GC_START_WORLD = 7,
+	MONO_PROFILER_EVENT_JIT_TIME_ALLOCATION = 8
 } MonoProfilerEvents;
 typedef enum {
 	MONO_PROFILER_EVENT_KIND_START = 0,
@@ -370,6 +372,7 @@ typedef struct _ProfilerThreadStack {
 	guint32 capacity;
 	guint32 top;
 	MonoMethod **stack;
+	guint8 *method_is_jitted;
 } ProfilerThreadStack;
 
 typedef struct _ProfilerPerThreadData {
@@ -939,6 +942,7 @@ thread_stack_initialize_empty (ProfilerThreadStack *stack) {
 	stack->capacity = 0;
 	stack->top = 0;
 	stack->stack = NULL;
+	stack->method_is_jitted = NULL;
 }
 
 static void
@@ -949,6 +953,10 @@ thread_stack_free (ProfilerThreadStack *stack) {
 		g_free (stack->stack);
 		stack->stack = NULL;
 	}
+	if (stack->method_is_jitted != NULL) {
+		g_free (stack->method_is_jitted);
+		stack->method_is_jitted = NULL;
+	}
 }
 
 static void
@@ -956,19 +964,28 @@ thread_stack_initialize (ProfilerThreadStack *stack, guint32 capacity) {
 	stack->capacity = capacity;
 	stack->top = 0;
 	stack->stack = g_new0 (MonoMethod*, capacity);
+	stack->method_is_jitted = g_new0 (guint8, capacity);
 }
 
 static void
-thread_stack_push (ProfilerThreadStack *stack, MonoMethod* method) {
+thread_stack_push_jitted (ProfilerThreadStack *stack, MonoMethod* method, gboolean method_is_jitted) {
 	if (stack->top >= stack->capacity) {
 		MonoMethod **old_stack = stack->stack;
+		guint8 *old_method_is_jitted = stack->method_is_jitted;
 		guint32 top = stack->top;
 		thread_stack_initialize (stack, stack->capacity * 2);
 		memcpy (stack->stack, old_stack, top * sizeof (MonoMethod*));
+		memcpy (stack->method_is_jitted, old_method_is_jitted, top * sizeof (guint8));
 		stack->top = top;
 	}
 	stack->stack [stack->top] = method;
+	stack->method_is_jitted [stack->top] = method_is_jitted;
 	stack->top ++;
+}
+
+static inline void
+thread_stack_push (ProfilerThreadStack *stack, MonoMethod* method) {
+	thread_stack_push_jitted (stack, method, FALSE);
 }
 
 static MonoMethod*
@@ -990,6 +1007,15 @@ thread_stack_top (ProfilerThreadStack *stack) {
 	}
 }
 
+static gboolean
+thread_stack_top_is_jitted (ProfilerThreadStack *stack) {
+	if (stack->top > 0) {
+		return stack->method_is_jitted [stack->top - 1];
+	} else {
+		return FALSE;
+	}
+}
+
 static MonoMethod*
 thread_stack_index_from_top (ProfilerThreadStack *stack, int index) {
 	if (stack->top > index) {
@@ -999,10 +1025,26 @@ thread_stack_index_from_top (ProfilerThreadStack *stack, int index) {
 	}
 }
 
+static gboolean
+thread_stack_index_from_top_is_jitted (ProfilerThreadStack *stack, int index) {
+	if (stack->top > index) {
+		return stack->method_is_jitted [stack->top - (index + 1)];
+	} else {
+		return FALSE;
+	}
+}
+
 static inline void
 thread_stack_push_safely (ProfilerThreadStack *stack, MonoMethod* method) {
 	if (stack->stack != NULL) {
 		thread_stack_push (stack, method);
+	}
+}
+
+static inline void
+thread_stack_push_jitted_safely (ProfilerThreadStack *stack, MonoMethod* method, gboolean method_is_jitted) {
+	if (stack->stack != NULL) {
+		thread_stack_push_jitted (stack, method, method_is_jitted);
 	}
 }
 
@@ -2221,6 +2263,8 @@ write_event (ProfilerEventData *event) {
 	guint8 event_code;
 	guint64 event_data;
 	guint64 event_value;
+	gboolean write_event_value_extension_1 = FALSE;
+	guint64 event_value_extension_1 = 0;
 
 	event_value = event->value;
 	if (event_value == MAX_EVENT_VALUE) {
@@ -2248,7 +2292,28 @@ write_event (ProfilerEventData *event) {
 		event_data = element->id;
 		
 		if (event->code == MONO_PROFILER_EVENT_CLASS_ALLOCATION) {
-			MONO_PROFILER_EVENT_MAKE_PACKED_CODE (event_code, event_data, MONO_PROFILER_PACKED_EVENT_CODE_CLASS_ALLOCATION);
+			if (! profiler->action_flags.track_stack) {
+				MONO_PROFILER_EVENT_MAKE_PACKED_CODE (event_code, event_data, MONO_PROFILER_PACKED_EVENT_CODE_CLASS_ALLOCATION);
+			} else {
+				MonoMethod *caller_method = next->data.address;
+				
+				if (next->code == MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER) {
+					MONO_PROFILER_EVENT_MAKE_PACKED_CODE (event_code, event_data, MONO_PROFILER_PACKED_EVENT_CODE_CLASS_ALLOCATION);
+				} else if (next->code == MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER) {
+					MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, MONO_PROFILER_EVENT_JIT_TIME_ALLOCATION, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_OTHER_EVENT);
+				} else {
+					/* If we are tracking the stack, the next event must be the caller method */
+					g_assert_not_reached ();
+				}
+				if (caller_method != NULL) {
+					MethodIdMappingElement *caller = method_id_mapping_element_get (caller_method);
+					g_assert (caller != NULL);
+					event_value_extension_1 = caller->id;
+				}
+
+				write_event_value_extension_1 = TRUE;
+				next ++;
+			}
 		} else {
 			MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, event->code, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_CLASS_EVENT);
 		}
@@ -2273,22 +2338,8 @@ write_event (ProfilerEventData *event) {
 	write_uint64 (event_data);
 	if (write_event_value) {
 		write_uint64 (event_value);
-	}
-	
-	if ((event->data_type == MONO_PROFILER_EVENT_DATA_TYPE_CLASS) && (event->code == MONO_PROFILER_EVENT_CLASS_ALLOCATION)) {
-		if (profiler->action_flags.track_stack) {
-			guint32 caller_id;
-			
-			g_assert (next->code == MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER);
-			if (next->data.address != NULL) {
-				MethodIdMappingElement *caller = method_id_mapping_element_get (next->data.address);
-				g_assert (caller != NULL);
-				caller_id = caller->id;
-			} else {
-				caller_id = 0;
-			}
-			write_uint32 (caller_id);
-			next ++;
+		if (write_event_value_extension_1) {
+			write_uint64 (event_value_extension_1);
 		}
 	}
 	
@@ -3519,6 +3570,7 @@ method_event_code_to_string (MonoProfilerMethodEvents code) {
 	case MONO_PROFILER_EVENT_METHOD_JIT: return "JIT";
 	case MONO_PROFILER_EVENT_METHOD_FREED: return "FREED";
 	case MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER: return "ALLOCATION_CALLER";
+	case MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER: return "ALLOCATION_JIT_TIME_CALLER";
 	default: g_assert_not_reached (); return "";
 	}
 }
@@ -3712,6 +3764,7 @@ static void
 method_start_jit (MonoProfiler *profiler, MonoMethod *method) {
 	ProfilerPerThreadData *data;
 	GET_PROFILER_THREAD_DATA (data);
+	thread_stack_push_jitted_safely (&(data->stack), method, TRUE);
 	STORE_EVENT_ITEM_COUNTER (profiler, method, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_JIT, MONO_PROFILER_EVENT_KIND_START);
 }
 static void
@@ -3719,6 +3772,7 @@ method_end_jit (MonoProfiler *profiler, MonoMethod *method, int result) {
 	ProfilerPerThreadData *data;
 	GET_PROFILER_THREAD_DATA (data);
 	STORE_EVENT_ITEM_COUNTER (profiler, method, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_JIT | RESULT_TO_EVENT_CODE (result), MONO_PROFILER_EVENT_KIND_END);
+	thread_stack_pop (&(data->stack));
 }
 
 #if (HAS_OPROFILE)
@@ -3801,13 +3855,18 @@ object_allocated (MonoProfiler *profiler, MonoObject *obj, MonoClass *klass) {
 	
 	if (profiler->action_flags.track_stack) {
 		MonoMethod *caller = thread_stack_top (&(data->stack));
+		gboolean caller_is_jitted = thread_stack_top_is_jitted (&(data->stack));
 		int index = 1;
 		while ((caller != NULL) && (caller->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)) {
 			caller = thread_stack_index_from_top (&(data->stack), index);
+			caller_is_jitted = thread_stack_index_from_top_is_jitted (&(data->stack), index);
 			index ++;
 		}
-		
-		STORE_EVENT_ITEM_VALUE (profiler, caller, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER, 0, 0);
+		if (! caller_is_jitted) {
+			STORE_EVENT_ITEM_VALUE (profiler, caller, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER, 0, 0);
+		} else {
+			STORE_EVENT_ITEM_VALUE (profiler, caller, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER, 0, 0);
+		}
 	}
 }
 
@@ -4378,6 +4437,7 @@ static void
 profiler_shutdown (MonoProfiler *prof)
 {
 	ProfilerPerThreadData* current_thread_data;
+	ProfilerPerThreadData* next_thread_data;
 	
 	LOG_WRITER_THREAD ("profiler_shutdown: zeroing relevant flags");
 	mono_profiler_set_events (0);
@@ -4415,7 +4475,8 @@ profiler_shutdown (MonoProfiler *prof)
 	
 	FREE_PROFILER_THREAD_DATA ();
 	
-	for (current_thread_data = profiler->per_thread_data; current_thread_data != NULL; current_thread_data = current_thread_data->next) {
+	for (current_thread_data = profiler->per_thread_data; current_thread_data != NULL; current_thread_data = next_thread_data) {
+		next_thread_data = current_thread_data->next;
 		profiler_per_thread_data_destroy (current_thread_data);
 	}
 	if (profiler->statistical_data != NULL) {
