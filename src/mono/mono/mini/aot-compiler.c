@@ -3325,11 +3325,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 
-	//acfg->opts &= ~MONO_OPT_GSHARED;
-
-	// FIXME: GSHARED is on by default
-#if 1
-	if (TRUE || !(acfg->opts & MONO_OPT_GSHARED)) {
+#if 0
+	if (!(acfg->opts & MONO_OPT_GSHARED)) {
 		if (method->is_generic || method->klass->generic_container) {
 			acfg->stats.genericcount ++;
 			return;
