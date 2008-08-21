@@ -9,7 +9,7 @@ endif
 
 check-local: test
 
-aotcheck: testaot
+aotcheck: testaot gshared-aot
 
 TEST_PROG = ../interpreter/mint
 JITTEST_PROG = ../mini/mono
@@ -679,6 +679,9 @@ generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
 
 gshared: test-generic-sharing
 
+gshared-aot:
+	@$(MAKE) AOT=1 gshared
+
 test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		shared-generic-synchronized.2.exe generic-initobj.2.exe		\
 		generics-sharing-other-exc.2.exe generic-box.2.exe		\
@@ -701,6 +704,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,shared         $$fn > $$fn.stdout || exit 1;	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline        $$fn > $$fn.stdout || exit 1;	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared,-inline,shared $$fn > $fn.stdout || exit 1;	\
+		if [ x$(AOT) = x1 ]; then MONO_GENERIC_SHARING=all $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $$fn > /dev/null || exit 1; MONO_GENERIC_SHARING=all $(RUNTIME) $$fn > $$fn.stdout || exit 1; fi; \
 	done
 
 EXTRA_DIST += async-exceptions.cs
