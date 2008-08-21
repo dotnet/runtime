@@ -9593,11 +9593,8 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_mb_emit_ldarg (mb, 0);
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
-	
-	/* this is needed to avoid recursion */
-	mono_mb_emit_byte (mb, CEE_PREFIX1);
-	mono_mb_emit_op (mb, CEE_LDFTN, method);
-	mono_mb_emit_calli (mb, mono_method_signature (method));
+
+	mono_mb_emit_managed_call (mb, method, NULL);
 
 	if (!MONO_TYPE_IS_VOID (sig->ret))
 		mono_mb_emit_stloc (mb, ret_local);
@@ -9609,7 +9606,6 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 
 	/* Call Monitor::Exit() */
 	mono_mb_emit_ldloc (mb, this_local);
-/*	mono_mb_emit_native_call (mb, exit_sig, mono_monitor_exit); */
 	mono_mb_emit_managed_call (mb, exit_method, NULL);
 	mono_mb_emit_byte (mb, CEE_ENDFINALLY);
 
