@@ -198,30 +198,6 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * the ret address is at: esp + (pushed_args + 1) * sizeof (gpointer)
 	 */
 
-	/* If this is a generic class init the argument is not on the
-	 * stack yet but in MONO_ARCH_VTABLE_REG.  We first check
-	 * whether the vtable is already initialized in which case we
-	 * just return.  Otherwise we push it and continue.
-	 */
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
-		static int byte_offset = -1;
-		static guint8 bitmask;
-
-		guint8 *jump;
-
-		if (byte_offset < 0)
-			mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-		x86_test_membase_imm (buf, MONO_ARCH_VTABLE_REG, byte_offset, bitmask);
-		jump = buf;
-		x86_branch8 (buf, X86_CC_Z, -1, 1);
-
-		x86_ret (buf);
-
-		x86_patch (jump, buf);
-		x86_push_reg (buf, MONO_ARCH_VTABLE_REG);
-	}
-
 	/* Put all registers into an array on the stack
 	 * If this code is changed, make sure to update the offset value in
 	 * mono_arch_find_this_argument () in mini-x86.c.
@@ -515,6 +491,46 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	g_assert (buf - code <= tramp_size);
 
 	return code;
+}
+
+gpointer
+mono_arch_create_generic_class_init_trampoline (void)
+{
+	guint8 *tramp;
+	guint8 *code, *buf;
+	static int byte_offset = -1;
+	static guint8 bitmask;
+	guint8 *jump;
+	int tramp_size;
+
+	tramp_size = 64;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	if (byte_offset < 0)
+		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+	x86_test_membase_imm (code, MONO_ARCH_VTABLE_REG, byte_offset, bitmask);
+	jump = code;
+	x86_branch8 (code, X86_CC_Z, -1, 1);
+
+	x86_ret (code);
+
+	x86_patch (jump, code);
+
+	/* Push the vtable so the stack is the same as in a specific trampoline */
+	x86_push_reg (code, MONO_ARCH_VTABLE_REG);
+
+	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+
+	/* jump to the actual trampoline */
+	x86_jump_code (code, tramp);
+
+	mono_arch_flush_icache (code, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	return buf;
 }
 
 void
