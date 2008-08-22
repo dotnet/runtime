@@ -7479,7 +7479,7 @@ mono_class_generic_sharing_enabled (MonoClass *class)
 		const char *option;
 
 		if (supported)
-			generic_sharing = MONO_GENERIC_SHARING_COLLECTIONS;
+			generic_sharing = MONO_GENERIC_SHARING_CORLIB;
 		else
 			generic_sharing = MONO_GENERIC_SHARING_NONE;
 
