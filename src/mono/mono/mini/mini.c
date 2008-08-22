@@ -8588,7 +8588,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL) {
 					MonoInst *load;
 					NEW_LDELEMA (cfg, load, sp, mono_defaults.object_class);
-					MONO_INST_NEW (cfg, ins, stelem_to_stind [*ip - CEE_STELEM_I]);
+					MONO_INST_NEW (cfg, ins, CEE_STIND_REF);
 					ins->inst_left = load;
 					ins->inst_right = sp [2];
 					MONO_ADD_INS (bblock, ins);

@@ -1883,4 +1883,37 @@ HAS_VALUE:	ldc.i4.1
 			ldc.i4.0
 			ret			
 	}
+
+    .method public static int32 test_0_stelem_any_null_opt () cil managed
+    {
+		.maxstack 16
+		.locals init (
+				object[]	V_0,
+				int32	V_1)
+
+		ldc.i4.s 10
+		newarr [mscorlib]System.Object
+		stloc.0
+
+		ldc.i4.0
+		stloc.1
+		br L0
+
+	L1:
+		ldloc.0
+		ldloc.1
+		ldnull
+		stelem.any [mscorlib]System.Object
+		ldloc.1
+		ldc.i4.1
+		add
+		stloc.1
+	L0:
+		ldloc.1
+		ldc.i4.s 10
+		blt L1
+
+		ldc.i4.0
+		ret
+	}
 }
