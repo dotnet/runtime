@@ -1230,8 +1230,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		g_assert (in->dreg != -1);
 
 		if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(t))) {
-			gint align;
-			guint32 ialign;
+			guint32 align;
 			guint32 size;
 
 			g_assert (in->klass);
