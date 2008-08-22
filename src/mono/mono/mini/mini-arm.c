@@ -31,8 +31,6 @@ static CRITICAL_SECTION mini_arch_mutex;
 static int v5_supported = 0;
 static int thumb_supported = 0;
 
-static int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);
-
 /*
  * TODO:
  * floating point support: on ARM it is a mess, there are at least 3
@@ -561,8 +559,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V2));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V3));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V4));
-	if (cfg->compile_aot)
-		/* V5 is reserved for holding the IMT method */
+	if (cfg->compile_aot || cfg->uses_rgctx_reg || cfg->uses_vtable_reg)
+		/* V5 is reserved for passing arguments to trampolines/IMT thunks */
 		cfg->used_int_regs |= (1 << ARMREG_V5);
 	else
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V5));
@@ -679,7 +677,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 {
 	guint i, gr;
 	int n = sig->hasthis + sig->param_count;
-	guint32 simpletype;
+	MonoType *simpletype;
 	guint32 stack_size = 0;
 	CallInfo *cinfo = g_malloc0 (sizeof (CallInfo) + sizeof (ArgInfo) * n);
 
@@ -712,8 +710,8 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			n++;
 			continue;
 		}
-		simpletype = mono_type_get_underlying_type (sig->params [i])->type;
-		switch (simpletype) {
+		simpletype = mono_type_get_underlying_type (sig->params [i]);
+		switch (simpletype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -762,7 +760,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			int align_size;
 			int nwords;
 
-			if (simpletype == MONO_TYPE_TYPEDBYREF) {
+			if (simpletype->type == MONO_TYPE_TYPEDBYREF) {
 				size = sizeof (MonoTypedRef);
 			} else {
 				MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
@@ -810,8 +808,8 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	}
 
 	{
-		simpletype = mono_type_get_underlying_type (sig->ret)->type;
-		switch (simpletype) {
+		simpletype = mono_type_get_underlying_type (sig->ret);
+		switch (simpletype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
@@ -2334,7 +2332,7 @@ arm_patch (guchar *code, const guchar *target)
  * to be used with the emit macros.
  * Return -1 otherwise.
  */
-static int
+int
 mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount)
 {
 	guint32 res, i;
@@ -3791,6 +3789,20 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 	}
 
+	/* store runtime generic context */
+	if (cfg->rgctx_var) {
+		MonoInst *ins = cfg->rgctx_var;
+
+		g_assert (ins->opcode == OP_REGOFFSET);
+
+		if (arm_is_imm12 (ins->inst_offset)) {
+			ARM_STR_IMM (code, MONO_ARCH_RGCTX_REG, ins->inst_basereg, ins->inst_offset);
+		} else {
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
+			ARM_STR_REG_REG (code, MONO_ARCH_RGCTX_REG, ins->inst_basereg, ARMREG_LR);
+		}
+	}
+
 	/* load arguments allocated to register from the stack */
 	pos = 0;
 
@@ -3927,8 +3939,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int soffset = 0;
 				int cur_reg;
 				int size = 0;
-				if (mono_class_from_mono_type (inst->inst_vtype))
-					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
+				if (mono_class_from_mono_type (inst->inst_vtype)) {
+					if (sig->pinvoke)
+						size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
+					else
+						size = mini_type_stack_size (cfg->generic_context, inst->inst_vtype, NULL);
+				}
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
 					if (arm_is_imm12 (doffset)) {
 						ARM_STR_IMM (code, ainfo->reg + cur_reg, inst->inst_basereg, doffset);
@@ -4292,6 +4308,11 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSha
 	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
 }
 
+MonoVTable*
+mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code)
+{
+	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
+}
 
 #define ENABLE_WRONG_METHOD_CHECK 0
 #define BASE_SIZE (6 * 4)

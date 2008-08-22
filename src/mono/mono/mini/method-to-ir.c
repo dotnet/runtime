@@ -2310,6 +2310,7 @@ mono_emit_rgctx_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **ar
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, rgctx_arg->dreg);
 	call = (MonoCallInst*)mono_emit_calli (cfg, sig, args, addr);
 	mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
+	cfg->uses_rgctx_reg = TRUE;
 	return (MonoInst*)call;
 #else
 	g_assert_not_reached ();
@@ -6170,6 +6171,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr);
 					call = (MonoCallInst*)ins;
 					mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
+					cfg->uses_rgctx_reg = TRUE;
 #else
 					NOT_IMPLEMENTED;
 #endif
@@ -6278,6 +6280,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				ins = (MonoInst*)mono_emit_method_call_full (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL, NULL);
 				call = (MonoCallInst*)ins;
 				mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
+				cfg->uses_rgctx_reg = TRUE;
 #else
 				NOT_IMPLEMENTED;
 #endif
@@ -7722,6 +7725,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline, &vtable);
 #ifdef MONO_ARCH_VTABLE_REG
 					mono_call_inst_add_outarg_reg (cfg, call, vtable->dreg, MONO_ARCH_VTABLE_REG, FALSE);
+					cfg->uses_vtable_reg = TRUE;
 #else
 					NOT_IMPLEMENTED;
 #endif

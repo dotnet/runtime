@@ -59,6 +59,7 @@
 
 void arm_patch (guchar *code, const guchar *target);
 guint8* mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val);
+int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);
 
 /* keep the size of the structure a multiple of 8 */
 struct MonoLMF {
@@ -122,6 +123,10 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_IMT 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
+
+/* ARM doesn't have too many registers, so we have to use a callee saved one */
+#define MONO_ARCH_RGCTX_REG ARMREG_V5
+#define MONO_ARCH_VTABLE_REG ARMREG_V5
 
 /* we have the stack pointer, not the base pointer in sigcontext */
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (int)ip; } while (0); 

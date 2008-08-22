@@ -893,6 +893,8 @@ typedef struct {
 	guint            disable_initlocals_opt : 1;
 	guint            disable_omit_fp : 1;
 	guint            has_got_slots : 1;
+	guint            uses_rgctx_reg : 1;
+	guint            uses_vtable_reg : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;

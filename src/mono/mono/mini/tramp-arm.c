@@ -184,10 +184,14 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		 * The trampoline contains a pc-relative offset to the got slot where the
 		 * value is stored. The offset can be found at [lr + 4].
 		 */
+		g_assert (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
 		ARM_LDR_IMM (buf, ARMREG_V2, ARMREG_LR, 4);
 		ARM_LDR_REG_REG (buf, ARMREG_V2, ARMREG_V2, ARMREG_LR);
 	} else {
-		ARM_LDR_IMM (buf, ARMREG_V2, ARMREG_LR, 0);
+		if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
+			ARM_LDR_IMM (buf, ARMREG_V2, ARMREG_LR, 0);
+		else
+			ARM_MOV_REG_REG (buf, ARMREG_V2, MONO_ARCH_VTABLE_REG);
 	}
 	ARM_LDR_IMM (buf, ARMREG_V3, ARMREG_SP, LR_OFFSET);
 
@@ -318,9 +322,11 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	 */
 	ARM_ADD_REG_IMM8 (buf, ARMREG_SP, ARMREG_SP, sizeof (MonoLMF) - sizeof (guint) * 14);
 	ARM_POP_NWB (buf, 0x5fff);
+	if (tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
+		ARM_MOV_REG_REG (buf, ARMREG_R0, ARMREG_IP);
 	/* do we need to set sp? */
 	ARM_ADD_REG_IMM8 (buf, ARMREG_SP, ARMREG_SP, (14 * 4));
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT)
+	if ((tramp_type == MONO_TRAMPOLINE_CLASS_INIT) || (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) || (tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH))
 		ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_LR);
 	else
 		ARM_MOV_REG_REG (buf, ARMREG_PC, ARMREG_IP);
@@ -434,7 +440,59 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
 {
-	/* FIXME: implement! */
-	g_assert_not_reached ();
-	return NULL;
+	guint32 code_len;
+
+	// FIXME: Implement the fastpath
+	return mono_arch_create_specific_trampoline (GUINT_TO_POINTER (encoded_offset), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
+}
+
+#define arm_is_imm8(v) ((v) > -256 && (v) < 256)
+
+gpointer
+mono_arch_create_generic_class_init_trampoline (void)
+{
+	guint8 *tramp;
+	guint8 *code, *buf;
+	static int byte_offset = -1;
+	static guint8 bitmask;
+	guint8 *jump;
+	int tramp_size;
+	guint32 code_len, imm8;
+	gint rot_amount;
+
+	tramp_size = 64;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	if (byte_offset < 0)
+		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+	g_assert (arm_is_imm8 (byte_offset));
+	ARM_LDRSB_IMM (code, ARMREG_IP, MONO_ARCH_VTABLE_REG, byte_offset);
+	imm8 = mono_arm_is_rotated_imm8 (bitmask, &rot_amount);
+	g_assert (imm8 >= 0);
+	ARM_AND_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
+	ARM_CMP_REG_IMM (code, ARMREG_IP, 0, 0);
+	jump = code;
+	ARM_B_COND (code, ARMCOND_EQ, 0);
+
+	/* Initialized case */
+	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_LR);	
+
+	/* Uninitialized case */
+	arm_patch (jump, code);
+
+	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), &code_len);
+
+	/* Jump to the actual trampoline */
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
+	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+	*(guint32*)code = tramp;
+	code += 4;
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	return buf;
 }
