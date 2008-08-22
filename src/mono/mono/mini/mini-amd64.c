@@ -6343,7 +6343,7 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSha
 }
 
 void
-mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call)
+mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 {
 	/* Done by the implementation of the CALL_MEMBASE opcodes */
 }
