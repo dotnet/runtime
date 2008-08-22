@@ -437,15 +437,13 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 {
-	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_RGCTX_LAZY_FETCH);
+	guint8 *tramp;
 	guint8 *code, *buf;
 	guint8 **rgctx_null_jumps;
 	int tramp_size;
 	int depth, index;
 	int i;
 	gboolean mrgctx;
-
-	g_assert (tramp);
 
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
@@ -505,35 +503,11 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 
 	g_free (rgctx_null_jumps);
 
-	/*
-	 * our stack looks like this (tos on top):
-	 *
-	 * | ret addr   |
-	 * | vtable ptr |
-	 * | ...        |
-	 *
-	 * the trampoline code expects it to look like this:
-	 *
-	 * | vtable ptr |
-	 * | ret addr   |
-	 * | ...        |
-	 *
-	 * whereas our caller expects to still have one argument on
-	 * the stack when we return, so we transform the stack into
-	 * this:
-	 *
-	 * | vtable ptr |
-	 * | ret addr   |
-	 * | dummy      |
-	 * | ...        |
-	 *
-	 * which actually only requires us to push the vtable ptr, and
-	 * the "old" vtable ptr becomes the dummy.
-	 */
+	x86_mov_reg_membase (buf, MONO_ARCH_VTABLE_REG, X86_ESP, 4, 4);
 
-	x86_push_membase (buf, X86_ESP, 4);
+	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 
-	x86_mov_reg_imm (buf, X86_EAX, slot);
+	/* jump to the actual trampoline */
 	x86_jump_code (buf, tramp);
 
 	mono_arch_flush_icache (code, buf - code);
@@ -541,12 +515,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	g_assert (buf - code <= tramp_size);
 
 	return code;
-}
-
-guint32
-mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs)
-{
-	return (guint32)(regs [X86_EAX]);
 }
 
 void

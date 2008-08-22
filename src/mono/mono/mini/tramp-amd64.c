@@ -651,12 +651,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	return code;
 }
 
-guint32
-mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs)
-{
-	return (guint32)(gulong)(regs [MONO_AMD64_ARG_REG2]);
-}
-
 void
 mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 {
