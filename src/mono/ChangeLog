@@ -1,3 +1,10 @@
+2008-08-22  Jb Evain  <jbevain@novell.com>
+
+	* data/wcf.pc.in
+	* data/Makefile.am
+	* configure.in: add a new wcf.pc for assemblies recently moved
+	from olive to mcs.
+
 2008-08-12  Bill Holmes  <billholmes54@gmail.com>
 
 	* winconfig.h:  Updating the config file for MSVC builds to match
