@@ -6171,7 +6171,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					call = (MonoCallInst*)ins;
 					mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
 #else
-					GENERIC_SHARING_FAILURE (*ip);
+					NOT_IMPLEMENTED;
 #endif
 				} else {
 					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr);
@@ -6279,7 +6279,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				call = (MonoCallInst*)ins;
 				mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
 #else
-				GENERIC_SHARING_FAILURE (*ip);				
+				NOT_IMPLEMENTED;
 #endif
 			} else if (imt_arg) {
 				ins = (MonoInst*)mono_emit_method_call_full (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL, imt_arg);
