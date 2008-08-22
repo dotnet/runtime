@@ -8,6 +8,21 @@
 
 	[Mono-dev] utf8 related patches. Please review.
 
+2008-08-20  Mike Voorhees  <vernish13@gmail.com>
+
+	* src/glib.h : Adding declarations for g_utf8_strlen, g_utf8_get_char,
+	and g_utf8_next_char.
+
+	* src/gunicode.c : Adding implementation for g_utf8_strlen, g_utf8_get_char,
+	and g_utf8_next_char.
+
+	* src/gunicode.c : Rewrote g_utf8_validate.
+
+	* test/utf8.c Adding tests for g_utf8_strlen, g_utf8_get_char,
+	g_utf8_next_char, and g_utf8_validate.
+
+	Contributed under MIT/X11 license.
+	
 2008-08-05  Andreas Faerber  <andreas.faerber@web.de>
 
 	* autogen.sh: Suppress arguments warning for NOCONFIGURE.
