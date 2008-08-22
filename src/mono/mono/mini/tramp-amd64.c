@@ -330,8 +330,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	for (i = 0; i < 8; ++i)
 		amd64_movsd_membase_reg (code, AMD64_RBP, saved_fpregs_offset + (i * 8), i);
 
-	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT &&
-			tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH) {
+	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
 		/* Obtain the trampoline argument which is encoded in the instruction stream */
 		if (aot) {
 			/* Load the GOT offset */
@@ -570,15 +569,13 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 {
-	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_RGCTX_LAZY_FETCH);
+	guint8 *tramp;
 	guint8 *code, *buf;
 	guint8 **rgctx_null_jumps;
 	int tramp_size;
 	int depth, index;
 	int i;
 	gboolean mrgctx;
-
-	g_assert (tramp);
 
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
@@ -640,11 +637,12 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	g_free (rgctx_null_jumps);
 
 	/* move the rgctx pointer to the VTABLE register */
-	amd64_mov_reg_reg (buf, MONO_AMD64_ARG_REG1, AMD64_ARG_REG1, 8);
-	/* store the slot in the second argument register */
-	amd64_mov_reg_imm (buf, MONO_AMD64_ARG_REG2, slot);
+	amd64_mov_reg_reg (buf, MONO_ARCH_VTABLE_REG, AMD64_ARG_REG1, 8);
+
+	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+
 	/* jump to the actual trampoline */
-	amd64_call_code (buf, tramp);
+	amd64_jump_code (buf, tramp);
 
 	mono_arch_flush_icache (code, buf - code);
 
