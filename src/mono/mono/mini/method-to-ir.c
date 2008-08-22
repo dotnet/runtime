@@ -2188,7 +2188,7 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 
 	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
 #else
-	mono_arch_emit_imt_argument (cfg, call);
+	mono_arch_emit_imt_argument (cfg, call, imt_arg);
 #endif
 }
 #endif

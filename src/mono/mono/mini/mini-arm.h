@@ -126,7 +126,8 @@ typedef struct MonoCompileArch {
 
 /* ARM doesn't have too many registers, so we have to use a callee saved one */
 #define MONO_ARCH_RGCTX_REG ARMREG_V5
-#define MONO_ARCH_VTABLE_REG ARMREG_V5
+/* First argument reg */
+#define MONO_ARCH_VTABLE_REG ARMREG_R0
 
 /* we have the stack pointer, not the base pointer in sigcontext */
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (int)ip; } while (0); 

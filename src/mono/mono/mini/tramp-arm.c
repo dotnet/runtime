@@ -440,10 +440,29 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
 {
+	guint8 *tramp;
+	guint8 *code, *buf;
+	int tramp_size;
 	guint32 code_len;
 
+	tramp_size = 64;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
 	// FIXME: Implement the fastpath
-	return mono_arch_create_specific_trampoline (GUINT_TO_POINTER (encoded_offset), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
+	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (encoded_offset), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
+
+	/* Jump to the actual trampoline */
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
+	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+	*(guint32*)code = tramp;
+	code += 4;
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	return buf;
 }
 
 #define arm_is_imm8(v) ((v) > -256 && (v) < 256)

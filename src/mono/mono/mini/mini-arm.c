@@ -555,10 +555,8 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V2));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V3));
 	regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V4));
-	if (cfg->compile_aot || cfg->uses_rgctx_reg || cfg->uses_vtable_reg)
-		/* V5 is reserved for passing arguments to trampolines/IMT thunks */
-		cfg->used_int_regs |= (1 << ARMREG_V5);
-	else
+	if (!(cfg->compile_aot || cfg->uses_rgctx_reg))
+		/* V5 is reserved for passing the vtable/rgctx/IMT method */
 		regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V5));
 	/*regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V6));*/
 	/*regs = g_list_prepend (regs, GUINT_TO_POINTER (ARMREG_V7));*/
@@ -865,7 +863,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
  * The locals var stuff should most likely be split in another method.
  */
 void
-mono_arch_allocate_vars (MonoCompile *m)
+mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
@@ -874,13 +872,13 @@ mono_arch_allocate_vars (MonoCompile *m)
 	int frame_reg = ARMREG_FP;
 
 	/* FIXME: this will change when we use FP as gcc does */
-	m->flags |= MONO_CFG_HAS_SPILLUP;
+	cfg->flags |= MONO_CFG_HAS_SPILLUP;
 
 	/* allow room for the vararg method args: void* and long/double */
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
-		m->param_area = MAX (m->param_area, sizeof (gpointer)*8);
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
+		cfg->param_area = MAX (cfg->param_area, sizeof (gpointer)*8);
 
-	header = mono_method_get_header (m->method);
+	header = mono_method_get_header (cfg->method);
 
 	/* 
 	 * We use the frame register also for any method that has
@@ -891,14 +889,18 @@ mono_arch_allocate_vars (MonoCompile *m)
 	 * filters get called before stack unwinding happens) when the filter
 	 * code would call any method (this also applies to finally etc.).
 	 */ 
-	if ((m->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
+	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
 		frame_reg = ARMREG_FP;
-	m->frame_reg = frame_reg;
+	cfg->frame_reg = frame_reg;
 	if (frame_reg != ARMREG_SP) {
-		m->used_int_regs |= 1 << frame_reg;
+		cfg->used_int_regs |= 1 << frame_reg;
 	}
 
-	sig = mono_method_signature (m->method);
+	if (!cfg->compile_aot || cfg->uses_rgctx_reg)
+		/* V5 is reserved for passing the vtable/rgctx/IMT method */
+		cfg->used_int_regs |= (1 << ARMREG_V5);
+
+	sig = mono_method_signature (cfg->method);
 	
 	offset = 0;
 	curinst = 0;
@@ -908,8 +910,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 		case MONO_TYPE_VOID:
 			break;
 		default:
-			m->ret->opcode = OP_REGVAR;
-			m->ret->inst_c0 = ARMREG_R0;
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->inst_c0 = ARMREG_R0;
 			break;
 		}
 	}
@@ -924,48 +926,51 @@ mono_arch_allocate_vars (MonoCompile *m)
 	//offset &= ~(8 - 1);
 
 	/* add parameter area size for called functions */
-	offset += m->param_area;
+	offset += cfg->param_area;
 	offset += 8 - 1;
 	offset &= ~(8 - 1);
-	if (m->flags & MONO_CFG_HAS_FPOUT)
+	if (cfg->flags & MONO_CFG_HAS_FPOUT)
 		offset += 8;
 
 	/* allow room to save the return value */
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
 		offset += 8;
 
 	/* the MonoLMF structure is stored just below the stack pointer */
 
 	if (sig->call_convention == MONO_CALL_VARARG) {
-                m->sig_cookie = 0;
+                cfg->sig_cookie = 0;
         }
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		inst = m->vret_addr;
+		inst = cfg->vret_addr;
 		offset += sizeof(gpointer) - 1;
 		offset &= ~(sizeof(gpointer) - 1);
 		inst->inst_offset = offset;
 		inst->opcode = OP_REGOFFSET;
 		inst->inst_basereg = frame_reg;
-		if (G_UNLIKELY (m->verbose_level > 1)) {
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr =");
-			mono_print_ins (m->vret_addr);
+			mono_print_ins (cfg->vret_addr);
 		}
 		offset += sizeof(gpointer);
 		if (sig->call_convention == MONO_CALL_VARARG)
-			m->sig_cookie += sizeof (gpointer);
+			cfg->sig_cookie += sizeof (gpointer);
 	}
 
-	curinst = m->locals_start;
-	for (i = curinst; i < m->num_varinfo; ++i) {
-		inst = m->varinfo [i];
+	curinst = cfg->locals_start;
+	for (i = curinst; i < cfg->num_varinfo; ++i) {
+		inst = cfg->varinfo [i];
 		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR)
 			continue;
 
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
-		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
+		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF) {
+			guint32 ualign;
+			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &ualign);
+			align = ualign;
+		}
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
 
@@ -985,7 +990,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	curinst = 0;
 	if (sig->hasthis) {
-		inst = m->args [curinst];
+		inst = cfg->args [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
@@ -994,13 +999,13 @@ mono_arch_allocate_vars (MonoCompile *m)
 			inst->inst_offset = offset;
 			offset += sizeof (gpointer);
 			if (sig->call_convention == MONO_CALL_VARARG)
-				m->sig_cookie += sizeof (gpointer);
+				cfg->sig_cookie += sizeof (gpointer);
 		}
 		curinst++;
 	}
 
 	for (i = 0; i < sig->param_count; ++i) {
-		inst = m->args [curinst];
+		inst = cfg->args [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
@@ -1015,7 +1020,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			inst->inst_offset = offset;
 			offset += size;
 			if ((sig->call_convention == MONO_CALL_VARARG) && (i < sig->sentinelpos)) 
-				m->sig_cookie += size;
+				cfg->sig_cookie += size;
 		}
 		curinst++;
 	}
@@ -1025,8 +1030,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	offset &= ~(8 - 1);
 
 	/* change sign? */
-	m->stack_offset = offset;
-
+	cfg->stack_offset = offset;
 }
 
 void
@@ -3008,17 +3012,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 				ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_PC, 4);
 				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
-				if (cfg->compile_aot) {
-					/* 
-					 * We can't embed the method in the code stream in PIC code. Instead,
-					 * we put it in V5 in code emitted by mono_arch_emit_imt_argument (),
-					 * and embed NULL here to signal the IMT thunk that the call is made
-					 * from AOT code.
-					 */
+				/* 
+				 * We can't embed the method in the code stream in PIC code, or
+				 * in gshared code.
+				 * Instead, we put it in V5 in code emitted by 
+				 * mono_arch_emit_imt_argument (), and embed NULL here to 
+				 * signal the IMT thunk that the value is in V5.
+				 */
+				if (call->dynamic_imt_arg)
 					*((gpointer*)code) = NULL;
-				} else {
+				else
 					*((gpointer*)code) = (gpointer)call->method;
-				}
 				code += 4;
 			} else {
 				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
@@ -4260,11 +4264,13 @@ mono_arch_fixup_jinfo (MonoCompile *cfg)
 #ifdef MONO_ARCH_HAVE_IMT
 
 void
-mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call)
+mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 {
 	if (cfg->compile_aot) {
 		int method_reg = mono_regstate_next_int (cfg->rs);
 		MonoInst *ins;
+
+		call->dynamic_imt_arg = TRUE;
 
 		MONO_INST_NEW (cfg, ins, OP_AOTCONST);
 		ins->dreg = method_reg;
@@ -4273,6 +4279,26 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call)
 		MONO_ADD_INS (cfg->cbb, ins);
 
 		mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
+	} else if (cfg->generic_context) {
+
+		/* Always pass in a register for simplicity */
+		call->dynamic_imt_arg = TRUE;
+
+		cfg->uses_rgctx_reg = TRUE;
+
+		if (imt_arg) {
+			mono_call_inst_add_outarg_reg (cfg, call, imt_arg->dreg, ARMREG_V5, FALSE);
+		} else {
+			MonoInst *ins;
+			int method_reg = mono_alloc_preg (cfg);
+
+			MONO_INST_NEW (cfg, ins, OP_PCONST);
+			ins->inst_p0 = call->method;
+			ins->dreg = method_reg;
+			MONO_ADD_INS (cfg->cbb, ins);
+
+			mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
+		}
 	}
 }
 
@@ -4466,6 +4492,5 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	/* FIXME: implement */
-	g_assert_not_reached ();
+	return ctx->regs [reg];
 }
