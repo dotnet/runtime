@@ -1620,8 +1620,10 @@ MonoClass* mini_class_get_container_class (MonoClass *class) MONO_INTERNAL;
 MonoGenericContext* mini_class_get_context (MonoClass *class) MONO_INTERNAL;
 
 MonoType* mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *type) MONO_INTERNAL;
+MonoType* mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type) MONO_INTERNAL;
 
 int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align) MONO_INTERNAL;
+int mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke) MONO_INTERNAL;
 
 /* wapihandles.c */
 int mini_wapi_hps (int argc, char **argv) MONO_INTERNAL;

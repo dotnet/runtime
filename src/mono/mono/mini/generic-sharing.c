@@ -281,6 +281,18 @@ mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *ty
 }
 
 /*
+ * mini_type_get_underlying_type:
+ *
+ *   Return the underlying type of TYPE, taking into account enums and generic
+ * sharing.
+ */
+MonoType*
+mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type)
+{
+	return mono_type_get_basic_type_from_generic (mono_type_get_underlying_type (type));
+}
+
+/*
  * mini_type_stack_size:
  * @gsctx: a generic sharing context
  * @t: a type
@@ -293,6 +305,32 @@ int
 mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align)
 {
 	return mono_type_stack_size_internal (t, align, gsctx != NULL);
+}
+
+/*
+ * mini_type_stack_size_full:
+ *
+ *   Same as mini_type_stack_size, but handle pinvoke data types as well.
+ */
+int
+mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke)
+{
+	int size;
+
+	if (pinvoke) {
+		size = mono_type_native_stack_size (t, align);
+	} else {
+		int ialign;
+
+		if (align) {
+			size = mini_type_stack_size (gsctx, t, &ialign);
+			*align = ialign;
+		} else {
+			size = mini_type_stack_size (gsctx, t, NULL);
+		}
+	}
+	
+	return size;
 }
 
 /*

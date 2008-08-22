@@ -206,10 +206,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	MonoClass *klass;
 
 	klass = mono_class_from_mono_type (type);
-	if (sig->pinvoke) 
-		size = mono_type_native_stack_size (&klass->byval_arg, NULL);
-	else 
-		size = mini_type_stack_size (gsctx, &klass->byval_arg, NULL);
+	size = mini_type_stack_size_full (gsctx, &klass->byval_arg, NULL, sig->pinvoke);
 
 #ifdef SMALL_STRUCTS_IN_REGS
 	if (sig->pinvoke && is_return) {
@@ -281,8 +278,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 
 	/* return value */
 	{
-		ret_type = mono_type_get_underlying_type (sig->ret);
-		ret_type = mini_get_basic_type_from_generic (gsctx, ret_type);
+		ret_type = mini_type_get_underlying_type (gsctx, sig->ret);
 		switch (ret_type->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -377,8 +373,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_general (&gr, &stack_size, ainfo);
 			continue;
 		}
-		ptype = mono_type_get_underlying_type (sig->params [i]);
-		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
+		ptype = mini_type_get_underlying_type (gsctx, sig->params [i]);
 		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -492,14 +487,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	arg_info [0].size = args_size;
 
 	for (k = 0; k < param_count; k++) {
-		
-		if (csig->pinvoke) {
-			size = mono_type_native_stack_size (csig->params [k], &align);
-		} else {
-			int ialign;
-			size = mini_type_stack_size (NULL, csig->params [k], &ialign);
-			align = ialign;
-		}
+		size = mini_type_stack_size_full (NULL, csig->params [k], &align, csig->pinvoke);
 
 		/* ignore alignment for now */
 		align = 1;
@@ -981,7 +969,7 @@ collect_fp_stack_space (MonoMethodSignature *sig, int start_arg, int *fp_arg_set
 	MonoType *t;
 
 	for (; start_arg < sig->param_count; ++start_arg) {
-		t = mono_type_get_underlying_type (sig->params [start_arg]);
+		t = mini_type_get_underlying_type (NULL, sig->params [start_arg]);
 		if (!t->byref && t->type == MONO_TYPE_R8) {
 			fp_space += sizeof (double);
 			*fp_arg_setup = start_arg;
@@ -1033,7 +1021,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 				t = sig->params [i - sig->hasthis];
 			else
 				t = &mono_defaults.int_class->byval_arg;
-			t = mono_type_get_underlying_type (t);
+			t = mini_type_get_underlying_type (cfg->generic_sharing_context, t);
 
 			MONO_INST_NEW (cfg, arg, OP_OUTARG);
 			in = call->args [i];
@@ -1053,14 +1041,9 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 					size = sizeof (MonoTypedRef);
 					align = sizeof (gpointer);
 				}
-				else
-					if (sig->pinvoke)
-						size = mono_type_native_stack_size (&in->klass->byval_arg, &ialign);
-					else {
-						int ialign;
-						size = mini_type_stack_size (cfg->generic_sharing_context, &in->klass->byval_arg, &ialign);
-						align = ialign;
-					}
+				else {
+					size = mini_type_stack_size_full (cfg->generic_sharing_context, &in->klass->byval_arg, &ialign, sig->pinvoke);
+				}
 				arg->opcode = OP_OUTARG_VT;
 				arg->klass = in->klass;
 				arg->backend.is_pinvoke = sig->pinvoke;
@@ -1235,7 +1218,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			t = sig->params [i - sig->hasthis];
 		else
 			t = &mono_defaults.int_class->byval_arg;
-		t = mono_type_get_underlying_type (t);
+		t = mini_type_get_underlying_type (cfg->generic_sharing_context, t);
 
 		MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
 
@@ -1257,13 +1240,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				size = sizeof (MonoTypedRef);
 				align = sizeof (gpointer);
 			}
-			else
-				if (sig->pinvoke) {
-					size = mono_type_native_stack_size (&in->klass->byval_arg, &ialign);
-					align = ialign;
-				} else {
-					size = mini_type_stack_size (cfg->generic_sharing_context, &in->klass->byval_arg, &align);
-				}
+			else {
+				size = mini_type_stack_size_full (cfg->generic_sharing_context, &in->klass->byval_arg, &align, sig->pinvoke);
+			}
 
 			if (size > 0) {
 				arg->opcode = OP_OUTARG_VT;
@@ -1365,7 +1344,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
-	MonoType *ret = mono_type_get_underlying_type (mono_method_signature (method)->ret);
+	MonoType *ret = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret);
 
 	if (!ret->byref) {
 		if (ret->type == MONO_TYPE_R4) {
@@ -1433,7 +1412,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int arg_size = 0, save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
 	
-	switch (mono_type_get_underlying_type (mono_method_signature (method)->ret)->type) {
+	switch (mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret)->type) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
 		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
@@ -4109,7 +4088,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			x86_mov_mem_reg (code, lmf_tls_offset, X86_ECX, 4);
 		} else {
 			/* Find a spare register */
-			switch (mono_type_get_underlying_type (sig->ret)->type) {
+			switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8:
 				prev_lmf_reg = X86_EDI;

@@ -211,7 +211,7 @@ int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int k, frame_size = 0;
-	int size, align, pad;
+	guint32 size, pad;
 	int offset = 8;
 
 	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
@@ -229,11 +229,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	arg_info [0].size = frame_size;
 
 	for (k = 0; k < param_count; k++) {
-		
-		if (csig->pinvoke)
-			size = mono_type_native_stack_size (csig->params [k], &align);
-		else
-			size = mini_type_stack_size (NULL, csig->params [k], &align);
+		size = mini_type_stack_size_full (NULL, csig->params [k], &align, csig->pinvoke);
 
 		/* ignore alignment for now */
 		align = 1;
@@ -496,7 +492,7 @@ static gboolean
 is_regsize_var (MonoType *t) {
 	if (t->byref)
 		return TRUE;
-	t = mono_type_get_underlying_type (t);
+	t = mini_type_get_underlying_type (NULL, t);
 	switch (t->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
@@ -710,7 +706,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 			n++;
 			continue;
 		}
-		simpletype = mono_type_get_underlying_type (sig->params [i]);
+		simpletype = mini_type_get_underlying_type (NULL, sig->params [i]);
 		switch (simpletype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -808,7 +804,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	}
 
 	{
-		simpletype = mono_type_get_underlying_type (sig->ret);
+		simpletype = mini_type_get_underlying_type (NULL, sig->ret);
 		switch (simpletype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -908,7 +904,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 	curinst = 0;
 	if (!MONO_TYPE_ISSTRUCT (sig->ret)) {
 		/* FIXME: handle long and FP values */
-		switch (mono_type_get_underlying_type (sig->ret)->type) {
+		switch (mini_type_get_underlying_type (NULL, sig->ret)->type) {
 		case MONO_TYPE_VOID:
 			break;
 		default:
@@ -1203,7 +1199,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			t = sig->params [i - sig->hasthis];
 		else
 			t = &mono_defaults.int_class->byval_arg;
-		t = mono_type_get_underlying_type (t);
+		t = mono_type_get_underlying_type (NULL, t);
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* FIXME: */
@@ -1404,7 +1400,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
-	MonoType *ret = mono_type_get_underlying_type (mono_method_signature (method)->ret);
+	MonoType *ret = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret);
 
 	if (!ret->byref) {
 		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
@@ -1475,7 +1471,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int save_mode = SAVE_NONE;
 	int offset;
 	MonoMethod *method = cfg->method;
-	int rtype = mono_type_get_underlying_type (mono_method_signature (method)->ret)->type;
+	int rtype = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret)->type;
 	int save_offset = cfg->param_area;
 	save_offset += 7;
 	save_offset &= ~7;
@@ -3939,12 +3935,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int soffset = 0;
 				int cur_reg;
 				int size = 0;
-				if (mono_class_from_mono_type (inst->inst_vtype)) {
-					if (sig->pinvoke)
-						size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
-					else
-						size = mini_type_stack_size (cfg->generic_context, inst->inst_vtype, NULL);
-				}
+				size = mini_type_stack_size_full (cfg->generic_context, inst->inst_vtype, NULL, sig->pinvoke);
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
 					if (arm_is_imm12 (doffset)) {
 						ARM_STR_IMM (code, ainfo->reg + cur_reg, inst->inst_basereg, doffset);

@@ -326,7 +326,7 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 	ArgumentClass class2 = ARG_CLASS_NO_CLASS;
 	MonoType *ptype;
 
-	ptype = mono_type_get_underlying_type (type);
+	ptype = mini_type_get_underlying_type (NULL, type);
 	switch (ptype->type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
@@ -416,10 +416,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 		gsctx = &tmp_gsctx;
 
 	klass = mono_class_from_mono_type (type);
-	if (sig->pinvoke) 
-		size = mono_type_native_stack_size (&klass->byval_arg, NULL);
-	else 
-		size = mini_type_stack_size (gsctx, &klass->byval_arg, NULL);
+	size = mini_type_stack_size_full (gsctx, &klass->byval_arg, NULL, sig->pinvoke);
 #ifndef PLATFORM_WIN32
 	if (!sig->pinvoke && !disable_vtypes_in_regs && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
 		/* We pass and return vtypes of size 8 in a register */
@@ -614,8 +611,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 
 	/* return value */
 	{
-		ret_type = mono_type_get_underlying_type (sig->ret);
-		ret_type = mini_get_basic_type_from_generic (gsctx, ret_type);
+		ret_type = mini_type_get_underlying_type (gsctx, sig->ret);
 		switch (ret_type->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -719,8 +715,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 			add_general (&gr, &stack_size, ainfo);
 			continue;
 		}
-		ptype = mono_type_get_underlying_type (sig->params [i]);
-		ptype = mini_get_basic_type_from_generic (gsctx, ptype);
+		ptype = mini_type_get_underlying_type (gsctx, sig->params [i]);
 		switch (ptype->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
@@ -2202,7 +2197,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
-	MonoType *ret = mono_type_get_underlying_type (mono_method_signature (method)->ret);
+	MonoType *ret = mini_type_get_underlying_type (NULL, mono_method_signature (method)->ret);
 
 	if (!ret->byref) {
 		if (ret->type == MONO_TYPE_R4) {
@@ -5633,7 +5628,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	guchar *code = p;
 	int save_mode = SAVE_NONE;
 	MonoMethod *method = cfg->method;
-	int rtype = mono_type_get_underlying_type (mono_method_signature (method)->ret)->type;
+	int rtype = mini_type_get_underlying_type (NULL, mono_method_signature (method)->ret)->type;
 	
 	switch (rtype) {
 	case MONO_TYPE_VOID:
