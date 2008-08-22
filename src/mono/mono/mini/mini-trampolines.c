@@ -692,6 +692,25 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 }
 
 gpointer
+mono_create_generic_class_init_trampoline (void)
+{
+#ifdef MONO_ARCH_VTABLE_REG
+	static gpointer code;
+
+	mono_trampolines_lock ();
+
+	if (!code)
+		code = mono_arch_create_generic_class_init_trampoline ();
+
+	mono_trampolines_unlock ();
+
+	return code;
+#else
+	g_assert_not_reached ();
+#endif
+}
+
+gpointer
 mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
 {
 	MonoJitInfo *ji;

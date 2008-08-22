@@ -238,39 +238,15 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	framesize = 524 + sizeof (MonoLMF);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
 
-	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
-		static int byte_offset = -1;
-		static guint8 bitmask;
-
-		guint8 *jump;
-
-		if (byte_offset < 0)
-			mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-		amd64_test_membase_imm_size (code, MONO_AMD64_ARG_REG1, byte_offset, bitmask, 1);
-		jump = code;
-		amd64_branch8 (code, X86_CC_Z, -1, 1);
-
-		amd64_ret (code);
-
-		x86_patch (jump, code);
-	}
-
 	orig_rsp_to_rbp_offset = 0;
 	r11_save_code = code;
 	/* Reserve 5 bytes for the mov_membase_reg to save R11 */
 	code += 5;
 	after_r11_save_code = code;
 
-	/*
-	 * The generic class init trampoline is called directly by
-	 * JITted code, there is no specific trampoline.
-	 */
-	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
-		/* Pop the return address off the stack */
-		amd64_pop_reg (code, AMD64_R11);
-		orig_rsp_to_rbp_offset += 8;
-	}
+	/* Pop the return address off the stack */
+	amd64_pop_reg (code, AMD64_R11);
+	orig_rsp_to_rbp_offset += 8;
 
 	/* 
 	 * Allocate a new stack frame
@@ -289,19 +265,15 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	offset += 8;
 	arg_offset = - offset;
 
-	if (tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
-		/* Compute the trampoline address from the return address */
-		if (aot) {
-			/* 7 = length of call *<offset>(rip) */
-			amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 7);
-		} else {
-			/* 5 = length of amd64_call_membase () */
-			amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 5);
-		}
-		amd64_mov_membase_reg (code, AMD64_RBP, tramp_offset, AMD64_R11, 8);
+	/* Compute the trampoline address from the return address */
+	if (aot) {
+		/* 7 = length of call *<offset>(rip) */
+		amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 7);
 	} else {
-		amd64_mov_membase_imm (code, AMD64_RBP, tramp_offset, 0, 8);
+		/* 5 = length of amd64_call_membase () */
+		amd64_alu_reg_imm (code, X86_SUB, AMD64_R11, 5);
 	}
+	amd64_mov_membase_reg (code, AMD64_RBP, tramp_offset, AMD64_R11, 8);
 
 	offset += 8;
 	res_offset = - offset;
@@ -649,6 +621,43 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	g_assert (buf - code <= tramp_size);
 
 	return code;
+}
+
+gpointer
+mono_arch_create_generic_class_init_trampoline (void)
+{
+	guint8 *tramp;
+	guint8 *code, *buf;
+	static int byte_offset = -1;
+	static guint8 bitmask;
+	guint8 *jump;
+	int tramp_size;
+
+	tramp_size = 64;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	if (byte_offset < 0)
+		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+	amd64_test_membase_imm_size (code, MONO_AMD64_ARG_REG1, byte_offset, bitmask, 1);
+	jump = code;
+	amd64_branch8 (code, X86_CC_Z, -1, 1);
+
+	amd64_ret (code);
+
+	x86_patch (jump, code);
+
+	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), NULL);
+
+	/* jump to the actual trampoline */
+	amd64_jump_code (code, tramp);
+
+	mono_arch_flush_icache (code, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	return buf;
 }
 
 void

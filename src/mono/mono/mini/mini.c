@@ -8009,7 +8009,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					call = mono_emit_call_args (cfg, bblock, sig, NULL, FALSE, FALSE, ip, FALSE);
 					call->inst.opcode = OP_TRAMPCALL_VTABLE;
-					call->fptr = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+					call->fptr = mono_create_generic_class_init_trampoline ();
 
 					call->inst.inst_left = vtable;
 
@@ -11535,7 +11535,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
-		target = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
+		target = mono_create_generic_class_init_trampoline ();
 		break;
 	default:
 		g_assert_not_reached ();
