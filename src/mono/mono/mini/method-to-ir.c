@@ -3891,7 +3891,7 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 }
 
 static void
-mono_save_args (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **sp, MonoInst **args)
+mono_save_args (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **sp)
 {
 	MonoInst *store, *temp;
 	int i;
@@ -3908,8 +3908,9 @@ mono_save_args (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **sp, MonoI
 		 * inline_method () if needed.
 		 */
 		temp = mono_compile_create_var (cfg, argtype, OP_LOCAL);
-		*args++ = temp;
-		EMIT_NEW_TEMPSTORE (cfg, store, temp->inst_c0, *sp);
+		cfg->args [i] = temp;
+		/* This uses cfg->args [i] which is set by the preceeding line */
+		EMIT_NEW_ARGSTORE (cfg, store, i, *sp);
 		store->cil_code = sp [0]->cil_code;
 		sp++;
 	}
@@ -5006,6 +5007,13 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 	if (cfg->verbose_level > 2)
 		printf ("method to IR %s\n", mono_method_full_name (method, TRUE));
 
+	param_types = mono_mempool_alloc (cfg->mempool, sizeof (MonoType*) * num_args);
+	if (sig->hasthis)
+		param_types [0] = method->klass->valuetype?&method->klass->this_arg:&method->klass->byval_arg;
+	for (n = 0; n < sig->param_count; ++n)
+		param_types [n + sig->hasthis] = sig->params [n];
+	cfg->arg_types = param_types;
+
 	dont_inline = g_list_prepend (dont_inline, method);
 	if (cfg->method == method) {
 
@@ -5123,8 +5131,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 	} else {
 		arg_array = alloca (sizeof (MonoInst *) * num_args);
 		cfg->cbb = start_bblock;
-		mono_save_args (cfg, sig, inline_args, arg_array);
 		cfg->args = arg_array;
+		mono_save_args (cfg, sig, inline_args);
 	}
 
 	/* FIRST CODE BLOCK */
@@ -5259,12 +5267,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 	if (cfg->method == method)
 		mono_debug_init_method (cfg, bblock, breakpoint_id);
 
-	param_types = mono_mempool_alloc (cfg->mempool, sizeof (MonoType*) * num_args);
-	if (sig->hasthis)
-		param_types [0] = method->klass->valuetype?&method->klass->this_arg:&method->klass->byval_arg;
-	for (n = 0; n < sig->param_count; ++n)
-		param_types [n + sig->hasthis] = sig->params [n];
-	cfg->arg_types = param_types;
 	for (n = 0; n < header->num_locals; ++n) {
 		if (header->locals [n]->type == MONO_TYPE_VOID && !header->locals [n]->byref)
 			UNVERIFIED;
