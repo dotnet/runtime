@@ -7466,7 +7466,7 @@ mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
 gboolean
 mono_class_generic_sharing_enabled (MonoClass *class)
 {
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__arm__)
 	static gboolean supported = TRUE;
 #else
 	/* Not supported by the JIT backends */
