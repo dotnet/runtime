@@ -262,25 +262,33 @@ sigint_handler (int signo)
 	in_sigint = FALSE;
 }
 
+static struct sigaction save_sigcont, save_sigint;
+
 static void
-sigcont_handler (int signo)
+sigcont_handler (int signo, void *the_siginfo, void *data)
 {
 	// Ignore error, there is not much we can do in the sigcont handler.
 	tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr);
 
 	if (keypad_xmit_str != NULL)
 		write (STDOUT_FILENO, keypad_xmit_str, strlen (keypad_xmit_str));
-}
 
-static struct sigaction save_sigcont, save_sigint;
+	if (save_sigcont.sa_sigaction != NULL &&
+	    save_sigcont.sa_sigaction != (void *)SIG_DFL &&
+	    save_sigcont.sa_sigaction != (void *)SIG_IGN)
+		(*save_sigcont.sa_sigaction) (signo, the_siginfo, data);
+}
 
 void
 console_set_signal_handlers ()
 {
 	struct sigaction sigcont, sigint;
 
+	memset (&sigcont, 0, sizeof (struct sigaction));
+	memset (&sigint, 0, sizeof (struct sigaction));
+	
 	// Continuing
-	sigcont.sa_handler = sigcont_handler;
+	sigcont.sa_handler = (void *) sigcont_handler;
 	sigcont.sa_flags = 0;
 	sigemptyset (&sigcont.sa_mask);
 	sigaction (SIGCONT, &sigcont, &save_sigcont);
