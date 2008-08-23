@@ -437,20 +437,94 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	return code;
 }
 
+#define arm_is_imm12(v) ((int)(v) > -4096 && (int)(v) < 4096)
+
 gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;
 	int tramp_size;
 	guint32 code_len;
+	guint8 **rgctx_null_jumps;
+	int depth, index;
+	int i, njumps;
+	gboolean mrgctx;
 
-	tramp_size = 64;
+	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
+	index = MONO_RGCTX_SLOT_INDEX (slot);
+	if (mrgctx)
+		index += sizeof (MonoMethodRuntimeGenericContext) / sizeof (gpointer);
+	for (depth = 0; ; ++depth) {
+		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
+
+		if (index < size - 1)
+			break;
+		index -= size - 1;
+	}
+
+	tramp_size = 64 + 16 * depth;
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
-	// FIXME: Implement the fastpath
-	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (encoded_offset), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
+	rgctx_null_jumps = g_malloc (sizeof (guint8*) * (depth + 2));
+	njumps = 0;
+
+	/* The vtable/mrgctx is in R0 */
+	g_assert (MONO_ARCH_VTABLE_REG == ARMREG_R0);
+
+	if (mrgctx) {
+		/* get mrgctx ptr */
+		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_R0);
+ 	} else {
+		/* load rgctx ptr from vtable */
+		g_assert (arm_is_imm12 (G_STRUCT_OFFSET (MonoVTable, runtime_generic_context)));
+		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_R0, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
+		/* is the rgctx ptr null? */
+		ARM_CMP_REG_IMM (code, ARMREG_R1, 0, 0);
+		/* if yes, jump to actual trampoline */
+		rgctx_null_jumps [njumps ++] = code;
+		ARM_B_COND (code, ARMCOND_EQ, 0);
+	}
+
+	for (i = 0; i < depth; ++i) {
+		/* load ptr to next array */
+		if (mrgctx && i == 0) {
+			g_assert (arm_is_imm12 (sizeof (MonoMethodRuntimeGenericContext)));
+			ARM_LDR_IMM (code, ARMREG_R1, ARMREG_R1, sizeof (MonoMethodRuntimeGenericContext));
+		} else {
+			ARM_LDR_IMM (code, ARMREG_R1, ARMREG_R1, 0);
+		}
+		/* is the ptr null? */
+		ARM_CMP_REG_IMM (code, ARMREG_R1, 0, 0);
+		/* if yes, jump to actual trampoline */
+		rgctx_null_jumps [njumps ++] = code;
+		ARM_B_COND (code, ARMCOND_EQ, 0);
+	}
+
+	/* fetch slot */
+	code = mono_arm_emit_load_imm (code, ARMREG_R2, sizeof (gpointer) * (index + 1));
+	ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_R1, ARMREG_R2);
+	/* is the slot null? */
+	ARM_CMP_REG_IMM (code, ARMREG_R1, 0, 0);
+	/* if yes, jump to actual trampoline */
+	rgctx_null_jumps [njumps ++] = code;
+	ARM_B_COND (code, ARMCOND_EQ, 0);
+	/* otherwise return, result is in R1 */
+	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_R1);
+	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_LR);
+
+	g_assert (njumps <= depth + 2);
+	for (i = 0; i < njumps; ++i)
+		arm_patch (rgctx_null_jumps [i], code);
+
+	g_free (rgctx_null_jumps);
+
+	/* Slowpath */
+
+	/* The vtable/mrgctx is still in R0 */
+
+	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
 
 	/* Jump to the actual trampoline */
 	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
