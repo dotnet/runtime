@@ -323,7 +323,8 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 		return FALSE;
 
 	mono_attr = initial_attr;
-	mono_attr.c_lflag &= ~(ICANON | IXON | IXOFF);
+	mono_attr.c_lflag &= ~(ICANON);
+	mono_attr.c_iflag &= ~(IXON|IXOFF);
 	mono_attr.c_cc [VMIN] = 1;
 	mono_attr.c_cc [VTIME] = 0;
 	if (tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr) == -1)
