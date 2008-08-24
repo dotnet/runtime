@@ -9706,8 +9706,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				for (i = 0; i < header->num_clauses; ++i) {
 					MonoExceptionClause *clause = &header->clauses [i];
-					if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && !(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY))
+					if (MONO_OFFSET_IN_HANDLER (clause, ip - header->code) && !(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
 						handler_offset = clause->handler_offset;
+						break;
+					}
 				}
 
 				bblock->flags |= BB_EXCEPTION_UNSAFE;

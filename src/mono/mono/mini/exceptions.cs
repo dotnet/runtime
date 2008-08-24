@@ -2208,6 +2208,30 @@ class Tests {
 		return i;
 	}
 
+	public static void rethrow () {
+		try {
+			throw new ApplicationException();
+		} catch (ApplicationException) {
+			try {
+				throw new OverflowException();
+			} catch (Exception) {
+				throw;
+			}
+		}
+	}
+
+	// Test that a rethrow rethrows the correct exception
+	public static int test_0_rethrow_nested () {
+		try {
+			rethrow ();
+		} catch (OverflowException) {
+			return 0;
+		} catch (Exception) {
+			return 1;
+		}
+		return 2;
+	}
+
 	/* MarshalByRefObject prevents the methods from being inlined */
 	class ThrowClass : MarshalByRefObject {
 		public static void rethrow1 () {
