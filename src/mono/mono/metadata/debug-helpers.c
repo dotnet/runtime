@@ -142,12 +142,20 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 		g_string_append (res, "<");
 		context = &type->data.generic_class->context;
 		if (context->class_inst) {
-			for (i = 0; i < context->class_inst->type_argc; ++i)
+			for (i = 0; i < context->class_inst->type_argc; ++i) {
+				if (i > 0)
+					g_string_append (res, ", ");
 				mono_type_get_desc (res, context->class_inst->type_argv [i], include_namespace);
+			}
 		}
 		if (context->method_inst) {
-			for (i = 0; i < context->method_inst->type_argc; ++i)
+			if (context->class_inst
+)					g_string_append (res, "; ");
+			for (i = 0; i < context->method_inst->type_argc; ++i) {
+				if (i > 0)
+					g_string_append (res, ", ");
 				mono_type_get_desc (res, context->method_inst->type_argv [i], include_namespace);
+			}
 		}
 		g_string_append (res, ">");
 		break;
