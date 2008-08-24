@@ -7319,7 +7319,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (context_used) {
 					MonoInst *iargs [2];
 
-					g_assert (!method->klass->valuetype);
+					GENERIC_SHARING_FAILURE_IF_VALUETYPE_METHOD (*ip);
 
 					/* obj */
 					iargs [0] = *sp;

@@ -3302,6 +3302,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	MonoJumpInfo *patch_info;
 	gboolean skip;
 	int index;
+	MonoMethod *wrapped;
 
 	if (acfg->aot_opts.metadata_only)
 		return;
@@ -3317,6 +3318,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+		return;
+
+	wrapped = mono_marshal_method_from_wrapper (method);
+	if (wrapped && (wrapped->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && wrapped->is_generic)
+		// FIXME: The wrapper should be generic too, but it is not
 		return;
 
 	acfg->stats.mcount++;
