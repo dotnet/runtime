@@ -6806,13 +6806,13 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 	if (!klass)
 		return NULL;
 	for (mod = info->nested; mod; mod = mod->next) {
-		GList *nested;
+		gpointer iter = NULL;
+		MonoClass *parent;
 
-		mono_class_init (klass);
-		nested = klass->nested_classes;
-		klass = NULL;
-		while (nested) {
-			klass = nested->data;
+		parent = klass;
+		mono_class_init (parent);
+
+		while ((klass = mono_class_get_nested_types (parent, &iter))) {
 			if (ignorecase) {
 				if (g_strcasecmp (klass->name, mod->data) == 0)
 					break;
@@ -6820,8 +6820,6 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 				if (strcmp (klass->name, mod->data) == 0)
 					break;
 			}
-			klass = NULL;
-			nested = nested->next;
 		}
 		if (!klass)
 			break;
@@ -9923,6 +9921,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 			klass->nested_classes = g_list_prepend_mempool (klass->image->mempool, klass->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
 		}
 	}
+
+	klass->nested_classes_inited = TRUE;
 
 	/* fields and object layout */
 	if (klass->parent) {

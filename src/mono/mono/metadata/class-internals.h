@@ -300,6 +300,7 @@ struct _MonoClass {
 	 * during object creation rather than having to traverse supertypes
 	 */
 	guint is_com_object : 1; 
+	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
 

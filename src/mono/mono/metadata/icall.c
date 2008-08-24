@@ -4084,8 +4084,8 @@ ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint3
 	MonoDomain *domain; 
 	MonoClass *klass;
 	MonoClass *nested;
-	GList *tmpn;
 	char *str;
+	gpointer iter;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -4111,9 +4111,9 @@ ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint3
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
 
-	for (tmpn = klass->nested_classes; tmpn; tmpn = tmpn->next) {
+	iter = NULL;
+	while ((nested = mono_class_get_nested_types (klass, &iter))) {
 		int match = 0;
-		nested = tmpn->data;
 		if ((nested->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NESTED_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;
@@ -4138,12 +4138,12 @@ static MonoArray*
 ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 {
 	MonoDomain *domain; 
-	GList *tmpn;
 	MonoClass *klass;
 	MonoArray *res;
 	MonoObject *member;
 	int i, len, match;
 	MonoClass *nested;
+	gpointer iter;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -4169,9 +4169,9 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	i = 0;
 	len = 1;
 	res = mono_array_new (domain, mono_defaults.monotype_class, len);
-	for (tmpn = klass->nested_classes; tmpn; tmpn = tmpn->next) {
+	iter = NULL;
+	while ((nested = mono_class_get_nested_types (klass, &iter))) {
 		match = 0;
-		nested = tmpn->data;
 		if ((nested->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NESTED_PUBLIC) {
 			if (bflags & BFLAGS_Public)
 				match++;

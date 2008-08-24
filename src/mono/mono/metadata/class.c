@@ -112,7 +112,7 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 		MonoClass *enclosing = mono_class_from_typeref (image, MONO_TOKEN_TYPE_REF | idx);
 		GList *tmp;
 
-		if (enclosing->inited) {
+		if (enclosing->nested_classes_inited) {
 			/* Micro-optimization: don't scan the metadata tables if enclosing is already inited */
 			for (tmp = enclosing->nested_classes; tmp; tmp = tmp->next) {
 				res = tmp->data;
@@ -3647,18 +3647,8 @@ mono_class_init (MonoClass *class)
 
 	has_cached_info = mono_class_get_cached_class_info (class, &cached_info);
 
-	if (!class->generic_class && !class->image->dynamic && (!has_cached_info || (has_cached_info && cached_info.has_nested_classes))) {
-		i = mono_metadata_nesting_typedef (class->image, class->type_token, 1);
-		while (i) {
-			MonoClass* nclass;
-			guint32 cols [MONO_NESTED_CLASS_SIZE];
-			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
-			nclass = mono_class_create_from_typedef (class->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
-			class->nested_classes = g_list_prepend_mempool (class->nested_classes, class->image->mempool, nclass);
-
-			i = mono_metadata_nesting_typedef (class->image, class->type_token, i + 1);
-		}
-	}
+	if (class->generic_class || class->image->dynamic || !class->type_token || (has_cached_info && !cached_info.has_nested_classes))
+		class->nested_classes_inited = TRUE;
 
 	/*
 	 * Computes the size used by the fields, and their locations
@@ -5544,17 +5534,18 @@ mono_class_from_name_case (MonoImage *image, const char* name_space, const char 
 }
 
 static MonoClass*
-return_nested_in (MonoClass *class, char *nested) {
+return_nested_in (MonoClass *class, char *nested)
+{
 	MonoClass *found;
 	char *s = strchr (nested, '/');
-	GList *tmp;
+	gpointer iter = NULL;
 
 	if (s) {
 		*s = 0;
 		s++;
 	}
-	for (tmp = class->nested_classes; tmp; tmp = tmp->next) {
-		found = tmp->data;
+
+	while ((found = mono_class_get_nested_types (class, &iter))) {
 		if (strcmp (found->name, nested) == 0) {
 			if (s)
 				return return_nested_in (found, s);
@@ -6573,10 +6564,33 @@ MonoClass*
 mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 {
 	GList *item;
+	int i;
+
 	if (!iter)
 		return NULL;
 	if (!klass->inited)
 		mono_class_init (klass);
+	if (!klass->nested_classes_inited) {
+		if (!klass->type_token)
+			klass->nested_classes_inited = TRUE;
+		mono_loader_lock ();
+		if (!klass->nested_classes_inited) {
+			i = mono_metadata_nesting_typedef (klass->image, klass->type_token, 1);
+			while (i) {
+				MonoClass* nclass;
+				guint32 cols [MONO_NESTED_CLASS_SIZE];
+				mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
+				nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
+				klass->nested_classes = g_list_prepend_mempool (klass->nested_classes, klass->image->mempool, nclass);
+
+				i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
+			}
+		}
+		mono_memory_barrier ();
+		klass->nested_classes_inited = TRUE;
+		mono_loader_unlock ();
+	}
+
 	if (!*iter) {
 		/* start from the first */
 		if (klass->nested_classes) {
