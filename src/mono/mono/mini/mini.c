@@ -2151,6 +2151,13 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			printf ("  Create LVAR R%d (R%d, R%d)\n", inst->dreg, inst->dreg + 1, inst->dreg + 2);
 		}
 
+#ifdef MONO_ARCH_SOFT_FLOAT
+		if (cfg->opt & MONO_OPT_SSA) {
+			if (mono_type_is_float (type))
+				inst->flags = MONO_INST_VOLATILE;
+		}
+#endif
+
 		/* Allocate a dummy MonoInst for the first vreg */
 		MONO_INST_NEW (cfg, tree, OP_LOCAL);
 		tree->dreg = inst->dreg + 1;
