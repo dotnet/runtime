@@ -4011,15 +4011,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
-
 	/* store runtime generic context */
 	if (cfg->rgctx_var) {
 		g_assert (cfg->rgctx_var->opcode == OP_REGOFFSET && cfg->rgctx_var->inst_basereg == X86_EBP);
 
 		x86_mov_membase_reg (code, X86_EBP, cfg->rgctx_var->inst_offset, MONO_ARCH_RGCTX_REG, 4);
 	}
+
+	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
 	/* load arguments allocated to register from the stack */
 	sig = mono_method_signature (method);
