@@ -2746,6 +2746,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	int i, buf_size;
 	char *symbol;
 	gboolean no_special_static, cant_encode;
+	gpointer iter = NULL;
 
 	buf_size = 10240 + (klass->vtable_size * 16);
 	p = buf = g_malloc (buf_size);
@@ -2753,6 +2754,9 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	g_assert (klass);
 
 	mono_class_init (klass);
+
+	mono_class_get_nested_types (klass, &iter);
+	g_assert (klass->nested_classes_inited);
 
 	mono_class_setup_vtable (klass);
 
