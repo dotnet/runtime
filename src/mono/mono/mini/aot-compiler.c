@@ -2070,8 +2070,13 @@ get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 static int
 add_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-	int index = acfg->method_index;
+	int index;
 
+	index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_indexes, method));
+	if (index)
+		return index - 1;
+
+	index = acfg->method_index;
 	add_method_with_index (acfg, method, index);
 
 	/* FIXME: Fix quadratic behavior */
@@ -2188,8 +2193,7 @@ add_wrappers (MonoAotCompile *acfg)
 
 		method = mono_get_method (acfg->image, token, NULL);
 
-		if (!strcmp (method->name, "Main"))
-			add_method (acfg, mono_marshal_get_runtime_invoke (method));
+		add_method (acfg, mono_marshal_get_runtime_invoke (method));
 	}
 
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
