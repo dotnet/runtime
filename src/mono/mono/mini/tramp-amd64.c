@@ -541,6 +541,15 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 {
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
+	return mono_arch_create_rgctx_lazy_fetch_trampoline_full (slot, &code_size, &ji, FALSE);
+}
+
+gpointer
+mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+{
 	guint8 *tramp;
 	guint8 *code, *buf;
 	guint8 **rgctx_null_jumps;
@@ -548,6 +557,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 	int depth, index;
 	int i;
 	gboolean mrgctx;
+
+	*ji = NULL;
 
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
@@ -569,58 +580,64 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 
 	if (mrgctx) {
 		/* get mrgctx ptr */
-		amd64_mov_reg_reg (buf, AMD64_RAX, AMD64_ARG_REG1, 8);
+		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
 	} else {
 		/* load rgctx ptr from vtable */
-		amd64_mov_reg_membase (buf, AMD64_RAX, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), 8);
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), 8);
 		/* is the rgctx ptr null? */
-		amd64_test_reg_reg (buf, AMD64_RAX, AMD64_RAX);
+		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 		/* if yes, jump to actual trampoline */
-		rgctx_null_jumps [0] = buf;
-		amd64_branch8 (buf, X86_CC_Z, -1, 1);
+		rgctx_null_jumps [0] = code;
+		amd64_branch8 (code, X86_CC_Z, -1, 1);
 	}
 
 	for (i = 0; i < depth; ++i) {
 		/* load ptr to next array */
 		if (mrgctx && i == 0)
-			amd64_mov_reg_membase (buf, AMD64_RAX, AMD64_RAX, sizeof (MonoMethodRuntimeGenericContext), 8);
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, sizeof (MonoMethodRuntimeGenericContext), 8);
 		else
-			amd64_mov_reg_membase (buf, AMD64_RAX, AMD64_RAX, 0, 8);
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, 0, 8);
 		/* is the ptr null? */
-		amd64_test_reg_reg (buf, AMD64_RAX, AMD64_RAX);
+		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 		/* if yes, jump to actual trampoline */
-		rgctx_null_jumps [i + 1] = buf;
-		amd64_branch8 (buf, X86_CC_Z, -1, 1);
+		rgctx_null_jumps [i + 1] = code;
+		amd64_branch8 (code, X86_CC_Z, -1, 1);
 	}
 
 	/* fetch slot */
-	amd64_mov_reg_membase (buf, AMD64_RAX, AMD64_RAX, sizeof (gpointer) * (index + 1), 8);
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RAX, sizeof (gpointer) * (index + 1), 8);
 	/* is the slot null? */
-	amd64_test_reg_reg (buf, AMD64_RAX, AMD64_RAX);
+	amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 	/* if yes, jump to actual trampoline */
-	rgctx_null_jumps [depth + 1] = buf;
-	amd64_branch8 (buf, X86_CC_Z, -1, 1);
+	rgctx_null_jumps [depth + 1] = code;
+	amd64_branch8 (code, X86_CC_Z, -1, 1);
 	/* otherwise return */
-	amd64_ret (buf);
+	amd64_ret (code);
 
 	for (i = mrgctx ? 1 : 0; i <= depth + 1; ++i)
-		x86_patch (rgctx_null_jumps [i], buf);
+		x86_patch (rgctx_null_jumps [i], code);
 
 	g_free (rgctx_null_jumps);
 
 	/* move the rgctx pointer to the VTABLE register */
-	amd64_mov_reg_reg (buf, MONO_ARCH_VTABLE_REG, AMD64_ARG_REG1, 8);
+	amd64_mov_reg_reg (code, MONO_ARCH_VTABLE_REG, AMD64_ARG_REG1, 8);
 
-	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, g_strdup_printf ("specific_trampoline_lazy_fetch_%u", slot));
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+		amd64_jump_reg (code, AMD64_R11);
+	} else {
+		tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 
-	/* jump to the actual trampoline */
-	amd64_jump_code (buf, tramp);
+		/* jump to the actual trampoline */
+		amd64_jump_code (code, tramp);
+	}
 
-	mono_arch_flush_icache (code, buf - code);
+	mono_arch_flush_icache (buf, code - buf);
 
-	g_assert (buf - code <= tramp_size);
+	g_assert (code - buf <= tramp_size);
 
-	return code;
+	return buf;
 }
 
 gpointer
@@ -653,7 +670,7 @@ mono_arch_create_generic_class_init_trampoline (void)
 	/* jump to the actual trampoline */
 	amd64_jump_code (code, tramp);
 
-	mono_arch_flush_icache (code, code - buf);
+	mono_arch_flush_icache (buf, code - buf);
 
 	g_assert (code - buf <= tramp_size);
 

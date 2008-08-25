@@ -2114,9 +2114,10 @@ get_runtime_invoke_sig (MonoMethodSignature *sig)
 static void
 add_wrappers (MonoAotCompile *acfg)
 {
-	MonoMethod *m;
+	MonoMethod *method, *m;
 	int i, nallocators;
 	MonoMethodSignature *csig;
+	guint32 token;
 
 	/* 
 	 * FIXME: Instead of AOTing all the wrappers, it might be better to redesign them
@@ -2183,7 +2184,6 @@ add_wrappers (MonoAotCompile *acfg)
 	add_method (acfg, get_runtime_invoke_sig (csig));
 
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
 
 		method = mono_get_method (acfg->image, token, NULL);
@@ -2211,10 +2211,9 @@ add_wrappers (MonoAotCompile *acfg)
 
 	/* remoting-invoke wrappers */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		MonoMethod *method;
 		MonoMethodSignature *sig;
-		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
-
+		
+		token = MONO_TOKEN_METHOD_DEF | (i + 1);
 		method = mono_get_method (acfg->image, token, NULL);
 
 		sig = mono_method_signature (method);
@@ -2226,6 +2225,23 @@ add_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, m);
 		}
 	}
+
+#if 0
+	/* static rgctx wrappers */
+	/* FIXME: Each wrapper belongs to a given instantiation of a generic method */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		method = mono_get_method (acfg->image, token, NULL);
+
+		if (((method->flags & METHOD_ATTRIBUTE_STATIC) ||
+			 (method->is_inflated && mono_method_get_context (method)->method_inst)) &&
+			mono_class_generic_sharing_enabled (method->klass) &&
+			mono_method_is_generic_sharable_impl (method, FALSE)) {
+			m = mono_marshal_get_static_rgctx_invoke (method);
+			add_method (acfg, m);
+		}
+	}
+#endif
 }
 
 static void
@@ -3086,6 +3102,24 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_named_code (acfg, "throw_exception_by_name", code, code_size, acfg->got_offset, ji);
 		code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
 		emit_named_code (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji);
+
+#ifdef __x86_64__
+		for (i = 0; i < 128; ++i) {
+			int offset;
+
+			offset = MONO_RGCTX_SLOT_MAKE_RGCTX (i);
+			code = mono_arch_create_rgctx_lazy_fetch_trampoline_full (offset, &code_size, &ji, TRUE);
+			symbol = g_strdup_printf ("rgctx_fetch_trampoline_%u", offset);
+			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji);
+			g_free (symbol);
+
+			offset = MONO_RGCTX_SLOT_MAKE_MRGCTX (i);
+			code = mono_arch_create_rgctx_lazy_fetch_trampoline_full (offset, &code_size, &ji, TRUE);
+			symbol = g_strdup_printf ("rgctx_fetch_trampoline_%u", offset);
+			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji);
+			g_free (symbol);
+		}
+#endif
 #endif
 
 		/*

@@ -873,6 +873,9 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 
 	gpointer tramp, ptr;
 
+	if (mono_aot_only)
+		return mono_aot_get_lazy_fetch_trampoline (offset);
+
 	mono_trampolines_lock ();
 	if (rgctx_lazy_fetch_trampoline_hash)
 		tramp = g_hash_table_lookup (rgctx_lazy_fetch_trampoline_hash, GUINT_TO_POINTER (offset));

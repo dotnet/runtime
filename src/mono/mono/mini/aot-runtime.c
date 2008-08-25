@@ -2500,7 +2500,8 @@ load_named_code (MonoAotModule *amodule, const char *name)
 	symbol = g_strdup_printf ("%s", name);
 	find_symbol (amodule->sofile, amodule->globals, symbol, (gpointer *)&code);
 	g_free (symbol);
-	g_assert (code);
+	if (!code)
+		g_error ("Symbol '%s' not found in AOT file '%s'.\n", name, amodule->aot_name);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND function '%s' in AOT file '%s'.\n", name, amodule->aot_name);
 
@@ -2556,8 +2557,11 @@ load_named_code (MonoAotModule *amodule, const char *name)
 				} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
 					int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));
 					target = (gpointer)mono_get_trampoline_func (tramp_type2);
+				} else if (strstr (ji->data.name, "specific_trampoline_lazy_fetch_") == ji->data.name) {
+					guint32 slot = atoi (ji->data.name + strlen ("specific_trampoline_lazy_fetch_"));
+					target = mono_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				} else {
-					fprintf (stderr, "%s\n", ji->data.name);
+					fprintf (stderr, "Unknown relocation '%s'\n", ji->data.name);
 					g_assert_not_reached ();
 					target = NULL;
 				}
@@ -2667,6 +2671,18 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 
 	symbol = g_strdup_printf ("unbox_trampoline_%d", method_index);
 	code = load_named_code (amodule, symbol);
+	g_free (symbol);
+	return code;
+}
+
+gpointer
+mono_aot_get_lazy_fetch_trampoline (guint32 slot)
+{
+	char *symbol;
+	gpointer code;
+
+	symbol = g_strdup_printf ("rgctx_fetch_trampoline_%u", slot);
+	code = load_named_code (mono_defaults.corlib->aot_module, symbol);
 	g_free (symbol);
 	return code;
 }
