@@ -1180,9 +1180,9 @@ init_com_provider_ms (void)
 gpointer
 mono_string_to_bstr (MonoString *string_obj)
 {
-#ifdef PLATFORM_WIN32
 	if (!string_obj)
 		return NULL;
+#ifdef PLATFORM_WIN32
 	return SysAllocStringLen (mono_string_chars (string_obj), mono_string_length (string_obj));
 #else
 	if (com_provider == MONO_COM_DEFAULT) {
@@ -1216,9 +1216,9 @@ mono_string_to_bstr (MonoString *string_obj)
 MonoString *
 mono_string_from_bstr (gpointer bstr)
 {
-#ifdef PLATFORM_WIN32
 	if (!bstr)
 		return NULL;
+#ifdef PLATFORM_WIN32
 	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
 #else
 	if (com_provider == MONO_COM_DEFAULT) {
@@ -1242,6 +1242,8 @@ mono_string_from_bstr (gpointer bstr)
 void
 mono_free_bstr (gpointer bstr)
 {
+	if (!bstr)
+		return;
 #ifdef PLATFORM_WIN32
 	SysFreeString ((BSTR)bstr);
 #else
