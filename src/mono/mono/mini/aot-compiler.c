@@ -10,8 +10,6 @@
 
 /* Remaining AOT-only work:
  * - reduce the length of the wrapper names.
- * - during loading, collect the names into a hashtable to avoid linear
- *   searches.
  * - aot IMT tables, so we don't have two kinds of aot code.
  * - optimize the trampolines, generate more code in the arch files.
  * - make things more consistent with how elf works, for example, use ELF 
