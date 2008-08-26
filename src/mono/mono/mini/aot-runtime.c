@@ -75,6 +75,8 @@ typedef struct MonoAotModule {
 	guint32 got_size;
 	GHashTable *name_cache;
 	GHashTable *wrappers;
+	/* Maps wrapper names to their method index */
+	GHashTable *wrappers_by_name;
 	MonoAssemblyName *image_names;
 	char **image_guids;
 	MonoAssembly *assembly;
@@ -1832,23 +1834,32 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 
 		/* Try to find the wrapper among the wrapper info */
 		full_name = mono_method_full_name (method, TRUE);
-		p = (char*)aot_module->wrapper_info;
-		while (*p) {
-			char *end;
 
-			end = p + strlen (p) + 1;
-			end = ALIGN_PTR_TO (end, 4);
-			method_index = *(guint32*)end;
-			end += 4;
-			if (strcmp (full_name, p) == 0)
-				break;
-			p = end;
+		mono_aot_lock ();
+		/* Create a hash table to avoid repeated linear searches */
+		if (!aot_module->wrappers_by_name) {
+			aot_module->wrappers_by_name = g_hash_table_new (g_str_hash, g_str_equal);
+			p = (char*)aot_module->wrapper_info;
+			while (*p) {
+				char *end;
+
+				end = p + strlen (p) + 1;
+				end = ALIGN_PTR_TO (end, 4);
+				method_index = *(guint32*)end;
+				end += 4;
+				/* The + 1 is used to distinguish a 0 index from a not-found one */
+				g_hash_table_insert (aot_module->wrappers_by_name, p, GUINT_TO_POINTER (method_index + 1));
+				p = end;
+			}
 		}
-		g_free (full_name);
+		method_index = GPOINTER_TO_UINT (g_hash_table_lookup (aot_module->wrappers_by_name, full_name));
+		mono_aot_unlock ();
 
-		if (!(*p))
-			/* Not found */
+		g_free (full_name);
+		if (!method_index)
 			return NULL;
+
+		method_index --;
 
 		/* Needed by find_jit_info */
 		mono_aot_lock ();
