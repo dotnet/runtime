@@ -326,7 +326,7 @@ public class GenABDeriv<T> : GenA<GenB<T>> {
 
 public class NonGenUser<T> where T : NonGen {
 	public int getNonGenField () {
-		return T.field;
+		return NonGen.field;
 	}
 }
 
