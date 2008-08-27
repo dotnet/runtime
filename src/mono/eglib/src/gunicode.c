@@ -51,6 +51,27 @@ static char *my_charset;
 static gboolean is_utf8;
 
 /*
+ * Character set conversion
+ */
+/*
+* Index into the table below with the first byte of a UTF-8 sequence to
+* get the number of trailing bytes that are supposed to follow it.
+* Note that *legal* UTF-8 values can't have 4 or 5-bytes. The table is
+* left as-is for anyone who may want to do such conversion, which was
+* allowed in earlier algorithms.
+*/
+const gchar g_trailingBytesForUTF8 [256] = {
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,4,4,4,4,5,5,0,0
+};
+
+/*
 * Magic values subtracted from a buffer value during UTF8 conversion.
 * This table contains as many values as there might be trailing bytes
 * in a UTF-8 sequence.
@@ -235,7 +256,7 @@ g_locale_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read, gsiz
 gboolean
 g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 {
-	glong byteCount = 0;
+	gssize byteCount = 0;
 	gboolean retVal = TRUE;
 	gboolean lastRet = TRUE;
 	guchar* ptr = (guchar*) str;
@@ -247,7 +268,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 	else if (max_len < 0)
 		byteCount = max_len;
 	while (*ptr != 0 && byteCount <= max_len) {
-		length = trailingBytesForUTF8 [*ptr] + 1;
+		length = g_trailingBytesForUTF8 [*ptr] + 1;
 		srcPtr = (guchar*) ptr + length;
 		switch (length) {
 		default: retVal = FALSE;
@@ -279,7 +300,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 		//If the string is invalid, set the end to the invalid byte.
 		if (!retVal && lastRet) {
 			if (end != NULL)
-				*end = ptr;
+				*end = (gchar*) ptr;
 			lastRet = FALSE;
 		}
 		ptr += length;
@@ -287,7 +308,7 @@ g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
 			byteCount += length;
 	}
 	if (retVal && end != NULL)
-		*end = ptr;
+		*end = (gchar*) ptr;
 	return retVal;
 }
 /**
@@ -301,7 +322,7 @@ g_utf8_get_char (const gchar *src)
 {
 	gunichar ch = 0;
 	guchar* ptr = (guchar*) src;
-	gushort extraBytesToRead = trailingBytesForUTF8 [*ptr];
+	gushort extraBytesToRead = g_trailingBytesForUTF8 [*ptr];
 
 	switch (extraBytesToRead) {
 	case 5: ch += *ptr++; ch <<= 6; // remember, illegal UTF-8
@@ -317,7 +338,7 @@ g_utf8_get_char (const gchar *src)
 glong
 g_utf8_strlen (const gchar *str, gssize max)
 {
-	glong byteCount = 0;
+	gssize byteCount = 0;
 	guchar* ptr = (guchar*) str;
 	glong length = 0;
 	if (max == 0)
@@ -325,7 +346,7 @@ g_utf8_strlen (const gchar *str, gssize max)
 	else if (max < 0)
 		byteCount = max;
 	while (*ptr != 0 && byteCount <= max) {
-		guint cLen = trailingBytesForUTF8 [*ptr] + 1;
+		guint cLen = g_trailingBytesForUTF8 [*ptr] + 1;
 		if (max > 0 && (byteCount + cLen) > max)
 			return length;
 		ptr += cLen;

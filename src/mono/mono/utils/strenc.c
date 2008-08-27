@@ -280,14 +280,15 @@ mono_utf8_validate_and_len (const gchar *source, glong* oLength, const gchar** o
 		//If the string is invalid, set the end to the invalid byte.
 		if (!retVal && lastRet) {
 			if (oEnd != NULL)
-				*oEnd = ptr;
+				*oEnd = (gchar*) ptr;
 			lastRet = FALSE;
 		}
 		ptr += length;
 		(*oLength)++;
 	}
 	if (retVal && oEnd != NULL)
-		*oEnd = ptr;
+		*oEnd = (gchar*) ptr;
 	return retVal;
 }
+
 

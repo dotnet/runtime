@@ -1,3 +1,9 @@
+2008-08-27  Bill Holmes  <billholmes54@gmail.com>
+
+	* glib.h, gunicode.c : Fixing some compiler errors.
+
+	Contributed under MIT/X11 license.
+
 2008-08-20  Mike Voorhees <vernish13@gmail.com>
 
 	* Patch from Mike Voorhees to fix various problems with
