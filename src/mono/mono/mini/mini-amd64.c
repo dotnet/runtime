@@ -3953,8 +3953,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_X86_PUSH_MEMBASE:
 			amd64_push_membase (code, ins->inst_basereg, ins->inst_offset);
 			break;
-		case OP_X86_PUSH_OBJ: 
-			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, ins->inst_imm);
+		case OP_X86_PUSH_OBJ: {
+			int size = ALIGN_TO (ins->inst_imm, 8);
+			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, size);
 			amd64_push_reg (code, AMD64_RDI);
 			amd64_push_reg (code, AMD64_RSI);
 			amd64_push_reg (code, AMD64_RCX);
@@ -3962,7 +3963,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_lea_membase (code, AMD64_RSI, ins->inst_basereg, ins->inst_offset);
 			else
 				amd64_mov_reg_reg (code, AMD64_RSI, ins->inst_basereg, 8);
-			amd64_lea_membase (code, AMD64_RDI, AMD64_RSP, 3 * 8);
+			amd64_lea_membase (code, AMD64_RDI, AMD64_RSP, (3 * 8) + (size - ins->inst_imm));
 			amd64_mov_reg_imm (code, AMD64_RCX, (ins->inst_imm >> 3));
 			amd64_cld (code);
 			amd64_prefix (code, X86_REP_PREFIX);
@@ -3971,6 +3972,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_pop_reg (code, AMD64_RSI);
 			amd64_pop_reg (code, AMD64_RDI);
 			break;
+		}
 		case OP_X86_LEA:
 			amd64_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->backend.shift_amount);
 			break;
