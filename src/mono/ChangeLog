@@ -1,3 +1,7 @@
+2008-08-28  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/gacutil2: New file.
+
 2008-08-22  Jb Evain  <jbevain@novell.com>
 
 	* data/wcf.pc.in
