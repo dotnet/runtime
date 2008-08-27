@@ -1238,6 +1238,27 @@ mono_arch_unwindinfo_get_size (gpointer monoui)
 		(sizeof (UNWIND_CODE) * (MONO_MAX_UNWIND_CODES - unwindinfo->unwindInfo.CountOfCodes));
 }
 
+PRUNTIME_FUNCTION
+MONO_GET_RUNTIME_FUNCTION_CALLBACK ( DWORD64 ControlPc, IN PVOID Context )
+{
+	MonoJitInfo *ji;
+	guint64 pos;
+	PMonoUnwindInfo targetinfo;
+	MonoDomain *domain = mono_domain_get ();
+
+	ji = mono_jit_info_table_find (domain, (char*)ControlPc);
+	if (!ji)
+		return 0;
+
+	pos = (guint64)(((char*)ji->code_start) + ji->code_size);
+	
+	targetinfo = (PMonoUnwindInfo)ALIGN_TO (pos, 8);
+
+	targetinfo->runtimeFunction.UnwindData = ((DWORD64)&targetinfo->unwindInfo) - ((DWORD64)Context);
+
+	return &targetinfo->runtimeFunction;
+}
+
 void
 mono_arch_unwindinfo_install_unwind_info (gpointer* monoui, gpointer code, guint code_size)
 {
@@ -1265,7 +1286,7 @@ mono_arch_unwindinfo_install_unwind_info (gpointer* monoui, gpointer code, guint
 	g_free (unwindinfo);
 	*monoui = 0;
 
-	RtlAddFunctionTable (&targetinfo->runtimeFunction, 1, (DWORD64)code);
+	RtlInstallFunctionTableCallback (((DWORD64)code) | 0x3, (DWORD64)code, code_size, MONO_GET_RUNTIME_FUNCTION_CALLBACK, code, NULL);
 }
 
 #endif

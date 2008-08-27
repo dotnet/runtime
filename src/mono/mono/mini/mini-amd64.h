@@ -340,7 +340,7 @@ extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 void mono_arch_unwindinfo_add_push_nonvol (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
 void mono_arch_unwindinfo_add_set_fpreg (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
 void mono_arch_unwindinfo_add_alloc_stack (gpointer* monoui, gpointer codebegin, gpointer nextip, guint size );
-guint mono_arch_unwindinfo_get_size (gpointer* monoui);
+guint mono_arch_unwindinfo_get_size (gpointer monoui);
 void mono_arch_unwindinfo_install_unwind_info (gpointer* monoui, gpointer code, guint code_size);
 
 #define MONO_ARCH_HAVE_UNWIND_TABLE 1
