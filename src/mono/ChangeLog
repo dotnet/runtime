@@ -1,5 +1,7 @@
 2008-08-28  Zoltan Varga  <vargaz@gmail.com>
 
+	* scripts/Makefile.am (scripts_2_0): Add gacutil2.
+
 	* scripts/gacutil2: New file.
 
 2008-08-22  Jb Evain  <jbevain@novell.com>
