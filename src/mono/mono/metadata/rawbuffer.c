@@ -139,9 +139,11 @@ mono_raw_buffer_load_mmap (int fd, int is_writable, guint32 base, size_t size)
 	
 	return ((char *)ptr) + (base - start);
 
+#elif defined(__arm__) && defined(__MACH__)
+	/* The iPhone doesn't have a usable mmap implementation */
+	return NULL;
 #else
 	/* mmap implementation */
-
 
 	size_t start, end;
 	int prot = PROT_READ;
