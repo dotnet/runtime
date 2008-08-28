@@ -6768,6 +6768,12 @@ _mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, 
 
 	if (info->assembly.name) {
 		MonoAssembly *assembly = mono_assembly_loaded (&info->assembly);
+		if (!assembly && image && image->assembly && mono_assembly_names_equal (&info->assembly, &image->assembly->aname))
+			/* 
+			 * This could happen in the AOT compiler case when the search hook is not
+			 * installed.
+			 */
+			assembly = image->assembly;
 		if (!assembly) {
 			/* then we must load the assembly ourselve - see #60439 */
 			assembly = mono_assembly_load (&info->assembly, NULL, NULL);
