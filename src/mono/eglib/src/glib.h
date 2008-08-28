@@ -93,8 +93,13 @@ typedef uint16_t       gunichar2;
 #define EGLIB_TOSTRING(x) EGLIB_STRINGIFY(x)
 #define G_STRLOC __FILE__ ":" EGLIB_TOSTRING(__LINE__) ":"
 
+#ifdef  __cplusplus
+#define G_BEGIN_DECLS  extern "C" {
+#define G_END_DECLS    }
+#else
 #define G_BEGIN_DECLS
 #define G_END_DECLS
+#endif
  
 #define G_CONST_RETURN const
 
