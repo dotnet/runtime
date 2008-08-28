@@ -3346,7 +3346,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "static")) {
 			opts->static_link = TRUE;
 			opts->no_dlsym = TRUE;
-		} else if (str_begins_with (arg, "asm-only")) {
+		} else if (str_begins_with (arg, "asmonly")) {
 			opts->asm_only = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
