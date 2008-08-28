@@ -98,6 +98,7 @@ typedef struct MonoAotOptions {
 	gboolean full_aot;
 	gboolean no_dlsym;
 	gboolean static_link;
+	gboolean asm_only;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -1016,6 +1017,8 @@ emit_writeout (MonoAotCompile *acfg)
 	int i, num_sections, file_offset, virt_offset, size, num_symtab;
 	int num_local_syms;
 
+	g_assert (!acfg->aot_opts.asm_only);
+
 	if (acfg->aot_opts.outfile)
 		outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 	else
@@ -1276,8 +1279,16 @@ emit_writeout (MonoAotCompile *acfg)
 static void
 emit_start (MonoAotCompile *acfg)
 {
-	int i = g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL);
-	acfg->fp = fdopen (i, "w+");
+	if (acfg->aot_opts.asm_only) {
+		if (acfg->aot_opts.outfile)
+			acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
+		else
+			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
+		acfg->fp = fopen (acfg->tmpfname, "w+");
+	} else {
+		int i = g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL);
+		acfg->fp = fdopen (i, "w+");
+	}
 	g_assert (acfg->fp);
 }
 
@@ -1513,6 +1524,13 @@ emit_writeout (MonoAotCompile *acfg)
 #else
 #define AS_OPTIONS ""
 #endif
+
+	if (acfg->aot_opts.asm_only) {
+		printf ("Output file: '%s'.\n", acfg->tmpfname);
+		if (acfg->aot_opts.static_link)
+			printf ("Linking symbol: '%s'.\n", acfg->static_linking_symbol);
+		return 0;
+	}
 
 	if (acfg->aot_opts.static_link) {
 		if (acfg->aot_opts.outfile)
@@ -3328,6 +3346,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "static")) {
 			opts->static_link = TRUE;
 			opts->no_dlsym = TRUE;
+		} else if (str_begins_with (arg, "asm-only")) {
+			opts->asm_only = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
