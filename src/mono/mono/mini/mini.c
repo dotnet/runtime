@@ -11185,7 +11185,7 @@ mono_create_tls_get (MonoCompile *cfg, int offset)
 		return NULL;
 	
 	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->dreg = mono_regstate_next_int (cfg->rs);
+	ins->dreg = cfg->new_ir ? mono_alloc_preg (cfg) : mono_regstate_next_int (cfg->rs);
 	ins->inst_offset = offset;
 	return ins;
 #else
