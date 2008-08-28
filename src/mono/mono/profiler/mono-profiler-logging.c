@@ -229,7 +229,7 @@ static __inline__ guint64 rdtsc(void) {
 	}\
 } while (0)
 #else
-static detect_fast_timer (void) {
+static void detect_fast_timer (void) {
 	use_fast_timer = FALSE;
 }
 #define MONO_PROFILER_GET_CURRENT_COUNTER(c) MONO_PROFILER_GET_CURRENT_TIME ((c))
