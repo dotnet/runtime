@@ -118,6 +118,9 @@ run_finalize (void *obj, void *data)
 		}
 	}
 
+	if (mono_runtime_get_no_exec ())
+		return;
+
 	/* speedup later... and use a timeout */
 	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
 

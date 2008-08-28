@@ -1047,7 +1047,7 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 		/* we build just a single imt slot and this is not it */
 		return;
 	}
-	
+
 	entry = malloc (sizeof (MonoImtBuilderEntry));
 	entry->method = method;
 	entry->vtable_slot = vtable_slot;
@@ -2163,6 +2163,9 @@ static MonoInvokeFunc default_mono_runtime_invoke = dummy_mono_runtime_invoke;
 MonoObject*
 mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
+	if (mono_runtime_get_no_exec ())
+		g_warning ("Invoking method '%s' when running in no-exec mode.\n", mono_method_full_name (method, TRUE));
+
 	return default_mono_runtime_invoke (method, obj, params, exc);
 }
 

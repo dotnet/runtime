@@ -77,6 +77,8 @@ static gboolean process_guid_set = FALSE;
 
 static gboolean shutting_down = FALSE;
 
+static gboolean no_exec = FALSE;
+
 static MonoAssembly *
 mono_domain_assembly_preload (MonoAssemblyName *aname,
 			      gchar **assemblies_path,
@@ -112,6 +114,26 @@ mono_runtime_load (const char *filename, const char *runtime_version)
 {
 	g_assert (load_function);
 	return load_function (filename, runtime_version);
+}
+
+/*
+ * mono_runtime_set_no_exec:
+ *
+ *   Instructs the runtime to operate in static mode, i.e. avoid/do not allow managed
+ * code execution. This is useful for running the AOT compiler on platforms which
+ * allow full-aot execution only.
+ * This should be called before mono_runtime_init ().
+ */
+void
+mono_runtime_set_no_exec (gboolean val)
+{
+	no_exec = val;
+}
+
+gboolean
+mono_runtime_get_no_exec (void)
+{
+	return no_exec;
 }
 
 /**
@@ -170,22 +192,23 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	mono_type_initialization_init ();
 
+	if (!mono_runtime_get_no_exec ()) {
+		/*
+		 * Create an instance early since we can't do it when there is no memory.
+		 */
+		arg = mono_string_new (domain, "Out of memory");
+		domain->out_of_memory_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL);
 	
-	/*
-	 * Create an instance early since we can't do it when there is no memory.
-	 */
-	arg = mono_string_new (domain, "Out of memory");
-	domain->out_of_memory_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL);
-	
-	/* 
-	 * These two are needed because the signal handlers might be executing on
-	 * an alternate stack, and Boehm GC can't handle that.
-	 */
-	arg = mono_string_new (domain, "A null value was found where an object instance was required");
-	domain->null_reference_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL);
-	arg = mono_string_new (domain, "The requested operation caused a stack overflow.");
-	domain->stack_overflow_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL);
-	
+		/* 
+		 * These two are needed because the signal handlers might be executing on
+		 * an alternate stack, and Boehm GC can't handle that.
+		 */
+		arg = mono_string_new (domain, "A null value was found where an object instance was required");
+		domain->null_reference_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL);
+		arg = mono_string_new (domain, "The requested operation caused a stack overflow.");
+		domain->stack_overflow_ex = mono_exception_from_name_two_strings (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL);
+	}
+
 	/* GC init has to happen after thread init */
 	mono_gc_init ();
 
