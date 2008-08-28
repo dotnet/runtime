@@ -14587,17 +14587,18 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_generic_sharing_init ();
 
+	if (mono_compile_aot)
+		/* 
+		 * Avoid running managed code when AOT compiling, since the platform
+		 * might only support aot-only execution.
+		 */
+		mono_runtime_set_no_exec (TRUE);
+
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
 	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
-	/* 
-	 * Avoid initializing the runtime when AOT compiling, since the platform
-	 * might only support aot-only execution.
-	 */
-	if (!mono_compile_aot) {
-		mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
-		mono_thread_attach (domain);
-	}
+	mono_runtime_init (domain, mono_thread_start_cb, mono_thread_attach_cb);
+	mono_thread_attach (domain);
 #endif
 
 	mono_profiler_runtime_initialized ();
@@ -14720,8 +14721,7 @@ mini_cleanup (MonoDomain *domain)
 	/* This accesses metadata so needs to be called before runtime shutdown */
 	print_jit_stats ();
 
-	if (!mono_compile_aot)
-		mono_runtime_cleanup (domain);
+	mono_runtime_cleanup (domain);
 
 	mono_profiler_shutdown ();
 
