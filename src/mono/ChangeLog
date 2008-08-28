@@ -1,7 +1,15 @@
+2008-08-28  Geoff Norton  <gnorton@novell.com>
+
+	* build-iphone.sh: iPhone lies about HAVE_MMAP as well.
+
+2008-08-26  Geoff Norton  <gnorton@novell.com>
+
+	* build-iphone.sh: Update build-iphone to not wget old inssel's, and build
+	out of the box with teh current SDK.
+
 2008-08-28  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/Makefile.am (scripts_2_0): Add gacutil2.
-
 	* scripts/gacutil2: New file.
 
 2008-08-22  Jb Evain  <jbevain@novell.com>
