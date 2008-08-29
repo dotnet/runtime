@@ -14001,7 +14001,7 @@ mono_runtime_install_handlers (void)
 #else /* !PLATFORM_WIN32 */
 
 
-#ifdef PLATFORM_MACOSX
+#if defined(PLATFORM_MACOSX) && !defined(__arm__)
 	macosx_register_exception_handler ();
 #endif
 
