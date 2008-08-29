@@ -1308,8 +1308,10 @@ emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsect
 #if defined(PLATFORM_WIN32)
 	fprintf (acfg->fp, ".section %s\n", section_name);
 #elif defined(__MACH__)
-	/* This needs to be made more precise on mach. */
-	fprintf (acfg->fp, "%s\n", subsection_index == 0 ? ".text" : ".data");
+	if (strcmp(section_name, ".bss") == 0)
+		fprintf (acfg->fp, "%s\n", ".data");
+	else
+		fprintf (acfg->fp, "%s\n", section_name);
 #elif defined(sparc) || defined(__arm__)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (acfg->fp, ".section \"%s\"\n", section_name);
