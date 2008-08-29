@@ -4267,7 +4267,11 @@ emit_globals (MonoAotCompile *acfg)
 			 * Emit a global symbol which can be passed by an embedding app to
 			 * mono_aot_register_module ().
 			 */
+#if defined(__MACH__)
+			symbol = g_strdup_printf ("_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
+#else
 			symbol = g_strdup_printf ("mono_aot_module_%s_info", acfg->image->assembly->aname.name);
+#endif
 			acfg->static_linking_symbol = g_strdup (symbol);
 			emit_global_inner (acfg, symbol, FALSE);
 			emit_alignment (acfg, 8);
@@ -4288,6 +4292,30 @@ emit_globals (MonoAotCompile *acfg)
 			fprintf (acfg->fp, ".section .ctors,\"aw\",@progbits\n");
 			emit_alignment (acfg, 8);
 			emit_pointer (acfg, symbol);
+#elif defined(__arm__) && defined(__MACH__)
+				
+			fprintf (acfg->fp, ".text\n");
+			fprintf (acfg->fp, ".align   3\n");
+		
+			fprintf (acfg->fp, "ldr	r0, .L5\n");
+			fprintf (acfg->fp, ".LPIC0:\n");
+			fprintf (acfg->fp, "add	r0, pc, r0\n");
+			fprintf (acfg->fp, "ldr r0, [r0]\n");
+			fprintf (acfg->fp, "b	_mono_aot_register_globals@PLT\n");
+			fprintf (acfg->fp, ".align 2\n");
+
+			fprintf (acfg->fp, ".L5:\n");
+			fprintf (acfg->fp, ".long	globals_ptr-(.LPIC0+8)\n");
+			
+			fprintf (acfg->fp, ".data\n");
+			fprintf (acfg->fp, ".align	2\n");
+			fprintf (acfg->fp, "globals_ptr:\n");
+			fprintf (acfg->fp, ".long	globals\n");
+			
+			fprintf (acfg->fp, ".mod_init_func\n");
+			fprintf (acfg->fp, ".align	2\n");
+			fprintf (acfg->fp, ".long	%s@target1\n", symbol);
+
 #elif defined(__arm__)
 			/* 
 			 * Taken from gcc generated code for:
