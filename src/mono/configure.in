@@ -100,33 +100,7 @@ case "$host" in
 		libgc_threads=pthreads
 		with_sigaltstack=no
 		;;
-# these flags will work for all versions of -STABLE
-#
-	*-*-*freebsd4*)
-		platform_win32=no
-		if test "x$PTHREAD_CFLAGS" = "x"; then
-			CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_FREEBSD_THREADS"
-			libmono_cflags="-D_THREAD_SAFE"
-		else
-			CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS -DGC_FREEBSD_THREADS"
-			libmono_cflags="$PTHREAD_CFLAGS"
-		fi
-		if test "x$PTHREAD_LIBS" = "x"; then
-			LDFLAGS="$LDFLAGS -pthread"
-			libmono_ldflags="-pthread"
-		else
-			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
-			libmono_ldflags="$PTHREAD_LIBS"
-		fi
-		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD -DPLATFORM_BSD4"
-		need_link_unlink=yes
-		AC_DEFINE(PTHREAD_POINTER_ID, 1, [pthread_t is a pointer])
-		libdl=
-		libgc_threads=pthreads
-# TLS isn't implemented at all on 4-STABLE
-		with_tls=pthread
-		;;
-	*-*-*freebsd5*)
+	*-*-*freebsd*)
 		platform_win32=no
 		if test "x$PTHREAD_CFLAGS" = "x"; then
 			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
@@ -142,36 +116,9 @@ case "$host" in
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
 			libmono_ldflags="$PTHREAD_LIBS"
 		fi
-		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD -DPLATFORM_BSD5"
+		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD"
 		need_link_unlink=yes
-		AC_DEFINE(PTHREAD_POINTER_ID)
-		libdl=
-		with_sigaltstack=yes
-		libgc_threads=pthreads
-# TLS is only partially implemented on 5-STABLE (compiler support
-# but NOT library support)
-#
-		with_tls=pthread
-		;;
-	*-*-*freebsd6*)
-		platform_win32=no
-		if test "x$PTHREAD_CFLAGS" = "x"; then
-			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
-			libmono_cflags=
-		else
-			CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS -DGC_FREEBSD_THREADS"
-			libmono_cflags="$PTHREAD_CFLAGS"
-		fi
-		if test "x$PTHREAD_LIBS" = "x"; then
-			LDFLAGS="$LDFLAGS -pthread"
-			libmono_ldflags="-pthread"
-		else
-			LDFLAGS="$LDFLAGS $PTHREAD_LIBS"
-			libmono_ldflags="$PTHREAD_LIBS"
-		fi
-		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD -DPLATFORM_BSD6"
-		need_link_unlink=yes
-		AC_DEFINE(PTHREAD_POINTER_ID)
+		AC_DEFINE(PTHREAD_POINTER_ID, 1, [pthread is a pointer])
 		libdl=
 		libgc_threads=pthreads
 		with_sigaltstack=yes
@@ -352,17 +299,7 @@ AC_CHECK_HEADERS(syslog.h)
 
 # for mono/dis
 AC_CHECK_HEADERS(wchar.h)
-case "$host" in
-	*-*-*freebsd6*)
-		AC_CHECK_HEADERS(ieeefp.h)
-	;;
-	*-*-*freebsd*)
-		/* Only freebsd6 has a working ieeefp.h */
-	;;
-	*)
-		AC_CHECK_HEADERS(ieeefp.h)
-	;;
-esac
+AC_CHECK_HEADERS(ieeefp.h)
 AC_MSG_CHECKING(for isinf)
 AC_TRY_LINK([#include <math.h>], [
 	int f = isinf (1);
@@ -1127,13 +1064,7 @@ if test x$platform_win32 = xno; then
 # and libpthread does not exist
 #
 	case "${host}" in
-		*-*-*freebsd4*)
-			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
-		;;
-		*-*-*freebsd5*)
-			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
-		;;
-		*-*-*freebsd6*)
+		*-*-*freebsd*)
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
 		;;
 		*)
