@@ -5783,7 +5783,8 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			 * interface_offsets set.
 			 */
  			return mono_reflection_call_is_assignable_to (oklass, klass);
-
+		if (!oklass->interface_bitmap)
+			mono_class_setup_vtable (oklass);
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (oklass, klass->interface_id))
 			return TRUE;
 
