@@ -2943,6 +2943,11 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	NEW_BBLOCK (cfg, false_bb);
 	NEW_BBLOCK (cfg, end_bb);
 
+	/* Do the assignment at the beginning, so the other assignment can be if converted */
+	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, res_reg, obj_reg);
+	ins->type = STACK_OBJ;
+	ins->klass = klass;
+
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_null_bb);
 
@@ -3021,10 +3026,6 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
 	MONO_START_BB (cfg, is_null_bb);
-
-	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, res_reg, obj_reg);
-	ins->type = STACK_OBJ;
-	ins->klass = klass;
 
 	MONO_START_BB (cfg, end_bb);
 
