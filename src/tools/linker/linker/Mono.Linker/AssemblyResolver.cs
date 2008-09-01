@@ -180,7 +180,7 @@ namespace Mono.Linker {
 
 		public void CacheAssembly (AssemblyDefinition assembly)
 		{
-			_assemblies [assembly.Name.FullName] = assembly;
+			_assemblies [assembly.Name.Name] = assembly;
 			assembly.Resolver = this;
 		}
 	}

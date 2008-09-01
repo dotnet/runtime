@@ -1,3 +1,7 @@
+2008-09-01  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/AssemblyResolver.cs: properly cache .exes.
+
 2008-08-26  Zoltan Varga  <vargaz@gmail.com>
 
 	* Descriptors/mscorlib.xml: Add EntryPointNotFoundException.
