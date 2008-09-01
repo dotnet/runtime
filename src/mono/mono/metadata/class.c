@@ -1694,6 +1694,8 @@ mono_class_setup_properties (MonoClass *class)
 			}
 		}
 	}
+	/*Flush any pending writes as we do double checked locking on class->properties */
+	mono_memory_barrier ();
 
 	/* Leave this assignment as the last op in the function */
 	class->properties = properties;
@@ -1823,6 +1825,9 @@ mono_class_setup_events (MonoClass *class)
 			}
 		}
 	}
+	/*Flush any pending writes as we do double checked locking on class->properties */
+	mono_memory_barrier ();
+
 	/* Leave this assignment as the last op in the function */
 	class->events = events;
 
