@@ -4497,13 +4497,19 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 		    return NULL;
 		*out_size = size;
 		/*g_print ("optimized in %s: size: %d, numelems: %d\n", method->name, size, newarr->inst_newa_len->inst_c0);*/
-		field_index = read32 (ip + 2) & 0xffffff;
-		mono_metadata_field_info (method->klass->image, field_index - 1, NULL, &rva, NULL);
-		data_ptr = mono_image_rva_map (method->klass->image, rva);
-		/*g_print ("field: 0x%08x, rva: %d, rva_ptr: %p\n", read32 (ip + 2), rva, data_ptr);*/
-		/* for aot code we do the lookup on load */
-		if (aot && data_ptr)
-			return GUINT_TO_POINTER (rva);
+		if (!method->klass->image->dynamic) {
+			field_index = read32 (ip + 2) & 0xffffff;
+			mono_metadata_field_info (method->klass->image, field_index - 1, NULL, &rva, NULL);
+			data_ptr = mono_image_rva_map (method->klass->image, rva);
+			/*g_print ("field: 0x%08x, rva: %d, rva_ptr: %p\n", read32 (ip + 2), rva, data_ptr);*/
+			/* for aot code we do the lookup on load */
+			if (aot && data_ptr)
+				return GUINT_TO_POINTER (rva);
+		} else {
+			/*FIXME is it possible to AOT a SRE assembly not meant to be saved? */ 
+			g_assert (!aot);
+			data_ptr = field->data;
+		}
 		return data_ptr;
 	}
 	return NULL;
