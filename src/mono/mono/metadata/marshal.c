@@ -10679,9 +10679,22 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (MonoString *string)
 {
-	MONO_ARCH_SAVE_REGS;
+#ifdef PLATFORM_WIN32
+	char* tres, *ret;
+	size_t len;
+	tres = mono_string_to_utf8 (string);
+	if (!tres)
+		return tres;
 
+	len = strlen (tres) + 1;
+	ret = ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len);
+	memcpy (ret, tres, len);
+	g_free (tres);
+	return ret;
+
+#else
 	return mono_string_to_utf8 (string);
+#endif
 }
 
 gpointer
@@ -10692,7 +10705,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString 
 	if (string == NULL)
 		return NULL;
 	else {
-		gunichar2 *res = g_malloc ((mono_string_length (string) + 1) * 2);
+#ifdef PLATFORM_WIN32
+		gunichar2 *res = ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal 
+			((mono_string_length (string) + 1) * 2);
+#else
+		gunichar2 *res = g_malloc ((mono_string_length (string) + 1) * 2);		
+#endif
 		memcpy (res, mono_string_chars (string), mono_string_length (string) * 2);
 		res [mono_string_length (string)] = 0;
 		return res;
