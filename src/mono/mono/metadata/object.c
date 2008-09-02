@@ -69,7 +69,7 @@ static void
 get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value);
 
 static MonoString*
-mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig);
+mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig);
 
 #define ldstr_lock() EnterCriticalSection (&ldstr_section)
 #define ldstr_unlock() LeaveCriticalSection (&ldstr_section)
@@ -2515,7 +2515,7 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 		readr8 (p, (double*) value);
 		break;
 	case MONO_TYPE_STRING:
-		*(gpointer*) value = mono_ldstr_metdata_sig (domain, blob);
+		*(gpointer*) value = mono_ldstr_metadata_sig (domain, blob);
 		break;
 	case MONO_TYPE_CLASS:
 		*(gpointer*) value = NULL;
@@ -4325,18 +4325,18 @@ mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 	if (image->dynamic)
 		return mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL);
 	else
-		return mono_ldstr_metdata_sig (domain, mono_metadata_user_string (image, idx));
+		return mono_ldstr_metadata_sig (domain, mono_metadata_user_string (image, idx));
 }
 
 /**
- * mono_ldstr_metdata_sig
+ * mono_ldstr_metadata_sig
  * @domain: the domain for the string
  * @sig: the signature of a metadata string
  *
  * Returns: a MonoString for a string stored in the metadata
  */
 static MonoString*
-mono_ldstr_metdata_sig (MonoDomain *domain, const char* sig)
+mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 {
 	const char *str = sig;
 	MonoString *o, *interned;
