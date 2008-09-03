@@ -49,6 +49,7 @@ enum {
 		(__ctx)->list = g_slist_prepend ((__ctx)->list, vinfo);	\
 	} while (0)
 
+//TODO support MONO_VERIFY_REPORT_ALL_ERRORS
 #define ADD_VERIFY_ERROR(__ctx, __msg)	\
 	do {	\
 		ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR, MONO_EXCEPTION_INVALID_PROGRAM); \
@@ -1857,6 +1858,7 @@ check_overflow (VerifyContext *ctx)
 	return 1;
 }
 
+/*This reject out PTR, FNPTR and TYPEDBYREF*/
 static gboolean
 check_unmanaged_pointer (VerifyContext *ctx, ILStackDesc *value)
 {
@@ -1867,6 +1869,7 @@ check_unmanaged_pointer (VerifyContext *ctx, ILStackDesc *value)
 	return 1;
 }
 
+/*TODO verify if MONO_TYPE_TYPEDBYREF is not allowed here as well.*/
 static gboolean
 check_unverifiable_type (VerifyContext *ctx, MonoType *type)
 {
@@ -2414,8 +2417,6 @@ handle_enum:
 	}
 
 	case MONO_TYPE_PTR:
-		if (!IS_STRICT_MODE (ctx) && IS_ONE_OF2 (candidate->type, MONO_TYPE_I, MONO_TYPE_U))
-			return TRUE;
 		if (candidate->type != MONO_TYPE_PTR)
 			return FALSE;
 		/* check the underlying type */
@@ -4706,6 +4707,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	for (i = 0; i < ctx.num_locals; ++i) {
 		if (!mono_type_is_valid_in_context (&ctx, ctx.locals [i])) {
+			/*TODO use the last error message to provide better feedback. */
 			ADD_VERIFY_ERROR2 (&ctx, g_strdup_printf ("Invalid local variable %d", i), MONO_EXCEPTION_BAD_IMAGE);
 			break;
 		}
@@ -4713,6 +4715,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 	for (i = 0; i < ctx.max_args; ++i) {
 		if (!mono_type_is_valid_in_context (&ctx, ctx.params [i])) {
+			/*TODO use the last error message to provide better feedback. */
 			ADD_VERIFY_ERROR2 (&ctx, g_strdup_printf ("Invalid parameter %d", i), MONO_EXCEPTION_BAD_IMAGE);
 			break;
 		}
