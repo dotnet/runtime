@@ -110,7 +110,7 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 {
 	/* Patch the jump table entry used by the plt entry */
 	guint32 offset = ((guint32*)code)[3];
-	guint8 *jump_entry = code + offset + 16;
+	guint8 *jump_entry = code + offset + 12;
 
 	*(guint8**)jump_entry = addr;
 }
@@ -118,7 +118,7 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 void
 mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
-	return;
+	mono_arch_patch_callsite (NULL, code, nullified_class_init_trampoline);
 }
 
 void
@@ -374,7 +374,7 @@ mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
 
 	*code_len = buf - code;
 
-	return buf;
+	return code;
 }
 
 #define SPEC_TRAMP_SIZE 24

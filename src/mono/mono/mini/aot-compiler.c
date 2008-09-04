@@ -2966,7 +2966,7 @@ emit_plt (MonoAotCompile *acfg)
 		fprintf (acfg->fp, "\tldr ip, [pc, #4]\n");
 		fprintf (acfg->fp, "\tadd ip, pc, ip\n");
 		fprintf (acfg->fp, "\tldr pc, [ip, #0]\n");
-		emit_symbol_diff (acfg, "plt_jump_table", ".", 0);
+		emit_symbol_diff (acfg, "plt_jump_table", ".", (i * sizeof (gpointer)));
 		/* Used by mono_aot_get_plt_info_offset */
     #if defined(__MACH__)
 		fprintf (acfg->fp, "\n\t.long %d\n", plt_info_offsets [i]);
