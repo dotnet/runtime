@@ -5871,9 +5871,12 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		}
 
 		return mono_class_is_assignable_from (klass->cast_class, oklass->cast_class);
-	} else if (mono_class_is_nullable (klass))
-		return (mono_class_is_assignable_from (klass->cast_class, oklass));
-	else if (klass == mono_defaults.object_class)
+	} else if (mono_class_is_nullable (klass)) {
+		if (mono_class_is_nullable (oklass))
+			return mono_class_is_assignable_from (klass->cast_class, oklass->cast_class);
+		else
+			return mono_class_is_assignable_from (klass->cast_class, oklass);
+	} else if (klass == mono_defaults.object_class)
 		return TRUE;
 
 	return mono_class_has_parent (oklass, klass);
