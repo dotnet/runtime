@@ -279,13 +279,6 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		} \
 	} while (0)
 
-#define CHECK_BBLOCK(target,ip,tblock) do {	\
-		if ((target) < (ip) && !(tblock)->code)	{	\
-			bb_recheck = g_list_prepend (bb_recheck, (tblock));	\
-			if (cfg->verbose_level > 2) printf ("queued block %d for check at IL%04x from IL%04x\n", (tblock)->block_num, (int)((target) - header->code), (int)((ip) - header->code));	\
-		}	\
-	} while (0)
-
 #ifndef MONO_ARCH_EMIT_BOUNDS_CHECK
 #define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) do { \
 			int _length_reg = alloc_ireg (cfg); \
@@ -376,7 +369,6 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		GET_BBLOCK (cfg, tblock, target);		\
 		link_bblock (cfg, bblock, tblock);	\
 		ins->inst_true_bb = tblock;	\
-		CHECK_BBLOCK (target, ip, tblock);	\
 		if ((next_block)) {	\
 			link_bblock (cfg, bblock, (next_block));	\
 			ins->inst_false_bb = (next_block);	\
@@ -574,74 +566,6 @@ mono_create_exvar_for_offset (MonoCompile *cfg, int offset)
 	g_hash_table_insert (cfg->exvars, GINT_TO_POINTER (offset), var);
 
 	return var;
-}
-
-static MonoBasicBlock*
-find_previous (MonoBasicBlock **bblocks, guint32 n_bblocks, MonoBasicBlock *start, const guchar *code)
-{
-	MonoBasicBlock *best = start;
-	int i;
-
-	for (i = 0; i < n_bblocks; ++i) {
-		if (bblocks [i]) {
-			MonoBasicBlock *bb = bblocks [i];
-
-			if (bb->cil_code && bb->cil_code < code && bb->cil_code > best->cil_code)
-				best = bb;
-		}
-	}
-
-	return best;
-}
-
-static void
-split_bblock (MonoCompile *cfg, MonoBasicBlock *first, MonoBasicBlock *second) {
-	int i, j;
-	MonoInst *inst;
-	MonoBasicBlock *bb;
-
-	if (second->code)
-		return;
-	
-	/* 
-	 * FIXME: take into account all the details:
-	 * second may have been the target of more than one bblock
-	 */
-	second->out_count = first->out_count;
-	second->out_bb = first->out_bb;
-
-	for (i = 0; i < first->out_count; ++i) {
-		bb = first->out_bb [i];
-		for (j = 0; j < bb->in_count; ++j) {
-			if (bb->in_bb [j] == first)
-				bb->in_bb [j] = second;
-		}
-	}
-
-	first->out_count = 0;
-	first->out_bb = NULL;
-	link_bblock (cfg, first, second);
-
-	second->last_ins = first->last_ins;
-
-	/*printf ("start search at %p for %p\n", first->cil_code, second->cil_code);*/
-	for (inst = first->code; inst && inst->next; inst = inst->next) {
-		/*char *code = mono_disasm_code_one (NULL, cfg->method, inst->next->cil_code, NULL);
-		printf ("found %p: %s", inst->next->cil_code, code);
-		g_free (code);*/
-		if (inst->cil_code < second->cil_code && inst->next->cil_code >= second->cil_code) {
-			second->code = inst->next;
-			inst->next = NULL;
-			first->last_ins = inst;
-			second->next_bb = first->next_bb;
-			first->next_bb = second;
-			return;
-		}
-	}
-	if (!second->code) {
-		g_warning ("bblock split failed in %s::%s\n", cfg->method->klass->name, cfg->method->name);
-		//G_BREAKPOINT ();
-	}
 }
 
 /*
@@ -4932,7 +4856,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 	MonoGenericContext *generic_context = NULL;
 	MonoGenericContainer *generic_container = NULL;
 	MonoType **param_types;
-	GList *bb_recheck = NULL, *tmp;
 	int i, n, start_new_bblock, dreg;
 	int num_calls = 0, inline_costs = 0;
 	int breakpoint_id = 0;
@@ -6378,7 +6301,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			++ip;
 			GET_BBLOCK (cfg, tblock, target);
 			link_bblock (cfg, bblock, tblock);
-			CHECK_BBLOCK (target, ip, tblock);
 			ins->inst_target_bb = tblock;
 			if (sp != stack_start) {
 				handle_stack_args (cfg, stack_start, sp - stack_start);
@@ -6420,7 +6342,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			ip += 4;
 			GET_BBLOCK (cfg, tblock, target);
 			link_bblock (cfg, bblock, tblock);
-			CHECK_BBLOCK (target, ip, tblock);
 			ins->inst_target_bb = tblock;
 			if (sp != stack_start) {
 				handle_stack_args (cfg, stack_start, sp - stack_start);
@@ -6454,7 +6375,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 			GET_BBLOCK (cfg, tblock, target);
 			link_bblock (cfg, bblock, tblock);
-			CHECK_BBLOCK (target, ip, tblock);
 			GET_BBLOCK (cfg, tblock, ip);
 			link_bblock (cfg, bblock, tblock);
 
@@ -7433,7 +7353,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				}
 				GET_BBLOCK (cfg, tblock, target);
 				link_bblock (cfg, bblock, tblock);
-				CHECK_BBLOCK (target, ip, tblock);
 				ins->inst_target_bb = tblock;
 				GET_BBLOCK (cfg, tblock, ip);
 				/* 
@@ -8498,7 +8417,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			MONO_ADD_INS (bblock, ins);
 			GET_BBLOCK (cfg, tblock, target);
 			link_bblock (cfg, bblock, tblock);
-			CHECK_BBLOCK (target, ip, tblock);
 			ins->inst_target_bb = tblock;
 			start_new_bblock = 1;
 
@@ -9287,22 +9205,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 	}
 
 	cfg->ip = NULL;
-
-	/* resolve backward branches in the middle of an existing basic block */
-	for (tmp = bb_recheck; tmp; tmp = tmp->next) {
-		bblock = tmp->data;
-		/*printf ("need recheck in %s at IL_%04x\n", method->name, bblock->cil_code - header->code);*/
-		tblock = find_previous (cfg->cil_offset_to_bb, header->code_size, start_bblock, bblock->cil_code);
-		if (tblock != start_bblock) {
-			int l;
-			split_bblock (cfg, tblock, bblock);
-			l = bblock->cil_code - header->code;
-			bblock->cil_length = tblock->cil_length - l;
-			tblock->cil_length = l;
-		} else {
-			printf ("recheck failed.\n");
-		}
-	}
 
 	if (cfg->method == method) {
 		MonoBasicBlock *bb;
