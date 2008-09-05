@@ -1072,7 +1072,7 @@ mono_optimize_branches (MonoCompile *cfg)
 				continue;
 			}
 
-			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bb->region == bbn->region) {
+			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bbn != cfg->bb_exit && bb->region == bbn->region) {
 				if (cfg->verbose_level > 2)
 					g_print ("nullify block triggered %d\n", bbn->block_num);
 
@@ -1131,7 +1131,7 @@ mono_optimize_branches (MonoCompile *cfg)
 				}
 			}
 
-			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bb->region == bbn->region) {
+			if ((bbn = bb->next_bb) && bbn->in_count == 0 && bbn != cfg->bb_exit && bb->region == bbn->region) {
 				if (cfg->verbose_level > 2) {
 					g_print ("nullify block triggered %d\n", bbn->block_num);
 				}
@@ -1151,6 +1151,7 @@ mono_optimize_branches (MonoCompile *cfg)
 				if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
 					bbn = bb->last_ins->inst_target_bb;
 					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
+						bbn->code->inst_target_bb != bbn &&
 					    bbn->code->inst_target_bb->region == bb->region) {
 						
 						if (cfg->verbose_level > 2)

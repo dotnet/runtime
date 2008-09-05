@@ -12545,8 +12545,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			 * FIXME: Can't use the second case in methods with clauses, since the 
 			 * bblocks inside the clauses are not processed during dfn computation.
 			 */
-			if ((header->clauses && (bbn && bbn->region == -1 && bbn->in_count == 0)) ||
-				(!header->clauses && (bbn && bbn->region == -1 && !bbn->dfn))) {
+			if (((header->clauses && (bbn && bbn->region == -1 && bbn->in_count == 0)) ||
+				 (!header->clauses && (bbn && bbn->region == -1 && !bbn->dfn))) &&
+				bbn != cfg->bb_exit) {
 				if (cfg->verbose_level > 1)
 					g_print ("found unreachable code in BB%d\n", bbn->block_num);
 				/* There may exist unreachable branches to this bb */
