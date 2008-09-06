@@ -1190,6 +1190,17 @@ public class Tests {
 		return mono_test_stdcall_name_mangling (0, 1, 2) == 3 ? 0 : 1;
 	}
 
+	/* Float test */
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_pass_return_float")]
+	public static extern float mono_test_marshal_pass_return_float (float f);
+
+	public static int test_0_pass_return_float () {
+		float f = mono_test_marshal_pass_return_float (1.5f);
+
+		return (f == 2.5f) ? 0 : 1;
+	}
+
 	/*
 	 * Pointers to structures can not be passed
 	 */

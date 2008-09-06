@@ -109,6 +109,11 @@ mono_return_int (int a) {
 	return a;
 }
 
+LIBTEST_API float STDCALL  
+mono_test_marshal_pass_return_float (float f) {
+	return f + 1.0;
+}
+
 struct ss
 {
 	int i;
