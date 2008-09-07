@@ -124,12 +124,11 @@ ICALL_TYPE(INTCFGHOST, "System.Configuration.InternalConfigurationHost", INTCFGH
 ICALL(INTCFGHOST_1, "get_bundled_machine_config", get_bundled_machine_config)
 
 ICALL_TYPE(CONSOLE, "System.ConsoleDriver", CONSOLE_1)
-ICALL(CONSOLE_1, "GetTtySize", ves_icall_System_ConsoleDriver_GetTtySize )
-ICALL(CONSOLE_2, "InternalKeyAvailable", ves_icall_System_ConsoleDriver_InternalKeyAvailable )
-ICALL(CONSOLE_3, "Isatty", ves_icall_System_ConsoleDriver_Isatty )
-ICALL(CONSOLE_4, "SetBreak", ves_icall_System_ConsoleDriver_SetBreak )
-ICALL(CONSOLE_5, "SetEcho", ves_icall_System_ConsoleDriver_SetEcho )
-ICALL(CONSOLE_6, "TtySetup", ves_icall_System_ConsoleDriver_TtySetup )
+ICALL(CONSOLE_1, "InternalKeyAvailable", ves_icall_System_ConsoleDriver_InternalKeyAvailable )
+ICALL(CONSOLE_2, "Isatty", ves_icall_System_ConsoleDriver_Isatty )
+ICALL(CONSOLE_3, "SetBreak", ves_icall_System_ConsoleDriver_SetBreak )
+ICALL(CONSOLE_4, "SetEcho", ves_icall_System_ConsoleDriver_SetEcho )
+ICALL(CONSOLE_5, "TtySetup", ves_icall_System_ConsoleDriver_TtySetup )
 
 ICALL_TYPE(CONVERT, "System.Convert", CONVERT_1)
 ICALL(CONVERT_1, "InternalFromBase64CharArray", InternalFromBase64CharArray )

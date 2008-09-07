@@ -97,12 +97,6 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	return FALSE;
 }
 
-MonoBoolean
-ves_icall_System_ConsoleDriver_GetTtySize (HANDLE handle, gint32 *width, gint32 *height)
-{
-	return FALSE;
-}
-
 #else
 static struct termios initial_attr;
 
@@ -193,6 +187,27 @@ ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout)
 	return (ret > 0) ? ret : 0;
 }
 
+static gint32 cols_and_lines;
+
+#ifdef TIOCGWINSZ
+static int
+terminal_get_dimensions (void)
+{
+	struct winsize ws;
+
+	if (ioctl (STDIN_FILENO, TIOCGWINSZ, &ws) == 0)
+		return (ws.ws_col << 16) | ws.ws_row;
+
+	return -1;
+}
+#else
+static int
+terminal_get_dimensions (void)
+{
+	return -1;
+}
+#endif
+
 static void
 tty_teardown (void)
 {
@@ -262,7 +277,7 @@ sigint_handler (int signo)
 	in_sigint = FALSE;
 }
 
-static struct sigaction save_sigcont, save_sigint;
+static struct sigaction save_sigcont, save_sigint, save_sigwinch;
 
 static void
 sigcont_handler (int signo, void *the_siginfo, void *data)
@@ -273,16 +288,31 @@ sigcont_handler (int signo, void *the_siginfo, void *data)
 	if (keypad_xmit_str != NULL)
 		write (STDOUT_FILENO, keypad_xmit_str, strlen (keypad_xmit_str));
 
+	// Call previous handler
 	if (save_sigcont.sa_sigaction != NULL &&
 	    save_sigcont.sa_sigaction != (void *)SIG_DFL &&
 	    save_sigcont.sa_sigaction != (void *)SIG_IGN)
 		(*save_sigcont.sa_sigaction) (signo, the_siginfo, data);
 }
 
+static void
+sigwinch_handler (int signo, void *the_siginfo, void *data)
+{
+	int dims = terminal_get_dimensions ();
+	if (dims != -1)
+		cols_and_lines = dims;
+	
+	// Call previous handler
+	if (save_sigwinch.sa_sigaction != NULL &&
+	    save_sigwinch.sa_sigaction != (void *)SIG_DFL &&
+	    save_sigwinch.sa_sigaction != (void *)SIG_IGN)
+		(*save_sigwinch.sa_sigaction) (signo, the_siginfo, data);
+}
+
 void
 console_set_signal_handlers ()
 {
-	struct sigaction sigcont, sigint;
+	struct sigaction sigcont, sigint, sigwinch;
 
 	memset (&sigcont, 0, sizeof (struct sigaction));
 	memset (&sigint, 0, sizeof (struct sigaction));
@@ -298,6 +328,12 @@ console_set_signal_handlers ()
 	sigint.sa_flags = 0;
 	sigemptyset (&sigint.sa_mask);
 	sigaction (SIGINT, &sigint, &save_sigint);
+
+	// Window size changed
+	sigwinch.sa_handler = (void *) sigwinch_handler;
+	sigwinch.sa_flags = 0;
+	sigemptyset (&sigwinch.sa_mask);
+	sigaction (SIGWINCH, &sigwinch, &save_sigwinch);
 }
 
 //
@@ -309,13 +345,37 @@ console_restore_signal_handlers ()
 {
 	sigaction (SIGCONT, &save_sigcont, NULL);
 	sigaction (SIGINT, &save_sigint, NULL);
+	sigaction (SIGWINCH, &save_sigwinch, NULL);
 }
 
 MonoBoolean
-ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, char *verase, char *vsusp, char*intr)
+ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, char *verase, char *vsusp, char*intr, int **size)
 {
+	int dims;
+
 	MONO_ARCH_SAVE_REGS;
 
+	dims = terminal_get_dimensions ();
+	if (dims == -1){
+		int cols = 0, rows = 0;
+				      
+		char *str = getenv ("COLUMNS");
+		if (str != NULL)
+			cols = atoi (str);
+		str = getenv ("LINES");
+		if (str != NULL)
+			rows = atoi (str);
+
+		if (cols != 0 && rows != 0)
+			cols_and_lines = (cols << 16) | rows;
+		else
+			cols_and_lines = -1;
+	} else {
+		cols_and_lines = dims;
+	}
+	
+	*size = &cols_and_lines;
+	
 	*verase = '\0';
 	*vsusp = '\0';
 	*intr = '\0';
@@ -349,29 +409,6 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	}
 
 	return TRUE;
-}
-
-MonoBoolean
-ves_icall_System_ConsoleDriver_GetTtySize (HANDLE handle, gint32 *width, gint32 *height)
-{
-#ifdef TIOCGWINSZ
-	struct winsize ws;
-	int res;
-
-	MONO_ARCH_SAVE_REGS;
-
-	res = ioctl (GPOINTER_TO_INT (handle), TIOCGWINSZ, &ws);
-
-	if (!res) {
-		*width = ws.ws_col;
-		*height = ws.ws_row;
-		return TRUE;
-	}
-	else
-		return FALSE;
-#else
-	return FALSE;
-#endif
 }
 
 #endif /* !PLATFORM_WIN32 */
