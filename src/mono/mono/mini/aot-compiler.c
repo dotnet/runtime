@@ -72,7 +72,7 @@
 #define SHARED_EXT ".so"
 #endif
 
-#if defined(sparc) || defined(__ppc__) || defined(__MACH__)
+#if defined(sparc) || defined(__ppc__) || defined(__powerpc__) || defined(__MACH__)
 #define AS_STRING_DIRECTIVE ".asciz"
 #else
 /* GNU as */

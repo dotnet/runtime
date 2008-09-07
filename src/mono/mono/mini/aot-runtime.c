@@ -57,7 +57,7 @@
 
 #ifdef PLATFORM_WIN32
 #define SHARED_EXT ".dll"
-#elif (defined(__ppc__) || defined(__ppc64__)) || defined(__MACH__)
+#elif (defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__)) || defined(__MACH__)
 #define SHARED_EXT ".dylib"
 #else
 #define SHARED_EXT ".so"

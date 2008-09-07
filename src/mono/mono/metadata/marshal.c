@@ -11209,7 +11209,6 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_TYPEDBYREF:
 		*align = 4;
 		return 4;
 	case MONO_TYPE_R4:
@@ -11220,6 +11219,7 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	case MONO_TYPE_R8:
 		*align = 4;
 		return 8;
+	case MONO_TYPE_TYPEDBYREF:
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
 

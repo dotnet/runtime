@@ -123,7 +123,7 @@ enum {
 #define ppc_is_uimm16(val) ((gint)(val) >= 0 && (gint)(val) <= 65535)
 
 #define ppc_load(c,D,v) do {	\
-		if (ppc_is_imm16 ((v)))	{	\
+		if (ppc_is_imm16 ((guint32)(v)))	{	\
 			ppc_li ((c), (D), (guint16)(v));	\
 		} else {	\
 			ppc_lis ((c), (D), (guint32)(v) >> 16);	\

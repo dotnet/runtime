@@ -164,7 +164,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, ins->dreg, ins->sreg1, 0);
 		ins->opcode = OP_NOP;
 		break;
-#if defined(__ppc__)
+#if defined(__ppc__) || defined(__powerpc__)
 	case OP_LADD_OVF:
 		/* ADC sets the condition code */
 		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
@@ -666,7 +666,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				MONO_EMIT_NEW_BIALU (cfg, OP_ISBB, tree->dreg + 2, tree->sreg1 + 2, tree->sreg2 + 2);
 				break;
 
-#if defined(__ppc__)
+#if defined(__ppc__) || defined(__powerpc__)
 			case OP_LADD_OVF:
 				/* ADC sets the condition code */
 				MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, tree->dreg + 1, tree->sreg1 + 1, tree->sreg2 + 1);
@@ -745,7 +745,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 #elif defined(__arm__)
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSBS_IMM, tree->dreg + 1, tree->sreg1 + 1, 0);
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSC_IMM, tree->dreg + 2, tree->sreg1 + 2, 0);
-#elif defined(__ppc__)
+#elif defined(__ppc__) || defined(__powerpc__)
 				/* This is the old version from inssel-long32.brg */
 				MONO_EMIT_NEW_UNALU (cfg, OP_INOT, tree->dreg + 1, tree->sreg1 + 1);
 				MONO_EMIT_NEW_UNALU (cfg, OP_INOT, tree->dreg + 2, tree->sreg1 + 2);

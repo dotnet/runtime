@@ -97,8 +97,8 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 	 */
 	if (((*code) >> 26) == 18) {
 		/*g_print ("direct patching\n");*/
-		ppc_patch ((char*)code, addr);
-		mono_arch_flush_icache ((char*)code, 4);
+		ppc_patch ((guint8*)code, addr);
+		mono_arch_flush_icache ((guint8*)code, 4);
 		return;
 	}
 	
@@ -107,7 +107,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 
 	/* the thunk-less direct call sequence: lis/ori/mtlr/blrl */
 	if ((code [-1] >> 26) == 31 && (code [-2] >> 26) == 24 && (code [-3] >> 26) == 15) {
-		ppc_patch ((char*)code, addr);
+		ppc_patch ((guint8*)code, addr);
 		return;
 	}
 	g_assert_not_reached ();
@@ -165,7 +165,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	guint8 *buf, *code = NULL;
 	int i, offset;
-	gpointer tramp_handler;
+	gconstpointer tramp_handler;
 
 	if(!code) {
 		/* Now we'll create in 'buf' the PowerPC trampoline code. This
