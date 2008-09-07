@@ -31,10 +31,6 @@
 
 #define GENERIC_EXCEPTION_SIZE 256
 
-#ifdef CUSTOM_EXCEPTION_HANDLING
-static gboolean arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only);
-#endif
-
 /* XXX */
 #if 1
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
@@ -219,11 +215,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
-#ifdef CUSTOM_EXCEPTION_HANDLING
-	arch_handle_exception (&ctx, exc, FALSE);
-#else
 	mono_handle_exception (&ctx, exc, (void *)eip, FALSE);
-#endif
 #ifdef DEBUG_EXCEPTIONS
 	g_print ("throw_exception: restore to pc=%p sp=%p fp=%p ctx=%p\n",
 		 (void *) ctx.sc_pc, (void *) ctx.sc_regs[mips_sp],
@@ -572,12 +564,8 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 #ifdef DEBUG_EXCEPTIONS
 	g_print ("mono_arch_handle_exception: pc=%p\n", (void *) mctx.sc_pc);
 #endif
-#ifdef CUSTOM_EXCEPTION_HANDLING
-	result = arch_handle_exception (&mctx, obj, test_only);
-#else
 	mono_handle_exception (&mctx, obj, (gpointer)mctx.sc_pc, test_only);
 	result = TRUE;
-#endif
 
 #ifdef DEBUG_EXCEPTIONS
 	g_print ("mono_arch_handle_exception: restore pc=%p\n", (void *)mctx.sc_pc);
@@ -590,175 +578,6 @@ mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)
 	return result;
 }
 
-#ifdef CUSTOM_EXCEPTION_HANDLING
-/**
- * arch_handle_exception:
- * @ctx: saved processor state
- * @obj: the exception object
- * @test_only: only test if the exception is caught, but dont call handlers
- *
- *
- */
-static gboolean
-arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji, rji;
-	static int (*call_filter) (MonoContext *, gpointer, gpointer) = NULL;
-	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-	MonoLMF *lmf = jit_tls->lmf;		
-	GList *trace_ips = NULL;
-	MonoException *mono_ex;
-	MonoArray *initial_trace_ips = NULL;
-	int frame_count = 0;
-	gboolean has_dynamic_methods = FALSE;
-
-	g_assert (ctx != NULL);
-	if (!obj) {
-		MonoException *ex = mono_get_exception_null_reference ();
-		ex->message = mono_string_new (domain, 
-		        "Object reference not set to an instance of an object");
-		obj = (MonoObject *)ex;
-	} 
-
-	if (mono_object_isinst (obj, mono_defaults.exception_class)) {
-		mono_ex = (MonoException*)obj;
-		initial_trace_ips = mono_ex->trace_ips;
-	} else {
-		mono_ex = NULL;
-	}
-
-
-	if (!call_filter)
-		call_filter = mono_arch_get_call_filter ();
-
-	g_assert (jit_tls->end_of_stack);
-	g_assert (jit_tls->abort_func);
-
-	if (!test_only) {
-		MonoContext ctx_cp = *ctx;
-		setup_context (&ctx_cp);
-		if (mono_jit_trace_calls != NULL)
-			g_print ("EXCEPTION handling: %s\n", mono_object_class (obj)->name);
-		if (!arch_handle_exception (&ctx_cp, obj, TRUE)) {
-			if (mono_break_on_exc)
-				G_BREAKPOINT ();
-			mono_unhandled_exception (obj);
-		}
-	}
-
-	memset (&rji, 0, sizeof (rji));
-
-	while (1) {
-		MonoContext new_ctx;
-
-		setup_context (&new_ctx);
-		ji = mono_arch_find_jit_info (domain, jit_tls, &rji, &rji, ctx, &new_ctx, 
-					      NULL, &lmf, NULL, NULL);
-		if (!ji) {
-			g_warning ("Exception inside function without unwind info");
-			g_assert_not_reached ();
-		}
-
-		if (ji != (gpointer)-1) {
-			frame_count ++;
-			
-			if (test_only && ji->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && mono_ex) {
-				/* 
-				 * Avoid overwriting the stack trace if the exception is
-				 * rethrown. Also avoid giant stack traces during a stack
-				 * overflow.
-				 */
-				if (!initial_trace_ips && (frame_count < 1000)) {
-					trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
-
-				}
-			}
-
-			if (ji->method->dynamic)
-				has_dynamic_methods = TRUE;
-
-			if (ji->num_clauses) {
-				int i;
-				
-				g_assert (ji->clauses);
-			
-				for (i = 0; i < ji->num_clauses; i++) {
-					MonoJitExceptionInfo *ei = &ji->clauses [i];
-					gboolean filtered = FALSE;
-
-					if (ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
-					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
-						/* catch block */
-
-						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
-							/* store the exception object int cfg->excvar */
-							g_assert (ei->exvar_offset);
-							/* need to use the frame pointer (mips_fp): methods with clauses always have mips_fp */
-							*((gpointer *)(void*)((char *)(ctx->sc_regs [mips_fp]) + ei->exvar_offset)) = obj;
-						}
-
-						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)
-							filtered = call_filter (ctx, ei->data.filter, mono_ex);
-
-						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-						     mono_object_isinst (obj, ei->data.catch_class)) || filtered) {
-							if (test_only) {
-								if (mono_ex && !initial_trace_ips) {
-									trace_ips = g_list_reverse (trace_ips);
-									mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
-									if (has_dynamic_methods)
-										/* These methods could go away anytime, so compute the stack trace now */
-										mono_ex->stack_trace = ves_icall_System_Exception_get_trace (mono_ex);
-								}
-								g_list_free (trace_ips);
-								return TRUE;
-							}
-							if (mono_jit_trace_calls != NULL)
-								g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							/*g_print  ("stack for catch: %p\n", MONO_CONTEXT_GET_BP (ctx));*/
-							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
-							jit_tls->lmf = lmf;
-							return 0;
-						}
-						if (!test_only && ei->try_start <= MONO_CONTEXT_GET_IP (ctx) && 
-						    MONO_CONTEXT_GET_IP (ctx) < ei->try_end &&
-						    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
-							if (mono_jit_trace_calls != NULL)
-								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
-							call_filter (ctx, ei->handler_start, NULL);
-						}
-						
-					}
-				}
-			}
-		}
-
-		*ctx = new_ctx;
-		setup_context (ctx);
-
-		if ((ji == (gpointer)-1) || MONO_CONTEXT_GET_BP (ctx) >= jit_tls->end_of_stack) {
-			if (!test_only) {
-				jit_tls->lmf = lmf;
-				jit_tls->abort_func (obj);
-				g_assert_not_reached ();
-			} else {
-				if (mono_ex && !initial_trace_ips) {
-					trace_ips = g_list_reverse (trace_ips);
-					mono_ex->trace_ips = glist_to_array (trace_ips, mono_defaults.int_class);
-					if (has_dynamic_methods)
-						/* These methods could go away anytime, so compute the stack trace now */
-						mono_ex->stack_trace = ves_icall_System_Exception_get_trace (mono_ex);
-				}
-				g_list_free (trace_ips);
-				return FALSE;
-			}
-		}
-	}
-
-	g_assert_not_reached ();
-}
-#endif /* CUSTOM_EXCEPTION_HANDLING */
 
 gboolean
 mono_arch_has_unwind_info (gconstpointer addr)

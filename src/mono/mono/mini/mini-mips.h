@@ -242,7 +242,6 @@ typedef struct {
 #undef HAVE_BACKTRACE_SYMBOLS
 
 #undef DEBUG_EXCEPTIONS
-#undef CUSTOM_EXCEPTION_HANDLING
 
 #define MONO_ZERO_REG		mips_zero
 

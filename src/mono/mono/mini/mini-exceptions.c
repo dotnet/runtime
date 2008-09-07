@@ -701,8 +701,6 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 	return ss.stack;
 }
 
-#ifndef CUSTOM_EXCEPTION_HANDLING
-
 static MonoClass*
 get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContext *ctx)
 {
@@ -1101,8 +1099,6 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 		mono_perfcounters->exceptions_thrown++;
 	return mono_handle_exception_internal (ctx, obj, original_ip, test_only, NULL);
 }
-
-#endif /* CUSTOM_EXCEPTION_HANDLING */
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
