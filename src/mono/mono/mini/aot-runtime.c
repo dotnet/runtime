@@ -1846,7 +1846,14 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		}
 
 		/* Try to find the wrapper among the wrapper info */
-		full_name = mono_method_full_name (method, TRUE);
+		/* FIXME: This is a hack to work around the fact that runtime invoke wrappers get assigned to some random class */
+		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+			full_name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
+			g_free (tmpsig);
+		} else {
+			full_name = mono_method_full_name (method, TRUE);
+		}
 
 		/* Create a hash table to avoid repeated linear searches */
 		if (!aot_module->wrappers_by_name) {
