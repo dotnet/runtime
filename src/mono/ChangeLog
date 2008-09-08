@@ -1,3 +1,6 @@
+2008-09-08  Massimiliano Mantione  <massi@ximian.com>
+	* configure.in: Added DISABLE_PROFILER automake conditional.
+
 2008-08-29  Geoff Norton  <gnorton@novell.com>
 
 	* configure.in: Rollup our unrolled FreeBSD support so that we properly

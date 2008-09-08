@@ -554,6 +554,7 @@ fi
 if test "x$mono_feature_disable_profiler" = "xyes"; then
 	AC_DEFINE(DISABLE_PROFILER, 1, [Disable default profiler support])
 fi
+AM_CONDITIONAL(DISABLE_PROFILER, test x$mono_feature_disable_profiler = xyes)
 
 if test "x$mono_feature_disable_decimal" = "xyes"; then
 	AC_DEFINE(DISABLE_DECIMAL, 1, [Disable System.Decimal support])
