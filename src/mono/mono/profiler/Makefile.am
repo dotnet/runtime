@@ -4,11 +4,13 @@ INCLUDES = \
 	-I$(top_srcdir) 	\
 	$(GLIB_CFLAGS)
 
+if !DISABLE_PROFILER
 if JIT_SUPPORTED
 if PLATFORM_LINUX
 lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-logging.la
 else
 lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la
+endif
 endif
 endif
 
