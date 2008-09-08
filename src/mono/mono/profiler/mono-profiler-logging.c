@@ -865,6 +865,12 @@ static MonoProfiler *profiler;
 #endif
 
 static void
+request_heap_snapshot (void) {
+	profiler->heap_shot_was_signalled = TRUE;
+	mono_gc_collect (mono_gc_max_generation ());
+}
+
+static void
 SIG_HANDLER_SIGNATURE (gc_request_handler) {
 	profiler->heap_shot_was_signalled = TRUE;
 	WRITER_EVENT_RAISE ();
@@ -887,6 +893,18 @@ add_gc_request_handler (int signal_number)
 	
 	g_assert (sigaction (signal_number, &sa, NULL) != -1);
 }
+
+static void
+enable_profiler (void) {
+	profiler->profiler_enabled = TRUE;
+}
+
+static void
+disable_profiler (void) {
+	profiler->profiler_enabled = FALSE;
+}
+
+
 
 static void
 SIG_HANDLER_SIGNATURE (toggle_handler) {
@@ -4430,6 +4448,10 @@ runtime_initialized (MonoProfiler *profiler) {
 	LOG_WRITER_THREAD ("runtime_initialized: waiting writer thread...\n");
 	WRITER_EVENT_DONE_WAIT ();
 	LOG_WRITER_THREAD ("runtime_initialized: writer thread enabled.\n");
+	mono_add_internal_call ("Mono.Profiler.RuntimeControls::EnableProfiler", enable_profiler);
+	mono_add_internal_call ("Mono.Profiler.RuntimeControls::DisableProfiler", disable_profiler);
+	mono_add_internal_call ("Mono.Profiler.RuntimeControls::TakeHeapSnapshot", request_heap_snapshot);
+	LOG_WRITER_THREAD ("runtime_initialized: initialized internal calls.\n");
 }
 
 /* called at the end of the program */
@@ -4651,7 +4673,6 @@ setup_user_options (const char *arguments) {
 				profiler->action_flags.collection_summary = TRUE;
 			} else if (! (strcmp (argument, "heap-shot") && strcmp (argument, "heap") && strcmp (argument, "h"))) {
 				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
-				profiler->action_flags.unreachable_objects = TRUE;
 				profiler->action_flags.heap_shot = TRUE;
 			} else if (! (strcmp (argument, "unreachable") && strcmp (argument, "free") && strcmp (argument, "f"))) {
 				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
