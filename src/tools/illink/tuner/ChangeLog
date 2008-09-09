@@ -1,3 +1,7 @@
+2008-09-09  Jb Evain  <jbevain@novell.com>
+
+	* Makefile: tune System.Runtime.Serialization as well.
+
 2008-08-05  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/CheckVisibility.cs: properly verify famorassem.
