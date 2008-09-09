@@ -2617,6 +2617,88 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 	return code;
 }
 
+/*
+ * emit_load_volatile_arguments:
+ *
+ *  Load volatile arguments from the stack to the original input registers.
+ * Required before a tail call.
+ */
+static guint8*
+emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
+{
+	MonoMethod *method = cfg->method;
+	MonoMethodSignature *sig;
+	MonoInst *inst;
+	CallInfo *cinfo;
+	guint32 i, pos;
+
+	/* FIXME: Generate intermediate code instead */
+
+	sig = mono_method_signature (method);
+
+	/* This is the opposite of the code in emit_prolog */
+
+	pos = 0;
+
+	cinfo = calculate_sizes (sig, sig->pinvoke);
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	    /* FIXME: */
+	    NOT_IMPLEMENTED;
+	}
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = cinfo->args + i;
+		inst = cfg->args [pos];
+
+		g_assert (inst->opcode != OP_REGVAR);
+		g_assert (ppc_is_imm16 (inst->inst_offset));
+
+		switch (ainfo->regtype) {
+		case RegTypeGeneral:
+			switch (ainfo->size) {
+				case 1:
+					ppc_lbz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					break;
+				case 2:
+					ppc_lhz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					break;
+				default:
+					ppc_lwz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					break;
+			}
+			break;
+
+		case RegTypeFP:
+			switch (ainfo->size) {
+				case 4:
+					ppc_lfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					break;
+				case 8:
+					ppc_lfd (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					break;
+				default:
+					g_assert_not_reached ();
+			}
+			break;
+
+		case RegTypeBase:
+		case RegTypeStructByVal:
+		case RegTypeStructByAddr:
+			/* FIXME: */
+			NOT_IMPLEMENTED;
+
+		default:
+			g_assert_not_reached ();
+		}
+
+		pos ++;
+	}
+
+	g_free (cinfo);
+
+	return code;
+}
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -3114,6 +3196,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				ppc_mtlr (code, ppc_r0);
 			}
+
+			code = emit_load_volatile_arguments (cfg, code);
+
 			if (ppc_is_imm16 (cfg->stack_usage)) {
 				ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
 			} else {

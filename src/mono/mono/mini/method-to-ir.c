@@ -8998,12 +8998,10 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				ip += 2;
 				break;
 			case CEE_TAIL_:
-#if !defined(__ppc__) && !defined(__powerpc)
 				ins_flag   |= MONO_INST_TAILCALL;
 				cfg->flags |= MONO_CFG_HAS_TAIL;
 				/* Can't inline tail calls at this time */
 				inline_costs += 100000;
-#endif
 				ip += 2;
 				break;
 			case CEE_INITOBJ:
