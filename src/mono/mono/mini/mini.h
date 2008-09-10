@@ -927,6 +927,14 @@ typedef struct {
 
 	/* Patches which describe absolute addresses embedded into the native code */
 	GHashTable *abs_patches;
+
+	/* If the arch passes valuetypes by address, then for methods
+	   which use JMP the arch code should use these local
+	   variables to store the addresses of incoming valuetypes.
+	   The addresses should be stored in mono_arch_emit_prolog()
+	   and can be used when emitting code for OP_JMP.  See
+	   mini-ppc.c. */
+	MonoInst **tailcall_valuetype_addrs;
 } MonoCompile;
 
 typedef enum {

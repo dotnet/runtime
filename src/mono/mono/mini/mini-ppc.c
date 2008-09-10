@@ -1015,6 +1015,34 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 	return cinfo;
 }
 
+static void
+allocate_tailcall_valuetype_addrs (MonoCompile *cfg)
+{
+#if !PPC_PASS_STRUCTS_BY_VALUE
+	MonoMethodSignature *sig = mono_method_signature (cfg->method);
+	int num_structs = 0;
+	int i;
+
+	if (!(cfg->flags & MONO_CFG_HAS_TAIL))
+		return;
+
+	for (i = 0; i < sig->param_count; ++i) {
+		MonoType *type = mono_type_get_underlying_type (sig->params [i]);
+		if (type->type == MONO_TYPE_VALUETYPE)
+			num_structs++;
+	}
+
+	if (num_structs) {
+		cfg->tailcall_valuetype_addrs =
+			mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * num_structs);
+		for (i = 0; i < num_structs; ++i) {
+			cfg->tailcall_valuetype_addrs [i] =
+				mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			cfg->tailcall_valuetype_addrs [i]->flags |= MONO_INST_INDIRECT;
+		}
+	}
+#endif
+}
 
 /*
  * Set var information according to the calling convention. ppc version.
@@ -1028,6 +1056,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
 	int frame_reg = ppc_sp;
+
+	allocate_tailcall_valuetype_addrs (m);
 
 	m->flags |= MONO_CFG_HAS_SPILLUP;
 
@@ -2631,6 +2661,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 	MonoInst *inst;
 	CallInfo *cinfo;
 	guint32 i, pos;
+	int struct_index = 0;
 
 	/* FIXME: Generate intermediate code instead */
 
@@ -2643,8 +2674,10 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 	cinfo = calculate_sizes (sig, sig->pinvoke);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-	    /* FIXME: */
-	    NOT_IMPLEMENTED;
+		ArgInfo *ainfo = &cinfo->ret;
+		inst = cfg->vret_addr;
+		g_assert (ppc_is_imm16 (inst->inst_offset));
+		ppc_lwz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 	}
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
@@ -2683,9 +2716,19 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 		case RegTypeBase:
 		case RegTypeStructByVal:
-		case RegTypeStructByAddr:
 			/* FIXME: */
 			NOT_IMPLEMENTED;
+
+		case RegTypeStructByAddr: {
+			MonoInst *addr = cfg->tailcall_valuetype_addrs [struct_index];
+
+			g_assert (ppc_is_imm16 (addr->inst_offset));
+			g_assert (!ainfo->offset);
+			ppc_lwz (code, ainfo->reg, addr->inst_offset, addr->inst_basereg);
+
+			struct_index++;
+			break;
+		}
 
 		default:
 			g_assert_not_reached ();
@@ -3833,6 +3876,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	int tracing = 0;
 	int lmf_offset = 0;
+	int tailcall_struct_index;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
@@ -3929,6 +3973,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ppc_stwx (code, ainfo->reg, ppc_r11, inst->inst_basereg);
 		}
 	}
+
+	tailcall_struct_index = 0;
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		inst = cfg->args [pos];
@@ -4084,6 +4130,16 @@ register.  Should this case include linux/ppc?
 				} else {
 					ppc_mr (code, ppc_r11, ainfo->reg);
 				}
+
+				if (cfg->tailcall_valuetype_addrs) {
+					MonoInst *addr = cfg->tailcall_valuetype_addrs [tailcall_struct_index];
+
+					g_assert (ppc_is_imm16 (addr->inst_offset));
+					ppc_stw (code, ppc_r11, addr->inst_offset, addr->inst_basereg);
+
+					tailcall_struct_index++;
+				}
+
 				g_assert (ppc_is_imm16 (inst->inst_offset));
 				code = emit_memcpy (code, ainfo->vtsize, inst->inst_basereg, inst->inst_offset, ppc_r11, 0);
 				/*g_print ("copy in %s: %d bytes from %d to offset: %d\n", method->name, ainfo->vtsize, ainfo->reg, inst->inst_offset);*/
