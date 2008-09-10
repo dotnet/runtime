@@ -897,6 +897,11 @@ COND:   ldloc.0
 		ret
 	}
 
+#if !defined(__ppc__) && !defined(__powerpc__)
+    	// PPC handles overflow by clipping, but this test assumes
+	// no overflow handling.  According to ECMA the result of
+	// float->int conversion is undefined if overflow occurs, so
+	// both behaviours are valid.
 	.method public static int32 test_0_fconv_to_i () cil managed {
 		.maxstack 16
 
@@ -911,6 +916,7 @@ COND:   ldloc.0
 		ldc.i4.0
 		ret
 	}
+#endif
 
 	.method public static int32 test_0_get_type_from_handle_on_bblock_boundary () cil managed 
 	{
