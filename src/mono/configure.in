@@ -49,8 +49,6 @@ libmono_cflags=""
 libmono_ldflags=""
 AC_SUBST(libmono_cflags)
 AC_SUBST(libmono_ldflags)
-export_ldflags=`(./libtool --config; echo eval echo \\$export_dynamic_flag_spec) | sh`
-AC_SUBST(export_ldflags)
 
 # Variable to have relocatable .pc files (lib, or lib64)
 reloc_libdir=`basename ${libdir}`
@@ -253,6 +251,9 @@ AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 # Use dolt (http://dolt.freedesktop.org/) instead of libtool for building.
 DOLT
+
+export_ldflags=`(./libtool --config; echo eval echo \\$export_dynamic_flag_spec) | sh`
+AC_SUBST(export_ldflags)
 
 # Test whenever ld supports -version-script
 AC_PROG_LD
