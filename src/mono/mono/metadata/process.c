@@ -494,32 +494,46 @@ quote_path (const gchar *path)
 static gboolean
 complete_path (const gunichar2 *appname, gchar **completed)
 {
-	gchar *utf8app;
+	gchar *utf8app, *utf8appmemory;
 	gchar *found;
 
-	utf8app = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
+	utf8appmemory = utf8app = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
+#ifdef PLATFORM_WIN32 // Should this happen on all platforms? 
+	{
+		// remove the quotes around utf8app.
+		size_t len;
+		len = strlen (utf8app);
+		if (len) {
+			if (utf8app[len-1] == '\"')
+				utf8app[len-1] = '\0';
+			if (utf8app[0] == '\"')
+				utf8app++;
+		}
+	}
+#endif
+
 	if (g_path_is_absolute (utf8app)) {
 		*completed = quote_path (utf8app);
-		g_free (utf8app);
+		g_free (utf8appmemory);
 		return TRUE;
 	}
 
 	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
 		*completed = quote_path (utf8app);
-		g_free (utf8app);
+		g_free (utf8appmemory);
 		return TRUE;
 	}
 	
 	found = g_find_program_in_path (utf8app);
 	if (found == NULL) {
 		*completed = NULL;
-		g_free (utf8app);
+		g_free (utf8appmemory);
 		return FALSE;
 	}
 
 	*completed = quote_path (found);
 	g_free (found);
-	g_free (utf8app);
+	g_free (utf8appmemory);
 	return TRUE;
 }
 
