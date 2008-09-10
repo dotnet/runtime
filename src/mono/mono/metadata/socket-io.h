@@ -148,6 +148,11 @@ typedef enum {
 	SocketFlags_Partial = 0x8000
 } MonoSocketFlags;
 
+/*
+  Keep this in sync with SocketAsyncResult in
+  ./System.Net.Sockets/Socket.cs and ProcessAsyncReader
+  in System.Diagnostics/Process.cs.
+*/
 typedef struct _MonoSocketAsyncResult {
 	MonoObject obj;
 	MonoObject *socket;
