@@ -316,6 +316,7 @@ console_set_signal_handlers ()
 
 	memset (&sigcont, 0, sizeof (struct sigaction));
 	memset (&sigint, 0, sizeof (struct sigaction));
+	memset (&sigwinch, 0, sizeof (struct sigaction));
 	
 	// Continuing
 	sigcont.sa_handler = (void *) sigcont_handler;
