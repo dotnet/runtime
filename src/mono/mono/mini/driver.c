@@ -958,6 +958,72 @@ static void main_thread_handler (gpointer user_data)
 	}
 }
 
+static int
+load_agent (MonoDomain *domain, char *desc)
+{
+	char* col = strchr (desc, ':');	
+	char *agent, *args;
+	MonoAssembly *agent_assembly;
+	MonoImage *image;
+	MonoMethod *method;
+	guint32 entry;
+	MonoArray *main_args;
+	gpointer pa [1];
+	MonoImageOpenStatus open_status;
+
+	if (col) {
+		agent = g_memdup (desc, col - desc + 1);
+		agent [col - desc] = '\0';
+		args = col + 1;
+	} else {
+		agent = g_strdup (desc);
+		args = NULL;
+	}
+
+	agent_assembly = mono_assembly_open (agent, &open_status);
+	if (!agent_assembly) {
+		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
+		g_free (agent);
+		return 2;
+	}
+
+	/* 
+	 * Can't use mono_jit_exec (), as it sets things which might confuse the
+	 * real Main method.
+	 */
+	image = mono_assembly_get_image (agent_assembly);
+	entry = mono_image_get_entry_point (image);
+	if (!entry) {
+		g_print ("Assembly '%s' doesn't have an entry point.\n", mono_image_get_filename (image));
+		g_free (agent);
+		return 1;
+	}
+
+	method = mono_get_method (image, entry, NULL);
+	if (method == NULL){
+		g_print ("The entry point method of assembly '%s' could not be loaded\n", agent);
+		g_free (agent);
+		return 1;
+	}
+	
+	mono_thread_set_main (mono_thread_current ());
+
+	if (args) {
+		main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 1);
+		mono_array_set (main_args, MonoString*, 0, mono_string_new (domain, args));
+	} else {
+		main_args = (MonoArray*)mono_array_new (domain, mono_defaults.string_class, 0);
+	}
+
+	g_free (agent);
+
+	pa [0] = main_args;
+	/* Pass NULL as 'exc' so unhandled exceptions abort the runtime */
+	mono_runtime_invoke (method, NULL, pa, NULL);
+
+	return 0;
+}
+
 static void
 mini_usage_jitdeveloper (void)
 {
@@ -979,6 +1045,7 @@ mini_usage_jitdeveloper (void)
 		 "    --inject-async-exc METHOD OFFSET Inject an asynchronous exception at METHOD\n"
 		 "    --verify-all           Run the verifier on all methods\n"
 		 "    --full-aot             Avoid JITting any code\n"
+		 "    --agent=ASSEMBLY[:ARG] Loads the specific agent assembly and executes its Main method with the given argument before loading the main assembly.\n"
 		 "\n"
 		 "Other options:\n" 
 		 "    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
@@ -1137,6 +1204,7 @@ mono_main (int argc, char* argv[])
 	char *profile_options = NULL;
 	char *aot_options = NULL;
 	char *forced_version = NULL;
+	GPtrArray *agents = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
 #endif
@@ -1300,6 +1368,10 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
 			enable_profile = TRUE;
 			profile_options = argv [i] + 10;
+		} else if (strncmp (argv [i], "--agent=", 8) == 0) {
+			if (agents == NULL)
+				agents = g_ptr_array_new ();
+			g_ptr_array_add (agents, argv [i] + 8);
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --compile option requires a method name argument\n");
@@ -1439,6 +1511,21 @@ mono_main (int argc, char* argv[])
 	mono_set_defaults (mini_verbose, opt);
 	mono_setup_vtable_in_class_init = FALSE;
 	domain = mini_init (argv [i], forced_version);
+
+	if (agents) {
+		int i;
+
+		for (i = 0; i < agents->len; ++i) {
+			int res = load_agent (domain, (char*)g_ptr_array_index (agents, i));
+			if (res) {
+				g_ptr_array_free (agents, TRUE);
+				mini_cleanup (domain);
+				return 1;
+			}
+		}
+
+		g_ptr_array_free (agents, TRUE);
+	}
 	
 	switch (action) {
 	case DO_REGRESSION:
