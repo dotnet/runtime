@@ -13,7 +13,7 @@ compiler_defines = -d:NET_1_1
 # compiler_defines += -d:NET_2_0
 # else
 CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -debug
-SN = $(RUNTIME) $(mcs_topdir)/tools/security/sn.exe
+SN = sn
 # endif
 
 EXTRA_DIST = icall1.cs icall2.cs icall3.cs icall4.cs icall5.cs icall6.cs \
