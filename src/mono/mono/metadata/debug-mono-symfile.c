@@ -261,9 +261,9 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 	if ((symfile = minfo->handle->symfile) == NULL)
 		return NULL;
 
-	stm.line_base = symfile->offset_table->_line_number_table_line_base;
-	stm.line_range = symfile->offset_table->_line_number_table_line_range;
-	stm.opcode_base = (guint8) symfile->offset_table->_line_number_table_opcode_base;
+	stm.line_base = read32 (&symfile->offset_table->_line_number_table_line_base);
+	stm.line_range = read32 (&symfile->offset_table->_line_number_table_line_range);
+	stm.opcode_base = (guint8) read32 (&symfile->offset_table->_line_number_table_opcode_base);
 	stm.max_address_incr = (255 - stm.opcode_base) / stm.line_range;
 
 	mono_debugger_lock ();
