@@ -1056,6 +1056,8 @@ mono_arch_allocate_vars (MonoCompile *m)
 	MonoInst *inst;
 	int i, offset, size, align, curinst;
 	int frame_reg = ppc_sp;
+	gint32 *offsets;
+	guint32 locals_stack_size, locals_stack_align;
 
 	allocate_tailcall_valuetype_addrs (m);
 
@@ -1179,27 +1181,24 @@ mono_arch_allocate_vars (MonoCompile *m)
 			m->sig_cookie += sizeof (gpointer);
 	}
 
-	curinst = m->locals_start;
-	for (i = curinst; i < m->num_varinfo; ++i) {
-		inst = m->varinfo [i];
-		if ((inst->flags & MONO_INST_IS_DEAD) || inst->opcode == OP_REGVAR)
-			continue;
-
-		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
-		* pinvoke wrappers when they call functions returning structure */
-		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
-		else
-			size = mono_type_size (inst->inst_vtype, &align);
-
-		offset += align - 1;
-		offset &= ~(align - 1);
-		inst->inst_offset = offset;
-		inst->opcode = OP_REGOFFSET;
-		inst->inst_basereg = frame_reg;
-		offset += size;
-		//g_print ("allocating local %d to %d\n", i, inst->inst_offset);
+	offsets = mono_allocate_stack_slots_full (m, FALSE, &locals_stack_size, &locals_stack_align);
+	if (locals_stack_align) {
+		offset += (locals_stack_align - 1);
+		offset &= ~(locals_stack_align - 1);
 	}
+	for (i = m->locals_start; i < m->num_varinfo; i++) {
+		if (offsets [i] != -1) {
+			MonoInst *inst = m->varinfo [i];
+			inst->opcode = OP_REGOFFSET;
+			inst->inst_basereg = frame_reg;
+			inst->inst_offset = offset + offsets [i];
+			/*
+			g_print ("allocating local %d (%s) to %d\n",
+				i, mono_type_get_name (inst->inst_vtype), inst->inst_offset);
+			*/
+		}
+	}
+	offset += locals_stack_size;
 
 	curinst = 0;
 	if (sig->hasthis) {
@@ -1548,9 +1547,9 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	int ovf_size = ainfo->vtsize;
 	int doffset = ainfo->offset;
 	int i, soffset, dreg;
-	int size = 0;
 
 	if (ainfo->regtype == RegTypeStructByVal) {
+		guint32 size;
 		soffset = 0;
 		/*
 		  Darwin needs some special handling for 1 and 2 byte arguments
