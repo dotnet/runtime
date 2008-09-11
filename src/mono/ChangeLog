@@ -1,3 +1,8 @@
+2008-09-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add a --enable-minimal=jit option to disable jit, only
+	allowing full-aot execution.
+
 2008-09-10  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Move the computation of export_ldflags after libtool has
