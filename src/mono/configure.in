@@ -597,6 +597,8 @@ if test "x$mono_feature_disable_jit" = "xyes"; then
 	AC_DEFINE(DISABLE_JIT, 1, [Disable the JIT, only full-aot mode will be supported by the runtime.])
 fi
 
+AM_CONDITIONAL(DISABLE_JIT, test x$mono_feature_disable_jit = xyes)
+
 AC_MSG_CHECKING(for visibility __attribute__)
 AC_TRY_COMPILE([], [
    void __attribute__ ((visibility ("hidden"))) doit (void) {}
