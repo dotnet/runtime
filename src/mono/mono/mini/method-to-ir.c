@@ -267,6 +267,12 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		mono_print_ins_index (-1, tree);
 }
 
+/* 
+ * Can't put this at the beginning, since other files reference stuff from this
+ * file.
+ */
+#ifndef DISABLE_JIT
+
 #define UNVERIFIED do { if (mini_get_debug_options ()->break_on_unverified) G_BREAKPOINT (); else goto unverified; } while (0)
 
 #define GET_BBLOCK(cfg,tblock,ip) do {	\
@@ -1701,6 +1707,8 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 	}
 }
 
+#endif /* DISABLE_JIT */
+
 void 
 mini_emit_memcpy2 (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {
@@ -1756,6 +1764,8 @@ mini_emit_memcpy2 (MonoCompile *cfg, int destreg, int doffset, int srcreg, int s
 		size -= 1;
 	}
 }
+
+#ifndef DISABLE_JIT
 
 static void
 mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_class)
@@ -9281,6 +9291,8 @@ store_membase_reg_to_store_membase_imm (int opcode)
 	return -1;
 }		
 
+#endif /* DISABLE_JIT */
+
 int
 mono_op_to_op_imm (int opcode)
 {
@@ -9721,6 +9733,8 @@ mono_op_to_op_imm_noemul (int opcode)
 		return mono_op_to_op_imm (opcode);
 	}
 }
+
+#ifndef DISABLE_JIT
 
 /**
  * mono_handle_global_vregs:
@@ -10470,3 +10484,5 @@ NOTES
 - Instead of the to_end stuff in the old JIT, simply call the function handling
   the values on the stack before emitting the last instruction of the bb.
 */
+
+#endif /* DISABLE_JIT */

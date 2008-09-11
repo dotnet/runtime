@@ -1416,6 +1416,13 @@ mono_main (int argc, char* argv[])
 			exit (1);
 	}
 
+#ifdef DISABLE_JIT
+	if (!mono_aot_only) {
+		fprintf (stderr, "This runtime has been configured with --enable-minimal=jit, so the --full-aot command line option is required.\n");
+		exit (1);
+	}
+#endif
+
 	if (action == DO_DEBUGGER) {
 		enable_debugging = TRUE;
 

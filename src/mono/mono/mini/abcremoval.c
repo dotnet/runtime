@@ -15,6 +15,8 @@
 
 #include "config.h"
 
+#ifndef DISABLE_JIT
+
 #ifndef DISABLE_SSA
 
 #include "inssel.h"
@@ -1465,3 +1467,4 @@ handle_integer_value:
 
 #endif /* DISABLE_SSA */
 
+#endif /* DISABLE_JIT */

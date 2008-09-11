@@ -376,7 +376,11 @@ endif
 
 libmono_la_SOURCES = $(common_sources) $(arch_sources)
 
+if DISABLE_JIT
+nodist_libmono_la_SOURCES = inssel.h
+else
 nodist_libmono_la_SOURCES = inssel.c inssel.h
+endif
 
 libmono_static_la_SOURCES = $(libmono_la_SOURCES)
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)

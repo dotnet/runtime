@@ -14,6 +14,8 @@
 
 #include "mini.h"
 
+#ifndef DISABLE_JIT
+
 //#define DEBUG_DOMINATORS
 
 /*
@@ -451,3 +453,12 @@ mono_free_loop_info (MonoCompile *cfg)
     if (cfg->comp_done & MONO_COMP_LOOPS)
         clear_loops (cfg);
 }
+
+#else /* DISABLE_JIT */
+
+void
+mono_free_loop_info (MonoCompile *cfg)
+{
+}
+
+#endif /* DISABLE_JIT */

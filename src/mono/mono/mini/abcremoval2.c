@@ -13,6 +13,8 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/opcodes.h>
 
+#ifndef DISABLE_JIT
+
 #include "inssel.h"
 
 #include "abcremoval.h"
@@ -1261,3 +1263,5 @@ mono_perform_abc_removal2 (MonoCompile *cfg)
 
 	process_block (cfg, cfg->bblocks [0], &area);
 }
+
+#endif /* DISABLE_JIT */

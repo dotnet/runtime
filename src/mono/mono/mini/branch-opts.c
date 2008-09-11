@@ -7,6 +7,8 @@
  * (C) 2005 Ximian, Inc.  http://www.ximian.com
  */
  #include "mini.h"
+
+#ifndef DISABLE_JIT
  
  /*
  * Used by the arch code to replace the exception handling
@@ -1289,3 +1291,5 @@ mono_optimize_branches (MonoCompile *cfg)
 		}
 	} while (changed && (niterations > 0));
 }
+
+#endif /* DISABLE_JIT */

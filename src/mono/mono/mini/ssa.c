@@ -13,6 +13,8 @@
 
 #include "mini.h"
 
+#ifndef DISABLE_JIT
+
 #ifndef DISABLE_SSA
 
 #define USE_ORIGINAL_VARS
@@ -1278,3 +1280,4 @@ mono_ssa_strength_reduction (MonoCompile *cfg)
 
 #endif /* DISABLE_SSA */
 
+#endif /* DISABLE_JIT */

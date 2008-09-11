@@ -11,6 +11,8 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/mempool-internals.h>
 
+#ifndef DISABLE_JIT
+
 #define NEW_IR
 #include "mini.h"
 
@@ -1379,3 +1381,5 @@ mono_ssa_strength_reduction (MonoCompile *cfg)
 	}
 }
 #endif
+
+#endif /* DISABLE_JIT */

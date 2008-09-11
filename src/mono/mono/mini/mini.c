@@ -219,6 +219,12 @@ gboolean check_for_pending_exc = TRUE;
 /* Whenever to disable passing/returning small valuetypes in registers for managed methods */
 gboolean disable_vtypes_in_regs = FALSE;
 
+#ifdef DISABLE_JIT
+/* Define this here, since many files reference it */
+const guint8 mono_burg_arity [MBMAX_OPCODES] = {
+};
+#endif
+
 gboolean
 mono_running_on_valgrind (void)
 {
@@ -10135,6 +10141,8 @@ compare_by_interval_start_pos_func (gconstpointer a, gconstpointer b)
 		return 1;
 }
 
+#ifndef DISABLE_JIT
+
 #if 0
 #define LSCAN_DEBUG(a) do { a; } while (0)
 #else
@@ -10619,6 +10627,17 @@ mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_a
 {
 	return mono_allocate_stack_slots_full (m, TRUE, stack_size, stack_align);
 }
+
+#else
+
+gint32*
+mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *stack_size, guint32 *stack_align)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#endif /* DISABLE_JIT */
 
 void
 mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, gboolean no_throw)
@@ -11718,6 +11737,8 @@ mono_print_code (MonoCompile *cfg, const char* msg)
 		}
 	}
 }
+
+#ifndef DISABLE_JIT
 
 extern const char * const mono_burg_rule_string [];
 
@@ -13043,6 +13064,17 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	return cfg;
 }
 
+#else
+
+MonoCompile*
+mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gboolean run_cctors, gboolean compile_aot, int parts)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#endif /* DISABLE_JIT */
+
 static MonoJitInfo*
 lookup_generic_method (MonoDomain *domain, MonoMethod *method)
 {
@@ -14329,7 +14361,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_jit_tls_id = TlsAlloc ();
 	setup_jit_tls_data ((gpointer)-1, mono_thread_abort);
 
+#ifndef DISABLE_JIT
 	mono_burg_init ();
+#endif
 
 	if (default_opt & MONO_OPT_AOT)
 		mono_aot_init ();

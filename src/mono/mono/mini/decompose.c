@@ -10,6 +10,8 @@
 #include "mini.h"
 #include "ir-emit.h"
 
+#ifndef DISABLE_JIT
+
 /* FIXME: This conflicts with the definition in mini.c, so it cannot be moved to mini.h */
 MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature *sig, MonoInst **args);
 void mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native);
@@ -1239,3 +1241,5 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 		if (cfg->verbose_level > 1) mono_print_bb (bb, "AFTER LOWER-VTYPE-OPTS ");
 	}
 }
+
+#endif /* DISABLE_JIT */
