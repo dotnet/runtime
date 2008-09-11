@@ -952,7 +952,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 		}
 	}
 
-	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos)) {
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 		/* Prevent implicit arguments and sig_cookie from
 		   being passed in registers */
 		gr = PPC_LAST_ARG_REG + 1;
