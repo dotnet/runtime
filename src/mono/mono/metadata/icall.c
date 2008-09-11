@@ -4523,7 +4523,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 
 		if (create_culture) {
 			gpointer args [2];
-			gboolean assembly_ref = TRUE;
+			MonoBoolean assembly_ref = 1;
 			args [0] = mono_string_new (domain, mono_metadata_string_heap (image, cols [MONO_ASSEMBLYREF_CULTURE]));
 			args [1] = &assembly_ref;
 			MONO_OBJECT_SETREF (aname, cultureInfo, mono_runtime_invoke (create_culture, NULL, args, NULL));
@@ -4963,7 +4963,7 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	guint32 pkey_len;
 	const char *pkey_ptr;
 	gchar *codebase;
-	gboolean assembly_ref = FALSE;
+	MonoBoolean assembly_ref = 0;
 
 	MONO_ARCH_SAVE_REGS;
 
