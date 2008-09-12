@@ -62,7 +62,7 @@ namespace Mono.Linker {
 			}
 		}
 
-		public void AddStepAfter(Type target, IStep step)
+		public void AddStepAfter (Type target, IStep step)
 		{
 			for (int i = 0; i < _steps.Count; i++) {
 				if (_steps [i].GetType () == target) {
@@ -72,6 +72,17 @@ namespace Mono.Linker {
 						_steps.Insert (i + 1, step);
 					return;
 				}
+			}
+		}
+
+		public void RemoveStep (Type target)
+		{
+			for (int i = 0; i < _steps.Count; i++) {
+				if (_steps [i].GetType () != target)
+					continue;
+
+				_steps.RemoveAt (i);
+				break;
 			}
 		}
 

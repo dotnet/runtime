@@ -1,5 +1,11 @@
 2008-09-12  Jb Evain  <jbevain@novell.com>
 
+	* Mono.Linker/Pipeline.cs: add a RemoveStep method.
+	* Mono.Linker/Driver.cs: make the linker generate new
+	module guids by default.
+
+2008-09-12  Jb Evain  <jbevain@novell.com>
+
 	* Mono.Linker.Steps/RegenerateGuidStep.cs: new step that is used
 	to regenerate the Mvid identifier of each linked module.
 
