@@ -4903,6 +4903,7 @@ resource_tree_encode (ResTreeNode *node, char *begin, char *p, char **endbuf)
 	MonoPEResourceDirEntry dir_entry;
 	MonoPEResourceDataEntry data_entry;
 	GSList *l;
+	guint32 res_id_entries;
 
 	/*
 	 * For the format of the resource directory, see the article
@@ -4921,32 +4922,35 @@ resource_tree_encode (ResTreeNode *node, char *begin, char *p, char **endbuf)
 	node->offset = p - begin;
 
 	/* IMAGE_RESOURCE_DIRECTORY */
-	dir.res_id_entries = GUINT32_TO_LE (g_slist_length (node->children));
+	res_id_entries = g_slist_length (node->children);
+	dir.res_id_entries = GUINT16_TO_LE (res_id_entries);
 
 	memcpy (p, &dir, sizeof (dir));
 	p += sizeof (dir);
 
 	/* Reserve space for entries */
 	entries = p;
-	p += sizeof (dir_entry) * dir.res_id_entries;
+	p += sizeof (dir_entry) * res_id_entries;
 
 	/* Write children */
 	for (l = node->children; l; l = l->next) {
 		ResTreeNode *child = (ResTreeNode*)l->data;
 
 		if (child->win32_res) {
+			guint32 size;
 
 			child->offset = p - begin;
 
 			/* IMAGE_RESOURCE_DATA_ENTRY */
 			data_entry.rde_data_offset = GUINT32_TO_LE (p - begin + sizeof (data_entry));
-			data_entry.rde_size = mono_array_length (child->win32_res->res_data);
+			size = mono_array_length (child->win32_res->res_data);
+			data_entry.rde_size = GUINT32_TO_LE (size);
 
 			memcpy (p, &data_entry, sizeof (data_entry));
 			p += sizeof (data_entry);
 
-			memcpy (p, mono_array_addr (child->win32_res->res_data, char, 0), data_entry.rde_size);
-			p += data_entry.rde_size;
+			memcpy (p, mono_array_addr (child->win32_res->res_data, char, 0), size);
+			p += size;
 		} else {
 			resource_tree_encode (child, begin, p, &p);
 		}
@@ -4955,10 +4959,9 @@ resource_tree_encode (ResTreeNode *node, char *begin, char *p, char **endbuf)
 	/* IMAGE_RESOURCE_ENTRY */
 	for (l = node->children; l; l = l->next) {
 		ResTreeNode *child = (ResTreeNode*)l->data;
-		dir_entry.name_offset = GUINT32_TO_LE (child->id);
 
-		dir_entry.is_dir = child->win32_res ? 0 : 1;
-		dir_entry.dir_offset = GUINT32_TO_LE (child->offset);
+		MONO_PE_RES_DIR_ENTRY_SET_NAME (dir_entry, FALSE, child->id);
+		MONO_PE_RES_DIR_ENTRY_SET_DIR (dir_entry, !child->win32_res, child->offset);
 
 		memcpy (entries, &dir_entry, sizeof (dir_entry));
 		entries += sizeof (dir_entry);
@@ -5028,10 +5031,10 @@ fixup_resource_directory (char *res_section, char *p, guint32 rva)
 	int i;
 
 	p += sizeof (MonoPEResourceDir);
-	for (i = 0; i < dir->res_named_entries + dir->res_id_entries; ++i) {
+	for (i = 0; i < GUINT16_FROM_LE (dir->res_named_entries) + GUINT16_FROM_LE (dir->res_id_entries); ++i) {
 		MonoPEResourceDirEntry *dir_entry = (MonoPEResourceDirEntry*)p;
-		char *child = res_section + (GUINT32_FROM_LE (dir_entry->dir_offset));
-		if (dir_entry->is_dir) {
+		char *child = res_section + MONO_PE_RES_DIR_ENTRY_DIR_OFFSET (*dir_entry);
+		if (MONO_PE_RES_DIR_ENTRY_IS_DIR (*dir_entry)) {
 			fixup_resource_directory (res_section, child, rva);
 		} else {
 			MonoPEResourceDataEntry *data_entry = (MonoPEResourceDataEntry*)child;

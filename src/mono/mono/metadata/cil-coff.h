@@ -159,26 +159,22 @@ typedef struct {
 	 * the unicode string containing the name.  Otherwise, the
 	 * other 31 bits contain the ID of this entry.
 	 */
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	guint32 name_offset:31;
-	guint32 name_is_string:1;
-#else
-	guint32 name_is_string:1;
-	guint32 name_offset:31;
-#endif
-	
+	guint32 name;
+
 	/* If the MSB is set, then the other 31 bits store the RVA of
 	 * another subdirectory.  Otherwise, the other 31 bits store
 	 * the RVA of the resource data entry leaf node.
 	 */
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-	guint32 dir_offset:31;
-	guint32 is_dir:1;
-#else
-	guint32 is_dir:1;
-	guint32 dir_offset:31;
-#endif
+	guint32 dir;
 } MonoPEResourceDirEntry;
+
+#define MONO_PE_RES_DIR_ENTRY_NAME_IS_STRING(d)	(GUINT32_FROM_LE((d).name) >> 31)
+#define MONO_PE_RES_DIR_ENTRY_NAME_OFFSET(d)	(GUINT32_FROM_LE((d).name) & 0x7fffffff)
+#define MONO_PE_RES_DIR_ENTRY_SET_NAME(d,i,o)	((d).name = GUINT32_TO_LE(((guint32)((i)?1:0) << 31) | ((o) & 0x7fffffff)))
+
+#define MONO_PE_RES_DIR_ENTRY_IS_DIR(d)		(GUINT32_FROM_LE((d).dir) >> 31)
+#define MONO_PE_RES_DIR_ENTRY_DIR_OFFSET(d)	(GUINT32_FROM_LE((d).dir) & 0x7fffffff)
+#define MONO_PE_RES_DIR_ENTRY_SET_DIR(d,i,o)	((d).dir = GUINT32_TO_LE(((guint32)((i)?1:0) << 31) | ((o) & 0x7fffffff)))
 
 typedef struct 
 {

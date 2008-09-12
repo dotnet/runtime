@@ -1584,16 +1584,11 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 	 * Level 2 holds a directory entry for each language pointing to
 	 * the actual data.
 	 */
-	name_offset = GUINT32_FROM_LE (entry->name_offset) & 0x7fffffff;
-	dir_offset = GUINT32_FROM_LE (entry->dir_offset) & 0x7fffffff;
+	is_string = MONO_PE_RES_DIR_ENTRY_NAME_IS_STRING (*entry);
+	name_offset = MONO_PE_RES_DIR_ENTRY_NAME_OFFSET (*entry);
 
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	is_string = (GUINT32_FROM_LE (entry->name_offset) & 0x80000000) != 0;
-	is_dir = (GUINT32_FROM_LE (entry->dir_offset) & 0x80000000) != 0;
-#else
-	is_string = entry->name_is_string;
-	is_dir = entry->is_dir;
-#endif
+	is_dir = MONO_PE_RES_DIR_ENTRY_IS_DIR (*entry);
+	dir_offset = MONO_PE_RES_DIR_ENTRY_DIR_OFFSET (*entry);
 
 	if(level==0) {
 		if((is_string==FALSE && name_offset!=res_id) ||
