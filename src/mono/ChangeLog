@@ -1,3 +1,8 @@
+2008-09-12  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/patch-quiet.sh: Remove an obsolete comment. Change the Makefile so
+	this script is rerun if Makefile.am changes.
+
 2008-09-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add a DISABLE_JIT automake conditional too.
