@@ -148,8 +148,8 @@ namespace Mono.Linker {
 					context.LinkSymbols = bool.Parse (GetParam ());
 					break;
 				case 'g':
-					if (bool.Parse (GetParam ()))
-						p.AddStepBefore (typeof (OutputStep), new RegenerateGuidStep ());
+					if (!bool.Parse (GetParam ()))
+						p.RemoveStep (typeof (RegenerateGuidStep));
 					break;
 				default:
 					Usage ();
@@ -303,6 +303,7 @@ namespace Mono.Linker {
 			p.AppendStep (new MarkStep ());
 			p.AppendStep (new SweepStep ());
 			p.AppendStep (new CleanStep ());
+			p.AppendStep (new RegenerateGuidStep ());
 			p.AppendStep (new OutputStep ());
 			return p;
 		}
