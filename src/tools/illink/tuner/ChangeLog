@@ -1,5 +1,9 @@
 2008-09-12  Jb Evain  <jbevain@novell.com>
 
+	* Makefile: tune System.ServiceModel.Web.
+
+2008-09-12  Jb Evain  <jbevain@novell.com>
+
 	* Makefile: tune System.ServiceModel.dll
 
 2008-09-12  Jb Evain  <jbevain@novell.com>
