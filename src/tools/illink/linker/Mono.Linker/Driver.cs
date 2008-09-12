@@ -147,6 +147,9 @@ namespace Mono.Linker {
 				case 'b':
 					context.LinkSymbols = bool.Parse (GetParam ());
 					break;
+				case 'g':
+					p.AddStepBefore (typeof (OutputStep), new RegenerateGuidStep ());
+					break;
 				default:
 					Usage ();
 					break;
@@ -261,6 +264,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   -p          Action per assembly");
 			Console.WriteLine ("   -s          Add a new step to the pipeline.");
 			Console.WriteLine ("   -d          Add a directory where the linker will look for assemblies");
+			Console.WriteLine ("   -g          Generate a new unique guid for each linked module");
 			Console.WriteLine ("   -l          List of i18n assemblies to copy to the output directory");
 			Console.WriteLine ("                 separated with a comma: none,all,cjk,mideast,other,rare,west");
 			Console.WriteLine ("                 default is all");

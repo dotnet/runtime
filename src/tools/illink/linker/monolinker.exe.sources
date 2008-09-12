@@ -17,6 +17,7 @@
 ./Mono.Linker.Steps/LoadI18nAssemblies.cs
 ./Mono.Linker.Steps/ResolveFromXmlStep.cs
 ./Mono.Linker.Steps/SweepStep.cs
+./Mono.Linker.Steps/RegenerateGuidStep.cs
 ./Mono.Linker.Steps/ResolveFromXApiStep.cs
 ./Mono.Linker.Steps/ResolveFromAssemblyStep.cs
 ./Mono.Linker.Steps/ResolveStep.cs
