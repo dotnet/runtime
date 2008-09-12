@@ -351,7 +351,13 @@ This is Mono.
 			Generics support.  Disabling this will not
 			allow Mono to run any 2.0 libraries or
 			code that contains generics.
-	  	
+
+		jit:
+			Removes the JIT engine from the build, this reduces
+			the executable size, and requires that all code
+			executed by the virtual machine be compiled with
+			Full AOT before execution.
+
 	--enable-big-arrays
 
 		This enables the use arrays whose indexes are larger
