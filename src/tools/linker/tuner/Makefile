@@ -70,6 +70,7 @@ TUNER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR)	\
 	-c link		\
 	-a smcs		\
 	-b true		\
+	-g true		\
 	-m display_internalized false	\
 
 TUNER_STEPS = \
