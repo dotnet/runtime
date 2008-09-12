@@ -539,7 +539,7 @@ dump_table_module (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_MODULE];
 	int i;
-	fprintf (output, "ModuleRef Table (1..%d)\n", t->rows);
+	fprintf (output, "Module Table (1..%d)\n", t->rows);
 
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_MODULE_SIZE];
