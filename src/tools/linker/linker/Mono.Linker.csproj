@@ -45,6 +45,7 @@
     <Compile Include="Mono.Linker.Steps\BaseStep.cs" />
     <Compile Include="Mono.Linker.Steps\BlacklistStep.cs" />
     <Compile Include="Mono.Linker.Steps\CleanStep.cs" />
+    <Compile Include="Mono.Linker.Steps\RegenerateGuidStep.cs" />
     <Compile Include="Mono.Linker.Steps\LoadI18nAssemblies.cs" />
     <Compile Include="Mono.Linker\IXApiVisitor.cs" />
     <Compile Include="Mono.Linker\ResolutionException.cs" />

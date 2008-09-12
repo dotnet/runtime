@@ -1,3 +1,14 @@
+2008-09-12  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/RegenerateGuidStep.cs: new step that is used
+	to regenerate the Mvid identifier of each linked module.
+
+	* monolinker.exe.sources:
+	* Mono.Linker.csproj: add RegeneratedGuidStep to the build.
+
+	* Mono.Linker/Driver.cs: add a -g option to control whether to
+	regenerate the modules identifier or not.
+
 2008-09-01  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/AssemblyResolver.cs: properly cache .exes.
