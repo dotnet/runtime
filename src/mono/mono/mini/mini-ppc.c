@@ -2012,6 +2012,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, (gpointer)&adjust_val);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, ppc_sp, -8);
 		MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
+		if (ins->opcode == OP_ICONV_TO_R4)
+			MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, ins->dreg, ins->dreg);
 		ins->opcode = OP_NOP;
 		break;
 	}
