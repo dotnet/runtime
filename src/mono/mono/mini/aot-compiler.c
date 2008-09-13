@@ -2218,6 +2218,9 @@ add_wrappers (MonoAotCompile *acfg)
 			(method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 			skip = TRUE;
 
+		if (method->is_generic || method->klass->generic_container)
+			skip = TRUE;
+
 		/* Skip methods which can not be handled by get_runtime_invoke () */
 		sig = mono_method_signature (method);
 		if ((sig->ret->type == MONO_TYPE_PTR) ||
