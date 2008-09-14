@@ -67,6 +67,14 @@ This is Mono.
 		./autogen.sh --prefix=/usr/local
 		make
 
+	The Mono build system is silent for most compilation commands.
+	To enable a more verbose compile (for example, to pinpoint
+	problems in your makefiles or your system) pass the V=1 flag to make, like this:
+
+		 make V=1
+
+
+
     c. Building the software from SVN
     ---------------------------------
 
