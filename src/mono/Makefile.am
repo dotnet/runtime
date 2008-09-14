@@ -1,13 +1,13 @@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I .
 
-SUBDIRS = $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) support docs data runtime scripts man samples web msvc
+SUBDIRS = po/mcs $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) support docs data runtime scripts man samples web msvc
 
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
-DIST_SUBDIRS = libgc $(eglib_dir) mono ikvm-native support docs data runtime scripts man samples web tools msvc
+DIST_SUBDIRS = po/mcs libgc $(eglib_dir) mono ikvm-native support docs data runtime scripts man samples web tools msvc
 
-EXTRA_DIST= mono-uninstalled.pc.in dtrace-prelink.sh build-mingw32.sh LICENSE
+EXTRA_DIST= po.m4 mono-uninstalled.pc.in dtrace-prelink.sh build-mingw32.sh LICENSE
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 

@@ -1,3 +1,30 @@
+2008-09-14  Miguel de Icaza  <miguel@novell.com>
+
+	* Added some infrastructure to start the translation of the
+	compiler error messages.
+
+	Currently the compiler does not yet use the infrastructure,
+	that needs a bit of work, but the PO infrastructure is in place. 
+
+2008-09-14  gettextize  <bug-gnu-gettext@gnu.org>
+
+	* Makefile.am (SUBDIRS): Add po/mcs.
+	(DIST_SUBDIRS): Add po/mcs.
+	(EXTRA_DIST): Add config.rpath.
+	* configure.in (AC_CONFIG_FILES): Add po/mcs/Makefile.in.
+
+2008-09-14  gettextize  <bug-gnu-gettext@gnu.org>
+
+	* gettext.m4: New file, from gettext-0.17.
+	* iconv.m4: New file, from gettext-0.17.
+	* lib-ld.m4: New file, from gettext-0.17.
+	* lib-link.m4: New file, from gettext-0.17.
+	* lib-prefix.m4: New file, from gettext-0.17.
+	* nls.m4: New file, from gettext-0.17.
+	* po.m4: New file, from gettext-0.17.
+	* progtest.m4: New file, from gettext-0.17.
+	* Makefile.am (EXTRA_DIST): Add the new files.
+
 2008-09-12  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/patch-quiet.sh: Remove an obsolete comment. Change the Makefile so

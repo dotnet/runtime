@@ -385,6 +385,10 @@ if test -d $srcdir/$olivedir; then
 olive_topdir='$(top_srcdir)/'$olivedir
 fi
 
+# gettext: prepare the translation directories. 
+# we do not configure the full gettext, as we consume it dynamically from C#
+AM_PO_SUBDIRS
+
 AC_ARG_WITH([libgdiplus], 
 	[  --with-libgdiplus=installed|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to NO)], 
 	[], [with_libgdiplus=installed])
@@ -2146,7 +2150,7 @@ else
 fi
 AC_SUBST(mono_cfg_dir)
 
-AC_CONFIG_FILES([runtime/mono-wrapper],[chmod +x runtime/mono-wrapper])
+AC_CONFIG_FILES([runtime/mono-wrapper po/mcs/Makefile.in],[chmod +x runtime/mono-wrapper])
 AC_CONFIG_FILES([runtime/monodis-wrapper],[chmod +x runtime/monodis-wrapper])
 
 AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
@@ -2288,6 +2292,7 @@ tools/Makefile
 tools/locale-builder/Makefile
 runtime/Makefile
 msvc/Makefile
+po/mcs/Makefile
 ])
 
 if test x$platform_win32 = xyes; then
