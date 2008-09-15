@@ -2150,7 +2150,9 @@ else
 fi
 AC_SUBST(mono_cfg_dir)
 
-AC_CONFIG_FILES([runtime/mono-wrapper po/mcs/Makefile.in],[chmod +x runtime/mono-wrapper])
+AC_CONFIG_FILES([po/mcs/Makefile.in])
+
+AC_CONFIG_FILES([runtime/mono-wrapper],[chmod +x runtime/mono-wrapper])
 AC_CONFIG_FILES([runtime/monodis-wrapper],[chmod +x runtime/monodis-wrapper])
 
 AC_CONFIG_COMMANDS([runtime/etc/mono/1.0/machine.config],
@@ -2292,7 +2294,6 @@ tools/Makefile
 tools/locale-builder/Makefile
 runtime/Makefile
 msvc/Makefile
-po/mcs/Makefile
 ])
 
 if test x$platform_win32 = xyes; then

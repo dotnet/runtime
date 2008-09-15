@@ -1,3 +1,10 @@
+2008-09-15  Raja R Harinath  <harinath@hurrynot.org>
+
+	* configure.in (AC_CONFIG_FILES): Put po/mcs/Makefile.in in its
+	own stanza.
+	(AC_OUTPUT): Don't list po/mcs/Makefile, it's automatically
+	handled by AM_PO_SUBDIRS.
+
 2008-09-14  Miguel de Icaza  <miguel@novell.com>
 
 	* Added some infrastructure to start the translation of the
