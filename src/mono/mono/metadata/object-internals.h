@@ -444,7 +444,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	guint16 intType;
+	guint32 intType;
 } MonoInterfaceTypeAttribute;
 
 /* used to free a dynamic method */
