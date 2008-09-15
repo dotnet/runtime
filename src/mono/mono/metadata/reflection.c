@@ -3423,6 +3423,8 @@ mono_image_fill_export_table_from_type_forwarders (MonoReflectionAssemblyBuilder
 			values [MONO_EXP_TYPE_IMPLEMENTATION] = (idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_ASSEMBLYREF;
 			values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
 			values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
+
+			table->next_idx++;
 		}
 	}
 }
