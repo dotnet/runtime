@@ -7,7 +7,7 @@ SUBDIRS = po/mcs $(libgc_dir) $(eglib_dir) mono $(ikvm_native_dir) support docs 
 ## 'tools' is not normally built
 DIST_SUBDIRS = po/mcs libgc $(eglib_dir) mono ikvm-native support docs data runtime scripts man samples web tools msvc
 
-EXTRA_DIST= po.m4 mono-uninstalled.pc.in dtrace-prelink.sh build-mingw32.sh LICENSE
+EXTRA_DIST= po.m4 mono-uninstalled.pc.in dtrace-prelink.sh build-mingw32.sh LICENSE mkinstalldirs
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
