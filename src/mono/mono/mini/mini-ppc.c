@@ -1503,12 +1503,18 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 				cfg->flags |= MONO_CFG_HAS_FPOUT;
 			} else {
-				MONO_INST_NEW (cfg, ins, OP_FMOVE);
-				ins->dreg = mono_alloc_freg (cfg);
-				ins->sreg1 = in->dreg;
-				MONO_ADD_INS (cfg->cbb, ins);
+				int dreg = mono_alloc_freg (cfg);
 
-				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, TRUE);
+				if (ainfo->size == 4) {
+					MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, dreg, in->dreg);
+				} else {
+					MONO_INST_NEW (cfg, ins, OP_FMOVE);
+					ins->dreg = dreg;
+					ins->sreg1 = in->dreg;
+					MONO_ADD_INS (cfg->cbb, ins);
+				}
+
+				mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg, TRUE);
 				cfg->flags |= MONO_CFG_HAS_FPOUT;
 			}
 		} else {
