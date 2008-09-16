@@ -2079,20 +2079,22 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 	mono_class_setup_vtable (klass);
 	vtable = klass->vtable;
 
+	if (method->slot == -1) {
+		/* method->slot might not be set for instances of generic methods */
+		if (method->is_inflated) {
+			g_assert (((MonoMethodInflated*)method)->declaring->slot != -1);
+			method->slot = ((MonoMethodInflated*)method)->declaring->slot; 
+		} else {
+			g_assert_not_reached ();
+		}
+	}
+
 	/* check method->slot is a valid index: perform isinstance? */
 	if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		if (!is_proxy)
 		       res = vtable [mono_class_interface_offset (klass, method->klass) + method->slot];
 	} else {
-		if (method->slot != -1) {
-			res = vtable [method->slot];
-		} else {
-			/* method->slot might not be set for instances of generic methods in the AOT case */
-			if (method->is_inflated) {
-				g_assert (((MonoMethodInflated*)method)->declaring->slot != -1);
-				res = vtable [((MonoMethodInflated*)method)->declaring->slot];
-			}
-		}
+		res = vtable [method->slot];
 	}
 
 	if (is_proxy) {
