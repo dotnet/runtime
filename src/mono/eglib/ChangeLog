@@ -1,3 +1,9 @@
+2008-09-16  Bill Holmes  <billholmes54@gmail.com>
+
+	* src/gunicode.c : Fix a warning.
+
+	Contributed under MIT/X11 license.
+
 2008-08-28  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/glib.h : Adding a c++ definition for G_BEGIN_DECLS.

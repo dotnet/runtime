@@ -346,7 +346,7 @@ g_utf8_strlen (const gchar *str, gssize max)
 	else if (max < 0)
 		byteCount = max;
 	while (*ptr != 0 && byteCount <= max) {
-		guint cLen = g_trailingBytesForUTF8 [*ptr] + 1;
+		gssize cLen = g_trailingBytesForUTF8 [*ptr] + 1;
 		if (max > 0 && (byteCount + cLen) > max)
 			return length;
 		ptr += cLen;
