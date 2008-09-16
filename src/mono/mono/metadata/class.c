@@ -5686,15 +5686,19 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 			return class;
 		} else if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_ASSEMBLYREF) {
 			MonoAssembly **references = image->references;
-			if (!references [idx - 1])
-				mono_assembly_load_reference (image, idx - 1);
+			guint32 assembly_idx;
+
+			assembly_idx = impl >> MONO_IMPLEMENTATION_BITS;
+
+			if (!references [assembly_idx - 1])
+				mono_assembly_load_reference (image, assembly_idx - 1);
 			g_assert (references == image->references);
-			g_assert (references [idx - 1]);
-			if (references [idx - 1] == (gpointer)-1)
+			g_assert (references [assembly_idx - 1]);
+			if (references [assembly_idx - 1] == (gpointer)-1)
 				return NULL;			
 			else
 				/* FIXME: Cycle detection */
-				return mono_class_from_name (references [idx - 1]->image, name_space, name);
+				return mono_class_from_name (references [assembly_idx - 1]->image, name_space, name);
 		} else {
 			g_error ("not yet implemented");
 		}
