@@ -1,3 +1,8 @@
+2008-09-17  Raja R Harinath  <harinath@hurrynot.org>
+
+	* Makefile.am (EXTRA_DIST): Update.
+	* nls.m4, progtest.m4: Really add from Gettext 0.17.
+
 2008-09-15  Raja R Harinath  <harinath@hurrynot.org>
 
 	* configure.in (AC_CONFIG_FILES): Put po/mcs/Makefile.in in its
