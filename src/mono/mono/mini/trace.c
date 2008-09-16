@@ -17,6 +17,7 @@
 #include "mini.h"
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
+#include <mono/utils/mono-time.h>
 #include "trace.h"
 
 static MonoTraceSpec trace_spec;
@@ -255,14 +256,27 @@ mono_trace_set_assembly (MonoAssembly *assembly)
 	trace_spec.assembly = assembly;
 }
 
-static int indent_level = 0;
+static
+#ifdef HAVE_KW_THREAD
+__thread 
+#endif
+int indent_level = 0;
+static guint64 start_time = 0;
+
+static double seconds_since_start (void)
+{
+	guint64 diff = mono_100ns_ticks () - start_time;
+	return diff/10000000.0;
+}
 
 static void indent (int diff) {
 	int v;
 	if (diff < 0)
 		indent_level += diff;
 	v = indent_level;
-	printf ("[%d] ", indent_level);
+	if (start_time == 0)
+		start_time = mono_100ns_ticks ();
+	printf ("[%p: %.5f %d] ", (void*)GetCurrentThreadId (), seconds_since_start (), indent_level);
 	if (diff > 0)
 		indent_level += diff;
 }
