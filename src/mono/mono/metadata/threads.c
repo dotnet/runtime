@@ -1054,16 +1054,8 @@ void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 }
 
-void ves_icall_System_Threading_Thread_SpinWait_internal (gint32 iterations)
+void ves_icall_System_Threading_Thread_SpinWait_nop (void)
 {
-	gint32 i;
-	
-	for(i = 0; i < iterations; i++) {
-		/* We're busy waiting, but at least we can tell the
-		 * scheduler to let someone else have a go...
-		 */
-		Sleep (0);
-	}
 }
 
 gint32

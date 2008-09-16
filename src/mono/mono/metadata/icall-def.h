@@ -825,7 +825,7 @@ ICALL(THREAD_19, "SetSerializedCurrentCulture", ves_icall_System_Threading_Threa
 ICALL(THREAD_20, "SetSerializedCurrentUICulture", ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture)
 ICALL(THREAD_21, "SetState", ves_icall_System_Threading_Thread_SetState)
 ICALL(THREAD_22, "Sleep_internal", ves_icall_System_Threading_Thread_Sleep_internal)
-ICALL(THREAD_54, "SpinWait_internal", ves_icall_System_Threading_Thread_SpinWait_internal)
+ICALL(THREAD_54, "SpinWait_nop", ves_icall_System_Threading_Thread_SpinWait_nop)
 ICALL(THREAD_23, "Suspend_internal", ves_icall_System_Threading_Thread_Suspend)
 ICALL(THREAD_24, "Thread_free_internal", ves_icall_System_Threading_Thread_Thread_free_internal)
 ICALL(THREAD_24a, "Thread_init", ves_icall_System_Threading_Thread_Thread_init)
