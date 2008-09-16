@@ -1,3 +1,11 @@
+2008-09-16  Bill Holmes  <billholmes54@gmail.com>
+
+	* eglib.vcproj, genmdesc.vcproj, libgc.vcproj, libmono.vcproj,
+	  mono.vcproj, monoburg.vcproj:  Adding i386 preprocessor definition
+	  to the Win32 build targets.
+
+	Contributed under MIT/X11 license.
+
 2008-08-12  Bill Holmes  <billholmes54@gmail.com>
 
 	* eglib.vcproj, genmdesc.vcproj, libgc.vcproj, libmono.vcproj, libtest.vcproj,
