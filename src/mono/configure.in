@@ -389,6 +389,16 @@ fi
 # we do not configure the full gettext, as we consume it dynamically from C#
 AM_PO_SUBDIRS
 
+a='@GETTEXT_MACRO'
+b='_VERSION@'
+c="$a$b"
+po_dirs=po/mcs
+if grep -q $c $0; then
+	po_dirs=
+fi
+AC_CONFIG_SUBDIRS(po/mcs)
+AC_SUBST(po_dirs)
+
 AC_ARG_WITH([libgdiplus], 
 	[  --with-libgdiplus=installed|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to NO)], 
 	[], [with_libgdiplus=installed])
@@ -2150,7 +2160,7 @@ else
 fi
 AC_SUBST(mono_cfg_dir)
 
-AC_CONFIG_FILES([po/mcs/Makefile.in])
+AC_CONFIG_FILES([po/mcs/Makefile.in po/Makefile.in])
 
 AC_CONFIG_FILES([runtime/mono-wrapper],[chmod +x runtime/mono-wrapper])
 AC_CONFIG_FILES([runtime/monodis-wrapper],[chmod +x runtime/monodis-wrapper])
