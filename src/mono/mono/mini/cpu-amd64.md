@@ -382,6 +382,8 @@ int_bge_un: len:8
 int_ble: len:8
 int_ble_un: len:8
 
+relaxed_nop: len:2
+
 # Linear IR opcodes
 nop: len:0
 dummy_use: len:0

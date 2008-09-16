@@ -2712,6 +2712,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 								 (gpointer)"mono_break");
 			code = emit_call_seq (cfg, code);
 			break;
+		case OP_RELAXED_NOP:
+			ARM_NOP (code);
+			break;
 		case OP_NOP:
 		case OP_DUMMY_USE:
 		case OP_DUMMY_STORE:

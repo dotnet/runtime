@@ -2232,6 +2232,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	  
        switch (ins->opcode)
 	 {
+	 case OP_RELAXED_NOP:
+	 	break;
 	 case OP_LSHR:
 	   // Shift 64 bit value right
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [long_shr] dreg=%d, sreg1=%d, sreg2=%d\n",

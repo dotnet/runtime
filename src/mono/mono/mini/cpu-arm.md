@@ -48,6 +48,7 @@
 #
 memory_barrier: len:4
 nop: len:4
+relaxed_nop: len:4
 break: len:4
 jmp: len:92
 br: len:4

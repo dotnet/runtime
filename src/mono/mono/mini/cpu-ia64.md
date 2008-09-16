@@ -367,6 +367,8 @@ ia64_loadi8_membase_inc: dest:b src1:i len:48
 ia64_loadr4_membase_inc: dest:b src1:i len:48
 ia64_loadr8_membase_inc: dest:b src1:i len:48
 
+relaxed_nop: len:0
+
 # Linear IR opcodes
 nop: len:0
 dummy_use: len:0

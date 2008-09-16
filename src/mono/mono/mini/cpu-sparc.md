@@ -289,6 +289,8 @@ sparc_cond_exc_gtz: src1:i len:64
 sparc_cond_exc_gez: src1:i len:64
 sparc_cond_exc_lez: src1:i len:64
 
+relaxed_nop: len:0
+
 # Linear IR opcodes
 nop: len:0
 dummy_use: len:0

@@ -1288,6 +1288,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		mono_debug_record_line_number (cfg, ins, offset);
 
 		switch (ins->opcode) {
+		case OP_RELAXED_NOP:
+			break;
 		case OP_STOREI1_MEMBASE_IMM:
 			EMIT_STORE_MEMBASE_IMM (ins, stb);
 			break;

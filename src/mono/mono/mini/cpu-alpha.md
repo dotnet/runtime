@@ -54,6 +54,7 @@
 #
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
+relaxed_nop: len:4
 break: len:4
 jmp: len:48
 br: len:4

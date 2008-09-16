@@ -47,6 +47,7 @@
 #
 
 nop: len:4
+relaxed_nop: len:4
 
 adc: dest:i src1:i src2:i len:6
 add_ovf_carry: dest:i src1:1 src2:i len:28

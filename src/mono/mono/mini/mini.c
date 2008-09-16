@@ -4102,6 +4102,10 @@ mini_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
 			return ins;
 		}
+		if (strcmp (cmethod->name, "SpinWait_nop") == 0) {
+			MONO_INST_NEW (cfg, ins, OP_RELAXED_NOP);
+			return ins;
+		}
 	} else if (mini_class_is_system_array (cmethod->klass) &&
 			strcmp (cmethod->name, "GetGenericValueImpl") == 0) {
 		MonoInst *sp [2];

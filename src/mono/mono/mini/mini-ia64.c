@@ -2396,6 +2396,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = code.buf - cfg->native_code;
 			break;
 		case OP_NOP:
+		case OP_RELAXED_NOP:
 		case OP_DUMMY_USE:
 		case OP_DUMMY_STORE:
 		case OP_NOT_REACHED:

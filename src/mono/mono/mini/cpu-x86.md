@@ -308,6 +308,8 @@ atomic_exchange_i4: src1:b src2:i dest:a len:24
 atomic_cas_imm_i4: src1:b src2:i dest:a len:24
 memory_barrier: len:16
 
+relaxed_nop: len:2
+
 # Linear IR opcodes
 nop: len:0
 dummy_use: len:0

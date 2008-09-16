@@ -161,6 +161,7 @@ memory_barrier: len: 10
 move: dest:i src1:i len:4
 mul_imm: dest:i src1:i len:24
 nop: len:4
+relaxed_nop: len:4
 oparglist: src1:i len:28
 bigmul: len:2 dest:i src1:a src2:i
 bigmul_un: len:2 dest:i src1:a src2:i

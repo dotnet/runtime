@@ -1897,6 +1897,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_mflo (code, ins->dreg);
 			mips_mfhi (code, ins->dreg+1);
 			break;
+		case OP_RELAXED_NOP:
+			break;
 		case OP_MEMORY_BARRIER:
 #if 0
 			ppc_sync (code);

@@ -47,6 +47,7 @@
 #
 # See the code in mini-hppa.c for more details on how the specifiers are used.
 #
+relaxed_nop: len:0
 label: len:0
 break: len:64
 jmp: len:64
