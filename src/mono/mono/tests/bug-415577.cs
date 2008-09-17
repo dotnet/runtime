@@ -16,7 +16,7 @@ public class MyContextAttribute: Attribute, IContextAttribute  {
 	}
 }
 
-// CBO class whose objects are always in the corrent context
+// CBO class whose objects are always in the correct context
 class UnlockedCbo : ContextBoundObject {
 	public int Counter;
 
