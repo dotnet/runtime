@@ -1347,6 +1347,27 @@ mono_mb_emit_xdomain_check (MonoMethodBuilder *mb, int branch_code)
 	return pos;
 }
 
+static int
+mono_mb_emit_contextbound_check (MonoMethodBuilder *mb, int branch_code)
+{
+	static int offset = -1;
+	static guint8 mask;
+
+	if (offset < 0)
+		mono_marshal_find_bitfield_offset (MonoClass, contextbound, &offset, &mask);
+
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, remote_class));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRemoteClass, proxy_class));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_ldflda (mb, offset);
+	mono_mb_emit_byte (mb, CEE_LDIND_U1);
+	mono_mb_emit_icon (mb, mask);
+	mono_mb_emit_byte (mb, CEE_AND);
+	mono_mb_emit_icon (mb, 0);
+	return mono_mb_emit_branch (mb, branch_code);
+}
+
 static void
 mono_mb_emit_cominterop_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethod* method)
 {
@@ -5288,7 +5309,7 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 	MonoClass *klass;
 	GHashTable *cache;
 	char *name;
-	int t, pos0;
+	int t, pos0, pos1, pos2, pos3;
 
 	type = mono_type_get_underlying_type (type);
 	t = type->type;
@@ -5331,12 +5352,50 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 	sig->params [3] = &mono_defaults.int_class->byval_arg;
 	sig->ret = &mono_defaults.int_class->byval_arg;
 
+	/* if typeof (this) != transparent_proxy goto pos0 */
 	mono_mb_emit_ldarg (mb, 0);
 	pos0 = mono_mb_emit_proxy_check (mb, CEE_BNE_UN);
 
-	/* FIXME: Only throw this if the object is in another appdomain */
+	/* if same_appdomain goto pos1 */
+	mono_mb_emit_ldarg (mb, 0);
+	pos1 = mono_mb_emit_xdomain_check (mb, CEE_BEQ);
+
 	mono_mb_emit_exception_full (mb, "System", "InvalidOperationException", "Attempt to load field address from object in another appdomain.");
 
+	/* same app domain */
+	mono_mb_patch_branch (mb, pos1);
+
+	/* if typeof (this) != contextbound goto pos2 */
+	mono_mb_emit_ldarg (mb, 0);
+	pos2 = mono_mb_emit_contextbound_check (mb, CEE_BEQ);
+
+	/* if this->rp->context == mono_context_get goto pos3 */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, context));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_icall (mb, mono_context_get);
+	pos3 = mono_mb_emit_branch (mb, CEE_BEQ);
+
+	mono_mb_emit_exception_full (mb, "System", "InvalidOperationException", "Attempt to load field address from object in another context.");
+
+	mono_mb_patch_branch (mb, pos2);
+	mono_mb_patch_branch (mb, pos3);
+
+	/* return the address of the field from this->rp->unwrapped_server */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoTransparentProxy, rp));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoRealProxy, unwrapped_server));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_OBJADDR);
+	mono_mb_emit_ldarg (mb, 3);
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/* not a proxy: return the address of the field directly */
 	mono_mb_patch_branch (mb, pos0);
 
 	mono_mb_emit_ldarg (mb, 0);
