@@ -43,7 +43,7 @@ namespace Mono.Linker {
 		public static int Main (string [] args)
 		{
 			if (args.Length == 0)
-				Usage ();
+				Usage ("No parameters specified");
 
 			try {
 
@@ -81,15 +81,15 @@ namespace Mono.Linker {
 			while (HaveMoreTokens ()) {
 				string token = GetParam ();
 				if (token.Length < 2)
-					Usage ();
+					Usage ("Option is too short");
 
 				if (! (token [0] == '-' || token [1] == '/'))
-					Usage ();
+					Usage ("Expecting an option, got instead: " + token);
 
 				if (token [0] == '-' && token [1] == '-') {
 
 					if (token.Length < 3)
-						Usage ();
+						Usage ("Option is too short");
 
 					switch (token [2]) {
 					case 'v':
@@ -99,7 +99,7 @@ namespace Mono.Linker {
 						About ();
 						break;
 					default:
-						Usage ();
+						Usage (null);
 						break;
 					}
 				}
@@ -152,13 +152,13 @@ namespace Mono.Linker {
 						p.RemoveStep (typeof (RegenerateGuidStep));
 					break;
 				default:
-					Usage ();
+					Usage ("Unknown option: `" + token [1] + "'");
 					break;
 				}
 			}
 
 			if (!resolver)
-				Usage ();
+				Usage ("No resolver was created (use -x, -a or -i)");
 
 			p.AddStepAfter (typeof (LoadReferencesStep), new LoadI18nAssemblies (assemblies));
 
@@ -175,14 +175,14 @@ namespace Mono.Linker {
 
 			string [] parts = arg.Split (':');
 			if (parts.Length != 2)
-				Usage ();
+				Usage ("Step is specified as TYPE:STEP");
 
 			if (parts [0].IndexOf (",") > -1)
 				pipeline.AddStepBefore (FindStep (pipeline, parts [1]), ResolveStep (parts [0]));
 			else if (parts [1].IndexOf (",") > -1)
 				pipeline.AddStepAfter (FindStep (pipeline, parts [0]), ResolveStep (parts [1]));
 			else
-				Usage ();
+				Usage ("No comma separator in TYPE or STEP");
 		}
 
 		static Type FindStep (Pipeline pipeline, string name)
@@ -240,7 +240,7 @@ namespace Mono.Linker {
 		string GetParam ()
 		{
 			if (_queue.Count == 0)
-				Usage ();
+				Usage ("Expecting a parameter");
 
 			return (string) _queue.Dequeue ();
 		}
@@ -253,9 +253,11 @@ namespace Mono.Linker {
 			return context;
 		}
 
-		static void Usage ()
+		static void Usage (string msg)
 		{
 			Console.WriteLine (_linker);
+			if (msg != null)
+				Console.WriteLine ("Error: " + msg);
 			Console.WriteLine ("monolinker [options] -x|-a|-i file");
 
 			Console.WriteLine ("   --about     About the {0}", _linker);
