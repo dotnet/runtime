@@ -564,13 +564,16 @@ id_from_string (MonoString *instance)
 static void
 get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *sirq, gint64 *idle)
 {
+	SYSTEM_INFO info;
 	char buf [256];
 	char *s;
-	int hz = 100 * 2; // 2 numprocs
+	int hz = 100;
 	long long unsigned int user_ticks, nice_ticks, system_ticks, idle_ticks, iowait_ticks, irq_ticks, sirq_ticks;
 	FILE *f = fopen ("/proc/stat", "r");
 	if (!f)
 		return;
+	GetSystemInfo (&info);
+	hz *= info.dwNumberOfProcessors;
 	while ((s = fgets (buf, sizeof (buf), f))) {
 		char *data = NULL;
 		if (cpu_id < 0 && strncmp (s, "cpu", 3) == 0 && g_ascii_isspace (s [3])) {
@@ -609,7 +612,7 @@ get_cpu_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *
 		fill_sample (sample);
 		sample->baseValue = 1;
 	}
-	sample->counterType = predef_counters [predef_categories [CATEGORY_PROC].first_counter + id].type;
+	sample->counterType = predef_counters [predef_categories [CATEGORY_CPU].first_counter + id].type;
 	switch (id) {
 	case COUNTER_CPU_USER_TIME:
 		get_cpu_times (pid, &value, NULL, NULL, NULL, NULL);
@@ -843,6 +846,7 @@ predef_readonly_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 	case CATEGORY_EXC:
 		switch (id) {
 		case COUNTER_EXC_THROWN:
+		case COUNTER_EXC_THROWN_PSEC:
 			sample->rawValue = vt->counters->exceptions_thrown;
 			return TRUE;
 		}
@@ -1293,11 +1297,106 @@ mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
 	return mono_array_new (domain, mono_get_string_class (), 0);
 }
 
+static MonoArray*
+get_string_array (void **array, int count)
+{
+	int i;
+	MonoDomain *domain = mono_domain_get ();
+	MonoArray * res = mono_array_new (mono_domain_get (), mono_get_string_class (), count);
+	for (i = 0; i < count; ++i) {
+		char buf [32];
+		sprintf (buf, "%d", GPOINTER_TO_INT (array [i]));
+		mono_array_setref (res, i, mono_string_new (domain, buf));
+	}
+	return res;
+}
+
+static MonoArray*
+get_mono_instances (void)
+{
+	int count = 64;
+	int res;
+	void **buf = NULL;
+	MonoArray *array;
+	do {
+		count *= 2;
+		g_free (buf);
+		buf = g_new (void*, count);
+		res = mono_shared_area_instances (buf, count);
+	} while (res == count);
+	array = get_string_array (buf, res);
+	g_free (buf);
+	return array;
+}
+
+static MonoArray*
+get_cpu_instances (void)
+{
+	void **buf = NULL;
+	int i;
+	MonoArray *array;
+	SYSTEM_INFO info;
+	GetSystemInfo (&info);
+	buf = g_new (void*, info.dwNumberOfProcessors);
+	for (i = 0; i < info.dwNumberOfProcessors; ++i)
+		buf [i] = GINT_TO_POINTER (i);
+	array = get_string_array (buf, info.dwNumberOfProcessors);
+	g_free (buf);
+	return array;
+}
+
+static MonoArray*
+get_processes_instances (void)
+{
+	const char *name;
+	void **buf = NULL;
+	int count = 0;
+	int i = 0;
+	MonoArray *array;
+	GDir *dir = g_dir_open ("/proc/", 0, NULL);
+	if (!dir)
+		return get_string_array (NULL, 0);
+	while ((name = g_dir_read_name (dir))) {
+		int pid;
+		char *nend;
+		pid = strtol (name, &nend, 10);
+		if (pid <= 0 || nend == name || *nend)
+			continue;
+		if (i >= count) {
+			if (!count)
+				count = 16;
+			else
+				count *= 2;
+			buf = g_realloc (buf, count * sizeof (void*));
+		}
+		buf [i++] = GINT_TO_POINTER (pid);
+	}
+	g_dir_close (dir);
+	array = get_string_array (buf, i);
+	g_free (buf);
+	return array;
+}
+
 MonoArray*
 mono_perfcounter_instance_names (MonoString *category, MonoString *machine)
 {
+	const CategoryDesc* cat;
 	if (mono_string_compare_ascii (machine, "."))
 		return mono_array_new (mono_domain_get (), mono_get_string_class (), 0);
-	return mono_array_new (mono_domain_get (), mono_get_string_class (), 0);
+	cat = find_category (category);
+	if (!cat)
+		return mono_array_new (mono_domain_get (), mono_get_string_class (), 0);
+	switch (cat->instance_type) {
+	case MonoInstance:
+		return get_mono_instances ();
+	case CPUInstance:
+		return get_cpu_instances ();
+	case ProcessInstance:
+		return get_processes_instances ();
+	case CustomInstance:
+	case ThreadInstance:
+	default:
+		return mono_array_new (mono_domain_get (), mono_get_string_class (), 0);
+	}
 }
 

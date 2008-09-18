@@ -37,8 +37,8 @@ PERFCTR_COUNTER(JIT_FAILURES, "Standard Jit Failures", "", NumberOfItems32)
 
 PERFCTR_CAT(EXC, ".NET CLR Exceptions", "", MultiInstance, Mono, EXC_THROWN)
 PERFCTR_COUNTER(EXC_THROWN, "# of Exceps Thrown", "", NumberOfItems32)
-PERFCTR_COUNTER(EXC_THROWN_PSEC, "# of Exceps Thrown/Sec", "", Timer100Ns)
-PERFCTR_COUNTER(EXC_FILTERS_PSEC, "# of Filters/Sec", "", Timer100Ns)
-PERFCTR_COUNTER(EXC_FINALLYS_PSEC, "# of Finallys/Sec", "", Timer100Ns)
-PERFCTR_COUNTER(EXC_CATCH_DEPTH, "Throw to Catch Depth/Sec", "", Timer100Ns)
+PERFCTR_COUNTER(EXC_THROWN_PSEC, "# of Exceps Thrown/Sec", "", RateOfCountsPerSecond32)
+PERFCTR_COUNTER(EXC_FILTERS_PSEC, "# of Filters/Sec", "", RateOfCountsPerSecond32)
+PERFCTR_COUNTER(EXC_FINALLYS_PSEC, "# of Finallys/Sec", "", RateOfCountsPerSecond32)
+PERFCTR_COUNTER(EXC_CATCH_DEPTH, "Throw to Catch Depth/Sec", "", NumberOfItems32)
 
