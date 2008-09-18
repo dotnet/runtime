@@ -2722,9 +2722,28 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 			break;
 
 		case RegTypeBase:
-		case RegTypeStructByVal:
 			/* FIXME: */
 			NOT_IMPLEMENTED;
+
+		case RegTypeStructByVal: {
+			guint32 size;
+
+			/* FIXME: */
+			if (ainfo->vtsize)
+				NOT_IMPLEMENTED;
+#ifdef __APPLE__
+			size = mono_class_native_size (inst->klass, NULL);
+			if (size == 1 || size == 2) {
+				/* FIXME: */
+				NOT_IMPLEMENTED;
+			} else
+#endif
+				for (i = 0; i < ainfo->size; ++i) {
+					ppc_lwz (code, ainfo->reg  + i,
+						inst->inst_offset + i * sizeof (gpointer), inst->inst_basereg);
+				}
+			break;
+		}
 
 		case RegTypeStructByAddr: {
 			MonoInst *addr = cfg->tailcall_valuetype_addrs [struct_index];
