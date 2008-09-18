@@ -30,6 +30,7 @@ void* mono_shared_area         (void);
 void  mono_shared_area_remove  (void);
 void* mono_shared_area_for_pid (void *pid);
 void  mono_shared_area_unload  (void *area);
+int   mono_shared_area_instances (void **array, int count);
 
 #endif /* __MONO_UTILS_MMAP_H__ */
 

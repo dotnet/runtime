@@ -186,6 +186,12 @@ mono_shared_area_unload (void *area)
 {
 }
 
+int
+mono_shared_area_instances (void **array, int count)
+{
+	return 0;
+}
+
 #elif defined(HAVE_MMAP)
 
 /**
@@ -366,13 +372,15 @@ mono_mprotect (void *addr, size_t length, int flags)
 	return mprotect (addr, length, prot);
 }
 
-static void
-shared_cleanup (void)
+static int
+mono_shared_area_instances_helper (void **array, int count, gboolean cleanup)
 {
 	const char *name;
+	int i = 0;
+	int curpid = getpid ();
 	GDir *dir = g_dir_open ("/dev/shm/", 0, NULL);
 	if (!dir)
-		return;
+		return i;
 	while ((name = g_dir_read_name (dir))) {
 		int pid;
 		char *nend;
@@ -381,13 +389,20 @@ shared_cleanup (void)
 		pid = strtol (name + 5, &nend, 10);
 		if (pid <= 0 || nend == name + 5 || *nend)
 			continue;
-		if (kill (pid, SIGCONT) == -1 && errno == ESRCH) {
+		if (!cleanup) {
+			if (i < count)
+				array [i++] = GINT_TO_POINTER (pid);
+			else
+				break;
+		}
+		if (curpid != pid && kill (pid, SIGCONT) == -1 && errno == ESRCH) {
 			char buf [128];
 			g_snprintf (buf, sizeof (buf), "/mono.%d", pid);
 			shm_unlink (buf);
 		}
 	}
 	g_dir_close (dir);
+	return i;
 }
 
 void*
@@ -402,7 +417,7 @@ mono_shared_area (void)
 	SAreaHeader *header;
 
 	/* perform cleanup of segments left over from dead processes */
-	shared_cleanup ();
+	mono_shared_area_instances_helper (NULL, 0, TRUE);
 
 	g_snprintf (buf, sizeof (buf), "/mono.%d", pid);
 
@@ -480,6 +495,12 @@ mono_shared_area_unload  (void *area)
 {
 	/* FIXME: currently we load only a page */
 	munmap (area, mono_pagesize ());
+}
+
+int
+mono_shared_area_instances (void **array, int count)
+{
+	return mono_shared_area_instances_helper (array, count, FALSE);
 }
 
 #else
@@ -562,6 +583,12 @@ mono_shared_area_for_pid (void *pid)
 void
 mono_shared_area_unload (void *area)
 {
+}
+
+int
+mono_shared_area_instances (void **array, int count)
+{
+	return 0;
 }
 
 #endif
