@@ -1330,9 +1330,27 @@ void
 mono_assembly_load_friends (MonoAssembly* ass)
 {
 	int i;
-	MonoCustomAttrInfo* attrs = mono_custom_attrs_from_assembly (ass);
-	if (!attrs)
+	MonoCustomAttrInfo* attrs;
+
+	if (ass->friend_assembly_names_inited)
 		return;
+
+	attrs = mono_custom_attrs_from_assembly (ass);
+	if (!attrs) {
+		ass->friend_assembly_names_inited = TRUE;
+		return;
+	}
+
+	mono_assemblies_lock ();
+	if (ass->friend_assembly_names_inited) {
+		mono_assemblies_unlock ();
+		return;
+	}
+
+	/* 
+	 * assemblies_lock () is a low level lock so the code below should not take 
+	 * any locks.
+	 */
 	for (i = 0; i < attrs->num_attrs; ++i) {
 		MonoCustomAttrEntry *attr = &attrs->attrs [i];
 		MonoAssemblyName *aname;
@@ -1351,14 +1369,17 @@ mono_assembly_load_friends (MonoAssembly* ass)
 		aname = g_new0 (MonoAssemblyName, 1);
 		/*g_print ("friend ass: %s\n", data);*/
 		if (mono_assembly_name_parse_full (data, aname, TRUE, NULL, NULL)) {
-			mono_assemblies_lock ();
 			ass->friend_assembly_names = g_slist_prepend (ass->friend_assembly_names, aname);
-			mono_assemblies_unlock ();
 		} else {
 			g_free (aname);
 		}
 	}
 	mono_custom_attrs_free (attrs);
+
+	/* Because of the double checked locking pattern above */
+	mono_memory_barrier ();
+	ass->friend_assembly_names_inited = TRUE;
+	mono_assemblies_unlock ();
 }
 
 /**
@@ -1472,8 +1493,6 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	loaded_assemblies = g_list_prepend (loaded_assemblies, ass);
 	mono_assemblies_unlock ();
 
-	if (mono_defaults.internals_visible_class)
-		mono_assembly_load_friends (ass);
 #ifdef PLATFORM_WIN32
 	if (image->is_module_handle)
 		mono_image_fixup_vtable (image);

@@ -30,7 +30,8 @@ struct _MonoAssembly {
 	char *basedir;
 	MonoAssemblyName aname;
 	MonoImage *image;
-	GSList *friend_assembly_names;
+	GSList *friend_assembly_names; /* Computed by mono_assembly_load_friends () */
+	guint8 friend_assembly_names_inited;
 	guint8 in_gac;
 	guint8 dynamic;
 	guint8 corlib_internal;

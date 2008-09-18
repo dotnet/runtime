@@ -1035,7 +1035,7 @@ mono_class_setup_fields (MonoClass *class)
 			ifield->generic_type = gfield->type;
 			field->name = gfield->name;
 			field->generic_info = ifield;
-			/*This memory must come from the image mempool as we don't have a change to free it.*/
+			/*This memory must come from the image mempool as we don't have a chance to free it.*/
 			field->type = mono_class_inflate_generic_type_with_mempool (class->image->mempool, gfield->type, mono_class_get_context (class));
 			field->type->attrs = gfield->type->attrs;
 			if (mono_field_is_deleted (field))
@@ -7144,6 +7144,7 @@ can_access_internals (MonoAssembly *accessing, MonoAssembly* accessed)
 		return TRUE;
 	if (!accessed || !accessing)
 		return FALSE;
+	mono_assembly_load_friends (accessed);
 	for (tmp = accessed->friend_assembly_names; tmp; tmp = tmp->next) {
 		MonoAssemblyName *friend = tmp->data;
 		/* Be conservative with checks */
