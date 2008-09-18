@@ -7414,7 +7414,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
 
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
+		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN))
 			break;
 
 		mono_mb_emit_ldarg (mb, argnum);
@@ -7433,7 +7433,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		g_assert (variant_clear);
 
 
-		if (t->byref) {
+		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 			mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
@@ -7466,7 +7466,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
 
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
+		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN))
 			break;
 
 		if (t->byref)
@@ -7479,7 +7479,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
-		if (t->byref) {
+		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT) {
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
@@ -11811,7 +11811,7 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 			mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, NULL);
 			mono_loader_lock ();
 			mono_marshal_lock ();
-			wrapper_method = mono_mb_create_method (mb, sig_adjusted, sig_adjusted->param_count + 16);
+			wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
 			mono_marshal_unlock ();
 			mono_loader_unlock ();
 
