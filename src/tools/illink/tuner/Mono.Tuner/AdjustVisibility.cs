@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Collections;
 
 using Mono.Linker;
@@ -39,13 +40,18 @@ namespace Mono.Tuner {
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			foreach (TypeDefinition type in assembly.MainModule.Types)
+			ProcessTypes (assembly.MainModule.Types);
+		}
+
+		static void ProcessTypes (ICollection types)
+		{
+			foreach (TypeDefinition type in types)
 				ProcessType (type);
 		}
 
 		static void ProcessType (TypeDefinition type)
 		{
-			if (!type.IsPublic)
+			if (!IsPublic (type))
 				return;
 
 			if (!IsMarkedAsPublic (type)) {
@@ -59,6 +65,11 @@ namespace Mono.Tuner {
 			ProcessFields (type.Fields);
 			ProcessMethods (type.Constructors);
 			ProcessMethods (type.Methods);
+		}
+
+		static bool IsPublic (TypeDefinition type)
+		{
+			return type.DeclaringType == null ? type.IsPublic : type.IsNestedPublic;
 		}
 
 		static void SetInternalVisibility (TypeDefinition type)
