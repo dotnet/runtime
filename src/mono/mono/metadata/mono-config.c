@@ -43,40 +43,40 @@
 
 #if defined(__i386__)
 #define CONFIG_CPU "x86"
-#define CONFIG_BITS "32"
+#define CONFIG_WORDSIZE "32"
 #elif defined(__x86_64__)
 #define CONFIG_CPU "x86-64"
-#define CONFIG_BITS "64"
+#define CONFIG_WORDSIZE "64"
 #elif defined(sparc) || defined(__sparc__)
 #define CONFIG_CPU "sparc"
-#define CONFIG_BITS "32"
+#define CONFIG_WORDSIZE "32"
 #elif defined(__ppc64__) || defined(__powerpc64__)
 #define CONFIG_CPU "ppc64"
-#define CONFIG_BITS "64"
+#define CONFIG_WORDSIZE "64"
 #elif defined(__ppc__) || defined(__powerpc__)
 #define CONFIG_CPU "ppc"
-#define CONFIG_BITS "32"
+#define CONFIG_WORDSIZE "32"
 #elif defined(__s390x__)
 #define CONFIG_CPU "s390x"
-#define CONFIG_BITS "64"
+#define CONFIG_WORDSIZE "64"
 #elif defined(__s390__)
 #define CONFIG_CPU "s390"
-#define CONFIG_BITS "32"
+#define CONFIG_WORDSIZE "32"
 #elif defined(__arm__)
 #define CONFIG_CPU "arm"
-#define CONFIG_BITS "32"
+#define CONFIG_WORDSIZE "32"
 #elif defined(__ia64__)
 #define CONFIG_CPU "ia64"
-#define CONFIG_BITS "64"
+#define CONFIG_WORDSIZE "64"
 #elif defined(__alpha__)
 #define CONFIG_CPU "alpha"
-#define CONFIG_BITS "64"
+#define CONFIG_WORDSIZE "64"
 #elif defined(hppa) || defined(__hppa__)
 #define CONFIG_CPU "hppa"
-#define CONFIG_BITS "32"
+#define CONFIG_WORDSIZE "32"
 #elif defined(mips) || defined(__mips) || defined(_mips)
 #define CONFIG_CPU "mips"
-#define CONFIG_BITS "32"
+#define CONFIG_WORDSIZE "32"
 #else
 #warning Unknown CPU
 #define CONFIG_CPU "unknownCPU"
@@ -259,7 +259,7 @@ dllmap_start (gpointer user_data,
 				info->ignore = TRUE;
 			else if (strcmp (attribute_names [i], "cpu") == 0 && !arch_matches (CONFIG_CPU, attribute_values [i]))
 				info->ignore = TRUE;
-			else if (strcmp (attribute_names [i], "bits") == 0 && !arch_matches (CONFIG_BITS, attribute_values [i]))
+			else if (strcmp (attribute_names [i], "wordsize") == 0 && !arch_matches (CONFIG_WORDSIZE, attribute_values [i]))
 				info->ignore = TRUE;
 		}
 		if (!info->ignore)
@@ -278,7 +278,7 @@ dllmap_start (gpointer user_data,
 				ignore = TRUE;
 			else if (strcmp (attribute_names [i], "cpu") == 0 && !arch_matches (CONFIG_CPU, attribute_values [i]))
 				ignore = TRUE;
-			else if (strcmp (attribute_names [i], "bits") == 0 && !arch_matches (CONFIG_BITS, attribute_values [i]))
+			else if (strcmp (attribute_names [i], "wordsize") == 0 && !arch_matches (CONFIG_WORDSIZE, attribute_values [i]))
 				ignore = TRUE;
 		}
 		if (!dll)
