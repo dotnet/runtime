@@ -547,16 +547,16 @@ fill_sample (MonoCounterSample *sample)
 }
 
 static int
-id_from_string (MonoString *instance)
+id_from_string (MonoString *instance, gboolean is_process)
 {
 	int id = -1;
 	if (mono_string_length (instance)) {
 		char *id_str = mono_string_to_utf8 (instance);
 		char *end;
 		id = strtol (id_str, &end, 0);
+		if (end == id_str && !is_process)
+			id = -1;
 		g_free (id_str);
-		if (end == id_str)
-			return -1;
 	}
 	return id;
 }
@@ -641,7 +641,7 @@ get_cpu_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *
 static void*
 cpu_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBoolean *custom)
 {
-	int id = id_from_string (instance) << 5;
+	int id = id_from_string (instance, FALSE) << 5;
 	const CounterDesc *cdesc;
 	*custom = FALSE;
 	/* increase the shift above and the mask also in the implementation functions */
@@ -778,7 +778,7 @@ get_process_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSamp
 static void*
 process_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBoolean *custom)
 {
-	int id = id_from_string (instance) << 5;
+	int id = id_from_string (instance, TRUE) << 5;
 	const CounterDesc *cdesc;
 	*custom = FALSE;
 	/* increase the shift above and the mask also in the implementation functions */
@@ -1297,16 +1297,46 @@ mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
 	return mono_array_new (domain, mono_get_string_class (), 0);
 }
 
+static char*
+read_proc_name (int pid, char *buf, int len)
+{
+	char fname [128];
+	FILE *file;
+	char *p;
+	int r;
+	sprintf (fname, "/proc/%d/cmdline", pid);
+	buf [0] = 0;
+	file = fopen (fname, "r");
+	if (!file)
+		return buf;
+	r = fread (buf, 1, len - 1, file);
+	fclose (file);
+	buf [r] = 0;
+	p = strrchr (buf, '/');
+	if (p)
+		return p + 1;
+	return buf;
+}
+
 static MonoArray*
-get_string_array (void **array, int count)
+get_string_array (void **array, int count, gboolean is_process)
 {
 	int i;
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray * res = mono_array_new (mono_domain_get (), mono_get_string_class (), count);
 	for (i = 0; i < count; ++i) {
-		char buf [32];
-		sprintf (buf, "%d", GPOINTER_TO_INT (array [i]));
-		mono_array_setref (res, i, mono_string_new (domain, buf));
+		char buf [128];
+		char *p;
+		if (is_process) {
+			char *pname = read_proc_name (GPOINTER_TO_INT (array [i]), buf, sizeof (buf));
+			p = g_strdup_printf ("%d/%s", GPOINTER_TO_INT (array [i]), pname);
+		} else {
+			sprintf (buf, "%d", GPOINTER_TO_INT (array [i]));
+			p = buf;
+		}
+		mono_array_setref (res, i, mono_string_new (domain, p));
+		if (p != buf)
+			g_free (p);
 	}
 	return res;
 }
@@ -1324,7 +1354,7 @@ get_mono_instances (void)
 		buf = g_new (void*, count);
 		res = mono_shared_area_instances (buf, count);
 	} while (res == count);
-	array = get_string_array (buf, res);
+	array = get_string_array (buf, res, TRUE);
 	g_free (buf);
 	return array;
 }
@@ -1340,7 +1370,7 @@ get_cpu_instances (void)
 	buf = g_new (void*, info.dwNumberOfProcessors);
 	for (i = 0; i < info.dwNumberOfProcessors; ++i)
 		buf [i] = GINT_TO_POINTER (i);
-	array = get_string_array (buf, info.dwNumberOfProcessors);
+	array = get_string_array (buf, info.dwNumberOfProcessors, FALSE);
 	g_free (buf);
 	return array;
 }
@@ -1355,7 +1385,7 @@ get_processes_instances (void)
 	MonoArray *array;
 	GDir *dir = g_dir_open ("/proc/", 0, NULL);
 	if (!dir)
-		return get_string_array (NULL, 0);
+		return get_string_array (NULL, 0, FALSE);
 	while ((name = g_dir_read_name (dir))) {
 		int pid;
 		char *nend;
@@ -1372,7 +1402,7 @@ get_processes_instances (void)
 		buf [i++] = GINT_TO_POINTER (pid);
 	}
 	g_dir_close (dir);
-	array = get_string_array (buf, i);
+	array = get_string_array (buf, i, TRUE);
 	g_free (buf);
 	return array;
 }
