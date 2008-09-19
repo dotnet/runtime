@@ -4847,6 +4847,23 @@ mono_handle_soft_float (MonoCompile *cfg)
 
 #endif
 
+static void
+emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
+{
+	MonoInst *ins;
+	guint32 opcode = mono_type_to_regmove (cfg, header->locals [n]);
+	if ((opcode == OP_MOVE) && ((sp [0]->opcode == OP_ICONST) || (sp [0]->opcode == OP_I8CONST))) {
+		/* Optimize reg-reg moves away */
+		/* 
+		 * Can't optimize other opcodes, since sp[0] might point to
+		 * the last ins of a decomposed opcode.
+		 */
+		sp [0]->dreg = (cfg)->locals [n]->dreg;
+	} else {
+		EMIT_NEW_LOCSTORE (cfg, ins, n, *sp);
+	}
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -5340,26 +5357,13 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 		case CEE_STLOC_1:
 		case CEE_STLOC_2:
 		case CEE_STLOC_3: {
-			guint32 opcode;
-
 			CHECK_STACK (1);
 			n = (*ip)-CEE_STLOC_0;
 			CHECK_LOCAL (n);
 			--sp;
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [n], *sp))
 				UNVERIFIED;
-
-			opcode = mono_type_to_regmove (cfg, header->locals [n]);
-			if ((opcode == OP_MOVE) && ((sp [0]->opcode == OP_ICONST) || (sp [0]->opcode == OP_I8CONST))) {
-				/* Optimize reg-reg moves away */
-				/* 
-				 * Can't optimize other opcodes, since sp[0] might point to
-				 * the last ins of a decomposed opcode.
-				 */
-				sp [0]->dreg = (cfg)->locals [n]->dreg;
-			} else {
-				EMIT_NEW_LOCSTORE (cfg, ins, n, *sp);
-			}
+			emit_stloc_ir (cfg, sp, header, n);
 			++ip;
 			inline_costs += 1;
 			break;
@@ -5447,7 +5451,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			CHECK_LOCAL (ip [1]);
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [ip [1]], *sp))
 				UNVERIFIED;
-			EMIT_NEW_LOCSTORE (cfg, ins, ip [1], *sp);
+			emit_stloc_ir (cfg, sp, header, ip [1]);
 			ip += 2;
 			inline_costs += 1;
 			break;
@@ -8937,7 +8941,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				CHECK_LOCAL (n);
 				if (!dont_verify_stloc && target_type_is_incompatible (cfg, header->locals [n], *sp))
 					UNVERIFIED;
-				EMIT_NEW_LOCSTORE (cfg, ins, n, *sp);
+				emit_stloc_ir (cfg, sp, header, n);
 				ip += 4;
 				inline_costs += 1;
 				break;
