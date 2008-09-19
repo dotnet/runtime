@@ -5942,9 +5942,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				 (mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)))) {
 				MonoCallInst *call;
 
-				/* FIXME: runtime generic context pointer for jumps? */
-				GENERIC_SHARING_FAILURE (*ip);
-
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
 				INLINE_FAILURE;
 
@@ -9025,12 +9022,10 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				token = read32 (ip + 2);
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
-				if (generic_class_is_reference_type (cfg, klass)) {
+				if (generic_class_is_reference_type (cfg, klass))
 					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, sp [0]->dreg, 0, 0);
-				} else {
-					GENERIC_SHARING_FAILURE (CEE_INITOBJ);
+				else
 					mini_emit_initobj (cfg, *sp, NULL, klass);
-				}
 				ip += 6;
 				inline_costs += 1;
 				break;
@@ -9109,12 +9104,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				guint32 align;
 				int ialign;
 
-				GENERIC_SHARING_FAILURE (CEE_SIZEOF);
-
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
-				/* FIXXME: handle generics. */
 				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					token = mono_type_size (type, &ialign);
