@@ -9422,7 +9422,14 @@ inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
 	MonoGenericContext *context;
 	int i;
 
-	g_assert (klass->generic_class);
+	/*
+	 * With generic code sharing the klass might not be inflated.
+	 * This can happen because classes inflated with their own
+	 * type arguments are "normalized" to the uninflated class.
+	 */
+	if (!klass->generic_class)
+		return method;
+
 	context = mono_class_get_context (klass);
 
 	if (klass->method.count) {

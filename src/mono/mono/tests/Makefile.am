@@ -280,6 +280,7 @@ BASE_TEST_CS_SRC=		\
 	generic-virtual2.2.cs	\
 	generic-valuetype-interface.2.cs	\
 	generic-getgenericarguments.2.cs	\
+	generic-type-builder.2.cs	\
 	recursive-generics.2.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
@@ -699,7 +700,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-exceptions.2.exe generic-delegate2.2.exe		\
 		generic-virtual2.2.exe generic-valuetype-interface.2.exe	\
 		generic-valuetype-newobj.2.exe generic-valuetype-newobj2.2.exe	\
-		generic-getgenericarguments.2.exe
+		generic-getgenericarguments.2.exe generic-type-builder.2.exe
 	@for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared                $$fn > $$fn.stdout || exit 1;	\
