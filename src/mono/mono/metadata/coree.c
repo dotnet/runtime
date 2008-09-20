@@ -252,6 +252,24 @@ STDAPI _CorValidateImage(PVOID *ImageBase, LPCWSTR FileName)
 		if (!CliHeaderDir->VirtualAddress)
 			return STATUS_INVALID_IMAGE_FORMAT;
 
+		CliHeader = (MonoCLIHeader*)((DWORD_PTR)DosHeader + CliHeaderDir->VirtualAddress);
+		if (CliHeader->ch_flags & CLI_FLAGS_32BITREQUIRED)
+			return STATUS_INVALID_IMAGE_FORMAT;
+
+		if (CliHeader->ch_flags & CLI_FLAGS_ILONLY)
+		{
+			/* Avoid calling _CorDllMain because imports are not resolved for IL only images. */
+			if (NtHeaders64->OptionalHeader.AddressOfEntryPoint != 0)
+			{
+				Address = &NtHeaders64->OptionalHeader.AddressOfEntryPoint;
+				if (!VirtualProtect(Address, sizeof(DWORD), PAGE_READWRITE, &OldProtect))
+					return E_UNEXPECTED;
+				*Address = (DWORD)0;
+				if (!VirtualProtect(Address, sizeof(DWORD), OldProtect, &OldProtect))
+					return E_UNEXPECTED;
+			}
+		}
+
 		return STATUS_SUCCESS;
 	}
 
