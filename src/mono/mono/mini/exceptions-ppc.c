@@ -237,8 +237,11 @@ mono_arch_get_call_filter (void)
 	alloc_size += PPC_STACK_ALIGNMENT - 1;
 	alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
 
+	/* allocate stack frame and set link from sp in ctx */
 	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
-	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
+	ppc_lwz (code, ppc_r0, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
+	ppc_lwzx (code, ppc_r0, ppc_r0, ppc_r0);
+	ppc_stwu (code, ppc_r0, -alloc_size, ppc_sp);
 
 	/* restore all the regs from ctx (in r3), but not r1, the stack pointer */
 	restore_regs_from_context (ppc_r3, ppc_r6, ppc_r7);
