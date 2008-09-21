@@ -2550,7 +2550,7 @@ mono_image_get_field_on_inst_token (MonoDynamicImage *assembly, MonoReflectionFi
 
 	name = mono_string_to_utf8 (fb->name);
 	token = mono_image_get_memberref_token (assembly, &klass->byval_arg, name, 
-											fieldref_encode_signature (assembly, fb->type->type));
+											field_encode_signature (assembly, fb));
 	g_free (name);
 	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER (token));
 	return token;
