@@ -1192,6 +1192,9 @@ mono_domain_create (void)
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
 
+	mono_perfcounters->loader_appdomains++;
+	mono_perfcounters->loader_total_appdomains++;
+
 	mono_debug_domain_create (domain);
 
 	if (create_domain_hook)
@@ -1978,6 +1981,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
 
 	mono_gc_free_fixed (domain);
+
+	mono_perfcounters->loader_appdomains--;
 
 	if ((domain == mono_root_domain))
 		mono_root_domain = NULL;

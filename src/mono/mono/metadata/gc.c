@@ -594,6 +594,7 @@ alloc_handle (HandleData *handles, MonoObject *obj)
 			mono_gc_weak_link_add (&(handles->entries [slot]), obj);
 	}
 
+	mono_perfcounters->gc_num_handles++;
 	unlock_handles (handles);
 	/*g_print ("allocated entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
 	return (slot << 3) | (handles->type + 1);
@@ -777,6 +778,7 @@ mono_gchandle_free (guint32 gchandle)
 	} else {
 		/* print a warning? */
 	}
+	mono_perfcounters->gc_num_handles--;
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);
 }

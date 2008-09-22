@@ -16,6 +16,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-time.h>
 
@@ -199,6 +200,7 @@ mon_finalize (MonoThreadsSync *mon)
 
 	mon->data = monitor_freelist;
 	monitor_freelist = mon;
+	mono_perfcounters->gc_sync_blocks--;
 }
 
 /* LOCKING: this is called with monitor_mutex held */
@@ -257,6 +259,7 @@ mon_new (gsize id)
 	new->owner = id;
 	new->nest = 1;
 	
+	mono_perfcounters->gc_sync_blocks++;
 	return new;
 }
 
@@ -483,6 +486,7 @@ retry:
 	}
 
 	/* The object must be locked by someone else... */
+	mono_perfcounters->thread_contentions++;
 
 	/* If ms is 0 we don't block, but just fail straight away */
 	if (ms == 0) {
@@ -527,6 +531,8 @@ retry:
 	
 	InterlockedIncrement (&mon->entry_count);
 
+	mono_perfcounters->thread_queue_len++;
+	mono_perfcounters->thread_queue_max++;
 	thread = mono_thread_current ();
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
@@ -540,6 +546,7 @@ retry:
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 	
 	InterlockedDecrement (&mon->entry_count);
+	mono_perfcounters->thread_queue_len--;
 
 	if (ms != INFINITE) {
 		now = mono_msec_ticks ();

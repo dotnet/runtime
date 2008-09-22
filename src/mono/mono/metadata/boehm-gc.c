@@ -100,7 +100,7 @@ mono_gc_base_init (void)
 #ifdef HAVE_GC_GCJ_MALLOC
 	GC_init_gcj_malloc (5, NULL);
 #endif
-
+	mono_gc_enable_events ();
 	gc_initialized = TRUE;
 }
 
@@ -108,7 +108,8 @@ void
 mono_gc_collect (int generation)
 {
 	MONO_PROBE_GC_BEGIN (generation);
-	
+
+	mono_perfcounters->gc_induced++;
 	GC_gcollect ();
 	
 	MONO_PROBE_GC_END (generation);
@@ -236,12 +237,26 @@ mono_object_is_alive (MonoObject* o)
 static void
 on_gc_notification (GCEventType event)
 {
+	if (event == MONO_GC_EVENT_START) {
+		mono_perfcounters->gc_collections0++;
+	} else if (event == MONO_GC_EVENT_END) {
+		guint64 heap_size = GC_get_heap_size ();
+		guint64 used_size = heap_size - GC_get_free_bytes ();
+		mono_perfcounters->gc_total_bytes = used_size;
+		mono_perfcounters->gc_committed_bytes = heap_size;
+		mono_perfcounters->gc_reserved_bytes = heap_size;
+		mono_perfcounters->gc_gen0size = heap_size;
+	}
 	mono_profiler_gc_event ((MonoGCEvent) event, 0);
 }
  
 static void
 on_gc_heap_resize (size_t new_size)
 {
+	guint64 heap_size = GC_get_heap_size ();
+	mono_perfcounters->gc_committed_bytes = heap_size;
+	mono_perfcounters->gc_reserved_bytes = heap_size;
+	mono_perfcounters->gc_gen0size = heap_size;
 	mono_profiler_gc_heap_resize (new_size);
 }
 
