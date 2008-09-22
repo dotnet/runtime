@@ -578,18 +578,18 @@ mono_create_exvar_for_offset (MonoCompile *cfg, int offset)
  * Returns the type used in the eval stack when @type is loaded.
  * FIXME: return a MonoType/MonoClass for the byref and VALUETYPE cases.
  */
-static void
+void
 type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst)
 {
 	MonoClass *klass;
 
+	inst->klass = klass = mono_class_from_mono_type (type);
 	if (type->byref) {
 		inst->type = STACK_MP;
-		inst->klass = mono_defaults.object_class;
+		if (cfg->new_ir)
+			inst->klass = mono_defaults.object_class;
 		return;
 	}
-
-	inst->klass = klass = mono_class_from_mono_type (type);
 
 handle_enum:
 	switch (type->type) {
