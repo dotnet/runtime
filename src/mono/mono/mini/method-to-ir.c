@@ -1639,6 +1639,9 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 
 	g_assert (val == 0);
 
+	if (align == 0)
+		align = 4;
+
 	if ((size <= 4) && (size <= align)) {
 		switch (size) {
 		case 1:
@@ -1713,6 +1716,9 @@ void
 mini_emit_memcpy2 (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {
 	int cur_reg;
+
+	if (align == 0)
+		align = 4;
 
 	if (align < 4) {
 		/* This could be optimized further if neccesary */

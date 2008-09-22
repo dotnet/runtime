@@ -403,7 +403,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 {
 	guint32 size, quad, nquads, i;
 	ArgumentClass args [2];
-	MonoMarshalType *info;
+	MonoMarshalType *info = NULL;
 	MonoClass *klass;
 	MonoGenericSharingContext tmp_gsctx;
 
