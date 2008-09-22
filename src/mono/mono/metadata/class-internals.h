@@ -620,15 +620,73 @@ typedef struct {
  * Size of fields and type should not be changed as well.
  */
 typedef struct {
+	/* JIT category */
 	guint32 jit_methods;
 	guint32 jit_bytes;
 	guint32 jit_time;
 	guint32 jit_failures;
+	/* Exceptions category */
 	guint32 exceptions_thrown;
 	guint32 exceptions_filters;
 	guint32 exceptions_finallys;
 	guint32 exceptions_depth;
 	guint32 aspnet_requests_queued;
+	/* Memory category */
+	guint32 gc_collections0;
+	guint32 gc_collections1;
+	guint32 gc_collections2;
+	guint32 gc_promotions0;
+	guint32 gc_promotions1;
+	guint32 gc_promotion_finalizers;
+	guint32 gc_gen0size;
+	guint32 gc_gen1size;
+	guint32 gc_gen2size;
+	guint32 gc_lossize;
+	guint32 gc_fin_survivors;
+	guint32 gc_num_handles;
+	guint32 gc_allocated;
+	guint32 gc_induced;
+	guint32 gc_time;
+	guint32 gc_total_bytes;
+	guint32 gc_committed_bytes;
+	guint32 gc_reserved_bytes;
+	guint32 gc_num_pinned;
+	guint32 gc_sync_blocks;
+	/* Remoting category */
+	guint32 remoting_calls;
+	guint32 remoting_channels;
+	guint32 remoting_proxies;
+	guint32 remoting_classes;
+	guint32 remoting_objects;
+	guint32 remoting_contexts;
+	/* Loader category */
+	guint32 loader_classes;
+	guint32 loader_total_classes;
+	guint32 loader_appdomains;
+	guint32 loader_total_appdomains;
+	guint32 loader_assemblies;
+	guint32 loader_total_assemblies;
+	guint32 loader_failures;
+	guint32 loader_bytes;
+	guint32 loader_appdomains_uloaded;
+	/* Threads and Locks category  */
+	guint32 thread_contentions;
+	guint32 thread_queue_len;
+	guint32 thread_queue_max;
+	guint32 thread_num_logical;
+	guint32 thread_num_physical;
+	guint32 thread_cur_recognized;
+	guint32 thread_num_recognized;
+	/* Interop category */
+	guint32 interop_num_ccw;
+	guint32 interop_num_stubs;
+	guint32 interop_num_marshals;
+	/* Security category */
+	guint32 security_num_checks;
+	guint32 security_num_link_checks;
+	guint32 security_time;
+	guint32 security_depth;
+	guint32 unused;
 } MonoPerfCounters;
 
 extern MonoPerfCounters *mono_perfcounters MONO_INTERNAL;

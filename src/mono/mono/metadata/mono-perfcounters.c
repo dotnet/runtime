@@ -101,7 +101,7 @@ enum {
 };
 
 #define PERFCTR_CAT(id,name,help,type,inst,first_counter) CATEGORY_ ## id,
-#define PERFCTR_COUNTER(id,name,help,type)
+#define PERFCTR_COUNTER(id,name,help,type,field)
 enum {
 #include "mono-perfcounters-def.h"
 	NUM_CATEGORIES
@@ -110,7 +110,7 @@ enum {
 #undef PERFCTR_CAT
 #undef PERFCTR_COUNTER
 #define PERFCTR_CAT(id,name,help,type,inst,first_counter) CATEGORY_START_ ## id = -1,
-#define PERFCTR_COUNTER(id,name,help,type) COUNTER_ ## id,
+#define PERFCTR_COUNTER(id,name,help,type,field) COUNTER_ ## id,
 /* each counter is assigned an id starting from 0 inside the category */
 enum {
 #include "mono-perfcounters-def.h"
@@ -120,7 +120,7 @@ enum {
 #undef PERFCTR_CAT
 #undef PERFCTR_COUNTER
 #define PERFCTR_CAT(id,name,help,type,inst,first_counter)
-#define PERFCTR_COUNTER(id,name,help,type) CCOUNTER_ ## id,
+#define PERFCTR_COUNTER(id,name,help,type,field) CCOUNTER_ ## id,
 /* this is used just to count the number of counters */
 enum {
 #include "mono-perfcounters-def.h"
@@ -231,14 +231,15 @@ typedef struct {
 typedef struct {
 	const char *name;
 	const char *help;
-	int id;
+	short id;
+	unsigned short offset; // offset inside MonoPerfCounters
 	int type;
 } CounterDesc;
 
 #undef PERFCTR_CAT
 #undef PERFCTR_COUNTER
 #define PERFCTR_CAT(id,name,help,type,inst,first_counter) {name, help, CATEGORY_ ## id, type, inst ## Instance, CCOUNTER_ ## first_counter},
-#define PERFCTR_COUNTER(id,name,help,type)
+#define PERFCTR_COUNTER(id,name,help,type,field)
 static const CategoryDesc
 predef_categories [] = {
 #include "mono-perfcounters-def.h"
@@ -248,11 +249,11 @@ predef_categories [] = {
 #undef PERFCTR_CAT
 #undef PERFCTR_COUNTER
 #define PERFCTR_CAT(id,name,help,type,inst,first_counter)
-#define PERFCTR_COUNTER(id,name,help,type) {name, help, COUNTER_ ## id, type},
+#define PERFCTR_COUNTER(id,name,help,type,field) {name, help, COUNTER_ ## id, G_STRUCT_OFFSET (MonoPerfCounters, field), type},
 static const CounterDesc
 predef_counters [] = {
 #include "mono-perfcounters-def.h"
-	{NULL, NULL, -1, 0}
+	{NULL, NULL, -1, 0, 0}
 };
 
 /*
@@ -823,6 +824,7 @@ static MonoBoolean
 predef_readonly_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *sample)
 {
 	PredefVtable *vt = (PredefVtable *)vtable;
+	const CounterDesc *desc;
 	int cat_id = GPOINTER_TO_INT (vtable->arg);
 	int id = cat_id >> 16;
 	cat_id &= 0xffff;
@@ -830,36 +832,12 @@ predef_readonly_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 		fill_sample (sample);
 		sample->baseValue = 1;
 	}
-	sample->counterType = predef_counters [predef_categories [cat_id].first_counter + id].type;
-	switch (cat_id) {
-	case CATEGORY_JIT:
-		switch (id) {
-		case COUNTER_JIT_BYTES:
-		case COUNTER_JIT_BYTES_PSEC:
-			sample->rawValue = vt->counters->jit_bytes;
-			return TRUE;
-		case COUNTER_JIT_METHODS:
-			sample->rawValue = vt->counters->jit_methods;
-			return TRUE;
-		}
-		break;
-	case CATEGORY_EXC:
-		switch (id) {
-		case COUNTER_EXC_THROWN:
-		case COUNTER_EXC_THROWN_PSEC:
-			sample->rawValue = vt->counters->exceptions_thrown;
-			return TRUE;
-		}
-		break;
-
-	case CATEGORY_ASPNET:
-		switch (id) {
-		case COUNTER_ASPNET_REQ_Q:
-			sample->rawValue = vt->counters->aspnet_requests_queued;
-			return TRUE;
-		}
-	}
-	return FALSE;
+	desc = &predef_counters [predef_categories [cat_id].first_counter + id];
+	sample->counterType = desc->type;
+	/* FIXME: check that the offset fits inside imported counters */
+	/*g_print ("loading %s at %d\n", desc->name, desc->offset);*/
+	sample->rawValue = *(guint32*)((char*)vt->counters + desc->offset);
+	return TRUE;
 }
 
 static ImplVtable*
@@ -880,7 +858,7 @@ predef_vtable (void *arg, MonoString *instance)
 	vtable->vtable.arg = arg;
 	vtable->vtable.sample = predef_readonly_counter;
 	vtable->vtable.cleanup = predef_cleanup;
-	vtable->counters = &area->counters;
+	vtable->counters = (MonoPerfCounters*)((char*)area + area->counters_start);
 	vtable->pid = pid;
 
 	return (ImplVtable*)vtable;
@@ -1035,6 +1013,12 @@ mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString
 		return mono_mem_get_impl (counter, instance, type, custom);
 	case CATEGORY_JIT:
 	case CATEGORY_EXC:
+	case CATEGORY_GC:
+	case CATEGORY_REMOTING:
+	case CATEGORY_LOADING:
+	case CATEGORY_THREAD:
+	case CATEGORY_INTEROP:
+	case CATEGORY_SECURITY:
 	case CATEGORY_ASPNET:
 		return predef_writable_get_impl (cdesc->id, counter, instance, type, custom);
 	}
