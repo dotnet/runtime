@@ -170,10 +170,15 @@ namespace Mono.Linker {
 
 		static bool IsCore (AssemblyNameReference name)
 		{
-			return name.Name == "mscorlib"
-				|| name.Name == "Accessibility"
-				|| name.Name.StartsWith ("System")
-				|| name.Name.StartsWith ("Microsoft");
+			switch (name.Name) {
+			case "mscorlib":
+			case "Accessibility":
+			case "Mono.Security":
+				return true;
+			default:
+				return name.Name.StartsWith ("System")
+					|| name.Name.StartsWith ("Microsoft");
+			}
 		}
 
 		public AssemblyDefinition [] GetAssemblies ()
