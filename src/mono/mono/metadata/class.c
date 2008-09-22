@@ -1085,6 +1085,8 @@ mono_class_setup_fields (MonoClass *class)
 				blittable = FALSE;
 			} else {
 				MonoClass *field_class = mono_class_from_mono_type (field->type);
+				if (field_class)
+					mono_class_setup_fields (field_class);
 				if (!field_class || !field_class->blittable)
 					blittable = FALSE;
 			}
