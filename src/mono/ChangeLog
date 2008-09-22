@@ -1,3 +1,8 @@
+2008-09-22  Raja R Harinath  <harinath@hurrynot.org>
+
+	* scripts/patch-quiet.sh: Skip Makefiles that've already been
+	patched.  Handle automake 1.10a.
+
 2008-09-18  Mark Probst  <mark.probst@gmail.com>
 
 	* docs/generic-sharing: More generic sharing porting
