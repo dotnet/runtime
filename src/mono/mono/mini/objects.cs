@@ -615,6 +615,10 @@ class Tests {
 		if (arr2 is int[])
 			return 4;
 
+		int [,] [] arr3 = new int [1, 1] [];
+		object o = arr3;
+		int [,] [] arr4 = (int [,] [])o;
+
 		return 0;
 	}
 

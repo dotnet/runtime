@@ -1604,10 +1604,11 @@ mini_emit_castclass (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClass *kl
 		} else if (klass->cast_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
 			mini_emit_iface_class_cast (cfg, eclass_reg, klass->cast_class, NULL, NULL);
 		} else {
-			mini_emit_castclass (cfg, obj_reg, eclass_reg, klass->cast_class, object_is_null);
+			// Pass -1 as obj_reg to skip the check below for arrays of arrays
+			mini_emit_castclass (cfg, -1, eclass_reg, klass->cast_class, object_is_null);
 		}
 
-		if ((klass->rank == 1) && (klass->byval_arg.type == MONO_TYPE_SZARRAY)) {
+		if ((klass->rank == 1) && (klass->byval_arg.type == MONO_TYPE_SZARRAY) && (obj_reg != -1)) {
 			/* Check that the object is a vector too */
 			int bounds_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg, obj_reg, G_STRUCT_OFFSET (MonoArray, bounds));
