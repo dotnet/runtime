@@ -846,7 +846,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	RegTrack *reginfo;
 	const char *spec;
 	unsigned char spec_src1, spec_src2, spec_dest;
-	gboolean fp;
+	gboolean fp = FALSE;
 #if MONO_ARCH_USE_FPSTACK
 	gboolean has_fp = FALSE;
 	int fpstack [8];
