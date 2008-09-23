@@ -1926,6 +1926,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_mempool_invalidate (domain->mp);
 	mono_code_manager_invalidate (domain->code_mp);
 #else
+	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (domain->mp);
 	mono_mempool_destroy (domain->mp);
 	domain->mp = NULL;
 	mono_code_manager_destroy (domain->code_mp);
@@ -2013,6 +2014,20 @@ gint32
 mono_domain_get_id (MonoDomain *domain)
 {
 	return domain->domain_id;
+}
+
+gpointer
+mono_domain_alloc (MonoDomain *domain, guint size)
+{
+	mono_perfcounters->loader_bytes += size;
+	return mono_mempool_alloc (domain->mp, size);
+}
+
+gpointer
+mono_domain_alloc0 (MonoDomain *domain, guint size)
+{
+	mono_perfcounters->loader_bytes += size;
+	return mono_mempool_alloc0 (domain->mp, size);
 }
 
 void 

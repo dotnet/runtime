@@ -1017,12 +1017,11 @@ mono_dllmap_insert (MonoImage *assembly, const char *dll, const char *func, cons
 		entry->next = global_dll_map;
 		global_dll_map = entry;
 	} else {
-		MonoMemPool *mpool = assembly->mempool;
-		entry = mono_mempool_alloc0 (mpool, sizeof (MonoDllMap));
-		entry->dll = dll? mono_mempool_strdup (mpool, dll): NULL;
-		entry->target = tdll? mono_mempool_strdup (mpool, tdll): NULL;
-		entry->func = func? mono_mempool_strdup (mpool, func): NULL;
-		entry->target_func = tfunc? mono_mempool_strdup (mpool, tfunc): NULL;
+		entry = mono_image_alloc0 (assembly, sizeof (MonoDllMap));
+		entry->dll = dll? mono_image_strdup (assembly, dll): NULL;
+		entry->target = tdll? mono_image_strdup (assembly, tdll): NULL;
+		entry->func = func? mono_image_strdup (assembly, func): NULL;
+		entry->target_func = tfunc? mono_image_strdup (assembly, tfunc): NULL;
 		entry->next = assembly->dll_map;
 		assembly->dll_map = entry;
 	}
@@ -1370,9 +1369,9 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		result = (MonoMethod *)mono_mempool_alloc0 (image->mempool, sizeof (MonoMethodPInvoke));
+		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodPInvoke));
 	else
-		result = (MonoMethod *)mono_mempool_alloc0 (image->mempool, sizeof (MonoMethodNormal));
+		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodNormal));
 
 	mono_stats.method_count ++;
 

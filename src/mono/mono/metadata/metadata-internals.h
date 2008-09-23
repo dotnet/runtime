@@ -362,6 +362,15 @@ guint mono_aligned_addr_hash (gconstpointer ptr) MONO_INTERNAL;
 void
 mono_image_check_for_module_cctor (MonoImage *image) MONO_INTERNAL;
 
+gpointer
+mono_image_alloc  (MonoImage *image, guint size) MONO_INTERNAL;
+
+gpointer
+mono_image_alloc0 (MonoImage *image, guint size) MONO_INTERNAL;
+
+char*
+mono_image_strdup (MonoImage *image, const char *s) MONO_INTERNAL;
+
 void
 mono_metadata_clean_for_image (MonoImage *image) MONO_INTERNAL;
 

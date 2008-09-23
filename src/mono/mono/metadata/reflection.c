@@ -1153,7 +1153,7 @@ mono_custom_attrs_from_builders (MonoMemPool *mp, MonoImage *image, MonoArray *c
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		if (custom_attr_visible (image, cattr)) {
-			unsigned char *saved = mono_mempool_alloc (image->mempool, mono_array_length (cattr->data));
+			unsigned char *saved = mono_image_alloc (image, mono_array_length (cattr->data));
 			memcpy (saved, mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
 			ainfo->attrs [index].ctor = cattr->ctor->method;
 			ainfo->attrs [index].data = saved;
@@ -8760,7 +8760,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 		return;
 	}
 
-	klass = mono_mempool_alloc0 (tb->module->dynamic_image->image.mempool, sizeof (MonoClass));
+	klass = mono_image_alloc0 (&tb->module->dynamic_image->image, sizeof (MonoClass));
 
 	klass->image = &tb->module->dynamic_image->image;
 
@@ -8840,7 +8840,7 @@ mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 	if (tb->generic_container)
 		return;
 
-	tb->generic_container = mono_mempool_alloc0 (klass->image->mempool, sizeof (MonoGenericContainer));
+	tb->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 	tb->generic_container->owner.klass = klass;
 }
 
@@ -8867,11 +8867,11 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 
 	g_assert (tb->generic_container && (tb->generic_container->owner.klass == klass));
 
-	klass->generic_container = mono_mempool_alloc0 (klass->image->mempool, sizeof (MonoGenericContainer));
+	klass->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 
 	klass->generic_container->owner.klass = klass;
 	klass->generic_container->type_argc = count;
-	klass->generic_container->type_params = mono_mempool_alloc0 (klass->image->mempool, sizeof (MonoGenericParam) * count);
+	klass->generic_container->type_params = mono_image_alloc0 (klass->image, sizeof (MonoGenericParam) * count);
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
@@ -9701,7 +9701,7 @@ ensure_runtime_vtable (MonoClass *klass)
 	num = tb->ctors? mono_array_length (tb->ctors): 0;
 	num += tb->num_methods;
 	klass->method.count = num;
-	klass->methods = mono_mempool_alloc (klass->image->mempool, sizeof (MonoMethod*) * num);
+	klass->methods = mono_image_alloc (klass->image, sizeof (MonoMethod*) * num);
 	num = tb->ctors? mono_array_length (tb->ctors): 0;
 	for (i = 0; i < num; ++i)
 		klass->methods [i] = ctorbuilder_to_mono_method (klass, mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i));
@@ -9712,7 +9712,7 @@ ensure_runtime_vtable (MonoClass *klass)
 
 	if (tb->interfaces) {
 		klass->interface_count = mono_array_length (tb->interfaces);
-		klass->interfaces = mono_mempool_alloc (klass->image->mempool, sizeof (MonoClass*) * klass->interface_count);
+		klass->interfaces = mono_image_alloc (klass->image, sizeof (MonoClass*) * klass->interface_count);
 		for (i = 0; i < klass->interface_count; ++i) {
 			MonoReflectionType *iface = mono_array_get (tb->interfaces, gpointer, i);
 			klass->interfaces [i] = mono_class_from_mono_type (iface->type);
@@ -10082,7 +10082,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 		if (!gparam->mbuilder->generic_container) {
 			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)gparam->mbuilder->type;
 			MonoClass *klass = my_mono_class_from_mono_type (tb->type.type);
-			gparam->mbuilder->generic_container = mono_mempool_alloc0 (klass->image->mempool, sizeof (MonoGenericContainer));
+			gparam->mbuilder->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 			gparam->mbuilder->generic_container->is_method = TRUE;
 		}
 		param->owner = gparam->mbuilder->generic_container;

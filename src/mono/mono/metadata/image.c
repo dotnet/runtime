@@ -1525,6 +1525,7 @@ mono_image_close (MonoImage *image)
 		g_free (image->modules_loaded);
 	if (image->references)
 		g_free (image->references);
+	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (image->mempool);
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (!image->dynamic) {
 		if (debug_assembly_unload)
@@ -2004,3 +2005,25 @@ mono_image_has_authenticode_entry (MonoImage *image)
 	// the Authenticode "pre" (non ASN.1) header is 8 bytes long
 	return ((de->rva != 0) && (de->size > 8));
 }
+
+gpointer
+mono_image_alloc (MonoImage *image, guint size)
+{
+	mono_perfcounters->loader_bytes += size;
+	return mono_mempool_alloc (image->mempool, size);
+}
+
+gpointer
+mono_image_alloc0 (MonoImage *image, guint size)
+{
+	mono_perfcounters->loader_bytes += size;
+	return mono_mempool_alloc0 (image->mempool, size);
+}
+
+char*
+mono_image_strdup (MonoImage *image, const char *s)
+{
+	mono_perfcounters->loader_bytes += strlen (s);
+	return mono_mempool_strdup (image->mempool, s);
+}
+

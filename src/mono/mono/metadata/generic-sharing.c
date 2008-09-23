@@ -370,7 +370,7 @@ alloc_template (MonoClass *class)
 	num_allocted++;
 	num_bytes += size;
 
-	return mono_mempool_alloc0 (class->image->mempool, size);
+	return mono_image_alloc0 (class->image, size);
 }
 
 /*
@@ -394,7 +394,7 @@ alloc_oti (MonoImage *image)
 	num_allocted++;
 	num_bytes += size;
 
-	return mono_mempool_alloc0 (image->mempool, size);
+	return mono_image_alloc0 (image, size);
 }
 
 #define MONO_RGCTX_SLOT_USED_MARKER	((gpointer)&mono_defaults.object_class->byval_arg)
@@ -1045,7 +1045,7 @@ alloc_rgctx_array (MonoDomain *domain, int n, gboolean is_mrgctx)
 	static int mrgctx_bytes_alloced = 0;
 
 	int size = mono_class_rgctx_get_array_size (n, is_mrgctx) * sizeof (gpointer);
-	gpointer array = mono_mempool_alloc0 (domain->mp, size);
+	gpointer array = mono_domain_alloc0 (domain, size);
 
 	if (!inited) {
 		mono_counters_register ("RGCTX num arrays alloced", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &rgctx_num_alloced);

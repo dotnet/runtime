@@ -293,6 +293,12 @@ mono_domain_register_shared_generic (MonoDomain *domain, MonoMethod *method, Mon
 char *
 mono_make_shadow_copy (const char *filename);
 
+gpointer
+mono_domain_alloc  (MonoDomain *domain, guint size) MONO_INTERNAL;
+
+gpointer
+mono_domain_alloc0 (MonoDomain *domain, guint size) MONO_INTERNAL;
+
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside
  * an AOT module.

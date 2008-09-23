@@ -1007,7 +1007,7 @@ mono_class_setup_fields (MonoClass *class)
 	/* Prevent infinite loops if the class references itself */
 	class->size_inited = 1;
 
-	class->fields = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoClassField) * top);
+	class->fields = mono_image_alloc0 (class->image, sizeof (MonoClassField) * top);
 
 	if (class->generic_container) {
 		container = class->generic_container;
@@ -1434,7 +1434,7 @@ create_array_method (MonoClass *class, const char *name, MonoMethodSignature *si
 {
 	MonoMethod *method;
 
-	method = (MonoMethod *) mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethodPInvoke));
+	method = (MonoMethod *) mono_image_alloc0 (class->image, sizeof (MonoMethodPInvoke));
 	method->klass = class;
 	method->flags = METHOD_ATTRIBUTE_PUBLIC;
 	method->iflags = METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
@@ -1504,7 +1504,7 @@ mono_class_setup_methods (MonoClass *class)
 			class->method.count += class->interface_count * count_generic;
 		}
 
-		methods = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoMethod*) * class->method.count);
+		methods = mono_image_alloc0 (class->image, sizeof (MonoMethod*) * class->method.count);
 
 		sig = mono_metadata_signature_alloc (class->image, class->rank);
 		sig->ret = &mono_defaults.void_class->byval_arg;
@@ -1558,7 +1558,7 @@ mono_class_setup_methods (MonoClass *class)
 		for (i = 0; i < class->interface_count; i++)
 			setup_generic_array_ifaces (class, class->interfaces [i], methods, first_generic + i * count_generic);
 	} else {
-		methods = mono_mempool_alloc (class->image->mempool, sizeof (MonoMethod*) * class->method.count);
+		methods = mono_image_alloc (class->image, sizeof (MonoMethod*) * class->method.count);
 		for (i = 0; i < class->method.count; ++i) {
 			int idx = mono_metadata_translate_token_index (class->image, MONO_TABLE_METHOD, class->method.first + i + 1);
 			methods [i] = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | idx, class);
@@ -1664,7 +1664,7 @@ mono_class_setup_properties (MonoClass *class)
 		if (class->property.count)
 			mono_class_setup_methods (class);
 
-		properties = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoProperty) * class->property.count);
+		properties = mono_image_alloc0 (class->image, sizeof (MonoProperty) * class->property.count);
 		for (i = class->property.first; i < last; ++i) {
 			mono_metadata_decode_table_row (class->image, MONO_TABLE_PROPERTY, i, cols, MONO_PROPERTY_SIZE);
 			properties [i - class->property.first].parent = class;
@@ -1776,7 +1776,7 @@ mono_class_setup_events (MonoClass *class)
 	if (class->event.count)
 		mono_class_setup_methods (class);
 
-	events = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoEvent) * class->event.count);
+	events = mono_image_alloc0 (class->image, sizeof (MonoEvent) * class->event.count);
 	for (i = class->event.first; i < last; ++i) {
 		MonoEvent *event = &events [i - class->event.first];
 
@@ -2357,9 +2357,9 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 		g_assert (class->interface_offsets_count == interface_offsets_count);
 	} else {
 		class->interface_offsets_count = interface_offsets_count;
-		class->interfaces_packed = mono_mempool_alloc (class->image->mempool, sizeof (MonoClass*) * interface_offsets_count);
-		class->interface_offsets_packed = mono_mempool_alloc (class->image->mempool, sizeof (guint16) * interface_offsets_count);
-		class->interface_bitmap = mono_mempool_alloc0 (class->image->mempool, (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0));
+		class->interfaces_packed = mono_image_alloc (class->image, sizeof (MonoClass*) * interface_offsets_count);
+		class->interface_offsets_packed = mono_image_alloc (class->image, sizeof (guint16) * interface_offsets_count);
+		class->interface_bitmap = mono_image_alloc0 (class->image, (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0));
 		for (interface_offsets_count = 0, i = 0; i <= max_iid; i++) {
 			if (interface_offsets_full [i] != -1) {
 				class->interface_bitmap [i >> 3] |= (1 << (i & 7));
@@ -3327,7 +3327,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		mono_memory_barrier ();
 		class->vtable = class->parent->vtable;
 	} else {
-		MonoMethod **tmp = mono_mempool_alloc0 (class->image->mempool, sizeof (gpointer) * class->vtable_size);
+		MonoMethod **tmp = mono_image_alloc0 (class->image, sizeof (gpointer) * class->vtable_size);
 		memcpy (tmp, vtable,  sizeof (gpointer) * class->vtable_size);
 		mono_memory_barrier ();
 		class->vtable = tmp;
@@ -3464,7 +3464,7 @@ generic_array_methods (MonoClass *class)
 			g_assert_not_reached ();
 		}
 
-		name = mono_mempool_alloc (mono_defaults.corlib->mempool, strlen (iname) + strlen (mname) + 1);
+		name = mono_image_alloc (mono_defaults.corlib, strlen (iname) + strlen (mname) + 1);
 		strcpy (name, iname);
 		strcpy (name + strlen (iname), mname);
 		generic_array_method_info [i].name = name;
@@ -3496,10 +3496,10 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, MonoMethod **met
 }
 
 static char*
-concat_two_strings_with_zero (MonoMemPool *pool, const char *s1, const char *s2)
+concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
 {
 	int len = strlen (s1) + strlen (s2) + 2;
-	char *s = mono_mempool_alloc (pool, len);
+	char *s = mono_image_alloc (image, len);
 	int result;
 
 	result = g_snprintf (s, len, "%s%c%s", s1, '\0', s2);
@@ -3515,11 +3515,11 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 
 	switch (error->exception_type) {
 	case MONO_EXCEPTION_TYPE_LOAD:
-		exception_data = concat_two_strings_with_zero (class->image->mempool, error->class_name, error->assembly_name);
+		exception_data = concat_two_strings_with_zero (class->image, error->class_name, error->assembly_name);
 		break;
 
 	case MONO_EXCEPTION_MISSING_METHOD:
-		exception_data = concat_two_strings_with_zero (class->image->mempool, error->class_name, error->member_name);
+		exception_data = concat_two_strings_with_zero (class->image, error->class_name, error->member_name);
 		break;
 
 	case MONO_EXCEPTION_MISSING_FIELD: {
@@ -3531,7 +3531,7 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 		else
 			class_name = error->klass->name;
 
-		exception_data = concat_two_strings_with_zero (class->image->mempool, class_name, error->member_name);
+		exception_data = concat_two_strings_with_zero (class->image, class_name, error->member_name);
 		
 		if (name_space)
 			g_free ((void*)class_name);
@@ -3546,7 +3546,7 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 		else
 			msg = "Could not load file or assembly '%s' or one of its dependencies.";
 
-		exception_data = concat_two_strings_with_zero (class->image->mempool, msg, error->assembly_name);
+		exception_data = concat_two_strings_with_zero (class->image, msg, error->assembly_name);
 		break;
 	}
 
@@ -3829,7 +3829,7 @@ mono_class_init (MonoClass *class)
 	}
 
 	if (mono_verifier_is_enabled_for_class (class) && !mono_verifier_verify_class (class)) {
-		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, concat_two_strings_with_zero (class->image->mempool, class->name, class->image->assembly_name));
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, concat_two_strings_with_zero (class->image, class->name, class->image->assembly_name));
 		class_init_ok = FALSE;
 	}
 
@@ -4106,7 +4106,7 @@ mono_class_setup_supertypes (MonoClass *class)
 		class->idepth = 1;
 
 	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, class->idepth);
-	class->supertypes = mono_mempool_alloc0 (class->image->mempool, sizeof (MonoClass *) * ms);
+	class->supertypes = mono_image_alloc0 (class->image, sizeof (MonoClass *) * ms);
 
 	if (class->parent) {
 		class->supertypes [class->idepth - 1] = class;
@@ -4153,7 +4153,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	name = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAME]);
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
-	class = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass));
+	class = mono_image_alloc0 (image, sizeof (MonoClass));
 
 	class->name = name;
 	class->name_space = nspace;
@@ -4434,12 +4434,12 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 		/* FIXME: */
 		image = mono_defaults.corlib;
 
-	klass = param->pklass = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass));
+	klass = param->pklass = mono_image_alloc0 (image, sizeof (MonoClass));
 
 	if (param->name)
 		klass->name = param->name;
 	else {
-		klass->name = mono_mempool_alloc0 (image->mempool, 16);
+		klass->name = mono_image_alloc0 (image, 16);
 		sprintf ((char*)klass->name, is_mvar ? "!!%d" : "!%d", param->num);
 	}
 	klass->name_space = "";
@@ -4459,7 +4459,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	if (count - pos > 0) {
 		klass->interface_count = count - pos;
-		klass->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass *) * (count - pos));
+		klass->interfaces = mono_image_alloc0 (image, sizeof (MonoClass *) * (count - pos));
 		for (i = pos; i < count; i++)
 			klass->interfaces [i - pos] = param->constraints [i];
 	}
@@ -4532,12 +4532,12 @@ mono_ptr_class_get (MonoType *type)
 		mono_loader_unlock ();
 		return result;
 	}
-	result = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass));
+	result = mono_image_alloc0 (image, sizeof (MonoClass));
 
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = el_class->name_space;
 	name = g_strdup_printf ("%s*", el_class->name);
-	result->name = mono_mempool_strdup (image->mempool, name);
+	result->name = mono_image_strdup (image, name);
 	g_free (name);
 
 	mono_profiler_class_event (result, MONO_PROFILE_START_LOAD);
@@ -4776,7 +4776,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 			mono_class_init (parent);
 	}
 
-	class = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass));
+	class = mono_image_alloc0 (image, sizeof (MonoClass));
 
 	class->image = image;
 	class->name_space = eclass->name_space;
@@ -4790,7 +4790,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		name [nsize + rank] = '*';
 	name [nsize + rank + bounded] = ']';
 	name [nsize + rank + bounded + 1] = 0;
-	class->name = mono_mempool_strdup (image->mempool, name);
+	class->name = mono_image_strdup (image, name);
 	g_free (name);
 
 	mono_profiler_class_event (class, MONO_PROFILE_START_LOAD);
@@ -4819,7 +4819,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 		/* generic IList, ICollection, IEnumerable */
 		class->interface_count = 1;
-		class->interfaces = mono_mempool_alloc0 (image->mempool, sizeof (MonoClass*) * class->interface_count);
+		class->interfaces = mono_image_alloc0 (image, sizeof (MonoClass*) * class->interface_count);
 
 		args [0] = &eclass->byval_arg;
 		class->interfaces [0] = mono_class_bind_generic_parameters (
@@ -4842,7 +4842,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	class->element_class = eclass;
 
 	if ((rank > 1) || bounded) {
-		MonoArrayType *at = mono_mempool_alloc0 (image->mempool, sizeof (MonoArrayType));
+		MonoArrayType *at = mono_image_alloc0 (image, sizeof (MonoArrayType));
 		class->byval_arg.type = MONO_TYPE_ARRAY;
 		class->byval_arg.data.array = at;
 		at->eklass = eclass;
