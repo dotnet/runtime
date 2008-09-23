@@ -14,12 +14,14 @@ enum {
 	MONO_REG_DOUBLE
 };
 
+#define MONO_NUM_REGBANKS 2
+
 typedef struct {
 	/* symbolic registers */
 	int next_vreg;
 
 	regmask_t ifree_mask;
-	regmask_t ffree_mask;
+	regmask_t free_mask [MONO_NUM_REGBANKS];
 
 	/* symbolic -> hard register assignment */
 	/* 
@@ -31,6 +33,9 @@ typedef struct {
 	/* hard -> symbolic */
 	int isymbolic [MONO_MAX_IREGS];
 	int fsymbolic [MONO_MAX_FREGS];
+
+	/* Points to the arrays above */
+	int *symbolic [MONO_NUM_REGBANKS];
 
 	int vassign_size;
 } MonoRegState;

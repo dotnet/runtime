@@ -811,10 +811,9 @@ typedef struct {
 	gint             max_ireg;
 	gint             cil_offset_to_bb_len;
 	MonoRegState    *rs;
-	MonoSpillInfo   *spill_info; /* machine register spills */
-	MonoSpillInfo   *spill_info_float; /* fp register spills */
+	MonoSpillInfo   *spill_info [16]; /* machine register spills */
 	gint             spill_count;
-	gint             spill_info_len, spill_info_float_len;
+	gint             spill_info_len [16];
 	/* unsigned char   *cil_code; */
 	MonoMethod      *inlined_method; /* the method which is currently inlined */
 	MonoInst        *domainvar; /* a cache for the current domain */
