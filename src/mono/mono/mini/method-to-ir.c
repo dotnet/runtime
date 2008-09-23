@@ -586,8 +586,6 @@ type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst)
 	inst->klass = klass = mono_class_from_mono_type (type);
 	if (type->byref) {
 		inst->type = STACK_MP;
-		if (cfg->new_ir)
-			inst->klass = mono_defaults.object_class;
 		return;
 	}
 
