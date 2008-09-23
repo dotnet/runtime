@@ -974,7 +974,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		DEBUG (mono_print_ins_index (i, ins));
 
 #if MONO_ARCH_USE_FPSTACK
-		if (sreg1_is_fp2 (spec) || sreg2_is_fp2 (spec) || dreg_is_fp2 (spec))
+		if (sreg1_is_fp (spec) || sreg2_is_fp (spec) || dreg_is_fp (spec))
 			has_fp = TRUE;
 #endif
 
