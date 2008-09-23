@@ -277,6 +277,15 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 #define sreg2_is_fp_ins(ins) (sreg2_is_fp (ins_get_spec ((ins)->opcode)))
 #define dreg_is_fp_ins(ins)  (dreg_is_fp (ins_get_spec ((ins)->opcode)))
 
+#define reg_bank(desc) reg_is_fp ((desc))
+#define sreg1_bank(spec) sreg1_is_fp ((spec))
+#define sreg2_bank(spec) sreg2_is_fp ((spec))
+#define dreg_bank(spec) dreg_is_fp ((spec))
+
+#define sreg1_bank_ins(ins) sreg1_is_fp_ins ((ins))
+#define sreg2_bank_ins(ins) sreg2_is_fp_ins ((ins))
+#define dreg_bank_ins(ins) dreg_is_fp_ins ((ins))
+
 #define regpair_reg2_mask(desc,hreg1) ((MONO_ARCH_INST_REGPAIR_REG2 (desc,hreg1) != -1) ? (regmask (MONO_ARCH_INST_REGPAIR_REG2 (desc,hreg1))) : MONO_ARCH_CALLEE_REGS)
 
 #ifdef MONO_ARCH_IS_GLOBAL_IREG
@@ -357,7 +366,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 	}
 
 	if (spec [MONO_INST_DEST]) {
-		int bank = dreg_is_fp_ins (ins);
+		int bank = dreg_bank_ins (ins);
 		if (is_soft_reg (ins->dreg, bank)) {
 			if (spec [MONO_INST_DEST] == 'b') {
 				if (ins->inst_offset == 0)
@@ -640,21 +649,21 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 
 	DEBUG (printf ("\tstart regmask to assign R%d: 0x%08" G_GUINT64_FORMAT " (R%d <- R%d R%d)\n", reg, (guint64)regmask, ins->dreg, ins->sreg1, ins->sreg2));
 	/* exclude the registers in the current instruction */
-	if ((sreg1_is_fp_ins (ins) == bank) && (reg != ins->sreg1) && (reg_is_freeable (ins->sreg1, bank) || (is_soft_reg (ins->sreg1, bank) && rs->vassign [ins->sreg1] >= 0))) {
+	if ((sreg1_bank_ins (ins) == bank) && (reg != ins->sreg1) && (reg_is_freeable (ins->sreg1, bank) || (is_soft_reg (ins->sreg1, bank) && rs->vassign [ins->sreg1] >= 0))) {
 		if (is_soft_reg (ins->sreg1, bank))
 			regmask &= ~ (regmask (rs->vassign [ins->sreg1]));
 		else
 			regmask &= ~ (regmask (ins->sreg1));
 		DEBUG (printf ("\t\texcluding sreg1 %s\n", mono_regname_full (ins->sreg1, bank)));
 	}
-	if ((sreg2_is_fp_ins (ins) == bank) && (reg != ins->sreg2) && (reg_is_freeable (ins->sreg2, bank) || (is_soft_reg (ins->sreg2, bank) && rs->vassign [ins->sreg2] >= 0))) {
+	if ((sreg2_bank_ins (ins) == bank) && (reg != ins->sreg2) && (reg_is_freeable (ins->sreg2, bank) || (is_soft_reg (ins->sreg2, bank) && rs->vassign [ins->sreg2] >= 0))) {
 		if (is_soft_reg (ins->sreg2, bank))
 			regmask &= ~ (regmask (rs->vassign [ins->sreg2]));
 		else
 			regmask &= ~ (regmask (ins->sreg2));
 		DEBUG (printf ("\t\texcluding sreg2 %s %d\n", mono_regname_full (ins->sreg2, bank), ins->sreg2));
 	}
-	if ((dreg_is_fp_ins (ins) == bank) && (reg != ins->dreg) && reg_is_freeable (ins->dreg, bank)) {
+	if ((dreg_bank_ins (ins) == bank) && (reg != ins->dreg) && reg_is_freeable (ins->dreg, bank)) {
 		regmask &= ~ (regmask (ins->dreg));
 		DEBUG (printf ("\t\texcluding dreg %s\n", mono_regname_full (ins->dreg, bank)));
 	}
@@ -965,12 +974,12 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		DEBUG (mono_print_ins_index (i, ins));
 
 #if MONO_ARCH_USE_FPSTACK
-		if (sreg1_is_fp (spec) || sreg2_is_fp (spec) || dreg_is_fp (spec))
+		if (sreg1_is_fp2 (spec) || sreg2_is_fp2 (spec) || dreg_is_fp2 (spec))
 			has_fp = TRUE;
 #endif
 
 		if (spec_src1) {
-			bank = sreg1_is_fp (spec);
+			bank = sreg1_bank (spec);
 			g_assert (ins->sreg1 != -1);
 			if (cfg->new_ir && is_soft_reg (ins->sreg1, bank))
 				/* This means the vreg is not local to this bb */
@@ -990,7 +999,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->sreg1 = -1;
 		}
 		if (spec_src2) {
-			bank = sreg2_is_fp (spec);
+			bank = sreg2_bank (spec);
 			g_assert (ins->sreg2 != -1);
 			if (cfg->new_ir && is_soft_reg (ins->sreg2, bank))
 				/* This means the vreg is not local to this bb */
@@ -1012,7 +1021,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		if (spec_dest) {
 			int dest_dreg;
 
-			bank = dreg_is_fp (spec);
+			bank = dreg_bank (spec);
 			if (spec_dest != 'b') /* it's not just a base register */
 				reginfo [ins->dreg].killed_in = i;
 			g_assert (ins->dreg != -1);
@@ -1243,7 +1252,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		/*
 		 * TRACK DREG
 		 */
-		bank = dreg_is_fp (spec);
+		bank = dreg_bank (spec);
 		if (spec_dest && is_soft_reg (ins->dreg, bank)) {
 			prev_dreg = ins->dreg;
 		}
@@ -1413,9 +1422,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * The dest reg is read by the instruction, not written, so
 			 * avoid allocating sreg1/sreg2 to the same reg.
 			 */
-			if (!sreg1_is_fp (spec))
+			if (!sreg1_bank (spec))
 				sreg1_mask &= ~ (regmask (ins->dreg));
-			if (!sreg2_is_fp (spec))
+			if (!sreg2_bank (spec))
 				sreg2_mask &= ~ (regmask (ins->dreg));
 		}
 
@@ -1439,7 +1448,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * Need to avoid spilling the dreg since the dreg is not really
 				 * clobbered by the call.
 				 */
-				if ((prev_dreg != -1) && !reg_is_fp (spec_dest))
+				if ((prev_dreg != -1) && !reg_bank (spec_dest))
 					dreg = rs->vassign [prev_dreg];
 				else
 					dreg = -1;
@@ -1464,7 +1473,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (rs->free_mask [1] != MONO_ARCH_CALLEE_FREGS) {
 				clob_mask = MONO_ARCH_CALLEE_FREGS;
-				if ((prev_dreg != -1) && reg_is_fp (spec_dest))
+				if ((prev_dreg != -1) && reg_bank (spec_dest))
 					dreg = rs->vassign [prev_dreg];
 				else
 					dreg = -1;
@@ -1542,7 +1551,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		/*
 		 * TRACK SREG1
 		 */
-		bank = sreg1_is_fp (spec);
+		bank = sreg1_bank (spec);
 		if (MONO_ARCH_INST_IS_REGPAIR (spec_dest) && (spec [MONO_INST_CLOB] == '1')) {
 			g_assert (is_soft_reg (ins->sreg1, bank));
 
@@ -1629,7 +1638,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					sreg1_mask = regmask (ins->dreg);
 				}
 
-				if (spec [MONO_INST_CLOB] == '1' && !dreg_is_fp (spec) && (rs->ifree_mask & (regmask (ins->dreg))))
+				if (spec [MONO_INST_CLOB] == '1' && !dreg_bank (spec) && (rs->ifree_mask & (regmask (ins->dreg))))
 					/* Allocate the same reg to sreg1 to avoid a copy later */
 					sreg1_mask = regmask (ins->dreg);
 
@@ -1761,7 +1770,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		/*
 		 * TRACK SREG2
 		 */
-		bank = sreg2_is_fp (spec);
+		bank = sreg2_bank (spec);
 		if (MONO_ARCH_INST_IS_REGPAIR (spec_src2))
 			g_assert_not_reached ();
 		if (is_soft_reg (ins->sreg2, bank)) {
