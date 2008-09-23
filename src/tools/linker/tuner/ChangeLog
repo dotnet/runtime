@@ -1,3 +1,8 @@
+2008-09-23  Jb Evain  <jbevain@novell.com>
+
+	* Makefile: only execute the check visibility step if
+	CHECK_VISIBILITY is defined.
+
 2008-09-18  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/AdjustVisibility.cs: correctly process public nested types.
