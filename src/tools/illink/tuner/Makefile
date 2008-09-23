@@ -14,12 +14,12 @@ TUNER_SOURCES = \
 	Mono.Tuner/RemoveSerialization.cs	\
 	Mono.Tuner/AdjustVisibility.cs	\
 	Mono.Tuner/CheckVisibility.cs	\
-	Mono.Tuner/InjectAttributes.cs	\
+	Mono.Tuner/InjectAttributes.cs
 
 TUNER_DESCS =	\
 	Descriptors/mscorlib.xml	\
 	Descriptors/smcs.xml	\
-	Descriptors/System.xml	\
+	Descriptors/System.xml
 
 TUNER_MASTERS =	\
 	masterinfos/silverlight/mscorlib.info	\
@@ -73,14 +73,17 @@ TUNER_FLAGS = -d $(WORKING_DIR) -o $(OUTPUT_DIR)	\
 	-a smcs		\
 	-b true		\
 	-g true		\
-	-m display_internalized false	\
+	-m display_internalized false
 
 TUNER_STEPS = \
 	Mono.Tuner.InjectAttributes,Mono.Tuner:OutputStep	\
 	Mono.Tuner.AdjustVisibility,Mono.Tuner:OutputStep	\
 	Mono.Tuner.PrintStatus,Mono.Tuner:OutputStep	\
-	Mono.Tuner.RemoveSerialization,Mono.Tuner:OutputStep	\
-	Mono.Tuner.CheckVisibility,Mono.Tuner	\
+	Mono.Tuner.RemoveSerialization,Mono.Tuner:OutputStep
+
+ifdef CHECK_VISIBILITY
+TUNER_STEPS += Mono.Tuner.CheckVisibility,Mono.Tuner
+endif
 
 $(OUTPUT_FILES): tune.stamp
 	test -f $@ || { rm -f $<; $(MAKE) $<; }
