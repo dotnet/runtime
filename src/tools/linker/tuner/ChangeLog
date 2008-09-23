@@ -1,5 +1,11 @@
 2008-09-23  Jb Evain  <jbevain@novell.com>
 
+	* masterinfos/silverlight/Mono.CompilerServices.SymbolWriter.info
+	* Makefile:
+		tune the SymbolWriter as well.
+
+2008-09-23  Jb Evain  <jbevain@novell.com>
+
 	* Makefile: only execute the check visibility step if
 	CHECK_VISIBILITY is defined.
 

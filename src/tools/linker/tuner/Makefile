@@ -29,7 +29,8 @@ TUNER_MASTERS =	\
 	masterinfos/silverlight/System.Xml.info	\
 	masterinfos/silverlight/System.Runtime.Serialization.info	\
 	masterinfos/silverlight/System.ServiceModel.info	\
-	masterinfos/silverlight/System.ServiceModel.Web.info
+	masterinfos/silverlight/System.ServiceModel.Web.info	\
+	masterinfos/silverlight/Mono.CompilerServices.SymbolWriter.info
 
 LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
 
@@ -38,7 +39,17 @@ DISTFILES = README $(TUNER_SOURCES) $(TUNER_DESCS) $(TUNER_MASTERS)
 WORKING_DIR = $(topdir)/class/lib/net_2_1_raw
 OUTPUT_DIR = $(topdir)/class/lib/net_2_1
 
-DLLFILES = mscorlib.dll System.dll System.Net.dll System.Xml.dll System.Core.dll System.Runtime.Serialization.dll System.ServiceModel.dll System.ServiceModel.Web.dll
+DLLFILES = \
+	mscorlib.dll	\
+	System.dll	\
+	System.Net.dll	\
+	System.Xml.dll	\
+	System.Core.dll	\
+	System.Runtime.Serialization.dll	\
+	System.ServiceModel.dll	\
+	System.ServiceModel.Web.dll	\
+	Mono.CompilerServices.SymbolWriter.dll
+
 FILES = smcs.exe $(DLLFILES)
 WORKING_FILES = $(FILES:%=$(WORKING_DIR)/%)
 OUTPUT_FILES = $(FILES:%=$(OUTPUT_DIR)/%)
@@ -99,7 +110,7 @@ GACUTIL = MONO_PATH="$(topdir)/class/lib/net_1_1_bootstrap$(PLATFORM_PATH_SEPARA
 
 TUNER_INSTALL_DIR = $(DESTDIR)$(mono_libdir)/mono/2.1
 
-end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Net gac-System.Xml gac-System.Core gac-System.Runtime.Serialization gac-System.ServiceModel gac-System.ServiceModel.Web
+end-install: inst-mscorlib.dll inst-smcs.exe gac-System gac-System.Net gac-System.Xml gac-System.Core gac-System.Runtime.Serialization gac-System.ServiceModel gac-System.ServiceModel.Web gac-Mono.CompilerServices.SymbolWriter
 
 inst-%: $(OUTPUT_DIR)/%
 	$(MKINSTALLDIRS) $(TUNER_INSTALL_DIR)
