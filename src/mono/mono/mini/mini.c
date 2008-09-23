@@ -5858,7 +5858,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			float *f;
 			/* we should really allocate this only late in the compilation process */
 			mono_domain_lock (cfg->domain);
-			f = mono_mempool_alloc (cfg->domain->mp, sizeof (float));
+			f = mono_domain_alloc (cfg->domain, sizeof (float));
 			mono_domain_unlock (cfg->domain);
 			CHECK_OPSIZE (5);
 			CHECK_STACK_OVF (1);
@@ -5875,7 +5875,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDC_R8: {
 			double *d;
 			mono_domain_lock (cfg->domain);
-			d = mono_mempool_alloc (cfg->domain->mp, sizeof (double));
+			d = mono_domain_alloc (cfg->domain, sizeof (double));
 			mono_domain_unlock (cfg->domain);
 			CHECK_OPSIZE (9);
 			CHECK_STACK_OVF (1);
@@ -11339,7 +11339,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		} else {
 			mono_domain_lock (domain);
 			if (mono_aot_only)
-				jump_table = mono_mempool_alloc (domain->mp, sizeof (gpointer) * patch_info->data.table->table_size);
+				jump_table = mono_domain_alloc (domain, sizeof (gpointer) * patch_info->data.table->table_size);
 			else
 				jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 			mono_domain_unlock (domain);
@@ -12815,7 +12815,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	} else {
 		/* we access cfg->domain->mp */
 		mono_domain_lock (cfg->domain);
-		jinfo = mono_mempool_alloc0 (cfg->domain->mp, sizeof (MonoJitInfo) +
+		jinfo = mono_domain_alloc0 (cfg->domain, sizeof (MonoJitInfo) +
 				(header->num_clauses * sizeof (MonoJitExceptionInfo)) +
 				generic_info_size);
 		mono_domain_unlock (cfg->domain);

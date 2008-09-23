@@ -3176,7 +3176,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 			domain->method_code_hash = g_hash_table_new (NULL, NULL);
 		code_slot = g_hash_table_lookup (domain->method_code_hash, method);
 		if (!code_slot) {
-			code_slot = mono_mempool_alloc0 (domain->mp, sizeof (gpointer));
+			code_slot = mono_domain_alloc0 (domain, sizeof (gpointer));
 			g_hash_table_insert (domain->method_code_hash, method, code_slot);
 		}
 		mono_domain_unlock (domain);
@@ -5519,7 +5519,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			float *f;
 			/* FIXME: we should really allocate this only late in the compilation process */
 			mono_domain_lock (cfg->domain);
-			f = mono_mempool_alloc (cfg->domain->mp, sizeof (float));
+			f = mono_domain_alloc (cfg->domain, sizeof (float));
 			mono_domain_unlock (cfg->domain);
 			CHECK_OPSIZE (5);
 			CHECK_STACK_OVF (1);
@@ -5539,7 +5539,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			double *d;
 			/* FIXME: we should really allocate this only late in the compilation process */
 			mono_domain_lock (cfg->domain);
-			d = mono_mempool_alloc (cfg->domain->mp, sizeof (double));
+			d = mono_domain_alloc (cfg->domain, sizeof (double));
 			mono_domain_unlock (cfg->domain);
 			CHECK_OPSIZE (9);
 			CHECK_STACK_OVF (1);

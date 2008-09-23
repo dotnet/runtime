@@ -1317,7 +1317,7 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 	/* Exception table */
 	if (header && header->num_clauses) {
 		jinfo = 
-			mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + (sizeof (MonoJitExceptionInfo) * header->num_clauses) + generic_info_size);
+			mono_domain_alloc0 (domain, sizeof (MonoJitInfo) + (sizeof (MonoJitExceptionInfo) * header->num_clauses) + generic_info_size);
 		jinfo->num_clauses = header->num_clauses;
 
 		for (i = 0; i < header->num_clauses; ++i) {
@@ -1338,7 +1338,7 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 		}
 	}
 	else
-		jinfo = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo) + generic_info_size);
+		jinfo = mono_domain_alloc0 (domain, sizeof (MonoJitInfo) + generic_info_size);
 
 	jinfo->code_size = code_len;
 	jinfo->used_regs = used_int_regs;

@@ -731,7 +731,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	g_assert (code_size);
 
 	mono_domain_lock (domain);
-	ji = mono_mempool_alloc0 (domain->mp, sizeof (MonoJitInfo));
+	ji = mono_domain_alloc0 (domain, sizeof (MonoJitInfo));
 	mono_domain_unlock (domain);
 	ji->code_start = code;
 	ji->code_size = code_size;
@@ -833,7 +833,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	g_assert (invoke);
 
 	mono_domain_lock (domain );
-	tramp_data = mono_mempool_alloc (domain->mp, sizeof (gpointer) * 3);
+	tramp_data = mono_domain_alloc (domain, sizeof (gpointer) * 3);
 	mono_domain_unlock (domain);
 	tramp_data [0] = invoke;
 	if (mono_aot_only) {
