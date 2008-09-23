@@ -955,6 +955,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 							// mono_debugger_handle_exception (ei->data.filter, MONO_CONTEXT_GET_SP (ctx), obj);
 							if (test_only) {
+								mono_perfcounters->exceptions_filters++;
 								filtered = call_filter (ctx, ei->data.filter);
 								if (filtered && out_filter_idx)
 									*out_filter_idx = filter_idx;
@@ -989,6 +990,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
 							MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 							*(mono_get_lmf_addr ()) = lmf;
+							mono_perfcounters->exceptions_depth += frame_count;
 
 							return 0;
 						}
@@ -1008,6 +1010,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 								g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (ji->method, TRUE));
 							mono_profiler_exception_clause_handler (ji->method, ei->flags, i);
 							mono_debugger_handle_exception (ei->handler_start, MONO_CONTEXT_GET_SP (ctx), obj);
+							mono_perfcounters->exceptions_finallys++;
 							call_filter (ctx, ei->handler_start);
 						}
 						
