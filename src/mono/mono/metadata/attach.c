@@ -197,12 +197,12 @@ mono_attach_init (void)
 	mono_gc_add_finalizer_thread_callback (maybe_start, NULL);
 }
 
-/*
+/**
  * mono_attach_start:
  *
- *   Start the attach mechanism if needed.
+ * Start the attach mechanism if needed.  This is called from a signal handler so it must be signal safe.
+ *
  * Returns: whenever it was started.
- * This is called from a signal handler so it must be signal safe.
  */
 gboolean
 mono_attach_start (void)
