@@ -366,7 +366,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 	}
 
 	if (spec [MONO_INST_DEST]) {
-		int bank = dreg_bank_ins (ins);
+		int bank = dreg_bank (spec);
 		if (is_soft_reg (ins->dreg, bank)) {
 			if (spec [MONO_INST_DEST] == 'b') {
 				if (ins->inst_offset == 0)
@@ -385,7 +385,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 			printf (" %s <-", mono_regname_full (ins->dreg, bank));
 	}
 	if (spec [MONO_INST_SRC1]) {
-		int bank = (spec [MONO_INST_SRC1] == 'f');
+		int bank = sreg1_bank (spec);
 		if (is_soft_reg (ins->sreg1, bank)) {
 			if (spec [MONO_INST_SRC1] == 'b')
 				printf (" [R%d + 0x%lx]", ins->sreg1, (long)ins->inst_offset);
@@ -397,7 +397,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 			printf (" %s", mono_regname_full (ins->sreg1, bank));
 	}
 	if (spec [MONO_INST_SRC2]) {
-		int bank = (spec [MONO_INST_SRC2] == 'f');
+		int bank = sreg2_bank (spec);
 		if (is_soft_reg (ins->sreg2, bank))
 			printf (" R%d", ins->sreg2);
 		else
@@ -1714,10 +1714,10 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		/* Handle dreg==sreg1 */
-		if (((dreg_is_fp (spec) && spec_src1 == 'f') || spec [MONO_INST_CLOB] == '1') && ins->dreg != ins->sreg1) {
+		if (((dreg_is_fp (spec) && sreg1_is_fp (spec)) || spec [MONO_INST_CLOB] == '1') && ins->dreg != ins->sreg1) {
 			MonoInst *sreg2_copy = NULL;
 			MonoInst *copy;
-			int bank = (spec_src1 == 'f');
+			int bank = reg_bank (spec_src1);
 
 			if (ins->dreg == ins->sreg2) {
 				/* 
