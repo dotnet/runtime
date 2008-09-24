@@ -60,6 +60,7 @@
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/attach.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -13751,7 +13752,14 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 static void
 SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
 {
+	gboolean res;
+
 	GET_CONTEXT;
+
+	/* We use this signal to start the attach agent too */
+	res = mono_attach_start ();
+	if (res)
+		return;
 
 	printf ("Full thread dump:\n");
 
@@ -14580,7 +14588,6 @@ print_jit_stats (void)
 		g_print ("Basic blocks:           %ld\n", mono_jit_stats.basic_blocks);
 		g_print ("Max basic blocks:       %ld\n", mono_jit_stats.max_basic_blocks);
 		g_print ("Allocated vars:         %ld\n", mono_jit_stats.allocate_var);
-		g_print ("Analyze stack repeat:   %ld\n", mono_jit_stats.analyze_stack_repeat);
 		g_print ("Compiled CIL code size: %ld\n", mono_jit_stats.cil_code_size);
 		g_print ("Native code size:       %ld\n", mono_jit_stats.native_code_size);
 		g_print ("Max code size ratio:    %.2f (%s)\n", mono_jit_stats.max_code_size_ratio/100.0,

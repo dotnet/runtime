@@ -45,6 +45,7 @@
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/coree.h>
+#include <mono/metadata/attach.h>
 #include "mono/utils/mono-counters.h"
 #include <mono/os/gc_wrapper.h>
 
@@ -1086,7 +1087,10 @@ mini_usage (void)
 		"    --optimize=OPT         Turns on or off a specific optimization\n"
 		"                           Use --list-opt to get a list of optimizations\n"
 		"    --security[=mode]      Turns on the unsupported security manager (off by default)\n"
-		"                           mode is one of cas, core-clr, verifiable or validil\n");
+		"                           mode is one of cas, core-clr, verifiable or validil\n"
+		"    --attach=OPTIONS       Pass OPTIONS to the attach agent in the runtime.\n"
+		"                           Currently the only supported option is 'disable'.\n"
+	  );
 }
 
 static void
@@ -1205,6 +1209,7 @@ mono_main (int argc, char* argv[])
 	char *aot_options = NULL;
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
+	char *attach_options = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	int test_jit_info_table = FALSE;
 #endif
@@ -1372,6 +1377,8 @@ mono_main (int argc, char* argv[])
 			if (agents == NULL)
 				agents = g_ptr_array_new ();
 			g_ptr_array_add (agents, argv [i] + 8);
+		} else if (strncmp (argv [i], "--attach=", 9) == 0) {
+			attach_options = argv [i] + 9;
 		} else if (strcmp (argv [i], "--compile") == 0) {
 			if (i + 1 >= argc){
 				fprintf (stderr, "error: --compile option requires a method name argument\n");
@@ -1477,6 +1484,8 @@ mono_main (int argc, char* argv[])
 		mono_gc_base_init ();
 		mono_profiler_load (profile_options);
 	}
+
+	mono_attach_parse_options (attach_options);
 
 	if (trace_options != NULL){
 		/* 
