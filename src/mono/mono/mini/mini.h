@@ -953,7 +953,6 @@ typedef struct {
 	gulong methods_lookups;
 	gulong method_trampolines;
 	gulong allocate_var;
-	gulong analyze_stack_repeat;
 	gulong cil_code_size;
 	gulong native_code_size;
 	gulong code_reallocs;
