@@ -405,7 +405,7 @@ ipc_connect (void)
 	unlink (filename);
 
 	/* Bind a name to the socket.   */
-	name.sun_family = AF_FILE;
+	name.sun_family = AF_UNIX;
 	strcpy (name.sun_path, filename);
 
 	size = (offsetof (struct sockaddr_un, sun_path)
