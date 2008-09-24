@@ -11,6 +11,9 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool-internals.h>
 
+/* Disable for now to save space */
+#undef MONO_ARCH_ENABLE_GLOBAL_RA
+
 #ifdef MONO_ARCH_ENABLE_GLOBAL_RA
 
 /*

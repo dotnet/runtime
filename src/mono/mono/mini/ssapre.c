@@ -16,10 +16,14 @@
 
 #include "config.h"
 
-#ifndef DISABLE_SSA
 #include "inssel.h"
 
 #include "ssapre.h"
+
+/* Disable for now to save space since it is not yet ported to linear IR */
+#if 0
+
+#ifndef DISABLE_SSA
 
 /* Logging conditions */
 #define DUMP_LEVEL (4)
@@ -2154,3 +2158,11 @@ mono_perform_ssapre (MonoCompile *cfg) {
 
 #endif /* DISABLE_SSA */
 
+#else /* 0 */
+
+void
+mono_perform_ssapre (MonoCompile *cfg)
+{
+}
+
+#endif /* 0 */
