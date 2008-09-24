@@ -99,7 +99,7 @@
 	} while (0)
 #define GENERIC_SHARING_FAILURE(opcode) do {		\
 		if (cfg->generic_sharing_context) {	\
-            if (cfg->verbose_level > 1) \
+            if (cfg->verbose_level > 2) \
 			    printf ("sharing failed for method %s.%s.%s/%d opcode %s line %d\n", method->klass->name_space, method->klass->name, method->name, method->signature->param_count, mono_opcode_name ((opcode)), __LINE__); \
 			cfg->exception_type = MONO_EXCEPTION_GENERIC_SHARING_FAILED;	\
 			goto exception_exit;	\
@@ -9246,7 +9246,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 		return -1;
 	}
 
-	if ((cfg->verbose_level > 1) && (cfg->method == method)) 
+	if ((cfg->verbose_level > 2) && (cfg->method == method)) 
 		mono_print_code (cfg, "AFTER METHOD-TO-IR");
 
 	return inline_costs;
@@ -9761,7 +9761,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 		MonoInst *ins = bb->code;	
 		int block_num = bb->block_num;
 
-		if (cfg->verbose_level > 1)
+		if (cfg->verbose_level > 2)
 			printf ("\nHANDLE-GLOBAL-VREGS BLOCK %d:\n", bb->block_num);
 
 		cfg->cbb = bb;
@@ -9770,7 +9770,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 			int regtype, regindex;
 			gint32 prev_bb;
 
-			if (G_UNLIKELY (cfg->verbose_level > 1))
+			if (G_UNLIKELY (cfg->verbose_level > 2))
 				mono_print_ins (ins);
 
 			g_assert (ins->opcode >= MONO_CEE_LAST);
@@ -9805,7 +9805,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 					if (!get_vreg_to_inst (cfg, vreg)) {
 						mono_compile_create_var_for_vreg (cfg, &mono_defaults.int64_class->byval_arg, OP_LOCAL, vreg);
 
-						if (cfg->verbose_level > 1)
+						if (cfg->verbose_level > 2)
 							printf ("LONG VREG R%d made global.\n", vreg);
 					}
 
@@ -9829,7 +9829,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 						continue;
 
 					if (!get_vreg_to_inst (cfg, vreg)) {
-						if (G_UNLIKELY (cfg->verbose_level > 1))
+						if (G_UNLIKELY (cfg->verbose_level > 2))
 							printf ("VREG R%d used in BB%d and BB%d made global.\n", vreg, vreg_to_bb [vreg], block_num);
 
 						switch (regtype) {
@@ -10038,7 +10038,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
 
-		if (cfg->verbose_level > 1)
+		if (cfg->verbose_level > 2)
 			printf ("\nSPILL BLOCK %d:\n", bb->block_num);
 
 		/* Clear vreg_to_lvreg array */
@@ -10052,7 +10052,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 			int regtype, srcindex, sreg, tmp_reg, prev_dreg;
 			gboolean store, no_lvreg;
 
-			if (G_UNLIKELY (cfg->verbose_level > 1))
+			if (G_UNLIKELY (cfg->verbose_level > 2))
 				mono_print_ins (ins);
 
 			if (ins->opcode == OP_NOP)
@@ -10116,7 +10116,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				store = FALSE;
 			no_lvreg = FALSE;
 
-			if (G_UNLIKELY (cfg->verbose_level > 1))
+			if (G_UNLIKELY (cfg->verbose_level > 2))
 				printf ("\t %.3s %d %d %d\n", spec, ins->dreg, ins->sreg1, ins->sreg2);
 
 			/***************/
@@ -10258,7 +10258,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 					if (vreg_to_lvreg [sreg]) {
 						/* The variable is already loaded to an lvreg */
-						if (G_UNLIKELY (cfg->verbose_level > 1))
+						if (G_UNLIKELY (cfg->verbose_level > 2))
 							printf ("\t\tUse lvreg R%d for R%d.\n", vreg_to_lvreg [sreg], sreg);
 						if (srcindex == 0)
 							ins->sreg1 = vreg_to_lvreg [sreg];
@@ -10342,7 +10342,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				lvregs_len = 0;
 			}
 
-			if (cfg->verbose_level > 1)
+			if (cfg->verbose_level > 2)
 				mono_print_ins_index (1, ins);
 		}
 	}

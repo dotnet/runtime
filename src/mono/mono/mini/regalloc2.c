@@ -500,7 +500,7 @@ collect_fp_vregs (MonoCompile *cfg, MonoRegallocContext *ctx)
 }
 
 #if 1
-#define LIVENESS_DEBUG(a) do { if (cfg->verbose_level > 1) { a; } } while (0)
+#define LIVENESS_DEBUG(a) do { if (cfg->verbose_level > 2) { a; } } while (0)
 #else
 #define LIVENESS_DEBUG(a)
 #endif

@@ -48,7 +48,7 @@ static const int regbank_move_ops [] = {
 	OP_FMOVE
 };
 
-#define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 2, a;)
+#define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 3, a;)
 
 static inline GSList*
 g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)

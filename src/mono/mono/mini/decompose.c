@@ -1055,7 +1055,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 		gboolean restart;
 		int dreg;
 
-		if (cfg->verbose_level > 1) mono_print_bb (bb, "BEFORE LOWER-VTYPE-OPTS ");
+		if (cfg->verbose_level > 2) mono_print_bb (bb, "BEFORE LOWER-VTYPE-OPTS ");
 
 		cfg->cbb->code = cfg->cbb->last_ins = NULL;
 		restart = TRUE;
@@ -1238,7 +1238,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 			}
 		}
 
-		if (cfg->verbose_level > 1) mono_print_bb (bb, "AFTER LOWER-VTYPE-OPTS ");
+		if (cfg->verbose_level > 2) mono_print_bb (bb, "AFTER LOWER-VTYPE-OPTS ");
 	}
 }
 
