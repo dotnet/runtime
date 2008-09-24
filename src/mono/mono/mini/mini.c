@@ -12286,6 +12286,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		 * for this in the debugger. */
 		cfg->disable_omit_fp = TRUE;
 
+		/* The debugger needs all locals to be on the stack or in a global register */
+		cfg->disable_vreg_to_lvreg = TRUE;
+
 		// cfg->opt |= MONO_OPT_SHARED;
 		cfg->opt &= ~MONO_OPT_INLINE;
 		cfg->opt &= ~MONO_OPT_COPYPROP;
