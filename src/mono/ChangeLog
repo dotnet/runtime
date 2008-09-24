@@ -1,3 +1,7 @@
+2008-09-24  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add --enable-minimal=attach option.
+
 2008-09-22  Raja R Harinath  <harinath@hurrynot.org>
 
 	* scripts/patch-quiet.sh: Skip Makefiles that've already been

@@ -540,7 +540,7 @@ DISABLED_FEATURES=none
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
   LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug,
-  reflection_emit, large_code, logging, com, ssa, generics, jit.],
+  reflection_emit, large_code, logging, com, ssa, generics, attach, jit.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -595,6 +595,10 @@ fi
 
 if test "x$mono_feature_disable_generics" = "xyes"; then
 	AC_DEFINE(DISABLE_GENERICS, 1, [Disable generics support])
+fi
+
+if test "x$mono_feature_disable_attach" = "xyes"; then
+	AC_DEFINE(DISABLE_ATTACH, 1, [Disable agent attach support])
 fi
 
 if test "x$mono_feature_disable_jit" = "xyes"; then
