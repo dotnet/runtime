@@ -41,6 +41,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/attach.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
@@ -214,6 +215,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	mono_network_init ();
 
+	mono_attach_init ();
+
 	/* mscorlib is loaded before we install the load hook */
 	mono_domain_fire_assembly_load (mono_defaults.corlib->assembly, NULL);
 	
@@ -274,6 +277,8 @@ void
 mono_runtime_cleanup (MonoDomain *domain)
 {
 	shutting_down = TRUE;
+
+	mono_attach_cleanup ();
 
 	/* This ends up calling any pending pending (for at most 2 seconds) */
 	mono_gc_cleanup ();

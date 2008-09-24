@@ -87,6 +87,8 @@ libmonoruntime_la_SOURCES = \
 	mono-debug-debugger.c	\
 	profiler.c	\
 	profiler-private.h	\
+	attach.h	\
+	attach.c	\
 	rand.h		\
 	rand.c		\
 	security.c	\
