@@ -3322,6 +3322,15 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		class->vtable_size = cur_slot;
 	}
 
+	/* FIXME: only do this if the class is actually sharable */
+	if (class->valuetype && (class->generic_class || class->generic_container) &&
+			mono_class_generic_sharing_enabled (class)) {
+		for (i = 0; i < max_vtsize; ++i) {
+			if (vtable [i] && vtable [i]->wrapper_type == MONO_WRAPPER_NONE)
+				vtable [i] = mono_marshal_get_static_rgctx_invoke (vtable [i]);
+		}
+	}
+
 	/* Try to share the vtable with our parent. */
 	if (class->parent && (class->parent->vtable_size == class->vtable_size) && (memcmp (class->parent->vtable, vtable, sizeof (gpointer) * class->vtable_size) == 0)) {
 		mono_memory_barrier ();

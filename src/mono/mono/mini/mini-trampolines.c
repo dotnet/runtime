@@ -178,7 +178,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 #else
 			g_assert_not_reached ();
 #endif
-		} else if (m->flags & METHOD_ATTRIBUTE_STATIC) {
+		} else if ((m->flags & METHOD_ATTRIBUTE_STATIC) || m->klass->valuetype) {
 #ifdef MONO_ARCH_RGCTX_REG
 			MonoVTable *vtable = mono_arch_find_static_call_vtable ((gpointer*)regs, code);
 

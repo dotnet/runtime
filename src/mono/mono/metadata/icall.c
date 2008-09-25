@@ -5818,7 +5818,8 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	/* FIXME: only do this for methods which can be shared! */
 	if ((method->is_inflated && mono_method_get_context (method)->method_inst &&
 					mono_class_generic_sharing_enabled (method->klass)) ||
-			((method->flags & METHOD_ATTRIBUTE_STATIC) && method->klass->generic_class)) {
+			(((method->flags & METHOD_ATTRIBUTE_STATIC) || method->klass->valuetype) &&
+					method->klass->generic_class)) {
 		method = mono_marshal_get_static_rgctx_invoke (method);
 		func = mono_compile_method (method);
 	} else if (method->dynamic) {

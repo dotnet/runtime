@@ -735,7 +735,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 		class = mrgctx->class_vtable->klass;
 		context.method_inst = mrgctx->method_inst;
 		g_assert (context.method_inst);
-	} else if (ji->method->flags & METHOD_ATTRIBUTE_STATIC) {
+	} else if ((ji->method->flags & METHOD_ATTRIBUTE_STATIC) || ji->method->klass->valuetype) {
 		MonoVTable *vtable = info;
 
 		class = vtable->klass;
