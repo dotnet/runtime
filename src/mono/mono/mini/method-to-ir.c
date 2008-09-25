@@ -8835,7 +8835,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			case CEE_LDFTN: {
 				MonoInst *argconst;
 				MonoMethod *cil_method, *ctor_method;
-				gboolean is_shared = FALSE;
+				gboolean needs_static_rgctx_invoke;
 
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (6);
@@ -8850,15 +8850,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (cfg->generic_sharing_context)
 					context_used = mono_method_check_context_used (cmethod);
 
-				if (mono_class_generic_sharing_enabled (cmethod->klass)) {
-					if (((cmethod->flags & METHOD_ATTRIBUTE_STATIC) || cmethod->klass->valuetype) &&
-							(cmethod->klass->generic_class ||
-							cmethod->klass->generic_container)) {
-						is_shared = TRUE;
-					}
-					if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst)
-						is_shared = TRUE;
-				}
+				needs_static_rgctx_invoke = mono_method_needs_static_rgctx_invoke (cmethod, TRUE);
  
 				cil_method = cmethod;
 				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
@@ -8879,7 +8871,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				/* FIXME: SGEN support */
 				/* FIXME: handle shared static generic methods */
 				/* FIXME: handle this in shared code */
-				if (!is_shared && !context_used && (sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
+				if (!needs_static_rgctx_invoke && !context_used && (sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
 					MonoInst *target_ins;
 
 					ip += 6;
@@ -8897,12 +8889,12 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (context_used) {
 					MonoInst *rgctx;
 
-					if (is_shared)
+					if (needs_static_rgctx_invoke)
 						cmethod = mono_marshal_get_static_rgctx_invoke (cmethod);
 
 					EMIT_GET_RGCTX (rgctx, context_used);
 					argconst = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod, MONO_RGCTX_INFO_METHOD);
-				} else if (is_shared) {
+				} else if (needs_static_rgctx_invoke) {
 					EMIT_NEW_METHODCONST (cfg, argconst, mono_marshal_get_static_rgctx_invoke (cmethod));
 				} else {
 					EMIT_NEW_METHODCONST (cfg, argconst, cmethod);

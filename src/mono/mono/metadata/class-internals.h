@@ -1082,6 +1082,9 @@ mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgct
 MonoMethodRuntimeGenericContext*
 mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst) MONO_INTERNAL;
 
+gboolean
+mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;
+
 int
 mono_class_rgctx_get_array_size (int n, gboolean mrgctx) MONO_INTERNAL;
 
@@ -1094,6 +1097,14 @@ mono_generic_context_check_used (MonoGenericContext *context) MONO_INTERNAL;
 
 int
 mono_class_check_context_used (MonoClass *class) MONO_INTERNAL;
+
+gboolean
+mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars) MONO_INTERNAL;
+
+gboolean
+mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
+gboolean
+mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;
 
 void
 mono_class_unregister_image_generic_subclasses (MonoImage *image) MONO_INTERNAL;

@@ -1615,11 +1615,6 @@ int mono_method_check_context_used (MonoMethod *method) MONO_INTERNAL;
 
 gboolean mono_generic_context_equal_deep (MonoGenericContext *context1, MonoGenericContext *context2) MONO_INTERNAL;
 
-gboolean mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars) MONO_INTERNAL;
-
-gboolean mono_method_is_generic_impl (MonoMethod *method) MONO_INTERNAL;
-gboolean mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_vars) MONO_INTERNAL;
-
 gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *vtable,
 					  guint32 token, guint32 token_source, guint32 rgctx_type,
 					  gint32 rgctx_index) MONO_INTERNAL;

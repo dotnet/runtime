@@ -49,11 +49,8 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 		res = mono_class_inflate_generic_method (res, &context);
 	}
 
-	/* FIXME: only do this for methods which can be shared! */
-	if (res->is_inflated && mono_method_get_context (res)->method_inst &&
-			mono_class_generic_sharing_enabled (res->klass)) {
+	if (mono_method_needs_static_rgctx_invoke (res, FALSE))
 		res = mono_marshal_get_static_rgctx_invoke (res);
-	}
 
 	return mono_ldftn (res);
 }
@@ -909,12 +906,8 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	g_assert (!vmethod->klass->generic_class || !vmethod->klass->generic_class->context.class_inst->is_open);
 	g_assert (!context->method_inst || !context->method_inst->is_open);
 	inflated = mono_class_inflate_generic_method (vmethod, context);
-	if (mono_class_generic_sharing_enabled (inflated->klass) &&
-			mono_method_is_generic_sharable_impl (method, FALSE)) {
-		/* The method is shared generic code, so it needs a
-		   MRGCTX. */
+	if (mono_method_needs_static_rgctx_invoke (inflated, FALSE))
 		inflated = mono_marshal_get_static_rgctx_invoke (inflated);
-	}
 	addr = mono_compile_method (inflated);
 
 	/* Since this is a virtual call, have to unbox vtypes */
