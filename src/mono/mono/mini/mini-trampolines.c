@@ -311,8 +311,11 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
-		if (generic_shared)
+		if (generic_shared) {
+			if (m->wrapper_type != MONO_WRAPPER_NONE)
+				m = mono_marshal_method_from_wrapper (m);
 			g_assert (mono_method_is_generic_sharable_impl (m, FALSE));
+		}
 
 		/* Patch calling code */
 		if (plt_entry) {
