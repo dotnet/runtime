@@ -1,5 +1,9 @@
 using System;
 
+/*
+ * Register allocator tests.
+ */
+
 public class Tests {
 
 	public static int Main (String[] args) {
