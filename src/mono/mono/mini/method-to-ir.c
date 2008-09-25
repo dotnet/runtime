@@ -2603,10 +2603,6 @@ emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 	}
 }
 
-#define EMIT_GET_RGCTX(rgctx, context_used) do {				\
-		(rgctx) = emit_get_rgctx (cfg, method, (context_used)); \
-	} while (0)
-
 static MonoJumpInfoRgctxEntry *
 mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean in_mrgctx, MonoJumpInfoType patch_type, gconstpointer patch_data, int info_type)
 {
@@ -5885,7 +5881,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (context_used) {
 					MonoInst *rgctx;
 
-					EMIT_GET_RGCTX (rgctx, context_used);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
 					vtable_arg = emit_get_rgctx_klass (cfg, context_used, rgctx, cmethod->klass, MONO_RGCTX_INFO_VTABLE);
 				} else {
 					MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
@@ -5901,7 +5897,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (context_used) {
 					MonoInst *rgctx;
 
-					EMIT_GET_RGCTX (rgctx, context_used);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
 					vtable_arg = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 				} else {
 					EMIT_NEW_METHOD_RGCTX_CONST (cfg, vtable_arg, cmethod);
@@ -5921,9 +5917,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				g_assert (!pass_vtable);
 				g_assert (cmethod);
 
-				EMIT_GET_RGCTX (rgctx, context_used);
-				imt_arg = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod,
-												 MONO_RGCTX_INFO_METHOD);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
+				imt_arg = emit_get_rgctx_method (cfg, context_used, rgctx,
+					cmethod, MONO_RGCTX_INFO_METHOD);
 			}
 
 			if (check_this) {
@@ -5959,7 +5955,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (context_used) {
 					MonoInst *rgctx;
 
-					EMIT_GET_RGCTX (rgctx, context_used);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
 					iargs [1] = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod, MONO_RGCTX_INFO_METHOD);
 					EMIT_NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
 					addr = mono_emit_jit_icall (cfg,
@@ -6129,7 +6125,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				 * indirect call.
 				 */
 
-				EMIT_GET_RGCTX (rgctx, context_used);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
 				addr = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 			}
 
@@ -7115,7 +7111,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					MonoInst *rgctx, *data;
 					int rgctx_info;
 
-					EMIT_GET_RGCTX (rgctx, context_used);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
 					if (cfg->opt & MONO_OPT_SHARED)
 						rgctx_info = MONO_RGCTX_INFO_KLASS;
 					else
@@ -7175,9 +7171,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 					g_assert (!callvirt_this_arg);
 
-					EMIT_GET_RGCTX (rgctx, context_used);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
 					cmethod_addr = emit_get_rgctx_method (cfg, context_used, rgctx,
-														  cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+						cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 
 					mono_emit_rgctx_calli (cfg, fsig, sp, cmethod_addr, vtable_arg);
 				} else {
@@ -7222,9 +7218,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				args [0] = *sp;
 
 				/* klass */
-				EMIT_GET_RGCTX (rgctx, context_used);
-				args [1] = emit_get_rgctx_klass (cfg, context_used, rgctx, klass,
-												 MONO_RGCTX_INFO_KLASS);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
+				args [1] = emit_get_rgctx_klass (cfg, context_used, rgctx,
+					klass, MONO_RGCTX_INFO_KLASS);
 
 				ins = mono_emit_jit_icall (cfg, mono_object_castclass, args);
 				*sp ++ = ins;
@@ -7277,7 +7273,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				args [0] = *sp;
 
 				/* klass */
-				EMIT_GET_RGCTX (rgctx, context_used);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
 				args [1] = emit_get_rgctx_klass (cfg, context_used, rgctx, klass, MONO_RGCTX_INFO_KLASS);
 
 				*sp = mono_emit_jit_icall (cfg, mono_object_isinst, args);
@@ -7335,7 +7331,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					/* obj */
 					iargs [0] = *sp;
 					/* klass */
-					EMIT_GET_RGCTX (rgctx, context_used);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
 					iargs [1] = emit_get_rgctx_klass (cfg, context_used, rgctx, klass, MONO_RGCTX_INFO_KLASS);
 					ins = mono_emit_jit_icall (cfg, mono_object_castclass, iargs);
 					*sp ++ = ins;
@@ -7370,7 +7366,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			}
 
 			if (context_used)
-				EMIT_GET_RGCTX (rgctx, context_used);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
 
 			if (mono_class_is_nullable (klass)) {
 				ins = handle_unbox_nullable (cfg, *sp, klass, context_used, rgctx);
@@ -7460,7 +7456,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				MonoInst *data;
 				int rgctx_info;
 
-				EMIT_GET_RGCTX (rgctx, context_used);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
 				if (cfg->opt & MONO_OPT_SHARED)
 					rgctx_info = MONO_RGCTX_INFO_KLASS;
 				else
@@ -7491,7 +7487,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				context_used = mono_class_check_context_used (klass);
 
 			if (context_used)
-				EMIT_GET_RGCTX (rgctx, context_used);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
  
 			if (mono_class_is_nullable (klass)) {
 				MonoInst *val;
@@ -7705,8 +7701,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (context_used) {
 					MonoInst *rgctx;
 
-					EMIT_GET_RGCTX (rgctx, context_used);
-					iargs [1] = emit_get_rgctx_field (cfg, context_used, rgctx, field, MONO_RGCTX_INFO_CLASS_FIELD);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
+					iargs [1] = emit_get_rgctx_field (cfg, context_used, rgctx,
+						field, MONO_RGCTX_INFO_CLASS_FIELD);
 				} else {
 					EMIT_NEW_FIELDCONST (cfg, iargs [1], field);
 				}
@@ -7724,8 +7721,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					MonoCallInst *call;
 					MonoInst *vtable, *rgctx;
 
-					EMIT_GET_RGCTX (rgctx, context_used);
-					vtable = emit_get_rgctx_klass (cfg, context_used, rgctx, klass, MONO_RGCTX_INFO_VTABLE);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
+					vtable = emit_get_rgctx_klass (cfg, context_used, rgctx,
+						klass, MONO_RGCTX_INFO_VTABLE);
 
 					// FIXME: This doesn't work since it tries to pass the argument
 					// in the normal way, instead of using MONO_ARCH_VTABLE_REG
@@ -7748,8 +7746,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				 *
 				 *   super_info.static_data + field->offset
 				 */
-				EMIT_GET_RGCTX (rgctx, context_used);
-				static_data = emit_get_rgctx_klass (cfg, context_used, rgctx, klass, MONO_RGCTX_INFO_STATIC_DATA);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
+				static_data = emit_get_rgctx_klass (cfg, context_used, rgctx,
+					klass, MONO_RGCTX_INFO_STATIC_DATA);
 
 				if (field->offset == 0) {
 					ins = static_data;
@@ -7947,8 +7946,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				/* FIXME: Decompose later to help abcrem */
 
 				/* vtable */
-				EMIT_GET_RGCTX (rgctx, context_used);
-				args [0] = emit_get_rgctx_klass (cfg, context_used, rgctx, mono_array_class_get (klass, 1), MONO_RGCTX_INFO_VTABLE);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
+				args [0] = emit_get_rgctx_klass (cfg, context_used, rgctx,
+					mono_array_class_get (klass, 1), MONO_RGCTX_INFO_VTABLE);
 
 				/* array len */
 				args [1] = sp [0];
@@ -8209,8 +8209,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			if (context_used) {
 				MonoInst *rgctx, *klass_ins;
 
-				EMIT_GET_RGCTX (rgctx, context_used);
-				klass_ins = emit_get_rgctx_klass (cfg, context_used, rgctx, klass, MONO_RGCTX_INFO_KLASS);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
+				klass_ins = emit_get_rgctx_klass (cfg, context_used, rgctx,
+						klass, MONO_RGCTX_INFO_KLASS);
 
 				// FIXME:
 				MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, klass_reg, klass_ins->dreg);
@@ -8245,7 +8246,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				MonoInst *rgctx, *const_ins;
 				int type_reg = alloc_preg (cfg);
 
-				EMIT_GET_RGCTX (rgctx, context_used);
+				rgctx = emit_get_rgctx (cfg, method, context_used);
 				const_ins = emit_get_rgctx_klass (cfg, context_used, rgctx, klass, MONO_RGCTX_INFO_KLASS);
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, addr->dreg, G_STRUCT_OFFSET (MonoTypedRef, klass), const_ins->dreg);
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, type_reg, const_ins->dreg, G_STRUCT_OFFSET (MonoClass, byval_arg));
@@ -8326,8 +8327,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (method_context_used) {
 					MonoInst *rgctx;
 
-					EMIT_GET_RGCTX (rgctx, method_context_used);
-					iargs [2] = emit_get_rgctx_method (cfg, method_context_used, rgctx, method, MONO_RGCTX_INFO_METHOD);
+					rgctx = emit_get_rgctx (cfg, method, method_context_used);
+					iargs [2] = emit_get_rgctx_method (cfg, method_context_used, rgctx,
+						method, MONO_RGCTX_INFO_METHOD);
 					ins = mono_emit_jit_icall (cfg, mono_ldtoken_wrapper_generic_shared, iargs);
 				} else {
 					EMIT_NEW_PCONST (cfg, iargs [2], generic_context);
@@ -8350,8 +8352,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					if (context_used) {
 						MonoInst *rgctx;
 
-						EMIT_GET_RGCTX (rgctx, context_used);
-						ins = emit_get_rgctx_klass (cfg, context_used, rgctx, tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
+						rgctx = emit_get_rgctx (cfg, method, context_used);
+						ins = emit_get_rgctx_klass (cfg, context_used, rgctx,
+							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
 					} else if (cfg->compile_aot) {
 						EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n);
 					} else {
@@ -8366,9 +8369,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					vtvar = mono_compile_create_var (cfg, &handle_class->byval_arg, OP_LOCAL);
 
 					if (context_used) {
-							MonoInst *rgctx;
+						MonoInst *rgctx;
 
-						EMIT_GET_RGCTX (rgctx, context_used);
+						rgctx = emit_get_rgctx (cfg, method, context_used);
 						if (handle_class == mono_defaults.typehandle_class) {
 							ins = emit_get_rgctx_klass (cfg, context_used, rgctx,
 									mono_class_from_mono_type (handle),
@@ -8892,7 +8895,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					if (needs_static_rgctx_invoke)
 						cmethod = mono_marshal_get_static_rgctx_invoke (cmethod);
 
-					EMIT_GET_RGCTX (rgctx, context_used);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
 					argconst = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod, MONO_RGCTX_INFO_METHOD);
 				} else if (needs_static_rgctx_invoke) {
 					EMIT_NEW_METHODCONST (cfg, argconst, mono_marshal_get_static_rgctx_invoke (cmethod));
@@ -8934,8 +8937,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				if (context_used) {
 					MonoInst *rgctx;
 
-					EMIT_GET_RGCTX (rgctx, context_used);
-					args [1] = emit_get_rgctx_method (cfg, context_used, rgctx, cmethod, MONO_RGCTX_INFO_METHOD);
+					rgctx = emit_get_rgctx (cfg, method, context_used);
+					args [1] = emit_get_rgctx_method (cfg, context_used, rgctx,
+						cmethod, MONO_RGCTX_INFO_METHOD);
 					*sp++ = mono_emit_jit_icall (cfg, mono_ldvirtfn_gshared, args);
 				} else {
 					EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
