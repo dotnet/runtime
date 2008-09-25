@@ -472,7 +472,6 @@ mono_shared_area_for_pid (void *pid)
 	int size = mono_pagesize ();
 	char buf [128];
 	void *res;
-	SAreaHeader *header;
 
 	g_snprintf (buf, sizeof (buf), "/mono.%d", GPOINTER_TO_INT (pid));
 
