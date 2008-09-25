@@ -64,13 +64,16 @@ int
 mono_method_check_context_used (MonoMethod *method)
 {
 	MonoGenericContext *method_context = mini_method_get_context (method);
-	int context_used;
+	int context_used = 0;
 
-	if (!method_context)
-		return 0;
-
-	context_used = mono_generic_context_check_used (method_context);
-	context_used |= mono_class_check_context_used (method->klass);
+	if (!method_context) {
+		/* It might be a method of an array of an open generic type */
+		if (method->klass->rank)
+			context_used = mono_class_check_context_used (method->klass);
+	} else {
+		context_used = mono_generic_context_check_used (method_context);
+		context_used |= mono_class_check_context_used (method->klass);
+	}
 
 	return context_used;
 }

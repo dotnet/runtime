@@ -117,6 +117,14 @@ class Tests {
 		return ldelem_any (arr);
 	}
 
+	public static T[,] newarr_multi<T> () {
+		return new T [1, 1];
+	}
+
+	public static int test_0_newarr_multi_dim () {
+		return newarr_multi<string> ().GetType () == typeof (string[,]) ? 0 : 1;
+	}
+
 	interface ITest
 	{
 		void Foo<T> ();

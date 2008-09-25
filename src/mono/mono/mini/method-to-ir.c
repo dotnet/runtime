@@ -7015,6 +7015,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			iargs [0] = NULL;
 
 			if (mini_class_is_system_array (cmethod->klass)) {
+				if (context_used)
+					GENERIC_SHARING_FAILURE (*ip);
 				g_assert (!context_used);
 				EMIT_NEW_METHODCONST (cfg, *sp, cmethod);
 
