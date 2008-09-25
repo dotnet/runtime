@@ -561,6 +561,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	guint32 ret;
 	int thr_ret;
 	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
+	guint32 retval;
 	
 	if (current_thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -668,6 +669,14 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		return WAIT_IO_COMPLETION;
 	}
 	
+	for (i = 0; i < numobjects; i++) {
+		/* Add a reference, as we need to ensure the handle wont
+		 * disappear from under us while we're waiting in the loop
+		 * (not lock, as we don't want exclusive access here)
+		 */
+		_wapi_handle_ref (handles[i]);
+	}
+
 	while(1) {
 		/* Prod all handles with prewait methods and
 		 * special-wait handles that aren't already signalled
@@ -685,7 +694,8 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		done = test_and_own (numobjects, handles, waitall,
 				     &count, &lowest);
 		if (done == TRUE) {
-			return(WAIT_OBJECT_0 + lowest);
+			retval = WAIT_OBJECT_0 + lowest;
+			break;
 		}
 		
 #ifdef DEBUG
@@ -712,7 +722,8 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		
 		if (alertable && _wapi_thread_apc_pending (current_thread)) {
 			_wapi_thread_dispatch_apc_queue (current_thread);
-			return WAIT_IO_COMPLETION;
+			retval = WAIT_IO_COMPLETION;
+			break;
 		}
 	
 		/* Check if everything is signalled, as we can't
@@ -722,7 +733,8 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		done = test_and_own (numobjects, handles, waitall,
 				     &count, &lowest);
 		if (done == TRUE) {
-			return(WAIT_OBJECT_0+lowest);
+			retval = WAIT_OBJECT_0+lowest;
+			break;
 		} else if (ret != 0) {
 			/* Didn't get all handles, and there was a
 			 * timeout or other error
@@ -733,12 +745,20 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 #endif
 
 			if(ret==ETIMEDOUT) {
-				return(WAIT_TIMEOUT);
+				retval = WAIT_TIMEOUT;
 			} else {
-				return(WAIT_FAILED);
+				retval = WAIT_FAILED;
 			}
+			break;
 		}
 	}
+
+	for (i = 0; i < numobjects; i++) {
+		/* Unref everything we reffed above */
+		_wapi_handle_unref (handles[i]);
+	}
+
+	return retval;
 }
 
 guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
