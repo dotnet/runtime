@@ -517,16 +517,20 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 	 */
 	delegate = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (invoke), regs, code);
 
-	if (!delegate->method_ptr && delegate->method) {
-		/* The delegate was initialized by mini_delegate_ctor */
+	if (delegate->method) {
 		method = delegate->method;
 
+		/*
+		 * delegate->method_ptr == NULL means the delegate was initialized by 
+		 * mini_delegate_ctor, while != NULL means it is initialized by 
+		 * mono_delegate_ctor_with_method (). In both cases, we need to add wrappers
+		 * (ctor_with_method () does this, but it doesn't store the wrapper back into
+		 * delegate->method).
+		 */
 		if (delegate->target && delegate->target->vtable->klass == mono_defaults.transparent_proxy_class)
 			method = mono_marshal_get_remoting_invoke (method);
 		else if (mono_method_signature (method)->hasthis && method->klass->valuetype)
 			method = mono_marshal_get_unbox_wrapper (method);
-	} else if (delegate->method) {
-		method = delegate->method;
 	} else {
 		ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (delegate->method_ptr));
 		if (ji)
