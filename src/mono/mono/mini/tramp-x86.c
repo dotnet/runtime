@@ -356,6 +356,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Restore caller saved registers */
 	x86_mov_reg_membase (buf, X86_ECX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_ECX) * 4, 4);
 	x86_mov_reg_membase (buf, X86_EDX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_EDX) * 4, 4);
+	if (tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT)
+		x86_mov_reg_membase (buf, X86_EAX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_EAX) * 4, 4);
 
 	/* Pop saved reg array + stack align + method ptr */
 	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 10 * 4);
@@ -368,6 +370,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT ||
 			tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||
+			tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT ||
 			tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 		x86_ret (buf);
 	else
