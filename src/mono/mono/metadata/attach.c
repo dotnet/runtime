@@ -7,6 +7,10 @@
  * (C) 2007-2008 Novell, Inc.
  */
 
+#include <glib.h>
+
+#if defined (DISABLE_ATTACH) || !defined(PLATFORM_WIN32)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +26,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <glib.h>
+
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata.h>
@@ -32,9 +36,11 @@
 #include <mono/metadata/gc-internal.h>
 #include "attach.h"
 
-#ifndef DISABLE_ATTACH
+#elif !defined(DISABLE_ATTACH) /*PLATFORM_WIN32*/
+#define DISABLE_ATTACH
+#endif/*PLATFORM_WIN32*/
 
-#ifndef PLATFORM_WIN32
+#ifndef DISABLE_ATTACH
 
 /*
  * This module enables other processes to attach to a running mono process and
@@ -569,31 +575,6 @@ receiver_thread (void *arg)
 
 	return 0;
 }
-
-#else /* PLATFORM_WIN32 */
-
-void
-mono_attach_parse_options (char *options)
-{
-}
-
-void
-mono_attach_init (void)
-{
-}
-
-gboolean
-mono_attach_start (void)
-{
-	return FALSE;
-}
-
-void
-mono_attach_cleanup (void)
-{
-}
-
-#endif /* PLATFORM_WIN32 */
 
 #else /* DISABLE_ATTACH */
 
