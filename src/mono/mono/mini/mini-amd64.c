@@ -5320,6 +5320,23 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	pos = 0;
 	
 	if (method->save_lmf) {
+		/* check if we need to restore protection of the stack after a stack overflow */
+		if (mono_get_jit_tls_offset () != -1) {
+			guint8 *patch;
+			code = emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
+			/* we load the value in a separate instruction: this mechanism may be
+			 * used later as a safer way to do thread interruption
+			 */
+			amd64_mov_reg_membase (code, X86_ECX, X86_ECX, G_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 8);
+			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
+			patch = code;
+		        x86_branch8 (code, X86_CC_Z, 0, FALSE);
+			/* note that the call trampoline will preserve eax/edx */
+			x86_call_reg (code, X86_ECX);
+			x86_patch (patch, code);
+		} else {
+			/* FIXME: maybe save the jit tls in the prolog */
+		}
 		if ((lmf_tls_offset != -1) && !optimize_for_xen) {
 			/*
 			 * Optimized version which uses the mono_lmf TLS variable instead of indirection
@@ -5401,6 +5418,23 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		for (quad = 0; quad < 2; quad ++) {
 			switch (ainfo->pair_storage [quad]) {
 			case ArgInIReg:
+		/* check if we need to restore protection of the stack after a stack overflow */
+		if (mono_get_jit_tls_offset () != -1) {
+			guint8 *patch;
+			code = emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
+			/* we load the value in a separate instruction: this mechanism may be
+			 * used later as a safer way to do thread interruption
+			 */
+			x86_mov_reg_membase (code, X86_ECX, X86_ECX, G_STRUCT_OFFSET (MonoJitTlsData, restore_stack_prot), 4);
+			x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
+			patch = code;
+		        x86_branch8 (code, X86_CC_Z, 0, FALSE);
+			/* note that the call trampoline will preserve eax/edx */
+			x86_call_reg (code, X86_ECX);
+			x86_patch (patch, code);
+		} else {
+			/* FIXME: maybe save the jit tls in the prolog */
+		}
 				amd64_mov_reg_membase (code, ainfo->pair_regs [quad], inst->inst_basereg, inst->inst_offset + (quad * sizeof (gpointer)), sizeof (gpointer));
 				break;
 			case ArgInFloatSSEReg:

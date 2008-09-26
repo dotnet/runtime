@@ -456,11 +456,15 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	for (i = 0; i < 8; ++i)
 		amd64_movsd_reg_membase (code, i, AMD64_RBP, saved_fpregs_offset + (i * 8));
 
+	if (tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT)
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, saved_regs_offset + (AMD64_RAX * 8), 8);
+
 	/* Restore stack */
 	amd64_leave (code);
 
 	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT ||
 			tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||
+			tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT ||
 			tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 		amd64_ret (code);
 	else {
