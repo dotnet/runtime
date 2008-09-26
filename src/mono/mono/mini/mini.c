@@ -13135,6 +13135,16 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
 				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("mono_delegate_ctor");
 				g_assert (mi);
+				/*
+				 * We need to make sure this wrapper
+				 * is compiled because it might end up
+				 * in an (M)RGCTX if generic sharing
+				 * is enabled, and would be called
+				 * indirectly.  If it were a
+				 * trampoline we'd try to patch that
+				 * indirect call, which is not
+				 * possible.
+				 */
 				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper_full (mi, TRUE));
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
