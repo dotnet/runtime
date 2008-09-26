@@ -13589,30 +13589,9 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	/* we got a stack overflow in the soft-guard pages
-	 * There are two cases:
-	 * 1) managed code caused the overflow: we unprotect the soft-guard page
-	 * and let the arch-specific code trigger the exception handling mechanism
-	 * in the thread stack. The soft-guard pages will be protected again as the stack is unwound.
-	 * 2) unmanaged code caused the overflow: we unprotect the soft-guard page
-	 * and hope we can continue with those enabled, at least until the hard-guard page
-	 * is hit. The alternative to continuing here is to just print a message and abort.
-	 * We may add in the future the code to protect the pages again in the codepath
-	 * when we return from unmanaged to managed code.
-	 */
-	if (jit_tls->stack_ovf_guard_size && (guint8*)info->si_addr >= (guint8*)jit_tls->stack_ovf_guard_base &&
-			(guint8*)info->si_addr < (guint8*)jit_tls->stack_ovf_guard_base + jit_tls->stack_ovf_guard_size) {
-		mono_mprotect (jit_tls->stack_ovf_guard_base, jit_tls->stack_ovf_guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC);
-		if (ji) {
-			mono_arch_handle_altstack_exception (ctx, info->si_addr, TRUE);
-		} else {
-			/* We print a message: after this even managed stack overflows
-			 * may crash the runtime
-			 */
-			fprintf (stderr, "Stack overflow in unmanaged: IP: %p, fault addr: %p\n", mono_arch_ip_from_context (ctx), (gpointer)info->si_addr);
-		}
+	if (mono_handle_soft_stack_ovf (jit_tls, ji, ctx, (guint8*)info->si_addr))
 		return;
-	}
+
 	/* The hard-guard page has been hit: there is not much we can do anymore
 	 * Print a hopefully clear message and abort.
 	 */
@@ -13626,7 +13605,7 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 		else
 			method = "Unmanaged";
 		fprintf (stderr, "At %s\n", method);
-		abort ();
+		_exit (1);
 	} else {
 		mono_arch_handle_altstack_exception (ctx, info->si_addr, FALSE);
 	}

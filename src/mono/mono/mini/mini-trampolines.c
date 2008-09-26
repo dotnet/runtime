@@ -607,6 +607,8 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 	case MONO_TRAMPOLINE_DELEGATE:
 		return mono_delegate_trampoline;
 #endif
+	case MONO_TRAMPOLINE_RESTORE_STACK_PROT:
+		return mono_altstack_restore_prot;
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -633,6 +635,7 @@ mono_trampolines_init (void)
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 	mono_trampoline_code [MONO_TRAMPOLINE_DELEGATE] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_DELEGATE);
 #endif
+	mono_trampoline_code [MONO_TRAMPOLINE_RESTORE_STACK_PROT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_RESTORE_STACK_PROT);
 }
 
 void
