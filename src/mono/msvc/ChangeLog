@@ -1,3 +1,9 @@
+2008-09-26  Bill Holmes  <billholmes54@gmail.com>
+
+	* libmono.vcproj : Adding attach.c to the VC project.
+
+	Code is contributed under MIT/X11 license.
+
 2008-09-16  Bill Holmes  <billholmes54@gmail.com>
 
 	* eglib.vcproj, genmdesc.vcproj, libgc.vcproj, libmono.vcproj,

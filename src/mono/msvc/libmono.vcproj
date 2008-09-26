@@ -2191,6 +2191,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\mono\metadata\attach.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\attach.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\metadata\boehm-gc.c"
 				>
 			</File>
