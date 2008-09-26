@@ -10009,8 +10009,8 @@ create_helper_signature (void)
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
 }
 
-gconstpointer
-mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
+static gconstpointer
+mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 {
 	char *name;
 	MonoMethod *wrapper;
@@ -10039,7 +10039,10 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_for_pending_exc);
 	g_free (name);
 
-	trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper));
+	if (do_compile)
+		trampoline = mono_compile_method (wrapper);
+	else
+		trampoline = mono_create_ftnptr (domain, mono_create_jit_trampoline_in_domain (domain, wrapper));
 	mono_register_jit_icall_wrapper (callinfo, trampoline);
 
 	callinfo->trampoline = trampoline;
@@ -10047,6 +10050,12 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	mono_domain_unlock (domain);
 	
 	return callinfo->trampoline;
+}
+
+gconstpointer
+mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
+{
+	return mono_icall_get_wrapper_full (callinfo, FALSE);
 }
 
 static void
@@ -13126,7 +13135,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
 				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("mono_delegate_ctor");
 				g_assert (mi);
-				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper (mi));
+				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper_full (mi, TRUE));
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 				return mono_create_delegate_trampoline (method->klass);
