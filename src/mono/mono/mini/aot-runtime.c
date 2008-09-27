@@ -1780,7 +1780,7 @@ register_jump_target_got_slot (MonoDomain *domain, MonoMethod *method, gpointer 
 	 * the addresses of the GOT slots pointing to a method, and patch
 	 * them after the method has been compiled.
 	 */
-	MonoJitDomainInfo *info = jit_domain_info (domain);
+	MonoJitDomainInfo *info = domain_jit_info (domain);
 	GSList *list;
 		
 	mono_domain_lock (domain);
