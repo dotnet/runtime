@@ -117,14 +117,14 @@ enum {
 	PPC_TRAP_GE_UN = 16 + PPC_TRAP_EQ
 };
 
-#define ppc_emit32(c,x) do { *((guint32 *) (c)) = x; (c) = (guint8 *)(c) + sizeof (guint32);} while (0)
+#define ppc_emit32(c,x) do { *((guint32 *) (c)) = x; (c) = (gpointer)((guint8 *)(c) + sizeof (guint32));} while (0)
 
 #define ppc_is_imm16(val) ((gint)(val) >= (gint)-(1<<15) && (gint)(val) <= (gint)((1<<15)-1))
 #define ppc_is_uimm16(val) ((gint)(val) >= 0 && (gint)(val) <= 65535)
 
 #define ppc_load(c,D,v) do {	\
 		if (ppc_is_imm16 ((guint32)(v)))	{	\
-			ppc_li ((c), (D), (guint16)(v));	\
+			ppc_li ((c), (D), (guint16)(guint32)(v));	\
 		} else {	\
 			ppc_lis ((c), (D), (guint32)(v) >> 16);	\
 			ppc_ori ((c), (D), (D), (guint32)(v) & 0xffff);	\

@@ -271,7 +271,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	for (k = 0; k < param_count; k++) {
 		
 		if (csig->pinvoke)
-			size = mono_type_native_stack_size (csig->params [k], &align);
+			size = mono_type_native_stack_size (csig->params [k], (guint32*)&align);
 		else
 			size = mini_type_stack_size (NULL, csig->params [k], &align);
 
@@ -577,11 +577,12 @@ mono_arch_flush_icache (guint8 *code, gint size)
 
 	if (!cachelinesize) {
 #ifdef __APPLE__
-		int mib [3], len;
+		int mib [3];
+		size_t len;
 		mib [0] = CTL_HW;
 		mib [1] = HW_CACHELINE;
 		len = sizeof (cachelinesize);
-		if (sysctl(mib, 2, &cachelinesize, &len, NULL, 0) == -1) {
+		if (sysctl(mib, 2, &cachelinesize, (size_t*)&len, NULL, 0) == -1) {
 			perror ("sysctl");
 			cachelinesize = 128;
 		} else {
@@ -1222,7 +1223,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
 			if (sig->pinvoke) {
-				size = mono_type_native_stack_size (sig->params [i], &align);
+				size = mono_type_native_stack_size (sig->params [i], (guint32*)&align);
 				inst->backend.is_pinvoke = 1;
 			} else {
 				size = mono_type_size (sig->params [i], &align);
@@ -1405,7 +1406,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
 	int sig_reg = mono_alloc_ireg (cfg);
 
-	MONO_EMIT_NEW_ICONST (cfg, sig_reg, call->signature);
+	MONO_EMIT_NEW_ICONST (cfg, sig_reg, (guint32)call->signature);
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG,
 			ppc_r1, cinfo->sig_cookie.offset, sig_reg);
 }
@@ -1692,7 +1693,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 		code = cfg->native_code + offset;
 	}
-handle_enum:
+
 	switch (rtype) {
 	case MONO_TYPE_VOID:
 		/* special case string .ctor icall */
@@ -2404,48 +2405,6 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		else if (size == 2)
 			ppc_extsh (code, dreg, dreg);
 	}
-	return code;
-}
-
-static unsigned char*
-mono_emit_stack_alloc (guchar *code, MonoInst* tree)
-{
-#if 0
-	int sreg = tree->sreg1;
-	x86_alu_reg_reg (code, X86_SUB, X86_ESP, tree->sreg1);
-	if (tree->flags & MONO_INST_INIT) {
-		int offset = 0;
-		if (tree->dreg != X86_EAX && sreg != X86_EAX) {
-			x86_push_reg (code, X86_EAX);
-			offset += 4;
-		}
-		if (tree->dreg != X86_ECX && sreg != X86_ECX) {
-			x86_push_reg (code, X86_ECX);
-			offset += 4;
-		}
-		if (tree->dreg != X86_EDI && sreg != X86_EDI) {
-			x86_push_reg (code, X86_EDI);
-			offset += 4;
-		}
-		
-		x86_shift_reg_imm (code, X86_SHR, sreg, 2);
-		if (sreg != X86_ECX)
-			x86_mov_reg_reg (code, X86_ECX, sreg, 4);
-		x86_alu_reg_reg (code, X86_XOR, X86_EAX, X86_EAX);
-				
-		x86_lea_membase (code, X86_EDI, X86_ESP, offset);
-		x86_cld (code);
-		x86_prefix (code, X86_REP_PREFIX);
-		x86_stosl (code);
-		
-		if (tree->dreg != X86_EDI && sreg != X86_EDI)
-			x86_pop_reg (code, X86_EDI);
-		if (tree->dreg != X86_ECX && sreg != X86_ECX)
-			x86_pop_reg (code, X86_ECX);
-		if (tree->dreg != X86_EAX && sreg != X86_EAX)
-			x86_pop_reg (code, X86_EAX);
-	}
-#endif
 	return code;
 }
 
@@ -4254,7 +4213,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
-	MonoJumpInfo *patch_info;
 	MonoMethod *method = cfg->method;
 	int pos, i;
 	int max_epilog_size = 16 + 20*4;
