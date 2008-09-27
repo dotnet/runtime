@@ -167,160 +167,165 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	int i, offset;
 	gconstpointer tramp_handler;
 
-	if(!code) {
-		/* Now we'll create in 'buf' the PowerPC trampoline code. This
-		 is the trampoline code common to all methods  */
+	/* Now we'll create in 'buf' the PowerPC trampoline code. This
+	   is the trampoline code common to all methods  */
 		
-		code = buf = mono_global_codeman_reserve (512);
+	code = buf = mono_global_codeman_reserve (512);
 		
-		ppc_stwu (buf, ppc_r1, -STACK, ppc_r1);
+	ppc_stwu (buf, ppc_r1, -STACK, ppc_r1);
 
-		/* start building the MonoLMF on the stack */
-		offset = STACK - sizeof (double) * MONO_SAVED_FREGS;
-		for (i = 14; i < 32; i++) {
-			ppc_stfd (buf, i, offset, ppc_r1);
-			offset += sizeof (double);
-		}
-		/* 
-		 * now the integer registers.
-		 */
-		offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs);
-		ppc_stmw (buf, ppc_r13, ppc_r1, offset);
+	/* start building the MonoLMF on the stack */
+	offset = STACK - sizeof (double) * MONO_SAVED_FREGS;
+	for (i = 14; i < 32; i++) {
+		ppc_stfd (buf, i, offset, ppc_r1);
+		offset += sizeof (double);
+	}
+	/* 
+	 * now the integer registers.
+	 */
+	offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs);
+	ppc_stmw (buf, ppc_r13, ppc_r1, offset);
 
-		/* Now save the rest of the registers below the MonoLMF struct, first 14
-		 * fp regs and then the 13 gregs.
-		 */
-		offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
-		for (i = 0; i < 14; i++) {
-			ppc_stfd (buf, i, offset, ppc_r1);
-			offset += sizeof (double);
-		}
+	/* Now save the rest of the registers below the MonoLMF struct, first 14
+	 * fp regs and then the 13 gregs.
+	 */
+	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
+	for (i = 0; i < 14; i++) {
+		ppc_stfd (buf, i, offset, ppc_r1);
+		offset += sizeof (double);
+	}
 #define GREGS_OFFSET (STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong)))
-		offset = GREGS_OFFSET;
-		for (i = 0; i < 13; i++) {
-			ppc_stw (buf, i, offset, ppc_r1);
-			offset += sizeof (gulong);
-		}
-		/* we got here through a jump to the ctr reg, we must save the lr
-		 * in the parent frame (we do it here to reduce the size of the
-		 * method-specific trampoline)
-		 */
-		ppc_mflr (buf, ppc_r0);
-		ppc_stw (buf, ppc_r0, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
+	offset = GREGS_OFFSET;
+	for (i = 0; i < 13; i++) {
+		ppc_stw (buf, i, offset, ppc_r1);
+		offset += sizeof (gulong);
+	}
+	/* we got here through a jump to the ctr reg, we must save the lr
+	 * in the parent frame (we do it here to reduce the size of the
+	 * method-specific trampoline)
+	 */
+	ppc_mflr (buf, ppc_r0);
+	ppc_stw (buf, ppc_r0, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
 
-		/* ok, now we can continue with the MonoLMF setup, mostly untouched 
-		 * from emit_prolog in mini-ppc.c
-		 */
-		ppc_load (buf, ppc_r0, mono_get_lmf_addr);
-		ppc_mtlr (buf, ppc_r0);
-		ppc_blrl (buf);
-		/* we build the MonoLMF structure on the stack - see mini-ppc.h
-		 * The pointer to the struct is put in ppc_r11.
-		 */
-		ppc_addi (buf, ppc_r11, ppc_sp, STACK - sizeof (MonoLMF));
-		ppc_stw (buf, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
-		/* new_lmf->previous_lmf = *lmf_addr */
-		ppc_lwz (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
-		ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
-		/* *(lmf_addr) = r11 */
-		ppc_stw (buf, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
-		/* save method info (it's stored on the stack, so get it first and put it
-		 * in r5 as it's the third argument to the function)
-		 */
+	/* ok, now we can continue with the MonoLMF setup, mostly untouched 
+	 * from emit_prolog in mini-ppc.c
+	 */
+	ppc_load (buf, ppc_r0, mono_get_lmf_addr);
+	ppc_mtlr (buf, ppc_r0);
+	ppc_blrl (buf);
+	/* we build the MonoLMF structure on the stack - see mini-ppc.h
+	 * The pointer to the struct is put in ppc_r11.
+	 */
+	ppc_addi (buf, ppc_r11, ppc_sp, STACK - sizeof (MonoLMF));
+	ppc_stw (buf, ppc_r3, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+	/* new_lmf->previous_lmf = *lmf_addr */
+	ppc_lwz (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
+	ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
+	/* *(lmf_addr) = r11 */
+	ppc_stw (buf, ppc_r11, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r3);
+	/* save method info (it's stored on the stack, so get it first and put it
+	 * in r5 as it's the third argument to the function)
+	 */
+	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
+		ppc_lwz (buf, ppc_r5, GREGS_OFFSET + PPC_FIRST_ARG_REG * sizeof (gpointer), ppc_r1);
+	else
 		ppc_lwz (buf, ppc_r5, GREGS_OFFSET, ppc_r1);
-		if ((tramp_type == MONO_TRAMPOLINE_JIT) || (tramp_type == MONO_TRAMPOLINE_JUMP))
-			ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
-		ppc_stw (buf, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
-		/* save the IP (caller ip) */
-		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
-			ppc_li (buf, ppc_r0, 0);
-		} else {
-			ppc_lwz (buf, ppc_r0, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
-		}
-		ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r11);
+	if ((tramp_type == MONO_TRAMPOLINE_JIT) || (tramp_type == MONO_TRAMPOLINE_JUMP))
+		ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
+	ppc_stw (buf, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
+	/* save the IP (caller ip) */
+	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+		ppc_li (buf, ppc_r0, 0);
+	} else {
+		ppc_lwz (buf, ppc_r0, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
+	}
+	ppc_stw (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r11);
 
-		/*
-		 * Now we're ready to call trampoline (gssize *regs, guint8 *code, gpointer value, guint8 *tramp)
-		 * Note that the last argument is unused.
-		 */
-		/* Arg 1: a pointer to the registers */
-		ppc_addi (buf, ppc_r3, ppc_r1, GREGS_OFFSET);
+	/*
+	 * Now we're ready to call trampoline (gssize *regs, guint8 *code, gpointer value, guint8 *tramp)
+	 * Note that the last argument is unused.
+	 */
+	/* Arg 1: a pointer to the registers */
+	ppc_addi (buf, ppc_r3, ppc_r1, GREGS_OFFSET);
 		
-		/* Arg 2: code (next address to the instruction that called us) */
-		if (tramp_type == MONO_TRAMPOLINE_JUMP) {
-			ppc_li (buf, ppc_r4, 0);
-		} else {
-			ppc_lwz  (buf, ppc_r4, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
-		}
+	/* Arg 2: code (next address to the instruction that called us) */
+	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
+		ppc_li (buf, ppc_r4, 0);
+	} else {
+		ppc_lwz  (buf, ppc_r4, STACK + PPC_RET_ADDR_OFFSET, ppc_r1);
+	}
 		
-		/* Arg 3: MonoMethod *method. It was put in r5 already above */
-		/*ppc_mr  (buf, ppc_r5, ppc_r5);*/
+	/* Arg 3: MonoMethod *method. It was put in r5 already above */
+	/*ppc_mr  (buf, ppc_r5, ppc_r5);*/
 
-		tramp_handler = mono_get_trampoline_func (tramp_type);
-		ppc_lis  (buf, ppc_r0, (guint32) tramp_handler >> 16);
-		ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) tramp_handler & 0xffff);
-		ppc_mtlr (buf, ppc_r0);
-		ppc_blrl (buf);
+	tramp_handler = mono_get_trampoline_func (tramp_type);
+	ppc_lis  (buf, ppc_r0, (guint32) tramp_handler >> 16);
+	ppc_ori  (buf, ppc_r0, ppc_r0, (guint32) tramp_handler & 0xffff);
+	ppc_mtlr (buf, ppc_r0);
+	ppc_blrl (buf);
 		
-		/* OK, code address is now on r3. Move it to the counter reg
-		 * so it will be ready for the final jump: this is safe since we
-		 * won't do any more calls.
-		 */
+	/* OK, code address is now on r3. Move it to the counter reg
+	 * so it will be ready for the final jump: this is safe since we
+	 * won't do any more calls.
+	 */
+	if (tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 		ppc_mtctr (buf, ppc_r3);
 
-		/*
-		 * Now we restore the MonoLMF (see emit_epilogue in mini-ppc.c)
-		 * and the rest of the registers, so the method called will see
-		 * the same state as before we executed.
-		 * The pointer to MonoLMF is in ppc_r11.
-		 */
-		ppc_addi (buf, ppc_r11, ppc_r1, STACK - sizeof (MonoLMF));
-		/* r5 = previous_lmf */
-		ppc_lwz (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
-		/* r6 = lmf_addr */
-		ppc_lwz (buf, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
-		/* *(lmf_addr) = previous_lmf */
-		ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
-		/* restore iregs */
-		ppc_lmw (buf, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
-		/* restore fregs */
-		for (i = 14; i < 32; i++) {
-			ppc_lfd (buf, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
-		}
-
-		/* restore the volatile registers, we skip r1, of course */
-		offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
-		for (i = 0; i < 14; i++) {
-			ppc_lfd (buf, i, offset, ppc_r1);
-			offset += sizeof (double);
-		}
-		offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
-		ppc_lwz (buf, ppc_r0, offset, ppc_r1);
-		offset += 2 * sizeof (gulong);
-		for (i = 2; i < 13; i++) {
-			ppc_lwz (buf, i, offset, ppc_r1);
-			offset += sizeof (gulong);
-		}
-
-		/* Non-standard function epilogue. Instead of doing a proper
-		 * return, we just jump to the compiled code.
-		 */
-		/* Restore stack pointer and LR and jump to the code */
-		ppc_lwz  (buf, ppc_r1,  0, ppc_r1);
-		ppc_lwz  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
-		ppc_mtlr (buf, ppc_r11);
-		if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
-			ppc_blr (buf);
-		} else {
-			ppc_bcctr (buf, 20, 0);
-		}
-
-		/* Flush instruction cache, since we've generated code */
-		mono_arch_flush_icache (code, buf - code);
-	
-		/* Sanity check */
-		g_assert ((buf - code) <= 512);
+	/*
+	 * Now we restore the MonoLMF (see emit_epilogue in mini-ppc.c)
+	 * and the rest of the registers, so the method called will see
+	 * the same state as before we executed.
+	 * The pointer to MonoLMF is in ppc_r11.
+	 */
+	ppc_addi (buf, ppc_r11, ppc_r1, STACK - sizeof (MonoLMF));
+	/* r5 = previous_lmf */
+	ppc_lwz (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r11);
+	/* r6 = lmf_addr */
+	ppc_lwz (buf, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r11);
+	/* *(lmf_addr) = previous_lmf */
+	ppc_stw (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
+	/* restore iregs */
+	ppc_lmw (buf, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
+	/* restore fregs */
+	for (i = 14; i < 32; i++) {
+		ppc_lfd (buf, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
 	}
+
+	/* restore the volatile registers, we skip r1, of course */
+	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
+	for (i = 0; i < 14; i++) {
+		ppc_lfd (buf, i, offset, ppc_r1);
+		offset += sizeof (double);
+	}
+	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
+	ppc_lwz (buf, ppc_r0, offset, ppc_r1);
+	offset += 2 * sizeof (gulong);
+	for (i = 2; i < 13; i++) {
+		if (i != 3 || tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
+			ppc_lwz (buf, i, offset, ppc_r1);
+		offset += sizeof (gulong);
+	}
+
+	/* Non-standard function epilogue. Instead of doing a proper
+	 * return, we just jump to the compiled code.
+	 */
+	/* Restore stack pointer and LR and jump to the code */
+	ppc_lwz  (buf, ppc_r1,  0, ppc_r1);
+	ppc_lwz  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
+	ppc_mtlr (buf, ppc_r11);
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT ||
+			tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||
+			tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH) {
+		ppc_blr (buf);
+	} else {
+		ppc_bcctr (buf, 20, 0);
+	}
+
+	/* Flush instruction cache, since we've generated code */
+	mono_arch_flush_icache (code, buf - code);
+	
+	/* Sanity check */
+	g_assert ((buf - code) <= 512);
 
 	return code;
 }
@@ -367,10 +372,151 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	return code;
 }
 
-gpointer
-mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+static guint8*
+emit_trampoline_jump (guint8 *code, guint8 *tramp)
 {
-	/* FIXME: implement! */
-	g_assert_not_reached ();
-	return NULL;
+	guint32 short_branch = branch_for_target_reachable (code, tramp);
+
+	/* FIXME: we can save a few bytes here by committing if the
+	   short branch is possible */
+	if (short_branch) {
+		ppc_emit32 (code, short_branch);
+	} else {
+		ppc_load (code, ppc_r0, tramp);
+		ppc_mtctr (code, ppc_r0);
+		ppc_bcctr (code, 20, 0);
+	}
+
+	return code;
+}
+
+gpointer
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
+{
+	guint8 *tramp;
+	guint8 *code, *buf;
+	guint8 **rgctx_null_jumps;
+	int tramp_size;
+	int depth, index;
+	int i;
+	gboolean mrgctx;
+
+	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
+	index = MONO_RGCTX_SLOT_INDEX (slot);
+	if (mrgctx)
+		index += sizeof (MonoMethodRuntimeGenericContext) / sizeof (gpointer);
+	for (depth = 0; ; ++depth) {
+		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
+
+		if (index < size - 1)
+			break;
+		index -= size - 1;
+	}
+
+	tramp_size = 40 + 12 * depth;
+	if (mrgctx)
+		tramp_size += 4;
+	else
+		tramp_size += 12;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	rgctx_null_jumps = g_malloc (sizeof (guint8*) * (depth + 2));
+
+	if (mrgctx) {
+		/* get mrgctx ptr */
+		ppc_mr (code, ppc_r4, PPC_FIRST_ARG_REG);
+	} else {
+		/* load rgctx ptr from vtable */
+		ppc_lwz (code, ppc_r4, G_STRUCT_OFFSET (MonoVTable, runtime_generic_context), PPC_FIRST_ARG_REG);
+		/* is the rgctx ptr null? */
+		ppc_cmpi (code, 0, 0, ppc_r4, 0);
+		/* if yes, jump to actual trampoline */
+		rgctx_null_jumps [0] = code;
+		ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+	}
+
+	for (i = 0; i < depth; ++i) {
+		/* load ptr to next array */
+		if (mrgctx && i == 0)
+			ppc_lwz (code, ppc_r4, sizeof (MonoMethodRuntimeGenericContext), ppc_r4);
+		else
+			ppc_lwz (code, ppc_r4, 0, ppc_r4);
+		/* is the ptr null? */
+		ppc_cmpi (code, 0, 0, ppc_r4, 0);
+		/* if yes, jump to actual trampoline */
+		rgctx_null_jumps [i + 1] = code;
+		ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+	}
+
+	/* fetch slot */
+	ppc_lwz (code, ppc_r4, sizeof (gpointer) * (index  + 1), ppc_r4);
+	/* is the slot null? */
+	ppc_cmpi (code, 0, 0, ppc_r4, 0);
+	/* if yes, jump to actual trampoline */
+	rgctx_null_jumps [depth + 1] = code;
+	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+	/* otherwise return r4 */
+	/* FIXME: if we use r3 as the work register we can avoid this copy */
+	ppc_mr (code, ppc_r3, ppc_r4);
+	ppc_blr (code);
+
+	for (i = mrgctx ? 1 : 0; i <= depth + 1; ++i)
+		ppc_patch (rgctx_null_jumps [i], code);
+
+	g_free (rgctx_null_jumps);
+
+	/* move the rgctx pointer to the VTABLE register */
+	ppc_mr (code, MONO_ARCH_VTABLE_REG, ppc_r3);
+
+	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
+			MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+
+	/* jump to the actual trampoline */
+	code = emit_trampoline_jump (code, tramp);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	return buf;
+}
+
+gpointer
+mono_arch_create_generic_class_init_trampoline (void)
+{
+	guint8 *tramp;
+	guint8 *code, *buf;
+	static int byte_offset = -1;
+	static guint8 bitmask;
+	guint8 *jump;
+	int tramp_size;
+
+	tramp_size = 32;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	if (byte_offset < 0)
+		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+	ppc_lbz (code, ppc_r4, byte_offset, PPC_FIRST_ARG_REG);
+	ppc_andid (code, ppc_r4, ppc_r4, bitmask);
+	jump = code;
+	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+
+	ppc_blr (code);
+
+	ppc_patch (jump, code);
+
+	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT,
+			mono_get_root_domain (), NULL);
+
+	/* jump to the actual trampoline */
+	code = emit_trampoline_jump (code, tramp);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	g_assert (code - buf <= tramp_size);
+
+	return buf;
 }
