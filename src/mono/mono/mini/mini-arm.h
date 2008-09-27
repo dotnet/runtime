@@ -8,6 +8,28 @@
 #define MONO_ARCH_SOFT_FLOAT 1
 #endif
 
+#if defined(__ARM_EABI__)
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define ARM_ARCHITECTURE "armel"
+#else
+#define ARM_ARCHITECTURE "armeb"
+#endif
+#else
+#define ARM_ARCHITECTURE "arm"
+#endif
+
+#if defined(ARM_FPU_FPA)
+#define ARM_FP_MODEL "fpa"
+#elif defined(ARM_FPU_VFP)
+#define ARM_FP_MODEL "vfp"
+#elif defined(ARM_FPU_NONE)
+#define ARM_FP_MODEL "soft-float"
+#else
+#error "At least one of ARM_FPU_NONE or ARM_FPU_FPA or ARM_FPU_VFP must be defined."
+#endif
+
+#define MONO_ARCH_ARCHITECTURE ARM_ARCHITECTURE "," ARM_FP_MODEL
+
 #define MONO_ARCH_CPU_SPEC arm_cpu_desc
 
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN

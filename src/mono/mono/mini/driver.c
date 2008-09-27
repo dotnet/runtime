@@ -1131,14 +1131,10 @@ mini_debug_usage (void)
 		 "                         process with the debugger.\n");
 }
 
-#if defined(__arm__) && defined(__ARM_EABI__)
+#if defined(MONO_ARCH_ARCHITECTURE)
 /* Redefine ARCHITECTURE to include more information */
 #undef ARCHITECTURE
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#define ARCHITECTURE "armel"
-#else
-#define ARCHITECTURE "armeb"
-#endif
+#define ARCHITECTURE MONO_ARCH_ARCHITECTURE
 #endif
 
 static const char info[] =
