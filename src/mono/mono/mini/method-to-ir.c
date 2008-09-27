@@ -3213,12 +3213,12 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 
 		domain = mono_domain_get ();
 		mono_domain_lock (domain);
-		if (!domain->method_code_hash)
-			domain->method_code_hash = g_hash_table_new (NULL, NULL);
-		code_slot = g_hash_table_lookup (domain->method_code_hash, method);
+		if (!domain_jit_info (domain)->method_code_hash)
+			domain_jit_info (domain)->method_code_hash = g_hash_table_new (NULL, NULL);
+		code_slot = g_hash_table_lookup (domain_jit_info (domain)->method_code_hash, method);
 		if (!code_slot) {
 			code_slot = mono_domain_alloc0 (domain, sizeof (gpointer));
-			g_hash_table_insert (domain->method_code_hash, method, code_slot);
+			g_hash_table_insert (domain_jit_info (domain)->method_code_hash, method, code_slot);
 		}
 		mono_domain_unlock (domain);
 

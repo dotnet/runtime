@@ -324,7 +324,8 @@ domain_dump_native_code (MonoDomain *domain) {
 #endif
 
 static int
-mini_regression (MonoImage *image, int verbose, int *total_run) {
+mini_regression (MonoImage *image, int verbose, int *total_run)
+{
 	guint32 i, opt, opt_flags;
 	MonoMethod *method;
 	MonoCompile *cfg;
@@ -332,6 +333,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 	int result, expected, failed, cfailed, run, code_size, total;
 	TestMethod func;
 	GTimer *timer = g_timer_new ();
+	MonoDomain *domain = mono_domain_get ();
 
 	if (mini_stats_fd) {
 		fprintf (mini_stats_fd, "$stattitle = \'Mono Benchmark Results (various optimizations)\';\n");
@@ -381,10 +383,10 @@ mini_regression (MonoImage *image, int verbose, int *total_run) {
 		comp_time = elapsed = 0.0;
 
 		/* fixme: ugly hack - delete all previously compiled methods */
-		g_hash_table_destroy (mono_domain_get ()->jit_trampoline_hash);
-		mono_domain_get ()->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		mono_internal_hash_table_destroy (&(mono_domain_get ()->jit_code_hash));
-		mono_jit_code_hash_init (&(mono_domain_get ()->jit_code_hash));
+		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
+		domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
+		mono_jit_code_hash_init (&(domain->jit_code_hash));
 
 		g_timer_start (timer);
 		if (mini_stats_fd)

@@ -273,17 +273,17 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		 * We do this here instead of in mono_codegen () to cover the case when m
 		 * was loaded from an aot image.
 		 */
-		if (jit_domain_info (domain)->jump_target_got_slot_hash) {
+		if (domain_jit_info (domain)->jump_target_got_slot_hash) {
 			GSList *list, *tmp;
 
 			mono_domain_lock (domain);
-			list = g_hash_table_lookup (jit_domain_info (domain)->jump_target_got_slot_hash, m);
+			list = g_hash_table_lookup (domain_jit_info (domain)->jump_target_got_slot_hash, m);
 			if (list) {
 				for (tmp = list; tmp; tmp = tmp->next) {
 					gpointer *got_slot = tmp->data;
 					*got_slot = addr;
 				}
-				g_hash_table_remove (jit_domain_info (domain)->jump_target_got_slot_hash, m);
+				g_hash_table_remove (domain_jit_info (domain)->jump_target_got_slot_hash, m);
 				g_slist_free (list);
 			}
 			mono_domain_unlock (domain);
@@ -670,27 +670,28 @@ gpointer
 mono_create_class_init_trampoline (MonoVTable *vtable)
 {
 	gpointer code, ptr;
+	MonoDomain *domain = vtable->domain;
 
 	g_assert (!vtable->klass->generic_container);
 
 	/* previously created trampoline code */
-	mono_domain_lock (vtable->domain);
+	mono_domain_lock (domain);
 	ptr = 
-		g_hash_table_lookup (vtable->domain->class_init_trampoline_hash,
+		g_hash_table_lookup (domain_jit_info (domain)->class_init_trampoline_hash,
 								  vtable);
-	mono_domain_unlock (vtable->domain);
+	mono_domain_unlock (domain);
 	if (ptr)
 		return ptr;
 
-	code = mono_create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, vtable->domain, NULL);
+	code = mono_create_specific_trampoline (vtable, MONO_TRAMPOLINE_CLASS_INIT, domain, NULL);
 
-	ptr = mono_create_ftnptr (vtable->domain, code);
+	ptr = mono_create_ftnptr (domain, code);
 
 	/* store trampoline address */
-	mono_domain_lock (vtable->domain);
-	g_hash_table_insert (vtable->domain->class_init_trampoline_hash,
+	mono_domain_lock (domain);
+	g_hash_table_insert (domain_jit_info (domain)->class_init_trampoline_hash,
 							  vtable, ptr);
-	mono_domain_unlock (vtable->domain);
+	mono_domain_unlock (domain);
 
 	mono_trampolines_lock ();
 	if (!class_init_hash_addr)
@@ -732,7 +733,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 		return code;
 
 	mono_domain_lock (domain);
-	code = g_hash_table_lookup (domain->jump_trampoline_hash, method);
+	code = g_hash_table_lookup (domain_jit_info (domain)->jump_trampoline_hash, method);
 	mono_domain_unlock (domain);
 	if (code)
 		return code;
@@ -755,7 +756,7 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	mono_jit_info_table_add (domain, ji);
 
 	mono_domain_lock (domain);
-	g_hash_table_insert (domain->jump_trampoline_hash, method, ji->code_start);
+	g_hash_table_insert (domain_jit_info (domain)->jump_trampoline_hash, method, ji->code_start);
 	mono_domain_unlock (domain);
 
 	return ji->code_start;
@@ -775,7 +776,7 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 	}
 
 	mono_domain_lock (domain);
-	tramp = g_hash_table_lookup (domain->jit_trampoline_hash, method);
+	tramp = g_hash_table_lookup (domain_jit_info (domain)->jit_trampoline_hash, method);
 	mono_domain_unlock (domain);
 	if (tramp)
 		return tramp;
@@ -783,7 +784,7 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 	tramp = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_JIT, domain, NULL);
 	
 	mono_domain_lock (domain);
-	g_hash_table_insert (domain->jit_trampoline_hash, method, tramp);
+	g_hash_table_insert (domain_jit_info (domain)->jit_trampoline_hash, method, tramp);
 	mono_domain_unlock (domain);
 
 	mono_jit_stats.method_trampolines++;
@@ -833,7 +834,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 	MonoMethod *invoke;
 
 	mono_domain_lock (domain);
-	ptr = g_hash_table_lookup (domain->delegate_trampoline_hash, klass);
+	ptr = g_hash_table_lookup (domain_jit_info (domain)->delegate_trampoline_hash, klass);
 	mono_domain_unlock (domain);
 	if (ptr)
 		return ptr;
@@ -859,7 +860,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 
 	/* store trampoline address */
 	mono_domain_lock (domain);
-	g_hash_table_insert (domain->delegate_trampoline_hash,
+	g_hash_table_insert (domain_jit_info (domain)->delegate_trampoline_hash,
 							  klass, ptr);
 	mono_domain_unlock (domain);
 

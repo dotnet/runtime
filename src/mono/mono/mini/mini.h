@@ -73,9 +73,23 @@ typedef struct
 {
 	/* Maps MonoMethod's to a GSList of GOT slot addresses pointing to its code */
 	GHashTable *jump_target_got_slot_hash;
+	GHashTable *jump_target_hash;
+	/* Maps methods/klasses to the address of the given type of trampoline */
+	GHashTable *class_init_trampoline_hash;
+	GHashTable *jump_trampoline_hash;
+	GHashTable *jit_trampoline_hash;
+	GHashTable *delegate_trampoline_hash;
+	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
+	GHashTable *dynamic_code_hash;
+	GHashTable *method_code_hash;
 } MonoJitDomainInfo;
 
-#define jit_domain_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
+typedef struct {
+	MonoJitInfo *ji;
+	MonoCodeManager *code_mp;
+} MonoJitDynamicMethodInfo;
+
+#define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
 
 #if 0
 #define mono_bitset_foreach_bit(set,b,n) \
