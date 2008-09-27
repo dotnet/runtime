@@ -603,7 +603,6 @@ mono_arch_ip_from_context (void *sigctx)
 	return (gpointer)UCONTEXT_REG_NIP(uc);
 }
 
-#ifndef __APPLE__
 static void
 altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean test_only)
 {
@@ -620,8 +619,8 @@ void
 mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean stack_ovf)
 {
 #ifdef MONO_ARCH_USE_SIGACTION
-	ucontext_t *uc = (ucontext_t*)sigctx;
-	ucontext_t *uc_copy;
+	os_ucontext *uc = (ucontext_t*)sigctx;
+	os_ucontext *uc_copy;
 	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (sigctx));
 	gpointer *sp;
 	int frame_size;
@@ -667,8 +666,6 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG + 2) = 0;
 #endif
 }
-
-#endif
 
 gboolean
 mono_arch_handle_exception (void *ctx, gpointer obj, gboolean test_only)

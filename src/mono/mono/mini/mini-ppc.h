@@ -181,15 +181,17 @@ typedef struct {
 #elif defined (__APPLE__) && defined (_STRUCT_MCONTEXT)
 	typedef struct __darwin_ucontext os_ucontext;
 
-	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext->__ss.__r##n)
+	#define UCONTEXT_REG_Rn(ctx, n)   ((&(ctx)->uc_mcontext->__ss.__r0) [(n)])
 	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext->__fs.__fpregs [(n)])
 	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext->__ss.__srr0)
+	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext->__ss.__lr)
 #elif defined (__APPLE__) && !defined (_STRUCT_MCONTEXT)
 	typedef struct ucontext os_ucontext;
 
-	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext->ss.r##n)
+	#define UCONTEXT_REG_Rn(ctx, n)   ((&(ctx)->uc_mcontext->ss.r0) [(n)])
 	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext->fs.fpregs [(n)])
 	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext->ss.srr0)
+	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext->ss.lr)
 #elif defined(__NetBSD__)
 	typedef ucontext_t os_ucontext;
 
