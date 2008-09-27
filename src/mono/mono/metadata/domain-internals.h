@@ -123,11 +123,6 @@ struct _MonoJitInfo {
 	/* There is an optional MonoGenericJitInfo after the clauses */
 };
 
-typedef struct {
-	MonoJitInfo *ji;
-	MonoCodeManager *code_mp;
-} MonoJitDynamicMethodInfo;
-
 struct _MonoAppContext {
 	MonoObject obj;
 	gint32 domain_id;
@@ -185,8 +180,6 @@ struct _MonoDomain {
 	/* Protected by 'jit_code_hash_lock' */
 	MonoInternalHashTable jit_code_hash;
 	CRITICAL_SECTION    jit_code_hash_lock;
-	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
-	GHashTable         *dynamic_code_hash;
 	int		    num_jit_info_tables;
 	MonoJitInfoTable * 
 	  volatile          jit_info_table;
@@ -200,11 +193,6 @@ struct _MonoDomain {
 	MonoMethod         *private_invoke_method;
 	/* Used to store offsets of thread and context static fields */
 	GHashTable         *special_static_fields;
-	GHashTable         *jump_target_hash;
-	GHashTable         *class_init_trampoline_hash;
-	GHashTable         *jump_trampoline_hash;
-	GHashTable         *jit_trampoline_hash;
-	GHashTable         *delegate_trampoline_hash;
 	/* 
 	 * This must be a GHashTable, since these objects can't be finalized
 	 * if the hashtable contains a GC visible reference to them.
@@ -215,7 +203,6 @@ struct _MonoDomain {
 
 	GHashTable	   *shared_generics_hash;
 	GHashTable	   *method_rgctx_hash;
-	GHashTable     *method_code_hash;
 
 	/* Information maintained by the JIT engine */
 	gpointer runtime_info;

@@ -1174,11 +1174,7 @@ mono_domain_create (void)
 	domain->num_jit_info_tables = 1;
 	domain->jit_info_table = jit_info_table_new (domain);
 	domain->jit_info_free_queue = NULL;
-	domain->class_init_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	domain->delegate_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	InitializeCriticalSection (&domain->lock);
 	InitializeCriticalSection (&domain->assemblies_lock);
@@ -1186,7 +1182,6 @@ mono_domain_create (void)
 
 	domain->shared_generics_hash = NULL;
 	domain->method_rgctx_hash = NULL;
-	domain->method_code_hash = NULL;
 
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
@@ -1820,20 +1815,6 @@ mono_domain_register_shared_generic (MonoDomain *domain, MonoMethod *method, Mon
 	g_hash_table_insert (domain->shared_generics_hash, method, jit_info);
 }
 
-static void
-dynamic_method_info_free (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoJitDynamicMethodInfo *di = value;
-	mono_code_manager_destroy (di->code_mp);
-	g_free (di);
-}
-
-static void
-delete_jump_list (gpointer key, gpointer value, gpointer user_data)
-{
-	g_slist_free (value);
-}
-
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
 {
@@ -1897,11 +1878,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		domain->static_data_array = NULL;
 	}
 	mono_internal_hash_table_destroy (&domain->jit_code_hash);
-	if (domain->dynamic_code_hash) {
-		g_hash_table_foreach (domain->dynamic_code_hash, dynamic_method_info_free, NULL);
-		g_hash_table_destroy (domain->dynamic_code_hash);
-		domain->dynamic_code_hash = NULL;
-	}
 	mono_g_hash_table_destroy (domain->ldstr_table);
 	domain->ldstr_table = NULL;
 
@@ -1932,11 +1908,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_code_manager_destroy (domain->code_mp);
 	domain->code_mp = NULL;
 #endif	
-	if (domain->jump_target_hash) {
-		g_hash_table_foreach (domain->jump_target_hash, delete_jump_list, NULL);
-		g_hash_table_destroy (domain->jump_target_hash);
-		domain->jump_target_hash = NULL;
-	}
 	if (domain->type_hash) {
 		mono_g_hash_table_destroy (domain->type_hash);
 		domain->type_hash = NULL;
@@ -1949,16 +1920,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		mono_g_hash_table_destroy (domain->type_init_exception_hash);
 		domain->type_init_exception_hash = NULL;
 	}
-	g_hash_table_destroy (domain->class_init_trampoline_hash);
-	domain->class_init_trampoline_hash = NULL;
-	g_hash_table_destroy (domain->jump_trampoline_hash);
-	domain->jump_trampoline_hash = NULL;
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	domain->finalizable_objects_hash = NULL;
-	g_hash_table_destroy (domain->jit_trampoline_hash);
-	domain->jit_trampoline_hash = NULL;
-	g_hash_table_destroy (domain->delegate_trampoline_hash);
-	domain->delegate_trampoline_hash = NULL;
 	if (domain->shared_generics_hash) {
 		g_hash_table_destroy (domain->shared_generics_hash);
 		domain->shared_generics_hash = NULL;
@@ -1966,10 +1929,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	if (domain->method_rgctx_hash) {
 		g_hash_table_destroy (domain->method_rgctx_hash);
 		domain->method_rgctx_hash = NULL;
-	}
-	if (domain->method_code_hash) {
-		g_hash_table_destroy (domain->method_code_hash);
-		domain->method_code_hash = NULL;
 	}
 
 	DeleteCriticalSection (&domain->assemblies_lock);
