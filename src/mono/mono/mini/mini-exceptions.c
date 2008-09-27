@@ -1270,13 +1270,17 @@ mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 			fault_addr < (guint8*)jit_tls->stack_ovf_guard_base + jit_tls->stack_ovf_guard_size) {
 		/* we unprotect the minimum amount we can */
 		guint32 guard_size = jit_tls->stack_ovf_guard_size - mono_pagesize ();
+		gboolean can_handle = FALSE;
 		while (guard_size && fault_addr < (guint8*)jit_tls->stack_ovf_guard_base + guard_size) {
 			guard_size -= mono_pagesize ();
 		}
 		guard_size = jit_tls->stack_ovf_guard_size - guard_size;
 		/*fprintf (stderr, "unprotecting: %d\n", guard_size);*/
 		mono_mprotect ((char*)jit_tls->stack_ovf_guard_base + jit_tls->stack_ovf_guard_size - guard_size, guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
-		if (ji) {
+#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
+		can_handle = ji != NULL;
+#endif
+		if (can_handle) {
 			mono_arch_handle_altstack_exception (ctx, fault_addr, TRUE);
 		} else {
 			/* We print a message: after this even managed stack overflows
