@@ -2387,28 +2387,31 @@ static MonoInst*
 mono_emit_rgctx_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSignature *sig,
 		MonoInst **args, MonoInst *this, MonoInst *imt_arg, MonoInst *vtable_arg)
 {
-#ifdef MONO_ARCH_RGCTX_REG
 	int rgctx_reg;
 	MonoInst *ins;
 	MonoCallInst *call;
 
 	if (vtable_arg) {
+#ifdef MONO_ARCH_RGCTX_REG
 		rgctx_reg = mono_alloc_preg (cfg);
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, rgctx_reg, vtable_arg->dreg);
+#else
+		NOT_IMPLEMENTED;
+#endif
 	}
 	ins = mono_emit_method_call_full (cfg, method, sig, args, this, imt_arg);
 
 	call = (MonoCallInst*)ins;
 	if (vtable_arg) {
+#ifdef MONO_ARCH_RGCTX_REG
 		mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
 		cfg->uses_rgctx_reg = TRUE;
+#else
+		NOT_IMPLEMENTED;
+#endif
 	}
 
 	return ins;
-#else
-	NOT_IMPLEMENTED;
-	return NULL;
-#endif
 }
 
 static inline MonoInst*
