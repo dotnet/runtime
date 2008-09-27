@@ -1555,14 +1555,16 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	int i, soffset, dreg;
 
 	if (ainfo->regtype == RegTypeStructByVal) {
-		guint32 size;
+		guint32 size = 0;
 		soffset = 0;
-		/*
-		  Darwin needs some special handling for 1 and 2 byte arguments
-		*/
 #ifdef __APPLE__
+		/*
+		 * Darwin pinvokes needs some special handling for 1
+		 * and 2 byte arguments
+		 */
 		g_assert (ins->klass);
-		size =  mono_class_native_size (ins->klass, NULL);
+		if (call->signature->pinvoke)
+			size =  mono_class_native_size (ins->klass, NULL);
 		if (size == 2 || size == 1) {
 			int tmpr = mono_alloc_ireg (cfg);
 			if (size == 1)
@@ -2726,13 +2728,18 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 			NOT_IMPLEMENTED;
 
 		case RegTypeStructByVal: {
-			guint32 size;
+			guint32 size = 0;
 
 			/* FIXME: */
 			if (ainfo->vtsize)
 				NOT_IMPLEMENTED;
 #ifdef __APPLE__
-			size = mono_class_native_size (inst->klass, NULL);
+			/*
+			 * Darwin pinvokes needs some special handling
+			 * for 1 and 2 byte arguments
+			 */
+			if (method->signature->pinvoke)
+				size = mono_class_native_size (inst->klass, NULL);
 			if (size == 1 || size == 2) {
 				/* FIXME: */
 				NOT_IMPLEMENTED;
@@ -4117,19 +4124,22 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_assert (ppc_is_imm16 (inst->inst_offset));
 				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
 				/* FIXME: what if there is no class? */
-				if (mono_class_from_mono_type (inst->inst_vtype))
+				if (sig->pinvoke && mono_class_from_mono_type (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
-/*
-Darwin handles 1 and 2 byte structs specially by loading h/b into the arg
-register.  Should this case include linux/ppc?
-*/
 #if __APPLE__
+					/*
+					 * Darwin handles 1 and 2 byte
+					 * structs specially by
+					 * loading h/b into the arg
+					 * register.  Only done for
+					 * pinvokes.
+					 */
 					if (size == 2)
 						ppc_sth (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
 					else if (size == 1)
 						ppc_stb (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-					else 
+					else
 #endif
 						ppc_stw (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
 					soffset += sizeof (gpointer);
