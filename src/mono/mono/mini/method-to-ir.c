@@ -1768,36 +1768,6 @@ mini_emit_memcpy2 (MonoCompile *cfg, int destreg, int doffset, int srcreg, int s
 
 #ifndef DISABLE_JIT
 
-static void
-mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_class)
-{
-	int vtable_reg = alloc_preg (cfg);
-
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
-				       
-	if (cfg->opt & MONO_OPT_SHARED) {
-		int class_reg = alloc_preg (cfg);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, class_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-		if (cfg->compile_aot) {
-			int klass_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_CLASSCONST (cfg, klass_reg, array_class);
-			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, class_reg, klass_reg);
-		} else {
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, class_reg, array_class);
-		}
-	} else {
-		if (cfg->compile_aot) {
-			int vt_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_VTABLECONST (cfg, vt_reg, mono_class_vtable (cfg->domain, array_class));
-			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vt_reg);
-		} else {
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, mono_class_vtable (cfg->domain, array_class));
-		}
-	}
-	
-	MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "ArrayTypeMismatchException");
-}
-
 static int
 ret_type_to_call_opcode (MonoType *type, int calli, int virt, MonoGenericSharingContext *gsctx)
 {
@@ -2654,6 +2624,45 @@ emit_get_rgctx_field (MonoCompile *cfg, int context_used,
 	MonoInst *rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
 
 	return emit_rgctx_fetch (cfg, rgctx, entry);
+}
+
+static void
+mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_class)
+{
+	int vtable_reg = alloc_preg (cfg);
+	int context_used = 0;
+
+	if (cfg->generic_sharing_context)
+		context_used = mono_class_check_context_used (array_class);
+
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj->dreg, G_STRUCT_OFFSET (MonoObject, vtable));
+				       
+	if (cfg->opt & MONO_OPT_SHARED) {
+		int class_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, class_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+		if (cfg->compile_aot) {
+			int klass_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_CLASSCONST (cfg, klass_reg, array_class);
+			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, class_reg, klass_reg);
+		} else {
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, class_reg, array_class);
+		}
+	} else if (context_used) {
+		MonoInst *vtable_ins;
+
+		vtable_ins = emit_get_rgctx_klass (cfg, context_used, array_class, MONO_RGCTX_INFO_VTABLE);
+		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vtable_ins->dreg);
+	} else {
+		if (cfg->compile_aot) {
+			int vt_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_VTABLECONST (cfg, vt_reg, mono_class_vtable (cfg->domain, array_class));
+			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, vtable_reg, vt_reg);
+		} else {
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, mono_class_vtable (cfg->domain, array_class));
+		}
+	}
+	
+	MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "ArrayTypeMismatchException");
 }
 
 /**

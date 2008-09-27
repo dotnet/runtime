@@ -117,6 +117,25 @@ class Tests {
 		return ldelem_any (arr);
 	}
 
+	public static T return_ref<T> (ref T t) {
+		return t;
+	}
+
+	public static T ldelema_any<T> (T[] arr) {
+		return return_ref<T> (ref arr [0]);
+	}
+
+	public static int test_0_ldelema () {
+		string[] arr = new string [1];
+
+		arr [0] = "Hello";
+
+		if (ldelema_any <string> (arr) == "Hello")
+			return 0;
+		else
+			return 1;
+	}
+
 	public static T[,] newarr_multi<T> () {
 		return new T [1, 1];
 	}
