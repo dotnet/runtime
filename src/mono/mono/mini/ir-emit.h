@@ -98,6 +98,10 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->dreg = alloc_dreg ((cfg), STACK_I4);	\
 	} while (0)
 
+/* 
+ * Avoid using this with a non-NULL val if possible as it is not AOT 
+ * compatible. Use one of the NEW_xxxCONST variants instead.
+ */
 #define NEW_PCONST(cfg,dest,val) do {	\
         MONO_INST_NEW ((cfg), (dest), OP_PCONST); \
 		(dest)->inst_p0 = (val);	\

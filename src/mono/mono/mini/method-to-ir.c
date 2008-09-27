@@ -6986,13 +6986,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 						vtable_arg = emit_get_rgctx_method (cfg, context_used,
 							cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 					} else {
-						MonoVTable *vtable = mono_class_vtable (cfg->domain, cmethod->klass);
-						MonoMethodRuntimeGenericContext *mrgctx;
-
-						mrgctx = mono_method_lookup_rgctx (vtable,
-							mini_method_get_context (cmethod)->method_inst);
-
-						EMIT_NEW_PCONST (cfg, vtable_arg, mrgctx);
+						EMIT_NEW_METHOD_RGCTX_CONST (cfg, vtable_arg, cmethod);
 					}
 				} else {
 					if (context_used) {
