@@ -4929,18 +4929,17 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 {
 	int local, token;
 	MonoClass *klass;
-	return NULL;
+
+	if (size == 1) {
+		local = ip [1];
+		ip += 2;
+	} else {
+		local = read16 (ip + 2);
+		ip += 4;
+	}
 	
 	if (ip + 6 < end && (ip [0] == CEE_PREFIX1) && (ip [1] == CEE_INITOBJ) && ip_in_bb (cfg, cfg->cbb, ip + 1)) {
 		gboolean skip = FALSE;
-
-		if (size == 1) {
-			local = ip [1];
-			ip += 2;
-		} else {
-			local = read16 (ip + 2);
-			ip += 4;
-		}
 
 		/* From the INITOBJ case */
 		token = read32 (ip + 2);
