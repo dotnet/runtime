@@ -7202,8 +7202,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			if (context_used) {
 				MonoInst *args [2];
 
-				g_assert (!method->klass->valuetype);
-
 				/* obj */
 				args [0] = *sp;
 
