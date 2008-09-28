@@ -4920,6 +4920,45 @@ emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
 	}
 }
 
+static inline unsigned char *
+emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *end, int size)
+{
+	int local, token;
+	MonoClass *klass;
+	return NULL;
+	
+	if (ip + 6 < end && (ip [0] == CEE_PREFIX1) && (ip [1] == CEE_INITOBJ) && ip_in_bb (cfg, cfg->cbb, ip + 1)) {
+		gboolean skip = FALSE;
+
+		if (size == 1) {
+			local = ip [1];
+			ip += 2;
+		} else {
+			local = read16 (ip + 2);
+			ip += 4;
+		}
+
+		/* From the INITOBJ case */
+		token = read32 (ip + 2);
+		klass = mini_get_class (cfg->current_method, token, cfg->generic_context);
+		CHECK_TYPELOAD (klass);
+		if (generic_class_is_reference_type (cfg, klass)) {
+			MONO_EMIT_NEW_PCONST (cfg, cfg->locals [local]->dreg, NULL);
+		} else if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
+			MONO_EMIT_NEW_PCONST (cfg, cfg->locals [local]->dreg, NULL);
+		} else if (MONO_TYPE_ISSTRUCT (&klass->byval_arg)) {
+			MONO_EMIT_NEW_VZERO (cfg, cfg->locals [local]->dreg, klass);
+		} else {
+			skip = TRUE;
+		}
+			
+		if (!skip)
+			return ip + 6;
+	}
+load_error:
+	return NULL;
+}
+
 /*
  * mono_method_to_ir: translates IL into basic blocks containing trees
  */
@@ -5464,43 +5503,23 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			*sp++ = ins;
 			ip += 2;
 			break;
-		case CEE_LDLOCA_S:
+		case CEE_LDLOCA_S: {
+			unsigned char *tmp_ip;
 			CHECK_OPSIZE (2);
 			CHECK_STACK_OVF (1);
 			CHECK_LOCAL (ip [1]);
 
-			/*
-			 * ldloca inhibits many optimizations so try to get rid of it in common
-			 * cases.
-			 */
-			if (ip + 8 < end && (ip [2] == CEE_PREFIX1) && (ip [3] == CEE_INITOBJ) && ip_in_bb (cfg, bblock, ip + 3)) {
-				gboolean skip = FALSE;
-
-				/* From the INITOBJ case */
-				token = read32 (ip + 4);
-				klass = mini_get_class (method, token, generic_context);
-				CHECK_TYPELOAD (klass);
-				if (generic_class_is_reference_type (cfg, klass)) {
-					MONO_EMIT_NEW_PCONST (cfg, cfg->locals [ip [1]]->dreg, NULL);
-				} else if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
-					MONO_EMIT_NEW_PCONST (cfg, cfg->locals [ip [1]]->dreg, NULL);
-				} else if (MONO_TYPE_ISSTRUCT (&klass->byval_arg)) {
-					MONO_EMIT_NEW_VZERO (cfg, cfg->locals [ip [1]]->dreg, klass);
-				} else {
-					skip = TRUE;
-				}
-					
-				if (!skip) {
-					ip += 2 + 6;
-					inline_costs += 1;
-					break;
-				}
+			if ((tmp_ip = emit_optimized_ldloca_ir (cfg, ip, end, 1))) {
+				ip = tmp_ip;
+				inline_costs += 1;
+				break;
 			}
 
 			EMIT_NEW_LOCLOADA (cfg, ins, ip [1]);
 			*sp++ = ins;
 			ip += 2;
 			break;
+		}
 		case CEE_STLOC_S:
 			CHECK_OPSIZE (2);
 			CHECK_STACK (1);
@@ -8938,15 +8957,24 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				*sp++ = ins;
 				ip += 4;
 				break;
-			case CEE_LDLOCA:
+			case CEE_LDLOCA: {
+				unsigned char *tmp_ip;
 				CHECK_STACK_OVF (1);
 				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_LOCAL (n);
+
+				if ((tmp_ip = emit_optimized_ldloca_ir (cfg, ip, end, 2))) {
+					ip = tmp_ip;
+					inline_costs += 1;
+					break;
+				}			
+				
 				EMIT_NEW_LOCLOADA (cfg, ins, n);
 				*sp++ = ins;
 				ip += 4;
 				break;
+			}
 			case CEE_STLOC:
 				CHECK_STACK (1);
 				--sp;
