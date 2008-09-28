@@ -216,6 +216,8 @@ gboolean check_for_pending_exc = TRUE;
 /* Whenever to disable passing/returning small valuetypes in registers for managed methods */
 gboolean disable_vtypes_in_regs = FALSE;
 
+gboolean mono_dont_free_global_codeman;
+
 #ifdef DISABLE_JIT
 /* Define this here, since many files reference it */
 const guint8 mono_burg_arity [MBMAX_OPCODES] = {
@@ -14754,7 +14756,8 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_trampolines_cleanup ();
 
-	mono_code_manager_destroy (global_codeman);
+	if (!mono_dont_free_global_codeman)
+		mono_code_manager_destroy (global_codeman);
 	g_hash_table_destroy (jit_icall_name_hash);
 	g_free (emul_opcode_map);
 
