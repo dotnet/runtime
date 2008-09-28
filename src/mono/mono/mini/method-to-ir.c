@@ -4920,6 +4920,10 @@ emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
 	}
 }
 
+/*
+ * ldloca inhibits many optimizations so try to get rid of it in common
+ * cases.
+ */
 static inline unsigned char *
 emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *end, int size)
 {
