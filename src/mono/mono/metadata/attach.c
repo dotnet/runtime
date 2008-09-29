@@ -10,7 +10,7 @@
 #include <glib.h>
 
 #ifndef DISABLE_ATTACH
-#ifndef PLATFORM_WIN32
+#ifdef PLATFORM_WIN32
 #define DISABLE_ATTACH
 #endif
 #endif
