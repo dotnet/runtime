@@ -9,7 +9,12 @@
 
 #include <glib.h>
 
-#if defined (DISABLE_ATTACH) || !defined(PLATFORM_WIN32)
+#ifndef DISABLE_ATTACH
+#ifndef PLATFORM_WIN32
+#define DISABLE_ATTACH
+#endif
+#endif
+#ifndef DISABLE_ATTACH
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,12 +40,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/gc-internal.h>
 #include "attach.h"
-
-#elif !defined(DISABLE_ATTACH) /*PLATFORM_WIN32*/
-#define DISABLE_ATTACH
-#endif/*PLATFORM_WIN32*/
-
-#ifndef DISABLE_ATTACH
 
 /*
  * This module enables other processes to attach to a running mono process and
