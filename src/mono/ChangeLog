@@ -1,3 +1,8 @@
+2008-09-29  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/patch-quiet.sh: Handle the ifs used by some versions of
+	automake.
+
 2008-09-25  Luis Ortiz  <lortiz@interactivesupercomputing.com>
 
 	* configure.in: Big arrays are only supported on 64 bit systems. 
