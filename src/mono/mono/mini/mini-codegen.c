@@ -132,7 +132,7 @@ mono_regstate_alloc_general (MonoRegState *rs, regmask_t allow, int bank)
 {
 	int i;
 	regmask_t mask = allow & rs->free_mask [bank];
-	for (i = 0; i < MONO_MAX_FREGS; ++i) {
+	for (i = 0; i < regbank_size [bank]; ++i) {
 		if (mask & ((regmask_t)1 << i)) {
 			rs->free_mask [bank] &= ~ ((regmask_t)1 << i);
 			return i;
@@ -168,8 +168,8 @@ mono_call_inst_add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, int vreg, i
 
 	regpair = (((guint32)hreg) << 24) + vreg;
 	if (G_UNLIKELY (bank)) {
-		g_assert (vreg >= MONO_MAX_FREGS);
-		g_assert (hreg < MONO_MAX_FREGS);
+		g_assert (vreg >= regbank_size [bank]);
+		g_assert (hreg < regbank_size [bank]);
 		call->used_fregs |= 1 << hreg;
 		call->out_freg_args = g_slist_append_mempool (cfg->mempool, call->out_freg_args, (gpointer)(gssize)(regpair));
 	} else {
@@ -253,16 +253,13 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 
 #define is_hard_ireg(r) ((r) >= 0 && (r) < MONO_MAX_IREGS)
 #define is_hard_freg(r) ((r) >= 0 && (r) < MONO_MAX_FREGS)
+#define is_hard_reg(r,bank) (G_UNLIKELY (bank) ? ((r) < regbank_size [bank]) : ((r) < MONO_MAX_IREGS))
 #define is_global_ireg(r) (is_hard_ireg ((r)) && (MONO_ARCH_CALLEE_SAVED_REGS & (regmask (r))))
 #define is_local_ireg(r) (is_hard_ireg ((r)) && (MONO_ARCH_CALLEE_REGS & (regmask (r))))
 #define is_global_freg(r) (is_hard_freg ((r)) && (MONO_ARCH_CALLEE_SAVED_FREGS & (regmask (r))))
-#define is_local_freg(r) (is_hard_ireg ((r)) && (MONO_ARCH_CALLEE_FREGS & (regmask (r))))
-#define ireg_is_freeable(r) is_local_ireg ((r))
-#define freg_is_freeable(r) is_hard_freg ((r))
-
-#define reg_is_freeable(r,fp) ((fp) ? freg_is_freeable ((r)) : ireg_is_freeable ((r)))
-#define is_hard_reg(r,fp) (G_UNLIKELY (fp) ? ((r) < MONO_MAX_FREGS) : ((r) < MONO_MAX_IREGS))
-#define is_soft_reg(r,fp) (!is_hard_reg((r),(fp)))
+#define is_local_freg(r) (is_hard_freg ((r)) && (MONO_ARCH_CALLEE_FREGS & (regmask (r))))
+#define reg_is_freeable(r,bank) (G_UNLIKELY (bank) ? is_hard_reg ((r), (bank)) : is_local_ireg ((r)))
+#define is_soft_reg(r,bank) (!is_hard_reg((r),(bank)))
 
 #ifndef MONO_ARCH_INST_IS_FLOAT
 #define MONO_ARCH_INST_IS_FLOAT(desc) ((desc) == 'f')
@@ -673,7 +670,7 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 	sel = 0;
 	/* we should track prev_use and spill the register that's farther */
 	if (G_UNLIKELY (bank)) {
-		for (i = 0; i < MONO_MAX_FREGS; ++i) {
+		for (i = 0; i < regbank_size [bank]; ++i) {
 			if (regmask & (regmask (i))) {
 				sel = i;
 				DEBUG (printf ("\t\tselected register %s has assignment %d\n", mono_regname_full (sel, bank), rs->symbolic [bank] [sel]));
@@ -684,7 +681,7 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 		i = rs->symbolic [bank] [sel];
 		spill = ++cfg->spill_count;
 		rs->vassign [i] = -spill - 1;
-		mono_regstate_free_general (rs, sel, 1);
+		mono_regstate_free_general (rs, sel, bank);
 	}
 	else {
 		for (i = 0; i < MONO_MAX_IREGS; ++i) {
@@ -823,8 +820,8 @@ static inline void
 assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 {
 	if (G_UNLIKELY (bank)) {
-		g_assert (reg >= MONO_MAX_FREGS);
-		g_assert (hreg < MONO_MAX_FREGS);
+		g_assert (reg >= regbank_size [bank]);
+		g_assert (hreg < regbank_size [bank]);
 		g_assert (! is_global_freg (hreg));
 
 		rs->vassign [reg] = hreg;
@@ -1408,7 +1405,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->dreg = dest_dreg;
 
 			if (G_UNLIKELY (bank)) {
-				if (rs->symbolic [bank] [dest_dreg] >= MONO_MAX_FREGS)
+				if (rs->symbolic [bank] [dest_dreg] >= regbank_size [bank])
 					free_up_reg (cfg, bb, tmp, ins, dest_dreg, bank);
 			}
 			else {
