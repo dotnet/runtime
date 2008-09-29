@@ -46,11 +46,11 @@
  * load agent assemblies. 
  * Communication is done through a UNIX Domain Socket located at
  * /tmp/mono-<USER>/.mono-<PID>.
- * We a simplified version of the .net remoting protocol.
+ * We use a simplified version of the .net remoting protocol.
  * To increase security, and to avoid spinning up a listener thread on startup,
  * we follow the java implementation, and only start up the attach mechanism
- * when we receive a QUIT signal and there is a file named '.attach_pid<PID>' in
- * /tmp.
+ * when we receive a QUIT signal and there is a file named 
+ * '.mono_attach_pid<PID>' in /tmp.
  *
  * SECURITY:
  * - This module allows loading of arbitrary code into a running mono runtime, so
