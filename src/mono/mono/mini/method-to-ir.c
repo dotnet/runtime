@@ -1105,7 +1105,7 @@ type_from_stack_type (MonoInst *ins) {
 	case STACK_OBJ: return &mono_defaults.object_class->byval_arg;
 	case STACK_VTYPE: return &ins->klass->byval_arg;
 	default:
-		g_error ("stack type %d to montype not handled\n", ins->type);
+		g_error ("stack type %d to monotype not handled\n", ins->type);
 	}
 	return NULL;
 }
