@@ -2212,6 +2212,8 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 	case OP_FCALL_REG:
 	case OP_FCALL_MEMBASE:
 		g_assert (ins->dreg == 8);
+		if (((MonoCallInst*)ins)->signature->ret->type == MONO_TYPE_R4)
+			ia64_fnorm_d_sf (code, ins->dreg, ins->dreg, 0);
 		break;
 	case OP_VCALL:
 	case OP_VCALL_REG:

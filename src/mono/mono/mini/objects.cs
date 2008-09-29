@@ -1252,6 +1252,18 @@ ncells ) {
 		return 0;
 	}
 
+	public static float return_float () {
+		return 1.4e-45f;
+	}
+
+	public static int test_0_float_return_spill () {
+		// The return value of return_float () is spilled because of the
+		// boxing call
+		object o = return_float ();
+		float f = return_float ();
+		return (float)o == f ? 0 : 1;
+	}
+
 	class R4Holder {
 		public static float pi = 3.14f;
 
