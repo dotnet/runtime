@@ -789,6 +789,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->arch.omit_fp = FALSE;
 	if ((sig->ret->type != MONO_TYPE_VOID) && (cinfo->ret.storage == ArgAggregate))
 		cfg->arch.omit_fp = FALSE;
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
+		cfg->arch.omit_fp = FALSE;
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
 
