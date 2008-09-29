@@ -189,7 +189,7 @@ resize_spill_info (MonoCompile *cfg, int bank)
 	MonoSpillInfo *new_info;
 	int i;
 
-	g_assert (bank < 2);
+	g_assert (bank < MONO_NUM_REGBANKS);
 
 	new_info = mono_mempool_alloc (cfg->mempool, sizeof (MonoSpillInfo) * new_len);
 	if (orig_info)
@@ -227,7 +227,7 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 		cfg->stack_offset += sizeof (gpointer) - 1;
 		cfg->stack_offset &= ~(sizeof (gpointer) - 1);
 
-		g_assert (bank < 2);
+		g_assert (bank < MONO_NUM_REGBANKS);
 		if (bank == 1)
 			size = sizeof (double);
 		else
@@ -645,7 +645,7 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 
 	symbolic = rs->symbolic [bank];
 
-	g_assert (bank <= 2);
+	g_assert (bank < MONO_NUM_REGBANKS);
 
 	DEBUG (printf ("\tstart regmask to assign R%d: 0x%08" G_GUINT64_FORMAT " (R%d <- R%d R%d)\n", reg, (guint64)regmask, ins->dreg, ins->sreg1, ins->sreg2));
 	/* exclude the registers in the current instruction */
