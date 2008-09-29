@@ -23,6 +23,8 @@
 #include "cpu-mips.h"
 #include "trace.h"
 
+#error "The mips backend has not been ported to linear IR."
+
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
 #define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
@@ -125,6 +127,12 @@ mono_arch_flush_icache (guint8 *code, gint size)
 void
 mono_arch_flush_register_windows (void)
 {
+}
+
+gboolean 
+mono_arch_is_inst_imm (gint64 imm)
+{
+	return TRUE;
 }
 
 static guint8 *
@@ -386,11 +394,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	arg_info [0].size = frame_size;
 
 	for (k = 0; k < param_count; k++) {
-		
-		if (csig->pinvoke)
-			size = mono_type_native_stack_size (csig->params [k], &align);
-		else
-			size = mini_type_stack_size (NULL, csig->params [k], &align);
+		size = mini_type_stack_size_full (NULL, csig->params [k], &align, csig->pinvoke);
 
 		/* ignore alignment for now */
 		align = 1;
@@ -1303,6 +1307,24 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 }
 
 void
+mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
+{
+	NOT_IMPLEMENTED;
+}
+
+void
+mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
+{
+	NOT_IMPLEMENTED;
+}
+
+void
+mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
+{
+	NOT_IMPLEMENTED;
+}
+
+void
 mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 }
@@ -1314,7 +1336,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 	ins = bb->code;
 
 	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
-		MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
+		MonoInst *last_ins = ins->prev;
 
 		switch (ins->opcode) {
 		case OP_MUL_IMM: 
@@ -4048,6 +4070,12 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 	MonoInst *ins = NULL;
 
 	return ins;
+}
+
+MonoInst*
+mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	return NULL;
 }
 
 gboolean
