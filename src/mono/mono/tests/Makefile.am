@@ -330,6 +330,9 @@ endif
 
 if IA64
 TEST_CS_SRC+=async-exc-compilation.cs
+# bug #319249
+PLATFORM_DISABLED_TESTS=exception17.exe
+PLATFORM_DISABLED_TESTS+=winx64structs.exe
 endif
 
 if X86
