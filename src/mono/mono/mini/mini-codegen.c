@@ -60,6 +60,12 @@ static const regmask_t regbank_callee_regs [] = {
 	MONO_ARCH_CALLEE_FREGS,
 };
 
+static const int regbank_spill_var_size[] = {
+	sizeof (gpointer),
+	sizeof (double),
+	16 /*FIXME make this a constant. Maybe MONO_ARCH_SIMD_VECTOR_SIZE? */
+};
+
 #define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 3, a;)
 
 static inline GSList*
@@ -240,8 +246,8 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 		cfg->stack_offset &= ~(sizeof (gpointer) - 1);
 
 		g_assert (bank < MONO_NUM_REGBANKS);
-		if (bank == 1)
-			size = sizeof (double);
+		if (G_UNLIKELY (bank))
+			size = regbank_spill_var_size [bank];
 		else
 			size = sizeof (gpointer);
 
@@ -263,13 +269,16 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 
 #define is_hard_ireg(r) ((r) >= 0 && (r) < MONO_MAX_IREGS)
 #define is_hard_freg(r) ((r) >= 0 && (r) < MONO_MAX_FREGS)
-#define is_hard_reg(r,bank) (G_UNLIKELY (bank) ? ((r) < regbank_size [bank]) : ((r) < MONO_MAX_IREGS))
 #define is_global_ireg(r) (is_hard_ireg ((r)) && (MONO_ARCH_CALLEE_SAVED_REGS & (regmask (r))))
 #define is_local_ireg(r) (is_hard_ireg ((r)) && (MONO_ARCH_CALLEE_REGS & (regmask (r))))
 #define is_global_freg(r) (is_hard_freg ((r)) && (MONO_ARCH_CALLEE_SAVED_FREGS & (regmask (r))))
 #define is_local_freg(r) (is_hard_freg ((r)) && (MONO_ARCH_CALLEE_FREGS & (regmask (r))))
-#define reg_is_freeable(r,bank) (G_UNLIKELY (bank) ? is_hard_reg ((r), (bank)) : is_local_ireg ((r)))
+
+#define is_hard_reg(r,bank) (G_UNLIKELY (bank) ? ((r) >= 0 && (r) < regbank_size [bank]) : ((r) < MONO_MAX_IREGS))
 #define is_soft_reg(r,bank) (!is_hard_reg((r),(bank)))
+#define is_global_reg(r,bank) (G_UNLIKELY (bank) ? (is_hard_reg ((r), (bank)) && (regbank_callee_saved_regs [bank] & regmask (r))) : is_global_ireg (r))
+#define is_local_reg(r,bank) (G_UNLIKELY (bank) ? (is_hard_reg ((r), (bank)) && (regbank_callee_regs [bank] & regmask (r))) : is_local_ireg (r))
+#define reg_is_freeable(r,bank) (G_UNLIKELY (bank) ? is_local_reg ((r), (bank)) : is_local_ireg ((r)))
 
 #ifndef MONO_ARCH_INST_IS_FLOAT
 #define MONO_ARCH_INST_IS_FLOAT(desc) ((desc) == 'f')

@@ -184,7 +184,7 @@ mono_alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 	return alloc_dreg (cfg, stack_type);
 }
 
-static guint
+guint
 mono_type_to_regmove (MonoCompile *cfg, MonoType *type)
 {
 	if (type->byref)
