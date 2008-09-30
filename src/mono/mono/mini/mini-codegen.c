@@ -900,7 +900,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 	mono_regstate_assign (rs);
 
 	rs->ifree_mask = MONO_ARCH_CALLEE_REGS;
-	rs->free_mask [1] = MONO_ARCH_CALLEE_FREGS;
+	for (i = 0; i < MONO_NUM_REGBANKS; ++i)
+		rs->free_mask [i] = regbank_callee_regs [i];
 
 	max = rs->next_vreg;
 
