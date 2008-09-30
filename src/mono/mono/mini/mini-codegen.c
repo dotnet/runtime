@@ -280,18 +280,14 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 #define sreg1_is_fp(spec) (MONO_ARCH_INST_IS_FLOAT (spec [MONO_INST_SRC1]))
 #define sreg2_is_fp(spec) (MONO_ARCH_INST_IS_FLOAT (spec [MONO_INST_SRC2]))
 
-#define sreg1_is_fp_ins(ins) (sreg1_is_fp (ins_get_spec ((ins)->opcode)))
-#define sreg2_is_fp_ins(ins) (sreg2_is_fp (ins_get_spec ((ins)->opcode)))
-#define dreg_is_fp_ins(ins)  (dreg_is_fp (ins_get_spec ((ins)->opcode)))
-
 #define reg_bank(desc) reg_is_fp ((desc))
-#define sreg1_bank(spec) sreg1_is_fp ((spec))
-#define sreg2_bank(spec) sreg2_is_fp ((spec))
-#define dreg_bank(spec) dreg_is_fp ((spec))
+#define sreg1_bank(spec) reg_bank ((spec)[MONO_INST_SRC1])
+#define sreg2_bank(spec) reg_bank ((spec)[MONO_INST_SRC2])
+#define dreg_bank(spec) reg_bank ((spec)[MONO_INST_DEST])
 
-#define sreg1_bank_ins(ins) sreg1_is_fp_ins ((ins))
-#define sreg2_bank_ins(ins) sreg2_is_fp_ins ((ins))
-#define dreg_bank_ins(ins) dreg_is_fp_ins ((ins))
+#define sreg1_bank_ins(ins) sreg1_bank (ins_get_spec ((ins)->opcode))
+#define sreg2_bank_ins(ins) sreg2_bank (ins_get_spec ((ins)->opcode))
+#define dreg_bank_ins(ins) dreg_bank (ins_get_spec ((ins)->opcode))
 
 #define regpair_reg2_mask(desc,hreg1) ((MONO_ARCH_INST_REGPAIR_REG2 (desc,hreg1) != -1) ? (regmask (MONO_ARCH_INST_REGPAIR_REG2 (desc,hreg1))) : MONO_ARCH_CALLEE_REGS)
 
