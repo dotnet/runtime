@@ -852,6 +852,14 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 	}
 }
 
+static inline regmask_t
+get_callee_mask (const char spec)
+{
+	if (G_UNLIKELY (reg_bank (spec)))
+		return regbank_callee_regs [reg_bank (spec)];
+	return MONO_ARCH_CALLEE_REGS;
+}
+
 static gint8 desc_to_fixed_reg [256];
 static gboolean desc_to_fixed_reg_inited = FALSE;
 
@@ -1126,9 +1134,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		prev_sreg1 = -1;
 		dreg_high = -1;
 		sreg1_high = -1;
-		dreg_mask = dreg_is_fp (spec) ? MONO_ARCH_CALLEE_FREGS : MONO_ARCH_CALLEE_REGS;
-		sreg1_mask = sreg1_is_fp (spec) ? MONO_ARCH_CALLEE_FREGS : MONO_ARCH_CALLEE_REGS;
-		sreg2_mask = sreg2_is_fp (spec) ? MONO_ARCH_CALLEE_FREGS : MONO_ARCH_CALLEE_REGS;
+		dreg_mask = get_callee_mask (spec_dest);
+		sreg1_mask = get_callee_mask (spec_src1);
+		sreg2_mask = get_callee_mask (spec_src2);
 
 		DEBUG (printf ("processing:"));
 		DEBUG (mono_print_ins_index (i, ins));
