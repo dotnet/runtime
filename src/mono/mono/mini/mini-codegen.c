@@ -48,6 +48,18 @@ static const int regbank_move_ops [] = {
 	OP_FMOVE
 };
 
+#define regmask(reg) (((regmask_t)1) << (reg))
+
+static const regmask_t regbank_callee_saved_regs [] = {
+	MONO_ARCH_CALLEE_SAVED_REGS,
+	MONO_ARCH_CALLEE_SAVED_FREGS,
+};
+
+static const regmask_t regbank_callee_regs [] = {
+	MONO_ARCH_CALLEE_REGS,
+	MONO_ARCH_CALLEE_FREGS,
+};
+
 #define DEBUG(a) MINI_DEBUG(cfg->verbose_level, 3, a;)
 
 static inline GSList*
@@ -248,8 +260,6 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 
 	return info->offset;
 }
-
-#define regmask(reg) (((regmask_t)1) << (reg))
 
 #define is_hard_ireg(r) ((r) >= 0 && (r) < MONO_MAX_IREGS)
 #define is_hard_freg(r) ((r) >= 0 && (r) < MONO_MAX_FREGS)
@@ -1435,7 +1445,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		if (spec [MONO_INST_CLOB] == 'c') {
-			int j, s, dreg, dreg2;
+			int j, s, dreg, dreg2, cur_bank;
 			guint64 clob_mask;
 
 			clob_mask = MONO_ARCH_CALLEE_REGS;
@@ -1468,22 +1478,24 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 
-			if (rs->free_mask [1] != MONO_ARCH_CALLEE_FREGS) {
-				clob_mask = MONO_ARCH_CALLEE_FREGS;
-				if ((prev_dreg != -1) && reg_bank (spec_dest))
-					dreg = rs->vassign [prev_dreg];
-				else
-					dreg = -1;
+			for (cur_bank = 1; cur_bank < MONO_NUM_REGBANKS; ++ cur_bank) {
+				if (rs->free_mask [cur_bank] != regbank_callee_regs [cur_bank]) {
+					clob_mask = regbank_callee_regs [cur_bank];
+					if ((prev_dreg != -1) && reg_bank (spec_dest))
+						dreg = rs->vassign [prev_dreg];
+					else
+						dreg = -1;
 
-				for (j = 0; j < MONO_MAX_FREGS; ++j) {
-					s = regmask (j);
-					if ((clob_mask & s) && !(rs->free_mask [1] & s) && (j != ins->sreg1)) {
-						if (j != dreg)
-							get_register_force_spilling (cfg, bb, tmp, ins, rs->symbolic [1] [j], 1);
-						else if (rs->symbolic [1] [j])
-							/* The hreg is assigned to the dreg of this instruction */
-							rs->vassign [rs->symbolic [1] [j]] = -1;
-						mono_regstate_free_general (rs, j, 1);
+					for (j = 0; j < regbank_size [cur_bank]; ++j) {
+						s = regmask (j);
+						if ((clob_mask & s) && !(rs->free_mask [cur_bank] & s) && (j != ins->sreg1)) {
+							if (j != dreg)
+								get_register_force_spilling (cfg, bb, tmp, ins, rs->symbolic [cur_bank] [j], cur_bank);
+							else if (rs->symbolic [cur_bank] [j])
+								/* The hreg is assigned to the dreg of this instruction */
+								rs->vassign [rs->symbolic [cur_bank] [j]] = -1;
+							mono_regstate_free_general (rs, j, cur_bank);
+						}
 					}
 				}
 			}
