@@ -407,6 +407,7 @@ TEST_IL_SRC=			\
 	generic-array-exc.2.il	\
 	generic-valuetype-newobj2.2.il	\
 	generic-valuetype-newobj.2.il	\
+	generic-constrained.2.il	\
 	bug-81466.il
 
 #	bug-318677.il
@@ -708,7 +709,8 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-virtual2.2.exe generic-valuetype-interface.2.exe	\
 		generic-valuetype-newobj.2.exe generic-valuetype-newobj2.2.exe	\
 		generic-getgenericarguments.2.exe generic-type-builder.2.exe	\
-		generic-synchronized.2.exe generic-delegate-ctor.2.exe
+		generic-synchronized.2.exe generic-delegate-ctor.2.exe		\
+		generic-constrained.2.exe
 	@for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared                $$fn > $$fn.stdout || exit 1;	\

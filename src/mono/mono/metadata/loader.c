@@ -1514,7 +1514,7 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 {
 	MonoMethod *method, *result;
 	MonoClass *ic = NULL;
-	MonoGenericContext *class_context = NULL, *method_context = NULL;
+	MonoGenericContext *method_context = NULL;
 	MonoMethodSignature *sig, *original_sig;
 
 	mono_loader_lock ();
@@ -1552,9 +1552,6 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 	if ((constrained_class != method->klass) && (method->klass->interface_id != 0))
 		ic = method->klass;
 
-	if (constrained_class->generic_class)
-		class_context = mono_class_get_context (constrained_class);
-
 	result = find_method (constrained_class, ic, method->name, sig, constrained_class);
 	if (sig != original_sig)
 		mono_metadata_free_inflated_signature (sig);
@@ -1566,8 +1563,6 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 		return NULL;
 	}
 
-	if (class_context)
-		result = mono_class_inflate_generic_method (result, class_context);
 	if (method_context)
 		result = mono_class_inflate_generic_method (result, method_context);
 
