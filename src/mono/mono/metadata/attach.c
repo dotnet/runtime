@@ -7,12 +7,11 @@
  * (C) 2007-2008 Novell, Inc.
  */
 
+#include <config.h>
 #include <glib.h>
 
-#ifndef DISABLE_ATTACH
 #ifdef PLATFORM_WIN32
 #define DISABLE_ATTACH
-#endif
 #endif
 #ifndef DISABLE_ATTACH
 
