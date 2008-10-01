@@ -6357,9 +6357,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 							ins->klass = mono_class_from_mono_type (ret_type);
 						}
 					} else {
-						g_assert (!ret_type->byref);
 #ifdef MONO_ARCH_SOFT_FLOAT
-						if (ret_type->type == MONO_TYPE_R4) {
+						if (!ret_type->byref && ret_type->type == MONO_TYPE_R4) {
 							MonoInst *iargs [1];
 							MonoInst *conv;
 
