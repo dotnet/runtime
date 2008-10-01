@@ -12686,7 +12686,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (cfg->new_ir) {
 #ifdef MONO_ARCH_SOFT_FLOAT
-		mono_handle_soft_float (cfg);
+		mono_decompose_soft_float (cfg);
 #endif
 		mono_decompose_vtype_opts (cfg);
 		if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
