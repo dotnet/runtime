@@ -1406,33 +1406,31 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret);
 
-	if (!ret->byref) {
-		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
-			MonoInst *ins;
+	if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
+		MonoInst *ins;
 
-			MONO_INST_NEW (cfg, ins, OP_SETLRET);
-			ins->sreg1 = val->dreg + 1;
-			ins->sreg2 = val->dreg + 2;
-			MONO_ADD_INS (cfg->cbb, ins);
-			return;
-		}
-#ifdef MONO_ARCH_SOFT_FLOAT
-		if (ret->type == MONO_TYPE_R8) {
-			MonoInst *ins;
-
-			MONO_INST_NEW (cfg, ins, OP_SETFRET);
-			ins->dreg = cfg->ret->dreg;
-			ins->sreg1 = val->dreg;
-			MONO_ADD_INS (cfg->cbb, ins);
-			return;
-		}
-		if (ret->type == MONO_TYPE_R4) {
-			/* Already converted to an int in method_to_ir () */
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
-			return;
-		}			
-#endif
+		MONO_INST_NEW (cfg, ins, OP_SETLRET);
+		ins->sreg1 = val->dreg + 1;
+		ins->sreg2 = val->dreg + 2;
+		MONO_ADD_INS (cfg->cbb, ins);
+		return;
 	}
+#ifdef MONO_ARCH_SOFT_FLOAT
+	if (ret->type == MONO_TYPE_R8) {
+		MonoInst *ins;
+
+		MONO_INST_NEW (cfg, ins, OP_SETFRET);
+		ins->dreg = cfg->ret->dreg;
+		ins->sreg1 = val->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		return;
+	}
+	if (ret->type == MONO_TYPE_R4) {
+		/* Already converted to an int in method_to_ir () */
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
+		return;
+	}			
+#endif
 
 	/* FIXME: */
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);

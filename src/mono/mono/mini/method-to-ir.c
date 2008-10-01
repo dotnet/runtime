@@ -6333,8 +6333,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 							ins->klass = mono_class_from_mono_type (ret_type);
 						}
 					} else {
+						g_assert (!ret_type->byref);
 #ifdef MONO_ARCH_SOFT_FLOAT
-						if (!ret_type->byref && ret_type->type == MONO_TYPE_R4) {
+						if (ret_type->type == MONO_TYPE_R4) {
 							MonoInst *iargs [1];
 							MonoInst *conv;
 
@@ -10470,8 +10471,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  *   specific function.
  * - unify the float comparison opcodes with the other comparison opcodes, i.e.
  *   fcompare + branchCC.
- * - sig->ret->byref seems to be set for some calls made from ldfld wrappers when
- *   running generics.exe.
  * - create a helper function for allocating a stack slot, taking into account 
  *   MONO_CFG_HAS_SPILLUP.
  * - merge new GC changes in mini.c.
@@ -10522,7 +10521,7 @@ NOTES
   - earlier -> saves work later on since the IR will be smaller/simpler
   - later -> can work on more instructions
 - Handling of valuetypes:
-  - When a vtype is pushed on the stack, a new tempotary is created, an 
+  - When a vtype is pushed on the stack, a new temporary is created, an 
     instruction computing its address (LDADDR) is emitted and pushed on
     the stack. Need to optimize cases when the vtype is used immediately as in
     argument passing, stloc etc.

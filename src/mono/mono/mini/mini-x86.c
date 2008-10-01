@@ -1345,18 +1345,16 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_type_get_underlying_type (cfg->generic_sharing_context, mono_method_signature (method)->ret);
 
-	if (!ret->byref) {
-		if (ret->type == MONO_TYPE_R4) {
-			/* Nothing to do */
-			return;
-		} else if (ret->type == MONO_TYPE_R8) {
-			/* Nothing to do */
-			return;
-		} else if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EAX, val->dreg + 1);
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EDX, val->dreg + 2);
-			return;
-		}
+	if (ret->type == MONO_TYPE_R4) {
+		/* Nothing to do */
+		return;
+	} else if (ret->type == MONO_TYPE_R8) {
+		/* Nothing to do */
+		return;
+	} else if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EAX, val->dreg + 1);
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EDX, val->dreg + 2);
+		return;
 	}
 			
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
