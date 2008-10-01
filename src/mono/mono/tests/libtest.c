@@ -2072,6 +2072,28 @@ mono_test_marshal_return_string_array_delegate (ReturnStringArrayDelegate d)
 	return res;
 }
 
+typedef int (STDCALL *ByrefStringDelegate) (char **s);
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_byref_string_delegate (ByrefStringDelegate d)
+{
+	char *s = (char*)"ABC";
+	int res;
+
+	res = d (&s);
+	if (res != 0)
+		return res;
+
+	if (!strcmp (s, "DEF"))
+		res = 0;
+	else
+		res = 2;
+
+	marshal_free (s);
+
+	return res;
+}
+
 LIBTEST_API int STDCALL 
 add_delegate (int i, int j)
 {

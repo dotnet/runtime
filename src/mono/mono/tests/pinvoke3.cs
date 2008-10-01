@@ -986,4 +986,24 @@ public class Tests {
 		return mono_test_marshal_return_string_array_delegate (new ReturnArrayDelegate (return_array_delegate_null));
 	}
 
+	/*
+	 * Byref string marshalling
+	 */
+	public delegate int ByrefStringDelegate (ref string s);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_byref_string_delegate")]
+	public static extern int mono_test_marshal_byref_string_delegate (ByrefStringDelegate d);
+
+	public static int byref_string_delegate (ref string s) {
+		if (s != "ABC")
+			return 1;
+
+		s = "DEF";
+
+		return 0;
+	}
+
+	public static int test_0_marshal_byref_string_delegate () {	
+		return mono_test_marshal_byref_string_delegate (new ByrefStringDelegate (byref_string_delegate));
+	}
 }
