@@ -10416,14 +10416,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  *   - keeping them separate allows specialized compare instructions like
  *     compare_imm, compare_membase
  *   - most back ends unify fp compare+branch, fp compare+ceq
- * - integrate handle_stack_args into inline_method
+ * - integrate mono_save_args into inline_method
  * - get rid of the empty bblocks created by MONO_EMIT_NEW_BRACH_BLOCK2
- * - Things to backport to the old JIT:
- *   - op_atomic_exchange fix for amd64
- *   - localloc fix for amd64
- *   - x86 type_token change
- *   - lconv fixes
- *   - long eq/ne optimizations
  * - handle long shift opts on 32 bit platforms somehow: they require 
  *   3 sregs (2 for arg1 and 1 for arg2)
  * - make byref a 'normal' type.
@@ -10432,7 +10426,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  * - do not start a new IL level bblock when cfg->cbb is changed by a function call
  *   like inline_method.
  * - remove inlining restrictions
- * - remove mono_save_args.
  * - add 'introduce a new optimization to simplify some range checks'
  * - fix LNEG and enable cfold of INEG
  * - generalize x86 optimizations like ldelema as a peephole optimization
@@ -10440,7 +10433,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  * - optimize the loading of the interruption flag in the managed->native wrappers
  * - avoid special handling of OP_NOP in passes
  * - move code inserting instructions into one function/macro.
- * - cleanup the code replacement in decompose_long_opts ()
  * - try a coalescing phase after liveness analysis
  * - add float -> vreg conversion + local optimizations on !x86
  * - figure out how to handle decomposed branches during optimizations, ie.
