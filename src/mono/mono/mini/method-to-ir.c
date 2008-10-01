@@ -3600,9 +3600,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		} else if (strcmp (cmethod->name, "get_Length") == 0) {
 			int dreg = alloc_ireg (cfg);
-			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, dreg, 
-								   args [0]->dreg, G_STRUCT_OFFSET (MonoString, length));
-			type_from_op (ins, NULL, NULL);
+			/* Decompose later to allow more optimizations */
+			EMIT_NEW_UNALU (cfg, ins, OP_STRLEN, dreg, args [0]->dreg);
+			ins->type = STACK_I4;
+			cfg->cbb->has_array_access = TRUE;
+			cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
 
 			return ins;
 		} else if (strcmp (cmethod->name, "InternalSetChar") == 0) {
@@ -4564,6 +4566,8 @@ generic_class_is_reference_type (MonoCompile *cfg, MonoClass *klass)
  * mono_decompose_array_access_opts:
  *
  *  Decompose array access opcodes.
+ * This should be in decompose.c, but it emits calls so it has to stay here until
+ * the old JIT is gone.
  */
 void
 mono_decompose_array_access_opts (MonoCompile *cfg)
@@ -4632,6 +4636,11 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						dest->dreg = ins->dreg;
 					}
 					break;
+				case OP_STRLEN:
+					NEW_LOAD_MEMBASE (cfg, dest, OP_LOADI4_MEMBASE, ins->dreg,
+									  ins->sreg1, G_STRUCT_OFFSET (MonoString, length));
+					MONO_ADD_INS (cfg->cbb, dest);
+					break;
 				default:
 					break;
 				}
@@ -4664,7 +4673,7 @@ typedef union {
 #ifdef MONO_ARCH_SOFT_FLOAT
 
 /**
- * mono_handle_soft_float:
+ * mono_decompose_soft_float:
  *
  *  Soft float support on ARM. We store each double value in a pair of integer vregs,
  * similar to long support on 32 bit platforms. 32 bit float values require special
@@ -4672,7 +4681,7 @@ typedef union {
  * One big problem with soft-float is that there are few r4 test cases in our test suite.
  */
 void
-mono_handle_soft_float (MonoCompile *cfg)
+mono_decompose_soft_float (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb, *first_bb;
 
@@ -10441,7 +10450,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  * - do not start a new IL level bblock when cfg->cbb is changed by a function call
  *   like inline_method.
  * - remove inlining restrictions
- * - add 'introduce a new optimization to simplify some range checks'
  * - fix LNEG and enable cfold of INEG
  * - generalize x86 optimizations like ldelema as a peephole optimization
  * - add store_mem_imm for amd64

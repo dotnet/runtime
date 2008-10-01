@@ -1419,7 +1419,7 @@ void              mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins) MONO_I
 void              mono_decompose_long_opts (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_decompose_vtype_opts (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_decompose_array_access_opts (MonoCompile *cfg) MONO_INTERNAL;
-void              mono_handle_soft_float (MonoCompile *cfg) MONO_INTERNAL;
+void              mono_decompose_soft_float (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_handle_global_vregs (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts) MONO_INTERNAL;
 void              mono_if_conversion (MonoCompile *cfg) MONO_INTERNAL;

@@ -585,7 +585,7 @@ MINI_OP(OP_SQRT,    "sqrt", FREG, FREG, NONE)
 /* to optimize strings */
 MINI_OP(OP_GETCHR, "getchar", NONE, NONE, NONE)
 MINI_OP(OP_STR_CHAR_ADDR, "str_char_addr", NONE, NONE, NONE)
-MINI_OP(OP_STRLEN, "strlen", NONE, NONE, NONE)
+MINI_OP(OP_STRLEN, "strlen", IREG, IREG, NONE)
 MINI_OP(OP_GETTYPE, "gettype", NONE, NONE, NONE)
 MINI_OP(OP_GETHASHCODE, "gethashcode", NONE, NONE, NONE)
 MINI_OP(OP_NEWARR, "newarr", IREG, IREG, NONE)

@@ -120,6 +120,28 @@ static const int long_cmov_opcodes [] = {
 	OP_CMOV_LGT_UN
 };
 
+static int
+br_to_br_un (int opcode)
+{
+	switch (opcode) {
+	case OP_IBGT:
+		return OP_IBGT_UN;
+		break;
+	case OP_IBLE:
+		return OP_IBLE_UN;
+		break;
+	case OP_LBGT:
+		return OP_LBGT_UN;
+		break;
+	case OP_LBLE:
+		return OP_LBLE_UN;
+		break;
+	default:
+		g_assert_not_reached ();
+		return -1;
+	}
+}
+
 void
 mono_if_conversion (MonoCompile *cfg)
 {
@@ -447,6 +469,98 @@ mono_if_conversion (MonoCompile *cfg)
 				goto restart;
 			}
 		}
+	}
+
+	/*
+	 * Optimize checks like: if (v < 0 || v > limit) by changing then to unsigned
+	 * compares. This isn't really if conversion, but it easier to do here than in
+	 * optimize_branches () since the IR is already optimized.
+	 */
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		MonoBasicBlock *bb1, *bb2, *true_bb, *false_bb, *next_bb;
+		MonoInst *branch1, *branch2, *compare1, *ins;
+
+		/* Look for the IR code generated from if (<var> < 0 || v > <limit>)
+		 * after branch opts which is:
+		 * BB:
+		 * icompare_imm R [0]
+		 * int_blt [BB1BB2]
+		 * BB2:
+		 * icompare_imm R [<limit>]
+		 * int_ble [BB3BB1]
+		 */
+		if (!(bb->out_count == 2 && !bb->extended))
+			continue;
+
+		bb1 = bb->out_bb [0];
+		bb2 = bb->out_bb [1];
+
+		// FIXME: Add more cases
+
+		/* Check structure */
+		if (!(bb1->in_count == 2 && bb1->in_bb [0] == bb && bb1->in_bb [1] == bb2 && bb2->in_count == 1 && bb2->out_count == 2))
+			continue;
+
+		next_bb = bb2;
+
+		/* Check first branch */
+		branch1 = bb->last_ins;
+		if (!(branch1 && ((branch1->opcode == OP_IBLT) || (branch1->opcode == OP_LBLT)) && (branch1->inst_false_bb == next_bb)))
+			continue;
+
+		true_bb = branch1->inst_true_bb;
+
+		/* Check second branch */
+		branch2 = next_bb->last_ins;
+		if (!branch2)
+			continue;
+
+		/* mcs sometimes generates inverted branches */
+		if (((branch2->opcode == OP_IBGT) || (branch2->opcode == OP_LBGT)) && branch2->inst_true_bb == branch1->inst_true_bb)
+			false_bb = branch2->inst_false_bb;
+		else if (((branch2->opcode == OP_IBLE) || (branch2->opcode == OP_LBLE)) && branch2->inst_false_bb == branch1->inst_true_bb)
+			false_bb = branch2->inst_true_bb;
+		else
+			continue;
+
+		/* Check first compare */
+		compare1 = bb->last_ins->prev;
+		if (!(compare1 && ((compare1->opcode == OP_ICOMPARE_IMM) || (compare1->opcode == OP_LCOMPARE_IMM)) && compare1->inst_imm == 0))
+			continue;
+
+		/* Check second bblock */
+		ins = next_bb->code;
+		if (!ins)
+			continue;
+		if (((ins->opcode == OP_ICOMPARE_IMM) || (ins->opcode == OP_LCOMPARE_IMM)) && ins->sreg1 == compare1->sreg1 && ins->next == branch2) {
+			/* The second arg must be positive */
+			if (ins->inst_imm < 0)
+				continue;
+		} else if (((ins->opcode == OP_LDLEN) || (ins->opcode == OP_STRLEN)) && ins->dreg != compare1->sreg1 && ins->next && ins->next->opcode == OP_ICOMPARE && ins->next->sreg1 == compare1->sreg1 && ins->next->sreg2 == ins->dreg && ins->next->next == branch2) {
+			/* Another common case: if (index < 0 || index > arr.Length) */
+		} else {
+			continue;
+		}
+
+		if (cfg->verbose_level > 2) {
+			printf ("\tSigned->unsigned compare optimization in BB%d on\n", bb->block_num);
+			printf ("\t\t"); mono_print_ins (compare1);
+			printf ("\t\t"); mono_print_ins (compare1->next);
+			printf ("\t\t"); mono_print_ins (ins);
+		}
+
+		/* Rewrite the first compare+branch */
+		MONO_DELETE_INS (bb, compare1);
+		branch1->opcode = OP_BR;
+		mono_unlink_bblock (cfg, bb, branch1->inst_true_bb);
+		mono_unlink_bblock (cfg, bb, branch1->inst_false_bb);
+		branch1->inst_target_bb = next_bb;
+		mono_link_bblock (cfg, bb, next_bb);		
+
+		/* Rewrite the second branch */
+		branch2->opcode = br_to_br_un (branch2->opcode);
+
+		mono_merge_basic_blocks (cfg, bb, next_bb);
 	}
 
 #if 0
