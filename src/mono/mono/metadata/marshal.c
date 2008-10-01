@@ -6323,7 +6323,6 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_icall (mb, conv_to_icall (conv));
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
-
 		}
 
 		if (need_free || (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
@@ -6365,12 +6364,8 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
-		if (t->byref) {
-			conv_arg = 0;
-			break;
-		}
-
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
 		*conv_arg_type = &mono_defaults.int_class->byval_arg;
 
 		conv = mono_marshal_get_ptr_to_string_conv (m->piinfo, spec, &need_free);
@@ -6381,9 +6376,22 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		}
 
 		mono_mb_emit_ldarg (mb, argnum);
+		if (t->byref)
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icall (mb, conv_to_icall (conv));
 		mono_mb_emit_stloc (mb, conv_arg);
-		break;	
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_OUT:
+		if (t->byref) {
+			if (conv_arg) {
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_icall (mb, conv_to_icall (conv));
+				mono_mb_emit_byte (mb, CEE_STIND_I);
+			}
+		}
+		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
 		if (conv_to_icall (conv) == mono_marshal_string_to_utf16)
@@ -8923,6 +8931,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_VALUETYPE:
 			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
 				emit_marshal (m, i, t, mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			}
@@ -11899,7 +11908,7 @@ mono_marshal_free_ccw (MonoObject* object)
 }
 
 /**
- * cominterop_get_native_wrapper_adjusted:
+ * cominterop_get_managed_wrapper_adjusted:
  * @method: managed COM Interop method
  *
  * Returns: the generated method to call with signature matching
