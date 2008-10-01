@@ -30,6 +30,7 @@
 #include <unistd.h>
 #endif
 #include <fcntl.h>
+#include <ctype.h>
 #include <string.h>
 #ifndef PLATFORM_WIN32
 #include <sys/mman.h>
@@ -4276,6 +4277,8 @@ emit_globals (MonoAotCompile *acfg)
 		emit_pointer (acfg, NULL);
 
 		if (acfg->aot_opts.static_link) {
+			char *p;
+
 			/* 
 			 * Emit a global symbol which can be passed by an embedding app to
 			 * mono_aot_register_module ().
@@ -4285,6 +4288,13 @@ emit_globals (MonoAotCompile *acfg)
 #else
 			symbol = g_strdup_printf ("mono_aot_module_%s_info", acfg->image->assembly->aname.name);
 #endif
+
+			/* Get rid of characters which cannot occur in symbols */
+			p = symbol;
+			for (p = symbol; *p; ++p) {
+				if (!(isalnum (*p) || *p == '_'))
+					*p = '_';
+			}
 			acfg->static_linking_symbol = g_strdup (symbol);
 			emit_global_inner (acfg, symbol, FALSE);
 			emit_alignment (acfg, 8);
