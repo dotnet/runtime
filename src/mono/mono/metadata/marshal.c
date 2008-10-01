@@ -7414,7 +7414,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
 
-		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN))
+		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
 
 		mono_mb_emit_ldarg (mb, argnum);
@@ -7433,7 +7433,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		g_assert (variant_clear);
 
 
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT) {
+		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 			mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
@@ -7466,7 +7466,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
 
-		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN))
+		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
 
 		if (t->byref)
@@ -7479,7 +7479,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT) {
+		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
