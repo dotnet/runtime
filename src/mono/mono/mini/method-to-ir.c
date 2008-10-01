@@ -2665,6 +2665,43 @@ mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_cl
 	MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "ArrayTypeMismatchException");
 }
 
+static void
+save_cast_details (MonoCompile *cfg, MonoClass *klass, int obj_reg)
+{
+	if (mini_get_debug_options ()->better_cast_details) {
+		int to_klass_reg = alloc_preg (cfg);
+		int vtable_reg = alloc_preg (cfg);
+		int klass_reg = alloc_preg (cfg);
+		MonoInst *tls_get = mono_get_jit_tls_intrinsic (cfg);
+
+		if (!tls_get) {
+			fprintf (stderr, "error: --debug=casts not supported on this platform.\n.");
+			exit (1);
+		}
+
+		MONO_ADD_INS (cfg->cbb, tls_get);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
+
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), klass_reg);
+		MONO_EMIT_NEW_PCONST (cfg, to_klass_reg, klass);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_to), to_klass_reg);
+	}
+}
+
+static void
+reset_cast_details (MonoCompile *cfg)
+{
+	/* Reset the variables holding the cast details */
+	if (mini_get_debug_options ()->better_cast_details) {
+		MonoInst *tls_get = mono_get_jit_tls_intrinsic (cfg);
+
+		MONO_ADD_INS (cfg->cbb, tls_get);
+		/* It is enough to reset the from field */
+		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), 0);
+	}
+}
+
 /**
  * Handles unbox of a Nullable<T>. If context_used is non zero, then shared 
  * generic code is generated.
@@ -2727,7 +2764,9 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, eclass_reg, element_class->dreg);
 		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 	} else {
+		save_cast_details (cfg, klass->element_class, obj_reg);
 		mini_emit_class_check (cfg, eclass_reg, klass->element_class);
+		reset_cast_details (cfg);
 	}
 
 	NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_PTR), obj_reg, sizeof (MonoObject));
@@ -2863,24 +2902,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, obj_reg, 0);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
 
-	if (mini_get_debug_options ()->better_cast_details) {
-		int to_klass_reg = alloc_preg (cfg);
-		int klass_reg = alloc_preg (cfg);
-		MonoInst *tls_get = mono_get_jit_tls_intrinsic (cfg);
-
-		if (!tls_get) {
-			fprintf (stderr, "error: --debug=casts not supported on this platform.\n.");
-			exit (1);
-		}
-
-		MONO_ADD_INS (cfg->cbb, tls_get);
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, G_STRUCT_OFFSET (MonoVTable, klass));
-
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), klass_reg);
-		MONO_EMIT_NEW_PCONST (cfg, to_klass_reg, klass);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_to), to_klass_reg);
-	}
+	save_cast_details (cfg, klass, obj_reg);
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, vtable_reg, obj_reg, G_STRUCT_OFFSET (MonoObject, vtable));
@@ -2908,14 +2930,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 
 	MONO_START_BB (cfg, is_null_bb);
 
-	/* Reset the variables holding the cast details */
-	if (mini_get_debug_options ()->better_cast_details) {
-		MonoInst *tls_get = mono_get_jit_tls_intrinsic (cfg);
-
-		MONO_ADD_INS (cfg->cbb, tls_get);
-		/* It is enough to reset the from field */
-		MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, tls_get->dreg, G_STRUCT_OFFSET (MonoJitTlsData, class_cast_from), 0);
-	}
+	reset_cast_details (cfg);
 
 	return src;
 }
