@@ -106,7 +106,7 @@ class Tests {
 		return TestDriver.RunTests (typeof (Tests));
 	}
 	
-	static int test_0_return () {
+	public static int test_0_return () {
 		Simple s;
 		s.a = 1;
 		s.b = 2;
@@ -115,14 +115,14 @@ class Tests {
 		return s.a - 1;
 	}
 
-	static int test_0_string_access () {
+	public static int test_0_string_access () {
 		string s = "Hello";
 		if (s [1] != 'e')
 			return 1;
 		return 0;
 	}
 
-	static int test_0_string_virtual_call () {
+	public static int test_0_string_virtual_call () {
 		string s = "Hello";
 		string s2 = s.ToString ();
 		if (s2 [1] != 'e')
@@ -130,23 +130,23 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_iface_call () {
+	public static int test_0_iface_call () {
 		string s = "Hello";
 		object o = ((ICloneable)s).Clone ();
 		return 0;
 	}
 
-	static int test_5_newobj () {
+	public static int test_5_newobj () {
 		Sample s = new Sample (5);
 		return s.a;
 	}
 
-	static int test_4_box () {
+	public static int test_4_box () {
 		object obj = 4;
 		return (int)obj;
 	}
 
-	static int test_0_enum_unbox () {
+	public static int test_0_enum_unbox () {
 		SampleEnum x = SampleEnum.A;
 		object o = x;
 		
@@ -167,7 +167,7 @@ class Tests {
 		return r;
 	}
 
-	static int test_3_return_struct () {
+	public static int test_3_return_struct () {
 		Simple v = get_simple (1);
 
 		if (v.a != 1)
@@ -186,7 +186,7 @@ class Tests {
 		return get_simple (v);
 	}
 	
-	static int test_2_return_struct_virtual () {
+	public static int test_2_return_struct_virtual () {
 		Tests t = new Tests ();
 		Simple v = t.v_get_simple (2);
 
@@ -217,7 +217,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_5_pass_struct () {
+	public static int test_5_pass_struct () {
 		Simple v = get_simple (1);
 		if (receive_simple (7, v, 9) != 0)
 			return 0;
@@ -227,7 +227,7 @@ class Tests {
 	}
 
 	static Simple s_v;
-	static int test_5_pass_static_struct () {
+	public static int test_5_pass_static_struct () {
 		s_v = get_simple (1);
 		if (receive_simple (7, s_v, 9) != 0)
 			return 0;
@@ -265,7 +265,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_5_pass_small_struct () {
+	public static int test_5_pass_small_struct () {
 		Small v = get_small (1);
 		if (receive_small (7, v, 9) != 0)
 			return 0;
@@ -313,7 +313,7 @@ class Tests {
 		return check_struct1(x);
 	}
 
-	static int test_0_struct1_args () {
+	public static int test_0_struct1_args () {
 		int r;
 		struct1 x;
 
@@ -369,7 +369,7 @@ class Tests {
 		return check_struct2(x);
 	}
 
-	static int test_0_struct2_args () {
+	public static int test_0_struct2_args () {
 		int r;
 		struct2 x;
 
@@ -399,7 +399,7 @@ class Tests {
 			return 0;
 	}
 
-	static int test_0_struct3_args () {
+	public static int test_0_struct3_args () {
 		Struct3 s = new Struct3 ();
 		s.i = 1;
 		s.j = 2;
@@ -422,13 +422,13 @@ class Tests {
 	}
 
 	// Test that vtypes are unboxed during a virtual call
-	static int test_44_unbox_trampoline () {
+	public static int test_44_unbox_trampoline () {
 		AStruct s = new AStruct (44);
 		object o = s;
 		return o.GetHashCode ();
 	}
 
-	static int test_0_unbox_trampoline2 () {
+	public static int test_0_unbox_trampoline2 () {
 		int i = 12;
 		object o = i;
 			
@@ -442,7 +442,7 @@ class Tests {
 	}
 
 	// Test fields with big offsets
-	static int test_0_fields_with_big_offsets () {
+	public static int test_0_fields_with_big_offsets () {
 		StructWithBigOffsets s = new StructWithBigOffsets ();
 		StructWithBigOffsets s2 = new StructWithBigOffsets ();
 
@@ -512,7 +512,7 @@ class Tests {
 
 	}
 
-	static int test_0_seektest () {
+	public static int test_0_seektest () {
 		TestRegA t = new TestRegA ();
 		return (int)t.Seek (0);
 	}
@@ -525,7 +525,7 @@ class Tests {
 	class Duper: Super {
 	}
 
-	static int test_0_null_cast () {
+	public static int test_0_null_cast () {
 		object o = null;
 
 		Super s = (Super)o;
@@ -533,7 +533,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_super_cast () {
+	public static int test_0_super_cast () {
 		Duper d = new Duper ();
 		Super sup = d;
 		Object o = d;
@@ -555,7 +555,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_super_cast_array () {
+	public static int test_0_super_cast_array () {
 		Duper[] d = new Duper [0];
 		Super[] sup = d;
 		Object[] o = d;
@@ -577,7 +577,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_multi_array_cast () {
+	public static int test_0_multi_array_cast () {
 		Duper[,] d = new Duper [1, 1];
 		object[,] o = d;
 
@@ -591,7 +591,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_vector_array_cast () {
+	public static int test_0_vector_array_cast () {
 		Array arr1 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {0});
 		Array arr2 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {10});
 
@@ -622,7 +622,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_enum_array_cast () {
+	public static int test_0_enum_array_cast () {
 		TypeCode[] tc = new TypeCode [0];
 		object[] oa;
 		ValueType[] vta;
@@ -663,7 +663,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_more_cast_corner_cases () {
+	public static int test_0_more_cast_corner_cases () {
 		ValueType[] vta = new ValueType [0];
 		Enum[] ea = new Enum [0];
 		Array a = vta;
@@ -741,7 +741,7 @@ class Tests {
 		return 0;
 	}
 
-	static int test_0_cast_iface_array () {
+	public static int test_0_cast_iface_array () {
 		object o = new ICloneable [0];
 		object o2 = new Duper [0];
 		object t;
@@ -797,7 +797,7 @@ class Tests {
 		return ((day-1) + temp + (365* (year-1)) + ((year-1)/4) - ((year-1)/100) + ((year-1)/400));
 	}
 
-	static int test_719162_complex_div () {
+	public static int test_719162_complex_div () {
 		int adays = AbsoluteDays (1970, 1, 1);
 		return adays;
 	}
@@ -812,7 +812,7 @@ class Tests {
 		return 5;
 	}
 
-	static int test_2_static_delegate () {
+	public static int test_2_static_delegate () {
 		GetIntDel del = new GetIntDel (return4);
 		int v = del ();
 		if (v != 4)
@@ -820,7 +820,7 @@ class Tests {
 		return 2;
 	}
 
-	static int test_2_instance_delegate () {
+	public static int test_2_instance_delegate () {
 		Tests t = new Tests ();
 		GetIntDel del = new GetIntDel (t.return5);
 		int v = del ();
@@ -829,7 +829,7 @@ class Tests {
 		return 2;
 	}
 
-	static int test_1_store_decimal () {
+	public static int test_1_store_decimal () {
 		decimal[,] a = {{1}};
 
 		if (a[0,0] != 1m)
@@ -837,7 +837,7 @@ class Tests {
 		return 1;
 	}
 
-	static int test_2_intptr_stobj () {
+	public static int test_2_intptr_stobj () {
 		System.IntPtr [] arr = { new System.IntPtr () };
 
 		if (arr [0] != (System.IntPtr)0)
@@ -853,7 +853,7 @@ class Tests {
 	 * Test that evaluation of complex arguments does not overwrite the
 	 * arguments already in outgoing registers.
 	 */
-	static int test_155_regalloc () {
+	public static int test_155_regalloc () {
 		int a = 10;
 		int b = 10;
 
@@ -873,7 +873,7 @@ class Tests {
 		return true;
 	}
 
-	static int test_2_large_struct_pass ()
+	public static int test_2_large_struct_pass ()
 	{
 		Large a, b, c, d;
 		a = new Large ();
@@ -994,7 +994,7 @@ class Tests {
 
 
 	static uint dum_de_dum = 1;
-	static int test_0_long_arg_opt ()
+	public static int test_0_long_arg_opt ()
 	{
 		return Foo (0x1234567887654321, dum_de_dum);
 	}
@@ -1010,7 +1010,7 @@ class Tests {
 		return 0;
 	}
 	
-	static int test_0_long_ret_opt ()
+	public static int test_0_long_ret_opt ()
 	{
 		ulong x = X ();
 		if (x != 0x1234567887654321)
@@ -1038,7 +1038,7 @@ class Tests {
 		counter = 10;
 		return true;
 	}
-	static int test_0_cond_branch_side_effects () {
+	public static int test_0_cond_branch_side_effects () {
 		counter = 5;
 		if (WriteStuff());
 		if (counter == 10)
@@ -1090,7 +1090,7 @@ ncells ) {
 		}
 	}
 
-	static int test_0_calls_opcode_emulation () {
+	public static int test_0_calls_opcode_emulation () {
 		// Test that emulated opcodes do not clobber arguments already in
 		// out registers
 		checked {
@@ -1100,25 +1100,25 @@ ncells ) {
 		return 0;
 	}
 
-	static int test_0_intrins_string_length () {
+	public static int test_0_intrins_string_length () {
 		string s = "ABC";
 
 		return (s.Length == 3) ? 0 : 1;
 	}
 
-	static int test_0_intrins_string_chars () {
+	public static int test_0_intrins_string_chars () {
 		string s = "ABC";
 
 		return (s [0] == 'A' && s [1] == 'B' && s [2] == 'C') ? 0 : 1;
 	}
 
-	static int test_0_intrins_object_gettype () {
+	public static int test_0_intrins_object_gettype () {
 		object o = 1;
 
 		return (o.GetType () == typeof (int)) ? 0 : 1;
 	}
 
-	static int test_0_intrins_object_gethashcode () {
+	public static int test_0_intrins_object_gethashcode () {
 		object o = new Object ();
 
 		return (o.GetHashCode () == o.GetHashCode ()) ? 0 : 1;
@@ -1127,32 +1127,32 @@ ncells ) {
 	class FooClass {
 	}
 
-	static int test_0_intrins_object_ctor () {
+	public static int test_0_intrins_object_ctor () {
 		object o = new FooClass ();
 
 		return (o != null) ? 0 : 1;
 	}
 
-	static int test_0_intrins_array_rank () {
+	public static int test_0_intrins_array_rank () {
 		int[,] a = new int [10, 10];
 
 		return (a.Rank == 2) ? 0 : 1;
 	}
 
-	static int test_0_intrins_array_length () {
+	public static int test_0_intrins_array_length () {
 		int[,] a = new int [10, 10];
 		Array a2 = a;
 
 		return (a2.Length == 100) ? 0 : 1;
 	}
 
-	static int test_0_intrins_runtimehelpers_offset_to_string_data () {
+	public static int test_0_intrins_runtimehelpers_offset_to_string_data () {
 		int i = RuntimeHelpers.OffsetToStringData;
 		
 		return i - i;
 	}
 
-	static int test_0_intrins_string_setchar () {
+	public static int test_0_intrins_string_setchar () {
 		StringBuilder sb = new StringBuilder ("ABC");
 
 		sb [1] = 'D';
@@ -1165,13 +1165,13 @@ ncells ) {
         Foo f = new Foo ();	
 	}
 
-	static int test_0_regress_78990_unaligned_structs () {
+	public static int test_0_regress_78990_unaligned_structs () {
 		new Bar ();
 
 		return 0;
 	}
 
-	static unsafe int test_97_negative_index () {
+	public static unsafe int test_97_negative_index () {
 		char[] arr = new char[] {'a', 'b'};
 		fixed (char *p = arr) {
 			char *i = p + 2;
@@ -1181,7 +1181,7 @@ ncells ) {
 	}
 
 	/* bug #82281 */
-	static int test_0_unsigned_right_shift_imm0 () {
+	public static int test_0_unsigned_right_shift_imm0 () {
 		uint temp = 0;
 		byte[] data = new byte[256];
 		for (int i = 0; i < 1; i ++)
@@ -1201,7 +1201,7 @@ ncells ) {
 		}
 	}
 
-	static int test_0_abcrem_check_this_removal () {
+	public static int test_0_abcrem_check_this_removal () {
 		Bar2 b = new Bar2 ();
 
 		// The check_this generated here by the JIT should be removed
@@ -1218,7 +1218,7 @@ ncells ) {
 		return 0;
 	}
 
-	static int test_0_abcrem_check_this_removal2 () {
+	public static int test_0_abcrem_check_this_removal2 () {
 		Bar2 b = new Bar2 ();
 
 		invoke_twice (b);
@@ -1227,7 +1227,7 @@ ncells ) {
 	}
 
 	/* #346563 */
-	static int test_0_array_access_64_bit () {
+	public static int test_0_array_access_64_bit () {
 		int[] arr2 = new int [10];
 		for (int i = 0; i < 10; ++i)
 			arr2 [i] = i;
@@ -1270,14 +1270,14 @@ ncells ) {
 		public float float_field;
 	}
 
-	static int test_0_ldsfld_soft_float () {
+	public static int test_0_ldsfld_soft_float () {
 		if (R4Holder.pi == 3.14f)
 			return 0;
 		else
 			return 1;
 	}
 
-	static int test_0_ldfld_stfld_soft_float () {
+	public static int test_0_ldfld_stfld_soft_float () {
 		R4Holder h = new R4Holder ();
 		h.float_field = 3.14f;
 
@@ -1293,7 +1293,7 @@ ncells ) {
 		public float float_field;
 	}
 
-	static int test_0_ldfld_stfld_soft_float_remote () {
+	public static int test_0_ldfld_stfld_soft_float_remote () {
 		R4HolderRemote h = new R4HolderRemote ();
 		h.float_field = 3.14f;
 
@@ -1303,7 +1303,7 @@ ncells ) {
 			return 1;
 	}
 
-	static int test_0_locals_soft_float () {
+	public static int test_0_locals_soft_float () {
 		float f = 0.0f;
 		
 		f = 3.14f;
@@ -1312,6 +1312,25 @@ ncells ) {
 			return 0;
 		else
 			return 1;
+	}
+
+	static int range_check_strlen (int i, string s) {
+		if (i < 0 || i > s.Length)
+			return 1;
+		else
+			return 0;
+	}
+		
+	public static int test_0_range_check_opt () {
+		if (range_check_strlen (0, "A") != 0)
+			return 1;
+		if (range_check_strlen (1, "A") != 0)
+			return 2;
+		if (range_check_strlen (2, "A") != 1)
+			return 3;
+		if (range_check_strlen (-100, "A") != 1)
+			return 4;
+		return 0;
 	}
 }
 
