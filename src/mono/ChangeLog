@@ -1,3 +1,7 @@
+2008-10-01  Jb Evain  <jbevain@novell.com>
+
+	* scripts/Makefile.am: add mono-cil-strip.
+
 2008-09-29  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/patch-quiet.sh: Handle the ifs used by some versions of
