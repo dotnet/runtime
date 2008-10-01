@@ -4359,16 +4359,19 @@ arm_emit_value_and_patch_ldr (arminstr_t *code, arminstr_t *target, guint32 valu
 }
 
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+	gpointer fail_tramp)
 {
 	int size, i, extra_space = 0;
 	arminstr_t *code, *start, *vtable_target = NULL;
 	size = BASE_SIZE;
 
+	g_assert (!fail_tramp);
+
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
-			g_assert (arm_is_imm12 (DISTANCE (vtable, &vtable->vtable[item->vtable_slot])));
+			g_assert (arm_is_imm12 (DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot])));
 
 			if (item->check_target_idx) {
 				if (!item->compare_done)
@@ -4393,7 +4396,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	printf ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable);
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
-		printf ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->method, item->method->name, &vtable->vtable [item->vtable_slot], item->is_equals, item->chunk_size);
+		printf ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->key, item->key->name, &vtable->vtable [item->value.vtable_slot], item->is_equals, item->chunk_size);
 	}
 #endif
 
@@ -4422,7 +4425,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				ARM_B_COND (code, ARMCOND_NE, 0);
 
 				ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
-				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, DISTANCE (vtable, &vtable->vtable[item->vtable_slot]));
+				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]));
 			} else {
 				/*Enable the commented code to assert on wrong method*/
 #if ENABLE_WRONG_METHOD_CHECK
@@ -4432,7 +4435,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				ARM_B_COND (code, ARMCOND_NE, 1);
 #endif
 				ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
-				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, DISTANCE (vtable, &vtable->vtable[item->vtable_slot]));
+				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]));
 
 #if ENABLE_WRONG_METHOD_CHECK
 				ARM_DBRK (code);
@@ -4440,7 +4443,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			}
 
 			if (imt_method)
-				code = arm_emit_value_and_patch_ldr (code, imt_method, (guint32)item->method);
+				code = arm_emit_value_and_patch_ldr (code, imt_method, (guint32)item->key);
 
 			/*must emit after unconditional branch*/
 			if (vtable_target) {

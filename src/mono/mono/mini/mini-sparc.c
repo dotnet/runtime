@@ -2576,11 +2576,14 @@ mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+	gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
 	guint32 *code, *start;
+
+	g_assert (!fail_tramp);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -2610,13 +2613,13 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
-					sparc_set (code, (guint32)item->method, sparc_g5);
+					sparc_set (code, (guint32)item->key, sparc_g5);
 					sparc_cmp (code, MONO_ARCH_IMT_REG, sparc_g5);
 				}
 				item->jmp_code = (guint8*)code;
 				sparc_branch (code, 0, sparc_bne, 0);
 				sparc_nop (code);
-				sparc_set (code, ((guint32)(&(vtable->vtable [item->vtable_slot]))), sparc_g5);
+				sparc_set (code, ((guint32)(&(vtable->vtable [item->value.vtable_slot]))), sparc_g5);
 				sparc_ld (code, sparc_g5, 0, sparc_g5);
 				sparc_jmpl (code, sparc_g5, sparc_g0, sparc_g0);
 				sparc_nop (code);
@@ -2625,7 +2628,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #if ENABLE_WRONG_METHOD_CHECK
 				g_assert_not_reached ();
 #endif
-				sparc_set (code, ((guint32)(&(vtable->vtable [item->vtable_slot]))), sparc_g5);
+				sparc_set (code, ((guint32)(&(vtable->vtable [item->value.vtable_slot]))), sparc_g5);
 				sparc_ld (code, sparc_g5, 0, sparc_g5);
 				sparc_jmpl (code, sparc_g5, sparc_g0, sparc_g0);
 				sparc_nop (code);
@@ -2634,7 +2637,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #endif
 			}
 		} else {
-			sparc_set (code, (guint32)item->method, sparc_g5);
+			sparc_set (code, (guint32)item->key, sparc_g5);
 			sparc_cmp (code, MONO_ARCH_IMT_REG, sparc_g5);
 			item->jmp_code = (guint8*)code;
 			sparc_branch (code, 0, sparc_beu, 0);

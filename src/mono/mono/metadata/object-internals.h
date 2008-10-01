@@ -1203,19 +1203,24 @@ mono_nullable_box (guint8 *buf, MonoClass *klass) MONO_INTERNAL;
 
 #define MONO_IMT_SIZE 19
 
-typedef struct _MonoImtBuilderEntry {
-	MonoMethod *method;
-	struct _MonoImtBuilderEntry *next;
+typedef union {
 	int vtable_slot;
+	gpointer target_code;
+} MonoImtItemValue;
+
+typedef struct _MonoImtBuilderEntry {
+	gpointer key;
+	struct _MonoImtBuilderEntry *next;
+	MonoImtItemValue value;
 	int children;
 } MonoImtBuilderEntry;
 
 typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
 
 struct _MonoIMTCheckItem {
-	MonoMethod       *method;
+	gpointer          key;
 	int               check_target_idx;
-	int               vtable_slot;
+	MonoImtItemValue  value;
 	guint8           *jmp_code;
 	guint8           *code_target;
 	guint8            is_equals;
@@ -1224,7 +1229,8 @@ struct _MonoIMTCheckItem {
 	guint8            short_branch;
 };
 
-typedef gpointer (*MonoImtThunkBuilder) (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count);
+typedef gpointer (*MonoImtThunkBuilder) (MonoVTable *vtable, MonoDomain *domain,
+		MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
 
 void
 mono_install_imt_thunk_builder (MonoImtThunkBuilder func) MONO_INTERNAL;
@@ -1240,6 +1246,13 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot) MONO_INTERNAL;
 
 guint32
 mono_method_get_imt_slot (MonoMethod *method) MONO_INTERNAL;
+
+void
+mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable_slot,
+	MonoGenericInst *method_inst, gpointer code) MONO_INTERNAL;
+
+gpointer
+mono_method_alloc_generic_virtual_thunk (MonoDomain *domain, int size) MONO_INTERNAL;
 
 typedef enum {
 	MONO_UNHANLED_POLICY_LEGACY,

@@ -4962,12 +4962,15 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+	gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
 	guint8 *start, *buf;
 	Ia64CodegenState code;
+
+	g_assert (!fail_tramp);
 
 	size = count * 256;
 	buf = g_malloc0 (size);
@@ -4982,13 +4985,13 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
-					ia64_movl (code, GP_SCRATCH_REG, item->method);
+					ia64_movl (code, GP_SCRATCH_REG, item->key);
 					ia64_cmp_eq (code, 6, 7, IA64_R9, GP_SCRATCH_REG);
 				}
 				item->jmp_code = (guint8*)code.buf + code.nins;
 				ia64_br_cond_pred (code, 7, 0);
 
-				ia64_movl (code, GP_SCRATCH_REG, &(vtable->vtable [item->vtable_slot]));
+				ia64_movl (code, GP_SCRATCH_REG, &(vtable->vtable [item->value.vtable_slot]));
 				ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
 				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 				ia64_br_cond_reg (code, IA64_B6);
@@ -4997,7 +5000,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #if ENABLE_WRONG_METHOD_CHECK
 				g_assert_not_reached ();
 #endif
-				ia64_movl (code, GP_SCRATCH_REG, &(vtable->vtable [item->vtable_slot]));
+				ia64_movl (code, GP_SCRATCH_REG, &(vtable->vtable [item->value.vtable_slot]));
 				ia64_ld8 (code, GP_SCRATCH_REG, GP_SCRATCH_REG);
 				ia64_mov_to_br (code, IA64_B6, GP_SCRATCH_REG);
 				ia64_br_cond_reg (code, IA64_B6);
@@ -5006,7 +5009,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #endif
 			}
 		} else {
-			ia64_movl (code, GP_SCRATCH_REG, item->method);
+			ia64_movl (code, GP_SCRATCH_REG, item->key);
 			ia64_cmp_geu (code, 6, 7, IA64_R9, GP_SCRATCH_REG);
 			item->jmp_code = (guint8*)code.buf + code.nins;
 			ia64_br_cond_pred (code, 6, 0);

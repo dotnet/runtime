@@ -106,6 +106,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	gpointer *vtable_slot;
 	gboolean generic_shared = FALSE;
 	MonoMethod *declaring = NULL;
+	MonoGenericInst *generic_virtual_method_inst = NULL;
 	int context_used;
 
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
@@ -158,7 +159,27 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	}
 #endif
 
-	if ((context_used = mono_method_check_context_used (m))) {
+	if (m->is_generic) {
+		MonoGenericContext context = { NULL, NULL };
+		MonoMethod *declaring;
+
+		if (m->is_inflated)
+			declaring = mono_method_get_declaring_generic_method (m);
+		else
+			declaring = m;
+
+		if (m->klass->generic_class)
+			context.class_inst = m->klass->generic_class->context.class_inst;
+		else
+			g_assert (!m->klass->generic_container);
+
+		generic_virtual_method_inst = (MonoGenericInst*)mono_arch_find_imt_method ((gpointer*)regs, code);
+		context.method_inst = generic_virtual_method_inst;
+
+		m = mono_class_inflate_generic_method (declaring, &context);
+		/* FIXME: only do this if the method is sharable */
+		m = mono_marshal_get_static_rgctx_invoke (m);
+	} else if ((context_used = mono_method_check_context_used (m))) {
 		MonoClass *klass = NULL;
 		MonoMethod *actual_method = NULL;
 		MonoVTable *vt = NULL;
@@ -263,6 +284,16 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	g_assert (addr);
 
 	mono_debugger_trampoline_compiled (m, addr);
+
+	if (generic_virtual_method_inst) {
+		vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+		g_assert (vtable_slot);
+
+		mono_method_add_generic_virtual_invocation (mono_domain_get (), vtable_slot,
+			generic_virtual_method_inst, addr);
+
+		return addr;
+	}
 
 	/* the method was jumped to */
 	if (!code) {

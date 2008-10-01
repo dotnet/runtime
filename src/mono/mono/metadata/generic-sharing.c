@@ -535,7 +535,8 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, M
 
 	case MONO_RGCTX_INFO_METHOD:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
-	case MONO_RGCTX_INFO_METHOD_RGCTX: {
+	case MONO_RGCTX_INFO_METHOD_RGCTX:
+	case MONO_RGCTX_INFO_METHOD_CONTEXT: {
 		MonoMethod *method = data;
 		MonoMethod *inflated_method;
 		MonoType *inflated_type = mono_class_inflate_generic_type (&method->klass->byval_arg, context);
@@ -820,6 +821,14 @@ instantiate_other_info (MonoDomain *domain, MonoRuntimeGenericContextOtherInfoTe
 		return mono_method_lookup_rgctx (mono_class_vtable (domain, method->method.method.klass),
 			method->context.method_inst);
 	}
+	case MONO_RGCTX_INFO_METHOD_CONTEXT: {
+		MonoMethodInflated *method = data;
+
+		g_assert (method->method.method.is_inflated);
+		g_assert (method->context.method_inst);
+
+		return method->context.method_inst;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -921,6 +930,7 @@ other_info_equal (gpointer data1, gpointer data2, int info_type)
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_METHOD_RGCTX:
+	case MONO_RGCTX_INFO_METHOD_CONTEXT:
 		return data1 == data2;
 	default:
 		g_assert_not_reached ();

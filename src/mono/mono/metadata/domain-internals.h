@@ -136,6 +136,12 @@ typedef enum {
 	MONO_APPDOMAIN_UNLOADED
 } MonoAppDomainState;
 
+typedef struct _MonoThunkFreeList {
+	guint32 size;
+	int length;		/* only valid for the wait list */
+	struct _MonoThunkFreeList *next;
+} MonoThunkFreeList;
+
 typedef struct _MonoJitCodeHash MonoJitCodeHash;
 
 struct _MonoDomain {
@@ -203,6 +209,9 @@ struct _MonoDomain {
 
 	GHashTable	   *shared_generics_hash;
 	GHashTable	   *method_rgctx_hash;
+
+	GHashTable	   *generic_virtual_cases;
+	MonoThunkFreeList **thunk_free_lists;
 
 	/* Information maintained by the JIT engine */
 	gpointer runtime_info;

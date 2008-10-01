@@ -21,6 +21,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-math.h>
+#include <mono/utils/mono-counters.h>
 
 #include "trace.h"
 #include "mini-x86.h"
@@ -4467,7 +4468,8 @@ imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+	gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
@@ -4481,10 +4483,14 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					item->chunk_size += CMP_SIZE;
 				item->chunk_size += BR_SMALL_SIZE + JUMP_IMM_SIZE;
 			} else {
-				item->chunk_size += JUMP_IMM_SIZE;
+				if (fail_tramp) {
+					item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + JUMP_IMM_SIZE * 2;
+				} else {
+					item->chunk_size += JUMP_IMM_SIZE;
 #if ENABLE_WRONG_METHOD_CHECK
-				item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + 1;
+					item->chunk_size += CMP_SIZE + BR_SMALL_SIZE + 1;
 #endif
+				}
 			}
 		} else {
 			item->chunk_size += CMP_SIZE + BR_LARGE_SIZE;
@@ -4492,7 +4498,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 		size += item->chunk_size;
 	}
-	code = mono_code_manager_reserve (domain->code_mp, size);
+	if (fail_tramp)
+		code = mono_method_alloc_generic_virtual_thunk (domain, size);
+	else
+		code = mono_code_manager_reserve (domain->code_mp, size);
 	start = code;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -4500,26 +4509,39 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done)
-					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
+					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
 				item->jmp_code = code;
 				x86_branch8 (code, X86_CC_NE, 0, FALSE);
-				x86_jump_mem (code, & (vtable->vtable [item->vtable_slot]));
+				if (fail_tramp)
+					x86_jump_code (code, item->value.target_code);
+				else
+					x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
 			} else {
-				/* enable the commented code to assert on wrong method */
+				if (fail_tramp) {
+					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
+					item->jmp_code = code;
+					x86_branch8 (code, X86_CC_NE, 0, FALSE);
+					x86_jump_code (code, item->value.target_code);
+					x86_patch (item->jmp_code, code);
+					x86_jump_code (code, fail_tramp);
+					item->jmp_code = NULL;
+				} else {
+					/* enable the commented code to assert on wrong method */
 #if ENABLE_WRONG_METHOD_CHECK
-				x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
-				item->jmp_code = code;
-				x86_branch8 (code, X86_CC_NE, 0, FALSE);
+					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
+					item->jmp_code = code;
+					x86_branch8 (code, X86_CC_NE, 0, FALSE);
 #endif
-				x86_jump_mem (code, & (vtable->vtable [item->vtable_slot]));
+					x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
 #if ENABLE_WRONG_METHOD_CHECK
-				x86_patch (item->jmp_code, code);
-				x86_breakpoint (code);
-				item->jmp_code = NULL;
+					x86_patch (item->jmp_code, code);
+					x86_breakpoint (code);
+					item->jmp_code = NULL;
 #endif
+				}
 			}
 		} else {
-			x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->method);
+			x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
 			item->jmp_code = code;
 			if (x86_is_imm8 (imt_branch_distance (imt_entries, i, item->check_target_idx)))
 				x86_branch8 (code, X86_CC_GE, 0, FALSE);
@@ -4536,8 +4558,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			}
 		}
 	}
-		
-	mono_stats.imt_thunks_size += code - start;
+
+	if (!fail_tramp)
+		mono_stats.imt_thunks_size += code - start;
 	g_assert (code - start <= size);
 	return start;
 }

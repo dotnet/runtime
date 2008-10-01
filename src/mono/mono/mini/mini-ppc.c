@@ -4649,11 +4649,14 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+	gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
 	guint8 *code, *start;
+
+	g_assert (!fail_tramp);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -4685,23 +4688,23 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
-					ppc_load (code, ppc_r0, (guint32)item->method);
+					ppc_load (code, ppc_r0, (guint32)item->key);
 					ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
 				}
 				item->jmp_code = code;
 				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-				ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->vtable_slot), ppc_r11);
+				ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			} else {
 				/* enable the commented code to assert on wrong method */
 #if ENABLE_WRONG_METHOD_CHECK
-				ppc_load (code, ppc_r0, (guint32)item->method);
+				ppc_load (code, ppc_r0, (guint32)item->key);
 				ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
 				item->jmp_code = code;
 				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 #endif
-				ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->vtable_slot), ppc_r11);
+				ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 #if ENABLE_WRONG_METHOD_CHECK
@@ -4711,7 +4714,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #endif
 			}
 		} else {
-			ppc_load (code, ppc_r0, (guint32)item->method);
+			ppc_load (code, ppc_r0, (guint32)item->key);
 			ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
 			item->jmp_code = code;
 			ppc_bc (code, PPC_BR_FALSE, PPC_BR_LT, 0);

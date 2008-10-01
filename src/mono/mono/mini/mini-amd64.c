@@ -6237,19 +6237,22 @@ imt_branch_distance (MonoIMTCheckItem **imt_entries, int start, int target)
  * LOCKING: called with the domain lock held
  */
 gpointer
-mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count)
+mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+	gpointer fail_tramp)
 {
 	int i;
 	int size = 0;
 	guint8 *code, *start;
 	gboolean vtable_is_32bit = ((gsize)(vtable) == (gsize)(int)(gsize)(vtable));
 
+	g_assert (!fail_tramp);
+
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
-					if (amd64_is_imm32 (item->method))
+					if (amd64_is_imm32 (item->key))
 						item->chunk_size += CMP_SIZE;
 					else
 						item->chunk_size += MOV_REG_IMM_SIZE + CMP_REG_REG_SIZE;
@@ -6270,7 +6273,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				 */
 			}
 		} else {
-			if (amd64_is_imm32 (item->method))
+			if (amd64_is_imm32 (item->key))
 				item->chunk_size += CMP_SIZE;
 			else
 				item->chunk_size += MOV_REG_IMM_SIZE + CMP_REG_REG_SIZE;
@@ -6287,31 +6290,31 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done) {
-					if (amd64_is_imm32 (item->method))
-						amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+					if (amd64_is_imm32 (item->key))
+						amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
 					else {
-						amd64_mov_reg_imm (code, AMD64_R10, item->method);
+						amd64_mov_reg_imm (code, AMD64_R10, item->key);
 						amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
 					}
 				}
 				item->jmp_code = code;
 				amd64_branch8 (code, X86_CC_NE, 0, FALSE);
 				/* See the comment below about R10 */
-				amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->vtable_slot]));
+				amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
 				amd64_jump_membase (code, AMD64_R10, 0);
 			} else {
 				/* enable the commented code to assert on wrong method */
 #if 0
-				if (amd64_is_imm32 (item->method))
-					amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+				if (amd64_is_imm32 (item->key))
+					amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
 				else {
-					amd64_mov_reg_imm (code, AMD64_R10, item->method);
+					amd64_mov_reg_imm (code, AMD64_R10, item->key);
 					amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
 				}
 				item->jmp_code = code;
 				amd64_branch8 (code, X86_CC_NE, 0, FALSE);
 				/* See the comment below about R10 */
-				amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->vtable_slot]));
+				amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
 				amd64_jump_membase (code, AMD64_R10, 0);
 				amd64_patch (item->jmp_code, code);
 				amd64_breakpoint (code);
@@ -6322,15 +6325,15 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				   to be preserved for calls which
 				   require a runtime generic context,
 				   but interface calls don't. */
-				amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->vtable_slot]));
+				amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
 				amd64_jump_membase (code, AMD64_R10, 0);
 #endif
 			}
 		} else {
-			if (amd64_is_imm32 (item->method))
-				amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->method);
+			if (amd64_is_imm32 (item->key))
+				amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
 			else {
-				amd64_mov_reg_imm (code, AMD64_R10, item->method);
+				amd64_mov_reg_imm (code, AMD64_R10, item->key);
 				amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
 			}
 			item->jmp_code = code;

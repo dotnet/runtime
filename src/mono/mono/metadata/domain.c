@@ -1930,6 +1930,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		g_hash_table_destroy (domain->method_rgctx_hash);
 		domain->method_rgctx_hash = NULL;
 	}
+	if (domain->generic_virtual_cases) {
+		g_hash_table_destroy (domain->generic_virtual_cases);
+		domain->generic_virtual_cases = NULL;
+	}
 
 	DeleteCriticalSection (&domain->assemblies_lock);
 	DeleteCriticalSection (&domain->jit_code_hash_lock);
