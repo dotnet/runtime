@@ -2744,8 +2744,8 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	buf_size = header->num_clauses * 256 + debug_info_size + 128;
 	p = buf = g_malloc (buf_size);
 
-	encode_value (cfg->code_len, p, &p);
-	encode_value (cfg->used_int_regs, p, &p);
+	encode_value (jinfo->code_size, p, &p);
+	encode_value (jinfo->used_regs, p, &p);
 	encode_value (jinfo->has_generic_jit_info, p, &p);
 
 	/* Exception table */
