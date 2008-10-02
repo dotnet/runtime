@@ -6182,7 +6182,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			/* Generic sharing */
 			/* FIXME: only do this for generic methods if
 			   they are not shared! */
-			if (context_used && !imt_arg &&
+			if (context_used && !imt_arg && !array_rank &&
 					(!mono_method_is_generic_sharable_impl (cmethod, TRUE) ||
 						!mono_class_generic_sharing_enabled (cmethod->klass)) &&
 					(!virtual || cmethod->flags & METHOD_ATTRIBUTE_FINAL ||
