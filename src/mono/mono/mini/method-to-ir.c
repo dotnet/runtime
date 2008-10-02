@@ -5811,13 +5811,20 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					if (!mono_class_init (cmethod->klass))
 						goto load_error;
 
-				if (mono_method_signature (cmethod)->pinvoke) {
-					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, check_for_pending_exc, FALSE);
-					fsig = mono_method_signature (wrapper);
-				} else if (constrained_call) {
+				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
+				    mini_class_is_system_array (cmethod->klass)) {
+					array_rank = cmethod->klass->rank;
 					fsig = mono_method_signature (cmethod);
 				} else {
-					fsig = mono_method_get_signature_full (cmethod, image, token, generic_context);
+					if (mono_method_signature (cmethod)->pinvoke) {
+						MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod,
+							check_for_pending_exc, FALSE);
+						fsig = mono_method_signature (wrapper);
+					} else if (constrained_call) {
+						fsig = mono_method_signature (cmethod);
+					} else {
+						fsig = mono_method_get_signature_full (cmethod, image, token, generic_context);
+					}
 				}
 
 				mono_save_token_info (cfg, image, token, cmethod);
@@ -5828,11 +5835,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					if (check_linkdemand (cfg, method, cmethod))
 						INLINE_FAILURE;
 					CHECK_CFG_EXCEPTION;
-				}
-
-				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
-				    mini_class_is_system_array (cmethod->klass)) {
-					array_rank = cmethod->klass->rank;
 				}
 
 				if (cmethod->string_ctor)
