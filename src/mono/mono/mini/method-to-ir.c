@@ -2337,11 +2337,12 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			if (slot_reg == -1) {
 				slot_reg = alloc_preg (cfg);
 				mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
-				call->inst.inst_offset = method->slot * SIZEOF_VOID_P;
+				call->inst.inst_offset = mono_method_get_vtable_index (method) * SIZEOF_VOID_P;
 			}
 		} else {
 			slot_reg = vtable_reg;
-			call->inst.inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) + (method->slot * SIZEOF_VOID_P);
+			call->inst.inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) +
+				(mono_method_get_vtable_index (method) * SIZEOF_VOID_P);
 			if (imt_arg) {
 				g_assert (mono_method_signature (method)->generic_param_count);
 				emit_imt_argument (cfg, call, imt_arg);

@@ -1119,4 +1119,7 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass) MONO_INTERNAL;
 
+int
+mono_method_get_vtable_index (MonoMethod *method) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

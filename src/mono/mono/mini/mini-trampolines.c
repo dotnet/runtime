@@ -78,7 +78,7 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *co
 #endif
 		g_assert (imt_slot < MONO_IMT_SIZE);
 		if (vt->imt_collisions_bitmap & (1 << imt_slot)) {
-			int vtable_offset = interface_offset + imt_method->slot;
+			int vtable_offset = interface_offset + mono_method_get_vtable_index (imt_method);
 			gpointer *vtable_slot = & (vt->vtable [vtable_offset]);
 #if DEBUG_IMT
 			printf ("mono_convert_imt_slot_to_vtable_slot: slot %p[%d] is in the IMT, and colliding becomes %p[%d] (interface_offset = %d, method->slot = %d)\n", slot, imt_slot, vtable_slot, vtable_offset, interface_offset, imt_method->slot);

@@ -3389,6 +3389,25 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	}
 }
 
+/**
+ * mono_method_get_vtable_index:
+ * @method: a method
+ *
+ * Returns the index into the runtime vtable to access the method or,
+ * in the case of a virtual generic method, the virtual generic method
+ * thunk.
+ */
+int
+mono_method_get_vtable_index (MonoMethod *method)
+{
+	if (method->is_inflated && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+		MonoMethodInflated *imethod = (MonoMethodInflated*)method;
+		if (imethod->declaring->is_generic)
+			return imethod->declaring->slot;
+	}
+	return method->slot;
+}
+
 static MonoMethod *default_ghc = NULL;
 static MonoMethod *default_finalize = NULL;
 static int finalize_slot = -1;
