@@ -4643,6 +4643,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 #define CMP_SIZE 12
 #define BR_SIZE 4
 #define JUMP_IMM_SIZE 12
+#define JUMP_IMM32_SIZE 16
 #define ENABLE_WRONG_METHOD_CHECK 0
 
 /*
@@ -4656,20 +4657,25 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	int size = 0;
 	guint8 *code, *start;
 
-	g_assert (!fail_tramp);
-
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
 			if (item->check_target_idx) {
 				if (!item->compare_done)
 					item->chunk_size += CMP_SIZE;
-				item->chunk_size += BR_SIZE + JUMP_IMM_SIZE;
+				if (fail_tramp)
+					item->chunk_size += BR_SIZE + JUMP_IMM32_SIZE;
+				else
+					item->chunk_size += BR_SIZE + JUMP_IMM_SIZE;
 			} else {
-				item->chunk_size += JUMP_IMM_SIZE;
+				if (fail_tramp) {
+					item->chunk_size += CMP_SIZE + BR_SIZE + JUMP_IMM32_SIZE * 2;
+				} else {
+					item->chunk_size += JUMP_IMM_SIZE;
 #if ENABLE_WRONG_METHOD_CHECK
-				item->chunk_size += CMP_SIZE + BR_SIZE + 4;
+					item->chunk_size += CMP_SIZE + BR_SIZE + 4;
 #endif
+				}
 			}
 		} else {
 			item->chunk_size += CMP_SIZE + BR_SIZE;
@@ -4677,11 +4683,16 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 		size += item->chunk_size;
 	}
-	/* the initial load of the vtable address */
-	size += 8;
-	code = mono_code_manager_reserve (domain->code_mp, size);
+	if (fail_tramp) {
+		code = mono_method_alloc_generic_virtual_thunk (domain, size);
+	} else {
+		/* the initial load of the vtable address */
+		size += 8;
+		code = mono_code_manager_reserve (domain->code_mp, size);
+	}
 	start = code;
-	ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [0])));
+	if (!fail_tramp)
+		ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [0])));
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
@@ -4693,25 +4704,43 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				}
 				item->jmp_code = code;
 				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-				ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
+				if (fail_tramp)
+					ppc_load (code, ppc_r0, item->value.target_code);
+				else
+					ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			} else {
-				/* enable the commented code to assert on wrong method */
+				if (fail_tramp) {
+					ppc_load (code, ppc_r0, (guint32)item->key);
+					ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
+					item->jmp_code = code;
+					ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+					ppc_load (code, ppc_r0, item->value.target_code);
+					ppc_mtctr (code, ppc_r0);
+					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+					ppc_patch (item->jmp_code, code);
+					ppc_load (code, ppc_r0, fail_tramp);
+					ppc_mtctr (code, ppc_r0);
+					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+					item->jmp_code = NULL;
+				} else {
+					/* enable the commented code to assert on wrong method */
 #if ENABLE_WRONG_METHOD_CHECK
-				ppc_load (code, ppc_r0, (guint32)item->key);
-				ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
-				item->jmp_code = code;
-				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+					ppc_load (code, ppc_r0, (guint32)item->key);
+					ppc_cmpl (code, 0, 0, MONO_ARCH_IMT_REG, ppc_r0);
+					item->jmp_code = code;
+					ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 #endif
-				ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
-				ppc_mtctr (code, ppc_r0);
-				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+					ppc_lwz (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
+					ppc_mtctr (code, ppc_r0);
+					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 #if ENABLE_WRONG_METHOD_CHECK
-				ppc_patch (item->jmp_code, code);
-				ppc_break (code);
-				item->jmp_code = NULL;
+					ppc_patch (item->jmp_code, code);
+					ppc_break (code);
+					item->jmp_code = NULL;
 #endif
+				}
 			}
 		} else {
 			ppc_load (code, ppc_r0, (guint32)item->key);
@@ -4729,8 +4758,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			}
 		}
 	}
-		
-	mono_stats.imt_thunks_size += code - start;
+
+	if (!fail_tramp)
+		mono_stats.imt_thunks_size += code - start;
 	g_assert (code - start <= size);
 	mono_arch_flush_icache (start, size);
 	return start;
