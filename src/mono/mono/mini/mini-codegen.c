@@ -25,7 +25,7 @@
 
 #define MONO_MAX_XREGS 0
 #define MONO_ARCH_CALLEE_SAVED_XREGS 0
-#define MONO_ARCH_CALLEE_XREGS
+#define MONO_ARCH_CALLEE_XREGS 0
 
 #endif
 /*
