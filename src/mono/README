@@ -324,36 +324,14 @@ This is Mono.
 			Disables support for the Ahead of Time
 	  		compilation.
 
-		profiler:
-			Disables support for the default profiler.
-
-	 	decimal:
-			Disables support for System.Decimal.
-
-		pinvoke:
-			Support for Platform Invocation services,
-			disabling this will drop support for any
-			libraries using DllImport.
+		com:
+			Disables COM support.
 
 		debug:
 			Drop debugging support.
 
-		reflection_emit:
-			Drop System.Reflection.Emit support
-
-		large_code:
-			Disables support for large assemblies.
-
-		logging:
-	  		Disables support for debug logging.
-
-		com:
-			Disables COM support.
-
-		ssa:
-			Disables compilation for the SSA optimization
-			framework, and the various SSA-based
-		  	optimizations.
+	 	decimal:
+			Disables support for System.Decimal.
 
 		generics:
 			Generics support.  Disabling this will not
@@ -365,6 +343,32 @@ This is Mono.
 			the executable size, and requires that all code
 			executed by the virtual machine be compiled with
 			Full AOT before execution.
+
+		large_code:
+			Disables support for large assemblies.
+
+		logging:
+	  		Disables support for debug logging.
+
+		pinvoke:
+			Support for Platform Invocation services,
+			disabling this will drop support for any
+			libraries using DllImport.
+
+		profiler:
+			Disables support for the default profiler.
+
+		reflection_emit:
+			Drop System.Reflection.Emit support
+
+		simd:
+			Disables support for the Mono.SIMD intrinsics
+			library.
+
+		ssa:
+			Disables compilation for the SSA optimization
+			framework, and the various SSA-based
+		  	optimizations.
 
 	--enable-big-arrays
 
