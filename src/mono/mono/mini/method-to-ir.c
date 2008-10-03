@@ -127,6 +127,7 @@ extern MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 #define IREG 'i'
 #define FREG 'f'
 #define VREG 'v'
+#define XREG 'x'
 #if SIZEOF_VOID_P == 8
 #define LREG IREG
 #else
@@ -217,6 +218,8 @@ handle_enum:
 			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		}
+		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
+			return OP_XMOVE;
 		return OP_VMOVE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_VMOVE;
@@ -3866,6 +3869,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		 * http://everything2.com/?node_id=1051618
 		 */
 	}
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	if (cfg->opt & MONO_OPT_SIMD) {
+		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
+		if (ins)
+			return ins;
+	}
+#endif
 
 	return mono_arch_emit_inst_for_method (cfg, cmethod, fsig, args);
 }
@@ -9833,6 +9844,11 @@ mono_handle_global_vregs (MonoCompile *cfg)
 
 	vreg_to_bb = mono_mempool_alloc0 (cfg->mempool, sizeof (gint32*) * cfg->next_vreg + 1);
 
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	if (cfg->uses_simd_intrinsics)
+		mono_simd_simplify_indirection (cfg);
+#endif
+
 	/* Find local vregs used in more than one bb */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins = bb->code;	
@@ -10063,6 +10079,9 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	stacktypes ['i'] = STACK_PTR;
 	stacktypes ['l'] = STACK_I8;
 	stacktypes ['f'] = STACK_R8;
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	stacktypes ['x'] = STACK_VTYPE;
+#endif
 
 #if SIZEOF_VOID_P == 4
 	/* Create MonoInsts for longs */
@@ -10354,7 +10373,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						ins->sreg2 = var->inst_basereg;
 						ins->inst_offset = var->inst_offset;
 					} else {
-						if ((ins->opcode == OP_MOVE) || (ins->opcode == OP_FMOVE)) {
+						if (MONO_IS_REAL_MOVE (ins)) {
 							ins->opcode = OP_NOP;
 							sreg = ins->dreg;
 						} else {

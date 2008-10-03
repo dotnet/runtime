@@ -188,7 +188,6 @@ enum {
 #define MONO_IS_SETCC(ins) ((((ins)->opcode >= OP_CEQ) && ((ins)->opcode <= OP_CLT_UN)) || (((ins)->opcode >= OP_ICEQ) && ((ins)->opcode <= OP_ICLT_UN)) || (((ins)->opcode >= OP_LCEQ) && ((ins)->opcode <= OP_LCLT_UN)) || (((ins)->opcode >= OP_FCEQ) && ((ins)->opcode <= OP_FCLT_UN)))
 
 #define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI))
-#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE))
 
 #define MONO_IS_LOAD_MEMBASE(ins) (((ins)->opcode >= OP_LOAD_MEMBASE) && ((ins)->opcode <= OP_LOADV_MEMBASE))
 #define MONO_IS_STORE_MEMBASE(ins) (((ins)->opcode >= OP_STORE_MEMBASE_REG) && ((ins)->opcode <= OP_STOREV_MEMBASE))
@@ -201,7 +200,30 @@ enum {
 #define MONO_JUMP_TABLE_FROM_INS(ins) (((ins)->opcode == OP_JUMP_TABLE) ? (ins)->inst_p0 : (((ins)->opcode == OP_AOTCONST) && (ins->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH) ? (ins)->inst_p0 : (((ins)->opcode == OP_SWITCH) ? (ins)->inst_p0 : ((((ins)->opcode == OP_GOT_ENTRY) && ((ins)->inst_right->inst_i1 == (gpointer)MONO_PATCH_INFO_SWITCH)) ? (ins)->inst_right->inst_p0 : NULL))))
 
 /* FIXME: Add more instructions */
-#define MONO_INS_HAS_NO_SIDE_EFFECT(ins) (MONO_IS_MOVE (ins) || (ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_VZERO) || (ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_R8CONST) || (ins->opcode == OP_LADD_IMM) || (ins->opcode == OP_ISUB_IMM) || (ins->opcode == OP_IADD_IMM) || (ins->opcode == OP_INEG) || (ins->opcode == OP_LNEG) || (ins->opcode == OP_ISUB) || (ins->opcode == OP_CMOV_IGE) || (ins->opcode == OP_ISHL_IMM) || (ins->opcode == OP_ISHR_IMM) || (ins->opcode == OP_ISHR_UN_IMM) || (ins->opcode == OP_IAND_IMM) || (ins->opcode == OP_ICONV_TO_U1) || (ins->opcode == OP_ICONV_TO_I1) || (ins->opcode == OP_SEXT_I4) || (ins->opcode == OP_LCONV_TO_U1) || (ins->opcode == OP_ICONV_TO_U2) || (ins->opcode == OP_ICONV_TO_I2) || (ins->opcode == OP_LCONV_TO_I2))
+#define MONO_INS_HAS_NO_SIDE_EFFECT(ins) (MONO_IS_MOVE (ins) || (ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || MONO_IS_ZERO (ins) || (ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_R8CONST) || (ins->opcode == OP_LADD_IMM) || (ins->opcode == OP_ISUB_IMM) || (ins->opcode == OP_IADD_IMM) || (ins->opcode == OP_INEG) || (ins->opcode == OP_LNEG) || (ins->opcode == OP_ISUB) || (ins->opcode == OP_CMOV_IGE) || (ins->opcode == OP_ISHL_IMM) || (ins->opcode == OP_ISHR_IMM) || (ins->opcode == OP_ISHR_UN_IMM) || (ins->opcode == OP_IAND_IMM) || (ins->opcode == OP_ICONV_TO_U1) || (ins->opcode == OP_ICONV_TO_I1) || (ins->opcode == OP_SEXT_I4) || (ins->opcode == OP_LCONV_TO_U1) || (ins->opcode == OP_ICONV_TO_U2) || (ins->opcode == OP_ICONV_TO_I2) || (ins->opcode == OP_LCONV_TO_I2))
+
+
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+
+#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_XMOVE))
+#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_XMOVE))
+#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE))
+#define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
+
+#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && (klass)->simd_type)
+
+#else
+
+#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE))
+#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE))
+/*A real MOVE is one that isn't decomposed such as a VMOVE or LMOVE*/
+#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE))
+#define MONO_IS_ZERO(ins) ((ins)->opcode == OP_VZERO)
+
+#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
+
+#endif
 
 typedef struct MonoInstList MonoInstList;
 typedef struct MonoInst MonoInst;
@@ -537,6 +559,7 @@ struct MonoInst {
 		gint shift_amount;
 		gboolean is_pinvoke; /* for variables in the unmanaged marshal format */
 		gboolean record_cast_details; /* For CEE_CASTCLASS */
+		MonoInst *spill_var; /* for OP_ICONV_TO_R8_RAW */
 	} backend;
 	
 	MonoClass *klass;
@@ -914,6 +937,7 @@ typedef struct {
 	guint            has_got_slots : 1;
 	guint            uses_rgctx_reg : 1;
 	guint            uses_vtable_reg : 1;
+	guint            uses_simd_intrinsics : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;
@@ -952,6 +976,10 @@ typedef struct {
 	   and can be used when emitting code for OP_JMP.  See
 	   mini-ppc.c. */
 	MonoInst **tailcall_valuetype_addrs;
+
+	/* Used to implement iconv_to_r8_raw on archs that can't do raw
+	copy between an ireg and a freg*/
+	MonoInst *iconv_raw_var;
 } MonoCompile;
 
 typedef enum {
@@ -1659,5 +1687,11 @@ int mini_wapi_hps (int argc, char **argv) MONO_INTERNAL;
 int mini_wapi_semdel (int argc, char **argv) MONO_INTERNAL;
 
 int mini_wapi_seminfo (int argc, char **argv) MONO_INTERNAL;
+
+/* SIMD support */
+const char *mono_arch_xregname (int reg) MONO_INTERNAL;
+void mono_simd_simplify_indirection (MonoCompile *cfg) MONO_INTERNAL;
+MonoInst* mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
+
 
 #endif /* __MONO_MINI_H__ */

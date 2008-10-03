@@ -62,6 +62,13 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #endif /* HAVE_WORKING_SIGALTSTACK */
 #endif /* !PLATFORM_WIN32 */
 
+#define MONO_ARCH_SUPPORT_SIMD_INTRINSICS 1
+
+#ifndef DISABLE_SIMD
+#define MONO_ARCH_SIMD_INTRINSICS 1
+#define MONO_ARCH_NEED_SIMD_BANK 1
+#endif
+
 /* we should lower this size and make sure we don't call heavy stack users in the segv handler */
 #define MONO_ARCH_SIGNAL_STACK_SIZE (16 * 1024)
 #define MONO_ARCH_HAVE_RESTORE_STACK_SUPPORT 1
@@ -70,6 +77,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #define MONO_MAX_IREGS 8
 #define MONO_MAX_FREGS 8
+#define MONO_MAX_XREGS 8
 
 /* Parameters used by the register allocator */
 #define MONO_ARCH_CALLEE_REGS X86_CALLEE_REGS
@@ -77,6 +85,10 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #define MONO_ARCH_CALLEE_FREGS (0xff & ~(regmask (MONO_ARCH_FPSTACK_SIZE)))
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
+
+/* All registers are clobered by a call */
+#define MONO_ARCH_CALLEE_XREGS (0xff & ~(regmask (MONO_MAX_XREGS)))
+#define MONO_ARCH_CALLEE_SAVED_XREGS 0
 
 #define MONO_ARCH_USE_FPSTACK TRUE
 #define MONO_ARCH_FPSTACK_SIZE 6

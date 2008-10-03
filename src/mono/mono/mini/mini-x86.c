@@ -106,6 +106,32 @@ mono_arch_fregname (int reg)
 	}
 }
 
+const char *
+mono_arch_xregname (int reg)
+{
+	switch (reg) {
+	case 0:
+		return "%xmm0";
+	case 1:
+		return "%xmm1";
+	case 2:
+		return "%xmm2";
+	case 3:
+		return "%xmm3";
+	case 4:
+		return "%xmm4";
+	case 5:
+		return "%xmm5";
+	case 6:
+		return "%xmm6";
+	case 7:
+		return "%xmm7";
+	default:
+		return "unknown";
+	}
+}
+
+
 typedef enum {
 	ArgInIReg,
 	ArgInFloatSSEReg,
@@ -656,6 +682,11 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 			opts |= MONO_OPT_SSE2;
 		else
 			*exclude_mask |= MONO_OPT_SSE2;
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+		/*SIMD intrinsics require SSE3.*/
+		if (!(ecx & 1))
+			*exclude_mask |= MONO_OPT_SIMD;
+#endif
 	}
 	return opts;
 }
@@ -3746,6 +3777,90 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+		case OP_ADDPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_ADD, ins->sreg1, ins->sreg2);
+			break;
+		case OP_DIVPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_DIV, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MULPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_MUL, ins->sreg1, ins->sreg2);
+			break;
+		case OP_SUBPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_SUB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MAXPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_MAX, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MINPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_MIN, ins->sreg1, ins->sreg2);
+			break;
+		case OP_SQRTPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_SQRT, ins->dreg, ins->sreg1);
+			break;
+		case OP_RSQRTPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_RSQRT, ins->dreg, ins->sreg1);
+			break;
+		case OP_ADDSUBPS:
+			x86_sse_alu_sd_reg_reg (code, X86_SSE_ADDSUB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_HADDPS:
+			x86_sse_alu_sd_reg_reg (code, X86_SSE_HADD, ins->sreg1, ins->sreg2);
+			break;
+		case OP_HSUBPS:
+			x86_sse_alu_sd_reg_reg (code, X86_SSE_HSUB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_SHUFLEPS:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
+			x86_pshufd_reg_reg (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			break;
+		case OP_PAND:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PAND, ins->sreg1, ins->sreg2);
+			break;
+		case OP_POR:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_POR, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PXOR:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PXOR, ins->sreg1, ins->sreg2);
+			break;
+		case OP_EXTRACT_I4:
+			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_STOREX_MEMBASE_REG:
+		case OP_STOREX_MEMBASE:
+			x86_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
+			break;
+		case OP_LOADX_MEMBASE:
+			x86_movups_reg_membase (code, ins->dreg, ins->sreg1, ins->inst_offset);
+			break;
+		case OP_LOADX_ALIGNED_MEMBASE:
+			x86_movaps_reg_membase (code, ins->dreg, ins->sreg1, ins->inst_offset);
+			break;
+		case OP_STOREX_ALIGNED_MEMBASE_REG:
+			x86_movaps_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
+			break;
+		case OP_XMOVE:
+			/*FIXME the peephole pass should have killed this*/
+			if (ins->dreg != ins->sreg1)
+				x86_movaps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;		
+		case OP_XZERO:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PXOR, ins->dreg, ins->dreg);
+			break;
+		case OP_ICONV_TO_R8_RAW:
+			x86_mov_membase_reg (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, ins->sreg1, 4);
+			x86_fld_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE);
+			break;
+		case OP_PUSH_R4:
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
+			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
+			break;
+		case OP_LOADX_STACK: 
+			x86_movups_reg_membase (code, ins->dreg, X86_ESP, 0);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 16);
+			break;
+#endif
 		default:
 			g_warning ("unknown opcode %s\n", mono_inst_name (ins->opcode));
 			g_assert_not_reached ();

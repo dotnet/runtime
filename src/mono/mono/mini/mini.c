@@ -1246,6 +1246,8 @@ handle_enum:
 			type = type->data.klass->enum_basetype;
 			goto handle_enum;
 		}
+		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
+			return OP_STOREX_MEMBASE;
 		return OP_STOREV_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_STOREV_MEMBASE;
@@ -1306,6 +1308,8 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_R8:
 		return OP_LOADR8_MEMBASE;
 	case MONO_TYPE_VALUETYPE:
+		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
+			return OP_LOADX_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_GENERICINST:

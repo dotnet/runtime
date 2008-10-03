@@ -520,6 +520,13 @@ mono_constant_fold_ins2 (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIn
 			dest->sreg1 = -1;
 		}
 		break;
+	case OP_XMOVE:
+		if (arg1->opcode == OP_XZERO) {
+			ALLOC_DEST (cfg, dest, ins);
+			dest->opcode = OP_XZERO;
+			dest->sreg1 = -1;
+		}
+		break;
 	case OP_COMPARE:
 	case OP_ICOMPARE:
 	case OP_COMPARE_IMM:

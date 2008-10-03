@@ -1488,6 +1488,7 @@ restart:
 			/* FIXME: Add long/float */
 			switch (ins->opcode) {
 			case OP_MOVE:
+			case OP_XMOVE:
 				if (ins->dreg == ins->sreg1) {
 					MONO_DELETE_INS (bb, ins);
 					spec = INS_INFO (ins->opcode);
@@ -1614,6 +1615,28 @@ restart:
 	}
 }
 
+static inline gboolean
+reg_is_softreg_no_fpstack (int reg, const char spec)
+{
+	return (spec == 'i' && reg > MONO_MAX_IREGS)
+		|| ((spec == 'f' && reg > MONO_MAX_FREGS) && !MONO_ARCH_USE_FPSTACK)
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+		|| (spec == 'x' && reg > MONO_MAX_XREGS)
+#endif
+		|| (spec == 'v');
+}
+		
+static inline gboolean
+reg_is_softreg (int reg, const char spec)
+{
+	return (spec == 'i' && reg > MONO_MAX_IREGS)
+		|| (spec == 'f' && reg > MONO_MAX_FREGS)
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+		|| (spec == 'x' && reg > MONO_MAX_XREGS)
+#endif
+		|| (spec == 'v');
+}
+
 /**
  * mono_local_deadce:
  *
@@ -1679,7 +1702,7 @@ mono_local_deadce (MonoCompile *cfg)
 
 			g_assert (ins->opcode > MONO_CEE_LAST);
 
-			if (((ins->opcode == OP_MOVE) || (ins->opcode == OP_VMOVE)) && ins->prev) {
+			if (MONO_IS_NON_FP_MOVE (ins) && ins->prev) {
 				MonoInst *def;
 				const char *spec2;
 
@@ -1694,7 +1717,7 @@ mono_local_deadce (MonoCompile *cfg)
 				 * This isn't copyprop, not deadce, but it can only be performed
 				 * after handle_global_vregs () has run.
 				 */
-				if (!get_vreg_to_inst (cfg, ins->sreg1) && (spec2 [MONO_INST_DEST] != ' ') && (def->dreg == ins->sreg1) && !mono_bitset_test_fast (used, ins->sreg1) && !MONO_IS_STORE_MEMBASE (def) && ((spec [MONO_INST_DEST] == 'f' && ins->sreg1 > MONO_MAX_FREGS) || (spec [MONO_INST_DEST] == 'i' && ins->sreg1 > MONO_MAX_IREGS) || (spec [MONO_INST_DEST] == 'v'))) {
+				if (!get_vreg_to_inst (cfg, ins->sreg1) && (spec2 [MONO_INST_DEST] != ' ') && (def->dreg == ins->sreg1) && !mono_bitset_test_fast (used, ins->sreg1) && !MONO_IS_STORE_MEMBASE (def) && reg_is_softreg (ins->sreg1, spec [MONO_INST_DEST])) {
 					if (cfg->verbose_level > 2) {
 						printf ("\tReverse copyprop in BB%d on ", bb->block_num);
 						mono_print_ins (ins);
@@ -1707,9 +1730,7 @@ mono_local_deadce (MonoCompile *cfg)
 			}
 
 			/* Enabling this on x86 could screw up the fp stack */
-			if (((spec [MONO_INST_DEST] == 'i') && (ins->dreg >= MONO_MAX_IREGS)) ||
-				((spec [MONO_INST_DEST] == 'f') && (ins->dreg >= MONO_MAX_FREGS) && !MONO_ARCH_USE_FPSTACK) ||
-				(spec [MONO_INST_DEST] == 'v')) {
+			if (reg_is_softreg_no_fpstack (ins->dreg, spec [MONO_INST_DEST])) {
 				/* 
 				 * Assignments to global vregs can only be eliminated if there is another
 				 * assignment to the same vreg later in the same bblock.

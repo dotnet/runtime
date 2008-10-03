@@ -26,7 +26,10 @@ mono_regstate_free (MonoRegState *rs) {
 
 void
 mono_regstate_reset (MonoRegState *rs) {
-	rs->next_vreg = MONO_MAX_IREGS + MONO_MAX_FREGS;
+	rs->next_vreg = MAX (MONO_MAX_IREGS, MONO_MAX_FREGS);
+#ifdef MONO_ARCH_NEED_SIMD_BANK
+	rs->next_vreg = MAX (rs->next_vreg, MONO_MAX_XREGS);
+#endif
 }
 
 inline int

@@ -21,6 +21,7 @@
 #	l  long reg (forced eax:edx)
 #	L  long reg (dynamic)
 #	y  the reg needs to be one of EAX,EBX,ECX,EDX (sete opcodes)
+#	x  XMM reg (XMM0 - X007)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
@@ -406,3 +407,40 @@ x86_or_reg_membase: dest:i src1:i src2:b clob:1 len:6
 x86_xor_reg_membase: dest:i src1:i src2:b clob:1 len:6
 
 x86_fxch: len:2
+
+addps: dest:x src1:x src2:x len:3 clob:1
+divps: dest:x src1:x src2:x len:3 clob:1
+mulps: dest:x src1:x src2:x len:3 clob:1
+subps: dest:x src1:x src2:x len:3 clob:1
+maxps: dest:x src1:x src2:x len:3 clob:1
+minps: dest:x src1:x src2:x len:3 clob:1
+
+haddps: dest:x src1:x src2:x len:4 clob:1
+hsubps: dest:x src1:x src2:x len:4 clob:1
+addsubps: dest:x src1:x src2:x len:4 clob:1
+
+pand: dest:x src1:x src2:x len:4 clob:1
+por: dest:x src1:x src2:x len:4 clob:1
+pxor: dest:x src1:x src2:x len:4 clob:1
+
+sqrtps: dest:x src1:x len:4
+rsqrtps: dest:x src1:x len:4
+shuffleps: dest:x src1:x len:5
+
+xmove: dest:x src1:x len:4
+xzero: dest:x len:4
+
+extract_i4: dest:i src1:x len:4
+iconv_to_r8_raw: dest:f src1:i len:17 
+
+loadx_membase: dest:x src1:b len:7
+storex_membase: dest:b src1:x len:7
+storex_membase_reg: dest:b src1:x len:7
+
+loadx_aligned_membase: dest:x src1:b len:7
+storex_aligned_membase_reg: dest:b src1:x len:7
+
+push_r4: src1:f len:13
+loadx_stack: dest:x len: 13
+
+

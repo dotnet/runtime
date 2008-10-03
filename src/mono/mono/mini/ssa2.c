@@ -1322,7 +1322,7 @@ mono_ssa_deadce2 (MonoCompile *cfg)
 				def->opcode = OP_NOP;
 				def->dreg = def->sreg1 = def->sreg2 = -1;
 				info->reg = -1;
-			} else if ((def->opcode == OP_ICONST) || (def->opcode == OP_I8CONST) || (def->opcode == OP_VZERO)) {
+			} else if ((def->opcode == OP_ICONST) || (def->opcode == OP_I8CONST) || MONO_IS_ZERO (def)) {
 				def->opcode = OP_NOP;
 				def->dreg = def->sreg1 = def->sreg2 = -1;
 				info->reg = -1;

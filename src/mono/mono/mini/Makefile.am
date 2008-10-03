@@ -252,7 +252,8 @@ common_sources = \
 	generic-sharing.c	\
 	ssa2.c	\
 	abcremoval2.c	\
-	regalloc2.c
+	regalloc2.c	\
+	simd-intrinsics.c
 
 test_sources = 		\
 	basic-calls.cs 	\

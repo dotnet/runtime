@@ -21,31 +21,42 @@
 #include "inssel.h"
 #include "mini-arch.h"
 
+#ifndef MONO_MAX_XREGS
+
+#define MONO_MAX_XREGS 0
+#define MONO_ARCH_CALLEE_SAVED_XREGS 0
+#define MONO_ARCH_CALLEE_XREGS
+
+#endif
 /*
  * Every hardware register belongs to a register type or register bank. bank 0 
  * contains the int registers, bank 1 contains the fp registers.
  * int registers are used 99% of the time, so they are special cased in a lot of 
  * places.
  */
- 
+
 static const int regbank_size [] = {
 	MONO_MAX_IREGS,
-	MONO_MAX_FREGS
+	MONO_MAX_FREGS,
+	MONO_MAX_XREGS
 };
 
 static const int regbank_load_ops [] = { 
 	OP_LOAD_MEMBASE,
-	OP_LOADR8_MEMBASE
+	OP_LOADR8_MEMBASE,
+	OP_LOADX_MEMBASE
 };
 
 static const int regbank_store_ops [] = { 
 	OP_STORE_MEMBASE_REG,
-	OP_STORER8_MEMBASE_REG
+	OP_STORER8_MEMBASE_REG,
+	OP_STOREX_MEMBASE
 };
 
 static const int regbank_move_ops [] = { 
 	OP_MOVE,
-	OP_FMOVE
+	OP_FMOVE,
+	OP_XMOVE
 };
 
 #define regmask(reg) (((regmask_t)1) << (reg))
@@ -53,11 +64,13 @@ static const int regbank_move_ops [] = {
 static const regmask_t regbank_callee_saved_regs [] = {
 	MONO_ARCH_CALLEE_SAVED_REGS,
 	MONO_ARCH_CALLEE_SAVED_FREGS,
+	MONO_ARCH_CALLEE_SAVED_XREGS,
 };
 
 static const regmask_t regbank_callee_regs [] = {
 	MONO_ARCH_CALLEE_REGS,
 	MONO_ARCH_CALLEE_FREGS,
+	MONO_ARCH_CALLEE_XREGS,
 };
 
 static const int regbank_spill_var_size[] = {
@@ -103,6 +116,11 @@ mono_regstate_assign (MonoRegState *rs)
 
 	rs->symbolic [0] = rs->isymbolic;
 	rs->symbolic [1] = rs->fsymbolic;
+
+#ifdef MONO_ARCH_NEED_SIMD_BANK
+	memset (rs->xsymbolic, 0, MONO_MAX_XREGS * sizeof (rs->xsymbolic [0]));
+	rs->symbolic [2] = rs->xsymbolic;
+#endif
 }
 
 static inline int
@@ -172,6 +190,10 @@ const char*
 mono_regname_full (int reg, int bank)
 {
 	if (G_UNLIKELY (bank)) {
+#if MONO_ARCH_NEED_SIMD_BANK
+		if (bank == 2)
+			return mono_arch_xregname (reg);
+#endif
 		g_assert (bank == 1);
 		return mono_arch_fregname (reg);
 	} else {
@@ -289,7 +311,18 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 #define sreg1_is_fp(spec) (MONO_ARCH_INST_IS_FLOAT (spec [MONO_INST_SRC1]))
 #define sreg2_is_fp(spec) (MONO_ARCH_INST_IS_FLOAT (spec [MONO_INST_SRC2]))
 
+#define reg_is_simd(desc) ((desc) == 'x') 
+
+#ifdef MONO_ARCH_NEED_SIMD_BANK
+
+#define reg_bank(desc) (G_UNLIKELY (reg_is_fp (desc)) ? MONO_REG_DOUBLE : G_UNLIKELY (reg_is_simd(desc)) ? MONO_REG_SIMD : MONO_REG_INT)
+
+#else
+
 #define reg_bank(desc) reg_is_fp ((desc))
+
+#endif
+
 #define sreg1_bank(spec) reg_bank ((spec)[MONO_INST_SRC1])
 #define sreg2_bank(spec) reg_bank ((spec)[MONO_INST_SRC2])
 #define dreg_bank(spec) reg_bank ((spec)[MONO_INST_DEST])
@@ -319,6 +352,7 @@ void
 mono_print_ins_index (int i, MonoInst *ins)
 {
 	const char *spec = ins_get_spec (ins->opcode);
+
 	if (i != -1)
 		printf ("\t%-2d %s", i, mono_inst_name (ins->opcode));
 	else

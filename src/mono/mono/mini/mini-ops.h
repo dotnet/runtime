@@ -109,11 +109,17 @@ MINI_OP(OP_STOREI8_MEMBASE_REG, "storei8_membase_reg", IREG, IREG, NONE)
 MINI_OP(OP_STORER4_MEMBASE_REG, "storer4_membase_reg", IREG, FREG, NONE)
 MINI_OP(OP_STORER8_MEMBASE_REG, "storer8_membase_reg", IREG, FREG, NONE)
 
+#ifdef MONO_ARCH_SUPPORT_SIMD_INTRINSICS
+MINI_OP(OP_STOREX_MEMBASE_REG, "storex_membase_reg", IREG, XREG, NONE)
+MINI_OP(OP_STOREX_ALIGNED_MEMBASE_REG,     "storex_aligned_membase_reg", IREG, XREG, NONE)
+#endif
+
 MINI_OP(OP_STORE_MEMBASE_IMM,"store_membase_imm", IREG, NONE, NONE)
 MINI_OP(OP_STOREI1_MEMBASE_IMM, "storei1_membase_imm", IREG, NONE, NONE)
 MINI_OP(OP_STOREI2_MEMBASE_IMM, "storei2_membase_imm", IREG, NONE, NONE)
 MINI_OP(OP_STOREI4_MEMBASE_IMM, "storei4_membase_imm", IREG, NONE, NONE)
 MINI_OP(OP_STOREI8_MEMBASE_IMM, "storei8_membase_imm", IREG, NONE, NONE)
+MINI_OP(OP_STOREX_MEMBASE,      	"storex_membase", IREG, XREG, NONE)
 MINI_OP(OP_STOREV_MEMBASE,      "storev_membase", IREG, VREG, NONE)
 
 /* MONO_IS_LOAD_MEMBASE depends on the order here */
@@ -127,6 +133,13 @@ MINI_OP(OP_LOADU4_MEMBASE,"loadu4_membase", IREG, IREG, NONE)
 MINI_OP(OP_LOADI8_MEMBASE,"loadi8_membase", IREG, IREG, NONE)
 MINI_OP(OP_LOADR4_MEMBASE,"loadr4_membase", FREG, IREG, NONE)
 MINI_OP(OP_LOADR8_MEMBASE,"loadr8_membase", FREG, IREG, NONE)
+
+MINI_OP(OP_LOADX_MEMBASE, 			"loadx_membase", XREG, IREG, NONE)
+
+#ifdef MONO_ARCH_SUPPORT_SIMD_INTRINSICS
+MINI_OP(OP_LOADX_ALIGNED_MEMBASE,  "loadx_aligned_membase", XREG, IREG, NONE)
+#endif
+
 MINI_OP(OP_LOADV_MEMBASE,   "loadv_membase", VREG, IREG, NONE)
 
 /* indexed loads: dreg = load at (sreg1 + sreg2)*/
@@ -614,6 +627,40 @@ MINI_OP(OP_DUMMY_USE, "dummy_use", NONE, IREG, NONE)
 MINI_OP(OP_DUMMY_STORE, "dummy_store", NONE, NONE, NONE)
 MINI_OP(OP_NOT_REACHED, "not_reached", NONE, NONE, NONE)
 MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
+
+/* SIMD opcodes. */
+
+#ifdef MONO_ARCH_SUPPORT_SIMD_INTRINSICS
+
+MINI_OP(OP_ADDPS, "addps", XREG, XREG, XREG)
+MINI_OP(OP_DIVPS, "divps", XREG, XREG, XREG)
+MINI_OP(OP_MULPS, "mulps", XREG, XREG, XREG)
+MINI_OP(OP_SUBPS, "subps", XREG, XREG, XREG)
+MINI_OP(OP_MAXPS, "maxps", XREG, XREG, XREG)
+MINI_OP(OP_MINPS, "minps", XREG, XREG, XREG)
+MINI_OP(OP_HADDPS, "haddps", XREG, XREG, XREG)
+MINI_OP(OP_HSUBPS, "hsubps", XREG, XREG, XREG)
+MINI_OP(OP_ADDSUBPS, "addsubps", XREG, XREG, XREG)
+
+MINI_OP(OP_RSQRTPS, "rsqrtps", XREG, XREG, NONE)
+MINI_OP(OP_SQRTPS, "sqrtps", XREG, XREG, NONE)
+MINI_OP(OP_SHUFLEPS, "shuffleps", XREG, XREG, NONE)
+
+MINI_OP(OP_PAND, "pand", XREG, XREG, XREG)
+MINI_OP(OP_POR, "por", XREG, XREG, XREG)
+MINI_OP(OP_PXOR, "pxor", XREG, XREG, XREG)
+
+MINI_OP(OP_EXTRACT_I4, "extract_i4", IREG, XREG, NONE)
+MINI_OP(OP_ICONV_TO_R8_RAW, "iconv_to_r8_raw", FREG, IREG, NONE)
+MINI_OP(OP_LOADX_R4, "loadx_r4", FREG, IREG, NONE)
+
+MINI_OP(OP_PUSH_R4, "push_r4", NONE, FREG, NONE)
+MINI_OP(OP_LOADX_STACK, "loadx_stack", XREG, NONE, NONE)
+
+#endif
+
+MINI_OP(OP_XMOVE,   "xmove", XREG, XREG, NONE)
+MINI_OP(OP_XZERO,   "xzero", XREG, NONE, NONE)
 
 /* Atomic specific
 

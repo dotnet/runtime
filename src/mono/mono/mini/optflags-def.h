@@ -23,3 +23,5 @@ OPTFLAG(SSA      ,21, "ssa",        "Use plain SSA form")
 OPTFLAG(TREEPROP ,22, "treeprop",   "Tree propagation")
 OPTFLAG(SSE2     ,23, "sse2",       "SSE2 instructions on x86")
 OPTFLAG(GSHARED  ,24, "gshared",    "Share generics")
+OPTFLAG(SIMD	 ,25, "simd",	    "Simd intrinsics")
+

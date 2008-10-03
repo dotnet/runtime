@@ -533,7 +533,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define MONO_EMIT_NEW_VZERO(cfg,dr,kl) do {	\
         MonoInst *inst; \
-        MONO_INST_NEW ((cfg), (inst), OP_VZERO); \
+        MONO_INST_NEW ((cfg), (inst), MONO_CLASS_IS_SIMD (cfg, kl) ? OP_XZERO : OP_VZERO); \
         inst->dreg = dr; \
 		(inst)->type = STACK_VTYPE;	\
         (inst)->klass = (kl); \
