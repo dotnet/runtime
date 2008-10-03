@@ -69,7 +69,7 @@ class Test {
 		// Test the return value from  ConstructorInfo.Invoke when a precreated
 		// valuetype is used.
 		ConstructorInfo ci = typeof (SimpleStruct).GetConstructor (new Type [] { typeof (bool) });
-		SimpleStruct res2 = (SimpleStruct)ci.Invoke (ss, new object [] { false });
+		ci.Invoke (ss, new object [] { false });
 
 		// Test invoking of the array Get/Set methods
 		string[,] arr = new string [10, 10];
