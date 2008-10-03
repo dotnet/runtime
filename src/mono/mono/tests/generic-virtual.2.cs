@@ -56,27 +56,30 @@ public class main {
 		Gen<ClassA> ga = new Gen<ClassA> ();
 		Gen<ClassA> gsa = new GenSub<ClassA> ();
 		Gen<ClassA> gss = new GenSubSub ();
+		int i;
 
-		if (!ga.test ())
-			return 1;
-		if (!gsa.test ())
-			return 1;
-		if (!gss.test ())
-			return 1;
+		for (i = 0; i < 100; ++i) {
+			if (!ga.test ())
+				return 1;
+			if (!gsa.test ())
+				return 1;
+			if (!gss.test ())
+				return 1;
 
-		StringArrayDelegate sad = new StringArrayDelegate (GenSubSub.staticNewArr<string>);
-		string[] arr = sad ();
-		if (arr.GetType () != typeof (string[]))
-			return 1;
-		if (arr.Length != 5)
-			return 1;
+			StringArrayDelegate sad = new StringArrayDelegate (GenSubSub.staticNewArr<string>);
+			string[] arr = sad ();
+			if (arr.GetType () != typeof (string[]))
+				return 1;
+			if (arr.Length != 5)
+				return 1;
 
-		sad = new StringArrayDelegate (gss.newArr<string>);
-		arr = sad ();
-		if (arr.GetType () != typeof (string[]))
-			return 1;
-		if (arr.Length != 5)
-			return 1;
+			sad = new StringArrayDelegate (gss.newArr<string>);
+			arr = sad ();
+			if (arr.GetType () != typeof (string[]))
+				return 1;
+			if (arr.Length != 5)
+				return 1;
+		}
 
 		return 0;
 	}
