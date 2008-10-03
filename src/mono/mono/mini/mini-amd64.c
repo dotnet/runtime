@@ -1935,6 +1935,19 @@ emit_sig_cookie2 (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MONO_ADD_INS (cfg->cbb, arg);
 }
 
+#define NEW_VARSTORE(cfg,dest,var,vartype,inst) do {	\
+        MONO_INST_NEW ((cfg), (dest), OP_MOVE); \
+		(dest)->opcode = mono_type_to_regmove ((cfg), (vartype));    \
+		(dest)->klass = (var)->klass;	\
+        (dest)->sreg1 = (inst)->dreg; \
+		(dest)->dreg = (var)->dreg;   \
+        if ((dest)->opcode == OP_VMOVE) (dest)->klass = mono_class_from_mono_type ((vartype)); \
+	} while (0)
+
+#define NEW_ARGSTORE(cfg,dest,num,inst) NEW_VARSTORE ((cfg), (dest), cfg->args [(num)], cfg->arg_types [(num)], (inst))
+
+#define EMIT_NEW_ARGSTORE(cfg,dest,num,inst) do { NEW_ARGSTORE ((cfg), (dest), (num), (inst)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
@@ -1984,9 +1997,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgOnStack:
 		case ArgValuetypeInReg:
 		case ArgValuetypeAddrInIReg:
-			if (ainfo->storage == ArgOnStack && call->tail_call)
-				NOT_IMPLEMENTED;
-			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
+			if (ainfo->storage == ArgOnStack && call->tail_call) {
+				MonoInst *call_inst = (MonoInst*)call;
+				cfg->args [i]->flags |= MONO_INST_VOLATILE;
+				EMIT_NEW_ARGSTORE (cfg, call_inst, i, in);
+			} else if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
 				guint32 align;
 				guint32 size;
 
