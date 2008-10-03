@@ -1,25 +1,26 @@
 using System;
+using System.Collections.Generic;
 
 public class Tests {
 
 	struct A1 {
-		long a1, a2, a3, a4;
+		public long a1, a2, a3, a4;
 	}
 
 	struct A2 {
-		A1 a1, a2, a3, a4;
+		public A1 a1, a2, a3, a4;
 	}
 
 	struct A3 {
-		A2 a1, a2, a3, a4;
+		public A2 a1, a2, a3, a4;
 	}
 
 	struct A4 {
-		A3 a1, a2, a3, a4;
+		public A3 a1, a2, a3, a4;
 	}
 
 	struct A5 {
-		A4 a1, a2, a3, a4;
+		public A4 a1, a2, a3, a4;
 	}
 
 	public static int foo () {
@@ -28,14 +29,45 @@ public class Tests {
 		return foo () + 1;
 	}
 
+	// call an icall so we have a big chance to hit the
+	// stack overflow in unmanaged code
+	static void Recurse () {
+		Type t = typeof (Dictionary<,>);
+		t.GetGenericArguments ();
+		Recurse ();
+	}
+
 	public static int Main () {
+		// Try overflow in managed code
+		int count = 0;
 		try {
 			foo ();
 		}
 		catch (StackOverflowException) {
 			Console.WriteLine ("Stack overflow caught.");
-			return 0;
+			count ++;
 		}
-		return 1;
+		if (count != 1)
+			return 1;
+
+		// Try overflow in unmanaged code
+		count = 0;
+		try {
+			Recurse ();
+		} catch (Exception ex) {
+			Console.WriteLine ("Handled: {0}", ex.Message);
+			count++;
+		}
+		// Check that the stack protection is properly restored
+		try {
+			Recurse ();
+		} catch (Exception ex) {
+			Console.WriteLine ("Again: {0}", ex.Message);
+			count++;
+		}
+		if (count != 2)
+			return 2;
+
+		return 0;
 	}
 }
