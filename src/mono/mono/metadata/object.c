@@ -1499,7 +1499,12 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable
 
 	entries = NULL;
 	for (list = gvc; list; list = list->next) {
-		MonoImtBuilderEntry *entry = g_new0 (MonoImtBuilderEntry, 1);
+		MonoImtBuilderEntry *entry;
+
+		if (list->count < THUNK_THRESHOLD)
+			continue;
+
+		entry = g_new0 (MonoImtBuilderEntry, 1);
 		entry->key = list->inst;
 		entry->value.target_code = list->code;
 		if (entries)
