@@ -16,6 +16,8 @@
 #endif
 
 #include <math.h>
+#include <string.h>
+#include <ctype.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -35,32 +37,17 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/threads.h>
 #include <mono/metadata/marshal.h>
-#include <mono/metadata/socket-io.h>
-#include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/io-layer/io-layer.h>
-#include "mono/metadata/profiler.h"
-#include <mono/metadata/profiler-private.h>
-#include <mono/metadata/mono-config.h>
-#include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/mono-debug-debugger.h>
-#include <mono/metadata/monitor.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/security-core-clr.h>
-#include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/os/gc_wrapper.h>
 
 #define NEW_IR
 #include "mini.h"
-#include <string.h>
-#include <ctype.h>
 #include "trace.h"
 
 #include "ir-emit.h"
