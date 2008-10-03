@@ -1707,6 +1707,28 @@ typedef union {
 		x86_ret ((inst));	\
 	} while (0)
 
+
+typedef enum {
+	X86_SSE_SQRT = 0x51,
+	X86_SSE_RSQRT = 0x52,
+	X86_SSE_ADD = 0x58,
+	X86_SSE_DIV = 0x5E,
+	X86_SSE_MUL = 0x59,
+	X86_SSE_SUB = 0x5C,
+	X86_SSE_MIN = 0x5D,
+	X86_SSE_MAX = 0x5F,
+
+	X86_SSE_ADDSUB = 0xD0,
+	X86_SSE_HADD = 0x7C,
+	X86_SSE_HSUB = 0x7D,
+	
+	X86_SSE_PAND = 0XDB,
+	X86_SSE_POR = 0XEB,
+	X86_SSE_PXOR = 0XEF,
+	
+} X86_SSE_Opcode;
+
+
 /* minimal SSE* support */
 #define x86_movsd_reg_membase(inst,dreg,basereg,disp)	\
 	do {	\
@@ -1724,4 +1746,88 @@ typedef union {
 		x86_reg_emit ((inst), (dreg), (reg));	\
 	} while (0)
 
+#define x86_sse_alu_reg_reg(inst,opc,dreg,reg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0F;	\
+		*(inst)++ = (unsigned char)(opc);	\
+		x86_reg_emit ((inst), (dreg), (reg));	\
+	} while (0)
+
+#define x86_sse_alu_pd_reg_reg(inst,opc,dreg,reg)       \
+	do {    \
+		*(inst)++ = (unsigned char)0x66;        \
+		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
+	} while (0)
+
+#define x86_sse_alu_ps_reg_reg(inst,opc,dreg,reg)	\
+	do {	\
+		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
+	} while (0)
+
+#define x86_sse_alu_sd_reg_reg(inst,opc,dreg,reg)       \
+	do {    \
+		*(inst)++ = (unsigned char)0xF2;        \
+		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
+	} while (0)
+
+#define x86_sse_alu_ss_reg_reg(inst,opc,dreg,reg)       \
+	do {    \
+		*(inst)++ = (unsigned char)0xF3;        \
+		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
+	} while (0)
+
+#define x86_movups_reg_membase(inst,sreg,basereg,disp)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x10;	\
+		x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
+	} while (0)
+
+#define x86_movups_membase_reg(inst,basereg,disp,reg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x11;	\
+		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+	} while (0)
+
+#define x86_movaps_reg_membase(inst,sreg,basereg,disp)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x28;	\
+		x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
+	} while (0)
+
+#define x86_movaps_membase_reg(inst,basereg,disp,reg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x29;	\
+		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+	} while (0)
+
+#define x86_movaps_reg_reg(inst,dreg,sreg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x28;	\
+		x86_reg_emit ((inst), (dreg), (sreg));	\
+	} while (0)
+
+
+#define x86_movd_reg_xreg(inst,dreg,sreg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x66;	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x7e;	\
+		x86_reg_emit ((inst), (sreg), (dreg));	\
+	} while (0)
+
+#define x86_pshufd_reg_reg(inst,dreg,sreg,mask)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x66;	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x70;	\
+		x86_reg_emit ((inst), (dreg), (sreg));	\
+		*(inst)++ = (unsigned char)mask;	\
+	} while (0)
+
 #endif // X86_H
+
