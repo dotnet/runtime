@@ -4297,11 +4297,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	if (class->generic_container)
 		mono_metadata_load_generic_param_constraints (
 			image, type_token, class->generic_container);
-#if !defined(DISABLE_SIMD) && defined(__i386__) 
+
 	if (class->image->assembly_name && !strcmp (class->image->assembly_name, "Mono.Simd") && !strcmp (nspace, "Mono.Simd")) {
 		class->simd_type = !strcmp (name, "Vector4f") || !strcmp (name, "Vector4u");
 	}
-#endif
+
 	mono_loader_unlock ();
 
 	mono_profiler_class_loaded (class, MONO_PROFILE_OK);
