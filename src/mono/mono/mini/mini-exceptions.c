@@ -1273,7 +1273,6 @@ mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 		gboolean handled = FALSE;
 
 		guard_size = jit_tls->stack_ovf_guard_size - (mono_pagesize () * SIZEOF_VOID_P / 4);
-		guard_size = jit_tls->stack_ovf_guard_size - mono_pagesize ();
 		while (guard_size && fault_addr < (guint8*)jit_tls->stack_ovf_guard_base + guard_size) {
 			guard_size -= mono_pagesize ();
 		}
