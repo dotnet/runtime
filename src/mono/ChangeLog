@@ -1,3 +1,7 @@
+2008-10-03  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* configure.in: Add simd intrinsics to the disable set.
+
 2008-10-01  Jb Evain  <jbevain@novell.com>
 
 	* scripts/Makefile.am: add mono-cil-strip.
