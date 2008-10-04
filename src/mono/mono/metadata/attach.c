@@ -198,7 +198,9 @@ mono_attach_init (void)
 {
 	InitializeCriticalSection (&agent_mutex);
 
+#ifndef HAVE_NULL_GC
 	mono_gc_add_finalizer_thread_callback (maybe_start, NULL);
+#endif
 }
 
 /**
