@@ -1062,6 +1062,11 @@ mono_gc_finalize_notify (void)
 {
 }
 
+void
+mono_gc_add_finalizer_thread_callback (FinalizerThreadCallback func, gpointer user_data)
+{
+}
+
 void mono_gc_init (void)
 {
 	InitializeCriticalSection (&handle_section);
