@@ -309,6 +309,13 @@ arch_built=cpu-ppc.h
 arch_define=__ppc__
 endif
 
+if POWERPC64
+arch_sources = $(ppc_sources)
+arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-ppc.brg
+arch_built=cpu-ppc64.h
+arch_define=__ppc__
+endif
+
 if MIPS
 arch_sources = $(mips_sources)
 arch_BURGSRC= $(srcdir)/inssel-long32-mips.brg $(srcdir)/inssel-mips.brg
@@ -434,6 +441,9 @@ cpu-amd64.h: cpu-amd64.md genmdesc$(EXEEXT)
 
 cpu-ppc.h: cpu-ppc.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-ppc.md cpu-ppc.h ppcg4
+
+cpu-ppc64.h: cpu-ppc64.md genmdesc$(EXEEXT)
+	$(GENMDESC_PRG) $(srcdir)/cpu-ppc64.md cpu-ppc64.h ppcg4
 
 cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
