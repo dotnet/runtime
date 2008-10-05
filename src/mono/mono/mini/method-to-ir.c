@@ -5826,7 +5826,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					}
 				}
 
-				mono_save_token_info (cfg, image, token, cmethod);
+				mono_save_token_info (cfg, image, token, cil_method);
 
 				n = fsig->param_count + fsig->hasthis;
 
