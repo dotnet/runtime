@@ -825,7 +825,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, FALSE);
 
-	cfg->frame_reg = MONO_ARCH_BASEREG;
+	cfg->frame_reg = X86_EBP;
 	offset = 0;
 
 	/* Reserve space to save LMF and caller saved registers */

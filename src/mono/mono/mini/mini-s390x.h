@@ -236,7 +236,6 @@ typedef struct
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-#define MONO_ARCH_BASEREG s390_r15
 #define MONO_ARCH_RETREG1 s390_r2
 
 /*-----------------------------------------------*/

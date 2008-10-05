@@ -122,18 +122,8 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-#define MONO_ARCH_BASEREG X86_EBP
 #define MONO_ARCH_RETREG1 X86_EAX
 #define MONO_ARCH_RETREG2 X86_EDX
-
-#define MONO_ARCH_ENCODE_LREG(r1,r2) (r1 | (r2<<3))
-
-#define inst_dreg_low dreg&7 
-#define inst_dreg_high dreg>>3
-#define inst_sreg1_low sreg1&7 
-#define inst_sreg1_high sreg1>>3
-#define inst_sreg2_low sreg2&7 
-#define inst_sreg2_high sreg2>>3
 
 struct MonoLMF {
 	/* Offset by 1 if this is a trampoline LMF frame */
