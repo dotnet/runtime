@@ -407,8 +407,8 @@ decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
  * metadata for the method if the caller does not need it. If the method has no token,
  * then it is loaded from metadata and METHOD is set to the method instance.
  */
-static inline MonoImage*
-decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, guint8 *buf, guint8 **endbuf)
+static MonoImage*
+decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, gboolean *no_aot_trampoline, guint8 *buf, guint8 **endbuf)
 {
 	guint32 image_index, value;
 	MonoImage *image;
@@ -416,9 +416,18 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 
 	if (method)
 		*method = NULL;
+	if (no_aot_trampoline)
+		*no_aot_trampoline = FALSE;
 
 	value = decode_value (p, &p);
 	image_index = value >> 24;
+
+	if (image_index == 252) {
+		if (no_aot_trampoline)
+			*no_aot_trampoline = TRUE;
+		value = decode_value (p, &p);
+		image_index = value >> 24;
+	}
 
 	if (image_index == 253) {
 		/* Wrapper */
@@ -573,7 +582,7 @@ decode_method_ref_2 (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
 	MonoMethod *method;
 	guint32 token;
-	MonoImage *image = decode_method_ref (module, &token, &method, buf, endbuf);
+	MonoImage *image = decode_method_ref (module, &token, &method, NULL, buf, endbuf);
 
 	if (method)
 		return method;
@@ -1110,12 +1119,12 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->no_special_static_fields = (flags >> 7) & 0x1;
 
 	if (info->has_cctor) {
-		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, NULL, buf, &buf);
+		MonoImage *cctor_image = decode_method_ref (module, &info->cctor_token, NULL, NULL, buf, &buf);
 		if (!cctor_image)
 			return FALSE;
 	}
 	if (info->has_finalize) {
-		info->finalize_image = decode_method_ref (module, &info->finalize_token, NULL, buf, &buf);
+		info->finalize_image = decode_method_ref (module, &info->finalize_token, NULL, NULL, buf, &buf);
 		if (!info->finalize_image)
 			return FALSE;
 	}
@@ -1141,6 +1150,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	gboolean err;
 	guint32 token;
 	MonoImage *image;
+	gboolean no_aot_trampoline;
 
 	if (MONO_CLASS_IS_INTERFACE (klass) || klass->rank || !aot_module)
 		return NULL;
@@ -1153,10 +1163,15 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 		return NULL;
 
 	for (i = 0; i < slot; ++i)
-		decode_method_ref (aot_module, &token, NULL, p, &p);
+		decode_method_ref (aot_module, &token, NULL, NULL, p, &p);
 
-	image = decode_method_ref (aot_module, &token, NULL, p, &p);
+	image = decode_method_ref (aot_module, &token, NULL, &no_aot_trampoline, p, &p);
 	if (!image)
+		return NULL;
+	if (no_aot_trampoline)
+		return NULL;
+
+	if (mono_metadata_token_index (token) == 0)
 		return NULL;
 
 	return mono_aot_get_method_from_token (domain, image, token);
@@ -1538,13 +1553,14 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_METHOD_RGCTX: {
 		guint32 token;
 		MonoMethod *method;
+		gboolean no_aot_trampoline;
 
-		image = decode_method_ref (aot_module, &token, &method, p, &p);
+		image = decode_method_ref (aot_module, &token, &method, &no_aot_trampoline, p, &p);
 		if (!image)
 			goto cleanup;
 
 #ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
-		if (!method && !mono_aot_only && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
+		if (!method && !mono_aot_only && !no_aot_trampoline && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
 			ji->data.target = mono_create_jit_trampoline_from_token (image, token);
 			ji->type = MONO_PATCH_INFO_ABS;
 		}

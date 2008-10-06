@@ -1808,6 +1808,12 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 
 	g_assert (image_index < MAX_IMAGE_INDEX);
 
+	/* Mark methods which can't use aot trampolines because they need the further 
+	 * processing in mono_magic_trampoline () which requires a MonoMethod*.
+	 */
+	if (method->is_generic && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
+		encode_value ((252 << 24), p, &p);
+
 	if (method->wrapper_type) {
 		/* Marker */
 		encode_value ((253 << 24), p, &p);

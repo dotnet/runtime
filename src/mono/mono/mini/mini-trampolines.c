@@ -382,6 +382,7 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 	gpointer addr;
 	gpointer *vtable_slot;
 	gboolean is_got_entry;
+	guint8 *plt_entry;
 
 	image = *(gpointer*)(gpointer)token_info;
 	token_info += sizeof (gpointer);
@@ -392,36 +393,20 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 		method = mono_get_method (image, token, NULL);
 		g_assert (method);
 
-		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
-
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-			method = mono_marshal_get_synchronized_wrapper (method);
-
-		addr = mono_compile_method (method);
-		g_assert (addr);
+		/* Use the generic code */
+		return mono_magic_trampoline (regs, code, method, tramp);
 	}
 
 	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+	g_assert (!vtable_slot);
 
-	if (vtable_slot) {
-		is_got_entry = mono_aot_is_got_entry (code, (guint8*)vtable_slot);
+	/* This is a normal call through a PLT entry */
+	plt_entry = mono_aot_get_plt_entry (code);
+	g_assert (plt_entry);
 
-		if (!is_got_entry) {
-			if (!method)
-				method = mono_get_method (image, token, NULL);
-			if (method->klass->valuetype)
-				addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), method, addr);
-		}
-	} else {
-		/* This is a normal call through a PLT entry */
-		guint8 *plt_entry = mono_aot_get_plt_entry (code);
+	mono_arch_patch_plt_entry (plt_entry, addr);
 
-		g_assert (plt_entry);
-
-		mono_arch_patch_plt_entry (plt_entry, addr);
-
-		is_got_entry = FALSE;
-	}
+	is_got_entry = FALSE;
 
 	/*
 	 * Since AOT code is only used in the root domain, 
