@@ -269,7 +269,8 @@ test_sources = 		\
 	iltests.il.in		\
 	test.cs			\
 	generics.cs	\
-	generics-variant-types.il
+	generics-variant-types.il	\
+	basic-simd.cs
 
 if MONO_DEBUGGER_SUPPORTED
 if AMD64
@@ -284,7 +285,7 @@ else
 mono_debugger_sources =
 endif
 
-regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe
+regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
 
 common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
 
@@ -403,6 +404,9 @@ libmonoinclude_HEADERS = jit.h
 
 libmono_la_LIBADD = \
 	$(libs) $(LIBMONO_DTRACE_OBJECT)
+
+basic-simd.exe: basic-simd.cs
+	$(MCS) -out:$@ $< -r:TestDriver.dll -r:Mono.Simd.dll
 
 generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
 	$(MCS) -out:$@ $< -r:TestDriver.dll -r:generics-variant-types.dll
