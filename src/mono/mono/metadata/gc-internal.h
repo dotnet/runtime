@@ -82,7 +82,6 @@ typedef void (*FinalizerThreadCallback) (gpointer user_data);
 int      mono_gc_invoke_finalizers  (void) MONO_INTERNAL;
 gboolean mono_gc_pending_finalizers (void) MONO_INTERNAL;
 void     mono_gc_finalize_notify    (void) MONO_INTERNAL;
-void     mono_gc_add_finalizer_thread_callback (FinalizerThreadCallback func, gpointer user_data) MONO_INTERNAL;
 
 void* mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size) MONO_INTERNAL;
 void* mono_gc_alloc_obj (MonoVTable *vtable, size_t size) MONO_INTERNAL;
