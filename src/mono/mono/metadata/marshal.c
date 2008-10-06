@@ -2914,7 +2914,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	g_assert (sig->hasthis);
 
 	name = mono_signature_to_name (sig, "begin_invoke");
-	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
+	mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
 	g_free (name);
 
 	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
@@ -3074,7 +3074,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	g_assert (sig->hasthis);
 
 	name = mono_signature_to_name (sig, "end_invoke");
-	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name, MONO_WRAPPER_DELEGATE_END_INVOKE);
+	mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_END_INVOKE);
 	g_free (name);
 
 	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
@@ -4443,7 +4443,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	static_sig->hasthis = 0;
 
 	name = mono_signature_to_name (sig, "invoke");
-	mb = mono_mb_new (mono_defaults.multicastdelegate_class, name,  MONO_WRAPPER_DELEGATE_INVOKE);
+	mb = mono_mb_new (method->klass, name,  MONO_WRAPPER_DELEGATE_INVOKE);
 	g_free (name);
 
 	/* allocate local 0 (object) */
