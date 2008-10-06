@@ -2277,6 +2277,22 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
+	/* delegate-invoke wrappers */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+		MonoClass *klass;
+		
+		token = MONO_TOKEN_TYPE_DEF | (i + 1);
+		klass = mono_class_get (acfg->image, token);
+
+		if (klass->delegate) {
+			method = mono_get_delegate_invoke (klass);
+
+			m = mono_marshal_get_delegate_invoke (method, NULL);
+
+			add_method (acfg, m);
+		}
+	}
+
 #if 0
 	/* static rgctx wrappers */
 	/* FIXME: Each wrapper belongs to a given instantiation of a generic method */
