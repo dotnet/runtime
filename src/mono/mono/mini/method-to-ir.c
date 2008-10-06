@@ -1222,7 +1222,11 @@ mono_compile_get_interface_var (MonoCompile *cfg, int slot, MonoInst *ins)
 static void
 mono_save_token_info (MonoCompile *cfg, MonoImage *image, guint32 token, gpointer key)
 {
-	if (cfg->compile_aot) {
+	/* 
+	 * Don't use this if a generic_context is set, since that means AOT can't
+	 * look up the method using just the image+token.
+	 */
+	if (cfg->compile_aot && !cfg->generic_context) {
 		MonoJumpInfoToken *jump_info_token = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoToken));
 		jump_info_token->image = image;
 		jump_info_token->token = token;

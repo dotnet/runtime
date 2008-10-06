@@ -3578,17 +3578,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				if (!g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method))
 					skip = TRUE;
 			}
-			if (patch_info->data.method->is_inflated && !g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method)) {
-				/* 
-				 * encode_method_ref () can handle this method if it is not generic
-				 * and its class can be encoded.
-				 */
-				if (!g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method->klass) || mono_method_get_context (patch_info->data.method)->method_inst) {
-					/* FIXME: Can't encode these */
-					//printf ("Skip (can't encode):   %s %d -> %s\n", mono_method_full_name (method, TRUE), patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
-					skip = TRUE;
-				}
-			}
 			break;
 		case MONO_PATCH_INFO_VTABLE:
 		case MONO_PATCH_INFO_CLASS_INIT:
