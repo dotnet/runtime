@@ -559,7 +559,8 @@ struct MonoInst {
 		gint shift_amount;
 		gboolean is_pinvoke; /* for variables in the unmanaged marshal format */
 		gboolean record_cast_details; /* For CEE_CASTCLASS */
-		MonoInst *spill_var; /* for OP_ICONV_TO_R8_RAW */
+		MonoInst *spill_var; /* for OP_ICONV_TO_R8_RAW and OP_FCONV_TO_R8_X */
+		guint16 source_opcode; /*OP_XCONV_R8_TO_I4 needs to know which op was used to do proper widening*/
 	} backend;
 	
 	MonoClass *klass;
@@ -978,8 +979,11 @@ typedef struct {
 	MonoInst **tailcall_valuetype_addrs;
 
 	/* Used to implement iconv_to_r8_raw on archs that can't do raw
-	copy between an ireg and a freg*/
+	copy between an ireg and a freg. This is an int32 var.*/
 	MonoInst *iconv_raw_var;
+
+	/* Used to implement fconv_to_r8_x. This is a double (8 bytes) var.*/
+	MonoInst *fconv_to_r8_x_var;
 } MonoCompile;
 
 typedef enum {

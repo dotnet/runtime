@@ -443,4 +443,6 @@ storex_aligned_membase_reg: dest:b src1:x len:7
 push_r4: src1:f len:13
 loadx_stack: dest:x len: 13
 
+fconv_to_r8_x: dest:x src1:f len:60 
+xconv_r8_to_i4: dest:y src1:x len:60
 

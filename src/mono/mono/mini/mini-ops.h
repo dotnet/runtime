@@ -657,6 +657,9 @@ MINI_OP(OP_LOADX_R4, "loadx_r4", FREG, IREG, NONE)
 MINI_OP(OP_PUSH_R4, "push_r4", NONE, FREG, NONE)
 MINI_OP(OP_LOADX_STACK, "loadx_stack", XREG, NONE, NONE)
 
+MINI_OP(OP_FCONV_TO_R8_X, "fconv_to_r8_x", XREG, FREG, NONE)
+MINI_OP(OP_XCONV_R8_TO_I4, "xconv_r8_to_i4", IREG, XREG, NONE)
+
 #endif
 
 MINI_OP(OP_XMOVE,   "xmove", XREG, XREG, NONE)

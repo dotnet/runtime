@@ -291,6 +291,10 @@ typedef struct {
 
 #define MONO_ARCH_HAVE_CMOV_OPS 1
 
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+#define MONO_ARCH_HAVE_DECOMPOSE_OPTS 1
+#endif
+
 #if !defined(__APPLE__)
 #define MONO_ARCH_AOT_SUPPORTED 1
 #endif

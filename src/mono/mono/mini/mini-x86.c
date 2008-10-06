@@ -1800,7 +1800,9 @@ static unsigned char*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int size, gboolean is_signed)
 {
 #define XMM_TEMP_REG 0
-	if (cfg->opt & MONO_OPT_SSE2 && size < 8) {
+	/*This SSE2 optimization must not be done which OPT_SIMD in place as it clobbers xmm0.*/
+	/*The xmm pass decomposes OP_FCONV_ ops anyway anyway.*/
+	if (cfg->opt & MONO_OPT_SSE2 && size < 8 && !(cfg->opt & MONO_OPT_SIMD)) {
 		/* optimize by assigning a local var for this use so we avoid
 		 * the stack manipulations */
 		x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
@@ -3860,6 +3862,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_movups_reg_membase (code, ins->dreg, X86_ESP, 0);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 16);
 			break;
+
+		case OP_FCONV_TO_R8_X:
+			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, TRUE, TRUE);
+			x86_movsd_reg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
+			break;
+
+		case OP_XCONV_R8_TO_I4:
+			x86_cvttsd2si (code, ins->dreg, ins->sreg1);
+			switch (ins->backend.source_opcode) {
+			case OP_FCONV_TO_I1:
+				x86_widen_reg (code, ins->dreg, ins->dreg, TRUE, FALSE);
+				break;
+			case OP_FCONV_TO_U1:
+				x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+				break;
+			case OP_FCONV_TO_I2:
+				x86_widen_reg (code, ins->dreg, ins->dreg, TRUE, TRUE);
+				break;
+			case OP_FCONV_TO_U2:
+				x86_widen_reg (code, ins->dreg, ins->dreg, FALSE, TRUE);
+				break;
+			}			
+			break;
 #endif
 		default:
 			g_warning ("unknown opcode %s\n", mono_inst_name (ins->opcode));
@@ -5159,3 +5184,66 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	default: return ((gpointer)(&ctx->eax)[reg]);
 	}
 }
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+
+static MonoInst*
+get_float_to_x_spill_area (MonoCompile *cfg)
+{
+	if (!cfg->fconv_to_r8_x_var) {
+		cfg->fconv_to_r8_x_var = mono_compile_create_var (cfg, &mono_defaults.double_class->byval_arg, OP_LOCAL);
+		cfg->fconv_to_r8_x_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
+	}	
+	return cfg->fconv_to_r8_x_var;
+}
+
+/*
+ * Convert all fconv opts that MONO_OPT_SSE2 would get wrong. 
+ */
+void
+mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
+{
+	MonoInst *fconv;
+
+	int dreg, src_opcode;
+	g_assert (cfg->new_ir);
+
+	if (!(cfg->opt & MONO_OPT_SSE2) || !(cfg->opt & MONO_OPT_SIMD))
+		return;
+
+	switch (src_opcode = ins->opcode) {
+	case OP_FCONV_TO_I1:
+	case OP_FCONV_TO_U1:
+	case OP_FCONV_TO_I2:
+	case OP_FCONV_TO_U2:
+	case OP_FCONV_TO_I4:
+	case OP_FCONV_TO_I:
+		break;
+	default:
+		return;
+	}
+
+	/* dreg is the IREG and sreg1 is the FREG */
+	MONO_INST_NEW (cfg, fconv, OP_FCONV_TO_R8_X);
+	fconv->klass = NULL; /*FIXME, what can I use here as the Mono.Simd lib might not be loaded yet*/
+	fconv->sreg1 = ins->sreg1;
+	fconv->dreg = mono_alloc_ireg (cfg);
+	fconv->type = STACK_VTYPE;
+	fconv->backend.spill_var = get_float_to_x_spill_area (cfg);
+
+	mono_bblock_insert_before_ins (cfg->cbb, ins, fconv);
+
+	dreg = ins->dreg;
+	NULLIFY_INS (ins);
+	ins->opcode = OP_XCONV_R8_TO_I4;
+
+	ins->klass = mono_defaults.int32_class;
+	ins->sreg1 = fconv->dreg;
+	ins->dreg = dreg;
+	ins->type = STACK_I4;
+	ins->backend.source_opcode = src_opcode;
+
+
+}
+#endif
+
