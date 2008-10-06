@@ -611,7 +611,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	}
 	p = start = code;
 	endp = p + size;
-	start = (guint8*)((guint32)start & ~(cachelinesize - 1));
+	start = (guint8*)((gsize)start & ~(cachelinesize - 1));
 	/* use dcbf for smp support, later optimize for UP, see pem._64bit.d20030611.pdf page 211 */
 	if (1) {
 		for (p = start; p < endp; p += cachelineinc) {
