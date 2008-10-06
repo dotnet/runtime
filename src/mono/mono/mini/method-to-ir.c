@@ -3959,7 +3959,7 @@ check_inline_called_method_name_limit (MonoMethod *called_method)
 		//return (strncmp_result <= 0);
 		return (strncmp_result == 0);
 	} else {
-		return FALSE;
+		return TRUE;
 	}
 }
 #endif
@@ -3989,7 +3989,7 @@ check_inline_caller_method_name_limit (MonoMethod *caller_method)
 		//return (strncmp_result <= 0);
 		return (strncmp_result == 0);
 	} else {
-		return FALSE;
+		return TRUE;
 	}
 }
 #endif
