@@ -13,6 +13,9 @@ gboolean
 mono_attach_start (void) MONO_INTERNAL;
 
 void
+mono_attach_maybe_start (void) MONO_INTERNAL;
+
+void
 mono_attach_cleanup (void) MONO_INTERNAL;
 
 G_END_DECLS

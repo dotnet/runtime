@@ -108,8 +108,6 @@ static guint32 WINAPI receiver_thread (void *arg);
 
 static void transport_start_receive (void);
 
-static void maybe_start (gpointer user_data);
-
 /*
  * Functions to decode protocol data
  */
@@ -197,8 +195,6 @@ void
 mono_attach_init (void)
 {
 	InitializeCriticalSection (&agent_mutex);
-
-	mono_gc_add_finalizer_thread_callback (maybe_start, NULL);
 }
 
 /**
@@ -249,8 +245,8 @@ mono_attach_start (void)
 }
 
 /* Called by the finalizer thread when it is woken up */
-static void
-maybe_start (gpointer user_data)
+void
+mono_attach_maybe_start (void)
 {
 	if (!needs_to_start)
 		return;
@@ -590,6 +586,11 @@ gboolean
 mono_attach_start (void)
 {
 	return FALSE;
+}
+
+void
+mono_attach_maybe_start (void)
+{
 }
 
 void

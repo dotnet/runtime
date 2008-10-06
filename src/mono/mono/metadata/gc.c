@@ -23,6 +23,7 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
+#include <mono/metadata/attach.h>
 
 #ifndef PLATFORM_WIN32
 #include <pthread.h>
@@ -52,9 +53,6 @@ static GSList *domains_to_finalize= NULL;
 static MonoMList *threads_to_finalize = NULL;
 
 static MonoThread *gc_thread;
-
-static FinalizerThreadCallback fin_thread_cb;
-static gpointer fin_thread_cb_user_data;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
@@ -838,23 +836,6 @@ mono_gc_finalize_notify (void)
 	SetEvent (finalizer_event);
 }
 
-/*
- * mono_gc_add_finalizer_thread_callback:
- *
- *   Register a callback function which will be called by the finalizer thread
- * each time it is woken up. This means the callback should execute quickly, and
- * not block.
- * 
- */
-void
-mono_gc_add_finalizer_thread_callback (FinalizerThreadCallback func, gpointer user_data)
-{
-	g_assert (!fin_thread_cb);
-
-	fin_thread_cb = func;
-	fin_thread_cb_user_data = user_data;
-}
-
 static void
 collect_objects (gpointer key, gpointer value, gpointer user_data)
 {
@@ -929,8 +910,9 @@ finalizer_thread (gpointer unused)
 		/* Use alertable=FALSE since we will be asked to exit using the event too */
 		WaitForSingleObjectEx (finalizer_event, INFINITE, FALSE);
 
-		if (fin_thread_cb)
-			fin_thread_cb (fin_thread_cb_user_data);
+#ifndef DISABLE_ATTACH
+		mono_attach_maybe_start ();
+#endif
 
 		if (domains_to_finalize) {
 			mono_finalizer_lock ();
@@ -1059,11 +1041,6 @@ mono_gc_cleanup (void)
 /* Null GC dummy functions */
 void
 mono_gc_finalize_notify (void)
-{
-}
-
-void
-mono_gc_add_finalizer_thread_callback (FinalizerThreadCallback func, gpointer user_data)
 {
 }
 
