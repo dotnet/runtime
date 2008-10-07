@@ -7605,12 +7605,10 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 								       iargs, ip, cfg->real_offset, dont_inline, TRUE);
 						g_assert (costs > 0);
 						      
-						ip += 5;
 						cfg->real_offset += 5;
 						bblock = cfg->cbb;
 
 						inline_costs += costs;
-						break;
 					} else {
 						mono_emit_method_call (cfg, stfld_wrapper, iargs, NULL);
 					}
@@ -7620,8 +7618,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
 						
 					store->flags |= ins_flag;
-					ins_flag = 0;
 				}
+				ins_flag = 0;
 				ip += 5;
 				break;
 			}
@@ -7640,13 +7638,11 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					bblock = cfg->cbb;
 					g_assert (costs > 0);
 						      
-					ip += 5;
 					cfg->real_offset += 5;
 
 					*sp++ = iargs [0];
 
 					inline_costs += costs;
-					break;
 				} else {
 					ins = mono_emit_method_call (cfg, wrapper, iargs, NULL);
 					*sp++ = ins;
@@ -7679,10 +7675,10 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, load, field->type, sp [0]->dreg, foffset);
 					load->flags |= ins_flag;
-					ins_flag = 0;
 					*sp++ = load;
 				}
 			}
+			ins_flag = 0;
 			ip += 5;
 			break;
 		}
@@ -7861,7 +7857,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 				EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, ins->dreg, 0, sp [0]->dreg);
 				store->flags |= ins_flag;
-				ins_flag = 0;
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = NULL;
@@ -7945,6 +7940,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					*sp++ = load;
 				}
 			}
+			ins_flag = 0;
 			ip += 5;
 			break;
 		}
