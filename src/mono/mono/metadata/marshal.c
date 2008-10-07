@@ -3268,6 +3268,9 @@ cominterop_get_native_wrapper (MonoMethod *method)
 
 	mono_init_com_types ();
 
+	if (!method->klass->vtable)
+		mono_class_setup_vtable (method->klass);
+	
 	if (!method->klass->methods)
 		mono_class_setup_methods (method->klass);
 
