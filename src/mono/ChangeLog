@@ -1,5 +1,9 @@
 2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
 
+	* data/Makefile.am : there seems a couple more of required changes.
+
+2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
+
 	* scripts/Makefile.am : one more dist fix is needed.
 
 2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
