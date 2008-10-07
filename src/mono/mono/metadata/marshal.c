@@ -3194,6 +3194,44 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 		mspecs[0] = NULL;
 	}
 
+	for (i = 1; i < sig_native->param_count; i++) {
+		int mspec_index = i + 1;
+		if (mspecs[mspec_index] == NULL) {
+			// default object to VARIANT
+			if (sig_native->params[i]->type == MONO_TYPE_OBJECT) {
+				mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
+				mspecs[mspec_index]->native = MONO_NATIVE_STRUCT;
+			}
+			else if (sig_native->params[i]->type == MONO_TYPE_STRING) {
+				mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
+				mspecs[mspec_index]->native = MONO_NATIVE_BSTR;
+			}
+			else if (sig_native->params[i]->type == MONO_TYPE_CLASS) {
+				mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
+				mspecs[mspec_index]->native = MONO_NATIVE_INTERFACE;
+			}
+		}
+	}
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG) {
+		// move return spec to last param
+		if (!MONO_TYPE_IS_VOID (sig->ret) && mspecs[0] == NULL) {			
+			// default object to VARIANT
+			if (sig->ret->type == MONO_TYPE_OBJECT) {
+				mspecs[0] = g_new0 (MonoMarshalSpec, 1);
+				mspecs[0]->native = MONO_NATIVE_STRUCT;
+			}
+			else if (sig->ret->type == MONO_TYPE_STRING) {
+				mspecs[0] = g_new0 (MonoMarshalSpec, 1);
+				mspecs[0]->native = MONO_NATIVE_BSTR;
+			}
+			else if (sig->ret->type == MONO_TYPE_CLASS) {
+				mspecs[0] = g_new0 (MonoMarshalSpec, 1);
+				mspecs[0]->native = MONO_NATIVE_INTERFACE;
+			}
+		}
+	}
+
 	mono_marshal_emit_native_wrapper (method->klass->image, mb_native, sig_native, piinfo, mspecs, piinfo->addr, TRUE);
 
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
@@ -11803,14 +11841,46 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 
 			
 			/* move managed args up one */
-			for (param_index = sig->param_count; param_index >= 1; param_index--)
-				mspecs [param_index+1] = mspecs [param_index];
+			for (param_index = sig->param_count; param_index >= 1; param_index--) {
+				int mspec_index = param_index+1;
+				mspecs [mspec_index] = mspecs [param_index];
+
+				if (mspecs[mspec_index] == NULL) {
+					if (sig_adjusted->params[param_index]->type == MONO_TYPE_OBJECT) {
+						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
+						mspecs[mspec_index]->native = MONO_NATIVE_STRUCT;
+					}
+					else if (sig_adjusted->params[i]->type == MONO_TYPE_STRING) {
+						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
+						mspecs[mspec_index]->native = MONO_NATIVE_BSTR;
+					}
+					else if (sig_adjusted->params[i]->type == MONO_TYPE_CLASS) {
+						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
+						mspecs[mspec_index]->native = MONO_NATIVE_INTERFACE;
+					}
+				}
+			}
 
 			/* first arg is IntPtr for interface */
 			mspecs [1] = NULL;
 
 			/* move return spec to last param */
 			if (!preserve_sig && !MONO_TYPE_IS_VOID (sig->ret)) {
+				if (mspecs [0] == NULL) {
+					if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_OBJECT) {
+						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
+						mspecs[0]->native = MONO_NATIVE_STRUCT;
+					}
+					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_STRING) {
+						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
+						mspecs[0]->native = MONO_NATIVE_BSTR;
+					}
+					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_CLASS) {
+						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
+						mspecs[0]->native = MONO_NATIVE_INTERFACE;
+					}
+				}
+
 				mspecs [sig_adjusted->param_count] = mspecs [0];
 				mspecs [0] = NULL;
 			}
