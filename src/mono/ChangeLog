@@ -1,5 +1,9 @@
 2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
 
+	* configure.in : fix missing change for previous change.
+
+2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
+
 	* scripts/mono-nunit.pc.in, data/mono-nunit.pc.in:
 	  move former to latter.
 	* scripts/Makefile.am : remove packaging info.

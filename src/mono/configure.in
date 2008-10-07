@@ -2245,7 +2245,6 @@ fi
 AC_OUTPUT([
 Makefile
 mono-uninstalled.pc
-scripts/mono-nunit.pc
 scripts/mono-find-provides
 scripts/mono-find-requires
 mono/Makefile
@@ -2294,6 +2293,7 @@ data/net_2_0/Browsers/Makefile
 data/mint.pc
 data/mono.pc
 data/mono-cairo.pc
+data/mono-nunit.pc
 data/dotnet.pc
 data/dotnet35.pc
 data/wcf.pc
