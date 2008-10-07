@@ -16,7 +16,7 @@
 
 extern gdouble ves_icall_System_Math_Floor (gdouble x) MONO_INTERNAL;
 extern gdouble ves_icall_System_Math_Round (gdouble x) MONO_INTERNAL;
-extern gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits) MONO_INTERNAL;
+extern gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits, gboolean away_from_zero) MONO_INTERNAL;
 
 extern gdouble 
 ves_icall_System_Math_Sin (gdouble x) MONO_INTERNAL;

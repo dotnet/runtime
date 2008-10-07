@@ -48,7 +48,7 @@ gdouble ves_icall_System_Math_Round (gdouble x) {
 	return int_part;
 }
 
-gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits) {
+gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits, gboolean away_from_zero) {
 	double p, int_part, dec_part;
 	MONO_ARCH_SAVE_REGS;
 	if (value == HUGE_VAL)
@@ -60,9 +60,18 @@ gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits) {
 	p = pow(10, digits);
 	dec_part = modf (value, &int_part);
 	dec_part *= 1000000000000000ULL;
-	dec_part = floor(dec_part);
+	if (away_from_zero && dec_part > 0)
+		dec_part = ceil (dec_part);
+	else
+		dec_part = floor (dec_part);
 	dec_part /= (1000000000000000ULL / p);
-	dec_part = ves_icall_System_Math_Round(dec_part);
+	if (away_from_zero) {
+		if (dec_part > 0)
+			dec_part = floor (dec_part + 0.5);
+		else
+			dec_part = ceil (dec_part - 0.5);
+	} else
+		dec_part = ves_icall_System_Math_Round (dec_part);
 	dec_part /= p;
 	return int_part + dec_part;
 }
