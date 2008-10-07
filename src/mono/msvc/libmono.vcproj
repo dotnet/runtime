@@ -7243,6 +7243,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\mini\simd-intrinsics.c"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\mini\ssa.c"
 				>
 				<FileConfiguration
