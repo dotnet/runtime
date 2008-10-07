@@ -2284,7 +2284,7 @@ add_wrappers (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
 
-		if (klass->delegate) {
+		if (klass->delegate && klass != mono_defaults.delegate_class && klass != mono_defaults.multicastdelegate_class) {
 			method = mono_get_delegate_invoke (klass);
 
 			m = mono_marshal_get_delegate_invoke (method, NULL);
