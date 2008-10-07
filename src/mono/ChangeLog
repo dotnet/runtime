@@ -1,3 +1,10 @@
+2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* scripts/mono-nunit.pc.in, data/mono-nunit.pc.in:
+	  move former to latter.
+	* scripts/Makefile.am : remove packaging info.
+	* data/Makefile.am : add mono-nunit.pc too.
+
 2008-10-03  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* configure.in: Add simd intrinsics to the disable set.
