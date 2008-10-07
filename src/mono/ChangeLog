@@ -1,5 +1,9 @@
 2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
 
+	* scripts/Makefile.am : one more dist fix is needed.
+
+2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
+
 	* configure.in : fix missing change for previous change.
 
 2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
