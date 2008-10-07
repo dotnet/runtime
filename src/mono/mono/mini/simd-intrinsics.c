@@ -24,13 +24,13 @@ TODO add support for indexed versions of simd ops
 TODO to an amd64 port and figure out how to properly handle extractors/.ctor
 TODO make sure locals, arguments and spills are properly aligned.
 TODO add support for fusing a XMOVE into a simd op in mono_spill_global_vars.
-TODO make it work under SSE2 by emulating the few SSE3 opcodes.
 TODO add stuff to man pages
 TODO document this under /docs
 TODO make passing a xmm as argument not cause it to be LDADDR'ed (introduce an OP_XPUSH)
 TODO revant the .ctor sequence as it looks very fragile, maybe use a var just like iconv_to_r8_raw. 
 TODO figure out what's wrong with OP_STOREX_MEMBASE_REG and OP_STOREX_MEMBASE (the 2nd is for imm operands)
-TODO handle all uses of MONO_OPT_SSE2
+TODO maybe add SSE3 emulation on top of SSE2, or just implement the corresponding functions using SSE2 intrinsics.
+TODO pass simd arguments in registers or, at least, add SSE support for pushing large (>=16) valuetypes 
 
 General notes for SIMD intrinsics.
 
@@ -62,6 +62,7 @@ without a OP_LDADDR.
 #define DEBUG(a) do { if (IS_DEBUG_ON(cfg)) { a; } } while (0)
 enum {
 	SIMD_EMIT_BINARY,
+	SIMD_EMIT_BINARY_SSE3,
 	SIMD_EMIT_UNARY,
 	SIMD_EMIT_GETTER,
 	SIMD_EMIT_CTOR,
@@ -83,9 +84,9 @@ typedef struct {
 
 static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ ".ctor", 0, SIMD_EMIT_CTOR },
-	{ "AddSub", OP_ADDSUBPS, SIMD_EMIT_BINARY },
-	{ "HorizontalAdd", OP_HADDPS, SIMD_EMIT_BINARY },
-	{ "HorizontalSub", OP_HSUBPS, SIMD_EMIT_BINARY },	
+	{ "AddSub", OP_ADDSUBPS, SIMD_EMIT_BINARY_SSE3 },
+	{ "HorizontalAdd", OP_HADDPS, SIMD_EMIT_BINARY_SSE3 },
+	{ "HorizontalSub", OP_HSUBPS, SIMD_EMIT_BINARY_SSE3 },	
 	{ "InvSqrt", OP_RSQRTPS, SIMD_EMIT_UNARY },
 	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ "Max", OP_MAXPS, SIMD_EMIT_BINARY },
@@ -507,6 +508,10 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 
 	switch (result->simd_emit_mode) {
+	case SIMD_EMIT_BINARY_SSE3:
+		if (cfg->opt & MONO_OPT_SSE3)
+			return simd_intrinsic_emit_binary (result, cfg, cmethod, args);
+		return NULL;
 	case SIMD_EMIT_BINARY:
 		return simd_intrinsic_emit_binary (result, cfg, cmethod, args);
 	case SIMD_EMIT_UNARY:

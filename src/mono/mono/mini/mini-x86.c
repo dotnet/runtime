@@ -682,9 +682,14 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 			opts |= MONO_OPT_SSE2;
 		else
 			*exclude_mask |= MONO_OPT_SSE2;
+		if (ecx & 1)
+			opts |= MONO_OPT_SSE3;
+		else
+			*exclude_mask |= MONO_OPT_SSE3;
+
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-		/*SIMD intrinsics require SSE3.*/
-		if (!(ecx & 1))
+		/*SIMD intrinsics require at least SSE2.*/
+		if (!(opts & MONO_OPT_SSE2))
 			*exclude_mask |= MONO_OPT_SIMD;
 #endif
 	}
