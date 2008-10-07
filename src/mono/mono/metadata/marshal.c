@@ -11853,11 +11853,11 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[mspec_index]->native = MONO_NATIVE_STRUCT;
 					}
-					else if (sig_adjusted->params[i]->type == MONO_TYPE_STRING) {
+					else if (sig_adjusted->params[param_index]->type == MONO_TYPE_STRING) {
 						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[mspec_index]->native = MONO_NATIVE_BSTR;
 					}
-					else if (sig_adjusted->params[i]->type == MONO_TYPE_CLASS) {
+					else if (sig_adjusted->params[param_index]->type == MONO_TYPE_CLASS) {
 						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[mspec_index]->native = MONO_NATIVE_INTERFACE;
 					}
