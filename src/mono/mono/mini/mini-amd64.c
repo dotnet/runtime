@@ -2177,10 +2177,11 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 		if (ainfo->pair_storage [0] == ArgInIReg) {
 			MONO_INST_NEW (cfg, arg, OP_X86_LEA_MEMBASE);
-			arg->dreg = ainfo->pair_regs [0];
+			arg->dreg = mono_alloc_ireg (cfg);
 			arg->sreg1 = load->dreg;
 			arg->inst_imm = 0;
 			MONO_ADD_INS (cfg->cbb, arg);
+			mono_call_inst_add_outarg_reg (cfg, call, arg->dreg, ainfo->pair_regs [0], FALSE);
 		} else {
 			MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
 			arg->sreg1 = load->dreg;
