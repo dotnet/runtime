@@ -4317,13 +4317,36 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	MonoString *res = NULL;
 	gchar *uri;
 	gchar *absolute;
+	gchar *dyn_base;
+	gchar *shadow_ini_file;
+	gsize len;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	if (g_path_is_absolute (mass->image->name))
+	absolute = NULL;
+	/* Check for shadow-copied assembly */
+	if (domain->setup->dynamic_base != NULL) {
+		dyn_base = mono_string_to_utf8 (domain->setup->dynamic_base);
+		if (!strncmp (dyn_base, mass->basedir, strlen (dyn_base))) {
+			shadow_ini_file = g_build_filename (mass->basedir, "__AssemblyInfo__.ini", NULL);
+			if (!g_file_get_contents (shadow_ini_file, &absolute, &len, NULL) ||
+				!g_file_test (absolute, G_FILE_TEST_IS_REGULAR)) {
+				if (absolute) {
+					g_free (absolute);
+					absolute = NULL;
+				}
+			}
+			g_free (shadow_ini_file);
+		}
+		g_free (dyn_base);
+		/* 'absolute' contains the original location of the shadow-copied assembly or NULL */
+	}
+
+	if (absolute == NULL && g_path_is_absolute (mass->image->name))
 		absolute = g_strdup (mass->image->name);
-	else
+	else if (absolute == NULL) 
 		absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
+
 #if PLATFORM_WIN32
 	{
 		gint i;
@@ -4335,7 +4358,16 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	if (escaped) {
 		uri = g_filename_to_uri (absolute, NULL, NULL);
 	} else {
-		uri = g_strconcat ("file://", absolute, NULL);
+		const char *prepend = "file://";
+#if PLATFORM_WIN32
+		if (*absolute == '/' && *(absolute + 1) == '/') {
+			prepend = "file:";
+		} else {
+			prepend = "file:///";
+		}
+#else
+		uri = g_strconcat (prepend, absolute, NULL);
+#endif
 	}
 
 	if (uri) {

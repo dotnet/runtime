@@ -42,6 +42,7 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/attach.h>
+#include <mono/metadata/file-io.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
@@ -1214,6 +1215,41 @@ private_file_needs_copying (const char *src, struct stat *sbuf_src, char *dest)
 	return TRUE;
 }
 
+static gboolean
+shadow_copy_create_ini (const char *shadow, const char *filename)
+{
+	char *dir_name;
+	char *ini_file;
+	guint16 *u16_ini;
+	gboolean result;
+	guint32 n;
+	HANDLE *handle;
+
+	dir_name = g_path_get_dirname (shadow);
+	ini_file = g_build_filename (dir_name, "__AssemblyInfo__.ini", NULL);
+	g_free (dir_name);
+	if (g_file_test (ini_file, G_FILE_TEST_IS_REGULAR)) {
+		g_free (ini_file);
+		return TRUE;
+	}
+
+	u16_ini = g_utf8_to_utf16 (ini_file, strlen (ini_file), NULL, NULL, NULL);
+	g_free (ini_file);
+	if (!u16_ini) {
+		return FALSE;
+	}
+	handle = CreateFile (u16_ini, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
+				NULL, CREATE_NEW, FileAttributes_Normal, NULL);
+	g_free (u16_ini);
+	if (handle == INVALID_HANDLE_VALUE) {
+		return FALSE;
+	}
+
+	result = WriteFile (handle, filename, strlen (filename), &n, NULL);
+	CloseHandle (handle);
+	return result;
+}
+
 char *
 mono_make_shadow_copy (const char *filename)
 {
@@ -1258,6 +1294,7 @@ mono_make_shadow_copy (const char *filename)
 	
 	shadow = get_shadow_assembly_location (filename);
 	if (ensure_directory_exists (shadow) == FALSE) {
+		g_free (shadow);
 		exc = mono_get_exception_execution_engine ("Failed to create shadow copy (ensure directory exists).");
 		mono_raise_exception (exc);
 	}	
@@ -1294,6 +1331,13 @@ mono_make_shadow_copy (const char *filename)
 	if (copy_result == FALSE)  {
 		g_free (shadow);
 		exc = mono_get_exception_execution_engine ("Failed to create shadow copy of sibling data (CopyFile).");
+		mono_raise_exception (exc);
+	}
+
+	/* Create a .ini file containing the original assembly location */
+	if (!shadow_copy_create_ini (shadow, filename)) {
+		g_free (shadow);
+		exc = mono_get_exception_execution_engine ("Failed to create shadow copy .ini file.");
 		mono_raise_exception (exc);
 	}
 
