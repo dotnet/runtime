@@ -199,7 +199,7 @@ public class SimdTests {
 
 	public static int test_simple_packed_shuffle () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
-		a = Vector4f.Shuffle(a, ShuffleSel.Y1 | ShuffleSel.W2 | ShuffleSel.X3 | ShuffleSel.Z4);
+		a = Vector4f.Shuffle(a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
 		if (a.X != 2f)
 			return 1;
 		if (a.Y != 4f)
@@ -216,11 +216,11 @@ public class SimdTests {
 		Vector4f m0 = v + v, m1 = v - v, m2 = v * v, m3 = v + v + v;
 		if (ff) v = v + v -v	;
 
-		Vector4f r0 = Vector4f.Shuffle (v, ShuffleSel.Y1 | ShuffleSel.W2 | ShuffleSel.X3 | ShuffleSel.Z4);
-		Vector4f r1 = Vector4f.Shuffle (v, ShuffleSel.Y1 | ShuffleSel.W2 | ShuffleSel.X3 | ShuffleSel.Z4);
-		Vector4f x = Vector4f.Shuffle (v, ShuffleSel.Y1 | ShuffleSel.W2 | ShuffleSel.X3 | ShuffleSel.Z4);
-		Vector4f r2 = Vector4f.Shuffle (v, ShuffleSel.Y1 | ShuffleSel.W2 | ShuffleSel.X3 | ShuffleSel.Z4);
-		Vector4f r3 = Vector4f.Shuffle (v, ShuffleSel.Y1 | ShuffleSel.W2 | ShuffleSel.X3 | ShuffleSel.Z4);
+		Vector4f r0 = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f r1 = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f x = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f r2 = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f r3 = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
 		Vector4f a = x;
 
 		r0 = r0 * m0 + x;
