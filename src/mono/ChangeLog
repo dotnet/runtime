@@ -1,3 +1,7 @@
+2008-10-08  Zoltan Varga  <vargaz@gmail.com>
+
+	* runtime/Makefile.am: Rename 'default' profile to 'net_1_1'.
+
 2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* data/Makefile.am : there seems a couple more of required changes.
