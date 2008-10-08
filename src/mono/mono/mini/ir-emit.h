@@ -255,7 +255,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 	} while (0)
 
 #define NEW_DOMAINCONST(cfg,dest) do { \
-		if (cfg->opt & MONO_OPT_SHARED) { \
+		if ((cfg->opt & MONO_OPT_SHARED) || cfg->compile_aot) {				 \
 			/* avoid depending on undefined C behavior in sequence points */ \
 			MonoInst* __domain_var = mono_get_domainvar (cfg); \
 			NEW_TEMPLOAD (cfg, dest, __domain_var->inst_c0); \

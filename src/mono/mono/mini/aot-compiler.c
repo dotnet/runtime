@@ -3438,12 +3438,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 
-	/*
-	 * FIXME: This does not work currently, because 
-	 * mono_metadata_generic_context_hash () uses inst->id which is different at
-	 * AOT time and runtime, causing the IMT slot of methods to change.
-	 */
-#if 1
+#if 0
 	if (method->is_generic || method->klass->generic_container) {
 		acfg->stats.genericcount ++;
 		return;
