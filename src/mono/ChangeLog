@@ -1,5 +1,7 @@
 2008-10-08  Zoltan Varga  <vargaz@gmail.com>
 
+	* Makefile.am (dist-hook): Use 'net_1_1' instead of 'default'.
+
 	* runtime/Makefile.am: Rename 'default' profile to 'net_1_1'.
 
 2008-10-07  Atsushi Enomoto  <atsushi@ximian.com>
