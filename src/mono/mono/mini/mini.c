@@ -13995,6 +13995,7 @@ mono_runtime_install_handlers (void)
 
 #else /* !PLATFORM_WIN32 */
 
+	sigset_t signal_set;
 
 #if defined(PLATFORM_MACOSX) && !defined(__arm__)
 	macosx_register_exception_handler ();
@@ -14011,6 +14012,14 @@ mono_runtime_install_handlers (void)
 		add_signal_handler (SIGUSR2, sigusr2_signal_handler);
 
 	add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
+	/* it seems to have become a common bug for some programs that run as parents
+	 * of many processes to block signal delivery for real time signals.
+	 * We try to detect and work around their breakage here.
+	 */
+	sigemptyset (&signal_set);
+	sigaddset (&signal_set, mono_thread_get_abort_signal ());
+	sigprocmask (SIG_UNBLOCK, &signal_set, NULL);
+
 	signal (SIGPIPE, SIG_IGN);
 
 	add_signal_handler (SIGABRT, sigabrt_signal_handler);
