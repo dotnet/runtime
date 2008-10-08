@@ -4365,9 +4365,8 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 		} else {
 			prepend = "file:///";
 		}
-#else
-		uri = g_strconcat (prepend, absolute, NULL);
 #endif
+		uri = g_strconcat (prepend, absolute, NULL);
 	}
 
 	if (uri) {
