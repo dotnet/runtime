@@ -60,7 +60,11 @@
 #define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  __asm ("movq $" #var "@TPOFF, %0" : "=r" (foo)); offset = foo; } while (0)
 #endif
 #elif defined(__ia64__) && !defined(__INTEL_COMPILER)
+#if defined(PIC)
+#define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("addl %0 = @ltoff(@tprel(" #var "#)), gp ;; ld8 %0 = [%0]\n" : "=r" (offset))
+#else
 #define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("addl %0 = @tprel(" #var "#), r0 ;;\n" : "=r" (offset))
+#endif
 #else
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 #endif
