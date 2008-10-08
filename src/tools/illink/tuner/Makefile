@@ -101,7 +101,7 @@ $(OUTPUT_FILES): tune.stamp
 
 tune.stamp: $(WORKING_FILES) $(OUTPUT_DIR)/.stamp
 	touch $@t
-	MONO_PATH=".$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/default$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) --debug $(LINKER) $(TUNER_FLAGS) $(TUNER_DESCS:%=-x %) $(TUNER_STEPS:%=-s %) $(TUNER_MASTERS:%=-i %)
+	MONO_PATH=".$(PLATFORM_PATH_SEPARATOR)$(topdir)/class/lib/net_1_1$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) --debug $(LINKER) $(TUNER_FLAGS) $(TUNER_DESCS:%=-x %) $(TUNER_STEPS:%=-s %) $(TUNER_MASTERS:%=-i %)
 	for i in $(DLLFILES); do $(SN) $(SNFLAGS) $(OUTPUT_DIR)/$$i $(topdir)/class/mono.snk; done
 	mv $@t $@
 
