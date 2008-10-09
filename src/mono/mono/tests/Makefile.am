@@ -252,6 +252,7 @@ BASE_TEST_CS_SRC=		\
 	test-type-ctor.cs 	\
 	soft-float-tests.cs	\
 	thread-exit.cs		\
+	finalize-parent.cs	\
 	assemblyresolve_event2.2.cs	\
 	interlocked-2.2.cs	\
 	pinvoke-2.2.cs 		\
