@@ -1448,9 +1448,11 @@ simple_shutdown (MonoProfiler *prof)
 	GSList *tmp;
 	char *str;
 	gint32 see_shutdown_done;
-	
+
+#ifndef PLATFORM_WIN32
 	mono_thread_attach(mono_get_root_domain());
-	
+#endif
+
 	// Make sure we execute simple_shutdown only once
 	see_shutdown_done = InterlockedExchange(& simple_shutdown_done, TRUE);
 	if (see_shutdown_done)
