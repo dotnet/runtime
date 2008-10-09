@@ -3775,9 +3775,7 @@ mono_class_init (MonoClass *class)
 		if (!(MONO_CLASS_IS_INTERFACE (class) || class->valuetype)) {
 			MonoMethod *cmethod = NULL;
 
-			if (class->type_token) {
-				cmethod = find_method_in_metadata (class, "Finalize", 0, METHOD_ATTRIBUTE_VIRTUAL);
-			} else if (class->parent) {
+			if (class->parent) {
 				/* FIXME: Optimize this */
 				mono_class_setup_vtable (class);
 				if (class->exception_type || mono_loader_get_last_error ())
