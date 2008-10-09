@@ -1722,9 +1722,43 @@ typedef enum {
 	X86_SSE_HADD = 0x7C,
 	X86_SSE_HSUB = 0x7D,
 	
-	X86_SSE_PAND = 0XDB,
-	X86_SSE_POR = 0XEB,
-	X86_SSE_PXOR = 0XEF,
+	X86_SSE_PAND = 0xDB,
+	X86_SSE_POR = 0xEB,
+	X86_SSE_PXOR = 0xEF,
+	
+	X86_SSE_PADDB = 0xFC,
+	X86_SSE_PADDW = 0xFD,
+	X86_SSE_PADDD = 0xFE,
+	
+	X86_SSE_PSUBB = 0xF8,
+	X86_SSE_PSUBW = 0xF9,
+	X86_SSE_PSUBD = 0xFA,
+
+	X86_SSE_PUNPCKLBW = 0x60,
+	X86_SSE_PUNPCKLWD = 0x61,
+	X86_SSE_PUNPCKLDQ = 0x62,
+	X86_SSE_PUNPCKLQDQ = 0x6C,
+
+	X86_SSE_PUNPCKHBW = 0x68,
+	X86_SSE_PUNPCKHWD = 0x69,
+	X86_SSE_PUNPCKHDQ = 0x6A,
+	X86_SSE_PUNPCKHQDQ = 0x6D,
+
+	X86_SSE_PADDUSB = 0xDC,
+	X86_SSE_PADDUSW = 0xDD,
+	X86_SSE_PSUBUSB = 0xD8,
+	X86_SSE_PSUBUSW = 0xD9,
+
+	X86_SSE_PMULLW = 0xD5,
+	
+	X86_SSE_PSHIFTW = 0x71,
+	X86_SSE_SHR = 2,
+	X86_SSE_SAR = 4,
+	X86_SSE_SHL = 6,
+	
+	X86_SSE_PSRLW_REG = 0xD1,
+	X86_SSE_PSRAW_REG = 0xE1,
+	X86_SSE_PSLLW_REG = 0xF1,
 	
 } X86_SSE_Opcode;
 
@@ -1820,6 +1854,14 @@ typedef enum {
 		x86_reg_emit ((inst), (sreg), (dreg));	\
 	} while (0)
 
+#define x86_movd_xreg_reg(inst,dreg,sreg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x66;	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x6e;	\
+		x86_reg_emit ((inst), (dreg), (sreg));	\
+	} while (0)
+
 #define x86_pshufd_reg_reg(inst,dreg,sreg,mask)	\
 	do {	\
 		*(inst)++ = (unsigned char)0x66;	\
@@ -1828,6 +1870,19 @@ typedef enum {
 		x86_reg_emit ((inst), (dreg), (sreg));	\
 		*(inst)++ = (unsigned char)mask;	\
 	} while (0)
+
+#define x86_sse_shift_reg_imm(inst,opc,mode, dreg,imm)	\
+	do {	\
+		x86_sse_alu_pd_reg_reg (inst, opc, mode, dreg);	\
+		x86_imm_emit8 ((inst), (imm));	\
+	} while (0)
+
+#define x86_sse_shift_reg_reg(inst,opc,dreg,sreg)	\
+	do {	\
+		x86_sse_alu_pd_reg_reg (inst, opc, dreg, sreg);	\
+	} while (0)
+
+
 
 #endif // X86_H
 
