@@ -4297,7 +4297,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 			image, type_token, class->generic_container);
 
 	if (class->image->assembly_name && !strcmp (class->image->assembly_name, "Mono.Simd") && !strcmp (nspace, "Mono.Simd")) {
-		class->simd_type = !strcmp (name, "Vector4f") || !strcmp (name, "Vector4u");
+		if (!strncmp (name, "Vector", 6))
+			class->simd_type = !strcmp (name + 6, "4f") || !strcmp (name + 6, "4u") || !strcmp (name + 6, "8u") || !strcmp (name + 6, "16u");
 	}
 
 	mono_loader_unlock ();
