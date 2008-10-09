@@ -427,9 +427,52 @@ sqrtps: dest:x src1:x len:4
 rsqrtps: dest:x src1:x len:4
 shuffleps: dest:x src1:x len:5
 
+paddb: dest:x src1:x src2:x len:4 clob:1
+paddw: dest:x src1:x src2:x len:4 clob:1
+paddd: dest:x src1:x src2:x len:4 clob:1
+
+psubb: dest:x src1:x src2:x len:4 clob:1
+psubw: dest:x src1:x src2:x len:4 clob:1
+psubd: dest:x src1:x src2:x len:4 clob:1
+
+unpack_lowb: dest:x src1:x src2:x len:4 clob:1
+unpack_loww: dest:x src1:x src2:x len:4 clob:1
+unpack_lowd: dest:x src1:x src2:x len:4 clob:1
+unpack_lowq: dest:x src1:x src2:x len:4 clob:1
+
+unpack_highb: dest:x src1:x src2:x len:4 clob:1
+unpack_highw: dest:x src1:x src2:x len:4 clob:1
+unpack_highd: dest:x src1:x src2:x len:4 clob:1
+unpack_highq: dest:x src1:x src2:x len:4 clob:1
+
+paddb_sat: dest:x src1:x src2:x len:4 clob:1
+paddb_sat_un: dest:x src1:x src2:x len:4 clob:1
+
+paddw_sat: dest:x src1:x src2:x len:4 clob:1
+paddw_sat_un: dest:x src1:x src2:x len:4 clob:1
+
+psubb_sat: dest:x src1:x src2:x len:4 clob:1
+psubb_sat_un: dest:x src1:x src2:x len:4 clob:1
+
+psubw_sat: dest:x src1:x src2:x len:4 clob:1
+psubw_sat_un: dest:x src1:x src2:x len:4 clob:1
+
+pmulw: dest:x src1:x src2:x len:4 clob:1
+pmuld: dest:x src1:x src2:x len:4 clob:1
+
+pshrw: dest:x src1:x len:8 clob:1
+pshrw_reg: dest:x src1:x src2:x len:8 clob:1
+
+psarw: dest:x src1:x len:8 clob:1
+psarw_reg: dest:x src1:x src2:x len:8 clob:1
+
+pshlw: dest:x src1:x len:8 clob:1
+pshlw_reg: dest:x src1:x src2:x len:8 clob:1
+
 xmove: dest:x src1:x len:4
 xzero: dest:x len:4
 
+iconv_to_x: dest:x src1:i len:4
 extract_i4: dest:i src1:x len:4
 iconv_to_r8_raw: dest:f src1:i len:17 
 

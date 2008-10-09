@@ -650,6 +650,49 @@ MINI_OP(OP_PAND, "pand", XREG, XREG, XREG)
 MINI_OP(OP_POR, "por", XREG, XREG, XREG)
 MINI_OP(OP_PXOR, "pxor", XREG, XREG, XREG)
 
+MINI_OP(OP_PADDB, "paddb", XREG, XREG, XREG)
+MINI_OP(OP_PADDW, "paddw", XREG, XREG, XREG)
+MINI_OP(OP_PADDD, "paddd", XREG, XREG, XREG)
+
+MINI_OP(OP_PSUBB, "psubb", XREG, XREG, XREG)
+MINI_OP(OP_PSUBW, "psubw", XREG, XREG, XREG)
+MINI_OP(OP_PSUBD, "psubd", XREG, XREG, XREG)
+
+MINI_OP(OP_UNPACK_LOWB, "unpack_lowb", XREG, XREG, XREG)
+MINI_OP(OP_UNPACK_LOWW, "unpack_loww", XREG, XREG, XREG)
+MINI_OP(OP_UNPACK_LOWD, "unpack_lowd", XREG, XREG, XREG)
+MINI_OP(OP_UNPACK_LOWQ, "unpack_lowq", XREG, XREG, XREG)
+
+MINI_OP(OP_UNPACK_HIGHB, "unpack_highb", XREG, XREG, XREG)
+MINI_OP(OP_UNPACK_HIGHW, "unpack_highw", XREG, XREG, XREG)
+MINI_OP(OP_UNPACK_HIGHD, "unpack_highd", XREG, XREG, XREG)
+MINI_OP(OP_UNPACK_HIGHQ, "unpack_highq", XREG, XREG, XREG)
+
+MINI_OP(OP_PADDB_SAT, "paddb_sat", XREG, XREG, XREG)
+MINI_OP(OP_PADDB_SAT_UN, "paddb_sat_un", XREG, XREG, XREG)
+
+MINI_OP(OP_PADDW_SAT, "paddw_sat", XREG, XREG, XREG)
+MINI_OP(OP_PADDW_SAT_UN, "paddw_sat_un", XREG, XREG, XREG)
+
+MINI_OP(OP_PSUBB_SAT, "psubb_sat", XREG, XREG, XREG)
+MINI_OP(OP_PSUBB_SAT_UN, "psubb_sat_un", XREG, XREG, XREG)
+
+MINI_OP(OP_PSUBW_SAT, "psubw_sat", XREG, XREG, XREG)
+MINI_OP(OP_PSUBW_SAT_UN, "psubw_sat_un", XREG, XREG, XREG)
+
+MINI_OP(OP_PMULW, "pmulw", XREG, XREG, XREG)
+MINI_OP(OP_PMULD, "pmuld", XREG, XREG, XREG)
+
+/*SSE2 Shift ops must have the _reg version right after as code depends on this ordering.*/ 
+MINI_OP(OP_PSHRW, "pshrw", XREG, XREG, NONE)
+MINI_OP(OP_PSHRW_REG, "pshrw_reg", XREG, XREG, XREG)
+
+MINI_OP(OP_PSARW, "psarw", XREG, XREG, NONE)
+MINI_OP(OP_PSARW_REG, "psarw_reg", XREG, XREG, XREG)
+
+MINI_OP(OP_PSHLW, "pshlw", XREG, XREG, NONE)
+MINI_OP(OP_PSHLW_REG, "pshlw_reg", XREG, XREG, XREG)
+
 MINI_OP(OP_EXTRACT_I4, "extract_i4", IREG, XREG, NONE)
 MINI_OP(OP_ICONV_TO_R8_RAW, "iconv_to_r8_raw", FREG, IREG, NONE)
 MINI_OP(OP_LOADX_R4, "loadx_r4", FREG, IREG, NONE)
@@ -659,6 +702,7 @@ MINI_OP(OP_LOADX_STACK, "loadx_stack", XREG, NONE, NONE)
 
 MINI_OP(OP_FCONV_TO_R8_X, "fconv_to_r8_x", XREG, FREG, NONE)
 MINI_OP(OP_XCONV_R8_TO_I4, "xconv_r8_to_i4", IREG, XREG, NONE)
+MINI_OP(OP_ICONV_TO_X, "iconv_to_x", XREG, IREG, NONE)
 
 #endif
 

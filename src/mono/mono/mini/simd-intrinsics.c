@@ -27,10 +27,11 @@ TODO add support for fusing a XMOVE into a simd op in mono_spill_global_vars.
 TODO add stuff to man pages
 TODO document this under /docs
 TODO make passing a xmm as argument not cause it to be LDADDR'ed (introduce an OP_XPUSH)
-TODO revant the .ctor sequence as it looks very fragile, maybe use a var just like iconv_to_r8_raw. 
+TODO revamp the .ctor sequence as it looks very fragile, maybe use a var just like iconv_to_r8_raw. 
 TODO figure out what's wrong with OP_STOREX_MEMBASE_REG and OP_STOREX_MEMBASE (the 2nd is for imm operands)
 TODO maybe add SSE3 emulation on top of SSE2, or just implement the corresponding functions using SSE2 intrinsics.
 TODO pass simd arguments in registers or, at least, add SSE support for pushing large (>=16) valuetypes 
+TODO pass simd args byval to a non-intrinsic method cause some useless local var load/store to happen. 
 
 General notes for SIMD intrinsics.
 
@@ -68,12 +69,13 @@ enum {
 	SIMD_EMIT_CTOR,
 	SIMD_EMIT_CAST,
 	SIMD_EMIT_SHUFFLE,
+	SIMD_EMIT_SHIFT,
 	SIMD_EMIT_LOAD_ALIGNED,
 	SIMD_EMIT_STORE_ALIGNED
 };
 
 /*This is the size of the largest method name + 1 (to fit the ending \0). Align to 4 as well.*/
-#define SIMD_INTRINSIC_NAME_MAX 16
+#define SIMD_INTRINSIC_NAME_MAX 22
 
 typedef struct {
 	const char name[SIMD_INTRINSIC_NAME_MAX];
@@ -82,6 +84,10 @@ typedef struct {
 	guint8 flags;
 } SimdIntrinsc;
 
+/*
+Missing:
+setters
+ */
 static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ ".ctor", 0, SIMD_EMIT_CTOR },
 	{ "AddSub", OP_ADDSUBPS, SIMD_EMIT_BINARY_SSE3 },
@@ -105,11 +111,62 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ "op_Subtraction", OP_SUBPS, SIMD_EMIT_BINARY },
 };
 
+/*
+Missing:
+A lot, revisit Vector4u.
+ */
 static const SimdIntrinsc vector4u_intrinsics[] = {
 	{ "op_BitwiseAnd", OP_PAND, SIMD_EMIT_BINARY },
 	{ "op_BitwiseOr", OP_POR, SIMD_EMIT_BINARY },
 	{ "op_BitwiseXor", OP_PXOR, SIMD_EMIT_BINARY },
 };
+
+/*
+Missing:
+.ctor
+getters
+setters
+ */
+static const SimdIntrinsc vector8u_intrinsics[] = {
+	{ "AddWithSaturation", OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
+	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ "ShiftRightArithmethic", OP_PSARW, SIMD_EMIT_SHIFT },
+	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
+	{ "SubWithSaturation", OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
+	{ "UnpackHigh", OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
+	{ "UnpackLow", OP_UNPACK_LOWW, SIMD_EMIT_BINARY },
+	{ "op_Addition", OP_PADDW, SIMD_EMIT_BINARY },
+	{ "op_BitwiseAnd", OP_PAND, SIMD_EMIT_BINARY },
+	{ "op_BitwiseOr", OP_POR, SIMD_EMIT_BINARY },
+	{ "op_BitwiseXor", OP_PXOR, SIMD_EMIT_BINARY },
+	{ "op_Explicit", 0, SIMD_EMIT_CAST },
+	{ "op_LeftShift", OP_PSHLW, SIMD_EMIT_SHIFT },
+	{ "op_Multiply", OP_PMULW, SIMD_EMIT_BINARY },
+	{ "op_RightShift", OP_PSHRW, SIMD_EMIT_SHIFT },
+	{ "op_Subtraction", OP_PSUBW, SIMD_EMIT_BINARY },
+};
+
+/*
+Missing:
+.ctor
+getters
+setters
+ */
+static const SimdIntrinsc vector16u_intrinsics[] = {
+	{ "AddWithSaturation", OP_PADDB_SAT_UN, SIMD_EMIT_BINARY },
+	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
+	{ "SubWithSaturation", OP_PSUBB_SAT_UN, SIMD_EMIT_BINARY },
+	{ "UnpackHigh", OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
+	{ "UnpackLow", OP_UNPACK_LOWB, SIMD_EMIT_BINARY },
+	{ "op_Addition", OP_PADDB, SIMD_EMIT_BINARY },
+	{ "op_BitwiseAnd", OP_PAND, SIMD_EMIT_BINARY },
+	{ "op_BitwiseOr", OP_POR, SIMD_EMIT_BINARY },
+	{ "op_BitwiseXor", OP_PXOR, SIMD_EMIT_BINARY },
+	{ "op_Explicit", 0, SIMD_EMIT_CAST },
+	{ "op_Subtraction", OP_PSUBB, SIMD_EMIT_BINARY },
+};
+
 
 /*TODO match using number of parameters as well*/
 static int
@@ -215,7 +272,7 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 		}
 	}
 
-	/*TODO stop here is no var is xzero only*/
+	/*TODO stop here if no var is xzero only*/
 
 	/*
 	Scan all other bb and check if it has only one other use
@@ -431,6 +488,43 @@ simd_intrinsic_emit_cast (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 }
 
 static MonoInst*
+
+simd_intrinsic_emit_shift (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
+{
+	MonoInst *ins;
+	int vreg, vreg2 = -1, opcode = intrinsic->opcode;
+
+	vreg = get_simd_vreg (cfg, cmethod, args [0], FALSE);
+
+	if (args [1]->opcode != OP_ICONST) {
+		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_X);
+		ins->klass = mono_defaults.int32_class;
+		ins->sreg1 = args [1]->dreg;
+		ins->type = STACK_I4;
+		ins->dreg = vreg2 = alloc_ireg (cfg);
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		++opcode; /*The shift_reg version op is always +1 from the regular one.*/
+	}
+
+	MONO_INST_NEW (cfg, ins, opcode);
+	ins->klass = cmethod->klass;
+	ins->sreg1 = vreg;
+	ins->sreg2 = vreg2;
+
+	if (args [1]->opcode == OP_ICONST) {
+		ins->inst_imm = args [1]->inst_c0;
+		NULLIFY_INS (args [1]);
+	}
+
+	ins->type = STACK_VTYPE;
+	ins->dreg = alloc_ireg (cfg);
+	MONO_ADD_INS (cfg->cbb, ins);
+	return ins;
+}
+
+
+static MonoInst*
 simd_intrinsic_emit_shuffle (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
 	MonoInst *ins;
@@ -524,6 +618,8 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return simd_intrinsic_emit_cast (result, cfg, cmethod, args);
 	case SIMD_EMIT_SHUFFLE:
 		return simd_intrinsic_emit_shuffle (result, cfg, cmethod, args); 
+	case SIMD_EMIT_SHIFT:
+		return simd_intrinsic_emit_shift (result, cfg, cmethod, args);
 	case SIMD_EMIT_LOAD_ALIGNED:
 		return simd_intrinsic_emit_load_aligned (result, cfg, cmethod, args);
 	case SIMD_EMIT_STORE_ALIGNED:
@@ -542,6 +638,10 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector4u", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4u_intrinsics, sizeof (vector4u_intrinsics) / sizeof (SimdIntrinsc));
+	if (!strcmp ("Vector8u", cmethod->klass->name))
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector8u_intrinsics, sizeof (vector8u_intrinsics) / sizeof (SimdIntrinsc));
+	if (!strcmp ("Vector16u", cmethod->klass->name))
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector16u_intrinsics, sizeof (vector16u_intrinsics) / sizeof (SimdIntrinsc));
 	return NULL;
 }
 

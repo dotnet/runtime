@@ -3831,6 +3831,88 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_PXOR:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PXOR, ins->sreg1, ins->sreg2);
 			break;
+
+		case OP_PADDB:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PADDB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PADDW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PADDD, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PSUBB:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBD, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_UNPACK_LOWB:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKLBW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_LOWW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKLWD, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_LOWD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKLDQ, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_UNPACK_HIGHB:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKHBW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKHWD, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKHDQ, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PADDB_SAT_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PADDUSB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBB_SAT_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBUSB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDW_SAT_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PADDUSW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBW_SAT_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBUSW, ins->sreg1, ins->sreg2);
+			break;
+			
+		case OP_PMULW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMULLW, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PSHRW:
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHIFTW, X86_SSE_SHR, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHRW_REG:
+			x86_sse_shift_reg_reg (code, X86_SSE_PSRLW_REG, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSARW:
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHIFTW, X86_SSE_SAR, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSARW_REG:
+			x86_sse_shift_reg_reg (code, X86_SSE_PSRAW_REG, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSHLW:
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHIFTW, X86_SSE_SHL, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHLW_REG:
+			x86_sse_shift_reg_reg (code, X86_SSE_PSLLW_REG, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_ICONV_TO_X:
+			x86_movd_xreg_reg (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_EXTRACT_I4:
 			x86_movd_reg_xreg (code, ins->dreg, ins->sreg1);
 			break;
