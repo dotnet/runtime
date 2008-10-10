@@ -127,7 +127,7 @@ Missing:
 getters
 setters
  */
-static const SimdIntrinsc vector8u_intrinsics[] = {
+static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ "AddWithSaturation", OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
 	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ "ShiftRightArithmethic", OP_PSARW, SIMD_EMIT_SHIFT },
@@ -152,7 +152,7 @@ Missing:
 getters
 setters
  */
-static const SimdIntrinsc vector16u_intrinsics[] = {
+static const SimdIntrinsc vector16b_intrinsics[] = {
 	{ "AddWithSaturation", OP_PADDB_SAT_UN, SIMD_EMIT_BINARY },
 	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
@@ -645,10 +645,10 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector4u", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4u_intrinsics, sizeof (vector4u_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector8u", cmethod->klass->name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector8u_intrinsics, sizeof (vector8u_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector16u", cmethod->klass->name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector16u_intrinsics, sizeof (vector16u_intrinsics) / sizeof (SimdIntrinsc));
+	if (!strcmp ("Vector8us", cmethod->klass->name))
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector8us_intrinsics, sizeof (vector8us_intrinsics) / sizeof (SimdIntrinsc));
+	if (!strcmp ("Vector16b", cmethod->klass->name))
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector16b_intrinsics, sizeof (vector16b_intrinsics) / sizeof (SimdIntrinsc));
 	return NULL;
 }
 
