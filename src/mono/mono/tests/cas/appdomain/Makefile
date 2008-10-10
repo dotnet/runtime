@@ -1,3 +1,4 @@
+# Postprocessed with patch-quiet.sh
 RUNTIME = mono --debug --security
 CSCOMPILE = mcs -debug
 PROFILE = net_1_1

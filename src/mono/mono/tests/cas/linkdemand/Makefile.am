@@ -1,4 +1,4 @@
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/default
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_1_1
 with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug --security
@@ -12,7 +12,7 @@ compiler_defines = -d:NET_1_1
 # CSCOMPILE = gmcs -debug
 # compiler_defines += -d:NET_2_0
 # else
-CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/default/mcs.exe -debug
+CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/net_1_1/mcs.exe -debug
 SN = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug $(mcs_topdir)/tools/security/sn.exe
 # endif
 
