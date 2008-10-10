@@ -14186,10 +14186,15 @@ setup_stat_profiler (void)
  * Returns: a pointer to the newly created code 
  */
 static gpointer
-mono_jit_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
+mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target)
 {
 	MonoMethod *nm;
 	guint8 *addr = NULL;
+
+	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && mono_method_signature (method)->generic_param_count) {
+		return mono_arch_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
+			domain, NULL);
+	}
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) || 
 	    (mono_method_signature (method)->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class))) {

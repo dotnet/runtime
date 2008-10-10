@@ -802,6 +802,7 @@ typedef enum {
 	MONO_TRAMPOLINE_AOT_PLT,
 	MONO_TRAMPOLINE_DELEGATE,
 	MONO_TRAMPOLINE_RESTORE_STACK_PROT,
+	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
 	MONO_TRAMPOLINE_NUM
 } MonoTrampolineType;
 
@@ -1420,6 +1421,7 @@ MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr) M
 MonoClass*        mono_find_delegate_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 guint32           mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 gpointer          mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp) MONO_INTERNAL;
+gpointer          mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *tramp) MONO_INTERNAL;
 gpointer          mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guint8* tramp) MONO_INTERNAL;
 gpointer          mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 									   guint8* tramp) MONO_INTERNAL;

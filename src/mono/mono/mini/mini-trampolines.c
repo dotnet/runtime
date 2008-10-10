@@ -365,6 +365,38 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	return addr;
 }
 
+gpointer
+mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
+{
+	MonoGenericContext context = { NULL, NULL };
+	MonoMethod *declaring;
+	gpointer addr;
+
+	g_assert (m->is_generic);
+
+	if (m->is_inflated)
+		declaring = mono_method_get_declaring_generic_method (m);
+	else
+		declaring = m;
+
+	if (m->klass->generic_class)
+		context.class_inst = m->klass->generic_class->context.class_inst;
+	else
+		g_assert (!m->klass->generic_container);
+
+	context.method_inst = (MonoGenericInst*)mono_arch_find_imt_method ((gpointer*)regs, code);
+
+	m = mono_class_inflate_generic_method (declaring, &context);
+	m = mono_marshal_get_remoting_invoke_with_check (m);
+
+	addr = mono_compile_method (m);
+	g_assert (addr);
+
+	mono_debugger_trampoline_compiled (m, addr);
+
+	return addr;
+}
+
 /*
  * mono_aot_trampoline:
  *
@@ -625,6 +657,8 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 #endif
 	case MONO_TRAMPOLINE_RESTORE_STACK_PROT:
 		return mono_altstack_restore_prot;
+	case MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING:
+		return mono_generic_virtual_remoting_trampoline;
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -652,6 +686,7 @@ mono_trampolines_init (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_DELEGATE] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_DELEGATE);
 #endif
 	mono_trampoline_code [MONO_TRAMPOLINE_RESTORE_STACK_PROT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_RESTORE_STACK_PROT);
+	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
 }
 
 void

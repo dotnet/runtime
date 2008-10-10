@@ -446,7 +446,7 @@ default_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sy
 }
 
 static gpointer
-default_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
+default_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target)
 {
 	g_error ("remoting not installed");
 	return NULL;
@@ -1939,8 +1939,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		MonoMethod *cm;
 		    
 		if ((cm = class->vtable [i]))
-			pvt->vtable [i] = mono_method_signature (cm)->generic_param_count
-				? cm : arch_create_remoting_trampoline (cm, target_type);
+			pvt->vtable [i] = arch_create_remoting_trampoline (domain, cm, target_type);
 		else
 			pvt->vtable [i] = NULL;
 	}
@@ -1952,7 +1951,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			gpointer iter = NULL;
 			while ((m = mono_class_get_methods (k, &iter)))
 				if (!pvt->vtable [m->slot])
-					pvt->vtable [m->slot] = mono_method_signature (m)->generic_param_count ? m : arch_create_remoting_trampoline (m, target_type);
+					pvt->vtable [m->slot] = arch_create_remoting_trampoline (domain, m, target_type);
 		}
 	}
 
@@ -1991,7 +1990,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			iter = NULL;
 			j = 0;
 			while ((cm = mono_class_get_methods (interf, &iter)))
-				pvt->vtable [slot + j++] = mono_method_signature (cm)->generic_param_count ? cm : arch_create_remoting_trampoline (cm, target_type);
+				pvt->vtable [slot + j++] = arch_create_remoting_trampoline (domain, cm, target_type);
 			
 			slot += mono_class_num_methods (interf);
 		}
