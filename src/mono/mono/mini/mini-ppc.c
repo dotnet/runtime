@@ -3261,7 +3261,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
 						pos += sizeof (gulong);
-						ppc_lwz (code, i, -pos, cfg->frame_reg);
+						ppc_lwz (code, i, -pos, ppc_sp);
 					}
 				}
 			} else {
