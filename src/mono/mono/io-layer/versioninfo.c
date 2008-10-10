@@ -593,6 +593,7 @@ static gconstpointer get_stringtable_block (gconstpointer data_ptr,
 	guint16 data_len = block->data_len;
 	guint16 string_len = 36; /* length of the StringFileInfo block */
 	gchar *found_lang;
+	gchar *lowercase_lang;
 	
 	/* data_ptr is pointing at an array of StringTable blocks,
 	 * with total length (not including alignment padding) of
@@ -625,7 +626,10 @@ static gconstpointer get_stringtable_block (gconstpointer data_ptr,
 			return(NULL);
 		}
 		
-		g_strdown (found_lang);
+		lowercase_lang = g_utf8_strdown (found_lang, -1);
+		g_free (found_lang);
+		found_lang = lowercase_lang;
+		lowercase_lang = NULL;
 		
 		if (lang != NULL && !strcmp (found_lang, lang)) {
 			/* Got the one we're interested in */
@@ -878,6 +882,7 @@ gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 	const gunichar2 *string_key = NULL;
 	gpointer string_value = NULL;
 	guint32 string_value_len = 0;
+	gchar *lowercase_lang;
 	
 	subblock_utf8 = g_utf16_to_utf8 (subblock, -1, NULL, NULL, NULL);
 	if (subblock_utf8 == NULL) {
@@ -890,7 +895,10 @@ gboolean VerQueryValue (gconstpointer datablock, const gunichar2 *subblock,
 		want_string = TRUE;
 		memcpy (lang, subblock + 16, 8 * sizeof(gunichar2));
 		lang_utf8 = g_utf16_to_utf8 (lang, 8, NULL, NULL, NULL);
-		g_strdown (lang_utf8);
+		lowercase_lang = g_utf8_strdown (lang_utf8, -1);
+		g_free (lang_utf8);
+		lang_utf8 = lowercase_lang;
+		lowercase_lang = NULL;
 		string_key = subblock + 25;
 	}
 	
