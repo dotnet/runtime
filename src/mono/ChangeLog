@@ -1,3 +1,7 @@
+2008-10-10  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* data/net_2_0/web.config: add UrlRouting.axd handler (forbidden).
+
 2008-10-08  Zoltan Varga  <vargaz@gmail.com>
 
 	* Makefile.am (dist-hook): Use 'net_1_1' instead of 'default'.
