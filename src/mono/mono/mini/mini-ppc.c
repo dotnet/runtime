@@ -2684,9 +2684,17 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 			}
 			break;
 
-		case RegTypeBase:
-			/* FIXME: */
-			NOT_IMPLEMENTED;
+		case RegTypeBase: {
+			MonoType *type = mini_type_get_underlying_type (cfg->generic_sharing_context,
+				&inst->klass->byval_arg);
+
+			if (!MONO_TYPE_IS_REFERENCE (type) && type->type != MONO_TYPE_I4)
+				NOT_IMPLEMENTED;
+
+			ppc_lwz (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
+			ppc_stw (code, ppc_r0, ainfo->offset, ainfo->reg);
+			break;
+		}
 
 		case RegTypeStructByVal: {
 			guint32 size = 0;
