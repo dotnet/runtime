@@ -2,6 +2,26 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	static int test_0_vector8us_pack () {
+		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
+		Vector8us b = new Vector8us (3,4,5,6,7,8,9,10);
+		Vector16b c = Vector8us.PackWithUnsignedSaturation (a, b);
+
+		if (c.V0 != 0xFF)
+			return 1;
+		if (c.V1 != 1)
+			return 2;
+		if (c.V2 != 2)
+			return 3;
+		if (c.V8 != 3)
+			return 4;
+		if (c.V15 != 10)
+			return 5;
+		return 0;
+	}
+
+
+
 	static int test_0_vector8us_sub_sat () {
 		Vector8us a = new Vector8us (0xF000,1,20,3,4,5,6,7);
 		Vector8us b = new Vector8us (0xFF00,4,5,6,7,8,9,10);
