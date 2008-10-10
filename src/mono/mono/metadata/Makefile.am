@@ -14,7 +14,7 @@ export HOST_CC
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
 else
-assembliesdir = $(libdir)
+assembliesdir = $(exec_prefix)/lib
 confdir = $(sysconfdir)
 endif
 
