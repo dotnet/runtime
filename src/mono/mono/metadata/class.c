@@ -3775,27 +3775,33 @@ mono_class_init (MonoClass *class)
 		if (!(MONO_CLASS_IS_INTERFACE (class) || class->valuetype)) {
 			MonoMethod *cmethod = NULL;
 
-			if (class->parent) {
-				/* FIXME: Optimize this */
-				mono_class_setup_vtable (class);
-				if (class->exception_type || mono_loader_get_last_error ())
-					goto fail;
-				cmethod = class->vtable [finalize_slot];
-			}
-
-			if (cmethod) {
-				/* Check that this is really the finalizer method */
-				mono_class_setup_vtable (class);
-				if (class->exception_type || mono_loader_get_last_error ())
-					goto fail;
-
-				class->has_finalize = 0;
-				if (class->parent) { 
+			if (class->parent && class->parent->has_finalize) {
+				class->has_finalize = 1;
+			} else {
+				if (class->type_token) {
+					cmethod = find_method_in_metadata (class, "Finalize", 0, METHOD_ATTRIBUTE_VIRTUAL);
+				} else if (class->parent) {
+					/* FIXME: Optimize this */
+					mono_class_setup_vtable (class);
+					if (class->exception_type || mono_loader_get_last_error ())
+						goto fail;
 					cmethod = class->vtable [finalize_slot];
-					if (cmethod->is_inflated)
-						cmethod = ((MonoMethodInflated*)cmethod)->declaring;
-					if (cmethod != default_finalize) {
-						class->has_finalize = 1;
+				}
+
+				if (cmethod) {
+					/* Check that this is really the finalizer method */
+					mono_class_setup_vtable (class);
+					if (class->exception_type || mono_loader_get_last_error ())
+					goto fail;
+
+					class->has_finalize = 0;
+					if (class->parent) { 
+						cmethod = class->vtable [finalize_slot];
+						if (cmethod->is_inflated)
+							cmethod = ((MonoMethodInflated*)cmethod)->declaring;
+						if (cmethod != default_finalize) {
+							class->has_finalize = 1;
+						}
 					}
 				}
 			}
