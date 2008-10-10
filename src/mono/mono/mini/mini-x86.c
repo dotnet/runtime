@@ -682,10 +682,6 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 			opts |= MONO_OPT_SSE2;
 		else
 			*exclude_mask |= MONO_OPT_SSE2;
-		if (ecx & 1)
-			opts |= MONO_OPT_SSE3;
-		else
-			*exclude_mask |= MONO_OPT_SSE3;
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 		/*SIMD intrinsics require at least SSE2.*/
@@ -694,6 +690,34 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 #endif
 	}
 	return opts;
+}
+
+/*
+ * This functions test for all SSE functions supported
+ *
+ * TODO detect other versions like SSE4a.
+ */
+guint32
+mono_arch_cpu_enumerate_simd_versions (void)
+{
+	int eax, ebx, ecx, edx;
+	guint32 sse_opts = 0;
+
+	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
+		if (edx & (1 << 25))
+			sse_opts |= SIMD_VERSION_SSE1;
+		if (edx & (1 << 26))
+			sse_opts |= SIMD_VERSION_SSE2;
+		if (ecx & (1 << 0))
+			sse_opts |= SIMD_VERSION_SSE3;
+		if (ecx & (1 << 9))
+			sse_opts |= SIMD_VERSION_SSSE3;
+		if (ecx & (1 << 19))
+			sse_opts |= SIMD_VERSION_SSE41;
+		if (ecx & (1 << 20))
+			sse_opts |= SIMD_VERSION_SSE42;
+	}
+	return sse_opts;	
 }
 
 /*

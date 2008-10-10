@@ -14622,6 +14622,10 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_generic_sharing_init ();
 
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	mono_simd_intrinsics_init ();
+#endif
+
 	if (mono_compile_aot)
 		/* 
 		 * Avoid running managed code when AOT compiling, since the platform

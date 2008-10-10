@@ -1693,9 +1693,21 @@ int mini_wapi_semdel (int argc, char **argv) MONO_INTERNAL;
 int mini_wapi_seminfo (int argc, char **argv) MONO_INTERNAL;
 
 /* SIMD support */
+
+enum {
+	SIMD_VERSION_SSE1	= 1 << 0,
+	SIMD_VERSION_SSE2	= 1 << 1,
+	SIMD_VERSION_SSE3	= 1 << 2,
+	SIMD_VERSION_SSSE3	= 1 << 3,
+	SIMD_VERSION_SSE41	= 1 << 4,
+	SIMD_VERSION_SSE42	= 1 << 5,
+	SIMD_VERSION_SSE4a	= 1 << 6,
+};
+
 const char *mono_arch_xregname (int reg) MONO_INTERNAL;
 void mono_simd_simplify_indirection (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
+guint32   mono_arch_cpu_enumerate_simd_versions (void) MONO_INTERNAL;
 
 
 #endif /* __MONO_MINI_H__ */

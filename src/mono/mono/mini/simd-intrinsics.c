@@ -167,6 +167,7 @@ static const SimdIntrinsc vector16u_intrinsics[] = {
 	{ "op_Subtraction", OP_PSUBB, SIMD_EMIT_BINARY },
 };
 
+static guint32 simd_supported_versions;
 
 /*TODO match using number of parameters as well*/
 static int
@@ -192,6 +193,12 @@ get_ins_reg_by_idx (MonoInst *ins, int idx)
 	case 2: return ins->sreg2;
 	}
 	return -1;
+}
+
+void
+mono_simd_intrinsics_init ()
+{
+	simd_supported_versions = mono_arch_cpu_enumerate_simd_versions ();
 }
 /*
 This pass recalculate which vars need MONO_INST_INDIRECT.
@@ -603,7 +610,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 	switch (result->simd_emit_mode) {
 	case SIMD_EMIT_BINARY_SSE3:
-		if (cfg->opt & MONO_OPT_SSE3)
+		if (simd_supported_versions & SIMD_VERSION_SSE3)
 			return simd_intrinsic_emit_binary (result, cfg, cmethod, args);
 		return NULL;
 	case SIMD_EMIT_BINARY:
