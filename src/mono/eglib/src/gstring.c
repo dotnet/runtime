@@ -159,7 +159,7 @@ g_string_append_printf (GString *string, const gchar *format, ...)
 	va_end (args);
 	g_string_append (string, ret);
 
-	free (ret);
+	g_free (ret);
 }
 
 void

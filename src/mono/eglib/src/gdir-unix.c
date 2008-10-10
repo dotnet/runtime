@@ -1,5 +1,5 @@
 /*
- * File utility functions.
+ * Directory utility functions.
  *
  * Author:
  *   Gonzalo Paniagua Javier (gonzalo@novell.com)
@@ -25,70 +25,70 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <config.h>
 #include <glib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
 
-GFileError
-g_file_error_from_errno (gint err_no)
+struct _GDir {
+	DIR *dir;
+};
+
+GDir *
+g_dir_open (const gchar *path, guint flags, GError **error)
 {
-	switch (err_no) {
-	case EEXIST:
-		return G_FILE_ERROR_EXIST;
-	case EISDIR:
-		return G_FILE_ERROR_ISDIR;
-	case EACCES:
-		return G_FILE_ERROR_ACCES;
-	case ENAMETOOLONG:
-		return G_FILE_ERROR_NAMETOOLONG;
-	case ENOENT:
-		return G_FILE_ERROR_NOENT;
-	case ENOTDIR:
-		return G_FILE_ERROR_NOTDIR;
-	case ENXIO:
-		return G_FILE_ERROR_NXIO;
-	case ENODEV:
-		return G_FILE_ERROR_NODEV;
-	case EROFS:
-		return G_FILE_ERROR_ROFS;
-#ifdef ETXTBSY
-	case ETXTBSY:
-		return G_FILE_ERROR_TXTBSY;
-#endif
-	case EFAULT:
-		return G_FILE_ERROR_FAULT;
-#ifdef ELOOP
-	case ELOOP:
-		return G_FILE_ERROR_LOOP;
-#endif
-	case ENOSPC:
-		return G_FILE_ERROR_NOSPC;
-	case ENOMEM:
-		return G_FILE_ERROR_NOMEM;
-	case EMFILE:
-		return G_FILE_ERROR_MFILE;
-	case ENFILE:
-		return G_FILE_ERROR_NFILE;
-	case EBADF:
-		return G_FILE_ERROR_BADF;
-	case EINVAL:
-		return G_FILE_ERROR_INVAL;
-	case EPIPE:
-		return G_FILE_ERROR_PIPE;
-	case EAGAIN:
-		return G_FILE_ERROR_AGAIN;
-	case EINTR:
-		return G_FILE_ERROR_INTR;
-	case EIO:
-		return G_FILE_ERROR_IO;
-	case EPERM:
-		return G_FILE_ERROR_PERM;
-	case ENOSYS:
-		return G_FILE_ERROR_NOSYS;
-	default:
-		return G_FILE_ERROR_FAILED;
+	GDir *dir;
+
+	g_return_val_if_fail (path != NULL, NULL);
+	g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+	(void) flags; /* this is not used */
+	dir = g_new (GDir, 1);
+	dir->dir = opendir (path);
+	if (dir->dir == NULL) {
+		if (error) {
+			gint err = errno;
+			*error = g_error_new (G_LOG_DOMAIN, g_file_error_from_errno (err), strerror (err));
+		}
+		g_free (dir);
+		return NULL;
 	}
+	return dir;
+}
+
+const gchar *
+g_dir_read_name (GDir *dir)
+{
+	struct dirent *entry;
+
+	g_return_val_if_fail (dir != NULL && dir->dir != NULL, NULL);
+	do {
+		entry = readdir (dir->dir);
+		if (entry == NULL)
+			return NULL;
+	} while ((strcmp (entry->d_name, ".") == 0) || (strcmp (entry->d_name, "..") == 0));
+
+	return entry->d_name;
+}
+
+void
+g_dir_rewind (GDir *dir)
+{
+	g_return_if_fail (dir != NULL && dir->dir != NULL);
+	rewinddir (dir->dir);
+}
+
+void
+g_dir_close (GDir *dir)
+{
+	g_return_if_fail (dir != NULL && dir->dir != 0);
+	closedir (dir->dir);
+	dir->dir = NULL;
+	g_free (dir);
 }
 
 

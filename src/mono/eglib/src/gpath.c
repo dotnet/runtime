@@ -257,7 +257,7 @@ g_get_home_dir (void)
 	gchar *home_dir = NULL;
 	
 	if (drive && path) {
-		home_dir = malloc(strlen(drive) + strlen(path) +1);
+		home_dir = g_malloc(strlen(drive) + strlen(path) +1);
 		if (home_dir) {
 			sprintf(home_dir, "%s%s", drive, path);
 		}

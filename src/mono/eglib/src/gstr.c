@@ -40,7 +40,7 @@ g_strndup (const gchar *str, gsize n)
 	return strndup (str, n);
 #else
 	if (str) {
-		char *retval = malloc(n+1);
+		char *retval = g_malloc(n+1);
 		if (retval) {
 			strncpy(retval, str, n)[n] = 0;
 		}

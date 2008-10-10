@@ -28,67 +28,57 @@
 #include <config.h>
 #include <glib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
-GFileError
-g_file_error_from_errno (gint err_no)
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+gboolean
+g_file_test (const gchar *filename, GFileTest test)
 {
-	switch (err_no) {
-	case EEXIST:
-		return G_FILE_ERROR_EXIST;
-	case EISDIR:
-		return G_FILE_ERROR_ISDIR;
-	case EACCES:
-		return G_FILE_ERROR_ACCES;
-	case ENAMETOOLONG:
-		return G_FILE_ERROR_NAMETOOLONG;
-	case ENOENT:
-		return G_FILE_ERROR_NOENT;
-	case ENOTDIR:
-		return G_FILE_ERROR_NOTDIR;
-	case ENXIO:
-		return G_FILE_ERROR_NXIO;
-	case ENODEV:
-		return G_FILE_ERROR_NODEV;
-	case EROFS:
-		return G_FILE_ERROR_ROFS;
-#ifdef ETXTBSY
-	case ETXTBSY:
-		return G_FILE_ERROR_TXTBSY;
-#endif
-	case EFAULT:
-		return G_FILE_ERROR_FAULT;
-#ifdef ELOOP
-	case ELOOP:
-		return G_FILE_ERROR_LOOP;
-#endif
-	case ENOSPC:
-		return G_FILE_ERROR_NOSPC;
-	case ENOMEM:
-		return G_FILE_ERROR_NOMEM;
-	case EMFILE:
-		return G_FILE_ERROR_MFILE;
-	case ENFILE:
-		return G_FILE_ERROR_NFILE;
-	case EBADF:
-		return G_FILE_ERROR_BADF;
-	case EINVAL:
-		return G_FILE_ERROR_INVAL;
-	case EPIPE:
-		return G_FILE_ERROR_PIPE;
-	case EAGAIN:
-		return G_FILE_ERROR_AGAIN;
-	case EINTR:
-		return G_FILE_ERROR_INTR;
-	case EIO:
-		return G_FILE_ERROR_IO;
-	case EPERM:
-		return G_FILE_ERROR_PERM;
-	case ENOSYS:
-		return G_FILE_ERROR_NOSYS;
-	default:
-		return G_FILE_ERROR_FAILED;
+	struct stat st;
+	gboolean have_stat;
+
+	if (filename == NULL || test == 0)
+		return FALSE;
+
+	have_stat = FALSE;
+
+	if ((test & G_FILE_TEST_EXISTS) != 0) {
+		if (access (filename, F_OK) == 0)
+			return TRUE;
 	}
+
+	if ((test & G_FILE_TEST_IS_EXECUTABLE) != 0) {
+		if (access (filename, X_OK) == 0)
+			return TRUE;
+	}
+	if ((test & G_FILE_TEST_IS_SYMLINK) != 0) {
+		have_stat = (lstat (filename, &st) == 0);
+		if (have_stat && S_ISLNK (st.st_mode))
+			return TRUE;
+	}
+
+	if ((test & G_FILE_TEST_IS_REGULAR) != 0) {
+		if (!have_stat)
+			have_stat = (stat (filename, &st) == 0);
+		if (have_stat && S_ISREG (st.st_mode))
+			return TRUE;
+	}
+	if ((test & G_FILE_TEST_IS_DIR) != 0) {
+		if (!have_stat)
+			have_stat = (stat (filename, &st) == 0);
+		if (have_stat && S_ISDIR (st.st_mode))
+			return TRUE;
+	}
+	return FALSE;
 }
 
 

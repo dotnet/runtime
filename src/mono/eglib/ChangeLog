@@ -1,3 +1,11 @@
+2008-10-10  Miguel de Icaza  <miguel@novell.com>
+
+	* Split functionality that is operating system specific into
+	-win32.c, -unix.c and -posix.c 
+
+	* Use g_malloc everywhere, and g_free, so that these can be easily
+	overwritten consistently.
+
 2008-09-16  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/gunicode.c : Fix a warning.

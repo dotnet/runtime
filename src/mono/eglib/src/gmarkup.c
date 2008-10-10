@@ -124,7 +124,7 @@ parse_value (const char *p, const char *end, char **value, GError **error)
 		return end;
 	l = (int)(p - start);
 	p++;
-	*value = malloc (l + 1);
+	*value = g_malloc (l + 1);
 	if (*value == NULL)
 		return end;
 	strncpy (*value, start, l);
@@ -144,7 +144,7 @@ parse_name (const char *p, const char *end, char **value)
 		return end;
 
 	l = (int)(p - start);
-	*value = malloc (l + 1);
+	*value = g_malloc (l + 1);
 	if (*value == NULL)
 		return end;
 	strncpy (*value, start, l);
@@ -183,24 +183,24 @@ parse_attributes (const char *p, const char *end, char ***names, char ***values,
 
 			p = skip_space (p, end);
 			if (p == end){
-				free (name);
+				g_free (name);
 				return p;
 			}
 			if (*p != '='){
 				set_error ("Expected an = after the attribute name `%s'", name);
-				free (name);
+				g_free (name);
 				return end;
 			}
 			p++;
 			p = skip_space (p, end);
 			if (p == end){
-				free (name);
+				g_free (name);
 				return end;
 			}
 
 			p = parse_value (p, end, &value, error);
 			if (p == end){
-				free (name);
+				g_free (name);
 				return p;
 			}
 
@@ -312,7 +312,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				goto fail;
 			}
 			l = (int)(element_end - element_start);
-			ename = malloc (l + 1);
+			ename = g_malloc (l + 1);
 			if (ename == NULL)
 				goto fail;
 			strncpy (ename, element_start, l);
@@ -331,7 +331,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			}
 
 			if (error != NULL && *error != NULL){
-				free (ename);
+				g_free (ename);
 				goto fail;
 			}
 			
@@ -343,7 +343,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 						goto fail;
 					}
 				}
-				free (ename);
+				g_free (ename);
 			} else {
 				context->level = g_slist_prepend (context->level, ename);
 			}
@@ -404,11 +404,11 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			if (context->parser.end_element != NULL){
 				context->parser.end_element (context, text, context->user_data, error);
 				if (error != NULL && *error != NULL){
-					free (text);
+					g_free (text);
 					goto fail;
 				}
 			}
-			free (text);
+			g_free (text);
 
 			while (p < end && *p != '>')
 				p++;
