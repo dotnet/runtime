@@ -484,7 +484,18 @@ typedef union {
 } while (0)
 
 #define amd64_call_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); *(inst)++ = (unsigned char)0xff; amd64_membase_emit ((inst),2, (basereg),(disp)); } while (0)
+#define amd64_jump_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); *(inst)++ = (unsigned char)0xff; amd64_membase_emit ((inst), 4, (basereg), (disp)); } while (0)
     
+#define amd64_jump_code_size(inst,target,size) do { \
+	if (((guint64)(target) >> 32) == 0) { \
+		x86_jump_code((inst),(target));									\
+	} else {															\
+	    amd64_jump_membase ((inst), AMD64_RIP, 0);							\
+		*(guint64*)(inst) = (guint64)(target);							\
+		(inst) += 8; \
+	} \
+} while (0)
+
 /*
  * SSE
  */
@@ -714,8 +725,6 @@ typedef union {
 #define amd64_jump8_size(inst,imm,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_jump8((inst),(imm)); } while (0)
 #define amd64_jump_reg_size(inst,reg,size) do { amd64_emit_rex ((inst),0,0,0,(reg)); x86_jump_reg((inst),((reg)&0x7)); } while (0)
 #define amd64_jump_mem_size(inst,mem,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_jump_mem((inst),(mem)); } while (0)
-#define amd64_jump_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); x86_jump_membase((inst),((basereg)&0x7),(disp)); } while (0)
-#define amd64_jump_code_size(inst,target,size) do { x86_jump_code((inst),(target)); } while (0)
 #define amd64_jump_disp_size(inst,disp,size) do { amd64_emit_rex ((inst),0,0,0,0); x86_jump_disp((inst),(disp)); } while (0)
 #define amd64_branch8_size(inst,cond,imm,is_signed,size) do { x86_branch8((inst),(cond),(imm),(is_signed)); } while (0)
 #define amd64_branch32_size(inst,cond,imm,is_signed,size) do { x86_branch32((inst),(cond),(imm),(is_signed)); } while (0)
