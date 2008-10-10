@@ -2,6 +2,241 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_vector4ui_pack_un_sat () {
+		Vector4ui a = new Vector4ui (100123,2,3,4);
+		Vector4ui b = new Vector4ui (5,6,7,8);
+		
+		Vector8us c = Vector4ui.PackWithUnsignedSaturation (a, b);
+	
+		if (c.V0 != 65535)
+			return 1;
+		if (c.V1 != 2)
+			return 2;
+		if (c.V2 != 3)
+			return 3;
+		if (c.V3 != 4)
+			return 4;
+		if (c.V4 != 5)
+			return 5;
+		if (c.V5 != 6)
+			return 6;
+		if (c.V6 != 7)
+			return 7;
+		if (c.V7 != 8)
+			return 8;
+		return 0;
+	}
+
+	public static int test_0_vector4ui_sar () {
+		Vector4ui a = new Vector4ui (0xF0000000u,20,3,40);
+		
+		Vector4ui c = Vector4ui.ShiftRightArithmetic (a, 2);
+	
+		if (c.X != 0xFC000000)
+			return 1;
+		if (c.Y != 5)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 10)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4ui_unpack_high () {
+		Vector4ui a = new Vector4ui (1,2,3,4);
+		Vector4ui b = new Vector4ui (5,6,7,8);
+		
+		Vector4ui c = Vector4ui.UnpackHigh(a, b);
+	
+		if (c.X != 3)
+			return 1;
+		if (c.Y != 7)
+			return 2;
+		if (c.Z != 4)
+			return 3;
+		if (c.W != 8)
+			return 4;
+		return 0;
+	}
+
+	public  static int test_0_vector4ui_unpack_low () {
+		Vector4ui a = new Vector4ui (1,2,3,4);
+		Vector4ui b = new Vector4ui (5,6,7,8);
+		
+		Vector4ui c = Vector4ui.UnpackLow (a, b);
+	
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 5)
+			return 2;
+		if (c.Z != 2)
+			return 3;
+		if (c.W != 6)
+			return 4;
+		return 0;
+	}
+
+	public  static int test_0_vector4ui_xor () {
+		Vector4ui a = new Vector4ui (1,2,3,4);
+		Vector4ui b = new Vector4ui (7,5,3,1);
+		
+		Vector4ui c = a ^ b;
+	
+		if (c.X != 6)
+			return 1;
+		if (c.Y != 7)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 5)
+			return 4;
+		return 0;
+	}
+
+	public  static int test_0_vector4ui_or () {
+		Vector4ui a = new Vector4ui (1,2,3,4);
+		Vector4ui b = new Vector4ui (7,5,3,1);
+		
+		Vector4ui c = a | b;
+	
+		if (c.X != 7)
+			return 1;
+		if (c.Y != 7)
+			return 2;
+		if (c.Z != 3)
+			return 3;
+		if (c.W != 5)
+			return 4;
+		return 0;
+	}
+	public  static int test_0_vector4ui_and () {
+		Vector4ui a = new Vector4ui (1,2,3,4);
+		Vector4ui b = new Vector4ui (7,5,3,1);
+		
+		Vector4ui c = a & b;
+	
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 0)
+			return 2;
+		if (c.Z != 3)
+			return 3;
+		if (c.W != 0)
+			return 4;
+		return 0;
+	}
+
+	public  static int test_0_vector4ui_shr () {
+		Vector4ui a = new Vector4ui (0xF0000000u,20,3,40);
+		
+		Vector4ui c = a >> 2;
+	
+		if (c.X != 0x3C000000)
+			return 1;
+		if (c.Y != 5)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 10)
+			return 4;
+		return 0;
+	}
+
+	public  static int test_0_vector4ui_shl () {
+		Vector4ui a = new Vector4ui (10,20,3,40);
+		
+		Vector4ui c = a << 2;
+	
+		if (c.X != 40)
+			return 1;
+		if (c.Y != 80)
+			return 2;
+		if (c.Z != 12)
+			return 3;
+		if (c.W != 160)
+			return 4;
+		return 0;
+	}
+
+	public  static int test_0_vector4ui_mul () {
+		Vector4ui a = new Vector4ui (0x8888,20,3,40);
+		Vector4ui b = new Vector4ui (0xFF00FF00u,2,3,4);
+		
+		Vector4ui c = a * b;
+	
+		if (c.X != 0xffff7800)
+			return 1;
+		if (c.Y != 40)
+			return 2;
+		if (c.Z != 9)
+			return 3;
+		if (c.W != 160)
+			return 4;
+		return 0;
+	}
+	public  static int test_0_vector4ui_sub () {
+		Vector4ui a = new Vector4ui (1,20,3,40);
+		Vector4ui b = new Vector4ui (0xFF00FF00u,2,3,4);
+		
+		Vector4ui c = a - b;
+	
+		if (c.X != 0xff0101)
+			return 1;
+		if (c.Y != 18)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 36)
+			return 4;
+		return 0;
+	}
+
+	public  static int test_0_vector4ui_add () {
+		Vector4ui a = new Vector4ui (0xFF00FF00u,2,3,4);
+		Vector4ui b = new Vector4ui (0xFF00FF00u,2,3,4);
+		
+		Vector4ui c = a + b;
+	
+		if (c.X != 0xfe01fe00)
+			return 1;
+		if (c.Y != 4)
+			return 2;
+		if (c.Z != 6)
+			return 3;
+		if (c.W != 8)
+			return 4;
+		return 0;
+	}
+
+
+	static int test_0_vector4ui_accessors () {
+		Vector4ui a = new Vector4ui (1,2,3,4);
+
+		if (a.X != 1)
+			return 1;
+		if (a.Y != 2)
+			return 2;
+		if (a.Z != 3)
+			return 3;
+		if (a.W != 4)
+			return 4;
+		a.X = 10;
+		a.Y = 20;
+		a.Z = 30;
+		a.W = 40;
+
+		if (a.X != 10)
+			return 5;
+		if (a.Y != 20)
+			return 6;
+		if (a.Z != 30)
+			return 7;
+		if (a.W != 40)
+			return 8;
+		return 0;
+	}
+
 	static int test_0_vector8us_pack () {
 		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
 		Vector8us b = new Vector8us (3,4,5,6,7,8,9,10);
@@ -19,8 +254,6 @@ public class SimdTests {
 			return 5;
 		return 0;
 	}
-
-
 
 	static int test_0_vector8us_sub_sat () {
 		Vector8us a = new Vector8us (0xF000,1,20,3,4,5,6,7);
@@ -114,7 +347,7 @@ public class SimdTests {
 		int amt = 2;
 		Vector8us c = Vector8us.ShiftRightArithmetic (a, amt);
 	
-		if (c.V0 != 0x3FC0)
+		if (c.V0 != 0xFFC0)
 			return 1;
 		if (c.V1 != 0)
 			return 2;
@@ -315,6 +548,21 @@ public class SimdTests {
 			return 7;
 		if (c.V15 != 0)
 			return 8;
+		return 0;
+	}
+
+	static int test_0_vector16b_sar () {
+		Vector16b a = new Vector16b (0xF0,20,3,40,0,0,0,0,0,0,0,0,0,0,0,0);
+		
+		Vector16b c = Vector16b.ShiftRightArithmetic (a, 2);
+		if (c.V0 != 0xFC)
+			return 1;
+		if (c.V1 != 5)
+			return 1;
+		if (c.V2 != 0)
+			return 2;
+		if (c.V3 != 10)
+			return 3;
 		return 0;
 	}
 

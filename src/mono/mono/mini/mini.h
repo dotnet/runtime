@@ -1708,6 +1708,7 @@ const char *mono_arch_xregname (int reg) MONO_INTERNAL;
 void mono_simd_simplify_indirection (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
 guint32   mono_arch_cpu_enumerate_simd_versions (void) MONO_INTERNAL;
+void mono_simd_intrinsics_init (void) MONO_INTERNAL;
 
 
 #endif /* __MONO_MINI_H__ */

@@ -130,7 +130,7 @@ setters
 static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ "AddWithSaturation", OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
 	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
-	{ "ShiftRightArithmethic", OP_PSARW, SIMD_EMIT_SHIFT },
+	{ "ShiftRightArithmetic", OP_PSARW, SIMD_EMIT_SHIFT },
 	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
 	{ "SubWithSaturation", OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
 	{ "UnpackHigh", OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
@@ -196,7 +196,7 @@ get_ins_reg_by_idx (MonoInst *ins, int idx)
 }
 
 void
-mono_simd_intrinsics_init ()
+mono_simd_intrinsics_init (void)
 {
 	simd_supported_versions = mono_arch_cpu_enumerate_simd_versions ();
 }
