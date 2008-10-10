@@ -2003,10 +2003,9 @@ mono_assembly_load_publisher_policy (MonoAssemblyName *aname)
 	} else
 		name = g_strdup (aname->name);
 	
-	if (aname->culture) {
-		culture = g_strdup (aname->culture);
-		g_strdown (culture);
-	} else
+	if (aname->culture)
+		culture = g_utf8_strdown (aname->culture, -1);
+	else
 		culture = g_strdup ("");
 	
 	pname = g_strdup_printf ("policy.%d.%d.%s", aname->major, aname->minor, name);
@@ -2158,8 +2157,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 	}
 
 	if (aname->culture) {
-		culture = g_strdup (aname->culture);
-		g_strdown (culture);
+		culture = g_utf8_strdown (aname->culture, -1);
 	} else {
 		culture = g_strdup ("");
 	}

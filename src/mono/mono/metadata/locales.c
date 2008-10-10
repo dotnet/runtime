@@ -420,7 +420,9 @@ get_current_locale_name (void)
 	if ((c = strchr (corrected, '_')) != NULL)
 		*c = '-';
 
-	g_strdown (corrected);
+	c = corrected;
+	corrected = g_ascii_strdown (c, -1);
+	g_free (c);
 
 	return corrected;
 }	 
