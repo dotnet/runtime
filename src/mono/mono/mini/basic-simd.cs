@@ -2,428 +2,428 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
-	static int test_0_vector8u_sub_sat () {
-		Vector8u a = new Vector8u (0xF000,1,20,3,4,5,6,7);
-		Vector8u b = new Vector8u (0xFF00,4,5,6,7,8,9,10);
-		Vector8u c = Vector8u.SubWithSaturation (a, b);
+	static int test_0_vector8us_sub_sat () {
+		Vector8us a = new Vector8us (0xF000,1,20,3,4,5,6,7);
+		Vector8us b = new Vector8us (0xFF00,4,5,6,7,8,9,10);
+		Vector8us c = Vector8us.SubWithSaturation (a, b);
 
-		if (c.A != 0)
+		if (c.V0 != 0)
 			return 1;
-		if (c.B != 0)
+		if (c.V1 != 0)
 			return 2;
-		if (c.C != 15)
+		if (c.V2 != 15)
 			return 3;
-		if (c.D != 0)
+		if (c.V3 != 0)
 			return 4;
-		if (c.E != 0)
+		if (c.V4 != 0)
 			return 5;
-		if (c.F != 0)
+		if (c.V5 != 0)
 			return 6;
-		if (c.G != 0)
+		if (c.V6 != 0)
 			return 7;
-		if (c.H != 0)
+		if (c.V7 != 0)
 			return 8;
 		return 0;
 	}
 
-	static int test_0_vector8u_add_sat () {
-		Vector8u a = new Vector8u (0xFF00,1,2,3,4,5,6,7);
-		Vector8u b = new Vector8u (0xFF00,4,5,6,7,8,9,10);
-		Vector8u c = Vector8u.AddWithSaturation (a, b);
+	static int test_0_vector8us_add_sat () {
+		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
+		Vector8us b = new Vector8us (0xFF00,4,5,6,7,8,9,10);
+		Vector8us c = Vector8us.AddWithSaturation (a, b);
 
-		if (c.A != 0xFFFF)
+		if (c.V0 != 0xFFFF)
 			return 1;
-		if (c.B != 5)
+		if (c.V1 != 5)
 			return 2;
-		if (c.C != 7)
+		if (c.V2 != 7)
 			return 3;
-		if (c.D != 9)
+		if (c.V3 != 9)
 			return 4;
-		if (c.E != 11)
+		if (c.V4 != 11)
 			return 5;
-		if (c.F != 13)
+		if (c.V5 != 13)
 			return 6;
-		if (c.G != 15)
+		if (c.V6 != 15)
 			return 7;
-		if (c.H != 17)
+		if (c.V7 != 17)
 			return 8;
 		return 0;
 	}
 
-	static int test_0_vector8u_unpack_low () {
-		Vector8u a = new Vector8u (0,1,2,3,4,5,6,7);
-		Vector8u b = new Vector8u (3,4,5,6,7,8,9,10);
-		Vector8u c = Vector8u.UnpackLow (a, b);
+	static int test_0_vector8us_unpack_low () {
+		Vector8us a = new Vector8us (0,1,2,3,4,5,6,7);
+		Vector8us b = new Vector8us (3,4,5,6,7,8,9,10);
+		Vector8us c = Vector8us.UnpackLow (a, b);
 
-		if (c.A != 0)
+		if (c.V0 != 0)
 			return 1;
-		if (c.B != 3)
+		if (c.V1 != 3)
 			return 2;
-		if (c.C != 1)
+		if (c.V2 != 1)
 			return 3;
-		if (c.D != 4)
+		if (c.V3 != 4)
 			return 4;
-		if (c.E != 2)
+		if (c.V4 != 2)
 			return 5;
-		if (c.F != 5)
+		if (c.V5 != 5)
 			return 6;
-		if (c.G != 3)
+		if (c.V6 != 3)
 			return 7;
-		if (c.H != 6)
+		if (c.V7 != 6)
 			return 8;
 		return 0;
 	}
 
 
-	static int test_0_vector8u_shift_left () {
-		Vector8u a = new Vector8u (0xFF00,1,2,3,4,5,6,7);
+	static int test_0_vector8us_shift_left () {
+		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
 		int amt = 2;
-		Vector8u c = a << amt;
+		Vector8us c = a << amt;
 	
-		if (c.A != 0xFC00)
+		if (c.V0 != 0xFC00)
 			return 1;
-		if (c.B != 4)
+		if (c.V1 != 4)
 			return 2;
-		if (c.H != 28)
+		if (c.V7 != 28)
 			return 3;
 		return 0;
 	}
 	
-	static int test_0_vector8u_shift_right_arithmetic () {
-		Vector8u a = new Vector8u (0xFF00,1,2,3,4,5,6,7);
+	static int test_0_vector8us_shift_right_arithmetic () {
+		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
 		int amt = 2;
-		Vector8u c = Vector8u.ShiftRightArithmetic (a, amt);
+		Vector8us c = Vector8us.ShiftRightArithmetic (a, amt);
 	
-		if (c.A != 0x3FC0)
+		if (c.V0 != 0x3FC0)
 			return 1;
-		if (c.B != 0)
+		if (c.V1 != 0)
 			return 2;
-		if (c.H != 1)
+		if (c.V7 != 1)
 			return 3;
 		return 0;
 	}
 
-	static int test_0_vector8u_shift_variable_offset () {
+	static int test_0_vector8us_shift_variable_offset () {
 		int off = 2;
-		Vector8u a = new Vector8u (0xF000,1,2,3,4,5,6,7);
-		Vector8u b = a;
-		Vector8u c = b >> off;
+		Vector8us a = new Vector8us (0xF000,1,2,3,4,5,6,7);
+		Vector8us b = a;
+		Vector8us c = b >> off;
 		a = b + b;
 
-		if (c.A != 0x3C00)
+		if (c.V0 != 0x3C00)
 			return 1;
-		if (c.B != 0)
+		if (c.V1 != 0)
 			return 2;
-		if (c.H != 1)
+		if (c.V7 != 1)
 			return 3;
-		if (a.B != 2)
+		if (a.V1 != 2)
 			return 4;
-		if (a.H != 14)
+		if (a.V7 != 14)
 			return 5;
 		return 0;
 	}
 	
 	
-	static int test_0_vector8u_shift_operand_is_live_after_op () {
-		Vector8u a = new Vector8u (0xF000,1,2,3,4,5,6,7);
-		Vector8u b = a;
-		Vector8u c = b >> 2;
+	static int test_0_vector8us_shift_operand_is_live_after_op () {
+		Vector8us a = new Vector8us (0xF000,1,2,3,4,5,6,7);
+		Vector8us b = a;
+		Vector8us c = b >> 2;
 		a = b + b;
 
-		if (c.A != 0x3C00)
+		if (c.V0 != 0x3C00)
 			return 1;
-		if (c.B != 0)
+		if (c.V1 != 0)
 			return 2;
-		if (c.H != 1)
+		if (c.V7 != 1)
 			return 3;
-		if (a.B != 2)
+		if (a.V1 != 2)
 			return 4;
-		if (a.H != 14)
+		if (a.V7 != 14)
 			return 5;
 		return 0;
 	}
 
-	static int test_0_vector8u_shr_constant () {
-		Vector8u a = new Vector8u (0xF000,1,2,3,4,5,6,7);
-		Vector8u c = a >> 2;
+	static int test_0_vector8us_shr_constant () {
+		Vector8us a = new Vector8us (0xF000,1,2,3,4,5,6,7);
+		Vector8us c = a >> 2;
 
-		if (c.A != 0x3C00)
+		if (c.V0 != 0x3C00)
 			return 1;
-		if (c.B != 0)
+		if (c.V1 != 0)
 			return 2;
-		if (c.H != 1)
+		if (c.V7 != 1)
 			return 3;
 		return 0;
 	}
 
-	static int test_0_vector8u_mul () {
-		Vector8u a = new Vector8u (0x0F00,4,5,6,7,8,9,10);
-		Vector8u b = new Vector8u (0x0888,1,2,3,4,5,6,8);
+	static int test_0_vector8us_mul () {
+		Vector8us a = new Vector8us (0x0F00,4,5,6,7,8,9,10);
+		Vector8us b = new Vector8us (0x0888,1,2,3,4,5,6,8);
 
-		Vector8u c = a * b;
-		if (c.A != 63488)
+		Vector8us c = a * b;
+		if (c.V0 != 63488)
 			return 1;
-		if (c.B != 4)
+		if (c.V1 != 4)
 			return 2;
-		if (c.H != 80)
+		if (c.V7 != 80)
 			return 3;
 		return 0;
 	}
 
-	static int test_0_vector8u_add () {
-		Vector8u a = new Vector8u (0xFF00,4,5,6,7,8,9,10);
-		Vector8u b = new Vector8u (0x8888,1,2,3,4,5,6,8);
+	static int test_0_vector8us_add () {
+		Vector8us a = new Vector8us (0xFF00,4,5,6,7,8,9,10);
+		Vector8us b = new Vector8us (0x8888,1,2,3,4,5,6,8);
 
-		Vector8u c = a + b;
-		if (c.A != 34696)
+		Vector8us c = a + b;
+		if (c.V0 != 34696)
 			return 1;
-		if (c.B != 5)
+		if (c.V1 != 5)
 			return 2;
-		if (c.H != 18)
-			return 3;
-		return 0;
-	}
-
-
-	static int test_0_vector8u_sub () {
-		Vector8u a = new Vector8u (3,4,5,6,7,8,9,10);
-		Vector8u b = new Vector8u (10,1,2,3,4,5,6,8);
-
-		Vector8u c = a - b;
-
-		if (c.A != 65529)
-			return 1;
-		if (c.B != 3)
-			return 2;
-		if (c.H != 2)
+		if (c.V7 != 18)
 			return 3;
 		return 0;
 	}
 
 
-	static int test_0_vector8u_accessors () {
-		Vector8u a = new Vector8u (0,1,2,3,4,5,6,7);
+	static int test_0_vector8us_sub () {
+		Vector8us a = new Vector8us (3,4,5,6,7,8,9,10);
+		Vector8us b = new Vector8us (10,1,2,3,4,5,6,8);
 
-		if (a.A != 0)
+		Vector8us c = a - b;
+
+		if (c.V0 != 65529)
 			return 1;
-		if (a.B != 1)
+		if (c.V1 != 3)
 			return 2;
-		if (a.C != 2)
+		if (c.V7 != 2)
 			return 3;
-		if (a.D != 3)
+		return 0;
+	}
+
+
+	static int test_0_vector8us_accessors () {
+		Vector8us a = new Vector8us (0,1,2,3,4,5,6,7);
+
+		if (a.V0 != 0)
+			return 1;
+		if (a.V1 != 1)
+			return 2;
+		if (a.V2 != 2)
+			return 3;
+		if (a.V3 != 3)
 			return 4;
-		if (a.E != 4)
+		if (a.V4 != 4)
 			return 5;
-		if (a.F != 5)
+		if (a.V5 != 5)
 			return 6;
-		if (a.G != 6)
+		if (a.V6 != 6)
 			return 7;
-		if (a.H != 7)
+		if (a.V7 != 7)
 			return 8;
-		a.A = 10;
-		a.B = 20;
-		a.C = 30;
-		a.D = 40;
-		a.E = 50;
-		a.F = 60;
-		a.G = 70;
-		a.H = 80;
+		a.V0 = 10;
+		a.V1 = 20;
+		a.V2 = 30;
+		a.V3 = 40;
+		a.V4 = 50;
+		a.V5 = 60;
+		a.V6 = 70;
+		a.V7 = 80;
 
-		if (a.A != 10)
+		if (a.V0 != 10)
 			return 17;
-		if (a.B != 20)
+		if (a.V1 != 20)
 			return 18;
-		if (a.C != 30)
+		if (a.V2 != 30)
 			return 19;
-		if (a.D != 40)
+		if (a.V3 != 40)
 			return 20;
-		if (a.E != 50)
+		if (a.V4 != 50)
 			return 21;
-		if (a.F != 60)
+		if (a.V5 != 60)
 			return 22;
-		if (a.G != 70)
+		if (a.V6 != 70)
 			return 23;
-		if (a.H != 80)
+		if (a.V7 != 80)
 			return 24;
 
 		return 0;
 	}
 
 
-	static int test_0_vector16u_unpack_high () {
-		Vector16u a = new Vector16u (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-		Vector16u b = new Vector16u (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16u c = Vector16u.UnpackHigh (a, b);
+	static int test_0_vector16b_unpack_high () {
+		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b c = Vector16b.UnpackHigh (a, b);
 
-		if (c.A != 8)
+		if (c.V0 != 8)
 			return 1;
-		if (c.B != 1)
+		if (c.V1 != 1)
 			return 2;
-		if (c.C != 9)
+		if (c.V2 != 9)
 			return 3;
-		if (c.D != 2)
+		if (c.V3 != 2)
 			return 4;
-		if (c.E != 10)
+		if (c.V4 != 10)
 			return 5;
-		if (c.F != 3)
+		if (c.V5 != 3)
 			return 6;
-		if (c.O != 15)
+		if (c.V14 != 15)
 			return 7;
-		if (c.P != 8)
+		if (c.V15 != 8)
 			return 8;
 		return 0;
 	}
 
-	static int test_0_vector16u_unpack_low () {
-		Vector16u a = new Vector16u (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-		Vector16u b = new Vector16u (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16u c = Vector16u.UnpackLow (a, b);
+	static int test_0_vector16b_unpack_low () {
+		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b c = Vector16b.UnpackLow (a, b);
 
-		if (c.A != 0)
+		if (c.V0 != 0)
 			return 1;
-		if (c.B != 9)
+		if (c.V1 != 9)
 			return 2;
-		if (c.C != 1)
+		if (c.V2 != 1)
 			return 3;
-		if (c.D != 10)
+		if (c.V3 != 10)
 			return 4;
-		if (c.E != 2)
+		if (c.V4 != 2)
 			return 5;
-		if (c.F != 11)
+		if (c.V5 != 11)
 			return 6;
-		if (c.O != 7)
+		if (c.V14 != 7)
 			return 7;
-		if (c.P != 0)
+		if (c.V15 != 0)
 			return 8;
 		return 0;
 	}
 
-	static int test_0_vector16u_sub_sat () {
-		Vector16u a = new Vector16u (100,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16u b = new Vector16u (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-		Vector16u c = Vector16u.SubWithSaturation (a, b);
+	static int test_0_vector16b_sub_sat () {
+		Vector16b a = new Vector16b (100,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b b = new Vector16b (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+		Vector16b c = Vector16b.SubWithSaturation (a, b);
 
-		if (c.A != 0)
+		if (c.V0 != 0)
 			return 1;
-		if (c.B != 9)
+		if (c.V1 != 9)
 			return 2;
-		if (c.P != 0)
+		if (c.V15 != 0)
 			return 3;
 		return 0;
 	}
 	
-	static int test_0_vector16u_add_sat () {
-		Vector16u a = new Vector16u (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-		Vector16u b = new Vector16u (200,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16u c = Vector16u.AddWithSaturation (a, b);
+	static int test_0_vector16b_add_sat () {
+		Vector16b a = new Vector16b (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+		Vector16b b = new Vector16b (200,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b c = Vector16b.AddWithSaturation (a, b);
 
-		if (c.A != 255)
+		if (c.V0 != 255)
 			return 1;
-		if (c.B != 11)
+		if (c.V1 != 11)
 			return 2;
-		if (c.P != 23)
+		if (c.V15 != 23)
 			return 3;
 		return 0;
 	}
 
-	static int test_0_vector16u_add_ovf () {
-		Vector16u a = new Vector16u (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-		Vector16u b = new Vector16u (200,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16u c = a + b;
+	static int test_0_vector16b_add_ovf () {
+		Vector16b a = new Vector16b (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+		Vector16b b = new Vector16b (200,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b c = a + b;
 
-		if (c.A != 144)
+		if (c.V0 != 144)
 			return 1;
-		if (c.B != 11)
+		if (c.V1 != 11)
 			return 2;
-		if (c.P != 23)
+		if (c.V15 != 23)
 			return 3;
 		return 0;
 	}
 
-	static int test_0_vector16u_accessors () {
-		Vector16u a = new Vector16u (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+	static int test_0_vector16b_accessors () {
+		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
 
-		if (a.A != 0)
+		if (a.V0 != 0)
 			return 1;
-		if (a.B != 1)
+		if (a.V1 != 1)
 			return 2;
-		if (a.C != 2)
+		if (a.V2 != 2)
 			return 3;
-		if (a.D != 3)
+		if (a.V3 != 3)
 			return 4;
-		if (a.E != 4)
+		if (a.V4 != 4)
 			return 5;
-		if (a.F != 5)
+		if (a.V5 != 5)
 			return 6;
-		if (a.G != 6)
+		if (a.V6 != 6)
 			return 7;
-		if (a.H != 7)
+		if (a.V7 != 7)
 			return 8;
-		if (a.I != 8)
+		if (a.V8 != 8)
 			return 9;
-		if (a.J != 9)
+		if (a.V9 != 9)
 			return 10;
-		if (a.K != 10)
+		if (a.V10 != 10)
 			return 11;
-		if (a.L != 11)
+		if (a.V11 != 11)
 			return 12;
-		if (a.M != 12)
+		if (a.V12 != 12)
 			return 13;
-		if (a.N != 13)
+		if (a.V13 != 13)
 			return 14;
-		if (a.O != 14)
+		if (a.V14 != 14)
 			return 15;
-		if (a.P != 15)
+		if (a.V15 != 15)
 			return 16;
 
-		a.A = 10;
-		a.B = 20;
-		a.C = 30;
-		a.D = 40;
-		a.E = 50;
-		a.F = 60;
-		a.G = 70;
-		a.H = 80;
-		a.I = 90;
-		a.J = 100;
-		a.K = 110;
-		a.L = 120;
-		a.M = 130;
-		a.N = 140;
-		a.O = 150;
-		a.P = 160;
+		a.V0 = 10;
+		a.V1 = 20;
+		a.V2 = 30;
+		a.V3 = 40;
+		a.V4 = 50;
+		a.V5 = 60;
+		a.V6 = 70;
+		a.V7 = 80;
+		a.V8 = 90;
+		a.V9 = 100;
+		a.V10 = 110;
+		a.V11 = 120;
+		a.V12 = 130;
+		a.V13 = 140;
+		a.V14 = 150;
+		a.V15 = 160;
 
-		if (a.A != 10)
+		if (a.V0 != 10)
 			return 17;
-		if (a.B != 20)
+		if (a.V1 != 20)
 			return 18;
-		if (a.C != 30)
+		if (a.V2 != 30)
 			return 19;
-		if (a.D != 40)
+		if (a.V3 != 40)
 			return 20;
-		if (a.E != 50)
+		if (a.V4 != 50)
 			return 21;
-		if (a.F != 60)
+		if (a.V5 != 60)
 			return 22;
-		if (a.G != 70)
+		if (a.V6 != 70)
 			return 23;
-		if (a.H != 80)
+		if (a.V7 != 80)
 			return 24;
-		if (a.I != 90)
+		if (a.V8 != 90)
 			return 25;
-		if (a.J != 100)
+		if (a.V9 != 100)
 			return 26;
-		if (a.K != 110)
+		if (a.V10 != 110)
 			return 27;
-		if (a.L != 120)
+		if (a.V11 != 120)
 			return 28;
-		if (a.M != 130)
+		if (a.V12 != 130)
 			return 29;
-		if (a.N != 140)
+		if (a.V13 != 140)
 			return 30;
-		if (a.O != 150)
+		if (a.V14 != 150)
 			return 31;
-		if (a.P != 160)
+		if (a.V15 != 160)
 			return 32;
 		return 0;
 	}
