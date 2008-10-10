@@ -576,7 +576,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 		index -= size - 1;
 	}
 
-	tramp_size = 36 + 8 * depth;
+	tramp_size = 64 + 8 * depth;
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
