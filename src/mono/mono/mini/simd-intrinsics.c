@@ -643,7 +643,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	cfg->uses_simd_intrinsics = 1;
 	if (!strcmp ("Vector4f", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector4u", cmethod->klass->name))
+	if (!strcmp ("Vector4ui", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4u_intrinsics, sizeof (vector4u_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector8us", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector8us_intrinsics, sizeof (vector8us_intrinsics) / sizeof (SimdIntrinsc));
