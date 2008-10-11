@@ -487,7 +487,7 @@ typedef union {
 #define amd64_jump_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); *(inst)++ = (unsigned char)0xff; amd64_membase_emit ((inst), 4, (basereg), (disp)); } while (0)
     
 #define amd64_jump_code_size(inst,target,size) do { \
-	if (((guint64)(target) >> 32) == 0) { \
+	if (amd64_is_imm32 ((gint64)(target) - (gint64)(inst))) {		\
 		x86_jump_code((inst),(target));									\
 	} else {															\
 	    amd64_jump_membase ((inst), AMD64_RIP, 0);							\
