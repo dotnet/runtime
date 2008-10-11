@@ -1,7 +1,12 @@
 noinst_LTLIBRARIES = libeglib.la
 
-win_files  = gdate-win32.c gdir-win32.c gfile-win32.c
-unix_files = gdate-unix.c  gdir-unix.c  gfile-unix.c
+win_files  = \
+	gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c \
+	gmodule-win32.c
+
+unix_files = \
+	gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c	\
+	gmodule-unix.c
 
 if PLATFORM_WIN32
 os_files = $(win_files)
@@ -17,7 +22,6 @@ libeglib_la_SOURCES = \
 	gerror.c	\
 	ghashtable.c 	\
 	gmem.c       	\
-	gmodule.c    	\
 	gmodule.h	\
 	goutput.c    	\
 	gstr.c       	\
@@ -25,7 +29,6 @@ libeglib_la_SOURCES = \
 	gstring.c    	\
 	gptrarray.c     \
 	glist.c		\
-	gmisc.c		\
 	gqueue.c	\
 	gpath.c		\
 	gshell.c	\

@@ -1,3 +1,11 @@
+2008-10-11  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gmodule-win32.c, src/gmisc-unix.c, src/gmisc-win32.c,
+	src/gmodule-unix.c: split functionality in platforms.
+	
+	* src/goutput.c (g_logv): On some platforms, before we abort we
+	want to flush the stdout/stderr.
+
 2008-10-10  Miguel de Icaza  <miguel@novell.com>
 
 	* Split functionality that is operating system specific into

@@ -73,8 +73,11 @@ g_logv (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, 
 		log_domain != NULL ? ": " : "",
 		msg);
 	free (msg);
-	if (log_level & fatal)
+	if (log_level & fatal){
+		fflush (stdout);
+		fflush (stderr);
 		abort ();
+	}
 }
 
 void

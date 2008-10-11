@@ -30,74 +30,6 @@
  */
 #include <glib.h>
 #include <gmodule.h>
-
-#ifdef G_OS_UNIX
-#include <dlfcn.h>
-
-/* For Linux and Solaris, need to add others as we port this */
-#define LIBPREFIX "lib"
-#define LIBSUFFIX ".so"
-
-struct _GModule {
-	void *handle;
-};
-
-GModule *
-g_module_open (const gchar *file, GModuleFlags flags)
-{
-	int f = 0;
-	GModule *module;
-	void *handle;
-	
-	flags &= G_MODULE_BIND_MASK;
-	if ((flags & G_MODULE_BIND_LAZY) != 0)
-		f |= RTLD_LAZY;
-	if ((flags & G_MODULE_BIND_LOCAL) != 0)
-		f |= RTLD_LOCAL;
-
-	handle = dlopen (file, f);
-	if (handle == NULL)
-		return NULL;
-	
-	module = g_new (GModule,1);
-	module->handle = handle;
-	
-	return module;
-}
-
-gboolean
-g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
-{
-	if (symbol_name == NULL || symbol == NULL)
-		return FALSE;
-
-	if (module == NULL || module->handle == NULL)
-		return FALSE;
-
-	*symbol = dlsym (module->handle, symbol_name);
-	return (*symbol != NULL);
-}
-
-const gchar *
-g_module_error (void)
-{
-	return dlerror ();
-}
-
-gboolean
-g_module_close (GModule *module)
-{
-	void *handle;
-	if (module == NULL || module->handle == NULL)
-		return FALSE;
-
-	handle = module->handle;
-	module->handle = NULL;
-	g_free (module);
-	return (0 == dlclose (handle));
-}
-
-#elif defined (G_OS_WIN32)
 #include <windows.h>
 #include <psapi.h>
 
@@ -233,40 +165,6 @@ g_module_close (GModule *module)
 	g_free (module);
 	return (main_module ? 1 : (0 == FreeLibrary (handle)));
 }
-
-#else
-
-#define LIBSUFFIX ""
-#define LIBPREFIX ""
-
-GModule *
-g_module_open (const gchar *file, GModuleFlags flags)
-{
-	g_error ("%s", "g_module_open not implemented on this platform");
-	return NULL;
-}
-
-gboolean
-g_module_symbol (GModule *module, const gchar *symbol_name, gpointer *symbol)
-{
-	g_error ("%s", "g_module_open not implemented on this platform");
-	return FALSE;
-}
-
-const gchar *
-g_module_error (void)
-{
-	g_error ("%s", "g_module_open not implemented on this platform");
-	return NULL;
-}
-
-gboolean
-g_module_close (GModule *module)
-{
-	g_error ("%s", "g_module_open not implemented on this platform");
-	return FALSE;
-}
-#endif
 
 gchar *
 g_module_build_path (const gchar *directory, const gchar *module_name)
