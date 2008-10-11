@@ -37,7 +37,8 @@ typedef enum {
 	MATCH_LITERAL,
 	MATCH_ANYCHAR,
 	MATCH_ANYTHING,
-	MATCH_ANYTHING_END
+	MATCH_ANYTHING_END,
+	MATCH_INVALID = -1
 } MatchType;
 
 typedef struct {
@@ -56,7 +57,7 @@ compile_pattern (const gchar *pattern)
 	size_t i, len;
 	PData *data;
 	gchar c;
-	MatchType last = -1;
+	MatchType last = MATCH_INVALID;
 	GString *str;
 	gboolean free_str;
 

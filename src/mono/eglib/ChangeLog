@@ -1,5 +1,8 @@
 2008-10-11  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gpattern.c (compile_pattern): From Unity, use -1 in the enum
+	for MatchType.
+
 	* src/gpath.c: Split this one as well.
 
 	* src/gmodule-win32.c, src/gmisc-unix.c, src/gmisc-win32.c,
