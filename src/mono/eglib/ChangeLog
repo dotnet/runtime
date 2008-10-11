@@ -1,5 +1,7 @@
 2008-10-11  Miguel de Icaza  <miguel@novell.com>
 
+	* src/gpath.c: Split this one as well.
+
 	* src/gmodule-win32.c, src/gmisc-unix.c, src/gmisc-win32.c,
 	src/gmodule-unix.c: split functionality in platforms.
 	

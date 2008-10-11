@@ -29,25 +29,10 @@
 #include <stdio.h>
 #include <glib.h>
 #include <errno.h>
-#include <sys/types.h>
-
-#ifdef G_OS_UNIX
-#include <pthread.h>
-#endif
-
-#ifdef HAVE_PWD_H
-#include <pwd.h>
-#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#ifdef G_OS_WIN32
-#include <direct.h>
-#include <io.h>
-#endif
-
 
 gchar *
 g_build_path (const gchar *separator, const gchar *first_element, ...)
@@ -142,21 +127,6 @@ g_path_get_basename (const char *filename)
 	return g_strdup (&r[1]);
 }
 
-gboolean
-g_path_is_absolute (const char *filename)
-{
-	g_return_val_if_fail (filename != NULL, FALSE);
-#ifdef G_OS_WIN32
-	if (filename[0] != '\0' && filename[1] != '\0' && filename[1] == ':' && 
-		filename[2] != '\0' && (filename[2] == '\\' || filename[2] == '/'))
-		return TRUE;
-	else
-		return FALSE;
-#else
-	return (*filename == '/');
-#endif
-}
-
 gchar *
 g_find_program_in_path (const gchar *program)
 {
@@ -206,121 +176,6 @@ g_get_current_dir (void)
 	} while (fail);
 
 	return r;
-}
-
-#if defined (G_OS_UNIX)
-
-static pthread_mutex_t home_lock = PTHREAD_MUTEX_INITIALIZER;
-static const gchar *home_dir;
-
-/* Give preference to /etc/passwd than HOME */
-const gchar *
-g_get_home_dir (void)
-{
-	if (home_dir == NULL){
-		pthread_mutex_lock (&home_lock);
-		if (home_dir == NULL){
-#ifdef HAVE_GETPWENT_R
-			struct passwd pwbuf, *track;
-			char buf [4096];
-			uid_t uid;
-			
-			uid = getuid ();
-
-			setpwent ();
-			
-			while (getpwent_r (&pwbuf, buf, sizeof (buf), &track) == 0){
-				if (pwbuf.pw_uid == uid){
-					home_dir = g_strdup (pwbuf.pw_dir);
-					break;
-				}
-			}
-			endpwent ();
-#endif
-			if (home_dir == NULL)
-				home_dir = g_getenv ("HOME");
-			pthread_mutex_unlock (&home_lock);
-		}
-	}
-	return home_dir;
-}
-
-#elif defined (G_OS_WIN32)
-#include <windows.h>
-
-const gchar *
-g_get_home_dir (void)
-{
-	/* FIXME */
-	const gchar *drive = g_getenv ("HOMEDRIVE");
-	const gchar *path = g_getenv ("HOMEPATH");
-	gchar *home_dir = NULL;
-	
-	if (drive && path) {
-		home_dir = g_malloc(strlen(drive) + strlen(path) +1);
-		if (home_dir) {
-			sprintf(home_dir, "%s%s", drive, path);
-		}
-	}
-
-	return home_dir;
-}
-
-#else
-
-const gchar *
-g_get_home_dir (void)
-{
-	g_error ("%s", "g_get_home_dir not implemented on this platform");
-	return NULL;
-}
-
-#endif
-
-static const char *tmp_dir;
-
-#ifdef G_OS_UNIX
-static pthread_mutex_t tmp_lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-const gchar *
-g_get_tmp_dir (void)
-{
-	if (tmp_dir == NULL){
-#ifdef G_OS_UNIX
-		pthread_mutex_lock (&tmp_lock);
-#endif
-		if (tmp_dir == NULL){
-			tmp_dir = g_getenv ("TMPDIR");
-			if (tmp_dir == NULL){
-				tmp_dir = g_getenv ("TMP");
-				if (tmp_dir == NULL){
-					tmp_dir = g_getenv ("TEMP");
-					if (tmp_dir == NULL)
-#if defined (G_OS_WIN32)
-						tmp_dir = "C:\\temp";
-#else
-						tmp_dir = "/tmp";
-#endif
-				}
-			}
-		}
-#ifdef G_OS_UNIX
-		pthread_mutex_unlock (&tmp_lock);
-#endif
-	}
-	return tmp_dir;
-}
-
-const char *
-g_get_user_name (void)
-{
-	const char * retName = g_getenv ("USER");
-#if defined (G_OS_WIN32)
-	if (!retName)
-		retName = g_getenv ("USERNAME");
-#endif
-	return retName;
 }
 
 static char *name;

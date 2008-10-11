@@ -30,6 +30,8 @@
 #include <glib.h>
 
 #include <windows.h>
+#include <direct.h>
+#include <io.h>
 
 const gchar *
 g_getenv(const gchar *variable)
@@ -86,4 +88,63 @@ g_win32_getlocale(void)
 	return strdup ("en_US");
 }
 
+gboolean
+g_path_is_absolute (const char *filename)
+{
+	g_return_val_if_fail (filename != NULL, FALSE);
+
+	if (filename[0] != '\0' && filename[1] != '\0' && filename[1] == ':' && 
+		filename[2] != '\0' && (filename[2] == '\\' || filename[2] == '/'))
+		return TRUE;
+	else
+		return FALSE;
+}
+
+const gchar *
+g_get_home_dir (void)
+{
+	/* FIXME */
+	const gchar *drive = g_getenv ("HOMEDRIVE");
+	const gchar *path = g_getenv ("HOMEPATH");
+	gchar *home_dir = NULL;
+	
+	if (drive && path) {
+		home_dir = g_malloc(strlen(drive) + strlen(path) +1);
+		if (home_dir) {
+			sprintf(home_dir, "%s%s", drive, path);
+		}
+	}
+
+	return home_dir;
+}
+
+const char *
+g_get_user_name (void)
+{
+	const char * retName = g_getenv ("USER");
+	if (!retName)
+		retName = g_getenv ("USERNAME");
+	return retName;
+}
+
+static const char *tmp_dir;
+
+const gchar *
+g_get_tmp_dir (void)
+{
+	if (tmp_dir == NULL){
+		if (tmp_dir == NULL){
+			tmp_dir = g_getenv ("TMPDIR");
+			if (tmp_dir == NULL){
+				tmp_dir = g_getenv ("TMP");
+				if (tmp_dir == NULL){
+					tmp_dir = g_getenv ("TEMP");
+					if (tmp_dir == NULL)
+						tmp_dir = "C:\\temp";
+				}
+			}
+		}
+	}
+	return tmp_dir;
+}
 

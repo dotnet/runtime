@@ -28,6 +28,16 @@
 
 #include <stdlib.h>
 #include <glib.h>
+#include <pthread.h>
+
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 
 const gchar *
 g_getenv(const gchar *variable)
@@ -53,5 +63,78 @@ g_win32_getlocale(void)
 	return NULL;
 }
 
+gboolean
+g_path_is_absolute (const char *filename)
+{
+	g_return_val_if_fail (filename != NULL, FALSE);
 
+	return (*filename == '/');
+}
+
+static pthread_mutex_t home_lock = PTHREAD_MUTEX_INITIALIZER;
+static const gchar *home_dir;
+
+/* Give preference to /etc/passwd than HOME */
+const gchar *
+g_get_home_dir (void)
+{
+	if (home_dir == NULL){
+		pthread_mutex_lock (&home_lock);
+		if (home_dir == NULL){
+#ifdef HAVE_GETPWENT_R
+			struct passwd pwbuf, *track;
+			char buf [4096];
+			uid_t uid;
+			
+			uid = getuid ();
+
+			setpwent ();
+			
+			while (getpwent_r (&pwbuf, buf, sizeof (buf), &track) == 0){
+				if (pwbuf.pw_uid == uid){
+					home_dir = g_strdup (pwbuf.pw_dir);
+					break;
+				}
+			}
+			endpwent ();
+#endif
+			if (home_dir == NULL)
+				home_dir = g_getenv ("HOME");
+			pthread_mutex_unlock (&home_lock);
+		}
+	}
+	return home_dir;
+}
+
+const char *
+g_get_user_name (void)
+{
+	const char *retName = g_getenv ("USER");
+	return retName;
+}
+
+static const char *tmp_dir;
+
+static pthread_mutex_t tmp_lock = PTHREAD_MUTEX_INITIALIZER;
+
+const gchar *
+g_get_tmp_dir (void)
+{
+	if (tmp_dir == NULL){
+		pthread_mutex_lock (&tmp_lock);
+		if (tmp_dir == NULL){
+			tmp_dir = g_getenv ("TMPDIR");
+			if (tmp_dir == NULL){
+				tmp_dir = g_getenv ("TMP");
+				if (tmp_dir == NULL){
+					tmp_dir = g_getenv ("TEMP");
+					if (tmp_dir == NULL)
+						tmp_dir = "/tmp";
+				}
+			}
+		}
+		pthread_mutex_unlock (&tmp_lock);
+	}
+	return tmp_dir;
+}
 
