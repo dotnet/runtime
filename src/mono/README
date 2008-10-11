@@ -361,6 +361,9 @@ This is Mono.
 		reflection_emit:
 			Drop System.Reflection.Emit support
 
+		reflection_emit_save:
+			Drop support for saving dynamically created assemblies (AssemblyBuilderAccess.Save) in System.Reflection.Emit.
+
 		simd:
 			Disables support for the Mono.SIMD intrinsics
 			library.
