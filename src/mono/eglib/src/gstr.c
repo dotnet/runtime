@@ -817,15 +817,6 @@ g_strescape (const gchar *source, const gchar *exceptions)
 	return result;
 }
 
-gchar *
-g_strdup (const gchar *str)
-{
-	if (str == NULL)
-		return NULL;
-
-	return strdup (str);
-}
-
 gint
 g_ascii_xdigit_value (gchar c)
 {

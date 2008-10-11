@@ -1,5 +1,8 @@
 2008-10-11  Miguel de Icaza  <miguel@novell.com>
 
+	* src/glib.h: Move g_strdup here, to consolidate all allocations
+	in this header, will help for merging the allocation work later. 
+
 	* src/gpattern.c (compile_pattern): From Unity, use -1 in the enum
 	for MatchType.
 

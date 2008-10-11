@@ -122,7 +122,7 @@ static inline gpointer g_malloc0 (gsize x) {if (x) return calloc(1,x); else retu
 #define g_alloca(size)		alloca (size)
 
 gpointer g_memdup (gconstpointer mem, guint byte_size);
-gchar   *g_strdup (const gchar *str);
+static inline gchar   *g_strdup (const gchar *str) { if (str) {return strdup (str);} return NULL; }
 
 typedef struct {
 	gpointer (*malloc)      (gsize    n_bytes);
