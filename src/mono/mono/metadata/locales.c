@@ -693,16 +693,17 @@ static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 					     gint32 options)
 {
 	gint32 result;
-	GUnicodeType c1type, c2type;
 
 	/* Ordinal can not be mixed with other options, and must return the difference, not only -1, 0, 1 */
 	if (options & CompareOptions_Ordinal) 
 		return (gint32) c1 - c2;
 	
-	c1type = g_unichar_type (c1);
-	c2type = g_unichar_type (c2);
-	
 	if (options & CompareOptions_IgnoreCase) {
+		GUnicodeType c1type, c2type;
+
+		c1type = g_unichar_type (c1);
+		c2type = g_unichar_type (c2);
+	
 		result = (gint32) (c1type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c1) : c1) -
 			(c2type != G_UNICODE_LOWERCASE_LETTER ? g_unichar_tolower(c2) : c2);
 	} else {
