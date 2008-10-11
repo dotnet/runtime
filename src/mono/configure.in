@@ -575,6 +575,7 @@ fi
 
 if test "x$mono_feature_disable_reflection_emit" = "xyes"; then
 	AC_DEFINE(DISABLE_REFLECTION_EMIT, 1, [Disable reflection emit support])
+	mono_feature_disable_reflection_emit_save=yes
 fi
 
 if test "x$mono_feature_disable_reflection_emit_save" = "xyes"; then

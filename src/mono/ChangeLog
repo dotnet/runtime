@@ -1,5 +1,8 @@
 2008-10-11  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Make --enable-minimal=reflection_emit turn on
+	==enable-minimal=reflection_emit_save too.
+
 	* README: Add docs for the option.
 
 	* configure.in: Add --enable-minimal=reflection_emit_save option.
