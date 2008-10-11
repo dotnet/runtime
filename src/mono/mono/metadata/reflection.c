@@ -1470,8 +1470,6 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	rmb->refs = NULL;
 }	
 
-#ifndef DISABLE_REFLECTION_EMIT_SAVE
-
 static void
 mono_image_add_methodimpl (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb)
 {
@@ -1567,8 +1565,6 @@ mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, Mon
 	mono_image_basic_method (&rmb, assembly);
 	mb->table_idx = *rmb.table_idx;
 }
-
-#endif /* DISABLE_REFLECTION_EMIT_SAVE */
 
 static char*
 type_get_fully_qualified_name (MonoType *type)
@@ -1818,8 +1814,6 @@ encode_marshal_blob (MonoDynamicImage *assembly, MonoReflectionMarshal *minfo) {
 	return idx;
 }
 
-#ifndef DISABLE_REFLECTION_EMIT_SAVE
-
 static void
 mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *assembly)
 {
@@ -2023,8 +2017,6 @@ mono_image_get_event_info (MonoReflectionEventBuilder *eb, MonoDynamicImage *ass
 		values [MONO_METHOD_SEMA_ASSOCIATION] = (eb->table_idx << MONO_HAS_SEMANTICS_BITS) | MONO_HAS_SEMANTICS_EVENT;
 	}
 }
-
-#endif /* DISABLE_REFLECTION_EMIT_SAVE */
 
 static void
 encode_constraints (MonoReflectionGenericParam *gparam, guint32 owner, MonoDynamicImage *assembly)
@@ -3041,8 +3033,6 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	m->table_idx = am->token & 0xffffff;
 	return am->token;
 }
-
-#ifndef DISABLE_REFLECTION_EMIT_SAVE
 
 /*
  * Insert into the metadata tables all the info about the TypeBuilder tb.
@@ -4188,6 +4178,8 @@ mono_image_emit_manifest (MonoReflectionModuleBuilder *moduleb)
 	}		
 }
 
+#ifndef DISABLE_REFLECTION_EMIT_SAVE
+
 /*
  * mono_image_build_metadata() will fill the info in all the needed metadata tables
  * for the modulebuilder @moduleb.
@@ -4346,6 +4338,8 @@ mono_image_build_metadata (MonoReflectionModuleBuilder *moduleb)
 }
 
 #endif /* DISABLE_REFLECTION_EMIT_SAVE */
+
+#ifndef DISABLE_REFLECTION_EMIT
 
 /*
  * mono_image_insert_string:
@@ -4616,6 +4610,8 @@ mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject
 	}
 }
 
+#endif /* DISABLE_REFLECTION_EMIT */
+
 typedef struct {
 	guint32 import_lookup_table;
 	guint32 timestamp;
@@ -4788,6 +4784,8 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	}
 }	
 
+#ifndef DISABLE_REFLECTION_EMIT
+
 /*
  * mono_image_basic_init:
  * @assembly: an assembly builder object
@@ -4862,7 +4860,7 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	mono_assembly_invoke_load_hook ((MonoAssembly*)assembly);
 }
 
-#ifndef DISABLE_REFLECTION_EMIT_SAVE
+#endif /* DISABLE_REFLECTION_EMIT */
 
 static int
 calc_section_size (MonoDynamicImage *assembly)
@@ -5139,6 +5137,8 @@ checked_write_file (HANDLE f, gconstpointer buffer, guint32 numbytes)
 	if (!WriteFile (f, buffer, numbytes, &dummy, NULL))
 		g_error ("WriteFile returned %d\n", GetLastError ());
 }
+
+#ifndef DISABLE_REFLECTION_EMIT_SAVE
 
 /*
  * mono_image_create_pefile:
@@ -5511,6 +5511,8 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file)
 
 #endif /* DISABLE_REFLECTION_EMIT_SAVE */
 
+#ifndef DISABLE_REFLECTION_EMIT
+
 MonoReflectionModule *
 mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
 {
@@ -5565,6 +5567,8 @@ mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *f
 
 	return mono_module_get_object (mono_domain_get (), image);
 }
+
+#endif /* DISABLE_REFLECTION_EMIT */
 
 /*
  * We need to return always the same object for MethodInfo, FieldInfo etc..
@@ -5646,6 +5650,8 @@ register_module (MonoDomain *domain, MonoReflectionModuleBuilder *res, MonoDynam
 	CACHE_OBJECT (MonoReflectionModuleBuilder *, module, res, NULL);
 }
 
+#ifndef DISABLE_REFLECTION_EMIT
+
 void
 mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 {
@@ -5682,6 +5688,8 @@ mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
 		ass->module_count ++;
 	}
 }
+
+#endif
 
 /*
  * mono_assembly_get_object:
@@ -8652,6 +8660,8 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 	*retbuffer = buffer;
 }
 
+#ifndef DISABLE_REFLECTION_EMIT
+
 /*
  * mono_reflection_get_custom_attrs_blob:
  * @ctor: custom attribute constructor
@@ -8969,6 +8979,8 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 	}
 	mono_loader_unlock ();
 }
+
+#endif /* DISABLE_REFLECTION_EMIT */
 
 static MonoMarshalSpec*
 mono_marshal_spec_from_builder (MonoMemPool *mp, MonoAssembly *assembly,
@@ -9467,7 +9479,9 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	int count, i;
 
 	MONO_ARCH_SAVE_REGS;
+
 	if (!strcmp (rmethod->object.vtable->klass->name, "MethodBuilder")) {
+#ifndef DISABLE_REFLECTION_EMIT
 		MonoReflectionTypeBuilder *tb;
 		MonoClass *klass;
 
@@ -9476,6 +9490,10 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 		klass = mono_class_from_mono_type (tb->type.type);
 
 		method = methodbuilder_to_mono_method (klass, mb);
+#else
+		g_assert_not_reached ();
+		method = NULL;
+#endif
 	} else {
 		method = rmethod->method;
 	}
@@ -9516,6 +9534,8 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	
 	return mono_method_get_object (mono_object_domain (rmethod), inflated, NULL);
 }
+
+#ifndef DISABLE_REFLECTION_EMIT
 
 static MonoMethod *
 inflate_mono_method (MonoClass *klass, MonoMethod *method, MonoObject *obj)
@@ -10274,6 +10294,8 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 	mb->ilgen = NULL;
 }
 
+#endif /* DISABLE_REFLECTION_EMIT */
+
 void
 mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb)
 {
@@ -10296,6 +10318,8 @@ mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token)
 {
 	return mono_g_hash_table_lookup (image->tokens, GUINT_TO_POINTER (token)) != NULL;
 }
+
+#ifndef DISABLE_REFLECTION_EMIT
 
 /**
  * mono_reflection_lookup_dynamic_token:
@@ -10517,6 +10541,146 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 	return result;
 }
 
+#else /* DISABLE_REFLECTION_EMIT */
+
+MonoArray*
+mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) 
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void
+mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
+{
+	g_error ("This mono runtime was configured with --enable-minimal=reflection_emit, so System.Reflection.Emit is not supported.");
+}
+
+void
+mono_image_module_basic_init (MonoReflectionModuleBuilder *moduleb)
+{
+	g_assert_not_reached ();
+}
+
+MonoReflectionModule *
+mono_image_load_module_dynamic (MonoReflectionAssemblyBuilder *ab, MonoString *fileName)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+guint32
+mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+guint32
+mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, MonoArray *opt_param_types)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+guint32
+mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, 
+						 gboolean create_methodspec, gboolean register_token)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+void
+mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
+{
+}
+
+void
+mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, MonoArray *methods, 
+					  MonoArray *ctors, MonoArray *fields, MonoArray *properties,
+					  MonoArray *events)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides, int *num_overrides)
+{
+	*overrides = NULL;
+	*num_overrides = 0;
+}
+
+MonoReflectionEvent *
+mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, MonoReflectionEventBuilder *eb)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoReflectionType*
+mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void
+mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam)
+{
+	g_assert_not_reached ();
+}
+
+MonoArray *
+mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelper *sig)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoArray *
+mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void 
+mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
+{
+}
+
+gpointer
+mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context)
+{
+	return NULL;
+}
+
+#endif /* DISABLE_REFLECTION_EMIT */
 
 /* SECURITY_ACTION_* are defined in mono/metadata/tabledefs.h */
 const static guint32 declsec_flags_map[] = {
