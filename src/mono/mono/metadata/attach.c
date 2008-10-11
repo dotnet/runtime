@@ -238,7 +238,6 @@ mono_attach_start (void)
 	 * do the actual startup.
 	 */
 	needs_to_start = TRUE;
-	// FIXME: This is not actually signal-safe
 	mono_gc_finalize_notify ();
 
 	return TRUE;
