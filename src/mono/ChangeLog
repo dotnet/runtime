@@ -1,3 +1,7 @@
+2008-10-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add --enable-minimal=reflection_emit_save option.
+
 2008-10-10  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* data/net_2_0/web.config: add UrlRouting.axd handler (forbidden).
