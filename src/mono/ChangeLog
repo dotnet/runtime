@@ -1,3 +1,8 @@
+2008-10-12  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Only process Makefiles with patch-quiet.sh which have a 
+	corresponding Makefile.in.
+
 2008-10-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Make --enable-minimal=reflection_emit turn on
