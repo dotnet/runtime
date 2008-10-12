@@ -42,6 +42,7 @@ typedef enum {
 	MONO_PROFILER_DIRECTIVE_END = 0,
 	MONO_PROFILER_DIRECTIVE_ALLOCATIONS_CARRY_CALLER = 1,
 	MONO_PROFILER_DIRECTIVE_ALLOCATIONS_HAVE_STACK = 2,
+	MONO_PROFILER_DIRECTIVE_ALLOCATIONS_CARRY_ID = 3,
 	MONO_PROFILER_DIRECTIVE_LAST
 } MonoProfilerDirectives;
 
@@ -99,7 +100,8 @@ typedef enum {
 	MONO_PROFILER_EVENT_GC_STOP_WORLD = 6,
 	MONO_PROFILER_EVENT_GC_START_WORLD = 7,
 	MONO_PROFILER_EVENT_JIT_TIME_ALLOCATION = 8,
-	MONO_PROFILER_EVENT_STACK_SECTION = 9
+	MONO_PROFILER_EVENT_STACK_SECTION = 9,
+	MONO_PROFILER_EVENT_ALLOCATION_OBJECT_ID = 10
 } MonoProfilerEvents;
 typedef enum {
 	MONO_PROFILER_EVENT_KIND_START = 0,
@@ -854,6 +856,7 @@ struct _MonoProfiler {
 		gboolean track_calls;
 		gboolean save_allocation_caller;
 		gboolean save_allocation_stack;
+		gboolean allocations_carry_id;
 	} action_flags;
 };
 static MonoProfiler *profiler;
@@ -1956,6 +1959,9 @@ write_directives_block (gboolean start) {
 		if (profiler->action_flags.save_allocation_stack || profiler->action_flags.track_calls) {
 			write_uint32 (MONO_PROFILER_DIRECTIVE_ALLOCATIONS_HAVE_STACK);
 		}
+		if (profiler->action_flags.allocations_carry_id) {
+			write_uint32 (MONO_PROFILER_DIRECTIVE_ALLOCATIONS_CARRY_ID);
+		}
 	}
 	write_uint32 (MONO_PROFILER_DIRECTIVE_END);
 	
@@ -2339,6 +2345,8 @@ write_event (ProfilerEventData *event) {
 	guint64 event_value;
 	gboolean write_event_value_extension_1 = FALSE;
 	guint64 event_value_extension_1 = 0;
+	gboolean write_event_value_extension_2 = FALSE;
+	guint64 event_value_extension_2 = 0;
 
 	event_value = event->value;
 	if (event_value == MAX_EVENT_VALUE) {
@@ -2366,19 +2374,21 @@ write_event (ProfilerEventData *event) {
 		event_data = element->id;
 		
 		if (event->code == MONO_PROFILER_EVENT_CLASS_ALLOCATION) {
-			if (! profiler->action_flags.save_allocation_caller) {
+			if ((! profiler->action_flags.save_allocation_caller) || (! (next->code == MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER))) {
 				MONO_PROFILER_EVENT_MAKE_PACKED_CODE (event_code, event_data, MONO_PROFILER_PACKED_EVENT_CODE_CLASS_ALLOCATION);
 			} else {
+				MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, MONO_PROFILER_EVENT_JIT_TIME_ALLOCATION, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_OTHER_EVENT);
+			}
+			
+			printf ("Handling allocation (id %d): event_code %d, event_data %ld\n", element->id, event_code, event_data);
+			
+			if (profiler->action_flags.save_allocation_caller) {
 				MonoMethod *caller_method = next->data.address;
 				
-				if (next->code == MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER) {
-					MONO_PROFILER_EVENT_MAKE_PACKED_CODE (event_code, event_data, MONO_PROFILER_PACKED_EVENT_CODE_CLASS_ALLOCATION);
-				} else if (next->code == MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER) {
-					MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, MONO_PROFILER_EVENT_JIT_TIME_ALLOCATION, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_OTHER_EVENT);
-				} else {
-					/* If we are tracking the stack, the next event must be the caller method */
+				if ((next->code != MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER) && (next->code != MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER)) {
 					g_assert_not_reached ();
 				}
+				
 				if (caller_method != NULL) {
 					MethodIdMappingElement *caller = method_id_mapping_element_get (caller_method);
 					g_assert (caller != NULL);
@@ -2387,6 +2397,21 @@ write_event (ProfilerEventData *event) {
 
 				write_event_value_extension_1 = TRUE;
 				next ++;
+				
+				printf ("Caller ID is %ld\n", event_value_extension_1);
+			}
+			
+			if (profiler->action_flags.allocations_carry_id) {
+				event_value_extension_2  = GPOINTER_TO_UINT (next->data.address);
+				
+				if (next->code != MONO_PROFILER_EVENT_ALLOCATION_OBJECT_ID) {
+					g_assert_not_reached ();
+				}
+				
+				write_event_value_extension_2 = TRUE;
+				next ++;
+				
+				printf ("Object ID is %ld\n", event_value_extension_2);
 			}
 		} else {
 			MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, event->code, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_CLASS_EVENT);
@@ -2418,6 +2443,9 @@ write_event (ProfilerEventData *event) {
 		write_uint64 (event_value);
 		if (write_event_value_extension_1) {
 			write_uint64 (event_value_extension_1);
+		}
+		if (write_event_value_extension_2) {
+			write_uint64 (event_value_extension_2);
 		}
 	}
 	
@@ -3644,6 +3672,7 @@ method_event_code_to_string (MonoProfilerMethodEvents code) {
 	case MONO_PROFILER_EVENT_METHOD_FREED: return "FREED";
 	case MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER: return "ALLOCATION_CALLER";
 	case MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER: return "ALLOCATION_JIT_TIME_CALLER";
+	case MONO_PROFILER_EVENT_ALLOCATION_OBJECT_ID: return "ALLOCATION_OBJECT_ID";
 	default: g_assert_not_reached (); return "";
 	}
 }
@@ -3942,6 +3971,9 @@ object_allocated (MonoProfiler *profiler, MonoObject *obj, MonoClass *klass) {
 	if (profiler->action_flags.save_allocation_caller) {
 		event_slot_count ++;
 	}
+	if (profiler->action_flags.allocations_carry_id) {
+		event_slot_count ++;
+	}
 	if (profiler->action_flags.save_allocation_stack) {
 		unsaved_frames = thread_stack_count_unsaved_frames (&(data->stack));
 		event_slot_count += (unsaved_frames + 1);
@@ -3976,16 +4008,22 @@ object_allocated (MonoProfiler *profiler, MonoObject *obj, MonoClass *klass) {
 		MonoMethod *caller = thread_stack_top (&(data->stack));
 		gboolean caller_is_jitted = thread_stack_top_is_jitted (&(data->stack));
 		int index = 1;
+		events ++;
+		
 		while ((caller != NULL) && (caller->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)) {
 			caller = thread_stack_index_from_top (&(data->stack), index);
 			caller_is_jitted = thread_stack_index_from_top_is_jitted (&(data->stack), index);
 			index ++;
 		}
 		if (! caller_is_jitted) {
-			STORE_EVENT_ITEM_VALUE (events + 1, profiler, caller, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER, 0, 0);
+			STORE_EVENT_ITEM_VALUE (events, profiler, caller, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER, 0, 0);
 		} else {
-			STORE_EVENT_ITEM_VALUE (events + 1, profiler, caller, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER, 0, 0);
+			STORE_EVENT_ITEM_VALUE (events, profiler, caller, MONO_PROFILER_EVENT_DATA_TYPE_METHOD, MONO_PROFILER_EVENT_METHOD_ALLOCATION_JIT_TIME_CALLER, 0, 0);
 		}
+	}
+	if (profiler->action_flags.allocations_carry_id) {
+		events ++;
+		STORE_EVENT_ITEM_VALUE (events, profiler, obj, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, MONO_PROFILER_EVENT_ALLOCATION_OBJECT_ID, 0, 0);
 	}
 }
 
@@ -4798,6 +4836,8 @@ setup_user_options (const char *arguments) {
 				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
 				profiler->action_flags.track_stack = TRUE;
 				profiler->action_flags.save_allocation_stack = TRUE;
+			} else if (! (strcmp (argument, "allocations-carry-id") && strcmp (argument, "aci"))) {
+				profiler->action_flags.allocations_carry_id = TRUE;
 			} else if (! (strcmp (argument, "start-enabled") && strcmp (argument, "se"))) {
 				profiler->profiler_enabled = TRUE;
 			} else if (! (strcmp (argument, "start-disabled") && strcmp (argument, "sd"))) {
