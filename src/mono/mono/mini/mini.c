@@ -55,7 +55,6 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
@@ -13596,10 +13595,6 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 
 #ifdef MONO_ARCH_USE_SIGACTION
 	if (debug_options.collect_pagefault_stats) {
-		if (mono_raw_buffer_is_pagefault (info->si_addr)) {
-			mono_raw_buffer_handle_pagefault (info->si_addr);
-			return;
-		}
 		if (mono_aot_is_pagefault (info->si_addr)) {
 			mono_aot_handle_pagefault (info->si_addr);
 			return;
@@ -14407,7 +14402,6 @@ mini_init (const char *filename, const char *runtime_version)
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
 	if (debug_options.collect_pagefault_stats) {
-		mono_raw_buffer_set_make_unreadable (TRUE);
 		mono_aot_set_make_unreadable (TRUE);
 	}
 
@@ -14734,7 +14728,6 @@ print_jit_stats (void)
 			g_print ("Demand (code gen)     : %ld\n", mono_jit_stats.cas_demand_generation);
 		}
 		if (debug_options.collect_pagefault_stats) {
-			g_print ("Metadata pagefaults   : %d\n", mono_raw_buffer_get_n_pagefaults ());
 			g_print ("AOT pagefaults        : %d\n", mono_aot_get_n_pagefaults ());
 		}
 
