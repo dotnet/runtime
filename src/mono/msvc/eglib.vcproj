@@ -552,15 +552,23 @@
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gdate.c"
+				RelativePath="..\eglib\src\gdate-win32.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gdir.c"
+				RelativePath="..\eglib\src\gdir-win32.c"
 				>
 			</File>
 			<File
 				RelativePath="..\eglib\src\gerror.c"
+				>
+			</File>
+			<File
+				RelativePath="..\eglib\src\gfile-posix.c"
+				>
+			</File>
+			<File
+				RelativePath="..\eglib\src\gfile-win32.c"
 				>
 			</File>
 			<File
@@ -584,11 +592,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gmisc.c"
+				RelativePath="..\eglib\src\gmisc-win32.c"
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gmodule.c"
+				RelativePath="..\eglib\src\gmodule-win32.c"
 				>
 			</File>
 			<File

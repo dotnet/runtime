@@ -1,3 +1,12 @@
+2008-10-13  Bill Holmes  <billholmes54@gmail.com>
+
+	* libmono.vcproj : Removing metadata\rawbuffer.c from the VC project.
+
+	* eglib.vcproj : Adding gdate-win32.c, gdir-win32.c, gfile-posix.c,
+	  gfile-win32.c, gmisc-win32.c, and gmodule-win32.c to the VC project.
+
+	Code is contributed under MIT/X11 license.
+
 2008-10-07  Bill Holmes  <billholmes54@gmail.com>
 
 	* libmono.vcproj : Adding simd-intrinsics.c to the VC project.
