@@ -3829,11 +3829,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MINPS:
 			x86_sse_alu_ps_reg_reg (code, X86_SSE_MIN, ins->sreg1, ins->sreg2);
 			break;
+		case OP_COMPPS:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 7);
+			x86_sse_alu_ps_reg_reg_imm (code, X86_SSE_COMP, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_ANDPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_AND, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ANDNPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_ANDN, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ORPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_OR, ins->sreg1, ins->sreg2);
+			break;
+		case OP_XORPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_XOR, ins->sreg1, ins->sreg2);
+			break;
 		case OP_SQRTPS:
 			x86_sse_alu_ps_reg_reg (code, X86_SSE_SQRT, ins->dreg, ins->sreg1);
 			break;
 		case OP_RSQRTPS:
 			x86_sse_alu_ps_reg_reg (code, X86_SSE_RSQRT, ins->dreg, ins->sreg1);
+			break;
+		case OP_RCPPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_RCP, ins->dreg, ins->sreg1);
 			break;
 		case OP_ADDSUBPS:
 			x86_sse_alu_sd_reg_reg (code, X86_SSE_ADDSUB, ins->sreg1, ins->sreg2);
@@ -3887,6 +3906,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_UNPACK_LOWD:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKLDQ, ins->sreg1, ins->sreg2);
 			break;
+		case OP_UNPACK_LOWPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_UNPCKL, ins->sreg1, ins->sreg2);
+			break;
 
 		case OP_UNPACK_HIGHB:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKHBW, ins->sreg1, ins->sreg2);
@@ -3896,6 +3918,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_UNPACK_HIGHD:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKHDQ, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHPS:
+			x86_sse_alu_ps_reg_reg (code, X86_SSE_UNPCKH, ins->sreg1, ins->sreg2);
 			break;
 
 		case OP_PACKW:

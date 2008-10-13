@@ -1706,6 +1706,17 @@ enum {
 	SIMD_VERSION_SSE4a	= 6,
 };
 
+enum {
+	SIMD_COMP_EQ,
+	SIMD_COMP_LT,
+	SIMD_COMP_LE,
+	SIMD_COMP_UNORD,
+	SIMD_COMP_NEQ,
+	SIMD_COMP_NLT,
+	SIMD_COMP_NLE,
+	SIMD_COMP_ORD
+};
+
 const char *mono_arch_xregname (int reg) MONO_INTERNAL;
 void mono_simd_simplify_indirection (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;

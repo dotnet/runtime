@@ -91,13 +91,25 @@ setters
  */
 static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ ".ctor", 0, SIMD_EMIT_CTOR },
+	{ "AndNot", OP_ANDNPS, SIMD_EMIT_BINARY },
 	{ "AddSub", OP_ADDSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
+	{ "CompareEquals", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
+	{ "CompareLessEqual", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LE },
+	{ "CompareLessThan", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LT },
+	{ "CompareNotEqual", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NEQ },
+	{ "CompareNotLessEqual", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NLE },
+	{ "CompareNotLessThan", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NLT },
+	{ "CompareOrdered", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_ORD },
+	{ "CompareUnordered", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_UNORD },
 	{ "HorizontalAdd", OP_HADDPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
 	{ "HorizontalSub", OP_HSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },	
+	{ "InterleaveHigh", OP_UNPACK_HIGHPS, SIMD_EMIT_BINARY },
+	{ "InterleaveLow", OP_UNPACK_LOWPS, SIMD_EMIT_BINARY },
 	{ "InvSqrt", OP_RSQRTPS, SIMD_EMIT_UNARY },
 	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ "Max", OP_MAXPS, SIMD_EMIT_BINARY },
 	{ "Min", OP_MINPS, SIMD_EMIT_BINARY },
+	{ "Reciprocal", OP_RCPPS, SIMD_EMIT_UNARY },
 	{ "Shuffle", 0, SIMD_EMIT_SHUFFLE },
 	{ "Sqrt", OP_SQRTPS, SIMD_EMIT_UNARY },
 	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
@@ -106,7 +118,10 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ "get_Y", 1, SIMD_EMIT_GETTER },
 	{ "get_Z", 2, SIMD_EMIT_GETTER },
 	{ "op_Addition", OP_ADDPS, SIMD_EMIT_BINARY },
+	{ "op_BitwiseAnd", OP_ANDPS, SIMD_EMIT_BINARY },
+	{ "op_BitwiseOr", OP_ORPS, SIMD_EMIT_BINARY },
 	{ "op_Division", OP_DIVPS, SIMD_EMIT_BINARY },
+	{ "op_ExclusiveOr", OP_XORPS, SIMD_EMIT_BINARY },
 	{ "op_Explicit", 0, SIMD_EMIT_CAST }, 
 	{ "op_Multiply", OP_MULPS, SIMD_EMIT_BINARY },
 	{ "op_Subtraction", OP_SUBPS, SIMD_EMIT_BINARY },
@@ -414,6 +429,7 @@ simd_intrinsic_emit_binary (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	ins->type = STACK_VTYPE;
 	ins->klass = cmethod->klass;
 	ins->dreg = alloc_ireg (cfg);
+	ins->inst_c0 = intrinsic->flags;
 	MONO_ADD_INS (cfg->cbb, ins);
 	return ins;
 }
