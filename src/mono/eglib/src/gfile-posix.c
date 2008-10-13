@@ -34,6 +34,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef _MSC_VER
+int mkstemp (char *tmp_template);
+#endif
+
 #ifndef O_LARGEFILE
 #define OPEN_FLAGS (O_RDONLY)
 #else

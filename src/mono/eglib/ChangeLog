@@ -1,3 +1,14 @@
+2008-10-13  Bill Holmes  <billholmes54@gmail.com>
+
+	* src/gdate-win32.c : Fix compiler errors for MSVC.
+
+	* src/gpath.c : Fix compiler errors for MSVC.
+
+	* src/gfile-posix.c : Adding declaration for mkstemp for the win 32
+	  implementation in gfile-win32.c.
+
+	Contributed under MIT/X11 license.
+
 2008-10-11  Miguel de Icaza  <miguel@novell.com>
 
 	* src/glib.h: Move g_strdup here, to consolidate all allocations

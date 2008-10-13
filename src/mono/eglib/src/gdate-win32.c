@@ -33,8 +33,9 @@
 void
 g_get_current_time (GTimeVal *result)
 {
+	long int l;
 	g_return_if_fail (result != NULL);
-	long int l = GetTickCount();
+	l = GetTickCount();
 
 	g_return_if_fail (result != NULL);
 
