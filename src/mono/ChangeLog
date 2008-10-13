@@ -1,3 +1,8 @@
+
+Mon Oct 13 11:26:19 CEST 2008 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: check for shm_open ().
+
 2008-10-12  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Only process Makefiles with patch-quiet.sh which have a 
