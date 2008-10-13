@@ -2,6 +2,245 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+
+	public static int test_0_vector4f_interleave_high () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f b = new Vector4f (5, 6, 7, 8);
+		Vector4f c = Vector4f.InterleaveHigh (a, b);
+
+		if (c.X != 3)
+			return 1;
+		if (c.Y != 7)
+			return 2;
+		if (c.Z != 4)
+			return 3;
+		if (c.W != 8)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_interleave_low () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f b = new Vector4f (5, 6, 7, 8);
+		Vector4f c = Vector4f.InterleaveLow (a, b);
+
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 5)
+			return 2;
+		if (c.Z != 2)
+			return 3;
+		if (c.W != 6)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_rcp () {
+		Vector4f a = new Vector4f (1, 2, 4, 8);
+		Vector4f c = Vector4f.Reciprocal (a);
+
+		//Test with ranges due to the terrible precision.
+		if (c.X < (1 - 0.01f) || c.X > (1 + 0.01f))
+			return 1;
+		if (c.Y < (0.5 - 0.01f) || c.Y > (0.5 + 0.01f))
+			return 2;
+		if (c.Z < (0.25 - 0.01f) || c.Z > (0.25 + 0.01f))
+			return 3;
+		if (c.W < (0.125 - 0.01f) || c.W > (0.125 + 0.01f))
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_xor () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f b = new Vector4f (1, 3, 3, 8);
+		Vector4f c = a ^ b;
+
+		if (((Vector4ui)c).X != 0)
+			return 1;
+		if (((Vector4ui)c).Y != 0x400000)
+			return 2;
+		if (((Vector4ui)c).Z != 0)
+			return 3;
+		if (((Vector4ui)c).W != 0x1800000)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_or () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f b = new Vector4f (1, 3, 3, 8);
+		Vector4f c = a | b;
+
+		if (((Vector4ui)c).X != 0x3F800000)
+			return 1;
+		if (((Vector4ui)c).Y != 0x40400000)
+			return 2;
+		if (((Vector4ui)c).Z != 0x40400000)
+			return 3;
+		if (((Vector4ui)c).W != 0x41800000)
+			return 4;
+		return 0;
+	}
+	public static int test_0_vector4f_andn () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f b = new Vector4f (1, 3, 3, 8);
+		Vector4f c = Vector4f.AndNot (a ,b);
+
+		if (((Vector4ui)c).X != 0)
+			return 1;
+		if (((Vector4ui)c).Y != 0x400000)
+			return 2;
+		if (((Vector4ui)c).Z != 0)
+			return 3;
+		if (((Vector4ui)c).W != 0x1000000)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_and () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f b = new Vector4f (1, 3, 3, 8);
+		Vector4f c = a & b;
+
+		if (((Vector4ui)c).X != 0x3F800000)
+			return 1;
+		if (((Vector4ui)c).Y != 0x40000000)
+			return 2;
+		if (((Vector4ui)c).Z != 0x40400000)
+			return 3;
+		if (((Vector4ui)c).W != 0x40000000)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_cmpord () {
+		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
+		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
+		Vector4f c = Vector4f.CompareOrdered (a, b);
+
+		if (((Vector4ui)c).X != 0)
+			return 1;
+		if (((Vector4ui)c).Y != 0)
+			return 2;
+		if (((Vector4ui)c).Z != 0xFFFFFFFF)
+			return 3;
+		if (((Vector4ui)c).W != 0xFFFFFFFF)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_cmpnle () {
+		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
+		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
+		Vector4f c = Vector4f.CompareNotLessEqual (a, b);
+
+		if (((Vector4ui)c).X != 0xFFFFFFFF)
+			return 1;
+		if (((Vector4ui)c).Y != 0xFFFFFFFF)
+			return 2;
+		if (((Vector4ui)c).Z != 0)
+			return 3;
+		if (((Vector4ui)c).W != 0)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_cmpnlt () {
+		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
+		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
+		Vector4f c = Vector4f.CompareNotLessThan (a, b);
+
+		if (((Vector4ui)c).X != 0xFFFFFFFF)
+			return 1;
+		if (((Vector4ui)c).Y != 0xFFFFFFFF)
+			return 2;
+		if (((Vector4ui)c).Z != 0xFFFFFFFF)
+			return 3;
+		if (((Vector4ui)c).W != 0)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_cmpneq () {
+		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
+		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
+		Vector4f c = Vector4f.CompareNotEqual (a, b);
+
+		if (((Vector4ui)c).X != 0xFFFFFFFF)
+			return 1;
+		if (((Vector4ui)c).Y != 0xFFFFFFFF)
+			return 2;
+		if (((Vector4ui)c).Z != 0)
+			return 3;
+		if (((Vector4ui)c).W != 0xFFFFFFFF)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_cmpunord () {
+		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
+		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
+		Vector4f c = Vector4f.CompareUnordered (a, b);
+
+		if (((Vector4ui)c).X != 0xFFFFFFFF)
+			return 1;
+		if (((Vector4ui)c).Y != 0xFFFFFFFF)
+			return 2;
+		if (((Vector4ui)c).Z != 0)
+			return 3;
+		if (((Vector4ui)c).W != 0)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_cmple () {
+		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
+		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
+		Vector4f c = Vector4f.CompareLessEqual (a, b);
+
+		if (((Vector4ui)c).X != 0)
+			return 1;
+		if (((Vector4ui)c).Y != 0)
+			return 2;
+		if (((Vector4ui)c).Z != 0xFFFFFFFF)
+			return 3;
+		if (((Vector4ui)c).W != 0xFFFFFFFF)
+			return 4;
+		return 0;
+	}
+	public static int test_0_vector4f_cmplt () {
+		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
+		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
+		Vector4f c = Vector4f.CompareLessThan (a, b);
+
+		if (((Vector4ui)c).X != 0)
+			return 1;
+		if (((Vector4ui)c).Y != 0)
+			return 2;
+		if (((Vector4ui)c).Z != 0)
+			return 3;
+		if (((Vector4ui)c).W != 0xFFFFFFFF)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_cmpeq () {
+		Vector4f a = new Vector4f (float.NaN, 2,         3, 6);
+		Vector4f b = new Vector4f (1,         float.NaN, 3, 4);
+		Vector4f c = Vector4f.CompareEquals (a, b);
+
+		if (((Vector4ui)c).X != 0)
+			return 1;
+		if (((Vector4ui)c).Y != 0)
+			return 2;
+		if (((Vector4ui)c).Z != 0xFFFFFFFF)
+			return 3;
+		if (((Vector4ui)c).W != 0)
+			return 4;
+		return 0;
+	}
+
 	public static int test_0_vector4ui_sar () {
 		Vector4ui a = new Vector4ui (0xF0000000u,20,3,40);
 		
