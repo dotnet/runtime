@@ -192,6 +192,7 @@ ICALL(PROCESS_3, "ExitTime_internal(intptr)", ves_icall_System_Diagnostics_Proce
 ICALL(PROCESS_4, "GetModules_internal(intptr)", ves_icall_System_Diagnostics_Process_GetModules_internal)
 ICALL(PROCESS_5, "GetPid_internal()", ves_icall_System_Diagnostics_Process_GetPid_internal)
 ICALL(PROCESS_5B, "GetPriorityClass(intptr,int&)", ves_icall_System_Diagnostics_Process_GetPriorityClass)
+ICALL(PROCESS_5H, "GetProcessData", ves_icall_System_Diagnostics_Process_GetProcessData)
 ICALL(PROCESS_6, "GetProcess_internal(int)", ves_icall_System_Diagnostics_Process_GetProcess_internal)
 ICALL(PROCESS_7, "GetProcesses_internal()", ves_icall_System_Diagnostics_Process_GetProcesses_internal)
 ICALL(PROCESS_8, "GetWorkingSet_internal(intptr,int&,int&)", ves_icall_System_Diagnostics_Process_GetWorkingSet_internal)

@@ -21,6 +21,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/exception.h>
 #include <mono/utils/strenc.h>
+#include <mono/utils/mono-proclib.h>
 #include <mono/io-layer/io-layer.h>
 /* FIXME: fix this code to not depend so much on the inetrnals */
 #include <mono/metadata/class-internals.h>
@@ -1028,3 +1029,10 @@ ves_icall_System_Diagnostics_Process_ProcessHandle_close (HANDLE process)
 
 	CloseHandle (process);
 }
+
+gint64
+ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, gint32 *error)
+{
+	return mono_process_get_data_with_error (GINT_TO_POINTER (pid), data_type, error);
+}
+
