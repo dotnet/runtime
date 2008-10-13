@@ -31,7 +31,8 @@ TODO revamp the .ctor sequence as it looks very fragile, maybe use a var just li
 TODO figure out what's wrong with OP_STOREX_MEMBASE_REG and OP_STOREX_MEMBASE (the 2nd is for imm operands)
 TODO maybe add SSE3 emulation on top of SSE2, or just implement the corresponding functions using SSE2 intrinsics.
 TODO pass simd arguments in registers or, at least, add SSE support for pushing large (>=16) valuetypes 
-TODO pass simd args byval to a non-intrinsic method cause some useless local var load/store to happen. 
+TODO pass simd args byval to a non-intrinsic method cause some useless local var load/store to happen.
+TODO check if we need to init the SSE control word with better precision. 
 
 General notes for SIMD intrinsics.
 
@@ -63,7 +64,6 @@ without a OP_LDADDR.
 #define DEBUG(a) do { if (IS_DEBUG_ON(cfg)) { a; } } while (0)
 enum {
 	SIMD_EMIT_BINARY,
-	SIMD_EMIT_BINARY_SSE3,
 	SIMD_EMIT_UNARY,
 	SIMD_EMIT_GETTER,
 	SIMD_EMIT_CTOR,
@@ -75,13 +75,13 @@ enum {
 };
 
 /*This is the size of the largest method name + 1 (to fit the ending \0). Align to 4 as well.*/
-#define SIMD_INTRINSIC_NAME_MAX 22
+#define SIMD_INTRINSIC_NAME_MAX 27
 
 typedef struct {
 	const char name[SIMD_INTRINSIC_NAME_MAX];
 	guint16 opcode;
 	guint8 simd_emit_mode;
-	guint8 flags;
+	guint8 simd_version;
 } SimdIntrinsc;
 
 /*
@@ -90,9 +90,9 @@ setters
  */
 static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ ".ctor", 0, SIMD_EMIT_CTOR },
-	{ "AddSub", OP_ADDSUBPS, SIMD_EMIT_BINARY_SSE3 },
-	{ "HorizontalAdd", OP_HADDPS, SIMD_EMIT_BINARY_SSE3 },
-	{ "HorizontalSub", OP_HSUBPS, SIMD_EMIT_BINARY_SSE3 },	
+	{ "AddSub", OP_ADDSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
+	{ "HorizontalAdd", OP_HADDPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
+	{ "HorizontalSub", OP_HSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },	
 	{ "InvSqrt", OP_RSQRTPS, SIMD_EMIT_UNARY },
 	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ "Max", OP_MAXPS, SIMD_EMIT_BINARY },
@@ -113,12 +113,27 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 
 /*
 Missing:
-A lot, revisit Vector4u.
+.ctor
+getters
+setters
  */
-static const SimdIntrinsc vector4u_intrinsics[] = {
+static const SimdIntrinsc vector4ui_intrinsics[] = {
+	{ "AddWithSaturation", OP_PADDD_SAT_UN, SIMD_EMIT_BINARY },
+	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ "ShiftRightArithmetic", OP_PSARD, SIMD_EMIT_SHIFT },
+	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
+	{ "SubWithSaturation", OP_PSUBD_SAT_UN, SIMD_EMIT_BINARY },
+	{ "UnpackHigh", OP_UNPACK_HIGHD, SIMD_EMIT_BINARY },
+	{ "UnpackLow", OP_UNPACK_LOWD, SIMD_EMIT_BINARY },
+	{ "op_Addition", OP_PADDD, SIMD_EMIT_BINARY },
 	{ "op_BitwiseAnd", OP_PAND, SIMD_EMIT_BINARY },
 	{ "op_BitwiseOr", OP_POR, SIMD_EMIT_BINARY },
 	{ "op_BitwiseXor", OP_PXOR, SIMD_EMIT_BINARY },
+	{ "op_Explicit", 0, SIMD_EMIT_CAST },
+	{ "op_LeftShift", OP_PSHLD, SIMD_EMIT_SHIFT },
+	{ "op_Multiply", OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ "op_RightShift", OP_PSHRD, SIMD_EMIT_SHIFT },
+	{ "op_Subtraction", OP_PSUBD, SIMD_EMIT_BINARY },
 };
 
 /*
@@ -199,6 +214,7 @@ void
 mono_simd_intrinsics_init (void)
 {
 	simd_supported_versions = mono_arch_cpu_enumerate_simd_versions ();
+	/*TODO log the supported flags*/
 }
 /*
 This pass recalculate which vars need MONO_INST_INDIRECT.
@@ -589,6 +605,27 @@ simd_intrinsic_emit_store_aligned (const SimdIntrinsc *intrinsic, MonoCompile *c
 	return ins;
 }
 
+static const char *
+simd_version_name (guint32 version)
+{
+	switch (version) {
+	case SIMD_VERSION_SSE1:
+		return "sse1";
+	case SIMD_VERSION_SSE2:
+		return "sse2";
+	case SIMD_VERSION_SSE3:
+		return "sse3";
+	case SIMD_VERSION_SSSE3:
+		return "ssse3";
+	case SIMD_VERSION_SSE41:
+		return "sse41";
+	case SIMD_VERSION_SSE42:
+		return "sse42";
+	case SIMD_VERSION_SSE4a:
+		return "sse4a";
+	}
+	return "n/a";
+}
 
 static MonoInst*
 emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, const SimdIntrinsc *intrinsics, guint32 size)
@@ -607,12 +644,13 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			mono_print_ins (args [i]);
 		}
 	}
+	if (result->simd_version && !(result->simd_version & simd_supported_versions)) {
+		if (IS_DEBUG_ON (cfg))
+			printf ("function %s::%s/%d requires unsuported SIMD instruction set %s \n", cmethod->klass->name, cmethod->name, fsig->param_count, simd_version_name (result->simd_version));
+		return NULL;
+	}
 
 	switch (result->simd_emit_mode) {
-	case SIMD_EMIT_BINARY_SSE3:
-		if (simd_supported_versions & SIMD_VERSION_SSE3)
-			return simd_intrinsic_emit_binary (result, cfg, cmethod, args);
-		return NULL;
 	case SIMD_EMIT_BINARY:
 		return simd_intrinsic_emit_binary (result, cfg, cmethod, args);
 	case SIMD_EMIT_UNARY:
@@ -644,7 +682,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!strcmp ("Vector4f", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector4ui", cmethod->klass->name))
-		return emit_intrinsics (cfg, cmethod, fsig, args, vector4u_intrinsics, sizeof (vector4u_intrinsics) / sizeof (SimdIntrinsc));
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector4ui_intrinsics, sizeof (vector4ui_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector8us", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector8us_intrinsics, sizeof (vector8us_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector16b", cmethod->klass->name))

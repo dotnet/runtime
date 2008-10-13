@@ -3896,6 +3896,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKHDQ, ins->sreg1, ins->sreg2);
 			break;
 
+		case OP_PACKW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PACKUSWB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PACKD:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PACKUSDW, ins->sreg1, ins->sreg2);
+			break;
+
 		case OP_PADDB_SAT_UN:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PADDUSB, ins->sreg1, ins->sreg2);
 			break;
@@ -3911,6 +3918,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			
 		case OP_PMULW:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMULLW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMULD:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMULLD, ins->sreg1, ins->sreg2);
 			break;
 
 		case OP_PSHRW:
@@ -3932,6 +3942,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_PSHLW_REG:
 			x86_sse_shift_reg_reg (code, X86_SSE_PSLLW_REG, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSHRD:
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHIFTD, X86_SSE_SHR, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHRD_REG:
+			x86_sse_shift_reg_reg (code, X86_SSE_PSRLD_REG, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSARD:
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHIFTD, X86_SSE_SAR, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSARD_REG:
+			x86_sse_shift_reg_reg (code, X86_SSE_PSRAD_REG, ins->dreg, ins->sreg2);
+			break;
+
+		case OP_PSHLD:
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHIFTD, X86_SSE_SHL, ins->dreg, ins->inst_imm);
+			break;
+		case OP_PSHLD_REG:
+			x86_sse_shift_reg_reg (code, X86_SSE_PSLLD_REG, ins->dreg, ins->sreg2);
 			break;
 
 		case OP_ICONV_TO_X:

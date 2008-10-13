@@ -2,31 +2,6 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
-	public static int test_0_vector4ui_pack_un_sat () {
-		Vector4ui a = new Vector4ui (100123,2,3,4);
-		Vector4ui b = new Vector4ui (5,6,7,8);
-		
-		Vector8us c = Vector4ui.PackWithUnsignedSaturation (a, b);
-	
-		if (c.V0 != 65535)
-			return 1;
-		if (c.V1 != 2)
-			return 2;
-		if (c.V2 != 3)
-			return 3;
-		if (c.V3 != 4)
-			return 4;
-		if (c.V4 != 5)
-			return 5;
-		if (c.V5 != 6)
-			return 6;
-		if (c.V6 != 7)
-			return 7;
-		if (c.V7 != 8)
-			return 8;
-		return 0;
-	}
-
 	public static int test_0_vector4ui_sar () {
 		Vector4ui a = new Vector4ui (0xF0000000u,20,3,40);
 		
@@ -234,24 +209,6 @@ public class SimdTests {
 			return 7;
 		if (a.W != 40)
 			return 8;
-		return 0;
-	}
-
-	static int test_0_vector8us_pack () {
-		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
-		Vector8us b = new Vector8us (3,4,5,6,7,8,9,10);
-		Vector16b c = Vector8us.PackWithUnsignedSaturation (a, b);
-
-		if (c.V0 != 0xFF)
-			return 1;
-		if (c.V1 != 1)
-			return 2;
-		if (c.V2 != 2)
-			return 3;
-		if (c.V8 != 3)
-			return 4;
-		if (c.V15 != 10)
-			return 5;
 		return 0;
 	}
 

@@ -1744,14 +1744,19 @@ typedef enum {
 	X86_SSE_PUNPCKHDQ = 0x6A,
 	X86_SSE_PUNPCKHQDQ = 0x6D,
 
+	X86_SSE_PACKUSWB = 0x67,
+	X86_SSE_PACKUSDW = 0x2B,/*sse41*/
+
 	X86_SSE_PADDUSB = 0xDC,
 	X86_SSE_PADDUSW = 0xDD,
 	X86_SSE_PSUBUSB = 0xD8,
 	X86_SSE_PSUBUSW = 0xD9,
 
 	X86_SSE_PMULLW = 0xD5,
+	X86_SSE_PMULLD = 0x40,/*sse41*/
 	
 	X86_SSE_PSHIFTW = 0x71,
+	X86_SSE_PSHIFTD = 0x72,
 	X86_SSE_SHR = 2,
 	X86_SSE_SAR = 4,
 	X86_SSE_SHL = 6,
@@ -1759,6 +1764,10 @@ typedef enum {
 	X86_SSE_PSRLW_REG = 0xD1,
 	X86_SSE_PSRAW_REG = 0xE1,
 	X86_SSE_PSLLW_REG = 0xF1,
+
+	X86_SSE_PSRLD_REG = 0xD2,
+	X86_SSE_PSRAD_REG = 0xE2,
+	X86_SSE_PSLLD_REG = 0xF2,
 	
 } X86_SSE_Opcode;
 
@@ -1809,6 +1818,16 @@ typedef enum {
 		*(inst)++ = (unsigned char)0xF3;        \
 		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
 	} while (0)
+
+#define x86_sse_alu_sse41_reg_reg(inst,opc,dreg,reg)       \
+	do {    \
+		*(inst)++ = (unsigned char)0x66;        \
+		*(inst)++ = (unsigned char)0x0F;	\
+		*(inst)++ = (unsigned char)0x38;	\
+		*(inst)++ = (unsigned char)(opc);	\
+		x86_reg_emit ((inst), (dreg), (reg));	\
+	} while (0)
+
 
 #define x86_movups_reg_membase(inst,sreg,basereg,disp)	\
 	do {	\

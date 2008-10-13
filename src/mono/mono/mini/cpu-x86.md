@@ -445,11 +445,17 @@ unpack_highw: dest:x src1:x src2:x len:4 clob:1
 unpack_highd: dest:x src1:x src2:x len:4 clob:1
 unpack_highq: dest:x src1:x src2:x len:4 clob:1
 
+packw: dest:x src1:x src2:x len:4 clob:1 
+packd: dest:x src1:x src2:x len:5 clob:1 
+
 paddb_sat: dest:x src1:x src2:x len:4 clob:1
 paddb_sat_un: dest:x src1:x src2:x len:4 clob:1
 
 paddw_sat: dest:x src1:x src2:x len:4 clob:1
 paddw_sat_un: dest:x src1:x src2:x len:4 clob:1
+
+paddd_sat: dest:x src1:x src2:x len:4 clob:1
+paddd_sat_un: dest:x src1:x src2:x len:4 clob:1
 
 psubb_sat: dest:x src1:x src2:x len:4 clob:1
 psubb_sat_un: dest:x src1:x src2:x len:4 clob:1
@@ -457,8 +463,11 @@ psubb_sat_un: dest:x src1:x src2:x len:4 clob:1
 psubw_sat: dest:x src1:x src2:x len:4 clob:1
 psubw_sat_un: dest:x src1:x src2:x len:4 clob:1
 
+psubd_sat: dest:x src1:x src2:x len:4 clob:1
+psubd_sat_un: dest:x src1:x src2:x len:4 clob:1
+
 pmulw: dest:x src1:x src2:x len:4 clob:1
-pmuld: dest:x src1:x src2:x len:4 clob:1
+pmuld: dest:x src1:x src2:x len:5 clob:1
 
 pshrw: dest:x src1:x len:8 clob:1
 pshrw_reg: dest:x src1:x src2:x len:8 clob:1
@@ -468,6 +477,15 @@ psarw_reg: dest:x src1:x src2:x len:8 clob:1
 
 pshlw: dest:x src1:x len:8 clob:1
 pshlw_reg: dest:x src1:x src2:x len:8 clob:1
+
+pshrd: dest:x src1:x len:8 clob:1
+pshrd_reg: dest:x src1:x src2:x len:8 clob:1
+
+psard: dest:x src1:x len:8 clob:1
+psard_reg: dest:x src1:x src2:x len:8 clob:1
+
+pshld: dest:x src1:x len:8 clob:1
+pshld_reg: dest:x src1:x src2:x len:8 clob:1
 
 xmove: dest:x src1:x len:4
 xzero: dest:x len:4
@@ -486,6 +504,6 @@ storex_aligned_membase_reg: dest:b src1:x len:7
 push_r4: src1:f len:13
 loadx_stack: dest:x len: 13
 
-fconv_to_r8_x: dest:x src1:f len:60 
-xconv_r8_to_i4: dest:y src1:x len:60
+fconv_to_r8_x: dest:x src1:f len:14 
+xconv_r8_to_i4: dest:y src1:x len:7
 
