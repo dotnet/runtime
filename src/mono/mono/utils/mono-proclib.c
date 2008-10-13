@@ -88,8 +88,13 @@ mono_process_get_name (gpointer pid, char *buf, int len)
  * 	[30] wchan 0 0 exit_signal cpu rt_prio policy
  */
 
+#define RET_ERROR(err) do {	\
+		if (error) *error = (err);	\
+		return 0;			\
+	} while (0)
+
 static gint64
-get_process_stat_item (int pid, int pos, int sum)
+get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 {
 	char buf [512];
 	char *s, *end;
@@ -100,29 +105,29 @@ get_process_stat_item (int pid, int pos, int sum)
 	g_snprintf (buf, sizeof (buf), "/proc/%d/stat", pid);
 	f = fopen (buf, "r");
 	if (!f)
-		return 0;
+		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
 	len = fread (buf, 1, sizeof (buf), f);
 	fclose (f);
 	if (len <= 0)
-		return 0;
+		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	s = strchr (buf, ')');
 	if (!s)
-		return 0;
+		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	s++;
 	while (g_ascii_isspace (*s)) s++;
 	if (!*s)
-		return 0;
+		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	/* skip the status char */
 	while (*s && !g_ascii_isspace (*s)) s++;
 	if (!*s)
-		return 0;
+		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	for (i = 0; i < pos; ++i) {
 		while (g_ascii_isspace (*s)) s++;
 		if (!*s)
-			return 0;
+			RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 		while (*s && !g_ascii_isspace (*s)) s++;
 		if (!*s)
-			return 0;
+			RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	}
 	/* we are finally at the needed item */
 	value = strtoul (s, &end, 0);
@@ -130,17 +135,19 @@ get_process_stat_item (int pid, int pos, int sum)
 	if (sum) {
 		while (g_ascii_isspace (*s)) s++;
 		if (!*s)
-			return 0;
+			RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 		value += strtoul (s, &end, 0);
 	}
+	if (error)
+		*error = MONO_PROCESS_ERROR_NONE;
 	return value;
 }
 
 static gint64
-get_process_stat_time (int pid, int pos, int sum)
+get_process_stat_time (int pid, int pos, int sum, MonoProcessError *error)
 {
 	static int user_hz = 0;
-	gint64 val = get_process_stat_item (pid, pos, sum);
+	gint64 val = get_process_stat_item (pid, pos, sum, error);
 	if (user_hz == 0) {
 #ifdef _SC_CLK_TCK
 		user_hz = sysconf (_SC_CLK_TCK);
@@ -153,7 +160,7 @@ get_process_stat_time (int pid, int pos, int sum)
 }
 
 static gint64
-get_pid_status_item (int pid, const char *item)
+get_pid_status_item (int pid, const char *item, MonoProcessError *error)
 {
 	char buf [256];
 	char *s;
@@ -163,7 +170,7 @@ get_pid_status_item (int pid, const char *item)
 	g_snprintf (buf, sizeof (buf), "/proc/%d/status", pid);
 	f = fopen (buf, "r");
 	if (!f)
-		return 0;
+		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
 	while ((s = fgets (buf, sizeof (buf), f))) {
 		if (*item != *buf)
 			continue;
@@ -172,10 +179,12 @@ get_pid_status_item (int pid, const char *item)
 		if (buf [len] != ':')
 			continue;
 		fclose (f);
+		if (error)
+			*error = MONO_PROCESS_ERROR_NONE;
 		return atoi (buf + len + 1);
 	}
 	fclose (f);
-	return 0;
+	RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 }
 
 /**
@@ -187,38 +196,49 @@ get_pid_status_item (int pid, const char *item)
  * according to the @data argumet.
  */
 gint64
-mono_process_get_data (gpointer pid, MonoProcessData data)
+mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProcessError *error)
 {
 	gint64 val;
 	int rpid = GPOINTER_TO_INT (pid);
+
+	if (error)
+		*error = MONO_PROCESS_ERROR_OTHER;
+
 	switch (data) {
 	case MONO_PROCESS_NUM_THREADS:
-		return get_pid_status_item (rpid, "Threads");
+		return get_pid_status_item (rpid, "Threads", error);
 	case MONO_PROCESS_USER_TIME:
-		return get_process_stat_time (rpid, 12, FALSE);
+		return get_process_stat_time (rpid, 12, FALSE, error);
 	case MONO_PROCESS_SYSTEM_TIME:
-		return get_process_stat_time (rpid, 13, FALSE);
+		return get_process_stat_time (rpid, 13, FALSE, error);
 	case MONO_PROCESS_TOTAL_TIME:
-		return get_process_stat_time (rpid, 12, TRUE);
+		return get_process_stat_time (rpid, 12, TRUE, error);
 	case MONO_PROCESS_WORKING_SET:
-		return get_pid_status_item (rpid, "VmRSS") * 1024;
+		return get_pid_status_item (rpid, "VmRSS", error) * 1024;
 	case MONO_PROCESS_WORKING_SET_PEAK:
-		val = get_pid_status_item (rpid, "VmHWM") * 1024;
+		val = get_pid_status_item (rpid, "VmHWM", error) * 1024;
 		if (val == 0)
-			val = get_pid_status_item (rpid, "VmRSS") * 1024;
+			val = get_pid_status_item (rpid, "VmRSS", error) * 1024;
 		return val;
 	case MONO_PROCESS_PRIVATE_BYTES:
-		return get_pid_status_item (rpid, "VmData") * 1024;
+		return get_pid_status_item (rpid, "VmData", error) * 1024;
 	case MONO_PROCESS_VIRTUAL_BYTES:
-		return get_pid_status_item (rpid, "VmSize") * 1024;
+		return get_pid_status_item (rpid, "VmSize", error) * 1024;
 	case MONO_PROCESS_VIRTUAL_BYTES_PEAK:
-		val = get_pid_status_item (rpid, "VmPeak") * 1024;
+		val = get_pid_status_item (rpid, "VmPeak", error) * 1024;
 		if (val == 0)
-			val = get_pid_status_item (rpid, "VmSize") * 1024;
+			val = get_pid_status_item (rpid, "VmSize", error) * 1024;
 		return val;
 	case MONO_PROCESS_FAULTS:
-		return get_process_stat_item (rpid, 6, TRUE);
+		return get_process_stat_item (rpid, 6, TRUE, error);
 	}
 	return 0;
+}
+
+gint64
+mono_process_get_data (gpointer pid, MonoProcessData data)
+{
+	MonoProcessError error;
+	return mono_process_get_data_with_error (pid, data, &error);
 }
 
