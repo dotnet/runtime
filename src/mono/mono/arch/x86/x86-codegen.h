@@ -1711,12 +1711,20 @@ typedef union {
 typedef enum {
 	X86_SSE_SQRT = 0x51,
 	X86_SSE_RSQRT = 0x52,
+	X86_SSE_RCP = 0x53,
 	X86_SSE_ADD = 0x58,
 	X86_SSE_DIV = 0x5E,
 	X86_SSE_MUL = 0x59,
 	X86_SSE_SUB = 0x5C,
 	X86_SSE_MIN = 0x5D,
 	X86_SSE_MAX = 0x5F,
+	X86_SSE_COMP = 0xC2,
+	X86_SSE_AND = 0x54,
+	X86_SSE_ANDN = 0x55,
+	X86_SSE_OR = 0x56,
+	X86_SSE_XOR = 0x57,
+	X86_SSE_UNPCKL = 0x14,
+	X86_SSE_UNPCKH = 0x15,
 
 	X86_SSE_ADDSUB = 0xD0,
 	X86_SSE_HADD = 0x7C,
@@ -1817,6 +1825,12 @@ typedef enum {
 	do {    \
 		*(inst)++ = (unsigned char)0xF3;        \
 		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
+	} while (0)
+
+#define x86_sse_alu_ps_reg_reg_imm(inst,opc,dreg,reg, imm)	\
+	do {	\
+		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
+		*(inst)++ = (unsigned char)imm;	\
 	} while (0)
 
 #define x86_sse_alu_sse41_reg_reg(inst,opc,dreg,reg)       \
