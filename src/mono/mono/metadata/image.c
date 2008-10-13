@@ -460,7 +460,7 @@ mono_image_check_for_module_cctor (MonoImage *image)
 	MonoTableInfo *t, *mt;
 	t = &image->tables [MONO_TABLE_TYPEDEF];
 	mt = &image->tables [MONO_TABLE_METHOD];
-	if (mono_get_runtime_info ()->framework_version [0] == '1') {
+	if (mono_framework_version () == 1) {
 		image->checked_module_cctor = TRUE;
 		return;
 	}

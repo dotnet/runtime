@@ -425,4 +425,6 @@ MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 						MonoImageOpenStatus *status,
 						gboolean refonly) MONO_INTERNAL;
 
+int mono_framework_version (void) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

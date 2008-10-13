@@ -2980,7 +2980,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	if (ares == NULL)
 		mono_raise_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingException", "The async result object is null or of an unexpected type."));
 
-	if (ares->async_delegate != (MonoObject*)delegate && mono_get_runtime_info ()->framework_version [0] >= '2') {
+	if (ares->async_delegate != (MonoObject*)delegate && mono_framework_version () >= 2) {
 		mono_raise_exception (mono_get_exception_invalid_operation (
 			"The IAsyncResult object provided does not match this delegate."));
 		return NULL;

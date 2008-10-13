@@ -3199,7 +3199,7 @@ mono_unhandled_exception (MonoObject *exc)
 		gboolean abort_process = (mono_thread_current () == main_thread) ||
 				(mono_runtime_unhandled_exception_policy_get () == MONO_UNHANLED_POLICY_CURRENT);
 		root_appdomain_delegate = *(MonoObject **)(((char *)root_domain->domain) + field->offset);
-		if (current_domain != root_domain && (mono_get_runtime_info ()->framework_version [0] >= '2')) {
+		if (current_domain != root_domain && (mono_framework_version () >= 2)) {
 			current_appdomain_delegate = *(MonoObject **)(((char *)current_domain->domain) + field->offset);
 		} else {
 			current_appdomain_delegate = NULL;
@@ -3287,7 +3287,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
  	}
 	if (has_stathread_attribute) {
 		thread->apartment_state = ThreadApartmentState_STA;
-	} else if (mono_get_runtime_info ()->framework_version [0] == '1') {
+	} else if (mono_framework_version () == 1) {
 		thread->apartment_state = ThreadApartmentState_Unknown;
 	} else {
 		thread->apartment_state = ThreadApartmentState_MTA;

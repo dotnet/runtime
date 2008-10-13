@@ -1297,7 +1297,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	}
 	
 	/* Now that we have a runtime, set the policy for unhandled exceptions */
-	if (mono_get_runtime_info ()->framework_version [0] < '2') {
+	if (mono_framework_version () < 2) {
 		mono_runtime_unhandled_exception_policy_set (MONO_UNHANLED_POLICY_LEGACY);
 	}
 
@@ -2394,3 +2394,15 @@ mono_debugger_check_runtime_version (const char *filename)
 
 	return NULL;
 }
+
+/**
+ * mono_framework_version:
+ *
+ * Return the major version of the framework curently executing.
+ */
+int
+mono_framework_version (void)
+{
+	return current_runtime->framework_version [0] - '0';
+}
+

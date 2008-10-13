@@ -5092,14 +5092,14 @@ ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly,
 	if (g_path_is_absolute (mass->image->name)) {
 		fill_reflection_assembly_name (mono_object_domain (assembly),
 			aname, &mass->aname, mass->image->name, TRUE,
-			TRUE, mono_get_runtime_info ()->framework_version [0] >= '2');
+			TRUE, mono_framework_version () >= 2);
 		return;
 	}
 	absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
 
 	fill_reflection_assembly_name (mono_object_domain (assembly),
 		aname, &mass->aname, absolute, TRUE, TRUE,
-		mono_get_runtime_info ()->framework_version [0] >= '2');
+		mono_framework_version () >= 2);
 
 	g_free (absolute);
 }
@@ -5138,8 +5138,8 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 	}
 
 	fill_reflection_assembly_name (mono_domain_get (), aname, &name, filename,
-		TRUE, mono_get_runtime_info ()->framework_version [0] == '1',
-		mono_get_runtime_info ()->framework_version [0] >= '2');
+		TRUE, mono_framework_version () == 1,
+		mono_framework_version () >= 2);
 
 	g_free (filename);
 	mono_image_close (image);
@@ -6273,14 +6273,19 @@ ves_icall_System_Environment_get_MachineName (void)
 static int
 ves_icall_System_Environment_get_Platform (void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #if defined (PLATFORM_WIN32)
 	/* Win32NT */
 	return 2;
+#elif defined(__MACH__)
+	/* OSX */
+	if (mono_framework_version () < 2)
+		return 128;
+	return 6;
 #else
 	/* Unix */
-	return 128;
+	if (mono_framework_version () < 2)
+		return 128;
+	return 4;
 #endif
 }
 

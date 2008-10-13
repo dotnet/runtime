@@ -2845,7 +2845,6 @@ inet_pton (int family, const char *address, void *inaddrp)
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	char *address;
-	const char *version;
 	gboolean v1;
 	
 #ifdef AF_INET6
@@ -2861,10 +2860,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	gboolean ret;
 #endif
 
-	MONO_ARCH_SAVE_REGS;
-
-	version = mono_get_runtime_info ()->framework_version;
-	v1 = (version[0] == '1');
+	v1 = mono_framework_version () == 1;
 
 	address = mono_string_to_utf8 (addr);
 
