@@ -25,7 +25,6 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/exception.h>
-#include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/appdomain.h>
@@ -1245,7 +1244,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	InitializeCriticalSection (&appdomains_mutex);
 
 	mono_metadata_init ();
-	mono_raw_buffer_init ();
 	mono_images_init ();
 	mono_assemblies_init ();
 	mono_classes_init ();
@@ -1686,7 +1684,6 @@ mono_cleanup (void)
 	mono_assemblies_cleanup ();
 	mono_images_cleanup ();
 	mono_debug_cleanup ();
-	mono_raw_buffer_cleanup ();
 	mono_metadata_cleanup ();
 
 	TlsFree (appdomain_thread_id);

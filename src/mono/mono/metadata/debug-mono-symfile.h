@@ -85,6 +85,7 @@ struct _MonoDebugLineNumberEntry {
 struct _MonoSymbolFile {
 	const guint8 *raw_contents;
 	int raw_contents_size;
+	void *raw_contents_handle;
 	int major_version;
 	int minor_version;
 	gchar *filename;

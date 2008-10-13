@@ -32,7 +32,6 @@
 #include <ctype.h>
 #include "image.h"
 #include "cil-coff.h"
-#include "rawbuffer.h"
 #include "mono-endian.h"
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mempool-internals.h>

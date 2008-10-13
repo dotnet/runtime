@@ -17,7 +17,6 @@
 #include <string.h>
 #include "image.h"
 #include "cil-coff.h"
-#include "rawbuffer.h"
 #include "mono-endian.h"
 #include "tabledefs.h"
 #include "tokentype.h"
@@ -29,6 +28,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
+#include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/assembly.h>
@@ -932,7 +932,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image = g_new0 (MonoImage, 1);
 	image->raw_buffer_used = TRUE;
 	image->raw_data_len = stat_buf.st_size;
-	image->raw_data = mono_raw_buffer_load (fileno (filed), FALSE, 0, stat_buf.st_size);
+	image->raw_data = mono_file_map (stat_buf.st_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, fileno (filed), 0, &image->raw_data_handle);
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
 	image->name = mono_path_resolve_symlinks (fname);
@@ -1414,7 +1414,7 @@ mono_image_close (MonoImage *image)
 
 	if (image->raw_buffer_used) {
 		if (image->raw_data != NULL)
-			mono_raw_buffer_free (image->raw_data);
+			mono_file_unmap (image->raw_data, image->raw_data_handle);
 	}
 	
 	if (image->raw_data_allocated) {

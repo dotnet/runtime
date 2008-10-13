@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/exception.h>
@@ -21,6 +20,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/utils/mono-mmap.h>
 
 #include <fcntl.h>
 #ifdef HAVE_UNISTD_H
@@ -128,7 +128,7 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_content
 						   symfile->filename,  g_strerror (errno));
 			} else {
 				symfile->raw_contents_size = stat_buf.st_size;
-				symfile->raw_contents = mono_raw_buffer_load (fileno (f), FALSE, 0, stat_buf.st_size);
+				symfile->raw_contents = mono_file_map (stat_buf.st_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, fileno (f), 0, &symfile->raw_contents_handle);
 			}
 
 			fclose (f);
@@ -159,7 +159,7 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 		g_hash_table_destroy (symfile->method_hash);
 
 	if (symfile->raw_contents)
-		mono_raw_buffer_free ((gpointer) symfile->raw_contents);
+		mono_file_unmap ((gpointer) symfile->raw_contents, symfile->raw_contents_handle);
 
 	if (symfile->filename)
 		g_free (symfile->filename);

@@ -130,8 +130,6 @@ libmonoruntime_la_SOURCES = \
 	mono-endian.c	\
 	mono-endian.h	\
 	mono-config.c	\
-	rawbuffer.c	\
-	rawbuffer.h	\
 	loader.c	\
 	class.c		\
 	class-internals.h		\

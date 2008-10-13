@@ -21,7 +21,6 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
-#include <mono/metadata/rawbuffer.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/verify-internals.h>
 #include "mono/utils/mono-digest.h"
@@ -434,7 +433,6 @@ main (int argc, char *argv [])
 		usage ();
 
 	mono_metadata_init ();
-	mono_raw_buffer_init ();
 	mono_images_init ();
 	mono_assemblies_init ();
 	mono_loader_init ();

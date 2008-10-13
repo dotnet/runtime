@@ -70,7 +70,6 @@ show_token (const char *file, int is_assembly, int show_pubkey) {
 		guint32 len;
 
 		mono_metadata_init ();
-        mono_raw_buffer_init ();
         mono_images_init ();
         mono_assemblies_init ();
         mono_loader_init ();

@@ -79,6 +79,7 @@ struct _MonoImage {
 	 * this image between calls of mono_image_open () and mono_image_close ().
 	 */
 	int   ref_count;
+	void *raw_data_handle;
 	char *raw_data;
 	guint32 raw_data_len;
 	guint8 raw_buffer_used    : 1;
