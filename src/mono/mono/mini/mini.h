@@ -1697,13 +1697,13 @@ int mini_wapi_seminfo (int argc, char **argv) MONO_INTERNAL;
 /* SIMD support */
 
 enum {
-	SIMD_VERSION_SSE1	= 1 << 0,
-	SIMD_VERSION_SSE2	= 1 << 1,
-	SIMD_VERSION_SSE3	= 1 << 2,
-	SIMD_VERSION_SSSE3	= 1 << 3,
-	SIMD_VERSION_SSE41	= 1 << 4,
-	SIMD_VERSION_SSE42	= 1 << 5,
-	SIMD_VERSION_SSE4a	= 1 << 6,
+	SIMD_VERSION_SSE1	= 0,
+	SIMD_VERSION_SSE2	= 1,
+	SIMD_VERSION_SSE3	= 2,
+	SIMD_VERSION_SSSE3	= 3,
+	SIMD_VERSION_SSE41	= 4,
+	SIMD_VERSION_SSE42	= 5,
+	SIMD_VERSION_SSE4a	= 6,
 };
 
 const char *mono_arch_xregname (int reg) MONO_INTERNAL;

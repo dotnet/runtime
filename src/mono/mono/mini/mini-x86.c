@@ -693,8 +693,10 @@ mono_arch_cpu_optimizazions (guint32 *exclude_mask)
 }
 
 /*
- * This functions test for all SSE functions supported
+ * This function test for all SSE functions supported.
  *
+ * Returns a bitmask corresponding to all supported versions.
+ * 
  * TODO detect other versions like SSE4a.
  */
 guint32
@@ -705,17 +707,17 @@ mono_arch_cpu_enumerate_simd_versions (void)
 
 	if (cpuid (1, &eax, &ebx, &ecx, &edx)) {
 		if (edx & (1 << 25))
-			sse_opts |= SIMD_VERSION_SSE1;
+			sse_opts |= 1 << SIMD_VERSION_SSE1;
 		if (edx & (1 << 26))
-			sse_opts |= SIMD_VERSION_SSE2;
+			sse_opts |= 1 << SIMD_VERSION_SSE2;
 		if (ecx & (1 << 0))
-			sse_opts |= SIMD_VERSION_SSE3;
+			sse_opts |= 1 << SIMD_VERSION_SSE3;
 		if (ecx & (1 << 9))
-			sse_opts |= SIMD_VERSION_SSSE3;
+			sse_opts |= 1 << SIMD_VERSION_SSSE3;
 		if (ecx & (1 << 19))
-			sse_opts |= SIMD_VERSION_SSE41;
+			sse_opts |= 1 << SIMD_VERSION_SSE41;
 		if (ecx & (1 << 20))
-			sse_opts |= SIMD_VERSION_SSE42;
+			sse_opts |= 1 << SIMD_VERSION_SSE42;
 	}
 	return sse_opts;	
 }

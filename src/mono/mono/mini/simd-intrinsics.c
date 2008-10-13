@@ -75,13 +75,14 @@ enum {
 };
 
 /*This is the size of the largest method name + 1 (to fit the ending \0). Align to 4 as well.*/
-#define SIMD_INTRINSIC_NAME_MAX 27
+#define SIMD_INTRINSIC_NAME_MAX 20
 
 typedef struct {
 	const char name[SIMD_INTRINSIC_NAME_MAX];
 	guint16 opcode;
-	guint8 simd_emit_mode;
-	guint8 simd_version;
+	guint8 simd_emit_mode : 4;
+	guint8 simd_version : 4;
+	guint8 flags;
 } SimdIntrinsc;
 
 /*
@@ -644,7 +645,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			mono_print_ins (args [i]);
 		}
 	}
-	if (result->simd_version && !(result->simd_version & simd_supported_versions)) {
+	if (result->simd_version && !((1 << result->simd_version) & simd_supported_versions)) {
 		if (IS_DEBUG_ON (cfg))
 			printf ("function %s::%s/%d requires unsuported SIMD instruction set %s \n", cmethod->klass->name, cmethod->name, fsig->param_count, simd_version_name (result->simd_version));
 		return NULL;
