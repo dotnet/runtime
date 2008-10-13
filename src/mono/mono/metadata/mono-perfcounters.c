@@ -21,6 +21,7 @@
 #include "metadata/class-internals.h"
 #include "utils/mono-time.h"
 #include "utils/mono-mmap.h"
+#include "utils/mono-proclib.h"
 #include <mono/io-layer/io-layer.h>
 
 /* map of CounterSample.cs */
@@ -654,89 +655,6 @@ cpu_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBoolean 
 	return NULL;
 }
 
-/*
- * /proc/pid/stat format:
- * pid (cmdname) S 
- * 	[0] ppid pgid sid tty_nr tty_pgrp flags min_flt cmin_flt maj_flt cmaj_flt
- * 	[10] utime stime cutime cstime prio nice threads start_time vsize rss
- * 	[20] rsslim start_code end_code start_stack esp eip pending blocked sigign sigcatch
- * 	[30] wchan 0 0 exit_signal cpu rt_prio policy
- */
-
-static gint64
-get_process_time (int pid, int pos, int sum)
-{
-	char buf [512];
-	char *s, *end;
-	FILE *f;
-	int len, i;
-	gint64 value;
-
-	g_snprintf (buf, sizeof (buf), "/proc/%d/stat", pid);
-	f = fopen (buf, "r");
-	if (!f)
-		return 0;
-	len = fread (buf, 1, sizeof (buf), f);
-	fclose (f);
-	if (len <= 0)
-		return 0;
-	s = strchr (buf, ')');
-	if (!s)
-		return 0;
-	s++;
-	while (g_ascii_isspace (*s)) s++;
-	if (!*s)
-		return 0;
-	/* skip the status char */
-	while (*s && !g_ascii_isspace (*s)) s++;
-	if (!*s)
-		return 0;
-	for (i = 0; i < pos; ++i) {
-		while (g_ascii_isspace (*s)) s++;
-		if (!*s)
-			return 0;
-		while (*s && !g_ascii_isspace (*s)) s++;
-		if (!*s)
-			return 0;
-	}
-	/* we are finally at the needed item */
-	value = strtoul (s, &end, 0);
-	/* add also the following value */
-	if (sum) {
-		while (g_ascii_isspace (*s)) s++;
-		if (!*s)
-			return 0;
-		value += strtoul (s, &end, 0);
-	}
-	return value;
-}
-
-static gint64
-get_pid_stat_item (int pid, const char *item)
-{
-	char buf [256];
-	char *s;
-	FILE *f;
-	int len = strlen (item);
-
-	g_snprintf (buf, sizeof (buf), "/proc/%d/status", pid);
-	f = fopen (buf, "r");
-	if (!f)
-		return 0;
-	while ((s = fgets (buf, sizeof (buf), f))) {
-		if (*item != *buf)
-			continue;
-		if (strncmp (buf, item, len))
-			continue;
-		if (buf [len] != ':')
-			continue;
-		fclose (f);
-		return atoi (buf + len + 1);
-	}
-	fclose (f);
-	return 0;
-}
-
 static MonoBoolean
 get_process_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *sample)
 {
@@ -752,25 +670,25 @@ get_process_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSamp
 	sample->counterType = predef_counters [predef_categories [CATEGORY_PROC].first_counter + id].type;
 	switch (id) {
 	case COUNTER_PROC_USER_TIME:
-		sample->rawValue = get_process_time (pid, 12, FALSE);
+		sample->rawValue = mono_process_get_data (GINT_TO_POINTER (pid), MONO_PROCESS_USER_TIME);
 		return TRUE;
 	case COUNTER_PROC_PRIV_TIME:
-		sample->rawValue = get_process_time (pid, 13, FALSE);
+		sample->rawValue = mono_process_get_data (GINT_TO_POINTER (pid), MONO_PROCESS_SYSTEM_TIME);
 		return TRUE;
 	case COUNTER_PROC_PROC_TIME:
-		sample->rawValue = get_process_time (pid, 12, TRUE);
+		sample->rawValue = mono_process_get_data (GINT_TO_POINTER (pid), MONO_PROCESS_TOTAL_TIME);
 		return TRUE;
 	case COUNTER_PROC_THREADS:
-		sample->rawValue = get_pid_stat_item (pid, "Threads");
+		sample->rawValue = mono_process_get_data (GINT_TO_POINTER (pid), MONO_PROCESS_NUM_THREADS);
 		return TRUE;
 	case COUNTER_PROC_VBYTES:
-		sample->rawValue = get_pid_stat_item (pid, "VmSize") * 1024;
+		sample->rawValue = mono_process_get_data (GINT_TO_POINTER (pid), MONO_PROCESS_VIRTUAL_BYTES);
 		return TRUE;
 	case COUNTER_PROC_WSET:
-		sample->rawValue = get_pid_stat_item (pid, "VmRSS") * 1024;
+		sample->rawValue = mono_process_get_data (GINT_TO_POINTER (pid), MONO_PROCESS_WORKING_SET);
 		return TRUE;
 	case COUNTER_PROC_PBYTES:
-		sample->rawValue = get_pid_stat_item (pid, "VmData") * 1024;
+		sample->rawValue = mono_process_get_data (GINT_TO_POINTER (pid), MONO_PROCESS_PRIVATE_BYTES);
 		return TRUE;
 	}
 	return FALSE;
@@ -1281,27 +1199,6 @@ mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
 	return mono_array_new (domain, mono_get_string_class (), 0);
 }
 
-static char*
-read_proc_name (int pid, char *buf, int len)
-{
-	char fname [128];
-	FILE *file;
-	char *p;
-	int r;
-	sprintf (fname, "/proc/%d/cmdline", pid);
-	buf [0] = 0;
-	file = fopen (fname, "r");
-	if (!file)
-		return buf;
-	r = fread (buf, 1, len - 1, file);
-	fclose (file);
-	buf [r] = 0;
-	p = strrchr (buf, '/');
-	if (p)
-		return p + 1;
-	return buf;
-}
-
 static MonoArray*
 get_string_array (void **array, int count, gboolean is_process)
 {
@@ -1312,7 +1209,7 @@ get_string_array (void **array, int count, gboolean is_process)
 		char buf [128];
 		char *p;
 		if (is_process) {
-			char *pname = read_proc_name (GPOINTER_TO_INT (array [i]), buf, sizeof (buf));
+			char *pname = mono_process_get_name (array [i], buf, sizeof (buf));
 			p = g_strdup_printf ("%d/%s", GPOINTER_TO_INT (array [i]), pname);
 		} else {
 			sprintf (buf, "%d", GPOINTER_TO_INT (array [i]));
@@ -1362,31 +1259,12 @@ get_cpu_instances (void)
 static MonoArray*
 get_processes_instances (void)
 {
-	const char *name;
-	void **buf = NULL;
-	int count = 0;
-	int i = 0;
 	MonoArray *array;
-	GDir *dir = g_dir_open ("/proc/", 0, NULL);
-	if (!dir)
+	int count = 0;
+	void **buf = mono_process_list (&count);
+	if (!buf)
 		return get_string_array (NULL, 0, FALSE);
-	while ((name = g_dir_read_name (dir))) {
-		int pid;
-		char *nend;
-		pid = strtol (name, &nend, 10);
-		if (pid <= 0 || nend == name || *nend)
-			continue;
-		if (i >= count) {
-			if (!count)
-				count = 16;
-			else
-				count *= 2;
-			buf = g_realloc (buf, count * sizeof (void*));
-		}
-		buf [i++] = GINT_TO_POINTER (pid);
-	}
-	g_dir_close (dir);
-	array = get_string_array (buf, i, TRUE);
+	array = get_string_array (buf, count, TRUE);
 	g_free (buf);
 	return array;
 }
