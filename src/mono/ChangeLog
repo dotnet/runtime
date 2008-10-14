@@ -1,3 +1,8 @@
+2008-10-12  Jonathan Pryor  <jpryor@novell.com>
+
+	* configure.in: Generate data/mono-options.pc.
+	* data/Makefile.am: Support mono-options.pc.in and mono-options.pc.
+	* data/mono-options.pc.in: Added.
 
 Mon Oct 13 11:26:19 CEST 2008 Paolo Molaro <lupus@ximian.com>
 
