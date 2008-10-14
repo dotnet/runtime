@@ -3,6 +3,31 @@ using Mono.Simd;
 
 public class SimdTests {
 
+	static void store_helper (ref Vector4f x) {
+		Vector4f k;
+		k = new Vector4f(9,9,9,9);
+		x = k;
+	}
+
+	public static int test_0_vector4f_byref_store ()
+	{
+		Vector4f k;
+		k = new Vector4f(1,2,3,4);
+		store_helper (ref k);
+		if (k.X != 9)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_vector4f_init_array_element ()
+	{
+		Vector4f[] v = new Vector4f[1];
+		v[0] = new Vector4f(9,9,9,9);
+		if (v [0].X != 9)
+			return 1;
+		return 0;
+	}
+
 	public static int test_0_vector4f_dup_high () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
 		Vector4f c = Vector4f.DuplicateHigh(a);
@@ -240,6 +265,7 @@ public class SimdTests {
 			return 4;
 		return 0;
 	}
+
 	public static int test_0_vector4f_cmplt () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
