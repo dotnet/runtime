@@ -423,6 +423,8 @@ xorps: dest:x src1:x src2:x len:3 clob:1
 haddps: dest:x src1:x src2:x len:4 clob:1
 hsubps: dest:x src1:x src2:x len:4 clob:1
 addsubps: dest:x src1:x src2:x len:4 clob:1
+dupps_low: dest:x src1:x len:4
+dupps_high: dest:x src1:x len:4
 
 pand: dest:x src1:x src2:x len:4 clob:1
 por: dest:x src1:x src2:x len:4 clob:1
