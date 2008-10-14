@@ -1,4 +1,10 @@
-2008-10-12  Jonathan Pryor  <jpryor@novell.com>
+2008-10-14  Jonathan Pryor  <jpryor@novell.com>
+
+	* data/mono-options.pc.in: Add a Sources variable so that 
+	  `pkg-config --variable Sources mono-options` can be used to grab the
+	  sources to Mono.Options (useful for embedding).
+
+2008-10-13  Jonathan Pryor  <jpryor@novell.com>
 
 	* configure.in: Generate data/mono-options.pc.
 	* data/Makefile.am: Support mono-options.pc.in and mono-options.pc.
