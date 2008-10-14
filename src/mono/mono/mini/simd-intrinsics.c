@@ -27,7 +27,7 @@ TODO add support for fusing a XMOVE into a simd op in mono_spill_global_vars.
 TODO add stuff to man pages
 TODO document this under /docs
 TODO make passing a xmm as argument not cause it to be LDADDR'ed (introduce an OP_XPUSH)
-TODO revamp the .ctor sequence as it looks very fragile, maybe use a var just like iconv_to_r8_raw. 
+TODO revamp the .ctor sequence as it looks very fragile, maybe use a var just like iconv_to_r8_raw. (or just pinst sse ops) 
 TODO figure out what's wrong with OP_STOREX_MEMBASE_REG and OP_STOREX_MEMBASE (the 2nd is for imm operands)
 TODO maybe add SSE3 emulation on top of SSE2, or just implement the corresponding functions using SSE2 intrinsics.
 TODO pass simd arguments in registers or, at least, add SSE support for pushing large (>=16) valuetypes 
@@ -384,22 +384,53 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 	g_free (target_bb);
 }
 
+/*
+ * This function expect that src be a value.
+ */
 static int
-get_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src, gboolean is_this_ptr)
+get_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src)
 {
 	if (src->opcode == OP_XMOVE) {
 		/*FIXME returning src->sreg1 breaks during regalloc */
 		return src->dreg;
-	} else if (src->opcode == OP_LDADDR && is_this_ptr) {
+	} else if (src->opcode == OP_LOADX_MEMBASE) {
+		return src->dreg;
+	} else if (GPOINTER_TO_INT (src->klass) != -1 && src->klass && src->klass->simd_type) {
+		return src->dreg;
+	}
+	g_warning ("get_simd_vreg:: could not infer source simd vreg for op");
+	mono_print_ins (src);
+	g_assert_not_reached ();
+}
+
+/*
+ * This function will load the value if needed. 
+ */
+static int
+load_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src)
+{
+	if (src->opcode == OP_XMOVE) {
+		return src->dreg;
+	} else if (src->opcode == OP_LDADDR) {
 		int res = ((MonoInst*)src->inst_p0)->dreg;
 		NULLIFY_INS (src);
 		return res;
 	} else if (src->opcode == OP_LOADX_MEMBASE) {
 		return src->dreg;
-	} else if (src->klass && src->klass->simd_type) {
+	} else if (GPOINTER_TO_INT (src->klass) != -1 && src->klass && src->klass->simd_type) {
 		return src->dreg;
+	} else if (src->type == STACK_PTR) {
+		MonoInst *ins;
+
+		MONO_INST_NEW (cfg, ins, OP_LOADX_MEMBASE);
+		ins->klass = cmethod->klass;
+		ins->sreg1 = src->dreg;
+		ins->type = STACK_VTYPE;
+		ins->dreg = alloc_ireg (cfg);
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins->dreg;
 	}
-	g_warning ("get_simd_vreg:: could not infer source simd vreg for op");
+	g_warning ("load_simd_vreg:: could not infer source simd (%d) vreg for op", src->type);
 	mono_print_ins (src);
 	g_assert_not_reached ();
 }
@@ -420,8 +451,8 @@ simd_intrinsic_emit_binary (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	MonoInst* ins;
 	int left_vreg, right_vreg;
 
-	left_vreg = get_simd_vreg (cfg, cmethod, args [0], FALSE);
-	right_vreg = get_simd_vreg (cfg, cmethod, args [1], FALSE);
+	left_vreg = get_simd_vreg (cfg, cmethod, args [0]);
+	right_vreg = get_simd_vreg (cfg, cmethod, args [1]);
 	
 
 	MONO_INST_NEW (cfg, ins, intrinsic->opcode);
@@ -442,7 +473,7 @@ simd_intrinsic_emit_unary (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mono
 	MonoInst* ins;
 	int vreg;
 	
-	vreg = get_simd_vreg (cfg, cmethod, args [0], FALSE);
+	vreg = get_simd_vreg (cfg, cmethod, args [0]);
 
 	MONO_INST_NEW (cfg, ins, intrinsic->opcode);
 	ins->klass = cmethod->klass;
@@ -459,7 +490,7 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	MonoInst *tmp, *ins;
 	int vreg;
 	
-	vreg = get_simd_vreg (cfg, cmethod, args [0], TRUE);
+	vreg = load_simd_vreg (cfg, cmethod, args [0]);
 
 	if (intrinsic->opcode) {
 		MONO_INST_NEW (cfg, ins, OP_SHUFLEPS);
@@ -501,13 +532,30 @@ simd_intrinsic_emit_ctor (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
 
-	/*TODO replace with proper LOAD macro */
-	MONO_INST_NEW (cfg, ins, OP_LOADX_STACK);
-	ins->klass = cmethod->klass;
-	ins->type = STACK_VTYPE;
-	ins->dreg = get_simd_vreg (cfg, cmethod, args [0], TRUE);
-	MONO_ADD_INS (cfg->cbb, ins);
+	if (args [0]->opcode == OP_LDADDR) { /*Eliminate LDADDR if it's initing a local var*/
+		int vreg = ((MonoInst*)args [0]->inst_p0)->dreg;
+		NULLIFY_INS (args [0]);
+		
+		MONO_INST_NEW (cfg, ins, OP_LOADX_STACK);
+		ins->klass = cmethod->klass;
+		ins->type = STACK_VTYPE;
+		ins->dreg = vreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+	} else {
+		int vreg = alloc_ireg (cfg);
 
+		MONO_INST_NEW (cfg, ins, OP_LOADX_STACK);
+		ins->klass = cmethod->klass;
+		ins->type = STACK_VTYPE;
+		ins->dreg = vreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		
+		MONO_INST_NEW (cfg, ins, OP_STOREX_MEMBASE_REG);
+		ins->klass = cmethod->klass;
+		ins->dreg = args [0]->dreg;
+		ins->sreg1 = vreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+	}
 	return ins;
 }
 
@@ -517,7 +565,7 @@ simd_intrinsic_emit_cast (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 	MonoInst *ins;
 	int vreg;
 
-	vreg = get_simd_vreg (cfg, cmethod, args [0], FALSE);		
+	vreg = get_simd_vreg (cfg, cmethod, args [0]);		
 
 	//TODO macroize this
 	MONO_INST_NEW (cfg, ins, OP_XMOVE);
@@ -536,7 +584,7 @@ simd_intrinsic_emit_shift (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mono
 	MonoInst *ins;
 	int vreg, vreg2 = -1, opcode = intrinsic->opcode;
 
-	vreg = get_simd_vreg (cfg, cmethod, args [0], FALSE);
+	vreg = get_simd_vreg (cfg, cmethod, args [0]);
 
 	if (args [1]->opcode != OP_ICONST) {
 		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_X);
@@ -578,7 +626,7 @@ simd_intrinsic_emit_shuffle (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mo
 		g_warning ("Vector4f:Shuffle with non literals is not yet supported");
 		g_assert_not_reached ();
 	}
-	vreg = get_simd_vreg (cfg, cmethod, args [0], FALSE);
+	vreg = get_simd_vreg (cfg, cmethod, args [0]);
 	NULLIFY_INS (args [1]);
 
 	MONO_INST_NEW (cfg, ins, OP_SHUFLEPS);
@@ -612,7 +660,7 @@ simd_intrinsic_emit_store_aligned (const SimdIntrinsc *intrinsic, MonoCompile *c
 	MonoInst *ins;
 	int vreg;
 
-	vreg = get_simd_vreg (cfg, cmethod, args [0], FALSE);
+	vreg = get_simd_vreg (cfg, cmethod, args [1]);
 
 	MONO_INST_NEW (cfg, ins, OP_STOREX_ALIGNED_MEMBASE_REG);
 	ins->klass = cmethod->klass;
