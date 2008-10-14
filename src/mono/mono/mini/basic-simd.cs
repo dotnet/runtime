@@ -3,6 +3,37 @@ using Mono.Simd;
 
 public class SimdTests {
 
+	public static int test_0_vector4f_dup_high () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f c = Vector4f.DuplicateHigh(a);
+
+		if (c.X != 2)
+			return 1;
+		if (c.Y != 2)
+			return 2;
+		if (c.Z != 4)
+			return 3;
+		if (c.W != 4)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4f_dup_low () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		Vector4f c = Vector4f.DuplicateLow (a);
+
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 1)
+			return 2;
+		if (c.Z != 3)
+			return 3;
+		if (c.W != 3)
+			return 4;
+		return 0;
+	}
+
+
 	public static int test_0_vector4f_interleave_high () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
 		Vector4f b = new Vector4f (5, 6, 7, 8);
