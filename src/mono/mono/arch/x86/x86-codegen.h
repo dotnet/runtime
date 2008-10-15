@@ -1744,6 +1744,21 @@ typedef enum {
 	X86_SSE_PSUBW = 0xF9,
 	X86_SSE_PSUBD = 0xFA,
 
+	X86_SSE_PMAXSB = 0x3C, /*sse41*/
+	X86_SSE_PMAXSW = 0xEE,
+	X86_SSE_PMAXSD = 0x3D, /*sse41*/
+
+	X86_SSE_PMAXUB = 0xDE,
+	X86_SSE_PMAXUW = 0x3E, /*sse41*/
+	X86_SSE_PMAXUD = 0x3F, /*sse41*/
+
+	X86_SSE_PMINUB = 0xDA,
+	X86_SSE_PMINUW = 0x3A, /*sse41*/
+	X86_SSE_PMINUD = 0x3B, /*sse41*/
+
+	X86_SSE_PAVGB = 0xE0,
+	X86_SSE_PAVGW = 0xE3,
+	
 	X86_SSE_PUNPCKLBW = 0x60,
 	X86_SSE_PUNPCKLWD = 0x61,
 	X86_SSE_PUNPCKLDQ = 0x62,
@@ -1764,6 +1779,8 @@ typedef enum {
 
 	X86_SSE_PMULLW = 0xD5,
 	X86_SSE_PMULLD = 0x40,/*sse41*/
+
+	X86_SSE_PMOVMSKB = 0xD7,
 	
 	X86_SSE_PSHIFTW = 0x71,
 	X86_SSE_PSHIFTD = 0x72,
@@ -1900,6 +1917,15 @@ typedef enum {
 #define x86_pshufd_reg_reg(inst,dreg,sreg,mask)	\
 	do {	\
 		*(inst)++ = (unsigned char)0x66;	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x70;	\
+		x86_reg_emit ((inst), (dreg), (sreg));	\
+		*(inst)++ = (unsigned char)mask;	\
+	} while (0)
+
+#define x86_pshufw_reg_reg(inst,dreg,sreg,mask,high_words)	\
+	do {	\
+		*(inst)++ = (unsigned char)(high_words) ? 0xF3 : 0xF2;	\
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x70;	\
 		x86_reg_emit ((inst), (dreg), (sreg));	\
