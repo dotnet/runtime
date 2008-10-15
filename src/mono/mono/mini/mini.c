@@ -10425,7 +10425,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 
 	vars = mono_varlist_sort (cfg, vars, 0);
 	offset = 0;
-	*stack_align = 0;
+	*stack_align = sizeof (gpointer);
 	for (l = vars; l; l = l->next) {
 		vmv = l->data;
 		inst = cfg->varinfo [vmv->idx];
@@ -10564,8 +10564,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 				offset += size;
 			}
 
-			if (*stack_align == 0)
-				*stack_align = align;
+			*stack_align = MAX (*stack_align, align);
 		}
 
 		offsets [vmv->idx] = slot;
