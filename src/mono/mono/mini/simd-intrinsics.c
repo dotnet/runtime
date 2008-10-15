@@ -71,7 +71,8 @@ enum {
 	SIMD_EMIT_SHUFFLE,
 	SIMD_EMIT_SHIFT,
 	SIMD_EMIT_LOAD_ALIGNED,
-	SIMD_EMIT_STORE_ALIGNED
+	SIMD_EMIT_STORE_ALIGNED,
+	SIMD_EMIT_EXTRACT_MASK
 };
 
 /*This is the size of the largest method name + 1 (to fit the ending \0). Align to 4 as well.*/
@@ -112,7 +113,7 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ "Max", OP_MAXPS, SIMD_EMIT_BINARY },
 	{ "Min", OP_MINPS, SIMD_EMIT_BINARY },
 	{ "Reciprocal", OP_RCPPS, SIMD_EMIT_UNARY },
-	{ "Shuffle", 0, SIMD_EMIT_SHUFFLE },
+	{ "Shuffle", OP_SHUFLEPS, SIMD_EMIT_SHUFFLE },
 	{ "Sqrt", OP_SQRTPS, SIMD_EMIT_UNARY },
 	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
 	{ "get_W", 3, SIMD_EMIT_GETTER },
@@ -162,8 +163,12 @@ setters
  */
 static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ "AddWithSaturation", OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
+	{ "Average", OP_PAVGW_UN, SIMD_EMIT_BINARY },
+	{ "ExtractByteMask", 0, SIMD_EMIT_EXTRACT_MASK },
 	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ "ShiftRightArithmetic", OP_PSARW, SIMD_EMIT_SHIFT },
+	{ "ShuffleHigh", OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
+	{ "ShuffleLow", OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },
 	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
 	{ "SubWithSaturation", OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
 	{ "UnpackHigh", OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
@@ -623,13 +628,13 @@ simd_intrinsic_emit_shuffle (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mo
 	/*TODO Exposing shuffle is not a good thing as it's non obvious. We should come up with better abstractions*/
 
 	if (args [1]->opcode != OP_ICONST) {
-		g_warning ("Vector4f:Shuffle with non literals is not yet supported");
+		g_warning ("Shuffle with non literals is not yet supported");
 		g_assert_not_reached ();
 	}
 	vreg = get_simd_vreg (cfg, cmethod, args [0]);
 	NULLIFY_INS (args [1]);
 
-	MONO_INST_NEW (cfg, ins, OP_SHUFLEPS);
+	MONO_INST_NEW (cfg, ins, intrinsic->opcode);
 	ins->klass = cmethod->klass;
 	ins->sreg1 = vreg;
 	ins->inst_c0 = args [1]->inst_c0;
@@ -669,6 +674,24 @@ simd_intrinsic_emit_store_aligned (const SimdIntrinsc *intrinsic, MonoCompile *c
 	ins->sreg1 = vreg;
 	ins->type = STACK_VTYPE;
 	MONO_ADD_INS (cfg->cbb, ins);
+	return ins;
+}
+
+static MonoInst*
+simd_intrinsic_emit_extract_mask (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
+{
+	MonoInst *ins;
+	int vreg;
+	
+	vreg = get_simd_vreg (cfg, cmethod, args [0]);
+
+	MONO_INST_NEW (cfg, ins, OP_EXTRACT_MASK);
+	ins->klass = cmethod->klass;
+	ins->sreg1 = vreg;
+	ins->type = STACK_I4;
+	ins->dreg = alloc_ireg (cfg);
+	MONO_ADD_INS (cfg->cbb, ins);
+
 	return ins;
 }
 
@@ -736,6 +759,8 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return simd_intrinsic_emit_load_aligned (result, cfg, cmethod, args);
 	case SIMD_EMIT_STORE_ALIGNED:
 		return simd_intrinsic_emit_store_aligned (result, cfg, cmethod, args);
+	case SIMD_EMIT_EXTRACT_MASK:
+		return simd_intrinsic_emit_extract_mask (result, cfg, cmethod, args);
 	}
 	g_assert_not_reached ();
 }

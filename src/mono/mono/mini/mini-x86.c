@@ -3873,6 +3873,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
 			x86_pshufd_reg_reg (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
+
+		case OP_PSHUFLEW_HIGH:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
+			x86_pshufw_reg_reg (code, ins->dreg, ins->sreg1, ins->inst_c0, 1);
+			break;
+		case OP_PSHUFLEW_LOW:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 0xFF);
+			x86_pshufw_reg_reg (code, ins->dreg, ins->sreg1, ins->inst_c0, 0);
+			break;
+
+		case OP_EXTRACT_MASK:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMOVMSKB, ins->dreg, ins->sreg1);
+			break;
+	
 		case OP_PAND:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PAND, ins->sreg1, ins->sreg2);
 			break;
@@ -3901,6 +3915,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_PSUBD:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBD, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PMAXB_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMAXUB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMAXW_UN:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMAXUW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMAXD_UN:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMAXUD, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PAVGB_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PAVGB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PAVGW_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PAVGW, ins->sreg1, ins->sreg2);
 			break;
 
 		case OP_UNPACK_LOWB:

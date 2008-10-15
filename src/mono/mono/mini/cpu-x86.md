@@ -435,6 +435,10 @@ rsqrtps: dest:x src1:x len:4
 rcpps: dest:x src1:x len:4
 shuffleps: dest:x src1:x len:5
 
+pshufflew_high: dest:x src1:x len:5
+pshufflew_low: dest:x src1:x len:5
+extract_mask: dest:i src1:x len:4
+
 paddb: dest:x src1:x src2:x len:4 clob:1
 paddw: dest:x src1:x src2:x len:4 clob:1
 paddd: dest:x src1:x src2:x len:4 clob:1
@@ -442,6 +446,13 @@ paddd: dest:x src1:x src2:x len:4 clob:1
 psubb: dest:x src1:x src2:x len:4 clob:1
 psubw: dest:x src1:x src2:x len:4 clob:1
 psubd: dest:x src1:x src2:x len:4 clob:1
+
+pmaxb_un: dest:x src1:x src2:x len:4 clob:1
+pmaxw_un: dest:x src1:x src2:x len:5 clob:1
+pmaxd_un: dest:x src1:x src2:x len:5 clob:1
+
+pavgb_un: dest:x src1:x src2:x len:4 clob:1
+pavgw_un: dest:x src1:x src2:x len:4 clob:1
 
 unpack_lowb: dest:x src1:x src2:x len:4 clob:1
 unpack_loww: dest:x src1:x src2:x len:4 clob:1
