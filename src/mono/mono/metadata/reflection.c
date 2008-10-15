@@ -3567,6 +3567,19 @@ compare_declsecurity_attrs (const void *a, const void *b)
 	return a_values [MONO_DECL_SECURITY_PARENT] - b_values [MONO_DECL_SECURITY_PARENT];
 }
 
+static int
+compare_interface_impl (const void *a, const void *b)
+{
+	const guint32 *a_values = a;
+	const guint32 *b_values = b;
+
+	int klass = a_values [MONO_INTERFACEIMPL_CLASS] - b_values [MONO_INTERFACEIMPL_CLASS];
+	if (klass)
+		return klass;
+
+	return a_values [MONO_INTERFACEIMPL_INTERFACE] - b_values [MONO_INTERFACEIMPL_INTERFACE];
+}
+
 static void
 pad_heap (MonoDynamicStream *sh)
 {
@@ -3629,7 +3642,8 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 		| ((guint64)1 << MONO_TABLE_FIELDLAYOUT) | ((guint64)1 << MONO_TABLE_FIELDRVA)
 		| ((guint64)1 << MONO_TABLE_IMPLMAP) | ((guint64)1 << MONO_TABLE_NESTEDCLASS)
 		| ((guint64)1 << MONO_TABLE_METHODIMPL) | ((guint64)1 << MONO_TABLE_CUSTOMATTRIBUTE)
-		| ((guint64)1 << MONO_TABLE_DECLSECURITY) | ((guint64)1 << MONO_TABLE_GENERICPARAM);
+		| ((guint64)1 << MONO_TABLE_DECLSECURITY) | ((guint64)1 << MONO_TABLE_GENERICPARAM)
+		| ((guint64)1 << MONO_TABLE_INTERFACEIMPL);
 	
 	/* Compute table sizes */
 	/* the MonoImage has already been created in mono_image_basic_init() */
@@ -3766,6 +3780,9 @@ build_compressed_metadata (MonoDynamicImage *assembly)
 	table = &assembly->tables [MONO_TABLE_DECLSECURITY];
 	if (table->rows)
 		qsort (table->values + MONO_DECL_SECURITY_SIZE, table->rows, sizeof (guint32) * MONO_DECL_SECURITY_SIZE, compare_declsecurity_attrs);
+	table = &assembly->tables [MONO_TABLE_INTERFACEIMPL];
+	if (table->rows)
+		qsort (table->values + MONO_INTERFACEIMPL_SIZE, table->rows, sizeof (guint32) * MONO_INTERFACEIMPL_SIZE, compare_interface_impl);
 
 	/* compress the tables */
 	for (i = 0; i < MONO_TABLE_NUM; i++){
