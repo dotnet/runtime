@@ -398,9 +398,7 @@ get_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src)
 	if (src->opcode == OP_XMOVE) {
 		/*FIXME returning src->sreg1 breaks during regalloc */
 		return src->dreg;
-	} else if (src->opcode == OP_LOADX_MEMBASE) {
-		return src->dreg;
-	} else if (GPOINTER_TO_INT (src->klass) != -1 && src->klass && src->klass->simd_type) {
+	} else if (src->type == STACK_VTYPE) {
 		return src->dreg;
 	}
 	g_warning ("get_simd_vreg:: could not infer source simd vreg for op");
@@ -420,9 +418,7 @@ load_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src)
 		int res = ((MonoInst*)src->inst_p0)->dreg;
 		NULLIFY_INS (src);
 		return res;
-	} else if (src->opcode == OP_LOADX_MEMBASE) {
-		return src->dreg;
-	} else if (GPOINTER_TO_INT (src->klass) != -1 && src->klass && src->klass->simd_type) {
+	} else if (src->type == STACK_VTYPE) {
 		return src->dreg;
 	} else if (src->type == STACK_PTR) {
 		MonoInst *ins;
