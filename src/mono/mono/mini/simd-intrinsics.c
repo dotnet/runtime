@@ -222,7 +222,7 @@ typedef enum {
 	VREG_MANY_BB_USE		= 0x10,
 } KillFlags;
 
-static inline int
+static inline gint32
 get_ins_reg_by_idx (MonoInst *ins, int idx)
 {
 	switch (idx) {
@@ -239,6 +239,18 @@ mono_simd_intrinsics_init (void)
 	simd_supported_versions = mono_arch_cpu_enumerate_simd_versions ();
 	/*TODO log the supported flags*/
 }
+
+static inline gboolean
+apply_vreg_interference (MonoCompile *cfg, MonoInst *ins, int reg, int max_vreg, char *vreg_flags)
+{
+	if (reg != -1 && reg <= max_vreg && vreg_flags [reg]) {
+		vreg_flags [reg] &= ~VREG_HAS_XZERO_BB0;
+		vreg_flags [reg] |= VREG_HAS_OTHER_OP_BB0;
+		DEBUG (printf ("[simd-simplify] R%d used: ", reg); mono_print_ins(ins));
+		return TRUE;
+	}
+	return FALSE;
+}
 /*
 This pass recalculate which vars need MONO_INST_INDIRECT.
 
@@ -251,12 +263,11 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 	int i, max_vreg = 0;
 	MonoBasicBlock *bb, *first_bb = NULL, **target_bb;
 	MonoInst *ins;
-	char * vreg_flags;
+	char *vreg_flags;
 
 	for (i = 0; i < cfg->num_varinfo; i++) {
 		MonoInst *var = cfg->varinfo [i];
 		if (var->klass->simd_type) {
-			// printf ("cleaning indirect flag for %d\n", var->dreg);
 			var->flags &= ~MONO_INST_INDIRECT;
 			max_vreg = MAX (var->dreg, max_vreg);
 		}
@@ -296,14 +307,16 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 			}
 			continue;
 		}
-		for (i = 0; i < 3; ++i) {
-			int reg = get_ins_reg_by_idx (ins, i);
-			if (reg != -1 && reg <= max_vreg && vreg_flags [reg]) {
-				vreg_flags [reg] &= ~VREG_HAS_XZERO_BB0;
-				vreg_flags [reg] |= VREG_HAS_OTHER_OP_BB0;
-				DEBUG (printf ("[simd-simplify] R%d used: ", reg); mono_print_ins(ins));
-			}
-		}
+		if (ins->opcode == OP_LDADDR && apply_vreg_interference (cfg, ins, ((MonoInst*)ins->inst_p0)->dreg, max_vreg, vreg_flags))
+			continue;
+		DEBUG (printf ("checking FBB op: [%d, %d, %d] ", ins->dreg, ins->sreg1, ins->sreg2); mono_print_ins(ins));
+		
+		if (apply_vreg_interference (cfg, ins, ins->dreg, max_vreg, vreg_flags))
+			continue;
+		if (apply_vreg_interference (cfg, ins, ins->sreg1, max_vreg, vreg_flags))
+			continue;
+		if (apply_vreg_interference (cfg, ins, ins->sreg2, max_vreg, vreg_flags))
+			continue;
 	}
 
 	if (IS_DEBUG_ON (cfg)) {
