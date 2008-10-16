@@ -2,12 +2,17 @@
 <assemblies>
   <assembly name="System" version="2.0.5.0">
     <attributes>
+      <attribute name="System.Diagnostics.DebuggableAttribute" />
       <attribute name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute">
         <properties>
           <property name="WrapNonExceptionThrows" value="True" />
         </properties>
       </attribute>
-      <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="False" />
+        </properties>
+      </attribute>
       <attribute name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
       <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
       <attribute name="System.CLSCompliantAttribute" />
@@ -17,6 +22,7 @@
       <attribute name="System.Reflection.AssemblyCompanyAttribute" />
       <attribute name="System.Reflection.AssemblyProductAttribute" />
       <attribute name="System.Reflection.AssemblyCopyrightAttribute" />
+      <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
       <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
       <attribute name="System.Resources.SatelliteContractVersionAttribute" />
       <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
@@ -67,52 +73,6 @@
           <property name="AllInternalsVisible" value="False" />
         </properties>
       </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <properties>
-          <property name="AllInternalsVisible" value="False" />
-        </properties>
-      </attribute>
-      <attribute name="System.Diagnostics.DebuggableAttribute" />
     </attributes>
     <namespaces>
       <namespace name="System">
@@ -167,6 +127,9 @@
             </constructors>
           </class>
           <class name="Uri" type="class" base="System.Object" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.ComponentModel.TypeConverterAttribute" />
+            </attributes>
             <fields>
               <field name="SchemeDelimiter" attrib="54" fieldtype="System.String" />
               <field name="UriSchemeFile" attrib="54" fieldtype="System.String" />
@@ -328,6 +291,16 @@
                   <parameter name="comparand" position="0" attrib="0" type="System.Object" />
                 </parameters>
               </method>
+              <method name="EscapeDataString(System.String)" attrib="150" static="true" returntype="System.String">
+                <parameters>
+                  <parameter name="stringToEscape" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </method>
+              <method name="EscapeUriString(System.String)" attrib="150" static="true" returntype="System.String">
+                <parameters>
+                  <parameter name="stringToEscape" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </method>
               <method name="FromHex(System.Char)" attrib="150" static="true" returntype="System.Int32">
                 <parameters>
                   <parameter name="digit" position="0" attrib="0" type="System.Char" />
@@ -341,6 +314,11 @@
               </method>
               <method name="GetHashCode()" attrib="198" virtual="true" returntype="System.Int32">
                 <parameters />
+              </method>
+              <method name="IsBaseOf(System.Uri)" attrib="134" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="uri" position="0" attrib="0" type="System.Uri" />
+                </parameters>
               </method>
               <method name="IsHexDigit(System.Char)" attrib="150" static="true" returntype="System.Boolean">
                 <parameters>
@@ -651,6 +629,12 @@
                   <parameter name="parsingError" position="1" attrib="2" type="System.UriFormatException&amp;" direction="out" />
                 </parameters>
               </method>
+              <method name="IsBaseOf(System.Uri, System.Uri)" attrib="452" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="baseUri" position="0" attrib="0" type="System.Uri" />
+                  <parameter name="relativeUri" position="1" attrib="0" type="System.Uri" />
+                </parameters>
+              </method>
               <method name="IsKnownScheme(System.String)" attrib="150" static="true" returntype="System.Boolean">
                 <parameters>
                   <parameter name="schemeName" position="0" attrib="0" type="System.String" />
@@ -682,6 +666,42 @@
                   <parameter name="baseUri" position="0" attrib="0" type="System.Uri" />
                   <parameter name="relativeUri" position="1" attrib="0" type="System.Uri" />
                   <parameter name="parsingError" position="2" attrib="2" type="System.UriFormatException&amp;" direction="out" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="UriTypeConverter" type="class" base="System.ComponentModel.TypeConverter" sealed="true" charset="Ansi" layout="Auto">
+            <constructors>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <methods>
+              <method name="CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)" attrib="198" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="context" position="0" attrib="0" type="System.ComponentModel.ITypeDescriptorContext" />
+                  <parameter name="sourceType" position="1" attrib="0" type="System.Type" />
+                </parameters>
+              </method>
+              <method name="CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)" attrib="198" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="context" position="0" attrib="0" type="System.ComponentModel.ITypeDescriptorContext" />
+                  <parameter name="destinationType" position="1" attrib="0" type="System.Type" />
+                </parameters>
+              </method>
+              <method name="ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)" attrib="198" virtual="true" returntype="System.Object">
+                <parameters>
+                  <parameter name="context" position="0" attrib="0" type="System.ComponentModel.ITypeDescriptorContext" />
+                  <parameter name="culture" position="1" attrib="0" type="System.Globalization.CultureInfo" />
+                  <parameter name="value" position="2" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)" attrib="198" virtual="true" returntype="System.Object">
+                <parameters>
+                  <parameter name="context" position="0" attrib="0" type="System.ComponentModel.ITypeDescriptorContext" />
+                  <parameter name="culture" position="1" attrib="0" type="System.Globalization.CultureInfo" />
+                  <parameter name="value" position="2" attrib="0" type="System.Object" />
+                  <parameter name="destinationType" position="3" attrib="0" type="System.Type" />
                 </parameters>
               </method>
             </methods>
@@ -730,7 +750,9 @@
         <classes>
           <class name="LinkedList`1" type="class" base="System.Object" charset="Ansi" layout="Auto">
             <attributes>
+              <attribute name="System.Diagnostics.DebuggerDisplayAttribute" />
               <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
+              <attribute name="System.Diagnostics.DebuggerTypeProxyAttribute" />
             </attributes>
             <interfaces>
               <interface name="System.Collections.Generic.ICollection`1[T]" />
@@ -936,6 +958,8 @@
           </class>
           <class name="Queue`1" type="class" base="System.Object" charset="Ansi" layout="Auto">
             <attributes>
+              <attribute name="System.Diagnostics.DebuggerTypeProxyAttribute" />
+              <attribute name="System.Diagnostics.DebuggerDisplayAttribute" />
               <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
             </attributes>
             <interfaces>
@@ -1032,7 +1056,9 @@
           </class>
           <class name="Stack`1" type="class" base="System.Object" charset="Ansi" layout="Auto">
             <attributes>
+              <attribute name="System.Diagnostics.DebuggerTypeProxyAttribute" />
               <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
+              <attribute name="System.Diagnostics.DebuggerDisplayAttribute" />
             </attributes>
             <interfaces>
               <interface name="System.Collections.Generic.IEnumerable`1[T]" />
@@ -1495,6 +1521,7 @@
               </method>
             </methods>
           </class>
+          <class name="ComponentCollection" type="class" base="System.Object" charset="Ansi" layout="Auto" />
           <class name="DefaultValueAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.AttributeUsageAttribute" />
@@ -1745,10 +1772,159 @@
               <field name="Never" attrib="32854" fieldtype="System.ComponentModel.EditorBrowsableState" value="1" />
             </fields>
           </class>
+          <class name="IComponent" type="interface" abstract="true" charset="Ansi" layout="Auto">
+            <interfaces>
+              <interface name="System.IDisposable" />
+            </interfaces>
+            <properties>
+              <property name="Site" attrib="0" ptype="System.ComponentModel.ISite" params="">
+                <methods>
+                  <method name="get_Site()" attrib="3526" abstract="true" virtual="true" returntype="System.ComponentModel.ISite">
+                    <parameters />
+                  </method>
+                  <method name="set_Site(System.ComponentModel.ISite)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.ComponentModel.ISite" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <events>
+              <event name="Disposed" attrib="0" eventtype="System.EventHandler" />
+            </events>
+          </class>
+          <class name="IContainer" type="interface" abstract="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
+            </attributes>
+            <interfaces>
+              <interface name="System.IDisposable" />
+            </interfaces>
+            <properties>
+              <property name="Components" attrib="0" ptype="System.ComponentModel.ComponentCollection" params="">
+                <methods>
+                  <method name="get_Components()" attrib="3526" abstract="true" virtual="true" returntype="System.ComponentModel.ComponentCollection">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="Add(System.ComponentModel.IComponent, System.String)" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="component" position="0" attrib="0" type="System.ComponentModel.IComponent" />
+                  <parameter name="name" position="1" attrib="0" type="System.String" />
+                </parameters>
+              </method>
+              <method name="Add(System.ComponentModel.IComponent)" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="component" position="0" attrib="0" type="System.ComponentModel.IComponent" />
+                </parameters>
+              </method>
+              <method name="Remove(System.ComponentModel.IComponent)" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
+                <parameters>
+                  <parameter name="component" position="0" attrib="0" type="System.ComponentModel.IComponent" />
+                </parameters>
+              </method>
+            </methods>
+          </class>
+          <class name="IEditableObject" type="interface" abstract="true" charset="Ansi" layout="Auto">
+            <methods>
+              <method name="BeginEdit()" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="CancelEdit()" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="EndEdit()" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
+                <parameters />
+              </method>
+            </methods>
+          </class>
           <class name="INotifyPropertyChanged" type="interface" abstract="true" charset="Ansi" layout="Auto">
             <events>
               <event name="PropertyChanged" attrib="0" eventtype="System.ComponentModel.PropertyChangedEventHandler" />
             </events>
+          </class>
+          <class name="ISite" type="interface" abstract="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
+            </attributes>
+            <interfaces>
+              <interface name="System.IServiceProvider" />
+            </interfaces>
+            <properties>
+              <property name="Component" attrib="0" ptype="System.ComponentModel.IComponent" params="">
+                <methods>
+                  <method name="get_Component()" attrib="3526" abstract="true" virtual="true" returntype="System.ComponentModel.IComponent">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Container" attrib="0" ptype="System.ComponentModel.IContainer" params="">
+                <methods>
+                  <method name="get_Container()" attrib="3526" abstract="true" virtual="true" returntype="System.ComponentModel.IContainer">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="DesignMode" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_DesignMode()" attrib="3526" abstract="true" virtual="true" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Name" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Name()" attrib="3526" abstract="true" virtual="true" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Name(System.String)" attrib="3526" abstract="true" virtual="true" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="ITypeDescriptorContext" type="interface" abstract="true" charset="Ansi" layout="Auto">
+            <interfaces>
+              <interface name="System.IServiceProvider" />
+            </interfaces>
+            <properties>
+              <property name="Container" attrib="0" ptype="System.ComponentModel.IContainer" params="">
+                <methods>
+                  <method name="get_Container()" attrib="3526" abstract="true" virtual="true" returntype="System.ComponentModel.IContainer">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="Instance" attrib="0" ptype="System.Object" params="">
+                <methods>
+                  <method name="get_Instance()" attrib="3526" abstract="true" virtual="true" returntype="System.Object">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="PropertyDescriptor" attrib="0" ptype="System.ComponentModel.PropertyDescriptor" params="">
+                <methods>
+                  <method name="get_PropertyDescriptor()" attrib="3526" abstract="true" virtual="true" returntype="System.ComponentModel.PropertyDescriptor">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+            <methods>
+              <method name="OnComponentChanged()" attrib="1478" abstract="true" virtual="true" returntype="System.Void">
+                <parameters />
+              </method>
+              <method name="OnComponentChanging()" attrib="1478" abstract="true" virtual="true" returntype="System.Boolean">
+                <parameters />
+              </method>
+            </methods>
           </class>
           <class name="ProgressChangedEventArgs" type="class" base="System.EventArgs" charset="Ansi" layout="Auto">
             <constructors>
@@ -1856,6 +2032,7 @@
               </method>
             </methods>
           </class>
+          <class name="PropertyDescriptor" type="class" base="System.Object" abstract="true" charset="Ansi" layout="Auto" />
           <class name="RunWorkerCompletedEventArgs" type="class" base="System.ComponentModel.AsyncCompletedEventArgs" charset="Ansi" layout="Auto">
             <constructors>
               <constructor name=".ctor(System.Object, System.Exception, System.Boolean)" attrib="6278">
@@ -1914,33 +2091,60 @@
               </constructor>
             </constructors>
             <methods>
-              <method name="CanConvertFrom(System.Type)" attrib="454" virtual="true" returntype="System.Boolean">
+              <method name="CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)" attrib="454" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="context" position="0" attrib="0" type="System.ComponentModel.ITypeDescriptorContext" />
+                  <parameter name="sourceType" position="1" attrib="0" type="System.Type" />
+                </parameters>
+              </method>
+              <method name="CanConvertFrom(System.Type)" attrib="134" returntype="System.Boolean">
                 <parameters>
                   <parameter name="sourceType" position="0" attrib="0" type="System.Type" />
                 </parameters>
               </method>
-              <method name="CanConvertTo(System.Type)" attrib="454" virtual="true" returntype="System.Boolean">
+              <method name="CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)" attrib="454" virtual="true" returntype="System.Boolean">
+                <parameters>
+                  <parameter name="context" position="0" attrib="0" type="System.ComponentModel.ITypeDescriptorContext" />
+                  <parameter name="destinationType" position="1" attrib="0" type="System.Type" />
+                </parameters>
+              </method>
+              <method name="CanConvertTo(System.Type)" attrib="134" returntype="System.Boolean">
                 <parameters>
                   <parameter name="destinationType" position="0" attrib="0" type="System.Type" />
                 </parameters>
               </method>
-              <method name="ConvertFrom(System.Object)" attrib="454" virtual="true" returntype="System.Object">
+              <method name="ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)" attrib="454" virtual="true" returntype="System.Object">
+                <parameters>
+                  <parameter name="context" position="0" attrib="0" type="System.ComponentModel.ITypeDescriptorContext" />
+                  <parameter name="culture" position="1" attrib="0" type="System.Globalization.CultureInfo" />
+                  <parameter name="value" position="2" attrib="0" type="System.Object" />
+                </parameters>
+              </method>
+              <method name="ConvertFrom(System.Object)" attrib="134" returntype="System.Object">
                 <parameters>
                   <parameter name="value" position="0" attrib="0" type="System.Object" />
                 </parameters>
               </method>
-              <method name="ConvertFromString(System.String)" attrib="454" virtual="true" returntype="System.Object">
+              <method name="ConvertFromString(System.String)" attrib="134" returntype="System.Object">
                 <parameters>
                   <parameter name="text" position="0" attrib="0" type="System.String" />
                 </parameters>
               </method>
-              <method name="ConvertTo(System.Object, System.Type)" attrib="454" virtual="true" returntype="System.Object">
+              <method name="ConvertTo(System.Object, System.Type)" attrib="134" returntype="System.Object">
                 <parameters>
                   <parameter name="value" position="0" attrib="0" type="System.Object" />
                   <parameter name="destinationType" position="1" attrib="0" type="System.Type" />
                 </parameters>
               </method>
-              <method name="ConvertToString(System.Object)" attrib="454" virtual="true" returntype="System.String">
+              <method name="ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)" attrib="454" virtual="true" returntype="System.Object">
+                <parameters>
+                  <parameter name="context" position="0" attrib="0" type="System.ComponentModel.ITypeDescriptorContext" />
+                  <parameter name="culture" position="1" attrib="0" type="System.Globalization.CultureInfo" />
+                  <parameter name="value" position="2" attrib="0" type="System.Object" />
+                  <parameter name="destinationType" position="3" attrib="0" type="System.Type" />
+                </parameters>
+              </method>
+              <method name="ConvertToString(System.Object)" attrib="134" returntype="System.String">
                 <parameters>
                   <parameter name="value" position="0" attrib="0" type="System.Object" />
                 </parameters>
@@ -1989,8 +2193,8 @@
             <methods>
               <method name="Assert(System.Boolean, System.String, System.String)" attrib="150" static="true" returntype="System.Void">
                 <attributes>
-                  <attribute name="System.Diagnostics.ConditionalAttribute" />
                   <attribute name="System.Security.SecuritySafeCriticalAttribute" />
+                  <attribute name="System.Diagnostics.ConditionalAttribute" />
                 </attributes>
                 <parameters>
                   <parameter name="condition" position="0" attrib="0" type="System.Boolean" />

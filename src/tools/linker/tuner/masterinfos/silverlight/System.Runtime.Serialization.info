@@ -2,8 +2,13 @@
 <assemblies>
   <assembly name="System.Runtime.Serialization" version="2.0.5.0">
     <attributes>
-      <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
+      <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
+      <attribute name="System.Resources.SatelliteContractVersionAttribute" />
+      <attribute name="System.Reflection.AssemblyCopyrightAttribute" />
+      <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
+      <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
       <attribute name="System.Reflection.AssemblyDelaySignAttribute" />
+      <attribute name="System.Reflection.AssemblyKeyFileAttribute" />
       <attribute name="System.Diagnostics.DebuggableAttribute" />
       <attribute name="System.Runtime.CompilerServices.CompilationRelaxationsAttribute" />
       <attribute name="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute">
@@ -11,19 +16,15 @@
           <property name="WrapNonExceptionThrows" value="True" />
         </properties>
       </attribute>
-      <attribute name="System.Reflection.AssemblyDefaultAliasAttribute" />
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
       <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
       <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
       <attribute name="System.CLSCompliantAttribute" />
       <attribute name="System.Reflection.AssemblyTitleAttribute" />
       <attribute name="System.Reflection.AssemblyDescriptionAttribute" />
-      <attribute name="System.Reflection.AssemblyCopyrightAttribute" />
+      <attribute name="System.Reflection.AssemblyDefaultAliasAttribute" />
       <attribute name="System.Reflection.AssemblyCompanyAttribute" />
       <attribute name="System.Reflection.AssemblyProductAttribute" />
-      <attribute name="System.Reflection.AssemblyInformationalVersionAttribute" />
-      <attribute name="System.Resources.NeutralResourcesLanguageAttribute" />
-      <attribute name="System.Reflection.AssemblyFileVersionAttribute" />
-      <attribute name="System.Resources.SatelliteContractVersionAttribute" />
     </attributes>
     <namespaces>
       <namespace name="System.Runtime.Serialization">
@@ -43,6 +44,18 @@
               </constructor>
             </constructors>
             <properties>
+              <property name="IsReference" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsReference()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_IsReference(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
               <property name="ItemName" attrib="0" ptype="System.String" params="">
                 <methods>
                   <method name="get_ItemName()" attrib="2182" returntype="System.String">
@@ -158,6 +171,18 @@
               </constructor>
             </constructors>
             <properties>
+              <property name="IsReference" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsReference()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_IsReference(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
               <property name="Name" attrib="0" ptype="System.String" params="">
                 <methods>
                   <method name="get_Name()" attrib="2182" returntype="System.String">
@@ -770,6 +795,13 @@
                   </method>
                 </methods>
               </property>
+              <property name="Quotas" attrib="0" ptype="System.Xml.XmlDictionaryReaderQuotas" params="">
+                <methods>
+                  <method name="get_Quotas()" attrib="2502" virtual="true" returntype="System.Xml.XmlDictionaryReaderQuotas">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
             </properties>
             <methods>
               <method name="CreateDictionaryReader(System.Xml.XmlReader)" attrib="150" static="true" returntype="System.Xml.XmlDictionaryReader">
@@ -1324,6 +1356,52 @@
                 </parameters>
               </method>
             </methods>
+          </class>
+          <class name="XmlDictionaryReaderQuotas" type="class" base="System.Object" sealed="true" charset="Ansi" layout="Auto">
+            <properties>
+              <property name="Max" attrib="0" ptype="System.Xml.XmlDictionaryReaderQuotas" params="">
+                <methods>
+                  <method name="get_Max()" attrib="2198" static="true" returntype="System.Xml.XmlDictionaryReaderQuotas">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="MaxArrayLength" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_MaxArrayLength()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="MaxBytesPerRead" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_MaxBytesPerRead()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="MaxDepth" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_MaxDepth()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="MaxNameTableCharCount" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_MaxNameTableCharCount()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+              <property name="MaxStringContentLength" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_MaxStringContentLength()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
           </class>
           <class name="XmlDictionaryString" type="class" base="System.Object" charset="Ansi" layout="Auto">
             <constructors>
