@@ -76,7 +76,7 @@ enum {
 };
 
 /*This is the size of the largest method name + 1 (to fit the ending \0). Align to 4 as well.*/
-#define SIMD_INTRINSIC_NAME_MAX 20
+#define SIMD_INTRINSIC_NAME_MAX 24
 
 typedef struct {
 	const char name[SIMD_INTRINSIC_NAME_MAX];
@@ -192,9 +192,15 @@ setters
  */
 static const SimdIntrinsc vector16b_intrinsics[] = {
 	{ "AddWithSaturation", OP_PADDB_SAT_UN, SIMD_EMIT_BINARY },
+	{ "Average", OP_PAVGB_UN, SIMD_EMIT_BINARY },
+	{ "CompareEqual", OP_PCMPEQB, SIMD_EMIT_BINARY },
+	{ "ExtractByteMask", 0, SIMD_EMIT_EXTRACT_MASK },
 	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ "Max", OP_PMAXB_UN, SIMD_EMIT_BINARY },
+	{ "Min", OP_PMINB_UN, SIMD_EMIT_BINARY },
 	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
 	{ "SubWithSaturation", OP_PSUBB_SAT_UN, SIMD_EMIT_BINARY },
+	{ "SumOfAbsoluteDifferences", OP_PSUM_ABS_DIFF, SIMD_EMIT_BINARY },
 	{ "UnpackHigh", OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
 	{ "UnpackLow", OP_UNPACK_LOWB, SIMD_EMIT_BINARY },
 	{ "op_Addition", OP_PADDB, SIMD_EMIT_BINARY },

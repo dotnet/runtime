@@ -455,6 +455,16 @@ pmaxd_un: dest:x src1:x src2:x len:5 clob:1
 pavgb_un: dest:x src1:x src2:x len:4 clob:1
 pavgw_un: dest:x src1:x src2:x len:4 clob:1
 
+pminb_un: dest:x src1:x src2:x len:4 clob:1
+pminw_un: dest:x src1:x src2:x len:5 clob:1
+pmind_un: dest:x src1:x src2:x len:5 clob:1
+
+pcmpeqb: dest:x src1:x src2:x len:4 clob:1
+pcmpeqw: dest:x src1:x src2:x len:4 clob:1
+pcmpeqd: dest:x src1:x src2:x len:4 clob:1
+
+psumabsdiff: dest:x src1:x src2:x len:4 clob:1
+
 unpack_lowb: dest:x src1:x src2:x len:4 clob:1
 unpack_loww: dest:x src1:x src2:x len:4 clob:1
 unpack_lowd: dest:x src1:x src2:x len:4 clob:1

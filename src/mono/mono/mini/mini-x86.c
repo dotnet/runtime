@@ -3937,6 +3937,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PAVGW, ins->sreg1, ins->sreg2);
 			break;
 
+		case OP_PMINB_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMINUB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMINW_UN:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMINUW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMIND_UN:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMINUD, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PCMPEQB:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPEQB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPEQW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPEQW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPEQD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPEQD, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PSUM_ABS_DIFF:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSADBW, ins->sreg1, ins->sreg2);
+			break;
+
 		case OP_UNPACK_LOWB:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKLBW, ins->sreg1, ins->sreg2);
 			break;
