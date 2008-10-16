@@ -5067,6 +5067,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 	if (!dont_verify && mini_method_verify (cfg, method_definition))
 		goto exception_exit;
 
+	if (mono_debug_using_mono_debugger ())
+		cfg->keep_cil_nops = TRUE;
+
 	if (sig->is_inflated)
 		generic_context = mono_method_get_context (method);
 	else if (generic_container)
@@ -5456,8 +5459,15 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 		switch (*ip) {
 		case CEE_NOP:
+			if (cfg->keep_cil_nops)
+				MONO_INST_NEW (cfg, ins, OP_HARD_NOP);
+			else
+				MONO_INST_NEW (cfg, ins, OP_NOP);
+			ip++;
+			MONO_ADD_INS (bblock, ins);
+			break;
 		case CEE_BREAK:
-			MONO_INST_NEW (cfg, ins, (*ip) == CEE_NOP ? OP_NOP : OP_BREAK);
+			MONO_INST_NEW (cfg, ins, OP_BREAK);
 			ip++;
 			MONO_ADD_INS (bblock, ins);
 			break;

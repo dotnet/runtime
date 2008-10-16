@@ -940,6 +940,7 @@ typedef struct {
 	guint            uses_rgctx_reg : 1;
 	guint            uses_vtable_reg : 1;
 	guint            uses_simd_intrinsics : 1;
+	guint            keep_cil_nops : 1;
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;

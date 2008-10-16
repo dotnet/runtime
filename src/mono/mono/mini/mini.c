@@ -5233,7 +5233,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoDeclSecurityActions actions;
 	GSList *class_inits = NULL;
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
-	gboolean use_hard_nops = FALSE;
 	int context_used;
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
@@ -5278,7 +5277,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		goto exception_exit;
 
 	if (mono_debug_using_mono_debugger ())
-		use_hard_nops = TRUE;
+		cfg->keep_cil_nops = TRUE;
 
 	if (sig->is_inflated)
 		generic_context = mono_method_get_context (method);
@@ -5687,7 +5686,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		switch (*ip) {
 		case CEE_NOP:
-			if (use_hard_nops)
+			if (cfg->keep_cil_nops)
 				MONO_INST_NEW (cfg, ins, OP_HARD_NOP);
 			else
 				MONO_INST_NEW (cfg, ins, OP_NOP);
