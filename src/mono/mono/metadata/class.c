@@ -2203,6 +2203,17 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 	return interfaces;
 }
 
+static int
+find_array_interface (MonoClass *klass, const char *name)
+{
+	int i;
+	for (i = 0; i < klass->interface_count; ++i) {
+		if (strcmp (klass->interfaces [i]->name, name) == 0)
+			return i;
+	}
+	return -1;
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -2307,8 +2318,8 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 	if (num_array_interfaces) {
 		if (is_enumerator) {
 			int ienumerator_offset;
-			g_assert (strcmp (class->interfaces [0]->name, "IEnumerator`1") == 0);
-			ienumerator_offset = interface_offsets_full [class->interfaces [0]->interface_id];
+			int ienumerator_idx = find_array_interface (class, "IEnumerator`1");
+			ienumerator_offset = interface_offsets_full [class->interfaces [ienumerator_idx]->interface_id];
 			for (i = 0; i < num_array_interfaces; ++i) {
 				ic = array_interfaces [i];
 				interfaces_full [ic->interface_id] = ic;
@@ -2320,12 +2331,12 @@ setup_interface_offsets (MonoClass *class, int cur_slot)
 			}
 		} else {
 			int ilist_offset, icollection_offset, ienumerable_offset;
-			g_assert (strcmp (class->interfaces [0]->name, "IList`1") == 0);
-			g_assert (strcmp (class->interfaces [0]->interfaces [0]->name, "ICollection`1") == 0);
-			g_assert (strcmp (class->interfaces [0]->interfaces [1]->name, "IEnumerable`1") == 0);
-			ilist_offset = interface_offsets_full [class->interfaces [0]->interface_id];
-			icollection_offset = interface_offsets_full [class->interfaces [0]->interfaces [0]->interface_id];
-			ienumerable_offset = interface_offsets_full [class->interfaces [0]->interfaces [1]->interface_id];
+			int ilist_iface_idx = find_array_interface (class, "IList`1");
+			int icollection_iface_idx = find_array_interface (class->interfaces [ilist_iface_idx], "ICollection`1");
+			int ienumerable_iface_idx = find_array_interface (class->interfaces [ilist_iface_idx], "IEnumerable`1");
+			ilist_offset = interface_offsets_full [class->interfaces [ilist_iface_idx]->interface_id];
+			icollection_offset = interface_offsets_full [class->interfaces [ilist_iface_idx]->interfaces [icollection_iface_idx]->interface_id];
+			ienumerable_offset = interface_offsets_full [class->interfaces [ilist_iface_idx]->interfaces [ienumerable_iface_idx]->interface_id];
 			g_assert (ilist_offset >= 0 && icollection_offset >= 0 && ienumerable_offset >= 0);
 			for (i = 0; i < num_array_interfaces; ++i) {
 				ic = array_interfaces [i];
