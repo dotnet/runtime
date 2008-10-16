@@ -2,6 +2,31 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	static unsafe Vector8us bad_method_regression_2 (Vector16b va, Vector16b vb) {
+		Vector8us res = new Vector8us ();
+		byte *a = (byte*)&va;
+		byte *b = (byte*)&vb;
+
+		int tmp = 0;
+		for (int i = 0; i < 8; ++i)
+			tmp += System.Math.Abs ((int)*a++ - (int)*b++);
+		res.V0 = (ushort)tmp;
+
+		tmp = 0;
+		for (int i = 0; i < 8; ++i)
+			tmp += System.Math.Abs ((int)*a++ - (int)*b++);
+		res.V4 = (ushort)tmp;
+		return res;
+	}
+
+	/*This bug was caused the simplifier not taking notice of LDADDR on the remaining blocks.*/
+	public static int test_2_local_simplifier_regression_other_blocks () {
+		Vector16b a = new Vector16b (1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1);
+		Vector16b b = new Vector16b (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+		Vector8us res = bad_method_regression_2 (a,b);
+		return (int)res.V0 + res.V4;
+	}
+
 	static unsafe Vector8us bad_method_regression (Vector16b va, Vector16b vb) {
 		Vector8us res = new Vector8us ();
 		byte *a = (byte*)&va;
@@ -17,8 +42,8 @@ public class SimdTests {
 		return dd;
 	}
 
-	/*This bug was caused the simplifier not taking notice of LDADDR.*/
-	public static int test_10_local_simplier_regression () {
+	/*This bug was caused the simplifier not taking notice of LDADDR on the first block.*/
+	public static int test_10_local_simplifier_regression_first_block () {
 		Vector16b a = new Vector16b ();
 		Vector16b b = new Vector16b ();
 		Vector8us res = bad_method_regression (a,b);
