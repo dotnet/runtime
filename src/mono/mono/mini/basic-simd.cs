@@ -2,6 +2,30 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	static unsafe Vector8us bad_method_regression (Vector16b va, Vector16b vb) {
+		Vector8us res = new Vector8us ();
+		byte *a = (byte*)&va;
+		byte *b = (byte*)&vb;
+		*((ushort*)&res) = 10;
+
+		int tmp = 0;
+		if (*b != 0)
+			tmp++;
+
+		Vector8us dd = res;
+		dd = dd + dd - dd;
+		return dd;
+	}
+
+	/*This bug was caused the simplifier not taking notice of LDADDR.*/
+	public static int test_10_local_simplier_regression () {
+		Vector16b a = new Vector16b ();
+		Vector16b b = new Vector16b ();
+		Vector8us res = bad_method_regression (a,b);
+		return (int)res.V0;
+	}
+	
+
 	public static int test_0_vecto8us_extract_mask () {
 		Vector8us a = new Vector8us (0xF0F0, 0x700F, 0xAABB, 0x0000, 0x00F0, 0xF0F0, 0, 0);
 		int c = Vector8us.ExtractByteMask (a);
