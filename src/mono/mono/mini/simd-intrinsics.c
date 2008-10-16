@@ -222,17 +222,6 @@ typedef enum {
 	VREG_MANY_BB_USE		= 0x10,
 } KillFlags;
 
-static inline gint32
-get_ins_reg_by_idx (MonoInst *ins, int idx)
-{
-	switch (idx) {
-	case 0: return ins->dreg;
-	case 1: return ins->sreg1;
-	case 2: return ins->sreg2;
-	}
-	return -1;
-}
-
 void
 mono_simd_intrinsics_init (void)
 {
@@ -241,12 +230,32 @@ mono_simd_intrinsics_init (void)
 }
 
 static inline gboolean
-apply_vreg_interference (MonoCompile *cfg, MonoInst *ins, int reg, int max_vreg, char *vreg_flags)
+apply_vreg_first_block_interference (MonoCompile *cfg, MonoInst *ins, int reg, int max_vreg, char *vreg_flags)
 {
 	if (reg != -1 && reg <= max_vreg && vreg_flags [reg]) {
 		vreg_flags [reg] &= ~VREG_HAS_XZERO_BB0;
 		vreg_flags [reg] |= VREG_HAS_OTHER_OP_BB0;
 		DEBUG (printf ("[simd-simplify] R%d used: ", reg); mono_print_ins(ins));
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline gboolean
+apply_vreg_following_block_interference (MonoCompile *cfg, MonoInst *ins, int reg, MonoBasicBlock *bb, int max_vreg, char *vreg_flags, MonoBasicBlock **target_bb)
+{
+	if (reg == -1 || reg > max_vreg || !(vreg_flags [reg] & VREG_HAS_XZERO_BB0) || target_bb [reg] == bb)
+		return FALSE;
+
+	if (vreg_flags [reg] & VREG_SINGLE_BB_USE) {
+		vreg_flags [reg] &= ~VREG_SINGLE_BB_USE;
+		vreg_flags [reg] |= VREG_MANY_BB_USE;
+		DEBUG (printf ("[simd-simplify] R%d used by many bb: ", reg); mono_print_ins(ins));
+		return TRUE;
+	} else if (!(vreg_flags [reg] & VREG_MANY_BB_USE)) {
+		vreg_flags [reg] |= VREG_SINGLE_BB_USE;
+		target_bb [reg] = bb;
+		DEBUG (printf ("[simd-simplify] R%d first used by: ", reg); mono_print_ins(ins));
 		return TRUE;
 	}
 	return FALSE;
@@ -307,15 +316,14 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 			}
 			continue;
 		}
-		if (ins->opcode == OP_LDADDR && apply_vreg_interference (cfg, ins, ((MonoInst*)ins->inst_p0)->dreg, max_vreg, vreg_flags))
+		if (ins->opcode == OP_LDADDR && apply_vreg_first_block_interference (cfg, ins, ((MonoInst*)ins->inst_p0)->dreg, max_vreg, vreg_flags))
 			continue;
-		DEBUG (printf ("checking FBB op: [%d, %d, %d] ", ins->dreg, ins->sreg1, ins->sreg2); mono_print_ins(ins));
 		
-		if (apply_vreg_interference (cfg, ins, ins->dreg, max_vreg, vreg_flags))
+		if (apply_vreg_first_block_interference (cfg, ins, ins->dreg, max_vreg, vreg_flags))
 			continue;
-		if (apply_vreg_interference (cfg, ins, ins->sreg1, max_vreg, vreg_flags))
+		if (apply_vreg_first_block_interference (cfg, ins, ins->sreg1, max_vreg, vreg_flags))
 			continue;
-		if (apply_vreg_interference (cfg, ins, ins->sreg2, max_vreg, vreg_flags))
+		if (apply_vreg_first_block_interference (cfg, ins, ins->sreg2, max_vreg, vreg_flags))
 			continue;
 	}
 
@@ -346,23 +354,15 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 
 	for (bb = first_bb->next_bb; bb; bb = bb->next_bb) {
 		for (ins = bb->code; ins; ins = ins->next) {
-			for (i = 0; i < 3; ++i) {
-				int reg = get_ins_reg_by_idx (ins, i);
-				if (reg == -1 || reg > max_vreg || !(vreg_flags [reg] & VREG_HAS_XZERO_BB0) || target_bb [reg] == bb)
-					continue;
-
-				if (vreg_flags [reg] & VREG_SINGLE_BB_USE) {
-					vreg_flags [reg] &= ~VREG_SINGLE_BB_USE;
-					vreg_flags [reg] |= VREG_MANY_BB_USE;
-					DEBUG (printf ("[simd-simplify] R%d used by many bb: ", reg); mono_print_ins(ins));
-					break;
-				} else if (!(vreg_flags [reg] & VREG_MANY_BB_USE)) {
-					vreg_flags [reg] |= VREG_SINGLE_BB_USE;
-					target_bb [reg] = bb;
-					DEBUG (printf ("[simd-simplify] R%d first used by: ", reg); mono_print_ins(ins));
-					break;
-				}
-			}
+			
+			if (ins->opcode == OP_LDADDR && apply_vreg_following_block_interference (cfg, ins, ((MonoInst*)ins->inst_p0)->dreg, bb, max_vreg, vreg_flags, target_bb))
+				continue;
+			if (apply_vreg_following_block_interference (cfg, ins, ins->dreg, bb, max_vreg, vreg_flags, target_bb))
+				continue;
+			if (apply_vreg_following_block_interference (cfg, ins, ins->sreg1, bb, max_vreg, vreg_flags, target_bb))
+				continue;
+			if (apply_vreg_following_block_interference (cfg, ins, ins->sreg2, bb, max_vreg, vreg_flags, target_bb))
+				continue;
 		}
 	}
 
