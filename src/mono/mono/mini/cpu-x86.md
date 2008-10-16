@@ -310,6 +310,7 @@ atomic_cas_imm_i4: src1:b src2:i dest:a len:24
 memory_barrier: len:16
 
 relaxed_nop: len:2
+hard_nop: len:1
 
 # Linear IR opcodes
 nop: len:0

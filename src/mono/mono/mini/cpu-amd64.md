@@ -383,6 +383,7 @@ int_ble: len:8
 int_ble_un: len:8
 
 relaxed_nop: len:2
+hard_nop: len:1
 
 # Linear IR opcodes
 nop: len:0

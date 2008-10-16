@@ -3347,6 +3347,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_prefix (code, X86_REP_PREFIX);
 			x86_nop (code);
 			break;
+		case OP_HARD_NOP:
+			x86_nop (code);
+			break;
 		case OP_NOP:
 		case OP_DUMMY_USE:
 		case OP_DUMMY_STORE:
