@@ -2,6 +2,134 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_vecto8us_extract_mask () {
+		Vector8us a = new Vector8us (0xF0F0, 0x700F, 0xAABB, 0x0000, 0x00F0, 0xF0F0, 0, 0);
+		int c = Vector8us.ExtractByteMask (a);
+
+		if (c != 0xD33)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_vecto8us_shuffle_low () {
+		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
+		Vector8us c = Vector8us.ShuffleLow (a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+
+		if (c.V0 != 2)
+			return 1;
+		if (c.V1 != 4)
+			return 2;
+		if (c.V2 != 1)
+			return 3;
+		if (c.V3 != 3)
+			return 4;
+		if (c.V4 != 5)
+			return 5;
+		if (c.V5 != 6)
+			return 6;
+		if (c.V6 != 7)
+			return 7;
+		if (c.V7 != 8)
+			return 8;
+		return 0;
+	}
+
+	public static int test_0_vecto8us_shuffle_high () {
+		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
+		Vector8us c = Vector8us.ShuffleHigh (a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+
+		if (c.V0 != 1)
+			return 1;
+		if (c.V1 != 2)
+			return 2;
+		if (c.V2 != 3)
+			return 3;
+		if (c.V3 != 4)
+			return 4;
+		if (c.V4 != 6)
+			return 5;
+		if (c.V5 != 8)
+			return 6;
+		if (c.V6 != 5)
+			return 7;
+		if (c.V7 != 7)
+			return 8;
+
+		return 0;
+	}
+
+	public static int test_0_vecto8us_max () {
+		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
+		Vector8us b = new Vector8us (9, 1, 1, 2, 9, 6, 5, 1000);
+		Vector8us c = Vector8us.Max (a, b);
+
+		if (c.V0 != 9)
+			return 1;
+		if (c.V1 != 2)
+			return 2;
+		if (c.V2 != 3)
+			return 3;
+		if (c.V3 != 4)
+			return 4;
+		if (c.V4 != 9)
+			return 5;
+		if (c.V5 != 6)
+			return 6;
+		if (c.V6 != 7)
+			return 7;
+		if (c.V7 != 1000)
+			return 0;
+
+		return 0;
+	}
+
+	public static int test_0_vecto8us_min () {
+		Vector8us a = new Vector8us (1, 2, 3, 0, 5, 6, 5, 4);
+		Vector8us b = new Vector8us (9, 1, 1, 2, 3, 4, 5, 6);
+		Vector8us c = Vector8us.Min (a, b);
+
+		if (c.V0 != 1)
+			return 1;
+		if (c.V1 != 1)
+			return 2;
+		if (c.V2 != 1)
+			return 3;
+		if (c.V3 != 0)
+			return 4;
+		if (c.V4 != 3)
+			return 5;
+		if (c.V5 != 4)
+			return 6;
+		if (c.V6 != 5)
+			return 7;
+		if (c.V7 != 4)
+			return 8;
+		return 0;
+	}
+
+	public static int test_0_vecto8us_avg () {
+		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
+		Vector8us b = new Vector8us (9, 1, 1, 2, 3, 4, 5, 6);
+		Vector8us c = Vector8us.Average (a, b);
+
+		if (c.V0 != 5)
+			return 1;
+		if (c.V1 != 2)
+			return 2;
+		if (c.V2 != 2)
+			return 3;
+		if (c.V3 != 3)
+			return 4;
+		if (c.V4 != 4)
+			return 5;
+		if (c.V5 != 5)
+			return 6;
+		if (c.V6 != 6)
+			return 7;
+		if (c.V7 != 7)
+			return 8;
+		return 0;
+	}
 
 	static void store_helper (ref Vector4f x) {
 		Vector4f k;
