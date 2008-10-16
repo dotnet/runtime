@@ -899,15 +899,15 @@ set_domain_search_path (MonoDomain *domain)
 	 */
 	mono_domain_assemblies_lock (domain);
 
-	if ((domain->search_path != NULL) && !domain->setup->path_changed) {
-		mono_domain_assemblies_unlock (domain);
-		return;
-	}
 	if (!domain->setup) {
 		mono_domain_assemblies_unlock (domain);
 		return;
 	}
 
+	if ((domain->search_path != NULL) && !domain->setup->path_changed) {
+		mono_domain_assemblies_unlock (domain);
+		return;
+	}
 	setup = domain->setup;
 	if (!setup->application_base) {
 		mono_domain_assemblies_unlock (domain);
