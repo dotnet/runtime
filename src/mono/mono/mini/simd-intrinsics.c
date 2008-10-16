@@ -396,8 +396,7 @@ static int
 get_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src)
 {
 	if (src->opcode == OP_XMOVE) {
-		/*FIXME returning src->sreg1 breaks during regalloc */
-		return src->dreg;
+		return src->sreg1;
 	} else if (src->type == STACK_VTYPE) {
 		return src->dreg;
 	}
@@ -413,7 +412,7 @@ static int
 load_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src)
 {
 	if (src->opcode == OP_XMOVE) {
-		return src->dreg;
+		return src->sreg1;
 	} else if (src->opcode == OP_LDADDR) {
 		int res = ((MonoInst*)src->inst_p0)->dreg;
 		NULLIFY_INS (src);
