@@ -28,7 +28,11 @@
           <property name="AllInternalsVisible" value="False" />
         </properties>
       </attribute>
-      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute" />
+      <attribute name="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+        <properties>
+          <property name="AllInternalsVisible" value="True" />
+        </properties>
+      </attribute>
       <attribute name="System.Runtime.InteropServices.ComVisibleAttribute" />
       <attribute name="System.CLSCompliantAttribute" />
       <attribute name="System.Reflection.AssemblyTitleAttribute" />
@@ -98,6 +102,15 @@
                 </parameters>
               </method>
             </methods>
+          </class>
+          <class name="NamespaceHandling" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.FlagsAttribute" />
+            </attributes>
+            <fields>
+              <field name="Default" attrib="32854" fieldtype="System.Xml.NamespaceHandling" value="0" />
+              <field name="OmitDuplicates" attrib="32854" fieldtype="System.Xml.NamespaceHandling" value="1" />
+            </fields>
           </class>
           <class name="NameTable" type="class" base="System.Xml.XmlNameTable" charset="Ansi" layout="Auto">
             <constructors>
@@ -1454,7 +1467,7 @@
               </method>
             </methods>
           </class>
-          <class name="XmlReaderSettings" type="class" base="System.Object" charset="Ansi" layout="Auto">
+          <class name="XmlReaderSettings" type="class" base="System.Object" sealed="true" charset="Ansi" layout="Auto">
             <constructors>
               <constructor name=".ctor()" attrib="6278">
                 <parameters />
@@ -2032,7 +2045,7 @@
               </method>
             </methods>
           </class>
-          <class name="XmlWriterSettings" type="class" base="System.Object" charset="Ansi" layout="Auto">
+          <class name="XmlWriterSettings" type="class" base="System.Object" sealed="true" charset="Ansi" layout="Auto">
             <constructors>
               <constructor name=".ctor()" attrib="6278">
                 <parameters />
@@ -2107,6 +2120,18 @@
                   <method name="set_IndentChars(System.String)" attrib="2182" returntype="System.Void">
                     <parameters>
                       <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="NamespaceHandling" attrib="0" ptype="System.Xml.NamespaceHandling" params="">
+                <methods>
+                  <method name="get_NamespaceHandling()" attrib="2182" returntype="System.Xml.NamespaceHandling">
+                    <parameters />
+                  </method>
+                  <method name="set_NamespaceHandling(System.Xml.NamespaceHandling)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Xml.NamespaceHandling" />
                     </parameters>
                   </method>
                 </methods>
@@ -2190,6 +2215,25 @@
       <namespace name="System.Xml.Schema">
         <classes>
           <class name="XmlSchema" type="class" base="System.Xml.Schema.XmlSchemaObject" charset="Ansi" layout="Auto" />
+          <class name="XmlSchemaForm" type="enum" base="System.Enum" sealed="true" serializable="true" charset="Ansi" layout="Auto">
+            <fields>
+              <field name="None" attrib="32854" fieldtype="System.Xml.Schema.XmlSchemaForm" value="0">
+                <attributes>
+                  <attribute name="System.Xml.Serialization.XmlIgnoreAttribute" />
+                </attributes>
+              </field>
+              <field name="Qualified" attrib="32854" fieldtype="System.Xml.Schema.XmlSchemaForm" value="1">
+                <attributes>
+                  <attribute name="System.Xml.Serialization.XmlEnumAttribute" />
+                </attributes>
+              </field>
+              <field name="Unqualified" attrib="32854" fieldtype="System.Xml.Schema.XmlSchemaForm" value="2">
+                <attributes>
+                  <attribute name="System.Xml.Serialization.XmlEnumAttribute" />
+                </attributes>
+              </field>
+            </fields>
+          </class>
           <class name="XmlSchemaObject" type="class" base="System.Object" abstract="true" charset="Ansi" layout="Auto">
             <constructors>
               <constructor name=".ctor()" attrib="6276">
@@ -2284,6 +2328,586 @@
               </method>
             </methods>
           </class>
+          <class name="XmlAnyElementAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="AllowMultiple" value="True" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.String, System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="name" position="0" attrib="0" type="System.String" />
+                  <parameter name="ns" position="1" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="name" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Name" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Name()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Name(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Namespace" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Namespace()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Namespace(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Order" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_Order()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                  <method name="set_Order(System.Int32)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Int32" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlArrayAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="AllowMultiple" value="False" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="elementName" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="ElementName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_ElementName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_ElementName(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Form" attrib="0" ptype="System.Xml.Schema.XmlSchemaForm" params="">
+                <methods>
+                  <method name="get_Form()" attrib="2182" returntype="System.Xml.Schema.XmlSchemaForm">
+                    <parameters />
+                  </method>
+                  <method name="set_Form(System.Xml.Schema.XmlSchemaForm)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Xml.Schema.XmlSchemaForm" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="IsNullable" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsNullable()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_IsNullable(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Namespace" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Namespace()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Namespace(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Order" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_Order()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                  <method name="set_Order(System.Int32)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Int32" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlArrayItemAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="AllowMultiple" value="True" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="type" position="0" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.String, System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="elementName" position="0" attrib="0" type="System.String" />
+                  <parameter name="type" position="1" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="elementName" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="DataType" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_DataType()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_DataType(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="ElementName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_ElementName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_ElementName(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Form" attrib="0" ptype="System.Xml.Schema.XmlSchemaForm" params="">
+                <methods>
+                  <method name="get_Form()" attrib="2182" returntype="System.Xml.Schema.XmlSchemaForm">
+                    <parameters />
+                  </method>
+                  <method name="set_Form(System.Xml.Schema.XmlSchemaForm)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Xml.Schema.XmlSchemaForm" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="IsNullable" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsNullable()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_IsNullable(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Namespace" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Namespace()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Namespace(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="NestingLevel" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_NestingLevel()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                  <method name="set_NestingLevel(System.Int32)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Int32" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Type" attrib="0" ptype="System.Type" params="">
+                <methods>
+                  <method name="get_Type()" attrib="2182" returntype="System.Type">
+                    <parameters />
+                  </method>
+                  <method name="set_Type(System.Type)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Type" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlAttributeAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="type" position="0" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.String, System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="attributeName" position="0" attrib="0" type="System.String" />
+                  <parameter name="type" position="1" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="attributeName" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="AttributeName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_AttributeName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_AttributeName(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="DataType" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_DataType()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_DataType(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Form" attrib="0" ptype="System.Xml.Schema.XmlSchemaForm" params="">
+                <methods>
+                  <method name="get_Form()" attrib="2182" returntype="System.Xml.Schema.XmlSchemaForm">
+                    <parameters />
+                  </method>
+                  <method name="set_Form(System.Xml.Schema.XmlSchemaForm)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Xml.Schema.XmlSchemaForm" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Namespace" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Namespace()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Namespace(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Type" attrib="0" ptype="System.Type" params="">
+                <methods>
+                  <method name="get_Type()" attrib="2182" returntype="System.Type">
+                    <parameters />
+                  </method>
+                  <method name="set_Type(System.Type)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Type" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlChoiceIdentifierAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="AllowMultiple" value="False" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="name" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="MemberName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_MemberName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_MemberName(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlElementAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="AllowMultiple" value="True" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="type" position="0" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor(System.String, System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="elementName" position="0" attrib="0" type="System.String" />
+                  <parameter name="type" position="1" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="elementName" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="DataType" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_DataType()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_DataType(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="ElementName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_ElementName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_ElementName(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Form" attrib="0" ptype="System.Xml.Schema.XmlSchemaForm" params="">
+                <methods>
+                  <method name="get_Form()" attrib="2182" returntype="System.Xml.Schema.XmlSchemaForm">
+                    <parameters />
+                  </method>
+                  <method name="set_Form(System.Xml.Schema.XmlSchemaForm)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Xml.Schema.XmlSchemaForm" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="IsNullable" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IsNullable()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_IsNullable(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Namespace" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Namespace()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Namespace(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Order" attrib="0" ptype="System.Int32" params="">
+                <methods>
+                  <method name="get_Order()" attrib="2182" returntype="System.Int32">
+                    <parameters />
+                  </method>
+                  <method name="set_Order(System.Int32)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Int32" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Type" attrib="0" ptype="System.Type" params="">
+                <methods>
+                  <method name="get_Type()" attrib="2182" returntype="System.Type">
+                    <parameters />
+                  </method>
+                  <method name="set_Type(System.Type)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Type" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlEnumAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="name" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Name" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Name()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Name(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlIgnoreAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+          </class>
+          <class name="XmlIncludeAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="AllowMultiple" value="True" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="type" position="0" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="Type" attrib="0" ptype="System.Type" params="">
+                <methods>
+                  <method name="get_Type()" attrib="2182" returntype="System.Type">
+                    <parameters />
+                  </method>
+                  <method name="set_Type(System.Type)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Type" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlNamespaceDeclarationsAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute">
+                <properties>
+                  <property name="AllowMultiple" value="False" />
+                </properties>
+              </attribute>
+            </attributes>
+            <constructors>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+          </class>
           <class name="XmlRootAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
             <attributes>
               <attribute name="System.AttributeUsageAttribute" />
@@ -2377,6 +3001,112 @@
                 <methods>
                   <method name="get_MethodName()" attrib="2182" returntype="System.String">
                     <parameters />
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlTextAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.Type)" attrib="6278">
+                <parameters>
+                  <parameter name="type" position="0" attrib="0" type="System.Type" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="DataType" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_DataType()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_DataType(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Type" attrib="0" ptype="System.Type" params="">
+                <methods>
+                  <method name="get_Type()" attrib="2182" returntype="System.Type">
+                    <parameters />
+                  </method>
+                  <method name="set_Type(System.Type)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Type" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+            </properties>
+          </class>
+          <class name="XmlTypeAttribute" type="class" base="System.Attribute" charset="Ansi" layout="Auto">
+            <attributes>
+              <attribute name="System.AttributeUsageAttribute" />
+            </attributes>
+            <constructors>
+              <constructor name=".ctor(System.String)" attrib="6278">
+                <parameters>
+                  <parameter name="typeName" position="0" attrib="0" type="System.String" />
+                </parameters>
+              </constructor>
+              <constructor name=".ctor()" attrib="6278">
+                <parameters />
+              </constructor>
+            </constructors>
+            <properties>
+              <property name="AnonymousType" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_AnonymousType()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_AnonymousType(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="IncludeInSchema" attrib="0" ptype="System.Boolean" params="">
+                <methods>
+                  <method name="get_IncludeInSchema()" attrib="2182" returntype="System.Boolean">
+                    <parameters />
+                  </method>
+                  <method name="set_IncludeInSchema(System.Boolean)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.Boolean" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="Namespace" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_Namespace()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_Namespace(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
+                  </method>
+                </methods>
+              </property>
+              <property name="TypeName" attrib="0" ptype="System.String" params="">
+                <methods>
+                  <method name="get_TypeName()" attrib="2182" returntype="System.String">
+                    <parameters />
+                  </method>
+                  <method name="set_TypeName(System.String)" attrib="2182" returntype="System.Void">
+                    <parameters>
+                      <parameter name="value" position="0" attrib="0" type="System.String" />
+                    </parameters>
                   </method>
                 </methods>
               </property>
