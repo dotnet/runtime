@@ -2,6 +2,203 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+
+
+	public static int vector16b_cmpeq () {
+		Vector16b a = new Vector16b (1,0,9,0,0,0,0,0,0,0,0,0,0,0,0,1);
+		Vector16b b = new Vector16b (0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+		Vector16b c = Vector16b.CompareEqual (a, b);
+
+		if (c.V0 != 0)
+			return 1;
+		if (c.V1 != 0)
+			return 2;
+		if (c.V2 != 0)
+			return 3;
+		if (c.V3 != 0xff)
+			return 4;
+		if (c.V4 != 0xff)
+			return 5;
+		if (c.V5 != 0xff)
+			return 6;
+		if (c.V6 != 0xff)
+			return 7;
+		if (c.V7 != 0xff)
+			return 8;
+		if (c.V8 != 0xff)
+			return 9;
+		if (c.V9 != 0xff)
+			return 10;
+		if (c.V10 != 0xff)
+			return 11;
+		if (c.V11 != 0xff)
+			return 12;
+		if (c.V12 != 0xff)
+			return 13;
+		if (c.V13 != 0xff)
+			return 14;
+		if (c.V14 != 0xff)
+			return 15;
+		if (c.V15 != 0)
+			return 16;
+		return 0;
+	}
+
+
+	public static int vector16b_sum_abs_diff () {
+		Vector16b a = new Vector16b (100,20,20,20,0,0,0,0,0,0,0,0,0,0, 0, 0);
+		Vector16b b = new Vector16b (0,  10,10,10,0,0,0,0,0,0,0,0,0,0,10,10);
+		Vector8us c = Vector16b.SumOfAbsoluteDifferences (a, b);
+
+		if (c.V0 != 130)
+			return 1;
+		if (c.V1 != 0)
+			return 2;
+		if (c.V2 != 0)
+			return 3;
+		if (c.V3 != 0)
+			return 4;
+		if (c.V4 != 20)
+			return 5;
+		if (c.V5 != 0)
+			return 6;
+		if (c.V6 != 0)
+			return 7;
+		if (c.V7 != 0)
+			return 8;
+		return 0;
+	}
+
+
+	public static int test_0_vector16b_extract_mask () {
+		Vector16b a = new Vector16b (0xF0,0,0xF0,0,0,0,0xF0,0xAA,0x0F,0,0xFF,0,0,0,0,0);
+		int c = Vector16b.ExtractByteMask (a);
+
+		if (c != 0x4C5)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_vector16b_min () {
+		Vector16b a = new Vector16b (0,12,20,12,4,5,6,7,8,9,10,11,12,13,14,15);
+		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b c = Vector16b.Min (a, b);
+
+		if (c.V0 != 0)
+			return 1;
+		if (c.V1 != 10)
+			return 2;
+		if (c.V2 != 11)
+			return 3;
+		if (c.V3 != 12)
+			return 4;
+		if (c.V4 != 4)
+			return 5;
+		if (c.V5 != 5)
+			return 6;
+		if (c.V6 != 6)
+			return 7;
+		if (c.V7 != 0)
+			return 8;
+		if (c.V8 != 1)
+			return 9;
+		if (c.V9 != 2)
+			return 10;
+		if (c.V10 != 3)
+			return 11;
+		if (c.V11 != 4)
+			return 12;
+		if (c.V12 != 5)
+			return 13;
+		if (c.V13 != 6)
+			return 14;
+		if (c.V14 != 7)
+			return 15;
+		if (c.V15 != 8)
+			return 16;
+		return 0;
+	}
+
+	public static int test_0_vector16b_max () {
+		Vector16b a = new Vector16b (0,12,20,12,4,5,6,7,8,9,10,11,12,13,14,15);
+		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b c = Vector16b.Max (a, b);
+
+		if (c.V0 != 9)
+			return 1;
+		if (c.V1 != 12)
+			return 2;
+		if (c.V2 != 20)
+			return 3;
+		if (c.V3 != 12)
+			return 4;
+		if (c.V4 != 13)
+			return 5;
+		if (c.V5 != 14)
+			return 6;
+		if (c.V6 != 15)
+			return 7;
+		if (c.V7 != 7)
+			return 8;
+		if (c.V8 != 8)
+			return 9;
+		if (c.V9 != 9)
+			return 10;
+		if (c.V10 != 10)
+			return 11;
+		if (c.V11 != 11)
+			return 12;
+		if (c.V12 != 12)
+			return 13;
+		if (c.V13 != 13)
+			return 14;
+		if (c.V14 != 14)
+			return 15;
+		if (c.V15 != 15)
+			return 16;
+		return 0;
+	}
+	public static int test_0_vector16b_avg () {
+		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16b c = Vector16b.Average (a, b);
+
+		if (c.V0 != 5)
+			return 1;
+		if (c.V1 != 6)
+			return 2;
+		if (c.V2 != 7)
+			return 3;
+		if (c.V3 != 8)
+			return 4;
+		if (c.V4 != 9)
+			return 5;
+		if (c.V5 != 10)
+			return 6;
+		if (c.V6 != 11)
+			return 7;
+		if (c.V7 != 4)
+			return 8;
+		if (c.V8 != 5)
+			return 9;
+		if (c.V9 != 6)
+			return 10;
+		if (c.V10 != 7)
+			return 11;
+		if (c.V11 != 8)
+			return 12;
+		if (c.V12 != 9)
+			return 13;
+		if (c.V13 != 10)
+			return 14;
+		if (c.V14 != 11)
+			return 15;
+		if (c.V15 != 12)
+			return 16;
+		return 0;
+	}
+
+
 	static unsafe Vector8us bad_method_regression_2 (Vector16b va, Vector16b vb) {
 		Vector8us res = new Vector8us ();
 		byte *a = (byte*)&va;
