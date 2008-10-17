@@ -75,11 +75,20 @@ enum {
 	SIMD_EMIT_EXTRACT_MASK
 };
 
-/*This is the size of the largest method name + 1 (to fit the ending \0). Align to 4 as well.*/
-#define SIMD_INTRINSIC_NAME_MAX 24
+#define SIMD_METHOD(str,name) str,
+static const char * const method_names [] = {
+#include "simd-methods.h"
+	NULL
+};
+#undef SIMD_METHOD
+#define SIMD_METHOD(str,name) name,
+enum {
+#include "simd-methods.h"
+	SN_LAST
+};
 
 typedef struct {
-	const char name[SIMD_INTRINSIC_NAME_MAX];
+	guint16 name;
 	guint16 opcode;
 	guint8 simd_emit_mode : 4;
 	guint8 simd_version : 4;
@@ -91,43 +100,43 @@ Missing:
 setters
  */
 static const SimdIntrinsc vector4f_intrinsics[] = {
-	{ ".ctor", 0, SIMD_EMIT_CTOR },
-	{ "AndNot", OP_ANDNPS, SIMD_EMIT_BINARY },
-	{ "AddSub", OP_ADDSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
-	{ "CompareEquals", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
-	{ "CompareLessEqual", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LE },
-	{ "CompareLessThan", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LT },
-	{ "CompareNotEqual", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NEQ },
-	{ "CompareNotLessEqual", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NLE },
-	{ "CompareNotLessThan", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NLT },
-	{ "CompareOrdered", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_ORD },
-	{ "CompareUnordered", OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_UNORD },
-	{ "DuplicateHigh", OP_DUPPS_HIGH, SIMD_EMIT_UNARY, SIMD_VERSION_SSE3 },
-	{ "DuplicateLow", OP_DUPPS_LOW, SIMD_EMIT_UNARY, SIMD_VERSION_SSE3 },
-	{ "HorizontalAdd", OP_HADDPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
-	{ "HorizontalSub", OP_HSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },	
-	{ "InterleaveHigh", OP_UNPACK_HIGHPS, SIMD_EMIT_BINARY },
-	{ "InterleaveLow", OP_UNPACK_LOWPS, SIMD_EMIT_BINARY },
-	{ "InvSqrt", OP_RSQRTPS, SIMD_EMIT_UNARY },
-	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
-	{ "Max", OP_MAXPS, SIMD_EMIT_BINARY },
-	{ "Min", OP_MINPS, SIMD_EMIT_BINARY },
-	{ "Reciprocal", OP_RCPPS, SIMD_EMIT_UNARY },
-	{ "Shuffle", OP_SHUFLEPS, SIMD_EMIT_SHUFFLE },
-	{ "Sqrt", OP_SQRTPS, SIMD_EMIT_UNARY },
-	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
-	{ "get_W", 3, SIMD_EMIT_GETTER },
-	{ "get_X", 0, SIMD_EMIT_GETTER },
-	{ "get_Y", 1, SIMD_EMIT_GETTER },
-	{ "get_Z", 2, SIMD_EMIT_GETTER },
-	{ "op_Addition", OP_ADDPS, SIMD_EMIT_BINARY },
-	{ "op_BitwiseAnd", OP_ANDPS, SIMD_EMIT_BINARY },
-	{ "op_BitwiseOr", OP_ORPS, SIMD_EMIT_BINARY },
-	{ "op_Division", OP_DIVPS, SIMD_EMIT_BINARY },
-	{ "op_ExclusiveOr", OP_XORPS, SIMD_EMIT_BINARY },
-	{ "op_Explicit", 0, SIMD_EMIT_CAST }, 
-	{ "op_Multiply", OP_MULPS, SIMD_EMIT_BINARY },
-	{ "op_Subtraction", OP_SUBPS, SIMD_EMIT_BINARY },
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
+	{ SN_AndNot, OP_ANDNPS, SIMD_EMIT_BINARY },
+	{ SN_AddSub, OP_ADDSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
+	{ SN_CompareEquals, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
+	{ SN_CompareLessEqual, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LE },
+	{ SN_CompareLessThan, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LT },
+	{ SN_CompareNotEqual, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NEQ },
+	{ SN_CompareNotLessEqual, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NLE },
+	{ SN_CompareNotLessThan, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NLT },
+	{ SN_CompareOrdered, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_ORD },
+	{ SN_CompareUnordered, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_UNORD },
+	{ SN_DuplicateHigh, OP_DUPPS_HIGH, SIMD_EMIT_UNARY, SIMD_VERSION_SSE3 },
+	{ SN_DuplicateLow, OP_DUPPS_LOW, SIMD_EMIT_UNARY, SIMD_VERSION_SSE3 },
+	{ SN_HorizontalAdd, OP_HADDPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
+	{ SN_HorizontalSub, OP_HSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },	
+	{ SN_InterleaveHigh, OP_UNPACK_HIGHPS, SIMD_EMIT_BINARY },
+	{ SN_InterleaveLow, OP_UNPACK_LOWPS, SIMD_EMIT_BINARY },
+	{ SN_InvSqrt, OP_RSQRTPS, SIMD_EMIT_UNARY },
+	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_Max, OP_MAXPS, SIMD_EMIT_BINARY },
+	{ SN_Min, OP_MINPS, SIMD_EMIT_BINARY },
+	{ SN_Reciprocal, OP_RCPPS, SIMD_EMIT_UNARY },
+	{ SN_Shuffle, OP_SHUFLEPS, SIMD_EMIT_SHUFFLE },
+	{ SN_Sqrt, OP_SQRTPS, SIMD_EMIT_UNARY },
+	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
+	{ SN_get_W, 3, SIMD_EMIT_GETTER },
+	{ SN_get_X, 0, SIMD_EMIT_GETTER },
+	{ SN_get_Y, 1, SIMD_EMIT_GETTER },
+	{ SN_get_Z, 2, SIMD_EMIT_GETTER },
+	{ SN_op_Addition, OP_ADDPS, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseAnd, OP_ANDPS, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseOr, OP_ORPS, SIMD_EMIT_BINARY },
+	{ SN_op_Division, OP_DIVPS, SIMD_EMIT_BINARY },
+	{ SN_op_ExclusiveOr, OP_XORPS, SIMD_EMIT_BINARY },
+	{ SN_op_Explicit, 0, SIMD_EMIT_CAST }, 
+	{ SN_op_Multiply, OP_MULPS, SIMD_EMIT_BINARY },
+	{ SN_op_Subtraction, OP_SUBPS, SIMD_EMIT_BINARY },
 };
 
 /*
@@ -137,22 +146,22 @@ getters
 setters
  */
 static const SimdIntrinsc vector4ui_intrinsics[] = {
-	{ "AddWithSaturation", OP_PADDD_SAT_UN, SIMD_EMIT_BINARY },
-	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
-	{ "ShiftRightArithmetic", OP_PSARD, SIMD_EMIT_SHIFT },
-	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
-	{ "SubWithSaturation", OP_PSUBD_SAT_UN, SIMD_EMIT_BINARY },
-	{ "UnpackHigh", OP_UNPACK_HIGHD, SIMD_EMIT_BINARY },
-	{ "UnpackLow", OP_UNPACK_LOWD, SIMD_EMIT_BINARY },
-	{ "op_Addition", OP_PADDD, SIMD_EMIT_BINARY },
-	{ "op_BitwiseAnd", OP_PAND, SIMD_EMIT_BINARY },
-	{ "op_BitwiseOr", OP_POR, SIMD_EMIT_BINARY },
-	{ "op_BitwiseXor", OP_PXOR, SIMD_EMIT_BINARY },
-	{ "op_Explicit", 0, SIMD_EMIT_CAST },
-	{ "op_LeftShift", OP_PSHLD, SIMD_EMIT_SHIFT },
-	{ "op_Multiply", OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
-	{ "op_RightShift", OP_PSHRD, SIMD_EMIT_SHIFT },
-	{ "op_Subtraction", OP_PSUBD, SIMD_EMIT_BINARY },
+	{ SN_AddWithSaturation, OP_PADDD_SAT_UN, SIMD_EMIT_BINARY },
+	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_ShiftRightArithmetic, OP_PSARD, SIMD_EMIT_SHIFT },
+	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
+	{ SN_SubWithSaturation, OP_PSUBD_SAT_UN, SIMD_EMIT_BINARY },
+	{ SN_UnpackHigh, OP_UNPACK_HIGHD, SIMD_EMIT_BINARY },
+	{ SN_UnpackLow, OP_UNPACK_LOWD, SIMD_EMIT_BINARY },
+	{ SN_op_Addition, OP_PADDD, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseXor, OP_PXOR, SIMD_EMIT_BINARY },
+	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
+	{ SN_op_LeftShift, OP_PSHLD, SIMD_EMIT_SHIFT },
+	{ SN_op_Multiply, OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_op_RightShift, OP_PSHRD, SIMD_EMIT_SHIFT },
+	{ SN_op_Subtraction, OP_PSUBD, SIMD_EMIT_BINARY },
 };
 
 /*
@@ -162,26 +171,26 @@ getters
 setters
  */
 static const SimdIntrinsc vector8us_intrinsics[] = {
-	{ "AddWithSaturation", OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
-	{ "Average", OP_PAVGW_UN, SIMD_EMIT_BINARY },
-	{ "ExtractByteMask", 0, SIMD_EMIT_EXTRACT_MASK },
-	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
-	{ "ShiftRightArithmetic", OP_PSARW, SIMD_EMIT_SHIFT },
-	{ "ShuffleHigh", OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
-	{ "ShuffleLow", OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },
-	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
-	{ "SubWithSaturation", OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
-	{ "UnpackHigh", OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
-	{ "UnpackLow", OP_UNPACK_LOWW, SIMD_EMIT_BINARY },
-	{ "op_Addition", OP_PADDW, SIMD_EMIT_BINARY },
-	{ "op_BitwiseAnd", OP_PAND, SIMD_EMIT_BINARY },
-	{ "op_BitwiseOr", OP_POR, SIMD_EMIT_BINARY },
-	{ "op_BitwiseXor", OP_PXOR, SIMD_EMIT_BINARY },
-	{ "op_Explicit", 0, SIMD_EMIT_CAST },
-	{ "op_LeftShift", OP_PSHLW, SIMD_EMIT_SHIFT },
-	{ "op_Multiply", OP_PMULW, SIMD_EMIT_BINARY },
-	{ "op_RightShift", OP_PSHRW, SIMD_EMIT_SHIFT },
-	{ "op_Subtraction", OP_PSUBW, SIMD_EMIT_BINARY },
+	{ SN_AddWithSaturation, OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
+	{ SN_Average, OP_PAVGW_UN, SIMD_EMIT_BINARY },
+	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
+	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_ShiftRightArithmetic, OP_PSARW, SIMD_EMIT_SHIFT },
+	{ SN_ShuffleHigh, OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
+	{ SN_ShuffleLow, OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },
+	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
+	{ SN_SubWithSaturation, OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
+	{ SN_UnpackHigh, OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
+	{ SN_UnpackLow, OP_UNPACK_LOWW, SIMD_EMIT_BINARY },
+	{ SN_op_Addition, OP_PADDW, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseXor, OP_PXOR, SIMD_EMIT_BINARY },
+	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
+	{ SN_op_LeftShift, OP_PSHLW, SIMD_EMIT_SHIFT },
+	{ SN_op_Multiply, OP_PMULW, SIMD_EMIT_BINARY },
+	{ SN_op_RightShift, OP_PSHRW, SIMD_EMIT_SHIFT },
+	{ SN_op_Subtraction, OP_PSUBW, SIMD_EMIT_BINARY },
 };
 
 /*
@@ -191,24 +200,24 @@ getters
 setters
  */
 static const SimdIntrinsc vector16b_intrinsics[] = {
-	{ "AddWithSaturation", OP_PADDB_SAT_UN, SIMD_EMIT_BINARY },
-	{ "Average", OP_PAVGB_UN, SIMD_EMIT_BINARY },
-	{ "CompareEqual", OP_PCMPEQB, SIMD_EMIT_BINARY },
-	{ "ExtractByteMask", 0, SIMD_EMIT_EXTRACT_MASK },
-	{ "LoadAligned", 0, SIMD_EMIT_LOAD_ALIGNED },
-	{ "Max", OP_PMAXB_UN, SIMD_EMIT_BINARY },
-	{ "Min", OP_PMINB_UN, SIMD_EMIT_BINARY },
-	{ "StoreAligned", 0, SIMD_EMIT_STORE_ALIGNED },
-	{ "SubWithSaturation", OP_PSUBB_SAT_UN, SIMD_EMIT_BINARY },
-	{ "SumOfAbsoluteDifferences", OP_PSUM_ABS_DIFF, SIMD_EMIT_BINARY },
-	{ "UnpackHigh", OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
-	{ "UnpackLow", OP_UNPACK_LOWB, SIMD_EMIT_BINARY },
-	{ "op_Addition", OP_PADDB, SIMD_EMIT_BINARY },
-	{ "op_BitwiseAnd", OP_PAND, SIMD_EMIT_BINARY },
-	{ "op_BitwiseOr", OP_POR, SIMD_EMIT_BINARY },
-	{ "op_BitwiseXor", OP_PXOR, SIMD_EMIT_BINARY },
-	{ "op_Explicit", 0, SIMD_EMIT_CAST },
-	{ "op_Subtraction", OP_PSUBB, SIMD_EMIT_BINARY },
+	{ SN_AddWithSaturation, OP_PADDB_SAT_UN, SIMD_EMIT_BINARY },
+	{ SN_Average, OP_PAVGB_UN, SIMD_EMIT_BINARY },
+	{ SN_CompareEqual, OP_PCMPEQB, SIMD_EMIT_BINARY },
+	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
+	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_Max, OP_PMAXB_UN, SIMD_EMIT_BINARY },
+	{ SN_Min, OP_PMINB_UN, SIMD_EMIT_BINARY },
+	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
+	{ SN_SubWithSaturation, OP_PSUBB_SAT_UN, SIMD_EMIT_BINARY },
+	{ SN_SumOfAbsoluteDifferences, OP_PSUM_ABS_DIFF, SIMD_EMIT_BINARY },
+	{ SN_UnpackHigh, OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
+	{ SN_UnpackLow, OP_UNPACK_LOWB, SIMD_EMIT_BINARY },
+	{ SN_op_Addition, OP_PADDB, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseXor, OP_PXOR, SIMD_EMIT_BINARY },
+	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
+	{ SN_op_Subtraction, OP_PSUBB, SIMD_EMIT_BINARY },
 };
 
 static guint32 simd_supported_versions;
@@ -217,7 +226,7 @@ static guint32 simd_supported_versions;
 static int
 simd_intrinsic_compare_by_name (const void *key, const void *value)
 {
-	return strncmp(key, ((SimdIntrinsc *)value)->name, SIMD_INTRINSIC_NAME_MAX);
+	return strcmp (key, method_names [((SimdIntrinsc *)value)->name]);
 }
 
 typedef enum {
@@ -741,7 +750,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	if (IS_DEBUG_ON (cfg)) {
 		int i, max;
-		printf ("found call to intrinsic %s::%s/%d -> %s\n", cmethod->klass->name, cmethod->name, fsig->param_count, result->name);
+		printf ("found call to intrinsic %s::%s/%d -> %s\n", cmethod->klass->name, cmethod->name, fsig->param_count, method_names [result->name]);
 		max = fsig->param_count + fsig->hasthis;
 		for (i = 0; i < max; ++i) {
 			printf ("param %d:  ", i);

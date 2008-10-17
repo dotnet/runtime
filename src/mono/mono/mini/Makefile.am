@@ -253,6 +253,7 @@ common_sources = \
 	ssa2.c	\
 	abcremoval2.c	\
 	regalloc2.c	\
+	simd-methods.h	\
 	simd-intrinsics.c
 
 test_sources = 		\
