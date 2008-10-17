@@ -3,6 +3,77 @@ using Mono.Simd;
 
 public class SimdTests {
 
+	public static int test_0_vector4ui_cmpeq () {
+		Vector4ui a = new Vector4ui (6,1,6,3);
+		Vector4ui b = new Vector4ui (3,4,6,7);
+		Vector4ui c = Vector4ui.CompareEqual (a, b);
+
+		if (c.X != 0)
+			return 1;
+		if (c.Y != 0)
+			return 2;
+		if (c.Z != 0xFFFFFFFF)
+			return 3;
+		if (c.W != 0)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4ui_shuffle () {
+		Vector4ui a = new Vector4ui (1,2,3,4);
+		Vector4ui c = Vector4ui.Shuffle (a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+
+		if (c.X != 2)
+			return 1;
+		if (c.Y != 4)
+			return 2;
+		if (c.Z != 1)
+			return 3;
+		if (c.W != 3)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4ui_extract_mask () {
+		Vector4ui a = new Vector4ui (0xFF00FF00,0x0F0FAA99,0,0);
+		int c = Vector4ui.ExtractByteMask (a);
+
+		if (c != 0x3A)
+			return 1;
+		return 0;
+	}
+
+	public static int test_0_vector4ui_min () {
+		Vector4ui a = new Vector4ui (6,1,6,3);
+		Vector4ui b = new Vector4ui (3,4,6,7);
+		Vector4ui c = Vector4ui.Min (a, b);
+
+		if (c.X != 3)
+			return 1;
+		if (c.Y != 1)
+			return 2;
+		if (c.Z != 6)
+			return 3;
+		if (c.W != 3)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_vector4ui_max () {
+		Vector4ui a = new Vector4ui (6,1,6,3);
+		Vector4ui b = new Vector4ui (3,4,6,7);
+		Vector4ui c = Vector4ui.Max (a, b);
+
+		if (c.X != 6)
+			return 1;
+		if (c.Y != 4)
+			return 2;
+		if (c.Z != 6)
+			return 3;
+		if (c.W != 7)
+			return 4;
+		return 0;
+	}
 
 	public static int vector16b_cmpeq () {
 		Vector16b a = new Vector16b (1,0,9,0,0,0,0,0,0,0,0,0,0,0,0,1);
