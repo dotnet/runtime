@@ -1,3 +1,10 @@
+2008-10-17  Miguel de Icaza  <miguel@novell.com>
+
+	* Allow types to be defined on the eglib-config.h file, that could
+	be a platform specific generated type file.
+
+	* gtimer.c: split functionality in platforms.
+
 2008-10-13  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/gdate-win32.c : Fix compiler errors for MSVC.
@@ -10,6 +17,8 @@
 	Contributed under MIT/X11 license.
 
 2008-10-11  Miguel de Icaza  <miguel@novell.com>
+
+	* gtimer.c: Same process.
 
 	* src/glib.h: Move g_strdup here, to consolidate all allocations
 	in this header, will help for merging the allocation work later. 

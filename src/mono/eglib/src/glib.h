@@ -38,6 +38,7 @@ typedef const void *   gconstpointer;
 typedef char           gchar;
 typedef unsigned char  guchar;
 
+#if !G_TYPES_DEFINED
 #ifdef _MSC_VER
 typedef __int8				gint8;
 typedef unsigned __int8		guint8;
@@ -64,6 +65,8 @@ typedef float          gfloat;
 typedef double         gdouble;
 typedef uint16_t       gunichar2;
 #endif
+#endif
+
 
 /*
  * Macros
