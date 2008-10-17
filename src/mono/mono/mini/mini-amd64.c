@@ -2621,6 +2621,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Keep the opcode if we can implement it efficiently */
 			if (!((ins->inst_imm > 0) && mono_is_power_of_two (ins->inst_imm)))
 				mono_decompose_op_imm (cfg, bb, ins);
+			break;
 		case OP_COMPARE_IMM:
 		case OP_LCOMPARE_IMM:
 			if (!amd64_is_imm32 (ins->inst_imm)) {
