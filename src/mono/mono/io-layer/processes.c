@@ -442,7 +442,7 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 			return FALSE;
 
 #ifdef PLATFORM_MACOSX
-		handler = "/usr/bin/open";
+		handler = g_strdup ("/usr/bin/open -W");
 #else
 		/*
 		 * On Linux, try: xdg-open, the FreeDesktop standard way of doing it,
