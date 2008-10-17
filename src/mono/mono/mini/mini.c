@@ -183,6 +183,7 @@ MonoMethodDesc *mono_inject_async_exc_method = NULL;
 int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method = NULL;
 int mono_break_at_bb_bb_num;
+gboolean mono_do_x86_stack_align = TRUE;
 
 static int mini_verbose = 0;
 

@@ -1059,6 +1059,7 @@ mini_usage_jitdeveloper (void)
 		 "    --verify-all           Run the verifier on all methods\n"
 		 "    --full-aot             Avoid JITting any code\n"
 		 "    --agent=ASSEMBLY[:ARG] Loads the specific agent assembly and executes its Main method with the given argument before loading the main assembly.\n"
+		 "    --no-x86-stack-align   Don't align stack on x86\n"
 		 "\n"
 		 "Other options:\n" 
 		 "    --graph[=TYPE] METHOD  Draws a graph of the specified method:\n");
@@ -1465,6 +1466,8 @@ mono_main (int argc, char* argv[])
 				fprintf (stderr, "Invalid --wapi suboption: '%s'\n", argv [i]);
 				return 1;
 			}
+		} else if (strcmp (argv [i], "--no-x86-stack-align") == 0) {
+			mono_do_x86_stack_align = FALSE;
 #ifdef MONO_JIT_INFO_TABLE_TEST
 		} else if (strcmp (argv [i], "--test-jit-info-table") == 0) {
 			test_jit_info_table = TRUE;

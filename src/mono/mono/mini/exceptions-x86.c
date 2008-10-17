@@ -334,8 +334,18 @@ mono_arch_get_call_filter (void)
 	x86_mov_reg_membase (code, X86_ESI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, esi), 4);
 	x86_mov_reg_membase (code, X86_EDI, X86_EAX,  G_STRUCT_OFFSET (MonoContext, edi), 4);
 
+	/* align stack and save ESP */
+	x86_mov_reg_reg (code, X86_EDX, X86_ESP, 4);
+	x86_alu_reg_imm (code, X86_AND, X86_ESP, -MONO_ARCH_FRAME_ALIGNMENT);
+	g_assert (MONO_ARCH_FRAME_ALIGNMENT >= 8);
+	x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 8);
+	x86_push_reg (code, X86_EDX);
+
 	/* call the handler */
 	x86_call_reg (code, X86_ECX);
+
+	/* restore ESP */
+	x86_pop_reg (code, X86_ESP);
 
 	/* restore EBP */
 	x86_pop_reg (code, X86_EBP);
