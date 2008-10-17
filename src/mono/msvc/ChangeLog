@@ -1,3 +1,9 @@
+2008-10-17  Bill Holmes  <billholmes54@gmail.com>
+
+	* eglib.vcproj : Adding src\gtimer-win32.c to the VC project.
+
+	Code is contributed under MIT/X11 license.
+
 2008-10-13  Bill Holmes  <billholmes54@gmail.com>
 
 	* libmono.vcproj : Removing metadata\rawbuffer.c from the VC project.

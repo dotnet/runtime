@@ -640,7 +640,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\eglib\src\gtimer.c"
+				RelativePath="..\eglib\src\gtimer-win32.c"
 				>
 			</File>
 			<File
