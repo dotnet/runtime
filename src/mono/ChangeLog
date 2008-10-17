@@ -1,3 +1,7 @@
+2008-10-16  Jonathan Pryor  <jpryor@novell.com>
+
+	* scripts/Makefile.am: Move mono-shlib-cop to scripts_2_0.
+
 2008-10-15  Jonathan Pryor  <jpryor@novell.com>
 
 	* configure.in: Add checks for `struct flock`, `struct timespec`.
