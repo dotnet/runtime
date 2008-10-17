@@ -75,6 +75,26 @@ enum {
 	SIMD_EMIT_EXTRACT_MASK
 };
 
+#ifdef HAVE_ARRAY_ELEM_INIT
+#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
+#define MSGSTRFIELD1(line) str##line
+static const struct msgstr_t {
+#define SIMD_METHOD(str,name) char MSGSTRFIELD(__LINE__) [sizeof (str)];
+#include "simd-methods.h"
+#undef SIMD_METHOD
+} method_names = {
+#define SIMD_METHOD(str,name) str,
+#include "simd-methods.h"
+#undef SIMD_METHOD
+};
+
+enum {
+#define SIMD_METHOD(str,name) name = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#include "simd-methods.h"
+};
+#define method_name(idx) ((const char*)&method_names + (idx))
+
+#else
 #define SIMD_METHOD(str,name) str,
 static const char * const method_names [] = {
 #include "simd-methods.h"
@@ -86,6 +106,10 @@ enum {
 #include "simd-methods.h"
 	SN_LAST
 };
+
+#define method_name(idx) (method_names [(idx)])
+
+#endif
 
 typedef struct {
 	guint16 name;
@@ -226,7 +250,7 @@ static guint32 simd_supported_versions;
 static int
 simd_intrinsic_compare_by_name (const void *key, const void *value)
 {
-	return strcmp (key, method_names [((SimdIntrinsc *)value)->name]);
+	return strcmp (key, method_name (((SimdIntrinsc *)value)->name));
 }
 
 typedef enum {
@@ -750,7 +774,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	if (IS_DEBUG_ON (cfg)) {
 		int i, max;
-		printf ("found call to intrinsic %s::%s/%d -> %s\n", cmethod->klass->name, cmethod->name, fsig->param_count, method_names [result->name]);
+		printf ("found call to intrinsic %s::%s/%d -> %s\n", cmethod->klass->name, cmethod->name, fsig->param_count, method_name (result->name));
 		max = fsig->param_count + fsig->hasthis;
 		for (i = 0; i < max; ++i) {
 			printf ("param %d:  ", i);
