@@ -508,6 +508,77 @@ InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 #elif defined(__ppc__) || defined (__powerpc__)
 #define WAPI_ATOMIC_ASM
 
+#ifdef G_COMPILER_CODEWARRIOR
+static inline gint32 InterlockedIncrement(volatile register gint32 *val)
+{
+	gint32 result = 0, tmp;
+	register gint32 result = 0;
+	register gint32 tmp;
+
+	asm
+	{
+		@1:
+			lwarx	tmp, 0, val
+			addi	result, tmp, 1
+			stwcx.	result, 0, val
+			bne-	@1
+	}
+ 
+	return result;
+}
+
+static inline gint32 InterlockedDecrement(register volatile gint32 *val)
+{
+	register gint32 result = 0;
+	register gint32 tmp;
+
+	asm
+	{
+		@1:
+			lwarx	tmp, 0, val
+			addi	result, tmp, -1
+			stwcx.	result, 0, val
+			bne-	@1
+	}
+
+	return result;
+}
+#define InterlockedCompareExchangePointer(dest,exch,comp) (void*)InterlockedCompareExchange((volatile gint32 *)(dest), (gint32)(exch), (gint32)(comp))
+
+static inline gint32 InterlockedCompareExchange(volatile register gint32 *dest, register gint32 exch, register gint32 comp)
+{
+	register gint32 tmp = 0;
+
+	asm
+	{
+		@1:
+			lwarx	tmp, 0, dest
+			cmpw	tmp, comp
+			bne-	@2
+			stwcx.	exch, 0, dest
+			bne-	@1
+		@2:
+	}
+
+	return tmp;
+}
+static inline gint32 InterlockedExchange(register volatile gint32 *dest, register gint32 exch)
+{
+	register gint32 tmp = 0;
+
+	asm
+	{
+		@1:
+			lwarx	tmp, 0, dest
+			stwcx.	exch, 0, dest
+			bne-	@1
+	}
+
+	return tmp;
+}
+#define InterlockedExchangePointer(dest,exch) (void*)InterlockedExchange((volatile gint32 *)(dest), (gint32)(exch))
+#else
+
 static inline gint32 InterlockedIncrement(volatile gint32 *val)
 {
 	gint32 result = 0, tmp;
@@ -577,6 +648,7 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
                               : "r" (dest), "r" (add) : "cc", "memory");
         return(result);
 }
+#endif /* !G_COMPILER_CODEWARRIOR */
 
 #elif defined(__arm__)
 #define WAPI_ATOMIC_ASM
