@@ -1796,6 +1796,32 @@ encode_field_info (MonoAotCompile *cfg, MonoClassField *field, guint8 *buf, guin
 	*endbuf = p;
 }
 
+static void
+encode_generic_context (MonoAotCompile *acfg, MonoGenericContext *context, guint8 *buf, guint8 **endbuf)
+{
+	guint8 *p = buf;
+	int i;
+	MonoGenericInst *inst;
+
+	/* Encode the context */
+	inst = context->class_inst;
+	encode_value (inst ? 1 : 0, p, &p);
+	if (inst) {
+		encode_value (inst->type_argc, p, &p);
+		for (i = 0; i < inst->type_argc; ++i)
+			encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), p, &p);
+	}
+	inst = context->method_inst;
+	encode_value (inst ? 1 : 0, p, &p);
+	if (inst) {
+		encode_value (inst->type_argc, p, &p);
+		for (i = 0; i < inst->type_argc; ++i)
+			encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), p, &p);
+	}
+
+	*endbuf = p;
+}
+
 #define MAX_IMAGE_INDEX 250
 
 static void
@@ -1881,8 +1907,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		} else {
 			MonoMethod *declaring;
 			MonoGenericContext *context = mono_method_get_context (method);
-			MonoGenericInst *inst;
-			int i;
 
 			g_assert (method->is_inflated);
 			declaring = ((MonoMethodInflated*)method)->declaring;
@@ -1905,22 +1929,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
 			encode_value (image_index, p, &p);
 			encode_value (token, p, &p);
-
-			/* Encode the context */
-			inst = context->class_inst;
-			encode_value (inst ? 1 : 0, p, &p);
-			if (inst) {
-				encode_value (inst->type_argc, p, &p);
-				for (i = 0; i < inst->type_argc; ++i)
-					encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), p, &p);
-			}
-			inst = context->method_inst;
-			encode_value (inst ? 1 : 0, p, &p);
-			if (inst) {
-				encode_value (inst->type_argc, p, &p);
-				for (i = 0; i < inst->type_argc; ++i)
-					encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), p, &p);
-			}
+			encode_generic_context (acfg, context, p, &p);
 		}
 	} else if (token == 0) {
 		/* This might be a method of a constructed type like int[,].Set */
@@ -2284,7 +2293,7 @@ add_wrappers (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
 
-		if (klass->delegate && klass != mono_defaults.delegate_class && klass != mono_defaults.multicastdelegate_class) {
+		if (klass->delegate && klass != mono_defaults.delegate_class && klass != mono_defaults.multicastdelegate_class && !klass->generic_container) {
 			method = mono_get_delegate_invoke (klass);
 
 			m = mono_marshal_get_delegate_invoke (method, NULL);
@@ -2539,6 +2548,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 		encode_value (get_image_index (acfg, patch_info->data.token->image), p, &p);
 		encode_value (patch_info->data.token->token, p, &p);
+		encode_value (patch_info->data.token->has_context, p, &p);
+		if (patch_info->data.token->has_context)
+			encode_generic_context (acfg, &patch_info->data.token->context, p, &p);
 		break;
 	case MONO_PATCH_INFO_EXC_NAME: {
 		MonoClass *ex_class;

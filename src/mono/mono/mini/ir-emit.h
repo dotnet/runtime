@@ -184,12 +184,12 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->dreg = alloc_dreg ((cfg), STACK_PTR);	\
 	} while (0)
 
-#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type,stack_class) do { \
+#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,generic_context,stack_type,stack_class) do { \
 		MonoInst *group, *got_loc;			\
         MONO_INST_NEW ((cfg), (dest), OP_GOT_ENTRY); \
 		got_loc = mono_get_got_var (cfg);			\
 		NEW_PATCH_INFO ((cfg), group, NULL, patch_type);	\
-		group->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token)); \
+		group->inst_p0 = mono_jump_info_token_new2 ((cfg)->mempool, (image), (token), (generic_context)); \
 		(dest)->inst_basereg = got_loc->dreg;				\
 		(dest)->inst_p1 = group;				\
 		(dest)->type = (stack_type);				\
@@ -207,9 +207,9 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->dreg = alloc_dreg ((cfg), STACK_PTR);	\
     } while (0)
 
-#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type,stack_class) do {   \
+#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,generic_context,stack_type,stack_class) do { \
         MONO_INST_NEW ((cfg), (dest), OP_AOTCONST); \
-		(dest)->inst_p0 = mono_jump_info_token_new ((cfg)->mempool, (image), (token));	\
+		(dest)->inst_p0 = mono_jump_info_token_new2 ((cfg)->mempool, (image), (token), (generic_context)); \
 		(dest)->inst_p1 = (gpointer)(patch_type); \
 		(dest)->type = (stack_type);	\
         (dest)->klass = (stack_class);          \
@@ -230,15 +230,15 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_SFLDACONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_SFLDA, (val))
 
-#define NEW_LDSTRCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), STACK_OBJ, mono_defaults.string_class)
+#define NEW_LDSTRCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), NULL, STACK_OBJ, mono_defaults.string_class)
 
-#define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), STACK_OBJ, mono_defaults.monotype_class)
+#define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.monotype_class)
 
-#define NEW_LDTOKENCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), STACK_PTR, NULL)
+#define NEW_LDTOKENCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), NULL, STACK_PTR, NULL)
 
 #define NEW_DECLSECCONST(cfg,dest,image,entry) do { \
 		if (cfg->compile_aot) { \
-			NEW_AOTCONST_TOKEN (cfg, dest, MONO_PATCH_INFO_DECLSEC, image, (entry).index, STACK_OBJ, NULL); \
+			NEW_AOTCONST_TOKEN (cfg, dest, MONO_PATCH_INFO_DECLSEC, image, (entry).index, NULL, STACK_OBJ, NULL); \
 		} else { \
 			NEW_PCONST (cfg, args [0], (entry).blob); \
 		} \
@@ -367,25 +367,25 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define EMIT_NEW_AOTCONST(cfg,dest,patch_type,cons) do { NEW_AOTCONST ((cfg), (dest), (patch_type), (cons)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type,stack_class) do { NEW_AOTCONST_TOKEN ((cfg), (dest), (patch_type), (image), (token), (stack_type), (stack_class)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+#define EMIT_NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,stack_type,stack_class) do { NEW_AOTCONST_TOKEN ((cfg), (dest), (patch_type), (image), (token), NULL, (stack_type), (stack_class)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_CLASSCONST(cfg,dest,val) EMIT_NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_CLASS, (val))
+#define EMIT_NEW_CLASSCONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_CLASS, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_IMAGECONST(cfg,dest,val) EMIT_NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_IMAGE, (val))
+#define EMIT_NEW_IMAGECONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_IMAGE, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_FIELDCONST(cfg,dest,val) EMIT_NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_FIELD, (val))
+#define EMIT_NEW_FIELDCONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_FIELD, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_METHODCONST(cfg,dest,val) EMIT_NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_METHODCONST, (val))
+#define EMIT_NEW_METHODCONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_METHODCONST, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_VTABLECONST(cfg,dest,vtable) EMIT_NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, cfg->compile_aot ? (gpointer)((vtable)->klass) : (vtable))
+#define EMIT_NEW_VTABLECONST(cfg,dest,vtable) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_VTABLE, cfg->compile_aot ? (gpointer)((vtable)->klass) : (vtable)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_SFLDACONST(cfg,dest,val) EMIT_NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_SFLDA, (val))
+#define EMIT_NEW_SFLDACONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_SFLDA, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_LDSTRCONST(cfg,dest,image,token) EMIT_NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), STACK_OBJ, mono_defaults.string_class)
+#define EMIT_NEW_LDSTRCONST(cfg,dest,image,token) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), NULL, STACK_OBJ, mono_defaults.string_class); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token) EMIT_NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), STACK_OBJ, mono_defaults.monotype_class)
+#define EMIT_NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.monotype_class); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_LDTOKENCONST(cfg,dest,image,token) EMIT_NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), STACK_PTR, NULL)
+#define EMIT_NEW_LDTOKENCONST(cfg,dest,image,token) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), NULL, STACK_PTR, NULL); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_DOMAINCONST(cfg,dest) do { NEW_DOMAINCONST ((cfg), (dest)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 

@@ -66,7 +66,7 @@
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "39"
+#define MONO_AOT_FILE_VERSION "40"
  
 /* Per-domain information maintained by the JIT */
 typedef struct
@@ -745,6 +745,8 @@ typedef enum {
 typedef struct MonoJumpInfoToken {
 	MonoImage *image;
 	guint32 token;
+	gboolean has_context;
+	MonoGenericContext context;
 } MonoJumpInfoToken;
 
 typedef struct MonoJumpInfoBBTable {
@@ -1264,7 +1266,8 @@ void        mini_cleanup                   (MonoDomain *domain) MONO_INTERNAL;
 MonoDebugOptions *mini_get_debug_options   (void) MONO_INTERNAL;
 
 /* helper methods */
-MonoJumpInfoToken * mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token) MONO_INTERNAL;
+MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token) MONO_INTERNAL;
+MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context) MONO_INTERNAL;
 MonoInst* mono_find_spvar_for_region        (MonoCompile *cfg, int region) MONO_INTERNAL;
 void      mono_precompile_assemblies        (void) MONO_INTERNAL;
 int       mono_parse_default_optimizations  (const char* p);

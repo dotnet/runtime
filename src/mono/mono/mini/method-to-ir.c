@@ -8396,14 +8396,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 						ins = emit_get_rgctx_klass (cfg, context_used,
 							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
 					} else if (cfg->compile_aot) {
-						/*
-						 * FIXME: We would have to include the context into the 	 
-						 * aot constant too (tests/generic-array-type.2.exe
-						 * with -O=-inline).
-						 */ 	 
-						if (generic_context) 	 
-							cfg->disable_aot = TRUE;
-						EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n);
+						EMIT_NEW_TYPE_FROM_HANDLE_CONST (cfg, ins, image, n, generic_context);
 					} else {
 						EMIT_NEW_PCONST (cfg, ins, mono_type_get_object (cfg->domain, handle));
 					}

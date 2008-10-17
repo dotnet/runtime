@@ -277,6 +277,29 @@ decode_generic_inst (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 	return inst;
 }
 
+static gboolean
+decode_generic_context (MonoAotModule *module, MonoGenericContext *ctx, guint8 *buf, guint8 **endbuf)
+{
+	gboolean has_class_inst, has_method_inst;
+	guint8 *p = buf;
+
+	has_class_inst = decode_value (p, &p);
+	if (has_class_inst) {
+		ctx->class_inst = decode_generic_inst (module, p, &p);
+		if (!ctx->class_inst)
+			return FALSE;
+	}
+	has_method_inst = decode_value (p, &p);
+	if (has_method_inst) {
+		ctx->method_inst = decode_generic_inst (module, p, &p);
+		if (!ctx->method_inst)
+			return FALSE;
+	}
+
+	*endbuf = p;
+	return TRUE;
+}
+
 static MonoClass*
 decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 {
@@ -512,7 +535,6 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		/* Method on generic instance */
 		MonoClass *klass;
 		MonoGenericContext ctx;
-		gboolean has_class_inst, has_method_inst;
 
 		/* 
 		 * These methods do not have a token which resolves them, so we 
@@ -544,19 +566,8 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 
 		memset (&ctx, 0, sizeof (ctx));
 
-		// FIXME: Memory management
-		has_class_inst = decode_value (p, &p);
-		if (has_class_inst) {
-			ctx.class_inst = decode_generic_inst (module, p, &p);
-			if (!ctx.class_inst)
-				return NULL;
-		}
-		has_method_inst = decode_value (p, &p);
-		if (has_method_inst) {
-			ctx.method_inst = decode_generic_inst (module, p, &p);
-			if (!ctx.method_inst)
-				return NULL;
-		}
+		if (!decode_generic_context (module, &ctx, p, &p))
+			return NULL;
 
 		*method = mono_class_inflate_generic_method_full (*method, klass, &ctx);
 	} else {
@@ -1662,6 +1673,13 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		if (!image)
 			goto cleanup;
 		ji->data.token = mono_jump_info_token_new (mp, image, decode_value (p, &p));
+
+		ji->data.token->has_context = decode_value (p, &p);
+		if (ji->data.token->has_context) {
+			gboolean res = decode_generic_context (aot_module, &ji->data.token->context, p, &p);
+			if (!res)
+				goto cleanup;
+		}
 		break;
 	case MONO_PATCH_INFO_EXC_NAME:
 		ji->data.klass = decode_klass_ref (aot_module, p, &p);

@@ -412,13 +412,22 @@ void *mono_global_codeman_reserve (int size)
 }
 
 MonoJumpInfoToken *
-mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
+mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context)
 {
 	MonoJumpInfoToken *res = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoToken));
 	res->image = image;
 	res->token = token;
+	res->has_context = context != NULL;
+	if (context)
+		memcpy (&res->context, context, sizeof (MonoGenericContext));
 
 	return res;
+}
+
+MonoJumpInfoToken *
+mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token)
+{
+	return mono_jump_info_token_new2 (mp, image, token, NULL);
 }
 
 #define MONO_INIT_VARINFO(vi,id) do { \
@@ -11459,7 +11468,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		MonoClass *handle_class;
 
 		handle = mono_ldtoken (patch_info->data.token->image, 
-				       patch_info->data.token->token, &handle_class, NULL);
+							   patch_info->data.token->token, &handle_class, patch_info->data.token->has_context ? &patch_info->data.token->context : NULL);
 		mono_class_init (handle_class);
 		mono_class_init (mono_class_from_mono_type (handle));
 
