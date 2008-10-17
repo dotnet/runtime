@@ -1,5 +1,9 @@
 2008-10-16  Jonathan Pryor  <jpryor@novell.com>
 
+	* scripts/Makefile.am: Create scripts for mdoc sub-commands.
+
+2008-10-16  Jonathan Pryor  <jpryor@novell.com>
+
 	* scripts/Makefile.am: Add mod.
 
 2008-10-16  Jonathan Pryor  <jpryor@novell.com>
