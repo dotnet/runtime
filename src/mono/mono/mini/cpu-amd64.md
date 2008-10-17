@@ -349,7 +349,7 @@ int_sub_imm: dest:i src1:i clob:1 len:8
 int_mul_imm: dest:i src1:i clob:1 len:32
 int_div_imm: dest:a src1:i clob:d len:32
 int_div_un_imm: dest:a src1:i clob:d len:32
-int_rem_imm: dest:d src1:i clob:a len:32
+int_rem_imm: dest:a src1:a len:32 clob:d
 int_rem_un_imm: dest:d src1:i clob:a len:32
 int_and_imm: dest:i src1:i clob:1 len:8
 int_or_imm: dest:i src1:i clob:1 len:8
