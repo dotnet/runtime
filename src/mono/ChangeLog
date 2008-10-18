@@ -1,8 +1,16 @@
-2008-10-16  Jonathan Pryor  <jpryor@novell.com>
+2008-10-17  Jonathan Pryor  <jpryor@novell.com>
+
+	* scripts/Makefile.am: Install scripts for mdoc-compat commands.
+	* scripts (svn:ignore): Ignore generated files.
+	* mdassembler, mdvalidater, monodocer, monodocs2html, 
+	  monodocs2slashdoc: Added; "compatibility" scripts, converting the
+	  previous commands into mdoc commands.
+
+2008-10-17  Jonathan Pryor  <jpryor@novell.com>
 
 	* scripts/Makefile.am: Create scripts for mdoc sub-commands.
 
-2008-10-16  Jonathan Pryor  <jpryor@novell.com>
+2008-10-17  Jonathan Pryor  <jpryor@novell.com>
 
 	* scripts/Makefile.am: Add mod.
 
