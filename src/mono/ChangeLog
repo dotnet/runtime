@@ -1,5 +1,9 @@
 2008-10-18  Jonathan Pryor  <jpryor@novell.com>
 
+	* data/Makefile.am: Add monodoc.pc to $(pkgconfig_DATA), $(DISTCLEANFILES).
+
+2008-10-18  Jonathan Pryor  <jpryor@novell.com>
+
 	* data/monodoc.pc.in: Fixup sourcesdir.
 	* data/Makefile.am (EXTRA_DIST): Add monodoc.pc.in.
 
