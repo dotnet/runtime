@@ -1867,8 +1867,10 @@ find_extra_method (MonoDomain *domain, MonoMethod *method)
 		}
 	}
 
-	// FIXME:
-	hash = 0 % table_size;
+	if (method->wrapper_type)
+		hash = g_str_hash (method->name) % table_size;
+	else
+		hash = 0 % table_size;
 
 	entry = &table [hash * entry_size];
 

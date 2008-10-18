@@ -4005,8 +4005,12 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 		key = info_offsets [i];
 		value = get_method_index (acfg, method);
-		// FIXME:
-		hash = 0 % table_size;
+		if (method->wrapper_type) {
+			hash = g_str_hash (method->name) % table_size;
+		} else {
+			// FIXME:
+			hash = 0 % table_size;
+		}
 
 		/* FIXME: Allocate from the mempool */
 		new_entry = g_new0 (HashEntry, 1);
