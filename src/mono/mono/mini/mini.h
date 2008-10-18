@@ -66,7 +66,7 @@
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "40"
+#define MONO_AOT_FILE_VERSION "41"
  
 /* Per-domain information maintained by the JIT */
 typedef struct

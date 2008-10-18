@@ -11326,7 +11326,10 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_DECLSEC:
 		if ((ji1->data.token->image != ji2->data.token->image) ||
-			(ji1->data.token->token != ji2->data.token->token))
+			(ji1->data.token->token != ji2->data.token->token) || 
+			(ji1->data.token->has_context != ji2->data.token->has_context) ||
+			(ji1->data.token->context.class_inst != ji2->data.token->context.class_inst) ||
+			(ji1->data.token->context.method_inst != ji2->data.token->context.method_inst))
 			return 0;
 		break;
 	default:

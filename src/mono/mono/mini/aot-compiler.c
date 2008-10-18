@@ -146,6 +146,8 @@ typedef struct MonoAotCompile {
 	GHashTable *image_hash;
 	GHashTable *method_to_cfg;
 	GHashTable *token_info_hash;
+	GPtrArray *extra_methods;
+	GHashTable *extra_methods_hash;
 	GPtrArray *image_table;
 	GPtrArray *globals;
 	GList *method_order;
@@ -2320,6 +2322,43 @@ add_wrappers (MonoAotCompile *acfg)
 #endif
 }
 
+/*
+ * add_methodspecs:
+ *
+ *   Add methods referenced by the METHODSPEC table.
+ */
+static void
+add_methodspecs (MonoAotCompile *acfg)
+{
+	int i;
+	guint32 token;
+	MonoMethod *method;
+	MonoGenericContext *context;
+
+	/* FIXME: Only add instantiations with vtype arguments */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
+		token = MONO_TOKEN_METHOD_SPEC | (i + 1);
+		method = mono_get_method (acfg->image, token, NULL);
+
+		context = mono_method_get_context (method);
+		if (context && ((context->class_inst && context->class_inst->is_open) ||
+						(context->method_inst && context->method_inst->is_open)))
+			continue;
+
+		if (method->klass->image != acfg->image)
+			continue;
+
+		if (mono_method_is_generic_sharable_impl (method, FALSE))
+			/* Already added */
+			continue;
+
+		add_method (acfg, method);
+
+		g_ptr_array_add (acfg->extra_methods, method);
+		g_hash_table_insert (acfg->extra_methods_hash, method, method);
+	}
+}
+
 static void
 emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, guint32 code_len, MonoJumpInfo *relocs, gboolean got_only)
 {
@@ -2383,8 +2422,20 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				if (!got_only && (patch_info->type == MONO_PATCH_INFO_METHOD) && (patch_info->data.method->klass->image == method->klass->image)) {
 					MonoCompile *callee_cfg = g_hash_table_lookup (acfg->method_to_cfg, patch_info->data.method);
 					if (callee_cfg) {
-						if (!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)) {
-							//printf ("DIRECT: %s %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (callee_cfg->method, TRUE));
+						gboolean direct_callable = TRUE;
+
+						if (direct_callable && !(!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+							direct_callable = FALSE;
+						/* 
+						 * FIXME: mono_aot_find_jit_info () needs to construct the 
+						 * MonoMethod belonging to a piece of code, and it can't
+						 * do it for generic instances.
+						 */
+						if (direct_callable && callee_cfg->method->is_inflated && g_hash_table_lookup (acfg->extra_methods_hash, callee_cfg->method))
+							direct_callable = FALSE;
+						
+						if (direct_callable) {
+							printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
 							direct_call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, callee_cfg->orig_method));
 							patch_info->type = MONO_PATCH_INFO_NONE;
 							acfg->stats.direct_calls ++;
@@ -3662,6 +3713,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	g_hash_table_insert (acfg->method_to_cfg, cfg->orig_method, cfg);
 
+	if (cfg->orig_method->wrapper_type) {
+		g_ptr_array_add (acfg->extra_methods, cfg->orig_method);
+		g_hash_table_insert (acfg->extra_methods_hash, cfg->orig_method, cfg->orig_method);
+	}
+
 	acfg->stats.ccount++;
 }
 
@@ -3851,51 +3907,154 @@ emit_info (MonoAotCompile *acfg)
 	}
 	emit_line (acfg);
 }
+ 
+typedef struct HashEntry {
+    guint32 key, value, index;
+	struct HashEntry *next;
+} HashEntry;
 
+/*
+ * emit_extra_methods:
+ *
+ * Emit methods which are not in the METHOD table, like wrappers.
+ */
 static void
-emit_wrapper_info (MonoAotCompile *acfg)
+emit_extra_methods (MonoAotCompile *acfg)
 {
-	int i, index;
+	int i, table_size, buf_size;
 	char *symbol;
-	char *name;
+	guint8 *p, *buf;
+	guint32 *info_offsets;
+	guint32 hash;
+	GPtrArray *table;
+	HashEntry *entry, *new_entry;
+	int nmethods;
+
+	info_offsets = g_new0 (guint32, acfg->nmethods);
+
+	buf_size = acfg->extra_methods->len * 256 + 256;
+	p = buf = g_malloc (buf_size);
+
+	/* Encode method info */
+	nmethods = 0;
+	/* So offsets are > 0 */
+	p++;
+	for (i = 0; i < acfg->extra_methods->len; ++i) {
+		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
+		MonoCompile *cfg = g_hash_table_lookup (acfg->method_to_cfg, method);
+
+		if (!cfg)
+			continue;
+
+		nmethods ++;
+		info_offsets [i] = p - buf;
+
+		if (method->wrapper_type) {
+			char *name;
+
+			// FIXME: Optimize disk usage
+			if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+				name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
+				g_free (tmpsig);
+			} else {
+				name = mono_method_full_name (cfg->orig_method, TRUE);
+			}
+
+			encode_value (1, p, &p);
+			strcpy ((char*)p, name);
+			p += strlen (name ) + 1;
+			g_free (name);
+		} else {
+			encode_value (0, p, &p);
+			encode_method_ref (acfg, method, p, &p);
+		}
+
+		g_assert ((p - buf) < buf_size);
+	}
+
+	g_assert ((p - buf) < buf_size);
 
 	/* Emit method info */
-	symbol = g_strdup_printf ("wrapper_info");
+	symbol = g_strdup_printf ("extra_method_info");
 	emit_section_change (acfg, ".text", 1);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 	g_free (symbol);
 
-	if (!acfg->aot_opts.full_aot)
-		return;
-
-	for (i = 0; i < acfg->nmethods; ++i) {
-		MonoCompile *cfg = acfg->cfgs [i];
-		MonoMethod *method;
-
-		if (!cfg || !cfg->orig_method->wrapper_type)
-			continue;
-
-		method = cfg->orig_method;
-		index = get_method_index (acfg, method);
-
-		// FIXME: Optimize disk usage and lookup speed
-		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		} else {
-			name = mono_method_full_name (cfg->orig_method, TRUE);
-		}
-		emit_string (acfg, name);
-		emit_alignment (acfg, 4);
-		emit_int32 (acfg, index);
-	}
-
-	emit_byte (acfg, 0);
+	emit_bytes (acfg, buf, p - buf);
 
 	emit_line (acfg);
+
+	/*
+	 * Construct a chained hash table for mapping indexes in extra_method_info to
+	 * method indexes.
+	 */
+	table_size = g_spaced_primes_closest ((int)(nmethods * 1.5));
+	table = g_ptr_array_sized_new (table_size);
+	for (i = 0; i < table_size; ++i)
+		g_ptr_array_add (table, NULL);
+	for (i = 0; i < acfg->extra_methods->len; ++i) {
+		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
+		MonoCompile *cfg = g_hash_table_lookup (acfg->method_to_cfg, method);
+		guint32 key, value;
+
+		if (!cfg)
+			continue;
+
+		key = info_offsets [i];
+		value = get_method_index (acfg, method);
+		// FIXME:
+		hash = 0 % table_size;
+
+		/* FIXME: Allocate from the mempool */
+		new_entry = g_new0 (HashEntry, 1);
+		new_entry->key = key;
+		new_entry->value = value;
+
+		entry = g_ptr_array_index (table, hash);
+		if (entry == NULL) {
+			new_entry->index = hash;
+			g_ptr_array_index (table, hash) = new_entry;
+		} else {
+			while (entry->next)
+				entry = entry->next;
+			
+			entry->next = new_entry;
+			new_entry->index = table->len;
+			g_ptr_array_add (table, new_entry);
+		}
+	}
+
+	/* Emit the table */
+	symbol = g_strdup_printf ("extra_method_table");
+	emit_section_change (acfg, ".text", 0);
+	emit_global (acfg, symbol, FALSE);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	g_free (symbol);
+
+	g_assert (table_size < 65000);
+	emit_int32 (acfg, table_size);
+	g_assert (table->len < 65000);
+	for (i = 0; i < table->len; ++i) {
+		HashEntry *entry = g_ptr_array_index (table, i);
+
+		if (entry == NULL) {
+			emit_int32 (acfg, 0);
+			emit_int32 (acfg, 0);
+			emit_int32 (acfg, 0);
+		} else {
+			g_assert (entry->key > 0);
+			emit_int32 (acfg, entry->key);
+			emit_int32 (acfg, entry->value);
+			if (entry->next)
+				emit_int32 (acfg, entry->next->index);
+			else
+				emit_int32 (acfg, 0);
+		}
+	}
 }	
 
 static void
@@ -4438,6 +4597,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->image = image;
 	acfg->opts = opts;
 	acfg->mempool = mono_mempool_new ();
+	acfg->extra_methods = g_ptr_array_new ();
+	acfg->extra_methods_hash = g_hash_table_new (NULL, NULL);
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
@@ -4468,6 +4629,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->method_index ++;
 	}
 
+	add_methodspecs (acfg);
+
 	if (acfg->aot_opts.full_aot)
 		add_wrappers (acfg);
 
@@ -4489,7 +4652,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_info (acfg);
 
-	emit_wrapper_info (acfg);
+	emit_extra_methods (acfg);
 
 	emit_method_order (acfg);
 

@@ -6029,7 +6029,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 							cmethod, MONO_RGCTX_INFO_METHOD_CONTEXT);
 
 					} else {
-						g_assert (!cfg->compile_aot);
+						// FIXME:
+						cfg->disable_aot = TRUE;
 						g_assert (cmethod->is_inflated);
 						EMIT_NEW_PCONST (cfg, imt_arg,
 							((MonoMethodInflated*)cmethod)->context.method_inst);
