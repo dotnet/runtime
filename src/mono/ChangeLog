@@ -1,5 +1,9 @@
 2008-10-18  Jonathan Pryor  <jpryor@novell.com>
 
+	* configure.in: Generate data/monodoc.pc.
+
+2008-10-18  Jonathan Pryor  <jpryor@novell.com>
+
 	* data/Makefile.am: Add monodoc.pc to $(pkgconfig_DATA), $(DISTCLEANFILES).
 
 2008-10-18  Jonathan Pryor  <jpryor@novell.com>
