@@ -2745,6 +2745,56 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 	return code;
 }
 
+/* This must be kept in sync with emit_load_volatile_arguments(). */
+static int
+ins_native_length (MonoCompile *cfg, MonoInst *ins)
+{
+	int len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+	MonoMethodSignature *sig;
+	MonoCallInst *call;
+	CallInfo *cinfo;
+	int i;
+
+	if (ins->opcode != OP_JMP)
+		return len;
+
+	call = (MonoCallInst*)ins;
+	sig = mono_method_signature (cfg->method);
+	cinfo = calculate_sizes (sig, sig->pinvoke);
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
+		len += 4;
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ArgInfo *ainfo = cinfo->args + i;
+
+		switch (ainfo->regtype) {
+		case RegTypeGeneral:
+		case RegTypeFP:
+			len += 4;
+			break;
+
+		case RegTypeBase:
+			len += 8;
+			break;
+
+		case RegTypeStructByVal:
+			len += 4 * ainfo->size;
+			break;
+
+		case RegTypeStructByAddr:
+			len += 4;
+			break;
+
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	g_free (cinfo);
+
+	return len;
+}
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -2777,7 +2827,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MONO_BB_FOR_EACH_INS (bb, ins) {
 		offset = code - cfg->native_code;
 
-		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+		max_len = ins_native_length (cfg, ins);
 
 		if (offset > (cfg->code_size - max_len - 16)) {
 			cfg->code_size *= 2;
@@ -3961,7 +4011,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			max_offset += 6; 
 
 		MONO_BB_FOR_EACH_INS (bb, ins)
-			max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+			max_offset += ins_native_length (cfg, ins);
 	}
 
 	/* load arguments allocated to register from the stack */
