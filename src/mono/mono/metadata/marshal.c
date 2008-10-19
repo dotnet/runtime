@@ -2783,6 +2783,25 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 	}
 }
 
+/*
+ * Return the hash table pointed to by VAR, lazily creating it if neccesary.
+ */
+static GHashTable*
+get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
+{
+	if (!(*var)) {
+		mono_marshal_lock ();
+		if (!(*var)) {
+			GHashTable *cache = 
+				g_hash_table_new (hash_func, equal_func);
+			mono_memory_barrier ();
+			*var = cache;
+		}
+		mono_marshal_unlock ();
+	}
+	return *var;
+}
+
 static inline MonoMethod*
 mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
 {
@@ -4704,6 +4723,118 @@ add_string_ctor_signature (MonoMethod *method)
 	return callsig;
 }
 
+static inline MonoType*
+get_basic_type (MonoType *t)
+{
+	switch (t->type) {
+	case MONO_TYPE_U1:
+		return &mono_defaults.sbyte_class->byval_arg;
+	case MONO_TYPE_U2:
+		return &mono_defaults.int16_class->byval_arg;
+	case MONO_TYPE_U4:
+		return &mono_defaults.int32_class->byval_arg;
+	case MONO_TYPE_U8:
+		return &mono_defaults.int64_class->byval_arg;
+	case MONO_TYPE_BOOLEAN:
+		return &mono_defaults.byte_class->byval_arg;
+	case MONO_TYPE_CHAR:
+		return &mono_defaults.int16_class->byval_arg;
+	case MONO_TYPE_U:
+		return &mono_defaults.int_class->byval_arg;
+	case MONO_TYPE_VALUETYPE:
+		if (t->data.klass->enumtype)
+			return mono_type_get_underlying_type (t);
+		else
+			return t;
+	default:
+		return t;
+	}
+}
+
+static inline gboolean
+runtime_invoke_type_equal (MonoType *t1, MonoType *t2)
+{
+	if (MONO_TYPE_IS_REFERENCE (t1) && MONO_TYPE_IS_REFERENCE (t2))
+		return TRUE;
+	else if (t1->byref != t2->byref)
+		return FALSE;
+	else if (t1->byref && t2->byref)
+		return TRUE;
+	else if (t1->type == MONO_TYPE_PTR && t2->type == MONO_TYPE_PTR)
+		return TRUE;
+	else {
+		t1 = get_basic_type (t1);
+		t2 = get_basic_type (t2);
+
+		return mono_metadata_type_equal (t1, t2);
+	}
+}
+
+static inline guint
+runtime_invoke_type_hash (MonoType *t1)
+{
+	if (MONO_TYPE_IS_REFERENCE (t1))
+		return 0;
+	else if (t1->byref)
+		return 1;
+	else if (t1->type == MONO_TYPE_PTR)
+		return 2;
+	else
+		return mono_metadata_type_hash (get_basic_type (t1));
+}
+
+/*
+ * runtime_invoke_signature_equal:
+ *
+ *   Same as mono_metadata_signature_equal, but consider reference types equal.
+ */
+static gboolean
+runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	int i;
+
+	if (sig1->hasthis != sig2->hasthis || sig1->param_count != sig2->param_count)
+		return FALSE;
+
+	if (sig1->generic_param_count != sig2->generic_param_count)
+		return FALSE;
+
+	/*
+	 * We're just comparing the signatures of two methods here:
+	 *
+	 * If we have two generic methods `void Foo<U> (U u)' and `void Bar<V> (V v)',
+	 * U and V are equal here.
+	 *
+	 * That's what the `signature_only' argument of do_mono_metadata_type_equal() is for.
+	 */
+
+	for (i = 0; i < sig1->param_count; i++) { 
+		MonoType *p1 = sig1->params[i];
+		MonoType *p2 = sig2->params[i];
+		
+		/* if (p1->attrs != p2->attrs)
+			return FALSE;
+		*/
+		if (!runtime_invoke_type_equal (p1, p2))
+			return FALSE;
+	}
+
+	if (!runtime_invoke_type_equal (sig1->ret, sig2->ret))
+		return FALSE;
+	return TRUE;
+}
+
+static guint
+runtime_invoke_signature_hash (MonoMethodSignature *sig)
+{
+	guint i, res = sig->ret->type;
+
+	for (i = 0; i < sig->param_count; i++)
+		res = (res << 5) - res + runtime_invoke_type_hash (sig->params[i]);
+
+	return res;
+}
+
 /*
  * generates IL code for the runtime invoke function 
  * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc, void* method)
@@ -4801,10 +4932,12 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	}
 
 	if (need_direct_wrapper) {
-		cache = target_klass->image->runtime_invoke_direct_cache;
+		cache = get_cache (&target_klass->image->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
 		res = mono_marshal_find_in_cache (cache, method);
 	} else {
-		cache = target_klass->image->runtime_invoke_cache;
+		cache = get_cache (&target_klass->image->runtime_invoke_cache, 
+						   (GHashFunc)runtime_invoke_signature_hash, 
+						   (GCompareFunc)runtime_invoke_signature_equal);
 
 		/* from mono_marshal_find_in_cache */
 		mono_marshal_lock ();
