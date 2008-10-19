@@ -1225,8 +1225,9 @@ mono_save_token_info (MonoCompile *cfg, MonoImage *image, guint32 token, gpointe
 	/* 
 	 * Don't use this if a generic_context is set, since that means AOT can't
 	 * look up the method using just the image+token.
+	 * table == 0 means this is a reference made from a wrapper.
 	 */
-	if (cfg->compile_aot && !cfg->generic_context) {
+	if (cfg->compile_aot && !cfg->generic_context && (mono_metadata_token_table (token) > 0)) {
 		MonoJumpInfoToken *jump_info_token = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoToken));
 		jump_info_token->image = image;
 		jump_info_token->token = token;
