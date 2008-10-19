@@ -494,7 +494,7 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 
 	m = NULL;
 	if (klass->generic_class)
-		m = mono_class_get_inflated_method (klass, method);
+		m = mono_class_get_inflated_method (klass, declaring);
 
 	if (!m) {
 		mono_class_setup_methods (klass);
