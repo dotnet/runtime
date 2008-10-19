@@ -492,16 +492,22 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 	else
 		declaring = method;
 
-	mono_class_setup_methods (klass);
-	for (i = 0; i < klass->method.count; ++i) {
-		m = klass->methods [i];
-		if (m == declaring)
-			break;
-		if (m->is_inflated && mono_method_get_declaring_generic_method (m) == declaring)
-			break;
+	m = NULL;
+	if (klass->generic_class)
+		m = mono_class_get_inflated_method (klass, method);
+
+	if (!m) {
+		mono_class_setup_methods (klass);
+		for (i = 0; i < klass->method.count; ++i) {
+			m = klass->methods [i];
+			if (m == declaring)
+				break;
+			if (m->is_inflated && mono_method_get_declaring_generic_method (m) == declaring)
+				break;
+		}
+		if (i >= klass->method.count)
+			return NULL;
 	}
-	if (i >= klass->method.count)
-		return NULL;
 
 	if (method != declaring) {
 		MonoGenericContext context;

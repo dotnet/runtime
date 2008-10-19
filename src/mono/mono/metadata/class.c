@@ -1614,6 +1614,31 @@ mono_class_get_method_by_index (MonoClass *class, int index)
 	}
 }	
 
+/*
+ * mono_class_get_inflated_method:
+ *
+ *   Given an inflated class CLASS and a method METHOD which should be a method of
+ * CLASS's generic definition, return the inflated method corresponding to METHOD.
+ */
+MonoMethod*
+mono_class_get_inflated_method (MonoClass *class, MonoMethod *method)
+{
+	MonoClass *gklass = class->generic_class->container_class;
+	int i;
+
+	mono_class_setup_methods (gklass);
+	for (i = 0; i < gklass->method.count; ++i) {
+		if (gklass->methods [i] == method) {
+			if (class->methods)
+				return class->methods [i];
+			else
+				return mono_class_inflate_generic_method_full (gklass->methods [i], class, mono_class_get_context (class));
+		}
+	}
+
+	return NULL;
+}	
+
 static void
 mono_class_setup_properties (MonoClass *class)
 {
@@ -5692,6 +5717,9 @@ mono_class_get_cctor (MonoClass *klass)
 
 	if (mono_class_get_cached_class_info (klass, &cached_info))
 		return mono_get_method (klass->image, cached_info.cctor_token, klass);
+
+	if (klass->generic_class && !klass->methods)
+		return mono_class_get_inflated_method (klass, mono_class_get_cctor (klass->generic_class->container_class));
 
 	return mono_class_get_method_from_name_flags (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME);
 }
