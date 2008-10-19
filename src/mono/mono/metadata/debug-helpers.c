@@ -149,8 +149,8 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 			}
 		}
 		if (context->method_inst) {
-			if (context->class_inst
-)					g_string_append (res, "; ");
+			if (context->class_inst)
+					g_string_append (res, "; ");
 			for (i = 0; i < context->method_inst->type_argc; ++i) {
 				if (i > 0)
 					g_string_append (res, ", ");
@@ -202,23 +202,33 @@ mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace)
 	return result;
 }
 
+static void
+ginst_get_desc (GString *str, MonoGenericInst *ginst)
+{
+	int i;
+
+	for (i = 0; i < ginst->type_argc; ++i) {
+		if (i > 0)
+			g_string_append (str, ", ");
+		mono_type_get_desc (str, ginst->type_argv [i], TRUE);
+	}
+}
+
 char*
 mono_context_get_desc (MonoGenericContext *context)
 {
 	GString *str;
 	char *res;
-	int i;
 
 	str = g_string_new ("");
 	g_string_append (str, "<");
 
-	if (context->class_inst) {
-		for (i = 0; i < context->class_inst->type_argc; ++i)
-			mono_type_get_desc (str, context->class_inst->type_argv [i], TRUE);
-	}
+	if (context->class_inst)
+		ginst_get_desc (str, context->class_inst);
 	if (context->method_inst) {
-		for (i = 0; i < context->method_inst->type_argc; ++i)
-			mono_type_get_desc (str, context->method_inst->type_argv [i], TRUE);
+		if (context->class_inst)
+			g_string_append (str, "; ");
+		ginst_get_desc (str, context->method_inst);
 	}
 
 	g_string_append (str, ">");
@@ -625,6 +635,17 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 	char *res;
 	char wrapper [64];
 	char *klass_desc = mono_type_full_name (&method->klass->byval_arg);
+	char *inst_desc = NULL;
+
+	if (method->is_inflated && ((MonoMethodInflated*)method)->context.method_inst) {
+		GString *str = g_string_new ("");
+		g_string_append (str, "<");
+		ginst_get_desc (str, ((MonoMethodInflated*)method)->context.method_inst);
+		g_string_append (str, ">");
+
+		inst_desc = str->str;
+		g_string_free (str, FALSE);
+	}
 
 	if (signature) {
 		char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
@@ -633,16 +654,17 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 			sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
 		else
 			strcpy (wrapper, "");
-		res = g_strdup_printf ("%s%s:%s (%s)", wrapper, klass_desc, 
-							   method->name, tmpsig);
+		res = g_strdup_printf ("%s%s:%s%s (%s)", wrapper, klass_desc, 
+							   method->name, inst_desc ? inst_desc : "", tmpsig);
 		g_free (tmpsig);
 	} else {
 
-		res = g_strdup_printf ("%02d %s:%s", method->wrapper_type, klass_desc,
-							   method->name);
+		res = g_strdup_printf ("%02d %s:%s%s", method->wrapper_type, klass_desc,
+							   method->name, inst_desc ? inst_desc : "");
 	}
 
 	g_free (klass_desc);
+	g_free (inst_desc);
 
 	return res;
 }
