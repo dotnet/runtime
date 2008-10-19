@@ -2426,14 +2426,6 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 
 						if (direct_callable && !(!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
 							direct_callable = FALSE;
-						/* 
-						 * FIXME: mono_aot_find_jit_info () needs to construct the 
-						 * MonoMethod belonging to a piece of code, and it can't
-						 * do it for generic instances.
-						 */
-						if (direct_callable && callee_cfg->method->is_inflated && g_hash_table_lookup (acfg->extra_methods_hash, callee_cfg->method))
-							direct_callable = FALSE;
-						
 						if (direct_callable) {
 							//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
 							direct_call_target = g_strdup_printf (".Lm_%x", get_method_index (acfg, callee_cfg->orig_method));
@@ -3938,6 +3930,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	/* Encode method info */
 	nmethods = 0;
 	/* So offsets are > 0 */
+	*p = 0;
 	p++;
 	for (i = 0; i < acfg->extra_methods->len; ++i) {
 		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
@@ -4005,6 +3998,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 		key = info_offsets [i];
 		value = get_method_index (acfg, method);
+
 		if (method->wrapper_type) {
 			hash = g_str_hash (method->name) % table_size;
 		} else {
@@ -4058,6 +4052,25 @@ emit_extra_methods (MonoAotCompile *acfg)
 			else
 				emit_int32 (acfg, 0);
 		}
+	}
+
+	/* 
+	 * Emit a table reverse mapping method indexes to their index in extra_method_info.
+	 * This is used by mono_aot_find_jit_info ().
+	 */
+	symbol = g_strdup_printf ("extra_method_info_offsets");
+	emit_section_change (acfg, ".text", 0);
+	emit_global (acfg, symbol, FALSE);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	g_free (symbol);
+
+	emit_int32 (acfg, acfg->extra_methods->len);
+	for (i = 0; i < acfg->extra_methods->len; ++i) {
+		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
+
+		emit_int32 (acfg, get_method_index (acfg, method));
+		emit_int32 (acfg, info_offsets [i]);
 	}
 }	
 

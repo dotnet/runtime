@@ -107,6 +107,7 @@ typedef struct MonoAotModule {
 	guint32 *methods_loaded;
 	guint16 *class_name_table;
 	guint32 *extra_method_table;
+	guint32 *extra_method_info_offsets;
 	guint8 *extra_method_info;
 	guint8 *trampolines;
 	guint32 num_trampolines, first_trampoline_got_offset, trampoline_index;
@@ -973,6 +974,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "class_name_table", (gpointer *)&amodule->class_name_table);
 	find_symbol (sofile, globals, "extra_method_table", (gpointer *)&amodule->extra_method_table);
 	find_symbol (sofile, globals, "extra_method_info", (gpointer *)&amodule->extra_method_info);
+	find_symbol (sofile, globals, "extra_method_info_offsets", (gpointer *)&amodule->extra_method_info_offsets);
 	find_symbol (sofile, globals, "got_info", (gpointer*)&amodule->got_info);
 	find_symbol (sofile, globals, "got_info_offsets", (gpointer*)&amodule->got_info_offsets);
 	find_symbol (sofile, globals, "trampolines", (gpointer*)&amodule->trampolines);
@@ -1398,26 +1400,28 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 MonoJitInfo *
 mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
-	int pos, left, right, offset, offset1, offset2, last_offset, new_offset, page_index, method_index, table_len;
+
+	int pos, left, right, offset, offset1, offset2, last_offset, new_offset;
+	int page_index, method_index, table_len, is_wrapper;
 	guint32 token;
-	MonoAotModule *aot_module = image->aot_module;
+	MonoAotModule *amodule = image->aot_module;
 	MonoMethod *method;
 	MonoJitInfo *jinfo;
-	guint8 *code, *ex_info;
+	guint8 *code, *ex_info, *p;
 	guint32 *table, *ptr;
 	gboolean found;
 
-	if (!aot_module)
+	if (!amodule)
 		return NULL;
 
 	if (domain != mono_get_root_domain ())
 		/* FIXME: */
 		return NULL;
 
-	offset = (guint8*)addr - aot_module->code;
+	offset = (guint8*)addr - amodule->code;
 
 	/* First search through the index */
-	ptr = aot_module->method_order;
+	ptr = amodule->method_order;
 	last_offset = 0;
 	page_index = 0;
 	found = FALSE;
@@ -1428,7 +1432,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	while (*ptr != 0xffffff) {
 		guint32 method_index = ptr [0];
-		new_offset = aot_module->code_offsets [method_index];
+		new_offset = amodule->code_offsets [method_index];
 
 		if (offset >= last_offset && offset < new_offset) {
 			found = TRUE;
@@ -1446,9 +1450,9 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	ptr ++;
 
 	table = ptr;
-	table_len = aot_module->method_order_end - table;
+	table_len = amodule->method_order_end - table;
 
-	g_assert (table <= aot_module->method_order_end);
+	g_assert (table <= amodule->method_order_end);
 
 	if (found) {
 		left = (page_index * 1024);
@@ -1457,7 +1461,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 		if (right > table_len)
 			right = table_len;
 
-		offset1 = aot_module->code_offsets [table [left]];
+		offset1 = amodule->code_offsets [table [left]];
 		g_assert (offset1 <= offset);
 
 		//printf ("Found in index: 0x%x 0x%x 0x%x\n", offset, last_offset, new_offset);
@@ -1472,15 +1476,15 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	while (TRUE) {
 		pos = (left + right) / 2;
 
-		g_assert (table + pos <= aot_module->method_order_end);
+		g_assert (table + pos <= amodule->method_order_end);
 
-		//printf ("Pos: %5d < %5d < %5d Offset: 0x%05x < 0x%05x < 0x%05x\n", left, pos, right, aot_module->code_offsets [table [left]], offset, aot_module->code_offsets [table [right]]);
+		//printf ("Pos: %5d < %5d < %5d Offset: 0x%05x < 0x%05x < 0x%05x\n", left, pos, right, amodule->code_offsets [table [left]], offset, amodule->code_offsets [table [right]]);
 
-		offset1 = aot_module->code_offsets [table [pos]];
-		if (table + pos + 1 >= aot_module->method_order_end)
-			offset2 = aot_module->code_end - aot_module->code;
+		offset1 = amodule->code_offsets [table [pos]];
+		if (table + pos + 1 >= amodule->method_order_end)
+			offset2 = amodule->code_end - amodule->code;
 		else
-			offset2 = aot_module->code_offsets [table [pos + 1]];
+			offset2 = amodule->code_offsets [table [pos + 1]];
 
 		if (offset < offset1)
 			right = pos;
@@ -1493,24 +1497,49 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	method_index = table [pos];
 
 	/* Might be a wrapper/extra method */
-	if (aot_module->extra_methods) {
+	if (amodule->extra_methods) {
 		mono_aot_lock ();
-		method = g_hash_table_lookup (aot_module->extra_methods, GUINT_TO_POINTER (method_index));
+		method = g_hash_table_lookup (amodule->extra_methods, GUINT_TO_POINTER (method_index));
 		mono_aot_unlock ();
 	} else {
 		method = NULL;
 	}
 
 	if (!method) {
-		/* 
-		 * This only works for methods which are in the METHOD table, it can't
-		 * handle generic instances/wrappers. This is only a problem for direct
-		 * calls, since those bypass mono_get_aot_method (), so we can't add the
-		 * method to aot_module->extra_methods.
-		 */
-		g_assert (method_index < image->tables [MONO_TABLE_METHOD].rows);
-		token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
-		method = mono_get_method (image, token, NULL);
+		if (method_index >= image->tables [MONO_TABLE_METHOD].rows) {
+			/* 
+			 * This is hit for extra methods which are called directly, so they are
+			 * not in amodule->extra_methods.
+			 */
+			table_len = amodule->extra_method_info_offsets [0];
+			table = amodule->extra_method_info_offsets + 1;
+			left = 0;
+			right = table_len;
+			pos = 0;
+
+			/* Binary search */
+			while (TRUE) {
+				pos = ((left + right) / 2);
+
+				g_assert (pos < table_len);
+
+				if (table [pos * 2] < method_index)
+					left = pos + 1;
+				else if (table [pos * 2] > method_index)
+					right = pos;
+				else
+					break;
+			}
+
+			p = amodule->extra_method_info + table [(pos * 2) + 1];
+			is_wrapper = decode_value (p, &p);
+			g_assert (!is_wrapper);
+			method = decode_method_ref_2 (amodule, p, &p);
+			g_assert (method);
+		} else {
+			token = mono_metadata_make_token (MONO_TABLE_METHOD, method_index + 1);
+			method = mono_get_method (image, token, NULL);
+		}
 	}
 
 	/* FIXME: */
@@ -1518,10 +1547,10 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	code = &aot_module->code [aot_module->code_offsets [method_index]];
-	ex_info = &aot_module->ex_info [aot_module->ex_info_offsets [method_index]];
+	code = &amodule->code [amodule->code_offsets [method_index]];
+	ex_info = &amodule->ex_info [amodule->ex_info_offsets [method_index]];
 
-	jinfo = decode_exception_debug_info (aot_module, domain, method, ex_info, code);
+	jinfo = decode_exception_debug_info (amodule, domain, method, ex_info, code);
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 	g_assert ((guint8*)addr < (guint8*)jinfo->code_start + jinfo->code_size);
