@@ -2873,7 +2873,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		MonoMethod *decl = overrides [i*2];
 		if (MONO_CLASS_IS_INTERFACE (decl->klass)) {
 			int dslot;
-			g_assert (decl->slot != -1);
 			dslot = mono_method_get_vtable_slot (decl) + mono_class_interface_offset (class, decl->klass);
 			vtable [dslot] = overrides [i*2 + 1];
 			vtable [dslot]->slot = dslot;
@@ -3216,7 +3215,7 @@ mono_method_get_vtable_index (MonoMethod *method)
 		if (imethod->declaring->is_generic)
 			return imethod->declaring->slot;
 	}
-	return method->slot;
+	return mono_method_get_vtable_slot (method);
 }
 
 static MonoMethod *default_ghc = NULL;
