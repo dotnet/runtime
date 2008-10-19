@@ -2370,6 +2370,8 @@ add_generic_instances (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
 
 		klass = mono_class_get (acfg->image, token);
+		if (!klass)
+			continue;
 		mono_class_init (klass);
 
 		if (klass->generic_class && klass->generic_class->context.class_inst->is_open)

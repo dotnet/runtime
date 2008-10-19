@@ -2015,7 +2015,12 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 	mono_jit_stats.methods_aot++;
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
-		char *full_name = mono_method_full_name (method, TRUE);
+		char *full_name;
+
+		if (!method)
+			method = mono_get_method (image, token, NULL);
+
+		full_name = mono_method_full_name (method, TRUE);
 
 		if (!jinfo) {
 			ex_info = &aot_module->ex_info [aot_module->ex_info_offsets [method_index]];
