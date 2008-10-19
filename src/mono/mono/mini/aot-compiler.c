@@ -147,7 +147,6 @@ typedef struct MonoAotCompile {
 	GHashTable *method_to_cfg;
 	GHashTable *token_info_hash;
 	GPtrArray *extra_methods;
-	GHashTable *extra_methods_hash;
 	GPtrArray *image_table;
 	GPtrArray *globals;
 	GList *method_order;
@@ -2124,6 +2123,13 @@ add_method (MonoAotCompile *acfg, MonoMethod *method)
 }
 
 static void
+add_extra_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	add_method (acfg, method);
+	g_ptr_array_add (acfg->extra_methods, method);
+}
+
+static void
 add_jit_icall_wrapper (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoAotCompile *acfg = user_data;
@@ -2323,19 +2329,18 @@ add_wrappers (MonoAotCompile *acfg)
 }
 
 /*
- * add_methodspecs:
+ * add_generic_instances:
  *
- *   Add methods referenced by the METHODSPEC table.
+ *   Add instances referenced by the METHODSPEC/TYPESPEC table.
  */
 static void
-add_methodspecs (MonoAotCompile *acfg)
+add_generic_instances (MonoAotCompile *acfg)
 {
 	int i;
 	guint32 token;
 	MonoMethod *method;
 	MonoGenericContext *context;
 
-	/* FIXME: Only add instantiations with vtype arguments */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
 		token = MONO_TOKEN_METHOD_SPEC | (i + 1);
 		method = mono_get_method (acfg->image, token, NULL);
@@ -2352,10 +2357,27 @@ add_methodspecs (MonoAotCompile *acfg)
 			/* Already added */
 			continue;
 
-		add_method (acfg, method);
+		add_extra_method (acfg, method);
+	}
 
-		g_ptr_array_add (acfg->extra_methods, method);
-		g_hash_table_insert (acfg->extra_methods_hash, method, method);
+	/* 
+	 * Add rgctx wrappers for cctors since those are called by the runtime, so there
+	 * is no methodspec for them.
+	 */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows; ++i) {
+		MonoClass *klass;
+
+		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
+
+		klass = mono_class_get (acfg->image, token);
+		mono_class_init (klass);
+
+		if (klass->generic_class && klass->generic_class->context.class_inst->is_open)
+			continue;
+
+		method = mono_class_get_cctor (klass);
+		if (method)
+			add_extra_method (acfg, mono_marshal_get_static_rgctx_invoke (method));
 	}
 }
 
@@ -3705,10 +3727,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	g_hash_table_insert (acfg->method_to_cfg, cfg->orig_method, cfg);
 
-	if (cfg->orig_method->wrapper_type) {
+	if (cfg->orig_method->wrapper_type)
 		g_ptr_array_add (acfg->extra_methods, cfg->orig_method);
-		g_hash_table_insert (acfg->extra_methods_hash, cfg->orig_method, cfg->orig_method);
-	}
 
 	acfg->stats.ccount++;
 }
@@ -4615,7 +4635,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->opts = opts;
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
-	acfg->extra_methods_hash = g_hash_table_new (NULL, NULL);
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
@@ -4646,7 +4665,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->method_index ++;
 	}
 
-	add_methodspecs (acfg);
+	add_generic_instances (acfg);
 
 	if (acfg->aot_opts.full_aot)
 		add_wrappers (acfg);

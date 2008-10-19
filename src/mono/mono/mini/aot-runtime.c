@@ -1861,78 +1861,6 @@ register_jump_target_got_slot (MonoDomain *domain, MonoMethod *method, gpointer 
 }
 
 /*
- * find_extra_method:
- *
- *   Try finding METHOD in the extra_method table in the AOT image.
- * Return its method index, or 0xffffff if not found.
- */
-static guint32
-find_extra_method (MonoDomain *domain, MonoMethod *method)
-{
-	MonoClass *klass = method->klass;
-	MonoAotModule *aot_module = klass->image->aot_module;
-	guint32 table_size, entry_size, hash;
-	guint32 *table, *entry;
-	char *full_name = NULL;
-
-	if (!aot_module)
-		return 0xffffff;
-
-	table_size = aot_module->extra_method_table [0];
-	table = aot_module->extra_method_table + 1;
-	entry_size = 3;
-
-	if (method->wrapper_type) {
-		/* FIXME: This is a hack to work around the fact that runtime invoke wrappers get assigned to some random class */
-		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			full_name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		} else {
-			full_name = mono_method_full_name (method, TRUE);
-		}
-	}
-
-	if (method->wrapper_type)
-		hash = g_str_hash (method->name) % table_size;
-	else
-		hash = 0 % table_size;
-
-	entry = &table [hash * entry_size];
-
-	if (entry [0] != 0) {
-		while (TRUE) {
-			guint32 key = entry [0];
-			guint32 value = entry [1];
-			guint32 next = entry [entry_size - 1];
-			MonoMethod *m;
-			guint8 *p;
-			int is_wrapper;
-
-			// FIXME: Avoid fully decoding the method ref
-			p = aot_module->extra_method_info + key;
-			is_wrapper = decode_value (p, &p);
-			if (method->wrapper_type && is_wrapper) {
-				if (!strcmp (full_name, (char*)p))
-					return value;
-			} else {
-				m = decode_method_ref_2 (aot_module, p, &p);
-				if (m == method)
-					return value;
-			}
-
-			if (next != 0) {
-				entry = &table [next * entry_size];
-			} else {
-				break;
-			}
-		}
-	}
-
-	return 0xffffff;
-}
-
-/*
  * load_method:
  *
  *   Load the method identified by METHOD_INDEX from the AOT image. Return a
@@ -2124,15 +2052,135 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 	return NULL;
 }
 
+static guint32
+find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
+{
+	guint32 table_size, entry_size, hash;
+	guint32 *table, *entry;
+	char *full_name = NULL;
+
+	if (!amodule)
+		return 0xffffff;
+
+	table_size = amodule->extra_method_table [0];
+	table = amodule->extra_method_table + 1;
+	entry_size = 3;
+
+	if (method->wrapper_type) {
+		/* FIXME: This is a hack to work around the fact that runtime invoke wrappers get assigned to some random class */
+		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+			full_name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
+			g_free (tmpsig);
+		} else {
+			full_name = mono_method_full_name (method, TRUE);
+		}
+	}
+
+	if (method->wrapper_type)
+		hash = g_str_hash (method->name) % table_size;
+	else
+		hash = 0 % table_size;
+
+	entry = &table [hash * entry_size];
+
+	if (entry [0] != 0) {
+		while (TRUE) {
+			guint32 key = entry [0];
+			guint32 value = entry [1];
+			guint32 next = entry [entry_size - 1];
+			MonoMethod *m;
+			guint8 *p;
+			int is_wrapper;
+
+			// FIXME: Avoid fully decoding the method ref
+			p = amodule->extra_method_info + key;
+			is_wrapper = decode_value (p, &p);
+			if (method->wrapper_type && is_wrapper) {
+				if (!strcmp (full_name, (char*)p))
+					return value;
+			} else {
+				m = decode_method_ref_2 (amodule, p, &p);
+				if (m == method)
+					return value;
+			}
+
+			if (next != 0) {
+				entry = &table [next * entry_size];
+			} else {
+				break;
+			}
+		}
+	}
+
+	return 0xffffff;
+}
+
+static void
+add_module_cb (gpointer key, gpointer value, gpointer user_data)
+{
+	g_ptr_array_add ((GPtrArray*)user_data, value);
+}
+
+/*
+ * find_extra_method:
+ *
+ *   Try finding METHOD in the extra_method table in all AOT images.
+ * Return its method index, or 0xffffff if not found. Set OUT_AMODULE to the AOT
+ * module where the method was found.
+ */
+static guint32
+find_extra_method (MonoMethod *method, MonoAotModule **out_amodule)
+{
+	guint32 index;
+	GPtrArray *modules;
+	int i;
+
+	/* Try the method's module first */
+	*out_amodule = method->klass->image->aot_module;
+	index = find_extra_method_in_amodule (method->klass->image->aot_module, method);
+	if (index != 0xffffff)
+		return index;
+
+	/* 
+	 * Try all other modules.
+	 * This is needed because generic instances klass->image points to the image
+	 * containing the generic definition, but the native code is generated to the
+	 * AOT image which contains the reference.
+	 */
+
+	/* Make a copy to avoid doing the search inside the aot lock */
+	modules = g_ptr_array_new ();
+	mono_aot_lock ();
+	g_hash_table_foreach (aot_modules, add_module_cb, modules);
+	mono_aot_unlock ();
+
+	index = 0xffffff;
+	for (i = 0; i < modules->len; ++i) {
+		MonoAotModule *amodule = g_ptr_array_index (modules, i);
+
+		if (amodule != method->klass->image->aot_module)
+			index = find_extra_method_in_amodule (amodule, method);
+		if (index != 0xffffff) {
+			*out_amodule = amodule;
+			break;
+		}
+	}
+	
+	g_ptr_array_free (modules, TRUE);
+
+	return index;
+}
+
 gpointer
 mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoClass *klass = method->klass;
 	guint32 method_index;
-	MonoAotModule *aot_module = klass->image->aot_module;
+	MonoAotModule *amodule = klass->image->aot_module;
 	guint8 *code;
 
-	if (!aot_module)
+	if (!amodule)
 		return NULL;
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
@@ -2150,27 +2198,27 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	} else if (method->is_inflated || !method->token) {
 		/* This hash table is used to avoid the slower search in the extra_method_table in the AOT image */
 		mono_aot_lock ();
-		code = g_hash_table_lookup (aot_module->method_to_code, method);
+		code = g_hash_table_lookup (amodule->method_to_code, method);
 		mono_aot_unlock ();
 		if (code)
 			return code;
 
-		method_index = find_extra_method (domain, method);
+		method_index = find_extra_method (method, &amodule);
 		if (method_index == 0xffffff)
 			return NULL;
 
 		/* Needed by find_jit_info */
 		mono_aot_lock ();
-		if (!aot_module->extra_methods)
-			aot_module->extra_methods = g_hash_table_new (NULL, NULL);
-		g_hash_table_insert (aot_module->extra_methods, GUINT_TO_POINTER (method_index), method);
+		if (!amodule->extra_methods)
+			amodule->extra_methods = g_hash_table_new (NULL, NULL);
+		g_hash_table_insert (amodule->extra_methods, GUINT_TO_POINTER (method_index), method);
 		mono_aot_unlock ();
 	} else {
 		/* Common case */
 		method_index = mono_metadata_token_index (method->token) - 1;
 	}
 
-	return load_method (domain, aot_module, klass->image, method, method->token, method_index);
+	return load_method (domain, amodule, klass->image, method, method->token, method_index);
 }
 
 /**
