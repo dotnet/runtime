@@ -607,31 +607,7 @@ mono_image_init (MonoImage *image)
 				       class_next_value);
 	image->field_cache = g_hash_table_new (NULL, NULL);
 
-	image->delegate_begin_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-	image->delegate_end_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-	image->delegate_invoke_cache = 
-		g_hash_table_new ((GHashFunc)mono_signature_hash, 
-				  (GCompareFunc)mono_metadata_signature_equal);
-	
-	image->managed_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->native_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->remoting_invoke_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->cominterop_invoke_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->cominterop_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->synchronized_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->unbox_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
-	image->ldfld_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->ldflda_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->stfld_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->castclass_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->proxy_isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->thunk_invoke_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
@@ -1336,6 +1312,13 @@ mono_dynamic_stream_reset (MonoDynamicStream* stream)
 	}
 }
 
+static inline void
+free_hash (GHashTable *hash)
+{
+	if (hash)
+		g_hash_table_destroy (hash);
+}
+
 /**
  * mono_image_close:
  * @image: The image file we wish to close
@@ -1455,33 +1438,31 @@ mono_image_close (MonoImage *image)
 		g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
 		g_hash_table_destroy (image->name_cache);
 	}
-	g_hash_table_destroy (image->native_wrapper_cache);
-	g_hash_table_destroy (image->managed_wrapper_cache);
-	g_hash_table_destroy (image->delegate_begin_invoke_cache);
-	g_hash_table_destroy (image->delegate_end_invoke_cache);
-	g_hash_table_destroy (image->delegate_invoke_cache);
-	if (image->delegate_abstract_invoke_cache)
-		g_hash_table_destroy (image->delegate_abstract_invoke_cache);
-	g_hash_table_foreach (image->remoting_invoke_cache, free_remoting_wrappers, NULL);
-	g_hash_table_destroy (image->remoting_invoke_cache);
-	if (image->runtime_invoke_cache)
-		g_hash_table_destroy (image->runtime_invoke_cache);
-	if (image->runtime_invoke_direct_cache)
-		g_hash_table_destroy (image->runtime_invoke_direct_cache);
-	g_hash_table_destroy (image->synchronized_cache);
-	g_hash_table_destroy (image->unbox_wrapper_cache);
-	g_hash_table_destroy (image->cominterop_invoke_cache);
-	g_hash_table_destroy (image->cominterop_wrapper_cache);
-	g_hash_table_destroy (image->typespec_cache);
-	g_hash_table_destroy (image->ldfld_wrapper_cache);
-	g_hash_table_destroy (image->ldflda_wrapper_cache);
-	g_hash_table_destroy (image->stfld_wrapper_cache);
-	g_hash_table_destroy (image->isinst_cache);
-	g_hash_table_destroy (image->castclass_cache);
-	g_hash_table_destroy (image->proxy_isinst_cache);
-	g_hash_table_destroy (image->thunk_invoke_cache);
-	if (image->static_rgctx_invoke_cache)
-		g_hash_table_destroy (image->static_rgctx_invoke_cache);
+
+	free_hash (image->native_wrapper_cache);
+	free_hash (image->managed_wrapper_cache);
+	free_hash (image->delegate_begin_invoke_cache);
+	free_hash (image->delegate_end_invoke_cache);
+	free_hash (image->delegate_invoke_cache);
+	free_hash (image->delegate_abstract_invoke_cache);
+	if (image->remoting_invoke_cache)
+		g_hash_table_foreach (image->remoting_invoke_cache, free_remoting_wrappers, NULL);
+	free_hash (image->remoting_invoke_cache);
+	free_hash (image->runtime_invoke_cache);
+	free_hash (image->runtime_invoke_direct_cache);
+	free_hash (image->synchronized_cache);
+	free_hash (image->unbox_wrapper_cache);
+	free_hash (image->cominterop_invoke_cache);
+	free_hash (image->cominterop_wrapper_cache);
+	free_hash (image->typespec_cache);
+	free_hash (image->ldfld_wrapper_cache);
+	free_hash (image->ldflda_wrapper_cache);
+	free_hash (image->stfld_wrapper_cache);
+	free_hash (image->isinst_cache);
+	free_hash (image->castclass_cache);
+	free_hash (image->proxy_isinst_cache);
+	free_hash (image->thunk_invoke_cache);
+	free_hash (image->static_rgctx_invoke_cache);
 
 	/* The ownership of signatures is not well defined */
 	//g_hash_table_foreach (image->memberref_signatures, free_mr_signatures, NULL);

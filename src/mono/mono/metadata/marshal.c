@@ -2851,7 +2851,10 @@ mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 	MonoRemotingMethods *wrps;
 
 	mono_marshal_lock ();
-	wrps = g_hash_table_lookup (method->klass->image->remoting_invoke_cache, method);
+	if (method->klass->image->remoting_invoke_cache)
+		wrps = g_hash_table_lookup (method->klass->image->remoting_invoke_cache, method);
+	else
+		wrps = NULL;
 
 	if (wrps) {
 		switch (wrapper_type) {
@@ -2877,7 +2880,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 {
 	MonoMethod **res = NULL;
 	MonoRemotingMethods *wrps;
-	GHashTable *cache = key->klass->image->remoting_invoke_cache;
+	GHashTable *cache = get_cache (&key->klass->image->remoting_invoke_cache, mono_aligned_addr_hash, NULL);
 
 	mono_marshal_lock ();
 	wrps = g_hash_table_lookup (cache, key);
@@ -2942,7 +2945,9 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 
 	sig = signature_no_pinvoke (method);
 
-	cache = method->klass->image->delegate_begin_invoke_cache;
+	cache = get_cache (&method->klass->image->delegate_begin_invoke_cache,
+					   (GHashFunc)mono_signature_hash, 
+					   (GCompareFunc)mono_metadata_signature_equal);
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
 		return res;
 
@@ -3102,7 +3107,9 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 
 	sig = signature_no_pinvoke (method);
 
-	cache = method->klass->image->delegate_end_invoke_cache;
+	cache = get_cache (&method->klass->image->delegate_end_invoke_cache,
+					   (GHashFunc)mono_signature_hash, 
+					   (GCompareFunc)mono_metadata_signature_equal);
 	if ((res = mono_marshal_find_in_cache (cache, sig)))
 		return res;
 
@@ -3299,7 +3306,7 @@ cominterop_get_native_wrapper (MonoMethod *method)
 
 	g_assert (method);
 
-	cache = method->klass->image->cominterop_wrapper_cache;
+	cache = get_cache (&method->klass->image->cominterop_wrapper_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
@@ -3409,7 +3416,7 @@ cominterop_get_invoke (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int i, temp_obj;
-	GHashTable* cache = method->klass->image->cominterop_invoke_cache;
+	GHashTable* cache = get_cache (&method->klass->image->cominterop_invoke_cache, mono_aligned_addr_hash, NULL);
 
 	g_assert (method);
 
@@ -4525,7 +4532,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		if (res)
 			return res;
 	} else {
-		cache = method->klass->image->delegate_invoke_cache;
+		cache = get_cache (&method->klass->image->delegate_invoke_cache,
+						   (GHashFunc)mono_signature_hash, 
+						   (GCompareFunc)mono_metadata_signature_equal);
 		if ((res = mono_marshal_find_in_cache (cache, sig)))
 			return res;
 	}
@@ -5229,15 +5238,7 @@ mono_marshal_get_static_rgctx_invoke (MonoMethod *method)
 	GHashTable *cache;
 	MonoImage *image = method->klass->image;
 
-	if (!(cache = image->static_rgctx_invoke_cache)) {
-		mono_marshal_lock ();
-		if (!(cache = image->static_rgctx_invoke_cache)) {
-			cache = image->static_rgctx_invoke_cache =
-				g_hash_table_new (mono_aligned_addr_hash, NULL);
-		}
-		mono_marshal_unlock ();
-	}
-
+	cache = get_cache (&image->static_rgctx_invoke_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
@@ -5392,7 +5393,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	cache = klass->image->ldfld_wrapper_cache;
+	cache = get_cache (&klass->image->ldfld_wrapper_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
@@ -5541,7 +5542,7 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	cache = klass->image->ldflda_wrapper_cache;
+	cache = get_cache (&klass->image->ldflda_wrapper_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
@@ -5736,7 +5737,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		klass = mono_defaults.int_class;
 	}
 
-	cache = klass->image->stfld_wrapper_cache;
+	cache = get_cache (&klass->image->stfld_wrapper_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
@@ -9243,7 +9244,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	 * could be called with different delegates, thus different marshalling
 	 * options.
 	 */
-	cache = method->klass->image->managed_wrapper_cache;
+	cache = get_cache (&method->klass->image->managed_wrapper_cache, mono_aligned_addr_hash, NULL);
 	if (!this && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
@@ -9430,7 +9431,7 @@ mono_marshal_get_isinst (MonoClass *klass)
 	char *name;
 	MonoMethodBuilder *mb;
 
-	cache = klass->image->isinst_cache;
+	cache = get_cache (&klass->image->isinst_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
@@ -9512,7 +9513,7 @@ mono_marshal_get_castclass (MonoClass *klass)
 	char *name;
 	MonoMethodBuilder *mb;
 
-	cache = klass->image->castclass_cache;
+	cache = get_cache (&klass->image->castclass_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
@@ -9577,7 +9578,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	MonoMethodDesc *desc;
 	MonoMethodBuilder *mb;
 
-	cache = klass->image->proxy_isinst_cache;
+	cache = get_cache (&klass->image->proxy_isinst_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, klass)))
 		return res;
 
@@ -9806,7 +9807,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	if (method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED)
 		return method;
 
-	cache = method->klass->image->synchronized_cache;
+	cache = get_cache (&method->klass->image->synchronized_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
@@ -9930,7 +9931,7 @@ mono_marshal_get_unbox_wrapper (MonoMethod *method)
 	MonoMethod *res;
 	GHashTable *cache;
 
-	cache = method->klass->image->unbox_wrapper_cache;
+	cache = get_cache (&method->klass->image->unbox_wrapper_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
@@ -12523,7 +12524,7 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 
 	klass = method->klass;
 	image = method->klass->image;
-	cache = image->thunk_invoke_cache;
+	cache = get_cache (&image->thunk_invoke_cache, mono_aligned_addr_hash, NULL);
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
