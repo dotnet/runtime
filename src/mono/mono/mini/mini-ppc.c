@@ -2698,6 +2698,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 		case RegTypeStructByVal: {
 			guint32 size = 0;
+			int j;
 
 			/* FIXME: */
 			if (ainfo->vtsize)
@@ -2714,9 +2715,9 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 				NOT_IMPLEMENTED;
 			} else
 #endif
-				for (i = 0; i < ainfo->size; ++i) {
-					ppc_lwz (code, ainfo->reg  + i,
-						inst->inst_offset + i * sizeof (gpointer), inst->inst_basereg);
+				for (j = 0; j < ainfo->size; ++j) {
+					ppc_lwz (code, ainfo->reg  + j,
+						inst->inst_offset + j * sizeof (gpointer), inst->inst_basereg);
 				}
 			break;
 		}
