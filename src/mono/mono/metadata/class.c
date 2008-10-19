@@ -1639,6 +1639,26 @@ mono_class_get_inflated_method (MonoClass *class, MonoMethod *method)
 	return NULL;
 }	
 
+/*
+ * mono_class_get_vtable_entry:
+ *
+ *   Returns class->vtable [offset], computing it if neccesary.
+ * LOCKING: Acquires the loader lock.
+ */
+MonoMethod*
+mono_class_get_vtable_entry (MonoClass *class, int offset)
+{
+	if (class->generic_class) {
+		MonoClass *gklass = class->generic_class->container_class;
+		mono_class_setup_vtable (gklass);
+		if (gklass->vtable [offset]->wrapper_type != MONO_WRAPPER_STATIC_RGCTX_INVOKE)
+			return mono_class_inflate_generic_method_full (gklass->vtable [offset], class, mono_class_get_context (class));
+	}
+
+	mono_class_setup_vtable (class);
+	return class->vtable [offset];
+}
+
 static void
 mono_class_setup_properties (MonoClass *class)
 {
@@ -2853,9 +2873,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		MonoMethod *decl = overrides [i*2];
 		if (MONO_CLASS_IS_INTERFACE (decl->klass)) {
 			int dslot;
-			mono_class_setup_methods (decl->klass);
 			g_assert (decl->slot != -1);
-			dslot = decl->slot + mono_class_interface_offset (class, decl->klass);
+			dslot = mono_method_get_vtable_slot (decl) + mono_class_interface_offset (class, decl->klass);
 			vtable [dslot] = overrides [i*2 + 1];
 			vtable [dslot]->slot = dslot;
 			if (!override_map)
@@ -3163,6 +3182,22 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			}
 		}
 	}
+}
+
+/*
+ * mono_method_get_vtable_slot:
+ *
+ *   Returns method->slot, computing it if neccesary.
+ * LOCKING: Acquires the loader lock.
+ */
+int
+mono_method_get_vtable_slot (MonoMethod *method)
+{
+	if (method->slot == -1) {
+		mono_class_setup_vtable (method->klass);
+		g_assert (method->slot != -1);
+	}
+	return method->slot;
 }
 
 /**

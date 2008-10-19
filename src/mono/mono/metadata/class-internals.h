@@ -776,6 +776,12 @@ mono_class_setup_supertypes (MonoClass *klass) MONO_INTERNAL;
 MonoMethod*
 mono_class_get_method_by_index (MonoClass *class, int index) MONO_INTERNAL;
 
+MonoMethod*
+mono_class_get_inflated_method (MonoClass *class, MonoMethod *method) MONO_INTERNAL;
+
+MonoMethod*
+mono_class_get_vtable_entry (MonoClass *class, int offset) MONO_INTERNAL;
+
 GPtrArray*
 mono_class_get_implemented_interfaces (MonoClass *klass) MONO_INTERNAL;
 
@@ -1119,6 +1125,9 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 
 MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass) MONO_INTERNAL;
+
+int
+mono_method_get_vtable_slot (MonoMethod *method) MONO_INTERNAL;
 
 int
 mono_method_get_vtable_index (MonoMethod *method) MONO_INTERNAL;
