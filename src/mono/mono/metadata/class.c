@@ -3213,7 +3213,7 @@ mono_method_get_vtable_index (MonoMethod *method)
 	if (method->is_inflated && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		MonoMethodInflated *imethod = (MonoMethodInflated*)method;
 		if (imethod->declaring->is_generic)
-			return imethod->declaring->slot;
+			return mono_method_get_vtable_slot (imethod->declaring);
 	}
 	return mono_method_get_vtable_slot (method);
 }
