@@ -2,6 +2,54 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_vector8us_mul_high () {
+		Vector8us a = new Vector8us (0xFF00, 2, 3, 0, 5, 6, 5, 4);
+		Vector8us b = new Vector8us (0xFF00, 2, 1, 2, 3, 6, 5, 6);
+		Vector8us c = Vector8us.MultiplyStoreHigh (a, b);
+
+		if (c.V0 != 0xFE01)
+			return 1;
+		if (c.V1 != 0)
+			return 2;
+		if (c.V2 != 0)
+			return 3;
+		if (c.V3 != 0)
+			return 4;
+		if (c.V4 != 0)
+			return 5;
+		if (c.V5 != 0)
+			return 6;
+		if (c.V6 != 0)
+			return 7;
+		if (c.V7 != 0)
+			return 8;
+		return 0;
+	}
+
+	public static int test_0_vector8us_cmpeq () {
+		Vector8us a = new Vector8us (1, 2, 3, 0, 5, 6, 5, 4);
+		Vector8us b = new Vector8us (9, 2, 1, 2, 3, 6, 5, 6);
+		Vector8us c = Vector8us.CompareEqual (a, b);
+
+		if (c.V0 != 0)
+			return 1;
+		if (c.V1 != 0xFFFF)
+			return 2;
+		if (c.V2 != 0)
+			return 3;
+		if (c.V3 != 0)
+			return 4;
+		if (c.V4 != 0)
+			return 5;
+		if (c.V5 != 0xFFFF)
+			return 6;
+		if (c.V6 != 0xFFFF)
+			return 7;
+		if (c.V7 != 0)
+			return 8;
+		return 0;
+	}
+
 
 	public static int test_0_vector4ui_cmpeq () {
 		Vector4ui a = new Vector4ui (6,1,6,3);
