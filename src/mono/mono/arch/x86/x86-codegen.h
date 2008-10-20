@@ -1787,6 +1787,7 @@ typedef enum {
 
 	X86_SSE_PMULLW = 0xD5,
 	X86_SSE_PMULLD = 0x40,/*sse41*/
+	X86_SSE_PMULHUW = 0xE4,
 
 	X86_SSE_PMOVMSKB = 0xD7,
 	
