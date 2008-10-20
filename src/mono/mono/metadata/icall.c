@@ -62,6 +62,7 @@
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/mono-perfcounters.h>
+#include <mono/metadata/mono-debug.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
@@ -6860,6 +6861,12 @@ ves_icall_System_Web_Util_ICalls_get_machine_install_dir (void)
 	g_free (path);
 
 	return ipath;
+}
+
+static MonoBoolean
+ves_icall_System_Diagnostics_Debugger_IsAttached_internal (void)
+{
+	return mono_debug_using_mono_debugger ();
 }
 
 static void

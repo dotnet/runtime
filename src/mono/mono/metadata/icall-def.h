@@ -163,6 +163,9 @@ ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 ICALL(DELEGATE_1, "CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal)
 ICALL(DELEGATE_2, "SetMulticastInvoke", ves_icall_System_Delegate_SetMulticastInvoke)
 
+ICALL_TYPE(DEBUGR, "System.Diagnostics.Debugger", DEBUGR_1)
+ICALL(DEBUGR_1, "IsAttached_internal", ves_icall_System_Diagnostics_Debugger_IsAttached_internal)
+
 ICALL_TYPE(TRACEL, "System.Diagnostics.DefaultTraceListener", TRACEL_1)
 ICALL(TRACEL_1, "WriteWindowsDebugString", ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString)
 
