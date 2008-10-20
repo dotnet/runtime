@@ -343,7 +343,7 @@ mono_compute_natural_loops (MonoCompile *cfg)
 					if ((cb->dfn && mono_bitset_test_fast (in_loop_blocks, cb->dfn)) || (!cb->dfn && g_list_find (h->loop_blocks, cb)))
 						continue;
 
-					h->loop_blocks = g_list_prepend (h->loop_blocks, cb);
+					h->loop_blocks = g_list_prepend_mempool (cfg->mempool, h->loop_blocks, cb);
 					cb->nesting++;
 					if (cb->dfn)
 						mono_bitset_set_fast (in_loop_blocks, cb->dfn);
@@ -359,7 +359,7 @@ mono_compute_natural_loops (MonoCompile *cfg)
 
 				/* add the header if not already there */
 				if (!((h->dfn && mono_bitset_test_fast (in_loop_blocks, h->dfn)) || (!h->dfn && g_list_find (h->loop_blocks, h)))) {
-					h->loop_blocks = g_list_prepend (h->loop_blocks, h);
+					h->loop_blocks = g_list_prepend_mempool (cfg->mempool, h->loop_blocks, h);
 					h->nesting++;
 				}
 			}
@@ -436,10 +436,7 @@ clear_loops (MonoCompile *cfg)
     
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		cfg->bblocks[i]->nesting = 0;
-		if (cfg->bblocks[i]->loop_blocks) {
-			g_list_free (cfg->bblocks[i]->loop_blocks);        
-			cfg->bblocks[i]->loop_blocks = NULL;
-		}
+		cfg->bblocks[i]->loop_blocks = NULL;
 	}
 
 	cfg->comp_done &= ~MONO_COMP_LOOPS;   
