@@ -33,7 +33,6 @@
 void
 g_get_current_time (GTimeVal *result)
 {
-	g_return_if_fail (result != NULL);
 	struct timeval tv;
 
 	g_return_if_fail (result != NULL);
