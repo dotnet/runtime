@@ -1685,10 +1685,10 @@ mono_class_setup_properties (MonoClass *class)
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
 
-		class->property = gklass->property;
-
 		mono_class_init (gklass);
 		mono_class_setup_properties (gklass);
+
+		class->property = gklass->property;
 
 		properties = g_new0 (MonoProperty, class->property.count + 1);
 
@@ -3476,7 +3476,6 @@ mono_class_init (MonoClass *class)
 
 		mono_class_init (gklass);
 		mono_class_setup_methods (gklass);
-		mono_class_setup_properties (gklass);
 
 		if (MONO_CLASS_IS_INTERFACE (class))
 			class->interface_id = mono_get_unique_iid (class);
