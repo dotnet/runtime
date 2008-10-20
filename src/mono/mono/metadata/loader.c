@@ -525,8 +525,12 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 				continue;
 
 			method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
-			if (method && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, mono_method_signature (method)))
-				return method;
+			if (method && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, mono_method_signature (method))) {
+				if (from_class->generic_class && from_class->generic_class->container_class == klass)
+					return mono_class_inflate_generic_method_full (method, from_class, mono_class_get_context (from_class));
+				else
+					return method;
+			}
 		}
 	}
 
