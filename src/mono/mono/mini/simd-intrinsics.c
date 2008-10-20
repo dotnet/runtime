@@ -202,10 +202,12 @@ setters
 static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ SN_AddWithSaturation, OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_Average, OP_PAVGW_UN, SIMD_EMIT_BINARY },
+	{ SN_CompareEqual, OP_PCMPEQW, SIMD_EMIT_BINARY },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ SN_Max, OP_PMAXW_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41},
 	{ SN_Min, OP_PMINW_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_MultiplyStoreHigh, OP_PMULW_HIGH_UN, SIMD_EMIT_BINARY },
 	{ SN_ShiftRightArithmetic, OP_PSARW, SIMD_EMIT_SHIFT },
 	{ SN_ShuffleHigh, OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
 	{ SN_ShuffleLow, OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },

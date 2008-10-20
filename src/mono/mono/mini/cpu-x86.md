@@ -502,6 +502,7 @@ psubd_sat_un: dest:x src1:x src2:x len:4 clob:1
 
 pmulw: dest:x src1:x src2:x len:4 clob:1
 pmuld: dest:x src1:x src2:x len:5 clob:1
+pmul_high_un: dest:x src1:x src2:x len:4 clob:1
 
 pshrw: dest:x src1:x len:8 clob:1
 pshrw_reg: dest:x src1:x src2:x len:8 clob:1
