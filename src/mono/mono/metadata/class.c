@@ -37,6 +37,8 @@
 #include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-counters.h>
 
+#define MONO_CLASS_HAS_STATIC_METADATA(klass) ((klass)->type_token && !(klass)->image->dynamic && !(klass)->generic_class)
+
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
@@ -57,6 +59,8 @@ static gboolean can_access_type (MonoClass *access_klass, MonoClass *member_klas
 static MonoMethod* find_method_in_metadata (MonoClass *klass, const char *name, int param_count, int flags);
 static int generic_array_methods (MonoClass *class);
 static void setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, MonoMethod **methods, int pos);
+
+static MonoMethod* mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter);
 
 void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
 void (*mono_debugger_class_loaded_methods_func) (MonoClass *klass) = NULL;
@@ -2476,11 +2480,11 @@ mono_class_setup_vtable (MonoClass *class)
 	if (class->vtable)
 		return;
 
-	/* This sets method->slot for all methods if this is an interface */
-	mono_class_setup_methods (class);
-
-	if (MONO_CLASS_IS_INTERFACE (class))
+	if (MONO_CLASS_IS_INTERFACE (class)) {
+		/* This sets method->slot for all methods if this is an interface */
+		mono_class_setup_methods (class);
 		return;
+	}
 
 	mono_loader_lock ();
 
@@ -2780,6 +2784,7 @@ print_unimplemented_interface_method_info (MonoClass *class, MonoClass *ic, Mono
 	printf ("no implementation for interface method %s::%s(%s) in class %s.%s\n",
 		mono_type_get_name (&ic->byval_arg), im->name, method_signature, class->name_space, class->name);
 	g_free (method_signature);
+	mono_class_setup_methods (class);
 	for (index = 0; index < class->method.count; ++index) {
 		MonoMethod *cm = class->methods [index];
 		method_signature = mono_signature_get_desc (mono_method_signature (cm), TRUE);
@@ -2801,6 +2806,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	GPtrArray *ifaces = NULL;
 	GHashTable *override_map = NULL;
 	gboolean security_enabled = mono_is_security_manager_active ();
+	MonoMethod *cm;
+	gpointer class_iter;
 #if (DEBUG_INTERFACE_VTABLE_CODE|TRACE_INTERFACE_VTABLE_CODE)
 	int first_non_interface_slot;
 #endif
@@ -2927,13 +2934,14 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			// otherwise look for a matching method
 			if (override_im == NULL) {
 				int cm_index;
-				
+				gpointer iter;
+				MonoMethod *cm;
+
 				// First look for a suitable method among the class methods
-				for (cm_index = 0; cm_index < class->method.count; cm_index++) {
-					MonoMethod *cm = class->methods [cm_index];
-					
+				iter = NULL;
+				while ((cm = mono_class_get_virtual_methods (class, &iter))) {
 					TRACE_INTERFACE_VTABLE (printf ("    For slot %d ('%s'.'%s':'%s'), trying method '%s'.'%s':'%s'... [EXPLICIT IMPLEMENTATION = %d][SLOT IS NULL = %d]", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL)));
-					if ((cm->flags & METHOD_ATTRIBUTE_VIRTUAL) && check_interface_method_override (class, im, cm, TRUE, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL), security_enabled)) {
+					if (check_interface_method_override (class, im, cm, TRUE, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL), security_enabled)) {
 						TRACE_INTERFACE_VTABLE (printf ("[check ok]: ASSIGNING"));
 						vtable [im_slot] = cm;
 						/* Why do we need this? */
@@ -3004,18 +3012,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	}
 
 	TRACE_INTERFACE_VTABLE (print_vtable_full (class, vtable, cur_slot, first_non_interface_slot, "AFTER SETTING UP INTERFACE METHODS", FALSE));
-	for (i = 0; i < class->method.count; ++i) {
-		MonoMethod *cm;
-	       
-		cm = class->methods [i];
-		
-		/*
-		 * Non-virtual method have no place in the vtable.
-		 * This also catches static methods (since they are not virtual).
-		 */
-		if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
-			continue;
-		
+	class_iter = NULL;
+	while ((cm = mono_class_get_virtual_methods (class, &class_iter))) {
 		/*
 		 * If the method is REUSE_SLOT, we must check in the
 		 * base class for a method to override.
@@ -3023,13 +3021,12 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		if (!(cm->flags & METHOD_ATTRIBUTE_NEW_SLOT)) {
 			int slot = -1;
 			for (k = class->parent; k ; k = k->parent) {
-				int j;
-				for (j = 0; j < k->method.count; ++j) {
-					MonoMethod *m1 = k->methods [j];
-					MonoMethodSignature *cmsig, *m1sig;
+				gpointer k_iter;
+				MonoMethod *m1;
 
-					if (!(m1->flags & METHOD_ATTRIBUTE_VIRTUAL))
-						continue;
+				k_iter = NULL;
+				while ((m1 = mono_class_get_virtual_methods (k, &k_iter))) {
+					MonoMethodSignature *cmsig, *m1sig;
 
 					cmsig = mono_method_signature (cm);
 					m1sig = mono_method_signature (m1);
@@ -3050,7 +3047,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
 							check_core_clr_override_method (class, cm, m1);
 
-						slot = k->methods [j]->slot;
+						slot = mono_method_get_vtable_slot (m1);
 						g_assert (cm->slot < max_vtsize);
 						if (!override_map)
 							override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -6298,6 +6295,64 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 	return NULL;
 }
 
+static MonoMethod*
+mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
+{
+	MonoMethod** method;
+	if (!iter)
+		return NULL;
+	if (klass->methods || !MONO_CLASS_HAS_STATIC_METADATA (klass)) {
+		if (!*iter) {
+			mono_class_setup_methods (klass);
+			/* start from the first */
+			method = &klass->methods [0];
+		} else {
+			method = *iter;
+			method++;
+		}
+		while (method < &klass->methods [klass->method.count]) {
+			if (((*method)->flags & METHOD_ATTRIBUTE_VIRTUAL))
+				break;
+			method ++;
+		}
+		if (method < &klass->methods [klass->method.count]) {
+			*iter = method;
+			return *method;
+		} else {
+			return NULL;
+		}
+	} else {
+		/* Search directly in metadata to avoid calling setup_methods () */
+		MonoMethod *res = NULL;
+		int i, start_index;
+
+		if (!*iter) {
+			start_index = 0;
+		} else {
+			start_index = GPOINTER_TO_UINT (*iter);
+		}
+
+		for (i = start_index; i < klass->method.count; ++i) {
+			guint32 cols [MONO_METHOD_SIZE];
+
+			/* class->method.first points into the methodptr table */
+			mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
+
+			if (cols [MONO_METHOD_FLAGS] & METHOD_ATTRIBUTE_VIRTUAL)
+				break;
+		}
+
+		if (i < klass->method.count) {
+			res = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
+			/* Add 1 here so the if (*iter) check fails */
+			*iter = GUINT_TO_POINTER (i + 1);
+			return res;
+		} else {
+			return NULL;
+		}
+	}
+}
+
 /**
  * mono_class_get_properties:
  * @klass: the MonoClass to act on
@@ -6749,7 +6804,7 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 
 	mono_class_init (klass);
 
-	if (klass->methods || klass->generic_class) {
+	if (klass->methods || !MONO_CLASS_HAS_STATIC_METADATA (klass)) {
 		mono_class_setup_methods (klass);
 		for (i = 0; i < klass->method.count; ++i) {
 			MonoMethod *method = klass->methods [i];
