@@ -503,14 +503,36 @@ mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSigna
 }
 
 static MonoMethod *
-find_method_in_class (MonoClass *in_class, const char *name, const char *qname, const char *fqname,
+find_method_in_class (MonoClass *klass, const char *name, const char *qname, const char *fqname,
 		      MonoMethodSignature *sig, MonoClass *from_class)
 {
-	int i;
+ 	int i;
+ 
+	/* Search directly in the metadata to avoid calling setup_methods () */
+	if (klass->type_token && !klass->image->dynamic && !klass->methods && !klass->rank) {
+		for (i = 0; i < klass->method.count; ++i) {
+			guint32 cols [MONO_METHOD_SIZE];
+			MonoMethod *method;
+			const char *m_name;
 
-	mono_class_setup_methods (in_class);
-	for (i = 0; i < in_class->method.count; ++i) {
-		MonoMethod *m = in_class->methods [i];
+			mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
+
+			m_name = mono_metadata_string_heap (klass->image, cols [MONO_METHOD_NAME]);
+
+			if (!((fqname && !strcmp (m_name, fqname)) ||
+				  (qname && !strcmp (m_name, qname)) ||
+				  (name && !strcmp (m_name, name))))
+				continue;
+
+			method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
+			if (method && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, mono_method_signature (method)))
+				return method;
+		}
+	}
+
+	mono_class_setup_methods (klass);
+	for (i = 0; i < klass->method.count; ++i) {
+		MonoMethod *m = klass->methods [i];
 
 		if (!((fqname && !strcmp (m->name, fqname)) ||
 		      (qname && !strcmp (m->name, qname)) ||
@@ -526,7 +548,7 @@ find_method_in_class (MonoClass *in_class, const char *name, const char *qname, 
 		}
 	}
 
-	if (i < in_class->method.count)
+	if (i < klass->method.count)
 		return mono_class_get_method_by_index (from_class, i);
 	return NULL;
 }
