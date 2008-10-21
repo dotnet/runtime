@@ -9,6 +9,8 @@
 
 #define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
 
+#define MONO_CLASS_HAS_STATIC_METADATA(klass) ((klass)->type_token && !(klass)->image->dynamic && !(klass)->generic_class)
+
 #define MONO_DEFAULT_SUPERTABLE_SIZE 6
 
 extern gboolean mono_print_vtable;

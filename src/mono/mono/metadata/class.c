@@ -37,8 +37,6 @@
 #include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-counters.h>
 
-#define MONO_CLASS_HAS_STATIC_METADATA(klass) ((klass)->type_token && !(klass)->image->dynamic && !(klass)->generic_class)
-
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
@@ -6621,7 +6619,7 @@ mono_field_get_rva (MonoClassField *field)
 
 	field_index = mono_field_get_index (field);
 		
-	if (!klass->field_def_values [field_index].data) {
+	if (!klass->field_def_values [field_index].data && !klass->image->dynamic) {
 		mono_metadata_field_info (field->parent->image, klass->field.first + field_index, NULL, &rva, NULL);
 		if (!rva)
 			g_warning ("field %s in %s should have RVA data, but hasn't", field->name, field->parent->name);
