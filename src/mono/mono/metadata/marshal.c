@@ -4836,7 +4836,9 @@ runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *
 	}
 
 	/* Can't share wrappers which return a vtype since it needs to be boxed */
-	if (MONO_TYPE_IS_REFERENCE (sig1->ret) && MONO_TYPE_IS_REFERENCE (sig2->ret))
+	if (sig1->ret == sig2->ret)
+		return TRUE;
+	else if (MONO_TYPE_IS_REFERENCE (sig1->ret) && MONO_TYPE_IS_REFERENCE (sig2->ret))
 		return TRUE;
 	else
 		return FALSE;
