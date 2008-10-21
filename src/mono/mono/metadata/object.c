@@ -1591,7 +1591,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	int imt_table_bytes = 0;
 	guint32 vtable_size, class_size;
 	guint32 cindex;
-	guint32 constant_cols [MONO_CONSTANT_SIZE];
 	gpointer iter;
 	gpointer *interface_offsets;
 
