@@ -1033,7 +1033,7 @@ mono_class_setup_fields (MonoClass *class)
 		if (class->generic_class) {
 			MonoClassField *gfield = &gklass->fields [i];
 
-			field->name = gfield->name;
+			field->name = mono_field_get_name (gfield);
 			/*This memory must come from the image mempool as we don't have a chance to free it.*/
 			field->type = mono_class_inflate_generic_type_with_mempool (class->image->mempool, gfield->type, mono_class_get_context (class));
 			field->type->attrs = gfield->type->attrs;
@@ -1065,7 +1065,7 @@ mono_class_setup_fields (MonoClass *class)
 				field->offset = offset;
 				if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 					g_warning ("%s not initialized correctly (missing field layout info for %s)",
-						   class->name, field->name);
+							   class->name, mono_field_get_name (field));
 			}
 		}
 
@@ -1309,7 +1309,7 @@ mono_class_layout_fields (MonoClass *class)
 				}
 
 				if ((top == 1) && (class->instance_size == sizeof (MonoObject)) &&
-					(strcmp (field->name, "$PRIVATE$") == 0)) {
+					(strcmp (mono_field_get_name (field), "$PRIVATE$") == 0)) {
 					/* This field is a hack inserted by MCS to empty structures */
 					continue;
 				}
@@ -4811,7 +4811,7 @@ mono_class_get_field_idx (MonoClass *class, int idx)
 			int i;
 
 			for (i = 0; i < class->field.count; ++i)
-				if (class->fields [i].name == name)
+				if (mono_field_get_name (&class->fields [i]) == name)
 					return &class->fields [i];
 			g_assert_not_reached ();
 		} else {			
@@ -4862,7 +4862,7 @@ mono_class_get_field_from_name (MonoClass *klass, const char *name)
 	mono_class_setup_fields_locking (klass);
 	while (klass) {
 		for (i = 0; i < klass->field.count; ++i) {
-			if (strcmp (name, klass->fields [i].name) == 0)
+			if (strcmp (name, mono_field_get_name (&klass->fields [i])) == 0)
 				return &klass->fields [i];
 		}
 		klass = klass->parent;
@@ -6622,7 +6622,7 @@ mono_field_get_rva (MonoClassField *field)
 	if (!klass->field_def_values [field_index].data && !klass->image->dynamic) {
 		mono_metadata_field_info (field->parent->image, klass->field.first + field_index, NULL, &rva, NULL);
 		if (!rva)
-			g_warning ("field %s in %s should have RVA data, but hasn't", field->name, field->parent->name);
+			g_warning ("field %s in %s should have RVA data, but hasn't", mono_field_get_name (field), field->parent->name);
 		klass->field_def_values [field_index].data = mono_image_rva_map (field->parent->image, rva);
 	}
 

@@ -141,7 +141,7 @@ struct _MonoClassField {
 
 /* a field is ignored if it's named "_Deleted" and it has the specialname and rtspecialname flags set */
 #define mono_field_is_deleted(field) (((field)->type->attrs & (FIELD_ATTRIBUTE_SPECIAL_NAME | FIELD_ATTRIBUTE_RT_SPECIAL_NAME)) \
-				      && (strcmp ((field)->name, "_Deleted") == 0))
+				      && (strcmp (mono_field_get_name (field), "_Deleted") == 0))
 
 typedef struct {
 	MonoClassField *field;

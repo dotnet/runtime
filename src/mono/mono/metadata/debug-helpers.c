@@ -624,7 +624,7 @@ mono_field_full_name (MonoClassField *field)
 	const char *nspace = field->parent->name_space;
 
 	res = g_strdup_printf ("%s%s%s:%s", nspace, *nspace ? "." : "",
-						   field->parent->name, field->name);
+						   field->parent->name, mono_field_get_name (field));
 
 	return res;
 }
@@ -727,7 +727,7 @@ static void
 print_field_value (const char *field_ptr, MonoClassField *field, int type_offset)
 {
 	MonoType *type;
-	g_print ("At %p (ofs: %2d) %s: ", field_ptr, field->offset + type_offset, field->name);
+	g_print ("At %p (ofs: %2d) %s: ", field_ptr, field->offset + type_offset, mono_field_get_name (field));
 	type = mono_type_get_underlying_type (field->type);
 
 	switch (type->type) {

@@ -2559,7 +2559,8 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 			type = f->field->type;
 	}
 	token = mono_image_get_memberref_token (assembly, &f->field->parent->byval_arg, 
-		f->field->name,  fieldref_encode_signature (assembly, type));
+											mono_field_get_name (f->field),  
+											fieldref_encode_signature (assembly, type));
 	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER(token));
 	return token;
 }
@@ -6172,7 +6173,7 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	res = (MonoReflectionField *)mono_object_new (domain, monofield_klass);
 	res->klass = klass;
 	res->field = field;
-	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, field->name));
+	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, mono_field_get_name (field)));
 	if (is_field_on_inst (field))
 		res->attrs = get_field_on_inst_generic_type (field)->attrs;
 	else
@@ -8397,7 +8398,7 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type)
 		*type = fb->type->type;
 	} else {
 		MonoReflectionField *f = (MonoReflectionField *)field;
-		*name = g_strdup (f->field->name);
+		*name = g_strdup (mono_field_get_name (f->field));
 		*type = f->field->type;
 	}
 }
@@ -10474,7 +10475,7 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 			MonoType *type = mono_class_inflate_generic_type (&klass->byval_arg, context);
 			MonoClass *inflated = mono_class_from_mono_type (type);
 
-			result = mono_class_get_field_from_name (inflated, fb->handle->name);
+			result = mono_class_get_field_from_name (inflated, mono_field_get_name (fb->handle));
 			g_assert (result);
 			mono_metadata_free_type (type);
 		}
@@ -10555,7 +10556,7 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		inflated = mono_class_from_mono_type (type);
 
 		g_assert (f->fb->handle);
-		result = mono_class_get_field_from_name (inflated, f->fb->handle->name);
+		result = mono_class_get_field_from_name (inflated, mono_field_get_name (f->fb->handle));
 		g_assert (result);
 		mono_metadata_free_type (type);
 		*handle_class = mono_defaults.fieldhandle_class;

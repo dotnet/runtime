@@ -4835,9 +4835,11 @@ runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *
 			return FALSE;
 	}
 
-	if (!runtime_invoke_type_equal (sig1->ret, sig2->ret))
+	/* Can't share wrappers which return a vtype since it needs to be boxed */
+	if (MONO_TYPE_IS_REFERENCE (sig1->ret) && MONO_TYPE_IS_REFERENCE (sig2->ret))
+		return TRUE;
+	else
 		return FALSE;
-	return TRUE;
 }
 
 static guint
@@ -10973,7 +10975,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 		while ((field = mono_class_get_fields (klass, &iter))) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
-			if (!strcmp (fname, field->name)) {
+			if (!strcmp (fname, mono_field_get_name (field))) {
 				match_index = i;
 				break;
 			}
@@ -11422,7 +11424,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		info->fields [j].field = field;
 
 		if ((mono_class_num_fields (klass) == 1) && (klass->instance_size == sizeof (MonoObject)) &&
-			(strcmp (field->name, "$PRIVATE$") == 0)) {
+			(strcmp (mono_field_get_name (field), "$PRIVATE$") == 0)) {
 			/* This field is a hack inserted by MCS to empty structures */
 			continue;
 		}

@@ -1622,7 +1622,7 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 		}
 
 		if (!found) {
-			char *msg = g_strdup_printf ("Field '%s' defined on type '%s' is not a field on the target object which is of type '%s'.", cf->name, cf->parent->name, obj->vtable->klass->name);
+			char *msg = g_strdup_printf ("Field '%s' defined on type '%s' is not a field on the target object which is of type '%s'.", mono_field_get_name (cf), cf->parent->name, obj->vtable->klass->name);
 			MonoException *ex = mono_get_exception_argument (NULL, msg);
 			g_free (msg);
 			mono_raise_exception (ex);
@@ -2543,7 +2543,7 @@ ves_icall_MonoGenericClass_GetCorrespondingInflatedField (MonoReflectionGenericC
 	domain = mono_object_domain (type);
 
 	for (i = 0; i < dgclass->count_fields; i++)
-                if (strcmp (utf8_name, dgclass->fields [i].name) == 0) {
+		if (strcmp (utf8_name, mono_field_get_name (&dgclass->fields [i])) == 0) {
 			g_free (utf8_name);
                         return mono_field_get_object (domain, refclass, &dgclass->fields [i]);
 		}
@@ -3344,11 +3344,11 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 		int len;
 		MonoTypeEnum def_type;
 		
-		if (strcmp ("value__", field->name) == 0)
+		if (strcmp ("value__", mono_field_get_name (field)) == 0)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
-		mono_array_setref (info->names, j, mono_string_new (domain, field->name));
+		mono_array_setref (info->names, j, mono_string_new (domain, mono_field_get_name (field)));
 
 		p = mono_class_get_field_default_value (field, &def_type);
 		len = mono_metadata_decode_blob_size (p, &p);
@@ -3455,7 +3455,7 @@ handle_parent:
 		
 		utf8_name = mono_string_to_utf8 (name);
 
-		if (compare_func (field->name, utf8_name)) {
+		if (compare_func (mono_field_get_name (field), utf8_name)) {
 			g_free (utf8_name);
 			continue;
 		}
