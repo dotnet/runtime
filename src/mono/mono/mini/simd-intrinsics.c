@@ -211,6 +211,7 @@ static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ SN_ShiftRightArithmetic, OP_PSARW, SIMD_EMIT_SHIFT },
 	{ SN_ShuffleHigh, OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
 	{ SN_ShuffleLow, OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },
+	{ SN_SignedPackWithUnsignedSaturation, OP_PACKW, SIMD_EMIT_BINARY },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_SubWithSaturation, OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
