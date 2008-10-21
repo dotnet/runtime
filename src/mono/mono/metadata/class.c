@@ -6602,7 +6602,13 @@ mono_field_get_offset (MonoClassField *field)
 const char *
 mono_field_get_data  (MonoClassField *field)
 {
-  return field->data;
+	if (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT) {
+		MonoTypeEnum def_type;
+
+		return mono_class_get_field_default_value (field, &def_type);
+	} else {
+		return field->data;
+	}
 }
 
 /**

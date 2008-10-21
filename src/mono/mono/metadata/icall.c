@@ -3340,6 +3340,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 	while ((field = mono_class_get_fields (enumc, &iter))) {
 		const char *p;
 		int len;
+		MonoTypeEnum def_type;
 		
 		if (strcmp ("value__", field->name) == 0)
 			continue;
@@ -3347,14 +3348,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 			continue;
 		mono_array_setref (info->names, j, mono_string_new (domain, field->name));
 
-		if (!field->data) {
-			crow = mono_metadata_get_constant_index (enumc->image, mono_class_get_field_token (field), crow + 1);
-			field->def_type = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_TYPE);
-			crow = mono_metadata_decode_row_col (&enumc->image->tables [MONO_TABLE_CONSTANT], crow-1, MONO_CONSTANT_VALUE);
-			field->data = (gpointer)mono_metadata_blob_heap (enumc->image, crow);
-		}
-
-		p = field->data;
+		p = mono_class_get_field_default_value (field, &def_type);
 		len = mono_metadata_decode_blob_size (p, &p);
 		switch (enumc->enum_basetype->type) {
 		case MONO_TYPE_U1:

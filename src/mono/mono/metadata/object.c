@@ -1725,21 +1725,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 				*t = *(char *)field->data;
 			}
 			continue;
-		}
-		if (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT))
-			continue;
-
-		/* later do this only on demand if needed */
-		if (!field->data) {
-			cindex = mono_metadata_get_constant_index (class->image, mono_class_get_field_token (field), cindex + 1);
-			g_assert (cindex);
-			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA));
-
-			mono_metadata_decode_row (&class->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
-			field->def_type = constant_cols [MONO_CONSTANT_TYPE];
-			field->data = (gpointer)mono_metadata_blob_heap (class->image, constant_cols [MONO_CONSTANT_VALUE]);
-		}
-		
+		}		
 	}
 
 	vt->max_interface_id = class->max_interface_id;
@@ -2773,8 +2759,11 @@ mono_get_constant_value_from_blob (MonoDomain* domain, MonoTypeEnum type, const 
 static void
 get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value)
 {
-	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT);
-	mono_get_constant_value_from_blob (domain, field->def_type, field->data, value);
+	MonoTypeEnum def_type;
+	const char* data;
+	
+	data = mono_class_get_field_default_value (field, &def_type);
+	mono_get_constant_value_from_blob (domain, def_type, data, value);
 }
 
 /**
