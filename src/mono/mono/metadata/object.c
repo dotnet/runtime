@@ -1711,17 +1711,19 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		}
 		if ((field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
 			MonoClass *fklass = mono_class_from_mono_type (field->type);
+			const char *data = mono_field_get_data (field);
+
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT));
 			t = (char*)vt->data + field->offset;
 			/* some fields don't really have rva, they are just zeroed (bss? bug #343083) */
-			if (!field->data)
+			if (!data)
 				continue;
 			if (fklass->valuetype) {
-				memcpy (t, field->data, mono_class_value_size (fklass, NULL));
+				memcpy (t, data, mono_class_value_size (fklass, NULL));
 			} else {
 				/* it's a pointer type: add check */
 				g_assert ((fklass->byval_arg.type == MONO_TYPE_PTR) || (fklass->byval_arg.type == MONO_TYPE_FNPTR));
-				*t = *(char *)field->data;
+				*t = *(char *)data;
 			}
 			continue;
 		}		

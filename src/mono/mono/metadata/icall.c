@@ -777,6 +777,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 	guint32 size = mono_array_element_size (klass);
 	MonoType *type = mono_type_get_underlying_type (&klass->element_class->byval_arg);
 	int align;
+	const char *field_data;
 
 	if (MONO_TYPE_IS_REFERENCE (type) ||
 			(type->type == MONO_TYPE_VALUETYPE &&
@@ -794,6 +795,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 	}
 
 	size *= array->max_length;
+	field_data = mono_field_get_data (field_handle);
 
 	if (size > mono_type_size (field_handle->type, &align)) {
 		MonoException *exc = mono_get_exception_argument("field_handle",
@@ -804,7 +806,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 #define SWAP(n) {\
 	guint ## n *data = (guint ## n *) mono_array_addr (array, char, 0); \
-	guint ## n *src = (guint ## n *) field_handle->data; \
+	guint ## n *src = (guint ## n *) field_data; \
 	guint ## n *end = (guint ## n *)((char*)src + size); \
 \
 	for (; src < end; data++, src++) { \
@@ -831,11 +833,11 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 		SWAP (64);
 		break;
 	default:
-		memcpy (mono_array_addr (array, char, 0), field_handle->data, size);
+		memcpy (mono_array_addr (array, char, 0), field_data, size);
 		break;
 	}
 #else
-	memcpy (mono_array_addr (array, char, 0), field_handle->data, size);
+	memcpy (mono_array_addr (array, char, 0), field_data, size);
 #ifdef ARM_FPU_FPA
 	if (klass->element_class->byval_arg.type == MONO_TYPE_R8) {
 		gint i;
