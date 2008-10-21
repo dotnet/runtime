@@ -8040,7 +8040,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 											   helper_sig_class_init_trampoline,
 											   NULL, ip, FALSE, FALSE);
 						if (cfg->verbose_level > 2)
-							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, field->name);
+							g_print ("class %s.%s needs init call for %s\n", klass->name_space, klass->name, mono_field_get_name (field));
 						class_inits = g_slist_prepend (class_inits, vtable);
 					} else {
 						if (cfg->run_cctors) {
@@ -8130,7 +8130,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (ro_type == MONO_TYPE_VALUETYPE && field->type->data.klass->enumtype) {
 						ro_type = field->type->data.klass->enum_basetype->type;
 					}
-					/* g_print ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, field->name);*/
+					/* g_print ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, mono_field_get_name (field));*/
 					is_const = TRUE;
 					switch (ro_type) {
 					case MONO_TYPE_BOOLEAN:
