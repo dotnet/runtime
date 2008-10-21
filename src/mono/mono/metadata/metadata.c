@@ -2239,12 +2239,6 @@ free_generic_class (MonoGenericClass *gclass)
 		/* Allocated in mono_class_init () */
 		g_free (class->methods);
 		g_free (class->properties);
-		/* Allocated in mono_class_setup_fields () */
-		if (class->fields) {
-			for (i = 0; i < class->field.count; ++i) {
-				g_free (class->fields [i].generic_info);
-			}
-		}
 		/* Allocated in mono_generic_class_get_class () */
 		g_free (class->interfaces);
 		g_free (class);
@@ -2254,9 +2248,6 @@ free_generic_class (MonoGenericClass *gclass)
 		for (i = 0; i < dgclass->count_fields; ++i) {
 			MonoClassField *field = dgclass->fields + i;
 			mono_metadata_free_type (field->type);
-			if (field->generic_info) {
-				g_free (field->generic_info);
-			}
 			g_free ((char*)field->name);
 		}
 		for (i = 0; i < dgclass->count_properties; ++i) {
@@ -2273,6 +2264,8 @@ free_generic_class (MonoGenericClass *gclass)
 		g_free (dgclass->fields);
 		g_free (dgclass->properties);
 		g_free (dgclass->events);
+		g_free (dgclass->field_objects);
+		g_free (dgclass->field_generic_types);
 		if (!mono_generic_class_is_generic_type_definition (gclass))
 			g_free (gclass->cached_class);
 	}

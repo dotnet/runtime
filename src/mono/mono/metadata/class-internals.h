@@ -96,11 +96,6 @@ struct _MonoMethodPInvoke {
 	guint16 implmap_idx;  /* index into IMPLMAP */
 };
 
-typedef struct {
-	MonoType *generic_type;
-	gpointer reflection_info;
-} MonoInflatedField;
-
 /*
  * MonoClassField is just a runtime representation of the metadata for
  * field, it doesn't contain the data directly.  Static fields are
@@ -110,12 +105,6 @@ typedef struct {
 struct _MonoClassField {
 	/* Type of the field */
 	MonoType        *type;
-
-	/* If this is an instantiated generic type, this is the
-	 * "original" type, ie. the MONO_TYPE_VAR or MONO_TYPE_GENERICINST
-	 * it was instantiated from.
-	 */
-	MonoInflatedField  *generic_info;
 
 	const char      *name;
 
@@ -491,6 +480,10 @@ struct _MonoDynamicGenericClass {
 	int count_events;
 	MonoEvent *events;
 	guint initialized;
+	/* The non-inflated types of the fields */
+	MonoType **field_generic_types;
+	/* The managed objects representing the fields */
+	MonoObject **field_objects;
 };
 
 /*

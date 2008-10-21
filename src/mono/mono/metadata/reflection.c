@@ -2512,6 +2512,30 @@ mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtor
 	return token;
 }
 
+static gboolean
+is_field_on_inst (MonoClassField *field)
+{
+	return (field->parent->generic_class && field->parent->generic_class->is_dynamic && ((MonoDynamicGenericClass*)field->parent->generic_class)->fields);
+}
+
+/*
+ * If FIELD is a field of a MonoDynamicGenericClass, return its non-inflated type.
+ */
+static MonoType*
+get_field_on_inst_generic_type (MonoClassField *field)
+{
+	MonoDynamicGenericClass *dgclass;
+	int field_index;
+
+	g_assert (is_field_on_inst (field));
+
+	dgclass = (MonoDynamicGenericClass*)field->parent->generic_class;
+	field_index = field - dgclass->fields;
+
+	g_assert (field_index >= 0 && field_index < dgclass->count_fields);
+	return dgclass->field_generic_types [field_index];
+}
+
 static guint32
 mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *f)
 {
@@ -2529,7 +2553,10 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 		int index = field - field->parent->fields;
 		type = field->parent->generic_class->container_class->fields [index].type;
 	} else {
-		type = f->field->generic_info ? f->field->generic_info->generic_type : f->field->type;
+		if (is_field_on_inst (f->field))
+			type = get_field_on_inst_generic_type (f->field);
+		else
+			type = f->field->type;
 	}
 	token = mono_image_get_memberref_token (assembly, &f->field->parent->byval_arg, 
 		f->field->name,  fieldref_encode_signature (assembly, type));
@@ -3909,7 +3936,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
 				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
-				g_assert (f->generic_info);
+				g_assert (is_field_on_inst (f));
 				continue;
 			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder") ||
 					!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
@@ -4579,7 +4606,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 	} else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionField *f = (MonoReflectionField *)obj;
-		if ((f->field->parent->image == &assembly->image) && !f->field->generic_info) {
+		if ((f->field->parent->image == &assembly->image) && !is_field_on_inst (f->field)) {
 			static guint32 field_table_idx = 0xffffff;
 			field_table_idx --;
 			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
@@ -6146,8 +6173,8 @@ mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *fie
 	res->klass = klass;
 	res->field = field;
 	MONO_OBJECT_SETREF (res, name, mono_string_new (domain, field->name));
-	if (field->generic_info)
-		res->attrs = field->generic_info->generic_type->attrs;
+	if (is_field_on_inst (field))
+		res->attrs = get_field_on_inst_generic_type (field)->attrs;
 	else
 		res->attrs = field->type->attrs;
 	MONO_OBJECT_SETREF (res, type, mono_type_get_object (domain, field->type));
@@ -7204,9 +7231,15 @@ mono_reflection_get_token (MonoObject *obj)
 	} else if (strcmp (klass->name, "MonoField") == 0) {
 		MonoReflectionField *f = (MonoReflectionField*)obj;
 
-		if (f->field->generic_info && f->field->generic_info->reflection_info)
-			return mono_reflection_get_token (f->field->generic_info->reflection_info);
+		if (is_field_on_inst (f->field)) {
+			MonoDynamicGenericClass *dgclass = (MonoDynamicGenericClass*)f->field->parent->generic_class;
+			int field_index = f->field - dgclass->fields;
+			MonoObject *obj;
 
+			g_assert (field_index >= 0 && field_index < dgclass->count_fields);
+			obj = dgclass->field_objects [field_index];
+			return mono_reflection_get_token (obj);
+		}
 		token = mono_class_get_field_token (f->field);
 	} else if (strcmp (klass->name, "MonoProperty") == 0) {
 		MonoReflectionProperty *p = (MonoReflectionProperty*)obj;
@@ -9663,6 +9696,8 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	dgclass->fields = g_new0 (MonoClassField, dgclass->count_fields);
 	dgclass->properties = g_new0 (MonoProperty, dgclass->count_properties);
 	dgclass->events = g_new0 (MonoEvent, dgclass->count_events);
+	dgclass->field_objects = g_new0 (MonoObject*, dgclass->count_fields);
+	dgclass->field_generic_types = g_new0 (MonoType*, dgclass->count_fields);
 
 	for (i = 0; i < dgclass->count_methods; i++) {
 		MonoObject *obj = mono_array_get (methods, gpointer, i);
@@ -9679,7 +9714,6 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	for (i = 0; i < dgclass->count_fields; i++) {
 		MonoObject *obj = mono_array_get (fields, gpointer, i);
 		MonoClassField *field, *inflated_field = NULL;
-		MonoInflatedField *ifield;
 
 		if (!strcmp (obj->vtable->klass->name, "FieldBuilder"))
 			inflated_field = field = fieldbuilder_to_mono_class_field (klass, (MonoReflectionFieldBuilder *) obj);
@@ -9690,16 +9724,13 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 			g_assert_not_reached ();
 		}
 
-		ifield = g_new0 (MonoInflatedField, 1);
-		ifield->generic_type = field->type;
-		MOVING_GC_REGISTER (&ifield->reflection_info);
-		ifield->reflection_info = obj;
-
 		dgclass->fields [i] = *field;
 		dgclass->fields [i].parent = klass;
-		dgclass->fields [i].generic_info = ifield;
 		dgclass->fields [i].type = mono_class_inflate_generic_type (
 			field->type, mono_generic_class_get_context ((MonoGenericClass *) dgclass));
+		dgclass->field_generic_types [i] = field->type;
+		MOVING_GC_REGISTER (&dgclass->field_objects [i]);
+		dgclass->field_objects [i] = obj;
 
 		if (inflated_field) {
 			g_free ((char*)inflated_field->data);
