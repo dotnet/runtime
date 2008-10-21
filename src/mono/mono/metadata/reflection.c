@@ -2517,12 +2517,20 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoReflectionField *
 {
 	MonoType *type;
 	guint32 token;
+	MonoClassField *field;
 
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, f));
 	if (token)
 		return token;
 	g_assert (f->field->parent);
-	type = f->field->generic_info ? f->field->generic_info->generic_type : f->field->type;
+
+	field = f->field;
+	if (field->parent->generic_class && field->parent->generic_class->container_class && field->parent->generic_class->container_class->fields) {
+		int index = field - field->parent->fields;
+		type = field->parent->generic_class->container_class->fields [index].type;
+	} else {
+		type = f->field->generic_info ? f->field->generic_info->generic_type : f->field->type;
+	}
 	token = mono_image_get_memberref_token (assembly, &f->field->parent->byval_arg, 
 		f->field->name,  fieldref_encode_signature (assembly, type));
 	g_hash_table_insert (assembly->handleref, f, GUINT_TO_POINTER(token));
