@@ -4524,7 +4524,7 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 		} else {
 			/*FIXME is it possible to AOT a SRE assembly not meant to be saved? */ 
 			g_assert (!aot);
-			data_ptr = field->data;
+			data_ptr = mono_field_get_data (field);
 		}
 		return data_ptr;
 	}
