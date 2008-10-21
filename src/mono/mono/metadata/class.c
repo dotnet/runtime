@@ -1034,11 +1034,8 @@ mono_class_setup_fields (MonoClass *class)
 
 		if (class->generic_class) {
 			MonoClassField *gfield = &gklass->fields [i];
-			MonoInflatedField *ifield = g_new0 (MonoInflatedField, 1);
 
-			ifield->generic_type = gfield->type;
 			field->name = gfield->name;
-			field->generic_info = ifield;
 			/*This memory must come from the image mempool as we don't have a chance to free it.*/
 			field->type = mono_class_inflate_generic_type_with_mempool (class->image->mempool, gfield->type, mono_class_get_context (class));
 			field->type->attrs = gfield->type->attrs;
