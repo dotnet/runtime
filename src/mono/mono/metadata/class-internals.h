@@ -117,14 +117,6 @@ struct _MonoClassField {
 	 */
 	MonoInflatedField  *generic_info;
 
-	/*
-	 * Offset where this field is stored; if it is an instance
-	 * field, it's the offset from the start of the object, if
-	 * it's static, it's from the start of the memory chunk
-	 * allocated for statics for the class.
-	 */
-	int              offset;
-
 	const char      *name;
 
 	/*
@@ -137,6 +129,14 @@ struct _MonoClassField {
 
 	/* Type where the field was defined */
 	MonoClass       *parent;
+
+	/*
+	 * Offset where this field is stored; if it is an instance
+	 * field, it's the offset from the start of the object, if
+	 * it's static, it's from the start of the memory chunk
+	 * allocated for statics for the class.
+	 */
+	int              offset;
 
 	/*
 	 * If the field is constant, the type of the constant.
