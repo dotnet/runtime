@@ -1033,6 +1033,12 @@ ves_icall_System_Diagnostics_Process_ProcessHandle_close (HANDLE process)
 gint64
 ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, gint32 *error)
 {
-	return mono_process_get_data_with_error (GINT_TO_POINTER (pid), data_type, error);
+	MonoProcessError perror;
+	guint64 res;
+
+	res = mono_process_get_data_with_error (GINT_TO_POINTER (pid), data_type, &perror);
+	if (error)
+		*error = perror;
+	return res;
 }
 
