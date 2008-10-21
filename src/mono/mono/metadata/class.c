@@ -3475,6 +3475,8 @@ mono_class_init (MonoClass *class)
 		class->field = gklass->field;
 
 		mono_class_init (gklass);
+		// FIXME: Why is this needed ?
+		mono_class_setup_methods (gklass);
 
 		if (MONO_CLASS_IS_INTERFACE (class))
 			class->interface_id = mono_get_unique_iid (class);
