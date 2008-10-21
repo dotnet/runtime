@@ -81,9 +81,6 @@ static CRITICAL_SECTION marshal_mutex;
 #define mono_cominterop_unlock() LeaveCriticalSection (&cominterop_mutex)
 static CRITICAL_SECTION cominterop_mutex;
 
-/* Maps wrapper methods to the methods they wrap */
-static GHashTable *wrapper_hash;
-
 static guint32 last_error_tls_id;
 
 static guint32 load_type_info_tls_id;
@@ -555,7 +552,6 @@ mono_marshal_init (void)
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
 		InitializeCriticalSection (&cominterop_mutex);
-		wrapper_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		last_error_tls_id = TlsAlloc ();
 		load_type_info_tls_id = TlsAlloc ();
 
@@ -626,7 +622,6 @@ mono_marshal_init (void)
 void
 mono_marshal_cleanup (void)
 {
-	g_hash_table_destroy (wrapper_hash);
 	TlsFree (load_type_info_tls_id);
 	TlsFree (last_error_tls_id);
 	DeleteCriticalSection (&marshal_mutex);
@@ -2813,6 +2808,18 @@ mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
 	return res;
 }
 
+static void
+mono_marshal_method_set_wrapper_data (MonoMethod *method, gpointer data)
+{
+	void **datav;
+	/* assert */
+	if (method->wrapper_type == MONO_WRAPPER_NONE || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+		return;
+
+	datav = ((MonoMethodWrapper *)method)->method_data;
+	datav [1] = data;
+}
+
 /* Create the method from the builder and place it in the cache */
 static inline MonoMethod*
 mono_mb_create_and_cache (GHashTable *cache, gpointer key,
@@ -2832,7 +2839,7 @@ mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 		if (!res) {
 			res = newm;
 			g_hash_table_insert (cache, key, res);
-			g_hash_table_insert (wrapper_hash, res, key);
+			mono_marshal_method_set_wrapper_data (res, key);
 			mono_marshal_unlock ();
 		} else {
 			mono_marshal_unlock ();
@@ -2905,7 +2912,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 		mono_marshal_lock ();
 		if (!*res) {
 			*res = newm;
-			g_hash_table_insert (wrapper_hash, *res, key);
+			mono_marshal_method_set_wrapper_data (*res, key);
 			mono_marshal_unlock ();
 		} else {
 			mono_marshal_unlock ();
@@ -2919,14 +2926,14 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 {
-	MonoMethod *res;
+	gpointer res;
 
-	if (wrapper->wrapper_type == MONO_WRAPPER_NONE)
+	if (wrapper->wrapper_type == MONO_WRAPPER_NONE || wrapper->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
 		return wrapper;
 
-	mono_marshal_lock ();
-	res = g_hash_table_lookup (wrapper_hash, wrapper);
-	mono_marshal_unlock ();
+	res = mono_method_get_wrapper_data (wrapper, 1);
+	if (res == NULL)
+		return wrapper;
 	return res;
 }
 
@@ -4646,7 +4653,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 			new_key->sig = sig;
 			new_key->method = target_method;
 			g_hash_table_insert (cache, new_key, res);
-			g_hash_table_insert (wrapper_hash, res, new_key);
+			mono_marshal_method_set_wrapper_data (res, new_key);
 			mono_marshal_unlock ();
 		} else {
 			mono_marshal_unlock ();

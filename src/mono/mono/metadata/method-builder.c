@@ -66,7 +66,9 @@ mono_mb_new_base (MonoClass *klass, MonoWrapperType type)
 
 	mb->code_size = 40;
 	mb->code = g_malloc (mb->code_size);
-	
+	/* placeholder for the wrapper always at index 1 */
+	mono_mb_add_data (mb, NULL);
+
 	return mb;
 }
 
