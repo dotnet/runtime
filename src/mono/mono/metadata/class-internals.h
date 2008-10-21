@@ -96,6 +96,23 @@ struct _MonoMethodPInvoke {
 	guint16 implmap_idx;  /* index into IMPLMAP */
 };
 
+/* 
+ * Stores the default value / RVA of fields.
+ * This information is rarely needed, so it is stored separately from MonoClassField.
+ */
+typedef struct MonoFieldDefaultValue {
+	/*
+	 * If the field is constant, pointer to the metadata constant
+	 * value.
+	 * If the field has an RVA flag, pointer to the data.
+	 * Else, invalid.
+	 */
+	const char      *data;
+
+	/* If the field is constant, the type of the constant. */
+	MonoTypeEnum     def_type;
+} MonoFieldDefaultValue;
+
 /*
  * MonoClassField is just a runtime representation of the metadata for
  * field, it doesn't contain the data directly.  Static fields are
@@ -108,14 +125,6 @@ struct _MonoClassField {
 
 	const char      *name;
 
-	/*
-	 * If the field is constant, pointer to the metadata constant
-	 * value.
-	 * If the field has an RVA flag, pointer to the data.
-	 * Else, invalid.
-	 */
-	const char      *data;
-
 	/* Type where the field was defined */
 	MonoClass       *parent;
 
@@ -126,11 +135,6 @@ struct _MonoClassField {
 	 * allocated for statics for the class.
 	 */
 	int              offset;
-
-	/*
-	 * If the field is constant, the type of the constant.
-	 */
-	MonoTypeEnum     def_type;
 };
 
 /* a field is ignored if it's named "_Deleted" and it has the specialname and rtspecialname flags set */
@@ -372,7 +376,11 @@ struct _MonoClass {
 	MonoClass *next_class_cache;
 
 	/* Generic vtable. Initialized by a call to mono_class_setup_vtable () */
-	MonoMethod **vtable;	
+	MonoMethod **vtable;
+
+	/* Default values/RVA for fields */
+	/* Accessed using mono_class_get_field_default_value () / mono_field_get_data () */
+	MonoFieldDefaultValue *field_def_values;
 };
 
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && ((k)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))

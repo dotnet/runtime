@@ -9422,8 +9422,6 @@ static MonoClassField*
 fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* fb)
 {
 	MonoClassField *field;
-	const char *p, *p2;
-	guint32 len, idx;
 	MonoType *custom;
 
 	field = g_new0 (MonoClassField, 1);
@@ -9440,24 +9438,12 @@ fieldbuilder_to_mono_class_field (MonoClass *klass, MonoReflectionFieldBuilder* 
 	} else {
 		field->type = fb->type->type;
 	}
-	if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && fb->rva_data)
-		field->data = mono_array_addr (fb->rva_data, char, 0); /* FIXME: GC pin array */
 	if (fb->offset != -1)
 		field->offset = fb->offset;
 	field->parent = klass;
 	mono_save_custom_attrs (klass->image, field, fb->cattrs);
 
-	if (fb->def_value) {
-		MonoDynamicImage *assembly = (MonoDynamicImage*)klass->image;
-		field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
-		idx = encode_constant (assembly, fb->def_value, &field->def_type);
-		/* Copy the data from the blob since it might get realloc-ed */
-		p = assembly->blob.data + idx;
-		len = mono_metadata_decode_blob_size (p, &p2);
-		len += p2 - p;
-		field->data = g_malloc (len);
-		memcpy ((gpointer)field->data, p, len);
-	}
+	// FIXME: Can't store fb->def_value/RVA, is it needed for field_on_insts ?
 
 	return field;
 }
@@ -9733,7 +9719,6 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 		dgclass->field_objects [i] = obj;
 
 		if (inflated_field) {
-			g_free ((char*)inflated_field->data);
 			g_free (inflated_field);
 		} else {
 			dgclass->fields [i].name = g_strdup (dgclass->fields [i].name);
@@ -9925,6 +9910,7 @@ typebuilder_setup_fields (MonoClass *klass)
 	}
 	
 	klass->fields = mp_g_new0 (mp, MonoClassField, klass->field.count);
+	klass->field_def_values = mp_g_new0 (mp, MonoFieldDefaultValue, klass->field.count);
 
 	for (i = 0; i < klass->field.count; ++i) {
 		fb = mono_array_get (tb->fields, gpointer, i);
@@ -9937,7 +9923,7 @@ typebuilder_setup_fields (MonoClass *klass)
 			field->type = fb->type->type;
 		}
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && fb->rva_data)
-			field->data = mono_array_addr (fb->rva_data, char, 0);
+			klass->field_def_values [i].data = mono_array_addr (fb->rva_data, char, 0);
 		if (fb->offset != -1)
 			field->offset = fb->offset;
 		field->parent = klass;
@@ -9947,13 +9933,13 @@ typebuilder_setup_fields (MonoClass *klass)
 		if (fb->def_value) {
 			MonoDynamicImage *assembly = (MonoDynamicImage*)klass->image;
 			field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
-			idx = encode_constant (assembly, fb->def_value, &field->def_type);
+			idx = encode_constant (assembly, fb->def_value, &klass->field_def_values [i].def_type);
 			/* Copy the data from the blob since it might get realloc-ed */
 			p = assembly->blob.data + idx;
 			len = mono_metadata_decode_blob_size (p, &p2);
 			len += p2 - p;
-			field->data = mono_mempool_alloc (mp, len);
-			memcpy ((gpointer)field->data, p, len);
+			klass->field_def_values [i].data = mono_mempool_alloc (mp, len);
+			memcpy ((gpointer)klass->field_def_values [i].data, p, len);
 		}
 	}
 

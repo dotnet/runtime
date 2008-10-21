@@ -1042,9 +1042,7 @@ mono_class_setup_fields (MonoClass *class)
 			if (mono_field_is_deleted (field))
 				continue;
 			field->offset = gfield->offset;
-			field->data = gfield->data;
 		} else {
-			guint32 rva;
 			const char *sig;
 			guint32 cols [MONO_FIELD_SIZE];
 
@@ -1070,13 +1068,6 @@ mono_class_setup_fields (MonoClass *class)
 				if (field->offset == (guint32)-1 && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 					g_warning ("%s not initialized correctly (missing field layout info for %s)",
 						   class->name, field->name);
-			}
-
-			if (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
-				mono_metadata_field_info (m, idx, NULL, &rva, NULL);
-				if (!rva)
-					g_warning ("field %s in %s should have RVA data, but hasn't", field->name, class->name);
-				field->data = mono_image_rva_map (class->image, rva);
 			}
 		}
 
@@ -4914,6 +4905,16 @@ mono_class_get_field_token (MonoClassField *field)
 	return 0;
 }
 
+static int
+mono_field_get_index (MonoClassField *field)
+{
+	int index = field - field->parent->fields;
+
+	g_assert (index >= 0 && index < field->parent->field.count);
+
+	return index;
+}
+
 /*
  * mono_class_get_field_default_value:
  *
@@ -4924,21 +4925,32 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 {
 	guint32 cindex;
 	guint32 constant_cols [MONO_CONSTANT_SIZE];
+	int field_index;
+	MonoClass *klass = field->parent;
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT);
 
-	if (!field->data) {
+	if (!klass->field_def_values) {
+		mono_loader_lock ();
+		if (!klass->field_def_values)
+			klass->field_def_values = mono_image_alloc0 (klass->image, sizeof (MonoFieldDefaultValue) * klass->field.count);
+		mono_loader_unlock ();
+	}
+
+	field_index = mono_field_get_index (field);
+		
+	if (!klass->field_def_values [field_index].data) {
 		cindex = mono_metadata_get_constant_index (field->parent->image, mono_class_get_field_token (field), 0);
 		g_assert (cindex);
 		g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA));
 
 		mono_metadata_decode_row (&field->parent->image->tables [MONO_TABLE_CONSTANT], cindex - 1, constant_cols, MONO_CONSTANT_SIZE);
-		field->def_type = constant_cols [MONO_CONSTANT_TYPE];
-		field->data = (gpointer)mono_metadata_blob_heap (field->parent->image, constant_cols [MONO_CONSTANT_VALUE]);
+		klass->field_def_values [field_index].def_type = constant_cols [MONO_CONSTANT_TYPE];
+		klass->field_def_values [field_index].data = (gpointer)mono_metadata_blob_heap (field->parent->image, constant_cols [MONO_CONSTANT_VALUE]);
 	}
 
-	*def_type = field->def_type;
-	return field->data;
+	*def_type = klass->field_def_values [field_index].def_type;
+	return klass->field_def_values [field_index].data;
 }
 
 guint32
@@ -6591,6 +6603,34 @@ mono_field_get_offset (MonoClassField *field)
 	return field->offset;
 }
 
+static const char *
+mono_field_get_rva (MonoClassField *field)
+{
+	guint32 rva;
+	int field_index;
+	MonoClass *klass = field->parent;
+
+	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA);
+
+	if (!klass->field_def_values) {
+		mono_loader_lock ();
+		if (!klass->field_def_values)
+			klass->field_def_values = mono_image_alloc0 (klass->image, sizeof (MonoFieldDefaultValue) * klass->field.count);
+		mono_loader_unlock ();
+	}
+
+	field_index = mono_field_get_index (field);
+		
+	if (!klass->field_def_values [field_index].data) {
+		mono_metadata_field_info (field->parent->image, klass->field.first + field_index, NULL, &rva, NULL);
+		if (!rva)
+			g_warning ("field %s in %s should have RVA data, but hasn't", field->name, field->parent->name);
+		klass->field_def_values [field_index].data = mono_image_rva_map (field->parent->image, rva);
+	}
+
+	return klass->field_def_values [field_index].data;
+}
+
 /**
  * mono_field_get_data;
  * @field: the MonoClassField to act on
@@ -6599,14 +6639,16 @@ mono_field_get_offset (MonoClassField *field)
  * data if it has an RVA flag.
  */
 const char *
-mono_field_get_data  (MonoClassField *field)
+mono_field_get_data (MonoClassField *field)
 {
 	if (field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT) {
 		MonoTypeEnum def_type;
 
 		return mono_class_get_field_default_value (field, &def_type);
+	} else if (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) {
+		return mono_field_get_rva (field);
 	} else {
-		return field->data;
+		return NULL;
 	}
 }
 
