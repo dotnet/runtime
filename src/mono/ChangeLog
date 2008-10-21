@@ -1,5 +1,9 @@
 2008-10-21  Atsushi Enomoto  <atsushi@ximian.com>
 
+	* data/dotnet35.pc.in : added sys.cm.dataannotations.dll too.
+
+2008-10-21  Atsushi Enomoto  <atsushi@ximian.com>
+
 	* data/net_2_0/web.config : added new assemblies and namespaces in
 	  pages and compilation sections.
 
