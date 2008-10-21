@@ -1,3 +1,8 @@
+2008-10-21  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* data/dotnet35.pc.in : added new assemblies (dlinq, abstractions,
+	  routing, dynamic data).
+
 2008-10-20  Jonathan Pryor  <jpryor@novell.com>
 
 	* scripts/mod.in: Remove bash-isms.
