@@ -507,7 +507,10 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		      MonoMethodSignature *sig, MonoClass *from_class)
 {
  	int i;
- 
+
+#if 0
+	/* FIXME: This causes test failures in Mono.C5 */
+
 	/* Search directly in the metadata to avoid calling setup_methods () */
 	if (klass->type_token && !klass->image->dynamic && !klass->methods && !klass->rank) {
 		for (i = 0; i < klass->method.count; ++i) {
@@ -533,6 +536,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 			}
 		}
 	}
+#endif
 
 	mono_class_setup_methods (klass);
 	for (i = 0; i < klass->method.count; ++i) {
