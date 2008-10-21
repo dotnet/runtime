@@ -178,6 +178,7 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 	{ SN_Min, OP_PMIND_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_ShiftRightArithmetic, OP_PSARD, SIMD_EMIT_SHIFT },
 	{ SN_Shuffle, OP_PSHUFLED, SIMD_EMIT_SHUFFLE },
+	{ SN_SignedPackWithUnsignedSaturation, OP_PACKD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_SubWithSaturation, OP_PSUBD_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHD, SIMD_EMIT_BINARY },
