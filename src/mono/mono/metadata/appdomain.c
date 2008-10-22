@@ -1250,6 +1250,49 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 	return result;
 }
 
+static gboolean
+is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
+{
+	const char *version;
+	MonoAppDomainSetup *setup;
+	gchar *all_dirs;
+	gchar **dir_ptr;
+	gchar **directories;
+	gchar *shadow_status_string;
+	gboolean shadow_enabled;
+	gboolean found = FALSE;
+
+	if (domain == NULL)
+		return FALSE;
+
+	setup = domain->setup;
+	if (setup == NULL || setup->shadow_copy_files == NULL || setup->dynamic_base == NULL ||
+	    setup->shadow_copy_directories == NULL)
+		return FALSE;
+
+	version = mono_get_runtime_info ()->framework_version;
+	shadow_status_string = mono_string_to_utf8 (setup->shadow_copy_files);
+	/* For 1.x, not NULL is enough. In 2.0 it has to be "true" */
+	shadow_enabled = (*version <= '1' || !g_ascii_strncasecmp (shadow_status_string, "true", 4));
+	g_free (shadow_status_string);
+	if (!shadow_enabled)
+		return FALSE;
+
+	all_dirs = mono_string_to_utf8 (setup->shadow_copy_directories);
+	directories = g_strsplit (all_dirs, G_SEARCHPATH_SEPARATOR_S, 1000);
+	dir_ptr = directories;
+	while (*dir_ptr) {
+		if (!strcmp (*dir_ptr, dir_name)) {
+			found = TRUE;
+			break;
+		}
+		dir_ptr++;
+	}
+	g_strfreev (directories);
+	g_free (all_dirs);
+	return found;
+}
+
 char *
 mono_make_shadow_copy (const char *filename)
 {
@@ -1258,39 +1301,18 @@ mono_make_shadow_copy (const char *filename)
 	guint16 *orig, *dest;
 	char *shadow;
 	gboolean copy_result;
-	gboolean is_private = FALSE;
-	gboolean do_copy = FALSE;
 	MonoException *exc;
-	gchar **path;
 	struct stat src_sbuf;
 	struct utimbuf utbuf;
 	char *dir_name = g_path_get_dirname (filename);
 	MonoDomain *domain = mono_domain_get ();
 	set_domain_search_path (domain);
 
-	if (!domain->search_path) {
+	if (!is_shadow_copy_enabled (domain, dir_name)) {
 		g_free (dir_name);
-		return (char*) filename;
-	}
-	
-	for (path = domain->search_path; *path; path++) {
-		if (**path == '\0') {
-			is_private = TRUE;
-			continue;
-		}
-		
-		if (!is_private)
-			continue;
-
-		if (strstr (dir_name, *path) == dir_name) {
-			do_copy = TRUE;
-			break;
-		}
+		return (char *) filename;
 	}
 	g_free (dir_name);
-
-	if (!do_copy)
-		return (char*) filename;
 	
 	shadow = get_shadow_assembly_location (filename);
 	if (ensure_directory_exists (shadow) == FALSE) {
