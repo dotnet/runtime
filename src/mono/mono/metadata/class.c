@@ -2858,6 +2858,29 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	max_iid = class->max_interface_id;
 	DEBUG_INTERFACE_VTABLE (first_non_interface_slot = cur_slot);
 
+	/* Optimized version for generic instances */
+	if (class->generic_class) {
+		MonoClass *gklass = class->generic_class->container_class;
+		gboolean usable = TRUE;
+
+		mono_class_setup_vtable (gklass);
+		for (i = 0; i < gklass->vtable_size; ++i)
+			if (gklass->vtable [i] && gklass->vtable [i]->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
+				usable = FALSE;
+
+		if (usable) {
+			MonoMethod **tmp = mono_image_alloc0 (class->image, sizeof (gpointer) * gklass->vtable_size);
+			class->vtable_size = gklass->vtable_size;
+			for (i = 0; i < gklass->vtable_size; ++i)
+				if (gklass->vtable [i])
+					tmp [i] = mono_class_inflate_generic_method_full (gklass->vtable [i], class, mono_class_get_context (class));
+			mono_memory_barrier ();
+			class->vtable = tmp;
+
+			return;
+		}
+	}
+
 	if (class->parent && class->parent->vtable_size) {
 		MonoClass *parent = class->parent;
 		int i;
