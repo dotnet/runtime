@@ -710,7 +710,6 @@ simd_intrinsic_emit_load_aligned (const SimdIntrinsc *intrinsic, MonoCompile *cf
 	MONO_INST_NEW (cfg, ins, OP_LOADX_ALIGNED_MEMBASE);
 	ins->klass = cmethod->klass;
 	ins->sreg1 = args [0]->dreg;
-	/*FIXME, shouldn't use use ->inst_offset?*/
 	ins->type = STACK_VTYPE;
 	ins->dreg = alloc_ireg (cfg);
 	MONO_ADD_INS (cfg->cbb, ins);
@@ -728,7 +727,6 @@ simd_intrinsic_emit_store_aligned (const SimdIntrinsc *intrinsic, MonoCompile *c
 	MONO_INST_NEW (cfg, ins, OP_STOREX_ALIGNED_MEMBASE_REG);
 	ins->klass = cmethod->klass;
 	ins->dreg = args [0]->dreg;
-	ins->inst_offset = args [0]->inst_offset;
 	ins->sreg1 = vreg;
 	ins->type = STACK_VTYPE;
 	MONO_ADD_INS (cfg->cbb, ins);

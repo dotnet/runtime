@@ -821,7 +821,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmpeq () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 6);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 4);
-		Vector4f c = Vector4f.CompareEquals (a, b);
+		Vector4f c = Vector4f.CompareEqual (a, b);
 
 		if (((Vector4ui)c).X != 0)
 			return 1;
