@@ -994,6 +994,10 @@ start_idle_threads (MonoAsyncResult *data)
 			Sleep (500);
 		}
 	} while ((needed - existing) > 0);
+
+	/* If we don't start any thread here, make sure 'data' is processed. */
+	if (data != NULL)
+		start_thread_or_queue (data);
 }
 
 static void
