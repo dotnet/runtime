@@ -419,9 +419,8 @@ static void
 try_free_delayed_free_item (int index)
 {
 	if (delayed_free_table->len > index) {
-		DelayedFreeItem item;
+		DelayedFreeItem item = { NULL, NULL };
 
-		item.p = NULL;
 		EnterCriticalSection (&delayed_free_table_mutex);
 		/* We have to check the length again because another
 		   thread might have freed an item before we acquired
@@ -733,6 +732,8 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 	InitializeCriticalSection (thread->synch_cs);
 
 	thread->threadpool_thread = threadpool_thread;
+	if (threadpool_thread)
+		mono_thread_set_state (thread, ThreadState_Background);
 
 	if (handle_store (thread))
 		ResumeThread (thread_handle);

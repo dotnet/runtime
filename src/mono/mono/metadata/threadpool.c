@@ -1181,8 +1181,6 @@ async_invoke_thread (gpointer data)
 	int workers, min;
  
 	thread = mono_thread_current ();
-	thread->threadpool_thread = TRUE;
-	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 
 	for (;;) {
 		MonoAsyncResult *ar;
@@ -1206,6 +1204,9 @@ async_invoke_thread (gpointer data)
 			}
 			mono_thread_pop_appdomain_ref ();
 			InterlockedDecrement (&busy_worker_threads);
+			/* If the callee changes the background status, set it back to TRUE */
+			if (!mono_thread_test_state (thread , ThreadState_Background))
+				ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 		}
 
 		data = dequeue_job (&mono_delegate_section, &async_call_queue);
