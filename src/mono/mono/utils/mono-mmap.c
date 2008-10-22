@@ -16,6 +16,7 @@
 #endif
 
 #include "mono-mmap.h"
+#include "mono-proclib.h"
 
 #ifndef MAP_ANONYMOUS
 #define MAP_ANONYMOUS MAP_ANON
@@ -373,6 +374,29 @@ mono_mprotect (void *addr, size_t length, int flags)
 }
 
 static int
+mono_shared_area_instances_slow (void **array, int count, gboolean cleanup)
+{
+	int i, j = 0;
+	int num;
+	void *data;
+	gpointer *processes = mono_process_list (&num);
+	for (i = 0; i < num; ++i) {
+		data = mono_shared_area_for_pid (processes [i]);
+		if (!data)
+			continue;
+		mono_shared_area_unload (data);
+		if (!cleanup) {
+			if (j < count)
+				array [j++] = processes [i];
+			else
+				break;
+		}
+	}
+	g_free (processes);
+	return j;
+}
+
+static int
 mono_shared_area_instances_helper (void **array, int count, gboolean cleanup)
 {
 	const char *name;
@@ -380,7 +404,7 @@ mono_shared_area_instances_helper (void **array, int count, gboolean cleanup)
 	int curpid = getpid ();
 	GDir *dir = g_dir_open ("/dev/shm/", 0, NULL);
 	if (!dir)
-		return i;
+		return mono_shared_area_instances_slow (array, count, cleanup);
 	while ((name = g_dir_read_name (dir))) {
 		int pid;
 		char *nend;

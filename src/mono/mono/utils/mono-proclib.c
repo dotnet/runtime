@@ -8,7 +8,13 @@
 #include <unistd.h>
 #endif
 
-/* FIXME: implement for non-linux */
+/* FIXME: bsds untested */
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <sys/proc.h>
+#define USE_SYSCTL 1
+#endif
 
 /**
  * mono_process_list:
@@ -20,6 +26,37 @@
 gpointer*
 mono_process_list (int *size)
 {
+#if USE_SYSCTL
+	int mib [4];
+	int res, i;
+	size_t data_len = sizeof (struct kinfo_proc) * 400;
+	struct kinfo_proc *processes = malloc (data_len);
+	void **buf = NULL;
+
+	if (size)
+		*size = 0;
+	if (!processes)
+		return NULL;
+
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC;
+	mib [2] = KERN_PROC_ALL;
+	mib [3] = 0;
+	
+	res = sysctl (mib, 4, processes, &data_len, NULL, 0);
+	if (res < 0) {
+		free (processes);
+		return NULL;
+	}
+	res = data_len/sizeof (struct kinfo_proc);
+	buf = g_realloc (buf, res * sizeof (void*));
+	for (i = 0; i < res; ++i)
+		buf [i] = GINT_TO_POINTER (processes [i].kp_proc.p_pid);
+	free (processes);
+	if (size)
+		*size = res;
+	return buf;
+#else
 	const char *name;
 	void **buf = NULL;
 	int count = 0;
@@ -49,6 +86,7 @@ mono_process_list (int *size)
 	if (size)
 		*size = i;
 	return buf;
+#endif
 }
 
 /**
@@ -63,6 +101,27 @@ mono_process_list (int *size)
 char*
 mono_process_get_name (gpointer pid, char *buf, int len)
 {
+#if USE_SYSCTL
+	int mib [4];
+	int res;
+	char *p;
+	size_t data_len = sizeof (struct kinfo_proc);
+	struct kinfo_proc processi;
+
+	memset (buf, 0, len);
+
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC;
+	mib [2] = KERN_PROC_PID;
+	mib [3] = GPOINTER_TO_UINT (pid);
+	
+	res = sysctl (mib, 4, &processi, &data_len, NULL, 0);
+	if (res < 0 || data_len != sizeof (struct kinfo_proc)) {
+		return buf;
+	}
+	strncpy (buf, processi.kp_proc.p_comm, len - 1);
+	return buf;
+#else
 	char fname [128];
 	FILE *file;
 	char *p;
@@ -79,6 +138,7 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 	if (p)
 		return p + 1;
 	return buf;
+#endif
 }
 
 /*
