@@ -1674,6 +1674,16 @@ mono_class_get_vtable_entry (MonoClass *class, int offset)
 			return mono_class_inflate_generic_method_full (gklass->vtable [offset], class, mono_class_get_context (class));
 	}
 
+ 	if (class->rank == 1) {
+		/* 
+		 * szarrays do not overwrite any methods of Array, so we can avoid
+		 * initializing their vtables in some cases.
+		 */
+		mono_class_setup_vtable (class->parent);
+		if (offset < class->parent->vtable_size)
+			return class->parent->vtable [offset];
+	}
+
 	mono_class_setup_vtable (class);
 	return class->vtable [offset];
 }
