@@ -11,7 +11,7 @@ RESOURCES = \
 	Descriptors/System.Web.xml		\
 	Descriptors/Mono.Posix.xml		\
 
-PROGRAM = $(topdir)/class/lib/$(PROFILE)/monolinker.exe
+PROGRAM = monolinker.exe
 
 $(PROGRAM): $(RESOURCES)
 
