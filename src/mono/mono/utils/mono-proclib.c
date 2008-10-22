@@ -8,6 +8,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef PLATFORM_WIN32
+#include <windows.h>
+#endif
+
 /* FIXME: bsds untested */
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 #include <sys/types.h>
@@ -89,6 +93,45 @@ mono_process_list (int *size)
 #endif
 }
 
+static char*
+get_pid_status_item_buf (int pid, const char *item, char *rbuf, int blen, MonoProcessError *error)
+{
+	char buf [256];
+	char *s;
+	FILE *f;
+	int len = strlen (item);
+
+	g_snprintf (buf, sizeof (buf), "/proc/%d/status", pid);
+	f = fopen (buf, "r");
+	if (!f) {
+		if (error)
+			*error = MONO_PROCESS_ERROR_NOT_FOUND;
+		return NULL;
+	}
+	while ((s = fgets (buf, blen, f))) {
+		if (*item != *buf)
+			continue;
+		if (strncmp (buf, item, len))
+			continue;
+		s = buf + len;
+		while (g_ascii_isspace (*s)) s++;
+		if (*s++ != ':')
+			continue;
+		while (g_ascii_isspace (*s)) s++;
+		fclose (f);
+		len = strlen (s);
+		strncpy (rbuf, s, MIN (len, blen));
+		rbuf [blen - 1] = 0;
+		if (error)
+			*error = MONO_PROCESS_ERROR_NONE;
+		return rbuf;
+	}
+	fclose (f);
+	if (error)
+		*error = MONO_PROCESS_ERROR_OTHER;
+	return NULL;
+}
+
 /**
  * mono_process_get_name:
  * @pid: pid of the process
@@ -137,6 +180,9 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 	p = strrchr (buf, '/');
 	if (p)
 		return p + 1;
+	if (r == 0) {
+		return get_pid_status_item_buf (GPOINTER_TO_INT (pid), "Name", buf, len, NULL);
+	}
 	return buf;
 #endif
 }
@@ -205,11 +251,10 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	return value;
 }
 
-static gint64
-get_process_stat_time (int pid, int pos, int sum, MonoProcessError *error)
+static int
+get_user_hz (void)
 {
 	static int user_hz = 0;
-	gint64 val = get_process_stat_item (pid, pos, sum, error);
 	if (user_hz == 0) {
 #ifdef _SC_CLK_TCK
 		user_hz = sysconf (_SC_CLK_TCK);
@@ -217,36 +262,27 @@ get_process_stat_time (int pid, int pos, int sum, MonoProcessError *error)
 		if (user_hz == 0)
 			user_hz = 100;
 	}
+	return user_hz;
+}
+
+static gint64
+get_process_stat_time (int pid, int pos, int sum, MonoProcessError *error)
+{
+	gint64 val = get_process_stat_item (pid, pos, sum, error);
 	/* return milliseconds */
-	return (val * 1000) / user_hz;
+	return (val * 1000) / get_user_hz ();
 }
 
 static gint64
 get_pid_status_item (int pid, const char *item, MonoProcessError *error)
 {
-	char buf [256];
+	char buf [64];
 	char *s;
-	FILE *f;
-	int len = strlen (item);
 
-	g_snprintf (buf, sizeof (buf), "/proc/%d/status", pid);
-	f = fopen (buf, "r");
-	if (!f)
-		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
-	while ((s = fgets (buf, sizeof (buf), f))) {
-		if (*item != *buf)
-			continue;
-		if (strncmp (buf, item, len))
-			continue;
-		if (buf [len] != ':')
-			continue;
-		fclose (f);
-		if (error)
-			*error = MONO_PROCESS_ERROR_NONE;
-		return atoi (buf + len + 1);
-	}
-	fclose (f);
-	RET_ERROR (MONO_PROCESS_ERROR_OTHER);
+	s = get_pid_status_item_buf (pid, item, buf, sizeof (buf), error);
+	if (s)
+		return atoi (s);
+	return 0;
 }
 
 /**
@@ -302,5 +338,112 @@ mono_process_get_data (gpointer pid, MonoProcessData data)
 {
 	MonoProcessError error;
 	return mono_process_get_data_with_error (pid, data, &error);
+}
+
+/**
+ * mono_cpu_count:
+ *
+ * Return the number of processors on the system.
+ */
+int
+mono_cpu_count (void)
+{
+	int count;
+#ifdef _SC_NPROCESSORS_ONLN
+	count = sysconf (_SC_NPROCESSORS_ONLN);
+	if (count > 0)
+		return count;
+#endif
+#ifdef USE_SYSCTL
+	{
+		int mib [2];
+		size_t len = sizeof (int);
+		mib [0] = CTL_HW;
+		mib [1] = HW_NCPU;
+		if (sysctl (mib, 2, &count, &len, NULL, 0) == 0)
+			return count;
+	}
+#endif
+#ifdef PLATFORM_WIN32
+	{
+		SYSTEM_INFO info;
+		GetSystemInfo (&info);
+		return info.dwNumberOfProcessors;
+	}
+#endif
+	/* FIXME: warn */
+	return 1;
+}
+
+static void
+get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *sirq, gint64 *idle)
+{
+	char buf [256];
+	char *s;
+	int hz = get_user_hz ();
+	long long unsigned int user_ticks, nice_ticks, system_ticks, idle_ticks, iowait_ticks, irq_ticks, sirq_ticks;
+	FILE *f = fopen ("/proc/stat", "r");
+	if (!f)
+		return;
+	hz *= mono_cpu_count ();
+	while ((s = fgets (buf, sizeof (buf), f))) {
+		char *data = NULL;
+		if (cpu_id < 0 && strncmp (s, "cpu", 3) == 0 && g_ascii_isspace (s [3])) {
+			data = s + 4;
+		} else if (cpu_id >= 0 && strncmp (s, "cpu", 3) == 0 && strtol (s + 3, &data, 10) == cpu_id) {
+			if (data == s + 3)
+				continue;
+			data++;
+		} else {
+			continue;
+		}
+		sscanf (data, "%Lu %Lu %Lu %Lu %Lu %Lu %Lu", &user_ticks, &nice_ticks, &system_ticks, &idle_ticks, &iowait_ticks, &irq_ticks, &sirq_ticks);
+	}
+	fclose (f);
+
+	if (user)
+		*user = (user_ticks + nice_ticks) * 10000000 / hz;
+	if (systemt)
+		*systemt = (system_ticks) * 10000000 / hz;
+	if (irq)
+		*irq = (irq_ticks) * 10000000 / hz;
+	if (sirq)
+		*sirq = (sirq_ticks) * 10000000 / hz;
+	if (idle)
+		*idle = (idle_ticks) * 10000000 / hz;
+}
+
+/**
+ * mono_cpu_get_data:
+ * @cpu_id: processor number or -1 to get a summary of all the processors
+ * @data: type of data to retrieve
+ *
+ * Get data about a processor on the system, like time spent in user space or idle time.
+ */
+gint64
+mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error)
+{
+	gint64 value = 0;
+
+	if (error)
+		*error = MONO_PROCESS_ERROR_NONE;
+	switch (data) {
+	case MONO_CPU_USER_TIME:
+		get_cpu_times (cpu_id, &value, NULL, NULL, NULL, NULL);
+		break;
+	case MONO_CPU_PRIV_TIME:
+		get_cpu_times (cpu_id, NULL, &value, NULL, NULL, NULL);
+		break;
+	case MONO_CPU_INTR_TIME:
+		get_cpu_times (cpu_id, NULL, NULL, &value, NULL, NULL);
+		break;
+	case MONO_CPU_DCP_TIME:
+		get_cpu_times (cpu_id, NULL, NULL, NULL, &value, NULL);
+		break;
+	case MONO_CPU_IDLE_TIME:
+		get_cpu_times (cpu_id, NULL, NULL, NULL, NULL, &value);
+		break;
+	}
+	return value;
 }
 

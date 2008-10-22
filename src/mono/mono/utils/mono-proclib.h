@@ -1,7 +1,7 @@
 #ifndef __MONO_PROC_LIB_H__
 #define __MONO_PROC_LIB_H__
 /*
- * Utility functions to access processes information.
+ * Utility functions to access processes information and other info about the system.
  */
 
 #include <glib.h>
@@ -24,6 +24,15 @@ typedef enum {
 } MonoProcessData;
 
 typedef enum {
+	MONO_CPU_USER_TIME,
+	MONO_CPU_PRIV_TIME,
+	MONO_CPU_INTR_TIME,
+	MONO_CPU_DCP_TIME,
+	MONO_CPU_IDLE_TIME,
+	MONO_CPU_END
+} MonoCpuData;
+
+typedef enum {
 	MONO_PROCESS_ERROR_NONE, /* no error happened */
 	MONO_PROCESS_ERROR_NOT_FOUND, /* process not found */
 	MONO_PROCESS_ERROR_OTHER
@@ -35,6 +44,9 @@ char*     mono_process_get_name (gpointer pid, char *buf, int len) MONO_INTERNAL
 
 gint64    mono_process_get_data (gpointer pid, MonoProcessData data) MONO_INTERNAL;
 gint64    mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProcessError *error) MONO_INTERNAL;
+
+int       mono_cpu_count    (void) MONO_INTERNAL;
+gint64    mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error) MONO_INTERNAL;
 
 #endif /* __MONO_PROC_LIB_H__ */
 
