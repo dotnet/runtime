@@ -1,3 +1,7 @@
+2008-10-22  Zoltan Varga  <vargaz@gmail.com>
+
+	* scripts/Makefile.am: Add gacutil1 script.
+
 2008-10-21  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* data/dotnet35.pc.in : added sys.cm.dataannotations.dll too.
