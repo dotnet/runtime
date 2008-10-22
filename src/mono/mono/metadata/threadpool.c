@@ -28,6 +28,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-proclib.h>
 #include <errno.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -975,7 +976,6 @@ mono_async_invoke (MonoAsyncResult *ares)
 void
 mono_thread_pool_init ()
 {
-	SYSTEM_INFO info;
 	int threads_per_cpu = THREADS_PER_CPU;
 
 	if ((int) InterlockedCompareExchange (&tp_inited, 1, 0) == 1)
@@ -988,14 +988,13 @@ mono_thread_pool_init ()
 	ares_htable = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
 	job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (job_added != NULL);
-	GetSystemInfo (&info);
 	if (g_getenv ("MONO_THREADS_PER_CPU") != NULL) {
 		threads_per_cpu = atoi (g_getenv ("MONO_THREADS_PER_CPU"));
 		if (threads_per_cpu <= 0)
 			threads_per_cpu = THREADS_PER_CPU;
 	}
 
-	mono_max_worker_threads = 20 + threads_per_cpu * info.dwNumberOfProcessors;
+	mono_max_worker_threads = 20 + threads_per_cpu * mono_cpu_count ();
 
 	async_call_klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
 	g_assert (async_call_klass);
