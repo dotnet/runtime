@@ -1,3 +1,8 @@
+2008-10-22  Zoltan Varga  <vargaz@gmail.com>
+
+	* Makefile (PROGRAM): Always install into the appropriate profile
+	dir.
+
 2008-09-12  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/Pipeline.cs: add a RemoveStep method.
