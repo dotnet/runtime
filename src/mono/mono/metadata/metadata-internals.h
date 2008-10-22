@@ -372,6 +372,9 @@ mono_image_alloc0 (MonoImage *image, guint size) MONO_INTERNAL;
 char*
 mono_image_strdup (MonoImage *image, const char *s) MONO_INTERNAL;
 
+MonoType*
+mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
+
 void
 mono_metadata_clean_for_image (MonoImage *image) MONO_INTERNAL;
 

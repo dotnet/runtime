@@ -605,6 +605,8 @@ mono_class_get_context (MonoClass *class)
  * The same as mono_class_inflate_generic_type, but allocates the MonoType
  * from mempool if it is non-NULL.  If it is NULL, the MonoType is
  * allocated on the heap and is owned by the caller.
+ * The returned type can potentially be the same as TYPE, so it should not be
+ * modified by the caller, and it should be freed using mono_metadata_free_type ().
  */
 MonoType*
 mono_class_inflate_generic_type_with_mempool (MonoMemPool *mempool, MonoType *type, MonoGenericContext *context)
@@ -614,8 +616,15 @@ mono_class_inflate_generic_type_with_mempool (MonoMemPool *mempool, MonoType *ty
 	if (context)
 		inflated = inflate_generic_type (mempool, type, context);
 
-	if (!inflated)
-		return mono_metadata_type_dup (mempool, type);
+	if (!inflated) {
+		MonoType *shared = mono_metadata_get_shared_type (type);
+
+		if (shared) {
+			return shared;
+		} else {
+			return mono_metadata_type_dup (mempool, type);
+		}
+	}
 
 	mono_stats.inflated_type_count++;
 	return inflated;
@@ -638,6 +647,26 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 	return mono_class_inflate_generic_type_with_mempool (NULL, type, context);
 }
 
+/*
+ * mono_class_inflate_generic_type_with_mempool_no_copy:
+ *
+ *   Same as inflate_generic_type_with_mempool, but return TYPE if no inflation
+ * was done.
+ */
+static MonoType*
+mono_class_inflate_generic_type_with_mempool_no_copy (MonoMemPool *mempool, MonoType *type, MonoGenericContext *context)
+{
+	MonoType *inflated = NULL; 
+
+	if (context)
+		inflated = inflate_generic_type (mempool, type, context);
+
+	if (!inflated)
+		return type;
+
+	mono_stats.inflated_type_count++;
+	return inflated;
+}
 
 static MonoGenericContext
 inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with)
@@ -1035,7 +1064,7 @@ mono_class_setup_fields (MonoClass *class)
 
 			field->name = mono_field_get_name (gfield);
 			/*This memory must come from the image mempool as we don't have a chance to free it.*/
-			field->type = mono_class_inflate_generic_type_with_mempool (class->image->mempool, gfield->type, mono_class_get_context (class));
+			field->type = mono_class_inflate_generic_type_with_mempool_no_copy (class->image->mempool, gfield->type, mono_class_get_context (class));
 			field->type->attrs = gfield->type->attrs;
 			if (mono_field_is_deleted (field))
 				continue;

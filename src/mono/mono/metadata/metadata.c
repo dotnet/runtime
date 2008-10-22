@@ -2588,6 +2588,38 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 	return &generic_container->type_params [index];
 }
 
+/*
+ * mono_metadata_get_shared_type:
+ *
+ *   Return a shared instance of TYPE, if available, NULL otherwise.
+ * Shared MonoType instances help save memory. Their contents should not be modified
+ * by the caller. They do not need to be freed as their lifetime is bound by either
+ * the lifetime of the runtime (builtin types), or the lifetime of the MonoClass
+ * instance they are embedded in. If they are freed, they should be freed using
+ * mono_metadata_free_type () instead of g_free ().
+ */
+MonoType*
+mono_metadata_get_shared_type (MonoType *type)
+{
+	MonoType *cached;
+
+	/* No need to use locking since nobody is modifying the hash table */
+	if ((cached = g_hash_table_lookup (type_cache, type)))
+		return cached;
+
+	switch (type->type){
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+		if (type == &type->data.klass->byval_arg)
+			return type;
+		if (type == &type->data.klass->this_arg)
+			return type;
+		break;
+	}
+
+	return NULL;
+}
+
 /* 
  * do_mono_metadata_parse_type:
  * @type: MonoType to be filled in with the return value
