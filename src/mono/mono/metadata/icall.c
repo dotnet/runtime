@@ -67,6 +67,7 @@
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-proclib.h>
 
 #if defined (PLATFORM_WIN32)
 #include <windows.h>

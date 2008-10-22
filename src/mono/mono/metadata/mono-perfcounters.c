@@ -563,50 +563,10 @@ id_from_string (MonoString *instance, gboolean is_process)
 	return id;
 }
 
-static void
-get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *sirq, gint64 *idle)
-{
-	SYSTEM_INFO info;
-	char buf [256];
-	char *s;
-	int hz = 100;
-	long long unsigned int user_ticks, nice_ticks, system_ticks, idle_ticks, iowait_ticks, irq_ticks, sirq_ticks;
-	FILE *f = fopen ("/proc/stat", "r");
-	if (!f)
-		return;
-	GetSystemInfo (&info);
-	hz *= info.dwNumberOfProcessors;
-	while ((s = fgets (buf, sizeof (buf), f))) {
-		char *data = NULL;
-		if (cpu_id < 0 && strncmp (s, "cpu", 3) == 0 && g_ascii_isspace (s [3])) {
-			data = s + 4;
-		} else if (cpu_id >= 0 && strncmp (s, "cpu", 3) == 0 && strtol (s + 3, &data, 10) == cpu_id) {
-			if (data == s + 3)
-				continue;
-			data++;
-		} else {
-			continue;
-		}
-		sscanf (data, "%Lu %Lu %Lu %Lu %Lu %Lu %Lu", &user_ticks, &nice_ticks, &system_ticks, &idle_ticks, &iowait_ticks, &irq_ticks, &sirq_ticks);
-	}
-	fclose (f);
-
-	if (user)
-		*user = (user_ticks + nice_ticks) * 10000000 / hz;
-	if (systemt)
-		*systemt = (system_ticks) * 10000000 / hz;
-	if (irq)
-		*irq = (irq_ticks) * 10000000 / hz;
-	if (sirq)
-		*sirq = (sirq_ticks) * 10000000 / hz;
-	if (idle)
-		*idle = (idle_ticks) * 10000000 / hz;
-}
-
 static MonoBoolean
 get_cpu_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *sample)
 {
-	gint64 value = 0;
+	MonoProcessError error;
 	int id = GPOINTER_TO_INT (vtable->arg);
 	int pid = id >> 5;
 	id &= 0x1f;
@@ -617,24 +577,19 @@ get_cpu_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample *
 	sample->counterType = predef_counters [predef_categories [CATEGORY_CPU].first_counter + id].type;
 	switch (id) {
 	case COUNTER_CPU_USER_TIME:
-		get_cpu_times (pid, &value, NULL, NULL, NULL, NULL);
-		sample->rawValue = value;
+		sample->rawValue = mono_cpu_get_data (pid, MONO_CPU_USER_TIME, &error);
 		return TRUE;
 	case COUNTER_CPU_PRIV_TIME:
-		get_cpu_times (pid, NULL, &value, NULL, NULL, NULL);
-		sample->rawValue = value;
+		sample->rawValue = mono_cpu_get_data (pid, MONO_CPU_PRIV_TIME, &error);
 		return TRUE;
 	case COUNTER_CPU_INTR_TIME:
-		get_cpu_times (pid, NULL, NULL, &value, NULL, NULL);
-		sample->rawValue = value;
+		sample->rawValue = mono_cpu_get_data (pid, MONO_CPU_INTR_TIME, &error);
 		return TRUE;
 	case COUNTER_CPU_DCP_TIME:
-		get_cpu_times (pid, NULL, NULL, NULL, &value, NULL);
-		sample->rawValue = value;
+		sample->rawValue = mono_cpu_get_data (pid, MONO_CPU_DCP_TIME, &error);
 		return TRUE;
 	case COUNTER_CPU_PROC_TIME:
-		get_cpu_times (pid, NULL, NULL, NULL, NULL, &value);
-		sample->rawValue = value;
+		sample->rawValue = mono_cpu_get_data (pid, MONO_CPU_IDLE_TIME, &error);
 		return TRUE;
 	}
 	return FALSE;
@@ -1244,14 +1199,13 @@ static MonoArray*
 get_cpu_instances (void)
 {
 	void **buf = NULL;
-	int i;
+	int i, count;
 	MonoArray *array;
-	SYSTEM_INFO info;
-	GetSystemInfo (&info);
-	buf = g_new (void*, info.dwNumberOfProcessors);
-	for (i = 0; i < info.dwNumberOfProcessors; ++i)
+	count = mono_cpu_count ();
+	buf = g_new (void*, count);
+	for (i = 0; i < count; ++i)
 		buf [i] = GINT_TO_POINTER (i);
-	array = get_string_array (buf, info.dwNumberOfProcessors, FALSE);
+	array = get_string_array (buf, count, FALSE);
 	g_free (buf);
 	return array;
 }

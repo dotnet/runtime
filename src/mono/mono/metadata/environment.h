@@ -17,8 +17,6 @@ extern void mono_environment_exitcode_set (gint32 value);
 
 extern MonoString* ves_icall_System_Environment_GetOSVersionString (void);
 
-extern gint32 ves_icall_System_Environment_get_ProcessorCount(void);
-
 G_END_DECLS
 
 #endif /* _MONO_METADATA_ENVIRONMENT_H_ */
