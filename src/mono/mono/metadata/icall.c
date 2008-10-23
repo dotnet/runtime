@@ -6525,7 +6525,7 @@ ves_icall_System_Environment_GetLogicalDrives (void)
 {
         gunichar2 buf [128], *ptr, *dname;
 	gunichar2 *u16;
-	gint initial_size = 127, size = 128;
+	guint initial_size = 127, size = 128;
 	gint ndrives;
 	MonoArray *result;
 	MonoString *drivestr;
@@ -6538,7 +6538,7 @@ ves_icall_System_Environment_GetLogicalDrives (void)
 	ptr = buf;
 
 	while (size > initial_size) {
-		size = GetLogicalDriveStrings (initial_size, ptr);
+		size = (guint) GetLogicalDriveStrings (initial_size, ptr);
 		if (size > initial_size) {
 			if (ptr != buf)
 				g_free (ptr);
