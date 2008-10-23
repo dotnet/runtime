@@ -236,9 +236,11 @@ async_invoke_io_thread (gpointer data)
 {
 	MonoDomain *domain;
 	MonoThread *thread;
+	const gchar *version;
 
 	thread = mono_thread_current ();
 
+	version = mono_get_runtime_info ()->framework_version;
 	for (;;) {
 		MonoSocketAsyncResult *state;
 		MonoAsyncResult *ar;
@@ -274,7 +276,7 @@ async_invoke_io_thread (gpointer data)
 			mono_thread_pop_appdomain_ref ();
 			InterlockedDecrement (&busy_io_worker_threads);
 			/* If the callee changes the background status, set it back to TRUE */
-			if (!mono_thread_test_state (thread , ThreadState_Background))
+			if (*version != '1' && !mono_thread_test_state (thread , ThreadState_Background))
 				ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 		}
 
@@ -398,7 +400,6 @@ socket_io_poll_main (gpointer p)
 	MonoThread *thread;
 
 	thread = mono_thread_current ();
-	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 
 	allocated = INITIAL_POLLFD_SIZE;
 	pfds = g_new0 (mono_pollfd, allocated);
@@ -539,8 +540,6 @@ socket_io_epoll_main (gpointer p)
 	data = p;
 	epollfd = data->epollfd;
 	thread = mono_thread_current ();
-	thread->threadpool_thread = TRUE;
-	ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 	events = g_new0 (struct epoll_event, nevents);
 
 	while (1) {
@@ -1220,8 +1219,10 @@ async_invoke_thread (gpointer data)
 	MonoDomain *domain;
 	MonoThread *thread;
 	int workers, min;
+	const gchar *version;
  
 	thread = mono_thread_current ();
+	version = mono_get_runtime_info ()->framework_version;
 	for (;;) {
 		MonoAsyncResult *ar;
 
@@ -1245,7 +1246,7 @@ async_invoke_thread (gpointer data)
 			mono_thread_pop_appdomain_ref ();
 			InterlockedDecrement (&busy_worker_threads);
 			/* If the callee changes the background status, set it back to TRUE */
-			if (!mono_thread_test_state (thread , ThreadState_Background))
+			if (*version != '1' && !mono_thread_test_state (thread , ThreadState_Background))
 				ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 		}
 
