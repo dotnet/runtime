@@ -209,7 +209,7 @@ public class SimdTests {
 
 	public static int vector16b_sum_abs_diff () {
 		Vector16b a = new Vector16b (100,20,20,20,0,0,0,0,0,0,0,0,0,0, 0, 0);
-		Vector16b b = new Vector16b (0,  10,10,10,0,0,0,0,0,0,0,0,0,0,10,10);
+		Vector16sb b = new Vector16sb (0,  10,10,10,0,0,0,0,0,0,0,0,0,0,10,10);
 		Vector8us c = Vector16b.SumOfAbsoluteDifferences (a, b);
 
 		if (c.V0 != 130)
@@ -1337,21 +1337,6 @@ public class SimdTests {
 			return 7;
 		if (c.V15 != 0)
 			return 8;
-		return 0;
-	}
-
-	static int test_0_vector16b_sar () {
-		Vector16b a = new Vector16b (0xF0,20,3,40,0,0,0,0,0,0,0,0,0,0,0,0);
-		
-		Vector16b c = Vector16b.ShiftRightArithmetic (a, 2);
-		if (c.V0 != 0xFC)
-			return 1;
-		if (c.V1 != 5)
-			return 1;
-		if (c.V2 != 0)
-			return 2;
-		if (c.V3 != 10)
-			return 3;
 		return 0;
 	}
 
