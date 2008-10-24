@@ -2365,6 +2365,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 		else
 			bb->last_ins = last_bb->last_ins;
 		*prev = last_bb->last_ins;
+		bb->has_array_access |= first_bb->has_array_access;
 	} else {
 		int i, count;
 		MonoBasicBlock **tmp_bblocks, *tmp;
@@ -2390,6 +2391,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 		} else {
 			last_bb->code = next;
 		}
+		last_bb->has_array_access |= bb->has_array_access;
 
 		if (next) {
 			for (last = next; last->next != NULL; last = last->next)
@@ -2408,6 +2410,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 			bb->code = first_bb->code;
 		}
 		bb->last_ins = first_bb->last_ins;
+		bb->has_array_access |= first_bb->has_array_access;
 
 		/* Delete the links between the original bb and its successors */
 		tmp_bblocks = bb->out_bb;
