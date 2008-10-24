@@ -32,7 +32,8 @@ TODO figure out what's wrong with OP_STOREX_MEMBASE_REG and OP_STOREX_MEMBASE (t
 TODO maybe add SSE3 emulation on top of SSE2, or just implement the corresponding functions using SSE2 intrinsics.
 TODO pass simd arguments in registers or, at least, add SSE support for pushing large (>=16) valuetypes 
 TODO pass simd args byval to a non-intrinsic method cause some useless local var load/store to happen.
-TODO check if we need to init the SSE control word with better precision. 
+TODO check if we need to init the SSE control word with better precision.
+TODO add support for 3 reg sources in mini without slowing the common path. Or find a way to make MASKMOVDQU work.  
 
 General notes for SIMD intrinsics.
 
@@ -127,7 +128,7 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AndNot, OP_ANDNPS, SIMD_EMIT_BINARY },
 	{ SN_AddSub, OP_ADDSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
-	{ SN_CompareEquals, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
+	{ SN_CompareEqual, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
 	{ SN_CompareLessEqual, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LE },
 	{ SN_CompareLessThan, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LT },
 	{ SN_CompareNotEqual, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NEQ },
@@ -206,7 +207,7 @@ static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ SN_CompareEqual, OP_PCMPEQW, SIMD_EMIT_BINARY },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
-	{ SN_Max, OP_PMAXW_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41},
+	{ SN_Max, OP_PMAXW_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_Min, OP_PMINW_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_MultiplyStoreHigh, OP_PMULW_HIGH_UN, SIMD_EMIT_BINARY },
 	{ SN_ShiftRightArithmetic, OP_PSARW, SIMD_EMIT_SHIFT },
@@ -245,6 +246,32 @@ static const SimdIntrinsc vector16b_intrinsics[] = {
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_SubWithSaturation, OP_PSUBB_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_SumOfAbsoluteDifferences, OP_PSUM_ABS_DIFF, SIMD_EMIT_BINARY },
+	{ SN_UnpackHigh, OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
+	{ SN_UnpackLow, OP_UNPACK_LOWB, SIMD_EMIT_BINARY },
+	{ SN_op_Addition, OP_PADDB, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseXor, OP_PXOR, SIMD_EMIT_BINARY },
+	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
+	{ SN_op_Subtraction, OP_PSUBB, SIMD_EMIT_BINARY },
+};
+
+/*
+Missing:
+.ctor
+getters
+setters
+ */
+static const SimdIntrinsc vector16sb_intrinsics[] = {
+	{ SN_AddWithSaturation, OP_PADDB_SAT, SIMD_EMIT_BINARY },
+	{ SN_CompareEqual, OP_PCMPEQB, SIMD_EMIT_BINARY },
+	{ SN_CompareGreaterThan, OP_PCMPGTB, SIMD_EMIT_BINARY },
+	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
+	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_Max, OP_PMAXB, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_Min, OP_PMINB, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
+	{ SN_SubWithSaturation, OP_PSUBB_SAT, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWB, SIMD_EMIT_BINARY },
 	{ SN_op_Addition, OP_PADDB, SIMD_EMIT_BINARY },
@@ -835,6 +862,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector8us_intrinsics, sizeof (vector8us_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector16b", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector16b_intrinsics, sizeof (vector16b_intrinsics) / sizeof (SimdIntrinsc));
+	if (!strcmp ("Vector16sb", cmethod->klass->name))
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector16sb_intrinsics, sizeof (vector16sb_intrinsics) / sizeof (SimdIntrinsc));
 	return NULL;
 }
 

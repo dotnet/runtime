@@ -454,6 +454,10 @@ pmaxb_un: dest:x src1:x src2:x len:4 clob:1
 pmaxw_un: dest:x src1:x src2:x len:5 clob:1
 pmaxd_un: dest:x src1:x src2:x len:5 clob:1
 
+pmaxb: dest:x src1:x src2:x len:5 clob:1
+pmaxw: dest:x src1:x src2:x len:4 clob:1
+pmaxd: dest:x src1:x src2:x len:5 clob:1
+
 pavgb_un: dest:x src1:x src2:x len:4 clob:1
 pavgw_un: dest:x src1:x src2:x len:4 clob:1
 
@@ -461,9 +465,17 @@ pminb_un: dest:x src1:x src2:x len:4 clob:1
 pminw_un: dest:x src1:x src2:x len:5 clob:1
 pmind_un: dest:x src1:x src2:x len:5 clob:1
 
+pminb: dest:x src1:x src2:x len:5 clob:1
+pminw: dest:x src1:x src2:x len:4 clob:1
+pmind: dest:x src1:x src2:x len:5 clob:1
+
 pcmpeqb: dest:x src1:x src2:x len:4 clob:1
 pcmpeqw: dest:x src1:x src2:x len:4 clob:1
 pcmpeqd: dest:x src1:x src2:x len:4 clob:1
+
+pcmpgtb: dest:x src1:x src2:x len:4 clob:1
+pcmpgtw: dest:x src1:x src2:x len:4 clob:1
+pcmpgtd: dest:x src1:x src2:x len:4 clob:1
 
 psumabsdiff: dest:x src1:x src2:x len:4 clob:1
 

@@ -3922,6 +3922,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_PMAXD_UN:
 			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMAXUD, ins->sreg1, ins->sreg2);
 			break;
+		
+		case OP_PMAXB:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMAXSB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMAXW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMAXSW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMAXD:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMAXSD, ins->sreg1, ins->sreg2);
+			break;
 
 		case OP_PAVGB_UN:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PAVGB, ins->sreg1, ins->sreg2);
@@ -3940,6 +3950,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMINUD, ins->sreg1, ins->sreg2);
 			break;
 
+		case OP_PMINB:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMINSB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMINW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMINSW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PMIND:
+			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PMINSD, ins->sreg1, ins->sreg2);
+			break;
+
 		case OP_PCMPEQB:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPEQB, ins->sreg1, ins->sreg2);
 			break;
@@ -3948,6 +3968,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_PCMPEQD:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPEQD, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PCMPGTB:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPGTB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPGTW:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPGTW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PCMPGTD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PCMPGTD, ins->sreg1, ins->sreg2);
 			break;
 
 		case OP_PSUM_ABS_DIFF:
@@ -3998,6 +4028,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_PSUBW_SAT_UN:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBUSW, ins->sreg1, ins->sreg2);
+			break;
+
+		case OP_PADDB_SAT:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PADDSB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBB_SAT:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBSB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PADDW_SAT:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PADDSW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PSUBW_SAT:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PSUBSW, ins->sreg1, ins->sreg2);
 			break;
 			
 		case OP_PMULW:
