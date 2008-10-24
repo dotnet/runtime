@@ -2,6 +2,81 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+
+	public static unsafe int test_vector16sb_sub_sat () {
+		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16sb b = new Vector16sb (-100, 100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
+
+		Vector16sb c = Vector16sb.SubWithSaturation (a, b);
+
+		if (c.V0 != 127)
+			return 1;
+		if (c.V1 != -128)
+			return 2;
+		if (c.V2 != 0)
+			return 3;
+		if (c.V3 != 0)
+			return 4;
+		if (c.V4 != 9)
+			return 5;
+		if (c.V5 != 9)
+			return 6;
+		if (c.V6 != 9)
+			return 7;
+		if (c.V7 != -7)
+			return 8;
+		return 0;
+	}
+
+	public static unsafe int test_vector16sb_add_sat () {
+		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16sb b = new Vector16sb (100, -100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
+
+		Vector16sb c = Vector16sb.AddWithSaturation (a, b);
+
+		if (c.V0 != 127)
+			return 1;
+		if (c.V1 != -128)
+			return 2;
+		if (c.V2 != 22)
+			return 3;
+		if (c.V3 != 24)
+			return 4;
+		if (c.V4 != 17)
+			return 5;
+		if (c.V5 != 19)
+			return 6;
+		if (c.V6 != 21)
+			return 7;
+		if (c.V7 != 7)
+			return 8;
+		return 0;
+	}
+
+	public static unsafe int test_vector16sb_cmp_gt () {
+		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
+		Vector16sb b = new Vector16sb (-100, 100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
+
+		Vector16sb c = Vector16sb.CompareGreaterThan (a, b);
+
+		if (c.V0 != -1)
+			return 1;
+		if (c.V1 != 0)
+			return 2;
+		if (c.V2 != 0)
+			return 3;
+		if (c.V3 != 0)
+			return 4;
+		if (c.V4 != -1)
+			return 5;
+		if (c.V5 != -1)
+			return 6;
+		if (c.V6 != -1)
+			return 7;
+		return 0;
+	}
+
+
 	public static int test_0_vector4ui_pack_with_sat () {
 		Vector4ui a = new Vector4ui (0xF0000000,0xF0000,3,4);
 		Vector4ui b = new Vector4ui (5,6,7,8);
