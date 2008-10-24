@@ -220,7 +220,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 		}
 
 		for (i = 0; i < bb->out_count; ++i)
-			link_bblock (cfg, last_bb, bb->out_bb [i]);
+			mono_link_bblock (cfg, last_bb, bb->out_bb [i]);
 
 		/* Merge the first (dummy) bb to the original bb */
 		if (*prev) {
@@ -242,7 +242,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 		for (i = 0; i < first_bb->out_count; ++i) {
 			MonoBasicBlock *out_bb = first_bb->out_bb [i];
 
-			link_bblock (cfg, bb, out_bb);
+			mono_link_bblock (cfg, bb, out_bb);
 		}
 		/* Delete links between the first_bb and its successors */
 		for (i = 0; i < bb->out_count; ++i) {
