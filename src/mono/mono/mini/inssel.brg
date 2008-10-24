@@ -781,7 +781,7 @@ stmt: OP_LABEL {
 stmt: OP_NOP "0" {
 }
 
-stmp: OP_HARD_NOP "0" {
+stmt: OP_HARD_NOP "0" {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
