@@ -9804,7 +9804,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 MonoMethod *
 mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 {
-	static MonoMethod *enter_method, *exit_method;
+	static MonoMethod *enter_method, *exit_method, *gettypefromhandle_method;
 	MonoMethodSignature *sig;
 	MonoExceptionClause *clause;
 	MonoMethodHeader *header;
@@ -9864,21 +9864,27 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		enter_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 		g_assert (enter_method);
 		mono_method_desc_free (desc);
+
 		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
 		exit_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 		g_assert (exit_method);
+		mono_method_desc_free (desc);
+
+		desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
+		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.monotype_class->parent);
+		g_assert (gettypefromhandle_method);
 		mono_method_desc_free (desc);
 	}
 
 	/* Push this or the type object */
 	if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-		/*
-		 * GetTypeFromHandle isn't called as a managed method because it has
-		 * a funky calling sequence, e.g. ldtoken+GetTypeFromHandle gets
-		 * transformed into something else by the JIT.
-		 */
-		mono_mb_emit_ptr (mb, &method->klass->byval_arg);
-		mono_mb_emit_icall (mb, type_from_handle);
+		/* We have special handling for this in the JIT */
+		int index = mono_mb_add_data (mb, method->klass);
+		mono_mb_add_data (mb, mono_defaults.typehandle_class);
+		mono_mb_emit_byte (mb, CEE_LDTOKEN);
+		mono_mb_emit_i4 (mb, index);
+
+		mono_mb_emit_managed_call (mb, gettypefromhandle_method, NULL);
 	}
 	else
 		mono_mb_emit_ldarg (mb, 0);

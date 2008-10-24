@@ -8326,7 +8326,8 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			CHECK_OPSIZE (5);
 			n = read32 (ip + 1);
 
-			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD ||
+					method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED) {
 				handle = mono_method_get_wrapper_data (method, n);
 				handle_class = mono_method_get_wrapper_data (method, n + 1);
 				if (handle_class == mono_defaults.typehandle_class)
@@ -8356,7 +8357,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					g_assert_not_reached ();
 			}
 
-			if (cfg->opt & MONO_OPT_SHARED) {
+			if ((cfg->opt & MONO_OPT_SHARED) &&
+					method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD &&
+					method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED) {
 				MonoInst *addr, *vtvar, *iargs [3];
 				int method_context_used;
 
