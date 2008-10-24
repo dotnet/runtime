@@ -500,17 +500,11 @@ paddb_sat_un: dest:x src1:x src2:x len:4 clob:1
 paddw_sat: dest:x src1:x src2:x len:4 clob:1
 paddw_sat_un: dest:x src1:x src2:x len:4 clob:1
 
-paddd_sat: dest:x src1:x src2:x len:4 clob:1
-paddd_sat_un: dest:x src1:x src2:x len:4 clob:1
-
 psubb_sat: dest:x src1:x src2:x len:4 clob:1
 psubb_sat_un: dest:x src1:x src2:x len:4 clob:1
 
 psubw_sat: dest:x src1:x src2:x len:4 clob:1
 psubw_sat_un: dest:x src1:x src2:x len:4 clob:1
-
-psubd_sat: dest:x src1:x src2:x len:4 clob:1
-psubd_sat_un: dest:x src1:x src2:x len:4 clob:1
 
 pmulw: dest:x src1:x src2:x len:4 clob:1
 pmuld: dest:x src1:x src2:x len:5 clob:1

@@ -171,17 +171,15 @@ getters
 setters
  */
 static const SimdIntrinsc vector4ui_intrinsics[] = {
-	{ SN_AddWithSaturation, OP_PADDD_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_CompareEqual, OP_PCMPEQD, SIMD_EMIT_BINARY },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
-	{ SN_Max, OP_PMAXD_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41},
+	{ SN_Max, OP_PMAXD_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_Min, OP_PMIND_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_ShiftRightArithmetic, OP_PSARD, SIMD_EMIT_SHIFT },
 	{ SN_Shuffle, OP_PSHUFLED, SIMD_EMIT_SHUFFLE },
 	{ SN_SignedPackWithUnsignedSaturation, OP_PACKD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
-	{ SN_SubWithSaturation, OP_PSUBD_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHD, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWD, SIMD_EMIT_BINARY },
 	{ SN_op_Addition, OP_PADDD, SIMD_EMIT_BINARY },
@@ -194,6 +192,8 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 	{ SN_op_RightShift, OP_PSHRD, SIMD_EMIT_SHIFT },
 	{ SN_op_Subtraction, OP_PSUBD, SIMD_EMIT_BINARY },
 };
+
+
 
 /*
 Missing:
@@ -244,10 +244,10 @@ static const SimdIntrinsc vector8s_intrinsics[] = {
 	{ SN_Max, OP_PMAXW, SIMD_EMIT_BINARY },
 	{ SN_Min, OP_PMINW, SIMD_EMIT_BINARY },
 	{ SN_MultiplyStoreHigh, OP_PMULW_HIGH, SIMD_EMIT_BINARY },
+	{ SN_PackWithUnsignedSaturation, OP_PACKW, SIMD_EMIT_BINARY },
 	{ SN_ShiftRightLogic, OP_PSHRW, SIMD_EMIT_SHIFT },
 	{ SN_ShuffleHigh, OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
 	{ SN_ShuffleLow, OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },
-	{ SN_PackWithUnsignedSaturation, OP_PACKW, SIMD_EMIT_BINARY },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_SubWithSaturation, OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
