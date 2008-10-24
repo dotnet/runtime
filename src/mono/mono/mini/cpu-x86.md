@@ -492,7 +492,10 @@ unpack_highq: dest:x src1:x src2:x len:4 clob:1
 unpack_highps: dest:x src1:x src2:x len:3 clob:1
 
 packw: dest:x src1:x src2:x len:4 clob:1 
-packd: dest:x src1:x src2:x len:5 clob:1 
+packd: dest:x src1:x src2:x len:4 clob:1 
+
+packw_un: dest:x src1:x src2:x len:4 clob:1 
+packd_un: dest:x src1:x src2:x len:5 clob:1 
 
 paddb_sat: dest:x src1:x src2:x len:4 clob:1
 paddb_sat_un: dest:x src1:x src2:x len:4 clob:1

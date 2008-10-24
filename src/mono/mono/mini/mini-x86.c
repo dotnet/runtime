@@ -4011,9 +4011,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_PACKW:
-			x86_sse_alu_pd_reg_reg (code, X86_SSE_PACKUSWB, ins->sreg1, ins->sreg2);
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PACKSSWB, ins->sreg1, ins->sreg2);
 			break;
 		case OP_PACKD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PACKSSDW, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PACKW_UN:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PACKUSWB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_PACKD_UN:
 			x86_sse_alu_sse41_reg_reg (code, X86_SSE_PACKUSDW, ins->sreg1, ins->sreg2);
 			break;
 
