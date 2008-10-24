@@ -235,6 +235,40 @@ Missing:
 getters
 setters
  */
+static const SimdIntrinsc vector8s_intrinsics[] = {
+	{ SN_AddWithSaturation, OP_PADDW_SAT, SIMD_EMIT_BINARY },
+	{ SN_CompareEqual, OP_PCMPEQW, SIMD_EMIT_BINARY },
+	{ SN_CompareGreaterThan, OP_PCMPGTW, SIMD_EMIT_BINARY },
+	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
+	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_Max, OP_PMAXW, SIMD_EMIT_BINARY },
+	{ SN_Min, OP_PMINW, SIMD_EMIT_BINARY },
+	{ SN_MultiplyStoreHigh, OP_PMULW_HIGH, SIMD_EMIT_BINARY },
+	{ SN_ShiftRightLogic, OP_PSHRW, SIMD_EMIT_SHIFT },
+	{ SN_ShuffleHigh, OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
+	{ SN_ShuffleLow, OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },
+	{ SN_PackWithUnsignedSaturation, OP_PACKW, SIMD_EMIT_BINARY },
+	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
+	{ SN_SubWithSaturation, OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
+	{ SN_UnpackHigh, OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
+	{ SN_UnpackLow, OP_UNPACK_LOWW, SIMD_EMIT_BINARY },
+	{ SN_op_Addition, OP_PADDW, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseXor, OP_PXOR, SIMD_EMIT_BINARY },
+	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
+	{ SN_op_LeftShift, OP_PSHLW, SIMD_EMIT_SHIFT },
+	{ SN_op_Multiply, OP_PMULW, SIMD_EMIT_BINARY },
+	{ SN_op_RightShift, OP_PSARW, SIMD_EMIT_SHIFT },
+	{ SN_op_Subtraction, OP_PSUBW, SIMD_EMIT_BINARY },
+};
+
+/*
+Missing:
+.ctor
+getters
+setters
+ */
 static const SimdIntrinsc vector16b_intrinsics[] = {
 	{ SN_AddWithSaturation, OP_PADDB_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_Average, OP_PAVGB_UN, SIMD_EMIT_BINARY },
@@ -860,6 +894,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4ui_intrinsics, sizeof (vector4ui_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector8us", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector8us_intrinsics, sizeof (vector8us_intrinsics) / sizeof (SimdIntrinsc));
+	if (!strcmp ("Vector8s", cmethod->klass->name))
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector8s_intrinsics, sizeof (vector8s_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector16b", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector16b_intrinsics, sizeof (vector16b_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector16sb", cmethod->klass->name))

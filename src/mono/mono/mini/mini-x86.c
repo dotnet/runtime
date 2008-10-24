@@ -4052,6 +4052,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_PMULW_HIGH_UN:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMULHUW, ins->sreg1, ins->sreg2);
 			break;
+		case OP_PMULW_HIGH:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMULHW, ins->sreg1, ins->sreg2);
+			break;
 
 		case OP_PSHRW:
 			x86_sse_shift_reg_imm (code, X86_SSE_PSHIFTW, X86_SSE_SHR, ins->dreg, ins->inst_imm);
