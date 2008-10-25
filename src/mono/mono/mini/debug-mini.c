@@ -123,10 +123,9 @@ write_variable (MonoInst *inst, MonoDebugVarInfo *var)
 
 	if (inst->opcode == OP_REGVAR)
 		var->index = inst->dreg | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
-	else if (inst->flags & MONO_INST_IS_DEAD) {
-		// FIXME:
-		var->index = 0 | MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER;
-	} else {
+	else if (inst->flags & MONO_INST_IS_DEAD)
+		var->index = MONO_DEBUG_VAR_ADDRESS_MODE_DEAD;
+	else {
 		/* the debug interface needs fixing to allow 0(%base) address */
 		var->index = inst->inst_basereg | MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET;
 		var->offset = inst->inst_offset;

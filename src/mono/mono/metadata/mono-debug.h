@@ -116,6 +116,9 @@ struct _MonoDebugSourceLocation {
 /* The variable is in the two registers "offset" and "index". */
 #define MONO_DEBUG_VAR_ADDRESS_MODE_TWO_REGISTERS	0x20000000
 
+/* The variable is dead. */
+#define MONO_DEBUG_VAR_ADDRESS_MODE_DEAD		0x30000000
+
 struct _MonoDebugVarInfo {
 	guint32 index;
 	guint32 offset;
