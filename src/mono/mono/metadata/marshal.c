@@ -4739,9 +4739,12 @@ add_string_ctor_signature (MonoMethod *method)
 	return callsig;
 }
 
-static inline MonoType*
-get_basic_type (MonoType *t)
+static MonoType*
+get_runtime_invoke_type (MonoType *t)
 {
+	if (t->byref)
+		return &mono_defaults.int_class->byval_arg;
+
 	switch (t->type) {
 	case MONO_TYPE_U1:
 		return &mono_defaults.sbyte_class->byval_arg;
@@ -4763,96 +4766,38 @@ get_basic_type (MonoType *t)
 		else
 			return t;
 	default:
+		if (MONO_TYPE_IS_REFERENCE (t))
+			return &mono_defaults.object_class->byval_arg;
 		return t;
 	}
 }
 
-static inline gboolean
-runtime_invoke_type_equal (MonoType *t1, MonoType *t2)
-{
-	if (MONO_TYPE_IS_REFERENCE (t1) && MONO_TYPE_IS_REFERENCE (t2))
-		return TRUE;
-	else if (t1->byref != t2->byref)
-		return FALSE;
-	else if (t1->byref && t2->byref)
-		return TRUE;
-	else if (t1->type == MONO_TYPE_PTR && t2->type == MONO_TYPE_PTR)
-		return TRUE;
-	else {
-		t1 = get_basic_type (t1);
-		t2 = get_basic_type (t2);
-
-		return mono_metadata_type_equal (t1, t2);
-	}
-}
-
-static inline guint
-runtime_invoke_type_hash (MonoType *t1)
-{
-	if (MONO_TYPE_IS_REFERENCE (t1))
-		return 0;
-	else if (t1->byref)
-		return 1;
-	else if (t1->type == MONO_TYPE_PTR)
-		return 2;
-	else
-		return mono_metadata_type_hash (get_basic_type (t1));
-}
-
 /*
- * runtime_invoke_signature_equal:
+ * mono_marshal_get_runtime_invoke_sig:
  *
- *   Same as mono_metadata_signature_equal, but consider reference types equal.
+ *   Return a common signature used for sharing runtime invoke wrappers.
  */
+static MonoMethodSignature*
+mono_marshal_get_runtime_invoke_sig (MonoMethodSignature *sig)
+{
+	MonoMethodSignature *res = mono_metadata_signature_dup (sig);
+	int i;
+
+	res->ret = get_runtime_invoke_type (sig->ret);
+	for (i = 0; i < res->param_count; ++i)
+		res->params [i] = get_runtime_invoke_type (sig->params [i]);
+
+	return res;
+}
+
 static gboolean
 runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
 {
-	int i;
-
-	if (sig1->hasthis != sig2->hasthis || sig1->param_count != sig2->param_count)
-		return FALSE;
-
-	if (sig1->generic_param_count != sig2->generic_param_count)
-		return FALSE;
-
-	/*
-	 * We're just comparing the signatures of two methods here:
-	 *
-	 * If we have two generic methods `void Foo<U> (U u)' and `void Bar<V> (V v)',
-	 * U and V are equal here.
-	 *
-	 * That's what the `signature_only' argument of do_mono_metadata_type_equal() is for.
-	 */
-
-	for (i = 0; i < sig1->param_count; i++) { 
-		MonoType *p1 = sig1->params[i];
-		MonoType *p2 = sig2->params[i];
-		
-		/* if (p1->attrs != p2->attrs)
-			return FALSE;
-		*/
-		if (!runtime_invoke_type_equal (p1, p2))
-			return FALSE;
-	}
-
 	/* Can't share wrappers which return a vtype since it needs to be boxed */
-	if (sig1->ret == sig2->ret)
-		return TRUE;
-	else if (MONO_TYPE_IS_REFERENCE (sig1->ret) && MONO_TYPE_IS_REFERENCE (sig2->ret))
-		return TRUE;
-	else
+	if (sig1->ret != sig2->ret && !(MONO_TYPE_IS_REFERENCE (sig1->ret) && MONO_TYPE_IS_REFERENCE (sig2->ret)))
 		return FALSE;
-}
-
-static guint
-runtime_invoke_signature_hash (MonoMethodSignature *sig)
-{
-	guint i, res = sig->ret->type;
-
-	for (i = 0; i < sig->param_count; i++)
-		res = (res << 5) - res + runtime_invoke_type_hash (sig->params[i]);
-
-	return res;
+	else
+		return mono_metadata_signature_equal (sig1, sig2);
 }
 
 /*
@@ -4954,19 +4899,26 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	if (need_direct_wrapper) {
 		cache = get_cache (&target_klass->image->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
 		res = mono_marshal_find_in_cache (cache, method);
+		if (res)
+			return res;
 	} else {
+		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
+
 		cache = get_cache (&target_klass->image->runtime_invoke_cache, 
-						   (GHashFunc)runtime_invoke_signature_hash, 
+						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)runtime_invoke_signature_equal);
 
 		/* from mono_marshal_find_in_cache */
 		mono_marshal_lock ();
 		res = g_hash_table_lookup (cache, callsig);
 		mono_marshal_unlock ();
-	}
 
-	if (res) {
-		return res;
+		if (res) {
+			g_free (callsig);
+			return res;
+		}
+
+		// FIXME: When to free callsig ?
 	}
 	
 	/* to make it work with our special string constructors */
