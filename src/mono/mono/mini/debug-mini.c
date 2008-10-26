@@ -430,6 +430,8 @@ serialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 		encode_value (var->index, p, &p);
 		encode_value (var->offset, p, &p);
 		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -499,6 +501,8 @@ deserialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
 		var->offset = decode_value (p, &p);
+		break;
+	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
 		break;
 	default:
 		g_assert_not_reached ();
