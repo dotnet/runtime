@@ -2209,6 +2209,17 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 			return code;
 
 		method_index = find_extra_method (method, &amodule);
+		if (method_index == 0xffffff) {
+			if (mono_aot_only && mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
+				char *full_name;
+
+				full_name = mono_method_full_name (method, TRUE);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT NOT FOUND: %s.\n", full_name);
+				g_free (full_name);
+			}
+			return NULL;
+		}
+
 		if (method_index == 0xffffff)
 			return NULL;
 
