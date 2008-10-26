@@ -301,6 +301,7 @@ struct _MonoDynamicImage {
 	GHashTable *handleref;
 	MonoGHashTable *tokens;
 	GHashTable *blob_cache;
+	GHashTable *standalonesig_cache;
 	GList *array_methods;
 	GPtrArray *gen_params;
 	MonoGHashTable *token_fixups;

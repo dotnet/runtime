@@ -822,12 +822,6 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 	int i;
 
 	sigbuffer_init (&buf, 32);
-	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
-	idx = table->next_idx ++;
-	table->rows ++;
-	alloc_table (table, table->rows);
-	values = table->values + idx * MONO_STAND_ALONE_SIGNATURE_SIZE;
-
 	sigbuffer_add_value (&buf, 0x07);
 	sigbuffer_add_value (&buf, nl);
 	for (i = 0; i < nl; ++i) {
@@ -841,7 +835,21 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 	sig_idx = sigbuffer_add_to_blob_cached (assembly, &buf);
 	sigbuffer_free (&buf);
 
+	if (assembly->standalonesig_cache == NULL)
+		assembly->standalonesig_cache = g_hash_table_new (NULL, NULL);
+	idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->standalonesig_cache, GUINT_TO_POINTER (sig_idx)));
+	if (idx)
+		return idx;
+
+	table = &assembly->tables [MONO_TABLE_STANDALONESIG];
+	idx = table->next_idx ++;
+	table->rows ++;
+	alloc_table (table, table->rows);
+	values = table->values + idx * MONO_STAND_ALONE_SIGNATURE_SIZE;
+
 	values [MONO_STAND_ALONE_SIGNATURE] = sig_idx;
+
+	g_hash_table_insert (assembly->standalonesig_cache, GUINT_TO_POINTER (sig_idx), GUINT_TO_POINTER (idx));
 
 	return idx;
 }
@@ -4790,6 +4798,8 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 		g_hash_table_foreach (di->blob_cache, free_blob_cache_entry, NULL);
 		g_hash_table_destroy (di->blob_cache);
 	}
+	if (di->standalonesig_cache)
+		g_hash_table_destroy (di->standalonesig_cache);
 	for (list = di->array_methods; list; list = list->next) {
 		ArrayMethod *am = (ArrayMethod *)list->data;
 		g_free (am->sig);
