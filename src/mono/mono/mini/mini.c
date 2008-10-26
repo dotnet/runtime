@@ -4613,7 +4613,7 @@ method_is_safe (MonoMethod *method)
  * sequence and return the pointer to the data and the size.
  */
 static const char*
-initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, MonoInst *newarr, int *out_size)
+initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, MonoInst *newarr, int *out_size, guint32 *out_field_token)
 {
 	/*
 	 * newarr[System.Int32]
@@ -4636,6 +4636,8 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 
 		if (!field)
 			return NULL;
+
+		*out_field_token = field_token;
 
 		if (newarr->inst_newa_len->opcode != OP_ICONST)
 			return NULL;
@@ -8270,6 +8272,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *store, *temp, *load;
 				const char *data_ptr;
 				int data_size = 0;
+				guint32 field_token;
+
 				--sp;
 				temp = mono_compile_create_var (cfg, type_from_stack_type (ins), OP_LOCAL);
 				NEW_TEMPSTORE (cfg, store, temp->inst_c0, ins);
@@ -8281,7 +8285,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * for small sizes open code the memcpy
 				 * ensure the rva field is big enough
 				 */
-				if ((cfg->opt & MONO_OPT_INTRINS) && ip + 6 < end && ip_in_bb (cfg, bblock, ip + 6) && (data_ptr = initialize_array_data (method, cfg->compile_aot, ip, ins, &data_size))) {
+				if ((cfg->opt & MONO_OPT_INTRINS) && ip + 6 < end && ip_in_bb (cfg, bblock, ip + 6) && (data_ptr = initialize_array_data (method, cfg->compile_aot, ip, ins, &data_size, &field_token))) {
 					MonoMethod *memcpy_method = get_memcpy_method ();
 					MonoInst *data_offset, *add;
 					MonoInst *iargs [3];
@@ -8294,7 +8298,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					add->inst_right = data_offset;
 					iargs [0] = add;
 					if (cfg->compile_aot) {
-						NEW_AOTCONST_TOKEN (cfg, iargs [1], MONO_PATCH_INFO_RVA, method->klass->image, GPOINTER_TO_UINT(data_ptr), STACK_PTR, NULL);
+						NEW_AOTCONST_TOKEN (cfg, iargs [1], MONO_PATCH_INFO_RVA, method->klass->image, GPOINTER_TO_UINT(field_token), STACK_PTR, NULL);
 					} else {
 						NEW_PCONST (cfg, iargs [1], (char*)data_ptr);
 					}
@@ -11342,9 +11346,14 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = (char*)vtable->data + patch_info->data.field->offset;
 		break;
 	}
-	case MONO_PATCH_INFO_RVA:
-		target = mono_image_rva_map (patch_info->data.token->image, patch_info->data.token->token);
+	case MONO_PATCH_INFO_RVA: {
+		guint32 field_index = mono_metadata_token_index (patch_info->data.token->token);
+		guint32 rva;
+
+		mono_metadata_field_info (patch_info->data.token->image, field_index - 1, NULL, &rva, NULL);
+		target = mono_image_rva_map (patch_info->data.token->image, rva);
 		break;
+	}
 	case MONO_PATCH_INFO_R4:
 	case MONO_PATCH_INFO_R8:
 		target = patch_info->data.target;
