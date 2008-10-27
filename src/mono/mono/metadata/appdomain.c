@@ -1093,16 +1093,30 @@ get_shadow_assembly_location (const char *filename)
 	char path_hash [30];
 	char *bname = g_path_get_basename (filename);
 	char *dirname = g_path_get_dirname (filename);
-	char *location, *dyn_base;
+	char *location;
 	MonoDomain *domain = mono_domain_get ();
+	MonoAppDomainSetup *setup;
+	char *cache_path, *appname;
+	char *userdir;
 	
 	hash = get_cstring_hash (bname);
 	hash2 = get_cstring_hash (dirname);
 	g_snprintf (name_hash, sizeof (name_hash), "%08x", hash);
 	g_snprintf (path_hash, sizeof (path_hash), "%08x_%08x_%08x", hash ^ hash2, hash2, domain->shadow_serial);
-	dyn_base = mono_string_to_utf8 (domain->setup->dynamic_base);
-	location = g_build_filename (dyn_base, "assembly", "shadow", name_hash, path_hash, bname, NULL);
-	g_free (dyn_base);
+	setup = domain->setup;
+	if (setup->cache_path != NULL && setup->application_name != NULL) {
+		cache_path = mono_string_to_utf8 (setup->cache_path);
+		appname = mono_string_to_utf8 (setup->application_name);
+		location = g_build_filename (cache_path, appname, "assembly", "shadow",
+						name_hash, path_hash, bname, NULL);
+		g_free (appname);
+		g_free (cache_path);
+	} else {
+		userdir = g_strdup_printf ("%s-mono-cachepath", g_get_user_name ());
+		location = g_build_filename (g_get_tmp_dir (), userdir, "assembly", "shadow",
+						name_hash, path_hash, bname, NULL);
+		g_free (userdir);
+	}
 	g_free (bname);
 	g_free (dirname);
 	return location;
@@ -1266,8 +1280,7 @@ is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 		return FALSE;
 
 	setup = domain->setup;
-	if (setup == NULL || setup->shadow_copy_files == NULL || setup->dynamic_base == NULL ||
-	    setup->shadow_copy_directories == NULL)
+	if (setup == NULL || setup->shadow_copy_files == NULL)
 		return FALSE;
 
 	version = mono_get_runtime_info ()->framework_version;
@@ -1278,11 +1291,14 @@ is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	if (!shadow_enabled)
 		return FALSE;
 
+	if (setup->shadow_copy_directories == NULL)
+		return TRUE;
+
 	all_dirs = mono_string_to_utf8 (setup->shadow_copy_directories);
 	directories = g_strsplit (all_dirs, G_SEARCHPATH_SEPARATOR_S, 1000);
 	dir_ptr = directories;
 	while (*dir_ptr) {
-		if (!strcmp (*dir_ptr, dir_name)) {
+		if (**dir_ptr != '\0' && !strcmp (*dir_ptr, dir_name)) {
 			found = TRUE;
 			break;
 		}
