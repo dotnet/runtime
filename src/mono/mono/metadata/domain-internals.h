@@ -287,7 +287,10 @@ void
 mono_domain_register_shared_generic (MonoDomain *domain, MonoMethod *method, MonoJitInfo *jit_info) MONO_INTERNAL;
 
 char *
-mono_make_shadow_copy (const char *filename);
+mono_make_shadow_copy (const char *filename) MONO_INTERNAL;
+
+gboolean
+mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name) MONO_INTERNAL;
 
 gpointer
 mono_domain_alloc  (MonoDomain *domain, guint size) MONO_INTERNAL;

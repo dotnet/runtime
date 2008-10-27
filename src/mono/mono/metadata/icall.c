@@ -4315,35 +4315,39 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 	MonoString *res = NULL;
 	gchar *uri;
 	gchar *absolute;
-	gchar *dyn_base;
+	gchar *content;
 	gchar *shadow_ini_file;
 	gsize len;
+	gchar *dirname;
 	
 	MONO_ARCH_SAVE_REGS;
 
-	absolute = NULL;
-	/* Check for shadow-copied assembly */
-	if (domain->setup->dynamic_base != NULL) {
-		dyn_base = mono_string_to_utf8 (domain->setup->dynamic_base);
-		if (!strncmp (dyn_base, mass->basedir, strlen (dyn_base))) {
-			shadow_ini_file = g_build_filename (mass->basedir, "__AssemblyInfo__.ini", NULL);
-			if (!g_file_get_contents (shadow_ini_file, &absolute, &len, NULL) ||
-				!g_file_test (absolute, G_FILE_TEST_IS_REGULAR)) {
-				if (absolute) {
-					g_free (absolute);
-					absolute = NULL;
-				}
-			}
-			g_free (shadow_ini_file);
-		}
-		g_free (dyn_base);
-		/* 'absolute' contains the original location of the shadow-copied assembly or NULL */
+	if (g_path_is_absolute (mass->image->name)) {
+		absolute = g_strdup (mass->image->name);
+		dirname = g_path_get_dirname (absolute);
+	} else {
+		absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
+		dirname = g_strdup (mass->basedir);
 	}
 
-	if (absolute == NULL && g_path_is_absolute (mass->image->name))
-		absolute = g_strdup (mass->image->name);
-	else if (absolute == NULL) 
-		absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
+	/* Check for shadow-copied assembly */
+	if (mono_is_shadow_copy_enabled (domain, dirname)) {
+		shadow_ini_file = g_build_filename (dirname, "__AssemblyInfo__.ini", NULL);
+		content = NULL;
+		if (!g_file_get_contents (shadow_ini_file, &content, &len, NULL) ||
+			!g_file_test (content, G_FILE_TEST_IS_REGULAR)) {
+			if (content) {
+				g_free (content);
+				content = NULL;
+			}
+		}
+		g_free (shadow_ini_file);
+		if (content != NULL) {
+			g_free (absolute);
+			absolute = content;
+		}
+	}
+	g_free (dirname);
 
 #if PLATFORM_WIN32
 	{
@@ -5007,8 +5011,33 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 
 	if (by_default_version)
 		MONO_OBJECT_SETREF (aname, version, create_version (domain, name->major, name->minor, name->build, name->revision));
-	
-	codebase = g_filename_to_uri (absolute, NULL, NULL);
+
+	codebase = NULL;
+	if (absolute != NULL && *absolute != '\0') {
+		const gchar *prepend = "file://";
+		gchar *result;
+
+		codebase = g_strdup (absolute);
+
+#if PLATFORM_WIN32
+		{
+			gint i;
+			for (i = strlen (codebase) - 1; i >= 0; i--)
+				if (codebase [i] == '\\')
+					codebase [i] = '/';
+
+			if (*codebase == '/' && *(codebase + 1) == '/') {
+				prepend = "file:";
+			} else {
+				prepend = "file:///";
+			}
+		}
+#endif
+		result = g_strconcat (prepend, codebase, NULL);
+		g_free (codebase);
+		codebase = result;
+	}
+
 	if (codebase) {
 		MONO_OBJECT_SETREF (aname, codebase, mono_string_new (domain, codebase));
 		g_free (codebase);

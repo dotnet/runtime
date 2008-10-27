@@ -1106,6 +1106,15 @@ get_shadow_assembly_location (const char *filename)
 	setup = domain->setup;
 	if (setup->cache_path != NULL && setup->application_name != NULL) {
 		cache_path = mono_string_to_utf8 (setup->cache_path);
+#ifndef PLATFORM_WIN32
+		{
+			gint i;
+			for (i = strlen (cache_path) - 1; i >= 0; i--)
+				if (cache_path [i] == '\\')
+					cache_path [i] = '/';
+		}
+#endif
+
 		appname = mono_string_to_utf8 (setup->application_name);
 		location = g_build_filename (cache_path, appname, "assembly", "shadow",
 						name_hash, path_hash, bname, NULL);
@@ -1264,8 +1273,8 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 	return result;
 }
 
-static gboolean
-is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
+gboolean
+mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 {
 	const char *version;
 	MonoAppDomainSetup *setup;
@@ -1324,7 +1333,7 @@ mono_make_shadow_copy (const char *filename)
 	MonoDomain *domain = mono_domain_get ();
 	set_domain_search_path (domain);
 
-	if (!is_shadow_copy_enabled (domain, dir_name)) {
+	if (!mono_is_shadow_copy_enabled (domain, dir_name)) {
 		g_free (dir_name);
 		return (char *) filename;
 	}
