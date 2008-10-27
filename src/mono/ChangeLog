@@ -1,3 +1,7 @@
+2008-10-27  Jb Evain  <jbevain@novell.com>
+
+	* data/cecil.pc.in: update version.
+
 2008-10-22  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/Makefile.am: Add gacutil1 script.
