@@ -2328,6 +2328,26 @@ add_wrappers (MonoAotCompile *acfg)
 #endif
 }
 
+static gboolean
+has_type_vars (MonoClass *klass)
+{
+	if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
+		return TRUE;
+	if (klass->rank)
+		return has_type_vars (klass->element_class);
+	if (klass->generic_class) {
+		MonoGenericContext *context = &klass->generic_class->context;
+		if (context->class_inst) {
+			int i;
+
+			for (i = 0; i < context->class_inst->type_argc; ++i)
+				if (has_type_vars (mono_class_from_mono_type (context->class_inst->type_argv [i])))
+					return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /*
  * add_generic_instances:
  *
@@ -2360,12 +2380,9 @@ add_generic_instances (MonoAotCompile *acfg)
 		add_extra_method (acfg, method);
 	}
 
-	/* 
-	 * Add rgctx wrappers for cctors since those are called by the runtime, so there
-	 * is no methodspec for them.
-	 */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows; ++i) {
 		MonoClass *klass;
+		gpointer iter;
 
 		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
 
@@ -2377,9 +2394,34 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (klass->generic_class && klass->generic_class->context.class_inst->is_open)
 			continue;
 
+		if (has_type_vars (klass))
+			continue;
+
+		/* 
+		 * Add rgctx wrappers for cctors since those are called by the runtime, so 
+		 * there is no methodspec for them. This is needed even for shared classes,
+		 * since rgctx wrappers belong to inflated methods.
+		 */
 		method = mono_class_get_cctor (klass);
 		if (method)
 			add_extra_method (acfg, mono_marshal_get_static_rgctx_invoke (method));
+
+		iter = NULL;
+		while ((method = mono_class_get_methods (klass, &iter))) {
+			if (mono_method_is_generic_sharable_impl (method, FALSE))
+				/* Already added */
+				continue;
+
+			if (method->is_generic)
+				/* FIXME: */
+				continue;
+
+			/*
+			 * FIXME: Instances which are referenced by these methods are not added,
+			 * for example Array.Resize<int> for List<int>.Add ().
+			 */
+			add_extra_method (acfg, method);
+		}
 	}
 }
 
