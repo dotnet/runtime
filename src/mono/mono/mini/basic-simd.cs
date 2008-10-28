@@ -3,14 +3,253 @@ using Mono.Simd;
 
 public class SimdTests {
 
+	public static unsafe int test_0_vector2d_dup () {
+		Vector2d a = new Vector2d (3, 2);
+
+		Vector2d c = Vector2d.Duplicate (a);
+	
+		if (c.X != 3)
+			return 1;
+		if (c.Y != 3)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_cmp_eq () {
+		Vector2d a = new Vector2d (3, 2);
+		Vector2d b = new Vector2d (3, 4);
+
+		Vector4ui c = (Vector4ui)Vector2d.CompareEqual (a, b);
+	
+		if (c.X != 0xFFFFFFFF)
+			return 1;
+		if (c.Y != 0xFFFFFFFF)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 0)
+			return 4;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_unpack_low () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (4, 5);
+
+		Vector2d c = Vector2d.InterleaveLow (a, b);
+	
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 4)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_unpack_high () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (4, 5);
+
+		Vector2d c = Vector2d.InterleaveHigh (a, b);
+	
+		if (c.X != 2)
+			return 1;
+		if (c.Y != 5)
+			return 2;
+		return 0;
+	}
+	public static unsafe int test_0_vector2d_addsub () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (4, 1);
+
+		Vector2d c = Vector2d.AddSub (a, b);
+	
+		if (c.X != -3)
+			return 1;
+		if (c.Y != 3)
+			return 2;
+		return 0;
+	}
+	public static unsafe int test_0_vector2d_hsub () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (4, 1);
+
+		Vector2d c = Vector2d.HorizontalSub (a, b);
+	
+		if (c.X != -1)
+			return 1;
+		if (c.Y != 3)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_hadd () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (4, 0);
+
+		Vector2d c = Vector2d.HorizontalAdd (a, b);
+	
+		if (c.X != 3)
+			return 1;
+		if (c.Y != 4)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_min () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (4, 0);
+
+		Vector2d c = Vector2d.Min (a, b);
+	
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 0)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_max () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (4, 0);
+
+		Vector2d c = Vector2d.Max (a, b);
+	
+		if (c.X != 4)
+			return 1;
+		if (c.Y != 2)
+			return 2;
+		return 0;
+	}
+
+
+	public static unsafe int test_0_vector2d_andnot () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (3, 4);
+
+		Vector4ui c = (Vector4ui)Vector2d.AndNot (a, b);
+	
+		if (c.X != 0)
+			return 1;
+		if (c.Y != 1074266112)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 1048576)
+			return 4;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_div () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (4, 5);
+
+		Vector2d c = a / b;
+	
+		if (c.X != 0.25)
+			return 1;
+		if (c.Y != 0.4)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_mul () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (3, 5);
+
+		Vector2d c = a * b;
+	
+		if (c.X != 3)
+			return 1;
+		if (c.Y != 10)
+			return 2;
+		return 0;
+	}
+	public static unsafe int test_0_vector2d_sub () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (3, 5);
+
+		Vector2d c = a - b;
+	
+		if (c.X != -2)
+			return 1;
+		if (c.Y != -3)
+			return 2;
+		return 0;
+	}
+	public static unsafe int test_0_vector2d_add () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (3, 4);
+
+		Vector2d c = a + b;
+	
+		if (c.X != 4)
+			return 1;
+		if (c.Y != 6)
+			return 2;
+		return 0;
+	}
+	public static unsafe int test_0_vector2d_xor () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (3, 4);
+
+		Vector4ui c = (Vector4ui)(a ^ b);
+	
+		if (c.X != 0)
+			return 1;
+		if (c.Y != 2146959360)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 1048576)
+			return 4;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_or () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (3, 4);
+
+		Vector4ui c = (Vector4ui)(a | b);
+	
+		if (c.X != 0)
+			return 1;
+		if (c.Y != 2146959360)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 1074790400)
+			return 4;
+		return 0;
+	}
+
+	public static unsafe int test_0_vector2d_and () {
+		Vector2d a = new Vector2d (1, 2);
+		Vector2d b = new Vector2d (3, 4);
+
+		Vector4ui c = (Vector4ui)(a & b);
+	
+		if (c.X != 0)
+			return 1;
+		if (c.Y != 0)
+			return 2;
+		if (c.Z != 0)
+			return 3;
+		if (c.W != 1073741824)
+			return 3;
+		return 0;
+	}
+
 	public static unsafe int test_vector8s_pack_signed_sat () {
 		Vector8s a = new Vector8s (-200, 200, 3, 0, 5, 6, 5, 4);
 		Vector8s b = new Vector8s (9, 2, 1, 2, 3, 6, 5, 6);
 
 		Vector16sb c = Vector8s.PackWithSignedSaturation (a, b);
 
-		Console.WriteLine (c.V0);//-128
-		Console.WriteLine (c.V1);//128
+		if (c.V0 != -128)
+			return 1;
+		if (c.V1 != 127)
+			return 2;
+
 		return 0;
 	}
 
