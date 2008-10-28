@@ -1731,6 +1731,7 @@ typedef enum {
 	X86_SSE_HSUB = 0x7D,
 	X86_SSE_MOVSHDUP = 0x16,
 	X86_SSE_MOVSLDUP = 0x12,
+	X86_SSE_MOVDDUP = 0x12,
 	
 	X86_SSE_PAND = 0xDB,
 	X86_SSE_POR = 0xEB,
@@ -1876,6 +1877,12 @@ typedef enum {
 	do {	\
 		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
 		*(inst)++ = (unsigned char)imm;	\
+	} while (0)
+
+#define x86_sse_alu_pd_reg_reg_imm(inst,opc,dreg,reg,imm)	\
+	do {	\
+		x86_sse_alu_pd_reg_reg ((inst), (opc), (dreg), (reg)); \
+		*(inst)++ = (unsigned char)(imm);	\
 	} while (0)
 
 #define x86_sse_alu_sse41_reg_reg(inst,opc,dreg,reg)       \
