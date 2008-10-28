@@ -3,6 +3,17 @@ using Mono.Simd;
 
 public class SimdTests {
 
+	public static unsafe int test_vector8s_pack_signed_sat () {
+		Vector8s a = new Vector8s (-200, 200, 3, 0, 5, 6, 5, 4);
+		Vector8s b = new Vector8s (9, 2, 1, 2, 3, 6, 5, 6);
+
+		Vector16sb c = Vector8s.PackWithSignedSaturation (a, b);
+
+		Console.WriteLine (c.V0);//-128
+		Console.WriteLine (c.V1);//128
+		return 0;
+	}
+
 	public static unsafe int test_vector16sb_sub_sat () {
 		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16sb b = new Vector16sb (-100, 100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
