@@ -3879,6 +3879,53 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
 
+		case OP_ADDPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_ADD, ins->sreg1, ins->sreg2);
+			break;
+		case OP_DIVPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_DIV, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MULPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_MUL, ins->sreg1, ins->sreg2);
+			break;
+		case OP_SUBPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_SUB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MAXPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_MAX, ins->sreg1, ins->sreg2);
+			break;
+		case OP_MINPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_MIN, ins->sreg1, ins->sreg2);
+			break;
+		case OP_COMPPD:
+			g_assert (ins->inst_c0 >= 0 && ins->inst_c0 <= 7);
+			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_COMP, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_ANDPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_AND, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ANDNPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_ANDN, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ORPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_OR, ins->sreg1, ins->sreg2);
+			break;
+		case OP_XORPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_XOR, ins->sreg1, ins->sreg2);
+			break;
+		case OP_ADDSUBPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_ADDSUB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_HADDPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_HADD, ins->sreg1, ins->sreg2);
+			break;
+		case OP_HSUBPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_HSUB, ins->sreg1, ins->sreg2);
+			break;
+		case OP_DUPPD:
+			x86_sse_alu_sd_reg_reg (code, X86_SSE_MOVDDUP, ins->dreg, ins->sreg1);
+			break;
+			
 		case OP_EXTRACT_MASK:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PMOVMSKB, ins->dreg, ins->sreg1);
 			break;
@@ -3996,6 +4043,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_UNPACK_LOWPS:
 			x86_sse_alu_ps_reg_reg (code, X86_SSE_UNPCKL, ins->sreg1, ins->sreg2);
 			break;
+		case OP_UNPACK_LOWPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_UNPCKL, ins->sreg1, ins->sreg2);
+			break;
 
 		case OP_UNPACK_HIGHB:
 			x86_sse_alu_pd_reg_reg (code, X86_SSE_PUNPCKHBW, ins->sreg1, ins->sreg2);
@@ -4008,6 +4058,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_UNPACK_HIGHPS:
 			x86_sse_alu_ps_reg_reg (code, X86_SSE_UNPCKH, ins->sreg1, ins->sreg2);
+			break;
+		case OP_UNPACK_HIGHPD:
+			x86_sse_alu_pd_reg_reg (code, X86_SSE_UNPCKH, ins->sreg1, ins->sreg2);
 			break;
 
 		case OP_PACKW:

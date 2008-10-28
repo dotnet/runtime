@@ -427,6 +427,23 @@ addsubps: dest:x src1:x src2:x len:4 clob:1
 dupps_low: dest:x src1:x len:4
 dupps_high: dest:x src1:x len:4
 
+addpd: dest:x src1:x src2:x len:4 clob:1
+divpd: dest:x src1:x src2:x len:4 clob:1
+mulpd: dest:x src1:x src2:x len:4 clob:1
+subpd: dest:x src1:x src2:x len:4 clob:1
+maxpd: dest:x src1:x src2:x len:4 clob:1
+minpd: dest:x src1:x src2:x len:4 clob:1
+comppd: dest:x src1:x src2:x len:5 clob:1
+andpd: dest:x src1:x src2:x len:4 clob:1
+andnpd: dest:x src1:x src2:x len:4 clob:1
+orpd: dest:x src1:x src2:x len:4 clob:1
+xorpd: dest:x src1:x src2:x len:4 clob:1
+
+haddpd: dest:x src1:x src2:x len:5 clob:1
+hsubpd: dest:x src1:x src2:x len:5 clob:1
+addsubpd: dest:x src1:x src2:x len:5 clob:1
+duppd: dest:x src1:x len:5
+
 pand: dest:x src1:x src2:x len:4 clob:1
 por: dest:x src1:x src2:x len:4 clob:1
 pxor: dest:x src1:x src2:x len:4 clob:1
@@ -484,12 +501,14 @@ unpack_loww: dest:x src1:x src2:x len:4 clob:1
 unpack_lowd: dest:x src1:x src2:x len:4 clob:1
 unpack_lowq: dest:x src1:x src2:x len:4 clob:1
 unpack_lowps: dest:x src1:x src2:x len:3 clob:1
+unpack_lowpd: dest:x src1:x src2:x len:4 clob:1
 
 unpack_highb: dest:x src1:x src2:x len:4 clob:1
 unpack_highw: dest:x src1:x src2:x len:4 clob:1
 unpack_highd: dest:x src1:x src2:x len:4 clob:1
 unpack_highq: dest:x src1:x src2:x len:4 clob:1
 unpack_highps: dest:x src1:x src2:x len:3 clob:1
+unpack_highpd: dest:x src1:x src2:x len:4 clob:1
 
 packw: dest:x src1:x src2:x len:4 clob:1 
 packd: dest:x src1:x src2:x len:4 clob:1 

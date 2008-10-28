@@ -126,8 +126,8 @@ setters
  */
 static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
-	{ SN_AndNot, OP_ANDNPS, SIMD_EMIT_BINARY },
 	{ SN_AddSub, OP_ADDSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
+	{ SN_AndNot, OP_ANDNPS, SIMD_EMIT_BINARY },
 	{ SN_CompareEqual, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
 	{ SN_CompareLessEqual, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LE },
 	{ SN_CompareLessThan, OP_COMPPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LT },
@@ -162,6 +162,42 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST }, 
 	{ SN_op_Multiply, OP_MULPS, SIMD_EMIT_BINARY },
 	{ SN_op_Subtraction, OP_SUBPS, SIMD_EMIT_BINARY },
+};
+
+/*
+Missing:
+.ctor
+getters
+setters
+ */
+static const SimdIntrinsc vector2d_intrinsics[] = {
+	{ SN_AddSub, OP_ADDSUBPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
+	{ SN_AndNot, OP_ANDNPD, SIMD_EMIT_BINARY },
+	{ SN_CompareEqual, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
+	{ SN_CompareLessEqual, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LE },
+	{ SN_CompareLessThan, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_LT },
+	{ SN_CompareNotEqual, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NEQ },
+	{ SN_CompareNotLessEqual, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NLE },
+	{ SN_CompareNotLessThan, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_NLT },
+	{ SN_CompareOrdered, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_ORD },
+	{ SN_CompareUnordered, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_UNORD },
+	{ SN_Duplicate, OP_DUPPD, SIMD_EMIT_UNARY, SIMD_VERSION_SSE3 },
+	{ SN_HorizontalAdd, OP_HADDPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
+	{ SN_HorizontalSub, OP_HSUBPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },	
+	{ SN_InterleaveHigh, OP_UNPACK_HIGHPD, SIMD_EMIT_BINARY },
+	{ SN_InterleaveLow, OP_UNPACK_LOWPD, SIMD_EMIT_BINARY },
+	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_Max, OP_MAXPD, SIMD_EMIT_BINARY },
+	{ SN_Min, OP_MINPD, SIMD_EMIT_BINARY },
+	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
+	{ SN_op_Addition, OP_ADDPD, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseAnd, OP_ANDPD, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseOr, OP_ORPD, SIMD_EMIT_BINARY },
+	{ SN_op_Division, OP_DIVPD, SIMD_EMIT_BINARY },
+	{ SN_op_ExclusiveOr, OP_XORPD, SIMD_EMIT_BINARY },
+	{ SN_op_Explicit, 0, SIMD_EMIT_CAST }, 
+	{ SN_op_Multiply, OP_MULPD, SIMD_EMIT_BINARY },
+	{ SN_op_Subtraction, OP_SUBPD, SIMD_EMIT_BINARY },
 };
 
 /*
@@ -920,6 +956,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!cmethod->klass->simd_type)
 		return NULL;
 	cfg->uses_simd_intrinsics = 1;
+	if (!strcmp ("Vector2d", cmethod->klass->name))
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector2d_intrinsics, sizeof (vector2d_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector4f", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector4ui", cmethod->klass->name))
