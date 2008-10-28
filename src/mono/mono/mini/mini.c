@@ -10462,6 +10462,11 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 			if (MONO_TYPE_ISSTRUCT (t))
 				align = sizeof (gpointer);
 
+			/* 
+			 * Align the size too so the code generated for passing vtypes in
+			 * registers doesn't overwrite random locals.
+			 */
+			size = (size + (align - 1)) & ~(align -1);
 			if (backward) {
 				offset += size;
 				offset += align - 1;
