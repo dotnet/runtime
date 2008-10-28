@@ -2,6 +2,145 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static unsafe int test_vector2l_cmp_gt () {
+		Vector2l a = new Vector2l (10, 5);
+		Vector2l b = new Vector2l (-1, 5);
+
+		Vector2l c = Vector2l.CompareGreaterThan (a, b);
+	
+		if (c.X != -1)
+			return 1;
+		if (c.Y != 0)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_cmp_eq () {
+		Vector2l a = new Vector2l (0xFF,          5);
+		Vector2l b = new Vector2l (0xFF000000FFL, 5);
+
+		Vector2l c = Vector2l.CompareEqual (a, b);
+	
+		if (c.X != 0)
+			return 1;
+		if (c.Y != -1)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_srl () {
+		Vector2l a = new Vector2l (1, 6);
+
+		Vector2l c = Vector2l.ShiftRightLogic (a, 1);
+	
+		if (c.X != 0)
+			return 1;
+		if (c.Y != 3)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_unpack_high () {
+		Vector2l a = new Vector2l (1, 6);
+		Vector2l b = new Vector2l (3, 4);
+
+		Vector2l c = Vector2l.UnpackHigh (a, b);
+	
+		if (c.X != 6)
+			return 1;
+		if (c.Y != 4)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_unpack_low () {
+		Vector2l a = new Vector2l (1, 6);
+		Vector2l b = new Vector2l (3, 4);
+
+		Vector2l c = Vector2l.UnpackLow (a, b);
+	
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 3)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_xor () {
+		Vector2l a = new Vector2l (1, 6);
+		Vector2l b = new Vector2l (3, 4);
+
+		Vector2l c = a ^ b;
+	
+		if (c.X != 2)
+			return 1;
+		if (c.Y != 2)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_or () {
+		Vector2l a = new Vector2l (1, 6);
+		Vector2l b = new Vector2l (3, 4);
+
+		Vector2l c = a | b;
+	
+		if (c.X != 3)
+			return 1;
+		if (c.Y != 6)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_and () {
+		Vector2l a = new Vector2l (1, 6);
+		Vector2l b = new Vector2l (3, 4);
+
+		Vector2l c = a & b;
+	
+		if (c.X != 1)
+			return 1;
+		if (c.Y != 4)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_shl() {
+		Vector2l a = new Vector2l (1, 6);
+
+		Vector2l c = a << 3;
+	
+		if (c.X != 8)
+			return 1;
+		if (c.Y != 48)
+			return 2;
+		return 0;
+	}
+	public static unsafe int test_vector2l_sub() {
+		Vector2l a = new Vector2l (1, 6);
+		Vector2l b = new Vector2l (3, 4);
+
+		Vector2l c = a - b;
+	
+		if (c.X != -2)
+			return 1;
+		if (c.Y != 2)
+			return 2;
+		return 0;
+	}
+
+	public static unsafe int test_vector2l_add () {
+		Vector2l a = new Vector2l (1, 2);
+		Vector2l b = new Vector2l (3, 4);
+
+		Vector2l c = a + b;
+	
+		if (c.X != 4)
+			return 1;
+		if (c.Y != 6)
+			return 2;
+		return 0;
+	}
 
 	public static unsafe int test_0_vector2d_dup () {
 		Vector2d a = new Vector2d (3, 2);
