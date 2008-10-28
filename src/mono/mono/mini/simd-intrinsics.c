@@ -206,6 +206,30 @@ Missing:
 getters
 setters
  */
+static const SimdIntrinsc vector2ul_intrinsics[] = {
+	{ SN_CompareEqual, OP_PCMPEQQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
+	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
+	{ SN_UnpackHigh, OP_UNPACK_HIGHQ, SIMD_EMIT_BINARY },
+	{ SN_UnpackLow, OP_UNPACK_LOWQ, SIMD_EMIT_BINARY },
+	{ SN_op_Addition, OP_PADDQ, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
+	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
+	{ SN_op_ExclusiveOr, OP_PXOR, SIMD_EMIT_BINARY },
+	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
+	{ SN_op_LeftShift, OP_PSHLQ, SIMD_EMIT_SHIFT },
+	{ SN_op_Multiply, OP_PMULQ, SIMD_EMIT_BINARY },
+	{ SN_op_RightShift, OP_PSHRQ, SIMD_EMIT_SHIFT },
+	{ SN_op_Subtraction, OP_PSUBQ, SIMD_EMIT_BINARY },
+};
+
+/*
+Missing:
+.ctor
+getters
+setters
+ */
 static const SimdIntrinsc vector2l_intrinsics[] = {
 	{ SN_CompareEqual, OP_PCMPEQQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_CompareGreaterThan, OP_PCMPGTQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
@@ -985,6 +1009,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector2d_intrinsics, sizeof (vector2d_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector4f", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsc));
+	if (!strcmp ("Vector2ul", cmethod->klass->name))
+		return emit_intrinsics (cfg, cmethod, fsig, args, vector2ul_intrinsics, sizeof (vector2ul_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector2l", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector2l_intrinsics, sizeof (vector2l_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector4ui", cmethod->klass->name))
