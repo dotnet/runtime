@@ -2,6 +2,18 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static unsafe int test_vector2ul_slr () {
+		Vector2ul a = new Vector2ul (1, 6);
+
+		Vector2ul c = a >> 1;
+	
+		Console.WriteLine (c.X);//0
+		Console.WriteLine (c.Y);//3
+
+		return 0;
+		return 0;
+	}
+
 	public static unsafe int test_vector2l_cmp_gt () {
 		Vector2l a = new Vector2l (10, 5);
 		Vector2l b = new Vector2l (-1, 5);
