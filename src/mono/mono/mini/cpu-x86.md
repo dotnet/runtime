@@ -462,10 +462,12 @@ extract_mask: dest:i src1:x len:4
 paddb: dest:x src1:x src2:x len:4 clob:1
 paddw: dest:x src1:x src2:x len:4 clob:1
 paddd: dest:x src1:x src2:x len:4 clob:1
+paddq: dest:x src1:x src2:x len:4 clob:1
 
 psubb: dest:x src1:x src2:x len:4 clob:1
 psubw: dest:x src1:x src2:x len:4 clob:1
 psubd: dest:x src1:x src2:x len:4 clob:1
+psubq: dest:x src1:x src2:x len:4 clob:1
 
 pmaxb_un: dest:x src1:x src2:x len:4 clob:1
 pmaxw_un: dest:x src1:x src2:x len:5 clob:1
@@ -489,10 +491,12 @@ pmind: dest:x src1:x src2:x len:5 clob:1
 pcmpeqb: dest:x src1:x src2:x len:4 clob:1
 pcmpeqw: dest:x src1:x src2:x len:4 clob:1
 pcmpeqd: dest:x src1:x src2:x len:4 clob:1
+pcmpeqq: dest:x src1:x src2:x len:5 clob:1
 
 pcmpgtb: dest:x src1:x src2:x len:4 clob:1
 pcmpgtw: dest:x src1:x src2:x len:4 clob:1
 pcmpgtd: dest:x src1:x src2:x len:4 clob:1
+pcmpgtq: dest:x src1:x src2:x len:5 clob:1
 
 psumabsdiff: dest:x src1:x src2:x len:4 clob:1
 
@@ -530,26 +534,34 @@ psubw_sat_un: dest:x src1:x src2:x len:4 clob:1
 
 pmulw: dest:x src1:x src2:x len:4 clob:1
 pmuld: dest:x src1:x src2:x len:5 clob:1
+pmulq: dest:x src1:x src2:x len:4 clob:1
+
 pmul_high_un: dest:x src1:x src2:x len:4 clob:1
 pmul_high: dest:x src1:x src2:x len:4 clob:1
 
-pshrw: dest:x src1:x len:8 clob:1
-pshrw_reg: dest:x src1:x src2:x len:8 clob:1
+pshrw: dest:x src1:x len:5 clob:1
+pshrw_reg: dest:x src1:x src2:x len:4 clob:1
 
-psarw: dest:x src1:x len:8 clob:1
-psarw_reg: dest:x src1:x src2:x len:8 clob:1
+psarw: dest:x src1:x len:5 clob:1
+psarw_reg: dest:x src1:x src2:x len:4 clob:1
 
-pshlw: dest:x src1:x len:8 clob:1
-pshlw_reg: dest:x src1:x src2:x len:8 clob:1
+pshlw: dest:x src1:x len:5 clob:1
+pshlw_reg: dest:x src1:x src2:x len:4 clob:1
 
-pshrd: dest:x src1:x len:8 clob:1
-pshrd_reg: dest:x src1:x src2:x len:8 clob:1
+pshrd: dest:x src1:x len:5 clob:1
+pshrd_reg: dest:x src1:x src2:x len:4 clob:1
 
-psard: dest:x src1:x len:8 clob:1
-psard_reg: dest:x src1:x src2:x len:8 clob:1
+psard: dest:x src1:x len:5 clob:1
+psard_reg: dest:x src1:x src2:x len:4 clob:1
 
-pshld: dest:x src1:x len:8 clob:1
-pshld_reg: dest:x src1:x src2:x len:8 clob:1
+pshld: dest:x src1:x len:5 clob:1
+pshld_reg: dest:x src1:x src2:x len:4 clob:1
+
+pshrq: dest:x src1:x len:5 clob:1
+pshrq_reg: dest:x src1:x src2:x len:4 clob:1
+
+pshlq: dest:x src1:x len:5 clob:1
+pshlq_reg: dest:x src1:x src2:x len:4 clob:1
 
 xmove: dest:x src1:x len:4
 xzero: dest:x len:4
