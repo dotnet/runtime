@@ -723,18 +723,19 @@ dis_code (MonoImage *m, guint32 token, guint32 rva, MonoGenericContainer *contai
 			fprintf (output, "\t.entrypoint\n");
 	}
 	
-	fprintf (output, "\t// Code size %d (0x%x)\n", mh->code_size, mh->code_size);
-	fprintf (output, "\t.maxstack %d\n", mh->max_stack);
-	if (mh->num_locals)
-		dis_locals (m, mh, ptr);
-	disassemble_cil (m, mh, container);
-	
+	if (mh) {
+		fprintf (output, "\t// Code size %d (0x%x)\n", mh->code_size, mh->code_size);
+		fprintf (output, "\t.maxstack %d\n", mh->max_stack);
+		if (mh->num_locals)
+			dis_locals (m, mh, ptr);
+		disassemble_cil (m, mh, container);
 /*
   hex_dump (mh->code, 0, mh->code_size);
   printf ("\nAfter the code\n");
   hex_dump (mh->code + mh->code_size, 0, 64);
 */
-	mono_metadata_free_mh (mh);
+		mono_metadata_free_mh (mh);
+	}
 }
 
 static char *
