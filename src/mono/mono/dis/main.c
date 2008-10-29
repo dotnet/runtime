@@ -1505,13 +1505,15 @@ disassemble_file (const char *file)
 {
 	MonoImageOpenStatus status;
 	MonoImage *img;
+	MonoAssembly *assembly;
+
 
 	img = mono_image_open (file, &status);
 	if (!img) {
 		fprintf (stderr, "Error while trying to process %s\n", file);
 		return;
 	} else {
-		mono_assembly_load_references (img, &status);
+		assembly = mono_assembly_load_from_full (img, file, &status, FALSE);
 	}
 
 	setup_filter (img);
