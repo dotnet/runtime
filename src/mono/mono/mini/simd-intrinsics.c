@@ -33,7 +33,8 @@ TODO maybe add SSE3 emulation on top of SSE2, or just implement the correspondin
 TODO pass simd arguments in registers or, at least, add SSE support for pushing large (>=16) valuetypes 
 TODO pass simd args byval to a non-intrinsic method cause some useless local var load/store to happen.
 TODO check if we need to init the SSE control word with better precision.
-TODO add support for 3 reg sources in mini without slowing the common path. Or find a way to make MASKMOVDQU work.  
+TODO add support for 3 reg sources in mini without slowing the common path. Or find a way to make MASKMOVDQU work.
+TODO make SimdRuntime.get_AccelMode work under AOT  
 
 General notes for SIMD intrinsics.
 
@@ -999,9 +1000,22 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	g_assert_not_reached ();
 }
 
+static MonoInst*
+emit_simd_runtime_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	if (!strcmp ("get_AccelMode", cmethod->name)) {
+		MonoInst *ins;
+		EMIT_NEW_ICONST (cfg, ins, simd_supported_versions);
+		return ins;
+	}
+	return NULL;
+}
+
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	if (!strcmp ("Mono.Simd", cmethod->klass->name_space) && !strcmp ("SimdRuntime", cmethod->klass->name))
+		return emit_simd_runtime_intrinsics (cfg, cmethod, fsig, args);
 	if (!cmethod->klass->simd_type)
 		return NULL;
 	cfg->uses_simd_intrinsics = 1;
@@ -1025,6 +1039,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector16b_intrinsics, sizeof (vector16b_intrinsics) / sizeof (SimdIntrinsc));
 	if (!strcmp ("Vector16sb", cmethod->klass->name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector16sb_intrinsics, sizeof (vector16sb_intrinsics) / sizeof (SimdIntrinsc));
+
 	return NULL;
 }
 

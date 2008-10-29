@@ -1701,6 +1701,10 @@ int mini_wapi_seminfo (int argc, char **argv) MONO_INTERNAL;
 
 /* SIMD support */
 
+/*
+This enum MUST be kept in sync with its managed mirror Mono.Simd.AccelMode.
+The AccelMode values are masks while the ones here are the bit indexes.
+ */
 enum {
 	SIMD_VERSION_SSE1	= 0,
 	SIMD_VERSION_SSE2	= 1,
