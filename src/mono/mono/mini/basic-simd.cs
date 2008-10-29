@@ -6,9 +6,6 @@ public class SimdTests {
 		Vector2ul a = new Vector2ul (1, 6);
 
 		Vector2ul c = a >> 1;
-	
-		Console.WriteLine (c.X);//0
-		Console.WriteLine (c.Y);//3
 
 		return 0;
 		return 0;
