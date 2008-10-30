@@ -879,7 +879,7 @@ type_from_op (MonoInst *ins, MonoInst *src1, MonoInst *src2) {
 		ins->type = STACK_PTR;
 		switch (src1->type) {
 		case STACK_I4:
-			ins->opcode = OP_MOVE;
+			ins->opcode = OP_ICONV_TO_U;
 			break;
 		case STACK_PTR:
 		case STACK_MP:

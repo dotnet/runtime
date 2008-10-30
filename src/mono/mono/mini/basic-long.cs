@@ -1183,5 +1183,13 @@ class Tests {
 
 		return t == 0 ? 0 : 1;
 	}
+
+	public static int test_0_conv_u () {
+		unsafe {
+			int** dead = (int**) 0xdeadbeaf;
+			long i = (long)dead;
+			return (i == 0xdeadbeaf) ? 0 : 1;
+		}
+	}
 }
 
