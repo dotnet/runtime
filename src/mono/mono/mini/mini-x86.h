@@ -295,6 +295,10 @@ typedef struct {
 #define MONO_ARCH_AOT_SUPPORTED 1
 #endif
 
+#if defined(__linux__) || defined(__sun)
+#define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
+#endif
+
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
 

@@ -44,6 +44,7 @@
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/security-core-clr.h>
+#include <mono/metadata/monitor.h>
 #include <mono/utils/mono-compiler.h>
 
 #define NEW_IR
@@ -3687,6 +3688,24 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		}
+	} else if (cmethod->klass == mono_defaults.monitor_class) {
+#if defined(MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH)
+		MonoMethod *fast_method = NULL;
+
+		/* Avoid infinite recursion */
+		if (cfg->method->wrapper_type == MONO_WRAPPER_UNKNOWN &&
+				(strcmp (cfg->method->name, "FastMonitorEnter") == 0 ||
+				 strcmp (cfg->method->name, "FastMonitorExit") == 0))
+			return NULL;
+
+		if (strcmp (cmethod->name, "Enter") == 0 ||
+				strcmp (cmethod->name, "Exit") == 0)
+			fast_method = mono_monitor_get_fast_path (cmethod);
+		if (!fast_method)
+			return NULL;
+
+		return (MonoInst*)mono_emit_method_call (cfg, fast_method, args, NULL);
+#endif
 	} else if (mini_class_is_system_array (cmethod->klass) &&
 			strcmp (cmethod->name, "GetGenericValueImpl") == 0) {
 		MonoInst *addr, *store, *load;
