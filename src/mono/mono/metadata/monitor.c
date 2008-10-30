@@ -752,8 +752,10 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 		desc = mono_method_desc_new ("Interlocked:CompareExchange(intptr&,intptr,intptr)", FALSE);
 		class = mono_class_from_name (mono_defaults.corlib, "System.Threading", "Interlocked");
 		compare_exchange_method = mono_method_desc_search_in_class (desc, class);
-		g_assert (compare_exchange_method);
 		mono_method_desc_free (desc);
+
+		if (!compare_exchange_method)
+			return NULL;
 	}
 
 	mb = mono_mb_new (mono_defaults.monitor_class, "FastMonitorEnter", MONO_WRAPPER_UNKNOWN);
