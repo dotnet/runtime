@@ -3131,7 +3131,7 @@ call_unhandled_exception_delegate (MonoDomain *domain, MonoObject *delegate, Mon
 	}
 }
 
-static MonoRuntimeUnhandledExceptionPolicy runtime_unhandled_exception_policy = MONO_UNHANLED_POLICY_CURRENT;
+static MonoRuntimeUnhandledExceptionPolicy runtime_unhandled_exception_policy = MONO_UNHANDLED_POLICY_CURRENT;
 
 /**
  * mono_runtime_unhandled_exception_policy_set:
@@ -3185,7 +3185,7 @@ mono_unhandled_exception (MonoObject *exc)
 
 	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
 		gboolean abort_process = (mono_thread_current () == main_thread) ||
-				(mono_runtime_unhandled_exception_policy_get () == MONO_UNHANLED_POLICY_CURRENT);
+				(mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT);
 		root_appdomain_delegate = *(MonoObject **)(((char *)root_domain->domain) + field->offset);
 		if (current_domain != root_domain && (mono_framework_version () >= 2)) {
 			current_appdomain_delegate = *(MonoObject **)(((char *)current_domain->domain) + field->offset);

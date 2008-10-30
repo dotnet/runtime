@@ -1255,8 +1255,8 @@ gpointer
 mono_method_alloc_generic_virtual_thunk (MonoDomain *domain, int size) MONO_INTERNAL;
 
 typedef enum {
-	MONO_UNHANLED_POLICY_LEGACY,
-	MONO_UNHANLED_POLICY_CURRENT
+	MONO_UNHANDLED_POLICY_LEGACY,
+	MONO_UNHANDLED_POLICY_CURRENT
 } MonoRuntimeUnhandledExceptionPolicy;
 
 MonoRuntimeUnhandledExceptionPolicy
