@@ -1,3 +1,7 @@
+2008-10-30  Jonathan Pryor  <jpryor@novell.com>
+
+	* man/mdoc-assemble.1: Document //node use within .source files.
+
 2008-10-27  Jb Evain  <jbevain@novell.com>
 
 	* data/cecil.pc.in: update version.
