@@ -1,5 +1,10 @@
 2008-10-30  Jonathan Pryor  <jpryor@novell.com>
 
+	* Makefile.am: Build `docs` after `runtime`, so that it can depend
+	  upon mdoc.exe for it's operation.
+
+2008-10-30  Jonathan Pryor  <jpryor@novell.com>
+
 	* man/mdoc-assemble.1: Document //node use within .source files.
 
 2008-10-27  Jb Evain  <jbevain@novell.com>
