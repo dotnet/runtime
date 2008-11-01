@@ -1128,8 +1128,12 @@ absolute_dir (const gchar *filename)
 	gchar *res;
 	gint i;
 
-	if (g_path_is_absolute (filename))
-		return g_path_get_dirname (filename);
+	if (g_path_is_absolute (filename)) {
+		part = g_path_get_dirname (filename);
+		res = g_strconcat (part, G_DIR_SEPARATOR_S, NULL);
+		g_free (part);
+		return res;
+	}
 
 	cwd = g_get_current_dir ();
 	mixed = g_build_filename (cwd, filename, NULL);
