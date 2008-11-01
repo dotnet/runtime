@@ -428,6 +428,8 @@ MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 						MonoImageOpenStatus *status,
 						gboolean refonly) MONO_INTERNAL;
 
+void mono_set_private_bin_path_from_config (MonoDomain *domain) MONO_INTERNAL;
+
 int mono_framework_version (void) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

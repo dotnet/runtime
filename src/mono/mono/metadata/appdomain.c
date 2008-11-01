@@ -625,7 +625,7 @@ mono_parser = {
 	NULL
 };
 
-static void
+void
 mono_set_private_bin_path_from_config (MonoDomain *domain)
 {
 	gchar *config_file, *text;
