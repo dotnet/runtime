@@ -34,6 +34,8 @@
 #include <string.h>
 #ifndef PLATFORM_WIN32
 #include <sys/mman.h>
+#include <sys/time.h>
+#include <time.h>
 #else
 #include <winsock2.h>
 #include <windows.h>
@@ -65,6 +67,16 @@
 #include "version.h"
 
 #ifndef DISABLE_AOT
+
+#ifdef PLATFORM_WIN32
+#define TV_DECLARE(name)
+#define TV_GETTIME(tv)
+#define TV_ELAPSED(start, end) 0
+#else
+#define TV_DECLARE(name) struct timeval name
+#define TV_GETTIME(tv) gettimeofday (&(tv), NULL)
+#define TV_ELAPSED(start,end) (int)((((end).tv_sec - (start).tv_sec) * 1000000) + end.tv_usec - start.tv_usec)
+#endif
 
 #ifdef PLATFORM_WIN32
 #define SHARED_EXT ".dll"
@@ -109,6 +121,7 @@ typedef struct MonoAotStats {
 	int methods_without_got_slots, direct_calls, all_calls;
 	int got_slots;
 	int got_slot_types [MONO_PATCH_INFO_NONE];
+	int jit_time, gen_time, link_time;
 } MonoAotStats;
 
 /*#define USE_ELF_WRITER 1*/
@@ -4734,6 +4747,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	char *symbol;
 	int i, res;
 	MonoAotCompile *acfg;
+	TV_DECLARE (atv);
+	TV_DECLARE (btv);
 
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
@@ -4795,10 +4810,16 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->plt_offset = 1;
 
 	/* Compile methods */
+	TV_GETTIME (atv);
 	for (i = 0; i < acfg->methods->len; ++i) {
 		/* This can new methods to acfg->methods */
 		compile_method (acfg, g_ptr_array_index (acfg->methods, i));
 	}
+	TV_GETTIME (btv);
+
+	acfg->stats.jit_time = TV_ELAPSED (atv, btv);
+
+	TV_GETTIME (atv);
 
 	alloc_got_slots (acfg);
 
@@ -4835,13 +4856,20 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_label (acfg, symbol);
 	g_free (symbol);
 
+	TV_GETTIME (btv);
+
+	acfg->stats.gen_time = TV_ELAPSED (atv, btv);
+
 	printf ("Code: %d Info: %d Ex Info: %d Class Info: %d PLT: %d GOT Info: %d GOT Info Offsets: %d GOT: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, acfg->stats.got_info_offsets_size, (int)(acfg->got_offset * sizeof (gpointer)));
 
+	TV_GETTIME (atv);
 	res = emit_writeout (acfg);
 	if (res != 0) {
 		acfg_free (acfg);
 		return res;
 	}
+	TV_GETTIME (btv);
+	acfg->stats.link_time = TV_ELAPSED (atv, btv);
 
 	printf ("Compiled %d out of %d methods (%d%%)\n", acfg->stats.ccount, acfg->stats.mcount, acfg->stats.mcount ? (acfg->stats.ccount * 100) / acfg->stats.mcount : 100);
 	if (acfg->stats.genericcount)
@@ -4856,6 +4884,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		printf ("%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
 	printf ("Methods without GOT slots: %d (%d%%)\n", acfg->stats.methods_without_got_slots, acfg->stats.mcount ? (acfg->stats.methods_without_got_slots * 100) / acfg->stats.mcount : 100);
 	printf ("Direct calls: %d (%d%%)\n", acfg->stats.direct_calls, acfg->stats.all_calls ? (acfg->stats.direct_calls * 100) / acfg->stats.all_calls : 100);
+	printf ("JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
 
 	printf ("GOT slot distribution:\n");
 	for (i = 0; i < MONO_PATCH_INFO_NONE; ++i)
