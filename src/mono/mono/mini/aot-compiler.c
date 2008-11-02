@@ -57,6 +57,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/method-builder.h>
+#include <mono/metadata/monitor.h>
 #include <mono/utils/mono-logger.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -139,6 +140,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *methods;
 	GHashTable *method_indexes;
 	MonoCompile **cfgs;
+	int cfgs_size;
 	GHashTable *patch_to_plt_offset;
 	GHashTable *plt_offset_to_patch;
 	GHashTable *patch_to_shared_got_offset;
@@ -155,7 +157,6 @@ typedef struct MonoAotCompile {
 	guint32 got_offset, plt_offset;
 	/* Number of GOT entries reserved for trampolines */
 	guint32 num_trampoline_got_entries;
-	guint32 *method_got_offsets;
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
@@ -1877,6 +1878,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_STELEMREF:
+		case MONO_WRAPPER_MONITOR_FAST_ENTER:
+		case MONO_WRAPPER_MONITOR_FAST_EXIT:
 			break;
 		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
 			MonoMethod *m;
@@ -2089,6 +2092,7 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index)
 	if (!g_hash_table_lookup (acfg->method_indexes, method)) {
 		g_ptr_array_add (acfg->methods, method);
 		g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
+		acfg->nmethods = acfg->methods->len + 1;
 	}
 }
 
@@ -2125,6 +2129,11 @@ add_method (MonoAotCompile *acfg, MonoMethod *method)
 static void
 add_extra_method (MonoAotCompile *acfg, MonoMethod *method)
 {
+	int index;
+
+	index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_indexes, method));
+	if (index)
+		return;
 	add_method (acfg, method);
 	g_ptr_array_add (acfg->extra_methods, method);
 }
@@ -2261,6 +2270,9 @@ add_wrappers (MonoAotCompile *acfg)
 	}
 
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
+		MonoMethodDesc *desc;
+		MonoMethod *orig_method;
+
 		/* JIT icall wrappers */
 		/* FIXME: locking */
 		g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
@@ -2275,6 +2287,19 @@ add_wrappers (MonoAotCompile *acfg)
 
 		/* stelemref */
 		add_method (acfg, mono_marshal_get_stelemref ());
+
+		/* Monitor Enter/Exit */
+		desc = mono_method_desc_new ("Monitor:Enter", FALSE);
+		orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+		g_assert (orig_method);
+		mono_method_desc_free (desc);
+		add_method (acfg, mono_monitor_get_fast_path (orig_method));
+
+		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+		orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+		g_assert (orig_method);
+		mono_method_desc_free (desc);
+		add_method (acfg, mono_monitor_get_fast_path (orig_method));
 	}
 
 	/* remoting-invoke wrappers */
@@ -2342,6 +2367,25 @@ has_type_vars (MonoClass *klass)
 
 			for (i = 0; i < context->class_inst->type_argc; ++i)
 				if (has_type_vars (mono_class_from_mono_type (context->class_inst->type_argv [i])))
+					return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static gboolean
+method_has_type_vars (MonoMethod *method)
+{
+	if (has_type_vars (method->klass))
+		return TRUE;
+
+	if (method->is_inflated) {
+		MonoGenericContext *context = mono_method_get_context (method);
+		if (context->method_inst) {
+			int i;
+
+			for (i = 0; i < context->method_inst->type_argc; ++i)
+				if (has_type_vars (mono_class_from_mono_type (context->method_inst->type_argv [i])))
 					return TRUE;
 		}
 	}
@@ -2590,7 +2634,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	acfg->stats.code_size += cfg->code_len;
 
-	acfg->method_got_offsets [method_index] = acfg->got_offset;
+	acfg->cfgs [method_index]->got_offset = acfg->got_offset;
 
 	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE);
 
@@ -2792,7 +2836,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		g_ptr_array_add (patches, patch_info);
 	g_ptr_array_sort (patches, compare_patches);
 
-	first_got_offset = acfg->method_got_offsets [method_index];
+	first_got_offset = acfg->cfgs [method_index]->got_offset;
 
 	/**********************/
 	/* Encode method info */
@@ -3651,6 +3695,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_ALLOC:
 			case MONO_WRAPPER_REMOTING_INVOKE:
 			case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
+			case MONO_WRAPPER_MONITOR_FAST_ENTER:
+			case MONO_WRAPPER_MONITOR_FAST_EXIT:
 				break;
 			default:
 				/* unable to handle this */
@@ -3716,6 +3762,24 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 
+	/* Adds generic instances referenced by this method */
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		switch (patch_info->type) {
+		case MONO_PATCH_INFO_METHOD: {
+			MonoMethod *m = patch_info->data.method;
+			if (m->is_inflated) {
+				if (!(mono_class_generic_sharing_enabled (m->klass) &&
+					  mono_method_is_generic_sharable_impl (m, FALSE)) &&
+					!method_has_type_vars (m))
+					add_extra_method (acfg, m);
+			}
+			break;
+		}
+		default:
+			break;
+		}
+	}
+
 	/* Determine whenever the method has GOT slots */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
@@ -3767,6 +3831,15 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	//printf ("Compile:           %s\n", mono_method_full_name (method, TRUE));
 
+	while (index >= acfg->cfgs_size) {
+		MonoCompile **new_cfgs;
+
+		acfg->cfgs_size *= 2;
+		new_cfgs = g_new0 (MonoCompile*, acfg->cfgs_size);
+		memcpy (new_cfgs, acfg->cfgs, sizeof (MonoCompile*) * acfg->cfgs_size);
+		g_free (acfg->cfgs);
+		acfg->cfgs = new_cfgs;
+	}
 	acfg->cfgs [index] = cfg;
 
 	g_hash_table_insert (acfg->method_to_cfg, cfg->orig_method, cfg);
@@ -3986,7 +4059,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	HashEntry *entry, *new_entry;
 	int nmethods;
 
-	info_offsets = g_new0 (guint32, acfg->nmethods);
+	info_offsets = g_new0 (guint32, acfg->extra_methods->len);
 
 	buf_size = acfg->extra_methods->len * 256 + 256;
 	p = buf = g_malloc (buf_size);
@@ -4636,7 +4709,6 @@ acfg_free (MonoAotCompile *acfg)
 		if (acfg->cfgs [i])
 			g_free (acfg->cfgs [i]);
 	g_free (acfg->cfgs);
-	g_free (acfg->method_got_offsets);
 	g_free (acfg->static_linking_symbol);
 	g_ptr_array_free (acfg->methods, TRUE);
 	g_ptr_array_free (acfg->shared_patches, TRUE);
@@ -4714,15 +4786,15 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->aot_opts.full_aot)
 		add_wrappers (acfg);
 
-	acfg->nmethods = acfg->methods->len + 1;
-	acfg->cfgs = g_new0 (MonoCompile*, acfg->nmethods + 32);
-	acfg->method_got_offsets = g_new0 (guint32, acfg->nmethods + 32);
+	acfg->cfgs_size = acfg->methods->len + 32;
+	acfg->cfgs = g_new0 (MonoCompile*, acfg->cfgs_size);
 
 	/* PLT offset 0 is reserved for the PLT trampoline */
 	acfg->plt_offset = 1;
 
 	/* Compile methods */
 	for (i = 0; i < acfg->methods->len; ++i) {
+		/* This can new methods to acfg->methods */
 		compile_method (acfg, g_ptr_array_index (acfg->methods, i));
 	}
 

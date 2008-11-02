@@ -47,6 +47,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internal.h>
+#include <mono/metadata/monitor.h>
 #include <mono/utils/mono-logger.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -515,6 +516,21 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			if (!m)
 				return NULL;
 			*method = mono_marshal_get_static_rgctx_invoke (m);
+			break;
+		}
+		case MONO_WRAPPER_MONITOR_FAST_ENTER:
+		case MONO_WRAPPER_MONITOR_FAST_EXIT: {
+			MonoMethodDesc *desc;
+			MonoMethod *orig_method;
+
+			if (wrapper_type == MONO_WRAPPER_MONITOR_FAST_ENTER)
+				desc = mono_method_desc_new ("Monitor:Enter", FALSE);
+			else
+				desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+			g_assert (orig_method);
+			mono_method_desc_free (desc);
+			*method = mono_monitor_get_fast_path (orig_method);
 			break;
 		}
 		default:
