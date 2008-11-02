@@ -1445,6 +1445,8 @@ emit_pointer (MonoAotCompile *acfg, const char *target)
 #endif
 }
 
+static char *byte_to_str;
+
 static void
 emit_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 {
@@ -1453,12 +1455,19 @@ emit_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 		acfg->mode = EMIT_BYTE;
 		acfg->col_count = 0;
 	}
+
+	if (byte_to_str == NULL) {
+		byte_to_str = g_new0 (char, 256 * 8);
+		for (i = 0; i < 256; ++i) {
+			sprintf (byte_to_str + (i * 8), ",%d", i);
+		}
+	}
+
 	for (i = 0; i < size; ++i, ++acfg->col_count) {
 		if ((acfg->col_count % 32) == 0)
-			fprintf (acfg->fp, "\n\t.byte ");
+			fprintf (acfg->fp, "\n\t.byte %d", buf [i]);
 		else
-			fprintf (acfg->fp, ",");
-		fprintf (acfg->fp, "0x%x", buf [i]);
+			fputs (byte_to_str + (buf [i] * 8), acfg->fp);
 	}
 }
 
