@@ -3833,12 +3833,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	while (index >= acfg->cfgs_size) {
 		MonoCompile **new_cfgs;
+		int new_size;
 
-		acfg->cfgs_size *= 2;
-		new_cfgs = g_new0 (MonoCompile*, acfg->cfgs_size);
+		new_size = acfg->cfgs_size * 2;
+		new_cfgs = g_new0 (MonoCompile*, new_size);
 		memcpy (new_cfgs, acfg->cfgs, sizeof (MonoCompile*) * acfg->cfgs_size);
 		g_free (acfg->cfgs);
 		acfg->cfgs = new_cfgs;
+		acfg->cfgs_size = new_size;
 	}
 	acfg->cfgs [index] = cfg;
 
