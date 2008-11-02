@@ -64,7 +64,7 @@ struct _MonoMethod {
 	/* this is used by the inlining algorithm */
 	unsigned int inline_info:1;
 	unsigned int inline_failure:1;
-	unsigned int wrapper_type:5;
+	unsigned int wrapper_type:6;
 	unsigned int string_ctor:1;
 	unsigned int save_lmf:1;
 	unsigned int dynamic:1; /* created & destroyed during runtime */
@@ -72,7 +72,7 @@ struct _MonoMethod {
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
 	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
-	signed int slot : 18;
+	signed int slot : 17;
 
 	/*
 	 * If is_generic is TRUE, the generic_container is stored in image->property_hash, 
