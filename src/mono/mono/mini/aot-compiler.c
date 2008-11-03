@@ -1156,7 +1156,7 @@ emit_writeout (MonoAotCompile *acfg)
 		header.e_ident [i] = 0;
 
 	header.e_type = ET_DYN;
-#if defined(__i386_)
+#if defined(__i386__)
 	header.e_machine = EM_386;
 #elif defined(__x86_64__)
 	header.e_machine = EM_X86_64;
