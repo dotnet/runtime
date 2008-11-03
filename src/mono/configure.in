@@ -2308,6 +2308,7 @@ data/mono.pc
 data/mono-cairo.pc
 data/mono-nunit.pc
 data/mono-options.pc
+data/mono-lineeditor.pc
 data/monodoc.pc
 data/dotnet.pc
 data/dotnet35.pc
