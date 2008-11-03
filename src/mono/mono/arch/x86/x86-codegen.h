@@ -1831,6 +1831,8 @@ typedef enum {
 	
 	X86_SSE_PSRLQ_REG = 0xD3,
 	X86_SSE_PSLLQ_REG = 0xF3,
+
+	X86_SSE_PREFETCH = 0x18
 } X86_SSE_Opcode;
 
 
@@ -1857,6 +1859,13 @@ typedef enum {
 		*(inst)++ = (unsigned char)(opc);	\
 		x86_reg_emit ((inst), (dreg), (reg));	\
 	} while (0)
+
+#define x86_sse_alu_reg_membase(inst,opc,sreg,basereg,disp)	\
+		do {	\
+			*(inst)++ = (unsigned char)0x0f;	\
+			*(inst)++ = (unsigned char)(opc);	\
+			x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
+		} while (0)
 
 #define x86_sse_alu_pd_reg_reg(inst,opc,dreg,reg)       \
 	do {    \
