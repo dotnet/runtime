@@ -74,7 +74,8 @@ enum {
 	SIMD_EMIT_SHIFT,
 	SIMD_EMIT_LOAD_ALIGNED,
 	SIMD_EMIT_STORE_ALIGNED,
-	SIMD_EMIT_EXTRACT_MASK
+	SIMD_EMIT_EXTRACT_MASK,
+	SIMD_EMIT_PREFETCH
 };
 
 #ifdef HAVE_ARRAY_ELEM_INIT
@@ -147,6 +148,10 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ SN_Max, OP_MAXPS, SIMD_EMIT_BINARY },
 	{ SN_Min, OP_MINPS, SIMD_EMIT_BINARY },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_Reciprocal, OP_RCPPS, SIMD_EMIT_UNARY },
 	{ SN_Shuffle, OP_SHUFLEPS, SIMD_EMIT_SHUFFLE },
 	{ SN_Sqrt, OP_SQRTPS, SIMD_EMIT_UNARY },
@@ -190,6 +195,10 @@ static const SimdIntrinsc vector2d_intrinsics[] = {
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ SN_Max, OP_MAXPD, SIMD_EMIT_BINARY },
 	{ SN_Min, OP_MINPD, SIMD_EMIT_BINARY },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_op_Addition, OP_ADDPD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_ANDPD, SIMD_EMIT_BINARY },
@@ -211,6 +220,10 @@ static const SimdIntrinsc vector2ul_intrinsics[] = {
 	{ SN_CompareEqual, OP_PCMPEQQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHQ, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWQ, SIMD_EMIT_BINARY },
@@ -236,6 +249,10 @@ static const SimdIntrinsc vector2l_intrinsics[] = {
 	{ SN_CompareGreaterThan, OP_PCMPGTQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_ShiftRightLogic, OP_PSHRQ, SIMD_EMIT_SHIFT },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHQ, SIMD_EMIT_BINARY },
@@ -262,6 +279,10 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ SN_Max, OP_PMAXD_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_Min, OP_PMIND_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_ShiftRightArithmetic, OP_PSARD, SIMD_EMIT_SHIFT },
 	{ SN_Shuffle, OP_PSHUFLED, SIMD_EMIT_SHUFFLE },
 	{ SN_SignedPackWithSignedSaturation, OP_PACKD, SIMD_EMIT_BINARY },
@@ -295,6 +316,10 @@ static const SimdIntrinsc vector4i_intrinsics[] = {
 	{ SN_Min, OP_PMIND, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_PackWithSignedSaturation, OP_PACKD, SIMD_EMIT_BINARY },
 	{ SN_PackWithUnsignedSaturation, OP_PACKD_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_ShiftRightLogic, OP_PSHRD, SIMD_EMIT_SHIFT },
 	{ SN_Shuffle, OP_PSHUFLED, SIMD_EMIT_SHUFFLE },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
@@ -326,6 +351,10 @@ static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ SN_Max, OP_PMAXW_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_Min, OP_PMINW_UN, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_MultiplyStoreHigh, OP_PMULW_HIGH_UN, SIMD_EMIT_BINARY },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_ShiftRightArithmetic, OP_PSARW, SIMD_EMIT_SHIFT },
 	{ SN_ShuffleHigh, OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
 	{ SN_ShuffleLow, OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },
@@ -363,6 +392,10 @@ static const SimdIntrinsc vector8s_intrinsics[] = {
 	{ SN_MultiplyStoreHigh, OP_PMULW_HIGH, SIMD_EMIT_BINARY },
 	{ SN_PackWithSignedSaturation, OP_PACKW, SIMD_EMIT_BINARY },
 	{ SN_PackWithUnsignedSaturation, OP_PACKW_UN, SIMD_EMIT_BINARY },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_ShiftRightLogic, OP_PSHRW, SIMD_EMIT_SHIFT },
 	{ SN_ShuffleHigh, OP_PSHUFLEW_HIGH, SIMD_EMIT_SHUFFLE },
 	{ SN_ShuffleLow, OP_PSHUFLEW_LOW, SIMD_EMIT_SHUFFLE },
@@ -395,6 +428,10 @@ static const SimdIntrinsc vector16b_intrinsics[] = {
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ SN_Max, OP_PMAXB_UN, SIMD_EMIT_BINARY },
 	{ SN_Min, OP_PMINB_UN, SIMD_EMIT_BINARY },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_SubWithSaturation, OP_PSUBB_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_SumOfAbsoluteDifferences, OP_PSUM_ABS_DIFF, SIMD_EMIT_BINARY },
@@ -422,6 +459,10 @@ static const SimdIntrinsc vector16sb_intrinsics[] = {
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ SN_Max, OP_PMAXB, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_Min, OP_PMINB, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_Prefetch0, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
+	{ SN_Prefetch1, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_1 },
+	{ SN_Prefetch2, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
+	{ SN_PrefetchNTA, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_StoreAligned, 0, SIMD_EMIT_STORE_ALIGNED },
 	{ SN_SubWithSaturation, OP_PSUBB_SAT, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
@@ -930,6 +971,19 @@ simd_intrinsic_emit_extract_mask (const SimdIntrinsc *intrinsic, MonoCompile *cf
 	return ins;
 }
 
+static MonoInst*
+simd_intrinsic_emit_prefetch (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
+{
+	MonoInst *ins;
+
+	MONO_INST_NEW (cfg, ins, OP_PREFETCH_MEMBASE);
+	ins->klass = cmethod->klass;
+	ins->sreg1 = args [0]->dreg;
+	ins->backend.arg_info = intrinsic->flags;
+	MONO_ADD_INS (cfg->cbb, ins);
+	return ins;
+}
+
 static const char *
 simd_version_name (guint32 version)
 {
@@ -996,6 +1050,8 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return simd_intrinsic_emit_store_aligned (result, cfg, cmethod, args);
 	case SIMD_EMIT_EXTRACT_MASK:
 		return simd_intrinsic_emit_extract_mask (result, cfg, cmethod, args);
+	case SIMD_EMIT_PREFETCH:
+		return simd_intrinsic_emit_prefetch (result, cfg, cmethod, args);
 	}
 	g_assert_not_reached ();
 }

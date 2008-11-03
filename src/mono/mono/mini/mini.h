@@ -1729,6 +1729,13 @@ enum {
 	SIMD_COMP_ORD
 };
 
+enum {
+	SIMD_PREFETCH_MODE_NTA,
+	SIMD_PREFETCH_MODE_0,
+	SIMD_PREFETCH_MODE_1,
+	SIMD_PREFETCH_MODE_2,
+};
+
 const char *mono_arch_xregname (int reg) MONO_INTERNAL;
 void mono_simd_simplify_indirection (MonoCompile *cfg) MONO_INTERNAL;
 MonoInst* mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;

@@ -4211,6 +4211,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STOREX_ALIGNED_MEMBASE_REG:
 			x86_movaps_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
 			break;
+		case OP_PREFETCH_MEMBASE:
+			x86_sse_alu_reg_membase (code, X86_SSE_PREFETCH, ins->backend.arg_info, ins->sreg1, ins->inst_offset);
+
+			break;
 		case OP_XMOVE:
 			/*FIXME the peephole pass should have killed this*/
 			if (ins->dreg != ins->sreg1)
