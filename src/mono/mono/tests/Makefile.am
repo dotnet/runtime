@@ -286,6 +286,7 @@ BASE_TEST_CS_SRC=		\
 	generic-type-builder.2.cs	\
 	generic-synchronized.2.cs	\
 	generic-delegate-ctor.2.cs	\
+	generic-array-iface-set.2.cs	\
 	bug-431413.2.cs	\
 	generic-virtual-invoke.2.cs	\
 	recursive-generics.2.cs	\
