@@ -29,6 +29,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_ELF_H
+#include <elf.h>
+#endif
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
@@ -123,6 +126,11 @@ typedef struct MonoAotStats {
 	int got_slot_types [MONO_PATCH_INFO_NONE];
 	int jit_time, gen_time, link_time;
 } MonoAotStats;
+
+#if defined(__x86_64__) && defined(HAVE_ELF_H)
+//#define USE_ELF_WRITER 1
+#define USE_ELF_RELA 1
+#endif
 
 /*#define USE_ELF_WRITER 1*/
 
@@ -487,13 +495,6 @@ emit_zero_bytes (MonoAotCompile *acfg, int num)
 }
 
 #ifdef USE_ELF_WRITER
-enum {
-	SYM_LOCAL = 0 << 4,
-	SYM_GLOBAL = 1 << 4,
-	SYM_OBJECT = 1,
-	SYM_FUNC = 2,
-	SYM_SECTION = 3
-};
 
 enum {
 	SECT_NULL,
@@ -501,6 +502,7 @@ enum {
 	SECT_DYNSYM,
 	SECT_DYNSTR,
 	SECT_REL_DYN,
+	SECT_RELA_DYN,
 	SECT_TEXT,
 	SECT_DYNAMIC,
 	SECT_GOT_PLT,
@@ -512,156 +514,52 @@ enum {
 	SECT_NUM
 };
 
-enum {
-	DYN_HASH = 4,
-	DYN_STRTAB = 5,
-	DYN_SYMTAB = 6,
-	DYN_STRSZ = 10,
-	DYN_SYMENT = 11,
-	DYN_REL = 17,
-	DYN_RELSZ = 18,
-	DYN_RELENT = 19,
-	DYN_RELCOUNT = 0x6ffffffa
-};
-
-static const char* section_names [] = {
-	"",
-	".hash",
-	".dynsym",
-	".dynstr",
-	".rel.dyn",
-	".text",
-	".dynamic",
-	".got.plt",
-	".data",
-	".bss",
-	".shstrtab",
-	".symtab",
-	".strtab"
-};
-
-static const guint8 section_type [] = {
-	0, 5, 11, 3, 9, 1,
-	6, 1, 1, 8, 3, 2, 3
-};
-
-static const guint8 section_link [] = {
-	0, 2, 3, 0, 2, 0, 3, 0, 0, 0, 0, 12, 0
-};
-
-static const guint8 section_esize [] = {
-	0, 4, 16, 0, 8, 0, 8, 4, 0, 0, 0, 16, 0
-};
-
-static const guint8 section_flags [] = {
-	0, 2, 2, 2, 2, 6, 3, 3, 3, 3, 0, 0, 0
-};
-
-static const guint16 section_align [] = {
-	0, 4, 4, 1, 4, 4096, 4, 4, 8, 8, 1, 4, 1
-};
-
-struct ElfHeader {
-	guint8  e_ident [16];
-	guint16 e_type;
-	guint16 e_machine;
-	guint32 e_version;
-	gsize   e_entry;
-	gsize   e_phoff;
-	gsize   e_shoff;
-	guint32 e_flags;
-	guint16 e_ehsize;
-	guint16 e_phentsize;
-	guint16 e_phnum;
-	guint16 e_shentsize;
-	guint16 e_shnum;
-	guint16 e_shstrndx;
-};
-
-struct ElfSectHeader {
-	guint32 sh_name;
-	guint32 sh_type;
-	gsize   sh_flags;
-	gsize   sh_addr;
-	gsize   sh_offset;
-	gsize   sh_size;
-	guint32 sh_link;
-	guint32 sh_info;
-	gsize   sh_addralign;
-	gsize   sh_entsize;
-};
-
 #if SIZEOF_VOID_P == 4
 
-struct ElfProgHeader {
-	guint32 p_type;
-	guint32 p_offset;
-	guint32 p_vaddr;
-	guint32 p_paddr;
-	guint32 p_filesz;
-	guint32 p_memsz;
-	guint32 p_flags;
-	guint32 p_align;
-};
-
-typedef struct {
-	guint32 st_name;
-	guint32 st_value;
-	guint32 st_size;
-	guint8  st_info;
-	guint8  st_other;
-	guint16 st_shndx;
-} ElfSymbol;
-
-typedef struct {
-	guint32 addr;
-	guint32 value;
-} ElfReloc;
-
-typedef struct {
-	guint32 d_tag;
-	guint32 d_val;
-} ElfDynamic;
+typedef Elf32_Ehdr ElfHeader;
+typedef Elf32_Shdr ElfSectHeader;
+typedef Elf32_Phdr ElfProgHeader;
+typedef Elf32_Sym ElfSymbol;
+typedef Elf32_Rel ElfReloc;
+typedef Elf32_Rela ElfRelocA;
+typedef Elf32_Dyn ElfDynamic;
 
 #else
 
-struct ElfProgHeader {
-	guint32 p_type;
-	guint32 p_flags;
-	guint64 p_offset;
-	guint64 p_vaddr;
-	guint64 p_paddr;
-	guint64 p_filesz;
-	guint64 p_memsz;
-	guint64 p_align;
-};
-
-typedef struct {
-	guint32 st_name;
-	guint8  st_info;
-	guint8  st_other;
-	guint16 st_shndx;
-	guint64 st_value;
-	guint64 st_size;
-} ElfSymbol;
-
-typedef struct {
-	guint64 addr;
-	guint64 value;
-} ElfReloc;
-
-typedef struct {
-	guint64 addr;
-	guint64 value;
-	guint64 addend;
-} ElfRelocA;
-
-typedef struct {
-	guint64 d_tag;
-	guint64 d_val;
-} ElfDynamic;
+typedef Elf64_Ehdr ElfHeader;
+typedef Elf64_Shdr ElfSectHeader;
+typedef Elf64_Phdr ElfProgHeader;
+typedef Elf64_Sym ElfSymbol;
+typedef Elf64_Rel ElfReloc;
+typedef Elf64_Rela ElfRelocA;
+typedef Elf64_Dyn ElfDynamic;
 
 #endif
+
+typedef struct {
+	const char *name;
+	int type;
+	int esize;
+	int flags;
+	int align;
+} SectInfo;
+
+static SectInfo section_info [] = {
+	{"", 0, 0, 0, 0},
+	{".hash", SHT_HASH, 4, 2, SIZEOF_VOID_P},
+	{".dynsym", SHT_DYNSYM, sizeof (ElfSymbol), 2, SIZEOF_VOID_P},
+	{".dynstr", SHT_STRTAB, 0, 2, 1},
+	{".rel.dyn", SHT_REL, sizeof (ElfReloc), 2, SIZEOF_VOID_P},
+	{".rela.dyn", SHT_RELA, sizeof (ElfRelocA), 2, SIZEOF_VOID_P},
+	{".text", SHT_PROGBITS, 0, 6, 4096},
+	{".dynamic", SHT_DYNAMIC, sizeof (ElfDynamic), 3, SIZEOF_VOID_P},
+	{".got.plt", SHT_PROGBITS, SIZEOF_VOID_P, 3, SIZEOF_VOID_P},
+	{".data", SHT_PROGBITS, 0, 3, 8},
+	{".bss", SHT_NOBITS, 0, 3, 8},
+	{".shstrtab", SHT_STRTAB, 0, 0, 1},
+	{".symtab", SHT_SYMTAB, sizeof (ElfSymbol), 0, SIZEOF_VOID_P},
+	{".strtab", SHT_STRTAB, 0, 0, 1}
+};
 
 typedef struct {
 	GString *data;
@@ -687,7 +585,7 @@ str_table_add (ElfStrTable *table, const char* value)
 }
 
 static void
-append_subsection (MonoAotCompile *acfg, struct ElfSectHeader *sheaders, BinSection *sect, BinSection *add)
+append_subsection (MonoAotCompile *acfg, ElfSectHeader *sheaders, BinSection *sect, BinSection *add)
 {
 	int offset = sect->cur_offset;
 	/*offset += (sheaders [sect->shidx].sh_addralign - 1);
@@ -703,14 +601,14 @@ append_subsection (MonoAotCompile *acfg, struct ElfSectHeader *sheaders, BinSect
 	add->parent = sect;
 	sect->cur_offset += add->cur_offset;
 	add->cur_offset = offset; /* it becomes the offset in the parent section */
-	g_print ("subsection %d of %s added at offset %d (align: %d)\n", add->subsection, sect->name, add->cur_offset, sheaders [sect->shidx].sh_addralign);
+	g_print ("subsection %d of %s added at offset %d (align: %d)\n", add->subsection, sect->name, add->cur_offset, (int)sheaders [sect->shidx].sh_addralign);
 	add->data = NULL;
 	add->data_len = 0;
 }
 
 /* merge the subsections */
 static int
-collect_sections (MonoAotCompile *acfg, struct ElfSectHeader *sheaders, BinSection **out, int num)
+collect_sections (MonoAotCompile *acfg, ElfSectHeader *sheaders, BinSection **out, int num)
 {
 	int i, j, maxs, num_sections;
 	BinSection *sect;
@@ -803,7 +701,7 @@ get_label_addr (MonoAotCompile *acfg, const char *name)
 }
 
 static ElfSymbol*
-collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, struct ElfSectHeader *sheaders, int *num_syms)
+collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, ElfSectHeader *sheaders, int *num_syms)
 {
 	ElfSymbol *symbols;
 	BinSymbol *symbol;
@@ -823,7 +721,7 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, struct ElfSe
 	if (sheaders) {
 		int j;
 		for (j = 1; j < SECT_NUM; ++j) {
-			symbols [i].st_info = SYM_LOCAL | SYM_SECTION;
+			symbols [i].st_info = ELF32_ST_INFO (STB_LOCAL, STT_SECTION);
 			symbols [i].st_shndx = j;
 			symbols [i].st_value = sheaders [j].sh_addr;
 			++i;
@@ -832,7 +730,7 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, struct ElfSe
 		for (section = acfg->sections; section; section = section->next) {
 			if (section->parent)
 				continue;
-			symbols [i].st_info = SYM_LOCAL | SYM_SECTION;
+			symbols [i].st_info = ELF32_ST_INFO (STB_LOCAL, STT_SECTION);
 			if (strcmp (section->name, ".text") == 0) {
 				symbols [i].st_shndx = SECT_TEXT;
 				section->shidx = SECT_TEXT;
@@ -857,7 +755,7 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, struct ElfSe
 		BinLabel *lab;
 		if (!symbol->is_global)
 			continue;
-		symbols [i].st_info = (symbol->is_function? SYM_FUNC : SYM_OBJECT) | SYM_GLOBAL;
+		symbols [i].st_info = ELF32_ST_INFO (STB_GLOBAL, symbol->is_function? STT_FUNC : STT_OBJECT);
 		symbols [i].st_name = str_table_add (strtab, symbol->name);
 		/*g_print ("sym name %s tabled to %d\n", symbol->name, symbols [i].st_name);*/
 		section = symbol->section;
@@ -874,15 +772,15 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, struct ElfSe
 	/* add special symbols */
 	symbols [i].st_name = str_table_add (strtab, "__bss_start");
 	symbols [i].st_shndx = 0xfff1;
-	symbols [i].st_info = SYM_GLOBAL;
+	symbols [i].st_info = ELF32_ST_INFO (STB_GLOBAL, 0);
 	++i;
 	symbols [i].st_name = str_table_add (strtab, "_edata");
 	symbols [i].st_shndx = 0xfff1;
-	symbols [i].st_info = SYM_GLOBAL;
+	symbols [i].st_info = ELF32_ST_INFO (STB_GLOBAL, 0);
 	++i;
 	symbols [i].st_name = str_table_add (strtab, "_end");
 	symbols [i].st_shndx = 0xfff1;
-	symbols [i].st_info = SYM_GLOBAL;
+	symbols [i].st_info = ELF32_ST_INFO (STB_GLOBAL, 0);
 	++i;
 
 	if (num_syms)
@@ -912,7 +810,7 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, struct ElfSe
 }
 
 static void
-reloc_symbols (MonoAotCompile *acfg, ElfSymbol *symbols, struct ElfSectHeader *sheaders, ElfStrTable *strtab, gboolean dynamic)
+reloc_symbols (MonoAotCompile *acfg, ElfSymbol *symbols, ElfSectHeader *sheaders, ElfStrTable *strtab, gboolean dynamic)
 {
 	BinSection *section;
 	BinSymbol *symbol;
@@ -957,6 +855,81 @@ reloc_symbols (MonoAotCompile *acfg, ElfSymbol *symbols, struct ElfSectHeader *s
 	++i;
 }
 
+static void
+resolve_reloc (MonoAotCompile *acfg, BinReloc *reloc, guint8 **out_data, gsize *out_vaddr, gsize *out_start_val, gsize *out_end_val)
+{
+	guint8 *data;
+	gsize end_val, start_val;
+	gsize vaddr;
+
+	end_val = get_label_addr (acfg, reloc->val1);
+	if (reloc->val2) {
+		start_val = get_label_addr (acfg, reloc->val2);
+	} else if (reloc->val2_section) {
+		start_val = reloc->val2_offset;
+		if (reloc->val2_section->parent)
+			start_val += reloc->val2_section->parent->file_offset + reloc->val2_section->cur_offset;
+		else
+			start_val += reloc->val2_section->file_offset;
+	} else {
+		start_val = 0;
+	}
+	end_val = end_val - start_val + reloc->offset;
+	if (reloc->section->parent) {
+		data = reloc->section->parent->data;
+		data += reloc->section->cur_offset;
+		data += reloc->section_offset;
+		vaddr = reloc->section->parent->file_offset;
+		vaddr += reloc->section->cur_offset;
+		vaddr += reloc->section_offset;
+	} else {
+		data = reloc->section->data;
+		data += reloc->section_offset;
+		vaddr = reloc->section->file_offset;
+		vaddr += reloc->section_offset;
+	}
+
+	*out_start_val = start_val;
+	*out_end_val = end_val;
+	*out_data = data;
+	*out_vaddr = vaddr;
+}
+
+#ifdef USE_ELF_RELA
+
+static ElfRelocA*
+resolve_relocations (MonoAotCompile *acfg)
+{
+	BinReloc *reloc;
+	guint8 *data;
+	gsize end_val, start_val;
+	ElfRelocA *rr;
+	int i;
+	gsize vaddr;
+
+	rr = g_new0 (ElfRelocA, acfg->num_relocs);
+	i = 0;
+
+	for (reloc = acfg->relocations; reloc; reloc = reloc->next) {
+		resolve_reloc (acfg, reloc, &data, &vaddr, &start_val, &end_val);
+		/* FIXME: little endian */
+		data [0] = end_val;
+		data [1] = end_val >> 8;
+		data [2] = end_val >> 16;
+		data [3] = end_val >> 24;
+		if (start_val == 0) {
+			rr [i].r_offset = vaddr;
+			rr [i].r_info = R_X86_64_RELATIVE;
+			rr [i].r_addend = end_val;
+			++i;
+			g_assert (i <= acfg->num_relocs);
+		}
+	}
+	return rr;
+}
+
+#else /* USE_ELF_RELA */
+
 static ElfReloc*
 resolve_relocations (MonoAotCompile *acfg)
 {
@@ -971,40 +944,15 @@ resolve_relocations (MonoAotCompile *acfg)
 	i = 0;
 
 	for (reloc = acfg->relocations; reloc; reloc = reloc->next) {
-		end_val = get_label_addr (acfg, reloc->val1);
-		if (reloc->val2) {
-			start_val = get_label_addr (acfg, reloc->val2);
-		} else if (reloc->val2_section) {
-			start_val = reloc->val2_offset;
-			if (reloc->val2_section->parent)
-				start_val += reloc->val2_section->parent->file_offset + reloc->val2_section->cur_offset;
-			else
-				start_val += reloc->val2_section->file_offset;
-		} else {
-			start_val = 0;
-		}
-		end_val = end_val - start_val + reloc->offset;
-		if (reloc->section->parent) {
-			data = reloc->section->parent->data;
-			data += reloc->section->cur_offset;
-			data += reloc->section_offset;
-			vaddr = reloc->section->parent->file_offset;
-			vaddr += reloc->section->cur_offset;
-			vaddr += reloc->section_offset;
-		} else {
-			data = reloc->section->data;
-			data += reloc->section_offset;
-			vaddr = reloc->section->file_offset;
-			vaddr += reloc->section_offset;
-		}
+		resolve_reloc (acfg, reloc, &data, &vaddr, &start_val, &end_val);
 		/* FIXME: little endian */
 		data [0] = end_val;
 		data [1] = end_val >> 8;
 		data [2] = end_val >> 16;
 		data [3] = end_val >> 24;
 		if (start_val == 0) {
-			rr [i].addr = vaddr;
-			rr [i].value = 8; /* FIXME: 386_RELATIVE */
+			rr [i].r_offset = vaddr;
+			rr [i].r_info = 8; /* FIXME: 386_RELATIVE */
 			++i;
 			g_assert (i <= acfg->num_relocs);
 		}
@@ -1012,15 +960,21 @@ resolve_relocations (MonoAotCompile *acfg)
 	return rr;
 }
 
+#endif /* USE_ELF_RELA */
+
 static int
 emit_writeout (MonoAotCompile *acfg)
 {
 	char *outfile_name, *tmp_outfile_name;
 	FILE *file;
-	struct ElfHeader header;
-	struct ElfProgHeader progh [3];
-	struct ElfSectHeader secth [SECT_NUM];
+	ElfHeader header;
+	ElfProgHeader progh [3];
+	ElfSectHeader secth [SECT_NUM];
+#ifdef USE_ELF_RELA
+	ElfRelocA *relocs;
+#else
 	ElfReloc *relocs;
+#endif
 	ElfStrTable str_table = {NULL, NULL};
 	ElfStrTable sh_str_table = {NULL, NULL};
 	ElfStrTable dyn_str_table = {NULL, NULL};
@@ -1032,6 +986,11 @@ emit_writeout (MonoAotCompile *acfg)
 	int *hash;
 	int i, num_sections, file_offset, virt_offset, size, num_symtab;
 	int num_local_syms;
+
+	// FIXME: If we don't do this, then the last part of the text segment won't
+	// be executable
+	emit_section_change (acfg, ".text", 0);
+	emit_alignment (acfg, PAGESIZE);
 
 	g_assert (!acfg->aot_opts.asm_only);
 
@@ -1052,21 +1011,26 @@ emit_writeout (MonoAotCompile *acfg)
 	memset (&header, 0, sizeof (header));
 
 	for (i = 1; i < SECT_NUM; ++i) {
-		secth [i].sh_name = str_table_add (&sh_str_table, section_names [i]);
-		secth [i].sh_type = section_type [i];
-		secth [i].sh_link = section_link [i];
-		secth [i].sh_addralign = section_align [i];
-		secth [i].sh_flags = section_flags [i];
-		secth [i].sh_entsize = section_esize [i];
+		secth [i].sh_name = str_table_add (&sh_str_table, section_info [i].name);
+		secth [i].sh_type = section_info [i].type;
+		secth [i].sh_addralign = section_info [i].align;
+		secth [i].sh_flags = section_info [i].flags;
+		secth [i].sh_entsize = section_info [i].esize;
 	}
-	secth [SECT_DYNSYM].sh_info = 4;
-	secth [SECT_SYMTAB].sh_info = 20;
+	secth [SECT_DYNSYM].sh_info = SIZEOF_VOID_P == 4 ? 4 : 2;
+	secth [SECT_SYMTAB].sh_info = SIZEOF_VOID_P == 4 ? 20 : 17;
+	secth [SECT_HASH].sh_link = SECT_DYNSYM;
+	secth [SECT_DYNSYM].sh_link = SECT_DYNSTR;
+	secth [SECT_REL_DYN].sh_link = SECT_DYNSYM;
+	secth [SECT_RELA_DYN].sh_link = SECT_DYNSYM;
+	secth [SECT_DYNAMIC].sh_link = SECT_DYNSTR;
+	secth [SECT_SYMTAB].sh_link = SECT_STRTAB;
 
 	num_sections = collect_sections (acfg, secth, sections, 6);
 	hash = build_hash (acfg, num_sections, &dyn_str_table);
 	num_symtab = hash [1]; /* FIXME */
 	g_print ("num_sections: %d\n", num_sections);
-	g_print ("dynsym: %d, dynstr size: %d\n", hash [1], dyn_str_table.data->len);
+	g_print ("dynsym: %d, dynstr size: %d\n", hash [1], (int)dyn_str_table.data->len);
 	for (i = 0; i < num_sections; ++i) {
 		g_print ("section %s, size: %d, %x\n", sections [i]->name, sections [i]->cur_offset, sections [i]->cur_offset);
 	}
@@ -1102,10 +1066,21 @@ emit_writeout (MonoAotCompile *acfg)
 	file_offset += 4-1;
 	file_offset &= ~(4-1);
 	secth [SECT_REL_DYN].sh_addr = secth [SECT_REL_DYN].sh_offset = file_offset;
+#ifndef USE_ELF_RELA
 	size = sizeof (ElfReloc) * acfg->num_relocs;
-	secth [SECT_REL_DYN].sh_size = size;
+#else
+	size = 0;
+#endif
 	virt_offset = (file_offset += size);
 	secth [SECT_REL_DYN].sh_size = size;
+	secth [SECT_RELA_DYN].sh_addr = secth [SECT_RELA_DYN].sh_offset = file_offset;
+#ifdef USE_ELF_RELA
+	size = sizeof (ElfRelocA) * acfg->num_relocs;
+#else
+	size = 0;
+#endif
+	virt_offset = (file_offset += size);
+	secth [SECT_RELA_DYN].sh_size = size;
 	file_offset += 4096-1;
 	file_offset &= ~(4096-1);
 	virt_offset = file_offset;
@@ -1150,8 +1125,8 @@ emit_writeout (MonoAotCompile *acfg)
 	secth [SECT_SHSTRTAB].sh_offset = file_offset;
 	size = sh_str_table.data->len;
 	secth [SECT_SHSTRTAB].sh_size = size;
-	size += 4-1;
-	size &= ~(4-1);
+	size += SIZEOF_VOID_P-1;
+	size &= ~(SIZEOF_VOID_P-1);
 	file_offset += size;
 	secth [SECT_SYMTAB].sh_offset = file_offset;
 	size = sizeof (ElfSymbol) * num_local_syms;
@@ -1168,68 +1143,88 @@ emit_writeout (MonoAotCompile *acfg)
 	data_section->file_offset = secth [SECT_DATA].sh_offset;
 	bss_section->file_offset = secth [SECT_BSS].sh_offset;
 
-	header.e_ident [0] = 0x7f; header.e_ident [1] = 'E';
-	header.e_ident [2] = 'L'; header.e_ident [3] = 'F';
-	header.e_ident [4] = SIZEOF_VOID_P == 4? 1: 2;
-	header.e_ident [5] = 1; /* FIXME: little endian, bigendian is 2 */
-	header.e_ident [6] = 1; /* version */
-	header.e_ident [7] = 0; /* FIXME: */
-	header.e_ident [8] = 0; /* FIXME: */
-	for (i = 9; i < 16; ++i)
+	header.e_ident [EI_MAG0] = ELFMAG0;
+	header.e_ident [EI_MAG1] = ELFMAG1;
+	header.e_ident [EI_MAG2] = ELFMAG2;
+	header.e_ident [EI_MAG3] = ELFMAG3;
+	header.e_ident [EI_CLASS] = SIZEOF_VOID_P == 4 ? ELFCLASS32 : ELFCLASS64;
+	header.e_ident [EI_DATA] = ELFDATA2LSB;
+	header.e_ident [EI_VERSION] = EV_CURRENT;
+	header.e_ident [EI_OSABI] = ELFOSABI_NONE;
+	header.e_ident [EI_ABIVERSION] = 0;
+	for (i = EI_PAD; i < EI_NIDENT; ++i)
 		header.e_ident [i] = 0;
 
-	header.e_type = 3; /* shared library */
-	header.e_machine = 3; /* FIXME: 386 */
-	header.e_version = 1; /* FIXME:  */
+	header.e_type = ET_DYN;
+#if defined(__i386_)
+	header.e_machine = EM_386;
+#elif defined(__x86_64__)
+	header.e_machine = EM_X86_64;
+#else
+	g_assert_not_reached ();
+#endif
+	header.e_version = 1;
 
 	header.e_phoff = sizeof (header);
 	header.e_ehsize = sizeof (header);
-	header.e_phentsize = sizeof (struct ElfProgHeader);
+	header.e_phentsize = sizeof (ElfProgHeader);
 	header.e_phnum = 3;
 	header.e_entry = secth [SECT_TEXT].sh_addr;
-	header.e_shstrndx = 10;
-	header.e_shentsize = sizeof (struct ElfSectHeader);
+	header.e_shstrndx = SECT_SHSTRTAB;
+	header.e_shentsize = sizeof (ElfSectHeader);
 	header.e_shnum = SECT_NUM;
 	header.e_shoff = file_offset;
 
 	/* dynamic data */
 	i = 0;
-	dynamic [i].d_tag = DYN_HASH;
-	dynamic [i].d_val = secth [SECT_HASH].sh_offset;
+	dynamic [i].d_tag = DT_HASH;
+	dynamic [i].d_un.d_val = secth [SECT_HASH].sh_offset;
 	++i;
-	dynamic [i].d_tag = DYN_STRTAB;
-	dynamic [i].d_val = secth [SECT_DYNSTR].sh_offset;
+	dynamic [i].d_tag = DT_STRTAB;
+	dynamic [i].d_un.d_val = secth [SECT_DYNSTR].sh_offset;
 	++i;
-	dynamic [i].d_tag = DYN_SYMTAB;
-	dynamic [i].d_val = secth [SECT_DYNSYM].sh_offset;
+	dynamic [i].d_tag = DT_SYMTAB;
+	dynamic [i].d_un.d_val = secth [SECT_DYNSYM].sh_offset;
 	++i;
-	dynamic [i].d_tag = DYN_STRSZ;
-	dynamic [i].d_val = dyn_str_table.data->len;
+	dynamic [i].d_tag = DT_STRSZ;
+	dynamic [i].d_un.d_val = dyn_str_table.data->len;
 	++i;
-	dynamic [i].d_tag = DYN_SYMENT;
-	dynamic [i].d_val = sizeof (ElfSymbol);
+	dynamic [i].d_tag = DT_SYMENT;
+	dynamic [i].d_un.d_val = sizeof (ElfSymbol);
 	++i;
-	dynamic [i].d_tag = DYN_REL;
-	dynamic [i].d_val = secth [SECT_REL_DYN].sh_offset;
+#ifdef USE_ELF_RELA
+	dynamic [i].d_tag = DT_RELA;
+	dynamic [i].d_un.d_val = secth [SECT_RELA_DYN].sh_offset;
 	++i;
-	dynamic [i].d_tag = DYN_RELSZ;
-	dynamic [i].d_val = secth [SECT_REL_DYN].sh_size;
+	dynamic [i].d_tag = DT_RELASZ;
+	dynamic [i].d_un.d_val = secth [SECT_RELA_DYN].sh_size;
 	++i;
-	dynamic [i].d_tag = DYN_RELENT;
-	dynamic [i].d_val = sizeof (ElfReloc);
+	dynamic [i].d_tag = DT_RELAENT;
+	dynamic [i].d_un.d_val = sizeof (ElfRelocA);
 	++i;
-	dynamic [i].d_tag = DYN_RELCOUNT;
-	dynamic [i].d_val = acfg->num_relocs;
+#else
+	dynamic [i].d_tag = DT_REL;
+	dynamic [i].d_un.d_val = secth [SECT_REL_DYN].sh_offset;
+	++i;
+	dynamic [i].d_tag = DT_RELSZ;
+	dynamic [i].d_un.d_val = secth [SECT_REL_DYN].sh_size;
+	++i;
+	dynamic [i].d_tag = DT_RELENT;
+	dynamic [i].d_un.d_val = sizeof (ElfReloc);
+	++i;
+#endif
+	dynamic [i].d_tag = DT_RELCOUNT;
+	dynamic [i].d_un.d_val = acfg->num_relocs;
 	++i;
 
 	/* Program header */
 	memset (&progh, 0, sizeof (progh));
-	progh [0].p_type = 1; /* LOAD */
+	progh [0].p_type = PT_LOAD;
 	progh [0].p_filesz = progh [0].p_memsz = secth [SECT_DYNAMIC].sh_offset;
 	progh [0].p_align = 4096;
 	progh [0].p_flags = 5;
 
-	progh [1].p_type = 1;
+	progh [1].p_type = PT_LOAD;
 	progh [1].p_offset = secth [SECT_DYNAMIC].sh_offset;
 	progh [1].p_vaddr = progh [1].p_paddr = secth [SECT_DYNAMIC].sh_addr;
 	progh [1].p_filesz = secth [SECT_BSS].sh_offset  - secth [SECT_DYNAMIC].sh_offset;
@@ -1237,11 +1232,11 @@ emit_writeout (MonoAotCompile *acfg)
 	progh [1].p_align = 4096;
 	progh [1].p_flags = 6;
 
-	progh [2].p_type = 2; /* DYNAMIC */
+	progh [2].p_type = PT_DYNAMIC;
 	progh [2].p_offset = secth [SECT_DYNAMIC].sh_offset;
 	progh [2].p_vaddr = progh [2].p_paddr = secth [SECT_DYNAMIC].sh_addr;
 	progh [2].p_filesz = progh [2].p_memsz = secth [SECT_DYNAMIC].sh_size;
-	progh [2].p_align = 4;
+	progh [2].p_align = SIZEOF_VOID_P;
 	progh [2].p_flags = 6;
 
 	reloc_symbols (acfg, dynsym, secth, &dyn_str_table, TRUE);
@@ -1256,6 +1251,10 @@ emit_writeout (MonoAotCompile *acfg)
 	/* .rel.dyn */
 	fseek (file, secth [SECT_REL_DYN].sh_offset, SEEK_SET);
 	fwrite (relocs, sizeof (ElfReloc), acfg->num_relocs, file);
+
+	/* .rela.dyn */
+	fseek (file, secth [SECT_RELA_DYN].sh_offset, SEEK_SET);
+	fwrite (relocs, secth [SECT_RELA_DYN].sh_size, 1, file);
 
 	fseek (file, secth [SECT_TEXT].sh_offset, SEEK_SET);
 	/* write .text, .data, .bss sections */
@@ -3123,7 +3122,9 @@ emit_plt (MonoAotCompile *acfg)
 	/* This section will be made read-write by the AOT loader */
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, symbol, TRUE);
+#ifndef __x86_64__
 	emit_alignment (acfg, PAGESIZE);
+#endif
 	emit_label (acfg, symbol);
 	g_free (symbol);
 
