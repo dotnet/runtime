@@ -1358,5 +1358,11 @@ ncells ) {
 			return 4;
 		return 0;
 	}
+
+	static int test_0_array_get_set_soft_float () {
+		float[,] arr = new float [2, 2];
+		arr [0, 0] = 256f;
+		return arr [0, 0] == 256f ? 0 : 1;
+	}
 }
 

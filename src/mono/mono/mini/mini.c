@@ -6425,9 +6425,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, TRUE);
 					NEW_INDSTORE (cfg, ins, addr, sp [fsig->param_count], fsig->params [fsig->param_count - 1]);
-					/* FIXME: handle CEE_STIND_R4 */
 					if (ins->opcode == CEE_STOBJ) {
 						handle_stobj (cfg, bblock, addr, sp [fsig->param_count], ip, mono_class_from_mono_type (fsig->params [fsig->param_count-1]), FALSE, FALSE, TRUE);
+#ifdef MONO_ARCH_SOFT_FLOAT
+					} else if (ins->opcode == CEE_STIND_R4) {
+						handle_store_float (cfg, bblock, addr, sp [fsig->param_count], ip);
+#endif
 					} else {
 						MONO_ADD_INS (bblock, ins);
 					}
@@ -6435,8 +6438,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else if (strcmp (cmethod->name, "Get") == 0) { /* array Get */
 					addr = mini_get_ldelema_ins (cfg, bblock, cmethod, sp, ip, FALSE);
 					NEW_INDLOAD (cfg, ins, addr, fsig->ret);
-
-					*sp++ = ins;
+					if (ins->opcode == CEE_LDIND_R4) {
+#ifdef MONO_ARCH_SOFT_FLOAT
+						int temp;
+						temp = handle_load_float (cfg, bblock, addr, ip);
+						NEW_TEMPLOAD (cfg, *sp, temp);
+						sp++;
+#else
+						*sp++ = ins;
+#endif
+					} else {
+						*sp++ = ins;
+					}
 				} else if (strcmp (cmethod->name, "Address") == 0) { /* array Address */
 					if (!cmethod->klass->element_class->valuetype && !readonly) {
 						MonoInst* check;
