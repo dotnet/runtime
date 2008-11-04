@@ -3307,6 +3307,9 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 	MONO_ADD_INS (cfg->bb_exit, dummy_use);
 }
 
+static int inline_limit;
+static gboolean inline_limit_inited;
+
 static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
@@ -3338,11 +3341,14 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 
 	/* also consider num_locals? */
 	/* Do the size check early to avoid creating vtables */
-	if (getenv ("MONO_INLINELIMIT")) {
-		if (header->code_size >= atoi (getenv ("MONO_INLINELIMIT"))) {
-			return FALSE;
-		}
-	} else if (header->code_size >= INLINE_LENGTH_LIMIT)
+	if (!inline_limit_inited) {
+		if (getenv ("MONO_INLINELIMIT"))
+			inline_limit = atoi (getenv ("MONO_INLINELIMIT"));
+		else
+			inline_limit = INLINE_LENGTH_LIMIT;
+		inline_limit_inited = TRUE;
+	}
+	if (header->code_size >= inline_limit)
 		return FALSE;
 
 	/*
