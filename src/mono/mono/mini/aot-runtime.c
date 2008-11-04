@@ -1888,6 +1888,7 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 {
 	MonoClass *klass;
 	MonoJumpInfo *patch_info = NULL;
+	gboolean from_plt = method == NULL;
 	MonoMemPool *mp;
 	int i, pindex, got_index = 0, n_patches, used_strings;
 	gboolean non_got_patches, keep_patches = TRUE;
@@ -2056,7 +2057,7 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 
 	mono_aot_unlock ();
 
-	if (!method && klass)
+	if (from_plt && klass)
 		mono_runtime_class_init (mono_class_vtable (domain, klass));
 
 	return code;
