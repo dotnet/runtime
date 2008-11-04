@@ -38,7 +38,6 @@
 #ifndef PLATFORM_WIN32
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <time.h>
 #else
 #include <winsock2.h>
 #include <windows.h>
@@ -64,22 +63,17 @@
 #include <mono/metadata/method-builder.h>
 #include <mono/metadata/monitor.h>
 #include <mono/utils/mono-logger.h>
-#include "mono/utils/mono-compiler.h"
+#include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-time.h>
 
 #include "mini.h"
 #include "version.h"
 
 #ifndef DISABLE_AOT
 
-#ifdef PLATFORM_WIN32
-#define TV_DECLARE(name)
-#define TV_GETTIME(tv)
-#define TV_ELAPSED(start, end) 0
-#else
-#define TV_DECLARE(name) struct timeval name
-#define TV_GETTIME(tv) gettimeofday (&(tv), NULL)
-#define TV_ELAPSED(start,end) (int)((((end).tv_sec - (start).tv_sec) * 1000000) + end.tv_usec - start.tv_usec)
-#endif
+#define TV_DECLARE(name) gint64 name
+#define TV_GETTIME(tv) tv = mono_100ns_ticks ()
+#define TV_ELAPSED(start,end) (((end) - (start)) / 10)
 
 #ifdef PLATFORM_WIN32
 #define SHARED_EXT ".dll"
