@@ -422,12 +422,12 @@ serialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 {
 	guint32 flags = var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 
+	encode_value (var->index, p, &p);
+
 	switch (flags) {
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER:
-		encode_value (var->index, p, &p);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET:
-		encode_value (var->index, p, &p);
 		encode_value (var->offset, p, &p);
 		break;
 	case MONO_DEBUG_VAR_ADDRESS_MODE_DEAD:
