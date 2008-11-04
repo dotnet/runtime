@@ -293,6 +293,9 @@ typedef struct {
 #define MONO_ARCH_ENABLE_NORMALIZE_OPCODES 1
 #define MONO_ARCH_ENABLE_GLOBAL_RA 1
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
+#if defined(__linux__) && !defined(HAVE_MOVING_COLLECTOR)
+#define MONO_ARCH_MONITOR_OBJECT_REG AMD64_RDI
+#endif
 
 #define MONO_ARCH_AOT_SUPPORTED 1
 
@@ -324,6 +327,9 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 							guint64 r14, guint64 r15, guint64 rdi, guint64 rsi, 
 							guint64 rax, guint64 rcx, guint64 rdx,
 							guint64 rethrow);
+
+guint8*
+mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
 
 typedef struct {
 	guint8 *address;

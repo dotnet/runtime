@@ -2857,18 +2857,19 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 }
 
 /*
- * emit_tls_get:
+ * mono_amd64_emit_tls_get:
  * @code: buffer to store code to
  * @dreg: hard register where to place the result
  * @tls_offset: offset info
  *
- * emit_tls_get emits in @code the native code that puts in the dreg register
- * the item in the thread local storage identified by tls_offset.
+ * mono_amd64_emit_tls_get emits in @code the native code that puts in
+ * the dreg register the item in the thread local storage identified
+ * by tls_offset.
  *
  * Returns: a pointer to the end of the stored code
  */
-static guint8*
-emit_tls_get (guint8* code, int dreg, int tls_offset)
+guint8*
+mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
 #ifdef PLATFORM_WIN32
 	g_assert (tls_offset < 64);
@@ -4599,7 +4600,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, 16);
 			break;
 		case OP_TLS_GET: {
-			code = emit_tls_get (code, ins->dreg, ins->inst_offset);
+			code = mono_amd64_emit_tls_get (code, ins->dreg, ins->inst_offset);
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
@@ -5171,7 +5172,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (appdomain_tls_offset != -1 && lmf_tls_offset != -1) {
 			guint8 *buf, *no_domain_branch;
 
-			code = emit_tls_get (code, AMD64_RAX, appdomain_tls_offset);
+			code = mono_amd64_emit_tls_get (code, AMD64_RAX, appdomain_tls_offset);
 			if ((domain >> 32) == 0)
 				amd64_mov_reg_imm_size (code, AMD64_ARG_REG1, domain, 4);
 			else
@@ -5179,7 +5180,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			amd64_alu_reg_reg (code, X86_CMP, AMD64_RAX, AMD64_ARG_REG1);
 			no_domain_branch = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
-			code = emit_tls_get ( code, AMD64_RAX, lmf_addr_tls_offset);
+			code = mono_amd64_emit_tls_get ( code, AMD64_RAX, lmf_addr_tls_offset);
 			amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 			buf = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
@@ -5227,7 +5228,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		} else {
 			if (lmf_addr_tls_offset != -1) {
 				/* Load lmf quicky using the FS register */
-				code = emit_tls_get (code, AMD64_RAX, lmf_addr_tls_offset);
+				code = mono_amd64_emit_tls_get (code, AMD64_RAX, lmf_addr_tls_offset);
 #ifdef PLATFORM_WIN32
 				/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
 				/* FIXME: Add a separate key for LMF to avoid this */
@@ -5367,7 +5368,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		/* check if we need to restore protection of the stack after a stack overflow */
 		if (mono_get_jit_tls_offset () != -1) {
 			guint8 *patch;
-			code = emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
+			code = mono_amd64_emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
 			/* we load the value in a separate instruction: this mechanism may be
 			 * used later as a safer way to do thread interruption
 			 */

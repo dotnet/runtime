@@ -158,6 +158,7 @@ MonoMethodSignature *helper_sig_class_init_trampoline = NULL;
 MonoMethodSignature *helper_sig_domain_get = NULL;
 MonoMethodSignature *helper_sig_generic_class_init_trampoline = NULL;
 MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline = NULL;
+MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline = NULL;
 
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
@@ -9936,6 +9937,7 @@ create_helper_signature (void)
 	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
 	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
+	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
 }
 
 static gconstpointer
@@ -11463,6 +11465,12 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	}
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 		target = mono_create_generic_class_init_trampoline ();
+		break;
+	case MONO_PATCH_INFO_MONITOR_ENTER:
+		target = mono_create_monitor_enter_trampoline ();
+		break;
+	case MONO_PATCH_INFO_MONITOR_EXIT:
+		target = mono_create_monitor_exit_trampoline ();
 		break;
 	default:
 		g_assert_not_reached ();

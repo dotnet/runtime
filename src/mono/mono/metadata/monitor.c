@@ -1040,6 +1040,27 @@ mono_monitor_get_fast_path (MonoMethod *enter_or_exit)
 	return NULL;
 }
 
+/*
+ * mono_monitor_threads_sync_member_offset:
+ * @owner_offset: returns size and offset of the "owner" member
+ * @nest_offset: returns size and offset of the "nest" member
+ * @entry_count_offset: returns size and offset of the "entry_count" member
+ *
+ * Returns the offsets and sizes of three members of the
+ * MonoThreadsSync struct.  The Monitor ASM fastpaths need this.
+ */
+void
+mono_monitor_threads_sync_members_offset (int *owner_offset, int *nest_offset, int *entry_count_offset)
+{
+	MonoThreadsSync ts;
+
+#define ENCODE_OFF_SIZE(o,s)	(((o) << 8) | ((s) & 0xff))
+
+	*owner_offset = ENCODE_OFF_SIZE (G_STRUCT_OFFSET (MonoThreadsSync, owner), sizeof (ts.owner));
+	*nest_offset = ENCODE_OFF_SIZE (G_STRUCT_OFFSET (MonoThreadsSync, nest), sizeof (ts.nest));
+	*entry_count_offset = ENCODE_OFF_SIZE (G_STRUCT_OFFSET (MonoThreadsSync, entry_count), sizeof (ts.entry_count));
+}
+
 gboolean 
 ves_icall_System_Threading_Monitor_Monitor_try_enter (MonoObject *obj, guint32 ms)
 {

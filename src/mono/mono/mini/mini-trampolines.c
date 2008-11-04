@@ -535,6 +535,18 @@ mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, gpointer data, gui
 #endif
 }
 
+void
+mono_monitor_enter_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
+{
+	mono_monitor_enter (obj);
+}
+
+void
+mono_monitor_exit_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp)
+{
+	mono_monitor_exit (obj);
+}
+
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 
 /**
@@ -658,6 +670,10 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 		return mono_altstack_restore_prot;
 	case MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING:
 		return mono_generic_virtual_remoting_trampoline;
+	case MONO_TRAMPOLINE_MONITOR_ENTER:
+		return mono_monitor_enter_trampoline;
+	case MONO_TRAMPOLINE_MONITOR_EXIT:
+		return mono_monitor_exit_trampoline;
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -686,6 +702,8 @@ mono_trampolines_init (void)
 #endif
 	mono_trampoline_code [MONO_TRAMPOLINE_RESTORE_STACK_PROT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_RESTORE_STACK_PROT);
 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
+	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_ENTER] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
+	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_EXIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
 }
 
 void
@@ -967,6 +985,36 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 	num_trampolines++;
 
 	return ptr;
+}
+
+gpointer
+mono_create_monitor_enter_trampoline (void)
+{
+	static gpointer code;
+
+	mono_trampolines_lock ();
+
+	if (!code)
+		code = mono_arch_create_monitor_enter_trampoline ();
+
+	mono_trampolines_unlock ();
+
+	return code;
+}
+
+gpointer
+mono_create_monitor_exit_trampoline (void)
+{
+	static gpointer code;
+
+	mono_trampolines_lock ();
+
+	if (!code)
+		code = mono_arch_create_monitor_exit_trampoline ();
+
+	mono_trampolines_unlock ();
+
+	return code;
 }
 
 MonoVTable*

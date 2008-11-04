@@ -284,6 +284,9 @@ typedef struct {
 #define MONO_ARCH_RGCTX_REG X86_EDX
 #define MONO_ARCH_ENABLE_NORMALIZE_OPCODES 1
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
+#if defined(__linux__) && !defined(HAVE_MOVING_COLLECTOR)
+#define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
+#endif
 
 #define MONO_ARCH_HAVE_CMOV_OPS 1
 
@@ -318,6 +321,9 @@ typedef struct {
 } MonoBreakpointInfo;
 
 extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
+
+guint8*
+mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
 
 #endif /* __MONO_MINI_X86_H__ */  
 

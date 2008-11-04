@@ -2034,18 +2034,19 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 }
 
 /*
- * emit_tls_get:
+ * mono_x86_emit_tls_get:
  * @code: buffer to store code to
  * @dreg: hard register where to place the result
  * @tls_offset: offset info
  *
- * emit_tls_get emits in @code the native code that puts in the dreg register
- * the item in the thread local storage identified by tls_offset.
+ * mono_x86_emit_tls_get emits in @code the native code that puts in
+ * the dreg register the item in the thread local storage identified
+ * by tls_offset.
  *
  * Returns: a pointer to the end of the stored code
  */
-static guint8*
-emit_tls_get (guint8* code, int dreg, int tls_offset)
+guint8*
+mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
 #ifdef PLATFORM_WIN32
 	/* 
@@ -3684,7 +3685,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_TLS_GET: {
-			code = emit_tls_get (code, ins->dreg, ins->inst_offset);
+			code = mono_x86_emit_tls_get (code, ins->dreg, ins->inst_offset);
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
@@ -4323,6 +4324,8 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_LABEL:
 		case MONO_PATCH_INFO_RGCTX_FETCH:
 		case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
+		case MONO_PATCH_INFO_MONITOR_ENTER:
+		case MONO_PATCH_INFO_MONITOR_EXIT:
 			x86_patch (ip, target);
 			break;
 		case MONO_PATCH_INFO_NONE:
@@ -4364,11 +4367,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (appdomain_tls_offset != -1 && lmf_tls_offset != -1) {
 			guint8 *buf, *no_domain_branch;
 
-			code = emit_tls_get (code, X86_EAX, appdomain_tls_offset);
+			code = mono_x86_emit_tls_get (code, X86_EAX, appdomain_tls_offset);
 			x86_alu_reg_imm (code, X86_CMP, X86_EAX, GPOINTER_TO_UINT (cfg->domain));
 			no_domain_branch = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
-			code = emit_tls_get ( code, X86_EAX, lmf_tls_offset);
+			code = mono_x86_emit_tls_get ( code, X86_EAX, lmf_tls_offset);
 			x86_test_reg_reg (code, X86_EAX, X86_EAX);
 			buf = code;
 			x86_branch8 (code, X86_CC_NE, 0, 0);
@@ -4428,7 +4431,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 			if (lmf_addr_tls_offset != -1) {
 				/* Load lmf quicky using the GS register */
-				code = emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
+				code = mono_x86_emit_tls_get (code, X86_EAX, lmf_addr_tls_offset);
 #ifdef PLATFORM_WIN32
 				/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
 				/* FIXME: Add a separate key for LMF to avoid this */
@@ -4496,6 +4499,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		x86_alu_reg_imm (code, X86_AND, X86_ESP, -MONO_ARCH_FRAME_ALIGNMENT);
 	}
 
+#define DEBUG_STACK_ALIGNMENT 1
 #if DEBUG_STACK_ALIGNMENT
 	/* check the stack is aligned */
 	if (method->wrapper_type == MONO_WRAPPER_NONE) {
@@ -4595,7 +4599,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		/* check if we need to restore protection of the stack after a stack overflow */
 		if (mono_get_jit_tls_offset () != -1) {
 			guint8 *patch;
-			code = emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
+			code = mono_x86_emit_tls_get (code, X86_ECX, mono_get_jit_tls_offset ());
 			/* we load the value in a separate instruction: this mechanism may be
 			 * used later as a safer way to do thread interruption
 			 */
