@@ -123,7 +123,7 @@ typedef struct MonoAotStats {
 } MonoAotStats;
 
 #if defined(__x86_64__) && defined(HAVE_ELF_H)
-//#define USE_ELF_WRITER 1
+#define USE_ELF_WRITER 1
 #define USE_ELF_RELA 1
 #endif
 
@@ -466,13 +466,13 @@ static void
 emit_symbol_diff (MonoAotCompile *acfg, const char *end, const char* start, int offset)
 {
 	BinReloc *reloc;
-	reloc = g_new0 (BinReloc, 1);
-	reloc->val1 = g_strdup (end);
+	reloc = mono_mempool_alloc0 (acfg->mempool, sizeof (BinReloc));
+	reloc->val1 = mono_mempool_strdup (acfg->mempool, end);
 	if (strcmp (start, ".") == 0) {
 		reloc->val2_section = acfg->cur_section;
 		reloc->val2_offset = acfg->cur_section->cur_offset;
 	} else {
-		reloc->val2 = g_strdup (start);
+		reloc->val2 = mono_mempool_strdup (acfg->mempool, start);
 	}
 	reloc->offset = offset;
 	reloc->section = acfg->cur_section;
