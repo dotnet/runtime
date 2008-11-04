@@ -4499,7 +4499,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		x86_alu_reg_imm (code, X86_AND, X86_ESP, -MONO_ARCH_FRAME_ALIGNMENT);
 	}
 
-#define DEBUG_STACK_ALIGNMENT 1
 #if DEBUG_STACK_ALIGNMENT
 	/* check the stack is aligned */
 	if (method->wrapper_type == MONO_WRAPPER_NONE) {
