@@ -3128,10 +3128,10 @@ emit_plt (MonoAotCompile *acfg)
 	emit_line (acfg);
 	symbol = g_strdup_printf ("plt");
 
-	/* This section will be made read-write by the AOT loader */
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, symbol, TRUE);
-#ifndef __x86_64__
+#ifdef __i386__
+	/* This section will be made read-write by the AOT loader */
 	emit_alignment (acfg, PAGESIZE);
 #endif
 	emit_label (acfg, symbol);
