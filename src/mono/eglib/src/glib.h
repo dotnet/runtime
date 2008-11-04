@@ -531,10 +531,41 @@ gpointer g_convert_error_quark(void);
 typedef guint32 gunichar;
 
 typedef enum {
+	G_UNICODE_CONTROL,
+	G_UNICODE_FORMAT,
+	G_UNICODE_UNASSIGNED,
+	G_UNICODE_PRIVATE_USE,
+	G_UNICODE_SURROGATE,
 	G_UNICODE_LOWERCASE_LETTER,
+	G_UNICODE_MODIFIER_LETTER,
+	G_UNICODE_OTHER_LETTER,
+	G_UNICODE_TITLECASE_LETTER,
+	G_UNICODE_UPPERCASE_LETTER,
+	G_UNICODE_COMBINING_MARK,
+	G_UNICODE_ENCLOSING_MARK,
+	G_UNICODE_NON_SPACING_MARK,
+	G_UNICODE_DECIMAL_NUMBER,
+	G_UNICODE_LETTER_NUMBER,
+	G_UNICODE_OTHER_NUMBER,
+	G_UNICODE_CONNECT_PUNCTUATION,
+	G_UNICODE_DASH_PUNCTUATION,
+	G_UNICODE_CLOSE_PUNCTUATION,
+	G_UNICODE_FINAL_PUNCTUATION,
+	G_UNICODE_INITIAL_PUNCTUATION,
+	G_UNICODE_OTHER_PUNCTUATION,
+	G_UNICODE_OPEN_PUNCTUATION,
+	G_UNICODE_CURRENCY_SYMBOL,
+	G_UNICODE_MODIFIER_SYMBOL,
+	G_UNICODE_MATH_SYMBOL,
+	G_UNICODE_OTHER_SYMBOL,
+	G_UNICODE_LINE_SEPARATOR,
+	G_UNICODE_PARAGRAPH_SEPARATOR,
+	G_UNICODE_SPACE_SEPARATOR
 } GUnicodeType;
 
+gunichar       g_unichar_toupper (gunichar c);
 gunichar       g_unichar_tolower (gunichar c);
+gunichar       g_unichar_totitle (gunichar c);
 GUnicodeType   g_unichar_type    (gunichar c);
 gboolean       g_unichar_isxdigit (gunichar c);
 gint           g_unichar_xdigit_value (gunichar c);
@@ -570,6 +601,8 @@ typedef enum {
 	G_CONVERT_ERROR_NOT_ABSOLUTE_PATH
 } GConvertError;
 
+gchar* g_utf8_strup (const gchar *str, gssize len);
+gchar* g_utf8_strdown (const gchar *str, gssize len);
 gunichar2 *g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **error);
 gchar     *g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **error);
 gunichar2 *g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **error);

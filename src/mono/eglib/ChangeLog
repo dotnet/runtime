@@ -1,5 +1,15 @@
 2008-11-04  Atsushi Enomoto  <atsushi@ximian.com>
 
+	* src/gutf8.c, src/gunicode.c, src/glib.h:
+	  implemented g_unichar_type(), g_unichar_toupper(),
+	  g_unichar_tolower(), g_unichar_totitle(), g_utf8_strup()
+	  and g_utf8_strdown(). Fixed some surrogate pair bugs.
+	* TODO : removed implemented things.
+	* test/unicode.c, test/tests.h, test/utf8.c, test/Makefile.am:
+	  added new tests.
+
+2008-11-04  Atsushi Enomoto  <atsushi@ximian.com>
+
 	* src/unicode-data.h : new header for some new unicode manipulation
 	  functions.
 

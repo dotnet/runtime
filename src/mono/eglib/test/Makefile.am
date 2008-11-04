@@ -21,6 +21,7 @@ SOURCES = \
 	pattern.c	\
 	dir.c		\
 	markup.c	\
+	unicode.c	\
 	utf8.c		\
 	endian.c	\
 	module.c	\

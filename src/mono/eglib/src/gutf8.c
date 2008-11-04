@@ -21,6 +21,40 @@ g_convert_error_quark ()
 	return error_quark;
 }
 
+gunichar*
+utf8_case_conv (const gchar *str, gssize len, gboolean upper)
+{
+	glong i, u16len, u32len;
+	gunichar2 *u16str;
+	gunichar *u32str;
+	gchar *u8str;
+	GError **err = NULL;
+
+	u16str = g_utf8_to_utf16 (str, len, NULL, &u16len, err);
+	u32str = g_utf16_to_ucs4 (u16str, u16len, NULL, &u32len, err);
+	for (i = 0; i < u32len; i++) {
+		u32str [i] = upper ? g_unichar_toupper (u32str [i]) : g_unichar_tolower (u32str [i]);
+	}
+	g_free (u16str);
+	u16str = g_ucs4_to_utf16 (u32str, u32len, NULL, &u16len, err);
+	u8str = g_utf16_to_utf8 (u16str, u16len, NULL, NULL, err);
+	g_free (u32str);
+	g_free (u16str);
+	return u8str;
+}
+
+gchar*
+g_utf8_strup (const gchar *str, gssize len)
+{
+	return utf8_case_conv (str, len, TRUE);
+}
+
+gchar*
+g_utf8_strdown (const gchar *str, gssize len)
+{
+	return utf8_case_conv (str, len, FALSE);
+}
+
 gunichar2*
 g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **error)
 {
@@ -268,12 +302,14 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	while (len < 0 ? str [in_pos] : in_pos < len) {
 		ch = str [in_pos];
 		if (surrogate) {
-			surrogate = 0;
-			if (ch >= 0xDC00 && ch <= 0xDFFF)
+			if (ch >= 0xDC00 && ch <= 0xDFFF) {
 				codepoint = 0x10000 + (ch - 0xDC00) + ((surrogate - 0xD800) << 10);
-			else
+				surrogate = 0;
+			} else {
+				surrogate = 0;
 				/* invalid surrogate pair */
 				continue;
+			}
 		} else {
 			/* fast path optimization */
 			if (ch < 0x80) {
@@ -296,6 +332,8 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 		}
 		in_pos++;
 
+		if (surrogate != 0)
+			continue;
 		if (codepoint < 0x80)
 			ret [out_pos++] = (gchar) codepoint;
 		else if (codepoint < 0x0800) {

@@ -35,6 +35,7 @@
  */
 #include <stdio.h>
 #include <glib.h>
+#include <unicode-data.h>
 #include <errno.h>
 #ifdef _MSC_VER
 /* FIXME */
@@ -82,15 +83,94 @@ static const gulong offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E208
 GUnicodeType 
 g_unichar_type (gunichar c)
 {
-	g_error ("%s", "g_unichar_type is not implemented");
+int i;
+
+	guint16 cp = (guint16) c;
+	for (i = 0; i < unicode_category_ranges_count; i++) {
+		if (cp < unicode_category_ranges [i].start)
+			continue;
+		if (unicode_category_ranges [i].end <= cp)
+			continue;
+		return unicode_category [i] [cp - unicode_category_ranges [i].start];
+	}
+
+	/*
+	// 3400-4DB5: OtherLetter
+	// 4E00-9FC3: OtherLetter
+	// AC00-D7A3: OtherLetter
+	// D800-DFFF: OtherSurrogate
+	// E000-F8FF: OtherPrivateUse
+	// 20000-2A6D6 OtherLetter
+	// F0000-FFFFD OtherPrivateUse
+	// 100000-10FFFD OtherPrivateUse
+	*/
+	if (0x3400 <= cp && cp < 0x4DB5)
+		return G_UNICODE_OTHER_LETTER;
+	if (0x4E00 <= cp && cp < 0x9FC3)
+		return G_UNICODE_OTHER_LETTER;
+	if (0xAC00<= cp && cp < 0xD7A3)
+		return G_UNICODE_OTHER_LETTER;
+	if (0xD800 <= cp && cp < 0xDFFF)
+		return G_UNICODE_SURROGATE;
+	if (0xE000 <= cp && cp < 0xF8FF)
+		return G_UNICODE_PRIVATE_USE;
+	/* since the argument is UTF-16, we cannot check beyond FFFF */
+
+	/* It should match any of above */
 	return 0;
+}
+
+gunichar
+g_unichar_case (gunichar c, gboolean upper)
+{
+	gint8 i, i2;
+	guint32 cp = (guint32) c, v;
+
+	for (i = 0; i < simple_case_map_ranges_count; i++) {
+		if (cp < simple_case_map_ranges [i].start)
+			return c;
+		if (simple_case_map_ranges [i].end <= cp)
+			continue;
+		if (c < 0x10000) {
+			guint16 *tab = upper ? simple_upper_case_mapping_lowarea [i] : simple_lower_case_mapping_lowarea [i];
+			v = tab [cp - simple_case_map_ranges [i].start];
+		} else {
+			i2 = i - (upper ? simple_upper_case_mapping_lowarea_table_count : simple_lower_case_mapping_lowarea_table_count);
+			guint32 *tab = upper ? simple_upper_case_mapping_higharea [i2] : simple_lower_case_mapping_higharea [i2];
+			v = tab [cp - simple_case_map_ranges [i].start];
+		}
+		return v != 0 ? (gunichar) v : c;
+	}
+	return c;
+}
+
+gunichar
+g_unichar_toupper (gunichar c)
+{
+	return g_unichar_case (c, TRUE);
 }
 
 gunichar
 g_unichar_tolower (gunichar c)
 {
-	g_error ("%s", "g_unichar_type is not implemented");
-	return 0;
+	return g_unichar_case (c, FALSE);
+}
+
+gunichar
+g_unichar_totitle (gunichar c)
+{
+	guint8 i;
+	guint32 cp;
+
+	cp = (guint32) c;
+	for (i = 0; i < simple_titlecase_mapping_count; i++) {
+		if (simple_titlecase_mapping [i].codepoint == cp)
+			return simple_titlecase_mapping [i].title;
+		if (simple_titlecase_mapping [i].codepoint > cp)
+			/* it is ordered, hence no more match */
+			break;
+	}
+	return g_unichar_toupper (c);
 }
 
 gboolean

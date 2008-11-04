@@ -18,6 +18,7 @@ DEFINE_TEST_GROUP_INIT_H(file_tests_init);
 DEFINE_TEST_GROUP_INIT_H(pattern_tests_init);
 DEFINE_TEST_GROUP_INIT_H(dir_tests_init);
 DEFINE_TEST_GROUP_INIT_H(markup_tests_init);
+DEFINE_TEST_GROUP_INIT_H(unicode_tests_init);
 DEFINE_TEST_GROUP_INIT_H(utf8_tests_init);
 DEFINE_TEST_GROUP_INIT_H(endian_tests_init);
 DEFINE_TEST_GROUP_INIT_H(module_tests_init);
@@ -42,6 +43,7 @@ static Group test_groups [] = {
 	{"file",      file_tests_init},
 	{"pattern",   pattern_tests_init},
 	{"dir",       dir_tests_init},
+	{"unicode",   unicode_tests_init},
 	{"utf8",      utf8_tests_init},
 	{"endian",    endian_tests_init},
 	{"module",    module_tests_init},

@@ -14,8 +14,7 @@ Macros:
 
 * Unimplemented, not supported currently:
 
-		g_unichar_tolower	Used for deprecated unmanaged string collation
-		g_unichar_type		Used for deprecated unmanaged string collation
+	(none as yet.)
 
 * Dead Code
 

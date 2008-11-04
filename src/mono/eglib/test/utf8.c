@@ -82,8 +82,8 @@ compare_utf16_to_utf8 (const gchar *expected, const gunichar2 *utf16, glong len_
 RESULT
 test_utf16_to_utf8 ()
 {
-	const gchar *src0 = "", *src1 = "ABCDE", *src2 = "\xE5\xB9\xB4\x27";
-	gunichar2 str0 [] = {0}, str1 [6], str2 [] = {0x5E74, 39, 0};
+	const gchar *src0 = "", *src1 = "ABCDE", *src2 = "\xE5\xB9\xB4\x27", *src3 = "\xEF\xBC\xA1", *src4 = "\xEF\xBD\x81", *src5 = "\xF0\x90\x90\x80";
+	gunichar2 str0 [] = {0}, str1 [6], str2 [] = {0x5E74, 39, 0}, str3 [] = {0xFF21, 0}, str4 [] = {0xFF41, 0}, str5 [] = {0xD801, 0xDC00, 0};
 	RESULT result;
 
 	gchar_to_gunichar2 (str1, src1);
@@ -97,6 +97,15 @@ test_utf16_to_utf8 ()
 	if (result != OK)
 		return result;
 	result = compare_utf16_to_utf8 (src2, str2, 2, 4);
+	if (result != OK)
+		return result;
+	result = compare_utf16_to_utf8 (src3, str3, 1, 3);
+	if (result != OK)
+		return result;
+	result = compare_utf16_to_utf8 (src4, str4, 1, 3);
+	if (result != OK)
+		return result;
+	result = compare_utf16_to_utf8 (src5, str5, 2, 4);
 	if (result != OK)
 		return result;
 
@@ -194,6 +203,7 @@ test_utf8_seq ()
 	if (out_read != 2) {
 		return FAILED ("out_read is expected to be 2 but was %d\n", out_read);
 	}
+	g_free (dst);
 
 	return OK;
 }
@@ -201,8 +211,8 @@ test_utf8_seq ()
 RESULT
 test_utf8_to_utf16 ()
 {
-	const gchar *src0 = "", *src1 = "ABCDE", *src2 = "\xE5\xB9\xB4\x27";
-	gunichar2 str0 [] = {0}, str1 [6], str2 [] = {0x5E74, 39, 0};
+	const gchar *src0 = "", *src1 = "ABCDE", *src2 = "\xE5\xB9\xB4\x27", *src3 = "\xEF\xBC\xA1", *src4 = "\xEF\xBD\x81";
+	gunichar2 str0 [] = {0}, str1 [6], str2 [] = {0x5E74, 39, 0}, str3 [] = {0xFF21, 0}, str4 [] = {0xFF41, 0};
 	RESULT result;
 
 	gchar_to_gunichar2 (str1, src1);
@@ -216,6 +226,12 @@ test_utf8_to_utf16 ()
 	if (result != OK)
 		return result;
 	result = compare_utf8_to_utf16 (str2, src2, 4, 2);
+	if (result != OK)
+		return result;
+	result = compare_utf8_to_utf16 (str3, src3, 3, 1);
+	if (result != OK)
+		return result;
+	result = compare_utf8_to_utf16 (str4, src4, 3, 1);
 	if (result != OK)
 		return result;
 
@@ -310,6 +326,8 @@ test_ucs4_to_utf16 ()
 	static gunichar2 exp4[4] = {'h',0xdbff,0xdfff,'\0'};
 	static gunichar str5[7] = {0xD7FF,0xD800,0xDFFF,0xE000,0x110000,0x10FFFF,'\0'};
 	static gunichar2 exp5[5] = {0xD7FF,0xE000,0xdbff,0xdfff,'\0'};
+	static gunichar str6[2] = {0x10400, '\0'};
+	static gunichar2 exp6[3] = {0xD801, 0xDC00, '\0'};
 	static glong read_write[12] = {1,1,0,0,0,0,1,1,0,0,1,2};
 	gunichar2* res;
 	glong items_read, items_written, current_write_index;
@@ -337,8 +355,8 @@ test_ucs4_to_utf16 ()
 	items_read = items_written = 0;
 	res = g_ucs4_to_utf16 (str2, 2, &items_read, &items_written, &err);
 	check_result = ucs4_to_utf16_check_result (res, 0, items_read, 1, items_written, 0, err, TRUE);
-	if (check_result) return check_result;
 	g_free (res);
+	if (check_result) return check_result;
 
 	items_read = items_written = 0;
 	err = 0;
@@ -366,6 +384,13 @@ test_ucs4_to_utf16 ()
 		g_free (res);
 		current_write_index += items_written;
 	}
+
+	items_read = items_written = 0;
+	err = 0;
+	res = g_ucs4_to_utf16 (str6, 1, &items_read, &items_written, &err);
+	check_result = ucs4_to_utf16_check_result (res, exp6, items_read, 1, items_written, 2, err, FALSE);
+	if (check_result) return check_result;
+	g_free (res);
 
 	return OK;
 }
@@ -411,6 +436,8 @@ test_utf16_to_ucs4 ()
 	static gunichar2 str4[20] = {0xDC00,0xDFFF,0xDFF,0xD800,0xDBFF,0xD800,0xDC00,0xD800,0xDFFF,
 				     0xD800,0xE000,0xDBFF,0xDBFF,0xDBFF,0xDC00,0xDBFF,0xDFFF,0xDBFF,0xE000,'\0'};
 	static gunichar exp4[6] = {0xDFF,0x10000,0x103ff,0x10fc00,0x10FFFF,'\0'};
+	static gunichar2 str5[3] = {0xD801, 0xDC00, 0};
+	static gunichar exp5[2] = {0x10400, 0};
 	static glong read_write[33] = {1,0,0,1,0,0,1,1,1,2,1,0,2,2,1,2,2,1,2,1,0,2,1,0,2,2,1,2,2,1,2,1,0};
 	gunichar* res;
 	glong items_read, items_written, current_read_index,current_write_index;
@@ -480,6 +507,13 @@ test_utf16_to_ucs4 ()
 		current_read_index += read_write[i*3];
 		current_write_index += items_written;
 	}
+
+	items_read = items_written = 0;
+	err = 0;
+	res = g_utf16_to_ucs4 (str5, 2, &items_read, &items_written, &err);
+	check_result = utf16_to_ucs4_check_result (res, exp5, items_read, 2, items_written, 1, err, FALSE);
+	if (check_result) return check_result;
+	g_free (res);
 
 	return OK;
 }
@@ -636,6 +670,101 @@ test_utf8_validate()
 	return OK;
 }
 
+glong
+utf8_byteslen (const gchar *src)
+{
+	int i = 0;
+	do {
+		if (src [i] == '\0')
+			return i;
+		i++;
+	} while (TRUE);
+}
+
+RESULT
+test_utf8_strcase_each (const gchar *src, const gchar *expected, gboolean strup)
+{
+	gchar *tmp;
+	glong len, len2;
+	RESULT r;
+
+	len = utf8_byteslen (src);
+	tmp = strup ? g_utf8_strup (src, len) : g_utf8_strdown (src, len);
+	len2 = utf8_byteslen (tmp);
+	r = compare_strings_utf8_RESULT (expected, tmp, len < len2 ? len2 : len);
+	g_free (tmp);
+	return r;
+}
+
+RESULT
+test_utf8_strup_each (const gchar *src, const gchar *expected)
+{
+	return test_utf8_strcase_each (src, expected, TRUE);
+}
+
+RESULT
+test_utf8_strdown_each (const gchar *src, const gchar *expected)
+{
+	return test_utf8_strcase_each (src, expected, FALSE);
+}
+
+/*
+ * g_utf8_strup
+ */
+RESULT
+test_utf8_strup ()
+{
+	RESULT r;
+
+	if ((r = test_utf8_strup_each ("aBc", "ABC")) != OK)
+		return r;
+	if ((r = test_utf8_strup_each ("x86-64", "X86-64")) != OK)
+		return r;
+	// U+3B1 U+392 -> U+391 U+392
+	if ((r = test_utf8_strup_each ("\xCE\xB1\xCE\x92", "\xCE\x91\xCE\x92")) != OK)
+		return r;
+	// U+FF21 -> U+FF21
+	if ((r = test_utf8_strup_each ("\xEF\xBC\xA1", "\xEF\xBC\xA1")) != OK)
+		return r;
+	// U+FF41 -> U+FF21
+	if ((r = test_utf8_strup_each ("\xEF\xBD\x81", "\xEF\xBC\xA1")) != OK)
+		return r;
+	// U+10428 -> U+10400
+	if ((r = test_utf8_strup_each ("\xF0\x90\x90\xA8", "\xF0\x90\x90\x80")) != OK)
+		return r;
+
+	return OK;
+}
+
+/*
+ * g_utf8_strdown
+ */
+RESULT
+test_utf8_strdown ()
+{
+	RESULT r;
+
+	if ((r = test_utf8_strdown_each ("aBc", "abc")) != OK)
+		return r;
+	if ((r = test_utf8_strdown_each ("X86-64", "x86-64")) != OK)
+		return r;
+	// U+391 U+3B2 -> U+3B1 U+3B2
+	if ((r = test_utf8_strdown_each ("\xCE\x91\xCE\xB2", "\xCE\xB1\xCE\xB2")) != OK)
+		return r;
+/*
+	// U+FF41 -> U+FF41
+	if ((r = test_utf8_strdown_each ("\xEF\xBC\x81", "\xEF\xBC\x81")) != OK)
+		return r;
+	// U+FF21 -> U+FF41
+	if ((r = test_utf8_strdown_each ("\xEF\xBC\xA1", "\xEF\xBD\x81")) != OK)
+		return r;
+	// U+10400 -> U+10428
+	if ((r = test_utf8_strdown_each ("\xF0\x90\x90\x80", "\xF0\x90\x90\xA8")) != OK)
+		return r;
+*/
+	return OK;
+}
+
 /*
  * test initialization
  */
@@ -652,6 +781,8 @@ static Test utf8_tests [] = {
 	{"g_utf8_get_char", test_utf8_get_char },
 	{"g_utf8_next_char", test_utf8_next_char },
 	{"g_utf8_validate", test_utf8_validate },
+	{"g_utf8_strup", test_utf8_strup},
+	{"g_utf8_strdown", test_utf8_strdown},
 	{NULL, NULL}
 };
 
