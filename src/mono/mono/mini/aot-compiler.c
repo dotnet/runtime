@@ -132,7 +132,7 @@ typedef struct MonoAotStats {
 #define USE_ELF_RELA 1
 #endif
 
-/*#define USE_ELF_WRITER 1*/
+//#define USE_ELF_WRITER 1
 
 #if defined(USE_ELF_WRITER)
 #define USE_BIN_WRITER 1
@@ -693,9 +693,9 @@ get_label_addr (MonoAotCompile *acfg, const char *name)
 	section = lab->section;
 	offset = lab->offset;
 	if (section->parent) {
-		value = section->parent->file_offset + section->cur_offset + offset;
+		value = section->parent->virt_offset + section->cur_offset + offset;
 	} else {
-		value = section->file_offset + offset;
+		value = section->virt_offset + offset;
 	}
 	return value;
 }
@@ -735,17 +735,17 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, ElfSectHeade
 				symbols [i].st_shndx = SECT_TEXT;
 				section->shidx = SECT_TEXT;
 				section->file_offset = 4096;
-				symbols [i].st_value = section->file_offset;
+				symbols [i].st_value = section->virt_offset;
 			} else if (strcmp (section->name, ".data") == 0) {
 				symbols [i].st_shndx = SECT_DATA;
 				section->shidx = SECT_DATA;
 				section->file_offset = 4096 + 28; /* FIXME */
-				symbols [i].st_value = section->file_offset;
+				symbols [i].st_value = section->virt_offset;
 			} else if (strcmp (section->name, ".bss") == 0) {
 				symbols [i].st_shndx = SECT_BSS;
 				section->shidx = SECT_BSS;
 				section->file_offset = 4096 + 28 + 8; /* FIXME */
-				symbols [i].st_value = section->file_offset;
+				symbols [i].st_value = section->virt_offset;
 			}
 			++i;
 		}
@@ -763,9 +763,9 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, ElfSectHeade
 		lab = g_hash_table_lookup (acfg->labels, symbol->name);
 		offset = lab->offset;
 		if (section->parent) {
-			symbols [i].st_value = section->parent->file_offset + section->cur_offset + offset;
+			symbols [i].st_value = section->parent->virt_offset + section->cur_offset + offset;
 		} else {
-			symbols [i].st_value = section->file_offset + offset;
+			symbols [i].st_value = section->virt_offset + offset;
 		}
 		++i;
 	}
@@ -868,9 +868,9 @@ resolve_reloc (MonoAotCompile *acfg, BinReloc *reloc, guint8 **out_data, gsize *
 	} else if (reloc->val2_section) {
 		start_val = reloc->val2_offset;
 		if (reloc->val2_section->parent)
-			start_val += reloc->val2_section->parent->file_offset + reloc->val2_section->cur_offset;
+			start_val += reloc->val2_section->parent->virt_offset + reloc->val2_section->cur_offset;
 		else
-			start_val += reloc->val2_section->file_offset;
+			start_val += reloc->val2_section->virt_offset;
 	} else {
 		start_val = 0;
 	}
@@ -879,13 +879,13 @@ resolve_reloc (MonoAotCompile *acfg, BinReloc *reloc, guint8 **out_data, gsize *
 		data = reloc->section->parent->data;
 		data += reloc->section->cur_offset;
 		data += reloc->section_offset;
-		vaddr = reloc->section->parent->file_offset;
+		vaddr = reloc->section->parent->virt_offset;
 		vaddr += reloc->section->cur_offset;
 		vaddr += reloc->section_offset;
 	} else {
 		data = reloc->section->data;
 		data += reloc->section_offset;
-		vaddr = reloc->section->file_offset;
+		vaddr = reloc->section->virt_offset;
 		vaddr += reloc->section_offset;
 	}
 
@@ -987,11 +987,6 @@ emit_writeout (MonoAotCompile *acfg)
 	int i, num_sections, file_offset, virt_offset, size, num_symtab;
 	int num_local_syms;
 
-	// FIXME: If we don't do this, then the last part of the text segment won't
-	// be executable
-	emit_section_change (acfg, ".text", 0);
-	emit_alignment (acfg, PAGESIZE);
-
 	g_assert (!acfg->aot_opts.asm_only);
 
 	if (acfg->aot_opts.outfile)
@@ -1092,6 +1087,8 @@ emit_writeout (MonoAotCompile *acfg)
 	file_offset &= ~(4-1);
 	virt_offset = file_offset;
 	/* .dynamic, .got.plt, .data, .bss here */
+	/* Have to increase the virt offset since these go to a separate segment */
+	virt_offset += PAGESIZE;
 	secth [SECT_DYNAMIC].sh_addr = virt_offset;
 	secth [SECT_DYNAMIC].sh_offset = file_offset;
 	size = sizeof (dynamic);
@@ -1140,8 +1137,11 @@ emit_writeout (MonoAotCompile *acfg)
 	file_offset &= ~(4-1);
 
 	text_section->file_offset = secth [SECT_TEXT].sh_offset;
+	text_section->virt_offset = secth [SECT_TEXT].sh_addr;
 	data_section->file_offset = secth [SECT_DATA].sh_offset;
+	data_section->virt_offset = secth [SECT_DATA].sh_addr;
 	bss_section->file_offset = secth [SECT_BSS].sh_offset;
+	bss_section->virt_offset = secth [SECT_BSS].sh_addr;
 
 	header.e_ident [EI_MAG0] = ELFMAG0;
 	header.e_ident [EI_MAG1] = ELFMAG1;
