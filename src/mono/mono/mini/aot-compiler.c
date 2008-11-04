@@ -110,6 +110,7 @@ typedef struct MonoAotOptions {
 	gboolean no_dlsym;
 	gboolean static_link;
 	gboolean asm_only;
+	int nthreads;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -122,7 +123,7 @@ typedef struct MonoAotStats {
 } MonoAotStats;
 
 #if defined(__x86_64__) && defined(HAVE_ELF_H)
-//#define USE_ELF_WRITER 1
+#define USE_ELF_WRITER 1
 #define USE_ELF_RELA 1
 #endif
 
@@ -179,6 +180,7 @@ typedef struct MonoAotCompile {
 	MonoAotStats stats;
 	int method_index;
 	char *static_linking_symbol;
+	CRITICAL_SECTION mutex;
 #ifdef USE_BIN_WRITER
 	BinSymbol *symbols;
 	BinSection *sections;
@@ -193,6 +195,9 @@ typedef struct MonoAotCompile {
 	int col_count; /* bytes emitted per .byte line */
 #endif
 } MonoAotCompile;
+
+#define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
+#define mono_acfg_unlock(acfg) LeaveCriticalSection (&((acfg)->mutex))
 
 #ifdef HAVE_ARRAY_ELEM_INIT
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
@@ -3553,6 +3558,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "no-dlsym")) {
 			opts->no_dlsym = TRUE;
 			*/
+		} else if (str_begins_with (arg, "threads=")) {
+			opts->nthreads = atoi (arg + strlen ("threads="));
 		} else if (str_begins_with (arg, "static")) {
 			opts->static_link = TRUE;
 			opts->no_dlsym = TRUE;
@@ -3580,6 +3587,12 @@ add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
 	g_hash_table_insert (acfg->token_info_hash, method, new_ji);
 }
 
+/*
+ * compile_method:
+ *
+ *   AOT compile a given method.
+ * This function might be called by multiple threads, so it must be thread-safe.
+ */
 static void
 compile_method (MonoAotCompile *acfg, MonoMethod *method)
 {
@@ -3592,7 +3605,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (acfg->aot_opts.metadata_only)
 		return;
 
+	mono_acfg_lock (acfg);
 	index = get_method_index (acfg, method);
+	mono_acfg_unlock (acfg);
 
 	/* fixme: maybe we can also precompile wrapper methods */
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
@@ -3610,7 +3625,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		// FIXME: The wrapper should be generic too, but it is not
 		return;
 
-	acfg->stats.mcount++;
+	InterlockedIncrement (&acfg->stats.mcount);
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 		/* 
@@ -3622,7 +3637,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 #if 0
 	if (method->is_generic || method->klass->generic_container) {
-		acfg->stats.genericcount ++;
+		InterlockedIncrement (&acfg->stats.genericcount);
 		return;
 	}
 #endif
@@ -3639,7 +3654,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), FALSE, TRUE, 0);
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 		//printf ("F: %s\n", mono_method_full_name (method, TRUE));
-		acfg->stats.genericcount ++;
+		InterlockedIncrement (&acfg->stats.genericcount);
 		return;
 	}
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
@@ -3649,7 +3664,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	if (cfg->disable_aot) {
 		//printf ("Skip (other): %s\n", mono_method_full_name (method, TRUE));
-		acfg->stats.ocount++;
+		InterlockedIncrement (&acfg->stats.ocount);
 		mono_destroy_compile (cfg);
 		return;
 	}
@@ -3667,7 +3682,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	/* Collect method->token associations from the cfg */
+	mono_acfg_lock (acfg);
 	g_hash_table_foreach (cfg->token_info_hash, add_token_info_hash, acfg);
+	mono_acfg_unlock (acfg);
 
 	/*
 	 * Check for absolute addresses.
@@ -3686,7 +3703,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	if (skip) {
-		acfg->stats.abscount++;
+		InterlockedIncrement (&acfg->stats.abscount);
 		mono_destroy_compile (cfg);
 		return;
 	}
@@ -3737,10 +3754,13 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	if (skip) {
-		acfg->stats.wrappercount++;
+		InterlockedIncrement (&acfg->stats.wrappercount);
 		mono_destroy_compile (cfg);
 		return;
 	}
+
+	/* Lock for the rest of the code */
+	mono_acfg_lock (acfg);
 
 	/*
 	 * Check for methods/klasses we can't encode.
@@ -3776,6 +3796,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (skip) {
 		acfg->stats.ocount++;
 		mono_destroy_compile (cfg);
+		mono_acfg_unlock (acfg);
 		return;
 	}
 
@@ -3816,7 +3837,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	if (!cfg->has_got_slots)
-		acfg->stats.methods_without_got_slots ++;
+		InterlockedIncrement (&acfg->stats.methods_without_got_slots);
 
 	/* Make a copy of the patch info which is in the mempool */
 	{
@@ -3866,7 +3887,23 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (cfg->orig_method->wrapper_type)
 		g_ptr_array_add (acfg->extra_methods, cfg->orig_method);
 
-	acfg->stats.ccount++;
+	mono_acfg_unlock (acfg);
+
+	InterlockedIncrement (&acfg->stats.ccount);
+}
+ 
+static void
+compile_thread_main (gpointer *user_data)
+{
+	MonoDomain *domain = user_data [0];
+	MonoAotCompile *acfg = user_data [1];
+	GPtrArray *methods = user_data [2];
+	int i;
+
+	mono_thread_attach (domain);
+
+	for (i = 0; i < methods->len; ++i)
+		compile_method (acfg, g_ptr_array_index (methods, i));
 }
 
 static void
@@ -4718,7 +4755,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	MonoImage *image = ass->image;
 	char symbol [256];
-	int i, res;
+	int i, res, methods_len;
 	MonoAotCompile *acfg;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -4741,6 +4778,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->opts = opts;
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
+	InitializeCriticalSection (&acfg->mutex);
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
@@ -4758,6 +4796,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
 
 		method = mono_get_method (acfg->image, token, NULL);
+
+		/* Load all methods eagerly to skip the slower lazy loading code */
+		mono_class_setup_methods (method->klass);
 
 		if (acfg->aot_opts.full_aot && method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 			/* Compile the wrapper instead */
@@ -4784,12 +4825,64 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	/* Compile methods */
 	TV_GETTIME (atv);
-	for (i = 0; i < acfg->methods->len; ++i) {
+
+	if (acfg->aot_opts.nthreads > 0) {
+		GPtrArray *frag;
+		int len, j;
+		GPtrArray *threads;
+		HANDLE handle;
+		gpointer *user_data;
+		MonoMethod **methods;
+
+		methods_len = acfg->methods->len;
+
+		len = acfg->methods->len / acfg->aot_opts.nthreads;
+		g_assert (len > 0);
+		/* 
+		 * Partition the list of methods into fragments, and hand it to threads to
+		 * process.
+		 */
+		threads = g_ptr_array_new ();
+		/* Make a copy since acfg->methods is modified by compile_method () */
+		methods = g_new0 (MonoMethod*, methods_len);
+		//memcpy (methods, g_ptr_array_index (acfg->methods, 0), sizeof (MonoMethod*) * methods_len);
+		for (i = 0; i < methods_len; ++i)
+			methods [i] = g_ptr_array_index (acfg->methods, i);
+		i = 0;
+		while (i < methods_len) {
+			frag = g_ptr_array_new ();
+			for (j = 0; j < len; ++j) {
+				if (i < methods_len) {
+					g_ptr_array_add (frag, methods [i]);
+					i ++;
+				}
+			}
+
+			user_data = g_new0 (gpointer, 3);
+			user_data [0] = mono_domain_get ();
+			user_data [1] = acfg;
+			user_data [2] = frag;
+			
+			handle = CreateThread (NULL, 0, (WapiThreadStart)compile_thread_main, user_data, 0, NULL);
+			g_ptr_array_add (threads, handle);
+		}
+		g_free (methods);
+
+		for (i = 0; i < threads->len; ++i) {
+			WaitForSingleObjectEx (g_ptr_array_index (threads, i), INFINITE, FALSE);
+		}
+	} else {
+		methods_len = 0;
+	}
+
+	/* Compile methods added by compile_method () or all methods if nthreads == 0 */
+	for (i = methods_len; i < acfg->methods->len; ++i) {
 		/* This can new methods to acfg->methods */
 		compile_method (acfg, g_ptr_array_index (acfg->methods, i));
 	}
-	TV_GETTIME (btv);
 
+	TV_GETTIME (btv);
+ 
 	acfg->stats.jit_time = TV_ELAPSED (atv, btv);
 
 	TV_GETTIME (atv);
