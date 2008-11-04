@@ -2003,6 +2003,8 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_CLASS_INIT:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
+	case MONO_PATCH_INFO_MONITOR_ENTER:
+	case MONO_PATCH_INFO_MONITOR_EXIT:
 		return TRUE;
 	default:
 		return FALSE;
@@ -2779,6 +2781,8 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		break;
 	}
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
+	case MONO_PATCH_INFO_MONITOR_ENTER:
+	case MONO_PATCH_INFO_MONITOR_EXIT:
 		break;
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
