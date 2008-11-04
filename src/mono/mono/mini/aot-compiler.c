@@ -950,7 +950,7 @@ resolve_relocations (MonoAotCompile *acfg)
 		data [3] = end_val >> 24;
 		if (start_val == 0) {
 			rr [i].r_offset = vaddr;
-			rr [i].r_info = 8; /* FIXME: 386_RELATIVE */
+			rr [i].r_info = R_386_RELATIVE;
 			++i;
 			g_assert (i <= acfg->num_relocs);
 		}
