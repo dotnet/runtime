@@ -29,9 +29,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_ELF_H
-#include <elf.h>
-#endif
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
@@ -65,6 +62,8 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/freebsd-elf32.h>
+#include <mono/utils/freebsd-elf64.h>
 
 #include "mini.h"
 #include "version.h"
