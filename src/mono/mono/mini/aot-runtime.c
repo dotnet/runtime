@@ -2204,6 +2204,9 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 	if (!amodule)
 		return NULL;
 
+	if (amodule->out_of_date)
+		return NULL;
+
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 		(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
