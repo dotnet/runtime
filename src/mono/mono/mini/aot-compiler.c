@@ -2620,8 +2620,23 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 		}
 #endif /* MONO_ARCH_AOT_SUPPORTED */
 
-		if (!skip)
-			emit_bytes (acfg, code + i, 1);
+		if (!skip) {
+			/* Find next patch */
+			patch_info = NULL;
+			for (pindex = start_index; pindex < patches->len; ++pindex) {
+				patch_info = g_ptr_array_index (patches, pindex);
+				if (patch_info->ip.i >= i)
+					break;
+			}
+
+			/* Try to emit multiple bytes at once */
+			if (pindex < patches->len && patch_info->ip.i > i) {
+				emit_bytes (acfg, code + i, patch_info->ip.i - i);
+				i = patch_info->ip.i - 1;
+			} else {
+				emit_bytes (acfg, code + i, 1);
+			}
+		}
 	}
 }
 
