@@ -997,6 +997,11 @@ thread_stack_initialize (ProfilerThreadStack *stack, guint32 capacity) {
 }
 
 static void
+thread_stack_reset_saved_state (ProfilerThreadStack *stack) {
+	stack->last_saved_top = 0;
+}
+
+static void
 thread_stack_push_jitted (ProfilerThreadStack *stack, MonoMethod* method, gboolean method_is_jitted) {
 	if (stack->top >= stack->capacity) {
 		MonoMethod **old_stack = stack->stack;
@@ -2380,8 +2385,6 @@ write_event (ProfilerEventData *event) {
 				MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, MONO_PROFILER_EVENT_JIT_TIME_ALLOCATION, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_OTHER_EVENT);
 			}
 			
-			printf ("Handling allocation (id %d): event_code %d, event_data %ld\n", element->id, event_code, event_data);
-			
 			if (profiler->action_flags.save_allocation_caller) {
 				MonoMethod *caller_method = next->data.address;
 				
@@ -2397,8 +2400,6 @@ write_event (ProfilerEventData *event) {
 
 				write_event_value_extension_1 = TRUE;
 				next ++;
-				
-				printf ("Caller ID is %ld\n", event_value_extension_1);
 			}
 			
 			if (profiler->action_flags.allocations_carry_id) {
@@ -2410,8 +2411,6 @@ write_event (ProfilerEventData *event) {
 				
 				write_event_value_extension_2 = TRUE;
 				next ++;
-				
-				printf ("Object ID is %ld\n", event_value_extension_2);
 			}
 		} else {
 			MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, event->code, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_CLASS_EVENT);
@@ -2466,6 +2465,9 @@ write_thread_data_block (ProfilerPerThreadData *data) {
 	write_uint64 (data->thread_id);
 	
 	write_uint64 (data->start_event_counter);
+	
+	/* Make sure that stack sections can be fully reconstructed even reading only one block */
+	thread_stack_reset_saved_state (&(data->stack));
 	
 	while (start < end) {
 		start = write_event (start);
