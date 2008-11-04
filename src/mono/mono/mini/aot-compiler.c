@@ -4863,7 +4863,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			user_data [1] = acfg;
 			user_data [2] = frag;
 			
-			handle = CreateThread (NULL, 0, (WapiThreadStart)compile_thread_main, user_data, 0, NULL);
+			handle = CreateThread (NULL, 0, (gpointer)compile_thread_main, user_data, 0, NULL);
 			g_ptr_array_add (threads, handle);
 		}
 		g_free (methods);
