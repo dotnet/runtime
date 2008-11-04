@@ -4835,6 +4835,15 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		finalize_signature->hasthis = 1;
 	}
 
+	/* 
+	 * Use a separate cache indexed by methods to speed things up and to avoid the
+	 * boundless mempool growth caused by the signature_dup stuff below.
+	 */
+	cache = get_cache (&method->klass->image->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
+	res = mono_marshal_find_in_cache (cache, method);
+	if (res)
+		return res;
+
 	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 		/* 
@@ -4843,7 +4852,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		 */
 		need_direct_wrapper = TRUE;
 	}
-
+		
 	if (method->string_ctor) {
 		callsig = lookup_string_ctor_signature (mono_method_signature (method));
 		if (!callsig)
@@ -4897,10 +4906,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	}
 
 	if (need_direct_wrapper) {
-		cache = get_cache (&target_klass->image->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
-		res = mono_marshal_find_in_cache (cache, method);
-		if (res)
-			return res;
+		/* Already searched at the start */
 	} else {
 		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
 
@@ -5157,6 +5163,7 @@ handle_enum:
 				res = newm;
 				g_hash_table_insert (cache, callsig, res);
 				/* Can't insert it into wrapper_hash since the key is a signature */
+				g_hash_table_insert (method->klass->image->runtime_invoke_direct_cache, method, res);
 			} else {
 				mono_free_method (newm);
 			}
