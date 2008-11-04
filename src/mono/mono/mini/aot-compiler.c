@@ -123,7 +123,7 @@ typedef struct MonoAotStats {
 } MonoAotStats;
 
 #if defined(__x86_64__) && defined(HAVE_ELF_H)
-#define USE_ELF_WRITER 1
+//#define USE_ELF_WRITER 1
 #define USE_ELF_RELA 1
 #endif
 
