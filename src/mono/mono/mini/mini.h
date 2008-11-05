@@ -256,6 +256,7 @@ extern gboolean disable_vtypes_in_regs;
 extern gboolean mono_verify_all;
 extern gboolean mono_dont_free_global_codeman;
 extern gboolean mono_do_x86_stack_align;
+extern const char *mono_build_date;
 
 #define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 3])
 
@@ -1277,6 +1278,7 @@ void        mono_set_defaults              (int verbose_level, guint32 opts);
 MonoDomain* mini_init                      (const char *filename, const char *runtime_version) MONO_INTERNAL;
 void        mini_cleanup                   (MonoDomain *domain) MONO_INTERNAL;
 MonoDebugOptions *mini_get_debug_options   (void) MONO_INTERNAL;
+char*       mono_get_runtime_build_info    (void) MONO_INTERNAL;
 
 /* helper methods */
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token) MONO_INTERNAL;

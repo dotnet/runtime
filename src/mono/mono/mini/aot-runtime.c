@@ -791,7 +791,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	gboolean usable = TRUE;
 	char *saved_guid = NULL;
 	char *aot_version = NULL;
-	char *runtime_version;
+	char *runtime_version, *build_info;
 	char *opt_flags = NULL;
 	gpointer *globals;
 	gboolean full_aot = FALSE;
@@ -880,10 +880,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		}
 	}
 
-	if (!runtime_version || ((strlen (runtime_version) > 0 && strcmp (runtime_version, FULL_VERSION)))) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled against runtime version %s while this runtime has version %s.\n", aot_name, runtime_version, FULL_VERSION);
+	build_info = mono_get_runtime_build_info ();
+	if (!runtime_version || ((strlen (runtime_version) > 0 && strcmp (runtime_version, build_info)))) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is compiled against runtime version '%s' while this runtime has version '%s'.\n", aot_name, runtime_version, build_info);
 		usable = FALSE;
 	}
+	g_free (build_info);
 
 	{
 		char *full_aot_str;

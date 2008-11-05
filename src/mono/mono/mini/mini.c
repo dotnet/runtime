@@ -72,6 +72,7 @@
 #include <ctype.h>
 #include "inssel.h"
 #include "trace.h"
+#include "version.h"
 
 #include "jit-icalls.h"
 
@@ -185,6 +186,7 @@ int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method = NULL;
 int mono_break_at_bb_bb_num;
 gboolean mono_do_x86_stack_align = TRUE;
+const char *mono_build_date;
 
 static int mini_verbose = 0;
 
@@ -14745,6 +14747,21 @@ mono_set_defaults (int verbose_level, guint32 opts)
 	mini_verbose = verbose_level;
 	default_opt = opts;
 	default_opt_set = TRUE;
+}
+
+/*
+ * mono_get_runtime_build_info:
+ *
+ *   Return the runtime version + build date in string format.
+ * The returned string is owned by the caller.
+ */
+char*
+mono_get_runtime_build_info (void)
+{
+	if (mono_build_date)
+		return g_strdup_printf ("%s %s", FULL_VERSION, mono_build_date);
+	else
+		return g_strdup_printf ("%s", FULL_VERSION);
 }
 
 static void

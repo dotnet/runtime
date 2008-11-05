@@ -4574,6 +4574,7 @@ static void
 emit_globals (MonoAotCompile *acfg)
 {
 	char *opts_str;
+	char *build_info;
 
 	emit_string_symbol (acfg, "mono_assembly_guid" , acfg->image->guid);
 
@@ -4585,10 +4586,13 @@ emit_globals (MonoAotCompile *acfg)
 
 	emit_string_symbol (acfg, "mono_aot_full_aot", acfg->aot_opts.full_aot ? "TRUE" : "FALSE");
 
-	if (acfg->aot_opts.bind_to_runtime_version)
-		emit_string_symbol (acfg, "mono_runtime_version", FULL_VERSION);
-	else
+	if (acfg->aot_opts.bind_to_runtime_version) {
+		build_info = mono_get_runtime_build_info ();
+		emit_string_symbol (acfg, "mono_runtime_version", build_info);
+		g_free (build_info);
+	} else {
 		emit_string_symbol (acfg, "mono_runtime_version", "");
+	}
 
 	/*
 	 * Some platforms like the iphone have no working dlsym (). To work around this,
