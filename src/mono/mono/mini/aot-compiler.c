@@ -62,8 +62,11 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
+
+#ifndef PLATFORM_WIN32
 #include <mono/utils/freebsd-elf32.h>
 #include <mono/utils/freebsd-elf64.h>
+#endif
 
 #include "mini.h"
 #include "version.h"
