@@ -992,12 +992,17 @@ mono_create_monitor_enter_trampoline (void)
 {
 	static gpointer code;
 
+#ifdef MONO_ARCH_MONITOR_OBJECT_REG
 	mono_trampolines_lock ();
 
 	if (!code)
 		code = mono_arch_create_monitor_enter_trampoline ();
 
 	mono_trampolines_unlock ();
+#else
+	code = NULL;
+	g_assert_not_reached ();
+#endif
 
 	return code;
 }
@@ -1007,13 +1012,17 @@ mono_create_monitor_exit_trampoline (void)
 {
 	static gpointer code;
 
+#ifdef MONO_ARCH_MONITOR_OBJECT_REG
 	mono_trampolines_lock ();
 
 	if (!code)
 		code = mono_arch_create_monitor_exit_trampoline ();
 
 	mono_trampolines_unlock ();
-
+#else
+	code = NULL;
+	g_assert_not_reached ();
+#endif
 	return code;
 }
 
