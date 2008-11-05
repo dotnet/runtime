@@ -703,7 +703,7 @@ load_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src)
 		return res;
 	} else if (src->type == STACK_VTYPE) {
 		return src->dreg;
-	} else if (src->type == STACK_PTR) {
+	} else if (src->type == STACK_PTR || src->type == STACK_MP) {
 		MonoInst *ins;
 
 		MONO_INST_NEW (cfg, ins, OP_LOADX_MEMBASE);
