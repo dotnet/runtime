@@ -695,13 +695,11 @@ mono_arch_create_monitor_enter_trampoline (void)
 gpointer
 mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	guint8 *tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
+	guint8 *tramp;
 	guint8 *code, *buf;
 	guint8 *jump_obj_null, *jump_sync_null, *jump_cmpxchg_failed, *jump_other_owner, *jump_tid;
 	int tramp_size;
 	int owner_offset, nest_offset, dummy;
-
-	g_assert (!aot);
 
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == AMD64_RDI);
 
@@ -776,10 +774,22 @@ mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo
 #if MONO_AMD64_ARG_REG1 != AMD64_RDI
 	amd64_mov_reg_reg (buf, MONO_AMD64_ARG_REG1, AMD64_RDI);
 #endif
-	amd64_jump_code (buf, tramp);
+
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, buf - code, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_monitor_enter");
+		amd64_mov_reg_membase (buf, AMD64_R11, AMD64_RIP, 0, 8);
+		amd64_jump_reg (buf, AMD64_R11);
+	} else {
+		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
+
+		/* jump to the actual trampoline */
+		amd64_jump_code (buf, tramp);
+	}
 
 	mono_arch_flush_icache (buf, buf - code);
 	g_assert (buf - code <= tramp_size);
+
+	*code_size = buf - code;
 
 	return code;
 }
@@ -796,14 +806,12 @@ mono_arch_create_monitor_exit_trampoline (void)
 gpointer
 mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	guint8 *tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_EXIT, mono_get_root_domain (), NULL);
+	guint8 *tramp;
 	guint8 *code, *buf;
 	guint8 *jump_obj_null, *jump_have_waiters;
 	guint8 *jump_next;
 	int tramp_size;
 	int owner_offset, nest_offset, entry_count_offset;
-
-	g_assert (!aot);
 
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == AMD64_RDI);
 
@@ -881,10 +889,20 @@ mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo 
 #if MONO_AMD64_ARG_REG1 != AMD64_RDI
 	amd64_mov_reg_reg (buf, MONO_AMD64_ARG_REG1, AMD64_RDI);
 #endif
-	amd64_jump_code (buf, tramp);
+
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, buf - code, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_monitor_exit");
+		amd64_mov_reg_membase (buf, AMD64_R11, AMD64_RIP, 0, 8);
+		amd64_jump_reg (buf, AMD64_R11);
+	} else {
+		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_EXIT, mono_get_root_domain (), NULL);
+		amd64_jump_code (buf, tramp);
+	}
 
 	mono_arch_flush_icache (buf, buf - code);
 	g_assert (buf - code <= tramp_size);
+
+	*code_size = buf - code;
 
 	return code;
 }

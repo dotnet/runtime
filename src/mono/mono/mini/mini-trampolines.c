@@ -992,6 +992,12 @@ mono_create_monitor_enter_trampoline (void)
 {
 	static gpointer code;
 
+	if (mono_aot_only) {
+		if (!code)
+			code = mono_aot_get_named_code ("monitor_enter_trampoline");
+		return code;
+	}
+
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 	mono_trampolines_lock ();
 
@@ -1011,6 +1017,12 @@ gpointer
 mono_create_monitor_exit_trampoline (void)
 {
 	static gpointer code;
+
+	if (mono_aot_only) {
+		if (!code)
+			code = mono_aot_get_named_code ("monitor_exit_trampoline");
+		return code;
+	}
 
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 	mono_trampolines_lock ();

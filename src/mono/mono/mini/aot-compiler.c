@@ -3352,6 +3352,12 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		code = mono_arch_get_nullified_class_init_trampoline (&code_size);
 		emit_named_code (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL);
+		/*
+		code = mono_arch_create_monitor_enter_trampoline_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "monitor_enter_trampoline", code, code_size, acfg->got_offset, ji);
+		code = mono_arch_create_monitor_exit_trampoline_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "monitor_exit_trampoline", code, code_size, acfg->got_offset, ji);
+		*/
 
 		/* Emit the exception related code pieces */
 		code = mono_arch_get_restore_context_full (&code_size, &ji, TRUE);
