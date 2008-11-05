@@ -1847,7 +1847,7 @@ static const guint16 *simple_upper_case_mapping_lowarea [] = {
 	simple_upper_case_mapping_lowarea_table5,
 	simple_upper_case_mapping_lowarea_table6,
 	simple_upper_case_mapping_lowarea_table7};
-simple_upper_case_mapping_lowarea_table_count = 8;
+static const int simple_upper_case_mapping_lowarea_table_count = 8;
 
 static const guint32 simple_upper_case_mapping_higharea_table0 [] = {
 	/* ==== 10400-10480 ==== */
@@ -2115,7 +2115,7 @@ static const guint16 *simple_lower_case_mapping_lowarea [] = {
 	simple_lower_case_mapping_lowarea_table5,
 	simple_lower_case_mapping_lowarea_table6,
 	simple_lower_case_mapping_lowarea_table7};
-simple_lower_case_mapping_lowarea_table_count = 8;
+static const int simple_lower_case_mapping_lowarea_table_count = 8;
 
 static const guint32 simple_lower_case_mapping_higharea_table0 [] = {
 	/* ==== 10400-10480 ==== */

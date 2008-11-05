@@ -30,7 +30,7 @@ utf8_case_conv (const gchar *str, gssize len, gboolean upper)
 	gchar *u8str;
 	GError **err = NULL;
 
-	u16str = g_utf8_to_utf16 (str, len, NULL, &u16len, err);
+	u16str = g_utf8_to_utf16 (str, (glong)len, NULL, &u16len, err);
 	u32str = g_utf16_to_ucs4 (u16str, u16len, NULL, &u32len, err);
 	for (i = 0; i < u32len; i++) {
 		u32str [i] = upper ? g_unichar_toupper (u32str [i]) : g_unichar_tolower (u32str [i]);
@@ -40,19 +40,19 @@ utf8_case_conv (const gchar *str, gssize len, gboolean upper)
 	u8str = g_utf16_to_utf8 (u16str, u16len, NULL, NULL, err);
 	g_free (u32str);
 	g_free (u16str);
-	return u8str;
+	return (gunichar*)u8str;
 }
 
 gchar*
 g_utf8_strup (const gchar *str, gssize len)
 {
-	return utf8_case_conv (str, len, TRUE);
+	return (gchar*)utf8_case_conv (str, len, TRUE);
 }
 
 gchar*
 g_utf8_strdown (const gchar *str, gssize len)
 {
-	return utf8_case_conv (str, len, FALSE);
+	return (gchar*)utf8_case_conv (str, len, FALSE);
 }
 
 gunichar2*

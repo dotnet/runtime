@@ -1,3 +1,10 @@
+2008-11-05  Bill Holmes  <billholmes54@gmail.com>
+
+	* src/gutf8.c, src/unicode-data.h, src/gunicode.c :
+	  Fixing the MSVC builds.
+
+	Contributed under MIT/X11 license.
+
 2008-11-04  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* src/gutf8.c, src/gunicode.c, src/glib.h:

@@ -132,11 +132,12 @@ g_unichar_case (gunichar c, gboolean upper)
 		if (simple_case_map_ranges [i].end <= cp)
 			continue;
 		if (c < 0x10000) {
-			guint16 *tab = upper ? simple_upper_case_mapping_lowarea [i] : simple_lower_case_mapping_lowarea [i];
+			const guint16 *tab = upper ? simple_upper_case_mapping_lowarea [i] : simple_lower_case_mapping_lowarea [i];
 			v = tab [cp - simple_case_map_ranges [i].start];
 		} else {
-			i2 = i - (upper ? simple_upper_case_mapping_lowarea_table_count : simple_lower_case_mapping_lowarea_table_count);
-			guint32 *tab = upper ? simple_upper_case_mapping_higharea [i2] : simple_lower_case_mapping_higharea [i2];
+			const guint32 *tab;
+			i2 = (gint8)(i - (upper ? simple_upper_case_mapping_lowarea_table_count : simple_lower_case_mapping_lowarea_table_count));
+			tab = upper ? simple_upper_case_mapping_higharea [i2] : simple_lower_case_mapping_higharea [i2];
 			v = tab [cp - simple_case_map_ranges [i].start];
 		}
 		return v != 0 ? (gunichar) v : c;
