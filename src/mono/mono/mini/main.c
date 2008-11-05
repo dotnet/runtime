@@ -1,6 +1,8 @@
 #include <config.h>
 #include "mini.h"
 
+extern const char *build_date;
+
 #ifdef PLATFORM_WIN32
 
 int
@@ -27,6 +29,7 @@ main ()
 int
 main (int argc, char* argv[])
 {
+	mono_build_date = build_date;
 	return mono_main (argc, argv);
 }
 
