@@ -699,7 +699,7 @@ mono_arch_create_monitor_enter_trampoline (void)
 	owner_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (owner_offset);
 	nest_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (nest_offset);
 
-	tramp_size = 64;
+	tramp_size = 96;
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
@@ -792,7 +792,7 @@ mono_arch_create_monitor_exit_trampoline (void)
 	nest_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (nest_offset);
 	entry_count_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (entry_count_offset);
 
-	tramp_size = 64;
+	tramp_size = 94;
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
