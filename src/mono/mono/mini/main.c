@@ -1,7 +1,6 @@
 #include <config.h>
 #include "mini.h"
-
-extern const char *build_date;
+#include "buildver.h"
 
 #ifdef PLATFORM_WIN32
 
