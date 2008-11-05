@@ -518,15 +518,17 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			*method = mono_marshal_get_static_rgctx_invoke (m);
 			break;
 		}
-		case MONO_WRAPPER_MONITOR_FAST_ENTER:
-		case MONO_WRAPPER_MONITOR_FAST_EXIT: {
+		case MONO_WRAPPER_UNKNOWN: {
 			MonoMethodDesc *desc;
 			MonoMethod *orig_method;
+			int subtype = decode_value (p, &p);
 
-			if (wrapper_type == MONO_WRAPPER_MONITOR_FAST_ENTER)
+			if (subtype == MONO_AOT_WRAPPER_MONO_ENTER)
 				desc = mono_method_desc_new ("Monitor:Enter", FALSE);
-			else
+			else if (subtype == MONO_AOT_WRAPPER_MONO_EXIT)
 				desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+			else
+				g_assert_not_reached ();
 			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 			g_assert (orig_method);
 			mono_method_desc_free (desc);

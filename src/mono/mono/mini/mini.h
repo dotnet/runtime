@@ -66,7 +66,7 @@
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "43"
+#define MONO_AOT_FILE_VERSION "44"
  
 /* Per-domain information maintained by the JIT */
 typedef struct
@@ -1760,5 +1760,11 @@ MonoInst* mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, Mono
 guint32   mono_arch_cpu_enumerate_simd_versions (void) MONO_INTERNAL;
 void mono_simd_intrinsics_init (void) MONO_INTERNAL;
 
+/* for MONO_WRAPPER_UNKNOWN subtypes */
+enum {
+	MONO_AOT_WRAPPER_MONO_ENTER,
+	MONO_AOT_WRAPPER_MONO_EXIT,
+	MONO_AOT_WRAPPER_LAST
+};
 
 #endif /* __MONO_MINI_H__ */

@@ -1900,8 +1900,14 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_STELEMREF:
-		case MONO_WRAPPER_MONITOR_FAST_ENTER:
-		case MONO_WRAPPER_MONITOR_FAST_EXIT:
+			break;
+		case MONO_WRAPPER_UNKNOWN:
+			if (strcmp (method->name, "FastMonitorEnter") == 0)
+				encode_value (MONO_AOT_WRAPPER_MONO_ENTER, p, &p);
+			else if (strcmp (method->name, "FastMonitorExit") == 0)
+				encode_value (MONO_AOT_WRAPPER_MONO_EXIT, p, &p);
+			else
+				g_assert_not_reached ();
 			break;
 		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
 			MonoMethod *m;
@@ -3731,8 +3737,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			case MONO_WRAPPER_ALLOC:
 			case MONO_WRAPPER_REMOTING_INVOKE:
 			case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
-			case MONO_WRAPPER_MONITOR_FAST_ENTER:
-			case MONO_WRAPPER_MONITOR_FAST_EXIT:
+			case MONO_WRAPPER_UNKNOWN:
 				break;
 			default:
 				/* unable to handle this */

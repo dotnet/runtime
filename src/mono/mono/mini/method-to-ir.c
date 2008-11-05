@@ -3720,8 +3720,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		MonoMethod *fast_method = NULL;
 
 		/* Avoid infinite recursion */
-		if ((cfg->method->wrapper_type == MONO_WRAPPER_MONITOR_FAST_ENTER ||
-			  cfg->method->wrapper_type == MONO_WRAPPER_MONITOR_FAST_EXIT) &&
+		if ((cfg->method->wrapper_type == MONO_WRAPPER_UNKNOWN ||
+			  cfg->method->wrapper_type == MONO_WRAPPER_UNKNOWN) &&
 				(strcmp (cfg->method->name, "FastMonitorEnter") == 0 ||
 				 strcmp (cfg->method->name, "FastMonitorExit") == 0))
 			return NULL;
