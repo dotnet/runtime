@@ -124,7 +124,7 @@ typedef struct MonoAotStats {
 	int jit_time, gen_time, link_time;
 } MonoAotStats;
 
-#if defined(__x86_64__) && defined(HAVE_ELF_H)
+#if defined(__x86_64__)
 //#define USE_ELF_WRITER 1
 #define USE_ELF_RELA 1
 #endif
@@ -3148,13 +3148,10 @@ emit_plt (MonoAotCompile *acfg)
 #endif
 	emit_label (acfg, symbol);
 
-#if defined(USE_BIN_WRITER) && defined(__arm__)
-	/* FIXME: */
-	g_assert_not_reached ();
-#endif
-
 	for (i = 0; i < acfg->plt_offset; ++i) {
 		char label [128];
+		guint8 buf [256];
+		guint8 *code;
 
 		sprintf (label, ".Lp_%d", i);
 		emit_label (acfg, label);
@@ -3195,18 +3192,14 @@ emit_plt (MonoAotCompile *acfg)
 		 * - optimize SWITCH AOT implementation
 		 * - implement IMT support
 		 */
-		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "\tldr ip, [pc, #4]\n");
-		fprintf (acfg->fp, "\tadd ip, pc, ip\n");
-		fprintf (acfg->fp, "\tldr pc, [ip, #0]\n");
+		code = buf;
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
+		ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
+		ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
+		emit_bytes (acfg, buf, code - buf);
 		emit_symbol_diff (acfg, "plt_jump_table", ".", (i * sizeof (gpointer)));
 		/* Used by mono_aot_get_plt_info_offset */
-    #if defined(__MACH__)
-		fprintf (acfg->fp, "\n\t.long %d\n", plt_info_offsets [i]);
-    #else
-		fprintf (acfg->fp, "\n\t.word %d\n", plt_info_offsets [i]);
-    #endif
-
+		emit_int32 (acfg, plt_info_offsets [i]);
 #else
 		g_assert_not_reached ();
 #endif
