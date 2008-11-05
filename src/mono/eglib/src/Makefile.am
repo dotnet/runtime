@@ -36,7 +36,6 @@ libeglib_la_SOURCES = \
 	gfile.c		\
 	gfile-posix.c	\
 	gpattern.c	\
-	gdir.c		\
 	gmarkup.c	\
 	gutf8.c		\
 	gunicode.c	\
