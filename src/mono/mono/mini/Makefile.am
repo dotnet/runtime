@@ -78,13 +78,14 @@ noinst_LTLIBRARIES = libmono-static.la
 endif
 
 mono_SOURCES = \
-	main.c	\
-	buildver.c
+	main.c
 
-# We build this after libmono was build so it contains the date when the final
+# We build this after libmono was built so it contains the date when the final
 # link was done
-buildver.c: libmono-static.la
-	@echo "const char *build_date = \"`date`\";" > buildver.c
+buildver.h: libmono-static.la
+	@echo "const char *build_date = \"`date`\";" > buildver.h
+
+main.$(OBJEXT): buildver.h
 
 if DTRACE_G_REQUIRED
 LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
@@ -523,7 +524,7 @@ docu: mini.sgm
 check-local: rcheck
 
 clean-local:
-	rm -f mono a.out gmon.out *.o buildver.c test.exe
+	rm -f mono a.out gmon.out *.o buildver.h test.exe
 
 pkgconfigdir = $(libdir)/pkgconfig
 
