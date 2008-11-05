@@ -1,3 +1,8 @@
+/* NOTE NOTE NOTE
+ * No additional wrapper types should be added.
+ * If a new wrapper is asolutely necessary, an existing one needs
+ * to be removed first (with all the change that implies).
+ */
 WRAPPER(NONE, "none")
 WRAPPER(DELEGATE_INVOKE, "delegate-invoke")
 WRAPPER(DELEGATE_BEGIN_INVOKE, "delegate-begin-invoke")
@@ -28,6 +33,4 @@ WRAPPER(COMINTEROP_INVOKE, "cominterop-invoke")
 WRAPPER(COMINTEROP, "cominterop")
 WRAPPER(ALLOC, "alloc")
 WRAPPER(STATIC_RGCTX_INVOKE, "static-rgctx-invoke")
-WRAPPER(MONITOR_FAST_ENTER, "monitor-fast-enter")
-WRAPPER(MONITOR_FAST_EXIT, "monitor-fast-exit")
 

@@ -758,7 +758,7 @@ mono_monitor_get_fast_enter_method (MonoMethod *monitor_enter_method)
 			return NULL;
 	}
 
-	mb = mono_mb_new (mono_defaults.monitor_class, "FastMonitorEnter", MONO_WRAPPER_MONITOR_FAST_ENTER);
+	mb = mono_mb_new (mono_defaults.monitor_class, "FastMonitorEnter", MONO_WRAPPER_UNKNOWN);
 
 	mb->method->slot = -1;
 	mb->method->flags = METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_STATIC |
@@ -892,7 +892,7 @@ mono_monitor_get_fast_exit_method (MonoMethod *monitor_exit_method)
 	if (fast_monitor_exit)
 		return fast_monitor_exit;
 
-	mb = mono_mb_new (mono_defaults.monitor_class, "FastMonitorExit", MONO_WRAPPER_MONITOR_FAST_EXIT);
+	mb = mono_mb_new (mono_defaults.monitor_class, "FastMonitorExit", MONO_WRAPPER_UNKNOWN);
 
 	mb->method->slot = -1;
 	mb->method->flags = METHOD_ATTRIBUTE_PUBLIC | METHOD_ATTRIBUTE_STATIC |
