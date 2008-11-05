@@ -53,6 +53,9 @@ libmonoutils_la_SOURCES = \
 	mono-property-hash.c \
 	mono-value-hash.h \
 	mono-value-hash.c \
+	freebsd-elf_common.h \
+	freebsd-elf32.h	\
+	freebsd-elf64.h	\
 	dtrace.h
 
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
