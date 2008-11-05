@@ -4484,7 +4484,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			int j;
 			arminstr_t *space_start = (arminstr_t*)(item->code_target + item->chunk_size);
 			for (j = i - 1; j >= 0 && !imt_entries [j]->is_equals; --j) {
-				space_start = arm_emit_value_and_patch_ldr (space_start, (arminstr_t*)imt_entries [j]->code_target, (guint32)imt_entries [j]->method);
+				space_start = arm_emit_value_and_patch_ldr (space_start, (arminstr_t*)imt_entries [j]->code_target, (guint32)imt_entries [j]->key);
 			}
 		}
 	}
