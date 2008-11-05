@@ -557,6 +557,15 @@ mono_arch_create_generic_class_init_trampoline (void)
 gpointer
 mono_arch_create_monitor_enter_trampoline (void)
 {
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
+	return mono_arch_create_monitor_enter_trampoline_full (&code_size, &ji, FALSE);
+}
+
+gpointer
+mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+{
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
 	guint8 *code, *buf;
 	guint8 *jump_obj_null, *jump_sync_null, *jump_other_owner, *jump_cmpxchg_failed, *jump_tid;
@@ -651,6 +660,15 @@ mono_arch_create_monitor_enter_trampoline (void)
 
 gpointer
 mono_arch_create_monitor_exit_trampoline (void)
+{
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
+	return mono_arch_create_monitor_exit_trampoline_full (&code_size, &ji, FALSE);
+}
+
+gpointer
+mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
 	guint8 *code, *buf;

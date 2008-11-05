@@ -682,14 +682,26 @@ mono_arch_create_generic_class_init_trampoline (void)
 }
 
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
+
 gpointer
 mono_arch_create_monitor_enter_trampoline (void)
+{
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
+	return mono_arch_create_monitor_enter_trampoline_full (&code_size, &ji, FALSE);
+}
+
+gpointer
+mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	guint8 *tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
 	guint8 *code, *buf;
 	guint8 *jump_obj_null, *jump_sync_null, *jump_cmpxchg_failed, *jump_other_owner, *jump_tid;
 	int tramp_size;
 	int owner_offset, nest_offset, dummy;
+
+	g_assert (!aot);
 
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == AMD64_RDI);
 
@@ -775,12 +787,23 @@ mono_arch_create_monitor_enter_trampoline (void)
 gpointer
 mono_arch_create_monitor_exit_trampoline (void)
 {
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
+	return mono_arch_create_monitor_exit_trampoline_full (&code_size, &ji, FALSE);
+}
+
+gpointer
+mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+{
 	guint8 *tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_EXIT, mono_get_root_domain (), NULL);
 	guint8 *code, *buf;
 	guint8 *jump_obj_null, *jump_have_waiters;
 	guint8 *jump_next;
 	int tramp_size;
 	int owner_offset, nest_offset, entry_count_offset;
+
+	g_assert (!aot);
 
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == AMD64_RDI);
 
