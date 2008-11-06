@@ -6620,12 +6620,11 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			MonoBasicBlock **targets;
 			MonoBasicBlock *default_bblock;
 			MonoJumpInfoBBTable *table;
-#ifndef __arm__
 			int offset_reg = alloc_preg (cfg);
 			int target_reg = alloc_preg (cfg);
 			int table_reg = alloc_preg (cfg);
 			int sum_reg = alloc_preg (cfg);
-#endif
+			gboolean use_op_switch;
 
 			CHECK_OPSIZE (5);
 			CHECK_STACK (1);
@@ -6673,42 +6672,47 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			table->table = targets;
 			table->table_size = n;
 
+			use_op_switch = FALSE;
 #ifdef __arm__
 			/* ARM implements SWITCH statements differently */
 			/* FIXME: Make it use the generic implementation */
-			/* the backend code will deal with aot vs normal case */
-			MONO_INST_NEW (cfg, ins, OP_SWITCH);
-			ins->sreg1 = src1->dreg;
-			ins->inst_p0 = table;
-			ins->inst_many_bb = targets;
-			ins->klass = GUINT_TO_POINTER (n);
-			MONO_ADD_INS (cfg->cbb, ins);
-#else
-			if (sizeof (gpointer) == 8)
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, src1->dreg, 3);
-			else
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, src1->dreg, 2);
+			if (!cfg->compile_aot)
+				use_op_switch = TRUE;
+#endif
+			
+			if (use_op_switch) {
+				MONO_INST_NEW (cfg, ins, OP_SWITCH);
+				ins->sreg1 = src1->dreg;
+				ins->inst_p0 = table;
+				ins->inst_many_bb = targets;
+				ins->klass = GUINT_TO_POINTER (n);
+				MONO_ADD_INS (cfg->cbb, ins);
+			} else {
+				if (sizeof (gpointer) == 8)
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, src1->dreg, 3);
+				else
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, src1->dreg, 2);
 
 #if SIZEOF_VOID_P == 8
-			/* The upper word might not be zero, and we add it to a 64 bit address later */
-			MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, offset_reg, offset_reg);
+				/* The upper word might not be zero, and we add it to a 64 bit address later */
+				MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, offset_reg, offset_reg);
 #endif
 
-			if (cfg->compile_aot) {
-				MONO_EMIT_NEW_AOTCONST (cfg, table_reg, table, MONO_PATCH_INFO_SWITCH);
-			} else {
-				MONO_INST_NEW (cfg, ins, OP_JUMP_TABLE);
-				ins->inst_c1 = MONO_PATCH_INFO_SWITCH;
-				ins->inst_p0 = table;
-				ins->dreg = table_reg;
-				MONO_ADD_INS (cfg->cbb, ins);
+				if (cfg->compile_aot) {
+					MONO_EMIT_NEW_AOTCONST (cfg, table_reg, table, MONO_PATCH_INFO_SWITCH);
+				} else {
+					MONO_INST_NEW (cfg, ins, OP_JUMP_TABLE);
+					ins->inst_c1 = MONO_PATCH_INFO_SWITCH;
+					ins->inst_p0 = table;
+					ins->dreg = table_reg;
+					MONO_ADD_INS (cfg->cbb, ins);
+				}
+
+				/* FIXME: Use load_memindex */
+				MONO_EMIT_NEW_BIALU (cfg, OP_PADD, sum_reg, table_reg, offset_reg);
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, target_reg, sum_reg, 0);
+				MONO_EMIT_NEW_UNALU (cfg, OP_BR_REG, -1, target_reg);
 			}
-
-			/* FIXME: Use load_memindex */
-			MONO_EMIT_NEW_BIALU (cfg, OP_PADD, sum_reg, table_reg, offset_reg);
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, target_reg, sum_reg, 0);
-			MONO_EMIT_NEW_UNALU (cfg, OP_BR_REG, -1, target_reg);
-#endif
 			start_new_bblock = 1;
 			inline_costs += (BRANCH_COST * 2);
 			break;
