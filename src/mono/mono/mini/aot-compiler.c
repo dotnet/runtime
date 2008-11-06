@@ -3241,8 +3241,10 @@ emit_plt (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->plt_offset; ++i) {
 		char label [128];
+#if defined(__arm__)
 		guint8 buf [256];
 		guint8 *code;
+#endif
 
 		sprintf (label, ".Lp_%d", i);
 		emit_label (acfg, label);
