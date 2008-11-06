@@ -1,6 +1,8 @@
 #include <config.h>
 #include "mini.h"
+#ifndef PLATFORM_WIN32
 #include "buildver.h"
+#endif
 
 #ifdef PLATFORM_WIN32
 
