@@ -920,6 +920,24 @@ ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
 	return(TRUE);
 }
 
+MonoBoolean ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, 
+						HANDLE source_handle, HANDLE target_process_handle, HANDLE *target_handle, 
+						gint32 access, gint32 inherit, gint32 options)
+{
+	/* This is only used on Windows */
+	gboolean ret;
+	
+	MONO_ARCH_SAVE_REGS;
+	
+	ret=DuplicateHandle (source_process_handle, source_handle, target_process_handle, target_handle, access, inherit, options);
+	if(ret==FALSE) {
+		/* FIXME: throw an exception? */
+		return(FALSE);
+	}
+	
+	return(TRUE);
+}
+
 gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar ()
 {

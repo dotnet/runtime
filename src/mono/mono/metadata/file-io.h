@@ -207,6 +207,10 @@ extern MonoBoolean
 ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
 				       HANDLE *write_handle) MONO_INTERNAL;
 
+extern MonoBoolean ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, 
+						HANDLE source_handle, HANDLE target_process_handle, HANDLE *target_handle, 
+						gint32 access, gint32 inherit, gint32 options) MONO_INTERNAL;
+
 extern gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void) MONO_INTERNAL;
 
