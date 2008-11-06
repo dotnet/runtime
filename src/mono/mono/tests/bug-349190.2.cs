@@ -79,7 +79,7 @@ public class Driver
         public static bool TestOneAssembly()
         {
 			AssemblyBuilder assembly = Thread.GetDomain ().DefineDynamicAssembly (new AssemblyName ("ALAL"), AssemblyBuilderAccess.RunAndSave, Path.GetTempPath ());
-			ModuleBuilder module = assembly.DefineDynamicModule ("res.exe");
+			ModuleBuilder module = assembly.DefineDynamicModule ("res1.exe");
 
 			TypeBuilder tb = module.DefineType ("Mono.Rocks.IEnumerable", TypeAttributes.Public | TypeAttributes.Abstract);
 
@@ -121,10 +121,10 @@ public class Driver
 
 			IEnumerable<int> en = new int[] { 1,2,3 };
 			bool res = en == t.GetMethod ("NaturalSort").MakeGenericMethod (typeof (int)).Invoke (null, new object[] {en });
-			assembly.Save ("res.exe");
+			assembly.Save ("res1.exe");
  			res &= en == t.GetMethod ("NaturalSort").MakeGenericMethod (typeof (int)).Invoke (null, new object[] {en });
 
-			Thread.GetDomain ().ExecuteAssembly(Path.GetTempPath () + Path.DirectorySeparatorChar +"res.exe");
+			Thread.GetDomain ().ExecuteAssembly(Path.GetTempPath () + Path.DirectorySeparatorChar +"res1.exe");
  			return res;
        }
 }
