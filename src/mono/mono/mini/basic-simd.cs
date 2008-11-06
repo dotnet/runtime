@@ -2,16 +2,29 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
-	public static unsafe int test_vector2ul_slr () {
+	static float use_getter_with_byref (ref Vector4f a) {
+		return a.W;
+	}
+ 
+	public static int test_0_accessor_and_byref_var () {
+		Vector4f a = new Vector4f (1, 2, 3, 4);
+		if (use_getter_with_byref (ref a) != 4)
+			return 1;
+		return 0;
+	}
+	
+	public static unsafe int test_0_vector2ul_slr () {
 		Vector2ul a = new Vector2ul (1, 6);
 
 		Vector2ul c = a >> 1;
-
-		return 0;
+		if (c.X != 0)
+			return 1;
+		if (c.Y != 3)
+			return 2;	
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_cmp_gt () {
+	public static unsafe int test_0_vector2l_cmp_gt () {
 		Vector2l a = new Vector2l (10, 5);
 		Vector2l b = new Vector2l (-1, 5);
 
@@ -24,7 +37,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_cmp_eq () {
+	public static unsafe int test_0_vector2l_cmp_eq () {
 		Vector2l a = new Vector2l (0xFF,          5);
 		Vector2l b = new Vector2l (0xFF000000FFL, 5);
 
@@ -37,7 +50,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_srl () {
+	public static unsafe int test_0_vector2l_srl () {
 		Vector2l a = new Vector2l (1, 6);
 
 		Vector2l c = Vector2l.ShiftRightLogic (a, 1);
@@ -49,7 +62,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_unpack_high () {
+	public static unsafe int test_0_vector2l_unpack_high () {
 		Vector2l a = new Vector2l (1, 6);
 		Vector2l b = new Vector2l (3, 4);
 
@@ -62,7 +75,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_unpack_low () {
+	public static unsafe int test_0_vector2l_unpack_low () {
 		Vector2l a = new Vector2l (1, 6);
 		Vector2l b = new Vector2l (3, 4);
 
@@ -75,7 +88,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_xor () {
+	public static unsafe int test_0_vector2l_xor () {
 		Vector2l a = new Vector2l (1, 6);
 		Vector2l b = new Vector2l (3, 4);
 
@@ -88,7 +101,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_or () {
+	public static unsafe int test_0_vector2l_or () {
 		Vector2l a = new Vector2l (1, 6);
 		Vector2l b = new Vector2l (3, 4);
 
@@ -101,7 +114,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_and () {
+	public static unsafe int test_0_vector2l_and () {
 		Vector2l a = new Vector2l (1, 6);
 		Vector2l b = new Vector2l (3, 4);
 
@@ -114,7 +127,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_shl() {
+	public static unsafe int test_0_vector2l_shl() {
 		Vector2l a = new Vector2l (1, 6);
 
 		Vector2l c = a << 3;
@@ -125,7 +138,7 @@ public class SimdTests {
 			return 2;
 		return 0;
 	}
-	public static unsafe int test_vector2l_sub() {
+	public static unsafe int test_0_vector2l_sub() {
 		Vector2l a = new Vector2l (1, 6);
 		Vector2l b = new Vector2l (3, 4);
 
@@ -138,7 +151,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector2l_add () {
+	public static unsafe int test_0_vector2l_add () {
 		Vector2l a = new Vector2l (1, 2);
 		Vector2l b = new Vector2l (3, 4);
 
