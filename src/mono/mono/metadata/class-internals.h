@@ -276,8 +276,10 @@ struct _MonoClass {
 	guint unicode         : 1; /* class uses unicode char when marshalled */
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
 	/* next byte */
-	guint min_align       : 4;
+	guint8 min_align;
+	/* next byte */
 	guint packing_size    : 4;
+	/* still 4 bits free */
 	/* next byte */
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
 	guint has_finalize    : 1; /* class has its own Finalize impl */ 

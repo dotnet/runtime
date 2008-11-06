@@ -10271,7 +10271,7 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 			 * and OP_MEMSET ignores alignment).
 			 */
 			if (MONO_TYPE_ISSTRUCT (t))
-				align = sizeof (gpointer);
+				align = MAX (sizeof (gpointer), mono_class_min_align (mono_class_from_mono_type (t)));
 
 			if (backward) {
 				offset += size;
@@ -10477,7 +10477,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 			 * and OP_MEMSET ignores alignment).
 			 */
 			if (MONO_TYPE_ISSTRUCT (t)) {
-				align = sizeof (gpointer);
+				align = MAX (sizeof (gpointer), mono_class_min_align (mono_class_from_mono_type (t)));
 				/* 
 				 * Align the size too so the code generated for passing vtypes in
 				 * registers doesn't overwrite random locals.

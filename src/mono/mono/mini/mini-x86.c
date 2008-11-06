@@ -897,6 +897,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		offset += (locals_stack_align - 1);
 		offset &= ~(locals_stack_align - 1);
 	}
+	/*
+	 * EBP is at alignment 8 % MONO_ARCH_FRAME_ALIGNMENT, so if we
+	 * have locals larger than 8 bytes we need to make sure that
+	 * they have the appropriate offset.
+	 */
+	if (MONO_ARCH_FRAME_ALIGNMENT > 8 && locals_stack_align > 8)
+		offset += MONO_ARCH_FRAME_ALIGNMENT - sizeof (gpointer) * 2;
 	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 		if (offsets [i] != -1) {
 			MonoInst *inst = cfg->varinfo [i];

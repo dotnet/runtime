@@ -1015,6 +1015,9 @@ mono_class_setup_fields (MonoClass *class)
 		class->min_align = 1;
 	}
 
+	if (class->simd_type)
+		class->min_align = 16;
+
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (class->image, class->type_token, &packing_size, &real_size);
 
