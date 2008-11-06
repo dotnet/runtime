@@ -183,8 +183,6 @@ decode_string_value (guint8 *buf, guint8 **endbuf, guint8 *limit)
 void
 mono_attach_parse_options (char *options)
 {
-	config.enabled = TRUE;
-
 	if (!options)
 		return;
 	if (!strcmp (options, "disable"))
@@ -195,6 +193,8 @@ void
 mono_attach_init (void)
 {
 	InitializeCriticalSection (&agent_mutex);
+
+	config.enabled = TRUE;
 }
 
 /**
