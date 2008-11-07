@@ -9366,7 +9366,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				MONO_ADD_INS (init_localsbb, ins);
 				EMIT_NEW_LOCSTORE (cfg, store, i, ins);
 			} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
-+				   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (ptype))) {
+				   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (ptype))) {
 				MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type (ptype));
 			} else {
 				MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
