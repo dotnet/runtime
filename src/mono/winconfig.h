@@ -84,6 +84,9 @@
 /* Define to 1 if you have the <curses.h> header file. */
 /* #undef HAVE_CURSES_H */
 
+/* Define to 1 if you have the <dirent.h> header file. */
+/* #define HAVE_DIRENT_H 1 */
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */
 
@@ -348,7 +351,7 @@
 /* #undef HAVE_STATVFS */
 
 /* Define to 1 if you have the <stdint.h> header file. */
-#define HAVE_STDINT_H 1
+/* #define HAVE_STDINT_H 1 */
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H 1
@@ -495,7 +498,7 @@
 /* #undef HAVE_VALGRIND_MEMCHECK_H */
 
 /* Support for the visibility ("hidden") attribute */
-#define HAVE_VISIBILITY_HIDDEN 1
+/* #define HAVE_VISIBILITY_HIDDEN 1 */
 
 /* Define to 1 if you have the `vsnprintf' function. */
 /* #undef HAVE_VSNPRINTF */
@@ -510,7 +513,7 @@
 /* #undef HAVE_WRITE_BARRIERS */
 
 /* Have system zlib */
-#define HAVE_ZLIB 1
+/* #define HAVE_ZLIB 1 */
 
 /* Architecture uses registers for Parameters */
 /* #undef MONO_ARCH_REGPARMS */

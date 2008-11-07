@@ -1,5 +1,13 @@
 2008-11-07  Bill Holmes  <billholmes54@gmail.com>
 
+	* monoposixhelper.def, monoposixhelper.vcproj : added.
+
+	* mono.sln : Adding the monoposixhelper project.
+
+	Code is contributed under MIT/X11 license.
+
+2008-11-07  Bill Holmes  <billholmes54@gmail.com>
+
 	* test_eglib.vcproj : Adding unicode.c to the project.
 
 	* mono.sln : Adding the correct dependencies for e-glib.
