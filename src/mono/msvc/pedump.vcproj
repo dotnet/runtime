@@ -70,6 +70,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libgc.lib mono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -155,6 +156,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -231,6 +233,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -310,6 +313,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -396,6 +400,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libgc.lib mono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
@@ -481,6 +486,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
@@ -557,6 +563,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
@@ -636,6 +643,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"

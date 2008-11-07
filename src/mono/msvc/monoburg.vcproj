@@ -68,6 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -152,6 +153,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -232,6 +234,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -315,6 +318,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib ws2_32.lib gthread-2.0.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -400,6 +404,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
@@ -484,6 +489,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
@@ -564,6 +570,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
@@ -647,6 +654,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"

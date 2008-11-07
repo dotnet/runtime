@@ -65,6 +65,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="Ws2_32.lib Psapi.lib glib-2.0.lib gthread-2.0.lib gmodule-2.0.lib"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				GenerateDebugInformation="true"
@@ -145,6 +146,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="Ws2_32.lib Psapi.lib"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				GenerateDebugInformation="true"
@@ -224,6 +226,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="Ws2_32.lib Psapi.lib"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 			/>
@@ -299,6 +302,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="Ws2_32.lib Psapi.lib"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				TargetMachine="17"
@@ -375,6 +379,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="Ws2_32.lib Psapi.lib eglib.lib"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				GenerateDebugInformation="true"
@@ -455,6 +460,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="Ws2_32.lib Psapi.lib eglib.lib"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				GenerateDebugInformation="true"
@@ -534,6 +540,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="Ws2_32.lib Psapi.lib eglib.lib"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 			/>
@@ -609,6 +616,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="Ws2_32.lib Psapi.lib eglib.lib"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				TargetMachine="17"
@@ -745,6 +753,10 @@
 			</File>
 			<File
 				RelativePath="..\eglib\test\timer.c"
+				>
+			</File>
+			<File
+				RelativePath="..\eglib\test\unicode.c"
 				>
 			</File>
 			<File

@@ -70,6 +70,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib mono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -155,6 +156,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
@@ -231,6 +233,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				GenerateDebugInformation="true"
@@ -309,6 +312,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				GenerateDebugInformation="true"
@@ -394,6 +398,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib mono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
@@ -479,6 +484,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib ws2_32.lib gthread-2.0.lib gobject-2.0.lib libmono.lib Psapi.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
@@ -555,6 +561,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				GenerateDebugInformation="true"
@@ -633,6 +640,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;"
 				GenerateDebugInformation="true"

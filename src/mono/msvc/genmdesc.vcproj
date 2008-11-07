@@ -71,6 +71,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
@@ -160,6 +161,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
@@ -248,6 +250,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
@@ -337,6 +340,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="glib-2.0.lib gmodule-2.0.lib"
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
@@ -425,6 +429,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
@@ -514,6 +519,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
@@ -602,6 +608,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
@@ -691,6 +698,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="false"
 				AdditionalDependencies="eglib.lib ws2_32.lib "
 				OutputFile="$(OutDir)/genmdesc.exe"
 				SuppressStartupBanner="true"
