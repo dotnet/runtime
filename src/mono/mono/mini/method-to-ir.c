@@ -3879,7 +3879,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		 * value is a constant.
 		 */
 		if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
-			if (fsig->params [1]->type == MONO_TYPE_I4 && args [2]->opcode == OP_ICONST) {
+			if ((fsig->params [1]->type == MONO_TYPE_I4 ||
+						(sizeof (gpointer) == 4 && fsig->params [1]->type == MONO_TYPE_I))
+					&& args [2]->opcode == OP_ICONST) {
 				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_IMM_I4);
 				ins->dreg = alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
