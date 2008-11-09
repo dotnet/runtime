@@ -641,6 +641,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 
 	g_assert (code - buf <= tramp_size);
 
+	*code_size = code - buf;
+
 	return buf;
 }
 

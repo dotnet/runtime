@@ -2198,6 +2198,7 @@ get_shared_got_offset (MonoAotCompile *acfg, MonoJumpInfo *ji)
 static void
 add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index)
 {
+	g_assert (method);
 	if (!g_hash_table_lookup (acfg->method_indexes, method)) {
 		g_ptr_array_add (acfg->methods, method);
 		g_hash_table_insert (acfg->method_indexes, method, GUINT_TO_POINTER (index + 1));
@@ -2402,13 +2403,17 @@ add_wrappers (MonoAotCompile *acfg)
 		orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 		g_assert (orig_method);
 		mono_method_desc_free (desc);
-		add_method (acfg, mono_monitor_get_fast_path (orig_method));
+		method = mono_monitor_get_fast_path (orig_method);
+		if (method)
+			add_method (acfg, method);
 
 		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
 		orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
 		g_assert (orig_method);
 		mono_method_desc_free (desc);
-		add_method (acfg, mono_monitor_get_fast_path (orig_method));
+		method = mono_monitor_get_fast_path (orig_method);
+		if (method)
+			add_method (acfg, method);
 	}
 
 	/* remoting-invoke wrappers */
@@ -3474,7 +3479,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
 		emit_named_code (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji);
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__arm__)
 		for (i = 0; i < 128; ++i) {
 			int offset;
 

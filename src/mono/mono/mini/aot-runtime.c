@@ -2681,7 +2681,12 @@ load_named_code (MonoAotModule *amodule, const char *name)
 					int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));
 					target = (gpointer)mono_get_trampoline_func (tramp_type2);
 				} else if (strstr (ji->data.name, "specific_trampoline_lazy_fetch_") == ji->data.name) {
-					guint32 slot = atoi (ji->data.name + strlen ("specific_trampoline_lazy_fetch_"));
+					/* atoll is needed because the the offset is unsigned */
+					guint32 slot;
+					int res;
+
+					res = sscanf (ji->data.name, "specific_trampoline_lazy_fetch_%u", &slot);
+					g_assert (res == 1);
 					target = mono_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				} else if (!strcmp (ji->data.name, "specific_trampoline_monitor_enter")) {
 					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
