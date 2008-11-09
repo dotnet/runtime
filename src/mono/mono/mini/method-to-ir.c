@@ -4157,6 +4157,10 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			MonoBasicBlock *prev = ebblock->in_bb [0];
 			mono_merge_basic_blocks (cfg, prev, ebblock);
 			cfg->cbb = prev;
+			if ((prev_cbb->out_count == 1) && (prev_cbb->out_bb [0]->in_count == 1) && (prev_cbb->out_bb [0] == prev)) {
+				mono_merge_basic_blocks (cfg, prev_cbb, prev);
+				cfg->cbb = prev_cbb;
+			}
 		} else {
 			cfg->cbb = ebblock;
 		}
