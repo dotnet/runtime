@@ -170,12 +170,6 @@ load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
 				 guint32 got_index, guint32 **got_slots, 
 				 guint8 *buf, guint8 **endbuf);
 
-static inline gboolean 
-is_got_patch (MonoJumpInfoType patch_type)
-{
-	return TRUE;
-}
-
 /*****************************************************/
 /*                 AOT RUNTIME                       */
 /*****************************************************/
@@ -1893,11 +1887,10 @@ static gpointer
 load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, MonoMethod *method, guint32 token, int method_index)
 {
 	MonoClass *klass;
-	MonoJumpInfo *patch_info = NULL;
 	gboolean from_plt = method == NULL;
 	MonoMemPool *mp;
 	int i, pindex, got_index = 0, n_patches, used_strings;
-	gboolean non_got_patches, keep_patches = TRUE;
+	gboolean keep_patches = TRUE;
 	guint8 *p, *ex_info;
 	MonoJitInfo *jinfo = NULL;
 	guint8 *code, *info;
@@ -2001,30 +1994,15 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		if (patches == NULL)
 			goto cleanup;
 
-		non_got_patches = FALSE;
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
 
-			if (is_got_patch (ji->type)) {
-				if (!aot_module->got [got_slots [pindex]]) {
-					aot_module->got [got_slots [pindex]] = mono_resolve_patch_target (method, domain, code, ji, TRUE);
-					if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
-						register_jump_target_got_slot (domain, ji->data.method, &(aot_module->got [got_slots [pindex]]));
-				}
-				ji->type = MONO_PATCH_INFO_NONE;
+			if (!aot_module->got [got_slots [pindex]]) {
+				aot_module->got [got_slots [pindex]] = mono_resolve_patch_target (method, domain, code, ji, TRUE);
+				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
+					register_jump_target_got_slot (domain, ji->data.method, &(aot_module->got [got_slots [pindex]]));
 			}
-			else
-				non_got_patches = TRUE;
-		}
-		if (non_got_patches) {
-			if (!jinfo) {
-				ex_info = &aot_module->ex_info [aot_module->ex_info_offsets [mono_metadata_token_index (token) - 1]];
-				jinfo = decode_exception_debug_info (aot_module, domain, method, ex_info, code);
-			}
-
-			mono_arch_flush_icache (code, jinfo->code_size);
-			make_writable (code, jinfo->code_size);
-			mono_arch_patch_code (method, domain, code, patch_info, TRUE);
+			ji->type = MONO_PATCH_INFO_NONE;
 		}
 
 		g_free (got_slots);
