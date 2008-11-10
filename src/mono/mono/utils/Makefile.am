@@ -7,7 +7,7 @@ if ENABLE_DTRACE
 BUILT_SOURCES = mono-dtrace.h
 
 mono-dtrace.h: $(top_srcdir)/data/mono.d
-	$(DTRACE) $(DTRACEFLAGS) -h -s $(top_srcdir)/data/mono.d -o $@
+	$(DTRACE) $(DTRACEFLAGS) -s $(top_srcdir)/data/mono.d -o $@
 
 endif
 
