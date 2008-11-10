@@ -103,7 +103,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runmdesc.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runmdesc.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -193,7 +193,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runmdesc.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runmdesc.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -282,7 +282,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runmdesc.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runmdesc.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -372,7 +372,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runmdesc.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runmdesc.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -461,7 +461,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runmdesc.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runmdesc.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -640,7 +640,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runmdesc.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runmdesc.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -730,7 +730,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runmdesc.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runmdesc.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 	</Configurations>

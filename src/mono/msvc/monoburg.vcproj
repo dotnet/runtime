@@ -99,7 +99,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runburg.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -184,7 +184,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runburg.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -267,7 +267,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runburg.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -351,7 +351,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runburg.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -435,7 +435,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runburg.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -520,7 +520,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runburg.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -603,7 +603,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runburg.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 		<Configuration
@@ -687,7 +687,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="runburg.bat $(TargetPath) $(PlatformName)"
+				CommandLine="runburg.bat &quot;$(TargetPath)&quot; $(PlatformName)"
 			/>
 		</Configuration>
 	</Configurations>
