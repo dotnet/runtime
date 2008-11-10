@@ -191,9 +191,9 @@ mono_process_get_name (gpointer pid, char *buf, int len)
  * /proc/pid/stat format:
  * pid (cmdname) S 
  * 	[0] ppid pgid sid tty_nr tty_pgrp flags min_flt cmin_flt maj_flt cmaj_flt
- * 	[10] utime stime cutime cstime prio nice threads start_time vsize rss
- * 	[20] rsslim start_code end_code start_stack esp eip pending blocked sigign sigcatch
- * 	[30] wchan 0 0 exit_signal cpu rt_prio policy
+ * 	[10] utime stime cutime cstime prio nice threads 0 start_time vsize rss
+ * 	[20] rss rsslim start_code end_code start_stack esp eip pending blocked sigign
+ * 	[30] sigcatch wchan 0 0 exit_signal cpu rt_prio policy
  */
 
 #define RET_ERROR(err) do {	\
@@ -329,6 +329,10 @@ mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProces
 		return val;
 	case MONO_PROCESS_FAULTS:
 		return get_process_stat_item (rpid, 6, TRUE, error);
+	case MONO_PROCESS_ELAPSED:
+		return get_process_stat_item (rpid, 18, FALSE, error) / get_user_hz ();
+	case MONO_PROCESS_PPID:
+		return get_process_stat_time (rpid, 0, FALSE, error);
 	}
 	return 0;
 }
