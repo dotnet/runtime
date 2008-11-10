@@ -265,6 +265,7 @@ fi
 AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h)
+AC_CHECK_HEADERS(sys/user.h)
 
 AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
 if test x$have_zlib = xyes; then
@@ -1469,6 +1470,14 @@ if test x$platform_win32 = xno; then
 		AC_CHECK_LIB(attr, lsetxattr, XATTR_LIB="-lattr",)
 	)
 	AC_SUBST(XATTR_LIB)
+
+	dnl kinfo_proc.kp_proc works on darwin but fails on other simil-bsds
+	AC_CHECK_MEMBERS(
+		[struct kinfo_proc.kp_proc],,, 
+		[#include <sys/types.h>
+		 #include <sys/sysctl.h>
+		 #include <sys/proc.h>
+		 ])
 
 	dnl *********************************
 	dnl *** Checks for Windows compilation ***

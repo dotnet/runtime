@@ -1,3 +1,8 @@
+
+Mon Nov 10 17:37:08 CET 2008 Paolo Molaro <lupus@ximian.com>
+
+	* configure.in: check for sys/user.h and struct kinfo_proc members.
+
 2008-11-07  Bill Holmes  <billholmes54@gmail.com>
 
 	* winconfig.h : Removing HAVE_DIRENT_H, HAVE_STDINT_H,
