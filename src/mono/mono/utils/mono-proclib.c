@@ -17,6 +17,16 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/proc.h>
+#ifdef HAVE_SYS_USER_H
+#include <sys/user.h>
+#endif
+#ifdef HAVE_STRUCT_KINFO_PROC_KP_PROC
+#define kinfo_pid_member kp_proc.p_pid
+#define kinfo_name_member kp_proc.p_comm
+#else
+#define kinfo_pid_member ki_pid
+#define kinfo_name_member ki_comm
+#endif
 #define USE_SYSCTL 1
 #endif
 
@@ -55,7 +65,7 @@ mono_process_list (int *size)
 	res = data_len/sizeof (struct kinfo_proc);
 	buf = g_realloc (buf, res * sizeof (void*));
 	for (i = 0; i < res; ++i)
-		buf [i] = GINT_TO_POINTER (processes [i].kp_proc.p_pid);
+		buf [i] = GINT_TO_POINTER (processes [i].kinfo_pid_member);
 	free (processes);
 	if (size)
 		*size = res;
@@ -162,7 +172,7 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 	if (res < 0 || data_len != sizeof (struct kinfo_proc)) {
 		return buf;
 	}
-	strncpy (buf, processi.kp_proc.p_comm, len - 1);
+	strncpy (buf, processi.kinfo_name_member, len - 1);
 	return buf;
 #else
 	char fname [128];
