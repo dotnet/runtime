@@ -1858,6 +1858,7 @@ typedef struct unload_data {
 	char *failure_reason;
 } unload_data;
 
+
 static guint32 WINAPI
 unload_thread_main (void *arg)
 {
@@ -1873,6 +1874,11 @@ unload_thread_main (void *arg)
 	 */
 	if (!mono_threads_abort_appdomain_threads (domain, -1)) {
 		data->failure_reason = g_strdup_printf ("Aborting of threads in domain %s timed out.", domain->friendly_name);
+		return 1;
+	}
+
+	if (!mono_thread_pool_remove_domain_jobs (domain, -1)) {
+		data->failure_reason = g_strdup_printf ("Cleanup of threadpool jobs of domain %s timed out.", domain->friendly_name);
 		return 1;
 	}
 

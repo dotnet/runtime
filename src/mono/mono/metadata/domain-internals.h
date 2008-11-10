@@ -215,6 +215,10 @@ struct _MonoDomain {
 
 	/* Information maintained by the JIT engine */
 	gpointer runtime_info;
+
+	/*thread pool jobs, used to coordinate shutdown.*/
+	int					threadpool_jobs;
+	HANDLE				cleanup_semaphore;
 };
 
 typedef struct  {
