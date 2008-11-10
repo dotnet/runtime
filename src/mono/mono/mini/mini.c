@@ -1954,7 +1954,7 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 
 	MONO_INST_NEW (cfg, temp, OP_ICONST);
 	temp->inst_c0 = ins->inst_imm;
-	temp->dreg = mono_regstate_next_int (cfg->rs);
+	temp->dreg = cfg->globalra ? mono_alloc_ireg (cfg) : mono_regstate_next_int (cfg->rs);
 	mono_bblock_insert_before_ins (bb, ins, temp);
 	ins->opcode = mono_op_imm_to_op (ins->opcode);
 	if (ins->opcode == OP_LOCALLOC)
@@ -1962,7 +1962,7 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	else
 		ins->sreg2 = temp->dreg;
 
-	bb->max_vreg = MAX (bb->max_vreg, cfg->rs->next_vreg);
+	bb->max_vreg = MAX (bb->max_vreg, cfg->globalra ? cfg->next_vreg : cfg->rs->next_vreg);
 }
 
 /*

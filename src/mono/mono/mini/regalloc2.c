@@ -212,26 +212,6 @@ g_slist_append_mempool (MonoMemPool *mp, GSList   *list,
 	}
 }
 
-static void
-insert_after_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *insert_after)
-{
-	if (insert_after == NULL) {
-		insert_after = bb->code;
-		bb->code = ins;
-		ins->next = insert_after;
-
-		if (bb->last_ins == NULL)
-			bb->last_ins = ins;
-	}
-	else {
-		ins->next = insert_after->next;
-		insert_after->next = ins;
-
-		if (bb->last_ins == insert_after)
-			bb->last_ins = ins;
-	}
-}
-
 static MonoInst*
 create_move (MonoCompile *cfg, int dreg, int sreg)
 {
@@ -261,7 +241,7 @@ emit_move (MonoCompile *cfg, int dreg, int sreg, MonoInst *insert_after)
 {
 	MonoInst *ins = create_move (cfg, dreg, sreg);
 
-	insert_after_ins (cfg->cbb, ins, insert_after);
+	mono_bblock_insert_after_ins (cfg->cbb, insert_after, ins);
 }
 
 static void
@@ -269,7 +249,7 @@ emit_fp_move (MonoCompile *cfg, int dreg, int sreg, MonoInst *insert_after)
 {
 	MonoInst *ins = create_fp_move (cfg, dreg, sreg);
 
-	insert_after_ins (cfg->cbb, ins, insert_after);
+	mono_bblock_insert_after_ins (cfg->cbb, insert_after, ins);
 }
 
 static void
@@ -278,8 +258,8 @@ emit_nop (MonoCompile *cfg, MonoInst *insert_after)
 	MonoInst *ins;
 
 	MONO_INST_NEW (cfg, ins, OP_NOP);
-	
-	insert_after_ins (cfg->cbb, ins, insert_after);
+
+	mono_bblock_insert_after_ins (cfg->cbb, insert_after, ins);	
 }
 
 /**
@@ -295,13 +275,13 @@ handle_reg_constraints (MonoCompile *cfg)
 	int i;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *ins = bb->code;	
+		MonoInst *ins;
 		MonoInst *prev = NULL;
 
 		if (cfg->verbose_level > 1) mono_print_bb (bb, "BEFORE HANDLE-REG-CONSTRAINTS ");
 
 		cfg->cbb = bb;
-		for (; ins; ins = ins->next) {
+		MONO_BB_FOR_EACH_INS (bb, ins) {
 			const char *spec = ins_get_spec (ins->opcode);
 			int dest_sreg1, dest_sreg2, dest_dreg;
 
@@ -333,7 +313,7 @@ handle_reg_constraints (MonoCompile *cfg)
 					reg = regpair & 0xffffff;
 
 					move = create_move (cfg, hreg, reg);
-					insert_after_ins (bb, move, prev);
+					mono_bblock_insert_after_ins (bb, prev, move);
 					prev = move;
 				}
 
@@ -347,7 +327,7 @@ handle_reg_constraints (MonoCompile *cfg)
 					reg = regpair & 0xffffff;
 
 					move = create_fp_move (cfg, hreg + MONO_MAX_IREGS, reg);
-					insert_after_ins (bb, move, prev);
+					mono_bblock_insert_after_ins (bb, prev, move);
 					prev = move;
 				}
 			}
@@ -359,7 +339,7 @@ handle_reg_constraints (MonoCompile *cfg)
 					MonoInst *move;
 					g_assert (spec [MONO_INST_DEST] != 'f');
 					move = create_move (cfg, new_sreg2, ins->sreg2);
-					insert_after_ins (cfg->cbb, move, prev);
+					mono_bblock_insert_after_ins (bb, prev, move);
 					prev = move;
 					ins->sreg2 = new_sreg2;
 				}
@@ -460,6 +440,8 @@ handle_reg_constraints (MonoCompile *cfg)
 
 		if (cfg->verbose_level > 1) mono_print_bb (bb, "AFTER HANDLE-REG-CONSTRAINTS ");
 	}
+
+	mono_verify_cfg (cfg);
 }
 
 /*
@@ -473,9 +455,9 @@ collect_fp_vregs (MonoCompile *cfg, MonoRegallocContext *ctx)
 	MonoBasicBlock *bb;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *ins = bb->code;	
+		MonoInst *ins;
 
-		for (; ins; ins = ins->next) {
+		MONO_BB_FOR_EACH_INS (bb, ins) {
 			const char *spec = ins_get_spec (ins->opcode);
 
 			if (G_UNLIKELY (sreg1_is_fp (spec) || sreg2_is_fp (spec) || dreg_is_fp (spec))) {
@@ -586,7 +568,7 @@ compute_gen_kill_sets (MonoCompile *cfg, MonoRegallocContext *ctx)
 		int j;
 #endif
 
-		for (ins = bb->code; ins; ins = ins->next)
+		MONO_BB_FOR_EACH_INS (bb, ins)
 			update_gen_kill_set (cfg, ctx, bb, ins);
 
 #ifdef DEBUG_LIVENESS
@@ -1211,7 +1193,7 @@ linear_scan (MonoCompile *cfg, MonoRegallocContext *ctx)
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 
-	LSCAN_DEBUG (printf ("\nLinear Scan 2 for %s:\n", mono_method_full_name (cfg->method, TRUE)));
+	LSCAN_DEBUG (printf ("\nLINEAR SCAN 2 for %s:\n", mono_method_full_name (cfg->method, TRUE)));
 
 	header = mono_method_get_header (cfg->method);
 
@@ -1885,17 +1867,13 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 
 							NEW_STORE_MEMBASE (cfg, store, mono_type_to_store_membase (cfg, interval->type), cfg->frame_reg, offset, child1->hreg);
 
-							if (prev)
-								prev->next = store;
-							else
-								bb->code = store;
-							store->next = ins;
+							mono_bblock_insert_after_ins (bb, prev, store);
 							prev = store;
 							g_hash_table_insert (ctx->spill_ins, store, store);
 
 							NEW_LOAD_MEMBASE (cfg, load, mono_type_to_load_membase (cfg, interval->type), child2->hreg, cfg->frame_reg, offset);
 
-							insert_after_ins (bb, load, ins);
+							mono_bblock_insert_after_ins (bb, ins, load);
 							g_hash_table_insert (ctx->spill_ins, load, load);
 
 							LSCAN_DEBUG (printf (" Spill store/load added for R%d (R%d -> R%d) at %x\n", interval->vreg, child1->vreg, child2->vreg, pos));
@@ -1904,11 +1882,7 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 
 							NEW_STORE_MEMBASE (cfg, store, mono_type_to_store_membase (cfg, interval->type), cfg->frame_reg, child2->offset, child1->hreg);
 
-							if (prev)
-								prev->next = store;
-							else
-								bb->code = store;
-							store->next = ins;
+							mono_bblock_insert_after_ins (bb, prev, store);
 							prev = store;
 							g_hash_table_insert (ctx->spill_ins, store, store);
 
@@ -1917,11 +1891,7 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 							g_assert (child1->offset != -1);
 							NEW_LOAD_MEMBASE (cfg, load, mono_type_to_load_membase (cfg, interval->type), child2->hreg, cfg->frame_reg, child1->offset);
 
-							if (prev)
-								prev->next = load;
-							else
-								bb->code = load;
-							load->next = ins;
+							mono_bblock_insert_before_ins (bb, ins, load);
 							prev = load;
 							g_hash_table_insert (ctx->spill_ins, load, load);
 
@@ -2014,7 +1984,7 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 						if (add_at_head) {
 							mono_add_ins_to_end (bb, ins);
 						} else {
-							insert_after_ins (out_bb, ins, insert_after);
+							mono_bblock_insert_after_ins (out_bb, insert_after, ins);
 							insert_after = ins;
 						}
 					}
@@ -2045,7 +2015,7 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 					if (add_at_head) {
 						mono_add_ins_to_end (bb, ins);
 					} else {
-						insert_after_ins (out_bb, ins, insert_after);
+						mono_bblock_insert_after_ins (out_bb, insert_after, ins);
 						insert_after = ins;
 					}
 				}
@@ -2057,7 +2027,7 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 						if (add_at_head) {
 							mono_add_ins_to_end (bb, ins);
 						} else {
-							insert_after_ins (out_bb, ins, insert_after);
+							mono_bblock_insert_after_ins (out_bb, insert_after, ins);
 							insert_after = ins;
 						}
 					}
@@ -2086,7 +2056,7 @@ rewrite_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 
 		pos = (bb->dfn << 16);
 		prev = NULL;
-		for (ins = bb->code; ins; ins = ins->next) {
+		MONO_BB_FOR_EACH_INS (bb, ins) {
 			const char *spec = INS_INFO (ins->opcode);
 			pos += INS_POS_INTERVAL;
 
@@ -2122,13 +2092,8 @@ rewrite_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 					MONO_INST_NEW (cfg, move, OP_MOVE);
 					move->dreg = l->hreg;
 					move->sreg1 = cfg->frame_reg;
+					mono_bblock_insert_before_ins (bb, ins, move);
 
-					if (prev == NULL)
-						bb->code = move;
-					else
-						prev->next = move;
-
-					move->next = ins;
 					ins->opcode = OP_ADD_IMM;
 					ins->dreg = l->hreg;
 					ins->sreg1 = l->hreg;

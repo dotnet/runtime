@@ -1741,7 +1741,11 @@ mono_local_deadce (MonoCompile *cfg)
 					/* Happens with CMOV instructions */
 					if (ins->prev && ins->prev->opcode == OP_ICOMPARE_IMM) {
 						MonoInst *prev = ins->prev;
-						MONO_DELETE_INS (bb, prev);
+						/* 
+						 * Can't use DELETE_INS since that would interfere with the
+						 * FOR_EACH_INS loop.
+						 */
+						NULLIFY_INS (prev);
 					}
 					//printf ("DEADCE: "); mono_print_ins (ins);
 					MONO_DELETE_INS (bb, ins);
