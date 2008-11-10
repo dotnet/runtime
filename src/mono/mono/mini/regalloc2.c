@@ -1664,6 +1664,14 @@ assign_spill_slots (MonoCompile *cfg, MonoRegallocContext *ctx)
 		LSCAN_DEBUG (mono_linterval_print (interval->interval));
 		LSCAN_DEBUG (printf ("\n"));
 	}
+
+	/* Write back information needed by the backend */
+	if (cfg->rgctx_var) {
+		/* rgctx_var is marked as volatile, so it won't be allocated to a register */
+		cfg->rgctx_var->opcode = OP_REGOFFSET;
+		cfg->rgctx_var->inst_basereg = cfg->frame_reg;
+		cfg->rgctx_var->inst_offset = ctx->varinfo [cfg->rgctx_var->dreg].offset;
+	}
 }
 
 /**
