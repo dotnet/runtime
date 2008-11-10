@@ -423,7 +423,8 @@ handle_reg_constraints (MonoCompile *cfg)
 
 		/* Add move of return value */
 		for (i = 0; i < bb->out_count; ++i) {
-			if (cfg->ret && !cfg->vret_addr && !MONO_TYPE_ISSTRUCT (sig->ret) && bb->out_bb [i] == cfg->bb_exit) {
+			/* bb->dfn == 0 -> unreachable */
+			if (cfg->ret && !cfg->vret_addr && !MONO_TYPE_ISSTRUCT (sig->ret) && bb->out_bb [i] == cfg->bb_exit && bb->dfn) {
 				MonoInst *ins = NULL;
 				int hreg;
 
@@ -1411,7 +1412,8 @@ linear_scan (MonoCompile *cfg, MonoRegallocContext *ctx)
 			MonoRegallocInterval *to_spill;
 			guint32 split_pos;
 
-			g_assert (!current->is_volatile);
+			// FIXME: Why was this needed ?
+			//g_assert (!current->is_volatile);
 
 			/* Spill the first */
 			/* FIXME: Optimize the selection of the interval */
