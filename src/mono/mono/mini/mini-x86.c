@@ -528,7 +528,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 		offset += size;
 	}
 
-	if (mono_do_x86_stack_align)
+	if (mono_do_x86_stack_align && !CALLCONV_IS_STDCALL (csig))
 		align = MONO_ARCH_FRAME_ALIGNMENT;
 	else
 		align = 4;
