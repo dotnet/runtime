@@ -565,3 +565,8 @@ version.h: Makefile
 	else \
 		echo "#define FULL_VERSION \"tarball\""; \
 	fi > version.h
+
+# Utility target for patching libtool to speed up linking
+patch-libtool:
+	sed -e 's,if (for obj in $$oldobjs,if (for obj in "",g' < ../../libtool > 2; mv 2 ../../libtool
+	chmod a+x ../../libtool
