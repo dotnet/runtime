@@ -33,7 +33,6 @@
 #include <ctype.h>
 #include <string.h>
 #ifndef PLATFORM_WIN32
-#include <sys/mman.h>
 #include <sys/time.h>
 #else
 #include <winsock2.h>

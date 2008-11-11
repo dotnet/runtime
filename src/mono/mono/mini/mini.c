@@ -13551,15 +13551,6 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 
 	GET_CONTEXT;
 
-#ifdef MONO_ARCH_USE_SIGACTION
-	if (debug_options.collect_pagefault_stats) {
-		if (mono_aot_is_pagefault (info->si_addr)) {
-			mono_aot_handle_pagefault (info->si_addr);
-			return;
-		}
-	}
-#endif
-
 	/* The thread might no be registered with the runtime */
 	if (!mono_domain_get () || !jit_tls)
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
@@ -13931,7 +13922,7 @@ remove_signal_handler (int signo)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 
-	g_assert (sigaction (signo, &sa, NULL) != -1);
+	sigaction (signo, &sa, NULL);
 }
 #endif
 
@@ -14359,10 +14350,6 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
  	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
-	if (debug_options.collect_pagefault_stats) {
-		mono_aot_set_make_unreadable (TRUE);
-	}
-
 	if (runtime_version)
 		domain = mono_init_version (filename, runtime_version);
 	else
@@ -14684,9 +14671,6 @@ print_jit_stats (void)
 			g_print ("LinkDemand (pinvoke)  : %ld\n", mono_jit_stats.cas_linkdemand_pinvoke);
 			g_print ("LinkDemand (aptc)     : %ld\n", mono_jit_stats.cas_linkdemand_aptc);
 			g_print ("Demand (code gen)     : %ld\n", mono_jit_stats.cas_demand_generation);
-		}
-		if (debug_options.collect_pagefault_stats) {
-			g_print ("AOT pagefaults        : %d\n", mono_aot_get_n_pagefaults ());
 		}
 
 		g_free (mono_jit_stats.max_ratio_method);

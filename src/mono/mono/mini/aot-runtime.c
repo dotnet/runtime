@@ -152,7 +152,6 @@ static gboolean spawn_compiler = TRUE;
 static gint32 mono_last_aot_method = -1;
 
 static gboolean make_unreadable = FALSE;
-static guint32 n_pagefaults = 0;
 static guint32 name_table_accesses = 0;
 
 /* Used to speed-up find_aot_module () */
@@ -2329,106 +2328,6 @@ find_aot_module (guint8 *code)
 }
 
 /*
- * mono_aot_set_make_unreadable:
- *
- *   Set whenever to make all mmaped memory unreadable. In conjuction with a
- * SIGSEGV handler, this is useful to find out which pages the runtime tries to read.
- */
-void
-mono_aot_set_make_unreadable (gboolean unreadable)
-{
-	make_unreadable = unreadable;
-}
-
-typedef struct {
-	MonoAotModule *module;
-	guint8 *ptr;
-} FindMapUserData;
-
-static void
-find_map (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoAotModule *module = (MonoAotModule*)value;
-	FindMapUserData *data = (FindMapUserData*)user_data;
-
-	if (!data->module)
-		if ((data->ptr >= module->mem_begin) && (data->ptr < module->mem_end))
-			data->module = module;
-}
-
-static MonoAotModule*
-find_module_for_addr (void *ptr)
-{
-	FindMapUserData data;
-
-	if (!make_unreadable)
-		return NULL;
-
-	data.module = NULL;
-	data.ptr = (guint8*)ptr;
-
-	mono_aot_lock ();
-	g_hash_table_foreach (aot_modules, (GHFunc)find_map, &data);
-	mono_aot_unlock ();
-
-	return data.module;
-}
-
-/*
- * mono_aot_is_pagefault:
- *
- *   Should be called from a SIGSEGV signal handler to find out whenever @ptr is
- * within memory allocated by this module.
- */
-gboolean
-mono_aot_is_pagefault (void *ptr)
-{
-	if (!make_unreadable)
-		return FALSE;
-
-	return find_module_for_addr (ptr) != NULL;
-}
-
-/*
- * mono_aot_handle_pagefault:
- *
- *   Handle a pagefault caused by an unreadable page by making it readable again.
- */
-void
-mono_aot_handle_pagefault (void *ptr)
-{
-#ifndef PLATFORM_WIN32
-	guint8* start = (guint8*)ROUND_DOWN (((gssize)ptr), PAGESIZE);
-	int res;
-
-	mono_aot_lock ();
-	res = mprotect (start, PAGESIZE, PROT_READ|PROT_WRITE|PROT_EXEC);
-	g_assert (res == 0);
-
-	n_pagefaults ++;
-	mono_aot_unlock ();
-
-#if 0
- {
-	void *array [256];
-	char **names;
-	int i, size;
-
-	printf ("\nNative stacktrace:\n\n");
-
-	size = backtrace (array, 256);
-	names = backtrace_symbols (array, size);
-	for (i =0; i < size; ++i) {
-		printf ("\t%s\n", names [i]);
-	}
-	free (names);
- }
-#endif
-
-#endif
-}
-
-/*
  * mono_aot_plt_resolve:
  *
  *   This function is called by the entries in the PLT to resolve the actual method that
@@ -2797,17 +2696,6 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	return code;
 }
 
-/*
- * mono_aot_get_n_pagefaults:
- *
- *   Return the number of times handle_pagefault is called.
- */
-guint32
-mono_aot_get_n_pagefaults (void)
-{
-	return n_pagefaults;
-}
-
 #else
 /* AOT disabled */
 
@@ -2850,28 +2738,6 @@ gpointer
 mono_aot_get_method_from_token (MonoDomain *domain, MonoImage *image, guint32 token)
 {
 	return NULL;
-}
-
-gboolean
-mono_aot_is_pagefault (void *ptr)
-{
-	return FALSE;
-}
-
-void
-mono_aot_set_make_unreadable (gboolean unreadable)
-{
-}
-
-guint32
-mono_aot_get_n_pagefaults (void)
-{
-	return 0;
-}
-
-void
-mono_aot_handle_pagefault (void *ptr)
-{
 }
 
 guint8*
