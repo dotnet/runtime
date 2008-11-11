@@ -12167,6 +12167,18 @@ get_object_generic_inst (int type_argc)
 	return mono_metadata_get_generic_inst (type_argc, type_argv);
 }
 
+static void
+compute_reachable (MonoBasicBlock *bb)
+{
+	int i;
+
+	if (!(bb->flags & BB_VISITED)) {
+		bb->flags |= BB_VISITED;
+		for (i = 0; i < bb->out_count; ++i)
+			compute_reachable (bb->out_bb [i]);
+	}
+}
+
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -12351,6 +12363,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		count ++;
 
 		if (getenv ("COUNT2")) {
+			cfg->globalra = TRUE;
 			if (count == atoi (getenv ("COUNT2")))
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 			if (count > atoi (getenv ("COUNT2")))
@@ -12382,6 +12395,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	if (cfg->new_ir) {
 		cfg->rs = mono_regstate_new ();
+		if (cfg->globalra)
+			cfg->rs->next_vreg = MONO_MAX_IREGS + MONO_MAX_FREGS;
 		cfg->next_vreg = cfg->rs->next_vreg;
 	}
 
@@ -12473,25 +12488,21 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		/* remove unreachable code, because the code in them may be 
 		 * inconsistent  (access to dead variables for example) */
-		for (bb = cfg->bb_entry; bb;) {
-			MonoBasicBlock *bbn = bb->next_bb;
-
-			/* 
-			 * FIXME: Can't use the second case in methods with clauses, since the 
-			 * bblocks inside the clauses are not processed during dfn computation.
-			 */
-			if (((header->clauses && (bbn && bbn->region == -1 && bbn->in_count == 0)) ||
-				 (!header->clauses && (bbn && bbn->region == -1 && !bbn->dfn))) &&
-				bbn != cfg->bb_exit) {
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+			bb->flags &= ~BB_VISITED;
+		compute_reachable (cfg->bb_entry);
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+			if (bb->flags & BB_EXCEPTION_HANDLER)
+				compute_reachable (bb);
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			if (!(bb->flags & BB_VISITED)) {
 				if (cfg->verbose_level > 1)
-					g_print ("found unreachable code in BB%d\n", bbn->block_num);
-				/* There may exist unreachable branches to this bb */
-				bb->next_bb = bbn->next_bb;
-				mono_nullify_basic_block (bbn);			
-			} else {
-				bb = bb->next_bb;
+					g_print ("found unreachable code in BB%d\n", bb->block_num);
+				bb->code = bb->last_ins = NULL;
 			}
 		}
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+			bb->flags &= ~BB_VISITED;
 	}
 
 	if (((cfg->num_varinfo > 2000) || (cfg->num_bblocks > 1000)) && !cfg->compile_aot) {

@@ -1106,10 +1106,14 @@ mono_remove_critical_edges (MonoCompile *cfg)
 							MONO_ADD_INS (new_bb_after_entry, jump);
 							jump->cil_code = bb->cil_code;
 							jump->inst_target_bb = bb;
+
+							mono_unlink_bblock (cfg, previous_bb, bb);
+							mono_link_bblock (cfg, new_bb_after_entry, bb);
+							mono_link_bblock (cfg, previous_bb, new_bb_after_entry);
 							
 							previous_bb->next_bb = new_bb_after_entry;
 							previous_bb = new_bb_after_entry;
-							
+
 							if (cfg->verbose_level > 2) {
 								printf ("remove_critical_edges, added helper BB%d jumping to BB%d\n", new_bb_after_entry->block_num, bb->block_num);
 							}
