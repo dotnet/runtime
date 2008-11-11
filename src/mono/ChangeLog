@@ -1,3 +1,6 @@
+2008-11-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Bump version to 2.3.
 
 Mon Nov 10 17:37:08 CET 2008 Paolo Molaro <lupus@ximian.com>
 
