@@ -178,8 +178,11 @@ typedef struct MonoRegallocContext {
 #define INS_POS_DEF 2
 #define INS_POS_SPILL 3
 
-/* 16 is used instead of 4 so liveness ranges are easier to read */
-#define INS_POS_INTERVAL 16
+/* 
+ * Should use 16 so liveness ranges are easier to read, but that would overflow
+ * on big bblocks.
+ */
+#define INS_POS_INTERVAL 8
 
 #define is_hard_reg(r,fp) ((fp) ? ((r) < MONO_MAX_FREGS) : ((r) < MONO_MAX_IREGS))
 #define is_soft_reg(r,fp) (!is_hard_reg((r),(fp)))
@@ -756,7 +759,15 @@ update_liveness (MonoCompile *cfg, MonoRegallocContext *ctx, MonoInst *ins, int 
 		} else {
 			if (last_use [ins->dreg] > 0) {
 				LIVENESS_DEBUG (printf ("\tadd range to R%d: [%x, %x]\n", ins->dreg, inst_num + INS_POS_DEF, last_use [ins->dreg]));
-				mono_linterval_add_range (ctx->cfg, ctx->varinfo [ins->dreg].interval, inst_num + INS_POS_DEF, last_use [ins->dreg]);
+				if (ins->dreg == ins->sreg1 && ins->dreg < MONO_FIRST_VREG) {
+					/* 
+					 * Avoid a hole in the liveness range, since the allocation code
+					 * could think the register is free there.
+					 */
+					mono_linterval_add_range (ctx->cfg, ctx->varinfo [ins->dreg].interval, inst_num, last_use [ins->dreg]);
+				} else {
+					mono_linterval_add_range (ctx->cfg, ctx->varinfo [ins->dreg].interval, inst_num + INS_POS_DEF, last_use [ins->dreg]);
+				}
 				last_use [ins->dreg] = 0;
 			}
 			else {
