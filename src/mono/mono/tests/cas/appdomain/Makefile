@@ -1,5 +1,6 @@
 # Postprocessed with patch-quiet.sh
-RUNTIME = mono --debug --security
+RUNTIME = mono --debug
+CAS_RUNTIME = $(RUNTIME) --security
 CSCOMPILE = mcs -debug
 PROFILE = net_1_1
 
@@ -14,7 +15,7 @@ run: all
 	@for p in $(TEST_POLICIES); do	\
 		for i in $(TEST_FILES); do	\
 			echo -e "TESTING: $(RUNTIME) sandbox.exe $$p $$i";	\
-			$(RUNTIME) sandbox.exe $$p $$i;	\
+			$(CAS_RUNTIME) sandbox.exe $$p $$i;	\
 		done; \
 	done;
 

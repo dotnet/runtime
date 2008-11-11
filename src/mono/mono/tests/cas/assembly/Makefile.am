@@ -1,12 +1,15 @@
 with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_1_1
 with_mono_path2 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
 
-RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug --security
-RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper --debug --security
+RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug
+RUNTIME2 = $(with_mono_path2) $(top_builddir)/runtime/mono-wrapper --debug
 
-PROFILE = net_1_1
+CAS_RUNTIME = $(RUNTIME) --security
+CAS_RUNTIME2 = $(RUNTIME2) --security
+
 CSCOMPILE = $(RUNTIME) $(mcs_topdir)/class/lib/net_1_1/mcs.exe -debug
 PERMVIEW = $(RUNTIME) $(mcs_topdir)/tools/security/permview.exe
+PROFILE = net_1_1
 
 tests: all.exe min.exe opt.exe ref.exe none.exe
 
@@ -19,7 +22,7 @@ EXTRA_DIST=all.cs min.cs opt.cs ref.cs none.cs \
 # Only make sense on a 2.0 runtime
 run: all
 	@for i in $(TEST_FILES); do	\
-		$(RUNTIME) $$i.exe;	\
+		$(CAS_RUNTIME) $$i.exe;	\
 	done;
 
 # Templates are checked into SVN, for each profile, to detect regressions
