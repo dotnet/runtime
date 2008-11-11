@@ -10,6 +10,7 @@
 
 #include <config.h>
 #include <signal.h>
+#include <alloca.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

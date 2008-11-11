@@ -7,6 +7,7 @@
  * (C) 2003 Ximian, Inc.
  */
 #include <string.h>
+#include <alloca.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/mempool-internals.h>

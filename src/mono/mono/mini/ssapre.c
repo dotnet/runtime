@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <alloca.h>
 
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/opcodes.h>

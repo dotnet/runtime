@@ -10,6 +10,7 @@
 
 #include <math.h>
 #include <limits.h>
+#include <alloca.h>
 
 #include "jit-icalls.h"
 

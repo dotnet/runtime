@@ -14,6 +14,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <alloca.h>
 
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool.h>
