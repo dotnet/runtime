@@ -123,12 +123,18 @@ typedef struct MonoAotStats {
 	int jit_time, gen_time, link_time;
 } MonoAotStats;
 
-#if defined(__x86_64__)
-//#define USE_ELF_WRITER 1
+#if defined(__x86_64__) && !defined(PLATFORM_WIN32)
+#define USE_ELF_WRITER 1
 #define USE_ELF_RELA 1
 #endif
 
-//#define USE_ELF_WRITER 1
+#if defined(__i386__) && !defined(PLATFORM_WIN32)
+#define USE_ELF_WRITER 1
+#endif
+
+#if defined(__arm__) && !defined(__MACH__)
+#define USE_ELF_WRITER 1
+#endif
 
 #if defined(USE_ELF_WRITER)
 #define USE_BIN_WRITER 1
@@ -499,7 +505,7 @@ emit_symbol_diff (MonoAotCompile *acfg, const char *end, const char* start, int 
  * Emit a relocation entry of type RELOC_TYPE against symbol SYMBOL at the current PC.
  * Do not advance PC.
  */
-static void
+static G_GNUC_UNUSED void
 emit_reloc (MonoAotCompile *acfg, int reloc_type, const char *symbol, int addend)
 {
 	BinReloc *reloc = create_reloc (acfg, symbol, ".", addend);
