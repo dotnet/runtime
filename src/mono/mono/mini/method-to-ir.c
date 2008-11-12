@@ -7559,13 +7559,15 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				link_bblock (cfg, bblock, tblock);
 				ins->inst_target_bb = tblock;
 				GET_BBLOCK (cfg, tblock, ip);
+				/* 
+				 * This leads to some inconsistency, since the two bblocks are 
+				 * not really connected, but it is needed for handling stack 
+				 * arguments correctly (See test_0_box_brtrue_opt_regress_81102).
+				 * FIXME: This should only be needed if sp != stack_start, but that
+				 * doesn't work for some reason (test failure in mcs/tests on x86).
+				 */
+				link_bblock (cfg, bblock, tblock);
 				if (sp != stack_start) {
-					/* 
-					 * This leads to some inconsistency, since the two bblocks are 
-					 * not really connected, but it is needed for handling stack 
-					 * arguments correctly (See test_0_box_brtrue_opt_regress_81102).
-					 */
-					link_bblock (cfg, bblock, tblock);
 					handle_stack_args (cfg, stack_start, sp - stack_start);
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
