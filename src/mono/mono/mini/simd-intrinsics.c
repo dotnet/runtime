@@ -730,6 +730,16 @@ get_int_to_float_spill_area (MonoCompile *cfg)
 }
 
 static MonoInst*
+get_simd_ctor_spill_area (MonoCompile *cfg, MonoClass *avector_klass)
+{
+	if (!cfg->simd_ctor_var) {
+		cfg->simd_ctor_var = mono_compile_create_var (cfg, &avector_klass->byval_arg, OP_LOCAL);
+		cfg->simd_ctor_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
+	}	
+	return cfg->simd_ctor_var;
+}
+
+static MonoInst*
 simd_intrinsic_emit_binary (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
 	MonoInst* ins;
@@ -808,28 +818,31 @@ simd_intrinsic_emit_ctor (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 {
 	MonoInst *ins;
 	int i;
+	int addr_reg;
+	
+	NEW_VARLOADA (cfg, ins, get_simd_ctor_spill_area (cfg, cmethod->klass), &cmethod->klass->byref_arg);
+	MONO_ADD_INS (cfg->cbb, ins);
+	addr_reg = ins->dreg;
 
-	for (i = 1; i < 5; ++i) {
-		MONO_INST_NEW (cfg, ins, OP_PUSH_R4);
-		ins->sreg1 = args [5 - i]->dreg;
-		ins->klass = args [5 - i]->klass;
-		MONO_ADD_INS (cfg->cbb, ins);
-	}
+	for (i = 3; i >= 0; --i)
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORER4_MEMBASE_REG, addr_reg, i * 4, args [i + 1]->dreg);
 
 	if (args [0]->opcode == OP_LDADDR) { /*Eliminate LDADDR if it's initing a local var*/
 		int vreg = ((MonoInst*)args [0]->inst_p0)->dreg;
 		NULLIFY_INS (args [0]);
 		
-		MONO_INST_NEW (cfg, ins, OP_LOADX_STACK);
+		MONO_INST_NEW (cfg, ins, OP_LOADX_MEMBASE);
 		ins->klass = cmethod->klass;
+		ins->sreg1 = addr_reg;
 		ins->type = STACK_VTYPE;
 		ins->dreg = vreg;
 		MONO_ADD_INS (cfg->cbb, ins);
 	} else {
 		int vreg = alloc_ireg (cfg);
 
-		MONO_INST_NEW (cfg, ins, OP_LOADX_STACK);
+		MONO_INST_NEW (cfg, ins, OP_LOADX_MEMBASE);
 		ins->klass = cmethod->klass;
+		ins->sreg1 = addr_reg;
 		ins->type = STACK_VTYPE;
 		ins->dreg = vreg;
 		MONO_ADD_INS (cfg->cbb, ins);

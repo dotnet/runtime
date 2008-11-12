@@ -4238,14 +4238,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_mov_membase_reg (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, ins->sreg1, 4);
 			x86_fld_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE);
 			break;
-		case OP_PUSH_R4:
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
-			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
-			break;
-		case OP_LOADX_STACK: 
-			x86_movups_reg_membase (code, ins->dreg, X86_ESP, 0);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 16);
-			break;
 
 		case OP_FCONV_TO_R8_X:
 			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, TRUE, TRUE);

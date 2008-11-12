@@ -1001,6 +1001,9 @@ typedef struct {
 	/* Used to implement fconv_to_r8_x. This is a double (8 bytes) var.*/
 	MonoInst *fconv_to_r8_x_var;
 
+	/*Use to implement simd constructors. This is a vector (16 bytes) var.*/
+	MonoInst *simd_ctor_var;
+
 	/* Used by AOT */
 	guint32 got_offset;
 } MonoCompile;
