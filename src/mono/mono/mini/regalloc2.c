@@ -1513,7 +1513,7 @@ linear_scan (MonoCompile *cfg, MonoRegallocContext *ctx)
 				 * spill the first part to memory, and save the second part for later
 				 * processing.
 				 */
-				LSCAN_DEBUG (printf ("\tSplitting current at first use pos %x, spilling the first part.\n", GPOINTER_TO_INT (current->use_pos->data)));
+				LSCAN_DEBUG (printf ("\tSplitting R%d(current) at first use pos %x, spilling the first part.\n", current->vreg, GPOINTER_TO_INT (current->use_pos->data)));
 				split_interval (cfg, ctx, current, GPOINTER_TO_INT (current->use_pos->data));
 				unhandled = g_list_insert_sorted (unhandled, current->child2, compare_by_interval_start_pos_func);
 			} else {
@@ -1843,6 +1843,11 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 				pos_interval_limit = INS_POS_INTERVAL;
 			}
 
+			/*
+			 * This is the most complex/hackish part of the allocator, but I failed to
+			 * make it any simpler.
+			 * FIXME FIXME FIXME: CLEAN THIS UP
+			 */
 			for (pos_interval = 0; pos_interval < pos_interval_limit; ++pos_interval) {
 				spill_list = g_hash_table_lookup (ctx->split_positions, GUINT_TO_POINTER (pos));
 				/* Insert stores first, then loads so registers don't get overwritten */
@@ -1870,7 +1875,7 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 						// FIXME: Why is !is_volatile needed ?
 						// It seems to fail when the same volatile var is a source and a
 						// destination of the same instruction
-						if ((iter == 0) && (child1->hreg != -1) && (child2->hreg != -1) && !interval->is_volatile) {
+						if ((iter == 0) && (child1->hreg != -1) && (child2->hreg != -1) && !interval->is_volatile && pos_interval > 0) {
 							int offset;
 
 							/*
@@ -1898,6 +1903,20 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 							g_hash_table_insert (ctx->spill_ins, load, load);
 
 							LSCAN_DEBUG (printf (" Spill store/load added for R%d (R%d -> R%d) at %x\n", interval->vreg, child1->vreg, child2->vreg, pos));
+						} else if ((iter == 0) && (child1->hreg != -1) && (child2->hreg != -1) && (child1->hreg != child2->hreg) && pos_interval == 0) {
+							/* Happens with volatile intervals, i.e. in
+							 * R1 <- FOO
+							 * R2 <- OP R1 R2
+							 * R1's interval is split between the two instructions.
+							 */
+							// FIXME: This should be done in iter 1, but it has 
+							// ordering problems with other loads. Now it might have
+							// ordering problems with stores.
+							g_assert (!interval->fp);
+							move = create_move (cfg, child2->hreg, child1->hreg);
+							mono_bblock_insert_before_ins (bb, ins, move);
+							prev = move;
+							g_hash_table_insert (ctx->spill_ins, move, move);
 						} else if ((iter == 0) && (child1->hreg != -1) && (child2->hreg == -1)) {
 							g_assert (child2->offset != -1);
 
@@ -1912,8 +1931,13 @@ add_spill_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 							g_assert (child1->offset != -1);
 							NEW_LOAD_MEMBASE (cfg, load, mono_type_to_load_membase (cfg, interval->type), child2->hreg, cfg->frame_reg, child1->offset);
 
-							mono_bblock_insert_before_ins (bb, ins, load);
-							prev = load;
+							if (pos_interval >= INS_POS_DEF)
+								/* Happens in InternalGetChars, couldn't create a testcase */
+								mono_bblock_insert_after_ins (bb, ins, load);
+							else {
+								mono_bblock_insert_before_ins (bb, ins, load);
+								prev = load;
+							}
 							g_hash_table_insert (ctx->spill_ins, load, load);
 
 							LSCAN_DEBUG (printf (" Spill load added for R%d (R%d -> R%d) at %x\n", interval->vreg, child1->vreg, child2->vreg, pos));
