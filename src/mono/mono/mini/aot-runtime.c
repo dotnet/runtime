@@ -2040,7 +2040,7 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 
 	mono_aot_unlock ();
 
-	if (from_plt && klass)
+	if (from_plt && klass && !klass->generic_container)
 		mono_runtime_class_init (mono_class_vtable (domain, klass));
 
 	return code;
