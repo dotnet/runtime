@@ -53,7 +53,7 @@ public class SimdTests {
 	public static unsafe int test_0_vector2l_srl () {
 		Vector2l a = new Vector2l (1, 6);
 
-		Vector2l c = Vector2l.ShiftRightLogic (a, 1);
+		Vector2l c = Vector2l.LogicalRightShift (a, 1);
 	
 		if (c.X != 0)
 			return 1;
@@ -418,7 +418,7 @@ public class SimdTests {
 		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16sb b = new Vector16sb (-100, 100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
 
-		Vector16sb c = Vector16sb.SubWithSaturation (a, b);
+		Vector16sb c = Vector16sb.SubtractWithSaturation (a, b);
 
 		if (c.V0 != 127)
 			return 1;
@@ -1323,7 +1323,7 @@ public class SimdTests {
 	public static int test_0_vector4ui_sar () {
 		Vector4ui a = new Vector4ui (0xF0000000u,20,3,40);
 		
-		Vector4ui c = Vector4ui.ShiftRightArithmetic (a, 2);
+		Vector4ui c = Vector4ui.ArithmeticRightShift (a, 2);
 	
 		if (c.X != 0xFC000000)
 			return 1;
@@ -1533,7 +1533,7 @@ public class SimdTests {
 	static int test_0_vector8us_sub_sat () {
 		Vector8us a = new Vector8us (0xF000,1,20,3,4,5,6,7);
 		Vector8us b = new Vector8us (0xFF00,4,5,6,7,8,9,10);
-		Vector8us c = Vector8us.SubWithSaturation (a, b);
+		Vector8us c = Vector8us.SubtractWithSaturation (a, b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -1620,7 +1620,7 @@ public class SimdTests {
 	static int test_0_vector8us_shift_right_arithmetic () {
 		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
 		int amt = 2;
-		Vector8us c = Vector8us.ShiftRightArithmetic (a, amt);
+		Vector8us c = Vector8us.ArithmeticRightShift (a, amt);
 	
 		if (c.V0 != 0xFFC0)
 			return 1;
@@ -1829,7 +1829,7 @@ public class SimdTests {
 	static int test_0_vector16b_sub_sat () {
 		Vector16b a = new Vector16b (100,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16b b = new Vector16b (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-		Vector16b c = Vector16b.SubWithSaturation (a, b);
+		Vector16b c = Vector16b.SubtractWithSaturation (a, b);
 
 		if (c.V0 != 0)
 			return 1;
