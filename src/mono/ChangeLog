@@ -1,3 +1,8 @@
+2008-11-12  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add an ENABLE_AOT variable to config.make, currently only
+	enabled for AMD64.
+
 2008-11-11  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Bump version to 2.3.

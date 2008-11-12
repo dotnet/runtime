@@ -2387,6 +2387,10 @@ fi
     echo "MONO_VERSION = $myver" >> $srcdir/$mcsdir/build/config.make
   fi
 
+  if test x$TARGET = xAMD64 -a x$platform_win32 = xno; then
+  	 echo "ENABLE_AOT = 1" >> $srcdir/$mcsdir/build/config.make
+  fi
+
   # if we have an olive folder, override the default settings
   if test -d $olivedir; then
 
@@ -2428,7 +2432,7 @@ echo "
 
 "
 if test x$with_static_mono = xno -a "x$platform_win32" != "xyes"; then
-   AC_MSG_WARN(Turning off static Mono is a risk, you might run into unexepcted bugs)
+   AC_MSG_WARN(Turning off static Mono is a risk, you might run into unexpected bugs)
 fi
 
 if test x$gc = xsgen; then
