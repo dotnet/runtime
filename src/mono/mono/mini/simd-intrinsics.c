@@ -270,11 +270,11 @@ static const SimdIntrinsc vector2l_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector4ui_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_ArithmeticRightShift, OP_PSARD, SIMD_EMIT_SHIFT },
 	{ SN_CompareEqual, OP_PCMPEQD, SIMD_EMIT_BINARY },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
@@ -304,11 +304,11 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector4i_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_CompareEqual, OP_PCMPEQD, SIMD_EMIT_BINARY },
 	{ SN_CompareGreaterThan, OP_PCMPGTD, SIMD_EMIT_BINARY },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
@@ -339,11 +339,11 @@ static const SimdIntrinsc vector4i_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector8us_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddWithSaturation, OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_ArithmeticRightShift, OP_PSARW, SIMD_EMIT_SHIFT },
 	{ SN_Average, OP_PAVGW_UN, SIMD_EMIT_BINARY },
@@ -378,11 +378,11 @@ static const SimdIntrinsc vector8us_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector8s_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddWithSaturation, OP_PADDW_SAT, SIMD_EMIT_BINARY },
 	{ SN_CompareEqual, OP_PCMPEQW, SIMD_EMIT_BINARY },
 	{ SN_CompareGreaterThan, OP_PCMPGTW, SIMD_EMIT_BINARY },
@@ -417,11 +417,11 @@ static const SimdIntrinsc vector8s_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector16b_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddWithSaturation, OP_PADDB_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_Average, OP_PAVGB_UN, SIMD_EMIT_BINARY },
 	{ SN_CompareEqual, OP_PCMPEQB, SIMD_EMIT_BINARY },
@@ -448,11 +448,11 @@ static const SimdIntrinsc vector16b_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector16sb_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddWithSaturation, OP_PADDB_SAT, SIMD_EMIT_BINARY },
 	{ SN_CompareEqual, OP_PCMPEQB, SIMD_EMIT_BINARY },
 	{ SN_CompareGreaterThan, OP_PCMPGTB, SIMD_EMIT_BINARY },
@@ -816,9 +816,12 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 static MonoInst*
 simd_intrinsic_emit_ctor (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
-	MonoInst *ins;
+	MonoInst *ins = NULL;
 	int i, addr_reg;
 	gboolean is_ldaddr = args [0]->opcode == OP_LDADDR;
+	MonoMethodSignature *sig = mono_method_signature (cmethod);
+	int store_op = mono_type_to_store_membase (cfg, sig->params [0]);
+	int arg_size = mono_type_size (sig->params [0], &i);
 
 	if (is_ldaddr) {
 		NEW_VARLOADA (cfg, ins, get_simd_ctor_spill_area (cfg, cmethod->klass), &cmethod->klass->byref_arg);
@@ -829,8 +832,9 @@ simd_intrinsic_emit_ctor (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 		addr_reg = args [0]->dreg;
 	}
 
-	for (i = 3; i >= 0; --i)
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORER4_MEMBASE_REG, addr_reg, i * 4, args [i + 1]->dreg);
+	for (i = sig->param_count - 1; i >= 0; --i) {
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, store_op, addr_reg, i * arg_size, args [i + 1]->dreg);
+	}
 
 	if (is_ldaddr) { /*Eliminate LDADDR if it's initing a local var*/
 		int vreg = ((MonoInst*)args [0]->inst_p0)->dreg;
