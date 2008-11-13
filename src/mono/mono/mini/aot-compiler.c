@@ -68,7 +68,6 @@
 #endif
 
 #include "mini.h"
-#include "version.h"
 
 #ifndef DISABLE_AOT
 
@@ -98,6 +97,7 @@
 // .long generates 4 bytes per expression.
 // .quad generates 8 bytes per expression.
 
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
@@ -648,13 +648,6 @@ collect_sections (MonoAotCompile *acfg, ElfSectHeader *sheaders, BinSection **ou
 		if (sect->subsection == 0) {
 			out [num_sections++] = sect;
 			g_assert (num_sections < num);
-			if (strcmp (sect->name, ".text") == 0) {
-				sect->shidx = SECT_TEXT;
-			} else if (strcmp (sect->name, ".data") == 0) {
-				sect->shidx = SECT_DATA;
-			} else if (strcmp (sect->name, ".bss") == 0) {
-				sect->shidx = SECT_BSS;
-			}
 		}
 		maxs = MAX (maxs, sect->subsection);
 	}
@@ -1061,8 +1054,8 @@ emit_writeout (MonoAotCompile *acfg)
 	ElfStrTable str_table = {NULL, NULL};
 	ElfStrTable sh_str_table = {NULL, NULL};
 	ElfStrTable dyn_str_table = {NULL, NULL};
-	BinSection* sections [6];
-	BinSection *text_section = NULL, *data_section = NULL, *bss_section = NULL;
+	BinSection* all_sections [32];
+	BinSection* sections [SECT_NUM];
 	ElfSymbol *dynsym;
 	ElfSymbol *symtab;
 	ElfDynamic dynamic [14];
@@ -1104,29 +1097,35 @@ emit_writeout (MonoAotCompile *acfg)
 	secth [SECT_DYNAMIC].sh_link = SECT_DYNSTR;
 	secth [SECT_SYMTAB].sh_link = SECT_STRTAB;
 
-	num_sections = collect_sections (acfg, secth, sections, 6);
+	num_sections = collect_sections (acfg, secth, all_sections, 6);
 	hash = build_hash (acfg, num_sections, &dyn_str_table);
 	num_symtab = hash [1]; /* FIXME */
 	g_print ("num_sections: %d\n", num_sections);
 	g_print ("dynsym: %d, dynstr size: %d\n", hash [1], (int)dyn_str_table.data->len);
 	for (i = 0; i < num_sections; ++i) {
-		g_print ("section %s, size: %d, %x\n", sections [i]->name, sections [i]->cur_offset, sections [i]->cur_offset);
+		g_print ("section %s, size: %d, %x\n", all_sections [i]->name, all_sections [i]->cur_offset, all_sections [i]->cur_offset);
+	}
+
+	/* Associate the bin sections with the ELF sections */
+	memset (sections, 0, sizeof (sections));
+	for (i = 0; i < num_sections; ++i) {
+		BinSection *sect = all_sections [i];
+		int j;
+
+		for (j = 0; j < SECT_NUM; ++j) {
+			if (strcmp (sect->name, section_info [j].name) == 0) {
+				sect->shidx = j;
+				break;
+			}
+		}
+
+		sections [all_sections [i]->shidx] = sect;
 	}
 
 	/* at this point we know where in the file the first segment sections go */
 	dynsym = collect_syms (acfg, hash, &dyn_str_table, NULL, NULL);
 	num_local_syms = hash [1];
 	symtab = collect_syms (acfg, NULL, &str_table, secth, &num_local_syms);
-
-	for (i = 0; i < num_sections; ++i) {
-		if (sections [i]->shidx == SECT_TEXT) {
-			text_section = sections [i];
-		} else if (sections [i]->shidx == SECT_DATA) {
-			data_section = sections [i];
-		} else if (sections [i]->shidx == SECT_BSS) {
-			bss_section = sections [i];
-		}
-	}
 
 	file_offset = virt_offset = sizeof (header) + sizeof (progh);
 	secth [SECT_HASH].sh_addr = secth [SECT_HASH].sh_offset = file_offset;
@@ -1159,16 +1158,17 @@ emit_writeout (MonoAotCompile *acfg)
 #endif
 	virt_offset = (file_offset += size);
 	secth [SECT_RELA_DYN].sh_size = size;
-	file_offset += 4096-1;
-	file_offset &= ~(4096-1);
+
+	file_offset = ALIGN_TO (file_offset, secth [SECT_TEXT].sh_addralign);
 	virt_offset = file_offset;
 	secth [SECT_TEXT].sh_addr = secth [SECT_TEXT].sh_offset = file_offset;
-	size = text_section->cur_offset;
+	size = sections [SECT_TEXT]->cur_offset;
 	secth [SECT_TEXT].sh_size = size;
 	file_offset += size;
-	file_offset += 4-1;
-	file_offset &= ~(4-1);
+
+	file_offset = ALIGN_TO (file_offset, secth [SECT_DYNAMIC].sh_addralign);
 	virt_offset = file_offset;
+
 	/* .dynamic, .got.plt, .data, .bss here */
 	/* Have to increase the virt offset since these go to a separate segment */
 	virt_offset += PAGESIZE;
@@ -1176,55 +1176,55 @@ emit_writeout (MonoAotCompile *acfg)
 	secth [SECT_DYNAMIC].sh_offset = file_offset;
 	size = sizeof (dynamic);
 	secth [SECT_DYNAMIC].sh_size = size;
-	size += 4-1;
-	size &= ~(4-1);
 	file_offset += size;
 	virt_offset += size;
+
+	file_offset = ALIGN_TO (file_offset, secth [SECT_GOT_PLT].sh_addralign);
+	virt_offset = ALIGN_TO (virt_offset, secth [SECT_GOT_PLT].sh_addralign);
 	secth [SECT_GOT_PLT].sh_addr = virt_offset;
 	secth [SECT_GOT_PLT].sh_offset = file_offset;
 	size = 12;
 	secth [SECT_GOT_PLT].sh_size = size;
-	size += 8-1;
-	size &= ~(8-1);
 	file_offset += size;
 	virt_offset += size;
+
+	file_offset = ALIGN_TO (file_offset, secth [SECT_DATA].sh_addralign);
+	virt_offset = ALIGN_TO (virt_offset, secth [SECT_DATA].sh_addralign);
 	secth [SECT_DATA].sh_addr = virt_offset;
 	secth [SECT_DATA].sh_offset = file_offset;
-	size = data_section->cur_offset;
+	size = sections [SECT_DATA]->cur_offset;
 	secth [SECT_DATA].sh_size = size;
-	size += 8-1;
-	size &= ~(8-1);
 	file_offset += size;
 	virt_offset += size;
+
+	file_offset = ALIGN_TO (file_offset, secth [SECT_BSS].sh_addralign);
+	virt_offset = ALIGN_TO (virt_offset, secth [SECT_BSS].sh_addralign);
 	secth [SECT_BSS].sh_addr = virt_offset;
 	secth [SECT_BSS].sh_offset = file_offset;
-	size = bss_section->cur_offset;
+	size = sections [SECT_BSS]->cur_offset;
 	secth [SECT_BSS].sh_size = size;
 
 	/* virtual doesn't matter anymore */
+	file_offset = ALIGN_TO (file_offset, secth [SECT_SHSTRTAB].sh_addralign);
 	secth [SECT_SHSTRTAB].sh_offset = file_offset;
 	size = sh_str_table.data->len;
 	secth [SECT_SHSTRTAB].sh_size = size;
-	size += SIZEOF_VOID_P-1;
-	size &= ~(SIZEOF_VOID_P-1);
 	file_offset += size;
+
+	file_offset = ALIGN_TO (file_offset, secth [SECT_SYMTAB].sh_addralign);
 	secth [SECT_SYMTAB].sh_offset = file_offset;
 	size = sizeof (ElfSymbol) * num_local_syms;
 	secth [SECT_SYMTAB].sh_size = size;
 	file_offset += size;
+
+	file_offset = ALIGN_TO (file_offset, secth [SECT_STRTAB].sh_addralign);
 	secth [SECT_STRTAB].sh_offset = file_offset;
 	size = str_table.data->len;
 	secth [SECT_STRTAB].sh_size = size;
 	file_offset += size;
+
 	file_offset += 4-1;
 	file_offset &= ~(4-1);
-
-	text_section->file_offset = secth [SECT_TEXT].sh_offset;
-	text_section->virt_offset = secth [SECT_TEXT].sh_addr;
-	data_section->file_offset = secth [SECT_DATA].sh_offset;
-	data_section->virt_offset = secth [SECT_DATA].sh_addr;
-	bss_section->file_offset = secth [SECT_BSS].sh_offset;
-	bss_section->virt_offset = secth [SECT_BSS].sh_addr;
 
 	header.e_ident [EI_MAG0] = ELFMAG0;
 	header.e_ident [EI_MAG1] = ELFMAG1;
@@ -1324,6 +1324,14 @@ emit_writeout (MonoAotCompile *acfg)
 	progh [2].p_align = SIZEOF_VOID_P;
 	progh [2].p_flags = 6;
 
+	/* Compute the addresses of the bin sections, so relocation can be done */
+	for (i = 0; i < SECT_NUM; ++i) {
+		if (sections [i]) {
+			sections [i]->file_offset = secth [i].sh_offset;
+			sections [i]->virt_offset = secth [i].sh_addr;
+		}
+	}
+
 	reloc_symbols (acfg, dynsym, secth, &dyn_str_table, TRUE);
 	reloc_symbols (acfg, symtab, secth, &str_table, FALSE);
 	relocs = resolve_relocations (acfg);
@@ -1341,17 +1349,17 @@ emit_writeout (MonoAotCompile *acfg)
 	fseek (file, secth [SECT_RELA_DYN].sh_offset, SEEK_SET);
 	fwrite (relocs, secth [SECT_RELA_DYN].sh_size, 1, file);
 
+	/* .text */
 	fseek (file, secth [SECT_TEXT].sh_offset, SEEK_SET);
-	/* write .text, .data, .bss sections */
-	fwrite (text_section->data, text_section->cur_offset, 1, file);
-
+	fwrite (sections [SECT_TEXT]->data, sections [SECT_TEXT]->cur_offset, 1, file);
 	/* .dynamic */
 	fwrite (dynamic, sizeof (dynamic), 1, file);
 	/* .got.plt */
 	size = secth [SECT_DYNAMIC].sh_addr;
 	fwrite (&size, sizeof (size), 1, file);
+	/* .data */
 	fseek (file, secth [SECT_DATA].sh_offset, SEEK_SET);
-	fwrite (data_section->data, data_section->cur_offset, 1, file);
+	fwrite (sections [SECT_DATA]->data, sections [SECT_DATA]->cur_offset, 1, file);
 
 	fseek (file, secth [SECT_SHSTRTAB].sh_offset, SEEK_SET);
 	fwrite (sh_str_table.data->str, sh_str_table.data->len, 1, file);
