@@ -2144,6 +2144,15 @@ get_plt_offset (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	if (is_plt_patch (patch_info)) {
 		int idx = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->patch_to_plt_offset, patch_info));
 
+		if (patch_info->type == MONO_PATCH_INFO_METHOD && (patch_info->data.method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
+			/* 
+			 * Allocate a separate PLT slot for each such patch, since some plt
+			 * entries will refer to the method itself, and some will refer to
+			 * wrapper.
+			 */
+			idx = 0;
+		}
+
 		if (idx) {
 			res = idx;
 		} else {
@@ -2454,6 +2463,15 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
+	/* Synchronized wrappers */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		method = mono_get_method (acfg->image, token, NULL);
+
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			add_method (acfg, mono_marshal_get_synchronized_wrapper (method));
+	}
+
 #if 0
 	/* static rgctx wrappers */
 	/* FIXME: Each wrapper belongs to a given instantiation of a generic method */
@@ -2653,6 +2671,9 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						gboolean direct_callable = TRUE;
 
 						if (direct_callable && !(!callee_cfg->has_got_slots && (callee_cfg->method->klass->flags & TYPE_ATTRIBUTE_BEFORE_FIELD_INIT)))
+							direct_callable = FALSE;
+						if ((callee_cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && method->wrapper_type != MONO_WRAPPER_SYNCHRONIZED)
+							// FIXME: Maybe call the wrapper directly ?
 							direct_callable = FALSE;
 						if (direct_callable) {
 							//printf ("DIRECT: %s %s\n", method ? mono_method_full_name (method, TRUE) : "", mono_method_full_name (callee_cfg->method, TRUE));
@@ -3463,12 +3484,12 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		code = mono_arch_get_nullified_class_init_trampoline (&code_size);
 		emit_named_code (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL);
-		/*
+#ifdef __x86_64__
 		code = mono_arch_create_monitor_enter_trampoline_full (&code_size, &ji, TRUE);
 		emit_named_code (acfg, "monitor_enter_trampoline", code, code_size, acfg->got_offset, ji);
 		code = mono_arch_create_monitor_exit_trampoline_full (&code_size, &ji, TRUE);
 		emit_named_code (acfg, "monitor_exit_trampoline", code, code_size, acfg->got_offset, ji);
-		*/
+#endif
 
 		/* Emit the exception related code pieces */
 		code = mono_arch_get_restore_context_full (&code_size, &ji, TRUE);
