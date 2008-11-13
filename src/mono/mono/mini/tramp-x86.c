@@ -354,27 +354,36 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	/* restore LMF end */
 
+	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
+		/* 
+		 * Overwrite the method ptr with the address we need to jump to,
+		 * to free %eax.
+		 */
+		x86_mov_membase_reg (buf, X86_ESP, pushed_args * sizeof (gpointer), X86_EAX, 4);
+	}
+
 	/* Restore caller saved registers */
 	x86_mov_reg_membase (buf, X86_ECX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_ECX) * 4, 4);
 	x86_mov_reg_membase (buf, X86_EDX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_EDX) * 4, 4);
-	if (tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT)
+	if ((tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT) || (tramp_type == MONO_TRAMPOLINE_AOT_PLT))
 		x86_mov_reg_membase (buf, X86_EAX, X86_ESP, (pushed_args - pushed_args_caller_saved + X86_EAX) * 4, 4);
 
-	/* Pop saved reg array + stack align + method ptr */
-	x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 10 * 4);
-
-	pushed_args -= 10;
-
-	/* We've popped one more stack item than we've pushed (the
-	   method ptr argument), so we must end up at -1. */
-	g_assert (pushed_args == -1);
-
-	if (MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
-		x86_ret (buf);
+	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
+		/* Pop saved reg array + stack align */
+		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 9 * 4);
+		pushed_args -= 9;
+		g_assert (pushed_args == 0);
 	} else {
-		/* call the compiled method */
-		x86_jump_reg (buf, X86_EAX);
+		/* Pop saved reg array + stack align + method ptr */
+		x86_alu_reg_imm (buf, X86_ADD, X86_ESP, 10 * 4);
+		pushed_args -= 10;
+
+		/* We've popped one more stack item than we've pushed (the
+		   method ptr argument), so we must end up at -1. */
+		g_assert (pushed_args == -1);
 	}
+
+	x86_ret (buf);
 
 	g_assert ((buf - code) <= 256);
 
