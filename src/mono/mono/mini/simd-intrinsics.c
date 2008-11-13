@@ -817,17 +817,22 @@ static MonoInst*
 simd_intrinsic_emit_ctor (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
 	MonoInst *ins;
-	int i;
-	int addr_reg;
-	
-	NEW_VARLOADA (cfg, ins, get_simd_ctor_spill_area (cfg, cmethod->klass), &cmethod->klass->byref_arg);
-	MONO_ADD_INS (cfg->cbb, ins);
-	addr_reg = ins->dreg;
+	int i, addr_reg;
+	gboolean is_ldaddr = args [0]->opcode == OP_LDADDR;
+
+	if (is_ldaddr) {
+		NEW_VARLOADA (cfg, ins, get_simd_ctor_spill_area (cfg, cmethod->klass), &cmethod->klass->byref_arg);
+		MONO_ADD_INS (cfg->cbb, ins);
+		addr_reg = ins->dreg;
+	} else {
+		g_assert (args [0]->type == STACK_MP || args [0]->type == STACK_PTR);
+		addr_reg = args [0]->dreg;
+	}
 
 	for (i = 3; i >= 0; --i)
 		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORER4_MEMBASE_REG, addr_reg, i * 4, args [i + 1]->dreg);
 
-	if (args [0]->opcode == OP_LDADDR) { /*Eliminate LDADDR if it's initing a local var*/
+	if (is_ldaddr) { /*Eliminate LDADDR if it's initing a local var*/
 		int vreg = ((MonoInst*)args [0]->inst_p0)->dreg;
 		NULLIFY_INS (args [0]);
 		
@@ -836,21 +841,6 @@ simd_intrinsic_emit_ctor (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 		ins->sreg1 = addr_reg;
 		ins->type = STACK_VTYPE;
 		ins->dreg = vreg;
-		MONO_ADD_INS (cfg->cbb, ins);
-	} else {
-		int vreg = alloc_ireg (cfg);
-
-		MONO_INST_NEW (cfg, ins, OP_LOADX_MEMBASE);
-		ins->klass = cmethod->klass;
-		ins->sreg1 = addr_reg;
-		ins->type = STACK_VTYPE;
-		ins->dreg = vreg;
-		MONO_ADD_INS (cfg->cbb, ins);
-		
-		MONO_INST_NEW (cfg, ins, OP_STOREX_MEMBASE_REG);
-		ins->klass = cmethod->klass;
-		ins->dreg = args [0]->dreg;
-		ins->sreg1 = vreg;
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
 	return ins;
