@@ -153,7 +153,7 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_PrefetchTemporal2ndLevelCache, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
 	{ SN_PrefetchNonTemporal, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_Reciprocal, OP_RCPPS, SIMD_EMIT_UNARY },
-	{ SN_Shuffle, OP_SHUFLEPS, SIMD_EMIT_SHUFFLE },
+	{ SN_Shuffle, OP_PSHUFLED, SIMD_EMIT_SHUFFLE },
 	{ SN_Sqrt, OP_SQRTPS, SIMD_EMIT_UNARY },
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_EMIT_STORE },
 	{ SN_StoreNonTemporal, OP_STOREX_NTA_MEMBASE_REG, SIMD_EMIT_STORE },
@@ -787,7 +787,7 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	vreg = load_simd_vreg (cfg, cmethod, args [0]);
 
 	if (intrinsic->opcode) {
-		MONO_INST_NEW (cfg, ins, OP_SHUFLEPS);
+		MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
 		ins->klass = cmethod->klass;
 		ins->sreg1 = vreg;
 		ins->inst_c0 = intrinsic->opcode;
