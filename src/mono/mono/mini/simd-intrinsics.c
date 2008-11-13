@@ -173,11 +173,11 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector2d_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddSub, OP_ADDSUBPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
 	{ SN_AndNot, OP_ANDNPD, SIMD_EMIT_BINARY },
 	{ SN_CompareEqual, OP_COMPPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
@@ -213,11 +213,11 @@ static const SimdIntrinsc vector2d_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector2ul_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_CompareEqual, OP_PCMPEQQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
@@ -241,11 +241,11 @@ static const SimdIntrinsc vector2ul_intrinsics[] = {
 
 /*
 Missing:
-.ctor
 getters
 setters
  */
 static const SimdIntrinsc vector2l_intrinsics[] = {
+	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_CompareEqual, OP_PCMPEQQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_CompareGreaterThan, OP_PCMPGTQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
