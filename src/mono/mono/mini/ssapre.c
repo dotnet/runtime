@@ -10,7 +10,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
 
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/opcodes.h>

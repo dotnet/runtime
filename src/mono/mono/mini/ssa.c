@@ -7,7 +7,9 @@
  * (C) 2003 Ximian, Inc.
  */
 #include <string.h>
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/mempool-internals.h>
