@@ -1945,7 +1945,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	/* Mark methods which can't use aot trampolines because they need the further 
 	 * processing in mono_magic_trampoline () which requires a MonoMethod*.
 	 */
-	if (method->is_generic && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
+	if ((method->is_generic && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) ||
+		(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED))
 		encode_value ((252 << 24), p, &p);
 
 	if (method->wrapper_type) {
@@ -3773,14 +3774,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 
 	InterlockedIncrement (&acfg->stats.mcount);
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
-		/* 
-		 * FIXME: Enabling this causes virtual-sync.exe to fail, since the trampoline
-		 * code can't determine that it needs to insert a sync wrapper in the AOT case.
-		 */
-		return;
-	}
 
 #if 0
 	if (method->is_generic || method->klass->generic_container) {
