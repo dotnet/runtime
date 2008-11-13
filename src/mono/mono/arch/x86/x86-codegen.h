@@ -1965,15 +1965,6 @@ typedef enum {
 		x86_reg_emit ((inst), (dreg), (sreg));	\
 	} while (0)
 
-#define x86_pshufd_reg_reg(inst,dreg,sreg,mask)	\
-	do {	\
-		*(inst)++ = (unsigned char)0x66;	\
-		*(inst)++ = (unsigned char)0x0f;	\
-		*(inst)++ = (unsigned char)0x70;	\
-		x86_reg_emit ((inst), (dreg), (sreg));	\
-		*(inst)++ = (unsigned char)mask;	\
-	} while (0)
-
 #define x86_pshufw_reg_reg(inst,dreg,sreg,mask,high_words)	\
 	do {	\
 		*(inst)++ = (unsigned char)(high_words) ? 0xF3 : 0xF2;	\
