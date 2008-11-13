@@ -270,7 +270,6 @@ static const SimdIntrinsc vector2l_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector4ui_intrinsics[] = {
@@ -291,6 +290,10 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_EMIT_STORE },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHD, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWD, SIMD_EMIT_BINARY },
+	{ SN_get_W, 3, SIMD_EMIT_GETTER },
+	{ SN_get_X, 0, SIMD_EMIT_GETTER },
+	{ SN_get_Y, 1, SIMD_EMIT_GETTER },
+	{ SN_get_Z, 2, SIMD_EMIT_GETTER },
 	{ SN_op_Addition, OP_PADDD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
@@ -304,7 +307,6 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector4i_intrinsics[] = {
@@ -326,6 +328,10 @@ static const SimdIntrinsc vector4i_intrinsics[] = {
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_EMIT_STORE },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHD, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWD, SIMD_EMIT_BINARY },
+	{ SN_get_W, 3, SIMD_EMIT_GETTER },
+	{ SN_get_X, 0, SIMD_EMIT_GETTER },
+	{ SN_get_Y, 1, SIMD_EMIT_GETTER },
+	{ SN_get_Z, 2, SIMD_EMIT_GETTER },
 	{ SN_op_Addition, OP_PADDD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
@@ -782,6 +788,7 @@ static MonoInst*
 simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
 	MonoInst *tmp, *ins;
+	MonoMethodSignature *sig = mono_method_signature (cmethod);
 	int vreg;
 	
 	vreg = load_simd_vreg (cfg, cmethod, args [0]);
@@ -803,13 +810,17 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	tmp->dreg = alloc_ireg (cfg);
 	MONO_ADD_INS (cfg->cbb, tmp);
 
-	MONO_INST_NEW (cfg, ins, OP_ICONV_TO_R8_RAW);
-	ins->klass = mono_defaults.single_class;
-	ins->sreg1 = tmp->dreg;
-	ins->type = STACK_R8;
-	ins->dreg = alloc_freg (cfg);
-	ins->backend.spill_var = get_int_to_float_spill_area (cfg);
-	MONO_ADD_INS (cfg->cbb, ins);	
+	if (sig->ret->type == MONO_TYPE_R4) {
+		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_R8_RAW);
+		ins->klass = mono_defaults.single_class;
+		ins->sreg1 = tmp->dreg;
+		ins->type = STACK_R8;
+		ins->dreg = alloc_freg (cfg);
+		ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+		MONO_ADD_INS (cfg->cbb, ins);	
+	} else {
+		ins = tmp;
+	}
 	return ins;
 }
 
