@@ -766,3 +766,25 @@ guint32 WaitForMultipleObjects(guint32 numobjects, gpointer *handles,
 {
 	return WaitForMultipleObjectsEx(numobjects, handles, waitall, timeout, FALSE);
 }
+
+/**
+ * WaitForInputIdle:
+ * @handle: a handle to the process to wait for
+ * @timeout: the maximum time in milliseconds to wait for
+ *
+ * This function returns when either @handle process is waiting
+ * for input, or @timeout ms elapses.  If @timeout is zero, the
+ * process state is tested and the function returns immediately.
+ * If @timeout is %INFINITE, the function waits forever.
+ *
+ * Return value: 0 - @handle process is waiting for input.
+ * %WAIT_TIMEOUT - The @timeout interval elapsed and
+ * @handle process is not waiting for input.  %WAIT_FAILED - an error
+ * occurred. 
+ */
+guint32 WaitForInputIdle(gpointer handle, guint32 timeout)
+{
+	/*TODO: Not implemented*/
+	return WAIT_TIMEOUT;
+}
+
