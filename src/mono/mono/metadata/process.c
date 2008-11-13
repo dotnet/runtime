@@ -808,6 +808,22 @@ MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObjec
 	}
 }
 
+MonoBoolean ves_icall_System_Diagnostics_Process_WaitForInputIdle_internal (MonoObject *this, HANDLE process, gint32 ms)
+{
+	guint32 ret;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	if(ms<0) {
+		/* Wait forever */
+		ret=WaitForInputIdle (process, INFINITE);
+	} else {
+		ret=WaitForInputIdle (process, ms);
+	}
+
+	return (ret) ? FALSE : TRUE;
+}
+
 gint64 ves_icall_System_Diagnostics_Process_ExitTime_internal (HANDLE process)
 {
 	gboolean ret;
