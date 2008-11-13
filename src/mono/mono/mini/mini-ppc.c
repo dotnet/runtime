@@ -2795,6 +2795,50 @@ ins_native_length (MonoCompile *cfg, MonoInst *ins)
 	return len;
 }
 
+static guint8*
+emit_reserve_param_area (MonoCompile *cfg, guint8 *code)
+{
+	int size = cfg->param_area;
+
+	size += MONO_ARCH_FRAME_ALIGNMENT - 1;
+	size &= -MONO_ARCH_FRAME_ALIGNMENT;
+
+	if (!size)
+		return code;
+
+	ppc_lwz (code, ppc_r0, 0, ppc_sp);
+	if (ppc_is_imm16 (-size)) {
+		ppc_stwu (code, ppc_r0, -size, ppc_sp);
+	} else {
+		ppc_load (code, ppc_r11, -size);
+		ppc_stwux (code, ppc_r0, ppc_sp, ppc_r11);
+	}
+
+	return code;
+}
+
+static guint8*
+emit_unreserve_param_area (MonoCompile *cfg, guint8 *code)
+{
+	int size = cfg->param_area;
+
+	size += MONO_ARCH_FRAME_ALIGNMENT - 1;
+	size &= -MONO_ARCH_FRAME_ALIGNMENT;
+
+	if (!size)
+		return code;
+
+	ppc_lwz (code, ppc_r0, 0, ppc_sp);
+	if (ppc_is_imm16 (size)) {
+		ppc_stwu (code, ppc_r0, size, ppc_sp);
+	} else {
+		ppc_load (code, ppc_r11, size);
+		ppc_stwux (code, ppc_r0, ppc_sp, ppc_r11);
+	}
+
+	return code;
+}
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -3455,6 +3499,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_START_HANDLER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			g_assert (spvar->inst_basereg != ppc_sp);
+			code = emit_reserve_param_area (cfg, code);
 			ppc_mflr (code, ppc_r0);
 			if (ppc_is_imm16 (spvar->inst_offset)) {
 				ppc_stw (code, ppc_r0, spvar->inst_offset, spvar->inst_basereg);
@@ -3466,6 +3512,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ENDFILTER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			g_assert (spvar->inst_basereg != ppc_sp);
+			code = emit_unreserve_param_area (cfg, code);
 			if (ins->sreg1 != ppc_r3)
 				ppc_mr (code, ppc_r3, ins->sreg1);
 			if (ppc_is_imm16 (spvar->inst_offset)) {
@@ -3480,6 +3528,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ENDFINALLY: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
+			g_assert (spvar->inst_basereg != ppc_sp);
+			code = emit_unreserve_param_area (cfg, code);
 			ppc_lwz (code, ppc_r0, spvar->inst_offset, spvar->inst_basereg);
 			ppc_mtlr (code, ppc_r0);
 			ppc_blr (code);
