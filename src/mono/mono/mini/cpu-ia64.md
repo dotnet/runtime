@@ -6,7 +6,7 @@
 
 label: len:0
 break: len:48
-jmp: len:48
+jmp: len:128
 br: len:48
 throw: src1:i len:96
 rethrow: src1:i len:48
