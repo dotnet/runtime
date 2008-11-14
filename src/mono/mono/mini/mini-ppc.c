@@ -571,7 +571,8 @@ typedef struct {
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-	guint8 *p, *endp, *start;
+	register guint8 *p;
+	guint8 *endp, *start;
 	static int cachelinesize = 0;
 	static int cachelineinc = 16;
 
@@ -604,6 +605,9 @@ mono_arch_flush_icache (guint8 *code, gint size)
 		}
 		if (!cachelinesize)
 			cachelinesize = 128;
+#elif defined(G_COMPILER_CODEWARRIOR)
+	cachelinesize = 32;
+	cachelineinc = 32;
 #else
 #warning Need a way to get cache line size
 		cachelinesize = 128;
@@ -613,6 +617,29 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	endp = p + size;
 	start = (guint8*)((gsize)start & ~(cachelinesize - 1));
 	/* use dcbf for smp support, later optimize for UP, see pem._64bit.d20030611.pdf page 211 */
+#if defined(G_COMPILER_CODEWARRIOR)
+	if (1) {
+		for (p = start; p < endp; p += cachelineinc) {
+			asm { dcbf 0, p };
+		}
+	} else {
+		for (p = start; p < endp; p += cachelineinc) {
+			asm { dcbst 0, p };
+		}
+	}
+	asm { sync };
+	p = code;
+	for (p = start; p < endp; p += cachelineinc) {
+		asm {
+			icbi 0, p
+			sync
+		}
+	}
+	asm {
+		sync
+		isync
+	}
+#else
 	if (1) {
 		for (p = start; p < endp; p += cachelineinc) {
 			asm ("dcbf 0,%0;" : : "r"(p) : "memory");
@@ -629,6 +656,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	}
 	asm ("sync");
 	asm ("isync");
+#endif
 }
 
 void
