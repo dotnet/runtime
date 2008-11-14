@@ -1266,6 +1266,12 @@ mono_arch_allocate_vars (MonoCompile *m)
 		curinst++;
 	}
 
+	/* some storage for fp conversions */
+	offset += 8 - 1;
+	offset &= ~(8 - 1);
+	m->arch.fp_conv_var_offset = offset;
+	offset += 8;
+
 	/* align the offset to 16 bytes */
 	offset += 16 - 1;
 	offset &= ~(16 - 1);
@@ -2027,11 +2033,17 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		int msw_reg = mono_alloc_ireg (cfg);
 		int adj_reg = mono_alloc_freg (cfg);
 		int tmp_reg = mono_alloc_freg (cfg);
+		int basereg = cfg->frame_reg;
+		int offset = cfg->arch.fp_conv_var_offset;
 		MONO_EMIT_NEW_ICONST (cfg, msw_reg, 0x43300000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, ppc_sp, -8, msw_reg);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, ppc_sp, -4, ins->sreg1);
+		if (!ppc_is_imm16 (offset + 4)) {
+			basereg = mono_alloc_ireg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
+		}
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, msw_reg);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, ins->sreg1);
 		MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, &adjust_val);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, ppc_sp, -8);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, basereg, offset);
 		MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
 		ins->opcode = OP_NOP;
 		break;
@@ -2044,12 +2056,18 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		int xored = mono_alloc_ireg (cfg);
 		int adj_reg = mono_alloc_freg (cfg);
 		int tmp_reg = mono_alloc_freg (cfg);
+		int basereg = cfg->frame_reg;
+		int offset = cfg->arch.fp_conv_var_offset;
+		if (!ppc_is_imm16 (offset + 4)) {
+			basereg = mono_alloc_ireg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
+		}
 		MONO_EMIT_NEW_ICONST (cfg, msw_reg, 0x43300000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, ppc_sp, -8, msw_reg);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, msw_reg);
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, xored, ins->sreg1, 0x80000000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, ppc_sp, -4, xored);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, xored);
 		MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, (gpointer)&adjust_val);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, ppc_sp, -8);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, basereg, offset);
 		MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
 		if (ins->opcode == OP_ICONV_TO_R4)
 			MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, ins->dreg, ins->dreg);
@@ -2058,8 +2076,14 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	}
 	case OP_CKFINITE: {
 		int msw_reg = mono_alloc_ireg (cfg);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, ppc_sp, -8, ins->sreg1);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, msw_reg, ppc_sp, -8);
+		int basereg = cfg->frame_reg;
+		int offset = cfg->arch.fp_conv_var_offset;
+		if (!ppc_is_imm16 (offset + 4)) {
+			basereg = mono_alloc_ireg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
+		}
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, basereg, offset, ins->sreg1);
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, msw_reg, basereg, offset);
 		MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_FINITE, -1, msw_reg);
 		MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, ins->dreg, ins->sreg1);
 		ins->opcode = OP_NOP;
@@ -2420,10 +2444,18 @@ loop_start:
 static guchar*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {
+	int offset = cfg->arch.fp_conv_var_offset;
 	/* sreg is a float, dreg is an integer reg. ppc_f0 is used a scratch */
 	ppc_fctiwz (code, ppc_f0, sreg);
-	ppc_stfd (code, ppc_f0, -8, ppc_sp);
-	ppc_lwz (code, dreg, -4, ppc_sp);
+	if (ppc_is_imm16 (offset + 4)) {
+		ppc_stfd (code, ppc_f0, offset, cfg->frame_reg);
+		ppc_lwz (code, dreg, offset + 4, cfg->frame_reg);
+	} else {
+		ppc_load (code, dreg, offset);
+		ppc_add (code, dreg, dreg, cfg->frame_reg);
+		ppc_stfd (code, ppc_f0, 0, dreg);
+		ppc_lwz (code, dreg, 4, dreg);
+	}
 	if (!is_signed) {
 		if (size == 1)
 			ppc_andid (code, dreg, dreg, 0xff);
@@ -3381,6 +3413,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 						ppc_lfd (code, i, -pos, cfg->frame_reg);
 					}
 				}*/
+				/* FIXME: restore registers before changing ppc_sp */
 				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
 						pos += sizeof (gulong);

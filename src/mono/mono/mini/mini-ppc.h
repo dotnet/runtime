@@ -44,6 +44,7 @@ typedef struct {
 } MonoContext;
 
 typedef struct MonoCompileArch {
+	int fp_conv_var_offset;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
