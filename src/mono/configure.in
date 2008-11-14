@@ -1865,8 +1865,10 @@ case "$host" in
         powerpc-*-sysv* | powerpc-*-darwin* | powerpc-*-netbsd* )
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
 			TARGET=POWERPC64;
+			CPPFLAGS="$CPPFLAGS -D__mono_ppc__ -D__mono_ppc64__"
 		else
 			TARGET=POWERPC;
+			CPPFLAGS="$CPPFLAGS -D__mono_ppc__"
 		fi
 		AC_DEFINE(MONO_ARCH_REGPARMS,1,[Architecture uses registers for Parameters])
 		arch_target=ppc;
