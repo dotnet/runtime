@@ -567,6 +567,12 @@ xzero: dest:x len:4
 
 iconv_to_x: dest:x src1:i len:4
 extract_i4: dest:i src1:x len:4
+
+extract_i2: dest:i src1:x len:10
+extract_u2: dest:i src1:x len:10
+extract_i1: dest:i src1:x len:10
+extract_u1: dest:i src1:x len:10
+
 iconv_to_r8_raw: dest:f src1:i len:17 
 
 loadx_membase: dest:x src1:b len:7

@@ -345,7 +345,6 @@ static const SimdIntrinsc vector4i_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector8us_intrinsics[] = {
@@ -371,6 +370,14 @@ static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ SN_SubtractWithSaturation, OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWW, SIMD_EMIT_BINARY },
+	{ SN_get_V0, 0, SIMD_EMIT_GETTER },
+	{ SN_get_V1, 1, SIMD_EMIT_GETTER },
+	{ SN_get_V2, 2, SIMD_EMIT_GETTER },
+	{ SN_get_V3, 3, SIMD_EMIT_GETTER },
+	{ SN_get_V4, 4, SIMD_EMIT_GETTER },
+	{ SN_get_V5, 5, SIMD_EMIT_GETTER },
+	{ SN_get_V6, 6, SIMD_EMIT_GETTER },
+	{ SN_get_V7, 7, SIMD_EMIT_GETTER },
 	{ SN_op_Addition, OP_PADDW, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
@@ -384,7 +391,6 @@ static const SimdIntrinsc vector8us_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector8s_intrinsics[] = {
@@ -410,6 +416,14 @@ static const SimdIntrinsc vector8s_intrinsics[] = {
 	{ SN_SubtractWithSaturation, OP_PSUBW_SAT_UN, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHW, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWW, SIMD_EMIT_BINARY },
+	{ SN_get_V0, 0, SIMD_EMIT_GETTER },
+	{ SN_get_V1, 1, SIMD_EMIT_GETTER },
+	{ SN_get_V2, 2, SIMD_EMIT_GETTER },
+	{ SN_get_V3, 3, SIMD_EMIT_GETTER },
+	{ SN_get_V4, 4, SIMD_EMIT_GETTER },
+	{ SN_get_V5, 5, SIMD_EMIT_GETTER },
+	{ SN_get_V6, 6, SIMD_EMIT_GETTER },
+	{ SN_get_V7, 7, SIMD_EMIT_GETTER },
 	{ SN_op_Addition, OP_PADDW, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
@@ -423,7 +437,6 @@ static const SimdIntrinsc vector8s_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector16b_intrinsics[] = {
@@ -444,6 +457,22 @@ static const SimdIntrinsc vector16b_intrinsics[] = {
 	{ SN_SumOfAbsoluteDifferences, OP_PSUM_ABS_DIFF, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWB, SIMD_EMIT_BINARY },
+	{ SN_get_V0, 0, SIMD_EMIT_GETTER },
+	{ SN_get_V1, 1, SIMD_EMIT_GETTER },
+	{ SN_get_V10, 10, SIMD_EMIT_GETTER },
+	{ SN_get_V11, 11, SIMD_EMIT_GETTER },
+	{ SN_get_V12, 12, SIMD_EMIT_GETTER },
+	{ SN_get_V13, 13, SIMD_EMIT_GETTER },
+	{ SN_get_V14, 14, SIMD_EMIT_GETTER },
+	{ SN_get_V15, 15, SIMD_EMIT_GETTER },
+	{ SN_get_V2, 2, SIMD_EMIT_GETTER },
+	{ SN_get_V3, 3, SIMD_EMIT_GETTER },
+	{ SN_get_V4, 4, SIMD_EMIT_GETTER },
+	{ SN_get_V5, 5, SIMD_EMIT_GETTER },
+	{ SN_get_V6, 6, SIMD_EMIT_GETTER },
+	{ SN_get_V7, 7, SIMD_EMIT_GETTER },
+	{ SN_get_V8, 8, SIMD_EMIT_GETTER },
+	{ SN_get_V9, 9, SIMD_EMIT_GETTER },
 	{ SN_op_Addition, OP_PADDB, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
@@ -454,7 +483,6 @@ static const SimdIntrinsc vector16b_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector16sb_intrinsics[] = {
@@ -474,6 +502,22 @@ static const SimdIntrinsc vector16sb_intrinsics[] = {
 	{ SN_SubtractWithSaturation, OP_PSUBB_SAT, SIMD_EMIT_BINARY },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHB, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWB, SIMD_EMIT_BINARY },
+	{ SN_get_V0, 0, SIMD_EMIT_GETTER },
+	{ SN_get_V1, 1, SIMD_EMIT_GETTER },
+	{ SN_get_V10, 10, SIMD_EMIT_GETTER },
+	{ SN_get_V11, 11, SIMD_EMIT_GETTER },
+	{ SN_get_V12, 12, SIMD_EMIT_GETTER },
+	{ SN_get_V13, 13, SIMD_EMIT_GETTER },
+	{ SN_get_V14, 14, SIMD_EMIT_GETTER },
+	{ SN_get_V15, 15, SIMD_EMIT_GETTER },
+	{ SN_get_V2, 2, SIMD_EMIT_GETTER },
+	{ SN_get_V3, 3, SIMD_EMIT_GETTER },
+	{ SN_get_V4, 4, SIMD_EMIT_GETTER },
+	{ SN_get_V5, 5, SIMD_EMIT_GETTER },
+	{ SN_get_V6, 6, SIMD_EMIT_GETTER },
+	{ SN_get_V7, 7, SIMD_EMIT_GETTER },
+	{ SN_get_V8, 8, SIMD_EMIT_GETTER },
+	{ SN_get_V9, 9, SIMD_EMIT_GETTER },
 	{ SN_op_Addition, OP_PADDB, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
@@ -784,42 +828,81 @@ simd_intrinsic_emit_unary (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mono
 	return ins;
 }
 
+static int
+mono_type_to_extract_op (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+		return OP_EXTRACT_I1;
+	case MONO_TYPE_U1:
+		return OP_EXTRACT_U1;
+	case MONO_TYPE_I2:
+		return OP_EXTRACT_I2;
+	case MONO_TYPE_U2:
+		return OP_EXTRACT_U2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		return OP_EXTRACT_I4;
+	}
+	g_assert_not_reached ();
+}
+
+/*Returns the amount to shift the element index to get the dword it belongs to*/
+static int
+mono_type_elements_shift_bits (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return 2;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return 1;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		return 0;
+	}
+	g_assert_not_reached ();
+}
+
+
 static MonoInst*
 simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
-	MonoInst *tmp, *ins;
+	MonoInst *ins;
 	MonoMethodSignature *sig = mono_method_signature (cmethod);
-	int vreg;
-	
+	int vreg, shift_bits = mono_type_elements_shift_bits (sig->ret);
+
 	vreg = load_simd_vreg (cfg, cmethod, args [0]);
 
-	if (intrinsic->opcode) {
+	if (intrinsic->opcode >> shift_bits) {
 		MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
 		ins->klass = cmethod->klass;
 		ins->sreg1 = vreg;
-		ins->inst_c0 = intrinsic->opcode;
+		ins->inst_c0 = intrinsic->opcode >> shift_bits;
 		ins->type = STACK_VTYPE;
 		ins->dreg = vreg = alloc_ireg (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);
 	}
 
-	MONO_INST_NEW (cfg, tmp, OP_EXTRACT_I4);
-	tmp->klass = cmethod->klass;
-	tmp->sreg1 = vreg;
-	tmp->type = STACK_I4;
-	tmp->dreg = alloc_ireg (cfg);
-	MONO_ADD_INS (cfg->cbb, tmp);
+	MONO_INST_NEW (cfg, ins, mono_type_to_extract_op (sig->ret));
+	ins->klass = cmethod->klass;
+	ins->sreg1 = vreg;
+	ins->type = STACK_I4;
+	ins->dreg = vreg = alloc_ireg (cfg);
+	ins->inst_c0 = intrinsic->opcode & ((1 << shift_bits) - 1);
+	MONO_ADD_INS (cfg->cbb, ins);
 
 	if (sig->ret->type == MONO_TYPE_R4) {
 		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_R8_RAW);
 		ins->klass = mono_defaults.single_class;
-		ins->sreg1 = tmp->dreg;
+		ins->sreg1 = vreg;
 		ins->type = STACK_R8;
 		ins->dreg = alloc_freg (cfg);
 		ins->backend.spill_var = get_int_to_float_spill_area (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);	
-	} else {
-		ins = tmp;
 	}
 	return ins;
 }
