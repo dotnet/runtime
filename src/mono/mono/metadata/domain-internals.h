@@ -173,7 +173,7 @@ struct _MonoDomain {
 	MonoGHashTable     *delegate_hash_table;
 	/* typeof (void) */
 	MonoObject         *typeof_void;
-#define MONO_DOMAIN_LAST_GC_TRACKED delegate_hash_table
+#define MONO_DOMAIN_LAST_GC_TRACKED typeof_void
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;
