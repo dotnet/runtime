@@ -6037,6 +6037,10 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 	 */
 	type = klass->byval_arg.byref == type->byref ? &klass->byval_arg : &klass->this_arg;
 
+	/* void is very common */
+	if (type->type == MONO_TYPE_VOID && domain->typeof_void)
+		return (MonoReflectionType*)domain->typeof_void;
+
 	/*
 	 * If the vtable of the given class was already created, we can use
 	 * the MonoType from there and avoid all locking and hash table lookups.
@@ -6088,6 +6092,10 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 #endif
 	res->type = type;
 	mono_g_hash_table_insert (domain->type_hash, type, res);
+
+	if (type->type == MONO_TYPE_VOID)
+		MONO_OBJECT_SETREF (domain, typeof_void, res);
+
 	mono_domain_unlock (domain);
 	return res;
 }

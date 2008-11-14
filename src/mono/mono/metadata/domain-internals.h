@@ -171,6 +171,8 @@ struct _MonoDomain {
 	MonoGHashTable    *type_init_exception_hash;
 	/* maps delegate trampoline addr -> delegate object */
 	MonoGHashTable     *delegate_hash_table;
+	/* typeof (void) */
+	MonoObject         *typeof_void;
 #define MONO_DOMAIN_LAST_GC_TRACKED delegate_hash_table
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
