@@ -292,6 +292,7 @@ struct _BinSymbol {
 	int offset;
 	gboolean is_function;
 	gboolean is_global;
+	char *end_label;
 };
 
 struct _BinSection {
@@ -338,17 +339,31 @@ emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsect
 }
 
 static void
-emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
+emit_symbol_inner (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean is_global, gboolean func)
 {
 	BinSymbol *symbol = g_new0 (BinSymbol, 1);
 	symbol->name = g_strdup (name);
+	if (end_label)
+		symbol->end_label = g_strdup (end_label);
 	symbol->is_function = func;
-	symbol->is_global = TRUE;
+	symbol->is_global = is_global;
 	symbol->section = acfg->cur_section;
 	/* FIXME: we align after this call... */
 	symbol->offset = symbol->section->cur_offset;
 	symbol->next = acfg->symbols;
 	acfg->symbols = symbol;
+}
+
+static void
+emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
+{
+	emit_symbol_inner (acfg, name, NULL, TRUE, func);
+}
+
+static void
+emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func)
+{
+	emit_symbol_inner (acfg, name, end_label, FALSE, func);
 }
 
 static void
@@ -735,8 +750,13 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, ElfSectHeade
 
 	if (hash)
 		symbols = g_new0 (ElfSymbol, hash [1]);
-	else
-		symbols = g_new0 (ElfSymbol, *num_syms + SECT_NUM + 10); /* FIXME */
+	else {
+		i = 0;
+		for (symbol = acfg->symbols; symbol; symbol = symbol->next)
+			i ++;
+		
+		symbols = g_new0 (ElfSymbol, i + SECT_NUM + 10); /* FIXME */
+	}
 
 	/* the first symbol is undef, all zeroes */
 	i = 1;
@@ -775,9 +795,9 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, ElfSectHeade
 	for (symbol = acfg->symbols; symbol; symbol = symbol->next) {
 		int offset;
 		BinLabel *lab;
-		if (!symbol->is_global)
+		if (!symbol->is_global && hash)
 			continue;
-		symbols [i].st_info = ELF32_ST_INFO (STB_GLOBAL, symbol->is_function? STT_FUNC : STT_OBJECT);
+		symbols [i].st_info = ELF32_ST_INFO (symbol->is_global ? STB_GLOBAL : STB_LOCAL, symbol->is_function? STT_FUNC : STT_OBJECT);
 		symbols [i].st_name = str_table_add (strtab, symbol->name);
 		/*g_print ("sym name %s tabled to %d\n", symbol->name, symbols [i].st_name);*/
 		section = symbol->section;
@@ -788,6 +808,12 @@ collect_syms (MonoAotCompile *acfg, int *hash, ElfStrTable *strtab, ElfSectHeade
 			symbols [i].st_value = section->parent->virt_offset + section->cur_offset + offset;
 		} else {
 			symbols [i].st_value = section->virt_offset + offset;
+		}
+
+		if (symbol->end_label) {
+			BinLabel *elab = g_hash_table_lookup (acfg->labels, symbol->end_label);
+			g_assert (elab);
+			symbols [i].st_size = elab->offset - lab->offset;
 		}
 		++i;
 	}
@@ -2785,6 +2811,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	guint8 *code;
 	char symbol [128];
 	int func_alignment = 16;
+	char *full_name;
 	MonoMethodHeader *header;
 
 	method = cfg->orig_method;
@@ -2798,8 +2825,17 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	emit_alignment (acfg, func_alignment);
 	emit_label (acfg, symbol);
-	if (acfg->aot_opts.write_symbols)
-		emit_global (acfg, symbol, TRUE);
+
+#ifdef USE_ELF_WRITER
+	if (acfg->aot_opts.write_symbols) {
+		/* Emit a local symbol into the symbol table */
+		full_name = mono_method_full_name (method, TRUE);
+		sprintf (symbol, ".Lme_%x", method_index);
+		emit_local_symbol (acfg, full_name, symbol, TRUE);
+		emit_label (acfg, full_name);
+		g_free (full_name);
+	}
+#endif
 
 	if (cfg->verbose_level > 0)
 		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), symbol);
@@ -2811,6 +2847,9 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_and_reloc_code (acfg, method, code, cfg->code_len, cfg->patch_info, FALSE);
 
 	emit_line (acfg);
+
+	sprintf (symbol, ".Lme_%x", method_index);
+	emit_label (acfg, symbol);
 }
 
 /**
