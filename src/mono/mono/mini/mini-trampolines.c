@@ -337,27 +337,31 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			*vtable_slot = mono_get_addr_from_ftnptr (addr);
 		}
 	}
-	else if (!generic_shared || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-			mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
+	else {
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
-		if (generic_shared) {
-			if (m->wrapper_type != MONO_WRAPPER_NONE)
-				m = mono_marshal_method_from_wrapper (m);
-			g_assert (mono_method_is_generic_sharable_impl (m, FALSE));
-		}
-
-		/* Patch calling code */
 		if (plt_entry) {
 			mono_arch_patch_plt_entry (plt_entry, addr);
-		} else {
-			MonoJitInfo *ji = 
-				mono_jit_info_table_find (mono_domain_get (), (char*)code);
-			MonoJitInfo *target_ji = 
-				mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
+		} else if (!generic_shared || (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+			mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
+			if (generic_shared) {
+				if (m->wrapper_type != MONO_WRAPPER_NONE)
+					m = mono_marshal_method_from_wrapper (m);
+				g_assert (mono_method_is_generic_sharable_impl (m, FALSE));
+			}
 
-			if (mono_method_same_domain (ji, target_ji))
-				mono_arch_patch_callsite (ji->code_start, code, addr);
+			/* Patch calling code */
+			if (plt_entry) {
+
+			} else {
+				MonoJitInfo *ji = 
+					mono_jit_info_table_find (mono_domain_get (), (char*)code);
+				MonoJitInfo *target_ji = 
+					mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr));
+
+				if (mono_method_same_domain (ji, target_ji))
+					mono_arch_patch_callsite (ji->code_start, code, addr);
+			}
 		}
 	}
 
@@ -485,12 +489,10 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
 
 	mono_runtime_class_init (vtable);
 
-	if (!mono_running_on_valgrind ()) {
-		if (plt_entry) {
-			mono_arch_nullify_plt_entry (plt_entry);
-		} else {
-			mono_arch_nullify_class_init_trampoline (code, regs);
-		}
+	if (plt_entry) {
+		mono_arch_nullify_plt_entry (plt_entry);
+	} else {
+		mono_arch_nullify_class_init_trampoline (code, regs);
 	}
 }
 
