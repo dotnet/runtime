@@ -417,6 +417,46 @@ void *mono_global_codeman_reserve (int size)
 	}
 }
 
+static inline GSList*
+g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
+{
+	GSList *new_list;
+	GSList *last;
+	
+	new_list = mono_mempool_alloc (mp, sizeof (GSList));
+	new_list->data = data;
+	new_list->next = NULL;
+	
+	if (list) {
+		last = list;
+		while (last->next)
+			last = last->next;
+		last->next = new_list;
+		
+		return list;
+	} else
+		return new_list;
+}
+
+/**
+ * mono_emit_unwind_op:
+ *
+ *   Add an unwind op with the given parameters for the list of unwind ops stored in
+ * cfg->unwind_ops.
+ */
+void
+mono_emit_unwind_op (MonoCompile *cfg, int when, int tag, int reg, int val)
+{
+	MonoUnwindOp *op = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoUnwindOp));
+
+	op->op = tag;
+	op->reg = reg;
+	op->val = val;
+	op->when = when;
+	
+	cfg->unwind_ops = g_slist_append_mempool (cfg->mempool, cfg->unwind_ops, op);
+}
+
 MonoJumpInfoToken *
 mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context)
 {
