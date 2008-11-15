@@ -261,7 +261,8 @@ common_sources = \
 	abcremoval2.c	\
 	regalloc2.c	\
 	simd-methods.h	\
-	simd-intrinsics.c
+	simd-intrinsics.c	\
+	unwind.h
 
 test_sources = 		\
 	basic-calls.cs 	\

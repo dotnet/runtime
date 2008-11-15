@@ -4850,7 +4850,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *ins;
-	int alloc_size, pos, max_offset, i, quad, max_epilog_size;
+	int alloc_size, pos, max_offset, i, cfa_offset, quad, max_epilog_size;
 	guint8 *code;
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->arch.lmf_offset;
@@ -4867,6 +4867,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* Amount of stack space allocated by register saving code */
 	pos = 0;
 
+	/* Offset between RSP and the CFA */
+	cfa_offset = 0;
+
 	/* 
 	 * The prolog consists of the following parts:
 	 * FP present:
@@ -4882,16 +4885,25 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	 * - save callee saved regs using moves
 	 */
 
+	// CFA = sp + 8
+	cfa_offset = 8;
+	mono_emit_unwind_op_def_cfa (cfg, code, AMD64_RSP, 8);
+	// IP saved at CFA - 8
+	mono_emit_unwind_op_offset (cfg, code, AMD64_RIP, -cfa_offset);
 	async_exc_point (code);
 
 	if (!cfg->arch.omit_fp) {
 		amd64_push_reg (code, AMD64_RBP);
+		cfa_offset += 8;
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+		mono_emit_unwind_op_offset (cfg, code, AMD64_RBP, - cfa_offset);
 		async_exc_point (code);
 #ifdef PLATFORM_WIN32
 		mono_arch_unwindinfo_add_push_nonvol (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
 #endif
 		
 		amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (gpointer));
+		mono_emit_unwind_op_def_cfa_reg (cfg, code, AMD64_RBP);
 		async_exc_point (code);
 #ifdef PLATFORM_WIN32
 		mono_arch_unwindinfo_add_set_fpreg (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
@@ -4900,10 +4912,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* Save callee saved registers */
 	if (!cfg->arch.omit_fp && !method->save_lmf) {
+		int offset = cfa_offset;
+
 		for (i = 0; i < AMD64_NREG; ++i)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				amd64_push_reg (code, i);
 				pos += sizeof (gpointer);
+				offset += 8;
+				mono_emit_unwind_op_offset (cfg, code, i, - offset);
 				async_exc_point (code);
 			}
 	}
@@ -4932,6 +4948,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		guint32 remaining_size = alloc_size;
 		while (remaining_size >= 0x1000) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 0x1000);
+ 			if (cfg->arch.omit_fp) {
+				cfa_offset += 0x1000;
+ 				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+			}
 			async_exc_point (code);
 #ifdef PLATFORM_WIN32
 			if (cfg->arch.omit_fp) 
@@ -4943,7 +4963,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 		if (remaining_size) {
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, remaining_size);
-			async_exc_point (code);
+ 			if (cfg->arch.omit_fp) {
+				cfa_offset += remaining_size;
+ 				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+				async_exc_point (code);
+			}
 #ifdef PLATFORM_WIN32
 			if (cfg->arch.omit_fp) 
 				mono_arch_unwindinfo_add_alloc_stack (&cfg->arch.unwindinfo, cfg->native_code, code, remaining_size);
@@ -4951,7 +4975,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 #else
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, alloc_size);
-		async_exc_point (code);
+		if (cfg->arch.omit_fp) {
+			cfa_offset += alloc_size;
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+			async_exc_point (code);
+		}
 #endif
 	}
 
@@ -4992,6 +5020,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		for (i = 0; i < AMD64_NREG; ++i)
 			if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
 				amd64_mov_membase_reg (code, AMD64_RSP, save_area_offset, i, 8);
+				mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - save_area_offset));
 				save_area_offset += 8;
 				async_exc_point (code);
 			}
