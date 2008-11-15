@@ -73,7 +73,7 @@ typedef struct MonoAotModule {
 	guint32 opts;
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
-	guint32 got_size;
+	guint32 got_size, plt_size;
 	GHashTable *name_cache;
 	GHashTable *extra_methods;
 	/* Maps methods to their code */
@@ -92,7 +92,6 @@ typedef struct MonoAotModule {
 	guint8 *code_end;
 	guint8 *plt;
 	guint8 *plt_end;
-	guint32 plt_jump_table_size;
 	guint32 plt_first_got_offset;
 	guint32 *code_offsets;
 	guint8 *method_info;
@@ -790,12 +789,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *opt_flags = NULL;
 	gpointer *globals;
 	gboolean full_aot = FALSE;
-	guint32 *plt_jump_table_size = NULL;
 	guint32 *plt_first_got_offset = NULL;
 	guint32 *trampolines_info = NULL;
 	gpointer *got_addr = NULL;
 	gpointer *got = NULL;
 	guint32 *got_size_ptr = NULL;
+	guint32 *plt_size = NULL;
 	int i;
 
 	if (mono_compile_aot)
@@ -998,9 +997,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "plt", (gpointer*)&amodule->plt);
 	find_symbol (sofile, globals, "plt_end", (gpointer*)&amodule->plt_end);
 
-	find_symbol (sofile, globals, "plt_jump_table_size", (gpointer *)&plt_jump_table_size);
-	g_assert (plt_jump_table_size);
-	amodule->plt_jump_table_size = *plt_jump_table_size;
+	find_symbol (sofile, globals, "plt_size", (gpointer *)&plt_size);
+	g_assert (plt_size);
+	amodule->plt_size = *plt_size;
 
 	find_symbol (sofile, globals, "plt_first_got_offset", (gpointer *)&plt_first_got_offset);
 	g_assert (plt_first_got_offset);
@@ -2381,10 +2380,8 @@ init_plt (MonoAotModule *info)
 #ifdef MONO_ARCH_AOT_SUPPORTED
 #ifdef __i386__
 	guint8 *buf = info->plt;
-#elif defined(__x86_64__)
-	int i, n_entries;
-#elif defined(__arm__)
-	int i, n_entries;
+#elif defined(__x86_64__) || defined(__arm__)
+	int i;
 #endif
 	gpointer tramp;
 
@@ -2401,11 +2398,10 @@ init_plt (MonoAotModule *info)
 	/*
 	 * Initialize the PLT entries in the GOT to point to the default targets.
 	 */
-	 n_entries = info->plt_jump_table_size / sizeof (gpointer);
 
 	 /* The first entry points to the AOT trampoline */
 	 ((gpointer*)info->got)[info->plt_first_got_offset] = tramp;
-	 for (i = 1; i < n_entries; ++i)
+	 for (i = 1; i < info->plt_size; ++i)
 		 /* All the default entries point to the first entry */
 		 ((gpointer*)info->got)[info->plt_first_got_offset + i] = info->plt;
 #else

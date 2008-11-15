@@ -3314,6 +3314,13 @@ emit_plt (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 	emit_int32 (acfg, acfg->first_plt_got_offset);
 
+	sprintf (symbol, "plt_size");
+	emit_section_change (acfg, ".data", 0);
+	emit_global (acfg, symbol, FALSE);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_int32 (acfg, acfg->plt_offset);
+
 	emit_line (acfg);
 	sprintf (symbol, "plt");
 
@@ -3401,32 +3408,6 @@ emit_plt (MonoAotCompile *acfg)
 
 	sprintf (symbol, "plt_end");
 	emit_global (acfg, symbol, TRUE);
-	emit_label (acfg, symbol);
-
-	sprintf (symbol, "plt_jump_table_addr");
-	emit_section_change (acfg, ".data", 0);
-	emit_global (acfg, symbol, FALSE);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-	emit_pointer (acfg, "plt_jump_table");
-
-	sprintf (symbol, "plt_jump_table_size");
-	emit_section_change (acfg, ".data", 0);
-	emit_global (acfg, symbol, FALSE);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-	emit_symbol_diff (acfg, "plt_jump_table_end", "plt_jump_table", 0);
-
-	/* Don't make this a global so accesses don't need relocations */
-	sprintf (symbol, "plt_jump_table");
-	emit_section_change (acfg, ".bss", 0);
-	emit_label (acfg, symbol);
-
-#if defined(__x86_64__) || defined(__arm__)
-	emit_zero_bytes (acfg, (int)(acfg->plt_offset * sizeof (gpointer)));
-#endif	
-
-	sprintf (symbol, "plt_jump_table_end");
 	emit_label (acfg, symbol);
 }
 
@@ -4697,9 +4678,9 @@ emit_got_info (MonoAotCompile *acfg)
 		MonoJumpInfo *patch_info = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
 
 		g_ptr_array_add (acfg->shared_patches, patch_info);
-
-		acfg->got_offset ++;
 	}
+
+	acfg->got_offset += acfg->plt_offset;
 
 	/**
 	 * FIXME: 
@@ -4762,7 +4743,7 @@ emit_got (MonoAotCompile *acfg)
 
 	/* Don't make GOT global so accesses to it don't need relocations */
 	sprintf (symbol, "got");
-	emit_section_change (acfg, ".bss", 1);
+	emit_section_change (acfg, ".bss", 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
 	if ((acfg->got_offset + acfg->num_trampoline_got_entries) > 0)
