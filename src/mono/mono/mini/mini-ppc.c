@@ -2033,8 +2033,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		int msw_reg = mono_alloc_ireg (cfg);
 		int adj_reg = mono_alloc_freg (cfg);
 		int tmp_reg = mono_alloc_freg (cfg);
-		int basereg = cfg->frame_reg;
-		int offset = cfg->arch.fp_conv_var_offset;
+		int basereg = ppc_sp;
+		int offset = -8;
 		MONO_EMIT_NEW_ICONST (cfg, msw_reg, 0x43300000);
 		if (!ppc_is_imm16 (offset + 4)) {
 			basereg = mono_alloc_ireg (cfg);
@@ -2056,8 +2056,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		int xored = mono_alloc_ireg (cfg);
 		int adj_reg = mono_alloc_freg (cfg);
 		int tmp_reg = mono_alloc_freg (cfg);
-		int basereg = cfg->frame_reg;
-		int offset = cfg->arch.fp_conv_var_offset;
+		int basereg = ppc_sp;
+		int offset = -8;
 		if (!ppc_is_imm16 (offset + 4)) {
 			basereg = mono_alloc_ireg (cfg);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
@@ -2076,8 +2076,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	}
 	case OP_CKFINITE: {
 		int msw_reg = mono_alloc_ireg (cfg);
-		int basereg = cfg->frame_reg;
-		int offset = cfg->arch.fp_conv_var_offset;
+		int basereg = ppc_sp;
+		int offset = -8;
 		if (!ppc_is_imm16 (offset + 4)) {
 			basereg = mono_alloc_ireg (cfg);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
