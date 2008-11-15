@@ -5067,7 +5067,6 @@ emit_dwarf_info (MonoAotCompile *acfg)
 #ifdef __x86_64__
 		// FIXME:
 		if (cfg->arch.omit_fp && cfg->arch.stack_alloc_size < 127) {
-			printf ("X: %d %d\n", cfg->arch.omit_fp, 0);
 			emit_byte (acfg, DW_CFA_advance_loc | 4); /* size of alu_reg_imm () */
 			emit_byte (acfg, DW_CFA_def_cfa_offset);
 			emit_uleb128 (acfg, cfg->arch.stack_alloc_size + 8);
