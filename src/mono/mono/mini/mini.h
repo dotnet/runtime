@@ -23,6 +23,7 @@
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "declsec.h"
+#include "unwind.h"
 
 #ifndef G_LIKELY
 #define G_LIKELY(a) (a)
@@ -966,6 +967,8 @@ typedef struct {
 	char*            exception_message;
 	gpointer         exception_ptr;
 
+	GSList*          unwind_ops;
+
 	/* Fields used by the local reg allocator */
 	void*            reginfo;
 	int              reginfo_len;
@@ -1471,6 +1474,9 @@ CompRelation      mono_negate_cond (CompRelation cond) MONO_INTERNAL;
 int               mono_op_imm_to_op (int opcode) MONO_INTERNAL;
 void              mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins) MONO_INTERNAL;
 void              mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins) MONO_INTERNAL;
+void              mono_emit_unwind_op (MonoCompile *cfg, int when, 
+									   int tag, int reg, 
+									   int val) MONO_INTERNAL;
 
 void              mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
 void              mono_decompose_long_opts (MonoCompile *cfg) MONO_INTERNAL;
