@@ -3,6 +3,7 @@
 
 /* don't run the resulting program, it will destroy your computer,
  * just objdump -d it to inspect we generated the correct assembler.
+ * On Mac OS X use otool[64] -v -t
  */
 
 int main() {
@@ -10,7 +11,11 @@ int main() {
 	guint8 *p = code;
 	guint8 *cp;
 
-	printf (".text\n.align 4\n.globl main\n.type main,@function\nmain:\n");
+	printf (".text\n.align 4\n.globl main\n");
+#ifndef __APPLE__
+	printf (".type main,@function\n");
+#endif
+	printf ("main:\n");
 
 	ppc_stwu (p, ppc_r1, -32, ppc_r1);
 	ppc_mflr (p, ppc_r0);
