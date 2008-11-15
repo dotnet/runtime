@@ -548,6 +548,7 @@ enum {
 	SECT_GOT_PLT,
 	SECT_DATA,
 	SECT_BSS,
+	SECT_DEBUG_FRAME,
 	SECT_SHSTRTAB,
 	SECT_SYMTAB,
 	SECT_STRTAB,
@@ -600,6 +601,7 @@ static SectInfo section_info [] = {
 	{".got.plt", SHT_PROGBITS, SIZEOF_VOID_P, 3, SIZEOF_VOID_P},
 	{".data", SHT_PROGBITS, 0, 3, 8},
 	{".bss", SHT_NOBITS, 0, 3, 8},
+	{".debug_frame", SHT_PROGBITS, 0, 0, 8},
 	{".shstrtab", SHT_STRTAB, 0, 0, 1},
 	{".symtab", SHT_SYMTAB, sizeof (ElfSymbol), 0, SIZEOF_VOID_P},
 	{".strtab", SHT_STRTAB, 0, 0, 1}
@@ -727,6 +729,8 @@ get_label_addr (MonoAotCompile *acfg, const char *name)
 	gsize value;
 
 	lab = g_hash_table_lookup (acfg->labels, name);
+	if (!lab)
+		g_error ("Undefined label: '%s'.\n", name);
 	section = lab->section;
 	offset = lab->offset;
 	if (section->parent) {
@@ -965,7 +969,8 @@ resolve_relocations (MonoAotCompile *acfg)
 		data [1] = end_val >> 8;
 		data [2] = end_val >> 16;
 		data [3] = end_val >> 24;
-		if (start_val == 0) {
+		// FIXME:
+		if (start_val == 0 && reloc->val1 [0] != '.') {
 			rr [i].r_offset = vaddr;
 			rr [i].r_info = R_X86_64_RELATIVE;
 			rr [i].r_addend = end_val;
@@ -1052,7 +1057,8 @@ resolve_relocations (MonoAotCompile *acfg)
 			data [2] = end_val >> 16;
 			data [3] = end_val >> 24;
 		}
-		if (start_val == 0) {
+		// FIXME:
+		if (start_val == 0 && reloc->val1 [0] != '.') {
 			rr [i].r_offset = vaddr;
 			rr [i].r_info = R_386_RELATIVE;
 			++i;
@@ -1231,6 +1237,15 @@ emit_writeout (MonoAotCompile *acfg)
 	secth [SECT_BSS].sh_size = size;
 
 	/* virtual doesn't matter anymore */
+	file_offset = ALIGN_TO (file_offset, secth [SECT_DEBUG_FRAME].sh_addralign);
+ 	secth [SECT_DEBUG_FRAME].sh_offset = file_offset;
+ 	if (sections [SECT_DEBUG_FRAME])
+ 		size = sections [SECT_DEBUG_FRAME]->cur_offset;
+ 	else
+ 		size = 0;
+ 	secth [SECT_DEBUG_FRAME].sh_size = size;
+ 	file_offset += size;
+
 	file_offset = ALIGN_TO (file_offset, secth [SECT_SHSTRTAB].sh_addralign);
 	secth [SECT_SHSTRTAB].sh_offset = file_offset;
 	size = sh_str_table.data->len;
@@ -1387,6 +1402,9 @@ emit_writeout (MonoAotCompile *acfg)
 	fseek (file, secth [SECT_DATA].sh_offset, SEEK_SET);
 	fwrite (sections [SECT_DATA]->data, sections [SECT_DATA]->cur_offset, 1, file);
 
+	fseek (file, secth [SECT_DEBUG_FRAME].sh_offset, SEEK_SET);
+	if (sections [SECT_DEBUG_FRAME])
+		fwrite (sections [SECT_DEBUG_FRAME]->data, sections [SECT_DEBUG_FRAME]->cur_offset, 1, file);
 	fseek (file, secth [SECT_SHSTRTAB].sh_offset, SEEK_SET);
 	fwrite (sh_str_table.data->str, sh_str_table.data->len, 1, file);
 	fseek (file, secth [SECT_SYMTAB].sh_offset, SEEK_SET);
@@ -3724,8 +3742,6 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 {
 	gchar **args, **ptr;
 
-	memset (opts, 0, sizeof (*opts));
-
 	args = g_strsplit (aot_options ? aot_options : "", ",", -1);
 	for (ptr = args; ptr && *ptr; ptr ++) {
 		const char *arg = *ptr;
@@ -4198,6 +4214,12 @@ emit_code (MonoAotCompile *acfg)
 	emit_global (acfg, symbol, TRUE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
+
+	/* 
+	 * Emit some padding so the local symbol for the first method doesn't have the
+	 * same address as 'methods'.
+	 */
+	emit_zero_bytes (acfg, 16);
 
 	for (l = acfg->method_order; l != NULL; l = l->next) {
 		i = GPOINTER_TO_UINT (l->data);
@@ -4915,6 +4937,153 @@ emit_globals (MonoAotCompile *acfg)
 	}
 }
 
+/*****************************************/
+/*   Emitting DWARF debug information    */
+/*****************************************/
+
+/* The low 6 bits contain additional information */
+#define DW_CFA_advance_loc        0x40
+#define DW_CFA_offset             0x80
+#define DW_CFA_restore            0xc0
+
+#define DW_CFA_nop              0x00
+#define DW_CFA_set_loc          0x01
+#define DW_CFA_advance_loc1     0x02
+#define DW_CFA_advance_loc2     0x03
+#define DW_CFA_advance_loc4     0x04
+#define DW_CFA_offset_extended  0x05
+#define DW_CFA_restore_extended 0x06
+#define DW_CFA_undefined        0x07
+#define DW_CFA_same_value       0x08
+#define DW_CFA_register         0x09
+#define DW_CFA_remember_state   0x0a
+#define DW_CFA_restore_state    0x0b
+#define DW_CFA_def_cfa          0x0c
+#define DW_CFA_def_cfa_register 0x0d
+#define DW_CFA_def_cfa_offset   0x0e
+#define DW_CFA_def_cfa_expression 0x0f
+#define DW_CFA_expression       0x10
+#define DW_CFA_offset_extended_sf 0x11
+#define DW_CFA_def_cfa_sf       0x12
+#define DW_CFA_def_cfa_offset_sf 0x13
+#define DW_CFA_val_offset        0x14
+#define DW_CFA_val_offset_sf     0x15
+#define DW_CFA_val_expression    0x16
+#define DW_CFA_lo_user           0x1c
+#define DW_CFA_hi_user           0x3f
+
+static G_GNUC_UNUSED void
+emit_uleb128 (MonoAotCompile *acfg, guint32 value)
+{
+	do {
+		guint8 b = value & 0x7f;
+		value >>= 7;
+		if (value != 0) /* more bytes to come */
+			b |= 0x80;
+		emit_byte (acfg, b);
+	} while (value);
+}
+
+static G_GNUC_UNUSED void
+emit_sleb128 (MonoAotCompile *acfg, gint32 value)
+{
+	gboolean more = 1;
+	gboolean negative = (value < 0);
+	guint32 size = 32;
+	guint8 byte;
+
+	while (more) {
+		byte = value & 0x7f;
+		value >>= 7;
+		/* the following is unnecessary if the
+		 * implementation of >>= uses an arithmetic rather
+		 * than logical shift for a signed left operand
+		 */
+		if (negative)
+			/* sign extend */
+			value |= - (1 <<(size - 7));
+		/* sign bit of byte is second high order bit (0x40) */
+		if ((value == 0 && !(byte & 0x40)) ||
+			(value == -1 && (byte & 0x40)))
+			more = 0;
+		else
+			byte |= 0x80;
+		emit_byte (acfg, byte);
+	}
+}
+
+static void
+emit_dwarf_info (MonoAotCompile *acfg)
+{
+#if defined(USE_ELF_WRITER) && defined(__x86_64__)
+	int i;
+	char symbol [128], symbol2 [128];
+
+	emit_section_change (acfg, ".debug_frame", 0);
+
+	/* Emit a CIE */
+	emit_symbol_diff (acfg, ".Lcie0_end", ".", -4); /* length */
+	emit_int32 (acfg, 0xffffffff); /* CIE id */
+	emit_byte (acfg, 3); /* version */
+	emit_string (acfg, ""); /* augmention */
+	emit_sleb128 (acfg, 1); /* code alignment factor */
+#ifdef __x86_64__
+	emit_sleb128 (acfg, -8); /* data alignment factor */
+	emit_uleb128 (acfg, AMD64_RIP);
+#else
+	g_assert_not_reached ();
+#endif
+
+#ifdef __x86_64__
+	emit_byte (acfg, DW_CFA_def_cfa);
+	/* For some reason, 7 is %rsp */
+	emit_uleb128 (acfg, 7); /* reg=%rsp */
+	emit_uleb128 (acfg, 8); /* offset=8 */
+	emit_byte (acfg, DW_CFA_offset | AMD64_RIP);
+	emit_uleb128 (acfg, 1); /* offset=-8 */
+#else
+	g_assert_not_reached ();
+#endif
+
+	emit_alignment (acfg, sizeof (gpointer));
+	emit_label (acfg, ".Lcie0_end");
+
+	/* DIEs for methods */
+	for (i = 0; i < acfg->nmethods; ++i) {
+		MonoCompile *cfg = acfg->cfgs [i];
+
+		if (!cfg)
+			continue;
+
+		sprintf (symbol, ".Ldie%d_end", i);
+		emit_symbol_diff (acfg, symbol, ".", -4); /* length */
+		emit_int32 (acfg, 0); /* CIE_pointer */
+		sprintf (symbol, ".Lm_%x", i);
+		sprintf (symbol2, ".Lme_%x", i);
+		emit_pointer (acfg, symbol); /* initial_location */
+		emit_symbol_diff (acfg, symbol2, symbol, 0); /* address_range */
+		emit_int32 (acfg, 0);
+
+#ifdef __x86_64__
+		// FIXME:
+		if (cfg->arch.omit_fp && cfg->arch.stack_alloc_size < 127) {
+			printf ("X: %d %d\n", cfg->arch.omit_fp, 0);
+			emit_byte (acfg, DW_CFA_advance_loc | 4); /* size of alu_reg_imm () */
+			emit_byte (acfg, DW_CFA_def_cfa_offset);
+			emit_uleb128 (acfg, cfg->arch.stack_alloc_size + 8);
+		}
+#else
+		g_assert_not_reached ();
+#endif
+
+		emit_alignment (acfg, sizeof (gpointer));
+		sprintf (symbol, ".Ldie%d_end", i);
+		emit_label (acfg, symbol);
+	}
+
+#endif /* ELF_WRITER */
+}
+
 static void
 acfg_free (MonoAotCompile *acfg)
 {
@@ -4969,6 +5138,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
 	InitializeCriticalSection (&acfg->mutex);
+
+	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
+	acfg->aot_opts.write_symbols = TRUE;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
@@ -5104,6 +5276,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_got (acfg);
 
 	emit_globals (acfg);
+
+	emit_dwarf_info (acfg);
 
 	sprintf (symbol, "mem_end");
 	emit_section_change (acfg, ".text", 1);
