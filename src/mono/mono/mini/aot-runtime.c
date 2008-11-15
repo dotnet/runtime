@@ -83,6 +83,7 @@ typedef struct MonoAotModule {
 	MonoAssembly *assembly;
 	MonoImage **image_table;
 	guint32 image_table_len;
+	guint32 plt_first_got_ofset;
 	gboolean out_of_date;
 	gboolean plt_inited;
 	guint8 *mem_begin;
@@ -91,9 +92,8 @@ typedef struct MonoAotModule {
 	guint8 *code_end;
 	guint8 *plt;
 	guint8 *plt_end;
-	guint8 *plt_info;
-	guint8 *plt_jump_table;
 	guint32 plt_jump_table_size;
+	guint32 plt_first_got_offset;
 	guint32 *code_offsets;
 	guint8 *method_info;
 	guint32 *method_info_offsets;
@@ -790,8 +790,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *opt_flags = NULL;
 	gpointer *globals;
 	gboolean full_aot = FALSE;
-	gpointer *plt_jump_table_addr = NULL;
 	guint32 *plt_jump_table_size = NULL;
+	guint32 *plt_first_got_offset = NULL;
 	guint32 *trampolines_info = NULL;
 	gpointer *got_addr = NULL;
 	gpointer *got = NULL;
@@ -997,16 +997,14 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	find_symbol (sofile, globals, "plt", (gpointer*)&amodule->plt);
 	find_symbol (sofile, globals, "plt_end", (gpointer*)&amodule->plt_end);
-	find_symbol (sofile, globals, "plt_info", (gpointer*)&amodule->plt_info);
-
-	find_symbol (sofile, globals, "plt_jump_table_addr", (gpointer *)&plt_jump_table_addr);
-	g_assert (plt_jump_table_addr);
-	amodule->plt_jump_table = (guint8*)*plt_jump_table_addr;
-	g_assert (amodule->plt_jump_table);
 
 	find_symbol (sofile, globals, "plt_jump_table_size", (gpointer *)&plt_jump_table_size);
 	g_assert (plt_jump_table_size);
 	amodule->plt_jump_table_size = *plt_jump_table_size;
+
+	find_symbol (sofile, globals, "plt_first_got_offset", (gpointer *)&plt_first_got_offset);
+	g_assert (plt_first_got_offset);
+	amodule->plt_first_got_offset = *plt_first_got_offset;
 
 	find_symbol (sofile, globals, "trampolines_info", (gpointer *)&trampolines_info);
 	if (trampolines_info) {
@@ -2345,7 +2343,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 
 	//printf ("DYN: %p %d\n", aot_module, plt_info_offset);
 
-	p = &module->plt_info [plt_info_offset];
+	p = &module->got_info [plt_info_offset];
 
 	ji.type = decode_value (p, &p);
 
@@ -2401,15 +2399,15 @@ init_plt (MonoAotModule *info)
 	x86_jump_code (buf, tramp);
 #elif defined(__x86_64__) || defined(__arm__)
 	/*
-	 * Initialize the entries in the plt_jump_table to point to the default targets.
+	 * Initialize the PLT entries in the GOT to point to the default targets.
 	 */
 	 n_entries = info->plt_jump_table_size / sizeof (gpointer);
 
 	 /* The first entry points to the AOT trampoline */
-	 ((gpointer*)info->plt_jump_table)[0] = tramp;
+	 ((gpointer*)info->got)[info->plt_first_got_offset] = tramp;
 	 for (i = 1; i < n_entries; ++i)
 		 /* All the default entries point to the first entry */
-		 ((gpointer*)info->plt_jump_table)[i] = info->plt;
+		 ((gpointer*)info->got)[info->plt_first_got_offset + i] = info->plt;
 #else
 	g_assert_not_reached ();
 #endif

@@ -176,9 +176,10 @@ typedef struct MonoAotCompile {
 	GPtrArray *image_table;
 	GPtrArray *globals;
 	GList *method_order;
+	guint32 *plt_got_info_offsets;
 	/* Number of trampolines emitted into the AOT file */
 	guint32 num_aot_trampolines;
-	guint32 got_offset, plt_offset;
+	guint32 got_offset, plt_offset, first_plt_got_offset;
 	/* Number of GOT entries reserved for trampolines */
 	guint32 num_trampoline_got_entries;
 	MonoAotOptions aot_opts;
@@ -3304,25 +3305,14 @@ static void
 emit_plt (MonoAotCompile *acfg)
 {
 	char symbol [128];
-	int i, buf_size;
-	guint8 *p, *buf;
-	guint32 *plt_info_offsets;
+	int i;
 
-	/*
-	 * Encode info need to resolve PLT entries.
-	 */
-	buf_size = acfg->plt_offset * 128;
-	p = buf = g_malloc (buf_size);
-
-	plt_info_offsets = g_new0 (guint32, acfg->plt_offset);
-
-	for (i = 1; i < acfg->plt_offset; ++i) {
-		MonoJumpInfo *patch_info = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
-
-		plt_info_offsets [i] = p - buf;
-		encode_value (patch_info->type, p, &p);
-		encode_patch (acfg, patch_info, p, &p);
-	}
+	sprintf (symbol, "plt_first_got_offset");
+	emit_section_change (acfg, ".data", 0);
+	emit_global (acfg, symbol, FALSE);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_int32 (acfg, acfg->first_plt_got_offset);
 
 	emit_line (acfg);
 	sprintf (symbol, "plt");
@@ -3364,18 +3354,16 @@ emit_plt (MonoAotCompile *acfg)
 #elif defined(__x86_64__)
 		/*
 		 * We can't emit jumps because they are 32 bits only so they can't be patched.
-		 * So we emit a jump table instead whose entries are patched by the AOT loader to
-		 * point to .Lpd entries. ELF stores these in the GOT too, but we don't, since
-		 * methods with GOT entries can't be called directly.
-		 * We also emit the default PLT code here since the PLT code will not be patched.
+		 * So we make indirect calls through GOT entries which are patched by the AOT 
+		 * loader to point to .Lpd entries. 
 		 * An x86_64 plt entry is 10 bytes long, init_plt () depends on this.
 		 */
 		/* jmpq *<offset>(%rip) */
 		emit_byte (acfg, '\xff');
 		emit_byte (acfg, '\x25');
-		emit_symbol_diff (acfg, "plt_jump_table", ".", (i * sizeof (gpointer)) -4);
+		emit_symbol_diff (acfg, "got", ".", ((acfg->first_plt_got_offset + i) * sizeof (gpointer)) -4);
 		/* Used by mono_aot_get_plt_info_offset */
-		emit_int32 (acfg, plt_info_offsets [i]);
+		emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
 #elif defined(__arm__)
 		/* FIXME:
 		 * - optimize OP_AOTCONST implementation
@@ -3386,24 +3374,24 @@ emit_plt (MonoAotCompile *acfg)
 		code = buf;
 #ifdef USE_BIN_WRITER
 		/* We only emit 1 relocation since we implement it ourselves anyway */
-		emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "plt_jump_table", (i * sizeof (gpointer)) - 8);
+		emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "got", ((acfg->first_plt_got_offset + i) * sizeof (gpointer)) - 8);
 		/* FIXME: A 2 instruction encoding is sufficient in most cases */
 		ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
 		ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
 		ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
 		emit_bytes (acfg, buf, code - buf);
 		/* FIXME: Get rid of this */
-		emit_symbol_diff (acfg, "plt_jump_table", ".", (i * sizeof (gpointer)));
+		emit_symbol_diff (acfg, "got", ".", ((acfg->first_plt_got_offset + i) * sizeof (gpointer)));
 		/* Used by mono_aot_get_plt_info_offset */
-		emit_int32 (acfg, plt_info_offsets [i]);
+		emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
 #else
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
 		ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
 		ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
 		emit_bytes (acfg, buf, code - buf);
-		emit_symbol_diff (acfg, "plt_jump_table", ".", (i * sizeof (gpointer)));
+		emit_symbol_diff (acfg, "got", ".", ((acfg->first_plt_got_offset + i) * sizeof (gpointer)));
 		/* Used by mono_aot_get_plt_info_offset */
-		emit_int32 (acfg, plt_info_offsets [i]);
+		emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
 #endif
 
 #else
@@ -3411,20 +3399,9 @@ emit_plt (MonoAotCompile *acfg)
 #endif
 	}
 
-	g_free (plt_info_offsets);
-
 	sprintf (symbol, "plt_end");
 	emit_global (acfg, symbol, TRUE);
 	emit_label (acfg, symbol);
-
-	/* Emit PLT info */
-	sprintf (symbol, "plt_info");
-	emit_global (acfg, symbol, FALSE);
-	emit_label (acfg, symbol);
-
-	g_assert (p - buf < buf_size);
-	emit_bytes (acfg, buf, p - buf);
-	g_free (buf);
 
 	sprintf (symbol, "plt_jump_table_addr");
 	emit_section_change (acfg, ".data", 0);
@@ -4709,9 +4686,20 @@ static void
 emit_got_info (MonoAotCompile *acfg)
 {
 	char symbol [256];
-	int i, buf_size;
+	int i, first_plt_got_patch, buf_size;
 	guint8 *p, *buf;
 	guint32 *got_info_offsets;
+
+	/* Add the patches needed by the PLT to the GOT */
+	acfg->first_plt_got_offset = acfg->got_offset;
+	first_plt_got_patch = acfg->shared_patches->len;
+	for (i = 1; i < acfg->plt_offset; ++i) {
+		MonoJumpInfo *patch_info = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
+
+		g_ptr_array_add (acfg->shared_patches, patch_info);
+
+		acfg->got_offset ++;
+	}
 
 	/**
 	 * FIXME: 
@@ -4728,11 +4716,16 @@ emit_got_info (MonoAotCompile *acfg)
 	buf_size = acfg->shared_patches->len * 64;
 	p = buf = mono_mempool_alloc (acfg->mempool, buf_size);
 	got_info_offsets = mono_mempool_alloc (acfg->mempool, acfg->shared_patches->len * sizeof (guint32));
+	acfg->plt_got_info_offsets = mono_mempool_alloc (acfg->mempool, acfg->plt_offset * sizeof (guint32));
 	for (i = 0; i < acfg->shared_patches->len; ++i) {
 		MonoJumpInfo *ji = g_ptr_array_index (acfg->shared_patches, i);
 
-		/* No need to encode the patch type */
 		got_info_offsets [i] = p - buf;
+		/* No need to encode the patch type for non-PLT patches */
+		if (i >= first_plt_got_patch) {
+			acfg->plt_got_info_offsets [i - first_plt_got_patch + 1] = got_info_offsets [i];
+			encode_value (ji->type, p, &p);
+		}
 		encode_patch (acfg, ji, p, &p);
 	}
 
