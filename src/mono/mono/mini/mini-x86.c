@@ -26,6 +26,7 @@
 #include "trace.h"
 #include "mini-x86.h"
 #include "cpu-x86.h"
+#include "ir-emit.h"
 
 /* On windows, these hold the key returned by TlsAlloc () */
 static gint lmf_tls_offset = -1;
@@ -1001,7 +1002,7 @@ mono_arch_create_vars (MonoCompile *cfg)
  * fp_arg_setup is the first argument in the execution sequence where the esp register
  * is modified.
  */
-static int
+static G_GNUC_UNUSED int
 collect_fp_stack_space (MonoMethodSignature *sig, int start_arg, int *fp_arg_setup)
 {
 	int fp_space = 0;
@@ -2695,7 +2696,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			code = emit_move_return_value (cfg, ins, code);
 			break;
-		case OP_OUTARG:
 		case OP_X86_PUSH:
 			x86_push_reg (code, ins->sreg1);
 			break;

@@ -2878,9 +2878,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			code = emit_move_return_value (cfg, ins, code);
 			break;
-		case OP_OUTARG:
-			g_assert_not_reached ();
-			break;
 		case OP_LOCALLOC: {
 			/* keep alignment */
 			int alloca_waste = cfg->param_area;

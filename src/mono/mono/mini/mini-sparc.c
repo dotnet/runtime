@@ -3031,9 +3031,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			}
 			break;
-		case OP_OUTARG:
-			g_assert_not_reached ();
-			break;
 		case OP_LOCALLOC: {
 			guint32 size_reg;
 			gint32 offset2;

@@ -3343,9 +3343,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* FIXME: this should be handled somewhere else in the new jit */
 			code = emit_move_return_value (cfg, ins, code);
 			break;
-		case OP_OUTARG:
-			g_assert_not_reached ();
-			break;
 		case OP_LOCALLOC: {
 			guint8 * zero_loop_jump, * zero_loop_start;
 			/* keep alignment */

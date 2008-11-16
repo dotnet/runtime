@@ -123,8 +123,6 @@ compare: src1:i src2:i len:2
 compare_imm: src1:i len:6
 fcompare: src1:f src2:f clob:a len:9
 oparglist: src1:b len:10
-outarg: src1:i len:1
-outarg_imm: len:5
 setlret: dest:l src1:i src2:i len:4
 checkthis: src1:b len:3
 voidcall: len:17 clob:c

@@ -3641,7 +3641,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_AMD64_SAVE_SP_TO_LMF:
 			amd64_mov_membase_reg (code, cfg->frame_reg, cfg->arch.lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 			break;
-		case OP_OUTARG:
 		case OP_X86_PUSH:
 			amd64_push_reg (code, ins->sreg1);
 			break;

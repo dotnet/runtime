@@ -2483,9 +2483,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_cvtds (code, mips_f0, mips_f0);
 			}
 			break;
-		case OP_OUTARG:
-			g_assert_not_reached ();
-			break;
 		case OP_LOCALLOC: {
 			int area_offset = cfg->param_area;
 

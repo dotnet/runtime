@@ -2091,7 +2091,7 @@ add_outarg_reg2 (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int r
 }
 
 static void
-emit_sig_cookie2 (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
+emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
 	MonoMethodSignature *tmpSig;
 	MonoInst *sig_arg;
@@ -2172,7 +2172,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		if ((sig->call_convention == MONO_CALL_VARARG) &&
 		    (i == sig->sentinelpos)) {
-			emit_sig_cookie2 (cfg, call, cinfo);
+			emit_sig_cookie (cfg, call, cinfo);
 		}
 
 		switch (ainfo->regtype) {
@@ -2301,7 +2301,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	 */
 	if ((sig->call_convention == MONO_CALL_VARARG) &&
 	    (i == sig->sentinelpos)) {
-		emit_sig_cookie2 (cfg, call, cinfo);
+		emit_sig_cookie (cfg, call, cinfo);
 	}
 }
 
@@ -2379,53 +2379,6 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	}
 			
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
-}
-
-/*========================= End of Function ========================*/
-   
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- emit_sig_cookie.                                  */
-/*                                                                  */
-/* Function	- For variable length parameter lists construct a   */
-/*		  signature cookie and emit it.			    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static void
-emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, 
-		 CallInfo *cinfo, int argSize)
-{
-	MonoCallArgParm *arg;
-	MonoMethodSignature *tmpSig;
-	MonoInst *sigArg;
-			
-	cfg->disable_aot = TRUE;
-
-	/*----------------------------------------------------------*/
-	/* mono_ArgIterator_Setup assumes the signature cookie is   */
-	/* passed first and all the arguments which were before it  */
-	/* passed on the stack after the signature. So compensate   */
-	/* by passing a different signature.			    */
-	/*----------------------------------------------------------*/
-	tmpSig = mono_metadata_signature_dup (call->signature);
-	tmpSig->param_count -= call->signature->sentinelpos;
-	tmpSig->sentinelpos  = 0;
-	if (tmpSig->param_count > 0)
-		memcpy (tmpSig->params, 
-			call->signature->params + call->signature->sentinelpos, 
-			tmpSig->param_count * sizeof(MonoType *));
-
-	MONO_INST_NEW (cfg, sigArg, OP_ICONST);
-	sigArg->inst_p0 = tmpSig;
-
-	MONO_INST_NEW_CALL_ARG (cfg, arg, OP_OUTARG_MEMBASE);
-	arg->ins.inst_left   = sigArg;
-	arg->ins.inst_right  = (MonoInst *) call;
-	arg->size            = argSize;
-	arg->offset          = cinfo->sigCookie.offset;
-	arg->ins.next        = call->out_args;
-	call->out_args       = (MonoInst *) arg;
 }
 
 /*========================= End of Function ========================*/
@@ -3794,9 +3747,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->opcode == OP_FCALL_MEMBASE && call->signature->ret->type == MONO_TYPE_R4)
 				s390_ldebr (code, s390_f0, s390_f0);
 		}
-			break;
-		case OP_OUTARG: 
-			g_assert_not_reached ();
 			break;
 		case OP_LOCALLOC: {
 			/*------------------------------------------*/
