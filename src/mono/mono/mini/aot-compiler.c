@@ -179,9 +179,10 @@ typedef struct MonoAotCompile {
 	guint32 *plt_got_info_offsets;
 	/* Number of trampolines emitted into the AOT file */
 	guint32 num_aot_trampolines;
-	guint32 got_offset, plt_offset, first_plt_got_offset;
+	guint32 got_offset, plt_offset, plt_got_offset_base;
 	/* Number of GOT entries reserved for trampolines */
 	guint32 num_trampoline_got_entries;
+	guint32 trampoline_got_offset_base;
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
@@ -3307,20 +3308,6 @@ emit_plt (MonoAotCompile *acfg)
 	char symbol [128];
 	int i;
 
-	sprintf (symbol, "plt_first_got_offset");
-	emit_section_change (acfg, ".data", 0);
-	emit_global (acfg, symbol, FALSE);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-	emit_int32 (acfg, acfg->first_plt_got_offset);
-
-	sprintf (symbol, "plt_size");
-	emit_section_change (acfg, ".data", 0);
-	emit_global (acfg, symbol, FALSE);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-	emit_int32 (acfg, acfg->plt_offset);
-
 	emit_line (acfg);
 	sprintf (symbol, "plt");
 
@@ -3368,7 +3355,7 @@ emit_plt (MonoAotCompile *acfg)
 		/* jmpq *<offset>(%rip) */
 		emit_byte (acfg, '\xff');
 		emit_byte (acfg, '\x25');
-		emit_symbol_diff (acfg, "got", ".", ((acfg->first_plt_got_offset + i) * sizeof (gpointer)) -4);
+		emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)) -4);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
 #elif defined(__arm__)
@@ -3381,14 +3368,14 @@ emit_plt (MonoAotCompile *acfg)
 		code = buf;
 #ifdef USE_BIN_WRITER
 		/* We only emit 1 relocation since we implement it ourselves anyway */
-		emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "got", ((acfg->first_plt_got_offset + i) * sizeof (gpointer)) - 8);
+		emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "got", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)) - 8);
 		/* FIXME: A 2 instruction encoding is sufficient in most cases */
 		ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
 		ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
 		ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
 		emit_bytes (acfg, buf, code - buf);
 		/* FIXME: Get rid of this */
-		emit_symbol_diff (acfg, "got", ".", ((acfg->first_plt_got_offset + i) * sizeof (gpointer)));
+		emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)));
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
 #else
@@ -3396,7 +3383,7 @@ emit_plt (MonoAotCompile *acfg)
 		ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
 		ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
 		emit_bytes (acfg, buf, code - buf);
-		emit_symbol_diff (acfg, "got", ".", ((acfg->first_plt_got_offset + i) * sizeof (gpointer)));
+		emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)));
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
 #endif
@@ -3687,6 +3674,8 @@ emit_trampolines (MonoAotCompile *acfg)
 
 	emit_int32 (acfg, acfg->num_aot_trampolines);
 	emit_int32 (acfg, acfg->got_offset);
+
+	acfg->trampoline_got_offset_base = acfg->got_offset;
 }
 
 static gboolean
@@ -4672,7 +4661,7 @@ emit_got_info (MonoAotCompile *acfg)
 	guint32 *got_info_offsets;
 
 	/* Add the patches needed by the PLT to the GOT */
-	acfg->first_plt_got_offset = acfg->got_offset;
+	acfg->plt_got_offset_base = acfg->got_offset;
 	first_plt_got_patch = acfg->shared_patches->len;
 	for (i = 1; i < acfg->plt_offset; ++i) {
 		MonoJumpInfo *patch_info = g_hash_table_lookup (acfg->plt_offset_to_patch, GUINT_TO_POINTER (i));
@@ -4748,20 +4737,6 @@ emit_got (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 	if ((acfg->got_offset + acfg->num_trampoline_got_entries) > 0)
 		emit_zero_bytes (acfg, (int)((acfg->got_offset + acfg->num_trampoline_got_entries) * sizeof (gpointer)));
-
-	sprintf (symbol, "got_addr");
-	emit_section_change (acfg, ".data", 1);
-	emit_global (acfg, symbol, FALSE);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-	emit_pointer (acfg, "got");
-
-	sprintf (symbol, "got_size");
-	emit_section_change (acfg, ".data", 1);
-	emit_global (acfg, symbol, FALSE);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 }
 
 static void
@@ -4923,6 +4898,29 @@ emit_globals (MonoAotCompile *acfg)
 #endif
 		}
 	}
+}
+
+/*
+ * Emit a structure containing all the information not stored elsewhere.
+ */
+static void
+emit_file_info (MonoAotCompile *acfg)
+{
+	char symbol [128];
+
+	sprintf (symbol, "mono_aot_file_info");
+	emit_section_change (acfg, ".data", 0);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_global (acfg, symbol, FALSE);
+
+	/* The data emitted here must match MonoAotFileInfo in aot-runtime.c. */
+	emit_int32 (acfg, acfg->plt_got_offset_base);
+	emit_int32 (acfg, acfg->trampoline_got_offset_base);
+	emit_int32 (acfg, acfg->num_aot_trampolines);
+	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
+	emit_int32 (acfg, acfg->plt_offset);
+	emit_pointer (acfg, "got");
 }
 
 /*****************************************/
@@ -5273,6 +5271,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	emit_image_table (acfg);
 
 	emit_got (acfg);
+
+	emit_file_info (acfg);
 
 	emit_globals (acfg);
 

@@ -83,7 +83,6 @@ typedef struct MonoAotModule {
 	MonoAssembly *assembly;
 	MonoImage **image_table;
 	guint32 image_table_len;
-	guint32 plt_first_got_ofset;
 	gboolean out_of_date;
 	gboolean plt_inited;
 	guint8 *mem_begin;
@@ -92,7 +91,7 @@ typedef struct MonoAotModule {
 	guint8 *code_end;
 	guint8 *plt;
 	guint8 *plt_end;
-	guint32 plt_first_got_offset;
+	guint32 plt_got_offset_base;
 	guint32 *code_offsets;
 	guint8 *method_info;
 	guint32 *method_info_offsets;
@@ -110,10 +109,21 @@ typedef struct MonoAotModule {
 	guint32 *extra_method_info_offsets;
 	guint8 *extra_method_info;
 	guint8 *trampolines;
-	guint32 num_trampolines, first_trampoline_got_offset, trampoline_index;
+	guint32 num_trampolines, trampoline_got_offset_base, trampoline_index;
 	gpointer *globals;
 	MonoDl *sofile;
 } MonoAotModule;
+
+/* This structure is stored in the AOT file */
+typedef struct MonoAotFileInfo
+{
+	guint32 plt_got_offset_base;
+	guint32 num_trampolines;
+	guint32 trampoline_got_offset_base;
+	guint32 got_size;
+	guint32 plt_size;
+	gpointer *got;
+} MonoAotFileInfo;
 
 static GHashTable *aot_modules;
 #define mono_aot_lock() EnterCriticalSection (&aot_mutex)
@@ -789,12 +799,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	char *opt_flags = NULL;
 	gpointer *globals;
 	gboolean full_aot = FALSE;
-	guint32 *plt_first_got_offset = NULL;
-	guint32 *trampolines_info = NULL;
-	gpointer *got_addr = NULL;
-	gpointer *got = NULL;
-	guint32 *got_size_ptr = NULL;
-	guint32 *plt_size = NULL;
+	MonoAotFileInfo *file_info = NULL;
 	int i;
 
 	if (mono_compile_aot)
@@ -911,18 +916,18 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		return;
 	}
 
-	find_symbol (sofile, globals, "got_addr", (gpointer *)&got_addr);
-	g_assert (got_addr);
-	got = (gpointer*)*got_addr;
-	g_assert (got);
-	find_symbol (sofile, globals, "got_size", (gpointer *)&got_size_ptr);
-	g_assert (got_size_ptr);
+	find_symbol (sofile, globals, "mono_aot_file_info", (gpointer*)&file_info);
+	g_assert (file_info);
 
 	amodule = g_new0 (MonoAotModule, 1);
 	amodule->aot_name = aot_name;
 	amodule->assembly = assembly;
-	amodule->got = got;
-	amodule->got_size = *got_size_ptr;
+	amodule->plt_got_offset_base = file_info->plt_got_offset_base;
+	amodule->num_trampolines = file_info->num_trampolines;
+	amodule->trampoline_got_offset_base = file_info->trampoline_got_offset_base;
+	amodule->got_size = file_info->got_size;
+	amodule->plt_size = file_info->plt_size;
+	amodule->got = file_info->got;
 	amodule->got [0] = assembly->image;
 	amodule->globals = globals;
 	amodule->sofile = sofile;
@@ -996,20 +1001,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	find_symbol (sofile, globals, "plt", (gpointer*)&amodule->plt);
 	find_symbol (sofile, globals, "plt_end", (gpointer*)&amodule->plt_end);
-
-	find_symbol (sofile, globals, "plt_size", (gpointer *)&plt_size);
-	g_assert (plt_size);
-	amodule->plt_size = *plt_size;
-
-	find_symbol (sofile, globals, "plt_first_got_offset", (gpointer *)&plt_first_got_offset);
-	g_assert (plt_first_got_offset);
-	amodule->plt_first_got_offset = *plt_first_got_offset;
-
-	find_symbol (sofile, globals, "trampolines_info", (gpointer *)&trampolines_info);
-	if (trampolines_info) {
-		amodule->num_trampolines = trampolines_info [0];
-		amodule->first_trampoline_got_offset = trampolines_info [1];
-	}	
 
 	if (make_unreadable) {
 #ifndef PLATFORM_WIN32
@@ -2400,10 +2391,10 @@ init_plt (MonoAotModule *info)
 	 */
 
 	 /* The first entry points to the AOT trampoline */
-	 ((gpointer*)info->got)[info->plt_first_got_offset] = tramp;
+	 ((gpointer*)info->got)[info->plt_got_offset_base] = tramp;
 	 for (i = 1; i < info->plt_size; ++i)
 		 /* All the default entries point to the first entry */
-		 ((gpointer*)info->got)[info->plt_first_got_offset + i] = info->plt;
+		 ((gpointer*)info->got)[info->plt_got_offset_base + i] = info->plt;
 #else
 	g_assert_not_reached ();
 #endif
@@ -2642,8 +2633,8 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	tramp = generic_trampolines [tramp_type];
 	g_assert (tramp);
 
-	amodule->got [amodule->first_trampoline_got_offset + (index *2)] = tramp;
-	amodule->got [amodule->first_trampoline_got_offset + (index *2) + 1] = arg1;
+	amodule->got [amodule->trampoline_got_offset_base + (index *2)] = tramp;
+	amodule->got [amodule->trampoline_got_offset_base + (index *2) + 1] = arg1;
 
 #ifdef __x86_64__
 	tramp_size = 16;
