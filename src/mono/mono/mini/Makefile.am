@@ -238,8 +238,6 @@ common_sources = \
 	ssapre.c	\
 	ssapre.h	\
 	local-propagation.c	\
-	simple-cee-ops.h \
-	simple-mini-ops.h \
 	driver.c	\
 	debug-mini.c	\
 	debug-mini.h	\
