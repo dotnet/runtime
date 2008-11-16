@@ -149,6 +149,8 @@ mono_draw_cfg (MonoCompile *cfg, FILE *fp)
 	fprintf (fp, "}\n");
 }
 
+#if 0
+
 static void
 mono_print_label (FILE *fp, MonoInst *tree) {
 	int arity;
@@ -279,6 +281,8 @@ mono_print_label (FILE *fp, MonoInst *tree) {
 		fprintf (fp, ")");
 }
 
+#endif
+
 static void
 mono_draw_code_cfg (MonoCompile *cfg, FILE *fp)
 {
@@ -306,7 +310,7 @@ mono_draw_code_cfg (MonoCompile *cfg, FILE *fp)
 		fprintf (fp, "BB%d [%sshape=record,labeljust=l,label=\"{BB%d|", bb->block_num, color, bb->block_num);
 			
 		MONO_BB_FOR_EACH_INS (bb, inst) {
-			mono_print_label (fp, inst);
+			//mono_print_label (fp, inst);
 			fprintf (fp, "\\n");			
 		}
 

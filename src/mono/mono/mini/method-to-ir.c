@@ -107,10 +107,6 @@ MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMetho
 void mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native);
 void mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
 
-int mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
-		   MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
-		   guint inline_offset, gboolean is_virtual_call);
-
 /* helper methods signature */
 extern MonoMethodSignature *helper_sig_class_init_trampoline;
 extern MonoMethodSignature *helper_sig_domain_get;
@@ -1705,7 +1701,7 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 #endif /* DISABLE_JIT */
 
 void 
-mini_emit_memcpy2 (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align)
+mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align)
 {
 	int cur_reg;
 
@@ -2476,7 +2472,7 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 
 	if ((cfg->opt & MONO_OPT_INTRINS) && n <= sizeof (gpointer) * 5) {
 		/* FIXME: Optimize the case when src/dest is OP_LDADDR */
-		mini_emit_memcpy2 (cfg, dest->dreg, 0, src->dreg, 0, n, align);
+		mini_emit_memcpy (cfg, dest->dreg, 0, src->dreg, 0, n, align);
 	} else {
 		iargs [0] = dest;
 		iargs [1] = src;
@@ -4117,7 +4113,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_current_method = cfg->current_method;
 	prev_generic_context = cfg->generic_context;
 
-	costs = mono_method_to_ir2 (cfg, cmethod, sbblock, ebblock, rvar, dont_inline, sp, real_offset, *ip == CEE_CALLVIRT);
+	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, rvar, dont_inline, sp, real_offset, *ip == CEE_CALLVIRT);
 
 	cfg->inlined_method = prev_inlined_method;
 	cfg->real_offset = prev_real_offset;
@@ -5046,10 +5042,12 @@ load_error:
 }
 
 /*
- * mono_method_to_ir: translates IL into basic blocks containing trees
+ * mono_method_to_ir:
+ *
+ *   Translate the .net IL into linear IR.
  */
 int
-mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
+mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
 		   MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
 		   guint inline_offset, gboolean is_virtual_call)
 {
@@ -9216,7 +9214,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				sp -= 3;
 
 				if ((ip [1] == CEE_CPBLK) && (cfg->opt & MONO_OPT_INTRINS) && (sp [2]->opcode == OP_ICONST) && ((n = sp [2]->inst_c0) <= sizeof (gpointer) * 5)) {
-					mini_emit_memcpy2 (cfg, sp [0]->dreg, 0, sp [1]->dreg, 0, sp [2]->inst_c0, 0);
+					mini_emit_memcpy (cfg, sp [0]->dreg, 0, sp [1]->dreg, 0, sp [2]->inst_c0, 0);
 				} else if ((ip [1] == CEE_INITBLK) && (cfg->opt & MONO_OPT_INTRINS) && (sp [2]->opcode == OP_ICONST) && ((n = sp [2]->inst_c0) <= sizeof (gpointer) * 5) && (sp [1]->opcode == OP_ICONST) && (sp [1]->inst_c0 == 0)) {
 					/* emit_memset only works when val == 0 */
 					mini_emit_memset (cfg, sp [0]->dreg, 0, sp [2]->inst_c0, sp [1]->inst_c0, 0);

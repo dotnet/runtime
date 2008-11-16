@@ -719,7 +719,7 @@ mono_if_conversion (MonoCompile *cfg)
 		/* Merging bblocks could make some variables local */
 		mono_handle_global_vregs (cfg);
 		if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
-			mono_local_cprop2 (cfg);
+			mono_local_cprop (cfg);
 		mono_local_deadce (cfg);
 	}
 #endif
@@ -1054,7 +1054,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 			printf (")");
 			if (bb->last_ins != NULL) {
 				printf (" ");
-				mono_print_tree (bb->last_ins);
+				mono_print_ins (bb->last_ins);
 			}
 			printf ("\n");
 		}
@@ -1160,114 +1160,11 @@ mono_remove_critical_edges (MonoCompile *cfg)
 			printf (")");
 			if (bb->last_ins != NULL) {
 				printf (" ");
-				mono_print_tree (bb->last_ins);
+				mono_print_ins (bb->last_ins);
 			}
 			printf ("\n");
 		}
 	}
-}
-
-/* checks that a and b represent the same instructions, conservatively,
- * it can return FALSE also for two trees that are equal.
- * FIXME: also make sure there are no side effects.
- */
-static int
-same_trees (MonoInst *a, MonoInst *b)
-{
-	int arity;
-	if (a->opcode != b->opcode)
-		return FALSE;
-	arity = mono_burg_arity [a->opcode];
-	if (arity == 1) {
-		if (a->ssa_op == b->ssa_op && a->ssa_op == MONO_SSA_LOAD && a->inst_i0 == b->inst_i0)
-			return TRUE;
-		return same_trees (a->inst_left, b->inst_left);
-	} else if (arity == 2) {
-		return same_trees (a->inst_left, b->inst_left) && same_trees (a->inst_right, b->inst_right);
-	} else if (arity == 0) {
-		switch (a->opcode) {
-		case OP_ICONST:
-			return a->inst_c0 == b->inst_c0;
-		default:
-			return FALSE;
-		}
-	}
-	return FALSE;
-}
-
-static int
-get_unsigned_condbranch (int opcode)
-{
-	switch (opcode) {
-	case CEE_BLE: return CEE_BLE_UN;
-	case CEE_BLT: return CEE_BLT_UN;
-	case CEE_BGE: return CEE_BGE_UN;
-	case CEE_BGT: return CEE_BGT_UN;
-	}
-	g_assert_not_reached ();
-	return 0;
-}
-
-static int
-tree_is_unsigned (MonoInst* ins) {
-	switch (ins->opcode) {
-	case OP_ICONST:
-		return (int)ins->inst_c0 >= 0;
-	/* array lengths are positive as are string sizes */
-	case CEE_LDLEN:
-	case OP_STRLEN:
-		return TRUE;
-	case CEE_CONV_U1:
-	case CEE_CONV_U2:
-	case CEE_CONV_U4:
-	case CEE_CONV_OVF_U1:
-	case CEE_CONV_OVF_U2:
-	case CEE_CONV_OVF_U4:
-		return TRUE;
-	case CEE_LDIND_U1:
-	case CEE_LDIND_U2:
-	case CEE_LDIND_U4:
-		return TRUE;
-	default:
-		return FALSE;
-	}
-}
-
-/* check if an unsigned compare can be used instead of two signed compares
- * for (val < 0 || val > limit) conditionals.
- * Returns TRUE if the optimization has been applied.
- * Note that this can't be applied if the second arg is not positive...
- */
-static int
-try_unsigned_compare (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-	MonoBasicBlock *truet, *falset;
-	MonoInst *cmp_inst = bb->last_ins->inst_left;
-	MonoInst *condb;
-	if (!cmp_inst->inst_right->inst_c0 == 0)
-		return FALSE;
-	truet = bb->last_ins->inst_true_bb;
-	falset = bb->last_ins->inst_false_bb;
-	if (falset->in_count != 1)
-		return FALSE;
-	condb = falset->last_ins;
-	/* target bb must have one instruction */
-	if (!condb || (condb != falset->code))
-		return FALSE;
-	if ((((condb->opcode == CEE_BLE || condb->opcode == CEE_BLT) && (condb->inst_false_bb == truet))
-			|| ((condb->opcode == CEE_BGE || condb->opcode == CEE_BGT) && (condb->inst_true_bb == truet)))
-			&& same_trees (cmp_inst->inst_left, condb->inst_left->inst_left)) {
-		if (!tree_is_unsigned (condb->inst_left->inst_right))
-			return FALSE;
-		condb->opcode = get_unsigned_condbranch (condb->opcode);
-		/* change the original condbranch to just point to the new unsigned check */
-		bb->last_ins->opcode = OP_BR;
-		bb->last_ins->inst_target_bb = falset;
-		replace_out_block (bb, truet, NULL);
-		replace_in_block (truet, bb, NULL);
-		return TRUE;
-	}
-	return FALSE;
 }
 
 /*
@@ -1325,15 +1222,6 @@ mono_optimize_branches (MonoCompile *cfg)
 
 				/* conditional branches where true and false targets are the same can be also replaced with OP_BR */
 				if (bb->last_ins && (bb->last_ins->opcode != OP_BR) && MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
-					if (!cfg->new_ir) {
-						MonoInst *pop;
-						MONO_INST_NEW (cfg, pop, CEE_POP);
-						pop->inst_left = bb->last_ins->inst_left->inst_left;
-						mono_add_ins_to_end (bb, pop);
-						MONO_INST_NEW (cfg, pop, CEE_POP);
-						pop->inst_left = bb->last_ins->inst_left->inst_right;
-						mono_add_ins_to_end (bb, pop);
-					}
 					bb->last_ins->opcode = OP_BR;
 					bb->last_ins->inst_target_bb = bb->last_ins->inst_true_bb;
 					changed = TRUE;
@@ -1405,16 +1293,12 @@ mono_optimize_branches (MonoCompile *cfg)
 					int branch_result;
 					MonoBasicBlock *taken_branch_target = NULL, *untaken_branch_target = NULL;
 
-					if (cfg->new_ir) {
-						if (bb->last_ins->flags & MONO_INST_CFOLD_TAKEN)
-							branch_result = BRANCH_TAKEN;
-						else if (bb->last_ins->flags & MONO_INST_CFOLD_NOT_TAKEN)
-							branch_result = BRANCH_NOT_TAKEN;
-						else
-							branch_result = BRANCH_UNDEF;
-					}
+					if (bb->last_ins->flags & MONO_INST_CFOLD_TAKEN)
+						branch_result = BRANCH_TAKEN;
+					else if (bb->last_ins->flags & MONO_INST_CFOLD_NOT_TAKEN)
+						branch_result = BRANCH_NOT_TAKEN;
 					else
-						branch_result = mono_eval_cond_branch (bb->last_ins);
+						branch_result = BRANCH_UNDEF;
 
 					if (branch_result == BRANCH_TAKEN) {
 						taken_branch_target = bb->last_ins->inst_true_bb;
@@ -1487,20 +1371,11 @@ mono_optimize_branches (MonoCompile *cfg)
 					 * would require addition of an extra branch at the end of bbn 
 					 * slowing down loops.
 					 */
-					if (cfg->new_ir && bbn && bb->region == bbn->region && bbn->in_count == 1 && cfg->enable_extended_bblocks && bbn != cfg->bb_exit && !bb->extended && !bbn->out_of_line && !mono_bblocks_linked (bbn, bb)) {
+					if (bbn && bb->region == bbn->region && bbn->in_count == 1 && cfg->enable_extended_bblocks && bbn != cfg->bb_exit && !bb->extended && !bbn->out_of_line && !mono_bblocks_linked (bbn, bb)) {
 						g_assert (bbn->in_bb [0] == bb);
 						if (cfg->verbose_level > 2)
 							g_print ("merge false branch target triggered BB%d -> BB%d\n", bb->block_num, bbn->block_num);
 						mono_merge_basic_blocks (cfg, bb, bbn);
-						changed = TRUE;
-						continue;
-					}
-				}
-
-				/* detect and optimize to unsigned compares checks like: if (v < 0 || v > limit */
-				if (bb->last_ins && bb->last_ins->opcode == CEE_BLT && !cfg->new_ir && bb->last_ins->inst_left->inst_right->opcode == OP_ICONST) {
-					if (try_unsigned_compare (cfg, bb)) {
-						/*g_print ("applied in bb %d (->%d) %s\n", bb->block_num, bb->last_ins->inst_target_bb->block_num, mono_method_full_name (cfg->method, TRUE));*/
 						changed = TRUE;
 						continue;
 					}

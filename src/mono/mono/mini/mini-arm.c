@@ -59,8 +59,6 @@ int mono_exc_esp_offset = 0;
 #define MOV_LR_PC ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 24) | (0xa << 20) |  (ARMREG_LR << 12) | ARMREG_PC)
 #define DEBUG_IMT 0
 
-void mini_emit_memcpy2 (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align);
-
 const char*
 mono_arch_regname (int reg)
 {
@@ -1049,139 +1047,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 	}
 }
 
-/* 
- * take the arguments and generate the arch-specific
- * instructions to properly call the function in call.
- * This includes pushing, moving arguments to the right register
- * etc.
- * Issue: who does the spilling if needed, and when?
- */
-MonoCallInst*
-mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
-	MonoInst *arg, *in;
-	MonoMethodSignature *sig;
-	int i, n;
-	CallInfo *cinfo;
-	ArgInfo *ainfo;
-
-	sig = call->signature;
-	n = sig->param_count + sig->hasthis;
-	
-	cinfo = calculate_sizes (sig, sig->pinvoke);
-	if (cinfo->struct_ret)
-		call->used_iregs |= 1 << cinfo->struct_ret;
-
-	for (i = 0; i < n; ++i) {
-		ainfo = cinfo->args + i;
-		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-			MonoInst *sig_arg;
-			cfg->disable_aot = TRUE;
-				
-			MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
-			sig_arg->inst_p0 = call->signature;
-			
-			MONO_INST_NEW (cfg, arg, OP_OUTARG);
-			arg->inst_imm = cinfo->sig_cookie.offset;
-			arg->inst_left = sig_arg;
-			
-			/* prepend, so they get reversed */
-			arg->next = call->out_args;
-			call->out_args = arg;
-		}
-		if (is_virtual && i == 0) {
-			/* the argument will be attached to the call instrucion */
-			in = call->args [i];
-			call->used_iregs |= 1 << ainfo->reg;
-		} else {
-			MONO_INST_NEW (cfg, arg, OP_OUTARG);
-			in = call->args [i];
-			arg->cil_code = in->cil_code;
-			arg->inst_left = in;
-			arg->inst_right = (MonoInst*)call;
-			arg->type = in->type;
-			/* prepend, we'll need to reverse them later */
-			arg->next = call->out_args;
-			call->out_args = arg;
-			if (ainfo->regtype == RegTypeGeneral) {
-				arg->backend.reg3 = ainfo->reg;
-				call->used_iregs |= 1 << ainfo->reg;
-				if (arg->type == STACK_I8)
-					call->used_iregs |= 1 << (ainfo->reg + 1);
-				if (arg->type == STACK_R8) {
-					if (ainfo->size == 4) {
-#ifndef MONO_ARCH_SOFT_FLOAT
-						arg->opcode = OP_OUTARG_R4;
-#endif
-					} else {
-						call->used_iregs |= 1 << (ainfo->reg + 1);
-					}
-					cfg->flags |= MONO_CFG_HAS_FPOUT;
-				}
-			} else if (ainfo->regtype == RegTypeStructByAddr) {
-				/* FIXME: where si the data allocated? */
-				arg->backend.reg3 = ainfo->reg;
-				call->used_iregs |= 1 << ainfo->reg;
-				g_assert_not_reached ();
-			} else if (ainfo->regtype == RegTypeStructByVal) {
-				int cur_reg;
-				/* mark the used regs */
-				for (cur_reg = 0; cur_reg < ainfo->size; ++cur_reg) {
-					call->used_iregs |= 1 << (ainfo->reg + cur_reg);
-				}
-				arg->opcode = OP_OUTARG_VT;
-				/* vtsize and offset have just 12 bits of encoding in number of words */
-				g_assert (((ainfo->vtsize | (ainfo->offset / 4)) & 0xfffff000) == 0);
-				arg->backend.arg_info = ainfo->reg | (ainfo->size << 4) | (ainfo->vtsize << 8) | ((ainfo->offset / 4) << 20);
-			} else if (ainfo->regtype == RegTypeBase) {
-				arg->opcode = OP_OUTARG_MEMBASE;
-				arg->backend.arg_info = (ainfo->offset << 8) | ainfo->size;
-			} else if (ainfo->regtype == RegTypeBaseGen) {
-				call->used_iregs |= 1 << ARMREG_R3;
-				arg->opcode = OP_OUTARG_MEMBASE;
-				arg->backend.arg_info = (ainfo->offset << 8) | 0xff;
-				if (arg->type == STACK_R8)
-					cfg->flags |= MONO_CFG_HAS_FPOUT;
-			} else if (ainfo->regtype == RegTypeFP) {
-				arg->backend.reg3 = ainfo->reg;
-				/* FP args are passed in int regs */
-				call->used_iregs |= 1 << ainfo->reg;
-				if (ainfo->size == 8) {
-					arg->opcode = OP_OUTARG_R8;
-					call->used_iregs |= 1 << (ainfo->reg + 1);
-				} else {
-					arg->opcode = OP_OUTARG_R4;
-				}
-				cfg->flags |= MONO_CFG_HAS_FPOUT;
-			} else {
-				g_assert_not_reached ();
-			}
-		}
-	}
-	/*
-	 * Reverse the call->out_args list.
-	 */
-	{
-		MonoInst *prev = NULL, *list = call->out_args, *next;
-		while (list) {
-			next = list->next;
-			list->next = prev;
-			prev = list;
-			list = next;
-		}
-		call->out_args = prev;
-	}
-	call->stack_usage = cinfo->stack_usage;
-	cfg->param_area = MAX (cfg->param_area, cinfo->stack_usage);
-	cfg->flags |= MONO_CFG_HAS_CALLS;
-	/* 
-	 * should set more info in call, such as the stack space
-	 * used by the args that needs to be added back to esp
-	 */
-
-	g_free (cinfo);
-	return call;
-}
-
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
@@ -1398,7 +1263,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	}
 	//g_print ("vt size: %d at R%d + %d\n", doffset, vt->inst_basereg, vt->inst_offset);
 	if (ovf_size != 0)
-		mini_emit_memcpy2 (cfg, ARMREG_SP, doffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
+		mini_emit_memcpy (cfg, ARMREG_SP, doffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
 }
 
 void
@@ -1617,24 +1482,6 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MUL_IMM: 
 		case OP_IMUL_IMM: 
 			/* Already done by an arch-independent pass */
-			if (cfg->new_ir)
-				break;
-
-			/* remove unnecessary multiplication with 1 */
-			if (ins->inst_imm == 1) {
-				if (ins->dreg != ins->sreg1) {
-					ins->opcode = OP_MOVE;
-				} else {
-					MONO_DELETE_INS (bb, ins);
-					continue;
-				}
-			} else {
-				int power2 = mono_is_power_of_two (ins->inst_imm);
-				if (power2 > 0) {
-					ins->opcode = OP_SHL_IMM;
-					ins->inst_imm = power2;
-				}
-			}
 			break;
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
@@ -1882,10 +1729,7 @@ loop_start:
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
 				ins->sreg2 = temp->dreg;
-				if (cfg->new_ir)
-					ins->opcode = mono_op_imm_to_op (ins->opcode);
-				else
-					ins->opcode = map_to_reg_reg_op (ins->opcode);
+				ins->opcode = mono_op_imm_to_op (ins->opcode);
 			}
 			break;
 		case OP_MUL_IMM:
@@ -3161,8 +3005,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * After follows the data.
 			 * FIXME: add aot support.
 			 */
-			if (cfg->new_ir)
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_SWITCH, ins->inst_p0);
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_SWITCH, ins->inst_p0);
 			max_len += 4 * GPOINTER_TO_INT (ins->klass);
 			if (offset > (cfg->code_size - max_len - 16)) {
 				cfg->code_size += max_len;
@@ -4192,43 +4035,6 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 void
 mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
-}
-
-void
-mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg)
-{
-	
-	int this_dreg = ARMREG_R0;
-	
-	if (vt_reg != -1)
-		this_dreg = ARMREG_R1;
-
-	/* add the this argument */
-	if (this_reg != -1) {
-		MonoInst *this;
-		MONO_INST_NEW (cfg, this, OP_MOVE);
-		this->type = this_type;
-		this->sreg1 = this_reg;
-		this->dreg = mono_regstate_next_int (cfg->rs);
-		mono_bblock_add_inst (cfg->cbb, this);
-		mono_call_inst_add_outarg_reg (cfg, inst, this->dreg, this_dreg, FALSE);
-	}
-
-	if (vt_reg != -1) {
-		MonoInst *vtarg;
-		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
-		vtarg->type = STACK_MP;
-		vtarg->sreg1 = vt_reg;
-		vtarg->dreg = mono_regstate_next_int (cfg->rs);
-		mono_bblock_add_inst (cfg->cbb, vtarg);
-		mono_call_inst_add_outarg_reg (cfg, inst, vtarg->dreg, ARMREG_R0, FALSE);
-	}
-}
-
-MonoInst*
-mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
-	return NULL;
 }
 
 MonoInst*

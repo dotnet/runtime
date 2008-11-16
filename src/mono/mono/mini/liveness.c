@@ -36,9 +36,6 @@ static void mono_analyze_liveness2 (MonoCompile *cfg);
 static void
 optimize_initlocals (MonoCompile *cfg);
 
-static void
-optimize_initlocals2 (MonoCompile *cfg);
-
 /* mono_bitset_mp_new:
  * 
  * allocates a MonoBitSet inside a memory pool
@@ -72,129 +69,6 @@ mono_bitset_print (MonoBitSet *set)
 	printf ("}\n");
 }
 
-static inline void
-update_live_range (MonoCompile *cfg, int idx, int block_dfn, int tree_pos)
-{
-	MonoLiveRange *range = &MONO_VARINFO (cfg, idx)->range;
-	guint32 abs_pos = (block_dfn << 16) | tree_pos;
-
-	if (range->first_use.abs_pos > abs_pos)
-		range->first_use.abs_pos = abs_pos;
-
-	if (range->last_use.abs_pos < abs_pos)
-		range->last_use.abs_pos = abs_pos;
-}
-
-static void
-update_gen_kill_set (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst, int inst_num)
-{
-	int arity;
-	int max_vars = cfg->num_varinfo;
-
-	arity = mono_burg_arity [inst->opcode];
-	if (arity)
-		update_gen_kill_set (cfg, bb, inst->inst_i0, inst_num);
-
-	if (arity > 1)
-		update_gen_kill_set (cfg, bb, inst->inst_i1, inst_num);
-
-	if ((inst->ssa_op & MONO_SSA_LOAD_STORE) || (inst->opcode == OP_DUMMY_STORE)) {
-		MonoLocalVariableList* affected_variables;
-		MonoLocalVariableList local_affected_variable;
-		
-		if (cfg->aliasing_info == NULL) {
-			if ((inst->ssa_op == MONO_SSA_LOAD) || (inst->ssa_op == MONO_SSA_STORE) || (inst->opcode == OP_DUMMY_STORE)) {
-				local_affected_variable.variable_index = inst->inst_i0->inst_c0;
-				local_affected_variable.next = NULL;
-				affected_variables = &local_affected_variable;
-			} else {
-				affected_variables = NULL;
-			}
-		} else {
-			affected_variables = mono_aliasing_get_affected_variables_for_inst_traversing_code (cfg->aliasing_info, inst);
-		}
-		
-		if (inst->ssa_op & MONO_SSA_LOAD) {
-			MonoLocalVariableList* affected_variable = affected_variables;
-			while (affected_variable != NULL) {
-				int idx = affected_variable->variable_index;
-				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
-				g_assert (idx < max_vars);
-				update_live_range (cfg, idx, bb->dfn, inst_num); 
-				if (!mono_bitset_test_fast (bb->kill_set, idx))
-					mono_bitset_set_fast (bb->gen_set, idx);
-				if (inst->ssa_op == MONO_SSA_LOAD)
-					vi->spill_costs += SPILL_COST_INCREMENT;
-				
-				affected_variable = affected_variable->next;
-			}
-		} else if ((inst->ssa_op == MONO_SSA_STORE) || (inst->opcode == OP_DUMMY_STORE)) {
-			MonoLocalVariableList* affected_variable = affected_variables;
-			while (affected_variable != NULL) {
-				int idx = affected_variable->variable_index;
-				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
-				g_assert (idx < max_vars);
-				//if (arity > 0)
-					//g_assert (inst->inst_i1->opcode != OP_PHI);
-				update_live_range (cfg, idx, bb->dfn, inst_num); 
-				mono_bitset_set_fast (bb->kill_set, idx);
-				if (inst->ssa_op == MONO_SSA_STORE)
-					vi->spill_costs += SPILL_COST_INCREMENT;
-				
-				affected_variable = affected_variable->next;
-			}
-		}
-	} else if (inst->opcode == OP_JMP) {
-		/* Keep arguments live! */
-		int i;
-		for (i = 0; i < cfg->num_varinfo; i++) {
-			if (cfg->varinfo [i]->opcode == OP_ARG) {
-				if (!mono_bitset_test_fast (bb->kill_set, i))
-					mono_bitset_set_fast (bb->gen_set, i);
-			}
-		}
-	}
-} 
-
-static void
-update_volatile (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *inst)
-{
-	int arity = mono_burg_arity [inst->opcode];
-	int max_vars = cfg->num_varinfo;
-
-	if (arity)
-		update_volatile (cfg, bb, inst->inst_i0);
-
-	if (arity > 1)
-		update_volatile (cfg, bb, inst->inst_i1);
-
-	if (inst->ssa_op & MONO_SSA_LOAD_STORE) {
-		MonoLocalVariableList* affected_variables;
-		MonoLocalVariableList local_affected_variable;
-		
-		if (cfg->aliasing_info == NULL) {
-			if ((inst->ssa_op == MONO_SSA_LOAD) || (inst->ssa_op == MONO_SSA_STORE)) {
-				local_affected_variable.variable_index = inst->inst_i0->inst_c0;
-				local_affected_variable.next = NULL;
-				affected_variables = &local_affected_variable;
-			} else {
-				affected_variables = NULL;
-			}
-		} else {
-			affected_variables = mono_aliasing_get_affected_variables_for_inst_traversing_code (cfg->aliasing_info, inst);
-		}
-		
-		while (affected_variables != NULL) {
-			int idx = affected_variables->variable_index;
-			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
-			g_assert (idx < max_vars);
-			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
-			
-			affected_variables = affected_variables->next;
-		}
-	}
-} 
-
 static void
 visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 {
@@ -204,47 +78,38 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 	if (g_slist_find (*visited, bb))
 		return;
 
-	if (cfg->new_ir) {
-		for (ins = bb->code; ins; ins = ins->next) {
-			const char *spec = INS_INFO (ins->opcode);
-			int regtype, srcindex, sreg;
+	for (ins = bb->code; ins; ins = ins->next) {
+		const char *spec = INS_INFO (ins->opcode);
+		int regtype, srcindex, sreg;
 
-			if (ins->opcode == OP_NOP)
-				continue;
+		if (ins->opcode == OP_NOP)
+			continue;
 
-			/* DREG */
-			regtype = spec [MONO_INST_DEST];
-			g_assert (((ins->dreg == -1) && (regtype == ' ')) || ((ins->dreg != -1) && (regtype != ' ')));
+		/* DREG */
+		regtype = spec [MONO_INST_DEST];
+		g_assert (((ins->dreg == -1) && (regtype == ' ')) || ((ins->dreg != -1) && (regtype != ' ')));
 				
-			if ((ins->dreg != -1) && get_vreg_to_inst (cfg, ins->dreg)) {
-				MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
+		if ((ins->dreg != -1) && get_vreg_to_inst (cfg, ins->dreg)) {
+			MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
+			int idx = var->inst_c0;
+			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+
+			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
+		}
+			
+		/* SREGS */
+		for (srcindex = 0; srcindex < 2; ++srcindex) {
+			regtype = spec [(srcindex == 0) ? MONO_INST_SRC1 : MONO_INST_SRC2];
+			sreg = srcindex == 0 ? ins->sreg1 : ins->sreg2;
+			
+			g_assert (((sreg == -1) && (regtype == ' ')) || ((sreg != -1) && (regtype != ' ')));
+			if ((sreg != -1) && get_vreg_to_inst (cfg, sreg)) {
+				MonoInst *var = get_vreg_to_inst (cfg, sreg);
 				int idx = var->inst_c0;
 				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 				cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 			}
-			
-			/* SREGS */
-			for (srcindex = 0; srcindex < 2; ++srcindex) {
-				regtype = spec [(srcindex == 0) ? MONO_INST_SRC1 : MONO_INST_SRC2];
-				sreg = srcindex == 0 ? ins->sreg1 : ins->sreg2;
-
-				g_assert (((sreg == -1) && (regtype == ' ')) || ((sreg != -1) && (regtype != ' ')));
-				if ((sreg != -1) && get_vreg_to_inst (cfg, sreg)) {
-					MonoInst *var = get_vreg_to_inst (cfg, sreg);
-					int idx = var->inst_c0;
-					MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
-
-					cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
-				}
-			}
-		}
-	} else {
-		if (cfg->aliasing_info != NULL)
-			mono_aliasing_initialize_code_traversal (cfg->aliasing_info, bb);
-
-		for (ins = bb->code; ins; ins = ins->next) {
-			update_volatile (cfg, bb, ins);
 		}
 	}
 
@@ -284,7 +149,7 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 }
 
 static inline void
-update_live_range2 (MonoMethodVar *var, int abs_pos)
+update_live_range (MonoMethodVar *var, int abs_pos)
 {
 	if (var->range.first_use.abs_pos > abs_pos)
 		var->range.first_use.abs_pos = abs_pos;
@@ -319,7 +184,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 #ifdef DEBUG_LIVENESS
 			printf ("\tGEN: R%d(%d)\n", var->dreg, idx);
 #endif
-			update_live_range2 (&vars [idx], abs_pos + inst_num); 
+			update_live_range (&vars [idx], abs_pos + inst_num); 
 			if (!mono_bitset_test_fast (bb->kill_set, idx))
 				mono_bitset_set_fast (bb->gen_set, idx);
 			vi->spill_costs += SPILL_COST_INCREMENT;
@@ -337,7 +202,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 #ifdef DEBUG_LIVENESS
 			printf ("\tGEN: R%d(%d)\n", sreg, idx);
 #endif
-			update_live_range2 (&vars [idx], abs_pos + inst_num); 
+			update_live_range (&vars [idx], abs_pos + inst_num); 
 			if (!mono_bitset_test_fast (bb->kill_set, idx))
 				mono_bitset_set_fast (bb->gen_set, idx);
 			vi->spill_costs += SPILL_COST_INCREMENT;
@@ -353,7 +218,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 #ifdef DEBUG_LIVENESS
 			printf ("\tGEN: R%d(%d)\n", sreg, idx);
 #endif
-			update_live_range2 (&vars [idx], abs_pos + inst_num); 
+			update_live_range (&vars [idx], abs_pos + inst_num); 
 			if (!mono_bitset_test_fast (bb->kill_set, idx))
 				mono_bitset_set_fast (bb->gen_set, idx);
 			vi->spill_costs += SPILL_COST_INCREMENT;
@@ -366,7 +231,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 			if (MONO_IS_STORE_MEMBASE (ins)) {
-				update_live_range2 (&vars [idx], abs_pos + inst_num); 
+				update_live_range (&vars [idx], abs_pos + inst_num); 
 				if (!mono_bitset_test_fast (bb->kill_set, idx))
 					mono_bitset_set_fast (bb->gen_set, idx);
 				vi->spill_costs += SPILL_COST_INCREMENT;
@@ -374,7 +239,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 #ifdef DEBUG_LIVENESS
 				printf ("\tKILL: R%d(%d)\n", ins->dreg, idx);
 #endif
-				update_live_range2 (&vars [idx], abs_pos + inst_num + 1); 
+				update_live_range (&vars [idx], abs_pos + inst_num + 1); 
 				mono_bitset_set_fast (bb->kill_set, idx);
 				vi->spill_costs += SPILL_COST_INCREMENT;
 			}
@@ -417,27 +282,11 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
-		MonoInst *inst;
-		int tree_num;
 
 		bb->gen_set = mono_bitset_mp_new (cfg->mempool, bitsize, max_vars);
 		bb->kill_set = mono_bitset_mp_new (cfg->mempool, bitsize, max_vars);
 
-		if (cfg->new_ir) {
-			analyze_liveness_bb (cfg, bb);
-		} else {
-			if (cfg->aliasing_info != NULL)
-				mono_aliasing_initialize_code_traversal (cfg->aliasing_info, bb);
-
-			tree_num = 0;
-			MONO_BB_FOR_EACH_INS (bb, inst) {
-#ifdef DEBUG_LIVENESS
-				mono_print_tree (inst); printf ("\n");
-#endif
-				update_gen_kill_set (cfg, bb, inst, tree_num);
-				tree_num ++;
-			}
-		}
+		analyze_liveness_bb (cfg, bb);
 
 #ifdef DEBUG_LIVENESS
 		printf ("BLOCK BB%d (", bb->block_num);
@@ -591,9 +440,9 @@ mono_analyze_liveness (MonoCompile *cfg)
 			k = (j * BITS_PER_CHUNK);
 			while ((bits_in || bits_out)) {
 				if (bits_in & 1)
-					update_live_range2 (&vars [k], abs_pos + 0);
+					update_live_range (&vars [k], abs_pos + 0);
 				if (bits_out & 1)
-					update_live_range2 (&vars [k], abs_pos + 0xffff);
+					update_live_range (&vars [k], abs_pos + 0xffff);
 				bits_in >>= 1;
 				bits_out >>= 1;
 				k ++;
@@ -627,20 +476,14 @@ mono_analyze_liveness (MonoCompile *cfg)
 	}
 #endif
 
-	if (cfg->new_ir) {
-		if (!cfg->disable_initlocals_opt)
-			optimize_initlocals2 (cfg);
+	if (!cfg->disable_initlocals_opt)
+		optimize_initlocals (cfg);
 
 #ifdef ENABLE_LIVENESS2
-		/* This improves code size by about 5% but slows down compilation too much */
-		if (cfg->compile_aot)
-			mono_analyze_liveness2 (cfg);
+	/* This improves code size by about 5% but slows down compilation too much */
+	if (cfg->compile_aot)
+		mono_analyze_liveness2 (cfg);
 #endif
-	}
-	else {
-		if (!cfg->disable_initlocals_opt)
-			optimize_initlocals (cfg);
-	}
 }
 
 /**
@@ -650,7 +493,7 @@ mono_analyze_liveness (MonoCompile *cfg)
  * 'locals init' using the liveness information.
  */
 static void
-optimize_initlocals2 (MonoCompile *cfg)
+optimize_initlocals (MonoCompile *cfg)
 {
 	MonoBitSet *used;
 	MonoInst *ins;
@@ -1043,62 +886,3 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 }
 
 #endif
-
-static void
-update_used (MonoCompile *cfg, MonoInst *inst, MonoBitSet *used)
-{
-	int arity = mono_burg_arity [inst->opcode];
-
-	if (arity)
-		update_used (cfg, inst->inst_i0, used);
-
-	if (arity > 1)
-		update_used (cfg, inst->inst_i1, used);
-
-	if (inst->ssa_op & MONO_SSA_LOAD_STORE) {
-		if (inst->ssa_op == MONO_SSA_LOAD) {
-			int idx = inst->inst_i0->inst_c0;
-
-			mono_bitset_set_fast (used, idx);
-		}
-	}
-} 
-
-/**
- * optimize_initlocals:
- *
- * Try to optimize away some of the redundant initialization code inserted because of
- * 'locals init' using the liveness information.
- */
-static void
-optimize_initlocals (MonoCompile *cfg)
-{
-	MonoBitSet *used;
-	MonoInst *ins;
-	MonoBasicBlock *initlocals_bb;
-
-	used = mono_bitset_new (cfg->num_varinfo, 0);
-
-	mono_bitset_clear_all (used);
-	initlocals_bb = cfg->bb_entry->next_bb;
-	MONO_BB_FOR_EACH_INS (initlocals_bb, ins)
-		update_used (cfg, ins, used);
-
-	MONO_BB_FOR_EACH_INS (initlocals_bb, ins) {
-		if (ins->ssa_op == MONO_SSA_STORE) {
-			int idx = ins->inst_i0->inst_c0;
-			MonoInst *var = cfg->varinfo [idx];
-
-			if (var && !mono_bitset_test_fast (used, idx) && !mono_bitset_test_fast (initlocals_bb->live_out_set, var->inst_c0) && (var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
-				if (ins->inst_i1 && ((ins->inst_i1->opcode == OP_ICONST) || (ins->inst_i1->opcode == OP_I8CONST))) {
-					NULLIFY_INS (ins);
-					ins->ssa_op = MONO_SSA_NOP;
-					MONO_VARINFO (cfg, var->inst_c0)->spill_costs -= 1;					
-				}
-			}
-		}
-	}
-
-	g_free (used);
-}
-

@@ -237,8 +237,6 @@ common_sources = \
 	abcremoval.h	\
 	ssapre.c	\
 	ssapre.h	\
-	aliasing.c	\
-	aliasing.h	\
 	local-propagation.c	\
 	simple-cee-ops.h \
 	simple-mini-ops.h \
@@ -257,8 +255,6 @@ common_sources = \
 	wapihandles.c	\
 	branch-opts.c	\
 	generic-sharing.c	\
-	ssa2.c	\
-	abcremoval2.c	\
 	regalloc2.c	\
 	simd-methods.h	\
 	simd-intrinsics.c	\
@@ -296,39 +292,32 @@ endif
 
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
 
-common_BURGSRC= $(srcdir)/inssel.brg $(srcdir)/inssel-float.brg
-
 if X86
 arch_sources = $(x86_sources) $(mono_debugger_sources)
-arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-x86.brg
 arch_built=cpu-x86.h
 arch_define=__i386__
 endif
 
 if AMD64
 arch_sources = $(amd64_sources) $(mono_debugger_sources)
-arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-amd64.brg
 arch_built=cpu-amd64.h
 arch_define=__x86_64__
 endif
 
 if POWERPC
 arch_sources = $(ppc_sources)
-arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-ppc.brg
 arch_built=cpu-ppc.h
 arch_define=__ppc__
 endif
 
 if POWERPC64
 arch_sources = $(ppc_sources)
-arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-ppc.brg
 arch_built=cpu-ppc64.h
 arch_define=__ppc__
 endif
 
 if MIPS
 arch_sources = $(mips_sources)
-arch_BURGSRC= $(srcdir)/inssel-long32-mips.brg $(srcdir)/inssel-mips.brg
 arch_built=cpu-mips.h
 arch_define=__mips__
 endif
@@ -337,21 +326,18 @@ if ARM
 # pick up arm_dpimacros.h and arm_fpamacros.h
 ARCH_CFLAGS = -I../arch/arm
 arch_sources = $(arm_sources)
-arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-arm.brg $(srcdir)/inssel-softfloat.brg
 arch_built=cpu-arm.h
 arch_define=__arm__
 endif
 
 if SPARC
 arch_sources = $(sparc_sources)
-arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-sparc.brg
 arch_built=cpu-sparc.h
 arch_define=__sparc__
 endif
 
 if SPARC64
 arch_sources = $(sparc_sources)
-arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-sparc.brg
 arch_built=cpu-sparc.h
 arch_define=__sparc__
 endif
@@ -365,21 +351,18 @@ endif
 
 if S390x
 arch_sources = $(s390x_sources)
-arch_BURGSRC= $(srcdir)/inssel-long.brg $(srcdir)/inssel-s390x.brg
 arch_built=cpu-s390x.h
 arch_define=__s390__
 endif
 
 if IA64
 arch_sources = $(ia64_sources)
-arch_BURGSRC = $(srcdir)/inssel-long.brg $(srcdir)/inssel-ia64.brg
 arch_built = cpu-ia64.h
 arch_define=__ia64__
 endif
 
 if ALPHA
 arch_sources = $(alpha_sources) $(mono_debugger_sources)
-arch_BURGSRC = $(srcdir)/inssel-long.brg $(srcdir)/inssel-alpha.brg
 arch_built = cpu-alpha.h
 arch_define=__alpha__
 endif
@@ -387,18 +370,11 @@ endif
 if HPPA
 # Only support 32-bit targets for now
 arch_sources = $(hppa_sources)
-arch_BURGSRC = $(srcdir)/inssel-long32.brg $(srcdir)/inssel-hppa.brg
 arch_built = cpu-hppa.h
 arch_define=__hppa__
 endif
 
 libmono_la_SOURCES = $(common_sources) $(arch_sources)
-
-if DISABLE_JIT
-nodist_libmono_la_SOURCES = inssel.h
-else
-nodist_libmono_la_SOURCES = inssel.c inssel.h
-endif
 
 libmono_static_la_SOURCES = $(libmono_la_SOURCES)
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
@@ -482,9 +458,6 @@ cpu-hppa.h: cpu-hppa.md genmdesc$(EXEEXT)
 cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-mips.md cpu-mips.h mips_desc
 
-inssel.c inssel.h: $(BURGSRC)
-	$(monodir)/mono/monoburg/monoburg -c 1 -p -e $(BURGSRC) -d inssel.h -s inssel.c
-
 testi: mono test.exe
 	$(RUNTIME) -v -v --ncompile 1 --compile Test:$(mtest) test.exe
 
@@ -530,7 +503,7 @@ clean-local:
 pkgconfigdir = $(libdir)/pkgconfig
 
 if JIT_SUPPORTED
-BUILT_SOURCES = version.h inssel.c inssel.h $(arch_built)
+BUILT_SOURCES = version.h $(arch_built)
 else
 BUILT_SOURCES = version.h
 endif
@@ -539,19 +512,17 @@ CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
 EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	genmdesc.pl	\
 	$(test_sources) \
-	inssel-long.brg inssel-long32.brg \
-	inssel-softfloat.brg	\
-	$(x86_sources) inssel-x86.brg cpu-x86.md \
-	$(amd64_sources) inssel-amd64.brg cpu-amd64.md \
-	$(ppc_sources) inssel-ppc.brg cpu-ppc.md \
-	$(arm_sources) inssel-arm.brg cpu-arm.md \
-	$(mips_sources) inssel-mips.brg inssel-long32-mips.brg cpu-mips.md \
-	$(sparc_sources) inssel-sparc.brg cpu-sparc.md \
-	$(s390_sources) inssel-s390.brg cpu-s390.md \
-	$(s390x_sources) inssel-s390x.brg cpu-s390x.md \
-	$(ia64_sources) inssel-ia64.brg cpu-ia64.md \
-	$(alpha_sources) inssel-alpha.brg cpu-alpha.md \
-	$(hppa_sources) inssel-hppa.brg cpu-hppa.md
+	$(x86_sources) cpu-x86.md \
+	$(amd64_sources) cpu-amd64.md \
+	$(ppc_sources) cpu-ppc.md \
+	$(arm_sources) cpu-arm.md \
+	$(mips_sources) cpu-mips.md \
+	$(sparc_sources) cpu-sparc.md \
+	$(s390_sources) cpu-s390.md \
+	$(s390x_sources) cpu-s390x.md \
+	$(ia64_sources) cpu-ia64.md \
+	$(alpha_sources) cpu-alpha.md \
+	$(hppa_sources) cpu-hppa.md
 
 version.h: Makefile
 	if test -d $(top_srcdir)/.git/svn; then svn_info='git svn info'; fi; \

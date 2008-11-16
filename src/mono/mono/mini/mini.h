@@ -1080,9 +1080,6 @@ enum {
 };
 #undef MINI_OP
 
-/* Can't use the same with both JITs since that would break the burg rules */
-#if defined(NEW_IR)
-
 #if SIZEOF_VOID_P == 8
 #define OP_PCONST OP_I8CONST
 #define OP_PADD OP_LADD
@@ -1124,42 +1121,6 @@ enum {
 #define OP_PBGE OP_IBGE
 #define OP_STOREP_MEMBASE_REG OP_STOREI4_MEMBASE_REG
 #define OP_STOREP_MEMBASE_IMM OP_STOREI4_MEMBASE_IMM
-#endif
-
-#else
-
-#if SIZEOF_VOID_P == 8
-#define OP_PCONST OP_I8CONST
-#define OP_PADD OP_LADD
-#define OP_PADD_IMM OP_LADD_IMM
-#define OP_PNEG OP_LNEG
-#define OP_PCONV_TO_I1 OP_LCONV_TO_I1
-#define OP_PCONV_TO_U1 OP_LCONV_TO_U1
-#define OP_PCONV_TO_I2 OP_LCONV_TO_I2
-#define OP_PCONV_TO_U2 OP_LCONV_TO_U2
-#define OP_PCONV_TO_OVF_I1_UN OP_LCONV_TO_OVF_I1_UN
-#define OP_PCONV_TO_OVF_I1 OP_LCONV_TO_OVF_I1
-#define OP_PBEQ OP_LBEQ
-#define OP_PCEQ CEE_CEQ
-#define OP_STOREP_MEMBASE_REG OP_STOREI8_MEMBASE_REG
-#define OP_STOREP_MEMBASE_IMM OP_STOREI8_MEMBASE_IMM
-#else
-#define OP_PCONST OP_ICONST
-#define OP_PADD CEE_ADD
-#define OP_PADD2 OP_IADD
-#define OP_PNEG CEE_NEG
-#define OP_PCONV_TO_I1 OP_ICONV_TO_I1
-#define OP_PCONV_TO_U1 OP_ICONV_TO_U1
-#define OP_PCONV_TO_I2 OP_ICONV_TO_I2
-#define OP_PCONV_TO_U2 CEE_CONV_U2
-#define OP_PCONV_TO_OVF_I1_UN CEE_CONV_OVF_I1_UN
-#define OP_PCONV_TO_OVF_I1 CEE_CONV_OVF_I1
-#define OP_PBEQ OP_IBEQ
-#define OP_PCEQ CEE_CEQ
-#define OP_STOREP_MEMBASE_REG OP_STOREI4_MEMBASE_REG
-#define OP_STOREP_MEMBASE_IMM OP_STOREI4_MEMBASE_IMM
-#endif
-
 #endif
 
 typedef enum {
@@ -1467,7 +1428,7 @@ void              mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb) MON
 MonoInst         *mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, const char * exname) MONO_INTERNAL;
 void              mono_remove_critical_edges (MonoCompile *cfg) MONO_INTERNAL;
 gboolean          mono_is_regsize_var (MonoType *t) MONO_INTERNAL;
-void              mini_emit_memcpy2 (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align) MONO_INTERNAL;
+void              mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int soffset, int size, int align) MONO_INTERNAL;
 CompRelation      mono_opcode_to_cond (int opcode) MONO_INTERNAL;
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode) MONO_INTERNAL;
 CompRelation      mono_negate_cond (CompRelation cond) MONO_INTERNAL;
@@ -1477,6 +1438,10 @@ void              mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins) MONO_INT
 void              mono_emit_unwind_op (MonoCompile *cfg, int when, 
 									   int tag, int reg, 
 									   int val) MONO_INTERNAL;
+
+int               mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_bblock, MonoBasicBlock *end_bblock, 
+									 MonoInst *return_var, GList *dont_inline, MonoInst **inline_args, 
+									 guint inline_offset, gboolean is_virtual_call) MONO_INTERNAL;
 
 void              mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
 void              mono_decompose_long_opts (MonoCompile *cfg) MONO_INTERNAL;
@@ -1495,8 +1460,6 @@ guint32   mono_arch_cpu_optimizazions           (guint32 *exclude_mask) MONO_INT
 void      mono_arch_instrument_mem_needs        (MonoMethod *method, int *stack, int *code) MONO_INTERNAL;
 void     *mono_arch_instrument_prolog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) MONO_INTERNAL;
 void     *mono_arch_instrument_epilog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) MONO_INTERNAL;
-MonoCallInst *mono_arch_call_opcode             (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) MONO_INTERNAL;
-MonoInst *mono_arch_get_inst_for_method         (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
 void      mono_codegen                          (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_call_inst_add_outarg_reg         (MonoCompile *cfg, MonoCallInst *call, int vreg, int hreg, gboolean fp) MONO_INTERNAL;
 const char *mono_arch_regname                   (int reg) MONO_INTERNAL;
@@ -1534,7 +1497,6 @@ void      mono_arch_output_basic_block          (MonoCompile *cfg, MonoBasicBloc
 gboolean  mono_arch_has_unwind_info             (gconstpointer addr) MONO_INTERNAL;
 void      mono_arch_setup_jit_tls_data          (MonoJitTlsData *tls) MONO_INTERNAL;
 void      mono_arch_free_jit_tls_data           (MonoJitTlsData *tls) MONO_INTERNAL;
-void      mono_arch_emit_this_vret_args         (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg) MONO_INTERNAL;
 void      mono_arch_fill_argument_info          (MonoCompile *cfg) MONO_INTERNAL;
 void      mono_arch_allocate_vars               (MonoCompile *m) MONO_INTERNAL;
 int       mono_arch_get_argument_info           (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info) MONO_INTERNAL;
@@ -1679,13 +1641,13 @@ gboolean       mono_trace_eval                  (MonoMethod *method) MONO_INTERN
 extern void
 mono_perform_abc_removal (MonoCompile *cfg) MONO_INTERNAL;
 extern void
-mono_perform_abc_removal2 (MonoCompile *cfg) MONO_INTERNAL;
+mono_perform_abc_removal (MonoCompile *cfg) MONO_INTERNAL;
 extern void
 mono_perform_ssapre (MonoCompile *cfg) MONO_INTERNAL;
 extern void
 mono_local_cprop (MonoCompile *cfg) MONO_INTERNAL;
 extern void
-mono_local_cprop2 (MonoCompile *cfg);
+mono_local_cprop (MonoCompile *cfg);
 extern void
 mono_local_deadce (MonoCompile *cfg);
 

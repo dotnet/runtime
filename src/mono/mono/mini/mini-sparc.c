@@ -812,7 +812,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			cfg->ret->inst_c0 = cinfo->ret.reg;
 			break;
 		case ArgInIRegPair:
-			if (cfg->new_ir && ((sig->ret->type == MONO_TYPE_I8) || (sig->ret->type == MONO_TYPE_U8))) {
+			if (((sig->ret->type == MONO_TYPE_I8) || (sig->ret->type == MONO_TYPE_U8))) {
 				MonoInst *low = get_vreg_to_inst (cfg, cfg->ret->dreg + 1);
 				MonoInst *high = get_vreg_to_inst (cfg, cfg->ret->dreg + 2);
 
@@ -953,7 +953,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				inst->dreg = sparc_i0 + ainfo->reg;
 				break;
 			case ArgInIRegPair:
-				if (cfg->new_ir && (inst->type == STACK_I8)) {
+				if (inst->type == STACK_I8) {
 					MonoInst *low = get_vreg_to_inst (cfg, inst->dreg + 1);
 					MonoInst *high = get_vreg_to_inst (cfg, inst->dreg + 2);
 
@@ -1048,223 +1048,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 	}
 }
 
-static MonoInst *
-make_group (MonoCompile *cfg, MonoInst *left, int basereg, int offset)
-{
-	MonoInst *group;
-
-	MONO_INST_NEW (cfg, group, OP_GROUP);
-	group->inst_left = left;
-	group->inst_basereg = basereg;
-	group->inst_imm = offset;
-
-	return group;
-}
-
-static void
-emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
-{
-	MonoInst *arg;
-	MonoMethodSignature *tmp_sig;
-	MonoInst *sig_arg;
-
-	/*
-	 * mono_ArgIterator_Setup assumes the signature cookie is 
-	 * passed first and all the arguments which were before it are
-	 * passed on the stack after the signature. So compensate by 
-	 * passing a different signature.
-	 */
-	tmp_sig = mono_metadata_signature_dup (call->signature);
-	tmp_sig->param_count -= call->signature->sentinelpos;
-	tmp_sig->sentinelpos = 0;
-	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
-
-	/* FIXME: Add support for signature tokens to AOT */
-	cfg->disable_aot = TRUE;
-	/* We allways pass the signature on the stack for simplicity */
-	MONO_INST_NEW (cfg, arg, OP_SPARC_OUTARG_MEM);
-	arg->inst_right = make_group (cfg, (MonoInst*)call, sparc_sp, ARGS_OFFSET + cinfo->sig_cookie.offset);
-	MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
-	sig_arg->inst_p0 = tmp_sig;
-	arg->inst_left = sig_arg;
-	arg->type = STACK_PTR;
-	/* prepend, so they get reversed */
-	arg->next = call->out_args;
-	call->out_args = arg;
-}
-
-/* 
- * take the arguments and generate the arch-specific
- * instructions to properly call the function in call.
- * This includes pushing, moving arguments to the right register
- * etc.
- */
-MonoCallInst*
-mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call, int is_virtual) {
-	MonoInst *arg, *in;
-	MonoMethodSignature *sig;
-	int i, n;
-	CallInfo *cinfo;
-	ArgInfo *ainfo;
-	guint32 extra_space = 0;
-
-	sig = call->signature;
-	n = sig->param_count + sig->hasthis;
-	
-	cinfo = get_call_info (cfg, sig, sig->pinvoke);
-
-	for (i = 0; i < n; ++i) {
-		ainfo = cinfo->args + i;
-
-		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-			/* Emit the signature cookie just before the first implicit argument */
-			emit_sig_cookie (cfg, call, cinfo);
-		}
-
-		if (is_virtual && i == 0) {
-			/* the argument will be attached to the call instruction */
-			in = call->args [i];
-		} else {
-			MONO_INST_NEW (cfg, arg, OP_OUTARG);
-			in = call->args [i];
-			arg->cil_code = in->cil_code;
-			arg->inst_left = in;
-			arg->type = in->type;
-			/* prepend, we'll need to reverse them later */
-			arg->next = call->out_args;
-			call->out_args = arg;
-
-			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
-				MonoInst *inst;
-				gint align;
-				guint32 offset, pad;
-				guint32 size;
-
-#ifdef SPARCV9
-				if (sig->pinvoke)
-					NOT_IMPLEMENTED;
-#endif
-
-				if (sig->params [i - sig->hasthis]->type == MONO_TYPE_TYPEDBYREF) {
-					size = sizeof (MonoTypedRef);
-					align = sizeof (gpointer);
-				}
-				else
-				if (sig->pinvoke)
-					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
-				else {
-					/* 
-					 * Can't use mini_type_stack_size (), but that
-					 * aligns the size to sizeof (gpointer), which is larger 
-					 * than the size of the source, leading to reads of invalid
-					 * memory if the source is at the end of address space or
-					 * misaligned reads.
-					 */
-					size = mono_class_value_size (in->klass, &align);
-				}
-
-				/* 
-				 * We use OP_OUTARG_VT to copy the valuetype to a stack location, then
-				 * use the normal OUTARG opcodes to pass the address of the location to
-				 * the callee.
-				 */
-				MONO_INST_NEW (cfg, inst, OP_OUTARG_VT);
-				inst->inst_left = in;
-
-				/* The first 6 argument locations are reserved */
-				if (cinfo->stack_usage < 6 * sizeof (gpointer))
-					cinfo->stack_usage = 6 * sizeof (gpointer);
-
-				offset = ALIGN_TO ((ARGS_OFFSET - STACK_BIAS) + cinfo->stack_usage, align);
-				pad = offset - ((ARGS_OFFSET - STACK_BIAS) + cinfo->stack_usage);
-
-				inst->inst_c1 = STACK_BIAS + offset;
-				inst->backend.size = size;
-				arg->inst_left = inst;
-
-				cinfo->stack_usage += size;
-				cinfo->stack_usage += pad;
-			}
-
-			arg->inst_right = make_group (cfg, (MonoInst*)call, sparc_sp, ARGS_OFFSET + ainfo->offset);
-
-			switch (ainfo->storage) {
-			case ArgInIReg:
-			case ArgInFReg:
-			case ArgInIRegPair:
-				if (ainfo->storage == ArgInIRegPair)
-					arg->opcode = OP_SPARC_OUTARG_REGPAIR;
-				arg->backend.reg3 = sparc_o0 + ainfo->reg;
-				call->used_iregs |= 1 << ainfo->reg;
-
-				if ((i >= sig->hasthis) && !sig->params [i - sig->hasthis]->byref && ((sig->params [i - sig->hasthis]->type == MONO_TYPE_R8) || (sig->params [i - sig->hasthis]->type == MONO_TYPE_R4))) {
-					/* An fp value is passed in an ireg */
-
-					if (arg->opcode == OP_SPARC_OUTARG_REGPAIR)
-						arg->opcode = OP_SPARC_OUTARG_REGPAIR_FLOAT;
-					else
-						arg->opcode = OP_SPARC_OUTARG_FLOAT;
-
-					/*
-					 * The OUTARG (freg) implementation needs an extra dword to store
-					 * the temporary value.
-					 */					
-					extra_space += 8;
-				}
-				break;
-			case ArgOnStack:
-				arg->opcode = OP_SPARC_OUTARG_MEM;
-				break;
-			case ArgOnStackPair:
-				arg->opcode = OP_SPARC_OUTARG_MEMPAIR;
-				break;
-			case ArgInSplitRegStack:
-				arg->opcode = OP_SPARC_OUTARG_SPLIT_REG_STACK;
-				arg->backend.reg3 = sparc_o0 + ainfo->reg;
-				call->used_iregs |= 1 << ainfo->reg;
-				break;
-			case ArgInFloatReg:
-				arg->opcode = OP_SPARC_OUTARG_FLOAT_REG;
-				arg->backend.reg3 = sparc_f0 + ainfo->reg;
-				break;
-			case ArgInDoubleReg:
-				arg->opcode = OP_SPARC_OUTARG_DOUBLE_REG;
-				arg->backend.reg3 = sparc_f0 + ainfo->reg;
-				break;
-			default:
-				NOT_IMPLEMENTED;
-			}
-		}
-	}
-
-	/* Handle the case where there are no implicit arguments */
-	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos)) {
-		emit_sig_cookie (cfg, call, cinfo);
-	}
-
-	/*
-	 * Reverse the call->out_args list.
-	 */
-	{
-		MonoInst *prev = NULL, *list = call->out_args, *next;
-		while (list) {
-			next = list->next;
-			list->next = prev;
-			prev = list;
-			list = next;
-		}
-		call->out_args = prev;
-	}
-	call->stack_usage = cinfo->stack_usage + extra_space;
-	call->out_ireg_args = NULL;
-	call->out_freg_args = NULL;
-	cfg->param_area = MAX (cfg->param_area, call->stack_usage);
-	cfg->flags |= MONO_CFG_HAS_CALLS;
-
-	g_free (cinfo);
-	return call;
-}
-
 /* FIXME: Remove these later */
 #define NEW_LOAD_MEMBASE(cfg,dest,op,dr,base,offset) do { \
         MONO_INST_NEW ((cfg), (dest), (op)); \
@@ -1287,7 +1070,7 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	} while (0)
 
 static void
-add_outarg_reg2 (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int reg, guint32 sreg)
+add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int reg, guint32 sreg)
 {
 	MonoInst *arg;
 
@@ -1334,15 +1117,15 @@ emit_pass_long (MonoCompile *cfg, MonoCallInst *call, ArgInfo *ainfo, MonoInst *
 
 	switch (ainfo->storage) {
 	case ArgInIRegPair:
-		add_outarg_reg2 (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg + 1, in->dreg + 1);
-		add_outarg_reg2 (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, in->dreg + 2);
+		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg + 1, in->dreg + 1);
+		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, in->dreg + 2);
 		break;
 	case ArgOnStackPair:
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset, in->dreg + 2);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset + 4, in->dreg + 1);
 		break;
 	case ArgInSplitRegStack:
-		add_outarg_reg2 (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, in->dreg + 2);
+		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, in->dreg + 2);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, offset + 4, in->dreg + 1);
 		break;
 	default:
@@ -1466,7 +1249,7 @@ emit_pass_other (MonoCompile *cfg, MonoCallInst *call, ArgInfo *ainfo, MonoType 
 
 	switch (ainfo->storage) {
 	case ArgInIReg:
-		add_outarg_reg2 (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, in->dreg);
+		add_outarg_reg (cfg, call, ArgInIReg, sparc_o0 + ainfo->reg, in->dreg);
 		break;
 	case ArgOnStack:
 #ifdef SPARCV9
@@ -1487,7 +1270,7 @@ emit_pass_other (MonoCompile *cfg, MonoCallInst *call, ArgInfo *ainfo, MonoType 
 }
 
 static void
-emit_sig_cookie2 (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
+emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
 	MonoMethodSignature *tmp_sig;
 
@@ -1535,7 +1318,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
 			/* Emit the signature cookie just before the first implicit argument */
-			emit_sig_cookie2 (cfg, call, cinfo);
+			emit_sig_cookie (cfg, call, cinfo);
 		}
 
 		in = call->args [i];
@@ -1559,7 +1342,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	/* Handle the case where there are no implicit arguments */
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sig->sentinelpos)) {
-		emit_sig_cookie2 (cfg, call, cinfo);
+		emit_sig_cookie (cfg, call, cinfo);
 	}
 
 	call->stack_usage = cinfo->stack_usage + extra_space;
@@ -1573,7 +1356,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	ArgInfo *ainfo = (ArgInfo*)ins->inst_p1;
 	int size = ins->backend.size;
 
-	mini_emit_memcpy2 (cfg, sparc_sp, ainfo->offset, src->dreg, 0, size, 0);
+	mini_emit_memcpy (cfg, sparc_sp, ainfo->offset, src->dreg, 0, size, 0);
 }
 
 void
@@ -4430,13 +4213,11 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (cfg->bb_exit->in_count == 1 && cfg->bb_exit->in_bb[0]->native_offset != cfg->bb_exit->native_offset)
 		can_fold = 1;
 
-	if (cfg->new_ir) {
-		/* 
-		 * FIXME: The last instruction might have a branch pointing into it like in 
-		 * int_ceq sparc_i0 <-
-		 */
-		can_fold = 0;
-	}
+	/* 
+	 * FIXME: The last instruction might have a branch pointing into it like in 
+	 * int_ceq sparc_i0 <-
+	 */
+	can_fold = 0;
 
 	/* Try folding last instruction into the restore */
 	if (can_fold && (sparc_inst_op (code [-2]) == 0x2) && (sparc_inst_op3 (code [-2]) == 0x2) && sparc_inst_imm (code [-2]) && (sparc_inst_rd (code [-2]) == sparc_i0)) {
@@ -4658,50 +4439,6 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 void
 mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 {
-}
-
-void
-mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *call, int this_reg, int this_type, int vt_reg)
-{
-	int this_out_reg = sparc_o0;
-
-	if (vt_reg != -1) {
-#ifdef SPARCV9
-		MonoInst *ins;
-		MONO_INST_NEW (cfg, ins, OP_MOVE);
-		ins->sreg1 = vt_reg;
-		ins->dreg = mono_regstate_next_int (cfg->rs);
-		mono_bblock_add_inst (cfg->cbb, ins);
-
-		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, sparc_o0, FALSE);
-
-		this_out_reg = sparc_o1;
-#else
-		/* Set the 'struct/union return pointer' location on the stack */
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, sparc_sp, 64, vt_reg);
-#endif
-	}
-
-	/* add the this argument */
-	if (this_reg != -1) {
-		MonoInst *this;
-		MONO_INST_NEW (cfg, this, OP_MOVE);
-		this->type = this_type;
-		this->sreg1 = this_reg;
-		this->dreg = mono_regstate_next_int (cfg->rs);
-		mono_bblock_add_inst (cfg->cbb, this);
-
-		mono_call_inst_add_outarg_reg (cfg, call, this->dreg, this_out_reg, FALSE);
-	}
-}
-
-
-MonoInst*
-mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
-{
-	MonoInst *ins = NULL;
-
-	return ins;
 }
 
 MonoInst*

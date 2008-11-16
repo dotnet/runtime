@@ -227,18 +227,6 @@ mono_constant_fold_inst (MonoInst *inst, gpointer data)
 	}
 }
 
-void
-mono_constant_fold (MonoCompile *cfg)
-{
-	MonoBasicBlock *bb;
-	
-	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *ins;
-		MONO_BB_FOR_EACH_INS (bb, ins)
-			mono_inst_foreach (ins, mono_constant_fold_inst, NULL);
-	}
-}
-
 /*
  * If the arguments to the cond branch are constants, eval and
  * return BRANCH_NOT_TAKEN for not taken, BRANCH_TAKEN for taken,
@@ -355,7 +343,7 @@ mono_eval_cond_branch (MonoInst *ins)
 } while (0)
 
 /**
- * mono_constant_fold_ins2:
+ * mono_constant_fold_ins:
  *
  * Perform constant folding on INS, using ARG1 and ARG2 as the arguments. If OVERWRITE is
  * true, then store the result back into INS and return INS. Otherwise allocate a new ins,
@@ -363,7 +351,7 @@ mono_eval_cond_branch (MonoInst *ins)
  * NULL.
  */
 MonoInst*
-mono_constant_fold_ins2 (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoInst *arg2, gboolean overwrite)
+mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoInst *arg2, gboolean overwrite)
 {
 	MonoInst *dest = NULL;
 

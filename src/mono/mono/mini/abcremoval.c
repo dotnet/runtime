@@ -8,19 +8,12 @@
  */
 #include <string.h>
 #include <stdio.h>
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
 
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/opcodes.h>
 
-#include "config.h"
-
 #ifndef DISABLE_JIT
-
-#ifndef DISABLE_SSA
 
 #include "inssel.h"
 
@@ -221,47 +214,25 @@ print_evaluation_area_contexts (MonoVariableRelationsEvaluationArea *area) {
 }
 #endif
 
-/*
- * Given a MonoInst, if it is a store to a variable return the MonoInst that
- * represents the stored value.
- * If anything goes wrong, return NULL.
- * store: the MonoInst that should be a store
- * expected_variable_index: the variable where the value should be stored
- * return: either the stored value, or NULL
- */
-static MonoInst *
-get_variable_value_from_store_instruction (MonoInst *store, int expected_variable_index) {
-	switch (store->opcode) {
-	case CEE_STIND_REF:
-	case CEE_STIND_I:
-	case CEE_STIND_I4:
-	case CEE_STIND_I1:
-	case CEE_STIND_I2:
-	case CEE_STIND_I8:
-	case CEE_STIND_R4:
-	case CEE_STIND_R8:
-		if (TRACE_ABC_REMOVAL) {
-			printf ("[store instruction found]");
-		}
-		if ((store->inst_left->opcode == OP_LOCAL) || (store->inst_left->opcode == OP_ARG)) {
-			int variable_index = store->inst_left->inst_c0;
-			if (TRACE_ABC_REMOVAL) {
-				printf ("[value put in local %d (expected %d)]", variable_index, expected_variable_index);
-			}
-			if (variable_index == expected_variable_index) {
-				return store->inst_right;
-			} else {
-				return NULL;
-			}
-		}
-		else
-		{
-			return NULL;
-		}
-		break;
-	default:
-		return NULL;
-	}
+static inline GSList*
+g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
+{
+	GSList *new_list;
+	GSList *last;
+	
+	new_list = mono_mempool_alloc (mp, sizeof (GSList));
+	new_list->data = data;
+	new_list->next = NULL;
+	
+	if (list) {
+		last = list;
+		while (last->next)
+			last = last->next;
+		last->next = new_list;
+		
+		return list;
+	} else
+		return new_list;
 }
 
 /*
@@ -269,7 +240,7 @@ get_variable_value_from_store_instruction (MonoInst *store, int expected_variabl
  * to the variable size in bytes and its kind (signed or unsigned).
  * If the delta is not safe, make the value an "any".
  */
-static void
+static G_GNUC_UNUSED void
 check_delta_safety (MonoVariableRelationsEvaluationArea *area, MonoSummarizedValue *value) {
 	if (value->type == MONO_VARIABLE_SUMMARIZED_VALUE) {
 		int variable = value->value.variable.variable;
@@ -288,262 +259,120 @@ check_delta_safety (MonoVariableRelationsEvaluationArea *area, MonoSummarizedVal
 	}
 }
 
-/* Prototype, definition comes later */
-static void
-summarize_array_value (MonoVariableRelationsEvaluationArea *area, MonoInst *value, MonoSummarizedValue *result, gboolean is_array_type);
-
 /*
- * Given a MonoInst representing an integer value, store it in "summarized" form.
+ * get_relation_from_ins:
+ *
+ *   Obtain relations from a MonoInst.
+ *
  * result_value_kind: the "expected" kind of result;
  * result: the "summarized" value
  * returns the "actual" kind of result, if guessable (otherwise MONO_UNKNOWN_INTEGER_VALUE)
  */
 static MonoIntegerValueKind
-summarize_integer_value (MonoVariableRelationsEvaluationArea *area, MonoInst *value, MonoSummarizedValue *result, MonoIntegerValueKind result_value_kind) {
+get_relation_from_ins (MonoVariableRelationsEvaluationArea *area, MonoInst *ins, MonoSummarizedValueRelation *result, MonoIntegerValueKind result_value_kind)
+{
 	MonoIntegerValueKind value_kind;
+	MonoSummarizedValue *value = &result->related_value;
 	
-	if (value->type == STACK_I8) {
+	if (ins->type == STACK_I8) {
 		value_kind = MONO_INTEGER_VALUE_SIZE_8;
-	} else if (value->type == STACK_I4) {
+	} else if (ins->type == STACK_I4) {
 		value_kind = MONO_INTEGER_VALUE_SIZE_4;
 	} else {
 		value_kind = MONO_UNKNOWN_INTEGER_VALUE;
 	}
 
-	switch (value->opcode) {
+	result->relation = MONO_EQ_RELATION;
+	MAKE_VALUE_ANY (*value);
+
+	switch (ins->opcode) {
 	case OP_ICONST:
-		result->type = MONO_CONSTANT_SUMMARIZED_VALUE;
-		result->value.constant.value = value->inst_c0;
+		value->type = MONO_CONSTANT_SUMMARIZED_VALUE;
+		value->value.constant.value = ins->inst_c0;
 		break;
-	case OP_LOCAL:
-	case OP_ARG:
-		result->type = MONO_VARIABLE_SUMMARIZED_VALUE;
-		result->value.variable.variable = value->inst_c0;
-		result->value.variable.delta = 0;
-		value_kind = area->variable_value_kind [value->inst_c0];
-		break;
-	case CEE_LDIND_I1:
-		value_kind = MONO_INTEGER_VALUE_SIZE_1;
-		goto handle_load;
-	case CEE_LDIND_U1:
-		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
-		goto handle_load;
-	case CEE_LDIND_I2:
-		value_kind = MONO_INTEGER_VALUE_SIZE_2;
-		goto handle_load;
-	case CEE_LDIND_U2:
-		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
-		goto handle_load;
-	case CEE_LDIND_I4:
-		value_kind = MONO_INTEGER_VALUE_SIZE_4;
-		goto handle_load;
-	case CEE_LDIND_U4:
-		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
-		goto handle_load;
-	case CEE_LDIND_I8:
-		value_kind = MONO_INTEGER_VALUE_SIZE_8;
-		goto handle_load;
-	case CEE_LDIND_I:
-		value_kind = SIZEOF_VOID_P;
-handle_load:
-		if ((value->inst_left->opcode == OP_LOCAL) || (value->inst_left->opcode == OP_ARG)) {
-			value_kind = summarize_integer_value (area, value->inst_left, result, result_value_kind);
-		} else {
-			MAKE_VALUE_ANY (*result);
-		}
-		break;
-	case CEE_ADD: {
-		MonoSummarizedValue left_value;
-		MonoSummarizedValue right_value;
-		summarize_integer_value (area, value->inst_left, &left_value, result_value_kind);
-		summarize_integer_value (area, value->inst_right, &right_value, result_value_kind);
-		
-		if (left_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-			if (right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-				result->type = MONO_VARIABLE_SUMMARIZED_VALUE;
-				result->value.variable.variable = left_value.value.variable.variable;
-				result->value.variable.delta = left_value.value.variable.delta + right_value.value.constant.value;
-			} else {
-				MAKE_VALUE_ANY (*result);
-			}
-		} else if (right_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-			if (left_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-				result->type = MONO_VARIABLE_SUMMARIZED_VALUE;
-				result->value.variable.variable = right_value.value.variable.variable;
-				result->value.variable.delta = left_value.value.constant.value + right_value.value.variable.delta;
-			} else {
-				MAKE_VALUE_ANY (*result);
-			}
-		} else if ((right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) && (left_value.type == MONO_CONSTANT_SUMMARIZED_VALUE)) {
-			/* This should not happen if constant folding has been done */
-			result->type = MONO_CONSTANT_SUMMARIZED_VALUE;
-			result->value.constant.value = left_value.value.constant.value + right_value.value.constant.value;
-		} else {
-			MAKE_VALUE_ANY (*result);
-		}
-		if (result->type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-			check_delta_safety (area, result);
-		}
-		break;
-	}
-	case CEE_SUB: {
-		MonoSummarizedValue left_value;
-		MonoSummarizedValue right_value;
-		summarize_integer_value (area, value->inst_left, &left_value, result_value_kind);
-		summarize_integer_value (area, value->inst_right, &right_value, result_value_kind);
-
-		if (left_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-			if (right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-				result->type = MONO_VARIABLE_SUMMARIZED_VALUE;
-				result->value.variable.variable = left_value.value.variable.variable;
-				result->value.variable.delta = left_value.value.variable.delta - right_value.value.constant.value;
-			} else {
-				MAKE_VALUE_ANY (*result);
-			}
-		} else if ((right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) && (left_value.type == MONO_CONSTANT_SUMMARIZED_VALUE)) {
-			/* This should not happen if constant folding has been done */
-			result->type = MONO_CONSTANT_SUMMARIZED_VALUE;
-			result->value.constant.value = left_value.value.constant.value - right_value.value.constant.value;
-		} else {
-			MAKE_VALUE_ANY (*result);
-		}
-		if (result->type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-			check_delta_safety (area, result);
-		}
-		break;
-	}
-	case CEE_AND: {
-		MonoSummarizedValue left_value;
-		MonoSummarizedValue right_value;
-		int constant_operand_value;
-
-		summarize_integer_value (area, value->inst_left, &left_value, result_value_kind);
-		summarize_integer_value (area, value->inst_right, &right_value, result_value_kind);
-
-		if (left_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-			constant_operand_value = left_value.value.constant.value;
-		} else if (right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-			constant_operand_value = right_value.value.constant.value;
-		} else {
-			constant_operand_value = 0;
-		}
-		
-		if (constant_operand_value > 0) {
-			if (constant_operand_value <= 0xff) {
-				if ((result_value_kind & MONO_INTEGER_VALUE_SIZE_BITMASK) > 1) {
-					value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
-				}
-			} else if (constant_operand_value <= 0xffff) {
-				if ((result_value_kind & MONO_INTEGER_VALUE_SIZE_BITMASK) > 2) {
-					value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
-				}
-			}
-		}
-		
-		MAKE_VALUE_ANY (*result);
-		break;
-	}
-	case CEE_CONV_I1:
-	case CEE_CONV_OVF_I1:
-	case CEE_CONV_OVF_I1_UN:
-		value_kind = MONO_INTEGER_VALUE_SIZE_1;
-		MAKE_VALUE_ANY (*result);
-		break;
-	case CEE_CONV_U1:
-	case CEE_CONV_OVF_U1:
-		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
-		MAKE_VALUE_ANY (*result);
-		break;
-	case CEE_CONV_I2:
-	case CEE_CONV_OVF_I2:
-	case CEE_CONV_OVF_I2_UN:
-		value_kind = MONO_INTEGER_VALUE_SIZE_2;
-		MAKE_VALUE_ANY (*result);
-		break;
-	case CEE_CONV_U2:
-	case CEE_CONV_OVF_U2:
-		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
-		MAKE_VALUE_ANY (*result);
-		break;
-	case CEE_LDLEN:
-		summarize_array_value (area, value->inst_left, result, TRUE);
-		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
-		break;
-	case OP_LCONV_TO_I4:
-		value_kind = summarize_integer_value (area, value->inst_left, result, result_value_kind);
+	case OP_MOVE:
+		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
+		value->value.variable.variable = ins->sreg1;
+		value->value.variable.delta = 0;
 		break;
 	case OP_PHI:
-		result->type = MONO_PHI_SUMMARIZED_VALUE;
-		result->value.phi.number_of_alternatives = *(value->inst_phi_args);
-		result->value.phi.phi_alternatives = value->inst_phi_args + 1;
+		value->type = MONO_PHI_SUMMARIZED_VALUE;
+		value->value.phi.number_of_alternatives = *(ins->inst_phi_args);
+		value->value.phi.phi_alternatives = ins->inst_phi_args + 1;
 		break;
+	case OP_IADD_IMM:
+		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
+		value->value.variable.variable = ins->sreg1;
+		value->value.variable.delta = ins->inst_imm;
+		/* FIXME: */
+		//check_delta_safety (area, result);
+		break;
+	case OP_ISUB_IMM:
+		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
+		value->value.variable.variable = ins->sreg1;
+		value->value.variable.delta = ins->inst_imm;
+		/* FIXME: */
+		//check_delta_safety (area, result);
+		break;
+	case OP_IREM_UN:
+		/* The result of an unsigned remainder is 0 < x < the divisor */
+		result->relation = MONO_LT_RELATION;
+		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
+		value->value.variable.variable = ins->sreg2;
+		value->value.variable.delta = 0;
+		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
+		break;
+	case OP_LDLEN:
+		/*
+		 * We represent arrays by their length, so r1<-ldlen r2 is stored
+		 * as r1 == r2 in the evaluation graph.
+		 */
+		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
+		value->value.variable.variable = ins->sreg1;
+		value->value.variable.delta = 0;
+		value_kind = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
+		break;
+	case OP_NEWARR:
+		value->type = MONO_VARIABLE_SUMMARIZED_VALUE;
+		value->value.variable.variable = ins->sreg1;
+		value->value.variable.delta = 0;
+		break;
+
+		/* FIXME: Add more opcodes */
 	default:
-		MAKE_VALUE_ANY (*result);
+		break;
 	}
 	return value_kind;
 }
 
-/*
- * Given a MonoInst representing an array value, store it in "summarized" form.
- * result: the "summarized" value
- * is_array_type: TRUE of we are *sure* that an eventual OP_PCONST will point
- * to a MonoArray (this can happen for already initialized readonly static fields,
- * in which case we will get the array length directly from the MonoArray)
- */
-static void
-summarize_array_value (MonoVariableRelationsEvaluationArea *area, MonoInst *value, MonoSummarizedValue *result, gboolean is_array_type) {
-	switch (value->opcode) {
-	case OP_LOCAL:
-	case OP_ARG:
-		result->type = MONO_VARIABLE_SUMMARIZED_VALUE;
-		result->value.variable.variable = value->inst_c0;
-		result->value.variable.delta = 0;
-		break;
-	case CEE_LDIND_REF:
-		summarize_array_value (area, value->inst_left, result, FALSE);
-		break;
-	case CEE_NEWARR:
-		summarize_integer_value (area, value->inst_newa_len, result, MONO_UNKNOWN_INTEGER_VALUE);
-		break;
-	case OP_PCONST:
-		if ((is_array_type) && (value->inst_p0 != NULL)) {
-			MonoArray *array = (MonoArray *) (value->inst_p0);
-			result->type = MONO_CONSTANT_SUMMARIZED_VALUE;
-			result->value.constant.value = array->max_length;
-		} else {
-			MAKE_VALUE_ANY (*result);
-		}
-		break;
-	case OP_PHI:
-		result->type = MONO_PHI_SUMMARIZED_VALUE;
-		result->value.phi.number_of_alternatives = *(value->inst_phi_args);
-		result->value.phi.phi_alternatives = value->inst_phi_args + 1;
-		break;
-	default:
-		MAKE_VALUE_ANY (*result);
-	}
-}
-
 static MonoValueRelation
-get_relation_from_branch_instruction (int opcode) {
-	switch (opcode) {
-	case CEE_BEQ:
-		return MONO_EQ_RELATION;
-	case CEE_BLT:
-	case CEE_BLT_UN:
-		return MONO_LT_RELATION;
-	case CEE_BLE:
-	case CEE_BLE_UN:
-		return MONO_LE_RELATION;
-	case CEE_BGT:
-	case CEE_BGT_UN:
-		return MONO_GT_RELATION;
-	case CEE_BGE:
-	case CEE_BGE_UN:
-		return MONO_GE_RELATION;
-	case CEE_BNE_UN:
-		return MONO_NE_RELATION;
-	default:
+get_relation_from_branch_instruction (MonoInst *ins)
+{
+	if (MONO_IS_COND_BRANCH_OP (ins)) {
+		CompRelation rel = mono_opcode_to_cond (ins->opcode);
+
+		switch (rel) {
+		case CMP_EQ:
+			return MONO_EQ_RELATION;
+		case CMP_NE:
+			return MONO_NE_RELATION;
+		case CMP_LE:
+		case CMP_LE_UN:
+			return MONO_LE_RELATION;
+		case CMP_GE:
+		case CMP_GE_UN:
+			return MONO_GE_RELATION;
+		case CMP_LT:
+		case CMP_LT_UN:
+			return MONO_LT_RELATION;
+		case CMP_GT:
+		case CMP_GT_UN:
+			return MONO_GT_RELATION;
+		default:
+			g_assert_not_reached ();
+			return MONO_ANY_RELATION;
+		}
+	} else {
 		return MONO_ANY_RELATION;
 	}
 }
@@ -555,32 +384,39 @@ get_relation_from_branch_instruction (int opcode) {
  * relations: the resulting relations (entry condition of the given BB)
  */
 static void
-get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoBasicBlock *bb, MonoAdditionalVariableRelationsForBB *relations) {
+get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoBasicBlock *bb, MonoAdditionalVariableRelationsForBB *relations)
+{
 	MonoBasicBlock *in_bb;
-	MonoInst *branch;
+	MonoInst *ins, *compare, *branch;
 	MonoValueRelation branch_relation;
 	MonoValueRelation symmetric_relation;
+	gboolean code_path;
 	
 	INITIALIZE_VALUE_RELATION (&(relations->relation1.relation));
 	relations->relation1.relation.relation_is_static_definition = FALSE;
+	relations->relation1.relation.next = NULL;
 	relations->relation1.insertion_point = NULL;
 	relations->relation1.variable = -1;
 	INITIALIZE_VALUE_RELATION (&(relations->relation2.relation));
 	relations->relation2.relation.relation_is_static_definition = FALSE;
+	relations->relation2.relation.next = NULL;	
 	relations->relation2.insertion_point = NULL;
 	relations->relation2.variable = -1;
 	
-	
 	if (bb->in_count == 1) { /* Should write the code to "sum" conditions... */
 		in_bb = bb->in_bb [0];
-		branch = in_bb->last_ins;
-		if (branch == NULL) return;
-		branch_relation = get_relation_from_branch_instruction (branch->opcode);
-		if ((branch_relation != MONO_ANY_RELATION) && (branch->inst_left->opcode == OP_COMPARE)) {
-			MonoSummarizedValue left_value;
-			MonoSummarizedValue right_value;
-			gboolean code_path;
 
+		if ((in_bb->last_ins == NULL) || (in_bb->code == in_bb->last_ins))
+			return;
+
+		for (ins = in_bb->code; ins->next != in_bb->last_ins; ins = ins->next)
+			;
+
+		compare = ins;
+		branch = ins->next;
+		branch_relation = get_relation_from_branch_instruction (branch);
+
+		if (branch_relation != MONO_ANY_RELATION) {
 			if (branch->inst_true_bb == bb) {
 				code_path = TRUE;
 			} else if (branch->inst_false_bb == bb) {
@@ -589,39 +425,32 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
 				code_path = TRUE;
 				g_assert_not_reached ();
 			}
-
-			if (!code_path) {
+			if (!code_path)
 				branch_relation = MONO_NEGATED_RELATION (branch_relation);
-			}
 			symmetric_relation = MONO_SYMMETRIC_RELATION (branch_relation);
 
-			summarize_integer_value (area, branch->inst_left->inst_left, &left_value, MONO_UNKNOWN_INTEGER_VALUE);
-			summarize_integer_value (area, branch->inst_left->inst_right, &right_value, MONO_UNKNOWN_INTEGER_VALUE);
-
-			if ((left_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) && ((right_value.type == MONO_VARIABLE_SUMMARIZED_VALUE)||(right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE))) {
-				relations->relation1.variable = left_value.value.variable.variable;
+			/* FIXME: Other compare opcodes */
+			if (compare->opcode == OP_ICOMPARE) {
+				relations->relation1.variable = compare->sreg1;
 				relations->relation1.relation.relation = branch_relation;
-				relations->relation1.relation.related_value = right_value;
-				if (right_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-					relations->relation1.relation.related_value.value.constant.value -= left_value.value.variable.delta;
-				} else {
-					relations->relation1.relation.related_value.value.variable.delta -= left_value.value.variable.delta;
-				}
-			}
-			if ((right_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) && ((left_value.type == MONO_VARIABLE_SUMMARIZED_VALUE)||(left_value.type == MONO_CONSTANT_SUMMARIZED_VALUE))) {
-				relations->relation2.variable = right_value.value.variable.variable;
+				relations->relation1.relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
+				relations->relation1.relation.related_value.value.variable.variable = compare->sreg2;
+				relations->relation1.relation.related_value.value.variable.delta = 0;
+
+				relations->relation2.variable = compare->sreg2;
 				relations->relation2.relation.relation = symmetric_relation;
-				relations->relation2.relation.related_value = left_value;
-				if (left_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-					relations->relation2.relation.related_value.value.constant.value -= right_value.value.variable.delta;
-				} else {
-					relations->relation2.relation.related_value.value.variable.delta -= right_value.value.variable.delta;
-				}
+				relations->relation2.relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
+				relations->relation2.relation.related_value.value.variable.variable = compare->sreg1;
+				relations->relation2.relation.related_value.value.variable.delta = 0;
+			} else if (compare->opcode == OP_ICOMPARE_IMM) {
+				relations->relation1.variable = compare->sreg1;
+				relations->relation1.relation.relation = branch_relation;
+				relations->relation1.relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
+				relations->relation1.relation.related_value.value.constant.value = compare->inst_imm;
 			}
 		}
 	}
 }
-
 
 /*
  * Add the given relations to the evaluation area.
@@ -629,7 +458,8 @@ get_relations_from_previous_bb (MonoVariableRelationsEvaluationArea *area, MonoB
  * change: the relations that must be added
  */
 static void
-apply_change_to_evaluation_area (MonoVariableRelationsEvaluationArea *area, MonoAdditionalVariableRelation *change) {
+apply_change_to_evaluation_area (MonoVariableRelationsEvaluationArea *area, MonoAdditionalVariableRelation *change)
+{
 	MonoSummarizedValueRelation *base_relation;
 	
 	if (change->relation.relation != MONO_ANY_RELATION) {
@@ -648,7 +478,8 @@ apply_change_to_evaluation_area (MonoVariableRelationsEvaluationArea *area, Mono
  * change: the relation that must be removed
  */
 static void
-remove_change_from_evaluation_area (MonoAdditionalVariableRelation *change) {
+remove_change_from_evaluation_area (MonoAdditionalVariableRelation *change)
+{
 	if (change->insertion_point != NULL) {
 		change->insertion_point->next = change->relation.next;
 		change->relation.next = NULL;
@@ -657,7 +488,8 @@ remove_change_from_evaluation_area (MonoAdditionalVariableRelation *change) {
 
 
 static void
-clean_contexts (MonoRelationsEvaluationContext *contexts, int number) {
+clean_contexts (MonoRelationsEvaluationContext *contexts, int number)
+{
 	int i;
 	for (i = 0; i < number; i++) {
 		contexts [i].status = MONO_RELATIONS_EVALUATION_NOT_STARTED;
@@ -673,7 +505,8 @@ clean_contexts (MonoRelationsEvaluationContext *contexts, int number) {
  * relation: the relation between the range and the value
  */
 static void
-intersect_value( MonoRelationsEvaluationRange *range, int value, MonoValueRelation relation ) {
+intersect_value( MonoRelationsEvaluationRange *range, int value, MonoValueRelation relation )
+{
 	switch (relation) {
 	case MONO_NO_RELATION:
 		MONO_MAKE_RELATIONS_EVALUATION_RANGE_IMPOSSIBLE (*range);
@@ -715,7 +548,8 @@ intersect_value( MonoRelationsEvaluationRange *range, int value, MonoValueRelati
  * relation: the relation between the pairs of ranges
  */
 static void
-intersect_ranges( MonoRelationsEvaluationRanges *ranges, MonoRelationsEvaluationRanges *other_ranges, int delta, MonoValueRelation relation ) {
+intersect_ranges( MonoRelationsEvaluationRanges *ranges, MonoRelationsEvaluationRanges *other_ranges, int delta, MonoValueRelation relation )
+{
 	if (delta == 0) {
 		switch (relation) {
 		case MONO_NO_RELATION:
@@ -772,7 +606,8 @@ intersect_ranges( MonoRelationsEvaluationRanges *ranges, MonoRelationsEvaluation
  *                 (or NULL for the first invocation)
  */
 static void
-evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *area, int variable, int target_variable, MonoRelationsEvaluationContext *father_context) {
+evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *area, int variable, int target_variable, MonoRelationsEvaluationContext *father_context)
+{
 	MonoRelationsEvaluationContext *context = &(area->contexts [variable]);
 	
 	// First of all, we check the evaluation status
@@ -782,7 +617,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 		MonoSummarizedValueRelation *relation = &(area->relations [variable]);
 		
 		if (TRACE_ABC_REMOVAL) {
-			printf ("Evaluating varible %d (target variable %d)\n", variable, target_variable);
+			printf ("Evaluating variable %d (target variable %d)\n", variable, target_variable);
 			print_summarized_value_relation (relation);
 			printf ("\n");
 		}
@@ -842,7 +677,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 						// Check if we are part of a recursive loop
 						if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
 							if (TRACE_ABC_REMOVAL) {
-								printf ("Recursivity detected for varible %d (target variable %d), status ", variable, target_variable);
+								printf ("Recursivity detected for variable %d (target variable %d), status ", variable, target_variable);
 								print_evaluation_context_status (context->status);
 							}
 							
@@ -895,7 +730,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 					// This means we are part of a recursive loop
 					if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
 						if (TRACE_ABC_REMOVAL) {
-							printf ("Recursivity detected for varible %d (target variable %d), status ", variable, target_variable);
+							printf ("Recursivity detected for variable %d (target variable %d), status ", variable, target_variable);
 							print_evaluation_context_status (context->status);
 							printf ("\n");
 						}
@@ -942,7 +777,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 		// Check if any recursivity bits are still in the status, and in any case clear them
 		if (context->status & MONO_RELATIONS_EVALUATION_IS_RECURSIVE) {
 			if (TRACE_ABC_REMOVAL) {
-				printf ("Recursivity for varible %d (target variable %d) discards computation, status ", variable, target_variable);
+				printf ("Recursivity for variable %d (target variable %d) discards computation, status ", variable, target_variable);
 				print_evaluation_context_status (context->status);
 				printf ("\n");
 			}
@@ -952,7 +787,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			context->status = MONO_RELATIONS_EVALUATION_NOT_STARTED;
 		} else {
 			if (TRACE_ABC_REMOVAL) {
-				printf ("Ranges for varible %d (target variable %d) computed: ", variable, target_variable);
+				printf ("Ranges for variable %d (target variable %d) computed: ", variable, target_variable);
 				print_evaluation_context_ranges (&(context->ranges));
 				printf ("\n");
 			}
@@ -970,7 +805,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 		int path_value = 0;
 		
 		if (TRACE_ABC_REMOVAL) {
-			printf ("Evaluation of varible %d (target variable %d) already in progress\n", variable, target_variable);
+			printf ("Evaluation of variable %d (target variable %d) already in progress\n", variable, target_variable);
 			print_evaluation_context (context);
 			print_summarized_value_relation (context->current_relation);
 			printf ("\n");
@@ -1036,7 +871,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 	}
 	default:
 		if (TRACE_ABC_REMOVAL) {
-			printf ("Varible %d (target variable %d) already in a recursive ring, skipping\n", variable, target_variable);
+			printf ("Variable %d (target variable %d) already in a recursive ring, skipping\n", variable, target_variable);
 			print_evaluation_context (context);
 			print_summarized_value_relation (context->current_relation);
 			printf ("\n");
@@ -1049,7 +884,9 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 /*
  * Apply the given value kind to the given range
  */
-static void apply_value_kind_to_range (MonoRelationsEvaluationRange *range, MonoIntegerValueKind value_kind) {
+static void
+apply_value_kind_to_range (MonoRelationsEvaluationRange *range, MonoIntegerValueKind value_kind)
+{
 	if (value_kind != MONO_UNKNOWN_INTEGER_VALUE) {
 		if (value_kind & MONO_UNSIGNED_VALUE_FLAG) {
 			if (range->lower < 0) {
@@ -1091,145 +928,40 @@ static void apply_value_kind_to_range (MonoRelationsEvaluationRange *range, Mono
  *       memory for all the evaluation contexts is already allocated)
  */
 static void
-remove_abc_from_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area) {
-	if (inst->opcode == CEE_LDELEMA) {
-		MonoInst *array_inst = inst->inst_left;
-		MonoInst *index_inst = inst->inst_right;
-		MonoSummarizedValue array_value;
-		MonoSummarizedValue index_value;
-		MonoIntegerValueKind index_value_kind;
-		
-		/* First of all, examine the CEE_LDELEMA operands */
-		summarize_array_value (area, array_inst, &array_value, TRUE);
-		index_value_kind = summarize_integer_value (area, index_inst, &index_value, MONO_UNKNOWN_INTEGER_VALUE);
-		
-		/* If the array is a local variable... */
-		if (array_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-			int array_variable = array_value.value.variable.variable;
-			MonoRelationsEvaluationContext *array_context = &(area->contexts [array_variable]);
-			
-			if (index_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-				// The easiest case: we just evaluate the array length, to see if it has some relation
-				// with the index constant, and act accordingly
-				
-				clean_contexts (area->contexts, area->cfg->num_varinfo);
-				evaluate_relation_with_target_variable (area, array_variable, array_variable, NULL);
-				
-				if ((index_value.value.constant.value >= 0) && (index_value.value.constant.value < array_context->ranges.zero.lower)) {
-					if (REPORT_ABC_REMOVAL) {
-						printf ("ARRAY-ACCESS: removed bounds check on array %d with constant index %d in method %s\n",
-								array_variable, index_value.value.constant.value, mono_method_full_name (area->cfg->method, TRUE));
-					}
-					inst->flags |= (MONO_INST_NORANGECHECK);
-				}
-			} else if (index_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-				// The common case: we must evaluate both the index and the array length, and check for relevant
-				// relations both through variable definitions and as constant definitions
-				
-				int index_variable = index_value.value.variable.variable;
-				MonoRelationsEvaluationContext *index_context = &(area->contexts [index_variable]);
-				
-				clean_contexts (area->contexts, area->cfg->num_varinfo);
-				
-				evaluate_relation_with_target_variable (area, index_variable, array_variable, NULL);
-				evaluate_relation_with_target_variable (area, array_variable, array_variable, NULL);
-				
-				MONO_SUB_DELTA_SAFELY_FROM_RANGES (index_context->ranges, index_value.value.variable.delta);
-				/* Apply index value kind */
-				apply_value_kind_to_range (&(index_context->ranges.zero), index_value_kind);
-				
-				if (index_context->ranges.zero.lower >= 0) {
-					if (TRACE_ABC_REMOVAL) {
-						printf ("ARRAY-ACCESS: Removed lower bound check on array %d with index %d\n", array_variable, index_variable);
-					}
-					if ((index_context->ranges.variable.upper < 0)||(index_context->ranges.zero.upper < array_context->ranges.zero.lower)) {
-						if (REPORT_ABC_REMOVAL) {
-							printf ("ARRAY-ACCESS: removed bounds check on array %d with index %d in method %s\n",
-									array_variable, index_variable, mono_method_full_name (area->cfg->method, TRUE));
-						}
-						inst->flags |= (MONO_INST_NORANGECHECK);
-					}
-				}
-				if (TRACE_ABC_REMOVAL) {
-					if (index_context->ranges.variable.upper < 0) {
-						printf ("ARRAY-ACCESS: Removed upper bound check (through variable) on array %d with index %d\n", array_variable, index_variable);
-					}
-					if (index_context->ranges.zero.upper < array_context->ranges.zero.lower) {
-						printf ("ARRAY-ACCESS: Removed upper bound check (through constant) on array %d with index %d\n", array_variable, index_variable);
-					}
-				}
-			}
-		} else if (array_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-			if (index_value.type == MONO_CONSTANT_SUMMARIZED_VALUE) {
-				/* The easiest possible case: constant with constant */
-				if ((index_value.value.constant.value >= 0) && (index_value.value.constant.value < array_value.value.constant.value)) {
-					if (REPORT_ABC_REMOVAL) {
-						printf ("ARRAY-ACCESS: removed bounds check on array of constant length %d with constant index %d in method %s\n",
-								array_value.value.constant.value, index_value.value.constant.value, mono_method_full_name (area->cfg->method, TRUE));
-					}
-					inst->flags |= (MONO_INST_NORANGECHECK);
-				}
-			} else if (index_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-				/* The index has a variable related value, which must be evaluated */
-				int index_variable = index_value.value.variable.variable;
-				MonoRelationsEvaluationContext *index_context = &(area->contexts [index_variable]);
-				
-				clean_contexts (area->contexts, area->cfg->num_varinfo);
-				evaluate_relation_with_target_variable (area, index_variable, index_variable, NULL);
-				/* Apply index value kind */
-				apply_value_kind_to_range (&(index_context->ranges.zero), index_value_kind);
-				
-				if ((index_context->ranges.zero.lower >= 0) && (index_context->ranges.zero.upper < array_value.value.constant.value)) {
-					if (REPORT_ABC_REMOVAL) {
-						printf ("ARRAY-ACCESS: removed bounds check on array of constant length %d with index %d ranging from %d to %d in method %s\n",
-								array_value.value.constant.value, index_variable, index_context->ranges.zero.lower, index_context->ranges.zero.upper, mono_method_full_name (area->cfg->method, TRUE));
-					}
-					inst->flags |= (MONO_INST_NORANGECHECK);
-				}
-			} else if (index_value_kind != MONO_UNKNOWN_INTEGER_VALUE) {
-				/* The index has an unknown but bounded value */
-				MonoRelationsEvaluationRange range;
-				MONO_MAKE_RELATIONS_EVALUATION_RANGE_WEAK (range);
-				apply_value_kind_to_range (&range, index_value_kind);
-				
-				if ((range.lower >= 0) && (range.upper < array_value.value.constant.value)) {
-					if (REPORT_ABC_REMOVAL) {
-						printf ("ARRAY-ACCESS: removed bounds check on array of constant length %d with unknown index ranging from %d to %d in method %s\n",
-								array_value.value.constant.value, range.lower, range.upper, mono_method_full_name (area->cfg->method, TRUE));
-					}
-					inst->flags |= (MONO_INST_NORANGECHECK);
-				}
-			}
-		}
-	}
-}
+remove_abc_from_inst (MonoInst *ins, MonoVariableRelationsEvaluationArea *area)
+{
+	/* FIXME: Add support for 'constant' arrays and constant indexes */
 
-/*
- * Recursively scan a tree of MonoInst looking for array accesses.
- * inst: the root of the MonoInst tree
- * area: the current evaluation area (it contains the relation graph and
- *       memory for all the evaluation contexts is already allocated)
- */
-static void
-process_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area) {
-	if (inst->opcode == CEE_LDELEMA) { /* Handle OP_LDELEMA2D, too */
+	int array_variable = ins->sreg1;
+	int index_variable = ins->sreg2;
+	MonoRelationsEvaluationContext *array_context = &(area->contexts [array_variable]);
+	MonoRelationsEvaluationContext *index_context = &(area->contexts [index_variable]);
+				
+	clean_contexts (area->contexts, area->cfg->next_vreg);
+				
+	evaluate_relation_with_target_variable (area, index_variable, array_variable, NULL);
+	evaluate_relation_with_target_variable (area, array_variable, array_variable, NULL);
+
+	if ((index_context->ranges.zero.lower >=0) && ((index_context->ranges.variable.upper < 0)||(index_context->ranges.zero.upper < array_context->ranges.zero.lower))) {
+		if (REPORT_ABC_REMOVAL) {
+			printf ("ARRAY-ACCESS: removed bounds check on array %d with index %d\n",
+					array_variable, index_variable);
+			NULLIFY_INS (ins);
+		}
+	} else {
 		if (TRACE_ABC_REMOVAL) {
-			printf ("Attempting check removal...\n");
-		}
-		
-		remove_abc_from_inst (inst, area);
-	}
-
-	if (mono_burg_arity [inst->opcode]) {
-		process_inst (inst->inst_left, area);
-		if (mono_burg_arity [inst->opcode] > 1) {
-			process_inst (inst->inst_right, area);
+			if (index_context->ranges.zero.lower >= 0) {
+				printf ("ARRAY-ACCESS: Removed lower bound check on array %d with index %d\n", array_variable, index_variable);
+			}
+			if (index_context->ranges.variable.upper < 0) {
+				printf ("ARRAY-ACCESS: Removed upper bound check (through variable) on array %d with index %d\n", array_variable, index_variable);
+			}
+			if (index_context->ranges.zero.upper < array_context->ranges.zero.lower) {
+				printf ("ARRAY-ACCESS: Removed upper bound check (through constant) on array %d with index %d\n", array_variable, index_variable);
+			}
 		}
 	}
 }
-
-
-
 
 /*
  * Process a BB removing bounds checks from array accesses.
@@ -1245,16 +977,17 @@ process_inst (MonoInst *inst, MonoVariableRelationsEvaluationArea *area) {
  *       memory for all the evaluation contexts is already allocated)
  */
 static void
-process_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
+process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
 	int inst_index;
-	MonoInst *current_inst;
+	MonoInst *ins;
 	MonoAdditionalVariableRelationsForBB additional_relations;
-	GSList *dominated_bb;
+	GSList *dominated_bb, *l;
+	GSList *check_relations = NULL;
 	
 	if (TRACE_ABC_REMOVAL) {
-		printf ("Processing block %d [dfn %d]...\n", bb->block_num, bb->dfn);
+		printf ("\nProcessing block %d [dfn %d]...\n", bb->block_num, bb->dfn);
 	}
-	
+
 	get_relations_from_previous_bb (area, bb, &additional_relations);
 	if (TRACE_ABC_REMOVAL) {
 		if (additional_relations.relation1.relation.relation != MONO_ANY_RELATION) {
@@ -1270,31 +1003,132 @@ process_block (MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
 	}
 	apply_change_to_evaluation_area (area, &(additional_relations.relation1));
 	apply_change_to_evaluation_area (area, &(additional_relations.relation2));
-	
+
 	inst_index = 0;
-	MONO_BB_FOR_EACH_INS (bb, current_inst) {
+	for (ins = bb->code; ins; ins = ins->next) {
+		MonoAdditionalVariableRelation *rel;
+		int array_var, index_var;
+
 		if (TRACE_ABC_REMOVAL) {
 			printf ("Processing instruction %d\n", inst_index);
 			inst_index++;
 		}
+
+		if (ins->opcode == OP_BOUNDS_CHECK) { /* Handle OP_LDELEMA2D, too */
+			if (TRACE_ABC_REMOVAL) {
+				printf ("Attempting check removal...\n");
+			}
+
+			array_var = ins->sreg1;
+			index_var = ins->sreg2;
 		
-		process_inst (current_inst, area);
-	}
-	
+			remove_abc_from_inst (ins, area);
+
+			/* We can derive additional relations from the bounds check */
+			if (ins->opcode != OP_NOP) {
+				rel = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
+				rel->variable = index_var;
+				rel->relation.relation = MONO_LT_RELATION;
+				rel->relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
+				rel->relation.related_value.value.variable.variable = array_var;
+				rel->relation.related_value.value.variable.delta = 0;
+
+				apply_change_to_evaluation_area (area, rel);
+
+				check_relations = g_slist_append_mempool (cfg->mempool, check_relations, rel);
+
+				rel = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
+				rel->variable = index_var;
+				rel->relation.relation = MONO_GE_RELATION;
+				rel->relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
+				rel->relation.related_value.value.constant.value = 0;
+
+				apply_change_to_evaluation_area (area, rel);
+
+				check_relations = g_slist_append_mempool (cfg->mempool, check_relations, rel);
+			}
+		}
+
+		if (ins->opcode == OP_CHECK_THIS) {
+			MonoRelationsEvaluationContext *context = &(area->contexts [ins->sreg1]);
+
+			clean_contexts (area->contexts, area->cfg->next_vreg);
+			evaluate_relation_with_target_variable (area, ins->sreg1, ins->sreg1, NULL);
+				
+			if (context->ranges.zero.lower > 0) {
+				if (REPORT_ABC_REMOVAL)
+					printf ("ARRAY-ACCESS: removed check_this instruction.\n");
+				NULLIFY_INS (ins);
+			}
+		}
+
+		if (ins->opcode == OP_NOT_NULL) {
+			rel = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
+			rel->variable = ins->sreg1;
+			rel->relation.relation = MONO_GT_RELATION;
+			rel->relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
+			rel->relation.related_value.value.constant.value = 0;
+
+			apply_change_to_evaluation_area (area, rel);
+
+			check_relations = g_slist_append_mempool (cfg->mempool, check_relations, rel);
+		}
+	}	
 	
 	if (TRACE_ABC_REMOVAL) {
 		printf ("Processing block %d [dfn %d] done.\n", bb->block_num, bb->dfn);
 	}
 	
 	for (dominated_bb = bb->dominated; dominated_bb != NULL; dominated_bb = dominated_bb->next) {
-		process_block ((MonoBasicBlock*) (dominated_bb->data), area);
+		process_block (cfg, (MonoBasicBlock*) (dominated_bb->data), area);
 	}
+
+	for (l = check_relations; l; l = l->next)
+		remove_change_from_evaluation_area (l->data);
 	
 	remove_change_from_evaluation_area (&(additional_relations.relation1));
 	remove_change_from_evaluation_area (&(additional_relations.relation2));
 }
 
-
+static MonoIntegerValueKind
+type_to_value_kind (MonoType *type)
+{
+	if (type->byref)
+		return MONO_UNKNOWN_INTEGER_VALUE;
+	switch (type->type) {
+	case MONO_TYPE_I1:
+		return MONO_INTEGER_VALUE_SIZE_1;
+		break;
+	case MONO_TYPE_U1:
+		return MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
+		break;
+	case MONO_TYPE_I2:
+		return MONO_INTEGER_VALUE_SIZE_2;
+		break;
+	case MONO_TYPE_U2:
+		return MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
+		break;
+	case MONO_TYPE_I4:
+		return MONO_INTEGER_VALUE_SIZE_4;
+		break;
+	case MONO_TYPE_U4:
+		return MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
+		break;
+	case MONO_TYPE_I:
+		return SIZEOF_VOID_P;
+		break;
+	case MONO_TYPE_U:
+		return (MONO_UNSIGNED_VALUE_FLAG|SIZEOF_VOID_P);
+		break;
+	case MONO_TYPE_I8:
+		return MONO_INTEGER_VALUE_SIZE_8;
+		break;
+	case MONO_TYPE_U8:
+		return MONO_UNSIGNED_INTEGER_VALUE_SIZE_8;
+	default:
+		return MONO_UNKNOWN_INTEGER_VALUE;
+	}
+}
 
 /**
  * mono_perform_abc_removal:
@@ -1316,136 +1150,98 @@ void
 mono_perform_abc_removal (MonoCompile *cfg)
 {
 	MonoVariableRelationsEvaluationArea area;
+	MonoBasicBlock *bb;
 	int i;
 	
 	verbose_level = cfg->verbose_level;
 	
 	if (TRACE_ABC_REMOVAL) {
-		printf ("Removing array bound checks in %s\n", mono_method_full_name (cfg->method, TRUE));
+		printf ("\nRemoving array bound checks in %s\n", mono_method_full_name (cfg->method, TRUE));
 	}
-	
+
 	area.cfg = cfg;
 	area.relations = (MonoSummarizedValueRelation *)
-		mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation) * (cfg->num_varinfo) * 2);
+		mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation) * (cfg->next_vreg) * 2);
 	area.contexts = (MonoRelationsEvaluationContext *)
-		mono_mempool_alloc (cfg->mempool, sizeof (MonoRelationsEvaluationContext) * (cfg->num_varinfo));
+		mono_mempool_alloc (cfg->mempool, sizeof (MonoRelationsEvaluationContext) * (cfg->next_vreg));
 	area.variable_value_kind = (MonoIntegerValueKind *)
-		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->num_varinfo));
-	for (i = 0; i < cfg->num_varinfo; i++) {
+		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->next_vreg));
+	for (i = 0; i < cfg->next_vreg; i++) {
 		area.variable_value_kind [i] = MONO_UNKNOWN_INTEGER_VALUE;
 		area.relations [i].relation = MONO_EQ_RELATION;
 		area.relations [i].relation_is_static_definition = TRUE;
+		MAKE_VALUE_ANY (area.relations [i].related_value);
 		area.relations [i].next = NULL;
-		if (MONO_VARINFO (cfg, i)->def != NULL) {
-			MonoInst *value = get_variable_value_from_store_instruction (MONO_VARINFO (cfg, i)->def, i);
-			if (value != NULL) {
-				gboolean is_array_type;
+	}
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		MonoInst *ins;
+
+		if (TRACE_ABC_REMOVAL)
+			printf ("\nABCREM BLOCK %d:\n", bb->block_num);
+
+		for (ins = bb->code; ins; ins = ins->next) {
+			const char *spec = INS_INFO (ins->opcode);
+			
+			if (spec [MONO_INST_DEST] == ' ' || MONO_IS_STORE_MEMBASE (ins))
+				continue;
+
+			if (spec [MONO_INST_DEST] == 'i') {
 				MonoIntegerValueKind effective_value_kind;
 				MonoRelationsEvaluationRange range;
 				MonoSummarizedValueRelation *type_relation;
-				
-				switch (cfg->varinfo [i]->inst_vtype->type) {
-				case MONO_TYPE_ARRAY:
-				case MONO_TYPE_SZARRAY:
-					is_array_type = TRUE;
-					goto handle_array_value;
-				case MONO_TYPE_OBJECT:
-					is_array_type = FALSE;
-handle_array_value:
-					summarize_array_value (&area, value, &(area.relations [i].related_value), is_array_type);
-					if (TRACE_ABC_REMOVAL) {
-						printf ("Summarized variable %d as array (is_array_type = %s): ", i, (is_array_type?"TRUE":"FALSE"));
-						print_summarized_value (&(area.relations [i].related_value));
-						printf ("\n");
-					}
-					break;
-				case MONO_TYPE_I1:
-					area.variable_value_kind [i] = MONO_INTEGER_VALUE_SIZE_1;
-					goto handle_integer_value;
-				case MONO_TYPE_U1:
-					area.variable_value_kind [i] = MONO_UNSIGNED_INTEGER_VALUE_SIZE_1;
-					goto handle_integer_value;
-				case MONO_TYPE_I2:
-					area.variable_value_kind [i] = MONO_INTEGER_VALUE_SIZE_2;
-					goto handle_integer_value;
-				case MONO_TYPE_U2:
-					area.variable_value_kind [i] = MONO_UNSIGNED_INTEGER_VALUE_SIZE_2;
-					goto handle_integer_value;
-				case MONO_TYPE_I4:
-					area.variable_value_kind [i] = MONO_INTEGER_VALUE_SIZE_4;
-					goto handle_integer_value;
-				case MONO_TYPE_U4:
-					area.variable_value_kind [i] = MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
-					goto handle_integer_value;
-				case MONO_TYPE_I:
-					area.variable_value_kind [i] = SIZEOF_VOID_P;
-					goto handle_integer_value;
-				case MONO_TYPE_U:
-					area.variable_value_kind [i] = (MONO_UNSIGNED_VALUE_FLAG|SIZEOF_VOID_P);
-					goto handle_integer_value;
-				case MONO_TYPE_I8:
-					area.variable_value_kind [i] = MONO_INTEGER_VALUE_SIZE_8;
-					goto handle_integer_value;
-				case MONO_TYPE_U8:
-					area.variable_value_kind [i] = MONO_UNSIGNED_INTEGER_VALUE_SIZE_8;
-handle_integer_value:
-					effective_value_kind = summarize_integer_value (&area, value, &(area.relations [i].related_value), area.variable_value_kind [i]);
-					MONO_MAKE_RELATIONS_EVALUATION_RANGE_WEAK (range);
-					apply_value_kind_to_range (&range, area.variable_value_kind [i]);
-					apply_value_kind_to_range (&range, effective_value_kind);
+				MonoInst *var;
+
+				if (TRACE_ABC_REMOVAL)
+					mono_print_ins (ins);
+
+				var = get_vreg_to_inst (cfg, ins->dreg);
+				if (var)
+					area.variable_value_kind [ins->dreg] = type_to_value_kind (var->inst_vtype);
+
+				effective_value_kind = get_relation_from_ins (&area, ins, &area.relations [ins->dreg], area.variable_value_kind [ins->dreg]);
+
+				MONO_MAKE_RELATIONS_EVALUATION_RANGE_WEAK (range);
+				apply_value_kind_to_range (&range, area.variable_value_kind [ins->dreg]);
+				apply_value_kind_to_range (&range, effective_value_kind);
 					
-					if (range.upper < INT_MAX) {
-						type_relation = (MonoSummarizedValueRelation *) mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation));
-						type_relation->relation = MONO_LE_RELATION;
-						type_relation->related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
-						type_relation->related_value.value.constant.value = range.upper;
-						type_relation->relation_is_static_definition = TRUE;
-						type_relation->next = area.relations [i].next;
-						area.relations [i].next = type_relation;
-						if (TRACE_ABC_REMOVAL) {
-							printf ("[var%d <= %d]", i, range.upper);
-						}
-					}
-					if (range.lower > INT_MIN) {
-						type_relation = (MonoSummarizedValueRelation *) mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation));
-						type_relation->relation = MONO_GE_RELATION;
-						type_relation->related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
-						type_relation->related_value.value.constant.value = range.lower;
-						type_relation->relation_is_static_definition = TRUE;
-						type_relation->next = area.relations [i].next;
-						area.relations [i].next = type_relation;
-						if (TRACE_ABC_REMOVAL) {
-							printf ("[var%d >= %d]", i, range.lower);
-						}
-					}
+				if (range.upper < INT_MAX) {
+					type_relation = (MonoSummarizedValueRelation *) mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation));
+					type_relation->relation = MONO_LE_RELATION;
+					type_relation->related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
+					type_relation->related_value.value.constant.value = range.upper;
+					type_relation->relation_is_static_definition = TRUE;
+					type_relation->next = area.relations [ins->dreg].next;
+					area.relations [ins->dreg].next = type_relation;
 					if (TRACE_ABC_REMOVAL) {
-						printf ("Summarized variable %d: ", i);
-						print_summarized_value (&(area.relations [i].related_value));
-						printf ("\n");
-					}
-					break;
-				default:
-					MAKE_VALUE_ANY (area.relations [i].related_value);
-					if (TRACE_ABC_REMOVAL) {
-						printf ("Variable %d not handled (type %d)\n", i, cfg->varinfo [i]->inst_vtype->type);
+						printf ("[var%d <= %d]", ins->dreg, range.upper);
 					}
 				}
-			} else {
-				MAKE_VALUE_ANY (area.relations [i].related_value);
+				if (range.lower > INT_MIN) {
+					type_relation = (MonoSummarizedValueRelation *) mono_mempool_alloc (cfg->mempool, sizeof (MonoSummarizedValueRelation));
+					type_relation->relation = MONO_GE_RELATION;
+					type_relation->related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
+					type_relation->related_value.value.constant.value = range.lower;
+					type_relation->relation_is_static_definition = TRUE;
+					type_relation->next = area.relations [ins->dreg].next;
+					area.relations [ins->dreg].next = type_relation;
+					if (TRACE_ABC_REMOVAL) {
+						printf ("[var%d >= %d]", ins->dreg, range.lower);
+					}
+				}
 				if (TRACE_ABC_REMOVAL) {
-					printf ("Definition of variable %d is not a proper store\n", i);
+					printf ("Summarized variable %d: ", ins->dreg);
+					print_summarized_value (&(area.relations [ins->dreg].related_value));
+					printf ("\n");
 				}
-			}
-		} else {
-			MAKE_VALUE_ANY (area.relations [i].related_value);
-			if (TRACE_ABC_REMOVAL) {
-				printf ("Variable %d has no definition, probably it is an argument\n", i);
 			}
 		}
 	}
-	for (i = 0; i < cfg->num_varinfo; i++) {
+
+	/* Add symmetric relations */
+	for (i = 0; i < cfg->next_vreg; i++) {
 		if (area.relations [i].related_value.type == MONO_VARIABLE_SUMMARIZED_VALUE) {
-			int related_index = cfg->num_varinfo + i;
+			int related_index = cfg->next_vreg + i;
 			int related_variable = area.relations [i].related_value.value.variable.variable;
 			
 			area.relations [related_index].relation = MONO_EQ_RELATION;
@@ -1464,10 +1260,8 @@ handle_integer_value:
 			}
 		}
 	}
-	
-	process_block (cfg->bblocks [0], &area);
-}
 
-#endif /* DISABLE_SSA */
+	process_block (cfg, cfg->bblocks [0], &area);
+}
 
 #endif /* DISABLE_JIT */

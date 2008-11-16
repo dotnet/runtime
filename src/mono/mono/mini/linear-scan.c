@@ -202,10 +202,7 @@ mono_linear_scan (MonoCompile *cfg, GList *vars, GList *regs, regmask_t *used_ma
 		if (vmv->reg >= 0)  {
 			if ((gains [vmv->reg] > mono_arch_regalloc_cost (cfg, vmv)) && (cfg->varinfo [vmv->idx]->opcode != OP_REGVAR)) {
 				if (cfg->verbose_level > 2) {
-					if (cfg->new_ir)
-						printf ("ALLOCATED R%d(%d) TO HREG %d COST %d\n", cfg->varinfo [vmv->idx]->dreg, vmv->idx, vmv->reg, vmv->spill_costs);
-					else
-						printf ("REGVAR %d C%d R%d\n", vmv->idx, vmv->spill_costs, vmv->reg);
+					printf ("ALLOCATED R%d(%d) TO HREG %d COST %d\n", cfg->varinfo [vmv->idx]->dreg, vmv->idx, vmv->reg, vmv->spill_costs);
 				}
 				cfg->varinfo [vmv->idx]->opcode = OP_REGVAR;
 				cfg->varinfo [vmv->idx]->dreg = vmv->reg;
