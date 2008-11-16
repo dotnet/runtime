@@ -3343,7 +3343,7 @@ emit_plt (MonoAotCompile *acfg)
 			/* Need to make sure this is 9 bytes long */
 			emit_byte (acfg, '\xe9');
 			emit_symbol_diff (acfg, "plt", ".", -4);
-			emit_int32 (acfg, plt_info_offsets [i]);
+			emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
 		}
 #elif defined(__x86_64__)
 		/*
