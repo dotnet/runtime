@@ -112,8 +112,6 @@ icompare_imm: src1:i len:64
 fcompare: src1:f src2:f len:64
 lcompare: src1:i src2:i len:4
 setfret: dest:f src1:f len:8
-outarg: src1:i len:1
-outarg_imm: len:5
 setlret: dest:a src1:i len:8
 checkthis: src1:b len:4
 oparglist: src1:i len:64
@@ -322,8 +320,6 @@ hppa_clt_un: dest:i src1:i src2:i len:8
 hppa_cgt: dest:i src1:i src2:i len:8
 hppa_cgt_un: dest:i src1:i src2:i len:8
 
-hppa_outarg_r4const: dest:f len:12 clob:r
-hppa_outarg_regoffset: dest:i src1:b len:8
 
 hppa_loadr4_left: dest:f src1:b len:12
 hppa_loadr4_right: dest:f src1:b len:12

@@ -165,8 +165,6 @@ bigmul_un: len:2 dest:l src1:a src2:i
 endfilter: src1:i len:12
 rethrow: src1:i len:8
 oparglist: src1:i len:20
-outarg: src1:i len:1
-outarg_imm: len:5
 r4const: dest:f len:22
 r8const: dest:f len:18
 s390_bkchain: len:16 dest:i src1:i

@@ -168,8 +168,6 @@ bigmul_un: len:2 dest:i src1:a src2:i
 endfilter: src1:i len:28
 rethrow: src1:i len:26
 or_imm: dest:i src1:i len:24
-outarg: src1:i len:1
-outarg_imm: len:5
 r4const: dest:f len:26
 r8const: dest:f len:24
 rem_imm: dest:i src1:i src2:i len:24
