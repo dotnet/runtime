@@ -8,8 +8,6 @@
  */
 
 #include "mini.h"
-#include "inssel.h"
-#include "aliasing.h"
 
 #define SPILL_COST_INCREMENT (1 << (bb->nesting << 1))
 

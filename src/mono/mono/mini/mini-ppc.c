@@ -14,7 +14,6 @@
 #include <mono/metadata/debug-helpers.h>
 
 #include "mini-ppc.h"
-#include "inssel.h"
 #include "cpu-ppc.h"
 #include "trace.h"
 #ifdef __APPLE__

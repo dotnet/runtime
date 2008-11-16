@@ -55,8 +55,6 @@
 
 #include "jit-icalls.h"
 
-#include "aliasing.h"
-
 #define BRANCH_COST 100
 #define INLINE_LENGTH_LIMIT 20
 #define INLINE_FAILURE do {\
@@ -10598,7 +10596,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  * - merge the ia64 switch changes.
  * - merge the mips conditional changes.
  * - remove unused opcodes from mini-ops.h, remove "op_" from the opcode names,
- *   remove the op_ opcodes from the cpu-..md files, clean up the cpu-..md files.
  * - make the cpu_ tables smaller when the usage of the cee_ opcodes is removed.
  * - optimize mono_regstate2_alloc_int/float.
  * - fix the pessimistic handling of variables accessed in exception handler blocks.
@@ -10610,8 +10607,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  * - LAST MERGE: 108395.
  * - when returning vtypes in registers, generate IR and append it to the end of the
  *   last bb instead of doing it in the epilog.
- * - when the new JIT is done, use the ins emission macros in ir-emit.h instead of the 
- *   ones in inssel.h.
  * - change the store opcodes so they use sreg1 instead of dreg to store the base register.
  */
 

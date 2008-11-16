@@ -26,8 +26,8 @@
 #include <mono/utils/mono-math.h>
 
 #include "trace.h"
+#include "ir-emit.h"
 #include "mini-amd64.h"
-#include "inssel.h"
 #include "cpu-amd64.h"
 
 /* 
@@ -247,13 +247,6 @@ typedef struct {
 } CallInfo;
 
 #define DEBUG(a) if (cfg->verbose_level > 1) a
-
-#define NEW_ICONST(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_ICONST;	\
-		(dest)->inst_c0 = (val);	\
-		(dest)->type = STACK_I4;	\
-	} while (0)
 
 #ifdef PLATFORM_WIN32
 #define PARAM_REGS 4

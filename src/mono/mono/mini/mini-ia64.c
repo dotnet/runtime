@@ -24,7 +24,6 @@
 
 #include "trace.h"
 #include "mini-ia64.h"
-#include "inssel.h"
 #include "cpu-ia64.h"
 #include "jit-icalls.h"
 

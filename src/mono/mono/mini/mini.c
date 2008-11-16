@@ -38,14 +38,9 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
-#include <mono/metadata/exception.h>
-#include <mono/metadata/opcodes.h>
-#include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/marshal.h>
-#include <mono/metadata/socket-io.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/io-layer/io-layer.h>
@@ -54,11 +49,8 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/monitor.h>
 #include <mono/metadata/gc-internal.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
@@ -73,13 +65,10 @@
 #include "mini.h"
 #include <string.h>
 #include <ctype.h>
-#include "inssel.h"
 #include "trace.h"
 #include "version.h"
 
 #include "jit-icalls.h"
-
-#include "aliasing.h"
 
 #include "debug-mini.h"
 
@@ -808,38 +797,6 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 		ins->sreg2 = temp->dreg;
 
 	bb->max_vreg = MAX (bb->max_vreg, cfg->globalra ? cfg->next_vreg : cfg->rs->next_vreg);
-}
-
-/*
- * When we need a pointer to the current domain many times in a method, we
- * call mono_domain_get() once and we store the result in a local variable.
- * This function returns the variable that represents the MonoDomain*.
- */
-inline static MonoInst *
-mono_get_domainvar (MonoCompile *cfg)
-{
-	if (!cfg->domainvar)
-		cfg->domainvar = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-	return cfg->domainvar;
-}
-
-/*
- * The got_var contains the address of the Global Offset Table when AOT 
- * compiling.
- */
-inline static MonoInst *
-mono_get_got_var (MonoCompile *cfg)
-{
-#ifdef MONO_ARCH_NEED_GOT_VAR
-	if (!cfg->compile_aot)
-		return NULL;
-	if (!cfg->got_var) {
-		cfg->got_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-	}
-	return cfg->got_var;
-#else
-	return NULL;
-#endif
 }
 
 static void

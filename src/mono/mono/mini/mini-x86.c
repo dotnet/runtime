@@ -25,7 +25,6 @@
 
 #include "trace.h"
 #include "mini-x86.h"
-#include "inssel.h"
 #include "cpu-x86.h"
 
 /* On windows, these hold the key returned by TlsAlloc () */

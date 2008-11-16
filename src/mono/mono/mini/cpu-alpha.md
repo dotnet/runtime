@@ -142,7 +142,6 @@ alpha_cmpt_le_su: src1:f src2:f len:4
 oparglist: src1:b len:11
 outarg: src1:i len:4
 outarg_imm: len:6
-setret: dest:a src1:i len:4
 setlret: dest:i src1:i src2:i len:4
 checkthis: src1:b len:4
 call: dest:a clob:c len:64

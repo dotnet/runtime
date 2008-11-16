@@ -14,7 +14,6 @@
 #include <mono/metadata/debug-helpers.h>
 
 #include "mini-arm.h"
-#include "inssel.h"
 #include "cpu-arm.h"
 #include "trace.h"
 #ifdef ARM_FPU_FPA

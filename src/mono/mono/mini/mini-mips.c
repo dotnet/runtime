@@ -19,7 +19,6 @@
 #include <mono/metadata/debug-helpers.h>
 
 #include "mini-mips.h"
-#include "inssel.h"
 #include "cpu-mips.h"
 #include "trace.h"
 

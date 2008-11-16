@@ -67,7 +67,6 @@
 
 #include "trace.h"
 #include "mini-alpha.h"
-#include "inssel.h"
 #include "cpu-alpha.h"
 #include "jit-icalls.h"
 

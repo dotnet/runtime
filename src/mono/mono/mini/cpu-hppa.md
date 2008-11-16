@@ -114,7 +114,6 @@ lcompare: src1:i src2:i len:4
 setfret: dest:f src1:f len:8
 outarg: src1:i len:1
 outarg_imm: len:5
-setret: dest:a src1:i len:4
 setlret: dest:a src1:i len:8
 checkthis: src1:b len:4
 oparglist: src1:i len:64

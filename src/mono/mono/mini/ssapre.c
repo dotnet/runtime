@@ -19,8 +19,6 @@
 
 #include "config.h"
 
-#include "inssel.h"
-
 #include "ssapre.h"
 
 /* Disable for now to save space since it is not yet ported to linear IR */

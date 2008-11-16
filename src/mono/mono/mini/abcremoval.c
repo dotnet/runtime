@@ -15,8 +15,6 @@
 
 #ifndef DISABLE_JIT
 
-#include "inssel.h"
-
 #include "abcremoval.h"
 
 #if SIZEOF_VOID_P == 8

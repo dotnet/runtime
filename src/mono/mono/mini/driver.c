@@ -53,7 +53,6 @@
 #include "jit.h"
 #include <string.h>
 #include <ctype.h>
-#include "inssel.h"
 #include <locale.h>
 #include "version.h"
 

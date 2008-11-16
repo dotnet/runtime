@@ -31,7 +31,6 @@
 #include <mono/utils/mono-math.h>
 
 #include "mini-sparc.h"
-#include "inssel.h"
 #include "trace.h"
 #include "cpu-sparc.h"
 #include "jit-icalls.h"
@@ -2936,10 +2935,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_fmovs (code, ins->sreg1, ins->dreg);
 			sparc_fmovs (code, ins->sreg1 + 1, ins->dreg + 1);
 #endif
-			break;
-		case OP_SPARC_SETFREG_FLOAT:
-			/* Only used on V9 */
-			sparc_fdtos (code, ins->sreg1, ins->dreg);
 			break;
 		case OP_JMP:
 			if (cfg->method->save_lmf)

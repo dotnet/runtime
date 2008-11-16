@@ -18,7 +18,6 @@
 
 #include "mini.h"
 #include "trace.h"
-#include "inssel.h"
 #include "mini-arch.h"
 
 #ifndef MONO_MAX_XREGS

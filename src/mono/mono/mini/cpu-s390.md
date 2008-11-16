@@ -175,7 +175,6 @@ s390_setf4ret: dest:f src1:f len:4
 tls_get: dest:i len:44
 sbb: dest:i src1:i src2:i len:8
 setlret: src1:i src2:i len:12
-setret: dest:a src1:i len:6
 sqrt: dest:f src1:f len:4
 start_handler: len:18
 store_membase_imm: dest:b len:32

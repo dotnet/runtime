@@ -263,7 +263,6 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 #include <mono/utils/mono-math.h>
 
 #include "mini-s390.h"
-#include "inssel.h"
 #include "cpu-s390.h"
 #include "jit-icalls.h"
 

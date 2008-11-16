@@ -36,7 +36,6 @@
 #include <mono/utils/mono-math.h>
 
 #include "mini-hppa.h"
-#include "inssel.h"
 #include "trace.h"
 #include "cpu-hppa.h"
 
