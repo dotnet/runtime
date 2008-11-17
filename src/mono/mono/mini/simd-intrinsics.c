@@ -247,7 +247,7 @@ setters
  */
 static const SimdIntrinsc vector2l_intrinsics[] = {
 	{ SN_CompareEqual, OP_PCMPEQQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
-	{ SN_CompareGreaterThan, OP_PCMPGTQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
+	{ SN_CompareGreaterThan, OP_PCMPGTQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE42 },
 	{ SN_ExtractByteMask, 0, SIMD_EMIT_EXTRACT_MASK },
 	{ SN_LoadAligned, 0, SIMD_EMIT_LOAD_ALIGNED },
 	{ SN_PrefetchTemporalAllCacheLevels, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_0 },
