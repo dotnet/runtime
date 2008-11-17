@@ -815,6 +815,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	if (assembly->image->dynamic)
 		return;
 
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
+		return;
+
 	mono_aot_lock ();
 	if (static_aot_modules)
 		globals = g_hash_table_lookup (static_aot_modules, assembly->aname.name);
