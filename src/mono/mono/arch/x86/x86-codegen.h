@@ -1833,7 +1833,8 @@ typedef enum {
 	X86_SSE_PSLLQ_REG = 0xF3,
 
 	X86_SSE_PREFETCH = 0x18,
-	X86_SSE_MOVNTPS = 0x2B
+	X86_SSE_MOVNTPS = 0x2B,
+	X86_SSE_MOVHPD_MEMBASE_REG = 0x17
 } X86_SSE_Opcode;
 
 
@@ -1867,6 +1868,13 @@ typedef enum {
 			*(inst)++ = (unsigned char)(opc);	\
 			x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
 		} while (0)
+
+#define x86_sse_alu_membase_reg(inst,opc,basereg,disp,reg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x0F;	\
+		*(inst)++ = (unsigned char)(opc);	\
+		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+	} while (0)
 
 #define x86_sse_alu_pd_reg_reg(inst,opc,dreg,reg)       \
 	do {    \
@@ -1912,6 +1920,11 @@ typedef enum {
 		x86_reg_emit ((inst), (dreg), (reg));	\
 	} while (0)
 
+#define x86_sse_alu_pd_membase_reg(inst,opc,basereg,disp,reg)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x66;	\
+		x86_sse_alu_membase_reg ((inst), (opc), (basereg), (disp), (reg)); \
+	} while (0)
 
 #define x86_movups_reg_membase(inst,sreg,basereg,disp)	\
 	do {	\
