@@ -2,14 +2,6 @@
 typedef size_t regmask_t;
 
 enum {
-	MONO_REG_FREE,
-	MONO_REG_FREEABLE,
-	MONO_REG_MOVEABLE,
-	MONO_REG_BUSY,
-	MONO_REG_RESERVED
-};
-
-enum {
 	MONO_REG_INT,
 	MONO_REG_DOUBLE,
 	MONO_REG_SIMD
@@ -49,12 +41,7 @@ typedef struct {
 } MonoRegState;
 
 #define mono_regstate_next_int(rs)   ((rs)->next_vreg++)
-#define mono_regstate_next_float(rs) ((rs)->next_vreg++)
-
 
 MonoRegState* mono_regstate_new (void) MONO_INTERNAL;
 
 void          mono_regstate_free      (MonoRegState *rs) MONO_INTERNAL;
-void          mono_regstate_reset     (MonoRegState *rs) MONO_INTERNAL;
-inline int    mono_regstate_next_long (MonoRegState *rs) MONO_INTERNAL;
-
