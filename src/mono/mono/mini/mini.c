@@ -73,7 +73,6 @@
 #include "debug-mini.h"
 
 static void setup_stat_profiler (void);
-gboolean  mono_arch_print_tree(MonoInst *tree, int arity);
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
 static gpointer mono_jit_compile_method (MonoMethod *method);
 
@@ -1542,7 +1541,7 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 			if (count > atoi (getenv ("COUNT3")))
 				slot = 0xffffff;
 			else {
-				mono_print_tree_nl (inst);
+				mono_print_ins (inst);
 				}
 		}
 #endif
@@ -1747,7 +1746,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 			if (count > atoi (getenv ("COUNT")))
 				slot = 0xffffff;
 			else {
-				mono_print_tree_nl (inst);
+				mono_print_ins (inst);
 				}
 			*/
 		}

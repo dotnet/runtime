@@ -945,8 +945,8 @@ loop_start:
 			break;
 
 		case CEE_MUL: {
-			int freg1 = mono_regstate_next_float (cfg->rs);
-			int freg2 = mono_regstate_next_float (cfg->rs);
+			int freg1 = mono_alloc_freg (cfg);
+			int freg2 = mono_alloc_freg (cfg);
 
 			NEW_INS(cfg, temp, OP_STORE_MEMBASE_REG);
 			temp->sreg1 = ins->sreg1;

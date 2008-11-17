@@ -179,7 +179,7 @@ enum {
  * this is used to determine when some branch optimizations are possible: we exclude FP compares
  * because they have weird semantics with NaNs.
  */
-#define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= CEE_BEQ && (ins)->opcode <= CEE_BLT_UN) || ((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN) || ((ins)->opcode >= OP_IBEQ && (ins)->opcode <= OP_IBLT_UN))
+#define MONO_IS_COND_BRANCH_OP(ins) (((ins)->opcode >= OP_LBEQ && (ins)->opcode <= OP_LBLT_UN) || ((ins)->opcode >= OP_FBEQ && (ins)->opcode <= OP_FBLT_UN) || ((ins)->opcode >= OP_IBEQ && (ins)->opcode <= OP_IBLT_UN))
 #define MONO_IS_COND_BRANCH_NOFP(ins) (MONO_IS_COND_BRANCH_OP(ins) && !(((ins)->opcode >= OP_FBEQ) && ((ins)->opcode <= OP_FBLT_UN)) && (!(ins)->inst_left || (ins)->inst_left->inst_left->type != STACK_R8))
 
 #define MONO_IS_BRANCH_OP(ins) (MONO_IS_COND_BRANCH_OP(ins) || ((ins)->opcode == OP_BR) || ((ins)->opcode == OP_BR_REG) || ((ins)->opcode == OP_SWITCH))
@@ -1285,15 +1285,12 @@ void      mono_merge_basic_blocks           (MonoCompile *cfg, MonoBasicBlock *b
 void      mono_optimize_branches            (MonoCompile *cfg) MONO_INTERNAL;
 
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom) MONO_INTERNAL;
-void      mono_print_tree                   (MonoInst *tree) MONO_INTERNAL;
-void      mono_print_tree_nl                (MonoInst *tree) MONO_INTERNAL;
 void      mono_print_ins_index              (int i, MonoInst *ins) MONO_INTERNAL;
 void      mono_print_ins                    (MonoInst *ins) MONO_INTERNAL;
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg) MONO_INTERNAL;
 void      mono_print_code                   (MonoCompile *cfg, const char *msg) MONO_INTERNAL;
 void      mono_print_method_from_ip         (void *ip);
 char     *mono_pmip                         (void *ip);
-void      mono_select_instructions          (MonoCompile *cfg) MONO_INTERNAL;
 const char* mono_inst_name                  (int op);
 int       mono_op_to_op_imm                 (int opcode) MONO_INTERNAL;
 int       mono_op_imm_to_op                 (int opcode) MONO_INTERNAL;
@@ -1302,7 +1299,6 @@ guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type) M
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 guint     mini_type_to_stind                (MonoCompile* cfg, MonoType *type) MONO_INTERNAL;
 guint32   mono_reverse_branch_op            (guint32 opcode) MONO_INTERNAL;
-void      mono_inst_foreach                 (MonoInst *tree, MonoInstFunc func, gpointer data) MONO_INTERNAL;
 void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id) MONO_INTERNAL;
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target) MONO_INTERNAL;
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip) MONO_INTERNAL;
@@ -1375,7 +1371,6 @@ gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *c
 
 void      mono_register_opcode_emulation    (int opcode, const char* name, const char *sigstr, gpointer func, gboolean no_throw) MONO_INTERNAL;
 void      mono_draw_graph                   (MonoCompile *cfg, MonoGraphOptions draw_options) MONO_INTERNAL;
-void      mono_add_varcopy_to_end           (MonoCompile *cfg, MonoBasicBlock *bb, int src, int dest) MONO_INTERNAL;
 void      mono_add_ins_to_end               (MonoBasicBlock *bb, MonoInst *inst) MONO_INTERNAL;
 gpointer  mono_create_ftnptr                (MonoDomain *domain, gpointer addr) MONO_INTERNAL;
 
