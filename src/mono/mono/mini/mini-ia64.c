@@ -26,6 +26,7 @@
 #include "mini-ia64.h"
 #include "cpu-ia64.h"
 #include "jit-icalls.h"
+#include "ir-emit.h"
 
 static gint appdomain_tls_offset = -1;
 static gint thread_tls_offset = -1;
@@ -196,13 +197,6 @@ typedef struct {
 } CallInfo;
 
 #define DEBUG(a) if (cfg->verbose_level > 1) a
-
-#define NEW_ICONST(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_ICONST;	\
-		(dest)->inst_c0 = (val);	\
-		(dest)->type = STACK_I4;	\
-	} while (0)
 
 #define PARAM_REGS 8
 
