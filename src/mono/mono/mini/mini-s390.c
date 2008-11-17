@@ -265,6 +265,7 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 #include "mini-s390.h"
 #include "cpu-s390.h"
 #include "jit-icalls.h"
+#include "ir-emit.h"
 
 /*========================= End of Includes ========================*/
 

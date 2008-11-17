@@ -16,6 +16,7 @@
 #include "mini-arm.h"
 #include "cpu-arm.h"
 #include "trace.h"
+#include "ir-emit.h"
 #ifdef ARM_FPU_FPA
 #include "mono/arch/arm/arm-fpa-codegen.h"
 #elif defined(ARM_FPU_VFP)

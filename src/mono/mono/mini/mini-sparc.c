@@ -34,6 +34,7 @@
 #include "trace.h"
 #include "cpu-sparc.h"
 #include "jit-icalls.h"
+#include "ir-emit.h"
 
 /*
  * Sparc V9 means two things:
@@ -1046,27 +1047,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 		}
 	}
 }
-
-/* FIXME: Remove these later */
-#define NEW_LOAD_MEMBASE(cfg,dest,op,dr,base,offset) do { \
-        MONO_INST_NEW ((cfg), (dest), (op)); \
-        (dest)->dreg = (dr); \
-        (dest)->inst_basereg = (base); \
-        (dest)->inst_offset = (offset); \
-        (dest)->type = STACK_I4; \
-	} while (0)
-
-#define EMIT_NEW_LOAD_MEMBASE(cfg,dest,op,dr,base,offset) do { NEW_LOAD_MEMBASE ((cfg), (dest), (op), (dr), (base), (offset)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
-
-#undef MONO_EMIT_NEW_STORE_MEMBASE_IMM
-#define MONO_EMIT_NEW_STORE_MEMBASE_IMM(cfg,op,base,offset,imm) do { \
-        MonoInst *inst; \
-        MONO_INST_NEW ((cfg), (inst), (op)); \
-        inst->inst_destbasereg = base; \
-        inst->inst_offset = offset; \
-        inst->inst_p1 = (gpointer)(gssize)imm; \
-        MONO_ADD_INS ((cfg)->cbb, inst); \
-	} while (0)
 
 static void
 add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int reg, guint32 sreg)

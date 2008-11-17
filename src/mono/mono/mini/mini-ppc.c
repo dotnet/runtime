@@ -16,81 +16,10 @@
 #include "mini-ppc.h"
 #include "cpu-ppc.h"
 #include "trace.h"
+#include "ir-emit.h"
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #endif
-
-/* From ir-emit.h */
-static inline guint32
-alloc_ireg (MonoCompile *cfg)
-{
-	return cfg->next_vreg ++;
-}
-
-static inline guint32
-alloc_lreg (MonoCompile *cfg)
-{
-#if SIZEOF_VOID_P == 8
-	return cfg->next_vreg ++;
-#else
-	/* Use a pair of consecutive vregs */
-	guint32 res = cfg->next_vreg;
-
-	cfg->next_vreg += 3;
-
-	return res;
-#endif
-}
-
-static inline guint32
-alloc_freg (MonoCompile *cfg)
-{
-#ifdef MONO_ARCH_SOFT_FLOAT
-	/* Allocate an lvreg so float ops can be decomposed into long ops */
-	return alloc_lreg (cfg);
-#else
-	/* Allocate these from the same pool as the int regs */
-	return cfg->next_vreg ++;
-#endif
-}
-
-static inline guint32
-alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
-{
-	switch (stack_type) {
-	case STACK_I4:
-	case STACK_PTR:
-	case STACK_MP:
-	case STACK_OBJ:
-		return alloc_ireg (cfg);
-	case STACK_R8:
-		return alloc_freg (cfg);
-	case STACK_I8:
-		return alloc_lreg (cfg);
-	case STACK_VTYPE:
-		return alloc_ireg (cfg);
-	default:
-		g_assert_not_reached ();
-	}
-}
-
-#ifdef MONO_ARCH_SOFT_FLOAT
-#define DECOMPOSE_INTO_REGPAIR(stack_type) ((stack_type) == STACK_I8 || (stack_type) == STACK_R8)
-#else
-#define DECOMPOSE_INTO_REGPAIR(stack_type) ((stack_type) == STACK_I8)
-#endif
-
-#define NEW_VARLOADA(cfg,dest,var,vartype) do {	\
-        MONO_INST_NEW ((cfg), (dest), OP_LDADDR); \
-		(dest)->inst_p0 = (var); \
-		(var)->flags |= MONO_INST_INDIRECT;	\
-		(dest)->type = STACK_MP;	\
-		(dest)->klass = (var)->klass;	\
-        (dest)->dreg = alloc_dreg ((cfg), STACK_MP); \
-		if (SIZEOF_VOID_P == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, (var)->dreg + 1); MonoInst *var2 = get_vreg_to_inst (cfg, (var)->dreg + 2); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
-	} while (0)
-
-#define EMIT_NEW_VARLOADA(cfg,dest,var,vartype) do { NEW_VARLOADA ((cfg), (dest), (var), (vartype)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define FORCE_INDIR_CALL 1
 
