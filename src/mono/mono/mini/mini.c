@@ -3234,10 +3234,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		/* The LMF saving code might clobber caller saved registers */
 		cfg->globalra = FALSE;
 
-	// FIXME:
-	if (!strcmp (cfg->method->name, "CompareInternal"))
-		cfg->globalra = FALSE;
-
 	cfg->rs = mono_regstate_new ();
 	if (cfg->globalra)
 		cfg->rs->next_vreg = MONO_MAX_IREGS + MONO_MAX_FREGS;
