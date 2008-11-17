@@ -12378,6 +12378,10 @@ cominterop_ccw_release (MonoCCWInterface* ccwe)
 #define MONO_E_NOINTERFACE 0x80004002L
 #define MONO_E_NOTIMPL 0x80004001L
 
+#ifdef PLATFORM_WIN32
+static const IID MONO_IID_IMarshal = {0x3, 0x0, 0x0, {0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46}};
+#endif
+
 /* All ccw objects are free threaded */
 static int
 cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpointer* ppv)
@@ -12396,7 +12400,7 @@ cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpoin
 	if (!ccw->free_marshaler)
 		return MONO_E_NOINTERFACE;
 
-	return ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (ccw->free_marshaler, (IID*)&IID_IMarshal, ppv);
+	return ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (ccw->free_marshaler, (IID*)&MONO_IID_IMarshal, ppv);
 #else
 	return MONO_E_NOINTERFACE;
 #endif
@@ -12439,7 +12443,7 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 
 #ifdef PLATFORM_WIN32
 	/* handle IMarshal special */
-	if (0 == memcmp (riid, &IID_IMarshal, sizeof (IID))) {
+	if (0 == memcmp (riid, &MONO_IID_IMarshal, sizeof (IID))) {
 		return cominterop_ccw_getfreethreadedmarshaler (ccw, object, ppv);	
 	}
 #endif
