@@ -293,13 +293,13 @@ typedef struct {
 #define MONO_ARCH_ENABLE_NORMALIZE_OPCODES 1
 #define MONO_ARCH_ENABLE_GLOBAL_RA 1
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
-#if defined(__linux__) && !defined(HAVE_MOVING_COLLECTOR)
+#if !defined(PLATFORM_WIN32) && !defined(HAVE_MOVING_COLLECTOR)
 #define MONO_ARCH_MONITOR_OBJECT_REG AMD64_RDI
 #endif
 
 #define MONO_ARCH_AOT_SUPPORTED 1
 
-#if defined(__linux__) || defined(__sun)
+#if !defined(PLATFORM_WIN32) || defined(__sun)
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
 #endif
 
