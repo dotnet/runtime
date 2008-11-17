@@ -1791,12 +1791,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	
 	cinfo   = get_call_info (cfg, cfg->mempool, sig, sig->pinvoke);
 
-	if (cinfo->struct_ret) {
-		if (!cfg->new_ir) {
-			cfg->vret_addr->opcode = OP_REGVAR;
-			cfg->vret_addr->inst_c0 = s390_r2;
-		}
-	} else {
+	if (!cinfo->struct_ret) {
 		switch (mono_type_get_underlying_type (sig->ret)->type) {
 		case MONO_TYPE_VOID:
 			break;
@@ -1823,9 +1818,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		inst->opcode 	   = OP_REGOFFSET;
 		inst->inst_basereg = frame_reg;
 		offset 		  += sizeof(gpointer);
-		if (!cfg->new_ir && (sig->call_convention == MONO_CALL_VARARG) &&
-		    (!retFitsInReg (cinfo->ret.size)))
-			cfg->sig_cookie += cinfo->ret.size;
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr =");
 			mono_print_ins (cfg->vret_addr);
@@ -1855,113 +1847,65 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		inst = cfg->args [curinst];
 		if (inst->opcode != OP_REGVAR) {
 			switch (cinfo->args[iParm].regtype) {
-				case RegTypeStructByAddr :
-					if (cfg->new_ir) {
-						MonoInst *indir;
+			    case RegTypeStructByAddr : {
+					MonoInst *indir;
 
-						size = sizeof (gpointer);
+					size = sizeof (gpointer);
 
-						if (cinfo->args [iParm].reg == STK_BASE) {
-							cfg->arch.bkchain_reg = s390_r12;
-							cfg->used_int_regs |= 1 << cfg->arch.bkchain_reg;
+					if (cinfo->args [iParm].reg == STK_BASE) {
+						cfg->arch.bkchain_reg = s390_r12;
+						cfg->used_int_regs |= 1 << cfg->arch.bkchain_reg;
 
-							inst->opcode 	   = OP_REGOFFSET;
-							inst->inst_basereg = cfg->arch.bkchain_reg;
-							inst->inst_offset  = cinfo->args [iParm].offset;
-						} else {
-							inst->opcode = OP_REGOFFSET;
-							inst->inst_basereg = frame_reg;
-							inst->inst_offset = S390_ALIGN(offset, sizeof (gpointer));
-						}
-
-						/* Add a level of indirection */
-						MONO_INST_NEW (cfg, indir, 0);
-						*indir = *inst;
-						inst->opcode = OP_VTARG_ADDR;
-						inst->inst_left = indir;
+						inst->opcode 	   = OP_REGOFFSET;
+						inst->inst_basereg = cfg->arch.bkchain_reg;
+						inst->inst_offset  = cinfo->args [iParm].offset;
 					} else {
-						if (cinfo->args[iParm].reg == STK_BASE) {
-							inst->opcode       = OP_S390_LOADARG;
-							inst->inst_basereg = frame_reg;
-							size		   = abs(cinfo->args[iParm].vtsize);
-							offset 		   = S390_ALIGN(offset, sizeof(long));
-							inst->inst_offset  = offset; 
-							inst->backend.arg_info       = cinfo->args[iParm].offset;
-						} else {
-							inst->opcode 	   = OP_S390_ARGREG;
-							inst->inst_basereg = frame_reg;
-							size		   = sizeof(gpointer);
-							offset		   = S390_ALIGN(offset, size);
-							inst->inst_offset  = offset;
-							inst->backend.arg_info       = cinfo->args[iParm].offset;
-						}
-					}
-					break;
-				case RegTypeStructByVal :
-					if (cfg->new_ir) {
-						size		   = cinfo->args[iParm].size;
-						offset		   = S390_ALIGN(offset, size);
 						inst->opcode = OP_REGOFFSET;
 						inst->inst_basereg = frame_reg;
-						inst->inst_offset = S390_ALIGN (offset, size);
-					} else {
-						inst->opcode	   = OP_S390_ARGPTR;
-						inst->inst_basereg = frame_reg;
-						size		   = cinfo->args[iParm].size;
-						offset		   = S390_ALIGN(offset, size);
-						inst->inst_offset  = offset;
-						inst->backend.arg_info       = cinfo->args[iParm].offset;
+						inst->inst_offset = S390_ALIGN(offset, sizeof (gpointer));
 					}
+
+					/* Add a level of indirection */
+					MONO_INST_NEW (cfg, indir, 0);
+					*indir = *inst;
+					inst->opcode = OP_VTARG_ADDR;
+					inst->inst_left = indir;
+				}
+					break;
+				case RegTypeStructByVal :
+					size		   = cinfo->args[iParm].size;
+					offset		   = S390_ALIGN(offset, size);
+					inst->opcode = OP_REGOFFSET;
+					inst->inst_basereg = frame_reg;
+					inst->inst_offset = S390_ALIGN (offset, size);
 					break;
 				default :
-					if (cfg->new_ir) {
-						if (cinfo->args [iParm].reg == STK_BASE) {
-							/*
-							 * These arguments are in the previous frame, so we can't 
-							 * compute their offset from the current frame pointer right
-							 * now, since cfg->stack_offset is not yet known, so dedicate a 
-							 * register holding the previous frame pointer.
-							 */
-							cfg->arch.bkchain_reg = s390_r12;
-							cfg->used_int_regs |= 1 << cfg->arch.bkchain_reg;
+					if (cinfo->args [iParm].reg == STK_BASE) {
+						/*
+						 * These arguments are in the previous frame, so we can't 
+						 * compute their offset from the current frame pointer right
+						 * now, since cfg->stack_offset is not yet known, so dedicate a 
+						 * register holding the previous frame pointer.
+						 */
+						cfg->arch.bkchain_reg = s390_r12;
+						cfg->used_int_regs |= 1 << cfg->arch.bkchain_reg;
 
-							inst->opcode 	   = OP_REGOFFSET;
-							inst->inst_basereg = cfg->arch.bkchain_reg;
-							size		   = (cinfo->args[iParm].size < 4
-											  ? 4 - cinfo->args[iParm].size
-											  : 0);
-							inst->inst_offset  = cinfo->args [iParm].offset + size;
-							size = sizeof (long);
-						} else {
-							inst->opcode 	   = OP_REGOFFSET;
-							inst->inst_basereg = frame_reg;
-							size		   = (cinfo->args[iParm].size < 8
-											  ? sizeof(long)  
-											  : sizeof(long long));
-							offset		   = S390_ALIGN(offset, size);
-							inst->inst_offset  = offset;
-						}
+						inst->opcode 	   = OP_REGOFFSET;
+						inst->inst_basereg = cfg->arch.bkchain_reg;
+						size		   = (cinfo->args[iParm].size < 4
+										  ? 4 - cinfo->args[iParm].size
+										  : 0);
+						inst->inst_offset  = cinfo->args [iParm].offset + size;
+						size = sizeof (long);
 					} else {
-						if (cinfo->args[iParm].reg != STK_BASE) {
-							inst->opcode 	   = OP_REGOFFSET;
-							inst->inst_basereg = frame_reg;
-							size		   = (cinfo->args[iParm].size < 8
-											  ? sizeof(long)  
-											  : sizeof(long long));
-							offset		   = S390_ALIGN(offset, size);
-							inst->inst_offset  = offset;
-						} else {
-							inst->opcode 	   = OP_S390_STKARG;
-							inst->inst_basereg = frame_reg;
-							size		   = (cinfo->args[iParm].size < 4
-											  ? 4 - cinfo->args[iParm].size
-											  : 0);
-							inst->inst_offset  = cinfo->args[iParm].offset + 
-								size;
-							inst->backend.arg_info       = 0;
-							size		   = sizeof(long);
-						}
-				} 
+						inst->opcode 	   = OP_REGOFFSET;
+						inst->inst_basereg = frame_reg;
+						size		   = (cinfo->args[iParm].size < 8
+										  ? sizeof(long)  
+										  : sizeof(long long));
+						offset		   = S390_ALIGN(offset, size);
+						inst->inst_offset  = offset;
+					}
 			}
 			if ((sig->call_convention == MONO_CALL_VARARG) && 
 			    (cinfo->args[iParm].regtype != RegTypeGeneral) &&
@@ -2017,14 +1961,12 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cfg->stack_offset = S390_ALIGN(offset, S390_STACK_ALIGNMENT);
 
 	/* Fix up offsets for arguments whose value is in the parent frame */
-	if (cfg->new_ir) {
-		for (iParm = sArg; iParm < eArg; ++iParm) {
-			inst = cfg->args [iParm];
+	for (iParm = sArg; iParm < eArg; ++iParm) {
+		inst = cfg->args [iParm];
 
-			if (inst->opcode == OP_S390_STKARG) {
-				inst->opcode = OP_REGOFFSET;
-				inst->inst_offset += cfg->stack_offset;
-			}
+		if (inst->opcode == OP_S390_STKARG) {
+			inst->opcode = OP_REGOFFSET;
+			inst->inst_offset += cfg->stack_offset;
 		}
 	}
 }

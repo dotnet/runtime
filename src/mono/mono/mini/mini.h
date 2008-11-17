@@ -942,7 +942,6 @@ typedef struct {
 	guint            got_var_allocated : 1;
 	guint            ret_var_is_local : 1;
 	guint            ret_var_set : 1;
-	guint            new_ir : 1;
 	guint            globalra : 1;
 	guint            unverifiable : 1;
 	guint            skip_visibility : 1;

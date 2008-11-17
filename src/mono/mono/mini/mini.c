@@ -3197,8 +3197,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (cfg->opt & (MONO_OPT_ABCREM | MONO_OPT_SSAPRE))
 		cfg->opt |= MONO_OPT_SSA;
 
-	cfg->new_ir = TRUE;
-
 	/* 
 	if ((cfg->method->klass->image != mono_defaults.corlib) || (strstr (cfg->method->klass->name, "StackOverflowException") && strstr (cfg->method->name, ".ctor")) || (strstr (cfg->method->klass->name, "OutOfMemoryException") && strstr (cfg->method->name, ".ctor")))
 		cfg->globalra = TRUE;
