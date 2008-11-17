@@ -13,7 +13,6 @@
 
 #ifndef DISABLE_JIT
 
-#define NEW_IR
 #include "mini.h"
 
 #define USE_ORIGINAL_VARS
@@ -25,14 +24,6 @@
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = OP_PHI;	\
 		(dest)->inst_c0 = (val);	\
-        (dest)->dreg = (dest)->sreg1 = (dest)->sreg2 = -1; \
-	} while (0)
-
-#define NEW_ICONST(cfg,dest,val) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		(dest)->opcode = OP_ICONST;	\
-		(dest)->inst_c0 = (val);	\
-		(dest)->type = STACK_I4;	\
         (dest)->dreg = (dest)->sreg1 = (dest)->sreg2 = -1; \
 	} while (0)
 

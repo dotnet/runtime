@@ -10,7 +10,6 @@
 #include <config.h>
 #include <stdio.h>
 
-#define NEW_IR
 #include "mini.h"
 #include "ir-emit.h"
 

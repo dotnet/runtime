@@ -47,7 +47,6 @@
 #include <mono/metadata/monitor.h>
 #include <mono/utils/mono-compiler.h>
 
-#define NEW_IR
 #include "mini.h"
 #include "trace.h"
 

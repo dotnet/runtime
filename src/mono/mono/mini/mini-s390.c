@@ -135,7 +135,7 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 		s390_ldr (code, ins->dreg, ins->sreg1);			\
 	}
 
-#define MONO_EMIT_NEW_MOVE2(cfg,dest,offset,src,imm,size) do { 			\
+#define MONO_EMIT_NEW_MOVE(cfg,dest,offset,src,imm,size) do { 			\
                 MonoInst *inst; 						\
 		int tmpr = 0;							\
 		int sReg, dReg;							\
@@ -175,7 +175,7 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
         MONO_ADD_INS (cfg->cbb, inst); \
 	} while (0)
 
-#define MONO_OUTPUT_VTR2(cfg, size, dr, sr, so) do {				\
+#define MONO_OUTPUT_VTR(cfg, size, dr, sr, so) do {				\
 	int reg = mono_alloc_preg (cfg); \
 	switch (size) {								\
 		case 0: 							\
@@ -209,7 +209,7 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 	}									\
 } while (0)
 
-#define MONO_OUTPUT_VTS2(cfg, size, dr, dx, sr, so) do {				\
+#define MONO_OUTPUT_VTS(cfg, size, dr, dx, sr, so) do {				\
 	int tmpr;								\
 	switch (size) {								\
 		case 0: 							\
@@ -234,7 +234,7 @@ if (ins->flags & MONO_INST_BRLABEL) { 							\
 		break;								\
 		case 4:								\
 		case 8:								\
-			MONO_EMIT_NEW_MOVE2 (cfg, dr, dx, sr, so, size);		\
+			MONO_EMIT_NEW_MOVE (cfg, dr, dx, sr, so, size);		\
 		break;								\
 	}									\
 } while (0)
@@ -2272,9 +2272,9 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 				arg->offPrm     = ainfo->offparm + cinfo->sz.offStruct;
 		*/
 		if (ainfo->reg != STK_BASE) {
-			MONO_OUTPUT_VTR2 (cfg, size, ainfo->reg, src->dreg, 0);
+			MONO_OUTPUT_VTR (cfg, size, ainfo->reg, src->dreg, 0);
 		} else {
-			MONO_OUTPUT_VTS2 (cfg, size, ainfo->reg, ainfo->offset,
+			MONO_OUTPUT_VTS (cfg, size, ainfo->reg, ainfo->offset,
 							  src->dreg, 0);
 		}	
 	} else if (ainfo->regtype == RegTypeStructByValInFP) {
@@ -2291,7 +2291,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 		mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg, TRUE);
 	} else {
-		MONO_EMIT_NEW_MOVE2 (cfg, STK_BASE, ainfo->offparm,
+		MONO_EMIT_NEW_MOVE (cfg, STK_BASE, ainfo->offparm,
 							 src->dreg, 0, size);
 	}
 }

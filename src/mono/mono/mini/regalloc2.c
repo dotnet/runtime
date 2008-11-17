@@ -8,6 +8,7 @@
  */
 
 #include "mini.h"
+#include "ir-emit.h"
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool-internals.h>
 
@@ -133,27 +134,6 @@ typedef struct MonoRegallocContext {
 /*
  * MACROS
  */
-
-#define NEW_UNALU(cfg,dest,op,dr,sr1) do { \
-        MONO_INST_NEW ((cfg), (dest), (op)); \
-        (dest)->dreg = dr; \
-        (dest)->sreg1 = sr1; \
-    } while (0)        
-
-#define NEW_STORE_MEMBASE(cfg,dest,op,base,offset,sr) do { \
-        MONO_INST_NEW ((cfg), (dest), (op)); \
-        (dest)->sreg1 = sr; \
-        (dest)->inst_destbasereg = base; \
-        (dest)->inst_offset = offset; \
-	} while (0)
-
-#define NEW_LOAD_MEMBASE(cfg,dest,op,dr,base,offset) do { \
-        MONO_INST_NEW ((cfg), (dest), (op)); \
-        (dest)->dreg = (dr); \
-        (dest)->inst_basereg = (base); \
-        (dest)->inst_offset = (offset); \
-        (dest)->type = STACK_I4; \
-	} while (0)
 
 #if SIZEOF_VOID_P == 8
 #define BITS_PER_CHUNK 64

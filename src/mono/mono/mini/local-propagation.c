@@ -22,21 +22,7 @@
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/opcodes.h>
 #include "mini.h"
-
-/* FIXME: Get rid of these */
-#define NEW_BIALU(cfg,dest,op,dr,sr1,sr2) do { \
-        MONO_INST_NEW ((cfg), (dest), (op)); \
-        (dest)->dreg = (dr); \
-        (dest)->sreg1 = (sr1); \
-        (dest)->sreg2 = (sr2); \
-	} while (0)
-
-#define NEW_BIALU_IMM(cfg,dest,op,dr,sr,imm) do { \
-        MONO_INST_NEW ((cfg), (dest), (op)); \
-        (dest)->dreg = (dr);				 \
-        (dest)->sreg1 = (sr);					   \
-        (dest)->inst_p1 = (gpointer)(gssize)(imm); \
-	} while (0)
+#include "ir-emit.h"
 
 #ifndef MONO_ARCH_IS_OP_MEMBASE
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) FALSE
