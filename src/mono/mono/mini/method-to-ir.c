@@ -5776,8 +5776,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoMethodSignature *fsig = mono_method_signature (cmethod);
 				int i, n;
 
-				/* FIXME: Remove OP_JMP from mini-amd64.c when the old JIT is removed */
-
 				/* Handle tail calls similarly to calls */
 				n = fsig->param_count + fsig->hasthis;
 

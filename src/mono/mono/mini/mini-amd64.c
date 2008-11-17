@@ -2541,93 +2541,6 @@ mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset)
 	return code;
 }
 
-/*
- * emit_load_volatile_arguments:
- *
- *  Load volatile arguments from the stack to the original input registers.
- * Required before a tail call.
- */
-static guint8*
-emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
-{
-	MonoMethod *method = cfg->method;
-	MonoMethodSignature *sig;
-	MonoInst *ins;
-	CallInfo *cinfo;
-	guint32 i, quad;
-
-	/* FIXME: Generate intermediate code instead */
-
-	sig = mono_method_signature (method);
-
-	cinfo = cfg->arch.cinfo;
-	
-	/* This is the opposite of the code in emit_prolog */
-	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (cfg->vret_addr && (cfg->vret_addr->opcode != OP_REGVAR))
-			amd64_mov_reg_membase (code, cinfo->ret.reg, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, 8);
-	}
-
-	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
-		ArgInfo *ainfo = cinfo->args + i;
-		MonoType *arg_type;
-		ins = cfg->args [i];
-
-		if (sig->hasthis && (i == 0))
-			arg_type = &mono_defaults.object_class->byval_arg;
-		else
-			arg_type = sig->params [i - sig->hasthis];
-
-		if (ins->opcode != OP_REGVAR) {
-			switch (ainfo->storage) {
-			case ArgInIReg: {
-				guint32 size = 8;
-
-				/* FIXME: I1 etc */
-				amd64_mov_reg_membase (code, ainfo->reg, ins->inst_basereg, ins->inst_offset, size);
-				break;
-			}
-			case ArgInFloatSSEReg:
-				amd64_movss_reg_membase (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
-				break;
-			case ArgInDoubleSSEReg:
-				amd64_movsd_reg_membase (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
-				break;
-			case ArgValuetypeInReg:
-				for (quad = 0; quad < 2; quad ++) {
-					switch (ainfo->pair_storage [quad]) {
-					case ArgInIReg:
-						amd64_mov_reg_membase (code, ainfo->pair_regs [quad], ins->inst_basereg, ins->inst_offset + (quad * sizeof (gpointer)), sizeof (gpointer));
-						break;
-					case ArgInFloatSSEReg:
-					case ArgInDoubleSSEReg:
-						g_assert_not_reached ();
-						break;
-					case ArgNone:
-						break;
-					default:
-						g_assert_not_reached ();
-					}
-				}
-				break;
-			case ArgValuetypeAddrInIReg:
-				if (ainfo->pair_storage [0] == ArgInIReg)
-					amd64_mov_reg_membase (code, ainfo->pair_regs [0], ins->inst_left->inst_basereg, ins->inst_left->inst_offset,  sizeof (gpointer));
-				break;
-			default:
-				break;
-			}
-		}
-		else {
-			g_assert (ainfo->storage == ArgInIReg);
-
-			amd64_mov_reg_reg (code, ainfo->reg, ins->dreg, 8);
-		}
-	}
-
-	return code;
-}
-
 #define REAL_PRINT_REG(text,reg) \
 mono_assert (reg >= 0); \
 amd64_push_reg (code, AMD64_RAX); \
@@ -3444,7 +3357,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		}
-		case OP_JMP:
 		case OP_TAILCALL: {
 			/*
 			 * Note: this 'frame destruction' logic is useful for tail calls, too.
@@ -3457,9 +3369,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
 
 			g_assert (!cfg->method->save_lmf);
-
-			if (ins->opcode == OP_JMP)
-				code = emit_load_volatile_arguments (cfg, code);
 
 			if (cfg->arch.omit_fp) {
 				guint32 save_offset = 0;
