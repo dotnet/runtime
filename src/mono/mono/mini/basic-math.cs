@@ -249,4 +249,41 @@ class Tests {
 			return 1;
 		return 0;
 	}
+
+	public static int test_0_round () {
+		if (Math.Round (5.0) != 5.0)
+			return 1;
+
+		if (Math.Round (5.000000000000001) != 5.0)
+			return 2;
+
+		if (Math.Round (5.499999999999999) != 5.0)
+			return 3;
+
+		if (Math.Round (5.5) != 6.0)
+			return 4;
+
+		if (Math.Round (5.999999999999999) != 6.0)
+			return 5;
+
+		if (Math.Round (Double.Epsilon) != 0)
+			return 6;
+
+		if (!Double.IsNaN (Math.Round (Double.NaN)))
+			return 7;
+
+		if (!Double.IsPositiveInfinity (Math.Round (Double.PositiveInfinity)))
+			return 8;
+
+		if (!Double.IsNegativeInfinity (Math.Round (Double.NegativeInfinity)))
+			return 9;
+
+		if (Math.Round (Double.MinValue) != Double.MinValue)
+			return 10;
+
+		if (Math.Round (Double.MaxValue) != Double.MaxValue)
+			return 11;
+
+		return 0;
+	}
 }

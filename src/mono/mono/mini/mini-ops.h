@@ -552,6 +552,7 @@ MINI_OP(OP_ABS,     "abs", FREG, FREG, NONE)
 MINI_OP(OP_TAN,     "tan", FREG, FREG, NONE)
 MINI_OP(OP_ATAN,    "atan", FREG, FREG, NONE)
 MINI_OP(OP_SQRT,    "sqrt", FREG, FREG, NONE)
+MINI_OP(OP_ROUND,   "round", FREG, FREG, NONE)
 /* to optimize strings */
 MINI_OP(OP_STRLEN, "strlen", IREG, IREG, NONE)
 MINI_OP(OP_NEWARR, "newarr", IREG, IREG, NONE)
