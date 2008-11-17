@@ -84,6 +84,15 @@ offsets_from_pthread_key (guint32 key, int *offset2)
 		}	\
 	} while (0)
 
+#define MONO_EMIT_NEW_LOAD_R8(cfg,dr,addr) do { \
+		MonoInst *inst;				   \
+		MONO_INST_NEW ((cfg), (inst), OP_R8CONST); \
+		inst->type = STACK_R8;			   \
+		inst->dreg = (dr);		       \
+		inst->inst_p0 = (void*)(addr);	       \
+		mono_bblock_add_inst (cfg->cbb, inst); \
+	} while (0)
+
 const char*
 mono_arch_regname (int reg) {
 	static const char rnames[][4] = {
