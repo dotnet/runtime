@@ -3496,7 +3496,7 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		code = mono_arch_get_nullified_class_init_trampoline (&code_size);
 		emit_named_code (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL);
-#ifdef __x86_64__
+#if defined(__x86_64__) && defined(MONO_ARCH_MONITOR_OBJECT_REG)
 		code = mono_arch_create_monitor_enter_trampoline_full (&code_size, &ji, TRUE);
 		emit_named_code (acfg, "monitor_enter_trampoline", code, code_size, acfg->got_offset, ji);
 		code = mono_arch_create_monitor_exit_trampoline_full (&code_size, &ji, TRUE);
