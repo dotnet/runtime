@@ -219,6 +219,9 @@ typedef struct {
 	guint32 ref_count;
 	guint32 gc_handle;
 	GHashTable* vtable_hash;
+#ifdef  PLATFORM_WIN32
+	gpointer free_marshaler;
+#endif
 } MonoCCW;
 
 /* This type is the actual pointer passed to unmanaged code
@@ -11972,6 +11975,9 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 
 	if (!ccw) {
 		ccw = g_new0 (MonoCCW, 1);
+#ifdef PLATFORM_WIN32
+		ccw->free_marshaler = 0;
+#endif
 		ccw->vtable_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		ccw->ref_count = 0;
 		/* just alloc a weak handle until we are addref'd*/
@@ -12358,6 +12364,10 @@ cominterop_ccw_release (MonoCCWInterface* ccwe)
 		/* allow gc of object */
 		guint32 oldhandle = ccw->gc_handle;
 		g_assert (oldhandle);
+#ifdef PLATFORM_WIN32
+		if (ccw->free_marshaler)
+			ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (ccw->free_marshaler);
+#endif
 		ccw->gc_handle = mono_gchandle_new_weakref (mono_gchandle_get_target (oldhandle), FALSE);
 		mono_gchandle_free (oldhandle);
 	}
@@ -12367,6 +12377,34 @@ cominterop_ccw_release (MonoCCWInterface* ccwe)
 #define MONO_S_OK 0x00000000L
 #define MONO_E_NOINTERFACE 0x80004002L
 #define MONO_E_NOTIMPL 0x80004001L
+
+#ifdef PLATFORM_WIN32
+static const IID MONO_IID_IMarshal = {0x3, 0x0, 0x0, {0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46}};
+#endif
+
+/* All ccw objects are free threaded */
+static int
+cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpointer* ppv)
+{
+#ifdef PLATFORM_WIN32
+	if (!ccw->free_marshaler) {
+		int ret = 0;
+		gpointer tunk;
+		tunk = cominterop_get_ccw (object, mono_defaults.iunknown_class);
+		/* remember to addref on QI */
+		cominterop_ccw_addref (tunk);
+		ret = CoCreateFreeThreadedMarshaler (tunk, (LPUNKNOWN*)&ccw->free_marshaler);
+		cominterop_ccw_release(tunk);
+	}
+		
+	if (!ccw->free_marshaler)
+		return MONO_E_NOINTERFACE;
+
+	return ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (ccw->free_marshaler, (IID*)&MONO_IID_IMarshal, ppv);
+#else
+	return MONO_E_NOINTERFACE;
+#endif
+}
 
 static int STDCALL 
 cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* ppv)
@@ -12384,6 +12422,9 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 	if (ppv)
 		*ppv = NULL;
 
+	if (!mono_domain_get ())
+		mono_thread_attach (mono_get_root_domain ());
+
 	/* handle IUnknown special */
 	if (cominterop_class_guid_equal (riid, mono_defaults.iunknown_class)) {
 		*ppv = cominterop_get_ccw (object, mono_defaults.iunknown_class);
@@ -12399,6 +12440,13 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 		cominterop_ccw_addref (*ppv);
 		return MONO_S_OK;
 	}
+
+#ifdef PLATFORM_WIN32
+	/* handle IMarshal special */
+	if (0 == memcmp (riid, &MONO_IID_IMarshal, sizeof (IID))) {
+		return cominterop_ccw_getfreethreadedmarshaler (ccw, object, ppv);	
+	}
+#endif
 
 	ifaces = mono_class_get_implemented_interfaces (klass);
 	if (ifaces) {
