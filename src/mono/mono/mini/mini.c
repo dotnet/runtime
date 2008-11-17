@@ -2911,14 +2911,6 @@ mono_codegen (MonoCompile *cfg)
 					}
 				}
 			}
-			
-			if (patch_info->type == MONO_PATCH_INFO_ABS) {
-				MonoClass *klass = mono_find_delegate_trampoline_by_addr (patch_info->data.target);
-				if (klass) {
-					patch_info->type = MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
-					patch_info->data.klass = klass;
-				}
-			}
 
 			if (patch_info->type == MONO_PATCH_INFO_ABS) {
 				if (cfg->abs_patches) {

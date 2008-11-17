@@ -3243,8 +3243,12 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	}
 
 	/* Set invoke_impl field */
-	trampoline = mono_create_delegate_trampoline (klass);
-	EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_ABS, trampoline);
+	if (cfg->compile_aot) {
+		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, klass);
+	} else {
+		trampoline = mono_create_delegate_trampoline (klass);
+		EMIT_NEW_PCONST (cfg, tramp_ins, trampoline);
+	}
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, G_STRUCT_OFFSET (MonoDelegate, invoke_impl), tramp_ins->dreg);
 
 	/* All the checks which are in mono_delegate_ctor () are done by the delegate trampoline */
