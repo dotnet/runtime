@@ -292,6 +292,7 @@ typedef struct {
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 #define MONO_ARCH_HAVE_DECOMPOSE_OPTS 1
+#define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 #endif
 
 #if !defined(__APPLE__)

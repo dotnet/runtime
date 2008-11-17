@@ -569,6 +569,7 @@ extract_i2: dest:i src1:x len:10
 extract_u2: dest:i src1:x len:10
 extract_i1: dest:i src1:x len:10
 extract_u1: dest:i src1:x len:10
+extract_r8: dest:f src1:x len:17 
 
 iconv_to_r8_raw: dest:f src1:i len:17 
 

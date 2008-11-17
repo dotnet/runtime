@@ -67,6 +67,7 @@ enum {
 	SIMD_EMIT_BINARY,
 	SIMD_EMIT_UNARY,
 	SIMD_EMIT_GETTER,
+	SIMD_EMIT_GETTER_QWORD,
 	SIMD_EMIT_CTOR,
 	SIMD_EMIT_CAST,
 	SIMD_EMIT_SHUFFLE,
@@ -172,7 +173,6 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector2d_intrinsics[] = {
@@ -200,6 +200,8 @@ static const SimdIntrinsc vector2d_intrinsics[] = {
 	{ SN_PrefetchTemporal2ndLevelCache, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_2 },
 	{ SN_PrefetchNonTemporal, 0, SIMD_EMIT_PREFETCH, SIMD_VERSION_SSE1, SIMD_PREFETCH_MODE_NTA },
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_EMIT_STORE },
+	{ SN_get_X, 0, SIMD_EMIT_GETTER_QWORD },
+	{ SN_get_Y, 1, SIMD_EMIT_GETTER_QWORD },
 	{ SN_op_Addition, OP_ADDPD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_ANDPD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_ORPD, SIMD_EMIT_BINARY },
@@ -212,7 +214,6 @@ static const SimdIntrinsc vector2d_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector2ul_intrinsics[] = {
@@ -227,6 +228,8 @@ static const SimdIntrinsc vector2ul_intrinsics[] = {
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_EMIT_STORE },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHQ, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWQ, SIMD_EMIT_BINARY },
+	{ SN_get_X, 0, SIMD_EMIT_GETTER_QWORD },
+	{ SN_get_Y, 1, SIMD_EMIT_GETTER_QWORD },
 	{ SN_op_Addition, OP_PADDQ, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
@@ -240,7 +243,6 @@ static const SimdIntrinsc vector2ul_intrinsics[] = {
 
 /*
 Missing:
-getters
 setters
  */
 static const SimdIntrinsc vector2l_intrinsics[] = {
@@ -257,6 +259,8 @@ static const SimdIntrinsc vector2l_intrinsics[] = {
 	{ SN_StoreAligned, OP_STOREX_ALIGNED_MEMBASE_REG, SIMD_EMIT_STORE },
 	{ SN_UnpackHigh, OP_UNPACK_HIGHQ, SIMD_EMIT_BINARY },
 	{ SN_UnpackLow, OP_UNPACK_LOWQ, SIMD_EMIT_BINARY },
+	{ SN_get_X, 0, SIMD_EMIT_GETTER_QWORD },
+	{ SN_get_Y, 1, SIMD_EMIT_GETTER_QWORD },
 	{ SN_op_Addition, OP_PADDQ, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
@@ -778,6 +782,16 @@ get_int_to_float_spill_area (MonoCompile *cfg)
 	return cfg->iconv_raw_var;
 }
 
+/*We share the var with fconv_to_r8_x to save some stack space.*/
+static MonoInst*
+get_double_spill_area (MonoCompile *cfg)
+{
+	if (!cfg->fconv_to_r8_x_var) {
+		cfg->fconv_to_r8_x_var = mono_compile_create_var (cfg, &mono_defaults.double_class->byval_arg, OP_LOCAL);
+		cfg->fconv_to_r8_x_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
+	}	
+	return cfg->fconv_to_r8_x_var;
+}
 static MonoInst*
 get_simd_ctor_spill_area (MonoCompile *cfg, MonoClass *avector_klass)
 {
@@ -903,6 +917,32 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 		ins->backend.spill_var = get_int_to_float_spill_area (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);	
 	}
+	return ins;
+}
+
+static MonoInst*
+simd_intrinsic_emit_long_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
+{
+	MonoInst *ins;
+	int vreg;
+	gboolean is_r8 = mono_method_signature (cmethod)->ret->type == MONO_TYPE_R8;
+
+	vreg = load_simd_vreg (cfg, cmethod, args [0]);
+
+	MONO_INST_NEW (cfg, ins, is_r8 ? OP_EXTRACT_R8 : OP_EXTRACT_I8);
+	ins->klass = cmethod->klass;
+	ins->sreg1 = vreg;
+	ins->inst_c0 = intrinsic->opcode;
+	if (is_r8) {
+		ins->type = STACK_R8;
+		ins->dreg = alloc_freg (cfg);
+		ins->backend.spill_var = get_double_spill_area (cfg);
+	} else {
+		ins->type = STACK_I8;
+		ins->dreg = alloc_lreg (cfg);		
+	}
+	MONO_ADD_INS (cfg->cbb, ins);
+
 	return ins;
 }
 
@@ -1137,6 +1177,8 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return simd_intrinsic_emit_unary (result, cfg, cmethod, args);
 	case SIMD_EMIT_GETTER:
 		return simd_intrinsic_emit_getter (result, cfg, cmethod, args);
+	case SIMD_EMIT_GETTER_QWORD:
+		return simd_intrinsic_emit_long_getter (result, cfg, cmethod, args);
 	case SIMD_EMIT_CTOR:
 		return simd_intrinsic_emit_ctor (result, cfg, cmethod, args);
 	case SIMD_EMIT_CAST:
