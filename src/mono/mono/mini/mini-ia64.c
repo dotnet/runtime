@@ -1369,9 +1369,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *n, *next, *temp, *temp2, *temp3, *last_ins = NULL;
 	ins = bb->code;
 
-	if (bb->max_vreg > cfg->rs->next_vreg)
-		cfg->rs->next_vreg = bb->max_vreg;
-
 	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
 		switch (ins->opcode) {
 		case OP_STOREI1_MEMBASE_IMM:
@@ -1386,17 +1383,17 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				NEW_INS (cfg, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->inst_imm = ins->inst_offset;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
+				temp2->dreg = mono_alloc_ireg (cfg);
 			}
 			else {
 				NEW_INS (cfg, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 
 				NEW_INS (cfg, temp2, OP_LADD);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->sreg2 = temp->dreg;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
+				temp2->dreg = mono_alloc_ireg (cfg);
 			}
 
 			switch (ins->opcode) {
@@ -1422,7 +1419,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			else {
 				NEW_INS (cfg, temp3, OP_I8CONST);
 				temp3->inst_c0 = ins->inst_imm;
-				temp3->dreg = mono_regstate_next_int (cfg->rs);
+				temp3->dreg = mono_alloc_ireg (cfg);
 				ins->sreg1 = temp3->dreg;
 			}
 
@@ -1445,16 +1442,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				NEW_INS (cfg, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->inst_imm = ins->inst_offset;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
+				temp2->dreg = mono_alloc_ireg (cfg);
 			}
 			else {
 				NEW_INS (cfg, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				NEW_INS (cfg, temp2, OP_LADD);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->sreg2 = temp->dreg;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
+				temp2->dreg = mono_alloc_ireg (cfg);
 			}
 
 			ins->inst_offset = 0;
@@ -1484,16 +1481,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				NEW_INS (cfg, temp2, OP_ADD_IMM);
 				temp2->sreg1 = ins->inst_basereg;
 				temp2->inst_imm = ins->inst_offset;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
+				temp2->dreg = mono_alloc_ireg (cfg);
 			}
 			else {
 				NEW_INS (cfg, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				NEW_INS (cfg, temp2, OP_LADD);
 				temp2->sreg1 = ins->inst_basereg;
 				temp2->sreg2 = temp->dreg;
-				temp2->dreg = mono_regstate_next_int (cfg->rs);
+				temp2->dreg = mono_alloc_ireg (cfg);
 			}
 
 			ins->inst_offset = 0;
@@ -1581,7 +1578,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			else {
 				NEW_INS (cfg, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 			}
 			break;
@@ -1626,7 +1623,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				else {
 					NEW_INS (cfg, temp, OP_I8CONST);
 					temp->inst_c0 = ins->inst_imm;
-					temp->dreg = mono_regstate_next_int (cfg->rs);
+					temp->dreg = mono_alloc_ireg (cfg);
 					ins->sreg2 = temp->dreg;
 				}
 			}
@@ -1715,7 +1712,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				for (i = 0; i < 64; ++i) {
 					if (ins->inst_imm & (((gint64)1) << i)) {
 						NEW_INS (cfg, temp, shl_op);
-						temp->dreg = mono_regstate_next_int (cfg->rs);
+						temp->dreg = mono_alloc_ireg (cfg);
 						temp->sreg1 = ins->sreg1;
 						temp->inst_imm = i;
 
@@ -1723,7 +1720,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 							sum_reg = temp->dreg;
 						else {
 							NEW_INS (cfg, temp2, OP_LADD);
-							temp2->dreg = mono_regstate_next_int (cfg->rs);
+							temp2->dreg = mono_alloc_ireg (cfg);
 							temp2->sreg1 = sum_reg;
 							temp2->sreg2 = temp->dreg;
 							sum_reg = temp2->dreg;
@@ -1748,7 +1745,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCONV_TO_OVF_I4_UN:
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = 0x7fffffff;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 
 			NEW_INS (cfg, temp2, OP_IA64_CMP4_GT_UN);
 			temp2->sreg1 = ins->sreg1;
@@ -1797,7 +1794,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 	bb->last_ins = last_ins;
 
-	bb->max_vreg = cfg->rs->next_vreg;
+	bb->max_vreg = cfg->next_vreg;
 }
 
 /*

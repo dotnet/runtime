@@ -887,10 +887,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *next, *temp, *last_ins = NULL;
 	int imm;
 
-	/* setup the virtual reg allocator */
-	if (bb->max_vreg > cfg->rs->next_vreg)
-		cfg->rs->next_vreg = bb->max_vreg;
-
 	MONO_BB_FOR_EACH_INS (bb, ins) {
 loop_start:
 		switch (ins->opcode) {
@@ -899,7 +895,7 @@ loop_start:
 			if (!hppa_check_bits (ins->inst_imm, 11)) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
@@ -909,7 +905,7 @@ loop_start:
 			if (!hppa_check_bits (ins->inst_imm, 11)) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
@@ -932,7 +928,7 @@ loop_start:
 				break;
 			}
 			else {
-				int tmp = mono_regstate_next_int (cfg->rs);
+				int tmp = mono_alloc_ireg (cfg);
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_c0;
 				temp->dreg = tmp;
@@ -990,7 +986,7 @@ loop_start:
 		last_ins = ins;
 	}
 	bb->last_ins = last_ins;
-	bb->max_vreg = cfg->rs->next_vreg;
+	bb->max_vreg = cfg->next_vreg;
 	
 }
 
@@ -2871,7 +2867,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		MONO_INST_NEW (cfg, this, OP_MOVE);
 		this->type = this_type;
 		this->sreg1 = this_reg;
-		this->dreg = mono_regstate_next_int (cfg->rs);
+		this->dreg = mono_alloc_ireg (cfg);
 		mono_bblock_add_inst (cfg->cbb, this);
 		mono_call_inst_add_outarg_reg (cfg, inst, this->dreg, hppa_r26, FALSE);
 	}
@@ -2881,7 +2877,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 		vtarg->type = STACK_MP;
 		vtarg->sreg1 = vt_reg;
-		vtarg->dreg = mono_regstate_next_int (cfg->rs);
+		vtarg->dreg = mono_alloc_ireg (cfg);
 		mono_bblock_add_inst (cfg->cbb, vtarg);
 		mono_call_inst_add_outarg_reg (cfg, inst, vtarg->dreg, hppa_r28, FALSE);
 	}

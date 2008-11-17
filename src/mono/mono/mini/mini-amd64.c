@@ -2253,9 +2253,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n, *temp;
 
-	if (bb->max_vreg > cfg->rs->next_vreg)
-		cfg->rs->next_vreg = bb->max_vreg;
-
 	/*
 	 * FIXME: Need to add more instructions, but the current machine 
 	 * description can't model some parts of the composite instructions like
@@ -2280,10 +2277,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (!amd64_is_imm32 (ins->inst_imm)) {
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_imm;
-				if (cfg->globalra)
-					temp->dreg = mono_alloc_ireg (cfg);
-				else
-					temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->opcode = OP_COMPARE;
 				ins->sreg2 = temp->dreg;
 			}
@@ -2293,10 +2287,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (!amd64_is_imm32 (ins->inst_offset)) {
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
-				if (cfg->globalra)
-					temp->dreg = mono_alloc_ireg (cfg);
-				else
-					temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->opcode = OP_AMD64_LOADI8_MEMINDEX;
 				ins->inst_indexreg = temp->dreg;
 			}
@@ -2306,10 +2297,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (!amd64_is_imm32 (ins->inst_imm)) {
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_imm;
-				if (cfg->globalra)
-					temp->dreg = mono_alloc_ireg (cfg);
-				else
-					temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->opcode = OP_STOREI8_MEMBASE_REG;
 				ins->sreg1 = temp->dreg;
 			}
@@ -2319,7 +2307,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	}
 
-	bb->max_vreg = cfg->rs->next_vreg;
+	bb->max_vreg = cfg->next_vreg;
 }
 
 static const int 

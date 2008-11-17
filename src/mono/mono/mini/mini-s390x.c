@@ -2541,9 +2541,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *next;
 
-	if (bb->max_vreg > cfg->rs->next_vreg)
-		cfg->rs->next_vreg = bb->max_vreg;
-
 	MONO_BB_FOR_EACH_INS_SAFE (bb, next, ins) {
 		switch (ins->opcode) {
 		case OP_DIV_IMM:
@@ -2568,7 +2565,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	}
 
-	bb->max_vreg = cfg->rs->next_vreg;
+	bb->max_vreg = cfg->next_vreg;
 }
 
 /*========================= End of Function ========================*/

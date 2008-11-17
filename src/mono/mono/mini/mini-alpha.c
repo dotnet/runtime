@@ -945,9 +945,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
    
    ins = bb->code;
    
-   if (bb->max_vreg > cfg->rs->next_vreg)
-	 cfg->rs->next_vreg = bb->max_vreg;
-   
    /*
     * FIXME: Need to add more instructions, but the current machine
     * description can't model some parts of the composite instructions like
@@ -964,7 +961,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case OP_MUL_IMM:
 	   NEW_INS (cfg, temp, OP_I8CONST);
 	   temp->inst_c0 = ins->inst_imm;
-	   temp->dreg = mono_regstate_next_int (cfg->rs);
+	   temp->dreg = mono_alloc_ireg (cfg);
 	   
 	   switch (ins->opcode) 
 	     {
@@ -1007,7 +1004,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	     {	  
 	       NEW_INS (cfg, temp, OP_I8CONST);
 	       temp->inst_c0 = ins->inst_imm;
-	       temp->dreg = mono_regstate_next_int (cfg->rs);
+	       temp->dreg = mono_alloc_ireg (cfg);
 	       ins->opcode = OP_COMPARE;
 	       ins->sreg2 = temp->dreg;
 				  
@@ -1026,7 +1023,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
              {
                NEW_INS (cfg, temp, OP_ICONST);
                temp->inst_c0 = ins->inst_imm;
-               temp->dreg = mono_regstate_next_int (cfg->rs);
+               temp->dreg = mono_alloc_ireg (cfg);
                ins->opcode = OP_ICOMPARE;
                ins->sreg2 = temp->dreg;
 
@@ -1046,7 +1043,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	     {	  
 	       NEW_INS (cfg, temp, OP_I8CONST);
 	       temp->inst_c0 = ins->inst_imm;
-	       temp->dreg = mono_regstate_next_int (cfg->rs);
+	       temp->dreg = mono_alloc_ireg (cfg);
 	       ins->opcode = OP_STOREI8_MEMBASE_REG;
 	       ins->sreg1 = temp->dreg;
 	     }
@@ -1058,7 +1055,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	       MonoInst *temp;
 	       NEW_INS (cfg, temp, OP_ICONST);
 	       temp->inst_c0 = ins->inst_imm;
-	       temp->dreg = mono_regstate_next_int (cfg->rs);
+	       temp->dreg = mono_alloc_ireg (cfg);
 	       ins->opcode = OP_STOREI4_MEMBASE_REG;
 	       ins->sreg1 = temp->dreg;
 	     }
@@ -1070,7 +1067,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
                MonoInst *temp;
                NEW_INS (cfg, temp, OP_ICONST);
                temp->inst_c0 = ins->inst_imm;
-               temp->dreg = mono_regstate_next_int (cfg->rs);
+               temp->dreg = mono_alloc_ireg (cfg);
                ins->opcode = OP_STOREI1_MEMBASE_REG;
                ins->sreg1 = temp->dreg;
              }
@@ -1082,7 +1079,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	     MonoInst *temp;
 	     NEW_INS (cfg, temp, OP_ICONST);
 	     temp->inst_c0 = ins->inst_imm;
-	     temp->dreg = mono_regstate_next_int (cfg->rs);
+	     temp->dreg = mono_alloc_ireg (cfg);
 	     ins->opcode = OP_STOREI2_MEMBASE_REG;
 	     ins->sreg1 = temp->dreg;
 	   }
@@ -1101,7 +1098,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	       MonoInst *temp;
 	       NEW_INS (cfg, temp, OP_ICONST);
 	       temp->inst_c0 = ins->inst_imm;
-	       temp->dreg = mono_regstate_next_int (cfg->rs);
+	       temp->dreg = mono_alloc_ireg (cfg);
 				  
 	       switch(ins->opcode)
 		 {
@@ -1144,7 +1141,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	       MonoInst *temp;
 	       NEW_INS (cfg, temp, OP_ICONST);
 	       temp->inst_c0 = ins->inst_imm;
-	       temp->dreg = mono_regstate_next_int (cfg->rs);
+	       temp->dreg = mono_alloc_ireg (cfg);
 	       
 	       switch(ins->opcode)
 		 {
@@ -1173,7 +1170,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	       MonoInst *temp;
 	       NEW_INS(cfg, temp, OP_ICONST);
 	       temp->inst_c0 = ins->inst_imm;
-	       temp->dreg = mono_regstate_next_int(cfg->rs);
+	       temp->dreg = mono_alloc_ireg (cfg);
 	       ins->sreg2 = temp->dreg;
 	       ins->opcode = OP_LSHR;
 	     }
@@ -1184,7 +1181,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
                MonoInst *temp;
                NEW_INS(cfg, temp, OP_ICONST);
                temp->inst_c0 = ins->inst_imm;
-               temp->dreg = mono_regstate_next_int(cfg->rs);
+               temp->dreg = mono_alloc_ireg (cfg);
                ins->sreg2 = temp->dreg;
                ins->opcode = OP_LSHL;
              }
@@ -1200,7 +1197,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
    
    bb->last_ins = last_ins;
    
-   bb->max_vreg = cfg->rs->next_vreg;
+   bb->max_vreg = cfg->next_vreg;
 }
 
 /*========================= End of Function ========================*/
@@ -4291,7 +4288,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst,
 	{
 	  MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 	  vtarg->sreg1 = vt_reg;
-	  vtarg->dreg = mono_regstate_next_int (cfg->rs);
+	  vtarg->dreg = mono_alloc_ireg (cfg);
 	  mono_bblock_add_inst (cfg->cbb, vtarg);
 
 	  mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg,
@@ -4306,7 +4303,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst,
       MONO_INST_NEW (cfg, this, OP_MOVE);
       this->type = this_type;
       this->sreg1 = this_reg;
-      this->dreg = mono_regstate_next_int (cfg->rs);
+      this->dreg = mono_alloc_ireg (cfg);
       mono_bblock_add_inst (cfg->cbb, this);
 
       mono_call_inst_add_outarg_reg (cfg, call, this->dreg,

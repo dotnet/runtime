@@ -1699,10 +1699,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *temp, *last_ins = NULL;
 	int rot_amount, imm8, low_imm;
 
-	/* setup the virtual reg allocator */
-	if (bb->max_vreg > cfg->rs->next_vreg)
-		cfg->rs->next_vreg = bb->max_vreg;
-
 	MONO_BB_FOR_EACH_INS (bb, ins) {
 loop_start:
 		switch (ins->opcode) {
@@ -1727,7 +1723,7 @@ loop_start:
 			if ((imm8 = mono_arm_is_rotated_imm8 (ins->inst_imm, &rot_amount)) < 0) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				ins->opcode = mono_op_imm_to_op (ins->opcode);
 			}
@@ -1751,14 +1747,14 @@ loop_start:
 			}
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = OP_IMUL;
 			break;
 		case OP_LOCALLOC_IMM:
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg1 = temp->dreg;
 			ins->opcode = OP_LOCALLOC;
 			break;
@@ -1775,7 +1771,7 @@ loop_start:
 				break;
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_offset;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
@@ -1786,7 +1782,7 @@ loop_start:
 				break;
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_offset;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
@@ -1799,7 +1795,7 @@ loop_start:
 				NEW_INS (cfg, temp, OP_ADD_IMM);
 				temp->inst_imm = ins->inst_offset & ~0x1ff;
 				temp->sreg1 = ins->inst_basereg;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->inst_basereg = temp->dreg;
 				ins->inst_offset = low_imm;
 				break;
@@ -1814,7 +1810,7 @@ loop_start:
 				break;
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_offset;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
@@ -1823,7 +1819,7 @@ loop_start:
 				break;
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_offset;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
@@ -1836,7 +1832,7 @@ loop_start:
 				NEW_INS (cfg, temp, OP_ADD_IMM);
 				temp->inst_imm = ins->inst_offset & ~0x1ff;
 				temp->sreg1 = ins->inst_destbasereg;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->inst_destbasereg = temp->dreg;
 				ins->inst_offset = low_imm;
 				break;
@@ -1851,7 +1847,7 @@ loop_start:
 		case OP_STOREI4_MEMBASE_IMM:
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg1 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			last_ins = temp;
@@ -1894,8 +1890,7 @@ loop_start:
 		last_ins = ins;
 	}
 	bb->last_ins = last_ins;
-	bb->max_vreg = cfg->rs->next_vreg;
-
+	bb->max_vreg = cfg->next_vreg;
 }
 
 static guchar*
@@ -4084,7 +4079,7 @@ void
 mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
 {
 	if (cfg->compile_aot) {
-		int method_reg = mono_regstate_next_int (cfg->rs);
+		int method_reg = mono_alloc_ireg (cfg);
 		MonoInst *ins;
 
 		call->dynamic_imt_arg = TRUE;

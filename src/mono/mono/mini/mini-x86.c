@@ -1184,7 +1184,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			/* The return address is passed in a register */
 			MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 			vtarg->sreg1 = call->inst.dreg;
-			vtarg->dreg = mono_regstate_next_int (cfg->rs);
+			vtarg->dreg = mono_alloc_ireg (cfg);
 			MONO_ADD_INS (cfg->cbb, vtarg);
 				
 			mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
@@ -1596,9 +1596,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *next;
 
-	if (bb->max_vreg > cfg->rs->next_vreg)
-		cfg->rs->next_vreg = bb->max_vreg;
-
 	/*
 	 * FIXME: Need to add more instructions, but the current machine 
 	 * description can't model some parts of the composite instructions like
@@ -1623,7 +1620,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 	}
 
-	bb->max_vreg = cfg->rs->next_vreg;
+	bb->max_vreg = cfg->next_vreg;
 }
 
 static const int 

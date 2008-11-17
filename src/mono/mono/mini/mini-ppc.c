@@ -2016,10 +2016,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *next, *temp, *last_ins = NULL;
 	int imm;
 
-	/* setup the virtual reg allocator */
-	if (bb->max_vreg > cfg->rs->next_vreg)
-		cfg->rs->next_vreg = bb->max_vreg;
-
 	MONO_BB_FOR_EACH_INS (bb, ins) {
 loop_start:
 		switch (ins->opcode) {
@@ -2029,7 +2025,7 @@ loop_start:
 		case OP_IREM_UN_IMM:
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			if (ins->opcode == OP_IDIV_IMM)
 				ins->opcode = OP_IDIV;
@@ -2054,10 +2050,10 @@ loop_start:
 			NEW_INS (cfg, temp, ins->opcode == OP_IREM? OP_IDIV: OP_IDIV_UN);
 			temp->sreg1 = ins->sreg1;
 			temp->sreg2 = ins->sreg2;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			mul->sreg1 = temp->dreg;
 			mul->sreg2 = ins->sreg2;
-			mul->dreg = mono_regstate_next_int (cfg->rs);
+			mul->dreg = mono_alloc_ireg (cfg);
 			ins->opcode = OP_ISUB;
 			ins->sreg2 = mul->dreg;
 			break;
@@ -2068,7 +2064,7 @@ loop_start:
 			if (!ppc_is_imm16 (ins->inst_imm)) {
 				NEW_INS (cfg,  temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
@@ -2078,7 +2074,7 @@ loop_start:
 			if (!ppc_is_imm16 (-ins->inst_imm)) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
@@ -2092,7 +2088,7 @@ loop_start:
 			if ((ins->inst_imm & 0xffff0000) && (ins->inst_imm & 0xffff)) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
@@ -2104,7 +2100,7 @@ loop_start:
 		case OP_ADC_IMM:
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
@@ -2121,7 +2117,7 @@ loop_start:
 				if (!ppc_is_uimm16 (ins->inst_imm)) {
 					NEW_INS (cfg, temp, OP_ICONST);
 					temp->inst_c0 = ins->inst_imm;
-					temp->dreg = mono_regstate_next_int (cfg->rs);
+					temp->dreg = mono_alloc_ireg (cfg);
 					ins->sreg2 = temp->dreg;
 					ins->opcode = map_to_reg_reg_op (ins->opcode);
 				}
@@ -2129,7 +2125,7 @@ loop_start:
 				if (!ppc_is_imm16 (ins->inst_imm)) {
 					NEW_INS (cfg, temp, OP_ICONST);
 					temp->inst_c0 = ins->inst_imm;
-					temp->dreg = mono_regstate_next_int (cfg->rs);
+					temp->dreg = mono_alloc_ireg (cfg);
 					ins->sreg2 = temp->dreg;
 					ins->opcode = map_to_reg_reg_op (ins->opcode);
 				}
@@ -2155,7 +2151,7 @@ loop_start:
 			if (!ppc_is_imm16 (ins->inst_imm)) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_regstate_next_int (cfg->rs);
+				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
@@ -2163,7 +2159,7 @@ loop_start:
 		case OP_LOCALLOC_IMM:
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg1 = temp->dreg;
 			ins->opcode = OP_LOCALLOC;
 			break;
@@ -2191,7 +2187,7 @@ loop_start:
 				break;
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_offset;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
@@ -2201,7 +2197,7 @@ loop_start:
 		case OP_STOREI4_MEMBASE_IMM:
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg1 = temp->dreg;
 			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			last_ins = temp;
@@ -2210,7 +2206,7 @@ loop_start:
 		case OP_R4CONST:
 			NEW_INS (cfg, temp, OP_ICONST);
 			temp->inst_c0 = (guint32)ins->inst_p0;
-			temp->dreg = mono_regstate_next_int (cfg->rs);
+			temp->dreg = mono_alloc_ireg (cfg);
 			ins->inst_basereg = temp->dreg;
 			ins->inst_offset = 0;
 			ins->opcode = ins->opcode == OP_R4CONST? OP_LOADR4_MEMBASE: OP_LOADR8_MEMBASE;
@@ -2223,8 +2219,7 @@ loop_start:
 		last_ins = ins;
 	}
 	bb->last_ins = last_ins;
-	bb->max_vreg = cfg->rs->next_vreg;
-	
+	bb->max_vreg = cfg->next_vreg;	
 }
 
 static guchar*
