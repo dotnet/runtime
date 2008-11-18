@@ -48,6 +48,7 @@ typedef struct {
 } MonoContext;
 
 typedef struct MonoCompileArch {
+	int fp_conv_var_offset;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
@@ -162,6 +163,15 @@ typedef struct {
 	unsigned long lr;
 } MonoPPCStackFrame;
 
+#ifdef G_COMPILER_CODEWARRIOR
+#define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
+		register gpointer r1_var;					\
+		asm { mr r1_var, r1 };	\
+		MONO_CONTEXT_SET_BP ((ctx), r1);		\
+		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
+	} while (0)
+
+#else
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
 		gpointer r1;					\
 		__asm__ volatile("mr   %0,1" : "=r" (r1));	\
@@ -169,6 +179,7 @@ typedef struct {
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
 	} while (0)
 
+#endif
 #endif
 
 typedef struct {
