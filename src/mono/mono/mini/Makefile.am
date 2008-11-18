@@ -163,6 +163,12 @@ ppc_sources = \
 	exceptions-ppc.c	\
 	tramp-ppc.c
 
+ppc64_sources = \
+	mini-ppc64.c		\
+	mini-ppc64.h		\
+	exceptions-ppc64.c	\
+	tramp-ppc64.c
+
 arm_sources = \
 	mini-arm.c		\
 	mini-arm.h		\
@@ -309,9 +315,9 @@ arch_define=__ppc__
 endif
 
 if POWERPC64
-arch_sources = $(ppc_sources)
+arch_sources = $(ppc64_sources)
 arch_built=cpu-ppc64.h
-arch_define=__ppc__
+arch_define=__ppc64__
 endif
 
 if MIPS
@@ -430,7 +436,7 @@ cpu-ppc.h: cpu-ppc.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-ppc.md cpu-ppc.h ppcg4
 
 cpu-ppc64.h: cpu-ppc64.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-ppc64.md cpu-ppc64.h ppcg4
+	$(GENMDESC_PRG) $(srcdir)/cpu-ppc64.md cpu-ppc64.h ppc64_cpu_desc
 
 cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
@@ -512,7 +518,7 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(test_sources) \
 	$(x86_sources) cpu-x86.md \
 	$(amd64_sources) cpu-amd64.md \
-	$(ppc_sources) cpu-ppc.md \
+	$(ppc_sources) cpu-ppc.md cpu-ppc64.md \
 	$(arm_sources) cpu-arm.md \
 	$(mips_sources) cpu-mips.md \
 	$(sparc_sources) cpu-sparc.md \
