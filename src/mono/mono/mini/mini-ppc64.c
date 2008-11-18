@@ -188,6 +188,38 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return -1;
 }
 
+static gboolean
+is_load_sequence (guint32 *seq)
+{
+	return ppc_opcode (seq [0]) == 15 && /* lis */
+		ppc_opcode (seq [1]) == 24 && /* ori */
+		ppc_opcode (seq [2]) == 30 && /* sldi */
+		ppc_opcode (seq [3]) == 25 && /* oris */
+		ppc_opcode (seq [4]) == 24; /* ori */
+}
+
+/* code must point to the blrl */
+gboolean
+mono_ppc_is_direct_call_sequence (guint32 *code)
+{
+	g_assert(*code == 0x4e800021 || *code == 0x4e800020 || *code == 0x4e800420);
+
+	/* the thunk-less direct call sequence: lis/ori/sldi/oris/ori/mtlr/blrl */
+	if (ppc_opcode (code [-1]) == 31) { /* mtlr */
+		if ((ppc_opcode (code [-2]) == 58 && ppc_opcode (code [-3]) == 58) || /* ld/ld */
+		    (ppc_opcode (code [-2]) == 24 && ppc_opcode (code [-3]) == 31)) { /* mr/nop */
+			/* FIXME: remove this assert - just for debugging */
+			g_assert (is_load_sequence (&code [-8]));
+			if (is_load_sequence (&code [-8]))
+				return TRUE;
+		} else {
+			if (is_load_sequence (&code [-6]))
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 gpointer
 mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 {
@@ -204,13 +236,10 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 	if (*code != 0x4e800021)
 		return NULL;
 
-	/* the thunk-less direct call sequence: lis/ori/sldi/oris/ori/mtlr/blrl */
-	if (ppc_opcode (code [-1]) == 31 && ppc_opcode (code [-2]) == 24 &&
-			ppc_opcode (code [-3]) == 25 && ppc_opcode (code [-4]) == 30 &&
-			ppc_opcode (code [-5]) == 24 && ppc_opcode (code [-6]) == 15) {
+	if (mono_ppc_is_direct_call_sequence (code))
 		return NULL;
-	}
 
+	/* FIXME: more sanity checks here */
 	/* OK, we're now at the 'blrl' instruction. Now walk backwards
 	till we get to a 'mtlr rA' */
 	for (; --code;) {
@@ -2296,7 +2325,7 @@ handle_thunk (int absolute, guchar *code, const guchar *target) {
 }
 
 void
-ppc_patch (guchar *code, const guchar *target)
+ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 {
 	guint32 ins = *(guint32*)code;
 	guint32 prim = ppc_opcode (ins);
@@ -2306,6 +2335,7 @@ ppc_patch (guchar *code, const guchar *target)
 	if (prim == 18) {
 		// prefer relative branches, they are more position independent (e.g. for AOT compilation).
 		gint diff = target - code;
+		g_assert (!is_fd);
 		if (diff >= 0){
 			if (diff <= 33554431){
 				ins = (18 << 26) | (diff) | (ins & 1);
@@ -2343,6 +2373,7 @@ ppc_patch (guchar *code, const guchar *target)
 	
 	
 	if (prim == 16) {
+		g_assert (!is_fd);
 		// absolute address
 		if (ins & 2) {
 			guint32 li = (gulong)target;
@@ -2367,27 +2398,53 @@ ppc_patch (guchar *code, const guchar *target)
 	}
 
 	if (prim == 15 || ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
-		guint32 *seq;
+		guint32 *seq = (guint32*)code;
+		guint32 *branch_ins;
+
 		/* the trampoline code will try to patch the blrl, blr, bcctr */
 		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
-			code -= 24;
+			branch_ins = seq;
+			if (ppc_opcode (seq [-3]) == 58 || ppc_opcode (seq [-3]) == 31) /* ld || mr */
+				code -= 32;
+			else
+				code -= 24;
+		} else {
+			if (ppc_opcode (seq [5]) == 58 || ppc_opcode (seq [5]) == 31) /* ld || mr */
+				branch_ins = seq + 8;
+			else
+				branch_ins = seq + 6;
 		}
-		/* this is the lis/ori/sldi/oris/ori/mtlr/blrl sequence */
+
 		seq = (guint32*)code;
-		g_assert (ppc_opcode (seq [0]) == 15); /* lis */
-		g_assert (ppc_opcode (seq [1]) == 24); /* ori */
-		g_assert (ppc_opcode (seq [2]) == 30); /* sldi */
-		g_assert (ppc_opcode (seq [3]) == 25); /* oris */
-		g_assert (ppc_opcode (seq [4]) == 24); /* ori */
-		g_assert (ppc_opcode (seq [5]) == 31); /* mtlr */
-		g_assert (seq [6] == 0x4e800021 || seq [6] == 0x4e800020 || seq [6] == 0x4e800420);
+		/* this is the lis/ori/sldi/oris/ori/(ld/ld|mr/nop)/mtlr/blrl sequence */
+		g_assert (mono_ppc_is_direct_call_sequence (branch_ins));
+
+		if (ppc_opcode (seq [5]) == 58) {	/* ld */
+			g_assert (ppc_opcode (seq [6]) == 58); /* ld */
+
+			if (!is_fd) {
+				guint8 *buf = (guint8*)&seq [5];
+				ppc_mr (buf, ppc_r0, ppc_r11);
+				ppc_nop (buf);
+			}
+		} else {
+			if (is_fd)
+				target = mono_get_addr_from_ftnptr ((gpointer)target);
+		}
+
 		/* FIXME: make this thread safe */
-		ppc_load_sequence (code, ppc_r0, target);
-		mono_arch_flush_icache (code - 8, 8);
+		/* FIXME: we're assuming we're using r11 here */
+		ppc_load_sequence (code, ppc_r11, target);
+		mono_arch_flush_icache (code, 28);
 	} else {
 		g_assert_not_reached ();
 	}
-//	g_print ("patched with 0x%08x\n", ins);
+}
+
+void
+ppc_patch (guchar *code, const guchar *target)
+{
+	ppc_patch_full (code, target, FALSE);
 }
 
 static guint8*
@@ -2751,7 +2808,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI8_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
-				ppc_ld (code, ins->dreg, ins->inst_offset >> 2, ins->inst_basereg);
+				ppc_load_reg (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
 				g_assert_not_reached ();
 			}
@@ -2820,6 +2877,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_extsh (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ICONV_TO_I4:
+		case OP_SEXT_I4:
 			ppc_extsw (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ICONV_TO_U1:
@@ -2868,6 +2926,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_addc (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IADD:
+		case OP_LADD:
 			ppc_add (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ADC:
@@ -2883,6 +2942,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
+		case OP_LADD_IMM:
 			if (ppc_is_imm16 (ins->inst_imm)) {
 				ppc_addi (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			} else {
@@ -2966,6 +3026,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SUB_IMM:
 		case OP_ISUB_IMM:
+		case OP_LSUB_IMM:
 			// we add the negated value
 			if (ppc_is_imm16 (-ins->inst_imm))
 				ppc_addi (code, ins->dreg, ins->sreg1, -ins->inst_imm);
@@ -3215,7 +3276,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
 			if (FORCE_INDIR_CALL || cfg->method->dynamic) {
-				ppc_load_sequence (code, ppc_r0, 0);
+				ppc_load_func (code, ppc_r0, 0);
 				ppc_mtlr (code, ppc_r0);
 				ppc_blrl (code);
 			} else {
@@ -3387,6 +3448,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CEQ:
 		case OP_ICEQ:
+		case OP_LCEQ:
 			ppc_li (code, ins->dreg, 0);
 			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 2);
 			ppc_li (code, ins->dreg, 1);
@@ -3395,6 +3457,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CLT_UN:
 		case OP_ICLT:
 		case OP_ICLT_UN:
+		case OP_LCLT:
+		case OP_LCLT_UN:
 			ppc_li (code, ins->dreg, 1);
 			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
 			ppc_li (code, ins->dreg, 0);
@@ -3735,6 +3799,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
 		unsigned char *ip = patch_info->ip.i + code;
 		unsigned char *target;
+		gboolean is_fd = FALSE;
 
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
@@ -3787,10 +3852,14 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_EXC_OVF:
 			/* everything is dealt with at epilog output time */
 			continue;
+		case MONO_PATCH_INFO_INTERNAL_METHOD:
+		case MONO_PATCH_INFO_ABS:
+			is_fd = TRUE;
+			break;
 		default:
 			break;
 		}
-		ppc_patch (ip, target);
+		ppc_patch_full (ip, target, is_fd);
 	}
 }
 

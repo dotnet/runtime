@@ -60,6 +60,9 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	guint32 short_branch;
 	MonoDomain *domain = mono_domain_get ();
 
+	/* FIXME: handle function descriptors */
+	g_assert_not_reached ();
+
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = 4;
 	    
@@ -109,17 +112,9 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 	}
 
 	/* Sanity check: instruction must be 'blrl' */
-	g_assert(*code == 0x4e800021);
+	g_assert (mono_ppc_is_direct_call_sequence (code));
 
-	/* the thunk-less direct call sequence: lis/ori/mtlr/blrl (or lis/ori/rldcicr/oris/ori/mtlr/blrl) */
-	if (ppc_opcode (code [-1]) == 31 && // mtlr
-	    ((ppc_opcode (code [-2]) == 24 && ppc_opcode (code [-3]) == 25 && ppc_opcode (code [-4]) == 30 && ppc_opcode (code [-5]) == 24 && ppc_opcode (code [-6]) == 15) // || //   ori, oris, rldicicr, ori, lis
-	     //(ppc_opcode (code [-2]) == 58 && ppc_opcode (code [-3]) == 24 && ppc_opcode (code [-4]) == 25 && ppc_opcode (code [-5]) == 30 && ppc_opcode (code [-6]) == 24 && ppc_opcode (code [-7]) == 15) // ld, ori, oris, rldicicr, ori, lis
-	     )) {
-		ppc_patch ((guint8*)code, addr);
-		return;
-	}
-	g_assert_not_reached ();
+	ppc_patch ((guint8*)code, addr);
 }
 
 void

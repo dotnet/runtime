@@ -50,9 +50,9 @@ nop: len:4
 relaxed_nop: len:4
 break: len:4
 jmp: len:92
-call: dest:a clob:c len:28
+call: dest:a clob:c len:36
 br: len:4
-throw: src1:i len:20
+throw: src1:i len:40
 rethrow: src1:i len:20
 ckfinite: dest:f src1:f
 ppc_check_finite: src1:i len:16
@@ -74,7 +74,7 @@ fcompare: src1:f src2:f len:12
 oparglist: src1:i len:12
 setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
-voidcall: len:28 clob:c
+voidcall: len:36 clob:c
 voidcall_reg: src1:i len:12 clob:c
 voidcall_membase: src1:b len:12 clob:c
 fcall: dest:g len:16 clob:c
@@ -97,6 +97,7 @@ store_membase_reg: dest:b src1:i len:12
 storei1_membase_reg: dest:b src1:i len:12
 storei2_membase_reg: dest:b src1:i len:12
 storei4_membase_reg: dest:b src1:i len:12
+storei8_membase_reg: dest:b src1:i len:12
 storer4_membase_reg: dest:b src1:f len:16
 storer8_membase_reg: dest:b src1:f len:12
 load_membase: dest:i src1:b len:12
@@ -106,6 +107,7 @@ loadi2_membase: dest:i src1:b len:12
 loadu2_membase: dest:i src1:b len:12
 loadi4_membase: dest:i src1:b len:12
 loadu4_membase: dest:i src1:b len:12
+loadi8_membase: dest:i src1:b len:12
 loadr4_membase: dest:f src1:b len:12
 loadr8_membase: dest:f src1:b len:12
 load_memindex: dest:i src1:b src2:i len:4
@@ -235,6 +237,7 @@ int_not: dest:i src1:i len:4
 int_conv_to_i1: dest:i src1:i len:8
 int_conv_to_i2: dest:i src1:i len:8
 int_conv_to_i4: dest:i src1:i len:4
+sext_i4: dest:i src1:i len:4
 int_conv_to_r4: dest:f src1:i len:36
 int_conv_to_r8: dest:f src1:i len:36
 int_conv_to_u4: dest:i src1:i
@@ -348,6 +351,12 @@ long_cgt: dest:i len:12
 long_cgt_un: dest:i len:12
 long_clt: dest:i len:12
 long_clt_un: dest:i len:12
+
+long_add_imm: dest:i src1:i clob:1 len:4
+long_sub_imm: dest:i src1:i clob:1 len:4
+long_and_imm: dest:i src1:i clob:1 len:4
+long_or_imm: dest:i src1:i clob:1 len:4
+long_xor_imm: dest:i src1:i clob:1 len:4
 
 lcompare: src1:i src2:i len:4
 lcompare_imm: src1:i len:12

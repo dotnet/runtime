@@ -23,6 +23,7 @@
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 void ppc_patch (guchar *code, const guchar *target);
+void ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd);
 
 struct MonoLMF {
 	gpointer    previous_lmf;
@@ -222,5 +223,6 @@ typedef struct {
 #endif
 
 extern void mono_ppc_emitted (guint8 *code, ssize_t length, const char *format, ...);
+extern gboolean mono_ppc_is_direct_call_sequence (guint32 *code);
 
 #endif /* __MONO_MINI_PPC_H__ */
