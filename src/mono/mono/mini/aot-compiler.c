@@ -441,7 +441,7 @@ emit_alignment (MonoAotCompile *acfg, int size)
 }
 
 static void
-emit_pointer (MonoAotCompile *acfg, const char *target)
+emit_pointer_unaligned (MonoAotCompile *acfg, const char *target)
 {
 	BinReloc *reloc;
 
@@ -460,6 +460,13 @@ emit_pointer (MonoAotCompile *acfg, const char *target)
 		g_print ("reloc: %s at %d\n", target, acfg->cur_section->cur_offset);
 	}
 	acfg->cur_section->cur_offset += sizeof (gpointer);
+}
+
+static void
+emit_pointer (MonoAotCompile *acfg, const char *target)
+{
+	emit_alignment (acfg, sizeof (gpointer));
+	emit_pointer_unaligned (acfg, target);
 }
 
 static void
@@ -552,6 +559,8 @@ enum {
 	SECT_DATA,
 	SECT_BSS,
 	SECT_DEBUG_FRAME,
+	SECT_DEBUG_INFO,
+	SECT_DEBUG_ABBREV,
 	SECT_SHSTRTAB,
 	SECT_SYMTAB,
 	SECT_STRTAB,
@@ -605,6 +614,8 @@ static SectInfo section_info [] = {
 	{".data", SHT_PROGBITS, 0, 3, 8},
 	{".bss", SHT_NOBITS, 0, 3, 8},
 	{".debug_frame", SHT_PROGBITS, 0, 0, 8},
+	{".debug_info", SHT_PROGBITS, 0, 0, 1},
+	{".debug_abbrev", SHT_PROGBITS, 0, 0, 1},
 	{".shstrtab", SHT_STRTAB, 0, 0, 1},
 	{".symtab", SHT_SYMTAB, sizeof (ElfSymbol), 0, SIZEOF_VOID_P},
 	{".strtab", SHT_STRTAB, 0, 0, 1}
@@ -1197,9 +1208,11 @@ emit_writeout (MonoAotCompile *acfg)
 	file_offset = ALIGN_TO (file_offset, secth [SECT_TEXT].sh_addralign);
 	virt_offset = file_offset;
 	secth [SECT_TEXT].sh_addr = secth [SECT_TEXT].sh_offset = file_offset;
-	size = sections [SECT_TEXT]->cur_offset;
-	secth [SECT_TEXT].sh_size = size;
-	file_offset += size;
+	if (sections [SECT_TEXT]) {
+		size = sections [SECT_TEXT]->cur_offset;
+		secth [SECT_TEXT].sh_size = size;
+		file_offset += size;
+	}
 
 	file_offset = ALIGN_TO (file_offset, secth [SECT_DYNAMIC].sh_addralign);
 	virt_offset = file_offset;
@@ -1227,17 +1240,21 @@ emit_writeout (MonoAotCompile *acfg)
 	virt_offset = ALIGN_TO (virt_offset, secth [SECT_DATA].sh_addralign);
 	secth [SECT_DATA].sh_addr = virt_offset;
 	secth [SECT_DATA].sh_offset = file_offset;
-	size = sections [SECT_DATA]->cur_offset;
-	secth [SECT_DATA].sh_size = size;
-	file_offset += size;
-	virt_offset += size;
+	if (sections [SECT_DATA]) {
+		size = sections [SECT_DATA]->cur_offset;
+		secth [SECT_DATA].sh_size = size;
+		file_offset += size;
+		virt_offset += size;
+	}
 
 	file_offset = ALIGN_TO (file_offset, secth [SECT_BSS].sh_addralign);
 	virt_offset = ALIGN_TO (virt_offset, secth [SECT_BSS].sh_addralign);
 	secth [SECT_BSS].sh_addr = virt_offset;
 	secth [SECT_BSS].sh_offset = file_offset;
-	size = sections [SECT_BSS]->cur_offset;
-	secth [SECT_BSS].sh_size = size;
+	if (sections [SECT_BSS]) {
+		size = sections [SECT_BSS]->cur_offset;
+		secth [SECT_BSS].sh_size = size;
+	}
 
 	/* virtual doesn't matter anymore */
 	file_offset = ALIGN_TO (file_offset, secth [SECT_DEBUG_FRAME].sh_addralign);
@@ -1247,6 +1264,22 @@ emit_writeout (MonoAotCompile *acfg)
  	else
  		size = 0;
  	secth [SECT_DEBUG_FRAME].sh_size = size;
+ 	file_offset += size;
+
+ 	secth [SECT_DEBUG_INFO].sh_offset = file_offset;
+ 	if (sections [SECT_DEBUG_INFO])
+ 		size = sections [SECT_DEBUG_INFO]->cur_offset;
+ 	else
+ 		size = 0;
+ 	secth [SECT_DEBUG_INFO].sh_size = size;
+ 	file_offset += size;
+
+ 	secth [SECT_DEBUG_ABBREV].sh_offset = file_offset;
+ 	if (sections [SECT_DEBUG_ABBREV])
+ 		size = sections [SECT_DEBUG_ABBREV]->cur_offset;
+ 	else
+ 		size = 0;
+ 	secth [SECT_DEBUG_ABBREV].sh_size = size;
  	file_offset += size;
 
 	file_offset = ALIGN_TO (file_offset, secth [SECT_SHSTRTAB].sh_addralign);
@@ -1394,20 +1427,32 @@ emit_writeout (MonoAotCompile *acfg)
 	fwrite (relocs, secth [SECT_RELA_DYN].sh_size, 1, file);
 
 	/* .text */
-	fseek (file, secth [SECT_TEXT].sh_offset, SEEK_SET);
-	fwrite (sections [SECT_TEXT]->data, sections [SECT_TEXT]->cur_offset, 1, file);
+	if (sections [SECT_TEXT]) {
+		fseek (file, secth [SECT_TEXT].sh_offset, SEEK_SET);
+		fwrite (sections [SECT_TEXT]->data, sections [SECT_TEXT]->cur_offset, 1, file);
+	}
 	/* .dynamic */
 	fwrite (dynamic, sizeof (dynamic), 1, file);
+
 	/* .got.plt */
 	size = secth [SECT_DYNAMIC].sh_addr;
 	fwrite (&size, sizeof (size), 1, file);
+
 	/* .data */
-	fseek (file, secth [SECT_DATA].sh_offset, SEEK_SET);
-	fwrite (sections [SECT_DATA]->data, sections [SECT_DATA]->cur_offset, 1, file);
+	if (sections [SECT_DATA]) {
+		fseek (file, secth [SECT_DATA].sh_offset, SEEK_SET);
+		fwrite (sections [SECT_DATA]->data, sections [SECT_DATA]->cur_offset, 1, file);
+	}
 
 	fseek (file, secth [SECT_DEBUG_FRAME].sh_offset, SEEK_SET);
 	if (sections [SECT_DEBUG_FRAME])
 		fwrite (sections [SECT_DEBUG_FRAME]->data, sections [SECT_DEBUG_FRAME]->cur_offset, 1, file);
+	fseek (file, secth [SECT_DEBUG_INFO].sh_offset, SEEK_SET);
+	if (sections [SECT_DEBUG_INFO])
+		fwrite (sections [SECT_DEBUG_INFO]->data, sections [SECT_DEBUG_INFO]->cur_offset, 1, file);
+	fseek (file, secth [SECT_DEBUG_ABBREV].sh_offset, SEEK_SET);
+	if (sections [SECT_DEBUG_ABBREV])
+		fwrite (sections [SECT_DEBUG_ABBREV]->data, sections [SECT_DEBUG_ABBREV]->cur_offset, 1, file);
 	fseek (file, secth [SECT_SHSTRTAB].sh_offset, SEEK_SET);
 	fwrite (sh_str_table.data->str, sh_str_table.data->len, 1, file);
 	fseek (file, secth [SECT_SYMTAB].sh_offset, SEEK_SET);
@@ -4972,12 +5017,9 @@ static int hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 
 #endif
 
 static void
-emit_dwarf_info (MonoAotCompile *acfg)
+emit_cie (MonoAotCompile *acfg)
 {
 #if defined(USE_ELF_WRITER) && defined(__x86_64__)
-	int i;
-	char symbol [128], symbol2 [128];
-
 	emit_section_change (acfg, ".debug_frame", 0);
 
 	/* Emit a CIE */
@@ -5005,79 +5047,116 @@ emit_dwarf_info (MonoAotCompile *acfg)
 
 	emit_alignment (acfg, sizeof (gpointer));
 	emit_label (acfg, ".Lcie0_end");
+#endif
+}
+
+static void
+emit_pointer_value (MonoAotCompile *acfg, gpointer ptr)
+{
+	gssize val = (gssize)ptr;
+	emit_bytes (acfg, (guint8*)&val, sizeof (gpointer));
+}
+
+static void
+emit_die (MonoAotCompile *acfg, int die_index, char *start_symbol, char *end_symbol,
+		  guint8 *code, guint32 code_size, GSList *unwind_ops)
+{
+#if defined(USE_ELF_WRITER) && defined(__x86_64__)
+	char symbol [128];
+	GSList *l;
+	MonoUnwindOp *op;
+	int loc;
+
+	emit_section_change (acfg, ".debug_frame", 0);
+
+	sprintf (symbol, ".Ldie%d_end", die_index);
+	emit_symbol_diff (acfg, symbol, ".", -4); /* length */
+	emit_int32 (acfg, 0); /* CIE_pointer */
+	if (start_symbol) {
+		emit_pointer (acfg, start_symbol); /* initial_location */
+		emit_symbol_diff (acfg, end_symbol, start_symbol, 0); /* address_range */
+		emit_int32 (acfg, 0);
+	} else {
+		emit_pointer_value (acfg, code);
+		emit_int32 (acfg, code_size);
+		emit_int32 (acfg, 0);
+	}
+
+	/* Convert the list of MonoUnwindOps to the format used by DWARF */
+	loc = 0;
+	l = unwind_ops;
+#ifdef __x86_64__
+	/* Skip the first two ops which are in the CIE */
+	l = l->next->next;
+#endif
+	for (; l; l = l->next) {
+		op = l->data;
+
+		/* Convert the register from the hw encoding to the dwarf encoding */
+#ifdef __x86_64__
+		op->reg = hw_reg_to_dwarf_reg [op->reg];
+#else
+		g_assert_not_reached ();
+#endif
+		/* Emit an advance_loc if neccesary */
+		if (op->when > loc) {
+			g_assert (op->when - loc < 32);
+			emit_byte (acfg, DW_CFA_advance_loc | (op->when - loc));
+		}			
+
+		switch (op->op) {
+		case DW_CFA_def_cfa:
+			emit_byte (acfg, op->op);
+			emit_uleb128 (acfg, op->reg);
+			emit_uleb128 (acfg, op->val);
+			break;
+		case DW_CFA_def_cfa_offset:
+			emit_byte (acfg, op->op);
+			emit_uleb128 (acfg, op->val);
+			break;
+		case DW_CFA_def_cfa_register:
+			emit_byte (acfg, op->op);
+			emit_uleb128 (acfg, op->reg);
+			break;
+		case DW_CFA_offset:
+			emit_byte (acfg, DW_CFA_offset | op->reg);
+			emit_uleb128 (acfg, op->val / - 8);
+			break;
+		default:
+			g_assert_not_reached ();
+			break;
+		}
+
+		loc = op->when;
+	}
+
+	emit_alignment (acfg, sizeof (gpointer));
+	sprintf (symbol, ".Ldie%d_end", die_index);
+	emit_label (acfg, symbol);
+#endif
+}
+
+static void
+emit_dwarf_info (MonoAotCompile *acfg)
+{
+#if defined(USE_ELF_WRITER) && defined(__x86_64__)
+	int i;
+	char symbol [128], symbol2 [128];
+
+	emit_cie (acfg);
 
 	/* DIEs for methods */
 	for (i = 0; i < acfg->nmethods; ++i) {
 		MonoCompile *cfg = acfg->cfgs [i];
-		GSList *l;
-		MonoUnwindOp *op;
-		int loc;
 
 		if (!cfg)
 			continue;
 
-		sprintf (symbol, ".Ldie%d_end", i);
-		emit_symbol_diff (acfg, symbol, ".", -4); /* length */
-		emit_int32 (acfg, 0); /* CIE_pointer */
 		sprintf (symbol, ".Lm_%x", i);
 		sprintf (symbol2, ".Lme_%x", i);
-		emit_pointer (acfg, symbol); /* initial_location */
-		emit_symbol_diff (acfg, symbol2, symbol, 0); /* address_range */
-		emit_int32 (acfg, 0);
 
-		/* Convert the list of MonoUnwindOps to the format used by DWARF */
-		loc = 0;
-		l = cfg->unwind_ops;
-#ifdef __x86_64__
-		/* Skip the first two ops which are in the CIE */
-		l = l->next->next;
-#endif
-		for (; l; l = l->next) {
-			op = l->data;
-
-			/* Convert the register from the hw encoding to the dwarf encoding */
-#ifdef __x86_64__
-			op->reg = hw_reg_to_dwarf_reg [op->reg];
-#else
-			g_assert_not_reached ();
-#endif
-			/* Emit an advance_loc if neccesary */
-			if (op->when > loc) {
-				g_assert (op->when - loc < 32);
-				emit_byte (acfg, DW_CFA_advance_loc | (op->when - loc));
-			}			
-
-			switch (op->op) {
-			case DW_CFA_def_cfa:
-				emit_byte (acfg, op->op);
-				emit_uleb128 (acfg, op->reg);
-				emit_uleb128 (acfg, op->val);
-				break;
-			case DW_CFA_def_cfa_offset:
-				emit_byte (acfg, op->op);
-				emit_uleb128 (acfg, op->val);
-				break;
-			case DW_CFA_def_cfa_register:
-				emit_byte (acfg, op->op);
-				emit_uleb128 (acfg, op->reg);
-				break;
-			case DW_CFA_offset:
-				emit_byte (acfg, DW_CFA_offset | op->reg);
-				emit_uleb128 (acfg, op->val / - 8);
-				break;
-			default:
-				g_assert_not_reached ();
-				break;
-			}
-
-			loc = op->when;
-		}
-
-		emit_alignment (acfg, sizeof (gpointer));
-		sprintf (symbol, ".Ldie%d_end", i);
-		emit_label (acfg, symbol);
+		emit_die (acfg, i, symbol, symbol2, NULL, 0, cfg->unwind_ops);
 	}
-
 #endif /* ELF_WRITER */
 }
 
@@ -5323,6 +5402,198 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	
 	return 0;
 }
+ 
+/*
+ * Support for emitting debug info for JITted code.
+ *
+ *   This works as follows:
+ * - the user calls a gdb macro
+ * - the macro calls mono_xdebug_emit (), which emits a shared library containing
+ *   DWARF debug info.
+ * - the macro loads this shared library using add-symbol-file.
+ *
+ * This is based on the xdebug functionality in the Kaffe Java VM.
+ * 
+ * The functionality is in this file so it can reuse the ELF writer. We could
+ * emit an assembly file instead, which would make calling mono_xdebug_emit ()
+ * unneccesary, but then we would have to emit assembly by hand, since the assembly
+ * writer is #ifdef-ed out on most platforms.
+ */
+
+/* The recommended gdb macro is: */
+/*
+  define xdb
+  shell rm -f xdb.so
+  call mono_xdebug_emit ()
+  add-symbol-file xdb.so 0
+  end
+*/
+
+#define DW_TAG_compile_unit           0x11
+#define DW_TAG_subprogram         0x2e
+
+#define DW_FORM_addr   0x01
+#define DW_FORM_block2 0x03
+#define DW_FORM_block4 0x04
+#define DW_FORM_data2  0x05
+#define DW_FORM_data4  0x06
+#define DW_FORM_data8  0x07
+#define DW_FORM_string 0x08
+#define DW_FORM_block  0x09
+#define DW_FORM_block1 0x0a
+#define DW_FORM_data1  0x0b
+#define DW_FORM_flag   0x0c
+#define DW_FORM_sdata  0x0d
+#define DW_FORM_strp      0x0e
+#define DW_FORM_udata     0x0f
+#define DW_FORM_ref_addr  0x10
+#define DW_FORM_ref1      0x11
+#define DW_FORM_ref2      0x12
+#define DW_FORM_ref4      0x13
+#define DW_FORM_ref8      0x14
+#define DW_FORM_ref_udata 0x15
+#define DW_FORM_indirect  0x16
+
+static void
+emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
+				   int *attrs, int attrs_len)
+{
+	int i;
+
+	emit_uleb128 (acfg, code);
+	emit_uleb128 (acfg, tag);
+	emit_byte (acfg, has_child);
+
+	for (i = 0; i < attrs_len; i++)
+		emit_uleb128 (acfg, attrs [i]);
+	emit_uleb128 (acfg, 0);
+	emit_uleb128 (acfg, 0);
+}
+
+#define DW_AT_name       0x03
+#define DW_AT_stmt_list        0x10
+#define DW_AT_low_pc           0x11
+#define DW_AT_high_pc          0x12
+#define DW_AT_language         0x13
+#define DW_AT_comp_dir         0x1b
+#define DW_AT_producer         0x25
+
+static int compile_unit_attr [] = {
+	DW_AT_producer     ,DW_FORM_string,
+    DW_AT_name         ,DW_FORM_string,
+    DW_AT_comp_dir     ,DW_FORM_string,
+    DW_AT_low_pc       ,DW_FORM_addr,
+    DW_AT_high_pc      ,DW_FORM_addr,
+};
+
+static int subprogram_attr [] = {
+	DW_AT_name     ,DW_FORM_string,
+    DW_AT_low_pc       ,DW_FORM_addr,
+    DW_AT_high_pc      ,DW_FORM_addr,
+};
+
+static MonoAotCompile *xdebug_acfg;
+static int die_index;
+
+/*
+ * mono_save_xdebug_info:
+ *
+ *   Emit debugging info for METHOD into an assembly file which can be assembled
+ * and loaded into gdb to provide debugging info for JITted code.
+ */
+void
+mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, GSList *unwind_info)
+{
+	// FIXME: Test with the assembly writer
+#ifdef USE_ELF_WRITER
+	char *s, *build_info, *name;
+	MonoAotCompile *acfg;
+
+	// FIXME: Locking
+
+	if (!xdebug_acfg) {
+		acfg = g_new0 (MonoAotCompile, 1);
+		acfg->mempool = mono_mempool_new ();
+		acfg->aot_opts.outfile = g_strdup ("xdb.so");
+
+		emit_start (acfg);
+
+		xdebug_acfg = acfg;
+
+		emit_section_change (acfg, ".debug_abbrev", 0);
+		emit_dwarf_abbrev (acfg, 1, DW_TAG_compile_unit, TRUE, compile_unit_attr, 
+						   G_N_ELEMENTS (compile_unit_attr));
+		emit_dwarf_abbrev (acfg, 2, DW_TAG_subprogram, FALSE, subprogram_attr, 
+						   G_N_ELEMENTS (subprogram_attr));
+		emit_byte (acfg, 0);
+
+		emit_section_change (acfg, ".debug_info", 0);
+		emit_symbol_diff (acfg, ".Ldebug_info_end", ".", -4); /* length */
+		emit_int16 (acfg, 0x3); /* DWARF version 3 */
+		emit_int32 (acfg, 0); /* .debug_abbrev offset */
+		emit_byte (acfg, sizeof (gpointer)); /* address size */
+
+		/* Compilation unit */
+		emit_uleb128 (acfg, 0x1);
+		build_info = mono_get_runtime_build_info ();
+		s = g_strdup_printf ("Mono AOT Compiler %s", build_info);
+		emit_string (acfg, s);
+		g_free (build_info);
+		g_free (s);
+		emit_string (acfg, "JITted code");
+		emit_string (acfg, "");
+		emit_pointer_value (acfg, 0);
+		emit_pointer_value (acfg, 0);
+
+		/* Emit this into a separate section so it gets placed at the end */
+		emit_section_change (acfg, ".debug_info", 1);
+		emit_label (acfg, ".Ldebug_info_end");
+		emit_section_change (acfg, ".debug_info", 0);
+
+		emit_cie (acfg);
+	}
+
+	acfg = xdebug_acfg;
+
+	emit_section_change (acfg, ".debug_info", 0);
+
+	emit_uleb128 (acfg, 0x2);
+	name = mono_method_full_name (method, FALSE);
+	emit_string (acfg, name);
+	g_free (name);
+	emit_pointer_value (acfg, code);
+	emit_pointer_value (acfg, code + code_size);
+
+	// FIXME: Allocate labels instead of using die_index
+	emit_die (acfg, die_index, NULL, NULL, code, code_size, unwind_info);
+	die_index ++;
+#else
+	g_error ("xdebug mode is not supported on this platform.");
+#endif
+}
+
+/*
+ * mono_xdebug_emit:
+ *
+ *   Save the debug info for JITted code into a shared object named 'xdb.so'. 
+ * Callable from gdb.
+ */
+void
+mono_xdebug_emit (void)
+{
+	static gboolean emitted;
+
+	if (xdebug_acfg == NULL) {
+		fprintf (stderr, "The runtime is not running in xdebug mode.\n");
+		return;
+	}
+
+	// FIXME: Make this callable multiple times
+	if (!emitted) {
+		emit_writeout (xdebug_acfg);
+		emitted = TRUE;
+	}
+}
 
 #else
 
@@ -5332,6 +5603,11 @@ int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	return 0;
+}
+
+void
+mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, GSList *unwind_info)
+{
 }
 
 #endif

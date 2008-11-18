@@ -1251,6 +1251,10 @@ void     mono_aot_register_globals          (gpointer *globals);
 /* This too */
 void     mono_aot_register_module           (gpointer *aot_info);
 
+void     mono_save_xdebug_info              (MonoMethod *method, guint8 *code, guint32 code_size, GSList *unwind_info) MONO_INTERNAL;
+/* This is an exported function */
+void     mono_xdebug_emit                   (void) MONO_INTERNAL;
+
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;
 
