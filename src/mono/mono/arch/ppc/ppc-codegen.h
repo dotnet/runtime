@@ -1,5 +1,11 @@
 /*
+   Authors:
+     Radek Doulik
+     Christopher Taylor <ct_AT_clemson_DOT_edu>
+     Andreas Faerber <andreas.faerber@web.de>
+
    Copyright (C)  2001 Radek Doulik
+   Copyright (C)  2007-2008 Andreas Faerber
 
    for testing do the following: ./test | as -o test.o
 */
@@ -134,8 +140,8 @@ enum {
 #define ppc_break(c) ppc_tw((c),31,0,0)
 #define  ppc_addi(c,D,A,d) ppc_emit32 (c, (14 << 26) | ((D) << 21) | ((A) << 16) | (guint16)(d))
 #define ppc_addis(c,D,A,d) ppc_emit32 (c, (15 << 26) | ((D) << 21) | ((A) << 16) | (guint16)(d))
-#define    ppc_li(c,D,v)   ppc_addi   (c, D, 0, (guint16)(v));
-#define   ppc_lis(c,D,v)   ppc_addis  (c, D, 0, (guint16)(v));
+#define    ppc_li(c,D,v)   ppc_addi   (c, D, 0, (guint16)(v))
+#define   ppc_lis(c,D,v)   ppc_addis  (c, D, 0, (guint16)(v))
 #define   ppc_lwz(c,D,d,a) ppc_emit32 (c, (32 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
 #define   ppc_lhz(c,D,d,a) ppc_emit32 (c, (40 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
 #define   ppc_lbz(c,D,d,a) ppc_emit32 (c, (34 << 26) | ((D) << 21) | ((a) << 16) | (guint16)(d))
@@ -244,17 +250,18 @@ my and Ximian's copyright to this code. ;)
 #define ppc_bnectrp(c,BO,BI) ppc_bcctr(c,BO,BI)
 #define ppc_bnectrlp(c,BO,BI) ppc_bcctr(c,BO,BI)
 
-#define ppc_bclrx(c,BO,BI,LK) ppc_emit32(c, (19 << 26) | (BO << 21 )| (BI << 16) | (0 << 11) | (16 << 1) | LK)
-#define ppc_bclr(c,BO,BI) ppc_bclrx(c,BO,BI,0)
-#define ppc_bclrl(c,BO,BI) ppc_bclrx(c,BO,BI,1)
+#define ppc_bclrx(c,BO,BI,BH,LK) ppc_emit32(c, (19 << 26) | ((BO) << 21 )| ((BI) << 16) | (0 << 13) | ((BH) << 11) | (16 << 1) | (LK))
+#define ppc_bclr(c,BO,BI,BH) ppc_bclrx(c,BO,BI,BH,0)
+#define ppc_bclrl(c,BO,BI,BH) ppc_bclrx(c,BO,BI,BH,1)
 
-#define ppc_bnelrp(c,BO,BI) ppc_bclr(c,BO,BI)
-#define ppc_bnelrlp(c,BO,BI) ppc_bclr(c,BO,BI)
+#define ppc_bnelrp(c,BO,BI) ppc_bclr(c,BO,BI,0)
+#define ppc_bnelrlp(c,BO,BI) ppc_bclr(c,BO,BI,0)
 
-#define ppc_cmp(c,cfrD,L,A,B) ppc_emit32(c, (31 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (B << 11) | (0x00000 << 1) | 0 )
+#define ppc_cmp(c,cfrD,L,A,B) ppc_emit32(c, (31 << 26) | ((cfrD) << 23) | (0 << 22) | ((L) << 21) | ((A) << 16) | ((B) << 11) | (0 << 1) | 0)
 #define ppc_cmpi(c,cfrD,L,A,B) ppc_emit32(c, (11 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (guint16)(B))
-#define ppc_cmpl(c,cfrD,L,A,B) ppc_emit32(c, (31 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (B << 11) | (32 << 1) | 0 )
+#define ppc_cmpl(c,cfrD,L,A,B) ppc_emit32(c, (31 << 26) | ((cfrD) << 23) | (0 << 22) | ((L) << 21) | ((A) << 16) | ((B) << 11) | (32 << 1) | 0)
 #define ppc_cmpli(c,cfrD,L,A,B) ppc_emit32(c, (10 << 26) | (cfrD << 23) | (0 << 22) | (L << 21) | (A << 16) | (guint16)(B))
+#define ppc_cmpw(c,cfrD,A,B) ppc_cmp(c, (cfrD), 0, (A), (B))
 
 #define ppc_cntlzwx(c,S,A,Rc) ppc_emit32(c, (31 << 26) | (S << 21) | (A << 16) | (0 << 11) | (26 << 1) | Rc)
 #define ppc_cntlzw(c,S,A) ppc_cntlzwx(c,S,A,0)
@@ -540,9 +547,18 @@ my and Ximian's copyright to this code. ;)
 #define ppc_rlwimi(c,A,S,SH,MB,ME) ppc_rlwimix(c,A,S,SH,MB,ME,0)
 #define ppc_rlwimid(c,A,S,SH,MB,ME) ppc_rlwimix(c,A,S,SH,MB,ME,1)
 
-#define ppc_rlwinmx(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (21 << 26) | (S << 21) | (A << 16) | (SH << 11) | (MB << 6) | (ME << 1) | Rc)
+#define ppc_rlwinmx(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (21 << 26) | ((S) << 21) | ((A) << 16) | ((SH) << 11) | ((MB) << 6) | ((ME) << 1) | (Rc))
 #define ppc_rlwinm(c,A,S,SH,MB,ME) ppc_rlwinmx(c,A,S,SH,MB,ME,0)
 #define ppc_rlwinmd(c,A,S,SH,MB,ME) ppc_rlwinmx(c,A,S,SH,MB,ME,1)
+#define ppc_extlwi(c,A,S,n,b) ppc_rlwinm(c,A,S, b, 0, (n) - 1)
+#define ppc_extrwi(c,A,S,n,b) ppc_rlwinm(c,A,S, (b) + (n), 32 - (n), 31)
+#define ppc_rotlwi(c,A,S,n) ppc_rlwinm(c,A,S, n, 0, 31)
+#define ppc_rotrwi(c,A,S,n) ppc_rlwinm(c,A,S, 32 - (n), 0, 31)
+#define ppc_slwi(c,A,S,n) ppc_rlwinm(c,A,S, n, 0, 31 - (n))
+#define ppc_srwi(c,A,S,n) ppc_rlwinm(c,A,S, 32 - (n), n, 31)
+#define ppc_clrlwi(c,A,S,n) ppc_rlwinm(c,A,S, 0, n, 31)
+#define ppc_clrrwi(c,A,S,n) ppc_rlwinm(c,A,S, 0, 0, 31 - (n))
+#define ppc_clrlslwi(c,A,S,b,n) ppc_rlwinm(c,A,S, n, (b) - (n), 31 - (n))
 
 #define ppc_rlwnmx(c,A,S,SH,MB,ME,Rc) ppc_emit32(c, (23 << 26) | (S << 21) | (A << 16) | (SH << 11) | (MB << 6) | (ME << 1) | Rc)
 #define ppc_rlwnm(c,A,S,SH,MB,ME) ppc_rlwnmx(c,A,S,SH,MB,ME,0)
