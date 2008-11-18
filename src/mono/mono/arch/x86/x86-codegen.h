@@ -1774,7 +1774,7 @@ typedef enum {
 	X86_SSE_PCMPGTB = 0x64,
 	X86_SSE_PCMPGTW = 0x65,
 	X86_SSE_PCMPGTD = 0x66,
-	X86_SSE_PCMPGTQ = 0x37, /*sse41*/
+	X86_SSE_PCMPGTQ = 0x37, /*sse42*/
 
 	X86_SSE_PSADBW = 0xf6,
 	
@@ -1834,7 +1834,8 @@ typedef enum {
 
 	X86_SSE_PREFETCH = 0x18,
 	X86_SSE_MOVNTPS = 0x2B,
-	X86_SSE_MOVHPD_MEMBASE_REG = 0x17
+ 	X86_SSE_MOVHPD_MEMBASE_REG = 0x17,
+ 	X86_SSE_MOVSD_MEMBASE_REG = 0x11,
 } X86_SSE_Opcode;
 
 
@@ -1891,6 +1892,12 @@ typedef enum {
 	do {    \
 		*(inst)++ = (unsigned char)0xF2;        \
 		x86_sse_alu_reg_reg ((inst), (opc), (dreg), (reg)); \
+	} while (0)
+
+#define x86_sse_alu_sd_membase_reg(inst,opc,basereg,disp,reg)	\
+	do {    \
+		*(inst)++ = (unsigned char)0xF2;        \
+		x86_sse_alu_membase_reg ((inst), (opc), (basereg), (disp), (reg));	\
 	} while (0)
 
 #define x86_sse_alu_ss_reg_reg(inst,opc,dreg,reg)       \
