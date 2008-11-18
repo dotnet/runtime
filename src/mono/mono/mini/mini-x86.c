@@ -4038,7 +4038,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_sse_alu_sd_membase_reg (code, X86_SSE_MOVSD_MEMBASE_REG, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, ins->sreg1);
 			x86_fld_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, TRUE);
 			break;
-			
+
+		case OP_INSERT_I2:
+			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+
 		case OP_STOREX_MEMBASE_REG:
 		case OP_STOREX_MEMBASE:
 			x86_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);

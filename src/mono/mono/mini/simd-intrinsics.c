@@ -66,6 +66,7 @@ without a OP_LDADDR.
 enum {
 	SIMD_EMIT_BINARY,
 	SIMD_EMIT_UNARY,
+	SIMD_EMIT_SETTER,
 	SIMD_EMIT_GETTER,
 	SIMD_EMIT_GETTER_QWORD,
 	SIMD_EMIT_CTOR,
@@ -392,10 +393,6 @@ static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ SN_op_Subtraction, OP_PSUBW, SIMD_EMIT_BINARY },
 };
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector8s_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddWithSaturation, OP_PADDW_SAT, SIMD_EMIT_BINARY },
@@ -436,6 +433,14 @@ static const SimdIntrinsc vector8s_intrinsics[] = {
 	{ SN_op_Multiply, OP_PMULW, SIMD_EMIT_BINARY },
 	{ SN_op_RightShift, OP_PSARW, SIMD_EMIT_SHIFT },
 	{ SN_op_Subtraction, OP_PSUBW, SIMD_EMIT_BINARY },
+	{ SN_set_V0, 0, SIMD_EMIT_SETTER },
+	{ SN_set_V1, 1, SIMD_EMIT_SETTER },
+	{ SN_set_V2, 2, SIMD_EMIT_SETTER },
+	{ SN_set_V3, 3, SIMD_EMIT_SETTER },
+	{ SN_set_V4, 4, SIMD_EMIT_SETTER },
+	{ SN_set_V5, 5, SIMD_EMIT_SETTER },
+	{ SN_set_V6, 6, SIMD_EMIT_SETTER },
+	{ SN_set_V7, 7, SIMD_EMIT_SETTER },
 };
 
 /*
@@ -584,6 +589,7 @@ apply_vreg_following_block_interference (MonoCompile *cfg, MonoInst *ins, int re
 	}
 	return FALSE;
 }
+
 /*
 This pass recalculate which vars need MONO_INST_INDIRECT.
 
@@ -702,8 +708,8 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 		if (!(vreg_flags [var->dreg] & VREG_SINGLE_BB_USE))
 			continue;
 		for (ins = target_bb [var->dreg]->code; ins; ins = ins->next) {
-			/*We can, pretty much kill it.*/
-			if (ins->dreg == var->dreg) {
+			/*We can avoid inserting the XZERO if the first use doesn't depend on the zero'ed value.*/
+			if (ins->dreg == var->dreg && ins->sreg1 != var->dreg && ins->sreg2 != var->dreg) {
 				break;
 			} else if (ins->sreg1 == var->dreg || ins->sreg2 == var->dreg) {
 				MonoInst *tmp;
@@ -880,6 +886,23 @@ mono_type_elements_shift_bits (MonoType *type)
 	g_assert_not_reached ();
 }
 
+
+static MonoInst*
+simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
+{
+	MonoInst *ins;
+
+	MONO_INST_NEW (cfg, ins, OP_INSERT_I2);
+	ins->klass = cmethod->klass;
+	/*This is a partial load so we encode the dependency on the previous value by setting dreg and sreg1 to the same value.*/
+	ins->dreg = ins->sreg1 = load_simd_vreg (cfg, cmethod, args [0]);
+	ins->type = STACK_I4;
+	ins->sreg2 = args [1]->dreg;
+	ins->inst_c0 = intrinsic->opcode;
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	return ins;
+}
 
 static MonoInst*
 simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
@@ -1175,6 +1198,8 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return simd_intrinsic_emit_binary (result, cfg, cmethod, args);
 	case SIMD_EMIT_UNARY:
 		return simd_intrinsic_emit_unary (result, cfg, cmethod, args);
+	case SIMD_EMIT_SETTER:
+		return simd_intrinsic_emit_setter (result, cfg, cmethod, args);
 	case SIMD_EMIT_GETTER:
 		return simd_intrinsic_emit_getter (result, cfg, cmethod, args);
 	case SIMD_EMIT_GETTER_QWORD:
