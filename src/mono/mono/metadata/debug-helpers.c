@@ -647,6 +647,11 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 		g_string_free (str, FALSE);
 	}
 
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
+	else
+		strcpy (wrapper, "");
+
 	if (signature) {
 		char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
 
@@ -658,8 +663,7 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 							   method->name, inst_desc ? inst_desc : "", tmpsig);
 		g_free (tmpsig);
 	} else {
-
-		res = g_strdup_printf ("%02d %s:%s%s", method->wrapper_type, klass_desc,
+		res = g_strdup_printf ("%s%s:%s%s", wrapper, klass_desc,
 							   method->name, inst_desc ? inst_desc : "");
 	}
 
