@@ -68,6 +68,8 @@
 #include <mono/utils/freebsd-elf64.h>
 #endif
 
+#include <mono/utils/freebsd-dwarf.h>
+
 #include "mini.h"
 
 #ifndef DISABLE_AOT
@@ -5429,31 +5431,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
   end
 */
 
-#define DW_TAG_compile_unit           0x11
-#define DW_TAG_subprogram         0x2e
-
-#define DW_FORM_addr   0x01
-#define DW_FORM_block2 0x03
-#define DW_FORM_block4 0x04
-#define DW_FORM_data2  0x05
-#define DW_FORM_data4  0x06
-#define DW_FORM_data8  0x07
-#define DW_FORM_string 0x08
-#define DW_FORM_block  0x09
-#define DW_FORM_block1 0x0a
-#define DW_FORM_data1  0x0b
-#define DW_FORM_flag   0x0c
-#define DW_FORM_sdata  0x0d
-#define DW_FORM_strp      0x0e
-#define DW_FORM_udata     0x0f
-#define DW_FORM_ref_addr  0x10
-#define DW_FORM_ref1      0x11
-#define DW_FORM_ref2      0x12
-#define DW_FORM_ref4      0x13
-#define DW_FORM_ref8      0x14
-#define DW_FORM_ref_udata 0x15
-#define DW_FORM_indirect  0x16
-
 static void
 emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
 				   int *attrs, int attrs_len)
@@ -5470,26 +5447,38 @@ emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
 	emit_uleb128 (acfg, 0);
 }
 
-#define DW_AT_name       0x03
-#define DW_AT_stmt_list        0x10
-#define DW_AT_low_pc           0x11
-#define DW_AT_high_pc          0x12
-#define DW_AT_language         0x13
-#define DW_AT_comp_dir         0x1b
-#define DW_AT_producer         0x25
+/* Abbrevations */
+#define AB_COMPILE_UNIT 1
+#define AB_SUBPROGRAM 3
+#define AB_PARAM 4
+#define AB_BASE_TYPE 5
 
 static int compile_unit_attr [] = {
 	DW_AT_producer     ,DW_FORM_string,
     DW_AT_name         ,DW_FORM_string,
     DW_AT_comp_dir     ,DW_FORM_string,
+	DW_AT_language     ,DW_FORM_data1,
     DW_AT_low_pc       ,DW_FORM_addr,
     DW_AT_high_pc      ,DW_FORM_addr,
 };
 
 static int subprogram_attr [] = {
-	DW_AT_name     ,DW_FORM_string,
-    DW_AT_low_pc       ,DW_FORM_addr,
-    DW_AT_high_pc      ,DW_FORM_addr,
+	DW_AT_name         , DW_FORM_string,
+    DW_AT_low_pc       , DW_FORM_addr,
+    DW_AT_high_pc      , DW_FORM_addr,
+	DW_AT_frame_base   , DW_FORM_block1
+};
+
+static int param_attr [] = {
+	DW_AT_name,     DW_FORM_string,
+	DW_AT_type,     DW_FORM_ref4,
+	DW_AT_location, DW_FORM_block1
+};
+
+static int base_type_attr [] = {
+	DW_AT_byte_size,   DW_FORM_data1,
+	DW_AT_encoding,    DW_FORM_data1,
+	DW_AT_name,        DW_FORM_string
 };
 
 static MonoAotCompile *xdebug_acfg;
@@ -5508,6 +5497,9 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, GSLi
 #ifdef USE_ELF_WRITER
 	char *s, *build_info, *name;
 	MonoAotCompile *acfg;
+	MonoMethodSignature *sig;
+	char **names;
+	int i;
 
 	// FIXME: Locking
 
@@ -5521,17 +5513,27 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, GSLi
 		xdebug_acfg = acfg;
 
 		emit_section_change (acfg, ".debug_abbrev", 0);
-		emit_dwarf_abbrev (acfg, 1, DW_TAG_compile_unit, TRUE, compile_unit_attr, 
-						   G_N_ELEMENTS (compile_unit_attr));
-		emit_dwarf_abbrev (acfg, 2, DW_TAG_subprogram, FALSE, subprogram_attr, 
-						   G_N_ELEMENTS (subprogram_attr));
+		emit_dwarf_abbrev (acfg, AB_COMPILE_UNIT, DW_TAG_compile_unit, TRUE, 
+						   compile_unit_attr, G_N_ELEMENTS (compile_unit_attr));
+		emit_dwarf_abbrev (acfg, AB_SUBPROGRAM, DW_TAG_subprogram, TRUE, 
+						   subprogram_attr, G_N_ELEMENTS (subprogram_attr));
+		emit_dwarf_abbrev (acfg, AB_PARAM, DW_TAG_formal_parameter, FALSE, 
+						   param_attr, G_N_ELEMENTS (param_attr));
+		emit_dwarf_abbrev (acfg, AB_BASE_TYPE, DW_TAG_base_type, FALSE, 
+						   base_type_attr, G_N_ELEMENTS (base_type_attr));
 		emit_byte (acfg, 0);
 
 		emit_section_change (acfg, ".debug_info", 0);
+		emit_label (acfg, ".debug_info_start");
 		emit_symbol_diff (acfg, ".Ldebug_info_end", ".", -4); /* length */
 		emit_int16 (acfg, 0x3); /* DWARF version 3 */
 		emit_int32 (acfg, 0); /* .debug_abbrev offset */
 		emit_byte (acfg, sizeof (gpointer)); /* address size */
+
+		/* Emit this into a separate section so it gets placed at the end */
+		emit_section_change (acfg, ".debug_info", 1);
+		emit_label (acfg, ".Ldebug_info_end");
+		emit_section_change (acfg, ".debug_info", 0);
 
 		/* Compilation unit */
 		emit_uleb128 (acfg, 0x1);
@@ -5542,13 +5544,16 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, GSLi
 		g_free (s);
 		emit_string (acfg, "JITted code");
 		emit_string (acfg, "");
+		emit_byte (acfg, DW_LANG_C89);
 		emit_pointer_value (acfg, 0);
 		emit_pointer_value (acfg, 0);
 
-		/* Emit this into a separate section so it gets placed at the end */
-		emit_section_change (acfg, ".debug_info", 1);
-		emit_label (acfg, ".Ldebug_info_end");
-		emit_section_change (acfg, ".debug_info", 0);
+		/* Base type */
+		emit_label (acfg, ".DIE_int");
+		emit_uleb128 (acfg, AB_BASE_TYPE);
+		emit_byte (acfg, 4);
+		emit_byte (acfg, DW_ATE_signed);
+		emit_string (acfg, "int");
 
 		emit_cie (acfg);
 	}
@@ -5557,12 +5562,44 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, GSLi
 
 	emit_section_change (acfg, ".debug_info", 0);
 
-	emit_uleb128 (acfg, 0x2);
+	/* Subprogram */
+	sig = mono_method_signature (method);
+	names = g_new0 (char *, sig->param_count);
+	mono_method_get_param_names (method, (const char **) names);
+
+	emit_uleb128 (acfg, AB_SUBPROGRAM);
 	name = mono_method_full_name (method, FALSE);
 	emit_string (acfg, name);
 	g_free (name);
 	emit_pointer_value (acfg, code);
 	emit_pointer_value (acfg, code + code_size);
+	/* frame_base */
+	emit_byte (acfg, 2);
+	emit_byte (acfg, DW_OP_breg6);
+	emit_byte (acfg, 16);
+
+	/* Parameters */
+	for (i = 0; i < sig->param_count; ++i) {
+		emit_uleb128 (acfg, AB_PARAM);
+		/* name */
+		if (names [i][0] != '\0')
+			emit_string (acfg, names [i]);
+		else {
+			char pname [128];
+
+			sprintf (pname, "<param %d>", i);
+			emit_string (acfg, pname);
+		}
+		/* type */
+		emit_symbol_diff (acfg, ".DIE_int", ".debug_info_start", 0);
+		/* location */
+		/* FIXME: */
+		emit_byte (acfg, 0);
+	}		
+	g_free (names);
+
+	/* Subprogram end */
+	emit_uleb128 (acfg, 0x0);
 
 	// FIXME: Allocate labels instead of using die_index
 	emit_die (acfg, die_index, NULL, NULL, code, code_size, unwind_info);
@@ -5590,6 +5627,11 @@ mono_xdebug_emit (void)
 
 	// FIXME: Make this callable multiple times
 	if (!emitted) {
+		MonoAotCompile *acfg = xdebug_acfg;
+
+		emit_section_change (acfg, ".debug_info", 0);
+		emit_uleb128 (acfg, 0x0);
+
 		emit_writeout (xdebug_acfg);
 		emitted = TRUE;
 	}
