@@ -4,18 +4,22 @@
 #include <mono/arch/ppc/ppc-codegen.h>
 #include <glib.h>
 
-#define MONO_ARCH_CPU_SPEC ppcg4
+#define MONO_ARCH_CPU_SPEC ppc64_cpu_desc
 
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 
-#define MONO_SAVED_GREGS 19
+#define MONO_SAVED_GREGS 18
 #define MONO_SAVED_FREGS 18
 
-#define MONO_ARCH_FRAME_ALIGNMENT 4
+#define MONO_FIRST_SAVED_GREG	14
+#define MONO_FIRST_SAVED_FREG	14
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
- * reproduceable results for benchmarks */
+#define MONO_LAST_SAVED_GREG	(MONO_FIRST_SAVED_GREG + MONO_SAVED_GREGS - 1)
+#define MONO_LAST_SAVED_FREG	(MONO_FIRST_SAVED_FREG + MONO_SAVED_FREGS - 1)
+
+/* FIXME: check */
+#define MONO_ARCH_FRAME_ALIGNMENT 16
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 void ppc_patch (guchar *code, const guchar *target);
@@ -26,7 +30,7 @@ struct MonoLMF {
 	MonoMethod *method;
 	gulong     ebp;
 	gulong     eip;
-	gulong     iregs [MONO_SAVED_GREGS]; /* 13..31 */
+	gulong     iregs [MONO_SAVED_GREGS]; /* 14..31 */
 	gdouble    fregs [MONO_SAVED_FREGS]; /* 14..31 */
 };
 
@@ -56,7 +60,7 @@ typedef struct MonoCompileArch {
 
 /* Parameters used by the register allocator */
 #define MONO_ARCH_CALLEE_REGS ((0xff << ppc_r3) | (1 << ppc_r11) | (1 << ppc_r12))
-#define MONO_ARCH_CALLEE_SAVED_REGS (0xfffff << ppc_r13) /* ppc_13 - ppc_31 */
+#define MONO_ARCH_CALLEE_SAVED_REGS (0x7ffff << ppc_r14) /* ppc_14 - ppc_31 */
 
 #ifdef __APPLE__
 #define MONO_ARCH_CALLEE_FREGS (0x1fff << ppc_f1)
@@ -69,12 +73,11 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_FPSTACK_SIZE 0
 
 #define MONO_ARCH_INST_FIXED_REG(desc) (((desc) == 'a')? ppc_r3:\
-					((desc) == 'l')? ppc_r4:\
 					((desc) == 'g'? ppc_f1:-1))
 #define MONO_ARCH_INST_SREG2_MASK(ins) (0)
 
-#define MONO_ARCH_INST_IS_REGPAIR(desc) (desc == 'l')
-#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (desc == 'l' ? ppc_r3 : -1)
+#define MONO_ARCH_INST_IS_REGPAIR(desc) FALSE
+#define MONO_ARCH_INST_REGPAIR_REG2(desc,hreg1) (-1)
 #define MONO_ARCH_INST_IS_FLOAT(desc) ((desc == 'f') || (desc == 'g'))
 
 /* deal with some of the ABI differences here */
@@ -90,17 +93,15 @@ typedef struct MonoCompileArch {
 #define PPC_PASS_STRUCTS_BY_VALUE 1
 #else
 /* Linux */
-#define PPC_RET_ADDR_OFFSET 4
-#define PPC_STACK_ALIGNMENT 16
-#define PPC_STACK_PARAM_OFFSET 8
-#define PPC_MINIMAL_STACK_SIZE 8
+#define PPC_RET_ADDR_OFFSET 16
+#define PPC_STACK_PARAM_OFFSET 48
+#define PPC_MINIMAL_STACK_SIZE 32 /* FIXME: check */
 #define PPC_FIRST_ARG_REG ppc_r3
 #define PPC_LAST_ARG_REG ppc_r10
 #define PPC_FIRST_FPARG_REG ppc_f1
-#define PPC_LAST_FPARG_REG ppc_f8
-#define PPC_PASS_STRUCTS_BY_VALUE 0
-#define PPC_SMALL_RET_STRUCT_IN_REG 1
-
+#define PPC_LAST_FPARG_REG ppc_f13
+#define PPC_PASS_STRUCTS_BY_VALUE 0 /* FIXME: check */
+#define PPC_SMALL_RET_STRUCT_IN_REG 1 /* FIXME: check */
 #endif
 
 #if defined(HAVE_WORKING_SIGALTSTACK) && !defined(__APPLE__)
@@ -130,9 +131,9 @@ typedef struct MonoCompileArch {
 #define PPC_NUM_REG_FPARGS (PPC_LAST_FPARG_REG-PPC_FIRST_FPARG_REG+1)
 
 /* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (int)ip; } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (gulong)ip; } while (0);
 /* FIXME: should be called SET_SP */
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (int)bp; } while (0); 
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)bp; } while (0);
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
@@ -157,6 +158,7 @@ typedef struct {
 
 typedef struct {
 	unsigned long sp;
+	unsigned long cr;
 	unsigned long lr;
 } MonoPPCStackFrame;
 
@@ -179,10 +181,10 @@ typedef struct {
 #if defined(__linux__)
 	typedef struct ucontext os_ucontext;
 
-	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.uc_regs->gregs [(n)])
-	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.uc_regs->fpregs.fpregs [(n)])
-	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_NIP])
-	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_LNK])
+	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.gp_regs [(n)])
+	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.fp_regs [(n)])
+	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext.gp_regs [PT_NIP])
+	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.gp_regs [PT_LNK])
 #elif defined (__APPLE__) && defined (_STRUCT_MCONTEXT)
 	typedef struct __darwin_ucontext os_ucontext;
 
@@ -208,4 +210,6 @@ typedef struct {
 #error Unknown OS
 #endif
 
-#endif /* __MONO_MINI_PPC_H__ */  
+extern void mono_ppc_emitted (guint8 *code, ssize_t length, const char *format, ...);
+
+#endif /* __MONO_MINI_PPC_H__ */

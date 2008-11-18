@@ -4,8 +4,10 @@
  * Authors:
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Paolo Molaro (lupus@ximian.com)
+ *   Andreas Faerber <andreas.faerber@web.de>
  *
  * (C) 2001 Ximian, Inc.
+ * (C) 2007-2008 Andreas Faerber
  */
 
 #include <config.h>
@@ -24,7 +26,7 @@
 #include <mono/metadata/mono-debug.h>
 
 #include "mini.h"
-#include "mini-ppc.h"
+#include "mini-ppc64.h"
 
 /*
 
@@ -159,10 +161,14 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
-		ppc_lwz (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
-		ppc_lmw (code, ppc_r13, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs));	\
+		ppc_load_reg (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
+		for (reg = 0; reg < MONO_SAVED_GREGS; ++reg) {	\
+			ppc_load_reg (code, (MONO_FIRST_SAVED_GREG + reg),	\
+				G_STRUCT_OFFSET(MonoLMF, iregs) + reg * sizeof (gulong), ctx_reg);	\
+		}	\
 		for (reg = 0; reg < MONO_SAVED_FREGS; ++reg) {	\
-			ppc_lfd (code, (14 + reg), G_STRUCT_OFFSET(MonoLMF, fregs) + reg * sizeof (gdouble), ctx_reg);	\
+			ppc_lfd (code, (MONO_FIRST_SAVED_FREG + reg),	\
+				G_STRUCT_OFFSET(MonoLMF, fregs) + reg * sizeof (gdouble), ctx_reg);	\
 		}	\
 	} while (0)
 
@@ -184,10 +190,10 @@ mono_arch_get_restore_context (void)
 	if (start)
 		return start;
 
-	code = start = mono_global_codeman_reserve (128);
+	code = start = mono_global_codeman_reserve (168);
 	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
 	/* restore also the stack pointer */
-	ppc_lwz (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
+	ppc_load_reg (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
 	//ppc_break (code);
 	/* jump to the saved IP */
 	ppc_mtctr (code, ppc_r4);
@@ -195,9 +201,44 @@ mono_arch_get_restore_context (void)
 	/* never reached */
 	ppc_break (code);
 
-	g_assert ((code - start) < 128);
+	g_assert ((code - start) < 168);
 	mono_arch_flush_icache (start, code - start);
+	mono_ppc_emitted (start, code - start, "restore context");
 	return start;
+}
+
+static guint8*
+emit_store_saved_regs (guint8 *code, int *pos)
+{
+	int i;
+
+	for (i = MONO_LAST_SAVED_FREG; i >= MONO_FIRST_SAVED_FREG; --i) {
+		*pos += sizeof (gdouble);
+		ppc_stfd (code, i, -*pos, ppc_sp);
+	}
+	for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
+		*pos += sizeof (gulong);
+		ppc_store_reg (code, i, -*pos, ppc_sp);
+	}
+
+	return code;
+}
+
+static guint8*
+emit_load_saved_regs (guint8 *code, int *pos)
+{
+	int i;
+
+	for (i = MONO_LAST_SAVED_FREG; i >= MONO_FIRST_SAVED_FREG; --i) {
+		*pos += sizeof (gdouble);
+		ppc_lfd (code, i, -*pos, ppc_sp);
+	}
+	for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
+		*pos += sizeof (gulong);
+		ppc_load_reg (code, i, -*pos, ppc_sp);
+	}
+
+	return code;
 }
 
 /*
@@ -212,36 +253,31 @@ mono_arch_get_call_filter (void)
 {
 	static guint8 *start = NULL;
 	guint8 *code;
-	int alloc_size, pos, i;
+	int alloc_size, pos;
 
 	if (start)
 		return start;
 
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
-	code = start = mono_global_codeman_reserve (320);
+	code = start = mono_global_codeman_reserve (488);
 
 	/* save all the regs on the stack */
 	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (gdouble);
-		ppc_stfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_stmw (code, ppc_r13, ppc_sp, -pos);
+	code = emit_store_saved_regs (code, &pos);
 
 	ppc_mflr (code, ppc_r0);
-	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_store_reg (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 
 	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64;
-	// align to PPC_STACK_ALIGNMENT bytes
-	alloc_size += PPC_STACK_ALIGNMENT - 1;
-	alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
+	// align to MONO_ARCH_FRAME_ALIGNMENT bytes
+	alloc_size += MONO_ARCH_FRAME_ALIGNMENT - 1;
+	alloc_size &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 
 	/* allocate stack frame and set link from sp in ctx */
-	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
-	ppc_lwz (code, ppc_r0, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
-	ppc_lwzx (code, ppc_r0, ppc_r0, ppc_r0);
-	ppc_stwu (code, ppc_r0, -alloc_size, ppc_sp);
+	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
+	ppc_load_reg (code, ppc_r0, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
+	ppc_load_reg_indexed (code, ppc_r0, ppc_r0, ppc_r0);
+	ppc_store_reg_update (code, ppc_r0, -alloc_size, ppc_sp);
 
 	/* restore all the regs from ctx (in r3), but not r1, the stack pointer */
 	restore_regs_from_context (ppc_r3, ppc_r6, ppc_r7);
@@ -251,23 +287,19 @@ mono_arch_get_call_filter (void)
 	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 
 	/* epilog */
-	ppc_lwz (code, ppc_r0, alloc_size + PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_load_reg (code, ppc_r0, alloc_size + PPC_RET_ADDR_OFFSET, ppc_sp);
 	ppc_mtlr (code, ppc_r0);
 	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
 	
 	/* restore all the regs from the stack */
 	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (double);
-		ppc_lfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_lmw (code, ppc_r13, ppc_sp, -pos);
+	code = emit_load_saved_regs (code, &pos);
 
 	ppc_blr (code);
 
-	g_assert ((code - start) < 320);
+	g_assert ((code - start) < 488);
 	mono_arch_flush_icache (start, code - start);
+	mono_ppc_emitted (start, code - start, "call filter");
 	return start;
 }
 
@@ -315,46 +347,41 @@ static gpointer
 mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gboolean rethrow)
 {
 	guint8 *code;
-	int alloc_size, pos, i;
+	int alloc_size, pos;
 
 	code = start;
 
 	/* save all the regs on the stack */
 	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (gdouble);
-		ppc_stfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_stmw (code, ppc_r13, ppc_sp, -pos);
+	code = emit_store_saved_regs (code, &pos);
 
 	ppc_mflr (code, ppc_r0);
-	ppc_stw (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
+	ppc_store_reg (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 
-	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64;
-	// align to PPC_STACK_ALIGNMENT bytes
-	alloc_size += PPC_STACK_ALIGNMENT - 1;
-	alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
+	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64; /* FIXME: what's the 64? */
+	// align to MONO_ARCH_FRAME_ALIGNMENT bytes
+	alloc_size += MONO_ARCH_FRAME_ALIGNMENT - 1;
+	alloc_size &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 
-	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
-	ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
+	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
+	ppc_store_reg_update (code, ppc_sp, -alloc_size, ppc_sp);
 
 	//ppc_break (code);
 	if (by_name) {
 		ppc_mr (code, ppc_r5, ppc_r3);
-		ppc_load (code, ppc_r3, (guint32)mono_defaults.corlib);
+		ppc_load (code, ppc_r3, (gulong)mono_defaults.corlib);
 		ppc_load (code, ppc_r4, "System");
-		ppc_load (code, ppc_r0, mono_exception_from_name);
+		ppc_load_func (code, ppc_r0, mono_exception_from_name);
 		ppc_mtctr (code, ppc_r0);
 		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	}
 
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
-	ppc_lwz (code, ppc_r5, 0, ppc_sp); 
+	ppc_load_reg (code, ppc_r5, 0, ppc_sp);
 	/* exc is already in place in r3 */
 	if (by_name)
-		ppc_lwz (code, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_r5); 
+		ppc_load_reg (code, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_r5);
 	else
 		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
 	/* pointer to the saved fp regs */
@@ -365,13 +392,14 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	ppc_li (code, ppc_r8, rethrow);
 
-	ppc_load (code, ppc_r0, throw_exception);
+	ppc_load_func (code, ppc_r0, throw_exception);
 	ppc_mtctr (code, ppc_r0);
 	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	/* we should never reach this breakpoint */
 	ppc_break (code);
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
+	mono_ppc_emitted (start, code - start, "throw exception generic by_name %d rethrow %d", by_name, rethrow);
 	return start;
 }
 
@@ -391,8 +419,8 @@ mono_arch_get_rethrow_exception (void)
 
 	if (inited)
 		return start;
-	start = mono_global_codeman_reserve (132);
-	mono_arch_get_throw_exception_generic (start, 132, FALSE, TRUE);
+	start = mono_global_codeman_reserve (220);
+	mono_arch_get_throw_exception_generic (start, 220, FALSE, TRUE);
 	inited = 1;
 	return start;
 }
@@ -416,8 +444,8 @@ mono_arch_get_throw_exception (void)
 
 	if (inited)
 		return start;
-	start = mono_global_codeman_reserve (132);
-	mono_arch_get_throw_exception_generic (start, 132, FALSE, FALSE);
+	start = mono_global_codeman_reserve (220);
+	mono_arch_get_throw_exception_generic (start, 220, FALSE, FALSE);
 	inited = 1;
 	return start;
 }
@@ -442,29 +470,10 @@ mono_arch_get_throw_exception_by_name (void)
 
 	if (inited)
 		return start;
-	start = mono_global_codeman_reserve (168);
-	mono_arch_get_throw_exception_generic (start, 168, TRUE, FALSE);
+	start = mono_global_codeman_reserve (276);
+	mono_arch_get_throw_exception_generic (start, 276, TRUE, FALSE);
 	inited = 1;
 	return start;
-}	
-
-static MonoArray *
-glist_to_array (GList *list, MonoClass *eclass) 
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	int len, i;
-
-	if (!list)
-		return NULL;
-
-	len = g_list_length (list);
-	res = mono_array_new (domain, eclass, len);
-
-	for (i = 0; list; list = list->next, i++)
-		mono_array_set (res, gpointer, i, list->data);
-
-	return res;
 }
 
 /* mono_arch_find_jit_info:
@@ -653,9 +662,6 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	/* may need to adjust pointers in the new struct copy, depending on the OS */
 	uc_copy = (ucontext_t*)(sp + 16);
 	memcpy (uc_copy, uc, sizeof (os_ucontext));
-#ifdef __linux__
-	uc_copy->uc_mcontext.uc_regs = (gpointer)((char*)uc_copy + ((char*)uc->uc_mcontext.uc_regs - (char*)uc));
-#endif
 	g_assert (mono_arch_ip_from_context (uc) == mono_arch_ip_from_context (uc_copy));
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
 	UCONTEXT_REG_LNK(uc) = UCONTEXT_REG_NIP(uc);
