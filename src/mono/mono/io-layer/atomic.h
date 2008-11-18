@@ -505,7 +505,7 @@ InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
 }
 # endif
 
-#elif defined(__ppc__) || defined (__powerpc__)
+#elif defined(__mono_ppc__)
 #define WAPI_ATOMIC_ASM
 
 #ifdef G_COMPILER_CODEWARRIOR
@@ -579,6 +579,16 @@ static inline gint32 InterlockedExchange(register volatile gint32 *dest, registe
 #define InterlockedExchangePointer(dest,exch) (void*)InterlockedExchange((volatile gint32 *)(dest), (gint32)(exch))
 #else
 
+#ifdef __mono_ppc64__
+#define LDREGX "ldarx"
+#define STREGCXD "stdcx."
+#define CMPREG "cmpd"
+#else
+#define LDREGX "lwarx"
+#define STREGCXD "stwcx."
+#define CMPREG "cmpw"
+#endif
+
 static inline gint32 InterlockedIncrement(volatile gint32 *val)
 {
 	gint32 result = 0, tmp;
@@ -605,7 +615,22 @@ static inline gint32 InterlockedDecrement(volatile gint32 *val)
 	return result - 1;
 }
 
-#define InterlockedCompareExchangePointer(dest,exch,comp) (gpointer)InterlockedCompareExchange((volatile gint32 *)(dest), (gint32)(exch), (gint32)(comp))
+static inline gpointer InterlockedCompareExchangePointer (volatile gpointer *dest,
+						gpointer exch, gpointer comp)
+{
+	gpointer tmp = NULL;
+
+	__asm__ __volatile__ ("\n1:\n\t"
+			     LDREGX " %0, 0, %1\n\t"
+			     CMPREG " %0, %2\n\t" 
+			     "bne-    2f\n\t"
+			     STREGCXD " %3, 0, %1\n\t"
+			     "bne-    1b\n"
+			     "2:"
+			     : "=&r" (tmp)
+			     : "b" (dest), "r" (comp), "r" (exch): "cc", "memory");
+	return(tmp);
+}
 
 static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
 						gint32 exch, gint32 comp) {
@@ -634,7 +659,18 @@ static inline gint32 InterlockedExchange(volatile gint32 *dest, gint32 exch)
 			      : "=r" (tmp) : "0" (tmp), "b" (dest), "r" (exch): "cc", "memory");
 	return(tmp);
 }
-#define InterlockedExchangePointer(dest,exch) (gpointer)InterlockedExchange((volatile gint32 *)(dest), (gint32)(exch))
+
+static inline gpointer InterlockedExchangePointer (volatile gpointer *dest, gpointer exch)
+{
+	gpointer tmp = NULL;
+
+	__asm__ __volatile__ ("\n1:\n\t"
+			      LDREGX " %0, 0, %2\n\t"
+			      STREGCXD " %3, 0, %2\n\t"
+			      "bne    1b"
+			      : "=r" (tmp) : "0" (tmp), "b" (dest), "r" (exch): "cc", "memory");
+	return(tmp);
+}
 
 static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
 {
@@ -648,6 +684,11 @@ static inline gint32 InterlockedExchangeAdd(volatile gint32 *dest, gint32 add)
                               : "r" (dest), "r" (add) : "cc", "memory");
         return(result);
 }
+
+#undef LDREGX
+#undef STREGCXD
+#undef CMPREG
+
 #endif /* !G_COMPILER_CODEWARRIOR */
 
 #elif defined(__arm__)
