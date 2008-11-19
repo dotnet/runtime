@@ -5563,12 +5563,16 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	char **names;
 	int i;
 
-	// FIXME: Locking
 	// FIXME: Add trampolines too
 
+	/* 
+	 * One time initialization.
+	 * This should be called during startup so no need for locking.
+	 */
 	if (!xdebug_acfg) {
 		acfg = g_new0 (MonoAotCompile, 1);
 		acfg->mempool = mono_mempool_new ();
+		InitializeCriticalSection (&acfg->mutex);
 		acfg->aot_opts.outfile = g_strdup ("xdb.so");
 
 		emit_start (acfg);
@@ -5624,6 +5628,8 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	}
 
 	acfg = xdebug_acfg;
+
+	mono_acfg_lock (acfg);
 
 	emit_section_change (acfg, ".debug_info", 0);
 
@@ -5722,6 +5728,8 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	// FIXME: Allocate labels instead of using die_index
 	emit_die (acfg, die_index, NULL, NULL, code, code_size, unwind_info);
 	die_index ++;
+
+	mono_acfg_unlock (acfg);
 #else
 	g_error ("xdebug mode is not supported on this platform.");
 #endif
