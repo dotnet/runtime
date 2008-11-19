@@ -3799,6 +3799,38 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 }
 
 /*
+ * Emit code to save the registers in used_int_regs or the registers in the MonoLMF
+ * structure at positive offset pos from register base_reg. pos is guaranteed to fit into
+ * the instruction offset immediate for all the registers.
+ */
+static guint8*
+save_registers (guint8* code, int pos, int base_reg, gboolean save_lmf, guint32 used_int_regs)
+{
+	int i;
+	if (!save_lmf) {
+		for (i = 13; i <= 31; i++) {
+			if (used_int_regs & (1 << i)) {
+				ppc_stw (code, i, pos, base_reg);
+				pos += sizeof (gulong);
+			}
+		}
+	} else {
+		/* pos is the start of the MonoLMF structure */
+		int offset = pos + G_STRUCT_OFFSET (MonoLMF, iregs);
+		for (i = 13; i <= 31; i++) {
+			ppc_stw (code, i, offset, base_reg);
+			offset += sizeof (gulong);
+		}
+		offset = pos + G_STRUCT_OFFSET (MonoLMF, fregs);
+		for (i = 14; i < 32; i++) {
+			ppc_stfd (code, i, offset, base_reg);
+			offset += sizeof (gdouble);
+		}
+	}
+	return code;
+}
+
+/*
  * Stack frame layout:
  * 
  *   ------------------- sp
@@ -3846,27 +3878,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	pos = 0;
 
 	if (!method->save_lmf) {
-		/*for (i = 31; i >= 14; --i) {
-			if (cfg->used_float_regs & (1 << i)) {
-				pos += sizeof (gdouble);
-				ppc_stfd (code, i, -pos, ppc_sp);
-			}
-		}*/
 		for (i = 31; i >= 13; --i) {
 			if (cfg->used_int_regs & (1 << i)) {
 				pos += sizeof (gulong);
-				ppc_stw (code, i, -pos, ppc_sp);
 			}
 		}
 	} else {
-		int ofs;
 		pos += sizeof (MonoLMF);
 		lmf_offset = pos;
-		ofs = -pos + G_STRUCT_OFFSET(MonoLMF, iregs);
-		ppc_stmw (code, ppc_r13, ppc_r1, ofs);
-		for (i = 14; i < 32; i++) {
-			ppc_stfd (code, i, (-pos + G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble))), ppc_r1);
-		}
 	}
 	alloc_size += pos;
 	// align to PPC_STACK_ALIGNMENT bytes
@@ -3880,9 +3899,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (alloc_size) {
 		if (ppc_is_imm16 (-alloc_size)) {
 			ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);
+			code = save_registers (code, alloc_size - pos, ppc_sp, method->save_lmf, cfg->used_int_regs);
 		} else {
-			ppc_load (code, ppc_r11, -alloc_size);
-			ppc_stwux (code, ppc_sp, ppc_sp, ppc_r11);
+			if (pos)
+				ppc_addi (code, ppc_r11, ppc_sp, -pos);
+			ppc_load (code, ppc_r0, -alloc_size);
+			ppc_stwux (code, ppc_sp, ppc_sp, ppc_r0);
+			code = save_registers (code, 0, ppc_r11, method->save_lmf, cfg->used_int_regs);
 		}
 	}
 	if (cfg->frame_reg != ppc_sp)
