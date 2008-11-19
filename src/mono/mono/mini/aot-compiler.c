@@ -5488,9 +5488,9 @@ emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
 
 /* Abbrevations */
 #define AB_COMPILE_UNIT 1
-#define AB_SUBPROGRAM 3
-#define AB_PARAM 4
-#define AB_BASE_TYPE 5
+#define AB_SUBPROGRAM 2
+#define AB_PARAM 3
+#define AB_BASE_TYPE 4
 
 static int compile_unit_attr [] = {
 	DW_AT_producer     ,DW_FORM_string,
@@ -5692,7 +5692,10 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 		emit_symbol_diff (acfg, tdie, ".debug_info_start", 0);
 		/* location */
 		/* FIXME: This needs a location list, since the args can go from reg->stack */
-		if (arg->opcode == OP_REGVAR) {
+		if (arg->flags & MONO_INST_IS_DEAD) {
+			/* gdb treats this as optimized out */
+			emit_byte (acfg, 0);
+		} else if (arg->opcode == OP_REGVAR) {
 			emit_byte (acfg, 1);
 			emit_byte (acfg, DW_OP_reg0 + hw_reg_to_dwarf_reg (arg->dreg));
 		} else if (arg->opcode == OP_REGOFFSET) {
