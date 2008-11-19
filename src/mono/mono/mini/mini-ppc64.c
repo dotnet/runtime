@@ -1416,15 +1416,6 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			mono_method_signature (method)->ret);
 
 	if (!ret->byref) {
-		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
-			MonoInst *ins;
-
-			MONO_INST_NEW (cfg, ins, OP_SETLRET);
-			ins->sreg1 = val->dreg + 1;
-			ins->sreg2 = val->dreg + 2;
-			MONO_ADD_INS (cfg->cbb, ins);
-			return;
-		}
 		if (ret->type == MONO_TYPE_R8 || ret->type == MONO_TYPE_R4) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
 			return;

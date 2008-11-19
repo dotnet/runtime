@@ -77,10 +77,10 @@ checkthis: src1:b len:4
 voidcall: len:36 clob:c
 voidcall_reg: src1:i len:12 clob:c
 voidcall_membase: src1:b len:12 clob:c
-fcall: dest:g len:16 clob:c
+fcall: dest:g len:36 clob:c
 fcall_reg: dest:g src1:i len:12 clob:c
 fcall_membase: dest:g src1:b len:12 clob:c
-lcall: dest:a len:16 clob:c
+lcall: dest:a len:36 clob:c
 lcall_reg: dest:a src1:i len:12 clob:c
 lcall_membase: dest:a src1:b len:12 clob:c
 vcall: len:16 clob:c
