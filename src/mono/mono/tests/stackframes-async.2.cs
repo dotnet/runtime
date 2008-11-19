@@ -2,8 +2,6 @@ using System;
 using System.Net;
 using System.Diagnostics;
 
-namespace stacktracetest
-{
 	class MainClass
 	{
 		static int frame_count = 0;
@@ -19,9 +17,13 @@ namespace stacktracetest
 			};
 			IPHostEntry ip = Dns.EndGetHostEntry (res);
 			Console.WriteLine (ip);*/
-			if (frame_count >= 1)
-				return 0;
-			return 1;
+			if (frame_count < 1)
+				return 1;
+
+			// A test for #444383
+			AppDomain.CreateDomain("1").CreateInstance(typeof (Class1).Assembly.GetName ().Name, "Class1");
+
+			return 0;
 		}
 		
 		public static void ResolveCallback(IAsyncResult ar)
@@ -35,5 +37,18 @@ namespace stacktracetest
 	            }
         	    Console.WriteLine("ResolveCallback() complete");
 		}
+	}
+
+public class Class1
+{
+	public Class1 () {
+		AppDomain.CreateDomain("2").CreateInstance(typeof (Class1).Assembly.GetName ().Name, "Class2");
+	}
+}
+
+public class Class2
+{
+	public Class2 () {
+		new StackTrace(true);
 	}
 }
