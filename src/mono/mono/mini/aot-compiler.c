@@ -5523,6 +5523,29 @@ static int base_type_attr [] = {
 static MonoAotCompile *xdebug_acfg;
 static int die_index;
 
+typedef struct DwarfBasicType {
+	const char *die_name, *name;
+	int type;
+	int size;
+	int encoding;
+} DwarfBasicType;
+
+static DwarfBasicType basic_types [] = {
+	{ ".DIE_I1", "sbyte", MONO_TYPE_I1, 1, DW_ATE_signed },
+	{ ".DIE_U1", "byte", MONO_TYPE_U1, 1, DW_ATE_unsigned },
+	{ ".DIE_I2", "short", MONO_TYPE_I2, 2, DW_ATE_signed },
+	{ ".DIE_U2", "ushort", MONO_TYPE_U2, 2, DW_ATE_unsigned },
+	{ ".DIE_I4", "int", MONO_TYPE_I4, 4, DW_ATE_signed },
+	{ ".DIE_U4", "uint", MONO_TYPE_U4, 4, DW_ATE_unsigned },
+	{ ".DIE_I8", "long", MONO_TYPE_I8, 8, DW_ATE_signed },
+	{ ".DIE_U8", "ulong", MONO_TYPE_U8, 8, DW_ATE_unsigned },
+	{ ".DIE_R4", "float", MONO_TYPE_R4, 4, DW_ATE_float },
+	{ ".DIE_R8", "double", MONO_TYPE_R8, 8, DW_ATE_float },
+	{ ".DIE_BOOLEAN", "boolean", MONO_TYPE_BOOLEAN, 1, DW_ATE_boolean },
+	{ ".DIE_STRING", "string", MONO_TYPE_STRING, sizeof (gpointer), DW_ATE_address },
+	{ ".DIE_OBJECT", "object", MONO_TYPE_OBJECT, sizeof (gpointer), DW_ATE_address },
+};
+
 /*
  * mono_save_xdebug_info:
  *
@@ -5541,6 +5564,7 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	int i;
 
 	// FIXME: Locking
+	// FIXME: Add trampolines too
 
 	if (!xdebug_acfg) {
 		acfg = g_new0 (MonoAotCompile, 1);
@@ -5575,7 +5599,7 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 		emit_section_change (acfg, ".debug_info", 0);
 
 		/* Compilation unit */
-		emit_uleb128 (acfg, 0x1);
+		emit_uleb128 (acfg, AB_COMPILE_UNIT);
 		build_info = mono_get_runtime_build_info ();
 		s = g_strdup_printf ("Mono AOT Compiler %s", build_info);
 		emit_string (acfg, s);
@@ -5588,35 +5612,13 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 		emit_pointer_value (acfg, 0);
 
 		/* Base types */
-		emit_label (acfg, ".DIE_objref");
-		emit_uleb128 (acfg, AB_BASE_TYPE);
-		emit_byte (acfg, sizeof (gpointer));
-		emit_byte (acfg, DW_ATE_address);
-		emit_string (acfg, "objref");
-
-		emit_label (acfg, ".DIE_I4");
-		emit_uleb128 (acfg, AB_BASE_TYPE);
-		emit_byte (acfg, 4);
-		emit_byte (acfg, DW_ATE_signed);
-		emit_string (acfg, "int");
-
-		emit_label (acfg, ".DIE_U4");
-		emit_uleb128 (acfg, AB_BASE_TYPE);
-		emit_byte (acfg, 4);
-		emit_byte (acfg, DW_ATE_unsigned);
-		emit_string (acfg, "uint");
-
-		emit_label (acfg, ".DIE_R4");
-		emit_uleb128 (acfg, AB_BASE_TYPE);
-		emit_byte (acfg, 4);
-		emit_byte (acfg, DW_ATE_float);
-		emit_string (acfg, "float");
-
-		emit_label (acfg, ".DIE_R8");
-		emit_uleb128 (acfg, AB_BASE_TYPE);
-		emit_byte (acfg, 8);
-		emit_byte (acfg, DW_ATE_float);
-		emit_string (acfg, "double");
+		for (i = 0; i < G_N_ELEMENTS (basic_types); ++i) {
+			emit_label (acfg, basic_types [i].die_name);
+			emit_uleb128 (acfg, AB_BASE_TYPE);
+			emit_byte (acfg, basic_types [i].size);
+			emit_byte (acfg, basic_types [i].encoding);
+			emit_string (acfg, basic_types [i].name);
+		}
 
 		emit_cie (acfg);
 	}
@@ -5648,6 +5650,7 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 		MonoType *t;
 		const char *pname;
 		char pname_buf [128];
+		int j;
 
 		if (i == 0 && sig->hasthis) {
 			t = &mono_defaults.object_class->byval_arg;
@@ -5665,29 +5668,27 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 		}
 		emit_string (acfg, pname);
 		/* type */
-		switch (t->type) {
-		case MONO_TYPE_I4:
-			tdie = ".DIE_I4";
-			break;
-		case MONO_TYPE_U4:
-			tdie = ".DIE_U4";
-			break;
-		case MONO_TYPE_R4:
-			tdie = ".DIE_R4";
-			break;
-		case MONO_TYPE_R8:
-			tdie = ".DIE_R8";
-			break;
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_STRING:
-			tdie = ".DIE_objref";
-			break;
-		default:
-			tdie = ".DIE_objref";
-			break;
+		for (j = 0; j < G_N_ELEMENTS (basic_types); ++j)
+			if (basic_types [j].type == t->type)
+				break;
+		if (j < G_N_ELEMENTS (basic_types))
+			tdie = basic_types [j].die_name;
+		else {
+			switch (t->type) {
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_ARRAY:
+				tdie = ".DIE_OBJECT";
+				break;
+			default:
+				tdie = ".DIE_I4";
+				break;
+			}
 		}
+		if (t->byref)
+			// FIXME:
+			tdie = ".DIE_I4";
+		if (arg->flags & MONO_INST_IS_DEAD)
+			tdie = ".DIE_I4";
 		emit_symbol_diff (acfg, tdie, ".debug_info_start", 0);
 		/* location */
 		/* FIXME: This needs a location list, since the args can go from reg->stack */
@@ -5714,6 +5715,7 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	/* Subprogram end */
 	emit_uleb128 (acfg, 0x0);
 
+	/* Emit unwind info */
 	// FIXME: Allocate labels instead of using die_index
 	emit_die (acfg, die_index, NULL, NULL, code, code_size, unwind_info);
 	die_index ++;
