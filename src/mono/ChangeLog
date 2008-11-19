@@ -1,3 +1,7 @@
+2008-11-19  Jonathan Pryor  <jpryor@novell.com>
+
+	* configure.in: Remove mono/monoburg/Makefile; fixes the build.
+
 2008-11-14  Andreas Färber  <andreas.faerber@web.de>
 
 	* configure.in: Add preprocessor defines for ppc(64).

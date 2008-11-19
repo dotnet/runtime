@@ -2301,7 +2301,6 @@ mono/tests/cas/inheritance/Makefile
 mono/tests/cas/linkdemand/Makefile
 mono/tests/cas/threads/Makefile
 mono/benchmark/Makefile
-mono/monoburg/Makefile
 mono/monograph/Makefile
 mono/io-layer/Makefile
 mono/mini/Makefile
