@@ -1247,6 +1247,7 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 	gboolean result;
 	guint32 n;
 	HANDLE *handle;
+	gchar *full_path;
 
 	dir_name = g_path_get_dirname (shadow);
 	ini_file = g_build_filename (dir_name, "__AssemblyInfo__.ini", NULL);
@@ -1268,7 +1269,9 @@ shadow_copy_create_ini (const char *shadow, const char *filename)
 		return FALSE;
 	}
 
-	result = WriteFile (handle, filename, strlen (filename), &n, NULL);
+	full_path = mono_path_resolve_symlinks (filename);
+	result = WriteFile (handle, full_path, strlen (full_path), &n, NULL);
+	g_free (full_path);
 	CloseHandle (handle);
 	return result;
 }
