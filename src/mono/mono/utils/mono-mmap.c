@@ -5,8 +5,12 @@
 #include <io.h>
 #else
 #include <sys/types.h>
+#if HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
+#if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
