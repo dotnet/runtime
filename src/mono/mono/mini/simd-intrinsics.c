@@ -347,10 +347,6 @@ static const SimdIntrinsc vector4i_intrinsics[] = {
 	{ SN_op_Subtraction, OP_PSUBD, SIMD_EMIT_BINARY },
 };
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddWithSaturation, OP_PADDW_SAT_UN, SIMD_EMIT_BINARY },
@@ -391,6 +387,14 @@ static const SimdIntrinsc vector8us_intrinsics[] = {
 	{ SN_op_Multiply, OP_PMULW, SIMD_EMIT_BINARY },
 	{ SN_op_RightShift, OP_PSHRW, SIMD_EMIT_SHIFT },
 	{ SN_op_Subtraction, OP_PSUBW, SIMD_EMIT_BINARY },
+	{ SN_set_V0, 0, SIMD_EMIT_SETTER },
+	{ SN_set_V1, 1, SIMD_EMIT_SETTER },
+	{ SN_set_V2, 2, SIMD_EMIT_SETTER },
+	{ SN_set_V3, 3, SIMD_EMIT_SETTER },
+	{ SN_set_V4, 4, SIMD_EMIT_SETTER },
+	{ SN_set_V5, 5, SIMD_EMIT_SETTER },
+	{ SN_set_V6, 6, SIMD_EMIT_SETTER },
+	{ SN_set_V7, 7, SIMD_EMIT_SETTER },
 };
 
 static const SimdIntrinsc vector8s_intrinsics[] = {
