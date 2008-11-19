@@ -679,12 +679,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		ji = mono_jit_info_table_find (domain, (gpointer)rip);
 		if (!ji) {
-			if (!(*lmf)->method)
-				/* Top LMF entry */
-				return (gpointer)-1;
-			/* Trampoline lmf frame */
-			memset (res, 0, sizeof (MonoJitInfo));
-			res->method = (*lmf)->method;
+			// FIXME: This can happen with multiple appdomains (bug #444383)
+			return (gpointer)-1;
 		}
 
 		new_ctx->rip = rip;
