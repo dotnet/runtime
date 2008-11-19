@@ -2195,7 +2195,11 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 {
 	int offset = cfg->arch.fp_conv_var_offset;
 	/* sreg is a float, dreg is an integer reg. ppc_f0 is used a scratch */
-	ppc_fctiwz (code, ppc_f0, sreg);
+	if (size == 8) {
+		ppc_fctidz (code, ppc_f0, sreg);
+	} else {
+		ppc_fctiwz (code, ppc_f0, sreg);
+	}
 	if (ppc_is_imm16 (offset + 4)) {
 		ppc_stfd (code, ppc_f0, offset, cfg->frame_reg);
 		ppc_lwz (code, dreg, offset + 4, cfg->frame_reg);
@@ -2331,7 +2335,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 	guint32 prim = ppc_opcode (ins);
 	guint32 ovf;
 
-	g_print ("patching %p (0x%08x) to point to %p\n", code, ins, target);
+	//g_print ("patching %p (0x%08x) to point to %p\n", code, ins, target);
 	if (prim == 18) {
 		// prefer relative branches, they are more position independent (e.g. for AOT compilation).
 		gint diff = target - code;
@@ -2887,6 +2891,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_clrlwi (code, ins->dreg, ins->sreg1, 16);
 			break;
 		case OP_ICONV_TO_U4:
+		case OP_ZEXT_I4:
 			ppc_clrldi (code, ins->dreg, ins->sreg1, 32);
 			break;
 		case OP_COMPARE:
@@ -3119,21 +3124,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_sldi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
 			break;
 		case OP_ISHR:
-			ppc_srad (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_sraw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_SHR_IMM:
-		case OP_ISHR_IMM:
 			ppc_sradi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
 			break;
+		case OP_ISHR_IMM:
+			ppc_srawi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
+			break;
 		case OP_SHR_UN_IMM:
+			ppc_srdi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
+			break;
 		case OP_ISHR_UN_IMM:
-			if (ins->inst_imm)
-				ppc_srdi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
-			else
-				ppc_mr (code, ins->dreg, ins->sreg1);
+			ppc_srwi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
 			break;
 		case OP_ISHR_UN:
-			ppc_srd (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_srw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_INOT:
 			ppc_not (code, ins->dreg, ins->sreg1);
@@ -3803,7 +3809,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 
 		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
 
-		g_print ("patching %p to %p (type %d)\n", ip, target, patch_info->type);
+		//g_print ("patching %p to %p (type %d)\n", ip, target, patch_info->type);
 
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_IP:

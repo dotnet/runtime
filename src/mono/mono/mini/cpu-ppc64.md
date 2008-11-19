@@ -329,6 +329,8 @@ long_conv_to_r8: dest:f src1:i len:36
 long_conv_to_u4: dest:i src1:i
 long_conv_to_u2: dest:i src1:i len:8
 long_conv_to_u1: dest:i src1:i len:4
+zext_i4: dest:i src1:i len:4
+
 long_beq: len:8
 long_bge: len:8
 long_bgt: len:8
@@ -367,5 +369,5 @@ vcall2: len:20 clob:c
 vcall2_reg: src1:i len:8 clob:c
 vcall2_membase: src1:b len:12 clob:c
 
-jump_table: dest:i len:8
+jump_table: dest:i len:20
 
