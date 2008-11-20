@@ -33,7 +33,7 @@ TUNER_LIBRARIES =	\
 	System.ServiceModel.Web	\
 	Mono.CompilerServices.SymbolWriter
 
-TUNER_MASTERS =	$(TUNER_LIBRARIES:%=masterinfos/silverlight/%.info)
+TUNER_MASTERS = $(TUNER_LIBRARIES:%=masterinfos/silverlight/%.info)
 
 LOCAL_MCS_FLAGS = -r:$(LINKER) -r:Mono.Cecil.dll
 
