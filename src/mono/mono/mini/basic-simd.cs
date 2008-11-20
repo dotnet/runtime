@@ -2,6 +2,62 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_accessor_vecto4i () {
+		Vector4i a = new Vector4i (0x70000000, -1, 3, 4);
+
+		if (a.X != 0x70000000)
+			return 1;
+		if (a.Y != -1)
+			return 2;
+		if (a.Z != 3)
+			return 3;
+		if (a.W != 4)
+			return 4;
+
+		a.X = 11;
+		a.Y = 22;
+		a.Z = 33333344;
+		a.W = -44444444;
+		
+		if (a.X != 11)
+			return 5;
+		if (a.Y != 22)
+			return 6;
+		if (a.Z != 33333344)
+			return 7;
+		if (a.W != -44444444)
+			return 8;
+		return 0;
+	}
+
+	public static int test_0_accessor_vecto4ui () {
+		Vector4ui a = new Vector4ui (0xF0000000, 0xF0000, 3, 4);
+
+		if (a.X != 0xF0000000)
+			return 1;
+		if (a.Y != 0xF0000)
+			return 2;
+		if (a.Z != 3)
+			return 3;
+		if (a.W != 4)
+			return 4;
+
+		a.X = 11;
+		a.Y = 22;
+		a.Z = 33333344;
+		a.W = 44444444;
+
+		if (a.X != 11)
+			return 5;
+		if (a.Y != 22)
+			return 6;
+		if (a.Z != 33333344)
+			return 7;
+		if (a.W != 44444444)
+			return 8;
+		return 0;
+	}
+	
 	static float use_getter_with_byref (ref Vector4f a) {
 		return a.W;
 	}
