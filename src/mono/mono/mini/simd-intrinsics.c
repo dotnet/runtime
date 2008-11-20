@@ -33,7 +33,8 @@ TODO pass simd arguments in registers or, at least, add SSE support for pushing 
 TODO pass simd args byval to a non-intrinsic method cause some useless local var load/store to happen.
 TODO check if we need to init the SSE control word with better precision.
 TODO add support for 3 reg sources in mini without slowing the common path. Or find a way to make MASKMOVDQU work.
-TODO make SimdRuntime.get_AccelMode work under AOT  
+TODO make SimdRuntime.get_AccelMode work under AOT
+TODO patterns such as "a ^= b" generate slower code as the LDADDR op will be copied to a tmp first. Look at adding a indirection reduction pass after the dce pass.  
 
 General notes for SIMD intrinsics.
 
@@ -123,10 +124,6 @@ typedef struct {
 	guint8 flags;
 } SimdIntrinsc;
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddSub, OP_ADDSUBPS, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
@@ -170,6 +167,10 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST }, 
 	{ SN_op_Multiply, OP_MULPS, SIMD_EMIT_BINARY },
 	{ SN_op_Subtraction, OP_SUBPS, SIMD_EMIT_BINARY },
+	{ SN_set_W, 3, SIMD_EMIT_SETTER },
+	{ SN_set_X, 0, SIMD_EMIT_SETTER },
+	{ SN_set_Y, 1, SIMD_EMIT_SETTER },
+	{ SN_set_Z, 2, SIMD_EMIT_SETTER },
 };
 
 /*
@@ -918,7 +919,24 @@ mono_type_elements_shift_bits (MonoType *type)
 	g_assert_not_reached ();
 }
 
-
+static int
+mono_type_to_slow_insert_op (MonoType *type)
+{
+	switch (type->type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return OP_INSERTX_U1_SLOW;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return OP_INSERT_I2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return OP_INSERTX_I4_SLOW;
+	case MONO_TYPE_R4:
+		return OP_INSERTX_R4_SLOW;
+	}
+	g_assert_not_reached ();
+}
 static MonoInst*
 simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
@@ -928,13 +946,14 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	size = mono_type_size (sig->params [0], &align); 
 
 	if (size == 2 || size == 4) {
-		MONO_INST_NEW (cfg, ins, size == 2 ? OP_INSERT_I2 : OP_INSERTX_I4_SLOW);
+		MONO_INST_NEW (cfg, ins, mono_type_to_slow_insert_op (sig->params [0]));
 		ins->klass = cmethod->klass;
 		/*This is a partial load so we encode the dependency on the previous value by setting dreg and sreg1 to the same value.*/
 		ins->dreg = ins->sreg1 = load_simd_vreg (cfg, cmethod, args [0]);
-		ins->type = STACK_I4;
 		ins->sreg2 = args [1]->dreg;
 		ins->inst_c0 = intrinsic->opcode;
+		if (sig->params [0]->type == MONO_TYPE_R4)
+			ins->backend.spill_var = get_int_to_float_spill_area (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);
 	} else {
 		int vreg, sreg;

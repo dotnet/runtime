@@ -4059,12 +4059,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_alu_reg_reg (code, X86_OR, ins->sreg1, ins->sreg2);
 			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg1, ins->inst_c0 / 2);
 			break;
-		case OP_INSERTX_I4_SLOW: {
+		case OP_INSERTX_I4_SLOW:
 			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg2, ins->inst_c0 * 2);
 			x86_shift_reg_imm (code, X86_SHR, ins->sreg2, 16);
 			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg2, ins->inst_c0 * 2 + 1);
 			break;
-		}
+
+		case OP_INSERTX_R4_SLOW:
+			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE, TRUE);
+			x86_sse_alu_pd_reg_membase_imm (code, X86_SSE_PINSRW, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset + 0, ins->inst_c0 * 2);
+			x86_sse_alu_pd_reg_membase_imm (code, X86_SSE_PINSRW, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset + 2, ins->inst_c0 * 2 + 1);
+			break;
+
 		case OP_STOREX_MEMBASE_REG:
 		case OP_STOREX_MEMBASE:
 			x86_movups_membase_reg (code, ins->dreg, ins->inst_offset, ins->sreg1);
