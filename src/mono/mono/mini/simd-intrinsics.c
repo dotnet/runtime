@@ -491,6 +491,22 @@ static const SimdIntrinsc vector16b_intrinsics[] = {
 	{ SN_op_ExclusiveOr, OP_PXOR, SIMD_EMIT_BINARY },
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
 	{ SN_op_Subtraction, OP_PSUBB, SIMD_EMIT_BINARY },
+	{ SN_set_V0, 0, SIMD_EMIT_SETTER },
+	{ SN_set_V1, 1, SIMD_EMIT_SETTER },
+	{ SN_set_V10, 10, SIMD_EMIT_SETTER },
+	{ SN_set_V11, 11, SIMD_EMIT_SETTER },
+	{ SN_set_V12, 12, SIMD_EMIT_SETTER },
+	{ SN_set_V13, 13, SIMD_EMIT_SETTER },
+	{ SN_set_V14, 14, SIMD_EMIT_SETTER },
+	{ SN_set_V15, 15, SIMD_EMIT_SETTER },
+	{ SN_set_V2, 2, SIMD_EMIT_SETTER },
+	{ SN_set_V3, 3, SIMD_EMIT_SETTER },
+	{ SN_set_V4, 4, SIMD_EMIT_SETTER },
+	{ SN_set_V5, 5, SIMD_EMIT_SETTER },
+	{ SN_set_V6, 6, SIMD_EMIT_SETTER },
+	{ SN_set_V7, 7, SIMD_EMIT_SETTER },
+	{ SN_set_V8, 8, SIMD_EMIT_SETTER },
+	{ SN_set_V9, 9, SIMD_EMIT_SETTER },
 };
 
 /*
@@ -895,16 +911,38 @@ static MonoInst*
 simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
 	MonoInst *ins;
+	MonoMethodSignature *sig = mono_method_signature (cmethod);
+	int size;
 
-	MONO_INST_NEW (cfg, ins, OP_INSERT_I2);
-	ins->klass = cmethod->klass;
-	/*This is a partial load so we encode the dependency on the previous value by setting dreg and sreg1 to the same value.*/
-	ins->dreg = ins->sreg1 = load_simd_vreg (cfg, cmethod, args [0]);
-	ins->type = STACK_I4;
-	ins->sreg2 = args [1]->dreg;
-	ins->inst_c0 = intrinsic->opcode;
-	MONO_ADD_INS (cfg->cbb, ins);
+	if (mono_type_size (sig->params [0], &size) == 2) {
+		MONO_INST_NEW (cfg, ins, OP_INSERT_I2);
+		ins->klass = cmethod->klass;
+		/*This is a partial load so we encode the dependency on the previous value by setting dreg and sreg1 to the same value.*/
+		ins->dreg = ins->sreg1 = load_simd_vreg (cfg, cmethod, args [0]);
+		ins->type = STACK_I4;
+		ins->sreg2 = args [1]->dreg;
+		ins->inst_c0 = intrinsic->opcode;
+		MONO_ADD_INS (cfg->cbb, ins);
+	} else {
+		int vreg, sreg;
 
+		MONO_INST_NEW (cfg, ins, OP_EXTRACTX_U2);
+		ins->klass = cmethod->klass;
+		ins->sreg1 = sreg = load_simd_vreg (cfg, cmethod, args [0]);
+		ins->type = STACK_I4;
+		ins->dreg = vreg = alloc_ireg (cfg);
+		ins->inst_c0 = intrinsic->opcode / 2;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		MONO_INST_NEW (cfg, ins, OP_INSERTX_U1_SLOW);
+		ins->klass = cmethod->klass;
+		ins->sreg1 = vreg;
+		ins->sreg2 = args [1]->dreg;
+		ins->dreg = sreg;
+		ins->inst_c0 = intrinsic->opcode;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+	}
 	return ins;
 }
 

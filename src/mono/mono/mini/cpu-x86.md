@@ -576,6 +576,9 @@ iconv_to_r8_raw: dest:f src1:i len:17
 
 insert_i2: dest:x src1:x src2:i len:5 clob:1
 
+extractx_u2: dest:i src1:x len:100
+insertx_u1_slow: dest:x src1:i src2:i len:100 clob:x
+
 loadx_membase: dest:x src1:b len:7
 storex_membase: dest:b src1:x len:7
 storex_membase_reg: dest:b src1:x len:7
