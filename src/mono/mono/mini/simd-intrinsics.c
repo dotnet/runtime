@@ -447,10 +447,6 @@ static const SimdIntrinsc vector8s_intrinsics[] = {
 	{ SN_set_V7, 7, SIMD_EMIT_SETTER },
 };
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector16b_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddWithSaturation, OP_PADDB_SAT_UN, SIMD_EMIT_BINARY },
@@ -552,6 +548,22 @@ static const SimdIntrinsc vector16sb_intrinsics[] = {
 	{ SN_op_ExclusiveOr, OP_PXOR, SIMD_EMIT_BINARY },
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
 	{ SN_op_Subtraction, OP_PSUBB, SIMD_EMIT_BINARY },
+	{ SN_set_V0, 0, SIMD_EMIT_SETTER },
+	{ SN_set_V1, 1, SIMD_EMIT_SETTER },
+	{ SN_set_V10, 10, SIMD_EMIT_SETTER },
+	{ SN_set_V11, 11, SIMD_EMIT_SETTER },
+	{ SN_set_V12, 12, SIMD_EMIT_SETTER },
+	{ SN_set_V13, 13, SIMD_EMIT_SETTER },
+	{ SN_set_V14, 14, SIMD_EMIT_SETTER },
+	{ SN_set_V15, 15, SIMD_EMIT_SETTER },
+	{ SN_set_V2, 2, SIMD_EMIT_SETTER },
+	{ SN_set_V3, 3, SIMD_EMIT_SETTER },
+	{ SN_set_V4, 4, SIMD_EMIT_SETTER },
+	{ SN_set_V5, 5, SIMD_EMIT_SETTER },
+	{ SN_set_V6, 6, SIMD_EMIT_SETTER },
+	{ SN_set_V7, 7, SIMD_EMIT_SETTER },
+	{ SN_set_V8, 8, SIMD_EMIT_SETTER },
+	{ SN_set_V9, 9, SIMD_EMIT_SETTER },
 };
 
 static guint32 simd_supported_versions;
