@@ -1840,6 +1840,10 @@ typedef enum {
 	X86_SSE_PINSRB = 0x20,/*sse41*/
 	X86_SSE_PINSRW = 0xC4,
 	X86_SSE_PINSRD = 0x22,/*sse41*/
+
+	X86_SSE_PEXTRB = 0x14,/*sse41*/
+	X86_SSE_PEXTRW = 0xC5,
+	X86_SSE_PEXTRD = 0x16,/*sse41*/
 } X86_SSE_Opcode;
 
 
