@@ -2,6 +2,34 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_accessor_vecto4f () {
+		Vector4f a = new Vector4f (1,2,3,4);
+
+		if (a.X != 1)
+			return 1;
+		if (a.Y != 2)
+			return 2;
+		if (a.Z != 3)
+			return 3;
+		if (a.W != 4)
+			return 4;
+
+		a.X = 128f;
+		a.Y = 256f;
+		a.Z = -0.5f;
+		a.W = 0.125f;
+
+		if (a.X != 128)
+			return 5;
+		if (a.Y != 256)
+			return 6;
+		if (a.Z != -0.5)
+			return 7;
+		if (a.W != 0.125)
+			return 8;
+		return 0;
+	}
+
 	public static int test_0_accessor_vecto4i () {
 		Vector4i a = new Vector4i (0x70000000, -1, 3, 4);
 
