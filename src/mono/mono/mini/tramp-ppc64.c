@@ -60,8 +60,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	guint32 short_branch;
 	MonoDomain *domain = mono_domain_get ();
 
-	/* FIXME: handle function descriptors */
-	g_assert_not_reached ();
+	addr = mono_get_addr_from_ftnptr (addr);
 
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = 4;
@@ -88,7 +87,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
 	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 
-	return start;
+	return mono_create_ftnptr (domain, start);
 }
 
 void
@@ -351,12 +350,12 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	mono_domain_lock (domain);
 	code = buf = mono_code_manager_reserve_align (domain->code_mp, TRAMPOLINE_SIZE, 4);
-	short_branch = branch_for_target_reachable (code + 8, tramp);
+	short_branch = branch_for_target_reachable (code + 5 * 4, tramp);
 	/* FIXME: make shorter if possible */
 	mono_domain_unlock (domain);
 
 	if (short_branch) {
-		ppc_load (buf, ppc_r0, (gulong) arg1);
+		ppc_load_sequence (buf, ppc_r0, (gulong) arg1);
 		ppc_emit32 (buf, short_branch);
 	} else {
 		/* Prepare the jump to the generic trampoline code.*/

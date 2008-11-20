@@ -75,18 +75,18 @@ oparglist: src1:i len:12
 setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
 voidcall: len:36 clob:c
-voidcall_reg: src1:i len:12 clob:c
+voidcall_reg: src1:i len:16 clob:c
 voidcall_membase: src1:b len:12 clob:c
 fcall: dest:g len:36 clob:c
-fcall_reg: dest:g src1:i len:12 clob:c
+fcall_reg: dest:g src1:i len:16 clob:c
 fcall_membase: dest:g src1:b len:12 clob:c
 lcall: dest:a len:36 clob:c
-lcall_reg: dest:a src1:i len:12 clob:c
+lcall_reg: dest:a src1:i len:16 clob:c
 lcall_membase: dest:a src1:b len:12 clob:c
 vcall: len:16 clob:c
-vcall_reg: src1:i len:12 clob:c
+vcall_reg: src1:i len:16 clob:c
 vcall_membase: src1:b len:12 clob:c
-call_reg: dest:a src1:i len:12 clob:c
+call_reg: dest:a src1:i len:16 clob:c
 call_membase: dest:a src1:b len:12 clob:c
 iconst: dest:i len:20
 i8const: dest:i len:20
@@ -317,17 +317,20 @@ long_and: dest:i src1:i src2:i len:4
 long_or: dest:i src1:i src2:i len:4
 long_xor: dest:i src1:i src2:i len:4
 long_shl: dest:i src1:i src2:i len:4
+long_shl_imm: dest:i src1:i len:4
 long_shr: dest:i src1:i src2:i len:4
 long_shr_un: dest:i src1:i src2:i len:4
+long_shr_imm: dest:i src1:i len:4
+long_shr_un_imm: dest:i src1:i len:4
 long_neg: dest:i src1:i len:4
 long_not: dest:i src1:i len:4
-long_conv_to_i1: dest:i src1:i len:8
-long_conv_to_i2: dest:i src1:i len:8
+long_conv_to_i1: dest:i src1:i len:4
+long_conv_to_i2: dest:i src1:i len:4
 long_conv_to_i4: dest:i src1:i len:4
 long_conv_to_r4: dest:f src1:i len:36
 long_conv_to_r8: dest:f src1:i len:36
 long_conv_to_u4: dest:i src1:i
-long_conv_to_u2: dest:i src1:i len:8
+long_conv_to_u2: dest:i src1:i len:4
 long_conv_to_u1: dest:i src1:i len:4
 zext_i4: dest:i src1:i len:4
 

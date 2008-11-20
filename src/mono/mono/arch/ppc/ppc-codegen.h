@@ -710,8 +710,8 @@ my and Ximian's copyright to this code. ;)
 
 #define ppc_load_func(c,D,v) G_STMT_START { \
 		ppc_load_sequence ((c), ppc_r11, (guint64)(v)); \
-		ppc_ld ((c), ppc_r2, 8, ppc_r11);	\
-		ppc_ld ((c), (D), 0, ppc_r11);	\
+		ppc_load_reg ((c), ppc_r2, 8, ppc_r11);	\
+		ppc_load_reg ((c), (D), 0, ppc_r11);	\
 	} G_STMT_END
 
 #define ppc_load_reg(c,D,d,A)         ppc_ld   ((c), (D), (d) >> 2, (A))

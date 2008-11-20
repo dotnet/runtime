@@ -208,8 +208,6 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 	if (ppc_opcode (code [-1]) == 31) { /* mtlr */
 		if ((ppc_opcode (code [-2]) == 58 && ppc_opcode (code [-3]) == 58) || /* ld/ld */
 		    (ppc_opcode (code [-2]) == 24 && ppc_opcode (code [-3]) == 31)) { /* mr/nop */
-			/* FIXME: remove this assert - just for debugging */
-			g_assert (is_load_sequence (&code [-8]));
 			if (is_load_sequence (&code [-8]))
 				return TRUE;
 		} else {
@@ -2034,12 +2032,15 @@ loop_start:
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
 			break;
-		case OP_IAND_IMM:
-		case OP_IOR_IMM:
-		case OP_IXOR_IMM:
 		case OP_AND_IMM:
 		case OP_OR_IMM:
 		case OP_XOR_IMM:
+		case OP_IAND_IMM:
+		case OP_IOR_IMM:
+		case OP_IXOR_IMM:
+		case OP_LAND_IMM:
+		case OP_LOR_IMM:
+		case OP_LXOR_IMM:
 			if ((ins->inst_imm & ~0xffffUL) && (ins->inst_imm & 0xffff)) {
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
@@ -2866,9 +2867,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_extsb (code, ins->dreg, ins->dreg);
 			break;
 		case OP_ICONV_TO_I1:
+		case OP_LCONV_TO_I1:
 			ppc_extsb (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ICONV_TO_I2:
+		case OP_LCONV_TO_I2:
 			ppc_extsh (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ICONV_TO_I4:
@@ -2876,9 +2879,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_extsw (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ICONV_TO_U1:
+		case OP_LCONV_TO_U1:
 			ppc_clrlwi (code, ins->dreg, ins->sreg1, 24);
 			break;
 		case OP_ICONV_TO_U2:
+		case OP_LCONV_TO_U2:
 			ppc_clrlwi (code, ins->dreg, ins->sreg1, 16);
 			break;
 		case OP_ICONV_TO_U4:
@@ -2919,7 +2924,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ADDCC:
 		case OP_IADDCC:
-			ppc_addc (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_addco (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IADD:
 		case OP_LADD:
@@ -2962,6 +2967,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
 			break;
 		case OP_ISUB_OVF:
+		case OP_LSUB_OVF:
 			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
 			 */
 			ppc_subfo (code, ins->dreg, ins->sreg2, ins->sreg1);
@@ -2970,6 +2976,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
 			break;
 		case OP_ISUB_OVF_UN:
+		case OP_LSUB_OVF_UN:
 			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
 			 */
 			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
@@ -3011,9 +3018,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SUBCC:
 		case OP_ISUBCC:
-			ppc_subfc (code, ins->dreg, ins->sreg2, ins->sreg1);
+			ppc_subfco (code, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
 		case OP_ISUB:
+		case OP_LSUB:
 			ppc_subf (code, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
 		case OP_SBB:
@@ -3038,11 +3046,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_subfze (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_IAND:
+		case OP_LAND:
 			/* FIXME: the ppc macros as inconsistent here: put dest as the first arg! */
 			ppc_and (code, ins->sreg1, ins->dreg, ins->sreg2);
 			break;
 		case OP_AND_IMM:
 		case OP_IAND_IMM:
+		case OP_LAND_IMM:
 			if (!(ins->inst_imm & 0xffff0000)) {
 				ppc_andid (code, ins->sreg1, ins->dreg, ins->inst_imm);
 			} else if (!(ins->inst_imm & 0xffff)) {
@@ -3070,6 +3080,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			break;
 		}
+		case OP_LDIV:
+			ppc_divd (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* FIXME: div by zero check */
+			break;
+		case OP_LDIV_UN:
+			ppc_divdu (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* FIXME: div by zero check */
+			break;
 		case OP_IDIV_UN:
 			ppc_divwuod (code, ins->dreg, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
@@ -3082,10 +3100,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_REM_IMM:
 			g_assert_not_reached ();
 		case OP_IOR:
+		case OP_LOR:
 			ppc_or (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_OR_IMM:
 		case OP_IOR_IMM:
+		case OP_LOR_IMM:
 			if (!(ins->inst_imm & 0xffff0000)) {
 				ppc_ori (code, ins->sreg1, ins->dreg, ins->inst_imm);
 			} else if (!(ins->inst_imm & 0xffff)) {
@@ -3095,10 +3115,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_IXOR:
+		case OP_LXOR:
 			ppc_xor (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IXOR_IMM:
 		case OP_XOR_IMM:
+		case OP_LXOR_IMM:
 			if (!(ins->inst_imm & 0xffff0000)) {
 				ppc_xori (code, ins->sreg1, ins->dreg, ins->inst_imm);
 			} else if (!(ins->inst_imm & 0xffff)) {
@@ -3108,22 +3130,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_ISHL:
+		case OP_LSHL:
 			ppc_sld (code, ins->sreg1, ins->dreg, ins->sreg2);
 			break;
 		case OP_SHL_IMM:
 		case OP_ISHL_IMM:
+		case OP_LSHL_IMM:
 			ppc_sldi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
 			break;
 		case OP_ISHR:
 			ppc_sraw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		case OP_LSHR:
+			ppc_srad (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
 		case OP_SHR_IMM:
+		case OP_LSHR_IMM:
 			ppc_sradi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
 			break;
 		case OP_ISHR_IMM:
 			ppc_srawi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
 			break;
 		case OP_SHR_UN_IMM:
+		case OP_LSHR_UN_IMM:
 			ppc_srdi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
 			break;
 		case OP_ISHR_UN_IMM:
@@ -3132,13 +3161,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISHR_UN:
 			ppc_srw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		case OP_LSHR_UN:
+			ppc_srd (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
 		case OP_INOT:
+		case OP_LNOT:
 			ppc_not (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_INEG:
+		case OP_LNEG:
 			ppc_neg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_IMUL:
+		case OP_LMUL:
 			ppc_mulld (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IMUL_IMM:
@@ -3289,6 +3324,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
 			ppc_load_reg (code, ppc_r0, 0, ins->sreg1);
+			/* FIXME: if we know that this is a method, we
+			   can omit this load */
+			ppc_load_reg (code, ppc_r2, 8, ins->sreg1);
 			ppc_mtlr (code, ppc_r0);
 			ppc_blrl (code);
 			/* FIXME: this should be handled somewhere else in the new jit */
@@ -3497,14 +3535,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_C:
 			/* check XER [0-3] (SO, OV, CA): we can't use mcrxr
 			 */
-			/*ppc_mfspr (code, ppc_r0, ppc_xer);
-			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
-			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
-			break;*/
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1 << 13)); /* CA */
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, ins->inst_p1);
+			break;
 		case OP_COND_EXC_OV:
-			/*ppc_mcrxr (code, 0);
-			EMIT_COND_SYSTEM_EXCEPTION (CEE_BGT - CEE_BEQ, ins->inst_p1);
-			break;*/
+			ppc_mfspr (code, ppc_r0, ppc_xer);
+			ppc_andisd (code, ppc_r0, ppc_r0, (1 << 14)); /* OV */
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, ins->inst_p1);
+			break;
 		case OP_COND_EXC_NC:
 		case OP_COND_EXC_NO:
 			g_assert_not_reached ();
@@ -3851,6 +3890,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			continue;
 		case MONO_PATCH_INFO_INTERNAL_METHOD:
 		case MONO_PATCH_INFO_ABS:
+		case MONO_PATCH_INFO_CLASS_INIT:
 			is_fd = TRUE;
 			break;
 		default:
@@ -3896,7 +3936,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		tracing = 1;
 
 	sig = mono_method_signature (method);
-	cfg->code_size = 256 + sig->param_count * 20;
+	cfg->code_size = 384 + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {

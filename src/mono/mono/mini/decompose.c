@@ -166,7 +166,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, ins->dreg, ins->sreg1, 0);
 		ins->opcode = OP_NOP;
 		break;
-#if defined(__ppc__) || defined(__powerpc__)
+#if defined(__mono_ppc__) && !defined(__mono_ppc64__)
 	case OP_LADD_OVF:
 		/* ADC sets the condition code */
 		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
@@ -206,6 +206,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		ins->opcode = OP_NOP;
 		break;
+#ifndef __mono_ppc64__
 	case OP_LSUB_OVF:
 		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
@@ -216,6 +217,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		ins->opcode = OP_NOP;
 		break;
+#endif
 #endif
 		
 	case OP_ICONV_TO_OVF_I8:

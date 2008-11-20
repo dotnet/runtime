@@ -334,6 +334,20 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	g_assert_not_reached ();
 }
 
+static gpointer
+ppc64_create_ftnptr (gpointer addr)
+{
+	gpointer *desc;
+
+	desc = mono_global_codeman_reserve (3 * sizeof (gpointer));
+
+	desc [0] = addr;
+	desc [1] = NULL;
+	desc [2] = NULL;
+
+	return desc;
+}
+
 /**
  * arch_get_throw_exception_generic:
  *
@@ -400,7 +414,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
 	mono_ppc_emitted (start, code - start, "throw exception generic by_name %d rethrow %d", by_name, rethrow);
-	return start;
+	return ppc64_create_ftnptr (start);
 }
 
 /**
@@ -417,10 +431,12 @@ mono_arch_get_rethrow_exception (void)
 	static guint8 *start = NULL;
 	static int inited = 0;
 
+	guint8 *code;
+
 	if (inited)
 		return start;
-	start = mono_global_codeman_reserve (220);
-	mono_arch_get_throw_exception_generic (start, 220, FALSE, TRUE);
+	code = mono_global_codeman_reserve (220);
+	start = mono_arch_get_throw_exception_generic (code, 220, FALSE, TRUE);
 	inited = 1;
 	return start;
 }
@@ -442,10 +458,12 @@ mono_arch_get_throw_exception (void)
 	static guint8 *start = NULL;
 	static int inited = 0;
 
+	guint8 *code;
+
 	if (inited)
 		return start;
-	start = mono_global_codeman_reserve (220);
-	mono_arch_get_throw_exception_generic (start, 220, FALSE, FALSE);
+	code = mono_global_codeman_reserve (220);
+	start = mono_arch_get_throw_exception_generic (code, 220, FALSE, FALSE);
 	inited = 1;
 	return start;
 }
@@ -468,10 +486,12 @@ mono_arch_get_throw_exception_by_name (void)
 	static guint8 *start = NULL;
 	static int inited = 0;
 
+	guint8 *code;
+
 	if (inited)
 		return start;
-	start = mono_global_codeman_reserve (276);
-	mono_arch_get_throw_exception_generic (start, 276, TRUE, FALSE);
+	code = mono_global_codeman_reserve (276);
+	start = mono_arch_get_throw_exception_generic (code, 276, TRUE, FALSE);
 	inited = 1;
 	return start;
 }
