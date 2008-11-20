@@ -173,10 +173,6 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_set_Z, 2, SIMD_EMIT_SETTER },
 };
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector2d_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_AddSub, OP_ADDSUBPD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE3 },
@@ -212,6 +208,8 @@ static const SimdIntrinsc vector2d_intrinsics[] = {
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST }, 
 	{ SN_op_Multiply, OP_MULPD, SIMD_EMIT_BINARY },
 	{ SN_op_Subtraction, OP_SUBPD, SIMD_EMIT_BINARY },
+	{ SN_set_X, 0, SIMD_EMIT_SETTER },
+	{ SN_set_Y, 1, SIMD_EMIT_SETTER },
 };
 
 /*
@@ -934,6 +932,8 @@ mono_type_to_slow_insert_op (MonoType *type)
 		return OP_INSERTX_I4_SLOW;
 	case MONO_TYPE_R4:
 		return OP_INSERTX_R4_SLOW;
+	case MONO_TYPE_R8:
+		return OP_INSERTX_R8_SLOW;
 	}
 	g_assert_not_reached ();
 }
@@ -945,7 +945,7 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	int size, align;
 	size = mono_type_size (sig->params [0], &align); 
 
-	if (size == 2 || size == 4) {
+	if (size == 2 || size == 4 || size == 8) {
 		MONO_INST_NEW (cfg, ins, mono_type_to_slow_insert_op (sig->params [0]));
 		ins->klass = cmethod->klass;
 		/*This is a partial load so we encode the dependency on the previous value by setting dreg and sreg1 to the same value.*/
@@ -954,6 +954,8 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 		ins->inst_c0 = intrinsic->opcode;
 		if (sig->params [0]->type == MONO_TYPE_R4)
 			ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+		else if (sig->params [0]->type == MONO_TYPE_R8)
+			ins->backend.spill_var = get_double_spill_area (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);
 	} else {
 		int vreg, sreg;
