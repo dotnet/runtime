@@ -724,6 +724,18 @@ my and Ximian's copyright to this code. ;)
 #define ppc_store_reg_indexed(c,S,A,B)        ppc_stdx  ((c), (S), (A), (B))
 #define ppc_store_reg_update_indexed(c,S,A,B) ppc_stdux ((c), (S), (A), (B))
 
+#define ppc_divdx(c,D,A,B,OE,Rc) ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | ((OE) << 10) | (489 << 1) | (Rc))
+#define ppc_divd(c,D,A,B)   ppc_divdx(c,D,A,B,0,0)
+#define ppc_divdd(c,D,A,B)  ppc_divdx(c,D,A,B,0,1)
+#define ppc_divdo(c,D,A,B)  ppc_divdx(c,D,A,B,1,0)
+#define ppc_divdod(c,D,A,B) ppc_divdx(c,D,A,B,1,1)
+
+#define ppc_divdux(c,D,A,B,OE,Rc) ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | ((OE) << 10) | (457 << 1) | (Rc))
+#define ppc_divdu(c,D,A,B)   ppc_divdux(c,D,A,B,0,0)
+#define ppc_divdud(c,D,A,B)  ppc_divdux(c,D,A,B,0,1)
+#define ppc_divduo(c,D,A,B)  ppc_divdux(c,D,A,B,1,0)
+#define ppc_divduod(c,D,A,B) ppc_divdux(c,D,A,B,1,1)
+
 #define ppc_extswx(c,S,A,Rc) ppc_emit32(c, (31 << 26) | ((S) << 21) | ((A) << 16) | (0 << 11) | (986 << 1) | (Rc))
 #define ppc_extsw(c,A,S)  ppc_extswx(c,S,A,0)
 #define ppc_extswd(c,A,S) ppc_extswx(c,S,A,1)
