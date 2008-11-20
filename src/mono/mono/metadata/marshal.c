@@ -6237,7 +6237,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoClass *klass;
 	int pos = 0, pos2;
 
-	klass = t->data.klass;
+	klass = mono_class_from_mono_type (t);
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
@@ -6815,7 +6815,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		     MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
-	MonoClass *klass = t->data.klass;
+	MonoClass *klass = mono_class_from_mono_type (t);
 	int pos, pos2, loc;
 
 	if (mono_class_from_mono_type (t) == mono_defaults.object_class) {
@@ -6965,7 +6965,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* allocate a new object */
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_op (mb, CEE_MONO_NEWOBJ, t->data.klass);
+			mono_mb_emit_op (mb, CEE_MONO_NEWOBJ, klass);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		}
 
@@ -6991,7 +6991,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_stloc (mb, 0);
 
 			/* emit valuetype conversion code */
-			emit_struct_conv (mb, t->data.klass, TRUE);
+			emit_struct_conv (mb, klass, TRUE);
 
 			/* Free the structure returned by the native code */
 			emit_struct_free (mb, klass, conv_arg);
@@ -8577,6 +8577,11 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MONO_TYPE_U8:
 	case MONO_TYPE_FNPTR:
 		return emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+	case MONO_TYPE_GENERICINST:
+		if (mono_type_generic_inst_is_valuetype (t))
+			return emit_marshal_vtype (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		else
+			return emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	}
 
 	return conv_arg;
@@ -8731,6 +8736,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CHAR:
 			case MONO_TYPE_PTR:
+			case MONO_TYPE_GENERICINST:
 				emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
 				break;
 			case MONO_TYPE_TYPEDBYREF:
@@ -11531,14 +11537,21 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	case MONO_TYPE_R8:
 		*align = 4;
 		return 8;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t)) {
+			*align = 4;
+			return 4;
+		} 
+		/* Fall through */
 	case MONO_TYPE_TYPEDBYREF:
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
+		MonoClass *klass = mono_class_from_mono_type (t);
 
-		if (t->data.klass->enumtype)
-			return mono_type_native_stack_size (t->data.klass->enum_basetype, align);
+		if (klass->enumtype)
+			return mono_type_native_stack_size (klass->enum_basetype, align);
 		else {
-			size = mono_class_native_size (t->data.klass, align);
+			size = mono_class_native_size (klass, align);
 			*align = *align + 3;
 			*align &= ~3;
 			
@@ -12382,6 +12395,7 @@ cominterop_ccw_release (MonoCCWInterface* ccwe)
 static const IID MONO_IID_IMarshal = {0x3, 0x0, 0x0, {0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46}};
 #endif
 
+#ifdef PLATFORM_WIN32
 /* All ccw objects are free threaded */
 static int
 cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpointer* ppv)
@@ -12405,6 +12419,7 @@ cominterop_ccw_getfreethreadedmarshaler (MonoCCW* ccw, MonoObject* object, gpoin
 	return MONO_E_NOINTERFACE;
 #endif
 }
+#endif
 
 static int STDCALL 
 cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* ppv)
