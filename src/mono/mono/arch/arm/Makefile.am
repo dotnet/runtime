@@ -7,7 +7,6 @@ BUILT_SOURCES = arm_dpimacros.h arm_fpamacros.h arm_vfpmacros.h
 
 
 libmonoarch_arm_la_SOURCES = $(BUILT_SOURCES) \
-	tramp.c \
 	arm-codegen.c \
 	arm-codegen.h \
 	arm-dis.c \
