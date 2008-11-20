@@ -1,3 +1,7 @@
+2008-11-20  Jb Evain  <jbevain@novell.com>
+
+	* Makefile: simplify Makefile and tune System.Xml.Linq.
+
 2008-10-16  Jb Evain  <jbevain@novell.com>
 
 	* masterinfos/silverlight/*.info: update to SL2.
