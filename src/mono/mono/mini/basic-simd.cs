@@ -2,6 +2,27 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_accessor_vecto2d () {
+		Vector2d a = new Vector2d (3, 2);
+
+		if (a.X != 3)
+			return 1;
+		if (a.Y != 2)
+			return 2;
+
+		a.X = 5000000000000;
+		a.Y = -0.5;
+
+		Console.WriteLine (a.X);
+		Console.WriteLine (a.Y);
+		
+		if (a.X != 5000000000000)
+			return 3;
+		if (a.Y != -0.5)
+			return 4;
+		return 0;
+	}
+
 	public static int test_0_accessor_vecto4f () {
 		Vector4f a = new Vector4f (1,2,3,4);
 
