@@ -272,10 +272,6 @@ static const SimdIntrinsc vector2l_intrinsics[] = {
 	{ SN_op_Subtraction, OP_PSUBQ, SIMD_EMIT_BINARY },
 };
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector4ui_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_ArithmeticRightShift, OP_PSARD, SIMD_EMIT_SHIFT },
@@ -307,12 +303,12 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 	{ SN_op_Multiply, OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_op_RightShift, OP_PSHRD, SIMD_EMIT_SHIFT },
 	{ SN_op_Subtraction, OP_PSUBD, SIMD_EMIT_BINARY },
+	{ SN_set_W, 3, SIMD_EMIT_SETTER },
+	{ SN_set_X, 0, SIMD_EMIT_SETTER },
+	{ SN_set_Y, 1, SIMD_EMIT_SETTER },
+	{ SN_set_Z, 2, SIMD_EMIT_SETTER },
 };
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector4i_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_CompareEqual, OP_PCMPEQD, SIMD_EMIT_BINARY },
@@ -345,6 +341,10 @@ static const SimdIntrinsc vector4i_intrinsics[] = {
 	{ SN_op_Multiply, OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_op_RightShift, OP_PSARD, SIMD_EMIT_SHIFT },
 	{ SN_op_Subtraction, OP_PSUBD, SIMD_EMIT_BINARY },
+	{ SN_set_W, 3, SIMD_EMIT_SETTER },
+	{ SN_set_X, 0, SIMD_EMIT_SETTER },
+	{ SN_set_Y, 1, SIMD_EMIT_SETTER },
+	{ SN_set_Z, 2, SIMD_EMIT_SETTER },
 };
 
 static const SimdIntrinsc vector8us_intrinsics[] = {
@@ -924,10 +924,11 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 {
 	MonoInst *ins;
 	MonoMethodSignature *sig = mono_method_signature (cmethod);
-	int size;
+	int size, align;
+	size = mono_type_size (sig->params [0], &align); 
 
-	if (mono_type_size (sig->params [0], &size) == 2) {
-		MONO_INST_NEW (cfg, ins, OP_INSERT_I2);
+	if (size == 2 || size == 4) {
+		MONO_INST_NEW (cfg, ins, size == 2 ? OP_INSERT_I2 : OP_INSERTX_I4_SLOW);
 		ins->klass = cmethod->klass;
 		/*This is a partial load so we encode the dependency on the previous value by setting dreg and sreg1 to the same value.*/
 		ins->dreg = ins->sreg1 = load_simd_vreg (cfg, cmethod, args [0]);

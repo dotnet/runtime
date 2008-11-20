@@ -579,6 +579,8 @@ insert_i2: dest:x src1:x src2:i len:5 clob:1
 extractx_u2: dest:i src1:x len:5
 insertx_u1_slow: dest:x src1:i src2:i len:15 clob:x
 
+insertx_i4_slow: dest:x src1:x src2:i len:13 clob:x
+
 loadx_membase: dest:x src1:b len:7
 storex_membase: dest:b src1:x len:7
 storex_membase_reg: dest:b src1:x len:7
