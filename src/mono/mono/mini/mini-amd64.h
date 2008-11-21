@@ -223,7 +223,29 @@ typedef struct {
 
 #endif /* PLATFORM_WIN32 */
 
-#ifdef __FreeBSD__
+#if defined (__NetBSD__)
+
+#define REG_RAX 14
+#define REG_RCX 3
+#define REG_RDX 2
+#define REG_RBX 13
+#define REG_RSP 24
+#define REG_RBP 12
+#define REG_RSI 1
+#define REG_RDI 0
+#define REG_R8 4
+#define REG_R9 5
+#define REG_R10 6
+#define REG_R11 7
+#define REG_R12 8
+#define REG_R13 9
+#define REG_R14 10
+#define REG_R15 11
+#define REG_RIP 21
+
+#define MONO_ARCH_NOMAP32BIT
+
+#elif defined (__FreeBSD__)
 
 #define REG_RAX 7
 #define REG_RCX 4
