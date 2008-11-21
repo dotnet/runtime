@@ -10,11 +10,61 @@
 #ifndef _WAPI_ATOMIC_H_
 #define _WAPI_ATOMIC_H_
 
+#if defined(__NetBSD__)
+#include <sys/param.h>
+
+#if __NetBSD_Version__ > 499004000
+#include <sys/atomic.h>
+#define HAVE_ATOMIC_OPS
+#endif
+
+#endif
+
 #include <glib.h>
 
 #include "mono/io-layer/wapi.h"
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__NetBSD__) && defined(HAVE_ATOMIC_OPS)
+
+#define WAPI_ATOMIC_ASM
+static inline gint32 InterlockedCompareExchange(volatile gint32 *dest,
+       gint32 exch, gint32 comp)
+{
+       return atomic_cas_32((uint32_t*)dest, comp, exch);
+}
+
+static inline gpointer InterlockedCompareExchangePointer(volatile gpointer *dest, gpointer exch, gpointer comp)
+{
+       return atomic_cas_ptr(dest, comp, exch);
+}
+
+static inline gint32 InterlockedIncrement(volatile gint32 *val)
+{
+       return atomic_inc_32_nv((uint32_t*)val);
+}
+
+static inline gint32 InterlockedDecrement(volatile gint32 *val)
+{
+       return atomic_dec_32_nv((uint32_t*)val);
+}
+
+static inline gint32 InterlockedExchange(volatile gint32 *val, gint32 new_val)
+{
+       return atomic_swap_32((uint32_t*)val, new_val);
+}
+
+static inline gpointer InterlockedExchangePointer(volatile gpointer *val,
+               gpointer new_val)
+{
+       return atomic_swap_ptr(val, new_val);
+}
+
+static inline gint32 InterlockedExchangeAdd(volatile gint32 *val, gint32 add)
+{
+       return atomic_add_32_nv((uint32_t*)val, add) - add;
+}
+
+#elif defined(__i386__) || defined(__x86_64__)
 #define WAPI_ATOMIC_ASM
 
 /*
