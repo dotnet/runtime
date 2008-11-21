@@ -3255,12 +3255,17 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 
 		assembly = method->klass->image->assembly;
 		domain->entry_assembly = assembly;
-		MONO_OBJECT_SETREF (domain->setup, application_base, mono_string_new (domain, assembly->basedir));
+		/* Domains created from another domain already have application_base and configuration_file set */
+		if (domain->setup->application_base == NULL) {
+			MONO_OBJECT_SETREF (domain->setup, application_base, mono_string_new (domain, assembly->basedir));
+		}
 
-		str = g_strconcat (assembly->image->name, ".config", NULL);
-		MONO_OBJECT_SETREF (domain->setup, configuration_file, mono_string_new (domain, str));
-		g_free (str);
-		mono_set_private_bin_path_from_config (domain);
+		if (domain->setup->configuration_file == NULL) {
+			str = g_strconcat (assembly->image->name, ".config", NULL);
+			MONO_OBJECT_SETREF (domain->setup, configuration_file, mono_string_new (domain, str));
+			g_free (str);
+			mono_set_private_bin_path_from_config (domain);
+		}
 	}
 
 	cinfo = mono_custom_attrs_from_method (method);
