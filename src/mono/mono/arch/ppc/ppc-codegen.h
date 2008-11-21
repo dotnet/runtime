@@ -125,8 +125,8 @@ enum {
 
 #define ppc_emit32(c,x) do { *((guint32 *) (c)) = x; (c) = (gpointer)((guint8 *)(c) + sizeof (guint32));} while (0)
 
-#define ppc_is_imm16(val) ((gint)(val) >= (gint)-(1<<15) && (gint)(val) <= (gint)((1<<15)-1))
-#define ppc_is_uimm16(val) ((gint)(val) >= 0 && (gint)(val) <= 65535)
+#define ppc_is_imm16(val) ((glong)(val) >= (glong)-(1L<<15) && (glong)(val) <= (glong)((1L<<15)-1L))
+#define ppc_is_uimm16(val) ((glong)(val) >= 0L && (glong)(val) <= 65535L)
 
 #define ppc_load32(c,D,v) G_STMT_START {	\
 		ppc_lis ((c), (D),      (guint32)(v) >> 16);	\

@@ -97,7 +97,8 @@ typedef struct MonoCompileArch {
 /* Linux */
 #define PPC_RET_ADDR_OFFSET 16
 #define PPC_STACK_PARAM_OFFSET 48
-#define PPC_MINIMAL_STACK_SIZE 32 /* FIXME: check */
+#define PPC_MINIMAL_STACK_SIZE 48
+#define PPC_MINIMAL_PARAM_AREA_SIZE 64
 #define PPC_FIRST_ARG_REG ppc_r3
 #define PPC_LAST_ARG_REG ppc_r10
 #define PPC_FIRST_FPARG_REG ppc_f1

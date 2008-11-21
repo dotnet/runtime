@@ -61,7 +61,7 @@ sub_ovf_carry: dest:i src1:i src2:i len:16
 add_ovf_un_carry: dest:i src1:i src2:i len:16
 sub_ovf_un_carry: dest:i src1:i src2:i len:16
 start_handler: len:16
-endfinally: len:12
+endfinally: len:20
 ceq: dest:i len:12
 cgt: dest:i len:12
 cgt.un: dest:i len:12
@@ -197,7 +197,7 @@ float_clt: dest:i src1:f src2:f len:16
 float_clt_un: dest:i src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:12
-endfilter: src1:i len:16
+endfilter: src1:i len:20
 aot_const: dest:i len:8
 sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4

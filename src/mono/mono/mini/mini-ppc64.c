@@ -598,8 +598,8 @@ mono_arch_flush_register_windows (void)
 #define ALWAYS_ON_STACK(s) s
 #define FP_ALSO_IN_REG(s) s
 #else
-#define ALWAYS_ON_STACK(s)
-#define FP_ALSO_IN_REG(s)
+#define ALWAYS_ON_STACK(s) s
+#define FP_ALSO_IN_REG(s) s
 #define ALIGN_DOUBLES
 #endif
 
@@ -1328,7 +1328,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 	call->stack_usage = cinfo->stack_usage;
-	cfg->param_area = MAX (cfg->param_area, cinfo->stack_usage);
+	cfg->param_area = MAX (PPC_MINIMAL_PARAM_AREA_SIZE, MAX (cfg->param_area, cinfo->stack_usage));
 	cfg->flags |= MONO_CFG_HAS_CALLS;
 
 	g_free (cinfo);
