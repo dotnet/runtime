@@ -1,3 +1,7 @@
+2008-11-21  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Only enable AOT on linux. Fixes #447265.
+
 2008-11-19  Jonathan Pryor  <jpryor@novell.com>
 
 	* configure.in: Remove mono/monoburg/Makefile; fixes the build.

@@ -143,6 +143,7 @@ case "$host" in
 		libmono_ldflags="-lpthread"
 		libdl="-ldl"
 		libgc_threads=pthreads
+		AOT_SUPPORTED="yes"
 		;;
 	*-*-hpux*)
         platform_win32=no
@@ -2388,7 +2389,7 @@ fi
     echo "MONO_VERSION = $myver" >> $srcdir/$mcsdir/build/config.make
   fi
 
-  if test x$TARGET = xAMD64 -a x$platform_win32 = xno; then
+  if test x$TARGET = xAMD64 -a x$platform_win32 = xno -a "x$AOT_SUPPORTED" = "xyes"; then
   	 echo "ENABLE_AOT = 1" >> $srcdir/$mcsdir/build/config.make
   fi
 
