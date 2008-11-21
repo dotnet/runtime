@@ -67,7 +67,7 @@ typedef struct MonoCompileArch {
 #ifdef __APPLE__
 #define MONO_ARCH_CALLEE_FREGS (0x1fff << ppc_f1)
 #else
-#define MONO_ARCH_CALLEE_FREGS (0xff << ppc_f1)
+#define MONO_ARCH_CALLEE_FREGS (0x1fff << ppc_f1)
 #endif
 #define MONO_ARCH_CALLEE_SAVED_FREGS (~(MONO_ARCH_CALLEE_FREGS | 1))
 
