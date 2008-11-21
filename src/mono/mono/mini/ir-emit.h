@@ -716,6 +716,38 @@ static int ccount = 0;
 	    (cfg)->cbb = (bblock); \
     } while (0)
 
+/*Object Model related macros*/
+
+#ifndef MONO_ARCH_EMIT_BOUNDS_CHECK
+#define MONO_ARCH_EMIT_BOUNDS_CHECK(cfg, array_reg, offset, index_reg) do { \
+			int _length_reg = alloc_ireg (cfg); \
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset); \
+			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, _length_reg, index_reg); \
+			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
+	} while (0)
+#endif
+
+/* cfg is the MonoCompile been used
+ * array_reg is the vreg holding the array object
+ * array_type is a struct (usually MonoArray or MonoString)
+ * array_length_field is the field in the previous struct with the length
+ * index_reg is the vreg holding the index
+ */
+#define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
+            if (!(cfg->opt & MONO_OPT_ABCREM)) { \
+                MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
+            } else { \
+                MonoInst *ins; \
+                MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK); \
+                ins->sreg1 = array_reg; \
+                ins->sreg2 = index_reg; \
+                ins->inst_imm = G_STRUCT_OFFSET (array_type, array_length_field); \
+                MONO_ADD_INS ((cfg)->cbb, ins); \
+			    (cfg)->flags |= MONO_CFG_HAS_ARRAY_ACCESS; \
+                (cfg)->cbb->has_array_access = TRUE; \
+            } \
+    } while (0)
+
 G_END_DECLS
 
 #endif
