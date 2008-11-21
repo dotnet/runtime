@@ -5379,45 +5379,66 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 {
 	MonoInst *ins;
 	int vreg;
-	if (!(cfg->opt & MONO_OPT_SIMD) || long_ins->opcode != OP_EXTRACT_I8)
+	if (!(cfg->opt & MONO_OPT_SIMD))
 		return;
+	
 	/*TODO move this to simd-intrinsic.c once we support sse 4.1 dword extractors since we need the runtime caps info */ 
-
-	vreg = long_ins->sreg1;
-
-	if (long_ins->inst_c0) {
+	switch (long_ins->opcode) {
+	case OP_EXTRACT_I8:
+		vreg = long_ins->sreg1;
+	
+		if (long_ins->inst_c0) {
+			MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
+			ins->klass = long_ins->klass;
+			ins->sreg1 = long_ins->sreg1;
+			ins->inst_c0 = 2;
+			ins->type = STACK_VTYPE;
+			ins->dreg = vreg = alloc_ireg (cfg);
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	
+		MONO_INST_NEW (cfg, ins, OP_EXTRACT_I4);
+		ins->klass = mono_defaults.int32_class;
+		ins->sreg1 = vreg;
+		ins->type = STACK_I4;
+		ins->dreg = long_ins->dreg + 1;
+		MONO_ADD_INS (cfg->cbb, ins);
+	
 		MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
 		ins->klass = long_ins->klass;
 		ins->sreg1 = long_ins->sreg1;
-		ins->inst_c0 = 2;
+		ins->inst_c0 = long_ins->inst_c0 ? 3 : 1;
 		ins->type = STACK_VTYPE;
 		ins->dreg = vreg = alloc_ireg (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);
+	
+		MONO_INST_NEW (cfg, ins, OP_EXTRACT_I4);
+		ins->klass = mono_defaults.int32_class;
+		ins->sreg1 = vreg;
+		ins->type = STACK_I4;
+		ins->dreg = long_ins->dreg + 2;
+		MONO_ADD_INS (cfg->cbb, ins);
+	
+		long_ins->opcode = OP_NOP;
+		break;
+	case OP_INSERTX_I8_SLOW:
+		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
+		ins->dreg = long_ins->dreg;
+		ins->sreg1 = long_ins->dreg;
+		ins->sreg2 = long_ins->sreg2 + 1;
+		ins->inst_c0 = long_ins->inst_c0 * 2;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
+		ins->dreg = long_ins->dreg;
+		ins->sreg1 = long_ins->dreg;
+		ins->sreg2 = long_ins->sreg2 + 2;
+		ins->inst_c0 = long_ins->inst_c0 * 2 + 1;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		long_ins->opcode = OP_NOP;
+		break;
 	}
-
-	MONO_INST_NEW (cfg, ins, OP_EXTRACT_I4);
-	ins->klass = mono_defaults.int32_class;
-	ins->sreg1 = vreg;
-	ins->type = STACK_I4;
-	ins->dreg = long_ins->dreg + 1;
-	MONO_ADD_INS (cfg->cbb, ins);
-
-	MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
-	ins->klass = long_ins->klass;
-	ins->sreg1 = long_ins->sreg1;
-	ins->inst_c0 = long_ins->inst_c0 ? 3 : 1;
-	ins->type = STACK_VTYPE;
-	ins->dreg = vreg = alloc_ireg (cfg);
-	MONO_ADD_INS (cfg->cbb, ins);
-
-	MONO_INST_NEW (cfg, ins, OP_EXTRACT_I4);
-	ins->klass = mono_defaults.int32_class;
-	ins->sreg1 = vreg;
-	ins->type = STACK_I4;
-	ins->dreg = long_ins->dreg + 2;
-	MONO_ADD_INS (cfg->cbb, ins);
-
-	long_ins->opcode = OP_NOP;
 }
 #endif
 

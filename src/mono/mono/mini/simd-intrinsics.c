@@ -212,10 +212,6 @@ static const SimdIntrinsc vector2d_intrinsics[] = {
 	{ SN_set_Y, 1, SIMD_EMIT_SETTER },
 };
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector2ul_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_CompareEqual, OP_PCMPEQQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
@@ -239,12 +235,10 @@ static const SimdIntrinsc vector2ul_intrinsics[] = {
 	{ SN_op_Multiply, OP_PMULQ, SIMD_EMIT_BINARY },
 	{ SN_op_RightShift, OP_PSHRQ, SIMD_EMIT_SHIFT },
 	{ SN_op_Subtraction, OP_PSUBQ, SIMD_EMIT_BINARY },
+	{ SN_set_X, 0, SIMD_EMIT_SETTER },
+	{ SN_set_Y, 1, SIMD_EMIT_SETTER },
 };
 
-/*
-Missing:
-setters
- */
 static const SimdIntrinsc vector2l_intrinsics[] = {
 	{ SN_ctor, 0, SIMD_EMIT_CTOR },
 	{ SN_CompareEqual, OP_PCMPEQQ, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
@@ -269,6 +263,8 @@ static const SimdIntrinsc vector2l_intrinsics[] = {
 	{ SN_op_LeftShift, OP_PSHLQ, SIMD_EMIT_SHIFT },
 	{ SN_op_Multiply, OP_PMULQ, SIMD_EMIT_BINARY },
 	{ SN_op_Subtraction, OP_PSUBQ, SIMD_EMIT_BINARY },
+	{ SN_set_X, 0, SIMD_EMIT_SETTER },
+	{ SN_set_Y, 1, SIMD_EMIT_SETTER },
 };
 
 static const SimdIntrinsc vector4ui_intrinsics[] = {
@@ -930,6 +926,9 @@ mono_type_to_slow_insert_op (MonoType *type)
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		return OP_INSERTX_I4_SLOW;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return OP_INSERTX_I8_SLOW;
 	case MONO_TYPE_R4:
 		return OP_INSERTX_R4_SLOW;
 	case MONO_TYPE_R8:
