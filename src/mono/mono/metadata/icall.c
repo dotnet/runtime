@@ -4880,6 +4880,7 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 		return mono_class_inflate_generic_method_full (inflated->declaring, klass, &ctx);
 	}
 
+	mono_class_setup_methods (method->klass);
 	for (i = 0; i < method->klass->method.count; ++i) {
 		if (method->klass->methods [i] == method) {
 			offset = i;
