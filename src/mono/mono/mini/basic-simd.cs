@@ -2,6 +2,24 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_accessor_vecto2l () {
+		Vector2l a = new Vector2l (3, 2);
+
+		if (a.X != 3)
+			return 1;
+		if (a.Y != 2)
+			return 2;
+
+		a.X = 500000000000055l;
+		a.Y = -12345678900l;
+
+		if (a.X != 500000000000055l)
+			return 3;
+		if (a.Y != -12345678900l)
+			return 4;
+		return 0;
+	}
+
 	public static int test_0_accessor_vecto2d () {
 		Vector2d a = new Vector2d (3, 2);
 
@@ -13,9 +31,6 @@ public class SimdTests {
 		a.X = 5000000000000;
 		a.Y = -0.5;
 
-		Console.WriteLine (a.X);
-		Console.WriteLine (a.Y);
-		
 		if (a.X != 5000000000000)
 			return 3;
 		if (a.Y != -0.5)
