@@ -4270,24 +4270,40 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			ppc_mtlr (code, ppc_r0);
 		}
 		if (ppc_is_imm16 (cfg->stack_usage)) {
-			ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
+			int offset = cfg->stack_usage;
+			for (i = 13; i <= 31; i++) {
+				if (cfg->used_int_regs & (1 << i))
+					offset -= sizeof (gulong);
+			}
+			if (cfg->frame_reg != ppc_sp)
+				ppc_mr (code, ppc_r11, cfg->frame_reg);
+			/* note r31 (possibly the frame register) is restored last */
+			for (i = 13; i <= 31; i++) {
+				if (cfg->used_int_regs & (1 << i)) {
+					ppc_lwz (code, i, offset, cfg->frame_reg);
+					offset += sizeof (gulong);
+				}
+			}
+			if (cfg->frame_reg != ppc_sp)
+				ppc_addic (code, ppc_sp, ppc_r11, cfg->stack_usage);
+			else
+				ppc_addic (code, ppc_sp, ppc_sp, cfg->stack_usage);
 		} else {
 			ppc_load (code, ppc_r11, cfg->stack_usage);
-			ppc_add (code, ppc_sp, cfg->frame_reg, ppc_r11);
+			if (cfg->used_int_regs) {
+				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
+				for (i = 31; i >= 13; --i) {
+					if (cfg->used_int_regs & (1 << i)) {
+						pos += sizeof (gulong);
+						ppc_lwz (code, i, -pos, ppc_r11);
+					}
+				}
+				ppc_mr (code, ppc_sp, ppc_r11);
+			} else {
+				ppc_add (code, ppc_sp, cfg->frame_reg, ppc_r11);
+			}
 		}
 
-		/*for (i = 31; i >= 14; --i) {
-			if (cfg->used_float_regs & (1 << i)) {
-				pos += sizeof (double);
-				ppc_lfd (code, i, -pos, ppc_sp);
-			}
-		}*/
-		for (i = 31; i >= 13; --i) {
-			if (cfg->used_int_regs & (1 << i)) {
-				pos += sizeof (gulong);
-				ppc_lwz (code, i, -pos, ppc_sp);
-			}
-		}
 	}
 	ppc_blr (code);
 
