@@ -34,7 +34,8 @@ TODO pass simd args byval to a non-intrinsic method cause some useless local var
 TODO check if we need to init the SSE control word with better precision.
 TODO add support for 3 reg sources in mini without slowing the common path. Or find a way to make MASKMOVDQU work.
 TODO make SimdRuntime.get_AccelMode work under AOT
-TODO patterns such as "a ^= b" generate slower code as the LDADDR op will be copied to a tmp first. Look at adding a indirection reduction pass after the dce pass.  
+TODO patterns such as "a ^= b" generate slower code as the LDADDR op will be copied to a tmp first. Look at adding a indirection reduction pass after the dce pass.
+TODO extend bounds checking code to support for range checking.  
 
 General notes for SIMD intrinsics.
 
@@ -1299,6 +1300,66 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	g_assert_not_reached ();
 }
 
+static int
+mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *element_type, MonoInst *arr, MonoInst *index)
+{
+	MonoInst *ins;
+	guint32 size;
+	int mult_reg, add_reg, array_reg, index_reg, index2_reg, index3_reg, align;
+
+	size = mono_type_size (element_type, &align);
+
+	mult_reg = alloc_preg (cfg);
+	array_reg = arr->dreg;
+	index_reg = index->dreg;
+
+#if SIZEOF_VOID_P == 8
+	/* The array reg is 64 bits but the index reg is only 32 */
+	index2_reg = alloc_preg (cfg);
+	MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, index_reg);
+#else
+	index2_reg = index_reg;
+#endif
+	index3_reg = alloc_preg (cfg);
+
+	MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index2_reg);
+
+	MONO_EMIT_NEW_BIALU_IMM (cfg,  OP_PADD_IMM, index3_reg, index2_reg, 3);
+	
+	MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index3_reg);
+
+
+	add_reg = alloc_preg (cfg);
+
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, index2_reg, size);
+	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, array_reg, mult_reg);
+	NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, add_reg, add_reg, G_STRUCT_OFFSET (MonoArray, vector));
+	ins->type = STACK_PTR;
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	
+	return add_reg;
+}
+
+static MonoInst*
+emit_array_extension_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	if (!strcmp ("GetVector", cmethod->name)) {
+		MonoInst *load;
+		int addr = mono_emit_vector_ldelema (cfg, fsig->params [0], args [0], args [1]);
+
+		MONO_INST_NEW (cfg, load, OP_LOADX_MEMBASE);
+		load->klass = cmethod->klass;
+		load->sreg1 = addr;
+		load->type = STACK_VTYPE;
+		load->dreg = alloc_ireg (cfg);
+		MONO_ADD_INS (cfg->cbb, load);
+
+		return load;
+	}
+	return NULL;
+}
+
 static MonoInst*
 emit_simd_runtime_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -1313,8 +1374,15 @@ emit_simd_runtime_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodS
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	if (!strcmp ("Mono.Simd", cmethod->klass->name_space) && !strcmp ("SimdRuntime", cmethod->klass->name))
+	if (strcmp ("Mono.Simd", cmethod->klass->name_space))
+		return NULL;
+	
+	if (!strcmp ("SimdRuntime", cmethod->klass->name))
 		return emit_simd_runtime_intrinsics (cfg, cmethod, fsig, args);
+
+	if (!strcmp ("ArrayExtensions", cmethod->klass->name))
+		return emit_array_extension_intrinsics (cfg, cmethod, fsig, args);
+	
 	if (!cmethod->klass->simd_type)
 		return NULL;
 	cfg->uses_simd_intrinsics = 1;
