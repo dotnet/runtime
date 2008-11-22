@@ -3138,7 +3138,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ISHL:
 		case OP_LSHL:
-			ppc_sld (code, ins->sreg1, ins->dreg, ins->sreg2);
+			ppc_sld (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_SHL_IMM:
 		case OP_ISHL_IMM:
@@ -4783,7 +4783,7 @@ mono_ppc_emitted (guint8 *code, ssize_t length, const char *format, ...)
 	name = g_strdup_vprintf (format, args);
 	va_end (args);
 
-	g_print ("emitted [%s] at %p %p (length %ld)\n", name, code, code + length, length);
+	//g_print ("emitted [%s] at %p %p (length %ld)\n", name, code, code + length, length);
 
 	g_free (name);
 }

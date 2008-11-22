@@ -309,7 +309,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	offset = STACK - sizeof (MonoLMF) - (MONO_FIRST_SAVED_FREG * sizeof (double)) - (MONO_FIRST_SAVED_GREG * sizeof (gulong));
 	ppc_load_reg (buf, ppc_r0, offset, ppc_r1);
 	offset += 2 * sizeof (gulong);
-	for (i = 2; i <= MONO_FIRST_SAVED_GREG; i++) {
+	for (i = 2; i < MONO_FIRST_SAVED_GREG; i++) {
 		if (i != 3 || tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 			ppc_load_reg (buf, i, offset, ppc_r1);
 		offset += sizeof (gulong);
