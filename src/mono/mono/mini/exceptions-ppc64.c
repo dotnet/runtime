@@ -164,16 +164,30 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 		ppc_load_reg (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
 		for (reg = 0; reg < MONO_SAVED_GREGS; ++reg) {	\
 			ppc_load_reg (code, (MONO_FIRST_SAVED_GREG + reg),	\
-				G_STRUCT_OFFSET(MonoLMF, iregs) + reg * sizeof (gulong), ctx_reg);	\
+				G_STRUCT_OFFSET(MonoContext, regs) + reg * sizeof (gulong), ctx_reg);	\
 		}	\
 		for (reg = 0; reg < MONO_SAVED_FREGS; ++reg) {	\
 			ppc_lfd (code, (MONO_FIRST_SAVED_FREG + reg),	\
-				G_STRUCT_OFFSET(MonoLMF, fregs) + reg * sizeof (gdouble), ctx_reg);	\
+				G_STRUCT_OFFSET(MonoContext, fregs) + reg * sizeof (gdouble), ctx_reg);	\
 		}	\
 	} while (0)
 
 /* nothing to do */
 #define setup_context(ctx)
+
+static gpointer
+ppc64_create_ftnptr (gpointer addr)
+{
+	gpointer *desc;
+
+	desc = mono_global_codeman_reserve (3 * sizeof (gpointer));
+
+	desc [0] = addr;
+	desc [1] = NULL;
+	desc [2] = NULL;
+
+	return desc;
+}
 
 /*
  * arch_get_restore_context:
@@ -184,11 +198,13 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 gpointer
 mono_arch_get_restore_context (void)
 {
-	guint8 *code;
-	static guint8 *start = NULL;
+	static guint8 *ftnptr = NULL;
 
-	if (start)
-		return start;
+	guint8 *code;
+	guint8 *start;
+
+	if (ftnptr)
+		return ftnptr;
 
 	code = start = mono_global_codeman_reserve (168);
 	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
@@ -204,7 +220,8 @@ mono_arch_get_restore_context (void)
 	g_assert ((code - start) < 168);
 	mono_arch_flush_icache (start, code - start);
 	mono_ppc_emitted (start, code - start, "restore context");
-	return start;
+	ftnptr = ppc64_create_ftnptr (start);
+	return ftnptr;
 }
 
 static guint8*
@@ -332,20 +349,6 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	restore_context (&ctx);
 
 	g_assert_not_reached ();
-}
-
-static gpointer
-ppc64_create_ftnptr (gpointer addr)
-{
-	gpointer *desc;
-
-	desc = mono_global_codeman_reserve (3 * sizeof (gpointer));
-
-	desc [0] = addr;
-	desc [1] = NULL;
-	desc [2] = NULL;
-
-	return desc;
 }
 
 /**

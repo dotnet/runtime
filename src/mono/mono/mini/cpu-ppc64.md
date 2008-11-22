@@ -309,6 +309,7 @@ icompare_imm: src1:i len:12
 long_add: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
 long_mul: dest:i src1:i src2:i len:4
+long_mul_imm: dest:i src1:i len:4
 long_div: dest:i src1:i src2:i len:40
 long_div_un: dest:i src1:i src2:i len:16
 long_rem: dest:i src1:i src2:i len:48
@@ -368,7 +369,7 @@ lcompare_imm: src1:i len:12
 
 #long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
 
-vcall2: len:20 clob:c
+vcall2: len:36 clob:c
 vcall2_reg: src1:i len:8 clob:c
 vcall2_membase: src1:b len:12 clob:c
 

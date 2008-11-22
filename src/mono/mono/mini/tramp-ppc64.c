@@ -272,7 +272,8 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * won't do any more calls.
 	 */
 	if (tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
-		ppc_load_reg (buf, ppc_r3, 0, ppc_r3);
+		if (tramp_type != MONO_TRAMPOLINE_DELEGATE)
+			ppc_load_reg (buf, ppc_r3, 0, ppc_r3);
 		ppc_mtctr (buf, ppc_r3);
 
 	/*

@@ -130,7 +130,7 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 		ppc_addi (code, ppc_r12, dreg, (doffset - sizeof (gpointer)));
 		ppc_addi (code, ppc_r11, sreg, (soffset - sizeof (gpointer)));
 		copy_loop_start = code;
-		ppc_load_reg_update (code, ppc_r0, ppc_r11, 8);
+		ppc_load_reg_update (code, ppc_r0, 8, ppc_r11);
 		ppc_store_reg_update (code, ppc_r0, 8, ppc_r12);
 		copy_loop_jump = code;
 		ppc_bc (code, PPC_BR_DEC_CTR_NONZERO, 0, 0);
@@ -300,18 +300,20 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return cached;
 		}
 		
-		start = code = mono_global_codeman_reserve (16);
+		start = code = mono_global_codeman_reserve (20);
 
 		/* Replace the this argument with the target */
 		ppc_load_reg (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
+		/* it's a function descriptor */
+		ppc_ldx (code, ppc_r0, 0, ppc_r0);
 		ppc_mtctr (code, ppc_r0);
 		ppc_load_reg (code, ppc_r3, G_STRUCT_OFFSET (MonoDelegate, target), ppc_r3);
 		/* FIXME: this might be a function descriptor */
 		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 
-		g_assert ((code - start) <= 16);
+		g_assert ((code - start) <= 20);
 
-		mono_arch_flush_icache (start, 16);
+		mono_arch_flush_icache (start, 20);
 		mono_ppc_emitted (start, 16, "delegate invoke target has_target 1");
 		cached = start;
 		mono_mini_arch_unlock ();
@@ -333,10 +335,12 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return code;
 		}
 
-		size = 12 + sig->param_count * 4;
+		size = 16 + sig->param_count * 4;
 		start = code = mono_global_codeman_reserve (size);
 
 		ppc_load_reg (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
+		/* it's a function descriptor */
+		ppc_ldx (code, ppc_r0, 0, ppc_r0);
 		ppc_mtctr (code, ppc_r0);
 		/* slide down the arguments */
 		for (i = 0; i < sig->param_count; ++i) {
@@ -360,10 +364,8 @@ gpointer
 mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, gssize *regs, guint8 *code)
 {
 	/* FIXME: handle returning a struct */
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		g_assert_not_reached ();
+	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		return (gpointer)regs [ppc_r4];
-	}
 	return (gpointer)regs [ppc_r3];
 }
 
@@ -2256,7 +2258,6 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 			//g_print ("looking for target: %p at %p (%08x-%08x)\n", pdata->target, thunks, thunks [0], thunks [1]);
 			if ((thunks [0] == load [0]) && (thunks [1] == load [1])) {
 				ppc_patch (pdata->code, (guchar*)thunks);
-				mono_arch_flush_icache (pdata->code, 4);
 				pdata->found = 1;
 				/*{
 					static int num_thunks = 0;
@@ -2276,7 +2277,6 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 				mono_arch_flush_icache ((guchar*)thunks, 16);
 
 				ppc_patch (pdata->code, (guchar*)thunks);
-				mono_arch_flush_icache (pdata->code, 4);
 				pdata->found = 1;
 				/*{
 					static int num_thunks = 0;
@@ -2320,6 +2320,13 @@ handle_thunk (int absolute, guchar *code, const guchar *target) {
 	g_assert (pdata.found == 1);
 }
 
+static void
+patch_ins (guint8 *code, guint32 ins)
+{
+	*(guint32*)code = ins;
+	mono_arch_flush_icache (code, 4);
+}
+
 void
 ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 {
@@ -2335,14 +2342,14 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 		if (diff >= 0){
 			if (diff <= 33554431){
 				ins = (18 << 26) | (diff) | (ins & 1);
-				*(guint32*)code = ins;
+				patch_ins (code, ins);
 				return;
 			}
 		} else {
 			/* diff between 0 and -33554432 */
 			if (diff >= -33554432){
 				ins = (18 << 26) | (diff & ~0xfc000000) | (ins & 1);
-				*(guint32*)code = ins;
+				patch_ins (code, ins);
 				return;
 			}
 		}
@@ -2350,13 +2357,13 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 		if ((glong)target >= 0){
 			if ((glong)target <= 33554431){
 				ins = (18 << 26) | ((gulong) target) | (ins & 1) | 2;
-				*(guint32*)code = ins;
+				patch_ins (code, ins);
 				return;
 			}
 		} else {
 			if ((glong)target >= -33554432){
 				ins = (18 << 26) | (((gulong)target) & ~0xfc000000) | (ins & 1) | 2;
-				*(guint32*)code = ins;
+				patch_ins (code, ins);
 				return;
 			}
 		}
@@ -2389,7 +2396,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 			diff &= 0xffff;
 			ins |= diff;
 		}
-		*(guint32*)code = ins;
+		patch_ins (code, ins);
 		return;
 	}
 
@@ -2431,7 +2438,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 		/* FIXME: make this thread safe */
 		/* FIXME: we're assuming we're using r11 here */
 		ppc_load_sequence (code, ppc_r11, target);
-		mono_arch_flush_icache (code, 28);
+		mono_arch_flush_icache ((guint8*)seq, 28);
 	} else {
 		g_assert_not_reached ();
 	}
@@ -3177,6 +3184,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mulld (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IMUL_IMM:
+		case OP_LMUL_IMM:
 		case OP_MUL_IMM:
 			if (ppc_is_imm16 (ins->inst_imm)) {
 			    ppc_mulli (code, ins->dreg, ins->sreg1, ins->inst_imm);

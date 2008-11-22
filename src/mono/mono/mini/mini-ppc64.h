@@ -103,8 +103,8 @@ typedef struct MonoCompileArch {
 #define PPC_LAST_ARG_REG ppc_r10
 #define PPC_FIRST_FPARG_REG ppc_f1
 #define PPC_LAST_FPARG_REG ppc_f13
-#define PPC_PASS_STRUCTS_BY_VALUE 0 /* FIXME: check */
-#define PPC_SMALL_RET_STRUCT_IN_REG 1 /* FIXME: check */
+#define PPC_PASS_STRUCTS_BY_VALUE 1
+#define PPC_SMALL_RET_STRUCT_IN_REG 0
 #endif
 
 #if defined(HAVE_WORKING_SIGALTSTACK) && !defined(__APPLE__)
@@ -139,7 +139,7 @@ typedef struct MonoCompileArch {
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)bp; } while (0);
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-MONO_SAVED_GREGS]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
 
 #ifdef __APPLE__
