@@ -198,6 +198,9 @@ is_load_sequence (guint32 *seq)
 		ppc_opcode (seq [4]) == 24; /* ori */
 }
 
+#define ppc_load_get_dest(l)	(((l)>>21) & 0x1f)
+#define ppc_load_get_off(l)	((gint16)((l) & 0xffff))
+
 /* code must point to the blrl */
 gboolean
 mono_ppc_is_direct_call_sequence (guint32 *code)
@@ -206,14 +209,17 @@ mono_ppc_is_direct_call_sequence (guint32 *code)
 
 	/* the thunk-less direct call sequence: lis/ori/sldi/oris/ori/mtlr/blrl */
 	if (ppc_opcode (code [-1]) == 31) { /* mtlr */
-		if ((ppc_opcode (code [-2]) == 58 && ppc_opcode (code [-3]) == 58) || /* ld/ld */
-		    (ppc_opcode (code [-2]) == 24 && ppc_opcode (code [-3]) == 31)) { /* mr/nop */
-			if (is_load_sequence (&code [-8]))
-				return TRUE;
-		} else {
-			if (is_load_sequence (&code [-6]))
-				return TRUE;
+		if (ppc_opcode (code [-2]) == 58 && ppc_opcode (code [-3]) == 58) { /* ld/ld */
+			if (!is_load_sequence (&code [-8]))
+				return FALSE;
+			/* one of the loads must be "ld r2,8(rX)" */
+			return (ppc_load_get_dest (code [-2]) == ppc_r2 && ppc_load_get_off (code [-2]) == 8) ||
+				(ppc_load_get_dest (code [-3]) == ppc_r2 && ppc_load_get_off (code [-3]) == 8);
 		}
+		if (ppc_opcode (code [-2]) == 24 && ppc_opcode (code [-3]) == 31) /* mr/nop */
+			return is_load_sequence (&code [-8]);
+		else
+			return is_load_sequence (&code [-6]);
 	}
 	return FALSE;
 }
@@ -2497,10 +2503,6 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 	guint32 i, pos;
 	int struct_index = 0;
 
-	g_assert_not_reached ();
-
-	/* FIXME: Generate intermediate code instead */
-
 	sig = mono_method_signature (method);
 
 	/* This is the opposite of the code in emit_prolog */
@@ -2531,8 +2533,11 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 				case 2:
 					ppc_lhz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 					break;
-				default:
+				case 4:
 					ppc_lwz (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+					break;
+				default:
+					ppc_load_reg (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
 					break;
 			}
 			break;
@@ -2554,11 +2559,16 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 			MonoType *type = mini_type_get_underlying_type (cfg->generic_sharing_context,
 				&inst->klass->byval_arg);
 
-			if (!MONO_TYPE_IS_REFERENCE (type) && type->type != MONO_TYPE_I4)
+			if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_I8) {
+				ppc_load_reg (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
+				ppc_store_reg (code, ppc_r0, ainfo->offset, ainfo->reg);
+			} else if (type->type == MONO_TYPE_I4) {
+				ppc_lwz (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
+				ppc_stw (code, ppc_r0, ainfo->offset, ainfo->reg);
+			} else {
 				NOT_IMPLEMENTED;
+			}
 
-			ppc_lwz (code, ppc_r0, inst->inst_offset, inst->inst_basereg);
-			ppc_stw (code, ppc_r0, ainfo->offset, ainfo->reg);
 			break;
 		}
 
@@ -2582,7 +2592,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 			} else
 #endif
 				for (j = 0; j < ainfo->size; ++j) {
-					ppc_lwz (code, ainfo->reg  + j,
+					ppc_load_reg (code, ainfo->reg  + j,
 						inst->inst_offset + j * sizeof (gpointer), inst->inst_basereg);
 				}
 			break;
@@ -2593,7 +2603,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 
 			g_assert (ppc_is_imm16 (addr->inst_offset));
 			g_assert (!ainfo->offset);
-			ppc_lwz (code, ainfo->reg, addr->inst_offset, addr->inst_basereg);
+			ppc_load_reg (code, ainfo->reg, addr->inst_offset, addr->inst_basereg);
 
 			struct_index++;
 			break;
@@ -2623,8 +2633,6 @@ ins_native_length (MonoCompile *cfg, MonoInst *ins)
 
 	if (ins->opcode != OP_JMP)
 		return len;
-
-	g_assert_not_reached ();
 
 	call = (MonoCallInst*)ins;
 	sig = mono_method_signature (cfg->method);
