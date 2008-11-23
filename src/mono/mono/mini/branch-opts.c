@@ -1065,7 +1065,12 @@ mono_remove_critical_edges (MonoCompile *cfg)
 			int in_bb_index;
 			for (in_bb_index = 0; in_bb_index < bb->in_count; in_bb_index++) {
 				MonoBasicBlock *in_bb = bb->in_bb [in_bb_index];
-				if (in_bb->out_count > 1) {
+				/* 
+				 * Have to remove non-critical edges whose source ends with a BR_REG
+				 * ins too, since inserting a computation before the BR_REG could 
+				 * overwrite the sreg1 of the ins.
+				 */
+				if ((in_bb->out_count > 1) || (in_bb->out_count == 1 && in_bb->last_ins && in_bb->last_ins->opcode == OP_BR_REG)) {
 					MonoBasicBlock *new_bb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 					new_bb->block_num = cfg->num_bblocks++;
 //					new_bb->real_offset = bb->real_offset;

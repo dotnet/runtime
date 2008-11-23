@@ -347,4 +347,37 @@ public class Tests {
 
 		return 0;
 	}
+
+	public static string return_string (string s) {
+		for (int i = 0; i < 1000; ++i)
+			;
+		return s;
+	}
+
+	public static int test_0_switch_critical_edges () {
+		// A spill load is inserted at the end of the bblock containing the OP_BR_REG,
+		// overwriting the source reg of the OP_BR_REG. The edge is not really 
+		// a critical edge, since its source bblock only has 1 exit, but it must
+		// be treated as such.
+		for (int i=0; i < UInt16.MaxValue; i++) {
+			Char c = Convert.ToChar (i);
+			switch (i) {
+			case 0x0009:
+			case 0x000A:
+			case 0x000B:
+			case 0x2028:
+			case 0x2029:
+			case 0x202F:
+			case 0x205F:
+			case 0x3000:
+				//Console.WriteLine ((i.ToString () + (int)c));
+				return_string ((i.ToString () + (int)c));
+				break;
+			default:
+				break;
+			}
+		}
+
+		return 0;
+	}
 }
