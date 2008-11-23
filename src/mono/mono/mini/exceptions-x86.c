@@ -657,7 +657,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
 		} else {
-			if (!(*lmf)->method)
+			if (!((guint32)((*lmf)->previous_lmf) & 1))
 				/* Top LMF entry */
 				return (gpointer)-1;
 			/* Trampoline lmf frame */
