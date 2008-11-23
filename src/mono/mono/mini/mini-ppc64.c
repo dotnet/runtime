@@ -4029,12 +4029,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ppc_mr (code, cfg->frame_reg, ppc_sp);
 
 	/* store runtime generic context */
+#ifdef MONO_ARCH_RGCTX_REG
 	if (cfg->rgctx_var) {
 		g_assert (cfg->rgctx_var->opcode == OP_REGOFFSET &&
 				(cfg->rgctx_var->inst_basereg == ppc_r1 || cfg->rgctx_var->inst_basereg == ppc_r31));
 
 		ppc_store_reg (code, MONO_ARCH_RGCTX_REG, cfg->rgctx_var->inst_offset, cfg->rgctx_var->inst_basereg);
 	}
+#endif
 
         /* compute max_offset in order to use short forward jumps
 	 * we always do it on ppc because the immediate displacement
@@ -4747,11 +4749,13 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSha
 }
 #endif
 
+#ifdef MONO_ARCH_RGCTX_REG
 MonoVTable*
 mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code)
 {
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }
+#endif
 
 MonoInst*
 mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
