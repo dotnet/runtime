@@ -1518,7 +1518,12 @@ emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsect
 	/* For solaris as, GNU as should accept the same */
 	fprintf (acfg->fp, ".section \"%s\"\n", section_name);
 #else
-	fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);
+	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data") || !strcmp (section_name, ".bss")) {
+		fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);
+	} else {
+		fprintf (acfg->fp, ".section \"%s\"\n", section_name);
+		fprintf (acfg->fp, ".subsection %d\n", subsection_index);
+	}
 #endif
 }
 
@@ -1557,6 +1562,15 @@ emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
 	fprintf (acfg->fp, "\t.globl %s\n", name);
 #endif
 
+	emit_symbol_type (acfg, name, func);
+}
+
+static void
+emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func)
+{
+	emit_unset_mode (acfg);
+	fprintf (acfg->fp, "\t.local %s\n", name);
+	fprintf (acfg->fp, "\t.size %s, %s-%s\n", name, end_label, name);
 	emit_symbol_type (acfg, name, func);
 }
 
@@ -2879,7 +2893,6 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	guint8 *code;
 	char symbol [128];
 	int func_alignment = 16;
-	char *full_name;
 	MonoMethodHeader *header;
 
 	method = cfg->orig_method;
@@ -2894,8 +2907,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_alignment (acfg, func_alignment);
 	emit_label (acfg, symbol);
 
-#ifdef USE_ELF_WRITER
 	if (acfg->aot_opts.write_symbols) {
+		char *full_name;
 		/* Emit a local symbol into the symbol table */
 		full_name = mono_method_full_name (method, TRUE);
 		sprintf (symbol, ".Lme_%x", method_index);
@@ -2903,7 +2916,6 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		emit_label (acfg, full_name);
 		g_free (full_name);
 	}
-#endif
 
 	if (cfg->verbose_level > 0)
 		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), symbol);
@@ -5063,8 +5075,10 @@ hw_reg_to_dwarf_reg (int reg)
 static void
 emit_cie (MonoAotCompile *acfg)
 {
-#if defined(USE_ELF_WRITER) && defined(__x86_64__)
+#if defined(__x86_64__)
 	emit_section_change (acfg, ".debug_frame", 0);
+
+	emit_alignment (acfg, 8);
 
 	/* Emit a CIE */
 	emit_symbol_diff (acfg, ".Lcie0_end", ".", -4); /* length */
@@ -5105,7 +5119,7 @@ static void
 emit_die (MonoAotCompile *acfg, int die_index, char *start_symbol, char *end_symbol,
 		  guint8 *code, guint32 code_size, GSList *unwind_ops)
 {
-#if defined(USE_ELF_WRITER) && defined(__x86_64__)
+#if defined(__x86_64__)
 	char symbol [128];
 	GSList *l;
 	MonoUnwindOp *op;
@@ -5531,20 +5545,22 @@ typedef struct DwarfBasicType {
 } DwarfBasicType;
 
 static DwarfBasicType basic_types [] = {
-	{ ".DIE_I1", "sbyte", MONO_TYPE_I1, 1, DW_ATE_signed },
-	{ ".DIE_U1", "byte", MONO_TYPE_U1, 1, DW_ATE_unsigned },
-	{ ".DIE_I2", "short", MONO_TYPE_I2, 2, DW_ATE_signed },
-	{ ".DIE_U2", "ushort", MONO_TYPE_U2, 2, DW_ATE_unsigned },
-	{ ".DIE_I4", "int", MONO_TYPE_I4, 4, DW_ATE_signed },
-	{ ".DIE_U4", "uint", MONO_TYPE_U4, 4, DW_ATE_unsigned },
-	{ ".DIE_I8", "long", MONO_TYPE_I8, 8, DW_ATE_signed },
-	{ ".DIE_U8", "ulong", MONO_TYPE_U8, 8, DW_ATE_unsigned },
-	{ ".DIE_R4", "float", MONO_TYPE_R4, 4, DW_ATE_float },
-	{ ".DIE_R8", "double", MONO_TYPE_R8, 8, DW_ATE_float },
-	{ ".DIE_BOOLEAN", "boolean", MONO_TYPE_BOOLEAN, 1, DW_ATE_boolean },
-	{ ".DIE_STRING", "string", MONO_TYPE_STRING, sizeof (gpointer), DW_ATE_address },
-	{ ".DIE_OBJECT", "object", MONO_TYPE_OBJECT, sizeof (gpointer), DW_ATE_address },
+	{ ".LDIE_I1", "sbyte", MONO_TYPE_I1, 1, DW_ATE_signed },
+	{ ".LDIE_U1", "byte", MONO_TYPE_U1, 1, DW_ATE_unsigned },
+	{ ".LDIE_I2", "short", MONO_TYPE_I2, 2, DW_ATE_signed },
+	{ ".LDIE_U2", "ushort", MONO_TYPE_U2, 2, DW_ATE_unsigned },
+	{ ".LDIE_I4", "int", MONO_TYPE_I4, 4, DW_ATE_signed },
+	{ ".LDIE_U4", "uint", MONO_TYPE_U4, 4, DW_ATE_unsigned },
+	{ ".LDIE_I8", "long", MONO_TYPE_I8, 8, DW_ATE_signed },
+	{ ".LDIE_U8", "ulong", MONO_TYPE_U8, 8, DW_ATE_unsigned },
+	{ ".LDIE_R4", "float", MONO_TYPE_R4, 4, DW_ATE_float },
+	{ ".LDIE_R8", "double", MONO_TYPE_R8, 8, DW_ATE_float },
+	{ ".LDIE_BOOLEAN", "boolean", MONO_TYPE_BOOLEAN, 1, DW_ATE_boolean },
+	{ ".LDIE_STRING", "string", MONO_TYPE_STRING, sizeof (gpointer), DW_ATE_address },
+	{ ".LDIE_OBJECT", "object", MONO_TYPE_OBJECT, sizeof (gpointer), DW_ATE_address },
 };
+
+static gboolean xdebug_emitted;
 
 /*
  * mono_save_xdebug_info:
@@ -5555,8 +5571,6 @@ static DwarfBasicType basic_types [] = {
 void
 mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, GSList *unwind_info)
 {
-	// FIXME: Test with the assembly writer
-#ifdef USE_ELF_WRITER
 	char *s, *build_info, *name;
 	MonoAotCompile *acfg;
 	MonoMethodSignature *sig;
@@ -5564,6 +5578,9 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	int i;
 
 	// FIXME: Add trampolines too
+
+	if (xdebug_emitted)
+		return;
 
 	/* 
 	 * One time initialization.
@@ -5579,6 +5596,10 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 
 		xdebug_acfg = acfg;
 
+		/* Emit something so the file has a text segment */
+		emit_section_change (acfg, ".text", 0);
+		emit_string (acfg, "");
+
 		emit_section_change (acfg, ".debug_abbrev", 0);
 		emit_dwarf_abbrev (acfg, AB_COMPILE_UNIT, DW_TAG_compile_unit, TRUE, 
 						   compile_unit_attr, G_N_ELEMENTS (compile_unit_attr));
@@ -5591,7 +5612,7 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 		emit_byte (acfg, 0);
 
 		emit_section_change (acfg, ".debug_info", 0);
-		emit_label (acfg, ".debug_info_start");
+		emit_label (acfg, ".Ldebug_info_start");
 		emit_symbol_diff (acfg, ".Ldebug_info_end", ".", -4); /* length */
 		emit_int16 (acfg, 0x3); /* DWARF version 3 */
 		emit_int32 (acfg, 0); /* .debug_abbrev offset */
@@ -5683,19 +5704,19 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 			switch (t->type) {
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
-				tdie = ".DIE_OBJECT";
+				tdie = ".LDIE_OBJECT";
 				break;
 			default:
-				tdie = ".DIE_I4";
+				tdie = ".LDIE_I4";
 				break;
 			}
 		}
 		if (t->byref)
 			// FIXME:
-			tdie = ".DIE_I4";
+			tdie = ".LDIE_I4";
 		if (arg->flags & MONO_INST_IS_DEAD)
-			tdie = ".DIE_I4";
-		emit_symbol_diff (acfg, tdie, ".debug_info_start", 0);
+			tdie = ".LDIE_I4";
+		emit_symbol_diff (acfg, tdie, ".Ldebug_info_start", 0);
 		/* location */
 		/* FIXME: This needs a location list, since the args can go from reg->stack */
 		if (arg->flags & MONO_INST_IS_DEAD) {
@@ -5730,9 +5751,6 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	die_index ++;
 
 	mono_acfg_unlock (acfg);
-#else
-	g_error ("xdebug mode is not supported on this platform.");
-#endif
 }
 
 /*
@@ -5744,22 +5762,22 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 void
 mono_xdebug_emit (void)
 {
-	static gboolean emitted;
-
 	if (xdebug_acfg == NULL) {
 		fprintf (stderr, "The runtime is not running in xdebug mode.\n");
 		return;
 	}
 
 	// FIXME: Make this callable multiple times
-	if (!emitted) {
+	if (!xdebug_emitted) {
 		MonoAotCompile *acfg = xdebug_acfg;
 
 		emit_section_change (acfg, ".debug_info", 0);
 		emit_uleb128 (acfg, 0x0);
+		emit_line (acfg);
+		emit_alignment (acfg, 8);
 
 		emit_writeout (xdebug_acfg);
-		emitted = TRUE;
+		xdebug_emitted = TRUE;
 	}
 }
 
