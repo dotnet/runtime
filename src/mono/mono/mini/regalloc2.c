@@ -1741,9 +1741,12 @@ order_moves (MonoCompile *cfg, MonoRegallocContext *ctx, MonoInst **moves, int n
 
 		/* Create stores */
 		for (i = 0; i < nmoves; ++i) {
-			if (moves [i]->opcode != OP_MOVE)
+			if (moves [i]->opcode == OP_MOVE)
+				MONO_INST_NEW (cfg, ins, OP_STORE_MEMBASE_REG);
+			else if (moves [i]->opcode == OP_FMOVE)
+				MONO_INST_NEW (cfg, ins, OP_STORER8_MEMBASE_REG);
+			else
 				NOT_IMPLEMENTED;
-			MONO_INST_NEW (cfg, ins, OP_STORE_MEMBASE_REG);
 			ins->sreg1 = moves [i]->sreg1;
 			ins->inst_destbasereg = cfg->frame_reg;
 			ins->inst_offset = offsets [i];
@@ -1754,9 +1757,12 @@ order_moves (MonoCompile *cfg, MonoRegallocContext *ctx, MonoInst **moves, int n
 
 		/* Create loads */
 		for (i = 0; i < nmoves; ++i) {
-			if (moves [i]->opcode != OP_MOVE)
+			if (moves [i]->opcode == OP_MOVE)
+				MONO_INST_NEW (cfg, ins, OP_LOAD_MEMBASE);
+			else if (moves [i]->opcode == OP_FMOVE)
+				MONO_INST_NEW (cfg, ins, OP_LOADR8_MEMBASE);
+			else
 				NOT_IMPLEMENTED;
-			MONO_INST_NEW (cfg, ins, OP_LOAD_MEMBASE);
 			ins->dreg = moves [i]->dreg;
 			ins->inst_basereg = cfg->frame_reg;
 			ins->inst_offset = offsets [i];

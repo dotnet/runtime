@@ -3229,6 +3229,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		/* The LMF saving code might clobber caller saved registers */
 		cfg->globalra = FALSE;
 
+	if (header->code_size > 5000)
+		// FIXME:
+		/* Too large bblocks could overflow the ins positions */
+		cfg->globalra = FALSE;
+
 	cfg->rs = mono_regstate_new ();
 	if (cfg->globalra)
 		cfg->rs->next_vreg = MONO_MAX_IREGS + MONO_MAX_FREGS;
