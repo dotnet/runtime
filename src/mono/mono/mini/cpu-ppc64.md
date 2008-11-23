@@ -53,7 +53,7 @@ jmp: len:92
 call: dest:a clob:c len:36
 br: len:4
 throw: src1:i len:40
-rethrow: src1:i len:20
+rethrow: src1:i len:40
 ckfinite: dest:f src1:f
 ppc_check_finite: src1:i len:16
 add_ovf_carry: dest:i src1:i src2:i len:16

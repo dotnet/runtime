@@ -1818,6 +1818,22 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		ins->opcode = OP_NOP;
 		break;
 	}
+	case OP_IADD_OVF:
+	case OP_IADD_OVF_UN:
+	case OP_ISUB_OVF: {
+		int shifted1_reg = mono_alloc_ireg (cfg);
+		int shifted2_reg = mono_alloc_ireg (cfg);
+		int result_shifted_reg = mono_alloc_ireg (cfg);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, shifted1_reg, ins->sreg1, 32);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, shifted2_reg, ins->sreg2, 32);
+		MONO_EMIT_NEW_BIALU (cfg, ins->opcode, result_shifted_reg, shifted1_reg, shifted2_reg);
+		if (ins->opcode == OP_IADD_OVF_UN)
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, ins->dreg, result_shifted_reg, 32);
+		else
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, ins->dreg, result_shifted_reg, 32);
+		ins->opcode = OP_NOP;
+	}
 	}
 }
 
@@ -2824,6 +2840,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_load (code, ppc_r0, ins->inst_offset);
 				ppc_lwzx (code, ins->dreg, ins->inst_basereg, ppc_r0);
 			}
+			if (ins->opcode == OP_LOADI4_MEMBASE)
+				ppc_extsw (code, ins->dreg, ins->dreg);
 			break;
 		case OP_LOADI1_MEMBASE:
 		case OP_LOADU1_MEMBASE:
@@ -2859,6 +2877,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADI4_MEMINDEX:
 		case OP_LOADU4_MEMINDEX:
 			ppc_lwzx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			if (ins->opcode == OP_LOADI4_MEMINDEX)
+				ppc_extsb (code, ins->dreg, ins->dreg);
 			break;
 		case OP_LOADU2_MEMINDEX:
 			ppc_lhzx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
@@ -2900,7 +2920,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE:
 		case OP_ICOMPARE:
 		case OP_LCOMPARE:
-			L = (ins->opcode == OP_LCOMPARE) ? 1 : 0;
+			L = (ins->opcode == OP_ICOMPARE) ? 0 : 1;
 			next = ins->next;
 			if (next && compare_opcode_is_unsigned (next->opcode))
 				ppc_cmpl (code, 0, L, ins->sreg1, ins->sreg2);
@@ -2910,7 +2930,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE_IMM:
 		case OP_ICOMPARE_IMM:
 		case OP_LCOMPARE_IMM:
-			L = (ins->opcode == OP_LCOMPARE_IMM) ? 1 : 0;
+			L = (ins->opcode == OP_ICOMPARE_IMM) ? 0 : 1;
 			next = ins->next;
 			if (next && compare_opcode_is_unsigned (next->opcode)) {
 				if (ppc_is_uimm16 (ins->inst_imm)) {
@@ -3196,7 +3216,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* we annot use mcrxr, since it's not implemented on some processors 
 			 * XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
 			 */
-			ppc_mulldo (code, ins->dreg, ins->sreg1, ins->sreg2);
+			ppc_mullwo (code, ins->dreg, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
@@ -3206,8 +3226,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * to set the flags, then the result is discarded and then 
 			 * we multiply to get the lower * bits result
 			 */
-			ppc_mulhdu (code, ppc_r0, ins->sreg1, ins->sreg2);
-			ppc_cmpi (code, 0, 1, ppc_r0, 0);
+			ppc_mulhwu (code, ppc_r0, ins->sreg1, ins->sreg2);
+			ppc_cmpi (code, 0, 0, ppc_r0, 0);
 			EMIT_COND_SYSTEM_EXCEPTION (CEE_BNE_UN - CEE_BEQ, "OverflowException");
 			ppc_mulld (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;

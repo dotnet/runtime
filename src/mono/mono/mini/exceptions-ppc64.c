@@ -268,12 +268,14 @@ emit_load_saved_regs (guint8 *code, int *pos)
 gpointer
 mono_arch_get_call_filter (void)
 {
-	static guint8 *start = NULL;
+	static guint8 *ftnptr = NULL;
+
+	guint8 *start;
 	guint8 *code;
 	int alloc_size, pos;
 
-	if (start)
-		return start;
+	if (ftnptr)
+		return ftnptr;
 
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start = mono_global_codeman_reserve (488);
@@ -317,7 +319,8 @@ mono_arch_get_call_filter (void)
 	g_assert ((code - start) < 488);
 	mono_arch_flush_icache (start, code - start);
 	mono_ppc_emitted (start, code - start, "call filter");
-	return start;
+	ftnptr = ppc64_create_ftnptr (start);
+	return ftnptr;
 }
 
 static void
@@ -547,7 +550,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
 		if (ji->method->save_lmf) {
 			memcpy (&new_ctx->fregs, (char*)sframe->sp - sizeof (double) * MONO_SAVED_FREGS, sizeof (double) * MONO_SAVED_FREGS);
-			memcpy (&new_ctx->regs, (char*)sframe->sp - sizeof (double) * MONO_SAVED_FREGS - sizeof (gulong) * MONO_SAVED_GREGS, sizeof (gulong) * MONO_SAVED_GREGS);
+			memcpy (&new_ctx->regs, (char*)sframe->sp - sizeof (gulong) * MONO_SAVED_FREGS - sizeof (gulong) * MONO_SAVED_GREGS, sizeof (gulong) * MONO_SAVED_GREGS);
 		} else if (ji->used_regs) {
 			/* keep updated with emit_prolog in mini-ppc.c */
 			offset = 0;
@@ -558,10 +561,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 					new_ctx->fregs [i - 14] = *(gulong*)((char*)sframe->sp - offset);
 				}
 			}*/
-			for (i = 31; i >= 13; --i) {
+			for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
 				if (ji->used_regs & (1 << i)) {
 					offset += sizeof (gulong);
-					new_ctx->regs [i - 13] = *(gulong*)((char*)sframe->sp - offset);
+					new_ctx->regs [i - MONO_FIRST_SAVED_GREG] = *(gulong*)((char*)sframe->sp - offset);
 				}
 			}
 		}
@@ -613,8 +616,8 @@ mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
 
 	mctx->sc_ir = UCONTEXT_REG_NIP(uc);
 	mctx->sc_sp = UCONTEXT_REG_Rn(uc, 1);
-	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 13), sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, 14), sizeof (double) * MONO_SAVED_FREGS);
+	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, MONO_FIRST_SAVED_GREG), sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, MONO_FIRST_SAVED_FREG), sizeof (double) * MONO_SAVED_FREGS);
 }
 
 void
@@ -624,8 +627,8 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 
 	UCONTEXT_REG_NIP(uc) = mctx->sc_ir;
 	UCONTEXT_REG_Rn(uc, 1) = mctx->sc_sp;
-	memcpy (&UCONTEXT_REG_Rn(uc, 13), &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&UCONTEXT_REG_FPRn(uc, 14), &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
+	memcpy (&UCONTEXT_REG_Rn(uc, MONO_FIRST_SAVED_GREG), &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&UCONTEXT_REG_FPRn(uc, MONO_FIRST_SAVED_FREG), &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
 }
 
 gpointer
@@ -656,6 +659,7 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (sigctx));
 	gpointer *sp;
 	int frame_size;
+	gpointer *handler_ftnptr = (gpointer*)altstack_handle_and_restore;
 
 	if (stack_ovf) {
 		const char *method;
@@ -688,7 +692,8 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	g_assert (mono_arch_ip_from_context (uc) == mono_arch_ip_from_context (uc_copy));
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
 	UCONTEXT_REG_LNK(uc) = UCONTEXT_REG_NIP(uc);
-	UCONTEXT_REG_NIP(uc) = (unsigned long)altstack_handle_and_restore;
+	UCONTEXT_REG_NIP(uc) = handler_ftnptr [0];
+	UCONTEXT_REG_Rn(uc, 2) = handler_ftnptr [1];
 	UCONTEXT_REG_Rn(uc, 1) = (unsigned long)sp;
 	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG) = (unsigned long)(sp + 16);
 	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG + 1) = 0;
