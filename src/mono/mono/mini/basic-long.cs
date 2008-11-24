@@ -349,6 +349,17 @@ class Tests {
 		return (int)(a & 8);
 	}
 
+	public static int get_high_bit (ulong a) {
+		if ((a & 0x8000000000000000) != 0)
+			return 1;
+		return 0;
+	}
+
+	public static int test_1_and () {
+		ulong a = 0xabcd1234deadbeef;
+		return get_high_bit (a);
+	}
+
 	public static int test_10_or () {
 		long a = 8;
 		long b = 2;		
