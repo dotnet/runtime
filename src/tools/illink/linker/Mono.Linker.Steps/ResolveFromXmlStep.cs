@@ -85,6 +85,10 @@ namespace Mono.Linker.Steps {
 		{
 			Annotations.Mark (type);
 			Annotations.SetPreserve (type, TypePreserve.All);
+
+			if (!type.HasNestedTypes)
+				return;
+
 			foreach (TypeDefinition nested in type.NestedTypes)
 				MarkAndPreserveAll (nested);
 		}
@@ -200,6 +204,9 @@ namespace Mono.Linker.Steps {
 
 		static FieldDefinition GetField (TypeDefinition type, string signature)
 		{
+			if (!type.HasFields)
+				return null;
+
 			foreach (FieldDefinition field in type.Fields)
 				if (signature == GetFieldSignature (field))
 					return field;
@@ -227,6 +234,9 @@ namespace Mono.Linker.Steps {
 
 		static MethodDefinition GetMethod (TypeDefinition type, string signature)
 		{
+			if (!type.HasMethods)
+				return null;
+
 			foreach (MethodDefinition meth in type.Methods)
 				if (signature == GetMethodSignature (meth))
 					return meth;
@@ -245,11 +255,13 @@ namespace Mono.Linker.Steps {
 			sb.Append (" ");
 			sb.Append (meth.Name);
 			sb.Append ("(");
-			for (int i = 0; i < meth.Parameters.Count; i++) {
-				if (i > 0)
-					sb.Append (",");
+			if (meth.HasParameters) {
+				for (int i = 0; i < meth.Parameters.Count; i++) {
+					if (i > 0)
+						sb.Append (",");
 
-				sb.Append (meth.Parameters [i].ParameterType.FullName);
+					sb.Append (meth.Parameters [i].ParameterType.FullName);
+				}
 			}
 			sb.Append (")");
 			return sb.ToString ();

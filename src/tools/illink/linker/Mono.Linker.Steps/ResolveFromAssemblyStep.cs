@@ -61,8 +61,10 @@ namespace Mono.Linker.Steps {
 			foreach (TypeDefinition type in assembly.MainModule.Types) {
 				Annotations.Mark (type);
 
-				MarkMethods (type.Methods);
-				MarkMethods (type.Constructors);
+				if (type.HasMethods)
+					MarkMethods (type.Methods);
+				if (type.HasConstructors)
+					MarkMethods (type.Constructors);
 			}
 		}
 
