@@ -2115,7 +2115,7 @@ rewrite_code (MonoCompile *cfg, MonoRegallocContext *ctx)
 	MonoBasicBlock *bb;
 	MonoInst *ins, *prev;
 	int pos;
-	MonoInst **defs, *def;
+	MonoInst **defs;
 
 	defs = g_new (MonoInst*, MONO_MAX_IREGS + MONO_MAX_FREGS);
 
