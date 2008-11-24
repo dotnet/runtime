@@ -11487,6 +11487,11 @@ mono_class_native_size (MonoClass *klass, guint32 *align)
 	return klass->marshal_info->native_size;
 }
 
+/* __alignof__ returns the preferred alignment of values not the actual alignment used by
+   the compiler so is wrong e.g. for Linux where doubles are aligned on a 4 byte boundary
+   but __alignof__ returns 8 - using G_STRUCT_OFFSET works better */
+#define ALIGNMENT(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
+
 /*
  * mono_type_native_stack_size:
  * @t: the type to return the size it uses on the stack
@@ -11505,8 +11510,8 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 		align = &tmp;
 
 	if (t->byref) {
-		*align = 4;
-		return 4;
+		*align = sizeof (gpointer);
+		return sizeof (gpointer);
 	}
 
 	switch (t->type){
@@ -11520,6 +11525,8 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+		*align = 4;
+		return 4;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
@@ -11527,20 +11534,22 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
-		*align = 4;
-		return 4;
+		*align = sizeof (gpointer);
+		return sizeof (gpointer);
 	case MONO_TYPE_R4:
 		*align = 4;
 		return 4;
+	case MONO_TYPE_R8:
+		*align = ALIGNMENT (gdouble);
+		return 8;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-	case MONO_TYPE_R8:
-		*align = 4;
+		*align = ALIGNMENT (glong);
 		return 8;
 	case MONO_TYPE_GENERICINST:
 		if (!mono_type_generic_inst_is_valuetype (t)) {
-			*align = 4;
-			return 4;
+			*align = sizeof (gpointer);
+			return sizeof (gpointer);
 		} 
 		/* Fall through */
 	case MONO_TYPE_TYPEDBYREF:
@@ -11566,11 +11575,6 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	}
 	return 0;
 }
-
-/* __alignof__ returns the preferred alignment of values not the actual alignment used by
-   the compiler so is wrong e.g. for Linux where doubles are aligned on a 4 byte boundary
-   but __alignof__ returns 8 - using G_STRUCT_OFFSET works better */
-#define ALIGNMENT(type) G_STRUCT_OFFSET(struct { char c; type x; }, x)
 
 gint32
 mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
