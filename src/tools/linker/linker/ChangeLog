@@ -1,3 +1,11 @@
+2008-11-24  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker.Steps/ResolveFromAssemblyStep.cs
+	* Mono.Linker.Steps/ResolveFromXmlStep.cs
+	* Mono.Linker.Steps/MarkStep.cs:
+		generalize the use of the new Has* pattern in Cecil
+		to avoid unecessary allocations. Also cache delegates.
+
 2008-09-12  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/Pipeline.cs: add a RemoveStep method.

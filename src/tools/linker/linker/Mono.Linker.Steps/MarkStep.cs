@@ -73,10 +73,12 @@ namespace Mono.Linker.Steps {
 		{
 			MarkType (type);
 
-			InitializeFields (type);
-
-			InitializeMethods (type.Methods);
-			InitializeMethods (type.Constructors);
+			if (type.HasFields)
+				InitializeFields (type);
+			if (type.HasMethods)
+				InitializeMethods (type.Methods);
+			if (type.HasConstructors)
+				InitializeMethods (type.Constructors);
 		}
 
 		void InitializeFields (TypeDefinition type)
@@ -134,6 +136,9 @@ namespace Mono.Linker.Steps {
 
 		void MarkCustomAttributes (ICustomAttributeProvider provider)
 		{
+			if (!provider.HasCustomAttributes)
+				return;
+
 			foreach (CustomAttribute ca in provider.CustomAttributes)
 				MarkCustomAttribute (ca);
 		}
@@ -287,9 +292,9 @@ namespace Mono.Linker.Steps {
 			if (IsMulticastDelegate (type))
 				MarkMethodCollection (type.Constructors);
 
-			if (IsSerializable (type)) {
-				MarkMethodsIf (type.Constructors, new MethodPredicate (IsDefaultConstructor));
-				MarkMethodsIf (type.Constructors, new MethodPredicate (IsSpecialSerializationConstructor));
+			if (IsSerializable (type) && type.HasConstructors) {
+				MarkMethodsIf (type.Constructors, IsDefaultConstructorPredicate);
+				MarkMethodsIf (type.Constructors, IsSpecialSerializationConstructorPredicate);
 			}
 
 			MarkGenericParameterProvider (type);
@@ -297,12 +302,16 @@ namespace Mono.Linker.Steps {
 			if (type.IsValueType)
 				MarkFields (type);
 
-			foreach (TypeReference iface in type.Interfaces)
-				MarkType (iface);
+			if (type.HasInterfaces) {
+				foreach (TypeReference iface in type.Interfaces)
+					MarkType (iface);
+			}
 
-			MarkMethodsIf (type.Constructors, new MethodPredicate (IsStaticConstructor));
+			if (type.HasConstructors)
+				MarkMethodsIf (type.Constructors, IsStaticConstructorPredicate);
 
-			MarkMethodsIf (type.Methods, new MethodPredicate (IsVirtual));
+			if (type.HasMethods)
+				MarkMethodsIf (type.Methods, IsVirtualPredicate);
 
 			Annotations.Mark (type);
 
@@ -311,6 +320,9 @@ namespace Mono.Linker.Steps {
 
 		void MarkGenericParameterProvider (IGenericParameterProvider provider)
 		{
+			if (!provider.HasGenericParameters)
+				return;
+
 			foreach (GenericParameter parameter in provider.GenericParameters)
 				MarkGenericParameter (parameter);
 		}
@@ -321,6 +333,8 @@ namespace Mono.Linker.Steps {
 			foreach (TypeReference constraint in parameter.Constraints)
 				MarkType (constraint);
 		}
+
+		static MethodPredicate IsSpecialSerializationConstructorPredicate = new MethodPredicate (IsSpecialSerializationConstructor);
 
 		static bool IsSpecialSerializationConstructor (MethodDefinition method)
 		{
@@ -344,6 +358,8 @@ namespace Mono.Linker.Steps {
 					MarkMethod (method);
 		}
 
+		static MethodPredicate IsDefaultConstructorPredicate = new MethodPredicate (IsDefaultConstructor);
+
 		static bool IsDefaultConstructor (MethodDefinition method)
 		{
 			return IsConstructor (method) && method.Parameters.Count == 0;
@@ -355,10 +371,14 @@ namespace Mono.Linker.Steps {
 				method.IsRuntimeSpecialName;
 		}
 
+		static MethodPredicate IsVirtualPredicate = new MethodPredicate (IsVirtual);
+
 		static bool IsVirtual (MethodDefinition method)
 		{
 			return method.IsVirtual;
 		}
+
+		static MethodPredicate IsStaticConstructorPredicate = new MethodPredicate (IsStaticConstructor);
 
 		static bool IsStaticConstructor (MethodDefinition method)
 		{
@@ -434,14 +454,19 @@ namespace Mono.Linker.Steps {
 
 		void MarkFields (TypeDefinition type)
 		{
+			if (!type.HasFields)
+				return;
+
 			foreach (FieldDefinition field in type.Fields)
 				MarkField (field);
 		}
 
 		void MarkMethods (TypeDefinition type)
 		{
-			MarkMethodCollection (type.Methods);
-			MarkMethodCollection (type.Constructors);
+			if (type.HasMethods)
+				MarkMethodCollection (type.Methods);
+			if (type.HasConstructors)
+				MarkMethodCollection (type.Constructors);
 		}
 
 		void MarkMethodCollection (IEnumerable methods)
@@ -514,14 +539,18 @@ namespace Mono.Linker.Steps {
 			else if (IsEventMethod (method))
 				MarkEvent (GetEvent (method));
 
-			foreach (ParameterDefinition pd in method.Parameters) {
-				MarkType (pd.ParameterType);
-				MarkCustomAttributes (pd);
-				MarkMarshalSpec (pd);
+			if (method.HasParameters) {
+				foreach (ParameterDefinition pd in method.Parameters) {
+					MarkType (pd.ParameterType);
+					MarkCustomAttributes (pd);
+					MarkMarshalSpec (pd);
+				}
 			}
 
-			foreach (MethodReference ov in method.Overrides)
-				MarkMethod (ov);
+			if (method.HasOverrides) {
+				foreach (MethodReference ov in method.Overrides)
+					MarkMethod (ov);
+			}
 
 			MarkType (method.ReturnType.ReturnType);
 			MarkCustomAttributes (method.ReturnType);
