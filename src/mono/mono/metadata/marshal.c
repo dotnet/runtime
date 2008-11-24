@@ -11523,10 +11523,10 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
 		*align = 4;
 		return 4;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
