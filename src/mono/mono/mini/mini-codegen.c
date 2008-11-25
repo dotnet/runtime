@@ -250,9 +250,6 @@ mono_spillvar_offset (MonoCompile *cfg, int spillvar, int bank)
 	MonoSpillInfo *info;
 	int size;
 
-#if defined (__mips__)
-	g_assert_not_reached();
-#endif
 	if (G_UNLIKELY (spillvar >= (cfg->spill_info_len [bank]))) {
 		while (spillvar >= cfg->spill_info_len [bank])
 			resize_spill_info (cfg, bank);
