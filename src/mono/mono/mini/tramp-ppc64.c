@@ -66,10 +66,10 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 		this_pos = 4;
 	    
 	mono_domain_lock (domain);
-	start = code = mono_code_manager_reserve (domain->code_mp, 20);
+	start = code = mono_code_manager_reserve (domain->code_mp, 32);
 	short_branch = branch_for_target_reachable (code + 4, addr);
 	if (short_branch)
-		mono_code_manager_commit (domain->code_mp, code, 20, 8);
+		mono_code_manager_commit (domain->code_mp, code, 32, 8);
 	mono_domain_unlock (domain);
 
 	if (short_branch) {
@@ -83,7 +83,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	}
 	mono_arch_flush_icache (start, code - start);
 	mono_ppc_emitted (start, code - start, "unbox trampoline");
-	g_assert ((code - start) <= 20);
+	g_assert ((code - start) <= 32);
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
 	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 

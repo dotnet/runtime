@@ -240,7 +240,7 @@ int_conv_to_i4: dest:i src1:i len:4
 sext_i4: dest:i src1:i len:4
 int_conv_to_r4: dest:f src1:i len:36
 int_conv_to_r8: dest:f src1:i len:36
-int_conv_to_u4: dest:i src1:i
+int_conv_to_u4: dest:i src1:i len:4
 int_conv_to_u2: dest:i src1:i len:8
 int_conv_to_u1: dest:i src1:i len:4
 int_beq: len:8
@@ -267,7 +267,7 @@ int_sbb: dest:i src1:i src2:i len:4
 int_adc_imm: dest:i src1:i len:12
 int_sbb_imm: dest:i src1:i len:12
 
-int_add_imm: dest:i src1:i len:12
+int_add_imm: dest:i src1:i len:4
 int_sub_imm: dest:i src1:i len:12
 int_mul_imm: dest:i src1:i len:12
 int_div_imm: dest:i src1:i len:20
@@ -370,7 +370,7 @@ lcompare_imm: src1:i len:12
 #long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
 
 vcall2: len:36 clob:c
-vcall2_reg: src1:i len:8 clob:c
+vcall2_reg: src1:i len:16 clob:c
 vcall2_membase: src1:b len:12 clob:c
 
 jump_table: dest:i len:20
