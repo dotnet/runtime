@@ -204,6 +204,7 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
 	if (!exc || (*exc == NULL))
 		return retval;
 
+	retval = *exc;
 	message = get_exception_message (*exc);
 	if (message) {
 		*exc = (MonoObject *) mono_string_new_wrapper (message);
