@@ -139,6 +139,10 @@ typedef struct MonoAotStats {
 #define USE_ELF_WRITER 1
 #endif
 
+#if defined(__mips__)
+#define USE_ELF_WRITER 1
+#endif
+
 #if defined(USE_ELF_WRITER)
 #define USE_BIN_WRITER 1
 #endif
