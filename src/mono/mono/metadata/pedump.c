@@ -432,6 +432,7 @@ main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
+	mono_perfcounters_init ();
 	mono_metadata_init ();
 	mono_images_init ();
 	mono_assemblies_init ();
