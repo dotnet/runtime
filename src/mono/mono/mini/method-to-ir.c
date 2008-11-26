@@ -3796,7 +3796,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->inst_basereg = args [0]->dreg;
 				ins->inst_offset = 0;
 				ins->sreg2 = args [1]->dreg;
-				ins->type = (opcode == OP_ATOMIC_ADD_I4) ? STACK_I4 : STACK_I8;
+				ins->type = (opcode == OP_ATOMIC_ADD_NEW_I4) ? STACK_I4 : STACK_I8;
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 		}

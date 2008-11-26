@@ -3871,6 +3871,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_load_sequence (code, ins->dreg, 0x0f0f0f0f0f0f0f0fL);
 			break;
 		}
+		case OP_ATOMIC_ADD_NEW_I4:
+		case OP_ATOMIC_ADD_NEW_I8: {
+			guint8 *loop = code, *branch;
+			g_assert (ins->inst_offset == 0);
+			if (ins->opcode == OP_ATOMIC_ADD_NEW_I4)
+				ppc_lwarx (code, ppc_r0, 0, ins->inst_basereg);
+			else
+				ppc_ldarx (code, ppc_r0, 0, ins->inst_basereg);
+			ppc_add (code, ppc_r0, ppc_r0, ins->sreg2);
+			if (ins->opcode == OP_ATOMIC_ADD_NEW_I4)
+				ppc_stwcxd (code, ppc_r0, 0, ins->inst_basereg);
+			else
+				ppc_stdcxd (code, ppc_r0, 0, ins->inst_basereg);
+			branch = code;
+			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+			ppc_patch (branch, loop);
+			ppc_mr (code, ins->dreg, ppc_r0);
+			break;
+		}
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
