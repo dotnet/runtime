@@ -58,53 +58,13 @@ break: len:4
 jmp: len:92
 call: dest:v clob:c len:20
 br: len:16
-int_beq: len:8
-int_bge: len:8
-int_bgt: len:8
-int_ble: len:8
-int_blt: len:8
-int_bne_un: len:8
-int_bge_un: len:8
-int_bgt_un: len:8
-int_ble_un: len:8
-int_blt_un: len:8
 switch: src1:i len:40
-int_add: dest:i src1:i src2:i len:4
-int_sub: dest:i src1:i src2:i len:4
-int_mul: dest:i src1:i src2:i len:20
-int_div: dest:i src1:i src2:i len:76
-int_div_un: dest:i src1:i src2:i len:76
-int_rem: dest:i src1:i src2:i len:76
-int_rem_un: dest:i src1:i src2:i len:76
-int_and: dest:i src1:i src2:i len:4
-int_or: dest:i src1:i src2:i len:4
-int_xor: dest:i src1:i src2:i len:4
-int_shl: dest:i src1:i src2:i len:4
-int_shr: dest:i src1:i src2:i len:4
-int_shr_un: dest:i src1:i src2:i len:4
-int_neg: dest:i src1:i len:4
-int_not: dest:i src1:i len:4
-int_conv_to_i1: dest:i src1:i len:8
-int_conv_to_i2: dest:i src1:i len:8
-int_conv_to_i4: dest:i src1:i len:4
-int_conv_to_r4: dest:f src1:i len:36
-int_conv_to_r8: dest:f src1:i len:36
-int_conv_to_u1: dest:i src1:i len:4
-int_conv_to_u2: dest:i src1:i len:8
-int_conv_to_u4: dest:i src1:i
-int_conv_to_i: dest:i src1:i len:4
-int_conv_to_u: dest:i src1:i len:4
+
 callvirt: dest:v clob:c len:20
 int_conv_to_r_un: dest:f src1:i len:32
 throw: src1:i len:24
 rethrow: src1:i len:24
 ckfinite: dest:f src1:f len:24
-int_add_ovf: dest:i src1:i src2:i len:64
-int_add_ovf_un: dest:i src1:i src2:i len:64
-int_mul_ovf: dest:i src1:i src2:i len:64
-int_mul_ovf_un: dest:i src1:i src2:i len:64
-int_sub_ovf: dest:i src1:i src2:i len:64
-int_sub_ovf_un: dest:i src1:i src2:i len:64
 start_handler: len:16
 endfinally: len:12
 ceq: dest:i len:16
@@ -119,20 +79,30 @@ fcompare: src1:f src2:f len:12
 oparglist: src1:i len:12
 setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
+
 voidcall: len:20 clob:c
 voidcall_reg: src1:i len:20 clob:c
 voidcall_membase: src1:b len:20 clob:c
+
 fcall: dest:g len:20 clob:c
 fcall_reg: dest:g src1:i len:20 clob:c
 fcall_membase: dest:g src1:b len:20 clob:c
+
 lcall: dest:V len:28 clob:c
 lcall_reg: dest:V src1:i len:28 clob:c
 lcall_membase: dest:V src1:b len:28 clob:c
+
+call_reg: dest:v src1:i len:20 clob:c
+call_membase: dest:v src1:b len:20 clob:c
+
 vcall: len:16 clob:c
 vcall_reg: src1:i len:20 clob:c
 vcall_membase: src1:b len:20 clob:c
-call_reg: dest:v src1:i len:20 clob:c
-call_membase: dest:v src1:b len:20 clob:c
+
+vcall2: len:16 clob:c
+vcall2_reg: src1:i len:20 clob:c
+vcall2_membase: src1:b len:20 clob:c
+
 iconst: dest:i len:12
 r4const: dest:f len:20
 r8const: dest:f len:28
@@ -178,6 +148,84 @@ xor_imm: dest:i src1:i len:12
 shl_imm: dest:i src1:i len:8
 shr_imm: dest:i src1:i len:8
 shr_un_imm: dest:i src1:i len:8
+
+# Linear IR opcodes
+dummy_use: len:0
+dummy_store: len:0
+not_reached: len:0
+not_null: src1:i len:0
+
+# 32 bit opcodes
+int_add: dest:i src1:i src2:i len:4
+int_sub: dest:i src1:i src2:i len:4
+int_mul: dest:i src1:i src2:i len:4
+int_div: dest:i src1:i src2:i len:76
+int_div_un: dest:i src1:i src2:i len:16
+int_rem: dest:i src1:i src2:i len:76
+int_rem_un: dest:i src1:i src2:i len:24
+int_and: dest:i src1:i src2:i len:4
+int_or: dest:i src1:i src2:i len:4
+int_xor: dest:i src1:i src2:i len:4
+int_shl: dest:i src1:i src2:i len:4
+int_shr: dest:i src1:i src2:i len:4
+int_shr_un: dest:i src1:i src2:i len:4
+int_neg: dest:i src1:i len:4
+int_not: dest:i src1:i len:4
+int_conv_to_i1: dest:i src1:i len:8
+int_conv_to_i2: dest:i src1:i len:8
+int_conv_to_i4: dest:i src1:i len:4
+int_conv_to_r4: dest:f src1:i len:36
+int_conv_to_r8: dest:f src1:i len:36
+int_conv_to_u4: dest:i src1:i
+int_conv_to_u2: dest:i src1:i len:8
+int_conv_to_u1: dest:i src1:i len:4
+int_beq: len:8
+int_bge: len:8
+int_bgt: len:8
+int_ble: len:8
+int_blt: len:8
+int_bne_un: len:8
+int_bge_un: len:8
+int_bgt_un: len:8
+int_ble_un: len:8
+int_blt_un: len:8
+int_add_ovf: dest:i src1:i src2:i len:16
+int_add_ovf_un: dest:i src1:i src2:i len:16
+int_mul_ovf: dest:i src1:i src2:i len:16
+int_mul_ovf_un: dest:i src1:i src2:i len:16
+int_sub_ovf: dest:i src1:i src2:i len:16
+int_sub_ovf_un: dest:i src1:i src2:i len:16
+
+int_adc: dest:i src1:i src2:i len:4
+int_addcc: dest:i src1:i src2:i len:4
+int_subcc: dest:i src1:i src2:i len:4
+int_sbb: dest:i src1:i src2:i len:4
+int_adc_imm: dest:i src1:i len:12
+int_sbb_imm: dest:i src1:i len:12
+
+int_add_imm: dest:i src1:i len:12
+int_sub_imm: dest:i src1:i len:12
+int_mul_imm: dest:i src1:i len:12
+int_div_imm: dest:i src1:i len:20
+int_div_un_imm: dest:i src1:i len:12
+int_rem_imm: dest:i src1:i len:28
+int_rem_un_imm: dest:i src1:i len:16
+int_and_imm: dest:i src1:i len:12
+int_or_imm: dest:i src1:i len:12
+int_xor_imm: dest:i src1:i len:12
+int_shl_imm: dest:i src1:i len:8
+int_shr_imm: dest:i src1:i len:8
+int_shr_un_imm: dest:i src1:i len:8
+
+int_ceq: dest:i len:16
+int_cgt: dest:i len:16
+int_cgt_un: dest:i len:16
+int_clt: dest:i len:16
+int_clt_un: dest:i len:16
+
+cond_exc_ieq: len:8
+cond_exc_ine_un: len:8
+cond_exc_ilt: len:8
 cond_exc_eq: len:32
 cond_exc_ne_un: len:32
 cond_exc_lt: len:32
@@ -192,6 +240,10 @@ cond_exc_ov: len:32
 cond_exc_no: len:32
 cond_exc_c: len:32
 cond_exc_nc: len:32
+
+icompare: src1:i src2:i len:4
+icompare_imm: src1:i len:12
+
 long_conv_to_i1: dest:i src1:l len:32
 long_conv_to_i2: dest:i src1:l len:32
 long_conv_to_i4: dest:i src1:l len:32
@@ -203,18 +255,21 @@ long_conv_to_u2: dest:i src1:l len:32
 long_conv_to_u1: dest:i src1:l len:32
 long_conv_to_i:  dest:i src1:l len:32
 long_conv_to_ovf_i: dest:i src1:i src2:i len:32
+
 long_mul_ovf: 
 long_conv_to_r_un: dest:f src1:i src2:i len:37 
-float_beq:    src1:f src2:f len:16
-float_bne_un: src1:f src2:f len:16
-float_blt:    src1:f src2:f len:16
-float_blt_un: src1:f src2:f len:16
-float_bgt:    src1:f src2:f len:16
-float_bgt_un: src1:f src2:f len:16
-float_bge:    src1:f src2:f len:16
-float_bge_un: src1:f src2:f len:16
-float_ble:    src1:f src2:f len:16
-float_ble_un: src1:f src2:f len:16
+
+float_beq:    len:16
+float_bne_un: len:16
+float_blt:    len:16
+float_blt_un: len:16
+float_bgt:    len:16
+float_bgt_un: len:16
+float_bge:    len:16
+float_bge_un: len:16
+float_ble:    len:16
+float_ble_un: len:16
+
 float_add: dest:f src1:f src2:f len:4
 float_sub: dest:f src1:f src2:f len:4
 float_mul: dest:f src1:f src2:f len:4
@@ -289,7 +344,7 @@ mips_cond_exc_lt: src1:i src2:i len:40
 mips_cond_exc_ne_un: src1:i src2:i len:40
 mips_cond_exc_ge_un: src1:i src2:i len:40
 mips_cond_exc_gt_un: src1:i src2:i len:40
-mips_cond_exc_le_un: src1:i src2:i len:40
+mips_cond_exc_le_un: src1:i src2:i len:44
 mips_cond_exc_lt_un: src1:i src2:i len:40
 mips_cond_exc_ov: src1:i src2:i len:40
 mips_cond_exc_no: src1:i src2:i len:40

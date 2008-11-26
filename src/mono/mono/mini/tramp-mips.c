@@ -114,13 +114,14 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 
 #define STACK (4*4 + 8 + sizeof(MonoLMF) + 32)
 
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8* code8, gpointer *regs)
+
+gpointer
+mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 {
 	char *vtable = NULL;
 	int reg, offset = 0;
 	guint32 base = 0;
-	guint32 *code = (guint32*)code8;
+	guint32 *code = (guint32*)code_ptr;
 	char *sp;
 
 	/* On MIPS, we are passed sp instead of the register array */
@@ -162,6 +163,7 @@ mono_arch_get_vcall_slot_addr (guint8* code8, gpointer *regs)
 			offset = soff;
 			reg_offset = STACK - sizeof (MonoLMF)
 				+ G_STRUCT_OFFSET (MonoLMF, iregs[base]);
+			*displacement = reg_offset;
 			/* o contains now the value of register reg */
 			vtable = *((char**) (sp + reg_offset));
 			return (gpointer*)vtable;
@@ -170,6 +172,17 @@ mono_arch_get_vcall_slot_addr (guint8* code8, gpointer *regs)
 
 	g_assert_not_reached ();
 	return NULL;
+}
+
+gpointer*
+mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
 }
 
 void
@@ -496,6 +509,14 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+{
+	/* FIXME: implement! */
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_create_generic_class_init_trampoline (void)
 {
 	/* FIXME: implement! */
 	g_assert_not_reached ();
