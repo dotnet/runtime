@@ -818,7 +818,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 					cinfo->args [n].vtsize = nwords - n_in_regs;
 					cinfo->args [n].reg = gr;
 				}
-				if (nwords == 1)
+				if (nwords == 1 && is_pinvoke)
 					cinfo->args [n].bytes = size;
 				else
 					cinfo->args [n].bytes = 0;
@@ -853,7 +853,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 					cinfo->args [n].size = 0;
 					cinfo->args [n].vtsize = nwords;
 				}
-				if (nwords == 1)
+				if (nwords == 1 && is_pinvoke)
 					cinfo->args [n].bytes = size;
 				else
 					cinfo->args [n].bytes = 0;
@@ -884,12 +884,12 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				cinfo->args [n].reg = fr;
 				fr ++;
 				FP_ALSO_IN_REG (gr ++);
-				ALWAYS_ON_STACK (stack_size += 4);
+				ALWAYS_ON_STACK (stack_size += 8);
 			} else {
-				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
+				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size + 4;
 				cinfo->args [n].regtype = RegTypeBase;
 				cinfo->args [n].reg = ppc_sp; /* in the caller*/
-				stack_size += 4;
+				stack_size += 8;
 			}
 			n++;
 			break;
@@ -900,7 +900,7 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				cinfo->args [n].regtype = RegTypeFP;
 				cinfo->args [n].reg = fr;
 				fr ++;
-				FP_ALSO_IN_REG (gr += 2);
+				FP_ALSO_IN_REG (gr++);
 				ALWAYS_ON_STACK (stack_size += 8);
 			} else {
 				cinfo->args [n].offset = PPC_STACK_PARAM_OFFSET + stack_size;
@@ -3228,10 +3228,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SHR_UN_IMM:
 		case OP_LSHR_UN_IMM:
-			ppc_srdi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
+			if (ins->inst_imm & 0x3f)
+				ppc_srdi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x3f));
+			else
+				ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ISHR_UN_IMM:
-			ppc_srwi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
+			if (ins->inst_imm & 0x1f)
+				ppc_srwi (code, ins->dreg, ins->sreg1, (ins->inst_imm & 0x1f));
+			else
+				ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ISHR_UN:
 			ppc_srw (code, ins->dreg, ins->sreg1, ins->sreg2);
