@@ -6749,6 +6749,8 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 
 	/* last_point separates the namespace from the name */
 	last_point = NULL;
+	/* Skips spaces */
+	while (*p == ' ') p++, start++, w++, name++;
 
 	while (*p) {
 		switch (*p) {
