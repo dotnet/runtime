@@ -103,6 +103,8 @@ vcall2: len:16 clob:c
 vcall2_reg: src1:i len:20 clob:c
 vcall2_membase: src1:b len:20 clob:c
 
+jump_table: dest:i len:8
+
 iconst: dest:i len:12
 r4const: dest:f len:20
 r8const: dest:f len:28

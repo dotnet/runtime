@@ -1479,6 +1479,7 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n, *last_ins = NULL;
 	int op;
+	int tmp;
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d peephole pass 1\n", bb->block_num);
@@ -1497,23 +1498,9 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 				op = OP_MIPS_BNE;
 			else
 				g_assert_not_reached ();
-			if (ins_is_compare(last_ins)) {
-				ins_rewrite(ins, op, last_ins->sreg1, last_ins->sreg2);
-				// MONO_DELETE_INS(bb, last_ins);
-				last_ins->opcode = OP_NOP;
-			}
-			else if  (ins_is_compare_imm(last_ins)) {
-				int tmp;
-
-				tmp = mono_alloc_ireg(cfg);
-				
-				ins_rewrite(ins, op, last_ins->sreg1, tmp);
-				last_ins->opcode = OP_ICONST;
-				last_ins->dreg = tmp;
-				last_ins->sreg1 = -1;
-			}
-			else
-				g_assert_not_reached ();
+			g_assert (ins_is_compare(last_ins));
+			ins_rewrite(ins, op, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
 			break;
 
 		case OP_IBGE:
@@ -1592,15 +1579,9 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_CGT:
 		case OP_ICGT:
-			if (ins_is_compare(last_ins)) {
-				ins_rewrite(ins, OP_MIPS_SLT, last_ins->sreg2, last_ins->sreg1);
-				MONO_DELETE_INS(bb, last_ins);
-			}
-			else if (ins_is_compare_imm(last_ins)) {
-				g_assert_not_reached ();
-			}
-			else
-				g_assert_not_reached ();
+			g_assert (ins_is_compare(last_ins));
+			ins_rewrite(ins, OP_MIPS_SLT, last_ins->sreg2, last_ins->sreg1);
+			MONO_DELETE_INS(bb, last_ins);
 			break;
 
 		case OP_CGT_UN:
@@ -1847,35 +1828,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	} while (0)
 
 static int
-map_to_mips_branch_compare_op (int op)
-{
-	switch (op) {
-	case OP_IBEQ:
-		return OP_MIPS_BEQ;
-	case OP_IBGE:
-		return OP_MIPS_BGEZ;
-	case OP_IBGT:
-		return OP_MIPS_BGTZ;
-	case OP_IBLE:
-		return OP_MIPS_BLEZ;
-	case OP_IBLT:
-		return OP_MIPS_BLTZ;
-
-	case OP_IBNE_UN:
-		return OP_MIPS_BNE;
-
-	case OP_IBGE_UN:
-	case OP_IBGT_UN:
-	case OP_IBLE_UN:
-	case OP_IBLT_UN:
-
-	default:
-		g_warning ("unknown opcode %s in %s()\n", mono_inst_name (op), __FUNCTION__);
-		g_assert_not_reached ();
-	}
-}
-
-static int
 map_to_reg_reg_op (int op)
 {
 	switch (op) {
@@ -1969,16 +1921,11 @@ loop_start:
 				break;
 			}
 			if (ins->inst_imm) {
-#if 0
 				NEW_INS (cfg, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
 				last_ins = temp;
-#else
-				/* appears broken */
-				break;
-#endif
 			}
 			else {
 				ins->sreg2 = mips_zero;
@@ -3620,6 +3567,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			break;
 		}
+		case OP_JUMP_TABLE:
+			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
+			mips_load (code, ins->dreg, 0x0f0f0f0f);
+			break;
+
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
