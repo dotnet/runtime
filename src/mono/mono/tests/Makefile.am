@@ -321,7 +321,8 @@ BASE_TEST_CS_SRC=		\
 	bug-81691.cs	\
 	bug-80307.cs	\
 	bug-415577.cs	\
-	filter-stack.cs
+	filter-stack.cs	\
+	vararg2.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
