@@ -3364,6 +3364,7 @@ generic_array_methods (MonoClass *class)
 	/*g_print ("array generic methods: %d\n", count_generic);*/
 
 	generic_array_method_num = count_generic;
+	g_list_free (list);
 	return generic_array_method_num;
 }
 
