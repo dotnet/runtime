@@ -1342,11 +1342,11 @@ mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *array_type, MonoInst *arr,
 static MonoInst*
 emit_array_extension_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	if (!strcmp ("GetVector", cmethod->name)) {
+	if (!strcmp ("GetVector", cmethod->name) || !strcmp ("GetVectorAligned", cmethod->name)) {
 		MonoInst *load;
 		int addr = mono_emit_vector_ldelema (cfg, fsig->params [0], args [0], args [1], TRUE);
 
-		MONO_INST_NEW (cfg, load, OP_LOADX_MEMBASE);
+		MONO_INST_NEW (cfg, load, !strcmp ("GetVectorAligned", cmethod->name) ? OP_LOADX_ALIGNED_MEMBASE : OP_LOADX_MEMBASE );
 		load->klass = cmethod->klass;
 		load->sreg1 = addr;
 		load->type = STACK_VTYPE;
@@ -1355,12 +1355,12 @@ emit_array_extension_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 
 		return load;
 	}
-	if (!strcmp ("SetVector", cmethod->name)) {
+	if (!strcmp ("SetVector", cmethod->name) || !strcmp ("SetVectorAligned", cmethod->name)) {
 		MonoInst *store;
 		int vreg = get_simd_vreg (cfg, cmethod, args [1]);
 		int addr = mono_emit_vector_ldelema (cfg, fsig->params [0], args [0], args [2], TRUE);
 
-		MONO_INST_NEW (cfg, store, OP_STOREX_MEMBASE);
+		MONO_INST_NEW (cfg, store, !strcmp ("SetVectorAligned", cmethod->name) ? OP_STOREX_ALIGNED_MEMBASE_REG :  OP_STOREX_MEMBASE);
 		store->klass = cmethod->klass;
 		store->dreg = addr;
 		store->sreg1 = vreg;
