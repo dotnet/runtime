@@ -1945,7 +1945,6 @@ void
 mono_bblock_insert_before_ins (MonoBasicBlock *bb, MonoInst *ins, MonoInst *ins_to_insert)
 {
 	if (ins == NULL) {
-		NOT_IMPLEMENTED;
 		ins = bb->code;
 		bb->code = ins_to_insert;
 		ins_to_insert->next = ins;
@@ -2701,87 +2700,6 @@ mono_print_code (MonoCompile *cfg, const char* msg)
 }
 
 #ifndef DISABLE_JIT
-
-/*
- * mono_normalize_opcodes:
- *
- *   Replace CEE_ and OP_ opcodes with the corresponding OP_I or OP_L opcodes.
- */
-
-static gint16 *remap_table;
-
-#if SIZEOF_VOID_P == 8
-#define REMAP_OPCODE(opcode) OP_L ## opcode
-#else
-#define REMAP_OPCODE(opcode) OP_I ## opcode
-#endif
-
-static G_GNUC_UNUSED void
-mono_normalize_opcodes (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-	MonoInst *ins;
-
-	if (!remap_table) {
-		remap_table = g_new0 (gint16, OP_LAST);
-
-#if SIZEOF_VOID_P == 8
-		remap_table [CEE_CONV_U8] = OP_ZEXT_I4;
-		remap_table [CEE_CONV_U] = OP_ZEXT_I4;
-		remap_table [CEE_CONV_I8] = OP_SEXT_I4;
-		remap_table [CEE_CONV_I] = OP_SEXT_I4;
-		remap_table [CEE_CONV_OVF_U4] = OP_LCONV_TO_OVF_U4;
-		remap_table [CEE_CONV_OVF_I4_UN] = OP_LCONV_TO_OVF_I4_UN;
-#else
-#endif
-		remap_table [CEE_CONV_R4] = OP_ICONV_TO_R4;
-		remap_table [CEE_CONV_R8] = OP_ICONV_TO_R8;
-		remap_table [CEE_CONV_I4] = OP_MOVE;
-		remap_table [CEE_CONV_U4] = OP_MOVE;
-		remap_table [CEE_CONV_I1] = REMAP_OPCODE (CONV_TO_I1);
-		remap_table [CEE_CONV_I2] = REMAP_OPCODE (CONV_TO_I2);
-		remap_table [CEE_CONV_U1] = REMAP_OPCODE (CONV_TO_U1);
-		remap_table [CEE_CONV_U2] = REMAP_OPCODE (CONV_TO_U2);
-		remap_table [CEE_CONV_R_UN] = REMAP_OPCODE (CONV_TO_R_UN);
-		remap_table [CEE_ADD] = REMAP_OPCODE (ADD);
-		remap_table [CEE_SUB] = REMAP_OPCODE (SUB);
-		remap_table [CEE_MUL] = REMAP_OPCODE (MUL);
-		remap_table [CEE_DIV] = REMAP_OPCODE (DIV);
-		remap_table [CEE_REM] = REMAP_OPCODE (REM);
-		remap_table [CEE_DIV_UN] = REMAP_OPCODE (DIV_UN);
-		remap_table [CEE_REM_UN] = REMAP_OPCODE (REM_UN);
-		remap_table [CEE_AND] = REMAP_OPCODE (AND);
-		remap_table [CEE_OR] = REMAP_OPCODE (OR);
-		remap_table [CEE_XOR] = REMAP_OPCODE (XOR);
-		remap_table [CEE_SHL] = REMAP_OPCODE (SHL);
-		remap_table [CEE_SHR] = REMAP_OPCODE (SHR);
-		remap_table [CEE_SHR_UN] = REMAP_OPCODE (SHR_UN);
-		remap_table [CEE_NOT] = REMAP_OPCODE (NOT);
-		remap_table [CEE_NEG] = REMAP_OPCODE (NEG);
-		remap_table [CEE_CALL] = OP_CALL;
-		remap_table [CEE_BEQ] = REMAP_OPCODE (BEQ);
-		remap_table [CEE_BNE_UN] = REMAP_OPCODE (BNE_UN);
-		remap_table [CEE_BLT] = REMAP_OPCODE (BLT);
-		remap_table [CEE_BLT_UN] = REMAP_OPCODE (BLT_UN);
-		remap_table [CEE_BGT] = REMAP_OPCODE (BGT);
-		remap_table [CEE_BGT_UN] = REMAP_OPCODE (BGT_UN);
-		remap_table [CEE_BGE] = REMAP_OPCODE (BGE);
-		remap_table [CEE_BGE_UN] = REMAP_OPCODE (BGE_UN);
-		remap_table [CEE_BLE] = REMAP_OPCODE (BLE);
-		remap_table [CEE_BLE_UN] = REMAP_OPCODE (BLE_UN);
-		remap_table [CEE_ADD_OVF] = REMAP_OPCODE (ADD_OVF);
-		remap_table [CEE_ADD_OVF_UN] = REMAP_OPCODE (ADD_OVF_UN);
-		remap_table [CEE_SUB_OVF] = REMAP_OPCODE (SUB_OVF);
-		remap_table [CEE_SUB_OVF_UN] = REMAP_OPCODE (SUB_OVF_UN);
-		remap_table [CEE_MUL_OVF] = REMAP_OPCODE (MUL_OVF);
-		remap_table [CEE_MUL_OVF_UN] = REMAP_OPCODE (MUL_OVF_UN);
-	}
-
-	MONO_BB_FOR_EACH_INS (bb, ins) {
-		int remapped = remap_table [ins->opcode];
-		if (remapped)
-			ins->opcode = remapped;
-	}
-}
 
 void
 mono_codegen (MonoCompile *cfg)
