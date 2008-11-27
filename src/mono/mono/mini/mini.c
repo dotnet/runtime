@@ -334,27 +334,6 @@ void *mono_global_codeman_reserve (int size)
 	}
 }
 
-static inline GSList*
-g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
-{
-	GSList *new_list;
-	GSList *last;
-	
-	new_list = mono_mempool_alloc (mp, sizeof (GSList));
-	new_list->data = data;
-	new_list->next = NULL;
-	
-	if (list) {
-		last = list;
-		while (last->next)
-			last = last->next;
-		last->next = new_list;
-		
-		return list;
-	} else
-		return new_list;
-}
-
 /**
  * mono_emit_unwind_op:
  *

@@ -22,6 +22,7 @@
 #include "marshal.h"
 #include "debug-helpers.h"
 #include "tabledefs.h"
+#include "mempool-internals.h"
 
 static int
 type_check_context_used (MonoType *type, gboolean recursive)
@@ -161,7 +162,7 @@ get_other_info_templates (MonoRuntimeGenericContextTemplate *template, int type_
  * LOCKING: templates lock
  */
 static void
-set_other_info_templates (MonoRuntimeGenericContextTemplate *template, int type_argc,
+set_other_info_templates (MonoMemPool *mp, MonoRuntimeGenericContextTemplate *template, int type_argc,
 	MonoRuntimeGenericContextOtherInfoTemplate *oti)
 {
 	g_assert (type_argc >= 0);
@@ -173,7 +174,7 @@ set_other_info_templates (MonoRuntimeGenericContextTemplate *template, int type_
 
 		/* FIXME: quadratic! */
 		while (length < type_argc) {
-			template->method_templates = g_slist_append (template->method_templates, NULL);
+			template->method_templates = g_slist_append_mempool (mp, template->method_templates, NULL);
 			length++;
 		}
 
@@ -441,7 +442,7 @@ rgctx_template_set_other_slot (MonoImage *image, MonoRuntimeGenericContextTempla
 	(*oti)->data = data;
 	(*oti)->info_type = info_type;
 
-	set_other_info_templates (template, type_argc, list);
+	set_other_info_templates (image->mempool, template, type_argc, list);
 
 	if (data == MONO_RGCTX_SLOT_USED_MARKER)
 		++num_markers;

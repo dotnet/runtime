@@ -7,6 +7,8 @@
 
 GSList*
 g_slist_prepend_mempool (MonoMemPool *mp, GSList *list, gpointer data) MONO_INTERNAL;
+GSList*
+g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data) MONO_INTERNAL;
 
 GList*
 g_list_prepend_mempool (MonoMemPool *mp, GList *list, gpointer data) MONO_INTERNAL;
