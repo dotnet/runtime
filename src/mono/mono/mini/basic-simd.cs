@@ -2,6 +2,106 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_set_vector_small_array () {
+		uint[] array = new uint[3];
+
+		try {
+			array.SetVector (new Vector4ui (), 0);
+			return 1;
+		} catch (IndexOutOfRangeException) {
+		}
+		return 0;
+	}
+	
+	public static int test_0_set_vector_negative_index () {
+		uint[] array = new uint[4];
+
+		try {
+			array.SetVector (new Vector4ui (), -1);
+			return 1;
+		} catch (IndexOutOfRangeException) {
+		}
+		return 0;
+	}
+
+	public static int test_0_set_vector_bounds_error () {
+		uint[] array = new uint[4];
+
+		try {
+			array.SetVector (new Vector4ui (), 1);
+			return 1;
+		} catch (IndexOutOfRangeException) {
+		}
+		return 0;
+	}
+
+	public static int test_0_set_vector () {
+		uint[] array = new uint[10];
+		Vector4ui a = new Vector4ui (11, 22, 33, 44);
+
+		array.SetVector (a, 1);
+
+		if (array [1] != 11)
+			return 1;
+		if (array [2] != 22)
+			return 2;
+		if (array [3] != 33)
+			return 3;
+		if (array [4] != 44)
+			return 4;
+		return 0;
+	}
+
+	public static int test_0_get_vector_small_array () {
+		uint[] array = new uint[3];
+
+		try {
+			Vector4ui res = array.GetVector (0);
+			return 1;
+		} catch (IndexOutOfRangeException) {
+		}
+		return 0;
+	}
+	
+	public static int test_0_get_vector_negative_index () {
+		uint[] array = new uint[4];
+
+		try {
+			Vector4ui res = array.GetVector (-1);
+			return 1;
+		} catch (IndexOutOfRangeException) {
+		}
+		return 0;
+	}
+
+	public static int test_0_get_vector_bounds_error () {
+		uint[] array = new uint[4];
+
+		try {
+			Vector4ui res = array.GetVector (1);
+			return 1;
+		} catch (IndexOutOfRangeException) {
+		}
+		return 0;
+	}
+	
+	public static int test_0_get_vector () {
+		uint[] array = new uint[] { 11, 22, 33, 44, 55, 66, 77, 88, 99, 111 };
+
+		Vector4ui res = array.GetVector (1);
+
+		if (res.X != 22)
+			return 1;
+		if (res.Y != 33)
+			return 2;
+		if (res.Z != 44)
+			return 3;
+		if (res.W != 55)
+			return 4;
+
+		return 0;
+	}
+	
 	public static int test_0_accessor_vecto2l () {
 		Vector2l a = new Vector2l (3, 2);
 
