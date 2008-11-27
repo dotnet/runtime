@@ -937,6 +937,7 @@ mono_type_to_slow_insert_op (MonoType *type)
 	}
 	g_assert_not_reached ();
 }
+
 static MonoInst*
 simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
@@ -1301,14 +1302,13 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 }
 
 static int
-mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *element_type, MonoInst *arr, MonoInst *index)
+mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *array_type, MonoInst *arr, MonoInst *index, gboolean check_bounds)
 {
 	MonoInst *ins;
 	guint32 size;
-	int mult_reg, add_reg, array_reg, index_reg, index2_reg, index3_reg, align;
+	int mult_reg, add_reg, array_reg, index_reg, index2_reg, index3_reg;
 
-	size = mono_type_size (element_type, &align);
-
+	size = mono_array_element_size (mono_class_from_mono_type (array_type));
 	mult_reg = alloc_preg (cfg);
 	array_reg = arr->dreg;
 	index_reg = index->dreg;
@@ -1322,12 +1322,11 @@ mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *element_type, MonoInst *ar
 #endif
 	index3_reg = alloc_preg (cfg);
 
-	MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index2_reg);
-
-	MONO_EMIT_NEW_BIALU_IMM (cfg,  OP_PADD_IMM, index3_reg, index2_reg, 3);
-	
-	MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index3_reg);
-
+	if (check_bounds) {
+		MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index2_reg);
+		MONO_EMIT_NEW_BIALU_IMM (cfg,  OP_PADD_IMM, index3_reg, index2_reg, 16 / size - 1);
+		MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index3_reg);
+	}
 
 	add_reg = alloc_preg (cfg);
 
@@ -1337,7 +1336,6 @@ mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *element_type, MonoInst *ar
 	ins->type = STACK_PTR;
 	MONO_ADD_INS (cfg->cbb, ins);
 
-	
 	return add_reg;
 }
 
@@ -1346,7 +1344,7 @@ emit_array_extension_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 {
 	if (!strcmp ("GetVector", cmethod->name)) {
 		MonoInst *load;
-		int addr = mono_emit_vector_ldelema (cfg, fsig->params [0], args [0], args [1]);
+		int addr = mono_emit_vector_ldelema (cfg, fsig->params [0], args [0], args [1], TRUE);
 
 		MONO_INST_NEW (cfg, load, OP_LOADX_MEMBASE);
 		load->klass = cmethod->klass;
@@ -1356,6 +1354,30 @@ emit_array_extension_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		MONO_ADD_INS (cfg->cbb, load);
 
 		return load;
+	}
+	if (!strcmp ("SetVector", cmethod->name)) {
+		MonoInst *store;
+		int vreg = get_simd_vreg (cfg, cmethod, args [1]);
+		int addr = mono_emit_vector_ldelema (cfg, fsig->params [0], args [0], args [2], TRUE);
+
+		MONO_INST_NEW (cfg, store, OP_STOREX_MEMBASE);
+		store->klass = cmethod->klass;
+		store->dreg = addr;
+		store->sreg1 = vreg;
+		MONO_ADD_INS (cfg->cbb, store);
+
+		return store;
+	}
+	if (!strcmp ("IsAligned", cmethod->name)) {
+		MonoInst *ins;
+		int addr = mono_emit_vector_ldelema (cfg, fsig->params [0], args [0], args [1], FALSE);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_AND_IMM, addr, addr, 15);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, addr, 0);
+		NEW_UNALU (cfg, ins, OP_CEQ, addr, -1);
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		return ins;
 	}
 	return NULL;
 }
