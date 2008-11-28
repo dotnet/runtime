@@ -186,24 +186,6 @@ typedef struct MonoRegallocContext {
 
 #define USE_POS_IS_DEF(ins_pos) ((ins_pos) & INS_POS_DEF)
 
-static inline GSList*
-g_slist_append_mempool (MonoMemPool *mp, GSList   *list,
-						gpointer  data)
-{
-	GSList *new_list, *last;
-
-	last = g_slist_last (list);
-	new_list = mono_mempool_alloc (mp, sizeof (GSList));
-	new_list->data = data;
-	new_list->next = NULL;
-	if (last) {
-		last->next = new_list;
-		return list;
-	} else {
-		return new_list;
-	}
-}
-
 static MonoInst*
 create_move (MonoCompile *cfg, int dreg, int sreg)
 {
