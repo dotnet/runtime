@@ -271,10 +271,11 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * so it will be ready for the final jump: this is safe since we
 	 * won't do any more calls.
 	 */
-	if (tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
+	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
 		if (tramp_type != MONO_TRAMPOLINE_DELEGATE)
 			ppc_load_reg (buf, ppc_r3, 0, ppc_r3);
 		ppc_mtctr (buf, ppc_r3);
+	}
 
 	/*
 	 * Now we restore the MonoLMF (see emit_epilogue in mini-ppc.c)
@@ -322,13 +323,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	ppc_load_reg  (buf, ppc_r1,  0, ppc_r1);
 	ppc_load_reg  (buf, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_r1);
 	ppc_mtlr (buf, ppc_r11);
-	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT ||
-			tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||
-			tramp_type == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH) {
+	if (MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type))
 		ppc_blr (buf);
-	} else {
+	else
 		ppc_bcctr (buf, 20, 0);
-	}
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
