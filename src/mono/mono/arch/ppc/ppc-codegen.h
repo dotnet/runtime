@@ -137,6 +137,8 @@ enum {
 
 #define ppc_load_sequence(c,D,v) ppc_load32 ((c), (D), (guint32)(v))
 
+#define PPC_LOAD_SEQUENCE_LENGTH	8
+
 #define ppc_load(c,D,v) G_STMT_START {	\
 		if (ppc_is_imm16 ((guint32)(v)))	{	\
 			ppc_li ((c), (D), (guint16)(guint32)(v));	\
@@ -695,6 +697,8 @@ my and Ximian's copyright to this code. ;)
 		ppc_oris ((c), (D), (D), ((guint64)(v) >> 16) & 0xffff);	\
 		ppc_ori  ((c), (D), (D),  (guint64)(v)        & 0xffff);	\
 	} G_STMT_END
+
+#define PPC_LOAD_SEQUENCE_LENGTH	20
 
 #define ppc_is_imm32(val) ((glong)(val) >= (glong)-(1L<<31) && (glong)(val) <= (glong)((1L<<31)-1))
 

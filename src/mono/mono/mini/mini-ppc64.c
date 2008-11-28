@@ -4701,10 +4701,10 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 
 #ifdef MONO_ARCH_HAVE_IMT
 
-#define CMP_SIZE 12
+#define CMP_SIZE (PPC_LOAD_SEQUENCE_LENGTH + 4)
 #define BR_SIZE 4
 #define JUMP_IMM_SIZE 12
-#define JUMP_IMM32_SIZE 16
+#define JUMP_IMM32_SIZE (PPC_LOAD_SEQUENCE_LENGTH + 8)
 #define ENABLE_WRONG_METHOD_CHECK 0
 
 /*
@@ -4748,7 +4748,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		code = mono_method_alloc_generic_virtual_thunk (domain, size);
 	} else {
 		/* the initial load of the vtable address */
-		size += 8;
+		size += PPC_LOAD_SEQUENCE_LENGTH;
 		code = mono_code_manager_reserve (domain->code_mp, size);
 	}
 	start = code;

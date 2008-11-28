@@ -1504,7 +1504,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable
 
 		entry = g_new0 (MonoImtBuilderEntry, 1);
 		entry->key = list->inst;
-		entry->value.target_code = list->code;
+		entry->value.target_code = mono_get_addr_from_ftnptr (list->code);
 		if (entries)
 			entry->children = entries->children + 1;
 		entry->next = entries;
