@@ -172,7 +172,9 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		else
 			g_assert (!m->klass->generic_container);
 
+#ifdef MONO_ARCH_HAVE_IMT
 		generic_virtual_method_inst = (MonoGenericInst*)mono_arch_find_imt_method ((gpointer*)regs, code);
+#endif
 		context.method_inst = generic_virtual_method_inst;
 
 		m = mono_class_inflate_generic_method (declaring, &context);
@@ -387,8 +389,9 @@ mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod
 	else
 		g_assert (!m->klass->generic_container);
 
+#ifdef MONO_ARCH_HAVE_IMT
 	context.method_inst = (MonoGenericInst*)mono_arch_find_imt_method ((gpointer*)regs, code);
-
+#endif
 	m = mono_class_inflate_generic_method (declaring, &context);
 	m = mono_marshal_get_remoting_invoke_with_check (m);
 

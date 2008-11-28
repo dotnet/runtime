@@ -27,7 +27,7 @@
 
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
-#define EXTRA_STACK_SPACE	1	/* suppresses some s-reg corruption issues */
+#define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
 #define LONG_BRANCH		1	/* needed for yyparse in mcs */
 
 #define SAVE_LMF		1
@@ -40,6 +40,11 @@ enum {
 	TLS_MODE_LTHREADS,
 	TLS_MODE_NPTL
 };
+
+/* This mutex protects architecture specific caches */
+#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
+#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
+static CRITICAL_SECTION mini_arch_mutex;
 
 int mono_exc_esp_offset = 0;
 static int tls_mode = TLS_MODE_DETECT;
@@ -451,6 +456,7 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
+	InitializeCriticalSection (&mini_arch_mutex);	
 }
 
 /*
@@ -459,6 +465,7 @@ mono_arch_init (void)
 void
 mono_arch_cleanup (void)
 {
+	DeleteCriticalSection (&mini_arch_mutex);
 }
 
 /*
@@ -972,7 +979,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	guint32 iregs_to_save = 0;
 	guint32 fregs_to_restore;
 
-	cfg->flags |= MONO_CFG_HAS_SPILLUP;
+	/* spill down, we'll fix it in a separate pass */
+	// cfg->flags |= MONO_CFG_HAS_SPILLUP;
 
 	/* allow room for the vararg method args: void* and long/double */
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
@@ -1074,12 +1082,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 #endif
 
-#if EXTRA_STACK_SPACE
 	/* XXX - Saved S-regs seem to be getting clobbered by some calls with struct
 	 * args or return vals.  Extra stack space avoids this in a lot of cases.
 	 */
-	offset += 64;
-#endif
+	offset += EXTRA_STACK_SPACE;
+
 	/* Space for saved registers */
 	cfg->arch.iregs_offset = offset;
 #if SAVE_ALL_REGS
@@ -1095,12 +1102,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 	}
 
-#if EXTRA_STACK_SPACE
 	/* XXX - Saved S-regs seem to be getting clobbered by some calls with struct
 	 * args or return vals.  Extra stack space avoids this in a lot of cases.
 	 */
-	offset += 64;
-#endif
+	offset += EXTRA_STACK_SPACE;
 
 	/* saved float registers */
 #if SAVE_FP_REGS
@@ -1120,6 +1125,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* change sign? */
 	offset = (offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
 	cfg->stack_offset = offset;
+	cfg->arch.local_alloc_offset = cfg->stack_offset;
 
 	/*
 	 * Now allocate stack slots for the int arg regs (a0 - a3)
@@ -2700,10 +2706,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_REM_IMM:
 			g_assert_not_reached ();
-		case CEE_OR:
+		case OP_IOR:
 			mips_or (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_OR_IMM:
+		case OP_IOR_IMM:
 			if (mips_is_imm16 (ins->inst_imm)) {
 				mips_ori (code, ins->sreg1, ins->dreg, ins->inst_imm);
 			} else {
@@ -3738,6 +3745,87 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	return code;
 }
 
+void
+mips_adjust_stackframe(MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+	int delta, threshold, i;
+	MonoMethodSignature *sig;
+	int verbose = (cfg->verbose_level > 2);
+
+	if (cfg->stack_offset == cfg->arch.local_alloc_offset)
+		return;
+
+	/* re-align cfg->stack_offset if needed (due to var spilling) */
+	cfg->stack_offset = (cfg->stack_offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
+	delta = cfg->stack_offset - cfg->arch.local_alloc_offset;
+	if (verbose) {
+		g_print ("mips_adjust_stackframe:\n");
+		g_print ("\tspillvars allocated 0x%x -> 0x%x (+%d)\n", cfg->arch.local_alloc_offset, cfg->stack_offset, delta);
+	}
+	threshold = cfg->arch.local_alloc_offset - 4;
+
+#if 1
+	if (sig && sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
+		cfg->vret_addr->inst_offset += delta;
+	}
+
+	sig = mono_method_signature (cfg->method);
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		MonoInst *inst = cfg->args [i];
+
+		inst->inst_offset += delta;
+	}
+#endif
+
+	/*
+	 * loads and stores based off the frame reg that (used to) lie
+	 * above the spill var area need to be increased by 'delta'
+	 * to make room for the spill vars.
+	 */
+	/* Need to find loads and stores to adjust that
+	 * are above where the spillvars were inserted, but
+	 * which are not the spillvar references themselves.
+	 *
+	 * Idea - since all offsets from fp are positive, make
+	 * spillvar offsets negative to begin with so we can spot
+	 * them here.
+	 */
+
+#if 1
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		int ins_cnt = 0;
+		MonoInst *ins;
+
+		if (verbose) {
+			g_print ("BASIC BLOCK %d:\n", bb->block_num);
+		}
+		MONO_BB_FOR_EACH_INS (bb, ins) {
+			if (verbose) {
+				mono_print_ins_index (ins_cnt, ins);
+			}
+			if ((MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_fp)) || (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_fp))) {
+				if (ins->inst_c0 > threshold) {
+					ins->inst_c0 += delta;
+					if (verbose) {
+						g_print ("adj");
+						mono_print_ins_index (ins_cnt, ins);
+					}
+				}
+				else if (ins->inst_c0 < 0) {
+					ins->inst_c0 = - ins->inst_c0;
+					if (verbose) {
+						g_print ("spill");
+						mono_print_ins_index (ins_cnt, ins);
+					}
+				}
+			}
+			++ins_cnt;
+		}
+	}
+#endif
+}
+
 /*
  * Stack frame layout:
  * 
@@ -3791,8 +3879,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->code_size = 768 + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
-	/* re-align cfg->stack_offset if needed (due to var spilling in mini-codegen.c) */
-	cfg->stack_offset = (cfg->stack_offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
+	/* adjust stackframe assignments for spillvars if needed */
+	mips_adjust_stackframe (cfg);
 
 	/* stack_offset should not be changed here. */
 	alloc_size = cfg->stack_offset;
@@ -4768,5 +4856,6 @@ mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSha
 MonoVTable*
 mono_arch_find_static_call_vtable (gpointer *regs, guint8 *code)
 {
+	NOT_IMPLEMENTED;
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
 }

@@ -2306,10 +2306,12 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			slot_reg = vtable_reg;
 			call->inst.inst_offset = G_STRUCT_OFFSET (MonoVTable, vtable) +
 				(mono_method_get_vtable_index (method) * SIZEOF_VOID_P);
+#ifdef MONO_ARCH_HAVE_IMT
 			if (imt_arg) {
 				g_assert (mono_method_signature (method)->generic_param_count);
 				emit_imt_argument (cfg, call, imt_arg);
 			}
+#endif
 		}
 
 		call->inst.sreg1 = slot_reg;

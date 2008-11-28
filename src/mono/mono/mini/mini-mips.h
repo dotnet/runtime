@@ -140,6 +140,7 @@ typedef struct {
 typedef struct MonoCompileArch {
 	guint		iregs_offset;
 	guint		lmf_offset;
+	guint		local_alloc_offset;
 	guint		spillvar_offset;
 	guint		spillvar_offset_float;
 } MonoCompileArch;
@@ -162,12 +163,12 @@ typedef struct MonoCompileArch {
 #define MIPS_FIRST_FPARG_REG	mips_f12
 #define MIPS_LAST_FPARG_REG	mips_f14
 
-#define MONO_ARCH_HAVE_IMT 1
-#define MONO_ARCH_IMT_REG mips_a0		/* XXX */
+//#define MONO_ARCH_HAVE_IMT 1
+//#define MONO_ARCH_IMT_REG mips_v0		/* XXX */
 #define MONO_ARCH_COMMON_VTABLE_TRAMPOLINE 1
 
-#define MONO_ARCH_VTABLE_REG	mips_a0		/* XXX */
-#define MONO_ARCH_RGCTX_REG	mips_a0		/* XXX */
+//#define MONO_ARCH_VTABLE_REG	mips_v0		/* XXX */
+#define MONO_ARCH_RGCTX_REG	mips_v0		/* XXX */
 
 #define MONO_ARCH_HAVE_DECOMPOSE_OPTS 1
 

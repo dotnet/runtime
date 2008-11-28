@@ -71,6 +71,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	looks something like this:
 
 		jal	XXXXYYYY
+		nop
 
 		lui	t9, XXXX
 		addiu	t9, YYYY
@@ -118,6 +119,7 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 gpointer
 mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 {
+	char *o = NULL;
 	char *vtable = NULL;
 	int reg, offset = 0;
 	guint32 base = 0;
@@ -161,17 +163,19 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 			if (soff & 0x8000)
 				soff |= 0xffff0000;
 			offset = soff;
-			reg_offset = STACK - sizeof (MonoLMF)
-				+ G_STRUCT_OFFSET (MonoLMF, iregs[base]);
-			*displacement = reg_offset;
-			/* o contains now the value of register reg */
-			vtable = *((char**) (sp + reg_offset));
-			return (gpointer*)vtable;
+			if (1) {
+				MonoLMF *lmf = (MonoLMF*)((char *)regs + 12*4);
+				g_assert (lmf->magic == MIPS_LMF_MAGIC2);
+				o = (gpointer)lmf->iregs [base];
+			}
+			else {
+				o = regs [base];
+			}
+			break;
 		}
 	}
-
-	g_assert_not_reached ();
-	return NULL;
+	*displacement = offset;
+	return o;
 }
 
 gpointer*
