@@ -1,3 +1,7 @@
+2008-11-28  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* data/mono-nunit.pc.in : add new 2.4.8 files.
+
 2008-11-21  Jb Evain  <jbevain@novell.com>
 
 	* scripts/Makefile.am: use only one mono-api-info pointing to the cecil one
