@@ -2039,22 +2039,30 @@ loop_start:
 			/* handle rem separately */
 			goto loop_start;
 		case OP_IREM:
-		case OP_IREM_UN: {
+		case OP_IREM_UN:
+		case OP_LREM:
+		case OP_LREM_UN: {
 			MonoInst *mul;
 			/* we change a rem dest, src1, src2 to
 			 * div temp1, src1, src2
 			 * mul temp2, temp1, src2
 			 * sub dest, src1, temp2
 			 */
-			NEW_INS (cfg, mul, OP_IMUL);
-			NEW_INS (cfg, temp, ins->opcode == OP_IREM? OP_IDIV: OP_IDIV_UN);
+			if (ins->opcode == OP_IREM || ins->opcode == OP_IREM_UN) {
+				NEW_INS (cfg, mul, OP_IMUL);
+				NEW_INS (cfg, temp, ins->opcode == OP_IREM? OP_IDIV: OP_IDIV_UN);
+				ins->opcode = OP_ISUB;
+			} else {
+				NEW_INS (cfg, mul, OP_LMUL);
+				NEW_INS (cfg, temp, ins->opcode == OP_LREM? OP_LDIV: OP_LDIV_UN);
+				ins->opcode = OP_LSUB;
+			}
 			temp->sreg1 = ins->sreg1;
 			temp->sreg2 = ins->sreg2;
 			temp->dreg = mono_alloc_ireg (cfg);
 			mul->sreg1 = temp->dreg;
 			mul->sreg2 = ins->sreg2;
 			mul->dreg = mono_alloc_ireg (cfg);
-			ins->opcode = OP_ISUB;
 			ins->sreg2 = mul->dreg;
 			break;
 		}
@@ -3129,7 +3137,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 			break;
-		case OP_IDIV: {
+		case OP_IDIV:
+		case OP_LDIV: {
 			guint8 *divisor_is_m1;
                          /* XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
                          */
@@ -3137,27 +3146,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			divisor_is_m1 = code;
 			ppc_bc (code, PPC_BR_FALSE | PPC_BR_LIKELY, PPC_BR_EQ, 0);
 			ppc_lis (code, ppc_r0, 0x8000);
+			if (ins->opcode == OP_LDIV)
+				ppc_sldi (code, ppc_r0, ppc_r0, 32);
 			ppc_cmp (code, 0, 1, ins->sreg1, ppc_r0);
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_TRUE, PPC_BR_EQ, "ArithmeticException");
 			ppc_patch (divisor_is_m1, code);
 			 /* XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
 			 */
-			ppc_divwod (code, ins->dreg, ins->sreg1, ins->sreg2);
+			if (ins->opcode == OP_IDIV)
+				ppc_divwod (code, ins->dreg, ins->sreg1, ins->sreg2);
+			else
+				ppc_divdod (code, ins->dreg, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
 			break;
 		}
-		case OP_LDIV:
-			ppc_divd (code, ins->dreg, ins->sreg1, ins->sreg2);
-			/* FIXME: div by zero check */
-			break;
-		case OP_LDIV_UN:
-			ppc_divdu (code, ins->dreg, ins->sreg1, ins->sreg2);
-			/* FIXME: div by zero check */
-			break;
 		case OP_IDIV_UN:
-			ppc_divwuod (code, ins->dreg, ins->sreg1, ins->sreg2);
+		case OP_LDIV_UN:
+			if (ins->opcode == OP_IDIV_UN)
+				ppc_divwuod (code, ins->dreg, ins->sreg1, ins->sreg2);
+			else
+				ppc_divduod (code, ins->dreg, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "DivideByZeroException");
@@ -3260,20 +3270,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_IMUL_OVF:
+		case OP_LMUL_OVF:
 			/* we annot use mcrxr, since it's not implemented on some processors 
 			 * XER format: SO, OV, CA, reserved [21 bits], count [8 bits]
 			 */
-			ppc_mullwo (code, ins->dreg, ins->sreg1, ins->sreg2);
+			if (ins->opcode == OP_IMUL_OVF)
+				ppc_mullwo (code, ins->dreg, ins->sreg1, ins->sreg2);
+			else
+				ppc_mulldo (code, ins->dreg, ins->sreg1, ins->sreg2);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
 			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (PPC_BR_FALSE, PPC_BR_EQ, "OverflowException");
 			break;
 		case OP_IMUL_OVF_UN:
+		case OP_LMUL_OVF_UN:
 			/* we first multiply to get the high word and compare to 0
 			 * to set the flags, then the result is discarded and then 
 			 * we multiply to get the lower * bits result
 			 */
-			ppc_mulhwu (code, ppc_r0, ins->sreg1, ins->sreg2);
+			if (ins->opcode == OP_IMUL_OVF_UN)
+				ppc_mulhwu (code, ppc_r0, ins->sreg1, ins->sreg2);
+			else
+				ppc_mulhdu (code, ppc_r0, ins->sreg1, ins->sreg2);
 			ppc_cmpi (code, 0, 0, ppc_r0, 0);
 			EMIT_COND_SYSTEM_EXCEPTION (CEE_BNE_UN - CEE_BEQ, "OverflowException");
 			ppc_mulld (code, ins->dreg, ins->sreg1, ins->sreg2);

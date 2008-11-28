@@ -52,6 +52,9 @@ typedef struct MonoCompileArch {
 	int fp_conv_var_offset;
 } MonoCompileArch;
 
+#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
+#define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
+
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 1
