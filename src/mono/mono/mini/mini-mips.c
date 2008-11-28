@@ -1721,7 +1721,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && (last_ins->opcode == OP_STOREI1_MEMBASE_REG) &&
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
-				ins->opcode = (ins->opcode == OP_LOADI1_MEMBASE) ? CEE_CONV_I1 : CEE_CONV_U1;
+				ins->opcode = (ins->opcode == OP_LOADI1_MEMBASE) ? OP_ICONV_TO_I1 : OP_ICONV_TO_U1;
 				ins->sreg1 = last_ins->sreg1;				
 			}
 			break;
@@ -1730,12 +1730,12 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (last_ins && (last_ins->opcode == OP_STOREI2_MEMBASE_REG) &&
 					ins->inst_basereg == last_ins->inst_destbasereg &&
 					ins->inst_offset == last_ins->inst_offset) {
-				ins->opcode = (ins->opcode == OP_LOADI2_MEMBASE) ? CEE_CONV_I2 : CEE_CONV_U2;
+				ins->opcode = (ins->opcode == OP_LOADI2_MEMBASE) ? OP_ICONV_TO_I2 : OP_ICONV_TO_U2;
 				ins->sreg1 = last_ins->sreg1;				
 			}
 			break;
-		case CEE_CONV_I4:
-		case CEE_CONV_U4:
+		case OP_ICONV_TO_I4:
+		case OP_ICONV_TO_U4:
 		case OP_MOVE:
 			ins->opcode = OP_MOVE;
 			/* 
@@ -1790,7 +1790,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	}
 	case OP_ICONV_TO_R4:
 	case OP_ICONV_TO_R8: {
-		/* FIXME: change precision for CEE_CONV_R4 */
+		/* FIXME: change precision for OP_ICONV_TO_R4 */
 		static const guint64 adjust_val = 0x4330000080000000ULL;
 		int msw_reg = mono_alloc_ireg (cfg);
 		int xored = mono_alloc_ireg (cfg);
@@ -1847,29 +1847,29 @@ map_to_reg_reg_op (int op)
 {
 	switch (op) {
 	case OP_ADD_IMM:
-		return CEE_ADD;
+		return OP_IADD;
 	case OP_SUB_IMM:
-		return CEE_SUB;
+		return OP_ISUB;
 	case OP_AND_IMM:
-		return CEE_AND;
+		return OP_IAND;
 	case OP_COMPARE_IMM:
 		return OP_COMPARE;
 	case OP_ICOMPARE_IMM:
 		return OP_ICOMPARE;
 	case OP_ADDCC_IMM:
-		return OP_ADDCC;
+		return OP_IADDCC;
 	case OP_ADC_IMM:
-		return OP_ADC;
+		return OP_IADC;
 	case OP_SUBCC_IMM:
-		return OP_SUBCC;
+		return OP_ISUBCC;
 	case OP_SBB_IMM:
-		return OP_SBB;
+		return OP_ISBB;
 	case OP_OR_IMM:
-		return CEE_OR;
+		return OP_IOR;
 	case OP_XOR_IMM:
-		return CEE_XOR;
+		return OP_IXOR;
 	case OP_MUL_IMM:
-		return CEE_MUL;
+		return OP_IMUL;
 	case OP_LOAD_MEMBASE:
 		return OP_LOAD_MEMINDEX;
 	case OP_LOADI4_MEMBASE:
@@ -1909,7 +1909,43 @@ map_to_reg_reg_op (int op)
 	case OP_STOREI4_MEMBASE_IMM:
 		return OP_STOREI4_MEMBASE_REG;
 	}
-	g_assert_not_reached ();
+	return mono_op_imm_to_op (op);
+}
+
+static int
+map_to_mips_op (int op)
+{
+	switch (op) {
+	case OP_FBEQ:
+		return OP_MIPS_FBEQ;
+	case OP_FBGE:
+		return OP_MIPS_FBGE;
+	case OP_FBGT:
+		return OP_MIPS_FBGT;
+	case OP_FBLE:
+		return OP_MIPS_FBLE;
+	case OP_FBLT:
+		return OP_MIPS_FBLT;
+	case OP_FBNE_UN:
+		return OP_MIPS_FBNE;
+	case OP_FBGE_UN:
+		return OP_MIPS_FBGE_UN;
+	case OP_FBGT_UN:
+		return OP_MIPS_FBGT_UN;
+	case OP_FBLE_UN:
+		return OP_MIPS_FBLE_UN;
+	case OP_FBLT_UN:
+		return OP_MIPS_FBLT_UN;
+
+	case OP_FCEQ:
+	case OP_FCGT:
+	case OP_FCGT_UN:
+	case OP_FCLT:
+	case OP_FCLT_UN:
+	default:
+		g_warning ("unknown opcode %s in %s()\n", mono_inst_name (op), __FUNCTION__);
+		g_assert_not_reached ();
+	}
 }
 
 /*
@@ -1995,33 +2031,10 @@ loop_start:
 			 * remap compare/branch and compare/set
 			 * to MIPS specific opcodes.
 			 */
-			tmp = next->opcode;
-			switch (next->opcode) {
-			case OP_FBEQ:
-			case OP_FBGE:
-			case OP_FBGT:
-			case OP_FBLE:
-			case OP_FBLT:
-			case OP_FBNE_UN:
-			case OP_FBGE_UN:
-			case OP_FBGT_UN:
-			case OP_FBLE_UN:
-			case OP_FBLT_UN:
-
-			case OP_FCEQ:
-			case OP_FCGT:
-			case OP_FCGT_UN:
-			case OP_FCLT:
-			case OP_FCLT_UN:
-				ins->opcode = OP_NOP;
-				next->sreg1 = ins->sreg1;
-				next->sreg2 = ins->sreg2;
-				break;
-
-			default:
-				g_warning ("unknown opcode %s in %s()\n", mono_inst_name (next->opcode), __FUNCTION__);
-				g_assert_not_reached ();
-			}
+			ins->opcode = OP_NOP;
+			next->opcode = map_to_mips_op (next->opcode);
+			next->sreg1 = ins->sreg1;
+			next->sreg2 = ins->sreg2;
 			break;
 
 		case OP_SUB_IMM:
@@ -2502,18 +2515,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_lhu (code, ins->dreg, mips_at, 0);
 			}
 			break;
-		case CEE_CONV_I1:
+		case OP_ICONV_TO_I1:
 			mips_sll (code, mips_at, ins->sreg1, 24);
 			mips_sra (code, ins->dreg, mips_at, 24);
 			break;
-		case CEE_CONV_I2:
+		case OP_ICONV_TO_I2:
 			mips_sll (code, mips_at, ins->sreg1, 16);
 			mips_sra (code, ins->dreg, mips_at, 16);
 			break;
-		case CEE_CONV_U1:
+		case OP_ICONV_TO_U1:
 			mips_andi (code, ins->dreg, ins->sreg1, 0xff);
 			break;
-		case CEE_CONV_U2:
+		case OP_ICONV_TO_U2:
 			mips_sll (code, mips_at, ins->sreg1, 16);
 			mips_srl (code, ins->dreg, mips_at, 16);
 			break;
@@ -2546,9 +2559,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IADD:
 			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-		case CEE_ADD:
-			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;
 		case OP_ADC:
 			g_assert_not_reached ();
 			break;
@@ -2564,50 +2574,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_addu (code, ins->dreg, ins->sreg1, mips_at);
 			}
 			break;
-		case OP_ADC_IMM:
-			g_assert_not_reached ();
-			break;
-		case CEE_ADD_OVF:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
-		case CEE_ADD_OVF_UN:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
-		case CEE_SUB_OVF:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
-		case CEE_SUB_OVF_UN:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
-		case OP_ADD_OVF_CARRY:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
-		case OP_ADD_OVF_UN_CARRY:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
-		case OP_SUB_OVF_CARRY:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
-		case OP_SUB_OVF_UN_CARRY:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
 		case OP_SUBCC:
 		case OP_ISUBCC:
 			mips_subu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-		case OP_SUBCC_IMM:
-			/* rewritten in .brg file */
-			g_assert_not_reached ();
-			break;
-		case CEE_SUB:
+		case OP_ISUB:
 			mips_subu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ISUB_IMM:
@@ -2627,7 +2598,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SBB_IMM:
 			g_assert_not_reached ();
 			break;
-		case CEE_AND:
+		case OP_IAND:
 			mips_and (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_AND_IMM:
@@ -2841,8 +2812,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_dmfc1 (code, ins->dreg, ins->sreg1);
 			break;
 
-		case CEE_CONV_I4:
-		case CEE_CONV_U4:
+		case OP_ICONV_TO_I4:
+		case OP_ICONV_TO_U4:
 		case OP_MOVE:
 			if (ins->dreg != ins->sreg1)
 				mips_move (code, ins->dreg, ins->sreg1);
@@ -3253,20 +3224,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			cfg->bb_exit->max_offset += 24;
 			break;
 		}
-		case CEE_BEQ:
-		case CEE_BNE_UN:
-		case CEE_BLT:
-		case CEE_BLT_UN:
-		case CEE_BGT:
-		case CEE_BGT_UN:
-		case CEE_BGE:
-		case CEE_BGE_UN:
-		case CEE_BLE:
-		case CEE_BLE_UN:
-			/* Should be re-mapped to OP_MIPS_B* by *.inssel-mips.brg */
-			g_warning ("unsupported conditional set %s\n", mono_inst_name (ins->opcode));
-			g_assert_not_reached ();
-			break;
 		case OP_MIPS_BEQ:
 		case OP_MIPS_BNE:
 		case OP_MIPS_BGEZ:
@@ -3353,7 +3310,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Convert to double precision in place */
 			mips_cvtds (code, ins->dreg, ins->dreg);
 			break;
-		case CEE_CONV_R_UN: {
+		case OP_ICONV_TO_R_UN: {
 			static const guint64 adjust_val = 0x41F0000000000000ULL;
 
 			/* convert unsigned int to double */
@@ -3367,12 +3324,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* target is here */
 			break;
 		}
-		case CEE_CONV_R4:
+		case OP_ICONV_TO_R4:
 			mips_mtc1 (code, mips_ftemp, ins->sreg1);
 			mips_cvtsw (code, ins->dreg, mips_ftemp);
 			mips_cvtds (code, ins->dreg, ins->dreg);
 			break;
-		case CEE_CONV_R8:
+		case OP_ICONV_TO_R8:
 			mips_mtc1 (code, mips_ftemp, ins->sreg1);
 			mips_cvtdw (code, ins->dreg, mips_ftemp);
 			break;
@@ -3471,7 +3428,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_nop (code);
 			mips_addiu (code, ins->dreg, mips_zero, 1);
 			break;
-		case OP_FBEQ:
+		case OP_MIPS_FBEQ:
 			mips_fcmpd (code, MIPS_FPU_EQ, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -3481,7 +3438,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBNE_UN:
+		case OP_MIPS_FBNE:
 			mips_fcmpd (code, MIPS_FPU_EQ, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -3491,7 +3448,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBLT:
+		case OP_MIPS_FBLT:
 			mips_fcmpd (code, MIPS_FPU_LT, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -3511,7 +3468,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBGT:
+		case OP_MIPS_FBGT:
 			mips_fcmpd (code, MIPS_FPU_LE, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -3521,7 +3478,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBGT_UN:
+		case OP_MIPS_FBGT_UN:
 			mips_fcmpd (code, MIPS_FPU_OLE, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -3531,7 +3488,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBGE:
+		case OP_MIPS_FBGE:
 			mips_fcmpd (code, MIPS_FPU_LT, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -3541,7 +3498,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBGE_UN:
+		case OP_MIPS_FBGE_UN:
 			mips_fcmpd (code, MIPS_FPU_OLT, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -3551,7 +3508,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBLE:
+		case OP_MIPS_FBLE:
 			mips_fcmpd (code, MIPS_FPU_OLE, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -3561,7 +3518,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBLE_UN:
+		case OP_MIPS_FBLE_UN:
 			mips_fcmpd (code, MIPS_FPU_ULE, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
