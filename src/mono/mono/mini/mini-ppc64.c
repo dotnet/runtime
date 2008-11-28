@@ -4006,6 +4006,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_INTERNAL_METHOD:
 		case MONO_PATCH_INFO_ABS:
 		case MONO_PATCH_INFO_CLASS_INIT:
+		case MONO_PATCH_INFO_RGCTX_FETCH:
 			is_fd = TRUE;
 			break;
 		default:
