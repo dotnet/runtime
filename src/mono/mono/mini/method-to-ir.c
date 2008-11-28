@@ -2995,7 +2995,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 
 	MONO_START_BB (cfg, false_bb);
 
-	MONO_EMIT_NEW_ICONST (cfg, res_reg, 0);
+	MONO_EMIT_NEW_PCONST (cfg, res_reg, 0);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
 	MONO_START_BB (cfg, is_null_bb);
