@@ -1268,10 +1268,19 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, FALSE);
 			} else if (!t->byref && (t->type == MONO_TYPE_R4)) {
+				int freg;
+
+				/* ??? - convert to single first? */
+				MONO_INST_NEW (cfg, ins, OP_MIPS_CVTSD);
+				ins->dreg = mono_alloc_freg (cfg);
+				ins->sreg1 = in->dreg;
+				MONO_ADD_INS (cfg->cbb, ins);
+				freg = ins->dreg;
+
 				/* trying to load float value into int registers */
 				MONO_INST_NEW (cfg, ins, OP_MIPS_MFC1S);
 				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg;
+				ins->sreg1 = freg;
 				MONO_ADD_INS (cfg->cbb, ins);
 				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, ainfo->reg, FALSE);
 			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
@@ -3756,6 +3765,9 @@ mips_adjust_stackframe(MonoCompile *cfg)
 	if (cfg->stack_offset == cfg->arch.local_alloc_offset)
 		return;
 
+	/* adjust cfg->stack_offset for account for down-spilling */
+	cfg->stack_offset += 4;
+
 	/* re-align cfg->stack_offset if needed (due to var spilling) */
 	cfg->stack_offset = (cfg->stack_offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
 	delta = cfg->stack_offset - cfg->arch.local_alloc_offset;
@@ -3765,11 +3777,12 @@ mips_adjust_stackframe(MonoCompile *cfg)
 	}
 	threshold = cfg->arch.local_alloc_offset - 4;
 
-#if 1
+#if 0
 	if (sig && sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
 		cfg->vret_addr->inst_offset += delta;
 	}
-
+#endif
+#if 1
 	sig = mono_method_signature (cfg->method);
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoInst *inst = cfg->args [i];
