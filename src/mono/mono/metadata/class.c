@@ -1069,7 +1069,7 @@ mono_class_setup_fields (MonoClass *class)
 			field->name = mono_field_get_name (gfield);
 			/*This memory must come from the image mempool as we don't have a chance to free it.*/
 			field->type = mono_class_inflate_generic_type_with_mempool_no_copy (class->image->mempool, gfield->type, mono_class_get_context (class));
-			field->type->attrs = gfield->type->attrs;
+			g_assert (field->type->attrs == gfield->type->attrs);
 			if (mono_field_is_deleted (field))
 				continue;
 			field->offset = gfield->offset;
