@@ -1115,9 +1115,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 	/* this is a global constant */
 	mono_exc_esp_offset = offset;
 #endif
-	if (sig->call_convention == MONO_CALL_VARARG) {
-                m->sig_cookie = PPC_STACK_PARAM_OFFSET;
-        }
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		offset += sizeof(gpointer) - 1;
@@ -1133,8 +1130,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 		}
 
 		offset += sizeof(gpointer);
-		if (sig->call_convention == MONO_CALL_VARARG)
-			m->sig_cookie += sizeof (gpointer);
 	}
 
 	offsets = mono_allocate_stack_slots_full (m, FALSE, &locals_stack_size, &locals_stack_align);
@@ -1166,8 +1161,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 			offset &= ~(sizeof (gpointer) - 1);
 			inst->inst_offset = offset;
 			offset += sizeof (gpointer);
-			if (sig->call_convention == MONO_CALL_VARARG)
-				m->sig_cookie += sizeof (gpointer);
 		}
 		curinst++;
 	}
@@ -1183,12 +1176,12 @@ mono_arch_allocate_vars (MonoCompile *m)
 			} else {
 				size = mono_type_size (sig->params [i], &align);
 			}
+			if (MONO_TYPE_ISSTRUCT (sig->params [i]) && size < sizeof (gpointer))
+				size = align = sizeof (gpointer);
 			offset += align - 1;
 			offset &= ~(align - 1);
 			inst->inst_offset = offset;
 			offset += size;
-			if ((sig->call_convention == MONO_CALL_VARARG) && (i < sig->sentinelpos)) 
-				m->sig_cookie += size;
 		}
 		curinst++;
 	}

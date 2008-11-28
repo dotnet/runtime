@@ -496,8 +496,8 @@ mono_arch_get_throw_exception_by_name (void)
 
 	if (inited)
 		return start;
-	code = mono_global_codeman_reserve (276);
-	start = mono_arch_get_throw_exception_generic (code, 276, TRUE, FALSE);
+	code = mono_global_codeman_reserve (288);
+	start = mono_arch_get_throw_exception_generic (code, 288, TRUE, FALSE);
 	inited = 1;
 	return start;
 }
