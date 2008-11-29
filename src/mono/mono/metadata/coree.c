@@ -736,8 +736,8 @@ STDAPI MonoFixupExe(HMODULE ModuleHandle)
 						return E_FAIL;
 
 					BaseRelocSize -= RelocBlockSize;
-					RelocBlock = (USHORT*)((DWORD_PTR)BaseReloc + IMAGE_SIZEOF_BASE_RELOCATION);
-					RelocBlockSize -= IMAGE_SIZEOF_BASE_RELOCATION;
+					RelocBlock = (USHORT*)((DWORD_PTR)BaseReloc + sizeof(IMAGE_BASE_RELOCATION));
+					RelocBlockSize -= sizeof(IMAGE_BASE_RELOCATION);
 					RelocBlockSize /= sizeof(USHORT);
 
 					while (RelocBlockSize-- != 0)
