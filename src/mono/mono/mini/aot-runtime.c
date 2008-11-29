@@ -2746,15 +2746,23 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	return NULL;
 }
 
+guint32
+mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
+{
+	g_assert_not_reached ();
+
+	return 0;
+}
+
 gpointer
-mono_aot_create_specific_trampolines (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
 {
 	g_assert_not_reached ();
 	return NULL;
 }
 
 gpointer
-mono_aot_get_named_code (char *name)
+mono_aot_get_named_code (const char *name)
 {
 	g_assert_not_reached ();
 	return NULL;
@@ -2762,6 +2770,13 @@ mono_aot_get_named_code (char *name)
 
 gpointer
 mono_aot_get_unbox_trampoline (MonoMethod *method)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 {
 	g_assert_not_reached ();
 	return NULL;
