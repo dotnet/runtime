@@ -164,7 +164,7 @@ int_mul: dest:i src1:i src2:i len:4
 int_div: dest:i src1:i src2:i len:76
 int_div_un: dest:i src1:i src2:i len:16
 int_rem: dest:i src1:i src2:i len:76
-int_rem_un: dest:i src1:i src2:i len:24
+int_rem_un: dest:i src1:i src2:i len:76
 int_and: dest:i src1:i src2:i len:4
 int_or: dest:i src1:i src2:i len:4
 int_xor: dest:i src1:i src2:i len:4

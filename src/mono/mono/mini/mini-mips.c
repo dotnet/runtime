@@ -1413,7 +1413,15 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	int i, soffset, dreg;
 
 	if (ainfo->regtype == RegTypeStructByVal) {
-		guint32 size = 0;
+#if 1
+		if (cfg->verbose_level > 0) {
+			char* nm = mono_method_full_name (cfg->method, TRUE);
+			g_print ("Method %s outarg_vt struct doffset=%d ainfo->size=%d ovf_size=%d\n", 
+				 nm, doffset, ainfo->size, ovf_size);
+			g_free (nm);
+		}
+#endif
+
 		soffset = 0;
 		for (i = 0; i < ainfo->size; ++i) {
 			dreg = mono_alloc_ireg (cfg);
@@ -1421,10 +1429,12 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg + i, FALSE);
 			soffset += sizeof (gpointer);
 		}
-		if (ovf_size != 0)
-			mini_emit_memcpy (cfg, mips_at, doffset + soffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
+		if (ovf_size != 0) {
+			mini_emit_memcpy (cfg, mips_fp, doffset + soffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
+		}
 	} else if (ainfo->regtype == RegTypeFP) {
 		int tmpr = mono_alloc_freg (cfg);
+
 		if (ainfo->size == 4)
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR4_MEMBASE, tmpr, src->dreg, 0);
 		else
@@ -1494,7 +1504,6 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n, *last_ins = NULL;
 	int op;
-	int tmp;
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d peephole pass 1\n", bb->block_num);
@@ -1615,6 +1624,12 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COND_EXC_LE_UN:
 			g_assert (ins_is_compare(last_ins));
 			ins_rewrite(ins, OP_MIPS_COND_EXC_LE_UN, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_OV:
+			g_assert (ins_is_compare(last_ins));
+			ins_rewrite(ins, OP_MIPS_COND_EXC_OV, last_ins->sreg1, last_ins->sreg2);
 			MONO_DELETE_INS(bb, last_ins);
 			break;
 		}
@@ -1957,7 +1972,6 @@ void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *next, *temp, *last_ins = NULL;
-	int tmp;
 	int imm;
 
 	MONO_BB_FOR_EACH_INS (bb, ins) {
@@ -2554,13 +2568,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_break (code, 0xfd);
 			break;
 		case OP_ADDCC:
-			g_assert_not_reached ();
+		case OP_IADDCC:
+			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IADD:
 			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ADC:
-			g_assert_not_reached ();
+		case OP_IADC:
+			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ADDCC_IMM:
 			g_assert_not_reached ();
@@ -2611,7 +2627,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_IDIV:
-		case OP_IREM: {
+		case OP_IREM:
+		case OP_IREM_UN: {
 			guint32 *divisor_is_m1;
 			guint32 *divisor_is_zero;
 
@@ -2642,6 +2659,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_mfhi (code, ins->dreg);
 			break;
 		}
+#if 0
+		case OP_IREM:
+		case OP_IREM_UN: {
+			guint32 *divisor_is_zero = (guint32 *)(void *)code;
+
+			/* Put divide in branch delay slot (NOT YET) */
+			mips_bne (code, ins->sreg2, mips_zero, 0);
+			mips_nop (code);
+
+			/* Divide by zero -- throw exception */
+			EMIT_SYSTEM_EXCEPTION_NAME("DivideByZeroException");
+
+			mips_patch (divisor_is_zero, (guint32)code);
+			mips_divu (code, ins->sreg1, ins->sreg2);
+			mips_mfhi (code, ins->dreg);
+			break;
+		}
+#endif
 		case CEE_DIV_UN: {
 			guint32 *divisor_is_zero = (guint32 *)(void *)code;
 
@@ -2669,21 +2704,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			g_assert_not_reached();
 			break;
-		case CEE_REM_UN: {
-			guint32 *divisor_is_zero = (guint32 *)(void *)code;
-
-			/* Put divide in branch delay slot (NOT YET) */
-			mips_bne (code, ins->sreg2, mips_zero, 0);
-			mips_nop (code);
-
-			/* Divide by zero -- throw exception */
-			EMIT_SYSTEM_EXCEPTION_NAME("DivideByZeroException");
-
-			mips_patch (divisor_is_zero, (guint32)code);
-			mips_divu (code, ins->sreg1, ins->sreg2);
-			mips_mfhi (code, ins->dreg);
-			break;
-		}
 		case OP_REM_IMM:
 			g_assert_not_reached ();
 		case OP_IOR:
@@ -3717,7 +3737,7 @@ mips_adjust_stackframe(MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	int delta, threshold, i;
 	MonoMethodSignature *sig;
-	int verbose = (cfg->verbose_level > 2);
+	int ra_offset;
 
 	if (cfg->stack_offset == cfg->arch.local_alloc_offset)
 		return;
@@ -3728,11 +3748,15 @@ mips_adjust_stackframe(MonoCompile *cfg)
 	/* re-align cfg->stack_offset if needed (due to var spilling) */
 	cfg->stack_offset = (cfg->stack_offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
 	delta = cfg->stack_offset - cfg->arch.local_alloc_offset;
-	if (verbose) {
+	if (cfg->verbose_level > 2) {
 		g_print ("mips_adjust_stackframe:\n");
-		g_print ("\tspillvars allocated 0x%x -> 0x%x (+%d)\n", cfg->arch.local_alloc_offset, cfg->stack_offset, delta);
+		g_print ("\tspillvars allocated 0x%x -> 0x%x\n", cfg->arch.local_alloc_offset, cfg->stack_offset);
 	}
-	threshold = cfg->arch.local_alloc_offset - 4;
+	threshold = cfg->arch.local_alloc_offset;
+	ra_offset = cfg->stack_offset - 4;
+	if (cfg->verbose_level > 2) {
+		g_print ("\tra_offset %d/0x%x delta %d/0x%x\n", ra_offset, ra_offset, delta, delta);
+	}
 
 #if 0
 	if (sig && sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
@@ -3767,28 +3791,29 @@ mips_adjust_stackframe(MonoCompile *cfg)
 		int ins_cnt = 0;
 		MonoInst *ins;
 
-		if (verbose) {
+		if (cfg->verbose_level > 2) {
 			g_print ("BASIC BLOCK %d:\n", bb->block_num);
 		}
 		MONO_BB_FOR_EACH_INS (bb, ins) {
-			if (verbose) {
+			if (cfg->verbose_level > 2) {
 				mono_print_ins_index (ins_cnt, ins);
 			}
 			if ((MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_fp)) || (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_fp))) {
-				if (ins->inst_c0 > threshold) {
+				if (ins->inst_c0 >= threshold) {
 					ins->inst_c0 += delta;
-					if (verbose) {
+					if (cfg->verbose_level > 2) {
 						g_print ("adj");
 						mono_print_ins_index (ins_cnt, ins);
 					}
 				}
 				else if (ins->inst_c0 < 0) {
-					ins->inst_c0 = - ins->inst_c0;
-					if (verbose) {
+					ins->inst_c0 = - ins->inst_c0 - 4;
+					if (cfg->verbose_level > 2) {
 						g_print ("spill");
 						mono_print_ins_index (ins_cnt, ins);
 					}
 				}
+				g_assert (ins->inst_c0 != ra_offset);
 			}
 			++ins_cnt;
 		}
