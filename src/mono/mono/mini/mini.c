@@ -3052,6 +3052,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->disable_vreg_to_lvreg = TRUE;
 
 		// cfg->opt |= MONO_OPT_SHARED;
+		cfg->opt &= ~MONO_OPT_DEADCE;
 		cfg->opt &= ~MONO_OPT_INLINE;
 		cfg->opt &= ~MONO_OPT_COPYPROP;
 		cfg->opt &= ~MONO_OPT_CONSPROP;
