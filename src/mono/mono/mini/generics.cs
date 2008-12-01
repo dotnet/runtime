@@ -240,6 +240,10 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_nullable_ldflda () {
+		return GenericClass<string>.BIsAClazz == false ? 0 : 1;
+	}
+
 	public struct GenericStruct<T> {
 		public T t;
 
@@ -285,6 +289,15 @@ class Tests {
 		{
 			return x [index];
 		}
+
+        protected static T NullB = default(T);       
+        private static Nullable<bool>  _BIsA = null;
+        public static bool BIsAClazz {
+            get {
+                _BIsA = false;
+                return _BIsA.Value;
+            }
+        }
 	}
 
 	public class MRO : MarshalByRefObject {

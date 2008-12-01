@@ -7895,6 +7895,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (*ip == CEE_LDSFLDA) {
 				ins->klass = mono_class_from_mono_type (field->type);
+				ins->type = STACK_PTR;
 				*sp++ = ins;
 			} else if (*ip == CEE_STSFLD) {
 				MonoInst *store;
