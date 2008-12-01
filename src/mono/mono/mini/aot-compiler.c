@@ -198,12 +198,14 @@ typedef struct MonoAotCompile {
 	CRITICAL_SECTION mutex;
 	gboolean use_bin_writer;
 	/* Bin writer */
+#ifdef USE_BIN_WRITER
 	BinSymbol *symbols;
 	BinSection *sections;
 	BinSection *cur_section;
 	BinReloc *relocations;
 	GHashTable *labels;
 	int num_relocs;
+#endif
 	/* Asm writer */
 	FILE *fp;
 	char *tmpfname;
