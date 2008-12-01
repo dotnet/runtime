@@ -1401,7 +1401,8 @@ get_uninitialized_data_type (guint32 size)
 		return "int64";
 	default:
 		g_error ("get_uninitialized_data_type for size: %d\n", size);
-	}		
+	}
+	return NULL;
 }
 
 /**
