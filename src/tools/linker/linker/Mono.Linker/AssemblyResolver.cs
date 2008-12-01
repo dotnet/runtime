@@ -125,6 +125,7 @@ namespace Mono.Linker {
 		static MethodDefinition GetMethod (ICollection collection, MethodReference reference)
 		{
 			foreach (MethodDefinition meth in collection) {
+				
 				if (meth.Name != reference.Name)
 					continue;
 
@@ -155,24 +156,62 @@ namespace Mono.Linker {
 			return true;
 		}
 
+		static bool AreSame (ModType a, ModType b)
+		{
+			if (!AreSame (a.ModifierType, b.ModifierType))
+				return false;
+
+			return AreSame (a.ElementType, b.ElementType);
+		}
+
+		static bool AreSame (TypeSpecification a, TypeSpecification b)
+		{
+			if (a is GenericInstanceType)
+				return AreSame ((GenericInstanceType) a, (GenericInstanceType) b);
+
+			if (a is ModType)
+				return AreSame ((ModType) a, (ModType) b);
+
+			return AreSame (a.ElementType, b.ElementType);
+		}
+
+		static bool AreSame (GenericInstanceType a, GenericInstanceType b)
+		{
+			if (!AreSame (a.ElementType, b.ElementType))
+				return false;
+
+			if (a.GenericArguments.Count != b.GenericArguments.Count)
+				return false;
+
+			if (a.GenericArguments.Count == 0)
+				return true;
+
+			for (int i = 0; i < a.GenericArguments.Count; i++)
+				if (!AreSame (a.GenericArguments [i], b.GenericArguments [i]))
+					return false;
+
+			return true;
+		}
+
+		static bool AreSame (GenericParameter a, GenericParameter b)
+		{
+			return a.Position == b.Position;
+		}
+
 		static bool AreSame (TypeReference a, TypeReference b)
 		{
-			while (a is TypeSpecification || b is TypeSpecification) {
+			if (a is TypeSpecification || b is TypeSpecification) {
 				if (a.GetType () != b.GetType ())
 					return false;
 
-				a = ((TypeSpecification) a).ElementType;
-				b = ((TypeSpecification) b).ElementType;
+				return AreSame ((TypeSpecification) a, (TypeSpecification) b);
 			}
 
 			if (a is GenericParameter || b is GenericParameter) {
-				if (a.GetType() != b.GetType())
+				if (a.GetType () != b.GetType ())
 					return false;
 
-				GenericParameter pa = (GenericParameter) a;
-				GenericParameter pb = (GenericParameter) b;
-
-				return pa.Position == pb.Position;
+				return AreSame ((GenericParameter) a, (GenericParameter) b);
 			}
 
 			return a.FullName == b.FullName;
