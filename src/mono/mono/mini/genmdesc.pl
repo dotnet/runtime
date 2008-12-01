@@ -27,15 +27,6 @@ sub load_opcodes
 	my $i = 0;
 	my $arch_found = 0;
 
-	open (OPS, "$opcodes_def") || die "Cannot open $opcodes_def: $!";
-	while (<OPS>) {
-		next unless /OPDEF\s*\(\s*(\S+?)\s*,\s*"(.*?)"/;
-		my ($sym, $name) = ($1, $2);
-		push @opcodes, [$sym, $name];
-		$table{$name} = {num => $i, name => $name};
-		$i++;
-	}
-	close (OPS);
 	my $cpp = $ENV{"CPP"};
 	$cpp = "cpp" unless defined $cpp;
 	$cpp .= " -undef ";
