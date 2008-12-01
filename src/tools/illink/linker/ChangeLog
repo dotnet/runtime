@@ -1,3 +1,9 @@
+2008-12-02  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/AssemblyResolver.cs (AreSame(TypeReference,TypeReference):
+	fix the case where we compare two GenericInstanceType of the same
+	element type with different generic arguments.
+
 2008-11-24  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker.Steps/ResolveFromAssemblyStep.cs
