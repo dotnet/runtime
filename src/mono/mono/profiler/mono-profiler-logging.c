@@ -376,8 +376,10 @@ typedef struct _ProfilerThreadStack {
 	guint32 capacity;
 	guint32 top;
 	guint32 last_saved_top;
+	guint32 last_written_frame;
 	MonoMethod **stack;
 	guint8 *method_is_jitted;
+	guint32 *written_frames;
 } ProfilerThreadStack;
 
 typedef struct _ProfilerPerThreadData {
@@ -968,8 +970,10 @@ thread_stack_initialize_empty (ProfilerThreadStack *stack) {
 	stack->capacity = 0;
 	stack->top = 0;
 	stack->last_saved_top = 0;
+	stack->last_written_frame = 0;
 	stack->stack = NULL;
 	stack->method_is_jitted = NULL;
+	stack->written_frames = NULL;
 }
 
 static void
@@ -977,6 +981,7 @@ thread_stack_free (ProfilerThreadStack *stack) {
 	stack->capacity = 0;
 	stack->top = 0;
 	stack->last_saved_top = 0;
+	stack->last_written_frame = 0;
 	if (stack->stack != NULL) {
 		g_free (stack->stack);
 		stack->stack = NULL;
@@ -985,6 +990,10 @@ thread_stack_free (ProfilerThreadStack *stack) {
 		g_free (stack->method_is_jitted);
 		stack->method_is_jitted = NULL;
 	}
+	if (stack->written_frames != NULL) {
+		g_free (stack->written_frames);
+		stack->written_frames = NULL;
+	}
 }
 
 static void
@@ -992,13 +1001,10 @@ thread_stack_initialize (ProfilerThreadStack *stack, guint32 capacity) {
 	stack->capacity = capacity;
 	stack->top = 0;
 	stack->last_saved_top = 0;
+	stack->last_written_frame = 0;
 	stack->stack = g_new0 (MonoMethod*, capacity);
 	stack->method_is_jitted = g_new0 (guint8, capacity);
-}
-
-static void
-thread_stack_reset_saved_state (ProfilerThreadStack *stack) {
-	stack->last_saved_top = 0;
+	stack->written_frames = g_new0 (guint32, capacity);
 }
 
 static void
@@ -1006,11 +1012,20 @@ thread_stack_push_jitted (ProfilerThreadStack *stack, MonoMethod* method, gboole
 	if (stack->top >= stack->capacity) {
 		MonoMethod **old_stack = stack->stack;
 		guint8 *old_method_is_jitted = stack->method_is_jitted;
+		guint32 *old_written_frames = stack->written_frames;
 		guint32 top = stack->top;
+		guint32 last_saved_top = stack->last_saved_top;
+		guint32 last_written_frame = stack->last_written_frame;
 		thread_stack_initialize (stack, stack->capacity * 2);
 		memcpy (stack->stack, old_stack, top * sizeof (MonoMethod*));
 		memcpy (stack->method_is_jitted, old_method_is_jitted, top * sizeof (guint8));
+		memcpy (stack->written_frames, old_written_frames, top * sizeof (guint32));
+		g_free (old_stack);
+		g_free (old_method_is_jitted);
+		g_free (old_written_frames);
 		stack->top = top;
+		stack->last_saved_top = last_saved_top;
+		stack->last_written_frame = last_written_frame;
 	}
 	stack->stack [stack->top] = method;
 	stack->method_is_jitted [stack->top] = method_is_jitted;
@@ -1089,6 +1104,26 @@ static inline int
 thread_stack_count_unsaved_frames (ProfilerThreadStack *stack) {
 	int result = stack->top - stack->last_saved_top;
 	return (result > 0) ? result : 0;
+}
+
+static inline int
+thread_stack_get_last_written_frame (ProfilerThreadStack *stack) {
+	return stack->last_written_frame;
+}
+
+static inline void
+thread_stack_set_last_written_frame (ProfilerThreadStack *stack, int last_written_frame) {
+	stack->last_written_frame = last_written_frame;
+}
+
+static inline guint32
+thread_stack_written_frame_at_index (ProfilerThreadStack *stack, int index) {
+	return stack->written_frames [index];
+}
+
+static inline void
+thread_stack_write_frame_at_index (ProfilerThreadStack *stack, int index, guint32 method_id_and_is_jitted) {
+	stack->written_frames [index] = method_id_and_is_jitted;
 }
 
 static ClassIdMappingElement*
@@ -2305,8 +2340,29 @@ typedef enum {
 	result = ((base)|((((kind)<<4) | (code)) << MONO_PROFILER_PACKED_EVENT_CODE_BITS));\
 } while (0)
 
+static void
+rewrite_last_written_stack (ProfilerThreadStack *stack) {
+	guint8 event_code;
+	int i = thread_stack_get_last_written_frame (stack);
+	
+	MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, MONO_PROFILER_EVENT_STACK_SECTION, 0, MONO_PROFILER_PACKED_EVENT_CODE_OTHER_EVENT);
+	WRITE_BYTE (event_code);
+	write_uint32 (0);
+	write_uint32 (i);
+	
+	printf ("rewrite_last_written_stack START (%d %p)\n", i, stack);
+	
+	while (i > 0) {
+		i--;
+		write_uint32 (thread_stack_written_frame_at_index (stack, i));
+		
+		printf ("rewrite_last_written_stack ELEMENT (%d %d)\n", i, thread_stack_written_frame_at_index (stack, i));
+	}
+}
+
+
 static ProfilerEventData*
-write_stack_section_event (ProfilerEventData *events) {
+write_stack_section_event (ProfilerEventData *events, ProfilerPerThreadData *data) {
 	int last_saved_frame = events->data.number;
 	int saved_frames = events->value;
 	guint8 event_code;
@@ -2316,12 +2372,14 @@ write_stack_section_event (ProfilerEventData *events) {
 	WRITE_BYTE (event_code);
 	write_uint32 (last_saved_frame);
 	write_uint32 (saved_frames);
+	thread_stack_set_last_written_frame (&(data->stack), last_saved_frame + saved_frames);
 	events++;
 	
 	for (i = 0; i < saved_frames; i++) {
 		guint8 code = events->code;
 		guint32 jit_flag;
 		MethodIdMappingElement *method;
+		guint32 frame_value;
 		
 		if (code == MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER) {
 			jit_flag = 0;
@@ -2334,7 +2392,9 @@ write_stack_section_event (ProfilerEventData *events) {
 		
 		method = method_id_mapping_element_get (events->data.address);
 		g_assert (method != NULL);
-		write_uint32 ((method->id << 1) | jit_flag);
+		frame_value = (method->id << 1) | jit_flag;
+		write_uint32 (frame_value);
+		thread_stack_write_frame_at_index (&(data->stack), last_saved_frame + saved_frames - (1 + i), frame_value);
 		events ++;
 	}
 	
@@ -2342,7 +2402,7 @@ write_stack_section_event (ProfilerEventData *events) {
 }
 
 static ProfilerEventData*
-write_event (ProfilerEventData *event) {
+write_event (ProfilerEventData *event, ProfilerPerThreadData *data) {
 	ProfilerEventData *next = event + 1;
 	gboolean write_event_value = TRUE;
 	guint8 event_code;
@@ -2417,7 +2477,7 @@ write_event (ProfilerEventData *event) {
 		}
 	} else {
 		if (event->code == MONO_PROFILER_EVENT_STACK_SECTION) {
-			return write_stack_section_event (event);
+			return write_stack_section_event (event, data);
 		} else {
 			event_data = event->data.number;
 			MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, event->code, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_OTHER_EVENT);
@@ -2467,10 +2527,10 @@ write_thread_data_block (ProfilerPerThreadData *data) {
 	write_uint64 (data->start_event_counter);
 	
 	/* Make sure that stack sections can be fully reconstructed even reading only one block */
-	thread_stack_reset_saved_state (&(data->stack));
+	rewrite_last_written_stack (&(data->stack));
 	
 	while (start < end) {
-		start = write_event (start);
+		start = write_event (start, data);
 	}
 	WRITE_BYTE (0);
 	data->first_unwritten_event = end;
@@ -3690,6 +3750,7 @@ number_event_code_to_string (MonoProfilerEvents code) {
 	case MONO_PROFILER_EVENT_GC_START_WORLD: return "GC_START_WORLD";
 	case MONO_PROFILER_EVENT_JIT_TIME_ALLOCATION: return "JIT_TIME_ALLOCATION";
 	case MONO_PROFILER_EVENT_STACK_SECTION: return "STACK_SECTION";
+	case MONO_PROFILER_EVENT_ALLOCATION_OBJECT_ID: return "ALLOCATION_OBJECT_ID";
 	default: g_assert_not_reached (); return "";
 	}
 }
@@ -3710,12 +3771,12 @@ event_kind_to_string (MonoProfilerEventKind code) {
 	}
 }
 static void
-print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
+print_event_data (ProfilerPerThreadData *data, ProfilerEventData *event, guint64 value) {
 	if (event->data_type == MONO_PROFILER_EVENT_DATA_TYPE_CLASS) {
-		printf ("[TID %ld] CLASS[%p] event [%p] %s:%s:%s[%d-%d-%d] %ld (%s.%s)\n",
-				thread_id,
+		printf ("STORE EVENT [TID %ld][EVENT %ld] CLASS[%p] %s:%s:%s[%d-%d-%d] %ld (%s.%s)\n",
+				data->thread_id,
+				event - data->events,
 				event->data.address,
-				event,
 				class_event_code_to_string (event->code & ~MONO_PROFILER_EVENT_RESULT_MASK),
 				event_result_to_string (event->code & MONO_PROFILER_EVENT_RESULT_MASK),
 				event_kind_to_string (event->kind),
@@ -3726,10 +3787,10 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 				mono_class_get_namespace ((MonoClass*) event->data.address),
 				mono_class_get_name ((MonoClass*) event->data.address));
 	} else if (event->data_type == MONO_PROFILER_EVENT_DATA_TYPE_METHOD) {
-		printf ("[TID %ld] METHOD[%p] event [%p] %s:%s:%s[%d-%d-%d] %ld (%s.%s:%s (?))\n",
-				thread_id,
+		printf ("STORE EVENT [TID %ld][EVENT %ld]  METHOD[%p] %s:%s:%s[%d-%d-%d] %ld (%s.%s:%s (?))\n",
+				data->thread_id,
+				event - data->events,
 				event->data.address,
-				event,
 				method_event_code_to_string (event->code & ~MONO_PROFILER_EVENT_RESULT_MASK),
 				event_result_to_string (event->code & MONO_PROFILER_EVENT_RESULT_MASK),
 				event_kind_to_string (event->kind),
@@ -3741,10 +3802,10 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 				(event->data.address != NULL) ? mono_class_get_name (mono_method_get_class ((MonoMethod*) event->data.address)) : "<NULL>",
 				(event->data.address != NULL) ? mono_method_get_name ((MonoMethod*) event->data.address) : "<NULL>");
 	} else {
-		printf ("[TID %ld] NUMBER[%ld] event [%p] %s:%s[%d-%d-%d] %ld\n",
-				thread_id,
+		printf ("STORE EVENT [TID %ld][EVENT %ld]  NUMBER[%ld] %s:%s[%d-%d-%d] %ld\n",
+				data->thread_id,
+				event - data->events,
 				(guint64) event->data.number,
-				event,
 				number_event_code_to_string (event->code),
 				event_kind_to_string (event->kind),
 				event->data_type,
@@ -3753,9 +3814,9 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 				value);
 	}
 }
-#define LOG_EVENT(tid,ev,val) print_event_data ((tid),(ev),(val))
+#define LOG_EVENT(data,ev,val) print_event_data ((data),(ev),(val))
 #else
-#define LOG_EVENT(tid,ev,val)
+#define LOG_EVENT(data,ev,val)
 #endif
 
 #define RESULT_TO_EVENT_CODE(r) (((r)==MONO_PROFILE_OK)?MONO_PROFILER_EVENT_RESULT_SUCCESS:MONO_PROFILER_EVENT_RESULT_FAILURE)
@@ -3778,7 +3839,7 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 		*(guint64*)extension = delta;\
 	}\
 	data->last_event_counter = counter;\
-	LOG_EVENT (data->thread_id, (event), delta);\
+	LOG_EVENT (data, (event), delta);\
 } while (0);
 #define STORE_EVENT_ITEM_VALUE(event,p,i,dt,c,k,v) do {\
 	(event)->data.address = (i);\
@@ -3793,7 +3854,7 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 		(event)->value = MAX_EVENT_VALUE;\
 		*(guint64*)extension = (v);\
 	}\
-	LOG_EVENT (data->thread_id, (event), (v));\
+	LOG_EVENT (data, (event), (v));\
 }while (0);
 #define STORE_EVENT_NUMBER_COUNTER(event,p,n,dt,c,k) do {\
 	guint64 counter;\
@@ -3813,7 +3874,7 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 		*(guint64*)extension = delta;\
 	}\
 	data->last_event_counter = counter;\
-	LOG_EVENT (data->thread_id, (event), delta);\
+	LOG_EVENT (data, (event), delta);\
 }while (0);
 #define STORE_EVENT_NUMBER_VALUE(event,p,n,dt,c,k,v) do {\
 	(event)->data.number = (n);\
@@ -3828,7 +3889,7 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 		(event)->value = MAX_EVENT_VALUE;\
 		*(guint64*)extension = (v);\
 	}\
-	LOG_EVENT (data->thread_id, (event), (v));\
+	LOG_EVENT (data, (event), (v));\
 }while (0);
 
 static void
@@ -4558,9 +4619,6 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 	gboolean do_heap_profiling = profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot || profiler->action_flags.collection_summary;
 	guint32 event_value;
 	
-	GET_PROFILER_THREAD_DATA (data);
-	GET_NEXT_FREE_EVENT (data, event);
-	
 	if (ev == MONO_GC_EVENT_START) {
 		profiler->garbage_collection_counter ++;
 	}
@@ -4570,7 +4628,11 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 	if (do_heap_profiling && (ev == MONO_GC_EVENT_POST_STOP_WORLD)) {
 		handle_heap_profiling (profiler, ev);
 	}
+	
+	GET_PROFILER_THREAD_DATA (data);
+	GET_NEXT_FREE_EVENT (data, event);
 	STORE_EVENT_NUMBER_COUNTER (event, profiler, event_value, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, gc_event_code_from_profiler_event (ev), gc_event_kind_from_profiler_event (ev));
+	
 	if (do_heap_profiling && (ev != MONO_GC_EVENT_POST_STOP_WORLD)) {
 		handle_heap_profiling (profiler, ev);
 	}
