@@ -3197,7 +3197,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	/* This must be done _before_ global reg alloc and _after_ decompose */
 	mono_handle_global_vregs (cfg);
-	mono_local_deadce (cfg);
+	if (cfg->opt & MONO_OPT_DEADCE)
+		mono_local_deadce (cfg);
 	mono_if_conversion (cfg);
 
 	if ((cfg->opt & MONO_OPT_SSAPRE) || cfg->globalra)
@@ -3314,7 +3315,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		mono_ssa_remove (cfg);
 		mono_local_cprop (cfg);
 		mono_handle_global_vregs (cfg);
-		mono_local_deadce (cfg);
+		if (cfg->opt & MONO_OPT_DEADCE)
+			mono_local_deadce (cfg);
 
 		if (cfg->opt & MONO_OPT_BRANCH) {
 			MonoBasicBlock *bb;
@@ -3427,7 +3429,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			if (need_local_opts || cfg->compile_aot) {
 				/* To optimize code created by spill_global_vars */
 				mono_local_cprop (cfg);
-				mono_local_deadce (cfg);
+				if (cfg->opt & MONO_OPT_DEADCE)
+					mono_local_deadce (cfg);
 			}
 		}
 
