@@ -2554,13 +2554,18 @@ get_generic_param (VerifyContext *ctx, MonoType *param)
  * @type The source type. It it tested to be of the proper type.    
  * @candidate type of the boxed valuetype.
  * @stack stack slot of the boxed valuetype, separate from @candidade since one could be changed before calling this function
- * @type_must_be_object if TRUE @type must be System.Object, otherwise can be any reference type.
+ * @strict if TRUE candidate must be boxed compatible to type otherwise it's enough
  * 
  */
 static gboolean
-is_compatible_boxed_valuetype (VerifyContext *ctx, MonoType *type, MonoType *candidate, ILStackDesc *stack, gboolean type_must_be_object)
+is_compatible_boxed_valuetype (VerifyContext *ctx, MonoType *type, MonoType *candidate, ILStackDesc *stack, gboolean strict)
 {
-	if (mono_type_is_generic_argument (candidate) && stack_slot_is_boxed_value (stack) && !type->byref) {
+	if (!stack_slot_is_boxed_value (stack))
+		return FALSE;
+	if (type->byref || candidate->byref)
+		return FALSE;
+
+	if (mono_type_is_generic_argument (candidate)) {
 		MonoGenericParam *param = get_generic_param (ctx, candidate);
 		MonoClass **class;
 		for (class = param->constraints; class && *class; ++class) {
@@ -2568,14 +2573,19 @@ is_compatible_boxed_valuetype (VerifyContext *ctx, MonoType *type, MonoType *can
 				return TRUE;
 		}
 	}
-	
-	if (!type_must_be_object && !MONO_TYPE_IS_REFERENCE (type))
+
+	if (mono_type_is_generic_argument (type))
 		return FALSE;
-	return !type->byref && !candidate->byref && stack_slot_is_boxed_value (stack);
+
+	if (!strict)
+		return MONO_TYPE_IS_REFERENCE (type);
+
+	/*All boxed valuetypes are compatible to System.Object*/
+	return MONO_TYPE_IS_REFERENCE (type) && (type->type == MONO_TYPE_OBJECT || verify_type_compatibility_full (ctx, type, candidate, FALSE));
 }
 
 static int
-verify_stack_type_compatibility_full (VerifyContext *ctx, MonoType *type, ILStackDesc *stack, gboolean strict, gboolean drop_byref)
+verify_stack_type_compatibility_full (VerifyContext *ctx, MonoType *type, ILStackDesc *stack, gboolean drop_byref, gboolean valuetype_must_be_boxed)
 {
 	MonoType *candidate = mono_type_from_stack_slot (stack);
 	if (MONO_TYPE_IS_REFERENCE (type) && !type->byref && stack_slot_is_null_literal (stack))
@@ -2584,10 +2594,16 @@ verify_stack_type_compatibility_full (VerifyContext *ctx, MonoType *type, ILStac
 	if (is_compatible_boxed_valuetype (ctx, type, candidate, stack, TRUE))
 		return TRUE;
 
-	if (drop_byref)
-		return verify_type_compatibility_full (ctx, type, mono_type_get_type_byval (candidate), strict);
+	if (valuetype_must_be_boxed && !stack_slot_is_boxed_value (stack) && !MONO_TYPE_IS_REFERENCE (candidate))
+		return FALSE;
 
-	return verify_type_compatibility_full (ctx, type, candidate, strict);
+	if (!valuetype_must_be_boxed && stack_slot_is_boxed_value (stack))
+		return FALSE;
+
+	if (drop_byref)
+		return verify_type_compatibility_full (ctx, type, mono_type_get_type_byval (candidate), FALSE);
+
+	return verify_type_compatibility_full (ctx, type, candidate, FALSE);
 }
 
 static int
@@ -2805,7 +2821,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	ctx->code [ip_offset].flags |= IL_CODE_DELEGATE_SEQUENCE;
 
 	//general tests
-	if (!verify_stack_type_compatibility (ctx, &method->klass->byval_arg, value) && !stack_slot_is_null_literal (value))
+	if (!verify_stack_type_compatibility_full (ctx, &method->klass->byval_arg, value, FALSE, TRUE) && !stack_slot_is_null_literal (value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
 
 	if (stack_slot_get_type (value) != TYPE_COMPLEX)
@@ -3370,7 +3386,7 @@ check_is_valid_type_for_field_ops (VerifyContext *ctx, int token, ILStackDesc *o
 		if (field->parent->valuetype && stack_slot_is_boxed_value (obj))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is a boxed valuetype and is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
-		if (!stack_slot_is_null_literal (obj) && !verify_stack_type_compatibility_full (ctx, &field->parent->byval_arg, obj, FALSE, TRUE))
+		if (!stack_slot_is_null_literal (obj) && !verify_stack_type_compatibility_full (ctx, &field->parent->byval_arg, obj, TRUE, FALSE))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Type at stack is not compatible to reference the field at 0x%04x", ctx->ip_offset));
 
 		if (!IS_SKIP_VISIBILITY (ctx) && !mono_method_can_access_field_full (ctx->method, field, mono_class_from_mono_type (obj->type)))
