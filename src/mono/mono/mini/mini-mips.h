@@ -171,6 +171,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_RGCTX_REG	mips_v0		/* XXX */
 
 #define MONO_ARCH_HAVE_DECOMPOSE_OPTS 1
+#define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 
@@ -405,12 +406,11 @@ typedef struct {
 
 #define	MONO_EMIT_NEW_MIPS_COND_EXC(cfg,cond,sr1,sr2,name) do {	\
                 MonoInst *inst; \
-		inst = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
-		inst->opcode = cond;  \
+		MONO_INST_NEW ((cfg), (inst), cond); \
                 inst->inst_p1 = (char*)name; \
 		inst->sreg1 = sr1; \
 		inst->sreg2 = sr2; \
-	        mono_bblock_add_inst ((cfg)->cbb, inst); \
+		MONO_ADD_INS ((cfg)->cbb, inst); \
 	} while (0)
 
 #ifndef MONO_EMIT_NEW_COMPARE_EXC

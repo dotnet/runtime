@@ -1514,6 +1514,26 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_print_ins_index (0, ins);
 
 		switch (ins->opcode) {
+#if 0
+		case OP_LOAD_MEMBASE:
+		case OP_LOADI4_MEMBASE:
+			/*
+			 * OP_IADD		reg2, reg1, const1
+			 * OP_LOAD_MEMBASE	const2(reg2), reg3
+			 * ->
+			 * OP_LOAD_MEMBASE	(const1+const2)(reg1), reg3
+			 */
+			if (last_ins && (last_ins->opcode == OP_IADD_IMM || last_ins->opcode == OP_ADD_IMM) && (last_ins->dreg == ins->inst_basereg) && (last_ins->sreg1 != last_ins->dreg)){
+				int const1 = last_ins->inst_imm;
+				int const2 = ins->inst_offset;
+
+				if (mips_is_imm16 (const1 + const2)) {
+					ins->inst_basereg = last_ins->sreg1;
+					ins->inst_offset = const1 + const2;
+				}
+			}
+			break;
+#endif
 		case OP_IBEQ:
 		case OP_IBNE_UN:
 			if (ins->opcode == OP_IBEQ)
@@ -1627,11 +1647,6 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			MONO_DELETE_INS(bb, last_ins);
 			break;
 
-		case OP_COND_EXC_OV:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(ins, OP_MIPS_COND_EXC_OV, last_ins->sreg1, last_ins->sreg2);
-			MONO_DELETE_INS(bb, last_ins);
-			break;
 		}
 		last_ins = ins;
 		ins = ins->next;
@@ -1779,8 +1794,178 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 }
 
 void
+mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
+{
+	int tmp1 = -1;
+	int tmp2 = -1;
+	int tmp3 = -1;
+	int tmp4 = -1;
+	int tmp5 = -1;
+
+	switch (ins->opcode) {
+#if 0
+	case OP_LCOMPARE:
+	case OP_LCOMPARE_IMM:
+		mono_print_ins (ins);
+		g_assert_not_reached ();
+#endif
+	case OP_LADD:
+		tmp1 = mono_alloc_ireg (cfg);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+1, ins->sreg1+1, ins->sreg2+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->dreg+1, ins->sreg1+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, ins->dreg+2, tmp1);
+		ins->opcode = OP_NOP;
+		break;
+
+	case OP_LSUB:
+		tmp1 = mono_alloc_ireg (cfg);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+1, ins->sreg1+1, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->sreg1+1, ins->dreg+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
+		ins->opcode = OP_NOP;
+		break;
+
+	case OP_LMUL:
+	case OP_LDIV:
+	case OP_LDIV_UN:
+	case OP_LREM:
+	case OP_LREM_UN:
+	case OP_LSHL:
+	case OP_LSHR:
+	case OP_LSHR_UN:
+	case OP_LNEG:
+	case OP_LNOT:
+#if 0
+	case OP_LCONV_TO_I1:
+	case OP_LCONV_TO_I2:
+	case OP_LCONV_TO_I4:
+	case OP_LCONV_TO_I8:
+	case OP_LCONV_TO_R4:
+	case OP_LCONV_TO_R8:
+	case OP_LCONV_TO_U4:
+	case OP_LCONV_TO_U8:
+	case OP_LCONV_TO_U2:
+	case OP_LCONV_TO_U1:
+	case OP_LCONV_TO_I:
+	case OP_LCONV_TO_OVF_I:
+	case OP_LCONV_TO_OVF_U:
+#endif
+		mono_print_ins (ins);
+		g_assert_not_reached ();
+
+	case OP_LADD_OVF:
+		tmp1 = mono_alloc_ireg (cfg);
+		tmp2 = mono_alloc_ireg (cfg);
+		tmp3 = mono_alloc_ireg (cfg);
+		tmp4 = mono_alloc_ireg (cfg);
+		tmp5 = mono_alloc_ireg (cfg);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+1, ins->sreg1+1, ins->sreg2+1);
+
+		/* tmp1 holds the carry from the low 32-bit to the high 32-bits */
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp5, ins->dreg+1, ins->sreg1+1);
+
+		/* add the high 32-bits, and add in the carry from the low 32-bits */
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, tmp5, ins->dreg+2);
+
+		/* Overflow happens if
+		 *	neg + neg = pos    or
+		 *	pos + pos = neg
+		 * XOR of the high bits returns 0 if the signs match
+		 * XOR of that with the high bit of the result return 1 if overflow.
+		 */
+
+		/* tmp1 = 0 if the signs of the two inputs match, 1 otherwise */
+		MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tmp1, ins->sreg1+2, ins->sreg2+2);
+
+		/* set tmp2 = 0 if bit31 of results matches is different than the operands */
+		MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tmp2, ins->dreg+2, ins->sreg2+2);
+		MONO_EMIT_NEW_UNALU (cfg, OP_INOT, tmp2, tmp2);
+
+		/* OR(tmp1, tmp2) = 0 if both conditions are true */
+		MONO_EMIT_NEW_BIALU (cfg, OP_IOR, tmp3, tmp2, tmp1);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, tmp4, tmp3, 31);
+
+		/* Now, if (tmp4 == 0) then overflow */
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, EQ, tmp4, mips_zero, "OverflowException");
+		ins->opcode = OP_NOP;
+		break;
+
+	case OP_LADD_OVF_UN:
+	case OP_LMUL_OVF:
+	case OP_LMUL_OVF_UN:
+	case OP_LSUB_OVF:
+	case OP_LSUB_OVF_UN:
+#if 0
+	case OP_LCONV_TO_OVF_I1_UN:
+	case OP_LCONV_TO_OVF_I2_UN:
+	case OP_LCONV_TO_OVF_I4_UN:
+	case OP_LCONV_TO_OVF_I8_UN:
+	case OP_LCONV_TO_OVF_U1_UN:
+	case OP_LCONV_TO_OVF_U2_UN:
+	case OP_LCONV_TO_OVF_U4_UN:
+	case OP_LCONV_TO_OVF_U8_UN:
+	case OP_LCONV_TO_OVF_I_UN:
+	case OP_LCONV_TO_OVF_U_UN:
+	case OP_LCONV_TO_OVF_I1:
+	case OP_LCONV_TO_OVF_U1:
+	case OP_LCONV_TO_OVF_I2:
+	case OP_LCONV_TO_OVF_U2:
+	case OP_LCONV_TO_OVF_I4:
+	case OP_LCONV_TO_OVF_U4:
+	case OP_LCONV_TO_OVF_I8:
+	case OP_LCONV_TO_OVF_U8:
+#endif
+	case OP_LCEQ:
+	case OP_LCGT:
+	case OP_LCGT_UN:
+	case OP_LCLT:
+	case OP_LCLT_UN:
+	case OP_LCONV_TO_R_UN:
+	case OP_LCONV_TO_U:
+	case OP_LADD_IMM:
+	case OP_LSUB_IMM:
+	case OP_LMUL_IMM:
+	case OP_LSHL_IMM:
+	case OP_LSHR_IMM:
+	case OP_LSHR_UN_IMM:
+	case OP_LDIV_IMM:
+	case OP_LDIV_UN_IMM:
+	case OP_LREM_IMM:
+	case OP_LREM_UN_IMM:
+	case OP_LBEQ:
+	case OP_LBGE:
+	case OP_LBGT:
+	case OP_LBLE:
+	case OP_LBLT:
+	case OP_LBNE_UN:
+	case OP_LBGE_UN:
+	case OP_LBGT_UN:
+	case OP_LBLE_UN:
+	case OP_LBLT_UN:
+	case OP_LCONV_TO_R8_2:
+	case OP_LCONV_TO_R4_2:
+	case OP_LCONV_TO_R_UN_2:
+	case OP_LCONV_TO_OVF_I4_2:
+	case OP_LMIN_UN:
+	case OP_LMAX_UN:
+	case OP_LMIN:
+	case OP_LMAX:
+		mono_print_ins (ins);
+		g_assert_not_reached ();
+
+	default:
+		break;
+	}
+}
+
+void
 mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
+	int tmp1;
+
 	switch (ins->opcode) {
 	case OP_ICONV_TO_R_UN: {
 		static const guint64 adjust_val = 0x4330000000000000ULL;
@@ -1851,11 +2036,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	}
 
 }
-
-#define NEW_INS(cfg,dest,op) do {					\
-		MONO_INST_NEW((cfg), (dest), (op));			\
-		mono_bblock_insert_after_ins (bb, last_ins, (dest));	\
-	} while (0)
 
 static int
 map_to_reg_reg_op (int op)
@@ -1963,6 +2143,31 @@ map_to_mips_op (int op)
 	}
 }
 
+#define NEW_INS(cfg,after,dest,op) do {					\
+		MONO_INST_NEW((cfg), (dest), (op));			\
+		mono_bblock_insert_after_ins (bb, (after), (dest));	\
+	} while (0)
+
+#define INS(pos,op,_dreg,_sreg1,_sreg2) do {		\
+		MonoInst *temp;						\
+		MONO_INST_NEW(cfg, temp, (op));				\
+		mono_bblock_insert_after_ins (bb, (pos), temp);		\
+		temp->dreg = (_dreg);					\
+		temp->sreg1 = (_sreg1);					\
+		temp->sreg2 = (_sreg2);					\
+		pos = temp;						\
+	} while (0)
+
+#define INS_IMM(pos,op,_dreg,_sreg1,_imm) do {		\
+		MonoInst *temp;						\
+		MONO_INST_NEW(cfg, temp, (op));				\
+		mono_bblock_insert_after_ins (bb, (pos), temp);		\
+		temp->dreg = (_dreg);					\
+		temp->sreg1 = (_sreg1);					\
+		temp->inst_c0 = (_imm);					\
+		pos = temp;						\
+	} while (0)
+
 /*
  * Remove from the instruction list the instructions that can't be
  * represented with very simple instructions with no register
@@ -1973,6 +2178,18 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *next, *temp, *last_ins = NULL;
 	int imm;
+
+#if 1
+	if (cfg->verbose_level > 2) {
+		int idx = 0;
+
+		g_print ("BASIC BLOCK %d (before lowering)\n", bb->block_num);
+		MONO_BB_FOR_EACH_INS (bb, ins) {
+			mono_print_ins_index (idx++, ins);
+		}
+		
+	}
+#endif
 
 	MONO_BB_FOR_EACH_INS (bb, ins) {
 loop_start:
@@ -1986,7 +2203,7 @@ loop_start:
 				break;
 			}
 			if (ins->inst_imm) {
-				NEW_INS (cfg, temp, OP_ICONST);
+				NEW_INS (cfg, last_ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
@@ -2005,7 +2222,7 @@ loop_start:
 		case OP_IDIV_IMM:
 		case OP_IREM_IMM:
 		case OP_IREM_UN_IMM:
-			NEW_INS (cfg, temp, OP_ICONST);
+			NEW_INS (cfg, last_ins, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
@@ -2024,7 +2241,7 @@ loop_start:
 		case OP_ADD_IMM:
 		case OP_ADDCC_IMM:
 			if (!mips_is_imm16 (ins->inst_imm)) {
-				NEW_INS (cfg, temp, OP_ICONST);
+				NEW_INS (cfg, last_ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
@@ -2053,7 +2270,7 @@ loop_start:
 
 		case OP_SUB_IMM:
 			if (!mips_is_imm16 (-ins->inst_imm)) {
-				NEW_INS (cfg, temp, OP_ICONST);
+				NEW_INS (cfg, last_ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
@@ -2065,7 +2282,7 @@ loop_start:
 		case OP_OR_IMM:
 		case OP_XOR_IMM:
 			if ((ins->inst_imm & 0xffff0000) && (ins->inst_imm & 0xffff)) {
-				NEW_INS (cfg, temp, OP_ICONST);
+				NEW_INS (cfg, last_ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
@@ -2076,7 +2293,7 @@ loop_start:
 		case OP_SBB_IMM:
 		case OP_SUBCC_IMM:
 		case OP_ADC_IMM:
-			NEW_INS (cfg, temp, OP_ICONST);
+			NEW_INS (cfg, last_ins, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
@@ -2100,7 +2317,7 @@ loop_start:
 				break;
 			}
 			if (!mips_is_imm16 (ins->inst_imm)) {
-				NEW_INS (cfg, temp, OP_ICONST);
+				NEW_INS (cfg, last_ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
 				ins->sreg2 = temp->dreg;
@@ -2130,7 +2347,7 @@ loop_start:
 			 */
 			if (mips_is_imm16 (ins->inst_offset))
 				break;
-			NEW_INS (cfg, temp, OP_ICONST);
+			NEW_INS (cfg, last_ins, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_offset;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
@@ -2141,23 +2358,24 @@ loop_start:
 		case OP_STOREI1_MEMBASE_IMM:
 		case OP_STOREI2_MEMBASE_IMM:
 		case OP_STOREI4_MEMBASE_IMM:
-#if 0
 			if (!ins->inst_imm) {
 				ins->sreg1 = mips_zero;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
-#endif
-			NEW_INS (cfg, temp, OP_ICONST);
-			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_alloc_ireg (cfg);
-			ins->sreg1 = temp->dreg;
-			ins->opcode = map_to_reg_reg_op (ins->opcode);
-			last_ins = temp;
-			goto loop_start; /* make it handle the possibly big ins->inst_offset */
+			else {
+				NEW_INS (cfg, last_ins, temp, OP_ICONST);
+				temp->inst_c0 = ins->inst_imm;
+				temp->dreg = mono_alloc_ireg (cfg);
+				ins->sreg1 = temp->dreg;
+				ins->opcode = map_to_reg_reg_op (ins->opcode);
+				last_ins = temp;
+				goto loop_start; /* make it handle the possibly big ins->inst_offset */
+			}
+			break;
 
 		case OP_R8CONST:
 		case OP_R4CONST:
-			NEW_INS (cfg, temp, OP_ICONST);
+			NEW_INS (cfg, last_ins, temp, OP_ICONST);
 			temp->inst_c0 = (guint32)ins->inst_p0;
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->inst_basereg = temp->dreg;
@@ -2169,11 +2387,62 @@ loop_start:
 			 */
 			goto loop_start;
 
+		case OP_COND_EXC_OV: {
+			int tmp1, tmp2, tmp3, tmp4, tmp5;
+			MonoInst *pos = last_ins;
+
+			/* Overflow happens if
+			 *	neg + neg = pos    or
+			 *	pos + pos = neg
+			 *
+			 * (bit31s of operands match) AND (bit31 of operand
+			 * != bit31 of result)
+			 * XOR of the high bit returns 0 if the signs match
+			 * XOR of that with the high bit of the result return 1
+			 * if overflow.
+			 */
+			g_assert (last_ins->opcode == OP_IADC);
+
+			tmp1 = mono_alloc_ireg (cfg);
+			tmp2 = mono_alloc_ireg (cfg);
+			tmp3 = mono_alloc_ireg (cfg);
+			tmp4 = mono_alloc_ireg (cfg);
+			tmp5 = mono_alloc_ireg (cfg);
+
+			/* tmp1 = 0 if the signs of the two inputs match, else 1 */
+			INS (pos, OP_IXOR, tmp1, last_ins->sreg1, last_ins->sreg2);
+
+			/* set tmp2 = 0 if bit31 of results matches is different than the operands */
+			INS (pos, OP_IXOR, tmp2, last_ins->dreg, last_ins->sreg2);
+			INS (pos, OP_INOT, tmp3, tmp2, -1);
+
+			/* OR(tmp1, tmp2) = 0 if both conditions are true */
+			INS (pos, OP_IOR, tmp4, tmp3, tmp1);
+			INS_IMM (pos, OP_SHR_IMM, tmp5, tmp4, 31);
+
+			/* Now, if (tmp5 == 0) then overflow */
+			ins_rewrite(ins, OP_MIPS_COND_EXC_EQ, tmp5, mips_zero);
+			ins->dreg = -1;
+			break;
+			}
 		}
 		last_ins = ins;
 	}
 	bb->last_ins = last_ins;
 	bb->max_vreg = cfg->next_vreg;
+
+#if 1
+	if (cfg->verbose_level > 2) {
+		int idx = 0;
+
+		g_print ("BASIC BLOCK %d (after lowering)\n", bb->block_num);
+		MONO_BB_FOR_EACH_INS (bb, ins) {
+			mono_print_ins_index (idx++, ins);
+		}
+		
+	}
+#endif
+
 }
 
 static guchar*
@@ -2569,6 +2838,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ADDCC:
 		case OP_IADDCC:
+			g_assert_not_reached ();
 			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IADD:
@@ -2576,6 +2846,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ADC:
 		case OP_IADC:
+			g_assert_not_reached ();
 			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ADDCC_IMM:
@@ -2592,6 +2863,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SUBCC:
 		case OP_ISUBCC:
+			g_assert_not_reached ();
 			mips_subu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ISUB:
@@ -2609,6 +2881,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_SBB:
 		case OP_ISBB:
+			g_assert_not_reached ();
 			mips_subu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_SBB_IMM:
@@ -3758,19 +4031,15 @@ mips_adjust_stackframe(MonoCompile *cfg)
 		g_print ("\tra_offset %d/0x%x delta %d/0x%x\n", ra_offset, ra_offset, delta, delta);
 	}
 
-#if 0
+	sig = mono_method_signature (cfg->method);
 	if (sig && sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
 		cfg->vret_addr->inst_offset += delta;
 	}
-#endif
-#if 1
-	sig = mono_method_signature (cfg->method);
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoInst *inst = cfg->args [i];
 
 		inst->inst_offset += delta;
 	}
-#endif
 
 	/*
 	 * loads and stores based off the frame reg that (used to) lie
