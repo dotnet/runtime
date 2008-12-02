@@ -28,7 +28,7 @@
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
 #define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
-#define LONG_BRANCH		1	/* needed for yyparse in mcs */
+#define LONG_BRANCH		0	/* needed for yyparse in mcs */
 
 #define SAVE_LMF		1
 #define ALWAYS_USE_FP		1
@@ -90,6 +90,25 @@ static int monodomain_key = -1;
 		inst->inst_p0 = (void*)(addr);	       \
 		mono_bblock_add_inst (cfg->cbb, inst); \
 	} while (0)
+
+#define ins_is_compare(ins) ((ins) && (((ins)->opcode == OP_COMPARE) || ((ins)->opcode == OP_ICOMPARE)))
+#define ins_is_compare_imm(ins) ((ins) && (((ins)->opcode == OP_COMPARE_IMM) || ((ins)->opcode == OP_ICOMPARE_IMM)))
+
+#define INS_REWRITE(ins, op, _s1, _s2)	do { \
+			int s1 = _s1;			\
+			int s2 = _s2;			\
+			ins->opcode = (op);		\
+			ins->sreg1 = (s1);		\
+			ins->sreg2 = (s2);		\
+	} while (0);
+
+#define INS_REWRITE_IMM(ins, op, _s1, _imm)	do { \
+			int s1 = _s1;			\
+			ins->opcode = (op);		\
+			ins->sreg1 = (s1);		\
+			ins->inst_imm = (_imm);		\
+	} while (0);
+
 
 typedef struct InstList InstList;
 
@@ -1491,19 +1510,10 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
 }
 
-#define ins_is_compare(ins) ((ins) && (((ins)->opcode == OP_COMPARE) || ((ins)->opcode == OP_ICOMPARE)))
-#define ins_is_compare_imm(ins) ((ins) && (((ins)->opcode == OP_COMPARE_IMM) || ((ins)->opcode == OP_ICOMPARE_IMM)))
-#define ins_rewrite(ins, op, s1, s2)	do { \
-			ins->opcode = (op);	      \
-			ins->sreg1 = (s1);	      \
-			ins->sreg2 = (s2);	      \
-	} while (0);
-
 void
 mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n, *last_ins = NULL;
-	int op;
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d peephole pass 1\n", bb->block_num);
@@ -1534,118 +1544,6 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 #endif
-		case OP_IBEQ:
-		case OP_IBNE_UN:
-			if (ins->opcode == OP_IBEQ)
-				op = OP_MIPS_BEQ;
-			else if (ins->opcode == OP_IBNE_UN)
-				op = OP_MIPS_BNE;
-			else
-				g_assert_not_reached ();
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(ins, op, last_ins->sreg1, last_ins->sreg2);
-			MONO_DELETE_INS(bb, last_ins);
-			break;
-
-		case OP_IBGE:
-			g_assert (ins_is_compare(last_ins));
-			last_ins->opcode = OP_MIPS_SLT;
-			last_ins->dreg = mips_at;
-			ins_rewrite(ins, OP_MIPS_BNE, mips_at, mips_zero);
-			break;
-
-		case OP_IBGE_UN:
-			g_assert (ins_is_compare(last_ins));
-			last_ins->opcode = OP_MIPS_SLTU;
-			last_ins->dreg = mips_at;
-			ins_rewrite(ins, OP_MIPS_BNE, mips_at, mips_zero);
-			break;
-
-		case OP_IBGT:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(last_ins, OP_MIPS_SLT, last_ins->sreg2, last_ins->sreg1);
-			last_ins->dreg = mips_at;
-			ins_rewrite(ins, OP_MIPS_BNE, mips_at, mips_zero);
-			break;
-
-		case OP_IBGT_UN:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(last_ins, OP_MIPS_SLTU, last_ins->sreg2, last_ins->sreg1);
-			last_ins->dreg = mips_at;
-			ins_rewrite(ins, OP_MIPS_BNE, mips_at, mips_zero);
-			break;
-
-		case OP_IBLE:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(last_ins, OP_MIPS_SLT, last_ins->sreg2, last_ins->sreg1);
-			last_ins->dreg = mips_at;
-			ins_rewrite(ins, OP_MIPS_BEQ, mips_at, mips_zero);
-			break;
-
-		case OP_IBLE_UN:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(last_ins, OP_MIPS_SLTU, last_ins->sreg2, last_ins->sreg1);
-			last_ins->dreg = mips_at;
-			ins_rewrite(ins, OP_MIPS_BEQ, mips_at, mips_zero);
-			break;
-
-		case OP_IBLT:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(last_ins, OP_MIPS_SLT, last_ins->sreg1, last_ins->sreg2);
-			last_ins->dreg = mips_at;
-			ins_rewrite(ins, OP_MIPS_BNE, mips_at, mips_zero);
-			break;
-
-		case OP_IBLT_UN:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(last_ins, OP_MIPS_SLTU, last_ins->sreg1, last_ins->sreg2);
-			last_ins->dreg = mips_at;
-			ins_rewrite(ins, OP_MIPS_BNE, mips_at, mips_zero);
-			break;
-
-		case OP_CEQ:
-		case OP_ICEQ:
-			g_assert (ins_is_compare(last_ins));
-			last_ins->opcode = OP_IXOR;
-			last_ins->dreg = mono_alloc_ireg(cfg);
-			ins_rewrite(ins, OP_MIPS_SLTIU, last_ins->dreg, mips_zero);
-			break;
-
-		case OP_CLT:
-		case OP_ICLT:
-			g_assert_not_reached ();
-			break;
-
-		case OP_CLT_UN:
-		case OP_ICLT_UN:
-			g_assert_not_reached ();
-			break;
-
-		case OP_CGT:
-		case OP_ICGT:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(ins, OP_MIPS_SLT, last_ins->sreg2, last_ins->sreg1);
-			MONO_DELETE_INS(bb, last_ins);
-			break;
-
-		case OP_CGT_UN:
-		case OP_ICGT_UN:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(ins, OP_MIPS_SLTU, last_ins->sreg2, last_ins->sreg1);
-			MONO_DELETE_INS(bb, last_ins);
-			break;
-
-		case OP_COND_EXC_NE_UN:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(ins, OP_MIPS_COND_EXC_NE_UN, last_ins->sreg1, last_ins->sreg2);
-			MONO_DELETE_INS(bb, last_ins);
-			break;
-
-		case OP_COND_EXC_LE_UN:
-			g_assert (ins_is_compare(last_ins));
-			ins_rewrite(ins, OP_MIPS_COND_EXC_LE_UN, last_ins->sreg1, last_ins->sreg2);
-			MONO_DELETE_INS(bb, last_ins);
-			break;
 
 		}
 		last_ins = ins;
@@ -1923,8 +1821,10 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCGT_UN:
 	case OP_LCLT:
 	case OP_LCLT_UN:
+#if 0
 	case OP_LCONV_TO_R_UN:
 	case OP_LCONV_TO_U:
+#endif
 	case OP_LADD_IMM:
 	case OP_LSUB_IMM:
 	case OP_LMUL_IMM:
@@ -1964,9 +1864,91 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 void
 mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
-	int tmp1;
+	int tmp1 = -1;
+	int tmp2 = -1;
+	int tmp3 = -1;
+	int tmp4 = -1;
+	int tmp5 = -1;
 
 	switch (ins->opcode) {
+	case OP_IADD_OVF:
+		tmp1 = mono_alloc_ireg (cfg);
+		tmp2 = mono_alloc_ireg (cfg);
+		tmp3 = mono_alloc_ireg (cfg);
+		tmp4 = mono_alloc_ireg (cfg);
+		tmp5 = mono_alloc_ireg (cfg);
+
+		/* add the operands */
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg, ins->sreg1, ins->sreg2);
+
+		/* Overflow happens if
+		 *	neg + neg = pos    or
+		 *	pos + pos = neg
+		 *
+		 * (bit31s of operands match) AND (bit31 of operand != bit31 of result)
+		 * XOR of the high bit returns 0 if the signs match
+		 * XOR of that with the high bit of the result return 1 if overflow.
+		 */
+
+		/* tmp1 = 0 if the signs of the two inputs match, 1 otherwise */
+		MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tmp1, ins->sreg1, ins->sreg2);
+
+		/* set tmp2 = 0 if bit31 of results matches is different than the operands */
+		MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tmp2, ins->dreg, ins->sreg2);
+		MONO_EMIT_NEW_UNALU (cfg, OP_INOT, tmp3, tmp2);
+
+		/* OR(tmp1, tmp2) = 0 if both conditions are true */
+		MONO_EMIT_NEW_BIALU (cfg, OP_IOR, tmp4, tmp3, tmp1);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, tmp5, tmp4, 31);
+
+		/* Now, if (tmp4 == 0) then overflow */
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, EQ, tmp5, mips_zero, "OverflowException");
+		ins->opcode = OP_NOP;
+		break;
+
+	case OP_ISUB_OVF:
+		tmp1 = mono_alloc_ireg (cfg);
+		tmp2 = mono_alloc_ireg (cfg);
+		tmp3 = mono_alloc_ireg (cfg);
+		tmp4 = mono_alloc_ireg (cfg);
+		tmp5 = mono_alloc_ireg (cfg);
+
+		/* add the operands */
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg, ins->sreg1, ins->sreg2);
+
+		/* Overflow happens if
+		 *	neg - pos = pos    or
+		 *	pos - neg = neg
+		 * XOR of bit31 of the lhs & rhs = 1 if the signs are different
+		 *
+		 * tmp1 = (lhs ^ rhs)
+		 * tmp2 = (lhs ^ result)
+		 * if ((tmp1 < 0) & (tmp2 < 0)) then overflow
+		 */
+
+		/* tmp3 = 1 if the signs of the two inputs differ */
+		MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tmp1, ins->sreg1, ins->sreg2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tmp2, ins->sreg1, ins->dreg);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MIPS_SLTI, tmp3, tmp1, 0);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MIPS_SLTI, tmp4, tmp2, 0);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IAND, tmp5, tmp4, tmp3);
+
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp5, mips_zero, "OverflowException");
+		ins->opcode = OP_NOP;
+		break;
+
+	case OP_ISUB_OVF_UN:
+		tmp1 = mono_alloc_ireg (cfg);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg, ins->sreg1, ins->sreg2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->sreg1, ins->dreg);
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp1, mips_zero, "OverflowException");
+		ins->opcode = OP_NOP;
+		break;
+
 	case OP_ICONV_TO_R_UN: {
 		static const guint64 adjust_val = 0x4330000000000000ULL;
 		int msw_reg = mono_alloc_ireg (cfg);
@@ -2387,7 +2369,181 @@ loop_start:
 			 */
 			goto loop_start;
 
-		case OP_COND_EXC_OV: {
+		case OP_IBEQ:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_BEQ, last_ins->sreg1, last_ins->sreg2);
+			last_ins->opcode = OP_NOP;
+			break;
+
+		case OP_IBNE_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_BNE, last_ins->sreg1, last_ins->sreg2);
+			last_ins->opcode = OP_NOP;
+			break;
+
+		case OP_IBGE:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(last_ins, OP_MIPS_SLT, last_ins->sreg1, last_ins->sreg2);
+			last_ins->dreg = mono_alloc_ireg (cfg);
+			INS_REWRITE(ins, OP_MIPS_BEQ, last_ins->dreg, mips_zero);
+			break;
+
+		case OP_IBGE_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(last_ins, OP_MIPS_SLTU, last_ins->sreg1, last_ins->sreg2);
+			last_ins->dreg = mono_alloc_ireg (cfg);
+			INS_REWRITE(ins, OP_MIPS_BEQ, last_ins->dreg, mips_zero);
+			break;
+
+		case OP_IBLT:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(last_ins, OP_MIPS_SLT, last_ins->sreg1, last_ins->sreg2);
+			last_ins->dreg = mono_alloc_ireg (cfg);
+			INS_REWRITE(ins, OP_MIPS_BNE, last_ins->dreg, mips_zero);
+			break;
+
+		case OP_IBLT_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(last_ins, OP_MIPS_SLTU, last_ins->sreg1, last_ins->sreg2);
+			last_ins->dreg = mono_alloc_ireg (cfg);
+			INS_REWRITE(ins, OP_MIPS_BNE, last_ins->dreg, mips_zero);
+			break;
+
+		case OP_IBLE:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(last_ins, OP_MIPS_SLT, last_ins->sreg2, last_ins->sreg1);
+			last_ins->dreg = mono_alloc_ireg (cfg);
+			INS_REWRITE(ins, OP_MIPS_BEQ, last_ins->dreg, mips_zero);
+			break;
+
+		case OP_IBLE_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(last_ins, OP_MIPS_SLTU, last_ins->sreg2, last_ins->sreg1);
+			last_ins->dreg = mono_alloc_ireg (cfg);
+			INS_REWRITE(ins, OP_MIPS_BEQ, last_ins->dreg, mips_zero);
+			break;
+
+		case OP_IBGT:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(last_ins, OP_MIPS_SLT, last_ins->sreg2, last_ins->sreg1);
+			last_ins->dreg = mono_alloc_ireg (cfg);
+			INS_REWRITE(ins, OP_MIPS_BNE, last_ins->dreg, mips_zero);
+			break;
+
+		case OP_IBGT_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(last_ins, OP_MIPS_SLTU, last_ins->sreg2, last_ins->sreg1);
+			last_ins->dreg = mono_alloc_ireg (cfg);
+			INS_REWRITE(ins, OP_MIPS_BNE, last_ins->dreg, mips_zero);
+			break;
+
+		case OP_CEQ:
+		case OP_ICEQ:
+			g_assert (ins_is_compare(last_ins));
+			last_ins->opcode = OP_IXOR;
+			last_ins->dreg = mono_alloc_ireg(cfg);
+			INS_REWRITE_IMM(ins, OP_MIPS_SLTIU, last_ins->dreg, 1);
+			break;
+
+		case OP_CLT:
+		case OP_ICLT:
+			INS_REWRITE(ins, OP_MIPS_SLT, last_ins->sreg1, last_ins->sreg2);
+			last_ins->opcode = OP_NOP;
+			break;
+
+
+		case OP_CLT_UN:
+		case OP_ICLT_UN:
+			INS_REWRITE(ins, OP_MIPS_SLTU, last_ins->sreg1, last_ins->sreg2);
+			last_ins->opcode = OP_NOP;
+			break;
+
+		case OP_CGT:
+		case OP_ICGT:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_SLT, last_ins->sreg2, last_ins->sreg1);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_CGT_UN:
+		case OP_ICGT_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_SLTU, last_ins->sreg2, last_ins->sreg1);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_EQ:
+		case OP_COND_EXC_IEQ:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_EQ, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_GE:
+		case OP_COND_EXC_IGE:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_GE, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_GT:
+		case OP_COND_EXC_IGT:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_GT, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_LE:
+		case OP_COND_EXC_ILE:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_LE, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_LT:
+		case OP_COND_EXC_ILT:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_LT, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_NE_UN:
+		case OP_COND_EXC_INE_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_NE_UN, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_GE_UN:
+		case OP_COND_EXC_IGE_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_GE, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_GT_UN:
+		case OP_COND_EXC_IGT_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_GT, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_LE_UN:
+		case OP_COND_EXC_ILE_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_LE_UN, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_LT_UN:
+		case OP_COND_EXC_ILT_UN:
+			g_assert (ins_is_compare(last_ins));
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_LT, last_ins->sreg1, last_ins->sreg2);
+			MONO_DELETE_INS(bb, last_ins);
+			break;
+
+		case OP_COND_EXC_OV:
+		case OP_COND_EXC_IOV: {
 			int tmp1, tmp2, tmp3, tmp4, tmp5;
 			MonoInst *pos = last_ins;
 
@@ -2421,10 +2577,26 @@ loop_start:
 			INS_IMM (pos, OP_SHR_IMM, tmp5, tmp4, 31);
 
 			/* Now, if (tmp5 == 0) then overflow */
-			ins_rewrite(ins, OP_MIPS_COND_EXC_EQ, tmp5, mips_zero);
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_EQ, tmp5, mips_zero);
 			ins->dreg = -1;
 			break;
 			}
+
+		case OP_COND_EXC_NO:
+		case OP_COND_EXC_INO:
+			g_assert_not_reached ();
+			break;
+
+		case OP_COND_EXC_C:
+		case OP_COND_EXC_IC:
+			g_assert_not_reached ();
+			break;
+
+		case OP_COND_EXC_NC:
+		case OP_COND_EXC_INC:
+			g_assert_not_reached ();
+			break;
+
 		}
 		last_ins = ins;
 	}
@@ -2827,30 +2999,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (mips_is_imm16 (ins->inst_imm));
 			mips_sltiu (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
-		case OP_COMPARE_IMM:
-			g_assert_not_reached ();
-			break;
-		case OP_COMPARE:
-			g_assert_not_reached ();
-			break;
 		case OP_BREAK:
 			mips_break (code, 0xfd);
 			break;
-		case OP_ADDCC:
-		case OP_IADDCC:
-			g_assert_not_reached ();
-			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;
 		case OP_IADD:
 			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;
-		case OP_ADC:
-		case OP_IADC:
-			g_assert_not_reached ();
-			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;
-		case OP_ADDCC_IMM:
-			g_assert_not_reached ();
 			break;
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
@@ -2860,11 +3013,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_load_const (code, mips_at, ins->inst_imm);
 				mips_addu (code, ins->dreg, ins->sreg1, mips_at);
 			}
-			break;
-		case OP_SUBCC:
-		case OP_ISUBCC:
-			g_assert_not_reached ();
-			mips_subu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ISUB:
 			mips_subu (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -2878,14 +3026,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_load_const (code, mips_at, ins->inst_imm);
 				mips_subu (code, ins->dreg, ins->sreg1, mips_at);
 			}
-			break;
-		case OP_SBB:
-		case OP_ISBB:
-			g_assert_not_reached ();
-			mips_subu (code, ins->dreg, ins->sreg1, ins->sreg2);
-			break;
-		case OP_SBB_IMM:
-			g_assert_not_reached ();
 			break;
 		case OP_IAND:
 			mips_and (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -2950,7 +3090,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 #endif
-		case CEE_DIV_UN: {
+		case OP_IDIV_UN: {
 			guint32 *divisor_is_zero = (guint32 *)(void *)code;
 
 			/* Put divide in branch delay slot (NOT YET) */
@@ -3057,7 +3197,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_nop (code);
 #endif
 			break;
-		case CEE_MUL_OVF: {
+		case OP_IMUL_OVF: {
 			guint32 *patch;
 			mips_mult (code, ins->sreg1, ins->sreg2);
 			mips_mflo (code, ins->dreg);
@@ -3072,7 +3212,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_patch (patch, (guint32)code);
 			break;
 		}
-		case CEE_MUL_OVF_UN:
+		case OP_IMUL_OVF_UN:
 #if 0
 			mips_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
 #else
@@ -3408,42 +3548,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_move (code, ins->dreg, mips_zero);
 			break;
 
-		case OP_COND_EXC_EQ:
-		case OP_COND_EXC_GE:
-		case OP_COND_EXC_GT:
-		case OP_COND_EXC_LE:
-		case OP_COND_EXC_LT:
-		case OP_COND_EXC_NE_UN:
-		case OP_COND_EXC_GE_UN:
-		case OP_COND_EXC_GT_UN:
-		case OP_COND_EXC_LE_UN:
-		case OP_COND_EXC_LT_UN:
-
-		case OP_COND_EXC_OV:
-		case OP_COND_EXC_NO:
-		case OP_COND_EXC_C:
-		case OP_COND_EXC_NC:
-
-		case OP_COND_EXC_IEQ:
-		case OP_COND_EXC_IGE:
-		case OP_COND_EXC_IGT:
-		case OP_COND_EXC_ILE:
-		case OP_COND_EXC_ILT:
-		case OP_COND_EXC_INE_UN:
-		case OP_COND_EXC_IGE_UN:
-		case OP_COND_EXC_IGT_UN:
-		case OP_COND_EXC_ILE_UN:
-		case OP_COND_EXC_ILT_UN:
-
-		case OP_COND_EXC_IOV:
-		case OP_COND_EXC_INO:
-		case OP_COND_EXC_IC:
-		case OP_COND_EXC_INC:
-			/* Should be re-mapped to OP_MIPS_B* by *.inssel-mips.brg */
-			g_warning ("unsupported conditional exception %s\n", mono_inst_name (ins->opcode));
-			g_assert_not_reached ();
-			break;
-
 		case OP_MIPS_COND_EXC_EQ:
 		case OP_MIPS_COND_EXC_GE:
 		case OP_MIPS_COND_EXC_GT:
@@ -3492,17 +3596,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_beq (code, ins->sreg1, ins->sreg2, 0);
 				mips_nop (code);
 				break;
+
 			case OP_MIPS_COND_EXC_NE_UN:
 				throw = (guint32 *)(void *)code;
 				mips_bne (code, ins->sreg1, ins->sreg2, 0);
 				mips_nop (code);
 				break;
+
 			case OP_MIPS_COND_EXC_LE_UN:
 				mips_subu (code, mips_at, ins->sreg1, ins->sreg2);
 				throw = (guint32 *)(void *)code;
 				mips_blez (code, mips_at, 0);
 				mips_nop (code);
 				break;
+
+			case OP_MIPS_COND_EXC_GT:
+				mips_slt (code, mips_at, ins->sreg2, ins->sreg1);
+				throw = (guint32 *)(void *)code;
+				mips_bne (code, mips_at, mips_zero, 0);
+				mips_nop (code);
+				break;
+
+			case OP_MIPS_COND_EXC_LT:
+				mips_slt (code, mips_at, ins->sreg1, ins->sreg2);
+				throw = (guint32 *)(void *)code;
+				mips_bne (code, mips_at, mips_zero, 0);
+				mips_nop (code);
+				break;
+
 			default:
 				/* Not yet implemented */
 				g_warning ("NYI conditional exception %s\n", mono_inst_name (ins->opcode));
@@ -3880,17 +4001,13 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)ip);
 			continue;
 		case MONO_PATCH_INFO_SWITCH: {
-			/* jt is the inlined jump table, 7 or 9 instructions after ip
-			 * In the normal case we store the absolute addresses.
-			 * otherwise the displacements.
-			 */
-			int i;
 			gpointer *table = (gpointer *)patch_info->data.table->table;
-			gpointer *jt = ((gpointer*)(void *)ip) + 7;
-			if (1 /* || !(cfg->->flags & MONO_CFG_HAS_CALLS) */)
-				jt += 2;
+			int i;
+
+			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)table);
+
 			for (i = 0; i < patch_info->data.table->table_size; i++) { 
-				jt [i] = code + (int)table [i];
+				table [i] = (int)patch_info->data.table->table [i] + code;
 			}
 			continue;
 		}

@@ -162,7 +162,7 @@ int_add: dest:i src1:i src2:i len:4
 int_sub: dest:i src1:i src2:i len:4
 int_mul: dest:i src1:i src2:i len:4
 int_div: dest:i src1:i src2:i len:76
-int_div_un: dest:i src1:i src2:i len:16
+int_div_un: dest:i src1:i src2:i len:40
 int_rem: dest:i src1:i src2:i len:76
 int_rem_un: dest:i src1:i src2:i len:76
 int_and: dest:i src1:i src2:i len:4
@@ -193,8 +193,8 @@ int_ble_un: len:8
 int_blt_un: len:8
 int_add_ovf: dest:i src1:i src2:i len:16
 int_add_ovf_un: dest:i src1:i src2:i len:16
-int_mul_ovf: dest:i src1:i src2:i len:16
-int_mul_ovf_un: dest:i src1:i src2:i len:16
+int_mul_ovf: dest:i src1:i src2:i len:56
+int_mul_ovf_un: dest:i src1:i src2:i len:56
 int_sub_ovf: dest:i src1:i src2:i len:16
 int_sub_ovf_un: dest:i src1:i src2:i len:16
 
@@ -225,9 +225,6 @@ int_cgt_un: dest:i len:16
 int_clt: dest:i len:16
 int_clt_un: dest:i len:16
 
-cond_exc_ieq: len:8
-cond_exc_ine_un: len:8
-cond_exc_ilt: len:8
 cond_exc_eq: len:32
 cond_exc_ne_un: len:32
 cond_exc_lt: len:32
@@ -242,6 +239,21 @@ cond_exc_ov: len:32
 cond_exc_no: len:32
 cond_exc_c: len:32
 cond_exc_nc: len:32
+
+cond_exc_ieq: len:32
+cond_exc_ine_un: len:32
+cond_exc_ilt: len:32
+cond_exc_ilt_un: len:32
+cond_exc_igt: len:32
+cond_exc_igt_un: len:32
+cond_exc_ige: len:32
+cond_exc_ige_un: len:32
+cond_exc_ile: len:32
+cond_exc_ile_un: len:32
+cond_exc_iov: len:12
+cond_exc_ino: len:32
+cond_exc_ic: len:12
+cond_exc_inc: len:32
 
 icompare: src1:i src2:i len:4
 icompare_imm: src1:i len:12
@@ -342,31 +354,31 @@ mips_slt: dest:i src1:i src2:i len:4
 mips_sltiu: dest:i src1:i len:4
 mips_sltu: dest:i src1:i src2:i len:4
 mips_xori: dest:i src1:i len:4
-mips_cond_exc_eq: src1:i src2:i len:40
-mips_cond_exc_ge: src1:i src2:i len:40
-mips_cond_exc_gt: src1:i src2:i len:40
-mips_cond_exc_le: src1:i src2:i len:40
-mips_cond_exc_lt: src1:i src2:i len:40
-mips_cond_exc_ne_un: src1:i src2:i len:40
-mips_cond_exc_ge_un: src1:i src2:i len:40
-mips_cond_exc_gt_un: src1:i src2:i len:40
+mips_cond_exc_eq: src1:i src2:i len:44
+mips_cond_exc_ge: src1:i src2:i len:44
+mips_cond_exc_gt: src1:i src2:i len:44
+mips_cond_exc_le: src1:i src2:i len:44
+mips_cond_exc_lt: src1:i src2:i len:44
+mips_cond_exc_ne_un: src1:i src2:i len:44
+mips_cond_exc_ge_un: src1:i src2:i len:44
+mips_cond_exc_gt_un: src1:i src2:i len:44
 mips_cond_exc_le_un: src1:i src2:i len:44
-mips_cond_exc_lt_un: src1:i src2:i len:40
-mips_cond_exc_ov: src1:i src2:i len:40
-mips_cond_exc_no: src1:i src2:i len:40
-mips_cond_exc_c: src1:i src2:i len:40
-mips_cond_exc_nc: src1:i src2:i len:40
-mips_cond_exc_ieq: src1:i src2:i len:40
-mips_cond_exc_ige: src1:i src2:i len:40
-mips_cond_exc_igt: src1:i src2:i len:40
-mips_cond_exc_ile: src1:i src2:i len:40
-mips_cond_exc_ilt: src1:i src2:i len:40
-mips_cond_exc_ine_un: src1:i src2:i len:40
-mips_cond_exc_ige_un: src1:i src2:i len:40
-mips_cond_exc_igt_un: src1:i src2:i len:40
-mips_cond_exc_ile_un: src1:i src2:i len:40
-mips_cond_exc_ilt_un: src1:i src2:i len:40
-mips_cond_exc_iov: src1:i src2:i len:40
-mips_cond_exc_ino: src1:i src2:i len:40
-mips_cond_exc_ic: src1:i src2:i len:40
-mips_cond_exc_inc: src1:i src2:i len:40
+mips_cond_exc_lt_un: src1:i src2:i len:44
+mips_cond_exc_ov: src1:i src2:i len:44
+mips_cond_exc_no: src1:i src2:i len:44
+mips_cond_exc_c: src1:i src2:i len:44
+mips_cond_exc_nc: src1:i src2:i len:44
+mips_cond_exc_ieq: src1:i src2:i len:44
+mips_cond_exc_ige: src1:i src2:i len:44
+mips_cond_exc_igt: src1:i src2:i len:44
+mips_cond_exc_ile: src1:i src2:i len:44
+mips_cond_exc_ilt: src1:i src2:i len:44
+mips_cond_exc_ine_un: src1:i src2:i len:44
+mips_cond_exc_ige_un: src1:i src2:i len:44
+mips_cond_exc_igt_un: src1:i src2:i len:44
+mips_cond_exc_ile_un: src1:i src2:i len:44
+mips_cond_exc_ilt_un: src1:i src2:i len:44
+mips_cond_exc_iov: src1:i src2:i len:44
+mips_cond_exc_ino: src1:i src2:i len:44
+mips_cond_exc_ic: src1:i src2:i len:44
+mips_cond_exc_inc: src1:i src2:i len:44
