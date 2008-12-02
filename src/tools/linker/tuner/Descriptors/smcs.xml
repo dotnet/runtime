@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<linker>
-	<assembly fullname="smcs">
-		<type fullname="Mono.CompilerServices.SymbolWriter.MonoDebuggerSupport" />
-		<type fullname="Mono.CSharp.CompilerCallableEntryPoint" />
-	</assembly>
-</linker>

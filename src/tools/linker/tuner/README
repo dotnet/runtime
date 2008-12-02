@@ -1,8 +1,0 @@
-monotuner
-===
-
-monotuner is an internal tool to re-shape the Mono assemblies to have
-a 2.1 assembly set compatible with Microsoft's Silverlight.
-
-The tuner uses the monolinker, and augment it with some plugins.
-
