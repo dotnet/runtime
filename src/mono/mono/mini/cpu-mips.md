@@ -353,7 +353,6 @@ mips_slti: dest:i src1:i len:4
 mips_slt: dest:i src1:i src2:i len:4
 mips_sltiu: dest:i src1:i len:4
 mips_sltu: dest:i src1:i src2:i len:4
-mips_xori: dest:i src1:i len:4
 mips_cond_exc_eq: src1:i src2:i len:44
 mips_cond_exc_ge: src1:i src2:i len:44
 mips_cond_exc_gt: src1:i src2:i len:44

@@ -324,12 +324,12 @@ typedef struct {
 			break; \
 		case CEE_BGE: \
 			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLT, mips_at, sreg1, sreg2); \
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_MIPS_XORI, mips_at, mips_at, 1); \
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_IXOR, mips_at, mips_at, 1); \
 			MONO_EMIT_NEW_BRANCH_BIREG_LABEL(cfg, OP_MIPS_BNE, mips_at, mips_zero, label); \
 			break; \
 		case CEE_BGE_UN: \
 			MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, mips_at, sreg1, sreg2); \
-			MONO_EMIT_NEW_BIALU_IMM (s, OP_MIPS_XORI, mips_at, mips_at, 1); \
+			MONO_EMIT_NEW_BIALU_IMM (s, OP_IXOR, mips_at, mips_at, 1); \
 			MONO_EMIT_NEW_BRANCH_BIREG_LABEL(cfg, OP_MIPS_BNE, mips_at, mips_zero, label); \
 			break; \
 		case CEE_BGT: \

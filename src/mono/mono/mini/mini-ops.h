@@ -1111,7 +1111,6 @@ MINI_OP(OP_MIPS_SLTI,  "mips_slti", IREG, IREG, NONE)
 MINI_OP(OP_MIPS_SLT,   "mips_slt", IREG, IREG, IREG)
 MINI_OP(OP_MIPS_SLTIU, "mips_sltiu", IREG, IREG, NONE)
 MINI_OP(OP_MIPS_SLTU,  "mips_sltu", IREG, IREG, IREG)
-MINI_OP(OP_MIPS_XORI,  "mips_xori", IREG, IREG, IREG)
 
 MINI_OP(OP_MIPS_COND_EXC_EQ, "mips_cond_exc_eq", NONE, IREG, IREG)
 MINI_OP(OP_MIPS_COND_EXC_GE, "mips_cond_exc_ge", NONE, IREG, IREG)

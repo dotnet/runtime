@@ -1716,11 +1716,29 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		ins->opcode = OP_NOP;
 		break;
 
+	case OP_LADD_IMM:
+		tmp1 = mono_alloc_ireg (cfg);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, ins->dreg+1, ins->sreg1+1, ins->inst_ls_word);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->dreg+1, ins->sreg1+1);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, ins->dreg+2, ins->sreg1+2, ins->inst_ms_word);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, ins->dreg+2, tmp1);
+		ins->opcode = OP_NOP;
+		break;
+
 	case OP_LSUB:
 		tmp1 = mono_alloc_ireg (cfg);
-		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+1, ins->sreg1+1, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+1, ins->sreg1+1, ins->sreg2+1);
 		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->sreg1+1, ins->dreg+1);
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
+		ins->opcode = OP_NOP;
+		break;
+
+	case OP_LSUB_IMM:
+		tmp1 = mono_alloc_ireg (cfg);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, ins->dreg+1, ins->sreg1+1, ins->inst_ls_word);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->sreg1+1, ins->dreg+1);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, ins->dreg+2, ins->sreg1+2, ins->inst_ms_word);
 		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
 		ins->opcode = OP_NOP;
 		break;
@@ -1733,8 +1751,21 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LSHL:
 	case OP_LSHR:
 	case OP_LSHR_UN:
+		mono_print_ins (ins);
+		g_assert_not_reached ();
+
 	case OP_LNEG:
+		tmp1 = mono_alloc_ireg (cfg);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+1, mips_zero, ins->sreg1+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, mips_zero, ins->dreg+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, mips_zero, ins->sreg1+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
+		ins->opcode = OP_NOP;
+		break;
+
+#if 0
 	case OP_LNOT:
+#endif
 #if 0
 	case OP_LCONV_TO_I1:
 	case OP_LCONV_TO_I2:
@@ -1759,6 +1790,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		tmp3 = mono_alloc_ireg (cfg);
 		tmp4 = mono_alloc_ireg (cfg);
 		tmp5 = mono_alloc_ireg (cfg);
+
 		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+1, ins->sreg1+1, ins->sreg2+1);
 
 		/* tmp1 holds the carry from the low 32-bit to the high 32-bits */
@@ -1794,8 +1826,55 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LADD_OVF_UN:
 	case OP_LMUL_OVF:
 	case OP_LMUL_OVF_UN:
+		mono_print_ins (ins);
+		g_assert_not_reached ();
+
 	case OP_LSUB_OVF:
+		tmp1 = mono_alloc_ireg (cfg);
+		tmp2 = mono_alloc_ireg (cfg);
+		tmp3 = mono_alloc_ireg (cfg);
+		tmp4 = mono_alloc_ireg (cfg);
+		tmp5 = mono_alloc_ireg (cfg);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+1, ins->sreg1+1, ins->sreg2+1);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp5, ins->sreg1+1, ins->dreg+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp5);
+
+		/* Overflow happens if
+		 *	neg - pos = pos    or
+		 *	pos - neg = neg
+		 * XOR of bit31 of the lhs & rhs = 1 if the signs are different
+		 *
+		 * tmp1 = (lhs ^ rhs)
+		 * tmp2 = (lhs ^ result)
+		 * if ((tmp1 < 0) & (tmp2 < 0)) then overflow
+		 */
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tmp1, ins->sreg1+2, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IXOR, tmp2, ins->sreg1+2, ins->dreg+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IAND, tmp3, tmp2, tmp1);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, tmp4, tmp3, 31);
+
+		/* Now, if (tmp4 == 1) then overflow */
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp4, mips_zero, "OverflowException");
+		ins->opcode = OP_NOP;
+		break;
+
 	case OP_LSUB_OVF_UN:
+		tmp1 = mono_alloc_ireg (cfg);
+		tmp2 = mono_alloc_ireg (cfg);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+1, ins->sreg1+1, ins->sreg2+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->sreg1+1, ins->dreg+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ISUB, ins->dreg+2, ins->dreg+2, tmp1);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp2, ins->sreg1+2, ins->dreg+2);
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp2, mips_zero, "OverflowException");
+		ins->opcode = OP_NOP;
+		break;
 #if 0
 	case OP_LCONV_TO_OVF_I1_UN:
 	case OP_LCONV_TO_OVF_I2_UN:
@@ -1825,8 +1904,6 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCONV_TO_R_UN:
 	case OP_LCONV_TO_U:
 #endif
-	case OP_LADD_IMM:
-	case OP_LSUB_IMM:
 	case OP_LMUL_IMM:
 	case OP_LSHL_IMM:
 	case OP_LSHR_IMM:
@@ -2219,9 +2296,40 @@ loop_start:
 			last_ins = temp;
 			/* handle rem separately */
 			goto loop_start;
+
+#if 0
+		case OP_AND_IMM:
+		case OP_OR_IMM:
+		case OP_XOR_IMM:
+			if ((ins->inst_imm & 0xffff0000) && (ins->inst_imm & 0xffff)) {
+				NEW_INS (cfg, last_ins, temp, OP_ICONST);
+				temp->inst_c0 = ins->inst_imm;
+				temp->dreg = mono_alloc_ireg (cfg);
+				ins->sreg2 = temp->dreg;
+				ins->opcode = map_to_reg_reg_op (ins->opcode);
+			}
+			break;
+#endif
+		case OP_AND_IMM:
+		case OP_IAND_IMM:
+		case OP_OR_IMM:
+		case OP_IOR_IMM:
+		case OP_XOR_IMM:
+		case OP_IXOR_IMM:
+			/* unsigned 16 bit immediate */
+			if (ins->inst_imm & 0xffff0000) {
+				NEW_INS (cfg, last_ins, temp, OP_ICONST);
+				temp->inst_c0 = ins->inst_imm;
+				temp->dreg = mono_alloc_ireg (cfg);
+				ins->sreg2 = temp->dreg;
+				ins->opcode = map_to_reg_reg_op (ins->opcode);
+			}
+			break;
+
 		case OP_IADD_IMM:
 		case OP_ADD_IMM:
 		case OP_ADDCC_IMM:
+			/* signed 16 bit immediate */
 			if (!mips_is_imm16 (ins->inst_imm)) {
 				NEW_INS (cfg, last_ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
@@ -2252,18 +2360,6 @@ loop_start:
 
 		case OP_SUB_IMM:
 			if (!mips_is_imm16 (-ins->inst_imm)) {
-				NEW_INS (cfg, last_ins, temp, OP_ICONST);
-				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_alloc_ireg (cfg);
-				ins->sreg2 = temp->dreg;
-				ins->opcode = map_to_reg_reg_op (ins->opcode);
-			}
-			break;
-
-		case OP_AND_IMM:
-		case OP_OR_IMM:
-		case OP_XOR_IMM:
-			if ((ins->inst_imm & 0xffff0000) && (ins->inst_imm & 0xffff)) {
 				NEW_INS (cfg, last_ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
@@ -3124,12 +3220,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_OR_IMM:
 		case OP_IOR_IMM:
-			if (mips_is_imm16 (ins->inst_imm)) {
-				mips_ori (code, ins->sreg1, ins->dreg, ins->inst_imm);
-			} else {
-				mips_load_const (code, mips_at, ins->inst_imm);
-				mips_or (code, ins->dreg, ins->sreg1, mips_at);
-			}
+			g_assert (!(ins->inst_imm & 0xffff0000));
+			mips_ori (code, ins->sreg1, ins->dreg, ins->inst_imm);
 			break;
 		case OP_IXOR:
 			mips_xor (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -3137,15 +3229,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XOR_IMM:
 		case OP_IXOR_IMM:
 			/* unsigned 16-bit immediate */
-			if ((ins->inst_imm & 0xffff) == ins->inst_imm) {
-				mips_xori (code, ins->dreg, ins->sreg1, ins->inst_imm);
-			} else {
-				mips_load_const (code, mips_at, ins->inst_imm);
-				mips_xor (code, ins->dreg, ins->sreg1, mips_at);
-			}
-			break;
-		case OP_MIPS_XORI:
-			g_assert (mips_is_imm16 (ins->inst_imm));
+			g_assert (!(ins->inst_imm & 0xffff0000));
 			mips_xori (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
 		case OP_ISHL:
