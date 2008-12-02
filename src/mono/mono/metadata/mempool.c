@@ -195,18 +195,30 @@ mono_mempool_stats (MonoMemPool *pool)
 #include "metadata/appdomain.h"
 #include "metadata/metadata-internals.h"
 
+static CRITICAL_SECTION mempool_tracing_lock;
+#define BACKTRACE_DEPTH 7
 static void
-mono_backtrace (int limit)
+mono_backtrace (int size)
 {
-        void *array[limit];
+        void *array[BACKTRACE_DEPTH];
         char **names;
-        int i;
-        backtrace (array, limit);
-        names = backtrace_symbols (array, limit);
-        for (i = 1; i < limit; ++i) {
+        int i, symbols;
+        static gboolean inited;
+
+        if (!inited) {
+            InitializeCriticalSection (&mempool_tracing_lock);
+            inited = TRUE;
+        }
+
+        EnterCriticalSection (&mempool_tracing_lock);
+        g_print ("Allocating %d bytes\n", size);
+        symbols = backtrace (array, BACKTRACE_DEPTH);
+        names = backtrace_symbols (array, symbols);
+        for (i = 1; i < symbols; ++i) {
                 g_print ("\t%s\n", names [i]);
         }
-        g_free (names);
+        free (names);
+        LeaveCriticalSection (&mempool_tracing_lock);
 }
 
 #endif
@@ -263,8 +275,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 
 #ifdef TRACE_ALLOCATIONS
 	if (pool == mono_get_corlib ()->mempool) {
-		g_print ("Allocating %d bytes\n", size);
-		mono_backtrace (7);
+		mono_backtrace (size);
 	}
 #endif
 	if (G_UNLIKELY (pool->pos >= pool->end)) {
@@ -320,6 +331,11 @@ mono_mempool_alloc0 (MonoMemPool *pool, guint size)
 	if (G_UNLIKELY (pool->pos >= pool->end)) {
 		rval = mono_mempool_alloc (pool, size);
 	}
+#ifdef TRACE_ALLOCATIONS
+	else if (pool == mono_get_corlib ()->mempool) {
+		mono_backtrace (size);
+	}
+#endif
 #endif
 
 	memset (rval, 0, size);
