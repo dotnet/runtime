@@ -112,7 +112,15 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	if (m == MONO_FAKE_VTABLE_METHOD) {
 		int displacement;
 		MonoVTable *vt = mono_arch_get_vcall_slot (code, (gpointer*)regs, &displacement);
-		g_assert (vt);
+		if (!vt) {
+			int i;
+
+			/* Print some debug info */
+			for (i = 0; i < 32; ++i)
+				printf ("0x%x ", code [-32 + i]);
+			printf ("\n");
+			g_assert (vt);
+		}
 		if (displacement > 0) {
 			displacement -= G_STRUCT_OFFSET (MonoVTable, vtable);
 			g_assert (displacement >= 0);
