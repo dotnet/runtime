@@ -9331,7 +9331,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MonoInst *store;
 
 		cfg->cbb = init_localsbb;
-		cfg->ip = header->code;
+		cfg->ip = NULL;
 		for (i = 0; i < header->num_locals; ++i) {
 			MonoType *ptype = header->locals [i];
 			int t = ptype->type;
