@@ -1806,32 +1806,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		ins->opcode = OP_NOP;
 		break;
 	}
-	case OP_ICONV_TO_R4:
-	case OP_ICONV_TO_R8: {
-		/* FIXME: change precision for CEE_CONV_R4 */
-		static const guint64 adjust_val = 0x4330000080000000ULL;
-		int msw_reg = mono_alloc_ireg (cfg);
-		int xored = mono_alloc_ireg (cfg);
-		int adj_reg = mono_alloc_freg (cfg);
-		int tmp_reg = mono_alloc_freg (cfg);
-		int basereg = ppc_sp;
-		int offset = -8;
-		if (!ppc_is_imm16 (offset + 4)) {
-			basereg = mono_alloc_ireg (cfg);
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
-		}
-		MONO_EMIT_NEW_ICONST (cfg, msw_reg, 0x43300000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, msw_reg);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, xored, ins->sreg1, 0x80000000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, xored);
-		MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, (gpointer)&adjust_val);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, basereg, offset);
-		MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
-		if (ins->opcode == OP_ICONV_TO_R4)
-			MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, ins->dreg, ins->dreg);
-		ins->opcode = OP_NOP;
-		break;
-	}
 	case OP_CKFINITE: {
 		int msw_reg = mono_alloc_ireg (cfg);
 		int basereg = ppc_sp;
@@ -2244,20 +2218,29 @@ static guchar*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {
 	int offset = cfg->arch.fp_conv_var_offset;
+	int sub_offset;
 	/* sreg is a float, dreg is an integer reg. ppc_f0 is used a scratch */
 	if (size == 8) {
 		ppc_fctidz (code, ppc_f0, sreg);
+		sub_offset = 0;
 	} else {
 		ppc_fctiwz (code, ppc_f0, sreg);
+		sub_offset = 4;
 	}
-	if (ppc_is_imm16 (offset + 4)) {
+	if (ppc_is_imm16 (offset + sub_offset)) {
 		ppc_stfd (code, ppc_f0, offset, cfg->frame_reg);
-		ppc_lwz (code, dreg, offset + 4, cfg->frame_reg);
+		if (size == 8)
+			ppc_load_reg (code, dreg, offset + sub_offset, cfg->frame_reg);
+		else
+			ppc_lwz (code, dreg, offset + sub_offset, cfg->frame_reg);
 	} else {
 		ppc_load (code, dreg, offset);
 		ppc_add (code, dreg, dreg, cfg->frame_reg);
 		ppc_stfd (code, ppc_f0, 0, dreg);
-		ppc_lwz (code, dreg, 4, dreg);
+		if (size == 8)
+			ppc_load_reg (code, dreg, sub_offset, dreg);
+		else
+			ppc_lwz (code, dreg, sub_offset, dreg);
 	}
 	if (!is_signed) {
 		if (size == 1)
@@ -2966,6 +2949,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ZEXT_I4:
 			ppc_clrldi (code, ins->dreg, ins->sreg1, 32);
 			break;
+		case OP_ICONV_TO_R4:
+		case OP_ICONV_TO_R8:
+		case OP_LCONV_TO_R4:
+		case OP_LCONV_TO_R8: {
+			int tmp;
+			if (ins->opcode == OP_ICONV_TO_R4 || ins->opcode == OP_ICONV_TO_R8) {
+				ppc_extsw (code, ppc_r0, ins->sreg1);
+				tmp = ppc_r0;
+			} else {
+				tmp = ins->sreg1;
+			}
+			ppc_store_reg (code, tmp, -8, ppc_r1);
+			ppc_lfd (code, ins->dreg, -8, ppc_r1);
+			ppc_fcfid (code, ins->dreg, ins->dreg);
+			if (ins->opcode == OP_ICONV_TO_R4 || ins->opcode == OP_LCONV_TO_R4)
+				ppc_frsp (code, ins->dreg, ins->dreg);
+			break;
+		}
 		case OP_COMPARE:
 		case OP_ICOMPARE:
 		case OP_LCOMPARE:

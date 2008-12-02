@@ -744,6 +744,10 @@ my and Ximian's copyright to this code. ;)
 #define ppc_extsw(c,A,S)  ppc_extswx(c,S,A,0)
 #define ppc_extswd(c,A,S) ppc_extswx(c,S,A,1)
 
+#define ppc_fcfidx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (846 << 1) | (Rc))
+#define ppc_fcfid(c,D,B)  ppc_fcfidx(c,D,B,0)
+#define ppc_fcfidd(c,D,B) ppc_fcfidx(c,D,B,1)
+
 #define ppc_fctidx(c,D,B,Rc) ppc_emit32(c, (63 << 26) | ((D) << 21) | (0 << 16) | ((B) << 11) | (814 << 1) | (Rc))
 #define ppc_fctid(c,D,B)  ppc_fctidx(c,D,B,0)
 #define ppc_fctidd(c,D,B) ppc_fctidx(c,D,B,1)

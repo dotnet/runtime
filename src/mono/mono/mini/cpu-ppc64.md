@@ -238,8 +238,8 @@ int_conv_to_i1: dest:i src1:i len:8
 int_conv_to_i2: dest:i src1:i len:8
 int_conv_to_i4: dest:i src1:i len:4
 sext_i4: dest:i src1:i len:4
-int_conv_to_r4: dest:f src1:i len:36
-int_conv_to_r8: dest:f src1:i len:36
+int_conv_to_r4: dest:f src1:i len:20
+int_conv_to_r8: dest:f src1:i len:16
 int_conv_to_u4: dest:i src1:i len:4
 int_conv_to_u2: dest:i src1:i len:8
 int_conv_to_u1: dest:i src1:i len:4
@@ -328,8 +328,8 @@ long_not: dest:i src1:i len:4
 long_conv_to_i1: dest:i src1:i len:4
 long_conv_to_i2: dest:i src1:i len:4
 long_conv_to_i4: dest:i src1:i len:4
-long_conv_to_r4: dest:f src1:i len:36
-long_conv_to_r8: dest:f src1:i len:36
+long_conv_to_r4: dest:f src1:i len:16
+long_conv_to_r8: dest:f src1:i len:12
 long_conv_to_u4: dest:i src1:i
 long_conv_to_u2: dest:i src1:i len:4
 long_conv_to_u1: dest:i src1:i len:4

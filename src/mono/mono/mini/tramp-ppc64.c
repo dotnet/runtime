@@ -419,7 +419,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot)
 		index -= size - 1;
 	}
 
-	tramp_size = 40 + 12 * depth;
+	tramp_size = 52 + 12 * depth;
 	if (mrgctx)
 		tramp_size += 4;
 	else
