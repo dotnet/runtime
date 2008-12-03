@@ -1,3 +1,8 @@
+2008-12-03  Mark Probst  <mark.probst@gmail.com>
+
+	* configure.in: Disable sibling call optimization on PPC64 as it
+	seems to trip up GCC on the build bot.
+
 2008-11-28  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* data/mono-nunit.pc.in : add new 2.4.8 files.
