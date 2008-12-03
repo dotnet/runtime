@@ -8380,7 +8380,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto load_error;
 			mono_class_init (handle_class);
 			if (cfg->generic_sharing_context) {
-				if (handle_class == mono_defaults.typehandle_class) {
+				if (mono_metadata_token_table (n) == MONO_TABLE_TYPEDEF ||
+						mono_metadata_token_table (n) == MONO_TABLE_TYPEREF) {
+					/* This case handles ldtoken
+					   of an open type, like for
+					   typeof(Gen<>). */
+					context_used = 0;
+				} else if (handle_class == mono_defaults.typehandle_class) {
 					/* If we get a MONO_TYPE_CLASS
 					   then we need to provide the
 					   open type, not an
