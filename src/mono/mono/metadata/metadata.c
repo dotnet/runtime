@@ -1547,7 +1547,6 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	int count = 0;
 	gboolean found;
 
-	mono_loader_lock ();
 	/*
 	 * According to the spec, custom modifiers should come before the byref
 	 * flag, but the IL produced by ilasm from the following signature:
@@ -1580,7 +1579,9 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	}
 
 	if (count) {
+		mono_loader_lock ();
 		type = mono_image_alloc0 (m, sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
+		mono_loader_unlock ();
 		type->num_mods = count;
 		if (count > 64)
 			g_warning ("got more than 64 modifiers in type");
@@ -1617,7 +1618,6 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	type->pinned = pinned ? 1 : 0;
 
 	if (!do_mono_metadata_parse_type (type, m, container, ptr, &ptr)) {
-		mono_loader_unlock ();
 		return NULL;
 	}
 
@@ -1648,13 +1648,11 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 			            of a MonoClass which currently holds the loader lock.  'type' is local.
 			*/
 			if (ret->data.klass == type->data.klass) {
-				mono_loader_unlock ();
 				return ret;
 			}
 		}
 		/* No need to use locking since nobody is modifying the hash table */
 		if ((cached = g_hash_table_lookup (type_cache, type))) {
-			mono_loader_unlock ();
 			return cached;
 		}
 	}
@@ -1662,15 +1660,16 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
 	
 	if (type == &stype) {
+		mono_loader_lock ();
 		type = mono_image_alloc (m, sizeof (MonoType));
+		mono_loader_unlock ();
 		memcpy (type, &stype, sizeof (MonoType));
 	}
-	mono_loader_unlock ();
 	return type;
 }
 
 /*
- * LOCKING: Assumes the loader lock is held.
+ * LOCKING: Acquires the loader lock.
  */
 MonoType*
 mono_metadata_parse_type (MonoImage *m, MonoParseTypeMode mode, short opt_attrs,
@@ -2809,7 +2808,9 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 			int i;
 			mh->num_clauses = is_fat ? sect_data_len / 24: sect_data_len / 12;
 			/* we could just store a pointer if we don't need to byteswap */
+			mono_loader_lock ();
 			mh->clauses = mono_image_alloc0 (m, sizeof (MonoExceptionClause) * mh->num_clauses);
+			mono_loader_unlock ();
 			for (i = 0; i < mh->num_clauses; ++i) {
 				MonoExceptionClause *ec = &mh->clauses [i];
 				guint32 tof_value;
@@ -2858,7 +2859,7 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
  * info about local variables and optional exception tables.
  * This is a Mono runtime internal function.
  *
- * LOCKING: Assumes the loader lock is held.
+ * LOCKING: Acquires the loader lock.
  *
  * Returns: a MonoMethodHeader allocated from the image mempool.
  */
@@ -2875,19 +2876,21 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	
 	g_return_val_if_fail (ptr != NULL, NULL);
 
-	mono_loader_lock ();
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
+		mono_loader_lock ();
 		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
+		mono_loader_unlock ();
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
 		mh->code_size = flags >> 2;
 		mh->code = (unsigned char*)ptr;
-		mono_loader_unlock ();
 		return mh;
 	case METHOD_HEADER_TINY_FORMAT1:
+		mono_loader_lock ();
 		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
+		mono_loader_unlock ();
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
@@ -2898,7 +2901,6 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		 */
 		mh->code_size = flags >> 2;
 		mh->code = (unsigned char*)ptr;
-		mono_loader_unlock ();
 		return mh;
 	case METHOD_HEADER_FAT_FORMAT:
 		fat_flags = read16 (ptr);
@@ -2927,7 +2929,6 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		ptr = (char*)code + code_size;
 		break;
 	default:
-		mono_loader_unlock ();
 		return NULL;
 	}
 		       
@@ -2944,18 +2945,21 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			g_warning ("wrong signature for locals blob");
 		locals_ptr++;
 		len = mono_metadata_decode_value (locals_ptr, &locals_ptr);
+		mono_loader_lock ();
 		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+		mono_loader_unlock ();
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
 			mh->locals [i] = mono_metadata_parse_type_full (
 				m, container, MONO_PARSE_LOCAL, 0, locals_ptr, &locals_ptr);
 			if (!mh->locals [i]) {
-				mono_loader_unlock ();
 				return NULL;
 			}
 		}
 	} else {
+		mono_loader_lock ();
 		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
+		mono_loader_unlock ();
 	}
 	mh->code = code;
 	mh->code_size = code_size;
@@ -2963,7 +2967,6 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	mh->init_locals = init_locals;
 	if (fat_flags & METHOD_HEADER_MORE_SECTS)
 		parse_section_data (m, mh, (const unsigned char*)ptr);
-	mono_loader_unlock ();
 	return mh;
 }
 
