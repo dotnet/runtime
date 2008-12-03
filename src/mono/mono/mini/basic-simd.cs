@@ -508,14 +508,16 @@ public class SimdTests {
 		Vector2d b = new Vector2d (3, 4);
 
 		Vector4ui c = (Vector4ui)Vector2d.AndNot (a, b);
+		Vector4ui ta = (Vector4ui)a;
+		Vector4ui tb = (Vector4ui)b;
 	
-		if (c.X != 0)
+		if (c.X != (~ta.X & tb.X))
 			return 1;
-		if (c.Y != 1074266112)
+		if (c.Y != (~ta.Y & tb.Y))
 			return 2;
-		if (c.Z != 0)
+		if (c.Z != (~ta.Z & tb.Z))
 			return 3;
-		if (c.W != 1048576)
+		if (c.W != (~ta.W & tb.W))
 			return 4;
 		return 0;
 	}
@@ -574,14 +576,16 @@ public class SimdTests {
 		Vector2d b = new Vector2d (3, 4);
 
 		Vector4ui c = (Vector4ui)(a ^ b);
-	
-		if (c.X != 0)
+		Vector4ui ta = (Vector4ui)a;
+		Vector4ui tb = (Vector4ui)b;
+
+		if (c.X != (ta.X ^ tb.X))
 			return 1;
-		if (c.Y != 2146959360)
+		if (c.Y != (ta.Y ^ tb.Y))
 			return 2;
-		if (c.Z != 0)
+		if (c.Z != (ta.Z ^ tb.Z))
 			return 3;
-		if (c.W != 1048576)
+		if (c.W != (ta.W ^ tb.W))
 			return 4;
 		return 0;
 	}
@@ -591,14 +595,16 @@ public class SimdTests {
 		Vector2d b = new Vector2d (3, 4);
 
 		Vector4ui c = (Vector4ui)(a | b);
+		Vector4ui ta = (Vector4ui)a;
+		Vector4ui tb = (Vector4ui)b;
 	
-		if (c.X != 0)
+		if (c.X != (ta.X | tb.X))
 			return 1;
-		if (c.Y != 2146959360)
+		if (c.Y != (ta.Y | tb.Y))
 			return 2;
-		if (c.Z != 0)
+		if (c.Z != (ta.Z | tb.Z))
 			return 3;
-		if (c.W != 1074790400)
+		if (c.W != (ta.W | tb.W))
 			return 4;
 		return 0;
 	}
@@ -608,15 +614,17 @@ public class SimdTests {
 		Vector2d b = new Vector2d (3, 4);
 
 		Vector4ui c = (Vector4ui)(a & b);
-	
-		if (c.X != 0)
+		Vector4ui ta = (Vector4ui)a;
+		Vector4ui tb = (Vector4ui)b;
+
+		if (c.X != (ta.X & tb.X))
 			return 1;
-		if (c.Y != 0)
+		if (c.Y != (ta.Y & tb.Y))
 			return 2;
-		if (c.Z != 0)
+		if (c.Z != (ta.Z & tb.Z))
 			return 3;
-		if (c.W != 1073741824)
-			return 3;
+		if (c.W != (ta.W & tb.W))
+			return 4;
 		return 0;
 	}
 
@@ -828,15 +836,6 @@ public class SimdTests {
 			return 3;
 		if (c.W != 3)
 			return 4;
-		return 0;
-	}
-
-	public static int test_0_vector4ui_extract_mask () {
-		Vector4ui a = new Vector4ui (0xFF00FF00,0x0F0FAA99,0,0);
-		int c = Vector4ui.ExtractByteMask (a);
-
-		if (c != 0x3A)
-			return 1;
 		return 0;
 	}
 
@@ -1115,16 +1114,6 @@ public class SimdTests {
 		return (int)res.V0;
 	}
 	
-
-	public static int test_0_vecto8us_extract_mask () {
-		Vector8us a = new Vector8us (0xF0F0, 0x700F, 0xAABB, 0x0000, 0x00F0, 0xF0F0, 0, 0);
-		int c = Vector8us.ExtractByteMask (a);
-
-		if (c != 0xD33)
-			return 1;
-		return 0;
-	}
-
 	public static int test_0_vecto8us_shuffle_low () {
 		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
 		Vector8us c = Vector8us.ShuffleLow (a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
