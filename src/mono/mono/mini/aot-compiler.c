@@ -3915,17 +3915,9 @@ emit_trampolines (MonoAotCompile *acfg)
 #endif
 	}
 
-	sprintf (symbol, "trampolines_info");
-
-	emit_section_change (acfg, ".text", 0);
-	emit_global (acfg, symbol, TRUE);
-	emit_alignment (acfg, PAGESIZE);
-	emit_label (acfg, symbol);
-
-	emit_int32 (acfg, acfg->num_aot_trampolines);
-	emit_int32 (acfg, acfg->got_offset);
-
 	acfg->trampoline_got_offset_base = acfg->got_offset;
+
+	acfg->got_offset += acfg->num_trampoline_got_entries;
 }
 
 static gboolean
@@ -4999,8 +4991,8 @@ emit_got (MonoAotCompile *acfg)
 	emit_section_change (acfg, ".bss", 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
-	if ((acfg->got_offset + acfg->num_trampoline_got_entries) > 0)
-		emit_zero_bytes (acfg, (int)((acfg->got_offset + acfg->num_trampoline_got_entries) * sizeof (gpointer)));
+	if (acfg->got_offset > 0)
+		emit_zero_bytes (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 }
 
 static void
