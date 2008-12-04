@@ -2,6 +2,39 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+
+	public static int test_1_set_vector4ui_operator_neq () {
+		Vector4ui a = new Vector4ui(1, 2, 3, 4);
+		Vector4ui b = new Vector4ui(1, 2, 3, 4);
+		if (a != b)
+			return 0;
+		return 1;
+	}
+
+	public static int test_0_set_vector4ui_operator_neq () {
+		Vector4ui a = new Vector4ui(1, 2, 3, 4);
+		Vector4ui b = new Vector4ui(111, 2, 3, 4);
+		if (a != b)
+			return 0;
+		return 1;
+	}
+
+	public static int test_0_set_vector4ui_operator_eq () {
+		Vector4ui a = new Vector4ui(1, 2, 3, 4);
+		Vector4ui b = new Vector4ui(1, 2, 3, 4);
+		if (a == b)
+			return 0;
+		return 1;
+	}
+
+	public static int test_1_set_vector4ui_operator_eq () {
+		Vector4ui a = new Vector4ui(1, 2, 3, 4);
+		Vector4ui b = new Vector4ui(111, 2, 3, 4);
+		if (a == b)
+			return 0;
+		return 1;
+	}
+
 	public static int test_0_set_vector_small_array () {
 		uint[] array = new uint[3];
 
