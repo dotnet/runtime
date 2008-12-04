@@ -118,8 +118,8 @@ typedef struct MonoAotModule {
 typedef struct MonoAotFileInfo
 {
 	guint32 plt_got_offset_base;
-	guint32 num_trampolines;
 	guint32 trampoline_got_offset_base;
+	guint32 num_trampolines;
 	guint32 got_size;
 	guint32 plt_size;
 	gpointer *got;
