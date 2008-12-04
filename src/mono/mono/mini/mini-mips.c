@@ -3136,8 +3136,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_IDIV:
-		case OP_IREM:
-		case OP_IREM_UN: {
+		case OP_IREM: {
 			guint32 *divisor_is_m1;
 			guint32 *divisor_is_zero;
 
@@ -3168,8 +3167,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_mfhi (code, ins->dreg);
 			break;
 		}
-#if 0
-		case OP_IREM:
+		case OP_IDIV_UN: 
 		case OP_IREM_UN: {
 			guint32 *divisor_is_zero = (guint32 *)(void *)code;
 
@@ -3182,23 +3180,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			mips_patch (divisor_is_zero, (guint32)code);
 			mips_divu (code, ins->sreg1, ins->sreg2);
-			mips_mfhi (code, ins->dreg);
-			break;
-		}
-#endif
-		case OP_IDIV_UN: {
-			guint32 *divisor_is_zero = (guint32 *)(void *)code;
-
-			/* Put divide in branch delay slot (NOT YET) */
-			mips_bne (code, ins->sreg2, mips_zero, 0);
-			mips_nop (code);
-
-			/* Divide by zero -- throw exception */
-			EMIT_SYSTEM_EXCEPTION_NAME("DivideByZeroException");
-
-			mips_patch (divisor_is_zero, (guint32)code);
-			mips_divu (code, ins->sreg1, ins->sreg2);
-			mips_mflo (code, ins->dreg);
+			if (ins->opcode == OP_IDIV)
+				mips_mflo (code, ins->dreg);
+			else
+				mips_mfhi (code, ins->dreg);
 			break;
 		}
 		case OP_DIV_IMM:
