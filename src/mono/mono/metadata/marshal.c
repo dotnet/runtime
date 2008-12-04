@@ -149,7 +149,7 @@ static void
 mono_marshal_set_last_error_windows (int error);
 
 static void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean check_exceptions);
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions);
 
 static void init_safe_handle (void);
 
@@ -3286,7 +3286,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 		}
 	}
 
-	mono_marshal_emit_native_wrapper (method->klass->image, mb_native, sig_native, piinfo, mspecs, piinfo->addr, TRUE);
+	mono_marshal_emit_native_wrapper (method->klass->image, mb_native, sig_native, piinfo, mspecs, piinfo->addr, FALSE, TRUE);
 
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
 
@@ -8593,13 +8593,14 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
  * @sig: The signature of the native function
  * @piinfo: Marshalling information
  * @mspecs: Marshalling information
- * @func: the native function to call
+ * @aot: whenever the created method will be compiled by the AOT compiler
+ * @method: if non-NULL, the pinvoke method to call
  * @check_exceptions: Whenever to check for pending exceptions after the native call
  *
  * generates IL code for the pinvoke wrapper, the generated code calls @func.
  */
 static void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean check_exceptions)
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions)
 {
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
@@ -8657,7 +8658,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	if (sig->hasthis)
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
 
-
 	for (i = 0; i < sig->param_count; i++) {
 		emit_marshal (&m, i + sig->hasthis, sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_PUSH);
 	}			
@@ -8671,7 +8671,14 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 #endif
 	}
 	else {
-		mono_mb_emit_native_call (mb, csig, func);
+		if (aot) {
+			/* Reuse the ICALL_ADDR opcode for pinvokes too */
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
+			mono_mb_emit_calli (mb, csig);
+		} else {			
+			mono_mb_emit_native_call (mb, csig, func);
+		}
 	}
 
 	/* Set LastError if needed */
@@ -8938,12 +8945,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	}
 
 	g_assert (pinvoke);
-	g_assert (piinfo->addr);
+	if (!aot)
+		g_assert (piinfo->addr);
 
 	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	mono_marshal_emit_native_wrapper (mb->method->klass->image, mb, sig, piinfo, mspecs, piinfo->addr, check_exceptions);
+	mono_marshal_emit_native_wrapper (mb->method->klass->image, mb, sig, piinfo, mspecs, piinfo->addr, aot, check_exceptions);
 
 	csig = signature_dup (method->klass->image, sig);
 	csig->pinvoke = 0;
@@ -8989,7 +8997,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
-	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, TRUE);
+	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, FALSE, TRUE);
 
 	csig = signature_dup (image, sig);
 	csig->pinvoke = 0;
