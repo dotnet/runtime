@@ -75,10 +75,16 @@ enum {
 	SIMD_EMIT_CAST,
 	SIMD_EMIT_SHUFFLE,
 	SIMD_EMIT_SHIFT,
+	SIMD_EMIT_EQUALITY,
 	SIMD_EMIT_LOAD_ALIGNED,
 	SIMD_EMIT_STORE,
 	SIMD_EMIT_EXTRACT_MASK,
 	SIMD_EMIT_PREFETCH
+};
+
+enum {
+	SIMD_CMP_EQUALS,
+	SIMD_CMP_NOT_EQUALS
 };
 
 #ifdef HAVE_ARRAY_ELEM_INIT
@@ -290,8 +296,10 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 	{ SN_op_Addition, OP_PADDD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
+	{ SN_op_Equality, SIMD_CMP_EQUALS, SIMD_EMIT_EQUALITY,  },
 	{ SN_op_ExclusiveOr, OP_PXOR, SIMD_EMIT_BINARY },
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
+	{ SN_op_Inequality, SIMD_CMP_NOT_EQUALS, SIMD_EMIT_EQUALITY },
 	{ SN_op_LeftShift, OP_PSHLD, SIMD_EMIT_SHIFT },
 	{ SN_op_Multiply, OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_op_RightShift, OP_PSHRD, SIMD_EMIT_SHIFT },
@@ -327,8 +335,10 @@ static const SimdIntrinsc vector4i_intrinsics[] = {
 	{ SN_op_Addition, OP_PADDD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
+	{ SN_op_Equality, SIMD_CMP_EQUALS, SIMD_EMIT_EQUALITY,  },
 	{ SN_op_ExclusiveOr, OP_PXOR, SIMD_EMIT_BINARY },
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
+	{ SN_op_Inequality, SIMD_CMP_NOT_EQUALS, SIMD_EMIT_EQUALITY },
 	{ SN_op_LeftShift, OP_PSHLD, SIMD_EMIT_SHIFT },
 	{ SN_op_Multiply, OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_op_RightShift, OP_PSARD, SIMD_EMIT_SHIFT },
@@ -1096,7 +1106,6 @@ simd_intrinsic_emit_cast (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 }
 
 static MonoInst*
-
 simd_intrinsic_emit_shift (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
 	MonoInst *ins;
@@ -1128,6 +1137,40 @@ simd_intrinsic_emit_shift (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mono
 	ins->type = STACK_VTYPE;
 	ins->dreg = alloc_ireg (cfg);
 	MONO_ADD_INS (cfg->cbb, ins);
+	return ins;
+}
+
+static MonoInst*
+simd_intrinsic_emit_equality (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
+{
+	MonoInst* ins;
+	int left_vreg, right_vreg, tmp_vreg;
+
+	left_vreg = get_simd_vreg (cfg, cmethod, args [0]);
+	right_vreg = get_simd_vreg (cfg, cmethod, args [1]);
+	
+
+	MONO_INST_NEW (cfg, ins, OP_PCMPEQD);
+	ins->klass = cmethod->klass;
+	ins->sreg1 = left_vreg;
+	ins->sreg2 = right_vreg;
+	ins->type = STACK_VTYPE;
+	ins->klass = cmethod->klass;
+	ins->dreg = tmp_vreg = alloc_ireg (cfg);
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	/*FIXME the next ops are SSE specific*/
+	MONO_INST_NEW (cfg, ins, OP_EXTRACT_MASK);
+	ins->klass = cmethod->klass;
+	ins->sreg1 = tmp_vreg;
+	ins->type = STACK_I4;
+	ins->dreg = tmp_vreg = alloc_ireg (cfg);
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_vreg, 0xFFFF);
+	NEW_UNALU (cfg, ins, intrinsic->opcode == SIMD_CMP_EQUALS ? OP_CEQ : OP_CLT_UN, tmp_vreg, -1);
+	MONO_ADD_INS (cfg->cbb, ins);
+
 	return ins;
 }
 
@@ -1283,6 +1326,8 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return simd_intrinsic_emit_shuffle (result, cfg, cmethod, args); 
 	case SIMD_EMIT_SHIFT:
 		return simd_intrinsic_emit_shift (result, cfg, cmethod, args);
+	case SIMD_EMIT_EQUALITY:
+		return simd_intrinsic_emit_equality (result, cfg, cmethod, args);
 	case SIMD_EMIT_LOAD_ALIGNED:
 		return simd_intrinsic_emit_load_aligned (result, cfg, cmethod, args);
 	case SIMD_EMIT_STORE:
