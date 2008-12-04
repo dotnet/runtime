@@ -1,3 +1,13 @@
+2008-12-04  Bill Holmes  <billholmes54@gmail.com>
+
+	* mono.sln : Removing monoburg from the solution.
+
+	* libmono.vcproj : Removing files deleted from svn.
+
+	* mono.def : Removing mono_burg* exports that no longer exist.
+
+	Code is contributed under MIT/X11 license.
+
 2008-11-10  Bill Holmes  <billholmes54@gmail.com>
 
 	* genmdesc.vcproj, monoburg.vcproj : Adding quotes to paths in the

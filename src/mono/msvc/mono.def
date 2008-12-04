@@ -63,11 +63,6 @@ mono_bitset_test
 mono_bitset_test_bulk
 mono_bitset_union
 mono_bounded_array_class_get
-mono_burg_emit
-mono_burg_init
-mono_burg_kids
-mono_burg_label
-mono_burg_rule
 mono_check_corlib_version
 mono_class_array_element_size
 mono_class_data_size
