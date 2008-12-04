@@ -3180,7 +3180,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			mips_patch (divisor_is_zero, (guint32)code);
 			mips_divu (code, ins->sreg1, ins->sreg2);
-			if (ins->opcode == OP_IDIV)
+			if (ins->opcode == OP_IDIV_UN)
 				mips_mflo (code, ins->dreg);
 			else
 				mips_mfhi (code, ins->dreg);
