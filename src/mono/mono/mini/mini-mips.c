@@ -2253,6 +2253,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	MONO_BB_FOR_EACH_INS (bb, ins) {
 loop_start:
 		switch (ins->opcode) {
+		case OP_COMPARE:
+		case OP_ICOMPARE:
+			next = ins->next;
+			/* Branch opts can eliminate the branch */
+			if (!next || (!(MONO_IS_COND_BRANCH_OP (next) || MONO_IS_COND_EXC (next) || MONO_IS_SETCC (next)))) {
+				ins->opcode = OP_NOP;
+				break;
+			}
+			break;
+
 		case OP_COMPARE_IMM:
 		case OP_ICOMPARE_IMM:
 			next = ins->next;
