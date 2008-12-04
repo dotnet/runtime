@@ -2794,6 +2794,17 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 #endif
+
+	/* pinvoke wrappers */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		MonoMethod *method;
+		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+
+		method = mono_get_method (acfg->image, token, NULL);
+
+		if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
+	}
 }
 
 static gboolean

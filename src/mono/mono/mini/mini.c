@@ -2545,10 +2545,21 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = (mono_metadata_blob_heap (patch_info->data.token->image, patch_info->data.token->token) + 2);
 		break;
 	case MONO_PATCH_INFO_ICALL_ADDR:
-		target = mono_lookup_internal_call (patch_info->data.method);
 		/* run_cctors == 0 -> AOT */
-		if (!target && run_cctors)
-			g_error ("Unregistered icall '%s'\n", mono_method_full_name (patch_info->data.method, TRUE));
+		if (patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+			if (run_cctors) {
+				target = mono_lookup_pinvoke_call (patch_info->data.method, NULL, NULL);
+				if (!target)
+					g_error ("Unable to resolve pinvoke method '%s' Re-run with MONO_LOG_LEVEL=debug for more information.\n", mono_method_full_name (patch_info->data.method, TRUE));
+			} else {
+				target = NULL;
+			}
+		} else {
+			target = mono_lookup_internal_call (patch_info->data.method);
+
+			if (!target && run_cctors)
+				g_error ("Unregistered icall '%s'\n", mono_method_full_name (patch_info->data.method, TRUE));
+		}
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR: {
 		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
