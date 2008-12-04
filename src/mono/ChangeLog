@@ -1,3 +1,8 @@
+2008-12-04  Mark Probst  <mark.probst@gmail.com>
+
+	* configure.in: Disabling the sibling call optimization doesn't
+	work, so we're using -mminimal-toc.
+
 2008-12-03  Mark Probst  <mark.probst@gmail.com>
 
 	* configure.in: Disable sibling call optimization on PPC64 as it
