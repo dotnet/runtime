@@ -166,7 +166,7 @@ ppc_sources = \
 ppc64_sources = \
 	mini-ppc64.c		\
 	mini-ppc.h		\
-	exceptions-ppc64.c	\
+	exceptions-ppc.c	\
 	tramp-ppc.c
 
 arm_sources = \

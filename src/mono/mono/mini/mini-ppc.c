@@ -3900,14 +3900,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		lmf_offset = pos;
 	}
 	alloc_size += pos;
-	// align to PPC_STACK_ALIGNMENT bytes
-	if (alloc_size & (PPC_STACK_ALIGNMENT - 1)) {
-		alloc_size += PPC_STACK_ALIGNMENT - 1;
-		alloc_size &= ~(PPC_STACK_ALIGNMENT - 1);
+	// align to MONO_ARCH_FRAME_ALIGNMENT bytes
+	if (alloc_size & (MONO_ARCH_FRAME_ALIGNMENT - 1)) {
+		alloc_size += MONO_ARCH_FRAME_ALIGNMENT - 1;
+		alloc_size &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 	}
 
 	cfg->stack_usage = alloc_size;
-	g_assert ((alloc_size & (PPC_STACK_ALIGNMENT-1)) == 0);
+	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
 	if (alloc_size) {
 		if (ppc_is_imm16 (-alloc_size)) {
 			ppc_stwu (code, ppc_sp, -alloc_size, ppc_sp);

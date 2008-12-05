@@ -102,7 +102,6 @@ typedef struct MonoCompileArch {
 /* deal with some of the ABI differences here */
 #ifdef __APPLE__
 #define PPC_RET_ADDR_OFFSET 8
-#define PPC_STACK_ALIGNMENT 16
 #define PPC_STACK_PARAM_OFFSET 24
 #define PPC_MINIMAL_STACK_SIZE 24
 #define PPC_FIRST_ARG_REG ppc_r3
@@ -122,7 +121,6 @@ typedef struct MonoCompileArch {
 #define PPC_SMALL_RET_STRUCT_IN_REG 0
 #else
 #define PPC_RET_ADDR_OFFSET 4
-#define PPC_STACK_ALIGNMENT 16
 #define PPC_STACK_PARAM_OFFSET 8
 #define PPC_MINIMAL_STACK_SIZE 8
 #define PPC_LAST_FPARG_REG ppc_f8
@@ -218,6 +216,14 @@ typedef struct {
 	int vtsize;
 	int offset;
 } MonoPPCArgInfo;
+
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+typedef struct {
+	gpointer code;
+	gpointer toc;
+	gpointer env;
+} MonoPPCFunctionDescriptor;
+#endif
 
 #if defined(__linux__)
 	typedef struct ucontext os_ucontext;
