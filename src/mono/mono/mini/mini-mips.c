@@ -34,6 +34,8 @@
 #define ALWAYS_USE_FP		1
 #define ALWAYS_SAVE_RA		1	/* call-handler & switch currently clobber ra */
 
+#define PROMOTE_R4_TO_R8	1	/* promote single values in registers to doubles */
+
 enum {
 	TLS_MODE_DETECT,
 	TLS_MODE_FAILED,
@@ -1049,6 +1051,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		switch (mono_type_get_underlying_type (sig->ret)->type) {
 		case MONO_TYPE_VOID:
 			break;
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->inst_c0 = cfg->ret->dreg = mips_f0;
+			break;
 		default:
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = mips_v0;
@@ -1289,13 +1296,16 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			} else if (!t->byref && (t->type == MONO_TYPE_R4)) {
 				int freg;
 
+#if PROMOTE_R4_TO_R8
 				/* ??? - convert to single first? */
 				MONO_INST_NEW (cfg, ins, OP_MIPS_CVTSD);
 				ins->dreg = mono_alloc_freg (cfg);
 				ins->sreg1 = in->dreg;
 				MONO_ADD_INS (cfg->cbb, ins);
 				freg = ins->dreg;
-
+#else
+				freg = in->dreg;
+#endif
 				/* trying to load float value into int registers */
 				MONO_INST_NEW (cfg, ins, OP_MIPS_MFC1S);
 				ins->dreg = mono_alloc_ireg (cfg);
@@ -1502,8 +1512,12 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			MONO_ADD_INS (cfg->cbb, ins);
 			return;
 		}
-		if (ret->type == MONO_TYPE_R8 || ret->type == MONO_TYPE_R4) {
+		if (ret->type == MONO_TYPE_R8) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
+			return;
+		}
+		if (ret->type == MONO_TYPE_R4) {
+			MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, cfg->ret->dreg, val->dreg);
 			return;
 		}
 	}
@@ -3357,9 +3371,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_cvtsd (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:
-			/* Convert from double to float and back again */
+			/* Convert from double to float */
 			mips_cvtsd (code, ins->dreg, ins->sreg1);
+#if 0
+			/* and back again */
 			mips_cvtds (code, ins->dreg, ins->dreg);
+#endif
 			break;
 		case OP_JMP:
 			code = emit_load_volatile_arguments(cfg, code);
@@ -3448,11 +3465,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			mips_jalr (code, mips_t9, mips_ra);
 			mips_nop (code);
+#if PROMOTE_R4_TO_R8
+			/* returned an FP R4 (single), promote to R8 (double) in place */
 			if ((ins->opcode == OP_FCALL ||
 			     ins->opcode == OP_FCALL_REG) &&
 			    call->signature->ret->type == MONO_TYPE_R4) {
 				mips_cvtds (code, mips_f0, mips_f0);
 			}
+#endif
 			break;
 		case OP_LOCALLOC: {
 			int area_offset = cfg->param_area;
@@ -3740,7 +3760,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				mips_lui (code, mips_at, mips_zero, (((guint32)ins->inst_p0)>>16));
 			mips_lwc1 (code, ins->dreg, mips_at, ((guint32)ins->inst_p0) & 0xffff);
+#if PROMOTE_R4_TO_R8
 			mips_cvtds (code, ins->dreg, ins->dreg);
+#endif
 			break;
 		case OP_STORER8_MEMBASE_REG:
 			if (mips_is_imm16 (ins->inst_offset)) {
@@ -3773,8 +3795,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_STORER4_MEMBASE_REG:
-			/* XXX Need to convert ins->sreg1 to single-precision first */
+#if PROMOTE_R4_TO_R8
+			/* Need to convert ins->sreg1 to single-precision first */
 			mips_cvtsd (code, mips_ftemp, ins->sreg1);
+#endif
 			if (mips_is_imm16 (ins->inst_offset)) {
 				mips_swc1 (code, mips_ftemp, ins->inst_destbasereg, ins->inst_offset);
 			} else {
@@ -3800,8 +3824,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_addu (code, mips_at, mips_at, ins->inst_basereg);
 				mips_lwc1 (code, ins->dreg, mips_at, 0);
 			}
+#if PROMOTE_R4_TO_R8
 			/* Convert to double precision in place */
 			mips_cvtds (code, ins->dreg, ins->dreg);
+#endif
 			break;
 		case OP_ICONV_TO_R_UN: {
 			static const guint64 adjust_val = 0x41F0000000000000ULL;
