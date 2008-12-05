@@ -23,8 +23,6 @@
 #include "trace.h"
 #include "ir-emit.h"
 
-#warning "The mips backend is still being ported to the linear IR."
-
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
 #define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
@@ -153,6 +151,11 @@ typedef struct {
 
 void patch_lui_addiu(guint32 *ip, guint32 val);
 guint8 *mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code);
+guint8 *mips_emit_cond_branch (MonoCompile *cfg, guint8 *code, int op, MonoInst *ins);
+void mips_adjust_stackframe(MonoCompile *cfg);
+void mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_reg, int this_type, int vt_reg);
+MonoInst *mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+
 
 void
 mono_arch_flush_icache (guint8 *code, gint size)
@@ -190,7 +193,9 @@ mips_emit_exc_by_name(guint8 *code, const char *name)
 guint8 *
 mips_emit_cond_branch (MonoCompile *cfg, guint8 *code, int op, MonoInst *ins)
 {
+#if LONG_BRANCH
 	int br_offset = 5;
+#endif
 
 	g_assert (ins);
 #if LONG_BRANCH
@@ -341,6 +346,7 @@ mips_patch (guint32 *code, guint32 target)
 	}
 }
 
+#if 0
 static int
 offsets_from_pthread_key (guint32 key, int *offset2)
 {
@@ -349,6 +355,7 @@ offsets_from_pthread_key (guint32 key, int *offset2)
 	*offset2 = idx2 * sizeof (gpointer);
 	return 284 + idx1 * sizeof (gpointer);
 }
+#endif
 
 const char*
 mono_arch_regname (int reg) {
@@ -999,7 +1006,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	int i, offset, size, align, curinst;
 	int frame_reg = mips_sp;
 	guint32 iregs_to_save = 0;
+#if SAVE_FP_REGS
 	guint32 fregs_to_restore;
+#endif
 
 	/* spill down, we'll fix it in a separate pass */
 	// cfg->flags |= MONO_CFG_HAS_SPILLUP;
@@ -2462,6 +2471,14 @@ loop_start:
 			}
 			break;
 
+		case OP_LOCALLOC_IMM:
+			NEW_INS (cfg, last_ins, temp, OP_ICONST);
+			temp->inst_c0 = ins->inst_imm;
+			temp->dreg = mono_alloc_ireg (cfg);
+			ins->sreg1 = temp->dreg;
+			ins->opcode = OP_LOCALLOC;
+			break;
+
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI4_MEMBASE:
 		case OP_LOADU4_MEMBASE:
@@ -3207,7 +3224,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* */
 			mips_addiu (code, mips_at, mips_zero, 0xffff);
-			divisor_is_m1 = (guint32 *)code;
+			divisor_is_m1 = (guint32 *)(void *)code;
 			mips_bne (code, ins->sreg2, mips_at, 0);
 			mips_nop (code);
 
@@ -3217,7 +3234,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_patch (divisor_is_m1, (guint32)code);
 
 			/* Put divide in branch delay slot (NOT YET) */
-			divisor_is_zero = (guint32 *)code;
+			divisor_is_zero = (guint32 *)(void *)code;
 			mips_bne (code, ins->sreg2, mips_zero, 0);
 			mips_nop (code);
 
@@ -4182,6 +4199,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	}
 }
 
+#if 0
 static
 void
 mono_trace_lmf_prolog (MonoLMF *new_lmf)
@@ -4193,6 +4211,7 @@ void
 mono_trace_lmf_epilog (MonoLMF *old_lmf)
 {
 }
+#endif
 
 /*
  * Allow tracing to work with this interface (with an optional argument)
@@ -4321,10 +4340,19 @@ mips_adjust_stackframe(MonoCompile *cfg)
 			g_print ("BASIC BLOCK %d:\n", bb->block_num);
 		}
 		MONO_BB_FOR_EACH_INS (bb, ins) {
+			int adj_c0 = 0;
+			int adj_imm = 0;
+
 			if (cfg->verbose_level > 2) {
 				mono_print_ins_index (ins_cnt, ins);
 			}
-			if ((MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_fp)) || (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_fp))) {
+			if (MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_fp))
+				adj_c0 = 1;
+			if (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_fp))
+				adj_c0 = 1;
+			if (((ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_IADD_IMM)) && (ins->sreg1 == mips_fp))
+				adj_imm = 1;
+			if (adj_c0) {
 				if (ins->inst_c0 >= threshold) {
 					ins->inst_c0 += delta;
 					if (cfg->verbose_level > 2) {
@@ -4341,6 +4369,17 @@ mips_adjust_stackframe(MonoCompile *cfg)
 				}
 				g_assert (ins->inst_c0 != ra_offset);
 			}
+			if (adj_imm) {
+				if (ins->inst_imm >= threshold) {
+					ins->inst_imm += delta;
+					if (cfg->verbose_level > 2) {
+						g_print ("adj");
+						mono_print_ins_index (ins_cnt, ins);
+					}
+				}
+				g_assert (ins->inst_c0 != ra_offset);
+			}
+
 			++ins_cnt;
 		}
 	}
@@ -4786,7 +4825,7 @@ guint8 *
 mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 {
 	MonoMethod *method = cfg->method;
-	int pos, i;
+	int pos = 0, i;
 	int max_epilog_size = 16 + 20*4;
 	guint32 iregs_to_restore;
 #if SAVE_FP_REGS
@@ -4904,6 +4943,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 }
 
 /* remove once throw_exception_by_name is eliminated */
+#if 0
 static int
 exception_id_by_name (const char *name)
 {
@@ -4924,6 +4964,7 @@ exception_id_by_name (const char *name)
 	g_error ("Unknown intrinsic exception %s\n", name);
 	return 0;
 }
+#endif
 
 void
 mono_arch_emit_exceptions (MonoCompile *cfg)
