@@ -115,6 +115,7 @@ typedef struct MonoAotOptions {
 	gboolean no_dlsym;
 	gboolean static_link;
 	gboolean asm_only;
+	gboolean asm_writer;
 	int nthreads;
 } MonoAotOptions;
 
@@ -1566,6 +1567,16 @@ asm_writer_emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean f
 }
 
 static void
+asm_writer_emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func)
+{
+	asm_writer_emit_unset_mode (acfg);
+
+	fprintf (acfg->fp, "\t.local %s\n", name);
+
+	asm_writer_emit_symbol_type (acfg, name, func);
+}
+
+static void
 asm_writer_emit_label (MonoAotCompile *acfg, const char *name)
 {
 	asm_writer_emit_unset_mode (acfg);
@@ -1613,7 +1624,7 @@ asm_writer_emit_alignment (MonoAotCompile *acfg, int size)
 }
 
 static void
-asm_writer_emit_pointer (MonoAotCompile *acfg, const char *target)
+asm_writer_emit_pointer_unaligned (MonoAotCompile *acfg, const char *target)
 {
 	asm_writer_emit_unset_mode (acfg);
 	asm_writer_emit_alignment (acfg, sizeof (gpointer));
@@ -1624,6 +1635,14 @@ asm_writer_emit_pointer (MonoAotCompile *acfg, const char *target)
 #else
 	fprintf (acfg->fp, "\t.long %s\n", target ? target : "0");
 #endif
+}
+
+static void
+asm_writer_emit_pointer (MonoAotCompile *acfg, const char *target)
+{
+	asm_writer_emit_unset_mode (acfg);
+	asm_writer_emit_alignment (acfg, sizeof (gpointer));
+	asm_writer_emit_pointer_unaligned (acfg, target);
 }
 
 static char *byte_to_str;
@@ -1856,17 +1875,15 @@ static void emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean 
 #endif
 }
 
-static void emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func)
+static void G_GNUC_UNUSED emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
 		bin_writer_emit_local_symbol (acfg, name, end_label, func);
 	else
-		g_assert_not_reached ();
-	//asm_writer_emit_local_symbol (acfg, name, end_label, func);
+		asm_writer_emit_local_symbol (acfg, name, end_label, func);
 #else
-	g_assert_not_reached ();
-	//asm_writer_emit_local_symbol (acfg, name, end_label, func);
+	asm_writer_emit_local_symbol (acfg, name, end_label, func);
 #endif
 }
 
@@ -1936,11 +1953,9 @@ static void emit_pointer_unaligned (MonoAotCompile *acfg, const char *target)
 	if (acfg->use_bin_writer)
 		bin_writer_emit_pointer_unaligned (acfg, target);
 	else
-		g_assert_not_reached ();
-	//asm_writer_emit_pointer_unaligned (acfg, target);
+		asm_writer_emit_pointer_unaligned (acfg, target);
 #else
-	g_assert_not_reached ();
-	//asm_writer_emit_pointer_unaligned (acfg, target);
+	asm_writer_emit_pointer_unaligned (acfg, target);
 #endif
 }
 
@@ -3111,8 +3126,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_alignment (acfg, func_alignment);
 	emit_label (acfg, symbol);
 
-#ifdef USE_ELF_WRITER
-	if (acfg->aot_opts.write_symbols) {
+	if (acfg->aot_opts.write_symbols && acfg->use_bin_writer) {
 		char *full_name;
 		/* Emit a local symbol into the symbol table */
 		full_name = mono_method_full_name (method, TRUE);
@@ -3121,7 +3135,6 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		emit_label (acfg, full_name);
 		g_free (full_name);
 	}
-#endif
 
 	if (cfg->verbose_level > 0)
 		g_print ("Method %s emitted as %s\n", mono_method_full_name (method, TRUE), symbol);
@@ -3981,6 +3994,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->no_dlsym = TRUE;
 		} else if (str_begins_with (arg, "asmonly")) {
 			opts->asm_only = TRUE;
+		} else if (str_begins_with (arg, "asmwriter")) {
+			opts->asm_writer = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -5957,14 +5972,16 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
 	InitializeCriticalSection (&acfg->mutex);
-#ifdef USE_BIN_WRITER
-	acfg->use_bin_writer = TRUE;
-#endif
 
 	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
 	acfg->aot_opts.write_symbols = TRUE;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
+ 
+#ifdef USE_BIN_WRITER
+	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer)
+		acfg->use_bin_writer = TRUE;
+#endif
 
 	load_profile_files (acfg);
 
