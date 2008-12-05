@@ -2,6 +2,57 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_set_vector4f_operator_neq () {
+		Vector4f a = new Vector4f(1, 2, 3, 4);
+		Vector4f b = new Vector4f(1, 2, 3, 4);
+		if (a != b)
+			return 1;
+
+		a = new Vector4f(1, 2, float.NaN, 4);
+		b = new Vector4f(1, 2, float.NaN, 4);
+		if (!(a != b)) //NaN is always !=
+			return 2;
+
+		a = new Vector4f(1, 2, float.NaN, 4);
+		b = new Vector4f(1, 2, 10, 4);
+		if (!(a != b))
+			return 3;
+
+		a = new Vector4f(1, 2, float.PositiveInfinity, 4);
+		b = new Vector4f(1, 2, float.PositiveInfinity, 4);
+		if (a != b)
+			return 4;
+
+		a = new Vector4f(1, 2, 20, 4);
+		b = new Vector4f(1, 2, 30, 4);
+		if (!(a != b))
+			return 5;
+
+		return 0;
+	}
+	
+	public static int test_0_set_vector4f_operator_eq () {
+		Vector4f a = new Vector4f(1, 2, 3, 4);
+		Vector4f b = new Vector4f(1, 2, 3, 4);
+		if (!(a == b))
+			return 1;
+
+		a = new Vector4f(1, 2, float.NaN, 4);
+		b = new Vector4f(1, 2, float.NaN, 4);
+		if (a == b)
+			return 2;
+
+		a = new Vector4f(1, 2, 10, 4);
+		b = new Vector4f(1, 2, float.NaN, 4);
+		if (a == b)
+			return 3;
+
+		a = new Vector4f(1, 2, float.PositiveInfinity, 4);
+		b = new Vector4f(1, 2, float.PositiveInfinity, 4);
+		if (!(a == b))
+			return 4;
+		return 0;
+	}
 
 	public static int test_1_set_vector4ui_operator_neq () {
 		Vector4ui a = new Vector4ui(1, 2, 3, 4);
