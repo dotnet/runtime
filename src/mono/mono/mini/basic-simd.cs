@@ -2,6 +2,50 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_vector16b_operator_neq () {
+		Vector16b a = new Vector16b(1,2,3,5,5,6,7,8,1,2,3,5,5,6,7,8);
+		Vector16b b = new Vector16b(1,2,3,5,5,6,7,8,1,2,3,5,5,6,7,8);
+		if (a != b)
+			return 1;
+		b.V0 = 99;
+		if (!(a != b))
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_vector16b_operator_eq () {
+		Vector16b a = new Vector16b(1,2,3,5,5,6,7,8,1,2,3,5,5,6,7,8);
+		Vector16b b = new Vector16b(1,2,3,5,5,6,7,8,1,2,3,5,5,6,7,8);
+		if (!(a == b))
+			return 1;
+		b.V0 = 99;
+		if (a == b)
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_vector8us_operator_neq () {
+		Vector8us a = new Vector8us(1, 2, 3, 4, 5, 6, 7, 8);
+		Vector8us b = new Vector8us(1, 2, 3, 4, 5, 6, 7, 8);
+		if (a != b)
+			return 1;
+		b.V0 = 99;
+		if (!(a != b))
+			return 2;
+		return 0;
+	}
+
+	public static int test_0_vector8us_operator_eq () {
+		Vector8us a = new Vector8us(1, 2, 3, 4, 5, 6, 7, 8);
+		Vector8us b = new Vector8us(1, 2, 3, 4, 5, 6, 7, 8);
+		if (!(a == b))
+			return 1;
+		b.V0 = 99;
+		if (a == b)
+			return 2;
+		return 0;
+	}
+
 	public static int test_0_set_vector4f_operator_neq () {
 		Vector4f a = new Vector4f(1, 2, 3, 4);
 		Vector4f b = new Vector4f(1, 2, 3, 4);
