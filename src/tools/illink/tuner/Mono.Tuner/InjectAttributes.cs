@@ -59,6 +59,9 @@ namespace Mono.Tuner {
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
+			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
+				return;
+
 			_assembly = assembly;
 
 			MatchApi ();

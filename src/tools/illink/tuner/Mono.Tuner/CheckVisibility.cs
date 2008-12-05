@@ -44,6 +44,9 @@ namespace Mono.Tuner {
 			if (assembly.Name.Name == "mscorlib" || assembly.Name.Name == "smcs")
 				return;
 
+			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
+				return;
+
 			Report ("in assembly {0}", assembly.Name);
 
 			foreach (ModuleDefinition module in assembly.Modules)

@@ -57,6 +57,9 @@ namespace Mono.Tuner {
 			if (assembly.Name.Name == Constants.Corlib)
 				return;
 
+			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
+				return;
+
 			foreach (ModuleDefinition module in assembly.Modules)
 				foreach (TypeDefinition type in module.Types)
 					ProcessType (type);
