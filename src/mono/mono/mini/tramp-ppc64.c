@@ -140,7 +140,7 @@ mono_arch_nullify_plt_entry (guint8 *code)
  * #define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 13 * (sizeof (gulong)))
  * STACK would be 444 for 32 bit darwin
  */
-#define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + MONO_FIRST_SAVED_FREG * sizeof (double) + MONO_FIRST_SAVED_GREG * sizeof (gulong))
+#define STACK (PPC_MINIMAL_STACK_SIZE + 4 * sizeof (gulong) + sizeof (MonoLMF) + 14 * sizeof (double) + 13 * sizeof (gulong))
 
 /* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
@@ -179,7 +179,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 
 	/* start building the MonoLMF on the stack */
 	offset = STACK - sizeof (double) * MONO_SAVED_FREGS;
-	for (i = MONO_FIRST_SAVED_FREG; i <= MONO_LAST_SAVED_FREG; i++) {
+	for (i = 14; i <= 31; i++) {
 		ppc_stfd (buf, i, offset, ppc_r1);
 		offset += sizeof (double);
 	}
@@ -187,7 +187,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * now the integer registers.
 	 */
 	offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs);
-	for (i = MONO_FIRST_SAVED_GREG; i <= MONO_LAST_SAVED_GREG; i++) {
+	for (i = 13; i <= 31; i++) {
 		ppc_store_reg (buf, i, offset, ppc_sp);
 		offset += sizeof (gulong);
 	}
@@ -195,14 +195,14 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Now save the rest of the registers below the MonoLMF struct, first 14
 	 * fp regs and then the 13 gregs.
 	 */
-	offset = STACK - sizeof (MonoLMF) - (MONO_FIRST_SAVED_FREG * sizeof (double));
-	for (i = 0; i < MONO_FIRST_SAVED_FREG; i++) {
+	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
+	for (i = 0; i < 14; i++) {
 		ppc_stfd (buf, i, offset, ppc_r1);
 		offset += sizeof (double);
 	}
-#define GREGS_OFFSET (STACK - sizeof (MonoLMF) - (MONO_FIRST_SAVED_FREG * sizeof (double)) - (MONO_FIRST_SAVED_GREG * sizeof (gulong)))
+#define GREGS_OFFSET (STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong)))
 	offset = GREGS_OFFSET;
-	for (i = 0; i < MONO_FIRST_SAVED_GREG; i++) {
+	for (i = 0; i < 13; i++) {
 		ppc_store_reg (buf, i, offset, ppc_r1);
 		offset += sizeof (gulong);
 	}
@@ -291,26 +291,22 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* *(lmf_addr) = previous_lmf */
 	ppc_store_reg (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
 	/* restore iregs */
-	for (i = MONO_FIRST_SAVED_GREG; i <= MONO_LAST_SAVED_GREG; i++) {
-		ppc_load_reg (buf, i, G_STRUCT_OFFSET(MonoLMF, iregs) +
-			((i-MONO_FIRST_SAVED_GREG) * sizeof (gulong)), ppc_r11);
-	}
+	for (i = 13; i <= 31; i++)
+		ppc_load_reg (buf, i, G_STRUCT_OFFSET(MonoLMF, iregs) + ((i-13) * sizeof (gulong)), ppc_r11);
 	/* restore fregs */
-	for (i = MONO_FIRST_SAVED_FREG; i <= MONO_LAST_SAVED_FREG; i++) {
-		ppc_lfd (buf, i, G_STRUCT_OFFSET(MonoLMF, fregs) +
-			((i-MONO_FIRST_SAVED_FREG) * sizeof (gdouble)), ppc_r11);
-	}
+	for (i = 14; i <= 31; i++)
+		ppc_lfd (buf, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);
 
 	/* restore the volatile registers, we skip r1, of course */
-	offset = STACK - sizeof (MonoLMF) - (MONO_FIRST_SAVED_FREG * sizeof (double));
-	for (i = 0; i < MONO_FIRST_SAVED_FREG; i++) {
+	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double));
+	for (i = 0; i < 14; i++) {
 		ppc_lfd (buf, i, offset, ppc_r1);
 		offset += sizeof (double);
 	}
-	offset = STACK - sizeof (MonoLMF) - (MONO_FIRST_SAVED_FREG * sizeof (double)) - (MONO_FIRST_SAVED_GREG * sizeof (gulong));
+	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (13 * sizeof (gulong));
 	ppc_load_reg (buf, ppc_r0, offset, ppc_r1);
 	offset += 2 * sizeof (gulong);
-	for (i = 2; i < MONO_FIRST_SAVED_GREG; i++) {
+	for (i = 2; i < 13; i++) {
 		if (i != 3 || tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
 			ppc_load_reg (buf, i, offset, ppc_r1);
 		offset += sizeof (gulong);

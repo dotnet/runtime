@@ -264,10 +264,10 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 			reg = (*code >> 16) & 0x1f;
 			g_assert (reg != ppc_r1);
 			/*g_print ("patching reg is %d\n", reg);*/
-			if (reg >= MONO_FIRST_SAVED_GREG) {
-				MonoLMF *lmf = (MonoLMF*)((char*)regs + (MONO_FIRST_SAVED_FREG * sizeof (double)) + (MONO_FIRST_SAVED_GREG * sizeof (gulong)));
+			if (reg >= 13) {
+				MonoLMF *lmf = (MonoLMF*)((char*)regs + (14 * sizeof (double)) + (13 * sizeof (gulong)));
 				/* saved in the MonoLMF structure */
-				o = (gpointer)lmf->iregs [reg - MONO_FIRST_SAVED_GREG];
+				o = (gpointer)lmf->iregs [reg - 13];
 			} else {
 				o = regs [reg];
 			}
@@ -3363,7 +3363,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					}
 				}*/
 				/* FIXME: restore registers before changing ppc_sp */
-				for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
+				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
 						pos += sizeof (gulong);
 						ppc_load_reg_indexed (code, i, -pos, ppc_sp);
@@ -4071,7 +4071,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				ppc_stfd (code, i, -pos, ppc_sp);
 			}
 		}*/
-		for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
+		for (i = 31; i >= 13; --i) {
 			if (cfg->used_int_regs & (1 << i)) {
 				pos += sizeof (gulong);
 				ppc_store_reg (code, i, -pos, ppc_sp);
@@ -4080,13 +4080,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	} else {
 		pos += sizeof (MonoLMF);
 		lmf_offset = pos;
-		for (i = MONO_FIRST_SAVED_GREG; i <= MONO_LAST_SAVED_GREG; i++) {
+		for (i = 13; i <= 31; i++) {
 			ppc_store_reg (code, i, (-pos + G_STRUCT_OFFSET(MonoLMF, iregs) +
-				((i-MONO_FIRST_SAVED_GREG) * sizeof (gulong))), ppc_r1);
+				((i-13) * sizeof (gulong))), ppc_r1);
 		}
-		for (i = MONO_FIRST_SAVED_FREG; i <= MONO_LAST_SAVED_FREG; i++) {
+		for (i = 14; i <= 31; i++) {
 			ppc_stfd (code, i, (-pos + G_STRUCT_OFFSET(MonoLMF, fregs) +
-				((i-MONO_FIRST_SAVED_FREG) * sizeof (gdouble))), ppc_r1);
+				((i-14) * sizeof (gdouble))), ppc_r1);
 		}
 	}
 	alloc_size += pos;
@@ -4453,9 +4453,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		 * we didn't actually change them (idea from Zoltan).
 		 */
 		/* restore iregs */
-		for (i = MONO_FIRST_SAVED_GREG; i <= MONO_LAST_SAVED_FREG; ++i) {
+		for (i = 13; i <= 31; ++i) {
 			ppc_load_reg (code, i, G_STRUCT_OFFSET (MonoLMF, iregs) +
-				(i - MONO_FIRST_SAVED_GREG) * sizeof (gulong), ppc_r11);
+				(i - 13) * sizeof (gulong), ppc_r11);
 		}
 		/* restore fregs */
 		/*for (i = 14; i < 32; i++) {
@@ -4491,7 +4491,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 				ppc_lfd (code, i, -pos, ppc_sp);
 			}
 		}*/
-		for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
+		for (i = 31; i >= 13; --i) {
 			if (cfg->used_int_regs & (1 << i)) {
 				pos += sizeof (gulong);
 				ppc_load_reg (code, i, -pos, ppc_sp);
@@ -4894,9 +4894,9 @@ mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	g_assert (reg >= MONO_FIRST_SAVED_GREG);
+	g_assert (reg >= 13);
 
-	return (gpointer)ctx->regs [reg - MONO_FIRST_SAVED_GREG];
+	return (gpointer)ctx->regs [reg - 13];
 }
 
 void

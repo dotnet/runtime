@@ -163,11 +163,11 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 		int reg;	\
 		ppc_load_reg (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
 		for (reg = 0; reg < MONO_SAVED_GREGS; ++reg) {	\
-			ppc_load_reg (code, (MONO_FIRST_SAVED_GREG + reg),	\
+			ppc_load_reg (code, (13 + reg),	\
 				G_STRUCT_OFFSET(MonoContext, regs) + reg * sizeof (gulong), ctx_reg);	\
 		}	\
 		for (reg = 0; reg < MONO_SAVED_FREGS; ++reg) {	\
-			ppc_lfd (code, (MONO_FIRST_SAVED_FREG + reg),	\
+			ppc_lfd (code, (14 + reg),	\
 				G_STRUCT_OFFSET(MonoContext, fregs) + reg * sizeof (gdouble), ctx_reg);	\
 		}	\
 	} while (0)
@@ -206,7 +206,7 @@ mono_arch_get_restore_context (void)
 	if (ftnptr)
 		return ftnptr;
 
-	code = start = mono_global_codeman_reserve (168);
+	code = start = mono_global_codeman_reserve (172);
 	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
 	/* restore also the stack pointer */
 	ppc_load_reg (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
@@ -217,7 +217,7 @@ mono_arch_get_restore_context (void)
 	/* never reached */
 	ppc_break (code);
 
-	g_assert ((code - start) < 168);
+	g_assert ((code - start) < 172);
 	mono_arch_flush_icache (start, code - start);
 	mono_ppc_emitted (start, code - start, "restore context");
 	ftnptr = ppc64_create_ftnptr (start);
@@ -229,11 +229,11 @@ emit_store_saved_regs (guint8 *code, int *pos)
 {
 	int i;
 
-	for (i = MONO_LAST_SAVED_FREG; i >= MONO_FIRST_SAVED_FREG; --i) {
+	for (i = 31; i >= 14; --i) {
 		*pos += sizeof (gdouble);
 		ppc_stfd (code, i, -*pos, ppc_sp);
 	}
-	for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
+	for (i = 31; i >= 13; --i) {
 		*pos += sizeof (gulong);
 		ppc_store_reg (code, i, -*pos, ppc_sp);
 	}
@@ -246,11 +246,11 @@ emit_load_saved_regs (guint8 *code, int *pos)
 {
 	int i;
 
-	for (i = MONO_LAST_SAVED_FREG; i >= MONO_FIRST_SAVED_FREG; --i) {
+	for (i = 31; i >= 14; --i) {
 		*pos += sizeof (gdouble);
 		ppc_lfd (code, i, -*pos, ppc_sp);
 	}
-	for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
+	for (i = 31; i >= 13; --i) {
 		*pos += sizeof (gulong);
 		ppc_load_reg (code, i, -*pos, ppc_sp);
 	}
@@ -278,7 +278,7 @@ mono_arch_get_call_filter (void)
 		return ftnptr;
 
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
-	code = start = mono_global_codeman_reserve (488);
+	code = start = mono_global_codeman_reserve (500);
 
 	/* save all the regs on the stack */
 	pos = 0;
@@ -316,7 +316,7 @@ mono_arch_get_call_filter (void)
 
 	ppc_blr (code);
 
-	g_assert ((code - start) < 488);
+	g_assert ((code - start) < 500);
 	mono_arch_flush_icache (start, code - start);
 	mono_ppc_emitted (start, code - start, "call filter");
 	ftnptr = ppc64_create_ftnptr (start);
@@ -441,8 +441,8 @@ mono_arch_get_rethrow_exception (void)
 
 	if (inited)
 		return start;
-	code = mono_global_codeman_reserve (220);
-	start = mono_arch_get_throw_exception_generic (code, 220, FALSE, TRUE);
+	code = mono_global_codeman_reserve (224);
+	start = mono_arch_get_throw_exception_generic (code, 224, FALSE, TRUE);
 	inited = 1;
 	return start;
 }
@@ -468,8 +468,8 @@ mono_arch_get_throw_exception (void)
 
 	if (inited)
 		return start;
-	code = mono_global_codeman_reserve (220);
-	start = mono_arch_get_throw_exception_generic (code, 220, FALSE, FALSE);
+	code = mono_global_codeman_reserve (224);
+	start = mono_arch_get_throw_exception_generic (code, 224, FALSE, FALSE);
 	inited = 1;
 	return start;
 }
@@ -496,8 +496,8 @@ mono_arch_get_throw_exception_by_name (void)
 
 	if (inited)
 		return start;
-	code = mono_global_codeman_reserve (288);
-	start = mono_arch_get_throw_exception_generic (code, 288, TRUE, FALSE);
+	code = mono_global_codeman_reserve (292);
+	start = mono_arch_get_throw_exception_generic (code, 292, TRUE, FALSE);
 	inited = 1;
 	return start;
 }
@@ -561,10 +561,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 					new_ctx->fregs [i - 14] = *(gulong*)((char*)sframe->sp - offset);
 				}
 			}*/
-			for (i = MONO_LAST_SAVED_GREG; i >= MONO_FIRST_SAVED_GREG; --i) {
+			for (i = 31; i >= 13; --i) {
 				if (ji->used_regs & (1 << i)) {
 					offset += sizeof (gulong);
-					new_ctx->regs [i - MONO_FIRST_SAVED_GREG] = *(gulong*)((char*)sframe->sp - offset);
+					new_ctx->regs [i - 13] = *(gulong*)((char*)sframe->sp - offset);
 				}
 			}
 		}
@@ -616,8 +616,8 @@ mono_arch_sigctx_to_monoctx (void *ctx, MonoContext *mctx)
 
 	mctx->sc_ir = UCONTEXT_REG_NIP(uc);
 	mctx->sc_sp = UCONTEXT_REG_Rn(uc, 1);
-	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, MONO_FIRST_SAVED_GREG), sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, MONO_FIRST_SAVED_FREG), sizeof (double) * MONO_SAVED_FREGS);
+	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 13), sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, 14), sizeof (double) * MONO_SAVED_FREGS);
 }
 
 void
@@ -627,8 +627,8 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 
 	UCONTEXT_REG_NIP(uc) = mctx->sc_ir;
 	UCONTEXT_REG_Rn(uc, 1) = mctx->sc_sp;
-	memcpy (&UCONTEXT_REG_Rn(uc, MONO_FIRST_SAVED_GREG), &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
-	memcpy (&UCONTEXT_REG_FPRn(uc, MONO_FIRST_SAVED_FREG), &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
+	memcpy (&UCONTEXT_REG_Rn(uc, 13), &mctx->regs, sizeof (gulong) * MONO_SAVED_GREGS);
+	memcpy (&UCONTEXT_REG_FPRn(uc, 14), &mctx->fregs, sizeof (double) * MONO_SAVED_FREGS);
 }
 
 gpointer

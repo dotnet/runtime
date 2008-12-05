@@ -9,14 +9,8 @@
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32
 
-#define MONO_SAVED_GREGS 18
+#define MONO_SAVED_GREGS 19
 #define MONO_SAVED_FREGS 18
-
-#define MONO_FIRST_SAVED_GREG	14
-#define MONO_FIRST_SAVED_FREG	14
-
-#define MONO_LAST_SAVED_GREG	(MONO_FIRST_SAVED_GREG + MONO_SAVED_GREGS - 1)
-#define MONO_LAST_SAVED_FREG	(MONO_FIRST_SAVED_FREG + MONO_SAVED_FREGS - 1)
 
 /* FIXME: check */
 #define MONO_ARCH_FRAME_ALIGNMENT 16
@@ -139,7 +133,7 @@ typedef struct MonoCompileArch {
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)bp; } while (0);
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-MONO_FIRST_SAVED_GREG]))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
 
 #ifdef __APPLE__
