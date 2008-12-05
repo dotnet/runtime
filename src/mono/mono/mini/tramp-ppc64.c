@@ -20,7 +20,7 @@
 #include <mono/arch/ppc/ppc-codegen.h>
 
 #include "mini.h"
-#include "mini-ppc64.h"
+#include "mini-ppc.h"
 
 /*
  * Return the instruction to jump from code to target, 0 if not

@@ -26,7 +26,7 @@
 #include <mono/metadata/mono-debug.h>
 
 #include "mini.h"
-#include "mini-ppc64.h"
+#include "mini-ppc.h"
 
 /*
 
