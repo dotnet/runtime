@@ -147,7 +147,7 @@ enum {
 		}	\
 	} G_STMT_END
 
-#define ppc_load_func(c,D,V)	      ppc_load ((c), (D), (V))
+#define ppc_load_func(c,D,V)	      ppc_load_sequence ((c), (D), (V))
 
 #define ppc_load_reg(c,D,d,A)         ppc_lwz  ((c), (D), (d), (A))
 #define ppc_load_reg_update(c,D,d,A)  ppc_lwzu ((c), (D), (d), (A))
@@ -162,6 +162,7 @@ enum {
 #define ppc_store_multiple_regs(c,S,A,D)      ppc_stmw  ((c), (S), (A), (D))
 
 #define ppc_compare_reg_imm(c,cfrD,A,B)	      ppc_cmpi((c), (cfrD), 0, (A), (B))
+#define ppc_compare_log(c,cfrD,A,B)	      ppc_cmpl((c), (cfrD), 0, (A), (B))
 
 #endif
 
@@ -749,6 +750,7 @@ my and Ximian's copyright to this code. ;)
 	} G_STMT_END
 
 #define ppc_compare_reg_imm(c,cfrD,A,B)	      ppc_cmpi((c), (cfrD), 1, (A), (B))
+#define ppc_compare_log(c,cfrD,A,B)	      ppc_cmpl((c), (cfrD), 1, (A), (B))
 
 #define ppc_divdx(c,D,A,B,OE,Rc) ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | ((OE) << 10) | (489 << 1) | (Rc))
 #define ppc_divd(c,D,A,B)   ppc_divdx(c,D,A,B,0,0)
