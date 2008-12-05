@@ -370,7 +370,8 @@ mono_ssa_compute (MonoCompile *cfg)
 		buf += bitsize;
 		vinfo [i].idx = i;
 		/* implicit reference at start */
-		mono_bitset_set_fast (vinfo [i].def_in, 0);
+		if (cfg->varinfo [i]->opcode == OP_ARG)
+			mono_bitset_set_fast (vinfo [i].def_in, 0);
 	}
 
 	for (i = 0; i < cfg->num_bblocks; ++i) {
