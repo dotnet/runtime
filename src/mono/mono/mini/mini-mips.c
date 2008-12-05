@@ -1838,6 +1838,18 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 		break;
 
 	case OP_LADD_OVF_UN:
+		tmp1 = mono_alloc_ireg (cfg);
+		tmp2 = mono_alloc_ireg (cfg);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+1, ins->sreg1+1, ins->sreg2+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->dreg+1, ins->sreg1+1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, ins->sreg1+2, ins->sreg2+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg+2, tmp1, ins->dreg+2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp2, ins->dreg+2, ins->sreg1+2);
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp2, mips_zero, "OverflowException");
+		ins->opcode = OP_NOP;
+		break;
+
 	case OP_LMUL_OVF:
 	case OP_LMUL_OVF_UN:
 		mono_print_ins (ins);
@@ -1936,10 +1948,23 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LBGT_UN:
 	case OP_LBLE_UN:
 	case OP_LBLT_UN:
+		mono_print_ins (ins);
+		g_assert_not_reached ();
+#if 0
 	case OP_LCONV_TO_R8_2:
 	case OP_LCONV_TO_R4_2:
 	case OP_LCONV_TO_R_UN_2:
+#endif
 	case OP_LCONV_TO_OVF_I4_2:
+		tmp1 = mono_alloc_ireg (cfg);
+
+		/* Overflows if reg2 != sign extension of reg1 */
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, tmp1, ins->sreg1, 31);
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, ins->sreg2, tmp1, "OverflowException");
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, ins->dreg, ins->sreg1);
+		ins->opcode = OP_NOP;
+		break;
+
 	case OP_LMIN_UN:
 	case OP_LMAX_UN:
 	case OP_LMIN:
@@ -1996,6 +2021,15 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 		/* Now, if (tmp4 == 0) then overflow */
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, EQ, tmp5, mips_zero, "OverflowException");
+		ins->opcode = OP_NOP;
+		break;
+
+	case OP_IADD_OVF_UN:
+		tmp1 = mono_alloc_ireg (cfg);
+
+		MONO_EMIT_NEW_BIALU (cfg, OP_IADD, ins->dreg, ins->sreg1, ins->sreg2);
+		MONO_EMIT_NEW_BIALU (cfg, OP_MIPS_SLTU, tmp1, ins->dreg, ins->sreg1);
+		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp1, mips_zero, "OverflowException");
 		ins->opcode = OP_NOP;
 		break;
 
@@ -2637,14 +2671,14 @@ loop_start:
 		case OP_COND_EXC_GE_UN:
 		case OP_COND_EXC_IGE_UN:
 			g_assert (ins_is_compare(last_ins));
-			INS_REWRITE(ins, OP_MIPS_COND_EXC_GE, last_ins->sreg1, last_ins->sreg2);
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_GE_UN, last_ins->sreg1, last_ins->sreg2);
 			MONO_DELETE_INS(bb, last_ins);
 			break;
 
 		case OP_COND_EXC_GT_UN:
 		case OP_COND_EXC_IGT_UN:
 			g_assert (ins_is_compare(last_ins));
-			INS_REWRITE(ins, OP_MIPS_COND_EXC_GT, last_ins->sreg1, last_ins->sreg2);
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_GT_UN, last_ins->sreg1, last_ins->sreg2);
 			MONO_DELETE_INS(bb, last_ins);
 			break;
 
@@ -2658,7 +2692,7 @@ loop_start:
 		case OP_COND_EXC_LT_UN:
 		case OP_COND_EXC_ILT_UN:
 			g_assert (ins_is_compare(last_ins));
-			INS_REWRITE(ins, OP_MIPS_COND_EXC_LT, last_ins->sreg1, last_ins->sreg2);
+			INS_REWRITE(ins, OP_MIPS_COND_EXC_LT_UN, last_ins->sreg1, last_ins->sreg2);
 			MONO_DELETE_INS(bb, last_ins);
 			break;
 
@@ -3716,8 +3750,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				mips_nop (code);
 				break;
 
+			case OP_MIPS_COND_EXC_GT_UN:
+				mips_sltu (code, mips_at, ins->sreg2, ins->sreg1);
+				throw = (guint32 *)(void *)code;
+				mips_bne (code, mips_at, mips_zero, 0);
+				mips_nop (code);
+				break;
+
 			case OP_MIPS_COND_EXC_LT:
 				mips_slt (code, mips_at, ins->sreg1, ins->sreg2);
+				throw = (guint32 *)(void *)code;
+				mips_bne (code, mips_at, mips_zero, 0);
+				mips_nop (code);
+				break;
+
+			case OP_MIPS_COND_EXC_LT_UN:
+				mips_sltu (code, mips_at, ins->sreg1, ins->sreg2);
 				throw = (guint32 *)(void *)code;
 				mips_bne (code, mips_at, mips_zero, 0);
 				mips_nop (code);
@@ -3872,19 +3920,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCONV_TO_U:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);
 			break;
-		case OP_FCONV_TO_I8:
-		case OP_FCONV_TO_U8:
-			g_assert_not_reached ();
-			/* Implemented as helper calls */
-			break;
-		case OP_LCONV_TO_R_UN:
-			g_assert_not_reached ();
-			/* Implemented as helper calls */
-			break;
-		case OP_LCONV_TO_OVF_I:
-			g_assert_not_reached ();
-			/* split up by brg file */
-			break;
 		case OP_SQRT:
 			mips_fsqrtd (code, ins->dreg, ins->sreg1);
 			break;
@@ -3903,13 +3938,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FNEG:
 			mips_fnegd (code, ins->dreg, ins->sreg1);
 			break;		
-		case OP_FREM:
-			/* emulated */
-			g_assert_not_reached ();
-			break;
-		case OP_FCOMPARE:
-			g_assert_not_reached();
-			break;
 		case OP_FCEQ:
 			mips_fcmpd (code, MIPS_FPU_EQ, ins->sreg1, ins->sreg2);
 			mips_addiu (code, ins->dreg, mips_zero, 1);

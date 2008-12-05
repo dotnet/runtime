@@ -269,6 +269,7 @@ long_conv_to_u2: dest:i src1:l len:32
 long_conv_to_u1: dest:i src1:l len:32
 long_conv_to_i:  dest:i src1:l len:32
 long_conv_to_ovf_i: dest:i src1:i src2:i len:32
+long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:32
 
 long_mul_ovf: 
 long_conv_to_r_un: dest:f src1:i src2:i len:37 
