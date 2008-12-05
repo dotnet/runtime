@@ -3216,7 +3216,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_OR_IMM:
 		case OP_IOR_IMM:
 			g_assert (!(ins->inst_imm & 0xffff0000));
-			mips_ori (code, ins->sreg1, ins->dreg, ins->inst_imm);
+			mips_ori (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
 		case OP_IXOR:
 			mips_xor (code, ins->dreg, ins->sreg1, ins->sreg2);
