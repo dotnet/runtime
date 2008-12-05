@@ -42,6 +42,9 @@ namespace Mono.Tuner {
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
+			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
+				return;
+
 			Console.WriteLine ("Assembly `{0}' ({1}) tuned", assembly.Name, assembly.MainModule.Image.FileInformation);
 
 			if (!DisplayInternalized ())
