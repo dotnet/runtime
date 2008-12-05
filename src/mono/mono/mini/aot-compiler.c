@@ -2895,6 +2895,9 @@ add_generic_instances (MonoAotCompile *acfg)
 		if (has_type_vars (klass))
 			continue;
 
+		if (!klass->generic_class && !klass->rank)
+			continue;
+
 		/* 
 		 * Add rgctx wrappers for cctors since those are called by the runtime, so 
 		 * there is no methodspec for them. This is needed even for shared classes,
