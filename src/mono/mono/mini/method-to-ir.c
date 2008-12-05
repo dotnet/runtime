@@ -6277,7 +6277,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NOT_IMPLEMENTED;
 #endif
 				} else {
-					ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr);
+					if (addr->opcode == OP_AOTCONST && addr->inst_c1 == MONO_PATCH_INFO_ICALL_ADDR) {
+						/* 
+						 * Instead of emitting an indirect call, emit a direct call
+						 * with the contents of the aotconst as the patch info.
+						 */
+						ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, addr->inst_p0, fsig, sp);
+						NULLIFY_INS (addr);
+					} else {
+						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr);
+					}
 				}
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 					if (fsig->pinvoke && !fsig->ret->byref) {
