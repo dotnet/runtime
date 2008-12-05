@@ -1,3 +1,7 @@
+2008-12-05  Jonathan Pryor  <jpryor@novell.com>
+
+	* man/mdoc-update.1: Document new parameters such as --exceptions.
+
 2008-12-04  Mark Probst  <mark.probst@gmail.com>
 
 	* configure.in: Disabling the sibling call optimization doesn't
