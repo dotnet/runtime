@@ -56,6 +56,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 #define MONO_ARCH_HAVE_ATOMIC_ADD 1
+#define PPC_USES_FUNCTION_DESCRIPTOR
 #else
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
@@ -258,8 +259,12 @@ typedef struct {
 #endif
 
 #ifdef __mono_ppc64__
+#define MONO_PPC_32_64_CASE(c32,c64)	c64
 extern void mono_ppc_emitted (guint8 *code, ssize_t length, const char *format, ...);
-extern gboolean mono_ppc_is_direct_call_sequence (guint32 *code);
+#else
+#define MONO_PPC_32_64_CASE(c32,c64)	c32
 #endif
+
+extern gboolean mono_ppc_is_direct_call_sequence (guint32 *code);
 
 #endif /* __MONO_MINI_PPC_H__ */

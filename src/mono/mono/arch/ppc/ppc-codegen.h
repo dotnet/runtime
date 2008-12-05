@@ -147,15 +147,21 @@ enum {
 		}	\
 	} G_STMT_END
 
+#define ppc_load_func(c,D,V)	      ppc_load ((c), (D), (V))
+
 #define ppc_load_reg(c,D,d,A)         ppc_lwz  ((c), (D), (d), (A))
 #define ppc_load_reg_update(c,D,d,A)  ppc_lwzu ((c), (D), (d), (A))
 #define ppc_load_reg_indexed(c,D,A,B)        ppc_lwzx ((c), (D), (A), (B))
 #define ppc_load_reg_update_indexed(c,D,A,B) ppc_lwzux ((c), (D), (A), (B))
+#define ppc_load_multiple_regs(c,D,A,d)      ppc_lmw   ((c), (D), (A), (d))
 
 #define ppc_store_reg(c,S,d,A)        ppc_stw  ((c), (S), (d), (A))
 #define ppc_store_reg_update(c,S,d,A) ppc_stwu ((c), (S), (d), (A))
 #define ppc_store_reg_indexed(c,S,A,B)        ppc_stwx  ((c), (S), (A), (B))
 #define ppc_store_reg_update_indexed(c,S,A,B) ppc_stwux ((c), (S), (A), (B))
+#define ppc_store_multiple_regs(c,S,A,D)      ppc_stmw  ((c), (S), (A), (D))
+
+#define ppc_compare_reg_imm(c,cfrD,A,B)	      ppc_cmpi((c), (cfrD), 0, (A), (B))
 
 #endif
 
@@ -722,11 +728,27 @@ my and Ximian's copyright to this code. ;)
 #define ppc_load_reg_update(c,D,d,A)  ppc_ldu  ((c), (D), (d) >> 2, (A))
 #define ppc_load_reg_indexed(c,D,A,B)        ppc_ldx  ((c), (D), (A), (B))
 #define ppc_load_reg_update_indexed(c,D,A,B) ppc_ldux ((c), (D), (A), (B))
+#define ppc_load_multiple_regs(c,D,A,d) G_STMT_START { \
+		int __i, __o = (d);			\
+		for (__i = (D); __i <= 31; ++__i) {	\
+			ppc_load_reg ((c), __i, __o, (A));		\
+			__o += sizeof (gulong);				\
+		} \
+	} G_STMT_END
 
 #define ppc_store_reg(c,S,d,A)        ppc_std  ((c), (S), (d) >> 2, (A))
 #define ppc_store_reg_update(c,S,d,A) ppc_stdu ((c), (S), (d) >> 2, (A))
 #define ppc_store_reg_indexed(c,S,A,B)        ppc_stdx  ((c), (S), (A), (B))
 #define ppc_store_reg_update_indexed(c,S,A,B) ppc_stdux ((c), (S), (A), (B))
+#define ppc_store_multiple_regs(c,S,A,D) G_STMT_START { \
+		int __i, __o = (D);			\
+		for (__i = (S); __i <= 31; ++__i) {	\
+			ppc_store_reg ((c), __i, __o, (A));		\
+			__o += sizeof (gulong);				\
+		} \
+	} G_STMT_END
+
+#define ppc_compare_reg_imm(c,cfrD,A,B)	      ppc_cmpi((c), (cfrD), 1, (A), (B))
 
 #define ppc_divdx(c,D,A,B,OE,Rc) ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | ((OE) << 10) | (489 << 1) | (Rc))
 #define ppc_divd(c,D,A,B)   ppc_divdx(c,D,A,B,0,0)

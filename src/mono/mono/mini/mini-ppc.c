@@ -232,6 +232,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return frame_size;
 }
 
+/* code must point to the blrl */
+gboolean
+mono_ppc_is_direct_call_sequence (guint32 *code)
+{
+	g_assert(*code == 0x4e800021);
+
+	/* the thunk-less direct call sequence: lis/ori/mtlr/blrl */
+	return ppc_opcode (code [-1]) == 31 &&
+		ppc_opcode (code [-2]) == 24 &&
+		ppc_opcode (code [-3]) == 15;
+}
+
 gpointer
 mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 {
