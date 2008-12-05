@@ -1,3 +1,8 @@
+2008-12-05  Marek Habersack  <mhabersack@novell.com>
+
+	* configure.in: check whether round (3) and rint (3) are present
+	in the C library.
+
 2008-12-05  Jonathan Pryor  <jpryor@novell.com>
 
 	* man/mdoc-update.1: Document new parameters such as --exceptions.
