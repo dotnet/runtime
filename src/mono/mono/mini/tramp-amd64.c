@@ -223,7 +223,7 @@ guchar*
 mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
 	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
-	int i, lmf_offset, offset, res_offset, arg_offset, tramp_offset, saved_regs_offset;
+	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, tramp_offset, saved_regs_offset;
 	int saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset;
 	gboolean has_caller;
 
@@ -259,6 +259,9 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 
 	offset = 0;
 	rbp_offset = - offset;
+
+	offset += 8;
+	rax_offset = - offset;
 
 	offset += 8;
 	tramp_offset = - offset;
@@ -441,35 +444,32 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, lmf_addr), 8);
 	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, 8);
 
-	/* Restore argument registers, r10 (needed to pass rgctx to
-	   static shared generic methods) and r11 (imt register for
-	   interface calls). */
-	for (i = 0; i < AMD64_NREG; ++i)
-		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_R11)
-			amd64_mov_reg_membase (code, i, AMD64_RBP, saved_regs_offset + (i * 8), 8);
-
 	/* 
-	 * FIXME: When using aot-only, the called code might be a C vararg function 
-	 * which uses %rax as well.
-	 * We could restore it, but we would have to use another register to store the
-	 * target address, and we don't have any left.
-	 * Also, the default AOT plt trampolines overwrite 'rax'.
+	 * Save rax to the stack, after the leave instruction, this will become part of
+	 * the red zone.
 	 */
+	amd64_mov_membase_reg (code, AMD64_RBP, rax_offset, AMD64_RAX, 8);
+
+	/* Restore argument registers, r10 (needed to pass rgctx to
+	   static shared generic methods), r11 (imt register for
+	   interface calls), and rax (needed for direct calls to C vararg functions). */
+	for (i = 0; i < AMD64_NREG; ++i)
+		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_R11 || i == AMD64_RAX)
+			amd64_mov_reg_membase (code, i, AMD64_RBP, saved_regs_offset + (i * 8), 8);
 
 	for (i = 0; i < 8; ++i)
 		amd64_movsd_reg_membase (code, i, AMD64_RBP, saved_fpregs_offset + (i * 8));
-
-	if (tramp_type == MONO_TRAMPOLINE_RESTORE_STACK_PROT)
-		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, saved_regs_offset + (AMD64_RAX * 8), 8);
 
 	/* Restore stack */
 	amd64_leave (code);
 
 	if (MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
+		/* Load result */
+		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, rax_offset - 0x8, 8);
 		amd64_ret (code);
 	} else {
-		/* call the compiled method */
-		amd64_jump_reg (code, AMD64_RAX);
+		/* call the compiled method using the saved rax */
+		amd64_jump_membase (code, AMD64_RSP, rax_offset - 0x8);
 	}
 
 	g_assert ((code - buf) <= 524);
