@@ -82,11 +82,6 @@ enum {
 	SIMD_EMIT_PREFETCH
 };
 
-enum {
-	SIMD_CMP_EQUALS,
-	SIMD_CMP_NOT_EQUALS
-};
-
 #ifdef HAVE_ARRAY_ELEM_INIT
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
@@ -170,8 +165,10 @@ static const SimdIntrinsc vector4f_intrinsics[] = {
 	{ SN_op_BitwiseAnd, OP_ANDPS, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_ORPS, SIMD_EMIT_BINARY },
 	{ SN_op_Division, OP_DIVPS, SIMD_EMIT_BINARY },
+	{ SN_op_Equality, OP_COMPPS, SIMD_EMIT_EQUALITY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
 	{ SN_op_ExclusiveOr, OP_XORPS, SIMD_EMIT_BINARY },
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST }, 
+	{ SN_op_Inequality, OP_COMPPS, SIMD_EMIT_EQUALITY, SIMD_VERSION_SSE1, SIMD_COMP_NEQ },
 	{ SN_op_Multiply, OP_MULPS, SIMD_EMIT_BINARY },
 	{ SN_op_Subtraction, OP_SUBPS, SIMD_EMIT_BINARY },
 	{ SN_set_W, 3, SIMD_EMIT_SETTER },
@@ -296,10 +293,10 @@ static const SimdIntrinsc vector4ui_intrinsics[] = {
 	{ SN_op_Addition, OP_PADDD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
-	{ SN_op_Equality, SIMD_CMP_EQUALS, SIMD_EMIT_EQUALITY,  },
+	{ SN_op_Equality, OP_PCMPEQD, SIMD_EMIT_EQUALITY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
 	{ SN_op_ExclusiveOr, OP_PXOR, SIMD_EMIT_BINARY },
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
-	{ SN_op_Inequality, SIMD_CMP_NOT_EQUALS, SIMD_EMIT_EQUALITY },
+	{ SN_op_Inequality, OP_PCMPEQD, SIMD_EMIT_EQUALITY, SIMD_VERSION_SSE1, SIMD_COMP_NEQ },
 	{ SN_op_LeftShift, OP_PSHLD, SIMD_EMIT_SHIFT },
 	{ SN_op_Multiply, OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_op_RightShift, OP_PSHRD, SIMD_EMIT_SHIFT },
@@ -335,10 +332,10 @@ static const SimdIntrinsc vector4i_intrinsics[] = {
 	{ SN_op_Addition, OP_PADDD, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseAnd, OP_PAND, SIMD_EMIT_BINARY },
 	{ SN_op_BitwiseOr, OP_POR, SIMD_EMIT_BINARY },
-	{ SN_op_Equality, SIMD_CMP_EQUALS, SIMD_EMIT_EQUALITY,  },
+	{ SN_op_Equality, OP_PCMPEQD, SIMD_EMIT_EQUALITY, SIMD_VERSION_SSE1, SIMD_COMP_EQ },
 	{ SN_op_ExclusiveOr, OP_PXOR, SIMD_EMIT_BINARY },
 	{ SN_op_Explicit, 0, SIMD_EMIT_CAST },
-	{ SN_op_Inequality, SIMD_CMP_NOT_EQUALS, SIMD_EMIT_EQUALITY },
+	{ SN_op_Inequality, OP_PCMPEQD, SIMD_EMIT_EQUALITY, SIMD_VERSION_SSE1, SIMD_COMP_NEQ },
 	{ SN_op_LeftShift, OP_PSHLD, SIMD_EMIT_SHIFT },
 	{ SN_op_Multiply, OP_PMULD, SIMD_EMIT_BINARY, SIMD_VERSION_SSE41 },
 	{ SN_op_RightShift, OP_PSARD, SIMD_EMIT_SHIFT },
@@ -1140,6 +1137,12 @@ simd_intrinsic_emit_shift (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mono
 	return ins;
 }
 
+static inline gboolean
+mono_op_is_packed_compare (int op)
+{
+	return op >= OP_PCMPEQB && op <= OP_PCMPEQQ;
+}
+
 static MonoInst*
 simd_intrinsic_emit_equality (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
@@ -1150,13 +1153,14 @@ simd_intrinsic_emit_equality (const SimdIntrinsc *intrinsic, MonoCompile *cfg, M
 	right_vreg = get_simd_vreg (cfg, cmethod, args [1]);
 	
 
-	MONO_INST_NEW (cfg, ins, OP_PCMPEQD);
+	MONO_INST_NEW (cfg, ins, intrinsic->opcode);
 	ins->klass = cmethod->klass;
 	ins->sreg1 = left_vreg;
 	ins->sreg2 = right_vreg;
 	ins->type = STACK_VTYPE;
 	ins->klass = cmethod->klass;
 	ins->dreg = tmp_vreg = alloc_ireg (cfg);
+	ins->inst_c0 = intrinsic->flags;
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	/*FIXME the next ops are SSE specific*/
@@ -1167,10 +1171,15 @@ simd_intrinsic_emit_equality (const SimdIntrinsc *intrinsic, MonoCompile *cfg, M
 	ins->dreg = tmp_vreg = alloc_ireg (cfg);
 	MONO_ADD_INS (cfg->cbb, ins);
 
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_vreg, 0xFFFF);
-	NEW_UNALU (cfg, ins, intrinsic->opcode == SIMD_CMP_EQUALS ? OP_CEQ : OP_CLT_UN, tmp_vreg, -1);
-	MONO_ADD_INS (cfg->cbb, ins);
-
+	/*FP ops have a not equal instruction, which means that we must test the results with OR semantics.*/
+	if (mono_op_is_packed_compare (intrinsic->opcode) || intrinsic->flags == SIMD_COMP_EQ) {
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_vreg, 0xFFFF);
+		NEW_UNALU (cfg, ins, intrinsic->flags == SIMD_COMP_EQ ? OP_CEQ : OP_CLT_UN, tmp_vreg, -1);
+	} else {
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, tmp_vreg, 0);
+		NEW_UNALU (cfg, ins, OP_CGT_UN, tmp_vreg, -1);
+	}
+	MONO_ADD_INS (cfg->cbb, ins);	
 	return ins;
 }
 
