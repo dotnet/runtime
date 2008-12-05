@@ -35,6 +35,7 @@
 #define ALWAYS_SAVE_RA		1	/* call-handler & switch currently clobber ra */
 
 #define PROMOTE_R4_TO_R8	1	/* promote single values in registers to doubles */
+#define USE_LDC_SDC		0	/* use ldc/sdc to load/store doubles */
 
 enum {
 	TLS_MODE_DETECT,
@@ -843,8 +844,8 @@ calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
 				  cinfo->stack_size, alignment);
 #endif
 			nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
-			g_assert(cinfo->args [n].size == 0);
-			g_assert(cinfo->args [n].vtsize == 0);
+			g_assert (cinfo->args [n].size == 0);
+			g_assert (cinfo->args [n].vtsize == 0);
 			for (j = 0; j < nwords; ++j) {
 				if (j == 0) {
 					add_int32_arg (cinfo, &cinfo->args [n]);
@@ -1459,7 +1460,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			soffset += sizeof (gpointer);
 		}
 		if (ovf_size != 0) {
-			mini_emit_memcpy (cfg, mips_fp, doffset + soffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
+			mini_emit_memcpy (cfg, mips_fp, doffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
 		}
 	} else if (ainfo->regtype == RegTypeFP) {
 		int tmpr = mono_alloc_freg (cfg);
@@ -2862,8 +2863,14 @@ emit_load_volatile_arguments(MonoCompile *cfg, guint8 *code)
 				/* do nothing */
 			} else if (ainfo->regtype == RegTypeFP) {
 				g_assert (mips_is_imm16 (inst->inst_offset));
-				if (ainfo->size == 8)
+				if (ainfo->size == 8) {
+#if USE_LDC_SDC
 					mips_ldc1 (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+#else
+					mips_lwc1 (code, ainfo->reg, inst->inst_basereg, inst->inst_offset+4);
+					mips_lwc1 (code, ainfo->reg+1, inst->inst_basereg, inst->inst_offset);
+#endif
+				}
 				else if (ainfo->size == 4)
 					mips_lwc1 (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 				else
@@ -3814,7 +3821,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_STORER8_MEMBASE_REG:
 			if (mips_is_imm16 (ins->inst_offset)) {
-#if 1
+#if USE_LDC_SDC
 				mips_sdc1 (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset);
 #else
 				mips_swc1 (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset+4);
@@ -3829,7 +3836,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOADR8_MEMBASE:
 			if (mips_is_imm16 (ins->inst_offset)) {
-#if 1
+#if USE_LDC_SDC
 				mips_ldc1 (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 #else
 				mips_lwc1 (code, ins->dreg, ins->inst_basereg, ins->inst_offset+4);
@@ -4576,7 +4583,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			} else if (ainfo->regtype == RegTypeFP) {
 				g_assert (mips_is_imm16 (inst->inst_offset));
 				if (ainfo->size == 8) {
-#if 1
+#if USE_LDC_SDC
 					mips_sdc1 (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
 #else
 					mips_swc1 (code, ainfo->reg, inst->inst_basereg, inst->inst_offset+4);
