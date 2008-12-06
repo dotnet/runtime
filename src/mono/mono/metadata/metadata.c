@@ -445,6 +445,9 @@ typedef struct {
  * mono_meta_table_name:
  * @table: table index
  *
+ * Returns the name of the given ECMA metadata logical format table
+ * as described in ECMA 335, Partition II, Section 22.
+ * 
  * Returns: the name for the @table index
  */
 const char *
