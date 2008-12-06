@@ -34,6 +34,7 @@
 
 #define PROMOTE_R4_TO_R8	1	/* promote single values in registers to doubles */
 #define USE_LDC_SDC		0	/* use ldc/sdc to load/store doubles */
+#define USE_MUL			1	/* use mul instead of mult/mflo for multiply */
 
 enum {
 	TLS_MODE_DETECT,
@@ -2447,6 +2448,7 @@ loop_start:
 			break;
 
 		case OP_MUL_IMM:
+		case OP_IMUL_IMM:
 			if (ins->inst_imm == 1) {
 				ins->opcode = OP_MOVE;
 				break;
@@ -2462,13 +2464,11 @@ loop_start:
 				ins->inst_imm = imm;
 				break;
 			}
-			if (!mips_is_imm16 (ins->inst_imm)) {
-				NEW_INS (cfg, last_ins, temp, OP_ICONST);
-				temp->inst_c0 = ins->inst_imm;
-				temp->dreg = mono_alloc_ireg (cfg);
-				ins->sreg2 = temp->dreg;
-				ins->opcode = map_to_reg_reg_op (ins->opcode);
-			}
+			NEW_INS (cfg, last_ins, temp, OP_ICONST);
+			temp->inst_c0 = ins->inst_imm;
+			temp->dreg = mono_alloc_ireg (cfg);
+			ins->sreg2 = temp->dreg;
+			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
 
 		case OP_LOCALLOC_IMM:
@@ -3327,22 +3327,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_subu (code, ins->dreg, mips_zero, ins->sreg1);
 			break;
 		case OP_IMUL:
-#if 1
+#if USE_MUL
 			mips_mul (code, ins->dreg, ins->sreg1, ins->sreg2);
 #else
 			mips_mult (code, ins->sreg1, ins->sreg2);
-			mips_mflo (code, ins->dreg);
-			mips_nop (code);
-			mips_nop (code);
-#endif
-			break;
-		case OP_MUL_IMM:
-		case OP_IMUL_IMM:
-			mips_load_const (code, mips_at, ins->inst_imm);
-#if 1
-			mips_mul (code, ins->dreg, ins->sreg1, mips_at);
-#else
-			mips_mult (code, ins->sreg1, mips_at);
 			mips_mflo (code, ins->dreg);
 			mips_nop (code);
 			mips_nop (code);
@@ -3537,16 +3525,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* Round up ins->sreg1, mips_at ends up holding size */
 			mips_addiu (code, mips_at, ins->sreg1, 31);
-			mips_andi (code, mips_at, mips_at, ~31);
+			mips_addiu (code, mips_temp, mips_zero, ~31);
+			mips_and (code, mips_at, mips_at, mips_temp);
 
 			mips_subu (code, mips_sp, mips_sp, mips_at);
+			g_assert (mips_is_imm16 (area_offset));
 			mips_addiu (code, ins->dreg, mips_sp, area_offset);
 
 			if (ins->flags & MONO_INST_INIT) {
 				mips_move (code, mips_temp, ins->dreg);
 				mips_sb (code, mips_zero, mips_temp, 0);
 				mips_addiu (code, mips_at, mips_at, -1);
-				mips_bne (code, mips_at, mips_zero, -4);
+				mips_bne (code, mips_at, mips_zero, -3);
 				mips_addiu (code, mips_temp, mips_temp, 1);
 			}
 			break;
