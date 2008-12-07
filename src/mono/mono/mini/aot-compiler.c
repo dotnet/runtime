@@ -5316,21 +5316,6 @@ emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
 	emit_uleb128 (acfg, 0);
 }
 
-#ifdef __x86_64__
-static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
-#endif
-
-static int
-hw_reg_to_dwarf_reg (int reg)
-{
-#ifdef __x86_64__
-	return map_hw_reg_to_dwarf_reg [reg];
-#else
-	g_assert_not_reached ();
-	return -1;
-#endif
-}
-
 static void
 emit_cie (MonoAotCompile *acfg)
 {
@@ -5354,7 +5339,7 @@ emit_cie (MonoAotCompile *acfg)
 
 #ifdef __x86_64__
 	emit_byte (acfg, DW_CFA_def_cfa);
-	emit_uleb128 (acfg, hw_reg_to_dwarf_reg (AMD64_RSP));
+	emit_uleb128 (acfg, mono_hw_reg_to_dwarf_reg (AMD64_RSP));
 	emit_uleb128 (acfg, 8); /* offset=8 */
 	emit_byte (acfg, DW_CFA_offset | AMD64_RIP);
 	emit_uleb128 (acfg, 1); /* offset=-8 */
@@ -5381,8 +5366,8 @@ emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_sym
 #if defined(__x86_64__)
 	char symbol [128];
 	GSList *l;
-	MonoUnwindOp *op;
-	int loc;
+	guint8 *uw_info;
+	guint32 uw_info_len;
 
 	emit_section_change (acfg, ".debug_frame", 0);
 
@@ -5399,52 +5384,16 @@ emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_sym
 		emit_int32 (acfg, 0);
 	}
 
-	/* Convert the list of MonoUnwindOps to the format used by DWARF */
-	loc = 0;
 	l = unwind_ops;
 #ifdef __x86_64__
 	/* Skip the first two ops which are in the CIE */
 	l = l->next->next;
 #endif
-	for (; l; l = l->next) {
-		int reg;
 
-		op = l->data;
-
-		/* Convert the register from the hw encoding to the dwarf encoding */
-		reg = hw_reg_to_dwarf_reg (op->reg);
-
-		/* Emit an advance_loc if neccesary */
-		if (op->when > loc) {
-			g_assert (op->when - loc < 32);
-			emit_byte (acfg, DW_CFA_advance_loc | (op->when - loc));
-		}			
-
-		switch (op->op) {
-		case DW_CFA_def_cfa:
-			emit_byte (acfg, op->op);
-			emit_uleb128 (acfg, reg);
-			emit_uleb128 (acfg, op->val);
-			break;
-		case DW_CFA_def_cfa_offset:
-			emit_byte (acfg, op->op);
-			emit_uleb128 (acfg, op->val);
-			break;
-		case DW_CFA_def_cfa_register:
-			emit_byte (acfg, op->op);
-			emit_uleb128 (acfg, reg);
-			break;
-		case DW_CFA_offset:
-			emit_byte (acfg, DW_CFA_offset | reg);
-			emit_uleb128 (acfg, op->val / - 8);
-			break;
-		default:
-			g_assert_not_reached ();
-			break;
-		}
-
-		loc = op->when;
-	}
+	/* Convert the list of MonoUnwindOps to the format used by DWARF */	
+	uw_info = mono_unwind_ops_encode (l, &uw_info_len);
+	emit_bytes (acfg, uw_info, uw_info_len);
+	g_free (uw_info);
 
 	emit_alignment (acfg, sizeof (gpointer));
 	sprintf (symbol, ".Lfde%d_end", fde_index);
@@ -5868,13 +5817,13 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 			emit_byte (acfg, 0);
 		} else if (arg->opcode == OP_REGVAR) {
 			emit_byte (acfg, 1);
-			emit_byte (acfg, DW_OP_reg0 + hw_reg_to_dwarf_reg (arg->dreg));
+			emit_byte (acfg, DW_OP_reg0 + mono_hw_reg_to_dwarf_reg (arg->dreg));
 		} else if (arg->opcode == OP_REGOFFSET) {
 			guint8 buf [128];
 			guint8 *p;
 
 			p = buf;
-			*p ++= DW_OP_breg0 + hw_reg_to_dwarf_reg (arg->inst_basereg);
+			*p ++= DW_OP_breg0 + mono_hw_reg_to_dwarf_reg (arg->inst_basereg);
 			encode_sleb128 (arg->inst_offset, p, &p);
 			emit_byte (acfg, p - buf);
 			emit_bytes (acfg, buf, p - buf);

@@ -262,7 +262,8 @@ common_sources = \
 	regalloc2.c	\
 	simd-methods.h	\
 	simd-intrinsics.c	\
-	unwind.h
+	unwind.h	\
+	unwind.c
 
 test_sources = 		\
 	basic-calls.cs 	\
