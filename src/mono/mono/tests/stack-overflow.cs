@@ -26,6 +26,10 @@ public class Tests {
 	public static int foo () {
 		A5 a5;
 
+		/* Prevent a5 from being optimized away */
+		a5 = new A5 ();
+		a5.a1.a1.a1.a1.a1 = 5;
+
 		return foo () + 1;
 	}
 
