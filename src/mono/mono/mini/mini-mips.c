@@ -1384,7 +1384,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				int dreg = mono_alloc_freg (cfg);
 
 				if (ainfo->size == 4) {
-					MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, dreg, in->dreg);
+					MONO_EMIT_NEW_UNALU (cfg, OP_MIPS_CVTSD, dreg, in->dreg);
 				} else {
 					MONO_INST_NEW (cfg, ins, OP_FMOVE);
 					ins->dreg = dreg;
