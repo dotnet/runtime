@@ -1528,7 +1528,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			return;
 		}
 		if (ret->type == MONO_TYPE_R4) {
-			MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, cfg->ret->dreg, val->dreg);
+			MONO_EMIT_NEW_UNALU (cfg, OP_MIPS_CVTSD, cfg->ret->dreg, val->dreg);
 			return;
 		}
 	}
@@ -2084,73 +2084,6 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 		MONO_EMIT_NEW_COMPARE_EXC (cfg, NE_UN, tmp1, mips_zero, "OverflowException");
 		ins->opcode = OP_NOP;
 		break;
-
-	case OP_ICONV_TO_R_UN: {
-		static const guint64 adjust_val = 0x4330000000000000ULL;
-		int msw_reg = mono_alloc_ireg (cfg);
-		int adj_reg = mono_alloc_freg (cfg);
-		int tmp_reg = mono_alloc_freg (cfg);
-		int basereg = mips_sp;
-		int offset = -8;
-
-		MONO_EMIT_NEW_ICONST (cfg, msw_reg, 0x43300000);
-		if (!mips_is_imm16 (offset + 4)) {
-			basereg = mono_alloc_ireg (cfg);
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
-		}
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, msw_reg);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, ins->sreg1);
-		MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, &adjust_val);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, basereg, offset);
-		MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
-		ins->opcode = OP_NOP;
-		break;
-	}
-	case OP_ICONV_TO_R4:
-	case OP_ICONV_TO_R8: {
-		/* FIXME: change precision for OP_ICONV_TO_R4 */
-		static const guint64 adjust_val = 0x4330000080000000ULL;
-		int msw_reg = mono_alloc_ireg (cfg);
-		int xored = mono_alloc_ireg (cfg);
-		int adj_reg = mono_alloc_freg (cfg);
-		int tmp_reg = mono_alloc_freg (cfg);
-		int basereg = mips_sp;
-		int offset = -8;
-
-		if (!mips_is_imm16 (offset + 4)) {
-			basereg = mono_alloc_ireg (cfg);
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
-		}
-		MONO_EMIT_NEW_ICONST (cfg, msw_reg, 0x43300000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, msw_reg);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_XOR_IMM, xored, ins->sreg1, 0x80000000);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, xored);
-		MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, (gpointer)&adjust_val);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, basereg, offset);
-		MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
-		if (ins->opcode == OP_ICONV_TO_R4)
-			MONO_EMIT_NEW_UNALU (cfg, OP_FCONV_TO_R4, ins->dreg, ins->dreg);
-		ins->opcode = OP_NOP;
-		break;
-	}
-#if 0
-	case OP_CKFINITE: {
-		int msw_reg = mono_alloc_ireg (cfg);
-		int basereg = mips_sp;
-		int offset = -8;
-
-		if (!mips_is_imm16 (offset + 4)) {
-			basereg = mono_alloc_ireg (cfg);
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
-		}
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, basereg, offset, ins->sreg1);
-		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, msw_reg, basereg, offset);
-		MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_FINITE, -1, msw_reg);
-		MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, ins->dreg, ins->sreg1);
-		ins->opcode = OP_NOP;
-		break;
-	}
-#endif
 	}
 
 }
@@ -2527,6 +2460,7 @@ loop_start:
 			}
 			break;
 
+#if 0
 		case OP_R8CONST:
 		case OP_R4CONST:
 			NEW_INS (cfg, last_ins, temp, OP_ICONST);
@@ -2540,7 +2474,7 @@ loop_start:
 			 * later optimize to use lis + load_membase
 			 */
 			goto loop_start;
-
+#endif
 		case OP_IBEQ:
 			g_assert (ins_is_compare(last_ins));
 			INS_REWRITE(ins, OP_MIPS_BEQ, last_ins->sreg1, last_ins->sreg2);
@@ -2792,7 +2726,7 @@ loop_start:
 static guchar*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {
-	/* sreg is a float, dreg is an integer reg. mips_at is used a scratch */
+	/* sreg is a float, dreg is an integer reg. mips_at is used as scratch */
 #if 1
 	mips_truncwd (code, mips_ftemp, sreg);
 #else
@@ -3374,6 +3308,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MIPS_MTC1S:
 			mips_mtc1 (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_MIPS_MTC1S_2:
+			mips_mtc1 (code, ins->dreg, ins->sreg1);
+			mips_mtc1 (code, ins->dreg+1, ins->sreg2);
+			break;
 		case OP_MIPS_MFC1S:
 			mips_mfc1 (code, ins->dreg, ins->sreg1);
 			break;
@@ -3417,11 +3355,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_cvtsd (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:
-			/* Convert from double to float */
-			mips_cvtsd (code, ins->dreg, ins->sreg1);
 #if 0
-			/* and back again */
-			mips_cvtds (code, ins->dreg, ins->dreg);
+			mips_cvtsd (code, ins->dreg, ins->sreg1);
+#else
+			/* Just a move, no precision change */
+			if (ins->dreg != ins->sreg1) {
+				mips_fmovd (code, ins->dreg, ins->sreg1);
+			}
 #endif
 			break;
 		case OP_JMP:
@@ -3857,35 +3797,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_STORER4_MEMBASE_REG:
+			g_assert (mips_is_imm16 (ins->inst_offset));
 #if PROMOTE_R4_TO_R8
 			/* Need to convert ins->sreg1 to single-precision first */
 			mips_cvtsd (code, mips_ftemp, ins->sreg1);
 #endif
-			if (mips_is_imm16 (ins->inst_offset)) {
-				mips_swc1 (code, mips_ftemp, ins->inst_destbasereg, ins->inst_offset);
-			} else {
-				mips_load_const (code, mips_at, ins->inst_offset);
-				mips_addu (code, mips_at, mips_at, ins->inst_destbasereg);
-				mips_swc1 (code, mips_ftemp, mips_at, 0);
-			}
+			mips_swc1 (code, mips_ftemp, ins->inst_destbasereg, ins->inst_offset);
 			break;
 		case OP_MIPS_LWC1:
-			if (mips_is_imm16 (ins->inst_offset)) {
-				mips_lwc1 (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-			} else {
-				mips_load_const (code, mips_at, ins->inst_offset);
-				mips_addu (code, mips_at, mips_at, ins->inst_basereg);
-				mips_lwc1 (code, ins->dreg, mips_at, 0);
-			}
+			g_assert (mips_is_imm16 (ins->inst_offset));
+			mips_lwc1 (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_LOADR4_MEMBASE:
-			if (mips_is_imm16 (ins->inst_offset)) {
-				mips_lwc1 (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-			} else {
-				mips_load_const (code, mips_at, ins->inst_offset);
-				mips_addu (code, mips_at, mips_at, ins->inst_basereg);
-				mips_lwc1 (code, ins->dreg, mips_at, 0);
-			}
+			g_assert (mips_is_imm16 (ins->inst_offset));
+			mips_lwc1 (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 #if PROMOTE_R4_TO_R8
 			/* Convert to double precision in place */
 			mips_cvtds (code, ins->dreg, ins->dreg);
@@ -4019,7 +3944,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
-		case OP_FBLT_UN:
+		case OP_MIPS_FBLT_UN:
 			mips_fcmpd (code, MIPS_FPU_ULT, ins->sreg1, ins->sreg2);
 			mips_nop (code);
 			if (ins->flags & MONO_INST_BRLABEL)
@@ -4339,6 +4264,11 @@ mips_adjust_stackframe(MonoCompile *cfg)
 			if (MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_fp))
 				adj_c0 = 1;
 			if (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_fp))
+				adj_c0 = 1;
+			/* The following two catch FP spills */
+			if (MONO_IS_LOAD_MEMBASE(ins) && (ins->inst_basereg == mips_sp))
+				adj_c0 = 1;
+			if (MONO_IS_STORE_MEMBASE(ins) && (ins->dreg == mips_sp))
 				adj_c0 = 1;
 			if (((ins->opcode == OP_ADD_IMM) || (ins->opcode == OP_IADD_IMM)) && (ins->sreg1 == mips_fp))
 				adj_imm = 1;

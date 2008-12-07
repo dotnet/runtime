@@ -347,6 +347,7 @@ mips_fblt_un: src1:f src2:f len:16
 mips_fbne: src1:f src2:f len:16
 mips_lwc1: dest:f src1:b len:16
 mips_mtc1_s: dest:f src1:i len:8
+mips_mtc1_s2: dest:f src1:i src2:i len:8
 mips_mfc1_s: dest:i src1:f len:8
 mips_mtc1_d: dest:f src1:i len:8
 mips_mfc1_d: dest:i src1:f len:8
