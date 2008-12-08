@@ -4307,6 +4307,9 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	return klass;
 }
 
+/*
+ * LOCKING: Acquires the loader lock.
+ */
 MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
 {
@@ -4335,7 +4338,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 		/* FIXME: */
 		image = mono_defaults.corlib;
 
-	klass = param->pklass = mono_image_alloc0 (image, sizeof (MonoClass));
+	klass = mono_image_alloc0 (image, sizeof (MonoClass));
 
 	if (param->name)
 		klass->name = param->name;
@@ -4405,6 +4408,10 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	}
 
 	mono_class_setup_supertypes (klass);
+
+	mono_memory_barrier ();
+
+	param->pklass = klass;
 
 	mono_loader_unlock ();
 
