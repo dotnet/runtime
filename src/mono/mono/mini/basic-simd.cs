@@ -848,7 +848,7 @@ public class SimdTests {
 		Vector4ui a = new Vector4ui (0xF0000000,0xF0000,3,4);
 		Vector4ui b = new Vector4ui (5,6,7,8);
 
-		Vector8us c = Vector4ui.SignedPackWithUnsignedSaturation (a, b);
+		Vector8us c = a.SignedPackWithUnsignedSaturation (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -939,7 +939,7 @@ public class SimdTests {
 	public static int test_0_vector4ui_cmpeq () {
 		Vector4ui a = new Vector4ui (6,1,6,3);
 		Vector4ui b = new Vector4ui (3,4,6,7);
-		Vector4ui c = Vector4ui.CompareEqual (a, b);
+		Vector4ui c = a.CompareEqual (b);
 
 		if (c.X != 0)
 			return 1;
@@ -954,7 +954,7 @@ public class SimdTests {
 
 	public static int test_0_vector4ui_shuffle () {
 		Vector4ui a = new Vector4ui (1,2,3,4);
-		Vector4ui c = Vector4ui.Shuffle (a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4ui c = a.Shuffle (ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
 
 		if (c.X != 2)
 			return 1;
@@ -970,7 +970,7 @@ public class SimdTests {
 	public static int test_0_vector4ui_min () {
 		Vector4ui a = new Vector4ui (6,1,6,3);
 		Vector4ui b = new Vector4ui (3,4,6,7);
-		Vector4ui c = Vector4ui.Min (a, b);
+		Vector4ui c = a.Min (b);
 
 		if (c.X != 3)
 			return 1;
@@ -986,7 +986,7 @@ public class SimdTests {
 	public static int test_0_vector4ui_max () {
 		Vector4ui a = new Vector4ui (6,1,6,3);
 		Vector4ui b = new Vector4ui (3,4,6,7);
-		Vector4ui c = Vector4ui.Max (a, b);
+		Vector4ui c = a.Max (b);
 
 		if (c.X != 6)
 			return 1;
@@ -1660,7 +1660,7 @@ public class SimdTests {
 	public static int test_0_vector4ui_sar () {
 		Vector4ui a = new Vector4ui (0xF0000000u,20,3,40);
 		
-		Vector4ui c = Vector4ui.ArithmeticRightShift (a, 2);
+		Vector4ui c = a.ArithmeticRightShift (2);
 	
 		if (c.X != 0xFC000000)
 			return 1;
@@ -1677,7 +1677,7 @@ public class SimdTests {
 		Vector4ui a = new Vector4ui (1,2,3,4);
 		Vector4ui b = new Vector4ui (5,6,7,8);
 		
-		Vector4ui c = Vector4ui.UnpackHigh(a, b);
+		Vector4ui c = a.UnpackHigh(b);
 	
 		if (c.X != 3)
 			return 1;
@@ -1694,7 +1694,7 @@ public class SimdTests {
 		Vector4ui a = new Vector4ui (1,2,3,4);
 		Vector4ui b = new Vector4ui (5,6,7,8);
 		
-		Vector4ui c = Vector4ui.UnpackLow (a, b);
+		Vector4ui c = a.UnpackLow (b);
 	
 		if (c.X != 1)
 			return 1;
