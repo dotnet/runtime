@@ -1389,7 +1389,7 @@ public class SimdTests {
 
 	public static int test_0_vector4f_dup_high () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
-		Vector4f c = Vector4f.DuplicateHigh(a);
+		Vector4f c = a.DuplicateHigh();
 
 		if (c.X != 2)
 			return 1;
@@ -1404,7 +1404,7 @@ public class SimdTests {
 
 	public static int test_0_vector4f_dup_low () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
-		Vector4f c = Vector4f.DuplicateLow (a);
+		Vector4f c = a.DuplicateLow ();
 
 		if (c.X != 1)
 			return 1;
@@ -1421,7 +1421,7 @@ public class SimdTests {
 	public static int test_0_vector4f_interleave_high () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
 		Vector4f b = new Vector4f (5, 6, 7, 8);
-		Vector4f c = Vector4f.InterleaveHigh (a, b);
+		Vector4f c = a.InterleaveHigh (b);
 
 		if (c.X != 3)
 			return 1;
@@ -1437,7 +1437,7 @@ public class SimdTests {
 	public static int test_0_vector4f_interleave_low () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
 		Vector4f b = new Vector4f (5, 6, 7, 8);
-		Vector4f c = Vector4f.InterleaveLow (a, b);
+		Vector4f c = a.InterleaveLow (b);
 
 		if (c.X != 1)
 			return 1;
@@ -1452,7 +1452,7 @@ public class SimdTests {
 
 	public static int test_0_vector4f_rcp () {
 		Vector4f a = new Vector4f (1, 2, 4, 8);
-		Vector4f c = Vector4f.Reciprocal (a);
+		Vector4f c = a.Reciprocal ();
 
 		//Test with ranges due to the terrible precision.
 		if (c.X < (1 - 0.01f) || c.X > (1 + 0.01f))
@@ -1500,7 +1500,7 @@ public class SimdTests {
 	public static int test_0_vector4f_andn () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
 		Vector4f b = new Vector4f (1, 3, 3, 8);
-		Vector4f c = Vector4f.AndNot (a ,b);
+		Vector4f c = a.AndNot (b);
 
 		if (((Vector4ui)c).X != 0)
 			return 1;
@@ -1532,7 +1532,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmpord () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
-		Vector4f c = Vector4f.CompareOrdered (a, b);
+		Vector4f c = a.CompareOrdered (b);
 
 		if (((Vector4ui)c).X != 0)
 			return 1;
@@ -1548,7 +1548,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmpnle () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
-		Vector4f c = Vector4f.CompareNotLessEqual (a, b);
+		Vector4f c = a.CompareNotLessEqual (b);
 
 		if (((Vector4ui)c).X != 0xFFFFFFFF)
 			return 1;
@@ -1564,7 +1564,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmpnlt () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
-		Vector4f c = Vector4f.CompareNotLessThan (a, b);
+		Vector4f c = a.CompareNotLessThan (b);
 
 		if (((Vector4ui)c).X != 0xFFFFFFFF)
 			return 1;
@@ -1580,7 +1580,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmpneq () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
-		Vector4f c = Vector4f.CompareNotEqual (a, b);
+		Vector4f c = a.CompareNotEqual (b);
 
 		if (((Vector4ui)c).X != 0xFFFFFFFF)
 			return 1;
@@ -1596,7 +1596,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmpunord () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
-		Vector4f c = Vector4f.CompareUnordered (a, b);
+		Vector4f c = a.CompareUnordered (b);
 
 		if (((Vector4ui)c).X != 0xFFFFFFFF)
 			return 1;
@@ -1612,7 +1612,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmple () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
-		Vector4f c = Vector4f.CompareLessEqual (a, b);
+		Vector4f c = a.CompareLessEqual (b);
 
 		if (((Vector4ui)c).X != 0)
 			return 1;
@@ -1628,7 +1628,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmplt () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 4);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 6);
-		Vector4f c = Vector4f.CompareLessThan (a, b);
+		Vector4f c = a.CompareLessThan (b);
 
 		if (((Vector4ui)c).X != 0)
 			return 1;
@@ -1644,7 +1644,7 @@ public class SimdTests {
 	public static int test_0_vector4f_cmpeq () {
 		Vector4f a = new Vector4f (float.NaN, 2,         3, 6);
 		Vector4f b = new Vector4f (1,         float.NaN, 3, 4);
-		Vector4f c = Vector4f.CompareEqual (a, b);
+		Vector4f c = a.CompareEqual (b);
 
 		if (((Vector4ui)c).X != 0)
 			return 1;
@@ -2385,7 +2385,7 @@ public class SimdTests {
 
 	public static int test_0_simple_packed_sqrt () {
 		Vector4f a = new Vector4f (16, 4, 9, 25);
-		a = Vector4f.Sqrt (a);
+		a = a.Sqrt ();
 		if (a.X != 4f)
 			return 1;
 		if (a.Y != 2f)
@@ -2400,7 +2400,7 @@ public class SimdTests {
 	public static int test_0_simple_packed_invsqrt () {
 		Vector4f a = new Vector4f (16, 4, 100, 25);
 		//this function has VERY low precision
-		a = Vector4f.InvSqrt (a);
+		a = a.InvSqrt ();
 		if (a.X < (1/4f - 0.01f) || a.X > (1/4f + 0.01f))
 			return 1;
 		if (a.Y < (1/2f - 0.01f) || a.Y > (1/2f + 0.01f))
@@ -2415,7 +2415,7 @@ public class SimdTests {
 	public static int test_0_simple_packed_min () {
 		Vector4f a = new Vector4f (16, -4, 9, 25);
 		Vector4f b = new Vector4f (5, 3, 9, 0);
-		Vector4f c = Vector4f.Min (a, b);
+		Vector4f c = a.Min (b);
 		if (c.X != 5f)
 			return 1;
 		if (c.Y != -4f)
@@ -2430,7 +2430,7 @@ public class SimdTests {
 	public static int test_0_simple_packed_max () {
 		Vector4f a = new Vector4f (16, -4, 9, 25);
 		Vector4f b = new Vector4f (5, 3, 9, 0);
-		Vector4f c = Vector4f.Max (a, b);
+		Vector4f c = a.Max (b);
 		if (c.X != 16f)
 			return 1;
 		if (c.Y != 3f)
@@ -2445,7 +2445,7 @@ public class SimdTests {
 	public static int test_0_simple_packed_hadd () {
 		Vector4f a = new Vector4f (5, 5, 6, 6);
 		Vector4f b = new Vector4f (7, 7, 8, 8);
-		Vector4f c = Vector4f.HorizontalAdd (a, b);
+		Vector4f c = a.HorizontalAdd (b);
 		if (c.X != 10f)
 			return 1;
 		if (c.Y != 12f)
@@ -2460,7 +2460,7 @@ public class SimdTests {
 	public static int test_0_simple_packed_hsub () {
 		Vector4f a = new Vector4f (5, 2, 6, 1);
 		Vector4f b = new Vector4f (7, 0, 8, 3);
-		Vector4f c = Vector4f.HorizontalSub (a, b);
+		Vector4f c = a.HorizontalSub (b);
 		if (c.X != 3f)
 			return 1;
 		if (c.Y != 5f)
@@ -2475,7 +2475,7 @@ public class SimdTests {
 	public static int test_0_simple_packed_addsub () {
 		Vector4f a = new Vector4f (5, 2, 6, 1);
 		Vector4f b = new Vector4f (7, 0, 8, 3);
-		Vector4f c = Vector4f.AddSub (a, b);
+		Vector4f c = a.AddSub (b);
 		if (c.X != -2f)
 			return 1;
 		if (c.Y != 2f)
@@ -2489,7 +2489,7 @@ public class SimdTests {
 
 	public static int test_0_simple_packed_shuffle () {
 		Vector4f a = new Vector4f (1, 2, 3, 4);
-		a = Vector4f.Shuffle(a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		a = a.Shuffle(ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
 		if (a.X != 2f)
 			return 1;
 		if (a.Y != 4f)
@@ -2506,11 +2506,11 @@ public class SimdTests {
 		Vector4f m0 = v + v, m1 = v - v, m2 = v * v, m3 = v + v + v;
 		if (ff) v = v + v -v	;
 
-		Vector4f r0 = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
-		Vector4f r1 = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
-		Vector4f x = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
-		Vector4f r2 = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
-		Vector4f r3 = Vector4f.Shuffle (v, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f r0 = v.Shuffle (ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f r1 = v.Shuffle (ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f x = v.Shuffle (ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f r2 = v.Shuffle (ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector4f r3 = v.Shuffle (ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
 		Vector4f a = x;
 
 		r0 = r0 * m0 + x;
