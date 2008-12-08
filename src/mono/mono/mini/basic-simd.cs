@@ -376,7 +376,7 @@ public class SimdTests {
 		Vector2l a = new Vector2l (10, 5);
 		Vector2l b = new Vector2l (-1, 5);
 
-		Vector2l c = Vector2l.CompareGreaterThan (a, b);
+		Vector2l c = a.CompareGreaterThan (b);
 	
 		if (c.X != -1)
 			return 1;
@@ -389,7 +389,7 @@ public class SimdTests {
 		Vector2l a = new Vector2l (0xFF,          5);
 		Vector2l b = new Vector2l (0xFF000000FFL, 5);
 
-		Vector2l c = Vector2l.CompareEqual (a, b);
+		Vector2l c = a.CompareEqual (b);
 	
 		if (c.X != 0)
 			return 1;
@@ -401,7 +401,7 @@ public class SimdTests {
 	public static unsafe int test_0_vector2l_srl () {
 		Vector2l a = new Vector2l (1, 6);
 
-		Vector2l c = Vector2l.LogicalRightShift (a, 1);
+		Vector2l c = a.LogicalRightShift (1);
 	
 		if (c.X != 0)
 			return 1;
@@ -414,7 +414,7 @@ public class SimdTests {
 		Vector2l a = new Vector2l (1, 6);
 		Vector2l b = new Vector2l (3, 4);
 
-		Vector2l c = Vector2l.UnpackHigh (a, b);
+		Vector2l c = a.UnpackHigh (b);
 	
 		if (c.X != 6)
 			return 1;
@@ -427,7 +427,7 @@ public class SimdTests {
 		Vector2l a = new Vector2l (1, 6);
 		Vector2l b = new Vector2l (3, 4);
 
-		Vector2l c = Vector2l.UnpackLow (a, b);
+		Vector2l c = a.UnpackLow (b);
 	
 		if (c.X != 1)
 			return 1;
