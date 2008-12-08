@@ -1500,6 +1500,8 @@ mono_print_thread_dump (void *sigctx)
 		g_string_append_printf (text, "\n\"%s\"", name);
 		g_free (name);
 	}
+	else if (thread->threadpool_thread)
+		g_string_append (text, "\n\"<threadpool thread>\"");
 	else
 		g_string_append (text, "\n\"\"");
 
