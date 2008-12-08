@@ -760,7 +760,7 @@ public class SimdTests {
 		Vector8s a = new Vector8s (-200, 200, 3, 0, 5, 6, 5, 4);
 		Vector8s b = new Vector8s (9, 2, 1, 2, 3, 6, 5, 6);
 
-		Vector16sb c = Vector8s.PackWithSignedSaturation (a, b);
+		Vector16sb c = a.PackWithSignedSaturation (b);
 
 		if (c.V0 != -128)
 			return 1;
