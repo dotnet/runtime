@@ -42,12 +42,13 @@ mono_100ns_ticks (void)
 gint64
 mono_100ns_datetime (void)
 {
-	SYSTEMTIME st;
-	FILETIME ft;
+	ULARGE_INTEGER ft;
 
-	GetSystemTime (&st);
-	SystemTimeToFileTime (&st, &ft);
-	return (gint64) FILETIME_ADJUST + ((((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime);
+	if (sizeof(ft) != sizeof(FILETIME))
+		g_assert_not_reached ();
+
+	GetSystemTimeAsFileTime ((FILETIME*) &ft);
+	return FILETIME_ADJUST + ft.QuadPart;
 }
 
 #else
