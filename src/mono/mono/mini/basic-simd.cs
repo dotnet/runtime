@@ -872,7 +872,7 @@ public class SimdTests {
 	public static int test_0_vector8us_pack_with_sat () {
 		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
 		Vector8us b = new Vector8us (3,4,5,6,7,8,9,10);
-		Vector16b c = Vector8us.SignedPackWithUnsignedSaturation (a, b);
+		Vector16b c = a.SignedPackWithUnsignedSaturation (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -890,7 +890,7 @@ public class SimdTests {
 	public static int test_0_vector8us_mul_high () {
 		Vector8us a = new Vector8us (0xFF00, 2, 3, 0, 5, 6, 5, 4);
 		Vector8us b = new Vector8us (0xFF00, 2, 1, 2, 3, 6, 5, 6);
-		Vector8us c = Vector8us.MultiplyStoreHigh (a, b);
+		Vector8us c = a.MultiplyStoreHigh (b);
 
 		if (c.V0 != 0xFE01)
 			return 1;
@@ -914,7 +914,7 @@ public class SimdTests {
 	public static int test_0_vector8us_cmpeq () {
 		Vector8us a = new Vector8us (1, 2, 3, 0, 5, 6, 5, 4);
 		Vector8us b = new Vector8us (9, 2, 1, 2, 3, 6, 5, 6);
-		Vector8us c = Vector8us.CompareEqual (a, b);
+		Vector8us c = a.CompareEqual (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -1244,7 +1244,7 @@ public class SimdTests {
 	
 	public static int test_0_vecto8us_shuffle_low () {
 		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
-		Vector8us c = Vector8us.ShuffleLow (a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector8us c = a.ShuffleLow (ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
 
 		if (c.V0 != 2)
 			return 1;
@@ -1267,7 +1267,7 @@ public class SimdTests {
 
 	public static int test_0_vecto8us_shuffle_high () {
 		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
-		Vector8us c = Vector8us.ShuffleHigh (a, ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
+		Vector8us c = a.ShuffleHigh (ShuffleSel.XFromY | ShuffleSel.YFromW | ShuffleSel.ZFromX | ShuffleSel.WFromZ);
 
 		if (c.V0 != 1)
 			return 1;
@@ -1292,7 +1292,7 @@ public class SimdTests {
 	public static int test_0_vecto8us_max () {
 		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
 		Vector8us b = new Vector8us (9, 1, 1, 2, 9, 6, 5, 1000);
-		Vector8us c = Vector8us.Max (a, b);
+		Vector8us c = a.Max (b);
 
 		if (c.V0 != 9)
 			return 1;
@@ -1317,7 +1317,7 @@ public class SimdTests {
 	public static int test_0_vecto8us_min () {
 		Vector8us a = new Vector8us (1, 2, 3, 0, 5, 6, 5, 4);
 		Vector8us b = new Vector8us (9, 1, 1, 2, 3, 4, 5, 6);
-		Vector8us c = Vector8us.Min (a, b);
+		Vector8us c = a.Min (b);
 
 		if (c.V0 != 1)
 			return 1;
@@ -1341,7 +1341,7 @@ public class SimdTests {
 	public static int test_0_vecto8us_avg () {
 		Vector8us a = new Vector8us (1, 2, 3, 4, 5, 6, 7, 8);
 		Vector8us b = new Vector8us (9, 1, 1, 2, 3, 4, 5, 6);
-		Vector8us c = Vector8us.Average (a, b);
+		Vector8us c = a.Average (b);
 
 		if (c.V0 != 5)
 			return 1;
@@ -1870,7 +1870,7 @@ public class SimdTests {
 	static int test_0_vector8us_sub_sat () {
 		Vector8us a = new Vector8us (0xF000,1,20,3,4,5,6,7);
 		Vector8us b = new Vector8us (0xFF00,4,5,6,7,8,9,10);
-		Vector8us c = Vector8us.SubtractWithSaturation (a, b);
+		Vector8us c = a.SubtractWithSaturation (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -1894,7 +1894,7 @@ public class SimdTests {
 	static int test_0_vector8us_add_sat () {
 		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
 		Vector8us b = new Vector8us (0xFF00,4,5,6,7,8,9,10);
-		Vector8us c = Vector8us.AddWithSaturation (a, b);
+		Vector8us c = a.AddWithSaturation (b);
 
 		if (c.V0 != 0xFFFF)
 			return 1;
@@ -1918,7 +1918,7 @@ public class SimdTests {
 	static int test_0_vector8us_unpack_low () {
 		Vector8us a = new Vector8us (0,1,2,3,4,5,6,7);
 		Vector8us b = new Vector8us (3,4,5,6,7,8,9,10);
-		Vector8us c = Vector8us.UnpackLow (a, b);
+		Vector8us c = a.UnpackLow (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -1957,7 +1957,7 @@ public class SimdTests {
 	static int test_0_vector8us_shift_right_arithmetic () {
 		Vector8us a = new Vector8us (0xFF00,1,2,3,4,5,6,7);
 		int amt = 2;
-		Vector8us c = Vector8us.ArithmeticRightShift (a, amt);
+		Vector8us c = a.ArithmeticRightShift (amt);
 	
 		if (c.V0 != 0xFFC0)
 			return 1;
