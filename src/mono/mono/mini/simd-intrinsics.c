@@ -1452,37 +1452,45 @@ emit_simd_runtime_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodS
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	const char *class_name;
+
 	if (strcmp ("Mono.Simd", cmethod->klass->name_space))
 		return NULL;
-	
-	if (!strcmp ("SimdRuntime", cmethod->klass->name))
+
+	class_name = cmethod->klass->name;
+	if (!strcmp ("SimdRuntime", class_name))
 		return emit_simd_runtime_intrinsics (cfg, cmethod, fsig, args);
 
-	if (!strcmp ("ArrayExtensions", cmethod->klass->name))
+	if (!strcmp ("ArrayExtensions", class_name))
 		return emit_array_extension_intrinsics (cfg, cmethod, fsig, args);
 	
-	if (!cmethod->klass->simd_type)
+	if (!strcmp ("VectorOperations", class_name)) {
+		if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC))
+			return NULL;
+		class_name = mono_class_from_mono_type (mono_method_signature (cmethod)->params [0])->name;
+	} else if (!cmethod->klass->simd_type)
 		return NULL;
+
 	cfg->uses_simd_intrinsics = 1;
-	if (!strcmp ("Vector2d", cmethod->klass->name))
+	if (!strcmp ("Vector2d", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector2d_intrinsics, sizeof (vector2d_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector4f", cmethod->klass->name))
+	if (!strcmp ("Vector4f", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4f_intrinsics, sizeof (vector4f_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector2ul", cmethod->klass->name))
+	if (!strcmp ("Vector2ul", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector2ul_intrinsics, sizeof (vector2ul_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector2l", cmethod->klass->name))
+	if (!strcmp ("Vector2l", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector2l_intrinsics, sizeof (vector2l_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector4ui", cmethod->klass->name))
+	if (!strcmp ("Vector4ui", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4ui_intrinsics, sizeof (vector4ui_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector4i", cmethod->klass->name))
+	if (!strcmp ("Vector4i", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector4i_intrinsics, sizeof (vector4i_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector8us", cmethod->klass->name))
+	if (!strcmp ("Vector8us", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector8us_intrinsics, sizeof (vector8us_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector8s", cmethod->klass->name))
+	if (!strcmp ("Vector8s", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector8s_intrinsics, sizeof (vector8s_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector16b", cmethod->klass->name))
+	if (!strcmp ("Vector16b", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector16b_intrinsics, sizeof (vector16b_intrinsics) / sizeof (SimdIntrinsc));
-	if (!strcmp ("Vector16sb", cmethod->klass->name))
+	if (!strcmp ("Vector16sb", class_name))
 		return emit_intrinsics (cfg, cmethod, fsig, args, vector16sb_intrinsics, sizeof (vector16sb_intrinsics) / sizeof (SimdIntrinsc));
 
 	return NULL;
