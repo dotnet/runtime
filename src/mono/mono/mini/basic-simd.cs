@@ -774,7 +774,7 @@ public class SimdTests {
 		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16sb b = new Vector16sb (-100, 100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
 
-		Vector16sb c = Vector16sb.SubtractWithSaturation (a, b);
+		Vector16sb c = a.SubtractWithSaturation (b);
 
 		if (c.V0 != 127)
 			return 1;
@@ -799,7 +799,7 @@ public class SimdTests {
 		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16sb b = new Vector16sb (100, -100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
 
-		Vector16sb c = Vector16sb.AddWithSaturation (a, b);
+		Vector16sb c = a.AddWithSaturation (b);
 
 		if (c.V0 != 127)
 			return 1;
@@ -824,7 +824,7 @@ public class SimdTests {
 		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16sb b = new Vector16sb (-100, 100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
 
-		Vector16sb c = Vector16sb.CompareGreaterThan (a, b);
+		Vector16sb c = a.CompareGreaterThan (b);
 
 		if (c.V0 != -1)
 			return 1;
