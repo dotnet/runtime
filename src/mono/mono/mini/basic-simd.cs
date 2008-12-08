@@ -515,7 +515,7 @@ public class SimdTests {
 	public static unsafe int test_0_vector2d_dup () {
 		Vector2d a = new Vector2d (3, 2);
 
-		Vector2d c = Vector2d.Duplicate (a);
+		Vector2d c = a.Duplicate ();
 	
 		if (c.X != 3)
 			return 1;
@@ -528,7 +528,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (3, 2);
 		Vector2d b = new Vector2d (3, 4);
 
-		Vector4ui c = (Vector4ui)Vector2d.CompareEqual (a, b);
+		Vector4ui c = (Vector4ui)a.CompareEqual (b);
 	
 		if (c.X != 0xFFFFFFFF)
 			return 1;
@@ -545,7 +545,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (1, 2);
 		Vector2d b = new Vector2d (4, 5);
 
-		Vector2d c = Vector2d.InterleaveLow (a, b);
+		Vector2d c = a.InterleaveLow (b);
 	
 		if (c.X != 1)
 			return 1;
@@ -558,7 +558,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (1, 2);
 		Vector2d b = new Vector2d (4, 5);
 
-		Vector2d c = Vector2d.InterleaveHigh (a, b);
+		Vector2d c = a.InterleaveHigh (b);
 	
 		if (c.X != 2)
 			return 1;
@@ -570,7 +570,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (1, 2);
 		Vector2d b = new Vector2d (4, 1);
 
-		Vector2d c = Vector2d.AddSub (a, b);
+		Vector2d c = a.AddSub (b);
 	
 		if (c.X != -3)
 			return 1;
@@ -582,7 +582,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (1, 2);
 		Vector2d b = new Vector2d (4, 1);
 
-		Vector2d c = Vector2d.HorizontalSub (a, b);
+		Vector2d c = a.HorizontalSub (b);
 	
 		if (c.X != -1)
 			return 1;
@@ -595,7 +595,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (1, 2);
 		Vector2d b = new Vector2d (4, 0);
 
-		Vector2d c = Vector2d.HorizontalAdd (a, b);
+		Vector2d c = a.HorizontalAdd (b);
 	
 		if (c.X != 3)
 			return 1;
@@ -608,7 +608,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (1, 2);
 		Vector2d b = new Vector2d (4, 0);
 
-		Vector2d c = Vector2d.Min (a, b);
+		Vector2d c = a.Min (b);
 	
 		if (c.X != 1)
 			return 1;
@@ -621,7 +621,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (1, 2);
 		Vector2d b = new Vector2d (4, 0);
 
-		Vector2d c = Vector2d.Max (a, b);
+		Vector2d c = a.Max (b);
 	
 		if (c.X != 4)
 			return 1;
@@ -635,7 +635,7 @@ public class SimdTests {
 		Vector2d a = new Vector2d (1, 2);
 		Vector2d b = new Vector2d (3, 4);
 
-		Vector4ui c = (Vector4ui)Vector2d.AndNot (a, b);
+		Vector4ui c = (Vector4ui)a.AndNot (b);
 		Vector4ui ta = (Vector4ui)a;
 		Vector4ui tb = (Vector4ui)b;
 	
