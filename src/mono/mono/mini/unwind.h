@@ -79,4 +79,11 @@ typedef struct {
 /* Reg is saved at cfa+offset */
 #define mono_emit_unwind_op_offset(cfg,ip,reg,offset) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_offset, (reg), (offset))
 
+
+int
+mono_hw_reg_to_dwarf_reg (int reg) MONO_INTERNAL;
+
+guint8*
+mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len) MONO_INTERNAL;
+
 #endif
