@@ -1002,7 +1002,7 @@ public class SimdTests {
 	public static int vector16b_cmpeq () {
 		Vector16b a = new Vector16b (1,0,9,0,0,0,0,0,0,0,0,0,0,0,0,1);
 		Vector16b b = new Vector16b (0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-		Vector16b c = Vector16b.CompareEqual (a, b);
+		Vector16b c = a.CompareEqual (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -1043,7 +1043,7 @@ public class SimdTests {
 	public static int vector16b_sum_abs_diff () {
 		Vector16b a = new Vector16b (100,20,20,20,0,0,0,0,0,0,0,0,0,0, 0, 0);
 		Vector16sb b = new Vector16sb (0,  10,10,10,0,0,0,0,0,0,0,0,0,0,10,10);
-		Vector8us c = Vector16b.SumOfAbsoluteDifferences (a, b);
+		Vector8us c = a.SumOfAbsoluteDifferences (b);
 
 		if (c.V0 != 130)
 			return 1;
@@ -1067,7 +1067,7 @@ public class SimdTests {
 
 	public static int test_0_vector16b_extract_mask () {
 		Vector16b a = new Vector16b (0xF0,0,0xF0,0,0,0,0xF0,0xAA,0x0F,0,0xFF,0,0,0,0,0);
-		int c = Vector16b.ExtractByteMask (a);
+		int c = a.ExtractByteMask ();
 
 		if (c != 0x4C5)
 			return 1;
@@ -1077,7 +1077,7 @@ public class SimdTests {
 	public static int test_0_vector16b_min () {
 		Vector16b a = new Vector16b (0,12,20,12,4,5,6,7,8,9,10,11,12,13,14,15);
 		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16b c = Vector16b.Min (a, b);
+		Vector16b c = a.Min (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -1117,7 +1117,7 @@ public class SimdTests {
 	public static int test_0_vector16b_max () {
 		Vector16b a = new Vector16b (0,12,20,12,4,5,6,7,8,9,10,11,12,13,14,15);
 		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16b c = Vector16b.Max (a, b);
+		Vector16b c = a.Max (b);
 
 		if (c.V0 != 9)
 			return 1;
@@ -1156,7 +1156,7 @@ public class SimdTests {
 	public static int test_0_vector16b_avg () {
 		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
 		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16b c = Vector16b.Average (a, b);
+		Vector16b c = a.Average (b);
 
 		if (c.V0 != 5)
 			return 1;
@@ -2118,7 +2118,7 @@ public class SimdTests {
 	static int test_0_vector16b_unpack_high () {
 		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
 		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16b c = Vector16b.UnpackHigh (a, b);
+		Vector16b c = a.UnpackHigh (b);
 
 		if (c.V0 != 8)
 			return 1;
@@ -2142,7 +2142,7 @@ public class SimdTests {
 	static int test_0_vector16b_unpack_low () {
 		Vector16b a = new Vector16b (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
 		Vector16b b = new Vector16b (9,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16b c = Vector16b.UnpackLow (a, b);
+		Vector16b c = a.UnpackLow (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -2166,7 +2166,7 @@ public class SimdTests {
 	static int test_0_vector16b_sub_sat () {
 		Vector16b a = new Vector16b (100,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16b b = new Vector16b (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-		Vector16b c = Vector16b.SubtractWithSaturation (a, b);
+		Vector16b c = a.SubtractWithSaturation (b);
 
 		if (c.V0 != 0)
 			return 1;
@@ -2180,7 +2180,7 @@ public class SimdTests {
 	static int test_0_vector16b_add_sat () {
 		Vector16b a = new Vector16b (200,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
 		Vector16b b = new Vector16b (200,10,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
-		Vector16b c = Vector16b.AddWithSaturation (a, b);
+		Vector16b c = a.AddWithSaturation (b);
 
 		if (c.V0 != 255)
 			return 1;
