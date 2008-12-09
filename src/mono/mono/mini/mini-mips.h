@@ -4,6 +4,18 @@
 #include <mono/arch/mips/mips-codegen.h>
 #include <glib.h>
 
+#if _MIPS_SIM == _ABIO32
+/* o32 fully supported */
+#elif _MIPS_SIM == _ABIN32
+/* n32 under development */
+#warning "MIPS using n32 - under development"
+#else
+/* o64 not supported */
+/* n64 not supported */
+#error "MIPS unsupported ABI"
+#endif
+
+
 #define MONO_ARCH_CPU_SPEC mips_desc
 
 #define MONO_MAX_IREGS 32
@@ -11,6 +23,27 @@
 
 #define MONO_SAVED_GREGS 32
 #define MONO_SAVED_FREGS 32
+
+
+#if _MIPS_SIM == _ABIO32
+#define IREG_SIZE	4
+typedef guint32		mips_ireg;
+#define FREG_SIZE	4
+typedef gfloat		mips_freg;
+#elif _MIPS_SIM == _ABIN32
+#define IREG_SIZE	8
+typedef guint64		mips_ireg;
+#define FREG_SIZE	8
+typedef gdouble		mips_freg;
+#endif
+
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#define MSW_OFFSET	sizeof(mips_ireg)
+#define LSW_OFFSET	0
+#else
+#define MSW_OFFSET	0
+#define LSW_OFFSET	sizeof(mips_ireg)
+#endif
 
 /*
  * at and t0 used internally
@@ -56,6 +89,7 @@
 #define MIPS_FP_PAIR(reg)	(1 << (reg))
 #endif
 
+#if _MIPS_SIM == _ABIO32
 #define MONO_ARCH_CALLEE_FREGS		(MIPS_FP_PAIR(mips_f0) |	\
 					 MIPS_FP_PAIR(mips_f2) |	\
 					 MIPS_FP_PAIR(mips_f4) |	\
@@ -73,6 +107,41 @@
 					 MIPS_FP_PAIR(mips_f26) |	\
 					 MIPS_FP_PAIR(mips_f28) |	\
 					 MIPS_FP_PAIR(mips_f30))
+#elif _MIPS_SIM == _ABIN32
+#define MONO_ARCH_CALLEE_FREGS		(MIPS_FP_PAIR(mips_f0) |	\
+					 MIPS_FP_PAIR(mips_f1) |	\
+					 MIPS_FP_PAIR(mips_f2) |	\
+					 MIPS_FP_PAIR(mips_f3) |	\
+					 MIPS_FP_PAIR(mips_f4) |	\
+					 MIPS_FP_PAIR(mips_f5) |	\
+					 MIPS_FP_PAIR(mips_f6) |	\
+					 MIPS_FP_PAIR(mips_f7) |	\
+					 MIPS_FP_PAIR(mips_f8) |	\
+					 MIPS_FP_PAIR(mips_f9) |	\
+					 MIPS_FP_PAIR(mips_f10) |	\
+					 MIPS_FP_PAIR(mips_f11) |	\
+					 MIPS_FP_PAIR(mips_f12) |	\
+					 MIPS_FP_PAIR(mips_f13) |	\
+					 MIPS_FP_PAIR(mips_f14) |	\
+					 MIPS_FP_PAIR(mips_f15) |	\
+					 MIPS_FP_PAIR(mips_f16) |	\
+					 MIPS_FP_PAIR(mips_f17) |	\
+					 MIPS_FP_PAIR(mips_f18) |	\
+					 MIPS_FP_PAIR(mips_f19))
+
+#define MONO_ARCH_CALLEE_SAVED_FREGS	(MIPS_FP_PAIR(mips_f20) |	\
+					 MIPS_FP_PAIR(mips_f21) |	\
+					 MIPS_FP_PAIR(mips_f22) |	\
+					 MIPS_FP_PAIR(mips_f23) |	\
+					 MIPS_FP_PAIR(mips_f24) |	\
+					 MIPS_FP_PAIR(mips_f25) |	\
+					 MIPS_FP_PAIR(mips_f26) |	\
+					 MIPS_FP_PAIR(mips_f27) |	\
+					 MIPS_FP_PAIR(mips_f28) |	\
+					 MIPS_FP_PAIR(mips_f29) |	\
+					 MIPS_FP_PAIR(mips_f30) |	\
+					 MIPS_FP_PAIR(mips_f31))
+#endif
 
 #define mips_ftemp mips_f18
 
@@ -115,14 +184,14 @@ void mips_patch (guint32 *code, guint32 target);
 #define MIPS_LMF_MAGIC2	0xc3c3c3c3
 
 struct MonoLMF {
-	gpointer    previous_lmf;
-	gpointer    lmf_addr;
-	MonoMethod *method;
-	gulong     ebp;
-	gulong     eip;
-	gulong     iregs [MONO_SAVED_GREGS];
-	gfloat     fregs [MONO_SAVED_FREGS];
-	gulong     magic;
+	gpointer	previous_lmf;
+	gpointer	lmf_addr;
+	MonoMethod	*method;
+	mips_ireg	ebp;
+	gpointer	eip;
+	mips_ireg	iregs [MONO_SAVED_GREGS];
+	mips_freg	fregs [MONO_SAVED_FREGS];
+	gulong		magic;
 };
 
 /* we define our own structure and we'll copy the data
@@ -132,9 +201,9 @@ struct MonoLMF {
  * the original context from the signal handler.
  */
 typedef struct {
-	gulong sc_pc;
-	gulong sc_regs [MONO_SAVED_GREGS];
-	gfloat sc_fpregs [MONO_SAVED_FREGS];
+	gpointer	sc_pc;
+	mips_ireg	sc_regs [MONO_SAVED_GREGS];
+	mips_freg	sc_fpregs [MONO_SAVED_FREGS];
 } MonoContext;
 
 typedef struct MonoCompileArch {
@@ -152,16 +221,24 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_BIGMUL_INTRINS 1
 
-#define MIPS_RET_ADDR_OFFSET	(-4)
+#define MIPS_RET_ADDR_OFFSET	(-sizeof(gpointer))
 #define MIPS_FP_ADDR_OFFSET	(-8)
 #define MIPS_STACK_ALIGNMENT	16
 #define MIPS_STACK_PARAM_OFFSET 16		/* from sp to first parameter */
-#define MIPS_MINIMAL_STACK_SIZE (4*4 + 4*4)
+#define MIPS_MINIMAL_STACK_SIZE (4*sizeof(mips_ireg) + 4*sizeof(mips_ireg))
 #define MIPS_EXTRA_STACK_SIZE	16		/* from last parameter to top of frame */
+
+#if _MIPS_SIM == _ABIO32
 #define MIPS_FIRST_ARG_REG	mips_a0
 #define MIPS_LAST_ARG_REG	mips_a3
 #define MIPS_FIRST_FPARG_REG	mips_f12
 #define MIPS_LAST_FPARG_REG	mips_f14
+#elif _MIPS_SIM == _ABIN32
+#define MIPS_FIRST_ARG_REG	mips_a0
+#define MIPS_LAST_ARG_REG	mips_t3
+#define MIPS_FIRST_FPARG_REG	mips_f12
+#define MIPS_LAST_FPARG_REG	mips_f19
+#endif
 
 //#define MONO_ARCH_HAVE_IMT 1
 //#define MONO_ARCH_IMT_REG mips_v0		/* XXX */

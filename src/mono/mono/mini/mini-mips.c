@@ -23,14 +23,6 @@
 #include "trace.h"
 #include "ir-emit.h"
 
-#if _MIPS_SIM == _ABIO32
-#warning "MIPS using o32"
-#elif _MIPS_SIM == _ABIN32
-#warning "MIPS using n32"
-#else
-#error "MIPS unsupported ABI"
-#endif
-
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
 #define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
@@ -527,6 +519,10 @@ is_regsize_var (MonoType *t) {
 	switch (t->type) {
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
+#if (IREG_SIZE == 8)
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+#endif
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
@@ -610,12 +606,13 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 static void
 args_onto_stack (CallInfo *info)
 {
-	g_assert(!info->on_stack);
-	g_assert(info->stack_size <= MIPS_STACK_PARAM_OFFSET);
+	g_assert (!info->on_stack);
+	g_assert (info->stack_size <= MIPS_STACK_PARAM_OFFSET);
 	info->on_stack = TRUE;
 	info->stack_size = MIPS_STACK_PARAM_OFFSET;
 }
 
+#if _MIPS_SIM == _ABIO32
 /*
  * O32 calling convention version
  */
@@ -649,7 +646,7 @@ add_int64_arg (CallInfo *info, ArgInfo *ainfo) {
 
 	/* Now, place the argument */
 	if (info->on_stack) {
-		g_assert(info->stack_size % 4 == 0);
+		g_assert (info->stack_size % 4 == 0);
 		info->stack_size += (info->stack_size % 8);
 
 		ainfo->regtype = RegTypeBase;
@@ -743,6 +740,113 @@ add_float64_arg (CallInfo *info, ArgInfo *ainfo) {
 	}
 	info->stack_size += 8;
 }
+#elif _MIPS_SIM == _ABIN32
+/*
+ * N32 calling convention version
+ */
+
+static void
+add_int32_arg (CallInfo *info, ArgInfo *ainfo) {
+	/* First, see if we need to drop onto the stack */
+	if (!info->on_stack && info->gr > MIPS_LAST_ARG_REG)
+		args_onto_stack (info);
+
+	/* Now, place the argument */
+	if (info->on_stack) {
+		ainfo->regtype = RegTypeBase;
+		ainfo->reg = mips_sp; /* in the caller */
+		ainfo->offset = info->stack_size;
+		info->stack_size += IREG_SIZE;
+	}
+	else {
+		ainfo->regtype = RegTypeGeneral;
+		ainfo->reg = info->gr;
+		info->gr += 1;
+		info->gr_passed = TRUE;
+	}
+}
+
+static void
+add_int64_arg (CallInfo *info, ArgInfo *ainfo) {
+	/* First, see if we need to drop onto the stack */
+	if (!info->on_stack && info->gr > MIPS_LAST_ARG_REG)
+		args_onto_stack (info);
+
+	/* Now, place the argument */
+	if (info->on_stack) {
+		g_assert (info->stack_size % 4 == 0);
+		info->stack_size += (info->stack_size % 8);
+
+		ainfo->regtype = RegTypeBase;
+		ainfo->reg = mips_sp; /* in the caller */
+		ainfo->offset = info->stack_size;
+		info->stack_size += IREG_SIZE;
+	}
+	else {
+		g_assert (info->gr <= MIPS_LAST_ARG_REG);
+
+		ainfo->regtype = RegTypeGeneral;
+		ainfo->reg = info->gr;
+		info->gr += 1;
+		info->gr_passed = TRUE;
+	}
+}
+
+static void
+add_float32_arg (CallInfo *info, ArgInfo *ainfo) {
+	/* First, see if we need to drop onto the stack */
+	if (!info->on_stack) {
+		if (info->gr > MIPS_LAST_ARG_REG)
+			args_onto_stack (info);
+		else if (info->fr > MIPS_LAST_FPARG_REG)
+			args_onto_stack (info);
+	}
+
+	/* Now, place the argument */
+	if (info->on_stack) {
+		ainfo->regtype = RegTypeBase;
+		ainfo->reg = mips_sp; /* in the caller */
+		ainfo->offset = info->stack_size;
+		info->stack_size += FREG_SIZE;
+	}
+	else {
+		ainfo->regtype = RegTypeFP;
+		ainfo->reg = info->fr;
+		info->fr += 1;
+		/* FP and GP slots do not overlap */
+		info->gr += 1;
+	}
+}
+
+static void
+add_float64_arg (CallInfo *info, ArgInfo *ainfo) {
+	/* First, see if we need to drop onto the stack */
+	if (!info->on_stack) {
+		if (info->gr > MIPS_LAST_ARG_REG)
+			args_onto_stack (info);
+		else if (info->fr > MIPS_LAST_FPARG_REG)
+			args_onto_stack (info);
+	}
+
+	/* Now, place the argument */
+	if (info->on_stack) {
+		g_assert(info->stack_size % 4 == 0);
+		info->stack_size += (info->stack_size % 8);
+
+		ainfo->regtype = RegTypeBase;
+		ainfo->reg = mips_sp; /* in the caller */
+		ainfo->offset = info->stack_size;
+		info->stack_size += FREG_SIZE;
+	}
+	else {
+		ainfo->regtype = RegTypeFP;
+		ainfo->reg = info->fr;
+		info->fr += 1;
+		/* FP and GP slots do not overlap */
+		info->gr += 1;
+	}
+}
+#endif
 
 static CallInfo*
 calculate_sizes (MonoMethodSignature *sig, gboolean is_pinvoke)
@@ -1142,7 +1246,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (iregs_to_save) {
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			if (iregs_to_save & (1 << i)) {
-				offset += sizeof (gulong);
+				offset += IREG_SIZE;
 			}
 		}
 	}
@@ -1158,14 +1262,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (fregs_to_restore) {
 		for (i = MONO_MAX_FREGS-1; i >= 0; --i) {
 			if (fregs_to_restore & (1 << i)) {
-				offset += sizeof (double);
+				offset += sizeof(double);
 			}
 		}
 	}
 #endif
 
 	/* Now add space for saving the ra */
-	offset += 4;
+	offset += sizeof(gpointer);
 
 	/* change sign? */
 	offset = (offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
@@ -1184,7 +1288,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->vret_addr->inst_c0 = mips_a0;
 		cfg->vret_addr->inst_offset = offset;
 		cfg->vret_addr->inst_basereg = frame_reg;
-		offset += 4;
+		offset += sizeof(gpointer);
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -1200,9 +1304,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			inst->opcode = OP_REGOFFSET;
 			size = mono_type_size (arg_type, &align);
 
-			if (size < 4) {
-				size = 4;
-				align = 4;
+			if (size < IREG_SIZE) {
+				size = IREG_SIZE;
+				align = IREG_SIZE;
 			}
 			inst->inst_basereg = frame_reg;
 			offset = (offset + align - 1) & ~(align - 1);
@@ -1475,7 +1579,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			dreg = mono_alloc_ireg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, src->dreg, soffset);
 			mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg + i, FALSE);
-			soffset += sizeof (gpointer);
+			soffset += IREG_SIZE;
 		}
 		if (ovf_size != 0) {
 			mini_emit_memcpy (cfg, mips_fp, doffset, src->dreg, soffset, ovf_size * sizeof (gpointer), 0);
@@ -2833,7 +2937,7 @@ emit_load_volatile_arguments(MonoCompile *cfg, guint8 *code)
 				g_assert (mips_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
 				for (i = 0; i < ainfo->size; ++i) {
 					mips_lw (code, ainfo->reg + i, inst->inst_basereg, doffset);
-					doffset += sizeof (gpointer);
+					doffset += IREG_SIZE;
 				}
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
 				g_assert (mips_is_imm16 (inst->inst_offset));
@@ -4155,10 +4259,10 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	mips_nop (code);
 	mips_nop (code);
 
-	mips_sw (code, mips_a0, mips_sp, cfg->stack_offset + 0);
-	mips_sw (code, mips_a1, mips_sp, cfg->stack_offset + 4);
-	mips_sw (code, mips_a2, mips_sp, cfg->stack_offset + 8);
-	mips_sw (code, mips_a3, mips_sp, cfg->stack_offset + 12);
+	mips_sw (code, mips_a0, mips_sp, cfg->stack_offset + 0*IREG_SIZE);
+	mips_sw (code, mips_a1, mips_sp, cfg->stack_offset + 1*IREG_SIZE);
+	mips_sw (code, mips_a2, mips_sp, cfg->stack_offset + 2*IREG_SIZE);
+	mips_sw (code, mips_a3, mips_sp, cfg->stack_offset + 3*IREG_SIZE);
 #if 0
 #if 0
 	fp_stack_offset = MIPS_STACK_PARAM_OFFSET;
@@ -4180,10 +4284,10 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	mips_jalr (code, mips_t9, mips_ra);
 	mips_nop (code);
 
-	mips_lw (code, mips_a0, mips_sp, cfg->stack_offset + 0);
-	mips_lw (code, mips_a1, mips_sp, cfg->stack_offset + 4);
-	mips_lw (code, mips_a2, mips_sp, cfg->stack_offset + 8);
-	mips_lw (code, mips_a3, mips_sp, cfg->stack_offset + 12);
+	mips_lw (code, mips_a0, mips_sp, cfg->stack_offset + 0*IREG_SIZE);
+	mips_lw (code, mips_a1, mips_sp, cfg->stack_offset + 1*IREG_SIZE);
+	mips_lw (code, mips_a2, mips_sp, cfg->stack_offset + 2*IREG_SIZE);
+	mips_lw (code, mips_a3, mips_sp, cfg->stack_offset + 3*IREG_SIZE);
 #if 0
 #if 0
 	mips_lwc1 (code, mips_f12, mips_sp, fp_stack_offset + 16);
@@ -4216,7 +4320,7 @@ mips_adjust_stackframe(MonoCompile *cfg)
 		return;
 
 	/* adjust cfg->stack_offset for account for down-spilling */
-	cfg->stack_offset += 4;
+	cfg->stack_offset += IREG_SIZE;
 
 	/* re-align cfg->stack_offset if needed (due to var spilling) */
 	cfg->stack_offset = (cfg->stack_offset + MIPS_STACK_ALIGNMENT - 1) & ~(MIPS_STACK_ALIGNMENT - 1);
@@ -4226,7 +4330,7 @@ mips_adjust_stackframe(MonoCompile *cfg)
 		g_print ("\tspillvars allocated 0x%x -> 0x%x\n", cfg->arch.local_alloc_offset, cfg->stack_offset);
 	}
 	threshold = cfg->arch.local_alloc_offset;
-	ra_offset = cfg->stack_offset - 4;
+	ra_offset = cfg->stack_offset - sizeof(gpointer);
 	if (cfg->verbose_level > 2) {
 		g_print ("\tra_offset %d/0x%x delta %d/0x%x\n", ra_offset, ra_offset, delta, delta);
 	}
@@ -4407,9 +4511,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		pos = cfg->arch.iregs_offset;
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			if (iregs_to_save & (1 << i)) {
-				g_assert (pos < cfg->stack_usage - 4);
+				g_assert (pos < cfg->stack_usage - sizeof(gpointer));
 				mips_sw (code, i, mips_sp, pos);
-				pos += sizeof (gulong);
+				pos += IREG_SIZE;
 			}
 		}
 	}
@@ -4571,7 +4675,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				/* Push the argument registers into their stack slots */
 				for (i = 0; i < ainfo->size; ++i) {
 					mips_sw (code, ainfo->reg + i, inst->inst_basereg, doffset);
-					doffset += sizeof (gpointer);
+					doffset += IREG_SIZE;
 				}
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
 				g_assert (mips_is_imm16 (inst->inst_offset));
@@ -4700,7 +4804,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	switch (save_mode) {
 	case SAVE_TWO:
 		mips_sw (code, mips_v0, mips_sp, save_offset);
-		mips_sw (code, mips_v1, mips_sp, save_offset + 4);
+		mips_sw (code, mips_v1, mips_sp, save_offset + IREG_SIZE);
 		if (enable_arguments) {
 			mips_move (code, mips_a1, mips_v0);
 			mips_move (code, mips_a2, mips_v1);
@@ -4716,7 +4820,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		mips_sdc1 (code, mips_f0, mips_sp, save_offset);
 		mips_ldc1 (code, mips_f12, mips_sp, save_offset);
 		mips_lw (code, mips_a0, mips_sp, save_offset);
-		mips_lw (code, mips_a1, mips_sp, save_offset+4);
+		mips_lw (code, mips_a1, mips_sp, save_offset + IREG_SIZE);
 		break;
 	case SAVE_STRUCT:
 	case SAVE_NONE:
@@ -4731,7 +4835,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	switch (save_mode) {
 	case SAVE_TWO:
 		mips_lw (code, mips_v0, mips_sp, save_offset);
-		mips_lw (code, mips_v1, mips_sp, save_offset + 4);
+		mips_lw (code, mips_v1, mips_sp, save_offset + IREG_SIZE);
 		break;
 	case SAVE_ONE:
 		mips_lw (code, mips_v0, mips_sp, save_offset);
@@ -4804,7 +4908,7 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 		for (i = MONO_MAX_IREGS-1; i >= 0; --i) {
 			if (iregs_to_restore & (1 << i)) {
 				mips_lw (code, i, mips_sp, pos);
-				pos += sizeof (gulong);
+				pos += IREG_SIZE;
 			}
 		}
 	}
@@ -4821,7 +4925,7 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg, guint8 *code)
 			if (fregs_to_restore & (1 << i)) {
 				g_assert (pos < cfg->stack_usage - MIPS_STACK_ALIGNMENT);
 				mips_lwc1 (code, i, mips_sp, pos);
-				pos += sizeof (gulong);
+				pos += FREG_SIZE
 			}
 		}
 	}

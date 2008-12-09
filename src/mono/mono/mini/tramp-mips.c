@@ -113,7 +113,7 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
  * STACK would be 444 for 32 bit darwin
  */
 
-#define STACK (4*4 + 8 + sizeof(MonoLMF) + 32)
+#define STACK (4*IREG_SIZE + 8 + sizeof(MonoLMF) + 32)
 
 
 gpointer
