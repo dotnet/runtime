@@ -232,11 +232,11 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	else
 		has_caller = TRUE;
 
-	code = buf = mono_global_codeman_reserve (532);
+	code = buf = mono_global_codeman_reserve (538);
 
 	*ji = NULL;
 
-	framesize = 532 + sizeof (MonoLMF);
+	framesize = 538 + sizeof (MonoLMF);
 	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
 
 	orig_rsp_to_rbp_offset = 0;
@@ -472,7 +472,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		amd64_jump_membase (code, AMD64_RSP, rax_offset - 0x8);
 	}
 
-	g_assert ((code - buf) <= 532);
+	g_assert ((code - buf) <= 538);
 
 	mono_arch_flush_icache (buf, code - buf);
 
