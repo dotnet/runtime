@@ -217,7 +217,7 @@ mono_marshal_free_ccw (MonoObject* obj) MONO_INTERNAL;
 
 #ifndef DISABLE_COM
 void
-cominterop_release_all_rcws () MONO_INTERNAL; 
+cominterop_release_all_rcws (void) MONO_INTERNAL; 
 #endif
 
 void
