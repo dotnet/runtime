@@ -34,7 +34,7 @@
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
 #define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
-#define LONG_BRANCH		0	/* needed for yyparse in mcs */
+#define LONG_BRANCH		1	/* needed for yyparse in mcs */
 
 #define SAVE_LMF		1
 #define ALWAYS_USE_FP		1
@@ -3312,7 +3312,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_dmtc1 (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MIPS_MFC1D:
+#if 0
 			mips_dmfc1 (code, ins->dreg, ins->sreg1);
+#else
+			mips_mfc1 (code, ins->dreg+1, ins->sreg1);
+			mips_mfc1 (code, ins->dreg, ins->sreg1+1);
+#endif
 			break;
 
 		case OP_ICONV_TO_I4:
@@ -3743,11 +3748,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* floating point opcodes */
 		case OP_R8CONST:
+#if 0
 			if (((guint32)ins->inst_p0) & (1 << 15))
 				mips_lui (code, mips_at, mips_zero, (((guint32)ins->inst_p0)>>16)+1);
 			else
 				mips_lui (code, mips_at, mips_zero, (((guint32)ins->inst_p0)>>16));
 			mips_ldc1 (code, ins->dreg, mips_at, ((guint32)ins->inst_p0) & 0xffff);
+#else
+			mips_load_const (code, mips_at, ins->inst_p0);
+			mips_lwc1 (code, ins->dreg, mips_at, 4);
+			mips_lwc1 (code, ins->dreg+1, mips_at, 0);
+#endif
 			break;
 		case OP_R4CONST:
 			if (((guint32)ins->inst_p0) & (1 << 15))
