@@ -7347,6 +7347,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\mini\unwind.c"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\mini\wapihandles.c"
 				>
 			</File>
