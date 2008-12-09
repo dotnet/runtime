@@ -64,7 +64,7 @@ callvirt: dest:v clob:c len:20
 int_conv_to_r_un: dest:f src1:i len:32
 throw: src1:i len:24
 rethrow: src1:i len:24
-ckfinite: dest:f src1:f len:24
+ckfinite: dest:f src1:f len:52
 start_handler: len:16
 endfinally: len:12
 ceq: dest:i len:16

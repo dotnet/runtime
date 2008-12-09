@@ -23,6 +23,14 @@
 #include "trace.h"
 #include "ir-emit.h"
 
+#if _MIPS_SIM == _ABIO32
+#warning "MIPS using o32"
+#elif _MIPS_SIM == _ABIN32
+#warning "MIPS using n32"
+#else
+#error "MIPS unsupported ABI"
+#endif
+
 #define SAVE_FP_REGS		0
 #define SAVE_ALL_REGS		0
 #define EXTRA_STACK_SPACE	0	/* suppresses some s-reg corruption issues */
@@ -2341,26 +2349,8 @@ loop_start:
 			}
 			break;
 
-		case OP_FCOMPARE:
-			next = ins->next;
-			/* Branch opts can eliminate the branch */
-			if (!next || (!(MONO_IS_COND_BRANCH_OP (next) || MONO_IS_COND_EXC (next) || MONO_IS_SETCC (next)))) {
-				ins->opcode = OP_NOP;
-				break;
-			}
-			g_assert(next);
-
-			/*
-			 * remap compare/branch and compare/set
-			 * to MIPS specific opcodes.
-			 */
-			ins->opcode = OP_NOP;
-			next->opcode = map_to_mips_op (next->opcode);
-			next->sreg1 = ins->sreg1;
-			next->sreg2 = ins->sreg2;
-			break;
-
 		case OP_SUB_IMM:
+		case OP_ISUB_IMM:
 			if (!mips_is_imm16 (-ins->inst_imm)) {
 				NEW_INS (cfg, last_ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
@@ -2368,16 +2358,6 @@ loop_start:
 				ins->sreg2 = temp->dreg;
 				ins->opcode = map_to_reg_reg_op (ins->opcode);
 			}
-			break;
-
-		case OP_SBB_IMM:
-		case OP_SUBCC_IMM:
-		case OP_ADC_IMM:
-			NEW_INS (cfg, last_ins, temp, OP_ICONST);
-			temp->inst_c0 = ins->inst_imm;
-			temp->dreg = mono_alloc_ireg (cfg);
-			ins->sreg2 = temp->dreg;
-			ins->opcode = map_to_reg_reg_op (ins->opcode);
 			break;
 
 		case OP_MUL_IMM:
@@ -2458,6 +2438,25 @@ loop_start:
 				last_ins = temp;
 				goto loop_start; /* make it handle the possibly big ins->inst_offset */
 			}
+			break;
+
+		case OP_FCOMPARE:
+			next = ins->next;
+			/* Branch opts can eliminate the branch */
+			if (!next || (!(MONO_IS_COND_BRANCH_OP (next) || MONO_IS_COND_EXC (next) || MONO_IS_SETCC (next)))) {
+				ins->opcode = OP_NOP;
+				break;
+			}
+			g_assert(next);
+
+			/*
+			 * remap compare/branch and compare/set
+			 * to MIPS specific opcodes.
+			 */
+			ins->opcode = OP_NOP;
+			next->opcode = map_to_mips_op (next->opcode);
+			next->sreg1 = ins->sreg1;
+			next->sreg2 = ins->sreg2;
 			break;
 
 #if 0
@@ -3117,40 +3116,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IADD:
 			mips_addu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
-			if (mips_is_imm16 (ins->inst_imm)) {
-				mips_addiu (code, ins->dreg, ins->sreg1, ins->inst_imm);
-			} else {
-				mips_load_const (code, mips_at, ins->inst_imm);
-				mips_addu (code, ins->dreg, ins->sreg1, mips_at);
-			}
+			g_assert (mips_is_imm16 (ins->inst_imm));
+			mips_addiu (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
+
 		case OP_ISUB:
 			mips_subu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+
 		case OP_ISUB_IMM:
 		case OP_SUB_IMM:
 			// we add the negated value
-			if (mips_is_imm16 (-ins->inst_imm))
-				mips_addi (code, ins->dreg, ins->sreg1, -ins->inst_imm);
-			else {
-				mips_load_const (code, mips_at, ins->inst_imm);
-				mips_subu (code, ins->dreg, ins->sreg1, mips_at);
-			}
+			g_assert (mips_is_imm16 (-ins->inst_imm));
+			mips_addiu (code, ins->dreg, ins->sreg1, -ins->inst_imm);
 			break;
+
 		case OP_IAND:
 			mips_and (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+
 		case OP_AND_IMM:
 		case OP_IAND_IMM:
-			if (mips_is_imm16 (ins->inst_imm)) {
-				mips_andi (code, ins->dreg, ins->sreg1, ins->inst_imm);
-			} else {
-				mips_load_const (code, mips_at, ins->inst_imm);
-				mips_and (code, ins->dreg, ins->sreg1, mips_at);
-			}
+			g_assert (!(ins->inst_imm & 0xffff0000));
+			mips_andi (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
+
 		case OP_IDIV:
 		case OP_IREM: {
 			guint32 *divisor_is_m1;
@@ -4015,15 +4008,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_nop (code);
 			break;
 		case OP_CKFINITE: {
-			g_assert_not_reached();
-#if 0
-			ppc_stfd (code, ins->sreg1, -8, ppc_sp);
-			ppc_lwz (code, ppc_r11, -8, ppc_sp);
-			ppc_rlwinm (code, ppc_r11, ppc_r11, 0, 1, 31);
-			ppc_addis (code, ppc_r11, ppc_r11, -32752);
-			ppc_rlwinmd (code, ppc_r11, ppc_r11, 1, 31, 31);
-			EMIT_COND_SYSTEM_EXCEPTION (CEE_BEQ - CEE_BEQ, "ArithmeticException");
-#endif
+			guint32 *branch_patch;
+
+			mips_mfc1 (code, mips_at, ins->sreg1+1);
+			mips_srl (code, mips_at, mips_at, 16+4);
+			mips_andi (code, mips_at, mips_at, 2047);
+			mips_addiu (code, mips_at, mips_at, -2047);
+
+			branch_patch = (guint32 *)(void *)code;
+			mips_bne (code, mips_at, mips_zero, 0);
+			mips_nop (code);
+
+			EMIT_SYSTEM_EXCEPTION_NAME("ArithmeticException");
+			mips_patch (branch_patch, (guint32)code);
+			mips_fmovd (code, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_JUMP_TABLE:
