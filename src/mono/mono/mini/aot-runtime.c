@@ -1329,6 +1329,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	return TRUE;
 }
 
+/*
+ * LOCKING: Acquires the domain lock.
+ */
 static MonoJitInfo*
 decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain, 
 							 MonoMethod *method, guint8* ex_info, guint8 *code)
@@ -2016,10 +2019,6 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 			mono_mempool_destroy (mp);
 	}
 
-	mono_aot_lock ();
-
-	mono_jit_stats.methods_aot++;
-
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 		char *full_name;
 
@@ -2036,6 +2035,10 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT FOUND AOT compiled code for %s %p - %p %p\n", full_name, code, code + jinfo->code_size, info);
 		g_free (full_name);
 	}
+
+	mono_aot_lock ();
+
+	mono_jit_stats.methods_aot++;
 
 	aot_module->methods_loaded [method_index / 32] |= 1 << (method_index % 32);
 
