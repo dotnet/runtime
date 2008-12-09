@@ -442,6 +442,42 @@ typedef struct {
 } MonoInflatedMethodSignature;
 
 /**
+ * mono_image_alloc_lock:
+ *
+ *   Same as mono_image_alloc, but do the locking as well.
+ * LOCKING: Acquires the loader lock.
+ */
+static gpointer
+mono_image_alloc_lock (MonoImage *image, guint size)
+{
+	gpointer res;
+
+	mono_loader_lock ();
+	res = mono_image_alloc (image, size);
+	mono_loader_unlock ();
+
+	return res;
+}
+
+/**
+ * mono_image_alloc0_lock:
+ *
+ *   Same as mono_image_alloc, but do the locking as well.
+ * LOCKING: Acquires the loader lock.
+ */
+static gpointer
+mono_image_alloc0_lock (MonoImage *image, guint size)
+{
+	gpointer res;
+
+	mono_loader_lock ();
+	res = mono_image_alloc0 (image, size);
+	mono_loader_unlock ();
+
+	return res;
+}
+
+/**
  * mono_meta_table_name:
  * @table: table index
  *
@@ -1256,16 +1292,17 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
  * Returns: a #MonoArrayType structure describing the array type
  * and dimensions. Memory is allocated from the image mempool.
  *
- * LOCKING: Assumes the loader lock is held.
+ * LOCKING: Acquires the loader lock
  */
 MonoArrayType *
 mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
 				const char *ptr, const char **rptr)
 {
 	int i;
-	MonoArrayType *array = mono_image_alloc0 (m, sizeof (MonoArrayType));
+	MonoArrayType *array;
 	MonoType *etype;
 	
+	array = mono_image_alloc0_lock (m, sizeof (MonoArrayType));
 	etype = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
 	if (!etype)
 		return NULL;
@@ -1582,9 +1619,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	}
 
 	if (count) {
-		mono_loader_lock ();
-		type = mono_image_alloc0 (m, sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
-		mono_loader_unlock ();
+		type = mono_image_alloc0_lock (m, sizeof (MonoType) + ((gint32)count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod));
 		type->num_mods = count;
 		if (count > 64)
 			g_warning ("got more than 64 modifiers in type");
@@ -1663,9 +1698,7 @@ mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container, Mo
 	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
 	
 	if (type == &stype) {
-		mono_loader_lock ();
-		type = mono_image_alloc (m, sizeof (MonoType));
-		mono_loader_unlock ();
+		type = mono_image_alloc_lock (m, sizeof (MonoType));
 		memcpy (type, &stype, sizeof (MonoType));
 	}
 	return type;
@@ -1780,11 +1813,9 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 {
 	MonoMethodSignature *sig;
 
-	mono_loader_lock ();
-	sig = mono_image_alloc0 (m, sizeof (MonoMethodSignature) + ((gint32)nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
+	sig = mono_image_alloc0_lock (m, sizeof (MonoMethodSignature) + ((gint32)nparams - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 	sig->param_count = nparams;
 	sig->sentinelpos = -1;
-	mono_loader_unlock ();
 
 	return sig;
 }
@@ -2564,7 +2595,7 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
  * @generic_container: Our MonoClass's or MonoMethodNormal's MonoGenericContainer;
  *                     see mono_metadata_parse_type_full() for details.
  * Internal routine to parse a generic type parameter.
- * LOCKING: Assumes the loader lock is held.
+ * LOCKING: Acquires the loader lock
  */
 static MonoGenericParam *
 mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_container,
@@ -2577,8 +2608,10 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 	generic_container = select_container (generic_container, type);
 	if (!generic_container) {
 		/* Create dummy MonoGenericParam */
-		MonoGenericParam *param = mono_image_alloc0 (m, sizeof (MonoGenericParam));
-		param->name = mono_image_alloc0 (m, 8);
+		MonoGenericParam *param;
+
+		param = mono_image_alloc0_lock (m, sizeof (MonoGenericParam));
+		param->name = mono_image_alloc0_lock (m, 8);
 		sprintf ((char*)param->name, "%d", index);
 		param->num = index;
 		param->image = m;
@@ -2811,9 +2844,7 @@ parse_section_data (MonoImage *m, MonoMethodHeader *mh, const unsigned char *ptr
 			int i;
 			mh->num_clauses = is_fat ? sect_data_len / 24: sect_data_len / 12;
 			/* we could just store a pointer if we don't need to byteswap */
-			mono_loader_lock ();
-			mh->clauses = mono_image_alloc0 (m, sizeof (MonoExceptionClause) * mh->num_clauses);
-			mono_loader_unlock ();
+			mh->clauses = mono_image_alloc0_lock (m, sizeof (MonoExceptionClause) * mh->num_clauses);
 			for (i = 0; i < mh->num_clauses; ++i) {
 				MonoExceptionClause *ec = &mh->clauses [i];
 				guint32 tof_value;
@@ -2881,9 +2912,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
-		mono_loader_lock ();
-		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
-		mono_loader_unlock ();
+		mh = mono_image_alloc0_lock (m, sizeof (MonoMethodHeader));
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
@@ -2891,9 +2920,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mh->code = (unsigned char*)ptr;
 		return mh;
 	case METHOD_HEADER_TINY_FORMAT1:
-		mono_loader_lock ();
-		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
-		mono_loader_unlock ();
+		mh = mono_image_alloc0_lock (m, sizeof (MonoMethodHeader));
 		ptr++;
 		mh->max_stack = 8;
 		local_var_sig_tok = 0;
@@ -2948,9 +2975,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			g_warning ("wrong signature for locals blob");
 		locals_ptr++;
 		len = mono_metadata_decode_value (locals_ptr, &locals_ptr);
-		mono_loader_lock ();
-		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
-		mono_loader_unlock ();
+		mh = mono_image_alloc0_lock (m, sizeof (MonoMethodHeader) + (len - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType*));
 		mh->num_locals = len;
 		for (i = 0; i < len; ++i) {
 			mh->locals [i] = mono_metadata_parse_type_full (
@@ -2960,9 +2985,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			}
 		}
 	} else {
-		mono_loader_lock ();
-		mh = mono_image_alloc0 (m, sizeof (MonoMethodHeader));
-		mono_loader_unlock ();
+		mh = mono_image_alloc0_lock (m, sizeof (MonoMethodHeader));
 	}
 	mh->code = code;
 	mh->code_size = code_size;
@@ -3422,9 +3445,7 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 		++pos;
 	}
 
-	mono_loader_lock ();
-	result = mono_image_alloc0 (meta, sizeof (MonoClass*) * (pos - start));
-	mono_loader_unlock ();
+	result = mono_image_alloc0_lock (meta, sizeof (MonoClass*) * (pos - start));
 
 	pos = start;
 	while (pos < tdef->rows) {
@@ -5148,7 +5169,7 @@ mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
  *
  * Returns: NULL if @token is not a generic type or method definition or the new generic container.
  *
- * LOCKING: Assumes the loader lock is held.
+ * LOCKING: Acquires the loader lock
  *
  */
 MonoGenericContainer *
@@ -5166,7 +5187,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 	params = NULL;
 	n = 0;
-	container = mono_image_alloc0 (image, sizeof (MonoGenericContainer));
+	container = mono_image_alloc0_lock (image, sizeof (MonoGenericContainer));
 	do {
 		n++;
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
@@ -5182,7 +5203,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 
 	container->type_argc = n;
-	container->type_params = mono_image_alloc0 (image, sizeof (MonoGenericParam) * n);
+	container->type_params = mono_image_alloc0_lock (image, sizeof (MonoGenericParam) * n);
 	memcpy (container->type_params, params, sizeof (MonoGenericParam) * n);
 	g_free (params);
 	container->parent = parent_container;
