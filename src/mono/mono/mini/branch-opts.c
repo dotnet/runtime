@@ -10,7 +10,19 @@
 
 #ifndef DISABLE_JIT
  
- /*
+
+/*
+ * Returns true if @bb is a basic block which falls through the next block.
+ * TODO verify if it helps to check if the bb last ins is a branch to its successor. 
+ */
+static gboolean
+mono_bb_is_fall_through (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+	return  bb->next_bb && bb->next_bb->region == bb->region && /*fall throught between regions is not really interesting or useful*/
+			(bb->last_ins == NULL || !MONO_IS_BRANCH_OP (bb->last_ins)); /*and the last op can't be a branch too*/
+}
+
+/*
  * Used by the arch code to replace the exception handling
  * with a direct branch. This is safe to do if the 
  * exception object isn't used, no rethrow statement and
@@ -894,11 +906,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		}
 		
 		mono_unlink_bblock (cfg, bb, target_bb);
-		
-		if ((previous_bb != cfg->bb_entry) &&
-				(previous_bb->region == bb->region) &&
-				((previous_bb->last_ins == NULL) ||
-				(!MONO_IS_BRANCH_OP (previous_bb->last_ins)))) {
+		if (mono_bb_is_fall_through (cfg, previous_bb)) {
 			for (i = 0; i < previous_bb->out_count; i++) {
 				if (previous_bb->out_bb [i] == target_bb) {
 					MonoInst *jump;
@@ -1075,25 +1083,18 @@ mono_remove_critical_edges (MonoCompile *cfg)
 					new_bb->region = bb->region;
 					
 					/* Do not alter the CFG while altering the BB list */
-					if (previous_bb->region == bb->region) {
+					if (mono_bb_is_fall_through (cfg, previous_bb)) {
 						if (previous_bb != cfg->bb_entry) {
-							/* If previous_bb "followed through" to bb, */
-							/* keep it linked with a OP_BR */
-							if ((previous_bb->last_ins == NULL) ||
-									((previous_bb->last_ins->opcode != OP_BR) &&
-									(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
-									(previous_bb->last_ins->opcode != OP_SWITCH))) {
-								int i;
-								/* Make sure previous_bb really falls through bb */
-								for (i = 0; i < previous_bb->out_count; i++) {
-									if (previous_bb->out_bb [i] == bb) {
-										MonoInst *jump;
-										MONO_INST_NEW (cfg, jump, OP_BR);
-										MONO_ADD_INS (previous_bb, jump);
-										jump->cil_code = previous_bb->cil_code;
-										jump->inst_target_bb = bb;
-										break;
-									}
+							int i;
+							/* Make sure previous_bb really falls through bb */
+							for (i = 0; i < previous_bb->out_count; i++) {
+								if (previous_bb->out_bb [i] == bb) {
+									MonoInst *jump;
+									MONO_INST_NEW (cfg, jump, OP_BR);
+									MONO_ADD_INS (previous_bb, jump);
+									jump->cil_code = previous_bb->cil_code;
+									jump->inst_target_bb = bb;
+									break;
 								}
 							}
 						} else {
