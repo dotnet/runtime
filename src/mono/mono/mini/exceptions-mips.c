@@ -422,8 +422,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (managed)
 		*managed = FALSE;
 
-	*new_ctx = *ctx;
-	setup_context (new_ctx);
+	memcpy (new_ctx, ctx, sizeof (MonoContext));
 
 	if (ji != NULL) {
 		int i;
