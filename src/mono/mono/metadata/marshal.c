@@ -11221,7 +11221,7 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 }
 
 static gboolean    
-cominterop_finalizer (gpointer key, gpointer value, gpointer user_data)
+cominterop_rcw_interface_finalizer (gpointer key, gpointer value, gpointer user_data)
 {
 	ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (value);
 	return TRUE;
@@ -11240,12 +11240,57 @@ ves_icall_System_ComObject_ReleaseInterfaces (MonoComObject* obj)
 			g_hash_table_remove (rcw_hash, obj->iunknown);
 		}
 
-		g_hash_table_foreach_remove (obj->itf_hash, cominterop_finalizer, NULL);
+		g_hash_table_foreach_remove (obj->itf_hash, cominterop_rcw_interface_finalizer, NULL);
+		g_hash_table_destroy (obj->itf_hash);
 		ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (obj->iunknown);
 		obj->itf_hash = obj->iunknown = NULL;
 		mono_cominterop_unlock ();
 	}
 }
+
+#ifndef DISABLE_COM
+
+static gboolean    
+cominterop_rcw_finalizer (gpointer key, gpointer value, gpointer user_data)
+{
+	guint32 gchandle = 0;
+
+	gchandle = GPOINTER_TO_UINT (value);
+	if (gchandle) {
+		MonoComInteropProxy* proxy = (MonoComInteropProxy*)mono_gchandle_get_target (gchandle);
+		
+		if (proxy) {
+			if (proxy->com_object->itf_hash) {
+				g_hash_table_foreach_remove (proxy->com_object->itf_hash, cominterop_rcw_interface_finalizer, NULL);
+				g_hash_table_destroy (proxy->com_object->itf_hash);
+			}
+			if (proxy->com_object->iunknown)
+				ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (proxy->com_object->iunknown);
+			proxy->com_object->itf_hash = proxy->com_object->iunknown = NULL;
+		}
+		
+		mono_gchandle_free (gchandle);
+	}
+
+	return TRUE;
+}
+
+void
+cominterop_release_all_rcws ()
+{
+	if (!rcw_hash)
+		return;
+
+	mono_cominterop_lock ();
+
+	g_hash_table_foreach_remove (rcw_hash, cominterop_rcw_finalizer, NULL);
+	g_hash_table_destroy (rcw_hash);
+	rcw_hash = NULL;
+
+	mono_cominterop_unlock ();
+}
+
+#endif
 
 gpointer
 ves_icall_System_ComObject_GetInterfaceInternal (MonoComObject* obj, MonoReflectionType* type, MonoBoolean throw_exception)

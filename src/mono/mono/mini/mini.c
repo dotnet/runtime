@@ -5380,6 +5380,10 @@ mini_cleanup (MonoDomain *domain)
 		enable_rtc_timer (FALSE);
 #endif
 
+#ifndef DISABLE_COM
+	cominterop_release_all_rcws ();
+#endif
+	
 	/* 
 	 * mono_runtime_cleanup() and mono_domain_finalize () need to
 	 * be called early since they need the execution engine still

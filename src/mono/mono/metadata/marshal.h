@@ -215,6 +215,11 @@ mono_marshal_free_array (gpointer *ptr, int size) MONO_INTERNAL;
 gboolean 
 mono_marshal_free_ccw (MonoObject* obj) MONO_INTERNAL;
 
+#ifndef DISABLE_COM
+void
+cominterop_release_all_rcws () MONO_INTERNAL; 
+#endif
+
 void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
 								    gpointer dest, gint32 length) MONO_INTERNAL;
@@ -391,4 +396,5 @@ mono_signature_no_pinvoke (MonoMethod *method) MONO_INTERNAL;
 G_END_DECLS
 
 #endif /* __MONO_MARSHAL_H__ */
+
 
