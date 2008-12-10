@@ -1127,12 +1127,13 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 					NULLIFY_INS (ins);
 					NULLIFY_INS (ins->next);
 					NULLIFY_INS (ins->next->next);
-					NULLIFY_INS (ins->next->next->next);
+					if (ins->next->next->next)
+						NULLIFY_INS (ins->next->next->next);
 
 					return;
 				}
 
-				if (ins->next->next->next->opcode != OP_BR_REG) {
+				if (!ins->next->next->next || ins->next->next->next->opcode != OP_BR_REG) {
 					/* A one-way switch which got optimized away */
 					if (G_UNLIKELY (cfg->verbose_level > 1)) {
 						printf ("\tNo cfold on ");

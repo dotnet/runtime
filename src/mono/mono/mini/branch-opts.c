@@ -898,9 +898,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		if ((previous_bb != cfg->bb_entry) &&
 				(previous_bb->region == bb->region) &&
 				((previous_bb->last_ins == NULL) ||
-				((previous_bb->last_ins->opcode != OP_BR) &&
-				(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
-				(previous_bb->last_ins->opcode != OP_SWITCH)))) {
+				(!MONO_IS_BRANCH_OP (previous_bb->last_ins)))) {
 			for (i = 0; i < previous_bb->out_count; i++) {
 				if (previous_bb->out_bb [i] == target_bb) {
 					MonoInst *jump;
@@ -1077,9 +1075,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 							/* If previous_bb "followed through" to bb, */
 							/* keep it linked with a OP_BR */
 							if ((previous_bb->last_ins == NULL) ||
-									((previous_bb->last_ins->opcode != OP_BR) &&
-									(! (MONO_IS_COND_BRANCH_OP (previous_bb->last_ins))) &&
-									(previous_bb->last_ins->opcode != OP_SWITCH))) {
+									!MONO_IS_BRANCH_OP (previous_bb->last_ins)) {
 								int i;
 								/* Make sure previous_bb really falls through bb */
 								for (i = 0; i < previous_bb->out_count; i++) {
