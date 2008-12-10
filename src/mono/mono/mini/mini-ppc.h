@@ -104,6 +104,7 @@ typedef struct MonoCompileArch {
 #define PPC_RET_ADDR_OFFSET 8
 #define PPC_STACK_PARAM_OFFSET 24
 #define PPC_MINIMAL_STACK_SIZE 24
+#define PPC_MINIMAL_PARAM_AREA_SIZE 0
 #define PPC_FIRST_ARG_REG ppc_r3
 #define PPC_LAST_ARG_REG ppc_r10
 #define PPC_FIRST_FPARG_REG ppc_f1
@@ -123,6 +124,7 @@ typedef struct MonoCompileArch {
 #define PPC_RET_ADDR_OFFSET 4
 #define PPC_STACK_PARAM_OFFSET 8
 #define PPC_MINIMAL_STACK_SIZE 8
+#define PPC_MINIMAL_PARAM_AREA_SIZE 0
 #define PPC_LAST_FPARG_REG ppc_f8
 #define PPC_PASS_STRUCTS_BY_VALUE 0
 #define PPC_SMALL_RET_STRUCT_IN_REG 1

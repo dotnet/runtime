@@ -163,12 +163,6 @@ ppc_sources = \
 	exceptions-ppc.c	\
 	tramp-ppc.c
 
-ppc64_sources = \
-	mini-ppc64.c		\
-	mini-ppc.h		\
-	exceptions-ppc.c	\
-	tramp-ppc.c
-
 arm_sources = \
 	mini-arm.c		\
 	mini-arm.h		\
@@ -316,7 +310,7 @@ arch_define=__ppc__
 endif
 
 if POWERPC64
-arch_sources = $(ppc64_sources)
+arch_sources = $(ppc_sources)
 arch_built=cpu-ppc64.h
 arch_define=__ppc64__
 endif

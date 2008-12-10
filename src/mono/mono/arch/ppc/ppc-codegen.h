@@ -161,8 +161,19 @@ enum {
 #define ppc_store_reg_update_indexed(c,S,A,B) ppc_stwux ((c), (S), (A), (B))
 #define ppc_store_multiple_regs(c,S,A,D)      ppc_stmw  ((c), (S), (A), (D))
 
+#define ppc_compare(c,cfrD,A,B)		      ppc_cmp((c), (cfrD), 0, (A), (B))
 #define ppc_compare_reg_imm(c,cfrD,A,B)	      ppc_cmpi((c), (cfrD), 0, (A), (B))
 #define ppc_compare_log(c,cfrD,A,B)	      ppc_cmpl((c), (cfrD), 0, (A), (B))
+
+#define ppc_shift_left(c,A,S,B)		      ppc_slw((c), (S), (A), (B))
+#define ppc_shift_left_imm(c,A,S,n)	      ppc_slwi((c), (A), (S), (n))
+
+#define ppc_shift_right_imm(c,A,S,B)	      ppc_srwi((c), (A), (S), (B))
+#define ppc_shift_right_arith_imm(c,A,S,B)    ppc_srawi((c), (A), (S), (B))
+
+#define ppc_multiply(c,D,A,B)		      ppc_mullw((c), (D), (A), (B))
+
+#define ppc_clear_right_imm(c,A,S,n)	      ppc_clrrwi((c), (A), (S), (n))
 
 #endif
 
@@ -749,8 +760,19 @@ my and Ximian's copyright to this code. ;)
 		} \
 	} G_STMT_END
 
+#define ppc_compare(c,cfrD,A,B)		      ppc_cmp((c), (cfrD), 1, (A), (B))
 #define ppc_compare_reg_imm(c,cfrD,A,B)	      ppc_cmpi((c), (cfrD), 1, (A), (B))
 #define ppc_compare_log(c,cfrD,A,B)	      ppc_cmpl((c), (cfrD), 1, (A), (B))
+
+#define ppc_shift_left(c,A,S,B)		      ppc_sld((c), (A), (S), (B))
+#define ppc_shift_left_imm(c,A,S,n)	      ppc_sldi((c), (A), (S), (n))
+
+#define ppc_shift_right_imm(c,A,S,B)	      ppc_srdi((c), (A), (S), (B))
+#define ppc_shift_right_arith_imm(c,A,S,B)    ppc_sradi((c), (A), (S), (B))
+
+#define ppc_multiply(c,D,A,B)		      ppc_mulld((c), (D), (A), (B))
+
+#define ppc_clear_right_imm(c,A,S,n)	      ppc_clrrdi((c), (A), (S), (n))
 
 #define ppc_divdx(c,D,A,B,OE,Rc) ppc_emit32(c, (31 << 26) | ((D) << 21) | ((A) << 16) | ((B) << 11) | ((OE) << 10) | (489 << 1) | (Rc))
 #define ppc_divd(c,D,A,B)   ppc_divdx(c,D,A,B,0,0)
