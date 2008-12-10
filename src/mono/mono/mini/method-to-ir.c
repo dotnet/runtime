@@ -2445,6 +2445,21 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 	else
 		n = mono_class_value_size (klass, &align);
 
+#if HAVE_WRITE_BARRIERS
+	/* if native is true there should be no references in the struct */
+	if (klass->has_references && !native) {
+		/* Avoid barriers when storing to the stack */
+		if (!((dest->opcode == OP_ADD_IMM && dest->sreg1 == cfg->frame_reg) ||
+			  (dest->opcode == OP_LDADDR))) {
+			iargs [0] = dest;
+			iargs [1] = src;
+			EMIT_NEW_PCONST (cfg, iargs [2], klass);
+
+			mono_emit_jit_icall (cfg, mono_value_copy, iargs);
+		}
+	}
+#endif
+
 	if ((cfg->opt & MONO_OPT_INTRINS) && n <= sizeof (gpointer) * 5) {
 		/* FIXME: Optimize the case when src/dest is OP_LDADDR */
 		mini_emit_memcpy (cfg, dest->dreg, 0, src->dreg, 0, n, align);
@@ -6753,6 +6768,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (2);
 			sp -= 2;
 
+#if HAVE_WRITE_BARRIERS
+			if (*ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !((sp [1]->opcode == OP_PCONST) && (sp [1]->inst_p0 == 0))) {
+				/* insert call to write barrier */
+				MonoMethod *write_barrier = mono_marshal_get_write_barrier ();
+				mono_emit_method_call (cfg, write_barrier, sp, NULL);
+				ins_flag = 0;
+				ip++;
+				break;
+			}
+#endif
+
 			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (*ip), sp [0]->dreg, 0, sp [1]->dreg);
 			ins->flags |= ins_flag;
 			ins_flag = 0;
@@ -7672,6 +7698,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					MonoInst *store;
 
+#if HAVE_WRITE_BARRIERS
+				if (mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
+					/* insert call to write barrier */
+					MonoMethod *write_barrier = mono_marshal_get_write_barrier ();
+					MonoInst *iargs [2];
+					int dreg;
+
+					dreg = alloc_preg (cfg);
+					EMIT_NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
+					iargs [1] = sp [1];
+					mono_emit_method_call (cfg, write_barrier, iargs, NULL);
+				}
+#endif
+
 					EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
 						
 					store->flags |= ins_flag;
@@ -7960,6 +8000,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						EMIT_NEW_ICONST (cfg, *sp, *((guint32 *)addr));
 						sp++;
 						break;
+#ifndef HAVE_MOVING_COLLECTOR
 					case MONO_TYPE_I:
 					case MONO_TYPE_U:
 					case MONO_TYPE_STRING:
@@ -7973,6 +8014,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						type_to_eval_stack_type ((cfg), field->type, *sp);
 						sp++;
 						break;
+#endif
 					case MONO_TYPE_I8:
 					case MONO_TYPE_U8:
 						EMIT_NEW_I8CONST (cfg, *sp, *((gint64 *)addr));
@@ -8931,7 +8973,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			case CEE_LDFTN: {
 				MonoInst *argconst;
-				MonoMethod *cil_method, *ctor_method;
+				MonoMethod *cil_method;
 				gboolean needs_static_rgctx_invoke;
 
 				CHECK_STACK_OVF (1);
@@ -8968,18 +9010,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* FIXME: SGEN support */
 				/* FIXME: handle shared static generic methods */
 				/* FIXME: handle this in shared code */
-				if (!needs_static_rgctx_invoke && !context_used && (sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context)) && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
-					MonoInst *target_ins;
+				if (!needs_static_rgctx_invoke && !context_used && (sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, bblock, ip + 6) && (ip [6] == CEE_NEWOBJ)) {
+					MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context);
+					if (ctor_method && (ctor_method->klass->parent == mono_defaults.multicastdelegate_class)) {
+						MonoInst *target_ins;
 
-					ip += 6;
-					if (cfg->verbose_level > 3)
-						g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
-					target_ins = sp [-1];
-					sp --;
-					*sp = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod);
-					ip += 5;					
-					sp ++;
-					break;
+						ip += 6;
+						if (cfg->verbose_level > 3)
+							g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
+						target_ins = sp [-1];
+						sp --;
+						*sp = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod);
+						ip += 5;			
+						sp ++;
+						break;
+					}
 				}
 #endif
 
@@ -10588,10 +10633,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  *   fcompare + branchCC.
  * - create a helper function for allocating a stack slot, taking into account 
  *   MONO_CFG_HAS_SPILLUP.
- * - merge new GC changes in mini.c.
  * - merge r68207.
  * - merge the ia64 switch changes.
- * - merge the mips conditional changes.
  * - remove unused opcodes from mini-ops.h, remove "op_" from the opcode names,
  * - make the cpu_ tables smaller when the usage of the cee_ opcodes is removed.
  * - optimize mono_regstate2_alloc_int/float.
