@@ -675,7 +675,9 @@ static void sweep_pinned_objects (void);
 static void free_large_object (LOSObject *obj);
 static void free_mem_section (GCMemSection *section);
 
+void describe_ptr (char *ptr);
 void check_consistency (void);
+char* check_object (char *start);
 
 /*
  * ######################################################################
@@ -2133,6 +2135,8 @@ build_nursery_fragments (int start_pin, int end_pin)
 		degraded_mode = 1;
 	}
 
+	nursery_next = nursery_frag_real_end = NULL;
+
 	/* Clear TLABs for all threads */
 	clear_tlabs ();
 }
@@ -2589,8 +2593,6 @@ minor_collect_or_expand_inner (size_t size)
 				DEBUG (3, fprintf (gc_debug_file, "Bastard pinning obj %p (%s), size: %d\n", pin_queue [i], safe_name (pin_queue [i]), safe_object_get_size (pin_queue [i])));
 			}
 			degraded_mode = 1;
-			/* This is needed by collect_nursery () to calculate nursery_last_allocated */
-			nursery_next = nursery_frag_real_end = NULL;
 		}
 	}
 	//report_internal_mem_usage ();
@@ -3204,7 +3206,8 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 				if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION)
 					memset (p, 0, size);
 			} else {
-				DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", tlab_start, tlab_real_end, (long)(tlab_real_end - tlab_next - size)));
+				if (tlab_start)
+					DEBUG (3, fprintf (gc_debug_file, "Retire TLAB: %p-%p [%ld]\n", tlab_start, tlab_real_end, (long)(tlab_real_end - tlab_next - size)));
 
 				if (nursery_next + tlab_size >= nursery_frag_real_end) {
 					res = search_fragment_for_size (tlab_size);
@@ -4409,7 +4412,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 		*(void**)ptr = value;
 		return;
 	}
-	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p\n", ptr));
+	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
 	/* FIXME: ensure it is on the heap */
 	if (rs->store_next < rs->end_set) {
 		*(rs->store_next++) = (mword)ptr;
@@ -4751,6 +4754,79 @@ check_consistency (void)
 	}
 
 	DEBUG (1, fprintf (gc_debug_file, "Heap consistency check done.\n"));
+}
+
+/* Check that the reference is valid */
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		if (*(ptr)) {	\
+			g_assert (safe_name (*(ptr)) != NULL);	\
+		}	\
+	} while (0)
+
+/*
+ * check_object:
+ *
+ *   Perform consistency check on an object. Currently we only check that the
+ * reference fields are valid.
+ */
+char*
+check_object (char *start)
+{
+	GCVTable *vt;
+	size_t skip_size;
+	mword desc;
+
+	if (!start)
+		return NULL;
+
+	vt = (GCVTable*)LOAD_VTABLE (start);
+	//type = vt->desc & 0x7;
+
+	desc = vt->desc;
+	switch (desc & 0x7) {
+	case DESC_TYPE_STRING:
+		STRING_SIZE (skip_size, start);
+		return start + skip_size;
+	case DESC_TYPE_RUN_LENGTH:
+		OBJ_RUN_LEN_FOREACH_PTR (desc,start);
+		OBJ_RUN_LEN_SIZE (skip_size, desc, start);
+		g_assert (skip_size);
+		return start + skip_size;
+	case DESC_TYPE_ARRAY:
+	case DESC_TYPE_VECTOR:
+		OBJ_VECTOR_FOREACH_PTR (vt, start);
+		skip_size = safe_object_get_size ((MonoObject*)start);
+		skip_size += (ALLOC_ALIGN - 1);
+		skip_size &= ~(ALLOC_ALIGN - 1);
+		return start + skip_size;
+	case DESC_TYPE_SMALL_BITMAP:
+		OBJ_BITMAP_FOREACH_PTR (desc,start);
+		OBJ_BITMAP_SIZE (skip_size, desc, start);
+		return start + skip_size;
+	case DESC_TYPE_LARGE_BITMAP:
+		OBJ_LARGE_BITMAP_FOREACH_PTR (vt,start);
+		skip_size = safe_object_get_size ((MonoObject*)start);
+		skip_size += (ALLOC_ALIGN - 1);
+		skip_size &= ~(ALLOC_ALIGN - 1);
+		return start + skip_size;
+	case DESC_TYPE_COMPLEX:
+		OBJ_COMPLEX_FOREACH_PTR (vt, start);
+		/* this is a complex object */
+		skip_size = safe_object_get_size ((MonoObject*)start);
+		skip_size += (ALLOC_ALIGN - 1);
+		skip_size &= ~(ALLOC_ALIGN - 1);
+		return start + skip_size;
+	case DESC_TYPE_COMPLEX_ARR:
+		OBJ_COMPLEX_ARR_FOREACH_PTR (vt, start);
+		/* this is an array of complex structs */
+		skip_size = safe_object_get_size ((MonoObject*)start);
+		skip_size += (ALLOC_ALIGN - 1);
+		skip_size &= ~(ALLOC_ALIGN - 1);
+		return start + skip_size;
+	}
+	g_assert_not_reached ();
+	return NULL;
 }
 
 /*

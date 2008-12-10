@@ -3782,7 +3782,7 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 #ifdef HAVE_SGEN_GC
 	if (klass->element_class->valuetype) {
 		if (klass->element_class->has_references)
-			mono_value_copy_array (dest, 0, src, mono_array_length (src));
+			mono_value_copy_array (dest, 0, mono_array_addr_with_size (src, 0, 0), mono_array_length (src));
 		else
 			memcpy (&dest->vector, &src->vector, size);
 	} else {
@@ -3819,7 +3819,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 #ifdef HAVE_SGEN_GC
 		if (klass->element_class->valuetype) {
 			if (klass->element_class->has_references)
-				mono_value_copy_array (o, 0, array, mono_array_length (array));
+				mono_value_copy_array (o, 0, mono_array_addr_with_size (array, 0, 0), mono_array_length (array));
 			else
 				memcpy (&o->vector, &array->vector, size);
 		} else {
@@ -3842,7 +3842,7 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 #ifdef HAVE_SGEN_GC
 	if (klass->element_class->valuetype) {
 		if (klass->element_class->has_references)
-			mono_value_copy_array (o, 0, array, mono_array_length (array));
+			mono_value_copy_array (o, 0, mono_array_addr_with_size (array, 0, 0), mono_array_length (array));
 		else
 			memcpy (&o->vector, &array->vector, size);
 	} else {
@@ -4278,8 +4278,8 @@ mono_value_copy (gpointer dest, gpointer src, MonoClass *klass)
  * @src: source pointer
  * @count: number of items
  *
- * Copy @count valuetype items from @src to @dest. This function must be used
- * when @klass contains references fields.
+ * Copy @count valuetype items from @src to the array @dest at index @dest_idx. 
+ * This function must be used when @klass contains references fields.
  * Overlap is handled.
  */
 void
