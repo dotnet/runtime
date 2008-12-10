@@ -839,6 +839,8 @@ compile_all_methods_thread_main (CompileAllThreadArgs *args)
 			continue;
 
 		method = mono_get_method (image, token, NULL);
+		if (!method)
+			continue;
 		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 		    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
