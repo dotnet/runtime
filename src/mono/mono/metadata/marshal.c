@@ -485,6 +485,42 @@ cominterop_class_guid (MonoClass* klass, guint8* guid)
 	return FALSE;
 }
 
+static gboolean
+cominterop_com_visible (MonoClass* klass)
+{
+	static MonoClass *ComVisibleAttribute = NULL;
+	MonoCustomAttrInfo *cinfo;
+
+	/* Handle the ComVisibleAttribute */
+	if (!ComVisibleAttribute)
+		ComVisibleAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "ComVisibleAttribute");
+
+	cinfo = mono_custom_attrs_from_class (klass);	
+	if (cinfo) {
+		MonoReflectionComVisibleAttribute *attr = (MonoReflectionComVisibleAttribute*)mono_custom_attrs_get_attr (cinfo, ComVisibleAttribute);
+
+		if (!attr)
+			return FALSE;
+		if (!cinfo->cached)
+			mono_custom_attrs_free (cinfo);
+
+		if (attr->visible)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static void cominterop_raise_hr_exception (int hr)
+{
+	static MonoMethod* throw_exception_for_hr = NULL;
+	MonoException* ex;
+	void* params[1] = {&hr};
+	if (!throw_exception_for_hr)
+		throw_exception_for_hr = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetExceptionForHR", 1);
+	ex = (MonoException*)mono_runtime_invoke (throw_exception_for_hr, NULL, params, NULL);
+	mono_raise_exception (ex);
+}
+
 /**
  * cominterop_get_interface:
  * @obj: managed wrapper object containing COM object
@@ -512,13 +548,7 @@ cominterop_get_interface (MonoComObject* obj, MonoClass* ic, gboolean throw_exce
 		g_assert(found);
 		hr = ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (obj->iunknown, iid, &itf);
 		if (hr < 0 && throw_exception) {
-			static MonoMethod* throw_exception_for_hr = NULL;
-			MonoException* ex;
-			void* params[1] = {&hr};
-			if (!throw_exception_for_hr)
-				throw_exception_for_hr = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetExceptionForHR", 1);
-			ex = (MonoException*)mono_runtime_invoke (throw_exception_for_hr, NULL, params, NULL);
-			mono_raise_exception (ex);
+			cominterop_raise_hr_exception (hr);	
 		}
 
 		if (hr >= 0 && itf) {
@@ -10661,6 +10691,21 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (gpointer pUnk)
 
 #ifndef DISABLE_COM
 
+#define MONO_S_OK 0x00000000L
+#define MONO_E_NOINTERFACE 0x80004002L
+#define MONO_E_NOTIMPL 0x80004001L
+
+static gboolean cominterop_can_support_dispatch (MonoClass* klass)
+{
+	if (!(klass->flags & TYPE_ATTRIBUTE_PUBLIC) )
+		return FALSE;
+
+	if (!cominterop_com_visible (klass))
+		return FALSE;
+
+	return TRUE;
+}
+
 static void*
 cominterop_get_idispatch_for_object (MonoObject* object)
 {
@@ -10672,6 +10717,9 @@ cominterop_get_idispatch_for_object (MonoObject* object)
 			mono_defaults.idispatch_class, TRUE);
 	}
 	else {
+		MonoClass* klass = mono_object_class (object);
+		if (!cominterop_can_support_dispatch (klass) )
+			cominterop_raise_hr_exception (MONO_E_NOINTERFACE);
 		return cominterop_get_ccw (object, mono_defaults.idispatch_class);
 	}
 }
@@ -12441,10 +12489,6 @@ cominterop_ccw_release (MonoCCWInterface* ccwe)
 	return ref_count;
 }
 
-#define MONO_S_OK 0x00000000L
-#define MONO_E_NOINTERFACE 0x80004002L
-#define MONO_E_NOTIMPL 0x80004001L
-
 #ifdef PLATFORM_WIN32
 static const IID MONO_IID_IMarshal = {0x3, 0x0, 0x0, {0xC0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x46}};
 #endif
@@ -12504,6 +12548,9 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 
 	/* handle IDispatch special */
 	if (cominterop_class_guid_equal (riid, mono_defaults.idispatch_class)) {
+		if (!cominterop_can_support_dispatch (klass))
+			return MONO_E_NOINTERFACE;
+		
 		*ppv = cominterop_get_ccw (object, mono_defaults.idispatch_class);
 		/* remember to addref on QI */
 		cominterop_ccw_addref (*ppv);

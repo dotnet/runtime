@@ -1085,6 +1085,11 @@ typedef struct {
 	MonoReflectionMethodBuilder *mb;
 } MonoReflectionMethodOnTypeBuilderInst;
 
+typedef struct {
+	MonoObject object;
+	MonoBoolean *visible;
+} MonoReflectionComVisibleAttribute;
+
 enum {
 	RESOURCE_LOCATION_EMBEDDED = 1,
 	RESOURCE_LOCATION_ANOTHER_ASSEMBLY = 2,
