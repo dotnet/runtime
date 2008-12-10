@@ -10635,8 +10635,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
  *   MONO_CFG_HAS_SPILLUP.
  * - merge r68207.
  * - merge the ia64 switch changes.
- * - remove unused opcodes from mini-ops.h, remove "op_" from the opcode names,
- * - make the cpu_ tables smaller when the usage of the cee_ opcodes is removed.
  * - optimize mono_regstate2_alloc_int/float.
  * - fix the pessimistic handling of variables accessed in exception handler blocks.
  * - need to write a tree optimization pass, but the creation of trees is difficult, i.e.
