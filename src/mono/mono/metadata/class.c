@@ -1052,6 +1052,11 @@ mono_class_setup_fields (MonoClass *class)
 		g_assert (container);
 
 		mono_class_setup_fields (gklass);
+
+		if (gklass->exception_type) {
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			return;
+		}
 	}
 
 	/*
