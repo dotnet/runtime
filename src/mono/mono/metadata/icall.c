@@ -1168,6 +1168,24 @@ get_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer dat
 	return FALSE;
 }
 
+static gboolean
+get_executing (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
+{
+	MonoMethod **dest = data;
+
+	/* skip unmanaged frames */
+	if (!managed)
+		return FALSE;
+
+	if (!(*dest)) {
+		if (!strcmp (m->klass->name_space, "System.Reflection"))
+			return FALSE;
+		*dest = m;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static MonoReflectionType *
 type_from_name (const char *str, MonoBoolean ignoreCase)
 {
@@ -4922,11 +4940,12 @@ ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal (MonoMethod *method
 static MonoReflectionAssembly*
 ves_icall_System_Reflection_Assembly_GetExecutingAssembly (void)
 {
-	MonoMethod *m = mono_method_get_last_managed ();
+	MonoMethod *dest = NULL;
 
 	MONO_ARCH_SAVE_REGS;
 
-	return mono_assembly_get_object (mono_domain_get (), m->klass->image->assembly);
+	mono_stack_walk_no_il (get_executing, &dest);
+	return mono_assembly_get_object (mono_domain_get (), dest->klass->image->assembly);
 }
 
 
@@ -4946,11 +4965,14 @@ ves_icall_System_Reflection_Assembly_GetEntryAssembly (void)
 static MonoReflectionAssembly*
 ves_icall_System_Reflection_Assembly_GetCallingAssembly (void)
 {
-	MonoMethod *m = mono_method_get_last_managed ();
-	MonoMethod *dest = m;
+	MonoMethod *m;
+	MonoMethod *dest;
 
 	MONO_ARCH_SAVE_REGS;
 
+	dest = NULL;
+	mono_stack_walk_no_il (get_executing, &dest);
+	m = dest;
 	mono_stack_walk_no_il (get_caller, &dest);
 	if (!dest)
 		dest = m;
