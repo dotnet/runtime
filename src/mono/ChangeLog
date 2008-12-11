@@ -1,3 +1,7 @@
+2008-12-11  Mark Mason <mmason@upwardaccess.com>
+
+	* configure.in: introduce SIZEOF_REGISTER - usually ==SIZEOF_VOID_P, except on mips/n32
+	
 2008-12-05  Marek Habersack  <mhabersack@novell.com>
 
 	* configure.in: check whether round (3) and rint (3) are present

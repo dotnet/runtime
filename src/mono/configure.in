@@ -1748,6 +1748,8 @@ SQLITE="libsqlite.so.0"
 SQLITE3="libsqlite3.so.0"
 X11="libX11.so"
 
+sizeof_register="SIZEOF_VOID_P"
+
 jit_wanted=false
 interp_wanted=false
 case "$host" in
@@ -1761,6 +1763,20 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		JIT_SUPPORTED=yes
 		jit_wanted=true
+
+		AC_MSG_CHECKING(for mips n32)
+		AC_TRY_COMPILE([], [
+		void main () {
+		#if _MIPS_SIM != _ABIN32
+		#error Not mips n32
+		#endif
+   		}
+		],[
+		AC_MSG_RESULT(yes)
+		sizeof_register=8
+		],[
+		AC_MSG_RESULT(no)
+		])
 		;;
 	i*86-*-*)
 		TARGET=X86;
@@ -1915,6 +1931,14 @@ case "$host" in
 		CFLAGS="$CFLAGS -mbackchain -D__USE_STRING_INLINES"
 		;;
 esac
+
+if test "x$sizeof_register" = "x4"; then
+   AC_DEFINE(SIZEOF_REGISTER,4,[size of machine integer registers])
+elif test "x$sizeof_register" = "x8"; then
+   AC_DEFINE(SIZEOF_REGISTER,8,[size of machine integer registers])
+else
+   AC_DEFINE(SIZEOF_REGISTER,SIZEOF_VOID_P,[size of machine integer registers])
+fi
 
 if test "x$have_visibility_hidden" = "xyes"; then
    AC_DEFINE(HAVE_VISIBILITY_HIDDEN, 1, [Support for the visibility ("hidden") attribute])
