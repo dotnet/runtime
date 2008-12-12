@@ -1122,6 +1122,7 @@ mini_trace_usage (void)
 		 "    T:Type               Specifies a type\n"
 		 "    +EXPR                Includes expression\n"
 		 "    -EXPR                Excludes expression\n"
+		 "    EXPR,EXPR            Multiple expressions\n"
 		 "    disabled             Don't print any output until toggled via SIGUSR2\n");
 }
 
