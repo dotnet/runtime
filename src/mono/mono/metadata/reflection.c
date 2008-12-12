@@ -9802,35 +9802,74 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 }
 
 static void
+ensure_generic_class_runtime_vtable (MonoClass *klass)
+{
+	MonoClass *gklass = klass->generic_class->container_class;
+	int i;
+
+	if (klass->wastypebuilder)
+		return;
+
+	ensure_runtime_vtable (gklass);
+
+	klass->method.count = gklass->method.count;
+	klass->methods = mono_image_alloc (klass->image, sizeof (MonoMethod*) * (klass->method.count + 1));
+
+	for (i = 0; i < klass->method.count; i++) {
+		klass->methods [i] = mono_class_inflate_generic_method_full (
+			gklass->methods [i], klass, mono_class_get_context (klass));
+	}
+
+	klass->interface_count = gklass->interface_count;
+	klass->interfaces = mono_image_alloc (klass->image, sizeof (MonoClass*) * klass->interface_count);
+	for (i = 0; i < klass->interface_count; ++i) {
+		MonoType *iface_type = mono_class_inflate_generic_type (&gklass->interfaces [i]->byval_arg, mono_class_get_context (klass));
+		klass->interfaces [i] = mono_class_from_mono_type (iface_type);
+		mono_metadata_free_type (iface_type);
+
+		ensure_runtime_vtable (klass->interfaces [i]);
+	}
+	/*We can only finish with this klass once it's parent has as well*/
+	if (gklass->wastypebuilder)
+		klass->wastypebuilder = TRUE;
+	return;
+}
+
+static void
 ensure_runtime_vtable (MonoClass *klass)
 {
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	int i, num, j;
 
-	if (!tb || klass->wastypebuilder)
+	if (!klass->image->dynamic || (!tb && !klass->generic_class) || klass->wastypebuilder)
 		return;
 	if (klass->parent)
 		ensure_runtime_vtable (klass->parent);
 
-	num = tb->ctors? mono_array_length (tb->ctors): 0;
-	num += tb->num_methods;
-	klass->method.count = num;
-	klass->methods = mono_image_alloc (klass->image, sizeof (MonoMethod*) * num);
-	num = tb->ctors? mono_array_length (tb->ctors): 0;
-	for (i = 0; i < num; ++i)
-		klass->methods [i] = ctorbuilder_to_mono_method (klass, mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i));
-	num = tb->num_methods;
-	j = i;
-	for (i = 0; i < num; ++i)
-		klass->methods [j++] = methodbuilder_to_mono_method (klass, mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i));
-
-	if (tb->interfaces) {
-		klass->interface_count = mono_array_length (tb->interfaces);
-		klass->interfaces = mono_image_alloc (klass->image, sizeof (MonoClass*) * klass->interface_count);
-		for (i = 0; i < klass->interface_count; ++i) {
-			MonoReflectionType *iface = mono_array_get (tb->interfaces, gpointer, i);
-			klass->interfaces [i] = mono_class_from_mono_type (iface->type);
+	if (tb) {
+		num = tb->ctors? mono_array_length (tb->ctors): 0;
+		num += tb->num_methods;
+		klass->method.count = num;
+		klass->methods = mono_image_alloc (klass->image, sizeof (MonoMethod*) * num);
+		num = tb->ctors? mono_array_length (tb->ctors): 0;
+		for (i = 0; i < num; ++i)
+			klass->methods [i] = ctorbuilder_to_mono_method (klass, mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i));
+		num = tb->num_methods;
+		j = i;
+		for (i = 0; i < num; ++i)
+			klass->methods [j++] = methodbuilder_to_mono_method (klass, mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i));
+	
+		if (tb->interfaces) {
+			klass->interface_count = mono_array_length (tb->interfaces);
+			klass->interfaces = mono_image_alloc (klass->image, sizeof (MonoClass*) * klass->interface_count);
+			for (i = 0; i < klass->interface_count; ++i) {
+				MonoReflectionType *iface = mono_array_get (tb->interfaces, gpointer, i);
+				klass->interfaces [i] = mono_class_from_mono_type (iface->type);
+				ensure_runtime_vtable (klass->interfaces [i]);
+			}
 		}
+	} else if (klass->generic_class){
+		ensure_generic_class_runtime_vtable (klass);
 	}
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
@@ -9838,6 +9877,7 @@ ensure_runtime_vtable (MonoClass *klass)
 			klass->methods [i]->slot = i;
 		
 		mono_class_setup_interface_offsets (klass);
+		mono_class_setup_interface_id (klass);
 	}
 
 	/*
