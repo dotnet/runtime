@@ -1137,4 +1137,7 @@ mono_method_get_vtable_slot (MonoMethod *method) MONO_INTERNAL;
 int
 mono_method_get_vtable_index (MonoMethod *method) MONO_INTERNAL;
 
+void
+mono_class_setup_interface_id (MonoClass *class) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

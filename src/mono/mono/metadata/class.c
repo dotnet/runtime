@@ -7653,3 +7653,19 @@ mono_class_generic_sharing_enabled (MonoClass *class)
 		g_assert_not_reached ();
 	}
 }
+
+/*
+ * mono_class_setup_interface_id:
+ *
+ * Initializes MonoClass::interface_id if required.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_setup_interface_id (MonoClass *class)
+{
+	mono_loader_lock ();
+	if (MONO_CLASS_IS_INTERFACE (class) && !class->interface_id)
+		class->interface_id = mono_get_unique_iid (class);
+	mono_loader_unlock ();
+}
