@@ -2592,6 +2592,7 @@ check_core_clr_override_method (MonoClass *class, MonoMethod *override, MonoMeth
 
 #define DEBUG_INTERFACE_VTABLE_CODE 0
 #define TRACE_INTERFACE_VTABLE_CODE 0
+#define VERIFY_INTERFACE_VTABLE_CODE 0
 
 #if (TRACE_INTERFACE_VTABLE_CODE|DEBUG_INTERFACE_VTABLE_CODE)
 #define DEBUG_INTERFACE_VTABLE(stmt) do {\
@@ -2607,6 +2608,14 @@ check_core_clr_override_method (MonoClass *class, MonoMethod *override, MonoMeth
 } while (0)
 #else
 #define TRACE_INTERFACE_VTABLE(stmt)
+#endif
+
+#if VERIFY_INTERFACE_VTABLE_CODE
+#define VERIFY_INTERFACE_VTABLE(stmt) do {\
+	stmt;\
+} while (0)
+#else
+#define VERIFY_INTERFACE_VTABLE(stmt)
 #endif
 
 
@@ -2805,6 +2814,60 @@ print_vtable_full (MonoClass *class, MonoMethod** vtable, int size, int first_no
 		}
 	}
 
+	g_free (full_name);
+}
+#endif
+
+#if VERIFY_INTERFACE_VTABLE_CODE
+static int
+mono_method_try_get_vtable_index (MonoMethod *method)
+{
+	if (method->is_inflated && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+		MonoMethodInflated *imethod = (MonoMethodInflated*)method;
+		if (imethod->declaring->is_generic)
+			return imethod->declaring->slot;
+	}
+	return method->slot;
+}
+
+static void
+mono_class_verify_vtable (MonoClass *class)
+{
+	int i;
+	char *full_name = mono_type_full_name (&class->byval_arg);
+
+	printf ("*** Verifying VTable of class '%s' \n", full_name);
+	g_free (full_name);
+	full_name = NULL;
+	
+	if (!class->methods)
+		return;
+
+	for (i = 0; i < class->method.count; ++i) {
+		MonoMethod *cm = class->methods [i];
+		int slot;
+
+		if (!(cm->flags & METHOD_ATTRIBUTE_VIRTUAL))
+			continue;
+
+		g_free (full_name);
+		full_name = mono_method_full_name (cm, TRUE);
+
+		slot = mono_method_try_get_vtable_index (cm);
+		if (slot >= 0) {
+			if (slot >= class->vtable_size) {
+				printf ("\tInvalid method %s at index %d with vtable of length %d\n", full_name, slot, class->vtable_size);
+				continue;
+			}
+
+			if (slot >= 0 && class->vtable [slot] != cm && (class->vtable [slot] && class->vtable [slot]->wrapper_type != MONO_WRAPPER_STATIC_RGCTX_INVOKE)) {
+				char *other_name = class->vtable [slot] ? mono_method_full_name (class->vtable [slot], TRUE) : g_strdup ("[null value]");
+				printf ("\tMethod %s has slot %d but vtable has %s on it\n", full_name, slot, other_name);
+				g_free (other_name);
+			}
+		} else
+			printf ("\tVirtual method %s does n't have an assigned slot\n", full_name);
+	}
 	g_free (full_name);
 }
 #endif
@@ -3239,6 +3302,8 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			}
 		}
 	}
+
+	VERIFY_INTERFACE_VTABLE (mono_class_verify_vtable (class));
 }
 
 /*
