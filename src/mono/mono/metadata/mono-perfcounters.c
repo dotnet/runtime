@@ -688,7 +688,7 @@ mono_mem_get_impl (MonoString* counter, MonoString* instance, int *type, MonoBoo
 	*custom = FALSE;
 	if ((cdesc = get_counter_in_category (&predef_categories [CATEGORY_MONO_MEM], counter))) {
 		*type = cdesc->type;
-		return create_vtable (GINT_TO_POINTER (cdesc->id), mono_mem_counter, NULL);
+		return create_vtable (GINT_TO_POINTER ((gint) cdesc->id), mono_mem_counter, NULL);
 	}
 	return NULL;
 }
