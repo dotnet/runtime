@@ -59,7 +59,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	int this_pos = 3;
 	guint32 short_branch;
 	MonoDomain *domain = mono_domain_get ();
-	int size = MONO_PPC_32_64_CASE (20, 32);
+	int size = MONO_PPC_32_64_CASE (20, 32) + PPC_FTNPTR_SIZE;
 
 	addr = mono_get_addr_from_ftnptr (addr);
 
@@ -68,6 +68,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	    
 	mono_domain_lock (domain);
 	start = code = mono_code_manager_reserve (domain->code_mp, size);
+	code = mono_ppc_create_pre_code_ftnptr (code);
 	short_branch = branch_for_target_reachable (code + 4, addr);
 	if (short_branch)
 		mono_code_manager_commit (domain->code_mp, code, size, 8);
@@ -87,7 +88,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
 	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 
-	return mono_create_ftnptr (domain, start);
+	return start;
 }
 
 void

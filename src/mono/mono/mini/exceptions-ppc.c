@@ -172,22 +172,19 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 /* nothing to do */
 #define setup_context(ctx)
 
-#ifdef __mono_ppc64__
-static gpointer
-ppc_create_ftnptr (gpointer addr)
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+guint8*
+mono_ppc_create_pre_code_ftnptr (guint8 *code)
 {
-	gpointer *desc;
+	MonoPPCFunctionDescriptor *ftnptr = (MonoPPCFunctionDescriptor*)code;
 
-	desc = mono_global_codeman_reserve (3 * sizeof (gpointer));
+	code += sizeof (MonoPPCFunctionDescriptor);
+	ftnptr->code = code;
+	ftnptr->toc = NULL;
+	ftnptr->env = NULL;
 
-	desc [0] = addr;
-	desc [1] = NULL;
-	desc [2] = NULL;
-
-	return desc;
+	return code;
 }
-#else
-#define ppc_create_ftnptr(a)	a
 #endif
 
 /*
@@ -199,16 +196,16 @@ ppc_create_ftnptr (gpointer addr)
 gpointer
 mono_arch_get_restore_context (void)
 {
-	static guint8 *ftnptr = NULL;
+	static guint8 *start = NULL;
 
 	guint8 *code;
-	guint8 *start;
-	int size = MONO_PPC_32_64_CASE (128, 172);
+	int size = MONO_PPC_32_64_CASE (128, 172) + PPC_FTNPTR_SIZE;
 
-	if (ftnptr)
-		return ftnptr;
+	if (start)
+		return start;
 
 	code = start = mono_global_codeman_reserve (size);
+	code = mono_ppc_create_pre_code_ftnptr (code);
 	restore_regs_from_context (ppc_r3, ppc_r4, ppc_r5);
 	/* restore also the stack pointer */
 	ppc_load_reg (code, ppc_sp, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
@@ -221,8 +218,7 @@ mono_arch_get_restore_context (void)
 
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
-	ftnptr = ppc_create_ftnptr (start);
-	return ftnptr;
+	return start;
 }
 
 /*
@@ -235,18 +231,18 @@ mono_arch_get_restore_context (void)
 gpointer
 mono_arch_get_call_filter (void)
 {
-	static guint8 *ftnptr = NULL;
+	static guint8 *start = NULL;
 
-	guint8 *start;
 	guint8 *code;
 	int alloc_size, pos, i;
-	int size = MONO_PPC_32_64_CASE (320, 500);
+	int size = MONO_PPC_32_64_CASE (320, 500) + PPC_FTNPTR_SIZE;
 
-	if (ftnptr)
-		return ftnptr;
+	if (start)
+		return start;
 
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start = mono_global_codeman_reserve (size);
+	code = mono_ppc_create_pre_code_ftnptr (code);
 
 	/* save all the regs on the stack */
 	pos = 0;
@@ -296,8 +292,7 @@ mono_arch_get_call_filter (void)
 
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
-	ftnptr = ppc_create_ftnptr (start);
-	return ftnptr;
+	return start;
 }
 
 static void
@@ -346,7 +341,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	guint8 *code;
 	int alloc_size, pos, i;
 
-	code = start;
+	code = mono_ppc_create_pre_code_ftnptr (start);
 
 	/* save all the regs on the stack */
 	pos = 0;
@@ -403,7 +398,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	ppc_break (code);
 	g_assert ((code - start) < size);
 	mono_arch_flush_icache (start, code - start);
-	return ppc_create_ftnptr (start);
+	return start;
 }
 
 /**
@@ -421,7 +416,7 @@ mono_arch_get_rethrow_exception (void)
 	static int inited = 0;
 
 	guint8 *code;
-	int size = MONO_PPC_32_64_CASE (132, 224);
+	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
 
 	if (inited)
 		return start;
@@ -449,7 +444,7 @@ mono_arch_get_throw_exception (void)
 	static int inited = 0;
 
 	guint8 *code;
-	int size = MONO_PPC_32_64_CASE (132, 224);
+	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
 
 	if (inited)
 		return start;
@@ -478,7 +473,7 @@ mono_arch_get_throw_exception_by_name (void)
 	static int inited = 0;
 
 	guint8 *code;
-	int size = MONO_PPC_32_64_CASE (168, 292);
+	int size = MONO_PPC_32_64_CASE (168, 292) + PPC_FTNPTR_SIZE;
 
 	if (inited)
 		return start;

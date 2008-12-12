@@ -225,6 +225,12 @@ typedef struct {
 	gpointer toc;
 	gpointer env;
 } MonoPPCFunctionDescriptor;
+
+#define PPC_FTNPTR_SIZE			sizeof (MonoPPCFunctionDescriptor)
+extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
+#else
+#define PPC_FTNPTR_SIZE			0
+#define mono_ppc_create_pre_code_ftnptr(c)	c
 #endif
 
 #if defined(__linux__)
