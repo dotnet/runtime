@@ -2350,13 +2350,9 @@ rewrite_last_written_stack (ProfilerThreadStack *stack) {
 	write_uint32 (0);
 	write_uint32 (i);
 	
-	printf ("rewrite_last_written_stack START (%d %p)\n", i, stack);
-	
 	while (i > 0) {
 		i--;
 		write_uint32 (thread_stack_written_frame_at_index (stack, i));
-		
-		printf ("rewrite_last_written_stack ELEMENT (%d %d)\n", i, thread_stack_written_frame_at_index (stack, i));
 	}
 }
 
@@ -4766,6 +4762,21 @@ check_signal_number (int signal_number) {
 }
 #endif
 
+#define FAIL_ARGUMENT_CHECK(message) do {\
+	failure_message = (message);\
+	goto failure_handling;\
+} while (0)
+#define FAIL_PARSING_VALUED_ARGUMENT FAIL_ARGUMENT_CHECK("cannot parse valued argument %s")
+#define FAIL_PARSING_FLAG_ARGUMENT FAIL_ARGUMENT_CHECK("cannot parse flag argument %s")
+#define CHECK_CONDITION(condition,message) do {\
+	gboolean result = (condition);\
+	if (result) {\
+		FAIL_ARGUMENT_CHECK (message);\
+	}\
+} while (0)
+#define FAIL_IF_HAS_MINUS CHECK_CONDITION(has_minus,"minus ('-') modifier not allowed for argument %s")
+#define TRUE_IF_NOT_MINUS ((!has_minus)?TRUE:FALSE)
+
 #define DEFAULT_ARGUMENTS "s"
 static void
 setup_user_options (const char *arguments) {
@@ -4808,117 +4819,175 @@ setup_user_options (const char *arguments) {
 	for (current_argument = arguments_array; ((current_argument != NULL) && (current_argument [0] != 0)); current_argument ++) {
 		char *argument = *current_argument;
 		char *equals = strstr (argument, "=");
+		const char *failure_message = NULL;
+		gboolean has_plus;
+		gboolean has_minus;
+		
+		if (*argument == '+') {
+			has_plus = TRUE;
+			has_minus = FALSE;
+			argument ++;
+		} else if (*argument == '-') {
+			has_plus = FALSE;
+			has_minus = TRUE;
+			argument ++;
+		} else {
+			has_plus = FALSE;
+			has_minus = FALSE;
+		}
 		
 		if (equals != NULL) {
 			int equals_position = equals - argument;
 			
 			if (! (strncmp (argument, "per-thread-buffer-size", equals_position) && strncmp (argument, "tbs", equals_position))) {
 				int value = atoi (equals + 1);
+				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
 					profiler->per_thread_buffer_size = value;
 				}
 			} else if (! (strncmp (argument, "statistical", equals_position) && strncmp (argument, "stat", equals_position) && strncmp (argument, "s", equals_position))) {
 				int value = atoi (equals + 1);
+				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
 					if (value > 16) {
 						value = 16;
 					}
 					profiler->statistical_call_chain_depth = value;
-					profiler->flags |= MONO_PROFILE_STATISTICAL|MONO_PROFILE_JIT_COMPILATION;
+					profiler->flags |= MONO_PROFILE_STATISTICAL;
 				}
 			} else if (! (strncmp (argument, "statistical-thread-buffer-size", equals_position) && strncmp (argument, "sbs", equals_position))) {
 				int value = atoi (equals + 1);
+				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
 					profiler->statistical_buffer_size = value;
 				}
 			} else if (! (strncmp (argument, "write-buffer-size", equals_position) && strncmp (argument, "wbs", equals_position))) {
 				int value = atoi (equals + 1);
+				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
 					profiler->write_buffer_size = value;
 				}
 			} else if (! (strncmp (argument, "output", equals_position) && strncmp (argument, "out", equals_position) && strncmp (argument, "o", equals_position) && strncmp (argument, "O", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->file_name = g_strdup (equals + 1);
 				}
 			} else if (! (strncmp (argument, "output-suffix", equals_position) && strncmp (argument, "suffix", equals_position) && strncmp (argument, "os", equals_position) && strncmp (argument, "OS", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->file_name_suffix = g_strdup (equals + 1);
 				}
+			} else if (! (strncmp (argument, "heap-shot", equals_position) && strncmp (argument, "heap", equals_position) && strncmp (argument, "h", equals_position))) {
+				char *parameter = equals + 1;
+				if (! strcmp (parameter, "all")) {
+					profiler->dump_next_heap_snapshots = -1;
+				} else {
+					gc_request_signal_number = parse_signal_name (parameter);
+				}
+				FAIL_IF_HAS_MINUS;
+				if (! has_plus) {
+					profiler->action_flags.save_allocation_caller = TRUE;
+					profiler->action_flags.save_allocation_stack = TRUE;
+					profiler->action_flags.allocations_carry_id = TRUE_IF_NOT_MINUS;
+				}
+				profiler->action_flags.heap_shot = TRUE_IF_NOT_MINUS;
 			} else if (! (strncmp (argument, "gc-commands", equals_position) && strncmp (argument, "gc-c", equals_position) && strncmp (argument, "gcc", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->heap_shot_command_file_name = g_strdup (equals + 1);
 				}
 			} else if (! (strncmp (argument, "gc-dumps", equals_position) && strncmp (argument, "gc-d", equals_position) && strncmp (argument, "gcd", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->dump_next_heap_snapshots = atoi (equals + 1);
 				}
 #ifndef PLATFORM_WIN32
 			} else if (! (strncmp (argument, "gc-signal", equals_position) && strncmp (argument, "gc-s", equals_position) && strncmp (argument, "gcs", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					char *signal_name = equals + 1;
 					gc_request_signal_number = parse_signal_name (signal_name);
 				}
 			} else if (! (strncmp (argument, "toggle-signal", equals_position) && strncmp (argument, "ts", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					char *signal_name = equals + 1;
 					toggle_signal_number = parse_signal_name (signal_name);
 				}
 #endif
 			} else {
-				g_warning ("Cannot parse valued argument %s\n", argument);
+				FAIL_PARSING_VALUED_ARGUMENT;
 			}
 		} else {
 			if (! (strcmp (argument, "jit") && strcmp (argument, "j"))) {
-				profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
-				profiler->action_flags.jit_time = TRUE;
+				profiler->action_flags.jit_time = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "allocations") && strcmp (argument, "alloc") && strcmp (argument, "a"))) {
-				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
+				FAIL_IF_HAS_MINUS;
+				if (! has_plus) {
+					profiler->action_flags.save_allocation_caller = TRUE;
+					profiler->action_flags.save_allocation_stack = TRUE;
+				}
+				if (! has_minus) {
+					profiler->flags |= MONO_PROFILE_ALLOCATIONS;
+				} else {
+					profiler->flags &= ~MONO_PROFILE_ALLOCATIONS;
+				}
 			} else if (! (strcmp (argument, "gc") && strcmp (argument, "g"))) {
+				FAIL_IF_HAS_MINUS;
 				profiler->flags |= MONO_PROFILE_GC;
 			} else if (! (strcmp (argument, "allocations-summary") && strcmp (argument, "as"))) {
-				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
-				profiler->action_flags.collection_summary = TRUE;
+				profiler->action_flags.collection_summary = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "heap-shot") && strcmp (argument, "heap") && strcmp (argument, "h"))) {
-				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
-				profiler->action_flags.heap_shot = TRUE;
+				FAIL_IF_HAS_MINUS;
+				if (! has_plus) {
+					profiler->action_flags.save_allocation_caller = TRUE;
+					profiler->action_flags.save_allocation_stack = TRUE;
+					profiler->action_flags.allocations_carry_id = TRUE_IF_NOT_MINUS;
+				}
+				profiler->action_flags.heap_shot = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "unreachable") && strcmp (argument, "free") && strcmp (argument, "f"))) {
-				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
-				profiler->action_flags.unreachable_objects = TRUE;
+				profiler->action_flags.unreachable_objects = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "threads") && strcmp (argument, "t"))) {
-				profiler->flags |= MONO_PROFILE_THREADS;
+				if (! has_minus) {
+					profiler->flags |= MONO_PROFILE_THREADS;
+				} else {
+					profiler->flags &= ~MONO_PROFILE_THREADS;
+				}
 			} else if (! (strcmp (argument, "enter-leave") && strcmp (argument, "calls") && strcmp (argument, "c"))) {
-				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
-				profiler->action_flags.jit_time = TRUE;
-				profiler->action_flags.track_calls = TRUE;
+				profiler->action_flags.track_calls = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "statistical") && strcmp (argument, "stat") && strcmp (argument, "s"))) {
-				profiler->flags |= MONO_PROFILE_STATISTICAL;
-			} else if (! (strcmp (argument, "track-stack") && strcmp (argument, "ts"))) {
-				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
-				profiler->action_flags.track_stack = TRUE;
-				profiler->action_flags.save_allocation_caller = TRUE;
+				if (! has_minus) {
+					profiler->flags |= MONO_PROFILE_STATISTICAL;
+				} else {
+					profiler->flags &= ~MONO_PROFILE_STATISTICAL;
+				}
 			} else if (! (strcmp (argument, "save-allocation-stack") && strcmp (argument, "sas"))) {
-				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
-				profiler->action_flags.track_stack = TRUE;
-				profiler->action_flags.save_allocation_stack = TRUE;
+				profiler->action_flags.save_allocation_stack = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "allocations-carry-id") && strcmp (argument, "aci"))) {
-				profiler->action_flags.allocations_carry_id = TRUE;
+				profiler->action_flags.allocations_carry_id = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "start-enabled") && strcmp (argument, "se"))) {
-				profiler->profiler_enabled = TRUE;
+				profiler->profiler_enabled = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "start-disabled") && strcmp (argument, "sd"))) {
-				profiler->profiler_enabled = FALSE;
+				profiler->profiler_enabled = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "force-accurate-timer") && strcmp (argument, "fac"))) {
-				use_fast_timer = FALSE;
+				use_fast_timer = TRUE_IF_NOT_MINUS;
 #if (HAS_OPROFILE)
 			} else if (! (strcmp (argument, "oprofile") && strcmp (argument, "oprof"))) {
 				profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
 				profiler->action_flags.oprofile = TRUE;
 				if (op_open_agent ()) {
-					g_warning ("Problem calling op_open_agent\n");
+					FAIL_ARGUMENT_CHECK ("problem calling op_open_agent");
 				}
 #endif
 			} else if (strcmp (argument, "logging")) {
-				g_warning ("Cannot parse flag argument %s\n", argument);
+				FAIL_PARSING_FLAG_ARGUMENT;
 			}
+		}
+		
+failure_handling:
+		if (failure_message != NULL) {
+			g_warning (failure_message, argument);
+			failure_message = NULL;
 		}
 	}
 	
@@ -4940,6 +5009,35 @@ setup_user_options (const char *arguments) {
 		}
 	}
 #endif
+	
+	/* Ensure that the profiler flags needed to support required action flags are active */
+	if (profiler->action_flags.jit_time) {
+		profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
+	}
+	if (profiler->action_flags.save_allocation_caller || profiler->action_flags.save_allocation_stack || profiler->action_flags.allocations_carry_id) {
+		profiler->flags |= MONO_PROFILE_ALLOCATIONS;
+	}
+	if (profiler->action_flags.collection_summary || profiler->action_flags.heap_shot || profiler->action_flags.unreachable_objects) {
+		profiler->flags |= MONO_PROFILE_ALLOCATIONS;
+	}
+	if (profiler->action_flags.track_calls) {
+		profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
+		profiler->action_flags.jit_time = TRUE;
+	}
+	if (profiler->action_flags.save_allocation_caller || profiler->action_flags.save_allocation_stack) {
+		profiler->action_flags.track_stack = TRUE;
+		profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
+	}
+	
+	/* Without JIT events the stat profiler will not find method IDs... */
+	if (profiler->flags | MONO_PROFILE_STATISTICAL) {
+		profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
+	}
+	/* Profiling allocations without knowing which gc we are doing is not nice... */
+	if (profiler->flags | MONO_PROFILE_ALLOCATIONS) {
+		profiler->flags |= MONO_PROFILE_GC;
+	}
+
 	
 	if (profiler->file_name == NULL) {
 		char *program_name = g_get_prgname ();
