@@ -403,9 +403,9 @@ typedef struct _ProfilerStatisticalHit {
 
 typedef struct _ProfilerStatisticalData {
 	ProfilerStatisticalHit *hits;
-	int next_free_index;
-	int end_index;
-	int first_unwritten_index;
+	unsigned int next_free_index;
+	unsigned int end_index;
+	unsigned int first_unwritten_index;
 } ProfilerStatisticalData;
 
 typedef struct _ProfilerUnmanagedSymbol {
@@ -2708,133 +2708,139 @@ executable_file_add_region_reference (ProfilerExecutableFile *file, ProfilerExec
 static ProfilerExecutableFile*
 executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 	ProfilerExecutableFiles *files = & (profiler->executable_files);
-	ProfilerExecutableFile *file = (ProfilerExecutableFile*) g_hash_table_lookup (files->table, region->file_name);
+	ProfilerExecutableFile *file = region->file;
+	
 	if (file == NULL) {
-		guint16 test = 0x0102;
-		struct stat stat_buffer;
-		int symtab_index = 0;
-		int strtab_index = 0;
-		int dynsym_index = 0;
-		int dynstr_index = 0;
-		ElfHeader *header;
-		guint8 *section_headers;
-		int section_index;
-		int strings_index;
+		file = (ProfilerExecutableFile*) g_hash_table_lookup (files->table, region->file_name);
 		
-		file = g_new0 (ProfilerExecutableFile, 1);
-		region->file = file;
-		file->reference_count ++;
-		
-		file->fd = open (region->file_name, O_RDONLY);
-		if (file->fd == -1) {
-			//g_warning ("Cannot open file '%s': '%s'", region->file_name, strerror (errno));
-			return file;
-		} else {
-			if (fstat (file->fd, &stat_buffer) != 0) {
-				//g_warning ("Cannot stat file '%s': '%s'", region->file_name, strerror (errno));
+		if (file == NULL) {
+			guint16 test = 0x0102;
+			struct stat stat_buffer;
+			int symtab_index = 0;
+			int strtab_index = 0;
+			int dynsym_index = 0;
+			int dynstr_index = 0;
+			ElfHeader *header;
+			guint8 *section_headers;
+			int section_index;
+			int strings_index;
+			
+			file = g_new0 (ProfilerExecutableFile, 1);
+			region->file = file;
+			g_hash_table_insert (files->table, region->file_name, file);
+			file->reference_count ++;
+			
+			file->fd = open (region->file_name, O_RDONLY);
+			if (file->fd == -1) {
+				//g_warning ("Cannot open file '%s': '%s'", region->file_name, strerror (errno));
 				return file;
 			} else {
-				size_t region_length = ((guint8*)region->end) - ((guint8*)region->start);
-				file->length = stat_buffer.st_size;
-				
-				if (file->length == region_length) {
-					file->data = region->start;
-					close (file->fd);
-					file->fd = -1;
+				if (fstat (file->fd, &stat_buffer) != 0) {
+					//g_warning ("Cannot stat file '%s': '%s'", region->file_name, strerror (errno));
+					return file;
 				} else {
-					file->data = mmap (NULL, file->length, PROT_READ, MAP_PRIVATE, file->fd, 0);
+					size_t region_length = ((guint8*)region->end) - ((guint8*)region->start);
+					file->length = stat_buffer.st_size;
 					
-					if (file->data == MAP_FAILED) {
+					if (file->length == region_length) {
+						file->data = region->start;
 						close (file->fd);
-						//g_warning ("Cannot map file '%s': '%s'", region->file_name, strerror (errno));
-						file->data = NULL;
-						return file;
+						file->fd = -1;
+					} else {
+						file->data = mmap (NULL, file->length, PROT_READ, MAP_PRIVATE, file->fd, 0);
+						
+						if (file->data == MAP_FAILED) {
+							close (file->fd);
+							//g_warning ("Cannot map file '%s': '%s'", region->file_name, strerror (errno));
+							file->data = NULL;
+							return file;
+						}
 					}
 				}
 			}
-		}
-		
-		header = (ElfHeader*) file->data;
-		
-		if ((header->e_ident [EI_MAG0] != 0x7f) || (header->e_ident [EI_MAG1] != 'E') ||
-				(header->e_ident [EI_MAG2] != 'L') || (header->e_ident [EI_MAG3] != 'F')) {
-			return file;
-		}
-		
-		if (sizeof (gsize) == 4) {
-			if (header->e_ident [EI_CLASS] != ELF_CLASS_32) {
-				g_warning ("Class is not ELF_CLASS_32 with gsize size %d", (int) sizeof (gsize));
-				return file;
-			}
-		} else if (sizeof (gsize) == 8) {
-			if (header->e_ident [EI_CLASS] != ELF_CLASS_64) {
-				g_warning ("Class is not ELF_CLASS_64 with gsize size %d", (int) sizeof (gsize));
-				return file;
-			}
-		} else {
-			g_warning ("Absurd gsize size %d", (int) sizeof (gsize));
-			return file;
-		}
-		
-		if ((*(guint8*)(&test)) == 0x01) {
-			if (header->e_ident [EI_DATA] != ELF_DATA_MSB) {
-				g_warning ("Data is not ELF_DATA_MSB with first test byte 0x01");
-				return file;
-			}
-		} else if ((*(guint8*)(&test)) == 0x02) {
-			if (header->e_ident [EI_DATA] != ELF_DATA_LSB) {
-				g_warning ("Data is not ELF_DATA_LSB with first test byte 0x02");
-				return file;
-			}
-		} else {
-			g_warning ("Absurd test byte value");
-			return file;
-		}
-		
-		/* OK, this is a usable elf file... */
-		file->header = header;
-		section_headers = file->data + header->e_shoff;
-		file->main_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * header->e_shstrndx)))->sh_offset);
-		
-		for (section_index = 0; section_index < header->e_shnum; section_index ++) {
-			ElfSection *section_header = (ElfSection*) (section_headers + (header->e_shentsize * section_index));
 			
-			if (section_header->sh_type == ELF_SHT_SYMTAB) {
-				symtab_index = section_index;
-			} else if (section_header->sh_type == ELF_SHT_DYNSYM) {
-				dynsym_index = section_index;
-			} else if (section_header->sh_type == ELF_SHT_STRTAB) {
-				if (! strcmp (file->main_string_table + section_header->sh_name, ".strtab")) {
-					strtab_index = section_index;
-				} else if (! strcmp (file->main_string_table + section_header->sh_name, ".dynstr")) {
-					dynstr_index = section_index;
+			header = (ElfHeader*) file->data;
+			
+			if ((header->e_ident [EI_MAG0] != 0x7f) || (header->e_ident [EI_MAG1] != 'E') ||
+					(header->e_ident [EI_MAG2] != 'L') || (header->e_ident [EI_MAG3] != 'F')) {
+				return file;
+			}
+			
+			if (sizeof (gsize) == 4) {
+				if (header->e_ident [EI_CLASS] != ELF_CLASS_32) {
+					g_warning ("Class is not ELF_CLASS_32 with gsize size %d", (int) sizeof (gsize));
+					return file;
+				}
+			} else if (sizeof (gsize) == 8) {
+				if (header->e_ident [EI_CLASS] != ELF_CLASS_64) {
+					g_warning ("Class is not ELF_CLASS_64 with gsize size %d", (int) sizeof (gsize));
+					return file;
+				}
+			} else {
+				g_warning ("Absurd gsize size %d", (int) sizeof (gsize));
+				return file;
+			}
+			
+			if ((*(guint8*)(&test)) == 0x01) {
+				if (header->e_ident [EI_DATA] != ELF_DATA_MSB) {
+					g_warning ("Data is not ELF_DATA_MSB with first test byte 0x01");
+					return file;
+				}
+			} else if ((*(guint8*)(&test)) == 0x02) {
+				if (header->e_ident [EI_DATA] != ELF_DATA_LSB) {
+					g_warning ("Data is not ELF_DATA_LSB with first test byte 0x02");
+					return file;
+				}
+			} else {
+				g_warning ("Absurd test byte value");
+				return file;
+			}
+			
+			/* OK, this is a usable elf file... */
+			file->header = header;
+			section_headers = file->data + header->e_shoff;
+			file->main_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * header->e_shstrndx)))->sh_offset);
+			
+			for (section_index = 0; section_index < header->e_shnum; section_index ++) {
+				ElfSection *section_header = (ElfSection*) (section_headers + (header->e_shentsize * section_index));
+				
+				if (section_header->sh_type == ELF_SHT_SYMTAB) {
+					symtab_index = section_index;
+				} else if (section_header->sh_type == ELF_SHT_DYNSYM) {
+					dynsym_index = section_index;
+				} else if (section_header->sh_type == ELF_SHT_STRTAB) {
+					if (! strcmp (file->main_string_table + section_header->sh_name, ".strtab")) {
+						strtab_index = section_index;
+					} else if (! strcmp (file->main_string_table + section_header->sh_name, ".dynstr")) {
+						dynstr_index = section_index;
+					}
 				}
 			}
-		}
-		
-		if ((symtab_index != 0) && (strtab_index != 0)) {
-			section_index = symtab_index;
-			strings_index = strtab_index;
-		} else if ((dynsym_index != 0) && (dynstr_index != 0)) {
-			section_index = dynsym_index;
-			strings_index = dynstr_index;
+			
+			if ((symtab_index != 0) && (strtab_index != 0)) {
+				section_index = symtab_index;
+				strings_index = strtab_index;
+			} else if ((dynsym_index != 0) && (dynstr_index != 0)) {
+				section_index = dynsym_index;
+				strings_index = dynstr_index;
+			} else {
+				section_index = 0;
+				strings_index = 0;
+			}
+			
+			if (section_index != 0) {
+				ElfSection *section_header = (ElfSection*) (section_headers + (header->e_shentsize * section_index));
+				file->symbol_size = section_header->sh_entsize;
+				file->symbols_count = (guint32) (section_header->sh_size / section_header->sh_entsize);
+				file->symbols_start = file->data + section_header->sh_offset;
+				file->symbols_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * strings_index)))->sh_offset);
+			}
+			
+			file->section_regions = g_new0 (ProfilerExecutableFileSectionRegion, file->header->e_shnum);
 		} else {
-			section_index = 0;
-			strings_index = 0;
+			region->file = file;
+			file->reference_count ++;
 		}
-		
-		if (section_index != 0) {
-			ElfSection *section_header = (ElfSection*) (section_headers + (header->e_shentsize * section_index));
-			file->symbol_size = section_header->sh_entsize;
-			file->symbols_count = (guint32) (section_header->sh_size / section_header->sh_entsize);
-			file->symbols_start = file->data + section_header->sh_offset;
-			file->symbols_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * strings_index)))->sh_offset);
-		}
-		
-		file->section_regions = g_new0 (ProfilerExecutableFileSectionRegion, file->header->e_shnum);
-	} else {
-		region->file = file;
-		file->reference_count ++;
 	}
 	
 	if (file->header != NULL) {
@@ -4090,16 +4096,16 @@ static void
 statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **ips, void *context) {
 	MonoDomain *domain = mono_domain_get ();
 	ProfilerStatisticalData *data;
-	int index;
+	unsigned int index;
 	
 	CHECK_PROFILER_ENABLED ();
 	do {
 		data = profiler->statistical_data;
-		index = InterlockedIncrement (&data->next_free_index);
+		index = InterlockedIncrement ((int*) &data->next_free_index);
 		
 		if (index <= data->end_index) {
-			int base_index = (index - 1) * (profiler->statistical_call_chain_depth + 1);
-			int call_chain_index = 0;
+			unsigned int base_index = (index - 1) * (profiler->statistical_call_chain_depth + 1);
+			unsigned int call_chain_index = 0;
 			
 			//printf ("[statistical_call_chain] (%d)\n", call_chain_depth);
 			while (call_chain_index < call_chain_depth) {
@@ -4146,12 +4152,12 @@ static void
 statistical_hit (MonoProfiler *profiler, guchar *ip, void *context) {
 	MonoDomain *domain = mono_domain_get ();
 	ProfilerStatisticalData *data;
-	int index;
+	unsigned int index;
 	
 	CHECK_PROFILER_ENABLED ();
 	do {
 		data = profiler->statistical_data;
-		index = InterlockedIncrement (&data->next_free_index);
+		index = InterlockedIncrement ((int*) &data->next_free_index);
 		
 		if (index <= data->end_index) {
 			ProfilerStatisticalHit *hit = & (data->hits [index - 1]);
