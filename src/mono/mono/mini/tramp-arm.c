@@ -343,7 +343,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	code += 8;
 
 	/* Flush instruction cache, since we've generated code */
-	mono_arch_flush_icache (code, code - buf);
+	mono_arch_flush_icache (buf, code - buf);
 
 	/* Sanity check */
 	g_assert ((code - buf) <= GEN_TRAMP_SIZE);
@@ -369,7 +369,7 @@ mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
 
 	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_LR);
 
-	mono_arch_flush_icache (code, code - buf);
+	mono_arch_flush_icache (buf, code - buf);
 
 	*code_len = code - buf;
 
@@ -426,7 +426,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	}
 
 	/* Flush instruction cache, since we've generated code */
-	mono_arch_flush_icache (code, code - buf);
+	mono_arch_flush_icache (buf, code - buf);
 
 	g_assert ((code - buf) <= size);
 
