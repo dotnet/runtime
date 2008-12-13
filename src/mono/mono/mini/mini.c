@@ -667,7 +667,7 @@ mono_op_imm_to_op (int opcode)
 {
 	switch (opcode) {
 	case OP_ADD_IMM:
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 		return OP_IADD;
 #else
 		return OP_LADD;
@@ -683,7 +683,7 @@ mono_op_imm_to_op (int opcode)
 	case OP_IMUL_IMM:
 		return OP_IMUL;
 	case OP_AND_IMM:
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 		return OP_IAND;
 #else
 		return OP_LAND;
@@ -721,13 +721,13 @@ mono_op_imm_to_op (int opcode)
 	case OP_IREM_IMM:
 		return OP_IREM;
 	case OP_DIV_IMM:
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 		return OP_IDIV;
 #else
 		return OP_LDIV;
 #endif
 	case OP_REM_IMM:
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 		return OP_IREM;
 #else
 		return OP_LREM;
@@ -832,7 +832,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	if (vreg != -1)
 		set_vreg_to_inst (cfg, vreg, inst);
 
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 #ifdef MONO_ARCH_SOFT_FLOAT
 	regpair = mono_type_is_long (type) || mono_type_is_float (type);
 #else
@@ -1405,7 +1405,7 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 		case MONO_TYPE_I4:
 #else
 		case MONO_TYPE_I8:
@@ -1669,7 +1669,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 			case MONO_TYPE_PTR:
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 			case MONO_TYPE_I4:
 #else
 			case MONO_TYPE_I8:
@@ -5220,7 +5220,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_fload_r4_arg, "mono_fload_r4_arg", "uint32 double", FALSE);
 #endif
 
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 	mono_register_opcode_emulation (OP_FCONV_TO_U, "__emul_fconv_to_u", "uint32 double", mono_fconv_u4, TRUE);
 #endif
 

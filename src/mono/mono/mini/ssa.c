@@ -389,7 +389,7 @@ mono_ssa_compute (MonoCompile *cfg)
 	for (i = 0; i < cfg->num_varinfo; ++i) {
 		MonoInst *var = cfg->varinfo [i];
 
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 		if (var->type == STACK_I8)
 			continue;
 #endif
@@ -994,7 +994,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GList **cvars, 
 			g_assert (ins->next->sreg1 == ins->dreg);
 
 			if (carray [ins->next->sreg2]) {
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 				int idx = carray [ins->next->sreg2]->inst_c0 >> 3;
 #else
 				int idx = carray [ins->next->sreg2]->inst_c0 >> 2;
@@ -1103,7 +1103,7 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 
 			if (carray [ins->next->sreg2]) {
 				/* Convert to a simple branch */
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 				int idx = carray [ins->next->sreg2]->inst_c0 >> 3;
 #else
 				int idx = carray [ins->next->sreg2]->inst_c0 >> 2;

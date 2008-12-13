@@ -967,7 +967,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		if ((ins->dreg != -1) && (ins->dreg < max)) {
 			memset (&reginfo [ins->dreg], 0, sizeof (RegTrack));
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 			if (MONO_ARCH_INST_IS_REGPAIR (spec [MONO_INST_DEST])) {
 				/**
 				 * In the new IR, the two vregs of the regpair do not alias the
@@ -981,7 +981,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		if ((ins->sreg1 != -1) && (ins->sreg1 < max)) {
 			memset (&reginfo [ins->sreg1], 0, sizeof (RegTrack));
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 			if (MONO_ARCH_INST_IS_REGPAIR (spec [MONO_INST_SRC1])) {
 				ins->sreg1 ++;
 				memset (&reginfo [ins->sreg1 + 1], 0, sizeof (RegTrack));
@@ -990,7 +990,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		if ((ins->sreg2 != -1) && (ins->sreg2 < max)) {
 			memset (&reginfo [ins->sreg2], 0, sizeof (RegTrack));
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 			if (MONO_ARCH_INST_IS_REGPAIR (spec [MONO_INST_SRC2])) {
 				ins->sreg2 ++;
 				memset (&reginfo [ins->sreg2 + 1], 0, sizeof (RegTrack));
@@ -2212,7 +2212,7 @@ mono_is_regsize_var (MonoType *t)
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 #endif
@@ -2352,7 +2352,7 @@ mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins)
 		if (last_ins && (last_ins->opcode == OP_STOREI2_MEMBASE_REG) &&
 			ins->inst_basereg == last_ins->inst_destbasereg &&
 			ins->inst_offset == last_ins->inst_offset) {
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 			ins->opcode = (ins->opcode == OP_LOADI2_MEMBASE) ? OP_PCONV_TO_I2 : OP_PCONV_TO_U2;
 #else
 			/* The definition of OP_PCONV_TO_U2 is wrong */

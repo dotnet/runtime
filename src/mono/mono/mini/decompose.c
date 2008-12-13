@@ -106,7 +106,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		break;
 	case OP_ICONV_TO_OVF_U4:
 	case OP_ICONV_TO_OVF_I4_UN:
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 	case OP_ICONV_TO_OVF_U:
 	case OP_ICONV_TO_OVF_I_UN:
 #endif
@@ -118,21 +118,21 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_ICONV_TO_I4:
 	case OP_ICONV_TO_U4:
 	case OP_ICONV_TO_OVF_I4:
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 	case OP_ICONV_TO_OVF_I:
 	case OP_ICONV_TO_OVF_U_UN:
 #endif
 		ins->opcode = OP_MOVE;
 		break;
 	case OP_ICONV_TO_I:
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 		ins->opcode = OP_SEXT_I4;
 #else
 		ins->opcode = OP_MOVE;
 #endif
 		break;
 	case OP_ICONV_TO_U:
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 		ins->opcode = OP_ZEXT_I4;
 #else
 		ins->opcode = OP_MOVE;
@@ -144,7 +144,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		break;
 
 		/* Long opcodes on 64 bit machines */
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 	case OP_LCONV_TO_I4:
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_LSHR_IMM, ins->dreg, ins->sreg1, 0);
 		ins->opcode = OP_NOP;
@@ -380,7 +380,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	}
 }
 
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 static int lbr_decomp [][2] = {
 	{0, 0}, /* BEQ */
 	{OP_IBGT, OP_IBGE_UN}, /* BGE */
@@ -411,7 +411,7 @@ static int lcset_decomp [][2] = {
 void
 mono_decompose_long_opts (MonoCompile *cfg)
 {
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 	MonoBasicBlock *bb, *first_bb;
 
 	/*

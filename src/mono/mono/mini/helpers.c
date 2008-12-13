@@ -181,7 +181,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #define AS_CMD "as -xarch=v9"
 #elif defined(__i386__) || defined(__x86_64__)
 #define AS_CMD "as -gstabs"
-#elif defined(__mips__)
+#elif defined(__mips__) && (_MIPS_SIM == _ABIO32)
 #define AS_CMD "as -mips32"
 #elif defined(__ppc64__)
 #define AS_CMD "as -arch ppc64"

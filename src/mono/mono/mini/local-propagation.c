@@ -66,19 +66,19 @@ restart:
 		MONO_BB_FOR_EACH_INS (bb, ins) {
 			if ((ins->dreg != -1) && (ins->dreg < max)) {
 				defs [ins->dreg] = NULL;
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 				defs [ins->dreg + 1] = NULL;
 #endif
 			}
 			if ((ins->sreg1 != -1) && (ins->sreg1 < max)) {
 				defs [ins->sreg1] = NULL;
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 				defs [ins->sreg1 + 1] = NULL;
 #endif
 			}
 			if ((ins->sreg2 != -1) && (ins->sreg2 < max)) {
 				defs [ins->sreg2] = NULL;
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 				defs [ins->sreg2 + 1] = NULL;
 #endif
 			}
@@ -286,7 +286,7 @@ restart:
 			case OP_IADD_IMM:
 			case OP_SUB_IMM:
 			case OP_ISUB_IMM:
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 			case OP_LADD_IMM:
 			case OP_LSUB_IMM:
 #endif
@@ -297,7 +297,7 @@ restart:
 				break;
 			case OP_MUL_IMM:
 			case OP_IMUL_IMM:
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 			case OP_LMUL_IMM:
 #endif
 				if (ins->inst_imm == 0) {
@@ -457,7 +457,7 @@ mono_local_deadce (MonoCompile *cfg)
 			if (spec [MONO_INST_DEST] != ' ') {
 				mono_bitset_clear_fast (used, ins->dreg);
 				mono_bitset_clear_fast (defined, ins->dreg);
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 				/* Regpairs */
 				mono_bitset_clear_fast (used, ins->dreg + 1);
 				mono_bitset_clear_fast (defined, ins->dreg + 1);
@@ -465,13 +465,13 @@ mono_local_deadce (MonoCompile *cfg)
 			}
 			if (spec [MONO_INST_SRC1] != ' ') {
 				mono_bitset_clear_fast (used, ins->sreg1);
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 				mono_bitset_clear_fast (used, ins->sreg1 + 1);
 #endif
 			}
 			if (spec [MONO_INST_SRC2] != ' ') {
 				mono_bitset_clear_fast (used, ins->sreg2);
-#if SIZEOF_VOID_P == 4
+#if SIZEOF_REGISTER == 4
 				mono_bitset_clear_fast (used, ins->sreg2 + 1);
 #endif
 			}

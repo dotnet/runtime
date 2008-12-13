@@ -13,7 +13,7 @@
 
 //#define DEBUG_LIVENESS
 
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 #define BITS_PER_CHUNK 64
 #else
 #define BITS_PER_CHUNK 32
@@ -23,7 +23,7 @@
  * The liveness2 pass can't handle long vars on 32 bit platforms because the component
  * vars have the same 'idx'.
  */
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 #define ENABLE_LIVENESS2
 #endif
 

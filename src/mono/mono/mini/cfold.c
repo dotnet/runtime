@@ -222,7 +222,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 		}
 		break;
 	case OP_MOVE:
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 		if ((arg1->opcode == OP_ICONST) || (arg1->opcode == OP_I8CONST)) {
 #else
 		if (arg1->opcode == OP_ICONST) {
