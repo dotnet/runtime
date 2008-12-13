@@ -16,6 +16,7 @@ enum {
 	mips_a1,
 	mips_a2,
 	mips_a3,
+#if _MIPS_SIM == _ABIO32
 	mips_t0, /* 8 temporaries */
 	mips_t1,
 	mips_t2,
@@ -24,6 +25,16 @@ enum {
 	mips_t5,
 	mips_t6,
 	mips_t7,
+#elif _MIPS_SIM == _ABIN32
+	mips_a4, /* 4 more argument registers */
+	mips_a5,
+	mips_a6,
+	mips_a7,
+	mips_t0, /* 4 temporaries */
+	mips_t1,
+	mips_t2,
+	mips_t3,
+#endif
 	mips_s0, /* 16 calle saved */
 	mips_s1,
 	mips_s2,
@@ -147,6 +158,30 @@ enum {
 	MIPS_FPU_LE,
 	MIPS_FPU_NGT
 };
+
+#if SIZEOF_REGISTER == 4
+
+#define MIPS_SW		mips_sw
+#define MIPS_LW		mips_lw
+#define MIPS_ADDU	mips_addu
+#define MIPS_ADDIU	mips_addiu
+#define MIPS_SWC1	mips_swc1
+#define MIPS_LWC1	mips_lwc1
+#define MIPS_MOVE	mips_move
+
+#elif SIZEOF_REGISTER == 8
+
+#define MIPS_SW		mips_sd
+#define MIPS_LW		mips_ld
+#define MIPS_ADDU	mips_daddu
+#define MIPS_ADDIU	mips_daddiu
+#define MIPS_SWC1	mips_sdc1
+#define MIPS_LWC1	mips_ldc1
+#define MIPS_MOVE	mips_dmove
+
+#else
+#error Unknown SIZEOF_REGISTER
+#endif
 
 #define mips_emit32(c,x) do {				\
 		*((guint32 *) (void *)(c)) = x;				\
@@ -301,7 +336,8 @@ enum {
 #define mips_swr(c,src,base,offset) mips_format_i(c,54,base,src,offset)
 
 /* misc and coprocessor ops */
-#define mips_move(c,dest,src) mips_add(c,dest,src,mips_zero)
+#define mips_move(c,dest,src) mips_addu(c,dest,src,mips_zero)
+#define mips_dmove(c,dest,src) mips_daddu(c,dest,src,mips_zero)
 #define mips_nop(c) mips_sll(c,0,0,0)
 #define mips_break(c,code) mips_emit32(c, ((code)<<6)|13)
 #define mips_mfhi(c,dest) mips_format_r(c,0,0,0,dest,0,16)
