@@ -75,7 +75,7 @@ mono_arch_get_restore_context (void)
 			    | (1 << mips_sp) | (1 << mips_ra));
 	for (i = 0; i < MONO_SAVED_GREGS; ++i) {
 		if (iregs_to_restore & (1 << i)) {
-			mips_lw (code, i, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[i]));
+			MIPS_LW (code, i, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[i]));
 		}
 	}
 
@@ -130,26 +130,26 @@ mono_arch_get_call_filter (void)
 
 	/* Save global registers on stack (s0 - s7) */
 	offset = 16;
-	mips_sw (code, mips_s0, mips_sp, offset); offset += IREG_SIZE;
-	mips_sw (code, mips_s1, mips_sp, offset); offset += IREG_SIZE;
-	mips_sw (code, mips_s2, mips_sp, offset); offset += IREG_SIZE;
-	mips_sw (code, mips_s3, mips_sp, offset); offset += IREG_SIZE;
-	mips_sw (code, mips_s4, mips_sp, offset); offset += IREG_SIZE;
-	mips_sw (code, mips_s5, mips_sp, offset); offset += IREG_SIZE;
-	mips_sw (code, mips_s6, mips_sp, offset); offset += IREG_SIZE;
-	mips_sw (code, mips_s7, mips_sp, offset); offset += IREG_SIZE;
-	mips_sw (code, mips_fp, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_s0, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_s1, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_s2, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_s3, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_s4, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_s5, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_s6, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_s7, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_SW (code, mips_fp, mips_sp, offset); offset += IREG_SIZE;
 
 	/* Restore global registers from MonoContext, including the frame pointer */
-	mips_lw (code, mips_s0, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s0]));
-	mips_lw (code, mips_s1, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s1]));
-	mips_lw (code, mips_s2, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s2]));
-	mips_lw (code, mips_s3, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s3]));
-	mips_lw (code, mips_s4, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s4]));
-	mips_lw (code, mips_s5, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s5]));
-	mips_lw (code, mips_s6, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s6]));
-	mips_lw (code, mips_s7, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s7]));
-	mips_lw (code, mips_fp, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_fp]));
+	MIPS_LW (code, mips_s0, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s0]));
+	MIPS_LW (code, mips_s1, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s1]));
+	MIPS_LW (code, mips_s2, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s2]));
+	MIPS_LW (code, mips_s3, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s3]));
+	MIPS_LW (code, mips_s4, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s4]));
+	MIPS_LW (code, mips_s5, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s5]));
+	MIPS_LW (code, mips_s6, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s6]));
+	MIPS_LW (code, mips_s7, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_s7]));
+	MIPS_LW (code, mips_fp, mips_a0, G_STRUCT_OFFSET (MonoContext, sc_regs[mips_fp]));
 
 	/* a1 is the handler to call */
 	mips_move (code, mips_t9, mips_a1);
@@ -160,15 +160,15 @@ mono_arch_get_call_filter (void)
 
 	/* restore all regs from the stack */
 	offset = 16;
-	mips_lw (code, mips_s0, mips_sp, offset); offset += IREG_SIZE;
-	mips_lw (code, mips_s1, mips_sp, offset); offset += IREG_SIZE;
-	mips_lw (code, mips_s2, mips_sp, offset); offset += IREG_SIZE;
-	mips_lw (code, mips_s3, mips_sp, offset); offset += IREG_SIZE;
-	mips_lw (code, mips_s4, mips_sp, offset); offset += IREG_SIZE;
-	mips_lw (code, mips_s5, mips_sp, offset); offset += IREG_SIZE;
-	mips_lw (code, mips_s6, mips_sp, offset); offset += IREG_SIZE;
-	mips_lw (code, mips_s7, mips_sp, offset); offset += IREG_SIZE;
-	mips_lw (code, mips_fp, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_s0, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_s1, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_s2, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_s3, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_s4, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_s5, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_s6, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_s7, mips_sp, offset); offset += IREG_SIZE;
+	MIPS_LW (code, mips_fp, mips_sp, offset); offset += IREG_SIZE;
 
 	/* epilog */
 	mips_lw (code, mips_ra, mips_sp, alloc_size + MIPS_RET_ADDR_OFFSET);
@@ -203,11 +203,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 	/*g_print  ("stack in throw: %p\n", esp);*/
 	memcpy (&ctx.sc_regs, (void *)(esp + MIPS_STACK_PARAM_OFFSET),
 		sizeof (gulong) * MONO_SAVED_GREGS);
-#if 0
-	memcpy (&ctx.sc_fpregs, fp_regs, sizeof (float) * MONO_SAVED_FREGS);
-#else
-	memset (&ctx.sc_fpregs, 0, sizeof (float) * MONO_SAVED_FREGS);
-#endif
+	memset (&ctx.sc_fpregs, 0, sizeof (mips_freg) * MONO_SAVED_FREGS);
 	MONO_CONTEXT_SET_IP (&ctx, eip);
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
@@ -262,10 +258,10 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	/* Save all the regs on the stack */
 	for (i = 0; i < MONO_MAX_IREGS; i++) {
 		if (i != mips_sp)
-			mips_sw (code, i, mips_sp, i*IREG_SIZE + MIPS_STACK_PARAM_OFFSET);
+			MIPS_SW (code, i, mips_sp, i*IREG_SIZE + MIPS_STACK_PARAM_OFFSET);
 		else {
 			mips_addiu (code, mips_at, mips_sp, alloc_size);
-			mips_sw (code, mips_at, mips_sp, i*IREG_SIZE + MIPS_STACK_PARAM_OFFSET);
+			MIPS_SW (code, mips_at, mips_sp, i*IREG_SIZE + MIPS_STACK_PARAM_OFFSET);
 		}
 	}
 

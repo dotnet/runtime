@@ -164,7 +164,7 @@ mono_arch_get_vcall_slot (guint8 *code_ptr, gpointer *regs, int *displacement)
 				soff |= 0xffff0000;
 			offset = soff;
 			if (1) {
-				MonoLMF *lmf = (MonoLMF*)((char *)regs + 12*4);
+				MonoLMF *lmf = (MonoLMF*)((char *)regs + 12*IREG_SIZE);
 				g_assert (lmf->magic == MIPS_LMF_MAGIC2);
 				o = (gpointer)lmf->iregs [base];
 			}
@@ -194,124 +194,6 @@ mono_arch_nullify_plt_entry (guint8 *code)
 {
 	g_assert_not_reached ();
 }
-
-/**
- * mips_magic_trampoline:
- * @code: pointer into caller code
- * @method: the method to translate
- * @sp: stack pointer
- *
- * This method is called by the function 'arch_create_jit_trampoline', which in
- * turn is called by the trampoline functions for virtual methods.
- * After having called the JIT compiler to compile the method, it inspects the
- * caller code to find the address of the method-specific part of the
- * trampoline vtable slot for this method, updates it with a fragment that calls
- * the newly compiled code and returns this address of the compiled code to
- * 'arch_create_jit_trampoline' 
- */
-#if 0
-static gpointer
-mips_magic_trampoline (MonoMethod *method, guint32 *code, char *sp)
-{
-	char *vtable = NULL;
-	gpointer addr;
-        MonoJitInfo *ji, *target_ji;
-	int reg, offset = 0;
-	guint32 base = 0;
-
-	addr = mono_compile_method (method);
-	g_assert (addr);
-
-	if (!code)
-		return addr;
-
-	/* We can't trampoline across domains */
-	ji = mono_jit_info_table_find (mono_domain_get (), code);
-	target_ji = mono_jit_info_table_find (mono_domain_get (), addr);
-	if (!mono_method_same_domain (ji, target_ji))
-		return addr;
-
-#if 0
-	g_print ("mips_magic: method code at %p from %p for %s:%s\n",
-		 addr, code, method->klass->name, method->name);
-#endif
-	/* Locate the address of the method-specific trampoline. The call using
-	the vtable slot that took the processing flow to 'arch_create_jit_trampoline' 
-	looks something like this:
-
-		jal	XXXXYYYY
-
-		lui	t9, XXXX
-		addiu	t9, YYYY
-		jalr	t9
-		nop
-
-	On entry, 'code' points just after one of the above sequences.
-	*/
-	
-	/* The jal case */
-	if ((code[-2] >> 26) == 0x03) {
-		g_print ("direct patching\n");
-		mips_patch ((char*)(code-2), addr);
-		return addr;
-	}
-	
-	/* Sanity check: look for the jalr */
-	g_assert((code[-2] & 0xfc1f003f) == 0x00000009);
-
-	reg = (code[-2] >> 21) & 0x1f;
-
-	//printf ("mips_magic_trampoline: jalr @ 0x%0x, w/ reg %d\n", code-2, reg);
-
-	/* The lui / addiu / jalr case */
-	if ((code [-4] >> 26) == 0x0f && (code [-3] >> 26) == 0x09 && (code [-2] >> 26) == 0) {
-		mips_patch ((char*)(code-4), addr);
-		return addr;
-	}
-
-	//printf ("mips_magic_trampoline: 0x%08x @ 0x%0x\n", *(code-2), code-2);
-
-	/* Probably a vtable lookup */
-
-	/* Walk backwards to find 'lw reg,XX(base)' */
-	for(; --code;) {
-		guint32 mask = (0x3f << 26) | (0x1f << 16);
-		guint32 match = (0x23 << 26) | (reg << 16);
-		if((*code & mask) == match) {
-			gint16 soff;
-			gint reg_offset;
-
-			/* lw reg,XX(base) */
-			base = (*code >> 21) & 0x1f;
-			soff = (*code & 0xffff);
-			if (soff & 0x8000)
-				soff |= 0xffff0000;
-			offset = soff;
-			reg_offset = STACK - sizeof (MonoLMF)
-				+ G_STRUCT_OFFSET (MonoLMF, iregs[base]);
-			/* o contains now the value of register reg */
-			vtable = *((char**) (sp + reg_offset));
-#if 0
-			g_print ("patching reg is %d, offset %d (vtable %p) @ %p\n",
-				 base, offset, vtable, code);
-#endif
-			break;
-		}
-	}
-
-	/* this is not done for non-virtual calls, because in that case
-	   we won't have an object, but the actual pointer to the 
-	   valuetype as the this argument
-	 */
-	if (method->klass->valuetype && !mono_aot_is_got_entry (code, vtable))
-		addr = get_unbox_trampoline (method, addr);
-
-	vtable += offset;
-	if (mono_aot_is_got_entry (code, vtable) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable))
-		*((gpointer *)vtable) = addr;
-	return addr;
-}
-#endif
 
 void
 mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
@@ -368,9 +250,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	lmf = STACK - sizeof (MonoLMF) - 8;
 
 	for (i = 0; i < MONO_MAX_IREGS; i++)
-		mips_sw (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[i]));
+		MIPS_SW (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[i]));
 	for (i = 0; i < MONO_MAX_FREGS; i++)
-		mips_swc1 (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, fregs[i]));
+		MIPS_SWC1 (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, fregs[i]));
 
 	/* Set the magic number */
 	mips_load_const (code, mips_at, MIPS_LMF_MAGIC2);
@@ -380,7 +262,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	mips_sw (code, mips_t8, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, method));
 
 	/* save frame pointer (caller fp) */
-	mips_sw (code, mips_fp, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, ebp));
+	MIPS_SW (code, mips_fp, mips_sp, lmf + G_STRUCT_OFFSET(MonoLMF, ebp));
 
 	/* save the IP (caller ip) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
@@ -452,10 +334,10 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Restore the callee-saved & argument registers */
 	for (i = 0; i < MONO_MAX_IREGS; i++) {
 		if ((MONO_ARCH_CALLEE_SAVED_REGS | MONO_ARCH_CALLEE_REGS | MIPS_ARG_REGS) & (1 << i))
-		    mips_lw (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[i]));
+		    MIPS_LW (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, iregs[i]));
 	}
 	for (i = 0; i < MONO_MAX_FREGS; i++)
-		mips_lwc1 (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, fregs[i]));
+		MIPS_LWC1 (code, i, mips_sp, lmf + G_STRUCT_OFFSET (MonoLMF, fregs[i]));
 
 	/* Non-standard function epilogue. Instead of doing a proper
 	 * return, we just jump to the compiled code.

@@ -1,8 +1,8 @@
 #ifndef __MONO_MINI_MIPS_H__
 #define __MONO_MINI_MIPS_H__
 
-#include <mono/arch/mips/mips-codegen.h>
 #include <glib.h>
+#include <mono/arch/mips/mips-codegen.h>
 
 #if _MIPS_SIM == _ABIO32
 /* o32 fully supported */
@@ -25,16 +25,21 @@
 #define MONO_SAVED_FREGS 32
 
 
-#if _MIPS_SIM == _ABIO32
+#if SIZEOF_REGISTER == 4
 #define IREG_SIZE	4
 typedef guint32		mips_ireg;
 #define FREG_SIZE	4
 typedef gfloat		mips_freg;
-#elif _MIPS_SIM == _ABIN32
+
+#elif SIZEOF_REGISTER == 8
+
 #define IREG_SIZE	8
 typedef guint64		mips_ireg;
 #define FREG_SIZE	8
 typedef gdouble		mips_freg;
+
+#else
+#error Unknown REGISTER_SIZE
 #endif
 
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
@@ -54,6 +59,7 @@ typedef gdouble		mips_freg;
 
 #define MIPS_V_REGS	((1 << mips_v0) | \
 			 (1 << mips_v1))
+#if _MIPS_SIM == _ABIO32
 #define MIPS_T_REGS	((1 << mips_t0) | \
 			 (1 << mips_t1) | \
 			 (1 << mips_t2) | \
@@ -62,6 +68,14 @@ typedef gdouble		mips_freg;
 			 (1 << mips_t5) | \
 			 (1 << mips_t6) | \
 			 (1 << mips_t7))
+#elif _MIPS_SIM == _ABIN32
+#define MIPS_T_REGS	((1 << mips_t0) | \
+			 (1 << mips_t1) | \
+			 (1 << mips_t2) | \
+			 (1 << mips_t3))
+#endif
+
+
 #define MIPS_S_REGS	((1 << mips_s0) | \
 			 (1 << mips_s1) | \
 			 (1 << mips_s2) | \
@@ -71,10 +85,21 @@ typedef gdouble		mips_freg;
 			 (1 << mips_s6) | \
 			 (1 << mips_s7) | \
 			 (1 << mips_fp))
+#if _MIPS_SIM == _ABIO32
 #define MIPS_A_REGS	((1 << mips_a0) | \
 			 (1 << mips_a1) | \
 			 (1 << mips_a2) | \
 			 (1 << mips_a3))
+#elif _MIPS_SIM == _ABIN32
+#define MIPS_A_REGS	((1 << mips_a0) | \
+			 (1 << mips_a1) | \
+			 (1 << mips_a2) | \
+			 (1 << mips_a3) | \
+			 (1 << mips_a4) | \
+			 (1 << mips_a5) | \
+			 (1 << mips_a6) | \
+			 (1 << mips_a7))
+#endif
 
 #define mips_temp mips_t8
 
@@ -212,6 +237,7 @@ typedef struct MonoCompileArch {
 	guint		local_alloc_offset;
 	guint		spillvar_offset;
 	guint		spillvar_offset_float;
+	guint		tracing_offset;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
