@@ -3786,6 +3786,13 @@ int
 mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 {
 	int tmp;
+#if SIZEOF_VOID_P == SIZEOF_REGISTER
+	int stack_slot_size = sizeof (gpointer);
+	int stack_slot_align = __alignof__ (gpointer);
+#elif SIZEOF_VOID_P < SIZEOF_REGISTER
+	int stack_slot_size = SIZEOF_REGISTER;
+	int stack_slot_align = SIZEOF_REGISTER;
+#endif
 
 	g_assert (t != NULL);
 
@@ -3793,8 +3800,8 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 		align = &tmp;
 
 	if (t->byref) {
-		*align = __alignof__(gpointer);
-		return sizeof (gpointer);
+		*align = stack_slot_align;
+		return stack_slot_size;
 	}
 
 	switch (t->type){
@@ -3815,16 +3822,16 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
-		*align = __alignof__(gpointer);
-		return sizeof (gpointer);
+		*align = stack_slot_align;
+		return stack_slot_size;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		g_assert (allow_open);
-		*align = __alignof__(gpointer);
-		return sizeof (gpointer);
+		*align = stack_slot_align;
+		return stack_slot_size;
 	case MONO_TYPE_TYPEDBYREF:
-		*align = __alignof__(gpointer);
-		return sizeof (gpointer) * 3;
+		*align = stack_slot_align;
+		return stack_slot_size * 3;
 	case MONO_TYPE_R4:
 		*align = __alignof__(float);
 		return sizeof (float);		
@@ -3843,11 +3850,11 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 		else {
 			size = mono_class_value_size (t->data.klass, (guint32*)align);
 
-			*align = *align + __alignof__(gpointer) - 1;
-			*align &= ~(__alignof__(gpointer) - 1);
+			*align = *align + stack_slot_align - 1;
+			*align &= ~(stack_slot_align - 1);
 
-			size += sizeof (gpointer) - 1;
-			size &= ~(sizeof (gpointer) - 1);
+			size += stack_slot_size - 1;
+			size &= ~(stack_slot_size - 1);
 
 			return size;
 		}
@@ -3865,17 +3872,17 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 			else {
 				guint32 size = mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 
-				*align = *align + __alignof__(gpointer) - 1;
-				*align &= ~(__alignof__(gpointer) - 1);
+				*align = *align + stack_slot_align - 1;
+				*align &= ~(stack_slot_align - 1);
 
-				size += sizeof (gpointer) - 1;
-				size &= ~(sizeof (gpointer) - 1);
+				size += stack_slot_size - 1;
+				size &= ~(stack_slot_size - 1);
 
 				return size;
 			}
 		} else {
-			*align = __alignof__(gpointer);
-			return sizeof (gpointer);
+			*align = stack_slot_align;
+			return stack_slot_size;
 		}
 	}
 	default:
