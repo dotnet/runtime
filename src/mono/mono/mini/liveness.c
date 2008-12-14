@@ -610,8 +610,18 @@ mono_analyze_liveness (MonoCompile *cfg)
 	for (i = 0; i < max_vars; i ++) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, i);
 		if (cfg->varinfo [vi->idx]->opcode == OP_ARG) {
-			if (vi->range.last_use.abs_pos == 0 && !(cfg->varinfo [vi->idx]->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
-				cfg->varinfo [vi->idx]->flags |= MONO_INST_IS_DEAD;
+			if (vi->range.last_use.abs_pos == 0 && !(cfg->varinfo [vi->idx]->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
+				/* 
+				 * Can't eliminate the this variable in gshared code, since
+				 * it is needed during exception handling to identify the
+				 * method.
+				 * It is better to check for this here instead of marking the variable
+				 * VOLATILE, since that would prevent it from being allocated to
+				 * registers.
+				 */
+				 if (!(cfg->generic_sharing_context && mono_method_signature (cfg->method)->hasthis && cfg->varinfo [vi->idx] == cfg->args [0]))
+					 cfg->varinfo [vi->idx]->flags |= MONO_INST_IS_DEAD;
+			}
 			vi->range.first_use.abs_pos = 0;
 		}
 	}
