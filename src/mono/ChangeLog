@@ -1,3 +1,17 @@
+2008-12-15  Marek Habersack  <mhabersack@novell.com>
+
+	* data/Makefile.am (EXTRA_DIST): added
+	system.web.extensions_1.0.pc.in. Also added to pkgconfig_DATA
+
+	* data/system.web.extensions_1.0.pc.in: added. This file serves
+	the purpose of making MonoDevelop see the 1.0 version of the
+	System.Web.Extensions assembly in the project references
+	editor. This will also make legacy 2.0 ASP.NET apps not fail when
+	they reference the 1.0 version of the assembly in their project
+	files.
+
+	* configure.in: added data/system.web.extensions_1.0.pc to AC_OUTPUT
+
 2008-12-11  Mark Mason <mmason@upwardaccess.com>
 
 	* configure.in: introduce SIZEOF_REGISTER - usually ==SIZEOF_VOID_P, except on mips/n32
