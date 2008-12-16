@@ -400,6 +400,16 @@ typedef struct MonoMemcpyArgs {
 	int size, align;
 } MonoMemcpyArgs;
 
+/* C type matching the size of a machine register. Not always the same as 'int' */
+/* Note that member 'p' of MonoInst must be the same type, as OP_PCONST is defined
+ * as one of the OP_ICONST types, so inst_c0 must be the same as inst_p0
+ */
+#if SIZEOF_REGISTER == 4
+typedef gint32 mgreg_t;
+#elif SIZEOF_REGISTER == 8
+typedef gint64 mgreg_t;
+#endif
+
 struct MonoInst {
  	guint16 opcode;
 	guint8  type; /* stack type */
@@ -415,8 +425,14 @@ struct MonoInst {
 		union {
 			MonoInst *src;
 			MonoMethodVar *var;
-			gssize const_val;
+			mgreg_t const_val;
+#if (SIZEOF_REGISTER > SIZEOF_VOID_P) && (G_BYTE_ORDER == G_BIG_ENDIAN)
+			struct {
+				gpointer p[SIZEOF_REGISTER/SIZEOF_VOID_P];
+			} pdata;
+#else
 			gpointer p;
+#endif
 			MonoMethod *method;
 			MonoMethodSignature *signature;
 			MonoBasicBlock **many_blocks;
@@ -511,8 +527,13 @@ enum {
 #define inst_c1 data.op[1].const_val
 #define inst_i0 data.op[0].src
 #define inst_i1 data.op[1].src
+#if (SIZEOF_REGISTER > SIZEOF_VOID_P) && (G_BYTE_ORDER == G_BIG_ENDIAN)
+#define inst_p0 data.op[0].pdata.p[SIZEOF_REGISTER/SIZEOF_VOID_P - 1]
+#define inst_p1 data.op[1].pdata.p[SIZEOF_REGISTER/SIZEOF_VOID_P - 1]
+#else
 #define inst_p0 data.op[0].p
 #define inst_p1 data.op[1].p
+#endif
 #define inst_l  data.i8const
 #define inst_r  data.r8const
 #define inst_left  data.op[0].src

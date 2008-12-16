@@ -29,7 +29,7 @@ alloc_preg (MonoCompile *cfg)
 static inline guint32
 alloc_lreg (MonoCompile *cfg)
 {
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 	return cfg->next_vreg ++;
 #else
 	/* Use a pair of consecutive vregs */
@@ -81,7 +81,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
  */
 #define MONO_INST_NEW(cfg,dest,op) do {	\
 		(dest) = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoInst));	\
-        (dest)->inst_p0 = (dest)->inst_p1 = (dest)->next = (dest)->prev = NULL; \
+		(dest)->inst_c0 = (dest)->inst_c1 = 0; \
+		(dest)->next = (dest)->prev = NULL;    \
 		(dest)->opcode = (op);	\
         (dest)->flags = 0; \
         (dest)->type = 0; \
@@ -289,7 +290,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (var)->klass;	\
         (dest)->dreg = alloc_dreg ((cfg), STACK_MP); \
-		if (SIZEOF_VOID_P == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, (var)->dreg + 1); MonoInst *var2 = get_vreg_to_inst (cfg, (var)->dreg + 2); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
+		if (SIZEOF_REGISTER == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, (var)->dreg + 1); MonoInst *var2 = get_vreg_to_inst (cfg, (var)->dreg + 2); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
 	} while (0)
 
 #define NEW_VARSTORE(cfg,dest,var,vartype,inst) do {	\
