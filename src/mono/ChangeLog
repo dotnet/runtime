@@ -1,3 +1,9 @@
+2008-12-16  Bill Holmes  <billholmes54@gmail.com>
+
+	* winconfig.h : Defining the SIZEOF_REGISTER variable for the MSVC builds.
+
+	Code is contributed under MIT/X11 license.
+
 2008-12-15  Marek Habersack  <mhabersack@novell.com>
 
 	* data/Makefile.am (EXTRA_DIST): added
