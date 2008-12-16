@@ -906,7 +906,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		}
 		
 		mono_unlink_bblock (cfg, bb, target_bb);
-		if (mono_bb_is_fall_through (cfg, previous_bb)) {
+		if (previous_bb != cfg->bb_entry && mono_bb_is_fall_through (cfg, previous_bb)) {
 			for (i = 0; i < previous_bb->out_count; i++) {
 				if (previous_bb->out_bb [i] == target_bb) {
 					MonoInst *jump;
