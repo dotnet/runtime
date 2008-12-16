@@ -2178,9 +2178,11 @@ inflated_method_in_image (gpointer key, gpointer value, gpointer data)
 	MonoImage *image = data;
 	MonoMethodInflated *method = key;
 
+	// FIXME:
+	// https://bugzilla.novell.com/show_bug.cgi?id=458168
 	return method->declaring->klass->image == image ||
 		(method->context.class_inst && ginst_in_image (method->context.class_inst, image)) ||
-		(method->context.method_inst && ginst_in_image (method->context.method_inst, image));
+		(method->context.method_inst && ginst_in_image (method->context.method_inst, image)) || signature_in_image (mono_method_signature ((MonoMethod*)method), image);
 }
 
 static gboolean
