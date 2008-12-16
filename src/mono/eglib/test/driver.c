@@ -238,7 +238,7 @@ gint main(gint argc, gchar **argv)
 		string_array_free(tests_to_run);
 	}
 
-	return 0;
+	return global_tests - global_passed;
 }
 
 
