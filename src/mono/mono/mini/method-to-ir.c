@@ -9359,7 +9359,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 		MonoInst *store;
 
 		cfg->cbb = init_localsbb;
-		cfg->ip = header->code;
+		cfg->ip = NULL;
 		for (i = 0; i < header->num_locals; ++i) {
 			MonoType *ptype = header->locals [i];
 			int t = ptype->type;
