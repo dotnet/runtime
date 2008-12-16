@@ -312,7 +312,7 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 #if SIZEOF_VOID_P == 8
 #define ADD_WIDEN_OP(ins, arg1, arg2) do { \
 		/* FIXME: Need to add many more cases */ \
-		if ((arg1)->type == STACK_PTR && (arg2)->type == STACK_I4) { \
+		if ((arg1)->type == STACK_PTR && (arg2)->type == STACK_I4) {	\
 			MonoInst *widen; \
 			int dr = alloc_preg (cfg); \
 			EMIT_NEW_UNALU (cfg, widen, OP_SEXT_I4, dr, (arg2)->dreg); \
@@ -6849,7 +6849,9 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 						ins->inst_p1 = (gpointer)(gssize)(sp [1]->inst_c0);
 					ins->sreg2 = -1;
 
-					sp [1]->opcode = OP_NOP;
+					/* Might be followed by an instruction added by ADD_WIDEN_OP */
+					if (sp [1]->next == NULL)
+						sp [1]->opcode = OP_NOP;
 				}
 			}
 			MONO_ADD_INS ((cfg)->cbb, (ins));

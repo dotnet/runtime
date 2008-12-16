@@ -12465,6 +12465,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (cfg->new_ir) {
 		/* This must be done _before_ global reg alloc and _after_ decompose */
 		mono_handle_global_vregs (cfg);
+	if (cfg->opt & MONO_OPT_DEADCE)
 		mono_local_deadce (cfg);
 		mono_if_conversion (cfg);
 	}
@@ -12610,7 +12611,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			mono_ssa_remove2 (cfg);
 			mono_local_cprop2 (cfg);
 			mono_handle_global_vregs (cfg);
-			mono_local_deadce (cfg);
+			if (cfg->opt & MONO_OPT_DEADCE)
+				mono_local_deadce (cfg);
 		}
 		else
 			mono_ssa_remove (cfg);
@@ -12753,7 +12755,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			if (need_local_opts || cfg->compile_aot) {
 				/* To optimize code created by spill_global_vars */
 				mono_local_cprop2 (cfg);
-				mono_local_deadce (cfg);
+				if (cfg->opt & MONO_OPT_DEADCE)
+					mono_local_deadce (cfg);
 			}
 		}
 
