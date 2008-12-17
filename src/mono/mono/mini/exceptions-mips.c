@@ -469,10 +469,15 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			/* these all happen before adjustment of fp */
 			/* Look for sw ??, ????(sp) */
 			insn = ((guint32 *)ji->code_start) + 1;
-			while (!*insn || (*insn & 0xffe00000) == 0xafa00000) {
+			while (!*insn || ((*insn & 0xffe00000) == 0xafa00000) || ((*insn & 0xffe00000) == 0xffa00000)) {
 				int reg = (*insn >> 16) & 0x1f;
+				guint32 addr = (((guint32)fp) + (short)(*insn & 0x0000ffff));
+
 				mask &= ~(1 << reg);
-				new_ctx->sc_regs [reg] = *(guint32 *)(((guint32)fp) + (short)(*insn & 0x0000ffff));
+				if ((*insn & 0xffe00000) == 0xafa00000)
+					new_ctx->sc_regs [reg] = *(guint32 *)addr;
+				else
+					new_ctx->sc_regs [reg] = *(guint64 *)addr;
 				insn++;
 			}
 			MONO_CONTEXT_SET_SP (new_ctx, sp);
