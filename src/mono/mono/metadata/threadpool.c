@@ -806,7 +806,6 @@ socket_io_init (SocketIOData *data)
 	}
 	io_job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (io_job_added != NULL);
-	InitializeCriticalSection (&io_queue_lock);
 	if (data->epoll_disabled) {
 		mono_thread_create_internal (mono_get_root_domain (), socket_io_poll_main, data, TRUE);
 	}
@@ -1069,6 +1068,7 @@ mono_thread_pool_init ()
 	MONO_GC_REGISTER_ROOT (socket_io_data.sock_to_state);
 	InitializeCriticalSection (&socket_io_data.io_lock);
 	InitializeCriticalSection (&ares_lock);
+	InitializeCriticalSection (&io_queue_lock);
 	ares_htable = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC);
 	job_added = CreateSemaphore (NULL, 0, 0x7fffffff, NULL);
 	g_assert (job_added != NULL);
