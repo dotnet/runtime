@@ -906,12 +906,10 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->raw_data_len = stat_buf.st_size;
 	image->raw_data = mono_file_map (stat_buf.st_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, fileno (filed), 0, &image->raw_data_handle);
 	if (!image->raw_data) {
-		int error = errno;
 		fclose (filed);
 		g_free (image);
 		if (status)
-			*status = MONO_IMAGE_ERROR_ERRNO;
-		errno = error;
+			*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
 	}
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
