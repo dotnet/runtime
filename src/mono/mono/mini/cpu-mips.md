@@ -106,7 +106,7 @@ vcall2_membase: src1:b len:20 clob:c
 jump_table: dest:i len:8
 
 iconst: dest:i len:12
-i8const: dest:l len:20
+i8const: dest:l len:24
 r4const: dest:f len:20
 r8const: dest:f len:28
 label: len:0
@@ -129,7 +129,7 @@ loadi2_membase: dest:i src1:b len:16
 loadu2_membase: dest:i src1:b len:16
 loadi4_membase: dest:i src1:b len:16
 loadu4_membase: dest:i src1:b len:16
-loadi8_membase: dest:i src1:b
+loadi8_membase: dest:i src1:b len:16
 loadr4_membase: dest:f src1:b len:16
 loadr8_membase: dest:f src1:b len:16
 loadu4_mem: dest:i len:8
@@ -262,7 +262,7 @@ icompare_imm: src1:i len:12
 # 64 bit opcodes
 long_add: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
-long_mul: dest:i src1:i src2:i len:4
+long_mul: dest:i src1:i src2:i len:8
 long_mul_imm: dest:i src1:i len:4
 long_div: dest:i src1:i src2:i len:40
 long_div_un: dest:i src1:i src2:i len:16

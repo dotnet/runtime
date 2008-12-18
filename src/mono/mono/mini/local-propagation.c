@@ -225,7 +225,7 @@ restart:
 						/* Special cases */
 #if defined(__i386__) || defined(__x86_64__)
 						if ((ins->opcode == OP_X86_LEA) && (srcindex == 1)) {
-#if SIZEOF_VOID_P == 8
+#if SIZEOF_REGISTER == 8
 							/* FIXME: Use OP_PADD_IMM when the new JIT is done */
 							ins->opcode = OP_LADD_IMM;
 #else
@@ -260,12 +260,12 @@ restart:
 					ins->sreg1 = def->sreg1;
 					ins->inst_imm -= def->inst_imm;
 				} else if (ins->opcode == OP_STOREI1_MEMBASE_REG &&
-						   (def->opcode == OP_ICONV_TO_U1 || def->opcode == OP_ICONV_TO_I1 || def->opcode == OP_SEXT_I4 || (SIZEOF_VOID_P == 8 && def->opcode == OP_LCONV_TO_U1)) &&
+						   (def->opcode == OP_ICONV_TO_U1 || def->opcode == OP_ICONV_TO_I1 || def->opcode == OP_SEXT_I4 || (SIZEOF_REGISTER == 8 && def->opcode == OP_LCONV_TO_U1)) &&
 						   (!defs [def->sreg1] || (def_index [def->sreg1] < def_index [sreg]))) {
 					/* Avoid needless sign extension */
 					ins->sreg1 = def->sreg1;
 				} else if (ins->opcode == OP_STOREI2_MEMBASE_REG &&
-						   (def->opcode == OP_ICONV_TO_U2 || def->opcode == OP_ICONV_TO_I2 || def->opcode == OP_SEXT_I4 || (SIZEOF_VOID_P == 8 && def->opcode == OP_LCONV_TO_I2)) &&
+						   (def->opcode == OP_ICONV_TO_U2 || def->opcode == OP_ICONV_TO_I2 || def->opcode == OP_SEXT_I4 || (SIZEOF_REGISTER == 8 && def->opcode == OP_LCONV_TO_I2)) &&
 						   (!defs [def->sreg1] || (def_index [def->sreg1] < def_index [sreg]))) {
 					/* Avoid needless sign extension */
 					ins->sreg1 = def->sreg1;

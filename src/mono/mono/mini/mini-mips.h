@@ -240,12 +240,18 @@ typedef struct MonoCompileArch {
 	guint		tracing_offset;
 } MonoCompileArch;
 
+#if SIZEOF_REGISTER == 4
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_BIGMUL_INTRINS 1
+#endif
+
+#if SIZEOF_REGISTER == 8
+#define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
+#endif
 
 #define MIPS_RET_ADDR_OFFSET	(-sizeof(gpointer))
 #define MIPS_FP_ADDR_OFFSET	(-8)
@@ -582,5 +588,7 @@ typedef struct {
 	int vtsize;
 	int offset;
 } MonoMIPSArgInfo;
+
+extern guint8 *mips_emit_load_const(guint8 *code, int dreg, mgreg_t v);
 
 #endif /* __MONO_MINI_MIPS_H__ */  
