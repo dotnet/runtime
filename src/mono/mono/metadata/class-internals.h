@@ -1131,6 +1131,9 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass) MONO_INTERNAL;
 
+gboolean
+mono_class_has_parent_and_ignore_generics (MonoClass *klass, MonoClass *parent) MONO_INTERNAL;
+
 int
 mono_method_get_vtable_slot (MonoMethod *method) MONO_INTERNAL;
 

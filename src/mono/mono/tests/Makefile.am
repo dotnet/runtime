@@ -290,6 +290,7 @@ BASE_TEST_CS_SRC=		\
 	generic-typedef.2.cs	\
 	generic-marshalbyref.2.cs	\
 	bug-431413.2.cs	\
+	bug-459285.2.cs	\
 	generic-virtual-invoke.2.cs	\
 	recursive-generics.2.cs	\
 	bug-80392.2.cs		\
@@ -723,7 +724,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-synchronized.2.exe generic-delegate-ctor.2.exe		\
 		generic-constrained.2.exe bug-431413.2.exe			\
 		generic-virtual-invoke.2.exe generic-typedef.2.exe		\
-		generic-marshalbyref.2.exe
+		generic-marshalbyref.2.exe bug-459285.2.exe
 	@for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared                $$fn > $$fn.stdout || exit 1;	\
