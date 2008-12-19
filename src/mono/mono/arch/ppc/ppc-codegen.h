@@ -150,7 +150,7 @@ enum {
 #define ppc_load_func(c,D,V)	      ppc_load_sequence ((c), (D), (V))
 
 #define ppc_load_reg(c,D,d,A)         ppc_lwz  ((c), (D), (d), (A))
-#define ppc_load_reg_update(c,D,d,A)  ppc_lwzu ((c), (D), (d), (A))
+#define ppc_load_reg_update(c,D,d,A)  ppc_lwzu ((c), (D), (A), (d))
 #define ppc_load_reg_indexed(c,D,A,B)        ppc_lwzx ((c), (D), (A), (B))
 #define ppc_load_reg_update_indexed(c,D,A,B) ppc_lwzux ((c), (D), (A), (B))
 #define ppc_load_multiple_regs(c,D,A,d)      ppc_lmw   ((c), (D), (A), (d))
