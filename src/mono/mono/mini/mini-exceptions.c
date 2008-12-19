@@ -766,8 +766,6 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 
 	if (class->generic_class)
 		g_assert (class->generic_class->container_class == method_container_class);
-	else
-		g_assert (!class->generic_container && class == method_container_class);
 
 	/* FIXME: we shouldn't inflate but instead put the
 	   type in the rgctx and fetch it from there.  It
