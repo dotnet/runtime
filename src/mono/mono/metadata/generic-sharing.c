@@ -1347,6 +1347,20 @@ mono_method_is_generic_impl (MonoMethod *method)
 	return FALSE;
 }
 
+static gboolean
+has_constraints (MonoGenericContainer *container)
+{
+	int i;
+
+	g_assert (container->type_argc > 0);
+	g_assert (container->type_params);
+
+	for (i = 0; i < container->type_argc; ++i)
+		if (container->type_params [i].constraints)
+			return TRUE;
+	return FALSE;
+}
+
 /*
  * mono_method_is_generic_sharable_impl:
  * @method: a method
@@ -1372,9 +1386,7 @@ mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_va
 		g_assert (inflated->declaring);
 
 		if (inflated->declaring->is_generic) {
-			g_assert (mono_method_get_generic_container (inflated->declaring)->type_params);
-
-			if (mono_method_get_generic_container (inflated->declaring)->type_params->constraints)
+			if (has_constraints (mono_method_get_generic_container (inflated->declaring)))
 				return FALSE;
 		}
 	}
@@ -1384,10 +1396,9 @@ mono_method_is_generic_sharable_impl (MonoMethod *method, gboolean allow_type_va
 			return FALSE;
 
 		g_assert (method->klass->generic_class->container_class &&
-				method->klass->generic_class->container_class->generic_container &&
-				method->klass->generic_class->container_class->generic_container->type_params);
+				method->klass->generic_class->container_class->generic_container);
 
-		if (method->klass->generic_class->container_class->generic_container->type_params->constraints)
+		if (has_constraints (method->klass->generic_class->container_class->generic_container))
 			return FALSE;
 	}
 

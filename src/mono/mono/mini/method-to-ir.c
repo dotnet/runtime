@@ -7305,8 +7305,6 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 							!mono_class_generic_sharing_enabled (cmethod->klass))) {
 					MonoInst *cmethod_addr;
 
-					g_assert (!callvirt_this_arg);
-
 					cmethod_addr = emit_get_rgctx_method (cfg, context_used,
 						cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 
