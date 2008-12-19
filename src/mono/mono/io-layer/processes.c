@@ -1993,6 +1993,8 @@ static guint32 get_module_name (gpointer process, gpointer module,
 		   __func__, process, module);
 #endif
 
+	size = size*sizeof(gunichar2); /* adjust for unicode characters */
+
 	if (basename == NULL || size == 0) {
 		return(0);
 	}
