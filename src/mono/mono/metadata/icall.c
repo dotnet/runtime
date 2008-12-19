@@ -6731,6 +6731,14 @@ ves_icall_System_Environment_get_HasShutdownStarted (void)
 }
 
 static void
+ves_icall_System_Environment_BroadcastSettingChange (void)
+{
+#ifdef PLATFORM_WIN32
+	SendMessageTimeout (HWND_BROADCAST, WM_SETTINGCHANGE, NULL, L"Environment", SMTO_ABORTIFHUNG, 2000, 0);
+#endif
+}
+
+static void
 ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
 					 MonoReflectionMethod *method,
 					 MonoArray *out_args)
