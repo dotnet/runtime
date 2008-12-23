@@ -765,7 +765,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 		method_container_class = ji->method->klass;
 
 	if (class->generic_class)
-		g_assert (class->generic_class->container_class == method_container_class);
+		g_assert (mono_class_has_parent_and_ignore_generics (class->generic_class->container_class, method_container_class));
 	else
 		g_assert (mono_class_has_parent_and_ignore_generics (class, method_container_class));
 
