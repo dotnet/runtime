@@ -9095,6 +9095,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
+		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_I4:
