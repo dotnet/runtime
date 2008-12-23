@@ -5142,6 +5142,7 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 
 #define CMP_SIZE (PPC_LOAD_SEQUENCE_LENGTH + 4)
 #define BR_SIZE 4
+#define LOADSTORE_SIZE 4
 #define JUMP_IMM_SIZE 12
 #define JUMP_IMM32_SIZE (PPC_LOAD_SEQUENCE_LENGTH + 8)
 #define ENABLE_WRONG_METHOD_CHECK 0
@@ -5166,12 +5167,12 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				if (fail_tramp)
 					item->chunk_size += BR_SIZE + JUMP_IMM32_SIZE;
 				else
-					item->chunk_size += BR_SIZE + JUMP_IMM_SIZE;
+					item->chunk_size += LOADSTORE_SIZE + BR_SIZE + JUMP_IMM_SIZE;
 			} else {
 				if (fail_tramp) {
 					item->chunk_size += CMP_SIZE + BR_SIZE + JUMP_IMM32_SIZE * 2;
 				} else {
-					item->chunk_size += JUMP_IMM_SIZE;
+					item->chunk_size += LOADSTORE_SIZE + JUMP_IMM_SIZE;
 #if ENABLE_WRONG_METHOD_CHECK
 					item->chunk_size += CMP_SIZE + BR_SIZE + 4;
 #endif
@@ -5187,12 +5188,22 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		code = mono_method_alloc_generic_virtual_thunk (domain, size);
 	} else {
 		/* the initial load of the vtable address */
-		size += PPC_LOAD_SEQUENCE_LENGTH;
+		size += PPC_LOAD_SEQUENCE_LENGTH + LOADSTORE_SIZE;
 		code = mono_code_manager_reserve (domain->code_mp, size);
 	}
 	start = code;
-	if (!fail_tramp)
+	if (!fail_tramp) {
+		/*
+		 * We need to save and restore r11 because it might be
+		 * used by the caller as the vtable register, so
+		 * clobbering it will trip up the magic trampoline.
+		 *
+		 * FIXME: Get rid of this by making sure that r11 is
+		 * not used as the vtable register in interface calls.
+		 */
+		ppc_store_reg (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
 		ppc_load (code, ppc_r11, (gulong)(& (vtable->vtable [0])));
+	}
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
@@ -5204,10 +5215,12 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				}
 				item->jmp_code = code;
 				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-				if (fail_tramp)
+				if (fail_tramp) {
 					ppc_load (code, ppc_r0, item->value.target_code);
-				else
+				} else {
 					ppc_load_reg (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
+					ppc_load_reg (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
+				}
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			} else {
@@ -5233,6 +5246,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 #endif
 					ppc_load_reg (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
+					ppc_load_reg (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
 					ppc_mtctr (code, ppc_r0);
 					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 #if ENABLE_WRONG_METHOD_CHECK
