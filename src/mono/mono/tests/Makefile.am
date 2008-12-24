@@ -328,7 +328,8 @@ BASE_TEST_CS_SRC=		\
 	filter-stack.cs	\
 	vararg2.cs	\
 	bug-389886-sre-generic-interface-instances.cs	\
-	bug-461867.cs
+	bug-461867.cs	\
+	bug-461941.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
