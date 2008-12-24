@@ -5015,6 +5015,16 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 
 		if (t->byref) {
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
+			/* A Nullable<T> type don't have a boxed form, it's either null or a boxed T.
+			 * So to make this work we unbox it to a local variablee and push a reference to that.
+			 */
+			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
+				int tmp_nullable_local = mono_mb_add_local (mb, &mono_class_from_mono_type (t)->byval_arg);
+
+				mono_mb_emit_op (mb, CEE_UNBOX_ANY, mono_class_from_mono_type (t));
+				mono_mb_emit_stloc (mb, tmp_nullable_local);
+				mono_mb_emit_ldloc_addr (mb, tmp_nullable_local);
+			}
 			continue;
 		}
 
