@@ -4760,7 +4760,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		 * FIXME: Get rid of this by making sure that r11 is
 		 * not used as the vtable register in interface calls.
 		 */
-		ppc_store_reg (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
+		ppc_stw (code, ppc_r11, PPC_RET_ADDR_OFFSET, ppc_sp);
 		ppc_load (code, ppc_r11, (guint32)(& (vtable->vtable [0])));
 	}
 	for (i = 0; i < count; ++i) {
