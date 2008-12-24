@@ -3396,10 +3396,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			case MONO_TYPE_R8:
 			case MONO_TYPE_VALUETYPE:
 				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
-					if (t->byref)
-						/* FIXME: */
-						g_assert_not_reached ();
-					/* The runtime invoke wrapper needs the original boxed vtype */
+					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
 					pa [i] = mono_array_get (params, MonoObject*, i);
 				} else {
 					/* MS seems to create the objects if a null is passed in */
