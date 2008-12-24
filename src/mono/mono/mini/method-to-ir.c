@@ -2261,7 +2261,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		if ((!cfg->compile_aot || enable_for_aot) && 
 			(!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
-			 ((method->flags & METHOD_ATTRIBUTE_FINAL) && 
+			 (MONO_METHOD_IS_FINAL (method) &&
 			  method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK))) {
 			/* 
 			 * the method is not virtual, we just need to ensure this is not null
@@ -2296,9 +2296,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		}
 #endif
 
-		if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) &&
-			((method->flags &  METHOD_ATTRIBUTE_FINAL) ||
-			 (method->klass && method->klass->flags & TYPE_ATTRIBUTE_SEALED))) {
+		if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && MONO_METHOD_IS_FINAL (method)) {
 			/*
 			 * the method is virtual, but we can statically dispatch since either
 			 * it's class or the method itself are sealed.
@@ -6035,7 +6033,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				}
 
 				if (!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-						(cmethod->flags & METHOD_ATTRIBUTE_FINAL)) {
+						MONO_METHOD_IS_FINAL (cmethod)) {
 					if (virtual)
 						check_this = TRUE;
 					virtual = 0;
@@ -6061,7 +6059,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			/* Calling virtual generic methods */
 			if (cmethod && virtual && 
 			    (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && 
-		 	    !((cmethod->flags & METHOD_ATTRIBUTE_FINAL) && 
+		 	    !(MONO_METHOD_IS_FINAL (cmethod) && 
 			      cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) &&
 			    mono_method_signature (cmethod)->generic_param_count) {
 				MonoInst *this_temp, *this_arg_temp, *store;
@@ -6183,7 +6181,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 
 			/* Inlining */
 			if ((cfg->opt & MONO_OPT_INLINE) && cmethod &&
-			    (!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || (cmethod->flags & METHOD_ATTRIBUTE_FINAL)) && 
+				(!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
 			    mono_method_check_inlining (cfg, cmethod) &&
 				 !g_list_find (dont_inline, cmethod)) {
 				int costs;
@@ -6255,7 +6253,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 			if (context_used && !imt_arg && !array_rank &&
 					(!mono_method_is_generic_sharable_impl (cmethod, TRUE) ||
 						!mono_class_generic_sharing_enabled (cmethod->klass)) &&
-					(!virtual || cmethod->flags & METHOD_ATTRIBUTE_FINAL ||
+					(!virtual || MONO_METHOD_IS_FINAL (cmethod) ||
 						!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL))) {
 				INLINE_FAILURE;
 
@@ -6281,6 +6279,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 				else if (*ip == CEE_CALLI)
 					g_assert (!vtable_arg);
 				else
+					/* FIXME: what the hell is this??? */
 					g_assert (cmethod->flags & METHOD_ATTRIBUTE_FINAL ||
 							!(cmethod->flags & METHOD_ATTRIBUTE_FINAL));
 
