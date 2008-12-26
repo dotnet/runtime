@@ -2095,6 +2095,15 @@ print_implemented_interfaces (MonoClass *klass) {
 	}
 }
 
+static MonoClass*
+inflate_class_one_arg (MonoClass *gtype, MonoClass *arg0)
+{
+	MonoType *args [1];
+	args [0] = &arg0->byval_arg;
+
+	return mono_class_bind_generic_parameters (gtype, 1, args, FALSE);
+}
+
 /* this won't be needed once bug #325495 is completely fixed
  * though we'll need something similar to know which interfaces to allow
  * in arrays when they'll be lazyly created
@@ -2233,64 +2242,42 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 
 	/* instantiate the generic interfaces */
 	for (i = 0; i < interface_count; i += 3) {
-		MonoType *args [1];
 		MonoClass *iface = interfaces [i];
 
-		args [0] = &iface->byval_arg;
-		interfaces [i] = mono_class_bind_generic_parameters (
-			mono_defaults.generic_ilist_class, 1, args, FALSE);
-		//g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));
-		args [0] = &iface->byval_arg;
-		interfaces [i + 1] = mono_class_bind_generic_parameters (
-			generic_icollection_class, 1, args, FALSE);
-		args [0] = &iface->byval_arg;
-		interfaces [i + 2] = mono_class_bind_generic_parameters (
-			generic_ienumerable_class, 1, args, FALSE);
-		//g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i + 1]->byval_arg, 0));
-		//g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i + 2]->byval_arg, 0));
+		interfaces [i + 0] = inflate_class_one_arg (mono_defaults.generic_ilist_class, iface);
+		interfaces [i + 1] = inflate_class_one_arg (generic_icollection_class, iface);
+		interfaces [i + 2] = inflate_class_one_arg (generic_ienumerable_class, iface);
 	}
 	if (internal_enumerator) {
 		int j;
 		/* instantiate IEnumerator<iface> */
 		for (i = 0; i < interface_count; i++) {
-			MonoType *args [1];
-			MonoClass *iface = interfaces [i];
-
-			args [0] = &iface->byval_arg;
-			interfaces [i] = mono_class_bind_generic_parameters (
-				generic_ienumerator_class, 1, args, FALSE);
-			/*g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));*/
+			interfaces [i] = inflate_class_one_arg (generic_ienumerator_class, interfaces [i]);
 		}
 		if (!eclass_is_valuetype) {
 			j = interface_count;
 			if (MONO_CLASS_IS_INTERFACE (eclass)) {
-				MonoType *args [1];
-				args [0] = &mono_defaults.object_class->byval_arg;
-				interfaces [j] = mono_class_bind_generic_parameters (
-					generic_ienumerator_class, 1, args, FALSE);
-				/*g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));*/
+				interfaces [j] = inflate_class_one_arg (generic_ienumerator_class, mono_defaults.object_class);
 				j ++;
 			} else {
 				for (i = 0; i < eclass->idepth; i++) {
-					MonoType *args [1];
-					args [0] = &eclass->supertypes [i]->byval_arg;
-					interfaces [j] = mono_class_bind_generic_parameters (
-						generic_ienumerator_class, 1, args, FALSE);
-					/*g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));*/
+					interfaces [j] = inflate_class_one_arg (generic_ienumerator_class, eclass->supertypes [i]);
 					j ++;
 				}
 			}
 			for (i = 0; i < eclass->interface_offsets_count; i++) {
-				MonoClass *iface = eclass->interfaces_packed [i];
-				MonoType *args [1];
-				args [0] = &iface->byval_arg;
-				interfaces [j] = mono_class_bind_generic_parameters (
-					generic_ienumerator_class, 1, args, FALSE);
-				/*g_print ("%s implements %s\n", class->name, mono_type_get_name_full (&interfaces [i]->byval_arg, 0));*/
+				interfaces [j] = inflate_class_one_arg (generic_ienumerator_class, eclass->interfaces_packed [i]);
 				j ++;
 			}
 		}
 	}
+#if 0
+	for (i = 0; i  < real_count; ++i) {
+		char *name = mono_type_get_name_full (&interfaces [i]->byval_arg, 0);
+		g_print ("%s implements %s\n", class->name, name);
+		g_free (name);
+	}
+#endif
 	*num = real_count;
 	return interfaces;
 }
