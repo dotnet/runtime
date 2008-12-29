@@ -836,7 +836,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		mono_ex = NULL;
 	}
 
-	if (mono_ex && jit_tls->class_cast_to && !strcmp (mono_ex->object.vtable->klass->name, "InvalidCastException")) {
+	if (mono_ex && jit_tls->class_cast_from && !strcmp (mono_ex->object.vtable->klass->name, "InvalidCastException")) {
 		char *from_name = mono_type_get_full_name (jit_tls->class_cast_from);
 		char *to_name = mono_type_get_full_name (jit_tls->class_cast_to);
 		char *msg = g_strdup_printf ("Unable to cast object of type '%s' to type '%s'.", from_name, to_name);
