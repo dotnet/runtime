@@ -13059,16 +13059,12 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 		mono_class_init (method->klass);
 
-		mono_domain_lock (domain);
 		if ((code = mono_aot_get_method (domain, method))) {
-			mono_domain_unlock (domain);
 			vtable = mono_class_vtable (domain, method->klass);
 			g_assert (vtable);
 			mono_runtime_class_init (vtable);
 			return code;
 		}
-
-		mono_domain_unlock (domain);
 	}
 #endif
 
