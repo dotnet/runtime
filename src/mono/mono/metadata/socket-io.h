@@ -194,7 +194,7 @@ extern void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock, gint
 extern gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(void) MONO_INTERNAL;
 extern gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock, gint32 *error) MONO_INTERNAL;
 extern void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock, gboolean block, gint32 *error) MONO_INTERNAL;
-extern gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock, gint32 *error) MONO_INTERNAL;
+extern gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock, gint32 *error, gboolean blocking) MONO_INTERNAL;
 extern void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock, guint32 backlog, gint32 *error) MONO_INTERNAL;
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SOCKET sock, gint32 *error) MONO_INTERNAL;
 extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(SOCKET sock, gint32 *error) MONO_INTERNAL;

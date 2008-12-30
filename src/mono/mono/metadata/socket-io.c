@@ -811,13 +811,41 @@ void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
 }
 
 gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock,
-							     gint32 *error)
+							     gint32 *error,
+							     gboolean blocking)
 {
 	SOCKET newsock;
 	
 	MONO_ARCH_SAVE_REGS;
 
 	*error = 0;
+
+#ifdef PLATFORM_WIN32
+	/* Several applications are getting stuck during shutdown on Windows 
+	 * when an accept call is on a background thread.
+	 * 
+	 */
+	if (blocking) {
+		MonoThread* curthread = mono_thread_current ();
+
+		if (curthread) {
+			for (;;) {
+				int selectret;
+				TIMEVAL timeout; 
+				fd_set readfds;
+				FD_ZERO (&readfds);
+				FD_SET(sock, &readfds);
+				timeout.tv_sec = 0;
+				timeout.tv_usec = 1000;
+				selectret = select (0, &readfds, NULL, NULL, &timeout);
+				if (selectret > 0)
+					break;
+				if (curthread->state & ThreadState_StopRequested)
+					return NULL;
+			}
+		}
+	}
+#endif
 	
 	newsock = _wapi_accept (sock, NULL, 0);
 	if(newsock==INVALID_SOCKET) {
