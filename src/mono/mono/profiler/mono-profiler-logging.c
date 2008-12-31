@@ -416,6 +416,7 @@ typedef struct _ProfilerUnmanagedSymbol {
 } ProfilerUnmanagedSymbol;
 
 struct _ProfilerExecutableFile;
+struct _ProfilerExecutableFileSectionRegion;
 
 typedef struct _ProfilerExecutableMemoryRegionData {
 	gpointer start;
@@ -426,6 +427,7 @@ typedef struct _ProfilerExecutableMemoryRegionData {
 	gboolean is_new;
 	
 	struct _ProfilerExecutableFile *file;
+	struct _ProfilerExecutableFileSectionRegion *file_region_reference;
 	guint32 symbols_count;
 	guint32 symbols_capacity;
 	ProfilerUnmanagedSymbol *symbols;
@@ -2549,6 +2551,7 @@ profiler_executable_memory_region_new (gpointer *start, gpointer *end, guint32 f
 	result->is_new = TRUE;
 	
 	result->file = NULL;
+	result->file_region_reference = NULL;
 	result->symbols_capacity = id;
 	result->symbols_count = id;
 	result->symbols = NULL;
@@ -2569,6 +2572,15 @@ profiler_executable_memory_region_destroy (ProfilerExecutableMemoryRegionData *d
 	}
 	if (data->file != NULL) {
 		executable_file_close (data);
+		data->file = NULL;
+	}
+	if (data->symbols != NULL) {
+		g_free (data->symbols);
+		data->symbols = NULL;
+	}
+	if (data->file_name != NULL) {
+		g_free (data->file_name);
+		data->file_name = NULL;
 	}
 	g_free (data);
 }
@@ -2701,6 +2713,7 @@ executable_file_add_region_reference (ProfilerExecutableFile *file, ProfilerExec
 			section_region->region = region;
 			section_region->section_address = (gpointer) section_header->sh_addr;
 			section_region->section_offset = section_header->sh_offset;
+			region->file_region_reference = section_region;
 		}
 	}
 }
@@ -2715,6 +2728,7 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 		
 		if (file == NULL) {
 			guint16 test = 0x0102;
+			int file_name_length = strlen (region->file_name);
 			struct stat stat_buffer;
 			int symtab_index = 0;
 			int strtab_index = 0;
@@ -2729,6 +2743,14 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 			region->file = file;
 			g_hash_table_insert (files->table, region->file_name, file);
 			file->reference_count ++;
+			file->next_new_file = files->new_files;
+			files->new_files = file;
+			
+			/* Skip files whose name doesn't end in ".so" */
+			if ((region->file_name [file_name_length - 1] != 'o') || (region->file_name [file_name_length - 2] != 's') || (region->file_name [file_name_length - 3] != '.')) {
+				file->fd = -1;
+				return file;
+			}
 			
 			file->fd = open (region->file_name, O_RDONLY);
 			if (file->fd == -1) {
@@ -2875,6 +2897,12 @@ executable_file_free (ProfilerExecutableFile* file) {
 static void
 executable_file_close (ProfilerExecutableMemoryRegionData *region) {
 	region->file->reference_count --;
+	
+	if ((region->file_region_reference != NULL) && (region->file_region_reference->region == region)) {
+		region->file_region_reference->region = NULL;
+		region->file_region_reference->section_address = 0;
+		region->file_region_reference->section_offset = 0;
+	}
 	
 	if (region->file->reference_count <= 0) {
 		ProfilerExecutableFiles *files = & (profiler->executable_files);
@@ -3036,6 +3064,7 @@ executable_memory_region_find_symbol (ProfilerExecutableMemoryRegionData *region
 
 //FIXME: make also Win32 and BSD variants
 #define MAPS_BUFFER_SIZE 4096
+#define MAPS_FILENAME_SIZE 2048
 
 static gboolean
 update_regions_buffer (int fd, char *buffer) {
@@ -3114,13 +3143,12 @@ const char *map_line_parser_state [] = {
 };
 
 static char*
-parse_map_line (ProfilerExecutableMemoryRegions *regions, int fd, char *buffer, char *current) {
+parse_map_line (ProfilerExecutableMemoryRegions *regions, int fd, char *buffer, char *filename, char *current) {
 	MapLineParserState state = MAP_LINE_PARSER_STATE_START_ADDRESS;
 	gsize start_address = 0;
 	gsize end_address = 0;
 	guint32 offset = 0;
-	char *start_filename = NULL;
-	char *end_filename = NULL;
+	int filename_index = 0;
 	gboolean is_executable = FALSE;
 	gboolean done = FALSE;
 	
@@ -3184,22 +3212,31 @@ parse_map_line (ProfilerExecutableMemoryRegions *regions, int fd, char *buffer, 
 		case MAP_LINE_PARSER_STATE_BLANK_BEFORE_FILENAME:
 			if ((c == '/') || (c == '[')) {
 				state = MAP_LINE_PARSER_STATE_FILENAME;
-				start_filename = current;
+				filename [filename_index] = *current;
+				filename_index ++;
 			} else if (! isblank (c)) {
 				state = MAP_LINE_PARSER_STATE_INVALID;
 			}
 			break;
 		case MAP_LINE_PARSER_STATE_FILENAME:
-			if (c == '\n') {
-				state = MAP_LINE_PARSER_STATE_DONE;
-				done = TRUE;
-				end_filename = current;
+			if (filename_index < MAPS_FILENAME_SIZE) {
+				if (c == '\n') {
+					state = MAP_LINE_PARSER_STATE_DONE;
+					done = TRUE;
+					filename [filename_index] = 0;
+				} else {
+					filename [filename_index] = *current;
+					filename_index ++;
+				}
+			} else {
+				filename [filename_index] = 0;
+				g_warning ("ELF filename too long: \"%s\"...\n", filename);
 			}
 			break;
 		case MAP_LINE_PARSER_STATE_DONE:
 			if (done && is_executable) {
-				*end_filename = 0;
-				append_region (regions, (gpointer) start_address, (gpointer) end_address, offset, start_filename);
+				filename [filename_index] = 0;
+				append_region (regions, (gpointer) start_address, (gpointer) end_address, offset, filename);
 			}
 			return current;
 		case MAP_LINE_PARSER_STATE_INVALID:
@@ -3223,6 +3260,7 @@ parse_map_line (ProfilerExecutableMemoryRegions *regions, int fd, char *buffer, 
 static gboolean
 scan_process_regions (ProfilerExecutableMemoryRegions *regions) {
 	char *buffer;
+	char *filename;
 	char *current;
 	int fd;
 	
@@ -3232,13 +3270,15 @@ scan_process_regions (ProfilerExecutableMemoryRegions *regions) {
 	}
 	
 	buffer = malloc (MAPS_BUFFER_SIZE);
+	filename = malloc (MAPS_FILENAME_SIZE);
 	update_regions_buffer (fd, buffer);
 	current = buffer;
 	while (current != NULL) {
-		current = parse_map_line (regions, fd, buffer, current);
+		current = parse_map_line (regions, fd, buffer, filename, current);
 	}
 	
 	free (buffer);
+	free (filename);
 	
 	close (fd);
 	return TRUE;
@@ -4140,9 +4180,12 @@ statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **i
 				profiler->statistical_data = new_data;
 				profiler->statistical_data_second_buffer = NULL;
 				WRITER_EVENT_RAISE ();
+				/* Otherwise exit from the handler and drop the event... */
+			} else {
+				break;
 			}
 			
-			/* Loop again, hoping to acquire a free slot this time */
+			/* Loop again, hoping to acquire a free slot this time (otherwise the event will be dropped) */
 			data = NULL;
 		}
 	} while (data == NULL);
