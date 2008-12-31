@@ -376,8 +376,10 @@ typedef struct _ProfilerThreadStack {
 	guint32 capacity;
 	guint32 top;
 	guint32 last_saved_top;
+	guint32 last_written_frame;
 	MonoMethod **stack;
 	guint8 *method_is_jitted;
+	guint32 *written_frames;
 } ProfilerThreadStack;
 
 typedef struct _ProfilerPerThreadData {
@@ -401,9 +403,9 @@ typedef struct _ProfilerStatisticalHit {
 
 typedef struct _ProfilerStatisticalData {
 	ProfilerStatisticalHit *hits;
-	int next_free_index;
-	int end_index;
-	int first_unwritten_index;
+	unsigned int next_free_index;
+	unsigned int end_index;
+	unsigned int first_unwritten_index;
 } ProfilerStatisticalData;
 
 typedef struct _ProfilerUnmanagedSymbol {
@@ -414,6 +416,7 @@ typedef struct _ProfilerUnmanagedSymbol {
 } ProfilerUnmanagedSymbol;
 
 struct _ProfilerExecutableFile;
+struct _ProfilerExecutableFileSectionRegion;
 
 typedef struct _ProfilerExecutableMemoryRegionData {
 	gpointer start;
@@ -424,6 +427,7 @@ typedef struct _ProfilerExecutableMemoryRegionData {
 	gboolean is_new;
 	
 	struct _ProfilerExecutableFile *file;
+	struct _ProfilerExecutableFileSectionRegion *file_region_reference;
 	guint32 symbols_count;
 	guint32 symbols_capacity;
 	ProfilerUnmanagedSymbol *symbols;
@@ -968,8 +972,10 @@ thread_stack_initialize_empty (ProfilerThreadStack *stack) {
 	stack->capacity = 0;
 	stack->top = 0;
 	stack->last_saved_top = 0;
+	stack->last_written_frame = 0;
 	stack->stack = NULL;
 	stack->method_is_jitted = NULL;
+	stack->written_frames = NULL;
 }
 
 static void
@@ -977,6 +983,7 @@ thread_stack_free (ProfilerThreadStack *stack) {
 	stack->capacity = 0;
 	stack->top = 0;
 	stack->last_saved_top = 0;
+	stack->last_written_frame = 0;
 	if (stack->stack != NULL) {
 		g_free (stack->stack);
 		stack->stack = NULL;
@@ -985,6 +992,10 @@ thread_stack_free (ProfilerThreadStack *stack) {
 		g_free (stack->method_is_jitted);
 		stack->method_is_jitted = NULL;
 	}
+	if (stack->written_frames != NULL) {
+		g_free (stack->written_frames);
+		stack->written_frames = NULL;
+	}
 }
 
 static void
@@ -992,13 +1003,10 @@ thread_stack_initialize (ProfilerThreadStack *stack, guint32 capacity) {
 	stack->capacity = capacity;
 	stack->top = 0;
 	stack->last_saved_top = 0;
+	stack->last_written_frame = 0;
 	stack->stack = g_new0 (MonoMethod*, capacity);
 	stack->method_is_jitted = g_new0 (guint8, capacity);
-}
-
-static void
-thread_stack_reset_saved_state (ProfilerThreadStack *stack) {
-	stack->last_saved_top = 0;
+	stack->written_frames = g_new0 (guint32, capacity);
 }
 
 static void
@@ -1006,11 +1014,20 @@ thread_stack_push_jitted (ProfilerThreadStack *stack, MonoMethod* method, gboole
 	if (stack->top >= stack->capacity) {
 		MonoMethod **old_stack = stack->stack;
 		guint8 *old_method_is_jitted = stack->method_is_jitted;
+		guint32 *old_written_frames = stack->written_frames;
 		guint32 top = stack->top;
+		guint32 last_saved_top = stack->last_saved_top;
+		guint32 last_written_frame = stack->last_written_frame;
 		thread_stack_initialize (stack, stack->capacity * 2);
 		memcpy (stack->stack, old_stack, top * sizeof (MonoMethod*));
 		memcpy (stack->method_is_jitted, old_method_is_jitted, top * sizeof (guint8));
+		memcpy (stack->written_frames, old_written_frames, top * sizeof (guint32));
+		g_free (old_stack);
+		g_free (old_method_is_jitted);
+		g_free (old_written_frames);
 		stack->top = top;
+		stack->last_saved_top = last_saved_top;
+		stack->last_written_frame = last_written_frame;
 	}
 	stack->stack [stack->top] = method;
 	stack->method_is_jitted [stack->top] = method_is_jitted;
@@ -1089,6 +1106,26 @@ static inline int
 thread_stack_count_unsaved_frames (ProfilerThreadStack *stack) {
 	int result = stack->top - stack->last_saved_top;
 	return (result > 0) ? result : 0;
+}
+
+static inline int
+thread_stack_get_last_written_frame (ProfilerThreadStack *stack) {
+	return stack->last_written_frame;
+}
+
+static inline void
+thread_stack_set_last_written_frame (ProfilerThreadStack *stack, int last_written_frame) {
+	stack->last_written_frame = last_written_frame;
+}
+
+static inline guint32
+thread_stack_written_frame_at_index (ProfilerThreadStack *stack, int index) {
+	return stack->written_frames [index];
+}
+
+static inline void
+thread_stack_write_frame_at_index (ProfilerThreadStack *stack, int index, guint32 method_id_and_is_jitted) {
+	stack->written_frames [index] = method_id_and_is_jitted;
 }
 
 static ClassIdMappingElement*
@@ -2305,8 +2342,25 @@ typedef enum {
 	result = ((base)|((((kind)<<4) | (code)) << MONO_PROFILER_PACKED_EVENT_CODE_BITS));\
 } while (0)
 
+static void
+rewrite_last_written_stack (ProfilerThreadStack *stack) {
+	guint8 event_code;
+	int i = thread_stack_get_last_written_frame (stack);
+	
+	MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, MONO_PROFILER_EVENT_STACK_SECTION, 0, MONO_PROFILER_PACKED_EVENT_CODE_OTHER_EVENT);
+	WRITE_BYTE (event_code);
+	write_uint32 (0);
+	write_uint32 (i);
+	
+	while (i > 0) {
+		i--;
+		write_uint32 (thread_stack_written_frame_at_index (stack, i));
+	}
+}
+
+
 static ProfilerEventData*
-write_stack_section_event (ProfilerEventData *events) {
+write_stack_section_event (ProfilerEventData *events, ProfilerPerThreadData *data) {
 	int last_saved_frame = events->data.number;
 	int saved_frames = events->value;
 	guint8 event_code;
@@ -2316,12 +2370,14 @@ write_stack_section_event (ProfilerEventData *events) {
 	WRITE_BYTE (event_code);
 	write_uint32 (last_saved_frame);
 	write_uint32 (saved_frames);
+	thread_stack_set_last_written_frame (&(data->stack), last_saved_frame + saved_frames);
 	events++;
 	
 	for (i = 0; i < saved_frames; i++) {
 		guint8 code = events->code;
 		guint32 jit_flag;
 		MethodIdMappingElement *method;
+		guint32 frame_value;
 		
 		if (code == MONO_PROFILER_EVENT_METHOD_ALLOCATION_CALLER) {
 			jit_flag = 0;
@@ -2334,7 +2390,9 @@ write_stack_section_event (ProfilerEventData *events) {
 		
 		method = method_id_mapping_element_get (events->data.address);
 		g_assert (method != NULL);
-		write_uint32 ((method->id << 1) | jit_flag);
+		frame_value = (method->id << 1) | jit_flag;
+		write_uint32 (frame_value);
+		thread_stack_write_frame_at_index (&(data->stack), last_saved_frame + saved_frames - (1 + i), frame_value);
 		events ++;
 	}
 	
@@ -2342,7 +2400,7 @@ write_stack_section_event (ProfilerEventData *events) {
 }
 
 static ProfilerEventData*
-write_event (ProfilerEventData *event) {
+write_event (ProfilerEventData *event, ProfilerPerThreadData *data) {
 	ProfilerEventData *next = event + 1;
 	gboolean write_event_value = TRUE;
 	guint8 event_code;
@@ -2417,7 +2475,7 @@ write_event (ProfilerEventData *event) {
 		}
 	} else {
 		if (event->code == MONO_PROFILER_EVENT_STACK_SECTION) {
-			return write_stack_section_event (event);
+			return write_stack_section_event (event, data);
 		} else {
 			event_data = event->data.number;
 			MONO_PROFILER_EVENT_MAKE_FULL_CODE (event_code, event->code, event->kind, MONO_PROFILER_PACKED_EVENT_CODE_OTHER_EVENT);
@@ -2467,10 +2525,10 @@ write_thread_data_block (ProfilerPerThreadData *data) {
 	write_uint64 (data->start_event_counter);
 	
 	/* Make sure that stack sections can be fully reconstructed even reading only one block */
-	thread_stack_reset_saved_state (&(data->stack));
+	rewrite_last_written_stack (&(data->stack));
 	
 	while (start < end) {
-		start = write_event (start);
+		start = write_event (start, data);
 	}
 	WRITE_BYTE (0);
 	data->first_unwritten_event = end;
@@ -2493,6 +2551,7 @@ profiler_executable_memory_region_new (gpointer *start, gpointer *end, guint32 f
 	result->is_new = TRUE;
 	
 	result->file = NULL;
+	result->file_region_reference = NULL;
 	result->symbols_capacity = id;
 	result->symbols_count = id;
 	result->symbols = NULL;
@@ -2513,6 +2572,15 @@ profiler_executable_memory_region_destroy (ProfilerExecutableMemoryRegionData *d
 	}
 	if (data->file != NULL) {
 		executable_file_close (data);
+		data->file = NULL;
+	}
+	if (data->symbols != NULL) {
+		g_free (data->symbols);
+		data->symbols = NULL;
+	}
+	if (data->file_name != NULL) {
+		g_free (data->file_name);
+		data->file_name = NULL;
 	}
 	g_free (data);
 }
@@ -2645,6 +2713,7 @@ executable_file_add_region_reference (ProfilerExecutableFile *file, ProfilerExec
 			section_region->region = region;
 			section_region->section_address = (gpointer) section_header->sh_addr;
 			section_region->section_offset = section_header->sh_offset;
+			region->file_region_reference = section_region;
 		}
 	}
 }
@@ -2652,133 +2721,148 @@ executable_file_add_region_reference (ProfilerExecutableFile *file, ProfilerExec
 static ProfilerExecutableFile*
 executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 	ProfilerExecutableFiles *files = & (profiler->executable_files);
-	ProfilerExecutableFile *file = (ProfilerExecutableFile*) g_hash_table_lookup (files->table, region->file_name);
+	ProfilerExecutableFile *file = region->file;
+	
 	if (file == NULL) {
-		guint16 test = 0x0102;
-		struct stat stat_buffer;
-		int symtab_index = 0;
-		int strtab_index = 0;
-		int dynsym_index = 0;
-		int dynstr_index = 0;
-		ElfHeader *header;
-		guint8 *section_headers;
-		int section_index;
-		int strings_index;
+		file = (ProfilerExecutableFile*) g_hash_table_lookup (files->table, region->file_name);
 		
-		file = g_new0 (ProfilerExecutableFile, 1);
-		region->file = file;
-		file->reference_count ++;
-		
-		file->fd = open (region->file_name, O_RDONLY);
-		if (file->fd == -1) {
-			//g_warning ("Cannot open file '%s': '%s'", region->file_name, strerror (errno));
-			return file;
-		} else {
-			if (fstat (file->fd, &stat_buffer) != 0) {
-				//g_warning ("Cannot stat file '%s': '%s'", region->file_name, strerror (errno));
+		if (file == NULL) {
+			guint16 test = 0x0102;
+			int file_name_length = strlen (region->file_name);
+			struct stat stat_buffer;
+			int symtab_index = 0;
+			int strtab_index = 0;
+			int dynsym_index = 0;
+			int dynstr_index = 0;
+			ElfHeader *header;
+			guint8 *section_headers;
+			int section_index;
+			int strings_index;
+			
+			file = g_new0 (ProfilerExecutableFile, 1);
+			region->file = file;
+			g_hash_table_insert (files->table, region->file_name, file);
+			file->reference_count ++;
+			file->next_new_file = files->new_files;
+			files->new_files = file;
+			
+			/* Skip files whose name doesn't end in ".so" */
+			if ((region->file_name [file_name_length - 1] != 'o') || (region->file_name [file_name_length - 2] != 's') || (region->file_name [file_name_length - 3] != '.')) {
+				file->fd = -1;
+				return file;
+			}
+			
+			file->fd = open (region->file_name, O_RDONLY);
+			if (file->fd == -1) {
+				//g_warning ("Cannot open file '%s': '%s'", region->file_name, strerror (errno));
 				return file;
 			} else {
-				size_t region_length = ((guint8*)region->end) - ((guint8*)region->start);
-				file->length = stat_buffer.st_size;
-				
-				if (file->length == region_length) {
-					file->data = region->start;
-					close (file->fd);
-					file->fd = -1;
+				if (fstat (file->fd, &stat_buffer) != 0) {
+					//g_warning ("Cannot stat file '%s': '%s'", region->file_name, strerror (errno));
+					return file;
 				} else {
-					file->data = mmap (NULL, file->length, PROT_READ, MAP_PRIVATE, file->fd, 0);
+					size_t region_length = ((guint8*)region->end) - ((guint8*)region->start);
+					file->length = stat_buffer.st_size;
 					
-					if (file->data == MAP_FAILED) {
+					if (file->length == region_length) {
+						file->data = region->start;
 						close (file->fd);
-						//g_warning ("Cannot map file '%s': '%s'", region->file_name, strerror (errno));
-						file->data = NULL;
-						return file;
+						file->fd = -1;
+					} else {
+						file->data = mmap (NULL, file->length, PROT_READ, MAP_PRIVATE, file->fd, 0);
+						
+						if (file->data == MAP_FAILED) {
+							close (file->fd);
+							//g_warning ("Cannot map file '%s': '%s'", region->file_name, strerror (errno));
+							file->data = NULL;
+							return file;
+						}
 					}
 				}
 			}
-		}
-		
-		header = (ElfHeader*) file->data;
-		
-		if ((header->e_ident [EI_MAG0] != 0x7f) || (header->e_ident [EI_MAG1] != 'E') ||
-				(header->e_ident [EI_MAG2] != 'L') || (header->e_ident [EI_MAG3] != 'F')) {
-			return file;
-		}
-		
-		if (sizeof (gsize) == 4) {
-			if (header->e_ident [EI_CLASS] != ELF_CLASS_32) {
-				g_warning ("Class is not ELF_CLASS_32 with gsize size %d", (int) sizeof (gsize));
-				return file;
-			}
-		} else if (sizeof (gsize) == 8) {
-			if (header->e_ident [EI_CLASS] != ELF_CLASS_64) {
-				g_warning ("Class is not ELF_CLASS_64 with gsize size %d", (int) sizeof (gsize));
-				return file;
-			}
-		} else {
-			g_warning ("Absurd gsize size %d", (int) sizeof (gsize));
-			return file;
-		}
-		
-		if ((*(guint8*)(&test)) == 0x01) {
-			if (header->e_ident [EI_DATA] != ELF_DATA_MSB) {
-				g_warning ("Data is not ELF_DATA_MSB with first test byte 0x01");
-				return file;
-			}
-		} else if ((*(guint8*)(&test)) == 0x02) {
-			if (header->e_ident [EI_DATA] != ELF_DATA_LSB) {
-				g_warning ("Data is not ELF_DATA_LSB with first test byte 0x02");
-				return file;
-			}
-		} else {
-			g_warning ("Absurd test byte value");
-			return file;
-		}
-		
-		/* OK, this is a usable elf file... */
-		file->header = header;
-		section_headers = file->data + header->e_shoff;
-		file->main_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * header->e_shstrndx)))->sh_offset);
-		
-		for (section_index = 0; section_index < header->e_shnum; section_index ++) {
-			ElfSection *section_header = (ElfSection*) (section_headers + (header->e_shentsize * section_index));
 			
-			if (section_header->sh_type == ELF_SHT_SYMTAB) {
-				symtab_index = section_index;
-			} else if (section_header->sh_type == ELF_SHT_DYNSYM) {
-				dynsym_index = section_index;
-			} else if (section_header->sh_type == ELF_SHT_STRTAB) {
-				if (! strcmp (file->main_string_table + section_header->sh_name, ".strtab")) {
-					strtab_index = section_index;
-				} else if (! strcmp (file->main_string_table + section_header->sh_name, ".dynstr")) {
-					dynstr_index = section_index;
+			header = (ElfHeader*) file->data;
+			
+			if ((header->e_ident [EI_MAG0] != 0x7f) || (header->e_ident [EI_MAG1] != 'E') ||
+					(header->e_ident [EI_MAG2] != 'L') || (header->e_ident [EI_MAG3] != 'F')) {
+				return file;
+			}
+			
+			if (sizeof (gsize) == 4) {
+				if (header->e_ident [EI_CLASS] != ELF_CLASS_32) {
+					g_warning ("Class is not ELF_CLASS_32 with gsize size %d", (int) sizeof (gsize));
+					return file;
+				}
+			} else if (sizeof (gsize) == 8) {
+				if (header->e_ident [EI_CLASS] != ELF_CLASS_64) {
+					g_warning ("Class is not ELF_CLASS_64 with gsize size %d", (int) sizeof (gsize));
+					return file;
+				}
+			} else {
+				g_warning ("Absurd gsize size %d", (int) sizeof (gsize));
+				return file;
+			}
+			
+			if ((*(guint8*)(&test)) == 0x01) {
+				if (header->e_ident [EI_DATA] != ELF_DATA_MSB) {
+					g_warning ("Data is not ELF_DATA_MSB with first test byte 0x01");
+					return file;
+				}
+			} else if ((*(guint8*)(&test)) == 0x02) {
+				if (header->e_ident [EI_DATA] != ELF_DATA_LSB) {
+					g_warning ("Data is not ELF_DATA_LSB with first test byte 0x02");
+					return file;
+				}
+			} else {
+				g_warning ("Absurd test byte value");
+				return file;
+			}
+			
+			/* OK, this is a usable elf file... */
+			file->header = header;
+			section_headers = file->data + header->e_shoff;
+			file->main_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * header->e_shstrndx)))->sh_offset);
+			
+			for (section_index = 0; section_index < header->e_shnum; section_index ++) {
+				ElfSection *section_header = (ElfSection*) (section_headers + (header->e_shentsize * section_index));
+				
+				if (section_header->sh_type == ELF_SHT_SYMTAB) {
+					symtab_index = section_index;
+				} else if (section_header->sh_type == ELF_SHT_DYNSYM) {
+					dynsym_index = section_index;
+				} else if (section_header->sh_type == ELF_SHT_STRTAB) {
+					if (! strcmp (file->main_string_table + section_header->sh_name, ".strtab")) {
+						strtab_index = section_index;
+					} else if (! strcmp (file->main_string_table + section_header->sh_name, ".dynstr")) {
+						dynstr_index = section_index;
+					}
 				}
 			}
-		}
-		
-		if ((symtab_index != 0) && (strtab_index != 0)) {
-			section_index = symtab_index;
-			strings_index = strtab_index;
-		} else if ((dynsym_index != 0) && (dynstr_index != 0)) {
-			section_index = dynsym_index;
-			strings_index = dynstr_index;
+			
+			if ((symtab_index != 0) && (strtab_index != 0)) {
+				section_index = symtab_index;
+				strings_index = strtab_index;
+			} else if ((dynsym_index != 0) && (dynstr_index != 0)) {
+				section_index = dynsym_index;
+				strings_index = dynstr_index;
+			} else {
+				section_index = 0;
+				strings_index = 0;
+			}
+			
+			if (section_index != 0) {
+				ElfSection *section_header = (ElfSection*) (section_headers + (header->e_shentsize * section_index));
+				file->symbol_size = section_header->sh_entsize;
+				file->symbols_count = (guint32) (section_header->sh_size / section_header->sh_entsize);
+				file->symbols_start = file->data + section_header->sh_offset;
+				file->symbols_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * strings_index)))->sh_offset);
+			}
+			
+			file->section_regions = g_new0 (ProfilerExecutableFileSectionRegion, file->header->e_shnum);
 		} else {
-			section_index = 0;
-			strings_index = 0;
+			region->file = file;
+			file->reference_count ++;
 		}
-		
-		if (section_index != 0) {
-			ElfSection *section_header = (ElfSection*) (section_headers + (header->e_shentsize * section_index));
-			file->symbol_size = section_header->sh_entsize;
-			file->symbols_count = (guint32) (section_header->sh_size / section_header->sh_entsize);
-			file->symbols_start = file->data + section_header->sh_offset;
-			file->symbols_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * strings_index)))->sh_offset);
-		}
-		
-		file->section_regions = g_new0 (ProfilerExecutableFileSectionRegion, file->header->e_shnum);
-	} else {
-		region->file = file;
-		file->reference_count ++;
 	}
 	
 	if (file->header != NULL) {
@@ -2813,6 +2897,12 @@ executable_file_free (ProfilerExecutableFile* file) {
 static void
 executable_file_close (ProfilerExecutableMemoryRegionData *region) {
 	region->file->reference_count --;
+	
+	if ((region->file_region_reference != NULL) && (region->file_region_reference->region == region)) {
+		region->file_region_reference->region = NULL;
+		region->file_region_reference->section_address = 0;
+		region->file_region_reference->section_offset = 0;
+	}
 	
 	if (region->file->reference_count <= 0) {
 		ProfilerExecutableFiles *files = & (profiler->executable_files);
@@ -2974,6 +3064,7 @@ executable_memory_region_find_symbol (ProfilerExecutableMemoryRegionData *region
 
 //FIXME: make also Win32 and BSD variants
 #define MAPS_BUFFER_SIZE 4096
+#define MAPS_FILENAME_SIZE 2048
 
 static gboolean
 update_regions_buffer (int fd, char *buffer) {
@@ -3052,13 +3143,12 @@ const char *map_line_parser_state [] = {
 };
 
 static char*
-parse_map_line (ProfilerExecutableMemoryRegions *regions, int fd, char *buffer, char *current) {
+parse_map_line (ProfilerExecutableMemoryRegions *regions, int fd, char *buffer, char *filename, char *current) {
 	MapLineParserState state = MAP_LINE_PARSER_STATE_START_ADDRESS;
 	gsize start_address = 0;
 	gsize end_address = 0;
 	guint32 offset = 0;
-	char *start_filename = NULL;
-	char *end_filename = NULL;
+	int filename_index = 0;
 	gboolean is_executable = FALSE;
 	gboolean done = FALSE;
 	
@@ -3122,22 +3212,31 @@ parse_map_line (ProfilerExecutableMemoryRegions *regions, int fd, char *buffer, 
 		case MAP_LINE_PARSER_STATE_BLANK_BEFORE_FILENAME:
 			if ((c == '/') || (c == '[')) {
 				state = MAP_LINE_PARSER_STATE_FILENAME;
-				start_filename = current;
+				filename [filename_index] = *current;
+				filename_index ++;
 			} else if (! isblank (c)) {
 				state = MAP_LINE_PARSER_STATE_INVALID;
 			}
 			break;
 		case MAP_LINE_PARSER_STATE_FILENAME:
-			if (c == '\n') {
-				state = MAP_LINE_PARSER_STATE_DONE;
-				done = TRUE;
-				end_filename = current;
+			if (filename_index < MAPS_FILENAME_SIZE) {
+				if (c == '\n') {
+					state = MAP_LINE_PARSER_STATE_DONE;
+					done = TRUE;
+					filename [filename_index] = 0;
+				} else {
+					filename [filename_index] = *current;
+					filename_index ++;
+				}
+			} else {
+				filename [filename_index] = 0;
+				g_warning ("ELF filename too long: \"%s\"...\n", filename);
 			}
 			break;
 		case MAP_LINE_PARSER_STATE_DONE:
 			if (done && is_executable) {
-				*end_filename = 0;
-				append_region (regions, (gpointer) start_address, (gpointer) end_address, offset, start_filename);
+				filename [filename_index] = 0;
+				append_region (regions, (gpointer) start_address, (gpointer) end_address, offset, filename);
 			}
 			return current;
 		case MAP_LINE_PARSER_STATE_INVALID:
@@ -3161,6 +3260,7 @@ parse_map_line (ProfilerExecutableMemoryRegions *regions, int fd, char *buffer, 
 static gboolean
 scan_process_regions (ProfilerExecutableMemoryRegions *regions) {
 	char *buffer;
+	char *filename;
 	char *current;
 	int fd;
 	
@@ -3170,13 +3270,15 @@ scan_process_regions (ProfilerExecutableMemoryRegions *regions) {
 	}
 	
 	buffer = malloc (MAPS_BUFFER_SIZE);
+	filename = malloc (MAPS_FILENAME_SIZE);
 	update_regions_buffer (fd, buffer);
 	current = buffer;
 	while (current != NULL) {
-		current = parse_map_line (regions, fd, buffer, current);
+		current = parse_map_line (regions, fd, buffer, filename, current);
 	}
 	
 	free (buffer);
+	free (filename);
 	
 	close (fd);
 	return TRUE;
@@ -3690,6 +3792,7 @@ number_event_code_to_string (MonoProfilerEvents code) {
 	case MONO_PROFILER_EVENT_GC_START_WORLD: return "GC_START_WORLD";
 	case MONO_PROFILER_EVENT_JIT_TIME_ALLOCATION: return "JIT_TIME_ALLOCATION";
 	case MONO_PROFILER_EVENT_STACK_SECTION: return "STACK_SECTION";
+	case MONO_PROFILER_EVENT_ALLOCATION_OBJECT_ID: return "ALLOCATION_OBJECT_ID";
 	default: g_assert_not_reached (); return "";
 	}
 }
@@ -3710,12 +3813,12 @@ event_kind_to_string (MonoProfilerEventKind code) {
 	}
 }
 static void
-print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
+print_event_data (ProfilerPerThreadData *data, ProfilerEventData *event, guint64 value) {
 	if (event->data_type == MONO_PROFILER_EVENT_DATA_TYPE_CLASS) {
-		printf ("[TID %ld] CLASS[%p] event [%p] %s:%s:%s[%d-%d-%d] %ld (%s.%s)\n",
-				thread_id,
+		printf ("STORE EVENT [TID %ld][EVENT %ld] CLASS[%p] %s:%s:%s[%d-%d-%d] %ld (%s.%s)\n",
+				data->thread_id,
+				event - data->events,
 				event->data.address,
-				event,
 				class_event_code_to_string (event->code & ~MONO_PROFILER_EVENT_RESULT_MASK),
 				event_result_to_string (event->code & MONO_PROFILER_EVENT_RESULT_MASK),
 				event_kind_to_string (event->kind),
@@ -3726,10 +3829,10 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 				mono_class_get_namespace ((MonoClass*) event->data.address),
 				mono_class_get_name ((MonoClass*) event->data.address));
 	} else if (event->data_type == MONO_PROFILER_EVENT_DATA_TYPE_METHOD) {
-		printf ("[TID %ld] METHOD[%p] event [%p] %s:%s:%s[%d-%d-%d] %ld (%s.%s:%s (?))\n",
-				thread_id,
+		printf ("STORE EVENT [TID %ld][EVENT %ld]  METHOD[%p] %s:%s:%s[%d-%d-%d] %ld (%s.%s:%s (?))\n",
+				data->thread_id,
+				event - data->events,
 				event->data.address,
-				event,
 				method_event_code_to_string (event->code & ~MONO_PROFILER_EVENT_RESULT_MASK),
 				event_result_to_string (event->code & MONO_PROFILER_EVENT_RESULT_MASK),
 				event_kind_to_string (event->kind),
@@ -3741,10 +3844,10 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 				(event->data.address != NULL) ? mono_class_get_name (mono_method_get_class ((MonoMethod*) event->data.address)) : "<NULL>",
 				(event->data.address != NULL) ? mono_method_get_name ((MonoMethod*) event->data.address) : "<NULL>");
 	} else {
-		printf ("[TID %ld] NUMBER[%ld] event [%p] %s:%s[%d-%d-%d] %ld\n",
-				thread_id,
+		printf ("STORE EVENT [TID %ld][EVENT %ld]  NUMBER[%ld] %s:%s[%d-%d-%d] %ld\n",
+				data->thread_id,
+				event - data->events,
 				(guint64) event->data.number,
-				event,
 				number_event_code_to_string (event->code),
 				event_kind_to_string (event->kind),
 				event->data_type,
@@ -3753,9 +3856,9 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 				value);
 	}
 }
-#define LOG_EVENT(tid,ev,val) print_event_data ((tid),(ev),(val))
+#define LOG_EVENT(data,ev,val) print_event_data ((data),(ev),(val))
 #else
-#define LOG_EVENT(tid,ev,val)
+#define LOG_EVENT(data,ev,val)
 #endif
 
 #define RESULT_TO_EVENT_CODE(r) (((r)==MONO_PROFILE_OK)?MONO_PROFILER_EVENT_RESULT_SUCCESS:MONO_PROFILER_EVENT_RESULT_FAILURE)
@@ -3778,7 +3881,7 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 		*(guint64*)extension = delta;\
 	}\
 	data->last_event_counter = counter;\
-	LOG_EVENT (data->thread_id, (event), delta);\
+	LOG_EVENT (data, (event), delta);\
 } while (0);
 #define STORE_EVENT_ITEM_VALUE(event,p,i,dt,c,k,v) do {\
 	(event)->data.address = (i);\
@@ -3793,7 +3896,7 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 		(event)->value = MAX_EVENT_VALUE;\
 		*(guint64*)extension = (v);\
 	}\
-	LOG_EVENT (data->thread_id, (event), (v));\
+	LOG_EVENT (data, (event), (v));\
 }while (0);
 #define STORE_EVENT_NUMBER_COUNTER(event,p,n,dt,c,k) do {\
 	guint64 counter;\
@@ -3813,7 +3916,7 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 		*(guint64*)extension = delta;\
 	}\
 	data->last_event_counter = counter;\
-	LOG_EVENT (data->thread_id, (event), delta);\
+	LOG_EVENT (data, (event), delta);\
 }while (0);
 #define STORE_EVENT_NUMBER_VALUE(event,p,n,dt,c,k,v) do {\
 	(event)->data.number = (n);\
@@ -3828,7 +3931,7 @@ print_event_data (gsize thread_id, ProfilerEventData *event, guint64 value) {
 		(event)->value = MAX_EVENT_VALUE;\
 		*(guint64*)extension = (v);\
 	}\
-	LOG_EVENT (data->thread_id, (event), (v));\
+	LOG_EVENT (data, (event), (v));\
 }while (0);
 
 static void
@@ -4033,16 +4136,16 @@ static void
 statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **ips, void *context) {
 	MonoDomain *domain = mono_domain_get ();
 	ProfilerStatisticalData *data;
-	int index;
+	unsigned int index;
 	
 	CHECK_PROFILER_ENABLED ();
 	do {
 		data = profiler->statistical_data;
-		index = InterlockedIncrement (&data->next_free_index);
+		index = InterlockedIncrement ((int*) &data->next_free_index);
 		
 		if (index <= data->end_index) {
-			int base_index = (index - 1) * (profiler->statistical_call_chain_depth + 1);
-			int call_chain_index = 0;
+			unsigned int base_index = (index - 1) * (profiler->statistical_call_chain_depth + 1);
+			unsigned int call_chain_index = 0;
 			
 			//printf ("[statistical_call_chain] (%d)\n", call_chain_depth);
 			while (call_chain_index < call_chain_depth) {
@@ -4077,9 +4180,12 @@ statistical_call_chain (MonoProfiler *profiler, int call_chain_depth, guchar **i
 				profiler->statistical_data = new_data;
 				profiler->statistical_data_second_buffer = NULL;
 				WRITER_EVENT_RAISE ();
+				/* Otherwise exit from the handler and drop the event... */
+			} else {
+				break;
 			}
 			
-			/* Loop again, hoping to acquire a free slot this time */
+			/* Loop again, hoping to acquire a free slot this time (otherwise the event will be dropped) */
 			data = NULL;
 		}
 	} while (data == NULL);
@@ -4089,12 +4195,12 @@ static void
 statistical_hit (MonoProfiler *profiler, guchar *ip, void *context) {
 	MonoDomain *domain = mono_domain_get ();
 	ProfilerStatisticalData *data;
-	int index;
+	unsigned int index;
 	
 	CHECK_PROFILER_ENABLED ();
 	do {
 		data = profiler->statistical_data;
-		index = InterlockedIncrement (&data->next_free_index);
+		index = InterlockedIncrement ((int*) &data->next_free_index);
 		
 		if (index <= data->end_index) {
 			ProfilerStatisticalHit *hit = & (data->hits [index - 1]);
@@ -4558,9 +4664,6 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 	gboolean do_heap_profiling = profiler->action_flags.unreachable_objects || profiler->action_flags.heap_shot || profiler->action_flags.collection_summary;
 	guint32 event_value;
 	
-	GET_PROFILER_THREAD_DATA (data);
-	GET_NEXT_FREE_EVENT (data, event);
-	
 	if (ev == MONO_GC_EVENT_START) {
 		profiler->garbage_collection_counter ++;
 	}
@@ -4570,7 +4673,11 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation) {
 	if (do_heap_profiling && (ev == MONO_GC_EVENT_POST_STOP_WORLD)) {
 		handle_heap_profiling (profiler, ev);
 	}
+	
+	GET_PROFILER_THREAD_DATA (data);
+	GET_NEXT_FREE_EVENT (data, event);
 	STORE_EVENT_NUMBER_COUNTER (event, profiler, event_value, MONO_PROFILER_EVENT_DATA_TYPE_OTHER, gc_event_code_from_profiler_event (ev), gc_event_kind_from_profiler_event (ev));
+	
 	if (do_heap_profiling && (ev != MONO_GC_EVENT_POST_STOP_WORLD)) {
 		handle_heap_profiling (profiler, ev);
 	}
@@ -4704,6 +4811,21 @@ check_signal_number (int signal_number) {
 }
 #endif
 
+#define FAIL_ARGUMENT_CHECK(message) do {\
+	failure_message = (message);\
+	goto failure_handling;\
+} while (0)
+#define FAIL_PARSING_VALUED_ARGUMENT FAIL_ARGUMENT_CHECK("cannot parse valued argument %s")
+#define FAIL_PARSING_FLAG_ARGUMENT FAIL_ARGUMENT_CHECK("cannot parse flag argument %s")
+#define CHECK_CONDITION(condition,message) do {\
+	gboolean result = (condition);\
+	if (result) {\
+		FAIL_ARGUMENT_CHECK (message);\
+	}\
+} while (0)
+#define FAIL_IF_HAS_MINUS CHECK_CONDITION(has_minus,"minus ('-') modifier not allowed for argument %s")
+#define TRUE_IF_NOT_MINUS ((!has_minus)?TRUE:FALSE)
+
 #define DEFAULT_ARGUMENTS "s"
 static void
 setup_user_options (const char *arguments) {
@@ -4746,117 +4868,177 @@ setup_user_options (const char *arguments) {
 	for (current_argument = arguments_array; ((current_argument != NULL) && (current_argument [0] != 0)); current_argument ++) {
 		char *argument = *current_argument;
 		char *equals = strstr (argument, "=");
+		const char *failure_message = NULL;
+		gboolean has_plus;
+		gboolean has_minus;
+		
+		if (*argument == '+') {
+			has_plus = TRUE;
+			has_minus = FALSE;
+			argument ++;
+		} else if (*argument == '-') {
+			has_plus = FALSE;
+			has_minus = TRUE;
+			argument ++;
+		} else {
+			has_plus = FALSE;
+			has_minus = FALSE;
+		}
 		
 		if (equals != NULL) {
 			int equals_position = equals - argument;
 			
 			if (! (strncmp (argument, "per-thread-buffer-size", equals_position) && strncmp (argument, "tbs", equals_position))) {
 				int value = atoi (equals + 1);
+				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
 					profiler->per_thread_buffer_size = value;
 				}
 			} else if (! (strncmp (argument, "statistical", equals_position) && strncmp (argument, "stat", equals_position) && strncmp (argument, "s", equals_position))) {
 				int value = atoi (equals + 1);
+				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
 					if (value > 16) {
 						value = 16;
 					}
 					profiler->statistical_call_chain_depth = value;
-					profiler->flags |= MONO_PROFILE_STATISTICAL|MONO_PROFILE_JIT_COMPILATION;
+					profiler->flags |= MONO_PROFILE_STATISTICAL;
 				}
 			} else if (! (strncmp (argument, "statistical-thread-buffer-size", equals_position) && strncmp (argument, "sbs", equals_position))) {
 				int value = atoi (equals + 1);
+				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
 					profiler->statistical_buffer_size = value;
 				}
 			} else if (! (strncmp (argument, "write-buffer-size", equals_position) && strncmp (argument, "wbs", equals_position))) {
 				int value = atoi (equals + 1);
+				FAIL_IF_HAS_MINUS;
 				if (value > 0) {
 					profiler->write_buffer_size = value;
 				}
 			} else if (! (strncmp (argument, "output", equals_position) && strncmp (argument, "out", equals_position) && strncmp (argument, "o", equals_position) && strncmp (argument, "O", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->file_name = g_strdup (equals + 1);
 				}
 			} else if (! (strncmp (argument, "output-suffix", equals_position) && strncmp (argument, "suffix", equals_position) && strncmp (argument, "os", equals_position) && strncmp (argument, "OS", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->file_name_suffix = g_strdup (equals + 1);
 				}
+			} else if (! (strncmp (argument, "heap-shot", equals_position) && strncmp (argument, "heap", equals_position) && strncmp (argument, "h", equals_position))) {
+				char *parameter = equals + 1;
+				if (! strcmp (parameter, "all")) {
+					profiler->dump_next_heap_snapshots = -1;
+				} else {
+					gc_request_signal_number = parse_signal_name (parameter);
+				}
+				FAIL_IF_HAS_MINUS;
+				if (! has_plus) {
+					profiler->action_flags.save_allocation_caller = TRUE;
+					profiler->action_flags.save_allocation_stack = TRUE;
+					profiler->action_flags.allocations_carry_id = TRUE_IF_NOT_MINUS;
+				}
+				profiler->action_flags.heap_shot = TRUE_IF_NOT_MINUS;
 			} else if (! (strncmp (argument, "gc-commands", equals_position) && strncmp (argument, "gc-c", equals_position) && strncmp (argument, "gcc", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->heap_shot_command_file_name = g_strdup (equals + 1);
 				}
 			} else if (! (strncmp (argument, "gc-dumps", equals_position) && strncmp (argument, "gc-d", equals_position) && strncmp (argument, "gcd", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					profiler->dump_next_heap_snapshots = atoi (equals + 1);
 				}
 #ifndef PLATFORM_WIN32
 			} else if (! (strncmp (argument, "gc-signal", equals_position) && strncmp (argument, "gc-s", equals_position) && strncmp (argument, "gcs", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					char *signal_name = equals + 1;
 					gc_request_signal_number = parse_signal_name (signal_name);
 				}
 			} else if (! (strncmp (argument, "toggle-signal", equals_position) && strncmp (argument, "ts", equals_position))) {
+				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
 					char *signal_name = equals + 1;
 					toggle_signal_number = parse_signal_name (signal_name);
 				}
 #endif
 			} else {
-				g_warning ("Cannot parse valued argument %s\n", argument);
+				FAIL_PARSING_VALUED_ARGUMENT;
 			}
 		} else {
 			if (! (strcmp (argument, "jit") && strcmp (argument, "j"))) {
-				profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
-				profiler->action_flags.jit_time = TRUE;
+				profiler->action_flags.jit_time = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "allocations") && strcmp (argument, "alloc") && strcmp (argument, "a"))) {
-				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
+				FAIL_IF_HAS_MINUS;
+				if (! has_plus) {
+					profiler->action_flags.save_allocation_caller = TRUE;
+					profiler->action_flags.save_allocation_stack = TRUE;
+				}
+				if (! has_minus) {
+					profiler->flags |= MONO_PROFILE_ALLOCATIONS;
+				} else {
+					profiler->flags &= ~MONO_PROFILE_ALLOCATIONS;
+				}
 			} else if (! (strcmp (argument, "gc") && strcmp (argument, "g"))) {
+				FAIL_IF_HAS_MINUS;
 				profiler->flags |= MONO_PROFILE_GC;
 			} else if (! (strcmp (argument, "allocations-summary") && strcmp (argument, "as"))) {
-				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
-				profiler->action_flags.collection_summary = TRUE;
+				profiler->action_flags.collection_summary = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "heap-shot") && strcmp (argument, "heap") && strcmp (argument, "h"))) {
-				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
-				profiler->action_flags.heap_shot = TRUE;
+				FAIL_IF_HAS_MINUS;
+				if (! has_plus) {
+					profiler->action_flags.save_allocation_caller = TRUE;
+					profiler->action_flags.save_allocation_stack = TRUE;
+					profiler->action_flags.allocations_carry_id = TRUE_IF_NOT_MINUS;
+				}
+				profiler->action_flags.heap_shot = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "unreachable") && strcmp (argument, "free") && strcmp (argument, "f"))) {
-				profiler->flags |= MONO_PROFILE_ALLOCATIONS|MONO_PROFILE_GC;
-				profiler->action_flags.unreachable_objects = TRUE;
+				profiler->action_flags.unreachable_objects = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "threads") && strcmp (argument, "t"))) {
-				profiler->flags |= MONO_PROFILE_THREADS;
+				if (! has_minus) {
+					profiler->flags |= MONO_PROFILE_THREADS;
+				} else {
+					profiler->flags &= ~MONO_PROFILE_THREADS;
+				}
 			} else if (! (strcmp (argument, "enter-leave") && strcmp (argument, "calls") && strcmp (argument, "c"))) {
-				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
-				profiler->action_flags.jit_time = TRUE;
-				profiler->action_flags.track_calls = TRUE;
+				profiler->action_flags.track_calls = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "statistical") && strcmp (argument, "stat") && strcmp (argument, "s"))) {
-				profiler->flags |= MONO_PROFILE_STATISTICAL;
-			} else if (! (strcmp (argument, "track-stack") && strcmp (argument, "ts"))) {
-				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
-				profiler->action_flags.track_stack = TRUE;
-				profiler->action_flags.save_allocation_caller = TRUE;
+				if (! has_minus) {
+					profiler->flags |= MONO_PROFILE_STATISTICAL;
+				} else {
+					profiler->flags &= ~MONO_PROFILE_STATISTICAL;
+				}
+			} else if (! (strcmp (argument, "save-allocation-caller") && strcmp (argument, "sac"))) {
+				profiler->action_flags.save_allocation_caller = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "save-allocation-stack") && strcmp (argument, "sas"))) {
-				profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
-				profiler->action_flags.track_stack = TRUE;
-				profiler->action_flags.save_allocation_stack = TRUE;
+				profiler->action_flags.save_allocation_stack = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "allocations-carry-id") && strcmp (argument, "aci"))) {
-				profiler->action_flags.allocations_carry_id = TRUE;
+				profiler->action_flags.allocations_carry_id = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "start-enabled") && strcmp (argument, "se"))) {
-				profiler->profiler_enabled = TRUE;
+				profiler->profiler_enabled = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "start-disabled") && strcmp (argument, "sd"))) {
-				profiler->profiler_enabled = FALSE;
+				profiler->profiler_enabled = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "force-accurate-timer") && strcmp (argument, "fac"))) {
-				use_fast_timer = FALSE;
+				use_fast_timer = TRUE_IF_NOT_MINUS;
 #if (HAS_OPROFILE)
 			} else if (! (strcmp (argument, "oprofile") && strcmp (argument, "oprof"))) {
 				profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
 				profiler->action_flags.oprofile = TRUE;
 				if (op_open_agent ()) {
-					g_warning ("Problem calling op_open_agent\n");
+					FAIL_ARGUMENT_CHECK ("problem calling op_open_agent");
 				}
 #endif
 			} else if (strcmp (argument, "logging")) {
-				g_warning ("Cannot parse flag argument %s\n", argument);
+				FAIL_PARSING_FLAG_ARGUMENT;
 			}
+		}
+		
+failure_handling:
+		if (failure_message != NULL) {
+			g_warning (failure_message, argument);
+			failure_message = NULL;
 		}
 	}
 	
@@ -4878,6 +5060,35 @@ setup_user_options (const char *arguments) {
 		}
 	}
 #endif
+	
+	/* Ensure that the profiler flags needed to support required action flags are active */
+	if (profiler->action_flags.jit_time) {
+		profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
+	}
+	if (profiler->action_flags.save_allocation_caller || profiler->action_flags.save_allocation_stack || profiler->action_flags.allocations_carry_id) {
+		profiler->flags |= MONO_PROFILE_ALLOCATIONS;
+	}
+	if (profiler->action_flags.collection_summary || profiler->action_flags.heap_shot || profiler->action_flags.unreachable_objects) {
+		profiler->flags |= MONO_PROFILE_ALLOCATIONS;
+	}
+	if (profiler->action_flags.track_calls) {
+		profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
+		profiler->action_flags.jit_time = TRUE;
+	}
+	if (profiler->action_flags.save_allocation_caller || profiler->action_flags.save_allocation_stack) {
+		profiler->action_flags.track_stack = TRUE;
+		profiler->flags |= MONO_PROFILE_ENTER_LEAVE;
+	}
+	
+	/* Without JIT events the stat profiler will not find method IDs... */
+	if (profiler->flags | MONO_PROFILE_STATISTICAL) {
+		profiler->flags |= MONO_PROFILE_JIT_COMPILATION;
+	}
+	/* Profiling allocations without knowing which gc we are doing is not nice... */
+	if (profiler->flags | MONO_PROFILE_ALLOCATIONS) {
+		profiler->flags |= MONO_PROFILE_GC;
+	}
+
 	
 	if (profiler->file_name == NULL) {
 		char *program_name = g_get_prgname ();
