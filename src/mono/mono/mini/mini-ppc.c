@@ -4362,7 +4362,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		tracing = 1;
 
 	sig = mono_method_signature (method);
-	cfg->code_size = MONO_PPC_32_64_CASE (256, 384) + sig->param_count * 20;
+	cfg->code_size = MONO_PPC_32_64_CASE (260, 384) + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
 	if (1 || cfg->flags & MONO_CFG_HAS_CALLS) {
@@ -4723,7 +4723,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 
 	cfg->code_len = code - cfg->native_code;
-	g_assert (cfg->code_len < cfg->code_size);
+	g_assert (cfg->code_len <= cfg->code_size);
 	g_free (cinfo);
 
 	return code;
