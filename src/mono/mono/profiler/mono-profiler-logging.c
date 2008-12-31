@@ -5010,6 +5010,8 @@ setup_user_options (const char *arguments) {
 				} else {
 					profiler->flags &= ~MONO_PROFILE_STATISTICAL;
 				}
+			} else if (! (strcmp (argument, "save-allocation-caller") && strcmp (argument, "sac"))) {
+				profiler->action_flags.save_allocation_caller = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "save-allocation-stack") && strcmp (argument, "sas"))) {
 				profiler->action_flags.save_allocation_stack = TRUE_IF_NOT_MINUS;
 			} else if (! (strcmp (argument, "allocations-carry-id") && strcmp (argument, "aci"))) {
