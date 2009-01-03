@@ -135,6 +135,8 @@ op_phi_to_move (int opcode)
 		return OP_FMOVE;
 	case OP_VPHI:
 		return OP_VMOVE;
+	case OP_XPHI:
+		return OP_XMOVE;
 	default:
 		g_assert_not_reached ();
 	}
@@ -444,7 +446,7 @@ mono_ssa_compute2 (MonoCompile *cfg)
 				ins->opcode = OP_FPHI;
 				break;
 			case STACK_VTYPE:
-				ins->opcode = OP_VPHI;
+				ins->opcode = MONO_CLASS_IS_SIMD (cfg, var->klass) ? OP_XPHI : OP_VPHI;
 				ins->klass = var->klass;
 				break;
 			}

@@ -805,6 +805,7 @@ MINI_OP(OP_PREFETCH_MEMBASE, "prefetch_membase", NONE, IREG, NONE)
 
 MINI_OP(OP_XMOVE,   "xmove", XREG, XREG, NONE)
 MINI_OP(OP_XZERO,   "xzero", XREG, NONE, NONE)
+MINI_OP(OP_XPHI,	"xphi", XREG, NONE, NONE)
 
 /* Atomic specific
 
