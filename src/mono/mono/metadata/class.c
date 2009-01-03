@@ -2318,10 +2318,14 @@ get_implicit_generic_array_interfaces (MonoClass *class, int *num, int *is_enume
 			interfaces [j] = inflate_class_one_arg (generic_ienumerator_class, array_class_get_if_rank (valuetype_types [1], original_rank));
 	}
 #if 0
+	{
+	char *type_name = mono_type_get_name_full (&class->byval_arg, 0);
 	for (i = 0; i  < real_count; ++i) {
 		char *name = mono_type_get_name_full (&interfaces [i]->byval_arg, 0);
-		g_print ("%s implements %s\n", class->name, name);
+		g_print ("%s implements %s\n", type_name, name);
 		g_free (name);
+	}
+	g_free (type_name);
 	}
 #endif
 	*num = real_count;
