@@ -2,6 +2,19 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static int test_0_bug_462457 ()
+	{
+		Vector4f sum = new Vector4f(0,0,0,0);
+		Vector4f add = new Vector4f(1.0F,1.0F,1.0F,1.0F);
+
+		for (int i = 0; i < 10; ++i)
+				sum = sum + add;
+
+		if (sum.X != 10f)
+			return 1;
+		return 0;
+	}
+
 	static float use_getter_with_byref (ref Vector4f a) {
 		return a.W;
 	}
