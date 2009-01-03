@@ -381,6 +381,8 @@ mono_print_ins_index (int i, MonoInst *ins)
 			}
 			break;
 		case OP_PHI:
+		case OP_VPHI:
+		case OP_XPHI:
 		case OP_FPHI: {
 			int i;
 			printf (" [%d (", (int)ins->inst_c0);
