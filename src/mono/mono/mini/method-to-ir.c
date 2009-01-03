@@ -2176,7 +2176,7 @@ mono_emit_rgctx_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **ar
 {
 #ifdef MONO_ARCH_RGCTX_REG
 	MonoCallInst *call;
-	int rgctx_reg;
+	int rgctx_reg = -1;
 
 	if (rgctx_arg) {
 		rgctx_reg = mono_alloc_preg (cfg);
