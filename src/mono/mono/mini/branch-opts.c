@@ -314,7 +314,9 @@ mono_if_conversion (MonoCompile *cfg)
 				prev = compare;
 				compare = compare->next;
 			}
-			g_assert (compare->next && MONO_IS_COND_BRANCH_OP (compare->next));
+			if (!(compare->next && MONO_IS_COND_BRANCH_OP (compare->next)))
+				/* This can happen if a cond branch is optimized away */
+				continue;
 			branch = compare->next;
 
 			true_bb = branch->inst_true_bb;
