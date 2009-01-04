@@ -309,19 +309,38 @@ mono_if_conversion (MonoCompile *cfg)
 
 		if (bb1->in_count == 1 && bb2->in_count == 1 && bb1->out_count == 1 && bb2->out_count == 1 && bb1->out_bb [0] == bb2->out_bb [0]) {
 			MonoInst *prev, *compare, *branch, *ins1, *ins2, *cmov, *move, *tmp;
+			MonoBasicBlock *true_bb, *false_bb;
 			gboolean simple, ret;
 			int dreg, tmp_reg;
 			CompType comp_type;
+
+			if (bb->last_ins && (bb->last_ins->opcode == OP_BR_REG || bb->last_ins->opcode == OP_BR))
+				continue;
+
+			/* Find the compare instruction */
+			/* FIXME: Optimize this using prev */
+			prev = NULL;
+			compare = bb->code;
+			g_assert (compare);
+			while (compare->next && !MONO_IS_COND_BRANCH_OP (compare->next)) {
+				prev = compare;
+				compare = compare->next;
+			}
+			g_assert (compare->next && MONO_IS_COND_BRANCH_OP (compare->next));
+			branch = compare->next;
+
+			true_bb = branch->inst_true_bb;
+			false_bb = branch->inst_false_bb;
 
 			/* 
 			 * Check that bb1 and bb2 are 'simple' and both assign to the same
 			 * variable.
 			 */
 			/* FIXME: Get rid of the nops earlier */
-			ins1 = bb1->code;
+			ins1 = true_bb->code;
 			while (ins1 && ins1->opcode == OP_NOP)
 				ins1 = ins1->next;
-			ins2 = bb2->code;
+			ins2 = false_bb->code;
 			while (ins2 && ins2->opcode == OP_NOP)
 				ins2 = ins2->next;
 			if (!(ins1 && ins2 && ins1->dreg == ins2->dreg && ins1->dreg != -1))
@@ -342,21 +361,6 @@ mono_if_conversion (MonoCompile *cfg)
 			/* We move ins1/ins2 before the compare so they should have no side effect */
 			if (!(MONO_INS_HAS_NO_SIDE_EFFECT (ins1) && MONO_INS_HAS_NO_SIDE_EFFECT (ins2)))
 				continue;
-
-			if (bb->last_ins && (bb->last_ins->opcode == OP_BR_REG || bb->last_ins->opcode == OP_BR))
-				continue;
-
-			/* Find the compare instruction */
-			/* FIXME: Optimize this using prev */
-			prev = NULL;
-			compare = bb->code;
-			g_assert (compare);
-			while (compare->next && !MONO_IS_COND_BRANCH_OP (compare->next)) {
-				prev = compare;
-				compare = compare->next;
-			}
-			g_assert (compare->next && MONO_IS_COND_BRANCH_OP (compare->next));
-			branch = compare->next;
 
 			/* Moving ins1/ins2 could change the comparison */
 			/* FIXME: */
@@ -403,8 +407,8 @@ mono_if_conversion (MonoCompile *cfg)
 			}
 
 			/* Remove ins1/ins2 from bb1/bb2 */
-			MONO_REMOVE_INS (bb1, ins1);
-			MONO_REMOVE_INS (bb2, ins2);
+			MONO_REMOVE_INS (true_bb, ins1);
+			MONO_REMOVE_INS (false_bb, ins2);
 
 			/* Move ins1 and ins2 before the comparison */
 			/* ins1 comes first to avoid ins1 overwriting an argument of ins2 */
@@ -438,16 +442,16 @@ mono_if_conversion (MonoCompile *cfg)
 
 			/* Rewrite the branch */
 			branch->opcode = OP_BR;
-			branch->inst_target_bb = bb1->out_bb [0];
+			branch->inst_target_bb = true_bb->out_bb [0];
 			mono_link_bblock (cfg, bb, branch->inst_target_bb);
 
 			/* Reorder bblocks */
-			mono_unlink_bblock (cfg, bb, bb1);
-			mono_unlink_bblock (cfg, bb, bb2);
-			mono_unlink_bblock (cfg, bb1, bb1->out_bb [0]);
-			mono_unlink_bblock (cfg, bb2, bb2->out_bb [0]);
-			mono_remove_bblock (cfg, bb1);
-			mono_remove_bblock (cfg, bb2);
+			mono_unlink_bblock (cfg, bb, true_bb);
+			mono_unlink_bblock (cfg, bb, false_bb);
+			mono_unlink_bblock (cfg, true_bb, true_bb->out_bb [0]);
+			mono_unlink_bblock (cfg, false_bb, false_bb->out_bb [0]);
+			mono_remove_bblock (cfg, true_bb);
+			mono_remove_bblock (cfg, false_bb);
 
 			/* Merge bb and its successor if possible */
 			if ((bb->out_bb [0]->in_count == 1) && (bb->out_bb [0] != cfg->bb_exit) &&
