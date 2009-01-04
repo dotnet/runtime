@@ -308,7 +308,7 @@ mono_if_conversion (MonoCompile *cfg)
 		bb2 = bb->out_bb [1];
 
 		if (bb1->in_count == 1 && bb2->in_count == 1 && bb1->out_count == 1 && bb2->out_count == 1 && bb1->out_bb [0] == bb2->out_bb [0]) {
-			MonoInst *prev, *compare, *branch, *ins1, *ins2, *cmov, *move, *tmp;
+			MonoInst *compare, *branch, *ins1, *ins2, *cmov, *move, *tmp;
 			MonoBasicBlock *true_bb, *false_bb;
 			gboolean simple, ret;
 			int dreg, tmp_reg;
@@ -318,18 +318,14 @@ mono_if_conversion (MonoCompile *cfg)
 				continue;
 
 			/* Find the compare instruction */
-			/* FIXME: Optimize this using prev */
-			prev = NULL;
-			compare = bb->code;
-			g_assert (compare);
-			while (compare->next && !MONO_IS_COND_BRANCH_OP (compare->next)) {
-				prev = compare;
-				compare = compare->next;
-			}
-			if (!(compare->next && MONO_IS_COND_BRANCH_OP (compare->next)))
+			if (!bb->last_ins || !bb->last_ins->prev)
+				continue;
+			branch = bb->last_ins;
+			compare = branch->prev;
+
+			if (!MONO_IS_COND_BRANCH_OP (branch))
 				/* This can happen if a cond branch is optimized away */
 				continue;
-			branch = compare->next;
 
 			true_bb = branch->inst_true_bb;
 			false_bb = branch->inst_false_bb;
@@ -474,7 +470,7 @@ mono_if_conversion (MonoCompile *cfg)
 
 		if ((bb2->in_count == 1 && bb2->out_count == 1 && bb2->out_bb [0] == bb1) ||
 			(bb1->in_count == 1 && bb1->out_count == 1 && bb1->out_bb [0] == bb2)) {
-			MonoInst *prev, *compare, *branch, *ins1, *cmov, *tmp;
+			MonoInst *compare, *branch, *ins1, *cmov, *tmp;
 			gboolean simple;
 			int dreg, tmp_reg;
 			CompType comp_type;
@@ -512,16 +508,15 @@ mono_if_conversion (MonoCompile *cfg)
 				continue;
 
 			/* Find the compare instruction */
-			/* FIXME: Optimize this using prev */
-			prev = NULL;
-			compare = bb->code;
-			g_assert (compare);
-			while (compare->next && !MONO_IS_COND_BRANCH_OP (compare->next)) {
-				prev = compare;
-				compare = compare->next;
-			}
-			g_assert (compare->next && MONO_IS_COND_BRANCH_OP (compare->next));
-			branch = compare->next;
+
+			if (!bb->last_ins || !bb->last_ins->prev)
+				continue;
+			branch = bb->last_ins;
+			compare = branch->prev;
+
+			if (!MONO_IS_COND_BRANCH_OP (branch))
+				/* This can happen if a cond branch is optimized away */
+				continue;
 
 			/* FIXME: */
 			comp_type = mono_opcode_to_type (branch->opcode, compare->opcode);
