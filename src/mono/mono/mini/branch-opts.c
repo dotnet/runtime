@@ -309,7 +309,8 @@ mono_if_conversion (MonoCompile *cfg)
 			/* FIXME: Optimize this using prev */
 			prev = NULL;
 			compare = bb->code;
-			g_assert (compare);
+			if (!compare)
+				continue;
 			while (compare->next && !MONO_IS_COND_BRANCH_OP (compare->next)) {
 				prev = compare;
 				compare = compare->next;
