@@ -585,10 +585,10 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 		if (name [0] == '.' && (!strcmp (name, ".ctor") || !strcmp (name, ".cctor")))
 			break;
 
-		g_assert (from_class->interface_count == in_class->interface_count);
-		for (i = 0; i < in_class->interface_count; i++) {
-			MonoClass *in_ic = in_class->interfaces [i];
-			MonoClass *from_ic = from_class->interfaces [i];
+		g_assert (from_class->interface_offsets_count == in_class->interface_offsets_count);
+		for (i = 0; i < in_class->interface_offsets_count; i++) {
+			MonoClass *in_ic = in_class->interfaces_packed [i];
+			MonoClass *from_ic = from_class->interfaces_packed [i];
 			char *ic_qname, *ic_fqname, *ic_class_name;
 			
 			ic_class_name = mono_type_get_name_full (&in_ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
