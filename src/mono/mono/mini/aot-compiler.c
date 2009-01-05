@@ -3051,7 +3051,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						code = buf;
 						ARM_BL (code, 0);
 
-						emit_reloc (acfg, R_ARM_CALL, direct_call_target, -8);
+						bin_writer_emit_reloc (acfg, R_ARM_CALL, direct_call_target, -8);
 						emit_bytes (acfg, buf, 4);
 					}
 #else
@@ -3646,7 +3646,7 @@ emit_plt (MonoAotCompile *acfg)
 		code = buf;
 #ifdef USE_BIN_WRITER
 		/* We only emit 1 relocation since we implement it ourselves anyway */
-		emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "got", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)) - 8);
+		bin_writer_emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "got", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)) - 8);
 		/* FIXME: A 2 instruction encoding is sufficient in most cases */
 		ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
 		ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
