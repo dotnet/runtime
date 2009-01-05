@@ -5539,7 +5539,17 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 	if (0) {
 	}
 #endif
-	else if ((code [-1] == 0x8b) && (amd64_modrm_mod (code [0]) == 0x2) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
+	else if ((code [-2] == 0x41) && (code [-1] == 0xbb) && (code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x1)) {
+		/* 
+		 * 41 bb e8 e8 e8 e8     mov    $0xe8e8e8e8,%r11d
+		 * ff 50 60              callq  *0x60(%rax)
+		 */
+		if (IS_REX (code [3]))
+			rex = code [3];
+		reg = amd64_modrm_rm (code [5]);
+		disp = *(gint8*)(code + 6);
+		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
+	} else if ((code [-1] == 0x8b) && (amd64_modrm_mod (code [0]) == 0x2) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
 			/*
 			 * This is a interface call
 			 * 48 8b 80 f0 e8 ff ff   mov    0xffffffffffffe8f0(%rax),%rax
