@@ -31,6 +31,16 @@ public class Tests {
 	}
 
 	[StructLayout (LayoutKind.Sequential)]
+	public struct SimpleStructGen<T> {
+		public bool a;
+		public bool b;
+		public bool c;
+		public string d;
+		[MarshalAs(UnmanagedType.LPWStr)]
+		public string d2;
+	}
+
+	[StructLayout (LayoutKind.Sequential)]
 	public struct SimpleStruct2 {
 		public bool a;
 		public bool b;
@@ -201,6 +211,9 @@ public class Tests {
 	
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct")]
 	public static extern int mono_test_marshal_struct (SimpleStruct ss);
+	
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct")]
+	public static extern int mono_test_marshal_struct_gen (SimpleStructGen<string> ss);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct2")]
 	public static extern int mono_test_marshal_struct2 (SimpleStruct2 ss);
@@ -382,6 +395,14 @@ public class Tests {
 		ss.d = "TEST";
 		
 		return mono_test_marshal_struct (ss);
+	}
+
+	public static int test_0_marshal_struct_gen () {
+		SimpleStructGen<string> ss = new  SimpleStructGen<string> ();
+		ss.b = true;
+		ss.d = "TEST";
+		
+		return mono_test_marshal_struct_gen (ss);
 	}
 
 	public static int test_0_marshal_struct2 () {
