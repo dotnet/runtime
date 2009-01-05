@@ -1,3 +1,7 @@
+2009-01-05  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Disable sigaltstack on freebsd as it doesn't seem to work.
+
 2008-12-15  Marek Habersack  <mhabersack@novell.com>
 
 	* data/Makefile.am (EXTRA_DIST): added
