@@ -581,6 +581,8 @@ mono_arch_flush_icache (guint8 *code, gint size)
 {
 #if __APPLE__
 	sys_icache_invalidate (code, size);
+#elif ((__GNUC__ >= 4) && (__GNUC_MINOR__ >= 1))
+	__clear_cache (code, code + size);
 #else
 	__asm __volatile ("mov r0, %0\n"
 			"mov r1, %1\n"
