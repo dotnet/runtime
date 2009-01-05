@@ -119,7 +119,8 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID, 1, [pthread is a pointer])
 		libdl=
 		libgc_threads=pthreads
-		with_sigaltstack=yes
+		# This doesn't seem to work as of 7.0 on amd64
+		with_sigaltstack=no
 # TLS is only partially implemented on -CURRENT (compiler support
 # but NOT library support)
 #
