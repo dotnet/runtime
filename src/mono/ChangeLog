@@ -1,3 +1,7 @@
+2008-12-05  Jonathan Pryor  <jpryor@novell.com>
+
+	* man/mdoc-update.1: Document -fno-assembly-versions.
+
 2009-01-05  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Disable sigaltstack on freebsd as it doesn't seem to work.
