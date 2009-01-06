@@ -2150,26 +2150,14 @@ dump_stack_state (ILCodeDesc *state)
 static gboolean
 is_array_type_compatible (MonoType *target, MonoType *candidate)
 {
-	int i;
 	MonoArrayType *left = target->data.array;
 	MonoArrayType *right = candidate->data.array;
 
 	g_assert (target->type == MONO_TYPE_ARRAY);
 	g_assert (candidate->type == MONO_TYPE_ARRAY);
 
-
-	if ((left->rank != right->rank) ||
-			(left->numsizes != right->numsizes) ||
-			(left->numlobounds != right->numlobounds))
+	if (left->rank != right->rank)
 		return FALSE;
-
-	for (i = 0; i < left->numsizes; ++i) 
-		if (left->sizes [i] != right->sizes [i])
-			return FALSE;
-
-	for (i = 0; i < left->numlobounds; ++i) 
-		if (left->lobounds [i] != right->lobounds [i])
-			return FALSE;
 
 	return mono_class_is_assignable_from (left->eklass, right->eklass);
 }
