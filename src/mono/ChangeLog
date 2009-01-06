@@ -1,3 +1,8 @@
+2009-01-06  Jb Evain  <jbevain@novell.com>
+
+	* scripts/Makefile.am: don't generate a script for the now
+	dead mono-api-diff.
+
 2008-12-05  Jonathan Pryor  <jpryor@novell.com>
 
 	* man/mdoc-update.1: Document -fno-assembly-versions.
