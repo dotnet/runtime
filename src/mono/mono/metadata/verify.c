@@ -379,12 +379,15 @@ static gboolean
 mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *iface)
 {
 	int i;
-	if (candidate == iface)
-		return TRUE;
-	for (i = 0; i < candidate->interface_count; ++i) {
-		if (candidate->interfaces [i] == iface || mono_class_interface_implements_interface (candidate->interfaces [i], iface))
+	do {
+		if (candidate == iface)
 			return TRUE;
-	}
+		for (i = 0; i < candidate->interface_count; ++i) {
+			if (candidate->interfaces [i] == iface || mono_class_interface_implements_interface (candidate->interfaces [i], iface))
+				return TRUE;
+		}
+		candidate = candidate->parent;
+	} while (candidate);
 	return FALSE;
 }
 
