@@ -332,7 +332,8 @@ BASE_TEST_CS_SRC=		\
 	bug-461867.cs	\
 	bug-461941.cs	\
 	bug-461261.cs	\
-	bug-400716.cs
+	bug-400716.cs	\
+	bug-462592.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
