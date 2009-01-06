@@ -137,7 +137,7 @@ static void reflection_methodbuilder_from_method_builder (ReflectionMethodBuilde
 static void reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb);
 static guint32 mono_image_typedef_or_ref (MonoDynamicImage *assembly, MonoType *type);
 static guint32 mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboolean try_typespec);
-static guint32 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method);
+static guint32 mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec);
 static guint32 mono_image_get_methodbuilder_token (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *mb, gboolean create_methodspec);
 static guint32 mono_image_get_ctorbuilder_token (MonoDynamicImage *assembly, MonoReflectionCtorBuilder *cb);
 static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelper *helper);
@@ -153,6 +153,7 @@ static MonoObject *mono_get_object_from_blob (MonoDomain *domain, MonoType *type
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
 static guint32 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method);
+static guint32 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context);
 
 #define mono_reflection_lock() EnterCriticalSection (&reflection_mutex)
 #define mono_reflection_unlock() LeaveCriticalSection (&reflection_mutex)
@@ -2342,25 +2343,57 @@ mono_image_get_memberref_token (MonoDynamicImage *assembly, MonoType *type, cons
 }
 
 static guint32
-mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method)
+mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, gboolean create_typespec)
 {
 	guint32 token;
 	MonoMethodSignature *sig;
 	
+	create_typespec = create_typespec && method->is_generic && method->klass->image != &assembly->image;
+
+	if (create_typespec) {
+		token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, GUINT_TO_POINTER (GPOINTER_TO_UINT (method) + 1)));
+		if (token)
+			return token;
+	} 
+
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->handleref, method));
-	if (token)
+	if (token && !create_typespec)
 		return token;
 
-	/*
-	 * A methodref signature can't contain an unmanaged calling convention.
-	 */
-	sig = mono_metadata_signature_dup (mono_method_signature (method));
-	if ((sig->call_convention != MONO_CALL_DEFAULT) && (sig->call_convention != MONO_CALL_VARARG))
-		sig->call_convention = MONO_CALL_DEFAULT;
-	token = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
-		method->name,  method_encode_signature (assembly, sig));
-	g_free (sig);
-	g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
+	g_assert (!method->is_inflated);
+	if (!token) {
+		/*
+		 * A methodref signature can't contain an unmanaged calling convention.
+		 */
+		sig = mono_metadata_signature_dup (mono_method_signature (method));
+		if ((sig->call_convention != MONO_CALL_DEFAULT) && (sig->call_convention != MONO_CALL_VARARG))
+			sig->call_convention = MONO_CALL_DEFAULT;
+		token = mono_image_get_memberref_token (assembly, &method->klass->byval_arg,
+			method->name,  method_encode_signature (assembly, sig));
+		g_free (sig);
+		g_hash_table_insert (assembly->handleref, method, GUINT_TO_POINTER(token));
+	}
+
+	if (create_typespec) {
+		MonoDynamicTable *table = &assembly->tables [MONO_TABLE_METHODSPEC];
+		g_assert (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF);
+		token = (mono_metadata_token_index (token) << MONO_METHODDEFORREF_BITS) | MONO_METHODDEFORREF_METHODREF;
+
+		if (assembly->save) {
+			guint32 *values;
+
+			alloc_table (table, table->rows + 1);
+			values = table->values + table->next_idx * MONO_METHODSPEC_SIZE;
+			values [MONO_METHODSPEC_METHOD] = token;
+			values [MONO_METHODSPEC_SIGNATURE] = encode_generic_method_sig (assembly, &mono_method_get_generic_container (method)->context);
+		}
+
+		token = MONO_TOKEN_METHOD_SPEC | table->next_idx;
+		table->next_idx ++;
+		/*methodspec and memberef tokens are diferent, */
+		g_hash_table_insert (assembly->handleref, GUINT_TO_POINTER (GPOINTER_TO_UINT (method) + 1), GUINT_TO_POINTER (token));
+		return token;
+	}
 	return token;
 }
 
@@ -4610,7 +4643,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 				token = MONO_TOKEN_METHOD_DEF | method_table_idx;
 			}
 		} else {
-			token = mono_image_get_methodref_token (assembly, m->method);
+			token = mono_image_get_methodref_token (assembly, m->method, create_methodspec);
 		}
 		/*g_print ("got token 0x%08x for %s\n", token, m->method->name);*/
 	} else if (strcmp (klass->name, "MonoField") == 0) {
