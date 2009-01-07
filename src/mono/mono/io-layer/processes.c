@@ -394,6 +394,55 @@ utf16_concat (const gunichar2 *first, ...)
 	return ret;
 }
 
+#ifdef PLATFORM_MACOSX
+#include <sys/utsname.h>
+
+/* 0 = no detection; -1 = not 10.5 or higher;  1 = 10.5 or higher */
+static int detected_osx_version;
+
+static void
+detect_osx_10_5_or_higher ()
+{
+	struct utsname u;
+	char *p;
+	int v;
+	
+	if (uname (&u) != 0){
+		detected_osx_version = 1;
+		return;
+	}
+
+	p = u.release;
+	v = atoi (p);
+	
+	if (v < 9){
+		detected_osx_version = -1;
+	} else if (v > 9)
+		detected_osx_version = 1;
+	else {
+		while (*p && *p != '.')
+			p++;
+		if (*p == '.'){
+			p++;
+			if (atoi (p) > 4){
+				detected_osx_version = 1;
+				return;
+			}
+		}
+		detected_osx_version = -1;
+	}
+}
+
+static gboolean
+is_macos_10_5_or_higher ()
+{
+	if (detected_osx_version == 0)
+		detect_osx_10_5_or_higher ();
+	
+	return detected_osx_version + 1;
+}
+#endif
+
 static const gunichar2 utf16_space_bytes [2] = { 0x20, 0 };
 static const gunichar2 *utf16_space = utf16_space_bytes; 
 static const gunichar2 utf16_quote_bytes [2] = { 0x22, 0 };
@@ -442,7 +491,10 @@ gboolean ShellExecuteEx (WapiShellExecuteInfo *sei)
 			return FALSE;
 
 #ifdef PLATFORM_MACOSX
-		handler = g_strdup ("/usr/bin/open -W");
+		if (is_macos_10_5_or_higher ())
+			handler = g_strdup ("/usr/bin/open -W");
+		else
+			handler = g_strdup ("/usr/bin/open");
 #else
 		/*
 		 * On Linux, try: xdg-open, the FreeDesktop standard way of doing it,
