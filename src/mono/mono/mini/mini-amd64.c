@@ -1050,6 +1050,10 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 		regs = g_list_prepend (regs, (gpointer)AMD64_R13);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R14);
 		regs = g_list_prepend (regs, (gpointer)AMD64_R15);
+#ifdef PLATFORM_WIN32
+		regs = g_list_prepend (regs, (gpointer)AMD64_RDI);
+		regs = g_list_prepend (regs, (gpointer)AMD64_RSI);
+#endif
 	}
 
 	return regs;
@@ -4537,6 +4541,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, 8);
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
 		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
+#ifdef PLATFORM_WIN32
+		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), AMD64_RDI, 8);
+		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), AMD64_RSI, 8);
+#endif
 	}
 
 	/* Save callee saved registers */
@@ -4977,6 +4985,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		if (cfg->used_int_regs & (1 << AMD64_R15)) {
 			amd64_mov_reg_membase (code, AMD64_R15, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), 8);
 		}
+#ifdef PLATFORM_WIN32
+		if (cfg->used_int_regs & (1 << AMD64_RDI)) {
+			amd64_mov_reg_membase (code, AMD64_RDI, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), 8);
+		}
+		if (cfg->used_int_regs & (1 << AMD64_RSI)) {
+			amd64_mov_reg_membase (code, AMD64_RSI, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), 8);
+		}
+#endif
 	} else {
 
 		if (cfg->arch.omit_fp) {

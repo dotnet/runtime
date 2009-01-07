@@ -589,6 +589,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			new_ctx->r13 = lmf_addr->r13;
 			new_ctx->r14 = lmf_addr->r14;
 			new_ctx->r15 = lmf_addr->r15;
+#ifdef PLATFORM_WIN32
+			new_ctx->rdi = lmf_addr->rdi;
+			new_ctx->rsi = lmf_addr->rsi;
+#endif
 		}
 		else {
 			offset = omit_fp ? 0 : -1;
@@ -625,6 +629,14 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 					case AMD64_RBP:
 						new_ctx->rbp = reg;
 						break;
+#ifdef PLATFORM_WIN32
+					case AMD64_RDI:
+						new_ctx->rdi = reg;
+						break;
+					case AMD64_RSI:
+						new_ctx->rsi = reg;
+						break;
+#endif
 					default:
 						g_assert_not_reached ();
 					}
@@ -692,6 +704,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		new_ctx->r13 = (*lmf)->r13;
 		new_ctx->r14 = (*lmf)->r14;
 		new_ctx->r15 = (*lmf)->r15;
+#ifdef PLATFORM_WIN32
+		new_ctx->rdi = (*lmf)->rdi;
+		new_ctx->rsi = (*lmf)->rsi;
+#endif
 
 		*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~1);
 
