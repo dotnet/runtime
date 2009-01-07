@@ -10744,6 +10744,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal (M
 	if (!object)
 		return NULL;
 
+	mono_init_com_types ();
+
 	if (cominterop_object_is_rcw (object)) {
 		MonoClass *klass = NULL;
 		MonoRealProxy* real_proxy = NULL;
@@ -10804,6 +10806,8 @@ void*
 ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal (MonoObject* object)
 {
 #ifndef DISABLE_COM
+	mono_init_com_types ();
+
 	return cominterop_get_idispatch_for_object (object);
 #else
 	g_assert_not_reached ();
