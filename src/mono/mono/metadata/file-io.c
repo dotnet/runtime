@@ -403,9 +403,10 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
 
 	res_len = GetCurrentDirectory (len, buf);
 	if (res_len > len) { /*buf is too small.*/
+		int old_res_len = res_len;
 		g_free (buf);
 		buf = g_new (gunichar2, res_len);
-		res_len = GetCurrentDirectory (res_len, buf);
+		res_len = GetCurrentDirectory (res_len, buf) == old_res_len;
 	}
 	
 	if (res_len) {
