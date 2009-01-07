@@ -3429,35 +3429,33 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
  */
 extern guint32 GetCurrentDirectory (guint32 length, gunichar2 *buffer)
 {
-	gchar *path;
 	gunichar2 *utf16_path;
 	glong count;
 	gsize bytes;
-	
-	path = g_get_current_dir ();
-	if (path == NULL)
-		return 0;
 
-	utf16_path=mono_unicode_from_external (path, &bytes);
-	
-	/* if buffer too small, return number of characters required.
-	 * this is plain dumb.
-	 */
-	
-	count = (bytes/2)+1;
-	if (count > length) {
-		g_free(path);
-		g_free (utf16_path);
-		
-		return (count);
+	if (getcwd ((char*)buffer, length) == NULL) {
+		if (errno == ERANGE) { /*buffer length is not big enough */ 
+			gchar *path = g_get_current_dir (); /*FIXME g_get_current_dir doesn't work with broken paths and calling it just to know the path length is silly*/
+			if (path == NULL)
+				return 0;
+			utf16_path = mono_unicode_from_external (path, &bytes);
+			g_free (utf16_path);
+			g_free (path);
+			return (bytes/2)+1;
+		}
+		_wapi_set_last_error_from_errno ();
+		return 0;
 	}
+
+	utf16_path = mono_unicode_from_external ((gchar*)buffer, &bytes);
+	count = (bytes/2)+1;
+	g_assert (count <= length); /*getcwd must have failed before with ERANGE*/
 
 	/* Add the terminator */
 	memset (buffer, '\0', bytes+2);
 	memcpy (buffer, utf16_path, bytes);
 	
 	g_free (utf16_path);
-	g_free (path);
 
 	return count;
 }

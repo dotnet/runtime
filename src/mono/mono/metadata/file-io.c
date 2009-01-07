@@ -391,17 +391,25 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
 {
 	MonoString *result;
 	gunichar2 *buf;
-	int len;
+	int len, res_len;
 
 	MONO_ARCH_SAVE_REGS;
 
-	len = MAX_PATH + 1;
+	len = MAX_PATH + 1; /*FIXME this is too smal under most unix systems.*/
 	buf = g_new (gunichar2, len);
 	
 	*error=ERROR_SUCCESS;
 	result = NULL;
 
-	if (GetCurrentDirectory (len, buf) > 0) {
+	res_len = GetCurrentDirectory (len, buf);
+	if (res_len > len) { /*buf is too small.*/
+		int old_res_len = res_len;
+		g_free (buf);
+		buf = g_new (gunichar2, res_len);
+		res_len = GetCurrentDirectory (res_len, buf) == old_res_len;
+	}
+	
+	if (res_len) {
 		len = 0;
 		while (buf [len])
 			++ len;
