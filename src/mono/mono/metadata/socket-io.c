@@ -779,7 +779,14 @@ gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock,
 
 	*error = 0;
 	
+#if defined(PLATFORM_MACOSX)
+	{
+		socklen_t optlen = sizeof (amount);
+		ret=getsockopt (sock, SOL_SOCKET, SO_NREAD, &amount, &optlen);
+	}
+#else
 	ret=ioctlsocket(sock, FIONREAD, &amount);
+#endif
 	if(ret==SOCKET_ERROR) {
 		*error = WSAGetLastError ();
 		return(0);
@@ -2701,8 +2708,12 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 
 		mono_array_setref (*h_addr_list, addr_index, addr_string);
 
-		if(!i && ai->ai_canonname != NULL) {
-			*h_name=mono_string_new(domain, ai->ai_canonname);
+		if(!i) {
+			if (ai->ai_canonname != NULL) {
+				*h_name=mono_string_new(domain, ai->ai_canonname);
+			} else {
+				*h_name=mono_string_new(domain, buffer);
+			}
 		}
 
 		addr_index++;
