@@ -6325,6 +6325,8 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
 		return NULL;
 	if (!*iter) {
 		mono_class_setup_fields_locking (klass);
+		if (klass->exception_type)
+			return NULL;
 		/* start from the first */
 		if (klass->field.count) {
 			return *iter = &klass->fields [0];
