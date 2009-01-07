@@ -1733,6 +1733,48 @@ static gint find_procmodule (gconstpointer a, gconstpointer b)
 	}
 }
 
+#ifdef PLATFORM_MACOSX
+#include <mach-o/dyld.h>
+
+static GSList *load_modules ()
+{
+	GSList *ret = NULL;
+	WapiProcModule *mod;
+	uint32_t count = _dyld_image_count ();
+	int i = 0;
+
+	for (i = 0; i < count; i++) {
+		const struct mach_header *hdr;
+		const struct section *sec;
+		const char *name;
+		intptr_t slide;
+
+		slide = _dyld_get_image_vmaddr_slide (i);
+		name = _dyld_get_image_name (i);
+		hdr = _dyld_get_image_header (i);
+		sec = getsectbynamefromheader (hdr, SEG_DATA, SECT_DATA);
+
+		mod = g_new0 (WapiProcModule, 1);
+		mod->address_start = sec->addr;
+		mod->address_end = sec->addr+sec->size;
+		mod->perms = g_strdup ("r--p");
+		mod->address_offset = 0;
+		mod->device = makedev (0, 0);
+		mod->inode = (ino_t) i;
+		mod->filename = g_strdup (name); 
+		
+		if (g_slist_find_custom (ret, mod, find_procmodule) == NULL) {
+			ret = g_slist_prepend (ret, mod);
+		} else {
+			free_procmodule (mod);
+		}
+	}
+
+	ret = g_slist_reverse (ret);
+	
+	return(ret);
+}
+#else
 static GSList *load_modules (FILE *fp)
 {
 	GSList *ret = NULL;
@@ -1851,6 +1893,7 @@ static GSList *load_modules (FILE *fp)
 	
 	return(ret);
 }
+#endif
 
 static gboolean match_procname_to_modulename (gchar *procname, gchar *modulename)
 {
@@ -1877,7 +1920,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 {
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
-	gchar *filename;
+	gchar *filename = NULL;
 	FILE *fp;
 	GSList *mods = NULL;
 	WapiProcModule *module;
@@ -1915,6 +1958,10 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		proc_name = process_handle->proc_name;
 	}
 	
+#ifdef PLATFORM_MACOSX
+	{
+		mods = load_modules ();
+#else
 	filename = g_strdup_printf ("/proc/%d/maps", pid);
 	if ((fp = fopen (filename, "r")) == NULL) {
 		/* No /proc/<pid>/maps so just return the main module
@@ -1925,6 +1972,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 	} else {
 		mods = load_modules (fp);
 		fclose (fp);
+#endif
 		count = g_slist_length (mods);
 		
 		/* count + 1 to leave slot 0 for the main module */
@@ -1961,7 +2009,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 
 static gchar *get_process_name_from_proc (pid_t pid)
 {
-	gchar *filename;
+	gchar *filename = NULL;
 	gchar *ret = NULL;
 	gchar buf[256];
 	FILE *fp;
@@ -2030,7 +2078,7 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	gchar *procname_ext = NULL;
 	glong len;
 	gsize bytes;
-	gchar *filename;
+	gchar *filename = NULL;
 	FILE *fp;
 	GSList *mods = NULL;
 	WapiProcModule *found_module;
@@ -2071,6 +2119,10 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	}
 
 	/* Look up the address in /proc/<pid>/maps */
+#ifdef PLATFORM_MACOSX
+	{
+		mods = load_modules ();
+#else
 	filename = g_strdup_printf ("/proc/%d/maps", pid);
 	if ((fp = fopen (filename, "r")) == NULL) {
 		if (errno == EACCES && module == NULL && base == TRUE) {
@@ -2086,6 +2138,7 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	} else {
 		mods = load_modules (fp);
 		fclose (fp);
+#endif
 		count = g_slist_length (mods);
 
 		/* If module != NULL compare the address.
@@ -2181,7 +2234,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 	struct _WapiHandle_process *process_handle;
 	gboolean ok;
 	pid_t pid;
-	gchar *filename;
+	gchar *filename = NULL;
 	FILE *fp;
 	GSList *mods = NULL;
 	WapiProcModule *found_module;
@@ -2220,6 +2273,10 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 		proc_name = g_strdup (process_handle->proc_name);
 	}
 
+#ifdef PLATFORM_MACOSX
+	{
+		mods = load_modules ();
+#else
 	/* Look up the address in /proc/<pid>/maps */
 	filename = g_strdup_printf ("/proc/%d/maps", pid);
 	if ((fp = fopen (filename, "r")) == NULL) {
@@ -2232,6 +2289,7 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 	} else {
 		mods = load_modules (fp);
 		fclose (fp);
+#endif
 		count = g_slist_length (mods);
 
 		/* If module != NULL compare the address.
