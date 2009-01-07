@@ -576,12 +576,16 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 	return 2;
 }
 
+#ifndef __GNUC_PREREQ
+#define __GNUC_PREREQ(maj, min) (0)
+#endif
+
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
 #if __APPLE__
 	sys_icache_invalidate (code, size);
-#elif ((__GNUC__ >= 4) && (__GNUC_MINOR__ >= 1))
+#elif __GNUC_PREREQ(4, 1)
 	__clear_cache (code, code + size);
 #else
 	__asm __volatile ("mov r0, %0\n"
