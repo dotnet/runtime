@@ -379,12 +379,15 @@ static gboolean
 mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *iface)
 {
 	int i;
-	if (candidate == iface)
-		return TRUE;
-	for (i = 0; i < candidate->interface_count; ++i) {
-		if (candidate->interfaces [i] == iface || mono_class_interface_implements_interface (candidate->interfaces [i], iface))
+	do {
+		if (candidate == iface)
 			return TRUE;
-	}
+		for (i = 0; i < candidate->interface_count; ++i) {
+			if (candidate->interfaces [i] == iface || mono_class_interface_implements_interface (candidate->interfaces [i], iface))
+				return TRUE;
+		}
+		candidate = candidate->parent;
+	} while (candidate);
 	return FALSE;
 }
 
@@ -2150,26 +2153,14 @@ dump_stack_state (ILCodeDesc *state)
 static gboolean
 is_array_type_compatible (MonoType *target, MonoType *candidate)
 {
-	int i;
 	MonoArrayType *left = target->data.array;
 	MonoArrayType *right = candidate->data.array;
 
 	g_assert (target->type == MONO_TYPE_ARRAY);
 	g_assert (candidate->type == MONO_TYPE_ARRAY);
 
-
-	if ((left->rank != right->rank) ||
-			(left->numsizes != right->numsizes) ||
-			(left->numlobounds != right->numlobounds))
+	if (left->rank != right->rank)
 		return FALSE;
-
-	for (i = 0; i < left->numsizes; ++i) 
-		if (left->sizes [i] != right->sizes [i])
-			return FALSE;
-
-	for (i = 0; i < left->numlobounds; ++i) 
-		if (left->lobounds [i] != right->lobounds [i])
-			return FALSE;
 
 	return mono_class_is_assignable_from (left->eklass, right->eklass);
 }
@@ -3006,7 +2997,7 @@ do_boolean_branch_op (VerifyContext *ctx, int delta)
 static gboolean
 stack_slot_is_complex_type_not_reference_type (ILStackDesc *slot)
 {
-	return stack_slot_get_type (slot) == TYPE_COMPLEX && !MONO_TYPE_IS_REFERENCE (slot->type);
+	return stack_slot_get_type (slot) == TYPE_COMPLEX && !MONO_TYPE_IS_REFERENCE (slot->type) && !stack_slot_is_boxed_value (slot);
 }
 
 static void
