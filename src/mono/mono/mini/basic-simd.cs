@@ -2,6 +2,99 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	public static unsafe int test_0_sizeof_returns_16_2d ()
+	{
+		double[] array = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+		fixed (double *ptr = &array [0]) {
+			Vector2d *f = (Vector2d*)ptr;
+			Vector2d a = *f++;
+			Vector2d b = *f++;
+			Vector2d c = *f++;
+			Vector2d d = *f++;
+
+			if (a.X != 1 || a.Y  != 2)
+				return 1;
+			if (b.X != 3 || b.Y  != 4)
+				return 2;
+			if (c.X != 5 || c.Y  != 6)
+				return 3;
+			if (d.X != 7 || d.Y  != 8)
+				return 4;
+		}
+		return 0;
+	}
+
+	public static unsafe int test_0_sizeof_returns_16_4f ()
+	{
+		float[] array = new float[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+		fixed (float *ptr = &array [0]) {
+			Vector4f *f = (Vector4f*)ptr;
+			Vector4f a = *f++;
+			Vector4f b = *f++;
+			Vector4f c = *f++;
+			Vector4f d = *f++;
+
+			if (a.X != 1 || a.W  != 4)
+				return 1;
+			if (b.X != 5 || b.W  != 8)
+				return 2;
+			if (c.X != 9 || c.W  != 12)
+				return 3;
+			if (d.X != 13 || d.W  != 16)
+				return 4;
+		}
+		return 0;
+	}
+
+	public static unsafe int test_0_sizeof_returns_16_8d ()
+	{
+		short[] array = new short[40];
+		for (int i = 0; i < 40; ++i)
+			array [i] = (short) (i + 1);
+
+		fixed (short *ptr = &array [0]) {
+			Vector8s *f = (Vector8s*)ptr;
+			Vector8s a = *f++;
+			Vector8s b = *f++;
+			Vector8s c = *f++;
+			Vector8s d = *f++;
+
+			if (a.V0 != 1 || a.V7  != 8)
+				return 1;
+			if (b.V0 != 9 || b.V7  != 16)
+				return 2;
+			if (c.V0 != 17 || c.V7  != 24)
+				return 3;
+			if (d.V0 != 25 || d.V7  != 32)
+				return 4;
+		}
+		return 0;
+	}
+
+	public static unsafe int test_0_sizeof_returns_16_16b ()
+	{
+		byte[] array = new byte[80];
+		for (int i = 0; i < 80; ++i)
+			array [i] = (byte) (i + 1);
+
+		fixed (byte *ptr = &array [0]) {
+			Vector16b *f = (Vector16b*)ptr;
+			Vector16b a = *f++;
+			Vector16b b = *f++;
+			Vector16b c = *f++;
+			Vector16b d = *f++;
+
+			if (a.V0 != 1 || a.V15  != 16)
+				return 1;
+			if (b.V0 != 17 || b.V15  != 32)
+				return 2;
+			if (c.V0 != 33 || c.V15  != 48)
+				return 3;
+			if (d.V0 != 49 || d.V15  != 64)
+				return 4;
+		}
+		return 0;
+	}	
 	public static int test_0_bug_462457 ()
 	{
 		Vector4f sum = new Vector4f(0,0,0,0);
