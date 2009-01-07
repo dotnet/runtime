@@ -180,7 +180,11 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #if defined(sparc)
 #define AS_CMD "as -xarch=v9"
 #elif defined(__i386__) || defined(__x86_64__)
-#define AS_CMD "as -gstabs"
+#  if defined(__APPLE__)
+#    define AS_CMD "as"
+#  else
+#    define AS_CMD "as -gstabs"
+#endif
 #elif defined(__mips__) && (_MIPS_SIM == _ABIO32)
 #define AS_CMD "as -mips32"
 #elif defined(__ppc64__)
