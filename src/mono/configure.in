@@ -176,6 +176,7 @@ case "$host" in
 		;;
 	*-*-darwin*)
 		platform_win32=no
+		platform_darwin=yes
 		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE -DGC_MACOSX_THREADS -DPLATFORM_MACOSX -DUSE_MMAP -DUSE_MUNMAP"
 		CPPFLAGS="$CPPFLAGS -DGetCurrentProcess=MonoGetCurrentProcess -DGetCurrentThread=MonoGetCurrentThread -DCreateEvent=MonoCreateEvent"
 		libmono_cflags="-D_THREAD_SAFE"
@@ -2418,6 +2419,10 @@ fi
     }')]
 
     echo "MONO_VERSION = $myver" >> $srcdir/$mcsdir/build/config.make
+  fi
+
+  if test x$platform_darwin = xyes; then
+	echo "PLATFORM = darwin" >> $srcdir/$mcsdir/build/config.make
   fi
 
   if test x$TARGET = xAMD64 -a x$platform_win32 = xno -a "x$AOT_SUPPORTED" = "xyes"; then
