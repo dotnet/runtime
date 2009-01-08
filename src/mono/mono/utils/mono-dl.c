@@ -304,6 +304,10 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	module->main_module = name == NULL? TRUE: FALSE;
 	lib = LL_SO_OPEN (name, lflags);
 	if (!lib) {
+		/* This platform does not support dlopen */
+		if (name == NULL)
+			return NULL;
+		
 		char *lname;
 		char *llname;
 		const char *suff = ".la";
