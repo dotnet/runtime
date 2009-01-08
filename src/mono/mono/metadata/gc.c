@@ -997,13 +997,11 @@ mono_gc_init (void)
 	 * held by LoadLibrary. Avoiding waiting for the finalizer thread being
 	 * created should not cause any issues on Windows.
 	 */
-#ifndef PLATFORM_WIN32
 	/*
 	 * Wait until the finalizer thread sets gc_thread since its value is needed
 	 * by mono_thread_attach ()
 	 */
 	WaitForSingleObjectEx (thread_started_event, INFINITE, FALSE);
-#endif
 }
 
 void
