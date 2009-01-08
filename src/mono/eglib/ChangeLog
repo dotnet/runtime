@@ -1,3 +1,10 @@
+2009-01-08  Bill Holmes  <billholmes54@gmail.com>
+
+	* winconfig.h, src/gfile-posix.c :
+	  Fixing the MSVC builds.
+
+	Contributed under MIT/X11 license.
+
 2009-01-07  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gfile-posix.c: Move g_get_current_dir, as it is a

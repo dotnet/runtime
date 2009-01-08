@@ -72,3 +72,5 @@
 
 /* Version number of package */
 #define VERSION "0.1"
+
+#define HAVE_STRTOK_R 1

@@ -35,6 +35,7 @@
 #include <sys/types.h>
 
 #ifdef _MSC_VER
+#include <direct.h>
 int mkstemp (char *tmp_template);
 #endif
 
