@@ -89,7 +89,7 @@ is_generic_parameter (MonoType *type)
 #ifdef _EGLIB_MAJOR
 /* Need to lock here because EGLIB has locking defined as no-ops, we can not depend on mono_strtod do the right locking */
 /* Ideally this will be fixed in eglib */
-static CRITICAL_SECTION loader_mutex;
+static CRITICAL_SECTION strtod_mutex;
 #endif
 
 /*
