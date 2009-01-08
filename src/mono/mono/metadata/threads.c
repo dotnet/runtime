@@ -1270,8 +1270,9 @@ ves_icall_System_Threading_Thread_SetSerializedCurrentUICulture (MonoThread *thi
 MonoThread *
 mono_thread_current (void)
 {
-	THREAD_DEBUG (g_message ("%s: returning %p", __func__, GET_CURRENT_OBJECT ()));
-	return GET_CURRENT_OBJECT ();
+	MonoThread *res = GET_CURRENT_OBJECT ()
+	THREAD_DEBUG (g_message ("%s: returning %p", __func__, res));
+	return res;
 }
 
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this,
