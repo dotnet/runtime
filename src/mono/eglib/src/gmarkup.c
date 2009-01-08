@@ -40,6 +40,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <stdio.h>
+#include <ctype.h>
 #include <glib.h>
 
 #define set_error(msg, ...) do { if (error != NULL) *error = g_error_new (GINT_TO_POINTER (1), 1, msg, __VA_ARGS__); } while (0);
@@ -99,10 +100,37 @@ g_markup_parse_context_free (GMarkupParseContext *context)
 	g_free (context);
 }
 
+static gboolean
+my_isspace (char c)
+{
+	if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v')
+		return TRUE;
+	return FALSE;
+}
+
+static gboolean
+my_isalnum (char c)
+{
+	if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+		return TRUE;
+	if (c >= '0' && c <= '9')
+		return TRUE;
+
+	return FALSE;
+}
+
+static gboolean
+my_isalpha (char c)
+{
+	if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+		return TRUE;
+	return FALSE;
+}
+
 static const char *
 skip_space (const char *p, const char *end)
 {
-	for (; p < end && isspace (*p); p++)
+	for (; p < end && my_isspace (*p); p++)
 		;
 	return p;
 }
@@ -138,7 +166,7 @@ parse_name (const char *p, const char *end, char **value)
 	const char *start = p;
 	int l;
 	
-	for (; p < end && isalnum (*p); p++)
+	for (; p < end && my_isalnum (*p); p++)
 		;
 	if (p == end)
 		return end;
@@ -268,7 +296,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			int full_stop = 0, l;
 			gchar **names = NULL, **values = NULL;
 
-			for (; p < end && isspace (*p); p++)
+			for (; p < end && my_isspace (*p); p++)
 				;
 			if (p == end){
 				set_error ("%s", "Unfinished element");
@@ -281,12 +309,12 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				break;
 			}
 			
-			if (!(isascii (*p) && isalpha (*p))){
+			if (!my_isalpha (*p)){
 				set_error ("%s", "Expected an element name");
 				goto fail;
 			}
 			
-			for (++p; p < end && (isalnum (*p) || (*p == '.')); p++)
+			for (++p; p < end && (my_isalnum (*p) || (*p == '.')); p++)
 				;
 			if (p == end){
 				set_error ("%s", "Expected an element");
@@ -294,7 +322,7 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 			}
 			element_end = p;
 			
-			for (; p < end && isspace (*p); p++)
+			for (; p < end && my_isspace (*p); p++)
 				;
 			if (p == end){
 				set_error ("%s", "Unfinished element");

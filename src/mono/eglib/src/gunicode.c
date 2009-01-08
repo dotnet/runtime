@@ -33,6 +33,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+#include <config.h>
 #include <stdio.h>
 #include <glib.h>
 #include <unicode-data.h>
@@ -44,8 +45,12 @@
 
 typedef int iconv_t;
 #else
+#ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
+#endif
+#ifdef HAVE_ICONV_H
 #include <iconv.h>
+#endif
 #endif
 
 static char *my_charset;
@@ -200,7 +205,7 @@ g_convert (const gchar *str, gssize len,
 {
 	char *result = NULL;
 #ifdef G_OS_WIN32
-#else
+#elif HAVE_ICONV_H
 	iconv_t convertor;
 	char *buffer, *output;
 	const char *strptr = (const char *) str;
@@ -295,7 +300,11 @@ g_get_charset (G_CONST_RETURN char **charset)
 	is_utf8 = FALSE;
 #else
 	if (my_charset == NULL){
+#if HAVE_LANGINFO_H
 		my_charset = g_strdup (nl_langinfo (CODESET));
+#else
+		my_charset = g_strdup ("UTF-8");
+#endif
 		is_utf8 = strcmp (my_charset, "UTF-8") == 0;
 	}
 	

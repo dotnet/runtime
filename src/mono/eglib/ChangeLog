@@ -1,3 +1,18 @@
+2009-01-07  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gfile-posix.c: Move g_get_current_dir, as it is a
+	POSIX-esque feature, and some other systems do not have current
+	directories. 
+
+	* src/glib.h (G_LOCK_DEFINE, G_LOCK_DEFINE_STATIC): 
+
+	Embedded support from Paolo's work on quack.
+	
+	* configure.ac: check for strtok_r, langinfo.h and iconv.h
+	
+	* src/gpath.c (strtok_r): Add a strtok_r implementation if it is
+	not available on the target system.
+
 2008-11-05  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/gutf8.c, src/unicode-data.h, src/gunicode.c :

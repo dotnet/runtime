@@ -144,3 +144,23 @@ g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error)
 	}
 	return fd;
 }
+
+gchar *
+g_get_current_dir (void)
+{
+	int s = 32;
+	char *buffer = NULL, *r;
+	gboolean fail;
+	
+	do {
+		buffer = g_realloc (buffer, s);
+		r = getcwd (buffer, s);
+		fail = (r == NULL && errno == ERANGE);
+		if (fail) {
+			s <<= 1;
+		}
+	} while (fail);
+
+	return r;
+}
+

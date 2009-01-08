@@ -832,8 +832,8 @@ glong     g_utf8_strlen        (const gchar *str, gssize max);
 #define g_thread_supported()   TRUE
 #define g_thread_init(x)       G_STMT_START { if (x != NULL) { g_error ("No vtable supported in g_thread_init"); } } G_STMT_END
 
-#define G_LOCK_DEFINE(name)
-#define G_LOCK_DEFINE_STATIC(name)
+#define G_LOCK_DEFINE(name)        int name;
+#define G_LOCK_DEFINE_STATIC(name) static int name;
 #define G_LOCK_EXTERN(name)
 #define G_LOCK(name)
 #define G_TRYLOCK(name)
