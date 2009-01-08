@@ -86,6 +86,12 @@ is_generic_parameter (MonoType *type)
 	return !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
 }
 
+#ifdef _EGLIB_MAJOR
+/* Need to lock here because EGLIB has locking defined as no-ops, we can not depend on mono_strtod do the right locking */
+/* Ideally this will be fixed in eglib */
+static CRITICAL_SECTION loader_mutex;
+#endif
+
 /*
  * We expect a pointer to a char, not a string
  */
@@ -101,8 +107,16 @@ mono_double_ParseImpl (char *ptr, double *result)
 	if (*ptr)
 		*result = strtod (ptr, &endptr);
 #else
-	if (*ptr)
+	if (*ptr){
+#ifdef _EGLIB_MAJOR
+		/* Need to lock here because EGLIB has locking defined as no-ops, and that breaks mono_strtod */
+		EnterCriticalSection (&strtod_mutex);
 		*result = mono_strtod (ptr, &endptr);
+		LeaveCriticalSection (&strtod_mutex);
+#else
+		*result = mono_strtod (ptr, &endptr);
+#endif
+	}
 #endif
 
 	if (!*ptr || (endptr && *endptr))
