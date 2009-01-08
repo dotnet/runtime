@@ -12,6 +12,7 @@
 #include <mono/io-layer/io-layer.h>
 
 extern CRITICAL_SECTION mono_delegate_section;
+extern CRITICAL_SECTION mono_strtod_mutex;
 
 /*
  * If this is set, the memory belonging to appdomains is not freed when a domain is
