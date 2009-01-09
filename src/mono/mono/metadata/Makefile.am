@@ -140,7 +140,8 @@ libmonoruntime_la_SOURCES = \
 	mono-perfcounters-def.h	\
 	debug-helpers.c	\
 	generic-sharing.c	\
-	mempool-internals.h
+	mempool-internals.h	\
+	metadata-verify.c
 
 libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
 

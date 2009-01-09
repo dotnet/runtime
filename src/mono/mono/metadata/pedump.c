@@ -24,6 +24,12 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/verify-internals.h>
 #include "mono/utils/mono-digest.h"
+#include <mono/utils/mono-mmap.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 gboolean dump_data = TRUE;
 gboolean verify_pe = FALSE;
@@ -398,12 +404,65 @@ dump_verify_info (MonoImage *image, int flags)
 static void
 usage (void)
 {
-	printf ("Usage is: pedump [--verify error,warn,cls,all,code,fail-on-verifiable,non-strict,valid-only] file.exe\n");
+	printf ("Usage is: pedump [--verify error,warn,cls,all,code,fail-on-verifiable,non-strict,valid-only,metadata] file.exe\n");
 	exit (1);
+}
+
+static int
+verify_image_file (const char *fname)
+{
+	FILE *filed;
+	struct stat stat_buf;
+	void *raw_data_handle;
+	char *raw_data;
+	GSList *errors, *tmp;
+	int count = 0;
+	const char* desc [] = {
+		"Ok", "Error", "Warning", NULL, "CLS", NULL, NULL, NULL, "Not Verifiable"
+	};
+
+	if ((filed = fopen (fname, "rb")) == NULL) {
+		fprintf (stderr, "Cannot open file %s\n", fname);
+		exit (1);
+	}
+
+	if (fstat (fileno (filed), &stat_buf)) {
+		fclose (filed);
+		fprintf (stderr, "Cannot stat file %s\n", fname);
+		exit (1);
+	}
+
+	raw_data = mono_file_map (stat_buf.st_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, fileno (filed), 0, &raw_data_handle);
+
+	if (!raw_data) {
+		fprintf (stderr, "Could not mmap file %s\n", fname);
+		exit (1);
+	}
+	fclose (filed);
+
+	errors = mono_image_verify (raw_data, stat_buf.st_size);
+	mono_file_unmap (raw_data, raw_data_handle);
+
+	if (!errors)
+		return 0;
+
+	for (tmp = errors; tmp; tmp = tmp->next) {
+		MonoVerifyInfo *info = tmp->data;
+		g_print ("%s: %s\n", desc [info->status], info->message);
+		if (info->status == MONO_VERIFY_ERROR)
+			count++;
+	}
+	mono_free_verify_list (errors);
+	if (count)
+		g_print ("Error count: %d\n", count);
+
+	return count > 0 ? 1 : 0;
 }
 
 #define VALID_ONLY_FLAG 0x08000000
 #define VERIFY_CODE_ONLY MONO_VERIFY_ALL + 1 
+#define VERIFY_METADATA_ONLY VERIFY_CODE_ONLY + 1
+
 int
 main (int argc, char *argv [])
 {
@@ -411,9 +470,9 @@ main (int argc, char *argv [])
 	char *file = NULL;
 	char *flags = NULL;
 	MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_VERIFIABLE;
-	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", "fail-on-verifiable", "non-strict", "valid-only", NULL};
-	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, VERIFY_CODE_ONLY, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT, VALID_ONLY_FLAG, 0};
-	int i;
+	const char *flag_desc [] = {"error", "warn", "cls", "all", "code", "fail-on-verifiable", "non-strict", "valid-only", "metadata", NULL};
+	guint flag_vals [] = {MONO_VERIFY_ERROR, MONO_VERIFY_WARNING, MONO_VERIFY_CLS, MONO_VERIFY_ALL, VERIFY_CODE_ONLY, MONO_VERIFY_FAIL_FAST, MONO_VERIFY_NON_STRICT, VALID_ONLY_FLAG, VERIFY_METADATA_ONLY, 0};
+	int i, verify_flags = MONO_VERIFY_REPORT_ALL_ERRORS, run_new_metadata_verifier = 0;
 	
 	for (i = 1; i < argc; i++){
 		if (argv [i][0] != '-'){
@@ -442,18 +501,9 @@ main (int argc, char *argv [])
 	mono_assemblies_init ();
 	mono_loader_init ();
  
-	image = mono_image_open (file, NULL);
-	if (!image){
-		fprintf (stderr, "Can not open image %s\n", file);
-		exit (1);
-	}
-
-	if (dump_data)
-		dump_dotnet_iinfo (image);
 	if (verify_pe) {
-		int f = MONO_VERIFY_REPORT_ALL_ERRORS;
 		char *tok = strtok (flags, ",");
-		MonoAssembly *assembly;
+
 		verify_metadata = 1;
 		verify_code = 0;
 		while (tok) {
@@ -462,12 +512,16 @@ main (int argc, char *argv [])
 					if (flag_vals [i] == VERIFY_CODE_ONLY) {
 						verify_metadata = 0;
 						verify_code = 1;
-					} else if(flag_vals [i] == MONO_VERIFY_ALL)
+					} else if(flag_vals [i] == MONO_VERIFY_ALL) {
 						verify_code = 1;
+					} else if(flag_vals [i] == VERIFY_METADATA_ONLY) {
+						verify_metadata = 0;
+						run_new_metadata_verifier = 1;
+					}
 					if (flag_vals [i] == VALID_ONLY_FLAG)
 						verifier_mode = MONO_VERIFIER_MODE_VALID;
 					else
-						f |= flag_vals [i];
+						verify_flags |= flag_vals [i];
 					break;
 				}
 			}
@@ -477,6 +531,23 @@ main (int argc, char *argv [])
 		}
 
 		mono_verifier_set_mode (verifier_mode);
+		/**/
+	}
+
+	if (run_new_metadata_verifier)
+		return verify_image_file (file);
+
+	image = mono_image_open (file, NULL);
+	if (!image){
+		fprintf (stderr, "Cannot open image %s\n", file);
+		exit (1);
+	}
+
+	if (dump_data)
+		dump_dotnet_iinfo (image);
+	if (verify_pe) {
+		MonoAssembly *assembly;
+
 		mono_init_from_assembly (file, file);
 		assembly = mono_assembly_open (file, NULL);
 
@@ -485,7 +556,7 @@ main (int argc, char *argv [])
 			return 4;
 		}
 
-		return dump_verify_info (assembly->image, f);
+		return dump_verify_info (assembly->image, verify_flags);
 	} else
 		mono_image_close (image);
 	
