@@ -44,6 +44,8 @@ typedef enum {
 	THREAD_STATE_EXITED
 } WapiThreadState;
 
+#define INTERRUPTION_REQUESTED_HANDLE (gpointer)0xFFFFFFFE
+
 struct _WapiHandle_thread
 {
 	guint32 exitstatus;
@@ -55,6 +57,13 @@ struct _WapiHandle_thread
 	pthread_t id;
 	GPtrArray *owned_mutexes;
 	gpointer handle;
+	/* 
+     * Handle this thread waits on. If this is INTERRUPTION_REQUESTED_HANDLE,
+	 * it means the thread is interrupted by another thread, and shouldn't enter
+	 * a wait.
+	 * This also acts as a reference for the handle.
+	 */
+	gpointer wait_handle;
 	MonoSemType suspend_sem;
 	guint32 (*start_routine)(gpointer arg);
 	gpointer start_arg;

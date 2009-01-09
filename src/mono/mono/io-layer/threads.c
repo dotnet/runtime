@@ -28,6 +28,7 @@
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mono-spinlock.h>
 #include <mono/io-layer/mutex-private.h>
+#include <mono/io-layer/atomic.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -35,6 +36,12 @@
 
 #undef DEBUG
 #undef TLS_DEBUG
+
+#if 0
+#define WAIT_DEBUG(code) do { code } while (0)
+#else
+#define WAIT_DEBUG(code) do { } while (0)
+#endif
 
 /* Hash threads with tids. I thought of using TLS for this, but that
  * would have to set the data in the new thread, which is more hassle
@@ -1093,12 +1100,13 @@ gboolean _wapi_thread_dispatch_apc_queue (gpointer handle)
 }
 
 /*
- * In this implementation, APC_CALLBACK is ignored, HANDLE can only refer to the current
- * thread, and the only effect this function has that if called from a signal handler,
- * and the thread was waiting when receiving the signal, the wait will be broken after
- * the signal handler returns.
- * These limitations are not a problem as the runtime only uses this functionality.
- * This function is async-signal-safe.
+ * In this implementation, APC_CALLBACK is ignored.
+ * if HANDLE refers to the current thread, the only effect this function has 
+ * that if called from a signal handler, and the thread was waiting when receiving 
+ * the signal, the wait will be broken after the signal handler returns.
+ * In this case, this function is async-signal-safe.
+ * If HANDLE refers to another thread, and that thread is waiting, then the wait
+ * will be broken.
  */
 guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle, 
 		      gpointer param)
@@ -1115,11 +1123,174 @@ guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle,
 	}
 
 	g_assert (thread_handle->id == GetCurrentThreadId ());
-
 	/* No locking/memory barriers are needed here */
 	thread_handle->has_apc = TRUE;
-
 	return(1);
+}
+
+/*
+ * wapi_interrupt_thread:
+ *
+ *   This is not part of the WIN32 API.
+ * The state of the thread handle HANDLE is set to 'interrupted' which means that
+ * if the thread calls one of the WaitFor functions, the function will return with 
+ * WAIT_IO_COMPLETION instead of waiting. Also, if the thread was waiting when
+ * this function was called, the wait will be broken.
+ * Note: with the current implementation, the Wait functions will not return
+ * immediately, they will spin until QueueUserAPC is called by the target thread
+ * (from a signal handler). This is done to avoid more excessive changes to the
+ * runtime interruption handling code in metadata/threads.c.
+ */
+void wapi_interrupt_thread (gpointer thread_handle)
+{
+	struct _WapiHandle_thread *thread;
+	gboolean ok;
+	gpointer prev_handle, wait_handle;
+	guint32 idx;
+	pthread_cond_t *cond;
+	mono_mutex_t *mutex;
+	
+	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
+				  (gpointer *)&thread);
+	g_assert (ok);
+
+	while (TRUE) {
+		wait_handle = thread->wait_handle;
+
+		/* 
+		 * Atomically obtain the handle the thread is waiting on, and
+		 * change it to a flag value.
+		 */
+		prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
+														 INTERRUPTION_REQUESTED_HANDLE, wait_handle);
+		if (prev_handle == INTERRUPTION_REQUESTED_HANDLE)
+			/* Already interrupted */
+			return;
+		if (prev_handle == wait_handle)
+			break;
+
+		/* Try again */
+	}
+
+	WAIT_DEBUG (printf ("%p: state -> INTERRUPTED.\n", thread_handle->id););
+
+	if (!wait_handle)
+		/* Not waiting */
+		return;
+
+	/* If we reach here, then wait_handle is set to the flag value, 
+	 * which means that the target thread is either
+	 * - before the first CAS in timedwait, which means it won't enter the
+	 * wait.
+	 * - it is after the first CAS, so it is already waiting, or it will 
+	 * enter the wait, and it will be interrupted by the broadcast.
+	 */
+	idx = GPOINTER_TO_UINT(wait_handle);
+	cond = &_WAPI_PRIVATE_HANDLES(idx).signal_cond;
+	mutex = &_WAPI_PRIVATE_HANDLES(idx).signal_mutex;
+
+	/*
+	 * Note that we dont set thread->has_apc, so the wait functions will spin until
+	 * the target thread calls QueueUserAPC from a signal handler.
+	 */
+	mono_mutex_lock (mutex);
+	mono_cond_broadcast (cond);
+	mono_mutex_unlock (mutex);
+
+	/* ref added by set_wait_handle */
+	_wapi_handle_unref (wait_handle);
+}
+
+/*
+ * wapi_clear_interruption:
+ *
+ *   This is not part of the WIN32 API. 
+ * Clear the 'interrupted' state of the calling thread.
+ */
+void wapi_clear_interruption (void)
+{
+	struct _WapiHandle_thread *thread;
+	gboolean ok;
+	gpointer prev_handle;
+	gpointer thread_handle;
+
+	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
+	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
+							  (gpointer *)&thread);
+	g_assert (ok);
+
+	prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
+													 NULL, INTERRUPTION_REQUESTED_HANDLE);
+	if (prev_handle == INTERRUPTION_REQUESTED_HANDLE)
+		WAIT_DEBUG (printf ("%p: state -> NORMAL.\n", GetCurrentThreadId ()););
+
+	_wapi_handle_unref (thread_handle);
+}
+
+/**
+ * wapi_thread_set_wait_handle:
+ *
+ *   Set the wait handle for the current thread to HANDLE. Return TRUE on success, FALSE
+ * if the thread is in interrupted state, and cannot start waiting.
+ */
+gboolean wapi_thread_set_wait_handle (gpointer handle)
+{
+	struct _WapiHandle_thread *thread;
+	gboolean ok;
+	gpointer prev_handle;
+	gpointer thread_handle;
+
+	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
+	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
+							  (gpointer *)&thread);
+	g_assert (ok);
+
+	prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
+													 handle, NULL);
+	_wapi_handle_unref (thread_handle);
+
+	if (prev_handle == NULL) {
+		/* thread->wait_handle acts as an additional reference to the handle */
+		_wapi_handle_ref (handle);
+
+		WAIT_DEBUG (printf ("%p: state -> WAITING.\n", GetCurrentThreadId ()););
+	} else {
+		g_assert (prev_handle == INTERRUPTION_REQUESTED_HANDLE);
+		WAIT_DEBUG (printf ("%p: unable to set state to WAITING.\n", GetCurrentThreadId ()););
+	}
+
+	return prev_handle == NULL;
+}
+
+/**
+ * wapi_thread_clear_wait_handle:
+ *
+ *   Clear the wait handle of the current thread.
+ */
+void wapi_thread_clear_wait_handle (gpointer handle)
+{
+	struct _WapiHandle_thread *thread;
+	gboolean ok;
+	gpointer prev_handle;
+	gpointer thread_handle;
+
+	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
+	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
+							  (gpointer *)&thread);
+	g_assert (ok);
+
+	prev_handle = InterlockedCompareExchangePointer (&thread->wait_handle,
+													 NULL, handle);
+
+	if (prev_handle == handle) {
+		_wapi_handle_unref (handle);
+		WAIT_DEBUG (printf ("%p: state -> NORMAL.\n", GetCurrentThreadId ()););
+	} else {
+		g_assert (prev_handle == INTERRUPTION_REQUESTED_HANDLE);
+		WAIT_DEBUG (printf ("%p: finished waiting.\n", GetCurrentThreadId ()););
+	}
+
+	_wapi_handle_unref (thread_handle);
 }
 
 void _wapi_thread_own_mutex (gpointer mutex)
