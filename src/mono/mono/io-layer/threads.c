@@ -1081,7 +1081,7 @@ gboolean _wapi_thread_apc_pending (gpointer handle)
 		return (FALSE);
 	}
 	
-	return(thread->has_apc);
+	return(thread->has_apc || thread->wait_handle == INTERRUPTION_REQUESTED_HANDLE);
 }
 
 gboolean _wapi_thread_dispatch_apc_queue (gpointer handle)
@@ -1105,8 +1105,6 @@ gboolean _wapi_thread_dispatch_apc_queue (gpointer handle)
  * that if called from a signal handler, and the thread was waiting when receiving 
  * the signal, the wait will be broken after the signal handler returns.
  * In this case, this function is async-signal-safe.
- * If HANDLE refers to another thread, and that thread is waiting, then the wait
- * will be broken.
  */
 guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle, 
 		      gpointer param)
@@ -1136,10 +1134,11 @@ guint32 QueueUserAPC (WapiApcProc apc_callback, gpointer handle,
  * if the thread calls one of the WaitFor functions, the function will return with 
  * WAIT_IO_COMPLETION instead of waiting. Also, if the thread was waiting when
  * this function was called, the wait will be broken.
- * Note: with the current implementation, the Wait functions will not return
- * immediately, they will spin until QueueUserAPC is called by the target thread
- * (from a signal handler). This is done to avoid more excessive changes to the
- * runtime interruption handling code in metadata/threads.c.
+ * It is possible that the wait functions return WAIT_IO_COMPLETION, but the
+ * target thread didn't receive the interrupt signal yet, in this case it should
+ * call the wait function again. This essentially means that the target thread will
+ * busy wait until it is ready to process the interruption.
+ * FIXME: get rid of QueueUserAPC and thread->has_apc, SleepEx seems to require it.
  */
 void wapi_interrupt_thread (gpointer thread_handle)
 {
@@ -1189,10 +1188,6 @@ void wapi_interrupt_thread (gpointer thread_handle)
 	cond = &_WAPI_PRIVATE_HANDLES(idx).signal_cond;
 	mutex = &_WAPI_PRIVATE_HANDLES(idx).signal_mutex;
 
-	/*
-	 * Note that we dont set thread->has_apc, so the wait functions will spin until
-	 * the target thread calls QueueUserAPC from a signal handler.
-	 */
 	mono_mutex_lock (mutex);
 	mono_cond_broadcast (cond);
 	mono_mutex_unlock (mutex);
