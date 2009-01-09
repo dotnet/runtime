@@ -1,11 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 #include <glib.h>
 
 #if 1
-#define DEBUG(stmt) do { stmt; } while (0)
+#define DEBUG_PARSER(stmt) do { stmt; } while (0)
+#else
+#define DEBUG_PARSER(stmt)
 #endif
+
+#if 0
+#define DEBUG_SCANNER(stmt) do { stmt; } while (0)
+#else
+#define DEBUG_SCANNER(stmt)
+#endif
+
 /*
 Grammar:
 
@@ -58,7 +66,9 @@ enum {
 	INVALID_PUNC_TEXT,
 	INVALID_ID_TEXT,
 	INVALID_VALIDITY_TEST,
-	INVALID_NUMBER
+	INVALID_NUMBER,
+	INVALID_FILE_NAME,
+	INVALID_SELECTOR,
 };
 
 enum {
@@ -108,14 +118,163 @@ typedef struct {
 typedef struct {
 	int validity;
 	GSList *patches; /*of test_patch_t*/
+	char *data;
 } test_entry_t;
 
 typedef struct {
 	char *name;
 	char *assembly;
 	int count;
+
+	char *assembly_data;
+	int assembly_size;
+	int init;
 } test_set_t;
 
+/*******************************************************************************************************/
+
+static const char*
+test_validity_name (int validity)
+{
+	switch (validity) {
+	case TEST_TYPE_VALID:
+		return "valid";
+	case TEST_TYPE_INVALID:
+		return "invalid";
+	default:
+		printf ("Invalid test type %d\n", validity);
+		exit (INVALID_VALIDITY_TEST);
+	}
+}
+
+static char*
+read_whole_file_and_close (const char *name, int *file_size)
+{
+	FILE *file = fopen (name, "ro");
+	char *res;
+	int fsize;
+
+	if (!file) {
+		printf ("Could not open file %s\n", name);
+		exit (INVALID_FILE_NAME);
+	}
+
+	fseek (file, 0, SEEK_END);
+	fsize = ftell (file);
+	fseek (file, 0, SEEK_SET);
+
+	res = g_malloc (fsize + 1);
+
+	fread (res, fsize, 1, file);
+	fclose (file);
+	*file_size = fsize;
+	return res;
+}
+
+static void
+init_test_set (test_set_t *test_set)
+{
+	FILE *f;
+	if (test_set->init)
+		return;
+	test_set->assembly_data = read_whole_file_and_close (test_set->assembly, &test_set->assembly_size);
+
+	test_set->init = 1;
+}
+
+static char*
+make_test_name (test_entry_t *entry, test_set_t *test_set)
+{
+	return g_strdup_printf ("%s-%s-%d.exe", test_validity_name (entry->validity), test_set->name, test_set->count++);
+}
+
+static char*
+apply_selector (patch_selector_t *selector, char *data)
+{
+	switch (selector->type) {
+	case SELECTOR_ABS_OFFSET:
+		DEBUG_PARSER (printf("\tabsolute offset selector [%d]\n", selector->data.offset));
+		return data + selector->data.offset;
+	default:
+		printf ("Invalid selector type %d\n", selector->type);
+		exit (INVALID_SELECTOR);
+	}
+}
+
+static void
+apply_effect (patch_effect_t *effect, char *data)
+{
+	switch (effect->type) {
+	case EFFECT_SET_BYTE:
+		DEBUG_PARSER (printf("\tset-byte effect [%d]\n", effect->data.value));
+		*data = effect->data.value;
+		break;
+	default:
+		printf ("Invalid effect type %d\n", effect->type);
+		exit (INVALID_SELECTOR);
+	}
+}
+
+static void
+apply_patch (test_entry_t *entry, test_patch_t *patch)
+{
+	char *offset = apply_selector (patch->selector, entry->data);
+	apply_effect (patch->effect, offset);
+}
+
+static void
+process_test_entry (test_set_t *test_set, test_entry_t *entry)
+{
+	GSList *tmp;
+	char *file_name;
+	FILE *f;
+
+	init_test_set (test_set);
+	entry->data = g_memdup (test_set->assembly_data, test_set->assembly_size);
+
+	for (tmp = entry->patches; tmp; tmp = tmp->next)
+		apply_patch (entry, tmp->data);
+
+	file_name = make_test_name (entry, test_set);
+
+	f = fopen (file_name, "wo");
+	fwrite (entry->data, test_set->assembly_size, 1, f);
+	fclose (f);
+
+	g_free (file_name);
+} 	
+
+/*******************************************************************************************************/
+
+static void
+patch_free (test_patch_t *patch)
+{
+	free (patch->selector);
+	free (patch->effect);
+	free (patch);
+}
+
+static void
+test_set_free (test_set_t *set)
+{
+	free (set->name);
+	free (set->assembly);
+	free (set->assembly_data);
+}
+
+static void
+test_entry_free (test_entry_t *entry)
+{
+	GSList *tmp;
+
+	free (entry->data);
+	for (tmp = entry->patches; tmp; tmp = tmp->next)
+		patch_free (tmp->data);
+	g_slist_free (entry->patches);
+}
+
+
+/*******************************************************************************************************/
 static const char*
 token_type_name (int type)
 {
@@ -169,8 +328,8 @@ static char*
 token_text_dup (scanner_t *scanner, token_t *token)
 {
 	int len = token->end - token->start;
-	char *str = malloc (len + 1);
-	memcpy (str, scanner->input + token->start, len);
+	
+	char *str = g_memdup (scanner->input + token->start, len + 1);
 	str [len] = 0;
 	return str;
 }
@@ -210,29 +369,18 @@ next_token (scanner_t *scanner)
 	scanner->current.type = type;
 	scanner->current.line = scanner->line;
 
-	DEBUG (dump_token (scanner, &scanner->current));
+	DEBUG_SCANNER (dump_token (scanner, &scanner->current));
 }
 
 static scanner_t*
-scanner_new (FILE *file)
+scanner_new (const char *file_name)
 {
-	long fsize;
 	scanner_t *res;
 
-	fseek (file, 0, SEEK_END);
-	fsize = ftell (file);
-	fseek (file, 0, SEEK_SET);
+	res = g_new0 (scanner_t, 1);
+	res->input = read_whole_file_and_close (file_name, &res->size);
 
-	res = malloc (sizeof (scanner_t));
-	memset (res, 0, sizeof (scanner_t));
-	res->input = malloc (fsize + 1);
-
-	fread (res->input, fsize, 1, file);
-	fclose (file);
-	res->input [fsize] = 0;
-	res->size = fsize;
 	res->line = 1;
-
 	next_token (res);
 
 	return res;
@@ -353,16 +501,6 @@ match_current_type_and_text (scanner_t *scanner, int type, const char *text)
 
 /*******************************************************************************************************/
 
-static void
-patch_free (test_patch_t *patch)
-{
-	free (patch->selector);
-	free (patch->effect);
-	free (patch);
-}
-
-/*******************************************************************************************************/
-
 static patch_selector_t*
 parse_selector (scanner_t *scanner)
 {
@@ -372,7 +510,7 @@ parse_selector (scanner_t *scanner)
 	CONSUME_SPECIFIC_IDENTIFIER ("offset");
 	CONSUME_NUMBER (off);
 
-	selector = malloc (sizeof (patch_selector_t));
+	selector = g_new0 (patch_selector_t, 1);
 	selector->type = SELECTOR_ABS_OFFSET;
 	selector->data.offset = off;
 	return selector;
@@ -387,7 +525,7 @@ parse_effect (scanner_t *scanner)
 	CONSUME_SPECIFIC_IDENTIFIER ("set-byte");
 	CONSUME_NUMBER (value);
 
-	effect = malloc (sizeof (patch_effect_t));
+	effect = g_new0 (patch_effect_t, 1);
 	effect->type = EFFECT_SET_BYTE;
 	effect->data.value = value;
 	return effect;
@@ -398,7 +536,7 @@ parse_patch (scanner_t *scanner)
 {
 	test_patch_t *patch;
 
-	patch = malloc (sizeof (test_patch_t));
+	patch = g_new0 (test_patch_t, 1);
 	patch->selector = parse_selector (scanner);
 	patch->effect = parse_effect (scanner);
 	return patch;
@@ -427,10 +565,8 @@ parse_validity (scanner_t *scanner)
 static void
 parse_test_entry (scanner_t *scanner, test_set_t *test_set)
 {
-	GSList *tmp;
-	test_entry_t entry;
+	test_entry_t entry = { 0 };
 	int res;
-	memset (&entry, 0, sizeof (test_entry_t));
 	
 	entry.validity = parse_validity (scanner);
 
@@ -438,11 +574,9 @@ parse_test_entry (scanner_t *scanner, test_set_t *test_set)
 		entry.patches = g_slist_append (entry.patches, parse_patch (scanner));
 	} while (match_current_type_and_text (scanner, TOKEN_PUNC, ","));
 
-	//TODO consume the test_entry here
+	process_test_entry (test_set, &entry);
 
-	for (tmp = entry.patches; tmp; tmp = tmp->next)
-		patch_free (tmp->data);
-	g_slist_free (entry.patches);
+	test_entry_free (&entry);
 }
 
 static void
@@ -455,15 +589,14 @@ parse_test (scanner_t *scanner)
 	CONSUME_SPECIFIC_IDENTIFIER ("assembly");
 	CONSUME_IDENTIFIER (set.assembly);
 
-	DEBUG (printf ("\tRULE %s using assembly %s\n", set.name, set.assembly));
+	DEBUG_PARSER (printf ("RULE %s using assembly %s\n", set.name, set.assembly));
 
 	while (!match_current_type (scanner, TOKEN_EOF) && !match_current_type_and_text (scanner, TOKEN_PUNC, "}"))
 		parse_test_entry (scanner, &set);
 
 	CONSUME_SPECIFIC_PUNCT ("}");
 
-	free (set.name);
-	free (set.assembly);
+	test_set_free (&set);
 }
 
 
@@ -475,14 +608,12 @@ parse_program (scanner_t *scanner)
 }
 
 
-static int
-digest_file (FILE *file)
+static void
+digest_file (const char *file)
 {
-	int ret;
 	scanner_t *scanner = scanner_new (file); 
 	parse_program (scanner);
 	scanner_free (scanner);
-	return ret;
 }
 
 int
@@ -493,12 +624,7 @@ main (int argc, char **argv)
 		return 1;
 	}
 
-	FILE *f = fopen (argv [1], "ro");
-	if (!f) {
-		printf ("could not open file %s\n", argv [1]);
-		return 2;
-	}
-
-	return digest_file (f);
+	digest_file (argv [1]);
+	return 0;
 }
 
