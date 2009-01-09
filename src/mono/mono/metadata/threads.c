@@ -27,7 +27,9 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
 #include <mono/io-layer/io-layer.h>
+#ifndef PLATFORM_WIN32
 #include <mono/io-layer/threads.h>
+#endif
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/utils/mono-compiler.h>
