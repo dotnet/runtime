@@ -398,7 +398,7 @@ utf16_concat (const gunichar2 *first, ...)
 #include <sys/utsname.h>
 
 /* 0 = no detection; -1 = not 10.5 or higher;  1 = 10.5 or higher */
-static int detected_osx_version;
+static int osx_10_5_or_higher;
 
 static void
 detect_osx_10_5_or_higher ()
@@ -408,38 +408,26 @@ detect_osx_10_5_or_higher ()
 	int v;
 	
 	if (uname (&u) != 0){
-		detected_osx_version = 1;
+		osx_10_5_or_higher = 1;
 		return;
 	}
 
 	p = u.release;
 	v = atoi (p);
 	
-	if (v < 9){
-		detected_osx_version = -1;
-	} else if (v > 9)
-		detected_osx_version = 1;
-	else {
-		while (*p && *p != '.')
-			p++;
-		if (*p == '.'){
-			p++;
-			if (atoi (p) > 4){
-				detected_osx_version = 1;
-				return;
-			}
-		}
-		detected_osx_version = -1;
-	}
+	if (v < 9)
+		osx_10_5_or_higher = -1;
+	else 
+		osx_10_5_or_higher = 1;
 }
 
 static gboolean
 is_macos_10_5_or_higher ()
 {
-	if (detected_osx_version == 0)
+	if (osx_10_5_or_higher == 0)
 		detect_osx_10_5_or_higher ();
 	
-	return detected_osx_version + 1;
+	return (osx_10_5_or_higher == 1);
 }
 #endif
 
