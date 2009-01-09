@@ -20,7 +20,10 @@
 #include <string.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+
+#ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
+#endif
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
