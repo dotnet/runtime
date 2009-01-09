@@ -27,6 +27,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
 #include <mono/io-layer/io-layer.h>
+#include <mono/io-layer/threads.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/utils/mono-compiler.h>
@@ -2030,6 +2031,15 @@ static void signal_thread_state_change (MonoThread *thread)
 #else
 	pthread_kill (thread->tid, mono_thread_get_abort_signal ());
 #endif
+
+	/* 
+	 * This will cause waits to be broken.
+	 * It will also prevent the thread from entering a wait, so if the thread returns
+	 * from the wait before it receives the abort signal, it will just spin in the wait
+	 * functions in the io-layer until the signal handler calls QueueUserAPC which will
+	 * make it return.
+	 */
+	wapi_interrupt_thread (thread->handle);
 #endif /* PLATFORM_WIN32 */
 }
 
@@ -3458,6 +3468,10 @@ static MonoException* mono_thread_execute_interruption (MonoThread *thread)
 		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
 		InterlockedDecrement (&thread_interruption_requested);
 		thread->interruption_requested = FALSE;
+#ifndef PLATFORM_WIN32
+		/* Clear the interrupted flag of the thread so it can wait again */
+		wapi_clear_interruption ();
+#endif
 	}
 
 	if ((thread->state & ThreadState_AbortRequested) != 0) {
