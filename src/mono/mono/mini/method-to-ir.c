@@ -7069,7 +7069,7 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					if (bblock->out_of_line) {
 						MonoInst *iargs [2];
 
-						if (cfg->method->klass->image == mono_defaults.corlib) {
+						if (image == mono_defaults.corlib) {
 							/* 
 							 * Avoid relocations in AOT and save some space by using a 
 							 * version of helper_ldstr specialized to mscorlib.
