@@ -10,7 +10,10 @@
 #include <config.h>
 #include <mono/io-layer/io-layer.h>
 
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
+
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>

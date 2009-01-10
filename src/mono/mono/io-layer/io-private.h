@@ -12,7 +12,10 @@
 
 #include <config.h>
 #include <glib.h>
+#ifdef HAVE_DIRENT_H
 #include <dirent.h>
+#endif
+
 #include <mono/io-layer/io.h>
 #include <mono/io-layer/wapi-private.h>
 

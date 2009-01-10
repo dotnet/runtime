@@ -18,7 +18,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <dirent.h>
+#include <sys/time.h>
+#ifdef HAVE_DIRENT_H
+# include <dirent.h>
+#endif
 #include <utime.h>
 #include <sys/stat.h>
 
