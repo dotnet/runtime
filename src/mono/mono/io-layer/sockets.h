@@ -10,14 +10,6 @@
 #ifndef _WAPI_SOCKETS_H_
 #define _WAPI_SOCKETS_H_
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-
 #include "mono/io-layer/wapi.h"
 
 G_BEGIN_DECLS

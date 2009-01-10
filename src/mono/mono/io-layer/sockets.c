@@ -35,6 +35,11 @@
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/socket-wrappers.h>
 
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+
 #undef DEBUG
 
 static guint32 startup_count=0;
