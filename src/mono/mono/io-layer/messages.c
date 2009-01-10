@@ -69,7 +69,8 @@ guint32 FormatMessage (guint32 flags, gconstpointer source, guint32 messageid,
 		str = g_utf8_to_utf16 (message_string (messageid), -1, NULL,
 				       NULL, NULL);
 		freestr = TRUE;
-	}
+	} else
+		str = g_utf8_to_utf16 ("No message specified", -1, NULL, NULL, NULL);
 
 	strlen = unicode_chars (str);
 
