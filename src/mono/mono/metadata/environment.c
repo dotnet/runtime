@@ -17,7 +17,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/io-layer/io-layer.h>
 
-#ifndef PLATFORM_WIN32 && HAVE_SYS_UTSNAME_H
+#if !defined(PLATFORM_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
 #endif
 
