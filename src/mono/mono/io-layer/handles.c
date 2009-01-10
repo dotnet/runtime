@@ -1717,6 +1717,7 @@ static void _wapi_handle_check_share_by_pid (struct _WapiFileShare *share_info)
 	}
 }
 
+#ifdef __linux__
 /* Scan /proc/<pids>/fd/ for open file descriptors to the file in
  * question.  If there are none, reset the share info.
  *
@@ -1850,6 +1851,29 @@ done:
 
 	_wapi_handle_unlock_shared_handles ();
 }
+#else
+//
+// Other implementations (non-Linux)
+//
+void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
+{
+	int thr_ret;
+	
+	/* Prevents entries from expiring under us if we remove this
+	 * one */
+	thr_ret = _wapi_handle_lock_shared_handles ();
+	g_assert (thr_ret == 0);
+	
+	/* Prevent new entries racing with us */
+	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
+	g_assert (thr_ret == 0);
+	
+	_wapi_handle_check_share_by_pid (share_info);
+
+	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);
+	_wapi_handle_unlock_shared_handles ();
+}
+#endif
 
 void _wapi_handle_dump (void)
 {
