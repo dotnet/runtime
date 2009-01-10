@@ -12,6 +12,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <sys/stat.h>
 
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>
