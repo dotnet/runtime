@@ -5364,7 +5364,7 @@ emit_pointer_value (MonoAotCompile *acfg, gpointer ptr)
 
 static void
 emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_symbol,
-		  guint8 *code, guint32 code_size, GSList *unwind_ops)
+		  guint8 *code, guint32 code_size, GSList *unwind_ops, gboolean use_cie)
 {
 #if defined(__x86_64__)
 	char symbol [128];
@@ -5389,8 +5389,9 @@ emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_sym
 
 	l = unwind_ops;
 #ifdef __x86_64__
-	/* Skip the first two ops which are in the CIE */
-	l = l->next->next;
+	if (use_cie)
+		/* Skip the first two ops which are in the CIE */
+		l = l->next->next;
 #endif
 
 	/* Convert the list of MonoUnwindOps to the format used by DWARF */	
@@ -5842,7 +5843,30 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 	emit_uleb128 (acfg, 0x0);
 
 	/* Emit unwind info */
-	emit_fde (acfg, acfg->fde_index, start_symbol, end_symbol, code, code_size, unwind_info);
+	emit_fde (acfg, acfg->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, TRUE);
+	acfg->fde_index ++;
+}
+
+static void
+emit_trampoline_dwarf_info (MonoAotCompile *acfg, const char *tramp_name, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, GSList *unwind_info)
+{
+	emit_section_change (acfg, ".debug_info", 0);
+
+	/* Subprogram */
+	emit_uleb128 (acfg, AB_SUBPROGRAM);
+	emit_string (acfg, tramp_name);
+	emit_pointer_value (acfg, code);
+	emit_pointer_value (acfg, code + code_size);
+	/* frame_base */
+	emit_byte (acfg, 2);
+	emit_byte (acfg, DW_OP_breg6);
+	emit_byte (acfg, 16);
+
+	/* Subprogram end */
+	emit_uleb128 (acfg, 0x0);
+
+	/* Emit unwind info */
+	emit_fde (acfg, acfg->fde_index, NULL, NULL, code, code_size, unwind_info, FALSE);
 	acfg->fde_index ++;
 }
 
@@ -6145,18 +6169,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 static MonoAotCompile *xdebug_acfg;
 
-/*
- * mono_save_xdebug_info:
- *
- *   Emit debugging info for METHOD into an assembly file which can be assembled
- * and loaded into gdb to provide debugging info for JITted code.
- */
-void
-mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, GSList *unwind_info)
+static void
+xdebug_init (void)
 {
 	MonoAotCompile *acfg;
-
-	// FIXME: Add trampolines too
 
 	/* 
 	 * One time initialization.
@@ -6181,11 +6197,45 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 
 		emit_base_dwarf_info (acfg);
 	}
+}
 
+/*
+ * mono_save_xdebug_info:
+ *
+ *   Emit debugging info for METHOD into an assembly file which can be assembled
+ * and loaded into gdb to provide debugging info for JITted code.
+ */
+void
+mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, GSList *unwind_info)
+{
+	MonoAotCompile *acfg;
+
+	xdebug_init ();
+	
 	acfg = xdebug_acfg;
 
 	mono_acfg_lock (acfg);
 	emit_method_dwarf_info (acfg, method, NULL, NULL, code, code_size, args, unwind_info);
+	fflush (acfg->fp);
+	mono_acfg_unlock (acfg);
+}
+
+/*
+ * mono_save_trampoline_xdebug_info:
+ *
+ *   Same as mono_save_xdebug_info, but for trampolines.
+ */
+void
+mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info)
+{
+	MonoAotCompile *acfg;
+
+	xdebug_init ();
+
+	acfg = xdebug_acfg;
+
+	mono_acfg_lock (acfg);
+	emit_trampoline_dwarf_info (acfg, tramp_name, NULL, NULL, code, code_size, unwind_info);
 	fflush (acfg->fp);
 	mono_acfg_unlock (acfg);
 }
@@ -6202,6 +6252,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 void
 mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, GSList *unwind_info)
+{
+}
+
+void
+mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info)
 {
 }
 

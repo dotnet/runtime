@@ -224,8 +224,10 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 {
 	guint8 *buf, *code, *tramp, *br [2], *r11_save_code, *after_r11_save_code;
 	int i, lmf_offset, offset, res_offset, arg_offset, rax_offset, tramp_offset, saved_regs_offset;
-	int saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset;
+	int saved_fpregs_offset, rbp_offset, framesize, orig_rsp_to_rbp_offset, cfa_offset;
 	gboolean has_caller;
+	GSList *unwind_ops = NULL;
+	GSList *l;
 
 	if (tramp_type == MONO_TRAMPOLINE_JUMP)
 		has_caller = FALSE;
@@ -245,16 +247,30 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	code += 5;
 	after_r11_save_code = code;
 
+	// CFA = sp + 16 (the trampoline address is on the stack)
+	cfa_offset = 16;
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, AMD64_RSP, 16);
+	// IP saved at CFA - 8
+	mono_add_unwind_op_offset (unwind_ops, code, buf, AMD64_RIP, -8);
+
 	/* Pop the return address off the stack */
 	amd64_pop_reg (code, AMD64_R11);
 	orig_rsp_to_rbp_offset += 8;
+
+	cfa_offset -= 8;
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 
 	/* 
 	 * Allocate a new stack frame
 	 */
 	amd64_push_reg (code, AMD64_RBP);
+	cfa_offset += 8;
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
+	mono_add_unwind_op_offset (unwind_ops, code, buf, AMD64_RBP, - cfa_offset);
+
 	orig_rsp_to_rbp_offset -= 8;
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, 8);
+	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, AMD64_RBP);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
 	offset = 0;
@@ -485,6 +501,12 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (&code_len);
 	}
 
+	mono_save_trampoline_xdebug_info ("<generic_trampoline>", buf, *code_size, unwind_ops);
+
+	for (l = unwind_ops; l; l = l->next)
+		g_free (l->data);
+	g_slist_free (unwind_ops);
+	
 	return buf;
 }
 

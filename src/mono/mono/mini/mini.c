@@ -335,6 +335,24 @@ void *mono_global_codeman_reserve (int size)
 }
 
 /**
+ * mono_create_unwind_op:
+ *
+ *   Create an unwind op with the given parameters.
+ */
+MonoUnwindOp*
+mono_create_unwind_op (int when, int tag, int reg, int val)
+{
+	MonoUnwindOp *op = g_new0 (MonoUnwindOp, 1);
+
+	op->op = tag;
+	op->reg = reg;
+	op->val = val;
+	op->when = when;
+
+	return op;
+}
+
+/**
  * mono_emit_unwind_op:
  *
  *   Add an unwind op with the given parameters for the list of unwind ops stored in

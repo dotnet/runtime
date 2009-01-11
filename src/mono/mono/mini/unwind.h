@@ -79,6 +79,12 @@ typedef struct {
 /* Reg is saved at cfa+offset */
 #define mono_emit_unwind_op_offset(cfg,ip,reg,offset) mono_emit_unwind_op (cfg, (ip) - (cfg)->native_code, DW_CFA_offset, (reg), (offset))
 
+/* Similar macros usable when a cfg is not available, like for trampolines */
+#define mono_add_unwind_op_def_cfa(op_list,code,buf,reg,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa, (reg), (offset))); } while (0)
+#define mono_add_unwind_op_def_cfa_reg(op_list,code,buf,reg) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa_register, (reg), (0))); } while (0)
+#define mono_add_unwind_op_def_cfa_offset(op_list,code,buf,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_def_cfa, 0, (offset))); } while (0)
+#define mono_add_unwind_op_same_value(op_list,code,buf,reg) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_same_value, (reg), 0)); } while (0)
+#define mono_add_unwind_op_offset(op_list,code,buf,reg,offset) do { (op_list) = g_slist_append ((op_list), mono_create_unwind_op ((code) - (buf), DW_CFA_offset, (reg), (offset))); } while (0)
 
 int
 mono_hw_reg_to_dwarf_reg (int reg) MONO_INTERNAL;

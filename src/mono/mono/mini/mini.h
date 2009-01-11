@@ -1271,6 +1271,7 @@ void     mono_aot_register_globals          (gpointer *globals);
 void     mono_aot_register_module           (gpointer *aot_info);
 
 void     mono_save_xdebug_info              (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, GSList *unwind_info) MONO_INTERNAL;
+void     mono_save_trampoline_xdebug_info   (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info) MONO_INTERNAL;
 /* This is an exported function */
 void     mono_xdebug_emit                   (void) MONO_INTERNAL;
 
@@ -1339,6 +1340,9 @@ CompRelation      mono_negate_cond (CompRelation cond) MONO_INTERNAL;
 int               mono_op_imm_to_op (int opcode) MONO_INTERNAL;
 void              mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins) MONO_INTERNAL;
 void              mono_peephole_ins (MonoBasicBlock *bb, MonoInst *ins) MONO_INTERNAL;
+MonoUnwindOp     *mono_create_unwind_op (int when, 
+										 int tag, int reg, 
+										 int val) MONO_INTERNAL;
 void              mono_emit_unwind_op (MonoCompile *cfg, int when, 
 									   int tag, int reg, 
 									   int val) MONO_INTERNAL;
