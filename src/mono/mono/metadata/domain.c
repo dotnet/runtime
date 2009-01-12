@@ -1179,7 +1179,6 @@ mono_domain_create (void)
 	InitializeCriticalSection (&domain->assemblies_lock);
 	InitializeCriticalSection (&domain->jit_code_hash_lock);
 
-	domain->shared_generics_hash = NULL;
 	domain->method_rgctx_hash = NULL;
 
 	mono_appdomains_lock ();
@@ -1792,26 +1791,6 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 	return ass;
 }
 
-MonoJitInfo*
-mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method)
-{
-	if (!domain->shared_generics_hash)
-		return NULL;
-
-	return g_hash_table_lookup (domain->shared_generics_hash, method);
-}
-
-void
-mono_domain_register_shared_generic (MonoDomain *domain, MonoMethod *method, MonoJitInfo *jit_info)
-{
-	if (!domain->shared_generics_hash)
-		domain->shared_generics_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
-	g_assert (domain->shared_generics_hash);
-
-	g_hash_table_insert (domain->shared_generics_hash, method, jit_info);
-}
-
 void
 mono_domain_free (MonoDomain *domain, gboolean force)
 {
@@ -1919,10 +1898,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	domain->finalizable_objects_hash = NULL;
-	if (domain->shared_generics_hash) {
-		g_hash_table_destroy (domain->shared_generics_hash);
-		domain->shared_generics_hash = NULL;
-	}
 	if (domain->method_rgctx_hash) {
 		g_hash_table_destroy (domain->method_rgctx_hash);
 		domain->method_rgctx_hash = NULL;

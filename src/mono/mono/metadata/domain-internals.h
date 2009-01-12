@@ -210,7 +210,6 @@ struct _MonoDomain {
 	/* Used when accessing 'domain_assemblies' */
 	CRITICAL_SECTION    assemblies_lock;
 
-	GHashTable	   *shared_generics_hash;
 	GHashTable	   *method_rgctx_hash;
 
 	GHashTable	   *generic_virtual_cases;
@@ -286,12 +285,6 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji) MONO_INTERNAL;
 
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
-
-MonoJitInfo*
-mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
-
-void
-mono_domain_register_shared_generic (MonoDomain *domain, MonoMethod *method, MonoJitInfo *jit_info) MONO_INTERNAL;
 
 char *
 mono_make_shadow_copy (const char *filename) MONO_INTERNAL;

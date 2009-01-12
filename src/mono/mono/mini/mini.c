@@ -2969,6 +2969,34 @@ compute_reachable (MonoBasicBlock *bb)
 	}
 }
 
+static MonoGenericContext
+construct_object_context_for_method (MonoMethod *method)
+{
+	MonoGenericContext object_context;
+
+	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
+	g_assert (!method->klass->generic_class);
+	if (method->klass->generic_container) {
+		int type_argc = method->klass->generic_container->type_argc;
+
+		object_context.class_inst = get_object_generic_inst (type_argc);
+	} else {
+		object_context.class_inst = NULL;
+	}
+
+	if (mini_method_get_context (method)->method_inst) {
+		int type_argc = mini_method_get_context (method)->method_inst->type_argc;
+
+		object_context.method_inst = get_object_generic_inst (type_argc);
+	} else {
+		object_context.method_inst = NULL;
+	}
+
+	g_assert (object_context.class_inst || object_context.method_inst);
+
+	return object_context;
+}
+
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -3527,26 +3555,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if (cfg->generic_sharing_context) {
-		MonoGenericContext object_context;
-
-		g_assert (!method_to_compile->klass->generic_class);
-		if (method_to_compile->klass->generic_container) {
-			int type_argc = method_to_compile->klass->generic_container->type_argc;
-
-			object_context.class_inst = get_object_generic_inst (type_argc);
-		} else {
-			object_context.class_inst = NULL;
-		}
-
-		if (mini_method_get_context (method_to_compile)->method_inst) {
-			int type_argc = mini_method_get_context (method_to_compile)->method_inst->type_argc;
-
-			object_context.method_inst = get_object_generic_inst (type_argc);
-		} else {
-			object_context.method_inst = NULL;
-		}
-
-		g_assert (object_context.class_inst || object_context.method_inst);
+		MonoGenericContext object_context = construct_object_context_for_method (method_to_compile);
 
 		method_to_register = mono_class_inflate_generic_method (method_to_compile, &object_context);
 	} else {
@@ -3707,17 +3716,25 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 #endif /* DISABLE_JIT */
 
-static MonoJitInfo*
-lookup_generic_method (MonoDomain *domain, MonoMethod *method)
+MonoJitInfo*
+mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method)
 {
-	MonoMethod *open_method;
+	MonoGenericContext object_context;
+	MonoMethod *open_method, *object_method;
+	MonoJitInfo *ji;
 
 	if (!mono_method_is_generic_sharable_impl (method, FALSE))
 		return NULL;
 
 	open_method = mono_method_get_declaring_generic_method (method);
+	object_context = construct_object_context_for_method (open_method);
+	object_method = mono_class_inflate_generic_method (open_method, &object_context);
 
-	return mono_domain_lookup_shared_generic (domain, open_method);
+	ji = mono_internal_hash_table_lookup (&domain->jit_code_hash, object_method);
+	if (ji && !ji->has_generic_jit_info)
+		ji = NULL;
+
+	return ji;
 }
 
 /*
@@ -3731,7 +3748,7 @@ lookup_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (ji)
 		return ji;
 
-	return lookup_generic_method (domain, method);
+	return mono_domain_lookup_shared_generic (domain, method);
 }
 
 static MonoJitInfo*
@@ -3940,12 +3957,8 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		mono_domain_jit_code_hash_unlock (target_domain);
 		code = cfg->native_code;
 
-		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method, FALSE)) {
-			/* g_print ("inserting method %s.%s.%s\n", method->klass->name_space, method->klass->name, method->name); */
-			mono_domain_register_shared_generic (target_domain, 
-				mono_method_get_declaring_generic_method (method), cfg->jit_info);
+		if (cfg->generic_sharing_context && mono_method_is_generic_sharable_impl (method, FALSE))
 			mono_stats.generics_shared_methods++;
-		}
 	} else {
 		mono_domain_jit_code_hash_unlock (target_domain);
 	}
