@@ -9871,6 +9871,8 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	mono_loader_unlock ();
 	clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
 
+	mono_loader_lock ();
+
 	if (!enter_method) {
 		MonoMethodDesc *desc;
 
@@ -9889,6 +9891,8 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		g_assert (gettypefromhandle_method);
 		mono_method_desc_free (desc);
 	}
+
+	mono_loader_unlock ();
 
 	/* Push this or the type object */
 	if (method->flags & METHOD_ATTRIBUTE_STATIC) {
