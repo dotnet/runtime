@@ -20,12 +20,14 @@
 #include <errno.h>
 
 #include <sys/types.h>
+#ifndef PLATFORM_WIN32 
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#endif
 
 #include <mono/metadata/object.h>
 #include <mono/io-layer/io-layer.h>
