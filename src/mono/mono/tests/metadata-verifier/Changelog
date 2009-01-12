@@ -1,5 +1,9 @@
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* Makefile: Fix generate-stamp deps.
+	
+2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* Makefile: Add run-test target and fix the generation deps.
 
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>

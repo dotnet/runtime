@@ -11,7 +11,7 @@ header-tests.ok: header-tests.md simple-assembly.exe
 	./gen-md-tests header-tests.md
 	touch header-tests.ok
 
-generate-stamp: header-tests.ok
+generate-stamp: gen-md-tests header-tests.ok
 	touch generate-stamp
 
 run-test: generate-stamp
