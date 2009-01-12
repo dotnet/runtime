@@ -1,5 +1,9 @@
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* Makefile: New clean-stamps target, more deps fine tunning.
+
+2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* header-tests.md: Add test for the lfanew field.
 
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>

@@ -5,14 +5,18 @@ GLIB_LINK_FLAGS=`pkg-config --libs glib-2.0`
 	ilasm2 -out:$@ $<
 
 gen-md-tests: gen-md-tests.c
-	gcc $(GLIB_CFLAGS) $(GLIB_LINK_FLAGS) gen-md-tests.c -g -o gen-md-tests
+	gcc $(GLIB_CFLAGS) $(GLIB_LINK_FLAGS) gen-md-tests.c -g -Wall -o gen-md-tests
 
-header-tests.ok: header-tests.md simple-assembly.exe
+header-tests.ok: gen-md-tests header-tests.md simple-assembly.exe
 	./gen-md-tests header-tests.md
 	touch header-tests.ok
 
-generate-stamp: gen-md-tests header-tests.ok
+generate-stamp: header-tests.ok
 	touch generate-stamp
+
+clean-stamps:
+	rm -f *.ok
+	rm -f generate-stamp
 
 run-test: generate-stamp
 	@for i in *.exe; do \
