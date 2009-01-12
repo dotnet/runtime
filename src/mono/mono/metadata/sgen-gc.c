@@ -672,6 +672,7 @@ static void clear_remsets (void);
 static void clear_tlabs (void);
 static char *find_tlab_next_from_address (char *addr);
 static void sweep_pinned_objects (void);
+static void scan_from_pinned_objects (char *addr_start, char *addr_end);
 static void free_large_object (LOSObject *obj);
 static void free_mem_section (GCMemSection *section);
 
@@ -2282,6 +2283,8 @@ collect_nursery (size_t requested_size)
 	}
 	/* registered roots, this includes static fields */
 	scan_from_registered_roots (nursery_start, nursery_next);
+	/* alloc_pinned objects */
+	scan_from_pinned_objects (nursery_start, nursery_next);
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
@@ -2423,7 +2426,8 @@ major_collection (void)
 	}
 	/* registered roots, this includes static fields */
 	scan_from_registered_roots (heap_start, heap_end);
-
+	/* alloc_pinned objects */
+	scan_from_pinned_objects (heap_start, heap_end);
 	/* scan the list of objects ready for finalization */
 	for (fin = fin_ready_list; fin; fin = fin->next) {
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
@@ -2734,7 +2738,7 @@ sweep_pinned_objects (void)
 	void *end_chunk;
 	for (chunk = pinned_chunk_list; chunk; chunk = chunk->next) {
 		end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
-		DEBUG (6, fprintf (gc_debug_file, "Sweeping pinned chunk %p (ranhe: %p-%p)\n", chunk, chunk->start_data, end_chunk));
+		DEBUG (6, fprintf (gc_debug_file, "Sweeping pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk));
 		for (i = 0; i < chunk->num_pages; ++i) {
 			obj_size = chunk->page_sizes [i];
 			if (!obj_size)
@@ -2754,6 +2758,40 @@ sweep_pinned_objects (void)
 						/* FIXME: add to freelist */
 						DEBUG (6, fprintf (gc_debug_file, "Going to free unmarked pinned object %p (%s)\n", ptr, safe_name (ptr)));
 					}
+				}
+				p += obj_size;
+			}
+		}
+	}
+}
+
+static void
+scan_from_pinned_objects (char *addr_start, char *addr_end)
+{
+	PinnedChunk *chunk;
+	int i, obj_size;
+	char *p, *endp;
+	void **ptr;
+	void *end_chunk;
+	for (chunk = pinned_chunk_list; chunk; chunk = chunk->next) {
+		end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
+		DEBUG (6, fprintf (gc_debug_file, "Scanning pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk));
+		for (i = 0; i < chunk->num_pages; ++i) {
+			obj_size = chunk->page_sizes [i];
+			if (!obj_size)
+				continue;
+			p = i? (char*)chunk + i * FREELIST_PAGESIZE: chunk->start_data;
+			endp = i? p + FREELIST_PAGESIZE: (char*)chunk + FREELIST_PAGESIZE;
+			DEBUG (6, fprintf (gc_debug_file, "Page %d (size: %d, range: %p-%p)\n", i, obj_size, p, endp));
+			while (p + obj_size <= endp) {
+				ptr = (void**)p;
+				DEBUG (9, fprintf (gc_debug_file, "Considering %p (vtable: %p)\n", ptr, *ptr));
+				/* if the first word (the vtable) is outside the chunk we have an object */
+				if (*ptr && (*ptr < (void*)chunk || *ptr >= end_chunk)) {
+					DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of alloc_pinned %p (%s)\n", i, ptr, safe_name (ptr)));
+					// FIXME: Put objects without references into separate chunks
+					// which do not need to be scanned
+					scan_object ((char*)ptr, addr_start, addr_end);
 				}
 				p += obj_size;
 			}
@@ -4506,6 +4544,8 @@ describe_ptr (char *ptr)
 
 		if (section) {
 			printf ("Pointer inside oldspace.\n");
+		} else if (obj_is_from_pinned_alloc (ptr)) {
+			printf ("Pointer is inside a pinned chunk.\n");
 		} else {
 			printf ("Pointer unknown.\n");
 			return;
