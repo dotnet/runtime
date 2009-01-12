@@ -1,5 +1,10 @@
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* Makefile: Add check_with_peverify target to make it easier to
+	check against MS peverify.
+
+2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* Makefile: gen-md-tests now require glib. Fix the build.
 
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
