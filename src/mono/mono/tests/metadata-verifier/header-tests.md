@@ -17,5 +17,14 @@ msdos-signature {
 msdos-lfanew {
 	assembly simple-assembly.exe
 
-	invalid offset 3c set-uint 0xffffffff
+	#truncate the file before and after
+	invalid offset 3c truncate
+	invalid offset 3d truncate
+	invalid offset 3e truncate
+	invalid offset 3f truncate
+
+	#not enough space for the PE water mark
+	invalid offset 3c set-uint 0xffffffff 
+	invalid offset 3c set-uint file-size - 1 
+	invalid offset 3c set-uint file-size - 2 
 }
