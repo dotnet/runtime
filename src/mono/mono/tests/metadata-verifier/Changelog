@@ -1,5 +1,9 @@
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* Makefile: Add run-test target and fix the generation deps.
+
+2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* Makefile: Add check_with_peverify target to make it easier to
 	check against MS peverify.
 
