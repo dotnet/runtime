@@ -42,13 +42,18 @@ typedef struct {
 static void
 verify_msdos_header (VerifyContext *ctx)
 {
+	guint32 lfanew;
 	if (ctx->size < 128) {
 		ADD_ERROR (ctx, g_strdup ("Not enough space for the MS-DOS header"));
 		return;
 	}
 	if (ctx->data [0] != 0x4d || ctx->data [1] != 0x5a)
 		ADD_ERROR (ctx,  g_strdup ("Invalid MS-DOS watermark"));
+	lfanew = read32 (ctx->data + 0x3c);
+	if (lfanew > ctx->size - 4)
+		ADD_ERROR (ctx,  g_strdup ("MS-DOS lfanew offset points to outside of the file"));
 }
+
 
 GSList*
 mono_image_verify (const char *data, guint32 size)
