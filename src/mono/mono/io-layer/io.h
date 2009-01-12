@@ -108,6 +108,16 @@ typedef enum {
 } WapiFileType;
 
 typedef enum {
+	DRIVE_UNKNOWN=0,
+	DRIVE_NO_ROOT_DIR=1,
+	DRIVE_REMOVABLE=2,
+	DRIVE_FIXED=3,
+	DRIVE_REMOTE=4,
+	DRIVE_CDROM=5,
+	DRIVE_RAMDISK=6
+} WapiDriveType;
+
+typedef enum {
 	GetFileExInfoStandard=0x0000,
 	GetFileExMaxInfoLevel=0x0001
 } WapiGetFileExInfoLevels;
@@ -202,6 +212,10 @@ extern gboolean CreatePipe (gpointer *readpipe, gpointer *writepipe,
 			    WapiSecurityAttributes *security, guint32 size);
 extern guint32 GetTempPath (guint32 len, gunichar2 *buf);
 extern gint32 GetLogicalDriveStrings (guint32 len, gunichar2 *buf);
+extern gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_bytes_avail,
+				   WapiULargeInteger *total_number_of_bytes,
+				   WapiULargeInteger *total_number_of_free_bytes);
+extern guint32 GetDriveType(const gunichar2 *root_path_name);
 extern gboolean LockFile (gpointer handle, guint32 offset_low,
 			  guint32 offset_high, guint32 length_low,
 			  guint32 length_high);

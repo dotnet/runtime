@@ -15,6 +15,14 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#elif defined(HAVE_SYS_STATFS_H)
+#include <sys/statfs.h>
+#elif defined(HAVE_SYS_PARAM_H) && defined(HAVE_SYS_MOUNT_H)
+#include <sys/param.h>
+#include <sys/mount.h>
+#endif
 #include <sys/types.h>
 #include <dirent.h>
 #include <fnmatch.h>
@@ -3696,6 +3704,225 @@ GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 	return total;
 }
 #endif
+}
+
+#if defined(HAVE_STATVFS) || defined(HAVE_STATFS)
+gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_bytes_avail,
+			    WapiULargeInteger *total_number_of_bytes,
+			    WapiULargeInteger *total_number_of_free_bytes)
+{
+#ifdef HAVE_STATVFS
+	struct statvfs fsstat;
+#elif defined(HAVE_STATFS)
+	struct statfs fsstat;
+#endif
+	gboolean isreadonly;
+	gchar *utf8_path_name;
+	int ret;
+
+	if (path_name == NULL) {
+		utf8_path_name = g_strdup (g_get_current_dir());
+		if (utf8_path_name == NULL) {
+			SetLastError (ERROR_DIRECTORY);
+			return(FALSE);
+		}
+	}
+	else {
+		utf8_path_name = mono_unicode_to_external (path_name);
+		if (utf8_path_name == NULL) {
+#ifdef DEBUG
+			g_message("%s: unicode conversion returned NULL", __func__);
+#endif
+
+			SetLastError (ERROR_INVALID_NAME);
+			return(FALSE);
+		}
+	}
+
+	do {
+#ifdef HAVE_STATVFS
+		ret = statvfs (utf8_path_name, &fsstat);
+		isreadonly = ((fsstat.f_flag & ST_RDONLY) == ST_RDONLY);
+#elif defined(HAVE_STATFS)
+		ret = statfs (utf8_path_name, &fsstat);
+		isreadonly = ((fsstat.f_flags & MNT_RDONLY) == MNT_RDONLY);
+#endif
+	} while(ret == -1 && errno == EINTR);
+
+	g_free(utf8_path_name);
+
+	if (ret == -1) {
+		_wapi_set_last_error_from_errno ();
+#ifdef DEBUG
+		g_message ("%s: statvfs failed: %s", __func__, strerror (errno));
+#endif
+		return(FALSE);
+	}
+
+	/* total number of free bytes for non-root */
+	if (free_bytes_avail != NULL) {
+		if (isreadonly) {
+			free_bytes_avail->QuadPart = 0;
+		}
+		else {
+			free_bytes_avail->QuadPart = fsstat.f_bsize * fsstat.f_bavail;
+		}
+	}
+
+	/* total number of bytes available for non-root */
+	if (total_number_of_bytes != NULL) {
+		total_number_of_bytes->QuadPart = fsstat.f_bsize * fsstat.f_blocks;
+	}
+
+	/* total number of bytes available for root */
+	if (total_number_of_free_bytes != NULL) {
+		if (isreadonly) {
+			total_number_of_free_bytes->QuadPart = 0;
+		}
+		else {
+			total_number_of_free_bytes->QuadPart = fsstat.f_bsize * fsstat.f_bfree;
+		}
+	}
+	
+	return(TRUE);
+}
+#else
+gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_bytes_avail,
+			    WapiULargeInteger *total_number_of_bytes,
+			    WapiULargeInteger *total_number_of_free_bytes)
+{
+	if (free_bytes_avail != NULL) {
+		free_bytes_avail->QuadPart = (guint64) -1;
+	}
+
+	if (total_number_of_bytes != NULL) {
+		total_number_of_bytes->QuadPart = (guint64) -1;
+	}
+
+	if (total_number_of_free_bytes != NULL) {
+		total_number_of_free_bytes->QuadPart = (guint64) -1;
+	}
+
+	return(TRUE);
+}
+#endif
+
+typedef struct {
+	guint32 drive_type;
+	const gchar* fstype;
+} _wapi_drive_type;
+
+static _wapi_drive_type _wapi_drive_types[] = {
+	{ DRIVE_RAMDISK, "ramfs"      },
+	{ DRIVE_RAMDISK, "tmpfs"      },
+	{ DRIVE_RAMDISK, "proc"       },
+	{ DRIVE_RAMDISK, "sysfs"      },
+	{ DRIVE_RAMDISK, "debugfs"    },
+	{ DRIVE_RAMDISK, "devpts"     },
+	{ DRIVE_RAMDISK, "securityfs" },
+	{ DRIVE_CDROM,   "iso9660"    },
+	{ DRIVE_FIXED,   "ext2"       },
+	{ DRIVE_FIXED,   "ext3"       },
+	{ DRIVE_FIXED,   "ext4"       },
+	{ DRIVE_FIXED,   "sysv"       },
+	{ DRIVE_FIXED,   "reiserfs"   },
+	{ DRIVE_FIXED,   "ufs"        },
+	{ DRIVE_FIXED,   "vfat"       },
+	{ DRIVE_FIXED,   "msdos"      },
+	{ DRIVE_FIXED,   "udf"        },
+	{ DRIVE_FIXED,   "hfs"        },
+	{ DRIVE_FIXED,   "hpfs"       },
+	{ DRIVE_FIXED,   "qnx4"       },
+	{ DRIVE_FIXED,   "ntfs"       },
+	{ DRIVE_FIXED,   "ntfs-3g"    },
+	{ DRIVE_REMOTE,  "smbfs"      },
+	{ DRIVE_REMOTE,  "fuse"       },
+	{ DRIVE_REMOTE,  "nfs"        },
+	{ DRIVE_REMOTE,  "nfs4"       },
+	{ DRIVE_REMOTE,  "cifs"       },
+	{ DRIVE_REMOTE,  "ncpfs"      },
+	{ DRIVE_REMOTE,  "coda"       },
+	{ DRIVE_REMOTE,  "afs"        },
+	{ DRIVE_UNKNOWN, NULL         }
+};
+
+static guint32 _wapi_get_drive_type(const gchar* fstype)
+{
+	_wapi_drive_type *current;
+
+	current = &_wapi_drive_types[0];
+	while (current->drive_type != DRIVE_UNKNOWN) {
+		if (strcmp (current->fstype, fstype) == 0)
+			break;
+
+		current++;
+	}
+	
+	return current->drive_type;
+}
+
+guint32 GetDriveType(const gunichar2 *root_path_name)
+{
+	FILE *fp;
+	gchar buffer [512];
+	gchar **splitted;
+	gchar *utf8_root_path_name;
+	guint32 drive_type;
+
+	if (root_path_name == NULL) {
+		utf8_root_path_name = g_strdup (g_get_current_dir());
+		if (utf8_root_path_name == NULL) {
+			return(DRIVE_NO_ROOT_DIR);
+		}
+	}
+	else {
+		utf8_root_path_name = mono_unicode_to_external (root_path_name);
+		if (utf8_root_path_name == NULL) {
+#ifdef DEBUG
+			g_message("%s: unicode conversion returned NULL", __func__);
+#endif
+			return(DRIVE_NO_ROOT_DIR);
+		}
+		
+		/* strip trailing slash for compare below */
+		if (g_str_has_suffix(utf8_root_path_name, "/")) {
+			utf8_root_path_name[strlen(utf8_root_path_name) - 1] = 0;
+		}
+	}
+
+	fp = fopen ("/etc/mtab", "rt");
+	if (fp == NULL) {
+		fp = fopen ("/etc/mnttab", "rt");
+		if (fp == NULL) {
+			g_free (utf8_root_path_name);
+			return(DRIVE_UNKNOWN);
+		}
+	}
+
+	drive_type = DRIVE_NO_ROOT_DIR;
+	while (fgets (buffer, 512, fp) != NULL) {
+		splitted = g_strsplit (buffer, " ", 0);
+		if (!*splitted || !*(splitted + 1) || !*(splitted + 2)) {
+			g_strfreev (splitted);
+			continue;
+		}
+
+		/* compare given root_path_name with the one from mtab, 
+		  if length of utf8_root_path_name is zero it must be the root dir */
+		if (strcmp (*(splitted + 1), utf8_root_path_name) == 0 ||
+		    (strcmp (*(splitted + 1), "/") == 0 && strlen (utf8_root_path_name) == 0)) {
+			drive_type = _wapi_get_drive_type (*(splitted + 2));
+			g_strfreev (splitted);
+			break;
+		}
+
+		g_strfreev (splitted);
+	}
+
+	fclose (fp);
+	g_free (utf8_root_path_name);
+
+	return (drive_type);
 }
 
 static gboolean _wapi_lock_file_region (int fd, off_t offset, off_t length)

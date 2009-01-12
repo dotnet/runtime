@@ -2,6 +2,10 @@
 
 	* configure.in: Check for the existence of the gettext executables.
 
+2008-01-08  Christian Prochnow  <cproch@seculogix.de>
+
+	* configure.in: Check for sys/statfs.h and sys/mount.h
+
 2009-01-07  Geoff Norton  <gnorton@novell.com>
 
 	* configure.in: Provide platform information to the mcs build tree
