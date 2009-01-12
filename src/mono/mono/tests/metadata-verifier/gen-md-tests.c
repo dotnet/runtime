@@ -21,7 +21,7 @@ tokens:
 	comment ::= '#.*<eol>
 	identifier ::= ([a-z] | [A-Z]) ([a-z] | [A-Z] | [0-9] | [_-.])* 
 	hexa_digit = [0-9] | [a-f] | [A-F]
-	number ::= [0-9] ([0-9] hexa_digit)* | ('0' [xX] hexa_digit+)
+	number ::= (+-)?('0' [xX])? hexa_digit+
 	eol ::= <eol>
 	punctuation ::= [{}]
 
@@ -82,6 +82,7 @@ enum {
 
 enum {
 	EFFECT_SET_BYTE,
+	EFFECT_SET_UINT,
 };
 
 typedef struct {
@@ -106,7 +107,8 @@ typedef struct {
 typedef struct {
 	int type;
 	union {
-		long value;
+		guint8 byte_value;
+		guint32 uint_value;
 	} data;
 } patch_effect_t;
 
@@ -206,8 +208,12 @@ apply_effect (patch_effect_t *effect, char *data)
 {
 	switch (effect->type) {
 	case EFFECT_SET_BYTE:
-		DEBUG_PARSER (printf("\tset-byte effect [%d]\n", effect->data.value));
-		*data = effect->data.value;
+		DEBUG_PARSER (printf("\tset-byte effect [%d]\n", effect->data.byte_value));
+		*data = effect->data.byte_value;
+		break;
+	case EFFECT_SET_UINT:
+		DEBUG_PARSER (printf("\tset-uint effect [%d]\n", effect->data.uint_value));
+		*((guint32*)data) = (guint32)effect->data.uint_value;
 		break;
 	default:
 		printf ("Invalid effect type %d\n", effect->type);
@@ -450,10 +456,15 @@ match_current_type_and_text (scanner_t *scanner, int type, const char *text)
 }
 
 /*******************************************************************************************************/
+#define FAIL(MSG, REASON) do { \
+	char *__tmp = scanner_text_dup (scanner);	\
+	printf ("%s at line %d for rule %s\n", MSG, scanner_get_line (scanner), __FUNCTION__);	\
+	exit (REASON);	\
+} while (0);
 
 #define EXPECT_TOKEN(TYPE) do { \
 	if (scanner_get_type (scanner) != TYPE) { \
-		printf ("Expected %s but got %s at line %d for rule %s\n", token_type_name (TYPE), token_type_name (scanner_get_type (scanner)), scanner_get_line (scanner), __FUNCTION__);	\
+		printf ("Expected %s but got %s '%s' at line %d for rule %s\n", token_type_name (TYPE), token_type_name (scanner_get_type (scanner)), scanner_text_dup (scanner), scanner_get_line (scanner), __FUNCTION__);	\
 		exit (INVALID_TOKEN_TYPE);	\
 	}	\
 } while (0)
@@ -521,13 +532,26 @@ parse_effect (scanner_t *scanner)
 {
 	patch_effect_t *effect;
 	long value;
+	char *name;
+	int type;
 
-	CONSUME_SPECIFIC_IDENTIFIER ("set-byte");
+	CONSUME_IDENTIFIER(name);
+
+	if (!strcmp ("set-byte", name))
+		type = EFFECT_SET_BYTE; 
+	else if (!strcmp ("set-uint", name))
+		type = EFFECT_SET_UINT; 
+	else 
+		FAIL("Invalid effect kind, expected one of: set-byte, set-uint", INVALID_ID_TEXT);
+
 	CONSUME_NUMBER (value);
 
 	effect = g_new0 (patch_effect_t, 1);
-	effect->type = EFFECT_SET_BYTE;
-	effect->data.value = value;
+	effect->type = type;
+	if (type == EFFECT_SET_BYTE)
+		effect->data.byte_value = value;
+	else
+		effect->data.uint_value = (guint32)value;
 	return effect;
 }
 
