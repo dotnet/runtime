@@ -13,3 +13,9 @@ msdos-signature {
 	valid   offset 2 set-byte 00
 }
 
+#the offset to the pe-image
+msdos-lfanew {
+	assembly simple-assembly.exe
+
+	invalid offset 3c set-uint 0xffffffff
+}

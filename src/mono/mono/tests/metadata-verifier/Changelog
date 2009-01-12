@@ -1,6 +1,10 @@
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
-	* gen-md-tests: Add support for absolute uint patching.
+	* header-tests.md: Add test for the lfanew field.
+
+2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Add support for absolute uint patching.
 
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
