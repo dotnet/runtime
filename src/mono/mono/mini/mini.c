@@ -113,9 +113,6 @@ const char *mono_build_date;
 
 static int mini_verbose = 0;
 
-/* Enable xdebug mode. See aot-compiler.c for documentation */
-static gboolean enable_xdebug = FALSE;
-
 #define mono_jit_lock() EnterCriticalSection (&jit_mutex)
 #define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
 static CRITICAL_SECTION jit_mutex;
@@ -3662,11 +3659,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_arch_fixup_jinfo (cfg);
 #endif
 
-	if (enable_xdebug) {
-#ifndef DISABLE_AOT
-		mono_save_xdebug_info (method_to_register, jinfo->code_start, jinfo->code_size, cfg->args, cfg->unwind_ops);
-#endif
-	}
+	mono_save_xdebug_info (method_to_register, jinfo->code_start, jinfo->code_size, cfg->args, cfg->unwind_ops);
 
 	if (!cfg->compile_aot) {
 		mono_domain_lock (cfg->domain);
@@ -5005,6 +4998,9 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_arch_init ();
 
+	if (getenv ("MONO_XDEBUG"))
+		mono_xdebug_init ();
+
 	mono_trampolines_init ();
 
 	if (!g_thread_supported ())
@@ -5033,9 +5029,6 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_threads_install_notify_pending_exc (mono_arch_notify_pending_exc);
 	}
 #endif
-
-	if (getenv ("MONO_XDEBUG"))
-		enable_xdebug = TRUE;
 
 #define JIT_TRAMPOLINES_WORK
 #ifdef JIT_TRAMPOLINES_WORK

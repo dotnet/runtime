@@ -6169,34 +6169,28 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 static MonoAotCompile *xdebug_acfg;
 
-static void
-xdebug_init (void)
+void
+mono_xdebug_init (void)
 {
 	MonoAotCompile *acfg;
 
-	/* 
-	 * One time initialization.
-	 * This should be called during startup so no need for locking.
-	 */
-	if (!xdebug_acfg) {
-		acfg = g_new0 (MonoAotCompile, 1);
-		acfg->mempool = mono_mempool_new ();
-		InitializeCriticalSection (&acfg->mutex);
-		acfg->aot_opts.asm_only = TRUE;
-		acfg->aot_opts.outfile = g_strdup ("xdb.s");
+	acfg = g_new0 (MonoAotCompile, 1);
+	acfg->mempool = mono_mempool_new ();
+	InitializeCriticalSection (&acfg->mutex);
+	acfg->aot_opts.asm_only = TRUE;
+	acfg->aot_opts.outfile = g_strdup ("xdb.s");
 
-		unlink ("xdb.s");
+	unlink ("xdb.s");
 
-		emit_start (acfg);
+	emit_start (acfg);
 
-		xdebug_acfg = acfg;
+	xdebug_acfg = acfg;
 
-		/* Emit something so the file has a text segment */
-		emit_section_change (acfg, ".text", 0);
-		emit_string (acfg, "");
+	/* Emit something so the file has a text segment */
+	emit_section_change (acfg, ".text", 0);
+	emit_string (acfg, "");
 
-		emit_base_dwarf_info (acfg);
-	}
+	emit_base_dwarf_info (acfg);
 }
 
 /*
@@ -6210,7 +6204,8 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 {
 	MonoAotCompile *acfg;
 
-	xdebug_init ();
+	if (!xdebug_acfg)
+		return;
 	
 	acfg = xdebug_acfg;
 
@@ -6230,7 +6225,8 @@ mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 
 {
 	MonoAotCompile *acfg;
 
-	xdebug_init ();
+	if (!xdebug_acfg)
+		return;
 
 	acfg = xdebug_acfg;
 
