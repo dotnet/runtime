@@ -1,5 +1,7 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <glib.h>
 
 #if 1
@@ -10,6 +12,7 @@
 
 #if 0
 #define DEBUG_SCANNER(stmt) do { stmt; } while (0)
+#define SCANNER_DEBUG
 #else
 #define DEBUG_SCANNER(stmt)
 #endif
@@ -44,10 +47,16 @@ patch:
 	selector effect
 
 selector:
-	'offset' number
+	'offset' expression
 
 effect:
-	'set-byte' number
+	('set-byte' | 'set-uint') expression
+
+expression:
+	atom ('-' atom)*
+
+atom:
+	number | 'file-size'
 
 TODO For the sake of a simple implementation, tokens are space delimited.
 */
@@ -69,6 +78,8 @@ enum {
 	INVALID_NUMBER,
 	INVALID_FILE_NAME,
 	INVALID_SELECTOR,
+	INVALID_EFFECT,
+	INVALID_EXPRESSION
 };
 
 enum {
@@ -83,7 +94,16 @@ enum {
 enum {
 	EFFECT_SET_BYTE,
 	EFFECT_SET_UINT,
+	EFFECT_SET_TRUNC
 };
+
+enum {
+	EXPRESSION_CONSTANT,
+	EXPRESSION_FILE_SIZE,
+	EXPRESSION_BIN_MINUS
+};
+
+typedef struct _expression expression_t;
 
 typedef struct {
 	int type;
@@ -97,19 +117,28 @@ typedef struct {
 	token_t current;
 } scanner_t;
 
-typedef struct {
+
+struct _expression {
 	int type;
 	union {
-		long offset;
+		gint32 constant;
+		struct {
+			expression_t *left;
+			expression_t *right;
+		} bin;
 	} data;
-} patch_selector_t;
+};
+
 
 typedef struct {
 	int type;
-	union {
-		guint8 byte_value;
-		guint32 uint_value;
-	} data;
+	expression_t *expression;
+} patch_selector_t;
+
+
+typedef struct {
+	int type;
+	expression_t *expression;
 } patch_effect_t;
 
 typedef struct {
@@ -121,6 +150,7 @@ typedef struct {
 	int validity;
 	GSList *patches; /*of test_patch_t*/
 	char *data;
+	int data_size;
 } test_entry_t;
 
 typedef struct {
@@ -176,7 +206,6 @@ read_whole_file_and_close (const char *name, int *file_size)
 static void
 init_test_set (test_set_t *test_set)
 {
-	FILE *f;
 	if (test_set->init)
 		return;
 	test_set->assembly_data = read_whole_file_and_close (test_set->assembly, &test_set->assembly_size);
@@ -190,42 +219,73 @@ make_test_name (test_entry_t *entry, test_set_t *test_set)
 	return g_strdup_printf ("%s-%s-%d.exe", test_validity_name (entry->validity), test_set->name, test_set->count++);
 }
 
-static char*
-apply_selector (patch_selector_t *selector, char *data)
+
+static guint32
+expression_eval (expression_t *exp, test_entry_t *entry)
 {
+	switch (exp->type) {
+	case EXPRESSION_CONSTANT:
+		return exp->data.constant;
+	case EXPRESSION_FILE_SIZE:
+		return entry->data_size;
+	case EXPRESSION_BIN_MINUS:
+		return expression_eval (exp->data.bin.left, entry) - expression_eval (exp->data.bin.right, entry);
+	default:
+		printf ("Invalid expression type %d\n", exp->type);
+		exit (INVALID_EXPRESSION);
+	}	return 0;
+}
+
+static guint32
+apply_selector (patch_selector_t *selector, test_entry_t *entry)
+{
+	guint32 value = 0;
+	if (selector->expression)
+		value = expression_eval (selector->expression, entry);
 	switch (selector->type) {
 	case SELECTOR_ABS_OFFSET:
-		DEBUG_PARSER (printf("\tabsolute offset selector [%d]\n", selector->data.offset));
-		return data + selector->data.offset;
+		DEBUG_PARSER (printf("\tabsolute offset selector [%d]\n", value));
+		return value;
 	default:
 		printf ("Invalid selector type %d\n", selector->type);
 		exit (INVALID_SELECTOR);
 	}
 }
 
+#define SET_VAL(PTR, KIND, VAL) do { *((KIND*)(PTR)) = (KIND)VAL; }  while (0)
+
 static void
-apply_effect (patch_effect_t *effect, char *data)
+apply_effect (patch_effect_t *effect, test_entry_t *entry, guint32 offset)
 {
+	gint32 value = 0;
+	char *ptr = entry->data + offset;
+	if (effect->expression)
+		value = expression_eval (effect->expression, entry);
+
 	switch (effect->type) {
 	case EFFECT_SET_BYTE:
-		DEBUG_PARSER (printf("\tset-byte effect [%d]\n", effect->data.byte_value));
-		*data = effect->data.byte_value;
+		DEBUG_PARSER (printf("\tset-byte effect [%d]\n", value));
+		SET_VAL (ptr, guint8, value);
 		break;
 	case EFFECT_SET_UINT:
-		DEBUG_PARSER (printf("\tset-uint effect [%d]\n", effect->data.uint_value));
-		*((guint32*)data) = (guint32)effect->data.uint_value;
+		DEBUG_PARSER (printf("\tset-uint effect [%d]\n", value));
+		SET_VAL (ptr, guint32, value);
+		break;
+	case EFFECT_SET_TRUNC:
+		DEBUG_PARSER (printf("\ttrunc effect [%d]\n", offset));
+		entry->data_size = offset;
 		break;
 	default:
 		printf ("Invalid effect type %d\n", effect->type);
-		exit (INVALID_SELECTOR);
+		exit (INVALID_EFFECT);
 	}
 }
 
 static void
 apply_patch (test_entry_t *entry, test_patch_t *patch)
 {
-	char *offset = apply_selector (patch->selector, entry->data);
-	apply_effect (patch->effect, offset);
+	guint32 offset = apply_selector (patch->selector, entry);
+	apply_effect (patch->effect, entry, offset);
 }
 
 static void
@@ -237,6 +297,7 @@ process_test_entry (test_set_t *test_set, test_entry_t *entry)
 
 	init_test_set (test_set);
 	entry->data = g_memdup (test_set->assembly_data, test_set->assembly_size);
+	entry->data_size = test_set->assembly_size;
 
 	for (tmp = entry->patches; tmp; tmp = tmp->next)
 		apply_patch (entry, tmp->data);
@@ -244,7 +305,7 @@ process_test_entry (test_set_t *test_set, test_entry_t *entry)
 	file_name = make_test_name (entry, test_set);
 
 	f = fopen (file_name, "wo");
-	fwrite (entry->data, test_set->assembly_size, 1, f);
+	fwrite (entry->data, entry->data_size, 1, f);
 	fclose (f);
 
 	g_free (file_name);
@@ -308,7 +369,7 @@ is_eof (scanner_t *scanner)
 }
 
 static int
-ispunct (int c)
+ispunct_char (int c)
 {
 	return c == '{' || c == '}' || c == ',';
 }
@@ -340,6 +401,7 @@ token_text_dup (scanner_t *scanner, token_t *token)
 	return str;
 }
 
+#if SCANNER_DEBUG
 static void
 dump_token (scanner_t *scanner, token_t *token)
 {
@@ -348,6 +410,8 @@ dump_token (scanner_t *scanner, token_t *token)
 	printf ("token '%s' of type '%s' at line %d\n", str, token_type_name (token->type), token->line);
 	free (str);
 }
+
+#endif
 
 static void
 next_token (scanner_t *scanner)
@@ -366,7 +430,7 @@ next_token (scanner_t *scanner)
 		type = TOKEN_EOF;
 	else if (isdigit (c))
 		type = TOKEN_NUM;
-	else if (ispunct (c))
+	else if (ispunct_char (c))
 		type = TOKEN_PUNC;
 	else
 		type = TOKEN_ID;
@@ -457,7 +521,6 @@ match_current_type_and_text (scanner_t *scanner, int type, const char *text)
 
 /*******************************************************************************************************/
 #define FAIL(MSG, REASON) do { \
-	char *__tmp = scanner_text_dup (scanner);	\
 	printf ("%s at line %d for rule %s\n", MSG, scanner_get_line (scanner), __FUNCTION__);	\
 	exit (REASON);	\
 } while (0);
@@ -510,20 +573,52 @@ match_current_type_and_text (scanner_t *scanner, int type, const char *text)
 	next_token (scanner); \
 } while (0)
 
+#define LA_ID(TEXT) (scanner_get_type (scanner) == TOKEN_ID && match_current_text (scanner, TEXT))
+#define LA_PUNCT(TEXT) (scanner_get_type (scanner) == TOKEN_PUNC && match_current_text (scanner, TEXT))
+
 /*******************************************************************************************************/
+static expression_t*
+parse_atom (scanner_t *scanner)
+{
+	expression_t *atom = g_new0 (expression_t, 1);
+	if (scanner_get_type (scanner) == TOKEN_NUM) {
+		atom->type = EXPRESSION_CONSTANT;
+		CONSUME_NUMBER (atom->data.constant);
+	} else {
+		atom->type = EXPRESSION_FILE_SIZE;
+		CONSUME_SPECIFIC_IDENTIFIER ("file-size");
+	}
+	return atom;
+}
+
+
+static expression_t*
+parse_expression (scanner_t *scanner)
+{
+	expression_t *exp = parse_atom (scanner);
+
+	if (LA_ID ("-")) {
+		CONSUME_SPECIFIC_IDENTIFIER ("-");
+		expression_t *left = exp;
+		exp = g_new0 (expression_t, 1);
+		exp->type = EXPRESSION_BIN_MINUS;
+		exp->data.bin.left = left;
+		exp->data.bin.right = parse_atom (scanner);
+	}
+	return exp;
+}
+
 
 static patch_selector_t*
 parse_selector (scanner_t *scanner)
 {
 	patch_selector_t *selector;
-	long off;
 
 	CONSUME_SPECIFIC_IDENTIFIER ("offset");
-	CONSUME_NUMBER (off);
 
 	selector = g_new0 (patch_selector_t, 1);
 	selector->type = SELECTOR_ABS_OFFSET;
-	selector->data.offset = off;
+	selector->expression = parse_expression (scanner);
 	return selector;
 }
 
@@ -531,7 +626,6 @@ static patch_effect_t*
 parse_effect (scanner_t *scanner)
 {
 	patch_effect_t *effect;
-	long value;
 	char *name;
 	int type;
 
@@ -541,17 +635,15 @@ parse_effect (scanner_t *scanner)
 		type = EFFECT_SET_BYTE; 
 	else if (!strcmp ("set-uint", name))
 		type = EFFECT_SET_UINT; 
+	else if (!strcmp ("truncate", name))
+		type = EFFECT_SET_TRUNC;
 	else 
-		FAIL("Invalid effect kind, expected one of: set-byte, set-uint", INVALID_ID_TEXT);
-
-	CONSUME_NUMBER (value);
+		FAIL(g_strdup_printf ("Invalid effect kind, expected one of: (set-byte set-uint) but got %s",name), INVALID_ID_TEXT);
 
 	effect = g_new0 (patch_effect_t, 1);
 	effect->type = type;
-	if (type == EFFECT_SET_BYTE)
-		effect->data.byte_value = value;
-	else
-		effect->data.uint_value = (guint32)value;
+	if (type != EFFECT_SET_TRUNC)
+		effect->expression = parse_expression (scanner);
 	return effect;
 }
 
@@ -590,7 +682,6 @@ static void
 parse_test_entry (scanner_t *scanner, test_set_t *test_set)
 {
 	test_entry_t entry = { 0 };
-	int res;
 	
 	entry.validity = parse_validity (scanner);
 
