@@ -221,6 +221,27 @@ mono_arch_get_restore_context (void)
 	return start;
 }
 
+#define SAVED_REGS_LENGTH		(sizeof (gdouble) * MONO_SAVED_FREGS + sizeof (gpointer) * MONO_SAVED_GREGS)
+#define ALIGN_STACK_FRAME_SIZE(s)	(((s) + MONO_ARCH_FRAME_ALIGNMENT - 1) & ~(MONO_ARCH_FRAME_ALIGNMENT - 1))
+/* The 64 bytes here are for outgoing arguments and a bit of spare.
+   We don't use it all, but it doesn't hurt. */
+#define REG_SAVE_STACK_FRAME_SIZE	(ALIGN_STACK_FRAME_SIZE (SAVED_REGS_LENGTH + PPC_MINIMAL_STACK_SIZE + 64))
+
+static guint8*
+emit_save_saved_regs (guint8 *code, int pos)
+{
+	int i;
+
+	for (i = 31; i >= 14; --i) {
+		pos -= sizeof (gdouble);
+		ppc_stfd (code, i, pos, ppc_sp);
+	}
+	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
+	ppc_store_multiple_regs (code, ppc_r13, ppc_sp, pos);
+
+	return code;
+}
+
 /*
  * mono_arch_get_call_filter:
  *
@@ -244,28 +265,19 @@ mono_arch_get_call_filter (void)
 	code = start = mono_global_codeman_reserve (size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
 
-	/* save all the regs on the stack */
-	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (gdouble);
-		ppc_stfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_store_multiple_regs (code, ppc_r13, ppc_sp, -pos);
-
+	/* store ret addr */
 	ppc_mflr (code, ppc_r0);
 	ppc_store_reg (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 
-	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64;
-	// align to MONO_ARCH_FRAME_ALIGNMENT bytes
-	alloc_size += MONO_ARCH_FRAME_ALIGNMENT - 1;
-	alloc_size &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
+	alloc_size = REG_SAVE_STACK_FRAME_SIZE;
 
 	/* allocate stack frame and set link from sp in ctx */
 	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
 	ppc_load_reg (code, ppc_r0, G_STRUCT_OFFSET (MonoContext, sc_sp), ppc_r3);
 	ppc_load_reg_indexed (code, ppc_r0, ppc_r0, ppc_r0);
 	ppc_store_reg_update (code, ppc_r0, -alloc_size, ppc_sp);
+
+	code = emit_save_saved_regs (code, alloc_size);
 
 	/* restore all the regs from ctx (in r3), but not r1, the stack pointer */
 	restore_regs_from_context (ppc_r3, ppc_r6, ppc_r7);
@@ -277,17 +289,17 @@ mono_arch_get_call_filter (void)
 	/* epilog */
 	ppc_load_reg (code, ppc_r0, alloc_size + PPC_RET_ADDR_OFFSET, ppc_sp);
 	ppc_mtlr (code, ppc_r0);
-	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
-	
-	/* restore all the regs from the stack */
-	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (double);
-		ppc_lfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_load_multiple_regs (code, ppc_r13, ppc_sp, -pos);
 
+	/* restore all the regs from the stack */
+	pos = alloc_size;
+	for (i = 31; i >= 14; --i) {
+		pos -= sizeof (gdouble);
+		ppc_lfd (code, i, pos, ppc_sp);
+	}
+	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
+	ppc_load_multiple_regs (code, ppc_r13, ppc_sp, pos);
+
+	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
 	ppc_blr (code);
 
 	g_assert ((code - start) < size);
@@ -339,31 +351,20 @@ static gpointer
 mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gboolean rethrow)
 {
 	guint8 *code;
-	int alloc_size, pos, i;
+	int alloc_size, pos;
 
 	code = mono_ppc_create_pre_code_ftnptr (start);
 
-	/* save all the regs on the stack */
-	pos = 0;
-	for (i = 31; i >= 14; --i) {
-		pos += sizeof (gdouble);
-		ppc_stfd (code, i, -pos, ppc_sp);
-	}
-	pos += sizeof (gulong) * MONO_SAVED_GREGS;
-	ppc_store_multiple_regs (code, ppc_r13, ppc_sp, -pos);
-
+	/* store ret addr */
 	ppc_mflr (code, ppc_r0);
 	ppc_store_reg (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 
-	/* The 64 bytes here are for outgoing arguments and a bit of
-	   spare.  We don't use it all, but it doesn't hurt. */
-	alloc_size = PPC_MINIMAL_STACK_SIZE + pos + 64;
-	// align to MONO_ARCH_FRAME_ALIGNMENT bytes
-	alloc_size += MONO_ARCH_FRAME_ALIGNMENT - 1;
-	alloc_size &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
+	alloc_size = REG_SAVE_STACK_FRAME_SIZE;
 
 	g_assert ((alloc_size & (MONO_ARCH_FRAME_ALIGNMENT-1)) == 0);
 	ppc_store_reg_update (code, ppc_sp, -alloc_size, ppc_sp);
+
+	code = emit_save_saved_regs (code, alloc_size);
 
 	//ppc_break (code);
 	if (by_name) {
@@ -384,10 +385,10 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	else
 		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
 	/* pointer to the saved fp regs */
-	pos = alloc_size - sizeof (double) * MONO_SAVED_FREGS;
+	pos = alloc_size - sizeof (gdouble) * MONO_SAVED_FREGS;
 	ppc_addi (code, ppc_r7, ppc_sp, pos);
 	/* pointer to the saved int regs */
-	pos -= sizeof (gulong) * MONO_SAVED_GREGS;
+	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	ppc_li (code, ppc_r8, rethrow);
 

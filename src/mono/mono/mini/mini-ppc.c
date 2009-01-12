@@ -3543,7 +3543,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_frsp (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_JMP: {
-			int i, pos = 0;
+			int i, pos;
 			
 			/*
 			 * Keep in sync with mono_arch_emit_epilog
@@ -3566,10 +3566,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_load_volatile_arguments (cfg, code);
 
 			if (ppc_is_imm16 (cfg->stack_usage)) {
-				ppc_addic (code, ppc_sp, cfg->frame_reg, cfg->stack_usage);
+				ppc_addic (code, ppc_r11, cfg->frame_reg, cfg->stack_usage);
 			} else {
 				ppc_load (code, ppc_r11, cfg->stack_usage);
-				ppc_add (code, ppc_sp, cfg->frame_reg, ppc_r11);
+				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
 			}
 			if (!cfg->method->save_lmf) {
 				/*for (i = 31; i >= 14; --i) {
@@ -3578,16 +3578,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 						ppc_lfd (code, i, -pos, cfg->frame_reg);
 					}
 				}*/
-				/* FIXME: restore registers before changing ppc_sp */
+				pos = 0;
 				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
 						pos += sizeof (gpointer);
-						ppc_load_reg_indexed (code, i, -pos, ppc_sp);
+						ppc_load_reg (code, i, -pos, ppc_r11);
 					}
 				}
 			} else {
 				/* FIXME restore from MonoLMF: though this can't happen yet */
 			}
+			ppc_mr (code, ppc_sp, ppc_r11);
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			ppc_b (code, 0);
 			break;
