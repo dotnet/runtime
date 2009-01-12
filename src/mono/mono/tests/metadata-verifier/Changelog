@@ -1,3 +1,7 @@
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* Makefile: gen-md-tests now require glib. Fix the build.
+
+2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* Initial commit of the metadata verifier test suite.
