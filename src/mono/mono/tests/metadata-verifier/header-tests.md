@@ -28,3 +28,18 @@ msdos-lfanew {
 	invalid offset 3c set-uint file-size - 1 
 	invalid offset 3c set-uint file-size - 2 
 }
+
+pe-signature {
+	assembly simple-assembly.exe
+
+	valid offset pe-header + 0 set-byte 'P'	
+	valid offset pe-header + 1 set-byte 'E'	
+	valid offset pe-header + 2 set-byte 0
+	valid offset pe-header + 3 set-byte 0
+
+	invalid offset pe-header + 0 set-byte 'M'	
+	invalid offset pe-header + 1 set-byte 'K'	
+	invalid offset pe-header + 2 set-byte 1
+	invalid offset pe-header + 3 set-byte 2
+
+}
