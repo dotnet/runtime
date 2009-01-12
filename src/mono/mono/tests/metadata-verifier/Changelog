@@ -1,3 +1,9 @@
+2009-01-12 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Refactor the file-size into a new
+	atom 'variable' which is more extensible and easier
+	to use. Added binary add.
+
 2009-01-09 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* header-tests.md: Add tests for lfanew ranges.

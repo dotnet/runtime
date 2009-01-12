@@ -53,10 +53,14 @@ effect:
 	('set-byte' | 'set-uint') expression
 
 expression:
-	atom ('-' atom)*
+	atom ([+-] atom)*
 
 atom:
-	number | 'file-size'
+	number | variable:
+
+variable:
+	file-size
+	pe-header
 
 TODO For the sake of a simple implementation, tokens are space delimited.
 */
@@ -79,7 +83,8 @@ enum {
 	INVALID_FILE_NAME,
 	INVALID_SELECTOR,
 	INVALID_EFFECT,
-	INVALID_EXPRESSION
+	INVALID_EXPRESSION,
+	INVALID_VARIABLE_NAME
 };
 
 enum {
@@ -99,8 +104,9 @@ enum {
 
 enum {
 	EXPRESSION_CONSTANT,
-	EXPRESSION_FILE_SIZE,
-	EXPRESSION_BIN_MINUS
+	EXPRESSION_VARIABLE,
+	EXPRESSION_ADD,
+	EXPRESSION_SUB
 };
 
 typedef struct _expression expression_t;
@@ -122,6 +128,7 @@ struct _expression {
 	int type;
 	union {
 		gint32 constant;
+		char *name;
 		struct {
 			expression_t *left;
 			expression_t *right;
@@ -219,6 +226,19 @@ make_test_name (test_entry_t *entry, test_set_t *test_set)
 	return g_strdup_printf ("%s-%s-%d.exe", test_validity_name (entry->validity), test_set->name, test_set->count++);
 }
 
+#define READ_VAR(KIND, PTR) GUINT32_FROM_LE((guint32)*((KIND*)(PTR)))
+
+static guint32
+lookup_var (test_entry_t *entry, const char *name)
+{
+	if (!strcmp ("file-size", name))
+		return entry->data_size;
+	if (!strcmp ("pe-header", name))
+		return READ_VAR (guint32, entry->data + 0x3c); 
+
+	printf ("Unknown variable in expression %s\n", name);
+	exit (INVALID_VARIABLE_NAME);
+}
 
 static guint32
 expression_eval (expression_t *exp, test_entry_t *entry)
@@ -226,9 +246,11 @@ expression_eval (expression_t *exp, test_entry_t *entry)
 	switch (exp->type) {
 	case EXPRESSION_CONSTANT:
 		return exp->data.constant;
-	case EXPRESSION_FILE_SIZE:
-		return entry->data_size;
-	case EXPRESSION_BIN_MINUS:
+	case EXPRESSION_VARIABLE:
+		return lookup_var (entry, exp->data.name);
+	case EXPRESSION_ADD:
+		return expression_eval (exp->data.bin.left, entry) + expression_eval (exp->data.bin.right, entry);
+	case EXPRESSION_SUB:
 		return expression_eval (exp->data.bin.left, entry) - expression_eval (exp->data.bin.right, entry);
 	default:
 		printf ("Invalid expression type %d\n", exp->type);
@@ -428,7 +450,7 @@ next_token (scanner_t *scanner)
 	c = scanner->input [start];
 	if (start >= scanner->size)
 		type = TOKEN_EOF;
-	else if (isdigit (c))
+	else if (isdigit (c) || c == '\'')
 		type = TOKEN_NUM;
 	else if (ispunct_char (c))
 		type = TOKEN_PUNC;
@@ -493,8 +515,14 @@ scanner_text_parse_number (scanner_t *scanner, long *res)
 	char *text = scanner_text_dup (scanner);
 	char *end = NULL;
 	int ok;
-	*res = strtol (text, &end, 16);
-	ok = *end;
+	if (text [0] == '\'') {
+		ok = strlen (text) != 3 || text [2] != '\'';
+		if (!ok)
+			*res = text [1];
+	} else {
+		*res = strtol (text, &end, 16);
+		ok = *end;
+	}
 	free (text);
 
 	return ok;
@@ -585,8 +613,8 @@ parse_atom (scanner_t *scanner)
 		atom->type = EXPRESSION_CONSTANT;
 		CONSUME_NUMBER (atom->data.constant);
 	} else {
-		atom->type = EXPRESSION_FILE_SIZE;
-		CONSUME_SPECIFIC_IDENTIFIER ("file-size");
+		atom->type = EXPRESSION_VARIABLE;
+		CONSUME_IDENTIFIER (atom->data.name);
 	}
 	return atom;
 }
@@ -597,11 +625,12 @@ parse_expression (scanner_t *scanner)
 {
 	expression_t *exp = parse_atom (scanner);
 
-	if (LA_ID ("-")) {
-		CONSUME_SPECIFIC_IDENTIFIER ("-");
+	if (LA_ID ("-") || LA_ID ("+")) {
+		char *text;
+		CONSUME_IDENTIFIER (text);
 		expression_t *left = exp;
 		exp = g_new0 (expression_t, 1);
-		exp->type = EXPRESSION_BIN_MINUS;
+		exp->type = !strcmp ("+", text) ? EXPRESSION_ADD: EXPRESSION_SUB;
 		exp->data.bin.left = left;
 		exp->data.bin.right = parse_atom (scanner);
 	}
