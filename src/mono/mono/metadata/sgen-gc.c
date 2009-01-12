@@ -407,6 +407,7 @@ typedef struct {
 		((mword*)(obj))[0] &= ~PINNED_BIT;	\
 	} while (0)
 
+#define ptr_in_nursery(ptr) ((char*)ptr >= nursery_start && (char*)ptr < nursery_real_end)
 
 /*
  * Since we set bits in the vtable, use the macro to load it from the pointer to
@@ -1287,11 +1288,23 @@ mono_gc_clear_domain (MonoDomain * domain)
 	UNLOCK_GC;
 }
 
+/*
+ * add_to_global_remset:
+ *
+ *   The global remset contains locations in oldspace which point into newspace after
+ * a minor collection. This can happen if the objects they point to are pinned.
+ */
 static void
 add_to_global_remset (gpointer ptr)
 {
 	RememberedSet *rs;
+
 	DEBUG (8, fprintf (gc_debug_file, "Adding global remset for %p\n", ptr));
+
+	/* 
+	 * FIXME: If an object remains pinned, we need to add it at every minor collection.
+	 * To avoid uncontrolled growth of the global remset, only add each pointer once.
+	 */
 	if (global_remset->store_next < global_remset->end_set) {
 		*(global_remset->store_next++) = (mword)ptr;
 		return;
@@ -1300,6 +1313,15 @@ add_to_global_remset (gpointer ptr)
 	rs->next = global_remset;
 	global_remset = rs;
 	*(global_remset->store_next++) = (mword)ptr;
+
+	{
+		int global_rs_size = 0;
+
+		for (rs = global_remset; rs; rs = rs->next) {
+			global_rs_size += rs->store_next - rs->data;
+		}
+		DEBUG (4, fprintf (gc_debug_file, "Global remset now has size %d\n", global_rs_size));
+	}
 }
 
 /*
@@ -1397,7 +1419,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 			void *__old = *(ptr);	\
 			*(ptr) = copy_object (*(ptr), from_start, from_end);	\
 			DEBUG (9, if (__old != *(ptr)) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
-			if (G_UNLIKELY (*(ptr) >= (void*)from_start && *(ptr) < (void*)from_end))	\
+			if (G_UNLIKELY (*(ptr) >= (void*)from_start && *(ptr) < (void*)from_end) && !ptr_in_nursery (ptr)) \
 				add_to_global_remset ((ptr));	\
 		}	\
 	} while (0)
@@ -4021,8 +4043,14 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery) && ptr_in_heap (ptr)) {
 			*ptr = copy_object (*ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
-			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
+			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
+				/*
+				 * If the object is pinned, each reference to it from nonpinned objects
+				 * becomes part of the global remset, which can grow very large.
+				 */
+				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
 				add_to_global_remset (ptr);
+			}
 		} else {
 			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
 		}
@@ -4065,15 +4093,32 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 	int i;
 	SgenThreadInfo *info;
 	RememberedSet *remset, *next;
-	mword *p;
+	mword *p, *next_p, *store_pos;
 
 	/* the global one */
 	for (remset = global_remset; remset; remset = remset->next) {
 		DEBUG (4, fprintf (gc_debug_file, "Scanning global remset range: %p-%p, size: %zd\n", remset->data, remset->store_next, remset->store_next - remset->data));
-		for (p = remset->data; p < remset->store_next;) {
-			p = handle_remset (p, start_nursery, end_nursery, TRUE);
+		store_pos = remset->data;
+		for (p = remset->data; p < remset->store_next; p = next_p) {
+			mword ptr;
+
+			next_p = handle_remset (p, start_nursery, end_nursery, TRUE);
+
+			/* 
+			 * Clear global remsets of locations which no longer point to the 
+			 * nursery. Otherwise, they could grow indefinitely between major 
+			 * collections.
+			 */
+			ptr = *p;
+			g_assert ((ptr & REMSET_TYPE_MASK) == REMSET_LOCATION);
+			if (ptr_in_nursery (*(void**)ptr))
+				*store_pos ++ = *p;
 		}
+
+		/* Truncate the remset */
+		remset->store_next = store_pos;
 	}
+
 	/* the per-thread ones */
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
@@ -4472,7 +4517,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	if ((char*)dest >= nursery_start && (char*)dest < nursery_real_end) {
 		return;
 	}
-	DEBUG (1, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
+	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
 
 	if (rs->store_next + 1 < rs->end_set) {
 		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
@@ -4551,6 +4596,9 @@ describe_ptr (char *ptr)
 			return;
 		}
 	}
+
+	if (object_is_pinned (ptr))
+		printf ("Object is pinned.\n");
 
 	// FIXME: Handle pointers to the inside of objects
 	vtable = (MonoVTable*)LOAD_VTABLE (ptr);
