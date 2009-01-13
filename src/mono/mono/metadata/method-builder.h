@@ -28,6 +28,8 @@ typedef struct _MonoMethodBuilder {
 	gboolean no_dup_name;
 	guint32 code_size, pos;
 	unsigned char *code;
+	int num_clauses;
+	MonoExceptionClause *clauses;
 } MonoMethodBuilder;
 
 MonoMethodBuilder *
@@ -134,6 +136,9 @@ mono_mb_emit_op (MonoMethodBuilder *mb, guint8 op, gpointer data) MONO_INTERNAL;
 
 void
 mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str) MONO_INTERNAL;
+
+void
+mono_mb_set_clauses (MonoMethodBuilder *mb, int num_clauses, MonoExceptionClause *clauses) MONO_INTERNAL;
 
 G_END_DECLS
 

@@ -3802,7 +3802,6 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	MonoClass *ret_class = NULL;
 	int loc_array=0, loc_return=0, loc_serialized_exc=0;
 	MonoExceptionClause *main_clause;
-	MonoMethodHeader *header;
 	int pos, pos_leave;
 	gboolean copy_return;
 
@@ -4039,12 +4038,10 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
+	mono_mb_set_clauses (mb, 1, main_clause);
+
 	res = mono_remoting_mb_create_and_cache (method, mb, csig, csig->param_count + 16);
 	mono_mb_free (mb);
-
-	header = ((MonoMethodNormal *)res)->header;
-	header->num_clauses = 1;
-	header->clauses = main_clause;
 
 	return res;
 }
@@ -4811,7 +4808,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 {
 	MonoMethodSignature *sig, *csig, *callsig;
 	MonoExceptionClause *clause;
-	MonoMethodHeader *header;
 	MonoMethodBuilder *mb;
 	GHashTable *cache = NULL;
 	MonoClass *target_klass;
@@ -5149,6 +5145,8 @@ handle_enum:
 
 	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
 
+	mono_mb_set_clauses (mb, 1, clause);
+
 	/* return result */
 	mono_mb_patch_branch (mb, pos);
 	mono_mb_emit_ldloc (mb, 0);
@@ -5184,10 +5182,6 @@ handle_enum:
 	}
 
 	mono_mb_free (mb);
-
-	header = ((MonoMethodNormal *)res)->header;
-	header->num_clauses = 1;
-	header->clauses = clause;
 
 	return res;	
 }
@@ -9791,7 +9785,6 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	static MonoMethod *enter_method, *exit_method, *gettypefromhandle_method;
 	MonoMethodSignature *sig;
 	MonoExceptionClause *clause;
-	MonoMethodHeader *header;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -9912,13 +9905,11 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_mb_emit_ldloc (mb, ret_local);
 	mono_mb_emit_byte (mb, CEE_RET);
 
+	mono_mb_set_clauses (mb, 1, clause);
+
 	res = mono_mb_create_and_cache (cache, method,
 									mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
-
-	header = ((MonoMethodNormal *)res)->header;
-	header->num_clauses = 1;
-	header->clauses = clause;
 
 	return res;	
 }
@@ -12237,7 +12228,6 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	MonoMarshalSpec **mspecs;
 	MonoMethodSignature *sig, *sig_native;
 	MonoExceptionClause *main_clause = NULL;
-	MonoMethodHeader *header;
 	int pos_leave;
 	int hr = 0;
 	int i;
@@ -12312,6 +12302,8 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 		main_clause->handler_len = mono_mb_get_pos (mb) - main_clause->handler_offset;
 		/* end catch */
 
+		mono_mb_set_clauses (mb, 1, main_clause);
+
 		mono_mb_patch_branch (mb, pos_leave);
 
 		mono_mb_emit_ldloc (mb, hr);
@@ -12331,12 +12323,6 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
-
-	if (!preserve_sig) {
-		header = ((MonoMethodNormal *)res)->header;
-		header->num_clauses = 1;
-		header->clauses = main_clause;
-	}
 
 	return res;
 }
@@ -12572,7 +12558,6 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig, *csig;
 	MonoExceptionClause *clause;
-	MonoMethodHeader *header;
 	MonoImage *image;
 	MonoClass *klass;
 	GHashTable *cache;
@@ -12691,6 +12676,8 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 
 	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
 
+	mono_mb_set_clauses (mb, 1, clause);
+
 	mono_mb_patch_branch (mb, pos_leave);
 	/* end-try */
 
@@ -12706,10 +12693,6 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 
 	res = mono_mb_create_and_cache (cache, method, mb, csig, param_count + 16);
 	mono_mb_free (mb);
-
-	header = ((MonoMethodNormal *)res)->header;
-	header->num_clauses = 1;
-	header->clauses = clause;
 
 	return res;
 }
