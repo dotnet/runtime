@@ -409,6 +409,8 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 			MONO_OBJECT_SETREF (setup, application_base, mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base)));
 	}
 
+	mono_context_init (data);
+
 	mono_set_private_bin_path_from_config (data);
 	
 	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
@@ -742,8 +744,6 @@ ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomai
 	MonoAppDomain *ad = mono_domain_create_appdomain_internal (fname, setup);
 	
 	g_free (fname);
-
-	mono_context_init (mono_domain_from_appdomain (ad));
 
 	return ad;
 }
