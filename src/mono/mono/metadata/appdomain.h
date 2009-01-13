@@ -65,6 +65,9 @@ MonoDomain *
 mono_domain_create         (void);
 
 MonoDomain *
+mono_domain_create_appdomain (char *friendly_name, char *configuration_file);
+
+MonoDomain *
 mono_domain_get            (void);
 
 MonoDomain *

@@ -110,6 +110,9 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *has
 static void
 mono_domain_unload (MonoDomain *domain);
 
+static MonoAppDomain *
+mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *setup);
+
 static MonoLoadFunc load_function = NULL;
 
 void
@@ -351,6 +354,66 @@ gboolean
 mono_runtime_is_shutting_down (void)
 {
 	return shutting_down;
+}
+
+/**
+ * mono_domain_create_appdomain:
+ * @friendly_name: The friendly name of the appdomain to create
+ * @configuration_file: The configuration file to initialize the appdomain with
+ * 
+ * Returns a MonoDomain initialized with the appdomain
+ */
+MonoDomain *
+mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
+{
+	MonoAppDomain *ad;
+	MonoAppDomainSetup *setup;
+	MonoClass *class;
+
+	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
+	setup = (MonoAppDomainSetup *) mono_object_new (mono_domain_get (), class);
+	setup->configuration_file = configuration_file != NULL ? mono_string_new (mono_domain_get (), configuration_file) : NULL;
+
+	ad = mono_domain_create_appdomain_internal (friendly_name, setup);
+
+	return mono_domain_from_appdomain (ad);
+}
+
+static MonoAppDomain *
+mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *setup)
+{
+	MonoClass *adclass;
+	MonoAppDomain *ad;
+	MonoDomain *data;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
+
+	/* FIXME: pin all those objects */
+	data = mono_domain_create();
+
+	ad = (MonoAppDomain *) mono_object_new (data, adclass);
+	ad->data = data;
+	data->domain = ad;
+	data->setup = setup;
+	data->friendly_name = g_strdup (friendly_name);
+	// FIXME: The ctor runs in the current domain
+	// FIXME: Initialize null_reference_ex and stack_overflow_ex
+	data->out_of_memory_ex = mono_exception_from_name_domain (data, mono_defaults.corlib, "System", "OutOfMemoryException");
+
+	if (!setup->application_base) {
+		/* Inherit from the root domain since MS.NET does this */
+		MonoDomain *root = mono_get_root_domain ();
+		if (root->setup->application_base)
+			MONO_OBJECT_SETREF (setup, application_base, mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base)));
+	}
+
+	mono_set_private_bin_path_from_config (data);
+	
+	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
+
+	return ad;
 }
 
 /**
@@ -675,38 +738,12 @@ mono_set_private_bin_path_from_config (MonoDomain *domain)
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
-	MonoClass *adclass;
-	MonoAppDomain *ad;
-	MonoDomain *data;
+	char *fname = mono_string_to_utf8 (friendly_name);
+	MonoAppDomain *ad = mono_domain_create_appdomain_internal (fname, setup);
 	
-	MONO_ARCH_SAVE_REGS;
+	g_free (fname);
 
-	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-
-	/* FIXME: pin all those objects */
-	data = mono_domain_create();
-
-	ad = (MonoAppDomain *) mono_object_new (data, adclass);
-	ad->data = data;
-	data->domain = ad;
-	data->setup = setup;
-	data->friendly_name = mono_string_to_utf8 (friendly_name);
-	// FIXME: The ctor runs in the current domain
-	// FIXME: Initialize null_reference_ex and stack_overflow_ex
-	data->out_of_memory_ex = mono_exception_from_name_domain (data, mono_defaults.corlib, "System", "OutOfMemoryException");
-
-	if (!setup->application_base) {
-		/* Inherit from the root domain since MS.NET does this */
-		MonoDomain *root = mono_get_root_domain ();
-		if (root->setup->application_base)
-			MONO_OBJECT_SETREF (setup, application_base, mono_string_new_utf16 (data, mono_string_chars (root->setup->application_base), mono_string_length (root->setup->application_base)));
-	}
-
-	mono_set_private_bin_path_from_config (data);
-	
-	mono_context_init (data);
-
-	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
+	mono_context_init (mono_domain_from_appdomain (ad));
 
 	return ad;
 }
