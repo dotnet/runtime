@@ -35,8 +35,8 @@ extern struct _WapiHandleSharedLayout *_wapi_shared_layout;
 extern struct _WapiFileShareLayout *_wapi_fileshare_layout;
 
 extern guint32 _wapi_fd_reserve;
-extern mono_mutex_t _wapi_global_signal_mutex;
-extern pthread_cond_t _wapi_global_signal_cond;
+extern mono_mutex_t *_wapi_global_signal_mutex;
+extern pthread_cond_t *_wapi_global_signal_cond;
 extern int _wapi_sem_id;
 extern gboolean _wapi_has_shut_down;
 
@@ -78,11 +78,11 @@ extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      guint32 *lowest);
 extern void _wapi_handle_unlock_handles (guint32 numhandles,
 					 gpointer *handles);
-extern int _wapi_handle_wait_signal (void);
-extern int _wapi_handle_timedwait_signal (struct timespec *timeout);
+extern int _wapi_handle_wait_signal (gboolean poll);
+extern int _wapi_handle_timedwait_signal (struct timespec *timeout, gboolean poll);
 extern int _wapi_handle_wait_signal_handle (gpointer handle, gboolean alertable);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle,
-						 struct timespec *timeout, gboolean alertable);
+												 struct timespec *timeout, gboolean alertable, gboolean poll);
 extern gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
 					       guint32 new_sharemode,
 					       guint32 new_access,
@@ -155,14 +155,14 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 		/* Tell everyone blocking on multiple handles that something
 		 * was signalled
 		 */
-		pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)&_wapi_global_signal_mutex);
-		thr_ret = mono_mutex_lock (&_wapi_global_signal_mutex);
+		pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)_wapi_global_signal_mutex);
+		thr_ret = mono_mutex_lock (_wapi_global_signal_mutex);
 		g_assert (thr_ret == 0);
 			
-		thr_ret = pthread_cond_broadcast (&_wapi_global_signal_cond);
+		thr_ret = pthread_cond_broadcast (_wapi_global_signal_cond);
 		g_assert (thr_ret == 0);
 			
-		thr_ret = mono_mutex_unlock (&_wapi_global_signal_mutex);
+		thr_ret = mono_mutex_unlock (_wapi_global_signal_mutex);
 		g_assert (thr_ret == 0);
 		pthread_cleanup_pop (0);
 	} else {
@@ -217,7 +217,7 @@ static inline int _wapi_handle_lock_signal_mutex (void)
 	g_message ("%s: lock global signal mutex", __func__);
 #endif
 
-	return(mono_mutex_lock (&_wapi_global_signal_mutex));
+	return(mono_mutex_lock (_wapi_global_signal_mutex));
 }
 
 /* the parameter makes it easier to call from a pthread cleanup handler */
@@ -227,7 +227,7 @@ static inline int _wapi_handle_unlock_signal_mutex (void *unused)
 	g_message ("%s: unlock global signal mutex", __func__);
 #endif
 
-	return(mono_mutex_unlock (&_wapi_global_signal_mutex));
+	return(mono_mutex_unlock (_wapi_global_signal_mutex));
 }
 
 static inline int _wapi_handle_lock_handle (gpointer handle)

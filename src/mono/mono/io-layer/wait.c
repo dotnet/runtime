@@ -204,7 +204,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		if (timeout == INFINITE) {
 			waited = _wapi_handle_wait_signal_handle (handle, alertable);
 		} else {
-			waited = _wapi_handle_timedwait_signal_handle (handle, &abstime, alertable);
+			waited = _wapi_handle_timedwait_signal_handle (handle, &abstime, alertable, FALSE);
 		}
 	
 		if (alertable)
@@ -415,7 +415,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		if (timeout == INFINITE) {
 			waited = _wapi_handle_wait_signal_handle (wait, alertable);
 		} else {
-			waited = _wapi_handle_timedwait_signal_handle (wait, &abstime, alertable);
+			waited = _wapi_handle_timedwait_signal_handle (wait, &abstime, alertable, FALSE);
 		}
 
 		if (alertable) {
@@ -562,6 +562,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	int thr_ret;
 	gpointer current_thread = _wapi_thread_handle_from_id (pthread_self ());
 	guint32 retval;
+	gboolean poll;
 	
 	if (current_thread == NULL) {
 		SetLastError (ERROR_INVALID_HANDLE);
@@ -649,6 +650,11 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		return(WAIT_FAILED);
 	}
 
+	for (i = 0; i < numobjects; ++i)
+		if (_wapi_handle_type (handles [i]) == WAPI_HANDLE_PROCESS)
+			/* Can't wait for a process handle + another handle without polling */
+			poll = TRUE;
+
 	done = test_and_own (numobjects, handles, waitall, &count, &lowest);
 	if (done == TRUE) {
 		return(WAIT_OBJECT_0+lowest);
@@ -707,9 +713,9 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		g_assert (thr_ret == 0);
 		
 		if (timeout == INFINITE) {
-			ret = _wapi_handle_wait_signal ();
+			ret = _wapi_handle_wait_signal (poll);
 		} else {
-			ret = _wapi_handle_timedwait_signal (&abstime);
+			ret = _wapi_handle_timedwait_signal (&abstime, poll);
 		}
 
 #ifdef DEBUG
