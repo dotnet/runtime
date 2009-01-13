@@ -187,6 +187,9 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	header->num_locals = mb->locals;
 	header->init_locals = TRUE;
 
+	header->num_clauses = mb->num_clauses;
+	header->clauses = mb->clauses;
+
 	mw = (MonoMethodWrapper*) mb->method;
 	i = g_list_length (mw->method_data);
 	if (i) {
@@ -517,4 +520,11 @@ mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 	mono_mb_emit_icon (mb, incr);
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_stloc (mb, local); 
+}
+
+void
+mono_mb_set_clauses (MonoMethodBuilder *mb, int num_clauses, MonoExceptionClause *clauses)
+{
+	mb->num_clauses = num_clauses;
+	mb->clauses = clauses;
 }
