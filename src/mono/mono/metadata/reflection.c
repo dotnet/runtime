@@ -43,7 +43,7 @@ static void* reflection_info_desc = NULL;
 			gsize bmap = 1;		\
 			reflection_info_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);	\
 		}	\
-		mono_gc_register_root ((addr), sizeof (gpointer), reflection_info_desc);	\
+		mono_gc_register_root ((char*)(addr), sizeof (gpointer), reflection_info_desc); \
 	} while (0)
 #else
 #define MOVING_GC_REGISTER(addr)
