@@ -40,7 +40,9 @@
 #include <unistd.h>
 #endif
 #include <string.h>
-
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
 #include <mono/utils/mono-poll.h>
 #ifdef HAVE_EPOLL
 #include <sys/epoll.h>
