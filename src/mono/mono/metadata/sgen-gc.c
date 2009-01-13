@@ -422,7 +422,7 @@ safe_name (void* obj)
 	return vt->klass->name;
 }
 
-static guint
+static inline guint
 safe_object_get_size (MonoObject* o)
 {
 	MonoClass *klass = ((MonoVTable*)LOAD_VTABLE (o))->klass;
@@ -431,7 +431,7 @@ safe_object_get_size (MonoObject* o)
 	} else if (klass->rank) {
 		MonoArray *array = (MonoArray*)o;
 		size_t size = sizeof (MonoArray) + mono_array_element_size (klass) * mono_array_length (array);
-		if (array->bounds) {
+		if (G_UNLIKELY (array->bounds)) {
 			size += 3;
 			size &= ~3;
 			size += sizeof (MonoArrayBounds) * klass->rank;
@@ -749,10 +749,12 @@ enum {
 	ROOT_DESC_CONSERVATIVE, /* 0, so matches NULL value */
 	ROOT_DESC_BITMAP,
 	ROOT_DESC_RUN_LEN,
-	ROOT_DESC_LARGE_BITMAP,
+	ROOT_DESC_COMPLEX,
 	ROOT_DESC_TYPE_MASK = 0x3,
 	ROOT_DESC_TYPE_SHIFT = 2,
 };
+
+#define MAKE_ROOT_DESC(type,val) ((type) | ((val) << ROOT_DESC_TYPE_SHIFT))
 
 static gsize* complex_descriptors = NULL;
 static int complex_descriptors_size = 0;
@@ -1871,8 +1873,29 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 			start_root++;
 		}
 		return;
+	case ROOT_DESC_COMPLEX: {
+		gsize *bitmap_data = complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
+		int bwords = (*bitmap_data) - 1;
+		void **start_run = start_root;
+		bitmap_data++;
+		while (bwords-- > 0) {
+			gsize bmap = *bitmap_data++;
+			void **objptr = start_run;
+			while (bmap) {
+				if ((bmap & 1) && *objptr) {
+					*objptr = copy_object (*objptr, n_start, n_end);
+					DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", objptr, *objptr));
+				}
+				bmap >>= 1;
+				++objptr;
+			}
+			start_run += GC_BITS_PER_WORD;
+		}
+		break;
+	}
 	case ROOT_DESC_RUN_LEN:
-	case ROOT_DESC_LARGE_BITMAP:
+		g_assert_not_reached ();
+	default:
 		g_assert_not_reached ();
 	}
 }
@@ -5033,12 +5056,11 @@ void*
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {
 	if (numbits < ((sizeof (*bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) {
-		mword desc = ROOT_DESC_BITMAP | (bitmap [0] << ROOT_DESC_TYPE_SHIFT);
-		return (void*)desc;
+		return (void*)MAKE_ROOT_DESC (ROOT_DESC_BITMAP, bitmap [0]);
+	} else {
+		mword complex = alloc_complex_descriptor (bitmap, numbits + 1);
+		return (void*)MAKE_ROOT_DESC (ROOT_DESC_COMPLEX, complex);
 	}
-	/* conservative scanning */
-	DEBUG (3, fprintf (gc_debug_file, "Conservative root descr for size: %d\n", numbits));
-	return NULL;
 }
 
 void*
