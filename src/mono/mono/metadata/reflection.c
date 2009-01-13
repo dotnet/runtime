@@ -36,6 +36,19 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mempool-internals.h>
 
+#if HAVE_SGEN_GC
+static void* reflection_info_desc = NULL;
+#define MOVING_GC_REGISTER(addr) do {	\
+		if (!reflection_info_desc) {	\
+			gsize bmap = 1;		\
+			reflection_info_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);	\
+		}	\
+		mono_gc_register_root ((addr), sizeof (gpointer), reflection_info_desc);	\
+	} while (0)
+#else
+#define MOVING_GC_REGISTER(addr)
+#endif
+
 typedef struct {
 	char *p;
 	char *buf;
@@ -2078,11 +2091,9 @@ mono_image_get_generic_param_info (MonoReflectionGenericParam *gparam, guint32 o
 
 	entry = g_new0 (GenericParamTableEntry, 1);
 	entry->owner = owner;
-#ifdef HAVE_SGEN_GC
 	/* FIXME: track where gen_params should be freed and remove the GC root as well */
-	MONO_GC_REGISTER_ROOT (entry->gparam);
-#endif
-	entry->gparam = gparam; /* FIXME: GC object stored in unmanaged mem */
+	MOVING_GC_REGISTER (&entry->gparam);
+	entry->gparam = gparam;
 
 	g_ptr_array_add (assembly->gen_params, entry);
 }
@@ -6007,7 +6018,6 @@ mono_generic_class_get_object (MonoDomain *domain, MonoType *geninst)
 	mono_class_init (klass);
 
 #ifdef HAVE_SGEN_GC
-	/* FIXME: allow unpinned later */
 	res = (MonoReflectionGenericClass *) mono_gc_alloc_pinned_obj (mono_class_vtable (domain, System_Reflection_MonoGenericClass), mono_class_instance_size (System_Reflection_MonoGenericClass));
 #else
 	res = (MonoReflectionGenericClass *) mono_object_new (domain, System_Reflection_MonoGenericClass);
@@ -8859,19 +8869,6 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 		g_free (sig);
 	return result;
 }
-
-#if HAVE_SGEN_GC
-static void* reflection_info_desc = NULL;
-#define MOVING_GC_REGISTER(addr) do {	\
-		if (!reflection_info_desc) {	\
-			gsize bmap = 1;		\
-			reflection_info_desc = mono_gc_make_descr_from_bitmap (&bmap, 1);	\
-		}	\
-		mono_gc_register_root ((addr), sizeof (gpointer), reflection_info_desc);	\
-	} while (0)
-#else
-#define MOVING_GC_REGISTER(addr)
-#endif
 
 /*
  * mono_reflection_setup_internal_class:
