@@ -1,5 +1,9 @@
 2009-01-13 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* header-tests.md: Add tests for the machine field.
+
+2009-01-13 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* gen-md-tests.c: Add set-uint effect.
 
 2009-01-13 Rodrigo Kumpera  <rkumpera@novell.com>

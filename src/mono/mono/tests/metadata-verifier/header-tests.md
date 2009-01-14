@@ -54,4 +54,10 @@ pe-header {
 	invalid offset pe-header + 1 truncate
 	invalid offset pe-header + 018 truncate
 	invalid offset pe-header + 019 truncate
+
+	#machine
+	valid offset pe-header set-ushort 14c
+	invalid offset pe-header set-ushort 14d
+	invalid offset pe-header set-ushort 24c
+
 }
