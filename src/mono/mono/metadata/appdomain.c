@@ -107,9 +107,6 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 static void
 add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *hash);
 
-static void
-mono_domain_unload (MonoDomain *domain);
-
 static MonoAppDomain *
 mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *setup);
 
@@ -1993,7 +1990,7 @@ unload_thread_main (void *arg)
  *  'simple' way, which means do everything needed to avoid crashes and
  *  memory leaks, but not much else.
  */
-static void
+void
 mono_domain_unload (MonoDomain *domain)
 {
 	HANDLE thread_handle;

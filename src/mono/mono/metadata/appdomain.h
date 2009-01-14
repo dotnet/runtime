@@ -82,6 +82,9 @@ mono_domain_set            (MonoDomain *domain, gboolean force);
 void
 mono_domain_set_internal   (MonoDomain *domain);
 
+void
+mono_domain_unload (MonoDomain *domain);
+
 gboolean
 mono_domain_is_unloading   (MonoDomain *domain);
 
