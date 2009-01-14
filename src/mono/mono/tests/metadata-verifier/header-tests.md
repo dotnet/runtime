@@ -60,4 +60,13 @@ pe-header {
 	invalid offset pe-header set-ushort 14d
 	invalid offset pe-header set-ushort 24c
 
+	#symbol table value doesn't matter
+	valid offset pe-header + 8 set-uint 0
+	valid offset pe-header + 8 set-uint 99
+	valid offset pe-header + 8 set-uint 0xffffffff
+
+	#number of symbols value doesn't matter
+	valid offset pe-header + 012 set-uint 0
+	valid offset pe-header + 012 set-uint 99
+	valid offset pe-header + 012 set-uint 0xffffffff
 }
