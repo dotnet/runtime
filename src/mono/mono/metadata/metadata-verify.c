@@ -61,10 +61,14 @@ verify_pe_header (VerifyContext *ctx)
 	const char *pe_header = ctx->data + offset;
 	if (pe_header [0] != 'P' || pe_header [1] != 'E' ||pe_header [2] != 0 ||pe_header [3] != 0)
 		ADD_ERROR (ctx,  g_strdup ("Invalid PE header watermark"));
+	pe_header += 4;
 	offset += 4;
+
 	if (offset > ctx->size - 20)
 		ADD_ERROR (ctx, g_strdup ("File with truncated pe header"));
-	
+	if (read16 (pe_header) != 0x14c)
+		ADD_ERROR (ctx, g_strdup ("Invalid PE header Machine value"));
+
 }
 
 
