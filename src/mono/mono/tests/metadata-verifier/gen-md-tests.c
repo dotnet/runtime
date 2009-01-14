@@ -24,7 +24,9 @@ tokens:
 	comment ::= '#.*<eol>
 	identifier ::= ([a-z] | [A-Z]) ([a-z] | [A-Z] | [0-9] | [_-.])* 
 	hexa_digit = [0-9] | [a-f] | [A-F]
-	number ::= (+-)?('0' [xX])? hexa_digit+
+	number ::= hexadecimal | decimal
+	hexadecimal ::= (+-)?('0' [xX])? hexa_digit+
+	decimal ::= 0 [0-9]+
 	eol ::= <eol>
 	punctuation ::= [{}]
 
@@ -59,8 +61,9 @@ atom:
 	number | variable:
 
 variable:
-	file-size
-	pe-header
+	file-size |
+	pe-header |
+	pe-signature
 
 TODO For the sake of a simple implementation, tokens are space delimited.
 */
@@ -233,8 +236,10 @@ lookup_var (test_entry_t *entry, const char *name)
 {
 	if (!strcmp ("file-size", name))
 		return entry->data_size;
-	if (!strcmp ("pe-header", name))
+	if (!strcmp ("pe-signature", name))
 		return READ_VAR (guint32, entry->data + 0x3c); 
+	if (!strcmp ("pe-header", name))
+		return READ_VAR (guint32, entry->data + 0x3c) + 4; 
 
 	printf ("Unknown variable in expression %s\n", name);
 	exit (INVALID_VARIABLE_NAME);
@@ -520,7 +525,10 @@ scanner_text_parse_number (scanner_t *scanner, long *res)
 		if (!ok)
 			*res = text [1];
 	} else {
-		*res = strtol (text, &end, 16);
+		if (text [0] == '0' && text [1] != 'x')
+			*res = strtol (text, &end, 10);
+		else
+			*res = strtol (text, &end, 16);
 		ok = *end;
 	}
 	free (text);

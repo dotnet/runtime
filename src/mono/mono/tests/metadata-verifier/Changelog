@@ -1,3 +1,9 @@
+2009-01-13 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Rename pe-header to pe-signature.
+	Add support for decimal literals using a '0' prefix.
+	Add proper pe-header variable.
+
 2009-01-12 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* header-tests.md: Add tests for pe header.
