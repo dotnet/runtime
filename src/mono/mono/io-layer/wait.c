@@ -694,15 +694,6 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 				_wapi_handle_ops_special_wait (handles[i], 0);
 			}
 		}
-
-		/* Check before waiting on the condition, just in case
-		 */
-		done = test_and_own (numobjects, handles, waitall,
-				     &count, &lowest);
-		if (done == TRUE) {
-			retval = WAIT_OBJECT_0 + lowest;
-			break;
-		}
 		
 #ifdef DEBUG
 		g_message ("%s: locking signal mutex", __func__);
@@ -711,11 +702,30 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_signal_mutex, NULL);
 		thr_ret = _wapi_handle_lock_signal_mutex ();
 		g_assert (thr_ret == 0);
-		
-		if (timeout == INFINITE) {
-			ret = _wapi_handle_wait_signal (poll);
+
+		/* Check the signalled state of handles inside the critical section */
+		if (waitall) {
+			done = TRUE;
+			for (i = 0; i < numobjects; i++)
+				if (!_wapi_handle_issignalled (handles [i]))
+					done = FALSE;
 		} else {
-			ret = _wapi_handle_timedwait_signal (&abstime, poll);
+			done = FALSE;
+			for (i = 0; i < numobjects; i++)
+				if (_wapi_handle_issignalled (handles [i]))
+					done = TRUE;
+		}
+		
+		if (!done) {
+			/* Enter the wait */
+			if (timeout == INFINITE) {
+				ret = _wapi_handle_wait_signal (poll);
+			} else {
+				ret = _wapi_handle_timedwait_signal (&abstime, poll);
+			}
+		} else {
+			/* No need to wait */
+			ret = 0;
 		}
 
 #ifdef DEBUG

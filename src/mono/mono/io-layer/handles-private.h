@@ -139,6 +139,13 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 	if (state == TRUE) {
 		/* Tell everyone blocking on a single handle */
 
+		/* The condition the global signal cond is waiting on is the signalling of
+		 * _any_ handle. So lock it before setting the signalled state.
+		 */
+		pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)_wapi_global_signal_mutex);
+		thr_ret = mono_mutex_lock (_wapi_global_signal_mutex);
+		g_assert (thr_ret == 0);
+
 		/* This function _must_ be called with
 		 * handle->signal_mutex locked
 		 */
@@ -154,11 +161,7 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 
 		/* Tell everyone blocking on multiple handles that something
 		 * was signalled
-		 */
-		pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup, (void *)_wapi_global_signal_mutex);
-		thr_ret = mono_mutex_lock (_wapi_global_signal_mutex);
-		g_assert (thr_ret == 0);
-			
+		 */			
 		thr_ret = pthread_cond_broadcast (_wapi_global_signal_cond);
 		g_assert (thr_ret == 0);
 			
