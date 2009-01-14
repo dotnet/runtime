@@ -51,16 +51,22 @@ verify_msdos_header (VerifyContext *ctx)
 		ADD_ERROR (ctx,  g_strdup ("Invalid MS-DOS watermark"));
 	lfanew = read32 (ctx->data + 0x3c);
 	if (lfanew > ctx->size - 4)
-		ADD_ERROR (ctx,  g_strdup ("MS-DOS lfanew offset points to outside of the file"));
+		ADD_ERROR (ctx, g_strdup ("MS-DOS lfanew offset points to outside of the file"));
 }
 
 static void
 verify_pe_header (VerifyContext *ctx)
 {
-	const char *pe_header = ctx->data + read32 (ctx->data + 0x3c);
+	guint32 offset = read32 (ctx->data + 0x3c);
+	const char *pe_header = ctx->data + offset;
 	if (pe_header [0] != 'P' || pe_header [1] != 'E' ||pe_header [2] != 0 ||pe_header [3] != 0)
 		ADD_ERROR (ctx,  g_strdup ("Invalid PE header watermark"));
+	offset += 4;
+	if (offset > ctx->size - 20)
+		ADD_ERROR (ctx, g_strdup ("File with truncated pe header"));
+	
 }
+
 
 GSList*
 mono_image_verify (const char *data, guint32 size)
