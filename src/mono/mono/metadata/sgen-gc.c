@@ -181,11 +181,13 @@ static gboolean collect_before_allocs = FALSE;
 /* If set, do a heap consistency check before each minor collection */
 static gboolean consistency_check_at_minor_collection = FALSE;
 
+/*
 void
 mono_gc_flush_info (void)
 {
 	fflush (gc_debug_file);
 }
+*/
 
 #define MAX_DEBUG_LEVEL 9
 #define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
@@ -362,7 +364,7 @@ enum {
 static __thread RememberedSet *remembered_set MONO_TLS_FAST;
 static pthread_key_t remembered_set_key;
 static RememberedSet *global_remset;
-static int store_to_global_remset = 0;
+//static int store_to_global_remset = 0;
 
 /* FIXME: later choose a size that takes into account the RememberedSet struct
  * and doesn't waste any alloc paddin space.
@@ -556,11 +558,18 @@ obj_is_from_pinned_alloc (char *p)
 	return FALSE;
 }
 
+#define NORMAL_ROOTS 0
+#define PINNED_ROOTS 1
+
 /* registered roots: the key to the hash is the root start address */
-static RootRecord **roots_hash = NULL;
-static int roots_hash_size = 0;
+/* 
+ * Roots with/without a GC descriptor are kept separate to speed up pin_from_roots ()
+ * for example.
+ */
+static RootRecord **roots_hash [2] = { NULL, NULL };
+static int roots_hash_size [2] = { 0, 0 };
 static mword roots_size = 0; /* amount of memory in the root set */
-static int num_roots_entries = 0;
+static int num_roots_entries [2] = { 0, 0 };
 
 /* 
  * The current allocation cursors
@@ -595,7 +604,7 @@ static __thread char **tlab_next_addr;
 static char *nursery_next = NULL;
 static char *nursery_frag_real_end = NULL;
 static char *nursery_real_end = NULL;
-static char *nursery_first_pinned_start = NULL;
+//static char *nursery_first_pinned_start = NULL;
 static char *nursery_last_pinned_end = NULL;
 
 /* The size of a TLAB */
@@ -656,7 +665,7 @@ static void* get_internal_mem          (size_t size);
 static void  free_internal_mem         (void *addr);
 static void* get_os_memory             (size_t size, int activate);
 static void  free_os_memory            (void *addr, size_t size);
-static void  report_internal_mem_usage (void);
+static G_GNUC_UNUSED void  report_internal_mem_usage (void);
 
 static int stop_world (void);
 static int restart_world (void);
@@ -1088,6 +1097,7 @@ static mword obj_references_checked = 0;
  * This section of code deals with detecting the objects no longer in use
  * and reclaiming the memory.
  */
+#if 0
 static void __attribute__((noinline))
 scan_area (char *start, char *end)
 {
@@ -1289,6 +1299,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	/* FIXME: handle big and fixed objects (we remove, don't clear in this case) */
 	UNLOCK_GC;
 }
+#endif
 
 /*
  * add_to_global_remset:
@@ -1349,7 +1360,9 @@ add_to_global_remset (gpointer ptr)
 static char* __attribute__((noinline))
 copy_object (char *obj, char *from_space_start, char *from_space_end)
 {
-	if (obj >= from_space_start && obj < from_space_end && (obj < to_space || obj >= to_space_end)) {
+	static void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
+
+	if (obj >= from_space_start && obj < from_space_end) {
 		MonoVTable *vt;
 		char *forwarded;
 		mword objsize;
@@ -1374,13 +1387,35 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 		 * At the end of major collections, we walk the los list and if
 		 * the object is pinned, it is marked, otherwise it can be freed.
 		 */
-		if (objsize >= MAX_SMALL_OBJ_SIZE || (obj >= min_pinned_chunk_addr && obj < max_pinned_chunk_addr && obj_is_from_pinned_alloc (obj))) {
+		if (G_UNLIKELY (objsize >= MAX_SMALL_OBJ_SIZE || (obj >= min_pinned_chunk_addr && obj < max_pinned_chunk_addr && obj_is_from_pinned_alloc (obj)))) {
 			DEBUG (9, fprintf (gc_debug_file, "Marked LOS/Pinned %p (%s), size: %zd\n", obj, safe_name (obj), objsize));
 			pin_object (obj);
 			return obj;
 		}
 		/* ok, the object is not pinned, we can move it */
 		/* use a optimized memcpy here */
+		if (objsize <= sizeof (gpointer) * 8) {
+			mword *dest = (mword*)gray_objects;
+			goto *copy_labels [objsize / sizeof (gpointer)];
+		LAB_8:
+			(dest) [7] = ((mword*)obj) [7];
+		LAB_7:
+			(dest) [6] = ((mword*)obj) [6];
+		LAB_6:
+			(dest) [5] = ((mword*)obj) [5];
+		LAB_5:
+			(dest) [4] = ((mword*)obj) [4];
+		LAB_4:
+			(dest) [3] = ((mword*)obj) [3];
+		LAB_3:
+			(dest) [2] = ((mword*)obj) [2];
+		LAB_2:
+			(dest) [1] = ((mword*)obj) [1];
+		LAB_1:
+			(dest) [0] = ((mword*)obj) [0];
+		LAB_0:
+			;
+		} else {
 #if 0
 		{
 			int ecx;
@@ -1396,10 +1431,11 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 #else
 		memcpy (gray_objects, obj, objsize);
 #endif
+		}
 		/* adjust array->bounds */
 		vt = ((MonoObject*)obj)->vtable;
 		g_assert (vt->gc_descr);
-		if (vt->rank && ((MonoArray*)obj)->bounds) {
+		if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
 			MonoArray *array = (MonoArray*)gray_objects;
 			array->bounds = (MonoArrayBounds*)((char*)gray_objects + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
 			DEBUG (9, fprintf (gc_debug_file, "Array instance %p: size: %zd, rank: %d, length: %d\n", array, objsize, vt->rank, mono_array_length (array)));
@@ -1417,9 +1453,9 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
-		if (*(ptr)) {	\
-			void *__old = *(ptr);	\
-			*(ptr) = copy_object (*(ptr), from_start, from_end);	\
+		void *__old = *(ptr);	\
+		if (__old) {	\
+			*(ptr) = copy_object (__old, from_start, from_end);	\
 			DEBUG (9, if (__old != *(ptr)) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (*(ptr) >= (void*)from_start && *(ptr) < (void*)from_end) && !ptr_in_nursery (ptr)) \
 				add_to_global_remset ((ptr));	\
@@ -1675,7 +1711,7 @@ sort_addresses (void **array, int size)
 	}
 }
 
-static void
+static G_GNUC_UNUSED void
 print_nursery_gaps (void* start_nursery, void *end_nursery)
 {
 	int i;
@@ -1790,7 +1826,7 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
  * is no write in the old generation area where the pinned object is referenced
  * and we may not consider it as reachable.
  */
-static void
+static G_GNUC_UNUSED void
 mark_pinned_objects (int generation)
 {
 }
@@ -1798,14 +1834,14 @@ mark_pinned_objects (int generation)
 /*
  * Debugging function: find in the conservative roots where @obj is being pinned.
  */
-static void
+static G_GNUC_UNUSED void
 find_pinning_reference (char *obj, size_t size)
 {
 	RootRecord *root;
 	int i;
 	char *endobj = obj + size;
-	for (i = 0; i < roots_hash_size; ++i) {
-		for (root = roots_hash [i]; root; root = root->next) {
+	for (i = 0; i < roots_hash_size [0]; ++i) {
+		for (root = roots_hash [0][i]; root; root = root->next) {
 			/* if desc is non-null it has precise info */
 			if (!root->root_desc) {
 				char ** start = (char**)root->start_root;
@@ -1831,13 +1867,10 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 {
 	RootRecord *root;
 	int i;
-	DEBUG (3, fprintf (gc_debug_file, "Scanning pinned roots (%d bytes, %d entries)\n", (int)roots_size, num_roots_entries));
+	DEBUG (3, fprintf (gc_debug_file, "Scanning pinned roots (%d bytes, %d/%d entries)\n", (int)roots_size, num_roots_entries [0], num_roots_entries [1]));
 	/* objects pinned from the API are inside these roots */
-	for (i = 0; i < roots_hash_size; ++i) {
-		for (root = roots_hash [i]; root; root = root->next) {
-			/* if desc is non-null it has precise info */
-			if (root->root_desc)
-				continue;
+	for (i = 0; i < roots_hash_size [1]; ++i) {
+		for (root = roots_hash [1][i]; root; root = root->next) {
 			DEBUG (6, fprintf (gc_debug_file, "Pinned roots %p-%p\n", root->start_root, root->end_root));
 			conservatively_pin_objects_from ((void**)root->start_root, (void**)root->end_root, start_nursery, end_nursery);
 		}
@@ -1968,7 +2001,7 @@ alloc_nursery (void)
  * Update roots in the old generation. Since we currently don't have the
  * info from the write barriers, we just scan all the objects.
  */
-static void
+static G_GNUC_UNUSED void
 scan_old_generation (char *start, char* end)
 {
 	GCMemSection *section;
@@ -2231,11 +2264,8 @@ scan_from_registered_roots (char *addr_start, char *addr_end)
 {
 	int i;
 	RootRecord *root;
-	for (i = 0; i < roots_hash_size; ++i) {
-		for (root = roots_hash [i]; root; root = root->next) {
-			/* if desc is non-null it has precise info */
-			if (!root->root_desc)
-				continue;
+	for (i = 0; i < roots_hash_size [0]; ++i) {
+		for (root = roots_hash [0][i]; root; root = root->next) {
 			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
 			precisely_scan_objects_from ((void**)root->start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc);
 		}
@@ -2714,7 +2744,7 @@ report_pinned_chunk (PinnedChunk *chunk, int seq) {
 /*
  * Debug reporting.
  */
-static void
+static G_GNUC_UNUSED void
 report_internal_mem_usage (void) {
 	PinnedChunk *chunk;
 	int i;
@@ -3705,26 +3735,27 @@ mono_gc_add_memory_pressure (gint64 value)
  */
 
 static void
-rehash_roots (void)
+rehash_roots (gboolean pinned)
 {
 	int i;
 	unsigned int hash;
 	RootRecord **new_hash;
 	RootRecord *entry, *next;
-	int new_size = g_spaced_primes_closest (num_roots_entries);
+	int new_size;
 
+	new_size = g_spaced_primes_closest (num_roots_entries [pinned]);
 	new_hash = get_internal_mem (new_size * sizeof (RootRecord*));
-	for (i = 0; i < roots_hash_size; ++i) {
-		for (entry = roots_hash [i]; entry; entry = next) {
+	for (i = 0; i < roots_hash_size [pinned]; ++i) {
+		for (entry = roots_hash [pinned][i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->start_root) % new_size;
 			next = entry->next;
 			entry->next = new_hash [hash];
 			new_hash [hash] = entry;
 		}
 	}
-	free_internal_mem (roots_hash);
-	roots_hash = new_hash;
-	roots_hash_size = new_size;
+	free_internal_mem (roots_hash [pinned]);
+	roots_hash [pinned] = new_hash;
+	roots_hash_size [pinned] = new_size;
 }
 
 /*
@@ -3734,21 +3765,27 @@ int
 mono_gc_register_root (char *start, size_t size, void *descr)
 {
 	RootRecord *new_root;
-	unsigned int hash = mono_aligned_addr_hash (start);
+	unsigned int hash, addr_hash = mono_aligned_addr_hash (start);
+	gboolean pinned = descr == NULL;
+	int i;
 	LOCK_GC;
-	if (num_roots_entries >= roots_hash_size * 2)
-		rehash_roots ();
-	hash %= roots_hash_size;
-	for (new_root = roots_hash [hash]; new_root; new_root = new_root->next) {
-		/* we allow changing the size and the descriptor (for thread statics etc) */
-		if (new_root->start_root == start) {
-			size_t old_size = new_root->end_root - new_root->start_root;
-			new_root->end_root = new_root->start_root + size;
-			new_root->root_desc = (mword)descr;
-			roots_size += size;
-			roots_size -= old_size;
-			UNLOCK_GC;
-			return TRUE;
+	if (num_roots_entries [0] >= roots_hash_size [0] * 2)
+		rehash_roots (0);
+	if (num_roots_entries [1] >= roots_hash_size [1] * 2)
+		rehash_roots (1);
+	for (i = 0; i < 2; ++i) {
+		hash = addr_hash % roots_hash_size [i];
+		for (new_root = roots_hash [i][hash]; new_root; new_root = new_root->next) {
+			/* we allow changing the size and the descriptor (for thread statics etc) */
+			if (new_root->start_root == start) {
+				size_t old_size = new_root->end_root - new_root->start_root;
+				new_root->end_root = new_root->start_root + size;
+				new_root->root_desc = (mword)descr;
+				roots_size += size;
+				roots_size -= old_size;
+				UNLOCK_GC;
+				return TRUE;
+			}
 		}
 	}
 	new_root = get_internal_mem (sizeof (RootRecord));
@@ -3757,9 +3794,10 @@ mono_gc_register_root (char *start, size_t size, void *descr)
 		new_root->end_root = new_root->start_root + size;
 		new_root->root_desc = (mword)descr;
 		roots_size += size;
-		num_roots_entries++;
-		new_root->next = roots_hash [hash];
-		roots_hash [hash] = new_root;
+		hash = addr_hash % roots_hash_size [pinned];
+		num_roots_entries [pinned]++;
+		new_root->next = roots_hash [pinned] [hash];
+		roots_hash [pinned][hash] = new_root;
 		DEBUG (3, fprintf (gc_debug_file, "Added root %p for range: %p-%p, descr: %p  (%d/%d bytes)\n", new_root, new_root->start_root, new_root->end_root, descr, (int)size, (int)roots_size));
 	} else {
 		UNLOCK_GC;
@@ -3772,25 +3810,30 @@ mono_gc_register_root (char *start, size_t size, void *descr)
 void
 mono_gc_deregister_root (char* addr)
 {
-	RootRecord *tmp, *prev = NULL;
-	unsigned int hash = mono_aligned_addr_hash (addr);
+	RootRecord *tmp, *prev;
+	unsigned int hash, addr_hash = mono_aligned_addr_hash (addr);
+	int pinned;
+
 	LOCK_GC;
-	hash %= roots_hash_size;
-	tmp = roots_hash [hash];
-	while (tmp) {
-		if (tmp->start_root == (char*)addr) {
-			if (prev)
-				prev->next = tmp->next;
-			else
-				roots_hash [hash] = tmp->next;
-			roots_size -= (tmp->end_root - tmp->start_root);
-			num_roots_entries--;
-			DEBUG (3, fprintf (gc_debug_file, "Removed root %p for range: %p-%p\n", tmp, tmp->start_root, tmp->end_root));
-			free_internal_mem (tmp);
-			break;
+	for (pinned = 0; pinned < 2; ++pinned) {
+		hash = addr_hash % roots_hash_size [pinned];
+		tmp = roots_hash [pinned][hash];
+		prev = NULL;
+		while (tmp) {
+			if (tmp->start_root == (char*)addr) {
+				if (prev)
+					prev->next = tmp->next;
+				else
+					roots_hash [pinned][hash] = tmp->next;
+				roots_size -= (tmp->end_root - tmp->start_root);
+				num_roots_entries [pinned]--;
+				DEBUG (3, fprintf (gc_debug_file, "Removed root %p for range: %p-%p\n", tmp, tmp->start_root, tmp->end_root));
+				free_internal_mem (tmp);
+				break;
+			}
+			prev = tmp;
+			tmp = tmp->next;
 		}
-		prev = tmp;
-		tmp = tmp->next;
 	}
 	UNLOCK_GC;
 }
