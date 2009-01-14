@@ -2259,6 +2259,18 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		this_reg = this->dreg;
 
+#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
+		if ((method->klass->parent == mono_defaults.multicastdelegate_class) && (!strcmp (method->name, "Invoke"))) {
+			/* Make a call to delegate->invoke_impl */
+			call->inst.opcode = callvirt_to_call_membase (call->inst.opcode);
+			call->inst.inst_basereg = this_reg;
+			call->inst.inst_offset = G_STRUCT_OFFSET (MonoDelegate, invoke_impl);
+			MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
+
+			return (MonoInst*)call;
+		}
+#endif
+
 		if ((!cfg->compile_aot || enable_for_aot) && 
 			(!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) || 
 			 (MONO_METHOD_IS_FINAL (method) &&
@@ -2283,18 +2295,6 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 			return (MonoInst*)call;
 		}
-
-#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
-		if ((method->klass->parent == mono_defaults.multicastdelegate_class) && (!strcmp (method->name, "Invoke"))) {
-			/* Make a call to delegate->invoke_impl */
-			call->inst.opcode = callvirt_to_call_membase (call->inst.opcode);
-			call->inst.inst_basereg = this_reg;
-			call->inst.inst_offset = G_STRUCT_OFFSET (MonoDelegate, invoke_impl);
-			MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
-
-			return (MonoInst*)call;
-		}
-#endif
 
 		if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && MONO_METHOD_IS_FINAL (method)) {
 			/*
