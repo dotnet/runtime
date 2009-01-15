@@ -1,5 +1,9 @@
 2009-01-14 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* header-tests.md: Add tests for characteristics.
+
+2009-01-14 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* gen-md-tests.c: Improved debugging and made small cleanup on macro names.
 
 2009-01-13 Rodrigo Kumpera  <rkumpera@novell.com>

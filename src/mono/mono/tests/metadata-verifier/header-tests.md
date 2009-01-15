@@ -69,4 +69,11 @@ pe-header {
 	valid offset pe-header + 012 set-uint 0
 	valid offset pe-header + 012 set-uint 99
 	valid offset pe-header + 012 set-uint 0xffffffff
+
+	#characteristics - it's value is not important
+	valid offset pe-header + 018 set-ushort 0
+	valid offset pe-header + 018 set-ushort 0x4000
+
+	#FIXME 0x2000 is used for signaling it's a dll and peverify complains about the entrypoint signature. WHAT?
+	invalid offset pe-header + 018 set-ushort 0x2000
 }
