@@ -750,24 +750,29 @@ enum {
 #define ALLOC_ALIGN 8
 
 
-/* Root bitmap descriptors are simpler: the lower two bits describe the type
+/* Root bitmap descriptors are simpler: the lower three bits describe the type
  * and we either have 30/62 bitmap bits or nibble-based run-length,
- * or a complex descriptor
+ * or a complex descriptor, or a user defined marker function.
  */
 enum {
 	ROOT_DESC_CONSERVATIVE, /* 0, so matches NULL value */
 	ROOT_DESC_BITMAP,
-	ROOT_DESC_RUN_LEN,
+	ROOT_DESC_RUN_LEN, 
 	ROOT_DESC_COMPLEX,
-	ROOT_DESC_TYPE_MASK = 0x3,
-	ROOT_DESC_TYPE_SHIFT = 2,
+	ROOT_DESC_USER,
+	ROOT_DESC_TYPE_MASK = 0x7,
+	ROOT_DESC_TYPE_SHIFT = 3,
 };
 
 #define MAKE_ROOT_DESC(type,val) ((type) | ((val) << ROOT_DESC_TYPE_SHIFT))
 
+#define MAX_USER_DESCRIPTORS 16
+
 static gsize* complex_descriptors = NULL;
 static int complex_descriptors_size = 0;
 static int complex_descriptors_next = 0;
+static MonoGCMarkFunc user_descriptors [MAX_USER_DESCRIPTORS];
+static int user_descriptors_next = 0;
 
 static int
 alloc_complex_descriptor (gsize *bitmap, int numbits)
@@ -1362,7 +1367,11 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 {
 	static void *copy_labels [] = { &&LAB_0, &&LAB_1, &&LAB_2, &&LAB_3, &&LAB_4, &&LAB_5, &&LAB_6, &&LAB_7, &&LAB_8 };
 
-	if (obj >= from_space_start && obj < from_space_end) {
+	/* 
+	 * FIXME: The second set of checks is only needed if we are called for tospace
+	 * objects too.
+	 */
+	if (obj >= from_space_start && obj < from_space_end && (obj < to_space || obj >= to_space_end)) {
 		MonoVTable *vt;
 		char *forwarded;
 		mword objsize;
@@ -1885,6 +1894,19 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 	pin_thread_data (start_nursery, end_nursery);
 }
 
+/* Copy function called from user defined mark functions */
+static char *user_copy_n_start;
+static char *user_copy_n_end;
+
+static void*
+user_copy (void *addr)
+{
+	if (addr)
+		return copy_object (addr, user_copy_n_start, user_copy_n_end);
+	else
+		return NULL;
+}
+
 /*
  * The memory area from start_root to end_root contains pointers to objects.
  * Their position is precisely described by @desc (this means that the pointer
@@ -1924,6 +1946,14 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 			}
 			start_run += GC_BITS_PER_WORD;
 		}
+		break;
+	}
+	case ROOT_DESC_USER: {
+		MonoGCMarkFunc marker = user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
+
+		user_copy_n_start = n_start;
+		user_copy_n_end = n_end;
+		marker (start_root, user_copy);
 		break;
 	}
 	case ROOT_DESC_RUN_LEN:
@@ -4666,6 +4696,9 @@ describe_ptr (char *ptr)
 	if (object_is_pinned (ptr))
 		printf ("Object is pinned.\n");
 
+	if (object_is_forwarded (ptr))
+		printf ("Object is forwared.\n");
+
 	// FIXME: Handle pointers to the inside of objects
 	vtable = (MonoVTable*)LOAD_VTABLE (ptr);
 
@@ -5104,6 +5137,18 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 		mword complex = alloc_complex_descriptor (bitmap, numbits + 1);
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_COMPLEX, complex);
 	}
+}
+
+void*
+mono_gc_make_root_descr_user (MonoGCMarkFunc marker)
+{
+	void *descr;
+
+	g_assert (user_descriptors_next < MAX_USER_DESCRIPTORS);
+	descr = (void*)MAKE_ROOT_DESC (ROOT_DESC_USER, (mword)user_descriptors_next);
+	user_descriptors [user_descriptors_next ++] = marker;
+
+	return descr;
 }
 
 void*
