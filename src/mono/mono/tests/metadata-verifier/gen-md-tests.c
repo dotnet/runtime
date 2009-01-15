@@ -231,6 +231,7 @@ make_test_name (test_entry_t *entry, test_set_t *test_set)
 }
 
 #define READ_VAR(KIND, PTR) GUINT32_FROM_LE((guint32)*((KIND*)(PTR)))
+#define SET_VAR(KIND, PTR, VAL) do { *((KIND*)(PTR)) = (KIND)VAL; }  while (0)
 
 static guint32
 lookup_var (test_entry_t *entry, const char *name)
@@ -280,8 +281,6 @@ apply_selector (patch_selector_t *selector, test_entry_t *entry)
 	}
 }
 
-#define SET_VAL(PTR, KIND, VAL) do { *((KIND*)(PTR)) = (KIND)VAL; }  while (0)
-
 static void
 apply_effect (patch_effect_t *effect, test_entry_t *entry, guint32 offset)
 {
@@ -292,16 +291,16 @@ apply_effect (patch_effect_t *effect, test_entry_t *entry, guint32 offset)
 
 	switch (effect->type) {
 	case EFFECT_SET_BYTE:
-		DEBUG_PARSER (printf("\tset-byte effect [%d]\n", value));
-		SET_VAL (ptr, guint8, value);
+		DEBUG_PARSER (printf("\tset-byte effect old value [%x] new value [%x]\n", READ_VAR (guint8, ptr), value));
+		SET_VAR (guint8, ptr, value);
 		break;
 	case EFFECT_SET_USHORT:
-		DEBUG_PARSER (printf("\tset-sint effect [%d]\n", value));
-		SET_VAL (ptr, guint16, value);
+		DEBUG_PARSER (printf("\tset-ushort effect old value [%x] new value [%x]\n", READ_VAR (guint16, ptr), value));
+		SET_VAR (guint16, ptr, value);
 		break;
 	case EFFECT_SET_UINT:
-		DEBUG_PARSER (printf("\tset-uint effect [%d]\n", value));
-		SET_VAL (ptr, guint32, value);
+		DEBUG_PARSER (printf("\tset-uint effect old value [%x] new value [%x]\n", READ_VAR (guint32, ptr), value));
+		SET_VAR (guint32, ptr, value);
 		break;
 	case EFFECT_SET_TRUNC:
 		DEBUG_PARSER (printf("\ttrunc effect [%d]\n", offset));
