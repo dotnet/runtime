@@ -92,7 +92,9 @@ static guint g_hash_table_foreach_remove_or_steal (MonoGHashTable     *hash_tabl
                                                    gpointer	   user_data,
                                                    gboolean        notify);
 
+#ifdef HAVE_SGEN_GC
 static void mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func);
+#endif
 
 G_LOCK_DEFINE_STATIC (g_hash_global);
 
@@ -831,6 +833,8 @@ g_hash_nodes_destroy (MonoGHashNode *hash_node,
     }
 }
 
+#ifdef HAVE_SGEN_GC
+
 /* GC marker function */
 static void
 mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func)
@@ -864,3 +868,5 @@ mono_g_hash_mark (void *addr, MonoGCCopyFunc mark_func)
 		}
 	}
 }
+
+#endif
