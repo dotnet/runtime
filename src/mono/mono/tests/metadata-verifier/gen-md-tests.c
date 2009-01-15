@@ -63,6 +63,7 @@ atom:
 variable:
 	file-size |
 	pe-header |
+	pe-optional-header |
 	pe-signature
 
 TODO For the sake of a simple implementation, tokens are space delimited.
@@ -242,6 +243,8 @@ lookup_var (test_entry_t *entry, const char *name)
 		return READ_VAR (guint32, entry->data + 0x3c); 
 	if (!strcmp ("pe-header", name))
 		return READ_VAR (guint32, entry->data + 0x3c) + 4; 
+	if (!strcmp ("pe-optional-header", name))
+		return READ_VAR (guint32, entry->data + 0x3c) + 24; 
 
 	printf ("Unknown variable in expression %s\n", name);
 	exit (INVALID_VARIABLE_NAME);
@@ -330,7 +333,7 @@ process_test_entry (test_set_t *test_set, test_entry_t *entry)
 	entry->data = g_memdup (test_set->assembly_data, test_set->assembly_size);
 	entry->data_size = test_set->assembly_size;
 
-	DEBUG_PARSER (printf("%s\n", entry->validity == TEST_TYPE_VALID? "valid" : "invalid"));
+	DEBUG_PARSER (printf("(%d)%s\n", test_set->count, entry->validity == TEST_TYPE_VALID? "valid" : "invalid"));
 	for (tmp = entry->patches; tmp; tmp = tmp->next)
 		apply_patch (entry, tmp->data);
 
