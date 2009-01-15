@@ -17,6 +17,7 @@
 /*
  TODO add fail fast mode
  TODO add PE32+ support
+ TODO verify the entry point RVA and content.
 */
 
 typedef struct {
@@ -24,6 +25,8 @@ typedef struct {
 	guint32 size;
 	GSList *errors;
 	int valid;
+
+	guint32 data_dir_count;
 } VerifyContext;
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
@@ -96,18 +99,33 @@ verify_pe_optional_header (VerifyContext *ctx)
 	if (header_size < 2) /*must be at least 2 or we won't be able to read magic*/
 		ADD_ERROR (ctx, g_strdup ("Invalid PE optional header size"));
 
-	if (offset > ctx->size - header_size || header_size > ctx->size)
+	if (offset > ctx->size - header_size || header_size > ctx->size) {
 		ADD_ERROR (ctx, g_strdup ("Invalid PE optional header size"));
+		return;
+	}
 
 	if (read16 (pe_optional_header) == 0x10b) {
 		if (header_size != 224)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header size %d", header_size));
+
+		if (read32 (pe_optional_header + 28) != 0x400000)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Image base %x", read32 (pe_optional_header + 28)));
+		if (read32 (pe_optional_header + 32) != 0x2000)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Section Aligmment %x", read32 (pe_optional_header + 32)));
+		if (read32 (pe_optional_header + 36) != 0x200)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid file Aligmment %x", read32 (pe_optional_header + 36)));
+		/* All the junk in the middle is irrelevant, specially for mono. */
+		ctx->data_dir_count = read32 (pe_optional_header + 92);
+		if (ctx->data_dir_count > 0x10)
+			ADD_ERROR (ctx, g_strdup_printf ("Too many data directories %x", ctx->data_dir_count));
 	} else {
 		if (read16 (pe_optional_header) == 0x20B)
 			ADD_ERROR (ctx, g_strdup ("Metadata verifier doesn't handle PE32+"));
 		else
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header magic %d", read16 (pe_optional_header)));
 	}
+
+
 }
 
 GSList*
