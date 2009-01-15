@@ -3717,16 +3717,16 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #endif /* DISABLE_JIT */
 
 MonoJitInfo*
-mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method)
+mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *open_method)
 {
+	static gboolean inited = FALSE;
+	static int lookups = 0;
+	static int failed_lookups = 0;
+
 	MonoGenericContext object_context;
-	MonoMethod *open_method, *object_method;
+	MonoMethod *object_method;
 	MonoJitInfo *ji;
 
-	if (!mono_method_is_generic_sharable_impl (method, FALSE))
-		return NULL;
-
-	open_method = mono_method_get_declaring_generic_method (method);
 	object_context = construct_object_context_for_method (open_method);
 	object_method = mono_class_inflate_generic_method (open_method, &object_context);
 
@@ -3734,7 +3734,30 @@ mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method)
 	if (ji && !ji->has_generic_jit_info)
 		ji = NULL;
 
+	if (!inited) {
+		mono_counters_register ("Shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &lookups);
+		mono_counters_register ("Failed shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &failed_lookups);
+		inited = TRUE;
+	}
+
+	++lookups;
+	if (!ji)
+		++failed_lookups;
+
 	return ji;
+}
+
+static MonoJitInfo*
+lookup_generic_method (MonoDomain *domain, MonoMethod *method)
+{
+	MonoMethod *open_method;
+
+	if (!mono_method_is_generic_sharable_impl (method, FALSE))
+		return NULL;
+
+ 	open_method = mono_method_get_declaring_generic_method (method);
+
+	return mono_domain_lookup_shared_generic (domain, open_method);
 }
 
 /*
@@ -3748,7 +3771,7 @@ lookup_method_inner (MonoDomain *domain, MonoMethod *method)
 	if (ji)
 		return ji;
 
-	return mono_domain_lookup_shared_generic (domain, method);
+	return lookup_generic_method (domain, method);
 }
 
 static MonoJitInfo*
