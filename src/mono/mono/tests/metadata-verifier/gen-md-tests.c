@@ -330,6 +330,7 @@ process_test_entry (test_set_t *test_set, test_entry_t *entry)
 	entry->data = g_memdup (test_set->assembly_data, test_set->assembly_size);
 	entry->data_size = test_set->assembly_size;
 
+	DEBUG_PARSER (printf("%s\n", entry->validity == TEST_TYPE_VALID? "valid" : "invalid"));
 	for (tmp = entry->patches; tmp; tmp = tmp->next)
 		apply_patch (entry, tmp->data);
 

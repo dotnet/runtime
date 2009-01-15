@@ -1,5 +1,11 @@
 2009-01-14 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* gen-md-tests.c: Improve debugging.
+
+	* header-tests.md: Add tests for the optional header.
+
+2009-01-14 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* gen-md-tests.c: Revert decision of making base 16 the default.
 	It makes for shorter tests, but it's confusing.
 

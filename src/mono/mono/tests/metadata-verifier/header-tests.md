@@ -75,5 +75,19 @@ pe-header {
 	valid offset pe-header + 18 set-ushort 0x4000
 
 	#FIXME 0x2000 is used for signaling it's a dll and peverify complains about the entrypoint signature. WHAT?
-	invalid offset pe-header + 18 set-ushort 0x2000
+	#invalid offset pe-header + 18 set-ushort 0x2000
+}
+
+pe-optional-header {
+	assembly simple-assembly.exe
+
+	#this header is optional only in the names
+	valid offset pe-header + 16 set-ushort 224
+	invalid offset pe-header + 16 set-ushort 0
+	invalid offset pe-header + 16 set-ushort 223
+
+	invalid offset pe-header + 18 truncate
+	invalid offset pe-header + 239 truncate
+
+	#FIXME add tests for PE32+
 }
