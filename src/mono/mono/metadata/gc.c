@@ -91,7 +91,10 @@ static void
 run_finalize (void *obj, void *data)
 {
 	MonoObject *exc = NULL;
-	MonoObject *o, *o2;
+	MonoObject *o;
+#ifndef HAVE_SGEN_GC
+	MonoObject *o2;
+#endif
 	MonoMethod* finalizer = NULL;
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
@@ -853,12 +856,16 @@ mono_gc_finalize_notify (void)
 #endif
 }
 
+#ifdef HAVE_BOEHM_GC
+
 static void
 collect_objects (gpointer key, gpointer value, gpointer user_data)
 {
 	GPtrArray *arr = (GPtrArray*)user_data;
 	g_ptr_array_add (arr, key);
 }
+
+#endif
 
 /*
  * finalize_domain_objects:
