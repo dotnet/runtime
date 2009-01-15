@@ -1,5 +1,12 @@
 2009-01-14 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* gen-md-tests.c: Revert decision of making base 16 the default.
+	It makes for shorter tests, but it's confusing.
+
+	* header-tests.md: Fix the tests to use an explicit 0x for hexadecimal numbers.
+
+2009-01-14 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* header-tests.md: Add tests for characteristics.
 
 2009-01-14 Rodrigo Kumpera  <rkumpera@novell.com>

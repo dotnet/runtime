@@ -529,10 +529,7 @@ scanner_text_parse_number (scanner_t *scanner, long *res)
 		if (!ok)
 			*res = text [1];
 	} else {
-		if (text [0] == '0' && text [1] != 'x')
-			*res = strtol (text, &end, 10);
-		else
-			*res = strtol (text, &end, 16);
+		*res = strtol (text, &end, 0);
 		ok = *end;
 	}
 	free (text);

@@ -3,14 +3,14 @@
 #the first bytes of an image must be 4d 5a
 msdos-signature {
 	assembly simple-assembly.exe
-	valid   offset 0 set-byte 4d
-	invalid offset 0 set-byte 4e
+	valid   offset 0 set-byte 0x4d
+	invalid offset 0 set-byte 0x4e
 
-	valid   offset 1 set-byte 5a
+	valid   offset 1 set-byte 0x5a
 	invalid offset 1 set-byte 0
 
 	#the spec says it should be 0x90 but no modern COFF loader cares about this.
-	valid   offset 2 set-byte 00
+	valid   offset 2 set-byte 0
 }
 
 #the offset to the pe-image
@@ -18,15 +18,15 @@ msdos-lfanew {
 	assembly simple-assembly.exe
 
 	#truncate the file before and after
-	invalid offset 3c truncate
-	invalid offset 3d truncate
-	invalid offset 3e truncate
-	invalid offset 3f truncate
+	invalid offset 0x3c truncate
+	invalid offset 0x3d truncate
+	invalid offset 0x3e truncate
+	invalid offset 0x3f truncate
 
 	#not enough space for the PE water mark
-	invalid offset 3c set-uint 0xffffffff 
-	invalid offset 3c set-uint file-size - 1 
-	invalid offset 3c set-uint file-size - 2
+	invalid offset 0x3c set-uint 0xffffffff 
+	invalid offset 0x3c set-uint file-size - 1 
+	invalid offset 0x3c set-uint file-size - 2
 }
 
 pe-signature {
@@ -52,13 +52,13 @@ pe-header {
 	#size related checks
 	invalid offset pe-header + 0 truncate
 	invalid offset pe-header + 1 truncate
-	invalid offset pe-header + 018 truncate
-	invalid offset pe-header + 019 truncate
+	invalid offset pe-header + 18 truncate
+	invalid offset pe-header + 19 truncate
 
 	#machine
-	valid offset pe-header set-ushort 14c
-	invalid offset pe-header set-ushort 14d
-	invalid offset pe-header set-ushort 24c
+	valid offset pe-header set-ushort 0x14c
+	invalid offset pe-header set-ushort 0x14d
+	invalid offset pe-header set-ushort 0x24c
 
 	#symbol table value doesn't matter
 	valid offset pe-header + 8 set-uint 0
@@ -66,14 +66,14 @@ pe-header {
 	valid offset pe-header + 8 set-uint 0xffffffff
 
 	#number of symbols value doesn't matter
-	valid offset pe-header + 012 set-uint 0
-	valid offset pe-header + 012 set-uint 99
-	valid offset pe-header + 012 set-uint 0xffffffff
+	valid offset pe-header + 12 set-uint 0
+	valid offset pe-header + 12 set-uint 99
+	valid offset pe-header + 12 set-uint 0xffffffff
 
 	#characteristics - it's value is not important
-	valid offset pe-header + 018 set-ushort 0
-	valid offset pe-header + 018 set-ushort 0x4000
+	valid offset pe-header + 18 set-ushort 0
+	valid offset pe-header + 18 set-ushort 0x4000
 
 	#FIXME 0x2000 is used for signaling it's a dll and peverify complains about the entrypoint signature. WHAT?
-	invalid offset pe-header + 018 set-ushort 0x2000
+	invalid offset pe-header + 18 set-ushort 0x2000
 }
