@@ -78,7 +78,7 @@ pe-header {
 	#invalid offset pe-header + 18 set-ushort 0x2000
 }
 
-pe-optional-header {
+pe-optional-header-standard-fields {
 	assembly simple-assembly.exe
 
 	#this header is optional only in the names
@@ -89,5 +89,65 @@ pe-optional-header {
 	invalid offset pe-header + 18 truncate
 	invalid offset pe-header + 239 truncate
 
+	#test optional header magic
+	valid offset pe-optional-header + 0 set-ushort 0x10b
+	invalid offset pe-optional-header + 0 set-ushort 0x10c
+	invalid offset pe-optional-header + 0 set-ushort 0
+
+	#LMajor and LMinor are the linker version. It's an informative field with no use.
+	valid offset pe-optional-header + 2 set-byte 6
+	valid offset pe-optional-header + 2 set-byte 99
+
+	valid offset pe-optional-header + 3 set-byte 0
+	valid offset pe-optional-header + 3 set-byte 99
+	
+	#Code size is just an informative field as well, nobody cares
+	valid offset pe-optional-header + 4 set-uint 0
+	valid offset pe-optional-header + 4 set-uint 0x999999
+
+	#Intialized data size is just an informative field as well, nobody cares
+	valid offset pe-optional-header + 8 set-uint 0
+	valid offset pe-optional-header + 8 set-uint 0x999999
+
+	#Unintialized data size is just an informative field as well, nobody cares
+	valid offset pe-optional-header + 12 set-uint 0
+	valid offset pe-optional-header + 12 set-uint 0x999999
+
+	valid offset pe-optional-header + 20 set-uint 0
+	valid offset pe-optional-header + 20 set-uint 0x999999
+
+	valid offset pe-optional-header + 24 set-uint 0
+	valid offset pe-optional-header + 24 set-uint 0x999999
+
 	#FIXME add tests for PE32+
+}
+
+pe-optional-header-nt-fields {
+	assembly simple-assembly.exe
+
+	#Image base
+	valid offset pe-optional-header + 28 set-uint 0x400000
+	invalid offset pe-optional-header + 28 set-uint 0x990000
+
+	#Section alignment
+	valid offset pe-optional-header + 32 set-uint 0x2000
+	invalid offset pe-optional-header + 32 set-uint 0x4000
+	invalid offset pe-optional-header + 32 set-uint 0x2001
+
+	#File alignment
+	valid offset pe-optional-header + 36 set-uint 0x200
+	invalid offset pe-optional-header + 36 set-uint 0x1000
+	invalid offset pe-optional-header + 36 set-uint 999
+	invalid offset pe-optional-header + 36 set-uint 0x1200
+
+
+	#Number of Directories
+	valid offset pe-optional-header + 92 set-uint 0x10
+	#it's ok to have less
+	valid offset pe-optional-header + 92 set-uint 0x0F
+	#it's ok to have less
+	valid offset pe-optional-header + 92 set-uint 0
+	#but not more than 0x10
+	invalid offset pe-optional-header + 92 set-uint 0x11
+
 }
