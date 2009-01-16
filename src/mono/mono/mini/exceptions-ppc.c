@@ -15,7 +15,9 @@
 #include <signal.h>
 #include <string.h>
 #include <stddef.h>
+#if HAVE_UCONTEXT_H
 #include <ucontext.h>
+#endif
 
 #include <mono/arch/ppc/ppc-codegen.h>
 #include <mono/metadata/appdomain.h>
@@ -397,7 +399,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	/* we should never reach this breakpoint */
 	ppc_break (code);
-	g_assert ((code - start) < size);
+	g_assert ((code - start) <= size);
 	mono_arch_flush_icache (start, code - start);
 	return start;
 }
@@ -474,7 +476,7 @@ mono_arch_get_throw_exception_by_name (void)
 	static int inited = 0;
 
 	guint8 *code;
-	int size = MONO_PPC_32_64_CASE (168, 292) + PPC_FTNPTR_SIZE;
+	int size = MONO_PPC_32_64_CASE (168, 304) + PPC_FTNPTR_SIZE;
 
 	if (inited)
 		return start;
