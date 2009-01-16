@@ -1589,7 +1589,7 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 		pthread_cond_t *cond;
 		mono_mutex_t *mutex;
 
-		if (!wapi_thread_set_wait_handle (handle))
+		if (alertable && !wapi_thread_set_wait_handle (handle))
 			return 0;
 
 		cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
@@ -1605,7 +1605,8 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 				res = mono_cond_wait (cond, mutex);
 		}
 
-		wapi_thread_clear_wait_handle (handle);
+		if (alertable)
+			wapi_thread_clear_wait_handle (handle);
 
 		return res;
 	}
