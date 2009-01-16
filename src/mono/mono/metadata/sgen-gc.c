@@ -357,8 +357,14 @@ enum {
 	REMSET_LOCATION, /* just a pointer to the exact location */
 	REMSET_RANGE,    /* range of pointer fields */
 	REMSET_OBJECT,   /* mark all the object for scanning */
-	REMSET_VTYPE,    /* a valuetype described by a gc descriptor */
+	REMSET_OTHER,    /* all others */
 	REMSET_TYPE_MASK = 0x3
+};
+
+/* Subtypes of REMSET_OTHER */
+enum {
+	REMSET_VTYPE, /* a valuetype described by a gc descriptor */
+	REMSET_ROOT_LOCATION, /* a location inside a root */
 };
 
 static __thread RememberedSet *remembered_set MONO_TLS_FAST;
@@ -558,18 +564,21 @@ obj_is_from_pinned_alloc (char *p)
 	return FALSE;
 }
 
-#define NORMAL_ROOTS 0
-#define PINNED_ROOTS 1
+enum {
+	ROOT_TYPE_NORMAL = 0, /* "normal" roots */
+	ROOT_TYPE_PINNED = 1, /* roots without a GC descriptor */
+	ROOT_TYPE_WBARRIER = 2, /* roots with a write barrier */
+	ROOT_TYPE_NUM
+};
 
 /* registered roots: the key to the hash is the root start address */
 /* 
- * Roots with/without a GC descriptor are kept separate to speed up pin_from_roots ()
- * for example.
+ * Different kinds of roots are kept separate to speed up pin_from_roots () for example.
  */
-static RootRecord **roots_hash [2] = { NULL, NULL };
-static int roots_hash_size [2] = { 0, 0 };
+static RootRecord **roots_hash [ROOT_TYPE_NUM] = { NULL, NULL };
+static int roots_hash_size [ROOT_TYPE_NUM] = { 0, 0, 0 };
 static mword roots_size = 0; /* amount of memory in the root set */
-static int num_roots_entries [2] = { 0, 0 };
+static int num_roots_entries [ROOT_TYPE_NUM] = { 0, 0, 0 };
 
 /* 
  * The current allocation cursors
@@ -1309,11 +1318,11 @@ mono_gc_clear_domain (MonoDomain * domain)
 /*
  * add_to_global_remset:
  *
- *   The global remset contains locations in oldspace which point into newspace after
+ *   The global remset contains locations which point into newspace after
  * a minor collection. This can happen if the objects they point to are pinned.
  */
 static void
-add_to_global_remset (gpointer ptr)
+add_to_global_remset (gpointer ptr, gboolean root)
 {
 	RememberedSet *rs;
 
@@ -1323,14 +1332,24 @@ add_to_global_remset (gpointer ptr)
 	 * FIXME: If an object remains pinned, we need to add it at every minor collection.
 	 * To avoid uncontrolled growth of the global remset, only add each pointer once.
 	 */
-	if (global_remset->store_next < global_remset->end_set) {
-		*(global_remset->store_next++) = (mword)ptr;
+	if (global_remset->store_next + 3 < global_remset->end_set) {
+		if (root) {
+			*(global_remset->store_next++) = (mword)ptr | REMSET_OTHER;
+			*(global_remset->store_next++) = (mword)REMSET_ROOT_LOCATION;
+		} else {
+			*(global_remset->store_next++) = (mword)ptr;
+		}
 		return;
 	}
 	rs = alloc_remset (global_remset->end_set - global_remset->data, NULL);
 	rs->next = global_remset;
 	global_remset = rs;
-	*(global_remset->store_next++) = (mword)ptr;
+	if (root) {
+		*(global_remset->store_next++) = (mword)ptr | REMSET_OTHER;
+		*(global_remset->store_next++) = (mword)REMSET_LOCATION;
+	} else {
+		*(global_remset->store_next++) = (mword)ptr;
+	}
 
 	{
 		int global_rs_size = 0;
@@ -1467,7 +1486,7 @@ copy_object (char *obj, char *from_space_start, char *from_space_end)
 			*(ptr) = copy_object (__old, from_start, from_end);	\
 			DEBUG (9, if (__old != *(ptr)) fprintf (gc_debug_file, "Overwrote field at %p with %p (was: %p)\n", (ptr), *(ptr), __old));	\
 			if (G_UNLIKELY (*(ptr) >= (void*)from_start && *(ptr) < (void*)from_end) && !ptr_in_nursery (ptr)) \
-				add_to_global_remset ((ptr));	\
+				add_to_global_remset ((ptr), FALSE);							\
 		}	\
 	} while (0)
 
@@ -1876,10 +1895,10 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 {
 	RootRecord *root;
 	int i;
-	DEBUG (3, fprintf (gc_debug_file, "Scanning pinned roots (%d bytes, %d/%d entries)\n", (int)roots_size, num_roots_entries [0], num_roots_entries [1]));
+	DEBUG (2, fprintf (gc_debug_file, "Scanning pinned roots (%d bytes, %d/%d entries)\n", (int)roots_size, num_roots_entries [ROOT_TYPE_NORMAL], num_roots_entries [ROOT_TYPE_PINNED]));
 	/* objects pinned from the API are inside these roots */
-	for (i = 0; i < roots_hash_size [1]; ++i) {
-		for (root = roots_hash [1][i]; root; root = root->next) {
+	for (i = 0; i < roots_hash_size [ROOT_TYPE_PINNED]; ++i) {
+		for (root = roots_hash [ROOT_TYPE_PINNED][i]; root; root = root->next) {
 			DEBUG (6, fprintf (gc_debug_file, "Pinned roots %p-%p\n", root->start_root, root->end_root));
 			conservatively_pin_objects_from ((void**)root->start_root, (void**)root->end_root, start_nursery, end_nursery);
 		}
@@ -2290,12 +2309,12 @@ build_section_fragments (GCMemSection *section)
 }
 
 static void
-scan_from_registered_roots (char *addr_start, char *addr_end)
+scan_from_registered_roots (char *addr_start, char *addr_end, int root_type)
 {
 	int i;
 	RootRecord *root;
-	for (i = 0; i < roots_hash_size [0]; ++i) {
-		for (root = roots_hash [0][i]; root; root = root->next) {
+	for (i = 0; i < roots_hash_size [root_type]; ++i) {
+		for (root = roots_hash [root_type][i]; root; root = root->next) {
 			DEBUG (6, fprintf (gc_debug_file, "Precise root scan %p-%p (desc: %p)\n", root->start_root, root->end_root, (void*)root->root_desc));
 			precisely_scan_objects_from ((void**)root->start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc);
 		}
@@ -2379,7 +2398,6 @@ collect_nursery (size_t requested_size)
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation scan: %d usecs\n", TV_ELAPSED (btv, atv)));
-	/* FIXME: later scan also alloc_pinned objects */
 
 	/* the pinned objects are roots */
 	for (i = 0; i < next_pin_slot; ++i) {
@@ -2387,7 +2405,7 @@ collect_nursery (size_t requested_size)
 		scan_object (pin_queue [i], nursery_start, nursery_next);
 	}
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (nursery_start, nursery_next);
+	scan_from_registered_roots (nursery_start, nursery_next, ROOT_TYPE_NORMAL);
 	/* alloc_pinned objects */
 	scan_from_pinned_objects (nursery_start, nursery_next);
 	TV_GETTIME (btv);
@@ -2530,7 +2548,8 @@ major_collection (void)
 		scan_object (pin_queue [i], heap_start, heap_end);
 	}
 	/* registered roots, this includes static fields */
-	scan_from_registered_roots (heap_start, heap_end);
+	scan_from_registered_roots (heap_start, heap_end, ROOT_TYPE_NORMAL);
+	scan_from_registered_roots (heap_start, heap_end, ROOT_TYPE_WBARRIER);
 	/* alloc_pinned objects */
 	scan_from_pinned_objects (heap_start, heap_end);
 	/* scan the list of objects ready for finalization */
@@ -3788,34 +3807,49 @@ rehash_roots (gboolean pinned)
 	roots_hash_size [pinned] = new_size;
 }
 
+static RootRecord*
+find_root (int root_type, char *start, guint32 addr_hash)
+{
+	RootRecord *new_root;
+
+	guint32 hash = addr_hash % roots_hash_size [root_type];
+	for (new_root = roots_hash [root_type][hash]; new_root; new_root = new_root->next) {
+		/* we allow changing the size and the descriptor (for thread statics etc) */
+		if (new_root->start_root == start) {
+			return new_root;
+		}
+	}
+
+	return NULL;
+}
+
 /*
  * We do not coalesce roots.
  */
-int
-mono_gc_register_root (char *start, size_t size, void *descr)
+static int
+mono_gc_register_root_inner (char *start, size_t size, void *descr, int root_type)
 {
 	RootRecord *new_root;
 	unsigned int hash, addr_hash = mono_aligned_addr_hash (start);
-	gboolean pinned = descr == NULL;
 	int i;
 	LOCK_GC;
-	if (num_roots_entries [0] >= roots_hash_size [0] * 2)
-		rehash_roots (0);
-	if (num_roots_entries [1] >= roots_hash_size [1] * 2)
-		rehash_roots (1);
-	for (i = 0; i < 2; ++i) {
-		hash = addr_hash % roots_hash_size [i];
-		for (new_root = roots_hash [i][hash]; new_root; new_root = new_root->next) {
-			/* we allow changing the size and the descriptor (for thread statics etc) */
-			if (new_root->start_root == start) {
-				size_t old_size = new_root->end_root - new_root->start_root;
-				new_root->end_root = new_root->start_root + size;
-				new_root->root_desc = (mword)descr;
-				roots_size += size;
-				roots_size -= old_size;
-				UNLOCK_GC;
-				return TRUE;
-			}
+	for (i = 0; i < ROOT_TYPE_NUM; ++i) {
+		if (num_roots_entries [i] >= roots_hash_size [i] * 2)
+			rehash_roots (i);
+	}
+	for (i = 0; i < ROOT_TYPE_NUM; ++i) {
+		new_root = find_root (i, start, addr_hash);
+		/* we allow changing the size and the descriptor (for thread statics etc) */
+		if (new_root) {
+			size_t old_size = new_root->end_root - new_root->start_root;
+			new_root->end_root = new_root->start_root + size;
+			g_assert (((new_root->root_desc != 0) && (descr != NULL)) ||
+					  ((new_root->root_desc == 0) && (descr == NULL)));
+			new_root->root_desc = (mword)descr;
+			roots_size += size;
+			roots_size -= old_size;
+			UNLOCK_GC;
+			return TRUE;
 		}
 	}
 	new_root = get_internal_mem (sizeof (RootRecord));
@@ -3824,10 +3858,10 @@ mono_gc_register_root (char *start, size_t size, void *descr)
 		new_root->end_root = new_root->start_root + size;
 		new_root->root_desc = (mword)descr;
 		roots_size += size;
-		hash = addr_hash % roots_hash_size [pinned];
-		num_roots_entries [pinned]++;
-		new_root->next = roots_hash [pinned] [hash];
-		roots_hash [pinned][hash] = new_root;
+		hash = addr_hash % roots_hash_size [root_type];
+		num_roots_entries [root_type]++;
+		new_root->next = roots_hash [root_type] [hash];
+		roots_hash [root_type][hash] = new_root;
 		DEBUG (3, fprintf (gc_debug_file, "Added root %p for range: %p-%p, descr: %p  (%d/%d bytes)\n", new_root, new_root->start_root, new_root->end_root, descr, (int)size, (int)roots_size));
 	} else {
 		UNLOCK_GC;
@@ -3837,26 +3871,38 @@ mono_gc_register_root (char *start, size_t size, void *descr)
 	return TRUE;
 }
 
+int
+mono_gc_register_root (char *start, size_t size, void *descr)
+{
+	return mono_gc_register_root_inner (start, size, descr, descr ? ROOT_TYPE_NORMAL : ROOT_TYPE_PINNED);
+}
+
+int
+mono_gc_register_root_wbarrier (char *start, size_t size, void *descr)
+{
+	return mono_gc_register_root_inner (start, size, descr, ROOT_TYPE_WBARRIER);
+}
+
 void
 mono_gc_deregister_root (char* addr)
 {
 	RootRecord *tmp, *prev;
 	unsigned int hash, addr_hash = mono_aligned_addr_hash (addr);
-	int pinned;
+	int root_type;
 
 	LOCK_GC;
-	for (pinned = 0; pinned < 2; ++pinned) {
-		hash = addr_hash % roots_hash_size [pinned];
-		tmp = roots_hash [pinned][hash];
+	for (root_type = 0; root_type < ROOT_TYPE_NUM; ++root_type) {
+		hash = addr_hash % roots_hash_size [root_type];
+		tmp = roots_hash [root_type][hash];
 		prev = NULL;
 		while (tmp) {
 			if (tmp->start_root == (char*)addr) {
 				if (prev)
 					prev->next = tmp->next;
 				else
-					roots_hash [pinned][hash] = tmp->next;
+					roots_hash [root_type][hash] = tmp->next;
 				roots_size -= (tmp->end_root - tmp->start_root);
-				num_roots_entries [pinned]--;
+				num_roots_entries [root_type]--;
 				DEBUG (3, fprintf (gc_debug_file, "Removed root %p for range: %p-%p\n", tmp, tmp->start_root, tmp->end_root));
 				free_internal_mem (tmp);
 				break;
@@ -4083,11 +4129,11 @@ pin_thread_data (void *start_nursery, void *end_nursery)
 				DEBUG (2, fprintf (gc_debug_file, "Skipping dead thread %p, range: %p-%p, size: %zd\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
 				continue;
 			}
-			DEBUG (2, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %zd\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start));
+			DEBUG (2, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %zd, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
 			conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery);
 		}
 	}
-	DEBUG (2, fprintf (gc_debug_file, "Scanning current thread registers\n"));
+	DEBUG (2, fprintf (gc_debug_file, "Scanning current thread registers, pinned=%d\n", next_pin_slot));
 	conservatively_pin_objects_from ((void*)cur_thread_regs, (void*)(cur_thread_regs + ARCH_NUM_REGS), start_nursery, end_nursery);
 }
 
@@ -4136,6 +4182,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 	switch ((*p) & REMSET_TYPE_MASK) {
 	case REMSET_LOCATION:
 		ptr = (void**)(*p);
+		//__builtin_prefetch (ptr);
 		if (((void*)ptr < start_nursery || (void*)ptr >= end_nursery) && ptr_in_heap (ptr)) {
 			*ptr = copy_object (*ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p\n", ptr, *ptr));
@@ -4145,7 +4192,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 				 * becomes part of the global remset, which can grow very large.
 				 */
 				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
-				add_to_global_remset (ptr);
+				add_to_global_remset (ptr, FALSE);
 			}
 		} else {
 			DEBUG (9, fprintf (gc_debug_file, "Skipping remset at %p holding %p\n", ptr, *ptr));
@@ -4160,7 +4207,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			*ptr = copy_object (*ptr, start_nursery, end_nursery);
 			DEBUG (9, fprintf (gc_debug_file, "Overwrote remset at %p with %p (count: %d)\n", ptr, *ptr, (int)count));
 			if (!global && *ptr >= start_nursery && *ptr < end_nursery)
-				add_to_global_remset (ptr);
+				add_to_global_remset (ptr, FALSE);
 			++ptr;
 		}
 		return p + 2;
@@ -4170,13 +4217,34 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 			return p + 1;
 		scan_object (*ptr, start_nursery, end_nursery);
 		return p + 1;
-	case REMSET_VTYPE:
+	case REMSET_OTHER: {
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
+
+		switch (p [1]) {
+		case REMSET_VTYPE:
+			if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
+				return p + 3;
+			desc = p [2];
+			scan_vtype ((char*)ptr, desc, start_nursery, end_nursery);
+			return p + 3;
+		case REMSET_ROOT_LOCATION:
+			/* Same as REMSET_LOCATION, but the address is not required to be in the heap */
+			*ptr = copy_object (*ptr, start_nursery, end_nursery);
+			DEBUG (9, fprintf (gc_debug_file, "Overwrote root location remset at %p with %p\n", ptr, *ptr));
+			if (!global && *ptr >= start_nursery && *ptr < end_nursery) {
+				/*
+				 * If the object is pinned, each reference to it from nonpinned objects
+				 * becomes part of the global remset, which can grow very large.
+				 */
+				DEBUG (9, fprintf (gc_debug_file, "Add to global remset because of pinning %p (%p %s)\n", ptr, *ptr, safe_name (*ptr)));
+				add_to_global_remset (ptr, TRUE);
+			}
 			return p + 2;
-		desc = p [1];
-		scan_vtype ((char*)ptr, desc, start_nursery, end_nursery);
-		return p + 2;
+		default:
+			g_assert_not_reached ();
+		}
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -4205,10 +4273,18 @@ scan_from_remsets (void *start_nursery, void *end_nursery)
 			 * nursery. Otherwise, they could grow indefinitely between major 
 			 * collections.
 			 */
-			ptr = *p;
-			g_assert ((ptr & REMSET_TYPE_MASK) == REMSET_LOCATION);
-			if (ptr_in_nursery (*(void**)ptr))
-				*store_pos ++ = *p;
+			ptr = (p [0] & ~REMSET_TYPE_MASK);
+			if ((p [0] & REMSET_TYPE_MASK) == REMSET_LOCATION) {
+				if (ptr_in_nursery (*(void**)ptr))
+					*store_pos ++ = p [0];
+			} else {
+				g_assert ((p [0] & REMSET_TYPE_MASK) == REMSET_OTHER);
+				g_assert (p [1] == REMSET_ROOT_LOCATION);
+				if (ptr_in_nursery (*(void**)ptr)) {
+					*store_pos ++ = p [0];
+					*store_pos ++ = p [1];
+				}
+			}
 		}
 
 		/* Truncate the remset */
@@ -4585,12 +4661,13 @@ mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
-	RememberedSet *rs = remembered_set;
+	RememberedSet *rs;
 	if ((char*)ptr >= nursery_start && (char*)ptr < nursery_real_end) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		*(void**)ptr = value;
 		return;
 	}
+	rs = remembered_set;
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
 	/* FIXME: ensure it is on the heap */
 	if (rs->store_next < rs->end_set) {
@@ -4607,6 +4684,31 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 }
 
 void
+mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value)
+{
+	RememberedSet *rs = remembered_set;
+	if ((char*)ptr >= nursery_start && (char*)ptr < nursery_real_end) {
+		return;
+	}
+	DEBUG (8, fprintf (gc_debug_file, "Adding root remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
+
+	if (rs->store_next + 2 < rs->end_set) {
+		*(rs->store_next++) = (mword)ptr | REMSET_OTHER;
+		*(rs->store_next++) = (mword)REMSET_ROOT_LOCATION;
+		*(void**)ptr = value;
+		return;
+	}
+	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
+	rs->next = remembered_set;
+	remembered_set = rs;
+	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
+	*(rs->store_next++) = (mword)ptr | REMSET_OTHER;
+	*(rs->store_next++) = (mword)REMSET_ROOT_LOCATION;
+
+	*(void**)ptr = value;
+}
+
+void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	RememberedSet *rs = remembered_set;
@@ -4615,8 +4717,9 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
 
-	if (rs->store_next + 1 < rs->end_set) {
-		*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
+	if (rs->store_next + 2 < rs->end_set) {
+		*(rs->store_next++) = (mword)dest | REMSET_OTHER;
+		*(rs->store_next++) = (mword)REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
 		return;
 	}
@@ -4624,7 +4727,8 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	rs->next = remembered_set;
 	remembered_set = rs;
 	thread_info_lookup (ARCH_GET_THREAD ())->remset = rs;
-	*(rs->store_next++) = (mword)dest | REMSET_VTYPE;
+	*(rs->store_next++) = (mword)dest | REMSET_OTHER;
+	*(rs->store_next++) = (mword)REMSET_VTYPE;
 	*(rs->store_next++) = (mword)klass->gc_descr;
 }
 
@@ -4747,24 +4851,29 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 		if ((void**)addr >= ptr && (void**)addr < ptr + count)
 			*found = TRUE;
 		return p + 1;
-	case REMSET_VTYPE:
-		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
-		desc = p [1];
+	case REMSET_OTHER: {
+		switch (p [1]) {
+		case REMSET_VTYPE:
+			ptr = (void**)(*p & ~REMSET_TYPE_MASK);
+			desc = p [2];
 
-		switch (desc & 0x7) {
-		case DESC_TYPE_RUN_LENGTH:
-			OBJ_RUN_LEN_SIZE (skip_size, desc, ptr);
-			/* The descriptor includes the size of MonoObject */
-			skip_size -= sizeof (MonoObject);
-			if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
-				*found = TRUE;
-			break;
-		default:
-			// FIXME:
-			g_assert_not_reached ();
+			switch (desc & 0x7) {
+			case DESC_TYPE_RUN_LENGTH:
+				OBJ_RUN_LEN_SIZE (skip_size, desc, ptr);
+				/* The descriptor includes the size of MonoObject */
+				skip_size -= sizeof (MonoObject);
+				if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
+					*found = TRUE;
+				break;
+			default:
+				// FIXME:
+				g_assert_not_reached ();
+			}
+
+			return p + 3;
 		}
-
-		return p + 2;
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}

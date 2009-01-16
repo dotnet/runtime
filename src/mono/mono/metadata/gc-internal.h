@@ -107,6 +107,25 @@ int   mono_gc_register_root (char *start, size_t size, void *descr) MONO_INTERNA
 void  mono_gc_deregister_root (char* addr) MONO_INTERNAL;
 int   mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size) MONO_INTERNAL;
 
+/* 
+ * Register a root which can only be written using a write barrier.
+ * Writes to the root must be done using a write barrier (MONO_ROOT_SETREF).
+ * If the root uses an user defined mark routine, the writes are not required to be
+ * to the area between START and START+SIZE.
+ * The write barrier allows the GC to avoid scanning this root at each collection, so it
+ * is more efficient.
+ * FIXME: Add an API for clearing remset entries if a root with a user defined
+ * mark routine is deleted.
+ */
+int mono_gc_register_root_wbarrier (char *start, size_t size, void *descr) MONO_INTERNAL;
+
+void mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value) MONO_INTERNAL;
+
+/* Set a field of a root registered using mono_gc_register_root_wbarrier () */
+#define MONO_ROOT_SETREF(s,fieldname,value) do {	\
+	mono_gc_wbarrier_set_root (&((s)->fieldname), (MonoObject*)value); \
+} while (0)
+
 void  mono_gc_finalize_threadpool_threads (void) MONO_INTERNAL;
 
 /* fast allocation support */
