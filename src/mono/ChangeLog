@@ -1,3 +1,8 @@
+2009-01-16  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Avoid error messages in the quiet code if libgc/Makefile
+	does not exist yet. Fixes #466814.
+
 2009-01-09  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Check for the existence of the gettext executables.
