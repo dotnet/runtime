@@ -1,3 +1,10 @@
+2009-01-16  Zoltan Varga  <vargaz@gmail.com>
+
+	Backport of r123612.
+	
+	* configure.in: Avoid error messages in the quiet code if libgc/Makefile
+	does not exist yet. Fixes #466814.
+
 2009-01-05  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Disable sigaltstack on freebsd as it doesn't seem to work.
