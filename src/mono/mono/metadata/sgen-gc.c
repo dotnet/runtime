@@ -307,6 +307,14 @@ typedef enum {
 
 static NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
 
+/* 
+ * If this is set, the nursery is aligned to an address aligned to its size, ie.
+ * a 1MB nursery will be aligned to an address divisible by 1MB. This allows us to
+ * speed up ptr_in_nursery () checks which are very frequent. This requires the
+ * nursery size to be a compile time constant.
+ */
+#define ALIGN_NURSERY 1
+
 /*
  * The young generation is divided into fragments. This is because
  * we can hand one fragments to a thread for lock-less fast alloc and
@@ -415,7 +423,11 @@ typedef struct {
 		((mword*)(obj))[0] &= ~PINNED_BIT;	\
 	} while (0)
 
-#define ptr_in_nursery(ptr) ((char*)ptr >= nursery_start && (char*)ptr < nursery_real_end)
+#ifdef ALIGN_NURSERY
+#define ptr_in_nursery(ptr) (((mword)(ptr) & ~((1 << DEFAULT_NURSERY_BITS) - 1)) == (mword)nursery_start)
+#else
+#define ptr_in_nursery(ptr) ((char*)(ptr) >= nursery_start && (char*)(ptr) < nursery_real_end)
+#endif
 
 /*
  * Since we set bits in the vtable, use the macro to load it from the pointer to
@@ -477,6 +489,8 @@ static int num_major_gcs = 0;
 /* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
 //#define DEFAULT_NURSERY_SIZE (1024*512*125+4096*118)
 #define DEFAULT_NURSERY_SIZE (1024*512*2)
+/* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
+#define DEFAULT_NURSERY_BITS 20
 #define DEFAULT_MAX_SECTION (DEFAULT_NURSERY_SIZE * 16)
 #define DEFAULT_LOS_COLLECTION_TARGET (DEFAULT_NURSERY_SIZE * 2)
 /* to quickly find the head of an object pinned by a conservative address
@@ -2007,6 +2021,7 @@ alloc_nursery (void)
 	char *data;
 	int scan_starts;
 	Fragment *frag;
+	int alloc_size;
 
 	if (nursery_section)
 		return;
@@ -2017,16 +2032,30 @@ alloc_nursery (void)
 	 */
 	/* FIXME: handle OOM */
 	section = get_internal_mem (sizeof (GCMemSection));
-	data = get_os_memory (nursery_size, TRUE);
-	nursery_start = nursery_next = data;
-	nursery_real_end = data + nursery_size;
+
+#ifdef ALIGN_NURSERY
+	/* Allocate twice the memory to be able to put the nursery at an aligned address */
+	g_assert (nursery_size = DEFAULT_NURSERY_SIZE);
+
+	alloc_size = nursery_size * 2;
+	data = get_os_memory (alloc_size, TRUE);
+	nursery_start = (void*)(((mword)data + (1 << DEFAULT_NURSERY_BITS) - 1) & ~((1 << DEFAULT_NURSERY_BITS) - 1));
+	g_assert ((char*)nursery_start + nursery_size <= ((char*)data + alloc_size));
+	/* FIXME: Use the remaining size for something else, if it is big enough */
+#else
+	alloc_size = nursery_size;
+	data = get_os_memory (alloc_size, TRUE);
+	nursery_start = data;
+#endif
+	nursery_real_end = nursery_start + nursery_size;
 	UPDATE_HEAP_BOUNDARIES (nursery_start, nursery_real_end);
-	total_alloc += nursery_size;
+	nursery_next = nursery_start;
+	total_alloc += alloc_size;
 	DEBUG (4, fprintf (gc_debug_file, "Expanding heap size: %zd, total: %zd\n", nursery_size, total_alloc));
 	section->data = section->next_data = data;
-	section->size = nursery_size;
+	section->size = alloc_size;
 	section->end_data = nursery_real_end;
-	scan_starts = nursery_size / SCAN_START_SIZE;
+	scan_starts = alloc_size / SCAN_START_SIZE;
 	section->scan_starts = get_internal_mem (sizeof (char*) * scan_starts);
 	section->num_scan_start = scan_starts;
 	section->role = MEMORY_ROLE_GEN0;
@@ -4597,7 +4626,7 @@ void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
 	RememberedSet *rs;
-	if ((char*)field_ptr >= nursery_start && (char*)field_ptr < nursery_real_end) {
+	if (ptr_in_nursery (field_ptr)) {
 		*(void**)field_ptr = value;
 		return;
 	}
@@ -4620,7 +4649,7 @@ void
 mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	RememberedSet *rs = remembered_set;
-	if ((char*)slot_ptr >= nursery_start && (char*)slot_ptr < nursery_real_end) {
+	if (ptr_in_nursery (slot_ptr)) {
 		*(void**)slot_ptr = value;
 		return;
 	}
@@ -4642,7 +4671,7 @@ void
 mono_gc_wbarrier_arrayref_copy (MonoArray *arr, gpointer slot_ptr, int count)
 {
 	RememberedSet *rs = remembered_set;
-	if ((char*)slot_ptr >= nursery_start && (char*)slot_ptr < nursery_real_end)
+	if (ptr_in_nursery (slot_ptr))
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding remset at %p, %d\n", slot_ptr, count));
 	if (rs->store_next + 1 < rs->end_set) {
@@ -4662,7 +4691,7 @@ void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	RememberedSet *rs;
-	if ((char*)ptr >= nursery_start && (char*)ptr < nursery_real_end) {
+	if (ptr_in_nursery (ptr)) {
 		DEBUG (8, fprintf (gc_debug_file, "Skipping remset at %p\n", ptr));
 		*(void**)ptr = value;
 		return;
@@ -4687,9 +4716,8 @@ void
 mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value)
 {
 	RememberedSet *rs = remembered_set;
-	if ((char*)ptr >= nursery_start && (char*)ptr < nursery_real_end) {
+	if (ptr_in_nursery (ptr))
 		return;
-	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding root remset at %p (%s)\n", ptr, value ? safe_name (value) : "null"));
 
 	if (rs->store_next + 2 < rs->end_set) {
@@ -4712,9 +4740,8 @@ void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	RememberedSet *rs = remembered_set;
-	if ((char*)dest >= nursery_start && (char*)dest < nursery_real_end) {
+	if (ptr_in_nursery (dest))
 		return;
-	}
 	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
 
 	if (rs->store_next + 2 < rs->end_set) {
@@ -4778,7 +4805,7 @@ describe_ptr (char *ptr)
 	mword desc;
 	int type;
 
-	if ((ptr >= nursery_start) && (ptr < nursery_real_end)) {
+	if (ptr_in_nursery (ptr)) {
 		printf ("Pointer inside nursery.\n");
 	} else {
 		for (section = section_list; section;) {
@@ -4811,7 +4838,7 @@ describe_ptr (char *ptr)
 		printf ("VTable is invalid (empty).\n");
 		return;
 	}
-	if (((char*)vtable >= nursery_start) && ((char*)vtable < nursery_real_end)) {
+	if (ptr_in_nursery (vtable)) {
 		printf ("VTable is invalid (points inside nursery).\n");
 		return;
 	}
@@ -5207,7 +5234,7 @@ mono_object_is_alive (MonoObject* o)
 int
 mono_gc_get_generation (MonoObject *obj)
 {
-	if ((char*)obj >= nursery_start && (char*)obj < nursery_real_end)
+	if (ptr_in_nursery (obj))
 		return 0;
 	return 1;
 }
