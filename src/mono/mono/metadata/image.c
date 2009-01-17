@@ -1369,7 +1369,7 @@ mono_image_close (MonoImage *image)
 	 * assemblies, so we can't release these references in mono_assembly_close () since the
 	 * MonoImage might outlive its associated MonoAssembly.
 	 */
-	if (image->references) {
+	if (image->references && !image->dynamic) {
 		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 		int i;
 
