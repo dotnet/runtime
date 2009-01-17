@@ -2149,12 +2149,16 @@ AC_ARG_WITH(moonlight,[ --with-moonlight=yes,no   If you want to build the Moonl
 ])
 
 OPROFILE=no
-AC_ARG_WITH(oprofile,[ --with-oprofile=no,<path>   Enable oprofile support (defaults to NO)],[
+AC_ARG_WITH(oprofile,[ --with-oprofile=no,<oprofile install dir>   Enable oprofile support (defaults to NO)],[
 	if test x$with_oprofile != xno; then
-	      OPROFILE=yes
-	      OPROFILE_CFLAGS="-I$with_oprofile/include"
-	      OPROFILE_LIBS=
-	      AC_DEFINE(HAVE_OPROFILE,1,[Have oprofile support])
+	    oprofile_include=$with_oprofile/include
+	    if test ! -f $oprofile_include/opagent.h; then
+	   	  AC_MSG_ERROR([oprofile include file not found at $oprofile_include/opagent.h])
+		fi
+	    OPROFILE=yes
+		OPROFILE_CFLAGS="-I$oprofile_include"
+	    OPROFILE_LIBS="-L$with_oprofile/lib/oprofile -lopagent"
+	    AC_DEFINE(HAVE_OPROFILE,1,[Have oprofile support])
 	fi
 ])
 
