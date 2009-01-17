@@ -1370,9 +1370,10 @@ mono_image_close (MonoImage *image)
 	 * MonoImage might outlive its associated MonoAssembly.
 	 */
 	if (image->references) {
+		MonoTableInfo *t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 		int i;
 
-		for (i = 0; image->references [i]; i++) {
+		for (i = 0; i < t->rows; i++) {
 			if (image->references [i])
 				mono_assembly_close (image->references [i]);
 		}
