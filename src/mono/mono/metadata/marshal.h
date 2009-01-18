@@ -96,9 +96,6 @@ mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding, int para
 void
 mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs) MONO_INTERNAL;
 
-MonoMethod*
-mono_marshal_get_write_barrier (void) MONO_INTERNAL;
-
 guint
 mono_type_to_ldind (MonoType *type) MONO_INTERNAL;
 

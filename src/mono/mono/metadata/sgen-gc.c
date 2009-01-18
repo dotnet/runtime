@@ -2035,7 +2035,7 @@ alloc_nursery (void)
 
 #ifdef ALIGN_NURSERY
 	/* Allocate twice the memory to be able to put the nursery at an aligned address */
-	g_assert (nursery_size = DEFAULT_NURSERY_SIZE);
+	g_assert (nursery_size == DEFAULT_NURSERY_SIZE);
 
 	alloc_size = nursery_size * 2;
 	data = get_os_memory (alloc_size, TRUE);
@@ -4898,6 +4898,10 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 			}
 
 			return p + 3;
+		case REMSET_ROOT_LOCATION:
+			return p + 2;
+		default:
+			g_assert_not_reached ();
 		}
 		break;
 	}
@@ -5573,6 +5577,132 @@ guint32
 mono_gc_get_managed_allocator_types (void)
 {
 	return ATYPE_NUM;
+}
+
+static MonoMethod *write_barrier_method;
+
+MonoMethod*
+mono_gc_get_write_barrier (void)
+{
+	MonoMethod *res;
+	int remset_offset = -1;
+	int remset_var, next_var;
+	MonoMethodBuilder *mb;
+	MonoMethodSignature *sig;
+	int label1, label2;
+
+	MONO_THREAD_VAR_OFFSET (remembered_set, remset_offset);
+
+	// FIXME: Maybe create a separate version for ctors (the branch would be
+	// correctly predicted more times)
+	if (write_barrier_method)
+		return write_barrier_method;
+
+	/* Create the IL version of mono_gc_barrier_generic_store () */
+	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	sig->ret = &mono_defaults.void_class->byval_arg;
+	sig->params [0] = &mono_defaults.int_class->byval_arg;
+	sig->params [1] = &mono_defaults.object_class->byval_arg;
+
+	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
+
+	/* ptr_in_nursery () check */
+#ifdef ALIGN_NURSERY
+	/* 
+	 * Masking out the bits might be faster, but we would have to use 64 bit
+	 * immediates, which might be slower.
+	 */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+	mono_mb_emit_byte (mb, CEE_SHR_UN);
+	mono_mb_emit_icon (mb, (mword)nursery_start >> DEFAULT_NURSERY_BITS);
+	label1 = mono_mb_emit_branch (mb, CEE_BNE_UN);
+#else
+	// FIXME:
+	g_assert_not_reached ();
+#endif
+
+	/* Don't need write barrier case */
+	/* do the assignment */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	/* Don't use STIND_REF, as it would cause infinite recursion */
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/* Need write barrier case */
+	mono_mb_patch_branch (mb, label1);
+
+	if (remset_offset == -1)
+		// FIXME:
+		g_assert_not_reached ();
+
+	// remset_var = remembered_set;
+	remset_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_TLS);
+	mono_mb_emit_i4 (mb, remset_offset);
+	mono_mb_emit_stloc (mb, remset_var);
+
+	// next_var = rs->store_next
+	next_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	mono_mb_emit_ldloc (mb, remset_var);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, store_next));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_stloc (mb, next_var);
+
+	// if (rs->store_next < rs->end_set) {
+	mono_mb_emit_ldloc (mb, next_var);
+	mono_mb_emit_ldloc (mb, remset_var);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, end_set));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	label2 = mono_mb_emit_branch (mb, CEE_BGE);
+
+	/* write barrier fast path */
+	// *(rs->store_next++) = (mword)ptr;
+	mono_mb_emit_ldloc (mb, next_var);
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+
+	mono_mb_emit_ldloc (mb, next_var);
+	mono_mb_emit_icon (mb, sizeof (gpointer));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_stloc (mb, next_var);
+
+	mono_mb_emit_ldloc (mb, remset_var);
+	mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (RememberedSet, store_next));
+	mono_mb_emit_ldloc (mb, next_var);
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+
+	// *(void**)ptr = value;
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_byte (mb, CEE_STIND_I);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/* write barrier slow path */
+	mono_mb_patch_branch (mb, label2);
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_store);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	res = mono_mb_create_method (mb, sig, 16);
+	mono_mb_free (mb);
+
+	mono_loader_lock ();
+	if (write_barrier_method) {
+		/* Already created */
+		mono_free_method (res);
+	} else {
+		/* double-checked locking */
+		mono_memory_barrier ();
+		write_barrier_method = res;
+	}
+	mono_loader_unlock ();
+
+	return write_barrier_method;
 }
 
 #endif /* HAVE_SGEN_GC */

@@ -10289,46 +10289,6 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	return ret;
 }
 
-MonoMethod*
-mono_marshal_get_write_barrier (void)
-{
-	static MonoMethod* ret = NULL;
-	MonoMethodSignature *sig;
-	MonoMethodBuilder *mb;
-	int max_stack = 2;
-
-	if (ret)
-		return ret;
-	
-	mb = mono_mb_new (mono_defaults.object_class, "writebarrier", MONO_WRAPPER_WRITE_BARRIER);
-
-	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
-
-	/* void writebarrier (MonoObject** addr, MonoObject* obj) */
-	sig->ret = &mono_defaults.void_class->byval_arg;
-	sig->params [0] = &mono_defaults.object_class->this_arg;
-	sig->params [1] = &mono_defaults.object_class->byval_arg;
-
-	/* just the store right now: add an hook for the GC to use, maybe something
-	 * that can be used for stelemref as well
-	 * We need a write barrier variant to be used with struct copies as well, though
-	 * there are also other approaches possible, like writing a wrapper specific to
-	 * the struct or to the reference pattern in the struct...
-	 * Depending on the GC, we may want variants that take the object we store to
-	 * when it is available.
-	 */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldarg (mb, 1);
-	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_store);
-	/*mono_mb_emit_byte (mb, CEE_STIND_REF);*/
-
-	mono_mb_emit_byte (mb, CEE_RET);
-
-	ret = mono_mb_create_method (mb, sig, max_stack);
-	mono_mb_free (mb);
-	return ret;
-}
-
 void*
 mono_marshal_alloc (gulong size)
 {

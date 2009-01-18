@@ -3141,10 +3141,14 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 
 					if (field_klass->valuetype) {
 						size = mono_type_size (field->type, &align);
+#ifdef HAVE_SGEN_GC
+						mono_gc_wbarrier_value_copy ((char *)this + field->offset, (char*)val + sizeof (MonoObject), 1, field_klass);
+#endif
 						memcpy ((char *)this + field->offset, 
 							((char *)val) + sizeof (MonoObject), size);
-					} else 
-						*(MonoObject**)((char *)this + field->offset) = val;
+					} else {
+						mono_gc_wbarrier_set_field (this, (char*)this + field->offset, val);
+					}
 				
 					out_args = mono_array_new (domain, mono_defaults.object_class, 0);
 					*outArgs = out_args;
