@@ -189,7 +189,7 @@ mono_gc_flush_info (void)
 }
 */
 
-#define MAX_DEBUG_LEVEL 9
+#define MAX_DEBUG_LEVEL 8
 #define DEBUG(level,a) do {if (G_UNLIKELY ((level) <= MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) a;} while (0)
 
 #define TV_DECLARE(name) struct timeval name
@@ -646,7 +646,7 @@ static Fragment *fragment_freelist = NULL;
 /* 
  * used when moving the objects
  * When the nursery is collected, objects are copied to to_space.
- * The area between to_space and gray_objects is used as a stack
+ * The area between gray_first and gray_objects is used as a stack
  * of objects that need their fields checked for more references
  * to be copied.
  * We should optimize somehow this mechanism to avoid rescanning
@@ -654,6 +654,7 @@ static Fragment *fragment_freelist = NULL;
  * test cache misses and other graph traversal orders.
  */
 static char *to_space = NULL;
+static char *gray_first = NULL;
 static char *gray_objects = NULL;
 static char *to_space_end = NULL;
 static GCMemSection *to_space_section = NULL;
@@ -1585,6 +1586,26 @@ scan_object (char *start, char* from_start, char* from_end)
 }
 
 /*
+ * drain_gray_stack:
+ *
+ *   Scan objects in the gray stack until the stack is empty. This should be called
+ * frequently after each object is copied, to achieve better locality and cache
+ * usage.
+ */
+static void inline
+drain_gray_stack (char *start_addr, char *end_addr)
+{
+	char *gray_start = gray_first;
+
+	while (gray_start < gray_objects) {
+		DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
+		gray_start = scan_object (gray_start, start_addr, end_addr);
+	}
+
+	gray_first = gray_start;
+}
+
+/*
  * scan_vtype:
  *
  * Scan the valuetype pointed to by START, described by DESC for references to
@@ -1955,7 +1976,8 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 		while (desc) {
 			if ((desc & 1) && *start_root) {
 				*start_root = copy_object (*start_root, n_start, n_end);
-				DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", start_root, *start_root));	\
+				DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", start_root, *start_root));
+				drain_gray_stack (n_start, n_end);
 			}
 			desc >>= 1;
 			start_root++;
@@ -1973,6 +1995,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 				if ((bmap & 1) && *objptr) {
 					*objptr = copy_object (*objptr, n_start, n_end);
 					DEBUG (9, fprintf (gc_debug_file, "Overwrote root at %p with %p\n", objptr, *objptr));
+					drain_gray_stack (n_start, n_end);
 				}
 				bmap >>= 1;
 				++objptr;
@@ -2160,7 +2183,7 @@ scan_needed_big_objects (char *start_addr, char *end_addr)
 }
 
 static void
-drain_gray_stack (char *start_addr, char *end_addr)
+finish_gray_stack (char *start_addr, char *end_addr)
 {
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -2177,16 +2200,15 @@ drain_gray_stack (char *start_addr, char *end_addr)
 	 * We need to walk the LO list as well in search of marked big objects
 	 * (use a flag since this is needed only on major collections). We need to loop
 	 * here as well, so keep a counter of marked LO (increasing it in copy_object).
+	 *   To achieve better cache locality and cache usage, we drain the gray stack 
+	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	TV_GETTIME (btv);
-	gray_start = to_space;
-	DEBUG (6, fprintf (gc_debug_file, "Precise scan of gray area: %p-%p, size: %d\n", gray_start, gray_objects, (int)(gray_objects - gray_start)));
+	gray_start = gray_first;
 	while (gray_start < gray_objects) {
 		DEBUG (9, fprintf (gc_debug_file, "Precise gray object scan %p (%s)\n", gray_start, safe_name (gray_start)));
 		gray_start = scan_object (gray_start, start_addr, end_addr);
 	}
 	TV_GETTIME (atv);
-	DEBUG (2, fprintf (gc_debug_file, "Gray stack scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 	//scan_old_generation (start_addr, end_addr);
 	DEBUG (2, fprintf (gc_debug_file, "Old generation done\n"));
 	/* walk the finalization queue and move also the objects that need to be
@@ -2393,11 +2415,11 @@ collect_nursery (size_t requested_size)
 	 * We reset to_space if we allocated objects in degraded mode.
 	 */
 	if (to_space_section)
-		to_space = gray_objects = to_space_section->next_data;
+		to_space = gray_objects = gray_first = to_space_section->next_data;
 	if ((to_space_end - to_space) < max_garbage_amount) {
 		section = alloc_section (nursery_section->size * 4);
 		g_assert (nursery_section->size >= max_garbage_amount);
-		to_space = gray_objects = section->next_data;
+		to_space = gray_objects = gray_first = section->next_data;
 		to_space_end = section->end_data;
 		to_space_section = section;
 	}
@@ -2440,7 +2462,7 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
-	drain_gray_stack (nursery_start, nursery_next);
+	finish_gray_stack (nursery_start, nursery_next);
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
@@ -2561,7 +2583,7 @@ major_collection (void)
 	/* allocate the big to space */
 	DEBUG (4, fprintf (gc_debug_file, "Allocate tospace for size: %zd\n", copy_space_required));
 	section = alloc_section (copy_space_required);
-	to_space = gray_objects = section->next_data;
+	to_space = gray_objects = gray_first = section->next_data;
 	to_space_end = section->end_data;
 	to_space_section = section;
 
@@ -2591,11 +2613,11 @@ major_collection (void)
 
 	/* we need to go over the big object list to see if any was marked and scan it
 	 * And we need to make this in a loop, considering that objects referenced by finalizable
-	 * objects could reference big objects (this happens in drain_gray_stack ())
+	 * objects could reference big objects (this happens in finish_gray_stack ())
 	 */
 	scan_needed_big_objects (heap_start, heap_end);
 	/* all the objects in the heap */
-	drain_gray_stack (heap_start, heap_end);
+	finish_gray_stack (heap_start, heap_end);
 
 	/* sweep the big objects list */
 	prevbo = NULL;
