@@ -366,7 +366,12 @@ ipc_connect (void)
 	 */
 	/* FIXME: Use TMP ? */
 	pw = NULL;
+#ifdef HAVE_GETPWUID_R
 	res = getpwuid_r (getuid (), &pwbuf, buf, sizeof (buf), &pw);
+#else
+	pw = getpwuid(getuid ());
+	res = pw != NULL ? 0 : 1;
+#endif
 	if (res != 0) {
 		fprintf (stderr, "attach: getpwuid_r () failed.\n");
 		return;
