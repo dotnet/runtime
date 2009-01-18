@@ -120,7 +120,9 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #endif
 
 	for (i = 0; id [i]; ++i) {
-		if (!isalnum (id [i]))
+		if (i == 0 && isdigit (id [i]))
+			fprintf (ofd, "_");
+		else if (!isalnum (id [i]))
 			fprintf (ofd, "_");
 		else
 			fprintf (ofd, "%c", id [i]);
