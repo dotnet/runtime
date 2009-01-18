@@ -78,6 +78,11 @@
 #undef AF_INET6
 #endif
 
+#ifdef PLATFORM_ANDROID
+// not yet actually implemented...
+#undef AF_INET6
+#endif
+
 #undef DEBUG
 
 static gint32 convert_family(MonoAddressFamily mono_family)
