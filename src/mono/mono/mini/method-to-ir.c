@@ -6767,7 +6767,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #if HAVE_WRITE_BARRIERS
 			if (*ip == CEE_STIND_REF && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !((sp [1]->opcode == OP_PCONST) && (sp [1]->inst_p0 == 0))) {
 				/* insert call to write barrier */
-				MonoMethod *write_barrier = mono_marshal_get_write_barrier ();
+				MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 				mono_emit_method_call (cfg, write_barrier, sp, NULL);
 				ins_flag = 0;
 				ip++;
@@ -7695,7 +7695,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #if HAVE_WRITE_BARRIERS
 				if (mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !(sp [1]->opcode == OP_PCONST && sp [1]->inst_c0 == 0)) {
 					/* insert call to write barrier */
-					MonoMethod *write_barrier = mono_marshal_get_write_barrier ();
+					MonoMethod *write_barrier = mono_gc_get_write_barrier ();
 					MonoInst *iargs [2];
 					int dreg;
 
