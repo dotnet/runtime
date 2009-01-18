@@ -587,6 +587,18 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	sys_icache_invalidate (code, size);
 #elif __GNUC_PREREQ(4, 1)
 	__clear_cache (code, code + size);
+#elif defined(PLATFORM_ANDROID)
+	const int syscall = 0xf0002;
+	__asm __volatile (
+		"mov	 r0, %0\n"			
+		"mov	 r1, %1\n"
+		"mov	 r7, %2\n"
+		"mov     r2, #0x0\n"
+		"svc     0x00000000\n"
+		:
+		:	"r" (code), "r" (code + size), "r" (syscall)
+		:	"r0", "r1", "r7"
+		);
 #else
 	__asm __volatile ("mov r0, %0\n"
 			"mov r1, %1\n"
