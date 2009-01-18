@@ -197,7 +197,7 @@ mono_shared_area_instances (void **array, int count)
 	return 0;
 }
 
-#elif defined(HAVE_MMAP)
+#elif defined(HAVE_MMAP) && defined(HAVE_SHM_OPEN)
 
 /**
  * mono_pagesize:
