@@ -3706,7 +3706,7 @@ GetLogicalDriveStrings (guint32 len, gunichar2 *buf)
 #endif
 }
 
-#if defined(HAVE_STATVFS) || defined(HAVE_STATFS)
+#if (defined(HAVE_STATVFS) || defined(HAVE_STATFS)) && !defined(PLATFORM_ANDROID)
 gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_bytes_avail,
 			    WapiULargeInteger *total_number_of_bytes,
 			    WapiULargeInteger *total_number_of_free_bytes)
