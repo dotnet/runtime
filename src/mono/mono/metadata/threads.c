@@ -2993,7 +2993,7 @@ typedef struct abort_appdomain_data {
 } abort_appdomain_data;
 
 static void
-abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
+collect_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoThread *thread = (MonoThread*)value;
 	abort_appdomain_data *data = (abort_appdomain_data*)user_data;
@@ -3001,8 +3001,6 @@ abort_appdomain_thread (gpointer key, gpointer value, gpointer user_data)
 
 	if (mono_thread_has_appdomain_ref (thread, domain)) {
 		/* printf ("ABORTING THREAD %p BECAUSE IT REFERENCES DOMAIN %s.\n", thread->tid, domain->friendly_name); */
-
-		ves_icall_System_Threading_Thread_Abort (thread, NULL);
 
 		if(data->wait.num<MAXIMUM_WAIT_OBJECTS) {
 			HANDLE handle = OpenThread (THREAD_ALL_ACCESS, TRUE, thread->tid);
@@ -3030,6 +3028,7 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	abort_appdomain_data user_data;
 	guint32 start_time;
 	int orig_timeout = timeout;
+	int i;
 
 	THREAD_DEBUG (g_message ("%s: starting abort", __func__));
 
@@ -3039,15 +3038,21 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 
 		user_data.domain = domain;
 		user_data.wait.num = 0;
-		mono_g_hash_table_foreach (threads, abort_appdomain_thread, &user_data);
+		/* This shouldn't take any locks */
+		mono_g_hash_table_foreach (threads, collect_appdomain_thread, &user_data);
 		mono_threads_unlock ();
 
-		if (user_data.wait.num > 0)
+		if (user_data.wait.num > 0) {
+			/* Abort the threads outside the threads lock */
+			for (i = 0; i < user_data.wait.num; ++i)
+				ves_icall_System_Threading_Thread_Abort (user_data.wait.threads [i], NULL);
+
 			/*
 			 * We should wait for the threads either to abort, or to leave the
 			 * domain. We can't do the latter, so we wait with a timeout.
 			 */
 			wait_for_tids (&user_data.wait, 100);
+		}
 
 		/* Update remaining time */
 		timeout -= mono_msec_ticks () - start_time;
