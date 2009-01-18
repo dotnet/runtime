@@ -2564,12 +2564,6 @@ executable_file_close (ProfilerExecutableMemoryRegionData *region);
 
 static void
 profiler_executable_memory_region_destroy (ProfilerExecutableMemoryRegionData *data) {
-	if (data->file_name != NULL) {
-		g_free (data->file_name);
-	}
-	if (data->symbols != NULL) {
-		g_free (data->symbols);
-	}
 	if (data->file != NULL) {
 		executable_file_close (data);
 		data->file = NULL;
@@ -2728,7 +2722,6 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 		
 		if (file == NULL) {
 			guint16 test = 0x0102;
-			int file_name_length = strlen (region->file_name);
 			struct stat stat_buffer;
 			int symtab_index = 0;
 			int strtab_index = 0;
@@ -2745,12 +2738,6 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 			file->reference_count ++;
 			file->next_new_file = files->new_files;
 			files->new_files = file;
-			
-			/* Skip files whose name doesn't end in ".so" */
-			if ((region->file_name [file_name_length - 1] != 'o') || (region->file_name [file_name_length - 2] != 's') || (region->file_name [file_name_length - 3] != '.')) {
-				file->fd = -1;
-				return file;
-			}
 			
 			file->fd = open (region->file_name, O_RDONLY);
 			if (file->fd == -1) {
@@ -2869,10 +2856,6 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 		executable_file_add_region_reference (file, region);
 	}
 	
-	if (file->next_new_file == NULL) {
-		file->next_new_file = files->new_files;
-		files->new_files = file;
-	}
 	return file;
 }
 
@@ -2890,6 +2873,7 @@ executable_file_free (ProfilerExecutableFile* file) {
 	}
 	if (file->section_regions != NULL) {
 		g_free (file->section_regions);
+		file->section_regions = NULL;
 	}
 	g_free (file);
 }
