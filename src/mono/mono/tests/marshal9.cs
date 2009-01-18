@@ -99,7 +99,7 @@ public class Tests
 			return 1;
 		if (Marshal1.cleanup_native_count != 2)
 			return 2;
-		if (Marshal1.native_to_managed_count != 2)
+		if (Marshal1.native_to_managed_count != 1)
 			return 3;
 
 		return res == 15 ? 0 : 3;
