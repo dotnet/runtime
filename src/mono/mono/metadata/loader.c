@@ -759,6 +759,9 @@ static MonoMethod*
 search_in_array_class (MonoClass *klass, const char *name, MonoMethodSignature *sig)
 {
 	int i;
+
+	mono_class_setup_methods (klass);
+
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoMethod *method = klass->methods [i];
 		if (strcmp (method->name, name) == 0 && sig->param_count == method->signature->param_count)
