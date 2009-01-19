@@ -596,3 +596,9 @@ xconv_r8_to_i4: dest:y src1:x len:7
 
 prefetch_membase: src1:b len:4
 
+expand_i1: dest:x src1:y len:17 clob:1
+expand_i2: dest:x src1:i len:15
+expand_i4: dest:x src1:i len:9
+expand_r4: dest:x src1:f len:13
+expand_r8: dest:x src1:f len:13
+

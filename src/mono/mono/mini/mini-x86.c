@@ -4134,6 +4134,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}			
 			break;
+
+		case OP_EXPAND_I1:
+			/*FIXME this causes a partial register stall, maybe it would not be that bad to use shift + mask + or*/
+			/*The +4 is to get a mov ?h, ?l over the same reg.*/
+			x86_mov_reg_reg (code, ins->dreg + 4, ins->dreg, 1);
+			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg1, 0);
+			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg1, 1);
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_EXPAND_I2:
+			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg1, 0);
+			x86_sse_alu_pd_reg_reg_imm (code, X86_SSE_PINSRW, ins->dreg, ins->sreg1, 1);
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_EXPAND_I4:
+			x86_movd_xreg_reg (code, ins->dreg, ins->sreg1);
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_EXPAND_R4:
+			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, FALSE, TRUE);
+			x86_movd_xreg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_EXPAND_R8:
+			x86_fst_membase (code, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset, TRUE, TRUE);
+			x86_movsd_reg_membase (code, ins->dreg, ins->backend.spill_var->inst_basereg, ins->backend.spill_var->inst_offset);
+			x86_sse_shift_reg_imm (code, X86_SSE_PSHUFD, ins->dreg, ins->dreg, 0x44);
+			break;
 #endif
 		default:
 			g_warning ("unknown opcode %s\n", mono_inst_name (ins->opcode));
@@ -5434,6 +5462,33 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		ins->sreg1 = long_ins->dreg;
 		ins->sreg2 = long_ins->sreg2 + 2;
 		ins->inst_c0 = long_ins->inst_c0 * 2 + 1;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		long_ins->opcode = OP_NOP;
+		break;
+	case OP_EXPAND_I8:
+		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_X);
+		ins->dreg = long_ins->dreg;
+		ins->sreg1 = long_ins->sreg1 + 1;
+		ins->klass = long_ins->klass;
+		ins->type = STACK_VTYPE;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		MONO_INST_NEW (cfg, ins, OP_INSERTX_I4_SLOW);
+		ins->dreg = long_ins->dreg;
+		ins->sreg1 = long_ins->dreg;
+		ins->sreg2 = long_ins->sreg1 + 2;
+		ins->inst_c0 = 1;
+		ins->klass = long_ins->klass;
+		ins->type = STACK_VTYPE;
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
+		ins->dreg = long_ins->dreg;
+		ins->sreg1 = long_ins->dreg;;
+		ins->inst_c0 = 0x44; /*Magic number for swizzling (X,Y,X,Y)*/
+		ins->klass = long_ins->klass;
+		ins->type = STACK_VTYPE;
 		MONO_ADD_INS (cfg->cbb, ins);
 
 		long_ins->opcode = OP_NOP;
