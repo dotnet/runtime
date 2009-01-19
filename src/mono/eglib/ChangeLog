@@ -1,3 +1,10 @@
+2009-01-19  Bill Holmes  <billholmes54@gmail.com>
+
+	* gmisc-win32.c (g_path_is_absolute):  Adding support for UNC
+	  paths on Windows.
+
+	Contributed under MIT/X11 license.
+
 2009-01-08  Bill Holmes  <billholmes54@gmail.com>
 
 	* winconfig.h, src/gfile-posix.c :
