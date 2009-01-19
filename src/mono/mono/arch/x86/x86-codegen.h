@@ -2020,6 +2020,14 @@ typedef enum {
 		x86_reg_emit ((inst), (dreg), (sreg));	\
 	} while (0)
 
+#define x86_movd_xreg_membase(inst,sreg,basereg,disp)	\
+	do {	\
+		*(inst)++ = (unsigned char)0x66;	\
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x6e;	\
+		x86_membase_emit ((inst), (sreg), (basereg), (disp));	\
+	} while (0)
+
 #define x86_pshufw_reg_reg(inst,dreg,sreg,mask,high_words)	\
 	do {	\
 		*(inst)++ = (unsigned char)(high_words) ? 0xF3 : 0xF2;	\
