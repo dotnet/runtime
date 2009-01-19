@@ -2083,4 +2083,14 @@ HAS_VALUE:	ldc.i4.1
 		ldc.i4.1
 		ret
 	}
+
+	.method public static default int32 test_5_createarr_newobj () cil managed
+	{
+		.maxstack 16
+
+		ldc.i4 5
+		newobj void char[]::.ctor(int32)
+		ldlen
+		ret
+	}
 }
