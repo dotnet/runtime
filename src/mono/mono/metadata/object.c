@@ -4763,8 +4763,6 @@ mono_raise_exception (MonoException *ex)
 		MONO_OBJECT_SETREF (mono_thread_current (), abort_exc, ex);
 	
 	ex_handler (ex);
-
-	InterlockedIncrement ((gint32*)&mono_perfcounters->exceptions_thrown);
 }
 
 /**
