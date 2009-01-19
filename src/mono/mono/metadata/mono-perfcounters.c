@@ -752,10 +752,20 @@ predef_writable_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounter
 	}
 	sample->counterType = predef_counters [predef_categories [cat_id].first_counter + id].type;
 	switch (cat_id) {
+	case CATEGORY_EXC:
+		switch (id) {
+		case COUNTER_EXC_THROWN:
+			sample->rawValue = mono_perfcounters->exceptions_thrown;
+			return TRUE;
+		}
+		break;
 	case CATEGORY_ASPNET:
 		switch (id) {
 		case COUNTER_ASPNET_REQ_Q:
 			sample->rawValue = mono_perfcounters->aspnet_requests_queued;
+			return TRUE;
+		case COUNTER_ASPNET_REQ_TOTAL:
+			sample->rawValue = mono_perfcounters->aspnet_requests;
 			return TRUE;
 		}
 		break;
@@ -774,6 +784,7 @@ predef_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 	case CATEGORY_ASPNET:
 		switch (id) {
 		case COUNTER_ASPNET_REQ_Q: ptr = &mono_perfcounters->aspnet_requests_queued; break;
+		case COUNTER_ASPNET_REQ_TOTAL: ptr = &mono_perfcounters->aspnet_requests; break;
 		}
 		break;
 	}
