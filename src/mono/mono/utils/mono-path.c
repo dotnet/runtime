@@ -67,6 +67,11 @@ mono_path_canonicalize (const char *path)
 		lastpos = pos + 1;
 		pos = strchr (lastpos, G_DIR_SEPARATOR);
 	}
+
+#ifdef PLATFORM_WIN32 /* For UNC paths the first '\' is removed. */
+	if (*(lastpos-1) == G_DIR_SEPARATOR && *(lastpos-2) == G_DIR_SEPARATOR)
+		lastpos = lastpos-1;
+#endif
 	
 	if (dest != lastpos) strcpy (dest, lastpos);
 	return g_strreverse (abspath);
