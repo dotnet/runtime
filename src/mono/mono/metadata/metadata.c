@@ -2191,7 +2191,7 @@ inflated_signature_in_image (gpointer key, gpointer value, gpointer data)
 	MonoImage *image = data;
 	MonoInflatedMethodSignature *sig = key;
 
-	return /* signature_in_image (sig->sig, image) || */
+	return signature_in_image (sig->sig, image) ||
 		(sig->context.class_inst && ginst_in_image (sig->context.class_inst, image)) ||
 		(sig->context.method_inst && ginst_in_image (sig->context.method_inst, image));
 }	
