@@ -2,6 +2,219 @@ using System;
 using Mono.Simd;
 
 public class SimdTests {
+	static int ddd;
+	static void InitByRef (out Vector4i v) {
+		v = new Vector4i (99);
+		if (ddd > 10)
+			throw new Exception ("ddd");
+	}
+
+	static int test_0_vector4i_one_element_ctor_with_byref ()
+	{
+		Vector4i a;
+		InitByRef (out a);
+		if (a.X != 99)
+			return 1;
+		if (a.Y != 99)
+			return 2;
+		if (a.Z != 99)
+			return 3;
+		if (a.W != 99)
+			return 4;
+		return 0;
+	}
+	
+	static int test_0_vector2d_one_element_ctor () {
+		Vector2d a = new Vector2d (99);
+		if (a.X != 99)
+			return 1;
+		if (a.Y != 99)
+			return 2;
+		return 0;
+	}
+
+	static int test_0_vector2ul_one_element_ctor () {
+		Vector2ul a = new Vector2ul (99);
+
+		if (a.X != 99)
+			return 1;
+		if (a.Y != 99)
+			return 2;
+		return 0;
+	}
+
+	static int test_0_vector2l_one_element_ctor () {
+		Vector2l a = new Vector2l (99);
+
+		if (a.X != 99)
+			return 1;
+		if (a.Y != 99)
+			return 2;
+		return 0;
+	}
+
+	static int test_0_vector4f_one_element_ctor () {
+		Vector4f a = new Vector4f (99);
+
+		if (a.X != 99)
+			return 1;
+		if (a.Y != 99)
+			return 2;
+		if (a.Z != 99)
+			return 3;
+		if (a.W != 99)
+			return 4;
+		return 0;
+	}
+
+	static int test_0_vector4ui_one_element_ctor () {
+		Vector4ui a = new Vector4ui (99);
+
+		if (a.X != 99)
+			return 1;
+		if (a.Y != 99)
+			return 2;
+		if (a.Z != 99)
+			return 3;
+		if (a.W != 99)
+			return 4;
+		return 0;
+	}
+
+	static int test_0_vector4i_one_element_ctor () {
+		Vector4i a = new Vector4i (99);
+
+		if (a.X != 99)
+			return 1;
+		if (a.Y != 99)
+			return 2;
+		if (a.Z != 99)
+			return 3;
+		if (a.W != 99)
+			return 4;
+		return 0;
+	}
+
+	static int test_0_vector8us_one_element_ctor () {
+		Vector8us a = new Vector8us (99);
+
+		if (a.V0 != 99)
+			return 1;
+		if (a.V1 != 99)
+			return 2;
+		if (a.V2 != 99)
+			return 3;
+		if (a.V3 != 99)
+			return 4;
+		if (a.V4 != 99)
+			return 5;
+		if (a.V5 != 99)
+			return 6;
+		if (a.V6 != 99)
+			return 7;
+		if (a.V7 != 99)
+			return 8;
+		return 0;
+	}
+
+	static int test_0_vector8s_one_element_ctor () {
+		Vector8s a = new Vector8s (99);
+
+		if (a.V0 != 99)
+			return 1;
+		if (a.V1 != 99)
+			return 2;
+		if (a.V2 != 99)
+			return 3;
+		if (a.V3 != 99)
+			return 4;
+		if (a.V4 != 99)
+			return 5;
+		if (a.V5 != 99)
+			return 6;
+		if (a.V6 != 99)
+			return 7;
+		if (a.V7 != 99)
+			return 8;
+		return 0;
+	}
+
+	static int test_0_vector16sb_one_element_ctor () {
+		Vector16sb a = new Vector16sb (99);
+
+		if (a.V0 != 99)
+			return 1;
+		if (a.V1 != 99)
+			return 2;
+		if (a.V2 != 99)
+			return 3;
+		if (a.V3 != 99)
+			return 4;
+		if (a.V4 != 99)
+			return 5;
+		if (a.V5 != 99)
+			return 6;
+		if (a.V6 != 99)
+			return 7;
+		if (a.V7 != 99)
+			return 8;
+		if (a.V8 != 99)
+			return 9;
+		if (a.V9 != 99)
+			return 10;
+		if (a.V10 != 99)
+			return 11;
+		if (a.V11 != 99)
+			return 12;
+		if (a.V12 != 99)
+			return 13;
+		if (a.V13 != 99)
+			return 14;
+		if (a.V14 != 99)
+			return 15;
+		if (a.V15 != 99)
+			return 16;
+		return 0;
+	}
+
+	static int test_0_vector16b_one_element_ctor () {
+		Vector16b a = new Vector16b (99);
+
+		if (a.V0 != 99)
+			return 1;
+		if (a.V1 != 99)
+			return 2;
+		if (a.V2 != 99)
+			return 3;
+		if (a.V3 != 99)
+			return 4;
+		if (a.V4 != 99)
+			return 5;
+		if (a.V5 != 99)
+			return 6;
+		if (a.V6 != 99)
+			return 7;
+		if (a.V7 != 99)
+			return 8;
+		if (a.V8 != 99)
+			return 9;
+		if (a.V9 != 99)
+			return 10;
+		if (a.V10 != 99)
+			return 11;
+		if (a.V11 != 99)
+			return 12;
+		if (a.V12 != 99)
+			return 13;
+		if (a.V13 != 99)
+			return 14;
+		if (a.V14 != 99)
+			return 15;
+		if (a.V15 != 99)
+			return 16;
+		return 0;
+	}
+
 	public static unsafe int test_0_sizeof_returns_16_2d ()
 	{
 		double[] array = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
