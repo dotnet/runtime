@@ -10466,7 +10466,22 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 			result = mono_class_inflate_generic_method (result, context);
 		*handle_class = mono_defaults.methodhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "MonoField") == 0) {
-		result = ((MonoReflectionField*)obj)->field;
+		MonoClassField *field = ((MonoReflectionField*)obj)->field;
+		if (context) {
+			MonoType *inflated = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
+			MonoClass *class = mono_class_from_mono_type (inflated);
+			MonoClassField *inflated_field;
+			gpointer iter = NULL;
+			mono_metadata_free_type (inflated);
+			while ((inflated_field = mono_class_get_fields (class, &iter))) {
+				if (!strcmp (field->name, inflated_field->name))
+					break;
+			}
+			g_assert (inflated_field && !strcmp (field->name, inflated_field->name));
+			result = inflated_field;
+		} else {
+			result = field;
+		}
 		*handle_class = mono_defaults.fieldhandle_class;
 		g_assert (result);
 	} else if (strcmp (obj->vtable->klass->name, "FieldBuilder") == 0) {
