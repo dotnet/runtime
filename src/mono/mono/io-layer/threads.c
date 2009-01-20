@@ -1222,6 +1222,47 @@ void wapi_clear_interruption (void)
 	_wapi_handle_unref (thread_handle);
 }
 
+char* wapi_current_thread_desc ()
+{
+	struct _WapiHandle_thread *thread;
+	int i;
+	gboolean ok;
+	gpointer handle;
+	gpointer thread_handle;
+	GString* text;
+	char *res;
+
+	thread_handle = OpenThread (0, 0, GetCurrentThreadId ());
+	ok = _wapi_lookup_handle (thread_handle, WAPI_HANDLE_THREAD,
+							  (gpointer *)&thread);
+	if (!ok)
+		return g_strdup_printf ("thread handle %p state : lookup failure", thread_handle);
+
+	handle = thread->wait_handle;
+	text = g_string_new (0);
+	g_string_append_printf (text, "thread handle %p state : ", thread_handle);
+
+	if (!handle)
+		g_string_append_printf (text, "not waiting");
+	else if (handle == INTERRUPTION_REQUESTED_HANDLE)
+		g_string_append_printf (text, "interrupted state");
+	else
+		g_string_append_printf (text, "waiting on %p : %s ", handle, _wapi_handle_typename[_wapi_handle_type (handle)]);
+	g_string_append_printf (text, " owns (");
+	for (i = 0; i < thread->owned_mutexes->len; i++) {
+		gpointer mutex = g_ptr_array_index (thread->owned_mutexes, i);
+		if (i > 0)
+			g_string_append_printf (text, ", %p", mutex);
+		else
+			g_string_append_printf (text, "%p", mutex);
+	}
+	g_string_append_printf (text, ")");
+
+	res = text->str;
+	g_string_free (text, FALSE);
+	return res;
+}
+
 /**
  * wapi_thread_set_wait_handle:
  *
