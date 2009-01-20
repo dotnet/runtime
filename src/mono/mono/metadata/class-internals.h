@@ -1141,6 +1141,9 @@ mono_method_get_vtable_slot (MonoMethod *method) MONO_INTERNAL;
 int
 mono_method_get_vtable_index (MonoMethod *method) MONO_INTERNAL;
 
+MonoMethod*
+mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMethodSignature *sig) MONO_INTERNAL;
+
 void
 mono_class_setup_interface_id (MonoClass *class) MONO_INTERNAL;
 

@@ -7216,11 +7216,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			iargs [0] = NULL;
 
 			if (mini_class_is_system_array (cmethod->klass)) {
-				if (context_used)
-					GENERIC_SHARING_FAILURE (*ip);
-				g_assert (!context_used);
 				g_assert (!vtable_arg);
-				EMIT_NEW_METHODCONST (cfg, *sp, cmethod);
+
+				if (context_used) {
+					*sp = emit_get_rgctx_method (cfg, context_used,
+						cmethod, MONO_RGCTX_INFO_METHOD);
+				} else {
+					EMIT_NEW_METHODCONST (cfg, *sp, cmethod);
+				}
 
 				/* Avoid varargs in the common case */
 				if (fsig->param_count == 1)

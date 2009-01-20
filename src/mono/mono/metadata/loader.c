@@ -755,8 +755,8 @@ mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 }
 
 /* this is only for the typespec array methods */
-static MonoMethod*
-search_in_array_class (MonoClass *klass, const char *name, MonoMethodSignature *sig)
+MonoMethod*
+mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMethodSignature *sig)
 {
 	int i;
 
@@ -874,7 +874,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		}
 
 		/* we're an array and we created these methods already in klass in mono_class_init () */
-		result = search_in_array_class (klass, mname, sig);
+		result = mono_method_search_in_array_class (klass, mname, sig);
 		if (result)
 			return result;
 
