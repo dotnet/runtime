@@ -5417,6 +5417,12 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 	}
 	class_inits = NULL;
 
+	/* We force the vtable variable here for all shared methods
+	   for the possibility that they might show up in a stack
+	   trace where their exact instantiation is needed. */
+	if (cfg->generic_sharing_context)
+		mono_get_vtable_var (cfg);
+
 	/* add a check for this != NULL to inlined methods */
 	if (is_virtual_call) {
 		MonoInst *arg_ins;

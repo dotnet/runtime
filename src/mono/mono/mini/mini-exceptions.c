@@ -246,6 +246,82 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	return ji;
 }
 
+static gpointer
+get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
+{
+	MonoGenericJitInfo *gi;
+
+	if (!ji->has_generic_jit_info)
+		return NULL;
+	gi = mono_jit_info_get_generic_jit_info (ji);
+	if (!gi->has_this)
+		return NULL;
+
+	if (gi->this_in_reg)
+		return mono_arch_context_get_int_reg (ctx, gi->this_reg);
+	else
+		return *(gpointer*)(gpointer)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
+				gi->this_offset);
+}
+
+static MonoGenericContext
+get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
+{
+	MonoGenericContext context = { NULL, NULL };
+	MonoClass *class, *method_container_class;
+
+	g_assert (generic_info);
+
+	g_assert (ji->method->is_inflated);
+	if (mono_method_get_context (ji->method)->method_inst) {
+		MonoMethodRuntimeGenericContext *mrgctx = generic_info;
+
+		class = mrgctx->class_vtable->klass;
+		context.method_inst = mrgctx->method_inst;
+		g_assert (context.method_inst);
+	} else if ((ji->method->flags & METHOD_ATTRIBUTE_STATIC) || ji->method->klass->valuetype) {
+		MonoVTable *vtable = generic_info;
+
+		class = vtable->klass;
+	} else {
+		MonoObject *this = generic_info;
+
+		class = this->vtable->klass;
+	}
+
+	if (class->generic_class || class->generic_container)
+		context.class_inst = mini_class_get_context (class)->class_inst;
+
+	g_assert (!ji->method->klass->generic_container);
+	if (ji->method->klass->generic_class)
+		method_container_class = ji->method->klass->generic_class->container_class;
+	else
+		method_container_class = ji->method->klass;
+
+	if (class->generic_class)
+		g_assert (mono_class_has_parent_and_ignore_generics (class->generic_class->container_class, method_container_class));
+	else
+		g_assert (mono_class_has_parent_and_ignore_generics (class, method_container_class));
+
+	return context;
+}
+
+static MonoMethod*
+get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
+{
+	MonoGenericContext context;
+	MonoMethod *method;
+
+	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this)
+		return ji->method;
+	context = get_generic_context_from_stack_frame (ji, generic_info);
+
+	method = mono_method_get_declaring_generic_method (ji->method);
+	method = mono_class_inflate_generic_method (method, &context);
+
+	return method;
+}
+
 MonoString *
 ves_icall_System_Exception_get_trace (MonoException *ex)
 {
@@ -259,11 +335,12 @@ ves_icall_System_Exception_get_trace (MonoException *ex)
 		/* Exception is not thrown yet */
 		return NULL;
 
-	len = mono_array_length (ta);
+	len = mono_array_length (ta) >> 1;
 	trace_str = g_string_new ("");
 	for (i = 0; i < len; i++) {
 		MonoJitInfo *ji;
-		gpointer ip = mono_array_get (ta, gpointer, i);
+		gpointer ip = mono_array_get (ta, gpointer, i * 2 + 0);
+		gpointer generic_info = mono_array_get (ta, gpointer, i * 2 + 1);
 
 		ji = mono_jit_info_table_find (domain, ip);
 		if (ji == NULL) {
@@ -272,10 +349,11 @@ ves_icall_System_Exception_get_trace (MonoException *ex)
 		} else {
 			gchar *location;
 			gint32 address;
+			MonoMethod *method = get_method_from_stack_frame (ji, generic_info);
 
 			address = (char *)ip - (char *)ji->code_start;
 			location = mono_debug_print_stack_frame (
-				ji->method, address, ex->object.vtable->domain);
+				method, address, ex->object.vtable->domain);
 
 			g_string_append_printf (trace_str, "%s\n", location);
 			g_free (location);
@@ -301,15 +379,17 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		/* Exception is not thrown yet */
 		return mono_array_new (domain, mono_defaults.stack_frame_class, 0);
 	}
-	
-	len = mono_array_length (ta);
+
+	len = mono_array_length (ta) >> 1;
 
 	res = mono_array_new (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0);
 
 	for (i = skip; i < len; i++) {
 		MonoJitInfo *ji;
 		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
-		gpointer ip = mono_array_get (ta, gpointer, i);
+		gpointer ip = mono_array_get (ta, gpointer, i * 2 + 0);
+		gpointer generic_info = mono_array_get (ta, gpointer, i * 2 + 1);
+		MonoMethod *method;
 
 		ji = mono_jit_info_table_find (domain, ip);
 		if (ji == NULL) {
@@ -320,16 +400,17 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 		g_assert (ji != NULL);
 
+		method = get_method_from_stack_frame (ji, generic_info);
 		if (ji->method->wrapper_type) {
 			char *s;
 
 			sf->method = NULL;
-			s = mono_method_full_name (ji->method, TRUE);
+			s = mono_method_full_name (method, TRUE);
 			MONO_OBJECT_SETREF (sf, internal_method_name, mono_string_new (domain, s));
 			g_free (s);
 		}
 		else
-			MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, ji->method, NULL));
+			MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, method, NULL));
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 
 		/*
@@ -469,7 +550,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoJitInfo *ji, rji;
 	MonoContext ctx, new_ctx;
 	MonoDebugSourceLocation *location;
-	MonoMethod *last_method = NULL;
+	MonoMethod *last_method = NULL, *actual_method;
 
 	MONO_ARCH_CONTEXT_DEF;
 
@@ -513,7 +594,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	} while (skip >= 0);
 
-	*method = mono_method_get_object (domain, ji->method, NULL);
+	actual_method = get_method_from_stack_frame (ji, &ctx);
+
+	*method = mono_method_get_object (domain, actual_method, NULL);
 
 	location = mono_debug_lookup_source_location (ji->method, *native_offset, domain);
 	if (location)
@@ -915,6 +998,8 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 				 */
 				if (!initial_trace_ips && (frame_count < 1000)) {
 					trace_ips = g_list_prepend (trace_ips, MONO_CONTEXT_GET_IP (ctx));
+					trace_ips = g_list_prepend (trace_ips,
+						get_generic_info_from_stack_frame (ji, ctx));
 				}
 			}
 

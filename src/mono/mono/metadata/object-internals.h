@@ -140,6 +140,8 @@ typedef struct {
 
 struct _MonoException {
 	MonoObject object;
+	/* Stores the IPs and the generic sharing infos
+	   (vtable/MRGCTX) of the frames. */
 	MonoArray  *trace_ips;
 	MonoObject *inner_ex;
 	MonoString *message;

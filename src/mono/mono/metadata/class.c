@@ -7132,7 +7132,7 @@ mono_class_get_generic_type_definition (MonoClass *klass)
  * 
  * Visibility checks ignoring generic instantiations.  
  */
-static gboolean
+gboolean
 mono_class_has_parent_and_ignore_generics (MonoClass *klass, MonoClass *parent)
 {
 	int i;
