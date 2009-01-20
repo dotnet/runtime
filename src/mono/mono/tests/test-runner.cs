@@ -132,8 +132,10 @@ public class TestRunner
 
 				/* Cleaup terminated processes */
 				foreach (Process dead in terminated) {
-					process_data [dead].stdout.Close ();
-					process_data [dead].stderr.Close ();
+					if (process_data [dead].stdout != null)
+						process_data [dead].stdout.Close ();
+					if (process_data [dead].stderr != null)
+						process_data [dead].stderr.Close ();
 					// This is needed to avoid CreateProcess failed errors :(
 					dead.Close ();
 				}
@@ -192,6 +194,9 @@ public class TestRunner
 
 				lock (monitor) {
 					fs = process_data [p2].stdout;
+
+					if (String.IsNullOrEmpty (e.Data))
+						process_data [p2].stdout = null;
 				}
 
 				if (String.IsNullOrEmpty (e.Data))
@@ -207,10 +212,19 @@ public class TestRunner
 
 				lock (monitor) {
 					fs = process_data [p2].stderr;
+
+					if (String.IsNullOrEmpty (e.Data))
+						process_data [p2].stderr = null;
+
 				}
 
-				if (String.IsNullOrEmpty (e.Data))
+				if (String.IsNullOrEmpty (e.Data)) {
 					fs.Close ();
+
+					lock (monitor) {
+						process_data [p2].stderr = null;
+					}
+				}
 				else
 					fs.WriteLine (e.Data);
 			};
