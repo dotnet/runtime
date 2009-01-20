@@ -1491,7 +1491,7 @@ mono_print_thread_dump (void *sigctx)
 	MonoContext ctx;
 #endif
 	GString* text = g_string_new (0);
-	char *name;
+	char *name, *wapi_desc;
 	GError *error = NULL;
 
 	if (thread->name) {
@@ -1503,9 +1503,11 @@ mono_print_thread_dump (void *sigctx)
 	else if (thread->threadpool_thread)
 		g_string_append (text, "\n\"<threadpool thread>\"");
 	else
-		g_string_append (text, "\n\"\"");
+		g_string_append (text, "\n\"<unnamed thread>\"");
 
-	g_string_append_printf (text, " tid=0x%p this=0x%p:\n", (gpointer)(gsize)thread->tid, thread);
+	wapi_desc = wapi_current_thread_desc ();
+	g_string_append_printf (text, " tid=0x%p this=0x%p %s\n", (gpointer)(gsize)thread->tid, thread,  wapi_desc);
+	free (wapi_desc);
 
 	/* FIXME: */
 #if defined(__i386__) || defined(__x86_64__)
