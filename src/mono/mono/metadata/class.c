@@ -2904,6 +2904,13 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			mono_memory_barrier ();
 			class->vtable = tmp;
 
+			/* Have to set method->slot for abstract virtual methods */
+			if (class->methods && gklass->methods) {
+				for (i = 0; i < class->method.count; ++i)
+					if (class->methods [i]->slot == -1)
+						class->methods [i]->slot = gklass->methods [i]->slot;
+			}
+
 			return;
 		}
 	}
