@@ -123,7 +123,7 @@ typedef struct MonoAotOptions {
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
-	int ccount, mcount, lmfcount, abscount, wrappercount, gcount, ocount, genericcount;
+	int ccount, mcount, lmfcount, abscount, gcount, ocount, genericcount;
 	int code_size, info_size, ex_info_size, got_size, class_info_size, got_info_size, got_info_offsets_size;
 	int methods_without_got_slots, direct_calls, all_calls;
 	int got_slots;
@@ -4021,6 +4021,66 @@ add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
 	g_hash_table_insert (acfg->token_info_hash, method, new_ji);
 }
 
+static gboolean
+can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
+{
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHODCONST:
+		if (patch_info->data.method->wrapper_type) {
+			switch (patch_info->data.method->wrapper_type) {
+			case MONO_WRAPPER_NONE:
+			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
+			case MONO_WRAPPER_XDOMAIN_INVOKE:
+			case MONO_WRAPPER_STFLD:
+			case MONO_WRAPPER_LDFLD:
+			case MONO_WRAPPER_LDFLDA:
+			case MONO_WRAPPER_LDFLD_REMOTE:
+			case MONO_WRAPPER_STFLD_REMOTE:
+			case MONO_WRAPPER_STELEMREF:
+			case MONO_WRAPPER_ISINST:
+			case MONO_WRAPPER_PROXY_ISINST:
+			case MONO_WRAPPER_ALLOC:
+			case MONO_WRAPPER_REMOTING_INVOKE:
+			case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
+			case MONO_WRAPPER_UNKNOWN:
+				break;
+			default:
+				//printf ("Skip (wrapper call):   %s %d -> %s\n", mono_method_full_name (method, TRUE), patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
+				return FALSE;
+			}
+		} else {
+			if (!patch_info->data.method->token) {
+				/* The method is part of a constructed type like Int[,].Set (). */
+				if (!g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method))
+					return FALSE;
+			}
+		}
+		break;
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_CLASS_INIT:
+	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_ADJUSTED_IID:
+		if (!patch_info->data.klass->type_token)
+			if (!patch_info->data.klass->element_class->type_token && !(patch_info->data.klass->element_class->rank && patch_info->data.klass->element_class->element_class->type_token))
+				return FALSE;
+		break;
+	case MONO_PATCH_INFO_RGCTX_FETCH: {
+		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
+
+		if (!can_encode_patch (acfg, entry->data))
+			return FALSE;
+		break;
+	}
+	default:
+		break;
+	}
+
+	return TRUE;
+}
+
 /*
  * compile_method:
  *
@@ -4134,56 +4194,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 
-	/*
-	 * Check for wrapper methods we can't encode.
-	 */
-	skip = FALSE;
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if ((patch_info->type == MONO_PATCH_INFO_METHODCONST) || (patch_info->type == MONO_PATCH_INFO_METHOD)) {
-			switch (patch_info->data.method->wrapper_type) {
-			case MONO_WRAPPER_NONE:
-			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
-			case MONO_WRAPPER_XDOMAIN_INVOKE:
-			case MONO_WRAPPER_STFLD:
-			case MONO_WRAPPER_LDFLD:
-			case MONO_WRAPPER_LDFLDA:
-			case MONO_WRAPPER_LDFLD_REMOTE:
-			case MONO_WRAPPER_STFLD_REMOTE:
-			case MONO_WRAPPER_STELEMREF:
-			case MONO_WRAPPER_ISINST:
-			case MONO_WRAPPER_PROXY_ISINST:
-			case MONO_WRAPPER_ALLOC:
-			case MONO_WRAPPER_REMOTING_INVOKE:
-			case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
-			case MONO_WRAPPER_UNKNOWN:
-				break;
-			default:
-				/* unable to handle this */
-				//printf ("Skip (wrapper call):   %s %d -> %s\n", mono_method_full_name (method, TRUE), patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
-				skip = TRUE;
-				break;
-			}
-		} else if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH) {
-			MonoJumpInfo *child = patch_info->data.rgctx_entry->data;
-
-			if (child->type == MONO_PATCH_INFO_METHODCONST) {
-				switch (child->data.method->wrapper_type) {
-				case MONO_WRAPPER_NONE:
-				case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
-					break;
-				default:
-					skip = TRUE;
-				}
-			}
-		}
-	}
-
-	if (skip) {
-		InterlockedIncrement (&acfg->stats.wrappercount);
-		mono_destroy_compile (cfg);
-		return;
-	}
-
 	/* Lock for the rest of the code */
 	mono_acfg_lock (acfg);
 
@@ -4192,30 +4202,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	 */
 	skip = FALSE;
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_METHOD:
-		case MONO_PATCH_INFO_METHODCONST:
-			if (patch_info->data.method->wrapper_type)
-				break;
-			if (!patch_info->data.method->token) {
-				/* The method is part of a constructed type like Int[,].Set (). */
-				if (!g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method))
-					skip = TRUE;
-			}
-			break;
-		case MONO_PATCH_INFO_VTABLE:
-		case MONO_PATCH_INFO_CLASS_INIT:
-		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IID:
-		case MONO_PATCH_INFO_ADJUSTED_IID:
-			if (!patch_info->data.klass->type_token)
-				if (!patch_info->data.klass->element_class->type_token && !(patch_info->data.klass->element_class->rank && patch_info->data.klass->element_class->element_class->type_token))
-					skip = TRUE;
-			break;
-		default:
-			break;
-		}
+		if (!can_encode_patch (acfg, patch_info))
+			skip = TRUE;
 	}
 
 	if (skip) {
@@ -6122,8 +6110,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		printf ("%d methods are generic (%d%%)\n", acfg->stats.genericcount, acfg->stats.mcount ? (acfg->stats.genericcount * 100) / acfg->stats.mcount : 100);
 	if (acfg->stats.abscount)
 		printf ("%d methods contain absolute addresses (%d%%)\n", acfg->stats.abscount, acfg->stats.mcount ? (acfg->stats.abscount * 100) / acfg->stats.mcount : 100);
-	if (acfg->stats.wrappercount)
-		printf ("%d methods contain wrapper references (%d%%)\n", acfg->stats.wrappercount, acfg->stats.mcount ? (acfg->stats.wrappercount * 100) / acfg->stats.mcount : 100);
 	if (acfg->stats.lmfcount)
 		printf ("%d methods contain lmf pointers (%d%%)\n", acfg->stats.lmfcount, acfg->stats.mcount ? (acfg->stats.lmfcount * 100) / acfg->stats.mcount : 100);
 	if (acfg->stats.ocount)
