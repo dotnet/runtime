@@ -43,9 +43,9 @@
  */
 
 typedef struct {
-	u_int32_t	n_namesz;	/* Length of name. */
-	u_int32_t	n_descsz;	/* Length of descriptor. */
-	u_int32_t	n_type;		/* Type of this note. */
+	uint32_t	n_namesz;	/* Length of name. */
+	uint32_t	n_descsz;	/* Length of descriptor. */
+	uint32_t	n_type;		/* Type of this note. */
 } Elf_Note;
 
 /* Indexes into the e_ident array.  Keep synced with
