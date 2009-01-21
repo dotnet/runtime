@@ -2771,7 +2771,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box)
 		EMIT_NEW_CLASSCONST (cfg, iargs [1], klass);
 
 		alloc_ftn = mono_object_new;
-	} else if (cfg->compile_aot && cfg->cbb->out_of_line && klass->type_token && klass->image == mono_defaults.corlib) {
+	} else if (cfg->compile_aot && cfg->cbb->out_of_line && klass->type_token && klass->image == mono_defaults.corlib && !klass->generic_class) {
 		/* This happens often in argument checking code, eg. throw new FooException... */
 		/* Avoid relocations and save some space by calling a helper function specialized to mscorlib */
 		EMIT_NEW_ICONST (cfg, iargs [0], mono_metadata_token_index (klass->type_token));
