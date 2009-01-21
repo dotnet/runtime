@@ -1546,9 +1546,11 @@ mono_print_thread_dump (void *sigctx)
 	else
 		g_string_append (text, "\n\"<unnamed thread>\"");
 
+#ifndef PLATFORM_WIN32
 	wapi_desc = wapi_current_thread_desc ();
 	g_string_append_printf (text, " tid=0x%p this=0x%p %s\n", (gpointer)(gsize)thread->tid, thread,  wapi_desc);
 	free (wapi_desc);
+#endif
 
 	/* FIXME: */
 #if defined(__i386__) || defined(__x86_64__)
