@@ -3952,7 +3952,7 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 	if (p1->num != p2->num)
 		return FALSE;
 
-	if (p1->owner == p2->owner)
+	if (p1->owner == p2->owner && p1->image == p2->image)
 		return TRUE;
 
 	/*
