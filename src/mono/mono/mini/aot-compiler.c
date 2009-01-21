@@ -4022,20 +4022,6 @@ add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
 }
 
 static gboolean
-has_constraints (MonoGenericContainer *container)
-{
-	int i;
-
-	g_assert (container->type_argc > 0);
-	g_assert (container->type_params);
-
-	for (i = 0; i < container->type_argc; ++i)
-		if (container->type_params [i].constraints)
-			return TRUE;
-	return FALSE;
-}
-
-static gboolean
 can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 {
 	switch (patch_info->type) {
@@ -4144,16 +4130,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	if (acfg->aot_opts.full_aot)
 		mono_use_imt = FALSE;
-
-	/* 
-	 * Check for type constraints, we can't handle them yet, see bug-325283.2.cs
-	 * for an example.
-	 */
-	if ((method->is_generic && has_constraints (mono_method_get_generic_container (method))) ||
-		(method->klass->generic_container && has_constraints (method->klass->generic_container))) {
-		InterlockedIncrement (&acfg->stats.ocount);
-		return;
-	}		   
 
 	/*
 	 * Since these methods are the only ones which are compiled with
