@@ -197,7 +197,8 @@ mono_shared_area_instances (void **array, int count)
 	return 0;
 }
 
-#elif defined(HAVE_MMAP) && defined(HAVE_SHM_OPEN)
+#else
+#if defined(HAVE_MMAP)
 
 /**
  * mono_pagesize:
@@ -377,6 +378,66 @@ mono_mprotect (void *addr, size_t length, int flags)
 	return mprotect (addr, length, prot);
 }
 
+#else
+
+/* dummy malloc-based implementation */
+int
+mono_pagesize (void)
+{
+	return 4096;
+}
+
+void*
+mono_valloc (void *addr, size_t length, int flags)
+{
+	return malloc (length);
+}
+
+int
+mono_vfree (void *addr, size_t length)
+{
+	free (addr);
+	return 0;
+}
+
+void*
+mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
+{
+	guint64 cur_offset;
+	size_t bytes_read;
+	void *ptr = malloc (length);
+	if (!ptr)
+		return NULL;
+	cur_offset = lseek (fd, 0, SEEK_CUR);
+	if (lseek (fd, offset, SEEK_SET) != offset) {
+		free (ptr);
+		return NULL;
+	}
+	bytes_read = read (fd, ptr, length);
+	lseek (fd, cur_offset, SEEK_SET);
+	*ret_handle = NULL;
+	return ptr;
+}
+
+int
+mono_file_unmap (void *addr, void *handle)
+{
+	free (addr);
+	return 0;
+}
+
+int
+mono_mprotect (void *addr, size_t length, int flags)
+{
+	if (flags & MONO_MMAP_DISCARD) {
+		memset (addr, 0, length);
+	}
+	return 0;
+}
+#endif // HAVE_MMAP
+
+#if defined(HAVE_SHM_OPEN)
+
 static int
 mono_shared_area_instances_slow (void **array, int count, gboolean cleanup)
 {
@@ -529,64 +590,7 @@ mono_shared_area_instances (void **array, int count)
 {
 	return mono_shared_area_instances_helper (array, count, FALSE);
 }
-
 #else
-
-/* dummy malloc-based implementation */
-int
-mono_pagesize (void)
-{
-	return 4096;
-}
-
-void*
-mono_valloc (void *addr, size_t length, int flags)
-{
-	return malloc (length);
-}
-
-int
-mono_vfree (void *addr, size_t length)
-{
-	free (addr);
-	return 0;
-}
-
-void*
-mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
-{
-	guint64 cur_offset;
-	size_t bytes_read;
-	void *ptr = malloc (length);
-	if (!ptr)
-		return NULL;
-	cur_offset = lseek (fd, 0, SEEK_CUR);
-	if (lseek (fd, offset, SEEK_SET) != offset) {
-		free (ptr);
-		return NULL;
-	}
-	bytes_read = read (fd, ptr, length);
-	lseek (fd, cur_offset, SEEK_SET);
-	*ret_handle = NULL;
-	return ptr;
-}
-
-int
-mono_file_unmap (void *addr, void *handle)
-{
-	free (addr);
-	return 0;
-}
-
-int
-mono_mprotect (void *addr, size_t length, int flags)
-{
-	if (flags & MONO_MMAP_DISCARD) {
-		memset (addr, 0, length);
-	}
-	return 0;
-}
-
 void*
 mono_shared_area (void)
 {
@@ -618,5 +622,6 @@ mono_shared_area_instances (void **array, int count)
 	return 0;
 }
 
-#endif
+#endif // HAVE_SHM_OPEN
 
+#endif // PLATFORM_WIN32
