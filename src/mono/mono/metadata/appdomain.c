@@ -1941,16 +1941,21 @@ mono_domain_unload (MonoDomain *domain)
 
 	/* Atomically change our state to UNLOADING */
 	prev_state = InterlockedCompareExchange ((gint32*)&domain->state,
-											 MONO_APPDOMAIN_UNLOADING,
+											 MONO_APPDOMAIN_UNLOADING_START,
 											 MONO_APPDOMAIN_CREATED);
 	if (prev_state != MONO_APPDOMAIN_CREATED) {
-		if (prev_state == MONO_APPDOMAIN_UNLOADING)
+		switch (prev_state) {
+		case MONO_APPDOMAIN_UNLOADING_START:
+		case MONO_APPDOMAIN_UNLOADING:
 			mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("Appdomain is already being unloaded."));
-		else
-			if (prev_state == MONO_APPDOMAIN_UNLOADED)
-				mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("Appdomain is already unloaded."));
-		else
+			break;
+		case MONO_APPDOMAIN_UNLOADED:
+			mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("Appdomain is already unloaded."));
+			break;
+		default:
+			g_warning ("Incalid appdomain state %d", prev_state);
 			g_assert_not_reached ();
+		}
 	}
 
 	mono_domain_set (domain, FALSE);
@@ -1970,6 +1975,8 @@ mono_domain_unload (MonoDomain *domain)
 	thread_data.domain = domain;
 	thread_data.failure_reason = NULL;
 
+	/*The managed callback finished successfully, now we start tearing down the appdomain*/
+	domain->state = MONO_APPDOMAIN_UNLOADING;
 	/* 
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
