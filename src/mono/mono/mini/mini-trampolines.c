@@ -634,7 +634,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 		code = delegate->target ? impl_this : impl_nothis;
 
 		if (code) {
-			delegate->invoke_impl = code;
+			delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
 			return code;
 		}
 	}
@@ -645,12 +645,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
 	mono_debugger_trampoline_compiled (m, delegate->invoke_impl);
 
-#ifdef __mono_ppc64__
-	// FIXME:
-	return mono_get_addr_from_ftnptr (code);
-#else
 	return code;
-#endif
 }
 
 #endif

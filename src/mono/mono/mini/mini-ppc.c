@@ -375,14 +375,15 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 	if (has_target) {
 		static guint8* cached = NULL;
-		int size = MONO_PPC_32_64_CASE (16, 20);
+		int size = MONO_PPC_32_64_CASE (16, 20) + PPC_FTNPTR_SIZE;
 		mono_mini_arch_lock ();
 		if (cached) {
 			mono_mini_arch_unlock ();
 			return cached;
 		}
-		
+
 		start = code = mono_global_codeman_reserve (size);
+		code = mono_ppc_create_pre_code_ftnptr (code);
 
 		/* Replace the this argument with the target */
 		ppc_load_reg (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
@@ -417,8 +418,9 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return code;
 		}
 
-		size = MONO_PPC_32_64_CASE (12, 16) + sig->param_count * 4;
+		size = MONO_PPC_32_64_CASE (12, 16) + sig->param_count * 4 + PPC_FTNPTR_SIZE;
 		start = code = mono_global_codeman_reserve (size);
+		code = mono_ppc_create_pre_code_ftnptr (code);
 
 		ppc_load_reg (code, ppc_r0, G_STRUCT_OFFSET (MonoDelegate, method_ptr), ppc_r3);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR

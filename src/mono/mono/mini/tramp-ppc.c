@@ -277,8 +277,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 */
 	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		if (tramp_type != MONO_TRAMPOLINE_DELEGATE)
-			ppc_load_reg (buf, ppc_r3, 0, ppc_r3);
+		ppc_load_reg (buf, ppc_r3, 0, ppc_r3);
 #endif
 		ppc_mtctr (buf, ppc_r3);
 	}
