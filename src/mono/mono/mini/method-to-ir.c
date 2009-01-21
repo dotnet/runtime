@@ -5033,6 +5033,17 @@ load_error:
 	return NULL;
 }
 
+static gboolean
+is_exception_class (MonoClass *class)
+{
+	while (class) {
+		if (class == mono_defaults.exception_class)
+			return TRUE;
+		class = class->parent;
+	}
+	return FALSE;
+}
+
 /*
  * mono_method_to_ir:
  *
@@ -7189,7 +7200,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * Generate smaller code for the common newobj <exception> instruction in
 			 * argument checking code.
 			 */
-			if (bblock->out_of_line && cmethod->klass->image == mono_defaults.corlib && n <= 2 && 
+			if (bblock->out_of_line && cmethod->klass->image == mono_defaults.corlib &&
+				is_exception_class (cmethod->klass) && n <= 2 &&
 				((n < 1) || (!fsig->params [0]->byref && fsig->params [0]->type == MONO_TYPE_STRING)) && 
 				((n < 2) || (!fsig->params [1]->byref && fsig->params [1]->type == MONO_TYPE_STRING))) {
 				MonoInst *iargs [3];
