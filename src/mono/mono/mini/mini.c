@@ -3123,6 +3123,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		/* The debugger needs all locals to be on the stack or in a global register */
 		cfg->disable_vreg_to_lvreg = TRUE;
 
+		/* Don't remove unused variables when running inside the debugger since the user
+		 * may still want to view them. */
+		cfg->disable_deadce_vars = TRUE;
+
 		// cfg->opt |= MONO_OPT_SHARED;
 		cfg->opt &= ~MONO_OPT_DEADCE;
 		cfg->opt &= ~MONO_OPT_INLINE;
