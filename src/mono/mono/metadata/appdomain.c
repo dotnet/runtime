@@ -2040,8 +2040,8 @@ mono_domain_unload (MonoDomain *domain)
 	thread_data.domain = domain;
 	thread_data.failure_reason = NULL;
 
-	/*Move from unloading_start to unloading. Now no new TP jobs are going to be accepted.*/
-	InterlockedIncrement ((gint32*)&domain->state);
+	/*The managed callback finished successfully, now we start tearing down the appdomain*/
+	domain->state = MONO_APPDOMAIN_UNLOADING;
 	/* 
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
