@@ -5200,12 +5200,11 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	do {
 		n++;
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
+		memset (&params [n - 1], 0, sizeof (MonoGenericParam));
 		params [n - 1].owner = container;
-		params [n - 1].pklass = NULL;
 		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
-		params [n - 1].constraints = NULL;
 		if (++i > tdef->rows)
 			break;
 		mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
