@@ -5061,8 +5061,11 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_arch_init ();
 
-	if (getenv ("MONO_XDEBUG"))
+	if (getenv ("MONO_XDEBUG")) {
 		mono_xdebug_init ();
+		/* So methods for multiple domains don't have the same address */
+		mono_dont_free_domains = TRUE;
+	}
 
 	mono_trampolines_init ();
 
