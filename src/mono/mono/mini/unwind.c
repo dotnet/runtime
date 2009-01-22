@@ -10,9 +10,26 @@
 #include "mini.h"
 #include "unwind.h"
 
+typedef enum {
+	LOC_SAME,
+	LOC_OFFSET
+} LocType;
+
+typedef struct {
+	LocType loc_type;
+	int offset;
+} Loc;
+
 #ifdef __x86_64__
 static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+#define NUM_REGS AMD64_NREG
+#else
+#define NUM_REGS 0
 #endif
+
+static gboolean dwarf_reg_to_hw_reg_inited;
+
+static int map_dwarf_reg_to_hw_reg [NUM_REGS];
 
 /*
  * mono_hw_reg_to_dwarf_reg:
@@ -30,6 +47,29 @@ mono_hw_reg_to_dwarf_reg (int reg)
 #endif
 }
 
+static void
+init_reg_map (void)
+{
+	int i;
+
+	g_assert (sizeof (map_hw_reg_to_dwarf_reg) / sizeof (int) == NUM_REGS);
+	for (i = 0; i < NUM_REGS; ++i) {
+		map_dwarf_reg_to_hw_reg [mono_hw_reg_to_dwarf_reg (i)] = i;
+	}
+
+	mono_memory_barrier ();
+	dwarf_reg_to_hw_reg_inited = TRUE;
+}
+
+static inline int
+mono_dwarf_reg_to_hw_reg (int reg)
+{
+	if (!dwarf_reg_to_hw_reg_inited)
+		init_reg_map ();
+
+	return map_dwarf_reg_to_hw_reg [reg];
+}
+
 static G_GNUC_UNUSED void
 encode_uleb128 (guint32 value, guint8 *buf, guint8 **endbuf)
 {
@@ -44,6 +84,28 @@ encode_uleb128 (guint32 value, guint8 *buf, guint8 **endbuf)
 	} while (value);
 
 	*endbuf = p;
+}
+
+static inline guint32
+decode_uleb128 (guint8 *buf, guint8 **endbuf)
+{
+	guint8 *p = buf;
+	guint32 res = 0;
+	int shift = 0;
+
+	while (TRUE) {
+		guint8 b = *p;
+		p ++;
+
+		res = res | (((int)(b & 0x7f)) << shift);
+		if (!(b & 0x80))
+			break;
+		shift += 7;
+	}
+
+	*endbuf = p;
+
+	return res;
 }
 
 /*
@@ -110,4 +172,96 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 	memcpy (res, buf, p - buf);
 	g_free (buf);
 	return res;
+}
+
+#if 0
+#define UNW_DEBUG(stmt) do { stmt; } while (0)
+#else
+#define UNW_DEBUG(stmt) do { } while (0)
+#endif
+
+static G_GNUC_UNUSED void
+print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *locations)
+{
+	int i;
+
+	printf ("\t%x: cfa=r%d+%d ", ip, cfa_reg, cfa_offset);
+
+	for (i = 0; i < nregs; ++i)
+		if (locations [i].loc_type == LOC_OFFSET)
+			printf ("r%d@%d(cfa) ", i, locations [i].offset);
+	printf ("\n");
+}
+
+/*
+ * Given the state of the current frame as stored in REGS, execute the unwind 
+ * operations in unwind_info until the location counter reaches POS. The result is 
+ * stored back into REGS. OUT_CFA will receive the value of the CFA.
+ */
+void
+mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
+				   int data_align_factor,
+				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, gssize *regs, 
+				   int nregs, guint8 **out_cfa) 
+{
+	Loc locations [NUM_REGS];
+	int i, pos, reg, cfa_reg, cfa_offset;
+	guint8 *p;
+	guint8 *cfa_val;
+
+	g_assert (nregs <= NUM_REGS);
+
+	for (i = 0; i < nregs; ++i)
+		locations [i].loc_type = LOC_SAME;
+
+	p = unwind_info;
+	pos = 0;
+	while (pos < ip - start_ip && p < unwind_info + unwind_info_len) {
+		int op = *p & 0xc0;
+
+		switch (op) {
+		case DW_CFA_advance_loc:
+			UNW_DEBUG (print_dwarf_state (cfa_reg, cfa_offset, pos, nregs, locations));
+			pos += *p & 0x3f;
+			p ++;
+			break;
+		case DW_CFA_offset:
+			reg = mono_dwarf_reg_to_hw_reg (*p & 0x3f);
+			p ++;
+			locations [reg].loc_type = LOC_OFFSET;
+			locations [reg].offset = decode_uleb128 (p, &p) * data_align_factor;
+			break;
+		case 0: {
+			int ext_op = *p;
+			p ++;
+			switch (ext_op) {
+			case DW_CFA_def_cfa:
+				cfa_reg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
+				cfa_offset = decode_uleb128 (p, &p);
+				break;
+			case DW_CFA_def_cfa_offset:
+				cfa_offset = decode_uleb128 (p, &p);
+				break;
+			case DW_CFA_def_cfa_register:
+				cfa_reg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			break;
+		}
+		default:
+			g_assert_not_reached ();
+		}
+	}
+
+	cfa_val = (guint8*)regs [cfa_reg] + cfa_offset;
+	for (i = 0; i < nregs; ++i) {
+		if (locations [i].loc_type == LOC_OFFSET)
+			regs [i] = *(gssize*)(cfa_val + locations [i].offset);
+	}
+
+	*out_cfa = cfa_val;
+
+	g_free (locations);
 }
