@@ -92,4 +92,10 @@ mono_hw_reg_to_dwarf_reg (int reg) MONO_INTERNAL;
 guint8*
 mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len) MONO_INTERNAL;
 
+void
+mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
+				   int data_align_factor,
+				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, gssize *regs, 
+				   int nregs, guint8 **out_cfa) MONO_INTERNAL;
+
 #endif
