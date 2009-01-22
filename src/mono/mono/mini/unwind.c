@@ -262,6 +262,4 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	}
 
 	*out_cfa = cfa_val;
-
-	g_free (locations);
 }
