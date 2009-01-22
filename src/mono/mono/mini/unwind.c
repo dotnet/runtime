@@ -24,6 +24,7 @@ typedef struct {
 static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 #define NUM_REGS AMD64_NREG
 #else
+static int map_hw_reg_to_dwarf_reg [0];
 #define NUM_REGS 0
 #endif
 
@@ -52,6 +53,7 @@ init_reg_map (void)
 {
 	int i;
 
+	g_assert (NUM_REGS > 0);
 	g_assert (sizeof (map_hw_reg_to_dwarf_reg) / sizeof (int) == NUM_REGS);
 	for (i = 0; i < NUM_REGS; ++i) {
 		map_dwarf_reg_to_hw_reg [mono_hw_reg_to_dwarf_reg (i)] = i;
