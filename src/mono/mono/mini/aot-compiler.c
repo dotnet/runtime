@@ -4581,6 +4581,10 @@ emit_extra_methods (MonoAotCompile *acfg)
 				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
 				name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
 				g_free (tmpsig);
+			} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
+				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+				name = g_strdup_printf ("(wrapper delegate-invoke):%s (%s)", method->name, tmpsig);
+				g_free (tmpsig);
 			} else {
 				name = mono_method_full_name (cfg->orig_method, TRUE);
 			}
