@@ -1,3 +1,7 @@
+2009-01-23  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Make --enable-parallel-mark=yes the default.
+
 2009-01-17  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Complete the OPROFILE checks.

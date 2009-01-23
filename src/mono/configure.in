@@ -640,7 +640,7 @@ AC_TRY_COMPILE([], [
    AC_MSG_RESULT(no)
 ])
 
-AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables GC Parallel Marking])
+AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables GC Parallel Marking], enable_parallel_mark=$enableval, enable_parallel_mark=yes)
 if test x$enable_parallel_mark = xyes; then
 	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
 fi
@@ -2469,18 +2469,19 @@ echo "
         mcs source:    $mcs_topdir
         olive source:  $olive_topdir
 
-	GC:	     $gc
-	TLS:         $with_tls
-	SIGALTSTACK: $with_sigaltstack
-	Engine:      $jit_status
-	2.0 Beta:    $PREVIEW
-	2.1 Alpha:   $MOONLIGHT
-	JNI support: $jdk_headers_found
-	libgdiplus:  $libgdiplus_msg
-	zlib:        $zlib_msg
-	oprofile:    $OPROFILE
-	BigArrays:   $enable_big_arrays
-	DTrace:      $enable_dtrace
+	GC:	       $gc
+	TLS:           $with_tls
+	SIGALTSTACK:   $with_sigaltstack
+	Engine:        $jit_status
+	2.0 Beta:      $PREVIEW
+	2.1 Alpha:     $MOONLIGHT
+	JNI support:   $jdk_headers_found
+	libgdiplus:    $libgdiplus_msg
+	zlib:          $zlib_msg
+	oprofile:      $OPROFILE
+	BigArrays:     $enable_big_arrays
+	DTrace:        $enable_dtrace
+	Parallel Mark: $enable_parallel_mark
 	$disabled
 
 "
