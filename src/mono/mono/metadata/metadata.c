@@ -3988,7 +3988,19 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 	if (p1->num != p2->num)
 		return FALSE;
 
-	if (p1->owner == p2->owner && p1->image == p2->image)
+	/*
+	 * We have to compare the image as well because if we didn't,
+	 * the generic_inst_cache lookup wouldn't care about the image
+	 * of generic params, so what could happen is that a generic
+	 * inst with params from image A is put into the cache, then
+	 * image B gets that generic inst from the cache, image A is
+	 * unloaded, so the inst is deleted, but image B still retains
+	 * a pointer to it.
+	 *
+	 * The AOT runtime doesn't set the image when it's decoding
+	 * types, so we only compare it when the owner is NULL.
+	 */
+	if (p1->owner == p2->owner && (p1->owner || p1->image == p2->image))
 		return TRUE;
 
 	/*
