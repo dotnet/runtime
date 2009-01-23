@@ -5345,6 +5345,9 @@ mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
+	if (reg == ppc_r1)
+		return MONO_CONTEXT_GET_SP (ctx);
+
 	g_assert (reg >= ppc_r13);
 
 	return (gpointer)ctx->regs [reg - ppc_r13];
