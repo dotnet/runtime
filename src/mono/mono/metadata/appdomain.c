@@ -1694,11 +1694,8 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	g_free (name);
 
 	if (!parsed) {
-		MonoException *exc;
-
 		/* This is a parse error... */
-		exc = mono_get_exception_file_not_found2 (NULL, assRef);
-		mono_raise_exception (exc);
+		return NULL;
 	}
 
 	ass = mono_assembly_load_full_nosearch (&aname, NULL, &status, refOnly);
@@ -1711,9 +1708,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 		else
 			refass = NULL;
 		if (!refass) {
-			/* FIXME: it doesn't make much sense since we really don't have a filename ... */
-			MonoException *exc = mono_get_exception_file_not_found2 (NULL, assRef);
-			mono_raise_exception (exc);
+			return NULL;
 		}
 	}
 
