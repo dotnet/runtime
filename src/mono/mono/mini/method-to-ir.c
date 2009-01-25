@@ -5862,7 +5862,21 @@ mono_method_to_ir2 (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_
 					cmethod =  (MonoMethod *)mono_method_get_wrapper_data (method, token);
 					cil_method = cmethod;
 				} else if (constrained_call) {
-					cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context, &cil_method);
+					if ((constrained_call->byval_arg.type == MONO_TYPE_VAR || constrained_call->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
+						/* This is needed when using aot + generic sharing, since 
+						 * the AOT code allows generic sharing for methods with 
+						 * type parameters having constraints, and 
+						 * get_method_constrained can't find the method in klass 
+						 * representing a type var.
+						 * The type var is guaranteed to be a reference type in this
+						 * case.
+						 */
+						cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+						cil_method = cmethod;
+						g_assert (!cmethod->klass->valuetype);
+					} else {
+						cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context, &cil_method);
+					}
 				} else {
 					cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 					cil_method = cmethod;
