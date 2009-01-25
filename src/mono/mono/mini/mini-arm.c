@@ -23,6 +23,11 @@
 #include "mono/arch/arm/arm-vfp-codegen.h"
 #endif
 
+static gint lmf_tls_offset = -1;
+static gint lmf_addr_tls_offset = -1;
+static gint appdomain_tls_offset = -1;
+static gint thread_tls_offset = -1;
+
 /* This mutex protects architecture specific caches */
 #define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
 #define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
@@ -2430,7 +2435,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MEMORY_BARRIER:
 			break;
 		case OP_TLS_GET:
+#if defined(__ARM_EABI__) && defined(__linux__)
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+								 (gpointer)"__aeabi_read_tp");
+			code = emit_call_seq (cfg, code);
+
+			ARM_LDR_IMM (code, ins->dreg, ARMREG_R0, ins->inst_offset);
+#else
 			g_assert_not_reached ();
+#endif
 			break;
 		/*case OP_BIGMUL:
 			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
@@ -4062,9 +4075,19 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 }
 
+static gboolean tls_offset_inited = FALSE;
+
 void
 mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 {
+	if (!tls_offset_inited) {
+		tls_offset_inited = TRUE;
+
+		appdomain_tls_offset = mono_domain_get_tls_offset ();
+  		lmf_tls_offset = mono_get_lmf_tls_offset ();
+		lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
+		thread_tls_offset = mono_thread_get_tls_offset ();
+	}
 }
 
 void
@@ -4087,13 +4110,27 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 
 MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 {
-	return NULL;
+	MonoInst* ins;
+	
+	if (appdomain_tls_offset == -1)
+		return NULL;
+	
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+	ins->inst_offset = appdomain_tls_offset;
+	return ins;
 }
 
 MonoInst* 
 mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 {
-	return NULL;
+	MonoInst* ins;
+	
+	if (thread_tls_offset == -1)
+		return NULL;
+	
+	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
+	ins->inst_offset = thread_tls_offset;
+	return ins;
 }
 
 guint32
