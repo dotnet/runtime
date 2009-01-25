@@ -23,7 +23,7 @@ if test x$GCC != xyes; then
 fi
 case $host in
 i?86-*-linux*|x86_64-*-linux*|powerpc-*-linux* \
-|amd64-*-freebsd*|i?86-*-freebsd*|ia64-*-freebsd*)
+|amd64-*-freebsd*|i?86-*-freebsd*|ia64-*-freebsd*|arm*-*-linux*)
     pic_options='-fPIC'
     ;;
 i?86-apple-darwin*)

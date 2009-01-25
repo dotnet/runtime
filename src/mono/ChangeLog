@@ -1,3 +1,7 @@
+2009-01-25  Zoltan Varga  <vargaz@gmail.com>
+
+	* acinclude.m4 (dolt_supported): Handle ARM as well.
+
 2009-01-23  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Make --enable-parallel-mark=yes the default.
