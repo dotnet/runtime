@@ -2658,26 +2658,15 @@ append_region (ProfilerExecutableMemoryRegions *regions, gpointer *start, gpoint
 	regions->next_id ++;
 }
 
-static void
-restore_old_regions (ProfilerExecutableMemoryRegions *old_regions, ProfilerExecutableMemoryRegions *new_regions) {
-	int old_i;
-	int new_i;
-	
-	for (old_i = 0; old_i < old_regions->regions_count; old_i++) {
-		ProfilerExecutableMemoryRegionData *old_region = old_regions->regions [old_i];
-		for (new_i = 0; new_i < new_regions->regions_count; new_i++) {
-			ProfilerExecutableMemoryRegionData *new_region = new_regions->regions [new_i];
-			if ((old_region->start == new_region->start) &&
-					(old_region->end == new_region->end) &&
-					(old_region->file_offset == new_region->file_offset) &&
-					! strcmp (old_region->file_name, new_region->file_name)) {
-				new_regions->regions [new_i] = old_region;
-				old_regions->regions [old_i] = new_region;
-				
-				// FIXME (sanity check)
-				g_assert (new_region->is_new && ! old_region->is_new);
-			}
-		}
+static gboolean
+regions_are_equivalent (ProfilerExecutableMemoryRegionData *region1, ProfilerExecutableMemoryRegionData *region2) {
+	if ((region1->start == region2->start) &&
+			(region1->end == region2->end) &&
+			(region1->file_offset == region2->file_offset) &&
+			! strcmp (region1->file_name, region2->file_name)) {
+		return TRUE;
+	} else {
+		return FALSE;
 	}
 }
 
@@ -2689,8 +2678,68 @@ compare_regions (const void *a1, const void *a2) {
 }
 
 static void
+restore_old_regions (ProfilerExecutableMemoryRegions *old_regions, ProfilerExecutableMemoryRegions *new_regions) {
+	int old_i;
+	int new_i;
+	
+	for (new_i = 0; new_i < new_regions->regions_count; new_i++) {
+		ProfilerExecutableMemoryRegionData *new_region = new_regions->regions [new_i];
+		for (old_i = 0; old_i < old_regions->regions_count; old_i++) {
+			ProfilerExecutableMemoryRegionData *old_region = old_regions->regions [old_i];
+			if ( regions_are_equivalent (old_region, new_region)) {
+				new_regions->regions [new_i] = old_region;
+				old_regions->regions [old_i] = new_region;
+				
+				// FIXME (sanity check)
+				g_assert (new_region->is_new && ! old_region->is_new);
+			}
+		}
+	}
+}
+
+static void
 sort_regions (ProfilerExecutableMemoryRegions *regions) {
-	qsort (regions->regions, regions->regions_count, sizeof (ProfilerExecutableMemoryRegionData *), compare_regions);
+	if (regions->regions_count > 1) {
+		int i;
+		
+		qsort (regions->regions, regions->regions_count, sizeof (ProfilerExecutableMemoryRegionData *), compare_regions);
+		
+		i = 1;
+		while (i < regions->regions_count) {
+			ProfilerExecutableMemoryRegionData *current_region = regions->regions [i];
+			ProfilerExecutableMemoryRegionData *previous_region = regions->regions [i - 1];
+			
+			if (regions_are_equivalent (previous_region, current_region)) {
+				int j;
+				
+				if (! current_region->is_new) {
+					profiler_executable_memory_region_destroy (previous_region);
+					regions->regions [i - 1] = current_region;
+				} else {
+					profiler_executable_memory_region_destroy (current_region);
+				}
+				
+				for (j = i + 1; j < regions->regions_count; j++) {
+					regions->regions [j - 1] = regions->regions [j];
+				}
+				
+				regions->regions_count --;
+			} else {
+				i++;
+			}
+		}
+	}
+}
+
+static void
+fix_region_references (ProfilerExecutableMemoryRegions *regions) {
+	int i;
+	for (i = 0; i < regions->regions_count; i++) {
+		ProfilerExecutableMemoryRegionData *region = regions->regions [i];
+		if (region->file_region_reference != NULL) {
+			region->file_region_reference->region = region;
+		}
+	}
 }
 
 static void
@@ -3287,8 +3336,9 @@ refresh_memory_regions (void) {
 	
 	LOG_WRITER_THREAD ("Refreshing memory regions...");
 	scan_process_regions (new_regions);
-	restore_old_regions (old_regions, new_regions);
 	sort_regions (new_regions);
+	restore_old_regions (old_regions, new_regions);
+	fix_region_references (new_regions);
 	LOG_WRITER_THREAD ("Refreshed memory regions.");
 	
 	LOG_WRITER_THREAD ("Building symbol tables...");
