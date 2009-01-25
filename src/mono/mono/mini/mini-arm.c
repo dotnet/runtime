@@ -25,8 +25,6 @@
 
 static gint lmf_tls_offset = -1;
 static gint lmf_addr_tls_offset = -1;
-static gint appdomain_tls_offset = -1;
-static gint thread_tls_offset = -1;
 
 /* This mutex protects architecture specific caches */
 #define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
@@ -4083,10 +4081,8 @@ mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
 	if (!tls_offset_inited) {
 		tls_offset_inited = TRUE;
 
-		appdomain_tls_offset = mono_domain_get_tls_offset ();
   		lmf_tls_offset = mono_get_lmf_tls_offset ();
 		lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
-		thread_tls_offset = mono_thread_get_tls_offset ();
 	}
 }
 
@@ -4108,29 +4104,16 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 	return 0;
 }
 
-MonoInst* mono_arch_get_domain_intrinsic (MonoCompile* cfg)
+MonoInst*
+mono_arch_get_domain_intrinsic (MonoCompile* cfg)
 {
-	MonoInst* ins;
-	
-	if (appdomain_tls_offset == -1)
-		return NULL;
-	
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->inst_offset = appdomain_tls_offset;
-	return ins;
+	return mono_get_domain_intrinsic (cfg);
 }
 
-MonoInst* 
+MonoInst*
 mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 {
-	MonoInst* ins;
-	
-	if (thread_tls_offset == -1)
-		return NULL;
-	
-	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
-	ins->inst_offset = thread_tls_offset;
-	return ins;
+	return mono_get_thread_intrinsic (cfg);
 }
 
 guint32
