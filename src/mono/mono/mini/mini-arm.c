@@ -3464,11 +3464,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 #endif /* DISABLE_JIT */
 
+#if defined(__ARM_EABI__) && defined(__linux__)
+void __aeabi_read_tp (void);
+#endif
+
 void
 mono_arch_register_lowlevel_calls (void)
 {
 	/* The signature doesn't matter */
 	mono_register_jit_icall (mono_arm_throw_exception, "mono_arm_throw_exception", mono_create_icall_signature ("void"), TRUE);
+
+#if defined(__ARM_EABI__) && defined(__linux__)
+	mono_register_jit_icall (__aeabi_read_tp, "__aeabi_read_tp", mono_create_icall_signature ("void"), TRUE);
+#endif
 }
 
 #define patch_lis_ori(ip,val) do {\
@@ -3833,10 +3841,27 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	if (method->save_lmf) {
+		gboolean get_lmf_fast = FALSE;
 
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-			     (gpointer)"mono_get_lmf_addr");
-		code = emit_call_seq (cfg, code);
+#if defined(__ARM_EABI__) && defined(__linux__)
+		gint32 lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
+
+		if (lmf_addr_tls_offset != -1) {
+			get_lmf_fast = TRUE;
+
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+								 (gpointer)"__aeabi_read_tp");
+			code = emit_call_seq (cfg, code);
+
+			ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, lmf_addr_tls_offset);
+			get_lmf_fast = TRUE;
+		}
+#endif
+		if (!get_lmf_fast) {
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+								 (gpointer)"mono_get_lmf_addr");
+			code = emit_call_seq (cfg, code);
+		}
 		/* we build the MonoLMF structure on the stack - see mini-arm.h */
 		/* lmf_offset is the offset from the previous stack pointer,
 		 * alloc_size is the total stack space allocated, so the offset
