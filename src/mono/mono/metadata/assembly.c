@@ -2521,10 +2521,12 @@ mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 	bundles = assemblies;
 }
 
+#define MONO_DECLSEC_FORMAT_10		0x3C
 #define MONO_DECLSEC_FORMAT_20		0x2E
 #define MONO_DECLSEC_FIELD		0x53
 #define MONO_DECLSEC_PROPERTY		0x54
 
+#define SKIP_VISIBILITY_XML_ATTRIBUTE ("\"SkipVerification\"")
 #define SKIP_VISIBILITY_ATTRIBUTE_NAME ("System.Security.Permissions.SecurityPermissionAttribute")
 #define SKIP_VISIBILITY_ATTRIBUTE_SIZE (sizeof (SKIP_VISIBILITY_ATTRIBUTE_NAME) - 1)
 #define SKIP_VISIBILITY_PROPERTY_NAME ("SkipVerification")
@@ -2567,6 +2569,16 @@ mono_assembly_try_decode_skip_verification (const char *p, const char *endn)
 {
 	int i, j, num, len, params_len;
 
+	if (*p == MONO_DECLSEC_FORMAT_10) {
+		gsize read, written;
+		char *res = g_convert (p, endn - p, "UTF-8", "UTF-16LE", &read, &written, NULL);
+		if (res) {
+			gboolean found = strstr (res, SKIP_VISIBILITY_XML_ATTRIBUTE) != NULL;
+			g_free (res);
+			return found;
+		}
+		return FALSE;
+	}
 	if (*p++ != MONO_DECLSEC_FORMAT_20)
 		return FALSE;
 
