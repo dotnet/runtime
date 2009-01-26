@@ -8473,7 +8473,7 @@ emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
-		if (MONO_TYPE_ISSTRUCT (t->data.type)) {
+		if (MONO_TYPE_ISSTRUCT (t->data.type) && !mono_class_from_mono_type (t->data.type)->blittable) {
 			char *msg = g_strdup_printf ("Can not marshal 'parameter #%d': Pointers can not reference marshaled structures. Use byref instead.", argnum + 1);
 			mono_mb_emit_exception_marshal_directive (m->mb, msg);
 		}
