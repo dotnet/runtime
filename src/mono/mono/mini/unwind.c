@@ -10,6 +10,8 @@
 #include "mini.h"
 #include "unwind.h"
 
+#include <mono/utils/mono-counters.h>
+
 typedef enum {
 	LOC_SAME,
 	LOC_OFFSET
@@ -19,6 +21,19 @@ typedef struct {
 	LocType loc_type;
 	int offset;
 } Loc;
+
+typedef struct {
+	guint32 len;
+	guint8 info [MONO_ZERO_LEN_ARRAY];
+} MonoUnwindInfo;
+
+static CRITICAL_SECTION unwind_mutex;
+
+static GPtrArray *cached_info;
+static int cached_info_size;
+
+#define unwind_lock() EnterCriticalSection (&unwind_mutex)
+#define unwind_unlock() LeaveCriticalSection (&unwind_mutex)
 
 #ifdef __x86_64__
 static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
@@ -264,4 +279,86 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	}
 
 	*out_cfa = cfa_val;
+}
+
+void
+mono_unwind_init (void)
+{
+	InitializeCriticalSection (&unwind_mutex);
+
+	mono_counters_register ("Unwind info size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &cached_info_size);
+}
+
+void
+mono_unwind_cleanup (void)
+{
+	int i;
+
+	DeleteCriticalSection (&unwind_mutex);
+
+	for (i = 0; i < cached_info->len; ++i) {
+		MonoUnwindInfo *cached = g_ptr_array_index (cached_info, i);
+
+		g_free (cached);
+	}
+
+	g_ptr_array_free (cached_info, TRUE);
+}
+
+/*
+ * mono_cache_unwind_info
+ *
+ *   Save UNWIND_INFO in the unwind info cache and return an id which can be passed
+ * to mono_get_cached_unwind_info to get a cached copy of the info.
+ * A copy is made of the unwind info.
+ * This function is useful for two reasons:
+ * - many methods have the same unwind info
+ * - MonoJitInfo->used_regs is an int so it can't store the pointer to the unwind info
+ */
+guint32
+mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)
+{
+	int i;
+	MonoUnwindInfo *info;
+
+	unwind_lock ();
+	if (cached_info == NULL)
+		cached_info = g_ptr_array_new ();
+
+	for (i = 0; i < cached_info->len; ++i) {
+		MonoUnwindInfo *cached = g_ptr_array_index (cached_info, i);
+
+		if (cached->len == unwind_info_len && memcmp (cached->info, unwind_info, unwind_info_len) == 0) {
+			unwind_unlock ();
+			return i;
+		}
+	}
+
+	info = g_malloc (sizeof (MonoUnwindInfo) + unwind_info_len);
+	info->len = unwind_info_len;
+	memcpy (&info->info, unwind_info, unwind_info_len);
+
+	i = cached_info->len;
+	g_ptr_array_add (cached_info, info);
+
+	cached_info_size += sizeof (MonoUnwindInfo) + unwind_info_len;
+
+	unwind_unlock ();
+	return i;
+}
+
+guint8*
+mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len)
+{
+	MonoUnwindInfo *info;
+
+	// FIXME: Get rid of the locking somehow, as this is called a lot during
+	// exception handling
+	unwind_lock ();
+	info = g_ptr_array_index (cached_info, index);
+	unwind_unlock ();
+
+	*unwind_info_len = info->len;
+
+	return info->info;
 }

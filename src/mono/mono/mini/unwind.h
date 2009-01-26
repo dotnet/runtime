@@ -98,4 +98,12 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, gssize *regs, 
 				   int nregs, guint8 **out_cfa) MONO_INTERNAL;
 
+void mono_unwind_init (void) MONO_INTERNAL;
+
+void mono_unwind_cleanup (void) MONO_INTERNAL;
+
+guint32 mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len) MONO_INTERNAL;
+
+guint8* mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len) MONO_INTERNAL;
+
 #endif
