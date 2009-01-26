@@ -107,9 +107,10 @@ struct _MonoJitInfo {
 	MonoMethod *method;
 	struct _MonoJitInfo *next_jit_code_hash;
 	gpointer    code_start;
+	/* This might contain an id for the unwind info instead of a register mask */
 	guint32     used_regs;
 	int         code_size;
-	guint32     num_clauses:16;
+	guint32     num_clauses:15;
 	/* Whenever the code is domain neutral or 'shared' */
 	gboolean    domain_neutral:1;
 	gboolean    cas_inited:1;
@@ -120,6 +121,7 @@ struct _MonoJitInfo {
 	gboolean    cas_method_deny:1;
 	gboolean    cas_method_permitonly:1;
 	gboolean    has_generic_jit_info:1;
+	gboolean    from_aot:1;
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 	/* There is an optional MonoGenericJitInfo after the clauses */
 };
