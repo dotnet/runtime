@@ -296,6 +296,9 @@ mono_unwind_cleanup (void)
 
 	DeleteCriticalSection (&unwind_mutex);
 
+	if (!cached_info)
+		return;
+
 	for (i = 0; i < cached_info->len; ++i) {
 		MonoUnwindInfo *cached = g_ptr_array_index (cached_info, i);
 
