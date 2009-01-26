@@ -1406,6 +1406,31 @@ public class Tests {
 	}
 
 	/*
+	 * Alignment of structs containing longs
+	 */
+
+	struct LongStruct2 {
+		public long l;
+	}
+
+	struct LongStruct {
+		public int i;
+		public LongStruct2 l;
+	}
+
+	[DllImport("libtest")]
+	extern static int mono_test_marshal_long_struct (ref LongStruct s);
+
+	public static int test_47_pass_long_struct () {
+		LongStruct s = new LongStruct ();
+		s.i = 5;
+		s.l = new LongStruct2 ();
+		s.l.l = 42;
+
+		return mono_test_marshal_long_struct (ref s);
+	}
+
+	/*
 	 * Invoking pinvoke methods through delegates
 	 */
 

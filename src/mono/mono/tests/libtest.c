@@ -1412,6 +1412,21 @@ marshal_test_bool_struct(struct BoolStruct *s)
     return res;
 }
 
+typedef struct {
+	gint64 l;
+} LongStruct2;
+
+typedef struct {
+	int i;
+	LongStruct2 l;
+} LongStruct;
+
+LIBTEST_API int STDCALL
+mono_test_marshal_long_struct (LongStruct *s)
+{
+	return s->i + s->l.l;
+}
+
 LIBTEST_API void STDCALL
 mono_test_last_error (int err)
 {
