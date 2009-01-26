@@ -136,7 +136,6 @@ enum {
 		(dest)->opcode = (op);	\
         (dest)->dreg = (dest)->sreg1 = (dest)->sreg2 = -1;  \
         (dest)->cil_code = (cfg)->ip;  \
-        (dest)->cil_code = (cfg)->ip; \
 	} while (0)
 
 #define MONO_INST_NEW_CALL(cfg,dest,op) do {	\
