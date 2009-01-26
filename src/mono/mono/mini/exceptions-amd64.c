@@ -545,7 +545,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			 MonoContext *new_ctx, MonoLMF **lmf, gboolean *managed)
 {
 	MonoJitInfo *ji;
-	int i;
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
 
 	/* Avoid costly table lookup during stack overflow */
@@ -560,107 +559,61 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		int offset;
-		gboolean omit_fp = (ji->used_regs & (1 << 31)) > 0;
+		gssize regs [MONO_MAX_IREGS + 1];
+		guint8 *cfa;
+		guint32 unwind_info_len;
+		guint8 *unwind_info;
 
 		if (managed)
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
 
-		/*
-		 * If a method has save_lmf set, then register save/restore code is not generated 
-		 * by the JIT, so we have to restore callee saved registers from the lmf.
-		 */
-		if (ji->method->save_lmf) {
-			MonoLMF *lmf_addr;
+		if (ji->from_aot)
+			unwind_info = mono_aot_get_unwind_info (ji, &unwind_info_len);
+		else
+			unwind_info = mono_get_cached_unwind_info (ji->used_regs, &unwind_info_len);
+ 
+		regs [AMD64_RAX] = new_ctx->rax;
+		regs [AMD64_RBX] = new_ctx->rbx;
+		regs [AMD64_RCX] = new_ctx->rcx;
+		regs [AMD64_RDX] = new_ctx->rdx;
+		regs [AMD64_RBP] = new_ctx->rbp;
+		regs [AMD64_RSP] = new_ctx->rsp;
+		regs [AMD64_RSI] = new_ctx->rsi;
+		regs [AMD64_RDI] = new_ctx->rdi;
+		regs [AMD64_RIP] = new_ctx->rip;
+		regs [AMD64_R12] = new_ctx->r12;
+		regs [AMD64_R13] = new_ctx->r13;
+		regs [AMD64_R14] = new_ctx->r14;
+		regs [AMD64_R15] = new_ctx->r15;
 
-			/* 
-			 * *lmf might not point to the LMF pushed by this method, so compute the LMF
-			 * address instead.
-			 */
-			if (omit_fp)
-				lmf_addr = (MonoLMF*)ctx->rsp;
-			else
-				lmf_addr = (MonoLMF*)(ctx->rbp - sizeof (MonoLMF));
+		mono_unwind_frame (unwind_info, unwind_info_len, -8, ji->code_start, 
+						   (guint8*)ji->code_start + ji->code_size,
+						   ip, regs, MONO_MAX_IREGS + 1, &cfa);
 
-			new_ctx->rbp = lmf_addr->rbp;
-			new_ctx->rbx = lmf_addr->rbx;
-			new_ctx->r12 = lmf_addr->r12;
-			new_ctx->r13 = lmf_addr->r13;
-			new_ctx->r14 = lmf_addr->r14;
-			new_ctx->r15 = lmf_addr->r15;
-#ifdef PLATFORM_WIN32
-			new_ctx->rdi = lmf_addr->rdi;
-			new_ctx->rsi = lmf_addr->rsi;
-#endif
-		}
-		else {
-			offset = omit_fp ? 0 : -1;
-			/* restore caller saved registers */
-			for (i = 0; i < AMD64_NREG; i ++)
-				if (AMD64_IS_CALLEE_SAVED_REG (i) && (ji->used_regs & (1 << i))) {
-					guint64 reg;
+		new_ctx->rax = regs [AMD64_RAX];
+		new_ctx->rbx = regs [AMD64_RBX];
+		new_ctx->rcx = regs [AMD64_RCX];
+		new_ctx->rdx = regs [AMD64_RDX];
+		new_ctx->rbp = regs [AMD64_RBP];
+		new_ctx->rsp = regs [AMD64_RSP];
+		new_ctx->rsi = regs [AMD64_RSI];
+		new_ctx->rdi = regs [AMD64_RDI];
+		new_ctx->rip = regs [AMD64_RIP];
+		new_ctx->r12 = regs [AMD64_R12];
+		new_ctx->r13 = regs [AMD64_R13];
+		new_ctx->r14 = regs [AMD64_R14];
+		new_ctx->r15 = regs [AMD64_R15];
+ 
+		/* The CFA becomes the new SP value */
+		new_ctx->rsp = (gssize)cfa;
 
-					if (omit_fp) {
-						reg = *((guint64*)ctx->rsp + offset);
-						offset ++;
-					}
-					else {
-						reg = *((guint64 *)ctx->rbp + offset);
-						offset --;
-					}
-
-					switch (i) {
-					case AMD64_RBX:
-						new_ctx->rbx = reg;
-						break;
-					case AMD64_R12:
-						new_ctx->r12 = reg;
-						break;
-					case AMD64_R13:
-						new_ctx->r13 = reg;
-						break;
-					case AMD64_R14:
-						new_ctx->r14 = reg;
-						break;
-					case AMD64_R15:
-						new_ctx->r15 = reg;
-						break;
-					case AMD64_RBP:
-						new_ctx->rbp = reg;
-						break;
-#ifdef PLATFORM_WIN32
-					case AMD64_RDI:
-						new_ctx->rdi = reg;
-						break;
-					case AMD64_RSI:
-						new_ctx->rsi = reg;
-						break;
-#endif
-					default:
-						g_assert_not_reached ();
-					}
-				}
-		}
+		/* Adjust IP */
+		new_ctx->rip --;
 
 		if (*lmf && ((*lmf) != jit_tls->first_lmf) && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->rsp)) {
 			/* remove any unused lmf */
 			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~1);
-		}
-
-		if (omit_fp) {
-			/* Pop frame */
-			new_ctx->rsp += (ji->used_regs >> 16) & (0x7fff);
-			new_ctx->rip = *((guint64 *)new_ctx->rsp) - 1;
-			/* Pop return address */
-			new_ctx->rsp += 8;
-		}
-		else {
-			/* Pop EBP and the return address */
-			new_ctx->rsp = ctx->rbp + (2 * sizeof (gpointer));
-			/* we substract 1, so that the IP points into the call instruction */
-			new_ctx->rip = *((guint64 *)ctx->rbp + 1) - 1;
-			new_ctx->rbp = *((guint64 *)ctx->rbp);
 		}
 
 		/* Pop arguments off the stack */

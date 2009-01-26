@@ -3696,6 +3696,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 	}
 
+	if (cfg->unwind_ops) {
+		guint32 info_len;
+		guint8 *unwind_info = mono_unwind_ops_encode (cfg->unwind_ops, &info_len);
+
+		jinfo->used_regs = mono_cache_unwind_info (unwind_info, info_len);
+		g_free (unwind_info);
+	}
+
 	cfg->jit_info = jinfo;
 #if defined(__arm__)
 	mono_arch_fixup_jinfo (cfg);

@@ -1328,11 +1328,11 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 {
 	int i, buf_len;
 	MonoJitInfo *jinfo;
-	guint code_len, used_int_regs;
-	gboolean has_generic_jit_info;
-	guint8 *p;
+	guint code_len, used_int_regs, flags;
+	gboolean has_generic_jit_info, has_dwarf_unwind_info;
+	guint8 *p, *unwind_info_block;
 	MonoMethodHeader *header;
-	int generic_info_size;
+	int generic_info_size, unwind_info_len;
 
 	header = mono_method_get_header (method);
 
@@ -1340,8 +1340,21 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 
 	p = ex_info;
 	code_len = decode_value (p, &p);
-	used_int_regs = decode_value (p, &p);
-	has_generic_jit_info = decode_value (p, &p);
+	flags = decode_value (p, &p);
+	has_generic_jit_info = (flags & 1) != 0;
+	has_dwarf_unwind_info = (flags & 2) != 0;
+	unwind_info_block = p;
+	if (has_dwarf_unwind_info) {
+		gssize offset;
+
+		unwind_info_len = decode_value (p, &p);
+		offset = unwind_info_block - (guint8*)aot_module->ex_info;
+		g_assert (offset > 0 && offset < (1 << 30));
+		used_int_regs = offset;
+		p += unwind_info_len;
+	} else {
+		used_int_regs = decode_value (p, &p);
+	}
 	if (has_generic_jit_info)
 		generic_info_size = sizeof (MonoGenericJitInfo);
 	else
@@ -1383,6 +1396,7 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 	jinfo->method = method;
 	jinfo->code_start = code;
 	jinfo->domain_neutral = 0;
+	jinfo->from_aot = 1;
 
 	if (has_generic_jit_info) {
 		MonoGenericJitInfo *gi;
@@ -1407,6 +1421,25 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 	mono_debug_add_aot_method (domain, method, code, p, buf_len);
 	
 	return jinfo;
+}
+
+/*
+ * mono_aot_get_unwind_info:
+ *
+ *   Return a pointer to the DWARF unwind info belonging to JI.
+ */
+guint8*
+mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
+{
+	MonoAotModule *amodule = ji->method->klass->image->aot_module;
+	guint8 *p;
+
+	g_assert (amodule);
+	g_assert (ji->from_aot);
+
+	p = amodule->ex_info + ji->used_regs;
+	*unwind_info_len = decode_value (p, &p);
+	return p;
 }
 
 MonoJitInfo *

@@ -3430,6 +3430,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	MonoMethodHeader *header;
 	guint8 *p, *buf, *debug_info;
 	MonoJitInfo *jinfo = cfg->jit_info;
+	guint32 flags;
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
@@ -3442,12 +3443,30 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
 
-	buf_size = header->num_clauses * 256 + debug_info_size + 128;
+	buf_size = header->num_clauses * 256 + debug_info_size + 256;
 	p = buf = g_malloc (buf_size);
 
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | ((cfg->unwind_ops != NULL) ? 2 : 0);
+
 	encode_value (jinfo->code_size, p, &p);
-	encode_value (jinfo->used_regs, p, &p);
-	encode_value (jinfo->has_generic_jit_info, p, &p);
+	encode_value (flags, p, &p);
+
+	if (cfg->unwind_ops) {
+		guint32 encoded_len;
+		guint8 *encoded;
+
+		/* 
+		 * This is a duplicate of the data in the .debug_frame section, but that
+		 * section cannot be accessed using the dl interface.
+		 */
+		encoded = mono_unwind_ops_encode (cfg->unwind_ops, &encoded_len);
+		encode_value (encoded_len, p, &p);
+		memcpy (p, encoded, encoded_len);
+		p += encoded_len;
+		g_free (encoded);
+	} else {
+		encode_value (jinfo->used_regs, p, &p);
+	}
 
 	/* Exception table */
 	if (header->num_clauses) {

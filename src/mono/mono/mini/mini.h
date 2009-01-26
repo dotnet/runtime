@@ -77,7 +77,7 @@ typedef gint64 mgreg_t;
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "45"
+#define MONO_AOT_FILE_VERSION "46"
  
 /* Per-domain information maintained by the JIT */
 typedef struct
@@ -1267,6 +1267,7 @@ gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1,
 gpointer mono_aot_get_named_code            (const char *name) MONO_INTERNAL;
 gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method) MONO_INTERNAL;
 gpointer mono_aot_get_lazy_fetch_trampoline (guint32 slot) MONO_INTERNAL;
+guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len) MONO_INTERNAL;
 /* This is an exported function */
 void     mono_aot_register_globals          (gpointer *globals);
 /* This too */
