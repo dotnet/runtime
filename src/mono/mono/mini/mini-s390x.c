@@ -379,7 +379,6 @@ static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gbool
 gpointer mono_arch_get_lmf_addr (void);
 static guint8 * emit_load_volatile_arguments (guint8 *, MonoCompile *);
 static void catch_SIGILL(int, siginfo_t *, void *);
-static void emit_sig_cookie (MonoCompile *, MonoCallInst *, CallInfo *, int);
 
 /*========================= End of Prototypes ======================*/
 
