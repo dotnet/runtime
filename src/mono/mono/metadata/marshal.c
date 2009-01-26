@@ -11506,6 +11506,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 		info->native_size &= ~(min_align - 1);
 	}
 
+	info->min_align = min_align;
+
 	/* Update the class's blittable info, if the layouts don't match */
 	if (info->native_size != mono_class_value_size (klass, NULL))
 		klass->blittable = FALSE;
@@ -11550,7 +11552,7 @@ mono_class_native_size (MonoClass *klass, guint32 *align)
 	}
 
 	if (align)
-		*align = klass->min_align;
+		*align = klass->marshal_info->min_align;
 
 	return klass->marshal_info->native_size;
 }

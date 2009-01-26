@@ -150,7 +150,7 @@ typedef struct {
 } MonoMarshalField;
 
 typedef struct {
-	guint32 native_size;
+	guint32 native_size, min_align;
 	guint32 num_fields;
 	MonoMethod *ptr_to_str;
 	MonoMethod *str_to_ptr;
