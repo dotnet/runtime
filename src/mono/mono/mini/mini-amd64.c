@@ -4535,16 +4535,31 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* sp is saved right before calls */
 		/* Skip method (only needed for trampoline LMF frames) */
 		/* Save callee saved regs */
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbx), AMD64_RBX, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rbp), AMD64_RBP, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r12), AMD64_R12, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r13), AMD64_R13, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r14), AMD64_R14, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, r15), AMD64_R15, 8);
+		for (i = 0; i < MONO_MAX_IREGS; ++i) {
+			int offset;
+
+			switch (i) {
+			case AMD64_RBX: offset = G_STRUCT_OFFSET (MonoLMF, rbx); break;
+			case AMD64_RBP: offset = G_STRUCT_OFFSET (MonoLMF, rbp); break;
+			case AMD64_R12: offset = G_STRUCT_OFFSET (MonoLMF, r12); break;
+			case AMD64_R13: offset = G_STRUCT_OFFSET (MonoLMF, r13); break;
+			case AMD64_R14: offset = G_STRUCT_OFFSET (MonoLMF, r14); break;
+			case AMD64_R15: offset = G_STRUCT_OFFSET (MonoLMF, r15); break;
 #ifdef PLATFORM_WIN32
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rdi), AMD64_RDI, 8);
-		amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsi), AMD64_RSI, 8);
+			case AMD64_RDI: offset = G_STRUCT_OFFSET (MonoLMF, rdi); break;
+			case AMD64_RSI: offset = G_STRUCT_OFFSET (MonoLMF, rsi); break;
 #endif
+			default:
+				offset = -1;
+				break;
+			}
+
+			if (offset != -1) {
+				amd64_mov_membase_reg (code, cfg->frame_reg, lmf_offset + offset, i, 8);
+				if (cfg->arch.omit_fp || (i != AMD64_RBP))
+					mono_emit_unwind_op_offset (cfg, code, i, - (cfa_offset - (lmf_offset + offset)));
+			}
+		}
 	}
 
 	/* Save callee saved registers */
