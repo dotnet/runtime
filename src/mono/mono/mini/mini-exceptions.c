@@ -86,6 +86,10 @@ mono_exceptions_init (void)
 	try_more_restore_tramp = mono_create_specific_trampoline (try_more_restore, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
 	restore_stack_protection_tramp = mono_create_specific_trampoline (restore_stack_protection, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
 #endif
+
+#ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
+	mono_arch_exceptions_init ();
+#endif
 }
 
 gpointer
