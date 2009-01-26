@@ -35,11 +35,15 @@ extern gboolean TryEnterCriticalSection(WapiCriticalSection *section);
 
 #define EnterCriticalSection(section) do { \
 	int ret = mono_mutex_lock(&(section)->mutex);    \
+	if (ret != 0) \
+		g_warning ("Bad call to mono_mutex_lock result %d", ret); \
 	g_assert (ret == 0);				 \
 } while (0)
 
 #define LeaveCriticalSection(section) do { \
 	int ret = mono_mutex_unlock(&(section)->mutex);      \
+	if (ret != 0) \
+		g_warning ("Bad call to mono_mutex_unlock result %d", ret); \
 	g_assert (ret == 0);    \
 } while (0)
 
