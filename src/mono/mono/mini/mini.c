@@ -5073,6 +5073,8 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_arch_init ();
 
+	mono_unwind_init ();
+
 	if (getenv ("MONO_XDEBUG")) {
 		mono_xdebug_init ();
 		/* So methods for multiple domains don't have the same address */
@@ -5494,6 +5496,8 @@ mini_cleanup (MonoDomain *domain)
 	mono_debugger_cleanup ();
 
 	mono_trampolines_cleanup ();
+
+	mono_unwind_cleanup ();
 
 	if (!mono_dont_free_global_codeman)
 		mono_code_manager_destroy (global_codeman);
