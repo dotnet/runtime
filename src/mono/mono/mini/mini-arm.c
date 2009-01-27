@@ -23,6 +23,10 @@
 #include "mono/arch/arm/arm-vfp-codegen.h"
 #endif
 
+#if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID)
+#define HAVE_AEABI_READ_TP 1
+#endif
+
 static gint lmf_tls_offset = -1;
 static gint lmf_addr_tls_offset = -1;
 
@@ -2433,7 +2437,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MEMORY_BARRIER:
 			break;
 		case OP_TLS_GET:
-#if defined(__ARM_EABI__) && defined(__linux__)
+#ifdef HAVE_AEABI_READ_TP
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
 								 (gpointer)"__aeabi_read_tp");
 			code = emit_call_seq (cfg, code);
@@ -3475,7 +3479,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 #endif /* DISABLE_JIT */
 
-#if defined(__ARM_EABI__) && defined(__linux__)
+#ifdef HAVE_AEABI_READ_TP
 void __aeabi_read_tp (void);
 #endif
 
@@ -3485,7 +3489,7 @@ mono_arch_register_lowlevel_calls (void)
 	/* The signature doesn't matter */
 	mono_register_jit_icall (mono_arm_throw_exception, "mono_arm_throw_exception", mono_create_icall_signature ("void"), TRUE);
 
-#if defined(__ARM_EABI__) && defined(__linux__)
+#ifdef HAVE_AEABI_READ_TP
 	mono_register_jit_icall (__aeabi_read_tp, "__aeabi_read_tp", mono_create_icall_signature ("void"), TRUE);
 #endif
 }
@@ -3854,7 +3858,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		gboolean get_lmf_fast = FALSE;
 
-#if defined(__ARM_EABI__) && defined(__linux__)
+#ifdef HAVE_AEABI_READ_TP
 		gint32 lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 
 		if (lmf_addr_tls_offset != -1) {
