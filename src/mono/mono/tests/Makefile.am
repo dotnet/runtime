@@ -436,7 +436,8 @@ TEST_IL_SRC=			\
 	bug-81466.il	\
 	bug457574.il	\
 	bug445361.il	\
-	bug-463303.il
+	bug-463303.il	\
+	bug469742.2.il
 
 #	bug-318677.il
 
