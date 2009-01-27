@@ -1309,7 +1309,7 @@ ves_icall_System_Type_EqualsInternal (MonoReflectionType *type, MonoReflectionTy
 	if (c && type->type && c->type)
 		return mono_metadata_type_equal (type->type, c->type);
 	else
-		return FALSE;
+		return (type == c) ? TRUE : FALSE;
 }
 
 /* System.TypeCode */
