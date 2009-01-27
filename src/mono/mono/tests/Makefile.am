@@ -428,7 +428,8 @@ TEST_IL_SRC=			\
 	generic-valuetype-newobj.2.il	\
 	generic-constrained.2.il	\
 	bug-81466.il	\
-	bug457574.il
+	bug457574.il	\
+	bug469742.2.il
 
 #	bug-318677.il
 

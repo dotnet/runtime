@@ -4989,7 +4989,8 @@ emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
 {
 	MonoInst *ins;
 	guint32 opcode = mono_type_to_regmove (cfg, header->locals [n]);
-	if ((opcode == OP_MOVE) && ((sp [0]->opcode == OP_ICONST) || (sp [0]->opcode == OP_I8CONST))) {
+	if ((opcode == OP_MOVE) && cfg->cbb->last_ins == sp [0]  &&
+			((sp [0]->opcode == OP_ICONST) || (sp [0]->opcode == OP_I8CONST))) {
 		/* Optimize reg-reg moves away */
 		/* 
 		 * Can't optimize other opcodes, since sp[0] might point to
