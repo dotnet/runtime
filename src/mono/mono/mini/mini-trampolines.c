@@ -114,7 +114,11 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		MonoVTable *vt = mono_arch_get_vcall_slot (code, (gpointer*)regs, &displacement);
 		if (!vt) {
 			int i;
+			MonoJitInfo *ji;
 
+			ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+			if (ji)
+				printf ("Caller: %s\n", mono_method_full_name (ji->method, TRUE));
 			/* Print some debug info */
 			for (i = 0; i < 32; ++i)
 				printf ("0x%x ", code [-32 + i]);
