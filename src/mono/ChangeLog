@@ -1,3 +1,8 @@
+2009-01-27  Jb Evain  <jbevain@novell.com>
+
+	* configure.in: bump Mono's version to 2.5 now that 2.4
+	has been branched.
+
 2009-01-25  Zoltan Varga  <vargaz@gmail.com>
 
 	* acinclude.m4 (dolt_supported): Handle ARM as well.
