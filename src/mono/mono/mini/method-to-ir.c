@@ -7352,8 +7352,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					mono_emit_rgctx_calli (cfg, fsig, sp, cmethod_addr, vtable_arg);
 				} else {
 					INLINE_FAILURE;
-					mono_emit_rgctx_method_call_full (cfg, cmethod, fsig, sp,
-							callvirt_this_arg, NULL, vtable_arg);
+					ins = mono_emit_rgctx_method_call_full (cfg, cmethod, fsig, sp,
+															callvirt_this_arg, NULL, vtable_arg);
+					if (mono_method_is_generic_sharable_impl (cmethod, TRUE) && ((MonoCallInst*)ins)->method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+						GENERIC_SHARING_FAILURE (*ip);
 				}
 			}
 
