@@ -4858,7 +4858,6 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 				MonoGenericParam *param = entry->gparam->type.type->data.generic_param;
 				g_free ((char*)param->name);
 				g_free (param);
-				g_free (entry->gparam->type.type);
 			}
 			g_free (entry);
 		}
@@ -10276,13 +10275,10 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	image = &gparam->tbuilder->module->dynamic_image->image;
 	mono_class_from_generic_parameter (param, image, gparam->mbuilder != NULL);
 
+	gparam->type.type = &param->pklass->byval_arg;
+
 	MOVING_GC_REGISTER (&param->pklass->reflection_info);
 	param->pklass->reflection_info = gparam; /* FIXME: GC pin gparam */
-
-	gparam->type.type = g_new0 (MonoType, 1);
-	gparam->type.type->type = gparam->mbuilder ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
-	gparam->type.type->attrs = TYPE_ATTRIBUTE_PUBLIC;
-	gparam->type.type->data.generic_param = param;
 }
 
 MonoArray *
