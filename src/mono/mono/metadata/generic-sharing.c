@@ -1359,6 +1359,8 @@ has_constraints (MonoGenericContainer *container)
 {
 	int i;
 
+	return FALSE;
+	/*
 	g_assert (container->type_argc > 0);
 	g_assert (container->type_params);
 
@@ -1366,6 +1368,7 @@ has_constraints (MonoGenericContainer *container)
 		if (container->type_params [i].constraints)
 			return TRUE;
 	return FALSE;
+	*/
 }
 
 /*
