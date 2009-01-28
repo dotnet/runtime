@@ -1035,6 +1035,7 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 {
 	MonoDebugSourceLocation *location;
 	gchar *fname, *ptr, *res;
+	int offset;
 
 	fname = mono_method_full_name (method, TRUE);
 	for (ptr = fname; *ptr; ptr++) {
@@ -1044,7 +1045,14 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 	location = mono_debug_lookup_source_location (method, native_offset, domain);
 
 	if (!location) {
-		res = g_strdup_printf ("at %s <0x%05x>", fname, native_offset);
+		mono_debugger_lock ();
+		offset = il_offset_from_address (method, domain, native_offset);
+		mono_debugger_unlock ();
+
+		if (offset < 0)
+			res = g_strdup_printf ("at %s <0x%05x>", fname, native_offset);
+		else
+			res = g_strdup_printf ("at %s <IL 0x%05x, 0x%05x>", fname, offset, native_offset);
 		g_free (fname);
 		return res;
 	}
