@@ -1,3 +1,9 @@
+2009-01-28  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/AssemblyResolver.cs
+	  Mono.Linker.Steps/MarkStep.cs:
+		Directly use the Resolve methods from Cecil.
+
 2008-12-16  Jb Evain  <jbevain@novell.com>
 
 	* Makefile: build monolinker.exe in the profile directory instead of

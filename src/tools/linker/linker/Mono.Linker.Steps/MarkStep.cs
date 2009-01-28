@@ -155,8 +155,10 @@ namespace Mono.Linker.Steps {
 			if (!ca.Resolved)
 				return;
 
-			TypeDefinition type = _context.Resolver.Resolve (ca.Constructor.DeclaringType);
 			MarkCustomAttributeParameters (ca);
+
+			TypeDefinition type = ca.Constructor.DeclaringType.Resolve ();
+
 			MarkCustomAttributeProperties (ca, type);
 			MarkCustomAttributeFields (ca, type);
 		}
@@ -259,7 +261,7 @@ namespace Mono.Linker.Steps {
 		{
 			FieldDefinition fd = field as FieldDefinition;
 			if (fd == null)
-				fd = _context.Resolver.Resolve (field);
+				fd = field.Resolve ();
 
 			return fd;
 		}
@@ -400,7 +402,7 @@ namespace Mono.Linker.Steps {
 		{
 			TypeDefinition td = type as TypeDefinition;
 			if (td == null)
-				td = _context.Resolver.Resolve (type);
+				td = type.Resolve ();
 
 			return td;
 		}
@@ -519,7 +521,7 @@ namespace Mono.Linker.Steps {
 		{
 			MethodDefinition md = method as MethodDefinition;
 			if (md == null)
-				md = _context.Resolver.Resolve (method);
+				md = method.Resolve ();
 
 			return md;
 		}
