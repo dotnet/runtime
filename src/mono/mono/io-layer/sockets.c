@@ -1362,24 +1362,29 @@ int WSASend (guint32 fd, WapiWSABuf *buffers, guint32 count, guint32 *sent,
 
 	g_assert (overlapped == NULL);
 	g_assert (complete == NULL);
-	
-	for(i = 0; i < count; i++) {
-		buflen += buffers[i].len;
-	}
-	
-	sendbuf = g_new0 (gint8, buflen);
-	for(i = 0; i < count; i++) {
-		copylen = buffers[i].len;
-		memcpy (sendbuf + offset, buffers[i].buf, copylen);
-		offset += copylen;
-	}
 
-	ret = _wapi_sendto (fd, sendbuf, buflen, flags, NULL, 0);
-	if(ret == SOCKET_ERROR) {
+	if (count == 1)
+		ret = _wapi_sendto (fd, buffers [0].buf, buffers [0].len, flags, NULL, 0);
+	else {
+		for(i = 0; i < count; i++) {
+			buflen += buffers[i].len;
+		}
+		
+		sendbuf = g_new0 (gint8, buflen);
+		for(i = 0; i < count; i++) {
+			copylen = buffers[i].len;
+			memcpy (sendbuf + offset, buffers[i].buf, copylen);
+			offset += copylen;
+		}
+		
+		ret = _wapi_sendto (fd, sendbuf, buflen, flags, NULL, 0);
 		g_free (sendbuf);
-		return(ret);
+		
 	}
 	
+	if(ret == SOCKET_ERROR) 
+		return ret;
+
 	*sent = ret;
-	return(0);
+	return 0;
 }
