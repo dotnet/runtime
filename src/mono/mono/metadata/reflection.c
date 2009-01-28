@@ -8983,16 +8983,6 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 void
 mono_reflection_setup_generic_class (MonoReflectionTypeBuilder *tb)
 {
-	MonoClass *klass;
-
-	MONO_ARCH_SAVE_REGS;
-
-	klass = my_mono_class_from_mono_type (tb->type.type);
-	if (tb->generic_container)
-		return;
-
-	tb->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
-	tb->generic_container->owner.klass = klass;
 }
 
 /*
@@ -10272,7 +10262,11 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 		}
 		param->owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
-		g_assert (gparam->tbuilder->generic_container);
+		if (!gparam->tbuilder->generic_container) {
+			MonoClass *klass = my_mono_class_from_mono_type (gparam->tbuilder->type.type);
+			gparam->tbuilder->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
+			gparam->tbuilder->generic_container->owner.klass = klass;
+		}
 		param->owner = gparam->tbuilder->generic_container;
 	}
 
