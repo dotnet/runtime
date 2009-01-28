@@ -96,7 +96,7 @@ namespace Mono.Tuner {
 			if (reference is GenericParameter || reference.GetOriginalType () is GenericParameter)
 				return true;
 
-			TypeDefinition other = Context.Resolver.Resolve (reference);
+			TypeDefinition other = reference.Resolve ();
 			if (other == null)
 				return true;
 
@@ -114,11 +114,7 @@ namespace Mono.Tuner {
 			if (reference == null)
 				return true;
 
-			MethodDefinition meth = null;
-			try {
-				meth = Context.Resolver.Resolve (reference);
-			} catch (ResolutionException) {}
-
+			MethodDefinition meth = reference.Resolve ();
 			if (meth == null)
 				return true;
 
@@ -149,11 +145,7 @@ namespace Mono.Tuner {
 			if (reference == null)
 				return true;
 
-			FieldDefinition field = null;
-			try {
-				field = Context.Resolver.Resolve (reference);
-			} catch (ResolutionException) {}
-
+			FieldDefinition field = reference.Resolve ();
 			if (field == null)
 				return true;
 
@@ -184,7 +176,7 @@ namespace Mono.Tuner {
 			if (type.BaseType == null)
 				return false;
 
-			TypeDefinition baseType = Context.Resolver.Resolve (type.BaseType);
+			TypeDefinition baseType = type.BaseType.Resolve ();
 
 			if (baseType == other)
 				return true;

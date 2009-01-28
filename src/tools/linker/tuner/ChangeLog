@@ -1,3 +1,7 @@
+2009-01-28  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/CheckVisibility.cs: use the appropriate Resolve methods.
+
 2008-12-01  Jb Evain  <jbevain@novell.com>
 
 	* Makefile: move tuning logic inside ../moon. We now simply build
