@@ -13,6 +13,7 @@
 #include <mono/metadata/method-builder.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/utils/mono-logger.h>
+#include <mono/utils/mono-time.h>
 #include <mono/utils/dtrace.h>
 
 #if HAVE_BOEHM_GC
@@ -234,11 +235,15 @@ mono_object_is_alive (MonoObject* o)
 
 #ifdef USE_INCLUDED_LIBGC
 
+static gint64 gc_start_time;
+
 static void
 on_gc_notification (GCEventType event)
 {
 	if (event == MONO_GC_EVENT_START) {
 		mono_perfcounters->gc_collections0++;
+		mono_stats.major_gc_count ++;
+		gc_start_time = mono_100ns_ticks ();
 	} else if (event == MONO_GC_EVENT_END) {
 		guint64 heap_size = GC_get_heap_size ();
 		guint64 used_size = heap_size - GC_get_free_bytes ();
@@ -246,6 +251,7 @@ on_gc_notification (GCEventType event)
 		mono_perfcounters->gc_committed_bytes = heap_size;
 		mono_perfcounters->gc_reserved_bytes = heap_size;
 		mono_perfcounters->gc_gen0size = heap_size;
+		mono_stats.major_gc_time_usecs += (mono_100ns_ticks () - gc_start_time) / 10;
 	}
 	mono_profiler_gc_event ((MonoGCEvent) event, 0);
 }
