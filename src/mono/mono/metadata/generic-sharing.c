@@ -1357,7 +1357,7 @@ mono_method_is_generic_impl (MonoMethod *method)
 static gboolean
 has_constraints (MonoGenericContainer *container)
 {
-	int i;
+	//int i;
 
 	return FALSE;
 	/*
