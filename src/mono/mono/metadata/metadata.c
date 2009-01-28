@@ -2257,7 +2257,6 @@ free_generic_inst (MonoGenericInst *ginst)
 
 	for (i = 0; i < ginst->type_argc; ++i)
 		mono_metadata_free_type (ginst->type_argv [i]);
-	g_free (ginst->type_argv);
 	g_free (ginst);
 }
 
@@ -2376,40 +2375,37 @@ MonoGenericInst *
 mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 {
 	MonoGenericInst *ginst;
-	MonoGenericInst helper;
+	gboolean is_open;
 	int i;
-
-	helper.type_argc = type_argc;
-	helper.type_argv = type_argv;
-	helper.id = 0;
+	int size = sizeof (MonoGenericInst) + (type_argc - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
 
 	for (i = 0; i < type_argc; ++i)
 		if (mono_class_is_open_constructed_type (type_argv [i]))
 			break;
-	helper.is_open = (i < type_argc);
+	is_open = (i < type_argc);
 
-	/*dump_ginst (&helper);*/
+	ginst = alloca (size);
+	ginst->id = 0;
+	ginst->is_open = is_open;
+	ginst->type_argc = type_argc;
+	memcpy (ginst->type_argv, type_argv, type_argc * sizeof (MonoType *));
+
 	mono_loader_lock ();
-	ginst = g_hash_table_lookup (generic_inst_cache, &helper);
-	if (ginst) {
-		mono_loader_unlock ();
-		/*g_print (" found cached\n");*/
-		return ginst;
+
+	ginst = g_hash_table_lookup (generic_inst_cache, ginst);
+	if (!ginst) {
+		ginst = g_malloc (size);
+		ginst->id = ++next_generic_inst_id;
+		ginst->is_open = is_open;
+		ginst->type_argc = type_argc;
+
+		for (i = 0; i < type_argc; ++i)
+			ginst->type_argv [i] = mono_metadata_type_dup (NULL, type_argv [i]);
+
+		g_hash_table_insert (generic_inst_cache, ginst, ginst);
 	}
 
-	ginst = g_new0 (MonoGenericInst, 1);
-	ginst->type_argc = type_argc;
-	ginst->type_argv = g_new (MonoType*, type_argc);
-	ginst->id = ++next_generic_inst_id;
-	ginst->is_open = helper.is_open;
-
-	for (i = 0; i < type_argc; ++i)
-		ginst->type_argv [i] = mono_metadata_type_dup (NULL, type_argv [i]);
-
-	g_hash_table_insert (generic_inst_cache, ginst, ginst);
-
 	mono_loader_unlock ();
-	/*g_print (" inserted\n");*/
 	return ginst;
 }
 

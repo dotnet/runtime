@@ -431,7 +431,7 @@ struct _MonoGenericInst {
 	guint id;			/* unique ID for debugging */
 	guint type_argc    : 22;	/* number of type arguments */
 	guint is_open      :  1;	/* if this is an open type */
-	MonoType **type_argv;
+	MonoType *type_argv [MONO_ZERO_LEN_ARRAY];
 };
 
 /*
