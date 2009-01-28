@@ -5,7 +5,7 @@ static class Program
     static int Main()
     {
 	    DocumentForm<object> browseForm = new DocumentForm<object> ();
-	    if (browseForm.DoInit () != 124)
+	    if (browseForm.DoInit () != 248)
 		    return 1;
 	    return 0;
     }
@@ -24,15 +24,26 @@ class DocumentForm<T>
 	internal int DoInit()
 	{
 		var g = new Grid1<GenEntity<T>>(123);
-		return g.num;
+		var g2 = new Grid2<GenEntity<T>>(123);
+		return g.num + g2.num;
 	}
 }
 
-public class Grid1<TEntity> : MarshalByRefObject where TEntity : EntityBase, new()
+public class Grid1<TEntity> : MarshalByRefObject
 {
 	public int num;
 
 	public Grid1 (int i)
+	{
+		num = i + 1;
+	}
+}
+
+public class Grid2<TEntity> : MarshalByRefObject where TEntity : EntityBase, new()
+{
+	public int num;
+
+	public Grid2 (int i)
 	{
 		num = i + 1;
 	}
