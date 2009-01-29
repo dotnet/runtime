@@ -5427,6 +5427,7 @@ emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_sym
 #define AB_ENUM_TYPE 8
 #define AB_ENUMERATOR 9
 #define AB_NAMESPACE 10
+#define AB_VARIABLE 11
 
 static int compile_unit_attr [] = {
 	DW_AT_producer     ,DW_FORM_string,
@@ -5487,6 +5488,12 @@ static int namespace_attr [] = {
 	DW_AT_name,        DW_FORM_string,
 };
 
+static int variable_attr [] = {
+	DW_AT_name,     DW_FORM_string,
+	DW_AT_type,     DW_FORM_ref4,
+	DW_AT_location, DW_FORM_block1
+};
+
 typedef struct DwarfBasicType {
 	const char *die_name, *name;
 	int type;
@@ -5538,6 +5545,8 @@ emit_base_dwarf_info (MonoAotCompile *acfg)
 					   enumerator_attr, G_N_ELEMENTS (enumerator_attr));
 	emit_dwarf_abbrev (acfg, AB_NAMESPACE, DW_TAG_namespace, TRUE,
 					   namespace_attr, G_N_ELEMENTS (namespace_attr));
+	emit_dwarf_abbrev (acfg, AB_VARIABLE, DW_TAG_variable, FALSE,
+					   variable_attr, G_N_ELEMENTS (variable_attr));
 	emit_byte (acfg, 0);
 
 	emit_section_change (acfg, ".debug_info", 0);
@@ -5725,16 +5734,80 @@ emit_class_dwarf_info (MonoAotCompile *acfg, MonoClass *klass)
 }
 
 static void
-emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, GSList *unwind_info)
+emit_var_type (MonoAotCompile *acfg, MonoType *t)
+{
+	MonoClass *klass = mono_class_from_mono_type (t);
+	int j;
+	const char *tdie;
+
+	for (j = 0; j < G_N_ELEMENTS (basic_types); ++j)
+		if (basic_types [j].type == t->type)
+			break;
+	if (j < G_N_ELEMENTS (basic_types))
+		tdie = basic_types [j].die_name;
+	else {
+		switch (t->type) {
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_ARRAY:
+			tdie = ".LDIE_OBJECT";
+			break;
+		case MONO_TYPE_VALUETYPE:
+			if (klass->enumtype)
+				tdie = emit_class_dwarf_info (acfg, klass);
+			else
+				tdie = ".LDIE_I4";
+			break;
+		default:
+			tdie = ".LDIE_I4";
+			break;
+		}
+	}
+	if (t->byref)
+		// FIXME:
+		tdie = ".LDIE_I4";
+	emit_symbol_diff (acfg, tdie, ".Ldebug_info_start", 0);
+}
+
+static void
+emit_var_location (MonoAotCompile *acfg, MonoInst *ins)
+{
+	/* location */
+	/* FIXME: This needs a location list, since the args can go from reg->stack */
+	if (!ins || ins->flags & MONO_INST_IS_DEAD) {
+		/* gdb treats this as optimized out */
+		emit_byte (acfg, 0);
+	} else if (ins->opcode == OP_REGVAR) {
+		emit_byte (acfg, 1);
+		emit_byte (acfg, DW_OP_reg0 + mono_hw_reg_to_dwarf_reg (ins->dreg));
+	} else if (ins->opcode == OP_REGOFFSET) {
+		guint8 buf [128];
+		guint8 *p;
+
+		p = buf;
+		*p ++= DW_OP_breg0 + mono_hw_reg_to_dwarf_reg (ins->inst_basereg);
+		encode_sleb128 (ins->inst_offset, p, &p);
+		emit_byte (acfg, p - buf);
+		emit_bytes (acfg, buf, p - buf);
+	} else {
+		// FIXME:
+		emit_byte (acfg, 1);
+		emit_byte (acfg, DW_OP_reg0);
+	}
+}
+
+static void
+emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info)
 {
 	char *name;
 	MonoMethodSignature *sig;
-	char **names, **tdies;
+	MonoMethodHeader *header;
+	char **names, **tdies, **local_tdies;
 	int i;
 
 	emit_section_change (acfg, ".debug_info", 0);
 
 	sig = mono_method_signature (method);
+	header = mono_method_get_header (method);
 
 	/* Parameter types */
 	tdies = g_new0 (char *, sig->param_count + sig->hasthis);
@@ -5748,6 +5821,12 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 		}
 
 		emit_class_dwarf_info (acfg, mono_class_from_mono_type (t));
+	}
+
+	/* Local types */
+	local_tdies = g_new0 (char *, header->num_locals);
+	for (i = 0; i < header->num_locals; ++i) {
+		emit_class_dwarf_info (acfg, mono_class_from_mono_type (header->locals [i]));
 	}
 
 	/* Subprogram */
@@ -5773,12 +5852,9 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 	/* Parameters */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		MonoInst *arg = args ? args [i] : NULL;
-		const char *tdie;
 		MonoType *t;
-		MonoClass *klass;
 		const char *pname;
 		char pname_buf [128];
-		int j;
 
 		if (i == 0 && sig->hasthis) {
 			t = &mono_defaults.object_class->byval_arg;
@@ -5796,59 +5872,31 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 		}
 		emit_string (acfg, pname);
 		/* type */
-		klass = mono_class_from_mono_type (t);
-		for (j = 0; j < G_N_ELEMENTS (basic_types); ++j)
-			if (basic_types [j].type == t->type)
-				break;
-		if (j < G_N_ELEMENTS (basic_types))
-			tdie = basic_types [j].die_name;
-		else {
-			switch (t->type) {
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_ARRAY:
-				tdie = ".LDIE_OBJECT";
-				break;
-			case MONO_TYPE_VALUETYPE:
-				if (klass->enumtype)
-					tdie = emit_class_dwarf_info (acfg, klass);
-				else
-					tdie = ".LDIE_I4";
-				break;
-			default:
-				tdie = ".LDIE_I4";
-				break;
-			}
-		}
-		if (t->byref)
-			// FIXME:
-			tdie = ".LDIE_I4";
 		if (!arg || arg->flags & MONO_INST_IS_DEAD)
-			tdie = ".LDIE_I4";
-		emit_symbol_diff (acfg, tdie, ".Ldebug_info_start", 0);
-		/* location */
-		/* FIXME: This needs a location list, since the args can go from reg->stack */
-		if (!arg || arg->flags & MONO_INST_IS_DEAD) {
-			/* gdb treats this as optimized out */
-			emit_byte (acfg, 0);
-		} else if (arg->opcode == OP_REGVAR) {
-			emit_byte (acfg, 1);
-			emit_byte (acfg, DW_OP_reg0 + mono_hw_reg_to_dwarf_reg (arg->dreg));
-		} else if (arg->opcode == OP_REGOFFSET) {
-			guint8 buf [128];
-			guint8 *p;
-
-			p = buf;
-			*p ++= DW_OP_breg0 + mono_hw_reg_to_dwarf_reg (arg->inst_basereg);
-			encode_sleb128 (arg->inst_offset, p, &p);
-			emit_byte (acfg, p - buf);
-			emit_bytes (acfg, buf, p - buf);
-		} else {
-			// FIXME:
-			emit_byte (acfg, 1);
-			emit_byte (acfg, DW_OP_reg0);
-		}
+			emit_var_type (acfg, &mono_defaults.int32_class->byval_arg);
+		else
+			emit_var_type (acfg, t);
+		emit_var_location (acfg, arg);
 	}		
 	g_free (names);
+
+	/* Locals */
+	for (i = 0; i < header->num_locals; ++i) {
+		MonoInst *ins = locals [i];
+		char name_buf [128];
+
+		emit_uleb128 (acfg, AB_VARIABLE);
+		/* name */
+		/* Currently there is no way to obtain the local name from the .mdb files */
+		sprintf (name_buf, "V_%d", i);
+		emit_string (acfg, name_buf);
+		/* type */
+		if (!ins || ins->flags & MONO_INST_IS_DEAD)
+			emit_var_type (acfg, &mono_defaults.int32_class->byval_arg);
+		else
+			emit_var_type (acfg, header->locals [i]);
+		emit_var_location (acfg, ins);
+	}
 
 	/* Subprogram end */
 	emit_uleb128 (acfg, 0x0);
@@ -5900,7 +5948,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 		sprintf (symbol, ".Lm_%x", i);
 		sprintf (symbol2, ".Lme_%x", i);
 
-		emit_method_dwarf_info (acfg, cfg->method, symbol, symbol2, NULL, 0, cfg->args, cfg->unwind_ops);
+		emit_method_dwarf_info (acfg, cfg->method, symbol, symbol2, NULL, 0, cfg->args, cfg->locals, cfg->unwind_ops);
 	}
 #endif /* ELF_WRITER */
 }
@@ -6209,7 +6257,7 @@ mono_xdebug_init (void)
  * and loaded into gdb to provide debugging info for JITted code.
  */
 void
-mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, GSList *unwind_info)
+mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info)
 {
 	MonoAotCompile *acfg;
 
@@ -6219,7 +6267,7 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	acfg = xdebug_acfg;
 
 	mono_acfg_lock (acfg);
-	emit_method_dwarf_info (acfg, method, NULL, NULL, code, code_size, args, unwind_info);
+	emit_method_dwarf_info (acfg, method, NULL, NULL, code, code_size, args, locals, unwind_info);
 	fflush (acfg->fp);
 	mono_acfg_unlock (acfg);
 }

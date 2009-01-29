@@ -3709,7 +3709,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_arch_fixup_jinfo (cfg);
 #endif
 
-	mono_save_xdebug_info (method_to_register, jinfo->code_start, jinfo->code_size, cfg->args, cfg->unwind_ops);
+	mono_save_xdebug_info (method_to_register, jinfo->code_start, jinfo->code_size, cfg->args, cfg->locals, cfg->unwind_ops);
 
 	if (!cfg->compile_aot) {
 		mono_domain_lock (cfg->domain);
