@@ -1804,12 +1804,6 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 	return offsets;
 }
 
-gint32*
-mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_align)
-{
-	return mono_allocate_stack_slots_full (m, TRUE, stack_size, stack_align);
-}
-
 #else
 
 gint32*
@@ -1820,6 +1814,12 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 }
 
 #endif /* DISABLE_JIT */
+
+gint32*
+mono_allocate_stack_slots (MonoCompile *m, guint32 *stack_size, guint32 *stack_align)
+{
+	return mono_allocate_stack_slots_full (m, TRUE, stack_size, stack_align);
+}
 
 void
 mono_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, gboolean no_throw)
