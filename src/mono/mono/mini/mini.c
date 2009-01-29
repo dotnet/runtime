@@ -2725,6 +2725,48 @@ mono_print_code (MonoCompile *cfg, const char* msg)
 		mono_print_bb (bb, msg);
 }
 
+static MonoGenericInst*
+get_object_generic_inst (int type_argc)
+{
+	MonoType **type_argv;
+	int i;
+
+	type_argv = alloca (sizeof (MonoType*) * type_argc);
+
+	for (i = 0; i < type_argc; ++i)
+		type_argv [i] = &mono_defaults.object_class->byval_arg;
+
+	return mono_metadata_get_generic_inst (type_argc, type_argv);
+}
+
+static MonoGenericContext
+construct_object_context_for_method (MonoMethod *method)
+{
+	MonoGenericContext object_context;
+
+	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
+	g_assert (!method->klass->generic_class);
+	if (method->klass->generic_container) {
+		int type_argc = method->klass->generic_container->type_argc;
+
+		object_context.class_inst = get_object_generic_inst (type_argc);
+	} else {
+		object_context.class_inst = NULL;
+	}
+
+	if (mini_method_get_context (method)->method_inst) {
+		int type_argc = mini_method_get_context (method)->method_inst->type_argc;
+
+		object_context.method_inst = get_object_generic_inst (type_argc);
+	} else {
+		object_context.method_inst = NULL;
+	}
+
+	g_assert (object_context.class_inst || object_context.method_inst);
+
+	return object_context;
+}
+
 #ifndef DISABLE_JIT
 
 void
@@ -2963,20 +3005,6 @@ if (valgrind_register){
 #endif
 }
 
-static MonoGenericInst*
-get_object_generic_inst (int type_argc)
-{
-	MonoType **type_argv;
-	int i;
-
-	type_argv = alloca (sizeof (MonoType*) * type_argc);
-
-	for (i = 0; i < type_argc; ++i)
-		type_argv [i] = &mono_defaults.object_class->byval_arg;
-
-	return mono_metadata_get_generic_inst (type_argc, type_argv);
-}
-
 static void
 compute_reachable (MonoBasicBlock *bb)
 {
@@ -2987,34 +3015,6 @@ compute_reachable (MonoBasicBlock *bb)
 		for (i = 0; i < bb->out_count; ++i)
 			compute_reachable (bb->out_bb [i]);
 	}
-}
-
-static MonoGenericContext
-construct_object_context_for_method (MonoMethod *method)
-{
-	MonoGenericContext object_context;
-
-	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
-	g_assert (!method->klass->generic_class);
-	if (method->klass->generic_container) {
-		int type_argc = method->klass->generic_container->type_argc;
-
-		object_context.class_inst = get_object_generic_inst (type_argc);
-	} else {
-		object_context.class_inst = NULL;
-	}
-
-	if (mini_method_get_context (method)->method_inst) {
-		int type_argc = mini_method_get_context (method)->method_inst->type_argc;
-
-		object_context.method_inst = get_object_generic_inst (type_argc);
-	} else {
-		object_context.method_inst = NULL;
-	}
-
-	g_assert (object_context.class_inst || object_context.method_inst);
-
-	return object_context;
 }
 
 /*
