@@ -216,6 +216,12 @@ mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 	g_assert_not_reached ();
 }
 
+void
+mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs)
+{
+	mono_arm_throw_exception (mono_exception_from_token (mono_defaults.corlib, type_token), eip, esp, int_regs, fp_regs);
+}
+
 /**
  * arch_get_throw_exception_generic:
  *
@@ -239,26 +245,11 @@ mono_arch_get_throw_exception_generic (int size, int by_token, gboolean rethrow,
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 	ARM_PUSH (code, MONO_ARM_REGSAVE_MASK);
 
-	if (by_token) {
-		/* r0 has the type token of the exception: get the object */
-		ARM_PUSH1 (code, ARMREG_R1);
-		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_R0);
-		code = mono_arm_emit_load_imm (code, ARMREG_R0, GPOINTER_TO_UINT (mono_defaults.corlib));
-		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (mono_exception_from_token));
-		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
-		ARM_POP1 (code, ARMREG_R1);
-	}
-
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, 10 * 4); /* 10 saved regs */
 	/* exc is already in place in r0 */
-	if (by_token) {
-		/* The caller ip is already in R1 */
-	} else {
-		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR); /* caller ip */
-	}
+	ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR); /* caller ip */
 	/* FIXME: pointer to the saved fp regs */
 	/*pos = alloc_size - sizeof (double) * MONO_SAVED_FREGS;
 	ppc_addi (code, ppc_r7, ppc_sp, pos);*/
@@ -268,14 +259,14 @@ mono_arch_get_throw_exception_generic (int size, int by_token, gboolean rethrow,
 	ARM_ORR_REG_IMM8 (code, ARMREG_R1, ARMREG_R1, rethrow);
 
 	if (aot) {
-		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_arm_throw_exception");
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, by_token ? "mono_arm_throw_exception_by_token" : "mono_arm_throw_exception");
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)(gpointer)code = NULL;
 		code += 4;
 		ARM_LDR_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
 	} else {
-		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (mono_arm_throw_exception));
+		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (by_token ? mono_arm_throw_exception_by_token : mono_arm_throw_exception));
 	}
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);

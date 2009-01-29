@@ -2785,6 +2785,12 @@ add_wrappers (MonoAotCompile *acfg)
 			m = mono_marshal_get_delegate_invoke (method, NULL);
 
 			add_method (acfg, m);
+
+			method = mono_class_get_method_from_name_flags (klass, "BeginInvoke", -1, 0);
+			add_method (acfg, mono_marshal_get_delegate_begin_invoke (method));
+
+			method = mono_class_get_method_from_name_flags (klass, "EndInvoke", -1, 0);
+			add_method (acfg, mono_marshal_get_delegate_end_invoke (method));
 		}
 	}
 
@@ -4612,6 +4618,14 @@ emit_extra_methods (MonoAotCompile *acfg)
 			} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
 				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
 				name = g_strdup_printf ("(wrapper delegate-invoke):%s (%s)", method->name, tmpsig);
+				g_free (tmpsig);
+			} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE) {
+				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+				name = g_strdup_printf ("(wrapper delegate-begin-invoke):%s (%s)", method->name, tmpsig);
+				g_free (tmpsig);
+			} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_END_INVOKE) {
+				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+				name = g_strdup_printf ("(wrapper delegate-end-invoke):%s (%s)", method->name, tmpsig);
 				g_free (tmpsig);
 			} else {
 				name = mono_method_full_name (cfg->orig_method, TRUE);

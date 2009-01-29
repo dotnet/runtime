@@ -2113,6 +2113,14 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
 			full_name = g_strdup_printf ("(wrapper delegate-invoke):%s (%s)", method->name, tmpsig);
 			g_free (tmpsig);
+		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE) {
+			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+			full_name = g_strdup_printf ("(wrapper delegate-begin-invoke):%s (%s)", method->name, tmpsig);
+			g_free (tmpsig);
+		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_END_INVOKE) {
+			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+			full_name = g_strdup_printf ("(wrapper delegate-end-invoke):%s (%s)", method->name, tmpsig);
+			g_free (tmpsig);
 		} else {
 			full_name = mono_method_full_name (method, TRUE);
 		}
