@@ -97,6 +97,7 @@ case "$host" in
 		libdl="-ldl"
 		libgc_threads=pthreads
 		with_sigaltstack=no
+		use_sigposix=yes
 		;;
 	*-*-*freebsd*)
 		platform_win32=no
@@ -125,6 +126,7 @@ case "$host" in
 # but NOT library support)
 #
 		with_tls=pthread
+		use_sigposix=yes
 		;;
 	*-*-*openbsd*)
 		platform_win32=no
@@ -136,6 +138,7 @@ case "$host" in
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
 		libgc_threads=pthreads
+		use_sigposix=yes
 		;;
 	*-*-linux*)
 		platform_win32=no
@@ -145,9 +148,10 @@ case "$host" in
 		libdl="-ldl"
 		libgc_threads=pthreads
 		AOT_SUPPORTED="yes"
+		use_sigposix=yes
 		;;
 	*-*-hpux*)
-        platform_win32=no
+	        platform_win32=no
 		CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
 		# +ESdbgasm only valid on bundled cc on RISC
 		# silently ignored for ia64
@@ -163,6 +167,7 @@ case "$host" in
 		libmono_ldflags="-lpthread"
 		libgc_threads=pthreads
 		need_link_unlink=yes
+		use_sigposix=yes
 		;;
 	*-*-solaris*)
 		platform_win32=no
@@ -173,6 +178,7 @@ case "$host" in
 		# This doesn't seem to work on solaris/x86, but the configure test runs
 		with_tls=pthread
 		has_dtrace=yes
+		use_sigposix=yes
 		;;
 	*-*-darwin*)
 		platform_win32=no
@@ -207,6 +213,8 @@ fi
 
 AM_CONDITIONAL(PLATFORM_WIN32, test x$platform_win32 = xyes)
 AM_CONDITIONAL(PLATFORM_LINUX, echo x$target_os | grep -q linux)
+AM_CONDITIONAL(PLATFORM_DARWIN, test x$platform_darwin = xyes)
+AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC

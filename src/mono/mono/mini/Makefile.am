@@ -211,6 +211,15 @@ hppa_sources = \
 	exceptions-hppa.c	\
 	tramp-hppa.c
 
+darwin_sources = \
+	mini-darwin.c
+
+windows_sources = \
+	mini-windows.c
+
+posix_sources = \
+	mini-posix.c
+
 common_sources = \
 	mini.c		\
 	ir-emit.h	\
@@ -245,8 +254,8 @@ common_sources = \
 	aot-compiler.c		\
 	aot-runtime.c		\
 	graph.c		\
-	mini-exceptions.c	\
 	mini-codegen.c		\
+	mini-exceptions.c	\
 	mini-trampolines.c  \
 	declsec.c	\
 	declsec.h	\
@@ -373,7 +382,19 @@ arch_built = cpu-hppa.h
 arch_define=__hppa__
 endif
 
-libmono_la_SOURCES = $(common_sources) $(arch_sources)
+if PLATFORM_WIN32
+os_sources = $(windows_sources)
+endif
+
+if PLATFORM_SIGPOSIX
+os_sources = $(posix_sources)
+endif
+
+if PLATFORM_DARWIN
+os_sources = $(darwin_sources) $(posix_sources)
+endif
+
+libmono_la_SOURCES = $(common_sources) $(arch_sources) $(os_sources)
 
 libmono_static_la_SOURCES = $(libmono_la_SOURCES)
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)
@@ -521,7 +542,10 @@ EXTRA_DIST = $(common_BURGSRC) cprop.c TestDriver.cs ldscript ldscript.mono \
 	$(s390x_sources) cpu-s390x.md \
 	$(ia64_sources) cpu-ia64.md \
 	$(alpha_sources) cpu-alpha.md \
-	$(hppa_sources) cpu-hppa.md
+	$(hppa_sources) cpu-hppa.md 	\
+	$(windows_sources)		\
+	$(darwin_sources)		\
+	$(posix_sources)
 
 version.h: Makefile
 	if test -d $(top_srcdir)/.git/svn; then svn_info='git svn info'; fi; \

@@ -6966,6 +6966,10 @@
 				RelativePath="..\mono\mini\mini-trampolines.c"
 				>
 			</File>
+                        <File
+                                RelativePath="..\mono\mini\mini-windows.c"
+                                >
+                       </File>
 			<File
 				RelativePath="..\mono\mini\mini.c"
 				>

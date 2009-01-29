@@ -1639,10 +1639,59 @@ enum {
 };
 
 const char *mono_arch_xregname (int reg) MONO_INTERNAL;
-void mono_simd_simplify_indirection (MonoCompile *cfg) MONO_INTERNAL;
-MonoInst* mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
-guint32   mono_arch_cpu_enumerate_simd_versions (void) MONO_INTERNAL;
-void mono_simd_intrinsics_init (void) MONO_INTERNAL;
+void        mono_simd_simplify_indirection (MonoCompile *cfg) MONO_INTERNAL;
+MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
+guint32     mono_arch_cpu_enumerate_simd_versions (void) MONO_INTERNAL;
+void        mono_simd_intrinsics_init (void) MONO_INTERNAL;
+
+/*
+ * Per-OS implementation functions.
+ */
+void mono_runtime_install_handlers (void) MONO_INTERNAL;
+void mono_runtime_cleanup_handlers (void) MONO_INTERNAL;
+void mono_runtime_setup_stat_profiler (void) MONO_INTERNAL;
+void mono_runtime_shutdown_stat_profiler (void) MONO_INTERNAL;
+void mono_runtime_posix_install_handlers (void) MONO_INTERNAL;
+
+/*
+ * Signal handling
+ */
+#ifdef MONO_GET_CONTEXT
+#define GET_CONTEXT MONO_GET_CONTEXT
+#endif
+
+#ifndef GET_CONTEXT
+#ifdef PLATFORM_WIN32
+#define GET_CONTEXT \
+	struct sigcontext *ctx = (struct sigcontext*)_dummy;
+#else
+#ifdef MONO_ARCH_USE_SIGACTION
+#define GET_CONTEXT \
+    void *ctx = context;
+#elif defined(__sparc__)
+#define GET_CONTEXT \
+    void *ctx = sigctx;
+#else
+#define GET_CONTEXT \
+	void **_p = (void **)&_dummy; \
+	struct sigcontext *ctx = (struct sigcontext *)++_p;
+#endif
+#endif
+#endif
+
+#ifdef MONO_ARCH_USE_SIGACTION
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
+#elif defined(__sparc__)
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *sigctx)
+#else
+#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
+#endif
+
+void SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)  MONO_INTERNAL;
+void SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)  MONO_INTERNAL;
+void SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler) MONO_INTERNAL;
+void SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)  MONO_INTERNAL;
+
 
 /* for MONO_WRAPPER_UNKNOWN subtypes */
 enum {

@@ -1,3 +1,9 @@
+2009-01-29  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: Add a couple of new AM conditionals for POSIX and
+	DARWIN, these are used to conditionally include some files in
+	mono/mini. 
+
 2009-01-27  Jb Evain  <jbevain@novell.com>
 
 	* configure.in: bump Mono's version to 2.5 now that 2.4

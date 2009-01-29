@@ -21,14 +21,6 @@
 #include <sys/time.h>
 #endif
 
-#ifdef PLATFORM_MACOSX
-#include <mach/mach.h>
-#include <mach/mach_error.h>
-#include <mach/exception.h>
-#include <mach/task.h>
-#include <pthread.h>
-#endif
-
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
 #endif
@@ -72,7 +64,6 @@
 
 #include "debug-mini.h"
 
-static void setup_stat_profiler (void);
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
 static gpointer mono_jit_compile_method (MonoMethod *method);
 
@@ -2215,7 +2206,7 @@ mono_thread_attach_cb (gsize tid, gpointer stack_start)
 	if (thread)
 		thread->jit_data = jit_tls;
 	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
-		setup_stat_profiler ();
+		mono_runtime_setup_stat_profiler ();
 }
 
 static void
@@ -4255,39 +4246,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	return runtime_invoke (obj, params, exc, compiled_method);
 }
 
-#ifdef MONO_GET_CONTEXT
-#define GET_CONTEXT MONO_GET_CONTEXT
-#endif
-
-#ifndef GET_CONTEXT
-#ifdef PLATFORM_WIN32
-#define GET_CONTEXT \
-	struct sigcontext *ctx = (struct sigcontext*)_dummy;
-#else
-#ifdef MONO_ARCH_USE_SIGACTION
-#define GET_CONTEXT \
-    void *ctx = context;
-#elif defined(__sparc__)
-#define GET_CONTEXT \
-    void *ctx = sigctx;
-#else
-#define GET_CONTEXT \
-	void **_p = (void **)&_dummy; \
-	struct sigcontext *ctx = (struct sigcontext *)++_p;
-#endif
-#endif
-#endif
-
-#ifdef MONO_ARCH_USE_SIGACTION
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
-#elif defined(__sparc__)
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *sigctx)
-#else
-#define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
-#endif
-
-static void
-SIG_HANDLER_SIGNATURE (sigfpe_signal_handler)
+void
+SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 {
 	MonoException *exc = NULL;
 #ifndef MONO_ARCH_USE_SIGACTION
@@ -4307,8 +4267,8 @@ SIG_HANDLER_SIGNATURE (sigfpe_signal_handler)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
-static void
-SIG_HANDLER_SIGNATURE (sigill_signal_handler)
+void
+SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)
 {
 	MonoException *exc;
 	GET_CONTEXT;
@@ -4318,8 +4278,8 @@ SIG_HANDLER_SIGNATURE (sigill_signal_handler)
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
 
-static void
-SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
+void
+SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 {
 #ifndef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	MonoException *exc = NULL;
@@ -4366,185 +4326,8 @@ SIG_HANDLER_SIGNATURE (sigsegv_signal_handler)
 #endif
 }
 
-#ifndef PLATFORM_WIN32
-
-static void
-SIG_HANDLER_SIGNATURE (sigabrt_signal_handler)
-{
-	MonoJitInfo *ji;
-	GET_CONTEXT;
-
-	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
-	if (!ji) {
-		mono_handle_native_sigsegv (SIGABRT, ctx);
-	}
-}
-
-static void
-SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
-{
-	gboolean running_managed;
-	MonoException *exc;
-	MonoThread *thread = mono_thread_current ();
-	MonoDomain *domain = mono_domain_get ();
-	void *ji;
-	
-	GET_CONTEXT;
-
-	if (!thread || !domain)
-		/* The thread might not have started up yet */
-		/* FIXME: Specify the synchronization with start_wrapper () in threads.c */
-		return;
-
-	if (thread->thread_dump_requested) {
-		thread->thread_dump_requested = FALSE;
-
-		mono_print_thread_dump (ctx);
-	}
-
-	/*
-	 * FIXME:
-	 * This is an async signal, so the code below must not call anything which
-	 * is not async safe. That includes the pthread locking functions. If we
-	 * know that we interrupted managed code, then locking is safe.
-	 */
-	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
-	running_managed = ji != NULL;
-	
-	exc = mono_thread_request_interruption (running_managed); 
-	if (!exc) return;
-
-	mono_arch_handle_exception (ctx, exc, FALSE);
-}
-
-#if defined(__i386__) || defined(__x86_64__)
-#define FULL_STAT_PROFILER_BACKTRACE 1
-#define CURRENT_FRAME_GET_BASE_POINTER(f) (* (gpointer*)(f))
-#define CURRENT_FRAME_GET_RETURN_ADDRESS(f) (* (((gpointer*)(f)) + 1))
-#if MONO_ARCH_STACK_GROWS_UP
-#define IS_BEFORE_ON_STACK <
-#define IS_AFTER_ON_STACK >
-#else
-#define IS_BEFORE_ON_STACK >
-#define IS_AFTER_ON_STACK <
-#endif
-#else
-#define FULL_STAT_PROFILER_BACKTRACE 0
-#endif
-
-#if defined(__ia64__) || defined(__sparc__) || defined(sparc) || defined(__s390__) || defined(s390)
-
-static void
-SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
-{
-	NOT_IMPLEMENTED;
-}
-
-#else
-
-static void
-SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
-{
-	int call_chain_depth = mono_profiler_stat_get_call_chain_depth ();
-	GET_CONTEXT;
-	
-	if (call_chain_depth == 0) {
-		mono_profiler_stat_hit (mono_arch_ip_from_context (ctx), ctx);
-	} else {
-		MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
-		int current_frame_index = 1;
-		MonoContext mono_context;
-#if FULL_STAT_PROFILER_BACKTRACE
-		guchar *current_frame;
-		guchar *stack_bottom;
-		guchar *stack_top;
-#else
-		MonoDomain *domain;
-#endif
-		guchar *ips [call_chain_depth + 1];
-
-		mono_arch_sigctx_to_monoctx (ctx, &mono_context);
-		ips [0] = MONO_CONTEXT_GET_IP (&mono_context);
-		
-		if (jit_tls != NULL) {
-#if FULL_STAT_PROFILER_BACKTRACE
-			stack_bottom = jit_tls->end_of_stack;
-			stack_top = MONO_CONTEXT_GET_SP (&mono_context);
-			current_frame = MONO_CONTEXT_GET_BP (&mono_context);
-			
-			while ((current_frame_index <= call_chain_depth) &&
-					(stack_bottom IS_BEFORE_ON_STACK (guchar*) current_frame) &&
-					((guchar*) current_frame IS_BEFORE_ON_STACK stack_top)) {
-				ips [current_frame_index] = CURRENT_FRAME_GET_RETURN_ADDRESS (current_frame);
-				current_frame_index ++;
-				stack_top = current_frame;
-				current_frame = CURRENT_FRAME_GET_BASE_POINTER (current_frame);
-			}
-#else
-			domain = mono_domain_get ();
-			if (domain != NULL) {
-				MonoLMF *lmf = NULL;
-				MonoJitInfo *ji;
-				MonoJitInfo res;
-				MonoContext new_mono_context;
-				int native_offset;
-				ji = mono_find_jit_info (domain, jit_tls, &res, NULL, &mono_context,
-						&new_mono_context, NULL, &lmf, &native_offset, NULL);
-				while ((ji != NULL) && (current_frame_index <= call_chain_depth)) {
-					ips [current_frame_index] = MONO_CONTEXT_GET_IP (&new_mono_context);
-					current_frame_index ++;
-					mono_context = new_mono_context;
-					ji = mono_find_jit_info (domain, jit_tls, &res, NULL, &mono_context,
-							&new_mono_context, NULL, &lmf, &native_offset, NULL);
-				}
-			}
-#endif
-		}
-		
-		
-		mono_profiler_stat_call_chain (current_frame_index, & ips [0], ctx);
-	}
-}
-
-#endif
-
-static void
-SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
-{
-	gboolean res;
-
-	GET_CONTEXT;
-
-	/* We use this signal to start the attach agent too */
-	res = mono_attach_start ();
-	if (res)
-		return;
-
-	printf ("Full thread dump:\n");
-
-	mono_threads_request_thread_dump ();
-
-	/*
-	 * print_thread_dump () skips the current thread, since sending a signal
-	 * to it would invoke the signal handler below the sigquit signal handler,
-	 * and signal handlers don't create an lmf, so the stack walk could not
-	 * be performed.
-	 */
-	mono_print_thread_dump (ctx);
-}
-
-static void
-SIG_HANDLER_SIGNATURE (sigusr2_signal_handler)
-{
-	gboolean enabled = mono_trace_is_enabled ();
-
-	mono_trace_enable (!enabled);
-}
-
-#endif
-
-static void
-SIG_HANDLER_SIGNATURE (sigint_signal_handler)
+void
+SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)
 {
 	MonoException *exc;
 	GET_CONTEXT;
@@ -4552,357 +4335,6 @@ SIG_HANDLER_SIGNATURE (sigint_signal_handler)
 	exc = mono_get_exception_execution_engine ("Interrupted (SIGINT).");
 	
 	mono_arch_handle_exception (ctx, exc, FALSE);
-}
-
-#ifdef PLATFORM_MACOSX
-
-/*
- * This code disables the CrashReporter of MacOS X by installing
- * a dummy Mach exception handler.
- */
-
-/*
- * http://darwinsource.opendarwin.org/10.4.3/xnu-792.6.22/osfmk/man/exc_server.html
- */
-extern
-boolean_t
-exc_server (mach_msg_header_t *request_msg,
-	    mach_msg_header_t *reply_msg);
-
-/*
- * The exception message
- */
-typedef struct {
-	mach_msg_base_t msg;  /* common mach message header */
-	char payload [1024];  /* opaque */
-} mach_exception_msg_t;
-
-/* The exception port */
-static mach_port_t mach_exception_port = VM_MAP_NULL;
-
-/*
- * Implicitly called by exc_server. Must be public.
- *
- * http://darwinsource.opendarwin.org/10.4.3/xnu-792.6.22/osfmk/man/catch_exception_raise.html
- */
-kern_return_t
-catch_exception_raise (
-	mach_port_t exception_port,
-	mach_port_t thread,
-	mach_port_t task,
-	exception_type_t exception,
-	exception_data_t code,
-	mach_msg_type_number_t code_count)
-{
-	/* consume the exception */
-	return KERN_FAILURE;
-}
-
-/*
- * Exception thread handler.
- */
-static
-void *
-mach_exception_thread (void *arg)
-{
-	for (;;) {
-		mach_exception_msg_t request;
-		mach_exception_msg_t reply;
-		mach_msg_return_t result;
-
-		/* receive from "mach_exception_port" */
-		result = mach_msg (&request.msg.header,
-				   MACH_RCV_MSG | MACH_RCV_LARGE,
-				   0,
-				   sizeof (request),
-				   mach_exception_port,
-				   MACH_MSG_TIMEOUT_NONE,
-				   MACH_PORT_NULL);
-
-		g_assert (result == MACH_MSG_SUCCESS);
-
-		/* dispatch to catch_exception_raise () */
-		exc_server (&request.msg.header, &reply.msg.header);
-
-		/* send back to sender */
-		result = mach_msg (&reply.msg.header,
-				   MACH_SEND_MSG,
-				   reply.msg.header.msgh_size,
-				   0,
-				   MACH_PORT_NULL,
-				   MACH_MSG_TIMEOUT_NONE,
-				   MACH_PORT_NULL);
-
-		g_assert (result == MACH_MSG_SUCCESS);
-	}
-	return NULL;
-}
-
-static void
-macosx_register_exception_handler ()
-{
-	mach_port_t task;
-	pthread_attr_t attr;
-	pthread_t thread;
-
-	if (mach_exception_port != VM_MAP_NULL)
-		return;
-
-	task = mach_task_self ();
-
-	/* create the "mach_exception_port" with send & receive rights */
-	g_assert (mach_port_allocate (task, MACH_PORT_RIGHT_RECEIVE,
-				      &mach_exception_port) == KERN_SUCCESS);
-	g_assert (mach_port_insert_right (task, mach_exception_port, mach_exception_port,
-					  MACH_MSG_TYPE_MAKE_SEND) == KERN_SUCCESS);
-
-	/* create the exception handler thread */
-	g_assert (!pthread_attr_init (&attr));
-	g_assert (!pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED));
-	g_assert (!pthread_create (&thread, &attr, mach_exception_thread, NULL));
-	pthread_attr_destroy (&attr);
-
-	/*
-	 * register "mach_exception_port" as a receiver for the
-	 * EXC_BAD_ACCESS exception
-	 *
-	 * http://darwinsource.opendarwin.org/10.4.3/xnu-792.6.22/osfmk/man/task_set_exception_ports.html
-	 */
-	g_assert (task_set_exception_ports (task, EXC_MASK_BAD_ACCESS,
-					    mach_exception_port,
-					    EXCEPTION_DEFAULT,
-					    MACHINE_THREAD_STATE) == KERN_SUCCESS);
-}
-#endif
-
-#ifndef PLATFORM_WIN32
-static void
-add_signal_handler (int signo, gpointer handler)
-{
-	struct sigaction sa;
-
-#ifdef MONO_ARCH_USE_SIGACTION
-	sa.sa_sigaction = handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO;
-#ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
-	if (signo == SIGSEGV)
-		sa.sa_flags |= SA_ONSTACK;
-#endif
-#else
-	sa.sa_handler = handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-#endif
-	g_assert (sigaction (signo, &sa, NULL) != -1);
-}
-
-static void
-remove_signal_handler (int signo)
-{
-	struct sigaction sa;
-
-	sa.sa_handler = SIG_DFL;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-
-	sigaction (signo, &sa, NULL);
-}
-#endif
-
-static void
-mono_runtime_install_handlers (void)
-{
-#ifdef PLATFORM_WIN32
-	win32_seh_init();
-	win32_seh_set_handler(SIGFPE, sigfpe_signal_handler);
-	win32_seh_set_handler(SIGILL, sigill_signal_handler);
-	win32_seh_set_handler(SIGSEGV, sigsegv_signal_handler);
-	if (debug_options.handle_sigint)
-		win32_seh_set_handler(SIGINT, sigint_signal_handler);
-
-#else /* !PLATFORM_WIN32 */
-
-	sigset_t signal_set;
-
-#if defined(PLATFORM_MACOSX) && !defined(__arm__)
-	macosx_register_exception_handler ();
-#endif
-
-	if (debug_options.handle_sigint)
-		add_signal_handler (SIGINT, sigint_signal_handler);
-
-	add_signal_handler (SIGFPE, sigfpe_signal_handler);
-	add_signal_handler (SIGQUIT, sigquit_signal_handler);
-	add_signal_handler (SIGILL, sigill_signal_handler);
-	add_signal_handler (SIGBUS, sigsegv_signal_handler);
-	if (mono_jit_trace_calls != NULL)
-		add_signal_handler (SIGUSR2, sigusr2_signal_handler);
-
-	add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
-	/* it seems to have become a common bug for some programs that run as parents
-	 * of many processes to block signal delivery for real time signals.
-	 * We try to detect and work around their breakage here.
-	 */
-	sigemptyset (&signal_set);
-	sigaddset (&signal_set, mono_thread_get_abort_signal ());
-	sigprocmask (SIG_UNBLOCK, &signal_set, NULL);
-
-	signal (SIGPIPE, SIG_IGN);
-
-	add_signal_handler (SIGABRT, sigabrt_signal_handler);
-
-	/* catch SIGSEGV */
-	add_signal_handler (SIGSEGV, sigsegv_signal_handler);
-#endif /* PLATFORM_WIN32 */
-}
-
-static void
-mono_runtime_cleanup_handlers (void)
-{
-#ifdef PLATFORM_WIN32
-	win32_seh_cleanup();
-#else
-	if (debug_options.handle_sigint)
-		remove_signal_handler (SIGINT);
-
-	remove_signal_handler (SIGFPE);
-	remove_signal_handler (SIGQUIT);
-	remove_signal_handler (SIGILL);
-	remove_signal_handler (SIGBUS);
-	if (mono_jit_trace_calls != NULL)
-		remove_signal_handler (SIGUSR2);
-
-	remove_signal_handler (mono_thread_get_abort_signal ());
-
-	remove_signal_handler (SIGABRT);
-
-	remove_signal_handler (SIGSEGV);
-#endif /* PLATFORM_WIN32 */
-}
-
-
-#ifdef HAVE_LINUX_RTC_H
-#include <linux/rtc.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
-static int rtc_fd = -1;
-
-static int
-enable_rtc_timer (gboolean enable)
-{
-	int flags;
-	flags = fcntl (rtc_fd, F_GETFL);
-	if (flags < 0) {
-		perror ("getflags");
-		return 0;
-	}
-	if (enable)
-		flags |= FASYNC;
-	else
-		flags &= ~FASYNC;
-	if (fcntl (rtc_fd, F_SETFL, flags) == -1) {
-		perror ("setflags");
-		return 0;
-	}
-	return 1;
-}
-#endif
-
-#ifdef PLATFORM_WIN32
-static HANDLE win32_main_thread;
-static MMRESULT win32_timer;
-
-static void CALLBACK
-win32_time_proc (UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2)
-{
-	CONTEXT context;
-
-	context.ContextFlags = CONTEXT_CONTROL;
-	if (GetThreadContext (win32_main_thread, &context)) {
-#ifdef _WIN64
-		mono_profiler_stat_hit ((guchar *) context.Rip, &context);
-#else
-		mono_profiler_stat_hit ((guchar *) context.Eip, &context);
-#endif
-	}
-}
-#endif
-
-static void
-setup_stat_profiler (void)
-{
-#ifdef ITIMER_PROF
-	struct itimerval itval;
-	static int inited = 0;
-#ifdef HAVE_LINUX_RTC_H
-	const char *rtc_freq;
-	if (!inited && (rtc_freq = g_getenv ("MONO_RTC"))) {
-		int freq = 0;
-		inited = 1;
-		if (*rtc_freq)
-			freq = atoi (rtc_freq);
-		if (!freq)
-			freq = 1024;
-		rtc_fd = open ("/dev/rtc", O_RDONLY);
-		if (rtc_fd == -1) {
-			perror ("open /dev/rtc");
-			return;
-		}
-		add_signal_handler (SIGPROF, sigprof_signal_handler);
-		if (ioctl (rtc_fd, RTC_IRQP_SET, freq) == -1) {
-			perror ("set rtc freq");
-			return;
-		}
-		if (ioctl (rtc_fd, RTC_PIE_ON, 0) == -1) {
-			perror ("start rtc");
-			return;
-		}
-		if (fcntl (rtc_fd, F_SETSIG, SIGPROF) == -1) {
-			perror ("setsig");
-			return;
-		}
-		if (fcntl (rtc_fd, F_SETOWN, getpid ()) == -1) {
-			perror ("setown");
-			return;
-		}
-		enable_rtc_timer (TRUE);
-		return;
-	}
-	if (rtc_fd >= 0)
-		return;
-#endif
-
-	itval.it_interval.tv_usec = 999;
-	itval.it_interval.tv_sec = 0;
-	itval.it_value = itval.it_interval;
-	setitimer (ITIMER_PROF, &itval, NULL);
-	if (inited)
-		return;
-	inited = 1;
-	add_signal_handler (SIGPROF, sigprof_signal_handler);
-#elif defined (PLATFORM_WIN32)
-	static int inited = 0;
-	TIMECAPS timecaps;
-
-	if (inited)
-		return;
-
-	inited = 1;
-	if (timeGetDevCaps (&timecaps, sizeof (timecaps)) != TIMERR_NOERROR)
-		return;
-
-	if ((win32_main_thread = OpenThread (READ_CONTROL | THREAD_GET_CONTEXT, FALSE, GetCurrentThreadId ())) == NULL)
-		return;
-
-	if (timeBeginPeriod (1) != TIMERR_NOERROR)
-		return;
-
-	if ((win32_timer = timeSetEvent (1, 0, win32_time_proc, 0, TIME_PERIODIC)) == 0) {
-		timeEndPeriod (1);
-		return;
-	}
-#endif
 }
 
 /* mono_jit_create_remoting_trampoline:
@@ -5473,11 +4905,8 @@ print_jit_stats (void)
 void
 mini_cleanup (MonoDomain *domain)
 {
-#ifdef HAVE_LINUX_RTC_H
-	if (rtc_fd >= 0)
-		enable_rtc_timer (FALSE);
-#endif
-
+	mono_runtime_shutdown_stat_profiler ();
+	
 #ifndef DISABLE_COM
 	cominterop_release_all_rcws ();
 #endif
