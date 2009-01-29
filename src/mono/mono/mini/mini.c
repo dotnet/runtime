@@ -805,6 +805,16 @@ set_vreg_to_inst (MonoCompile *cfg, int vreg, MonoInst *inst)
 #define mono_type_is_long(type) (!(type)->byref && ((mono_type_get_underlying_type (type)->type == MONO_TYPE_I8) || (mono_type_get_underlying_type (type)->type == MONO_TYPE_U8)))
 #define mono_type_is_float(type) (!(type)->byref && (((type)->type == MONO_TYPE_R8) || ((type)->type == MONO_TYPE_R4)))
 
+#ifdef DISABLE_JIT
+
+MonoInst*
+mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
+{
+	return NULL;
+}
+
+#else
+
 MonoInst*
 mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, int vreg)
 {
@@ -932,6 +942,8 @@ mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index) 
 	type_to_eval_stack_type (cfg, dest->inst_i0->inst_vtype, dest);
 	dest->klass = dest->inst_i0->klass;
 }
+
+#endif
 
 static MonoType*
 type_from_stack_type (MonoInst *ins) {
