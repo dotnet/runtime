@@ -99,7 +99,7 @@ _wapi_shm_base_name (_wapi_shm_t type)
 
 #ifdef USE_SHM
 
-static gchar *_wapi_shm_file (_wapi_shm_t type)
+static gchar *_wapi_shm_shm_name (_wapi_shm_t type)
 {
 	char *base_name = _wapi_shm_base_name (type);
 
@@ -113,10 +113,9 @@ _wapi_shm_open (const char *filename, int size)
 	int fd;
 
 	fd = shm_open (filename, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR|S_IRGRP);
-	if (fd == -1) {
-		perror ("_wapi_shm_open (): shm_open ()");
-		g_assert_not_reached ();
-	}
+	if (fd == -1)
+		/* Maybe /dev/shm is not mounted */
+		return -1;
 	if (ftruncate (fd, size) != 0) {
 		perror ("_wapi_shm_open (): ftruncate ()");
 		g_assert_not_reached ();
@@ -125,7 +124,7 @@ _wapi_shm_open (const char *filename, int size)
 	return fd;
 }
 
-#else
+#endif
 
 static gchar *_wapi_shm_file (_wapi_shm_t type)
 {
@@ -276,8 +275,6 @@ try_again:
 	return(fd);
 }
 
-#endif /* USE_SHM */
-
 static gboolean check_disabled (void)
 {
 	if (_wapi_shm_disabled || g_getenv ("MONO_DISABLE_SHM")) {
@@ -323,10 +320,14 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	}
 
 #ifdef USE_SHM
-	fd = _wapi_shm_open (filename, size);
+	fd = _wapi_shm_open (_wapi_shm_shm_name (type), size);
 #else
-	fd = _wapi_shm_file_open (filename, size);
+	fd = -1;
 #endif
+
+	/* Fall back to files if POSIX shm fails (for example, because /dev/shm is not mounted */
+	if (fd == -1)
+		fd = _wapi_shm_file_open (filename, size);
 	if (fd == -1) {
 		g_critical ("%s: shared file [%s] open error", __func__,
 			    filename);
@@ -551,12 +552,11 @@ static void shm_semaphores_remove (void)
 
 		semctl (_wapi_sem_id, 0, IPC_RMID);
 #ifdef USE_SHM
-		shm_unlink (_wapi_shm_file (WAPI_SHM_DATA));
-		shm_unlink (_wapi_shm_file (WAPI_SHM_FILESHARE));
-#else
+		shm_unlink (_wapi_shm_shm_name (WAPI_SHM_DATA));
+		shm_unlink (_wapi_shm_shm_name (WAPI_SHM_FILESHARE));
+#endif
 		unlink (_wapi_shm_file (WAPI_SHM_DATA));
 		unlink (_wapi_shm_file (WAPI_SHM_FILESHARE));
-#endif
 	} else {
 		/* "else" clause, because there's no point unlocking
 		 * the semaphore if we've just blown it away...
