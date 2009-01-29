@@ -4299,10 +4299,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		}
 		cfg->unwind_ops = g_slist_reverse (unwind_ops);
 	}
-	/* Make a copy of the argument info */
+	/* Make a copy of the argument/local info */
 	{
-		MonoInst **args;
+		MonoInst **args, **locals;
 		MonoMethodSignature *sig;
+		MonoMethodHeader *header;
 		int i;
 		
 		sig = mono_method_signature (method);
@@ -4312,6 +4313,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			memcpy (args [i], cfg->args [i], sizeof (MonoInst));
 		}
 		cfg->args = args;
+
+		header = mono_method_get_header (method);
+		locals = mono_mempool_alloc (acfg->mempool, sizeof (MonoInst*) * header->num_locals);
+		for (i = 0; i < header->num_locals; ++i) {
+			locals [i] = mono_mempool_alloc (acfg->mempool, sizeof (MonoInst));
+			memcpy (locals [i], cfg->locals [i], sizeof (MonoInst));
+		}
+		cfg->locals = locals;
 	}
 
 	/* Free some fields used by cfg to conserve memory */
