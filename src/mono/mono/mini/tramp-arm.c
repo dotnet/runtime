@@ -164,6 +164,8 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	guint8 *buf, *code = NULL;
 	guint8 *load_get_lmf_addr, *load_trampoline;
 	gpointer *constants;
+	GSList *unwind_ops = NULL, *l;
+	int cfa_offset;
 
 	*ji = NULL;
 
@@ -178,6 +180,16 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	 * saved as sp + LR_OFFSET by the push in the specific trampoline
 	 */
 #define LR_OFFSET (sizeof (gpointer) * 13)
+
+	// FIXME: Finish the unwind info, the current info allows us to unwind
+	// when the trampoline is not in the epilog
+
+	// CFA = SP + (num registers pushed) * 4
+	cfa_offset = 14 * sizeof (gpointer);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, cfa_offset);
+	// PC saved at sp+LR_OFFSET
+	mono_add_unwind_op_offset (unwind_ops, code, buf, ARMREG_LR, -4);
+
 	ARM_MOV_REG_REG (code, ARMREG_V1, ARMREG_SP);
 	if (aot && tramp_type != MONO_TRAMPOLINE_GENERIC_CLASS_INIT) {
 		/* 
@@ -217,6 +229,8 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 	 * the iregs array is already allocated on the stack by push.
 	 */
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (MonoLMF) - sizeof (guint) * 14);
+	cfa_offset += sizeof (MonoLMF) - sizeof (guint) * 14;
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	ARM_ADD_REG_IMM8 (code, ARMREG_R1, ARMREG_SP, STACK - sizeof (MonoLMF));
 	/* r0 is the result from mono_get_lmf_addr () */
 	ARM_STR_IMM (code, ARMREG_R0, ARMREG_R1, G_STRUCT_OFFSET (MonoLMF, lmf_addr));
@@ -356,6 +370,12 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		/* Initialize the nullified class init trampoline used in the AOT case */
 		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (&code_len);
 	}
+
+	mono_save_trampoline_xdebug_info ("<generic_trampoline>", buf, *code_size, unwind_ops);
+
+	for (l = unwind_ops; l; l = l->next)
+		g_free (l->data);
+	g_slist_free (unwind_ops);
 
 	return buf;
 }
@@ -547,7 +567,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 		/* Jump to the actual trampoline */
 		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
 		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
-		*(guint32*)code = tramp;
+		*(gpointer*)code = tramp;
 		code += 4;
 	}
 
@@ -601,7 +621,7 @@ mono_arch_create_generic_class_init_trampoline (void)
 	/* Jump to the actual trampoline */
 	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
 	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
-	*(guint32*)code = tramp;
+	*(gpointer*)code = tramp;
 	code += 4;
 
 	mono_arch_flush_icache (buf, code - buf);

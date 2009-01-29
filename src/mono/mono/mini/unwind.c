@@ -38,9 +38,16 @@ static int cached_info_size;
 #ifdef __x86_64__
 static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 #define NUM_REGS AMD64_NREG
+#define DWARF_DATA_ALIGN - 8
+#elif defined(__arm__)
+// http://infocenter.arm.com/help/topic/com.arm.doc.ihi0040a/IHI0040A_aadwarf.pdf
+static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+#define NUM_REGS 16
+#define DWARF_DATA_ALIGN - 4
 #else
 static int map_hw_reg_to_dwarf_reg [0];
 #define NUM_REGS 0
+#define DWARF_DATA_ALIGN 0
 #endif
 
 static gboolean dwarf_reg_to_hw_reg_inited;
@@ -55,12 +62,12 @@ static int map_dwarf_reg_to_hw_reg [NUM_REGS];
 int
 mono_hw_reg_to_dwarf_reg (int reg)
 {
-#ifdef __x86_64__
-	return map_hw_reg_to_dwarf_reg [reg];
-#else
-	g_assert_not_reached ();
-	return -1;
-#endif
+	if (NUM_REGS == 0) {
+		g_assert_not_reached ();
+		return -1;
+	} else {
+		return map_hw_reg_to_dwarf_reg [reg];
+	}
 }
 
 static void
@@ -173,7 +180,7 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 			break;
 		case DW_CFA_offset:
 			*p ++ = DW_CFA_offset | reg;
-			encode_uleb128 (op->val / - 8, p, &p);
+			encode_uleb128 (op->val / DWARF_DATA_ALIGN, p, &p);
 			break;
 		default:
 			g_assert_not_reached ();

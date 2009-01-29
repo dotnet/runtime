@@ -1518,7 +1518,7 @@ asm_writer_emit_section_change (MonoAotCompile *acfg, const char *section_name, 
 		fprintf (acfg->fp, "%s\n", ".data");
 	else
 		fprintf (acfg->fp, "%s\n", section_name);
-#elif defined(sparc) || defined(__arm__)
+#elif defined(sparc)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (acfg->fp, ".section \"%s\"\n", section_name);
 #else
@@ -3437,6 +3437,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	guint8 *p, *buf, *debug_info;
 	MonoJitInfo *jinfo = cfg->jit_info;
 	guint32 flags;
+	gboolean use_unwind_ops = FALSE;
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
@@ -3452,12 +3453,16 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	buf_size = header->num_clauses * 256 + debug_info_size + 256;
 	p = buf = g_malloc (buf_size);
 
-	flags = (jinfo->has_generic_jit_info ? 1 : 0) | ((cfg->unwind_ops != NULL) ? 2 : 0);
+#if defined(__x86_64__)
+	use_unwind_ops = cfg->unwind_ops != NULL;
+#endif
+
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0);
 
 	encode_value (jinfo->code_size, p, &p);
 	encode_value (flags, p, &p);
 
-	if (cfg->unwind_ops) {
+	if (use_unwind_ops) {
 		guint32 encoded_len;
 		guint8 *encoded;
 
@@ -5356,7 +5361,7 @@ emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
 static void
 emit_cie (MonoAotCompile *acfg)
 {
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(__arm__)
 	emit_section_change (acfg, ".debug_frame", 0);
 
 	emit_alignment (acfg, 8);
@@ -5370,6 +5375,9 @@ emit_cie (MonoAotCompile *acfg)
 #ifdef __x86_64__
 	emit_sleb128 (acfg, -8); /* data alignment factor */
 	emit_uleb128 (acfg, AMD64_RIP);
+#elif defined(__arm__)
+	emit_sleb128 (acfg, -4); /* data alignment factor */
+	emit_uleb128 (acfg, mono_hw_reg_to_dwarf_reg (ARMREG_LR));
 #else
 	g_assert_not_reached ();
 #endif
@@ -5380,6 +5388,7 @@ emit_cie (MonoAotCompile *acfg)
 	emit_uleb128 (acfg, 8); /* offset=8 */
 	emit_byte (acfg, DW_CFA_offset | AMD64_RIP);
 	emit_uleb128 (acfg, 1); /* offset=-8 */
+#elif defined(__arm__)
 #else
 	g_assert_not_reached ();
 #endif
@@ -5400,11 +5409,20 @@ static void
 emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_symbol,
 		  guint8 *code, guint32 code_size, GSList *unwind_ops, gboolean use_cie)
 {
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(__arm__)
 	char symbol [128];
 	GSList *l;
 	guint8 *uw_info;
 	guint32 uw_info_len;
+
+#ifdef __arm__
+	if (!unwind_ops)
+		/* 
+		 * The debugger can unwind without unwind info, but gets confused by empty
+		 * info.
+		 */
+		return;
+#endif
 
 	emit_section_change (acfg, ".debug_frame", 0);
 
@@ -5414,12 +5432,14 @@ emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_sym
 	if (start_symbol) {
 		emit_pointer (acfg, start_symbol); /* initial_location */
 		emit_symbol_diff (acfg, end_symbol, start_symbol, 0); /* address_range */
-		emit_int32 (acfg, 0);
 	} else {
 		emit_pointer_value (acfg, code);
 		emit_int32 (acfg, code_size);
-		emit_int32 (acfg, 0);
 	}
+#if SIZEOF_VOID_P == 8
+	/* Upper 32 bits of code size */
+	emit_int32 (acfg, 0);
+#endif
 
 	l = unwind_ops;
 #ifdef __x86_64__
@@ -5923,6 +5943,8 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 
 	/* Subprogram end */
 	emit_uleb128 (acfg, 0x0);
+
+	emit_line (acfg);
 
 	/* Emit unwind info */
 	emit_fde (acfg, acfg->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, TRUE);
