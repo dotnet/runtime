@@ -288,7 +288,7 @@ mono_irem_un (guint32 a, guint32 b)
 
 #endif
 
-#ifdef MONO_ARCH_EMULATE_MUL_DIV
+#if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_MUL_OVF)
 
 gint32
 mono_imul (gint32 a, gint32 b)
@@ -307,7 +307,7 @@ mono_imul_ovf (gint32 a, gint32 b)
 
 	res = (gint64)a * (gint64)b;
 
-	if ((res > 0x7fffffffL) || (res < -2147483648))
+	if ((res > 0x7fffffffL) || (res < -2147483648LL))
 		mono_raise_exception (mono_get_exception_overflow ());
 
 	return res;

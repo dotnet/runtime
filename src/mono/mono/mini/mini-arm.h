@@ -126,6 +126,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_EMULATE_DIV 1
 #define MONO_ARCH_EMULATE_CONV_R8_UN 1
+#define MONO_ARCH_EMULATE_MUL_OVF 1
 //#define MONO_ARCH_BIGMUL_INTRINS 1
 
 #define ARM_FIRST_ARG_REG 0
