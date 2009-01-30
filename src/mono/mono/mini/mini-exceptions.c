@@ -196,7 +196,7 @@ mono_get_throw_corlib_exception (void)
  * start of the function or -1 if that info is not available.
  */
 MonoJitInfo *
-mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, 
+mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx,
 		    MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset,
 		    gboolean *managed)
 {
@@ -572,7 +572,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	do {
 		old_ctx = ctx;
-		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, native_offset, NULL);
+		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, (int*) native_offset, NULL);
 		ctx = new_ctx;
 
 		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_SP (&ctx) >= jit_tls->end_of_stack)
