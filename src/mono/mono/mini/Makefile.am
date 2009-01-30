@@ -261,7 +261,7 @@ common_sources = \
 	declsec.h	\
 	wapihandles.c	\
 	branch-opts.c	\
-	generic-sharing.c	\
+	mini-generic-sharing.c	\
 	regalloc2.c	\
 	simd-methods.h	\
 	simd-intrinsics.c	\
