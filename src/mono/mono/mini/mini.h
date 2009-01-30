@@ -1653,6 +1653,10 @@ void mono_runtime_setup_stat_profiler (void) MONO_INTERNAL;
 void mono_runtime_shutdown_stat_profiler (void) MONO_INTERNAL;
 void mono_runtime_posix_install_handlers (void) MONO_INTERNAL;
 
+#ifdef MONO_ARCH_USE_SIGACTION
+#error WHAT THE FUCK
+#endif
+
 /*
  * Signal handling
  */
@@ -1680,6 +1684,9 @@ void mono_runtime_posix_install_handlers (void) MONO_INTERNAL;
 #endif
 
 #ifdef MONO_ARCH_USE_SIGACTION
+#ifdef MONO_ARCH_USE_SIGACTION
+#error WHAT THE FUCK
+#endif
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
 #elif defined(__sparc__)
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *sigctx)

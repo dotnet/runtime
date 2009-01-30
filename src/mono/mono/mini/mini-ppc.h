@@ -153,7 +153,6 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 
-#define MONO_ARCH_USE_SIGACTION 1
 #define MONO_ARCH_NEED_DIV_CHECK 1
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
@@ -236,6 +235,8 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 #if defined(__linux__)
 	typedef struct ucontext os_ucontext;
 
+#define MONO_ARCH_USE_SIGACTION 1
+
 #ifdef __mono_ppc64__
 	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.gp_regs [(n)])
 	#define UCONTEXT_REG_FPRn(ctx, n) ((ctx)->uc_mcontext.fp_regs [(n)])
@@ -248,6 +249,7 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.uc_regs->gregs [PT_LNK])
 #endif
 #elif defined (__APPLE__) && defined (_STRUCT_MCONTEXT)
+#define MONO_ARCH_USE_SIGACTION 1
 	typedef struct __darwin_ucontext os_ucontext;
 
 	#define UCONTEXT_REG_Rn(ctx, n)   ((&(ctx)->uc_mcontext->__ss.__r0) [(n)])
@@ -255,6 +257,7 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext->__ss.__srr0)
 	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext->__ss.__lr)
 #elif defined (__APPLE__) && !defined (_STRUCT_MCONTEXT)
+#define MONO_ARCH_USE_SIGACTION 1
 	typedef struct ucontext os_ucontext;
 
 	#define UCONTEXT_REG_Rn(ctx, n)   ((&(ctx)->uc_mcontext->ss.r0) [(n)])
@@ -262,6 +265,7 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 	#define UCONTEXT_REG_NIP(ctx)     ((ctx)->uc_mcontext->ss.srr0)
 	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext->ss.lr)
 #elif defined(__NetBSD__)
+#define MONO_ARCH_USE_SIGACTION 1
 	typedef ucontext_t os_ucontext;
 
 	#define UCONTEXT_REG_Rn(ctx, n)   ((ctx)->uc_mcontext.__gregs [(n)])
@@ -269,7 +273,8 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 	#define UCONTEXT_REG_NIP(ctx)     _UC_MACHINE_PC(ctx)
 	#define UCONTEXT_REG_LNK(ctx)     ((ctx)->uc_mcontext.__gregs [_REG_LR])
 #else
-#error Unknown OS
+/* For other operating systems, we pull the definition from an external file */
+#include "mini-ppc-os.h"
 #endif
 
 #ifdef __mono_ppc64__

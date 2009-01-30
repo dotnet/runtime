@@ -5275,7 +5275,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 		}
 	} else {
-		arg_array = alloca (sizeof (MonoInst *) * num_args);
+		arg_array = (MonoInst **) alloca (sizeof (MonoInst *) * num_args);
 		cfg->cbb = start_bblock;
 		cfg->args = arg_array;
 		mono_save_args (cfg, sig, inline_args);
