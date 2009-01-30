@@ -4404,5 +4404,14 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	return (gpointer)ctx->regs [reg];
+	if (reg >= 4 && reg <= 11)
+		return (gpointer)ctx->regs [reg - 4];
+	else if (reg == ARMREG_IP)
+		return (gpointer)ctx->regs [8];
+	else if (reg == ARMREG_LR)
+		return (gpointer)ctx->regs [9];
+	else {
+		g_assert_not_reached ();
+		return NULL;
+	}
 }
