@@ -486,7 +486,7 @@ gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only) MONO_INTERNAL;
 
 MonoMarshalSpec *
-mono_metadata_parse_marshal_spec_with_mempool (MonoMemPool *mp, const char *ptr) MONO_INTERNAL;;
+mono_metadata_parse_marshal_spec_with_mempool (MonoMemPool *mp, const char *ptr) MONO_INTERNAL;
 
 guint	       mono_metadata_generic_inst_hash (gconstpointer data) MONO_INTERNAL;
 gboolean       mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer kb) MONO_INTERNAL;
