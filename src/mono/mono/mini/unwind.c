@@ -11,6 +11,7 @@
 #include "unwind.h"
 
 #include <mono/utils/mono-counters.h>
+#include <mono/metadata/threads-types.h>
 
 typedef enum {
 	LOC_SAME,
@@ -29,8 +30,10 @@ typedef struct {
 
 static CRITICAL_SECTION unwind_mutex;
 
-static GPtrArray *cached_info;
-static int cached_info_size;
+static MonoUnwindInfo **cached_info;
+static int cached_info_next, cached_info_size;
+/* Statistics */
+static int unwind_info_size;
 
 #define unwind_lock() EnterCriticalSection (&unwind_mutex)
 #define unwind_unlock() LeaveCriticalSection (&unwind_mutex)
@@ -221,6 +224,7 @@ print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *location
  * Given the state of the current frame as stored in REGS, execute the unwind 
  * operations in unwind_info until the location counter reaches POS. The result is 
  * stored back into REGS. OUT_CFA will receive the value of the CFA.
+ * This function is signal safe.
  */
 void
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
@@ -293,7 +297,7 @@ mono_unwind_init (void)
 {
 	InitializeCriticalSection (&unwind_mutex);
 
-	mono_counters_register ("Unwind info size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &cached_info_size);
+	mono_counters_register ("Unwind info size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &unwind_info_size);
 }
 
 void
@@ -306,13 +310,13 @@ mono_unwind_cleanup (void)
 	if (!cached_info)
 		return;
 
-	for (i = 0; i < cached_info->len; ++i) {
-		MonoUnwindInfo *cached = g_ptr_array_index (cached_info, i);
+	for (i = 0; i < cached_info_next; ++i) {
+		MonoUnwindInfo *cached = cached_info [i];
 
 		g_free (cached);
 	}
 
-	g_ptr_array_free (cached_info, TRUE);
+	g_free (cached_info);
 }
 
 /*
@@ -332,11 +336,14 @@ mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)
 	MonoUnwindInfo *info;
 
 	unwind_lock ();
-	if (cached_info == NULL)
-		cached_info = g_ptr_array_new ();
 
-	for (i = 0; i < cached_info->len; ++i) {
-		MonoUnwindInfo *cached = g_ptr_array_index (cached_info, i);
+	if (cached_info == NULL) {
+		cached_info_size = 16;
+		cached_info = g_new0 (MonoUnwindInfo*, cached_info_size);
+	}
+
+	for (i = 0; i < cached_info_next; ++i) {
+		MonoUnwindInfo *cached = cached_info [i];
 
 		if (cached->len == unwind_info_len && memcmp (cached->info, unwind_info, unwind_info_len) == 0) {
 			unwind_unlock ();
@@ -348,27 +355,85 @@ mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)
 	info->len = unwind_info_len;
 	memcpy (&info->info, unwind_info, unwind_info_len);
 
-	i = cached_info->len;
-	g_ptr_array_add (cached_info, info);
+	i = cached_info_next;
+	
+	if (cached_info_next >= cached_info_size) {
+		MonoUnwindInfo **old_table, **new_table;
 
-	cached_info_size += sizeof (MonoUnwindInfo) + unwind_info_len;
+		/*
+		 * Have to resize the table, while synchronizing with 
+		 * mono_get_cached_unwind_info () using hazard pointers.
+		 */
+
+		old_table = cached_info;
+		new_table = g_new0 (MonoUnwindInfo*, cached_info_size * 2);
+
+		memcpy (new_table, cached_info, cached_info_size * sizeof (MonoUnwindInfo*));
+
+		mono_memory_barrier ();
+
+		cached_info = new_table;
+
+		mono_memory_barrier ();
+
+		mono_thread_hazardous_free_or_queue (old_table, g_free);
+
+		cached_info_size *= 2;
+	}
+
+	cached_info [cached_info_next ++] = info;
+
+	unwind_info_size += sizeof (MonoUnwindInfo) + unwind_info_len;
 
 	unwind_unlock ();
 	return i;
 }
 
+static gpointer
+get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index)
+{
+	gpointer p;
+
+	for (;;) {
+		/* Get the pointer */
+		p = *pp;
+		/* If we don't have hazard pointers just return the
+		   pointer. */
+		if (!hp)
+			return p;
+		/* Make it hazardous */
+		mono_hazard_pointer_set (hp, hazard_index, p);
+		/* Check that it's still the same.  If not, try
+		   again. */
+		if (*pp != p) {
+			mono_hazard_pointer_clear (hp, hazard_index);
+			continue;
+		}
+		break;
+	}
+
+	return p;
+}
+
+/*
+ * This function is signal safe.
+ */
 guint8*
 mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len)
 {
+	MonoUnwindInfo **table;
 	MonoUnwindInfo *info;
+	guint8 *data;
+	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	// FIXME: Get rid of the locking somehow, as this is called a lot during
-	// exception handling
-	unwind_lock ();
-	info = g_ptr_array_index (cached_info, index);
-	unwind_unlock ();
+	table = get_hazardous_pointer ((gpointer volatile*)&cached_info, hp, 0);
+
+	info = table [index];
 
 	*unwind_info_len = info->len;
+	data = info->info;
 
-	return info->info;
+	mono_hazard_pointer_clear (hp, 0);
+
+	return data;
 }
