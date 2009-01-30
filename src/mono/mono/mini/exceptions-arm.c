@@ -249,7 +249,11 @@ mono_arch_get_throw_exception_generic (int size, int by_token, gboolean rethrow,
 	/* caller sp */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, 10 * 4); /* 10 saved regs */
 	/* exc is already in place in r0 */
-	ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR); /* caller ip */
+	if (by_token) {
+		/* The caller ip is already in R1 */
+	} else {
+		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR); /* caller ip */
+	}
 	/* FIXME: pointer to the saved fp regs */
 	/*pos = alloc_size - sizeof (double) * MONO_SAVED_FREGS;
 	ppc_addi (code, ppc_r7, ppc_sp, pos);*/
