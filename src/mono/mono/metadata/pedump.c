@@ -459,6 +459,108 @@ verify_image_file (const char *fname)
 	return count > 0 ? 1 : 0;
 }
 
+static gboolean
+try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
+					const gchar *path3, const gchar *path4, gboolean refonly)
+{
+	gchar *fullpath;
+
+	*assembly = NULL;
+	fullpath = g_build_filename (path1, path2, path3, path4, NULL);
+	if (g_file_test (fullpath, G_FILE_TEST_IS_REGULAR))
+		*assembly = mono_assembly_open_full (fullpath, NULL, refonly);
+
+	g_free (fullpath);
+	return (*assembly != NULL);
+}
+
+static MonoAssembly *
+real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolean refonly)
+{
+	MonoAssembly *result = NULL;
+	gchar **path;
+	gchar *filename;
+	const gchar *local_culture;
+	gint len;
+
+	if (!culture || *culture == '\0') {
+		local_culture = "";
+	} else {
+		local_culture = culture;
+	}
+
+	filename =  g_strconcat (name, ".dll", NULL);
+	len = strlen (filename);
+
+	for (path = search_path; *path; path++) {
+		if (**path == '\0')
+			continue; /* Ignore empty ApplicationBase */
+
+		/* See test cases in bug #58992 and bug #57710 */
+		/* 1st try: [culture]/[name].dll (culture may be empty) */
+		strcpy (filename + len - 4, ".dll");
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly))
+			break;
+
+		/* 2nd try: [culture]/[name].exe (culture may be empty) */
+		strcpy (filename + len - 4, ".exe");
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly))
+			break;
+
+		/* 3rd try: [culture]/[name]/[name].dll (culture may be empty) */
+		strcpy (filename + len - 4, ".dll");
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly))
+			break;
+
+		/* 4th try: [culture]/[name]/[name].exe (culture may be empty) */
+		strcpy (filename + len - 4, ".exe");
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly))
+			break;
+	}
+
+	g_free (filename);
+	return result;
+}
+
+/*
+ * Try to load referenced assemblies from assemblies_path.
+ */
+static MonoAssembly *
+pedump_preload (MonoAssemblyName *aname,
+				 gchar **assemblies_path,
+				 gpointer user_data)
+{
+	MonoAssembly *result = NULL;
+	gboolean refonly = GPOINTER_TO_UINT (user_data);
+
+	if (assemblies_path && assemblies_path [0] != NULL) {
+		result = real_load (assemblies_path, aname->culture, aname->name, refonly);
+	}
+
+	return result;
+}
+
+static GList *loaded_assemblies = NULL;
+
+static void
+pedump_assembly_load_hook (MonoAssembly *assembly, gpointer user_data)
+{
+	loaded_assemblies = g_list_prepend (loaded_assemblies, assembly);
+}
+
+static MonoAssembly *
+pedump_assembly_search_hook (MonoAssemblyName *aname, gpointer user_data)
+{
+        GList *tmp;
+
+       for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
+               MonoAssembly *ass = tmp->data;
+               if (mono_assembly_names_equal (aname, &ass->aname))
+		       return ass;
+       }
+       return NULL;
+}
+
 #define VALID_ONLY_FLAG 0x08000000
 #define VERIFY_CODE_ONLY MONO_VERIFY_ALL + 1 
 #define VERIFY_METADATA_ONLY VERIFY_CODE_ONLY + 1
@@ -548,7 +650,13 @@ main (int argc, char *argv [])
 	if (verify_pe) {
 		MonoAssembly *assembly;
 
+		mono_install_assembly_load_hook (pedump_assembly_load_hook, NULL);
+		mono_install_assembly_search_hook (pedump_assembly_search_hook, NULL);
+
 		mono_init_from_assembly (file, file);
+
+		mono_install_assembly_preload_hook (pedump_preload, GUINT_TO_POINTER (FALSE));
+
 		assembly = mono_assembly_open (file, NULL);
 
 		if (!assembly) {
