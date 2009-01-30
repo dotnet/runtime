@@ -3465,6 +3465,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 			break;
 		case OP_FBGE:
+			/* FIXME does VFP requires both conds?
+			 * FPA requires EQ even thou the docs suggests that just CS is enough
+			 */
+			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_EQ);
 			EMIT_COND_BRANCH_FLAGS (ins, ARMCOND_CS);
 			break;
 		case OP_FBGE_UN:
