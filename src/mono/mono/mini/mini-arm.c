@@ -2359,8 +2359,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint8 *code)
 				// FIXME:
 				NOT_IMPLEMENTED;
 			} else if (ainfo->regtype == RegTypeBase) {
-				// FIXME:
-				NOT_IMPLEMENTED;
+				/* Nothing to do */
 			} else if (ainfo->regtype == RegTypeFP) {
 				g_assert_not_reached ();
 			} else if (ainfo->regtype == RegTypeStructByVal) {
