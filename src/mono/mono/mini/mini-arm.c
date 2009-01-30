@@ -1752,7 +1752,10 @@ loop_start:
 				ins->sreg2 = temp->dreg;
 				ins->opcode = mono_op_imm_to_op (ins->opcode);
 			}
-			break;
+			if (ins->opcode == OP_SBB || ins->opcode == OP_ISBB || ins->opcode == OP_SUBCC)
+				goto loop_start;
+			else
+				break;
 		case OP_MUL_IMM:
 		case OP_IMUL_IMM:
 			if (ins->inst_imm == 1) {
@@ -1775,6 +1778,14 @@ loop_start:
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->opcode = OP_IMUL;
+			break;
+		case OP_SBB:
+		case OP_ISBB:
+		case OP_SUBCC:
+		case OP_ISUBCC:
+			if (ins->next  && (ins->next->opcode == OP_COND_EXC_C || ins->next->opcode == OP_COND_EXC_IC))
+				/* ARM sets the C flag to 1 if there was _no_ overflow */
+				ins->next->opcode = OP_COND_EXC_NC;
 			break;
 		case OP_LOCALLOC_IMM:
 			NEW_INS (cfg, temp, OP_ICONST);
@@ -2774,10 +2785,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IMUL_OVF:
 			/* FIXME: handle ovf/ sreg2 != dreg */
 			ARM_MUL_REG_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* FIXME: MUL doesn't set the C/O flags on ARM */
 			break;
 		case OP_IMUL_OVF_UN:
 			/* FIXME: handle ovf/ sreg2 != dreg */
 			ARM_MUL_REG_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
+			/* FIXME: MUL doesn't set the C/O flags on ARM */
 			break;
 		case OP_ICONST:
 			code = mono_arm_emit_load_imm (code, ins->dreg, ins->inst_c0);
@@ -3092,14 +3105,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (ins->opcode - OP_COND_EXC_IEQ, ins->inst_p1);
 			break;
 		case OP_COND_EXC_C:
-		case OP_COND_EXC_OV:
-		case OP_COND_EXC_NC:
-		case OP_COND_EXC_NO:
 		case OP_COND_EXC_IC:
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_CS, ins->inst_p1);
+			break;
+		case OP_COND_EXC_OV:
 		case OP_COND_EXC_IOV:
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_VS, ins->inst_p1);
+			break;
+		case OP_COND_EXC_NC:
 		case OP_COND_EXC_INC:
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_CC, ins->inst_p1);
+			break;
+		case OP_COND_EXC_NO:
 		case OP_COND_EXC_INO:
-			/* FIXME: */
+			EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_VC, ins->inst_p1);
 			break;
 		case OP_IBEQ:
 		case OP_IBNE_UN:
@@ -3621,6 +3640,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	pos = 0;
 
 	if (!method->save_lmf) {
+		// FIXME: Why save IP ?
 		ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
 		prev_sp_offset = 8; /* ip and lr */
 		for (i = 0; i < 16; ++i) {
@@ -3652,8 +3672,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
 		}
 	}
-	if (cfg->frame_reg != ARMREG_SP)
+	if (cfg->frame_reg != ARMREG_SP) {
 		ARM_MOV_REG_REG (code, cfg->frame_reg, ARMREG_SP);
+	}
 	//g_print ("prev_sp_offset: %d, alloc_size:%d\n", prev_sp_offset, alloc_size);
 	prev_sp_offset += alloc_size;
 
@@ -4375,5 +4396,5 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	return ctx->regs [reg];
+	return (gpointer)ctx->regs [reg];
 }
