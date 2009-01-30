@@ -4266,14 +4266,21 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 {
 	int size, i, extra_space = 0;
 	arminstr_t *code, *start, *vtable_target = NULL;
+	gboolean large_offsets = FALSE;
+	guint32 **constant_pool_starts;
+
 	size = BASE_SIZE;
+	constant_pool_starts = g_new0 (guint32*, count);
 
 	g_assert (!fail_tramp);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {
-			g_assert (arm_is_imm12 (DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot])));
+			if (!arm_is_imm12 (DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]))) {
+				item->chunk_size += 32;
+				large_offsets = TRUE;
+			}
 
 			if (item->check_target_idx) {
 				if (!item->compare_done)
@@ -4292,6 +4299,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		size += item->chunk_size;
 	}
 
+	if (large_offsets)
+		size += 4 * count; /* The ARM_ADD_REG_IMM to pop the stack */
+
 	start = code = mono_code_manager_reserve (domain->code_mp, size);
 
 #if DEBUG_IMT
@@ -4302,7 +4312,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	}
 #endif
 
-	ARM_PUSH2 (code, ARMREG_R0, ARMREG_R1);
+	if (large_offsets)
+		ARM_PUSH4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
+	else
+		ARM_PUSH2 (code, ARMREG_R0, ARMREG_R1);
 	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, -4);
 	vtable_target = code;
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
@@ -4313,7 +4326,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
-		arminstr_t *imt_method = NULL;
+		arminstr_t *imt_method = NULL, *vtable_offset_ins = NULL;
+		gint32 vtable_offset;
+
 		item->code_target = (guint8*)code;
 
 		if (item->is_equals) {
@@ -4325,9 +4340,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				}
 				item->jmp_code = (guint8*)code;
 				ARM_B_COND (code, ARMCOND_NE, 0);
-
-				ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
-				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]));
 			} else {
 				/*Enable the commented code to assert on wrong method*/
 #if ENABLE_WRONG_METHOD_CHECK
@@ -4335,13 +4347,34 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
 				ARM_CMP_REG_REG (code, ARMREG_R0, ARMREG_R1);
 				ARM_B_COND (code, ARMCOND_NE, 1);
-#endif
-				ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
-				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]));
 
-#if ENABLE_WRONG_METHOD_CHECK
 				ARM_DBRK (code);
 #endif
+			}
+
+			vtable_offset = DISTANCE (vtable, &vtable->vtable[item->value.vtable_slot]);
+			if (!arm_is_imm12 (vtable_offset)) {
+				/* 
+				 * We need to branch to a computed address but we don't have
+				 * a free register to store it, since IP must contain the 
+				 * vtable address. So we push the two values to the stack, and
+				 * load them both using LDM.
+				 */
+				/* Compute target address */
+				vtable_offset_ins = code;
+				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
+				ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_IP, ARMREG_R1);
+				/* Save it to the fourth slot */
+				ARM_STR_IMM (code, ARMREG_R1, ARMREG_SP, 3 * sizeof (gpointer));
+				/* Restore registers and branch */
+				ARM_POP4 (code, ARMREG_R0, ARMREG_R1, ARMREG_IP, ARMREG_PC);
+				
+				code = arm_emit_value_and_patch_ldr (code, vtable_offset_ins, vtable_offset);
+			} else {
+				ARM_POP2 (code, ARMREG_R0, ARMREG_R1);
+				if (large_offsets)
+					ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 2 * sizeof (gpointer));
+				ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, vtable_offset);
 			}
 
 			if (imt_method)
@@ -4355,6 +4388,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			}
 
 			/*We reserve the space for bsearch IMT values after the first entry with an absolute jump*/
+			constant_pool_starts [i] = code;
 			if (extra_space) {
 				code += extra_space;
 				extra_space = 0;
@@ -4377,7 +4411,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 		if (i > 0 && item->is_equals) {
 			int j;
-			arminstr_t *space_start = (arminstr_t*)(item->code_target + item->chunk_size);
+			arminstr_t *space_start = constant_pool_starts [i];
 			for (j = i - 1; j >= 0 && !imt_entries [j]->is_equals; --j) {
 				space_start = arm_emit_value_and_patch_ldr (space_start, (arminstr_t*)imt_entries [j]->code_target, (guint32)imt_entries [j]->key);
 			}
@@ -4391,6 +4425,8 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		g_free (buff);
 	}
 #endif
+
+	g_free (constant_pool_starts);
 
 	mono_arch_flush_icache ((guint8*)start, size);
 	mono_stats.imt_thunks_size += code - start;
