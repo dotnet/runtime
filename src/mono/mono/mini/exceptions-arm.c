@@ -398,6 +398,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
 				memcpy (&new_ctx->regs [0], &(*lmf)->iregs [4], sizeof (gulong) * MONO_SAVED_GREGS);
 			}
+			/* This is the sp for the parent frame */
 			new_ctx->esp = (*lmf)->iregs [12];
 			new_ctx->eip = (*lmf)->iregs [13];
 			new_ctx->ebp = new_ctx->esp;
@@ -452,7 +453,8 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		}
 
 		memcpy (&new_ctx->regs [0], &(*lmf)->iregs [4], sizeof (gulong) * MONO_SAVED_GREGS);
-		new_ctx->esp = (*lmf)->iregs [12];
+		/* This is the sp for the current frame */
+		new_ctx->esp = (*lmf)->iregs [ARMREG_FP];
 		new_ctx->eip = (*lmf)->iregs [13];
 		new_ctx->ebp = new_ctx->esp;
 
