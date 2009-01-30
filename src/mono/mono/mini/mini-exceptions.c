@@ -1393,7 +1393,7 @@ static gboolean handling_sigsegv = FALSE;
 void
 mono_handle_native_sigsegv (int signal, void *ctx)
 {
-#ifndef PLATFORM_WIN32
+#ifdef MONO_ARCH_USE_SIGACTION
 	struct sigaction sa;
 #endif
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
@@ -1512,7 +1512,7 @@ mono_handle_native_sigsegv (int signal, void *ctx)
  }
 #endif
 
-#ifndef PLATFORM_WIN32
+#ifdef MONO_ARCH_USE_SIGACTION
 
 	/* Remove our SIGABRT handler */
 	sa.sa_handler = SIG_DFL;

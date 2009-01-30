@@ -6,6 +6,7 @@
  *
  * (C) 2003 Ximian, Inc.
  */
+#include <config.h>
 #include <string.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mempool.h>
@@ -14,6 +15,9 @@
 #ifndef DISABLE_JIT
 
 #include "mini.h"
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 
 #define USE_ORIGINAL_VARS
 #define CREATE_PRUNED_SSA
