@@ -7,7 +7,7 @@
  *
  * (C) 2002 Ximian, Inc.
  */
-
+#include <config.h>
 #include <math.h>
 #include <limits.h>
 #ifdef HAVE_ALLOCA_H
