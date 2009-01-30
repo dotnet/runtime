@@ -18,10 +18,12 @@
 #include <execinfo.h>
 #endif
 
-#ifndef PLATFORM_WIN32
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
-#include <unistd.h>
 #endif
 
 #ifdef HAVE_UNISTD_H

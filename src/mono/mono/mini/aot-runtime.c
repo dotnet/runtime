@@ -15,9 +15,11 @@
 #endif
 #include <fcntl.h>
 #include <string.h>
-#ifndef PLATFORM_WIN32
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
-#else
+#endif
+
+#if PLATFORM_WIN32
 #include <winsock2.h>
 #include <windows.h>
 #endif
