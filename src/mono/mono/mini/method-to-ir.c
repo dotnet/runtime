@@ -4943,6 +4943,31 @@ mono_decompose_soft_float (MonoCompile *cfg)
 					restart = TRUE;
 					break;
 				}
+				case OP_CKFINITE: {
+					MonoInst *iargs [2];
+					MonoInst *call, *cmp;
+
+					/* Convert to icall+icompare+cond_exc+move */
+
+					/* Create dummy MonoInst's for the arguments */
+					MONO_INST_NEW (cfg, iargs [0], OP_ARG);
+					iargs [0]->dreg = ins->sreg1;
+
+					call = mono_emit_jit_icall (cfg, mono_isfinite, iargs);
+
+					MONO_INST_NEW (cfg, cmp, OP_ICOMPARE_IMM);
+					cmp->sreg1 = call->dreg;
+					cmp->inst_imm = 1;
+					MONO_ADD_INS (cfg->cbb, cmp);
+
+					MONO_EMIT_NEW_COND_EXC (cfg, INE_UN, "ArithmeticException");
+
+					/* Do the assignment if the value is finite */
+					MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, ins->dreg, ins->sreg1);
+
+					restart = TRUE;
+					break;
+				}
 				default:
 					if (spec [MONO_INST_SRC1] == 'f' || spec [MONO_INST_SRC2] == 'f' || spec [MONO_INST_DEST] == 'f') {
 						mono_print_ins (ins);

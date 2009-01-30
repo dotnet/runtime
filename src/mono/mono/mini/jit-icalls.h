@@ -141,6 +141,8 @@ gboolean mono_fclt (double a, double b) MONO_INTERNAL;
 
 gboolean mono_fclt_un (double a, double b) MONO_INTERNAL;
 
+gboolean mono_isfinite (double a) MONO_INTERNAL;
+
 double   mono_fload_r4 (float *ptr) MONO_INTERNAL;
 
 void     mono_fstore_r4 (double val, float *ptr) MONO_INTERNAL;

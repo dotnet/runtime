@@ -600,6 +600,17 @@ mono_fclt_un (double a, double b)
 	return isunordered (a, b) || a < b;
 }
 
+gboolean
+mono_isfinite (double a)
+{
+#ifdef HAVE_ISFINITE
+	return isfinite (a);
+#else
+	g_assert_not_reached ();
+	return TRUE;
+#endif
+}
+
 double
 mono_fload_r4 (float *ptr)
 {

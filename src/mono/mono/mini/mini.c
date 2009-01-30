@@ -4758,6 +4758,7 @@ mini_init (const char *filename, const char *runtime_version)
 	register_icall (mono_fload_r4, "mono_fload_r4", "double ptr", FALSE);
 	register_icall (mono_fstore_r4, "mono_fstore_r4", "void double ptr", FALSE);
 	register_icall (mono_fload_r4_arg, "mono_fload_r4_arg", "uint32 double", FALSE);
+	register_icall (mono_isfinite, "mono_isfinite", "uint32 double", FALSE);
 #endif
 
 #if SIZEOF_REGISTER == 4
