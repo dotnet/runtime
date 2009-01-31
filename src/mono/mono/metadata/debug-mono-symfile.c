@@ -406,3 +406,51 @@ mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 	mono_debugger_unlock ();
 	return minfo;
 }
+
+/*
+ * mono_debug_symfile_lookup_locals:
+ *
+ *   Return information about the local variables of MINFO from the symbol file.
+ * NAMES and INDEXES are set to g_malloc-ed arrays containing the local names and
+ * their IL indexes.
+ * Returns: the number of elements placed into the arrays, or -1 if there is no
+ * local variable info.
+ */
+int
+mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo, char ***names, int **indexes)
+{
+	MonoSymbolFile *symfile = minfo->handle->symfile;
+	const guint8 *p;
+	int i, len, compile_unit_index, locals_offset, num_locals, index, block_index;
+
+	*names = NULL;
+	*indexes = NULL;
+
+	if (!symfile)
+		return -1;
+
+	p = symfile->raw_contents + minfo->data_offset;
+
+	compile_unit_index = read_leb128 (p, &p);
+	locals_offset = read_leb128 (p, &p);
+
+	p = symfile->raw_contents + locals_offset;
+	num_locals = read_leb128 (p, &p);
+
+	*names = g_new0 (char*, num_locals);
+	*indexes = g_new0 (int, num_locals);
+
+	for (i = 0; i < num_locals; ++i) {
+		index = read_leb128 (p, &p);
+		(*indexes) [i] = index;
+		len = read_leb128 (p, &p);
+		(*names) [i] = g_malloc (len + 1);
+		memcpy ((*names) [i], p, len);
+		(*names) [i][len] = '\0';
+		p += len;
+		block_index = read_leb128 (p, &p);
+	}
+
+	return num_locals;
+}
+

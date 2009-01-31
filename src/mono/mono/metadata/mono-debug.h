@@ -171,6 +171,9 @@ mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit);
 void
 mono_debug_add_delegate_trampoline (gpointer code, int size);
 
+int
+mono_debug_lookup_locals (MonoMethod *method, char ***names, int **indexes);
+
 /*
  * Line number support.
  */
