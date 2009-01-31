@@ -221,6 +221,10 @@ typedef struct {
 
 #endif
 
+#ifdef __OpenBSD__
+#undef MONO_ARCH_USE_SIGACTION
+#endif
+
 #endif /* PLATFORM_WIN32 */
 
 #if defined (__NetBSD__)
@@ -245,7 +249,7 @@ typedef struct {
 
 #define MONO_ARCH_NOMAP32BIT
 
-#elif defined (__FreeBSD__)
+#elif defined (__FreeBSD__) || defined (__OpenBSD__)
 
 #define REG_RAX 7
 #define REG_RCX 4
