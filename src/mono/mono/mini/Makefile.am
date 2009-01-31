@@ -194,20 +194,20 @@ s390x_sources = \
 	tramp-s390x.c
 
 ia64_sources = \
-	mini-ia64.c			\
-	mini-ia64.h			\
+	mini-ia64.c		\
+	mini-ia64.h		\
 	exceptions-ia64.c	\
 	tramp-ia64.c
 
 alpha_sources = \
-	mini-alpha.c	\
-	mini-alpha.h	\
+	mini-alpha.c		\
+	mini-alpha.h		\
 	exceptions-alpha.c	\
 	tramp-alpha.c
 
 hppa_sources = \
-	mini-hppa.c	\
-	mini-hppa.h	\
+	mini-hppa.c		\
+	mini-hppa.h		\
 	exceptions-hppa.c	\
 	tramp-hppa.c
 
@@ -221,68 +221,68 @@ posix_sources = \
 	mini-posix.c
 
 common_sources = \
-	mini.c		\
-	ir-emit.h	\
-	method-to-ir.c	\
-	decompose.c	\
-	mini.h		\
-	version.h	\
+	mini.c			\
+	ir-emit.h		\
+	method-to-ir.c		\
+	decompose.c		\
+	mini.h			\
+	version.h		\
 	optflags-def.h		\
-	jit-icalls.h \
-	jit-icalls.c \
-	trace.c		\
-	trace.h		\
-	patch-info.h	\
-	mini-ops.h	\
-	mini-arch.h	\
-	dominators.c	\
-	cfold.c		\
-	regalloc.c	\
-	regalloc.h	\
-	helpers.c	\
-	liveness.c	\
-	ssa.c		\
-	abcremoval.c	\
-	abcremoval.h	\
-	ssapre.c	\
-	ssapre.h	\
+	jit-icalls.h 		\
+	jit-icalls.c 		\
+	trace.c			\
+	trace.h			\
+	patch-info.h		\
+	mini-ops.h		\
+	mini-arch.h		\
+	dominators.c		\
+	cfold.c			\
+	regalloc.c		\
+	regalloc.h		\
+	helpers.c		\
+	liveness.c		\
+	ssa.c			\
+	abcremoval.c		\
+	abcremoval.h		\
+	ssapre.c		\
+	ssapre.h		\
 	local-propagation.c	\
-	driver.c	\
-	debug-mini.c	\
-	debug-mini.h	\
-	linear-scan.c	\
+	driver.c		\
+	debug-mini.c		\
+	debug-mini.h		\
+	linear-scan.c		\
 	aot-compiler.c		\
 	aot-runtime.c		\
-	graph.c		\
+	graph.c			\
 	mini-codegen.c		\
 	mini-exceptions.c	\
-	mini-trampolines.c  \
-	declsec.c	\
-	declsec.h	\
-	wapihandles.c	\
-	branch-opts.c	\
+	mini-trampolines.c  	\
+	declsec.c		\
+	declsec.h		\
+	wapihandles.c		\
+	branch-opts.c		\
 	mini-generic-sharing.c	\
-	regalloc2.c	\
-	simd-methods.h	\
+	regalloc2.c		\
+	simd-methods.h		\
 	simd-intrinsics.c	\
-	unwind.h	\
+	unwind.h		\
 	unwind.c
 
-test_sources = 		\
-	basic-calls.cs 	\
-	basic-long.cs 	\
+test_sources = 			\
+	basic-calls.cs 		\
+	basic-long.cs 		\
 	bench.cs 		\
 	objects.cs 		\
 	arrays.cs		\
-	basic-float.cs	\
-	basic-math.cs	\
+	basic-float.cs		\
+	basic-math.cs		\
 	basic.cs		\
-	exceptions.cs	\
+	exceptions.cs		\
 	devirtualization.cs	\
 	iltests.il.in		\
 	test.cs			\
-	generics.cs	\
-	generics-variant-types.il	\
+	generics.cs		\
+	generics-variant-types.il\
 	basic-simd.cs
 
 if MONO_DEBUGGER_SUPPORTED
