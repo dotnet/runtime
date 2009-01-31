@@ -23,6 +23,18 @@ using System.Reflection;
  * the IL code looks.
  */
 
+struct Alpha {
+	public long a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v;
+}
+
+struct Beta {
+	public Alpha a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v;
+}
+
+struct Gamma {
+	public Beta a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v;
+}
+
 class Tests {
 
 	static int Main () {
@@ -288,5 +300,47 @@ class Tests {
 		return 0;
 	}
 
+	static void InitMe (out Gamma noMercyWithTheStack) {
+		noMercyWithTheStack = new Gamma ();
+	}
+
+	static int FunNoInline () {
+		int x = 99;
+		if (x > 344 && x < 22)
+			throw new Exception ("333");
+		return x;
+	}
+
+	static float DoNothingButDontInline (float a, int b) {
+		if (b > 0)
+			return a;
+		else if (b < 0 && b > 10)
+			throw new Exception ("444");
+		return a;
+	}
+
+	/*
+	 * The local register allocator emits loadr8_membase and storer8_membase
+	 * to do spilling. This code is generated after mono_arch_lowering_pass so
+	 * mono_arch_output_basic_block must know how to deal with big offsets.
+	 * This only happens because the call in middle forces the temp for "(float)obj"
+	 * to be spilled.
+	*/
+	static int test_0_float_load_and_store_with_big_offset ()
+	{
+		object obj = 1.0f;
+		Gamma noMercyWithTheStack;
+		float res;
+
+		InitMe (out noMercyWithTheStack);
+
+		res = DoNothingButDontInline ((float)obj, FunNoInline ());
+
+		if (!(res == 1.0f)) {
+			Console.WriteLine ("invalid number {0}", res);
+			return 1;
+		}
+		return 0;
+	}
 }
 
