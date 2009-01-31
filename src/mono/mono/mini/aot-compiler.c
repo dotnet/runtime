@@ -63,6 +63,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
@@ -5845,7 +5846,9 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 	MonoMethodSignature *sig;
 	MonoMethodHeader *header;
 	char **names, **tdies, **local_tdies;
-	int i;
+	char **local_names;
+	int *local_indexes;
+	int i, num_locals;
 
 	emit_section_change (acfg, ".debug_info", 0);
 
@@ -5924,15 +5927,24 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 	g_free (names);
 
 	/* Locals */
+	num_locals = mono_debug_lookup_locals (method, &local_names, &local_indexes);
+
 	for (i = 0; i < header->num_locals; ++i) {
 		MonoInst *ins = locals [i];
 		char name_buf [128];
+		int j;
 
 		emit_uleb128 (acfg, AB_VARIABLE);
 		/* name */
-		/* Currently there is no way to obtain the local name from the .mdb files */
-		sprintf (name_buf, "V_%d", i);
-		emit_string (acfg, name_buf);
+		for (j = 0; j < num_locals; ++j)
+			if (local_indexes [j] == i)
+				break;
+		if (j < num_locals) {
+			emit_string (acfg, local_names [j]);
+		} else {
+			sprintf (name_buf, "V_%d", i);
+			emit_string (acfg, name_buf);
+		}
 		/* type */
 		if (!ins || ins->flags & MONO_INST_IS_DEAD)
 			emit_var_type (acfg, &mono_defaults.int32_class->byval_arg);
@@ -5940,6 +5952,9 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 			emit_var_type (acfg, header->locals [i]);
 		emit_var_location (acfg, ins);
 	}
+
+	g_free (local_names);
+	g_free (local_indexes);
 
 	/* Subprogram end */
 	emit_uleb128 (acfg, 0x0);

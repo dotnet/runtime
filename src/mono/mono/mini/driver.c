@@ -1485,6 +1485,9 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
+	if (getenv ("MONO_XDEBUG"))
+		enable_debugging = TRUE;
+
 	if ((action == DO_EXEC) && mono_debug_using_mono_debugger ())
 		action = DO_DEBUGGER;
 
