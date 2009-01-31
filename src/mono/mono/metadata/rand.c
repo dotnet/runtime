@@ -18,6 +18,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/rand.h>

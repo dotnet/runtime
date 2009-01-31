@@ -11,8 +11,8 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
-#ifndef PLATFORM_WIN32
-#include <sys/ucontext.h>
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
 #endif
 
 #include <mono/arch/amd64/amd64-codegen.h>
