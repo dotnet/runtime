@@ -6317,7 +6317,7 @@ mono_xdebug_init (void)
  * and loaded into gdb to provide debugging info for JITted code.
  */
 void
-mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info)
+mono_save_xdebug_info (MonoCompile *cfg)
 {
 	MonoAotCompile *acfg;
 
@@ -6327,7 +6327,7 @@ mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, Mono
 	acfg = xdebug_acfg;
 
 	mono_acfg_lock (acfg);
-	emit_method_dwarf_info (acfg, method, NULL, NULL, code, code_size, args, locals, unwind_info);
+	emit_method_dwarf_info (acfg, cfg->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops);
 	fflush (acfg->fp);
 	mono_acfg_unlock (acfg);
 }
@@ -6369,7 +6369,7 @@ mono_xdebug_init (void)
 }
 
 void
-mono_save_xdebug_info (MonoMethod *method, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info)
+mono_save_xdebug_info (MonoCompile *cfg)
 {
 }
 
