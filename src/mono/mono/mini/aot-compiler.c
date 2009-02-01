@@ -64,6 +64,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/debug-mono-symfile.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
@@ -218,7 +219,7 @@ typedef struct MonoAotCompile {
 	int col_count; /* bytes emitted per .byte line */
 	/* xdebug */
 	GHashTable *class_to_die;
-	int fde_index, tdie_index;
+	int fde_index, tdie_index, line_number_file_index;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -566,6 +567,7 @@ enum {
 	SECT_DEBUG_FRAME,
 	SECT_DEBUG_INFO,
 	SECT_DEBUG_ABBREV,
+	SECT_DEBUG_LINE,
 	SECT_SHSTRTAB,
 	SECT_SYMTAB,
 	SECT_STRTAB,
@@ -621,6 +623,7 @@ static SectInfo section_info [] = {
 	{".debug_frame", SHT_PROGBITS, 0, 0, 8},
 	{".debug_info", SHT_PROGBITS, 0, 0, 1},
 	{".debug_abbrev", SHT_PROGBITS, 0, 0, 1},
+	{".debug_line", SHT_PROGBITS, 0, 0, 1},
 	{".shstrtab", SHT_STRTAB, 0, 0, 1},
 	{".symtab", SHT_SYMTAB, sizeof (ElfSymbol), 0, SIZEOF_VOID_P},
 	{".strtab", SHT_STRTAB, 0, 0, 1}
@@ -1287,6 +1290,14 @@ bin_writer_emit_writeout (MonoAotCompile *acfg)
  	secth [SECT_DEBUG_ABBREV].sh_size = size;
  	file_offset += size;
 
+ 	secth [SECT_DEBUG_LINE].sh_offset = file_offset;
+ 	if (sections [SECT_DEBUG_LINE])
+ 		size = sections [SECT_DEBUG_LINE]->cur_offset;
+ 	else
+ 		size = 0;
+ 	secth [SECT_DEBUG_LINE].sh_size = size;
+ 	file_offset += size;
+
 	file_offset = ALIGN_TO (file_offset, secth [SECT_SHSTRTAB].sh_addralign);
 	secth [SECT_SHSTRTAB].sh_offset = file_offset;
 	size = sh_str_table.data->len;
@@ -1458,6 +1469,9 @@ bin_writer_emit_writeout (MonoAotCompile *acfg)
 	fseek (file, secth [SECT_DEBUG_ABBREV].sh_offset, SEEK_SET);
 	if (sections [SECT_DEBUG_ABBREV])
 		fwrite (sections [SECT_DEBUG_ABBREV]->data, sections [SECT_DEBUG_ABBREV]->cur_offset, 1, file);
+	fseek (file, secth [SECT_DEBUG_LINE].sh_offset, SEEK_SET);
+	if (sections [SECT_DEBUG_LINE])
+		fwrite (sections [SECT_DEBUG_LINE]->data, sections [SECT_DEBUG_LINE]->cur_offset, 1, file);
 	fseek (file, secth [SECT_SHSTRTAB].sh_offset, SEEK_SET);
 	fwrite (sh_str_table.data->str, sh_str_table.data->len, 1, file);
 	fseek (file, secth [SECT_SYMTAB].sh_offset, SEEK_SET);
@@ -5285,7 +5299,7 @@ emit_sleb128 (MonoAotCompile *acfg, gint64 value)
 		 */
 		if (negative)
 			/* sign extend */
-			value |= - (1 <<(size - 7));
+			value |= - ((gint64)1 <<(size - 7));
 		/* sign bit of byte is second high order bit (0x40) */
 		if ((value == 0 && !(byte & 0x40)) ||
 			(value == -1 && (byte & 0x40)))
@@ -5480,6 +5494,7 @@ static int compile_unit_attr [] = {
 	DW_AT_language     ,DW_FORM_data1,
     DW_AT_low_pc       ,DW_FORM_addr,
     DW_AT_high_pc      ,DW_FORM_addr,
+	DW_AT_stmt_list    ,DW_FORM_data4
 };
 
 static int subprogram_attr [] = {
@@ -5562,6 +5577,25 @@ static DwarfBasicType basic_types [] = {
 	{ ".LDIE_SZARRAY", "object", MONO_TYPE_SZARRAY, sizeof (gpointer), DW_ATE_address },
 };
 
+/* Constants for encoding line number special opcodes*/
+#define OPCODE_BASE 13
+#define LINE_BASE -5
+#define LINE_RANGE 14
+
+static int
+emit_line_number_file_name (MonoAotCompile *acfg, const char *name, int dir_index, 
+							gint64 last_mod_time, gint64 file_size)
+{
+	int index = acfg->line_number_file_index ++;
+
+	emit_string (acfg, name);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 0);
+
+	return index + 1;
+}
+
 static void
 emit_base_dwarf_info (MonoAotCompile *acfg)
 {
@@ -5618,6 +5652,8 @@ emit_base_dwarf_info (MonoAotCompile *acfg)
 	emit_byte (acfg, DW_LANG_C);
 	emit_pointer_value (acfg, 0);
 	emit_pointer_value (acfg, 0);
+	/* offset into .debug_line section */
+	emit_symbol_diff (acfg, ".Ldebug_line_start", ".Ldebug_line_section_start", 0);
 
 	/* Base types */
 	for (i = 0; i < G_N_ELEMENTS (basic_types); ++i) {
@@ -5627,6 +5663,60 @@ emit_base_dwarf_info (MonoAotCompile *acfg)
 		emit_byte (acfg, basic_types [i].encoding);
 		emit_string (acfg, basic_types [i].name);
 	}
+
+	/* Line number info header */
+	/* 
+	 * GAS seems to emit its own data to the end of the first subsection, so we use
+	 * subsections 1, 2 etc:
+	 * 1 - contains the header
+	 * 2 - contains the file names
+	 * 3 - contains the end of the header + the data
+	 * 4 - the end symbol
+	 */
+	emit_section_change (acfg, ".debug_line", 0);
+	emit_label (acfg, ".Ldebug_line_section_start");
+	emit_section_change (acfg, ".debug_line", 1);
+	emit_label (acfg, ".Ldebug_line_start");
+	emit_symbol_diff (acfg, ".Ldebug_line_end", ".", -4); /* length */
+	emit_int16 (acfg, 0x2); /* version */
+	emit_symbol_diff (acfg, ".Ldebug_line_header_end", ".", -4); /* header_length */
+	emit_byte (acfg, 1); /* minimum_instruction_length */
+	emit_byte (acfg, 1); /* default_is_stmt */
+	emit_byte (acfg, LINE_BASE); /* line_base */
+	emit_byte (acfg, LINE_RANGE); /* line_range */
+	emit_byte (acfg, OPCODE_BASE); /* opcode_base */
+	emit_byte (acfg, 0); /* standard_opcode_lengths */
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 0); /* include_directories */
+
+	/* Emit this into a separate subsection so it can be appended to */
+	emit_section_change (acfg, ".debug_line", 2);
+	emit_line_number_file_name (acfg, "<IL>", 0, 0, 0);
+
+	/* End of file_table */
+	emit_section_change (acfg, ".debug_line", 3);
+	emit_byte (acfg, 0);
+
+	emit_label (acfg, ".Ldebug_line_header_end");
+
+	/* Emit this into a separate subsection so it gets placed at the end */	
+	emit_section_change (acfg, ".debug_line", 4);
+
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, DW_LNE_end_sequence);
+
+	emit_label (acfg, ".Ldebug_line_end");
 
 	emit_cie (acfg);
 }
@@ -5840,7 +5930,7 @@ emit_var_location (MonoAotCompile *acfg, MonoInst *ins)
 }
 
 static void
-emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info)
+emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info)
 {
 	char *name;
 	MonoMethodSignature *sig;
@@ -5964,6 +6054,96 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 	/* Emit unwind info */
 	emit_fde (acfg, acfg->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, TRUE);
 	acfg->fde_index ++;
+
+	/* Emit line number info */
+	if (code && debug_info) {
+		guint32 prev_line = 0;
+		guint32 prev_native_offset = 0;
+		int file_index;
+		gboolean first = TRUE;
+		MonoDebugSourceLocation *loc;
+		char *prev_file_name = NULL;
+
+		// FIXME: Generate optimized bytecode
+
+		prev_line = 1;
+
+		for (i = 0; i < code_size; ++i) {
+			loc = mono_debug_lookup_source_location (method, i, mono_domain_get ());
+
+			if (loc) {
+				if (first) {					
+					emit_section_change (acfg, ".debug_line", 3);
+
+					emit_byte (acfg, 0);
+					emit_byte (acfg, sizeof (gpointer) + 1);
+					emit_byte (acfg, DW_LNE_set_address);
+					emit_pointer_value (acfg, code);
+
+					first = FALSE;
+				}
+
+				if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
+					/* Add an entry to the file table */
+					/* FIXME: Avoid duplicates */
+					emit_section_change (acfg, ".debug_line", 2);
+					file_index = emit_line_number_file_name (acfg, loc->source_file, 0, 0, 0);
+					emit_section_change (acfg, ".debug_line", 3);
+					g_free (prev_file_name);
+					prev_file_name = g_strdup (loc->source_file);
+
+					emit_byte (acfg, DW_LNS_set_file);
+					emit_uleb128 (acfg, file_index);
+					emit_byte (acfg, DW_LNS_copy);
+				}
+
+				if (loc->row != prev_line) {
+					int line_diff = (gint32)loc->row - (gint32)prev_line;
+					int addr_diff = i - prev_native_offset;
+					gint64 opcode;
+
+					//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
+
+					opcode = 0;
+					/* Use a special opcode if possible */
+					if (line_diff - LINE_BASE < LINE_RANGE) {
+						opcode = (line_diff - LINE_BASE) + (LINE_RANGE * addr_diff) + OPCODE_BASE;
+						if (opcode > 255)
+							opcode = 0;
+					}
+
+					if (opcode != 0) {
+						emit_byte (acfg, opcode);
+					} else {
+						emit_byte (acfg, DW_LNS_advance_line);
+						emit_sleb128 (acfg, (gint32)loc->row - (gint32)prev_line);
+						emit_byte (acfg, DW_LNS_advance_pc);
+						emit_sleb128 (acfg, i - prev_native_offset);
+						emit_byte (acfg, DW_LNS_copy);
+					}
+
+					prev_line = loc->row;
+					prev_native_offset = i;
+				}
+
+				g_free (loc);
+			}
+		}
+
+		g_free (prev_file_name);
+
+		if (!first) {
+			emit_byte (acfg, DW_LNS_advance_pc);
+			emit_sleb128 (acfg, code_size - prev_native_offset);
+			emit_byte (acfg, DW_LNS_copy);
+
+			emit_byte (acfg, 0);
+			emit_byte (acfg, 1);
+			emit_byte (acfg, DW_LNE_end_sequence);
+		}
+	}
+
+	emit_line (acfg);
 }
 
 static void
@@ -6008,7 +6188,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 		sprintf (symbol, ".Lm_%x", i);
 		sprintf (symbol2, ".Lme_%x", i);
 
-		emit_method_dwarf_info (acfg, cfg->method, symbol, symbol2, NULL, 0, cfg->args, cfg->locals, cfg->unwind_ops);
+		emit_method_dwarf_info (acfg, cfg->method, symbol, symbol2, NULL, 0, cfg->args, cfg->locals, cfg->unwind_ops, NULL);
 	}
 #endif /* ELF_WRITER */
 }
@@ -6327,7 +6507,7 @@ mono_save_xdebug_info (MonoCompile *cfg)
 	acfg = xdebug_acfg;
 
 	mono_acfg_lock (acfg);
-	emit_method_dwarf_info (acfg, cfg->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops);
+	emit_method_dwarf_info (acfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
 	fflush (acfg->fp);
 	mono_acfg_unlock (acfg);
 }
