@@ -219,7 +219,8 @@ typedef struct MonoAotCompile {
 	int col_count; /* bytes emitted per .byte line */
 	/* xdebug */
 	GHashTable *class_to_die;
-	int fde_index, tdie_index, line_number_file_index;
+	int fde_index, tdie_index, line_number_file_index, line_number_dir_index;
+	GHashTable *file_to_index, *dir_to_index;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -5582,18 +5583,69 @@ static DwarfBasicType basic_types [] = {
 #define LINE_BASE -5
 #define LINE_RANGE 14
 
+/* Subsections of the .debug_line section */
+#define LINE_SUBSECTION_HEADER 1
+#define LINE_SUBSECTION_INCLUDES 2
+#define LINE_SUBSECTION_FILES 3
+#define LINE_SUBSECTION_DATA 4
+#define LINE_SUBSECTION_END 5
+
 static int
-emit_line_number_file_name (MonoAotCompile *acfg, const char *name, int dir_index, 
+emit_line_number_file_name (MonoAotCompile *acfg, const char *name,
 							gint64 last_mod_time, gint64 file_size)
 {
-	int index = acfg->line_number_file_index ++;
+	int index;
+	int dir_index;
+	char *basename = NULL;
 
-	emit_string (acfg, name);
-	emit_byte (acfg, 0);
+	if (!acfg->file_to_index)
+		acfg->file_to_index = g_hash_table_new (g_str_hash, g_str_equal);
+
+	index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->file_to_index, name));
+	if (index > 0)
+		return index;
+
+	if (g_path_is_absolute (name)) {
+		char *dir = g_path_get_dirname (name);
+
+		if (!acfg->dir_to_index)
+			acfg->dir_to_index = g_hash_table_new (g_str_hash, g_str_equal);
+
+		dir_index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->dir_to_index, dir));
+		if (dir_index == 0) {
+			emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_INCLUDES);
+			emit_string (acfg, dir);
+
+			dir_index = ++ acfg->line_number_dir_index;
+			g_hash_table_insert (acfg->dir_to_index, g_strdup (dir), GUINT_TO_POINTER (dir_index));
+		}
+
+		g_free (dir);
+
+		basename = g_path_get_basename (name);
+	} else {
+		dir_index = 0;
+	}
+
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_FILES);
+
+	if (basename)
+		emit_string (acfg, basename);
+	else
+		emit_string (acfg, name);
+	emit_uleb128 (acfg, dir_index);
 	emit_byte (acfg, 0);
 	emit_byte (acfg, 0);
 
-	return index + 1;
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
+
+	if (basename)
+		g_free (basename);
+
+	index = ++ acfg->line_number_file_index;
+	g_hash_table_insert (acfg->file_to_index, g_strdup (name), GUINT_TO_POINTER (index));
+
+	return index;
 }
 
 static void
@@ -5675,7 +5727,7 @@ emit_base_dwarf_info (MonoAotCompile *acfg)
 	 */
 	emit_section_change (acfg, ".debug_line", 0);
 	emit_label (acfg, ".Ldebug_line_section_start");
-	emit_section_change (acfg, ".debug_line", 1);
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_HEADER);
 	emit_label (acfg, ".Ldebug_line_start");
 	emit_symbol_diff (acfg, ".Ldebug_line_end", ".", -4); /* length */
 	emit_int16 (acfg, 0x2); /* version */
@@ -5697,20 +5749,25 @@ emit_base_dwarf_info (MonoAotCompile *acfg)
 	emit_byte (acfg, 0);
 	emit_byte (acfg, 0);
 	emit_byte (acfg, 1);
-	emit_byte (acfg, 0); /* include_directories */
 
-	/* Emit this into a separate subsection so it can be appended to */
-	emit_section_change (acfg, ".debug_line", 2);
-	emit_line_number_file_name (acfg, "<IL>", 0, 0, 0);
+	/* Includes */
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_INCLUDES);
 
-	/* End of file_table */
-	emit_section_change (acfg, ".debug_line", 3);
+	/* End of Includes */
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_FILES);
+	emit_byte (acfg, 0);
+
+	/* Files */
+	emit_line_number_file_name (acfg, "<IL>", 0, 0);
+
+	/* End of Files */
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
 	emit_byte (acfg, 0);
 
 	emit_label (acfg, ".Ldebug_line_header_end");
 
 	/* Emit this into a separate subsection so it gets placed at the end */	
-	emit_section_change (acfg, ".debug_line", 4);
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_END);
 
 	emit_byte (acfg, 0);
 	emit_byte (acfg, 1);
@@ -6064,31 +6121,36 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 		MonoDebugSourceLocation *loc;
 		char *prev_file_name = NULL;
 
-		// FIXME: Generate optimized bytecode
-
 		prev_line = 1;
 
 		for (i = 0; i < code_size; ++i) {
 			loc = mono_debug_lookup_source_location (method, i, mono_domain_get ());
 
 			if (loc) {
+				int line_diff = (gint32)loc->row - (gint32)prev_line;
+				int addr_diff = i - prev_native_offset;
+
 				if (first) {					
-					emit_section_change (acfg, ".debug_line", 3);
+					emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
 
 					emit_byte (acfg, 0);
 					emit_byte (acfg, sizeof (gpointer) + 1);
 					emit_byte (acfg, DW_LNE_set_address);
 					emit_pointer_value (acfg, code);
 
-					first = FALSE;
+					/* 
+					 * The prolog+initlocals region does not have a line number, this
+					 * makes them belong to the first line of the method.
+					 */
+					emit_byte (acfg, DW_LNS_advance_line);
+					emit_sleb128 (acfg, (gint32)loc->row - (gint32)prev_line);
+					prev_line = loc->row;
 				}
 
 				if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
 					/* Add an entry to the file table */
 					/* FIXME: Avoid duplicates */
-					emit_section_change (acfg, ".debug_line", 2);
-					file_index = emit_line_number_file_name (acfg, loc->source_file, 0, 0, 0);
-					emit_section_change (acfg, ".debug_line", 3);
+					file_index = emit_line_number_file_name (acfg, loc->source_file, 0, 0);
 					g_free (prev_file_name);
 					prev_file_name = g_strdup (loc->source_file);
 
@@ -6098,8 +6160,6 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 				}
 
 				if (loc->row != prev_line) {
-					int line_diff = (gint32)loc->row - (gint32)prev_line;
-					int addr_diff = i - prev_native_offset;
 					gint64 opcode;
 
 					//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
@@ -6126,6 +6186,7 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 					prev_native_offset = i;
 				}
 
+				first = FALSE;
 				g_free (loc);
 			}
 		}
