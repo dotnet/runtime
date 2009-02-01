@@ -5988,17 +5988,102 @@ emit_var_location (MonoAotCompile *acfg, MonoInst *ins)
 	}
 }
 
+/* 
+ * MonoDisHelper->tokener doesn't take an IP argument, and we can't add one since 
+ * it is a public header.
+ */
+static const guint8 *token_handler_ip;
+
 static char*
 token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 {
+	char *res, *desc;
+
 	if (method->wrapper_type) {
 		gpointer data = mono_method_get_wrapper_data (method, token);
 
-		/* Wrapper data does not have a type, so we can't print out more info */
-		return g_strdup_printf ("[%p]", data);
+		switch (*token_handler_ip) {
+		case CEE_ISINST:
+		case CEE_LDELEMA:
+			res = g_strdup_printf ("<%s>", ((MonoClass*)data)->name);
+			break;
+		case CEE_NEWOBJ:
+		case CEE_CALL:
+			desc = mono_method_full_name (data, TRUE);
+			res = g_strdup_printf ("<%s>", desc);
+			g_free (desc);
+			break;
+		case CEE_CALLI:
+			desc = mono_signature_get_desc (data, FALSE);
+			res = g_strdup_printf ("<%s>", desc);
+			g_free (desc);
+			break;
+		default:
+			res = g_strdup_printf ("<%p>", data);
+		}
 	} else {
-		return g_strdup_printf ("[0x%08x]", token);
+		res = g_strdup_printf ("<0x%08x>", token);
 	}
+
+	return res;
+}
+
+/*
+ * disasm_ins:
+ *
+ *   Produce a disassembled form of the IL instruction at IP. This is an extension
+ * of mono_disasm_code_one () which can disasm tokens, handle wrapper methods, and
+ * CEE_MONO_ opcodes.
+ */
+static char*
+disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
+{
+	char *dis;
+	MonoDisHelper dh;
+	MonoMethodHeader *header = mono_method_get_header (method);
+
+	memset (&dh, 0, sizeof (dh));
+	dh.newline = "";
+	dh.label_format = "IL_%04x: ";
+	dh.label_target = "IL_%04x";
+	dh.tokener = token_handler;
+
+	token_handler_ip = ip;
+	if (*ip == MONO_CUSTOM_PREFIX) {
+		guint32 token;
+		gpointer data;
+
+		switch (ip [1]) {
+		case CEE_MONO_ICALL: {
+			MonoJitICallInfo *info;
+
+			token = read32 (ip + 2);
+			data = mono_method_get_wrapper_data (method, token);
+			info = mono_find_jit_icall_by_addr (data);
+			g_assert (info);
+
+			dis = g_strdup_printf ("IL_%04x: mono_icall <%s>", (int)(ip - header->code), info->name);
+			ip += 6;
+			break;
+		}
+		case CEE_MONO_CLASSCONST: {
+			token = read32 (ip + 2);
+			data = mono_method_get_wrapper_data (method, token);
+
+			dis = g_strdup_printf ("IL_%04x: mono_classconst <%s>", (int)(ip - header->code), ((MonoClass*)data)->name);
+			ip += 6;
+			break;
+		}
+		default:
+			dis = mono_disasm_code_one (&dh, method, ip, &ip);
+		}
+	} else {
+		dis = mono_disasm_code_one (&dh, method, ip, &ip);
+	}
+	token_handler_ip = NULL;
+
+	*endip = ip;
+	return dis;
 }
 
 static void
@@ -6099,13 +6184,6 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 		const guint8 *ip = header->code;
 		int prev_line, prev_native_offset;
 		int *il_to_line;
-		MonoDisHelper dh;
-
-		memset (&dh, 0, sizeof (dh));
-		dh.newline = "";
-		dh.label_format = "IL_%04x: ";
-		dh.label_target = "IL_%04x";
-		dh.tokener = token_handler;
 
 		/*
 		 * Emit the IL code into a temporary file and emit line number info
@@ -6133,8 +6211,7 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 			/* Emit IL */
 			acfg->il_file_line_index ++;
 
-			dis = mono_disasm_code_one (&dh, method, ip, &ip);
-
+			dis = disasm_ins (method, ip, &ip);
 			fprintf (acfg->il_file, "%s\n", dis);
 			g_free (dis);
 
