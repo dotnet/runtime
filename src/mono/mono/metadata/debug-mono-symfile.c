@@ -224,6 +224,15 @@ check_line (StatementMachine *stm, int offset, MonoDebugSourceLocation **locatio
 		source_file = read_string (stm->symfile->raw_contents + read32(&(se->_data_offset)));
 	}
 
+	if (stm->last_line == 0) {
+		/* 
+		 * The IL offset is less than the first IL offset which has a corresponding
+		 * source line.
+		 */
+		*location = NULL;
+		return TRUE;
+	}
+
 	*location = g_new0 (MonoDebugSourceLocation, 1);
 	(*location)->source_file = source_file;
 	(*location)->row = stm->last_line;
@@ -272,8 +281,10 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, guint32 offset)
 
 	stm.symfile = symfile;
 	stm.offset = stm.last_offset = 0;
-	stm.file = stm.last_file = 1;
-	stm.line = stm.last_line = 1;
+	stm.last_file = 0;
+	stm.last_line = 0;
+	stm.file = 1;
+	stm.line = 1;
 
 	while (TRUE) {
 		guint8 opcode = *ptr++;
