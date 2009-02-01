@@ -221,6 +221,8 @@ typedef struct MonoAotCompile {
 	GHashTable *class_to_die;
 	int fde_index, tdie_index, line_number_file_index, line_number_dir_index;
 	GHashTable *file_to_index, *dir_to_index;
+	FILE *il_file;
+	int il_file_line_index;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -5758,7 +5760,7 @@ emit_base_dwarf_info (MonoAotCompile *acfg)
 	emit_byte (acfg, 0);
 
 	/* Files */
-	emit_line_number_file_name (acfg, "<IL>", 0, 0);
+	emit_line_number_file_name (acfg, "xdb.il", 0, 0);
 
 	/* End of Files */
 	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
@@ -5986,6 +5988,194 @@ emit_var_location (MonoAotCompile *acfg, MonoInst *ins)
 	}
 }
 
+static char*
+token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
+{
+	if (method->wrapper_type) {
+		gpointer data = mono_method_get_wrapper_data (method, token);
+
+		/* Wrapper data does not have a type, so we can't print out more info */
+		return g_strdup_printf ("[%p]", data);
+	} else {
+		return g_strdup_printf ("[0x%08x]", token);
+	}
+}
+
+static void
+emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
+					   guint32 code_size, MonoDebugMethodJitInfo *debug_info)
+{
+	guint32 prev_line = 0;
+	guint32 prev_native_offset = 0;
+	int i, file_index;
+	gboolean first = TRUE;
+	MonoDebugSourceLocation *loc;
+	char *prev_file_name = NULL;
+	MonoMethodHeader *header = mono_method_get_header (method);
+
+	prev_line = 1;
+
+	for (i = 0; i < code_size; ++i) {
+		loc = mono_debug_lookup_source_location (method, i, mono_domain_get ());
+
+		if (loc) {
+			int line_diff = (gint32)loc->row - (gint32)prev_line;
+			int addr_diff = i - prev_native_offset;
+
+			if (first) {					
+				emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
+
+				emit_byte (acfg, 0);
+				emit_byte (acfg, sizeof (gpointer) + 1);
+				emit_byte (acfg, DW_LNE_set_address);
+				emit_pointer_value (acfg, code);
+
+				/* 
+				 * The prolog+initlocals region does not have a line number, this
+				 * makes them belong to the first line of the method.
+				 */
+				emit_byte (acfg, DW_LNS_advance_line);
+				emit_sleb128 (acfg, (gint32)loc->row - (gint32)prev_line);
+				prev_line = loc->row;
+			}
+
+			if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
+				/* Add an entry to the file table */
+				/* FIXME: Avoid duplicates */
+				file_index = emit_line_number_file_name (acfg, loc->source_file, 0, 0);
+				g_free (prev_file_name);
+				prev_file_name = g_strdup (loc->source_file);
+
+				emit_byte (acfg, DW_LNS_set_file);
+				emit_uleb128 (acfg, file_index);
+				emit_byte (acfg, DW_LNS_copy);
+			}
+
+			if (loc->row != prev_line) {
+				gint64 opcode;
+
+				//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
+
+				opcode = 0;
+				/* Use a special opcode if possible */
+				if (line_diff - LINE_BASE < LINE_RANGE) {
+					opcode = (line_diff - LINE_BASE) + (LINE_RANGE * addr_diff) + OPCODE_BASE;
+					if (opcode > 255)
+						opcode = 0;
+				}
+
+				if (opcode != 0) {
+					emit_byte (acfg, opcode);
+				} else {
+					emit_byte (acfg, DW_LNS_advance_line);
+					emit_sleb128 (acfg, (gint32)loc->row - (gint32)prev_line);
+					emit_byte (acfg, DW_LNS_advance_pc);
+					emit_sleb128 (acfg, i - prev_native_offset);
+					emit_byte (acfg, DW_LNS_copy);
+				}
+
+				prev_line = loc->row;
+				prev_native_offset = i;
+			}
+
+			first = FALSE;
+			g_free (loc);
+		}
+	}
+
+	g_free (prev_file_name);
+
+	if (!first) {
+		emit_byte (acfg, DW_LNS_advance_pc);
+		emit_sleb128 (acfg, code_size - prev_native_offset);
+		emit_byte (acfg, DW_LNS_copy);
+
+		emit_byte (acfg, 0);
+		emit_byte (acfg, 1);
+		emit_byte (acfg, DW_LNE_end_sequence);
+	} else if (!acfg->image) {
+		/* No debug info, XDEBUG mode */
+		char *name, *dis;
+		const guint8 *ip = header->code;
+		int prev_line, prev_native_offset;
+		int *il_to_line;
+		MonoDisHelper dh;
+
+		memset (&dh, 0, sizeof (dh));
+		dh.newline = "";
+		dh.label_format = "IL_%04x: ";
+		dh.label_target = "IL_%04x";
+		dh.tokener = token_handler;
+
+		/*
+		 * Emit the IL code into a temporary file and emit line number info
+		 * referencing that file.
+		 */
+
+		name = mono_method_full_name (method, TRUE);
+		fprintf (acfg->il_file, "// %s\n", name);
+		acfg->il_file_line_index ++;
+		g_free (name);
+
+		il_to_line = g_new0 (int, header->code_size);
+
+		emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
+		emit_byte (acfg, 0);
+		emit_byte (acfg, sizeof (gpointer) + 1);
+		emit_byte (acfg, DW_LNE_set_address);
+		emit_pointer_value (acfg, code);
+
+		// FIXME: Optimize this
+		// FIXME: Decode tokens in the IL info
+		while (ip < header->code + header->code_size) {
+			int il_offset = ip - header->code;
+
+			/* Emit IL */
+			acfg->il_file_line_index ++;
+
+			dis = mono_disasm_code_one (&dh, method, ip, &ip);
+
+			fprintf (acfg->il_file, "%s\n", dis);
+			g_free (dis);
+
+			il_to_line [il_offset] = acfg->il_file_line_index;
+		}
+
+		/* Emit line number info */
+		prev_line = 0;
+		prev_native_offset = 0;
+		for (i = 0; i < debug_info->num_line_numbers; ++i) {
+			MonoDebugLineNumberEntry *lne = &debug_info->line_numbers [i];
+			int line;
+
+			if (lne->il_offset >= header->code_size)
+				continue;
+			line = il_to_line [lne->il_offset];
+			g_assert (line);
+
+			emit_byte (acfg, DW_LNS_advance_line);
+			emit_sleb128 (acfg, line - prev_line);
+			emit_byte (acfg, DW_LNS_advance_pc);
+			emit_sleb128 (acfg, (gint32)lne->native_offset - prev_native_offset);
+			emit_byte (acfg, DW_LNS_copy);
+
+			prev_line = line;
+			prev_native_offset = lne->native_offset;
+		}
+
+		emit_byte (acfg, DW_LNS_advance_pc);
+		emit_sleb128 (acfg, code_size - prev_native_offset);
+		emit_byte (acfg, DW_LNS_copy);
+
+		emit_byte (acfg, 0);
+		emit_byte (acfg, 1);
+		emit_byte (acfg, DW_LNE_end_sequence);
+
+		fflush (acfg->il_file);
+		g_free (il_to_line);
+	}
+}
+
 static void
 emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info)
 {
@@ -6113,96 +6303,8 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoMethod *method, char *start_sy
 	acfg->fde_index ++;
 
 	/* Emit line number info */
-	if (code && debug_info) {
-		guint32 prev_line = 0;
-		guint32 prev_native_offset = 0;
-		int file_index;
-		gboolean first = TRUE;
-		MonoDebugSourceLocation *loc;
-		char *prev_file_name = NULL;
-
-		prev_line = 1;
-
-		for (i = 0; i < code_size; ++i) {
-			loc = mono_debug_lookup_source_location (method, i, mono_domain_get ());
-
-			if (loc) {
-				int line_diff = (gint32)loc->row - (gint32)prev_line;
-				int addr_diff = i - prev_native_offset;
-
-				if (first) {					
-					emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
-
-					emit_byte (acfg, 0);
-					emit_byte (acfg, sizeof (gpointer) + 1);
-					emit_byte (acfg, DW_LNE_set_address);
-					emit_pointer_value (acfg, code);
-
-					/* 
-					 * The prolog+initlocals region does not have a line number, this
-					 * makes them belong to the first line of the method.
-					 */
-					emit_byte (acfg, DW_LNS_advance_line);
-					emit_sleb128 (acfg, (gint32)loc->row - (gint32)prev_line);
-					prev_line = loc->row;
-				}
-
-				if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
-					/* Add an entry to the file table */
-					/* FIXME: Avoid duplicates */
-					file_index = emit_line_number_file_name (acfg, loc->source_file, 0, 0);
-					g_free (prev_file_name);
-					prev_file_name = g_strdup (loc->source_file);
-
-					emit_byte (acfg, DW_LNS_set_file);
-					emit_uleb128 (acfg, file_index);
-					emit_byte (acfg, DW_LNS_copy);
-				}
-
-				if (loc->row != prev_line) {
-					gint64 opcode;
-
-					//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
-
-					opcode = 0;
-					/* Use a special opcode if possible */
-					if (line_diff - LINE_BASE < LINE_RANGE) {
-						opcode = (line_diff - LINE_BASE) + (LINE_RANGE * addr_diff) + OPCODE_BASE;
-						if (opcode > 255)
-							opcode = 0;
-					}
-
-					if (opcode != 0) {
-						emit_byte (acfg, opcode);
-					} else {
-						emit_byte (acfg, DW_LNS_advance_line);
-						emit_sleb128 (acfg, (gint32)loc->row - (gint32)prev_line);
-						emit_byte (acfg, DW_LNS_advance_pc);
-						emit_sleb128 (acfg, i - prev_native_offset);
-						emit_byte (acfg, DW_LNS_copy);
-					}
-
-					prev_line = loc->row;
-					prev_native_offset = i;
-				}
-
-				first = FALSE;
-				g_free (loc);
-			}
-		}
-
-		g_free (prev_file_name);
-
-		if (!first) {
-			emit_byte (acfg, DW_LNS_advance_pc);
-			emit_sleb128 (acfg, code_size - prev_native_offset);
-			emit_byte (acfg, DW_LNS_copy);
-
-			emit_byte (acfg, 0);
-			emit_byte (acfg, 1);
-			emit_byte (acfg, DW_LNE_end_sequence);
-		}
-	}
+	if (code && debug_info)
+		emit_line_number_info (acfg, method, code, code_size, debug_info);
 
 	emit_line (acfg);
 }
@@ -6549,6 +6651,9 @@ mono_xdebug_init (void)
 	emit_string (acfg, "");
 
 	emit_base_dwarf_info (acfg);
+
+	/* This file will contain the IL code for methods which don't have debug info */
+	acfg->il_file = fopen ("xdb.il", "w");
 }
 
 /*
