@@ -2121,6 +2121,20 @@ retry:
 	case MONO_TYPE_VAR:
 		if (type->data.generic_param->owner) {
 			g_assert (!type->data.generic_param->owner->is_method);
+			/*
+			 * FIXME: The following check is here solely
+			 * for monodis, which uses the internal
+			 * function
+			 * mono_metadata_load_generic_params().  The
+			 * caller of that function needs to fill in
+			 * owner->klass or owner->method of the
+			 * returned struct, but monodis doesn't do
+			 * that.  The image unloading depends on that,
+			 * however, so a crash results without this
+			 * check.
+			 */
+			if (!type->data.generic_param->owner->owner.klass)
+				return FALSE;
 			return type->data.generic_param->owner->owner.klass->image == image;
 		} else {
 			return type->data.generic_param->image == image;
