@@ -1,3 +1,7 @@
+2009-02-02  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* configure.in: Add --with-mcs-docs to make it possible to disable building of documentation under mcs.
+
 2009-01-29  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Remove -Wcast-align from the warning list, it leads to a lot of
