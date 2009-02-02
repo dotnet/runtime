@@ -1079,9 +1079,13 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 	location = mono_debug_lookup_source_location (method, native_offset, domain);
 
 	if (!location) {
-		mono_debugger_lock ();
-		offset = il_offset_from_address (method, domain, native_offset);
-		mono_debugger_unlock ();
+		if (mono_debug_initialized) {
+			mono_debugger_lock ();
+			offset = il_offset_from_address (method, domain, native_offset);
+			mono_debugger_unlock ();
+		} else {
+			offset = -1;
+		}
 
 		if (offset < 0)
 			res = g_strdup_printf ("at %s <0x%05x>", fname, native_offset);
