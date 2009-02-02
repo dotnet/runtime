@@ -26,6 +26,7 @@ typedef struct _MonoMethodBuilder {
 	int locals;
 	gboolean dynamic;
 	gboolean no_dup_name;
+	gboolean skip_visibility;
 	guint32 code_size, pos;
 	unsigned char *code;
 	int num_clauses;

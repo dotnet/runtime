@@ -190,6 +190,8 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	header->num_clauses = mb->num_clauses;
 	header->clauses = mb->clauses;
 
+	method->skip_visibility = mb->skip_visibility;
+
 	mw = (MonoMethodWrapper*) mb->method;
 	i = g_list_length (mw->method_data);
 	if (i) {
