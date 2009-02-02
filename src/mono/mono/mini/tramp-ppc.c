@@ -193,7 +193,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	 * now the integer registers.
 	 */
 	offset = STACK - sizeof (MonoLMF) + G_STRUCT_OFFSET (MonoLMF, iregs);
-	ppc_store_multiple_regs (buf, ppc_r13, ppc_r1, offset);
+	ppc_store_multiple_regs (buf, ppc_r13, offset, ppc_r1);
 
 	/* Now save the rest of the registers below the MonoLMF struct, first 14
 	 * fp regs and then the 13 gregs.
@@ -296,7 +296,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* *(lmf_addr) = previous_lmf */
 	ppc_store_reg (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
 	/* restore iregs */
-	ppc_load_multiple_regs (buf, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
+	ppc_load_multiple_regs (buf, ppc_r13, G_STRUCT_OFFSET(MonoLMF, iregs), ppc_r11);
 	/* restore fregs */
 	for (i = 14; i < 32; i++)
 		ppc_lfd (buf, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);

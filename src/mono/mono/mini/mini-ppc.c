@@ -146,8 +146,8 @@ emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffse
 		ppc_addi (code, ppc_r12, dreg, (doffset - sizeof (gpointer)));
 		ppc_addi (code, ppc_r11, sreg, (soffset - sizeof (gpointer)));
 		copy_loop_start = code;
-		ppc_load_reg_update (code, ppc_r0, sizeof (gpointer), ppc_r11);
-		ppc_store_reg_update (code, ppc_r0, sizeof (gpointer), ppc_r12);
+		ppc_load_reg_update (code, ppc_r0, (unsigned int)sizeof (gpointer), ppc_r11);
+		ppc_store_reg_update (code, ppc_r0, (unsigned int)sizeof (gpointer), ppc_r12);
 		copy_loop_jump = code;
 		ppc_bc (code, PPC_BR_DEC_CTR_NONZERO, 0, 0);
 		ppc_patch (copy_loop_jump, copy_loop_start);
@@ -3144,7 +3144,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOADI2_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
-				ppc_lha (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
+				ppc_lha (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
 				ppc_load (code, ppc_r0, ins->inst_offset);
 				ppc_lhax (code, ins->dreg, ins->inst_basereg, ppc_r0);
@@ -4782,7 +4782,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		 * we didn't actually change them (idea from Zoltan).
 		 */
 		/* restore iregs */
-		ppc_load_multiple_regs (code, ppc_r13, ppc_r11, G_STRUCT_OFFSET(MonoLMF, iregs));
+		ppc_load_multiple_regs (code, ppc_r13, G_STRUCT_OFFSET(MonoLMF, iregs), ppc_r11);
 		/* restore fregs */
 		/*for (i = 14; i < 32; i++) {
 			ppc_lfd (code, i, G_STRUCT_OFFSET(MonoLMF, fregs) + ((i-14) * sizeof (gdouble)), ppc_r11);

@@ -164,7 +164,7 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
 		ppc_load_reg (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
-		ppc_load_multiple_regs (code, ppc_r13, ctx_reg, G_STRUCT_OFFSET (MonoContext, regs));	\
+		ppc_load_multiple_regs (code, ppc_r13, G_STRUCT_OFFSET (MonoContext, regs), ctx_reg);	\
 		for (reg = 0; reg < MONO_SAVED_FREGS; ++reg) {	\
 			ppc_lfd (code, (14 + reg),	\
 				G_STRUCT_OFFSET(MonoContext, fregs) + reg * sizeof (gdouble), ctx_reg);	\
@@ -239,7 +239,7 @@ emit_save_saved_regs (guint8 *code, int pos)
 		ppc_stfd (code, i, pos, ppc_sp);
 	}
 	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
-	ppc_store_multiple_regs (code, ppc_r13, ppc_sp, pos);
+	ppc_store_multiple_regs (code, ppc_r13, pos, ppc_sp);
 
 	return code;
 }
@@ -299,7 +299,7 @@ mono_arch_get_call_filter (void)
 		ppc_lfd (code, i, pos, ppc_sp);
 	}
 	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
-	ppc_load_multiple_regs (code, ppc_r13, ppc_sp, pos);
+	ppc_load_multiple_regs (code, ppc_r13, pos, ppc_sp);
 
 	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
 	ppc_blr (code);
