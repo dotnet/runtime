@@ -5580,7 +5580,7 @@ static DwarfBasicType basic_types [] = {
 	{ ".LDIE_SZARRAY", "object", MONO_TYPE_SZARRAY, sizeof (gpointer), DW_ATE_address },
 };
 
-/* Constants for encoding line number special opcodes*/
+/* Constants for encoding line number special opcodes */
 #define OPCODE_BASE 13
 #define LINE_BASE -5
 #define LINE_RANGE 14
@@ -6105,6 +6105,42 @@ il_offset_from_address (MonoMethod *method, MonoDebugMethodJitInfo *jit,
 	return -1;
 }
 
+static int max_special_addr_diff = 0;
+
+static inline void
+emit_advance_op (MonoAotCompile *acfg, int line_diff, int addr_diff)
+{
+	gint64 opcode = 0;
+
+	if (line_diff == 0)
+		return;
+
+	/* Use a special opcode if possible */
+	if (line_diff - LINE_BASE < LINE_RANGE) {
+		if (max_special_addr_diff == 0)
+			max_special_addr_diff = (255 - OPCODE_BASE) / LINE_RANGE;
+
+		if (addr_diff > max_special_addr_diff && (addr_diff < 2 * max_special_addr_diff)) {
+			emit_byte (acfg, DW_LNS_const_add_pc);
+			addr_diff -= max_special_addr_diff;
+		}
+
+		opcode = (line_diff - LINE_BASE) + (LINE_RANGE * addr_diff) + OPCODE_BASE;
+		if (opcode > 255)
+			opcode = 0;
+	}
+
+	if (opcode != 0) {
+		emit_byte (acfg, opcode);
+	} else {
+		emit_byte (acfg, DW_LNS_advance_line);
+		emit_sleb128 (acfg, line_diff);
+		emit_byte (acfg, DW_LNS_advance_pc);
+		emit_sleb128 (acfg, addr_diff);
+		emit_byte (acfg, DW_LNS_copy);
+	}
+}
+
 static void
 emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 					   guint32 code_size, MonoDebugMethodJitInfo *debug_info)
@@ -6170,8 +6206,6 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 			}
 
 			if (loc->row != prev_line) {
-				gint64 opcode;
-
 				if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
 					/* Add an entry to the file table */
 					/* FIXME: Avoid duplicates */
@@ -6186,23 +6220,7 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 
 				//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
 
-				opcode = 0;
-				/* Use a special opcode if possible */
-				if (line_diff - LINE_BASE < LINE_RANGE) {
-					opcode = (line_diff - LINE_BASE) + (LINE_RANGE * addr_diff) + OPCODE_BASE;
-					if (opcode > 255)
-						opcode = 0;
-				}
-
-				if (opcode != 0) {
-					emit_byte (acfg, opcode);
-				} else {
-					emit_byte (acfg, DW_LNS_advance_line);
-					emit_sleb128 (acfg, (gint32)loc->row - (gint32)prev_line);
-					emit_byte (acfg, DW_LNS_advance_pc);
-					emit_sleb128 (acfg, i - prev_native_offset);
-					emit_byte (acfg, DW_LNS_copy);
-				}
+				emit_advance_op (acfg, line_diff, addr_diff);
 
 				prev_line = loc->row;
 				prev_native_offset = i;
@@ -6275,11 +6293,7 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 			line = il_to_line [lne->il_offset];
 			g_assert (line);
 
-			emit_byte (acfg, DW_LNS_advance_line);
-			emit_sleb128 (acfg, line - prev_line);
-			emit_byte (acfg, DW_LNS_advance_pc);
-			emit_sleb128 (acfg, (gint32)lne->native_offset - prev_native_offset);
-			emit_byte (acfg, DW_LNS_copy);
+			emit_advance_op (acfg, line - prev_line, (gint32)lne->native_offset - prev_native_offset);
 
 			prev_line = line;
 			prev_native_offset = lne->native_offset;
