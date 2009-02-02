@@ -35,6 +35,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/marshal.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-membar.h>
@@ -1619,6 +1620,8 @@ mono_free_method  (MonoMethod *method)
 	if (method->dynamic) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)method;
 		int i;
+
+		mono_marshal_free_dynamic_wrappers (method);
 
 		mono_loader_lock ();
 		mono_property_hash_remove_object (method->klass->image->property_hash, method);

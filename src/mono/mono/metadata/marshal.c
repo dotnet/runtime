@@ -12765,3 +12765,23 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 
 	return res;
 }
+
+/*
+ * mono_marshal_free_dynamic_wrappers:
+ *
+ *   Free wrappers of the dynamic method METHOD.
+ */
+void
+mono_marshal_free_dynamic_wrappers (MonoMethod *method)
+{
+	g_assert (method->dynamic);
+
+	mono_marshal_lock ();
+	/* 
+	 * FIXME: We currently leak the wrappers. Freeing them would be tricky as
+	 * they could be shared with other methods ?
+	 */
+	if (method->klass->image->runtime_invoke_direct_cache)
+		g_hash_table_remove (method->klass->image->runtime_invoke_direct_cache, method);
+	mono_marshal_unlock ();
+}
