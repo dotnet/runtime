@@ -4668,8 +4668,8 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 
 	if (callvirt) {
 		// From mono_mb_create_and_cache
+		mb->skip_visibility = 1;
 		newm = mono_mb_create_method (mb, sig, sig->param_count + 16);
-		newm->skip_visibility = 1;
 		/*We perform double checked locking, so must fence before publishing*/
 		mono_memory_barrier ();
 		mono_marshal_lock ();
@@ -4687,8 +4687,8 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 			mono_free_method (newm);
 		}
 	} else {
+		mb->skip_visibility = 1;
 		res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
-		res->skip_visibility = 1;
 	}
 	mono_mb_free (mb);
 
@@ -5212,8 +5212,8 @@ handle_enum:
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	if (need_direct_wrapper) {
+		mb->skip_visibility = 1;
 		res = mono_mb_create_and_cache (cache, method, mb, csig, sig->param_count + 16);
-		res->skip_visibility = 1;
 	} else {
 		/* taken from mono_mb_create_and_cache */
 		mono_marshal_lock ();
@@ -5292,9 +5292,9 @@ mono_marshal_get_static_rgctx_invoke (MonoMethod *method)
 	mono_mb_emit_op (mb, CEE_CALL, method);
 	mono_mb_emit_byte (mb, CEE_RET);
 
+	mb->skip_visibility = TRUE;
 	res = mono_mb_create_and_cache (cache, method, mb, mono_method_signature (method),
 		sig->param_count + sig->hasthis + 4);
-	res->skip_visibility = TRUE;
 	res->flags = method->flags;
 
 	mono_mb_free (mb);
@@ -11922,10 +11922,10 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	mono_mb_emit_managed_call (mb, method, NULL);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
-
 	/* We can corlib internal methods */
-	res->skip_visibility = TRUE;
+	mb->skip_visibility = TRUE;
+
+	res = mono_mb_create_method (mb, csig, csig->param_count + 16);
 
 	mono_mb_free (mb);
 
@@ -12213,6 +12213,9 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 				mspecs [0] = NULL;
 			}
 
+			/* skip visiblity since we call internal methods */
+			mb->skip_visibility = TRUE;
+
 			cominterop_setup_marshal_context (&m, adjust_method);
 			m.mb = mb;
 			mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, NULL);
@@ -12221,9 +12224,6 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 			wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
 			mono_marshal_unlock ();
 			mono_loader_unlock ();
-
-			/* skip visiblity since we call internal methods */
-			wrapper_method->skip_visibility = TRUE;
 
 			vtable [vtable_index--] = mono_compile_method (wrapper_method);
 
