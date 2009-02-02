@@ -4848,6 +4848,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	int i, pos, posna;
 	char *name;
 	gboolean need_direct_wrapper = FALSE;
+	int *tmp_nullable_locals;
 
 	g_assert (method);
 
@@ -4869,7 +4870,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	res = mono_marshal_find_in_cache (cache, method);
 	if (res)
 		return res;
-
+		
 	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 		/* 
@@ -5005,6 +5006,8 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		}
 	}
 
+	tmp_nullable_locals = g_new0 (int, sig->param_count);
+
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 		int type;
@@ -5021,11 +5024,11 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 			 * So to make this work we unbox it to a local variablee and push a reference to that.
 			 */
 			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
-				int tmp_nullable_local = mono_mb_add_local (mb, &mono_class_from_mono_type (t)->byval_arg);
+				tmp_nullable_locals [i] = mono_mb_add_local (mb, &mono_class_from_mono_type (t)->byval_arg);
 
 				mono_mb_emit_op (mb, CEE_UNBOX_ANY, mono_class_from_mono_type (t));
-				mono_mb_emit_stloc (mb, tmp_nullable_local);
-				mono_mb_emit_ldloc_addr (mb, tmp_nullable_local);
+				mono_mb_emit_stloc (mb, tmp_nullable_locals [i]);
+				mono_mb_emit_ldloc_addr (mb, tmp_nullable_locals [i]);
 			}
 			continue;
 		}
@@ -5135,6 +5138,26 @@ handle_enum:
 	}
 
 	mono_mb_emit_stloc (mb, 0);
+
+	/* Convert back nullable-byref arguments */
+	for (i = 0; i < sig->param_count; i++) {
+		MonoType *t = sig->params [i];
+
+		/* 
+		 * Box the result and put it back into the array, the caller will have
+		 * to obtain it from there.
+		 */
+		if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
+			mono_mb_emit_ldarg (mb, 1);			
+			mono_mb_emit_icon (mb, sizeof (gpointer) * i);
+			mono_mb_emit_byte (mb, CEE_ADD);
+
+			mono_mb_emit_ldloc (mb, tmp_nullable_locals [i]);
+			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type (t));
+
+			mono_mb_emit_byte (mb, CEE_STIND_REF);
+		}
+	}
        		
 	pos = mono_mb_emit_branch (mb, CEE_LEAVE);
 
