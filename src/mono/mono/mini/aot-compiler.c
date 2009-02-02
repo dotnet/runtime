@@ -6086,22 +6086,67 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 	return dis;
 }
 
+static gint32
+il_offset_from_address (MonoMethod *method, MonoDebugMethodJitInfo *jit, 
+						guint32 native_offset)
+{
+	int i;
+
+	if (!jit->line_numbers)
+		return -1;
+
+	for (i = jit->num_line_numbers - 1; i >= 0; i--) {
+		MonoDebugLineNumberEntry lne = jit->line_numbers [i];
+
+		if (lne.native_offset <= native_offset)
+			return lne.il_offset;
+	}
+
+	return -1;
+}
+
 static void
 emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 					   guint32 code_size, MonoDebugMethodJitInfo *debug_info)
 {
 	guint32 prev_line = 0;
 	guint32 prev_native_offset = 0;
-	int i, file_index;
+	int i, file_index, il_offset, prev_il_offset;
 	gboolean first = TRUE;
 	MonoDebugSourceLocation *loc;
 	char *prev_file_name = NULL;
 	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoDebugMethodInfo *minfo;
+
+	minfo = mono_debug_lookup_method (method);
+
+	/* FIXME: Avoid quadratic behavior */
 
 	prev_line = 1;
+	prev_il_offset = -1;
 
 	for (i = 0; i < code_size; ++i) {
-		loc = mono_debug_lookup_source_location (method, i, mono_domain_get ());
+		if (!minfo)
+			continue;
+
+		if (!debug_info->line_numbers)
+			continue;
+
+		/* 
+		 * FIXME: Its hard to optimize this, since the line number info is not
+		 * sorted by il offset or native offset
+		 */
+		il_offset = il_offset_from_address (method, debug_info, i);
+
+		if (il_offset < 0)
+			continue;
+
+		if (il_offset == prev_il_offset)
+			continue;
+
+		prev_il_offset = il_offset;
+
+		loc = mono_debug_symfile_lookup_location (minfo, il_offset);
 
 		if (loc) {
 			int line_diff = (gint32)loc->row - (gint32)prev_line;
@@ -6124,20 +6169,20 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 				prev_line = loc->row;
 			}
 
-			if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
-				/* Add an entry to the file table */
-				/* FIXME: Avoid duplicates */
-				file_index = emit_line_number_file_name (acfg, loc->source_file, 0, 0);
-				g_free (prev_file_name);
-				prev_file_name = g_strdup (loc->source_file);
-
-				emit_byte (acfg, DW_LNS_set_file);
-				emit_uleb128 (acfg, file_index);
-				emit_byte (acfg, DW_LNS_copy);
-			}
-
 			if (loc->row != prev_line) {
 				gint64 opcode;
+
+				if (!prev_file_name || strcmp (loc->source_file, prev_file_name) != 0) {
+					/* Add an entry to the file table */
+					/* FIXME: Avoid duplicates */
+					file_index = emit_line_number_file_name (acfg, loc->source_file, 0, 0);
+					g_free (prev_file_name);
+					prev_file_name = g_strdup (loc->source_file);
+
+					emit_byte (acfg, DW_LNS_set_file);
+					emit_uleb128 (acfg, file_index);
+					emit_byte (acfg, DW_LNS_copy);
+				}
 
 				//printf ("X: %p(+0x%x) %d %s:%d(+%d)\n", code + i, addr_diff, loc->il_offset, loc->source_file, loc->row, line_diff);
 
