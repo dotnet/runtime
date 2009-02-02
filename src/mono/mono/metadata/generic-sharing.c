@@ -959,29 +959,92 @@ lookup_or_register_other_info (MonoClass *class, int type_argc, gpointer data, i
 
 	MonoRuntimeGenericContextTemplate *rgctx_template =
 		mono_class_get_runtime_generic_context_template (class);
-	MonoRuntimeGenericContextOtherInfoTemplate *oti;
-	int i;
+	MonoRuntimeGenericContextOtherInfoTemplate *oti_list, *oti, *copy;
+	int i, length;
 
 	g_assert (!class->generic_class);
 	g_assert (class->generic_container || type_argc);
 
+	/*
+	 * We must not call inflate_other_info() with the templates
+	 * lock held, because it calls metadata functions which might
+	 * cause the loader lock to be taken, which must not happen if
+	 * the templates lock is held.
+	 *
+	 * Only two things can happen to an oti list: An unused
+	 * (data==NULL) node can be filled in and nodes can be
+	 * appended at the end of the list.
+	 *
+	 * To solve the lock problem we first count the number of
+	 * nodes in the list, then copy all the data into a separate
+	 * array.  With the templates lock not held we then search for
+	 * our info in the array - this is where the calls to
+	 * inflate_other_info() happen.  If we don't find the info
+	 * we're looking for, we take the templates lock again and
+	 * check if the oti list has changed since we've copied it.
+	 * If it has, we start again.  If it hasn't, we register the
+	 * info.
+	 */
+
 	templates_lock ();
 
-	for (oti = get_other_info_templates (rgctx_template, type_argc), i = 0; oti; oti = oti->next, ++i) {
+ restart:
+	oti_list = get_other_info_templates (rgctx_template, type_argc);
+
+	length = 0;
+	for (oti = oti_list; oti; oti = oti->next)
+		++length;
+
+	copy = g_new (MonoRuntimeGenericContextOtherInfoTemplate, length);
+
+	for (oti = oti_list, i = 0; oti; oti = oti->next, ++i) {
+		copy [i].info_type = oti->info_type;
+		copy [i].data = oti->data;
+	}
+	g_assert (i == length);
+
+	templates_unlock ();
+
+	/* We've copied the list.  Now look for the info. */
+
+	for (i = 0; i < length; ++i) {
 		gpointer inflated_data;
 
-		if (!oti || oti->info_type != info_type || !oti->data)
+		if (copy [i].info_type != info_type || !copy [i].data)
 			continue;
 
-		inflated_data = inflate_other_info (oti, generic_context, class, TRUE);
+		inflated_data = inflate_other_info (&copy [i], generic_context, class, TRUE);
 
 		if (other_info_equal (data, inflated_data, info_type)) {
-			templates_unlock ();
-			free_inflated_info (oti->info_type, inflated_data);
+			free_inflated_info (info_type, inflated_data);
+			g_free (copy);
 			return i;
 		}
 		free_inflated_info (info_type, inflated_data);
 	}
+
+	/* We haven't found the info, so check if the list is still
+	   the same. */
+
+	templates_lock ();
+
+	/* We need to fetch oti_list again here because the list could
+	   have been empty. */
+	oti_list = get_other_info_templates (rgctx_template, type_argc);
+
+	for (oti = oti_list, i = 0; i < length; oti = oti->next, ++i) {
+		g_assert (oti);
+
+		if (copy [i].info_type != oti->info_type || copy [i].data != oti->data) {
+			g_free (copy);
+			goto restart;
+		}
+	}
+	g_free (copy);
+	if (oti)
+		goto restart;
+
+	/* The list is still the same - success. */
 
 	i = register_other_info (class, type_argc, data, info_type);
 
