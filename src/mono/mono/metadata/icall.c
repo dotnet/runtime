@@ -1194,6 +1194,32 @@ get_executing (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer 
 	return FALSE;
 }
 
+static gboolean
+get_caller_no_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
+{
+	MonoMethod **dest = data;
+
+	/* skip unmanaged frames */
+	if (!managed)
+		return FALSE;
+
+	if (m->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	if (m->klass->image == mono_defaults.corlib && !strcmp (m->klass->name_space, "System.Reflection"))
+		return FALSE;
+
+	if (m == *dest) {
+		*dest = NULL;
+		return FALSE;
+	}
+	if (!(*dest)) {
+		*dest = m;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static MonoReflectionType *
 type_from_name (const char *str, MonoBoolean ignoreCase)
 {
@@ -1218,7 +1244,7 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 		MonoMethod *m = mono_method_get_last_managed ();
 		MonoMethod *dest = m;
 
-		mono_stack_walk_no_il (get_caller, &dest);
+		mono_stack_walk_no_il (get_caller_no_reflection, &dest);
 		if (!dest)
 			dest = m;
 
