@@ -4898,6 +4898,12 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		}
 	}
 
+	/* Vtypes/nullables/Byrefs cause too many problems */
+	for (i = 0; i < callsig->param_count; ++i) {
+		if (MONO_TYPE_ISSTRUCT (callsig->params [i]) || callsig->params [i]->byref)
+			need_direct_wrapper = TRUE;
+	}
+
 	/*
 	 * We try to share runtime invoke wrappers between different methods but have to
 	 * be careful about methods whose klass has a type cctor, since putting the wrapper
@@ -5184,6 +5190,7 @@ handle_enum:
 
 	if (need_direct_wrapper) {
 		res = mono_mb_create_and_cache (cache, method, mb, csig, sig->param_count + 16);
+		res->skip_visibility = 1;
 	} else {
 		/* taken from mono_mb_create_and_cache */
 		mono_marshal_lock ();
