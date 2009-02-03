@@ -176,7 +176,7 @@ ves_icall_System_Array_GetValue (MonoObject *this, MonoObject *idxs)
 	
 	for (i = 0; i < ac->rank; i++)
 		if ((ind [i] < ao->bounds [i].lower_bound) ||
-		    (ind [i] >= ao->bounds [i].length + ao->bounds [i].lower_bound))
+		    (ind [i] >=  (mono_array_lower_bound_t)ao->bounds [i].length + ao->bounds [i].lower_bound))
 			mono_raise_exception (mono_get_exception_index_out_of_range ());
 
 	pos = ind [0] - ao->bounds [0].lower_bound;
@@ -489,7 +489,7 @@ ves_icall_System_Array_SetValue (MonoArray *this, MonoObject *value,
 	
 	for (i = 0; i < ac->rank; i++)
 		if ((ind [i] < this->bounds [i].lower_bound) ||
-		    (ind [i] >= this->bounds [i].length + this->bounds [i].lower_bound))
+		    (ind [i] >= (mono_array_lower_bound_t)this->bounds [i].length + this->bounds [i].lower_bound))
 			mono_raise_exception (mono_get_exception_index_out_of_range ());
 
 	pos = ind [0] - this->bounds [0].lower_bound;

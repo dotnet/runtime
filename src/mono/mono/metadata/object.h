@@ -30,17 +30,19 @@ typedef struct {
 
 #ifdef MONO_BIG_ARRAYS
 typedef guint64 mono_array_size_t;
+typedef gint64 mono_array_lower_bound_t;
 #define MONO_ARRAY_MAX_INDEX G_MAXINT64
 #define MONO_ARRAY_MAX_SIZE  G_MAXUINT64
 #else
 typedef guint32 mono_array_size_t;
+typedef gint32 mono_array_lower_bound_t;
 #define MONO_ARRAY_MAX_INDEX ((gint32) 0x7fffffff)
 #define MONO_ARRAY_MAX_SIZE  ((guint32) 0xffffffff)
 #endif
 
 typedef struct {
 	mono_array_size_t length;
-	mono_array_size_t lower_bound;
+	mono_array_lower_bound_t lower_bound;
 } MonoArrayBounds;
 
 typedef struct {
