@@ -515,6 +515,70 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_multidym_array_with_negative_lower_bound () {
+		int[,] x = (int[,]) Array.CreateInstance(typeof (int), new int[] { 2, 2 }, new int[] { -2, -3 });
+
+		if(x.GetLowerBound (0) != -2)
+			return 1;
+		if (x.GetLowerBound (1) != -3)
+			return 2;
+
+		x.SetValue (10, new int [] { -2, -3 });
+		x.SetValue (20, new int [] { -2, -2 });
+		x.SetValue (30, new int [] { -1, -3 });
+		x.SetValue (40, new int [] { -1, -2 });
+
+		try {
+			x.SetValue (10, new int [] { -3, -3 });
+			return 3;
+		} catch (IndexOutOfRangeException) { }
+
+		try {
+			x.SetValue (10, new int [] { -2, -4 });
+			return 4;
+		} catch (IndexOutOfRangeException) { }
+
+		try {
+			x.SetValue (10, new int [] { 0, -3 });
+			return 5;
+		} catch (IndexOutOfRangeException) { }
+
+		try {
+			x.SetValue (10, new int [] { -1, -1 });
+			return 6;
+		} catch (IndexOutOfRangeException) { }
+
+		if ((int)x.GetValue (new int [] { -2, -3 }) != 10)
+			return 7;
+		if ((int)x.GetValue (new int [] { -2, -2 }) != 20)
+			return 8;
+		if ((int)x.GetValue (new int [] { -1, -3 }) != 30)
+			return 9;
+		if ((int)x.GetValue (new int [] { -1, -2 }) != 40)
+			return 10;
+
+		try {
+			x.GetValue (new int [] { -3, -3 });
+			return 11;
+		} catch (IndexOutOfRangeException) { }
+
+		try {
+			x.GetValue ( new int [] { -2, -4 });
+			return 12;
+		} catch (IndexOutOfRangeException) { }
+
+		try {
+			x.GetValue (new int [] { 0, -3 });
+			return 13;
+		} catch (IndexOutOfRangeException) { }
+
+		try {
+			x.GetValue (new int [] { -1, -1 });
+			return 14;
+		} catch (IndexOutOfRangeException) { }
+		return 0;
+	}
+
 
 	public static int test_0_invalid_new_multi_dym_array_size () {
 		int dym_size = 1;
