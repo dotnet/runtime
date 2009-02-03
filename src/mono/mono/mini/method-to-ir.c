@@ -10239,6 +10239,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	guint32 i, lvregs_len;
 	gboolean dest_has_lvreg = FALSE;
 	guint32 stacktypes [128];
+	MonoInst **live_range_start, **live_range_end;
+	MonoBasicBlock **live_range_start_bb, **live_range_end_bb;
 
 	*need_local_opts = FALSE;
 
@@ -10298,6 +10300,20 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	vreg_to_lvreg = mono_mempool_alloc0 (cfg->mempool, sizeof (guint32) * cfg->next_vreg);
 	lvregs = mono_mempool_alloc (cfg->mempool, sizeof (guint32) * 1024);
 	lvregs_len = 0;
+
+	/* 
+	 * These arrays contain the first and last instructions accessing a given
+	 * variable.
+	 * Since we emit bblocks in the same order we process them here, and we
+	 * don't split live ranges, these will precisely describe the live range of
+	 * the variable, i.e. the instruction range where a valid value can be found
+	 * in the variables location.
+	 */
+	/* FIXME: Only do this if debugging info is requested */
+	live_range_start = g_new0 (MonoInst*, cfg->next_vreg);
+	live_range_end = g_new0 (MonoInst*, cfg->next_vreg);
+	live_range_start_bb = g_new (MonoBasicBlock*, cfg->next_vreg);
+	live_range_end_bb = g_new (MonoBasicBlock*, cfg->next_vreg);
 	
 	/* Add spill loads/stores */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
@@ -10395,6 +10411,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
 				MonoInst *store_ins;
 				int store_opcode;
+				MonoInst *def_ins = ins;
 
 				store_opcode = mono_type_to_store_membase (cfg, var->inst_vtype);
 
@@ -10407,6 +10424,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					g_assert (var->opcode == OP_REGOFFSET);
 					if (ins->opcode == OP_MOVE) {
 						NULLIFY_INS (ins);
+						def_ins = NULL;
 					} else {
 						ins->opcode = op_to_op_dest_membase (store_opcode, ins->opcode);
 						ins->inst_basereg = var->inst_basereg;
@@ -10440,6 +10458,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						mono_bblock_insert_after_ins (bb, ins, store_ins);
 						NEW_STORE_MEMBASE (cfg, store_ins, OP_STOREI4_MEMBASE_REG, var->inst_basereg, var->inst_offset + MINI_MS_WORD_OFFSET, ins->dreg + 2);
 						mono_bblock_insert_after_ins (bb, ins, store_ins);
+						def_ins = store_ins;
 					}
 					else {
 						g_assert (store_opcode != OP_STOREV_MEMBASE);
@@ -10482,6 +10501,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							/* Insert it after the instruction */
 							mono_bblock_insert_after_ins (bb, ins, store_ins);
 
+							def_ins = store_ins;
+
 							/* 
 							 * We can't assign ins->dreg to var->dreg here, since the
 							 * sregs could use it. So set a flag, and do it after
@@ -10491,6 +10512,11 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 								dest_has_lvreg = TRUE;
 						}
 					}
+				}
+
+				if (def_ins && !live_range_start [var->dreg]) {
+					live_range_start [var->dreg] = def_ins;
+					live_range_start_bb [var->dreg] = bb;
 				}
 			}
 
@@ -10504,6 +10530,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				g_assert (((sreg == -1) && (regtype == ' ')) || ((sreg != -1) && (regtype != ' ')));
 				if ((sreg != -1) && get_vreg_to_inst (cfg, sreg)) {
 					MonoInst *var = get_vreg_to_inst (cfg, sreg);
+					MonoInst *use_ins = ins;
 					MonoInst *load_ins;
 					guint32 load_opcode;
 
@@ -10512,6 +10539,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							ins->sreg1 = var->dreg;
 						else
 							ins->sreg2 = var->dreg;
+						live_range_end [var->dreg] = use_ins;
+						live_range_end_bb [var->dreg] = bb;
 						continue;
 					}
 
@@ -10575,6 +10604,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							mono_bblock_insert_before_ins (bb, ins, load_ins);
 							NEW_LOAD_MEMBASE (cfg, load_ins, OP_LOADI4_MEMBASE, sreg + 1, var->inst_basereg, var->inst_offset + MINI_LS_WORD_OFFSET);
 							mono_bblock_insert_before_ins (bb, ins, load_ins);
+							use_ins = load_ins;
 						}
 						else {
 #if SIZEOF_REGISTER == 4
@@ -10582,8 +10612,12 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 #endif
 							NEW_LOAD_MEMBASE (cfg, load_ins, load_opcode, sreg, var->inst_basereg, var->inst_offset);
 							mono_bblock_insert_before_ins (bb, ins, load_ins);
+							use_ins = load_ins;
 						}
 					}
+
+					live_range_end [var->dreg] = use_ins;
+					live_range_end_bb [var->dreg] = bb;
 				}
 			}
 
@@ -10611,6 +10645,36 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				mono_print_ins_index (1, ins);
 		}
 	}
+
+	cfg->vreg_to_var_num = mono_mempool_alloc0 (cfg->mempool, sizeof (gint32) * cfg->next_vreg);
+	for (i = 0; i < cfg->num_varinfo; ++i)
+		cfg->vreg_to_var_num [cfg->varinfo [i]->dreg] = i;
+	
+#ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
+	/*
+	 * Emit LIVERANGE_START/LIVERANGE_END opcodes, the backend will implement them
+	 * by storing the current native offset into MonoMethodVar->live_range_start/end.
+	 */
+	for (i = 0; i < orig_next_vreg; ++i) {
+		MonoInst *ins;
+
+		if (live_range_start [i]) {
+			MONO_INST_NEW (cfg, ins, OP_LIVERANGE_START);
+			ins->inst_c0 = cfg->vreg_to_var_num [i];
+			mono_bblock_insert_after_ins (live_range_start_bb [i], live_range_start [i], ins);
+		}
+		if (live_range_end [i]) {
+			MONO_INST_NEW (cfg, ins, OP_LIVERANGE_END);
+			ins->inst_c0 = cfg->vreg_to_var_num [i];
+			mono_bblock_insert_after_ins (live_range_end_bb [i], live_range_end [i], ins);
+		}
+	}
+#endif
+
+	g_free (live_range_start);
+	g_free (live_range_end);
+	g_free (live_range_start_bb);
+	g_free (live_range_end_bb);
 }
 
 /**

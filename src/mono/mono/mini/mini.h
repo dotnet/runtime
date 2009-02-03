@@ -615,6 +615,8 @@ struct MonoMethodVar {
 	MonoBasicBlock *def_bb; /* used by SSA */
 	GList          *uses;   /* used by SSA */
 	char            cpstate;  /* used by SSA conditional  constant propagation */
+	/* The native offsets corresponding to the live range of the variable */
+	gint32         live_range_start, live_range_end;
 };
 
 typedef struct {
@@ -882,6 +884,12 @@ typedef struct {
 
 	/* Size of above array */
 	guint32 vreg_to_inst_len;
+
+	/* Maps global vregs to the indexes in the cfg->vars array */
+	gint32 *vreg_to_var_num;
+
+	/* Size of above array */
+	guint32 vreg_to_var_index_num;
 
 	/* 
 	 * The original method to compile, differs from 'method' when doing generic

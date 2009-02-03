@@ -835,6 +835,18 @@ MINI_OP(OP_CMOV_LGT_UN, "cmov_lgt_un", IREG, IREG, IREG)
 MINI_OP(OP_CMOV_LLE_UN, "cmov_lle_un", IREG, IREG, IREG)
 MINI_OP(OP_CMOV_LLT_UN, "cmov_llt_un", IREG, IREG, IREG)
 
+/* Debugging support */
+/* 
+ * Marks the start of the live range of the variable in inst_c0, that is the
+ * first instruction where the variable has a value.
+ */
+MINI_OP(OP_LIVERANGE_START, "liverange_start", NONE, NONE, NONE)
+/* 
+ * Marks the end of the live range of the variable in inst_c0, that is the
+ * first instruction where the variable no longer has a value.
+ */
+MINI_OP(OP_LIVERANGE_END, "liverange_end", NONE, NONE, NONE)
+
 /* Arch specific opcodes */
 #if defined(__i386__) || defined(__x86_64__)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null", NONE, NONE, NONE)

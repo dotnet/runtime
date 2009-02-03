@@ -502,3 +502,6 @@ loadi8_mem: dest:i len:16
 loadi4_mem: dest:i len:16
 loadu1_mem: dest:i len:16
 loadu2_mem: dest:i len:16
+
+liverange_start: len:0
+liverange_end: len:0
