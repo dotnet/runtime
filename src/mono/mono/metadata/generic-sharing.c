@@ -1146,9 +1146,6 @@ alloc_rgctx_array (MonoDomain *domain, int n, gboolean is_mrgctx)
 	return array;
 }
 
-/*
- * LOCKING: domain lock
- */
 static gpointer
 fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContext *rgctx, guint32 slot,
 		MonoGenericInst *method_inst)
@@ -1164,6 +1161,8 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	gboolean do_free;
 
 	g_assert (rgctx);
+
+	mono_domain_lock (domain);
 
 	/* First check whether that slot isn't already instantiated.
 	   This might happen because lookup doesn't lock.  Allocate
@@ -1183,8 +1182,10 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		if (slot < first_slot + size - 1) {
 			rgctx_index = slot - first_slot + 1 + offset;
 			info = rgctx [rgctx_index];
-			if (info)
+			if (info) {
+				mono_domain_unlock (domain);
 				return info;
+			}
 			break;
 		}
 		if (!rgctx [offset + 0])
@@ -1196,15 +1197,28 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 
 	g_assert (!rgctx [rgctx_index]);
 
+	mono_domain_unlock (domain);
+
 	oti = class_get_rgctx_template_oti (class_uninstantiated (class),
 			method_inst ? method_inst->type_argc : 0, slot, TRUE, &do_free);
+	/* This might take the loader lock */
+	info = instantiate_other_info (domain, &oti, &context, class);
 
 	/*
 	if (method_inst)
 		g_print ("filling mrgctx slot %d table %d index %d\n", slot, i, rgctx_index);
 	*/
 
-	info = rgctx [rgctx_index] = instantiate_other_info (domain, &oti, &context, class);
+	mono_domain_lock (domain);
+
+	/* Check whether the slot hasn't been instantiated in the
+	   meantime. */
+	if (rgctx [rgctx_index])
+		info = rgctx [rgctx_index];
+	else
+		rgctx [rgctx_index] = info;
+
+	mono_domain_unlock (domain);
 
 	if (do_free)
 		free_inflated_info (oti.info_type, oti.data);
@@ -1243,9 +1257,9 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 		num_alloced++;
 	}
 
-	info = fill_runtime_generic_context (class_vtable, rgctx, slot, 0);
-
 	mono_domain_unlock (domain);
+
+	info = fill_runtime_generic_context (class_vtable, rgctx, slot, 0);
 
 	return info;
 }
@@ -1263,12 +1277,8 @@ mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgct
 	MonoDomain *domain = mrgctx->class_vtable->domain;
 	gpointer info;
 
-	mono_domain_lock (domain);
-
 	info = fill_runtime_generic_context (mrgctx->class_vtable, (MonoRuntimeGenericContext*)mrgctx, slot,
 		mrgctx->method_inst);
-
-	mono_domain_unlock (domain);
 
 	return info;
 }
