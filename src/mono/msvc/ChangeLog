@@ -1,3 +1,8 @@
+2009-02-03  Jonathan Pobst  <monkey@jpobst.com>
+
+	* libmono.vcproj : Track mini/generic-sharing.cs being renamed
+	to mini/mini-generic-sharing.cs.
+
 2008-12-09  Bill Holmes  <billholmes54@gmail.com>
 
 	* libmono.vcproj : Adding unwind.c to the project.

@@ -6319,7 +6319,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\mono\mini\generic-sharing.c"
+				RelativePath="..\mono\mini\mini-generic-sharing.c"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
