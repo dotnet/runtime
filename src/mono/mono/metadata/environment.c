@@ -53,7 +53,7 @@ ves_icall_System_Environment_GetOSVersionString (void)
 			verinfo.dwBuildNumber);
 		return mono_string_new (mono_domain_get (), version);
 	}
-#else
+#elif defined(HAVE_SYS_UTSNAME_H)
 	struct utsname name;
 
 	MONO_ARCH_SAVE_REGS;

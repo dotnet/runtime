@@ -482,7 +482,7 @@ mono_set_dirs (const char *assembly_dir, const char *config_dir)
 static char *
 compute_base (char *path)
 {
-	char *p = rindex (path, '/');
+	char *p = strrchr (path, '/');
 	if (p == NULL)
 		return NULL;
 
@@ -491,7 +491,7 @@ compute_base (char *path)
 		return NULL;
 	    
 	*p = 0;
-	p = rindex (path, '/');
+	p = strrchr (path, '/');
 	if (p == NULL)
 		return NULL;
 	

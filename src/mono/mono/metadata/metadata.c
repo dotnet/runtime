@@ -9,6 +9,9 @@
  */
 
 #include <config.h>
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -4301,12 +4304,12 @@ void
 mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
 			  MonoMarshalSpec **marshal_spec)
 {
-	return mono_metadata_field_info_with_mempool (NULL, meta, index, offset, rva, marshal_spec);
+	mono_metadata_field_info_with_mempool (NULL, meta, index, offset, rva, marshal_spec);
 }
 
 void
 mono_metadata_field_info_with_mempool (MonoMemPool *mempool, MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
-			  MonoMarshalSpec **marshal_spec)
+				       MonoMarshalSpec **marshal_spec)
 {
 	MonoTableInfo *tdef;
 	locator_t loc;

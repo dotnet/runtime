@@ -18,6 +18,9 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #ifdef HAVE_UTIME_H
 #include <utime.h>
 #else

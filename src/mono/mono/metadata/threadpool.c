@@ -48,7 +48,9 @@
 #include <sys/epoll.h>
 #endif
 
+#ifndef DISABLE_SOCKETS
 #include "mono/io-layer/socket-wrappers.h"
+#endif
 
 #include "threadpool.h"
 
@@ -153,6 +155,9 @@ enum {
 	AIO_OP_LAST
 };
 
+#ifdef DISABLE_SOCKETS
+#define socket_io_cleanup(x)
+#else
 static void
 socket_io_cleanup (SocketIOData *data)
 {
@@ -233,6 +238,7 @@ get_events_from_list (MonoMList *list)
 				(SOCKET)(gssize)x->handle, x->buffer, x->offset, x->size,\
 				 x->socket_flags, &x->error);
 
+#endif /* !DISABLE_SOCKETS */
 
 static void
 unregister_job (MonoAsyncResult *obj)
@@ -261,6 +267,7 @@ threadpool_jobs_dec (MonoObject *obj)
 	return FALSE;
 }
 
+#ifndef DISABLE_SOCKETS
 static void
 async_invoke_io_thread (gpointer data)
 {
@@ -967,6 +974,7 @@ socket_io_filter (MonoObject *target, MonoObject *state)
 
 	return TRUE;
 }
+#endif /* !DISABLE_SOCKETS */
 
 static void
 mono_async_invoke (MonoAsyncResult *ares)
@@ -1112,11 +1120,13 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	mono_g_hash_table_insert (ares_htable, ares, ares);
 	LeaveCriticalSection (&ares_lock);
 
+#ifndef DISABLE_SOCKETS
 	if (socket_io_filter (target, state)) {
 		socket_io_add (ares, (MonoSocketAsyncResult *) state);
 		return ares;
 	}
-
+#endif
+	
 	start_thread_or_queue (ares);
 	return ares;
 }

@@ -14,6 +14,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -6345,7 +6348,7 @@ ves_icall_System_Environment_get_MachineName (void)
 
 	g_free (buf);
 	return result;
-#else
+#elif !defined(DISABLE_SOCKETS)
 	gchar buf [256];
 	MonoString *result;
 
@@ -6355,6 +6358,8 @@ ves_icall_System_Environment_get_MachineName (void)
 		result = NULL;
 	
 	return result;
+#else
+	return mono_string_new (mono_domain_get (), "mono");
 #endif
 }
 

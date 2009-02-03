@@ -8,6 +8,9 @@
  *
  */
 #include <config.h>
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/mono-membar.h"
 #include "mono/metadata/reflection.h"

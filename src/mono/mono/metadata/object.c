@@ -8,6 +8,9 @@
  * (C) 2001-2004 Ximian, Inc.
  */
 #include <config.h>
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>

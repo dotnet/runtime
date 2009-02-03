@@ -41,8 +41,8 @@
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
-#ifndef PLATFORM_WIN32
 #ifndef TIOCGWINSZ
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
 #endif
@@ -64,7 +64,7 @@ static gchar *keypad_xmit_str;
 static struct termios mono_attr;
 #endif
 
-#ifdef PLATFORM_WIN32
+#if defined (PLATFORM_WIN32) || defined (MONO_NULL_TTYDRIVER)
 MonoBoolean
 ves_icall_System_ConsoleDriver_Isatty (HANDLE handle)
 {
