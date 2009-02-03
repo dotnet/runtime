@@ -177,7 +177,7 @@ static int
 get_stack_type (MonoType *type);
 
 static gboolean
-mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
+mono_delegate_signature_equal (MonoMethodSignature *delegate_sig, MonoMethodSignature *method_sig, gboolean is_static_ldftn);
 
 static gboolean
 mono_class_is_valid_generic_instantiation (VerifyContext *ctx, MonoClass *klass);
@@ -2678,7 +2678,7 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 	case MONO_TYPE_FNPTR:
 		if (candidate->type != MONO_TYPE_FNPTR)
 			return FALSE;
-		return mono_delegate_signature_equal (mono_type_get_signature (target), mono_type_get_signature (candidate));
+		return mono_delegate_signature_equal (mono_type_get_signature (target), mono_type_get_signature (candidate), FALSE);
 
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *target_klass;
@@ -2753,24 +2753,26 @@ mono_delegate_ret_equal (MonoType *delegate, MonoType *method)
  * FIXME can this function be eliminated and proper metadata functionality be used?
  */
 static gboolean
-mono_delegate_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+mono_delegate_signature_equal (MonoMethodSignature *delegate_sig, MonoMethodSignature *method_sig, gboolean is_static_ldftn)
 {
 	int i;
-	if (sig1->param_count != sig2->param_count) 
+	int method_offset = is_static_ldftn ? 1 : 0;
+
+	if (delegate_sig->param_count + method_offset != method_sig->param_count) 
 		return FALSE;
 
-	if (sig1->call_convention != sig2->call_convention)
+	if (delegate_sig->call_convention != method_sig->call_convention)
 		return FALSE;
 
-	for (i = 0; i < sig1->param_count; i++) { 
-		MonoType *p1 = sig1->params [i];
-		MonoType *p2 = sig2->params [i];
+	for (i = 0; i < delegate_sig->param_count; i++) { 
+		MonoType *p1 = delegate_sig->params [i];
+		MonoType *p2 = method_sig->params [i + method_offset];
 
 		if (!mono_delegate_param_equal (p1, p2))
 			return FALSE;
 	}
 
-	if (!mono_delegate_ret_equal (sig1->ret, sig2->ret))
+	if (!mono_delegate_ret_equal (delegate_sig->ret, method_sig->ret))
 		return FALSE;
 
 	return TRUE;
@@ -2822,6 +2824,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	MonoMethod *invoke, *method;
 	const guint8 *ip = ctx->header->code;
 	guint32 ip_offset = ctx->ip_offset;
+	gboolean is_static_ldftn = FALSE, is_first_arg_bound = FALSE;
 	
 	if (stack_slot_get_type (funptr) != TYPE_PTR || !funptr->method) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid function pointer parameter for delegate constructor at 0x%04x", ctx->ip_offset));
@@ -2831,7 +2834,12 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	invoke = mono_get_delegate_invoke (delegate);
 	method = funptr->method;
 
-	if (!mono_delegate_signature_equal (mono_method_signature (invoke), mono_method_signature (method)))
+	is_static_ldftn = (ip_offset > 5 && IS_LOAD_FUN_PTR (CEE_LDFTN)) && method->flags & METHOD_ATTRIBUTE_STATIC;
+
+	if (is_static_ldftn)
+		is_first_arg_bound = mono_method_signature (invoke)->param_count + 1 ==  mono_method_signature (method)->param_count;
+
+	if (!mono_delegate_signature_equal (mono_method_signature (invoke), mono_method_signature (method), is_first_arg_bound))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer parameter for delegate constructor has diferent signature at 0x%04x", ctx->ip_offset));
 
 	/* 
@@ -2855,8 +2863,13 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	ctx->code [ip_offset].flags |= IL_CODE_DELEGATE_SEQUENCE;
 
 	//general tests
-	if (!verify_stack_type_compatibility_full (ctx, &method->klass->byval_arg, value, FALSE, TRUE) && !stack_slot_is_null_literal (value))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
+	if (is_first_arg_bound) {
+		if (!verify_stack_type_compatibility_full (ctx, mono_method_signature (method)->params [0], value, FALSE, TRUE))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
+	} else {
+		if (!verify_stack_type_compatibility_full (ctx, &method->klass->byval_arg, value, FALSE, TRUE) && !stack_slot_is_null_literal (value))
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
+	}
 
 	if (stack_slot_get_type (value) != TYPE_COMPLEX)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid first parameter for delegate creation at 0x%04x", ctx->ip_offset));
