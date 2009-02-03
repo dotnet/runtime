@@ -2614,8 +2614,7 @@ is_compatible_boxed_valuetype (VerifyContext *ctx, MonoType *type, MonoType *can
 	if (!strict)
 		return TRUE;
 
-	/*All boxed valuetypes are compatible to System.Object*/
-	return MONO_TYPE_IS_REFERENCE (type) && (type->type == MONO_TYPE_OBJECT || verify_type_compatibility_full (ctx, type, candidate, FALSE));
+	return MONO_TYPE_IS_REFERENCE (type) && mono_class_is_assignable_from (mono_class_from_mono_type (type), mono_class_from_mono_type (candidate));
 }
 
 static int
@@ -3251,8 +3250,13 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 	for (i = sig->param_count - 1; i >= 0; --i) {
 		VERIFIER_DEBUG ( printf ("verifying argument %d\n", i); );
 		value = stack_pop (ctx);
-		if (!verify_stack_type_compatibility (ctx, sig->params[i], value))
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature at 0x%04x", ctx->ip_offset));
+		if (!verify_stack_type_compatibility (ctx, sig->params[i], value)) {
+			char *stack_name = stack_slot_full_name (value);
+			char *sig_name = mono_type_full_name (sig->params [i]);
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature: %s X %s at 0x%04x", sig_name, stack_name, ctx->ip_offset));
+			g_free (stack_name);
+			g_free (sig_name);
+		}
 
 		if (stack_slot_is_managed_mutability_pointer (value))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer as argument of %s at 0x%04x", virtual ? "callvirt" : "call",  ctx->ip_offset));
@@ -3496,6 +3500,7 @@ do_box_value (VerifyContext *ctx, int klass_token)
 {
 	ILStackDesc *value;
 	MonoType *type = get_boxable_mono_type (ctx, klass_token, "box");
+	MonoClass *klass;	
 
 	if (!type)
 		return;
@@ -3515,6 +3520,9 @@ do_box_value (VerifyContext *ctx, int klass_token)
 	if (!verify_stack_type_compatibility (ctx, type, value))
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid type at stack for boxing operation at 0x%04x", ctx->ip_offset));
 
+	klass = mono_class_from_mono_type (type);
+	if (mono_class_is_nullable (klass))
+		type = &mono_class_get_nullable_param (klass)->byval_arg;
 	stack_push_val (ctx, TYPE_COMPLEX | BOXED_MASK, type);
 }
 
@@ -3818,8 +3826,13 @@ do_newobj (VerifyContext *ctx, int token)
 		for (i = sig->param_count - 1; i >= 0; --i) {
 			VERIFIER_DEBUG ( printf ("verifying constructor argument %d\n", i); );
 			value = stack_pop (ctx);
-			if (!verify_stack_type_compatibility (ctx, sig->params [i], value))
-				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature at 0x%04x", ctx->ip_offset));
+			if (!verify_stack_type_compatibility (ctx, sig->params [i], value)) {
+				char *stack_name = stack_slot_full_name (value);
+				char *sig_name = mono_type_full_name (sig->params [i]);
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with constructor signature: %s X %s at 0x%04x", sig_name, stack_name, ctx->ip_offset));
+				g_free (stack_name);
+				g_free (sig_name);
+			}
 
 			if (stack_slot_is_managed_mutability_pointer (value))
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use a readonly pointer as argument of newobj at 0x%04x", ctx->ip_offset));
