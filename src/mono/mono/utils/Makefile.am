@@ -34,6 +34,7 @@ libmonoutils_la_SOURCES = \
 	mono-io-portability.c 	\
 	mono-io-portability.h	\
 	monobitset.c	\
+	mono-filemap.c	\
 	mono-math.c  \
 	mono-mmap.c  \
 	mono-mmap.h  \
