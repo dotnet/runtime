@@ -68,6 +68,7 @@ case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
 		AC_DEFINE(PLATFORM_WIN32,1,[Platform is Win32])
+		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
 		if test "x$cross_compiling" = "xno"; then
 			CC="gcc -mno-cygwin -g"
 			# So libgc configure gets -mno-cygwin
