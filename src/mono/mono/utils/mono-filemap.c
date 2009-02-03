@@ -41,7 +41,7 @@ mono_file_map_fd (MonoFileMap *fmap)
 	return fileno ((FILE*)fmap);
 }
 
-void
+int 
 mono_file_map_close (MonoFileMap *fmap)
 {
 	return fclose ((FILE*)fmap);

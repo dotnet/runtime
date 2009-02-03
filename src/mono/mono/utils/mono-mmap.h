@@ -27,7 +27,7 @@ typedef struct _MonoFileMap MonoFileMap;
 MonoFileMap *mono_file_map_open  (const char* name);
 guint64      mono_file_map_size  (MonoFileMap *fmap);
 int          mono_file_map_fd    (MonoFileMap *fmap);
-void         mono_file_map_close (MonoFileMap *fmap);
+int          mono_file_map_close (MonoFileMap *fmap);
 
 int   mono_pagesize   (void);
 void* mono_valloc     (void *addr, size_t length, int flags);
