@@ -45,6 +45,9 @@ MonoDefaults mono_defaults;
 /*
  * This lock protects the hash tables inside MonoImage used by the metadata 
  * loading functions in class.c and loader.c.
+ *
+ * See domain-internals.h for locking policy in combination with the
+ * domain lock.
  */
 static CRITICAL_SECTION loader_mutex;
 
