@@ -229,8 +229,10 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	/* GC init has to happen after thread init */
 	mono_gc_init ();
 
+#ifndef DISABLE_SOCKETS
 	mono_network_init ();
-
+#endif
+	
 	mono_attach_init ();
 
 	/* mscorlib is loaded before we install the load hook */
@@ -301,8 +303,9 @@ mono_runtime_cleanup (MonoDomain *domain)
 
 	mono_thread_cleanup ();
 
+#ifndef DISABLE_SOCKETS
 	mono_network_cleanup ();
-
+#endif
 	mono_marshal_cleanup ();
 
 	mono_type_initialization_cleanup ();
@@ -1092,6 +1095,19 @@ set_domain_search_path (MonoDomain *domain)
 	mono_domain_assemblies_unlock (domain);
 }
 
+#ifdef DISABLE_SHADOW_COPY
+gboolean
+mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
+{
+	return FALSE;
+}
+
+char *
+mono_make_shadow_copy (const char *filename)
+{
+	return (char *) filename;
+}
+#else
 static gboolean
 shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *target, gint targetlen, gint tail_len)
 {
@@ -1462,7 +1478,7 @@ mono_make_shadow_copy (const char *filename)
 	
 	return shadow;
 }
-
+#endif /* DISABLE_SHADOW_COPY */
 
 MonoDomain *
 mono_domain_from_appdomain (MonoAppDomain *appdomain)
