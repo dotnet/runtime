@@ -203,6 +203,11 @@ typedef struct MonoAotCompile {
 	char *static_linking_symbol;
 	CRITICAL_SECTION mutex;
 	gboolean use_bin_writer;
+	const char *current_section;
+	int current_subsection;
+	const char *section_stack [16];
+	int subsection_stack [16];
+	int stack_pos;
 	/* Bin writer */
 #ifdef USE_BIN_WRITER
 	BinSymbol *symbols;
@@ -1895,6 +1900,26 @@ static void emit_section_change (MonoAotCompile *acfg, const char *section_name,
 #else
 	asm_writer_emit_section_change (acfg, section_name, subsection_index);
 #endif
+
+	acfg->current_section = section_name;
+	acfg->current_subsection = subsection_index;
+}
+
+static void emit_push_section (MonoAotCompile *acfg, const char *section_name, int subsection)
+{
+	g_assert (acfg->stack_pos < 16 - 1);
+	acfg->section_stack [acfg->stack_pos] = acfg->current_section;
+	acfg->subsection_stack [acfg->stack_pos] = acfg->current_subsection;
+	acfg->stack_pos ++;
+
+	emit_section_change (acfg, section_name, subsection);
+}
+
+static void emit_pop_section (MonoAotCompile *acfg)
+{
+	g_assert (acfg->stack_pos > 0);
+	acfg->stack_pos --;
+	emit_section_change (acfg, acfg->section_stack [acfg->stack_pos], acfg->subsection_stack [acfg->stack_pos]);
 }
 
 static void emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
@@ -6015,7 +6040,7 @@ emit_loclist (MonoAotCompile *acfg, MonoInst *ins,
 {
 	char label [128];
 
-	emit_section_change (acfg, ".debug_loc", 0);
+	emit_push_section (acfg, ".debug_loc", 0);
 	sprintf (label, ".Lloclist_%d", acfg->loclist_index ++ );
 	emit_label (acfg, label);
 
@@ -6028,7 +6053,7 @@ emit_loclist (MonoAotCompile *acfg, MonoInst *ins,
 	emit_pointer_value (acfg, NULL);
 	emit_pointer_value (acfg, NULL);
 
-	emit_section_change (acfg, ".debug_info", 0);
+	emit_pop_section (acfg);
 	emit_symbol_diff (acfg, label, ".Ldebug_loc_start", 0);
 }
 
