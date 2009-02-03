@@ -872,6 +872,49 @@ stack_slot_get_name (ILStackDesc *value)
 {
 	return type_names [value->stype & TYPE_MASK];
 }
+
+#define APPEND_WITH_PREDICATE(PRED,NAME) do {\
+	if (PRED (value)) { \
+		if (!first) \
+			g_string_append (str, ", "); \
+		g_string_append (str, NAME); \
+		first = FALSE; \
+	} } while (0)
+
+static char*
+stack_slot_stack_type_full_name (ILStackDesc *value)
+{
+	GString *str = g_string_new ("");
+	char *result;
+
+	if ((value->stype & TYPE_MASK) != value->stype) {
+		gboolean first = TRUE;
+		g_string_append(str, "[");
+		APPEND_WITH_PREDICATE (stack_slot_is_this_pointer, "this");
+		APPEND_WITH_PREDICATE (stack_slot_is_boxed_value, "boxed");
+		APPEND_WITH_PREDICATE (stack_slot_is_null_literal, "null");
+		APPEND_WITH_PREDICATE (stack_slot_is_managed_mutability_pointer, "cmmp");
+		APPEND_WITH_PREDICATE (stack_slot_is_managed_pointer, "mp");
+		g_string_append(str, "] ");
+	}
+
+	g_string_append (str, stack_slot_get_name (value));
+	result = str->str;
+	g_string_free (str, FALSE);
+	return result;
+}
+
+static char*
+stack_slot_full_name (ILStackDesc *value)
+{
+	char *type_name = mono_type_full_name (value->type);
+	char *stack_name = stack_slot_stack_type_full_name (value);
+	char *res = g_strdup_printf ("%s (%s)", type_name, stack_name);
+	g_free (type_name);
+	g_free (stack_name);
+	return res;
+}
+
 //////////////////////////////////////////////////////////////////
 void
 mono_free_verify_list (GSList *list)
@@ -2545,7 +2588,7 @@ get_generic_param (VerifyContext *ctx, MonoType *param)
  * @type The source type. It it tested to be of the proper type.    
  * @candidate type of the boxed valuetype.
  * @stack stack slot of the boxed valuetype, separate from @candidade since one could be changed before calling this function
- * @strict if TRUE candidate must be boxed compatible to type otherwise it's enough
+ * @strict if TRUE candidate must be boxed compatible to the target type
  * 
  */
 static gboolean
@@ -2569,7 +2612,7 @@ is_compatible_boxed_valuetype (VerifyContext *ctx, MonoType *type, MonoType *can
 		return FALSE;
 
 	if (!strict)
-		return MONO_TYPE_IS_REFERENCE (type);
+		return TRUE;
 
 	/*All boxed valuetypes are compatible to System.Object*/
 	return MONO_TYPE_IS_REFERENCE (type) && (type->type == MONO_TYPE_OBJECT || verify_type_compatibility_full (ctx, type, candidate, FALSE));
@@ -4483,7 +4526,11 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 		}
 
 		if (mono_type_is_generic_argument (old_type) || mono_type_is_generic_argument (new_type)) {
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stack at depth %d, types not compatible old [%s] new [%s] at 0x%04x", i, stack_slot_get_name (old_slot), stack_slot_get_name (new_slot), ctx->ip_offset)); 
+			char *old_name = stack_slot_full_name (old_slot); 
+			char *new_name = stack_slot_full_name (new_slot);
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stack at depth %d, types not compatible: %s X %s at 0x%04x", i, old_name, new_name, ctx->ip_offset));
+			g_free (old_name);
+			g_free (new_name);
 			goto end_verify;			
 		} 
 
@@ -4515,9 +4562,15 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 		} else if (is_compatible_boxed_valuetype (ctx,old_type, new_type, new_slot, FALSE) || is_compatible_boxed_valuetype (ctx, new_type, old_type, old_slot, FALSE)) {
 			match_class = mono_defaults.object_class;
 			goto match_found;
-		} 
+		}
 
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stack at depth %d, types not compatible old [%s] new [%s] at 0x%04x", i, stack_slot_get_name (old_slot), stack_slot_get_name (new_slot), ctx->ip_offset)); 
+		{
+		char *old_name = stack_slot_full_name (old_slot); 
+		char *new_name = stack_slot_full_name (new_slot);
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Could not merge stack at depth %d, types not compatible: %s X %s at 0x%04x", i, old_name, new_name, ctx->ip_offset)); 
+		g_free (old_name);
+		g_free (new_name);
+		}
 		set_stack_value (ctx, old_slot, &new_class->byval_arg, stack_slot_is_managed_pointer (old_slot));
 		goto end_verify;
 
