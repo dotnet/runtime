@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <mono/utils/mono-io-portability.h>
 
-#ifdef PLATFORM_WIN32
+#ifdef DISABLE_PORTABILITY
 int __mono_io_portability_helpers = PORTABILITY_NONE;
 
 void 
