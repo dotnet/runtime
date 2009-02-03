@@ -23,6 +23,11 @@
 
 #include "mono-path.h"
 
+/* Embedded systems lack MAXSYMLINKS */
+#ifndef MAXSYMLINKS
+#define MAXSYMLINKS 3
+#endif
+
 /* Resolves '..' and '.' references in a path. If the path provided is relative,
  * it will be relative to the current directory */
 gchar *
