@@ -3509,7 +3509,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	buf_size = header->num_clauses * 256 + debug_info_size + 256;
 	p = buf = g_malloc (buf_size);
 
-#if defined(__x86_64__)
+#ifdef MONO_ARCH_HAVE_XP_UNWIND
 	use_unwind_ops = cfg->unwind_ops != NULL;
 #endif
 

@@ -3699,6 +3699,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 	}
 
+	/* 
+	 * Its possible to generate dwarf unwind info for xdebug etc, but not actually
+	 * using it during runtime, hence the define.
+	 */
+#ifdef MONO_ARCH_HAVE_XP_UNWIND
 	if (cfg->unwind_ops) {
 		guint32 info_len;
 		guint8 *unwind_info = mono_unwind_ops_encode (cfg->unwind_ops, &info_len);
@@ -3706,6 +3711,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		jinfo->used_regs = mono_cache_unwind_info (unwind_info, info_len);
 		g_free (unwind_info);
 	}
+#endif
 
 	cfg->jit_info = jinfo;
 #if defined(__arm__)
