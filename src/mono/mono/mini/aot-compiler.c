@@ -1156,7 +1156,7 @@ bin_writer_emit_writeout (MonoAotCompile *acfg)
 	secth [SECT_DYNAMIC].sh_link = SECT_DYNSTR;
 	secth [SECT_SYMTAB].sh_link = SECT_STRTAB;
 
-	num_sections = collect_sections (acfg, secth, all_sections, 8);
+	num_sections = collect_sections (acfg, secth, all_sections, 16);
 	hash = build_hash (acfg, num_sections, &dyn_str_table);
 	num_symtab = hash [1]; /* FIXME */
 	g_print ("num_sections: %d\n", num_sections);
