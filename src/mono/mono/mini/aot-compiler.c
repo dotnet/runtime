@@ -5417,7 +5417,7 @@ emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
 static void
 emit_cie (MonoAotCompile *acfg)
 {
-#if defined(__x86_64__) || defined(__arm__)
+#if defined(__x86_64__) || defined(__arm__) || defined(__i386__)
 	emit_section_change (acfg, ".debug_frame", 0);
 
 	emit_alignment (acfg, 8);
@@ -5434,6 +5434,9 @@ emit_cie (MonoAotCompile *acfg)
 #elif defined(__arm__)
 	emit_sleb128 (acfg, -4); /* data alignment factor */
 	emit_uleb128 (acfg, mono_hw_reg_to_dwarf_reg (ARMREG_LR));
+#elif defined(__i386__)
+	emit_sleb128 (acfg, -4); /* data alignment factor */
+	emit_uleb128 (acfg, mono_hw_reg_to_dwarf_reg (X86_NREG));
 #else
 	g_assert_not_reached ();
 #endif
@@ -5444,7 +5447,7 @@ emit_cie (MonoAotCompile *acfg)
 	emit_uleb128 (acfg, 8); /* offset=8 */
 	emit_byte (acfg, DW_CFA_offset | AMD64_RIP);
 	emit_uleb128 (acfg, 1); /* offset=-8 */
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(__i386__)
 #else
 	g_assert_not_reached ();
 #endif
@@ -5465,7 +5468,7 @@ static void
 emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_symbol,
 		  guint8 *code, guint32 code_size, GSList *unwind_ops, gboolean use_cie)
 {
-#if defined(__x86_64__) || defined(__arm__)
+#if defined(__x86_64__) || defined(__arm__) || defined(__i386__)
 	char symbol [128];
 	GSList *l;
 	guint8 *uw_info;
@@ -6181,11 +6184,8 @@ emit_advance_op (MonoAotCompile *acfg, int line_diff, int addr_diff)
 {
 	gint64 opcode = 0;
 
-	if (line_diff == 0)
-		return;
-
 	/* Use a special opcode if possible */
-	if (line_diff - LINE_BASE < LINE_RANGE) {
+	if (line_diff - LINE_BASE >= 0 && line_diff - LINE_BASE < LINE_RANGE) {
 		if (max_special_addr_diff == 0)
 			max_special_addr_diff = (255 - OPCODE_BASE) / LINE_RANGE;
 
@@ -6336,7 +6336,6 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 		emit_pointer_value (acfg, code);
 
 		// FIXME: Optimize this
-		// FIXME: Decode tokens in the IL info
 		while (ip < header->code + header->code_size) {
 			int il_offset = ip - header->code;
 
@@ -6362,10 +6361,12 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 			line = il_to_line [lne->il_offset];
 			g_assert (line);
 
-			emit_advance_op (acfg, line - prev_line, (gint32)lne->native_offset - prev_native_offset);
+			if (line - prev_line != 0) {
+				emit_advance_op (acfg, line - prev_line, (gint32)lne->native_offset - prev_native_offset);
 
-			prev_line = line;
-			prev_native_offset = lne->native_offset;
+				prev_line = line;
+				prev_native_offset = lne->native_offset;
+			}
 		}
 
 		emit_byte (acfg, DW_LNS_advance_pc);
@@ -6571,7 +6572,7 @@ emit_trampoline_dwarf_info (MonoAotCompile *acfg, const char *tramp_name, char *
 static void
 emit_dwarf_info (MonoAotCompile *acfg)
 {
-#if defined(USE_ELF_WRITER) && defined(__x86_64__)
+#if defined(USE_ELF_WRITER) && (defined(__x86_64__) || defined(__i386__))
 	int i;
 	char symbol [128], symbol2 [128];
 

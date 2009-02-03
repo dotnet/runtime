@@ -4253,18 +4253,32 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
-	int alloc_size, pos, max_offset, i;
+	int alloc_size, pos, max_offset, i, cfa_offset;
 	guint8 *code;
 
-	cfg->code_size =  MAX (mono_method_get_header (method)->code_size * 4, 10240);
+	cfg->code_size = MAX (mono_method_get_header (method)->code_size * 4, 10240);
 
 	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		cfg->code_size += 512;
 
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
+	/* Offset between RSP and the CFA */
+	cfa_offset = 0;
+
+	// CFA = sp + 4
+	cfa_offset = sizeof (gpointer);
+	mono_emit_unwind_op_def_cfa (cfg, code, X86_ESP, sizeof (gpointer));
+	// IP saved at CFA - 4
+	/* There is no IP reg on x86 */
+	mono_emit_unwind_op_offset (cfg, code, X86_NREG, -cfa_offset);
+
 	x86_push_reg (code, X86_EBP);
+	cfa_offset += sizeof (gpointer);
+	mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+	mono_emit_unwind_op_offset (cfg, code, X86_EBP, - cfa_offset);
 	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
+	mono_emit_unwind_op_def_cfa_reg (cfg, code, X86_EBP);
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
@@ -4307,12 +4321,20 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* save the current IP */
 		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
 		x86_push_imm_template (code);
+		cfa_offset += sizeof (gpointer);
 
 		/* save all caller saved regs */
 		x86_push_reg (code, X86_EBP);
+		cfa_offset += sizeof (gpointer);
 		x86_push_reg (code, X86_ESI);
+		cfa_offset += sizeof (gpointer);
+		mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset);
 		x86_push_reg (code, X86_EDI);
+		cfa_offset += sizeof (gpointer);
+		mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset);
 		x86_push_reg (code, X86_EBX);
+		cfa_offset += sizeof (gpointer);
+		mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset);
 
 		if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
 			/*
@@ -4363,16 +4385,22 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (cfg->used_int_regs & (1 << X86_EBX)) {
 			x86_push_reg (code, X86_EBX);
 			pos += 4;
+			cfa_offset += sizeof (gpointer);
+			mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset);
 		}
 
 		if (cfg->used_int_regs & (1 << X86_EDI)) {
 			x86_push_reg (code, X86_EDI);
 			pos += 4;
+			cfa_offset += sizeof (gpointer);
+			mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset);
 		}
 
 		if (cfg->used_int_regs & (1 << X86_ESI)) {
 			x86_push_reg (code, X86_ESI);
 			pos += 4;
+			cfa_offset += sizeof (gpointer);
+			mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset);
 		}
 	}
 
