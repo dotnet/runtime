@@ -47,7 +47,7 @@ mono_file_map_close (MonoFileMap *fmap)
 	return fclose ((FILE*)fmap);
 }
 
-#ifndef HAVE_MMAP
+#if !defined(HAVE_MMAP) && !defined (PLATFORM_WIN32)
 void *
 mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
 {
