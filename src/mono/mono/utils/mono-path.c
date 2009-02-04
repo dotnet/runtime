@@ -89,7 +89,7 @@ mono_path_canonicalize (const char *path)
 gchar *
 mono_path_resolve_symlinks (const char *path)
 {
-#if PLATFORM_WIN32
+#if defined(PLATFORM_NO_SYMLINKS)
 	return mono_path_canonicalize (path);
 #else
 	char *p, *concat, *dir;
