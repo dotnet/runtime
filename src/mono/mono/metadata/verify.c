@@ -1,3 +1,12 @@
+/*
+ * verify.c: 
+ *
+ * Author:
+ *	Mono Project (http://www.mono-project.com)
+ *
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ */
 
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/verify.h>

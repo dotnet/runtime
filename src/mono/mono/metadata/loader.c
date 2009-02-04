@@ -6,8 +6,8 @@
  *   Miguel de Icaza (miguel@ximian.com)
  *   Patrik Torstensson (patrik.torstensson@labs2.com)
  *
- * (C) 2001 Ximian, Inc.
- * Copyright (C) 2002-2006 Novell, Inc.
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  *
  * This file is used by the interpreter and the JIT engine to locate
  * assemblies.  Used to load AssemblyRef and later to resolve various

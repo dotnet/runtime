@@ -7,7 +7,8 @@
  *	Dick Porter     (dick@ximian.com)
  *      Miguel de Icaza (miguel@ximian.com)
  *
- * (C) 2001, 2002 Ximian, Inc.
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  */
 
 #include <mono/metadata/exception.h>

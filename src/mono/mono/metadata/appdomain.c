@@ -6,7 +6,8 @@
  *	Patrik Torstensson
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * (c) 2001-2003 Ximian, Inc. (http://www.ximian.com)
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  */
 #undef ASSEMBLY_LOAD_DEBUG
 #include <config.h>

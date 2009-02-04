@@ -4,8 +4,8 @@
  * Author:
  *	Dick Porter (dick@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
- * Copyright (c) 2002-2006 Novell, Inc.
+ * Copyright 2002 Ximian, Inc.
+ * Copyright 2002-2006 Novell, Inc.
  */
 
 #include <config.h>

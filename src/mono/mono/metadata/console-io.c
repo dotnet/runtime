@@ -1,11 +1,10 @@
-
 /*
  * console-io.c: ConsoleDriver internal calls
  *
  * Author:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * Copyright (C) 2005 Novell, Inc. (http://www.novell.com)
+ * Copyright (C) 2005-2008 Novell, Inc. (http://www.novell.com)
  */
 
 #include <config.h>

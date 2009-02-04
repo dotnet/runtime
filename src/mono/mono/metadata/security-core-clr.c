@@ -4,7 +4,7 @@
  * Author:
  *	Mark Probst <mark.probst@gmail.com>
  *
- * (C) 2007 Novell, Inc
+ * Copyright 2007-2009 Novell, Inc (http://www.novell.com)
  */
 
 #include <mono/metadata/class-internals.h>

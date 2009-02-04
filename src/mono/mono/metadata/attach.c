@@ -4,7 +4,7 @@
  * Author:
  *   Zoltan Varga (vargaz@gmail.com)
  *
- * (C) 2007-2008 Novell, Inc.
+ * Copyright 2007-2009 Novell, Inc (http://www.novell.com)
  */
 
 #include <config.h>

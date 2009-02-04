@@ -4,7 +4,7 @@
  * Author:
  *	Sebastien Pouliot  <sebastien@ximian.com>
  *
- * Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
+ * Copyright 2005-2009 Novell, Inc (http://www.novell.com)
  */
 
 #include "security-manager.h"

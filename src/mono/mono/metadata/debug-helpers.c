@@ -1,3 +1,11 @@
+/*
+ * console-io.c: ConsoleDriver internal calls
+ *
+ * Author:
+ *	Mono Project (http://www.mono-project.com)
+ *
+ * Copyright (C) 2005-2008 Novell, Inc. (http://www.novell.com)
+ */
 
 #include <string.h>
 #include "mono/metadata/tokentype.h"

@@ -5,7 +5,8 @@
  *	Dick Porter (dick@ximian.com)
  *	Mohammad DAMT (mdamt@cdl2000.com)
  *
- * (C) 2003 Ximian, Inc.
+ * Copyright 2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  * (C) 2003 PT Cakram Datalingga Duaribu  http://www.cdl2000.com
  */
 

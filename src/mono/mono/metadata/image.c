@@ -6,7 +6,8 @@
  *   Miguel de Icaza (miguel@ximian.com)
  *   Paolo Molaro (lupus@ximian.com)
  *
- * (C) 2001-2003 Ximian, Inc.  http://www.ximian.com
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  *
  */
 #include <config.h>

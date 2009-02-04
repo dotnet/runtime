@@ -1,3 +1,12 @@
+/*
+ * metadata-verify.c: Metadata verfication support
+ *
+ * Author:
+ *	Mono Project (http://www.mono-project.com)
+ *
+ * Copyright (C) 2005-2008 Novell, Inc. (http://www.novell.com)
+ */
+
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>

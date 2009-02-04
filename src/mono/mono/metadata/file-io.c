@@ -5,8 +5,8 @@
  *	Dick Porter (dick@ximian.com)
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * (C) 2001,2002,2003 Ximian, Inc.
- * Copyright (c) 2004,2005,2006 Novell, Inc. (http://www.novell.com)
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  */
 
 #include <config.h>

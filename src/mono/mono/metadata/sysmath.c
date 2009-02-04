@@ -1,5 +1,12 @@
-/* math.c - these are based on bob smith's csharp routines */
-
+/*
+ * sysmath.c: these are based on bob smith's csharp routines 
+ *
+ * Author:
+ *	Mono Project (http://www.mono-project.com)
+ *
+ * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ */
 #define __USE_ISOC99
 #include <math.h>
 #include <mono/metadata/sysmath.h>

@@ -1,12 +1,12 @@
 /* 
-   decimal.c
-
-   conversions and numerical operations for the c# type System.Decimal
-
-   Author: Martin Weindel (martin.weindel@t-online.de)
-
-   (C) 2001 by Martin Weindel
-*/
+ * decimal.c
+ *
+ * conversions and numerical operations for the c# type System.Decimal
+ *
+ * Author: Martin Weindel (martin.weindel@t-online.de)
+ *
+ * (C) 2001 by Martin Weindel
+ */
 
 /*
  * machine dependent configuration for 

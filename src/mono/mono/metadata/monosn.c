@@ -4,7 +4,8 @@
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
+ * Copyright 2002-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  *
  */
 #include <mono/metadata/class.h>

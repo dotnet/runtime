@@ -4,7 +4,7 @@
  * Author:
  *	Sebastien Pouliot  <sebastien@ximian.com>
  *
- * (C) 2004 Novell (http://www.novell.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  */
 
 #ifdef HAVE_CONFIG_H

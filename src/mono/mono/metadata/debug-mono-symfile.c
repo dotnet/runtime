@@ -1,3 +1,12 @@
+/*
+ * debug-mono-symfile.c: 
+ *
+ * Author:
+ *	Mono Project (http://www.mono-project.com)
+ *
+ * Copyright (C) 2005-2008 Novell, Inc. (http://www.novell.com)
+ */
+
 #include <config.h>
 #include <stdlib.h>
 #include <stdio.h>

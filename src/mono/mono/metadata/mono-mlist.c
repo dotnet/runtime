@@ -4,7 +4,7 @@
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
- * (C) 2006 Novell, Inc.
+ * Copyright 2006-2009 Novell, Inc (http://www.novell.com)
  */
 
 #include "mono/metadata/mono-mlist.h"

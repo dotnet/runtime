@@ -5,7 +5,7 @@
  *
  * Author: Paolo Molaro (lupus@ximian.com)
  *
- * (C) 2008 Novell, Inc
+ * Copyright 2008-2009 Novell, Inc (http://www.novell.com)
  */
 
 #include "config.h"

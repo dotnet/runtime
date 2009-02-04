@@ -4,7 +4,7 @@
  * Authors:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * (C) 2004,2005,2006 Novell, Inc. (http://www.novell.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  */
 
 #ifdef HAVE_CONFIG_H

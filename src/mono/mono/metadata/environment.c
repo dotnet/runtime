@@ -5,8 +5,8 @@
  *	Dick Porter (dick@ximian.com)
  *	Sebastien Pouliot (sebastien@ximian.com)
  *
- * (C) 2002 Ximian, Inc.
- * (C) 2004 Novell (http://www.novell.com)
+ * Copyright 2002-2003 Ximian, Inc (http://www.ximian.com)
+ * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  */
 
 #include <config.h>

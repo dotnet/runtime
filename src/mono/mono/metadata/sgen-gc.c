@@ -4,7 +4,7 @@
  * Author:
  * 	Paolo Molaro (lupus@ximian.com)
  *
- * Copyright (C) 2005-2006 Novell, Inc
+ * Copyright 2005-2009 Novell, Inc (http://www.novell.com)
  *
  * Thread start/stop adapted from Boehm's GC:
  * Copyright (c) 1994 by Xerox Corporation.  All rights reserved.
