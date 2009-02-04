@@ -67,6 +67,7 @@ libmonoutilsinclude_HEADERS = \
 	mono-codeman.h	\
 	mono-counters.h	\
 	mono-digest.h	\
+	mono-embed.h	\
 	mono-logger.h	\
 	mono-hash.h	\
 	mono-math.h	\

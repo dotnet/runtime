@@ -1,5 +1,15 @@
+/*
+ * mono-dl.c: Interface to the dynamic linker
+ *
+ * Author:
+ *    Mono Team (http://www.mono-project.com)
+ *
+ * Copyright 2001-2004 Ximian, Inc.
+ * Copyright 2004-2009 Novell, Inc.
+ */
 #include "config.h"
 #include "mono/utils/mono-dl.h"
+#include "mono/utils/mono-embed.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,6 +28,11 @@ static const char suffixes [][8] = {
 	".dylib",
 	".so",
 	".bundle"
+};
+#elif EMBEDDED_PINVOKE
+#define SOPREFIX ""
+static const char suffixes [][1] = {
+	""
 };
 #else
 #define SOPREFIX "lib"
@@ -64,6 +79,15 @@ convert_flags (int flags)
 		lflags |= RTLD_NOW;
 	return lflags;
 }
+
+#elif EMBEDDED_PINVOKE
+#define SO_HANDLE_TYPE void*
+void *LL_SO_OPEN   (const char *file, int flags);
+int   LL_SO_CLOSE  (void *handle);
+#define LL_SO_SYMBOL(module,symbol) _LL_SO_SYMBOL((module)->handle, (symbol))
+void *_LL_SO_SYMBOL (void *handle, const char *symbol);
+char *LL_SO_ERROR();
+#define LL_SO_TRFLAGS(flags)      0
 
 #else
 /* no dynamic loader supported */
@@ -435,3 +459,94 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	return res;
 }
 
+#if EMBEDDED_PINVOKE
+static GHashTable *mono_dls;
+static char *ll_last_error = "";
+
+/**
+ * mono_dl_register_library:
+ * @name: Library name, this is the name used by the DllImport as the external library name
+ * @mappings: the mappings to register for P/Invoke.
+ *
+ * This function is only available on builds that define
+ * EMBEDDED_PINVOKE, this is available for systems that do not provide
+ * a dynamic linker but still want to use DllImport to easily invoke
+ * code from the managed side into the unmanaged world.
+ *
+ * Mappings is a pointer to the first element of an array of
+ * MonoDlMapping values.  The list must be terminated with both 
+ * the name and addr fields set to NULL.
+ *
+ * This is typically used like this:
+ * MonoDlMapping sample_library_mappings [] = {
+ *   { "CallMe", CallMe },
+ *   { NULL, NULL }
+ * };
+ *
+ * ...
+ * main ()
+ * {
+ *    ...
+ *    mono_dl_register_library ("sample", sample_library_mappings);
+ *    ...
+ * }
+ *
+ * Then the C# code can use this P/Invoke signature:
+ *
+ * 	[DllImport ("sample")]
+ *	extern static int CallMe (int f);
+ */
+void
+mono_dl_register_library (const char *name, MonoDlMapping *mappings)
+{
+	if (mono_dls == NULL)
+		mono_dls = g_hash_table_new (g_str_hash, g_str_equal);
+	
+	printf ("Inserting: 0x%p\n", mappings);
+	g_hash_table_insert (mono_dls, g_strdup (name), mappings);
+}
+
+void *
+LL_SO_OPEN (const char *file, int flag)
+{
+	void *mappings;
+	
+	if (mono_dls == NULL){
+		ll_last_error = "Library not registered";
+		return NULL;
+	}
+		
+	mappings = g_hash_table_lookup (mono_dls, file);
+	ll_last_error = mappings == NULL ? "File not registered" : "";
+	printf ("Returning mappings=0x%p\n", mappings);
+	return mappings;
+}
+
+int LL_SO_CLOSE (void *handle)
+{
+	// No-op
+	return 0;
+}
+
+void *
+_LL_SO_SYMBOL (void *handle, const char *symbol)
+{
+	MonoDlMapping *mappings = (MonoDlMapping *) handle;
+	
+	printf ("During lookup: 0x%p\n", handle);
+	for (;mappings->name; mappings++){
+		if (strcmp (symbol, mappings->name) == 0){
+			ll_last_error = "";
+			return mappings->addr;
+		}
+	}
+	ll_last_error = "Symbol not found";
+	return NULL;
+}
+
+char *
+LL_SO_ERROR (void)
+{
+	return ll_last_error;
+}
+#endif
