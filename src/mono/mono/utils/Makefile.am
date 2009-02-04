@@ -18,46 +18,46 @@ hash_sources = mono-hash.c
 endif
 
 libmonoutils_la_SOURCES = \
-	$(hash_sources)	\
-	mono-md5.c	\
-	mono-sha1.c	\
-	mono-logger.c	\
-	mono-codeman.c	\
-	dlmalloc.h      \
-	dlmalloc.c      \
-	mono-counters.c	\
-	mono-compiler.h	\
-	mono-dl.c	\
-	mono-dl.h	\
+	$(hash_sources)		\
+	mono-md5.c		\
+	mono-sha1.c		\
+	mono-logger.c		\
+	mono-codeman.c		\
+	dlmalloc.h      	\
+	dlmalloc.c      	\
+	mono-counters.c		\
+	mono-compiler.h		\
+	mono-dl.c		\
+	mono-dl.h		\
 	mono-internal-hash.c	\
 	mono-internal-hash.h	\
 	mono-io-portability.c 	\
 	mono-io-portability.h	\
-	monobitset.c	\
-	mono-filemap.c	\
-	mono-math.c  \
-	mono-mmap.c  \
-	mono-mmap.h  \
-	mono-proclib.c	\
-	mono-proclib.h	\
-	mono-time.c  \
-	mono-time.h  \
-	strtod.h	\
-	strtod.c	\
-	strenc.h	\
-	strenc.c	\
-	mono-uri.c	\
-	mono-poll.c	\
-	mono-path.c	\
-	mono-stdlib.c \
-	mono-property-hash.h \
-	mono-property-hash.c \
-	mono-value-hash.h \
-	mono-value-hash.c \
-	freebsd-elf_common.h \
-	freebsd-elf32.h	\
-	freebsd-elf64.h	\
-	freebsd-dwarf.h \
+	monobitset.c		\
+	mono-filemap.c		\
+	mono-math.c  		\
+	mono-mmap.c  		\
+	mono-mmap.h  		\
+	mono-proclib.c		\
+	mono-proclib.h		\
+	mono-time.c  		\
+	mono-time.h  		\
+	strtod.h		\
+	strtod.c		\
+	strenc.h		\
+	strenc.c		\
+	mono-uri.c		\
+	mono-poll.c		\
+	mono-path.c		\
+	mono-stdlib.c 		\
+	mono-property-hash.h 	\
+	mono-property-hash.c 	\
+	mono-value-hash.h 	\
+	mono-value-hash.c 	\
+	freebsd-elf_common.h 	\
+	freebsd-elf32.h		\
+	freebsd-elf64.h		\
+	freebsd-dwarf.h 	\
 	dtrace.h
 
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
