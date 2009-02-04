@@ -6486,16 +6486,18 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *meth
 		gboolean need_loclist = FALSE;
 
 		/* ins->dreg no longer contains the original vreg */
-		for (j = 0; j < cfg->num_varinfo; ++j) {
-			if (cfg->varinfo [j] == ins)
-				break;
-		}
+		if (cfg->varinfo) {
+			for (j = 0; j < cfg->num_varinfo; ++j) {
+				if (cfg->varinfo [j] == ins)
+					break;
+			}
 
-		if (code && j < cfg->num_varinfo) {
-			vmv = MONO_VARINFO (cfg, j);
-			if (vmv->live_range_start) {
-				/* This variable has a precise live range */
-				need_loclist = TRUE;
+			if (code && j < cfg->num_varinfo) {
+				vmv = MONO_VARINFO (cfg, j);
+				if (vmv->live_range_start) {
+					/* This variable has a precise live range */
+					need_loclist = TRUE;
+				}
 			}
 		}
 
