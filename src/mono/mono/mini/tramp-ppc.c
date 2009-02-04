@@ -504,7 +504,7 @@ mono_arch_create_generic_class_init_trampoline (void)
 	guint8 *jump;
 	int tramp_size;
 
-	tramp_size = 32;
+	tramp_size = MONO_PPC_32_64_CASE (32, 44);
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 

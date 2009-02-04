@@ -218,7 +218,7 @@ mono_arch_get_restore_context (void)
 	/* never reached */
 	ppc_break (code);
 
-	g_assert ((code - start) < size);
+	g_assert ((code - start) <= size);
 	mono_arch_flush_icache (start, code - start);
 	return start;
 }
