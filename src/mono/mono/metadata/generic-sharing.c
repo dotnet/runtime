@@ -1281,7 +1281,6 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 gpointer
 mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot)
 {
-	MonoDomain *domain = mrgctx->class_vtable->domain;
 	gpointer info;
 
 	info = fill_runtime_generic_context (mrgctx->class_vtable, (MonoRuntimeGenericContext*)mrgctx, slot,
