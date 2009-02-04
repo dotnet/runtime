@@ -10616,8 +10616,10 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						}
 					}
 
-					live_range_end [var->dreg] = use_ins;
-					live_range_end_bb [var->dreg] = bb;
+					if (var->dreg < orig_next_vreg) {
+						live_range_end [var->dreg] = use_ins;
+						live_range_end_bb [var->dreg] = bb;
+					}
 				}
 			}
 
@@ -10647,8 +10649,10 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	}
 
 	cfg->vreg_to_var_num = mono_mempool_alloc0 (cfg->mempool, sizeof (gint32) * cfg->next_vreg);
-	for (i = 0; i < cfg->num_varinfo; ++i)
+	for (i = 0; i < cfg->num_varinfo; ++i) {
+		g_assert (cfg->varinfo [i]->dreg < cfg->next_vreg);
 		cfg->vreg_to_var_num [cfg->varinfo [i]->dreg] = i;
+	}
 	
 #ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
 	/*
