@@ -508,5 +508,8 @@ mono_metadata_get_corresponding_event_from_generic_type_definition (MonoEvent *e
 MonoProperty*
 mono_metadata_get_corresponding_property_from_generic_type_definition (MonoProperty *property) MONO_INTERNAL;
 
+guint32
+mono_metadata_signature_size (MonoMethodSignature *sig) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
