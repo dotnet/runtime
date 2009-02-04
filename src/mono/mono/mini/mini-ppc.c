@@ -3115,6 +3115,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_LOADI4_MEMBASE:
+#ifdef __mono_ppc64__
+			if (ppc_is_imm16 (ins->inst_offset)) {
+				ppc_lwa (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+			} else {
+				ppc_load (code, ppc_r0, ins->inst_offset);
+				ppc_lwax (code, ins->dreg, ins->inst_basereg, ppc_r0);
+			}
+			break;
+#endif
 		case OP_LOADU4_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_lwz (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
@@ -3122,10 +3131,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_load (code, ppc_r0, ins->inst_offset);
 				ppc_lwzx (code, ins->dreg, ins->inst_basereg, ppc_r0);
 			}
-#ifdef __mono_ppc64__
-			if (ins->opcode == OP_LOADI4_MEMBASE)
-				ppc_extsw (code, ins->dreg, ins->dreg);
-#endif
 			break;
 		case OP_LOADI1_MEMBASE:
 		case OP_LOADU1_MEMBASE:
@@ -3573,7 +3578,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_load_volatile_arguments (cfg, code);
 
 			if (ppc_is_imm16 (cfg->stack_usage)) {
-				ppc_addic (code, ppc_r11, cfg->frame_reg, cfg->stack_usage);
+				ppc_addi (code, ppc_r11, cfg->frame_reg, cfg->stack_usage);
 			} else {
 				ppc_load (code, ppc_r11, cfg->stack_usage);
 				ppc_add (code, ppc_r11, cfg->frame_reg, ppc_r11);
@@ -4836,9 +4841,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 				}
 			}
 			if (cfg->frame_reg != ppc_sp)
-				ppc_addic (code, ppc_sp, ppc_r11, cfg->stack_usage);
+				ppc_addi (code, ppc_sp, ppc_r11, cfg->stack_usage);
 			else
-				ppc_addic (code, ppc_sp, ppc_sp, cfg->stack_usage);
+				ppc_addi (code, ppc_sp, ppc_sp, cfg->stack_usage);
 		} else {
 			ppc_load (code, ppc_r11, cfg->stack_usage);
 			if (cfg->used_int_regs) {
