@@ -1173,6 +1173,8 @@ mono_handle_exception (MonoContext *ctx, gpointer obj, gpointer original_ip, gbo
 #error "Can't use sigaltstack without sigaction"
 #endif
 
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+
 void
 mono_setup_altstack (MonoJitTlsData *tls)
 {
@@ -1192,7 +1194,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	/*g_print ("thread %p, stack_base: %p, stack_size: %d\n", (gpointer)pthread_self (), staddr, stsize);*/
 
 	tls->stack_ovf_guard_base = staddr + mono_pagesize ();
-	tls->stack_ovf_guard_size = mono_pagesize () * 8;
+	tls->stack_ovf_guard_size = ALIGN_TO (8 * 4096, mono_pagesize ());
 
 	if (mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE)) {
 		/* mprotect can fail for the main thread stack */
