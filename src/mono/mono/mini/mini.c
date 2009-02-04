@@ -844,6 +844,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	cfg->varinfo [num] = inst;
 
 	MONO_INIT_VARINFO (&cfg->vars [num], num);
+	MONO_VARINFO (cfg, num)->vreg = vreg;
 
 	if (vreg != -1)
 		set_vreg_to_inst (cfg, vreg, inst);

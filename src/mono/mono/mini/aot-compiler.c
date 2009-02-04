@@ -6482,11 +6482,17 @@ emit_method_dwarf_info (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *meth
 		MonoInst *ins = locals [i];
 		char name_buf [128];
 		int j;
-		MonoMethodVar *vmv;
+		MonoMethodVar *vmv = NULL;
 		gboolean need_loclist = FALSE;
 
-		if (code && get_vreg_to_inst (cfg, ins->dreg)) {
-			vmv = MONO_VARINFO (cfg, cfg->vreg_to_var_num [ins->dreg]);
+		/* ins->dreg no longer contains the original vreg */
+		for (j = 0; j < cfg->num_varinfo; ++j) {
+			if (cfg->varinfo [j] == ins)
+				break;
+		}
+
+		if (code && j < cfg->num_varinfo) {
+			vmv = MONO_VARINFO (cfg, j);
 			if (vmv->live_range_start) {
 				/* This variable has a precise live range */
 				need_loclist = TRUE;
