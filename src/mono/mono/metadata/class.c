@@ -52,6 +52,9 @@ gboolean mono_print_vtable = FALSE;
  */
 gboolean mono_setup_vtable_in_class_init = TRUE;
 
+/* Statistics */
+guint32 inflated_classes_size, inflated_methods_size;
+
 /* Function supplied by the runtime to find classes by name using information from the AOT file */
 static MonoGetClassFromName get_class_from_name = NULL;
 
@@ -672,6 +675,25 @@ mono_class_inflate_generic_type_with_mempool_no_copy (MonoMemPool *mempool, Mono
 	return inflated;
 }
 
+/*
+ * mono_class_inflate_generic_class:
+ *
+ *   Inflate the class GKLASS with CONTEXT.
+ */
+MonoClass*
+mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context)
+{
+	MonoClass *res;
+	MonoType *inflated;
+
+	inflated = mono_class_inflate_generic_type (&gklass->byval_arg, context);
+
+	res = mono_class_from_mono_type (inflated);
+	mono_metadata_free_type (inflated);
+
+	return res;
+}
+
 static MonoGenericContext
 inflate_generic_context (MonoGenericContext *context, MonoGenericContext *inflate_with)
 {
@@ -798,6 +820,8 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	}
 
 	mono_stats.inflated_method_count++;
+
+	inflated_methods_size += sizeof (MonoMethodInflated);
 
 	sig = mono_method_signature (method);
 	if (sig->pinvoke) {
@@ -4348,10 +4372,8 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		 * nesting context should have, but it may also have additional
 		 * generic parameters...
 		 */
-		MonoType *inflated = mono_class_inflate_generic_type (
-			&gklass->nested_in->byval_arg, mono_generic_class_get_context (gclass));
-		klass->nested_in = mono_class_from_mono_type (inflated);
-		mono_metadata_free_type (inflated);
+		klass->nested_in = mono_class_inflate_generic_class (gklass->nested_in,
+															 mono_generic_class_get_context (gclass));
 	}
 
 	klass->name = gklass->name;
@@ -4381,10 +4403,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->interface_count = gklass->interface_count;
 	klass->interfaces = g_new0 (MonoClass *, klass->interface_count);
 	for (i = 0; i < klass->interface_count; i++) {
-		MonoType *it = &gklass->interfaces [i]->byval_arg;
-		MonoType *inflated = mono_class_inflate_generic_type (it, mono_generic_class_get_context (gclass));
-		klass->interfaces [i] = mono_class_from_mono_type (inflated);
-		mono_metadata_free_type (inflated);
+		klass->interfaces [i] = mono_class_inflate_generic_class (gklass->interfaces [i], mono_generic_class_get_context (gclass));
 	}
 
 	/*
@@ -4394,11 +4413,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->nested_classes = NULL;
 
 	if (gklass->parent) {
-		MonoType *inflated = mono_class_inflate_generic_type (
-			&gklass->parent->byval_arg, mono_generic_class_get_context (gclass));
-
-		klass->parent = mono_class_from_mono_type (inflated);
-		mono_metadata_free_type (inflated);
+		klass->parent = mono_class_inflate_generic_class (gklass->parent, mono_generic_class_get_context (gclass));
 	}
 
 	if (klass->parent)
@@ -4427,6 +4442,8 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	}
 
 	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
+
+	inflated_classes_size += sizeof (MonoClass);
 	
 	mono_loader_unlock ();
 
@@ -7140,6 +7157,10 @@ mono_class_get_exception_data (MonoClass *klass)
 void
 mono_classes_init (void)
 {
+	mono_counters_register ("Inflated methods size",
+							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_methods_size);
+	mono_counters_register ("Inflated classes size",
+							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_classes_size);
 }
 
 /**

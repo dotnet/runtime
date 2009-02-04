@@ -681,12 +681,9 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 		res->clauses = g_memdup (header->clauses, sizeof (MonoExceptionClause) * res->num_clauses);
 		for (i = 0; i < header->num_clauses; ++i) {
 			MonoExceptionClause *clause = &res->clauses [i];
-			MonoType *t;
 			if (clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
 				continue;
-			t = mono_class_inflate_generic_type (&clause->data.catch_class->byval_arg, context);
-			clause->data.catch_class = mono_class_from_mono_type (t);
-			mono_metadata_free_type (t);
+			clause->data.catch_class = mono_class_inflate_generic_class (clause->data.catch_class, context);
 		}
 	}
 	return res;
