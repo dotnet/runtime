@@ -563,6 +563,8 @@ mono_set_rootdir (void)
 	g_free (installdir);
 	g_free (bindir);
 	g_free (name);
+#elif defined(DISABLE_MONO_AUTODETECTION)
+	fallback ();
 #else
 	char buf [4096];
 	int  s;

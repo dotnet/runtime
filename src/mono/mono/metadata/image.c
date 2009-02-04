@@ -877,14 +877,13 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
-	FILE *filed;
-	struct stat stat_buf;
+	MonoFileMap *filed;
 
-	if ((filed = fopen (fname, "rb")) == NULL){
+	if ((filed = mono_file_map_open (fname)) == NULL){
 		if (IS_PORTABILITY_SET) {
 			gchar *ffname = mono_portability_find_file (fname, TRUE);
 			if (ffname) {
-				filed = fopen (ffname, "rb");
+				filed = mono_file_map_open (ffname);
 				g_free (ffname);
 			}
 		}
@@ -896,18 +895,12 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 		}
 	}
 
-	if (fstat (fileno (filed), &stat_buf)) {
-		fclose (filed);
-		if (status)
-			*status = MONO_IMAGE_ERROR_ERRNO;
-		return NULL;
-	}
 	image = g_new0 (MonoImage, 1);
 	image->raw_buffer_used = TRUE;
-	image->raw_data_len = stat_buf.st_size;
-	image->raw_data = mono_file_map (stat_buf.st_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, fileno (filed), 0, &image->raw_data_handle);
+	image->raw_data_len = mono_file_map_size (filed);
+	image->raw_data = mono_file_map (image->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &image->raw_data_handle);
 	if (!image->raw_data) {
-		fclose (filed);
+		mono_file_map_close (filed);
 		g_free (image);
 		if (status)
 			*status = MONO_IMAGE_IMAGE_INVALID;
@@ -919,8 +912,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->ref_only = refonly;
 	image->ref_count = 1;
 
-	fclose (filed);
-
+	mono_file_map_close (filed);
 	return do_mono_image_load (image, status, care_about_cli);
 }
 
