@@ -39,6 +39,7 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-counters.h>
 
 MonoDefaults mono_defaults;
 
@@ -51,6 +52,8 @@ MonoDefaults mono_defaults;
  */
 static CRITICAL_SECTION loader_mutex;
 
+/* Statistics */
+static guint32 inflated_signatures_size;
 
 /*
  * This TLS variable contains the last type load error encountered by the loader.
@@ -66,6 +69,9 @@ mono_loader_init ()
 		InitializeCriticalSection (&loader_mutex);
 
 		loader_error_thread_id = TlsAlloc ();
+
+		mono_counters_register ("Inflated signatures size",
+								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
 
 		inited = TRUE;
 	}
@@ -746,6 +752,8 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		cached = mono_metadata_get_inflated_signature (sig, context);
 		if (cached != sig)
 			mono_metadata_free_inflated_signature (sig);
+		else
+			inflated_signatures_size += mono_metadata_signature_size (cached);
 		sig = cached;
 	}
 
@@ -1934,6 +1942,9 @@ mono_method_signature (MonoMethod *m)
 		/* the lock is recursive */
 		signature = mono_method_signature (imethod->declaring);
 		signature = inflate_generic_signature (imethod->declaring->klass->image, signature, mono_method_get_context (m));
+
+		inflated_signatures_size += mono_metadata_signature_size (signature);
+
 		mono_memory_barrier ();
 		m->signature = signature;
 		mono_loader_unlock ();

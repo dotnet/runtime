@@ -3659,6 +3659,17 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		compare_func = (ignore_case) ? g_strcasecmp : strcmp;
 	}
 
+	/* An optimization for calls made from Delegate:CreateDelegate () */
+	if (klass->delegate && mname && !strcmp (mname, "Invoke") && (bflags == (BFLAGS_Public | BFLAGS_Static | BFLAGS_Instance))) {
+		method = mono_get_delegate_invoke (klass);
+
+		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
+		
+		res = mono_array_new_specific (array_vtable, 1);
+		mono_array_setref (res, 0, member);
+		return res;
+	}
+
 	mono_class_setup_vtable (klass);
 
 	if (is_generic_parameter (type->type))

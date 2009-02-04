@@ -7060,6 +7060,13 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 
 	mono_class_init (klass);
 
+	if (klass->generic_class && !klass->methods) {
+		res = mono_class_get_method_from_name_flags (klass->generic_class->container_class, name, param_count, flags);
+		if (res)
+			res = mono_class_inflate_generic_method_full (res, klass, mono_class_get_context (klass));
+		return res;
+	}
+
 	if (klass->methods || !MONO_CLASS_HAS_STATIC_METADATA (klass)) {
 		mono_class_setup_methods (klass);
 		for (i = 0; i < klass->method.count; ++i) {

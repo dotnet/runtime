@@ -1860,6 +1860,17 @@ mono_metadata_signature_dup (MonoMethodSignature *sig)
 }
 
 /*
+ * mono_metadata_signature_size:
+ *
+ *   Return the amount of memory allocated to SIG.
+ */
+guint32
+mono_metadata_signature_size (MonoMethodSignature *sig)
+{
+	return sizeof (MonoMethodSignature) + (sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
+}
+
+/*
  * mono_metadata_parse_method_signature:
  * @m: metadata context
  * @generic_container: generics container
