@@ -5010,6 +5010,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 }
 
+#if DEAD_CODE
 static int
 try_offset_access (void *value, guint32 idx)
 {
@@ -5023,6 +5024,7 @@ try_offset_access (void *value, guint32 idx)
 		return 0;
 	return 1;
 }
+#endif
 
 static void
 setup_tls_access (void)
