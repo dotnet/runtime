@@ -602,3 +602,5 @@ expand_i4: dest:x src1:i len:9
 expand_r4: dest:x src1:f len:13
 expand_r8: dest:x src1:f len:13
 
+liverange_start: len:0
+liverange_end: len:0
