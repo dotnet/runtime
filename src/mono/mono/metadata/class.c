@@ -453,9 +453,9 @@ MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
 	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype && !type->byref)
-		return type->data.klass->enum_basetype;
+		return mono_class_enum_basetype (type->data.klass);
 	if (type->type == MONO_TYPE_GENERICINST && type->data.generic_class->container_class->enumtype && !type->byref)
-		return type->data.generic_class->container_class->enum_basetype;
+		return mono_class_enum_basetype (type->data.generic_class->container_class);
 	return type;
 }
 
@@ -1161,7 +1161,7 @@ mono_class_setup_fields (MonoClass *class)
 
 	class->blittable = blittable;
 
-	if (class->enumtype && !class->enum_basetype) {
+	if (class->enumtype && !mono_class_enum_basetype (class)) {
 		if (!((strcmp (class->name, "Enum") == 0) && (strcmp (class->name_space, "System") == 0)))
 			G_BREAKPOINT ();
 	}
@@ -2157,8 +2157,8 @@ fill_valuetype_array_derived_types (MonoClass **valuetype_types, MonoClass *ecla
 		valuetype_types [1] = mono_defaults.sbyte_class;
 	else if (eclass == mono_defaults.sbyte_class)
 		valuetype_types [1] = mono_defaults.byte_class;
-	else if (eclass->enumtype && eclass->enum_basetype)
-		valuetype_types [1] = mono_class_from_mono_type (eclass->enum_basetype);
+	else if (eclass->enumtype && mono_class_enum_basetype (eclass))
+		valuetype_types [1] = mono_class_from_mono_type (mono_class_enum_basetype (eclass));
 }
 
 /* this won't be needed once bug #325495 is completely fixed
@@ -4853,7 +4853,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	class->parent = parent;
 	class->instance_size = mono_class_instance_size (class->parent);
 
-	if (eclass->enumtype && !eclass->enum_basetype) {
+	if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
 		if (!eclass->reflection_info || eclass->wastypebuilder) {
 			g_warning ("Only incomplete TypeBuilder objects are allowed to be an enum without base_type");
 			g_assert (eclass->reflection_info && !eclass->wastypebuilder);
@@ -6070,7 +6070,7 @@ handle_enum:
 		return 8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			klass = klass->element_class;
 			goto handle_enum;
 		}
