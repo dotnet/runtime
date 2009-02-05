@@ -349,6 +349,48 @@ mono_loader_error_prepare_exception (MonoLoaderError *error)
 	return ex;
 }
 
+/*
+ * find_cached_memberref_sig:
+ *
+ *   Return a cached copy of the memberref signature identified by SIG_IDX.
+ * We use a gpointer since the cache stores both MonoTypes and MonoMethodSignatures.
+ * A cache is needed since the type/signature parsing routines allocate everything 
+ * from a mempool, so without a cache, multiple requests for the same signature would 
+ * lead to unbounded memory growth. For normal methods/fields this is not a problem 
+ * since the resulting methods/fields are cached, but inflated methods/fields cannot
+ * be cached.
+ * LOCKING: Acquires the loader lock.
+ */
+static gpointer
+find_cached_memberref_sig (MonoImage *image, guint32 sig_idx)
+{
+	gpointer res;
+
+	mono_loader_lock ();
+	res = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (sig_idx));
+	mono_loader_unlock ();
+
+	return res;
+}
+
+static gpointer
+cache_memberref_sig (MonoImage *image, guint32 sig_idx, gpointer sig)
+{
+	gpointer prev_sig;
+
+	mono_loader_lock ();
+	prev_sig = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (sig_idx));
+	if (prev_sig) {
+		/* Somebody got in before us */
+		sig = prev_sig;
+	}
+	else
+		g_hash_table_insert (image->memberref_signatures, GUINT_TO_POINTER (sig_idx), sig);
+	mono_loader_unlock ();
+
+	return sig;
+}
+
 static MonoClassField*
 field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		      MonoGenericContext *context)
@@ -377,7 +419,14 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 		mono_loader_set_error_bad_image (g_strdup_printf ("Bad field signature class token %08x field name %s token %08x", class, fname, token));
 		return NULL;
 	}
-	sig_type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	/* FIXME: This needs a cache, especially for generic instances, since
+	 * mono_metadata_parse_type () allocates everything from a mempool.
+	 */
+	sig_type = find_cached_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE]);
+	if (!sig_type) {
+		sig_type = mono_metadata_parse_type (image, MONO_PARSE_TYPE, 0, ptr, &ptr);
+		sig_type = cache_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE], sig_type);
+	}
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
@@ -697,8 +746,9 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 {
 	int table = mono_metadata_token_table (token);
 	int idx = mono_metadata_token_index (token);
+	int sig_idx;
 	guint32 cols [MONO_MEMBERREF_SIZE];
-	MonoMethodSignature *sig, *prev_sig;
+	MonoMethodSignature *sig;
 	const char *ptr;
 
 	/* !table is for wrappers: we should really assign their own token to them */
@@ -720,25 +770,16 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		/* FIXME: This might be incorrect for vararg methods */
 		return mono_method_signature (method);
 
-	mono_loader_lock ();
-	sig = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (token));
-	mono_loader_unlock ();
-	if (!sig) {
-		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
+	mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
+	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
 
-		ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+	sig = find_cached_memberref_sig (image, sig_idx);
+	if (!sig) {
+		ptr = mono_metadata_blob_heap (image, sig_idx);
 		mono_metadata_decode_blob_size (ptr, &ptr);
 		sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
 
-		mono_loader_lock ();
-		prev_sig = g_hash_table_lookup (image->memberref_signatures, GUINT_TO_POINTER (token));
-		if (prev_sig) {
-			/* Somebody got in before us */
-			sig = prev_sig;
-		}
-		else
-			g_hash_table_insert (image->memberref_signatures, GUINT_TO_POINTER (token), sig);
-		mono_loader_unlock ();
+		sig = cache_memberref_sig (image, sig_idx, sig);
 	}
 
 	if (context) {
@@ -787,7 +828,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	MonoMethod *method = NULL;
 	MonoTableInfo *tables = image->tables;
 	guint32 cols[6];
-	guint32 nindex, class;
+	guint32 nindex, class, sig_idx;
 	const char *mname;
 	MonoMethodSignature *sig;
 	const char *ptr;
@@ -857,12 +898,19 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	g_assert (klass);
 	mono_class_init (klass);
 
-	ptr = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
+
+	ptr = mono_metadata_blob_heap (image, sig_idx);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 
-	sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
-	if (sig == NULL)
-		return NULL;
+	sig = find_cached_memberref_sig (image, sig_idx);
+	if (!sig) {
+		sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
+		if (sig == NULL)
+			return NULL;
+
+		sig = cache_memberref_sig (image, sig_idx, sig);
+	}
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
@@ -912,7 +960,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		g_free (msig);
 		g_free (class_name);
 	}
-	mono_metadata_free_method_signature (sig);
 
 	return method;
 }
