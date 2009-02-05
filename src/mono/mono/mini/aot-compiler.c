@@ -5620,9 +5620,12 @@ static DwarfBasicType basic_types [] = {
 	{ ".LDIE_U4", "uint", MONO_TYPE_U4, 4, DW_ATE_unsigned },
 	{ ".LDIE_I8", "long", MONO_TYPE_I8, 8, DW_ATE_signed },
 	{ ".LDIE_U8", "ulong", MONO_TYPE_U8, 8, DW_ATE_unsigned },
+	{ ".LDIE_I", "intptr", MONO_TYPE_I, SIZEOF_VOID_P, DW_ATE_signed },
+	{ ".LDIE_U", "uintptr", MONO_TYPE_U, SIZEOF_VOID_P, DW_ATE_unsigned },
 	{ ".LDIE_R4", "float", MONO_TYPE_R4, 4, DW_ATE_float },
 	{ ".LDIE_R8", "double", MONO_TYPE_R8, 8, DW_ATE_float },
 	{ ".LDIE_BOOLEAN", "boolean", MONO_TYPE_BOOLEAN, 1, DW_ATE_boolean },
+	{ ".LDIE_CHAR", "char", MONO_TYPE_CHAR, 2, DW_ATE_unsigned_char },
 	{ ".LDIE_STRING", "string", MONO_TYPE_STRING, sizeof (gpointer), DW_ATE_address },
 	{ ".LDIE_OBJECT", "object", MONO_TYPE_OBJECT, sizeof (gpointer), DW_ATE_address },
 	{ ".LDIE_SZARRAY", "object", MONO_TYPE_SZARRAY, sizeof (gpointer), DW_ATE_address },
@@ -5906,11 +5909,12 @@ emit_class_dwarf_info (MonoAotCompile *acfg, MonoClass *klass)
 			switch (klass->enum_basetype->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
+			case MONO_TYPE_BOOLEAN:
 				emit_sleb128 (acfg, *p);
 				break;
-			case MONO_TYPE_CHAR:
 			case MONO_TYPE_U2:
 			case MONO_TYPE_I2:
+			case MONO_TYPE_CHAR:
 				emit_sleb128 (acfg, read16 (p));
 				break;
 			case MONO_TYPE_U4:
@@ -5920,6 +5924,14 @@ emit_class_dwarf_info (MonoAotCompile *acfg, MonoClass *klass)
 			case MONO_TYPE_U8:
 			case MONO_TYPE_I8:
 				emit_sleb128 (acfg, read64 (p));
+				break;
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#if SIZEOF_VOID_P == 8
+				emit_sleb128 (acfg, read64 (p));
+#else
+				emit_sleb128 (acfg, read32 (p));
+#endif
 				break;
 			default:
 				g_assert_not_reached ();
