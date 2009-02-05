@@ -54,6 +54,7 @@ static CRITICAL_SECTION loader_mutex;
 
 /* Statistics */
 static guint32 inflated_signatures_size;
+static guint32 memberref_sig_cache_size;
 
 /*
  * This TLS variable contains the last type load error encountered by the loader.
@@ -72,6 +73,8 @@ mono_loader_init ()
 
 		mono_counters_register ("Inflated signatures size",
 								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
+		mono_counters_register ("Memberref signature cache size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
 
 		inited = TRUE;
 	}
@@ -384,8 +387,12 @@ cache_memberref_sig (MonoImage *image, guint32 sig_idx, gpointer sig)
 		/* Somebody got in before us */
 		sig = prev_sig;
 	}
-	else
+	else {
 		g_hash_table_insert (image->memberref_signatures, GUINT_TO_POINTER (sig_idx), sig);
+		/* An approximation based on glib 2.18 */
+		memberref_sig_cache_size += sizeof (gpointer) * 4;
+	}
+
 	mono_loader_unlock ();
 
 	return sig;
