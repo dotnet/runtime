@@ -11,7 +11,11 @@ header-tests.ok: gen-md-tests header-tests.md simple-assembly.exe
 	./gen-md-tests header-tests.md
 	touch header-tests.ok
 
-generate-stamp: header-tests.ok
+section-table-tests.ok: gen-md-tests section-table-tests.md simple-assembly.exe
+	./gen-md-tests section-table-tests.md
+	touch section-table-tests.ok
+
+generate-stamp: header-tests.ok section-table-tests.ok
 	touch generate-stamp
 
 clean-stamps:
