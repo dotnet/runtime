@@ -862,6 +862,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	result->is_inflated = TRUE;
 	result->is_generic = FALSE;
 	result->signature = NULL;
+	result->is_mb_open = is_mb_open;
 
 	if (!context->method_inst) {
 		/* Set the generic_container of the result to the generic_container of method */
@@ -1732,8 +1733,13 @@ mono_class_get_vtable_entry (MonoClass *class, int offset)
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
 		mono_class_setup_vtable (gklass);
-		if (gklass->vtable [offset]->wrapper_type != MONO_WRAPPER_STATIC_RGCTX_INVOKE)
+		if (gklass->vtable [offset]->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE) {
+			MonoMethod *method = mono_marshal_method_from_wrapper (gklass->vtable [offset]);
+			method = mono_class_inflate_generic_method_full (method, class, mono_class_get_context (class));
+			return mono_marshal_get_static_rgctx_invoke (method);
+		} else {
 			return mono_class_inflate_generic_method_full (gklass->vtable [offset], class, mono_class_get_context (class));
+		}
 	}
 
  	if (class->rank == 1) {
