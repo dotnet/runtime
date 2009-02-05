@@ -2336,7 +2336,7 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 		else
 			res = mono_marshal_get_remoting_invoke (res);
 	} else {
-		if (method->is_inflated && !res->is_inflated) {
+		if (method->is_inflated) {
 			/* Have to inflate the result */
 			res = mono_class_inflate_generic_method (res, &((MonoMethodInflated*)method)->context);
 		}
