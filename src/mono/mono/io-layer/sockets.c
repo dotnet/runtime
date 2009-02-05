@@ -754,8 +754,8 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 		return(SOCKET_ERROR);
 	}
 
-#if defined(__FreeBSD__)
-	/* FreeBSD's multicast sockets also need SO_REUSEPORT when SO_REUSEADDR is requested.  */
+#if defined (SO_REUSEPORT)
+	/* BSD's and MacOS X multicast sockets also need SO_REUSEPORT when SO_REUSEADDR is requested.  */
 	if (level == SOL_SOCKET && optname == SO_REUSEADDR) {
 		int type;
 		int type_len = sizeof (type);

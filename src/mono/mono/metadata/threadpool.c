@@ -835,7 +835,7 @@ socket_io_add_poll (MonoSocketAsyncResult *state)
 	MonoMList *list;
 	SocketIOData *data = &socket_io_data;
 
-#if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD6) || defined(PLATFORM_WIN32) || defined(PLATFORM_SOLARIS)
+#if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD) || defined(PLATFORM_WIN32) || defined(PLATFORM_SOLARIS)
 	/* select() for connect() does not work well on the Mac. Bug #75436. */
 	/* Bug #77637 for the BSD 6 case */
 	/* Bug #78888 for the Windows case */
