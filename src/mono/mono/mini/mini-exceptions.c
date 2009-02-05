@@ -556,7 +556,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	MonoJitTlsData *jit_tls = TlsGetValue (mono_jit_tls_id);
 	MonoLMF *lmf = mono_get_lmf ();
 	MonoJitInfo *ji, rji;
-	MonoContext ctx, new_ctx, old_ctx;
+	MonoContext ctx, new_ctx, ji_ctx;
 	MonoDebugSourceLocation *location;
 	MonoMethod *last_method = NULL, *actual_method;
 
@@ -571,9 +571,15 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 #endif
 
 	do {
-		old_ctx = ctx;
+		ji_ctx = ctx;
 		ji = mono_find_jit_info (domain, jit_tls, &rji, NULL, &ctx, &new_ctx, NULL, &lmf, (int*) native_offset, NULL);
 		ctx = new_ctx;
+
+		if (ji && ji != (gpointer)-1 &&
+				MONO_CONTEXT_GET_IP (&ctx) >= ji->code_start &&
+				(guint8*)MONO_CONTEXT_GET_IP (&ctx) < (guint8*)ji->code_start + ji->code_size) {
+			ji_ctx = ctx;
+		}
 
 		if (!ji || ji == (gpointer)-1 || MONO_CONTEXT_GET_SP (&ctx) >= jit_tls->end_of_stack)
 			return FALSE;
@@ -602,7 +608,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	} while (skip >= 0);
 
-	actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &old_ctx));
+	actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ji_ctx));
 
 	*method = mono_method_get_object (domain, actual_method, NULL);
 
