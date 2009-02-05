@@ -1148,8 +1148,7 @@ mono_class_setup_fields (MonoClass *class)
 		}
 
 		if (class->enumtype && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			class->enum_basetype = field->type;
-			class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
+			class->cast_class = class->element_class = mono_class_from_mono_type (field->type);
 			blittable = class->element_class->blittable;
 		}
 
@@ -4298,13 +4297,13 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	}
 
 	if (class->enumtype) {
-		class->enum_basetype = mono_class_find_enum_basetype (class);
-		if (!class->enum_basetype) {
+		MonoType *enum_basetype = mono_class_find_enum_basetype (class);
+		if (!enum_basetype) {
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			mono_loader_unlock ();
 			return NULL;
 		}
-		class->cast_class = class->element_class = mono_class_from_mono_type (class->enum_basetype);
+		class->cast_class = class->element_class = mono_class_from_mono_type (enum_basetype);
 	}
 
 	/*
@@ -4420,8 +4419,8 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 		mono_class_setup_parent (klass, klass->parent);
 
 	if (klass->enumtype) {
-		klass->enum_basetype = gklass->enum_basetype;
 		klass->cast_class = gklass->cast_class;
+		klass->element_class = gklass->element_class;
 	}
 
 	if (gclass->is_dynamic) {
@@ -4518,7 +4517,6 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	klass->inited = TRUE;
 	klass->cast_class = klass->element_class = klass;
-	klass->enum_basetype = &klass->element_class->byval_arg;
 	klass->flags = TYPE_ATTRIBUTE_PUBLIC;
 
 	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
@@ -4599,11 +4597,10 @@ mono_ptr_class_get (MonoType *type)
 	/* Can pointers get boxed? */
 	result->instance_size = sizeof (gpointer);
 	result->cast_class = result->element_class = el_class;
-	result->enum_basetype = &result->element_class->byval_arg;
 	result->blittable = TRUE;
 
 	result->this_arg.type = result->byval_arg.type = MONO_TYPE_PTR;
-	result->this_arg.data.type = result->byval_arg.data.type = result->enum_basetype;
+	result->this_arg.data.type = result->byval_arg.data.type = &result->element_class->byval_arg;
 	result->this_arg.byref = TRUE;
 
 	mono_class_setup_supertypes (result);
@@ -4653,7 +4650,6 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 	result->this_arg.type = result->byval_arg.type = MONO_TYPE_FNPTR;
 	result->this_arg.data.method = result->byval_arg.data.method = sig;
 	result->this_arg.byref = TRUE;
-	result->enum_basetype = &result->element_class->byval_arg;
 	result->blittable = TRUE;
 
 	mono_class_setup_supertypes (result);
@@ -6276,7 +6272,11 @@ mono_class_is_enum (MonoClass *klass)
 MonoType*
 mono_class_enum_basetype (MonoClass *klass)
 {
-	return klass->enum_basetype;
+	if (klass->element_class == klass)
+		/* SRE */
+		return NULL;
+	else
+		return &klass->element_class->byval_arg;
 }
 
 /**

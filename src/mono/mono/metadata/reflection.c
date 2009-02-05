@@ -9049,6 +9049,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 	if (klass->enumtype && mono_class_enum_basetype (klass) == NULL) {
 		MonoReflectionFieldBuilder *fb;
 		MonoClass *ec;
+		MonoType *enum_basetype;
 
 		g_assert (tb->fields != NULL);
 		g_assert (mono_array_length (tb->fields) >= 1);
@@ -9060,15 +9061,15 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 			return;
 		}
 
-		klass->enum_basetype = fb->type->type;
-		klass->element_class = my_mono_class_from_mono_type (klass->enum_basetype);
+		enum_basetype = fb->type->type;
+		klass->element_class = my_mono_class_from_mono_type (enum_basetype);
 		if (!klass->element_class)
-			klass->element_class = mono_class_from_mono_type (klass->enum_basetype);
+			klass->element_class = mono_class_from_mono_type (enum_basetype);
 
 		/*
 		 * get the element_class from the current corlib.
 		 */
-		ec = default_class_from_mono_type (klass->enum_basetype);
+		ec = default_class_from_mono_type (enum_basetype);
 		klass->instance_size = ec->instance_size;
 		klass->size_inited = 1;
 		/* 

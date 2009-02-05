@@ -243,7 +243,7 @@ typedef struct {
 #define MONO_CLASS_PROP_EXCEPTION_DATA 0
 
 struct _MonoClass {
-	/* element class for arrays and enum */
+	/* element class for arrays and enum basetype for enums */
 	MonoClass *element_class; 
 	/* used for subtype checks */
 	MonoClass *cast_class; 
@@ -314,9 +314,6 @@ struct _MonoClass {
 	MonoImage *image;
 	const char *name;
 	const char *name_space;
-
-	/* The underlying type of the enum */
-	MonoType *enum_basetype;
 
 	guint32    declsec_flags;	/* declarative security attributes flags */
 	guint32    type_token;
