@@ -1368,7 +1368,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContainer *generic_container = NULL, *container = NULL;
 	const char *sig = NULL;
-	int size, i;
+	int size;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
 	if (image->dynamic) {
@@ -1432,9 +1432,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		generic_container->owner.method = result;
 
 		mono_metadata_load_generic_param_constraints (image, token, generic_container);
-
-		for (i = 0; i < generic_container->type_argc; i++)
-			mono_class_from_generic_parameter (&generic_container->type_params [i], image, TRUE);
 
 		container = generic_container;
 	}
