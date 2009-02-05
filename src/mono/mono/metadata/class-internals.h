@@ -72,7 +72,9 @@ struct _MonoMethod {
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
 	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
-	signed int slot : 18;
+	/* TODO we MUST get rid of this field, it's an ugly hack nobody is proud of. */
+	unsigned int is_mb_open : 1;		/* This is the fully open instantiation of a generic method_builder. Worse than is_tb_open, but it's temporary */
+	signed int slot : 17;
 
 	/*
 	 * If is_generic is TRUE, the generic_container is stored in image->property_hash, 
@@ -474,9 +476,6 @@ struct _MonoMethodInflated {
 	} method;
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
-
-	/* TODO we MUST get rid of this field, it's an ugly hack nobody is proud of. */
-	guint is_mb_open : 1;		/* This is the fully open instantiation of a generic method_builder. Worse than is_tb_open, but it's temporary */
 };
 
 /*

@@ -825,7 +825,7 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 	iresult = g_new0 (MonoMethodInflated, 1);
 	iresult->context = *context;
 	iresult->declaring = method;
-	iresult->is_mb_open = is_mb_open;
+	iresult->method.method.is_mb_open = is_mb_open;
 
 	if (!context->method_inst && method->is_generic)
 		iresult->context.method_inst = mono_method_get_generic_container (method)->context.method_inst;
