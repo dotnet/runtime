@@ -296,6 +296,7 @@ BASE_TEST_CS_SRC=		\
 	generic-sealed-virtual.2.cs	\
 	generic-stack-traces.2.cs	\
 	generic-stack-traces2.2.cs	\
+	bug-472600.2.cs	\
 	recursive-generics.2.cs	\
 	bug-80392.2.cs		\
 	dynamic-method-access.2.cs	\
@@ -735,7 +736,7 @@ test-generic-sharing : generics-sharing.2.exe shared-generic-methods.2.exe	\
 		generic-virtual-invoke.2.exe generic-typedef.2.exe		\
 		generic-marshalbyref.2.exe bug-459285.2.exe bug-461198.2.exe	\
 		generic-sealed-virtual.2.exe generic-stack-traces.2.exe		\
-		generic-stack-traces2.2.exe
+		generic-stack-traces2.2.exe bug-472600.2.exe
 	@for fn in $+ ; do	\
 		echo "Testing $$fn ...";	\
 		MONO_GENERIC_SHARING=all $(RUNTIME) -O=gshared                $$fn > $$fn.stdout || exit 1;	\
