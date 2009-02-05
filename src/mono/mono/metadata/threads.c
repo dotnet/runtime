@@ -1979,6 +1979,7 @@ mono_thread_get_abort_signal (void)
 {
 #ifdef PLATFORM_WIN32
 	return -1;
+#else
 #ifndef	SIGRTMIN
 #ifdef SIGUSR1
 	return SIGUSR1;
