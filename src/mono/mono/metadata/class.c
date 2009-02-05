@@ -4248,8 +4248,18 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	}
 
 	if (cols [MONO_TYPEDEF_EXTENDS]) {
-		parent = mono_class_get_full (
-			image, mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]), context);
+		guint32 parent_token = mono_metadata_token_from_dor (cols [MONO_TYPEDEF_EXTENDS]);
+
+		if (mono_metadata_token_table (parent_token) == MONO_TABLE_TYPESPEC) {
+			/*WARNING: this must satisfy mono_metadata_type_hash*/
+			class->this_arg.byref = 1;
+			class->this_arg.data.klass = class;
+			class->this_arg.type = MONO_TYPE_CLASS;
+			class->byval_arg.data.klass = class;
+			class->byval_arg.type = MONO_TYPE_CLASS;
+		}
+		parent = mono_class_get_full (image, parent_token, context);
+
 		if (parent == NULL){
 			mono_internal_hash_table_remove (&image->class_cache, GUINT_TO_POINTER (type_token));
 			mono_loader_unlock ();
