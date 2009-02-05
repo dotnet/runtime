@@ -841,6 +841,8 @@ glong     g_utf8_strlen        (const gchar *str, gssize max);
 #define G_TRYLOCK(name)
 #define G_UNLOCK(name)
 
+#define GUINT16_SWAP_LE_BE_CONSTANT(x) ((((guint16) x) >> 8) | ((((guint16) x) << 8)))
+
 #define GUINT16_SWAP_LE_BE(x) ((guint16) (((guint16) x) >> 8) | ((((guint16)(x)) & 0xff) << 8))
 #define GUINT32_SWAP_LE_BE(x) ((guint32) \
 			       ( (((guint32) (x)) << 24)| \
