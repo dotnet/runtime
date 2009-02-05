@@ -58,13 +58,24 @@ expression:
 	atom ([+-] atom)*
 
 atom:
-	number | variable:
+	number | variable | function_call
+
+function_call:
+	fun_name '(' arg_list ')'
+
+fun_name:
+	read.uint
+
+arg_list:
+	expression |
+	expression ',' arg_list
 
 variable:
 	file-size |
 	pe-header |
 	pe-optional-header |
-	pe-signature
+	pe-signature |
+	section-table
 
 TODO For the sake of a simple implementation, tokens are space delimited.
 */
@@ -88,7 +99,9 @@ enum {
 	INVALID_SELECTOR,
 	INVALID_EFFECT,
 	INVALID_EXPRESSION,
-	INVALID_VARIABLE_NAME
+	INVALID_VARIABLE_NAME,
+	INVALID_FUNCTION_NAME,
+	INVALID_ARG_COUNT
 };
 
 enum {
@@ -111,7 +124,8 @@ enum {
 	EXPRESSION_CONSTANT,
 	EXPRESSION_VARIABLE,
 	EXPRESSION_ADD,
-	EXPRESSION_SUB
+	EXPRESSION_SUB,
+	EXPRESSION_FUNC
 };
 
 typedef struct _expression expression_t;
@@ -138,6 +152,10 @@ struct _expression {
 			expression_t *left;
 			expression_t *right;
 		} bin;
+		struct {
+			char *name;
+			GSList *args;
+		} func;
 	} data;
 };
 
@@ -175,7 +193,10 @@ typedef struct {
 	int init;
 } test_set_t;
 
+
 /*******************************************************************************************************/
+static guint32 expression_eval (expression_t *exp, test_entry_t *entry);
+static expression_t* parse_expression (scanner_t *scanner);
 
 static const char*
 test_validity_name (int validity)
@@ -232,7 +253,13 @@ make_test_name (test_entry_t *entry, test_set_t *test_set)
 }
 
 #define READ_VAR(KIND, PTR) GUINT32_FROM_LE((guint32)*((KIND*)(PTR)))
-#define SET_VAR(KIND, PTR, VAL) do { *((KIND*)(PTR)) = (KIND)VAL; }  while (0)
+#define SET_VAR(KIND, PTR, VAL) do { *((KIND*)(PTR)) = GUINT32_TO_LE ((KIND)VAL); }  while (0)
+
+static guint32 
+get_pe_header (test_entry_t *entry)
+{
+	return READ_VAR (guint32, entry->data + 0x3c) + 4;
+}
 
 static guint32
 lookup_var (test_entry_t *entry, const char *name)
@@ -240,14 +267,33 @@ lookup_var (test_entry_t *entry, const char *name)
 	if (!strcmp ("file-size", name))
 		return entry->data_size;
 	if (!strcmp ("pe-signature", name))
-		return READ_VAR (guint32, entry->data + 0x3c); 
+		return get_pe_header (entry) - 4;
 	if (!strcmp ("pe-header", name))
-		return READ_VAR (guint32, entry->data + 0x3c) + 4; 
+		return get_pe_header (entry); 
 	if (!strcmp ("pe-optional-header", name))
-		return READ_VAR (guint32, entry->data + 0x3c) + 24; 
+		return get_pe_header (entry) + 20; 
+	if (!strcmp ("section-table", name))
+		return get_pe_header (entry) + 244; 
 
 	printf ("Unknown variable in expression %s\n", name);
 	exit (INVALID_VARIABLE_NAME);
+}
+
+static guint32
+call_func (test_entry_t *entry, const char *name, GSList *args)
+{
+	if (!strcmp ("read.uint", name)) {
+		if (g_slist_length (args) != 1) {
+			printf ("Invalid number of args to read.uint %d\b", g_slist_length (args));
+			exit (INVALID_ARG_COUNT);
+		}
+		guint32 offset = expression_eval (args->data, entry);
+		return READ_VAR (guint32, entry->data + offset);
+	}
+
+	printf ("Unknown function %s\n", name);
+	exit (INVALID_FUNCTION_NAME);
+
 }
 
 static guint32
@@ -262,6 +308,8 @@ expression_eval (expression_t *exp, test_entry_t *entry)
 		return expression_eval (exp->data.bin.left, entry) + expression_eval (exp->data.bin.right, entry);
 	case EXPRESSION_SUB:
 		return expression_eval (exp->data.bin.left, entry) - expression_eval (exp->data.bin.right, entry);
+	case EXPRESSION_FUNC:
+		return call_func (entry, exp->data.func.name, exp->data.func.args);
 	default:
 		printf ("Invalid expression type %d\n", exp->type);
 		exit (INVALID_EXPRESSION);
@@ -618,6 +666,7 @@ match_current_type_and_text (scanner_t *scanner, int type, const char *text)
 #define LA_PUNCT(TEXT) (scanner_get_type (scanner) == TOKEN_PUNC && match_current_text (scanner, TEXT))
 
 /*******************************************************************************************************/
+
 static expression_t*
 parse_atom (scanner_t *scanner)
 {
@@ -626,8 +675,21 @@ parse_atom (scanner_t *scanner)
 		atom->type = EXPRESSION_CONSTANT;
 		CONSUME_NUMBER (atom->data.constant);
 	} else {
-		atom->type = EXPRESSION_VARIABLE;
-		CONSUME_IDENTIFIER (atom->data.name);
+		char *name;
+		CONSUME_IDENTIFIER (name);
+		if (LA_ID ("(")) {
+			atom->data.func.name = name;
+			atom->type = EXPRESSION_FUNC;
+			CONSUME_SPECIFIC_IDENTIFIER ("(");
+
+			while (!LA_ID (")") && !match_current_type (scanner, TOKEN_EOF))
+				atom->data.func.args = g_slist_append (atom->data.func.args, parse_expression (scanner));
+
+			CONSUME_SPECIFIC_IDENTIFIER (")");
+		} else {
+			atom->data.name = name;
+			atom->type = EXPRESSION_VARIABLE;
+		}
 	}
 	return atom;
 }
@@ -638,7 +700,7 @@ parse_expression (scanner_t *scanner)
 {
 	expression_t *exp = parse_atom (scanner);
 
-	if (LA_ID ("-") || LA_ID ("+")) {
+	while (LA_ID ("-") || LA_ID ("+")) {
 		char *text;
 		CONSUME_IDENTIFIER (text);
 		expression_t *left = exp;

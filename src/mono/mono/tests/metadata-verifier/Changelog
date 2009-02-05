@@ -1,3 +1,9 @@
+2009-02-05 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Add section-table var.
+	Add support for function calls. Added read.uint.
+	Added support for complex arithmetic expressions.
+
 2009-01-15 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* header-tests.md: Add more tests for pe optional header.
