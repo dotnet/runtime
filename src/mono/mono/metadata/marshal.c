@@ -1471,7 +1471,7 @@ handle_enum:
 		return CEE_LDIND_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		}
 		return CEE_LDOBJ;
@@ -1525,7 +1525,7 @@ handle_enum:
 		return CEE_STIND_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		}
 		return CEE_STOBJ;
@@ -2394,7 +2394,7 @@ emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object)
 				int src_var, dst_var;
 
 				if (ftype->data.klass->enumtype) {
-					ftype = ftype->data.klass->enum_basetype;
+					ftype = mono_class_enum_basetype (ftype->data.klass);
 					goto handle_enum;
 				}
 
@@ -5075,7 +5075,7 @@ handle_enum:
 			/* fall through */
 		case MONO_TYPE_VALUETYPE:
 			if (type == MONO_TYPE_VALUETYPE && t->data.klass->enumtype) {
-				type = t->data.klass->enum_basetype->type;
+				type = mono_class_enum_basetype (t->data.klass)->type;
 				goto handle_enum;
 			}
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -8783,7 +8783,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 			case MONO_TYPE_VALUETYPE:
 				klass = sig->ret->data.klass;
 				if (klass->enumtype) {
-					type = sig->ret->data.klass->enum_basetype->type;
+					type = mono_class_enum_basetype (sig->ret->data.klass)->type;
 					goto handle_enum;
 				}
 				emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
@@ -11663,7 +11663,7 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 		MonoClass *klass = mono_class_from_mono_type (t);
 
 		if (klass->enumtype)
-			return mono_type_native_stack_size (klass->enum_basetype, align);
+			return mono_type_native_stack_size (mono_class_enum_basetype (klass), align);
 		else {
 			size = mono_class_native_size (klass, align);
 			*align = *align + 3;
