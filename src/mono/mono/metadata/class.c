@@ -604,6 +604,32 @@ mono_class_get_context (MonoClass *class)
 }
 
 /*
+ * mono_class_get_generic_container:
+ *
+ *   Return the generic container of KLASS which should be a generic type definition.
+ */
+MonoGenericContainer*
+mono_class_get_generic_container (MonoClass *klass)
+{
+	g_assert (klass->is_generic);
+
+	return klass->generic_container;
+}
+
+/*
+ * mono_class_get_generic_class:
+ *
+ *   Return the MonoGenericClass of KLASS, which should be a generic instance.
+ */
+MonoGenericClass*
+mono_class_get_generic_class (MonoClass *klass)
+{
+	g_assert (klass->is_inflated);
+
+	return klass->generic_class;
+}
+
+/*
  * mono_class_inflate_generic_type_with_mempool:
  * @mempool: a mempool
  * @type: a type

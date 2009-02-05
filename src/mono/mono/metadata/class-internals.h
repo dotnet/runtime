@@ -1149,4 +1149,10 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 void
 mono_class_setup_interface_id (MonoClass *class) MONO_INTERNAL;
 
+MonoGenericContainer*
+mono_class_get_generic_container (MonoClass *klass) MONO_INTERNAL;
+
+MonoGenericClass*
+mono_class_get_generic_class (MonoClass *klass) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
