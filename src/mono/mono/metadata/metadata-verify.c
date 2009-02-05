@@ -27,13 +27,22 @@
  TODO add fail fast mode
  TODO add PE32+ support
  TODO verify the entry point RVA and content.
+ TODO load_section_table must take PE32+ into account
 */
+
+typedef struct {
+	guint32 baseRVA;
+	guint32 baseOffset;
+	guint32 size;
+} SectionHeader;
 
 typedef struct {
 	const char *data;
 	guint32 size;
 	GSList *errors;
 	int valid;
+	guint32 section_count;
+	SectionHeader *sections;
 
 	guint32 data_dir_count;
 } VerifyContext;
@@ -52,6 +61,7 @@ typedef struct {
 	do {	\
 		ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR, MONO_EXCEPTION_INVALID_PROGRAM); \
 		(__ctx)->valid = 0; \
+		return; \
 	} while (0)
 
 #define CHECK_STATE() do { if (!ctx.valid) goto cleanup; } while (0)
@@ -62,14 +72,19 @@ pe_signature_offset (VerifyContext *ctx)
 	return read32 (ctx->data + 0x3c);
 }
 
+static guint32
+pe_header_offset (VerifyContext *ctx)
+{
+	return read32 (ctx->data + 0x3c) + 4;
+}
+
+
 static void
 verify_msdos_header (VerifyContext *ctx)
 {
 	guint32 lfanew;
-	if (ctx->size < 128) {
+	if (ctx->size < 128)
 		ADD_ERROR (ctx, g_strdup ("Not enough space for the MS-DOS header"));
-		return;
-	}
 	if (ctx->data [0] != 0x4d || ctx->data [1] != 0x5a)
 		ADD_ERROR (ctx,  g_strdup ("Invalid MS-DOS watermark"));
 	lfanew = pe_signature_offset (ctx);
@@ -91,13 +106,12 @@ verify_pe_header (VerifyContext *ctx)
 		ADD_ERROR (ctx, g_strdup ("File with truncated pe header"));
 	if (read16 (pe_header) != 0x14c)
 		ADD_ERROR (ctx, g_strdup ("Invalid PE header Machine value"));
-
 }
 
 static void
 verify_pe_optional_header (VerifyContext *ctx)
 {
-	guint32 offset = pe_signature_offset (ctx) + 4;
+	guint32 offset = pe_header_offset (ctx);
 	guint32 header_size;
 	const char *pe_header = ctx->data + offset;
 	const char *pe_optional_header = pe_header + 20;
@@ -108,10 +122,8 @@ verify_pe_optional_header (VerifyContext *ctx)
 	if (header_size < 2) /*must be at least 2 or we won't be able to read magic*/
 		ADD_ERROR (ctx, g_strdup ("Invalid PE optional header size"));
 
-	if (offset > ctx->size - header_size || header_size > ctx->size) {
+	if (offset > ctx->size - header_size || header_size > ctx->size)
 		ADD_ERROR (ctx, g_strdup ("Invalid PE optional header size"));
-		return;
-	}
 
 	if (read16 (pe_optional_header) == 0x10b) {
 		if (header_size != 224)
@@ -133,8 +145,55 @@ verify_pe_optional_header (VerifyContext *ctx)
 		else
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header magic %d", read16 (pe_optional_header)));
 	}
+}
 
+static void
+load_section_table (VerifyContext *ctx)
+{
+	int i;
+	SectionHeader *sections;
+	guint32 offset =  pe_header_offset (ctx);
+	const char *ptr = ctx->data + offset;
+	guint16 num_sections = ctx->section_count = read16 (ptr + 2);
 
+	offset += 244;
+	ptr += 244;
+
+	if (num_sections * 40 > ctx->size - offset)
+		ADD_ERROR (ctx, g_strdup ("Invalid PE optional header size"));
+
+	sections = ctx->sections = g_new0 (SectionHeader, num_sections);
+	for (i = 0; i < num_sections; ++i) {
+		sections [i].size = read32 (ptr + 8);
+		sections [i].baseRVA = read32 (ptr + 12);
+		sections [i].baseOffset = read32 (ptr + 20);
+		ptr += 40;
+	}
+
+	ptr = ctx->data + offset; /*reset it to the beggining*/
+	for (i = 0; i < num_sections; ++i) {
+		guint32 raw_size;
+		if (sections [i].baseOffset == 0)
+			ADD_ERROR (ctx, g_strdup ("Metadata verifier doesn't handle sections with intialized data only"));
+		if (sections [i].baseOffset >= ctx->size)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid PointerToRawData %x points beyond EOF", sections [i].baseOffset));
+		if (sections [i].size > ctx->size - sections [i].baseOffset)
+			ADD_ERROR (ctx, g_strdup ("Invalid VirtualSize points beyond EOF"));
+
+		raw_size = read32 (ptr + 16);
+		if (raw_size < sections [i].size)
+			ADD_ERROR (ctx, g_strdup ("Metadata verifier doesn't handle sections with SizeOfRawData < VirtualSize"));
+
+		if (raw_size > ctx->size - sections [i].baseOffset)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid SizeOfRawData %x points beyond EOF", raw_size));
+		
+		/*We ignore the line number junk*/
+
+		//FIXME relocations
+		ptr += 40;
+	}
+	
+	
 }
 
 GSList*
@@ -152,7 +211,10 @@ mono_image_verify (const char *data, guint32 size)
 	CHECK_STATE();
 	verify_pe_optional_header (&ctx);
 	CHECK_STATE();
+	load_section_table (&ctx);
+	CHECK_STATE();
 
 cleanup:
+	g_free (ctx.sections);
 	return ctx.errors;
 }
