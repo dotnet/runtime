@@ -578,7 +578,7 @@ handle_enum:
 	}
 	case MONO_TYPE_VALUETYPE: 
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		} else {
 			guint8 *p = va_arg (ap, gpointer);

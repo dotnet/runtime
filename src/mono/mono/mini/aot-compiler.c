@@ -5878,13 +5878,13 @@ emit_class_dwarf_info (MonoAotCompile *acfg, MonoClass *klass)
 	emit_label (acfg, die);
 
 	if (klass->enumtype) {
-		int size = mono_class_value_size (mono_class_from_mono_type (klass->enum_basetype), NULL);
+		int size = mono_class_value_size (mono_class_from_mono_type (mono_class_enum_basetype (klass)), NULL);
 
 		emit_uleb128 (acfg, ABBREV_ENUM_TYPE);
 		emit_string (acfg, full_name);
 		emit_uleb128 (acfg, size);
 		for (k = 0; k < G_N_ELEMENTS (basic_types); ++k)
-			if (basic_types [k].type == klass->enum_basetype->type)
+			if (basic_types [k].type == mono_class_enum_basetype (klass)->type)
 				break;
 		g_assert (k < G_N_ELEMENTS (basic_types));
 		emit_symbol_diff (acfg, basic_types [k].die_name, ".Ldebug_info_start", 0);
@@ -5906,7 +5906,7 @@ emit_class_dwarf_info (MonoAotCompile *acfg, MonoClass *klass)
 
 			p = mono_class_get_field_default_value (field, &def_type);
 			len = mono_metadata_decode_blob_size (p, &p);
-			switch (klass->enum_basetype->type) {
+			switch (mono_class_enum_basetype (klass)->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
 			case MONO_TYPE_BOOLEAN:

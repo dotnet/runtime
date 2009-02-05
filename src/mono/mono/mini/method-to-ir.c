@@ -210,7 +210,7 @@ handle_enum:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		}
 		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
@@ -584,7 +584,7 @@ handle_enum:
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		} else {
 			inst->klass = klass;
@@ -1773,7 +1773,7 @@ handle_enum:
 		return calli? OP_FCALL_REG: virt? OP_FCALLVIRT: OP_FCALL;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		} else
 			return calli? OP_VCALL_REG: virt? OP_VCALLVIRT: OP_VCALL;
@@ -1974,7 +1974,7 @@ handle_enum:
 			continue;
 		case MONO_TYPE_VALUETYPE:
 			if (simple_type->data.klass->enumtype) {
-				simple_type = simple_type->data.klass->enum_basetype;
+				simple_type = mono_class_enum_basetype (simple_type->data.klass);
 				goto handle_enum;
 			}
 			if (args [i]->type != STACK_VTYPE)
@@ -8023,7 +8023,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					gpointer addr = (char*)vtable->data + field->offset;
 					int ro_type = field->type->type;
 					if (ro_type == MONO_TYPE_VALUETYPE && field->type->data.klass->enumtype) {
-						ro_type = field->type->data.klass->enum_basetype->type;
+						ro_type = mono_class_enum_basetype (field->type->data.klass)->type;
 					}
 					/* printf ("RO-FIELD %s.%s:%s\n", klass->name_space, klass->name, mono_field_get_name (field));*/
 					is_const = TRUE;
@@ -9453,7 +9453,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			dreg = cfg->locals [i]->dreg;
 
 			if (t == MONO_TYPE_VALUETYPE && ptype->data.klass->enumtype)
-				t = ptype->data.klass->enum_basetype->type;
+				t = mono_class_enum_basetype (ptype->data.klass)->type;
 			if (ptype->byref) {
 				MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
 			} else if (t >= MONO_TYPE_BOOLEAN && t <= MONO_TYPE_U4) {

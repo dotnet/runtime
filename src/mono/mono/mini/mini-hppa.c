@@ -355,7 +355,7 @@ handle_enum:
 			
 		case MONO_TYPE_VALUETYPE:
 			if (type->data.klass->enumtype) {
-				type = type->data.klass->enum_basetype;
+				type = mono_class_enum_basetype (type->data.klass);
 				goto handle_enum;
 			}
 			/* Fall through */

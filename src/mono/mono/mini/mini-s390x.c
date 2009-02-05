@@ -717,7 +717,7 @@ enum_parmtype:
 				MonoMarshalType *info;
 
 				if (type->data.klass->enumtype) {
-					simpleType = type->data.klass->enum_basetype->type;
+					simpleType = mono_class_enum_basetype (type->data.klass)->type;
 					printf("{VALUETYPE} - ");
 					goto enum_parmtype;
 				}
@@ -1021,7 +1021,7 @@ handle_enum:
 	case MONO_TYPE_VALUETYPE: {
 		MonoMarshalType *info;
 		if (type->data.klass->enumtype) {
-			type = type->data.klass->enum_basetype;
+			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		} else {
 			guint8 *p = va_arg (ap, gpointer);
@@ -1225,7 +1225,7 @@ is_regsize_var (MonoType *t) {
 		return FALSE;
 	case MONO_TYPE_VALUETYPE:
 		if (t->data.klass->enumtype)
-			return is_regsize_var (t->data.klass->enum_basetype);
+			return is_regsize_var (mono_class_enum_basetype (t->data.klass));
 		return FALSE;
 	}
 	return FALSE;
@@ -1505,7 +1505,7 @@ enum_retvalue:
 		case MONO_TYPE_VALUETYPE: {
 			MonoClass *klass = mono_class_from_mono_type (sig->ret);
 			if (klass->enumtype) {
-				simpletype = klass->enum_basetype->type;
+				simpletype = mono_class_enum_basetype (klass)->type;
 				goto enum_retvalue;
 			}
 			if (sig->pinvoke)
@@ -2442,7 +2442,7 @@ handle_enum:
 		break;
 	case MONO_TYPE_VALUETYPE:
 		if (mono_method_signature (method)->ret->data.klass->enumtype) {
-			rtype = mono_method_signature (method)->ret->data.klass->enum_basetype->type;
+			rtype = mono_class_enum_basetype (mono_method_signature (method)->ret->data.klass)->type;
 			goto handle_enum;
 		}
 		save_mode = SAVE_STRUCT;
