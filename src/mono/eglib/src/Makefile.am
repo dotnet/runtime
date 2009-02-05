@@ -39,6 +39,7 @@ libeglib_la_SOURCES = \
 	gmarkup.c	\
 	gutf8.c		\
 	gunicode.c	\
+	unicode-data.h	\
 	$(os_files)
 
 libeglib_la_CFLAGS = -Wall -D_FORTIFY_SOURCE=2
