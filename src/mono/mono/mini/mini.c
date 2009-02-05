@@ -4875,12 +4875,8 @@ print_jit_stats (void)
 		g_print ("VTable data size:       %ld\n", mono_stats.class_vtable_size);
 		g_print ("Mscorlib mempool size:  %d\n", mono_mempool_get_allocated (mono_defaults.corlib->mempool));
 
-		g_print ("\nGeneric instances:      %ld\n", mono_stats.generic_instance_count);
 		g_print ("Initialized classes:    %ld\n", mono_stats.generic_class_count);
-		g_print ("Inflated methods:       %ld / %ld\n", mono_stats.inflated_method_count_2,
-			 mono_stats.inflated_method_count);
 		g_print ("Inflated types:         %ld\n", mono_stats.inflated_type_count);
-		g_print ("Generics metadata size: %ld\n", mono_stats.generics_metadata_size);
 		g_print ("Generics virtual invokes: %ld\n", mono_jit_stats.generic_virtual_invocations);
 
 		g_print ("Sharable generic methods: %ld\n", mono_stats.generics_sharable_methods);
