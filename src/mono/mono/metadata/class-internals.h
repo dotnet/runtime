@@ -300,6 +300,8 @@ struct _MonoClass {
 	guint is_com_object : 1; 
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
 	guint simd_type : 1; /* class is a simd intrinsic type */
+	guint is_generic : 1; /* class is a generic type definition */
+	guint is_inflated : 1; /* class is a generic instance */
 
 	guint8     exception_type;	/* MONO_EXCEPTION_* */
 

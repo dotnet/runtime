@@ -4216,6 +4216,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 	 */
 	class->generic_container = mono_metadata_load_generic_params (image, class->type_token, NULL);
 	if (class->generic_container) {
+		class->is_generic = 1;
 		class->generic_container->owner.klass = class;
 		context = &class->generic_container->context;
 	}
@@ -4386,6 +4387,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	klass->field.count = gklass->field.count;
 	klass->property.count = gklass->property.count;
 
+	klass->is_inflated = 1;
 	klass->generic_class = gclass;
 
 	klass->this_arg.type = klass->byval_arg.type = MONO_TYPE_GENERICINST;
