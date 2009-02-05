@@ -167,9 +167,14 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 		reg = mono_hw_reg_to_dwarf_reg (op->reg);
 
 		/* Emit an advance_loc if neccesary */
-		if (op->when > loc) {
-			g_assert (op->when - loc < 32);
-			*p ++ = DW_CFA_advance_loc | (op->when - loc);
+		while (op->when > loc) {
+			if (op->when - loc < 32) {
+				*p ++ = DW_CFA_advance_loc | (op->when - loc);
+				loc = op->when;
+			} else {
+				*p ++ = DW_CFA_advance_loc | (30);
+				loc += 30;
+			}
 		}			
 
 		switch (op->op) {
@@ -194,8 +199,6 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 			g_assert_not_reached ();
 			break;
 		}
-
-		loc = op->when;
 	}
 	
 	g_assert (p - buf < 256);
