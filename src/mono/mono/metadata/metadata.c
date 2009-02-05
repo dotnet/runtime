@@ -3756,7 +3756,7 @@ mono_type_size (MonoType *t, int *align)
 		return sizeof (gpointer);
 	case MONO_TYPE_VALUETYPE: {
 		if (t->data.klass->enumtype)
-			return mono_type_size (t->data.klass->enum_basetype, align);
+			return mono_type_size (mono_class_enum_basetype (t->data.klass), align);
 		else
 			return mono_class_value_size (t->data.klass, (guint32*)align);
 	}
@@ -3777,7 +3777,7 @@ mono_type_size (MonoType *t, int *align)
 
 		if (container_class->valuetype) {
 			if (container_class->enumtype)
-				return mono_type_size (container_class->enum_basetype, align);
+				return mono_type_size (mono_class_enum_basetype (container_class), align);
 			else
 				return mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 		} else {
@@ -3873,7 +3873,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 		guint32 size;
 
 		if (t->data.klass->enumtype)
-			return mono_type_stack_size_internal (t->data.klass->enum_basetype, align, allow_open);
+			return mono_type_stack_size_internal (mono_class_enum_basetype (t->data.klass), align, allow_open);
 		else {
 			size = mono_class_value_size (t->data.klass, (guint32*)align);
 
@@ -3895,7 +3895,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 
 		if (container_class->valuetype) {
 			if (container_class->enumtype)
-				return mono_type_stack_size_internal (container_class->enum_basetype, align, allow_open);
+				return mono_type_stack_size_internal (mono_class_enum_basetype (container_class), align, allow_open);
 			else {
 				guint32 size = mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 
@@ -4881,7 +4881,7 @@ handle_enum:
 	case MONO_TYPE_PTR: return MONO_NATIVE_UINT;
 	case MONO_TYPE_VALUETYPE: /*FIXME*/
 		if (type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
+			t = mono_class_enum_basetype (type->data.klass)->type;
 			goto handle_enum;
 		}
 		if (type->data.klass == mono_defaults.handleref_class){

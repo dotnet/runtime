@@ -2532,7 +2532,7 @@ handle_enum:
 	case MONO_TYPE_VALUETYPE:
 		/* note that 't' and 'type->type' can be different */
 		if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype) {
-			t = type->data.klass->enum_basetype->type;
+			t = mono_class_enum_basetype (type->data.klass)->type;
 			goto handle_enum;
 		} else {
 			int size;

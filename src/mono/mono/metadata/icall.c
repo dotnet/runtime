@@ -288,11 +288,11 @@ ves_icall_System_Array_SetValueImpl (MonoArray *this, MonoObject *value, guint32
 
 	et = ec->byval_arg.type;
 	if (et == MONO_TYPE_VALUETYPE && ec->byval_arg.data.klass->enumtype)
-		et = ec->byval_arg.data.klass->enum_basetype->type;
+		et = mono_class_enum_basetype (ec->byval_arg.data.klass)->type;
 
 	vt = vc->byval_arg.type;
 	if (vt == MONO_TYPE_VALUETYPE && vc->byval_arg.data.klass->enumtype)
-		vt = vc->byval_arg.data.klass->enum_basetype->type;
+		vt = mono_class_enum_basetype (vc->byval_arg.data.klass)->type;
 
 #define ASSIGN_UNSIGNED(etype) G_STMT_START{\
 	switch (vt) { \
@@ -1000,7 +1000,7 @@ ves_icall_System_ValueType_Equals (MonoObject *this, MonoObject *that, MonoArray
 
 	klass = mono_object_class (this);
 
-	if (klass->enumtype && klass->enum_basetype && klass->enum_basetype->type == MONO_TYPE_I4)
+	if (klass->enumtype && mono_class_enum_basetype (klass) && mono_class_enum_basetype (klass)->type == MONO_TYPE_I4)
 		return (*(gint32*)((guint8*)this + sizeof (MonoObject)) == *(gint32*)((guint8*)that + sizeof (MonoObject)));
 
 	/*
@@ -1408,7 +1408,7 @@ handle_enum:
 		return TYPECODE_DOUBLE;
 	case MONO_TYPE_VALUETYPE:
 		if (type->type->data.klass->enumtype) {
-			t = type->type->data.klass->enum_basetype->type;
+			t = mono_class_enum_basetype (type->type->data.klass)->type;
 			goto handle_enum;
 		} else {
 			MonoClass *k =  type->type->data.klass;
@@ -2209,8 +2209,8 @@ ves_icall_MonoType_get_UnderlyingSystemType (MonoReflectionType *type)
 
 	MONO_ARCH_SAVE_REGS;
 
-	if (class->enumtype && class->enum_basetype) /* types that are modified typebuilders may not have enum_basetype set */
-		return mono_type_get_object (domain, class->enum_basetype);
+	if (class->enumtype && mono_class_enum_basetype (class)) /* types that are modified typebuilders may not have enum_basetype set */
+		return mono_type_get_object (domain, mono_class_enum_basetype (class));
 	else if (class->element_class)
 		return mono_type_get_object (domain, &class->element_class->byval_arg);
 	else
@@ -3308,8 +3308,8 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *enumType, MonoObject *value)
 		mono_raise_exception (mono_get_exception_argument ("value", "The value passed in must be an enum base or an underlying type for an enum, such as an Int32."));
 
 	res = mono_object_new (domain, enumc);
-	val = read_enum_value ((char *)value + sizeof (MonoObject), objc->enumtype? objc->enum_basetype->type: objc->byval_arg.type);
-	write_enum_value ((char *)res + sizeof (MonoObject), enumc->enum_basetype->type, val);
+	val = read_enum_value ((char *)value + sizeof (MonoObject), objc->enumtype? mono_class_enum_basetype (objc)->type: objc->byval_arg.type);
+	write_enum_value ((char *)res + sizeof (MonoObject), mono_class_enum_basetype (enumc)->type, val);
 
 	return res;
 }
@@ -3330,7 +3330,7 @@ ves_icall_System_Enum_get_value (MonoObject *this)
 
 	g_assert (this->vtable->klass->enumtype);
 	
-	enumc = mono_class_from_mono_type (this->vtable->klass->enum_basetype);
+	enumc = mono_class_from_mono_type (mono_class_enum_basetype (this->vtable->klass));
 	res = mono_object_new (mono_object_domain (this), enumc);
 	dst = (char *)res + sizeof (MonoObject);
 	src = (char *)this + sizeof (MonoObject);
@@ -3346,14 +3346,14 @@ ves_icall_System_Enum_get_underlying_type (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	return mono_type_get_object (mono_object_domain (type), mono_class_from_mono_type (type->type)->enum_basetype);
+	return mono_type_get_object (mono_object_domain (type), mono_class_enum_basetype (mono_class_from_mono_type (type->type)));
 }
 
 static int
 ves_icall_System_Enum_get_hashcode (MonoObject *this)
 {
 	gpointer data = (char *)this + sizeof (MonoObject);
-	MonoType *basetype = this->vtable->klass->enum_basetype;
+	MonoType *basetype = mono_class_enum_basetype (this->vtable->klass);
 	g_assert (basetype);
 
 	switch (basetype->type) {
@@ -3393,7 +3393,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 
 	MONO_ARCH_SAVE_REGS;
 
-	info->utype = mono_type_get_object (domain, enumc->enum_basetype);
+	info->utype = mono_type_get_object (domain, mono_class_enum_basetype (enumc));
 	nvalues = mono_class_num_fields (enumc) ? mono_class_num_fields (enumc) - 1 : 0;
 	info->names = mono_array_new (domain, mono_defaults.string_class, nvalues);
 	info->values = mono_array_new (domain, enumc, nvalues);
@@ -3413,7 +3413,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 
 		p = mono_class_get_field_default_value (field, &def_type);
 		len = mono_metadata_decode_blob_size (p, &p);
-		switch (enumc->enum_basetype->type) {
+		switch (mono_class_enum_basetype (enumc)->type) {
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I1:
 			mono_array_set (info->values, gchar, j, *p);
@@ -3432,7 +3432,7 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 			mono_array_set (info->values, gint64, j, read64 (p));
 			break;
 		default:
-			g_error ("Implement type 0x%02x in get_enum_info", enumc->enum_basetype->type);
+			g_error ("Implement type 0x%02x in get_enum_info", mono_class_enum_basetype (enumc)->type);
 		}
 		++j;
 	}

@@ -1720,7 +1720,7 @@ handle_enum:
 		break;
 	case MONO_TYPE_VALUETYPE:
 		if (val->vtable->klass->enumtype) {
-			*ret_type = val->vtable->klass->enum_basetype->type;
+			*ret_type = mono_class_enum_basetype (val->vtable->klass)->type;
 			goto handle_enum;
 		} else
 			g_error ("we can't encode valuetypes");
@@ -6668,7 +6668,7 @@ mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob)
 		object = mono_object_new (domain, klass);
 		retval = ((gchar *) object + sizeof (MonoObject));
 		if (klass->enumtype)
-			basetype = klass->enum_basetype;
+			basetype = mono_class_enum_basetype (klass);
 	} else {
 		retval = &object;
 	}
@@ -7391,7 +7391,7 @@ handle_enum:
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (t->data.klass->enumtype) {
-			type = t->data.klass->enum_basetype->type;
+			type = mono_class_enum_basetype (t->data.klass)->type;
 			goto handle_enum;
 		} else {
 			g_error ("generic valutype %s not handled in custom attr value decoding", t->data.klass->name);
@@ -7486,7 +7486,7 @@ handle_type:
 		arr = mono_array_new (mono_domain_get(), tklass, alen);
 		basetype = tklass->byval_arg.type;
 		if (basetype == MONO_TYPE_VALUETYPE && tklass->enumtype)
-			basetype = tklass->enum_basetype->type;
+			basetype = mono_class_enum_basetype (tklass)->type;
 		switch (basetype)
 		{
 			case MONO_TYPE_U1:
@@ -8537,7 +8537,7 @@ handle_enum:
 		break;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			simple_type = type->data.klass->enum_basetype->type;
+			simple_type = mono_class_enum_basetype (type->data.klass)->type;
 			goto handle_enum;
 		} else {
 			g_warning ("generic valutype %s not handled in custom attr value decoding", type->data.klass->name);
@@ -8705,7 +8705,7 @@ handle_type:
 		memcpy (p, str, slen);
 		p += slen;
 		g_free (str);
-		simple_type = klass->enum_basetype->type;
+		simple_type = mono_class_enum_basetype (klass)->type;
 		goto handle_enum;
 	}
 	default:
@@ -9046,7 +9046,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 	klass = my_mono_class_from_mono_type (tb->type.type);
 
 	mono_loader_lock ();
-	if (klass->enumtype && klass->enum_basetype == NULL) {
+	if (klass->enumtype && mono_class_enum_basetype (klass) == NULL) {
 		MonoReflectionFieldBuilder *fb;
 		MonoClass *ec;
 
