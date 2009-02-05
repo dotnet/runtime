@@ -342,7 +342,8 @@ BASE_TEST_CS_SRC=		\
 	generic-unloading.2.cs	\
 	generic-unloading-sub.2.cs	\
 	bug-467456.cs	\
-	appdomain-unload-callback.cs
+	appdomain-unload-callback.cs	\
+	bug-472692.2.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs

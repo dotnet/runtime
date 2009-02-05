@@ -900,7 +900,7 @@ mono_lconv_to_r8_un (guint64 a)
 gpointer
 mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg)
 {
-	MonoMethod *vmethod, *inflated;
+	MonoMethod *vmethod;
 	gpointer addr;
 	MonoGenericContext *context = mono_method_get_context (method);
 
@@ -909,20 +909,12 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	if (obj == NULL)
 		mono_raise_exception (mono_get_exception_null_reference ());
 	vmethod = mono_object_get_virtual_method (obj, method);
-
-	/* 'vmethod' is partially inflated.  All the blanks corresponding to the type parameters of the
-	   declaring class have been inflated.  We still need to fully inflate the method parameters.
-
-	   FIXME: This code depends on the declaring class being fully inflated, since we inflate it twice with 
-	   the same context.
-	*/
 	g_assert (!vmethod->klass->generic_container);
 	g_assert (!vmethod->klass->generic_class || !vmethod->klass->generic_class->context.class_inst->is_open);
 	g_assert (!context->method_inst || !context->method_inst->is_open);
-	inflated = mono_class_inflate_generic_method (vmethod, context);
-	if (mono_method_needs_static_rgctx_invoke (inflated, FALSE))
-		inflated = mono_marshal_get_static_rgctx_invoke (inflated);
-	addr = mono_compile_method (inflated);
+	if (mono_method_needs_static_rgctx_invoke (vmethod, FALSE))
+		vmethod = mono_marshal_get_static_rgctx_invoke (vmethod);
+	addr = mono_compile_method (vmethod);
 
 	/* Since this is a virtual call, have to unbox vtypes */
 	if (obj->vtable->klass->valuetype)
