@@ -234,6 +234,7 @@ gchar       *g_strjoinv       (const gchar *separator, gchar **str_array);
 gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
 void         g_strdown        (gchar *string);
+gchar       *g_strnfill       (gsize length, gchar fill_char);
 
 gchar       *g_strdelimit     (gchar *string, const gchar *delimiters, gchar new_delimiter);
 gchar       *g_strescape      (const gchar *source, const gchar *exceptions);
@@ -366,6 +367,7 @@ struct _GList {
 };
 
 #define g_list_next(list) ((list) ? (((GList *) (list))->next) : NULL)
+#define g_list_previous(list) ((list) ? (((GList *) (list))->prev) : NULL)
 
 GList *g_list_alloc         (void);
 GList *g_list_append        (GList         *list,

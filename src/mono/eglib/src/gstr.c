@@ -826,6 +826,15 @@ g_ascii_xdigit_value (gchar c)
 		  (c - 'A' + 10))));
 }
 
+gchar *
+g_strnfill (gsize length, gchar fill_char)
+{
+	gchar *ret = g_new (gchar, length + 1);
+	int i;
 
-
-
+	for (i = 0; i < length; i++)
+		ret [i] = fill_char;
+	
+	ret [length] = 0;
+	return ret;
+}

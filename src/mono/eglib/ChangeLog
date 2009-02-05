@@ -1,3 +1,9 @@
+2009-02-05  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gstr.c: Add g_strnfill
+
+	* src/glib.h: Add g_list_previous
+
 2009-01-19  Bill Holmes  <billholmes54@gmail.com>
 
 	* gmisc-win32.c (g_path_is_absolute):  Adding support for UNC
