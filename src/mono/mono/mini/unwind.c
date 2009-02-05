@@ -53,7 +53,7 @@ static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 #define NUM_REGS X86_NREG + 1
 #define DWARF_DATA_ALIGN (-4)
 #else
-static int map_hw_reg_to_dwarf_reg [0];
+static int map_hw_reg_to_dwarf_reg [16];
 #define NUM_REGS 0
 #define DWARF_DATA_ALIGN 0
 #endif
