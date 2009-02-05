@@ -242,6 +242,31 @@ typedef struct {
 
 #define MONO_CLASS_PROP_EXCEPTION_DATA 0
 
+/* 
+ * This structure contains the rarely used fields of MonoClass
+ * Since using just one field causes the whole structure to be allocated, it should
+ * be used for fields which are only used in like 5% of all classes.
+ */
+typedef struct {
+	struct {
+		guint32 first, count;
+	} property, event;
+
+	/* Initialized by a call to mono_class_setup_properties () */
+	MonoProperty *properties;
+
+	/* Initialized by a call to mono_class_setup_events () */
+	MonoEvent *events;
+
+	guint32    declsec_flags;	/* declarative security attributes flags */
+
+	/* Default values/RVA for fields */
+	/* Accessed using mono_class_get_field_default_value () / mono_field_get_data () */
+	MonoFieldDefaultValue *field_def_values;
+
+	GList      *nested_classes;
+} MonoClassExt;
+
 struct _MonoClass {
 	/* element class for arrays and enum basetype for enums */
 	MonoClass *element_class; 
@@ -311,13 +336,11 @@ struct _MonoClass {
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
-	GList      *nested_classes;
 
 	MonoImage *image;
 	const char *name;
 	const char *name_space;
 
-	guint32    declsec_flags;	/* declarative security attributes flags */
 	guint32    type_token;
 	int        vtable_size; /* number of slots */
 
@@ -344,7 +367,7 @@ struct _MonoClass {
 	guint32    flags;
 	struct {
 		guint32 first, count;
-	} field, method, property, event;
+	} field, method;
 
 	/* loaded on demand */
 	MonoMarshalType *marshal_info;
@@ -353,12 +376,6 @@ struct _MonoClass {
 	 * Field information: Type and location from object base
 	 */
 	MonoClassField *fields;
-
-	/* Initialized by a call to mono_class_setup_properties () */
-	MonoProperty *properties;
-
-	/* Initialized by a call to mono_class_setup_events () */
-	MonoEvent *events;
 
 	MonoMethod **methods;
 
@@ -381,9 +398,8 @@ struct _MonoClass {
 	/* Generic vtable. Initialized by a call to mono_class_setup_vtable () */
 	MonoMethod **vtable;
 
-	/* Default values/RVA for fields */
-	/* Accessed using mono_class_get_field_default_value () / mono_field_get_data () */
-	MonoFieldDefaultValue *field_def_values;
+	/* Rarely used fields of classes */
+	MonoClassExt *ext;
 };
 
 #define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && ((k)->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
@@ -1154,5 +1170,8 @@ mono_class_get_generic_container (MonoClass *klass) MONO_INTERNAL;
 
 MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass) MONO_INTERNAL;
+
+void
+mono_class_alloc_ext (MonoClass *klass) MONO_INTERNAL;
 
 #endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */

@@ -3491,10 +3491,10 @@ mono_image_fill_export_table_from_class (MonoDomain *domain, MonoClass *klass,
 	table->next_idx ++;
 
 	/* Emit nested types */
-	if (klass->nested_classes) {
+	if (klass->ext && klass->ext->nested_classes) {
 		GList *tmp;
 
-		for (tmp = klass->nested_classes; tmp; tmp = tmp->next)
+		for (tmp = klass->ext->nested_classes; tmp; tmp = tmp->next)
 			mono_image_fill_export_table_from_class (domain, tmp->data, module_index, table->next_idx - 1, assembly);
 	}
 
@@ -7650,9 +7650,9 @@ static guint32
 find_property_index (MonoClass *klass, MonoProperty *property) {
 	int i;
 
-	for (i = 0; i < klass->property.count; ++i) {
-		if (property == &klass->properties [i])
-			return klass->property.first + 1 + i;
+	for (i = 0; i < klass->ext->property.count; ++i) {
+		if (property == &klass->ext->properties [i])
+			return klass->ext->property.first + 1 + i;
 	}
 	return 0;
 }
@@ -7664,9 +7664,9 @@ static guint32
 find_event_index (MonoClass *klass, MonoEvent *event) {
 	int i;
 
-	for (i = 0; i < klass->event.count; ++i) {
-		if (event == &klass->events [i])
-			return klass->event.first + 1 + i;
+	for (i = 0; i < klass->ext->event.count; ++i) {
+		if (event == &klass->ext->events [i])
+			return klass->ext->event.first + 1 + i;
 	}
 	return 0;
 }
@@ -9997,7 +9997,8 @@ typebuilder_setup_fields (MonoClass *klass)
 	}
 	
 	klass->fields = mp_g_new0 (mp, MonoClassField, klass->field.count);
-	klass->field_def_values = mp_g_new0 (mp, MonoFieldDefaultValue, klass->field.count);
+	mono_class_alloc_ext (klass);
+	klass->ext->field_def_values = mp_g_new0 (mp, MonoFieldDefaultValue, klass->field.count);
 
 	for (i = 0; i < klass->field.count; ++i) {
 		fb = mono_array_get (tb->fields, gpointer, i);
@@ -10010,7 +10011,7 @@ typebuilder_setup_fields (MonoClass *klass)
 			field->type = fb->type->type;
 		}
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && fb->rva_data)
-			klass->field_def_values [i].data = mono_array_addr (fb->rva_data, char, 0);
+			klass->ext->field_def_values [i].data = mono_array_addr (fb->rva_data, char, 0);
 		if (fb->offset != -1)
 			field->offset = fb->offset;
 		field->parent = klass;
@@ -10020,13 +10021,13 @@ typebuilder_setup_fields (MonoClass *klass)
 		if (fb->def_value) {
 			MonoDynamicImage *assembly = (MonoDynamicImage*)klass->image;
 			field->type->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
-			idx = encode_constant (assembly, fb->def_value, &klass->field_def_values [i].def_type);
+			idx = encode_constant (assembly, fb->def_value, &klass->ext->field_def_values [i].def_type);
 			/* Copy the data from the blob since it might get realloc-ed */
 			p = assembly->blob.data + idx;
 			len = mono_metadata_decode_blob_size (p, &p2);
 			len += p2 - p;
-			klass->field_def_values [i].data = mono_mempool_alloc (mp, len);
-			memcpy ((gpointer)klass->field_def_values [i].data, p, len);
+			klass->ext->field_def_values [i].data = mono_mempool_alloc (mp, len);
+			memcpy ((gpointer)klass->ext->field_def_values [i].data, p, len);
 		}
 	}
 
@@ -10040,23 +10041,28 @@ typebuilder_setup_properties (MonoClass *klass)
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionPropertyBuilder *pb;
 	MonoMemPool *mp = klass->image->mempool;
+	MonoProperty *properties;
 	int i;
 
-	klass->property.count = tb->properties ? mono_array_length (tb->properties) : 0;
-	klass->property.first = 0;
+	if (!klass->ext)
+		klass->ext = mp_g_new0 (mp, MonoClassExt, 1);
 
-	klass->properties = mp_g_new0 (mp, MonoProperty, klass->property.count);
-	for (i = 0; i < klass->property.count; ++i) {
+	klass->ext->property.count = tb->properties ? mono_array_length (tb->properties) : 0;
+	klass->ext->property.first = 0;
+
+	properties = mp_g_new0 (mp, MonoProperty, klass->ext->property.count);
+	klass->ext->properties = properties;
+	for (i = 0; i < klass->ext->property.count; ++i) {
 		pb = mono_array_get (tb->properties, MonoReflectionPropertyBuilder*, i);
-		klass->properties [i].parent = klass;
-		klass->properties [i].attrs = pb->attrs;
-		klass->properties [i].name = mp_string_to_utf8 (mp, pb->name);
+		properties [i].parent = klass;
+		properties [i].attrs = pb->attrs;
+		properties [i].name = mp_string_to_utf8 (mp, pb->name);
 		if (pb->get_method)
-			klass->properties [i].get = pb->get_method->mhandle;
+			properties [i].get = pb->get_method->mhandle;
 		if (pb->set_method)
-			klass->properties [i].set = pb->set_method->mhandle;
+			properties [i].set = pb->set_method->mhandle;
 
-		mono_save_custom_attrs (klass->image, &klass->properties [i], pb->cattrs);
+		mono_save_custom_attrs (klass->image, &properties [i], pb->cattrs);
 	}
 }
 
@@ -10098,34 +10104,39 @@ typebuilder_setup_events (MonoClass *klass)
 	MonoReflectionTypeBuilder *tb = klass->reflection_info;
 	MonoReflectionEventBuilder *eb;
 	MonoMemPool *mp = klass->image->mempool;
+	MonoEvent *events;
 	int i, j;
 
-	klass->event.count = tb->events ? mono_array_length (tb->events) : 0;
-	klass->event.first = 0;
+	if (!klass->ext)
+		klass->ext = mp_g_new0 (mp, MonoClassExt, 1);
 
-	klass->events = mp_g_new0 (mp, MonoEvent, klass->event.count);
-	for (i = 0; i < klass->event.count; ++i) {
+	klass->ext->event.count = tb->events ? mono_array_length (tb->events) : 0;
+	klass->ext->event.first = 0;
+
+	events = mp_g_new0 (mp, MonoEvent, klass->ext->event.count);
+	klass->ext->events = events;
+	for (i = 0; i < klass->ext->event.count; ++i) {
 		eb = mono_array_get (tb->events, MonoReflectionEventBuilder*, i);
-		klass->events [i].parent = klass;
-		klass->events [i].attrs = eb->attrs;
-		klass->events [i].name = mp_string_to_utf8 (mp, eb->name);
+		events [i].parent = klass;
+		events [i].attrs = eb->attrs;
+		events [i].name = mp_string_to_utf8 (mp, eb->name);
 		if (eb->add_method)
-			klass->events [i].add = eb->add_method->mhandle;
+			events [i].add = eb->add_method->mhandle;
 		if (eb->remove_method)
-			klass->events [i].remove = eb->remove_method->mhandle;
+			events [i].remove = eb->remove_method->mhandle;
 		if (eb->raise_method)
-			klass->events [i].raise = eb->raise_method->mhandle;
+			events [i].raise = eb->raise_method->mhandle;
 
 		if (eb->other_methods) {
-			klass->events [i].other = mp_g_new0 (mp, MonoMethod*, mono_array_length (eb->other_methods) + 1);
+			events [i].other = mp_g_new0 (mp, MonoMethod*, mono_array_length (eb->other_methods) + 1);
 			for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
 				MonoReflectionMethodBuilder *mb = 
 					mono_array_get (eb->other_methods,
 									MonoReflectionMethodBuilder*, j);
-				klass->events [i].other [j] = mb->mhandle;
+				events [i].other [j] = mb->mhandle;
 			}
 		}
-		mono_save_custom_attrs (klass->image, &klass->events [i], eb->cattrs);
+		mono_save_custom_attrs (klass->image, &events [i], eb->cattrs);
 	}
 }
 
@@ -10196,7 +10207,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	if (tb->subtypes) {
 		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
 			MonoReflectionTypeBuilder *subtb = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
-			klass->nested_classes = g_list_prepend_mempool (klass->image->mempool, klass->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
+			mono_class_alloc_ext (klass);
+			klass->ext->nested_classes = g_list_prepend_mempool (klass->image->mempool, klass->ext->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
 		}
 	}
 
@@ -10920,14 +10932,19 @@ guint32
 mono_declsec_flags_from_class (MonoClass *klass)
 {
 	if (klass->flags & TYPE_ATTRIBUTE_HAS_SECURITY) {
-		if (!klass->declsec_flags) {
-			guint32 idx = mono_metadata_token_index (klass->type_token);
+		if (!klass->ext || !klass->ext->declsec_flags) {
+			guint32 idx;
+
+			idx = mono_metadata_token_index (klass->type_token);
 			idx <<= MONO_HAS_DECL_SECURITY_BITS;
 			idx |= MONO_HAS_DECL_SECURITY_TYPEDEF;
+			mono_loader_lock ();
+			mono_class_alloc_ext (klass);
+			mono_loader_unlock ();
 			/* we cache the flags on classes */
-			klass->declsec_flags = mono_declsec_get_flags (klass->image, idx);
+			klass->ext->declsec_flags = mono_declsec_get_flags (klass->image, idx);
 		}
-		return klass->declsec_flags;
+		return klass->ext->declsec_flags;
 	}
 	return 0;
 }

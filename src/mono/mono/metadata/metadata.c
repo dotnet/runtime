@@ -2301,7 +2301,8 @@ free_generic_class (MonoGenericClass *gclass)
 
 		/* Allocated in mono_class_init () */
 		g_free (class->methods);
-		g_free (class->properties);
+		if (class->ext)
+			g_free (class->ext->properties);
 		/* Allocated in mono_generic_class_get_class () */
 		g_free (class->interfaces);
 		g_free (class);
@@ -5444,8 +5445,8 @@ mono_metadata_get_corresponding_event_from_generic_type_definition (MonoEvent *e
 		return event;
 
 	gtd = event->parent->generic_class->container_class;
-	offset = event - event->parent->events;
-	return gtd->events + offset;
+	offset = event - event->parent->ext->events;
+	return gtd->ext->events + offset;
 }
 
 /*
@@ -5462,7 +5463,7 @@ mono_metadata_get_corresponding_property_from_generic_type_definition (MonoPrope
 		return property;
 
 	gtd = property->parent->generic_class->container_class;
-	offset = property - property->parent->properties;
-	return gtd->properties + offset;
+	offset = property - property->parent->ext->properties;
+	return gtd->ext->properties + offset;
 }
 
