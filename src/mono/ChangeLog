@@ -1,3 +1,11 @@
+2009-02-06  Miguel De Icaza  <miguel@novell.com>
+
+	* Disable parallel marking on OSX as it hangs during collections
+	in the bootstrap stage of Mono.
+
+	As we find more platforms that hang, we should disable it there as
+	well. 
+
 2009-02-03  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in (PLATFORM_NO_SYMLINKS): New define that replaces

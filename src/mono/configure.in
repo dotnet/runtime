@@ -64,6 +64,7 @@ need_link_unlink=no
 AC_MSG_CHECKING([host platform characteristics])
 libgc_threads=no
 has_dtrace=no
+parallel_mark=yes
 case "$host" in
 	*-*-mingw*|*-*-cygwin*)
 		platform_win32=yes
@@ -183,6 +184,7 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-darwin*)
+		parallel_mark="Disabled_Currently_Hangs_On_MacOSX"
 		platform_win32=no
 		platform_darwin=yes
 		CPPFLAGS="$CPPFLAGS -no-cpp-precomp -D_THREAD_SAFE -DGC_MACOSX_THREADS -DPLATFORM_MACOSX -DUSE_MMAP -DUSE_MUNMAP"
@@ -650,7 +652,7 @@ AC_TRY_COMPILE([], [
    AC_MSG_RESULT(no)
 ])
 
-AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables GC Parallel Marking], enable_parallel_mark=$enableval, enable_parallel_mark=yes)
+AC_ARG_ENABLE(parallel-mark, [  --enable-parallel-mark     Enables GC Parallel Marking], enable_parallel_mark=$enableval, enable_parallel_mark=$parallel_mark)
 if test x$enable_parallel_mark = xyes; then
 	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
 fi
