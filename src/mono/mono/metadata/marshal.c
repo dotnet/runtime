@@ -4793,10 +4793,7 @@ get_runtime_invoke_type (MonoType *t)
 	case MONO_TYPE_U:
 		return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass->enumtype)
-			return mono_type_get_underlying_type (t);
-		else
-			return t;
+		return t;
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t))
 			return &mono_defaults.object_class->byval_arg;
