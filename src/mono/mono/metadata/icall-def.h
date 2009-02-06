@@ -735,11 +735,11 @@ ICALL(WINIMP_4, "SetCurrentToken", ves_icall_System_Security_Principal_WindowsIm
 ICALL_TYPE(WINPRIN, "System.Security.Principal.WindowsPrincipal", WINPRIN_1)
 ICALL(WINPRIN_1, "IsMemberOfGroupId", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId)
 ICALL(WINPRIN_2, "IsMemberOfGroupName", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName)
-#endif /* !DISABLE_POLICY_EVIDENCE */
 
 ICALL_TYPE(SECSTRING, "System.Security.SecureString", SECSTRING_1)
 ICALL(SECSTRING_1, "DecryptInternal", ves_icall_System_Security_SecureString_DecryptInternal)
 ICALL(SECSTRING_2, "EncryptInternal", ves_icall_System_Security_SecureString_EncryptInternal)
+#endif /* !DISABLE_POLICY_EVIDENCE */
 
 ICALL_TYPE(SECMAN, "System.Security.SecurityManager", SECMAN_1)
 ICALL(SECMAN_1, "GetLinkDemandSecurity", ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity)

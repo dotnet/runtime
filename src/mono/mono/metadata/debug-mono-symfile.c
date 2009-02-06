@@ -114,7 +114,6 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_content
 			      int size, gboolean in_the_debugger)
 {
 	MonoSymbolFile *symfile;
-	FILE* f;
 
 	mono_debugger_lock ();
 	symfile = g_new0 (MonoSymbolFile, 1);
@@ -126,21 +125,20 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const guint8 *raw_content
 		memcpy (p, raw_contents, size);
 		symfile->filename = g_strdup_printf ("LoadedFromMemory");
 	} else {
+		MonoFileMap *f;
 		symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
 
-		if ((f = fopen (symfile->filename, "rb"))) {
-			struct stat stat_buf;
-			
-			if (fstat (fileno (f), &stat_buf) < 0) {
+		if ((f = mono_file_map_open (symfile->filename))) {
+			symfile->raw_contents_size = mono_file_map_size (f);
+			if (symfile->raw_contents_size == 0) {
 				if (!in_the_debugger)
 					g_warning ("stat of %s failed: %s",
 						   symfile->filename,  g_strerror (errno));
 			} else {
-				symfile->raw_contents_size = stat_buf.st_size;
-				symfile->raw_contents = mono_file_map (stat_buf.st_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, fileno (f), 0, &symfile->raw_contents_handle);
+				symfile->raw_contents = mono_file_map (symfile->raw_contents_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (f), 0, &symfile->raw_contents_handle);
 			}
 
-			fclose (f);
+			mono_file_map_close (f);
 		}
 	}
 	
