@@ -986,6 +986,7 @@ mono_method_get_imt_slot (MonoMethod *method) {
 	 * We do this to simplify generic sharing.  It will hurt
 	 * performance in cases where a class implements two different
 	 * instantiations of the same generic interface.
+	 * The code in build_imt_slots () depends on this.
 	 */
 	if (method->is_inflated)
 		method = ((MonoMethodInflated*)method)->declaring;
@@ -1195,7 +1196,20 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 		int interface_offset = klass->interface_offsets_packed [i];
 		int method_slot_in_interface;
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
-			MonoMethod *method = mono_class_get_method_by_index (iface, method_slot_in_interface);
+			MonoMethod *method;
+
+			if (slot_num >= 0 && iface->is_inflated) {
+				/*
+				 * The imt slot of the method is the same as for its declaring method,
+				 * see the comment in mono_method_get_imt_slot (), so we can
+				 * avoid inflating methods which will be discarded by 
+				 * add_imt_builder_entry anyway.
+				 */
+				method = mono_class_get_method_by_index (iface->generic_class->container_class, method_slot_in_interface);
+				if (mono_method_get_imt_slot (method) != slot_num)
+					continue;
+			}
+			method = mono_class_get_method_by_index (iface, method_slot_in_interface);
 			add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface, slot_num);
 		}
 	}
