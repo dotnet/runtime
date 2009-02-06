@@ -7966,7 +7966,7 @@ type_from_typename (char *typename)
 	else if (!strcmp (typename, "boolean"))
 		klass = mono_defaults.boolean_class;
 	else {
-		g_error (typename);
+		g_error ("%s", typename);
 		g_assert_not_reached ();
 	}
 	return &klass->byval_arg;
