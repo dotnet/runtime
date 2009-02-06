@@ -2097,55 +2097,6 @@ compare_interface_ids (const void *p_key, const void *p_element) {
 	return (key->interface_id - element->interface_id);
 }
 
-static gboolean
-mono_class_has_variant_generic_params (MonoClass *klass)
-{
-	int i;
-	MonoGenericContainer *container;
-
-	if (!klass->generic_class)
-		return FALSE;
-
-	container = klass->generic_class->container_class->generic_container;
-
-	for (i = 0; i < container->type_argc; ++i) {
-		if (container->type_params [i].flags & GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-static gboolean
-mono_class_is_variant_of (MonoClass *klass, MonoClass *vklass) {
-	int i;
-	MonoClass *generic = klass->generic_class->container_class;
-	MonoClass *vgeneric = vklass->generic_class->container_class;
-	MonoGenericContainer *container = vgeneric->generic_container;
-
-	if (generic != vgeneric)
-		return FALSE;
-
-	for (i = 0; i < container->type_argc; i++) {
-		MonoClass *param_class = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [i]);
-		MonoClass *vparam_class = mono_class_from_mono_type (vklass->generic_class->context.class_inst->type_argv [i]);
-
-		// FIXME this is incorrect
-		if (param_class->valuetype || vparam_class->valuetype)
-			return FALSE;
-
-		if (container->type_params [i].flags & GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK) {
-			if ((container->type_params [i].flags & GENERIC_PARAMETER_ATTRIBUTE_CONTRAVARIANT) && !mono_class_is_assignable_from (param_class, vparam_class))
-				return FALSE;
-			if ((container->type_params [i].flags & GENERIC_PARAMETER_ATTRIBUTE_COVARIANT) && !mono_class_is_assignable_from (vparam_class, param_class))
-				return FALSE;
-		} else if (param_class != vparam_class)
-			return FALSE;
-	}
-
-	return TRUE;
-}
-
 int
 mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
 	MonoClass **result = bsearch (
@@ -2159,21 +2110,6 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf) {
 	} else {
 		return -1;
 	}
-}
-
-int
-mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf) {
-	int i = mono_class_interface_offset (klass, itf);
-	if (i >= 0) {
-		return i;
-	} else if (mono_class_has_variant_generic_params (itf)) {
-		for (i = 0; i < klass->interface_offsets_count; i++) {
-			if (mono_class_is_variant_of (klass->interfaces_packed[i], itf)) {
-				return klass->interface_offsets_packed [i];
-			}
-		}
-	}
-	return -1;
 }
 
 static void
@@ -5942,6 +5878,24 @@ mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc,
 	return FALSE;
 }
 
+static gboolean
+mono_class_has_variant_generic_params (MonoClass *klass)
+{
+	int i;
+	MonoGenericContainer *container;
+
+	if (!klass->generic_class)
+		return FALSE;
+
+	container = klass->generic_class->container_class->generic_container;
+
+	for (i = 0; i < container->type_argc; ++i)
+		if (container->type_params [i].flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT))
+			return TRUE;
+
+	return FALSE;
+}
+
 /**
  * mono_class_is_assignable_from:
  * @klass: the class to be assigned to
@@ -5979,23 +5933,55 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (oklass, klass->interface_id))
 			return TRUE;
 
-		if (mono_class_has_variant_generic_params (klass) && oklass->generic_class) {
-			int i;
-			gboolean match = FALSE;
-			MonoClass *container_class1 = klass->generic_class->container_class;
-			MonoClass *container_class2 = oklass->generic_class->container_class;
+		if (mono_class_has_variant_generic_params (klass)) {
+			if (oklass->generic_class) {
+				int i;
+				gboolean match = FALSE;
+				MonoClass *container_class1 = klass->generic_class->container_class;
+				MonoClass *container_class2 = oklass->generic_class->container_class;
 
-			/* 
-			 * Check whenever the generic definition of oklass implements the 
-			 * generic definition of klass. The IMPLEMENTS_INTERFACE stuff is not usable
-			 * here since the relevant tables are not set up.
-			 */
-			for (i = 0; i < container_class2->interface_offsets_count; ++i)
-				if ((container_class2->interfaces_packed [i] == container_class1) || (container_class2->interfaces_packed [i]->generic_class && (container_class2->interfaces_packed [i]->generic_class->container_class == container_class1)))
+				/* 
+				 * Check whenever the generic definition of oklass implements the 
+				 * generic definition of klass. The IMPLEMENTS_INTERFACE stuff is not usable
+				 * here since the relevant tables are not set up.
+				 */
+				for (i = 0; i < container_class2->interface_offsets_count; ++i)
+					if ((container_class2->interfaces_packed [i] == container_class1) || (container_class2->interfaces_packed [i]->generic_class && (container_class2->interfaces_packed [i]->generic_class->container_class == container_class1)))
+						match = TRUE;
+
+				if (match) {
+					MonoGenericContainer *container;
+
+					container = klass->generic_class->container_class->generic_container;
+
 					match = TRUE;
+					for (i = 0; i < container->type_argc; ++i) {
+						MonoClass *param1_class = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [i]);
+						MonoClass *param2_class = mono_class_from_mono_type (oklass->generic_class->context.class_inst->type_argv [i]);
 
-			if (match && mono_class_is_variant_of (oklass, klass)) {
-				return TRUE;
+						if (param1_class->valuetype != param2_class->valuetype) {
+							match = FALSE;
+							break;
+						}
+						/*
+						 * The _VARIANT and _COVARIANT constants should read _COVARIANT and
+						 * _CONTRAVARIANT, but they are in a public header so we can't fix it.
+						 */
+						if (param1_class != param2_class) {
+							if ((container->type_params [i].flags & MONO_GEN_PARAM_VARIANT) && mono_class_is_assignable_from (param1_class, param2_class))
+								;
+							else if (((container->type_params [i].flags & MONO_GEN_PARAM_COVARIANT) && mono_class_is_assignable_from (param2_class, param1_class)))
+								;
+							else {
+								match = FALSE;
+								break;
+							}
+						}
+					}
+
+					if (match)
+						return TRUE;
+				}
 			}
 		}
 	} else if (klass->rank) {
