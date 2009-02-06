@@ -1580,6 +1580,8 @@ mono_class_setup_methods (MonoClass *class)
 
 		class->method.count = 3 + (class->rank > 1? 2: 1);
 
+		mono_class_setup_interfaces (class);
+
 		if (class->interface_count) {
 			count_generic = generic_array_methods (class);
 			first_generic = class->method.count;
@@ -2067,6 +2069,8 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res)
 {
 	int i;
 	MonoClass *ic;
+
+	mono_class_setup_interfaces (klass);
 	
 	for (i = 0; i < klass->interface_count; i++) {
 		ic = klass->interfaces [i];
@@ -3073,8 +3077,10 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			MonoMethod **tmp = mono_image_alloc0 (class->image, sizeof (gpointer) * gklass->vtable_size);
 			class->vtable_size = gklass->vtable_size;
 			for (i = 0; i < gklass->vtable_size; ++i)
-				if (gklass->vtable [i])
+				if (gklass->vtable [i]) {
 					tmp [i] = mono_class_inflate_generic_method_full (gklass->vtable [i], class, mono_class_get_context (class));
+					tmp [i]->slot = gklass->vtable [i]->slot;
+				}
 			mono_memory_barrier ();
 			class->vtable = tmp;
 
@@ -3729,8 +3735,6 @@ mono_class_init (MonoClass *class)
 
 		if (MONO_CLASS_IS_INTERFACE (class))
 			class->interface_id = mono_get_unique_iid (class);
-
-		g_assert (class->interface_count == gklass->interface_count);
 	}
 
 	if (class->parent && !class->parent->inited)
@@ -4306,6 +4310,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token)
 
 		class->interfaces = interfaces;
 		class->interface_count = icount;
+		class->interfaces_inited = 1;
 	}
 
 	if ((class->flags & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == TYPE_ATTRIBUTE_UNICODE_CLASS)
@@ -4408,7 +4413,6 @@ MonoClass*
 mono_generic_class_get_class (MonoGenericClass *gclass)
 {
 	MonoClass *klass, *gklass;
-	int i;
 
 	mono_loader_lock ();
 	if (gclass->cached_class) {
@@ -4454,12 +4458,6 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 
 	if (mono_class_is_nullable (klass))
 		klass->cast_class = klass->element_class = mono_class_get_nullable_param (klass);
-
-	klass->interface_count = gklass->interface_count;
-	klass->interfaces = g_new0 (MonoClass *, klass->interface_count);
-	for (i = 0; i < klass->interface_count; i++) {
-		klass->interfaces [i] = mono_class_inflate_generic_class (gklass->interfaces [i], mono_generic_class_get_context (gclass));
-	}
 
 	/*
 	 * We're not interested in the nested classes of a generic instance.
@@ -4922,18 +4920,6 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		class->sizes.element_size = mono_class_array_element_size (eclass);
 
 	mono_class_setup_supertypes (class);
-
-	if (mono_defaults.generic_ilist_class && !bounded && rank == 1) {
-		MonoType *args [1];
-
-		/* generic IList, ICollection, IEnumerable */
-		class->interface_count = 1;
-		class->interfaces = mono_image_alloc0 (image, sizeof (MonoClass*) * class->interface_count);
-
-		args [0] = &eclass->byval_arg;
-		class->interfaces [0] = mono_class_bind_generic_parameters (
-			mono_defaults.generic_ilist_class, 1, args, FALSE);
-	}
 
 	if (eclass->generic_class)
 		mono_class_init (eclass);
@@ -6749,9 +6735,11 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 	MonoClass** iface;
 	if (!iter)
 		return NULL;
-	if (!klass->inited)
-		mono_class_init (klass);
 	if (!*iter) {
+		if (!klass->inited)
+			mono_class_init (klass);
+		if (!klass->interfaces_inited)
+			mono_class_setup_interfaces (klass);
 		/* start from the first */
 		if (klass->interface_count) {
 			*iter = &klass->interfaces [0];
@@ -7847,4 +7835,50 @@ mono_class_alloc_ext (MonoClass *klass)
 		class_ext_size += sizeof (MonoClassExt);
 	}
 }
-				
+
+/*
+ * mono_class_setup_interfaces:
+ *
+ *   Initialize class->interfaces/interfaces_count.
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_setup_interfaces (MonoClass *klass)
+{
+	int i;
+
+	if (klass->interfaces_inited)
+		return;
+
+	mono_loader_lock ();
+
+	if (klass->interfaces_inited) {
+		mono_loader_unlock ();
+		return;
+	}
+
+	if (klass->rank == 1 && klass->byval_arg.type != MONO_TYPE_ARRAY && mono_defaults.generic_ilist_class) {
+		MonoType *args [1];
+
+		/* generic IList, ICollection, IEnumerable */
+		klass->interface_count = 1;
+		klass->interfaces = mono_image_alloc0 (klass->image, sizeof (MonoClass*) * klass->interface_count);
+
+		args [0] = &klass->element_class->byval_arg;
+		klass->interfaces [0] = mono_class_bind_generic_parameters (
+			mono_defaults.generic_ilist_class, 1, args, FALSE);
+	} else if (klass->generic_class) {
+		MonoClass *gklass = klass->generic_class->container_class;
+
+		klass->interface_count = gklass->interface_count;
+		klass->interfaces = g_new0 (MonoClass *, klass->interface_count);
+		for (i = 0; i < klass->interface_count; i++)
+			klass->interfaces [i] = mono_class_inflate_generic_class (gklass->interfaces [i], mono_generic_class_get_context (klass->generic_class));
+	}
+
+	mono_memory_barrier ();
+
+	klass->interfaces_inited = TRUE;
+
+	mono_loader_unlock ();
+}

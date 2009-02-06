@@ -9855,6 +9855,8 @@ ensure_generic_class_runtime_vtable (MonoClass *klass)
 
 		ensure_runtime_vtable (klass->interfaces [i]);
 	}
+	klass->interfaces_inited = 1;
+
 	/*We can only finish with this klass once it's parent has as well*/
 	if (gklass->wastypebuilder)
 		klass->wastypebuilder = TRUE;
@@ -9893,6 +9895,7 @@ ensure_runtime_vtable (MonoClass *klass)
 				klass->interfaces [i] = mono_class_from_mono_type (iface->type);
 				ensure_runtime_vtable (klass->interfaces [i]);
 			}
+			klass->interfaces_inited = 1;
 		}
 	} else if (klass->generic_class){
 		ensure_generic_class_runtime_vtable (klass);
