@@ -236,7 +236,6 @@ print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *location
  */
 void
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
-				   int data_align_factor,
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, gssize *regs, 
 				   int nregs, guint8 **out_cfa) 
 {
@@ -265,7 +264,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 			reg = mono_dwarf_reg_to_hw_reg (*p & 0x3f);
 			p ++;
 			locations [reg].loc_type = LOC_OFFSET;
-			locations [reg].offset = decode_uleb128 (p, &p) * data_align_factor;
+			locations [reg].offset = decode_uleb128 (p, &p) * DWARF_DATA_ALIGN;
 			break;
 		case 0: {
 			int ext_op = *p;
