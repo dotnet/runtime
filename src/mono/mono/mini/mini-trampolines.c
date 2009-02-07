@@ -141,8 +141,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 				return addr;
 			}
 
-			mono_class_setup_vtable (vt->klass);
-			m = vt->klass->vtable [displacement];
+			m = mono_class_get_vtable_entry (vt->klass, displacement);
 			/*g_print ("%s with disp %d: %s at %p\n", vt->klass->name, displacement, m->name, code);*/
 		} else {
 			/* We got here from an interface method: redirect to IMT handling */
