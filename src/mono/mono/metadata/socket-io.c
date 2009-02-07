@@ -2334,29 +2334,32 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 				       gboolean add_local_ips)
 {
 	MonoDomain *domain = mono_domain_get ();
-	int i;
+	int i = 0;
 	struct in_addr *local_in = NULL;
 	int nlocal_in = 0;
 
-	if(he->h_length!=4 || he->h_addrtype!=AF_INET) {
-		return(FALSE);
-	}
+	if (he != NULL) {
+		if(he->h_length!=4 || he->h_addrtype!=AF_INET) {
+			return(FALSE);
+		}
 
-	*h_name=mono_string_new(domain, he->h_name);
+		*h_name=mono_string_new(domain, he->h_name);
 
-	i=0;
-	while(he->h_aliases[i]!=NULL) {
-		i++;
-	}
-	
-	*h_aliases=mono_array_new(domain, mono_get_string_class (), i);
-	i=0;
-	while(he->h_aliases[i]!=NULL) {
-		MonoString *alias;
+		while(he->h_aliases[i]!=NULL) {
+			i++;
+		}
 		
-		alias=mono_string_new(domain, he->h_aliases[i]);
-		mono_array_setref (*h_aliases, i, alias);
-		i++;
+		*h_aliases=mono_array_new(domain, mono_get_string_class (), i);
+		i=0;
+		while(he->h_aliases[i]!=NULL) {
+			MonoString *alias;
+			
+			alias=mono_string_new(domain, he->h_aliases[i]);
+			mono_array_setref (*h_aliases, i, alias);
+			i++;
+		}
+	} else if (!add_local_ips) {
+		return FALSE;
 	}
 
 	if (add_local_ips) {
@@ -2383,7 +2386,7 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 		}
 	}
 	
-	if (nlocal_in == 0) {
+	if (nlocal_in == 0 && he != NULL) {
 		i = 0;
 		while (he->h_addr_list[i]!=NULL) {
 			i++;
@@ -2439,10 +2442,6 @@ static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2,
 
 	family_hint = get_family_hint ();
 
-	if(he1 == NULL && he2 == NULL) {
-		return(FALSE);
-	}
-
 	/*
 	 * Check if address length and family are correct
 	 */
@@ -2496,7 +2495,7 @@ static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2,
 			mono_array_setref (*h_aliases, i, alias);
 			i++;
 		}
-	} else {
+	} else if (!add_local_ips) {
 		return(FALSE);
 	}
 
@@ -2756,8 +2755,10 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	MONO_ARCH_SAVE_REGS;
 	
 	hostname=mono_string_to_utf8 (host);
+	if (*hostname == '\0')
+		add_local_ips = TRUE;
 #ifdef HAVE_SIOCGIFCONF
-	if (gethostname (this_hostname, sizeof (this_hostname)) != -1) {
+	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
 		if (!strcmp (hostname, this_hostname))
 			add_local_ips = TRUE;
 	}
@@ -2768,7 +2769,7 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_CANONNAME;
 
-	if (getaddrinfo(hostname, NULL, &hints, &info) == -1) {
+	if (*hostname && getaddrinfo(hostname, NULL, &hints, &info) == -1) {
 		return(FALSE);
 	}
 	
@@ -2786,9 +2787,11 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	MONO_ARCH_SAVE_REGS;
 	
 	hostname=mono_string_to_utf8 (host);
+	if (*hostname == '\0')
+		add_local_ips = TRUE;
 
 #ifdef HAVE_SIOCGIFCONF
-	if (gethostname (this_hostname, sizeof (this_hostname)) != -1) {
+	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
 		if (!strcmp (hostname, this_hostname))
 			add_local_ips = TRUE;
 	}
@@ -2799,13 +2802,15 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	buffer1 = g_malloc0(buffer_size1);
 	buffer2 = g_malloc0(buffer_size2);
 
-	while (gethostbyname2_r(hostname, AF_INET, &he1, buffer1, buffer_size1,
+	hp1 = NULL;
+	hp2 = NULL;
+	while (*hostname && gethostbyname2_r(hostname, AF_INET, &he1, buffer1, buffer_size1,
 				&hp1, &herr) == ERANGE) {
 		buffer_size1 *= 2;
 		buffer1 = g_realloc(buffer1, buffer_size1);
 	}
 
-	if (hp1 == NULL)
+	if (*hostname && hp1 == NULL)
 	{
 		while (gethostbyname2_r(hostname, AF_INET6, &he2, buffer2,
 					buffer_size2, &hp2, &herr) == ERANGE) {
@@ -2813,8 +2818,6 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 			buffer2 = g_realloc(buffer2, buffer_size2);
 		}
 	}
-	else
-		hp2 = NULL;
 
 	return_value = hostent_to_IPHostEntry2(hp1, hp2, h_name, h_aliases,
 					       h_addr_list, add_local_ips);
@@ -2839,19 +2842,22 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	MONO_ARCH_SAVE_REGS;
 
 	hostname=mono_string_to_utf8(host);
+	if (*hostname == '\0')
+		add_local_ips = TRUE;
 #ifdef HAVE_SIOCGIFCONF
-	if (gethostname (this_hostname, sizeof (this_hostname)) != -1) {
+	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
 		if (!strcmp (hostname, this_hostname))
 			add_local_ips = TRUE;
 	}
 #endif
 
-	he = _wapi_gethostbyname (hostname);
+	he = NULL;
+	if (*hostname)
+		he = _wapi_gethostbyname (hostname);
 	g_free(hostname);
 
-	if(he==NULL) {
+	if (*hostname && he==NULL)
 		return(FALSE);
-	}
 
 	return(hostent_to_IPHostEntry(he, h_name, h_aliases, h_addr_list, add_local_ips));
 }
