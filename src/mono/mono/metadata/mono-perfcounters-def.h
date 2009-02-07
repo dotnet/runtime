@@ -13,7 +13,7 @@ PERFCTR_COUNTER(CPU_USER_TIME, "% User Time", "", Timer100Ns, unused)
 PERFCTR_COUNTER(CPU_PRIV_TIME, "% Privileged Time", "", Timer100Ns, unused)
 PERFCTR_COUNTER(CPU_INTR_TIME, "% Interrupt Time", "", Timer100Ns, unused)
 PERFCTR_COUNTER(CPU_DCP_TIME,  "% DCP Time", "", Timer100Ns, unused)
-PERFCTR_COUNTER(CPU_PROC_TIME, "% Processor Time", "", Timer100Ns, unused)
+PERFCTR_COUNTER(CPU_PROC_TIME, "% Processor Time", "", Timer100NsInverse, unused)
 
 PERFCTR_CAT(PROC, "Process", "", MultiInstance, Process, PROC_USER_TIME)
 PERFCTR_COUNTER(PROC_USER_TIME, "% User Time", "", Timer100Ns, unused)
