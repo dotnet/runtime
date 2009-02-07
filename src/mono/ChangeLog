@@ -1,3 +1,8 @@
+2009-02-07 Gonzalo Paniagua Javier <gonzalo@novell.com>
+
+	* configure.in: include stdio so that NULL is defined when checking
+	for ifreq.
+
 2009-02-06  Miguel De Icaza  <miguel@novell.com>
 
 	* Disable parallel marking on OSX as it hangs during collections
