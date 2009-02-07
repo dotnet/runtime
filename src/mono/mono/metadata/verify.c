@@ -391,6 +391,7 @@ mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *ifac
 	do {
 		if (candidate == iface)
 			return TRUE;
+		mono_class_setup_interfaces (candidate);
 		for (i = 0; i < candidate->interface_count; ++i) {
 			if (candidate->interfaces [i] == iface || mono_class_interface_implements_interface (candidate->interfaces [i], iface))
 				return TRUE;
@@ -4582,6 +4583,7 @@ merge_stacks (VerifyContext *ctx, ILCodeDesc *from, ILCodeDesc *to, gboolean sta
 				}
 			}
 
+			mono_class_setup_interfaces (old_class);
 			for (j = 0; j < old_class->interface_count; ++j) {
 				for (k = 0; k < new_class->interface_count; ++k) {
 					if (mono_metadata_type_equal (&old_class->interfaces [j]->byval_arg, &new_class->interfaces [k]->byval_arg)) {
