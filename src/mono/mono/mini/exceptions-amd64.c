@@ -587,7 +587,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		regs [AMD64_R14] = new_ctx->r14;
 		regs [AMD64_R15] = new_ctx->r15;
 
-		mono_unwind_frame (unwind_info, unwind_info_len, -8, ji->code_start, 
+		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
 						   (guint8*)ji->code_start + ji->code_size,
 						   ip, regs, MONO_MAX_IREGS + 1, &cfa);
 
