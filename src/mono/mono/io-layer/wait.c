@@ -650,6 +650,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		return(WAIT_FAILED);
 	}
 
+	poll = FALSE;
 	for (i = 0; i < numobjects; ++i)
 		if (_wapi_handle_type (handles [i]) == WAPI_HANDLE_PROCESS)
 			/* Can't wait for a process handle + another handle without polling */
