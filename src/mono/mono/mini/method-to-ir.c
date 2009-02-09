@@ -4055,6 +4055,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	guint32 prev_cil_offset_to_bb_len;
 	MonoMethod *prev_current_method;
 	MonoGenericContext *prev_generic_context;
+	gboolean ret_var_set, prev_ret_var_set;
 
 	g_assert (cfg->exception_type == MONO_EXCEPTION_NONE);
 
@@ -4108,8 +4109,11 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_cbb = cfg->cbb;
 	prev_current_method = cfg->current_method;
 	prev_generic_context = cfg->generic_context;
+	prev_ret_var_set = cfg->ret_var_set;
 
 	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, rvar, dont_inline, sp, real_offset, *ip == CEE_CALLVIRT);
+
+	ret_var_set = cfg->ret_var_set;
 
 	cfg->inlined_method = prev_inlined_method;
 	cfg->real_offset = prev_real_offset;
@@ -4122,6 +4126,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->arg_types = prev_arg_types;
 	cfg->current_method = prev_current_method;
 	cfg->generic_context = prev_generic_context;
+	cfg->ret_var_set = prev_ret_var_set;
 
 	if ((costs >= 0 && costs < 60) || inline_allways) {
 		if (cfg->verbose_level > 2)
@@ -4162,7 +4167,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			 * If the inlined method contains only a throw, then the ret var is not 
 			 * set, so set it to a dummy value.
 			 */
-			if (!cfg->ret_var_set) {
+			if (!ret_var_set) {
 				static double r8_0 = 0.0;
 
 				switch (rvar->type) {
