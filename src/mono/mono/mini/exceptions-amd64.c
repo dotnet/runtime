@@ -895,17 +895,16 @@ get_original_ip (void)
 	return lmf->rip;
 }
 
-static gpointer 
-get_throw_pending_exception (void)
+gpointer
+mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
 {
-	static guint8* start;
-	static gboolean inited = FALSE;
-	guint8 *code;
+	guint8 *code, *start;
 	guint8 *br[1];
 	gpointer throw_trampoline;
 
-	if (inited)
-		return start;
+	*ji = NULL;
+
+	g_assert (!aot);
 
 	start = code = mono_global_codeman_reserve (128);
 
@@ -982,10 +981,12 @@ get_throw_pending_exception (void)
 
 	g_assert ((code - start) < 128);
 
-	inited = TRUE;
+	*code_size = code - start;
 
 	return start;
 }
+
+static gpointer throw_pending_exception;
 
 /*
  * Called when a thread receives an async exception while executing unmanaged code.
@@ -1011,14 +1012,17 @@ mono_arch_notify_pending_exc (void)
 	/* Signal that lmf->rip is set */
 	lmf->previous_lmf = (gpointer)((guint64)lmf->previous_lmf | 1);
 
-	*(gpointer*)(lmf->rsp - 8) = get_throw_pending_exception ();
+	*(gpointer*)(lmf->rsp - 8) = throw_pending_exception;
 }
 
 void
 mono_arch_exceptions_init (void)
 {
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
 	/* Call this to avoid initialization races */
-	get_throw_pending_exception ();
+	throw_pending_exception = mono_arch_get_throw_pending_exception_full (&code_size, &ji, FALSE);
 }
 
 #ifdef PLATFORM_WIN32
