@@ -5312,6 +5312,9 @@ mono_xdebug_init (void)
 	acfg->aot_opts.outfile = g_strdup ("xdb.s");
 
 	unlink ("xdb.s");
+	acfg->fp = fopen ("xdb.s", "w");
+
+	acfg->w = img_writer_create (acfg->fp, FALSE);
 
 	img_writer_emit_start (acfg->w);
 
