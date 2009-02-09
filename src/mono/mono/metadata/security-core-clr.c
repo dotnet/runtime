@@ -10,6 +10,8 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/verify-internals.h>
 
 #include "security-core-clr.h"
 
@@ -104,4 +106,11 @@ mono_security_core_clr_is_platform_image (MonoImage *image)
 	if (strchr (image->name + prefix_len + subprefix_len, '/'))
 		return FALSE;
 	return TRUE;
+}
+
+void
+mono_security_enable_core_clr ()
+{
+	mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
+	mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
 }

@@ -202,6 +202,9 @@ mono_get_thread_class       (void);
 MonoClass*
 mono_get_exception_class    (void);
 
+void
+mono_security_enable_core_clr (void);
+
 G_END_DECLS
 #endif /* _MONO_METADATA_APPDOMAIN_H_ */
 
