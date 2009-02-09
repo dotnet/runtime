@@ -494,6 +494,15 @@ aotcheck: mono $(regtests)
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
 	rm -f *.exe.so
 
+# This is not expected to run successfully
+fullaotcheck: mono $(regtests)
+	rm -rf fullaot-tmp
+	mkdir fullaot-tmp
+	cp $(CLASS)/mscorlib.dll $(regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
+	cp $(regtests) fullaot-tmp/
+	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --aot=full fullaot-tmp/* || exit 1
+	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/*.exe
+
 bench: mono test.exe
 	time env $(RUNTIME) --ncompile $(count) --compile Test:$(mtest) test.exe
 
