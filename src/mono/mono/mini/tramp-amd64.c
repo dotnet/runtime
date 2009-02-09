@@ -745,6 +745,8 @@ mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo
 	int tramp_size;
 	int owner_offset, nest_offset, dummy;
 
+	*ji = NULL;
+
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == AMD64_RDI);
 
 	mono_monitor_threads_sync_members_offset (&owner_offset, &nest_offset, &dummy);
@@ -856,6 +858,8 @@ mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo 
 	guint8 *jump_next;
 	int tramp_size;
 	int owner_offset, nest_offset, entry_count_offset;
+
+	*ji = NULL;
 
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == AMD64_RDI);
 
