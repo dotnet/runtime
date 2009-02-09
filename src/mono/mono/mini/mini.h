@@ -1398,6 +1398,7 @@ gpointer  mono_arch_create_monitor_enter_trampoline (void) MONO_INTERNAL;
 gpointer  mono_arch_create_monitor_exit_trampoline (void) MONO_INTERNAL;
 gpointer  mono_arch_create_monitor_enter_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot) MONO_INTERNAL;
 gpointer  mono_arch_create_monitor_exit_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot) MONO_INTERNAL;
+gpointer  mono_arch_create_generic_class_init_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot) MONO_INTERNAL;
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg) MONO_INTERNAL;
 GList    *mono_arch_get_global_int_regs         (MonoCompile *cfg) MONO_INTERNAL;
 GList    *mono_arch_get_global_fp_regs          (MonoCompile *cfg) MONO_INTERNAL;

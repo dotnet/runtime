@@ -50,6 +50,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-logger.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -2593,6 +2594,10 @@ load_named_code (MonoAotModule *amodule, const char *name)
 				} else if (!strcmp (ji->data.name, "mono_amd64_throw_exception")) {
 					target = mono_amd64_throw_exception;
 #endif
+#ifdef __x86_64__
+				} else if (!strcmp (ji->data.name, "mono_amd64_get_original_ip")) {
+					target = mono_amd64_get_original_ip;
+#endif
 #ifdef __arm__
 				} else if (!strcmp (ji->data.name, "mono_arm_throw_exception")) {
 					target = mono_arm_throw_exception;
@@ -2612,6 +2617,10 @@ load_named_code (MonoAotModule *amodule, const char *name)
 					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
 				} else if (!strcmp (ji->data.name, "specific_trampoline_monitor_exit")) {
 					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_EXIT, mono_get_root_domain (), NULL);
+				} else if (!strcmp (ji->data.name, "specific_trampoline_generic_class_init")) {
+					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), NULL);
+				} else if (!strcmp (ji->data.name, "mono_thread_get_and_clear_pending_exception")) {
+					target = mono_thread_get_and_clear_pending_exception;
 				} else {
 					fprintf (stderr, "Unknown relocation '%s'\n", ji->data.name);
 					g_assert_not_reached ();

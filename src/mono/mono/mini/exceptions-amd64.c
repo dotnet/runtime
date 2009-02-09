@@ -882,8 +882,8 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 #endif
 }
 
-static guint64
-get_original_ip (void)
+guint64
+mono_amd64_get_original_ip (void)
 {
 	MonoLMF *lmf = mono_get_lmf ();
 
@@ -904,8 +904,6 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 
 	*ji = NULL;
 
-	g_assert (!aot);
-
 	start = code = mono_global_codeman_reserve (128);
 
 	/* We are in the frame of a managed method after a call */
@@ -925,7 +923,12 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
 
 	/* Obtain the pending exception */
-	amd64_mov_reg_imm (code, AMD64_R11, mono_thread_get_and_clear_pending_exception);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_get_and_clear_pending_exception");
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_R11, mono_thread_get_and_clear_pending_exception);
+	}
 	amd64_call_reg (code, AMD64_R11);
 
 	/* Check if it is NULL, and branch */
@@ -940,7 +943,12 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 8);
 
 	/* Obtain the original ip and clear the flag in previous_lmf */
-	amd64_mov_reg_imm (code, AMD64_R11, get_original_ip);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_get_original_ip");
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_get_original_ip);
+	}
 	amd64_call_reg (code, AMD64_R11);	
 
 	/* Load exc */
@@ -956,8 +964,13 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 	amd64_push_reg (code, AMD64_RAX);
 
 	/* Call the throw trampoline */
-	throw_trampoline = mono_get_throw_exception ();
-	amd64_mov_reg_imm (code, AMD64_R11, throw_trampoline);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_throw_exception");
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+	} else {
+		throw_trampoline = mono_get_throw_exception ();
+		amd64_mov_reg_imm (code, AMD64_R11, throw_trampoline);
+	}
 	/* We use a jump instead of a call so we can push the original ip on the stack */
 	amd64_jump_reg (code, AMD64_R11);
 
@@ -965,7 +978,12 @@ mono_arch_get_throw_pending_exception_full (guint32 *code_size, MonoJumpInfo **j
 	mono_amd64_patch (br [0], code);
 
 	/* Obtain the original ip and clear the flag in previous_lmf */
-	amd64_mov_reg_imm (code, AMD64_R11, get_original_ip);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_get_original_ip");
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+	} else {
+		amd64_mov_reg_imm (code, AMD64_R11, mono_amd64_get_original_ip);
+	}
 	amd64_call_reg (code, AMD64_R11);	
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
 
@@ -1021,8 +1039,12 @@ mono_arch_exceptions_init (void)
 	guint32 code_size;
 	MonoJumpInfo *ji;
 
-	/* Call this to avoid initialization races */
-	throw_pending_exception = mono_arch_get_throw_pending_exception_full (&code_size, &ji, FALSE);
+	if (mono_aot_only) {
+		throw_pending_exception = mono_aot_get_named_code ("throw_pending_exception");
+	} else {
+		/* Call this to avoid initialization races */
+		throw_pending_exception = mono_arch_get_throw_pending_exception_full (&code_size, &ji, FALSE);
+	}
 }
 
 #ifdef PLATFORM_WIN32

@@ -2373,7 +2373,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			else
 				g_assert_not_reached ();
 			break;
-		case MONO_WRAPPER_STATIC_RGCTX_INVOKE: {
+		case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
+		case MONO_WRAPPER_SYNCHRONIZED: {
 			MonoMethod *m;
 
 			m = mono_marshal_method_from_wrapper (method);
@@ -2928,6 +2929,55 @@ method_has_type_vars (MonoMethod *method)
 }
 
 /*
+ * add_generic_class:
+ *
+ *   Add all methods of a generic class.
+ */
+static void
+add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
+{
+	MonoMethod *method;
+	gpointer iter;
+
+	mono_class_init (klass);
+
+	if (klass->generic_class && klass->generic_class->context.class_inst->is_open)
+		return;
+
+	if (has_type_vars (klass))
+		return;
+
+	if (!klass->generic_class && !klass->rank)
+		return;
+
+	/* 
+	 * Add rgctx wrappers for cctors since those are called by the runtime, so 
+	 * there is no methodspec for them. This is needed even for shared classes,
+	 * since rgctx wrappers belong to inflated methods.
+	 */
+	method = mono_class_get_cctor (klass);
+	if (method)
+		add_extra_method (acfg, mono_marshal_get_static_rgctx_invoke (method));
+
+	iter = NULL;
+	while ((method = mono_class_get_methods (klass, &iter))) {
+		if (mono_method_is_generic_sharable_impl (method, FALSE))
+			/* Already added */
+			continue;
+
+		if (method->is_generic)
+			/* FIXME: */
+			continue;
+
+		/*
+		 * FIXME: Instances which are referenced by these methods are not added,
+		 * for example Array.Resize<int> for List<int>.Add ().
+		 */
+		add_extra_method (acfg, method);
+	}
+}
+
+/*
  * add_generic_instances:
  *
  *   Add instances referenced by the METHODSPEC/TYPESPEC table.
@@ -2961,49 +3011,14 @@ add_generic_instances (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPESPEC].rows; ++i) {
 		MonoClass *klass;
-		gpointer iter;
 
 		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
 
 		klass = mono_class_get (acfg->image, token);
 		if (!klass)
 			continue;
-		mono_class_init (klass);
 
-		if (klass->generic_class && klass->generic_class->context.class_inst->is_open)
-			continue;
-
-		if (has_type_vars (klass))
-			continue;
-
-		if (!klass->generic_class && !klass->rank)
-			continue;
-
-		/* 
-		 * Add rgctx wrappers for cctors since those are called by the runtime, so 
-		 * there is no methodspec for them. This is needed even for shared classes,
-		 * since rgctx wrappers belong to inflated methods.
-		 */
-		method = mono_class_get_cctor (klass);
-		if (method)
-			add_extra_method (acfg, mono_marshal_get_static_rgctx_invoke (method));
-
-		iter = NULL;
-		while ((method = mono_class_get_methods (klass, &iter))) {
-			if (mono_method_is_generic_sharable_impl (method, FALSE))
-				/* Already added */
-				continue;
-
-			if (method->is_generic)
-				/* FIXME: */
-				continue;
-
-			/*
-			 * FIXME: Instances which are referenced by these methods are not added,
-			 * for example Array.Resize<int> for List<int>.Add ().
-			 */
-			add_extra_method (acfg, method);
-		}
+		add_generic_class (acfg, klass);
 	}
 }
 
@@ -3870,6 +3885,11 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_named_code (acfg, "monitor_exit_trampoline", code, code_size, acfg->got_offset, ji);
 #endif
 
+#if defined(__x86_64__)
+		code = mono_arch_create_generic_class_init_trampoline_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "generic_class_init_trampoline", code, code_size, acfg->got_offset, ji);
+#endif
+
 		/* Emit the exception related code pieces */
 		code = mono_arch_get_restore_context_full (&code_size, &ji, TRUE);
 		emit_named_code (acfg, "restore_context", code, code_size, acfg->got_offset, ji);
@@ -3883,6 +3903,11 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_named_code (acfg, "throw_exception_by_name", code, code_size, acfg->got_offset, ji);
 		code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
 		emit_named_code (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji);
+
+#if defined(__x86_64__)
+		code = mono_arch_get_throw_pending_exception_full (&code_size, &ji, TRUE);
+		emit_named_code (acfg, "throw_pending_exception", code, code_size, acfg->got_offset, ji);
+#endif
 
 #if defined(__x86_64__) || defined(__arm__)
 		for (i = 0; i < 128; ++i) {
@@ -4132,7 +4157,7 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			case MONO_WRAPPER_UNKNOWN:
 				break;
 			default:
-				//printf ("Skip (wrapper call):   %s %d -> %s\n", mono_method_full_name (method, TRUE), patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
+				//printf ("Skip (wrapper call): %d -> %s\n", patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
 				return FALSE;
 			}
 		} else {
@@ -4148,11 +4173,16 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
-	case MONO_PATCH_INFO_ADJUSTED_IID:
-		if (!patch_info->data.klass->type_token)
-			if (!patch_info->data.klass->element_class->type_token && !(patch_info->data.klass->element_class->rank && patch_info->data.klass->element_class->element_class->type_token))
+	case MONO_PATCH_INFO_ADJUSTED_IID: {
+		MonoClass *klass = patch_info->data.klass;
+
+		if (!klass->type_token)
+			if (!klass->element_class->type_token && !(klass->element_class->rank && klass->element_class->element_class->type_token) && (klass->byval_arg.type != MONO_TYPE_VAR) && (klass->byval_arg.type != MONO_TYPE_MVAR)) {
+				//printf ("Skip: %s\n", mono_type_full_name (&patch_info->data.klass->byval_arg));
 				return FALSE;
+			}
 		break;
+	}
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
 
@@ -4166,6 +4196,9 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 
 	return TRUE;
 }
+
+static void
+add_generic_class (MonoAotCompile *acfg, MonoClass *klass);
 
 /*
  * compile_method:
@@ -4299,6 +4332,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 
+	//printf ("X: %s\n", mono_method_full_name (method, TRUE));
+
 	/* Adds generic instances referenced by this method */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
@@ -4309,6 +4344,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 					  mono_method_is_generic_sharable_impl (m, FALSE)) &&
 					!method_has_type_vars (m))
 					add_extra_method (acfg, m);
+				add_generic_class (acfg, m->klass);
 			}
 			break;
 		}
@@ -6693,6 +6729,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 		method = mono_get_method (acfg->image, token, NULL);
 
+		if (!method) {
+			printf ("Failed to load method 0x%x from '%s'.\n", token, image->name);
+			exit (1);
+		}
+			
 		/* Load all methods eagerly to skip the slower lazy loading code */
 		mono_class_setup_methods (method->klass);
 

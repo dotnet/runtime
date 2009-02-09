@@ -356,6 +356,9 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 							guint64 rax, guint64 rcx, guint64 rdx,
 							guint64 rethrow);
 
+guint64
+mono_amd64_get_original_ip (void) MONO_INTERNAL;
+
 guint8*
 mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
 

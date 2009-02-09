@@ -671,12 +671,23 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 gpointer
 mono_arch_create_generic_class_init_trampoline (void)
 {
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
+	return mono_arch_create_generic_class_init_trampoline_full (&code_size, &ji, FALSE);
+}
+
+gpointer
+mono_arch_create_generic_class_init_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+{
 	guint8 *tramp;
 	guint8 *code, *buf;
 	static int byte_offset = -1;
 	static guint8 bitmask;
 	guint8 *jump;
 	int tramp_size;
+
+	*ji = NULL;
 
 	tramp_size = 64;
 
@@ -693,14 +704,22 @@ mono_arch_create_generic_class_init_trampoline (void)
 
 	x86_patch (jump, code);
 
-	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), NULL);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, buf - code, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_generic_class_init");
+		amd64_mov_reg_membase (buf, AMD64_R11, AMD64_RIP, 0, 8);
+		amd64_jump_reg (buf, AMD64_R11);
+	} else {
+		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), NULL);
 
-	/* jump to the actual trampoline */
-	amd64_jump_code (code, tramp);
+		/* jump to the actual trampoline */
+		amd64_jump_code (code, tramp);
+	}
 
 	mono_arch_flush_icache (buf, code - buf);
 
 	g_assert (code - buf <= tramp_size);
+
+	*code_size = code - buf;
 
 	return buf;
 }

@@ -794,8 +794,12 @@ mono_create_generic_class_init_trampoline (void)
 
 	mono_trampolines_lock ();
 
-	if (!code)
-		code = mono_arch_create_generic_class_init_trampoline ();
+	if (!code) {
+		if (mono_aot_only)
+			code = mono_aot_get_named_code ("generic_class_init_trampoline");
+		else
+			code = mono_arch_create_generic_class_init_trampoline ();
+	}
 
 	mono_trampolines_unlock ();
 
