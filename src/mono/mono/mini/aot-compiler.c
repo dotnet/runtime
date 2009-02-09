@@ -2512,6 +2512,7 @@ is_shared_got_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 	case MONO_PATCH_INFO_RVA:
 	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_IMAGE:
 		return TRUE;
 	default:
 		return FALSE;
@@ -3022,6 +3023,14 @@ add_generic_instances (MonoAotCompile *acfg)
 	}
 }
 
+/*
+ * emit_and_reloc_code:
+ *
+ *   Emit the native code in CODE, handling relocations along the way. If GOT_ONLY
+ * is true, calls are made through the GOT too. This is used for emitting trampolines
+ * in full-aot mode, since calls made from trampolines couldn't go through the PLT,
+ * since trampolines are needed to make PTL work.
+ */
 static void
 emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, guint32 code_len, MonoJumpInfo *relocs, gboolean got_only)
 {

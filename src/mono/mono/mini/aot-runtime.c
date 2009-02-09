@@ -1625,6 +1625,7 @@ is_shared_got_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 	case MONO_PATCH_INFO_RVA:
 	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_IMAGE:
 		return TRUE;
 	default:
 		return FALSE;
@@ -1807,6 +1808,14 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	return FALSE;
 }
 
+/*
+ * decode_got_entry:
+ *
+ *   Decode a reference to a GOT entry. GOT_OFFSET is set to the index of the got
+ * entry. If that got entry is not already filled out, then JI is filled out with
+ * the information required to resolve the value of the GOT entry.
+ * FIXME: Clean up this confusing API.
+ */
 static gboolean
 decode_got_entry (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guint8 *buf, guint8 **endbuf, guint32 *got_offset)
 {
@@ -2577,6 +2586,9 @@ load_named_code (MonoAotModule *amodule, const char *name)
 			MonoJumpInfo *ji = &patches [pindex];
 			gpointer target;
 
+			if (amodule->got [got_slots [pindex]])
+				continue;
+
 			/*
 			 * When this code is executed, the runtime may not yet initalized, so
 			 * resolve the patch info by hand.
@@ -2631,6 +2643,7 @@ load_named_code (MonoAotModule *amodule, const char *name)
 				 * domain to be set.
 				 */
 				target = mono_resolve_patch_target (NULL, NULL, code, ji, FALSE);
+				g_assert (target);
 			}
 
 			amodule->got [got_slots [pindex]] = target;
