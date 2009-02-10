@@ -109,6 +109,7 @@ typedef struct MonoAotOptions {
 	gboolean asm_only;
 	gboolean asm_writer;
 	int nthreads;
+	gboolean print_skipped_methods;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -1458,8 +1459,10 @@ add_wrappers (MonoAotCompile *acfg)
 
 		method = mono_get_method (acfg->image, token, NULL);
 
-		if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+			(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
+		}
 	}
 }
 
@@ -2676,7 +2679,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	if (cfg->disable_aot) {
-		//printf ("Skip (other): %s\n", mono_method_full_name (method, TRUE));
+		if (acfg->aot_opts.print_skipped_methods)
+			printf ("Skip (disabled): %s\n", mono_method_full_name (method, TRUE));
 		InterlockedIncrement (&acfg->stats.ocount);
 		mono_destroy_compile (cfg);
 		return;
@@ -2707,7 +2711,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_ABS:
 			/* unable to handle this */
-			//printf ("Skip (abs addr):   %s %d\n", mono_method_full_name (method, TRUE), patch_info->type);
 			skip = TRUE;	
 			break;
 		default:
@@ -2716,6 +2719,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	if (skip) {
+		if (acfg->aot_opts.print_skipped_methods)
+			printf ("Skip (abs call): %s\n", mono_method_full_name (method, TRUE));
 		InterlockedIncrement (&acfg->stats.abscount);
 		mono_destroy_compile (cfg);
 		return;
@@ -2734,13 +2739,13 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 
 	if (skip) {
+		if (acfg->aot_opts.print_skipped_methods)
+			printf ("Skip (patches): %s\n", mono_method_full_name (method, TRUE));
 		acfg->stats.ocount++;
 		mono_destroy_compile (cfg);
 		mono_acfg_unlock (acfg);
 		return;
 	}
-
-	//printf ("X: %s\n", mono_method_full_name (method, TRUE));
 
 	/* Adds generic instances referenced by this method */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
@@ -5129,7 +5134,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->aot_opts.write_symbols = TRUE;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
- 
+
+	//acfg->aot_opts.print_skipped_methods = TRUE;
+
 	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && bin_writer_supported ()) {
 		if (acfg->aot_opts.outfile)
 			outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
