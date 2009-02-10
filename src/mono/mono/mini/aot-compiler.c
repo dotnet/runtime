@@ -161,6 +161,7 @@ typedef struct MonoAotCompile {
 	int stack_pos;
 	FILE *fp;
 	char *tmpfname;
+	GSList *cie_program;
 	/* xdebug */
 	GHashTable *class_to_die;
 	int fde_index, tdie_index, line_number_file_index, line_number_dir_index;
@@ -313,7 +314,7 @@ emit_byte (MonoAotCompile *acfg, guint8 val)
 	img_writer_emit_byte (acfg->w, val); 
 }
 
-static void
+static G_GNUC_UNUSED void
 emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
 {
 	img_writer_emit_global (acfg->w, name, func);
@@ -338,22 +339,350 @@ emit_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
 	img_writer_emit_string (acfg->w, value);
 }
 
-static gboolean 
-is_got_patch (MonoJumpInfoType patch_type)
+static G_GNUC_UNUSED void
+emit_uleb128 (MonoAotCompile *acfg, guint32 value)
 {
-	return TRUE;
+	do {
+		guint8 b = value & 0x7f;
+		value >>= 7;
+		if (value != 0) /* more bytes to come */
+			b |= 0x80;
+		emit_byte (acfg, b);
+	} while (value);
 }
 
-static G_GNUC_UNUSED int
-ilog2(register int value)
+static G_GNUC_UNUSED void
+emit_sleb128 (MonoAotCompile *acfg, gint64 value)
 {
-	int count = -1;
-	while (value & ~0xf) count += 4, value >>= 4;
-	while (value) count++, value >>= 1;
-	return count;
+	gboolean more = 1;
+	gboolean negative = (value < 0);
+	guint32 size = 64;
+	guint8 byte;
+
+	while (more) {
+		byte = value & 0x7f;
+		value >>= 7;
+		/* the following is unnecessary if the
+		 * implementation of >>= uses an arithmetic rather
+		 * than logical shift for a signed left operand
+		 */
+		if (negative)
+			/* sign extend */
+			value |= - ((gint64)1 <<(size - 7));
+		/* sign bit of byte is second high order bit (0x40) */
+		if ((value == 0 && !(byte & 0x40)) ||
+			(value == -1 && (byte & 0x40)))
+			more = 0;
+		else
+			byte |= 0x80;
+		emit_byte (acfg, byte);
+	}
 }
 
-/* AOT COMPILER */
+static G_GNUC_UNUSED void
+encode_uleb128 (guint32 value, guint8 *buf, guint8 **endbuf)
+{
+	guint8 *p = buf;
+
+	do {
+		guint8 b = value & 0x7f;
+		value >>= 7;
+		if (value != 0) /* more bytes to come */
+			b |= 0x80;
+		*p ++ = b;
+	} while (value);
+
+	*endbuf = p;
+}
+
+static G_GNUC_UNUSED void
+encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
+{
+	gboolean more = 1;
+	gboolean negative = (value < 0);
+	guint32 size = 32;
+	guint8 byte;
+	guint8 *p = buf;
+
+	while (more) {
+		byte = value & 0x7f;
+		value >>= 7;
+		/* the following is unnecessary if the
+		 * implementation of >>= uses an arithmetic rather
+		 * than logical shift for a signed left operand
+		 */
+		if (negative)
+			/* sign extend */
+			value |= - (1 <<(size - 7));
+		/* sign bit of byte is second high order bit (0x40) */
+		if ((value == 0 && !(byte & 0x40)) ||
+			(value == -1 && (byte & 0x40)))
+			more = 0;
+		else
+			byte |= 0x80;
+		*p ++= byte;
+	}
+
+	*endbuf = p;
+}
+
+/* ARCHITECTURE SPECIFIC CODE */
+
+#if defined(__i386__) || defined(__x86_64__) || defined(__arm__)
+#define EMIT_DWARF_INFO 1
+#endif
+
+/*
+ * arch_emit_direct_call:
+ *
+ *   Emit a direct call to the symbol TARGET. CALL_SIZE is set to the size of the
+ * calling code.
+ */
+static void
+arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
+{
+#if defined(__i386__) || defined(__x86_64__)
+	/* Need to make sure this is exactly 5 bytes long */
+	emit_byte (acfg, '\xe8');
+	emit_symbol_diff (acfg, target, ".", -4);
+	*call_size = 5;
+#elif defined(__arm__)
+	if (acfg->use_bin_writer) {
+		guint8 buf [4];
+		guint8 *code;
+
+		code = buf;
+		ARM_BL (code, 0);
+
+		img_writer_emit_reloc (acfg, R_ARM_CALL, target, -8);
+		emit_bytes (acfg, buf, 4);
+	} else {
+		asm_writer_emit_unset_mode (acfg);
+		fprintf (acfg->fp, "bl %s\n", target);
+	}
+	*call_size = 4;
+#else
+	g_assert_not_reached ();
+#endif
+}
+
+/*
+ * arch_emit_got_access:
+ *
+ *   The memory pointed to by CODE should hold native code for loading a GOT
+ * slot. Emit this code while patching it so it accesses the GOT slot GOT_SLOT.
+ * CODE_SIZE is set to the number of bytes emitted.
+ */
+static void
+arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *code_size)
+{
+	/* Emit beginning of instruction */
+	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
+
+	/* Emit the offset */
+#ifdef __x86_64__
+	emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
+#elif defined(__i386__)
+	emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
+#elif defined(__arm__)
+	emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
+#else
+	g_assert_not_reached ();
+#endif
+
+	*code_size = mono_arch_get_patch_offset (code) + 4;
+}
+
+/*
+ * arch_emit_plt_entry:
+ *
+ *   Emit code for the PLT entry with index INDEX.
+ */
+static void
+arch_emit_plt_entry (MonoAotCompile *acfg, int index)
+{
+#if defined(__i386__)
+		if (i == 0) {
+			/* It is filled up during loading by the AOT loader. */
+			emit_zero_bytes (acfg, 16);
+		} else {
+			/* Need to make sure this is 9 bytes long */
+			emit_byte (acfg, '\xe9');
+			emit_symbol_diff (acfg, "plt", ".", -4);
+			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		}
+#elif defined(__x86_64__)
+		/*
+		 * We can't emit jumps because they are 32 bits only so they can't be patched.
+		 * So we make indirect calls through GOT entries which are patched by the AOT 
+		 * loader to point to .Lpd entries. 
+		 * An x86_64 plt entry is 10 bytes long, init_plt () depends on this.
+		 */
+		/* jmpq *<offset>(%rip) */
+		emit_byte (acfg, '\xff');
+		emit_byte (acfg, '\x25');
+		emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
+		/* Used by mono_aot_get_plt_info_offset */
+		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+#elif defined(__arm__)
+		guint8 buf [256];
+		guint8 *code;
+
+		/* FIXME:
+		 * - optimize OP_AOTCONST implementation
+		 * - optimize the PLT entries
+		 * - optimize SWITCH AOT implementation
+		 * - implement IMT support
+		 */
+		code = buf;
+		if (acfg->use_bin_writer) {
+			/* We only emit 1 relocation since we implement it ourselves anyway */
+			img_writer_emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "got", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)) - 8);
+			/* FIXME: A 2 instruction encoding is sufficient in most cases */
+			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
+			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
+			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
+			emit_bytes (acfg, buf, code - buf);
+			/* FIXME: Get rid of this */
+			emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
+			/* Used by mono_aot_get_plt_info_offset */
+			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		} else {
+			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
+			ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
+			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
+			emit_bytes (acfg, buf, code - buf);
+			emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
+			/* Used by mono_aot_get_plt_info_offset */
+			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		}
+#else
+		g_assert_not_reached ();
+#endif
+}
+
+/*
+ * arch_emit_specific_trampoline:
+ *
+ *   Emit code for a specific trampoline. OFFSET is the offset of the first of
+ * two GOT slots which contain the generic trampoline address and the trampoline
+ * argument.
+ */
+static void
+arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset)
+{
+	/*
+	 * The trampolines created here are variations of the specific 
+	 * trampolines created in mono_arch_create_specific_trampoline (). The 
+	 * differences are:
+	 * - the generic trampoline address is taken from a got slot.
+	 * - the offset of the got slot where the trampoline argument is stored
+	 *   is embedded in the instruction stream, and the generic trampoline
+	 *   can load the argument by loading the offset, adding it to the
+	 *   address of the trampoline to get the address of the got slot, and
+	 *   loading the argument from there.
+	 * - all the trampolines should be of the same length.
+	 */
+#if defined(__x86_64__)
+	/* This should be exactly 16 bytes long */
+	/* call *<offset>(%rip) */
+	emit_byte (acfg, '\x41');
+	emit_byte (acfg, '\xff');
+	emit_byte (acfg, '\x15');
+	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
+	/* This should be relative to the start of the trampoline */
+	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 19);
+	emit_zero_bytes (acfg, 5);
+#elif defined(__arm__)
+	guint8 buf [128];
+
+	/* This should be exactly 28 bytes long */
+	code = buf;
+	ARM_PUSH (code, 0x5fff);
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8);
+	/* Load the value from the GOT */
+	ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_PC, ARMREG_R1);
+	/* Branch to it */
+	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
+	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+
+	g_assert (code - buf == 20);
+
+	/* Emit it */
+	emit_bytes (acfg, buf, code - buf);
+	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 8);
+	emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
+#else
+	g_assert_not_reached ();
+#endif
+}
+
+/*
+ * arch_emit_unbox_trampoline:
+ *
+ *   Emit code for the unbox trampoline for METHOD used in the full-aot case.
+ * CALL_TARGET is the symbol pointing to the native code of METHOD.
+ */
+static void
+arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGenericSharingContext *gsctx, const char *call_target)
+{
+#if defined(__x86_64__)
+	guint8 buf [32];
+	guint8 *code;
+	int this_reg;
+
+	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (method), gsctx, NULL);
+	code = buf;
+	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
+
+	emit_bytes (acfg, buf, code - buf);
+	/* jump <method> */
+	emit_byte (acfg, '\xe9');
+	emit_symbol_diff (acfg, call_target, ".", -4);
+#elif defined(__arm__)
+	guint8 buf [128];
+	guint8 *code;
+	int this_pos = 0;
+
+	code = buf;
+
+	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
+		this_pos = 1;
+
+	ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
+
+	emit_bytes (acfg, buf, code - buf);
+	/* jump to method */
+	if (acfg->use_bin_writer)
+		g_assert_not_reached ();
+	else
+		fprintf (acfg->fp, "\n\tb %s\n", call_target);
+#else
+	g_assert_not_reached ();
+#endif
+}
+
+/*
+ * arch_get_cie_program:
+ *
+ *   Get the unwind bytecode for the DWARF CIE.
+ */
+static GSList*
+arch_get_cie_program (MonoAotCompile *acfg)
+{
+#ifdef __x86_64__
+	GSList *l = NULL;
+
+	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, AMD64_RSP, 8);
+	mono_add_unwind_op_offset (l, (guint8*)NULL, (guint8*)NULL, AMD64_RIP, -8);
+
+	return l;
+#else
+	return NULL;
+#endif
+}
+
+/* END OF ARCH SPECIFIC CODE */
 
 static guint32
 mono_get_field_token (MonoClassField *field) 
@@ -725,6 +1054,12 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	default:
 		return FALSE;
 	}
+}
+
+static gboolean 
+is_got_patch (MonoJumpInfoType patch_type)
+{
+	return TRUE;
 }
 
 /*
@@ -1362,45 +1697,17 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				}
 
 				if (direct_call) {
-#if defined(__i386__) || defined(__x86_64__)
-					g_assert (code [i] == 0xe8);
-					/* Need to make sure this is exactly 5 bytes long */
-					emit_byte (acfg, '\xe8');
-					emit_symbol_diff (acfg, direct_call_target, ".", -4);
-					i += 4;
-#elif defined(__arm__)
-					if (acfg->use_bin_writer) {
-						guint8 buf [4];
-						guint8 *code;
+					int call_size;
 
-						code = buf;
-						ARM_BL (code, 0);
-
-						img_writer_emit_reloc (acfg, R_ARM_CALL, direct_call_target, -8);
-						emit_bytes (acfg, buf, 4);
-					} else {
-						asm_writer_emit_unset_mode (acfg);
-						fprintf (acfg->fp, "bl %s\n", direct_call_target);
-					}
-					i += 4 - 1;
-#else
-					g_assert_not_reached ();
-#endif
+					arch_emit_direct_call (acfg, direct_call_target, &call_size);
+					i += call_size - 1;
 				} else {
+					int code_size;
+
 					got_slot = get_got_offset (acfg, patch_info);
 
-					emit_bytes (acfg, code + i, mono_arch_get_patch_offset (code + i));
-#ifdef __x86_64__
-					emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
-#elif defined(__i386__)
-					emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
-#elif defined(__arm__)
-					emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
-#else
-					g_assert_not_reached ();
-#endif
-					
-					i += mono_arch_get_patch_offset (code + i) + 4 - 1;
+					arch_emit_got_access (acfg, code + i, got_slot, &code_size);
+					i += code_size - 1;
 				}
 				skip = TRUE;
 			}
@@ -1949,10 +2256,6 @@ emit_plt (MonoAotCompile *acfg)
 
 	for (i = 0; i < acfg->plt_offset; ++i) {
 		char label [128];
-#if defined(__arm__)
-		guint8 buf [256];
-		guint8 *code;
-#endif
 
 		sprintf (label, ".Lp_%d", i);
 		emit_label (acfg, label);
@@ -1960,62 +2263,7 @@ emit_plt (MonoAotCompile *acfg)
 		/* 
 		 * The first plt entry is used to transfer code to the AOT loader. 
 		 */
-
-#if defined(__i386__)
-		if (i == 0) {
-			/* It is filled up during loading by the AOT loader. */
-			emit_zero_bytes (acfg, 16);
-		} else {
-			/* Need to make sure this is 9 bytes long */
-			emit_byte (acfg, '\xe9');
-			emit_symbol_diff (acfg, "plt", ".", -4);
-			emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
-		}
-#elif defined(__x86_64__)
-		/*
-		 * We can't emit jumps because they are 32 bits only so they can't be patched.
-		 * So we make indirect calls through GOT entries which are patched by the AOT 
-		 * loader to point to .Lpd entries. 
-		 * An x86_64 plt entry is 10 bytes long, init_plt () depends on this.
-		 */
-		/* jmpq *<offset>(%rip) */
-		emit_byte (acfg, '\xff');
-		emit_byte (acfg, '\x25');
-		emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)) -4);
-		/* Used by mono_aot_get_plt_info_offset */
-		emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
-#elif defined(__arm__)
-		/* FIXME:
-		 * - optimize OP_AOTCONST implementation
-		 * - optimize the PLT entries
-		 * - optimize SWITCH AOT implementation
-		 * - implement IMT support
-		 */
-		code = buf;
-		if (acfg->use_bin_writer) {
-			/* We only emit 1 relocation since we implement it ourselves anyway */
-			img_writer_emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "got", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)) - 8);
-			/* FIXME: A 2 instruction encoding is sufficient in most cases */
-			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
-			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
-			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
-			emit_bytes (acfg, buf, code - buf);
-			/* FIXME: Get rid of this */
-			emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)));
-			/* Used by mono_aot_get_plt_info_offset */
-			emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
-		} else {
-			ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
-			ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
-			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
-			emit_bytes (acfg, buf, code - buf);
-			emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)));
-			/* Used by mono_aot_get_plt_info_offset */
-			emit_int32 (acfg, acfg->plt_got_info_offsets [i]);
-		}
-#else
-		g_assert_not_reached ();
-#endif
+		arch_emit_plt_entry (acfg, i);
 	}
 
 	sprintf (symbol, "plt_end");
@@ -2187,54 +2435,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		for (i = 0; i < acfg->num_aot_trampolines; ++i) {
 			offset = acfg->got_offset + (i * 2);
 
-			/*
-			 * The trampolines created here are variations of the specific 
-			 * trampolines created in mono_arch_create_specific_trampoline (). The 
-			 * differences are:
-			 * - the generic trampoline address is taken from a got slot.
-			 * - the offset of the got slot where the trampoline argument is stored
-			 *   is embedded in the instruction stream, and the generic trampoline
-			 *   can load the argument by loading the offset, adding it to the
-			 *   address of the trampoline to get the address of the got slot, and
-			 *   loading the argument from the there.
-			 */
-#if defined(__x86_64__)
-			/* This should be exactly 16 bytes long */
-			/* It should work together with the generic trampoline code in tramp-amd64.c */
-			/* call *<offset>(%rip) */
-			emit_byte (acfg, '\x41');
-			emit_byte (acfg, '\xff');
-			emit_byte (acfg, '\x15');
-			emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
-			/* This should be relative to the start of the trampoline */
-			emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 19);
-			emit_zero_bytes (acfg, 5);
-#elif defined(__arm__)
-			{
-				guint8 buf [128];
-
-				/* Generate the trampoline code */
-				/* This should be exactly 28 bytes long */
-
-				code = buf;
-				ARM_PUSH (code, 0x5fff);
-				ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8);
-				/* Load the value from the GOT */
-				ARM_LDR_REG_REG (code, ARMREG_R1, ARMREG_PC, ARMREG_R1);
-				/* Branch to it */
-				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-				ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
-
-				g_assert (code - buf == 20);
-
-				/* Emit it */
-				emit_bytes (acfg, buf, code - buf);
-				emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 8);
-				emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
-			}
-#else
-			g_assert_not_reached ();
-#endif
+			arch_emit_specific_trampoline (acfg, offset);
 		}
 	}
 
@@ -2260,42 +2461,7 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		sprintf (call_target, ".Lm_%x", get_method_index (acfg, cfg->orig_method));
 
-#if defined(__x86_64__)
-		{
-			guint8 buf [32];
-			int this_reg;
-
-			this_reg = mono_arch_get_this_arg_reg (mono_method_signature (cfg->orig_method), cfg->generic_sharing_context, NULL);
-			code = buf;
-			amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
-
-			emit_bytes (acfg, buf, code - buf);
-			/* jump <method> */
-			emit_byte (acfg, '\xe9');
-			emit_symbol_diff (acfg, call_target, ".", -4);
-		}
-#elif defined(__arm__)
-		{
-			guint8 buf [128];
-			int this_pos = 0;
-
-			code = buf;
-
-			if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->orig_method)->ret))
-				this_pos = 1;
-
-			ARM_ADD_REG_IMM8 (code, this_pos, this_pos, sizeof (MonoObject));
-
-			emit_bytes (acfg, buf, code - buf);
-			/* jump to method */
-			if (acfg->use_bin_writer)
-				g_assert_not_reached ();
-			else
-				fprintf (acfg->fp, "\n\tb %s\n", call_target);
-		}
-#else
-		g_assert_not_reached ();
-#endif
+		arch_emit_unbox_trampoline (acfg, cfg->orig_method, cfg->generic_sharing_context, call_target);
 	}
 
 	acfg->trampoline_got_offset_base = acfg->got_offset;
@@ -3469,6 +3635,7 @@ emit_globals (MonoAotCompile *acfg)
 		emit_pointer (acfg, NULL);
 		emit_pointer (acfg, NULL);
 
+#if 0
 		if (acfg->aot_opts.static_link) {
 			char *p;
 
@@ -3556,6 +3723,7 @@ emit_globals (MonoAotCompile *acfg)
 			g_assert_not_reached ();
 #endif
 		}
+#endif
 	}
 }
 
@@ -3586,93 +3754,6 @@ emit_file_info (MonoAotCompile *acfg)
 /*   Emitting DWARF debug information    */
 /*****************************************/
 
-static G_GNUC_UNUSED void
-emit_uleb128 (MonoAotCompile *acfg, guint32 value)
-{
-	do {
-		guint8 b = value & 0x7f;
-		value >>= 7;
-		if (value != 0) /* more bytes to come */
-			b |= 0x80;
-		emit_byte (acfg, b);
-	} while (value);
-}
-
-static G_GNUC_UNUSED void
-emit_sleb128 (MonoAotCompile *acfg, gint64 value)
-{
-	gboolean more = 1;
-	gboolean negative = (value < 0);
-	guint32 size = 64;
-	guint8 byte;
-
-	while (more) {
-		byte = value & 0x7f;
-		value >>= 7;
-		/* the following is unnecessary if the
-		 * implementation of >>= uses an arithmetic rather
-		 * than logical shift for a signed left operand
-		 */
-		if (negative)
-			/* sign extend */
-			value |= - ((gint64)1 <<(size - 7));
-		/* sign bit of byte is second high order bit (0x40) */
-		if ((value == 0 && !(byte & 0x40)) ||
-			(value == -1 && (byte & 0x40)))
-			more = 0;
-		else
-			byte |= 0x80;
-		emit_byte (acfg, byte);
-	}
-}
-
-static G_GNUC_UNUSED void
-encode_uleb128 (guint32 value, guint8 *buf, guint8 **endbuf)
-{
-	guint8 *p = buf;
-
-	do {
-		guint8 b = value & 0x7f;
-		value >>= 7;
-		if (value != 0) /* more bytes to come */
-			b |= 0x80;
-		*p ++ = b;
-	} while (value);
-
-	*endbuf = p;
-}
-
-static G_GNUC_UNUSED void
-encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
-{
-	gboolean more = 1;
-	gboolean negative = (value < 0);
-	guint32 size = 32;
-	guint8 byte;
-	guint8 *p = buf;
-
-	while (more) {
-		byte = value & 0x7f;
-		value >>= 7;
-		/* the following is unnecessary if the
-		 * implementation of >>= uses an arithmetic rather
-		 * than logical shift for a signed left operand
-		 */
-		if (negative)
-			/* sign extend */
-			value |= - (1 <<(size - 7));
-		/* sign bit of byte is second high order bit (0x40) */
-		if ((value == 0 && !(byte & 0x40)) ||
-			(value == -1 && (byte & 0x40)))
-			more = 0;
-		else
-			byte |= 0x80;
-		*p ++= byte;
-	}
-
-	*endbuf = p;
-}
-
 static void
 emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
 				   int *attrs, int attrs_len)
@@ -3692,7 +3773,7 @@ emit_dwarf_abbrev (MonoAotCompile *acfg, int code, int tag, gboolean has_child,
 static void
 emit_cie (MonoAotCompile *acfg)
 {
-#if defined(__x86_64__) || defined(__arm__) || defined(__i386__)
+#ifdef EMIT_DWARF_INFO
 	emit_section_change (acfg, ".debug_frame", 0);
 
 	emit_alignment (acfg, 8);
@@ -3703,29 +3784,16 @@ emit_cie (MonoAotCompile *acfg)
 	emit_byte (acfg, 3); /* version */
 	emit_string (acfg, ""); /* augmention */
 	emit_sleb128 (acfg, 1); /* code alignment factor */
-#ifdef __x86_64__
-	emit_sleb128 (acfg, -8); /* data alignment factor */
-	emit_uleb128 (acfg, AMD64_RIP);
-#elif defined(__arm__)
-	emit_sleb128 (acfg, -4); /* data alignment factor */
-	emit_uleb128 (acfg, mono_hw_reg_to_dwarf_reg (ARMREG_LR));
-#elif defined(__i386__)
-	emit_sleb128 (acfg, -4); /* data alignment factor */
-	emit_uleb128 (acfg, mono_hw_reg_to_dwarf_reg (X86_NREG));
-#else
-	g_assert_not_reached ();
-#endif
+	emit_sleb128 (acfg, mono_unwind_get_dwarf_data_align ()); /* data alignment factor */
+	emit_uleb128 (acfg, mono_unwind_get_dwarf_pc_reg ());
 
-#ifdef __x86_64__
-	emit_byte (acfg, DW_CFA_def_cfa);
-	emit_uleb128 (acfg, mono_hw_reg_to_dwarf_reg (AMD64_RSP));
-	emit_uleb128 (acfg, 8); /* offset=8 */
-	emit_byte (acfg, DW_CFA_offset | AMD64_RIP);
-	emit_uleb128 (acfg, 1); /* offset=-8 */
-#elif defined(__arm__) || defined(__i386__)
-#else
-	g_assert_not_reached ();
-#endif
+	acfg->cie_program = arch_get_cie_program (acfg);
+	if (acfg->cie_program) {
+		guint32 uw_info_len;
+		guint8 *uw_info = mono_unwind_ops_encode (acfg->cie_program, &uw_info_len);
+		emit_bytes (acfg, uw_info, uw_info_len);
+		g_free (uw_info);
+	}
 
 	emit_alignment (acfg, sizeof (gpointer));
 	emit_label (acfg, ".Lcie0_end");
@@ -3743,20 +3811,11 @@ static void
 emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_symbol,
 		  guint8 *code, guint32 code_size, GSList *unwind_ops, gboolean use_cie)
 {
-#if defined(__x86_64__) || defined(__arm__) || defined(__i386__)
+#ifdef EMIT_DWARF_INFO
 	char symbol [128];
 	GSList *l;
 	guint8 *uw_info;
 	guint32 uw_info_len;
-
-#ifdef __arm__
-	if (!unwind_ops)
-		/* 
-		 * The debugger can unwind without unwind info, but gets confused by empty
-		 * info.
-		 */
-		return;
-#endif
 
 	emit_section_change (acfg, ".debug_frame", 0);
 
@@ -3775,12 +3834,14 @@ emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_sym
 	emit_int32 (acfg, 0);
 #endif
 
-	l = unwind_ops;
-#ifdef __x86_64__
-	if (use_cie)
-		/* Skip the first two ops which are in the CIE */
-		l = l->next->next;
-#endif
+	if (acfg->cie_program) {
+		// FIXME: Check that the ops really begin with the CIE program */
+		int i;
+
+		l = unwind_ops;
+		for (i = 0; i < g_slist_length (acfg->cie_program); ++i)
+			l = l->next;
+	}
 
 	/* Convert the list of MonoUnwindOps to the format used by DWARF */	
 	uw_info = mono_unwind_ops_encode (l, &uw_info_len);
@@ -3977,6 +4038,77 @@ emit_line_number_file_name (MonoAotCompile *acfg, const char *name,
 }
 
 static void
+emit_line_number_info_begin (MonoAotCompile *acfg)
+{
+	if (acfg->image) {
+		/* FIXME: This doesn't seem to work with !xdebug */
+		emit_section_change (acfg, ".debug_line", 0);
+		emit_label (acfg, ".Ldebug_line_start");
+		emit_label (acfg, ".Ldebug_line_section_start");
+		return;
+	}
+
+	/* Line number info header */
+	/* 
+	 * GAS seems to emit its own data to the end of the first subsection, so we use
+	 * subsections 1, 2 etc:
+	 * 1 - contains the header
+	 * 2 - contains the file names
+	 * 3 - contains the end of the header + the data
+	 * 4 - the end symbol
+	 */
+	emit_section_change (acfg, ".debug_line", 0);
+	emit_label (acfg, ".Ldebug_line_section_start");
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_HEADER);
+	emit_label (acfg, ".Ldebug_line_start");
+	emit_symbol_diff (acfg, ".Ldebug_line_end", ".", -4); /* length */
+	emit_int16 (acfg, 0x2); /* version */
+	emit_symbol_diff (acfg, ".Ldebug_line_header_end", ".", -4); /* header_length */
+	emit_byte (acfg, 1); /* minimum_instruction_length */
+	emit_byte (acfg, 1); /* default_is_stmt */
+	emit_byte (acfg, LINE_BASE); /* line_base */
+	emit_byte (acfg, LINE_RANGE); /* line_range */
+	emit_byte (acfg, OPCODE_BASE); /* opcode_base */
+	emit_byte (acfg, 0); /* standard_opcode_lengths */
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 1);
+
+	/* Includes */
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_INCLUDES);
+
+	/* End of Includes */
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_FILES);
+	emit_byte (acfg, 0);
+
+	/* Files */
+	emit_line_number_file_name (acfg, "xdb.il", 0, 0);
+
+	/* End of Files */
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
+	emit_byte (acfg, 0);
+
+	emit_label (acfg, ".Ldebug_line_header_end");
+
+	/* Emit this into a separate subsection so it gets placed at the end */	
+	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_END);
+
+	emit_byte (acfg, 0);
+	emit_byte (acfg, 1);
+	emit_byte (acfg, DW_LNE_end_sequence);
+
+	emit_label (acfg, ".Ldebug_line_end");
+}
+
+static void
 emit_base_dwarf_info (MonoAotCompile *acfg)
 {
 	char *s, *build_info;
@@ -4050,64 +4182,8 @@ emit_base_dwarf_info (MonoAotCompile *acfg)
 	emit_section_change (acfg, ".debug_loc", 0);
 	emit_label (acfg, ".Ldebug_loc_start");
 
-	/* Line number info header */
-	/* 
-	 * GAS seems to emit its own data to the end of the first subsection, so we use
-	 * subsections 1, 2 etc:
-	 * 1 - contains the header
-	 * 2 - contains the file names
-	 * 3 - contains the end of the header + the data
-	 * 4 - the end symbol
-	 */
-	emit_section_change (acfg, ".debug_line", 0);
-	emit_label (acfg, ".Ldebug_line_section_start");
-	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_HEADER);
-	emit_label (acfg, ".Ldebug_line_start");
-	emit_symbol_diff (acfg, ".Ldebug_line_end", ".", -4); /* length */
-	emit_int16 (acfg, 0x2); /* version */
-	emit_symbol_diff (acfg, ".Ldebug_line_header_end", ".", -4); /* header_length */
-	emit_byte (acfg, 1); /* minimum_instruction_length */
-	emit_byte (acfg, 1); /* default_is_stmt */
-	emit_byte (acfg, LINE_BASE); /* line_base */
-	emit_byte (acfg, LINE_RANGE); /* line_range */
-	emit_byte (acfg, OPCODE_BASE); /* opcode_base */
-	emit_byte (acfg, 0); /* standard_opcode_lengths */
-	emit_byte (acfg, 1);
-	emit_byte (acfg, 1);
-	emit_byte (acfg, 1);
-	emit_byte (acfg, 1);
-	emit_byte (acfg, 0);
-	emit_byte (acfg, 0);
-	emit_byte (acfg, 0);
-	emit_byte (acfg, 1);
-	emit_byte (acfg, 0);
-	emit_byte (acfg, 0);
-	emit_byte (acfg, 1);
-
-	/* Includes */
-	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_INCLUDES);
-
-	/* End of Includes */
-	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_FILES);
-	emit_byte (acfg, 0);
-
-	/* Files */
-	emit_line_number_file_name (acfg, "xdb.il", 0, 0);
-
-	/* End of Files */
-	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
-	emit_byte (acfg, 0);
-
-	emit_label (acfg, ".Ldebug_line_header_end");
-
-	/* Emit this into a separate subsection so it gets placed at the end */	
-	emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_END);
-
-	emit_byte (acfg, 0);
-	emit_byte (acfg, 1);
-	emit_byte (acfg, DW_LNE_end_sequence);
-
-	emit_label (acfg, ".Ldebug_line_end");
+	/* debug_line section */
+	emit_line_number_info_begin (acfg);
 
 	emit_cie (acfg);
 }
@@ -4510,6 +4586,10 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoDebugMethodInfo *minfo;
 
+	if (acfg->image)
+		// FIXME: The set_address op below only works with xdebug
+		return;
+
 	minfo = mono_debug_lookup_method (method);
 
 	/* FIXME: Avoid quadratic behavior */
@@ -4544,7 +4624,7 @@ emit_line_number_info (MonoAotCompile *acfg, MonoMethod *method, guint8 *code,
 			int line_diff = (gint32)loc->row - (gint32)prev_line;
 			int addr_diff = i - prev_native_offset;
 
-			if (first) {					
+			if (first) {	
 				emit_section_change (acfg, ".debug_line", LINE_SUBSECTION_DATA);
 
 				emit_byte (acfg, 0);
@@ -4867,7 +4947,7 @@ emit_trampoline_dwarf_info (MonoAotCompile *acfg, const char *tramp_name, char *
 static void
 emit_dwarf_info (MonoAotCompile *acfg)
 {
-#if defined(USE_ELF_WRITER) && (defined(__x86_64__) || defined(__i386__))
+#ifdef EMIT_DWARF_INFO
 	int i;
 	char symbol [128], symbol2 [128];
 
@@ -4885,7 +4965,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 
 		emit_method_dwarf_info (acfg, cfg, cfg->method, symbol, symbol2, NULL, 0, cfg->args, cfg->locals, cfg->unwind_ops, NULL);
 	}
-#endif /* ELF_WRITER */
+#endif
 }
 
 static int

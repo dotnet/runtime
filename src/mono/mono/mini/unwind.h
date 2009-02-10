@@ -89,6 +89,12 @@ typedef struct {
 int
 mono_hw_reg_to_dwarf_reg (int reg) MONO_INTERNAL;
 
+int
+mono_unwind_get_dwarf_data_align (void) MONO_INTERNAL;
+
+int
+mono_unwind_get_dwarf_pc_reg (void) MONO_INTERNAL;
+
 guint8*
 mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len) MONO_INTERNAL;
 

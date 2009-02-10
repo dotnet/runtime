@@ -42,20 +42,24 @@ static int unwind_info_size;
 static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 #define NUM_REGS AMD64_NREG
 #define DWARF_DATA_ALIGN (-8)
+#define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (AMD64_RIP))
 #elif defined(__arm__)
 // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0040a/IHI0040A_aadwarf.pdf
 static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 #define NUM_REGS 16
 #define DWARF_DATA_ALIGN (-4)
+#define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (ARMREG_LR))
 #elif defined (__i386__)
 static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 /* + 1 is for IP */
 #define NUM_REGS X86_NREG + 1
 #define DWARF_DATA_ALIGN (-4)
+#define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (X86_NREG))
 #else
 static int map_hw_reg_to_dwarf_reg [16];
 #define NUM_REGS 16
 #define DWARF_DATA_ALIGN 0
+#define DWARF_PC_REG -1
 #endif
 
 static gboolean dwarf_reg_to_hw_reg_inited;
@@ -443,4 +447,27 @@ mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len)
 	mono_hazard_pointer_clear (hp, 0);
 
 	return data;
+}
+
+/*
+ * mono_unwind_get_dwarf_data_align:
+ *
+ *   Return the data alignment used by the encoded unwind information.
+ */
+int
+mono_unwind_get_dwarf_data_align (void)
+{
+	return DWARF_DATA_ALIGN;
+}
+
+/*
+ * mono_unwind_get_dwarf_pc_reg:
+ *
+ *   Return the dwarf register number of the register holding the ip of the
+ * previous frame.
+ */
+int
+mono_unwind_get_dwarf_pc_reg (void)
+{
+	return DWARF_PC_REG;
 }
