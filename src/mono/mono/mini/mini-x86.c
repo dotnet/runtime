@@ -5563,11 +5563,15 @@ gpointer
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	switch (reg) {
+	case X86_EAX: return (gpointer)ctx->eax;
+	case X86_EBX: return (gpointer)ctx->ebx;
 	case X86_ECX: return (gpointer)ctx->ecx;
 	case X86_EDX: return (gpointer)ctx->edx;
-	case X86_EBP: return (gpointer)ctx->ebp;
 	case X86_ESP: return (gpointer)ctx->esp;
-	default: return ((gpointer)(&ctx->eax)[reg]);
+	case X86_EBP: return (gpointer)ctx->ebp;
+	case X86_ESI: return (gpointer)ctx->esi;
+	case X86_EDI: return (gpointer)ctx->edi;
+	default: g_assert_not_reached ();
 	}
 }
 
