@@ -8882,7 +8882,10 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	g_assert (method != NULL);
 	g_assert (mono_method_signature (method)->pinvoke);
 
-	cache = method->klass->image->native_wrapper_cache;
+	if (aot)
+		cache = get_cache (&method->klass->image->native_wrapper_aot_cache, mono_aligned_addr_hash, NULL);
+	else
+		cache = get_cache (&method->klass->image->native_wrapper_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
@@ -9052,7 +9055,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	GHashTable *cache;
 	char *name;
 
-	cache = image->native_wrapper_cache;
+	cache = get_cache (&image->native_wrapper_cache, mono_aligned_addr_hash, NULL);
 	if ((res = mono_marshal_find_in_cache (cache, func)))
 		return res;
 

@@ -608,8 +608,6 @@ mono_image_init (MonoImage *image)
 				       class_next_value);
 	image->field_cache = g_hash_table_new (NULL, NULL);
 
-	image->native_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
 	image->helper_signatures = g_hash_table_new (g_str_hash, g_str_equal);
