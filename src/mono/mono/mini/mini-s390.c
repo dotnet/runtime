@@ -358,7 +358,7 @@ static CallInfo * get_call_info (MonoCompile *, MonoMemPool *, MonoMethodSignatu
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 gpointer mono_arch_get_lmf_addr (void);
 static guint8 * emit_load_volatile_registers(guint8 *, MonoCompile *);
-static void emit_sig_cookie (MonoCompile *, MonoCallInst *, CallInfo *, int);
+static void emit_sig_cookie (MonoCompile *, MonoCallInst *, CallInfo *);
 
 /*========================= End of Prototypes ======================*/
 
