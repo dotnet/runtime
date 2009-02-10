@@ -113,6 +113,7 @@ typedef struct MonoAotModule {
 	guint8 *extra_method_info;
 	guint8 *trampolines;
 	guint32 num_trampolines, trampoline_got_offset_base, trampoline_index;
+	guint32 specific_trampoline_size;
 	gpointer *globals;
 	MonoDl *sofile;
 } MonoAotModule;
@@ -125,6 +126,7 @@ typedef struct MonoAotFileInfo
 	guint32 num_trampolines;
 	guint32 got_size;
 	guint32 plt_size;
+	guint32 specific_trampoline_size;
 	gpointer *got;
 } MonoAotFileInfo;
 
@@ -590,6 +592,35 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			return NULL;
 
 		*method = mono_class_inflate_generic_method_full (*method, klass, &ctx);
+	} else if (image_index == 251) {
+		MonoClass *klass;
+		int method_type;
+
+		/* Array methods */
+		klass = decode_klass_ref (module, p, &p);
+		if (!klass)
+			return NULL;
+		method_type = decode_value (p, &p);
+		*token = 0;
+		switch (method_type) {
+		case 0:
+			*method = mono_class_get_method_from_name (klass, ".ctor", klass->rank);
+			break;
+		case 1:
+			*method = mono_class_get_method_from_name (klass, ".ctor", klass->rank * 2);
+			break;
+		case 2:
+			*method = mono_class_get_method_from_name (klass, "Get", -1);
+			break;
+		case 3:
+			*method = mono_class_get_method_from_name (klass, "Address", -1);
+			break;
+		case 4:
+			*method = mono_class_get_method_from_name (klass, "Set", -1);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
 	} else {
 		*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
@@ -933,6 +964,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->trampoline_got_offset_base = file_info->trampoline_got_offset_base;
 	amodule->got_size = file_info->got_size;
 	amodule->plt_size = file_info->plt_size;
+	amodule->specific_trampoline_size = file_info->specific_trampoline_size;
 	amodule->got = file_info->got;
 	amodule->got [0] = assembly->image;
 	amodule->globals = globals;
@@ -2716,14 +2748,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	amodule->got [amodule->trampoline_got_offset_base + (index *2)] = tramp;
 	amodule->got [amodule->trampoline_got_offset_base + (index *2) + 1] = arg1;
 
-#ifdef __x86_64__
-	tramp_size = 16;
-#elif defined(__arm__)
-	tramp_size = 28;
-#else
-	tramp_size = -1;
-	g_assert_not_reached ();
-#endif
+	tramp_size = amodule->specific_trampoline_size;
 
 	code = amodule->trampolines + (index * tramp_size);
 	if (code_len)

@@ -77,7 +77,7 @@ typedef gint64 mgreg_t;
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "46"
+#define MONO_AOT_FILE_VERSION "47"
  
 /* Per-domain information maintained by the JIT */
 typedef struct

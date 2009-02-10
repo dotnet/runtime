@@ -145,6 +145,7 @@ typedef struct MonoAotCompile {
 	/* Number of GOT entries reserved for trampolines */
 	guint32 num_trampoline_got_entries;
 	guint32 trampoline_got_offset_base;
+	guint32 specific_trampoline_size;
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
@@ -567,10 +568,10 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
  *
  *   Emit code for a specific trampoline. OFFSET is the offset of the first of
  * two GOT slots which contain the generic trampoline address and the trampoline
- * argument.
+ * argument. TRAMP_SIZE is set to the size of the emitted trampoline.
  */
 static void
-arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset)
+arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 {
 	/*
 	 * The trampolines created here are variations of the specific 
@@ -586,6 +587,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset)
 	 */
 #if defined(__x86_64__)
 	/* This should be exactly 16 bytes long */
+	*tramp_size = 16;
 	/* call *<offset>(%rip) */
 	emit_byte (acfg, '\x41');
 	emit_byte (acfg, '\xff');
@@ -599,6 +601,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset)
 	guint8 *code;
 
 	/* This should be exactly 28 bytes long */
+	*tramp_size = 28;
 	code = buf;
 	ARM_PUSH (code, 0x5fff);
 	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8);
@@ -1000,15 +1003,36 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		/* This might be a method of a constructed type like int[,].Set */
 		/* Obtain the token from information recorded by the JIT */
 		ji = g_hash_table_lookup (acfg->token_info_hash, method);
-		g_assert (ji);
-		image_index = get_image_index (acfg, ji->image);
-		g_assert (image_index < MAX_IMAGE_INDEX);
-		token = ji->token;
+		if (ji) {
+			image_index = get_image_index (acfg, ji->image);
+			g_assert (image_index < MAX_IMAGE_INDEX);
+			token = ji->token;
 
-		/* Marker */
-		encode_value ((255 << 24), p, &p);
-		encode_value (image_index, p, &p);
-		encode_value (token, p, &p);
+			/* Marker */
+			encode_value ((255 << 24), p, &p);
+			encode_value (image_index, p, &p);
+			encode_value (token, p, &p);
+		} else {
+			/* Array methods */
+			g_assert (method->klass->rank);
+
+			/* Encode directly */
+			/* Marker */
+			encode_value ((251 << 24), p, &p);
+			encode_klass_ref (acfg, method->klass, p, &p);
+			if (!strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == method->klass->rank)
+				encode_value (0, p, &p);
+			else if (!strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == method->klass->rank * 2)
+				encode_value (1, p, &p);
+			else if (!strcmp (method->name, "Get"))
+				encode_value (2, p, &p);
+			else if (!strcmp (method->name, "Address"))
+				encode_value (3, p, &p);
+			else if (!strcmp (method->name, "Set"))
+				encode_value (4, p, &p);
+			else
+				g_assert_not_reached ();
+		}
 	} else {
 		g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
 		encode_value ((image_index << 24) | mono_metadata_token_index (token), p, &p);
@@ -2437,9 +2461,15 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_label (acfg, symbol);
 
 		for (i = 0; i < acfg->num_aot_trampolines; ++i) {
+			int tramp_size = 0;
+
 			offset = acfg->got_offset + (i * 2);
 
-			arch_emit_specific_trampoline (acfg, offset);
+			arch_emit_specific_trampoline (acfg, offset, &tramp_size);
+			if (!acfg->specific_trampoline_size) {
+				g_assert (tramp_size);
+				acfg->specific_trampoline_size = tramp_size;
+			}
 		}
 	}
 
@@ -2544,13 +2574,27 @@ add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
 }
 
 static gboolean
+can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
+{
+	if (klass->type_token)
+		return TRUE;
+	if ((klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
+		return TRUE;
+	if (klass->rank)
+		return can_encode_class (acfg, klass->element_class);
+	return FALSE;
+}
+
+static gboolean
 can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 {
 	switch (patch_info->type) {
 	case MONO_PATCH_INFO_METHOD:
-	case MONO_PATCH_INFO_METHODCONST:
-		if (patch_info->data.method->wrapper_type) {
-			switch (patch_info->data.method->wrapper_type) {
+	case MONO_PATCH_INFO_METHODCONST: {
+		MonoMethod *method = patch_info->data.method;
+
+		if (method->wrapper_type) {
+			switch (method->wrapper_type) {
 			case MONO_WRAPPER_NONE:
 			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
 			case MONO_WRAPPER_XDOMAIN_INVOKE:
@@ -2572,28 +2616,28 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 				return FALSE;
 			}
 		} else {
-			if (!patch_info->data.method->token) {
+			if (!method->token) {
 				/* The method is part of a constructed type like Int[,].Set (). */
-				if (!g_hash_table_lookup (acfg->token_info_hash, patch_info->data.method))
+				if (!g_hash_table_lookup (acfg->token_info_hash, method)) {
+					if (method->klass->rank)
+						return TRUE;
 					return FALSE;
+				}
 			}
 		}
 		break;
+	}
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS_INIT:
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
-	case MONO_PATCH_INFO_ADJUSTED_IID: {
-		MonoClass *klass = patch_info->data.klass;
-
-		if (!klass->type_token)
-			if (!klass->element_class->type_token && !(klass->element_class->rank && klass->element_class->element_class->type_token) && (klass->byval_arg.type != MONO_TYPE_VAR) && (klass->byval_arg.type != MONO_TYPE_MVAR)) {
-				//printf ("Skip: %s\n", mono_type_full_name (&patch_info->data.klass->byval_arg));
-				return FALSE;
-			}
+	case MONO_PATCH_INFO_ADJUSTED_IID:
+		if (!can_encode_class (acfg, patch_info->data.klass)) {
+			//printf ("Skip: %s\n", mono_type_full_name (&patch_info->data.klass->byval_arg));
+			return FALSE;
+		}
 		break;
-	}
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
 		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
 
@@ -3753,6 +3797,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, acfg->num_aot_trampolines);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
+	emit_int32 (acfg, acfg->specific_trampoline_size);
 	emit_pointer (acfg, "got");
 }
 
