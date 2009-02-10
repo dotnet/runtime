@@ -5157,6 +5157,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		g_assert (acfg->fp);
 
 		acfg->w = img_writer_create (acfg->fp, FALSE);
+		
+		/* hush compiler warnings about these being possibly uninitialized */
+		tmp_outfile_name = NULL;
+		outfile_name = NULL;
 	}
 
 	load_profile_files (acfg);
