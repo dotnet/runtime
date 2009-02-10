@@ -266,7 +266,9 @@ common_sources = \
 	simd-methods.h		\
 	simd-intrinsics.c	\
 	unwind.h		\
-	unwind.c
+	unwind.c		\
+	image-writer.h	\
+	image-writer.c
 
 test_sources = 			\
 	basic-calls.cs 		\
