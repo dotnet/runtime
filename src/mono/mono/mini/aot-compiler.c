@@ -502,7 +502,7 @@ static void
 arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 {
 #if defined(__i386__)
-		if (i == 0) {
+		if (index == 0) {
 			/* It is filled up during loading by the AOT loader. */
 			emit_zero_bytes (acfg, 16);
 		} else {
