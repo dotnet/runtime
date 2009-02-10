@@ -2854,6 +2854,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_POP_NWB (code, cfg->used_int_regs | ((1 << ARMREG_SP)) | ((1 << ARMREG_LR)));
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			ARM_B (code, 0);
+			cfg->disable_aot = TRUE;
 			break;
 		case OP_CHECK_THIS:
 			/* ensure ins->sreg1 is not NULL */
