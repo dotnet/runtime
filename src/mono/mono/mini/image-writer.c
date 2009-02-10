@@ -437,10 +437,6 @@ enum {
 	SECT_NUM
 };
 
-/* Relocation types */
-#define R_ARM_CALL 28
-#define R_ARM_ALU_PC_G0_NC 59
-
 #if SIZEOF_VOID_P == 4
 
 typedef Elf32_Ehdr ElfHeader;
@@ -1858,12 +1854,25 @@ img_writer_emit_reloc (MonoImageWriter *acfg, int reloc_type, const char *symbol
 	/* This is only supported by the bin writer */
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
-		img_writer_emit_reloc (acfg, reloc_type, symbol, addend);
+		bin_writer_emit_reloc (acfg, reloc_type, symbol, addend);
 	else
 		g_assert_not_reached ();
 #else
 		g_assert_not_reached ();
 #endif
+}
+
+/*
+ * img_writer_emit_unset_mode:
+ *
+ *   Flush buffered data so it is safe to write to the output file from outside this
+ * module. This is a nop for the binary writer.
+ */
+void
+img_writer_emit_unset_mode (MonoImageWriter *acfg)
+{
+	if (!acfg->use_bin_writer)
+		asm_writer_emit_unset_mode (acfg);
 }
 
 /*

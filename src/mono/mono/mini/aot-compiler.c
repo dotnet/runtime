@@ -454,10 +454,10 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
 		code = buf;
 		ARM_BL (code, 0);
 
-		img_writer_emit_reloc (acfg, R_ARM_CALL, target, -8);
+		img_writer_emit_reloc (acfg->w, R_ARM_CALL, target, -8);
 		emit_bytes (acfg, buf, 4);
 	} else {
-		asm_writer_emit_unset_mode (acfg);
+		img_writer_emit_unset_mode (acfg->w);
 		fprintf (acfg->fp, "bl %s\n", target);
 	}
 	*call_size = 4;
@@ -537,7 +537,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		code = buf;
 		if (acfg->use_bin_writer) {
 			/* We only emit 1 relocation since we implement it ourselves anyway */
-			img_writer_emit_reloc (acfg, R_ARM_ALU_PC_G0_NC, "got", ((acfg->plt_got_offset_base + i) * sizeof (gpointer)) - 8);
+			img_writer_emit_reloc (acfg->w, R_ARM_ALU_PC_G0_NC, "got", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 8);
 			/* FIXME: A 2 instruction encoding is sufficient in most cases */
 			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
 			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
@@ -595,6 +595,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset)
 	emit_zero_bytes (acfg, 5);
 #elif defined(__arm__)
 	guint8 buf [128];
+	guint8 *code;
 
 	/* This should be exactly 28 bytes long */
 	code = buf;
@@ -3834,11 +3835,11 @@ emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_sym
 	emit_int32 (acfg, 0);
 #endif
 
+	l = unwind_ops;
 	if (acfg->cie_program) {
 		// FIXME: Check that the ops really begin with the CIE program */
 		int i;
 
-		l = unwind_ops;
 		for (i = 0; i < g_slist_length (acfg->cie_program); ++i)
 			l = l->next;
 	}

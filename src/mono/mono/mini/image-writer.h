@@ -21,6 +21,10 @@
 
 typedef struct _MonoImageWriter MonoImageWriter;
 
+/* Relocation types */
+#define R_ARM_CALL 28
+#define R_ARM_ALU_PC_G0_NC 59
+
 gboolean bin_writer_supported (void) MONO_INTERNAL;
 
 MonoImageWriter* img_writer_create (FILE *fp, gboolean use_bin_writer) MONO_INTERNAL;
@@ -68,5 +72,7 @@ void img_writer_emit_global (MonoImageWriter *w, const char *name, gboolean func
 void img_writer_emit_byte (MonoImageWriter *w, guint8 val) MONO_INTERNAL;
 
 void img_writer_emit_reloc (MonoImageWriter *acfg, int reloc_type, const char *symbol, int addend) MONO_INTERNAL;
+
+void img_writer_emit_unset_mode (MonoImageWriter *acfg) MONO_INTERNAL;
 
 #endif
