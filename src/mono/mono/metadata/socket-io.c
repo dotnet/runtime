@@ -2387,7 +2387,6 @@ static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
 			/* If requesting "" and there are no other interfaces up, MS returns 127.0.0.1 */
 			*h_addr_list = mono_array_new(domain, mono_get_string_class (), 1);
 			mono_array_setref (*h_addr_list, 0, mono_string_new (domain, "127.0.0.1"));
-			n_local_in = 1;
 			return TRUE;
 		}
 	}
