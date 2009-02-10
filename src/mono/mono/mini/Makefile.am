@@ -503,7 +503,7 @@ fullaotcheck: mono $(regtests)
 	cp $(CLASS)/mscorlib.dll $(regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
 	cp $(regtests) fullaot-tmp/
 	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --aot=full fullaot-tmp/* || exit 1
-	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/*.exe
+	for i in $(regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/$$i; done
 
 bench: mono test.exe
 	time env $(RUNTIME) --ncompile $(count) --compile Test:$(mtest) test.exe
