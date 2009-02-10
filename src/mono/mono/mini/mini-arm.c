@@ -3635,7 +3635,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	int tracing = 0;
 	int lmf_offset = 0;
-	int prev_sp_offset;
+	int prev_sp_offset, reg_offset;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 		tracing = 1;
@@ -3644,22 +3644,40 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->code_size = 256 + sig->param_count * 20;
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
+	mono_emit_unwind_op_def_cfa (cfg, code, ARMREG_SP, 0);
+
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
 
 	if (!method->save_lmf) {
-		// FIXME: Why save IP ?
+		/* We save SP by storing it into IP and saving IP */
 		ARM_PUSH (code, (cfg->used_int_regs | (1 << ARMREG_IP) | (1 << ARMREG_LR)));
 		prev_sp_offset = 8; /* ip and lr */
 		for (i = 0; i < 16; ++i) {
 			if (cfg->used_int_regs & (1 << i))
 				prev_sp_offset += 4;
 		}
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
+		reg_offset = 0;
+		for (i = 0; i < 16; ++i) {
+			if ((cfg->used_int_regs & (1 << i)) || (i == ARMREG_IP) || (i == ARMREG_LR)) {
+				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
+				reg_offset += 4;
+			}
+		}
 	} else {
 		ARM_PUSH (code, 0x5ff0);
 		prev_sp_offset = 4 * 10; /* all but r0-r3, sp and pc */
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset);
+		reg_offset = 0;
+		for (i = 0; i < 16; ++i) {
+			if ((i > ARMREG_R3) && (i != ARMREG_SP) && (i != ARMREG_PC)) {
+				mono_emit_unwind_op_offset (cfg, code, i, (- prev_sp_offset) + reg_offset);
+				reg_offset += 4;
+			}
+		}
 		pos += sizeof (MonoLMF) - prev_sp_offset;
 		lmf_offset = pos;
 	}
@@ -3681,9 +3699,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = mono_arm_emit_load_imm (code, ARMREG_IP, alloc_size);
 			ARM_SUB_REG_REG (code, ARMREG_SP, ARMREG_SP, ARMREG_IP);
 		}
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, prev_sp_offset + alloc_size);
 	}
 	if (cfg->frame_reg != ARMREG_SP) {
 		ARM_MOV_REG_REG (code, cfg->frame_reg, ARMREG_SP);
+		mono_emit_unwind_op_def_cfa_reg (cfg, code, cfg->frame_reg);
 	}
 	//g_print ("prev_sp_offset: %d, alloc_size:%d\n", prev_sp_offset, alloc_size);
 	prev_sp_offset += alloc_size;
@@ -4167,9 +4187,6 @@ mono_arch_flush_register_windows (void)
 void
 mono_arch_fixup_jinfo (MonoCompile *cfg)
 {
-	/* max encoded stack usage is 64KB * 4 */
-	g_assert ((cfg->stack_usage & ~(0xffff << 2)) == 0);
-	cfg->jit_info->used_regs |= cfg->stack_usage << 14;
 }
 
 #ifdef MONO_ARCH_HAVE_IMT

@@ -389,7 +389,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			if (!ji->method->wrapper_type)
 				*managed = TRUE;
 
-		unwind_info = mono_get_cached_unwind_info (ji->used_regs, &unwind_info_len);
+		if (ji->from_aot)
+			unwind_info = mono_aot_get_unwind_info (ji, &unwind_info_len);
+		else
+			unwind_info = mono_get_cached_unwind_info (ji->used_regs, &unwind_info_len);
 
 		/* Beautiful numbers */
 		for (i = 4; i < 12; ++i)
