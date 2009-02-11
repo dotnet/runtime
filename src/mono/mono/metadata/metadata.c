@@ -451,7 +451,7 @@ typedef struct {
  *   Same as mono_image_alloc, but do the locking as well.
  * LOCKING: Acquires the loader lock.
  */
-static gpointer
+gpointer
 mono_image_alloc_lock (MonoImage *image, guint size)
 {
 	gpointer res;
@@ -469,7 +469,7 @@ mono_image_alloc_lock (MonoImage *image, guint size)
  *   Same as mono_image_alloc, but do the locking as well.
  * LOCKING: Acquires the loader lock.
  */
-static gpointer
+gpointer
 mono_image_alloc0_lock (MonoImage *image, guint size)
 {
 	gpointer res;

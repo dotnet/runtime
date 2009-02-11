@@ -1459,9 +1459,9 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if ((cols [2] & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 	    (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodPInvoke));
+		result = (MonoMethod *)mono_image_alloc0_lock (image, sizeof (MonoMethodPInvoke));
 	else
-		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodNormal));
+		result = (MonoMethod *)mono_image_alloc0_lock (image, sizeof (MonoMethodNormal));
 
 	mono_stats.method_count ++;
 
@@ -1559,26 +1559,28 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		return result;
 	}
 
+	mono_loader_unlock ();
 	result = mono_get_method_from_token (image, token, klass, context, &used_context);
+	if (!result)
+		return NULL;
 
-	//printf ("GET: %s\n", mono_method_full_name (result, TRUE));
+	mono_loader_lock ();
+	if (!used_context && !result->is_inflated) {
+		MonoMethod *result2;
+		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
+			result2 = mono_value_hash_table_lookup (image->method_cache, GINT_TO_POINTER (token));
+		else
+			result2 = g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
 
-#if 0
-	g_message (G_STRLOC ": %s - %d - %d", mono_method_full_name (result, TRUE),
-		   result->is_inflated, used_context);
-#endif
-
-	/*
-	 * `used_context' specifies whether or not mono_get_method_from_token() actually
-	 * used the `context' to get the method.  See bug #80969.
-	 */
-
-	if (!used_context && !(result && result->is_inflated) && result) {
-		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD) {
-			mono_value_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
-		} else {
-			g_hash_table_insert (image->methodref_cache, GINT_TO_POINTER (token), result);
+		if (result2) {
+			mono_loader_unlock ();
+			return result2;
 		}
+
+		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
+			mono_value_hash_table_insert (image->method_cache, GINT_TO_POINTER (token), result);
+		else
+			g_hash_table_insert (image->methodref_cache, GINT_TO_POINTER (token), result);
 	}
 
 	mono_loader_unlock ();

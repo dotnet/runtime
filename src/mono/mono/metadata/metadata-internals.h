@@ -512,5 +512,11 @@ mono_metadata_get_corresponding_property_from_generic_type_definition (MonoPrope
 guint32
 mono_metadata_signature_size (MonoMethodSignature *sig) MONO_INTERNAL;
 
+gpointer
+mono_image_alloc_lock (MonoImage *image, guint size) MONO_INTERNAL;
+
+gpointer
+mono_image_alloc0_lock (MonoImage *image, guint size) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
