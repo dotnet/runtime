@@ -1506,3 +1506,92 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 			method->klass->valuetype) &&
 		(method->klass->generic_class || method->klass->generic_container);
 }
+
+static MonoGenericInst*
+get_object_generic_inst (int type_argc)
+{
+	MonoType **type_argv;
+	int i;
+
+	type_argv = alloca (sizeof (MonoType*) * type_argc);
+
+	for (i = 0; i < type_argc; ++i)
+		type_argv [i] = &mono_defaults.object_class->byval_arg;
+
+	return mono_metadata_get_generic_inst (type_argc, type_argv);
+}
+
+/*
+ * mono_method_construct_object_context:
+ * @method: a method
+ *
+ * Returns a generic context for method with all type variables for
+ * class and method instantiated with Object.
+ */
+MonoGenericContext
+mono_method_construct_object_context (MonoMethod *method)
+{
+	MonoGenericContext object_context;
+
+	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
+	g_assert (!method->klass->generic_class);
+	if (method->klass->generic_container) {
+		int type_argc = method->klass->generic_container->type_argc;
+
+		object_context.class_inst = get_object_generic_inst (type_argc);
+	} else {
+		object_context.class_inst = NULL;
+	}
+
+	if (mono_method_get_context_general (method, TRUE)->method_inst) {
+		int type_argc = mono_method_get_context_general (method, TRUE)->method_inst->type_argc;
+
+		object_context.method_inst = get_object_generic_inst (type_argc);
+	} else {
+		object_context.method_inst = NULL;
+	}
+
+	g_assert (object_context.class_inst || object_context.method_inst);
+
+	return object_context;
+}
+
+/*
+ * mono_domain_lookup_shared_generic:
+ * @domain: a domain
+ * @open_method: an open generic method
+ *
+ * Looks up the jit info for method via the domain's jit code hash.
+ */
+MonoJitInfo*
+mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *open_method)
+{
+	static gboolean inited = FALSE;
+	static int lookups = 0;
+	static int failed_lookups = 0;
+
+	MonoGenericContext object_context;
+	MonoMethod *object_method;
+	MonoJitInfo *ji;
+
+	object_context = mono_method_construct_object_context (open_method);
+	object_method = mono_class_inflate_generic_method (open_method, &object_context);
+
+	mono_domain_jit_code_hash_lock (domain);
+	ji = mono_internal_hash_table_lookup (&domain->jit_code_hash, object_method);
+	if (ji && !ji->has_generic_jit_info)
+		ji = NULL;
+	mono_domain_jit_code_hash_unlock (domain);
+
+	if (!inited) {
+		mono_counters_register ("Shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &lookups);
+		mono_counters_register ("Failed shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &failed_lookups);
+		inited = TRUE;
+	}
+
+	++lookups;
+	if (!ji)
+		++failed_lookups;
+
+	return ji;
+}

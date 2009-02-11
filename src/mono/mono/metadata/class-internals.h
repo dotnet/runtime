@@ -868,6 +868,9 @@ MonoGenericContext*
 mono_class_get_context (MonoClass *class) MONO_INTERNAL;
 
 MonoGenericContext*
+mono_method_get_context_general (MonoMethod *method, gboolean uninflated) MONO_INTERNAL;
+
+MonoGenericContext*
 mono_method_get_context (MonoMethod *method) MONO_INTERNAL;
 
 /* Used by monodis, thus cannot be MONO_INTERNAL */
@@ -1123,6 +1126,9 @@ mono_class_rgctx_get_array_size (int n, gboolean mrgctx) MONO_INTERNAL;
 guint32
 mono_method_lookup_or_register_other_info (MonoMethod *method, gboolean in_mrgctx, gpointer data,
 	int info_type, MonoGenericContext *generic_context) MONO_INTERNAL;
+
+MonoGenericContext
+mono_method_construct_object_context (MonoMethod *method) MONO_INTERNAL;
 
 int
 mono_generic_context_check_used (MonoGenericContext *context) MONO_INTERNAL;

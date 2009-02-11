@@ -905,14 +905,43 @@ mono_get_inflated_method (MonoMethod *method)
 	return method;
 }
 
+/*
+ * mono_method_get_context_general:
+ * @method: a method
+ * @uninflated: handle uninflated methods?
+ *
+ * Returns the generic context of a method or NULL if it doesn't have
+ * one.  For an inflated method that's the context stored in the
+ * method.  Otherwise it's in the method's generic container or in the
+ * generic container of the method's class.
+ */
+MonoGenericContext*
+mono_method_get_context_general (MonoMethod *method, gboolean uninflated)
+{
+	if (method->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
+		return &imethod->context;
+	}
+	if (!uninflated)
+		return NULL;
+	if (method->is_generic)
+		return &(mono_method_get_generic_container (method)->context);
+	if (method->klass->generic_container)
+		return &method->klass->generic_container->context;
+	return NULL;
+}
+
+/*
+ * mono_method_get_context:
+ * @method: a method
+ *
+ * Returns the generic context for method if it's inflated, otherwise
+ * NULL.
+ */
 MonoGenericContext*
 mono_method_get_context (MonoMethod *method)
 {
-	MonoMethodInflated *imethod;
-	if (!method->is_inflated)
-		return NULL;
-	imethod = (MonoMethodInflated *) method;
-	return &imethod->context;
+	return mono_method_get_context_general (method, FALSE);
 }
 
 /*

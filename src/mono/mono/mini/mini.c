@@ -2738,48 +2738,6 @@ mono_print_code (MonoCompile *cfg, const char* msg)
 		mono_print_bb (bb, msg);
 }
 
-static MonoGenericInst*
-get_object_generic_inst (int type_argc)
-{
-	MonoType **type_argv;
-	int i;
-
-	type_argv = alloca (sizeof (MonoType*) * type_argc);
-
-	for (i = 0; i < type_argc; ++i)
-		type_argv [i] = &mono_defaults.object_class->byval_arg;
-
-	return mono_metadata_get_generic_inst (type_argc, type_argv);
-}
-
-static MonoGenericContext
-construct_object_context_for_method (MonoMethod *method)
-{
-	MonoGenericContext object_context;
-
-	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
-	g_assert (!method->klass->generic_class);
-	if (method->klass->generic_container) {
-		int type_argc = method->klass->generic_container->type_argc;
-
-		object_context.class_inst = get_object_generic_inst (type_argc);
-	} else {
-		object_context.class_inst = NULL;
-	}
-
-	if (mini_method_get_context (method)->method_inst) {
-		int type_argc = mini_method_get_context (method)->method_inst->type_argc;
-
-		object_context.method_inst = get_object_generic_inst (type_argc);
-	} else {
-		object_context.method_inst = NULL;
-	}
-
-	g_assert (object_context.class_inst || object_context.method_inst);
-
-	return object_context;
-}
-
 #ifndef DISABLE_JIT
 
 void
@@ -3592,7 +3550,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if (cfg->generic_sharing_context) {
-		MonoGenericContext object_context = construct_object_context_for_method (method_to_compile);
+		MonoGenericContext object_context = mono_method_construct_object_context (method_to_compile);
 
 		method_to_register = mono_class_inflate_generic_method (method_to_compile, &object_context);
 	} else {
@@ -3766,37 +3724,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 }
 
 #endif /* DISABLE_JIT */
-
-MonoJitInfo*
-mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *open_method)
-{
-	static gboolean inited = FALSE;
-	static int lookups = 0;
-	static int failed_lookups = 0;
-
-	MonoGenericContext object_context;
-	MonoMethod *object_method;
-	MonoJitInfo *ji;
-
-	object_context = construct_object_context_for_method (open_method);
-	object_method = mono_class_inflate_generic_method (open_method, &object_context);
-
-	ji = mono_internal_hash_table_lookup (&domain->jit_code_hash, object_method);
-	if (ji && !ji->has_generic_jit_info)
-		ji = NULL;
-
-	if (!inited) {
-		mono_counters_register ("Shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &lookups);
-		mono_counters_register ("Failed shared generic lookups", MONO_COUNTER_INT|MONO_COUNTER_GENERICS, &failed_lookups);
-		inited = TRUE;
-	}
-
-	++lookups;
-	if (!ji)
-		++failed_lookups;
-
-	return ji;
-}
 
 static MonoJitInfo*
 lookup_generic_method (MonoDomain *domain, MonoMethod *method)

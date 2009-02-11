@@ -301,6 +301,9 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji) MONO_INTERNAL;
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx) MONO_INTERNAL;
 
+MonoJitInfo*
+mono_domain_lookup_shared_generic (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
+
 char *
 mono_make_shadow_copy (const char *filename) MONO_INTERNAL;
 

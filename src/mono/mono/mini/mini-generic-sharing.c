@@ -30,25 +30,10 @@ mono_get_generic_context_from_code (guint8 *code)
 	return mono_jit_info_get_generic_sharing_context (jit_info);
 }
 
-/*
- * mini_method_get_context:
- * @method: a method
- *
- * Returns the generic context of a method or NULL if it doesn't have
- * one.  For an inflated method that's the context stored in the
- * method.  Otherwise it's in the method's generic container or in the
- * generic container of the method's class.
- */
 MonoGenericContext*
 mini_method_get_context (MonoMethod *method)
 {
-	if (method->is_inflated)
-		return mono_method_get_context (method);
-	if (method->is_generic)
-		return &(mono_method_get_generic_container (method)->context);
-	if (method->klass->generic_container)
-		return &method->klass->generic_container->context;
-	return NULL;
+	return mono_method_get_context_general (method, TRUE);
 }
 
 /*
