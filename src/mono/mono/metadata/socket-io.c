@@ -853,6 +853,7 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock,
 		if (curthread) {
 			for (;;) {
 				int selectret;
+				int optlen = sizeof (gint);
 				TIMEVAL timeout; 
 				fd_set readfds;
 				FD_ZERO (&readfds);
@@ -864,6 +865,15 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock,
 					break;
 				if (curthread->state & ThreadState_StopRequested)
 					return NULL;
+				/* A negative return from select means that an error has occurred.
+				 * Let _wapi_accept handle that.*/
+				if (selectret != 0)
+					break;
+				/* The socket's state may have changed.  If it is no longer listening, stop.*/
+				if (!getsockopt (sock, SOL_SOCKET, SO_ACCEPTCONN, (char*)&selectret, &optlen)) {
+					if (!selectret)
+						break;
+				}
 			}
 		}
 	}
