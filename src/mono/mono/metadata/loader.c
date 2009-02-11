@@ -1897,6 +1897,8 @@ mono_method_get_wrapper_data (MonoMethod *method, guint32 id)
 	g_assert (method != NULL);
 	g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
 	data = ((MonoMethodWrapper *)method)->method_data;
 	g_assert (data != NULL);
 	g_assert (id <= GPOINTER_TO_UINT (*data));
@@ -1946,6 +1948,11 @@ mono_method_get_last_managed (void)
 	return m;
 }
 
+/**
+ * mono_loader_lock:
+ *
+ * See docs/thread-safety.txt for the locking strategy.
+ */
 void
 mono_loader_lock (void)
 {
