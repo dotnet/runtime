@@ -588,6 +588,18 @@ mono_if_conversion (MonoCompile *cfg)
 			if ((bb->out_bb [0]->in_count == 1) && (bb->out_bb [0] != cfg->bb_exit) &&
 				(bb->region == bb->out_bb [0]->region)) {
 				mono_merge_basic_blocks (cfg, bb, bb->out_bb [0]);
+
+				/* 
+				 * bbn might have fallen through to the next bb without a branch, 
+				 * have to add one now (#474718).
+				 * FIXME: Maybe need to do this more generally in 
+				 * merge_basic_blocks () ?
+				 */
+				if (!(bb->last_ins && MONO_IS_BRANCH_OP (bb->last_ins)) && bb->out_count) {
+					MONO_INST_NEW (cfg, ins1, OP_BR);
+					ins1->inst_target_bb = bb->out_bb [0];
+					MONO_ADD_INS (bb, ins1);
+				}
 				goto restart;
 			}
 		}
@@ -979,6 +991,7 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 		bb->code = bbn->code;
 		bb->last_ins = bbn->last_ins;
 	}
+
 	for (prev_bb = cfg->bb_entry; prev_bb && prev_bb->next_bb != bbn; prev_bb = prev_bb->next_bb)
 		;
 	if (prev_bb) {
