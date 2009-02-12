@@ -10467,6 +10467,8 @@ mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token)
  * runtime structure. If HANDLE_CLASS is not NULL, it is set to the class required by 
  * mono_ldtoken. If valid_token is TRUE, assert if it is not found in the token->object
  * mapping table.
+ *
+ * LOCKING: Take the loader lock
  */
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context)
@@ -10475,6 +10477,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 	MonoObject *obj;
 	MonoClass *klass;
 
+	mono_loader_lock ();
 	obj = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
 	if (!obj) {
 		if (valid_token)
@@ -10482,6 +10485,7 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 		else
 			return NULL;
 	}
+	mono_loader_unlock ();
 
 	if (!handle_class)
 		handle_class = &klass;
