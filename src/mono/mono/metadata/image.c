@@ -614,6 +614,7 @@ mono_image_init (MonoImage *image)
 	image->method_signatures = g_hash_table_new (NULL, NULL);
 
 	image->property_hash = mono_property_hash_new ();
+	InitializeCriticalSection (&image->lock);
 }
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
@@ -1519,6 +1520,8 @@ mono_image_close (MonoImage *image)
 		mono_mempool_destroy (image->mempool);
 	}
 
+	DeleteCriticalSection (&image->lock);
+
 	mono_profiler_module_event (image, MONO_PROFILE_END_UNLOAD);
 }
 
@@ -2005,3 +2008,14 @@ mono_image_strdup (MonoImage *image, const char *s)
 	return mono_mempool_strdup (image->mempool, s);
 }
 
+void
+mono_image_lock (MonoImage *image)
+{
+	EnterCriticalSection (&image->lock);
+}
+
+void
+mono_image_unlock (MonoImage *image)
+{
+	LeaveCriticalSection (&image->lock);
+}

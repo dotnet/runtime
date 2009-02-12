@@ -246,6 +246,12 @@ struct _MonoImage {
 
 	/* interfaces IDs from this image */
 	MonoBitSet *interface_bitset;
+
+	/*
+	 * No other runtime locks must be taken while holding this lock.
+	 * It's meant to be used only to mutate a query structures part of this image.
+	 */
+	CRITICAL_SECTION    lock;
 };
 
 enum {
@@ -373,6 +379,12 @@ mono_image_alloc0 (MonoImage *image, guint size) MONO_INTERNAL;
 
 char*
 mono_image_strdup (MonoImage *image, const char *s) MONO_INTERNAL;
+
+void
+mono_image_lock (MonoImage *image) MONO_INTERNAL;
+
+void
+mono_image_unlock (MonoImage *image) MONO_INTERNAL;
 
 MonoType*
 mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
