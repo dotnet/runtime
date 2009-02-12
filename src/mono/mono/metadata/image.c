@@ -1990,22 +1990,40 @@ mono_image_has_authenticode_entry (MonoImage *image)
 gpointer
 mono_image_alloc (MonoImage *image, guint size)
 {
+	gpointer res;
+
 	mono_perfcounters->loader_bytes += size;
-	return mono_mempool_alloc (image->mempool, size);
+	mono_image_lock (image);
+	res = mono_mempool_alloc (image->mempool, size);
+	mono_image_unlock (image);
+
+	return res;
 }
 
 gpointer
 mono_image_alloc0 (MonoImage *image, guint size)
 {
+	gpointer res;
+
 	mono_perfcounters->loader_bytes += size;
-	return mono_mempool_alloc0 (image->mempool, size);
+	mono_image_lock (image);
+	res = mono_mempool_alloc0 (image->mempool, size);
+	mono_image_unlock (image);
+
+	return res;
 }
 
 char*
 mono_image_strdup (MonoImage *image, const char *s)
 {
+	char *res;
+
 	mono_perfcounters->loader_bytes += strlen (s);
-	return mono_mempool_strdup (image->mempool, s);
+	mono_image_lock (image);
+	res = mono_mempool_strdup (image->mempool, s);
+	mono_image_unlock (image);
+
+	return res;
 }
 
 GList*
@@ -2030,7 +2048,6 @@ GSList*
 g_slist_append_image (MonoImage *image, GSList *list, gpointer data)
 {
 	GSList *new_list;
-	GSList *last;
 
 	new_list = mono_image_alloc (image, sizeof (GSList));
 	new_list->data = data;
@@ -2038,6 +2055,7 @@ g_slist_append_image (MonoImage *image, GSList *list, gpointer data)
 
 	return g_slist_concat (list, new_list);
 }
+
 void
 mono_image_lock (MonoImage *image)
 {
