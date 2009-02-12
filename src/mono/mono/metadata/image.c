@@ -2025,6 +2025,19 @@ g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
 
 	return new_list;
 }
+
+GSList*
+g_slist_append_image (MonoImage *image, GSList *list, gpointer data)
+{
+	GSList *new_list;
+	GSList *last;
+
+	new_list = mono_image_alloc (image, sizeof (GSList));
+	new_list->data = data;
+	new_list->next = NULL;
+
+	return g_slist_concat (list, new_list);
+}
 void
 mono_image_lock (MonoImage *image)
 {

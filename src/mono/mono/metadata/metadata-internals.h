@@ -383,6 +383,9 @@ mono_image_strdup (MonoImage *image, const char *s) MONO_INTERNAL;
 GList*
 g_list_prepend_image (MonoImage *image, GList *list, gpointer data) MONO_INTERNAL;
 
+GSList*
+g_slist_append_image (MonoImage *image, GSList *list, gpointer data) MONO_INTERNAL;
+
 void
 mono_image_lock (MonoImage *image) MONO_INTERNAL;
 
@@ -503,13 +506,13 @@ gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only) MONO_INTERNAL;
 
 MonoMarshalSpec *
-mono_metadata_parse_marshal_spec_with_mempool (MonoMemPool *mp, const char *ptr) MONO_INTERNAL;
+mono_metadata_parse_marshal_spec_full (MonoImage *image, const char *ptr) MONO_INTERNAL;
 
 guint	       mono_metadata_generic_inst_hash (gconstpointer data) MONO_INTERNAL;
 gboolean       mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer kb) MONO_INTERNAL;
 
 void
-mono_metadata_field_info_with_mempool (MonoMemPool *mp, 
+mono_metadata_field_info_with_mempool (
 					  MonoImage *meta, 
 				      guint32       table_index,
 				      guint32      *offset,

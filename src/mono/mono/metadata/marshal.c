@@ -11497,7 +11497,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		if (mono_field_is_deleted (field))
 			continue;
 		if (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL)
-			mono_metadata_field_info_with_mempool (klass->image->mempool, klass->image, mono_metadata_token_index (mono_class_get_field_token (field)) - 1, 
+			mono_metadata_field_info_with_mempool (klass->image, mono_metadata_token_index (mono_class_get_field_token (field)) - 1, 
 						  NULL, NULL, &info->fields [j].mspec);
 
 		info->fields [j].field = field;

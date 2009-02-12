@@ -162,7 +162,7 @@ get_other_info_templates (MonoRuntimeGenericContextTemplate *template, int type_
  * LOCKING: templates lock
  */
 static void
-set_other_info_templates (MonoMemPool *mp, MonoRuntimeGenericContextTemplate *template, int type_argc,
+set_other_info_templates (MonoImage *image, MonoRuntimeGenericContextTemplate *template, int type_argc,
 	MonoRuntimeGenericContextOtherInfoTemplate *oti)
 {
 	g_assert (type_argc >= 0);
@@ -174,7 +174,7 @@ set_other_info_templates (MonoMemPool *mp, MonoRuntimeGenericContextTemplate *te
 
 		/* FIXME: quadratic! */
 		while (length < type_argc) {
-			template->method_templates = g_slist_append_mempool (mp, template->method_templates, NULL);
+			template->method_templates = g_slist_append_image (image, template->method_templates, NULL);
 			length++;
 		}
 
@@ -442,7 +442,7 @@ rgctx_template_set_other_slot (MonoImage *image, MonoRuntimeGenericContextTempla
 	(*oti)->data = data;
 	(*oti)->info_type = info_type;
 
-	set_other_info_templates (image->mempool, template, type_argc, list);
+	set_other_info_templates (image, template, type_argc, list);
 
 	if (data == MONO_RGCTX_SLOT_USED_MARKER)
 		++num_markers;

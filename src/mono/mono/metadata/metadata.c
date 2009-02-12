@@ -37,6 +37,7 @@ static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, 
 static void free_generic_inst (MonoGenericInst *ginst);
 static void free_generic_class (MonoGenericClass *ginst);
 static void free_inflated_method (MonoMethodInflated *method);
+static void mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, MonoMarshalSpec **marshal_spec, gboolean alloc_from_image);
 
 /*
  * This enumeration is used to describe the data types in the metadata
@@ -4331,12 +4332,19 @@ void
 mono_metadata_field_info (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
 			  MonoMarshalSpec **marshal_spec)
 {
-	mono_metadata_field_info_with_mempool (NULL, meta, index, offset, rva, marshal_spec);
+	mono_metadata_field_info_full (meta, index, offset, rva, marshal_spec, FALSE);
 }
 
 void
-mono_metadata_field_info_with_mempool (MonoMemPool *mempool, MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
-				       MonoMarshalSpec **marshal_spec)
+mono_metadata_field_info_with_mempool (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
+			  MonoMarshalSpec **marshal_spec)
+{
+	mono_metadata_field_info_full (meta, index, offset, rva, marshal_spec, TRUE);
+}
+
+static void
+mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, 
+				       MonoMarshalSpec **marshal_spec, gboolean alloc_from_image)
 {
 	MonoTableInfo *tdef;
 	locator_t loc;
@@ -4376,7 +4384,7 @@ mono_metadata_field_info_with_mempool (MonoMemPool *mempool, MonoImage *meta, gu
 		const char *p;
 		
 		if ((p = mono_metadata_get_marshal_info (meta, index, TRUE))) {
-			*marshal_spec = mono_metadata_parse_marshal_spec_with_mempool (mempool, p);
+			*marshal_spec = mono_metadata_parse_marshal_spec_full (alloc_from_image ? meta : NULL, p);
 		}
 	}
 
@@ -4692,12 +4700,12 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 
 
 static char*
-mono_mempool_strndup (MonoMemPool *mp, const char *data, guint len)
+mono_image_strndup (MonoImage *image, const char *data, guint len)
 {
 	char *res;
-	if (!mp)
+	if (!image)
 		return g_strndup (data, len);
-	res = mono_mempool_alloc (mp, len + 1);
+	res = mono_image_alloc (image, len + 1);
 	memcpy (res, data, len);
 	res [len] = 0;
 	return res;
@@ -4706,11 +4714,11 @@ mono_mempool_strndup (MonoMemPool *mp, const char *data, guint len)
 MonoMarshalSpec *
 mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 {
-	return mono_metadata_parse_marshal_spec_with_mempool (NULL, ptr);
+	return mono_metadata_parse_marshal_spec_full (NULL, ptr);
 }
 
 MonoMarshalSpec *
-mono_metadata_parse_marshal_spec_with_mempool (MonoMemPool *mempool, const char *ptr)
+mono_metadata_parse_marshal_spec_full (MonoImage *image, const char *ptr)
 {
 	MonoMarshalSpec *res;
 	int len;
@@ -4718,8 +4726,8 @@ mono_metadata_parse_marshal_spec_with_mempool (MonoMemPool *mempool, const char 
 
 	/* fixme: this is incomplete, but I cant find more infos in the specs */
 
-	if (mempool)
-		res = mono_mempool_alloc0 (mempool, sizeof (MonoMarshalSpec));
+	if (image)
+		res = mono_image_alloc0 (image, sizeof (MonoMarshalSpec));
 	else
 		res = g_new0 (MonoMarshalSpec, 1);
 	
@@ -4770,11 +4778,11 @@ mono_metadata_parse_marshal_spec_with_mempool (MonoMemPool *mempool, const char 
 		ptr += len;
 		/* read custom marshaler type name */
 		len = mono_metadata_decode_value (ptr, &ptr);
-		res->data.custom_data.custom_name = mono_mempool_strndup (mempool, ptr, len);		
+		res->data.custom_data.custom_name = mono_image_strndup (image, ptr, len);		
 		ptr += len;
 		/* read cookie string */
 		len = mono_metadata_decode_value (ptr, &ptr);
-		res->data.custom_data.cookie = mono_mempool_strndup (mempool, ptr, len);
+		res->data.custom_data.cookie = mono_image_strndup (image, ptr, len);
 	}
 
 	if (res->native == MONO_NATIVE_SAFEARRAY) {
