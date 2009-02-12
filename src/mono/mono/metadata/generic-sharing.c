@@ -537,7 +537,7 @@ inflate_other_data (gpointer data, int info_type, MonoGenericContext *context, M
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_TYPE:
 	case MONO_RGCTX_INFO_REFLECTION_TYPE:
-		return mono_class_inflate_generic_type_with_mempool (temporary ? NULL : class->image->mempool,
+		return mono_class_inflate_generic_type_with_mempool (temporary ? NULL : class->image,
 			data, context);
 
 	case MONO_RGCTX_INFO_METHOD:

@@ -308,7 +308,7 @@ cominterop_method_signature (MonoMethod* method)
 	else {
 		// last arg is return type
 		if (!MONO_TYPE_IS_VOID (sig->ret)) {
-			res->params[param_count-1] = mono_metadata_type_dup (image->mempool, sig->ret);
+			res->params[param_count-1] = mono_metadata_type_dup (image, sig->ret);
 			res->params[param_count-1]->byref = 1;
 			res->params[param_count-1]->attrs = PARAM_ATTRIBUTE_OUT;
 		}
@@ -12694,7 +12694,7 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	}
 
 	/* setup exception param as byref+[out] */
-	csig->params [param_count - 1] = mono_metadata_type_dup (image->mempool,
+	csig->params [param_count - 1] = mono_metadata_type_dup (image,
 		 &mono_defaults.exception_class->byval_arg);
 	csig->params [param_count - 1]->byref = 1;
 	csig->params [param_count - 1]->attrs = PARAM_ATTRIBUTE_OUT;

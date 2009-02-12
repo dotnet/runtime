@@ -9354,7 +9354,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			if ((pb = mono_array_get (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
 				if ((i > 0) && (pb->attrs)) {
 					/* Make a copy since it might point to a shared type structure */
-					m->signature->params [i - 1] = mono_metadata_type_dup (mp, m->signature->params [i - 1]);
+					m->signature->params [i - 1] = mono_metadata_type_dup (klass->image, m->signature->params [i - 1]);
 					m->signature->params [i - 1]->attrs = pb->attrs;
 				}
 
@@ -10008,7 +10008,7 @@ typebuilder_setup_fields (MonoClass *klass)
 		field = &klass->fields [i];
 		field->name = mp_string_to_utf8 (mp, fb->name);
 		if (fb->attrs) {
-			field->type = mono_metadata_type_dup (mp, fb->type->type);
+			field->type = mono_metadata_type_dup (klass->image, fb->type->type);
 			field->type->attrs = fb->attrs;
 		} else {
 			field->type = fb->type->type;

@@ -172,24 +172,24 @@ mono_class_from_typeref (MonoImage *image, guint32 type_token)
 
 
 static void *
-mono_mempool_dup (MonoMemPool *mp, void *data, guint size)
+mono_image_memdup (MonoImage *image, void *data, guint size)
 {
-	void *res = mono_mempool_alloc (mp, size);
+	void *res = mono_image_alloc (image, size);
 	memcpy (res, data, size);
 	return res;
 }
 	
 /* Copy everything mono_metadata_free_array free. */
 MonoArrayType *
-mono_dup_array_type (MonoMemPool *mp, MonoArrayType *a)
+mono_dup_array_type (MonoImage *image, MonoArrayType *a)
 {
-	if (mp) {
+	if (image) {
 		mono_loader_lock ();
-		a = mono_mempool_dup (mp, a, sizeof (MonoArrayType));
+		a = mono_image_memdup (image, a, sizeof (MonoArrayType));
 		if (a->sizes)
-			a->sizes = mono_mempool_dup (mp, a->sizes, a->numsizes * sizeof (int));
+			a->sizes = mono_image_memdup (image, a->sizes, a->numsizes * sizeof (int));
 		if (a->lobounds)
-			a->lobounds = mono_mempool_dup (mp, a->lobounds, a->numlobounds * sizeof (int));
+			a->lobounds = mono_image_memdup (image, a->lobounds, a->numlobounds * sizeof (int));
 		mono_loader_unlock ();		
 	} else {
 		a = g_memdup (a, sizeof (MonoArrayType));
@@ -203,15 +203,15 @@ mono_dup_array_type (MonoMemPool *mp, MonoArrayType *a)
 
 /* Copy everything mono_metadata_free_method_signature free. */
 MonoMethodSignature*
-mono_metadata_signature_deep_dup (MonoMemPool *mp, MonoMethodSignature *sig)
+mono_metadata_signature_deep_dup (MonoImage *image, MonoMethodSignature *sig)
 {
 	int i;
 	
-	sig = mono_metadata_signature_dup_full (mp, sig);
+	sig = mono_metadata_signature_dup_full (image, sig);
 	
-	sig->ret = mono_metadata_type_dup (mp, sig->ret);
+	sig->ret = mono_metadata_type_dup (image, sig->ret);
 	for (i = 0; i < sig->param_count; ++i)
-		sig->params [i] = mono_metadata_type_dup (mp, sig->params [i]);
+		sig->params [i] = mono_metadata_type_dup (image, sig->params [i]);
 	
 	return sig;
 }
@@ -489,7 +489,7 @@ mono_class_is_open_constructed_type (MonoType *t)
 }
 
 static MonoType*
-inflate_generic_type (MonoMemPool *mempool, MonoType *type, MonoGenericContext *context)
+inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *context)
 {
 	switch (type->type) {
 	case MONO_TYPE_MVAR: {
@@ -506,7 +506,7 @@ inflate_generic_type (MonoMemPool *mempool, MonoType *type, MonoGenericContext *
 		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
 		 * ->byref and ->attrs from @type are propagated to the returned type.
 		 */
-		nt = mono_metadata_type_dup (mempool, inst->type_argv [num]);
+		nt = mono_metadata_type_dup (image, inst->type_argv [num]);
 		nt->byref = type->byref;
 		nt->attrs = type->attrs;
 		return nt;
@@ -519,7 +519,7 @@ inflate_generic_type (MonoMemPool *mempool, MonoType *type, MonoGenericContext *
 			return NULL;
 		if (num >= inst->type_argc)
 			g_error ("VAR %d (%s) cannot be expanded in this context with %d instantiations", num, type->data.generic_param->name, inst->type_argc);
-		nt = mono_metadata_type_dup (mempool, inst->type_argv [num]);
+		nt = mono_metadata_type_dup (image, inst->type_argv [num]);
 		nt->byref = type->byref;
 		nt->attrs = type->attrs;
 		return nt;
@@ -529,7 +529,7 @@ inflate_generic_type (MonoMemPool *mempool, MonoType *type, MonoGenericContext *
 		MonoType *nt, *inflated = inflate_generic_type (NULL, &eclass->byval_arg, context);
 		if (!inflated)
 			return NULL;
-		nt = mono_metadata_type_dup (mempool, type);
+		nt = mono_metadata_type_dup (image, type);
 		nt->data.klass = mono_class_from_mono_type (inflated);
 		mono_metadata_free_type (inflated);
 		return nt;
@@ -539,7 +539,7 @@ inflate_generic_type (MonoMemPool *mempool, MonoType *type, MonoGenericContext *
 		MonoType *nt, *inflated = inflate_generic_type (NULL, &eclass->byval_arg, context);
 		if (!inflated)
 			return NULL;
-		nt = mono_metadata_type_dup (mempool, type);
+		nt = mono_metadata_type_dup (image, type);
 		nt->data.array = g_memdup (nt->data.array, sizeof (MonoArrayType));
 		nt->data.array->eklass = mono_class_from_mono_type (inflated);
 		mono_metadata_free_type (inflated);
@@ -559,7 +559,7 @@ inflate_generic_type (MonoMemPool *mempool, MonoType *type, MonoGenericContext *
 		if (gclass == type->data.generic_class)
 			return NULL;
 
-		nt = mono_metadata_type_dup (mempool, type);
+		nt = mono_metadata_type_dup (image, type);
 		nt->data.generic_class = gclass;
 		return nt;
 	}
@@ -581,7 +581,7 @@ inflate_generic_type (MonoMemPool *mempool, MonoType *type, MonoGenericContext *
 
 		gclass = mono_metadata_lookup_generic_class (klass, inst, klass->image->dynamic);
 
-		nt = mono_metadata_type_dup (mempool, type);
+		nt = mono_metadata_type_dup (image, type);
 		nt->type = MONO_TYPE_GENERICINST;
 		nt->data.generic_class = gclass;
 		return nt;
@@ -643,12 +643,12 @@ mono_class_get_generic_class (MonoClass *klass)
  * modified by the caller, and it should be freed using mono_metadata_free_type ().
  */
 MonoType*
-mono_class_inflate_generic_type_with_mempool (MonoMemPool *mempool, MonoType *type, MonoGenericContext *context)
+mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context)
 {
 	MonoType *inflated = NULL; 
 
 	if (context)
-		inflated = inflate_generic_type (mempool, type, context);
+		inflated = inflate_generic_type (image, type, context);
 
 	if (!inflated) {
 		MonoType *shared = mono_metadata_get_shared_type (type);
@@ -656,7 +656,7 @@ mono_class_inflate_generic_type_with_mempool (MonoMemPool *mempool, MonoType *ty
 		if (shared) {
 			return shared;
 		} else {
-			return mono_metadata_type_dup (mempool, type);
+			return mono_metadata_type_dup (image, type);
 		}
 	}
 
@@ -693,7 +693,7 @@ mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoG
 	MonoType *inflated = NULL; 
 
 	if (context)
-		inflated = inflate_generic_type (image->mempool, type, context);
+		inflated = inflate_generic_type (image, type, context);
 
 	if (!inflated)
 		return type;

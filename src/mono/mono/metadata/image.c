@@ -2013,7 +2013,7 @@ g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
 {
 	GList *new_list;
 	
-	new_list = mono_mempool_alloc (image->mempool, sizeof (GList));
+	new_list = mono_image_alloc (image, sizeof (GList));
 	new_list->data = data;
 	new_list->prev = list ? list->prev : NULL;
     new_list->next = list;

@@ -2209,7 +2209,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (method->string_ctor) {
 		/* Create the real signature */
 		/* FIXME: Cache these */
-		MonoMethodSignature *ctor_sig = mono_metadata_signature_dup_full (cfg->mempool, sig);
+		MonoMethodSignature *ctor_sig = mono_metadata_signature_dup_mempool (cfg->mempool, sig);
 		ctor_sig->ret = &mono_defaults.string_class->byval_arg;
 
 		sig = ctor_sig;

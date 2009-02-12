@@ -1824,24 +1824,38 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 	return sig;
 }
 
-MonoMethodSignature*
-mono_metadata_signature_dup_full (MonoMemPool *mp, MonoMethodSignature *sig)
+static MonoMethodSignature*
+mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	int sigsize;
-
+	MonoMethodSignature *ret;
 	sigsize = sizeof (MonoMethodSignature) + (sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
 
-	if (mp) {
-		MonoMethodSignature *ret;
+	if (image) {
+		mono_loader_lock ();
+		ret = mono_image_alloc (image, sigsize);
+		mono_loader_unlock ();
+	} else if (mp) {
 		mono_loader_lock ();
 		ret = mono_mempool_alloc (mp, sigsize);
 		mono_loader_unlock ();
-
-		memcpy (ret, sig, sigsize);
-		return ret;
 	} else {
-		return g_memdup (sig, sigsize);
+		ret = g_malloc (sigsize);
 	}
+	memcpy (ret, sig, sigsize);
+	return ret;
+}
+
+MonoMethodSignature*
+mono_metadata_signature_dup_full (MonoImage *image, MonoMethodSignature *sig)
+{
+	return mono_metadata_signature_dup_internal (image, NULL, sig);
+}
+
+MonoMethodSignature*
+mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	return mono_metadata_signature_dup_internal (NULL, mp, sig);
 }
 
 /*
@@ -4224,13 +4238,13 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 
 /**
  * mono_metadata_type_dup:
- * @mp: mempool to use
+ * @image: image to alloc memory from
  * @original: type to duplicate
  *
- * Returns: copy of type allocated from mempool (or from the heap, if @mp is null).
+ * Returns: copy of type allocated from the image's mempool (or from the heap, if @image is null).
  */
 MonoType *
-mono_metadata_type_dup (MonoMemPool *mp, const MonoType *o)
+mono_metadata_type_dup (MonoImage *image, const MonoType *o)
 {
 	MonoType *r = NULL;
 	int sizeof_o = sizeof (MonoType);
@@ -4238,18 +4252,18 @@ mono_metadata_type_dup (MonoMemPool *mp, const MonoType *o)
 		sizeof_o += (o->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
 
 	mono_loader_lock ();
-	r = mp ? mono_mempool_alloc0 (mp, sizeof_o) : g_malloc (sizeof_o);
+	r = image ? mono_image_alloc0 (image, sizeof_o) : g_malloc (sizeof_o);
 	mono_loader_unlock ();
 
 	memcpy (r, o, sizeof_o);
 
 	if (o->type == MONO_TYPE_PTR) {
-		r->data.type = mono_metadata_type_dup (mp, o->data.type);
+		r->data.type = mono_metadata_type_dup (image, o->data.type);
 	} else if (o->type == MONO_TYPE_ARRAY) {
-		r->data.array = mono_dup_array_type (mp, o->data.array);
+		r->data.array = mono_dup_array_type (image, o->data.array);
 	} else if (o->type == MONO_TYPE_FNPTR) {
 		/*FIXME the dup'ed signature is leaked mono_metadata_free_type*/
-		r->data.method = mono_metadata_signature_deep_dup (mp, o->data.method);
+		r->data.method = mono_metadata_signature_deep_dup (image, o->data.method);
 	}
 	return r;
 }

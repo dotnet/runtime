@@ -896,7 +896,7 @@ MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
 
 MonoType*
-mono_class_inflate_generic_type_with_mempool (MonoMemPool *mempool, MonoType *type, MonoGenericContext *context) MONO_INTERNAL;
+mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context) MONO_INTERNAL;
 
 MonoClass*
 mono_class_inflate_generic_class (MonoClass *gklass, MonoGenericContext *context) MONO_INTERNAL;
@@ -1068,8 +1068,8 @@ mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format) MONO_INTERNA
 char*
 mono_type_get_full_name (MonoClass *class) MONO_INTERNAL;
 
-MonoArrayType *mono_dup_array_type (MonoMemPool *mp, MonoArrayType *a) MONO_INTERNAL;
-MonoMethodSignature *mono_metadata_signature_deep_dup (MonoMemPool *mp, MonoMethodSignature *sig) MONO_INTERNAL;
+MonoArrayType *mono_dup_array_type (MonoImage *image, MonoArrayType *a) MONO_INTERNAL;
+MonoMethodSignature *mono_metadata_signature_deep_dup (MonoImage *image, MonoMethodSignature *sig) MONO_INTERNAL;
 
 void
 mono_image_init_name_cache (MonoImage *image);
