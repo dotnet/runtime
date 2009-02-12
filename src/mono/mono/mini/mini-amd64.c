@@ -5881,10 +5881,14 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					else
 						item->chunk_size += MOV_REG_IMM_SIZE + CMP_REG_REG_SIZE;
 				}
-				if (vtable_is_32bit)
-					item->chunk_size += MOV_REG_IMM_32BIT_SIZE;
-				else
+				if (fail_tramp) {
 					item->chunk_size += MOV_REG_IMM_SIZE;
+				} else {
+					if (vtable_is_32bit)
+						item->chunk_size += MOV_REG_IMM_32BIT_SIZE;
+					else
+						item->chunk_size += MOV_REG_IMM_SIZE;
+				}
 				item->chunk_size += BR_SMALL_SIZE + JUMP_REG_SIZE;
 			} else {
 				if (fail_tramp) {
