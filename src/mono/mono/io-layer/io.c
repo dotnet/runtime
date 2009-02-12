@@ -1895,6 +1895,10 @@ gboolean MoveFile (const gunichar2 *name, const gunichar2 *dest_name)
 	g_free (utf8_dest_name);
 
 	if (result != 0 && errno_copy == EXDEV) {
+		if (S_ISDIR (stat_src.st_mode)) {
+			SetLastError (ERROR_NOT_SAME_DEVICE);
+			return FALSE;
+		}
 		/* Try a copy to the new location, and delete the source */
 		if (CopyFile (name, dest_name, TRUE)==FALSE) {
 			/* CopyFile will set the error */
