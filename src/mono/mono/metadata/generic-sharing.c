@@ -118,7 +118,7 @@ mono_class_check_context_used (MonoClass *class)
  * Guards the two global rgctx (template) hash tables and all rgctx
  * templates.
  *
- * Ordering: The loader lock can be taken while the templates lock is
+ * Ordering: The templates lock can be taken while the loader lock is
  * held.
  */
 static CRITICAL_SECTION templates_mutex;
@@ -351,9 +351,6 @@ mono_class_unregister_image_generic_subclasses (MonoImage *image)
 	g_hash_table_destroy (old_hash);
 }
 
-/*
- * LOCKING: loader lock
- */
 static MonoRuntimeGenericContextTemplate*
 alloc_template (MonoClass *class)
 {
@@ -375,9 +372,6 @@ alloc_template (MonoClass *class)
 	return mono_image_alloc0 (class->image, size);
 }
 
-/*
- * LOCKING: loader lock
- */
 static MonoRuntimeGenericContextOtherInfoTemplate*
 alloc_oti (MonoImage *image)
 {
@@ -425,8 +419,6 @@ rgctx_template_set_other_slot (MonoImage *image, MonoRuntimeGenericContextTempla
 	g_assert (slot >= 0);
 	g_assert (data);
 
-	mono_loader_lock ();
-
 	i = 0;
 	while (i <= slot) {
 		if (i > 0)
@@ -435,8 +427,6 @@ rgctx_template_set_other_slot (MonoImage *image, MonoRuntimeGenericContextTempla
 			*oti = alloc_oti (image);
 		++i;
 	}
-
-	mono_loader_unlock ();
 
 	g_assert (!(*oti)->data);
 	(*oti)->data = data;
@@ -651,9 +641,7 @@ mono_class_get_runtime_generic_context_template (MonoClass *class)
 	else
 		inst = NULL;
 
-	mono_loader_lock ();
 	template = alloc_template (class);
-	mono_loader_unlock ();
 
 	templates_lock ();
 
