@@ -1184,6 +1184,10 @@ mono_release_type_locks (MonoThread *thread) MONO_INTERNAL;
 char *
 mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s) MONO_INTERNAL;
 
+char *
+mono_string_to_utf8_image (MonoImage *image, MonoString *s) MONO_INTERNAL;
+
+
 MonoArray*
 mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array) MONO_INTERNAL;
 

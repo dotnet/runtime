@@ -4733,6 +4733,46 @@ mono_string_from_utf16 (gunichar2 *data)
 	return mono_string_new_utf16 (domain, data, len);
 }
 
+
+static char *
+mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s)
+{
+	char *r;
+	char *mp_s;
+	int len;
+
+	if (!mp && !image)
+		return mono_string_to_utf8 (s);
+
+	r = mono_string_to_utf8 (s);
+	if (!r)
+		return NULL;
+
+	len = strlen (r) + 1;
+	if (mp)
+		mp_s = mono_mempool_alloc (mp, len);
+	else if (image)
+		mp_s = mono_image_alloc (image, len);
+
+	memcpy (mp_s, r, len);
+
+	g_free (r);
+
+	return mp_s;
+}
+
+/**
+ * mono_string_to_utf8_image:
+ * @s: a System.String
+ *
+ * Same as mono_string_to_utf8, but allocate the string from the image mempool.
+ */
+char *
+mono_string_to_utf8_image (MonoImage *image, MonoString *s)
+{
+	return mono_string_to_utf8_internal (NULL, image, s);
+}
+
 /**
  * mono_string_to_utf8_mp:
  * @s: a System.String
@@ -4742,20 +4782,7 @@ mono_string_from_utf16 (gunichar2 *data)
 char *
 mono_string_to_utf8_mp (MonoMemPool *mp, MonoString *s)
 {
-	char *r = mono_string_to_utf8 (s);
-	char *mp_s;
-	int len;
-
-	if (!r)
-		return NULL;
-
-	len = strlen (r) + 1;
-	mp_s = mono_mempool_alloc (mp, len);
-	memcpy (mp_s, r, len);
-
-	g_free (r);
-
-	return mp_s;
+	return mono_string_to_utf8_internal (mp, NULL, s);
 }
 
 static void
