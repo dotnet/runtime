@@ -10211,7 +10211,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
 			MonoReflectionTypeBuilder *subtb = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
 			mono_class_alloc_ext (klass);
-			klass->ext->nested_classes = g_list_prepend_mempool (klass->image->mempool, klass->ext->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
+			klass->ext->nested_classes = g_list_prepend_image (klass->image, klass->ext->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
 		}
 	}
 

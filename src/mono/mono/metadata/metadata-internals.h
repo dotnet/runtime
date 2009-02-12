@@ -249,7 +249,7 @@ struct _MonoImage {
 
 	/*
 	 * No other runtime locks must be taken while holding this lock.
-	 * It's meant to be used only to mutate a query structures part of this image.
+	 * It's meant to be used only to mutate and query structures part of this image.
 	 */
 	CRITICAL_SECTION    lock;
 };
@@ -379,6 +379,9 @@ mono_image_alloc0 (MonoImage *image, guint size) MONO_INTERNAL;
 
 char*
 mono_image_strdup (MonoImage *image, const char *s) MONO_INTERNAL;
+
+GList*
+g_list_prepend_image (MonoImage *image, GList *list, gpointer data) MONO_INTERNAL;
 
 void
 mono_image_lock (MonoImage *image) MONO_INTERNAL;

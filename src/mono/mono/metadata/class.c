@@ -682,18 +682,18 @@ mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
 }
 
 /*
- * mono_class_inflate_generic_type_with_mempool_no_copy:
+ * mono_class_inflate_generic_type_no_copy:
  *
  *   Same as inflate_generic_type_with_mempool, but return TYPE if no inflation
  * was done.
  */
 static MonoType*
-mono_class_inflate_generic_type_with_mempool_no_copy (MonoMemPool *mempool, MonoType *type, MonoGenericContext *context)
+mono_class_inflate_generic_type_no_copy (MonoImage *image, MonoType *type, MonoGenericContext *context)
 {
 	MonoType *inflated = NULL; 
 
 	if (context)
-		inflated = inflate_generic_type (mempool, type, context);
+		inflated = inflate_generic_type (image->mempool, type, context);
 
 	if (!inflated)
 		return type;
@@ -1157,7 +1157,7 @@ mono_class_setup_fields (MonoClass *class)
 
 			field->name = mono_field_get_name (gfield);
 			/*This memory must come from the image mempool as we don't have a chance to free it.*/
-			field->type = mono_class_inflate_generic_type_with_mempool_no_copy (class->image->mempool, gfield->type, mono_class_get_context (class));
+			field->type = mono_class_inflate_generic_type_no_copy (class->image, gfield->type, mono_class_get_context (class));
 			g_assert (field->type->attrs == gfield->type->attrs);
 			if (mono_field_is_deleted (field))
 				continue;
@@ -3526,16 +3526,6 @@ initialize_object_slots (MonoClass *class)
 		g_assert (finalize_slot > 0);
 		default_finalize = class->vtable [finalize_slot];
 	}
-}
-
-static GList*
-g_list_prepend_mempool (GList* l, MonoMemPool* mp, gpointer datum)
-{
-	GList* n = mono_mempool_alloc (mp, sizeof (GList));
-	n->next = l;
-	n->prev = NULL;
-	n->data = datum;
-	return n;
 }
 
 typedef struct {
@@ -6822,7 +6812,7 @@ mono_class_get_nested_types (MonoClass* klass, gpointer *iter)
 				mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
 				nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED]);
 				mono_class_alloc_ext (klass);
-				klass->ext->nested_classes = g_list_prepend_mempool (klass->ext->nested_classes, klass->image->mempool, nclass);
+				klass->ext->nested_classes = g_list_prepend_image (klass->image, klass->ext->nested_classes, nclass);
 
 				i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
 			}

@@ -2008,6 +2008,23 @@ mono_image_strdup (MonoImage *image, const char *s)
 	return mono_mempool_strdup (image->mempool, s);
 }
 
+GList*
+g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
+{
+	GList *new_list;
+	
+	new_list = mono_mempool_alloc (image->mempool, sizeof (GList));
+	new_list->data = data;
+	new_list->prev = list ? list->prev : NULL;
+    new_list->next = list;
+
+    if (new_list->prev)
+            new_list->prev->next = new_list;
+    if (list)
+            list->prev = new_list;
+
+	return new_list;
+}
 void
 mono_image_lock (MonoImage *image)
 {
