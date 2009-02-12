@@ -3900,9 +3900,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	/* try */
 
-	mono_loader_lock ();
 	main_clause = mono_image_alloc0 (method->klass->image, sizeof (MonoExceptionClause));
-	mono_loader_unlock ();
 	main_clause->try_offset = mono_mb_get_label (mb);
 
 	/* Clean the call context */
@@ -5186,9 +5184,7 @@ handle_enum:
        		
 	pos = mono_mb_emit_branch (mb, CEE_LEAVE);
 
-	mono_loader_lock ();
 	clause = mono_image_alloc0 (target_klass->image, sizeof (MonoExceptionClause));
-	mono_loader_unlock ();
 	clause->flags = MONO_EXCEPTION_CLAUSE_FILTER;
 	clause->try_len = mono_mb_get_label (mb);
 
@@ -9983,9 +9979,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	/* this */
 	this_local = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
-	mono_loader_lock ();
 	clause = mono_image_alloc0 (method->klass->image, sizeof (MonoExceptionClause));
-	mono_loader_unlock ();
 	clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
 
 	mono_loader_lock ();
@@ -12235,9 +12229,7 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 
 	if (!ccw_entry) {
 		int vtable_index = method_count-1+start_slot;
-		mono_loader_lock ();
 		vtable = mono_image_alloc0 (klass->image, sizeof (gpointer)*(method_count+start_slot));
-		mono_loader_unlock ();
 		memcpy (vtable, iunknown, sizeof (iunknown));
 		if (start_slot == 7)
 			memcpy (vtable+3, idispatch, sizeof (idispatch));
@@ -12813,9 +12805,7 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 
 	/* try */
-	mono_loader_lock ();
 	clause = mono_image_alloc0 (image, sizeof (MonoExceptionClause));
-	mono_loader_unlock ();
 	clause->try_offset = mono_mb_get_label (mb);
 
 	/* push method's args */

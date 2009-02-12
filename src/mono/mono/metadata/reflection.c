@@ -1169,7 +1169,6 @@ mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArr
 	ainfo->num_attrs = count;
 	ainfo->cached = alloc_img != NULL;
 	index = 0;
-	mono_loader_lock ();
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		if (custom_attr_visible (image, cattr)) {
@@ -1181,7 +1180,6 @@ mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArr
 			index ++;
 		}
 	}
-	mono_loader_unlock ();
 
 	return ainfo;
 }

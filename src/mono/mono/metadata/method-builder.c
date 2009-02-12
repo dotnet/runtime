@@ -139,7 +139,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	image = mb->method->klass->image;
 
-	mono_loader_lock ();
+	mono_loader_lock (); /*FIXME I think this lock can go.*/
 	if (mb->dynamic) {
 		method = mb->method;
 

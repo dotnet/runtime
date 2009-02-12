@@ -184,13 +184,11 @@ MonoArrayType *
 mono_dup_array_type (MonoImage *image, MonoArrayType *a)
 {
 	if (image) {
-		mono_loader_lock ();
 		a = mono_image_memdup (image, a, sizeof (MonoArrayType));
 		if (a->sizes)
 			a->sizes = mono_image_memdup (image, a->sizes, a->numsizes * sizeof (int));
 		if (a->lobounds)
 			a->lobounds = mono_image_memdup (image, a->lobounds, a->numlobounds * sizeof (int));
-		mono_loader_unlock ();		
 	} else {
 		a = g_memdup (a, sizeof (MonoArrayType));
 		if (a->sizes)

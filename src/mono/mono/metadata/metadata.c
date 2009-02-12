@@ -1797,13 +1797,9 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMet
 	sigsize = sizeof (MonoMethodSignature) + (sig->param_count - MONO_ZERO_LEN_ARRAY) * sizeof (MonoType *);
 
 	if (image) {
-		mono_loader_lock ();
 		ret = mono_image_alloc (image, sigsize);
-		mono_loader_unlock ();
 	} else if (mp) {
-		mono_loader_lock ();
 		ret = mono_mempool_alloc (mp, sigsize);
-		mono_loader_unlock ();
 	} else {
 		ret = g_malloc (sigsize);
 	}
@@ -1817,6 +1813,7 @@ mono_metadata_signature_dup_full (MonoImage *image, MonoMethodSignature *sig)
 	return mono_metadata_signature_dup_internal (image, NULL, sig);
 }
 
+/*The mempool is accessed without synchronization*/
 MonoMethodSignature*
 mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig)
 {
@@ -4216,9 +4213,7 @@ mono_metadata_type_dup (MonoImage *image, const MonoType *o)
 	if (o->num_mods)
 		sizeof_o += (o->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
 
-	mono_loader_lock ();
 	r = image ? mono_image_alloc0 (image, sizeof_o) : g_malloc (sizeof_o);
-	mono_loader_unlock ();
 
 	memcpy (r, o, sizeof_o);
 
