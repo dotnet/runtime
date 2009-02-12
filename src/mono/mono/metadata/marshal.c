@@ -495,24 +495,39 @@ cominterop_com_visible (MonoClass* klass)
 {
 	static MonoClass *ComVisibleAttribute = NULL;
 	MonoCustomAttrInfo *cinfo;
+	GPtrArray *ifaces;
+	MonoBoolean visible = 0;
 
 	/* Handle the ComVisibleAttribute */
 	if (!ComVisibleAttribute)
 		ComVisibleAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "ComVisibleAttribute");
 
-	cinfo = mono_custom_attrs_from_class (klass);	
+	cinfo = mono_custom_attrs_from_class (klass);
 	if (cinfo) {
 		MonoReflectionComVisibleAttribute *attr = (MonoReflectionComVisibleAttribute*)mono_custom_attrs_get_attr (cinfo, ComVisibleAttribute);
 
-		if (!attr)
-			return FALSE;
+		if (attr)
+			visible = attr->visible;
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
-
-		if (attr->visible)
+		if (visible)
 			return TRUE;
 	}
-	return FALSE;
+
+	ifaces = mono_class_get_implemented_interfaces (klass);
+	if (ifaces) {
+		int i;
+		for (i = 0; i < ifaces->len; ++i) {
+			MonoClass *ic = NULL;
+			ic = g_ptr_array_index (ifaces, i);
+			if (MONO_CLASS_IS_IMPORT (ic))
+				visible = TRUE;
+
+		}
+		g_ptr_array_free (ifaces, TRUE);
+	}
+	return visible;
+
 }
 
 static void cominterop_raise_hr_exception (int hr)
@@ -3296,6 +3311,10 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 				mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 				mspecs[mspec_index]->native = MONO_NATIVE_INTERFACE;
 			}
+			else if (sig_native->params[i]->type == MONO_NATIVE_BOOLEAN) {
+				mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
+				mspecs[mspec_index]->native = MONO_NATIVE_VARIANTBOOL;
+			}
 		}
 	}
 
@@ -3314,6 +3333,10 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 			else if (sig->ret->type == MONO_TYPE_CLASS) {
 				mspecs[0] = g_new0 (MonoMarshalSpec, 1);
 				mspecs[0]->native = MONO_NATIVE_INTERFACE;
+			}
+			else if (sig->ret->type == MONO_NATIVE_BOOLEAN) {
+				mspecs[0] = g_new0 (MonoMarshalSpec, 1);
+				mspecs[0]->native = MONO_NATIVE_VARIANTBOOL;
 			}
 		}
 	}
@@ -8489,6 +8512,70 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_stloc (mb, 3);
 		break;
 
+	case MARSHAL_ACTION_MANAGED_CONV_IN: {
+		gint variant_bool = 0;
+		guint8 ldop = CEE_LDIND_I4;
+		if (!t->byref)
+			break;
+
+		conv_arg = mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
+
+		*conv_arg_type = &mono_defaults.int32_class->byval_arg;
+
+		if (spec) {
+			switch (spec->native) {
+			case MONO_NATIVE_I1:
+			case MONO_NATIVE_U1:
+				*conv_arg_type = &mono_defaults.byte_class->this_arg;
+				ldop = CEE_LDIND_I1;
+				break;
+			case MONO_NATIVE_VARIANTBOOL:
+				*conv_arg_type = &mono_defaults.int16_class->this_arg;
+				variant_bool = 1;
+				ldop = CEE_LDIND_I2;
+				break;
+			case MONO_NATIVE_BOOLEAN:
+				break;
+			default:
+				g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
+			}
+		}
+		
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_byte (mb, ldop);	
+
+		if (variant_bool)
+			mono_mb_emit_byte (mb, CEE_NEG);
+		mono_mb_emit_stloc (mb, conv_arg);
+		break;
+	}
+
+	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
+		guint8 stop = CEE_STIND_I4;
+		if (!t->byref)
+			break;
+		if (spec) {
+			switch (spec->native) {
+			case MONO_NATIVE_I1:
+			case MONO_NATIVE_U1:
+				stop = CEE_STIND_I1;
+				break;
+			case MONO_NATIVE_VARIANTBOOL:
+				stop = CEE_STIND_I2;
+				break;
+			default:
+				break;
+			}
+		}
+
+		mono_mb_emit_ldarg (mb, argnum);
+		mono_mb_emit_ldloc (mb, conv_arg);
+		if (spec != NULL && spec->native == MONO_NATIVE_VARIANTBOOL)
+			mono_mb_emit_byte (mb, CEE_NEG);
+		mono_mb_emit_byte (mb, stop);
+		break;
+	}
+
 	default:
 		g_assert_not_reached ();
 	}
@@ -9113,6 +9200,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_STRING:
+		case MONO_TYPE_BOOLEAN:
 			tmp_locals [i] = emit_marshal (m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
 
 			break;
@@ -9207,6 +9295,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			case MONO_TYPE_VALUETYPE:
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_STRING:
+			case MONO_TYPE_BOOLEAN:
 				emit_marshal (m, i, t, mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			}
@@ -12191,6 +12280,10 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[mspec_index]->native = MONO_NATIVE_INTERFACE;
 					}
+					else if (sig_adjusted->params[param_index]->type == MONO_NATIVE_BOOLEAN) {
+						mspecs[mspec_index] = g_new0 (MonoMarshalSpec, 1);
+						mspecs[mspec_index]->native = MONO_NATIVE_VARIANTBOOL;
+					}
 				}
 			}
 
@@ -12211,6 +12304,10 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_TYPE_CLASS) {
 						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
 						mspecs[0]->native = MONO_NATIVE_INTERFACE;
+					}
+					else if (sig_adjusted->params[sig_adjusted->param_count-1]->type == MONO_NATIVE_BOOLEAN) {
+						mspecs[0] = g_new0 (MonoMarshalSpec, 1);
+						mspecs[0]->native = MONO_NATIVE_VARIANTBOOL;
 					}
 				}
 
