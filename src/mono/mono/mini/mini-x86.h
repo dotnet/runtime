@@ -136,7 +136,10 @@ struct MonoLMF {
 	guint32     eip;
 };
 
-typedef void* MonoCompileArch;
+typedef struct {
+	gboolean need_stack_frame_inited;
+	gboolean need_stack_frame;
+} MonoCompileArch;
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
 #include <ucontext.h>

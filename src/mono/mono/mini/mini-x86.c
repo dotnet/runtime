@@ -837,7 +837,73 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 		/* push+pop+possible load if it is an argument */
 		return (ins->opcode == OP_ARG) ? 3 : 2;
 }
- 
+
+static void
+set_needs_stack_frame (MonoCompile *cfg, gboolean flag)
+{
+	static int inited = FALSE;
+	static int count = 0;
+
+	if (cfg->arch.need_stack_frame_inited) {
+		g_assert (cfg->arch.need_stack_frame == flag);
+		return;
+	}
+
+	cfg->arch.need_stack_frame = flag;
+	cfg->arch.need_stack_frame_inited = TRUE;
+
+	if (flag)
+		return;
+
+	if (!inited) {
+		mono_counters_register ("Could eliminate stack frame", MONO_COUNTER_INT|MONO_COUNTER_JIT, &count);
+		inited = TRUE;
+	}
+	++count;
+
+	//g_print ("will eliminate %s.%s.%s\n", cfg->method->klass->name_space, cfg->method->klass->name, cfg->method->name);
+}
+
+static gboolean
+needs_stack_frame (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+	MonoMethodHeader *header;
+	gboolean result = FALSE;
+
+	if (cfg->arch.need_stack_frame_inited)
+		return cfg->arch.need_stack_frame;
+
+	header = mono_method_get_header (cfg->method);
+	sig = mono_method_signature (cfg->method);
+
+	if (cfg->disable_omit_fp)
+		result = TRUE;
+	else if (cfg->flags & MONO_CFG_HAS_ALLOCA)
+		result = TRUE;
+	else if (cfg->method->save_lmf)
+		result = TRUE;
+	else if (cfg->stack_offset)
+		result = TRUE;
+	else if (cfg->param_area)
+		result = TRUE;
+	else if (cfg->flags & (MONO_CFG_HAS_CALLS | MONO_CFG_HAS_ALLOCA | MONO_CFG_HAS_TAIL))
+		result = TRUE;
+	else if (header->num_clauses)
+		result = TRUE;
+	else if (sig->param_count + sig->hasthis)
+		result = TRUE;
+	else if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
+		result = TRUE;
+	else if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
+		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
+		result = TRUE;
+
+	set_needs_stack_frame (cfg, result);
+
+	return cfg->arch.need_stack_frame;
+}
+
 /*
  * Set var information according to the calling convention. X86 version.
  * The locals var stuff should most likely be split in another method.
@@ -969,9 +1035,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 		inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 	}
-
-	offset += (MONO_ARCH_FRAME_ALIGNMENT - 1);
-	offset &= ~(MONO_ARCH_FRAME_ALIGNMENT - 1);
 
 	cfg->stack_offset = offset;
 }
@@ -4267,6 +4330,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoInst *inst;
 	int alloc_size, pos, max_offset, i, cfa_offset;
 	guint8 *code;
+	gboolean need_stack_frame;
 
 	cfg->code_size = MAX (mono_method_get_header (method)->code_size * 4, 10240);
 
@@ -4285,12 +4349,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* There is no IP reg on x86 */
 	mono_emit_unwind_op_offset (cfg, code, X86_NREG, -cfa_offset);
 
-	x86_push_reg (code, X86_EBP);
-	cfa_offset += sizeof (gpointer);
-	mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
-	mono_emit_unwind_op_offset (cfg, code, X86_EBP, - cfa_offset);
-	x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
-	mono_emit_unwind_op_def_cfa_reg (cfg, code, X86_EBP);
+	need_stack_frame = needs_stack_frame (cfg);
+
+	if (need_stack_frame) {
+		x86_push_reg (code, X86_EBP);
+		cfa_offset += sizeof (gpointer);
+		mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+		mono_emit_unwind_op_offset (cfg, code, X86_EBP, - cfa_offset);
+		x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
+		mono_emit_unwind_op_def_cfa_reg (cfg, code, X86_EBP);
+	}
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
@@ -4419,10 +4487,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	alloc_size -= pos;
 
 	/* the original alloc_size is already aligned: there is %ebp and retip pushed, so realign */
-	if (mono_do_x86_stack_align) {
-		int tot = alloc_size + pos + 4 + 4; /* ret ip + ebp */
+	if (mono_do_x86_stack_align && need_stack_frame) {
+		int tot = alloc_size + pos + 4; /* ret ip */
+		if (need_stack_frame)
+			tot += 4; /* ebp */
 		tot &= MONO_ARCH_FRAME_ALIGNMENT - 1;
-		alloc_size += MONO_ARCH_FRAME_ALIGNMENT - tot;
+		if (tot)
+			alloc_size += MONO_ARCH_FRAME_ALIGNMENT - tot;
 	}
 
 	if (alloc_size) {
@@ -4439,6 +4510,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #else
 		x86_alu_reg_imm (code, X86_SUB, X86_ESP, alloc_size);
 #endif
+
+		g_assert (need_stack_frame);
 	}
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED ||
@@ -4448,7 +4521,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 #if DEBUG_STACK_ALIGNMENT
 	/* check the stack is aligned */
-	if (method->wrapper_type == MONO_WRAPPER_NONE) {
+	if (need_stack_frame && method->wrapper_type == MONO_WRAPPER_NONE) {
 		x86_mov_reg_reg (code, X86_ECX, X86_ESP, 4);
 		x86_alu_reg_imm (code, X86_AND, X86_ECX, MONO_ARCH_FRAME_ALIGNMENT - 1);
 		x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
@@ -4496,6 +4569,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		inst = cfg->args [pos];
 		if (inst->opcode == OP_REGVAR) {
+			g_assert (need_stack_frame);
 			x86_mov_reg_membase (code, inst->dreg, X86_EBP, inst->inst_offset, 4);
 			if (cfg->verbose_level > 2)
 				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
@@ -4520,7 +4594,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	guint8 *code;
 	int max_epilog_size = 16;
 	CallInfo *cinfo;
-	
+	gboolean need_stack_frame = needs_stack_frame (cfg);
+
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
 
@@ -4617,8 +4692,10 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			pos -= 4;
 		}
 
-		if (pos)
+		if (pos) {
+			g_assert (need_stack_frame);
 			x86_lea_membase (code, X86_ESP, X86_EBP, pos);
+		}
 
 		if (cfg->used_int_regs & (1 << X86_ESI)) {
 			x86_pop_reg (code, X86_ESI);
@@ -4653,7 +4730,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 	}
 
-	x86_leave (code);
+	if (need_stack_frame)
+		x86_leave (code);
 
 	if (CALLCONV_IS_STDCALL (sig)) {
 		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
@@ -4664,10 +4742,12 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	else
 		stack_to_pop = 0;
 
-	if (stack_to_pop)
+	if (stack_to_pop) {
+		g_assert (need_stack_frame);
 		x86_ret_imm (code, stack_to_pop);
-	else
+	} else {
 		x86_ret (code);
+	}
 
 	cfg->code_len = code - cfg->native_code;
 
