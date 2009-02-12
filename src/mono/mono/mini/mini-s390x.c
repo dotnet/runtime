@@ -2833,8 +2833,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LCONV_TO_U2: {
 			s390_lghi (code, s390_r0, -1);
-			s390_sllg (code, s390_r0, s390_r0, 0, 16);
-			s390_srlg (code, s390_r0, s390_r0, 0, 16);
+			s390_sllg (code, s390_r0, s390_r0, 0, 48);
+			s390_srlg (code, s390_r0, s390_r0, 0, 48);
 			if (ins->dreg != ins->sreg1) {
 				s390_lgr  (code, ins->dreg, ins->sreg1);
 			}

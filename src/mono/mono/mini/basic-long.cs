@@ -1202,5 +1202,13 @@ class Tests {
 			return (i == 0xdeadbeaf) ? 0 : 1;
 		}
 	}
+
+	public static int test_0_lconv_to_u2 () {
+		unchecked { 
+			ulong value = (ulong)(short)-10;
+			value = (ushort)value;
+		    return (value == 65526) ? 0 : 1;
+		}
+	}
 }
 
