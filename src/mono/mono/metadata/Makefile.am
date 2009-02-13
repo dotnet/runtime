@@ -62,6 +62,8 @@ libmonoruntime_la_SOURCES = \
 	method-builder.c \
 	marshal.c	\
 	marshal.h	\
+	cominterop.c	\
+	cominterop.h	\
 	mono-mlist.c	\
 	mono-mlist.h	\
 	monitor.c	\
