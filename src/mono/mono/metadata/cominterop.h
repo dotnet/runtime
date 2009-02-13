@@ -40,4 +40,10 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 											int conv_arg, MonoType **conv_arg_type, 
 											MarshalAction action) MONO_INTERNAL;
 
+MonoString * 
+mono_string_from_bstr (gpointer bstr);
+
+void 
+mono_free_bstr (gpointer bstr);
+
 #endif /* __MONO_COMINTEROP_H__ */

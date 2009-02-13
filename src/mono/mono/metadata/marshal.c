@@ -50,13 +50,6 @@ typedef enum {
 	MONO_MARSHAL_SERIALIZE		/* Value needs to be serialized into the new domain */
 } MonoXDomainMarshalType;
 
-typedef enum {
-	MONO_COM_DEFAULT,
-	MONO_COM_MS
-} MonoCOMProvider;
-
-static MonoCOMProvider com_provider = MONO_COM_DEFAULT;
-
 enum {
 #include "mono/cil/opcode.def"
 	LAST = 0xff
@@ -103,12 +96,6 @@ mono_marshal_string_to_utf16_copy (MonoString *s);
 
 static gpointer
 mono_string_to_lpstr (MonoString *string_obj);
-
-static MonoString * 
-mono_string_from_bstr (gpointer bstr);
-
-static void 
-mono_free_bstr (gpointer bstr);
 
 static MonoStringBuilder *
 mono_string_utf8_to_builder2 (char *text);
@@ -217,9 +204,6 @@ mono_marshal_init (void)
 		register_icall (mono_string_new_wrapper, "mono_string_new_wrapper", "obj ptr", FALSE);
 		register_icall (mono_string_to_utf8, "mono_string_to_utf8", "ptr obj", FALSE);
 		register_icall (mono_string_to_lpstr, "mono_string_to_lpstr", "ptr obj", FALSE);
-		register_icall (mono_string_to_bstr, "mono_string_to_bstr", "ptr obj", FALSE);
-		register_icall (mono_string_from_bstr, "mono_string_from_bstr", "obj ptr", FALSE);
-		register_icall (mono_free_bstr, "mono_free_bstr", "void ptr", FALSE);
 		register_icall (mono_string_to_ansibstr, "mono_string_to_ansibstr", "ptr object", FALSE);
 		register_icall (mono_string_builder_to_utf8, "mono_string_builder_to_utf8", "ptr object", FALSE);
 		register_icall (mono_string_builder_to_utf16, "mono_string_builder_to_utf16", "ptr object", FALSE);
@@ -767,137 +751,6 @@ mono_string_to_ansibstr (MonoString *string_obj)
 {
 	g_error ("UnmanagedMarshal.BStr is not implemented.");
 	return NULL;
-}
-
-typedef gpointer (*SysAllocStringLenFunc)(gunichar* str, guint32 len);
-typedef guint32 (*SysStringLenFunc)(gpointer bstr);
-typedef void (*SysFreeStringFunc)(gunichar* str);
-
-static SysAllocStringLenFunc sys_alloc_string_len_ms = NULL;
-static SysStringLenFunc sys_string_len_ms = NULL;
-static SysFreeStringFunc sys_free_string_ms = NULL;
-
-static gboolean
-init_com_provider_ms (void)
-{
-	static gboolean initialized = FALSE;
-	char *error_msg;
-	MonoDl *module = NULL;
-	const char* scope = "liboleaut32.so";
-
-	if (initialized)
-		return TRUE;
-
-	module = mono_dl_open(scope, MONO_DL_LAZY, &error_msg);
-	if (error_msg) {
-		g_warning ("Error loading COM support library '%s': %s", scope, error_msg);
-		g_assert_not_reached ();
-		return FALSE;
-	}
-	error_msg = mono_dl_symbol (module, "SysAllocStringLen", (gpointer*)&sys_alloc_string_len_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysAllocStringLen", scope, error_msg);
-		g_assert_not_reached ();
-		return FALSE;
-	}
-
-	error_msg = mono_dl_symbol (module, "SysStringLen", (gpointer*)&sys_string_len_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysStringLen", scope, error_msg);
-		g_assert_not_reached ();
-		return FALSE;
-	}
-
-	error_msg = mono_dl_symbol (module, "SysFreeString", (gpointer*)&sys_free_string_ms);
-	if (error_msg) {
-		g_warning ("Error loading entry point '%s' in COM support library '%s': %s", "SysFreeString", scope, error_msg);
-		g_assert_not_reached ();
-		return FALSE;
-	}
-
-	initialized = TRUE;
-	return TRUE;
-}
-
-gpointer
-mono_string_to_bstr (MonoString *string_obj)
-{
-	if (!string_obj)
-		return NULL;
-#ifdef PLATFORM_WIN32
-	return SysAllocStringLen (mono_string_chars (string_obj), mono_string_length (string_obj));
-#else
-	if (com_provider == MONO_COM_DEFAULT) {
-		int slen = mono_string_length (string_obj);
-		/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-		char *ret = g_malloc ((slen + 1) * sizeof(gunichar2) + sizeof(guint32));
-		if (ret == NULL)
-			return NULL;
-		memcpy (ret + sizeof(guint32), mono_string_chars (string_obj), slen * sizeof(gunichar2));
-		* ((guint32 *) ret) = slen * sizeof(gunichar2);
-		ret [4 + slen * sizeof(gunichar2)] = 0;
-		ret [5 + slen * sizeof(gunichar2)] = 0;
-
-		return ret + 4;
-	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
-		gpointer ret = NULL;
-		gunichar* str = NULL;
-		guint32 len;
-		len = mono_string_length (string_obj);
-		str = g_utf16_to_ucs4 (mono_string_chars (string_obj), len,
-			NULL, NULL, NULL);
-		ret = sys_alloc_string_len_ms (str, len);
-		g_free(str);
-		return ret;
-	} else {
-		g_assert_not_reached ();
-	}
-#endif
-}
-
-MonoString *
-mono_string_from_bstr (gpointer bstr)
-{
-	if (!bstr)
-		return NULL;
-#ifdef PLATFORM_WIN32
-	return mono_string_new_utf16 (mono_domain_get (), bstr, SysStringLen (bstr));
-#else
-	if (com_provider == MONO_COM_DEFAULT) {
-		return mono_string_new_utf16 (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof(gunichar2));
-	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
-		MonoString* str = NULL;
-		glong written = 0;
-		gunichar2* utf16 = NULL;
-
-		utf16 = g_ucs4_to_utf16 (bstr, sys_string_len_ms (bstr), NULL, &written, NULL);
-		str = mono_string_new_utf16 (mono_domain_get (), utf16, written);
-		g_free (utf16);
-		return str;
-	} else {
-		g_assert_not_reached ();
-	}
-
-#endif
-}
-
-void
-mono_free_bstr (gpointer bstr)
-{
-	if (!bstr)
-		return;
-#ifdef PLATFORM_WIN32
-	SysFreeString ((BSTR)bstr);
-#else
-	if (com_provider == MONO_COM_DEFAULT) {
-		g_free (((char *)bstr) - 4);
-	} else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
-		sys_free_string_ms (bstr);
-	} else {
-		g_assert_not_reached ();
-	}
-
-#endif
 }
 
 /**
@@ -9471,30 +9324,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *pt
 	} else {
 		return mono_string_new_utf16 (domain, ptr, len);
 	}
-}
-
-MonoString *
-ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (gpointer ptr)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return mono_string_from_bstr(ptr);
-}
-
-gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString* ptr)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return mono_string_to_bstr(ptr);
-}
-
-void
-ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (gpointer ptr)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	mono_free_bstr (ptr);
 }
 
 guint32 
