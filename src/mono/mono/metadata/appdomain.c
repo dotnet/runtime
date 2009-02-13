@@ -719,10 +719,6 @@ mono_set_private_bin_path_from_config (MonoDomain *domain)
 		return;
 
 	config_file = mono_string_to_utf8 (domain->setup->configuration_file);
-	if (stat (config_file, &sbuf) != 0) {
-		g_free (config_file);
-		return;
-	}
 
 	if (!g_file_get_contents (config_file, &text, &len, NULL)) {
 		g_free (config_file);

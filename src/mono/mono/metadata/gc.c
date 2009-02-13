@@ -155,6 +155,7 @@ run_finalize (void *obj, void *data)
 
 	finalizer = mono_class_get_finalizer (o->vtable->klass);
 
+#ifndef DISABLE_COM
 	/* If object has a CCW but has no finalizer, it was only
 	 * registered for finalization in order to free the CCW.
 	 * Else it needs the regular finalizer run.
@@ -163,7 +164,8 @@ run_finalize (void *obj, void *data)
 	 */
 	if (mono_marshal_free_ccw (o) && !finalizer)
 		return;
-
+#endif
+	
 	mono_runtime_invoke (finalizer, o, NULL, &exc);
 
 	if (exc) {

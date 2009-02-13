@@ -6370,6 +6370,16 @@ ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxy *tp)
 
 /* System.Environment */
 
+MonoString*
+ves_icall_System_Environment_get_UserName (void)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	/* using glib is more portable */
+	return mono_string_new (mono_domain_get (), g_get_user_name ());
+}
+
+
 static MonoString *
 ves_icall_System_Environment_get_MachineName (void)
 {
@@ -6936,6 +6946,7 @@ ves_icall_System_IO_get_temp_path (void)
 	return mono_string_new (mono_domain_get (), g_get_tmp_dir ());
 }
 
+#ifndef PLATFORM_NO_DRIVEINFO
 static MonoBoolean
 ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (MonoString *path_name, guint64 *free_bytes_avail,
 						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
@@ -6973,6 +6984,7 @@ ves_icall_System_IO_DriveInfo_GetDriveType (MonoString *root_path_name)
 
 	return GetDriveType (mono_string_chars (root_path_name));
 }
+#endif
 
 static gpointer
 ves_icall_RuntimeMethod_GetFunctionPointer (MonoMethod *method)
