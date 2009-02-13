@@ -2213,7 +2213,6 @@ app_config_parse (const char *exe_filename)
 	GMarkupParseContext *context;
 	char *text;
 	gsize len;
-	struct stat buf;
 	const char *bundled_config;
 	char *config_filename;
 
@@ -2225,11 +2224,6 @@ app_config_parse (const char *exe_filename)
 	} else {
 		config_filename = g_strconcat (exe_filename, ".config", NULL);
 
-		if (stat (config_filename, &buf) != 0) {
-			g_free (config_filename);
-			return NULL;
-		}
-	
 		if (!g_file_get_contents (config_filename, &text, &len, NULL)) {
 			g_free (config_filename);
 			return NULL;
