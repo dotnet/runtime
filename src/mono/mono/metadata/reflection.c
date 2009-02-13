@@ -10479,13 +10479,13 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 
 	mono_loader_lock ();
 	obj = mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
+	mono_loader_unlock ();
 	if (!obj) {
 		if (valid_token)
 			g_assert_not_reached ();
 		else
 			return NULL;
 	}
-	mono_loader_unlock ();
 
 	if (!handle_class)
 		handle_class = &klass;
