@@ -125,12 +125,6 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf);
 static MonoObject*
 cominterop_get_ccw_object (MonoCCWInterface* ccw_entry, gboolean verify);
 
-MonoString * 
-mono_string_from_bstr (gpointer bstr);
-
-void 
-mono_free_bstr (gpointer bstr);
-
 /**
  * cominterop_method_signature:
  * @method: a method
@@ -2498,6 +2492,26 @@ gboolean
 mono_marshal_free_ccw (MonoObject* object)
 {
 	return FALSE;
+}
+
+gpointer
+mono_string_to_bstr (MonoString *string_obj)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoString *
+mono_string_from_bstr (gpointer bstr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void
+mono_free_bstr (gpointer bstr)
+{
+	g_assert_not_reached ();
 }
 
 #endif /* DISABLE_COM */
