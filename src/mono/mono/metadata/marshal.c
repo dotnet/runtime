@@ -82,11 +82,6 @@ typedef struct _MonoRemotingMethods MonoRemotingMethods;
 #define mono_marshal_unlock() LeaveCriticalSection (&marshal_mutex)
 static CRITICAL_SECTION marshal_mutex;
 
-/* This mutex protects the various cominterop related caches in MonoImage */
-#define mono_cominterop_lock() EnterCriticalSection (&cominterop_mutex)
-#define mono_cominterop_unlock() LeaveCriticalSection (&cominterop_mutex)
-static CRITICAL_SECTION cominterop_mutex;
-
 static guint32 last_error_tls_id;
 
 static guint32 load_type_info_tls_id;
@@ -209,16 +204,10 @@ mono_marshal_init (void)
 	static gboolean module_initialized = FALSE;
 
 	if (!module_initialized) {
-		char* com_provider_env = NULL;
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
-		InitializeCriticalSection (&cominterop_mutex);
 		last_error_tls_id = TlsAlloc ();
 		load_type_info_tls_id = TlsAlloc ();
-
-		com_provider_env = getenv ("MONO_COM");
-		if (com_provider_env && !strcmp(com_provider_env, "MS"))
-			com_provider = MONO_COM_MS;
 
 		register_icall (ves_icall_System_Threading_Thread_ResetAbort, "ves_icall_System_Threading_Thread_ResetAbort", "void", TRUE);
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);
@@ -281,7 +270,6 @@ mono_marshal_cleanup (void)
 	TlsFree (load_type_info_tls_id);
 	TlsFree (last_error_tls_id);
 	DeleteCriticalSection (&marshal_mutex);
-	DeleteCriticalSection (&cominterop_mutex);
 }
 
 MonoClass *byte_array_class;
