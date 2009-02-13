@@ -9,6 +9,9 @@
 
 #include <config.h>
 #include <string.h>
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 
 #ifdef _MSC_VER
 #include <glib.h>
