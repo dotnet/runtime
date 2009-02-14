@@ -545,6 +545,19 @@ class Tests {
 
 		return 0;
 	}
+
+	public static int long_indices () {
+		int[] arr = new int [10];
+		int[,] arr2 = new int [10, 10];
+		long index = 1;
+		arr [index] = 5;
+		if (arr [index] != 5)
+			return 1;
+		arr2 [index, index] = 5;
+		if (arr2 [index, index] != 5)
+			return 2;
+		return 0;
+	}
 }
 
 
