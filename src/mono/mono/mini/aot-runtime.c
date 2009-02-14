@@ -2189,8 +2189,8 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 			// FIXME: Avoid fully decoding the method ref
 			p = amodule->extra_method_info + key;
 			is_wrapper = decode_value (p, &p);
-			if (method->wrapper_type && is_wrapper) {
-				if (!strcmp (full_name, (char*)p))
+			if (is_wrapper) {
+				if (full_name && !strcmp (full_name, (char*)p))
 					return value;
 			} else {
 				m = decode_method_ref_2 (amodule, p, &p);
