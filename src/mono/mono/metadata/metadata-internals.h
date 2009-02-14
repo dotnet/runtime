@@ -392,6 +392,16 @@ mono_image_lock (MonoImage *image) MONO_INTERNAL;
 void
 mono_image_unlock (MonoImage *image) MONO_INTERNAL;
 
+gpointer
+mono_image_property_lookup (MonoImage *image, gpointer subject, guint32 property) MONO_INTERNAL;
+
+void
+mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property, gpointer value) MONO_INTERNAL;
+
+void
+mono_image_property_remove (MonoImage *image, gpointer subject) MONO_INTERNAL;
+
+
 MonoType*
 mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
 

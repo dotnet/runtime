@@ -2067,3 +2067,53 @@ mono_image_unlock (MonoImage *image)
 {
 	LeaveCriticalSection (&image->lock);
 }
+
+
+/**
+ * mono_image_property_lookup:
+ *
+ * Lookup a property on @image. Used to store very rare fields of MonoClass and MonoMethod.
+ *
+ * LOCKING: Takes the image lock
+ */
+gpointer 
+mono_image_property_lookup (MonoImage *image, gpointer subject, guint32 property)
+{
+	gpointer res;
+
+	mono_image_lock (image);
+	res = mono_property_hash_lookup (image->property_hash, subject, property);
+ 	mono_image_unlock (image);
+
+	return res;
+}
+
+/**
+ * mono_image_property_insert:
+ *
+ * Insert a new property @property with value @value on @subject in @image. Used to store very rare fields of MonoClass and MonoMethod.
+ *
+ * LOCKING: Takes the image lock
+ */
+void
+mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property, gpointer value)
+{
+	mono_image_lock (image);
+	mono_property_hash_insert (image->property_hash, subject, property, value);
+ 	mono_image_unlock (image);
+}
+
+/**
+ * mono_image_property_remove:
+ *
+ * Remove all properties associated with @subject in @image. Used to store very rare fields of MonoClass and MonoMethod.
+ *
+ * LOCKING: Takes the image lock
+ */
+void
+mono_image_property_remove (MonoImage *image, gpointer subject)
+{
+	mono_image_lock (image);
+	mono_property_hash_remove_object (image->property_hash, subject);
+ 	mono_image_unlock (image);
+}
