@@ -957,9 +957,7 @@ mono_method_get_generic_container (MonoMethod *method)
 	if (!method->is_generic)
 		return NULL;
 
-	mono_loader_lock ();
-	container = mono_property_hash_lookup (method->klass->image->property_hash, method, MONO_METHOD_PROP_GENERIC_CONTAINER);
-	mono_loader_unlock ();
+	container = mono_image_property_lookup (method->klass->image, method, MONO_METHOD_PROP_GENERIC_CONTAINER);
 	g_assert (container);
 
 	return container;
@@ -976,9 +974,7 @@ mono_method_set_generic_container (MonoMethod *method, MonoGenericContainer* con
 {
 	g_assert (method->is_generic);
 
-	mono_loader_lock ();
-	mono_property_hash_insert (method->klass->image->property_hash, method, MONO_METHOD_PROP_GENERIC_CONTAINER, container);
-	mono_loader_unlock ();
+	mono_image_property_insert (method->klass->image, method, MONO_METHOD_PROP_GENERIC_CONTAINER, container);
 }
 
 /** 
@@ -7197,7 +7193,7 @@ mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
 	mono_loader_lock ();
 	klass->exception_type = ex_type;
 	if (ex_data)
-		mono_property_hash_insert (klass->image->property_hash, klass, MONO_CLASS_PROP_EXCEPTION_DATA, ex_data);
+		mono_image_property_insert (klass->image, klass, MONO_CLASS_PROP_EXCEPTION_DATA, ex_data);
 	mono_loader_unlock ();
 
 	return TRUE;
@@ -7213,12 +7209,7 @@ mono_class_set_failure (MonoClass *klass, guint32 ex_type, void *ex_data)
 gpointer
 mono_class_get_exception_data (MonoClass *klass)
 {
-	gpointer res;
-
-	mono_loader_lock ();
-	res = mono_property_hash_lookup (klass->image->property_hash, klass, MONO_CLASS_PROP_EXCEPTION_DATA);
-	mono_loader_unlock ();
-	return res;
+	return mono_image_property_lookup (klass->image, klass, MONO_CLASS_PROP_EXCEPTION_DATA);
 }
 
 /**

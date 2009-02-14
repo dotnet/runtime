@@ -1116,9 +1116,7 @@ lookup_custom_attr (MonoImage *image, gpointer member)
 {
 	MonoCustomAttrInfo* res;
 
-	mono_loader_lock ();
-	res = mono_property_hash_lookup (image->property_hash, member, MONO_PROP_DYNAMIC_CATTR);
-	mono_loader_unlock ();
+	res = mono_image_property_lookup (image, member, MONO_PROP_DYNAMIC_CATTR);
 
 	if (!res)
 		return NULL;
@@ -1196,12 +1194,14 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 		return;
 
 	ainfo = mono_custom_attrs_from_builders (image, image, cattrs);
+
 	mono_loader_lock ();
-	tmp = mono_property_hash_lookup (image->property_hash, obj, MONO_PROP_DYNAMIC_CATTR);
+	tmp = mono_image_property_lookup (image, obj, MONO_PROP_DYNAMIC_CATTR);
 	if (tmp)
 		mono_custom_attrs_free (tmp);
-	mono_property_hash_insert (image->property_hash, obj, MONO_PROP_DYNAMIC_CATTR, ainfo);
+	mono_image_property_insert (image, obj, MONO_PROP_DYNAMIC_CATTR, ainfo);
 	mono_loader_unlock ();
+
 }
 
 void

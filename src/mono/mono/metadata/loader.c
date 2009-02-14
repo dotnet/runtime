@@ -1684,9 +1684,7 @@ mono_free_method  (MonoMethod *method)
 
 		mono_marshal_free_dynamic_wrappers (method);
 
-		mono_loader_lock ();
-		mono_property_hash_remove_object (method->klass->image->property_hash, method);
-		mono_loader_unlock ();
+		mono_image_property_remove (method->klass->image, method);
 
 		g_free ((char*)method->name);
 		if (mw->method.header) {
