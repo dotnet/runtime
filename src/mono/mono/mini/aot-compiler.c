@@ -669,7 +669,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
  *   Get the unwind bytecode for the DWARF CIE.
  */
 static GSList*
-arch_get_cie_program (MonoAotCompile *acfg)
+arch_get_cie_program (void)
 {
 #ifdef __x86_64__
 	GSList *l = NULL;
@@ -4186,7 +4186,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	TV_GETTIME (atv);
 
-	mono_dwarf_writer_emit_base_info (acfg->dwarf, arch_get_cie_program (acfg));
+	mono_dwarf_writer_emit_base_info (acfg->dwarf, arch_get_cie_program ());
 
 	alloc_got_slots (acfg);
 
@@ -4298,39 +4298,35 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
   end
 */
 
-static MonoAotCompile *xdebug_acfg;
+static MonoDwarfWriter *xdebug_writer;
+static CRITICAL_SECTION xdebug_mutex;
+static FILE *xdebug_fp;
 
 void
 mono_xdebug_init (void)
 {
-	MonoAotCompile *acfg;
 	FILE *il_file;
+	MonoImageWriter *w;
 
-	acfg = g_new0 (MonoAotCompile, 1);
-	acfg->mempool = mono_mempool_new ();
-	InitializeCriticalSection (&acfg->mutex);
-	acfg->aot_opts.asm_only = TRUE;
-	acfg->aot_opts.outfile = g_strdup ("xdb.s");
+	InitializeCriticalSection (&xdebug_mutex);
 
 	unlink ("xdb.s");
-	acfg->fp = fopen ("xdb.s", "w");
+	xdebug_fp = fopen ("xdb.s", "w");
 
-	acfg->w = img_writer_create (acfg->fp, FALSE);
+	w = img_writer_create (xdebug_fp, FALSE);
 
-	img_writer_emit_start (acfg->w);
+	img_writer_emit_start (w);
 
 	/* This file will contain the IL code for methods which don't have debug info */
 	il_file = fopen ("xdb.il", "w");
 
-	acfg->dwarf = mono_dwarf_writer_create (acfg->w, il_file);
-
-	xdebug_acfg = acfg;
+	xdebug_writer = mono_dwarf_writer_create (w, il_file);
 
 	/* Emit something so the file has a text segment */
-	emit_section_change (acfg, ".text", 0);
-	emit_string (acfg, "");
+	img_writer_emit_section_change (w, ".text", 0);
+	img_writer_emit_string (w, "");
 
-	mono_dwarf_writer_emit_base_info (acfg->dwarf, arch_get_cie_program (acfg));
+	mono_dwarf_writer_emit_base_info (xdebug_writer, arch_get_cie_program ());
 }
 
 /*
@@ -4342,17 +4338,13 @@ mono_xdebug_init (void)
 void
 mono_save_xdebug_info (MonoCompile *cfg)
 {
-	MonoAotCompile *acfg;
-
-	if (!xdebug_acfg)
+	if (!xdebug_writer)
 		return;
 	
-	acfg = xdebug_acfg;
-
-	mono_acfg_lock (acfg);
-	mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
-	fflush (acfg->fp);
-	mono_acfg_unlock (acfg);
+	EnterCriticalSection (&xdebug_mutex);
+	mono_dwarf_writer_emit_method (xdebug_writer, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
+	fflush (xdebug_fp);
+	LeaveCriticalSection (&xdebug_mutex);
 }
 
 /*
@@ -4363,17 +4355,13 @@ mono_save_xdebug_info (MonoCompile *cfg)
 void
 mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info)
 {
-	MonoAotCompile *acfg;
-
-	if (!xdebug_acfg)
+	if (!xdebug_writer)
 		return;
 
-	acfg = xdebug_acfg;
-
-	mono_acfg_lock (acfg);
-	mono_dwarf_writer_emit_trampoline (acfg->dwarf, tramp_name, NULL, NULL, code, code_size, unwind_info);
-	fflush (acfg->fp);
-	mono_acfg_unlock (acfg);
+	EnterCriticalSection (&xdebug_mutex);
+	mono_dwarf_writer_emit_trampoline (xdebug_writer, tramp_name, NULL, NULL, code, code_size, unwind_info);
+	fflush (xdebug_fp);
+	LeaveCriticalSection (&xdebug_mutex);
 }
 
 #else
