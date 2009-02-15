@@ -889,19 +889,58 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	guint32 token = method->token;
 	MonoJumpInfoToken *ji;
 	guint8 *p = buf;
+	char *name;
 
-	g_assert (image_index < MAX_IMAGE_INDEX);
+	/*
+	 * The encoding for most methods is as follows:
+	 * - image index encoded as a leb128
+	 * - token index encoded as a leb128
+	 * Values of image index >= MONO_AOT_METHODREF_MIN are used to mark additional
+	 * types of method encodings.
+	 */
+
+	g_assert (image_index < MONO_AOT_METHODREF_MIN);
 
 	/* Mark methods which can't use aot trampolines because they need the further 
 	 * processing in mono_magic_trampoline () which requires a MonoMethod*.
 	 */
 	if ((method->is_generic && (method->flags & METHOD_ATTRIBUTE_VIRTUAL)) ||
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED))
-		encode_value ((252 << 24), p, &p);
+		encode_value ((MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE << 24), p, &p);
 
+	/* 
+	 * Some wrapper methods are shared using their signature, encode their 
+	 * stringified signature instead.
+	 * FIXME: Optimize disk usage
+	 */
+	name = NULL;
 	if (method->wrapper_type) {
-		/* Marker */
-		encode_value ((253 << 24), p, &p);
+		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+			name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
+			g_free (tmpsig);
+		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
+			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+			name = g_strdup_printf ("(wrapper delegate-invoke):%s (%s)", method->name, tmpsig);
+			g_free (tmpsig);
+		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE) {
+			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+			name = g_strdup_printf ("(wrapper delegate-begin-invoke):%s (%s)", method->name, tmpsig);
+			g_free (tmpsig);
+		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_END_INVOKE) {
+			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+			name = g_strdup_printf ("(wrapper delegate-end-invoke):%s (%s)", method->name, tmpsig);
+			g_free (tmpsig);
+		}
+	}
+
+	if (name) {
+		encode_value ((MONO_AOT_METHODREF_WRAPPER_NAME << 24), p, &p);
+		strcpy ((char*)p, name);
+		p += strlen (name) + 1;
+		g_free (name);
+	} else if (method->wrapper_type) {
+		encode_value ((MONO_AOT_METHODREF_WRAPPER << 24), p, &p);
 
 		encode_value (method->wrapper_type, p, &p);
 
@@ -968,8 +1007,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			g_assert (image_index < MAX_IMAGE_INDEX);
 			token = ji->token;
 
-			/* Marker */
-			encode_value ((255 << 24), p, &p);
+			encode_value ((MONO_AOT_METHODREF_METHODSPEC << 24), p, &p);
 			encode_value (image_index, p, &p);
 			encode_value (token, p, &p);
 		} else {
@@ -985,8 +1023,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			 * like Nullable:Box/Unbox, or by generic sharing.
 			 */
 
-			/* Marker */
-			encode_value ((254 << 24), p, &p);
+			encode_value ((MONO_AOT_METHODREF_GINST << 24), p, &p);
 			/* Encode the klass */
 			encode_klass_ref (acfg, method->klass, p, &p);
 			/* Encode the method */
@@ -1008,8 +1045,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			g_assert (image_index < MAX_IMAGE_INDEX);
 			token = ji->token;
 
-			/* Marker */
-			encode_value ((255 << 24), p, &p);
+			encode_value ((MONO_AOT_METHODREF_METHODSPEC << 24), p, &p);
 			encode_value (image_index, p, &p);
 			encode_value (token, p, &p);
 		} else {
@@ -1017,8 +1053,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			g_assert (method->klass->rank);
 
 			/* Encode directly */
-			/* Marker */
-			encode_value ((251 << 24), p, &p);
+			encode_value ((MONO_AOT_METHODREF_ARRAY << 24), p, &p);
 			encode_klass_ref (acfg, method->klass, p, &p);
 			if (!strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == method->klass->rank)
 				encode_value (0, p, &p);

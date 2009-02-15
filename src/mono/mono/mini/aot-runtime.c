@@ -450,15 +450,14 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 	value = decode_value (p, &p);
 	image_index = value >> 24;
 
-	if (image_index == 252) {
+	if (image_index == MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE) {
 		if (no_aot_trampoline)
 			*no_aot_trampoline = TRUE;
 		value = decode_value (p, &p);
 		image_index = value >> 24;
 	}
 
-	if (image_index == 253) {
-		/* Wrapper */
+	if (image_index == MONO_AOT_METHODREF_WRAPPER) {
 		guint32 wrapper_type;
 
 		wrapper_type = decode_value (p, &p);
@@ -545,16 +544,14 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		default:
 			g_assert_not_reached ();
 		}
-	} else if (image_index == 255) {
-		/* Methodspec */
+	} else if (image_index == MONO_AOT_METHODREF_METHODSPEC) {
 		image_index = decode_value (p, &p);
 		*token = decode_value (p, &p);
 
 		image = load_image (module, image_index);
 		if (!image)
 			return NULL;
-	} else if (image_index == 254) {
-		/* Method on generic instance */
+	} else if (image_index == MONO_AOT_METHODREF_GINST) {
 		MonoClass *klass;
 		MonoGenericContext ctx;
 
@@ -592,11 +589,10 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			return NULL;
 
 		*method = mono_class_inflate_generic_method_full (*method, klass, &ctx);
-	} else if (image_index == 251) {
+	} else if (image_index == MONO_AOT_METHODREF_ARRAY) {
 		MonoClass *klass;
 		int method_type;
 
-		/* Array methods */
 		klass = decode_klass_ref (module, p, &p);
 		if (!klass)
 			return NULL;
@@ -622,6 +618,7 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			g_assert_not_reached ();
 		}
 	} else {
+		g_assert (image_index < MONO_AOT_METHODREF_MIN);
 		*token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
 		image = load_image (module, image_index);

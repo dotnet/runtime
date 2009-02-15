@@ -78,6 +78,22 @@ typedef gint64 mgreg_t;
 
 /* Version number of the AOT file format */
 #define MONO_AOT_FILE_VERSION "47"
+
+/* Constants used to encode different types of methods in AOT */
+enum {
+	MONO_AOT_METHODREF_MIN = 240,
+	/* Method encoded using its name */
+	MONO_AOT_METHODREF_WRAPPER_NAME = 250,
+	/* Runtime provided methods on arrays */
+	MONO_AOT_METHODREF_ARRAY = 251,
+	MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE = 252,
+	/* Wrappers */
+	MONO_AOT_METHODREF_WRAPPER = 253,
+	/* Methods on generic instances */
+	MONO_AOT_METHODREF_GINST = 254,
+	/* Methods resolve using a METHODSPEC token */
+	MONO_AOT_METHODREF_METHODSPEC = 255,
+};
  
 /* Per-domain information maintained by the JIT */
 typedef struct
