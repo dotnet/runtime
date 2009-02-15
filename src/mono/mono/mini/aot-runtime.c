@@ -544,6 +544,9 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 		default:
 			g_assert_not_reached ();
 		}
+	} else if (image_index == MONO_AOT_METHODREF_WRAPPER_NAME) {
+		/* Can't decode these */
+		g_assert_not_reached ();
 	} else if (image_index == MONO_AOT_METHODREF_METHODSPEC) {
 		image_index = decode_value (p, &p);
 		*token = decode_value (p, &p);
