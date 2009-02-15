@@ -2,11 +2,11 @@
  * image-writer.h: Creation of object files or assembly files using the same interface.
  *
  * Author:
- *   Dietmar Maurer (dietmar@ximian.com) MONO_INTERNAL;
- *   Zoltan Varga (vargaz@gmail.com) MONO_INTERNAL;
- *   Paolo Molaro (lupus@ximian.com) MONO_INTERNAL;
+ *   Dietmar Maurer (dietmar@ximian.com);
+ *   Zoltan Varga (vargaz@gmail.com);
+ *   Paolo Molaro (lupus@ximian.com);
  *
- * (C) MONO_INTERNAL; 2002 Ximian, Inc.
+ * (C); 2002 Ximian, Inc.
  */
 
 #ifndef __MONO_IMAGE_WRITER_H__
