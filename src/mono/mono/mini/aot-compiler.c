@@ -2702,6 +2702,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	}
 #endif
 
+	//acfg->aot_opts.print_skipped_methods = TRUE;
+
 	if (acfg->aot_opts.full_aot)
 		mono_use_imt = FALSE;
 
@@ -2799,8 +2801,12 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			if (m->is_inflated) {
 				if (!(mono_class_generic_sharing_enabled (m->klass) &&
 					  mono_method_is_generic_sharable_impl (m, FALSE)) &&
-					!method_has_type_vars (m))
-					add_extra_method (acfg, m);
+					!method_has_type_vars (m)) {
+					if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
+						add_extra_method (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE));
+					else
+						add_extra_method (acfg, m);
+				}
 				add_generic_class (acfg, m->klass);
 			}
 			break;
