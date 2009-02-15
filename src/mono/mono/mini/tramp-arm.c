@@ -154,17 +154,27 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 {
 	MonoJumpInfo *ji;
 	guint32 code_size;
+	guchar *code;
+	GSList *unwind_ops, *l;
 
-	return mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, FALSE);
+	code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, &unwind_ops, FALSE);
+
+	mono_save_trampoline_xdebug_info ("<generic_trampoline>", code, code_size, unwind_ops);
+
+	for (l = unwind_ops; l; l = l->next)
+		g_free (l->data);
+	g_slist_free (unwind_ops);
+
+	return code;
 }
 	
 guchar*
-mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *code_size, MonoJumpInfo **ji, GSList **out_unwind_ops, gboolean aot)
 {
 	guint8 *buf, *code = NULL;
 	guint8 *load_get_lmf_addr, *load_trampoline;
 	gpointer *constants;
-	GSList *unwind_ops = NULL, *l;
+	GSList *unwind_ops = NULL;
 	int cfa_offset;
 
 	*ji = NULL;
@@ -371,11 +381,7 @@ mono_arch_create_trampoline_code_full (MonoTrampolineType tramp_type, guint32 *c
 		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (&code_len);
 	}
 
-	mono_save_trampoline_xdebug_info ("<generic_trampoline>", buf, *code_size, unwind_ops);
-
-	for (l = unwind_ops; l; l = l->next)
-		g_free (l->data);
-	g_slist_free (unwind_ops);
+	*out_unwind_ops = unwind_ops;
 
 	return buf;
 }

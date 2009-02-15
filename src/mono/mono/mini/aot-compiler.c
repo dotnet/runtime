@@ -218,6 +218,9 @@ get_patch_name (int info)
 static void
 emit_global (MonoAotCompile *acfg, const char *name, gboolean func);
 
+static void
+emit_trampoline_dwarf_info (MonoAotCompile *acfg, const char *tramp_name, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, GSList *unwind_info);
+
 /* Wrappers around the image writer functions */
 
 static inline void
@@ -2336,7 +2339,7 @@ emit_plt (MonoAotCompile *acfg)
 
 static G_GNUC_UNUSED void
 emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code, 
-				 guint32 code_size, int got_offset, MonoJumpInfo *ji)
+				 guint32 code_size, int got_offset, MonoJumpInfo *ji, GSList *unwind_ops)
 {
 	char symbol [256];
 	guint32 buf_size;
@@ -2351,6 +2354,9 @@ emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code,
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, symbol, TRUE);
 	emit_alignment (acfg, 16);
+	emit_label (acfg, symbol);
+
+	sprintf (symbol, ".Lnamed_%s", name);
 	emit_label (acfg, symbol);
 
 	/* 
@@ -2381,6 +2387,16 @@ emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code,
 	emit_label (acfg, symbol);
 		
 	emit_bytes (acfg, buf, p - buf);
+
+	/* Emit debug info */
+	if (unwind_ops) {
+		char symbol2 [256];
+
+		sprintf (symbol, "%s", name);
+		sprintf (symbol2, ".Lnamed_%s", name);
+
+		emit_trampoline_dwarf_info (acfg, symbol, symbol2, NULL, NULL, code_size, unwind_ops);
+	}
 }
 
 /*
@@ -2403,6 +2419,7 @@ emit_trampolines (MonoAotCompile *acfg)
 	guint32 code_size;
 	MonoJumpInfo *ji;
 	guint8 *code;
+	GSList *unwind_ops;
 #endif
 
 	if (!acfg->aot_opts.full_aot)
@@ -2421,46 +2438,46 @@ emit_trampolines (MonoAotCompile *acfg)
 		 * method.
 		 */
 		for (tramp_type = 0; tramp_type < MONO_TRAMPOLINE_NUM; ++tramp_type) {
-			code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, TRUE);
+			code = mono_arch_create_trampoline_code_full (tramp_type, &code_size, &ji, &unwind_ops, TRUE);
 
 			/* Emit trampoline code */
 
 			sprintf (symbol, "generic_trampoline_%d", tramp_type);
 
-			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji);
+			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji, unwind_ops);
 		}
 
 		code = mono_arch_get_nullified_class_init_trampoline (&code_size);
-		emit_named_code (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL);
+		emit_named_code (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL, NULL);
 #if defined(__x86_64__) && defined(MONO_ARCH_MONITOR_OBJECT_REG)
 		code = mono_arch_create_monitor_enter_trampoline_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "monitor_enter_trampoline", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "monitor_enter_trampoline", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_create_monitor_exit_trampoline_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "monitor_exit_trampoline", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "monitor_exit_trampoline", code, code_size, acfg->got_offset, ji, NULL);
 #endif
 
 #if defined(__x86_64__)
 		code = mono_arch_create_generic_class_init_trampoline_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "generic_class_init_trampoline", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "generic_class_init_trampoline", code, code_size, acfg->got_offset, ji, NULL);
 #endif
 
 		/* Emit the exception related code pieces */
 		code = mono_arch_get_restore_context_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "restore_context", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "restore_context", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_get_call_filter_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "call_filter", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "call_filter", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_get_throw_exception_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "throw_exception", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "throw_exception", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_get_rethrow_exception_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "rethrow_exception", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "rethrow_exception", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_get_throw_exception_by_name_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "throw_exception_by_name", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "throw_exception_by_name", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji, NULL);
 
 #if defined(__x86_64__)
 		code = mono_arch_get_throw_pending_exception_full (&code_size, &ji, TRUE);
-		emit_named_code (acfg, "throw_pending_exception", code, code_size, acfg->got_offset, ji);
+		emit_named_code (acfg, "throw_pending_exception", code, code_size, acfg->got_offset, ji, NULL);
 #endif
 
 #if defined(__x86_64__) || defined(__arm__)
@@ -2470,12 +2487,12 @@ emit_trampolines (MonoAotCompile *acfg)
 			offset = MONO_RGCTX_SLOT_MAKE_RGCTX (i);
 			code = mono_arch_create_rgctx_lazy_fetch_trampoline_full (offset, &code_size, &ji, TRUE);
 			sprintf (symbol, "rgctx_fetch_trampoline_%u", offset);
-			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji);
+			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji, NULL);
 
 			offset = MONO_RGCTX_SLOT_MAKE_MRGCTX (i);
 			code = mono_arch_create_rgctx_lazy_fetch_trampoline_full (offset, &code_size, &ji, TRUE);
 			sprintf (symbol, "rgctx_fetch_trampoline_%u", offset);
-			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji);
+			emit_named_code (acfg, symbol, code, code_size, acfg->got_offset, ji, NULL);
 		}
 #endif
 #endif
@@ -3916,7 +3933,12 @@ emit_fde (MonoAotCompile *acfg, int fde_index, char *start_symbol, char *end_sym
 	emit_int32 (acfg, 0); /* CIE_pointer */
 	if (start_symbol) {
 		emit_pointer (acfg, start_symbol); /* initial_location */
-		emit_symbol_diff (acfg, end_symbol, start_symbol, 0); /* address_range */
+		if (end_symbol)
+			emit_symbol_diff (acfg, end_symbol, start_symbol, 0); /* address_range */
+		else {
+			g_assert (code_size);
+			emit_int32 (acfg, code_size);
+		}
 	} else {
 		emit_pointer_value (acfg, code);
 		emit_int32 (acfg, code_size);
@@ -5032,7 +5054,7 @@ emit_trampoline_dwarf_info (MonoAotCompile *acfg, const char *tramp_name, char *
 	emit_uleb128 (acfg, 0x0);
 
 	/* Emit unwind info */
-	emit_fde (acfg, acfg->fde_index, NULL, NULL, code, code_size, unwind_info, FALSE);
+	emit_fde (acfg, acfg->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, FALSE);
 	acfg->fde_index ++;
 }
 
@@ -5042,8 +5064,6 @@ emit_dwarf_info (MonoAotCompile *acfg)
 #ifdef EMIT_DWARF_INFO
 	int i;
 	char symbol [128], symbol2 [128];
-
-	emit_base_dwarf_info (acfg);
 
 	/* DIEs for methods */
 	for (i = 0; i < acfg->nmethods; ++i) {
@@ -5367,6 +5387,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	TV_GETTIME (atv);
 
 	alloc_got_slots (acfg);
+
+	emit_base_dwarf_info (acfg);
 
 	emit_code (acfg);
 
