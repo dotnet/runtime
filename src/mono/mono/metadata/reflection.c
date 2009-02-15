@@ -5715,8 +5715,11 @@ reflected_hash (gconstpointer a) {
 
 #ifdef HAVE_BOEHM_GC
 #define ALLOC_REFENTRY mono_gc_alloc_fixed (sizeof (ReflectedEntry), NULL)
+#define FREE_REFENTRY(entry) mono_gc_free_fixed ((entry))
 #else
 #define ALLOC_REFENTRY mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry))
+/* FIXME: */
+#define FREE_REFENTRY(entry)
 #endif
 
 #define CACHE_OBJECT(t,p,o,k)	\
@@ -5739,6 +5742,24 @@ reflected_hash (gconstpointer a) {
 		mono_domain_unlock (domain);	\
         return _obj; \
 	} while (0)
+
+static void
+clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
+{
+	mono_domain_lock (domain);
+	if (domain->refobject_hash) {
+        ReflectedEntry pe;
+		gpointer orig_pe, orig_value;
+
+		pe.item = o;
+		pe.refclass = klass;
+		if (mono_g_hash_table_lookup_extended (domain->refobject_hash, &pe, &orig_pe, &orig_value)) {
+			mono_g_hash_table_remove (domain->refobject_hash, &pe);
+			FREE_REFENTRY (orig_pe);
+		}
+	}
+	mono_domain_unlock (domain);
+}
 
 static gpointer
 register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly *assembly)
@@ -6207,6 +6228,21 @@ mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refcl
 	ret->method = method;
 	MONO_OBJECT_SETREF (ret, reftype, mono_type_get_object (domain, &refclass->byval_arg));
 	CACHE_OBJECT (MonoReflectionMethod *, method, ret, refclass);
+}
+
+/*
+ * mono_method_clear_object:
+ *
+ *   Clear the cached reflection objects for the dynamic method METHOD.
+ */
+void
+mono_method_clear_object (MonoDomain *domain, MonoMethod *method)
+{
+	g_assert (method->dynamic);
+
+	clear_cached_object (domain, method, method->klass);
+	/* Added by mono_param_get_objects () */
+	clear_cached_object (domain, &(method->signature), NULL);
 }
 
 /*
