@@ -111,7 +111,6 @@ enum {
 };
 
 struct _MonoImageWriter {
-	MonoImage *image;
 	MonoMemPool *mempool;
 	char *outfile;
 	gboolean use_bin_writer;

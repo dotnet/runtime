@@ -166,12 +166,6 @@ typedef struct MonoAotCompile {
 	FILE *fp;
 	char *tmpfname;
 	GSList *cie_program;
-	/* xdebug */
-	GHashTable *class_to_die;
-	int fde_index, tdie_index, line_number_file_index, line_number_dir_index;
-	GHashTable *file_to_index, *dir_to_index;
-	FILE *il_file;
-	int il_file_line_index, loclist_index;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -4310,6 +4304,7 @@ void
 mono_xdebug_init (void)
 {
 	MonoAotCompile *acfg;
+	FILE *il_file;
 
 	acfg = g_new0 (MonoAotCompile, 1);
 	acfg->mempool = mono_mempool_new ();
@@ -4325,9 +4320,9 @@ mono_xdebug_init (void)
 	img_writer_emit_start (acfg->w);
 
 	/* This file will contain the IL code for methods which don't have debug info */
-	acfg->il_file = fopen ("xdb.il", "w");
+	il_file = fopen ("xdb.il", "w");
 
-	acfg->dwarf = mono_dwarf_writer_create (acfg->w, acfg->il_file);
+	acfg->dwarf = mono_dwarf_writer_create (acfg->w, il_file);
 
 	xdebug_acfg = acfg;
 
