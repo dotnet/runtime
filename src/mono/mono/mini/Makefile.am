@@ -268,7 +268,9 @@ common_sources = \
 	unwind.h		\
 	unwind.c		\
 	image-writer.h	\
-	image-writer.c
+	image-writer.c	\
+	dwarfwriter.h	\
+	dwarfwriter.c
 
 test_sources = 			\
 	basic-calls.cs 		\
