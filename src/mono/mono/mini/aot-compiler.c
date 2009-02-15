@@ -4302,6 +4302,9 @@ static MonoDwarfWriter *xdebug_writer;
 static CRITICAL_SECTION xdebug_mutex;
 static FILE *xdebug_fp;
 
+#define mono_xdebug_lock(acfg) EnterCriticalSection (&xdebug_mutex)
+#define mono_xdebug_unlock(acfg) LeaveCriticalSection (&xdebug_mutex)
+
 void
 mono_xdebug_init (void)
 {
@@ -4340,11 +4343,11 @@ mono_save_xdebug_info (MonoCompile *cfg)
 {
 	if (!xdebug_writer)
 		return;
-	
-	EnterCriticalSection (&xdebug_mutex);
+
+	mono_xdebug_lock ();
 	mono_dwarf_writer_emit_method (xdebug_writer, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
 	fflush (xdebug_fp);
-	LeaveCriticalSection (&xdebug_mutex);
+	mono_xdebug_unlock ();
 }
 
 /*
@@ -4358,10 +4361,10 @@ mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 
 	if (!xdebug_writer)
 		return;
 
-	EnterCriticalSection (&xdebug_mutex);
+	mono_xdebug_lock ();
 	mono_dwarf_writer_emit_trampoline (xdebug_writer, tramp_name, NULL, NULL, code, code_size, unwind_info);
 	fflush (xdebug_fp);
-	LeaveCriticalSection (&xdebug_mutex);
+	mono_xdebug_unlock ();
 }
 
 #else
