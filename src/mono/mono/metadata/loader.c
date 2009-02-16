@@ -927,7 +927,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		MonoType *type;
-		MonoMethod *result;
 
 		type = &klass->byval_arg;
 
@@ -938,7 +937,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		}
 
 		/* we're an array and we created these methods already in klass in mono_class_init () */
-		result = mono_method_search_in_array_class (klass, mname, sig);
+		method = mono_method_search_in_array_class (klass, mname, sig);
 		break;
 	}
 	default:
