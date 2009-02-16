@@ -158,11 +158,6 @@ typedef struct MonoAotCompile {
 	gboolean use_bin_writer;
 	MonoImageWriter *w;
 	MonoDwarfWriter *dwarf;
-	const char *current_section;
-	int current_subsection;
-	const char *section_stack [16];
-	int subsection_stack [16];
-	int stack_pos;
 	FILE *fp;
 	char *tmpfname;
 	GSList *cie_program;
