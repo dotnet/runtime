@@ -2407,6 +2407,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\mono\metadata\cominterop.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\metadata\cominterop.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\metadata\console-io.c"
 				>
 			</File>
@@ -6321,6 +6329,14 @@
 						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\mono\mini\dwarfwriter.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\mini\dwarfwriter.h"
+				>
 			</File>
 			<File
 				RelativePath="..\mono\mini\graph.c"
