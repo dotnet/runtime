@@ -987,7 +987,7 @@ visit_inst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GList **cvars, 
 			int i;
 			MonoJumpInfoBBTable *table = MONO_JUMP_TABLE_FROM_INS (ins);
 
-			if (ins->next->opcode != OP_PADD) {
+			if (!ins->next || ins->next->opcode != OP_PADD) {
 				/* The PADD was optimized away */
 				/* FIXME: handle this as well */
 				for (i = 0; i < table->table_size; i++)
