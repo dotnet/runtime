@@ -711,7 +711,6 @@ mono_set_private_bin_path_from_config (MonoDomain *domain)
 {
 	gchar *config_file, *text;
 	gsize len;
-	struct stat sbuf;
 	GMarkupParseContext *context;
 	RuntimeConfig runtime_config;
 	
