@@ -5282,6 +5282,9 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 	 * A given byte sequence can match more than case here, so we have to be
 	 * really careful about the ordering of the cases. Longer sequences
 	 * come first.
+	 * Some of the rules are only needed because the imm in the mov could 
+	 * match the
+	 * code [2] == 0xe8 case below.
 	 */
 	if ((code [-2] == 0x8b) && (x86_modrm_mod (code [-1]) == 0x2) && (code [4] == 0xff) && (x86_modrm_reg (code [5]) == 0x2) && (x86_modrm_mod (code [5]) == 0x0)) {
 		/*
@@ -5300,6 +5303,13 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 		reg = code [4] & 0x07;
 		disp = (signed char)code [5];
 #endif
+	} else if ((code [-2] >= 0xb8) && (code [-2] < 0xb8 + 8) && (code [3] == 0xff) && (x86_modrm_reg (code [4]) == 0x2) && (x86_modrm_mod (code [4]) == 0x1)) {
+		/* 
+		 * ba e8 e8 e8 e8     mov    $0xe8e8e8e8,%edx
+		 * ff 50 60              callq  *0x60(%eax)
+		 */
+		reg = x86_modrm_rm (code [4]);
+		disp = *(gint8*)(code + 5);
 	} else if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
 		reg = code [4] & 0x07;
 		disp = (signed char)code [5];
