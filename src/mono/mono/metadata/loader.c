@@ -939,10 +939,6 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 		/* we're an array and we created these methods already in klass in mono_class_init () */
 		result = mono_method_search_in_array_class (klass, mname, sig);
-		if (result)
-			return result;
-
-		g_assert_not_reached ();
 		break;
 	}
 	default:
