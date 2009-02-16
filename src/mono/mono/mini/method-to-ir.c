@@ -3305,7 +3305,7 @@ static gboolean inline_limit_inited;
 static gboolean
 mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
-	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoMethodHeader *header;
 	MonoVTable *vtable;
 #ifdef MONO_ARCH_SOFT_FLOAT
 	MonoMethodSignature *sig = mono_method_signature (method);
@@ -3321,6 +3321,12 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	    !MONO_TYPE_ISSTRUCT (signature->ret) && !mini_class_is_system_array (method->klass))
 		return TRUE;
 #endif
+
+	if (method->is_inflated)
+		/* Avoid inflating the header */
+		header = mono_method_get_header (((MonoMethodInflated*)method)->declaring);
+	else
+		header = mono_method_get_header (method);
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
