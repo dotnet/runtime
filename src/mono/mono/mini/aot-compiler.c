@@ -2830,10 +2830,12 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				if (!(mono_class_generic_sharing_enabled (m->klass) &&
 					  mono_method_is_generic_sharable_impl (m, FALSE)) &&
 					!method_has_type_vars (m)) {
-					if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
-						add_extra_method (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE));
-					else
+					if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+						if (acfg->aot_opts.full_aot)
+							add_extra_method (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE));
+					} else {
 						add_extra_method (acfg, m);
+					}
 				}
 				add_generic_class (acfg, m->klass);
 			}
@@ -4028,6 +4030,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->aot_opts.full_aot)
 		/* arch_emit_unbox_trampoline () etc only works with the asm writer */
 		acfg->aot_opts.asm_writer = TRUE;
+#endif
+
+#ifndef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
+	if (acfg->aot_opts.full_aot) {
+		printf ("--aot=full is not supported on this platform.\n");
+		return 1;
+	}
 #endif
 
 	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && bin_writer_supported ()) {
