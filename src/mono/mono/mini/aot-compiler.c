@@ -59,22 +59,12 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internal.h>
-#include <mono/metadata/method-builder.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-endian.h>
-#include <mono/metadata/mono-debug.h>
-#include <mono/metadata/debug-mono-symfile.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
-
-#ifndef PLATFORM_WIN32
-#include <mono/utils/freebsd-elf32.h>
-#include <mono/utils/freebsd-elf64.h>
-#endif
-
-#include <mono/utils/freebsd-dwarf.h>
 
 #include "mini.h"
 #include "image-writer.h"
