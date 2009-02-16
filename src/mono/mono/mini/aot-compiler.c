@@ -4026,6 +4026,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	//acfg->aot_opts.print_skipped_methods = TRUE;
 
+#ifdef __arm__
+	if (acfg->aot_opts.full_aot)
+		/* arch_emit_unbox_trampoline () etc only works with the asm writer */
+		acfg->aot_opts.asm_writer = TRUE;
+#endif
+
 	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && bin_writer_supported ()) {
 		if (acfg->aot_opts.outfile)
 			outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
@@ -4226,7 +4232,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (acfg->use_bin_writer) {
 		rename (tmp_outfile_name, outfile_name);
 	} else {
-		compile_asm (acfg);
+		res = compile_asm (acfg);
 		if (res != 0) {
 			acfg_free (acfg);
 			return res;

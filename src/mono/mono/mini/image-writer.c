@@ -1387,6 +1387,14 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 #elif defined(sparc)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (acfg->fp, ".section \"%s\"\n", section_name);
+#elif defined(__arm__)
+	/* ARM gas doesn't seem to like subsections of .bss */
+	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data")) {
+		fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);
+	} else {
+		fprintf (acfg->fp, ".section \"%s\"\n", section_name);
+		fprintf (acfg->fp, ".subsection %d\n", subsection_index);
+	}
 #else
 	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data") || !strcmp (section_name, ".bss")) {
 		fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);
