@@ -5729,9 +5729,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDC_R4: {
 			float *f;
 			/* FIXME: we should really allocate this only late in the compilation process */
-			mono_domain_lock (cfg->domain);
 			f = mono_domain_alloc (cfg->domain, sizeof (float));
-			mono_domain_unlock (cfg->domain);
 			CHECK_OPSIZE (5);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_R4CONST);
@@ -5749,9 +5747,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_LDC_R8: {
 			double *d;
 			/* FIXME: we should really allocate this only late in the compilation process */
-			mono_domain_lock (cfg->domain);
 			d = mono_domain_alloc (cfg->domain, sizeof (double));
-			mono_domain_unlock (cfg->domain);
 			CHECK_OPSIZE (9);
 			CHECK_STACK_OVF (1);
 			MONO_INST_NEW (cfg, ins, OP_R8CONST);

@@ -2491,12 +2491,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		if (method && method->dynamic) {
 			jump_table = mono_code_manager_reserve (mono_dynamic_code_hash_lookup (domain, method)->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 		} else {
-			mono_domain_lock (domain);
-			if (mono_aot_only)
+			if (mono_aot_only) {
 				jump_table = mono_domain_alloc (domain, sizeof (gpointer) * patch_info->data.table->table_size);
-			else
+			} else {
+				mono_domain_lock (domain);
 				jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
-			mono_domain_unlock (domain);
+				mono_domain_unlock (domain);
+			}
 		}
 
 		for (i = 0; i < patch_info->data.table->table_size; i++)
@@ -3541,12 +3542,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		jinfo = g_malloc0 (sizeof (MonoJitInfo) + (header->num_clauses * sizeof (MonoJitExceptionInfo)) +
 				generic_info_size);
 	} else {
-		/* we access cfg->domain->mp */
-		mono_domain_lock (cfg->domain);
 		jinfo = mono_domain_alloc0 (cfg->domain, sizeof (MonoJitInfo) +
 				(header->num_clauses * sizeof (MonoJitExceptionInfo)) +
 				generic_info_size);
-		mono_domain_unlock (cfg->domain);
 	}
 
 	if (cfg->generic_sharing_context) {
