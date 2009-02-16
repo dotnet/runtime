@@ -1524,7 +1524,6 @@ mono_method_construct_object_context (MonoMethod *method)
 {
 	MonoGenericContext object_context;
 
-	g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
 	g_assert (!method->klass->generic_class);
 	if (method->klass->generic_container) {
 		int type_argc = method->klass->generic_container->type_argc;
