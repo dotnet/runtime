@@ -1543,7 +1543,7 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 
 	/* We do everything inside the lock to prevent creation races */
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 
 	if (mono_metadata_token_table (token) == MONO_TABLE_METHOD) {
 		if (!image->method_cache)
@@ -1554,17 +1554,16 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 			image->methodref_cache = g_hash_table_new (NULL, NULL);
 		result = g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
 	}
-	if (result) {
-		mono_loader_unlock ();
-		return result;
-	}
+	mono_image_unlock (image);
 
-	mono_loader_unlock ();
+	if (result)
+		return result;
+
 	result = mono_get_method_from_token (image, token, klass, context, &used_context);
 	if (!result)
 		return NULL;
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 	if (!used_context && !result->is_inflated) {
 		MonoMethod *result2;
 		if (mono_metadata_token_table (token) == MONO_TABLE_METHOD)
@@ -1573,7 +1572,7 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 			result2 = g_hash_table_lookup (image->methodref_cache, GINT_TO_POINTER (token));
 
 		if (result2) {
-			mono_loader_unlock ();
+			mono_image_unlock (image);
 			return result2;
 		}
 
@@ -1583,7 +1582,7 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 			g_hash_table_insert (image->methodref_cache, GINT_TO_POINTER (token), result);
 	}
 
-	mono_loader_unlock ();
+	mono_image_unlock (image);
 
 	return result;
 }

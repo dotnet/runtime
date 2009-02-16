@@ -116,7 +116,7 @@ struct _MonoImage {
 	gint16 md_version_major, md_version_minor;
 	char *guid;
 	void *image_info;
-	MonoMemPool         *mempool;
+	MonoMemPool         *mempool; /*protected by the image lock*/
 
 	char                *raw_metadata;
 			    
@@ -155,11 +155,11 @@ struct _MonoImage {
 	/*
 	 * Indexed by method tokens and typedef tokens.
 	 */
-	MonoValueHashTable *method_cache;
+	MonoValueHashTable *method_cache; /*protected by the image lock*/
 	MonoInternalHashTable class_cache;
 
 	/* Indexed by memberref + methodspec tokens */
-	GHashTable *methodref_cache;
+	GHashTable *methodref_cache; /*protected by the image lock*/
 
 	/*
 	 * Indexed by fielddef and memberref tokens
