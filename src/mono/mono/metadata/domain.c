@@ -1952,18 +1952,40 @@ mono_domain_get_id (MonoDomain *domain)
 	return domain->domain_id;
 }
 
+/*
+ * mono_domain_alloc:
+ *
+ * LOCKING: Acquires the domain lock.
+ */
 gpointer
 mono_domain_alloc (MonoDomain *domain, guint size)
 {
+	gpointer res;
+
+	mono_domain_lock (domain);
 	mono_perfcounters->loader_bytes += size;
-	return mono_mempool_alloc (domain->mp, size);
+	res = mono_mempool_alloc (domain->mp, size);
+	mono_domain_unlock (domain);
+
+	return res;
 }
 
+/*
+ * mono_domain_alloc0:
+ *
+ * LOCKING: Acquires the domain lock.
+ */
 gpointer
 mono_domain_alloc0 (MonoDomain *domain, guint size)
 {
+	gpointer res;
+
+	mono_domain_lock (domain);
 	mono_perfcounters->loader_bytes += size;
-	return mono_mempool_alloc0 (domain->mp, size);
+	res = mono_mempool_alloc0 (domain->mp, size);
+	mono_domain_unlock (domain);
+
+	return res;
 }
 
 void 
