@@ -1097,7 +1097,7 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 			int i;
 			MonoJumpInfoBBTable *table = MONO_JUMP_TABLE_FROM_INS (ins);
 
-			if (ins->next->opcode != OP_PADD) {
+			if (!ins->next || ins->next->opcode != OP_PADD) {
 				/* The PADD was optimized away */
 				/* FIXME: handle this as well */
 				return;
