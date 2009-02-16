@@ -2434,10 +2434,8 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_named_code (acfg, "monitor_exit_trampoline", code, code_size, acfg->got_offset, ji, NULL);
 #endif
 
-#if defined(__x86_64__)
 		code = mono_arch_create_generic_class_init_trampoline_full (&code_size, &ji, TRUE);
 		emit_named_code (acfg, "generic_class_init_trampoline", code, code_size, acfg->got_offset, ji, NULL);
-#endif
 
 		/* Emit the exception related code pieces */
 		code = mono_arch_get_restore_context_full (&code_size, &ji, TRUE);

@@ -2645,6 +2645,8 @@ load_named_code (MonoAotModule *amodule, const char *name)
 #ifdef __arm__
 				} else if (!strcmp (ji->data.name, "mono_arm_throw_exception")) {
 					target = mono_arm_throw_exception;
+				} else if (!strcmp (ji->data.name, "mono_arm_throw_exception_by_token")) {
+					target = mono_arm_throw_exception_by_token;
 #endif
 				} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
 					int tramp_type2 = atoi (ji->data.name + strlen ("trampoline_func_"));

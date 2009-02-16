@@ -182,5 +182,8 @@ typedef struct MonoCompileArch {
 void
 mono_arm_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
 
+void
+mono_arm_throw_exception_by_token (guint32 type_token, unsigned long eip, unsigned long esp, gulong *int_regs, gdouble *fp_regs);
+
 #endif /* __MONO_MINI_ARM_H__ */
 

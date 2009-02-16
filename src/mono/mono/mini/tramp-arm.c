@@ -591,6 +591,15 @@ mono_arch_create_rgctx_lazy_fetch_trampoline_full (guint32 slot, guint32 *code_s
 gpointer
 mono_arch_create_generic_class_init_trampoline (void)
 {
+	guint32 code_size;
+	MonoJumpInfo *ji;
+
+	return mono_arch_create_generic_class_init_trampoline_full (&code_size, &ji, FALSE);
+}
+
+gpointer
+mono_arch_create_generic_class_init_trampoline_full (guint32 *code_size, MonoJumpInfo **ji, gboolean aot)
+{
 	guint8 *tramp;
 	guint8 *code, *buf;
 	static int byte_offset = -1;
@@ -599,6 +608,8 @@ mono_arch_create_generic_class_init_trampoline (void)
 	int tramp_size;
 	guint32 code_len, imm8;
 	gint rot_amount;
+
+	*ji = NULL;
 
 	tramp_size = 64;
 
@@ -622,17 +633,28 @@ mono_arch_create_generic_class_init_trampoline (void)
 	/* Uninitialized case */
 	arm_patch (jump, code);
 
-	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), &code_len);
+	if (aot) {
+		*ji = mono_patch_info_list_prepend (*ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_generic_class_init");
+		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0);
+		ARM_B (code, 0);
+		*(gpointer*)code = NULL;
+		code += 4;
+		ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_R1);
+	} else {
+		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), &code_len);
 
-	/* Jump to the actual trampoline */
-	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
-	ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
-	*(gpointer*)code = tramp;
-	code += 4;
+		/* Jump to the actual trampoline */
+		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 0); /* temp reg */
+		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_R1);
+		*(gpointer*)code = tramp;
+		code += 4;
+	}
 
 	mono_arch_flush_icache (buf, code - buf);
 
 	g_assert (code - buf <= tramp_size);
+
+	*code_size = code - buf;
 
 	return buf;
 }
