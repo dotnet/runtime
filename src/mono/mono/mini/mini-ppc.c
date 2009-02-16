@@ -26,6 +26,9 @@
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #endif
+#ifdef __linux__
+#include <unistd.h>
+#endif
 
 #define FORCE_INDIR_CALL 1
 
@@ -81,9 +84,22 @@ offsets_from_pthread_key (guint32 key, int *offset2)
 		if ((dreg) != ppc_r3) ppc_mr ((code), ppc_r3, ppc_r11);	\
 	} while (0);
 
+#define emit_nptl_tls(code,dreg,key) do { \
+		int off1 = key; \
+		int off2 = key >> 15; \
+		if ((off2 == 0) || (off2 == -1)) { \
+			ppc_load_reg ((code), (dreg), off1, PPC_THREAD_PTR_REG);	\
+		} else { \
+			int off3 = (off2 + 1) > 1; \
+			ppc_addis ((code), ppc_r11, PPC_THREAD_PTR_REG, off3); \
+			ppc_load_reg ((code), (dreg), off1, ppc_r11);	\
+		} \
+	} while (0);
+
 #define emit_tls_access(code,dreg,key) do {	\
 		switch (tls_mode) {	\
 		case TLS_MODE_LTHREADS: emit_linuxthreads_tls(code,dreg,key); break;	\
+		case TLS_MODE_NPTL: emit_nptl_tls(code,dreg,key); break;	\
 		case TLS_MODE_DARWIN_G5: emit_darwing5_tls(code,dreg,key); break;	\
 		case TLS_MODE_DARWIN_G4: emit_darwing4_tls(code,dreg,key); break;	\
 		default: g_assert_not_reached ();	\
@@ -4700,7 +4716,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (method->save_lmf) {
 		if (lmf_pthread_key != -1) {
 			emit_tls_access (code, ppc_r3, lmf_pthread_key);
-			if (G_STRUCT_OFFSET (MonoJitTlsData, lmf))
+			if (tls_mode != TLS_MODE_NPTL && G_STRUCT_OFFSET (MonoJitTlsData, lmf))
 				ppc_addi (code, ppc_r3, ppc_r3, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
 		} else {
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
@@ -5029,23 +5045,32 @@ try_offset_access (void *value, guint32 idx)
 static void
 setup_tls_access (void)
 {
-#ifdef __mono_ppc64__
-	/* FIXME: implement */
-	tls_mode = TLS_MODE_FAILED;
-	return;
-#else
 	guint32 ptk;
+
+#if defined(__linux__) && defined(_CS_GNU_LIBPTHREAD_VERSION)
+	size_t conf_size = 0;
+	char confbuf[128];
+#else
+	/* FIXME for darwin */
 	guint32 *ins, *code;
 	guint32 cmplwi_1023, li_0x48, blr_ins;
+#endif
+
 	if (tls_mode == TLS_MODE_FAILED)
 		return;
-
 	if (g_getenv ("MONO_NO_TLS")) {
 		tls_mode = TLS_MODE_FAILED;
 		return;
 	}
 
-	if (tls_mode == TLS_MODE_DETECT) {
+ 	if (tls_mode == TLS_MODE_DETECT) {
+#if defined(__linux__) && defined(_CS_GNU_LIBPTHREAD_VERSION)
+		conf_size = confstr ( _CS_GNU_LIBPTHREAD_VERSION, confbuf, sizeof(confbuf));
+		if ((conf_size > 4) && (strncmp (confbuf, "NPTL", 4) == 0))
+			tls_mode = TLS_MODE_NPTL;
+		else
+			tls_mode = TLS_MODE_LTHREADS;
+#else
 		ins = (guint32*)pthread_getspecific;
 		/* uncond branch to the real method */
 		if ((*ins >> 26) == 18) {
@@ -5054,7 +5079,7 @@ setup_tls_access (void)
 			val >>= 6;
 			if (*ins & 2) {
 				/* absolute */
-				ins = (guint32*)val;
+				ins = (guint32*)(long)val;
 			} else {
 				ins = (guint32*) ((char*)ins + val);
 			}
@@ -5090,7 +5115,7 @@ setup_tls_access (void)
 				val >>= 6;
 				if (*ins & 2) {
 					/* absolute */
-					ins = (guint32*)val;
+					ins = (guint32*)(long)val;
 				} else {
 					ins = (guint32*) ((char*)ins + val);
 				}
@@ -5117,7 +5142,13 @@ setup_tls_access (void)
 			tls_mode = TLS_MODE_FAILED;
 			return;
 		}
+#endif
 	}
+	if ((monodomain_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
+		monodomain_key = mono_domain_get_tls_offset();
+ 	}
+	/* if not TLS_MODE_NPTL or local dynamic (as indicated by
+	   mono_domain_get_tls_offset returning -1) then use keyed access. */
 	if (monodomain_key == -1) {
 		ptk = mono_domain_get_tls_key ();
 		if (ptk < 1024) {
@@ -5127,6 +5158,12 @@ setup_tls_access (void)
 			}
 		}
 	}
+
+	if ((lmf_pthread_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
+		lmf_pthread_key = mono_get_lmf_addr_tls_offset();
+	}
+	/* if not TLS_MODE_NPTL or local dynamic (as indicated by
+	   mono_get_lmf_addr_tls_offset returning -1) then use keyed access. */
 	if (lmf_pthread_key == -1) {
 		ptk = mono_pthread_key_for_tls (mono_jit_tls_id);
 		if (ptk < 1024) {
@@ -5138,6 +5175,12 @@ setup_tls_access (void)
 			lmf_pthread_key = ptk;
 		}
 	}
+
+	if ((monothread_key == -1) && (tls_mode == TLS_MODE_NPTL)) {
+		monothread_key = mono_thread_get_tls_offset();
+	}
+	/* if not TLS_MODE_NPTL or local dynamic (as indicated by
+	   mono_get_lmf_addr_tls_offset returning -1) then use keyed access. */
 	if (monothread_key == -1) {
 		ptk = mono_thread_get_tls_key ();
 		if (ptk < 1024) {
@@ -5150,7 +5193,6 @@ setup_tls_access (void)
 			/*g_print ("thread not inited yet %d\n", ptk);*/
 		}
 	}
-#endif
 }
 
 void

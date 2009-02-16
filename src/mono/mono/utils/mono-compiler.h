@@ -26,14 +26,23 @@
  */
 //#define PIC_INITIAL_EXEC
 
-#if defined (__powerpc__)
-#define MONO_TLS_FAST
-#elif defined(PIC)
+#if defined(PIC)
 
 #ifdef PIC_INITIAL_EXEC
 #define MONO_TLS_FAST __attribute__((tls_model("initial-exec")))
 #else
+#if defined (__powerpc__)
+/* local dynamic requires a call to __tls_get_addr to look up the
+   TLS block address via the Dynamic Thread Vector. In this case Thread
+   Pointer relative offsets can't be used as this modules TLS was
+   allocated separately (none contiguoiusly) from the initial TLS
+   block.
+
+   For now we will disable this. */
+#define MONO_TLS_FAST
+#else
 #define MONO_TLS_FAST __attribute__((tls_model("local-dynamic")))
+#endif
 #endif
 
 #else
@@ -67,6 +76,42 @@
 #endif
 #elif defined(__arm__) && defined(__ARM_EABI__) && !defined(PIC)
 #define MONO_THREAD_VAR_OFFSET(var,offset) __asm ("	ldr	%0, 1f; b 2f; 1: .word " #var "(tpoff); 2:" : "=r" (offset))
+#elif defined(__mono_ppc__) && defined(__GNUC__)
+#if defined(PIC)
+#ifdef PIC_INITIAL_EXEC
+
+#if defined(__mono_ppc64__)
+#define MONO_THREAD_VAR_OFFSET(var,offset) \
+	do { long off; \
+	__asm (	"ld	%0," #var "@got@tprel(2)\n" \
+	: "=r" (off)); \
+	(offset) = off; } while (0)
+#else
+/* must be powerpc32 */
+#define MONO_THREAD_VAR_OFFSET(var,offset) \
+	__asm (	"lwz	%0," #var "@got@tprel(30)\n" \
+	: "=r" (offset))
+#endif
+
+#else
+
+/* local dynamic requires a call to __tls_get_addr to look up the
+   TLS block address via the Dynamic Thread Vector. In this case Thread
+   Pointer relative offsets can't be used as this modules TLS was
+   allocated separately (none contiguoiusly) from the initial TLS
+   block.
+
+   For now we will disable this. */
+#define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
+
+#endif
+#else
+/* Must be local-exec TLS */
+#define MONO_THREAD_VAR_OFFSET(var,offset) \
+	__asm (	"lis	%0," #var "@tprel@ha\n" \
+		"addi	%0,%0, " #var "@tprel@l\n" \
+	: "=r" (offset))
+#endif
 #else
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 #endif

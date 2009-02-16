@@ -57,7 +57,18 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 #define MONO_ARCH_HAVE_ATOMIC_ADD 1
 #define PPC_USES_FUNCTION_DESCRIPTOR
-#else
+#define MONO_ARCH_HAVE_TLS_GET 1
+#define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
+#else /* must be __mono_ppc__ */
+#if 0
+/* enabling this for PPC32 causes hangs in the thread/delegate tests.
+   So disable for now. */
+#if defined(__linux__)
+#define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
+#endif
+#endif
+
+#define MONO_ARCH_HAVE_TLS_GET 1
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 1
@@ -120,6 +131,7 @@ typedef struct MonoCompileArch {
 #define PPC_LAST_FPARG_REG ppc_f13
 #define PPC_PASS_STRUCTS_BY_VALUE 1
 #define PPC_SMALL_RET_STRUCT_IN_REG 0
+#define PPC_THREAD_PTR_REG ppc_r13
 #else
 #define PPC_RET_ADDR_OFFSET 4
 #define PPC_STACK_PARAM_OFFSET 8
@@ -128,6 +140,7 @@ typedef struct MonoCompileArch {
 #define PPC_LAST_FPARG_REG ppc_f8
 #define PPC_PASS_STRUCTS_BY_VALUE 0
 #define PPC_SMALL_RET_STRUCT_IN_REG 1
+#define PPC_THREAD_PTR_REG ppc_r2
 #endif
 #define PPC_FIRST_ARG_REG ppc_r3
 #define PPC_LAST_ARG_REG ppc_r10
