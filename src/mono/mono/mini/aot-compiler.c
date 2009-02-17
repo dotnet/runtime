@@ -1573,7 +1573,7 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 	 * since rgctx wrappers belong to inflated methods.
 	 */
 	method = mono_class_get_cctor (klass);
-	if (method)
+	if (method && mono_method_needs_static_rgctx_invoke (method, FALSE))
 		add_extra_method (acfg, mono_marshal_get_static_rgctx_invoke (method));
 
 	iter = NULL;
