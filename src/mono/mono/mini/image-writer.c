@@ -517,8 +517,6 @@ append_subsection (MonoImageWriter *acfg, ElfSectHeader *sheaders, BinSection *s
 	int offset = sect->cur_offset;
 	/*offset += (sheaders [sect->shidx].sh_addralign - 1);
 	offset &= ~(sheaders [sect->shidx].sh_addralign - 1);*/
-	offset += (8 - 1);
-	offset &= ~(8 - 1);
 	bin_writer_emit_ensure_buffer (sect, offset);
 	g_print ("section %s aligned to %d from %d\n", sect->name, offset, sect->cur_offset);
 	sect->cur_offset = offset;
@@ -1021,6 +1019,8 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 		}
 
 		sections [all_sections [i]->shidx] = sect;
+		sections [all_sections [i]->shidx]->cur_offset += (8 - 1);
+		sections [all_sections [i]->shidx]->cur_offset &= ~(8 - 1);
 	}
 
 	/* at this point we know where in the file the first segment sections go */

@@ -535,14 +535,6 @@ emit_line_number_file_name (MonoDwarfWriter *w, const char *name,
 static void
 emit_line_number_info_begin (MonoDwarfWriter *w)
 {
-	if (!w->il_file) {
-		/* FIXME: This doesn't seem to work with !xdebug */
-		emit_section_change (w, ".debug_line", 0);
-		emit_label (w, ".Ldebug_line_start");
-		emit_label (w, ".Ldebug_line_section_start");
-		return;
-	}
-
 	/* Line number info header */
 	/* 
 	 * GAS seems to emit its own data to the end of the first subsection, so we use
@@ -585,7 +577,8 @@ emit_line_number_info_begin (MonoDwarfWriter *w)
 	emit_byte (w, 0);
 
 	/* Files */
-	emit_line_number_file_name (w, "xdb.il", 0, 0);
+	if (w->il_file)
+		emit_line_number_file_name (w, "xdb.il", 0, 0);
 
 	/* End of Files */
 	emit_section_change (w, ".debug_line", LINE_SUBSECTION_DATA);
