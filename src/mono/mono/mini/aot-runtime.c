@@ -81,6 +81,8 @@ typedef struct MonoAotModule {
 	GHashTable *extra_methods;
 	/* Maps methods to their code */
 	GHashTable *method_to_code;
+	/* Maps pointers into the method info to the methods themselves */
+	GHashTable *method_ref_to_method;
 	MonoAssemblyName *image_names;
 	char **image_guids;
 	MonoAssembly *assembly;
@@ -2189,7 +2191,20 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 				if (full_name && !strcmp (full_name, (char*)p))
 					return value;
 			} else {
-				m = decode_method_ref_2 (amodule, p, &p);
+				mono_aot_lock ();
+				if (!amodule->method_ref_to_method)
+					amodule->method_ref_to_method = g_hash_table_new (NULL, NULL);
+				m = g_hash_table_lookup (amodule->method_ref_to_method, p);
+				mono_aot_unlock ();
+				if (!m) {
+					guint8 *orig_p = p;
+					m = decode_method_ref_2 (amodule, p, &p);
+					if (m) {
+						mono_aot_lock ();
+						g_hash_table_insert (amodule->method_ref_to_method, orig_p, m);
+						mono_aot_unlock ();
+					}
+				}
 				if (m == method)
 					return value;
 			}
