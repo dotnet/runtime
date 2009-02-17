@@ -84,6 +84,7 @@ offsets_from_pthread_key (guint32 key, int *offset2)
 		if ((dreg) != ppc_r3) ppc_mr ((code), ppc_r3, ppc_r11);	\
 	} while (0);
 
+#ifdef PPC_THREAD_PTR_REG
 #define emit_nptl_tls(code,dreg,key) do { \
 		int off1 = key; \
 		int off2 = key >> 15; \
@@ -95,6 +96,11 @@ offsets_from_pthread_key (guint32 key, int *offset2)
 			ppc_load_reg ((code), (dreg), off1, ppc_r11);	\
 		} \
 	} while (0);
+#else
+#define emit_nptl_tls(code,dreg,key) do {	\
+		g_assert_not_reached ();	\
+	} while (0)
+#endif
 
 #define emit_tls_access(code,dreg,key) do {	\
 		switch (tls_mode) {	\
