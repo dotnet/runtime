@@ -658,6 +658,8 @@ main (int argc, char *argv [])
 
 		mono_install_assembly_preload_hook (pedump_preload, GUINT_TO_POINTER (FALSE));
 
+		mono_marshal_init ();
+
 		assembly = mono_assembly_open (file, NULL);
 
 		if (!assembly) {
