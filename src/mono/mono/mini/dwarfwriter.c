@@ -641,7 +641,7 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 	emit_section_change (w, ".debug_info", 0);
 	emit_label (w, ".Ldebug_info_start");
 	emit_symbol_diff (w, ".Ldebug_info_end", ".", -4); /* length */
-	emit_int16 (w, 0x3); /* DWARF version 3 */
+	emit_int16 (w, 0x2); /* DWARF version 2 */
 	emit_int32 (w, 0); /* .debug_abbrev offset */
 	emit_byte (w, sizeof (gpointer)); /* address size */
 
