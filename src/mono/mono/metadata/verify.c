@@ -5672,6 +5672,7 @@ mono_method_verify (MonoMethod *method, int level)
 				if (!is_correct_rethrow (ctx.header, ip_offset))
 					ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("rethrow must be used inside a catch handler at 0x%04x", ctx.ip_offset));
 				ctx.eval.size = 0;
+				start = 1;
 				++ip;
 				break;
 			case CEE_UNUSED:
