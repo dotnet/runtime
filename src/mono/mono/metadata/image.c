@@ -1505,6 +1505,9 @@ mono_image_close (MonoImage *image)
 	if (image->references)
 		g_free (image->references);
 	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (image->mempool);
+
+	DeleteCriticalSection (&image->lock);
+
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (!image->dynamic) {
 		if (debug_assembly_unload)
@@ -1519,8 +1522,6 @@ mono_image_close (MonoImage *image)
 		mono_dynamic_image_free ((MonoDynamicImage*)image);
 		mono_mempool_destroy (image->mempool);
 	}
-
-	DeleteCriticalSection (&image->lock);
 
 	mono_profiler_module_event (image, MONO_PROFILE_END_UNLOAD);
 }
