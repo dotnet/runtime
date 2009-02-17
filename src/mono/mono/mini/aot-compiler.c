@@ -3154,6 +3154,28 @@ emit_info (MonoAotCompile *acfg)
 	}
 	emit_line (acfg);
 }
+
+/*
+ * mono_aot_method_hash:
+ *
+ *   Return a hash code for methods which only depends on metadata.
+ */
+guint32
+mono_aot_method_hash (MonoMethod *method)
+{
+	guint32 hash;
+
+	if (method->wrapper_type) {
+		hash = g_str_hash (method->name);
+	} else {
+		char *full_name = mono_method_full_name (method, TRUE);
+		// FIXME: Improve this (changing this requires bumping MONO_AOT_FILE_VERSION)
+		hash = g_str_hash (full_name);
+		g_free (full_name);
+	}
+
+	return hash;
+}
  
 typedef struct HashEntry {
     guint32 key, value, index;
@@ -3175,7 +3197,8 @@ emit_extra_methods (MonoAotCompile *acfg)
 	guint32 hash;
 	GPtrArray *table;
 	HashEntry *entry, *new_entry;
-	int nmethods;
+	int nmethods, max_chain_length;
+	int *chain_lengths;
 
 	info_offsets = g_new0 (guint32, acfg->extra_methods->len);
 
@@ -3254,6 +3277,8 @@ emit_extra_methods (MonoAotCompile *acfg)
 	table = g_ptr_array_sized_new (table_size);
 	for (i = 0; i < table_size; ++i)
 		g_ptr_array_add (table, NULL);
+	chain_lengths = g_new0 (int, table_size);
+	max_chain_length = 0;
 	for (i = 0; i < acfg->extra_methods->len; ++i) {
 		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
 		MonoCompile *cfg = g_hash_table_lookup (acfg->method_to_cfg, method);
@@ -3265,12 +3290,10 @@ emit_extra_methods (MonoAotCompile *acfg)
 		key = info_offsets [i];
 		value = get_method_index (acfg, method);
 
-		if (method->wrapper_type) {
-			hash = g_str_hash (method->name) % table_size;
-		} else {
-			// FIXME:
-			hash = 0 % table_size;
-		}
+		hash = mono_aot_method_hash (method) % table_size;
+
+		chain_lengths [hash] ++;
+		max_chain_length = MAX (max_chain_length, chain_lengths [hash]);
 
 		/* FIXME: Allocate from the mempool */
 		new_entry = g_new0 (HashEntry, 1);
@@ -3290,6 +3313,8 @@ emit_extra_methods (MonoAotCompile *acfg)
 			g_ptr_array_add (table, new_entry);
 		}
 	}
+
+	//printf ("MAX: %d\n", max_chain_length);
 
 	/* Emit the table */
 	sprintf (symbol, "extra_method_table");

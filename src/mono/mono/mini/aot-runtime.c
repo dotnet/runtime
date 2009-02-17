@@ -431,6 +431,41 @@ decode_field_info (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 }
 
 /*
+ * can_method_ref_match_method:
+ *
+ *   Determine if calling decode_method_ref_2 on P could return the same method as 
+ * METHOD. This is an optimization to avoid calling decode_method_ref_2 () which
+ * would create MonoMethods which are not needed etc.
+ */
+static gboolean
+can_method_ref_match_method (MonoAotModule *module, guint8 *buf, MonoMethod *method)
+{
+	guint8 *p = buf;
+	guint32 image_index, value;
+
+	/* Keep this in sync with decode_method_ref () */
+	value = decode_value (p, &p);
+	image_index = value >> 24;
+
+	if (image_index == MONO_AOT_METHODREF_WRAPPER) {
+		guint32 wrapper_type;
+
+		if (!method->wrapper_type)
+			return FALSE;
+
+		wrapper_type = decode_value (p, &p);
+
+		if (method->wrapper_type != wrapper_type)
+			return FALSE;
+	} else if (image_index < MONO_AOT_METHODREF_MIN || image_index == MONO_AOT_METHODREF_METHODSPEC || image_index == MONO_AOT_METHODREF_GINST) {
+		if (method->wrapper_type)
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+/*
  * decode_method_ref:
  *
  *   Decode a method reference, and return its image and token. This avoids loading
@@ -2137,6 +2172,7 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
 	char *full_name = NULL;
+	int num_checks = 0;
 
 	if (!amodule)
 		return 0xffffff;
@@ -2168,53 +2204,54 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 		}
 	}
 
-	if (method->wrapper_type)
-		hash = g_str_hash (method->name) % table_size;
-	else
-		hash = 0 % table_size;
+	hash = mono_aot_method_hash (method) % table_size;
 
 	entry = &table [hash * entry_size];
 
-	if (entry [0] != 0) {
-		while (TRUE) {
-			guint32 key = entry [0];
-			guint32 value = entry [1];
-			guint32 next = entry [entry_size - 1];
-			MonoMethod *m;
-			guint8 *p;
-			int is_wrapper;
+	if (entry [0] == 0)
+		return 0xffffff;
 
-			// FIXME: Avoid fully decoding the method ref
-			p = amodule->extra_method_info + key;
-			is_wrapper = decode_value (p, &p);
-			if (is_wrapper) {
-				if (full_name && !strcmp (full_name, (char*)p))
-					return value;
-			} else {
-				mono_aot_lock ();
-				if (!amodule->method_ref_to_method)
-					amodule->method_ref_to_method = g_hash_table_new (NULL, NULL);
-				m = g_hash_table_lookup (amodule->method_ref_to_method, p);
-				mono_aot_unlock ();
-				if (!m) {
-					guint8 *orig_p = p;
-					m = decode_method_ref_2 (amodule, p, &p);
-					if (m) {
-						mono_aot_lock ();
-						g_hash_table_insert (amodule->method_ref_to_method, orig_p, m);
-						mono_aot_unlock ();
-					}
+	while (TRUE) {
+		guint32 key = entry [0];
+		guint32 value = entry [1];
+		guint32 next = entry [entry_size - 1];
+		MonoMethod *m;
+		guint8 *p;
+		int is_wrapper;
+
+		p = amodule->extra_method_info + key;
+		is_wrapper = decode_value (p, &p);
+		if (is_wrapper) {
+			if (full_name && !strcmp (full_name, (char*)p))
+				return value;
+		} else if (can_method_ref_match_method (amodule, p, method)) {
+			num_checks ++;
+			mono_aot_lock ();
+			if (!amodule->method_ref_to_method)
+				amodule->method_ref_to_method = g_hash_table_new (NULL, NULL);
+			m = g_hash_table_lookup (amodule->method_ref_to_method, p);
+			mono_aot_unlock ();
+			if (!m) {
+				guint8 *orig_p = p;
+				m = decode_method_ref_2 (amodule, p, &p);
+				if (m) {
+					mono_aot_lock ();
+					g_hash_table_insert (amodule->method_ref_to_method, orig_p, m);
+					mono_aot_unlock ();
 				}
-				if (m == method)
-					return value;
 			}
-
-			if (next != 0) {
-				entry = &table [next * entry_size];
-			} else {
-				break;
-			}
+			/*
+			  if (m)
+			  printf ("%d %s %s\n", num_checks, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE));
+			*/
+			if (m == method)
+				return value;
 		}
+
+		if (next != 0)
+			entry = &table [next * entry_size];
+		else
+			break;
 	}
 
 	return 0xffffff;
