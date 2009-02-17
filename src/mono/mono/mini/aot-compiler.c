@@ -2116,7 +2116,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
 
-	buf_size = header->num_clauses * 256 + debug_info_size + 256;
+	buf_size = header->num_clauses * 256 + debug_info_size + 1024;
 	p = buf = g_malloc (buf_size);
 
 #ifdef MONO_ARCH_HAVE_XP_UNWIND
