@@ -200,7 +200,7 @@ load_image (MonoAotModule *module, int index)
 	if (module->out_of_date)
 		return NULL;
 
-	assembly = mono_assembly_load (&module->image_names [index], NULL, &status);
+	assembly = mono_assembly_load (&module->image_names [index], module->assembly->basedir, &status);
 	if (!assembly) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s is unusable because dependency %s is not found.\n", module->aot_name, module->image_names [index].name);
 		module->out_of_date = TRUE;
