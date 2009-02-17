@@ -7116,6 +7116,8 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		gint variant_bool = 0;
 		guint8 ldop = CEE_LDIND_I4;
+		int label1;
+
 		if (!t->byref)
 			break;
 
@@ -7141,6 +7143,10 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 				g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
 			}
 		}
+
+		/* Check null */
+		mono_mb_emit_ldarg (mb, argnum);
+		label1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 		
 		mono_mb_emit_ldarg (mb, argnum);
 		mono_mb_emit_byte (mb, ldop);	
@@ -7148,11 +7154,15 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (variant_bool)
 			mono_mb_emit_byte (mb, CEE_NEG);
 		mono_mb_emit_stloc (mb, conv_arg);
+
+		mono_mb_patch_branch (mb, label1);
 		break;
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
 		guint8 stop = CEE_STIND_I4;
+		int label1;
+
 		if (!t->byref)
 			break;
 		if (spec) {
@@ -7168,12 +7178,18 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			}
 		}
+		
+		/* Check null */
+		mono_mb_emit_ldarg (mb, argnum);
+		label1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		mono_mb_emit_ldarg (mb, argnum);
 		mono_mb_emit_ldloc (mb, conv_arg);
 		if (spec != NULL && spec->native == MONO_NATIVE_VARIANTBOOL)
 			mono_mb_emit_byte (mb, CEE_NEG);
 		mono_mb_emit_byte (mb, stop);
+
+		mono_mb_patch_branch (mb, label1);
 		break;
 	}
 
