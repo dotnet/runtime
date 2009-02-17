@@ -4544,7 +4544,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObject *obj, Mon
 
 		sig = method_builder_encode_signature (assembly, &rmb);
 
-		parent = mono_image_create_token (assembly, obj, TRUE, TRUE) + 1; /*it returns the zero based indexing and metadata uses one based*/
+		parent = mono_image_create_token (assembly, obj, TRUE, TRUE);
 		g_assert (mono_metadata_token_table (parent) == MONO_TABLE_METHOD);
 
 		parent = mono_metadata_token_index (parent) << MONO_MEMBERREF_PARENT_BITS;
