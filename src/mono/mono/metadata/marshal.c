@@ -4267,7 +4267,7 @@ mono_marshal_get_static_rgctx_invoke (MonoMethod *method)
 		return res;
 
 	if (!inited) {
-		mono_counters_register ("static rgctx invoke wrappers",
+		mono_counters_register ("Static rgctx invoke wrappers",
 				MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_wrappers);
 		inited = TRUE;
 	}

@@ -1755,17 +1755,7 @@ mono_class_get_inflated_method (MonoClass *class, MonoMethod *method)
 MonoMethod*
 mono_class_get_vtable_entry (MonoClass *class, int offset)
 {
-	if (class->generic_class) {
-		MonoClass *gklass = class->generic_class->container_class;
-		mono_class_setup_vtable (gklass);
-		if (gklass->vtable [offset]->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE) {
-			MonoMethod *method = mono_marshal_method_from_wrapper (gklass->vtable [offset]);
-			method = mono_class_inflate_generic_method_full (method, class, mono_class_get_context (class));
-			return mono_marshal_get_static_rgctx_invoke (method);
-		} else {
-			return mono_class_inflate_generic_method_full (gklass->vtable [offset], class, mono_class_get_context (class));
-		}
-	}
+	MonoMethod *m;
 
  	if (class->rank == 1) {
 		/* 
@@ -1777,8 +1767,24 @@ mono_class_get_vtable_entry (MonoClass *class, int offset)
 			return class->parent->vtable [offset];
 	}
 
-	mono_class_setup_vtable (class);
-	return class->vtable [offset];
+	if (class->generic_class) {
+		MonoClass *gklass = class->generic_class->container_class;
+		mono_class_setup_vtable (gklass);
+		m = gklass->vtable [offset];
+
+		m = mono_class_inflate_generic_method_full (m, class, mono_class_get_context (class));
+	} else {
+		mono_class_setup_vtable (class);
+		m = class->vtable [offset];
+	}
+
+	/* 
+	 * We have to add static rgctx wrappers somewhere, we do it here, 
+	 * altough it should probably be done by the JIT.
+	 */
+	if (mono_method_needs_static_rgctx_invoke (m, FALSE))
+		m = mono_marshal_get_static_rgctx_invoke (m);
+	return m;
 }
 
 static void
@@ -3002,7 +3008,7 @@ mono_class_verify_vtable (MonoClass *class)
 				continue;
 			}
 
-			if (slot >= 0 && class->vtable [slot] != cm && (class->vtable [slot] && class->vtable [slot]->wrapper_type != MONO_WRAPPER_STATIC_RGCTX_INVOKE)) {
+			if (slot >= 0 && class->vtable [slot] != cm && (class->vtable [slot])) {
 				char *other_name = class->vtable [slot] ? mono_method_full_name (class->vtable [slot], TRUE) : g_strdup ("[null value]");
 				printf ("\tMethod %s has slot %d but vtable has %s on it\n", full_name, slot, other_name);
 				g_free (other_name);
@@ -3089,33 +3095,28 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	/* Optimized version for generic instances */
 	if (class->generic_class) {
 		MonoClass *gklass = class->generic_class->container_class;
-		gboolean usable = TRUE;
+		MonoMethod **tmp;
 
 		mono_class_setup_vtable (gklass);
+
+		tmp = mono_image_alloc0 (class->image, sizeof (gpointer) * gklass->vtable_size);
+		class->vtable_size = gklass->vtable_size;
 		for (i = 0; i < gklass->vtable_size; ++i)
-			if (gklass->vtable [i] && gklass->vtable [i]->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE)
-				usable = FALSE;
-
-		if (usable) {
-			MonoMethod **tmp = mono_image_alloc0 (class->image, sizeof (gpointer) * gklass->vtable_size);
-			class->vtable_size = gklass->vtable_size;
-			for (i = 0; i < gklass->vtable_size; ++i)
-				if (gklass->vtable [i]) {
-					tmp [i] = mono_class_inflate_generic_method_full (gklass->vtable [i], class, mono_class_get_context (class));
-					tmp [i]->slot = gklass->vtable [i]->slot;
-				}
-			mono_memory_barrier ();
-			class->vtable = tmp;
-
-			/* Have to set method->slot for abstract virtual methods */
-			if (class->methods && gklass->methods) {
-				for (i = 0; i < class->method.count; ++i)
-					if (class->methods [i]->slot == -1)
-						class->methods [i]->slot = gklass->methods [i]->slot;
+			if (gklass->vtable [i]) {
+				tmp [i] = mono_class_inflate_generic_method_full (gklass->vtable [i], class, mono_class_get_context (class));
+				tmp [i]->slot = gklass->vtable [i]->slot;
 			}
+		mono_memory_barrier ();
+		class->vtable = tmp;
 
-			return;
+		/* Have to set method->slot for abstract virtual methods */
+		if (class->methods && gklass->methods) {
+			for (i = 0; i < class->method.count; ++i)
+				if (class->methods [i]->slot == -1)
+					class->methods [i]->slot = gklass->methods [i]->slot;
 		}
+
+		return;
 	}
 
 	if (class->parent && class->parent->vtable_size) {
@@ -3386,15 +3387,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 		if (class->vtable_size)
 			g_assert (cur_slot == class->vtable_size);
 		class->vtable_size = cur_slot;
-	}
-
-	/* FIXME: only do this if the class is actually sharable */
-	if (class->valuetype && (class->generic_class || class->generic_container) &&
-			mono_class_generic_sharing_enabled (class)) {
-		for (i = 0; i < max_vtsize; ++i) {
-			if (vtable [i] && vtable [i]->wrapper_type == MONO_WRAPPER_NONE)
-				vtable [i] = mono_marshal_get_static_rgctx_invoke (vtable [i]);
-		}
 	}
 
 	/* Try to share the vtable with our parent. */
