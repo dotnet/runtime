@@ -2403,7 +2403,7 @@ verify_type_compatibility_full (VerifyContext *ctx, MonoType *target, MonoType *
 #define IS_ONE_OF2(T, A, B) (T == A || T == B)
 
 	MonoType *original_candidate = candidate;
-	VERIFIER_DEBUG ( printf ("checking type compatibility %p %p[%x][%x] %p[%x][%x]\n", ctx, target, target->type, target->byref, candidate, candidate->type, candidate->byref); );
+	VERIFIER_DEBUG ( printf ("checking type compatibility %s x %s strict %d\n", mono_type_full_name (target), mono_type_full_name (candidate), strict); );
 
  	/*only one is byref */
 	if (candidate->byref ^ target->byref) {
@@ -2518,9 +2518,9 @@ handle_enum:
 		if (candidate->type != MONO_TYPE_SZARRAY)
 			return FALSE;
 
-		left = target->data.array->eklass;
-		right = candidate->data.array->eklass;
-		return mono_class_is_assignable_from(left, right);
+		left = mono_class_from_mono_type (target)->element_class;
+		right = mono_class_from_mono_type (candidate)->element_class;
+		return mono_class_is_assignable_from (left, right);
 	}
 
 	case MONO_TYPE_ARRAY:
@@ -2708,7 +2708,7 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 	case MONO_TYPE_SZARRAY:
 		if (candidate->type != MONO_TYPE_SZARRAY)
 			return FALSE;
-		return mono_class_is_assignable_from (target->data.array->eklass, candidate->data.array->eklass);
+		return mono_class_is_assignable_from (mono_class_from_mono_type (target)->element_class, mono_class_from_mono_type (candidate)->element_class);
 
 	case MONO_TYPE_ARRAY:
 		if (candidate->type != MONO_TYPE_ARRAY)
