@@ -383,6 +383,9 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 #endif
 	MonoDelegate *d;
 
+	if (ftn == NULL)
+		return NULL;
+
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
