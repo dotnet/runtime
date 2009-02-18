@@ -172,14 +172,9 @@ static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, 
 static guint32 mono_image_get_methodref_token_for_methodbuilder (MonoDynamicImage *assembly, MonoReflectionMethodBuilder *method);
 static guint32 encode_generic_method_sig (MonoDynamicImage *assembly, MonoGenericContext *context);
 
-#define mono_reflection_lock() EnterCriticalSection (&reflection_mutex)
-#define mono_reflection_unlock() LeaveCriticalSection (&reflection_mutex)
-static CRITICAL_SECTION reflection_mutex;
-
 void
 mono_reflection_init (void)
 {
-	InitializeCriticalSection (&reflection_mutex);
 }
 
 static void
