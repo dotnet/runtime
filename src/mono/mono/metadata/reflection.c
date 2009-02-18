@@ -9,9 +9,6 @@
  *
  */
 #include <config.h>
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/mono-membar.h"
 #include "mono/metadata/reflection.h"
@@ -4959,6 +4956,8 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 
 #endif /* DISABLE_REFLECTION_EMIT */
 
+#ifndef DISABLE_REFLECTION_EMIT_SAVE
+
 static int
 calc_section_size (MonoDynamicImage *assembly)
 {
@@ -5234,8 +5233,6 @@ checked_write_file (HANDLE f, gconstpointer buffer, guint32 numbytes)
 	if (!WriteFile (f, buffer, numbytes, &dummy, NULL))
 		g_error ("WriteFile returned %d\n", GetLastError ());
 }
-
-#ifndef DISABLE_REFLECTION_EMIT_SAVE
 
 /*
  * mono_image_create_pefile:
@@ -7702,7 +7699,9 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	const char *named;
 	guint32 i, j, num_named;
 	MonoObject *attr;
+	void *params_buf [32];
 	void **params;
+	MonoMethodSignature *sig;
 
 	mono_class_init (method->klass);
 
@@ -7717,8 +7716,12 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 	/*g_print ("got attr %s\n", method->klass->name);*/
 
-	/* Allocate using alloca so it gets GC tracking */
-	params = alloca (mono_method_signature (method)->param_count * sizeof (void*));	
+	sig = mono_method_signature (method);
+	if (sig->param_count < 32)
+		params = params_buf;
+	else
+		/* Allocate using GC so it gets GC tracking */
+		params = mono_gc_alloc_fixed (sig->param_count * sizeof (void*), NULL);
 
 	/* skip prolog */
 	p += 2;
@@ -7777,6 +7780,9 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		}
 		g_free (name);
 	}
+
+	if (params != params_buf)
+		mono_gc_free_fixed (params);
 
 	return attr;
 }
