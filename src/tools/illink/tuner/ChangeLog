@@ -1,3 +1,9 @@
+2009-02-18  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/InjectSecurityAttributes.cs: new tuner step
+	which is able to process the security attribute data files.
+	It replaces the previous InjectAttributes step.
+
 2009-01-28  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/CheckVisibility.cs: use the appropriate Resolve methods.
