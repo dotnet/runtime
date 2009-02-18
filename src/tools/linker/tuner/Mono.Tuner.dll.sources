@@ -3,4 +3,4 @@ Mono.Tuner/PrintStatus.cs
 Mono.Tuner/RemoveSerialization.cs
 Mono.Tuner/AdjustVisibility.cs
 Mono.Tuner/CheckVisibility.cs
-Mono.Tuner/InjectAttributes.cs
+Mono.Tuner/InjectSecurityAttributes.cs
