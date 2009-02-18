@@ -2082,11 +2082,13 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 	if (!preserve_sig) {
 		hr = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
-
-		/* try */
-		main_clause = g_new0 (MonoExceptionClause, 1);
-		main_clause->try_offset = mono_mb_get_label (mb);
 	}
+	else if (!MONO_TYPE_IS_VOID (sig->ret))
+		hr = mono_mb_add_local (mb, sig->ret);
+
+	/* try */
+	main_clause = g_new0 (MonoExceptionClause, 1);
+	main_clause->try_offset = mono_mb_get_label (mb);
 
 	/* load last param to store result if not preserve_sig and not void */
 	if (!preserve_sig && !MONO_TYPE_IS_VOID (sig->ret))
@@ -2102,32 +2104,41 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 	mono_mb_emit_managed_call (mb, method, NULL);
 
-	if (!preserve_sig) {
-		/* store result if not preserve_sig and we have one */
-		if (!MONO_TYPE_IS_VOID (sig->ret))
+	if (!MONO_TYPE_IS_VOID (sig->ret)) {
+		if (!preserve_sig)
 			mono_mb_emit_byte (mb, mono_type_to_stind (sig->ret));
+		else
+			mono_mb_emit_stloc (mb, hr);
+	}
 
-		pos_leave = mono_mb_emit_branch (mb, CEE_LEAVE);
+	pos_leave = mono_mb_emit_branch (mb, CEE_LEAVE);
 
-		/* Main exception catch */
-		main_clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
-		main_clause->try_len = mono_mb_get_pos (mb) - main_clause->try_offset;
-		main_clause->data.catch_class = mono_defaults.object_class;
+	/* Main exception catch */
+	main_clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
+	main_clause->try_len = mono_mb_get_pos (mb) - main_clause->try_offset;
+	main_clause->data.catch_class = mono_defaults.object_class;
 		
-		/* handler code */
-		main_clause->handler_offset = mono_mb_get_label (mb);
+	/* handler code */
+	main_clause->handler_offset = mono_mb_get_label (mb);
+	
+	if (!preserve_sig || (sig->ret && !sig->ret->byref && (sig->ret->type == MONO_TYPE_U4 || sig->ret->type == MONO_TYPE_I4))) {
 		mono_mb_emit_managed_call (mb, get_hr_for_exception, NULL);
 		mono_mb_emit_stloc (mb, hr);
-		mono_mb_emit_branch (mb, CEE_LEAVE);
-		main_clause->handler_len = mono_mb_get_pos (mb) - main_clause->handler_offset;
-		/* end catch */
-
-		mono_mb_set_clauses (mb, 1, main_clause);
-
-		mono_mb_patch_branch (mb, pos_leave);
-
-		mono_mb_emit_ldloc (mb, hr);
 	}
+	else {
+		mono_mb_emit_byte (mb, CEE_POP);
+	}
+
+	mono_mb_emit_branch (mb, CEE_LEAVE);
+	main_clause->handler_len = mono_mb_get_pos (mb) - main_clause->handler_offset;
+	/* end catch */
+
+	mono_mb_set_clauses (mb, 1, main_clause);
+
+	mono_mb_patch_branch (mb, pos_leave);
+
+	if (!preserve_sig || !MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_emit_ldloc (mb, hr);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
