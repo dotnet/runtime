@@ -62,6 +62,8 @@ public class Tests {
 		public SimpleDelegate del;
 		[MarshalAs(UnmanagedType.FunctionPtr)] 
 		public SimpleDelegate del2;
+		[MarshalAs(UnmanagedType.FunctionPtr)] 
+		public SimpleDelegate del3;
 	}
 
 	/* sparcv9 has complex conventions when passing structs with doubles in them 
@@ -568,6 +570,7 @@ public class Tests {
 		s.a = 2;
 		s.del = new SimpleDelegate (delegate_test);
 		s.del2 = new SimpleDelegate (delegate_test);
+		s.del3 = null;
 
 		DelegateStruct res = mono_test_marshal_delegate_struct (s);
 
@@ -577,6 +580,8 @@ public class Tests {
 			return 2;
 		if (res.del2 (2) != 0)
 			return 3;
+		if (res.del3 != null)
+			return 4;
 
 		return 0;
 	}

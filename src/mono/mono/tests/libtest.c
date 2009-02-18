@@ -469,7 +469,7 @@ mono_test_marshal_out_struct (int a, simplestruct *ss, int b, OutVTypeDelegate f
 
 typedef struct {
 	int a;
-	SimpleDelegate func, func2;
+	SimpleDelegate func, func2, func3;
 } DelegateStruct;
 
 LIBTEST_API DelegateStruct STDCALL 
@@ -477,9 +477,10 @@ mono_test_marshal_delegate_struct (DelegateStruct ds)
 {
 	DelegateStruct res;
 
-	res.a = ds.func (ds.a) + ds.func2 (ds.a);
+	res.a = ds.func (ds.a) + ds.func2 (ds.a) + (ds.func3 == NULL ? 0 : 1);
 	res.func = ds.func;
 	res.func2 = ds.func2;
+	res.func3 = NULL;
 
 	return res;
 }
