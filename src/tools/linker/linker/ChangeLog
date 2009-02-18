@@ -1,3 +1,8 @@
+2009-02-18  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Linker/XApiService.cs: delete, unused.
+	* Mono.Linker/Driver.cs: don't use the uneeded XApiService anymore.
+
 2009-01-28  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/AssemblyResolver.cs

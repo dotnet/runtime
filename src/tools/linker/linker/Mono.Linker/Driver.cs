@@ -135,7 +135,7 @@ namespace Mono.Linker {
 					break;
 				case 'i':
 					foreach (string file in GetFiles (GetParam ()))
-						p.PrependStep (new ResolveFromXApiStep (XApiService.GetApiInfoFromFile (file)));
+						p.PrependStep (new ResolveFromXApiStep (new XPathDocument (file)));
 					resolver = true;
 					break;
 				case 'l':
