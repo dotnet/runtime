@@ -5,6 +5,7 @@
 #define __MONO_METADATA_DOMAIN_INTERNALS_H__
 
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/lock-tracer.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-hash.h>
 #include <mono/utils/mono-compiler.h>
@@ -249,12 +250,12 @@ typedef struct  {
 	const AssemblyVersionSet version_sets [2];
 } MonoRuntimeInfo;
 
-#define mono_domain_lock(domain)   EnterCriticalSection(&(domain)->lock)
-#define mono_domain_unlock(domain) LeaveCriticalSection(&(domain)->lock)
-#define mono_domain_assemblies_lock(domain)   EnterCriticalSection(&(domain)->assemblies_lock)
-#define mono_domain_assemblies_unlock(domain) LeaveCriticalSection(&(domain)->assemblies_lock)
-#define mono_domain_jit_code_hash_lock(domain)   EnterCriticalSection(&(domain)->jit_code_hash_lock)
-#define mono_domain_jit_code_hash_unlock(domain) LeaveCriticalSection(&(domain)->jit_code_hash_lock)
+#define mono_domain_lock(domain) mono_locks_acquire(&(domain)->lock, DomainLock)
+#define mono_domain_unlock(domain) mono_locks_release(&(domain)->lock, DomainLock)
+#define mono_domain_assemblies_lock(domain) mono_locks_acquire(&(domain)->assemblies_lock, DomainAssembliesLock)
+#define mono_domain_assemblies_unlock(domain) mono_locks_release(&(domain)->assemblies_lock, DomainAssembliesLock)
+#define mono_domain_jit_code_hash_lock(domain) mono_locks_acquire(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
+#define mono_domain_jit_code_hash_unlock(domain) mono_locks_release(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
 

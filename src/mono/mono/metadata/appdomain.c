@@ -47,6 +47,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/attach.h>
 #include <mono/metadata/file-io.h>
+#include <mono/metadata/lock-tracer.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
@@ -235,6 +236,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 #endif
 	
 	mono_attach_init ();
+
+	mono_locks_tracer_init ();
 
 	/* mscorlib is loaded before we install the load hook */
 	mono_domain_fire_assembly_load (mono_defaults.corlib->assembly, NULL);

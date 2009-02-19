@@ -2060,13 +2060,13 @@ g_slist_append_image (MonoImage *image, GSList *list, gpointer data)
 void
 mono_image_lock (MonoImage *image)
 {
-	EnterCriticalSection (&image->lock);
+	mono_locks_acquire (&image->lock, ImageDataLock);
 }
 
 void
 mono_image_unlock (MonoImage *image)
 {
-	LeaveCriticalSection (&image->lock);
+	mono_locks_release (&image->lock, ImageDataLock);
 }
 
 

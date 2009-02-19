@@ -36,6 +36,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/lock-tracer.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-membar.h>
@@ -1948,13 +1949,13 @@ mono_method_get_last_managed (void)
 void
 mono_loader_lock (void)
 {
-	EnterCriticalSection (&loader_mutex);
+	mono_locks_acquire (&loader_mutex, LoaderLock);
 }
 
 void
 mono_loader_unlock (void)
 {
-	LeaveCriticalSection (&loader_mutex);
+	mono_locks_release (&loader_mutex, LoaderLock);
 }
 
 /**
