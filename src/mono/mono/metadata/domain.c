@@ -2037,7 +2037,10 @@ mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
 
 /*
  * mono_domain_code_foreach:
- *
+ * Iterate over the code thunks of the code manager of @domain.
+ * 
+ * The @func callback MUST not take any locks. If it really needs to, it must respect
+ * the locking rules of the runtime: http://www.mono-project.com/Mono:Runtime:Documentation:ThreadSafety 
  * LOCKING: Acquires the domain lock.
  */
 
