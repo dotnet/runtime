@@ -1405,7 +1405,7 @@ mono_method_alloc_generic_virtual_thunk (MonoDomain *domain, int size)
 	}
 	generic_virtual_thunks_size += size;
 
-	p = mono_code_manager_reserve (domain->code_mp, size);
+	p = mono_domain_code_reserve (domain, size);
 	*p = size;
 
 	return p + 1;
@@ -5574,9 +5574,7 @@ mono_create_ftnptr (MonoDomain *domain, gpointer addr)
 #ifdef __ia64__
 	gpointer *desc;
 
-	mono_domain_lock (domain);
-	desc = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
-	mono_domain_unlock (domain);
+	desc = mono_domain_code_reserve (domain, 2 * sizeof (gpointer));
 
 	desc [0] = addr;
 	desc [1] = NULL;
@@ -5585,9 +5583,7 @@ mono_create_ftnptr (MonoDomain *domain, gpointer addr)
 #elif defined(__ppc64__) || defined(__powerpc64__)
 	gpointer *desc;
 
-	mono_domain_lock (domain);
-	desc = mono_code_manager_reserve (domain->code_mp, 3 * sizeof (gpointer));
-	mono_domain_unlock (domain);
+	desc = mono_domain_code_reserve (domain, 3 * sizeof (gpointer));
 
 	desc [0] = addr;
 	desc [1] = NULL;

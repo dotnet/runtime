@@ -1988,6 +1988,68 @@ mono_domain_alloc0 (MonoDomain *domain, guint size)
 	return res;
 }
 
+/*
+ * mono_domain_code_reserve:
+ *
+ * LOCKING: Acquires the domain lock.
+ */
+void*
+mono_domain_code_reserve (MonoDomain *domain, int size)
+{
+	gpointer res;
+
+	mono_domain_lock (domain);
+	res = mono_code_manager_reserve (domain->code_mp, size);
+	mono_domain_unlock (domain);
+
+	return res;
+}
+
+/*
+ * mono_domain_code_reserve_align:
+ *
+ * LOCKING: Acquires the domain lock.
+ */
+void*
+mono_domain_code_reserve_align (MonoDomain *domain, int size, int alignment)
+{
+	gpointer res;
+
+	mono_domain_lock (domain);
+	res = mono_code_manager_reserve_align (domain->code_mp, size, alignment);
+	mono_domain_unlock (domain);
+
+	return res;
+}
+
+/*
+ * mono_domain_code_commit:
+ *
+ * LOCKING: Acquires the domain lock.
+ */
+void
+mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize)
+{
+	mono_domain_lock (domain);
+	mono_code_manager_commit (domain->code_mp, data, size, newsize);
+	mono_domain_unlock (domain);
+}
+
+/*
+ * mono_domain_code_foreach:
+ *
+ * LOCKING: Acquires the domain lock.
+ */
+
+void
+mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data)
+{
+	mono_domain_lock (domain);
+	mono_code_manager_foreach (domain->code_mp, func, user_data);
+	mono_domain_unlock (domain);
+}
+
+
 void 
 mono_context_set (MonoAppContext * new_context)
 {

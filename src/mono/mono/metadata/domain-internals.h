@@ -316,6 +316,18 @@ mono_domain_alloc  (MonoDomain *domain, guint size) MONO_INTERNAL;
 gpointer
 mono_domain_alloc0 (MonoDomain *domain, guint size) MONO_INTERNAL;
 
+void*
+mono_domain_code_reserve (MonoDomain *domain, int size) MONO_INTERNAL;
+
+void*
+mono_domain_code_reserve_align (MonoDomain *domain, int size, int alignment) MONO_INTERNAL;
+
+void
+mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize) MONO_INTERNAL;
+
+void
+mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data) MONO_INTERNAL;
+
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside
  * an AOT module.
