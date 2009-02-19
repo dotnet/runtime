@@ -106,8 +106,23 @@ namespace Mono.Tuner {
 			}
 		}
 
+		static void RemoveSecurityDeclarations (IHasSecurity provider)
+		{
+			// also remove already existing CAS security declarations
+
+			if (provider == null)
+				return;
+
+			if (!provider.HasSecurityDeclarations)
+				return;
+
+			provider.SecurityDeclarations.Clear ();
+		}
+
 		static void RemoveSecurityAttributes (ICustomAttributeProvider provider)
 		{
+			RemoveSecurityDeclarations (provider as IHasSecurity);
+
 			if (!provider.HasCustomAttributes)
 				return;
 

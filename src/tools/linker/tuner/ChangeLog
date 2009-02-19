@@ -1,3 +1,8 @@
+2009-02-19  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/InjectSecurityAttributes.cs: also remove existing
+	CAS security declarations before injecting CoreCLR security attributes.
+
 2009-02-18  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/InjectSecurityAttributes.cs: new tuner step
