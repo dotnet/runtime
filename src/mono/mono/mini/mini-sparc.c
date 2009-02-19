@@ -2366,7 +2366,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		}
 		size += item->chunk_size;
 	}
-	code = mono_code_manager_reserve (domain->code_mp, size * 4);
+	code = mono_domain_code_reserve (domain, size * 4);
 	start = code;
 
 	for (i = 0; i < count; ++i) {

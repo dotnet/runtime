@@ -49,9 +49,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 
 	this_reg = mono_arch_get_this_arg_reg (mono_method_signature (m), gsctx, NULL);
 
-	mono_domain_lock (domain);
-	start = code = mono_code_manager_reserve (domain->code_mp, 20);
-	mono_domain_unlock (domain);
+	start = code = mono_domain_code_reserve (domain, 20);
 
 	amd64_alu_reg_imm (code, X86_ADD, this_reg, sizeof (MonoObject));
 	/* FIXME: Optimize this */
@@ -543,9 +541,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	else
 		size = 5 + 1 + 8;
 
-	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve_align (domain->code_mp, size, 1);
-	mono_domain_unlock (domain);
+	code = buf = mono_domain_code_reserve_align (domain, size, 1);
 
 	amd64_call_code (code, tramp);
 	/* The trampoline code will obtain the argument from the instruction stream */

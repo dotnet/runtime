@@ -44,9 +44,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = mips_a1;
 	    
-	mono_domain_lock (domain);
-	start = code = mono_code_manager_reserve (domain->code_mp, 20);
-	mono_domain_unlock (domain);
+	start = code = mono_domain_code_reserve (domain, 20);
 
 	mips_load (code, mips_t9, addr);
 	mips_addiu (code, this_pos, this_pos, sizeof (MonoObject));
@@ -368,9 +366,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, 32);
-	mono_domain_unlock (domain);
+	code = buf = mono_domain_code_reserve (domain, 32);
 
 	/* Prepare the jump to the generic trampoline code
 	 * mono_arch_create_trampoline_code() knows we're putting this in t8

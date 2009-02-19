@@ -243,9 +243,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE * 4);
-	mono_domain_unlock (domain);
+	code = buf = mono_domain_code_reserve (domain, TRAMPOLINE_SIZE * 4);
 
 	/* We have to use g5 here because there is no other free register */
 	sparc_set (code, tramp, sparc_g5);

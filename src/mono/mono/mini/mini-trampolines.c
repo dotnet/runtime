@@ -893,9 +893,7 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	MonoDomain *domain = mono_domain_get ();
 	guint8 *buf, *start;
 
-	mono_domain_lock (domain);
-	buf = start = mono_code_manager_reserve (domain->code_mp, 2 * sizeof (gpointer));
-	mono_domain_unlock (domain);
+	buf = start = mono_domain_code_reserve (domain, 2 * sizeof (gpointer));
 
 	*(gpointer*)(gpointer)buf = image;
 	buf += sizeof (gpointer);

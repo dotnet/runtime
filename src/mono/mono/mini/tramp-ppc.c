@@ -67,11 +67,11 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 		this_pos = 4;
 	    
 	mono_domain_lock (domain);
-	start = code = mono_code_manager_reserve (domain->code_mp, size);
+	start = code = mono_domain_code_reserve (domain, size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
 	short_branch = branch_for_target_reachable (code + 4, addr);
 	if (short_branch)
-		mono_code_manager_commit (domain->code_mp, code, size, 8);
+		mono_domain_code_commit (domain, code, size, 8);
 	mono_domain_unlock (domain);
 
 	if (short_branch) {
@@ -347,13 +347,13 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	tramp = mono_get_trampoline_code (tramp_type);
 
 	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve_align (domain->code_mp, TRAMPOLINE_SIZE, 4);
+	code = buf = mono_domain_code_reserve_align (domain, TRAMPOLINE_SIZE, 4);
 	short_branch = branch_for_target_reachable (code + MONO_PPC_32_64_CASE (8, 5*4), tramp);
 #ifdef __mono_ppc64__
 	/* FIXME: make shorter if possible */
 #else
 	if (short_branch)
-		mono_code_manager_commit (domain->code_mp, code, TRAMPOLINE_SIZE, 12);
+		mono_domain_code_commit (domain, code, TRAMPOLINE_SIZE, 12);
 #endif
 	mono_domain_unlock (domain);
 

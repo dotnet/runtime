@@ -4984,7 +4984,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	if (fail_tramp)
 		code = mono_method_alloc_generic_virtual_thunk (domain, size);
 	else
-		code = mono_code_manager_reserve (domain->code_mp, size);
+		code = mono_domain_code_reserve (domain, size);
 	start = code;
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];

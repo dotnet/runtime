@@ -2045,12 +2045,12 @@ handle_thunk (int absolute, guchar *code, const guchar *target) {
 	pdata.found = 0;
 
 	mono_domain_lock (domain);
-	mono_code_manager_foreach (domain->code_mp, search_thunk_slot, &pdata);
+	mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
 
 	if (!pdata.found) {
 		/* this uses the first available slot */
 		pdata.found = 2;
-		mono_code_manager_foreach (domain->code_mp, search_thunk_slot, &pdata);
+		mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
 	}
 	mono_domain_unlock (domain);
 
@@ -4322,7 +4322,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	if (large_offsets)
 		size += 4 * count; /* The ARM_ADD_REG_IMM to pop the stack */
 
-	start = code = mono_code_manager_reserve (domain->code_mp, size);
+	start = code = mono_domain_code_reserve (domain, size);
 
 #if DEBUG_IMT
 	printf ("building IMT thunk for class %s %s entries %d code size %d code at %p end %p vtable %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable);

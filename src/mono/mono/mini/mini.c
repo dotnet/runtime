@@ -2494,9 +2494,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			if (mono_aot_only) {
 				jump_table = mono_domain_alloc (domain, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
-				mono_domain_lock (domain);
-				jump_table = mono_code_manager_reserve (domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
-				mono_domain_unlock (domain);
+				jump_table = mono_domain_code_reserve (domain, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
 		}
 
@@ -2827,9 +2825,7 @@ mono_codegen (MonoCompile *cfg)
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
 		unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
 #endif
-		mono_domain_lock (cfg->domain);
-		code = mono_code_manager_reserve (cfg->domain->code_mp, cfg->code_size + unwindlen);
-		mono_domain_unlock (cfg->domain);
+		code = mono_domain_code_reserve (cfg->domain, cfg->code_size + unwindlen);
 	}
 
 	memcpy (code, cfg->native_code, cfg->code_len);
@@ -2890,9 +2886,7 @@ mono_codegen (MonoCompile *cfg)
 			if (cfg->method->dynamic) {
 				table = mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
-				mono_domain_lock (cfg->domain);
-				table = mono_code_manager_reserve (cfg->domain->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
-				mono_domain_unlock (cfg->domain);
+				table = mono_domain_code_reserve (cfg->domain, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
 
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
@@ -2964,9 +2958,7 @@ if (valgrind_register){
 	if (cfg->method->dynamic) {
 		mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
 	} else {
-		mono_domain_lock (cfg->domain);
-		mono_code_manager_commit (cfg->domain->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
-		mono_domain_unlock (cfg->domain);
+		mono_domain_code_commit (cfg->domain, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
 	
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);

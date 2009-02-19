@@ -99,9 +99,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *me
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret))
 		this_pos = s390_r3;
 
-	mono_domain_lock (domain);
-	start = code = mono_code_manager_reserve (domain->code_mp, 28);
-	mono_domain_unlock (domain);
+	start = code = mono_domain_code_reserve (domain, 28);
 
 	s390_basr (code, s390_r1, 0);
 	s390_j	  (code, 6);
@@ -508,9 +506,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	/* purpose is to provide the generic part with the          */
 	/* MonoMethod *method pointer. We'll use r1 to keep it.     */
 	/*----------------------------------------------------------*/
-	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, SPECIFIC_TRAMPOLINE_SIZE);
-	mono_domain_unlock (domain);
+	code = buf = mono_domain_code_reserve (domain, SPECIFIC_TRAMPOLINE_SIZE);
 
 	s390_basr (buf, s390_r1, 0);
 	s390_j	  (buf, 6);

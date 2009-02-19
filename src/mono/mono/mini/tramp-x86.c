@@ -48,9 +48,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = 8;
 	    
-	mono_domain_lock (domain);
-	start = code = mono_code_manager_reserve (domain->code_mp, 16);
-	mono_domain_unlock (domain);
+	start = code = mono_domain_code_reserve (domain, 16);
 
 	x86_alu_membase_imm (code, X86_ADD, X86_ESP, this_pos, sizeof (MonoObject));
 	x86_jump_code (code, addr);
@@ -405,9 +403,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve_align (domain->code_mp, TRAMPOLINE_SIZE, 4);
-	mono_domain_unlock (domain);
+	code = buf = mono_domain_code_reserve_align (domain, TRAMPOLINE_SIZE, 4);
 
 	x86_push_imm (buf, arg1);
 	x86_jump_code (buf, tramp);

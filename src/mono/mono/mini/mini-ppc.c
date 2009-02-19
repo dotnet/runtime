@@ -2603,12 +2603,12 @@ handle_thunk (int absolute, guchar *code, const guchar *target) {
 	pdata.found = 0;
 
 	mono_domain_lock (domain);
-	mono_code_manager_foreach (domain->code_mp, search_thunk_slot, &pdata);
+	mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
 
 	if (!pdata.found) {
 		/* this uses the first available slot */
 		pdata.found = 2;
-		mono_code_manager_foreach (domain->code_mp, search_thunk_slot, &pdata);
+		mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
 	}
 	mono_domain_unlock (domain);
 
@@ -5263,7 +5263,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	} else {
 		/* the initial load of the vtable address */
 		size += PPC_LOAD_SEQUENCE_LENGTH + LOADSTORE_SIZE;
-		code = mono_code_manager_reserve (domain->code_mp, size);
+		code = mono_domain_code_reserve (domain, size);
 	}
 	start = code;
 	if (!fail_tramp) {

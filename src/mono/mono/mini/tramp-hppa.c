@@ -63,9 +63,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
 		this_pos = hppa_r25;
 	    
-	mono_domain_lock (domain);
-	start = code = mono_code_manager_reserve (domain->code_mp, 20);
-	mono_domain_unlock (domain);
+	start = code = mono_domain_code_reserve (domain, 20);
 
 	hppa_set (code, addr, hppa_r1);
 	hppa_ldo (code, sizeof (MonoObject), this_pos, this_pos);
@@ -321,9 +319,7 @@ mono_arch_create_class_init_trampoline (MonoVTable *vtable)
 	tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_CLASS_INIT);
 	/* This is the method-specific part of the trampoline. Its purpose is
 	   to provide the generic part with the MonoMethod *method pointer. */
-	mono_domain_lock (vtable->domain);
-	code = buf = mono_code_manager_reserve (vtable->domain->code_mp, METHOD_TRAMPOLINE_SIZE);
-	mono_domain_unlock (vtable->domain);
+	code = buf = mono_domain_code_reserve (vtable->domain, METHOD_TRAMPOLINE_SIZE);
 
 	hppa_stw (buf, hppa_r2, -20, hppa_sp);
 	hppa_copy (buf, hppa_r3, hppa_r1);
@@ -364,9 +360,7 @@ create_specific_tramp (MonoMethod *method, guint8* tramp, MonoDomain *domain)
 	guint8 *code, *buf;
 	MonoJitInfo *ji;
 
-	mono_domain_lock (domain);
-	code = buf = mono_code_manager_reserve (domain->code_mp, 20);
-	mono_domain_unlock (domain);
+	code = buf = mono_domain_code_reserve (domain, 20);
 
 	/* Call trampoline, with the "method" pointer in r20 */
 	hppa_set (buf, tramp, hppa_r1);

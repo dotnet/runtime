@@ -5523,7 +5523,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	} else {
 		/* the initial load of the vtable address */
 		size += 8;
-		code = mono_code_manager_reserve (domain->code_mp, size);
+		code = mono_domain_code_reserve (domain, size);
 	}
 	start = code;
 	if (!fail_tramp)

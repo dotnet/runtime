@@ -472,14 +472,12 @@ mono_arch_create_specific_trampoline (gpointer arg1,
   alpha_jmp(code, alpha_zero, alpha_at, 0);
   
   g_assert (((char *)code - (char *)buf) <= TRAMPOLINE_SIZE);
-  mono_domain_lock (domain);
   /*
    * FIXME: Changing the size to code - buf causes strange crashes during
    * mcs bootstrap.
    */
-  real_code = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
+  real_code = mono_domain_code_reserve (domain, TRAMPOLINE_SIZE);
   size = (char *)code - (char *)buf;
-  mono_domain_unlock (domain);
   
   memcpy (real_code, buf, size);
  
@@ -591,9 +589,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
   if (MONO_TYPE_ISSTRUCT (mono_method_signature (m)->ret))
     this_reg = 17; //R17
 
-  mono_domain_lock (domain);
-  start_code = code = (unsigned int *)mono_code_manager_reserve (domain->code_mp, 32);
-  mono_domain_unlock (domain);
+  start_code = code = (unsigned int *)mono_domain_code_reserve (domain, 32);
 
   // Adjust this by size of MonoObject
   alpha_addq_(code, this_reg, sizeof(MonoObject), this_reg);  // 0

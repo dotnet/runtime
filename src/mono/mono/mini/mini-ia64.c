@@ -4669,7 +4669,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	g_assert (code.buf - buf <= size);
 
 	size = code.buf - buf;
-	start = mono_code_manager_reserve (domain->code_mp, size);
+	start = mono_domain_code_reserve (domain, size);
 	memcpy (start, buf, size);
 
 	mono_arch_flush_icache (start, size);

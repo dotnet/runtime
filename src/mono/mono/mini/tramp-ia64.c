@@ -50,9 +50,7 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	func_addr = ((gpointer*)addr) [0];
 	func_gp = ((gpointer*)addr) [1];
 
-	mono_domain_lock (domain);
-	buf = mono_code_manager_reserve (domain->code_mp, 256);
-	mono_domain_unlock (domain);
+	buf = mono_domain_code_reserve (domain, 256);
 
 	/* Since the this reg is a stacked register, its a bit hard to access it */
 	ia64_codegen_init (code, buf);
@@ -376,9 +374,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	tramp = mono_get_trampoline_code (tramp_type);
 
-	mono_domain_lock (domain);
-	buf = mono_code_manager_reserve (domain->code_mp, TRAMPOLINE_SIZE);
-	mono_domain_unlock (domain);
+	buf = mono_domain_code_reserve (domain, TRAMPOLINE_SIZE);
 
 	/* FIXME: Optimize this */
 

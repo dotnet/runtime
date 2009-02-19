@@ -2062,9 +2062,7 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 			jinfo = decode_exception_debug_info (aot_module, domain, method, ex_info, code);
 		}
 
-		mono_domain_lock (domain);
-		code2 = mono_code_manager_reserve (domain->code_mp, jinfo->code_size);
-		mono_domain_unlock (domain);
+		code2 = mono_domain_code_reserve (domain, jinfo->code_size);
 		memcpy (code2, code, jinfo->code_size);
 		mono_arch_flush_icache (code2, jinfo->code_size);
 		code = code2;
