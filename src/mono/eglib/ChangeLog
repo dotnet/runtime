@@ -1,3 +1,7 @@
+2009-02-19 Gonzalo Paniagua Javier <gonzalo@novell.com>
+
+	* src/gstr.c: use memset in g_strnfill.
+
 2009-01-19  Bill Holmes  <billholmes54@gmail.com>
 
 	* src/gstr.c (g_strnfill):  Fixing a warning for MSVC.

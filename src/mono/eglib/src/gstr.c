@@ -830,11 +830,8 @@ gchar *
 g_strnfill (gsize length, gchar fill_char)
 {
 	gchar *ret = g_new (gchar, length + 1);
-	gsize i;
 
-	for (i = 0; i < length; i++)
-		ret [i] = fill_char;
-	
+	memset (ret, fill_char, length);
 	ret [length] = 0;
 	return ret;
 }
