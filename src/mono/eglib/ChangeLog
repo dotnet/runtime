@@ -1,3 +1,9 @@
+2009-01-19  Bill Holmes  <billholmes54@gmail.com>
+
+	* src/gstr.c (g_strnfill):  Fixing a warning for MSVC.
+
+	Contributed under MIT/X11 license.
+
 2009-02-05  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gstr.c: Add g_strnfill
