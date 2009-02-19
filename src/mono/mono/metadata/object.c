@@ -1181,6 +1181,10 @@ initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry
 	}
 }
 
+/*
+ * LOCKING: requires the loader and domain locks.
+ *
+*/
 static void
 build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces, int slot_num) {
 	int i;
@@ -1294,6 +1298,8 @@ mono_install_vtable_trampoline (gpointer tramp_code)
  * Fill the given @imt_slot in the IMT table of @vtable with
  * a trampoline or a thunk for the case of collisions.
  * This is part of the internal mono API.
+ *
+ * LOCKING: Take the domain lock.
  */
 void
 mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
@@ -1307,11 +1313,13 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 	 * Update and heck needs to ahppen inside the proper domain lock, as all
 	 * the changes made to a MonoVTable.
 	 */
+	mono_loader_lock (); /*FIXME build_imt_slots requires the loader lock.*/
 	mono_domain_lock (vtable->domain);
 	/* we change the slot only if it wasn't changed from the generic imt trampoline already */
 	if (imt [imt_slot] == imt_trampoline)
 		build_imt_slots (vtable->klass, vtable, vtable->domain, imt, NULL, imt_slot);
 	mono_domain_unlock (vtable->domain);
+	mono_loader_unlock ();
 }
 
 
@@ -1614,16 +1622,19 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	gpointer iter;
 	gpointer *interface_offsets;
 
+	mono_loader_lock (); /*FIXME mono_class_init acquires it*/
 	mono_domain_lock (domain);
 	runtime_info = class->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id]) {
 		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 		return runtime_info->domain_vtables [domain->domain_id];
 	}
 	if (!class->inited || class->exception_type) {
 		if (!mono_class_init (class) || class->exception_type){
 			MonoException *exc;
 			mono_domain_unlock (domain);
+			mono_loader_unlock ();
 			exc = mono_class_get_exception_for_failure (class);
 			g_assert (exc);
 			mono_raise_exception (exc);
@@ -1772,7 +1783,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	/* class->runtime_info is protected by the loader lock, both when
 	 * it it enlarged and when it is stored info.
 	 */
-	mono_loader_lock ();
+
 	old_info = class->runtime_info;
 	if (old_info && old_info->max_domain >= domain->domain_id) {
 		/* someone already created a large enough runtime info */
@@ -1802,7 +1813,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		mono_memory_barrier ();
 		class->runtime_info = runtime_info;
 	}
-	mono_loader_unlock ();
 
 	/* Initialize vtable */
 	if (vtable_trampoline) {
@@ -1838,6 +1848,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	}
 
 	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 
 	/* Initialization is now complete, we can throw if the InheritanceDemand aren't satisfied */
 	if (mono_is_security_manager_active () && (class->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND)) {
@@ -2230,11 +2241,13 @@ clone_remote_class (MonoDomain *domain, MonoRemoteClass* remote_class, MonoClass
 gpointer
 mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *rp)
 {
+	mono_loader_lock (); /*FIXME mono_class_from_mono_type and mono_class_proxy_vtable take it*/
 	mono_domain_lock (domain);
 	if (rp->target_domain_id != -1) {
 		if (remote_class->xdomain_vtable == NULL)
 			remote_class->xdomain_vtable = mono_class_proxy_vtable (domain, remote_class, MONO_REMOTING_TARGET_APPDOMAIN);
 		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 		return remote_class->xdomain_vtable;
 	}
 	if (remote_class->default_vtable == NULL) {
@@ -2249,6 +2262,7 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 	}
 	
 	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 	return remote_class->default_vtable;
 }
 
@@ -2269,6 +2283,7 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoCla
 	MonoRemoteClass *remote_class;
 	gboolean redo_vtable;
 
+	mono_loader_lock (); /*FIXME mono_remote_class_vtable requires it.*/
 	mono_domain_lock (domain);
 
 	tproxy = (MonoTransparentProxy*) proxy_object;
@@ -2291,6 +2306,7 @@ mono_upgrade_remote_class (MonoDomain *domain, MonoObject *proxy_object, MonoCla
 	}
 	
 	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 }
 
 

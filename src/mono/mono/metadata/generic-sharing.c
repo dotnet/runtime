@@ -1207,6 +1207,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		g_print ("filling mrgctx slot %d table %d index %d\n", slot, i, rgctx_index);
 	*/
 
+	/*FIXME We should use CAS here, no need to take a lock.*/
 	mono_domain_lock (domain);
 
 	/* Check whether the slot hasn't been instantiated in the
@@ -1305,6 +1306,8 @@ mrgctx_equal_func (gconstpointer a, gconstpointer b)
  *
  * Returns the MRGCTX for the generic method(s) with the given
  * method_inst of the given class_vtable.
+ *
+ * LOCKING: Take the domain lock.
  */
 MonoMethodRuntimeGenericContext*
 mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst)

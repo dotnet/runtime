@@ -1967,11 +1967,12 @@ unload_thread_main (void *arg)
 	 * We also hold the loader lock because we're going to change
 	 * class->runtime_info.
 	 */
-	mono_domain_lock (domain);
+
 	mono_loader_lock ();
+	mono_domain_lock (domain);
 	g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable, domain);
-	mono_loader_unlock ();
 	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 
 	mono_threads_clear_cached_culture (domain);
 

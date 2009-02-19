@@ -1246,10 +1246,12 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	 * We use the lock on the root domain instead of the JIT lock to protect 
 	 * callinfo->trampoline, since we do a lot of stuff inside the critical section.
 	 */
+	mono_loader_lock (); /*FIXME mono_compile_method requires the loader lock, by large.*/
 	mono_domain_lock (domain);
 
 	if (callinfo->trampoline) {
 		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 		return callinfo->trampoline;
 	}
 
@@ -1266,6 +1268,7 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	callinfo->trampoline = trampoline;
 
 	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 	
 	return callinfo->trampoline;
 }
@@ -3747,9 +3750,11 @@ lookup_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoJitInfo *info;
 
+	mono_loader_lock (); /*FIXME lookup_method_inner acquired it*/
 	mono_domain_jit_code_hash_lock (domain);
 	info = lookup_method_inner (domain, method);
 	mono_domain_jit_code_hash_unlock (domain);
+	mono_loader_unlock ();
 
 	return info;
 }
@@ -3927,6 +3932,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		g_assert_not_reached ();
 	}
 
+	mono_loader_lock (); /*FIXME lookup_method_inner requires the loader lock*/
 	mono_domain_lock (target_domain);
 
 	/* Check if some other thread already did the job. In this case, we can
@@ -3973,6 +3979,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 
 	mono_domain_unlock (target_domain);
+	mono_loader_unlock ();
 
 	vtable = mono_class_vtable (target_domain, method->klass);
 	if (!vtable) {

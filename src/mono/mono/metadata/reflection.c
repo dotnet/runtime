@@ -6106,12 +6106,14 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 			return vtable->type;
 	}
 
+	mono_loader_lock (); /*FIXME mono_class_init and mono_class_vtable acquire it*/
 	mono_domain_lock (domain);
 	if (!domain->type_hash)
 		domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mymono_metadata_type_hash, 
 				(GCompareFunc)mymono_metadata_type_equal, MONO_HASH_VALUE_GC);
 	if ((res = mono_g_hash_table_lookup (domain->type_hash, type))) {
 		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 		return res;
 	}
 	/* Create a MonoGenericClass object for instantiations of not finished TypeBuilders */
@@ -6119,11 +6121,13 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		res = (MonoReflectionType *)mono_generic_class_get_object (domain, type);
 		mono_g_hash_table_insert (domain->type_hash, type, res);
 		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 		return res;
 	}
 
 	if (!verify_safe_for_managed_space (type)) {
 		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 		mono_raise_exception (mono_get_exception_invalid_operation ("This type cannot be propagated to managed space"));
 	}
 
@@ -6132,6 +6136,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		/* should this be considered an error condition? */
 		if (!type->byref) {
 			mono_domain_unlock (domain);
+			mono_loader_unlock ();
 			return klass->reflection_info;
 		}
 	}
@@ -6149,6 +6154,7 @@ mono_type_get_object (MonoDomain *domain, MonoType *type)
 		MONO_OBJECT_SETREF (domain, typeof_void, res);
 
 	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 	return res;
 }
 
@@ -10208,11 +10214,11 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	 * we need to lock the domain because the lock will be taken inside
 	 * So, we need to keep the locking order correct.
 	 */
-	mono_domain_lock (domain);
 	mono_loader_lock ();
+	mono_domain_lock (domain);
 	if (klass->wastypebuilder) {
-		mono_loader_unlock ();
 		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 		return mono_type_get_object (mono_object_domain (tb), &klass->byval_arg);
 	}
 	/*
@@ -10282,8 +10288,8 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	if (domain->type_hash && klass->generic_container)
 		mono_g_hash_table_foreach_remove (domain->type_hash, remove_instantiations_of, klass);
 
-	mono_loader_unlock ();
 	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 
 	if (klass->enumtype && !mono_class_is_valid_enum (klass)) {
 		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
