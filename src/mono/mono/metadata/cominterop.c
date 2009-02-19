@@ -449,7 +449,7 @@ cominterop_get_hresult_for_exception (MonoException* exc)
 }
 
 static MonoReflectionType *
-type_from_handle (MonoType *handle)
+cominterop_type_from_handle (MonoType *handle)
 {
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *klass = mono_class_from_mono_type (handle);
@@ -490,6 +490,7 @@ mono_cominterop_init (void)
 	register_icall (mono_string_to_bstr, "mono_string_to_bstr", "ptr obj", FALSE);
 	register_icall (mono_string_from_bstr, "mono_string_from_bstr", "obj ptr", FALSE);
 	register_icall (mono_free_bstr, "mono_free_bstr", "void ptr", FALSE);
+	register_icall (cominterop_type_from_handle, "cominterop_type_from_handle", "object ptr", FALSE);
 }
 
 void
@@ -561,7 +562,7 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_ptr (mb, &mono_defaults.com_object_class->byval_arg);
-		mono_mb_emit_icall (mb, type_from_handle);
+		mono_mb_emit_icall (mb, cominterop_type_from_handle);
 		mono_mb_emit_managed_call (mb, com_interop_proxy_get_proxy, NULL);
 		mono_mb_emit_managed_call (mb, get_transparent_proxy, NULL);
 		if (conv == MONO_MARSHAL_CONV_OBJECT_INTERFACE) {
@@ -1060,7 +1061,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 
 		if (klass && klass != mono_defaults.object_class) {
 			mono_mb_emit_ptr (mb, t);
-			mono_mb_emit_icall (mb, type_from_handle);
+			mono_mb_emit_icall (mb, cominterop_type_from_handle);
 			mono_mb_emit_managed_call (mb, get_com_interface_for_object_internal, NULL);
 		}
 		else if (spec->native == MONO_NATIVE_IUNKNOWN)
@@ -1250,7 +1251,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 			mono_mb_emit_ldloc (mb, conv_arg);
 			if (klass && klass != mono_defaults.object_class) {
 				mono_mb_emit_ptr (mb, t);
-				mono_mb_emit_icall (mb, type_from_handle);
+				mono_mb_emit_icall (mb, cominterop_type_from_handle);
 				mono_mb_emit_managed_call (mb, get_com_interface_for_object_internal, NULL);
 			}
 			else if (spec->native == MONO_NATIVE_IUNKNOWN)
@@ -1293,7 +1294,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 		mono_mb_emit_ldloc (mb, ccw_obj);
 		if (klass && klass != mono_defaults.object_class) {
 			mono_mb_emit_ptr (mb, t);
-			mono_mb_emit_icall (mb, type_from_handle);
+			mono_mb_emit_icall (mb, cominterop_type_from_handle);
 			mono_mb_emit_managed_call (mb, get_com_interface_for_object_internal, NULL);
 		}
 		else if (spec->native == MONO_NATIVE_IUNKNOWN)
