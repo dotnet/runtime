@@ -3096,12 +3096,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint8 *br;
 
 			/* load 64bit integer to FP stack */
-			x86_push_imm (code, 0);
 			x86_push_reg (code, ins->sreg2);
 			x86_push_reg (code, ins->sreg1);
 			x86_fild_membase (code, X86_ESP, 0, TRUE);
-			/* store as 80bit FP value */
-			x86_fst80_membase (code, X86_ESP, 0);
 			
 			/* test if lreg is negative */
 			x86_test_reg_reg (code, ins->sreg2, ins->sreg2);
@@ -3109,14 +3106,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	
 			/* add correction constant mn */
 			x86_fld80_mem (code, mn);
-			x86_fld80_membase (code, X86_ESP, 0);
 			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
-			x86_fst80_membase (code, X86_ESP, 0);
 
 			x86_patch (br, code);
 
-			x86_fld80_membase (code, X86_ESP, 0);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 
 			break;
 		}
