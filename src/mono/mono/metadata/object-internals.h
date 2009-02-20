@@ -5,6 +5,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/mempool.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -97,7 +98,6 @@
 		ex = mono_get_exception_argument_null (#arg);		  \
 		mono_raise_exception (ex);				  \
        };				}G_STMT_END
-
 
 /* 16 == default capacity */
 #define mono_stringbuilder_capacity(sb) ((sb)->str ? ((sb)->str->length) : 16)
@@ -536,6 +536,43 @@ mono_domain_get_tls_offset (void) MONO_INTERNAL;
 /* Reflection and Reflection.Emit support */
 
 /*
+ * Handling System.Type objects:
+ *
+ *   Fields defined as System.Type in managed code should be defined as MonoObject* 
+ * in unmanaged structures, and the monotype_cast () function should be used for 
+ * casting them to MonoReflectionType* to avoid crashes/security issues when 
+ * encountering instances of user defined subclasses of System.Type.
+ */
+
+#define IS_MONOTYPE(obj) (!(obj) || (((MonoObject*)(obj))->vtable->klass->image == mono_defaults.corlib && ((MonoReflectionType*)(obj))->type != NULL))
+
+/* 
+ * Make sure the argument, which should be a System.Type is a System.MonoType object 
+ * or equivalent, and not an instance of 
+ * a user defined subclass of System.Type. This should be used in places were throwing
+ * an exception is safe.
+ */
+#define CHECK_MONOTYPE(obj) do { \
+	if (!IS_MONOTYPE (obj)) \
+		mono_raise_exception (mono_get_exception_not_supported ("User defined subclasses of System.Type are not yet supported")); \
+	} while (0)
+
+/* This should be used for accessing members of Type[] arrays */
+#define mono_type_array_get(arr,index) monotype_cast (mono_array_get ((arr), gpointer, (index)))
+
+/*
+ * Cast an object to MonoReflectionType, making sure it is a System.MonoType or
+ * a subclass of it.
+ */
+static inline MonoReflectionType*
+monotype_cast (MonoObject *obj)
+{
+	g_assert (IS_MONOTYPE (obj));
+
+	return (MonoReflectionType*)obj;
+}
+
+/*
  * The following structure must match the C# implementation in our corlib.
  */
 
@@ -747,7 +784,7 @@ typedef struct {
 	MonoString *guid;
 	MonoString *mcookie;
 	MonoString *marshaltype;
-	MonoReflectionType *marshaltyperef;
+	MonoObject *marshaltyperef;
 	gint32 param_num;
 	MonoBoolean has_size;
 } MonoReflectionMarshal;
@@ -785,7 +822,7 @@ typedef struct {
 typedef struct {
 	MonoObject object;
 	MonoMethod *mhandle;
-	MonoReflectionType *rtype;
+	MonoObject *rtype;
 	MonoArray *parameters;
 	guint32 attrs;
 	guint32 iattrs;
@@ -877,7 +914,7 @@ typedef struct {
 typedef struct {
 	MonoObject object;
 	guint32 attrs;
-	MonoReflectionType *type;
+	MonoObject *type;
 	MonoString *name;
 	MonoObject *def_value;
 	gint32 offset;
@@ -895,7 +932,7 @@ typedef struct {
 	MonoObject object;
 	guint32 attrs;
 	MonoString *name;
-	MonoReflectionType *type;
+	MonoObject *type;
 	MonoArray *parameters;
 	MonoArray *cattrs;
 	MonoObject *def_value;
@@ -934,7 +971,7 @@ typedef struct {
 	MonoReflectionType type;
 	MonoString *name;
 	MonoString *nspace;
-	MonoReflectionType *parent;
+	MonoObject *parent;
 	MonoReflectionType *nesting_type;
 	MonoArray *interfaces;
 	gint32     num_methods;

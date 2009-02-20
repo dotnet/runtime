@@ -2464,7 +2464,7 @@ ves_icall_MonoGenericClass_GetParentType (MonoReflectionGenericClass *type)
 	if (!klass->generic_class && !klass->generic_container)
 		return NULL;
 
-	parent = type->generic_type->parent;
+	parent = monotype_cast (type->generic_type->parent);
 
 	if (!parent || (parent->type->type != MONO_TYPE_GENERICINST))
 		return NULL;
