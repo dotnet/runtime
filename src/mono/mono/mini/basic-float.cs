@@ -595,5 +595,16 @@ class Tests {
 
 		return f == PositiveInfinity ? 0 : 1;
 	}
+
+	static double VALUE = 0.19975845134874831D;
+
+	static int test_0_float_conversion_reduces_double_precision () {
+		double d = (float)VALUE;
+		if (d != 0.19975845515727997d)
+			return 1;
+
+		return 0;
+	}
+
 }
 

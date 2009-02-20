@@ -3040,7 +3040,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_fild_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);
 			break;
 		case OP_FCONV_TO_R4:
-			/* FIXME: nothing to do ?? */
+			/* Change precision */
+			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 4);
+			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
+			x86_fld_membase (code, X86_ESP, 0, FALSE);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, 1, TRUE);
