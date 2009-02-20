@@ -8938,9 +8938,9 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 
 	MONO_ARCH_SAVE_REGS;
 
-	mono_loader_lock ();
-
 	CHECK_MONOTYPE (tb->parent);
+
+	mono_loader_lock ();
 
 	if (tb->parent) {
 		/* check so we can compile corlib correctly */
