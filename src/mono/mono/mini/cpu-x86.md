@@ -128,9 +128,9 @@ checkthis: src1:b len:3
 voidcall: len:17 clob:c
 voidcall_reg: src1:i len:11 clob:c
 voidcall_membase: src1:b len:16 clob:c
-fcall: dest:f len:48 clob:c
-fcall_reg: dest:f src1:i len:48 clob:c
-fcall_membase: dest:f src1:b len:48 clob:c
+fcall: dest:f len:17 clob:c
+fcall_reg: dest:f src1:i len:11 clob:c
+fcall_membase: dest:f src1:b len:16 clob:c
 lcall: dest:l len:17 clob:c
 lcall_reg: dest:l src1:i len:11 clob:c
 lcall_membase: dest:l src1:b len:16 clob:c
@@ -376,8 +376,8 @@ cmov_ile_un: dest:i src1:i src2:i len:16 clob:1
 cmov_ilt_un: dest:i src1:i src2:i len:16 clob:1
 
 long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
-long_conv_to_r8_2: dest:f src1:i src2:i len:37 
-long_conv_to_r4_2: dest:f src1:i src2:i len:64
+long_conv_to_r8_2: dest:f src1:i src2:i len:14 
+long_conv_to_r4_2: dest:f src1:i src2:i len:14
 long_conv_to_r_un_2: dest:f src1:i src2:i len:37 
 
 fmove: dest:f src1:f
