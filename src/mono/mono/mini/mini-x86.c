@@ -1901,17 +1901,6 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 			}
 		}
 		break;
-	case OP_FCALL: {
-		MonoCallInst *call = (MonoCallInst*)ins;
-		if (call->method && !mono_method_signature (call->method)->ret->byref && mono_method_signature (call->method)->ret->type == MONO_TYPE_R4) {
-			/* Avoid some precision issues by saving/reloading the return value */
-			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 8);
-			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
-			x86_fld_membase (code, X86_ESP, 0, FALSE);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
-		}
-		break;
-	}
 	default:
 		break;
 	}
