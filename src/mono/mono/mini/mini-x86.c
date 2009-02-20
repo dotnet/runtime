@@ -3069,6 +3069,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_push_reg (code, ins->sreg2);
 			x86_push_reg (code, ins->sreg1);
 			x86_fild_membase (code, X86_ESP, 0, TRUE);
+			/* Change precision */
+			x86_fst_membase (code, X86_ESP, 0, TRUE, TRUE);
+			x86_fld_membase (code, X86_ESP, 0, TRUE);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 8);
 			break;
 		case OP_LCONV_TO_R4_2:

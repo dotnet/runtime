@@ -606,5 +606,16 @@ class Tests {
 		return 0;
 	}
 
+
+    static int test_0_long_to_double_conversion ()
+    {
+		long l = 9223372036854775807L;
+		long conv = (long)((double)l);
+		if (conv != -9223372036854775808l)
+			return 1;
+
+		return 0;
+    }
+
 }
 
