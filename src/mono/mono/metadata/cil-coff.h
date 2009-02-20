@@ -153,6 +153,7 @@ typedef struct {
 #define MONO_PE_RESOURCE_ID_ANICURSOR	0x15
 #define MONO_PE_RESOURCE_ID_ANIICON	0x16
 #define MONO_PE_RESOURCE_ID_HTML	0x17
+#define MONO_PE_RESOURCE_ID_ASPNET_STRING	0x65
 
 typedef struct {
 	/* If the MSB is set, then the other 31 bits store the RVA of

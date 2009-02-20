@@ -957,6 +957,7 @@ ICALL(VALUET_2, "InternalGetHashCode", ves_icall_System_ValueType_InternalGetHas
 ICALL_TYPE(WEBIC, "System.Web.Util.ICalls", WEBIC_1)
 ICALL(WEBIC_1, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path)
 ICALL(WEBIC_2, "GetMachineInstallDirectory", ves_icall_System_Web_Util_ICalls_get_machine_install_dir)
+ICALL(WEBIC_3, "GetUnmanagedResourcesPtr", ves_icall_get_resources_ptr)
 
 #ifndef DISABLE_COM
 ICALL_TYPE(COMOBJ, "System.__ComObject", COMOBJ_1)

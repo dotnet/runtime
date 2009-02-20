@@ -1574,11 +1574,11 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 	dir_offset = MONO_PE_RES_DIR_ENTRY_DIR_OFFSET (*entry);
 
 	if(level==0) {
-		if((is_string==FALSE && name_offset!=res_id) ||
-		   (is_string==TRUE)) {
-			return(NULL);
-		}
+		if (is_string)
+			return NULL;
 	} else if (level==1) {
+		if (res_id != name_offset)
+			return NULL;
 #if 0
 		if(name!=NULL &&
 		   is_string==TRUE && name!=lookup (name_offset)) {
@@ -1586,12 +1586,8 @@ mono_image_walk_resource_tree (MonoCLIImageInfo *info, guint32 res_id,
 		}
 #endif
 	} else if (level==2) {
-		if ((is_string == FALSE &&
-		    name_offset != lang_id &&
-		    lang_id != 0) ||
-		   (is_string == TRUE)) {
-			return(NULL);
-		}
+		if (is_string == TRUE || (is_string == FALSE && lang_id != 0 && name_offset != lang_id))
+			return NULL;
 	} else {
 		g_assert_not_reached ();
 	}
@@ -1657,6 +1653,8 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 	if(image==NULL) {
 		return(NULL);
 	}
+
+	mono_image_ensure_section_idx (image, MONO_SECTION_RSRC);
 
 	info=image->image_info;
 	if(info==NULL) {
