@@ -4769,7 +4769,7 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s)
 	len = strlen (r) + 1;
 	if (mp)
 		mp_s = mono_mempool_alloc (mp, len);
-	else if (image)
+	else
 		mp_s = mono_image_alloc (image, len);
 
 	memcpy (mp_s, r, len);
