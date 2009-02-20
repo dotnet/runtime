@@ -77,6 +77,7 @@ HANDLE ves_icall_System_Threading_Events_OpenEvent_internal (MonoString *name, g
 gboolean ves_icall_System_Threading_WaitHandle_WaitAll_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext) MONO_INTERNAL;
 gint32 ves_icall_System_Threading_WaitHandle_WaitAny_internal(MonoArray *mono_handles, gint32 ms, gboolean exitContext) MONO_INTERNAL;
 gboolean ves_icall_System_Threading_WaitHandle_WaitOne_internal(MonoObject *this_obj, HANDLE handle, gint32 ms, gboolean exitContext) MONO_INTERNAL;
+gboolean ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (HANDLE toSignal, HANDLE toWait, gint32 ms, gboolean exitContext) MONO_INTERNAL;
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int(gint32 *location) MONO_INTERNAL;
 gint64 ves_icall_System_Threading_Interlocked_Increment_Long(gint64 *location) MONO_INTERNAL;

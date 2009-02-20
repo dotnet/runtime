@@ -96,7 +96,7 @@ static void event_ops_init (void)
 
 static void event_signal(gpointer handle)
 {
-	ResetEvent(handle);
+	SetEvent(handle);
 }
 
 static gboolean event_own (gpointer handle)
@@ -129,7 +129,7 @@ static gboolean event_own (gpointer handle)
 
 static void namedevent_signal (gpointer handle)
 {
-	ResetEvent (handle);
+	SetEvent (handle);
 }
 
 /* NB, always called with the shared handle lock held */

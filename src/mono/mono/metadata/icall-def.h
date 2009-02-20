@@ -917,9 +917,10 @@ ICALL(THREADP_35, "SetMaxThreads", ves_icall_System_Threading_ThreadPool_SetMaxT
 ICALL(THREADP_4, "SetMinThreads", ves_icall_System_Threading_ThreadPool_SetMinThreads)
 
 ICALL_TYPE(WAITH, "System.Threading.WaitHandle", WAITH_1)
-ICALL(WAITH_1, "WaitAll_internal", ves_icall_System_Threading_WaitHandle_WaitAll_internal)
-ICALL(WAITH_2, "WaitAny_internal", ves_icall_System_Threading_WaitHandle_WaitAny_internal)
-ICALL(WAITH_3, "WaitOne_internal", ves_icall_System_Threading_WaitHandle_WaitOne_internal)
+ICALL(WAITH_1, "SignalAndWait_Internal", ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal)
+ICALL(WAITH_2, "WaitAll_internal", ves_icall_System_Threading_WaitHandle_WaitAll_internal)
+ICALL(WAITH_3, "WaitAny_internal", ves_icall_System_Threading_WaitHandle_WaitAny_internal)
+ICALL(WAITH_4, "WaitOne_internal", ves_icall_System_Threading_WaitHandle_WaitOne_internal)
 
 ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 ICALL(TYPE_1, "EqualsInternal", ves_icall_System_Type_EqualsInternal)
