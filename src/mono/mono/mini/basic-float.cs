@@ -617,5 +617,15 @@ class Tests {
 		return 0;
     }
 
+	static int INT_VAL = 0x13456799;
+
+	static int test_0_int4_to_float_convertion ()
+    {
+		double d = (double)(float)INT_VAL;
+
+		if (d != 323315616)
+			return 1;
+		return 0;
+	}
 }
 

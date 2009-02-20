@@ -96,7 +96,7 @@ int_not: dest:i src1:i len:2 clob:1
 int_conv_to_i1: dest:i src1:y len:3
 int_conv_to_i2: dest:i src1:i len:3
 int_conv_to_i4: dest:i src1:i len:2
-int_conv_to_r4: dest:f src1:i len:7
+int_conv_to_r4: dest:f src1:i len:13
 int_conv_to_r8: dest:f src1:i len:7
 int_conv_to_u4: dest:i src1:i
 int_conv_to_u2: dest:i src1:i len:3

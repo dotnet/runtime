@@ -3010,7 +3010,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADR4_MEMBASE:
 			x86_fld_membase (code, ins->inst_basereg, ins->inst_offset, FALSE);
 			break;
-		case OP_ICONV_TO_R4: /* FIXME: change precision */
+		case OP_ICONV_TO_R4:
+			x86_push_reg (code, ins->sreg1);
+			x86_fild_membase (code, X86_ESP, 0, FALSE);
+			/* Change precision */
+			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
+			x86_fld_membase (code, X86_ESP, 0, FALSE);
+			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
+			break;
 		case OP_ICONV_TO_R8:
 			x86_push_reg (code, ins->sreg1);
 			x86_fild_membase (code, X86_ESP, 0, FALSE);
