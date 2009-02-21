@@ -4624,7 +4624,7 @@ ves_icall_System_Reflection_Assembly_GetReferencedAssemblies (MonoReflectionAsse
 
 	result = mono_array_new (domain, System_Reflection_AssemblyName, count);
 
-	if (count > 0) {
+	if (count > 0 && !create_culture) {
 		MonoMethodDesc *desc = mono_method_desc_new (
 			"System.Globalization.CultureInfo:CreateCulture(string,bool)", TRUE);
 		create_culture = mono_method_desc_search_in_image (desc, mono_defaults.corlib);
