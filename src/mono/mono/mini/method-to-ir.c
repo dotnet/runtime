@@ -5959,7 +5959,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					CHECK_CFG_EXCEPTION;
 				}
 
-				if (cmethod->string_ctor)
+				if (cmethod->string_ctor && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
 					g_assert_not_reached ();
 			}
 
