@@ -3879,6 +3879,8 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		callsig = lookup_string_ctor_signature (mono_method_signature (method));
 		if (!callsig)
 			callsig = add_string_ctor_signature (method);
+		/* Can't share this as we push a string as this */
+		need_direct_wrapper = TRUE;
 	} else {
 		if (method->klass->valuetype && mono_method_signature (method)->hasthis) {
 			/* 
