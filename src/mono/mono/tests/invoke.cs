@@ -78,6 +78,11 @@ class Test {
 		string s = (string)arr.GetType ().GetMethod ("Get").Invoke (arr, new object [] { 1, 1 });
 		if (s != "FOO")
 			return 3;
+
+		// Test the sharing of runtime invoke wrappers for string ctors
+		typeof (string).GetConstructor (new Type [] { typeof (char[]) }).Invoke (null, new object [] { new char [] { 'a', 'b', 'c' } });
+
+		typeof (Assembly).GetMethod ("GetType", new Type [] { typeof (string), }).Invoke (typeof (int).Assembly, new object [] { "A" });
 	
 		return 0;
 	}
