@@ -2851,6 +2851,7 @@ void mono_thread_suspend_all_other_threads (void)
 		/* Get the suspended events that we'll be waiting for */
 		for (i = 0; i < wait->num; ++i) {
 			MonoThread *thread = wait->threads [i];
+			gboolean signal_suspend = FALSE;
 
 			if ((thread->tid == self) || mono_gc_is_finalizer_thread (thread)) {
 				//CloseHandle (wait->handles [i]);
@@ -2862,22 +2863,6 @@ void mono_thread_suspend_all_other_threads (void)
 		
 			EnterCriticalSection (thread->synch_cs);
 
-			if ((thread->state & ThreadState_Suspended) != 0 || 
-				(thread->state & ThreadState_SuspendRequested) != 0 ||
-				(thread->state & ThreadState_StopRequested) != 0 ||
-				(thread->state & ThreadState_Stopped) != 0) {
-				LeaveCriticalSection (thread->synch_cs);
-				CloseHandle (wait->handles [i]);
-				wait->threads [i] = NULL; /* ignore this thread in next loop */
-				continue;
-			}
-
-			/* Convert abort requests into suspend requests */
-			if ((thread->state & ThreadState_AbortRequested) != 0)
-				thread->state &= ~ThreadState_AbortRequested;
-			
-			thread->state |= ThreadState_SuspendRequested;
-
 			if (thread->suspended_event == NULL) {
 				thread->suspended_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 				if (thread->suspended_event == NULL) {
@@ -2887,11 +2872,31 @@ void mono_thread_suspend_all_other_threads (void)
 				}
 			}
 
+			if ((thread->state & ThreadState_Suspended) != 0 || 
+				(thread->state & ThreadState_StopRequested) != 0 ||
+				(thread->state & ThreadState_Stopped) != 0) {
+				LeaveCriticalSection (thread->synch_cs);
+				CloseHandle (wait->handles [i]);
+				wait->threads [i] = NULL; /* ignore this thread in next loop */
+				continue;
+			}
+
+			if ((thread->state & ThreadState_SuspendRequested) == 0)
+				signal_suspend = TRUE;
+
 			events [eventidx++] = thread->suspended_event;
+
+			/* Convert abort requests into suspend requests */
+			if ((thread->state & ThreadState_AbortRequested) != 0)
+				thread->state &= ~ThreadState_AbortRequested;
+			
+			thread->state |= ThreadState_SuspendRequested;
+
 			LeaveCriticalSection (thread->synch_cs);
 
 			/* Signal the thread to suspend */
-			signal_thread_state_change (thread);
+			if (signal_suspend)
+				signal_thread_state_change (thread);
 		}
 
 		if (eventidx > 0) {

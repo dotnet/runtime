@@ -593,10 +593,10 @@ retry:
 		}
 	} else {
 		if (ret == WAIT_TIMEOUT || (ret == WAIT_IO_COMPLETION && !allow_interruption)) {
-			if (ret == WAIT_IO_COMPLETION && mono_thread_test_state (mono_thread_current (), ThreadState_StopRequested)) {
+			if (ret == WAIT_IO_COMPLETION && (mono_thread_test_state (mono_thread_current (), (ThreadState_StopRequested|ThreadState_SuspendRequested)))) {
 				/* 
-				 * We have to obey a stop request even if allow_interruption is
-				 * FALSE to avoid hangs at shutdown.
+				 * We have to obey a stop/suspend request even if 
+				 * allow_interruption is FALSE to avoid hangs at shutdown.
 				 */
 				return -1;
 			}
