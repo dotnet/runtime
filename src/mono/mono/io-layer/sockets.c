@@ -631,6 +631,53 @@ int _wapi_recvfrom(guint32 fd, void *buf, size_t len, int recv_flags,
 	return(ret);
 }
 
+static int
+_wapi_recvmsg(guint32 fd, struct msghdr *msg, int recv_flags)
+{
+	gpointer handle = GUINT_TO_POINTER (fd);
+	struct _WapiHandle_socket *socket_handle;
+	gboolean ok;
+	int ret;
+	
+	if (startup_count == 0) {
+		WSASetLastError (WSANOTINITIALISED);
+		return(SOCKET_ERROR);
+	}
+	
+	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+		WSASetLastError (WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	do {
+		ret = recvmsg (fd, msg, recv_flags);
+	} while (ret == -1 && errno == EINTR &&
+		 !_wapi_thread_cur_apc_pending ());
+
+	if (ret == 0) {
+		/* see _wapi_recvfrom */
+		ok = _wapi_lookup_handle (handle, WAPI_HANDLE_SOCKET,
+					  (gpointer *)&socket_handle);
+		if (ok == FALSE || socket_handle->still_readable != 1) {
+			ret = -1;
+			errno = EINTR;
+		}
+	}
+	
+	if (ret == -1) {
+		gint errnum = errno;
+#ifdef DEBUG
+		g_message ("%s: recvmsg error: %s", __func__, strerror(errno));
+#endif
+
+		errnum = errno_to_WSA (errnum, __func__);
+		WSASetLastError (errnum);
+		
+		return(SOCKET_ERROR);
+	}
+	return(ret);
+}
+
 int _wapi_send(guint32 fd, const void *msg, size_t len, int send_flags)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
@@ -690,6 +737,41 @@ int _wapi_sendto(guint32 fd, const void *msg, size_t len, int send_flags,
 		gint errnum = errno;
 #ifdef DEBUG
 		g_message ("%s: send error: %s", __func__, strerror (errno));
+#endif
+
+		errnum = errno_to_WSA (errnum, __func__);
+		WSASetLastError (errnum);
+		
+		return(SOCKET_ERROR);
+	}
+	return(ret);
+}
+
+static int
+_wapi_sendmsg(guint32 fd,  const struct msghdr *msg, int send_flags)
+{
+	gpointer handle = GUINT_TO_POINTER (fd);
+	int ret;
+	
+	if (startup_count == 0) {
+		WSASetLastError (WSANOTINITIALISED);
+		return(SOCKET_ERROR);
+	}
+	
+	if (_wapi_handle_type (handle) != WAPI_HANDLE_SOCKET) {
+		WSASetLastError (WSAENOTSOCK);
+		return(SOCKET_ERROR);
+	}
+	
+	do {
+		ret = sendmsg (fd, msg, send_flags);
+	} while (ret == -1 && errno == EINTR &&
+		 !_wapi_thread_cur_apc_pending ());
+
+	if (ret == -1) {
+		gint errnum = errno;
+#ifdef DEBUG
+		g_message ("%s: sendmsg error: %s", __func__, strerror (errno));
 #endif
 
 		errnum = errno_to_WSA (errnum, __func__);
@@ -1318,38 +1400,47 @@ void _wapi_FD_SET(guint32 fd, fd_set *set)
 	FD_SET (fd, set);
 }
 
+static void
+wsabuf_to_msghdr (WapiWSABuf *buffers, guint32 count, struct msghdr *hdr)
+{
+	guint32 i;
+
+	memset (hdr, 0, sizeof (struct msghdr));
+	hdr->msg_iovlen = count;
+	hdr->msg_iov = g_new0 (struct iovec, count);
+	for (i = 0; i < count; i++) {
+		hdr->msg_iov [i].iov_base = buffers [i].buf;
+		hdr->msg_iov [i].iov_len  = buffers [i].len;
+	}
+}
+
+static void
+msghdr_iov_free (struct msghdr *hdr)
+{
+	g_free (hdr->msg_iov);
+}
+
 int WSARecv (guint32 fd, WapiWSABuf *buffers, guint32 count, guint32 *received,
 	     guint32 *flags, WapiOverlapped *overlapped,
 	     WapiOverlappedCB *complete)
 {
-	int ret, i, buflen = 0, offset = 0, copylen;
-	gint8 *recvbuf;
+	int ret;
+	struct msghdr hdr;
 
 	g_assert (overlapped == NULL);
 	g_assert (complete == NULL);
-	
-	for(i = 0; i < count; i++) {
-		buflen += buffers[i].len;
-	}
 
-	recvbuf = g_new0 (gint8, buflen);
-	ret = _wapi_recvfrom (fd, recvbuf, buflen, *flags, NULL, 0);
+	wsabuf_to_msghdr (buffers, count, &hdr);
+	ret = _wapi_recvmsg (fd, &hdr, *flags);
+	msghdr_iov_free (&hdr);
+	
 	if(ret == SOCKET_ERROR) {
-		g_free (recvbuf);
 		return(ret);
 	}
 	
-	for(i = 0; i < count; i++) {
-		copylen = buffers[i].len > (buflen - offset)? (buflen - offset):buffers[i].len;
-		memcpy (buffers[i].buf, recvbuf + offset, copylen);
-
-		if (copylen != buffers[i].len) {
-			break;
-		}
-		offset += copylen;
-	}
-	
 	*received = ret;
+	*flags = hdr.msg_flags;
+
 	return(0);
 }
 
@@ -1357,30 +1448,15 @@ int WSASend (guint32 fd, WapiWSABuf *buffers, guint32 count, guint32 *sent,
 	     guint32 flags, WapiOverlapped *overlapped,
 	     WapiOverlappedCB *complete)
 {
-	int ret, i, buflen = 0, offset = 0, copylen;
-	gint8 *sendbuf;
+	int ret;
+	struct msghdr hdr;
 
 	g_assert (overlapped == NULL);
 	g_assert (complete == NULL);
 
-	if (count == 1)
-		ret = _wapi_sendto (fd, buffers [0].buf, buffers [0].len, flags, NULL, 0);
-	else {
-		for(i = 0; i < count; i++) {
-			buflen += buffers[i].len;
-		}
-		
-		sendbuf = g_new0 (gint8, buflen);
-		for(i = 0; i < count; i++) {
-			copylen = buffers[i].len;
-			memcpy (sendbuf + offset, buffers[i].buf, copylen);
-			offset += copylen;
-		}
-		
-		ret = _wapi_sendto (fd, sendbuf, buflen, flags, NULL, 0);
-		g_free (sendbuf);
-		
-	}
+	wsabuf_to_msghdr (buffers, count, &hdr);
+	ret = _wapi_sendmsg (fd, &hdr, flags);
+	msghdr_iov_free (&hdr);
 	
 	if(ret == SOCKET_ERROR) 
 		return ret;
