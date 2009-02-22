@@ -174,7 +174,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	guint8 *buf, *code = NULL;
 	int i, offset;
 	gconstpointer tramp_handler;
-	int size = MONO_PPC_32_64_CASE (512, 688);
+	int size = MONO_PPC_32_64_CASE (516, 692);
 
 	/* Now we'll create in 'buf' the PowerPC trampoline code. This
 	   is the trampoline code common to all methods  */
@@ -241,7 +241,9 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 		ppc_load_reg (buf, ppc_r5, GREGS_OFFSET, ppc_r1);
 	if ((tramp_type == MONO_TRAMPOLINE_JIT) || (tramp_type == MONO_TRAMPOLINE_JUMP))
 		ppc_store_reg (buf, ppc_r5, G_STRUCT_OFFSET(MonoLMF, method), ppc_r11);
-	ppc_store_reg (buf, ppc_sp, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
+	/* store the frame pointer of the calling method */
+	ppc_addi (buf, ppc_r0, ppc_sp, STACK);
+	ppc_store_reg (buf, ppc_r0, G_STRUCT_OFFSET(MonoLMF, ebp), ppc_r11);
 	/* save the IP (caller ip) */
 	if (tramp_type == MONO_TRAMPOLINE_JUMP) {
 		ppc_li (buf, ppc_r0, 0);
