@@ -402,11 +402,23 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 			break;
 #endif
 		case SocketOptionName_ExclusiveAddressUse:
+#ifdef SO_EXCLUSIVEADDRUSE
+			*system_name = SO_EXCLUSIVEADDRUSE;
+			break;
+#endif
 		case SocketOptionName_UseLoopback:
+#ifdef SO_USELOOPBACK
+			*system_name = SO_USELOOPBACK;
+			break;
+#endif
 		case SocketOptionName_MaxConnections:
-			/* Can't figure out how to map these, so fall
-			 * through
-			 */
+#ifdef SO_MAXCONN
+			*system_name = SO_MAXCONN;
+			break;
+#elif defined(SOMAXCONN)
+			*system_name = SOMAXCONN;
+			break;
+#endif
 		default:
 			g_warning("System.Net.Sockets.SocketOptionName 0x%x is not supported at Socket level", mono_name);
 			return(-1);
