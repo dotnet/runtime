@@ -337,6 +337,9 @@ mono_debug_domain_unload (MonoDomain *domain)
 	mono_debugger_unlock ();
 }
 
+/*
+ * LOCKING: Assumes the debug lock is held.
+ */
 static MonoDebugHandle *
 _mono_debug_get_image (MonoImage *image)
 {
@@ -351,11 +354,13 @@ mono_debug_close_image (MonoImage *image)
 	if (!mono_debug_initialized)
 		return;
 
-	handle = _mono_debug_get_image (image);
-	if (!handle)
-		return;
-
 	mono_debugger_lock ();
+
+	handle = _mono_debug_get_image (image);
+	if (!handle) {
+		mono_debugger_unlock ();
+		return;
+	}
 
 	mono_debugger_event (MONO_DEBUGGER_EVENT_UNLOAD_MODULE, (guint64) (gsize) handle,
 			     handle->index);
@@ -374,11 +379,13 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 	if (mono_image_is_dynamic (image))
 		return NULL;
 
-	handle = _mono_debug_get_image (image);
-	if (handle != NULL)
-		return handle;
-
 	mono_debugger_lock ();
+
+	handle = _mono_debug_get_image (image);
+	if (handle != NULL) {
+		mono_debugger_unlock ();
+		return handle;
+	}
 
 	handle = g_new0 (MonoDebugHandle, 1);
 	handle->index = ++next_symbol_file_id;
@@ -814,15 +821,17 @@ mono_debug_add_type (MonoClass *klass)
 	guint32 size, total_size, max_size;
 	int base_offset = 0;
 
-	handle = _mono_debug_get_image (klass->image);
-	if (!handle)
-		return;
-
 	if (klass->generic_class || klass->rank ||
 	    (klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
 		return;
 
 	mono_debugger_lock ();
+
+	handle = _mono_debug_get_image (klass->image);
+	if (!handle) {
+		mono_debugger_unlock ();
+		return;
+	}
 
 	max_size = 12 + sizeof (gpointer);
 	if (max_size > BUFSIZ)
