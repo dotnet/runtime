@@ -502,7 +502,7 @@ aotcheck: mono $(regtests)
 fullaotcheck: mono $(regtests)
 	rm -rf fullaot-tmp
 	mkdir fullaot-tmp
-	cp $(CLASS)/mscorlib.dll $(regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
+	cp $(CLASS)/mscorlib.dll $(CLASS)/Mono.Simd.dll $(regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
 	cp $(regtests) fullaot-tmp/
 	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --aot=full fullaot-tmp/* || exit 1
 	for i in $(regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/$$i || exit 1; done

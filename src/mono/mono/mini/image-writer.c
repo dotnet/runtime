@@ -324,7 +324,7 @@ bin_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 	acfg->relocations = reloc;
 	if (strcmp (reloc->section->name, ".data") == 0) {
 		acfg->num_relocs++;
-		g_print ("reloc: %s at %d\n", target, acfg->cur_section->cur_offset);
+		//g_print ("reloc: %s at %d\n", target, acfg->cur_section->cur_offset);
 	}
 	acfg->cur_section->cur_offset += sizeof (gpointer);
 }
@@ -520,7 +520,7 @@ append_subsection (MonoImageWriter *acfg, ElfSectHeader *sheaders, BinSection *s
 	offset += (8 - 1);
 	offset &= ~(8 - 1);
 	bin_writer_emit_ensure_buffer (sect, offset);
-	g_print ("section %s aligned to %d from %d\n", sect->name, offset, sect->cur_offset);
+	//g_print ("section %s aligned to %d from %d\n", sect->name, offset, sect->cur_offset);
 	sect->cur_offset = offset;
 
 	bin_writer_emit_ensure_buffer (sect, add->cur_offset);
@@ -528,7 +528,7 @@ append_subsection (MonoImageWriter *acfg, ElfSectHeader *sheaders, BinSection *s
 	add->parent = sect;
 	sect->cur_offset += add->cur_offset;
 	add->cur_offset = offset; /* it becomes the offset in the parent section */
-	g_print ("subsection %d of %s added at offset %d (align: %d)\n", add->subsection, sect->name, add->cur_offset, (int)sheaders [sect->shidx].sh_addralign);
+	//g_print ("subsection %d of %s added at offset %d (align: %d)\n", add->subsection, sect->name, add->cur_offset, (int)sheaders [sect->shidx].sh_addralign);
 	add->data = NULL;
 	add->data_len = 0;
 }
@@ -1001,12 +1001,13 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	num_sections = collect_sections (acfg, secth, all_sections, 16);
 	hash = build_hash (acfg, num_sections, &dyn_str_table);
 	num_symtab = hash [1]; /* FIXME */
+#if 0
 	g_print ("num_sections: %d\n", num_sections);
 	g_print ("dynsym: %d, dynstr size: %d\n", hash [1], (int)dyn_str_table.data->len);
 	for (i = 0; i < num_sections; ++i) {
 		g_print ("section %s, size: %d, %x\n", all_sections [i]->name, all_sections [i]->cur_offset, all_sections [i]->cur_offset);
 	}
-
+#endif
 	/* Associate the bin sections with the ELF sections */
 	memset (sections, 0, sizeof (sections));
 	for (i = 0; i < num_sections; ++i) {
