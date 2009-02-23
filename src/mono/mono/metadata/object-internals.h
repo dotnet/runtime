@@ -739,7 +739,7 @@ typedef struct {
 } MonoILExceptionInfo;
 
 typedef struct {
-	MonoReflectionType *extype;
+	MonoObject *extype;
 	gint32 type;
 	gint32 start;
 	gint32 len;
@@ -748,7 +748,7 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
-	MonoReflectionType *catch_type;
+	MonoObject *catch_type;
 	gint32 filter_offset;
 	gint32 flags;
 	gint32 try_offset;
@@ -770,7 +770,7 @@ typedef struct {
 	 * LocalBuilder inherits from it under net 2.0.
 	 */
 	MonoObject object;
-	MonoReflectionType *type;
+	MonoObject *type;
 	MonoBoolean is_pinned;
 	guint16 local_index;
 	MonoString *name;

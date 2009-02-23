@@ -847,7 +847,7 @@ encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *ilgen)
 		if (lb->is_pinned)
 			sigbuffer_add_value (&buf, MONO_TYPE_PINNED);
 		
-		encode_reflection_type (assembly, lb->type, &buf);
+		encode_reflection_type (assembly, monotype_cast (lb->type), &buf);
 	}
 	sig_idx = sigbuffer_add_to_blob_cached (assembly, &buf);
 	sigbuffer_free (&buf);
@@ -921,7 +921,7 @@ method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflect
 			clause->handler_offset = ex_block->start;
 			clause->handler_len = ex_block->len;
 			if (ex_block->extype) {
-				clause->data.catch_class = mono_class_from_mono_type (ex_block->extype->type);
+				clause->data.catch_class = mono_class_from_mono_type (monotype_cast (ex_block->extype)->type);
 			} else {
 				if (ex_block->type == MONO_EXCEPTION_CLAUSE_FILTER)
 					clause->data.filter_offset = ex_block->filter_offset;
@@ -1072,7 +1072,7 @@ fat_header:
 					mono_image_add_stream_data (&assembly->code, (char*)&val, sizeof (guint32));
 					finally_start = ex_block->start + ex_block->len;
 					if (ex_block->extype) {
-						val = mono_metadata_token_from_dor (mono_image_typedef_or_ref (assembly, ex_block->extype->type));
+						val = mono_metadata_token_from_dor (mono_image_typedef_or_ref (assembly, monotype_cast (ex_block->extype)->type));
 					} else {
 						if (ex_block->type == MONO_EXCEPTION_CLAUSE_FILTER)
 							val = ex_block->filter_offset;
@@ -4584,6 +4584,12 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj,
 	guint32 token = 0;
 
 	klass = obj->vtable->klass;
+
+	/* Check for user defined reflection objects */
+	/* TypeDelegator is the only corlib type which doesn't look like a MonoReflectionType */
+	if (klass->image != mono_defaults.corlib || (strcmp (klass->name, "TypeDelegator") == 0))
+		mono_raise_exception (mono_get_exception_not_supported ("User defined subclasses of System.Type are not yet supported")); \
+
 	if (strcmp (klass->name, "MethodBuilder") == 0) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder *)obj;
 		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)mb->type;
@@ -9342,7 +9348,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				mono_array_get (rmb->ilgen->locals, MonoReflectionLocalBuilder*, i);
 
 			header->locals [i] = image_g_new0 (image, MonoType, 1);
-			memcpy (header->locals [i], lb->type->type, sizeof (MonoType));
+			memcpy (header->locals [i], monotype_cast (lb->type)->type, sizeof (MonoType));
 		}
 
 		header->num_clauses = num_clauses;
