@@ -6,7 +6,7 @@ using System.Reflection;
  *
  * Each test needs to be of the form:
  *
- * static int test_<result>_<name> ();
+ * public static int test_<result>_<name> ();
  *
  * where <result> is an integer (the value that needs to be returned by
  * the method to make it pass.
@@ -23,34 +23,37 @@ using System.Reflection;
  * the IL code looks.
  */
 
+/* A comparison made to same variable. */
+#pragma warning disable 1718
+
 class Tests {
 
-	static int Main () {
+	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
 	}
 	
-	static int test_0_beq () {
+	public static int test_0_beq () {
 		double a = 2.0;
 		if (a != 2.0)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_bne_un () {
+	public static int test_0_bne_un () {
 		double a = 2.0;
 		if (a == 1.0)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_conv_r8 () {
+	public static int test_0_conv_r8 () {
 		double a = 2;
 		if (a != 2.0)
 			return 1;
 		return 0;
 	}
 
-	static int test_0_conv_i () {
+	public static int test_0_conv_i () {
 		double a = 2.0;
 		int i = (int)a;
 		if (i != 2)
@@ -73,66 +76,66 @@ class Tests {
 		return 0;
 	}
 
-	static int test_5_conv_r4 () {
+	public static int test_5_conv_r4 () {
 		int i = 5;
 		float f = (float)i;
 		return (int)f;
 	}
 
-	static int test_5_double_conv_r4 () {
+	public static int test_5_double_conv_r4 () {
 		double d = 5.0;
 		float f = (float)d;
 		return (int)f;
 	}
 
-	static int test_5_float_conv_r8 () {
+	public static int test_5_float_conv_r8 () {
 		float f = 5.0F;
 		double d = (double)f;
 		return (int)d;
 	}
 
-	static int test_5_conv_r8 () {
+	public static int test_5_conv_r8 () {
 		int i = 5;
 		double f = (double)i;
 		return (int)f;
 	}
 
-	static int test_5_add () {
+	public static int test_5_add () {
 		double a = 2.0;
 		double b = 3.0;		
 		return (int)(a + b);
 	}
 
-	static int test_5_sub () {
+	public static int test_5_sub () {
 		double a = 8.0;
 		double b = 3.0;		
 		return (int)(a - b);
 	}	
 
-	static int test_24_mul () {
+	public static int test_24_mul () {
 		double a = 8.0;
 		double b = 3.0;		
 		return (int)(a * b);
 	}	
 
-	static int test_4_div () {
+	public static int test_4_div () {
 		double a = 8.0;
 		double b = 2.0;		
 		return (int)(a / b);
 	}	
 
-	static int test_2_rem () {
+	public static int test_2_rem () {
 		double a = 8.0;
 		double b = 3.0;		
 		return (int)(a % b);
 	}	
 
-	static int test_2_neg () {
+	public static int test_2_neg () {
 		double a = -2.0;		
 		return (int)(-a);
 	}
 	
-	static int test_46_float_add_spill () {
+	public static int test_46_float_add_spill () {
 		// we overflow the FP stack
 		double a = 1;
 		double b = 2;
@@ -147,7 +150,7 @@ class Tests {
 		return (int)(1.0 + (a + (b + (c + (d + (e + (f + (g + (h + i)))))))));
 	}
 
-	static int test_4_float_sub_spill () {
+	public static int test_4_float_sub_spill () {
 		// we overflow the FP stack
 		double a = 1;
 		double b = 2;
@@ -163,7 +166,7 @@ class Tests {
 		////// -(int)(1.0 - (1 - (2 - (3 - (4 - (5 - (6 - (7 - (8 - 9)))))))));
 	}
 
-	static int test_362880_float_mul_spill () {
+	public static int test_362880_float_mul_spill () {
 		// we overflow the FP stack
 		double a = 1;
 		double b = 2;
@@ -178,7 +181,7 @@ class Tests {
 		return (int)(1.0 * (a * (b * (c * (d * (e * (f * (g * (h * i)))))))));
 	}
 
-	static int test_4_long_cast () {
+	public static int test_4_long_cast () {
 		long a = 1000;
 		double d = (double)a;
 		long b = (long)d;
@@ -192,7 +195,7 @@ class Tests {
 		return 4;
 	}
 
-	static int test_4_ulong_cast () {
+	public static int test_4_ulong_cast () {
 		ulong a = 1000;
 		double d = (double)a;
 		ulong b = (ulong)d;
@@ -201,7 +204,7 @@ class Tests {
 		return 4;
 	}
 
-	static int test_4_single_long_cast () {
+	public static int test_4_single_long_cast () {
 		long a = 1000;
 		float d = (float)a;
 		long b = (long)d;
@@ -278,7 +281,7 @@ class Tests {
 	}
 	*/
 
-	static int test_16_float_cmp () {
+	public static int test_16_float_cmp () {
 		double a = 2.0;
 		double b = 1.0;
 		int result = 0;
@@ -367,7 +370,7 @@ class Tests {
 		return result;
 	}
 
-	static int test_15_float_cmp_un () {
+	public static int test_15_float_cmp_un () {
 		double a = Double.NaN;
 		double b = 1.0;
 		int result = 0;
@@ -451,7 +454,7 @@ class Tests {
 		return result;
 	}
 
-	static int test_15_float_branch () {
+	public static int test_15_float_branch () {
 		double a = 2.0;
 		double b = 1.0;
 		int result = 0;
@@ -519,7 +522,7 @@ class Tests {
 		return result;
 	}
 
-	static int test_15_float_branch_un () {
+	public static int test_15_float_branch_un () {
 		double a = Double.NaN;
 		double b = 1.0;
 		int result = 0;
@@ -587,7 +590,7 @@ class Tests {
 		return result;
 	}
 
-	static int test_0_float_precision () {
+	public static int test_0_float_precision () {
 		float f1 = 3.40282346638528859E+38f;
 		float f2 = 3.40282346638528859E+38f;		
 		float PositiveInfinity =  1.0f / 0.0f;
@@ -598,7 +601,7 @@ class Tests {
 
 	static double VALUE = 0.19975845134874831D;
 
-	static int test_0_float_conversion_reduces_double_precision () {
+	public static int test_0_float_conversion_reduces_double_precision () {
 		double d = (float)VALUE;
 		if (d != 0.19975845515727997d)
 			return 1;
@@ -607,19 +610,19 @@ class Tests {
 	}
 
 
-    static int test_0_long_to_double_conversion ()
+    public static int test_0_long_to_double_conversion ()
     {
 		long l = 9223372036854775807L;
 		long conv = (long)((double)l);
-		if (conv != -9223372036854775808l)
+		if (conv != -9223372036854775808L)
 			return 1;
 
 		return 0;
     }
 
-	static int INT_VAL = 0x13456799;
+	public static int INT_VAL = 0x13456799;
 
-	static int test_0_int4_to_float_convertion ()
+	public static int test_0_int4_to_float_convertion ()
     {
 		double d = (double)(float)INT_VAL;
 

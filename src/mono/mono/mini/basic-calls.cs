@@ -6,7 +6,7 @@ using System.Reflection;
  *
  * Each test needs to be of the form:
  *
- * static int test_<result>_<name> ();
+ * public static int test_<result>_<name> ();
  *
  * where <result> is an integer (the value that needs to be returned by
  * the method to make it pass.
@@ -44,7 +44,7 @@ class Tests {
 	static void dummy () {
 	}
 
-	static int test_0_return () {
+	public static int test_0_return () {
 		dummy ();
 		return 0;
 	}
@@ -53,7 +53,7 @@ class Tests {
 		return 1;
 	}
 
-	static int test_2_int_return () {
+	public static int test_2_int_return () {
 		int r = dummy1 ();
 		if (r == 1)
 			return 2;
@@ -64,7 +64,7 @@ class Tests {
 		return val + 1;
 	}
 
-	static int test_1_int_pass () {
+	public static int test_1_int_pass () {
 		int r = add1 (5);
 		if (r == 6)
 			return 1;
@@ -75,7 +75,7 @@ class Tests {
 		return val + t + b + da;
 	}
 
-	static int test_1_int_pass_many () {
+	public static int test_1_int_pass_many () {
 		byte b = 6;
 		int r = add_many (5, 2, b, 1);
 		if (r == 14)
@@ -93,7 +93,7 @@ class Tests {
 		}
 
 	/* bug #42134 */
-	static int test_2_inline_saved_arg_type () {
+	public static int test_2_inline_saved_arg_type () {
 		float f = 100.0f;
 		return GetFloat (f) == f? 2: 1;
 	}
@@ -102,7 +102,7 @@ class Tests {
 		return a + (int)b + c + (int)d;
 	}
 
-	static int test_5_pass_longs () {
+	public static int test_5_pass_longs () {
 		return pass_many_types (1, 2, -5, 7);
 	}
 
@@ -110,7 +110,7 @@ class Tests {
 		return a+b+c+d+e+f+g+h+i+j;
 	}
 
-	static int test_55_pass_even_more () {
+	public static int test_55_pass_even_more () {
 		return overflow_registers (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
 
@@ -118,7 +118,7 @@ class Tests {
 		return (int)(a + b + c + d + e + f + g);
 	}
 
-	static int test_1_sparc_argument_passing () {
+	public static int test_1_sparc_argument_passing () {
 		// The 4. argument tests split reg/mem argument passing
 		// The 5. argument tests mem argument passing
 		// The 7. argument tests passing longs in misaligned memory
@@ -130,7 +130,7 @@ class Tests {
 		return (int)(a + b + c + d + e + f + g);
 	}
 
-	static int test_21_sparc_byte_argument_passing () {
+	public static int test_21_sparc_byte_argument_passing () {
 		return pass_bytes (0, 1, 2, 3, 4, 5, 6);
 	}
 
@@ -138,7 +138,7 @@ class Tests {
 		return (int)(a + b + c + d + e + f + g);
 	}
 
-	static int test_21_sparc_sbyte_argument_passing () {
+	public static int test_21_sparc_sbyte_argument_passing () {
 		return pass_sbytes (0, 1, 2, 3, 4, 5, 6);
 	}
 
@@ -146,7 +146,7 @@ class Tests {
 		return (int)(a + b + c + d + e + f + g);
 	}
 
-	static int test_21_sparc_short_argument_passing () {
+	public static int test_21_sparc_short_argument_passing () {
 		return pass_shorts (0, 1, 2, 3, 4, 5, 6);
 	}
 
@@ -154,7 +154,7 @@ class Tests {
 		return (int)(a + b + c + d + e + f + g);
 	}
 
-	static int test_721_sparc_float_argument_passing () {
+	public static int test_721_sparc_float_argument_passing () {
 		return pass_floats_doubles (100.0f, 101.0, 102.0, 103.0, 104.0, 105.0f, 106.0);
 	}
 
@@ -162,7 +162,7 @@ class Tests {
 		return a + b + c + d + e + f + g + h + i + j;
 	}
 
-	static int test_55_sparc_float_argument_passing2 () {
+	public static int test_55_sparc_float_argument_passing2 () {
 		return (int)pass_floats (1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f);
 	}
 
@@ -172,7 +172,7 @@ class Tests {
 		return d - d2 < 0.000001;
 	}
 		
-	static int test_0_float_argument_passing_precision () {
+	public static int test_0_float_argument_passing_precision () {
 		float f = 7.183757E-41f;
 		return is_small (f) ? 0 : 1;
 	}
@@ -188,7 +188,7 @@ class Tests {
 
 	// Test that arguments are moved to the stack from incoming registers
 	// when the argument must reside in the stack because its address is taken
-	static int test_2_sparc_takeaddr_argument_passing () {
+	public static int test_2_sparc_takeaddr_argument_passing () {
 		return pass_takeaddr_ints_longs (1, 2, 253, -253, System.Int64.MaxValue, 0, System.Int64.MinValue);
 	}
 
@@ -200,7 +200,7 @@ class Tests {
 		return pass_byref_floats_doubles (ref a, ref b, ref c, ref d, ref e, ref f, ref g);
 	}
 
-	static int test_721_sparc_takeaddr_argument_passing2 () {
+	public static int test_721_sparc_takeaddr_argument_passing2 () {
 		return pass_takeaddr_floats_doubles (100.0f, 101.0, 102.0, 103.0, 104.0, 105.0f, 106.0);
 	}
 
@@ -209,7 +209,7 @@ class Tests {
 	}
 
 	// Test byref double argument passing
-	static int test_0_sparc_byref_double_argument_passing () {
+	public static int test_0_sparc_byref_double_argument_passing () {
 		double d;
 		pass_byref_double (out d);
 		return (d == 5.0) ? 0 : 1;
@@ -222,7 +222,7 @@ class Tests {
 	}
 
 	// Test that assignment to long arguments work
-	static int test_0_long_arg_assign ()
+	public static int test_0_long_arg_assign ()
 	{
 		ulong c = 0x800000ff00000000;
 			
@@ -236,7 +236,7 @@ class Tests {
 		return ptr;
 	}
 
-	static unsafe int test_0_ptr_return ()
+	public static unsafe int test_0_ptr_return ()
 	{
 		void *ptr = new IntPtr (55).ToPointer ();
 
@@ -250,7 +250,7 @@ class Tests {
 		return (f != f);
 	}
 
-	static int test_0_isnan () {
+	public static int test_0_isnan () {
 		float f = 1.0f;
 		return isnan (f) ? 1 : 0;
 	}
@@ -260,7 +260,7 @@ class Tests {
 			return -1;
 		return v2;
 	}
-	static int test_1_handle_dup_stloc () {
+	public static int test_1_handle_dup_stloc () {
 		int index = 0;
 		int val = first_is_zero (index, ++index);
 		if (val != 1)
@@ -326,7 +326,7 @@ class Tests {
 	 * This only happens because the call in middle forces the temp for "(float)obj"
 	 * to be spilled.
 	*/
-	static int test_0_float_load_and_store_with_big_offset ()
+	public static int test_0_float_load_and_store_with_big_offset ()
 	{
 		object obj = 1.0f;
 		Gamma noMercyWithTheStack;
