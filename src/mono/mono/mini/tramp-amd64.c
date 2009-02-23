@@ -163,11 +163,20 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 		/* call <TARGET> */
 		guint8 *buf = code - 2;
 
+		/* 
+		 * It would be better to replace the call with nops, but that doesn't seem
+		 * to work on SMP machines even when the whole call is inside a cache line.
+		 * Patching the call address seems to work.
+		 */
+		/*
 		buf [0] = 0x66;
 		buf [1] = 0x66;
 		buf [2] = 0x90;
 		buf [3] = 0x66;
 		buf [4] = 0x90;
+		*/
+
+		mono_arch_patch_callsite (NULL, code - 2 + 5, nullified_class_init_trampoline);
 	} else if ((code [0] == 0x41) && (code [1] == 0xff)) {
 		/* call <REG> */
 		/* happens on machines without MAP_32BIT like freebsd */
