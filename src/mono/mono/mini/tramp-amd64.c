@@ -176,7 +176,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 		buf [4] = 0x90;
 		*/
 
-		mono_arch_patch_callsite (NULL, code - 2 + 5, nullified_class_init_trampoline);
+		mono_arch_patch_callsite (code - 2, code - 2 + 5, nullified_class_init_trampoline);
 	} else if ((code [0] == 0x41) && (code [1] == 0xff)) {
 		/* call <REG> */
 		/* happens on machines without MAP_32BIT like freebsd */
