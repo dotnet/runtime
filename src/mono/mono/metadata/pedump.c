@@ -24,6 +24,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/marshal.h>
 #include "mono/utils/mono-digest.h"
 #include <mono/utils/mono-mmap.h>
 #include <sys/types.h>
