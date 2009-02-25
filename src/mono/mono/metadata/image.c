@@ -615,6 +615,7 @@ mono_image_init (MonoImage *image)
 
 	image->property_hash = mono_property_hash_new ();
 	InitializeCriticalSection (&image->lock);
+	InitializeCriticalSection (&image->szarray_cache_lock);
 }
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
@@ -1432,6 +1433,8 @@ mono_image_close (MonoImage *image)
 		g_hash_table_foreach (image->array_cache, free_array_cache_entry, NULL);
 		g_hash_table_destroy (image->array_cache);
 	}
+	if (image->szarray_cache)
+		g_hash_table_destroy (image->szarray_cache);
 	if (image->ptr_cache)
 		g_hash_table_destroy (image->ptr_cache);
 	if (image->name_cache) {
@@ -1506,6 +1509,7 @@ mono_image_close (MonoImage *image)
 		g_free (image->references);
 	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (image->mempool);
 
+	DeleteCriticalSection (&image->szarray_cache_lock);
 	DeleteCriticalSection (&image->lock);
 
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/

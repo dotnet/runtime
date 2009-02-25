@@ -4861,17 +4861,34 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	image = eclass->image;
 
-	mono_loader_lock ();
+	if (rank == 1 && !bounded) {
+		/* 
+		 * This case is very frequent not just during compilation because of calls 
+		 * from mono_class_from_mono_type (), mono_array_new (), 
+		 * Array:CreateInstance (), etc, so use a separate cache + a separate lock.
+		 */
+		EnterCriticalSection (&image->szarray_cache_lock);
+		if (!image->szarray_cache)
+			image->szarray_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		class = g_hash_table_lookup (image->szarray_cache, eclass);
+		LeaveCriticalSection (&image->szarray_cache_lock);
+		if (class)
+			return class;
 
-	if (!image->array_cache)
-		image->array_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		mono_loader_lock ();
+	} else {
+		mono_loader_lock ();
 
-	if ((rootlist = list = g_hash_table_lookup (image->array_cache, eclass))) {
-		for (; list; list = list->next) {
-			class = list->data;
-			if ((class->rank == rank) && (class->byval_arg.type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
-				mono_loader_unlock ();
-				return class;
+		if (!image->array_cache)
+			image->array_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+
+		if ((rootlist = list = g_hash_table_lookup (image->array_cache, eclass))) {
+			for (; list; list = list->next) {
+				class = list->data;
+				if ((class->rank == rank) && (class->byval_arg.type == (((rank > 1) || bounded) ? MONO_TYPE_ARRAY : MONO_TYPE_SZARRAY))) {
+					mono_loader_unlock ();
+					return class;
+				}
 			}
 		}
 	}
@@ -4960,8 +4977,21 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	class->generic_container = eclass->generic_container;
 
-	list = g_slist_append (rootlist, class);
-	g_hash_table_insert (image->array_cache, eclass, list);
+	if (rank == 1 && !bounded) {
+		MonoClass *prev_class;
+
+		EnterCriticalSection (&image->szarray_cache_lock);
+		prev_class = g_hash_table_lookup (image->szarray_cache, eclass);
+		if (prev_class)
+			/* Someone got in before us */
+			class = prev_class;
+		else
+			g_hash_table_insert (image->szarray_cache, eclass, class);
+		LeaveCriticalSection (&image->szarray_cache_lock);
+	} else {
+		list = g_slist_append (rootlist, class);
+		g_hash_table_insert (image->array_cache, eclass, list);
+	}
 
 	mono_loader_unlock ();
 

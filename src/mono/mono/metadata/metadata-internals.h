@@ -186,6 +186,10 @@ struct _MonoImage {
 	GHashTable *array_cache;
 	GHashTable *ptr_cache;
 
+	GHashTable *szarray_cache;
+	/* This has a separate lock to improve scalability */
+	CRITICAL_SECTION szarray_cache_lock;
+
 	/*
 	 * indexed by MonoMethodSignature 
 	 */
