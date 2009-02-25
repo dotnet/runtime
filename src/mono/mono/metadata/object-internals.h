@@ -102,6 +102,50 @@
 /* 16 == default capacity */
 #define mono_stringbuilder_capacity(sb) ((sb)->str ? ((sb)->str->length) : 16)
 
+/* 
+ * Macros which cache the results of lookups locally.
+ * These should be used instead of the original versions, if the __GNUC__
+ * restriction is acceptable.
+ */
+
+#ifdef __GNUC__
+
+/* namespace and name should be a constant */
+#define mono_class_from_name_cached(image,namespace,name) ({ \
+			static MonoClass *tmp_klass; \
+			if (!tmp_klass) { \
+				tmp_klass = mono_class_from_name ((image), (namespace), (name)); \
+				g_assert (tmp_klass); \
+			}; \
+			tmp_klass; })
+/* name should be a compile-time constant */
+#define mono_class_get_field_from_name_cached(klass,name) ({ \
+			static MonoClassField *tmp_field; \
+			if (!tmp_field) { \
+				tmp_field = mono_class_get_field_from_name ((klass), (name)); \
+				g_assert (tmp_field); \
+			}; \
+			tmp_field; })
+/* eclass should be a run-time constant */
+#define mono_array_class_get_cached(eclass,rank) ({	\
+			static MonoClass *tmp_klass; \
+			if (!tmp_klass) { \
+				tmp_klass = mono_array_class_get ((eclass), (rank));	\
+				g_assert (tmp_klass); \
+			}; \
+			tmp_klass; })
+/* eclass should be a run-time constant */
+#define mono_array_new_cached(domain, eclass, size) mono_array_new_specific (mono_class_vtable ((domain), mono_array_class_get_cached ((eclass), 1)), (size))
+
+#else
+
+#define mono_class_from_name_cached(image,namespace,name) mono_class_from_name ((image), (namespace), (name))
+#define mono_class_get_field_from_name_cached(klass,name) mono_class_get_field_from_name ((klass), (name))
+#define mono_array_class_get_cached(eclass,rank) mono_array_class_get ((eclass), (rank))
+#define mono_array_new_cached(domain, eclass, size) mono_array_new_specific (mono_class_vtable ((domain), mono_array_class_get_cached ((eclass), 1)), (size))
+
+#endif
+
 typedef struct {
 	MonoObject obj;
 	MonoObject *identity;

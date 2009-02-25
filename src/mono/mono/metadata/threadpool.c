@@ -1224,14 +1224,14 @@ append_job (CRITICAL_SECTION *cs, TPQueue *list, MonoObject *ar)
 	}
 	if (!list->array) {
 		MONO_GC_REGISTER_ROOT (list->array);
-		list->array = mono_array_new (mono_get_root_domain (), mono_defaults.object_class, 16);
+		list->array = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, 16);
 	} else {
 		int count = list->next_elem - list->first_elem;
 		/* slide the array or create a larger one if it's full */
 		if (list->first_elem) {
 			mono_array_memcpy_refs (list->array, 0, list->array, list->first_elem, count);
 		} else {
-			MonoArray *newa = mono_array_new (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) * 2);
+			MonoArray *newa = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) * 2);
 			mono_array_memcpy_refs (newa, 0, list->array, list->first_elem, count);
 			list->array = newa;
 		}
@@ -1335,7 +1335,7 @@ dequeue_job (CRITICAL_SECTION *cs, TPQueue *list)
 	count = list->next_elem - list->first_elem;
 	/* reduce the size of the array if it's mostly empty */
 	if (mono_array_length (list->array) > 16 && count < (mono_array_length (list->array) / 3)) {
-		MonoArray *newa = mono_array_new (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) / 2);
+		MonoArray *newa = mono_array_new_cached (mono_get_root_domain (), mono_defaults.object_class, mono_array_length (list->array) / 2);
 		mono_array_memcpy_refs (newa, 0, list->array, list->first_elem, count);
 		list->array = newa;
 		list->first_elem = 0;

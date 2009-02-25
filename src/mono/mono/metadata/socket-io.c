@@ -927,25 +927,25 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 	MonoAddressFamily family;
 
 	/* Build a System.Net.SocketAddress object instance */
-	sockaddr_class=mono_class_from_name(get_socket_assembly (), "System.Net", "SocketAddress");
+	sockaddr_class=mono_class_from_name_cached (get_socket_assembly (), "System.Net", "SocketAddress");
 	sockaddr_obj=mono_object_new(domain, sockaddr_class);
 	
 	/* Locate the SocketAddress data buffer in the object */
-	field=mono_class_get_field_from_name(sockaddr_class, "data");
+	field=mono_class_get_field_from_name_cached (sockaddr_class, "data");
 
 	/* Make sure there is space for the family and size bytes */
 #ifdef HAVE_SYS_UN_H
 	if (saddr->sa_family == AF_UNIX) {
 		/* sa_len includes the entire sockaddr size, so we don't need the
 		 * N bytes (sizeof (unsigned short)) of the family. */
-		data=mono_array_new(domain, mono_get_byte_class (), sa_size);
+		data=mono_array_new_cached(domain, mono_get_byte_class (), sa_size);
 	} else
 #endif
 	{
 		/* May be the +2 here is too conservative, as sa_len returns
 		 * the length of the entire sockaddr_in/in6, including
 		 * sizeof (unsigned short) of the family */
-		data=mono_array_new(domain, mono_get_byte_class (), sa_size+2);
+		data=mono_array_new_cached(domain, mono_get_byte_class (), sa_size+2);
 	}
 
 	/* The data buffer is laid out as follows:

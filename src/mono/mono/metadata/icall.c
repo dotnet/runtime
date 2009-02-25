@@ -2101,9 +2101,14 @@ ves_icall_Type_GetPacking (MonoReflectionType *type, guint32 *packing, guint32 *
 static MonoReflectionType*
 ves_icall_MonoType_GetElementType (MonoReflectionType *type)
 {
-	MonoClass *class = mono_class_from_mono_type (type->type);
+	MonoClass *class;
 
 	MONO_ARCH_SAVE_REGS;
+
+	if (!type->type->byref && type->type->type == MONO_TYPE_SZARRAY)
+		return mono_type_get_object (mono_object_domain (type), &type->type->data.klass->byval_arg);
+
+	class = mono_class_from_mono_type (type->type);
 
 	// GetElementType should only return a type for:
 	// Array Pointer PassedByRef
@@ -2688,7 +2693,7 @@ ves_icall_MonoGenericClass_GetConstructors (MonoReflectionGenericClass *type,
 	refclass = mono_class_from_mono_type (reflected_type->type);
 
 	domain = mono_object_domain (type);
-	res = mono_array_new (domain, System_Reflection_ConstructorInfo, dgclass->count_ctors);
+	res = mono_array_new_cached (domain, System_Reflection_ConstructorInfo, dgclass->count_ctors);
 
 	for (i = 0; i < dgclass->count_ctors; i++)
 		mono_array_setref (res, i, mono_method_get_object (domain, dgclass->ctors [i], refclass));

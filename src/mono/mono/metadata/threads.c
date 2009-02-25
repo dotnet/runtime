@@ -1173,7 +1173,7 @@ cache_culture (MonoThread *this, MonoObject *culture, int start_idx)
 	EnterCriticalSection (this->synch_cs);
 	
 	if (!this->cached_culture_info)
-		MONO_OBJECT_SETREF (this, cached_culture_info, mono_array_new (mono_object_domain (this), mono_defaults.object_class, NUM_CACHED_CULTURES * 2));
+		MONO_OBJECT_SETREF (this, cached_culture_info, mono_array_new_cached (mono_object_domain (this), mono_defaults.object_class, NUM_CACHED_CULTURES * 2));
 
 	for (i = start_idx; i < start_idx + NUM_CACHED_CULTURES; ++i) {
 		obj = mono_array_get (this->cached_culture_info, MonoObject*, i);

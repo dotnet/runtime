@@ -103,7 +103,7 @@ create_group_sizes_array (const gint *gs, gint ml)
 		len++;
 	}
 	
-	ret = mono_array_new (mono_domain_get (),
+	ret = mono_array_new_cached (mono_domain_get (),
 			mono_get_int32_class (), len);
 
 	for(i = 0; i < len; i++)
