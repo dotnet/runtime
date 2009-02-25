@@ -2944,6 +2944,9 @@ mono_get_delegate_invoke (MonoClass *klass)
 {
 	MonoMethod *im;
 
+	/* This is called at runtime, so avoid the slower search in metadata */
+	mono_class_setup_methods (klass);
+
 	im = mono_class_get_method_from_name (klass, "Invoke", -1);
 	g_assert (im);
 
