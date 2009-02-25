@@ -161,7 +161,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 		*vtable_slot = nullified_class_init_trampoline;
 	} else if (code [-2] == 0xe8) {
 		/* call <TARGET> */
-		guint8 *buf = code - 2;
+		//guint8 *buf = code - 2;
 
 		/* 
 		 * It would be better to replace the call with nops, but that doesn't seem
