@@ -1409,6 +1409,12 @@ mono_handle_native_sigsegv (int signal, void *ctx)
 	if (handling_sigsegv)
 		return;
 
+	if (mini_get_debug_options ()->suspend_on_sigsegv) {
+		fprintf (stderr, "Received SIGSEGV, suspending...");
+		while (1)
+			;
+	}
+
 	/* To prevent infinite loops when the stack walk causes a crash */
 	handling_sigsegv = TRUE;
 
@@ -1568,8 +1574,7 @@ mono_print_thread_dump (void *sigctx)
 	free (wapi_desc);
 #endif
 
-	/* FIXME: */
-#if defined(__i386__) || defined(__x86_64__)
+#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
 	if (!sigctx)
 		MONO_INIT_CONTEXT_FROM_FUNC (&ctx, mono_print_thread_dump);
 	else

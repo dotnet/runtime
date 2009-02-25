@@ -4355,11 +4355,13 @@ mini_parse_debug_options (void)
 			debug_options.break_on_unverified = TRUE;
 		else if (!strcmp (arg, "no-gdb-backtrace"))
 			debug_options.no_gdb_backtrace = TRUE;
+		else if (!strcmp (arg, "suspend-on-sigsegv"))
+			debug_options.suspend_on_sigsegv = TRUE;
 		else if (!strcmp (arg, "dont-free-domains"))
 			mono_dont_free_domains = TRUE;
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv'\n");
 			exit (1);
 		}
 	}

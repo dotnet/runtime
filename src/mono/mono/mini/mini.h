@@ -1121,6 +1121,7 @@ typedef struct {
 	gboolean better_cast_details;
 	gboolean mdb_optimizations;
 	gboolean no_gdb_backtrace;
+	gboolean suspend_on_sigsegv;
 } MonoDebugOptions;
 
 enum {
