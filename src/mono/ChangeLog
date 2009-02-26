@@ -1,3 +1,9 @@
+2009-02-26  Marek Habersack  <mhabersack@novell.com>
+
+	* data/mono.web.pc.in: added. Fixes bug #479760
+
+	* data/Makefile.am:  added mono.pc{.in} wherever necessary
+
 2009-02-07 Gonzalo Paniagua Javier <gonzalo@novell.com>
 
 	* configure.in: include stdio so that NULL is defined when checking
