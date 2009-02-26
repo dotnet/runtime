@@ -1382,7 +1382,7 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	base_dir = get_shadow_assembly_location_base (domain);
 	if (strstr (dir_name, base_dir) == dir_name) {
 		g_free (base_dir);
-		return TRUE;
+		return FALSE;
 	}
 	g_free (base_dir);
 
