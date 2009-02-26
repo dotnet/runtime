@@ -36,6 +36,9 @@
 
 struct _GDir {
 	DIR *dir;
+#ifndef HAVE_REWINDDIR
+	char *path;
+#endif
 };
 
 GDir *
@@ -57,6 +60,9 @@ g_dir_open (const gchar *path, guint flags, GError **error)
 		g_free (dir);
 		return NULL;
 	}
+#ifndef HAVE_REWINDDIR
+	dir->path = g_strdup (path);
+#endif
 	return dir;
 }
 
@@ -79,7 +85,12 @@ void
 g_dir_rewind (GDir *dir)
 {
 	g_return_if_fail (dir != NULL && dir->dir != NULL);
+#ifndef HAVE_REWINDDIR
+	closedir (dir->dir);
+	dir->dir = opendir (dir->path);
+#else
 	rewinddir (dir->dir);
+#endif
 }
 
 void
@@ -87,6 +98,9 @@ g_dir_close (GDir *dir)
 {
 	g_return_if_fail (dir != NULL && dir->dir != 0);
 	closedir (dir->dir);
+#ifndef HAVE_REWINDDIR
+	g_free (dir->path);
+#endif
 	dir->dir = NULL;
 	g_free (dir);
 }
