@@ -5349,12 +5349,23 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 		gssize *regs, guint8 *code)
 {
 	guint32 esp = regs [X86_ESP];
-	CallInfo *cinfo;
+	CallInfo *cinfo = NULL;
 	gpointer res;
+	int offset;
 
-	if (!gsctx && code)
-		gsctx = mono_get_generic_context_from_code (code);
-	cinfo = get_call_info (gsctx, NULL, sig, FALSE);
+	/* 
+	 * Avoid expensive calls to get_generic_context_from_code () + get_call_info 
+	 * if possible.
+	 */
+	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		if (!gsctx && code)
+			gsctx = mono_get_generic_context_from_code (code);
+		cinfo = get_call_info (gsctx, NULL, sig, FALSE);
+
+		offset = cinfo->args [0].offset;
+	} else {
+		offset = 0;
+	}
 
 	/*
 	 * The stack looks like:
@@ -5364,8 +5375,9 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 	 * <return addr>
 	 * <4 pointers pushed by mono_arch_create_trampoline_code ()>
 	 */
-	res = (((MonoObject**)esp) [5 + (cinfo->args [0].offset / 4)]);
-	g_free (cinfo);
+	res = (((MonoObject**)esp) [5 + (offset / 4)]);
+	if (cinfo)
+		g_free (cinfo);
 	return res;
 }
 
