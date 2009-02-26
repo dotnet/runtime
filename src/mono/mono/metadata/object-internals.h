@@ -243,10 +243,16 @@ typedef enum {
 	CallType_OneWay = 3
 } MonoCallType;
 
+/* This corresponds to System.Type */
 struct _MonoReflectionType {
 	MonoObject object;
 	MonoType  *type;
 };
+
+typedef struct {
+	MonoReflectionType type;
+	MonoObject *type_info;
+} MonoReflectionMonoType;
 
 typedef struct {
 	MonoObject  object;
@@ -1053,6 +1059,8 @@ typedef struct {
 typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;
 struct _MonoReflectionGenericClass {
 	MonoReflectionType type;
+	/* From System.MonoType */
+	MonoObject *type_info;
 	MonoReflectionTypeBuilder *generic_type;
 	guint32 initialized;
 };
