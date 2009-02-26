@@ -2388,6 +2388,7 @@ data/mono-nunit.pc
 data/mono-options.pc
 data/mono-lineeditor.pc
 data/monodoc.pc
+data/mono.web.pc
 data/dotnet.pc
 data/dotnet35.pc
 data/wcf.pc
