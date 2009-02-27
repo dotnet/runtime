@@ -228,6 +228,7 @@ ICALL(DOUBLE_1, "ParseImpl",    mono_double_ParseImpl)
 
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 ICALL(ENUM_1, "ToObject", ves_icall_System_Enum_ToObject)
+ICALL(ENUM_5, "compare_value_to", ves_icall_System_Enum_compare_value_to)
 ICALL(ENUM_4, "get_hashcode", ves_icall_System_Enum_get_hashcode)
 ICALL(ENUM_3, "get_underlying_type", ves_icall_System_Enum_get_underlying_type)
 ICALL(ENUM_2, "get_value", ves_icall_System_Enum_get_value)
