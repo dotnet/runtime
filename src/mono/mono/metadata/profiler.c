@@ -789,6 +789,7 @@ typedef struct _LastCallerInfo LastCallerInfo;
 struct _MonoProfiler {
 	GHashTable *methods;
 	MonoMemPool *mempool;
+	GSList *domains;
 	/* info about JIT time */
 	MONO_TIMER_TYPE jit_timer;
 	double      jit_time;
@@ -1220,7 +1221,7 @@ simple_allocation (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 		MonoMethod *caller = prof->callers->method;
 
 		/* Otherwise all allocations are attributed to icall_wrapper_mono_object_new */
-		if (caller->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+		if (caller->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && prof->callers->next)
 			caller = prof->callers->next->method;
 
 		if (!(profile_info = g_hash_table_lookup (prof->methods, caller)))
@@ -1365,7 +1366,7 @@ try_addr2line (const char* binary, gpointer ip)
 }
 
 static void
-stat_prof_report (void)
+stat_prof_report (MonoProfiler *prof)
 {
 	MonoJitInfo *ji;
 	int count = prof_counts;
@@ -1373,12 +1374,19 @@ stat_prof_report (void)
 	char *mn;
 	gpointer ip;
 	GList *tmp, *sorted = NULL;
+	GSList *l;
 	int pcount = ++ prof_counts;
 
 	prof_counts = MAX_PROF_SAMPLES;
 	for (i = 0; i < count; ++i) {
 		ip = prof_addresses [i];
 		ji = mono_jit_info_table_find (mono_domain_get (), ip);
+
+		if (!ji) {
+			for (l = prof->domains; l && !ji; l = l->next)
+				ji = mono_jit_info_table_find (l->data, ip);
+		}
+
 		if (ji) {
 			mn = mono_method_full_name (ji->method, TRUE);
 		} else {
@@ -1430,6 +1438,12 @@ stat_prof_report (void)
 }
 
 static void
+simple_appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result)
+{
+	prof->domains = g_slist_prepend (prof->domains, domain);
+}
+
+static void
 simple_appdomain_unload (MonoProfiler *prof, MonoDomain *domain)
 {
 	/* FIXME: we should actually record partial data for each domain, 
@@ -1459,7 +1473,7 @@ simple_shutdown (MonoProfiler *prof)
 		return;
 
 	if (mono_profiler_events & MONO_PROFILE_STATISTICAL) {
-		stat_prof_report ();
+		stat_prof_report (prof);
 	}
 
 	// Stop all incoming events
@@ -1554,7 +1568,7 @@ mono_profiler_install_simple (const char *desc)
 	mono_profiler_install_exception (NULL, simple_method_leave, NULL);
 	mono_profiler_install_jit_compile (simple_method_jit, simple_method_end_jit);
 	mono_profiler_install_allocation (simple_allocation);
-	mono_profiler_install_appdomain (NULL, NULL, simple_appdomain_unload, NULL);
+	mono_profiler_install_appdomain (NULL, simple_appdomain_load, simple_appdomain_unload, NULL);
 	mono_profiler_install_statistical (simple_stat_hit);
 	mono_profiler_set_events (flags);
 }
