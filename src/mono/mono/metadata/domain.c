@@ -44,16 +44,33 @@
  * but we can't depend on this).
  */
 static guint32 appdomain_thread_id = -1;
+
+/* 
+ * Avoid calling TlsSetValue () if possible, since in the io-layer, it acquires
+ * a global lock (!) so it is a contention point.
+ */
+#if (defined(__i386__) || defined(__x86_64__)) && !defined(PLATFORM_WIN32)
+#define NO_TLS_SET_VALUE
+#endif
  
 #ifdef HAVE_KW_THREAD
+
 static __thread MonoDomain * tls_appdomain MONO_TLS_FAST;
+
 #define GET_APPDOMAIN() tls_appdomain
+
+#ifdef NO_TLS_SET_VALUE
+#define SET_APPDOMAIN(x) do { \
+	tls_appdomain = x; \
+} while (FALSE)
+#else
 #define SET_APPDOMAIN(x) do { \
 	tls_appdomain = x; \
 	TlsSetValue (appdomain_thread_id, x); \
 } while (FALSE)
+#endif
 
-#else
+#else /* !HAVE_KW_THREAD */
 
 #define GET_APPDOMAIN() ((MonoDomain *)TlsGetValue (appdomain_thread_id))
 #define SET_APPDOMAIN(x) TlsSetValue (appdomain_thread_id, x);
@@ -141,7 +158,12 @@ mono_jit_info_find_aot_module (guint8* addr);
 guint32
 mono_domain_get_tls_key (void)
 {
+#ifdef NO_TLS_SET_VALUE
+	g_assert_not_reached ();
+	return 0;
+#else
 	return appdomain_thread_id;
+#endif
 }
 
 gint32
