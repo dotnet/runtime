@@ -138,7 +138,7 @@
 		<type fullname="System.Reflection.MonoMethod" preserve="fields" />
 		<type fullname="System.Reflection.MonoMethodInfo" preserve="fields" />
 		<type fullname="System.Reflection.MonoPropertyInfo" preserve="fields" />
-		<type fullname="System.Reflection.MonoProperty" preserve="fields" />
+		<type fullname="System.Reflection.MonoProperty" preserve="all" />
 		<type fullname="System.Reflection.ParameterInfo" preserve="fields" />
 		<type fullname="System.Reflection.PropertyInfo" preserve="fields" />
 		<type fullname="System.Reflection.ReflectionTypeLoadException" />
