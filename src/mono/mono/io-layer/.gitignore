@@ -6,5 +6,6 @@
 /mono-handle-d
 /*.lo
 /*.la
+/*.o
 /.project
 /.cproject
