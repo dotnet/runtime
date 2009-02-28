@@ -1,0 +1,12 @@
+/Makefile
+/Makefile.in
+/pedump
+/monosn
+/monodiet
+/.libs
+/.deps
+/*.lo
+/*.la
+/semantic.cache
+/.project
+/.cproject

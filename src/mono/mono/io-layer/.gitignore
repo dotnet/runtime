@@ -1,0 +1,10 @@
+/semantic.cache
+/.deps
+/.libs
+/Makefile
+/Makefile.in
+/mono-handle-d
+/*.lo
+/*.la
+/.project
+/.cproject

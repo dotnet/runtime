@@ -1,0 +1,5 @@
+/Makefile
+/Makefile.in
+/*.mdb
+/*.exe
+/*.dll

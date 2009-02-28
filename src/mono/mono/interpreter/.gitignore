@@ -1,0 +1,10 @@
+/Makefile
+/Makefile.in
+/mint
+/*.o
+/.libs
+/.deps
+/interp.lo
+/libmint.la
+/*.lo
+/semantic.cache

@@ -1,0 +1,7 @@
+/Makefile.in
+/Makefile
+/.deps
+/.libs
+/mono-cov.lo
+/libmono-profiler-cov.la
+/.cvsignore

@@ -1,0 +1,17 @@
+/
+/Makefile.in
+/configure
+/libtool
+/aclocal.m4
+/Makefile
+/config.h
+/config.h.in
+/config.status
+/stamp-h1
+/autom4te.cache
+/.libs
+/.deps
+/test-glib
+/test-eglib
+/test-glib.exe
+/test-eglib.exe

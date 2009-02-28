@@ -1,0 +1,13 @@
+/Makefile
+/Makefile.in
+/.deps
+/.libs
+/*.o
+/*.la
+/*.lo
+/*.lib
+/*.obj
+/*.exe
+/*.dll
+/arm_dpimacros.h
+/fixeol.sh
