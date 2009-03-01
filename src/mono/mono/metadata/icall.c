@@ -2075,9 +2075,9 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	mono_bitset_free (slots);
 
 	if (!ifaces)
-		return mono_array_new (domain, mono_defaults.monotype_class, 0);
+		return mono_array_new_cached (domain, mono_defaults.monotype_class, 0);
 		
-	intf = mono_array_new (domain, mono_defaults.monotype_class, ifaces->len);
+	intf = mono_array_new_cached (domain, mono_defaults.monotype_class, ifaces->len);
 	for (i = 0; i < ifaces->len; ++i) {
 		MonoClass *ic = g_ptr_array_index (ifaces, i);
 		MonoType *ret = &ic->byval_arg, *inflated = NULL;
@@ -3894,14 +3894,17 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 	MonoArray *res;
 	MonoMethod *method;
 	MonoObject *member;
-	int i, len, match;
+	int i, match;
 	gpointer iter = NULL;
+	MonoPtrArray tmp_array;
 	
 	MONO_ARCH_SAVE_REGS;
 
+	mono_ptr_array_init (tmp_array, 4); /*FIXME, guestimating*/
+
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref)
-		return mono_array_new (domain, mono_defaults.method_info_class, 0);
+		return mono_array_new_cached (domain, mono_defaults.method_info_class, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
@@ -3912,9 +3915,6 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 		System_Reflection_ConstructorInfo = mono_class_from_name (
 			mono_defaults.corlib, "System.Reflection", "ConstructorInfo");
 
-	i = 0;
-	len = 2;
-	res = mono_array_new (domain, System_Reflection_ConstructorInfo, len);
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		match = 0;
@@ -3943,24 +3943,16 @@ ves_icall_Type_GetConstructors_internal (MonoReflectionType *type, guint32 bflag
 			continue;
 		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
 
-		if (i >= len) {
-			MonoArray *new_res = mono_array_new (domain, System_Reflection_ConstructorInfo, len * 2);
-			mono_array_memcpy_refs (new_res, 0, res, 0, len);
-			len *= 2;
-			res = new_res;
-		}
-		mono_array_setref (res, i, member);
-		++i;
+		mono_ptr_array_append (tmp_array, member);
 	}
-	if (i != len) {
-		MonoArray *new_res = mono_array_new (domain, System_Reflection_ConstructorInfo, i);
-		mono_array_memcpy_refs (new_res, 0, res, 0, i);
-		res = new_res;
-		/*
-		 * Better solution for the new GC.
-		 * res->max_length = i;
-		 */
-	}
+
+	res = mono_array_new_cached (domain, System_Reflection_ConstructorInfo, mono_ptr_array_size (tmp_array));
+
+	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
+		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
+
+	mono_ptr_array_destroy (tmp_array);
+
 	return res;
 }
 
