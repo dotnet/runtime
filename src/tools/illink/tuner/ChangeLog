@@ -1,3 +1,9 @@
+2009-03-01  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner.dll.sources
+	* Mono.Tuner/MoonlightAssemblyStep.cs: add new step specific
+	to moonlight to instrument Moonlight assemblies one by one.
+
 2009-02-19  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/InjectSecurityAttributes.cs: also remove existing
