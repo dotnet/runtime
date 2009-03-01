@@ -1861,3 +1861,20 @@ mono_jit_set_trace_options (const char* options)
 	return TRUE;
 }
 
+/*
+ * mono_set_signal_chaining:
+ *
+ *   Enable/disable signal chaining. This should be called before mono_jit_init ().
+ * If signal chaining is enabled, the runtime saves the original signal handlers before
+ * installing its own handlers, and calls the original ones in the following cases:
+ * - a SIGSEGV/SIGABRT signal received while executing native (i.e. not JITted) code.
+ * - SIGPROF
+ * - SIGQUIT
+ * - SIGUSR2
+ * Signal chaining only works on POSIX platforms.
+ */
+void
+mono_set_signal_chaining (gboolean chain_signals)
+{
+	mono_do_signal_chaining = chain_signals;
+}

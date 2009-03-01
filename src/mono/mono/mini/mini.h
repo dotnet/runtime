@@ -281,6 +281,7 @@ extern gboolean mono_verify_all;
 extern gboolean mono_dont_free_global_codeman;
 extern gboolean mono_do_x86_stack_align;
 extern const char *mono_build_date;
+extern gboolean mono_do_signal_chaining;
 
 #define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 3])
 
@@ -1706,17 +1707,20 @@ void mono_runtime_posix_install_handlers (void) MONO_INTERNAL;
 
 #ifdef MONO_ARCH_USE_SIGACTION
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *info, void *context)
+#define SIG_HANDLER_PARAMS _dummy, info, context
 #elif defined(__sparc__)
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, void *sigctx)
+#define SIG_HANDLER_PARAMS _dummy, sigctx
 #else
 #define SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy)
+#define SIG_HANDLER_PARAMS _dummy
 #endif
 
 void SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)  MONO_INTERNAL;
 void SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler)  MONO_INTERNAL;
 void SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler) MONO_INTERNAL;
 void SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler)  MONO_INTERNAL;
-
+gboolean SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 
 /* for MONO_WRAPPER_UNKNOWN subtypes */
 enum {

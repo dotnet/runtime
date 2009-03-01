@@ -59,6 +59,84 @@
 
 #include "jit-icalls.h"
 
+static GHashTable *mono_saved_signal_handlers = NULL;
+
+static gpointer
+get_saved_signal_handler (int signo)
+{
+	if (mono_saved_signal_handlers)
+		/* The hash is only modified during startup, so no need for locking */
+		return g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+	return NULL;
+}
+
+static void
+save_old_signal_handler (int signo, struct sigaction *old_action)
+{
+	struct sigaction *handler_to_save = g_malloc (sizeof (struct sigaction));
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_CONFIG,
+				"Saving old signal handler for signal %d.", signo);
+
+	if (! (old_action->sa_flags & SA_SIGINFO)) {
+		handler_to_save->sa_handler = old_action->sa_handler;
+	} else {
+#ifdef MONO_ARCH_USE_SIGACTION
+		handler_to_save->sa_sigaction = old_action->sa_sigaction;
+#endif /* MONO_ARCH_USE_SIGACTION */
+	}
+	handler_to_save->sa_mask = old_action->sa_mask;
+	handler_to_save->sa_flags = old_action->sa_flags;
+	
+	if (!mono_saved_signal_handlers)
+		mono_saved_signal_handlers = g_hash_table_new (NULL, NULL);
+	g_hash_table_insert (mono_saved_signal_handlers, GINT_TO_POINTER (signo), handler_to_save);
+}
+
+static void
+free_saved_sig_handler_func (gpointer key, gpointer value, gpointer user_data)
+{
+	g_free (value);
+}
+
+static void
+free_saved_signal_handlers (void)
+{
+	if (mono_saved_signal_handlers) {
+		g_hash_table_foreach (mono_saved_signal_handlers, free_saved_sig_handler_func, NULL);
+		g_hash_table_destroy (mono_saved_signal_handlers);
+		mono_saved_signal_handlers = NULL;
+	}
+}
+
+/*
+ * mono_chain_signal:
+ *
+ *   Call the original signal handler for the signal given by the arguments, which
+ * should be the same as for a signal handler. Returns TRUE if the original handler
+ * was called, false otherwise.
+ */
+gboolean
+SIG_HANDLER_SIGNATURE (mono_chain_signal)
+{
+	int signal = _dummy;
+	struct sigaction *saved_handler = get_saved_signal_handler (signal);
+
+	GET_CONTEXT;
+
+	if (saved_handler) {
+		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
+			saved_handler->sa_handler (signal);
+		} else {
+#ifdef MONO_ARCH_USE_SIGACTION
+			saved_handler->sa_sigaction (signal, info, ctx);
+#endif /* MONO_ARCH_USE_SIGACTION */
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static void
 SIG_HANDLER_SIGNATURE (sigabrt_signal_handler)
 {
@@ -67,6 +145,8 @@ SIG_HANDLER_SIGNATURE (sigabrt_signal_handler)
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
 	if (!ji) {
+        if (mono_chain_signal (SIG_HANDLER_PARAMS))
+			return;
 		mono_handle_native_sigsegv (SIGABRT, ctx);
 	}
 }
@@ -103,7 +183,8 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 	running_managed = ji != NULL;
 	
 	exc = mono_thread_request_interruption (running_managed); 
-	if (!exc) return;
+	if (!exc)
+		return;
 
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
@@ -128,6 +209,9 @@ SIG_HANDLER_SIGNATURE (sigusr1_signal_handler)
 static void
 SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 {
+	if (mono_chain_signal (SIG_HANDLER_PARAMS))
+		return;
+
 	NOT_IMPLEMENTED;
 }
 
@@ -192,9 +276,10 @@ SIG_HANDLER_SIGNATURE (sigprof_signal_handler)
 #endif
 		}
 		
-		
 		mono_profiler_stat_call_chain (current_frame_index, & ips [0], ctx);
 	}
+
+	mono_chain_signal (SIG_HANDLER_PARAMS);
 }
 
 #endif
@@ -222,6 +307,8 @@ SIG_HANDLER_SIGNATURE (sigquit_signal_handler)
 	 * be performed.
 	 */
 	mono_print_thread_dump (ctx);
+
+	mono_chain_signal (SIG_HANDLER_PARAMS);
 }
 
 static void
@@ -230,12 +317,15 @@ SIG_HANDLER_SIGNATURE (sigusr2_signal_handler)
 	gboolean enabled = mono_trace_is_enabled ();
 
 	mono_trace_enable (!enabled);
+
+	mono_chain_signal (SIG_HANDLER_PARAMS);
 }
 
 static void
 add_signal_handler (int signo, gpointer handler)
 {
 	struct sigaction sa;
+	struct sigaction previous_sa;
 
 #ifdef MONO_ARCH_USE_SIGACTION
 	sa.sa_sigaction = handler;
@@ -250,19 +340,33 @@ add_signal_handler (int signo, gpointer handler)
 	sigemptyset (&sa.sa_mask);
 	sa.sa_flags = 0;
 #endif
-	g_assert (sigaction (signo, &sa, NULL) != -1);
+	g_assert (sigaction (signo, &sa, &previous_sa) != -1);
+
+	/* if there was already a handler in place for this signal, store it */
+	if (! (previous_sa.sa_flags & SA_SIGINFO) &&
+			(SIG_DFL == previous_sa.sa_handler)) { 
+		/* it there is no sa_sigaction function and the sa_handler is default, we can safely ignore this */
+	} else {
+		if (mono_do_signal_chaining)
+			save_old_signal_handler (signo, &previous_sa);
+	}
 }
 
 static void
 remove_signal_handler (int signo)
 {
 	struct sigaction sa;
+	struct sigaction *saved_action = get_saved_signal_handler (signo);
 
-	sa.sa_handler = SIG_DFL;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
+	if (!saved_action) {
+		sa.sa_handler = SIG_DFL;
+		sigemptyset (&sa.sa_mask);
+		sa.sa_flags = 0;
 
-	sigaction (signo, &sa, NULL);
+		sigaction (signo, &sa, NULL);
+	} else {
+		g_assert (sigaction (signo, saved_action, NULL) != -1);
+	}
 }
 
 void
@@ -324,6 +428,8 @@ mono_runtime_cleanup_handlers (void)
 	remove_signal_handler (SIGABRT);
 
 	remove_signal_handler (SIGSEGV);
+
+	free_saved_signal_handlers ();
 }
 
 #ifdef HAVE_LINUX_RTC_H

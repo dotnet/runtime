@@ -101,6 +101,7 @@ MonoMethodDesc *mono_break_at_bb_method = NULL;
 int mono_break_at_bb_bb_num;
 gboolean mono_do_x86_stack_align = TRUE;
 const char *mono_build_date;
+gboolean mono_do_signal_chaining;
 
 static int mini_verbose = 0;
 
@@ -4233,8 +4234,11 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 	GET_CONTEXT;
 
 	/* The thread might no be registered with the runtime */
-	if (!mono_domain_get () || !jit_tls)
+	if (!mono_domain_get () || !jit_tls) {
+		if (mono_chain_signal (SIG_HANDLER_PARAMS))
+			return;
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
+	}
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
 
@@ -4257,11 +4261,18 @@ SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler)
 		fprintf (stderr, "At %s\n", method);
 		_exit (1);
 	} else {
+		/* The original handler might not like that it is executed on an altstack... */
+		if (!ji && mono_chain_signal (SIG_HANDLER_PARAMS))
+			return;
+
 		mono_arch_handle_altstack_exception (ctx, info->si_addr, FALSE);
 	}
 #else
 
 	if (!ji) {
+		if (mono_chain_signal (SIG_HANDLER_PARAMS))
+			return;
+
 		mono_handle_native_sigsegv (SIGSEGV, ctx);
 	}
 			
