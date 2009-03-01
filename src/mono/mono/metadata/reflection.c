@@ -7934,7 +7934,7 @@ mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 	MonoObject *attr;
 	int i;
 
-	result = mono_array_new (mono_domain_get (), mono_defaults.attribute_class, cinfo->num_attrs);
+	result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, cinfo->num_attrs);
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		if (!cinfo->attrs [i].ctor)
 			/* The cattr type is not finished yet */
@@ -7959,7 +7959,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 			n ++;
 	}
 
-	result = mono_array_new (mono_domain_get (), mono_defaults.attribute_class, n);
+	result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, n);
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		if (mono_class_is_assignable_from (attr_klass, cinfo->attrs [i].ctor->klass)) {
@@ -8364,7 +8364,7 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 	} else {
 		if (mono_loader_get_last_error ())
 			return NULL;
-		result = mono_array_new (mono_domain_get (), mono_defaults.attribute_class, 0);
+		result = mono_array_new_cached (mono_domain_get (), mono_defaults.attribute_class, 0);
 	}
 
 	return result;
