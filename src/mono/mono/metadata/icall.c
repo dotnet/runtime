@@ -84,6 +84,51 @@ static MonoReflectionAssembly* ves_icall_System_Reflection_Assembly_GetCallingAs
 static MonoArray*
 type_array_from_modifiers (MonoImage *image, MonoType *type, int optional);
 
+/* This is an implementation of a growable pointer array that avoids doing memory allocations for small sizes.
+ * It works by allocating an initial small array on stack and only going to malloc'd memory if needed. 
+ */
+typedef struct {
+	void **data;
+	int size;
+	int capacity;
+} MonoPtrArray;
+
+#define MONO_PTR_ARRAY_MAX_ON_STACK (16)
+
+#define mono_ptr_array_init(ARRAY, INITIAL_SIZE) do {\
+	(ARRAY).size = 0; \
+	(ARRAY).capacity = MAX (INITIAL_SIZE, MONO_PTR_ARRAY_MAX_ON_STACK); \
+	(ARRAY).data = INITIAL_SIZE > MONO_PTR_ARRAY_MAX_ON_STACK ? g_new (void*, INITIAL_SIZE) : g_newa (void*, MONO_PTR_ARRAY_MAX_ON_STACK); \
+} while (0)
+
+#define mono_ptr_array_destroy(ARRAY) do {\
+	if ((ARRAY).capacity > MONO_PTR_ARRAY_MAX_ON_STACK) \
+		g_free ((ARRAY).data); \
+} while (0)
+
+#define mono_ptr_array_append(ARRAY, VALUE) do { \
+	if ((ARRAY).size >= (ARRAY).capacity) {\
+		if ((ARRAY).capacity == MONO_PTR_ARRAY_MAX_ON_STACK) { \
+			void *__tmp = g_new (void*, (ARRAY).capacity * 2); \
+			memcpy (__tmp, (ARRAY).data, (ARRAY).capacity * sizeof (void*));\
+			(ARRAY).data = __tmp;\
+		} else {\
+			(ARRAY).data = g_renew (void*, (ARRAY).data, (ARRAY).capacity * 2); \
+		} \
+		(ARRAY).capacity *= 2;\
+	}\
+	((ARRAY).data [(ARRAY).size++] = VALUE); \
+} while (0)
+
+#define mono_ptr_array_set(ARRAY, IDX, VALUE) do { \
+	((ARRAY).data [(IDX)] = VALUE); \
+} while (0)
+	
+#define mono_ptr_array_get(ARRAY, IDX) ((ARRAY).data [(IDX)])
+
+#define mono_ptr_array_size(ARRAY) ((ARRAY).size)
+
+
 static inline MonoBoolean
 is_generic_parameter (MonoType *type)
 {
@@ -3431,6 +3476,7 @@ ves_icall_System_Enum_compare_value_to (MonoObject *this, MonoObject *other)
 	return 0;
 }
 
+static int
 ves_icall_System_Enum_get_hashcode (MonoObject *this)
 {
 	gpointer data = (char *)this + sizeof (MonoObject);
@@ -3959,14 +4005,16 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	MonoMethod *method;
 	MonoProperty *prop;
 	int i, match;
-	int len = 0;
 	guint32 flags;
 	gchar *propname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	gpointer iter;
 	GHashTable *properties;
+	MonoPtrArray tmp_array;
 
 	MONO_ARCH_SAVE_REGS;
+
+	mono_ptr_array_init (tmp_array, 8); /*This the average for ASP.NET types*/
 
 	if (!System_Reflection_PropertyInfo)
 		System_Reflection_PropertyInfo = mono_class_from_name (
@@ -3974,7 +4022,7 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref)
-		return mono_array_new (domain, System_Reflection_PropertyInfo, 0);
+		return mono_array_new_cached (domain, System_Reflection_PropertyInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 	if (name != NULL) {
 		propname = mono_string_to_utf8 (name);
@@ -3984,9 +4032,6 @@ ves_icall_Type_GetPropertiesByName (MonoReflectionType *type, MonoString *name, 
 	mono_class_setup_vtable (klass);
 
 	properties = g_hash_table_new (property_hash, (GEqualFunc)property_equal);
-	i = 0;
-	len = 2;
-	res = mono_array_new (domain, System_Reflection_PropertyInfo, len);
 handle_parent:
 	mono_class_setup_vtable (klass);
 	if (klass->exception_type != MONO_EXCEPTION_NONE) {
@@ -4040,14 +4085,7 @@ handle_parent:
 		if (g_hash_table_lookup (properties, prop))
 			continue;
 
-		if (i >= len) {
-			MonoArray *new_res = mono_array_new (domain, System_Reflection_PropertyInfo, len * 2);
-			mono_array_memcpy_refs (new_res, 0, res, 0, len);
-			len *= 2;
-			res = new_res;
-		}
-		mono_array_setref (res, i, mono_property_get_object (domain, startklass, prop));
-		++i;
+		mono_ptr_array_append (tmp_array, mono_property_get_object (domain, startklass, prop));
 		
 		g_hash_table_insert (properties, prop, prop);
 	}
@@ -4056,15 +4094,13 @@ handle_parent:
 
 	g_hash_table_destroy (properties);
 	g_free (propname);
-	if (i != len) {
-		MonoArray *new_res = mono_array_new (domain, System_Reflection_PropertyInfo, i);
-		mono_array_memcpy_refs (new_res, 0, res, 0, i);
-		res = new_res;
-		/*
-		 * Better solution for the new GC.
-		 * res->max_length = i;
-		 */
-	}
+
+	res = mono_array_new_cached (domain, System_Reflection_PropertyInfo, mono_ptr_array_size (tmp_array));
+	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
+		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
+
+	mono_ptr_array_destroy (tmp_array);
+
 	return res;
 }
 
