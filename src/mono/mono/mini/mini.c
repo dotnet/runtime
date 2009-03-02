@@ -4199,6 +4199,9 @@ SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 #endif
 	GET_CONTEXT;
 
+	if (mono_chain_signal (SIG_HANDLER_PARAMS))
+		return;
+
 #if defined(MONO_ARCH_HAVE_IS_INT_OVERFLOW)
 	if (mono_arch_is_int_overflow (ctx, info))
 		exc = mono_get_exception_arithmetic ();

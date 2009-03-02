@@ -1869,6 +1869,7 @@ mono_jit_set_trace_options (const char* options)
  * installing its own handlers, and calls the original ones in the following cases:
  * - a SIGSEGV/SIGABRT signal received while executing native (i.e. not JITted) code.
  * - SIGPROF
+ * - SIGFPE
  * - SIGQUIT
  * - SIGUSR2
  * Signal chaining only works on POSIX platforms.
