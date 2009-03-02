@@ -418,7 +418,7 @@ gpointer
 mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
 {
 	MonoGenericContext context = { NULL, NULL };
-	MonoMethod *declaring;
+	MonoMethod *imt_method, *declaring;
 	gpointer addr;
 
 	g_assert (m->is_generic);
@@ -434,7 +434,9 @@ mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod
 		g_assert (!m->klass->generic_container);
 
 #ifdef MONO_ARCH_HAVE_IMT
-	context.method_inst = (MonoGenericInst*)mono_arch_find_imt_method ((gpointer*)regs, code);
+	imt_method = mono_arch_find_imt_method ((gpointer*)regs, code);
+	if (imt_method->is_inflated)
+		context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
 #endif
 	m = mono_class_inflate_generic_method (declaring, &context);
 	m = mono_marshal_get_remoting_invoke_with_check (m);
