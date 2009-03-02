@@ -3765,8 +3765,11 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 	gchar *mname = NULL;
 	int (*compare_func) (const char *s1, const char *s2) = NULL;
 	MonoVTable *array_vtable;
+	MonoPtrArray tmp_array;
 		
 	MONO_ARCH_SAVE_REGS;
+
+	mono_ptr_array_init (tmp_array, 4);
 
 	if (!MethodInfo_array) {
 		MonoClass *klass = mono_array_class_get (mono_defaults.method_info_class, 1);
@@ -3809,9 +3812,6 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		method_slots = method_slots_default;
 		memset (method_slots, 0, sizeof (method_slots_default));
 	}
-	i = 0;
-	len = 1;
-	res = mono_array_new_specific (array_vtable, len);
 handle_parent:
 	mono_class_setup_vtable (klass);
 	if (klass->exception_type != MONO_EXCEPTION_NONE)
@@ -3858,14 +3858,7 @@ handle_parent:
 		
 		member = (MonoObject*)mono_method_get_object (domain, method, refklass);
 		
-		if (i >= len) {
-			MonoArray *new_res = mono_array_new_specific (array_vtable, len * 2);
-			mono_array_memcpy_refs (new_res, 0, res, 0, len);
-			len *= 2;
-			res = new_res;
-		}
-		mono_array_setref (res, i, member);
-		++i;
+		mono_ptr_array_append (tmp_array, member);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
@@ -3873,15 +3866,13 @@ handle_parent:
 	g_free (mname);
 	if (method_slots != method_slots_default)
 		g_free (method_slots);
-	if (i != len) {
-		MonoArray *new_res = mono_array_new (domain, mono_defaults.method_info_class, i);
-		mono_array_memcpy_refs (new_res, 0, res, 0, i);
-		res = new_res;
-		/*
-		 * Better solution for the new GC.
-		 * res->max_length = i;
-		 */
-	}
+
+	res = mono_array_new_specific (array_vtable, mono_ptr_array_size (tmp_array));
+
+	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
+		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
+
+	mono_ptr_array_destroy (tmp_array);
 	return res;
 }
 
