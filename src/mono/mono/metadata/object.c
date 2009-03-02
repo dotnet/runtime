@@ -957,6 +957,22 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 	return SPECIAL_STATIC_NONE;
 }
 
+static gpointer imt_trampoline = NULL;
+
+void
+mono_install_imt_trampoline (gpointer tramp_code)
+{
+	imt_trampoline = tramp_code;
+}
+
+static gpointer vtable_trampoline = NULL;
+
+void
+mono_install_vtable_trampoline (gpointer tramp_code)
+{
+	vtable_trampoline = tramp_code;
+}
+
 #define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
 #define mix(a,b,c) { \
 	a -= c;  a ^= rot(c, 4);  c += b; \
@@ -977,12 +993,16 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
 }
 
 guint32
-mono_method_get_imt_slot (MonoMethod *method) {
+mono_method_get_imt_slot (MonoMethod *method)
+{
 	MonoMethodSignature *sig;
 	int hashes_count;
 	guint32 *hashes_start, *hashes;
 	guint32 a, b, c;
 	int i;
+
+	/* This can be used to stress tests the collision code */
+	//return 0;
 
 	/*
 	 * We do this to simplify generic sharing.  It will hurt
@@ -1056,7 +1076,7 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 		return;
 	}
 
-	entry = malloc (sizeof (MonoImtBuilderEntry));
+	entry = g_malloc0 (sizeof (MonoImtBuilderEntry));
 	entry->key = method;
 	entry->value.vtable_slot = vtable_slot;
 	entry->next = imt_builder [imt_slot];
@@ -1114,6 +1134,7 @@ imt_emit_ir (MonoImtBuilderEntry **sorted_array, int start, int end, GPtrArray *
 			MonoIMTCheckItem *item = g_new0 (MonoIMTCheckItem, 1);
 			item->key = sorted_array [i]->key;
 			item->value = sorted_array [i]->value;
+			item->has_target_code = sorted_array [i]->has_target_code;
 			item->is_equals = TRUE;
 			if (i < end - 1)
 				item->check_target_idx = out_array->len + 1;
@@ -1158,9 +1179,10 @@ imt_sort_slot_entries (MonoImtBuilderEntry *entries) {
 }
 
 static gpointer
-initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry *imt_builder_entry) {
+initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry *imt_builder_entry, gpointer fail_tramp)
+{
 	if (imt_builder_entry != NULL) {
-		if (imt_builder_entry->children == 0) {
+		if (imt_builder_entry->children == 0 && !fail_tramp) {
 			/* No collision, return the vtable slot contents */
 			return vtable->vtable [imt_builder_entry->value.vtable_slot];
 		} else {
@@ -1169,30 +1191,38 @@ initialize_imt_slot (MonoVTable *vtable, MonoDomain *domain, MonoImtBuilderEntry
 			gpointer result;
 			int i;
 			result = imt_thunk_builder (vtable, domain,
-				(MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len, NULL);
+				(MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len, fail_tramp);
 			for (i = 0; i < imt_ir->len; ++i)
 				g_free (g_ptr_array_index (imt_ir, i));
 			g_ptr_array_free (imt_ir, TRUE);
 			return result;
 		}
 	} else {
-		/* Empty slot */
-		return NULL;
+		if (fail_tramp)
+			return fail_tramp;
+		else
+			/* Empty slot */
+			return NULL;
 	}
 }
+
+static MonoImtBuilderEntry*
+get_generic_virtual_entries (MonoDomain *domain, gpointer *vtable_slot);
 
 /*
  * LOCKING: requires the loader and domain locks.
  *
 */
 static void
-build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces, int slot_num) {
+build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces, int slot_num)
+{
 	int i;
 	GSList *list_item;
 	guint32 imt_collisions_bitmap = 0;
 	MonoImtBuilderEntry **imt_builder = calloc (MONO_IMT_SIZE, sizeof (MonoImtBuilderEntry*));
 	int method_count = 0;
 	gboolean record_method_count_for_max_collisions = FALSE;
+	gboolean has_generic_virtual = FALSE;
 
 #if DEBUG_IMT
 	printf ("Building IMT for class %s.%s\n", klass->name_space, klass->name);
@@ -1216,6 +1246,10 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 					continue;
 			}
 			method = mono_class_get_method_by_index (iface, method_slot_in_interface);
+			if (method->is_generic) {
+				has_generic_virtual = TRUE;
+				continue;
+			}
 			add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, interface_offset + method_slot_in_interface, slot_num);
 		}
 	}
@@ -1234,10 +1268,39 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 	}
 	for (i = 0; i < MONO_IMT_SIZE; ++i) {
 		/* overwrite the imt slot only if we're building all the entries or if 
-		 * we're uilding this specific one
+		 * we're building this specific one
 		 */
-		if (slot_num < 0 || i == slot_num)
-			imt [i] = initialize_imt_slot (vt, domain, imt_builder [i]);
+		if (slot_num < 0 || i == slot_num) {
+			MonoImtBuilderEntry *entries = get_generic_virtual_entries (domain, &imt [i]);
+
+			if (entries) {
+				if (imt_builder [i]) {
+					MonoImtBuilderEntry *entry;
+
+					/* Link entries with imt_builder [i] */
+					for (entry = entries; entry->next; entry = entry->next)
+						;						
+					entry->next = imt_builder [i];
+					entries->children += imt_builder [i]->children + 1;
+				}
+				imt_builder [i] = entries;
+			}
+
+			if (has_generic_virtual) {
+				/*
+				 * There might be collisions later when the the thunk is expanded.
+				 */
+				imt_collisions_bitmap |= (1 << i);
+
+				/* 
+				 * The IMT thunk might be called with an instance of one of the 
+				 * generic virtual methods, so has to fallback to the IMT trampoline.
+				 */
+				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], imt_trampoline);
+			} else {
+				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], NULL);
+			}
+		}
 #if DEBUG_IMT
 		printf ("initialize_imt_slot[%d]: %p\n", i, imt [i]);
 #endif
@@ -1272,22 +1335,6 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 static void
 build_imt (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer* imt, GSList *extra_interfaces) {
 	build_imt_slots (klass, vt, domain, imt, extra_interfaces, -1);
-}
-
-static gpointer imt_trampoline = NULL;
-
-void
-mono_install_imt_trampoline (gpointer tramp_code)
-{
-	imt_trampoline = tramp_code;
-}
-
-static gpointer vtable_trampoline = NULL;
-
-void
-mono_install_vtable_trampoline (gpointer tramp_code)
-{
-	vtable_trampoline = tramp_code;
 }
 
 /**
@@ -1465,6 +1512,47 @@ typedef struct _GenericVirtualCase {
 	struct _GenericVirtualCase *next;
 } GenericVirtualCase;
 
+/*
+ * get_generic_virtual_entries:
+ *
+ *   Return IMT entries for the generic virtual method instances for vtable slot
+ * VTABLE_SLOT.
+ */ 
+static MonoImtBuilderEntry*
+get_generic_virtual_entries (MonoDomain *domain, gpointer *vtable_slot)
+{
+  	GenericVirtualCase *list;
+ 	MonoImtBuilderEntry *entries;
+  
+ 	mono_domain_lock (domain);
+ 	if (!domain->generic_virtual_cases)
+ 		domain->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
+ 
+ 	list = g_hash_table_lookup (domain->generic_virtual_cases, vtable_slot);
+ 
+ 	entries = NULL;
+ 	for (; list; list = list->next) {
+ 		MonoImtBuilderEntry *entry;
+ 
+ 		if (list->count < THUNK_THRESHOLD)
+ 			continue;
+ 
+ 		entry = g_new0 (MonoImtBuilderEntry, 1);
+ 		entry->key = list->method;
+ 		entry->value.target_code = mono_get_addr_from_ftnptr (list->code);
+ 		entry->has_target_code = 1;
+ 		if (entries)
+ 			entry->children = entries->children + 1;
+ 		entry->next = entries;
+ 		entries = entry;
+ 	}
+ 
+ 	mono_domain_unlock (domain);
+ 
+ 	/* FIXME: Leaking memory ? */
+ 	return entries;
+}
+
 /**
  * mono_method_add_generic_virtual_invocation:
  * @domain: a domain
@@ -1478,16 +1566,14 @@ typedef struct _GenericVirtualCase {
  * virtual method thunk.
  */
 void
-mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable_slot,
-	MonoMethod *method, gpointer code)
+mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtable,
+											gpointer *vtable_slot,
+											MonoMethod *method, gpointer code)
 {
 	static gboolean inited = FALSE;
 	static int num_added = 0;
 
 	GenericVirtualCase *gvc, *list;
-	MonoImtBuilderEntry *entries;
-	int i;
-	GPtrArray *sorted;
 
 	mono_domain_lock (domain);
 	if (!domain->generic_virtual_cases)
@@ -1519,46 +1605,20 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable
 		num_added++;
 	}
 
-	if (++gvc->count < THUNK_THRESHOLD) {
-		mono_domain_unlock (domain);
-		return;
+	if (++gvc->count == THUNK_THRESHOLD) {
+		gpointer *old_thunk = *vtable_slot;
+
+		/* Force the rebuild of the thunk at the next call */
+		if ((gpointer)vtable_slot < (gpointer)vtable)
+			*vtable_slot = imt_trampoline;
+		else
+			*vtable_slot = vtable_trampoline;
+
+		if (old_thunk != vtable_trampoline && old_thunk != imt_trampoline)
+			invalidate_generic_virtual_thunk (domain, old_thunk);
 	}
-
-	entries = NULL;
-	for (; list; list = list->next) {
-		MonoImtBuilderEntry *entry;
-
-		if (list->count < THUNK_THRESHOLD)
-			continue;
-
-		entry = g_new0 (MonoImtBuilderEntry, 1);
-		entry->key = list->method;
-		entry->value.target_code = mono_get_addr_from_ftnptr (list->code);
-		if (entries)
-			entry->children = entries->children + 1;
-		entry->next = entries;
-		entries = entry;
-	}
-
-	sorted = imt_sort_slot_entries (entries);
-
-	if (*vtable_slot != vtable_trampoline)
-		invalidate_generic_virtual_thunk (domain, *vtable_slot);
-
-	*vtable_slot = imt_thunk_builder (NULL, domain, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
-		vtable_trampoline);
 
 	mono_domain_unlock (domain);
-
-	while (entries) {
-		MonoImtBuilderEntry *next = entries->next;
-		g_free (entries);
-		entries = next;
-	}
-
-	for (i = 0; i < sorted->len; ++i)
-		g_free (g_ptr_array_index (sorted, i));
-	g_ptr_array_free (sorted, TRUE);
 }
 
 static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class);

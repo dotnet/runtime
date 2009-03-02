@@ -1313,6 +1313,7 @@ typedef struct _MonoImtBuilderEntry {
 	struct _MonoImtBuilderEntry *next;
 	MonoImtItemValue value;
 	int children;
+	guint8 has_target_code : 1;
 } MonoImtBuilderEntry;
 
 typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
@@ -1327,6 +1328,7 @@ struct _MonoIMTCheckItem {
 	guint8            compare_done;
 	guint8            chunk_size;
 	guint8            short_branch;
+	guint8            has_target_code;
 };
 
 typedef gpointer (*MonoImtThunkBuilder) (MonoVTable *vtable, MonoDomain *domain,
@@ -1348,8 +1350,9 @@ guint32
 mono_method_get_imt_slot (MonoMethod *method) MONO_INTERNAL;
 
 void
-mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable_slot,
-	MonoMethod *method, gpointer code) MONO_INTERNAL;
+mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtable,
+											gpointer *vtable_slot,
+											MonoMethod *method, gpointer code) MONO_INTERNAL;
 
 gpointer
 mono_method_alloc_generic_virtual_thunk (MonoDomain *domain, int size) MONO_INTERNAL;
