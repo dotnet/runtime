@@ -420,7 +420,13 @@ class Tests {
 		if (Foo<string>.count3 != 1000)
 			return 3;
 
+		VirtualInterfaceCallFromGenericMethod<long> (f);
+
 		return 0;
+	}
+
+	public static void VirtualInterfaceCallFromGenericMethod <T> (IFoo f) {
+		f.Bar <T> ();
 	}
 
 	public static Type the_type;

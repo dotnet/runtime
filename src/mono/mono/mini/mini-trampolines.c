@@ -69,19 +69,24 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *co
 		mono_vtable_build_imt_slot (vt, mono_method_get_imt_slot (imt_method));
 
 		if (impl_method) {
-			MonoMethod *impl = mono_class_get_vtable_entry (vt->klass, interface_offset + imt_method->slot);
+			MonoMethod *impl;
 
 			if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
 				MonoGenericContext context = { NULL, NULL };
 
 				/* 
 				 * Generic virtual method, imt_method contains the inflated interface 
-				 * method, need to get the infated impl method.
+				 * method, need to get the inflated impl method.
 				 */
+				/* imt_method->slot might not be set */
+				impl = mono_class_get_vtable_entry (vt->klass, interface_offset + mono_method_get_declaring_generic_method (imt_method)->slot);
+
 				if (impl->klass->generic_class)
 					context.class_inst = impl->klass->generic_class->context.class_inst;
 				context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
 				impl = mono_class_inflate_generic_method (impl, &context);
+			} else {
+				impl = mono_class_get_vtable_entry (vt->klass, interface_offset + imt_method->slot);
 			}
 
 			*impl_method = impl;
