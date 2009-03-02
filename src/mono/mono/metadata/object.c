@@ -1652,6 +1652,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 
 	if (class->exception_type) {
 		mono_domain_unlock (domain);
+		mono_loader_unlock ();
 		return NULL;
 	}
 
