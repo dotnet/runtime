@@ -6135,14 +6135,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					g_assert (!imt_arg);
 					if (context_used) {
 						imt_arg = emit_get_rgctx_method (cfg, context_used,
-							cmethod, MONO_RGCTX_INFO_METHOD_CONTEXT);
+							cmethod, MONO_RGCTX_INFO_METHOD);
 
 					} else {
-						// FIXME:
-						cfg->disable_aot = TRUE;
 						g_assert (cmethod->is_inflated);
-						EMIT_NEW_PCONST (cfg, imt_arg,
-							((MonoMethodInflated*)cmethod)->context.method_inst);
+						EMIT_NEW_METHODCONST (cfg, imt_arg, cmethod);
 					}
 					ins = mono_emit_method_call_full (cfg, cmethod, fsig, sp, sp [0], imt_arg);
 				} else
