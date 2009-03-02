@@ -681,6 +681,7 @@ struct _MonoReflectionProperty {
 /*This is System.EventInfo*/
 struct _MonoReflectionEvent {
 	MonoObject object;
+	MonoObject *cached_add_event;
 };
 
 typedef struct {
