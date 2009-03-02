@@ -118,7 +118,7 @@
 		<type fullname="System.Reflection.Emit.SignatureHelper" preserve="fields" />
 		<type fullname="System.Reflection.Emit.TypeBuilder" preserve="fields" />
 		<type fullname="System.Reflection.Emit.UnmanagedMarshal" preserve="fields" />
-		<type fullname="System.Reflection.EventInfo" preserve="fields" />
+		<type fullname="System.Reflection.EventInfo" preserve="all" />
 		<type fullname="System.Reflection.ExceptionHandlingClause" preserve="fields" />
 		<type fullname="System.Reflection.FieldInfo" preserve="fields" />
 		<type fullname="System.Reflection.LocalVariableInfo" preserve="fields" />
