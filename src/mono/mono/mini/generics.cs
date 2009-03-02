@@ -332,7 +332,7 @@ class Tests {
 
     public static int test_0_generic_virtual_call_on_vtype_unbox () {
 		object o = new Object ();
-        IMyHandler h = new Handler(o);
+        IFoo h = new Handler(o);
 
         if (h.Bar<object> () != o)
 			return 1;
@@ -401,6 +401,28 @@ class Tests {
 		return 0;
 	}
 
+	public static int test_0_generic_virtual_on_interfaces () {
+		Foo<string>.count1 = 0;
+		Foo<string>.count2 = 0;
+		Foo<string>.count3 = 0;
+
+		IFoo f = new Foo<string> ("");
+		for (int i = 0; i < 1000; ++i) {
+			f.Bar <int> ();
+			f.Bar <string> ();
+			f.NonGeneric ();
+		}
+
+		if (Foo<string>.count1 != 1000)
+			return 1;
+		if (Foo<string>.count2 != 1000)
+			return 2;
+		if (Foo<string>.count3 != 1000)
+			return 3;
+
+		return 0;
+	}
+
 	public static Type the_type;
 
 	public void ldvirtftn<T> () {
@@ -414,7 +436,12 @@ class Tests {
 		the_type = typeof (T);
 	}
 
-	public class Foo<T1>
+	public interface IFoo {
+		void NonGeneric ();
+		object Bar<T>();
+	}
+
+	public class Foo<T1> : IFoo
 	{
 		public Foo(T1 t1)
 		{
@@ -459,6 +486,19 @@ class Tests {
 			GenericEvent (this);
 		}
 
+		public static int count1, count2, count3;
+
+		public void NonGeneric () {
+			count3 ++;
+		}
+
+		public object Bar <T> () {
+			if (typeof (T) == typeof (int))
+				count1 ++;
+			else if (typeof (T) == typeof (string))
+				count2 ++;
+			return null;
+		}
 	}
 
 	public class SomeClass {
@@ -467,15 +507,14 @@ class Tests {
 		}
 	}		
 
-	public interface IMyHandler {
-		object Bar<T>();
-	}
-
-	struct Handler : IMyHandler {
+	struct Handler : IFoo {
 		object o;
 
 		public Handler(object o) {
 			this.o = o;
+		}
+
+		public void NonGeneric () {
 		}
 
 		public object Bar<T>() {

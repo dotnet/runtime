@@ -68,13 +68,29 @@ mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *co
 		}
 		mono_vtable_build_imt_slot (vt, mono_method_get_imt_slot (imt_method));
 
-		if (impl_method)
-			*impl_method = mono_class_get_vtable_entry (vt->klass, interface_offset + imt_method->slot);
+		if (impl_method) {
+			MonoMethod *impl = mono_class_get_vtable_entry (vt->klass, interface_offset + imt_method->slot);
+
+			if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
+				MonoGenericContext context = { NULL, NULL };
+
+				/* 
+				 * Generic virtual method, imt_method contains the inflated interface 
+				 * method, need to get the infated impl method.
+				 */
+				if (impl->klass->generic_class)
+					context.class_inst = impl->klass->generic_class->context.class_inst;
+				context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
+				impl = mono_class_inflate_generic_method (impl, &context);
+			}
+
+			*impl_method = impl;
 #if DEBUG_IMT
 		printf ("mono_convert_imt_slot_to_vtable_slot: method = %s.%s.%s, imt_method = %s.%s.%s\n",
 				method->klass->name_space, method->klass->name, method->name, 
 				imt_method->klass->name_space, imt_method->klass->name, imt_method->name);
 #endif
+		}
 		g_assert (imt_slot < MONO_IMT_SIZE);
 		if (vt->imt_collisions_bitmap & (1 << imt_slot)) {
 			int vtable_offset = interface_offset + mono_method_get_vtable_index (imt_method);
@@ -165,7 +181,14 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		 * to be called, so we compile it and go ahead as usual.
 		 */
 		/*g_print ("imt found method %p (%s) at %p\n", impl_method, impl_method->name, code);*/
-		m = impl_method;
+		if (m->is_inflated && ((MonoMethodInflated*)m)->context.method_inst) {
+			/* Generic virtual method */
+			generic_virtual = m;
+			m = impl_method;
+			m = mono_marshal_get_static_rgctx_invoke (m);
+		} else {
+			m = impl_method;
+		}
 	}
 #endif
 
@@ -301,11 +324,18 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	mono_debugger_trampoline_compiled (m, addr);
 
 	if (generic_virtual) {
+		int displacement;
+ 		MonoVTable *vt = mono_arch_get_vcall_slot (code, (gpointer*)regs, &displacement);
+
 		vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 		g_assert (vtable_slot);
 
-		mono_method_add_generic_virtual_invocation (mono_domain_get (), vtable_slot,
-			generic_virtual, addr);
+		if (vt->klass->valuetype)
+			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);			
+
+		mono_method_add_generic_virtual_invocation (mono_domain_get (), 
+													vt, vtable_slot,
+													generic_virtual, addr);
 
 		return addr;
 	}

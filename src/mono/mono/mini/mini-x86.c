@@ -4992,7 +4992,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
 				item->jmp_code = code;
 				x86_branch8 (code, X86_CC_NE, 0, FALSE);
-				if (fail_tramp)
+				if (item->has_target_code)
 					x86_jump_code (code, item->value.target_code);
 				else
 					x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
@@ -5001,7 +5001,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					x86_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)item->key);
 					item->jmp_code = code;
 					x86_branch8 (code, X86_CC_NE, 0, FALSE);
-					x86_jump_code (code, item->value.target_code);
+					if (item->has_target_code)
+						x86_jump_code (code, item->value.target_code);
+					else
+						x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
 					x86_patch (item->jmp_code, code);
 					x86_jump_code (code, fail_tramp);
 					item->jmp_code = NULL;
@@ -5012,7 +5015,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					item->jmp_code = code;
 					x86_branch8 (code, X86_CC_NE, 0, FALSE);
 #endif
-					x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
+					if (item->has_target_code)
+						x86_jump_code (code, item->value.target_code);
+					else
+						x86_jump_mem (code, & (vtable->vtable [item->value.vtable_slot]));
 #if ENABLE_WRONG_METHOD_CHECK
 					x86_patch (item->jmp_code, code);
 					x86_breakpoint (code);

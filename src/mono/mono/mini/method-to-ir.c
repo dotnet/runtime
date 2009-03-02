@@ -6130,8 +6130,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				INLINE_FAILURE;
 
 #if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK
-				if (!(cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) &&
-						cmethod->wrapper_type == MONO_WRAPPER_NONE) {
+				if (cmethod->wrapper_type == MONO_WRAPPER_NONE) {
 					g_assert (!imt_arg);
 					if (context_used) {
 						imt_arg = emit_get_rgctx_method (cfg, context_used,

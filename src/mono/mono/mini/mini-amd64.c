@@ -5881,7 +5881,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					else
 						item->chunk_size += MOV_REG_IMM_SIZE + CMP_REG_REG_SIZE;
 				}
-				if (fail_tramp) {
+				if (item->has_target_code) {
 					item->chunk_size += MOV_REG_IMM_SIZE;
 				} else {
 					if (vtable_is_32bit)
@@ -5936,7 +5936,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				item->jmp_code = code;
 				amd64_branch8 (code, X86_CC_NE, 0, FALSE);
 				/* See the comment below about R10 */
-				if (fail_tramp) {
+				if (item->has_target_code) {
 					amd64_mov_reg_imm (code, AMD64_R10, item->value.target_code);
 					amd64_jump_reg (code, AMD64_R10);
 				} else {
@@ -5953,8 +5953,14 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					}
 					item->jmp_code = code;
 					amd64_branch8 (code, X86_CC_NE, 0, FALSE);
-					amd64_mov_reg_imm (code, AMD64_R10, item->value.target_code);
-					amd64_jump_reg (code, AMD64_R10);
+					if (item->has_target_code) {
+						amd64_mov_reg_imm (code, AMD64_R10, item->value.target_code);
+						amd64_jump_reg (code, AMD64_R10);
+					} else {
+						g_assert (vtable);
+						amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
+						amd64_jump_membase (code, AMD64_R10, 0);
+					}
 					amd64_patch (item->jmp_code, code);
 					amd64_mov_reg_imm (code, AMD64_R10, fail_tramp);
 					amd64_jump_reg (code, AMD64_R10);
