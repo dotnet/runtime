@@ -1459,7 +1459,7 @@ invalidate_generic_virtual_thunk (MonoDomain *domain, gpointer code)
 }
 
 typedef struct _GenericVirtualCase {
-	MonoGenericInst *inst;
+	MonoMethod *method;
 	gpointer code;
 	int count;
 	struct _GenericVirtualCase *next;
@@ -1469,7 +1469,7 @@ typedef struct _GenericVirtualCase {
  * mono_method_add_generic_virtual_invocation:
  * @domain: a domain
  * @vtable_slot: pointer to the vtable slot
- * @method_inst: the method's method_inst
+ * @method: the inflated generic virtual method
  * @code: the method's code
  *
  * Registers a call via unmanaged code to a generic virtual method
@@ -1479,7 +1479,7 @@ typedef struct _GenericVirtualCase {
  */
 void
 mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable_slot,
-	MonoGenericInst *method_inst, gpointer code)
+	MonoMethod *method, gpointer code)
 {
 	static gboolean inited = FALSE;
 	static int num_added = 0;
@@ -1494,9 +1494,10 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable
 		domain->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	/* Check whether the case was already added */
-	gvc = g_hash_table_lookup (domain->generic_virtual_cases, vtable_slot);
+	list = g_hash_table_lookup (domain->generic_virtual_cases, vtable_slot);
+	gvc = list;
 	while (gvc) {
-		if (gvc->inst == method_inst)
+		if (gvc->method == method)
 			break;
 		gvc = gvc->next;
 	}
@@ -1504,7 +1505,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable
 	/* If not found, make a new one */
 	if (!gvc) {
 		gvc = mono_domain_alloc (domain, sizeof (GenericVirtualCase));
-		gvc->inst = method_inst;
+		gvc->method = method;
 		gvc->code = code;
 		gvc->count = 0;
 		gvc->next = g_hash_table_lookup (domain->generic_virtual_cases, vtable_slot);
@@ -1524,14 +1525,14 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable
 	}
 
 	entries = NULL;
-	for (list = gvc; list; list = list->next) {
+	for (; list; list = list->next) {
 		MonoImtBuilderEntry *entry;
 
 		if (list->count < THUNK_THRESHOLD)
 			continue;
 
 		entry = g_new0 (MonoImtBuilderEntry, 1);
-		entry->key = list->inst;
+		entry->key = list->method;
 		entry->value.target_code = mono_get_addr_from_ftnptr (list->code);
 		if (entries)
 			entry->children = entries->children + 1;

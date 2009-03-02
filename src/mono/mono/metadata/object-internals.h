@@ -1349,7 +1349,7 @@ mono_method_get_imt_slot (MonoMethod *method) MONO_INTERNAL;
 
 void
 mono_method_add_generic_virtual_invocation (MonoDomain *domain, gpointer *vtable_slot,
-	MonoGenericInst *method_inst, gpointer code) MONO_INTERNAL;
+	MonoMethod *method, gpointer code) MONO_INTERNAL;
 
 gpointer
 mono_method_alloc_generic_virtual_thunk (MonoDomain *domain, int size) MONO_INTERNAL;
