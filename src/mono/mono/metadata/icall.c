@@ -2006,7 +2006,7 @@ ves_icall_get_property_info (MonoReflectionProperty *property, MonoPropertyInfo 
 }
 
 static void
-ves_icall_get_event_info (MonoReflectionEvent *event, MonoEventInfo *info)
+ves_icall_get_event_info (MonoReflectionMonoEvent *event, MonoEventInfo *info)
 {
 	MonoDomain *domain = mono_object_domain (event); 
 

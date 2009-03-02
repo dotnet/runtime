@@ -6328,14 +6328,16 @@ MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 {
 	MonoReflectionEvent *res;
+	MonoReflectionMonoEvent *mono_event;
 	static MonoClass *monoevent_klass;
 
 	CHECK_OBJECT (MonoReflectionEvent *, event, klass);
 	if (!monoevent_klass)
 		monoevent_klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoEvent");
-	res = (MonoReflectionEvent *)mono_object_new (domain, monoevent_klass);
-	res->klass = klass;
-	res->event = event;
+	mono_event = (MonoReflectionMonoEvent *)mono_object_new (domain, monoevent_klass);
+	mono_event->klass = klass;
+	mono_event->event = event;
+	res = (MonoReflectionEvent*)mono_event;
 	CACHE_OBJECT (MonoReflectionEvent *, event, res, klass);
 }
 
@@ -7358,7 +7360,7 @@ mono_reflection_get_token (MonoObject *obj)
 
 		token = mono_class_get_property_token (p->property);
 	} else if (strcmp (klass->name, "MonoEvent") == 0) {
-		MonoReflectionEvent *p = (MonoReflectionEvent*)obj;
+		MonoReflectionMonoEvent *p = (MonoReflectionMonoEvent*)obj;
 
 		token = mono_class_get_event_token (p->event);
 	} else if (strcmp (klass->name, "ParameterInfo") == 0) {
@@ -8295,7 +8297,7 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 		MonoReflectionProperty *rprop = (MonoReflectionProperty*)obj;
 		cinfo = mono_custom_attrs_from_property (rprop->property->parent, rprop->property);
 	} else if (strcmp ("MonoEvent", klass->name) == 0) {
-		MonoReflectionEvent *revent = (MonoReflectionEvent*)obj;
+		MonoReflectionMonoEvent *revent = (MonoReflectionMonoEvent*)obj;
 		cinfo = mono_custom_attrs_from_event (revent->event->parent, revent->event);
 	} else if (strcmp ("MonoField", klass->name) == 0) {
 		MonoReflectionField *rfield = (MonoReflectionField*)obj;
@@ -9871,7 +9873,7 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 			if (eb->remove_method)
 				event->remove = inflate_method (type, (MonoObject *) eb->remove_method);
 		} else if (!strcmp (obj->vtable->klass->name, "MonoEvent")) {
-			*event = *((MonoReflectionEvent *) obj)->event;
+			*event = *((MonoReflectionMonoEvent *) obj)->event;
 			event->name = g_strdup (event->name);
 
 			if (event->add)

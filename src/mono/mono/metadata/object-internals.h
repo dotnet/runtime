@@ -678,11 +678,16 @@ struct _MonoReflectionProperty {
 	MonoProperty *property;
 };
 
+/*This is System.EventInfo*/
 struct _MonoReflectionEvent {
 	MonoObject object;
+};
+
+typedef struct {
+	MonoReflectionEvent object;
 	MonoClass *klass;
 	MonoEvent *event;
-};
+} MonoReflectionMonoEvent;
 
 typedef struct {
 	MonoObject object;
