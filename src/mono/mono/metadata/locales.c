@@ -130,7 +130,7 @@ create_names_array_idx (const guint16 *names, int ml)
 		len++;
 	}
 
-	ret = mono_array_new (mono_domain_get (), mono_get_string_class (), len);
+	ret = mono_array_new_cached (mono_domain_get (), mono_get_string_class (), len);
 
 	for(i = 0; i < len; i++)
 		mono_array_setref (ret, i, mono_string_new (domain, idx2string (names [i])));

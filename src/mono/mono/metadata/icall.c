@@ -2319,6 +2319,8 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 {
 	MonoArray *res;
 	MonoClass *klass, *pklass;
+	MonoDomain *domain = mono_object_domain (type);
+	MonoVTable *array_vtable = mono_class_vtable (domain, mono_array_class_get_cached (mono_defaults.systemtype_class, 1));
 	int i;
 	MONO_ARCH_SAVE_REGS;
 
@@ -2326,18 +2328,18 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 
 	if (klass->generic_container) {
 		MonoGenericContainer *container = klass->generic_container;
-		res = mono_array_new (mono_object_domain (type), mono_defaults.systemtype_class, container->type_argc);
+		res = mono_array_new_specific (array_vtable, container->type_argc);
 		for (i = 0; i < container->type_argc; ++i) {
 			pklass = mono_class_from_generic_parameter (&container->type_params [i], klass->image, FALSE);
-			mono_array_setref (res, i, mono_type_get_object (mono_object_domain (type), &pklass->byval_arg));
+			mono_array_setref (res, i, mono_type_get_object (domain, &pklass->byval_arg));
 		}
 	} else if (klass->generic_class) {
 		MonoGenericInst *inst = klass->generic_class->context.class_inst;
-		res = mono_array_new (mono_object_domain (type), mono_defaults.systemtype_class, inst->type_argc);
+		res = mono_array_new_specific (array_vtable, inst->type_argc);
 		for (i = 0; i < inst->type_argc; ++i)
-			mono_array_setref (res, i, mono_type_get_object (mono_object_domain (type), inst->type_argv [i]));
+			mono_array_setref (res, i, mono_type_get_object (domain, inst->type_argv [i]));
 	} else {
-		res = mono_array_new (mono_object_domain (type), mono_defaults.systemtype_class, 0);
+		res = mono_array_new_specific (array_vtable, 0);
 	}
 	return res;
 }
@@ -3664,9 +3666,10 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MonoClass *startklass, *klass, *refklass;
 	MonoArray *res;
 	MonoObject *member;
-	int i, len, match;
+	int i, match;
 	gpointer iter;
 	MonoClassField *field;
+	MonoPtrArray tmp_array;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -3676,9 +3679,8 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
-	i = 0;
-	len = 2;
-	res = mono_array_new (domain, mono_defaults.field_info_class, len);
+	mono_ptr_array_init (tmp_array, 2);
+	
 handle_parent:	
 	if (klass->exception_type != MONO_EXCEPTION_NONE)
 		mono_raise_exception (mono_class_get_exception_for_failure (klass));
@@ -3711,26 +3713,18 @@ handle_parent:
 		if (!match)
 			continue;
 		member = (MonoObject*)mono_field_get_object (domain, refklass, field);
-		if (i >= len) {
-			MonoArray *new_res = mono_array_new (domain, mono_defaults.field_info_class, len * 2);
-			mono_array_memcpy_refs (new_res, 0, res, 0, len);
-			len *= 2;
-			res = new_res;
-		}
-		mono_array_setref (res, i, member);
-		++i;
+		mono_ptr_array_append (tmp_array, member);
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
-	if (i != len) {
-		MonoArray *new_res = mono_array_new (domain, mono_defaults.field_info_class, i);
-		mono_array_memcpy_refs (new_res, 0, res, 0, i);
-		res = new_res;
-		/*
-		 * Better solution for the new GC.
-		 * res->max_length = i;
-		 */
-	}
+
+	res = mono_array_new_cached (domain, mono_defaults.field_info_class, mono_ptr_array_size (tmp_array));
+
+	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
+		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
+
+	mono_ptr_array_destroy (tmp_array);
+
 	return res;
 }
 
@@ -4164,10 +4158,14 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MonoArray *res;
 	MonoMethod *method;
 	MonoEvent *event;
-	int i, len, match;
+	int i, match;
 	gpointer iter;
+	
+	MonoPtrArray tmp_array;
 
 	MONO_ARCH_SAVE_REGS;
+
+	mono_ptr_array_init (tmp_array, 4);
 
 	if (!System_Reflection_EventInfo)
 		System_Reflection_EventInfo = mono_class_from_name (
@@ -4175,12 +4173,9 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 
 	domain = mono_object_domain (type);
 	if (type->type->byref)
-		return mono_array_new (domain, System_Reflection_EventInfo, 0);
+		return mono_array_new_cached (domain, System_Reflection_EventInfo, 0);
 	klass = startklass = mono_class_from_mono_type (type->type);
 
-	i = 0;
-	len = 2;
-	res = mono_array_new (domain, System_Reflection_EventInfo, len);
 handle_parent:	
 	if (klass->exception_type != MONO_EXCEPTION_NONE)
 		mono_raise_exception (mono_class_get_exception_for_failure (klass));
@@ -4223,27 +4218,18 @@ handle_parent:
 				match ++;
 		if (!match)
 			continue;
-		match = 0;
-		if (i >= len) {
-			MonoArray *new_res = mono_array_new (domain, System_Reflection_EventInfo, len * 2);
-			mono_array_memcpy_refs (new_res, 0, res, 0, len);
-			len *= 2;
-			res = new_res;
-		}
-		mono_array_setref (res, i, mono_event_get_object (domain, startklass, event));
-		++i;
+		mono_ptr_array_append (tmp_array, mono_event_get_object (domain, startklass, event));
 	}
 	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
 		goto handle_parent;
-	if (i != len) {
-		MonoArray *new_res = mono_array_new (domain, System_Reflection_EventInfo, i);
-		mono_array_memcpy_refs (new_res, 0, res, 0, i);
-		res = new_res;
-		/*
-		 * Better solution for the new GC.
-		 * res->max_length = i;
-		 */
-	}
+
+	res = mono_array_new_cached (domain, System_Reflection_EventInfo, mono_ptr_array_size (tmp_array));
+
+	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
+		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
+
+	mono_ptr_array_destroy (tmp_array);
+
 	return res;
 }
 
@@ -4310,9 +4296,10 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	MonoClass *klass;
 	MonoArray *res;
 	MonoObject *member;
-	int i, len, match;
+	int i, match;
 	MonoClass *nested;
 	gpointer iter;
+	MonoPtrArray tmp_array;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -4335,9 +4322,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	if (klass->generic_class)
 		klass = klass->generic_class->container_class;
 
-	i = 0;
-	len = 1;
-	res = mono_array_new (domain, mono_defaults.monotype_class, len);
+	mono_ptr_array_init (tmp_array, 1);
 	iter = NULL;
 	while ((nested = mono_class_get_nested_types (klass, &iter))) {
 		match = 0;
@@ -4351,24 +4336,16 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 		if (!match)
 			continue;
 		member = (MonoObject*)mono_type_get_object (domain, &nested->byval_arg);
-		if (i >= len) {
-			MonoArray *new_res = mono_array_new (domain, mono_defaults.monotype_class, len * 2);
-			mono_array_memcpy_refs (new_res, 0, res, 0, len);
-			len *= 2;
-			res = new_res;
-		}
-		mono_array_setref (res, i, member);
-		++i;
+		mono_ptr_array_append (tmp_array, member);
 	}
-	if (i != len) {
-		MonoArray *new_res = mono_array_new (domain, mono_defaults.monotype_class, i);
-		mono_array_memcpy_refs (new_res, 0, res, 0, i);
-		res = new_res;
-		/*
-		 * Better solution for the new GC.
-		 * res->max_length = i;
-		 */
-	}
+
+	res = mono_array_new_cached (domain, mono_defaults.monotype_class, mono_ptr_array_size (tmp_array));
+
+	for (i = 0; i < mono_ptr_array_size (tmp_array); ++i)
+		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
+
+	mono_ptr_array_destroy (tmp_array);
+
 	return res;
 }
 
