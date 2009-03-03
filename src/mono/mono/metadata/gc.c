@@ -108,11 +108,11 @@ run_finalize (void *obj, void *data)
 	domain = o->vtable->domain;
 
 #ifndef HAVE_SGEN_GC
-	mono_domain_lock (o->vtable->domain);
+	EnterCriticalSection (&o->vtable->domain->finalizable_objects_hash_lock);
 
 	o2 = g_hash_table_lookup (o->vtable->domain->finalizable_objects_hash, o);
 
-	mono_domain_unlock (o->vtable->domain);
+	LeaveCriticalSection (&o->vtable->domain->finalizable_objects_hash_lock);
 
 	if (!o2)
 		/* Already finalized somehow */
@@ -249,14 +249,14 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 		 */
 		return;
 
-	mono_domain_lock (domain);
+	EnterCriticalSection (&domain->finalizable_objects_hash_lock);
 
 	if (callback)
 		g_hash_table_insert (domain->finalizable_objects_hash, obj, obj);
 	else
 		g_hash_table_remove (domain->finalizable_objects_hash, obj);
 
-	mono_domain_unlock (domain);
+	LeaveCriticalSection (&domain->finalizable_objects_hash_lock);
 
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
 #elif defined(HAVE_SGEN_GC)

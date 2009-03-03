@@ -223,6 +223,7 @@ struct _MonoDomain {
 	 * if the hashtable contains a GC visible reference to them.
 	 */
 	GHashTable         *finalizable_objects_hash;
+	CRITICAL_SECTION   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
 	CRITICAL_SECTION    assemblies_lock;
 

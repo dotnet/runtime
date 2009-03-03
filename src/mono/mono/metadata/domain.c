@@ -1201,6 +1201,7 @@ mono_domain_create (void)
 	InitializeCriticalSection (&domain->lock);
 	InitializeCriticalSection (&domain->assemblies_lock);
 	InitializeCriticalSection (&domain->jit_code_hash_lock);
+	InitializeCriticalSection (&domain->finalizable_objects_hash_lock);
 
 	domain->method_rgctx_hash = NULL;
 
@@ -1930,6 +1931,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		domain->generic_virtual_cases = NULL;
 	}
 
+	DeleteCriticalSection (&domain->finalizable_objects_hash_lock);
 	DeleteCriticalSection (&domain->assemblies_lock);
 	DeleteCriticalSection (&domain->jit_code_hash_lock);
 	DeleteCriticalSection (&domain->lock);
