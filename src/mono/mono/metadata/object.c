@@ -1574,6 +1574,9 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	static int num_added = 0;
 
 	GenericVirtualCase *gvc, *list;
+	MonoImtBuilderEntry *entries;
+	int i;
+	GPtrArray *sorted;
 
 	mono_domain_lock (domain);
 	if (!domain->generic_virtual_cases)
@@ -1608,11 +1611,27 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	if (++gvc->count == THUNK_THRESHOLD) {
 		gpointer *old_thunk = *vtable_slot;
 
-		/* Force the rebuild of the thunk at the next call */
 		if ((gpointer)vtable_slot < (gpointer)vtable)
+			/* Force the rebuild of the thunk at the next call */
 			*vtable_slot = imt_trampoline;
-		else
-			*vtable_slot = vtable_trampoline;
+		else {
+			entries = get_generic_virtual_entries (domain, vtable_slot);
+
+			sorted = imt_sort_slot_entries (entries);
+
+			*vtable_slot = imt_thunk_builder (NULL, domain, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
+											  vtable_trampoline);
+
+			while (entries) {
+				MonoImtBuilderEntry *next = entries->next;
+				g_free (entries);
+				entries = next;
+			}
+
+			for (i = 0; i < sorted->len; ++i)
+				g_free (g_ptr_array_index (sorted, i));
+			g_ptr_array_free (sorted, TRUE);
+		}
 
 		if (old_thunk != vtable_trampoline && old_thunk != imt_trampoline)
 			invalidate_generic_virtual_thunk (domain, old_thunk);
