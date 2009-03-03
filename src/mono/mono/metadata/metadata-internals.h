@@ -207,6 +207,7 @@ struct _MonoImage {
 	 * indexed by MonoMethod pointers 
 	 */
 	GHashTable *runtime_invoke_direct_cache;
+	GHashTable *runtime_invoke_vcall_cache;
 	GHashTable *managed_wrapper_cache;
 	GHashTable *native_wrapper_cache;
 	GHashTable *native_wrapper_aot_cache;

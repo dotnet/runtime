@@ -1453,6 +1453,7 @@ mono_image_close (MonoImage *image)
 	free_hash (image->remoting_invoke_cache);
 	free_hash (image->runtime_invoke_cache);
 	free_hash (image->runtime_invoke_direct_cache);
+	free_hash (image->runtime_invoke_vcall_cache);
 	free_hash (image->synchronized_cache);
 	free_hash (image->unbox_wrapper_cache);
 	free_hash (image->cominterop_invoke_cache);

@@ -1285,7 +1285,7 @@ get_runtime_invoke_sig (MonoMethodSignature *sig)
 
 	mb = mono_mb_new (mono_defaults.object_class, "FOO", MONO_WRAPPER_NONE);
 	m = mono_mb_create_method (mb, sig, 16);
-	return mono_marshal_get_runtime_invoke (m);
+	return mono_marshal_get_runtime_invoke (m, FALSE);
 }
 
 static void
@@ -1360,6 +1360,9 @@ add_wrappers (MonoAotCompile *acfg)
 	csig->params [1] = &mono_defaults.boolean_class->byval_arg;
 	add_method (acfg, get_runtime_invoke_sig (csig));
 
+	/* runtime-invoke used by finalizers */
+	add_method (acfg, mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE));
+
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
 		MonoMethod *method;
 		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
@@ -1387,7 +1390,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 
 		if (!skip)
-			add_method (acfg, mono_marshal_get_runtime_invoke (method));
+			add_method (acfg, mono_marshal_get_runtime_invoke (method, FALSE));
 	}
 
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {

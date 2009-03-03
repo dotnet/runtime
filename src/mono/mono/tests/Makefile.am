@@ -552,7 +552,7 @@ runtest-managed: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la 
 	@$(RUNTIME) ./test-runner.exe -j a --disabled '$(DISABLED_TESTS)' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
 
 testjit:
-	@$(MAKE) runtest
+	@$(MAKE) runtest-managed
 
 testaot:
 	@$(MAKE) AOT=1 runtest

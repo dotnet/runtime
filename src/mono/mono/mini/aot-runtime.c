@@ -1,5 +1,5 @@
 /*
- * aot.c: mono Ahead of Time compiler
+ * aot-runtime.c: mono Ahead of Time compiler
  *
  * Author:
  *   Dietmar Maurer (dietmar@ximian.com)

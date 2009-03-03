@@ -179,7 +179,7 @@ MonoMethod *
 mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del) MONO_INTERNAL;
 
 MonoMethod *
-mono_marshal_get_runtime_invoke (MonoMethod *method) MONO_INTERNAL;
+mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual) MONO_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_static_rgctx_invoke (MonoMethod *method) MONO_INTERNAL;

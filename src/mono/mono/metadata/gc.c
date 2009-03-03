@@ -97,10 +97,15 @@ run_finalize (void *obj, void *data)
 	MonoObject *o2;
 #endif
 	MonoMethod* finalizer = NULL;
+	MonoDomain *domain;
+	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc, void* compiled_method);
+	
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
 	if (suspend_finalizers)
 		return;
+
+	domain = o->vtable->domain;
 
 #ifndef HAVE_SGEN_GC
 	mono_domain_lock (o->vtable->domain);
@@ -165,8 +170,23 @@ run_finalize (void *obj, void *data)
 	if (mono_marshal_free_ccw (o) && !finalizer)
 		return;
 #endif
-	
-	mono_runtime_invoke (finalizer, o, NULL, &exc);
+
+	/* 
+	 * To avoid the locking plus the other overhead of mono_runtime_invoke (),
+	 * create and precompile a wrapper which calls the finalize method using
+	 * a CALLVIRT.
+	 */
+	if (!domain->finalize_runtime_invoke) {
+		MonoMethod *invoke = mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE);
+
+		domain->finalize_runtime_invoke = mono_compile_method (invoke);
+	}
+
+	runtime_invoke = domain->finalize_runtime_invoke;
+
+	mono_runtime_class_init (o->vtable);
+
+	runtime_invoke (o, NULL, &exc, NULL);
 
 	if (exc) {
 		/* fixme: do something useful */

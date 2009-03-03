@@ -4167,7 +4167,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	else
 		to_compile = method;
 
-	invoke = mono_marshal_get_runtime_invoke (method);
+	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	runtime_invoke = mono_jit_compile_method (invoke);
 	
 	/* We need this here becuase mono_marshal_get_runtime_invoke can be place 
@@ -4976,7 +4976,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 		}
 		mono_compile_method (method);
 		if (strcmp (method->name, "Finalize") == 0) {
-			invoke = mono_marshal_get_runtime_invoke (method);
+			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 			mono_compile_method (invoke);
 		}
 		if (method->klass->marshalbyref && mono_method_signature (method)->hasthis) {

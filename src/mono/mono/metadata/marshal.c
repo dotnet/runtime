@@ -3827,9 +3827,13 @@ runtime_invoke_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *
  * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc, void* method)
  *
  * we also catch exceptions if exc != null
+ * If VIRTUAL is TRUE, then METHOD is invoked virtually on THIS. This is useful since
+ * it means that the compiled code for METHOD does not have to be looked up 
+ * before calling the runtime invoke wrapper. In this case, the wrapper ignores
+ * its METHOD argument.
  */
 MonoMethod *
-mono_marshal_get_runtime_invoke (MonoMethod *method)
+mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 {
 	MonoMethodSignature *sig, *csig, *callsig;
 	MonoExceptionClause *clause;
@@ -3857,11 +3861,17 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		finalize_signature->hasthis = 1;
 	}
 
+	if (virtual)
+		need_direct_wrapper = TRUE;
+
 	/* 
 	 * Use a separate cache indexed by methods to speed things up and to avoid the
 	 * boundless mempool growth caused by the signature_dup stuff below.
 	 */
-	cache = get_cache (&method->klass->image->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
+	if (virtual)
+		cache = get_cache (&method->klass->image->runtime_invoke_vcall_cache, mono_aligned_addr_hash, NULL);
+	else
+		cache = get_cache (&method->klass->image->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
 	res = mono_marshal_find_in_cache (cache, method);
 	if (res)
 		return res;
@@ -3976,7 +3986,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
 	csig->params [3] = &mono_defaults.int_class->byval_arg;
 
-	name = mono_signature_to_name (callsig, "runtime_invoke");
+	name = mono_signature_to_name (callsig, virtual ? "runtime_invoke_virtual" : "runtime_invoke");
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
 	g_free (name);
 
@@ -3994,6 +4004,11 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 
 	emit_thread_force_interrupt_checkpoint (mb);
+
+	if (virtual) {
+		g_assert (sig->hasthis);
+		g_assert (method->flags & METHOD_ATTRIBUTE_VIRTUAL);
+	}
 
 	if (sig->hasthis) {
 		if (method->string_ctor) {
@@ -4084,7 +4099,9 @@ handle_enum:
 		}		
 	}
 	
-	if (need_direct_wrapper) {
+	if (virtual) {
+		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
+	} else if (need_direct_wrapper) {
 		mono_mb_emit_op (mb, CEE_CALL, method);
 	} else {
 		mono_mb_emit_ldarg (mb, 3);
