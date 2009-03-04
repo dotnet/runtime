@@ -5802,6 +5802,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_JMP: {
 			MonoCallInst *call;
 
+			INLINE_FAILURE;
+
 			CHECK_OPSIZE (5);
 			if (stack_start != sp)
 				UNVERIFIED;
@@ -5815,11 +5817,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod))
 				GENERIC_SHARING_FAILURE (CEE_JMP);
 
-			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS) {
- 				if (check_linkdemand (cfg, method, cmethod))
- 					INLINE_FAILURE;
+			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
 				CHECK_CFG_EXCEPTION;
- 			}
 
 #ifdef __x86_64__
 			{
