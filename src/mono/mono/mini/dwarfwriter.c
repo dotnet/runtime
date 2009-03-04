@@ -1223,7 +1223,12 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 			if (lne->il_offset >= header->code_size)
 				continue;
 			line = il_to_line [lne->il_offset];
-			g_assert (line);
+			if (!line) {
+				/* To help debugging */
+				printf ("%s\n", mono_method_full_name (method, TRUE));
+				printf ("%d %d\n", lne->il_offset, header->code_size);
+				g_assert (line);
+			}
 
 			if (line - prev_line != 0) {
 				emit_advance_op (w, line - prev_line, (gint32)lne->native_offset - prev_native_offset);
