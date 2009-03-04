@@ -282,43 +282,6 @@ mono_arch_get_call_filter_full (guint32 *code_size, MonoJumpInfo **ji, gboolean 
 	return start;
 }
 
-static gboolean
-debugger_handle_exception (MonoContext *ctx, MonoObject *obj)
-{
-	MonoDebuggerExceptionAction action;
-
-	if (!mono_debug_using_mono_debugger ())
-		return FALSE;
-
-	if (!obj) {
-		MonoException *ex = mono_get_exception_null_reference ();
-		MONO_OBJECT_SETREF (ex, message, mono_string_new (mono_domain_get (), "Object reference not set to an instance of an object"));
-		obj = (MonoObject *)ex;
-	} 
-
-	action = mono_debugger_throw_exception (MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), obj);
-
-	if (action == MONO_DEBUGGER_EXCEPTION_ACTION_STOP) {
-		/*
-		 * The debugger wants us to stop on the `throw' instruction.
-		 * By the time we get here, it already inserted a breakpoint there.
-		 */
-		return TRUE;
-	} else if (action == MONO_DEBUGGER_EXCEPTION_ACTION_STOP_UNHANDLED) {
-		MonoContext ctx_cp = *ctx;
-
-		/*
-		 * The debugger wants us to stop only if this exception is user-unhandled.
-		 */
-
-		if (!mono_handle_exception (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), TRUE)) {
-			return mono_debugger_unhandled_exception (MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), obj);
-		}
-	}
-
-	return FALSE;
-}
-
 /* 
  * The first few arguments are dummy, to force the other arguments to be passed on
  * the stack, this avoids overwriting the argument registers in the throw trampoline.
@@ -368,7 +331,7 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 			MonoContext ctx_cp = ctx;
 			ctx_cp.rip = rip - 5;
 
-			if (debugger_handle_exception (&ctx_cp, exc)) {
+			if (mono_debugger_handle_exception (&ctx_cp, exc)) {
 				restore_context (&ctx_cp);
 				g_assert_not_reached ();
 			}
@@ -716,7 +679,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
 
-	if (debugger_handle_exception (&mctx, (MonoObject *)obj))
+	if (mono_debugger_handle_exception (&mctx, (MonoObject *)obj))
 		return TRUE;
 
 	mono_handle_exception (&mctx, obj, MONO_CONTEXT_GET_IP (&mctx), test_only);
@@ -871,7 +834,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 	restore_context = mono_get_restore_context ();
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
 
-	if (debugger_handle_exception (&mctx, (MonoObject *)obj)) {
+	if (mono_debugger_handle_exception (&mctx, (MonoObject *)obj)) {
 		if (stack_ovf)
 			prepare_for_guard_pages (&mctx);
 		restore_context (&mctx);
