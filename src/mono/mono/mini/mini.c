@@ -4167,9 +4167,21 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	else
 		to_compile = method;
 
-	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
-	runtime_invoke = mono_jit_compile_method (invoke);
-	
+	/* Special case parameterless ctors to speed up Activator.CreateInstance () */
+	if (method->flags & (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME) && !strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == 0 && !method->klass->valuetype) {
+		MonoJitDomainInfo *domain_info = domain_jit_info (mono_domain_get ());
+
+		if (!domain_info->ctor_runtime_invoke) {
+			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
+			domain_info->ctor_runtime_invoke = mono_jit_compile_method (invoke);
+		}
+
+		runtime_invoke = domain_info->ctor_runtime_invoke;
+	} else {
+		invoke = mono_marshal_get_runtime_invoke (method, FALSE);
+		runtime_invoke = mono_jit_compile_method (invoke);
+	}
+
 	/* We need this here becuase mono_marshal_get_runtime_invoke can be place 
 	 * the helper method in System.Object and not the target class
 	 */

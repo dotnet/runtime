@@ -109,6 +109,8 @@ typedef struct
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;
+	/* Compiled runtime invoke function for parameterless ctors */
+	gpointer ctor_runtime_invoke;
 } MonoJitDomainInfo;
 
 typedef struct {
