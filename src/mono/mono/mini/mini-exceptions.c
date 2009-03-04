@@ -46,6 +46,7 @@
 #include <mono/utils/mono-mmap.h>
 
 #include "mini.h"
+#include "debug-mini.h"
 #include "trace.h"
 
 #ifndef MONO_ARCH_CONTEXT_DEF
@@ -919,19 +920,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 			// FIXME: This runs managed code so it might cause another stack overflow when
 			// we are handling a stack overflow
 			mono_unhandled_exception (obj);
-
-			if (mono_debugger_unhandled_exception (original_ip, MONO_CONTEXT_GET_SP (ctx), obj)) {
-				/*
-				 * If this returns true, then we're running inside the
-				 * Mono Debugger and the debugger wants us to restore the
-				 * context and continue (normally, the debugger inserts
-				 * a breakpoint on the `original_ip', so it regains control
-				 * immediately after restoring the context).
-				 */
-				MONO_CONTEXT_SET_IP (ctx, original_ip);
-				restore_context (ctx);
-				g_assert_not_reached ();
-			}
 		}
 	}
 

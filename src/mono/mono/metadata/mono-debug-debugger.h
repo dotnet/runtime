@@ -53,9 +53,6 @@ void            mono_debugger_lock                          (void);
 void            mono_debugger_unlock                        (void);
 void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-MonoObject     *mono_debugger_runtime_invoke                (MonoMethod *method, void *obj,
-							     void **params, MonoObject **exc);
-
 void *
 mono_vtable_get_static_field_data (MonoVTable *vt);
 

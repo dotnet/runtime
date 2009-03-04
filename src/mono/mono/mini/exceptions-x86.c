@@ -361,6 +361,43 @@ mono_arch_get_call_filter (void)
 	return start;
 }
 
+static gboolean
+debugger_handle_exception (MonoContext *ctx, MonoObject *obj)
+{
+	MonoDebuggerExceptionAction action;
+
+	if (!mono_debug_using_mono_debugger ())
+		return FALSE;
+
+	if (!obj) {
+		MonoException *ex = mono_get_exception_null_reference ();
+		MONO_OBJECT_SETREF (ex, message, mono_string_new (mono_domain_get (), "Object reference not set to an instance of an object"));
+		obj = (MonoObject *)ex;
+	} 
+
+	action = mono_debugger_throw_exception (MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), obj);
+
+	if (action == MONO_DEBUGGER_EXCEPTION_ACTION_STOP) {
+		/*
+		 * The debugger wants us to stop on the `throw' instruction.
+		 * By the time we get here, it already inserted a breakpoint there.
+		 */
+		return TRUE;
+	} else if (action == MONO_DEBUGGER_EXCEPTION_ACTION_STOP_UNHANDLED) {
+		MonoContext ctx_cp = *ctx;
+
+		/*
+		 * The debugger wants us to stop only if this exception is user-unhandled.
+		 */
+
+		if (!mono_handle_exception (&ctx_cp, obj, MONO_CONTEXT_GET_IP (ctx), TRUE)) {
+			return mono_debugger_unhandled_exception (MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), obj);
+		}
+	}
+
+	return FALSE;
+}
+
 static void
 throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsigned long ebx,
 		 unsigned long esi, unsigned long edi, unsigned long ebp, MonoObject *exc,
@@ -383,26 +420,32 @@ throw_exception (unsigned long eax, unsigned long ecx, unsigned long edx, unsign
 	ctx.ecx = ecx;
 	ctx.eax = eax;
 
-	if (mono_debugger_throw_exception ((gpointer)(eip - 5), (gpointer)esp, exc)) {
-		/*
-		 * The debugger wants us to stop on the `throw' instruction.
-		 * By the time we get here, it already inserted a breakpoint on
-		 * eip - 5 (which is the address of the call).
-		 */
-		ctx.eip = eip - 5;
-		ctx.esp = esp + sizeof (gpointer);
-		restore_context (&ctx);
-		g_assert_not_reached ();
-	}
-
-	/* adjust eip so that it point into the call instruction */
-	ctx.eip -= 1;
-
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
 		if (!rethrow)
 			mono_ex->stack_trace = NULL;
 	}
+
+	if (mono_debug_using_mono_debugger ()) {
+		guint8 buf [16], *code;
+
+		mono_breakpoint_clean_code (NULL, (gpointer)eip, 8, buf, sizeof (buf));
+		code = buf + 8;
+
+		if (buf [3] == 0xe8) {
+			MonoContext ctx_cp = ctx;
+			ctx_cp.eip = eip - 5;
+
+			if (debugger_handle_exception (&ctx_cp, exc)) {
+				restore_context (&ctx_cp);
+				g_assert_not_reached ();
+			}
+		}
+	}
+
+	/* adjust eip so that it point into the call instruction */
+	ctx.eip -= 1;
+
 	mono_handle_exception (&ctx, exc, (gpointer)eip, FALSE);
 	restore_context (&ctx);
 
@@ -791,6 +834,9 @@ mono_arch_handle_exception (void *sigctx, gpointer obj, gboolean test_only)
 
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
 
+	if (debugger_handle_exception (&mctx, (MonoObject *)obj))
+		return TRUE;
+
 	mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, test_only);
 
 	mono_arch_monoctx_to_sigctx (&mctx, sigctx);
@@ -832,6 +878,13 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean stack_ovf)
 
 	restore_context = mono_arch_get_restore_context ();
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
+
+	if (debugger_handle_exception (&mctx, (MonoObject *)obj)) {
+		if (stack_ovf)
+			prepare_for_guard_pages (&mctx);
+		restore_context (&mctx);
+	}
+
 	mono_handle_exception (&mctx, obj, (gpointer)mctx.eip, FALSE);
 	if (stack_ovf)
 		prepare_for_guard_pages (&mctx);
