@@ -24,6 +24,7 @@
 
 #include "mini.h"
 #include "mini-x86.h"
+#include "debug-mini.h"
 
 #ifdef PLATFORM_WIN32
 static void (*restore_stack) (void *);
