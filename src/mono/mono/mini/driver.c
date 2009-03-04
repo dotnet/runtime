@@ -1861,7 +1861,7 @@ mono_jit_set_trace_options (const char* options)
 	return TRUE;
 }
 
-/*
+/**
  * mono_set_signal_chaining:
  *
  *   Enable/disable signal chaining. This should be called before mono_jit_init ().
