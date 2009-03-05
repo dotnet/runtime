@@ -98,7 +98,7 @@ run_finalize (void *obj, void *data)
 #endif
 	MonoMethod* finalizer = NULL;
 	MonoDomain *domain;
-	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc, void* compiled_method);
+	RuntimeInvokeFunction runtime_invoke;
 	
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
