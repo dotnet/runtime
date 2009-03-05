@@ -4980,6 +4980,26 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle)
 	}
 }
 
+
+static MonoObject*
+mono_runtime_capture_context (MonoDomain *domain)
+{
+	RuntimeInvokeFunction runtime_invoke;
+
+	if (!domain->capture_context_runtime_invoke || !domain->capture_context_method) {
+		MonoMethod *method = mono_get_context_capture_method ();
+		MonoMethod *wrapper;
+		if (!method)
+			return NULL;
+		wrapper = mono_marshal_get_runtime_invoke (method, FALSE);
+		domain->capture_context_runtime_invoke = mono_compile_method (wrapper);
+		domain->capture_context_method = mono_compile_method (method);
+	}
+
+	runtime_invoke = domain->capture_context_runtime_invoke;
+
+	return runtime_invoke (NULL, NULL, NULL, domain->capture_context_method);
+}
 /**
  * mono_async_result_new:
  * @domain:domain where the object will be created.
@@ -4995,11 +5015,10 @@ MonoAsyncResult *
 mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpointer data, MonoObject *object_data)
 {
 	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new (domain, mono_defaults.asyncresult_class);
-	MonoMethod *method = mono_get_context_capture_method ();
-
+	MonoObject *context = mono_runtime_capture_context (domain);
 	/* we must capture the execution context from the original thread */
-	if (method) {
-		MONO_OBJECT_SETREF (res, execution_context, mono_runtime_invoke (method, NULL, NULL, NULL));
+	if (context) {
+		MONO_OBJECT_SETREF (res, execution_context, context);
 		/* note: result may be null if the flow is suppressed */
 	}
 

@@ -241,6 +241,12 @@ struct _MonoDomain {
 	
 	/* Contains the compiled runtime invoke wrapper used by finalizers */
 	gpointer            finalize_runtime_invoke;
+
+	/* Contains the compiled runtime invoke wrapper used by async resylt creation to capture thread context*/
+	gpointer            capture_context_runtime_invoke;
+
+	/* Contains the compiled method used by async resylt creation to capture thread context*/
+	gpointer            capture_context_method;
 };
 
 typedef struct  {
