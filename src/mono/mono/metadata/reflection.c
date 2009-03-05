@@ -5724,8 +5724,9 @@ reflected_hash (gconstpointer a) {
 	} while (0)
 
 #ifdef HAVE_BOEHM_GC
-#define ALLOC_REFENTRY mono_gc_alloc_fixed (sizeof (ReflectedEntry), NULL)
-#define FREE_REFENTRY(entry) mono_gc_free_fixed ((entry))
+/* ReflectedEntry doesn't need to be GC tracked */
+#define ALLOC_REFENTRY g_new0 (ReflectedEntry, 1)
+#define FREE_REFENTRY(entry) g_free ((entry))
 #else
 #define ALLOC_REFENTRY mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry))
 /* FIXME: */
