@@ -67,6 +67,12 @@ mono_runtime_cleanup_handlers (void)
 	win32_seh_cleanup();
 }
 
+gboolean
+SIG_HANDLER_SIGNATURE (mono_chain_signal)
+{
+	return FALSE;
+}
+
 static HANDLE win32_main_thread;
 static MMRESULT win32_timer;
 

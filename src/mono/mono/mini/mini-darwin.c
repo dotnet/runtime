@@ -193,3 +193,9 @@ mono_runtime_install_handlers (void)
 #endif
 	mono_runtime_posix_install_handlers ();
 }
+
+gboolean
+SIG_HANDLER_SIGNATURE (mono_chain_signal)
+{
+	return FALSE;
+}
