@@ -176,6 +176,12 @@ struct _MonoDomain {
 	MonoException      *out_of_memory_ex;
 	MonoException      *null_reference_ex;
 	MonoException      *stack_overflow_ex;
+	/* typeof (void) */
+	MonoObject         *typeof_void;
+	/* 
+	 * The fields between FIRST_GC_TRACKED and LAST_GC_TRACKED are roots, but
+	 * not object references.
+	 */
 #define MONO_DOMAIN_FIRST_GC_TRACKED env
 	MonoGHashTable     *env;
 	MonoGHashTable     *ldstr_table;
@@ -188,9 +194,7 @@ struct _MonoDomain {
 	MonoGHashTable    *type_init_exception_hash;
 	/* maps delegate trampoline addr -> delegate object */
 	MonoGHashTable     *delegate_hash_table;
-	/* typeof (void) */
-	MonoObject         *typeof_void;
-#define MONO_DOMAIN_LAST_GC_TRACKED typeof_void
+#define MONO_DOMAIN_LAST_GC_TRACKED delegate_hash_table
 	guint32            state;
 	/* Needed by Thread:GetDomainID() */
 	gint32             domain_id;

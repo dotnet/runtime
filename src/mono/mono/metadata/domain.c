@@ -1182,6 +1182,8 @@ mono_domain_create (void)
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
 
+	mono_gc_register_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED), G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_GC_TRACKED) - G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED), NULL);
+
 	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_LOAD);
 
 	domain->mp = mono_mempool_new ();
