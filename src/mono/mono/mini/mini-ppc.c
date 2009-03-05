@@ -5238,13 +5238,15 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 			if (item->check_target_idx) {
 				if (!item->compare_done)
 					item->chunk_size += CMP_SIZE;
-				if (fail_tramp)
+				if (item->has_target_code)
 					item->chunk_size += BR_SIZE + JUMP_IMM32_SIZE;
 				else
 					item->chunk_size += LOADSTORE_SIZE + BR_SIZE + JUMP_IMM_SIZE;
 			} else {
 				if (fail_tramp) {
 					item->chunk_size += CMP_SIZE + BR_SIZE + JUMP_IMM32_SIZE * 2;
+					if (!item->has_target_code)
+						item->chunk_size += LOADSTORE_SIZE;
 				} else {
 					item->chunk_size += LOADSTORE_SIZE + JUMP_IMM_SIZE;
 #if ENABLE_WRONG_METHOD_CHECK
@@ -5289,7 +5291,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 				}
 				item->jmp_code = code;
 				ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-				if (fail_tramp) {
+				if (item->has_target_code) {
 					ppc_load (code, ppc_r0, item->value.target_code);
 				} else {
 					ppc_load_reg (code, ppc_r0, (sizeof (gpointer) * item->value.vtable_slot), ppc_r11);
@@ -5303,7 +5305,13 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					ppc_compare_log (code, 0, MONO_ARCH_IMT_REG, ppc_r0);
 					item->jmp_code = code;
 					ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
-					ppc_load (code, ppc_r0, item->value.target_code);
+					if (item->has_target_code) {
+						ppc_load (code, ppc_r0, item->value.target_code);
+					} else {
+						g_assert (vtable);
+						ppc_load (code, ppc_r0, & (vtable->vtable [item->value.vtable_slot]));
+						ppc_load_reg_indexed (code, ppc_r0, 0, ppc_r0);
+					}
 					ppc_mtctr (code, ppc_r0);
 					ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 					ppc_patch (item->jmp_code, code);
