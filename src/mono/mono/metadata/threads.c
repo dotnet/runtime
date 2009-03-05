@@ -234,7 +234,7 @@ static gboolean handle_store(MonoThread *thread)
 
 	if(threads==NULL) {
 		MONO_GC_REGISTER_ROOT (threads);
-		threads=mono_g_hash_table_new(NULL, NULL);
+		threads=mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC);
 	}
 
 	/* We don't need to duplicate thread->handle, because it is
