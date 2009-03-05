@@ -91,7 +91,6 @@ void     mono_gchandle_free_domain  (MonoDomain *domain) MONO_INTERNAL;
 typedef void (*FinalizerThreadCallback) (gpointer user_data);
 
 /* if there are finalizers to run, run them. Returns the number of finalizers run */
-int      mono_gc_invoke_finalizers  (void) MONO_INTERNAL;
 gboolean mono_gc_pending_finalizers (void) MONO_INTERNAL;
 void     mono_gc_finalize_notify    (void) MONO_INTERNAL;
 

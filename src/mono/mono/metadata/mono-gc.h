@@ -15,6 +15,7 @@ int    mono_gc_get_generation  (MonoObject *object);
 int    mono_gc_collection_count (int generation);
 gint64 mono_gc_get_used_size   (void);
 gint64 mono_gc_get_heap_size   (void);
+int    mono_gc_invoke_finalizers (void);
 
 G_END_DECLS
 

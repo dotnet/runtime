@@ -254,6 +254,7 @@ on_gc_notification (GCEventType event)
 		mono_perfcounters->gc_reserved_bytes = heap_size;
 		mono_perfcounters->gc_gen0size = heap_size;
 		mono_stats.major_gc_time_usecs += (mono_100ns_ticks () - gc_start_time) / 10;
+		mono_trace_message (MONO_TRACE_GC, "gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 	}
 	mono_profiler_gc_event ((MonoGCEvent) event, 0);
 }
