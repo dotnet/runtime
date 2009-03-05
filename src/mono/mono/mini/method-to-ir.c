@@ -5467,8 +5467,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	/* We force the vtable variable here for all shared methods
 	   for the possibility that they might show up in a stack
 	   trace where their exact instantiation is needed. */
-	if (cfg->generic_sharing_context)
-		mono_get_vtable_var (cfg);
+	if (cfg->generic_sharing_context && method == cfg->method) {
+		if ((method->flags & METHOD_ATTRIBUTE_STATIC) ||
+				mini_method_get_context (method)->method_inst ||
+				method->klass->valuetype) {
+			mono_get_vtable_var (cfg);
+		} else {
+			/* FIXME: Is there a better way to do this?
+			   We need the variable live for the duration
+			   of the whole method. */
+			cfg->args [0]->flags |= MONO_INST_INDIRECT;
+		}
+	}
 
 	/* add a check for this != NULL to inlined methods */
 	if (is_virtual_call) {
