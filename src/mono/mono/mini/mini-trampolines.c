@@ -856,8 +856,13 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	gpointer code;
 	guint32 code_size = 0;
 
-	code = mono_jit_find_compiled_method (domain, method);
-	if (code)
+	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
+	/*
+	 * We cannot recover the correct type of a shared generic
+	 * method from its native code address, so we use the
+	 * trampoline instead.
+	 */
+	if (code && !ji->has_generic_jit_info)
 		return code;
 
 	mono_domain_lock (domain);

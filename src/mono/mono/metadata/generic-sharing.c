@@ -813,7 +813,8 @@ instantiate_other_info (MonoDomain *domain, MonoRuntimeGenericContextOtherInfoTe
 	case MONO_RGCTX_INFO_METHOD:
 		return data;
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
-		return mono_compile_method (data);
+		return mono_create_ftnptr (mono_domain_get (),
+				mono_runtime_create_jump_trampoline (mono_domain_get (), data, TRUE));
 	case MONO_RGCTX_INFO_CLASS_FIELD:
 		return data;
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {

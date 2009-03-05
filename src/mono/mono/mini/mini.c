@@ -4109,7 +4109,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 }
 
 gpointer
-mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
+mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **ji)
 {
 	MonoDomain *target_domain;
 	MonoJitInfo *info;
@@ -4124,11 +4124,21 @@ mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			mono_jit_stats.methods_lookups++;
+			if (ji)
+				*ji = info;
 			return info->code_start;
 		}
 	}
 
+	if (ji)
+		*ji = NULL;
 	return NULL;
+}
+
+gpointer
+mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
+{
+	return mono_jit_find_compiled_method_with_jit_info (domain, method, NULL);
 }
 
 /**
