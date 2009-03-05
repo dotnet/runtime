@@ -76,7 +76,7 @@ typedef void (*MonoGCMarkFunc) (void *addr, MonoGCCopyFunc mark_func);
 void *mono_gc_make_root_descr_user (MonoGCMarkFunc marker);
 
 /* desc is the result from mono_gc_make_descr*. A NULL value means
- * all the words contain GC pointers.
+ * all the words might contain GC pointers.
  * The memory is non-moving and it will be explicitly deallocated.
  * size bytes will be available from the returned address (ie, descr
  * must not be stored in the returned memory)

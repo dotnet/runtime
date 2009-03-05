@@ -364,7 +364,20 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 void*
 mono_gc_alloc_fixed (size_t size, void *descr)
 {
-	return GC_MALLOC (size);
+	/* To help track down typed allocation bugs */
+	/*
+	static int count;
+	count ++;
+	if (count == atoi (getenv ("COUNT2")))
+		printf ("HIT!\n");
+	if (count > atoi (getenv ("COUNT2")))
+		return GC_MALLOC (size);
+	*/
+
+	if (descr)
+		return GC_MALLOC_EXPLICITLY_TYPED (size, (GC_descr)descr);
+	else
+		return GC_MALLOC (size);
 }
 
 void
