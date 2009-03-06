@@ -10,6 +10,9 @@
 
 #if defined(_WIN32_WCE) || defined (UNDER_CE)
 #	include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/mman.h>
 #endif
 
 #if !defined(PLATFORM_MACOSX)
@@ -76,8 +79,6 @@ void* alloc_code_buff (int num_instr)
 	code_buff = malloc(code_size);
 	VirtualProtect(code_buff, code_size, PAGE_EXECUTE_READWRITE, &old_prot);
 #else
-#include <unistd.h>
-#include <sys/mman.h>
 	int page_size = sysconf(_SC_PAGESIZE);
 	int new_code_size;
 
