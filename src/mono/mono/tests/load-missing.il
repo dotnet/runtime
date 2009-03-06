@@ -52,6 +52,34 @@
 
   }
 
+  .class auto ansi sealed public DelegateWithMissingArgument
+         extends [mscorlib]System.MulticastDelegate
+  {
+    .method public hidebysig specialname rtspecialname 
+            instance void  .ctor(object 'object',
+                                 native int 'method') runtime managed
+    {
+    }
+
+    .method public hidebysig newslot virtual 
+            instance void  Invoke([t]Missing t) runtime managed
+    {
+    }
+
+    .method public hidebysig newslot virtual 
+            instance class [mscorlib]System.IAsyncResult 
+            BeginInvoke(class [mscorlib]System.AsyncCallback callback,
+                        object 'object') runtime managed
+    {
+    }
+
+    .method public hidebysig newslot virtual 
+            instance void  EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed
+    {
+    }
+
+  }
+
 .class public auto ansi beforefieldinit LoadMissing
        extends [mscorlib]System.Object
 {
@@ -490,6 +518,27 @@
 
 		ret
 	}	
+
+	.method public static void delegate_target () cil managed
+	{
+		ret
+	}
+
+	.method public hidebysig static void missing_delegate_ctor_argument () cil managed	   
+	{
+	    .maxstack  3
+		.locals init (class [t]Missing.Foo2 V_0,
+			          class EmptyDelegate V_1)
+    IL_0000:  nop
+    IL_0001:  newobj     instance void LoadMissing::.ctor()
+    IL_0006:  stloc.0
+    IL_0007:  ldloc.0
+    IL_0008:  ldftn      instance void LoadMissing::delegate_target()
+    IL_000e:  newobj     instance void DelegateWithMissingArgument::.ctor(object,
+                                                                          native int)
+    IL_0013:  stloc.1
+    IL_0014:  ret
+	}
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed

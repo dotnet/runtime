@@ -216,6 +216,10 @@ public class Tests : LoadMissing {
 	public static int test_0_missing_assembly_in_newobj () {
 		return check_type_load (new TestDel (missing_assembly_in_newobj));
 	}
+
+	public static int test_0_missing_delegate_ctor_argument () {
+		return check_type_load (new TestDel (missing_delegate_ctor_argument));
+	}
 	
 	//
 	// Missing classes referenced from metadata
