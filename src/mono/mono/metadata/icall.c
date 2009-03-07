@@ -3070,32 +3070,6 @@ ensure_reflection_security (void)
 	}
 }
 
-static gboolean
-can_call_generic_shared_method_for_class (MonoDomain *domain, MonoMethod *method, MonoClass *class)
-{
-	MonoClass *method_class;
-
-	if (!mono_method_is_generic_sharable_impl (method, FALSE))
-		return FALSE;
-
-	method = mono_method_get_declaring_generic_method (method);
-	method_class = method->klass;
-	g_assert (!method_class->generic_class);
-
-	if (!mono_domain_lookup_shared_generic (domain, method))
-		return FALSE;
-
-	while (class) {
-		if (class->generic_class)
-			class = class->generic_class->container_class;
-		if (method_class == class)
-			return TRUE;
-		class = class->parent;
-	}
-
-	return FALSE;
-}
-
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoException **exc) 
 {
@@ -3118,8 +3092,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (this) {
-			if (!mono_object_isinst (this, m->klass) &&
-					!can_call_generic_shared_method_for_class (this->vtable->domain, m, this->vtable->klass)) {
+			if (!mono_object_isinst (this, m->klass)) {
 				*exc = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Object does not match target type.");
 				return NULL;
 			}
