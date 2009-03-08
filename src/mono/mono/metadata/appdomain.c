@@ -1199,6 +1199,8 @@ get_shadow_assembly_location (const char *filename)
 	tmploc = get_shadow_assembly_location_base (domain);
 	location = g_build_filename (tmploc, name_hash, path_hash, bname, NULL);
 	g_free (tmploc);
+	g_free (bname);
+	g_free (dirname);
 	return location;
 }
 
