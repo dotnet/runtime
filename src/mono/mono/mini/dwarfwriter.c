@@ -930,31 +930,45 @@ static char*
 token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 {
 	char *res, *desc;
+	MonoMethod *cmethod;
+	MonoClass *klass;
+	gpointer data = NULL;
 
-	if (method->wrapper_type) {
-		gpointer data = mono_method_get_wrapper_data (method, token);
+	if (method->wrapper_type)
+		data = mono_method_get_wrapper_data (method, token);
 
-		switch (*token_handler_ip) {
-		case CEE_ISINST:
-		case CEE_LDELEMA:
-			res = g_strdup_printf ("<%s>", ((MonoClass*)data)->name);
-			break;
-		case CEE_NEWOBJ:
-		case CEE_CALL:
-			desc = mono_method_full_name (data, TRUE);
-			res = g_strdup_printf ("<%s>", desc);
-			g_free (desc);
-			break;
-		case CEE_CALLI:
+	switch (*token_handler_ip) {
+	case CEE_ISINST:
+	case CEE_LDELEMA:
+		if (method->wrapper_type)
+			klass = data;
+		else
+			klass = mono_class_get_full (method->klass->image, token, NULL);
+		res = g_strdup_printf ("<%s>", klass->name);
+		break;
+	case CEE_NEWOBJ:
+	case CEE_CALL:
+	case CEE_CALLVIRT:
+		if (method->wrapper_type)
+			cmethod = data;
+		else
+			cmethod = mono_get_method_full (method->klass->image, token, NULL, NULL);
+		desc = mono_method_full_name (cmethod, TRUE);
+		res = g_strdup_printf ("<%s>", desc);
+		g_free (desc);
+		break;
+	case CEE_CALLI:
+		if (method->wrapper_type) {
 			desc = mono_signature_get_desc (data, FALSE);
 			res = g_strdup_printf ("<%s>", desc);
 			g_free (desc);
-			break;
-		default:
-			res = g_strdup_printf ("<%p>", data);
+		} else {
+			res = g_strdup_printf ("<0x%08x>", token);
 		}
-	} else {
+		break;
+	default:
 		res = g_strdup_printf ("<0x%08x>", token);
+		break;
 	}
 
 	return res;
