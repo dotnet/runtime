@@ -19,6 +19,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-logger.h>
@@ -67,11 +68,16 @@ static MonoThread *gc_thread;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
 
+static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
+
 #ifndef HAVE_NULL_GC
 static HANDLE pending_done_event;
 static HANDLE shutdown_event;
 static HANDLE thread_started_event;
 #endif
+
+#define domain_finalizers_lock(domain) EnterCriticalSection (&(domain)->finalizable_objects_hash_lock);
+#define domain_finalizers_unlock(domain) LeaveCriticalSection (&(domain)->finalizable_objects_hash_lock);
 
 static void
 add_thread_to_finalize (MonoThread *thread)
@@ -99,7 +105,8 @@ run_finalize (void *obj, void *data)
 	MonoMethod* finalizer = NULL;
 	MonoDomain *domain;
 	RuntimeInvokeFunction runtime_invoke;
-	
+	GSList *l, *refs = NULL;
+
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 
 	if (suspend_finalizers)
@@ -108,17 +115,45 @@ run_finalize (void *obj, void *data)
 	domain = o->vtable->domain;
 
 #ifndef HAVE_SGEN_GC
-	EnterCriticalSection (&o->vtable->domain->finalizable_objects_hash_lock);
+	domain_finalizers_lock (domain);
 
-	o2 = g_hash_table_lookup (o->vtable->domain->finalizable_objects_hash, o);
+	o2 = g_hash_table_lookup (domain->finalizable_objects_hash, o);
 
-	LeaveCriticalSection (&o->vtable->domain->finalizable_objects_hash_lock);
+	if (domain->track_resurrection_objects_hash) {
+		refs = g_hash_table_lookup (domain->track_resurrection_objects_hash, o);
+
+		if (refs)
+			/* 
+			 * Since we don't run finalizers again for resurrected objects, 
+			 * no need to keep these around.
+			 */
+			g_hash_table_remove (domain->track_resurrection_objects_hash, o);
+	}
+
+	domain_finalizers_unlock (domain);
 
 	if (!o2)
 		/* Already finalized somehow */
 		return;
 #endif
 
+	if (refs) {
+		/*
+		 * Support for GCHandles of type WeakTrackResurrection:
+		 *
+		 *   Its not exactly clear how these are supposed to work, or how their
+		 * semantics can be implemented. We only implement one crucial thing:
+		 * these handles are only cleared after the finalizer has ran.
+		 */
+		for (l = refs; l; l = l->next) {
+			guint32 gchandle = GPOINTER_TO_UINT (l->data);
+
+			mono_gchandle_set_target (gchandle, o);
+		}
+
+		g_slist_free (refs);
+	}
+		
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
 
@@ -249,14 +284,14 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 		 */
 		return;
 
-	EnterCriticalSection (&domain->finalizable_objects_hash_lock);
+	domain_finalizers_lock (domain);
 
 	if (callback)
 		g_hash_table_insert (domain->finalizable_objects_hash, obj, obj);
 	else
 		g_hash_table_remove (domain->finalizable_objects_hash, obj);
 
-	LeaveCriticalSection (&domain->finalizable_objects_hash_lock);
+	domain_finalizers_unlock (domain);
 
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, callback, GUINT_TO_POINTER (offset), NULL, NULL);
 #elif defined(HAVE_SGEN_GC)
@@ -441,8 +476,6 @@ typedef enum {
 	HANDLE_NORMAL,
 	HANDLE_PINNED
 } HandleType;
-
-static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 
 static HandleType mono_gchandle_get_type (guint32 gchandle);
 
@@ -660,6 +693,38 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
 	return alloc_handle (&gc_handles [pinned? HANDLE_PINNED: HANDLE_NORMAL], obj);
 }
 
+/*
+ * LOCKING: Assumes the domain_finalizers lock is held.
+ */
+static void
+add_weak_track_handle (MonoDomain *domain, MonoObject *obj, guint32 gchandle)
+{
+	GSList *refs;
+
+	if (!domain->track_resurrection_objects_hash)
+		domain->track_resurrection_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+
+	refs = g_hash_table_lookup (domain->track_resurrection_objects_hash, obj);
+	refs = g_slist_prepend (refs, GUINT_TO_POINTER (gchandle));
+	g_hash_table_insert (domain->track_resurrection_objects_hash, obj, refs);
+}
+
+/*
+ * LOCKING: Assumes the domain_finalizers lock is held.
+ */
+static void
+remove_weak_track_handle (MonoDomain *domain, MonoObject *obj, guint32 gchandle)
+{
+	GSList *refs;
+
+	if (!domain->track_resurrection_objects_hash)
+		return;
+
+	refs = g_hash_table_lookup (domain->track_resurrection_objects_hash, obj);
+	refs = g_slist_remove (refs, GUINT_TO_POINTER (gchandle));
+	g_hash_table_insert (domain->track_resurrection_objects_hash, obj, refs);
+}
+
 /**
  * mono_gchandle_new_weakref:
  * @obj: managed object to get a handle for
@@ -682,7 +747,26 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
 guint32
 mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
 {
-	return alloc_handle (&gc_handles [track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK], obj);
+	guint32 handle = alloc_handle (&gc_handles [track_resurrection? HANDLE_WEAK_TRACK: HANDLE_WEAK], obj);
+
+	if (track_resurrection) {
+		MonoDomain *domain = mono_domain_get ();
+
+		domain_finalizers_lock (domain);
+
+		add_weak_track_handle (domain, obj, handle);
+
+		g_hash_table_insert (domain->track_resurrection_handles_hash, GUINT_TO_POINTER (handle), obj);
+
+		domain_finalizers_unlock (domain);
+
+#ifdef HAVE_SGEN_GC
+		// FIXME: The hash table entries need to be remapped during GC
+		g_assert_not_reached ();
+#endif
+	}
+
+	return handle;
 }
 
 static HandleType
@@ -733,11 +817,14 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	guint slot = gchandle >> 3;
 	guint type = (gchandle & 7) - 1;
 	HandleData *handles = &gc_handles [type];
+	MonoObject *old_obj = NULL;
+
 	if (type > 3)
 		return;
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
+			old_obj = handles->entries [slot];
 			if (handles->entries [slot])
 				mono_gc_weak_link_remove (&handles->entries [slot]);
 			if (obj)
@@ -750,6 +837,19 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	}
 	/*g_print ("changed entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
 	unlock_handles (handles);
+
+	if (type == HANDLE_WEAK_TRACK) {
+		MonoDomain *domain = mono_domain_get ();
+
+		domain_finalizers_lock (domain);
+
+		if (old_obj)
+			remove_weak_track_handle (domain, old_obj, gchandle);
+		if (obj)
+			add_weak_track_handle (domain, obj, gchandle);
+
+		domain_finalizers_unlock (domain);
+	}
 }
 
 /**
@@ -803,6 +903,25 @@ mono_gchandle_free (guint32 gchandle)
 	HandleData *handles = &gc_handles [type];
 	if (type > 3)
 		return;
+	if (type == HANDLE_WEAK_TRACK) {
+		MonoDomain *domain = mono_domain_get ();
+		MonoObject *obj;
+
+		/* Clean our entries in the two hashes in MonoDomain */
+
+		domain_finalizers_lock (domain);
+
+		/* Get the original object this handle pointed to */
+		obj = g_hash_table_lookup (domain->track_resurrection_handles_hash, GUINT_TO_POINTER (gchandle));
+		if (obj) {
+			g_hash_table_remove (domain->track_resurrection_handles_hash, GUINT_TO_POINTER (gchandle));
+
+			remove_weak_track_handle (domain, obj, gchandle);
+		}
+
+		domain_finalizers_unlock (domain);
+	}
+
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
