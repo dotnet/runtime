@@ -99,6 +99,9 @@ namespace Test {
 			if (typeof (Y).GetCustomAttributes (typeof (ZInterface), true).Length != 1)
 				return 5;
 
+			if (!typeof (Y).IsDefined (typeof (ZInterface), true))
+				return 6;
+
 			return 0;
 		}
 	}
