@@ -3185,12 +3185,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_load_reg_indexed (code, ins->dreg, ins->sreg2, ins->inst_basereg);
 			break;
 		case OP_LOADI4_MEMINDEX:
+#ifdef __mono_ppc64__
+			ppc_lwax (code, ins->dreg, ins->sreg2, ins->inst_basereg);
+			break;
+#endif
 		case OP_LOADU4_MEMINDEX:
 			ppc_lwzx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
-#ifdef __mono_ppc64__
-			if (ins->opcode == OP_LOADI4_MEMINDEX)
-				ppc_extsb (code, ins->dreg, ins->dreg);
-#endif
 			break;
 		case OP_LOADU2_MEMINDEX:
 			ppc_lhzx (code, ins->dreg, ins->sreg2, ins->inst_basereg);
