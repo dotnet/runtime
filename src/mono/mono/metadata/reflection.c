@@ -10611,6 +10611,34 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 	return resolve_object (image, obj, handle_class, context);
 }
 
+/*
+ * ensure_complete_type:
+ *
+ *   Ensure that KLASS is completed if it is a dynamic type, or references
+ * dynamic types.
+ */
+static void
+ensure_complete_type (MonoClass *klass)
+{
+	if (klass->image->dynamic && !klass->wastypebuilder) {
+		MonoReflectionTypeBuilder *tb = klass->reflection_info;
+
+		mono_domain_try_type_resolve (mono_domain_get (), NULL, (MonoObject*)tb);
+
+		// Asserting here could break a lot of code
+		//g_assert (klass->wastypebuilder);
+	}
+
+	if (klass->generic_class) {
+		MonoGenericInst *inst = klass->generic_class->context.class_inst;
+		int i;
+
+		for (i = 0; i < inst->type_argc; ++i) {
+			ensure_complete_type (mono_class_from_mono_type (inst->type_argv [i]));
+		}
+	}
+}
+
 static gpointer
 resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context)
 {
@@ -10677,6 +10705,8 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		*handle_class = mono_defaults.methodhandle_class;
 	} else if (strcmp (obj->vtable->klass->name, "MonoField") == 0) {
 		MonoClassField *field = ((MonoReflectionField*)obj)->field;
+
+		ensure_complete_type (field->parent);
 		if (context) {
 			MonoType *inflated = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
 			MonoClass *class = mono_class_from_mono_type (inflated);
