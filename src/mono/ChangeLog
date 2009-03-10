@@ -1,3 +1,7 @@
+2009-03-10  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* scripts/Makefile.am : added svcutil.
+
 2009-02-26  Marek Habersack  <mhabersack@novell.com>
 
 	* data/mono.web.pc.in: added. Fixes bug #479760
