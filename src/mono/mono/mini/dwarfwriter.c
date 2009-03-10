@@ -1228,7 +1228,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 		}
 
 		/* Emit line number info */
-		prev_line = 0;
+		prev_line = 1;
 		prev_native_offset = 0;
 		for (i = 0; i < debug_info->num_line_numbers; ++i) {
 			MonoDebugLineNumberEntry *lne = &debug_info->line_numbers [i];
