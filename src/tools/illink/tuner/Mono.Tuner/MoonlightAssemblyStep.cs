@@ -53,7 +53,6 @@ namespace Mono.Tuner {
 
 		static void ProcessPipeline (Pipeline pipeline)
 		{
-			pipeline.RemoveStep (typeof (LoadReferencesStep));
 			pipeline.RemoveStep (typeof (LoadI18nAssemblies));
 			pipeline.RemoveStep (typeof (BlacklistStep));
 			pipeline.RemoveStep (typeof (MarkStep));
