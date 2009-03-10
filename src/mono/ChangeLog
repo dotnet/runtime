@@ -1,3 +1,7 @@
+2009-03-10  Zoltan Varga  <vargaz@gmail.com>
+
+	* README: Remove the comment about --with-moonlight being pre-alpha.
+
 2009-03-10  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* scripts/Makefile.am : added svcutil.

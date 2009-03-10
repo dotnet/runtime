@@ -279,11 +279,9 @@ This is Mono.
 		(1.1 and 2.0 APIs).
 
 		This will produce the `smcs' compiler which will reference
-		the Silvelright modified assemblies (mscorlib.dll,
+		the Silverlight modified assemblies (mscorlib.dll,
 		System.dll, System.Code.dll and System.Xml.Core.dll) and turn
 	  	on the LINQ extensions for the compiler.
-
-		This option defaults to `no' and it is considered pre-alpha.
 
 	--with-libgdiplus=installed,sibling,<path>
 
