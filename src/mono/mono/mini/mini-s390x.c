@@ -330,7 +330,8 @@ typedef enum {
 	RegTypeFPR4,
 	RegTypeStructByVal,
 	RegTypeStructByValInFP,
-	RegTypeStructByAddr
+	RegTypeStructByAddr,
+	RegTypeStructByAddrOnStack
 } ArgStorage;
 
 typedef struct {
@@ -1365,18 +1366,19 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
 		sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
 		ainfo->reg	    = STK_BASE;
 		ainfo->offset   = sz->stack_size;
+		ainfo->regtype  = RegTypeStructByAddrOnStack; 
 		sz->stack_size += sizeof (gpointer);
 		sz->parm_size  += sizeof(gpointer);
 		sz->offStruct  += sizeof(gpointer);
 	} else {
 		ainfo->reg      = *gr;
 		ainfo->offset   = sz->stack_size;
+		ainfo->regtype  = RegTypeStructByAddr; 
 	}
 	(*gr) ++;
 	ainfo->offparm  = sz->offset;
 	sz->offset      = S390_ALIGN(sz->offset+size, sizeof(long));
 	ainfo->size     = size;
-	ainfo->regtype  = RegTypeStructByAddr; 
 	ainfo->vtsize   = size;
 	sz->parm_size  += size;
 }
@@ -1878,6 +1880,27 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				inst->inst_left = indir;
 			}
 				break;
+			case RegTypeStructByAddrOnStack : {
+				MonoInst *indir;
+
+				size = sizeof (gpointer);
+
+				/* Similar to the == STK_BASE case below */
+				cfg->arch.bkchain_reg = s390_r12;
+				cfg->used_int_regs |= 1 << cfg->arch.bkchain_reg;
+
+				inst->opcode = OP_REGOFFSET;
+				inst->dreg = mono_alloc_preg (cfg);
+				inst->inst_basereg = cfg->arch.bkchain_reg;
+				inst->inst_offset = cinfo->args [iParm].offset;
+
+				/* Add a level of indirection */
+				MONO_INST_NEW (cfg, indir, 0);
+				*indir = *inst;
+				inst->opcode = OP_VTARG_ADDR;
+				inst->inst_left = indir;
+				break;
+			}
 			case RegTypeStructByVal :
 				size		   = cinfo->args[iParm].size;
 				offset		   = S390_ALIGN(offset, size);
@@ -2130,7 +2153,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				break;
 			}
 		case RegTypeStructByVal:
-		case RegTypeStructByAddr: {
+		case RegTypeStructByAddr:
+		case RegTypeStructByAddrOnStack: {
 			guint32 align;
 			guint32 size;
 
@@ -2175,6 +2199,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, treg, 
 										 STK_BASE, ainfo->offparm);
 				mono_call_inst_add_outarg_reg (cfg, call, treg, ainfo->reg, FALSE);
+			} else if (ainfo->regtype == RegTypeStructByAddrOnStack) {
+				/* The address of the valuetype is passed on the stack */
+				int treg = mono_alloc_preg (cfg);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, treg, 
+										 STK_BASE, ainfo->offparm);
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG,
+											 ainfo->reg, ainfo->offset, treg);
 			}
 			break;
 		}
@@ -4853,6 +4884,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				}
 			} else if (ainfo->regtype == RegTypeStructByAddr) {
 				s390_stg (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
+			} else if (ainfo->regtype == RegTypeStructByAddrOnStack) {
 			} else
 				g_assert_not_reached ();
 		}
