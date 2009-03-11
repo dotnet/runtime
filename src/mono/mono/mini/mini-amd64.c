@@ -3059,6 +3059,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->dreg == X86_EAX);
 			g_assert (power >= 0);
 
+			if (power == 0) {
+				amd64_mov_reg_imm (code, ins->dreg, 0);
+				break;
+			}
+
 			/* Based on gcc code */
 
 			/* Add compensation for negative dividents */
