@@ -3654,15 +3654,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			
 			/* We need the EAX reg for the cmpxchg */
 			if (ins->sreg2 == X86_EAX) {
-				x86_push_reg (code, X86_EDX);
-				x86_mov_reg_reg (code, X86_EDX, X86_EAX, 4);
-				sreg2 = X86_EDX;
+				sreg2 = (breg == X86_EDX) ? X86_EBX : X86_EDX;
+				x86_push_reg (code, sreg2);
+				x86_mov_reg_reg (code, sreg2, X86_EAX, 4);
 			}
 
 			if (breg == X86_EAX) {
-				x86_push_reg (code, X86_ESI);
-				x86_mov_reg_reg (code, X86_ESI, X86_EAX, 4);
-				breg = X86_ESI;
+				breg = (sreg2 == X86_ESI) ? X86_EDI : X86_ESI;
+				x86_push_reg (code, breg);
+				x86_mov_reg_reg (code, breg, X86_EAX, 4);
 			}
 
 			if (ins->opcode == OP_ATOMIC_CAS_IMM_I4) {
@@ -3680,10 +3680,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			if (breg != ins->inst_basereg)
-				x86_pop_reg (code, X86_ESI);
+				x86_pop_reg (code, breg);
 
 			if (ins->sreg2 != sreg2)
-				x86_pop_reg (code, X86_EDX);
+				x86_pop_reg (code, sreg2);
 
 			break;
 		}
