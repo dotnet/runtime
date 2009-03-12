@@ -792,6 +792,8 @@ parse_test_entry (scanner_t *scanner, test_set_t *test_set)
 	entry.validity = parse_validity (scanner);
 
 	do {
+		if (entry.patches)
+			CONSUME_SPECIFIC_PUNCT (",");
 		entry.patches = g_slist_append (entry.patches, parse_patch (scanner));
 	} while (match_current_type_and_text (scanner, TOKEN_PUNC, ","));
 

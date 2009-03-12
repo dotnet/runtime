@@ -27,7 +27,7 @@
  TODO add fail fast mode
  TODO add PE32+ support
  TODO verify the entry point RVA and content.
- TODO load_section_table must take PE32+ into account
+ TODO load_section_table and load_data_directories must take PE32+ into account
  TODO add section relocation support
 */
 
@@ -81,6 +81,22 @@ pe_header_offset (VerifyContext *ctx)
 	return read32 (ctx->data + 0x3c) + 4;
 }
 
+static gboolean
+bounds_check_virtual_address (VerifyContext *ctx, guint32 rva, guint32 size)
+{
+	int i;
+
+	if (!ctx->sections)
+		return FALSE;
+
+	for (i = 0; i < ctx->section_count; ++i) {
+		guint32 base = ctx->sections [i].baseRVA;
+		guint32 end = ctx->sections [i].baseRVA + ctx->sections [i].size;
+		if (rva >= base && rva + size <= end)
+			return TRUE;
+	}
+	return FALSE;
+}
 
 static void
 verify_msdos_header (VerifyContext *ctx)
@@ -159,7 +175,7 @@ load_section_table (VerifyContext *ctx)
 	const char *ptr = ctx->data + offset;
 	guint16 num_sections = ctx->section_count = read16 (ptr + 2);
 
-	offset += 244;
+	offset += 244;/*FIXME, this constant is different under PE32+*/
 	ptr += 244;
 
 	if (num_sections * 40 > ctx->size - offset)
@@ -204,6 +220,33 @@ load_section_table (VerifyContext *ctx)
 	}
 }
 
+static gboolean
+is_valid_data_directory (int i)
+{
+	/*LAMESPEC 4 == certificate 6 == debug, MS uses both*/
+	return i == 1 || i == 2 || i == 5 || i == 12 || i == 14 || i == 4 || i == 6; 
+}
+
+static void
+load_data_directories (VerifyContext *ctx)
+{
+	guint32 offset =  pe_header_offset (ctx) + 116; /*FIXME, this constant is different under PE32+*/
+	const char *ptr = ctx->data + offset;
+	int i;
+
+	for (i = 0; i < 16; ++i) {
+		guint32 rva = read32 (ptr);
+		guint32 size = read32 (ptr + 4);
+
+		if ((rva != 0 || size != 0) && !is_valid_data_directory (i))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid data directory %d", i));		
+			
+		if (rva != 0 && !bounds_check_virtual_address (ctx, rva, size))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid data directory %d rva/size pair %x/%x", i, rva, size));
+		ptr += 8;
+	}
+}
+
 GSList*
 mono_image_verify (const char *data, guint32 size)
 {
@@ -220,6 +263,8 @@ mono_image_verify (const char *data, guint32 size)
 	verify_pe_optional_header (&ctx);
 	CHECK_STATE();
 	load_section_table (&ctx);
+	CHECK_STATE();
+	load_data_directories (&ctx);
 	CHECK_STATE();
 
 cleanup:
