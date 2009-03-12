@@ -2331,6 +2331,7 @@ get_token (MonoImage *m, guint32 token, MonoGenericContainer *container)
 		g_free (temp);
 		return result;
 	case MONO_TOKEN_METHOD_DEF:
+	case MONO_TOKEN_METHOD_SPEC:
 		temp = get_method (m, token, container);
 		result = g_strdup_printf ("method %s", temp);
 		g_free (temp);
