@@ -4424,28 +4424,12 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	return mono_type_get_object (mono_object_domain (assembly), type);
 }
 
-static MonoString *
-ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *assembly, MonoBoolean escaped)
+static gboolean
+replace_shadow_path (MonoDomain *domain, gchar *dirname, gchar **filename)
 {
-	MonoDomain *domain = mono_object_domain (assembly); 
-	MonoAssembly *mass = assembly->assembly;
-	MonoString *res = NULL;
-	gchar *uri;
-	gchar *absolute;
 	gchar *content;
 	gchar *shadow_ini_file;
 	gsize len;
-	gchar *dirname;
-	
-	MONO_ARCH_SAVE_REGS;
-
-	if (g_path_is_absolute (mass->image->name)) {
-		absolute = g_strdup (mass->image->name);
-		dirname = g_path_get_dirname (absolute);
-	} else {
-		absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
-		dirname = g_strdup (mass->basedir);
-	}
 
 	/* Check for shadow-copied assembly */
 	if (mono_is_shadow_copy_enabled (domain, dirname)) {
@@ -4460,12 +4444,37 @@ ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *asse
 		}
 		g_free (shadow_ini_file);
 		if (content != NULL) {
-			g_free (absolute);
-			absolute = content;
+			if (*filename)
+				g_free (*filename);
+			*filename = content;
+			return TRUE;
 		}
 	}
-	g_free (dirname);
+	return FALSE;
+}
 
+static MonoString *
+ves_icall_System_Reflection_Assembly_get_code_base (MonoReflectionAssembly *assembly, MonoBoolean escaped)
+{
+	MonoDomain *domain = mono_object_domain (assembly); 
+	MonoAssembly *mass = assembly->assembly;
+	MonoString *res = NULL;
+	gchar *uri;
+	gchar *absolute;
+	gchar *dirname;
+	
+	MONO_ARCH_SAVE_REGS;
+
+	if (g_path_is_absolute (mass->image->name)) {
+		absolute = g_strdup (mass->image->name);
+		dirname = g_path_get_dirname (absolute);
+	} else {
+		absolute = g_build_filename (mass->basedir, mass->image->name, NULL);
+		dirname = g_strdup (mass->basedir);
+	}
+
+	replace_shadow_path (domain, dirname, &absolute);
+	g_free (dirname);
 #if PLATFORM_WIN32
 	{
 		gint i;
@@ -5261,10 +5270,15 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoString *fname,
 	gboolean res;
 	MonoImage *image;
 	MonoAssemblyName name;
+	char *dirname
 
 	MONO_ARCH_SAVE_REGS;
 
 	filename = mono_string_to_utf8 (fname);
+
+	dirname = g_path_get_dirname (filename);
+	replace_shadow_path (mono_domain_get (), dirname, &filename);
+	g_free (dirname);
 
 	image = mono_image_open (filename, &status);
 

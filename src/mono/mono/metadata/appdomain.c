@@ -1382,9 +1382,9 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 
 	/* Is dir_name a shadow_copy destination already? */
 	base_dir = get_shadow_assembly_location_base (domain);
-	if (strstr (dir_name, base_dir) == dir_name) {
+	if (strstr (dir_name, base_dir)) {
 		g_free (base_dir);
-		return FALSE;
+		return TRUE;
 	}
 	g_free (base_dir);
 
@@ -1416,14 +1416,24 @@ mono_make_shadow_copy (const char *filename)
 	struct utimbuf utbuf;
 	char *dir_name = g_path_get_dirname (filename);
 	MonoDomain *domain = mono_domain_get ();
+	char *shadow_dir;
+
 	set_domain_search_path (domain);
 
 	if (!mono_is_shadow_copy_enabled (domain, dir_name)) {
 		g_free (dir_name);
 		return (char *) filename;
 	}
+	/* Is dir_name a shadow_copy destination already? */
+	shadow_dir = get_shadow_assembly_location_base (domain);
+	if (strstr (dir_name, shadow_dir)) {
+		g_free (shadow_dir);
+		g_free (dir_name);
+		return (char *) filename;
+	}
+	g_free (shadow_dir);
 	g_free (dir_name);
-	
+
 	shadow = get_shadow_assembly_location (filename);
 	if (ensure_directory_exists (shadow) == FALSE) {
 		g_free (shadow);
