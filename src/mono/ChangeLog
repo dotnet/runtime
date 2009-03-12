@@ -1,3 +1,7 @@
+2009-03-12  Jonathan Pryor  <jpryor@novell.com>
+
+	* scripts/Makefile.am: Add sqlmetal.
+
 2009-03-10  Zoltan Varga  <vargaz@gmail.com>
 
 	* README: Remove the comment about --with-moonlight being pre-alpha.
@@ -83,6 +87,11 @@
 
 	* scripts/Makefile.am: don't generate a script for the now
 	dead mono-api-diff.
+
+2008-12-05  Jonathan Pryor  <jpryor@novell.com>
+
+	* scripts/mdassembler, scripts/monodocer, scripts/monodocs2html:
+	  Properly quote parameters as they may contain spaces.
 
 2008-12-05  Jonathan Pryor  <jpryor@novell.com>
 
