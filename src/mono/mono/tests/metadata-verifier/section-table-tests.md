@@ -28,13 +28,19 @@ pe-section-headers {
 	
 	invalid offset section-table + 60 set-uint 90000
 
-
+	#FIXME add section relocation tests
 }
 
-pe-header-data-directories {
+pe-section-header-flags {
+	#Simple assembly has 2 sections since it doesn't have any resources
 	assembly simple-assembly.exe
 
-	#These are tests for RVA boundaries
-	
+	#first section is always text 
+	valid offset section-table + 36 set-uint 0x60000020
 
+	valid offset section-table + 76 set-uint 0x42000040
+	
+	invalid offset section-table + 36 set-uint 0
+
+	invalid offset section-table + 36 set-uint 0xFFFFFFFF
 }

@@ -1,3 +1,7 @@
+2009-03-12 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* section-table-tests.md: Test for flags.
+
 2009-02-05 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* section-table-tests.md: New test suite for

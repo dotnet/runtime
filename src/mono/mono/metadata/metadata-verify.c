@@ -28,12 +28,15 @@
  TODO add PE32+ support
  TODO verify the entry point RVA and content.
  TODO load_section_table must take PE32+ into account
+ TODO add section relocation support
 */
 
 typedef struct {
 	guint32 baseRVA;
 	guint32 baseOffset;
 	guint32 size;
+	guint32 rellocationsRVA;
+	guint16 numberOfRelocations;
 } SectionHeader;
 
 typedef struct {
@@ -167,12 +170,14 @@ load_section_table (VerifyContext *ctx)
 		sections [i].size = read32 (ptr + 8);
 		sections [i].baseRVA = read32 (ptr + 12);
 		sections [i].baseOffset = read32 (ptr + 20);
+		sections [i].rellocationsRVA = read32 (ptr + 24);
+		sections [i].numberOfRelocations = read16 (ptr + 32);
 		ptr += 40;
 	}
 
 	ptr = ctx->data + offset; /*reset it to the beggining*/
 	for (i = 0; i < num_sections; ++i) {
-		guint32 raw_size;
+		guint32 raw_size, flags;
 		if (sections [i].baseOffset == 0)
 			ADD_ERROR (ctx, g_strdup ("Metadata verifier doesn't handle sections with intialized data only"));
 		if (sections [i].baseOffset >= ctx->size)
@@ -186,14 +191,17 @@ load_section_table (VerifyContext *ctx)
 
 		if (raw_size > ctx->size - sections [i].baseOffset)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid SizeOfRawData %x points beyond EOF", raw_size));
-		
-		/*We ignore the line number junk*/
 
-		//FIXME relocations
+		if (sections [i].rellocationsRVA || sections [i].numberOfRelocations)
+			ADD_ERROR (ctx, g_strdup_printf ("Metadata verifier doesn't handle section relocation"));
+
+		flags = read32 (ptr + 36);
+		/*TODO 0xFE0000E0 is all flags from cil-coff.h OR'd. Make it a less magical number*/
+		if (flags == 0 || (flags & ~0xFE0000E0) != 0)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid section flags %x", flags));
+
 		ptr += 40;
 	}
-	
-	
 }
 
 GSList*
