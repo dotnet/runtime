@@ -1361,7 +1361,7 @@ add_to_global_remset (gpointer ptr, gboolean root)
 	global_remset = rs;
 	if (root) {
 		*(global_remset->store_next++) = (mword)ptr | REMSET_OTHER;
-		*(global_remset->store_next++) = (mword)REMSET_LOCATION;
+		*(global_remset->store_next++) = (mword)REMSET_ROOT_LOCATION;
 	} else {
 		*(global_remset->store_next++) = (mword)ptr;
 	}
