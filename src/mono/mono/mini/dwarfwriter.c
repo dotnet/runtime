@@ -1032,6 +1032,7 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 	return dis;
 }
 
+/*
 static gint32
 il_offset_from_address (MonoMethod *method, MonoDebugMethodJitInfo *jit, 
 						guint32 native_offset)
@@ -1050,6 +1051,7 @@ il_offset_from_address (MonoMethod *method, MonoDebugMethodJitInfo *jit,
 
 	return -1;
 }
+*/
 
 static int max_special_addr_diff = 0;
 
@@ -1084,6 +1086,15 @@ emit_advance_op (MonoDwarfWriter *w, int line_diff, int addr_diff)
 	}
 }
 
+static gint
+compare_lne (MonoDebugLineNumberEntry *a, MonoDebugLineNumberEntry *b)
+{
+	if (a->native_offset == b->native_offset)
+		return a->il_offset - b->il_offset;
+	else
+		return a->native_offset - b->native_offset;
+}
+
 static void
 emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 					   guint32 code_size, MonoDebugMethodJitInfo *debug_info)
@@ -1096,6 +1107,8 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 	char *prev_file_name = NULL;
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoDebugMethodInfo *minfo;
+	GArray *ln_array;
+	int *native_to_il_offset;
 
 	if (!code)
 		// FIXME: The set_address op below only works with xdebug
@@ -1103,7 +1116,34 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 
 	minfo = mono_debug_lookup_method (method);
 
-	/* FIXME: Avoid quadratic behavior */
+	/* Compute the native->IL offset mapping */
+
+	ln_array = g_array_sized_new (FALSE, FALSE, sizeof (MonoDebugLineNumberEntry), 
+								  debug_info->num_line_numbers);
+	g_array_append_vals (ln_array, debug_info->line_numbers, debug_info->num_line_numbers);
+	g_array_sort (ln_array, (GCompareFunc)compare_lne);
+	native_to_il_offset = g_new0 (int, code_size + 1);
+
+	for (i = 0; i < debug_info->num_line_numbers; ++i) {
+		int j;
+		MonoDebugLineNumberEntry lne = g_array_index (ln_array, MonoDebugLineNumberEntry, i);
+
+		if (i == 0) {
+			for (j = 0; j < lne.native_offset; ++j)
+				native_to_il_offset [j] = -1;
+		}
+
+		if (i < debug_info->num_line_numbers - 1) {
+			MonoDebugLineNumberEntry lne_next = g_array_index (ln_array, MonoDebugLineNumberEntry, i + 1);
+
+			for (j = lne.native_offset; j < lne_next.native_offset; ++j)
+				native_to_il_offset [j] = lne.il_offset;
+		} else {
+			for (j = lne.native_offset; j < code_size; ++j)
+				native_to_il_offset [j] = lne.il_offset;
+		}
+	}
+	g_array_free (ln_array, TRUE);
 
 	prev_line = 1;
 	prev_il_offset = -1;
@@ -1115,12 +1155,12 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 		if (!debug_info->line_numbers)
 			continue;
 
-		/* 
-		 * FIXME: Its hard to optimize this, since the line number info is not
-		 * sorted by il offset or native offset
-		 */
+		/*
 		il_offset = il_offset_from_address (method, debug_info, i);
 
+		g_assert (il_offset == native_to_il_offset [i]);
+		*/
+		il_offset = native_to_il_offset [i];
 		if (il_offset < 0)
 			continue;
 
