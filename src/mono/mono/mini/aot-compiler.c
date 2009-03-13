@@ -174,7 +174,7 @@ static const gint16 opidx [] = {
 #undef PATCH_INFO
 };
 
-static const char*
+static G_GNUC_UNUSED const char*
 get_patch_name (int info)
 {
 	return (const char*)&opstr + opidx [info];
@@ -4328,19 +4328,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 */
 
 static MonoDwarfWriter *xdebug_writer;
-static CRITICAL_SECTION xdebug_mutex;
 static FILE *xdebug_fp;
-
-#define mono_xdebug_lock(acfg) EnterCriticalSection (&xdebug_mutex)
-#define mono_xdebug_unlock(acfg) LeaveCriticalSection (&xdebug_mutex)
 
 void
 mono_xdebug_init (void)
 {
 	FILE *il_file;
 	MonoImageWriter *w;
-
-	InitializeCriticalSection (&xdebug_mutex);
 
 	unlink ("xdb.s");
 	xdebug_fp = fopen ("xdb.s", "w");
@@ -4366,6 +4360,7 @@ mono_xdebug_init (void)
  *
  *   Emit debugging info for METHOD into an assembly file which can be assembled
  * and loaded into gdb to provide debugging info for JITted code.
+ * LOCKING: Acquires the loader lock.
  */
 void
 mono_save_xdebug_info (MonoCompile *cfg)
@@ -4373,16 +4368,17 @@ mono_save_xdebug_info (MonoCompile *cfg)
 	if (!xdebug_writer)
 		return;
 
-	mono_xdebug_lock ();
+	mono_loader_lock ();
 	mono_dwarf_writer_emit_method (xdebug_writer, cfg, cfg->jit_info->method, NULL, NULL, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->method, mono_domain_get ()));
 	fflush (xdebug_fp);
-	mono_xdebug_unlock ();
+	mono_loader_unlock ();
 }
 
 /*
  * mono_save_trampoline_xdebug_info:
  *
  *   Same as mono_save_xdebug_info, but for trampolines.
+ * LOCKING: Acquires the loader lock.
  */
 void
 mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info)
@@ -4390,10 +4386,10 @@ mono_save_trampoline_xdebug_info (const char *tramp_name, guint8 *code, guint32 
 	if (!xdebug_writer)
 		return;
 
-	mono_xdebug_lock ();
+	mono_loader_lock ();
 	mono_dwarf_writer_emit_trampoline (xdebug_writer, tramp_name, NULL, NULL, code, code_size, unwind_info);
 	fflush (xdebug_fp);
-	mono_xdebug_unlock ();
+	mono_loader_unlock ();
 }
 
 #else

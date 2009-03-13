@@ -1283,10 +1283,16 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 				continue;
 			line = il_to_line [lne->il_offset];
 			if (!line) {
-				/* To help debugging */
+				/* 
+				 * This seems to happen randomly, it looks like il_offset points
+				 * into the middle of an instruction.
+				 */
+				continue;
+				/*
 				printf ("%s\n", mono_method_full_name (method, TRUE));
 				printf ("%d %d\n", lne->il_offset, header->code_size);
 				g_assert (line);
+				*/
 			}
 
 			if (line - prev_line != 0) {
