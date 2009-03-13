@@ -11,7 +11,6 @@
  * allowing more efficient function ordering in the AOT files.
  */
 
- */
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
