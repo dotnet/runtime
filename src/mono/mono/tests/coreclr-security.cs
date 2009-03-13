@@ -173,6 +173,25 @@ public class Test
 		error ("method called via reflection");
 	}
 
+	[SecurityCriticalAttribute]
+	public static unsafe void StringTest ()
+	{
+		string str = "blabla";
+		char [] arr = str.ToCharArray ();
+		string r;
+
+		fixed (char *tarr = arr) {
+			int ss = 1, l = 3;
+			r = new string (tarr, ss, l - ss);
+		}
+	}
+
+	[SecuritySafeCriticalAttribute]
+	public static void CallStringTest ()
+	{
+		StringTest ();
+	}
+
 	[DllImport ("/lib64/libc.so.6")]
 	static extern int getpid ();
 
@@ -272,6 +291,14 @@ public class Test
 
 			id (null, null);
 		} catch (MethodAccessException) {
+		}
+
+
+		// wrapper 7
+		try {
+			CallStringTest ();
+		} catch (MethodAccessException) {
+			error ("string test failed");
 		}
 
 		//Console.WriteLine ("ok");
