@@ -1032,7 +1032,6 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 	return dis;
 }
 
-/*
 static gint32
 il_offset_from_address (MonoMethod *method, MonoDebugMethodJitInfo *jit, 
 						guint32 native_offset)
@@ -1051,7 +1050,6 @@ il_offset_from_address (MonoMethod *method, MonoDebugMethodJitInfo *jit,
 
 	return -1;
 }
-*/
 
 static int max_special_addr_diff = 0;
 
@@ -1108,7 +1106,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoDebugMethodInfo *minfo;
 	GArray *ln_array;
-	int *native_to_il_offset;
+	int *native_to_il_offset = NULL;
 
 	if (!code)
 		// FIXME: The set_address op below only works with xdebug
@@ -1118,6 +1116,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 
 	/* Compute the native->IL offset mapping */
 
+#ifndef EGLIB_MAJOR
 	ln_array = g_array_sized_new (FALSE, FALSE, sizeof (MonoDebugLineNumberEntry), 
 								  debug_info->num_line_numbers);
 	g_array_append_vals (ln_array, debug_info->line_numbers, debug_info->num_line_numbers);
@@ -1144,6 +1143,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 		}
 	}
 	g_array_free (ln_array, TRUE);
+#endif
 
 	prev_line = 1;
 	prev_il_offset = -1;
@@ -1155,11 +1155,16 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 		if (!debug_info->line_numbers)
 			continue;
 
+		if (native_to_il_offset)
+			il_offset = native_to_il_offset [i];
+		else
+			il_offset = il_offset_from_address (method, debug_info, i);
 		/*
 		il_offset = il_offset_from_address (method, debug_info, i);
 
 		g_assert (il_offset == native_to_il_offset [i]);
 		*/
+
 		il_offset = native_to_il_offset [i];
 		if (il_offset < 0)
 			continue;
