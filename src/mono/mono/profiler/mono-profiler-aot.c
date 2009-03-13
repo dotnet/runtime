@@ -1,3 +1,17 @@
+/*
+ * mono-profiler-aot.c: Ahead of Time Compiler Profiler for Mono.
+ *
+ *
+ * Copyright 2008-2009 Novell, Inc (http://www.novell.com)
+ *
+ * This profiler collects profiling information usable by the Mono AOT compiler
+ * to generate better code. It saves the information into files under ~/.mono. 
+ * The AOT compiler can load these files during compilation.
+ * Currently, only the order in which methods were compiled is saved, 
+ * allowing more efficient function ordering in the AOT files.
+ */
+
+ */
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
@@ -7,14 +21,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-
-/*
- * This profiler collects profiling information usable by the Mono AOT compiler
- * to generate better code. It saves the information into files under ~/.mono. 
- * The AOT compiler can load these files during compilation.
- * Currently, only the order in which methods were compiled is saved, 
- * allowing more efficient function ordering in the AOT files.
- */
 
 struct _MonoProfiler {
 	GHashTable *images;

@@ -1,3 +1,11 @@
+/*
+ * mono-profiler-logging.c: Logging profiler for Mono.
+ *
+ * Author:
+ *   Massimiliano Mantione (massi@ximian.com)
+ *
+ * Copyright 2008-2009 Novell, Inc (http://www.novell.com)
+ */
 #include <config.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/class.h>

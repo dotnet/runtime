@@ -1,3 +1,9 @@
+/*
+ * mono-co.c: Coverage profiler
+ *
+
+ * Copyright 2008-2009 Novell, Inc (http://www.novell.com)
+ */
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
