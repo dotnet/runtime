@@ -78,3 +78,33 @@ pe-import-table {
 	invalid offset translate.rva.ind ( pe-optional-header + 104 ) + 16 set-uint 0x88888
 }
 
+pe-import-table-ILT {
+	#Simple assembly has 2 sections since it doesn't have any resources
+	assembly simple-assembly.exe
+
+	#Bad RVA for the Hint/Name table
+	invalid offset translate.rva.ind ( translate.rva.ind ( pe-optional-header + 104 ) + 0 ) set-uint 0x88888
+
+	#Bad content in the Hint/Name table
+	invalid offset translate.rva.ind ( translate.rva.ind ( translate.rva.ind ( pe-optional-header + 104 ) ) ) + 2 set-uint 0x454c
+}
+
+pe-import-table-IAT {
+	#Simple assembly has 2 sections since it doesn't have any resources
+	assembly simple-assembly.exe
+
+	#Bad RVA for the Hint/Name table
+	invalid offset translate.rva.ind ( translate.rva.ind ( pe-optional-header + 104 ) + 16 ) set-uint 0x88888
+
+	#Bad content in the Hint/Name table
+	invalid offset translate.rva.ind ( translate.rva.ind ( translate.rva.ind ( pe-optional-header + 104 ) + 16 ) ) + 2 set-uint 0x454c
+}
+
+pe-import-table-name {
+	#Simple assembly has 2 sections since it doesn't have any resources
+	assembly simple-assembly.exe
+
+	#Invalid symbol name
+	invalid offset translate.rva.ind ( translate.rva.ind ( pe-optional-header + 104 ) + 12 ) set-uint 0x454c
+}
+

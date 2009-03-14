@@ -84,6 +84,8 @@ typedef struct {
 
 #define CHECK_STATE() do { if (!ctx.valid) goto cleanup; } while (0)
 
+#define CHECK_ERROR() do { if (!ctx->valid) return; } while (0)
+
 static guint32
 pe_signature_offset (VerifyContext *ctx)
 {
@@ -286,30 +288,77 @@ load_data_directories (VerifyContext *ctx)
 	}
 }
 
+#define SIZE_OF_MSCOREE (sizeof ("mscoree.dll"))
+
+#define SIZE_OF_CORMAIN (sizeof ("_CorExeMain"))
+
+static void
+verify_hint_name_table (VerifyContext *ctx, guint32 import_rva, const char *table_name)
+{
+	const char *ptr;
+	guint32 hint_table_rva;
+
+	import_rva = translate_rva (ctx, import_rva);
+	g_assert (import_rva != INVALID_OFFSET);
+
+	hint_table_rva = read32 (ctx->data + import_rva);
+	if (!bounds_check_virtual_address (ctx, hint_table_rva, SIZE_OF_CORMAIN + 2))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Hint/Name rva %d for %s", hint_table_rva, table_name));
+
+	hint_table_rva = translate_rva (ctx, hint_table_rva);
+	g_assert (hint_table_rva != INVALID_OFFSET);
+	ptr = ctx->data + hint_table_rva + 2;
+
+	if (memcmp ("_CorExeMain", ptr, SIZE_OF_CORMAIN) && memcmp ("_CorDllMain", ptr, SIZE_OF_CORMAIN)) {
+		char name[SIZE_OF_CORMAIN];
+		memcpy (name, ptr, SIZE_OF_CORMAIN);
+		name [SIZE_OF_CORMAIN - 1] = 0;
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Hint / Name: '%s'", name));
+	}
+}
+
 static void
 verify_import_table (VerifyContext *ctx)
 {
 	RvaAndSize it = ctx->data_directories [IMPORT_TABLE_IDX];
 	guint32 offset = translate_rva (ctx, it.rva);
 	const char *ptr = ctx->data + offset;
+	guint32 name_rva, ilt_rva, iat_rva;
 
-	if (offset == INVALID_OFFSET)
-		ADD_ERROR (ctx, g_strdup_printf ("Invalid import table rva %x", it.rva));
+	g_assert (offset != INVALID_OFFSET);
 
 	if (it.size < 40)
 		ADD_ERROR (ctx, g_strdup_printf ("Import table size %d is smaller than 40", it.size));
 
-	if (!bounds_check_virtual_address (ctx, read32 (ptr), 8))
-		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Lookup Table rva %x", read32 (ptr)));
+	ilt_rva = read32 (ptr);
+	if (!bounds_check_virtual_address (ctx, ilt_rva, 8))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Lookup Table rva %x", ilt_rva));
 
-	if (!bounds_check_virtual_address (ctx, read32 (ptr + 12), sizeof ("mscoree.dll")))
-		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name rva %x", read32 (ptr + 12)));
+	name_rva = read32 (ptr + 12);
+	if (!bounds_check_virtual_address (ctx, name_rva, SIZE_OF_MSCOREE))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name rva %x", name_rva));
 
-	if (!bounds_check_virtual_address (ctx, read32 (ptr + 16), 8))
-		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Address Table rva %x", read32 (ptr + 16)));
+	iat_rva = read32 (ptr + 16);
+	if (!bounds_check_virtual_address (ctx, iat_rva, 8))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Address Table rva %x", iat_rva));
 
 	if (read32 (ptr + 16) != ctx->data_directories [IAT_IDX].rva)
 		ADD_ERROR (ctx, g_strdup_printf ("Import Address Table rva %x different from data directory entry %x", read32 (ptr + 16), ctx->data_directories [IAT_IDX].rva));
+
+	name_rva = translate_rva (ctx, name_rva);
+	g_assert (name_rva != INVALID_OFFSET);
+	ptr = ctx->data + name_rva;
+
+	if (memcmp ("mscoree.dll", ptr, SIZE_OF_MSCOREE)) {
+		char name[SIZE_OF_MSCOREE];
+		memcpy (name, ptr, SIZE_OF_MSCOREE);
+		name [SIZE_OF_MSCOREE - 1] = 0;
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name: '%s'", name));
+	}
+	
+	verify_hint_name_table (ctx, ilt_rva, "Import Lookup Table");
+	CHECK_ERROR ();
+	verify_hint_name_table (ctx, iat_rva, "Import Address Table");
 }
 
 GSList*

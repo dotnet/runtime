@@ -1,5 +1,9 @@
 2009-03-13 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* data-directory-tests.md: New tests for import table name, ilt and iat.
+
+2009-03-13 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* data-directory-tests.md: New tests for import table.
 
 	* gen-md-tests.c: Added translate.rva and translate.rva.ind functions.
