@@ -29,6 +29,7 @@
  TODO verify the entry point RVA and content.
  TODO load_section_table and load_data_directories must take PE32+ into account
  TODO add section relocation support
+ TODO verify the relocation table, since we really don't use, no need so far. 
 */
 
 #define INVALID_OFFSET ((guint32)-1)
