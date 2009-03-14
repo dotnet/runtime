@@ -342,7 +342,7 @@ verify_import_table (VerifyContext *ctx)
 	if (!bounds_check_virtual_address (ctx, iat_rva, 8))
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Address Table rva %x", iat_rva));
 
-	if (read32 (ptr + 16) != ctx->data_directories [IAT_IDX].rva)
+	if (iat_rva != ctx->data_directories [IAT_IDX].rva)
 		ADD_ERROR (ctx, g_strdup_printf ("Import Address Table rva %x different from data directory entry %x", read32 (ptr + 16), ctx->data_directories [IAT_IDX].rva));
 
 	name_rva = translate_rva (ctx, name_rva);
@@ -382,7 +382,7 @@ mono_image_verify (const char *data, guint32 size)
 	CHECK_STATE();
 	verify_import_table (&ctx);
 	CHECK_STATE();
-
+	/*No need to check the IAT directory entry, it's content is indirectly verified by verify_import_table*/
 cleanup:
 	g_free (ctx.sections);
 	return ctx.errors;

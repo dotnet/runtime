@@ -108,3 +108,14 @@ pe-import-table-name {
 	invalid offset translate.rva.ind ( translate.rva.ind ( pe-optional-header + 104 ) + 12 ) set-uint 0x454c
 }
 
+pe-IAT {
+	#Simple assembly has 2 sections since it doesn't have any resources
+	assembly simple-assembly.exe
+
+	#Bad RVA to the Hint/Name table
+	invalid offset translate.rva.ind ( pe-optional-header + 192 ) set-uint 0x88880
+
+	#Bad content in the Hint/Name table
+	invalid offset translate.rva.ind ( translate.rva.ind ( pe-optional-header + 192 ) ) + 2 set-uint 0x454c
+
+}
