@@ -64,3 +64,17 @@ pe-data-directories-bad-tables {
 	#reserved import
 	invalid offset pe-optional-header + 216 set-uint 0x2000 
 }
+
+
+pe-import-table {
+	#Simple assembly has 2 sections since it doesn't have any resources
+	assembly simple-assembly.exe
+
+	#Invalid rva for the import lookup table
+	invalid offset translate.rva.ind ( pe-optional-header + 104 ) + 0 set-uint 0x88888
+	#Invalid rva for the name
+	invalid offset translate.rva.ind ( pe-optional-header + 104 ) + 12 set-uint 0x88888
+	#Invalid rva for the import address table
+	invalid offset translate.rva.ind ( pe-optional-header + 104 ) + 16 set-uint 0x88888
+}
+

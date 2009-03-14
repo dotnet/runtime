@@ -64,7 +64,9 @@ function_call:
 	fun_name '(' arg_list ')'
 
 fun_name:
-	read.uint
+	read.uint |
+	translate.rva |
+	translate.rva.ind
 
 arg_list:
 	expression |
@@ -101,7 +103,8 @@ enum {
 	INVALID_EXPRESSION,
 	INVALID_VARIABLE_NAME,
 	INVALID_FUNCTION_NAME,
-	INVALID_ARG_COUNT
+	INVALID_ARG_COUNT,
+	INVALID_RVA
 };
 
 enum {
@@ -262,6 +265,26 @@ get_pe_header (test_entry_t *entry)
 }
 
 static guint32
+translate_rva (test_entry_t *entry, guint32 rva)
+{
+	guint32 pe_header = get_pe_header (entry);
+	guint32 sectionCount = READ_VAR (guint16, entry->data + pe_header + 2);
+	guint32 idx = pe_header + 244;
+
+	while (sectionCount-- > 0) {
+		guint32 size = READ_VAR (guint32, entry->data + idx + 8);
+		guint32 base = READ_VAR (guint32, entry->data + idx + 12);
+		guint32 offset = READ_VAR (guint32, entry->data + idx + 20);
+
+		if (rva >= base && rva <= base + size)
+			return (rva - base) + offset;
+		idx += 40;
+	}
+	printf ("Could not translate RVA %x\n", rva);
+	exit (INVALID_RVA);
+}
+
+static guint32
 lookup_var (test_entry_t *entry, const char *name)
 {
 	if (!strcmp ("file-size", name))
@@ -283,12 +306,32 @@ static guint32
 call_func (test_entry_t *entry, const char *name, GSList *args)
 {
 	if (!strcmp ("read.uint", name)) {
+		guint32 offset;
 		if (g_slist_length (args) != 1) {
 			printf ("Invalid number of args to read.uint %d\b", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
-		guint32 offset = expression_eval (args->data, entry);
+		offset = expression_eval (args->data, entry);
 		return READ_VAR (guint32, entry->data + offset);
+	}
+	if (!strcmp ("translate.rva", name)) {
+		guint32 rva;
+		if (g_slist_length (args) != 1) {
+			printf ("Invalid number of args to translate.rva %d\b", g_slist_length (args));
+			exit (INVALID_ARG_COUNT);
+		}
+		rva = expression_eval (args->data, entry);
+		return translate_rva (entry, rva);
+	}
+	if (!strcmp ("translate.rva.ind", name)) {
+		guint32 rva;
+		if (g_slist_length (args) != 1) {
+			printf ("Invalid number of args to translate.rva %d\b", g_slist_length (args));
+			exit (INVALID_ARG_COUNT);
+		}
+		rva = expression_eval (args->data, entry);
+		rva = READ_VAR (guint32, entry->data + rva);
+		return translate_rva (entry, rva);
 	}
 
 	printf ("Unknown function %s\n", name);

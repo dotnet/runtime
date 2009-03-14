@@ -31,6 +31,21 @@
  TODO add section relocation support
 */
 
+#define INVALID_OFFSET ((guint32)-1)
+
+enum {
+	IMPORT_TABLE_IDX = 1, 
+	RESOURCE_TABLE_IDX = 2,
+	RELOCATION_TABLE_IDX = 5,
+	IAT_IDX = 12,
+	CLI_HEADER_IDX = 14,
+};
+
+typedef struct {
+	guint32 rva;
+	guint32 size;
+} RvaAndSize;
+
 typedef struct {
 	guint32 baseRVA;
 	guint32 baseOffset;
@@ -47,7 +62,7 @@ typedef struct {
 	guint32 section_count;
 	SectionHeader *sections;
 
-	guint32 data_dir_count;
+	RvaAndSize data_directories [16];
 } VerifyContext;
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
@@ -96,6 +111,27 @@ bounds_check_virtual_address (VerifyContext *ctx, guint32 rva, guint32 size)
 			return TRUE;
 	}
 	return FALSE;
+}
+
+static guint32
+translate_rva (VerifyContext *ctx, guint32 rva)
+{
+	int i;
+
+	if (!ctx->sections)
+		return FALSE;
+
+	for (i = 0; i < ctx->section_count; ++i) {
+		guint32 base = ctx->sections [i].baseRVA;
+		guint32 end = ctx->sections [i].baseRVA + ctx->sections [i].size;
+		if (rva >= base && rva <= end) {
+			guint32 res = (rva - base) + ctx->sections [i].baseOffset;
+			/* double check */
+			return res >= ctx->size ? INVALID_OFFSET : res;
+		}
+	}
+
+	return INVALID_OFFSET;
 }
 
 static void
@@ -155,9 +191,8 @@ verify_pe_optional_header (VerifyContext *ctx)
 		if (read32 (pe_optional_header + 36) != 0x200)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid file Aligmment %x", read32 (pe_optional_header + 36)));
 		/* All the junk in the middle is irrelevant, specially for mono. */
-		ctx->data_dir_count = read32 (pe_optional_header + 92);
-		if (ctx->data_dir_count > 0x10)
-			ADD_ERROR (ctx, g_strdup_printf ("Too many data directories %x", ctx->data_dir_count));
+		if (read32 (pe_optional_header + 92) > 0x10)
+			ADD_ERROR (ctx, g_strdup_printf ("Too many data directories %x", read32 (pe_optional_header + 92)));
 	} else {
 		if (read16 (pe_optional_header) == 0x20B)
 			ADD_ERROR (ctx, g_strdup ("Metadata verifier doesn't handle PE32+"));
@@ -239,12 +274,42 @@ load_data_directories (VerifyContext *ctx)
 		guint32 size = read32 (ptr + 4);
 
 		if ((rva != 0 || size != 0) && !is_valid_data_directory (i))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid data directory %d", i));		
-			
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid data directory %d", i));
+
 		if (rva != 0 && !bounds_check_virtual_address (ctx, rva, size))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid data directory %d rva/size pair %x/%x", i, rva, size));
+
+		ctx->data_directories [i].rva = rva;
+		ctx->data_directories [i].size = size;
+
 		ptr += 8;
 	}
+}
+
+static void
+verify_import_table (VerifyContext *ctx)
+{
+	RvaAndSize it = ctx->data_directories [IMPORT_TABLE_IDX];
+	guint32 offset = translate_rva (ctx, it.rva);
+	const char *ptr = ctx->data + offset;
+
+	if (offset == INVALID_OFFSET)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid import table rva %x", it.rva));
+
+	if (it.size < 40)
+		ADD_ERROR (ctx, g_strdup_printf ("Import table size %d is smaller than 40", it.size));
+
+	if (!bounds_check_virtual_address (ctx, read32 (ptr), 8))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Lookup Table rva %x", read32 (ptr)));
+
+	if (!bounds_check_virtual_address (ctx, read32 (ptr + 12), sizeof ("mscoree.dll")))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Table Name rva %x", read32 (ptr + 12)));
+
+	if (!bounds_check_virtual_address (ctx, read32 (ptr + 16), 8))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid Import Address Table rva %x", read32 (ptr + 16)));
+
+	if (read32 (ptr + 16) != ctx->data_directories [IAT_IDX].rva)
+		ADD_ERROR (ctx, g_strdup_printf ("Import Address Table rva %x different from data directory entry %x", read32 (ptr + 16), ctx->data_directories [IAT_IDX].rva));
 }
 
 GSList*
@@ -265,6 +330,8 @@ mono_image_verify (const char *data, guint32 size)
 	load_section_table (&ctx);
 	CHECK_STATE();
 	load_data_directories (&ctx);
+	CHECK_STATE();
+	verify_import_table (&ctx);
 	CHECK_STATE();
 
 cleanup:

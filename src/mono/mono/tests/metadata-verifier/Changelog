@@ -1,3 +1,9 @@
+2009-03-13 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* data-directory-tests.md: New tests for import table.
+
+	* gen-md-tests.c: Added translate.rva and translate.rva.ind functions.
+
 2009-03-12 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* gen-md-tests.c (parse_test_entry): Fix multi effect rules.
