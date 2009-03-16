@@ -2769,6 +2769,62 @@ executable_file_add_region_reference (ProfilerExecutableFile *file, ProfilerExec
 	}
 }
 
+static gboolean check_elf_header (ElfHeader* header) {
+	guint16 test = 0x0102;
+	
+	if ((header->e_ident [EI_MAG0] != 0x7f) || (header->e_ident [EI_MAG1] != 'E') ||
+			(header->e_ident [EI_MAG2] != 'L') || (header->e_ident [EI_MAG3] != 'F')) {
+		return FALSE;
+	}
+
+	if (sizeof (gsize) == 4) {
+		if (header->e_ident [EI_CLASS] != ELF_CLASS_32) {
+			g_warning ("Class is not ELF_CLASS_32 with gsize size %d", (int) sizeof (gsize));
+			return FALSE;
+		}
+	} else if (sizeof (gsize) == 8) {
+		if (header->e_ident [EI_CLASS] != ELF_CLASS_64) {
+			g_warning ("Class is not ELF_CLASS_64 with gsize size %d", (int) sizeof (gsize));
+			return FALSE;
+		}
+	} else {
+		g_warning ("Absurd gsize size %d", (int) sizeof (gsize));
+		return FALSE;
+	}
+
+	if ((*(guint8*)(&test)) == 0x01) {
+		if (header->e_ident [EI_DATA] != ELF_DATA_MSB) {
+			g_warning ("Data is not ELF_DATA_MSB with first test byte 0x01");
+			return FALSE;
+		}
+	} else if ((*(guint8*)(&test)) == 0x02) {
+		if (header->e_ident [EI_DATA] != ELF_DATA_LSB) {
+			g_warning ("Data is not ELF_DATA_LSB with first test byte 0x02");
+			return FALSE;
+		}
+	} else {
+		g_warning ("Absurd test byte value");
+		return FALSE;
+	}
+	
+	return TRUE;
+}
+
+static gboolean check_elf_file (int fd) {
+	void *header = malloc (sizeof (ElfHeader));
+	ssize_t read_result = read (fd, header, sizeof (ElfHeader));
+	gboolean result;
+	
+	if (read_result != sizeof (ElfHeader)) {
+		result = FALSE;
+	} else {
+		result = check_elf_header ((ElfHeader*) header);
+	}
+	
+	free (header);
+	return result;
+}
+
 static ProfilerExecutableFile*
 executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 	ProfilerExecutableFiles *files = & (profiler->executable_files);
@@ -2778,7 +2834,6 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 		file = (ProfilerExecutableFile*) g_hash_table_lookup (files->table, region->file_name);
 		
 		if (file == NULL) {
-			guint16 test = 0x0102;
 			struct stat stat_buffer;
 			int symtab_index = 0;
 			int strtab_index = 0;
@@ -2804,6 +2859,8 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 				if (fstat (file->fd, &stat_buffer) != 0) {
 					//g_warning ("Cannot stat file '%s': '%s'", region->file_name, strerror (errno));
 					return file;
+				} else if (! check_elf_file (file->fd)) {
+					return file;
 				} else {
 					size_t region_length = ((guint8*)region->end) - ((guint8*)region->start);
 					file->length = stat_buffer.st_size;
@@ -2825,46 +2882,10 @@ executable_file_open (ProfilerExecutableMemoryRegionData *region) {
 				}
 			}
 			
+			/* OK, this is a usable elf file, and we mmapped it... */
 			header = (ElfHeader*) file->data;
-			
-			if ((header->e_ident [EI_MAG0] != 0x7f) || (header->e_ident [EI_MAG1] != 'E') ||
-					(header->e_ident [EI_MAG2] != 'L') || (header->e_ident [EI_MAG3] != 'F')) {
-				return file;
-			}
-			
-			if (sizeof (gsize) == 4) {
-				if (header->e_ident [EI_CLASS] != ELF_CLASS_32) {
-					g_warning ("Class is not ELF_CLASS_32 with gsize size %d", (int) sizeof (gsize));
-					return file;
-				}
-			} else if (sizeof (gsize) == 8) {
-				if (header->e_ident [EI_CLASS] != ELF_CLASS_64) {
-					g_warning ("Class is not ELF_CLASS_64 with gsize size %d", (int) sizeof (gsize));
-					return file;
-				}
-			} else {
-				g_warning ("Absurd gsize size %d", (int) sizeof (gsize));
-				return file;
-			}
-			
-			if ((*(guint8*)(&test)) == 0x01) {
-				if (header->e_ident [EI_DATA] != ELF_DATA_MSB) {
-					g_warning ("Data is not ELF_DATA_MSB with first test byte 0x01");
-					return file;
-				}
-			} else if ((*(guint8*)(&test)) == 0x02) {
-				if (header->e_ident [EI_DATA] != ELF_DATA_LSB) {
-					g_warning ("Data is not ELF_DATA_LSB with first test byte 0x02");
-					return file;
-				}
-			} else {
-				g_warning ("Absurd test byte value");
-				return file;
-			}
-			
-			/* OK, this is a usable elf file... */
 			file->header = header;
-			section_headers = file->data + header->e_shoff;
+			section_headers = file->data + file->header->e_shoff;
 			file->main_string_table = ((const char*) file->data) + (((ElfSection*) (section_headers + (header->e_shentsize * header->e_shstrndx)))->sh_offset);
 			
 			for (section_index = 0; section_index < header->e_shnum; section_index ++) {
