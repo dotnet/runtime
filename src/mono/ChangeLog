@@ -1,3 +1,7 @@
+2009-03-16  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* scripts/Makefile.am : mono-xmltool uses 2.0.
+
 2009-03-12  Jonathan Pryor  <jpryor@novell.com>
 
 	* scripts/Makefile.am: Add sqlmetal.
