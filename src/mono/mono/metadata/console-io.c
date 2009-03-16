@@ -348,11 +348,33 @@ console_restore_signal_handlers ()
 	sigaction (SIGWINCH, &save_sigwinch, NULL);
 }
 
+static void
+set_control_chars (MonoArray *control_chars, const guchar *cc)
+{
+	/* The index into the array comes from corlib/System/ControlCharacters.cs */
+	mono_array_set (control_chars, gchar, 0, cc [VINTR]);
+	mono_array_set (control_chars, gchar, 1, cc [VQUIT]);
+	mono_array_set (control_chars, gchar, 2, cc [VERASE]);
+	mono_array_set (control_chars, gchar, 3, cc [VKILL]);
+	mono_array_set (control_chars, gchar, 4, cc [VEOF]);
+	mono_array_set (control_chars, gchar, 5, cc [VTIME]);
+	mono_array_set (control_chars, gchar, 6, cc [VMIN]);
+	mono_array_set (control_chars, gchar, 7, cc [VSWTC]);
+	mono_array_set (control_chars, gchar, 8, cc [VSTART]);
+	mono_array_set (control_chars, gchar, 9, cc [VSTOP]);
+	mono_array_set (control_chars, gchar, 10, cc [VSUSP]);
+	mono_array_set (control_chars, gchar, 11, cc [VEOL]);
+	mono_array_set (control_chars, gchar, 12, cc [VREPRINT]);
+	mono_array_set (control_chars, gchar, 13, cc [VDISCARD]);
+	mono_array_set (control_chars, gchar, 14, cc [VWERASE]);
+	mono_array_set (control_chars, gchar, 15, cc [VLNEXT]);
+	mono_array_set (control_chars, gchar, 16, cc [VEOL2]);
+}
+
 MonoBoolean
 ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_chars, int **size)
 {
 	int dims;
-	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -381,8 +403,6 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
 		return FALSE;
 
-	for (i = 0; i < sizeof (mono_attr.c_cc); i++)
-		mono_array_set (*control_chars, gchar, i, mono_attr.c_cc [i]);
 	mono_attr = initial_attr;
 	mono_attr.c_lflag &= ~(ICANON);
 	mono_attr.c_iflag &= ~(IXON|IXOFF);
@@ -391,8 +411,7 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	if (tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr) == -1)
 		return FALSE;
 
-	mono_array_set (*control_chars, gchar, VMIN, mono_attr.c_cc [VMIN]);
-	mono_array_set (*control_chars, gchar, VTIME, mono_attr.c_cc [VTIME]);
+	set_control_chars (*control_chars, mono_attr.c_cc);
 	/* If initialized from another appdomain... */
 	if (setup_finished)
 		return TRUE;
