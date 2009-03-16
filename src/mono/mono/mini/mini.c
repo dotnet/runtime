@@ -1421,11 +1421,7 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 				nvtypes ++;
 			}
 			break;
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_STRING:
+
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
@@ -1433,10 +1429,23 @@ mono_allocate_stack_slots_full2 (MonoCompile *cfg, gboolean backward, guint32 *s
 		case MONO_TYPE_I4:
 #else
 		case MONO_TYPE_I8:
+#endif
+#ifdef HAVE_SGEN_GC
+			slot_info = &scalar_stack_slots [MONO_TYPE_I];
+			break;
+#else
+			/* Fall through */
+#endif
+
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_STRING:
 			/* Share non-float stack slots of the same size */
 			slot_info = &scalar_stack_slots [MONO_TYPE_CLASS];
 			break;
-#endif
+
 		default:
 			slot_info = &scalar_stack_slots [t->type];
 		}
@@ -1685,11 +1694,7 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 					nvtypes ++;
 				}
 				break;
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_STRING:
+
 			case MONO_TYPE_PTR:
 			case MONO_TYPE_I:
 			case MONO_TYPE_U:
@@ -1698,9 +1703,22 @@ mono_allocate_stack_slots_full (MonoCompile *cfg, gboolean backward, guint32 *st
 #else
 			case MONO_TYPE_I8:
 #endif
+#ifdef HAVE_SGEN_GC
+				slot_info = &scalar_stack_slots [MONO_TYPE_I];
+				break;
+#else
+				/* Fall through */
+#endif
+
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_ARRAY:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_STRING:
 				/* Share non-float stack slots of the same size */
 				slot_info = &scalar_stack_slots [MONO_TYPE_CLASS];
 				break;
+
 			default:
 				slot_info = &scalar_stack_slots [t->type];
 			}
@@ -4784,7 +4802,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 
 	mono_profiler_runtime_initialized ();
-	
+
 	MONO_PROBE_VES_INIT_END ();
 	
 	return domain;

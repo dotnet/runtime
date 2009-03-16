@@ -259,6 +259,7 @@ static gpointer
 get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 {
 	MonoGenericJitInfo *gi;
+	gpointer info;
 
 	if (!ji->has_generic_jit_info)
 		return NULL;
@@ -267,10 +268,20 @@ get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 		return NULL;
 
 	if (gi->this_in_reg)
-		return mono_arch_context_get_int_reg (ctx, gi->this_reg);
+		info = mono_arch_context_get_int_reg (ctx, gi->this_reg);
 	else
-		return *(gpointer*)(gpointer)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
-				gi->this_offset);
+		info = *(gpointer*)(gpointer)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
+									  gi->this_offset);
+	if (mono_method_get_context (ji->method)->method_inst) {
+		return info;
+	} else if ((ji->method->flags & METHOD_ATTRIBUTE_STATIC) || ji->method->klass->valuetype) {
+		return info;
+	} else {
+		/* Avoid returning a managed object */
+		MonoObject *this_obj = info;
+
+		return this_obj->vtable->klass;
+	}
 }
 
 static MonoGenericContext
@@ -293,9 +304,7 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 
 		class = vtable->klass;
 	} else {
-		MonoObject *this = generic_info;
-
-		class = this->vtable->klass;
+		class = generic_info;
 	}
 
 	if (class->generic_class || class->generic_container)
