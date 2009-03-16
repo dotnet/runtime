@@ -91,7 +91,7 @@ ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout)
 }
 
 MonoBoolean
-ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, char *verase, char *vsusp, char*intr, int **size)
+ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_chars, int **size)
 {
 	return FALSE;
 }
