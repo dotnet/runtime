@@ -473,7 +473,7 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_IL_SRC) \
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
-test_platform:
+test_platform:	testbundle
 else
 # Can't use mkbundle on win32 since there is no static build there
 # Can't run test-unhandled-exception on Windows because of all the debug popups...
