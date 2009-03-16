@@ -349,9 +349,10 @@ console_restore_signal_handlers ()
 }
 
 MonoBoolean
-ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, char *verase, char *vsusp, char*intr, int **size)
+ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_chars, int **size)
 {
 	int dims;
+	int i;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -375,13 +376,13 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	}
 	
 	*size = &cols_and_lines;
-	
-	*verase = '\0';
-	*vsusp = '\0';
-	*intr = '\0';
+
+	*control_chars = mono_array_new (mono_domain_get (), mono_defaults.byte_class, sizeof (mono_attr.c_cc));
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
 		return FALSE;
 
+	for (i = 0; i < sizeof (mono_attr.c_cc); i++)
+		mono_array_set (*control_chars, gchar, i, mono_attr.c_cc [i]);
 	mono_attr = initial_attr;
 	mono_attr.c_lflag &= ~(ICANON);
 	mono_attr.c_iflag &= ~(IXON|IXOFF);
@@ -390,9 +391,8 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	if (tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr) == -1)
 		return FALSE;
 
-	*verase = initial_attr.c_cc [VERASE];
-	*vsusp = initial_attr.c_cc [VSUSP];
-	*intr = initial_attr.c_cc [VINTR];
+	mono_array_set (*control_chars, gchar, VMIN, mono_attr.c_cc [VMIN]);
+	mono_array_set (*control_chars, gchar, VTIME, mono_attr.c_cc [VTIME]);
 	/* If initialized from another appdomain... */
 	if (setup_finished)
 		return TRUE;
