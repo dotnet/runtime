@@ -939,6 +939,7 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 
 	switch (*token_handler_ip) {
 	case CEE_ISINST:
+	case CEE_CASTCLASS:
 	case CEE_LDELEMA:
 		if (method->wrapper_type)
 			klass = data;
@@ -965,6 +966,14 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 		} else {
 			res = g_strdup_printf ("<0x%08x>", token);
 		}
+		break;
+	case CEE_LDFLD:
+	case CEE_LDSFLD:
+	case CEE_STFLD:
+	case CEE_STSFLD:
+		desc = mono_field_full_name (data);
+		res = g_strdup_printf ("<%s>", desc);
+		g_free (desc);
 		break;
 	default:
 		res = g_strdup_printf ("<0x%08x>", token);
