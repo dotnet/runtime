@@ -1495,11 +1495,8 @@ mono_main (int argc, char* argv[])
 		g_set_prgname (argv[i]);
 	}
 
-	if (enable_profile) {
-		/* Needed because of TLS accesses in mono_profiler_load () */
-		mono_gc_base_init ();
+	if (enable_profile)
 		mono_profiler_load (profile_options);
-	}
 
 	mono_attach_parse_options (attach_options);
 
