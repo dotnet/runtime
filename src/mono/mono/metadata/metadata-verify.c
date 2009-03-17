@@ -29,7 +29,8 @@
  TODO verify the entry point RVA and content.
  TODO load_section_table and load_data_directories must take PE32+ into account
  TODO add section relocation support
- TODO verify the relocation table, since we really don't use, no need so far. 
+ TODO verify the relocation table, since we really don't use, no need so far.
+ TODO do full PECOFF resources verification 
 */
 
 #define INVALID_OFFSET ((guint32)-1)
@@ -363,6 +364,37 @@ verify_import_table (VerifyContext *ctx)
 	verify_hint_name_table (ctx, iat_rva, "Import Address Table");
 }
 
+static void
+verify_resources_table (VerifyContext *ctx)
+{
+	RvaAndSize it = ctx->data_directories [RESOURCE_TABLE_IDX];
+	guint32 offset;
+	guint16 named_entries, id_entries;
+	const char *ptr, *root, *end;
+
+	if (it.rva == 0 || it.size == 0)
+		return;
+
+	if (it.size < 16)
+		ADD_ERROR (ctx, g_strdup_printf ("Resource section is too small, must be at least 16 bytes long but it's %d long", it.size));
+
+	offset = translate_rva (ctx, it.rva);
+	root = ptr = ctx->data + offset;
+	end = root + it.size;
+
+	g_assert (offset != INVALID_OFFSET);
+
+	named_entries = read16 (ptr + 12);
+	id_entries = read16 (ptr + 12);
+
+	if ((named_entries + id_entries) * 8 + 16 > it.size)
+		ADD_ERROR (ctx, g_strdup_printf ("Resource section is too small, the number of entries (%d) doesn't fit on it's size %d", named_entries + id_entries, it.size));
+
+	if (named_entries || id_entries)
+		ADD_ERROR (ctx, g_strdup_printf ("The metadata verifier doesn't support full verification of PECOFF resources"));
+
+}
+
 GSList*
 mono_image_verify (const char *data, guint32 size)
 {
@@ -383,6 +415,8 @@ mono_image_verify (const char *data, guint32 size)
 	load_data_directories (&ctx);
 	CHECK_STATE();
 	verify_import_table (&ctx);
+	CHECK_STATE();
+	verify_resources_table (&ctx);
 	CHECK_STATE();
 	/*No need to check the IAT directory entry, it's content is indirectly verified by verify_import_table*/
 cleanup:
