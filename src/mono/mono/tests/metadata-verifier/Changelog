@@ -1,3 +1,11 @@
+2009-03-16 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* resources-tests.md: New file with pecoff tests.
+
+	* Makefile: Add new tests.
+
+	* header-tests.md: Update some tests.
+
 2009-03-13 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* data-directory-tests.md: New tests for IAT directory entry.

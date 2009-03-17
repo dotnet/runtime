@@ -4,6 +4,9 @@ GLIB_LINK_FLAGS=`pkg-config --libs glib-2.0`
 %.exe: %.il
 	ilasm2 -out:$@ $<
 
+assembly-with-resource.exe: assembly-with-resource.cs
+	gmcs assembly-with-resource.cs -linkresource:Makefile -resource:simple-assembly.il
+
 gen-md-tests: gen-md-tests.c
 	gcc $(GLIB_CFLAGS) $(GLIB_LINK_FLAGS) gen-md-tests.c -g -Wall -o gen-md-tests
 
@@ -19,7 +22,11 @@ data-directory-tests.ok: gen-md-tests data-directory-tests.md simple-assembly.ex
 	./gen-md-tests data-directory-tests.md
 	touch data-directory-tests.ok
 
-generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok
+resources-tests.ok: gen-md-tests resources-tests.md assembly-with-resource.exe
+	./gen-md-tests resources-tests.md
+	touch resources-tests.ok
+
+generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok
 	touch generate-stamp
 
 clean-stamps:
