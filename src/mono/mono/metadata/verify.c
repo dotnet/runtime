@@ -19,6 +19,8 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/security-manager.h>
+#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/tokentype.h>
 #include <string.h>
 #include <signal.h>
@@ -5840,18 +5842,19 @@ mono_verifier_is_method_full_trust (MonoMethod *method)
  * 
  * TODO This code doesn't take CAS into account.
  * 
- * This value is only pertinent to assembly verification and has
- * nothing to do with CoreClr security. 
- * 
  * Under verify_all all user code must be verifiable if no security option was set 
  * 
  */
 gboolean
 mono_verifier_is_class_full_trust (MonoClass *klass)
 {
+	/* under CoreCLR code is trusted if it is part of the "platform" otherwise all code inside the GAC is trusted */
+	gboolean trusted_location = (mono_security_get_mode () != MONO_SECURITY_MODE_CORE_CLR) ? 
+		klass->image->assembly->in_gac : mono_security_core_clr_is_platform_image (klass->image);
+
 	if (verify_all && verifier_mode == MONO_VERIFIER_MODE_OFF)
-		return klass->image->assembly->in_gac || klass->image == mono_defaults.corlib;
-	return verifier_mode < MONO_VERIFIER_MODE_VERIFIABLE || klass->image->assembly->in_gac || klass->image == mono_defaults.corlib;
+		return trusted_location || klass->image == mono_defaults.corlib;
+	return verifier_mode < MONO_VERIFIER_MODE_VERIFIABLE || trusted_location || klass->image == mono_defaults.corlib;
 }
 
 GSList*
