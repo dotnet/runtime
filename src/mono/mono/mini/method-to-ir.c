@@ -4499,16 +4499,6 @@ ensure_method_is_allowed_to_call_method (MonoCompile *cfg, MonoMethod *caller, M
 		emit_throw_method_access_exception (cfg, caller, callee, bblock, ip);
 }
 
-static gboolean
-method_is_safe (MonoMethod *method)
-{
-	/*
-	if (strcmp (method->name, "unsafeMethod") == 0)
-		return FALSE;
-	*/
-	return TRUE;
-}
-
 /*
  * Check that the IL instructions at ip are the array initialization
  * sequence and return the pointer to the data and the size.
@@ -5443,8 +5433,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 		}
-		if (!method_is_safe (method))
-			emit_throw_verification_exception (cfg, bblock, ip);
 	}
 
 	if (header->code_size == 0)
