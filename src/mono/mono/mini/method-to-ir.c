@@ -4459,28 +4459,6 @@ emit_throw_method_access_exception (MonoCompile *cfg, MonoMethod *caller, MonoMe
 	mono_emit_method_call (cfg, thrower, args, NULL);
 }
 
-static MonoMethod*
-verification_exception (void)
-{
-	static MonoMethod *method = NULL;
-
-	if (!method) {
-		MonoSecurityManager *secman = mono_security_manager_get_methods ();
-		method = mono_class_get_method_from_name (secman->securitymanager,
-							  "VerificationException", 0);
-	}
-	g_assert (method);
-	return method;
-}
-
-static void
-emit_throw_verification_exception (MonoCompile *cfg, MonoBasicBlock *bblock, unsigned char *ip)
-{
-	MonoMethod *thrower = verification_exception ();
-
-	mono_emit_method_call (cfg, thrower, NULL, NULL);
-}
-
 static void
 ensure_method_is_allowed_to_call_method (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
 					 MonoBasicBlock *bblock, unsigned char *ip)
