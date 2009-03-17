@@ -2390,6 +2390,8 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 	ctx->exception_types = g_slist_prepend (ctx->exception_types, type);
 	code->size = 1;
 	code->flags |= IL_CODE_FLAG_WAS_TARGET;
+	if (mono_type_is_generic_argument (type))
+		code->stack->stype |= BOXED_MASK;
 }
 
 /*Verify if type 'candidate' can be stored in type 'target'.
