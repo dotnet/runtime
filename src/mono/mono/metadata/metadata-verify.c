@@ -170,7 +170,7 @@ static void
 verify_pe_optional_header (VerifyContext *ctx)
 {
 	guint32 offset = pe_header_offset (ctx);
-	guint32 header_size;
+	guint32 header_size, file_alignment;
 	const char *pe_header = ctx->data + offset;
 	const char *pe_optional_header = pe_header + 20;
 
@@ -187,12 +187,13 @@ verify_pe_optional_header (VerifyContext *ctx)
 		if (header_size != 224)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header size %d", header_size));
 
-		if (read32 (pe_optional_header + 28) != 0x400000)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid Image base %x", read32 (pe_optional_header + 28)));
+		/*if (read32 (pe_optional_header + 28) != 0x400000)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Image base %x", read32 (pe_optional_header + 28)));*/
 		if (read32 (pe_optional_header + 32) != 0x2000)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid Section Aligmment %x", read32 (pe_optional_header + 32)));
-		if (read32 (pe_optional_header + 36) != 0x200)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid file Aligmment %x", read32 (pe_optional_header + 36)));
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Section Aligmnent %x", read32 (pe_optional_header + 32)));
+		file_alignment = read32 (pe_optional_header + 36);
+		if (file_alignment != 0x200 && file_alignment != 0x1000)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid file Aligmnent %x", file_alignment));
 		/* All the junk in the middle is irrelevant, specially for mono. */
 		if (read32 (pe_optional_header + 92) > 0x10)
 			ADD_ERROR (ctx, g_strdup_printf ("Too many data directories %x", read32 (pe_optional_header + 92)));
