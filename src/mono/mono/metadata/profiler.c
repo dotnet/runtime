@@ -1591,6 +1591,8 @@ typedef void (*ProfilerInitializer) (const char*);
 void 
 mono_profiler_load (const char *desc)
 {
+	mono_gc_base_init ();
+
 #ifndef DISABLE_PROFILER
 	if (!desc || (strcmp ("default", desc) == 0) || (strncmp (desc, "default:", 8) == 0)) {
 		mono_profiler_install_simple (desc);
