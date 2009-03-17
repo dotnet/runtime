@@ -861,7 +861,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	stored_size += ALLOC_ALIGN - 1;
 	stored_size &= ~(ALLOC_ALIGN - 1);
 	for (i = 0; i < numbits; ++i) {
-		if (bitmap [i / GC_BITS_PER_WORD] & (1 << (i % GC_BITS_PER_WORD))) {
+		if (bitmap [i / GC_BITS_PER_WORD] & ((gsize)1 << (i % GC_BITS_PER_WORD))) {
 			if (first_set < 0)
 				first_set = i;
 			last_set = i;
@@ -907,7 +907,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 	int first_set = -1, num_set = 0, last_set = -1, i;
 	mword desc = vector? DESC_TYPE_VECTOR: DESC_TYPE_ARRAY;
 	for (i = 0; i < numbits; ++i) {
-		if (elem_bitmap [i / GC_BITS_PER_WORD] & (1 << (i % GC_BITS_PER_WORD))) {
+		if (elem_bitmap [i / GC_BITS_PER_WORD] & ((gsize)1 << (i % GC_BITS_PER_WORD))) {
 			if (first_set < 0)
 				first_set = i;
 			last_set = i;
