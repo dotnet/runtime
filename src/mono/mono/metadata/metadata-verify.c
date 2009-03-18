@@ -372,7 +372,7 @@ verify_resources_table (VerifyContext *ctx)
 	guint16 named_entries, id_entries;
 	const char *ptr, *root, *end;
 
-	if (it.rva == 0 || it.size == 0)
+	if (it.rva == 0)
 		return;
 
 	if (it.size < 16)
@@ -385,8 +385,9 @@ verify_resources_table (VerifyContext *ctx)
 	g_assert (offset != INVALID_OFFSET);
 
 	named_entries = read16 (ptr + 12);
-	id_entries = read16 (ptr + 12);
+	id_entries = read16 (ptr + 14);
 
+	printf ("named %d id_entries %d\n", named_entries, id_entries);
 	if ((named_entries + id_entries) * 8 + 16 > it.size)
 		ADD_ERROR (ctx, g_strdup_printf ("Resource section is too small, the number of entries (%d) doesn't fit on it's size %d", named_entries + id_entries, it.size));
 
