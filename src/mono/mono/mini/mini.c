@@ -4224,13 +4224,13 @@ void
 SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 {
 	MonoException *exc = NULL;
+	MonoJitInfo *ji;
 #ifndef MONO_ARCH_USE_SIGACTION
 	void *info = NULL;
 #endif
 	GET_CONTEXT;
 
-	if (mono_chain_signal (SIG_HANDLER_PARAMS))
-		return;
+	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
 
 #if defined(MONO_ARCH_HAVE_IS_INT_OVERFLOW)
 	if (mono_arch_is_int_overflow (ctx, info))
@@ -4240,6 +4240,13 @@ SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler)
 #else
 	exc = mono_get_exception_divide_by_zero ();
 #endif
+
+	if (!ji) {
+		if (mono_chain_signal (SIG_HANDLER_PARAMS))
+			return;
+
+		mono_handle_native_sigsegv (SIGSEGV, ctx);
+	}
 	
 	mono_arch_handle_exception (ctx, exc, FALSE);
 }
