@@ -2346,6 +2346,9 @@ ves_icall_Type_get_IsGenericTypeDefinition (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
+	if (!IS_MONOTYPE (type))
+		return FALSE;
+
 	if (type->type->byref)
 		return FALSE;
 
@@ -2421,6 +2424,9 @@ ves_icall_Type_get_IsGenericType (MonoReflectionType *type)
 	MonoClass *klass;
 	MONO_ARCH_SAVE_REGS;
 
+	if (!IS_MONOTYPE (type))
+		return FALSE;
+
 	if (type->type->byref)
 		return FALSE;
 
@@ -2433,6 +2439,9 @@ ves_icall_Type_GetGenericParameterPosition (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
 
+	if (!IS_MONOTYPE (type))
+		return -1;
+
 	if (is_generic_parameter (type->type))
 		return type->type->data.generic_param->num;
 	return -1;
@@ -2442,6 +2451,8 @@ static GenericParameterAttributes
 ves_icall_Type_GetGenericParameterAttributes (MonoReflectionType *type)
 {
 	MONO_ARCH_SAVE_REGS;
+
+	g_assert (IS_MONOTYPE (type));
 	g_assert (is_generic_parameter (type->type));
 	return type->type->data.generic_param->flags;
 }
@@ -2456,6 +2467,8 @@ ves_icall_Type_GetGenericParameterConstraints (MonoReflectionType *type)
 	int i, count;
 
 	MONO_ARCH_SAVE_REGS;
+
+	g_assert (IS_MONOTYPE (type));
 
 	domain = mono_object_domain (type);
 	param = type->type->data.generic_param;
