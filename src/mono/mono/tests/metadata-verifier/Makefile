@@ -26,7 +26,11 @@ resources-tests.ok: gen-md-tests resources-tests.md assembly-with-resource.exe
 	./gen-md-tests resources-tests.md
 	touch resources-tests.ok
 
-generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok
+cli-header-tests.ok: gen-md-tests cli-header-tests.md simple-assembly.exe
+	./gen-md-tests cli-header-tests.md
+	touch cli-header-tests.ok
+
+generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok
 	touch generate-stamp
 
 clean-stamps:

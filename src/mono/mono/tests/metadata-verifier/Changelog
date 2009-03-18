@@ -1,3 +1,9 @@
+2009-03-18 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-header-tests.md: New file with cli header tests.
+
+	* Makefile: Add new tests.
+	
 2009-03-16 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* resources-tests.md: New file with pecoff tests.
