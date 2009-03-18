@@ -393,7 +393,18 @@ verify_resources_table (VerifyContext *ctx)
 
 	if (named_entries || id_entries)
 		ADD_ERROR (ctx, g_strdup_printf ("The metadata verifier doesn't support full verification of PECOFF resources"));
+}
 
+static void
+verify_cli_header (VerifyContext *ctx)
+{
+	RvaAndSize it = ctx->data_directories [CLI_HEADER_IDX];
+
+	if (it.rva == 0)
+		ADD_ERROR (ctx, g_strdup_printf ("CLI header missing"));
+
+	if (it.size != 72)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid cli header size in data directory %d must be 72", it.size));
 }
 
 GSList*
@@ -418,6 +429,8 @@ mono_image_verify (const char *data, guint32 size)
 	verify_import_table (&ctx);
 	CHECK_STATE();
 	verify_resources_table (&ctx);
+	CHECK_STATE();
+	verify_cli_header (&ctx);
 	CHECK_STATE();
 	/*No need to check the IAT directory entry, it's content is indirectly verified by verify_import_table*/
 cleanup:
