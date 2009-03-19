@@ -251,7 +251,7 @@ dump_cli_header (MonoCLIHeader *ch)
 	printf ("                    Flags: %s, %s, %s, %s\n",
 		(ch->ch_flags & CLI_FLAGS_ILONLY ? "ilonly" : "contains native"),
 		(ch->ch_flags & CLI_FLAGS_32BITREQUIRED ? "32bits" : "32/64"),
-		(ch->ch_flags & CLI_FLAGS_ILONLY ? "trackdebug" : "no-trackdebug"),
+		(ch->ch_flags & CLI_FLAGS_TRACKDEBUGDATA ? "trackdebug" : "no-trackdebug"),
 		(ch->ch_flags & CLI_FLAGS_STRONGNAMESIGNED ? "strongnamesigned" : "notsigned"));
 	dent   ("         Metadata", ch->ch_metadata);
 	hex32  ("Entry Point Token", ch->ch_entry_point);
