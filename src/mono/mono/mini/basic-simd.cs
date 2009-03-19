@@ -1075,7 +1075,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector8s_pack_signed_sat () {
+	public static unsafe int test_0_vector8s_pack_signed_sat () {
 		Vector8s a = new Vector8s (-200, 200, 3, 0, 5, 6, 5, 4);
 		Vector8s b = new Vector8s (9, 2, 1, 2, 3, 6, 5, 6);
 
@@ -1089,7 +1089,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector16sb_sub_sat () {
+	public static unsafe int test_0_vector16sb_sub_sat () {
 		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16sb b = new Vector16sb (-100, 100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
 
@@ -1114,7 +1114,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector16sb_add_sat () {
+	public static unsafe int test_0_vector16sb_add_sat () {
 		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16sb b = new Vector16sb (100, -100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
 
@@ -1139,7 +1139,7 @@ public class SimdTests {
 		return 0;
 	}
 
-	public static unsafe int test_vector16sb_cmp_gt () {
+	public static unsafe int test_0_vector16sb_cmp_gt () {
 		Vector16sb a = new Vector16sb (100,-100,11,12,13,14,15,0,1,2,3,4,5,6,7,8);
 		Vector16sb b = new Vector16sb (-100, 100,11,12,4,5,6,7,8,9,10,11,12,13,14,15);
 
