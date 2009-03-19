@@ -4459,21 +4459,83 @@ emit_throw_method_access_exception (MonoCompile *cfg, MonoMethod *caller, MonoMe
 	mono_emit_method_call (cfg, thrower, args, NULL);
 }
 
+static MonoMethod*
+field_access_exception (void)
+{
+	static MonoMethod *method = NULL;
+
+	if (!method) {
+		MonoSecurityManager *secman = mono_security_manager_get_methods ();
+		method = mono_class_get_method_from_name (secman->securitymanager,
+							  "FieldAccessException", 2);
+	}
+	g_assert (method);
+	return method;
+}
+
+static void
+emit_throw_field_access_exception (MonoCompile *cfg, MonoMethod *caller, MonoClassField *field,
+				    MonoBasicBlock *bblock, unsigned char *ip)
+{
+	MonoMethod *thrower = field_access_exception ();
+	MonoInst *args [2];
+
+	EMIT_NEW_METHODCONST (cfg, args [0], caller);
+	EMIT_NEW_METHODCONST (cfg, args [1], field);
+	mono_emit_method_call (cfg, thrower, args, NULL);
+}
+
+/*
+ * Return the original method is a wrapper is specified. We can only access 
+ * the custom attributes from the original method.
+ */
+static MonoMethod*
+get_original_method (MonoMethod *method)
+{
+	if (method->wrapper_type == MONO_WRAPPER_NONE)
+		return method;
+
+	/* native code (which is like Critical) can call any managed method XXX FIXME XXX to validate all usages */
+	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+		return NULL;
+
+	/* in other cases we need to find the original method */
+	return mono_marshal_method_from_wrapper (method);
+}
+
+static void
+ensure_method_is_allowed_to_access_field (MonoCompile *cfg, MonoMethod *caller, MonoClassField *field,
+					  MonoBasicBlock *bblock, unsigned char *ip)
+{
+	/* there's no restriction to access Transparent or SafeCritical fields, so we only check calls to Critical methods */
+	if (mono_security_core_clr_class_level (mono_field_get_parent (field)) != MONO_SECURITY_CORE_CLR_CRITICAL)
+		return;
+
+	/* we can't get the coreclr security level on wrappers since they don't have the attributes */
+	caller = get_original_method (caller);
+	if (!caller)
+		return;
+
+	/* caller is Critical! only SafeCritical and Critical callers can access the field, so we throw if caller is Transparent */
+	if (mono_security_core_clr_method_level (caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
+		emit_throw_field_access_exception (cfg, caller, field, bblock, ip);
+}
+
 static void
 ensure_method_is_allowed_to_call_method (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee,
 					 MonoBasicBlock *bblock, unsigned char *ip)
 {
-	MonoSecurityCoreCLRLevel caller_level = mono_security_core_clr_method_level (caller, TRUE);
-	MonoSecurityCoreCLRLevel callee_level = mono_security_core_clr_method_level (callee, TRUE);
-	gboolean is_safe = TRUE;
+	/* there's no restriction to call Transparent or SafeCritical code, so we only check calls to Critical methods */
+	if (mono_security_core_clr_method_level (callee, TRUE) != MONO_SECURITY_CORE_CLR_CRITICAL)
+		return;
 
-	if (!(caller_level >= callee_level ||
-			caller_level == MONO_SECURITY_CORE_CLR_SAFE_CRITICAL ||
-			callee_level == MONO_SECURITY_CORE_CLR_SAFE_CRITICAL)) {
-		is_safe = FALSE;
-	}
+	/* we can't get the coreclr security level on wrappers since they don't have the attributes */
+	caller = get_original_method (caller);
+	if (!caller)
+		return;
 
-	if (!is_safe)
+	/* caller is Critical! only SafeCritical and Critical callers can call it, so we throw if the caller is Transparent */
+	if (mono_security_core_clr_method_level (caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
 		emit_throw_method_access_exception (cfg, caller, callee, bblock, ip);
 }
 
@@ -7710,6 +7772,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				FIELD_ACCESS_FAILURE;
 			mono_class_init (klass);
 
+			/* XXX this is technically required but, so far (SL2), no [SecurityCritical] types (not many exists) have
+			   any visible *instance* field  (in fact there's a single case for a static field in Marshal) XXX
+			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+				ensure_method_is_allowed_to_access_field (cfg, method, field, bblock, ip);
+			*/
+
 			foffset = klass->valuetype? field->offset - sizeof (MonoObject): field->offset;
 			if (*ip == CEE_STFLD) {
 				if (target_type_is_incompatible (cfg, field->type, sp [1]))
@@ -7842,6 +7910,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			mono_class_init (klass);
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
 				FIELD_ACCESS_FAILURE;
+
+			/* if the class is Critical then transparent code cannot access it's fields */
+			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+				ensure_method_is_allowed_to_access_field (cfg, method, field, bblock, ip);
 
 			/*
 			 * We can only support shared generic static
