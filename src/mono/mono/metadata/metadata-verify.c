@@ -399,12 +399,44 @@ static void
 verify_cli_header (VerifyContext *ctx)
 {
 	RvaAndSize it = ctx->data_directories [CLI_HEADER_IDX];
+	guint32 offset;
+	const char *ptr;
+	int i;
 
 	if (it.rva == 0)
 		ADD_ERROR (ctx, g_strdup_printf ("CLI header missing"));
 
 	if (it.size != 72)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid cli header size in data directory %d must be 72", it.size));
+
+
+	offset = translate_rva (ctx, it.rva);
+	ptr = ctx->data + offset;
+
+	g_assert (offset != INVALID_OFFSET);
+
+	if (read16 (ptr) != 72)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid cli header size %d must be 72", read16 (ptr)));
+
+	if (!bounds_check_virtual_address (ctx, read32 (ptr + 8), read32 (ptr + 12)))
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid medatata section rva/size pair %x/%x", read32 (ptr + 8), read32 (ptr + 12)));
+
+	if (!read32 (ptr + 8) || !read32 (ptr + 12))
+		ADD_ERROR (ctx, g_strdup_printf ("Missing medatata section in the CLI header"));
+
+	if ((read32 (ptr + 16) & ~0x0001000B) != 0)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid CLI header flags"));
+
+	ptr += 24;
+	for (i = 0; i < 6; ++i) {
+		guint32 rva = read32 (ptr);
+		guint32 size = read32 (ptr + 4);
+
+		if (rva != 0 && !bounds_check_virtual_address (ctx, rva, size))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid cli section %i rva/size pair %x/%x", i, rva, size));
+
+		ptr += 8;
+	}
 }
 
 GSList*
