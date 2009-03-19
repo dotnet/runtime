@@ -77,7 +77,8 @@ variable:
 	pe-header |
 	pe-optional-header |
 	pe-signature |
-	section-table
+	section-table |
+	cli-header
 
 TODO For the sake of a simple implementation, tokens are space delimited.
 */
@@ -297,6 +298,12 @@ lookup_var (test_entry_t *entry, const char *name)
 		return get_pe_header (entry) + 20; 
 	if (!strcmp ("section-table", name))
 		return get_pe_header (entry) + 244; 
+	if (!strcmp ("cli-header", name)) {
+		guint32 offset = get_pe_header (entry) + 20; /*pe-optional-header*/
+		offset += 208; /*cli header entry offset in the pe-optional-header*/
+
+		return translate_rva (entry, READ_VAR (guint32, entry->data + offset));
+	}
 
 	printf ("Unknown variable in expression %s\n", name);
 	exit (INVALID_VARIABLE_NAME);

@@ -1,3 +1,8 @@
+2009-03-19 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Add cli-header variable to make tests
+	more readable.
+
 2009-03-18 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-header-tests.md: New file with cli header tests.
