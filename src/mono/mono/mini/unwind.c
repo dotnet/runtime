@@ -158,7 +158,7 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 	int loc;
 	guint8 *buf, *p, *res;
 
-	p = buf = g_malloc0 (256);
+	p = buf = g_malloc0 (4096);
 
 	loc = 0;
 	l = unwind_ops;
@@ -205,7 +205,7 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 		}
 	}
 	
-	g_assert (p - buf < 256);
+	g_assert (p - buf < 4096);
 	*out_len = p - buf;
 	res = g_malloc (p - buf);
 	memcpy (res, buf, p - buf);

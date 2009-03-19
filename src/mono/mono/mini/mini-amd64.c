@@ -1008,11 +1008,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 
 		locals_size += mono_type_size (ins->inst_vtype, &ialign);
 	}
-
-	if ((cfg->num_varinfo > 5000) || (locals_size >= (1 << 15)) || (header->code_size > 110000)) {
-		/* Avoid hitting the stack_alloc_size < (1 << 16) assertion in emit_epilog () */
-		cfg->arch.omit_fp = FALSE;
-	}
 }
 
 GList *
@@ -5099,15 +5094,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	cfg->code_len = code - cfg->native_code;
 
 	g_assert (cfg->code_len < cfg->code_size);
-
-	if (cfg->arch.omit_fp) {
-		/* 
-		 * Encode the stack size into used_int_regs so the exception handler
-		 * can access it.
-		 */
-		g_assert (cfg->arch.stack_alloc_size < (1 << 16));
-		cfg->used_int_regs |= (1 << 31) | (cfg->arch.stack_alloc_size << 16);
-	}
 }
 
 void
