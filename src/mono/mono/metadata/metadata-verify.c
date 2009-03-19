@@ -436,6 +436,9 @@ verify_cli_header (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid cli section %i rva/size pair %x/%x", i, rva, size));
 
 		ptr += 8;
+
+		if (rva && i > 1)
+			ADD_ERROR (ctx, g_strdup_printf ("Metadata verifier doesn't support cli header section %d", i));
 	}
 }
 
