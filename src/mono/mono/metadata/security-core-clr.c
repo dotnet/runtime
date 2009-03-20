@@ -43,13 +43,10 @@ security_safe_critical_attribute (void)
 	return class;
 }
 
-MonoSecurityCoreCLRLevel
+static MonoSecurityCoreCLRLevel
 mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *image)
 {
 	int level = MONO_SECURITY_CORE_CLR_TRANSPARENT;
-
-	if (!mono_security_core_clr_test && !mono_security_core_clr_is_platform_image (image))
-		return level;
 
 	if (cinfo && mono_custom_attrs_has_attr (cinfo, security_safe_critical_attribute ()))
 		level = MONO_SECURITY_CORE_CLR_SAFE_CRITICAL;
@@ -62,29 +59,43 @@ mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *i
 MonoSecurityCoreCLRLevel
 mono_security_core_clr_class_level (MonoClass *class)
 {
-	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class (class);
-	MonoSecurityCoreCLRLevel lvl = mono_security_core_clr_level_from_cinfo (cinfo, class->image);
+	MonoCustomAttrInfo *cinfo;
+	MonoSecurityCoreCLRLevel level = MONO_SECURITY_CORE_CLR_TRANSPARENT;
 
-	if (cinfo)
+	/* non-platform code is always Transparent - whatever the attributes says */
+	if (!mono_security_core_clr_test && !mono_security_core_clr_is_platform_image (class->image))
+		return level;
+
+	cinfo = mono_custom_attrs_from_class (class);
+	if (cinfo) {
+		level = mono_security_core_clr_level_from_cinfo (cinfo, class->image);
 		mono_custom_attrs_free (cinfo);
+	}
 
-	if (lvl == MONO_SECURITY_CORE_CLR_TRANSPARENT && class->nested_in)
-		return mono_security_core_clr_class_level (class->nested_in);
-	else
-		return lvl;
+	if (level == MONO_SECURITY_CORE_CLR_TRANSPARENT && class->nested_in)
+		level = mono_security_core_clr_class_level (class->nested_in);
+
+	return level;
 }
 
 MonoSecurityCoreCLRLevel
 mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_level)
 {
-	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_method (method);
-	MonoSecurityCoreCLRLevel level = mono_security_core_clr_level_from_cinfo (cinfo, method->klass->image);
+	MonoCustomAttrInfo *cinfo;
+	MonoSecurityCoreCLRLevel level = MONO_SECURITY_CORE_CLR_TRANSPARENT;
+
+	/* non-platform code is always Transparent - whatever the attributes says */
+	if (!mono_security_core_clr_test && !mono_security_core_clr_is_platform_image (method->klass->image))
+		return level;
+
+	cinfo = mono_custom_attrs_from_method (method);
+	if (cinfo) {
+		level = mono_security_core_clr_level_from_cinfo (cinfo, method->klass->image);
+		mono_custom_attrs_free (cinfo);
+	}
 
 	if (with_class_level && level == MONO_SECURITY_CORE_CLR_TRANSPARENT)
 		level = mono_security_core_clr_class_level (method->klass);
-
-	if (cinfo)
-		mono_custom_attrs_free (cinfo);
 
 	return level;
 }
