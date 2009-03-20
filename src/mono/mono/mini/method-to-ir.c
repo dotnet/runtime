@@ -444,7 +444,6 @@ mono_find_block_region (MonoCompile *cfg, int offset)
 	MonoExceptionClause *clause;
 	int i;
 
-	/* first search for handlers and filters */
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->data.filter_offset) &&
@@ -459,11 +458,7 @@ mono_find_block_region (MonoCompile *cfg, int offset)
 			else
 				return ((i + 1) << 8) | MONO_REGION_CATCH | clause->flags;
 		}
-	}
 
-	/* search the try blocks */
-	for (i = 0; i < header->num_clauses; ++i) {
-		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, offset))
 			return ((i + 1) << 8) | clause->flags;
 	}

@@ -449,9 +449,48 @@ mono_bblocks_linked (MonoBasicBlock *bb1, MonoBasicBlock *bb2)
 	return FALSE;
 }
 
+static int
+mono_find_block_region_notry (MonoCompile *cfg, int offset)
+{
+	MonoMethod *method = cfg->method;
+	MonoMethodHeader *header = mono_method_get_header (method);
+	MonoExceptionClause *clause;
+	int i;
+
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
+		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) && (offset >= clause->data.filter_offset) &&
+		    (offset < (clause->handler_offset)))
+			return ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
+			   
+		if (MONO_OFFSET_IN_HANDLER (clause, offset)) {
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+				return ((i + 1) << 8) | MONO_REGION_FINALLY | clause->flags;
+			else if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT)
+				return ((i + 1) << 8) | MONO_REGION_FAULT | clause->flags;
+			else
+				return ((i + 1) << 8) | MONO_REGION_CATCH | clause->flags;
+		}
+	}
+
+	return -1;
+}
+
 MonoInst *
 mono_find_spvar_for_region (MonoCompile *cfg, int region)
 {
+	if ((region & (0xf << 4)) == MONO_REGION_TRY) {
+		MonoMethodHeader *header = mono_method_get_header (cfg->method);
+		
+		/*
+		 * This can happen if a try clause is nested inside a finally clause.
+		 */
+		int clause_index = (region >> 8) - 1;
+		g_assert (clause_index >= 0 && clause_index < header->num_clauses);
+		
+		region = mono_find_block_region_notry (cfg, header->clauses [clause_index].try_offset);
+	}
+
 	return g_hash_table_lookup (cfg->spvars, GINT_TO_POINTER (region));
 }
 
