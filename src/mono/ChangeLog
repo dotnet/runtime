@@ -1,3 +1,9 @@
+2009-03-20  Zoltan Varga  <vargaz@gmail.com>
+
+	* mono/os: Remove this now empty directory.
+	
+	* mono/Makefile.am (SUBDIRS): Remove 'os'.
+
 2009-03-16  Atsushi Enomoto  <atsushi@ximian.com>
 
 	* scripts/Makefile.am : mono-xmltool uses 2.0.
