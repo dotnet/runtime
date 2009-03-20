@@ -12,7 +12,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include <mono/os/gc_wrapper.h>
+#include <mono/utils/gc_wrapper.h>
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/handles-private.h>

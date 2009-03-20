@@ -11,7 +11,7 @@
 
 #include <glib.h>
 #include <mono/metadata/object-internals.h>
-#include <mono/os/gc_wrapper.h>
+#include <mono/utils/gc_wrapper.h>
 
 #define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root ((char*)&(x), sizeof(x), NULL)
 

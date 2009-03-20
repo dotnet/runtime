@@ -24,7 +24,7 @@
 #include <math.h>
 #include <locale.h>
 
-#include <mono/os/gc_wrapper.h>
+#include <mono/utils/gc_wrapper.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>

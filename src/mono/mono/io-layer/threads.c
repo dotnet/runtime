@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <glib.h>
 #include <string.h>
-#include <mono/os/gc_wrapper.h>
+#include <mono/utils/gc_wrapper.h>
 #include <pthread.h>
 #include <signal.h>
 #include <sched.h>

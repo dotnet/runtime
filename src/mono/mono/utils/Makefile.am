@@ -58,7 +58,8 @@ libmonoutils_la_SOURCES = \
 	freebsd-elf32.h		\
 	freebsd-elf64.h		\
 	freebsd-dwarf.h 	\
-	dtrace.h
+	dtrace.h			\
+	gc-wrapper.h
 
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 
