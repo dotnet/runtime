@@ -2730,11 +2730,13 @@ mono_class_setup_vtable (MonoClass *class)
 static void
 check_core_clr_override_method (MonoClass *class, MonoMethod *override, MonoMethod *base)
 {
-	MonoSecurityCoreCLRLevel override_level = mono_security_core_clr_method_level (override, FALSE);
 	MonoSecurityCoreCLRLevel base_level = mono_security_core_clr_method_level (base, FALSE);
-
-	if (override_level != base_level && base_level == MONO_SECURITY_CORE_CLR_CRITICAL)
-		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	/* if the base method is decorated with [SecurityCritical] then the overrided method MUST be too */
+	if (base_level == MONO_SECURITY_CORE_CLR_CRITICAL) {
+		MonoSecurityCoreCLRLevel override_level = mono_security_core_clr_method_level (override, FALSE);
+		if (override_level != MONO_SECURITY_CORE_CLR_CRITICAL)
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	}
 }
 
 
