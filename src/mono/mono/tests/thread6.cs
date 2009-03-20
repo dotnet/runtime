@@ -4,6 +4,7 @@ using System.Threading;
 public class MultiThreadExceptionTest {
 
 	public static int result = 0;
+	public static object started = new object ();
 	
 	public static void ThreadStart1 () {
 		Console.WriteLine("{0} started", 
@@ -12,6 +13,9 @@ public class MultiThreadExceptionTest {
 		try {
 			try {
 				try {
+					lock (started) {
+						Monitor.Pulse (started);
+					}
 					int i = 0;
 					try {
 						while (true) {
@@ -107,8 +111,11 @@ public class MultiThreadExceptionTest {
 		Thread.Sleep (100);
 		
 		t1.Start();
+
+		lock (started) {
+			Monitor.Wait (started);
+		}
 		
-		Thread.Sleep (300);
 		t1.Abort ("STATETEST");
 
 		t1.Join ();
