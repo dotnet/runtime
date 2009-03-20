@@ -2345,7 +2345,6 @@ mono/metadata/Makefile
 mono/dis/Makefile
 mono/cil/Makefile
 mono/arch/Makefile
-mono/os/Makefile
 mono/arch/x86/Makefile
 mono/arch/amd64/Makefile
 mono/arch/hppa/Makefile
