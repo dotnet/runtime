@@ -64,23 +64,25 @@ restart:
 
 		/* Manually init the defs entries used by the bblock */
 		MONO_BB_FOR_EACH_INS (bb, ins) {
+			int sregs [MONO_MAX_SRC_REGS];
+			int num_sregs, i;
+
 			if ((ins->dreg != -1) && (ins->dreg < max)) {
 				defs [ins->dreg] = NULL;
 #if SIZEOF_REGISTER == 4
 				defs [ins->dreg + 1] = NULL;
 #endif
 			}
-			if ((ins->sreg1 != -1) && (ins->sreg1 < max)) {
-				defs [ins->sreg1] = NULL;
+
+			num_sregs = mono_inst_get_src_registers (ins, sregs);
+			for (i = 0; i < num_sregs; ++i) {
+				int sreg = sregs [i];
+				if (sreg < max) {
+					defs [sreg] = NULL;
 #if SIZEOF_REGISTER == 4
-				defs [ins->sreg1 + 1] = NULL;
+					defs [sreg + 1] = NULL;
 #endif
-			}
-			if ((ins->sreg2 != -1) && (ins->sreg2 < max)) {
-				defs [ins->sreg2] = NULL;
-#if SIZEOF_REGISTER == 4
-				defs [ins->sreg2 + 1] = NULL;
-#endif
+				}
 			}
 		}
 
@@ -89,6 +91,8 @@ restart:
 		MONO_BB_FOR_EACH_INS (bb, ins) {
 			const char *spec = INS_INFO (ins->opcode);
 			int regtype, srcindex, sreg;
+			int num_sregs;
+			int sregs [MONO_MAX_SRC_REGS];
 
 			if (ins->opcode == OP_NOP) {
 				MONO_DELETE_INS (bb, ins);
@@ -123,11 +127,14 @@ restart:
 				}
 			}
 
-			for (srcindex = 0; srcindex < 2; ++srcindex) {
+			num_sregs = mono_inst_get_src_registers (ins, sregs);
+			for (srcindex = 0; srcindex < num_sregs; ++srcindex) {
 				MonoInst *def;
 
-				regtype = srcindex == 0 ? spec [MONO_INST_SRC1] : spec [MONO_INST_SRC2];
-				sreg = srcindex == 0 ? ins->sreg1 : ins->sreg2;
+				mono_inst_get_src_registers (ins, sregs);
+
+				regtype = spec [MONO_INST_SRC1 + srcindex];
+				sreg = sregs [srcindex];
 
 				if ((regtype == ' ') || (sreg == -1) || (!defs [sreg]))
 					continue;
@@ -163,10 +170,8 @@ restart:
 					int vreg = def->sreg1;
 
 					//printf ("CCOPY: R%d -> R%d\n", sreg, vreg);
-					if (srcindex == 0)
-						ins->sreg1 = vreg;
-					else
-						ins->sreg2 = vreg;
+					sregs [srcindex] = vreg;
+					mono_inst_set_src_registers (ins, sregs);
 
 					/* Allow further iterations */
 					srcindex = -1;
@@ -209,10 +214,8 @@ restart:
 						} else {
 							ins->inst_imm = def->inst_c0;
 						}
-						if (srcindex == 0)
-							ins->sreg1 = -1;
-						else
-							ins->sreg2 = -1;
+						sregs [srcindex] = -1;
+						mono_inst_set_src_registers (ins, sregs);
 
 						if ((opcode2 == OP_VOIDCALL) || (opcode2 == OP_CALL) || (opcode2 == OP_LCALL) || (opcode2 == OP_FCALL))
 							((MonoCallInst*)ins)->fptr = (gpointer)ins->inst_imm;
@@ -453,6 +456,8 @@ mono_local_deadce (MonoCompile *cfg)
 		/* Manually init the defs entries used by the bblock */
 		MONO_BB_FOR_EACH_INS (bb, ins) {
 			const char *spec = INS_INFO (ins->opcode);
+			int sregs [MONO_MAX_SRC_REGS];
+			int num_sregs, i;
 
 			if (spec [MONO_INST_DEST] != ' ') {
 				mono_bitset_clear_fast (used, ins->dreg);
@@ -463,16 +468,11 @@ mono_local_deadce (MonoCompile *cfg)
 				mono_bitset_clear_fast (defined, ins->dreg + 1);
 #endif
 			}
-			if (spec [MONO_INST_SRC1] != ' ') {
-				mono_bitset_clear_fast (used, ins->sreg1);
+			num_sregs = mono_inst_get_src_registers (ins, sregs);
+			for (i = 0; i < num_sregs; ++i) {
+				mono_bitset_clear_fast (used, sregs [i]);
 #if SIZEOF_REGISTER == 4
-				mono_bitset_clear_fast (used, ins->sreg1 + 1);
-#endif
-			}
-			if (spec [MONO_INST_SRC2] != ' ') {
-				mono_bitset_clear_fast (used, ins->sreg2);
-#if SIZEOF_REGISTER == 4
-				mono_bitset_clear_fast (used, ins->sreg2 + 1);
+				mono_bitset_clear_fast (used, sregs [i] + 1);
 #endif
 			}
 		}
@@ -482,6 +482,8 @@ mono_local_deadce (MonoCompile *cfg)
 		 */
 		MONO_BB_FOR_EACH_INS_REVERSE_SAFE (bb, prev, ins) {
 			const char *spec = INS_INFO (ins->opcode);
+			int sregs [MONO_MAX_SRC_REGS];
+			int num_sregs, i;
 
 			if (ins->opcode == OP_NOP) {
 				MONO_DELETE_INS (bb, ins);
@@ -546,10 +548,9 @@ mono_local_deadce (MonoCompile *cfg)
 
 			if (spec [MONO_INST_DEST] != ' ')
 				mono_bitset_set_fast (defined, ins->dreg);
-			if (spec [MONO_INST_SRC1] != ' ')
-				mono_bitset_set_fast (used, ins->sreg1);
-			if (spec [MONO_INST_SRC2] != ' ')
-				mono_bitset_set_fast (used, ins->sreg2);
+			num_sregs = mono_inst_get_src_registers (ins, sregs);
+			for (i = 0; i < num_sregs; ++i)
+				mono_bitset_set_fast (used, sregs [i]);
 			if (MONO_IS_STORE_MEMBASE (ins))
 				mono_bitset_set_fast (used, ins->dreg);
 

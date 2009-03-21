@@ -79,6 +79,9 @@ load_file (const char *name) {
 			} else if (strncmp (p, "src2:", 5) == 0) {
 				desc->spec [MONO_INST_SRC2] = p [5];
 				p += 6;
+			} else if (strncmp (p, "src3:", 5) == 0) {
+				desc->spec [MONO_INST_SRC3] = p [5];
+				p += 6;
 			} else if (strncmp (p, "clob:", 5) == 0) {
 				desc->spec [MONO_INST_CLOB] = p [5];
 				p += 6;

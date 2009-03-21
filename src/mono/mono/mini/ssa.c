@@ -178,6 +178,8 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, gboole
 	/* First pass: Create new vars */
 	for (ins = bb->code; ins; ins = ins->next) {
 		const char *spec = INS_INFO (ins->opcode);
+		int num_sregs;
+		int sregs [MONO_MAX_SRC_REGS];
 
 #ifdef DEBUG_SSA
 		printf ("\tProcessing "); mono_print_ins (ins);
@@ -185,42 +187,27 @@ mono_ssa_rename_vars (MonoCompile *cfg, int max_vars, MonoBasicBlock *bb, gboole
 		if (ins->opcode == OP_NOP)
 			continue;
 
-		/* SREG1 */
-		if (spec [MONO_INST_SRC1] != ' ') {
-			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
-			if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
-				int idx = var->inst_c0;
-				if (stack [idx]) {
-					if (var->opcode != OP_ARG)
-						g_assert (stack [idx]);
-					ins->sreg1 = stack [idx]->dreg;
-					record_use (cfg, stack [idx], bb, ins);
+		/* SREGs */
+		num_sregs = mono_inst_get_src_registers (ins, sregs);
+		for (i = 0; i < num_sregs; ++i) {
+			if (spec [MONO_INST_SRC1 + i] != ' ') {
+				MonoInst *var = get_vreg_to_inst (cfg, sregs [i]);
+				if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
+					int idx = var->inst_c0;
+					if (stack [idx]) {
+						if (var->opcode != OP_ARG)
+							g_assert (stack [idx]);
+						sregs [i] = stack [idx]->dreg;
+						record_use (cfg, stack [idx], bb, ins);
+					}
+					else
+						record_use (cfg, var, bb, ins);
 				}
-				else
-					record_use (cfg, var, bb, ins);
+				else if (G_UNLIKELY (!var && lvreg_stack [sregs [i]]))
+					sregs [i] = lvreg_stack [sregs [i]];
 			}
-			else if (G_UNLIKELY (!var && lvreg_stack [ins->sreg1]))
-				ins->sreg1 = lvreg_stack [ins->sreg1];
-		}					
-
-		/* SREG2 */
-		if (spec [MONO_INST_SRC2] != ' ') {
-			MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
-			if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))) {
-				int idx = var->inst_c0;
-				if (stack [idx]) {
-					if (var->opcode != OP_ARG)
-						g_assert (stack [idx]);
-
-					ins->sreg2 = stack [idx]->dreg;
-					record_use (cfg, stack [idx], bb, ins);
-				}
-				else
-					record_use (cfg, var, bb, ins);
-			}
-			else if (G_UNLIKELY (!var && lvreg_stack [ins->sreg2]))
-				ins->sreg2 = lvreg_stack [ins->sreg2];
 		}
+		mono_inst_set_src_registers (ins, sregs);
 
 		if (MONO_IS_STORE_MEMBASE (ins)) {
 			MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
@@ -565,6 +552,8 @@ mono_ssa_remove (MonoCompile *cfg)
 
 		for (ins = bb->code; ins; ins = ins->next) {
 			const char *spec = INS_INFO (ins->opcode);
+			int num_sregs, j;
+			int sregs [MONO_MAX_SRC_REGS];
 
 			if (ins->opcode == OP_NOP)
 				continue;
@@ -586,32 +575,20 @@ mono_ssa_remove (MonoCompile *cfg)
 				}
 			}
 
-			if (spec [MONO_INST_SRC1] != ' ') {
-				MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
+			num_sregs = mono_inst_get_src_registers (ins, sregs);
+			for (j = 0; j < num_sregs; ++j) {
+				MonoInst *var = get_vreg_to_inst (cfg, sregs [i]);
 
 				if (var) {
 					MonoMethodVar *vmv = MONO_VARINFO (cfg, var->inst_c0);
 
 					if ((vmv->reg != -1) && (vmv->idx != vmv->reg) && (MONO_VARINFO (cfg, vmv->reg)->reg != -1)) {
-						printf ("COALESCE: R%d -> R%d\n", ins->sreg1, cfg->varinfo [vmv->reg]->dreg);
-						ins->sreg1 = cfg->varinfo [vmv->reg]->dreg; 
+						printf ("COALESCE: R%d -> R%d\n", sregs [i], cfg->varinfo [vmv->reg]->dreg);
+						sregs [i] = cfg->varinfo [vmv->reg]->dreg;
 					}
 				}
 			}
-
-			if (spec [MONO_INST_SRC2] != ' ') {
-				MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
-
-				if (var) {
-					MonoMethodVar *vmv = MONO_VARINFO (cfg, var->inst_c0);
-
-					if ((vmv->reg != -1) && (vmv->idx != vmv->reg) && (MONO_VARINFO (cfg, vmv->reg)->reg != -1)) {
-						printf ("COALESCE: R%d -> R%d\n", ins->sreg2, cfg->varinfo [vmv->reg]->dreg);
-						ins->sreg2 = cfg->varinfo [vmv->reg]->dreg; 
-					}
-				}
-			}
-
+			mono_inst_set_src_registers (ins, sregs);
 		}
 	}
 
@@ -640,24 +617,20 @@ mono_ssa_create_def_use (MonoCompile *cfg)
 		for (ins = bb->code; ins; ins = ins->next) {
 			const char *spec = INS_INFO (ins->opcode);
 			MonoMethodVar *info;
+			int num_sregs;
+			int sregs [MONO_MAX_SRC_REGS];
 
 			if (ins->opcode == OP_NOP)
 				continue;
 
-			/* SREG1 */
-			if (spec [MONO_INST_SRC1] != ' ') {
-				MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
+			/* SREGs */
+			num_sregs = mono_inst_get_src_registers (ins, sregs);
+			for (i = 0; i < num_sregs; ++i) {
+				MonoInst *var = get_vreg_to_inst (cfg, sregs [i]);
 				if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
 					record_use (cfg, var, bb, ins);
 			}
 
-			/* SREG2 */
-			if (spec [MONO_INST_SRC2] != ' ') {
-				MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
-				if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
-					record_use (cfg, var, bb, ins);
-			}
-				
 			if (MONO_IS_STORE_MEMBASE (ins)) {
 				MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
 				if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
@@ -713,13 +686,20 @@ mono_ssa_copyprop (MonoCompile *cfg)
 					MonoVarUsageInfo *u = (MonoVarUsageInfo*)l->data;
 					MonoInst *ins = u->inst;
 					GList *next = l->next;
+					int num_sregs;
+					int sregs [MONO_MAX_SRC_REGS];
 
 					spec = INS_INFO (ins->opcode);
 
-					if (spec [MONO_INST_SRC1] != ' ' && ins->sreg1 == dreg) {
-						ins->sreg1 = sreg1;
-					} else if (spec [MONO_INST_SRC2] != ' ' && ins->sreg2 == dreg) {
-						ins->sreg2 = sreg1;
+					num_sregs = mono_inst_get_src_registers (ins, sregs);
+					for (i = 0; i < num_sregs; ++i) {
+						if (sregs [i] == dreg)
+							break;
+					}
+					if (i < num_sregs) {
+						g_assert (sregs [i] == dreg);
+						sregs [i] = sreg1;
+						mono_inst_set_src_registers (ins, sregs);
 					} else if (MONO_IS_STORE_MEMBASE (ins) && ins->dreg == dreg) {
 						ins->dreg = sreg1;
 					} else if (MONO_IS_PHI (ins)) {
@@ -755,10 +735,13 @@ mono_ssa_copyprop (MonoCompile *cfg)
 static int
 evaluate_ins (MonoCompile *cfg, MonoInst *ins, MonoInst **res, MonoInst **carray)
 {
-	MonoInst *arg0, *arg1, *c0;
-	int r1, r2;
-	gboolean const_args = FALSE;
+	MonoInst *args [MONO_MAX_SRC_REGS];
+	int rs [MONO_MAX_SRC_REGS];
+	MonoInst *c0;
+	gboolean const_args = TRUE;
 	const char *spec = INS_INFO (ins->opcode);
+	int num_sregs, i;
+	int sregs [MONO_MAX_SRC_REGS];
 
 	/* Short-circuit this */
 	if (ins->opcode == OP_ICONST) {
@@ -769,52 +752,32 @@ evaluate_ins (MonoCompile *cfg, MonoInst *ins, MonoInst **res, MonoInst **carray
 	if (ins->opcode == OP_NOP)
 		return 2;
 
-	arg0 = NULL;
-	if (spec [MONO_INST_SRC1] != ' ') {
-		MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
+	num_sregs = mono_inst_get_src_registers (ins, sregs);
+	for (i = 0; i < MONO_MAX_SRC_REGS; ++i)
+		args [i] = NULL;
+	for (i = 0; i < num_sregs; ++i) {
+		MonoInst *var = get_vreg_to_inst (cfg, sregs [i]);
 
-		r1 = 2;
-		arg0 = carray [ins->sreg1];
-		if (arg0)
-			r1 = 1;
+		rs [i] = 2;
+		args [i] = carray [sregs [i]];
+		if (args [i])
+			rs [i] = 1;
 		else if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
-			r1 = MONO_VARINFO (cfg, var->inst_c0)->cpstate;
-	} else {
-		r1 = 2;
-	}
-
-	arg1 = NULL;
-	if (spec [MONO_INST_SRC2] != ' ') {
-		MonoInst *var = get_vreg_to_inst (cfg, ins->sreg2);
-
-		r2 = 2;
-		arg1 = carray [ins->sreg2];
-		if (arg1)
-			r2 = 1;
-		else if (var && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
-			r2 = MONO_VARINFO (cfg, var->inst_c0)->cpstate;
-	}
-	else {
-		r2 = 0;
+			rs [i] = MONO_VARINFO (cfg, var->inst_c0)->cpstate;
+		if (rs [i] != 1)
+			const_args = FALSE;
 	}
 
 	c0 = NULL;
-	if ((spec [MONO_INST_SRC1] != ' ') && (spec [MONO_INST_SRC2] != ' ')) {
-		/* Binop */
-		const_args = (r1 == 1) && (r2 == 1);
-	}
-	else if (spec [MONO_INST_SRC1] != ' ') {
-		/* Unop */
-		const_args = (r1 == 1);
-	}
 
-	if (const_args) {
+	if (num_sregs > 0 && const_args) {
+		g_assert (num_sregs <= 2);
 		if ((spec [MONO_INST_DEST] != ' ') && carray [ins->dreg]) {
 			// Cached value
 			*res = carray [ins->dreg];
 			return 1;
 		}
-		c0 = mono_constant_fold_ins (cfg, ins, arg0, arg1, FALSE);
+		c0 = mono_constant_fold_ins (cfg, ins, args [0], args [1], FALSE);
 		if (c0) {
 			if (G_UNLIKELY (cfg->verbose_level > 1)) {
 				printf ("\t cfold -> ");
@@ -828,22 +791,13 @@ evaluate_ins (MonoCompile *cfg, MonoInst *ins, MonoInst **res, MonoInst **carray
 			return 2;
 	}
 
-	if ((spec [MONO_INST_SRC1] != ' ') && (spec [MONO_INST_SRC2] != ' ')) {
-		/* Binop */
-		if ((r1 == 2) || (r2 == 2))
-			return 2;
-		else
-			return 0;
-	}
-	else if (spec [MONO_INST_SRC1] != ' ') {
-		/* Unop */
-		if (r1 == 2)
-			return 2;
-		else
-			return 0;
-	}
-	else
+	if (num_sregs == 0)
 		return 2;
+	for (i = 0; i < num_sregs; ++i) {
+		if (rs [i] == 2)
+			return 2;
+	}
+	return 0;
 }
 
 static inline void
@@ -1070,6 +1024,7 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 {
 	const char *spec = INS_INFO (ins->opcode);
 	int opcode2;
+	int num_sregs = mono_inst_get_num_src_registers (ins);
 
 	if ((ins->opcode != OP_NOP) && (ins->dreg != -1) && !MONO_IS_STORE_MEMBASE (ins)) {
 		if (carray [ins->dreg] && (spec [MONO_INST_DEST] == 'i') && (ins->dreg >= MONO_MAX_IREGS)) {
@@ -1078,9 +1033,8 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 			g_assert (carray [ins->dreg]->opcode == OP_ICONST);
 			ins->opcode = OP_ICONST;
 			ins->inst_c0 = carray [ins->dreg]->inst_c0;
-			ins->sreg1 = ins->sreg2 = -1;
-		}
-		else if ((spec [MONO_INST_SRC2] != ' ') && carray [ins->sreg2]) {
+			MONO_INST_NULLIFY_SREGS (ins);
+		} else if (num_sregs == 2 && carray [ins->sreg2]) {
 			/* Perform op->op_imm conversion */
 			opcode2 = mono_op_to_op_imm (ins->opcode);
 			if (opcode2 != -1) {
@@ -1091,6 +1045,8 @@ fold_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **carray
 				if ((opcode2 == OP_VOIDCALL) || (opcode2 == OP_CALL) || (opcode2 == OP_LCALL) || (opcode2 == OP_FCALL))
 					((MonoCallInst*)ins)->fptr = (gpointer)ins->inst_imm;
 			}
+		} else {
+			/* FIXME: Handle 3 op insns */
 		}
 
 		if (MONO_IS_JUMP_TABLE (ins)) {

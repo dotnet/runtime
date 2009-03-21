@@ -78,7 +78,8 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 
 	for (ins = bb->code; ins; ins = ins->next) {
 		const char *spec = INS_INFO (ins->opcode);
-		int regtype, srcindex, sreg;
+		int regtype, srcindex, sreg, num_sregs;
+		int sregs [MONO_MAX_SRC_REGS];
 
 		if (ins->opcode == OP_NOP)
 			continue;
@@ -96,12 +97,14 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 		}
 			
 		/* SREGS */
-		for (srcindex = 0; srcindex < 2; ++srcindex) {
+		num_sregs = mono_inst_get_src_registers (ins, sregs);
+		g_assert (num_sregs <= 2);
+		for (srcindex = 0; srcindex < num_sregs; ++srcindex) {
 			regtype = spec [(srcindex == 0) ? MONO_INST_SRC1 : MONO_INST_SRC2];
-			sreg = srcindex == 0 ? ins->sreg1 : ins->sreg2;
-			
-			g_assert (((sreg == -1) && (regtype == ' ')) || ((sreg != -1) && (regtype != ' ')));
-			if ((sreg != -1) && get_vreg_to_inst (cfg, sreg)) {
+			sreg = sregs [srcindex];
+
+			g_assert (sreg != -1);
+			if (get_vreg_to_inst (cfg, sreg)) {
 				MonoInst *var = get_vreg_to_inst (cfg, sreg);
 				int idx = var->inst_c0;
 				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
@@ -166,6 +169,8 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 	
 	for (inst_num = 0, ins = bb->code; ins; ins = ins->next, inst_num += 2) {
 		const char *spec = INS_INFO (ins->opcode);
+		int num_sregs, i;
+		int sregs [MONO_MAX_SRC_REGS];
 
 #ifdef DEBUG_LIVENESS
 			printf ("\t"); mono_print_ins (ins);
@@ -189,37 +194,22 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 		}				
 
 		/* SREGs must come first, so MOVE r <- r is handled correctly */
-
-		/* SREG1 */
-		sreg = ins->sreg1;
-		if ((spec [MONO_INST_SRC1] != ' ') && get_vreg_to_inst (cfg, sreg)) {
-			MonoInst *var = get_vreg_to_inst (cfg, sreg);
-			int idx = var->inst_c0;
-			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
-
-#ifdef DEBUG_LIVENESS
-			printf ("\tGEN: R%d(%d)\n", sreg, idx);
-#endif
-			update_live_range (&vars [idx], abs_pos + inst_num); 
-			if (!mono_bitset_test_fast (bb->kill_set, idx))
-				mono_bitset_set_fast (bb->gen_set, idx);
-			vi->spill_costs += SPILL_COST_INCREMENT;
-		}
-
-		/* SREG2 */
-		sreg = ins->sreg2;
-		if ((spec [MONO_INST_SRC2] != ' ') && get_vreg_to_inst (cfg, sreg)) {
-			MonoInst *var = get_vreg_to_inst (cfg, sreg);
-			int idx = var->inst_c0;
-			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
+		num_sregs = mono_inst_get_src_registers (ins, sregs);
+		for (i = 0; i < num_sregs; ++i) {
+			sreg = sregs [i];
+			if ((spec [MONO_INST_SRC1 + i] != ' ') && get_vreg_to_inst (cfg, sreg)) {
+				MonoInst *var = get_vreg_to_inst (cfg, sreg);
+				int idx = var->inst_c0;
+				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
 #ifdef DEBUG_LIVENESS
-			printf ("\tGEN: R%d(%d)\n", sreg, idx);
+				printf ("\tGEN: R%d(%d)\n", sreg, idx);
 #endif
-			update_live_range (&vars [idx], abs_pos + inst_num); 
-			if (!mono_bitset_test_fast (bb->kill_set, idx))
-				mono_bitset_set_fast (bb->gen_set, idx);
-			vi->spill_costs += SPILL_COST_INCREMENT;
+				update_live_range (&vars [idx], abs_pos + inst_num); 
+				if (!mono_bitset_test_fast (bb->kill_set, idx))
+					mono_bitset_set_fast (bb->gen_set, idx);
+				vi->spill_costs += SPILL_COST_INCREMENT;
+			}
 		}
 
 		/* DREG */
@@ -512,12 +502,13 @@ optimize_initlocals (MonoCompile *cfg)
 	mono_bitset_clear_all (used);
 	initlocals_bb = cfg->bb_entry->next_bb;
 	for (ins = initlocals_bb->code; ins; ins = ins->next) {
-		const char *spec = INS_INFO (ins->opcode);
+		int num_sregs, i;
+		int sregs [MONO_MAX_SRC_REGS];
 
-		if (spec [MONO_INST_SRC1] != ' ')
-			mono_bitset_set_fast (used, ins->sreg1);
-		if (spec [MONO_INST_SRC2] != ' ')
-			mono_bitset_set_fast (used, ins->sreg2);
+		num_sregs = mono_inst_get_src_registers (ins, sregs);
+		for (i = 0; i < num_sregs; ++i)
+			mono_bitset_set_fast (used, sregs [i]);
+
 		if (MONO_IS_STORE_MEMBASE (ins))
 			mono_bitset_set_fast (used, ins->dreg);
 	}
@@ -699,6 +690,8 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 {
 	const char *spec = INS_INFO (ins->opcode);
 	int sreg;
+	int num_sregs, i;
+	int sregs [MONO_MAX_SRC_REGS];
 
 	LIVENESS_DEBUG (printf ("\t%x: ", inst_num); mono_print_ins (ins));
 
@@ -727,7 +720,8 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 				if ((var != cfg->ret) && !(var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST)) && !(var->flags & MONO_INST_VOLATILE)) {
 					LIVENESS_DEBUG (printf ("\tdead def of R%d, eliminated\n", ins->dreg));
 					ins->opcode = OP_NOP;
-					ins->dreg = ins->sreg1 = ins->sreg2 = -1;
+					ins->dreg = -1;
+					MONO_INST_NULLIFY_SREGS (ins);
 					return;
 				}
 
@@ -737,27 +731,18 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 		}
 	}
 
-	/* SREG1 */
-	sreg = ins->sreg1;
-	if ((spec [MONO_INST_SRC1] != ' ') && get_vreg_to_inst (cfg, sreg)) {
-		MonoInst *var = get_vreg_to_inst (cfg, sreg);
-		int idx = var->inst_c0;
+	/* SREGs */
+	num_sregs = mono_inst_get_src_registers (ins, sregs);
+	for (i = 0; i < num_sregs; ++i) {
+		sreg = sregs [i];
+		if ((spec [MONO_INST_SRC1 + i] != ' ') && get_vreg_to_inst (cfg, sreg)) {
+			MonoInst *var = get_vreg_to_inst (cfg, sreg);
+			int idx = var->inst_c0;
 
-		if (last_use [idx] == 0) {
-			LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", sreg, inst_num));
-			last_use [idx] = inst_num;
-		}
-	}
-
-	/* SREG2 */
-	sreg = ins->sreg2;
-	if ((spec [MONO_INST_SRC2] != ' ') && get_vreg_to_inst (cfg, sreg)) {
-		MonoInst *var = get_vreg_to_inst (cfg, sreg);
-		int idx = var->inst_c0;
-
-		if (last_use [idx] == 0) {
-			LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", sreg, inst_num));
-			last_use [idx] = inst_num;
+			if (last_use [idx] == 0) {
+				LIVENESS_DEBUG (printf ("\tlast use of R%d set to %x\n", sreg, inst_num));
+				last_use [idx] = inst_num;
+			}
 		}
 	}
 }

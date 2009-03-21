@@ -121,7 +121,11 @@ extern MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline;
 #ifdef MINI_OP
 #undef MINI_OP
 #endif
-#define MINI_OP(a,b,dest,src1,src2) dest, src1, src2,
+#ifdef MINI_OP3
+#undef MINI_OP3
+#endif
+#define MINI_OP(a,b,dest,src1,src2) dest, src1, src2, ' ',
+#define MINI_OP3(a,b,dest,src1,src2,src3) dest, src1, src2, src3,
 #define NONE ' '
 #define IREG 'i'
 #define FREG 'f'
@@ -138,6 +142,15 @@ ins_info[] = {
 #include "mini-ops.h"
 };
 #undef MINI_OP
+#undef MINI_OP3
+
+#define MINI_OP(a,b,dest,src1,src2) (((src1) != NONE) + ((src2) != NONE)),
+#define MINI_OP3(a,b,dest,src1,src2,src3) (((src1) != NONE) + ((src2) != NONE) + ((src3) != NONE))
+const gint8 ins_sreg_counts[] = {
+#include "mini-ops.h"
+};
+#undef MINI_OP
+#undef MINI_OP3
 
 extern GHashTable *jit_icall_name_hash;
 
@@ -146,6 +159,43 @@ extern GHashTable *jit_icall_name_hash;
 	(vi)->reg = -1; \
 	(vi)->idx = (id); \
 } while (0)
+
+void
+mini_init_op_sreg_counts (void)
+{
+	int i;
+
+	g_assert (sizeof (ins_sreg_counts) == sizeof (ins_info) / 4);
+
+	for (i = 0; i < sizeof (ins_sreg_counts); ++i) {
+		int opcode = i + OP_START + 1;
+		const char *spec = INS_INFO (opcode);
+		int count;
+
+		if (spec [MONO_INST_SRC1] == ' ') {
+			g_assert (spec [MONO_INST_SRC2] == ' ');
+			g_assert (spec [MONO_INST_SRC3] == ' ');
+			count = 0;
+		} else if (spec [MONO_INST_SRC2] == ' ') {
+			g_assert (spec [MONO_INST_SRC3] == ' ');
+			count = 1;
+		} else if (spec [MONO_INST_SRC3] == ' ') {
+			count = 2;
+		} else {
+			count = 3;
+		}
+
+		g_assert (ins_sreg_counts [i] == count);
+	}
+}
+
+void
+mono_inst_set_src_registers (MonoInst *ins, int *regs)
+{
+	ins->sreg1 = regs [0];
+	ins->sreg2 = regs [1];
+	ins->sreg3 = regs [2];
+}
 
 guint32
 mono_alloc_ireg (MonoCompile *cfg)
@@ -10389,8 +10439,9 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 		cfg->cbb = bb;
 		MONO_BB_FOR_EACH_INS (bb, ins) {
 			const char *spec = INS_INFO (ins->opcode);
-			int regtype, srcindex, sreg, tmp_reg, prev_dreg;
+			int regtype, srcindex, sreg, tmp_reg, prev_dreg, num_sregs;
 			gboolean store, no_lvreg;
+			int sregs [MONO_MAX_SRC_REGS];
 
 			if (G_UNLIKELY (cfg->verbose_level > 2))
 				mono_print_ins (ins);
@@ -10611,6 +10662,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					g_assert (load_opcode != OP_LOADV_MEMBASE);
 
 					if (vreg_to_lvreg [sreg]) {
+						g_assert (vreg_to_lvreg [sreg] != -1);
+
 						/* The variable is already loaded to an lvreg */
 						if (G_UNLIKELY (cfg->verbose_level > 2))
 							printf ("\t\tUse lvreg R%d for R%d.\n", vreg_to_lvreg [sreg], sreg);
@@ -10648,6 +10701,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 									 */
 									sreg = ins->dreg;
 								}
+								g_assert (sreg != -1);
 								vreg_to_lvreg [var->dreg] = sreg;
 								g_assert (lvregs_len < 1024);
 								lvregs [lvregs_len ++] = var->dreg;
@@ -10684,6 +10738,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 			}
 
 			if (dest_has_lvreg) {
+				g_assert (ins->dreg != -1);
 				vreg_to_lvreg [prev_dreg] = ins->dreg;
 				g_assert (lvregs_len < 1024);
 				lvregs [lvregs_len ++] = prev_dreg;
@@ -10701,6 +10756,9 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				for (i = 0; i < lvregs_len; i++)
 					vreg_to_lvreg [lvregs [i]] = 0;
 				lvregs_len = 0;
+			} else if (ins->opcode == OP_NOP) {
+				ins->dreg = -1;
+				MONO_INST_NULLIFY_SREGS (ins);
 			}
 
 			if (cfg->verbose_level > 2)

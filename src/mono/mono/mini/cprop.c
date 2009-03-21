@@ -96,6 +96,9 @@ local_copy_prop (MonoCompile *cfg, MonoInst *code)
 			}
 		}
 
+		if (mono_inst_get_src_registers (ins, NULL) > 2)
+			NOT_IMPLEMENTED;
+
 		/* invalidate pairs */
 		if (spec [MONO_INST_DEST] == 'f') {
 			acp = remove_acp (acp, ins->dreg, 'f');

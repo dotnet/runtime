@@ -86,7 +86,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->opcode = (op);	\
         (dest)->flags = 0; \
         (dest)->type = 0; \
-        (dest)->dreg = (dest)->sreg1 = (dest)->sreg2 = -1;  \
+        (dest)->dreg = -1;  \
+	MONO_INST_NULLIFY_SREGS ((dest));		    \
         (dest)->cil_code = (cfg)->ip;  \
 	} while (0)
 

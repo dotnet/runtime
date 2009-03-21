@@ -358,16 +358,18 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 
 			/* Create dummy MonoInst's for the arguments */
 			g_assert (!info->sig->hasthis);
-			g_assert (info->sig->param_count <= 2);
+			g_assert (info->sig->param_count <= MONO_MAX_SRC_REGS);
 
 			args = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * info->sig->param_count);
 			if (info->sig->param_count > 0) {
-				MONO_INST_NEW (cfg, args [0], OP_ARG);
-				args [0]->dreg = ins->sreg1;
-			}
-			if (info->sig->param_count > 1) {
-				MONO_INST_NEW (cfg, args [1], OP_ARG);
-				args [1]->dreg = ins->sreg2;
+				int sregs [MONO_MAX_SRC_REGS];
+				int num_sregs, i;
+				num_sregs = mono_inst_get_src_registers (ins, sregs);
+				g_assert (num_sregs == info->sig->param_count);
+				for (i = 0; i < num_sregs; ++i) {
+					MONO_INST_NEW (cfg, args [i], OP_ARG);
+					args [i]->dreg = sregs [i];
+				}
 			}
 
 			call = mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);

@@ -149,17 +149,23 @@ enum {
 
 #define MONO_VARINFO(cfg,varnum) (&(cfg)->vars [varnum])
 
+#define MONO_INST_NULLIFY_SREGS(dest) do {				\
+		(dest)->sreg1 = (dest)->sreg2 = (dest)->sreg3 = -1;	\
+	} while (0)
+
 #define MONO_INST_NEW(cfg,dest,op) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = (op);	\
-        (dest)->dreg = (dest)->sreg1 = (dest)->sreg2 = -1;  \
+		(dest)->dreg = -1;			    \
+		MONO_INST_NULLIFY_SREGS ((dest));	    \
         (dest)->cil_code = (cfg)->ip;  \
 	} while (0)
 
 #define MONO_INST_NEW_CALL(cfg,dest,op) do {	\
 		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallInst));	\
 		(dest)->inst.opcode = (op);	\
-        (dest)->inst.dreg = (dest)->inst.sreg1 = (dest)->inst.sreg2 = -1;  \
+		(dest)->inst.dreg = -1;					\
+		MONO_INST_NULLIFY_SREGS (&(dest)->inst);		\
         (dest)->inst.cil_code = (cfg)->ip;  \
 	} while (0)
 
@@ -180,7 +186,8 @@ enum {
 
 #define NULLIFY_INS(ins) do { \
         (ins)->opcode = OP_NOP; \
-        (ins)->dreg = (ins)->sreg1 = (ins)->sreg2 = -1; \
+        (ins)->dreg = -1;				\
+	MONO_INST_NULLIFY_SREGS ((ins));		\
 		(ins)->ssa_op = MONO_SSA_NOP; \
     } while (0)
 
@@ -285,9 +292,13 @@ extern gboolean mono_do_x86_stack_align;
 extern const char *mono_build_date;
 extern gboolean mono_do_signal_chaining;
 
-#define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 3])
+#define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 4])
 
 extern const char ins_info[];
+extern const gint8 ins_sreg_counts [];
+
+#define mono_inst_get_num_src_registers(ins) (ins_sreg_counts [(ins)->opcode - OP_START - 1])
+#define mono_inst_get_src_registers(ins, regs) (((regs) [0] = (ins)->sreg1), ((regs) [1] = (ins)->sreg2), ((regs) [2] = (ins)->sreg3), mono_inst_get_num_src_registers ((ins)))
 
 #define MONO_BB_FOR_EACH_INS(bb, ins) for ((ins) = (bb)->code; (ins); (ins) = (ins)->next)
 
@@ -430,6 +441,8 @@ typedef struct MonoMemcpyArgs {
 	int size, align;
 } MonoMemcpyArgs;
 
+#define MONO_MAX_SRC_REGS	3
+
 struct MonoInst {
  	guint16 opcode;
 	guint8  type; /* stack type */
@@ -437,7 +450,7 @@ struct MonoInst {
 	guint8  flags  : 5;
 	
 	/* used by the register allocator */
-	gint32 dreg, sreg1, sreg2;
+	gint32 dreg, sreg1, sreg2, sreg3;
 
 	MonoInst *next, *prev;
 
@@ -582,8 +595,9 @@ enum {
 /* instruction description for use in regalloc/scheduling */
 enum {
 	MONO_INST_DEST,
-	MONO_INST_SRC1,
+	MONO_INST_SRC1,		/* we depend on the SRCs to be consecutive */
 	MONO_INST_SRC2,
+	MONO_INST_SRC3,
 	MONO_INST_LEN,
 	MONO_INST_CLOB,
 	/* Unused, commented out to reduce the size of the mdesc tables
@@ -1001,13 +1015,18 @@ enum {
 #ifdef MINI_OP
 #undef MINI_OP
 #endif
+#ifdef MINI_OP3
+#undef MINI_OP3
+#endif
 #define MINI_OP(a,b,dest,src1,src2) a,
+#define MINI_OP3(a,b,dest,src1,src2,src3) a,
 enum {
 	OP_START = MONO_CEE_LAST - 1,
 #include "mini-ops.h"
 	OP_LAST
 };
 #undef MINI_OP
+#undef MINI_OP3
 
 #if SIZEOF_VOID_P == 8
 #define OP_PCONST OP_I8CONST
@@ -1223,6 +1242,8 @@ void      mono_print_code                   (MonoCompile *cfg, const char *msg) 
 void      mono_print_method_from_ip         (void *ip);
 char     *mono_pmip                         (void *ip);
 const char* mono_inst_name                  (int op);
+void	  mini_init_op_sreg_counts	    (void) MONO_INTERNAL;
+void      mono_inst_set_src_registers       (MonoInst *ins, int *regs) MONO_INTERNAL;
 int       mono_op_to_op_imm                 (int opcode) MONO_INTERNAL;
 int       mono_op_imm_to_op                 (int opcode) MONO_INTERNAL;
 int       mono_load_membase_to_load_mem     (int opcode) MONO_INTERNAL;

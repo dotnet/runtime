@@ -8,6 +8,7 @@
  * (C) 2003 Ximian, Inc.  http://www.ximian.com
  */
 #include "mini.h"
+#include "ir-emit.h"
 
 int
 mono_is_power_of_two (guint32 val)
@@ -58,15 +59,6 @@ mono_is_power_of_two (guint32 val)
 	    res = (cast)arg1->inst_c0 op (cast)arg2->inst_c0;	\
         break; \
 
-#undef MONO_INST_NEW
-#define MONO_INST_NEW(cfg,dest,op) do {	\
-		(dest) = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoInst));	\
-        (dest)->inst_p0 = (dest)->inst_p1 = (dest)->next = NULL; \
-		(dest)->opcode = (op);	\
-        (dest)->flags = 0; \
-        (dest)->dreg = (dest)->sreg1 = (dest)->sreg2 = -1;  \
-	} while (0)
-
 #define ALLOC_DEST(cfg, dest, ins) do { \
     if (!(dest)) { \
         MONO_INST_NEW ((cfg), (dest), -1); \
@@ -107,7 +99,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 					FOLD_BINOP (OP_IXOR, ^);
 				}
 				dest->opcode = OP_ICONST;
-				dest->sreg1 = dest->sreg2 = -1;
+				MONO_INST_NULLIFY_SREGS (dest);
 			}
 		} else if (arg1->opcode == OP_ICONST) {
 			/* 
@@ -148,7 +140,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_BINOP2_IMM (OP_SHL_IMM, <<);
 			}
 			dest->opcode = OP_ICONST;
-			dest->sreg1 = dest->sreg2 = -1;
+			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
 	case OP_ISUB:
@@ -164,7 +156,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_BINOPC (OP_ISHR_UN, >>, guint32);
 			}
 			dest->opcode = OP_ICONST;
-			dest->sreg1 = dest->sreg2 = -1;
+			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
 	case OP_IDIV:
@@ -182,7 +174,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_BINOPC (OP_IREM_UN, %, guint32);
 			}
 			dest->opcode = OP_ICONST;
-			dest->sreg1 = dest->sreg2 = -1;
+			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
 	case OP_IDIV_IMM:
@@ -202,7 +194,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				g_assert_not_reached ();
 			}
 			dest->opcode = OP_ICONST;
-			dest->sreg1 = dest->sreg2 = -1;
+			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
 		/* case OP_INEG: */
@@ -218,7 +210,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_UNOP (OP_INOT,~);
 			}
 			dest->opcode = OP_ICONST;
-			dest->sreg1 = dest->sreg2 = -1;
+			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
 	case OP_MOVE:
@@ -229,7 +221,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 #endif
 			ALLOC_DEST (cfg, dest, ins);
 			dest->opcode = arg1->opcode;
-			dest->sreg1 = dest->sreg2 = -1;
+			MONO_INST_NULLIFY_SREGS (dest);
 			dest->inst_c0 = arg1->inst_c0;
 		}
 		break;
@@ -290,7 +282,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 					NULLIFY_INS (ins);
 					next->opcode = OP_ICONST;
 					next->inst_c0 = res;
-					next->sreg1 = next->sreg2 = -1;
+					MONO_INST_NULLIFY_SREGS (next);
 				} else {
 					ALLOC_DEST (cfg, dest, ins);
 					dest->opcode = OP_ICONST;
