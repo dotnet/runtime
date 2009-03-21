@@ -22,6 +22,9 @@ typedef enum {
 
 extern gboolean mono_security_core_clr_test;
 
+extern void mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field) MONO_INTERNAL;
+extern void mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method) MONO_INTERNAL;
+
 extern MonoSecurityCoreCLRLevel mono_security_core_clr_class_level (MonoClass *class) MONO_INTERNAL;
 extern MonoSecurityCoreCLRLevel mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_level) MONO_INTERNAL;
 

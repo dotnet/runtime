@@ -12,6 +12,8 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/exception.h>
 
 #include "security-core-clr.h"
 
@@ -41,6 +43,109 @@ security_safe_critical_attribute (void)
 	}
 	g_assert (class);
 	return class;
+}
+
+static gboolean
+get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
+{
+	MonoMethod **dest = data;
+	const char *ns;
+
+	/* skip unmanaged frames */
+	if (!managed)
+		return FALSE;
+
+	if (m->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	/* quick out (any namespace not starting with an 'S' */
+	ns = m->klass->name_space;
+	if (!ns || (*ns != 'S')) {
+		*dest = m;
+		return TRUE;
+	}
+
+	/* stop if the method is not part of platform code */
+	if (!mono_security_core_clr_is_platform_image (m->klass->image)) {
+		*dest = m;
+		return TRUE;
+	}
+
+	/* any number of calls inside System.Reflection are allowed */
+	if (strcmp (ns, "System.Reflection") == 0)
+		return FALSE;
+
+	/* any number of calls inside System.Reflection are allowed */
+	if (strcmp (ns, "System.Reflection.Emit") == 0)
+		return FALSE;
+
+	/* calls from System.Delegate are also possible and allowed */
+	if (strcmp (ns, "System") == 0) {
+		const char *kname = m->klass->name;
+		if ((*kname == 'D') && (strcmp (kname, "Delegate") == 0))
+			return FALSE;
+		if ((*kname == 'M') && (strcmp (kname, "MulticastDelegate")) == 0)
+			return FALSE;
+		if ((*kname == 'A') && (strcmp (kname, "Activator") == 0))
+			return FALSE;
+	}
+
+	if (m == *dest) {
+		*dest = NULL;
+		return FALSE;
+	}
+
+	*dest = m;
+	return TRUE;
+}
+
+/* walk to the first managed method outside:
+ *  - System.Reflection* namespaces
+ *  - System.[MulticastDelegate]Delegate or Activator type
+ *  - platform code
+ *  and return its value, since CoreCLR checks needs to be done on this "real" caller.
+ */
+static MonoMethod*
+get_reflection_caller (void)
+{
+	MonoMethod *m = mono_method_get_last_managed ();
+	mono_stack_walk_no_il (get_caller_no_reflection_related, &m);
+	return m;
+}
+
+void
+mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field)
+{
+	MonoClass *klass = mono_field_get_parent (field);
+
+	/* under CoreCLR you cannot use the value (get/set) of the reflected field: */
+	MonoMethod *caller = get_reflection_caller ();
+
+	/* (a) of a Critical type when called from a Transparent caller */
+	if (mono_security_core_clr_class_level (klass) == MONO_SECURITY_CORE_CLR_CRITICAL) {
+		if (mono_security_core_clr_method_level (caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
+			mono_raise_exception (mono_get_exception_field_access ());
+	}
+	/* (b) that are not accessible from the caller pov */
+	if (!mono_method_can_access_field_full (caller, field, klass))
+		mono_raise_exception (mono_get_exception_field_access ());
+}
+
+void
+mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
+{
+	MonoMethod *caller = get_reflection_caller ();
+	/* CoreCLR restrictions applies to Transparent code/caller */
+	if (mono_security_core_clr_method_level (caller, TRUE) != MONO_SECURITY_CORE_CLR_TRANSPARENT)
+		return;
+
+	/* Transparent code cannot invoke, even using reflection, Critical code */
+	if (mono_security_core_clr_method_level (method, TRUE) == MONO_SECURITY_CORE_CLR_CRITICAL)
+		mono_raise_exception (mono_get_exception_method_access ());
+
+	/* also it cannot invoke a method that is not visible from it's (caller) point of view */
+	if (!mono_method_can_access_method_full (caller, method, (method->flags & METHOD_ATTRIBUTE_STATIC) ? NULL : method->klass))
+		mono_raise_exception (mono_get_exception_method_access ());
 }
 
 static MonoSecurityCoreCLRLevel

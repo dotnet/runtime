@@ -668,6 +668,28 @@ mono_get_exception_out_of_memory (void)
 }
 
 /**
+ * mono_get_exception_field_access:
+ *
+ * Returns: a new instance of the System.FieldAccessException
+ */
+MonoException *
+mono_get_exception_field_access (void)
+{
+	return mono_exception_from_name (mono_get_corlib (), "System", "FieldAccessException");
+}
+
+/**
+ * mono_get_exception_method_access:
+ *
+ * Returns: a new instance of the System.MethodAccessException
+ */
+MonoException *
+mono_get_exception_method_access (void)
+{
+	return mono_exception_from_name (mono_get_corlib (), "System", "MethodAccessException");
+}
+
+/**
  * mono_get_exception_reflection_type_load:
  * @types: an array of types that were defined in the moduled loaded.
  * @exceptions: an array of exceptions that were thrown during the type loading.

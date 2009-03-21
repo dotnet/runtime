@@ -1702,6 +1702,9 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 		mono_raise_exception (mono_get_exception_invalid_operation (
 					"It is illegal to get the value on a field on a type loaded using the ReflectionOnly methods."));
 	
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+		mono_security_core_clr_ensure_reflection_access_field (cf);
+
 	mono_class_init (field->klass);
 
 	if (cf->type->attrs & FIELD_ATTRIBUTE_STATIC)
@@ -1819,6 +1822,9 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 	if (field->klass->image->assembly->ref_only)
 		mono_raise_exception (mono_get_exception_invalid_operation (
 					"It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods."));
+
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+		mono_security_core_clr_ensure_reflection_access_field (cf);
 
 	v = (gchar *) value;
 	if (!cf->type->byref) {
@@ -3050,35 +3056,6 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 	return res;
 }
 
-static void
-ensure_reflection_security (void)
-{
-	MonoMethod *m = mono_method_get_last_managed ();
-
-	while (m) {
-		/*
-		g_print ("method %s.%s.%s in image %s\n",
-			m->klass->name_space, m->klass->name, m->name, m->klass->image->name);
-		*/
-
-		/* We stop at the first method which is not in
-		   System.Reflection or which is not in a platform
-		   image. */
-		if (strcmp (m->klass->name_space, "System.Reflection") != 0 ||
-				!mono_security_core_clr_is_platform_image (m->klass->image)) {
-			/* If the method is transparent we throw an exception. */
-			if (mono_security_core_clr_method_level (m, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT ) {
-				MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MethodAccessException", "Reflection called from transparent code");
-
-				mono_raise_exception (ex);
-			}
-			return;
-		}
-
-		mono_stack_walk_no_il (get_caller, &m);
-	}
-}
-
 static MonoObject *
 ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoArray *params, MonoException **exc) 
 {
@@ -3095,9 +3072,8 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 	*exc = NULL;
 
-	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR &&
-			mono_security_core_clr_method_level (m, TRUE) == MONO_SECURITY_CORE_CLR_CRITICAL)
-		ensure_reflection_security ();
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+		mono_security_core_clr_ensure_reflection_access_method (m);
 
 	if (!(m->flags & METHOD_ATTRIBUTE_STATIC)) {
 		if (this) {
