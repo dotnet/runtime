@@ -10471,6 +10471,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				spec2 [MONO_INST_DEST] = ' ';
 				spec2 [MONO_INST_SRC1] = spec [MONO_INST_SRC1];
 				spec2 [MONO_INST_SRC2] = spec [MONO_INST_DEST];
+				spec2 [MONO_INST_SRC3] = ' ';
 				spec = spec2;
 			} else if (MONO_IS_STORE_MEMINDEX (ins))
 				g_assert_not_reached ();
@@ -10478,8 +10479,13 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 				store = FALSE;
 			no_lvreg = FALSE;
 
-			if (G_UNLIKELY (cfg->verbose_level > 2))
-				printf ("\t %.3s %d %d %d\n", spec, ins->dreg, ins->sreg1, ins->sreg2);
+			if (G_UNLIKELY (cfg->verbose_level > 2)) {
+				printf ("\t %.3s %d", spec, ins->dreg);
+				mono_inst_get_src_registers (ins, sregs);
+				for (srcindex = 0; srcindex < 3; ++srcindex)
+					printf (" %d", sregs [srcindex]);
+				printf ("\n");
+			}
 
 			/***************/
 			/*    DREG     */
@@ -10552,6 +10558,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							ins->inst_imm = ins->inst_c0;
 							ins->inst_destbasereg = var->inst_basereg;
 							ins->inst_offset = var->inst_offset;
+							spec = INS_INFO (ins->opcode);
 						} else if (!lvreg && ((ins->opcode == OP_MOVE) || (ins->opcode == OP_FMOVE) || (ins->opcode == OP_LMOVE))) {
 							ins->opcode = store_opcode;
 							ins->inst_destbasereg = var->inst_basereg;
@@ -10567,6 +10574,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							spec2 [MONO_INST_DEST] = ' ';
 							spec2 [MONO_INST_SRC1] = spec [MONO_INST_SRC1];
 							spec2 [MONO_INST_SRC2] = spec [MONO_INST_DEST];
+							spec2 [MONO_INST_SRC3] = ' ';
 							spec = spec2;
 						} else if (!lvreg && (op_to_op_store_membase (store_opcode, ins->opcode) != -1)) {
 							// FIXME: The backends expect the base reg to be in inst_basereg
@@ -10605,9 +10613,10 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 			/************/
 			/*  SREGS   */
 			/************/
-			for (srcindex = 0; srcindex < 2; ++srcindex) {
-				regtype = spec [(srcindex == 0) ? MONO_INST_SRC1 : MONO_INST_SRC2];
-				sreg = srcindex == 0 ? ins->sreg1 : ins->sreg2;
+			num_sregs = mono_inst_get_src_registers (ins, sregs);
+			for (srcindex = 0; srcindex < 3; ++srcindex) {
+				regtype = spec [MONO_INST_SRC1 + srcindex];
+				sreg = sregs [srcindex];
 
 				g_assert (((sreg == -1) && (regtype == ' ')) || ((sreg != -1) && (regtype != ' ')));
 				if ((sreg != -1) && get_vreg_to_inst (cfg, sreg)) {
@@ -10617,10 +10626,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					guint32 load_opcode;
 
 					if (var->opcode == OP_REGVAR) {
-						if (srcindex == 0)
-							ins->sreg1 = var->dreg;
-						else
-							ins->sreg2 = var->dreg;
+						sregs [srcindex] = var->dreg;
+						//mono_inst_set_src_registers (ins, sregs);
 						live_range_end [var->dreg] = use_ins;
 						live_range_end_bb [var->dreg] = bb;
 						continue;
@@ -10638,21 +10645,21 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 						/* The variable is already loaded to an lvreg */
 						if (G_UNLIKELY (cfg->verbose_level > 2))
 							printf ("\t\tUse lvreg R%d for R%d.\n", vreg_to_lvreg [sreg], sreg);
-						if (srcindex == 0)
-							ins->sreg1 = vreg_to_lvreg [sreg];
-						else
-							ins->sreg2 = vreg_to_lvreg [sreg];
+						sregs [srcindex] = vreg_to_lvreg [sreg];
+						//mono_inst_set_src_registers (ins, sregs);
 						continue;
 					}
 
 					/* Try to fuse the load into the instruction */
 					if ((srcindex == 0) && (op_to_op_src1_membase (load_opcode, ins->opcode) != -1)) {
 						ins->opcode = op_to_op_src1_membase (load_opcode, ins->opcode);
-						ins->inst_basereg = var->inst_basereg;
+						sregs [0] = var->inst_basereg;
+						//mono_inst_set_src_registers (ins, sregs);
 						ins->inst_offset = var->inst_offset;
 					} else if ((srcindex == 1) && (op_to_op_src2_membase (load_opcode, ins->opcode) != -1)) {
 						ins->opcode = op_to_op_src2_membase (load_opcode, ins->opcode);
-						ins->sreg2 = var->inst_basereg;
+						sregs [1] = var->inst_basereg;
+						//mono_inst_set_src_registers (ins, sregs);
 						ins->inst_offset = var->inst_offset;
 					} else {
 						if (MONO_IS_REAL_MOVE (ins)) {
@@ -10679,10 +10686,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							}
 						}
 
-						if (srcindex == 0)
-							ins->sreg1 = sreg;
-						else
-							ins->sreg2 = sreg;
+						sregs [srcindex] = sreg;
+						//mono_inst_set_src_registers (ins, sregs);
 
 						if (regtype == 'l') {
 							NEW_LOAD_MEMBASE (cfg, load_ins, OP_LOADI4_MEMBASE, sreg + 2, var->inst_basereg, var->inst_offset + MINI_MS_WORD_OFFSET);
@@ -10707,6 +10712,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					}
 				}
 			}
+			mono_inst_set_src_registers (ins, sregs);
 
 			if (dest_has_lvreg) {
 				g_assert (ins->dreg != -1);
