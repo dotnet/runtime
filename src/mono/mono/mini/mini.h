@@ -1242,7 +1242,6 @@ void      mono_print_code                   (MonoCompile *cfg, const char *msg) 
 void      mono_print_method_from_ip         (void *ip);
 char     *mono_pmip                         (void *ip);
 const char* mono_inst_name                  (int op);
-void	  mini_init_op_sreg_counts	    (void) MONO_INTERNAL;
 void      mono_inst_set_src_registers       (MonoInst *ins, int *regs) MONO_INTERNAL;
 int       mono_op_to_op_imm                 (int opcode) MONO_INTERNAL;
 int       mono_op_imm_to_op                 (int opcode) MONO_INTERNAL;

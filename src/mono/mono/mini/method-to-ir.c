@@ -145,7 +145,7 @@ ins_info[] = {
 #undef MINI_OP3
 
 #define MINI_OP(a,b,dest,src1,src2) (((src1) != NONE) + ((src2) != NONE)),
-#define MINI_OP3(a,b,dest,src1,src2,src3) (((src1) != NONE) + ((src2) != NONE) + ((src3) != NONE))
+#define MINI_OP3(a,b,dest,src1,src2,src3) (((src1) != NONE) + ((src2) != NONE) + ((src3) != NONE)),
 const gint8 ins_sreg_counts[] = {
 #include "mini-ops.h"
 };
@@ -159,35 +159,6 @@ extern GHashTable *jit_icall_name_hash;
 	(vi)->reg = -1; \
 	(vi)->idx = (id); \
 } while (0)
-
-void
-mini_init_op_sreg_counts (void)
-{
-	int i;
-
-	g_assert (sizeof (ins_sreg_counts) == sizeof (ins_info) / 4);
-
-	for (i = 0; i < sizeof (ins_sreg_counts); ++i) {
-		int opcode = i + OP_START + 1;
-		const char *spec = INS_INFO (opcode);
-		int count;
-
-		if (spec [MONO_INST_SRC1] == ' ') {
-			g_assert (spec [MONO_INST_SRC2] == ' ');
-			g_assert (spec [MONO_INST_SRC3] == ' ');
-			count = 0;
-		} else if (spec [MONO_INST_SRC2] == ' ') {
-			g_assert (spec [MONO_INST_SRC3] == ' ');
-			count = 1;
-		} else if (spec [MONO_INST_SRC3] == ' ') {
-			count = 2;
-		} else {
-			count = 3;
-		}
-
-		g_assert (ins_sreg_counts [i] == count);
-	}
-}
 
 void
 mono_inst_set_src_registers (MonoInst *ins, int *regs)

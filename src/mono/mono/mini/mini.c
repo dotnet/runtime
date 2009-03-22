@@ -4544,8 +4544,6 @@ mini_init (const char *filename, const char *runtime_version)
 		global_codeman = mono_code_manager_new ();
 	jit_icall_name_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
-	mini_init_op_sreg_counts ();
-
 	mono_arch_cpu_init ();
 
 	mono_arch_init ();
