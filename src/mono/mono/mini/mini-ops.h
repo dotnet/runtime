@@ -119,7 +119,7 @@ MINI_OP(OP_LOADR4_MEMINDEX,"loadr4_memindex", IREG, IREG, IREG)
 MINI_OP(OP_LOADR8_MEMINDEX,"loadr8_memindex", IREG, IREG, IREG)
 /* indexed stores: store sreg1 at (destbasereg + sreg2) */
 /* MONO_IS_STORE_MEMINDEX depends on the order here */
-MINI_OP(OP_STORE_MEMINDEX,"store_memindex", NONE, NONE, NONE)
+MINI_OP(OP_STORE_MEMINDEX,"store_memindex", IREG, IREG, IREG)
 MINI_OP(OP_STOREI1_MEMINDEX,"storei1_memindex", IREG, IREG, IREG)
 MINI_OP(OP_STOREI2_MEMINDEX,"storei2_memindex", IREG, IREG, IREG)
 MINI_OP(OP_STOREI4_MEMINDEX,"storei4_memindex", IREG, IREG, IREG)
@@ -926,7 +926,7 @@ MINI_OP(OP_AMD64_OR_REG_MEMBASE,         "amd64_or_reg_membase", IREG, IREG, IRE
 MINI_OP(OP_AMD64_XOR_REG_MEMBASE,        "amd64_xor_reg_membase", IREG, IREG, IREG)
 MINI_OP(OP_AMD64_MUL_REG_MEMBASE,        "amd64_mul_reg_membase", NONE, IREG, IREG)
 
-MINI_OP(OP_AMD64_LOADI8_MEMINDEX,        "amd64_loadi8_memindex", NONE, NONE, NONE)
+MINI_OP(OP_AMD64_LOADI8_MEMINDEX,        "amd64_loadi8_memindex", IREG, IREG, IREG)
 MINI_OP(OP_AMD64_SAVE_SP_TO_LMF,         "amd64_save_sp_to_lmf", NONE, NONE, NONE)
 #endif
 
