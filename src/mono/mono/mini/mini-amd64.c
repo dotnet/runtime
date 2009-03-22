@@ -5915,8 +5915,10 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
 		if (item->is_equals) {
-			if (item->check_target_idx) {
-				if (!item->compare_done) {
+			gboolean fail_case = !item->check_target_idx && fail_tramp;
+
+			if (item->check_target_idx || fail_case) {
+				if (!item->compare_done || fail_case) {
 					if (amd64_is_imm32 (item->key))
 						amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
 					else {
@@ -5934,56 +5936,39 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 					amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
 					amd64_jump_membase (code, AMD64_R10, 0);
 				}
-			} else {
-				if (fail_tramp) {
-					if (amd64_is_imm32 (item->key))
-						amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
-					else {
-						amd64_mov_reg_imm (code, AMD64_R10, item->key);
-						amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
-					}
-					item->jmp_code = code;
-					amd64_branch8 (code, X86_CC_NE, 0, FALSE);
-					if (item->has_target_code) {
-						amd64_mov_reg_imm (code, AMD64_R10, item->value.target_code);
-						amd64_jump_reg (code, AMD64_R10);
-					} else {
-						g_assert (vtable);
-						amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
-						amd64_jump_membase (code, AMD64_R10, 0);
-					}
+
+				if (fail_case) {
 					amd64_patch (item->jmp_code, code);
 					amd64_mov_reg_imm (code, AMD64_R10, fail_tramp);
 					amd64_jump_reg (code, AMD64_R10);
 					item->jmp_code = NULL;
-						
-				} else {
-					/* enable the commented code to assert on wrong method */
-#if 0
-					if (amd64_is_imm32 (item->key))
-						amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
-					else {
-						amd64_mov_reg_imm (code, AMD64_R10, item->key);
-						amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
-					}
-					item->jmp_code = code;
-					amd64_branch8 (code, X86_CC_NE, 0, FALSE);
-					/* See the comment below about R10 */
-					amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
-					amd64_jump_membase (code, AMD64_R10, 0);
-					amd64_patch (item->jmp_code, code);
-					amd64_breakpoint (code);
-					item->jmp_code = NULL;
-#else
-					/* We're using R10 here because R11
-					   needs to be preserved.  R10 needs
-					   to be preserved for calls which
-					   require a runtime generic context,
-					   but interface calls don't. */
-					amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
-					amd64_jump_membase (code, AMD64_R10, 0);
-#endif
 				}
+			} else {
+				/* enable the commented code to assert on wrong method */
+#if 0
+				if (amd64_is_imm32 (item->key))
+					amd64_alu_reg_imm (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key);
+				else {
+					amd64_mov_reg_imm (code, AMD64_R10, item->key);
+					amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, AMD64_R10);
+				}
+				item->jmp_code = code;
+				amd64_branch8 (code, X86_CC_NE, 0, FALSE);
+				/* See the comment below about R10 */
+				amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
+				amd64_jump_membase (code, AMD64_R10, 0);
+				amd64_patch (item->jmp_code, code);
+				amd64_breakpoint (code);
+				item->jmp_code = NULL;
+#else
+				/* We're using R10 here because R11
+				   needs to be preserved.  R10 needs
+				   to be preserved for calls which
+				   require a runtime generic context,
+				   but interface calls don't. */
+				amd64_mov_reg_imm (code, AMD64_R10, & (vtable->vtable [item->value.vtable_slot]));
+				amd64_jump_membase (code, AMD64_R10, 0);
+#endif
 			}
 		} else {
 			if (amd64_is_imm32 (item->key))
