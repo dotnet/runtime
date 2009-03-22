@@ -4292,7 +4292,11 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	size = BASE_SIZE;
 	constant_pool_starts = g_new0 (guint32*, count);
 
-	g_assert (!fail_tramp);
+	/* 
+	 * We might be called with a fail_tramp from the IMT builder code even if
+	 * MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK is not defined.
+	 */
+	//g_assert (!fail_tramp);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
