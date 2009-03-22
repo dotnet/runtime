@@ -873,13 +873,18 @@ do_reloc (MonoImageWriter *acfg, BinReloc *reloc, guint8 *data, gssize addr)
 	 * needed by the code we generate.
 	 */
 	switch (reloc->reloc_type) {
-	case R_ARM_CALL: {
+	case R_ARM_CALL:
+	case R_ARM_JUMP24: {
 		guint32 *code = (guint32*)(gpointer)data;
 		guint32 ins = *code;
 		int diff = addr;
 
-		/* bl */
-		g_assert (data [3] == 0xeb);
+		if (reloc->reloc_type == R_ARM_CALL)
+			/* bl */
+			g_assert (data [3] == 0xeb);
+		else
+			/* b */
+			g_assert (data [3] == 0xea);
 		if (diff >= 0 && diff <= 33554431) {
 			diff >>= 2;
 			ins = (ins & 0xff000000) | diff;
@@ -898,8 +903,11 @@ do_reloc (MonoImageWriter *acfg, BinReloc *reloc, guint8 *data, gssize addr)
 		guint8 *code = data;
 		guint32 val = addr;
 
-		g_assert (val <= 0xffff);
-		ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
+		g_assert (val <= 0xffffff);
+		if (val & 0xff0000)
+			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, (val & 0xFF0000) >> 16, 16);
+		else
+			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
 		ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, (val & 0xFF00) >> 8, 24);
 		ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, val & 0xFF);
 		break;

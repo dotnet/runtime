@@ -23,6 +23,7 @@ typedef struct _MonoImageWriter MonoImageWriter;
 
 /* Relocation types */
 #define R_ARM_CALL 28
+#define R_ARM_JUMP24 29
 #define R_ARM_ALU_PC_G0_NC 59
 
 gboolean bin_writer_supported (void) MONO_INTERNAL;

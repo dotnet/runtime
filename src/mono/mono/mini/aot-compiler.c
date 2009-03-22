@@ -639,10 +639,18 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 
 	emit_bytes (acfg, buf, code - buf);
 	/* jump to method */
-	if (acfg->use_bin_writer)
-		g_assert_not_reached ();
-	else
+	if (acfg->use_bin_writer) {
+		guint8 buf [4];
+		guint8 *code;
+
+		code = buf;
+		ARM_B (code, 0);
+
+		img_writer_emit_reloc (acfg->w, R_ARM_JUMP24, call_target, -8);
+		emit_bytes (acfg, buf, 4);
+	} else {
 		fprintf (acfg->fp, "\n\tb %s\n", call_target);
+	}
 #else
 	g_assert_not_reached ();
 #endif
@@ -4053,12 +4061,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
 	//acfg->aot_opts.print_skipped_methods = TRUE;
-
-#ifdef __arm__
-	if (acfg->aot_opts.full_aot)
-		/* arch_emit_unbox_trampoline () etc only works with the asm writer */
-		acfg->aot_opts.asm_writer = TRUE;
-#endif
 
 #ifndef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	if (acfg->aot_opts.full_aot) {
