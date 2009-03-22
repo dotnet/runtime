@@ -10481,7 +10481,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 			if (G_UNLIKELY (cfg->verbose_level > 2)) {
 				printf ("\t %.3s %d", spec, ins->dreg);
-				mono_inst_get_src_registers (ins, sregs);
+				num_sregs = mono_inst_get_src_registers (ins, sregs);
 				for (srcindex = 0; srcindex < 3; ++srcindex)
 					printf (" %d", sregs [srcindex]);
 				printf ("\n");

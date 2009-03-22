@@ -1162,7 +1162,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		for (j = 0; j < MONO_MAX_SRC_REGS; ++j) {
 			prev_sregs [j] = -1;
 			sreg_masks [j] = get_callee_mask (spec [MONO_INST_SRC1 + j]);
-			dest_sregs [j] = desc_to_fixed_reg [spec [MONO_INST_SRC1 + j]];
+			dest_sregs [j] = desc_to_fixed_reg [(int)spec [MONO_INST_SRC1 + j]];
 #ifdef MONO_ARCH_INST_FIXED_MASK
 			sreg_fixed_masks [j] = MONO_ARCH_INST_FIXED_MASK (spec [MONO_INST_SRC1 + j]);
 #else

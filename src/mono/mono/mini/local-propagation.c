@@ -130,8 +130,9 @@ restart:
 			num_sregs = mono_inst_get_src_registers (ins, sregs);
 			for (srcindex = 0; srcindex < num_sregs; ++srcindex) {
 				MonoInst *def;
+				int nsregs;
 
-				mono_inst_get_src_registers (ins, sregs);
+				nsregs = mono_inst_get_src_registers (ins, sregs);
 
 				regtype = spec [MONO_INST_SRC1 + srcindex];
 				sreg = sregs [srcindex];
