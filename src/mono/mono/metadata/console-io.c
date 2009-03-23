@@ -4,7 +4,7 @@
  * Author:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
  *
- * Copyright (C) 2005-2008 Novell, Inc. (http://www.novell.com)
+ * Copyright (C) 2005-2009 Novell, Inc. (http://www.novell.com)
  */
 
 #include <config.h>
@@ -352,23 +352,57 @@ static void
 set_control_chars (MonoArray *control_chars, const guchar *cc)
 {
 	/* The index into the array comes from corlib/System/ControlCharacters.cs */
+#ifdef VINTR
 	mono_array_set (control_chars, gchar, 0, cc [VINTR]);
+#endif
+#ifdef VQUIT
 	mono_array_set (control_chars, gchar, 1, cc [VQUIT]);
+#endif
+#ifdef VERASE
 	mono_array_set (control_chars, gchar, 2, cc [VERASE]);
+#endif
+#ifdef VKILL
 	mono_array_set (control_chars, gchar, 3, cc [VKILL]);
+#endif
+#ifdef VEOF
 	mono_array_set (control_chars, gchar, 4, cc [VEOF]);
+#endif
+#ifdef VTIME
 	mono_array_set (control_chars, gchar, 5, cc [VTIME]);
+#endif
+#ifdef VMIN
 	mono_array_set (control_chars, gchar, 6, cc [VMIN]);
+#endif
+#ifdef VSWTC
 	mono_array_set (control_chars, gchar, 7, cc [VSWTC]);
+#endif
+#ifdef VSTART
 	mono_array_set (control_chars, gchar, 8, cc [VSTART]);
+#endif
+#ifdef VSTOP
 	mono_array_set (control_chars, gchar, 9, cc [VSTOP]);
+#endif
+#ifdef VSUSP
 	mono_array_set (control_chars, gchar, 10, cc [VSUSP]);
+#endif
+#ifdef VEOL
 	mono_array_set (control_chars, gchar, 11, cc [VEOL]);
+#endif
+#ifdef VREPRINT
 	mono_array_set (control_chars, gchar, 12, cc [VREPRINT]);
+#endif
+#ifdef VDISCARD
 	mono_array_set (control_chars, gchar, 13, cc [VDISCARD]);
+#endif
+#ifdef VWERASE
 	mono_array_set (control_chars, gchar, 14, cc [VWERASE]);
+#endif
+#ifdef VLNEXT
 	mono_array_set (control_chars, gchar, 15, cc [VLNEXT]);
+#endif
+#ifdef VEOL2
 	mono_array_set (control_chars, gchar, 16, cc [VEOL2]);
+#endif
 }
 
 MonoBoolean
@@ -399,7 +433,9 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	
 	*size = &cols_and_lines;
 
-	*control_chars = mono_array_new (mono_domain_get (), mono_defaults.byte_class, sizeof (mono_attr.c_cc));
+	/* 17 is the number of entries set in set_control_chars() above.
+	 * NCCS is the total size, but, by now, we only care about those 17 values*/
+	*control_chars = mono_array_new (mono_domain_get (), mono_defaults.byte_class, 17);
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
 		return FALSE;
 
