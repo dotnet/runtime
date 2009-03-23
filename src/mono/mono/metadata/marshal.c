@@ -314,6 +314,18 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 
 	method = delegate->method;
 
+	if (mono_method_signature (method)->pinvoke) {
+		const char *exc_class, *exc_arg;
+		gpointer ftnptr;
+
+		ftnptr = mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
+		if (!ftnptr) {
+			g_assert (exc_class);
+			mono_raise_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System", exc_class, exc_arg));
+		}
+		return ftnptr;
+	}
+
 	wrapper = mono_marshal_get_managed_wrapper (method, klass, delegate->target);
 
 	delegate->delegate_trampoline =  mono_compile_method (wrapper);

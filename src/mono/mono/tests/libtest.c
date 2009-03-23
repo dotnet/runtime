@@ -256,6 +256,12 @@ mono_invoke_delegate (SimpleDelegate3 delegate)
 	return res;
 }
 
+LIBTEST_API int STDCALL
+mono_invoke_simple_delegate (SimpleDelegate d)
+{
+	return d (4);
+}
+
 LIBTEST_API int STDCALL  
 mono_test_marshal_char (short a1)
 {
