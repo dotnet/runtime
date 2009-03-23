@@ -476,7 +476,7 @@ static MonoImage*
 decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, gboolean *no_aot_trampoline, guint8 *buf, guint8 **endbuf)
 {
 	guint32 image_index, value;
-	MonoImage *image;
+	MonoImage *image = NULL;
 	guint8 *p = buf;
 
 	if (method)

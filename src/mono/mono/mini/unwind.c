@@ -255,6 +255,8 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 
 	p = unwind_info;
 	pos = 0;
+	cfa_reg = -1;
+	cfa_offset = -1;
 	while (pos <= ip - start_ip && p < unwind_info + unwind_info_len) {
 		int op = *p & 0xc0;
 
