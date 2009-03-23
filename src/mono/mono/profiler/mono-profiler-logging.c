@@ -5014,12 +5014,6 @@ setup_user_options (const char *arguments) {
 					profiler->dump_next_heap_snapshots = atoi (equals + 1);
 				}
 #ifndef PLATFORM_WIN32
-			} else if (! (strncmp (argument, "gc-signal", equals_position) && strncmp (argument, "gc-s", equals_position) && strncmp (argument, "gcs", equals_position))) {
-				FAIL_IF_HAS_MINUS;
-				if (strlen (equals + 1) > 0) {
-					char *signal_name = equals + 1;
-					gc_request_signal_number = parse_signal_name (signal_name);
-				}
 			} else if (! (strncmp (argument, "toggle-signal", equals_position) && strncmp (argument, "ts", equals_position))) {
 				FAIL_IF_HAS_MINUS;
 				if (strlen (equals + 1) > 0) {
