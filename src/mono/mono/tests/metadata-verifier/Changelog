@@ -1,3 +1,13 @@
+2009-03-24 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Add stream-header and cli-metadata
+	helpers.
+
+	* cli-metadata-tests.md: New tests for the cli metadata header
+	and streams.
+
+	* Makefile: Add new tests.
+
 2009-03-19 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-header-tests.md: More tests for the cli header.

@@ -66,7 +66,8 @@ function_call:
 fun_name:
 	read.uint |
 	translate.rva |
-	translate.rva.ind
+	translate.rva.ind |
+	stream-header
 
 arg_list:
 	expression |
@@ -78,7 +79,8 @@ variable:
 	pe-optional-header |
 	pe-signature |
 	section-table |
-	cli-header
+	cli-header |
+	cli-metadata
 
 TODO For the sake of a simple implementation, tokens are space delimited.
 */
@@ -286,6 +288,30 @@ translate_rva (test_entry_t *entry, guint32 rva)
 }
 
 static guint32
+get_cli_header (test_entry_t *entry)
+{
+	guint32 offset = get_pe_header (entry) + 20; /*pe-optional-header*/
+	offset += 208; /*cli header entry offset in the pe-optional-header*/
+	return translate_rva (entry, READ_VAR (guint32, entry->data + offset));
+}
+
+static guint32
+get_cli_metadata_root (test_entry_t *entry)
+{
+	guint32 offset = get_cli_header (entry);
+	offset += 8; /*metadata rva offset*/
+	return translate_rva (entry, READ_VAR (guint32, entry->data + offset));
+}
+
+static guint32
+pad4 (guint32 offset)
+{
+	if (offset % 4)
+		offset += 4 - (offset % 4);
+	return offset;
+}
+
+static guint32
 lookup_var (test_entry_t *entry, const char *name)
 {
 	if (!strcmp ("file-size", name))
@@ -298,12 +324,10 @@ lookup_var (test_entry_t *entry, const char *name)
 		return get_pe_header (entry) + 20; 
 	if (!strcmp ("section-table", name))
 		return get_pe_header (entry) + 244; 
-	if (!strcmp ("cli-header", name)) {
-		guint32 offset = get_pe_header (entry) + 20; /*pe-optional-header*/
-		offset += 208; /*cli header entry offset in the pe-optional-header*/
-
-		return translate_rva (entry, READ_VAR (guint32, entry->data + offset));
-	}
+	if (!strcmp ("cli-header", name))
+		return get_cli_header (entry);
+	if (!strcmp ("cli-metadata", name)) 
+		return get_cli_metadata_root (entry);
 
 	printf ("Unknown variable in expression %s\n", name);
 	exit (INVALID_VARIABLE_NAME);
@@ -339,6 +363,30 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 		rva = expression_eval (args->data, entry);
 		rva = READ_VAR (guint32, entry->data + rva);
 		return translate_rva (entry, rva);
+	}
+	if (!strcmp ("stream-header", name)) {
+		guint32 idx, offset;
+		if (g_slist_length (args) != 1) {
+			printf ("Invalid number of args to translate.rva %d\b", g_slist_length (args));
+			exit (INVALID_ARG_COUNT);
+		}
+		idx = expression_eval (args->data, entry);
+		offset = get_cli_metadata_root (entry);
+		offset = pad4 (offset + 16 + READ_VAR (guint32, entry->data + offset + 12));
+
+		offset += 4;
+
+		while (idx--) {
+			int i;
+
+			offset += 8;
+			for (i = 0; i < 32; ++i) {
+				if (!READ_VAR (guint8, entry->data + offset))
+					break;
+			}
+			offset = pad4 (offset);
+		}
+		return offset;
 	}
 
 	printf ("Unknown function %s\n", name);
