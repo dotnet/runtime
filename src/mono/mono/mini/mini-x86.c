@@ -3640,8 +3640,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
-		case OP_ATOMIC_EXCHANGE_I4:
-		case OP_ATOMIC_CAS_IMM_I4: {
+		case OP_ATOMIC_EXCHANGE_I4: {
 			guchar *br[2];
 			int sreg2 = ins->sreg2;
 			int breg = ins->inst_basereg;
@@ -3665,19 +3664,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_mov_reg_reg (code, breg, X86_EAX, 4);
 			}
 
-			if (ins->opcode == OP_ATOMIC_CAS_IMM_I4) {
-				x86_mov_reg_imm (code, X86_EAX, ins->backend.data);
+			x86_mov_reg_membase (code, X86_EAX, breg, ins->inst_offset, 4);
 
-				x86_prefix (code, X86_LOCK_PREFIX);
-				x86_cmpxchg_membase_reg (code, breg, ins->inst_offset, sreg2);
-			} else {
-				x86_mov_reg_membase (code, X86_EAX, breg, ins->inst_offset, 4);
-
-				br [0] = code; x86_prefix (code, X86_LOCK_PREFIX);
-				x86_cmpxchg_membase_reg (code, breg, ins->inst_offset, sreg2);
-				br [1] = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
-				x86_patch (br [1], br [0]);
-			}
+			br [0] = code; x86_prefix (code, X86_LOCK_PREFIX);
+			x86_cmpxchg_membase_reg (code, breg, ins->inst_offset, sreg2);
+			br [1] = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
+			x86_patch (br [1], br [0]);
 
 			if (breg != ins->inst_basereg)
 				x86_pop_reg (code, breg);
@@ -3685,6 +3677,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->sreg2 != sreg2)
 				x86_pop_reg (code, sreg2);
 
+			break;
+		}
+		case OP_ATOMIC_CAS_I4: {
+			g_assert (ins->sreg3 == X86_EAX);
+			g_assert (ins->sreg1 != X86_EAX);
+			g_assert (ins->sreg1 != ins->sreg2);
+
+			x86_prefix (code, X86_LOCK_PREFIX);
+			x86_cmpxchg_membase_reg (code, ins->sreg1, ins->inst_offset, ins->sreg2);
+
+			if (ins->dreg != X86_EAX)
+				x86_mov_reg_reg (code, ins->dreg, X86_EAX, 4);
 			break;
 		}
 #ifdef MONO_ARCH_SIMD_INTRINSICS

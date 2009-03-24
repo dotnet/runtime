@@ -4218,6 +4218,39 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 #endif
+		case OP_ATOMIC_CAS_I4:
+		CASE_PPC64 (OP_ATOMIC_CAS_I8) {
+			int location = ins->sreg1;
+			int value = ins->sreg2;
+			int comparand = ins->sreg3;
+			guint8 *start, *not_equal, *lost_reservation;
+
+			start = code;
+			if (ins->opcode == OP_ATOMIC_CAS_I4)
+				ppc_lwarx (code, ppc_r0, 0, location);
+#ifdef __mono_ppc64__
+			else
+				ppc_ldarx (code, ppc_r0, 0, location);
+#endif
+			ppc_cmp (code, 0, ins->opcode == OP_ATOMIC_CAS_I4 ? 0 : 1, ppc_r0, comparand);
+
+			not_equal = code;
+			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+			if (ins->opcode == OP_ATOMIC_CAS_I4)
+				ppc_stwcxd (code, value, 0, location);
+#ifdef __mono_ppc64__
+			else
+				ppc_stdcxd (code, value, 0, location);
+#endif
+
+			lost_reservation = code;
+			ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+			ppc_patch (lost_reservation, start);
+
+			ppc_patch (not_equal, code);
+			ppc_mr (code, ins->dreg, ppc_r0);
+			break;
+		}
 
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);

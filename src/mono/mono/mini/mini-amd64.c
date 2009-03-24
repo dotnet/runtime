@@ -4181,8 +4181,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_EXCHANGE_I4:
-		case OP_ATOMIC_EXCHANGE_I8:
-		case OP_ATOMIC_CAS_IMM_I4: {
+		case OP_ATOMIC_EXCHANGE_I8: {
 			guchar *br[2];
 			int sreg2 = ins->sreg2;
 			int breg = ins->inst_basereg;
@@ -4229,26 +4228,40 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 
-			if (ins->opcode == OP_ATOMIC_CAS_IMM_I4) {
-				if (ins->backend.data == NULL)
-					amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-				else
-					amd64_mov_reg_imm (code, AMD64_RAX, ins->backend.data);
+			amd64_mov_reg_membase (code, AMD64_RAX, breg, ins->inst_offset, size);
 
-				amd64_prefix (code, X86_LOCK_PREFIX);
-				amd64_cmpxchg_membase_reg_size (code, breg, ins->inst_offset, sreg2, size);
-			} else {
-				amd64_mov_reg_membase (code, AMD64_RAX, breg, ins->inst_offset, size);
-
-				br [0] = code; amd64_prefix (code, X86_LOCK_PREFIX);
-				amd64_cmpxchg_membase_reg_size (code, breg, ins->inst_offset, sreg2, size);
-				br [1] = code; amd64_branch8 (code, X86_CC_NE, -1, FALSE);
-				amd64_patch (br [1], br [0]);
-			}
+			br [0] = code; amd64_prefix (code, X86_LOCK_PREFIX);
+			amd64_cmpxchg_membase_reg_size (code, breg, ins->inst_offset, sreg2, size);
+			br [1] = code; amd64_branch8 (code, X86_CC_NE, -1, FALSE);
+			amd64_patch (br [1], br [0]);
 
 			if (rdx_pushed)
 				amd64_pop_reg (code, AMD64_RDX);
 
+			break;
+		}
+		case OP_ATOMIC_CAS_I4:
+		case OP_ATOMIC_CAS_I8: {
+			guint32 size;
+
+			if (ins->opcode == OP_ATOMIC_CAS_I8)
+				size = 8;
+			else
+				size = 4;
+
+			/* 
+			 * See http://msdn.microsoft.com/en-us/magazine/cc302329.aspx for
+			 * an explanation of how this works.
+			 */
+			g_assert (ins->sreg3 == AMD64_RAX);
+			g_assert (ins->sreg1 != AMD64_RAX);
+			g_assert (ins->sreg1 != ins->sreg2);
+
+			amd64_prefix (code, X86_LOCK_PREFIX);
+			amd64_cmpxchg_membase_reg_size (code, ins->sreg1, ins->inst_offset, ins->sreg2, size);
+
+			if (ins->dreg != AMD64_RAX)
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, size);
 			break;
 		}
 		case OP_LIVERANGE_START: {

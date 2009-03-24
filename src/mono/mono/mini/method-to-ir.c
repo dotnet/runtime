@@ -3891,27 +3891,36 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 #endif /* MONO_ARCH_HAVE_ATOMIC_EXCHANGE */
  
-#ifdef MONO_ARCH_HAVE_ATOMIC_CAS_IMM
-		/* 
-		 * Can't implement CompareExchange methods this way since they have
-		 * three arguments. We can implement one of the common cases, where the new
-		 * value is a constant.
-		 */
+#ifdef MONO_ARCH_HAVE_ATOMIC_CAS
 		if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
-			if ((fsig->params [1]->type == MONO_TYPE_I4 ||
-						(sizeof (gpointer) == 4 && fsig->params [1]->type == MONO_TYPE_I))
-					&& args [2]->opcode == OP_ICONST) {
-				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_IMM_I4);
+			int size = 0;
+			if (fsig->params [1]->type == MONO_TYPE_I4)
+				size = 4;
+			else if (fsig->params [1]->type == MONO_TYPE_I || MONO_TYPE_IS_REFERENCE (fsig->params [1]))
+				size = sizeof (gpointer);
+			else if (sizeof (gpointer) == 8 && fsig->params [1]->type == MONO_TYPE_I4)
+				size = 8;
+			if (size == 4) {
+				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I4);
 				ins->dreg = alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
 				ins->sreg2 = args [1]->dreg;
-				ins->backend.data = GINT_TO_POINTER (args [2]->inst_c0);
+				ins->sreg3 = args [2]->dreg;
 				ins->type = STACK_I4;
 				MONO_ADD_INS (cfg->cbb, ins);
+			} else if (size == 8) {
+				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I8);
+				ins->dreg = alloc_ireg (cfg);
+				ins->sreg1 = args [0]->dreg;
+				ins->sreg2 = args [1]->dreg;
+				ins->sreg3 = args [2]->dreg;
+				ins->type = STACK_I8;
+				MONO_ADD_INS (cfg->cbb, ins);
+			} else {
+				/* g_assert_not_reached (); */
 			}
-			/* The I8 case is hard to detect, since the arg might be a conv.i8 (iconst) tree */
 		}
-#endif /* MONO_ARCH_HAVE_ATOMIC_CAS_IMM */
+#endif /* MONO_ARCH_HAVE_ATOMIC_CAS */
 
 		if (ins)
 			return ins;

@@ -347,7 +347,8 @@ BASE_TEST_CS_SRC=		\
 	bug-467456.cs	\
 	appdomain-unload-callback.cs	\
 	bug-472692.2.cs		\
-	gchandles.cs
+	gchandles.cs	\
+	interlocked-3.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
