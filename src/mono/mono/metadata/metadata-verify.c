@@ -31,6 +31,7 @@
  TODO add section relocation support
  TODO verify the relocation table, since we really don't use, no need so far.
  TODO do full PECOFF resources verification 
+ TODO verify in the CLI header entry point and resources 
 */
 
 #define INVALID_OFFSET ((guint32)-1)
@@ -43,10 +44,24 @@ enum {
 	CLI_HEADER_IDX = 14,
 };
 
+enum {
+	STRINGS_STREAM,
+	USER_STRINGS_STREAM,
+	BLOB_STREAM,
+	GUID_STREAM,
+	TILDE_STREAM
+};
+
 typedef struct {
 	guint32 rva;
 	guint32 size;
-} RvaAndSize;
+	guint32 translated_offset;
+} DataDirectory;
+
+typedef struct {
+	guint32 offset;
+	guint32 size;
+} OffsetAndSize;
 
 typedef struct {
 	guint32 baseRVA;
@@ -64,7 +79,8 @@ typedef struct {
 	guint32 section_count;
 	SectionHeader *sections;
 
-	RvaAndSize data_directories [16];
+	DataDirectory data_directories [16];
+	OffsetAndSize metadata_streams [5]; //offset from begin of the image
 } VerifyContext;
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
@@ -116,6 +132,17 @@ bounds_check_virtual_address (VerifyContext *ctx, guint32 rva, guint32 size)
 	}
 	return FALSE;
 }
+
+static gboolean
+bounds_check_offset (DataDirectory *dir, guint32 offset, guint32 size)
+{
+	if (dir->translated_offset > offset)
+		return FALSE;
+	if (dir->size < size)
+		return FALSE;
+	return offset + size <= dir->translated_offset + dir->size;
+}
+
 
 static guint32
 translate_rva (VerifyContext *ctx, guint32 rva)
@@ -286,6 +313,7 @@ load_data_directories (VerifyContext *ctx)
 
 		ctx->data_directories [i].rva = rva;
 		ctx->data_directories [i].size = size;
+		ctx->data_directories [i].translated_offset = translate_rva (ctx, rva);
 
 		ptr += 8;
 	}
@@ -323,8 +351,8 @@ verify_hint_name_table (VerifyContext *ctx, guint32 import_rva, const char *tabl
 static void
 verify_import_table (VerifyContext *ctx)
 {
-	RvaAndSize it = ctx->data_directories [IMPORT_TABLE_IDX];
-	guint32 offset = translate_rva (ctx, it.rva);
+	DataDirectory it = ctx->data_directories [IMPORT_TABLE_IDX];
+	guint32 offset = it.translated_offset;
 	const char *ptr = ctx->data + offset;
 	guint32 name_rva, ilt_rva, iat_rva;
 
@@ -367,7 +395,7 @@ verify_import_table (VerifyContext *ctx)
 static void
 verify_resources_table (VerifyContext *ctx)
 {
-	RvaAndSize it = ctx->data_directories [RESOURCE_TABLE_IDX];
+	DataDirectory it = ctx->data_directories [RESOURCE_TABLE_IDX];
 	guint32 offset;
 	guint16 named_entries, id_entries;
 	const char *ptr, *root, *end;
@@ -378,7 +406,7 @@ verify_resources_table (VerifyContext *ctx)
 	if (it.size < 16)
 		ADD_ERROR (ctx, g_strdup_printf ("Resource section is too small, must be at least 16 bytes long but it's %d long", it.size));
 
-	offset = translate_rva (ctx, it.rva);
+	offset = it.translated_offset;
 	root = ptr = ctx->data + offset;
 	end = root + it.size;
 
@@ -398,7 +426,7 @@ verify_resources_table (VerifyContext *ctx)
 static void
 verify_cli_header (VerifyContext *ctx)
 {
-	RvaAndSize it = ctx->data_directories [CLI_HEADER_IDX];
+	DataDirectory it = ctx->data_directories [CLI_HEADER_IDX];
 	guint32 offset;
 	const char *ptr;
 	int i;
@@ -409,8 +437,7 @@ verify_cli_header (VerifyContext *ctx)
 	if (it.size != 72)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid cli header size in data directory %d must be 72", it.size));
 
-
-	offset = translate_rva (ctx, it.rva);
+	offset = it.translated_offset;
 	ptr = ctx->data + offset;
 
 	g_assert (offset != INVALID_OFFSET);
@@ -442,6 +469,105 @@ verify_cli_header (VerifyContext *ctx)
 	}
 }
 
+static guint32
+pad4 (guint32 offset)
+{
+	if (offset & 0x3) //pad to the next 4 byte boundary
+		offset = (offset & ~0x3) + 4;
+	return offset;
+}
+
+static void
+verify_metadata_header (VerifyContext *ctx)
+{
+	int i;
+	DataDirectory it = ctx->data_directories [CLI_HEADER_IDX];
+	guint32 offset;
+	const char *ptr;
+
+	offset = it.translated_offset;
+	ptr = ctx->data + offset;
+	g_assert (offset != INVALID_OFFSET);
+
+	//build a directory entry for the metadata root
+	ptr += 8;
+	it.rva = read32 (ptr);
+	ptr += 4;
+	it.size = read32 (ptr);
+	it.translated_offset = offset = translate_rva (ctx, it.rva);
+
+	ptr = ctx->data + offset;
+	g_assert (offset != INVALID_OFFSET);
+
+	if (it.size < 20)
+		ADD_ERROR (ctx, g_strdup_printf ("Metadata root section is too small %d (at least 20 bytes required for initial decoding)", it.size));
+
+	if (read32 (ptr) != 0x424A5342)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid metadata signature, expected 0x424A5342 but got %08x", read32 (ptr)));
+
+	offset = pad4 (offset + 16 + read32 (ptr + 12));
+
+	if (!bounds_check_offset (&it, offset, 4))
+		ADD_ERROR (ctx, g_strdup_printf ("Metadata root section is too small %d (at least %d bytes required for flags decoding)", it.size, offset + 4 - it.translated_offset));
+
+	ptr = ctx->data + offset; //move to streams header 
+
+	if (read16 (ptr + 2) != 5)
+		ADD_ERROR (ctx, g_strdup_printf ("Metadata root section have %d streams (it must have exactly 5)", read16 (ptr + 2)));
+
+	ptr += 4;
+	offset += 4;
+
+	for (i = 0; i < 5; ++i) {
+		guint32 stream_off, stream_size;
+		int string_size, stream_idx;
+
+		if (!bounds_check_offset (&it, offset, 8))
+			ADD_ERROR (ctx, g_strdup_printf ("Metadata root section is too small for initial decode of stream header %d, missing %d bytes", i, offset + 9 - it.translated_offset));
+		
+		stream_off = it.translated_offset + read32 (ptr);
+		stream_size = read32 (ptr + 4);
+
+		if (!bounds_check_offset (&it,  stream_off, stream_size))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid stream header %d offset/size pair %x/%x", 0, stream_off, stream_size));
+
+		ptr += 8;
+		offset += 8;
+		
+		for (string_size = 0; string_size < 32; ++string_size) {
+			if (!bounds_check_offset (&it, offset++, 1))
+				ADD_ERROR (ctx, g_strdup_printf ("Metadata root section is too small to decode stream header %d name", i));
+			if (!ptr [string_size])
+				break;
+		}
+
+		if (ptr [string_size])
+			ADD_ERROR (ctx, g_strdup_printf ("Metadata stream header %d name larger than 32 bytes", i));
+
+		if (!strncmp ("#Strings", ptr, 9))
+			stream_idx = STRINGS_STREAM;
+		else if (!strncmp ("#US", ptr, 4))
+			stream_idx = USER_STRINGS_STREAM;
+		else if (!strncmp ("#Blob", ptr, 6))
+			stream_idx = BLOB_STREAM;
+		else if (!strncmp ("#GUID", ptr, 6))
+			stream_idx = GUID_STREAM;
+		else if (!strncmp ("#~", ptr, 3))
+			stream_idx = TILDE_STREAM;
+		else
+			ADD_ERROR (ctx, g_strdup_printf ("Metadata stream header %d invalid name %s", i, ptr));
+
+		if (ctx->metadata_streams [stream_idx].offset != 0)
+			ADD_ERROR (ctx, g_strdup_printf ("Duplicated metadata stream header %s", ptr));
+
+		ctx->metadata_streams [stream_idx].offset = stream_off;
+		ctx->metadata_streams [stream_idx].offset = stream_size;
+
+		offset = pad4 (offset);
+		ptr = ctx->data + offset;
+	}
+}
+
 GSList*
 mono_image_verify (const char *data, guint32 size)
 {
@@ -463,11 +589,13 @@ mono_image_verify (const char *data, guint32 size)
 	CHECK_STATE();
 	verify_import_table (&ctx);
 	CHECK_STATE();
+	/*No need to check the IAT directory entry, it's content is indirectly verified by verify_import_table*/
 	verify_resources_table (&ctx);
 	CHECK_STATE();
 	verify_cli_header (&ctx);
 	CHECK_STATE();
-	/*No need to check the IAT directory entry, it's content is indirectly verified by verify_import_table*/
+	verify_metadata_header (&ctx);
+	CHECK_STATE();
 cleanup:
 	g_free (ctx.sections);
 	return ctx.errors;
