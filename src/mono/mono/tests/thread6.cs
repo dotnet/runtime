@@ -115,6 +115,8 @@ public class MultiThreadExceptionTest {
 		lock (started) {
 			Monitor.Wait (started);
 		}
+
+		Thread.Sleep (100);
 		
 		t1.Abort ("STATETEST");
 
