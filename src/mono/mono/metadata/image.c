@@ -333,9 +333,9 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 
 		ptr += 4;
 		image->md_version_major = read16 (ptr);
-		ptr += 4;
+		ptr += 2;
 		image->md_version_minor = read16 (ptr);
-		ptr += 4;
+		ptr += 6;
 
 		version_string_len = read32 (ptr);
 		ptr += 4;
