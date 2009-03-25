@@ -1484,5 +1484,21 @@ public class Tests {
 		
 		return 1;
 	}
+
+	/*
+	 * Marshalling of type 'object'
+	 */
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_class")]
+	public static extern SimpleClass mono_test_marshal_object (int i, int j, int k, object ss, int l);
+
+	public static int test_0_marshal_object () {
+		try {
+			mono_test_marshal_object (0, 0, 0, null, 0);
+			return 1;
+		} catch (Exception) {
+			return 0;
+		}
+	}
 }
 
