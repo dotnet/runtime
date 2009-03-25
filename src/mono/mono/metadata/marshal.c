@@ -5858,17 +5858,19 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoClass *klass = mono_class_from_mono_type (t);
 	int pos, pos2, loc;
 
-	if (mono_class_from_mono_type (t) == mono_defaults.object_class) {
-		mono_raise_exception (mono_get_exception_not_implemented ("Marshalling of type object is not implemented"));
-	}
-
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 		*conv_arg_type = &mono_defaults.int_class->byval_arg;
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 		m->orig_conv_args [argnum] = 0;
-		
+
+		if (mono_class_from_mono_type (t) == mono_defaults.object_class) {
+			char *msg = g_strdup_printf ("Marshalling of type object is not implemented");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
+			break;
+		}
+
 		if (klass->delegate) {
 			if (t->byref) {
 				if (!(t->attrs & PARAM_ATTRIBUTE_OUT)) {
@@ -7350,7 +7352,7 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 			return mono_cominterop_emit_marshal_com_interface (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 #endif
 
-		if (mono_defaults.safehandle_class != NULL &&
+		if (mono_defaults.safehandle_class != NULL && t->data.klass &&
 		    mono_class_is_subclass_of (t->data.klass,  mono_defaults.safehandle_class, FALSE))
 			return emit_marshal_safehandle (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		
