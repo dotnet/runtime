@@ -36,6 +36,7 @@
 #include "mono-endian.h"
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/security-core-clr.h>
 
 #if HAVE_SGEN_GC
 static void* reflection_info_desc = NULL;
@@ -10514,10 +10515,16 @@ mono_reflection_create_dynamic_method (MonoReflectionDynamicMethod *mb)
 			}
 			handle_class = mono_defaults.methodhandle_class;
 		} else {
+			MonoException *ex = NULL;
 			ref = resolve_object (mb->module->image, obj, &handle_class, NULL);
-			if (!ref) {
+			if (!ref)
+				ex = mono_get_exception_type_load (NULL, NULL);
+			else if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
+				ex = mono_security_core_clr_ensure_dynamic_method_resolved_object (ref, handle_class);
+
+			if (ex) {
 				g_free (rmb.refs);
-				mono_raise_exception (mono_get_exception_type_load (NULL, NULL));
+				mono_raise_exception (ex);
 				return;
 			}
 		}

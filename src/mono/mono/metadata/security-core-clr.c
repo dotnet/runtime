@@ -113,6 +113,30 @@ get_reflection_caller (void)
 	return m;
 }
 
+/*
+ * check_field_access:
+ *
+ *	Return TRUE if the caller method can access the specified field, FALSE otherwise.
+ */
+static gboolean
+check_field_access (MonoMethod *caller, MonoClassField *field)
+{
+	MonoClass *klass = (mono_field_get_flags (field) & FIELD_ATTRIBUTE_STATIC) ? NULL : mono_field_get_parent (field);
+	return mono_method_can_access_field_full (caller, field, klass);
+}
+
+/*
+ * check_method_access:
+ *
+ *	Return TRUE if the caller method can access the specified callee method, FALSE otherwise.
+ */
+static gboolean
+check_method_access (MonoMethod *caller, MonoMethod *callee)
+{
+	MonoClass *klass = (callee->flags & METHOD_ATTRIBUTE_STATIC) ? NULL : callee->klass;
+	return mono_method_can_access_method_full (caller, callee, klass);
+}
+
 void
 mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field)
 {
@@ -146,6 +170,41 @@ mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
 	/* also it cannot invoke a method that is not visible from it's (caller) point of view */
 	if (!mono_method_can_access_method_full (caller, method, (method->flags & METHOD_ATTRIBUTE_STATIC) ? NULL : method->klass))
 		mono_raise_exception (mono_get_exception_method_access ());
+}
+
+/*
+ * mono_security_core_clr_ensure_dynamic_method_resolved_object:
+ *
+ *	Called from mono_reflection_create_dynamic_method (reflection.c) to add some extra checks required for CoreCLR.
+ *	Dynamic methods needs to check to see if the objects being used (e.g. methods, fields) comes from platform code
+ *	and do an accessibility check in this case. Otherwise (i.e. user/application code) can be used without this extra
+ *	accessbility check.
+ */
+MonoException*
+mono_security_core_clr_ensure_dynamic_method_resolved_object (gpointer ref, MonoClass *handle_class)
+{
+	/* XXX find/create test cases for other handle_class XXX */
+	if (handle_class == mono_defaults.fieldhandle_class) {
+		MonoClassField *field = (MonoClassField*) ref;
+		MonoClass *klass = mono_field_get_parent (field);
+		/* fields coming from platform code have extra protection (accessibility check) */
+		if (mono_security_core_clr_is_platform_image (klass->image)) {
+			MonoMethod *caller = get_reflection_caller ();
+			/* XXX Critical code probably can do this / need some test cases (safer off otherwise) XXX */
+			if (!check_field_access (caller, field))
+				return mono_get_exception_field_access ();
+		}
+	} else if (handle_class == mono_defaults.methodhandle_class) {
+		MonoMethod *method = (MonoMethod*) ref;
+		/* methods coming from platform code have extra protection (accessibility check) */
+		if (mono_security_core_clr_is_platform_image (method->klass->image)) {
+			MonoMethod *caller = get_reflection_caller ();
+			/* XXX Critical code probably can do this / need some test cases (safer off otherwise) XXX */
+			if (!check_method_access (caller, method))
+				return mono_get_exception_method_access ();
+		}
+	}
+	return NULL;
 }
 
 static MonoSecurityCoreCLRLevel
