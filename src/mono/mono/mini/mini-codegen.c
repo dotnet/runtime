@@ -1201,9 +1201,14 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (dest_sreg != -1) {
 				if (rs->ifree_mask & (regmask (dest_sreg))) {
 					if (is_global_ireg (sreg)) {
+						int k;
 						/* Argument already in hard reg, need to copy */
 						MonoInst *copy = create_copy_ins (cfg, bb, tmp, dest_sreg, sreg, NULL, ip, 0);
 						insert_before_ins (bb, ins, copy);
+						for (k = 0; k < num_sregs; ++k) {
+							if (k != j)
+								sreg_masks [k] &= ~ (regmask (dest_sreg));
+						}
 					}
 					else {
 						val = rs->vassign [sreg];
