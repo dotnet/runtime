@@ -5980,7 +5980,7 @@ ves_icall_Type_MakePointerType (MonoReflectionType *type)
 
 static MonoObject *
 ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
-						   MonoReflectionMethod *info)
+						   MonoReflectionMethod *info, MonoBoolean throwOnBindFailure)
 {
 	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
 	MonoObject *delegate;
@@ -5991,9 +5991,10 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 
 	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
 
-	/* FIME: We must check if target is visible to the caller under coreclr.
-	 * The check should be disabled otherwise as it shouldn't raise expection under fulltrust.
-	 */
+	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR) {
+		if (!mono_security_core_clr_ensure_delegate_creation (method, throwOnBindFailure))
+			return NULL;
+	}
 
 	delegate = mono_object_new (mono_object_domain (type), delegate_class);
 

@@ -173,6 +173,42 @@ mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
 }
 
 /*
+ * mono_security_core_clr_ensure_delegate_creation:
+ *
+ *	Return TRUE if a delegate can be created on the specified method. 
+ *	CoreCLR also affect the binding, so throwOnBindFailure must be 
+ * 	FALSE to let this function return (FALSE) normally, otherwise (if
+ *	throwOnBindFailure is TRUE) itwill throw an ArgumentException.
+ *
+ *	A MethodAccessException is thrown if the specified method is not
+ *	visible from the caller point of view.
+ */
+gboolean
+mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure)
+{
+	/* note: mscorlib creates delegates to avoid reflection (optimization), we ignore those cases */
+	MonoMethod *caller = get_reflection_caller ();
+	/* if the "real" caller is not Transparent then it do can anything */
+	if (mono_security_core_clr_method_level (caller, TRUE) != MONO_SECURITY_CORE_CLR_TRANSPARENT)
+		return TRUE;
+
+	/* otherwise it (as a Transparent caller) cannot create a delegate on a Critical method... */
+	if (mono_security_core_clr_method_level (method, TRUE) == MONO_SECURITY_CORE_CLR_CRITICAL) {
+		/* but this throws only if 'throwOnBindFailure' is TRUE */
+		if (!throwOnBindFailure)
+			return FALSE;
+
+		mono_raise_exception (mono_get_exception_argument ("method", "Transparent code cannot call Critical code"));
+	}
+	
+	/* also it cannot create the delegate on a method that is not visible from it's (caller) point of view */
+	if (!check_method_access (caller, method))
+		mono_raise_exception (mono_get_exception_method_access ());
+
+	return TRUE;
+}
+
+/*
  * mono_security_core_clr_ensure_dynamic_method_resolved_object:
  *
  *	Called from mono_reflection_create_dynamic_method (reflection.c) to add some extra checks required for CoreCLR.
