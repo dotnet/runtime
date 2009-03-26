@@ -524,7 +524,7 @@ verify_metadata_header (VerifyContext *ctx)
 
 		if (!bounds_check_offset (&it, offset, 8))
 			ADD_ERROR (ctx, g_strdup_printf ("Metadata root section is too small for initial decode of stream header %d, missing %d bytes", i, offset + 9 - it.translated_offset));
-		
+
 		stream_off = it.translated_offset + read32 (ptr);
 		stream_size = read32 (ptr + 4);
 
@@ -533,7 +533,7 @@ verify_metadata_header (VerifyContext *ctx)
 
 		ptr += 8;
 		offset += 8;
-		
+
 		for (string_size = 0; string_size < 32; ++string_size) {
 			if (!bounds_check_offset (&it, offset++, 1))
 				ADD_ERROR (ctx, g_strdup_printf ("Metadata root section is too small to decode stream header %d name", i));
@@ -561,12 +561,26 @@ verify_metadata_header (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Duplicated metadata stream header %s", ptr));
 
 		ctx->metadata_streams [stream_idx].offset = stream_off;
-		ctx->metadata_streams [stream_idx].offset = stream_size;
+		ctx->metadata_streams [stream_idx].size = stream_size;
 
 		offset = pad4 (offset);
 		ptr = ctx->data + offset;
 	}
 }
+
+static void
+verify_tables_schema (VerifyContext *ctx)
+{
+	OffsetAndSize tables_area = ctx->metadata_streams [TILDE_STREAM];
+	unsigned offset = tables_area.offset;
+	const char *ptr = ctx->data + offset;
+
+	if (ptr [4] != 2)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata major version %d, expected 2", ptr [4]));
+	if (ptr [5] != 0)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata minor version %d, expected 0", ptr [5]));
+}
+
 
 GSList*
 mono_image_verify (const char *data, guint32 size)
@@ -595,6 +609,8 @@ mono_image_verify (const char *data, guint32 size)
 	verify_cli_header (&ctx);
 	CHECK_STATE();
 	verify_metadata_header (&ctx);
+	CHECK_STATE();
+	verify_tables_schema (&ctx);
 	CHECK_STATE();
 cleanup:
 	g_free (ctx.sections);
