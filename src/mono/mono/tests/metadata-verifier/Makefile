@@ -34,7 +34,11 @@ cli-metadata-tests.ok: gen-md-tests cli-metadata-tests.md simple-assembly.exe
 	./gen-md-tests cli-metadata-tests.md
 	touch cli-metadata-tests.ok
 
-generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok cli-metadata-tests.ok
+cli-tables-tests.ok: gen-md-tests cli-tables-tests.md simple-assembly.exe
+	./gen-md-tests cli-tables-tests.md
+	touch cli-tables-tests.ok
+
+generate-stamp: header-tests.ok section-table-tests.ok data-directory-tests.ok resources-tests.ok cli-header-tests.ok cli-metadata-tests.ok cli-tables-tests.ok
 	touch generate-stamp
 
 clean-stamps:

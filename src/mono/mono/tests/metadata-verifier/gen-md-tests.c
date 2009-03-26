@@ -52,7 +52,7 @@ selector:
 	'offset' expression
 
 effect:
-	('set-byte' | 'set-ushort' | 'set-uint') expression
+	('set-byte' | 'set-ushort' | 'set-uint' | 'set-bit' ) expression
 
 expression:
 	atom ([+-] atom)*
@@ -80,7 +80,8 @@ variable:
 	pe-signature |
 	section-table |
 	cli-header |
-	cli-metadata
+	cli-metadata |
+	tables-header
 
 TODO For the sake of a simple implementation, tokens are space delimited.
 */
@@ -123,7 +124,8 @@ enum {
 	EFFECT_SET_BYTE,
 	EFFECT_SET_USHORT,
 	EFFECT_SET_UINT,
-	EFFECT_SET_TRUNC
+	EFFECT_SET_TRUNC,
+	EFFECT_SET_BIT
 };
 
 enum {
@@ -261,6 +263,9 @@ make_test_name (test_entry_t *entry, test_set_t *test_set)
 #define READ_VAR(KIND, PTR) GUINT32_FROM_LE((guint32)*((KIND*)(PTR)))
 #define SET_VAR(KIND, PTR, VAL) do { *((KIND*)(PTR)) = GUINT32_TO_LE ((KIND)VAL); }  while (0)
 
+#define READ_BIT(PTR,OFF) ((((guint8*)(PTR))[(OFF / 8)] & (1 << ((OFF) % 8))) != 0)
+#define SET_BIT(PTR,OFF) do { ((guint8*)(PTR))[(OFF / 8)] |= (1 << ((OFF) % 8)); } while (0)
+
 static guint32 
 get_pe_header (test_entry_t *entry)
 {
@@ -312,6 +317,29 @@ pad4 (guint32 offset)
 }
 
 static guint32
+get_metadata_stream_header (test_entry_t *entry, guint32 idx)
+{
+	guint32 offset;
+
+	offset = get_cli_metadata_root (entry);
+	offset = pad4 (offset + 16 + READ_VAR (guint32, entry->data + offset + 12));
+
+	offset += 4;
+
+	while (idx--) {
+		int i;
+
+		offset += 8;
+		for (i = 0; i < 32; ++i) {
+			if (!READ_VAR (guint8, entry->data + offset))
+				break;
+		}
+		offset = pad4 (offset);
+	}
+	return offset;	
+}
+
+static guint32
 lookup_var (test_entry_t *entry, const char *name)
 {
 	if (!strcmp ("file-size", name))
@@ -328,6 +356,12 @@ lookup_var (test_entry_t *entry, const char *name)
 		return get_cli_header (entry);
 	if (!strcmp ("cli-metadata", name)) 
 		return get_cli_metadata_root (entry);
+	if (!strcmp ("tables-header", name)) {
+		guint32 metadata_root = get_cli_metadata_root (entry);
+		guint32 tilde_stream = get_metadata_stream_header (entry, 0);
+		guint32 offset = READ_VAR (guint32, entry->data + tilde_stream);
+		return metadata_root + offset;
+	}
 
 	printf ("Unknown variable in expression %s\n", name);
 	exit (INVALID_VARIABLE_NAME);
@@ -365,28 +399,13 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 		return translate_rva (entry, rva);
 	}
 	if (!strcmp ("stream-header", name)) {
-		guint32 idx, offset;
+		guint32 idx;
 		if (g_slist_length (args) != 1) {
 			printf ("Invalid number of args to translate.rva %d\b", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		idx = expression_eval (args->data, entry);
-		offset = get_cli_metadata_root (entry);
-		offset = pad4 (offset + 16 + READ_VAR (guint32, entry->data + offset + 12));
-
-		offset += 4;
-
-		while (idx--) {
-			int i;
-
-			offset += 8;
-			for (i = 0; i < 32; ++i) {
-				if (!READ_VAR (guint8, entry->data + offset))
-					break;
-			}
-			offset = pad4 (offset);
-		}
-		return offset;
+		return get_metadata_stream_header (entry, idx);
 	}
 
 	printf ("Unknown function %s\n", name);
@@ -454,6 +473,10 @@ apply_effect (patch_effect_t *effect, test_entry_t *entry, guint32 offset)
 	case EFFECT_SET_TRUNC:
 		DEBUG_PARSER (printf("\ttrunc effect [%d]\n", offset));
 		entry->data_size = offset;
+		break;
+	case EFFECT_SET_BIT:
+		DEBUG_PARSER (printf("\tset-bit effect bit %d old value [%x]\n", value, READ_BIT (ptr, value)));
+		SET_BIT (ptr, value);
 		break;
 	default:
 		printf ("Invalid effect type %d\n", effect->type);
@@ -839,6 +862,8 @@ parse_effect (scanner_t *scanner)
 		type = EFFECT_SET_USHORT; 
 	else if (!strcmp ("set-uint", name))
 		type = EFFECT_SET_UINT; 
+	else if (!strcmp ("set-bit", name))
+		type = EFFECT_SET_BIT; 
 	else if (!strcmp ("truncate", name))
 		type = EFFECT_SET_TRUNC;
 	else 
