@@ -72,6 +72,10 @@ typedef struct {
 } SectionHeader;
 
 typedef struct {
+	guint32 row_count;
+} TableInfo;
+
+typedef struct {
 	const char *data;
 	guint32 size;
 	GSList *errors;
@@ -81,6 +85,7 @@ typedef struct {
 
 	DataDirectory data_directories [16];
 	OffsetAndSize metadata_streams [5]; //offset from begin of the image
+	TableInfo tables [MONO_TABLE_NUM];
 } VerifyContext;
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
@@ -574,11 +579,33 @@ verify_tables_schema (VerifyContext *ctx)
 	OffsetAndSize tables_area = ctx->metadata_streams [TILDE_STREAM];
 	unsigned offset = tables_area.offset;
 	const char *ptr = ctx->data + offset;
+	guint64 valid_tables;
+	guint32 count;
+	int i;
+
+	if (tables_area.size < 24)
+		ADD_ERROR (ctx, g_strdup_printf ("Table schemata size (%d) too small to for initial decoding (requires 24 bytes)", tables_area.size));
 
 	if (ptr [4] != 2)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata major version %d, expected 2", ptr [4]));
 	if (ptr [5] != 0)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata minor version %d, expected 0", ptr [5]));
+
+	valid_tables = read64 (ptr + 8);
+	count = 0;
+	for (i = 0; i < 64; ++i) {
+		if (!(valid_tables & ((guint64)1 << i)))
+			continue;
+
+		/*MS Extensions: 0x3 0x5 0x7 0x13 0x16
+ 		  Unused: 0x1E 0x1F 0x2D-0x3F
+ 		  We don't care about the MS extensions.*/
+		if (i == 0x3 || i == 0x5 || i == 0x7 || i == 0x13 || i == 0x16)
+			ADD_ERROR (ctx, g_strdup_printf ("The metadata verifies doesn't support MS specific table %x", i));
+		if (i == 0x1E || i == 0x1F || i >= 0x2D)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid table %x", i));
+		++count;
+	}
 }
 
 
