@@ -6396,7 +6396,7 @@ get_reflection_missing (MonoDomain *domain, MonoObject **reflection_missing)
  * in the method @method.
  */
 MonoArray*
-mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
+mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
 {
 	static MonoClass *System_Reflection_ParameterInfo;
 	static MonoClass *System_Reflection_ParameterInfo_array;
@@ -6431,10 +6431,10 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
 	 */
-	CHECK_OBJECT (MonoArray*, &(method->signature), NULL);
+	CHECK_OBJECT (MonoArray*, &(method->signature), refclass);
 
 	sig = mono_method_signature (method);
-	member = mono_method_get_object (domain, method, NULL);
+	member = mono_method_get_object (domain, method, refclass);
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (method, (const char **) names);
 
@@ -6506,7 +6506,13 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
 	
-	CACHE_OBJECT (MonoArray *, &(method->signature), res, NULL);
+	CACHE_OBJECT (MonoArray *, &(method->signature), res, refclass);
+}
+
+MonoArray*
+mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
+{
+	return mono_param_get_objects_internal (domain, method, NULL);
 }
 
 /*

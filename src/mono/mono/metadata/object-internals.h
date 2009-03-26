@@ -1241,6 +1241,8 @@ void mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb) MO
 
 void        mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam) MONO_INTERNAL;
 
+MonoArray* mono_param_get_objects_internal  (MonoDomain *domain, MonoMethod *method, MonoClass *refclass) MONO_INTERNAL;
+
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic) MONO_INTERNAL;
 MonoType*
