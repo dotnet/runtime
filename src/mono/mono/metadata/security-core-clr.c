@@ -109,13 +109,15 @@ get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean
 }
 
 /*
- * get_caller_no_reflection_related:
+ * get_reflection_caller:
+ * 
+ *	Walk to the first managed method outside:
+ *	- System.Reflection* namespaces
+ *	- System.[MulticastDelegate]Delegate or Activator type
+ *	- platform code
+ *	and return a pointer to its MonoMethod.
  *
- *	Find the first managed caller that is either:
- *	(a) located outside the platform code assemblies; or
- *	(b) not related to reflection and delegates
- *
- *	Returns TRUE to stop the stackwalk, FALSE to continue to the next frame.
+ *	This is required since CoreCLR checks needs to be done on this "real" caller.
  */
 static MonoMethod*
 get_reflection_caller (void)
