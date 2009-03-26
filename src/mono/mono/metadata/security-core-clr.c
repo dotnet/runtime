@@ -45,6 +45,15 @@ security_safe_critical_attribute (void)
 	return class;
 }
 
+/*
+ * get_caller_no_reflection_related:
+ *
+ *	Find the first managed caller that is either:
+ *	(a) located outside the platform code assemblies; or
+ *	(b) not related to reflection and delegates
+ *
+ *	Returns TRUE to stop the stackwalk, FALSE to continue to the next frame.
+ */
 static gboolean
 get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {
@@ -99,11 +108,14 @@ get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean
 	return TRUE;
 }
 
-/* walk to the first managed method outside:
- *  - System.Reflection* namespaces
- *  - System.[MulticastDelegate]Delegate or Activator type
- *  - platform code
- *  and return its value, since CoreCLR checks needs to be done on this "real" caller.
+/*
+ * get_caller_no_reflection_related:
+ *
+ *	Find the first managed caller that is either:
+ *	(a) located outside the platform code assemblies; or
+ *	(b) not related to reflection and delegates
+ *
+ *	Returns TRUE to stop the stackwalk, FALSE to continue to the next frame.
  */
 static MonoMethod*
 get_reflection_caller (void)
@@ -137,6 +149,15 @@ check_method_access (MonoMethod *caller, MonoMethod *callee)
 	return mono_method_can_access_method_full (caller, callee, klass);
 }
 
+/*
+ * mono_security_core_clr_ensure_reflection_access_field:
+ *
+ *	Ensure that the specified field can be used with reflection since 
+ *	Transparent code cannot access to Critical fields and can only use
+ *	them if they are visible from it's point of view.
+ *
+ *	A FieldAccessException is thrown if the field is cannot be accessed.
+ */
 void
 mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field)
 {
@@ -155,6 +176,15 @@ mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field)
 		mono_raise_exception (mono_get_exception_field_access ());
 }
 
+/*
+ * mono_security_core_clr_ensure_reflection_access_method:
+ *
+ *	Ensure that the specified method can be used with reflection since
+ *	Transparent code cannot call Critical methods and can only call them
+ *	if they are visible from it's point of view.
+ *
+ *	A MethodAccessException is thrown if the field is cannot be accessed.
+ */
 void
 mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
 {
@@ -243,6 +273,14 @@ mono_security_core_clr_ensure_dynamic_method_resolved_object (gpointer ref, Mono
 	return NULL;
 }
 
+/*
+ * mono_security_core_clr_level_from_cinfo:
+ *
+ *	Return the MonoSecurityCoreCLRLevel that match the attribute located
+ *	in the specified custom attributes. If no attribute is present it 
+ *	defaults to MONO_SECURITY_CORE_CLR_TRANSPARENT, which is the default
+ *	level for all code under the CoreCLR.
+ */
 static MonoSecurityCoreCLRLevel
 mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *image)
 {
@@ -256,6 +294,11 @@ mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *i
 	return level;
 }
 
+/*
+ * mono_security_core_clr_class_level:
+ *
+ *	Return the MonoSecurityCoreCLRLevel for the specified class.
+ */
 MonoSecurityCoreCLRLevel
 mono_security_core_clr_class_level (MonoClass *class)
 {
@@ -278,6 +321,14 @@ mono_security_core_clr_class_level (MonoClass *class)
 	return level;
 }
 
+/*
+ * mono_security_core_clr_method_level:
+ *
+ *	Return the MonoSecurityCoreCLRLevel for the specified method.
+ *	If with_class_level is TRUE then the type (class) will also be
+ *	checked, otherwise this will only report the information about
+ *	the method itself.
+ */
 MonoSecurityCoreCLRLevel
 mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_level)
 {
