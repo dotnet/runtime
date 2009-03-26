@@ -10126,7 +10126,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 
 			g_assert (ins->opcode >= MONO_CEE_LAST);
 
-			for (regindex = 0; regindex < 3; regindex ++) {
+			for (regindex = 0; regindex < 4; regindex ++) {
 				int vreg;
 
 				if (regindex == 0) {
@@ -10139,11 +10139,16 @@ mono_handle_global_vregs (MonoCompile *cfg)
 					if (regtype == ' ')
 						continue;
 					vreg = ins->sreg1;
-				} else {
+				} else if (regindex == 2) {
 					regtype = spec [MONO_INST_SRC2];
 					if (regtype == ' ')
 						continue;
 					vreg = ins->sreg2;
+				} else if (regindex == 3) {
+					regtype = spec [MONO_INST_SRC3];
+					if (regtype == ' ')
+						continue;
+					vreg = ins->sreg3;
 				}
 
 #if SIZEOF_REGISTER == 4
