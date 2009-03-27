@@ -82,6 +82,7 @@ typedef struct {
 	int valid;
 	guint32 section_count;
 	SectionHeader *sections;
+	gboolean wide_strings, wide_guid, wide_blob;
 
 	DataDirectory data_directories [16];
 	OffsetAndSize metadata_streams [5]; //offset from begin of the image
@@ -591,6 +592,13 @@ verify_tables_schema (VerifyContext *ctx)
 	if (ptr [5] != 0)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata minor version %d, expected 0", ptr [5]));
 
+	if ((ptr [6] & ~0x7) != 0)
+		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata heap sizes 0x%02x, only bits 0, 1 and 2 can be set", ((unsigned char *) ptr) [6]));
+
+	ctx->wide_strings = ptr [6] & 0x1;
+	ctx->wide_guid = ptr [6] & 0x2;
+	ctx->wide_blob = ptr [6] & 04;
+
 	valid_tables = read64 (ptr + 8);
 	count = 0;
 	for (i = 0; i < 64; ++i) {
@@ -606,6 +614,10 @@ verify_tables_schema (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid table %x", i));
 		++count;
 	}
+
+	if (tables_area.size < 24 + count * 4)
+		ADD_ERROR (ctx, g_strdup_printf ("Table schemata size (%d) too small to for decoding row counts (requires %d bytes)", tables_area.size, 24 + count * 4));
+
 }
 
 
