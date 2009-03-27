@@ -353,28 +353,63 @@ mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_lev
 	return level;
 }
 
+/*
+ * mono_security_core_clr_is_platform_image:
+ *
+ *   Return the (cached) boolean value indicating if this image represent platform code
+ */
 gboolean
 mono_security_core_clr_is_platform_image (MonoImage *image)
 {
-	const char *prefix = mono_assembly_getrootdir ();
-	int prefix_len = strlen (prefix);
-	static const char subprefix[] = "/mono/2.1/";
-	int subprefix_len = strlen (subprefix);
-
-	if (!image->name)
-		return FALSE;
-	if (strncmp (prefix, image->name, prefix_len) != 0)
-		return FALSE;
-	if (strncmp (subprefix, image->name + prefix_len, subprefix_len) != 0)
-		return FALSE;
-	if (strchr (image->name + prefix_len + subprefix_len, '/'))
-		return FALSE;
-	return TRUE;
+	return image->core_clr_platform_code;
 }
 
+/*
+ * default_platform_check:
+ *
+ *	Default platform check. Always return FALSE.
+ */
+static gboolean
+default_platform_check (const char *image_name)
+{
+	return FALSE;
+}
+
+static MonoCoreClrPlatformCB platform_callback = default_platform_check;
+
+/*
+ * mono_security_core_clr_determine_platform_image:
+ *
+ *	Call the supplied callback (from mono_security_set_core_clr_platform_callback) 
+ *	to determine if this image represents platform code.
+ */
+gboolean
+mono_security_core_clr_determine_platform_image (MonoImage *image)
+{
+	return platform_callback (image->name);
+}
+
+/*
+ * mono_security_enable_core_clr:
+ *
+ *   Enable the verifier and the CoreCLR security model
+ */
 void
 mono_security_enable_core_clr ()
 {
 	mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
 	mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
 }
+
+/*
+ * mono_security_set_core_clr_platform_callback:
+ *
+ *	Set the callback function that will be used to determine if an image
+ *	is part, or not, of the platform code.
+ */
+void
+mono_security_set_core_clr_platform_callback (MonoCoreClrPlatformCB callback)
+{
+	platform_callback = callback;
+}
+

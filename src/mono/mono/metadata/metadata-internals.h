@@ -108,6 +108,9 @@ struct _MonoImage {
 	guint8 idx_string_wide : 1;
 	guint8 idx_guid_wide : 1;
 	guint8 idx_blob_wide : 1;
+
+	/* Whenever this image is considered as platform code for the CoreCLR security model */
+	guint8 core_clr_platform_code : 1;
 			    
 	char *name;
 	const char *assembly_name;

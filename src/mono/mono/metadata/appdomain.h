@@ -205,6 +205,11 @@ mono_get_exception_class    (void);
 void
 mono_security_enable_core_clr (void);
 
+typedef gboolean (*MonoCoreClrPlatformCB) (const char *image_name);
+
+void
+mono_security_set_core_clr_platform_callback (MonoCoreClrPlatformCB callback);
+
 G_END_DECLS
 #endif /* _MONO_METADATA_APPDOMAIN_H_ */
 
