@@ -40,6 +40,11 @@ G_BEGIN_DECLS
 typedef guint32 (*WapiThreadStart)(gpointer);
 typedef guint32 (*WapiApcProc)(gpointer);
 
+/* 
+ * The 'tid' argument has a different type than in win32, which breaks on win64.
+ * Runtime code shouldn't use this, use the mono_thread_create () function in
+ * metadata instead.
+ */
 extern gpointer CreateThread(WapiSecurityAttributes *security,
 			     guint32 stacksize, WapiThreadStart start,
 			     gpointer param, guint32 create, gsize *tid); /* NB tid is 32bit in MS API */

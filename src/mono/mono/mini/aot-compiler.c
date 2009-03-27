@@ -62,6 +62,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-endian.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
@@ -4190,7 +4191,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			user_data [1] = acfg;
 			user_data [2] = frag;
 			
-			handle = CreateThread (NULL, 0, (gpointer)compile_thread_main, user_data, 0, NULL);
+			handle = mono_create_thread (NULL, 0, (gpointer)compile_thread_main, user_data, 0, NULL);
 			g_ptr_array_add (threads, handle);
 		}
 		g_free (methods);

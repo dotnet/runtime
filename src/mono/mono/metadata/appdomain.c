@@ -48,6 +48,7 @@
 #include <mono/metadata/attach.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/lock-tracer.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
@@ -2078,9 +2079,9 @@ mono_domain_unload (MonoDomain *domain)
 	 * http://bugzilla.ximian.com/show_bug.cgi?id=27663
 	 */ 
 #if 0
-	thread_handle = CreateThread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
+	thread_handle = mono_create_thread (NULL, 0, unload_thread_main, &thread_data, 0, &tid);
 #else
-	thread_handle = CreateThread (NULL, 0, (LPTHREAD_START_ROUTINE)unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
+	thread_handle = mono_create_thread (NULL, 0, (LPTHREAD_START_ROUTINE)unload_thread_main, &thread_data, CREATE_SUSPENDED, &tid);
 	if (thread_handle == NULL) {
 		return;
 	}

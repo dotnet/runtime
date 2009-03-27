@@ -676,6 +676,31 @@ guint32 mono_threads_get_default_stacksize (void)
 	return default_stacksize;
 }
 
+/*
+ * mono_create_thread:
+ *
+ *   This is a wrapper around CreateThread which handles differences in the type of
+ * the the 'tid' argument.
+ */
+gpointer mono_create_thread (WapiSecurityAttributes *security,
+							 guint32 stacksize, WapiThreadStart start,
+							 gpointer param, guint32 create, gsize *tid)
+{
+	gpointer res;
+
+#ifdef PLATFORM_WIN32
+	DWORD real_tid;
+
+	res = CreateThread (security, stacksize, start, param, create, &real_tid);
+	if (tid)
+		*tid = real_tid;
+#else
+	res = CreateThread (security, stacksize, start, param, create, tid);
+#endif
+
+	return res;
+}
+
 void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread)
 {
 	MonoThread *thread;
@@ -713,7 +738,7 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 	/* Create suspended, so we can do some housekeeping before the thread
 	 * starts
 	 */
-	thread_handle = CreateThread(NULL, default_stacksize_for_thread (thread), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
+	thread_handle = mono_create_thread (NULL, default_stacksize_for_thread (thread), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				     CREATE_SUSPENDED, &tid);
 	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
 	if (thread_handle == NULL) {
@@ -957,7 +982,7 @@ HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this,
 		mono_g_hash_table_insert (threads_starting_up, this, this);
 		mono_threads_unlock ();	
 
-		thread=CreateThread(NULL, default_stacksize_for_thread (this), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
+		thread=mono_create_thread(NULL, default_stacksize_for_thread (this), (LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 				    CREATE_SUSPENDED, &tid);
 		if(thread==NULL) {
 			LeaveCriticalSection (this->synch_cs);

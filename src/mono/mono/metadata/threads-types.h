@@ -44,6 +44,10 @@ typedef void (*MonoThreadNotifyPendingExcFunc) (void);
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
 
+gpointer mono_create_thread (WapiSecurityAttributes *security,
+							 guint32 stacksize, WapiThreadStart start,
+							 gpointer param, guint32 create, gsize *tid) MONO_INTERNAL;
+
 void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread) MONO_INTERNAL;
 
 HANDLE ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start) MONO_INTERNAL;
