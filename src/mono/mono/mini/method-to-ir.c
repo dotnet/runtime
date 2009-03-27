@@ -6243,7 +6243,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: runtime generic context pointer for jumps? */
 			/* FIXME: handle this for generic sharing eventually */
 			if ((ins_flag & MONO_INST_TAILCALL) && !cfg->generic_sharing_context && !vtable_arg && cmethod && (*ip == CEE_CALL) &&
-				 (mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)))) {
+				(mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod))) && !MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->ret)) {
 				MonoCallInst *call;
 
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
