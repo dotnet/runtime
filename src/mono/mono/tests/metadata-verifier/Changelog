@@ -1,3 +1,8 @@
+2009-03-27 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Tests for heap sizes and minumum #~ size
+	to decode row counts.
+
 2009-03-26 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* gen-md-tests.c: Add tables-header and set-bit helpers.

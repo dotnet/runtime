@@ -13,7 +13,9 @@ tables-header {
 	invalid offset stream-header ( 0 ) + 4 set-uint 23
 
 	#heap sizes
-	invalid offset tables-header + 5 set-byte 0xFF
+	invalid offset tables-header + 6 set-byte 0x8
+	invalid offset tables-header + 6 set-byte 0x10
+	invalid offset tables-header + 6 set-byte 0xF
 
 	#present tables
 	#ECMA-335 defines 39 tables, the empty slows are the following:
@@ -36,4 +38,16 @@ tables-header {
 	invalid offset tables-header + 8 set-bit 0x35
 	invalid offset tables-header + 8 set-bit 0x38
 	invalid offset tables-header + 8 set-bit 0x3F
+
+	#simple-assembly.exe feature 6 tables (modules, typeref, typedef, method, assembly and assemblyref)
+	#This means that there must be 24 + 6 *4 bytes to hold the schemata + rows -> 48 bytes
+
+	#table schema size
+	invalid offset stream-header ( 0 ) + 4 set-uint 24
+	invalid offset stream-header ( 0 ) + 4 set-uint 33
+	invalid offset stream-header ( 0 ) + 4 set-uint 39
+	invalid offset stream-header ( 0 ) + 4 set-uint 44
+	invalid offset stream-header ( 0 ) + 4 set-uint 47
+
 }
+
