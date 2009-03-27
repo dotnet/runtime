@@ -674,7 +674,11 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
 	if (!multicast && !callvirt) {
-		code = delegate->target ? impl_this : impl_nothis;
+		if (method && (method->flags & METHOD_ATTRIBUTE_STATIC) && mono_method_signature (method)->param_count == mono_method_signature (invoke)->param_count + 1)
+			/* Closed static delegate */
+			code = impl_this;
+		else
+			code = delegate->target ? impl_this : impl_nothis;
 
 		if (code) {
 			delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
