@@ -49,5 +49,8 @@ tables-header {
 	invalid offset stream-header ( 0 ) + 4 set-uint 44
 	invalid offset stream-header ( 0 ) + 4 set-uint 47
 
+	#total size of the tables
+	invalid offset stream-header ( 0 ) + 4 set-uint 60
+	invalid offset stream-header ( 0 ) + 4 set-uint 93
 }
 

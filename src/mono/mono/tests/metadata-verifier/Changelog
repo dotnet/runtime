@@ -1,5 +1,9 @@
 2009-03-27 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for total table sizes.
+
+2009-03-27 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for heap sizes and minumum #~ size
 	to decode row counts.
 
