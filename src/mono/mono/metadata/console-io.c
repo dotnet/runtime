@@ -11,6 +11,7 @@
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
 #ifdef HAVE_SYS_TIME_H
@@ -61,6 +62,26 @@ static gchar *keypad_xmit_str;
 #ifdef HAVE_TERMIOS_H
 /* This is the last state used by Mono, used after a CONT signal is received */
 static struct termios mono_attr;
+#endif
+
+#if defined(PLATFORM_WIN32)
+void
+mono_console_init (void)
+{
+}
+#else
+void
+mono_console_init (void)
+{
+	int fd;
+
+	/* Make sure the standard file descriptors are opened */
+	fd = open ("/dev/null", O_RDWR);
+	while (fd >= 0 && fd < 3) {
+		fd = open ("/dev/null", O_RDWR);
+	}
+	close (fd);
+}
 #endif
 
 #if defined (PLATFORM_WIN32) || defined (MONO_NULL_TTYDRIVER)

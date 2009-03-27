@@ -18,6 +18,7 @@
 
 G_BEGIN_DECLS
 
+void mono_console_init (void) MONO_INTERNAL;
 MonoBoolean ves_icall_System_ConsoleDriver_Isatty (HANDLE handle) MONO_INTERNAL;
 gint32 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout) MONO_INTERNAL;
 MonoBoolean ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean echo) MONO_INTERNAL;

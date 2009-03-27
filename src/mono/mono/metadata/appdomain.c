@@ -48,6 +48,7 @@
 #include <mono/metadata/attach.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/lock-tracer.h>
+#include <mono/metadata/console-io.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
@@ -236,6 +237,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_network_init ();
 #endif
 	
+	mono_console_init ();
 	mono_attach_init ();
 
 	mono_locks_tracer_init ();
@@ -2106,7 +2108,7 @@ mono_domain_unload (MonoDomain *domain)
 		/* Roll back the state change */
 		domain->state = MONO_APPDOMAIN_CREATED;
 
-		g_warning (thread_data.failure_reason);
+		g_warning ("%s", thread_data.failure_reason);
 
 		ex = mono_get_exception_cannot_unload_appdomain (thread_data.failure_reason);
 
