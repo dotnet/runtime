@@ -3165,6 +3165,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	header = mono_method_get_header (method_to_compile);
 	if (!header) {
+		mono_loader_clear_error ();
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
 		cfg->exception_message = g_strdup_printf ("Missing or incorrect header for method %s", cfg->method->name);
 		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())

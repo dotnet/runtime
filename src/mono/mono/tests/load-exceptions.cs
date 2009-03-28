@@ -225,19 +225,21 @@ public class Tests : LoadMissing {
 	// Missing classes referenced from metadata
 	//
 
-	// FIXME: These do not work yet
-#if FALSE
 	public static int test_0_missing_local () {
 		try {
 			missing_local ();
 		}
 		catch (TypeLoadException ex) {
 		}
+		catch (InvalidProgramException ex) {
+		}
 
 		/* MS.NET doesn't throw an exception if a local is not found */
 		return 0;
 	}
 
+	// FIXME: These do not work yet
+#if FALSE
 	public static void missing_parent () {
 		new Miss1 ();
 	}
