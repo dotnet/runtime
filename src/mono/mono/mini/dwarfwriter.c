@@ -31,7 +31,7 @@
 struct _MonoDwarfWriter
 {
 	MonoImageWriter *w;
-	GHashTable *class_to_die;
+	GHashTable *class_to_die, *class_to_vtype_die, *class_to_pointer_die;
 	int fde_index, tdie_index, line_number_file_index, line_number_dir_index;
 	GHashTable *file_to_index, *dir_to_index;
 	FILE *il_file;
@@ -362,6 +362,8 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 #define ABBREV_NAMESPACE 10
 #define ABBREV_VARIABLE 11
 #define ABBREV_VARIABLE_LOCLIST 12
+#define ABBREV_POINTER_TYPE 13
+#define ABBREV_PARAM_LOCLIST 14
 
 static int compile_unit_attr [] = {
 	DW_AT_producer     ,DW_FORM_string,
@@ -386,6 +388,12 @@ static int param_attr [] = {
 	DW_AT_location, DW_FORM_block1
 };
 
+static int param_loclist_attr [] = {
+	DW_AT_name,     DW_FORM_string,
+	DW_AT_type,     DW_FORM_ref4,
+	DW_AT_location, DW_FORM_data4
+};
+
 static int base_type_attr [] = {
 	DW_AT_byte_size,   DW_FORM_data1,
 	DW_AT_encoding,    DW_FORM_data1,
@@ -406,6 +414,10 @@ static int data_member_attr [] = {
 static int typedef_attr [] = {
 	DW_AT_name,        DW_FORM_string,
 	DW_AT_type,        DW_FORM_ref4
+};
+
+static int pointer_type_attr [] = {
+	DW_AT_type,        DW_FORM_ref4,
 };
 
 static int enum_type_attr [] = {
@@ -618,6 +630,8 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 					   subprogram_attr, G_N_ELEMENTS (subprogram_attr));
 	emit_dwarf_abbrev (w, ABBREV_PARAM, DW_TAG_formal_parameter, FALSE, 
 					   param_attr, G_N_ELEMENTS (param_attr));
+	emit_dwarf_abbrev (w, ABBREV_PARAM_LOCLIST, DW_TAG_formal_parameter, FALSE, 
+					   param_loclist_attr, G_N_ELEMENTS (param_loclist_attr));
 	emit_dwarf_abbrev (w, ABBREV_BASE_TYPE, DW_TAG_base_type, FALSE, 
 					   base_type_attr, G_N_ELEMENTS (base_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_STRUCT_TYPE, DW_TAG_class_type, TRUE, 
@@ -636,6 +650,8 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 					   variable_attr, G_N_ELEMENTS (variable_attr));
 	emit_dwarf_abbrev (w, ABBREV_VARIABLE_LOCLIST, DW_TAG_variable, FALSE,
 					   variable_loclist_attr, G_N_ELEMENTS (variable_loclist_attr));
+	emit_dwarf_abbrev (w, ABBREV_POINTER_TYPE, DW_TAG_pointer_type, FALSE,
+					   pointer_type_attr, G_N_ELEMENTS (pointer_type_attr));
 	emit_byte (w, 0);
 
 	emit_section_change (w, ".debug_info", 0);
@@ -687,25 +703,35 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 
 /* Returns the local symbol pointing to the emitted debug info */
 static char*
-emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass)
+emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 {
-	char *die;
+	char *die, *pointer_die;
 	char *full_name;
 	gpointer iter;
 	MonoClassField *field;
 	const char *fdie;
 	int k;
 	gboolean emit_namespace = FALSE;
+	GHashTable *cache;
 
 	// FIXME: Appdomains
 	if (!w->class_to_die)
 		w->class_to_die = g_hash_table_new (NULL, NULL);
+	if (!w->class_to_vtype_die)
+		w->class_to_vtype_die = g_hash_table_new (NULL, NULL);
+	if (!w->class_to_pointer_die)
+		w->class_to_pointer_die = g_hash_table_new (NULL, NULL);
 
-	die = g_hash_table_lookup (w->class_to_die, klass);
+	if (vtype)
+		cache = w->class_to_vtype_die;
+	else
+		cache = w->class_to_die;
+
+	die = g_hash_table_lookup (cache, klass);
 	if (die)
 		return die;
 
-	if (!((klass->byval_arg.type == MONO_TYPE_CLASS) || klass->enumtype))
+	if (!((klass->byval_arg.type == MONO_TYPE_CLASS) || klass->enumtype || (klass->byval_arg.type == MONO_TYPE_VALUETYPE && vtype)))
 		return NULL;
 
 	/*
@@ -811,7 +837,10 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass)
 				/* location */
 				p = buf;
 				*p ++= DW_OP_plus_uconst;
-				encode_uleb128 (field->offset, p, &p);
+				if (klass->valuetype && vtype)
+					encode_uleb128 (field->offset - sizeof (MonoObject), p, &p);
+				else
+					encode_uleb128 (field->offset, p, &p);
 
 				emit_byte (w, p - buf);
 				emit_bytes (w, buf, p - buf);
@@ -827,26 +856,43 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass)
 	emit_string (w, full_name);
 	emit_symbol_diff (w, die, ".Ldebug_info_start", 0);
 
+	/* Add a pointer type */
+	pointer_die = g_strdup_printf (".LTDIE_%d_POINTER", w->tdie_index);
+	emit_label (w, pointer_die);
+
+	emit_uleb128 (w, ABBREV_POINTER_TYPE);
+	emit_symbol_diff (w, die, ".Ldebug_info_start", 0);
+
+	g_hash_table_insert (w->class_to_pointer_die, klass, pointer_die);
+
 	g_free (full_name);
 	w->tdie_index ++;
-
 
 	if (emit_namespace) {
 		/* Namespace end */
 		emit_uleb128 (w, 0x0);
 	}
 
-	g_hash_table_insert (w->class_to_die, klass, die);
+	g_hash_table_insert (cache, klass, die);
 	return die;
 }
 
-static void
-emit_var_type (MonoDwarfWriter *w, MonoType *t)
+static const char*
+emit_type (MonoDwarfWriter *w, MonoType *t)
 {
 	MonoClass *klass = mono_class_from_mono_type (t);
 	int j;
 	const char *tdie;
 
+	if (t->byref) {
+		if (t->type == MONO_TYPE_VALUETYPE) {
+			tdie = emit_class_dwarf_info (w, klass, TRUE);
+			if (tdie)
+				return g_hash_table_lookup (w->class_to_pointer_die, klass);
+		}
+		// FIXME:
+		t = &mono_defaults.int_class->byval_arg;
+	}
 	for (j = 0; j < G_N_ELEMENTS (basic_types); ++j)
 		if (basic_types [j].type == t->type)
 			break;
@@ -860,7 +906,7 @@ emit_var_type (MonoDwarfWriter *w, MonoType *t)
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (klass->enumtype)
-				tdie = emit_class_dwarf_info (w, klass);
+				tdie = emit_class_dwarf_info (w, klass, FALSE);
 			else
 				tdie = ".LDIE_I4";
 			break;
@@ -869,9 +915,17 @@ emit_var_type (MonoDwarfWriter *w, MonoType *t)
 			break;
 		}
 	}
-	if (t->byref)
-		// FIXME:
-		tdie = ".LDIE_I4";
+
+	return tdie;
+}
+
+static void
+emit_var_type (MonoDwarfWriter *w, MonoType *t)
+{
+	const char *tdie;
+
+	tdie = emit_type (w, t);
+
 	emit_symbol_diff (w, tdie, ".Ldebug_info_start", 0);
 }
 
@@ -1330,6 +1384,25 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method, guint8 *code,
 	}
 }
 
+static MonoMethodVar*
+find_vmv (MonoCompile *cfg, MonoInst *ins)
+{
+	int j;
+
+	if (cfg->varinfo) {
+		for (j = 0; j < cfg->num_varinfo; ++j) {
+			if (cfg->varinfo [j] == ins)
+				break;
+		}
+
+		if (j < cfg->num_varinfo) {
+			return MONO_VARINFO (cfg, j);
+		}
+	}
+
+	return NULL;
+}
+
 void
 mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info)
 {
@@ -1359,13 +1432,13 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 			t = sig->params [i - sig->hasthis];
 		}
 
-		emit_class_dwarf_info (w, mono_class_from_mono_type (t));
+		emit_type (w, t);
 	}
 
 	/* Local types */
 	local_tdies = g_new0 (char *, header->num_locals);
 	for (i = 0; i < header->num_locals; ++i) {
-		emit_class_dwarf_info (w, mono_class_from_mono_type (header->locals [i]));
+		emit_type (w, header->locals [i]);
 	}
 
 	/* Subprogram */
@@ -1394,16 +1467,25 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		MonoType *t;
 		const char *pname;
 		char pname_buf [128];
+		MonoMethodVar *vmv = NULL;
+		gboolean need_loclist = FALSE;
+
+		vmv = find_vmv (cfg, arg);
+		if (code && vmv && (vmv->live_range_start || vmv->live_range_end))
+			need_loclist = TRUE;
 
 		if (i == 0 && sig->hasthis) {
-			t = &mono_defaults.object_class->byval_arg;
+			if (method->klass->valuetype)
+				t = &method->klass->this_arg;
+			else
+				t = &mono_defaults.object_class->byval_arg;
 			pname = "this";
 		} else {
 			t = sig->params [i - sig->hasthis];
 			pname = names [i - sig->hasthis];
 		}
-		
-		emit_uleb128 (w, ABBREV_PARAM);
+
+		emit_uleb128 (w, need_loclist ? ABBREV_PARAM_LOCLIST : ABBREV_PARAM);
 		/* name */
 		if (pname[0] == '\0') {
 			sprintf (pname_buf, "param%d", i - sig->hasthis);
@@ -1418,8 +1500,16 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 		p = buf;
 		encode_var_location (w, arg, p, &p);
-		emit_byte (w, p - buf);
-		emit_bytes (w, buf, p - buf);
+		if (need_loclist) {
+			vmv->live_range_start = 0;
+			if (vmv->live_range_end == 0)
+				/* FIXME: Uses made in calls are not recorded */
+				vmv->live_range_end = code_size;
+			emit_loclist (w, arg, code + vmv->live_range_start, code + vmv->live_range_end, buf, p - buf);
+		} else {
+			emit_byte (w, p - buf);
+			emit_bytes (w, buf, p - buf);
+		}
 	}		
 	g_free (names);
 
@@ -1434,25 +1524,16 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		gboolean need_loclist = FALSE;
 
 		/* ins->dreg no longer contains the original vreg */
-		if (cfg->varinfo) {
-			for (j = 0; j < cfg->num_varinfo; ++j) {
-				if (cfg->varinfo [j] == ins)
-					break;
-			}
-
-			if (code && j < cfg->num_varinfo) {
-				vmv = MONO_VARINFO (cfg, j);
-				if (vmv->live_range_start) {
-					/* This variable has a precise live range */
-					need_loclist = TRUE;
-				}
+		vmv = find_vmv (cfg, ins);
+		if (code && vmv) {
+			vmv = MONO_VARINFO (cfg, j);
+			if (vmv->live_range_start) {
+				/* This variable has a precise live range */
+				need_loclist = TRUE;
 			}
 		}
 
-		if (need_loclist)
-			emit_uleb128 (w, ABBREV_VARIABLE_LOCLIST);
-		else
-			emit_uleb128 (w, ABBREV_VARIABLE);
+		emit_uleb128 (w, need_loclist ? ABBREV_VARIABLE_LOCLIST : ABBREV_VARIABLE);
 		/* name */
 		for (j = 0; j < num_locals; ++j)
 			if (local_indexes [j] == i)
