@@ -106,6 +106,45 @@ public class CriticalClass {
         }
 }
 
+public class TransparentBaseClass {
+	public virtual void TransparentMethod ()
+	{
+	}
+
+	[SecuritySafeCritical]
+	public virtual void SafeCriticalMethod ()
+	{
+	}
+
+	[SecurityCritical]
+	public virtual void CriticalMethod ()
+	{
+	}
+}
+
+public class BadTransparentOverrideClass : TransparentBaseClass {
+	[SecurityCritical]
+	public override void TransparentMethod ()
+	{
+		Test.error ("this method is critical and cannot override its base (transparent)");
+	}
+}
+
+public class BadSafeCriticalOverrideClass : TransparentBaseClass {
+	[SecurityCritical]
+	public override void SafeCriticalMethod ()
+	{
+		Test.error ("this method is critical and cannot override its base (safe critical)");
+	}
+}
+
+public class BadCriticalOverrideClass : TransparentBaseClass {
+	public override void CriticalMethod ()
+	{
+		Test.error ("this method is NOT critical and cannot override its base (critical)");
+	}
+}
+
 public delegate void MethodDelegate ();
 
 public delegate Object InvokeDelegate (Object obj, Object[] parms);
@@ -162,6 +201,21 @@ public class Test
 		error ("unsafe method called");
 	}
 	*/
+
+	static void doBadTransparentOverrideClass ()
+	{
+		new BadTransparentOverrideClass ();
+	}
+
+	static void doBadSafeCriticalOverrideClass ()
+	{
+		new BadSafeCriticalOverrideClass ();
+	}
+
+	static void doBadCriticalOverrideClass ()
+	{
+		new BadCriticalOverrideClass ();
+	}
 
 	public static void TransparentReflectionCMethod ()
 	{
@@ -299,6 +353,24 @@ public class Test
 			CallStringTest ();
 		} catch (MethodAccessException) {
 			error ("string test failed");
+		}
+
+		try {
+			doBadTransparentOverrideClass ();
+			error ("BadTransparentOverrideClass error");
+		} catch (TypeLoadException) {
+		}
+
+		try {
+			doBadSafeCriticalOverrideClass ();
+			error ("BadSafeCriticalOverrideClass error");
+		} catch (TypeLoadException) {
+		}
+
+		try {
+			doBadCriticalOverrideClass ();
+			error ("BadCriticalOverrideClass error");
+		} catch (TypeLoadException) {
 		}
 
 		//Console.WriteLine ("ok");
