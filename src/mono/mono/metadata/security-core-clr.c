@@ -46,6 +46,66 @@ security_safe_critical_attribute (void)
 }
 
 /*
+ * mono_security_core_clr_check_inheritance:
+ *
+ *	Determine if the specified class can inherit from its parent using 
+ * 	the CoreCLR inheritance rules.
+ *
+ *	Base Type	Allow Derived Type
+ *	------------	------------------
+ *	Transparent	Transparent, SafeCritical, Critical
+ *	SafeCritical	SafeCritical, Critical
+ *	Critical	Critical
+ *
+ *	Reference: http://msdn.microsoft.com/en-us/magazine/cc765416.aspx#id0190030
+ */
+void
+mono_security_core_clr_check_inheritance (MonoClass *class)
+{
+	MonoSecurityCoreCLRLevel class_level, parent_level;
+	MonoClass *parent = class->parent;
+
+	if (!parent)
+		return;
+
+	class_level = mono_security_core_clr_class_level (class);
+	parent_level = mono_security_core_clr_class_level (parent);
+
+	if (class_level < parent_level)
+		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+}
+
+/*
+ * mono_security_core_clr_check_override:
+ *
+ *	Determine if the specified override can "legally" override the 
+ *	specified base method using the CoreCLR inheritance rules.
+ *
+ *	Base (virtual/interface)	Allowed override
+ *	------------------------	-------------------------
+ *	Transparent			Transparent, SafeCritical
+ *	SafeCritical			Transparent, SafeCritical
+ *	Critical			Critical
+ *
+ *	Reference: http://msdn.microsoft.com/en-us/magazine/cc765416.aspx#id0190030
+ */
+void
+mono_security_core_clr_check_override (MonoClass *class, MonoMethod *override, MonoMethod *base)
+{
+	MonoSecurityCoreCLRLevel base_level = mono_security_core_clr_method_level (base, FALSE);
+	MonoSecurityCoreCLRLevel override_level = mono_security_core_clr_method_level (override, FALSE);
+	/* if the base method is decorated with [SecurityCritical] then the overrided method MUST be too */
+	if (base_level == MONO_SECURITY_CORE_CLR_CRITICAL) {
+		if (override_level != MONO_SECURITY_CORE_CLR_CRITICAL)
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	} else {
+		/* base is [SecuritySafeCritical] or [SecurityTransparent], override MUST NOT be [SecurityCritical] */
+		if (override_level == MONO_SECURITY_CORE_CLR_CRITICAL)
+			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+	}
+}
+
+/*
  * get_caller_no_reflection_related:
  *
  *	Find the first managed caller that is either:

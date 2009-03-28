@@ -2727,19 +2727,6 @@ mono_class_setup_vtable (MonoClass *class)
 	return;
 }
 
-static void
-check_core_clr_override_method (MonoClass *class, MonoMethod *override, MonoMethod *base)
-{
-	MonoSecurityCoreCLRLevel base_level = mono_security_core_clr_method_level (base, FALSE);
-	/* if the base method is decorated with [SecurityCritical] then the overrided method MUST be too */
-	if (base_level == MONO_SECURITY_CORE_CLR_CRITICAL) {
-		MonoSecurityCoreCLRLevel override_level = mono_security_core_clr_method_level (override, FALSE);
-		if (override_level != MONO_SECURITY_CORE_CLR_CRITICAL)
-			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-	}
-}
-
-
 #define DEBUG_INTERFACE_VTABLE_CODE 0
 #define TRACE_INTERFACE_VTABLE_CODE 0
 #define VERIFY_INTERFACE_VTABLE_CODE 0
@@ -2838,7 +2825,7 @@ check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *c
 		}
 
 		if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-			check_core_clr_override_method (class, cm, im);
+			mono_security_core_clr_check_override (class, cm, im);
 		TRACE_INTERFACE_VTABLE (printf ("[NAME CHECK OK]"));
 		return TRUE;
 	} else {
@@ -2907,7 +2894,7 @@ check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *c
 		}
 
 		if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-			check_core_clr_override_method (class, cm, im);
+			mono_security_core_clr_check_override (class, cm, im);
 		
 		TRACE_INTERFACE_VTABLE (printf ("[INJECTED INTERFACE CHECK OK]"));
 		return TRUE;
@@ -3167,7 +3154,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			g_hash_table_insert (override_map, overrides [i * 2], overrides [i * 2 + 1]);
 
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-				check_core_clr_override_method (class, vtable [dslot], decl);
+				mono_security_core_clr_check_override (class, vtable [dslot], decl);
 		}
 	}
 	TRACE_INTERFACE_VTABLE (print_overrides (override_map, "AFTER OVERRIDING INTERFACE METHODS"));
@@ -3323,7 +3310,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						}
 
 						if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-							check_core_clr_override_method (class, cm, m1);
+							mono_security_core_clr_check_override (class, cm, m1);
 
 						slot = mono_method_get_vtable_slot (m1);
 						g_assert (cm->slot < max_vtsize);
@@ -3359,7 +3346,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			g_hash_table_insert (override_map, decl, overrides [i * 2 + 1]);
 
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-				check_core_clr_override_method (class, vtable [decl->slot], decl);
+				mono_security_core_clr_check_override (class, vtable [decl->slot], decl);
 		}
 	}
 
@@ -3658,22 +3645,6 @@ set_failure_from_loader_error (MonoClass *class, MonoLoaderError *error)
 	mono_class_set_failure (class, error->exception_type, exception_data);
 }
 
-static void
-check_core_clr_inheritance (MonoClass *class)
-{
-	MonoSecurityCoreCLRLevel class_level, parent_level;
-	MonoClass *parent = class->parent;
-
-	if (!parent)
-		return;
-
-	class_level = mono_security_core_clr_class_level (class);
-	parent_level = mono_security_core_clr_class_level (parent);
-
-	if (class_level < parent_level)
-		mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
-}
-
 /**
  * mono_class_init:
  * @class: the class to initialize
@@ -3724,7 +3695,7 @@ mono_class_init (MonoClass *class)
 	}
 
 	if (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-		check_core_clr_inheritance (class);
+		mono_security_core_clr_check_inheritance (class);
 
 	mono_stats.initialized_class_count++;
 
