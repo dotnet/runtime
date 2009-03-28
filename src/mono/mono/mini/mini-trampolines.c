@@ -128,6 +128,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	MonoMethod *declaring = NULL;
 	MonoMethod *generic_virtual = NULL;
 	int context_used;
+	gboolean proxy = FALSE;
 
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	if (m == MONO_FAKE_VTABLE_METHOD) {
@@ -175,24 +176,37 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 #ifdef MONO_ARCH_HAVE_IMT
 	if (m == MONO_FAKE_IMT_METHOD) {
 		MonoMethod *impl_method;
+		MonoGenericSharingContext *gsctx;
+		MonoObject *this_arg;
+
 		/* we get the interface method because mono_convert_imt_slot_to_vtable_slot ()
 		 * needs the signature to be able to find the this argument
 		 */
 		m = mono_arch_find_imt_method ((gpointer*)regs, code);
 		vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
 		g_assert (vtable_slot);
-		vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, m, &impl_method);
-		/* mono_convert_imt_slot_to_vtable_slot () also gives us the method that is supposed
-		 * to be called, so we compile it and go ahead as usual.
-		 */
-		/*g_print ("imt found method %p (%s) at %p\n", impl_method, impl_method->name, code);*/
-		if (m->is_inflated && ((MonoMethodInflated*)m)->context.method_inst) {
-			/* Generic virtual method */
-			generic_virtual = m;
-			m = impl_method;
-			m = mono_marshal_get_static_rgctx_invoke (m);
+
+		gsctx = mono_get_generic_context_from_code (code);
+		this_arg = mono_arch_find_this_argument ((gpointer*)regs, m, gsctx);
+
+		if (this_arg->vtable->klass == mono_defaults.transparent_proxy_class) {
+			/* Use the slow path for now */
+			proxy = TRUE;
+		    m = mono_object_get_virtual_method (this_arg, m);
 		} else {
-			m = impl_method;
+			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, m, &impl_method);
+			/* mono_convert_imt_slot_to_vtable_slot () also gives us the method that is supposed
+			 * to be called, so we compile it and go ahead as usual.
+			 */
+			/*g_print ("imt found method %p (%s) at %p\n", impl_method, impl_method->name, code);*/
+			if (m->is_inflated && ((MonoMethodInflated*)m)->context.method_inst) {
+				/* Generic virtual method */
+				generic_virtual = m;
+				m = impl_method;
+				m = mono_marshal_get_static_rgctx_invoke (m);
+			} else {
+				m = impl_method;
+			}
 		}
 	}
 #endif
@@ -381,7 +395,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 		g_assert (*vtable_slot);
 
-		if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot)) {
+		if (!proxy && (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))) {
 #ifdef MONO_ARCH_HAVE_IMT
 			vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, m, NULL);
 #endif

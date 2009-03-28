@@ -100,10 +100,18 @@ namespace RemotingTest
 		}
 	}
 
-	class R1 : MarshalByRefObject 
+	interface GenericIFace {
+		T Foo <T> ();
+	}
+
+	class R1 : MarshalByRefObject, GenericIFace
 	{
 		public R2 TestMBV() {
 			return new R2();
+		}
+
+		public T Foo <T> () {
+			return default (T);
 		}
 	}
 
@@ -152,6 +160,17 @@ namespace RemotingTest
 
 			if (!bSerExc)
 				return 4;
+
+			// Test generic virtual interface methods on proxies
+
+			o = app2.CreateInstance(typeof(R1).Assembly.FullName, typeof(R1).FullName);
+			myobj = (R1) o.Unwrap();
+
+			GenericIFace iface = (GenericIFace)myobj;
+			if (iface.Foo <int> () != 0)
+				return 5;
+			if (iface.Foo <string> () != "")
+				return 6;
 	
 			Console.WriteLine("test-ok");
 			return 0;
