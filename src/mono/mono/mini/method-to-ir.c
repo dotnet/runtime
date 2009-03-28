@@ -10642,8 +10642,8 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					if (var->opcode == OP_REGVAR) {
 						sregs [srcindex] = var->dreg;
 						//mono_inst_set_src_registers (ins, sregs);
-						live_range_end [var->dreg] = use_ins;
-						live_range_end_bb [var->dreg] = bb;
+						live_range_end [sreg] = use_ins;
+						live_range_end_bb [sreg] = bb;
 						continue;
 					}
 
@@ -10769,11 +10769,13 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 		if (live_range_start [vreg]) {
 			MONO_INST_NEW (cfg, ins, OP_LIVERANGE_START);
 			ins->inst_c0 = i;
+			ins->inst_c1 = vreg;
 			mono_bblock_insert_after_ins (live_range_start_bb [vreg], live_range_start [vreg], ins);
 		}
 		if (live_range_end [vreg]) {
 			MONO_INST_NEW (cfg, ins, OP_LIVERANGE_END);
 			ins->inst_c0 = i;
+			ins->inst_c1 = vreg;
 			mono_bblock_insert_after_ins (live_range_end_bb [vreg], live_range_end [vreg], ins);
 		}
 	}

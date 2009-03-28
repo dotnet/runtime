@@ -407,6 +407,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 			break;
 		case OP_REGOFFSET:
 			printf (" + 0x%lx", (long)ins->inst_offset);
+			break;
 		default:
 			break;
 		}
@@ -581,6 +582,10 @@ mono_print_ins_index (int i, MonoInst *ins)
 			else
 				printf (" [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
 		}
+		break;
+	case OP_LIVERANGE_START:
+	case OP_LIVERANGE_END:
+		printf (" R%d", (int)ins->inst_c1);
 		break;
 	default:
 		break;
