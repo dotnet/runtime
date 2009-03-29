@@ -169,7 +169,7 @@ namespace RemotingTest
 			GenericIFace iface = (GenericIFace)myobj;
 			if (iface.Foo <int> () != 0)
 				return 5;
-			if (iface.Foo <string> () != "")
+			if (iface.Foo <string> () != null)
 				return 6;
 	
 			Console.WriteLine("test-ok");
