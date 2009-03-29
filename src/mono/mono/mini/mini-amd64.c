@@ -3496,30 +3496,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = AMD64_RAX;
 			}
 
-			if (call->method && ins->inst_offset < 0) {
-				gssize val;
-
-				/* 
-				 * This is a possible IMT call so save the IMT method in the proper
-				 * register. We don't use the generic code in method-to-ir.c, because
-				 * we need to disassemble this in get_vcall_slot_addr (), so we have to
-				 * maintain control over the layout of the code.
-				 * Also put the base reg in %rax to simplify find_imt_method ().
-				 */
-				if (ins->sreg1 != AMD64_RAX) {
-					amd64_mov_reg_reg (code, AMD64_RAX, ins->sreg1, 8);
-					ins->sreg1 = AMD64_RAX;
-				}
-				val = (gssize)(gpointer)call->method;
-
-				// FIXME: Generics sharing
-#if 0
-				if ((((guint64)val) >> 32) == 0)
-					amd64_mov_reg_imm_size (code, MONO_ARCH_IMT_REG, val, 4);
-				else
-					amd64_mov_reg_imm_size (code, MONO_ARCH_IMT_REG, val, 8);
-#endif
-			}
+			/* 
+			 * Emit a few nops to simplify get_vcall_slot ().
+			 */
+			amd64_nop (code);
+			amd64_nop (code);
+			amd64_nop (code);
 
 			amd64_call_membase (code, ins->sreg1, ins->inst_offset);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
@@ -5557,70 +5539,19 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 
 	*displacement = 0;
 
-	/* go to the start of the call instruction
-	 *
-	 * address_byte = (m << 6) | (o << 3) | reg
-	 * call opcode: 0xff address_byte displacement
-	 * 0xff m=1,o=2 imm8
-	 * 0xff m=2,o=2 imm32
-	 */
 	code -= 7;
 
 	/* 
 	 * A given byte sequence can match more than case here, so we have to be
 	 * really careful about the ordering of the cases. Longer sequences
 	 * come first.
-	 * Some of the rules are only needed because the imm in the mov could 
-	 * match the
-	 * code [2] == 0xe8 case below.
+	 * There are two types of calls:
+	 * - direct calls: 0xff address_byte 8/32 bits displacement
+	 * - indirect calls: nop nop nop <call>
+	 * The nops make sure we don't confuse the instruction preceeding an indirect
+	 * call with a direct call.
 	 */
-#ifdef MONO_ARCH_HAVE_IMT
-	if ((code [-2] == 0x41) && (code [-1] == 0xbb) && (code [4] == 0xff) && (x86_modrm_mod (code [5]) == 1) && (x86_modrm_reg (code [5]) == 2) && ((signed char)code [6] < 0)) {
-		/* IMT-based interface calls: with MONO_ARCH_IMT_REG == r11
-		 * 41 bb 14 f8 28 08       mov    $0x828f814,%r11d
-		 * ff 50 fc                call   *0xfffffffc(%rax)
-		 */
-		reg = amd64_modrm_rm (code [5]);
-		disp = (signed char)code [6];
-		/* R10 is clobbered by the IMT thunk code */
-		g_assert (reg != AMD64_R10);
-	}
-#else
-	if (0) {
-	}
-#endif
-	else if ((code [-2] == 0x41) && (code [-1] == 0xbb) && (code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x1)) {
-		/* 
-		 * 41 bb e8 e8 e8 e8     mov    $0xe8e8e8e8,%r11d
-		 * ff 50 60              callq  *0x60(%rax)
-		 */
-		if (IS_REX (code [3]))
-			rex = code [3];
-		reg = amd64_modrm_rm (code [5]);
-		disp = *(gint8*)(code + 6);
-		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
-	} else if ((code [-1] == 0x8b) && (amd64_modrm_mod (code [0]) == 0x2) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
-		/*
-		 * This is a interface call
-		 * 48 8b 80 f0 e8 ff ff   mov    0xffffffffffffe8f0(%rax),%rax
-		 * ff 10                  callq  *(%rax)
-		 */
-		if (IS_REX (code [4]))
-			rex = code [4];
-		reg = amd64_modrm_rm (code [6]);
-		disp = 0;
-		/* R10 is clobbered by the IMT thunk code */
-		g_assert (reg != AMD64_R10);
-	} else if ((code [-1] >= 0xb8) && (code [-1] < 0xb8 + 8) && (code [4] == 0xff) && (amd64_modrm_reg (code [5]) == 0x2) && (amd64_modrm_mod (code [5]) == 0x1)) {
-		/* 
-		 * ba e8 e8 e8 e8     mov    $0xe8e8e8e8,%edx
-		 * ff 50 60              callq  *0x60(%rax)
-		 */
-		if (IS_REX (code [3]))
-			rex = code [3];
-		reg = amd64_modrm_rm (code [5]);
-		disp = *(gint8*)(code + 6);
-	} else if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
+	if ((code [0] == 0x41) && (code [1] == 0xff) && (code [2] == 0x15)) {
 		/* call OFFSET(%rip) */
 		disp = *(guint32*)(code + 3);
 		return (gpointer*)(code + disp + 7);
@@ -5659,11 +5590,7 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 		//printf ("B: [%%r%d+0x%x]\n", reg, disp);
 	}
 	else if ((code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x0)) {
-			/*
-			 * This is a interface call: should check the above code can't catch it earlier 
-			 * 8b 40 30   mov    0x30(%eax),%eax
-			 * ff 10      call   *(%eax)
-			 */
+		/* call *%reg */
 		if (IS_REX (code [4]))
 			rex = code [4];
 		reg = amd64_modrm_rm (code [6]);
@@ -6025,12 +5952,6 @@ MonoObject*
 mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
 	return mono_arch_get_this_arg_from_call (gsctx, mono_method_signature (method), (gssize*)regs, NULL);
-}
-
-void
-mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
-{
-	/* Done by the implementation of the CALL_MEMBASE opcodes */
 }
 #endif
 
