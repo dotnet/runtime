@@ -231,8 +231,6 @@ public class Tests : LoadMissing {
 		}
 		catch (TypeLoadException ex) {
 		}
-		catch (InvalidProgramException ex) {
-		}
 
 		/* MS.NET doesn't throw an exception if a local is not found */
 		return 0;
