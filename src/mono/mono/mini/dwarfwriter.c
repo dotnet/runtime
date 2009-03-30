@@ -1526,7 +1526,6 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		/* ins->dreg no longer contains the original vreg */
 		vmv = find_vmv (cfg, ins);
 		if (code && vmv) {
-			vmv = MONO_VARINFO (cfg, j);
 			if (vmv->live_range_start) {
 				/* This variable has a precise live range */
 				need_loclist = TRUE;
