@@ -44,6 +44,11 @@ typedef void (*MonoThreadNotifyPendingExcFunc) (void);
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
 
+#ifdef PLATFORM_WIN32
+typedef SECURITY_ATTRIBUTES WapiSecurityAttributes;
+typedef LPTHREAD_START_ROUTINE WapiThreadStart;
+#endif
+
 gpointer mono_create_thread (WapiSecurityAttributes *security,
 							 guint32 stacksize, WapiThreadStart start,
 							 gpointer param, guint32 create, gsize *tid) MONO_INTERNAL;
