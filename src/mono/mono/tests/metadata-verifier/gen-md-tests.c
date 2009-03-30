@@ -4,6 +4,13 @@
 #include <string.h>
 #include <glib.h>
 
+#include <mono/metadata/image.h>
+#include <mono/metadata/metadata.h>
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/marshal.h>
+#include <mono/metadata/class-internals.h>
+#include <mono/metadata/metadata-internals.h>
+
 #if 1
 #define DEBUG_PARSER(stmt) do { stmt; } while (0)
 #else
@@ -67,7 +74,8 @@ fun_name:
 	read.uint |
 	translate.rva |
 	translate.rva.ind |
-	stream-header
+	stream-header |
+	table-row
 
 arg_list:
 	expression |
@@ -108,7 +116,8 @@ enum {
 	INVALID_VARIABLE_NAME,
 	INVALID_FUNCTION_NAME,
 	INVALID_ARG_COUNT,
-	INVALID_RVA
+	INVALID_RVA,
+	INVALID_BAD_FILE
 };
 
 enum {
@@ -185,21 +194,24 @@ typedef struct {
 } test_patch_t;
 
 typedef struct {
-	int validity;
-	GSList *patches; /*of test_patch_t*/
-	char *data;
-	int data_size;
-} test_entry_t;
-
-typedef struct {
 	char *name;
 	char *assembly;
 	int count;
 
 	char *assembly_data;
 	int assembly_size;
+	MonoImage *image;
 	int init;
 } test_set_t;
+
+typedef struct {
+	int validity;
+	GSList *patches; /*of test_patch_t*/
+	char *data;
+	int data_size;
+	test_set_t *test_set;
+} test_entry_t;
+
 
 
 /*******************************************************************************************************/
@@ -247,10 +259,16 @@ read_whole_file_and_close (const char *name, int *file_size)
 static void
 init_test_set (test_set_t *test_set)
 {
+	MonoImageOpenStatus status;
 	if (test_set->init)
 		return;
 	test_set->assembly_data = read_whole_file_and_close (test_set->assembly, &test_set->assembly_size);
-
+	test_set->image = mono_image_open_from_data (test_set->assembly_data, test_set->assembly_size, TRUE, &status);
+	if (!test_set->image || status != MONO_IMAGE_OK) {
+		printf ("Could not parse image %s\n", test_set->assembly);
+		exit (INVALID_BAD_FILE);
+	}
+	
 	test_set->init = 1;
 }
 
@@ -391,7 +409,7 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 	if (!strcmp ("translate.rva.ind", name)) {
 		guint32 rva;
 		if (g_slist_length (args) != 1) {
-			printf ("Invalid number of args to translate.rva %d\b", g_slist_length (args));
+			printf ("Invalid number of args to translate.rva.ind %d\b", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		rva = expression_eval (args->data, entry);
@@ -401,11 +419,25 @@ call_func (test_entry_t *entry, const char *name, GSList *args)
 	if (!strcmp ("stream-header", name)) {
 		guint32 idx;
 		if (g_slist_length (args) != 1) {
-			printf ("Invalid number of args to translate.rva %d\b", g_slist_length (args));
+			printf ("Invalid number of args to stream-header %d\b", g_slist_length (args));
 			exit (INVALID_ARG_COUNT);
 		}
 		idx = expression_eval (args->data, entry);
 		return get_metadata_stream_header (entry, idx);
+	}
+	if (!strcmp ("table-row", name)) {
+		const char *data;
+		guint32 table, row;
+		const MonoTableInfo *info;
+		if (g_slist_length (args) != 2) {
+			printf ("Invalid number of args to table-row %d\b", g_slist_length (args));
+			exit (INVALID_ARG_COUNT);
+		}
+		table = expression_eval (args->data, entry);
+		row = expression_eval (args->next->data, entry);
+		info = mono_image_get_table_info (entry->test_set->image, table);
+		data = info->base + row * info->row_size;
+		return data - entry->test_set->assembly_data;
 	}
 
 	printf ("Unknown function %s\n", name);
@@ -501,6 +533,7 @@ process_test_entry (test_set_t *test_set, test_entry_t *entry)
 	init_test_set (test_set);
 	entry->data = g_memdup (test_set->assembly_data, test_set->assembly_size);
 	entry->data_size = test_set->assembly_size;
+	entry->test_set = test_set;
 
 	DEBUG_PARSER (printf("(%d)%s\n", test_set->count, entry->validity == TEST_TYPE_VALID? "valid" : "invalid"));
 	for (tmp = entry->patches; tmp; tmp = tmp->next)
@@ -969,6 +1002,14 @@ main (int argc, char **argv)
 		printf ("usage: gen-md.test file_to_process\n");
 		return 1;
 	}
+
+	mono_perfcounters_init ();
+	mono_metadata_init ();
+	mono_images_init ();
+	mono_assemblies_init ();
+	mono_loader_init ();
+	mono_init_from_assembly ("simple-assembly.exe", "simple-assembly.exe");
+	mono_marshal_init ();
 
 	digest_file (argv [1]);
 	return 0;

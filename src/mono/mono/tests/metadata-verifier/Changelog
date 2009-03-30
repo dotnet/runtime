@@ -1,5 +1,16 @@
 2009-03-30 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* gen-md-tests.c: Parse the source assembly using the runtime
+	metadata routines.
+
+	* gen-md-tests.c: Add table-row function.
+
+	* Makefile: like gen-md-tests with the runtime.
+
+	* cli-tables-tests.md: Add initial tests for the module table.
+
+2009-03-30 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	assembly-with-resource.cs: Add missing file.
 
 2009-03-27 Rodrigo Kumpera  <rkumpera@novell.com>

@@ -54,3 +54,10 @@ tables-header {
 	invalid offset stream-header ( 0 ) + 4 set-uint 93
 }
 
+module-table {
+	assembly simple-assembly.exe
+
+	#generation
+	valid offset table-row ( 0 0 ) set-ushort 0
+	invalid offset table-row ( 0 0 ) set-ushort 9999
+}
