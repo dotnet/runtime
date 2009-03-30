@@ -4105,8 +4105,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	load_profile_files (acfg);
 
-	img_writer_emit_start (acfg->w);
-
 	acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
 
 	acfg->num_aot_trampolines = acfg->aot_opts.full_aot ? 10240 : 0;
@@ -4215,9 +4213,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	TV_GETTIME (atv);
 
-	mono_dwarf_writer_emit_base_info (acfg->dwarf, arch_get_cie_program ());
-
 	alloc_got_slots (acfg);
+
+	img_writer_emit_start (acfg->w);
+
+	mono_dwarf_writer_emit_base_info (acfg->dwarf, arch_get_cie_program ());
 
 	emit_code (acfg);
 

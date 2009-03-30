@@ -430,9 +430,13 @@ mono_ssa_compute (MonoCompile *cfg)
 				break;
 			case STACK_VTYPE:
 				ins->opcode = MONO_CLASS_IS_SIMD (cfg, var->klass) ? OP_XPHI : OP_VPHI;
-				ins->klass = var->klass;
 				break;
 			}
+
+ 			if (var->inst_vtype->byref)
+ 				ins->klass = mono_defaults.int_class;
+ 			else
+ 				ins->klass = var->klass;
 
 			ins->inst_phi_args =  mono_mempool_alloc0 (cfg->mempool, sizeof (int) * (cfg->bblocks [idx]->in_count + 1));
 			ins->inst_phi_args [0] = cfg->bblocks [idx]->in_count;

@@ -2800,12 +2800,105 @@ mono_print_code (MonoCompile *cfg, const char* msg)
 
 #ifndef DISABLE_JIT
 
+static void
+mono_postprocess_patches (MonoCompile *cfg)
+{
+	MonoJumpInfo *patch_info;
+	int i;
+
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		switch (patch_info->type) {
+		case MONO_PATCH_INFO_ABS: {
+			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (patch_info->data.target);
+
+			/*
+			 * Change patches of type MONO_PATCH_INFO_ABS into patches describing the 
+			 * absolute address.
+			 */
+			if (info) {
+				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
+				// FIXME: CLEAN UP THIS MESS.
+				if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 
+					strstr (cfg->method->name, info->name)) {
+					/*
+					 * This is an icall wrapper, and this is a call to the
+					 * wrapped function.
+					 */
+					if (cfg->compile_aot) {
+						patch_info->type = MONO_PATCH_INFO_JIT_ICALL_ADDR;
+						patch_info->data.name = info->name;
+					}
+				} else {
+					/* for these array methods we currently register the same function pointer
+					 * since it's a vararg function. But this means that mono_find_jit_icall_by_addr ()
+					 * will return the incorrect one depending on the order they are registered.
+					 * See tests/test-arr.cs
+					 */
+					if (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL) {
+						patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+						patch_info->data.name = info->name;
+					}
+				}
+			}
+
+			if (patch_info->type == MONO_PATCH_INFO_ABS) {
+				if (cfg->abs_patches) {
+					MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, patch_info->data.target);
+					if (abs_ji) {
+						patch_info->type = abs_ji->type;
+						patch_info->data.target = abs_ji->data.target;
+					}
+				}
+			}
+
+			break;
+		}
+		case MONO_PATCH_INFO_SWITCH: {
+			gpointer *table;
+			if (cfg->method->dynamic) {
+				table = mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
+			} else {
+				table = mono_domain_code_reserve (cfg->domain, sizeof (gpointer) * patch_info->data.table->table_size);
+			}
+
+			for (i = 0; i < patch_info->data.table->table_size; i++) {
+				/* Might be NULL if the switch is eliminated */
+				if (patch_info->data.table->table [i]) {
+					g_assert (patch_info->data.table->table [i]->native_offset);
+					table [i] = GINT_TO_POINTER (patch_info->data.table->table [i]->native_offset);
+				} else {
+					table [i] = NULL;
+				}
+			}
+			patch_info->data.table->table = (MonoBasicBlock**)table;
+			break;
+		}
+		case MONO_PATCH_INFO_METHOD_JUMP: {
+			GSList *list;
+			MonoDomain *domain = cfg->domain;
+			unsigned char *ip = cfg->native_code + patch_info->ip.i;
+
+			mono_domain_lock (domain);
+			if (!domain_jit_info (domain)->jump_target_hash)
+				domain_jit_info (domain)->jump_target_hash = g_hash_table_new (NULL, NULL);
+			list = g_hash_table_lookup (domain_jit_info (domain)->jump_target_hash, patch_info->data.method);
+			list = g_slist_prepend (list, ip);
+			g_hash_table_insert (domain_jit_info (domain)->jump_target_hash, patch_info->data.method, list);
+			mono_domain_unlock (domain);
+			break;
+		}
+		default:
+			/* do nothing */
+			break;
+		}
+	}
+}
+
 void
 mono_codegen (MonoCompile *cfg)
 {
-	MonoJumpInfo *patch_info;
 	MonoBasicBlock *bb;
-	int i, max_epilog_size;
+	int max_epilog_size;
 	guint8 *code;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
@@ -2895,92 +2988,7 @@ mono_codegen (MonoCompile *cfg)
 	code = cfg->native_code + cfg->code_len;
   
 	/* g_assert (((int)cfg->native_code & (MONO_ARCH_CODE_ALIGNMENT - 1)) == 0); */
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_ABS: {
-			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (patch_info->data.target);
-
-			/*
-			 * Change patches of type MONO_PATCH_INFO_ABS into patches describing the 
-			 * absolute address.
-			 */
-			if (info) {
-				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
-				// FIXME: CLEAN UP THIS MESS.
-				if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && 
-					strstr (cfg->method->name, info->name)) {
-					/*
-					 * This is an icall wrapper, and this is a call to the
-					 * wrapped function.
-					 */
-					if (cfg->compile_aot) {
-						patch_info->type = MONO_PATCH_INFO_JIT_ICALL_ADDR;
-						patch_info->data.name = info->name;
-					}
-				} else {
-					/* for these array methods we currently register the same function pointer
-					 * since it's a vararg function. But this means that mono_find_jit_icall_by_addr ()
-					 * will return the incorrect one depending on the order they are registered.
-					 * See tests/test-arr.cs
-					 */
-					if (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL) {
-						patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-						patch_info->data.name = info->name;
-					}
-				}
-			}
-
-			if (patch_info->type == MONO_PATCH_INFO_ABS) {
-				if (cfg->abs_patches) {
-					MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, patch_info->data.target);
-					if (abs_ji) {
-						patch_info->type = abs_ji->type;
-						patch_info->data.target = abs_ji->data.target;
-					}
-				}
-			}
-
-			break;
-		}
-		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table;
-			if (cfg->method->dynamic) {
-				table = mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
-			} else {
-				table = mono_domain_code_reserve (cfg->domain, sizeof (gpointer) * patch_info->data.table->table_size);
-			}
-
-			for (i = 0; i < patch_info->data.table->table_size; i++) {
-				/* Might be NULL if the switch is eliminated */
-				if (patch_info->data.table->table [i]) {
-					g_assert (patch_info->data.table->table [i]->native_offset);
-					table [i] = GINT_TO_POINTER (patch_info->data.table->table [i]->native_offset);
-				} else {
-					table [i] = NULL;
-				}
-			}
-			patch_info->data.table->table = (MonoBasicBlock**)table;
-			break;
-		}
-		case MONO_PATCH_INFO_METHOD_JUMP: {
-			GSList *list;
-			MonoDomain *domain = cfg->domain;
-			unsigned char *ip = cfg->native_code + patch_info->ip.i;
-
-			mono_domain_lock (domain);
-			if (!domain_jit_info (domain)->jump_target_hash)
-				domain_jit_info (domain)->jump_target_hash = g_hash_table_new (NULL, NULL);
-			list = g_hash_table_lookup (domain_jit_info (domain)->jump_target_hash, patch_info->data.method);
-			list = g_slist_prepend (list, ip);
-			g_hash_table_insert (domain_jit_info (domain)->jump_target_hash, patch_info->data.method, list);
-			mono_domain_unlock (domain);
-			break;
-		}
-		default:
-			/* do nothing */
-			break;
-		}
-	}
+	mono_postprocess_patches (cfg);
 
 #ifdef VALGRIND_JIT_REGISTER_MAP
 if (valgrind_register){
