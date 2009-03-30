@@ -1020,7 +1020,7 @@ calc_row_size (VerifyContext *ctx)
 		total_size += (guint64)size * ctx->tables [i].row_count;
 	}
 
-	if (total_size > G_MAXUINT32)
+	if (total_size > 0xFFFFFFFF)
 		return 0;
 
 	return (guint32)total_size; 
