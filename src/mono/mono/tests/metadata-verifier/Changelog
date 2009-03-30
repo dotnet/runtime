@@ -1,3 +1,7 @@
+2009-03-30 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	assembly-with-resource.cs: Add missing file.
+
 2009-03-27 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Tests for total table sizes.
