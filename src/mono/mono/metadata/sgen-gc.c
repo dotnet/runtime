@@ -528,11 +528,18 @@ typedef struct _FinalizeEntry FinalizeEntry;
 struct _FinalizeEntry {
 	FinalizeEntry *next;
 	void *object;
-	void *data; /* can be a disappearing link or the data for the finalizer */
+	void *data; /* callback for the finalizer */
 	/* Note we could use just one pointer if we don't support multiple callbacks
 	 * for finalizers and per-finalizer data and if we store the obj pointers
 	 * in the link like libgc does
 	 */
+};
+
+typedef struct _DisappearingLink DisappearingLink;
+struct _DisappearingLink {
+	DisappearingLink *next;
+	void *object;
+	void *data;
 };
 
 /*
@@ -542,8 +549,7 @@ struct _FinalizeEntry {
 static FinalizeEntry **finalizable_hash = NULL;
 /* objects that are ready to be finalized */
 static FinalizeEntry *fin_ready_list = NULL;
-/* disappearing links use the same structure but a different list */
-static FinalizeEntry **disappearing_link_hash = NULL;
+static DisappearingLink **disappearing_link_hash = NULL;
 static mword disappearing_link_hash_size = 0;
 static mword finalizable_hash_size = 0;
 
@@ -3556,7 +3562,7 @@ finalize_in_range (char *start, char *end)
 static void
 null_link_in_range (char *start, char *end)
 {
-	FinalizeEntry *entry, *prev;
+	DisappearingLink *entry, *prev;
 	int i;
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		prev = NULL;
@@ -3564,7 +3570,7 @@ null_link_in_range (char *start, char *end)
 			if ((char*)entry->object >= start && (char*)entry->object < end && ((char*)entry->object < to_space || (char*)entry->object >= to_space_end)) {
 				if (object_is_fin_ready (entry->object)) {
 					void **p = entry->data;
-					FinalizeEntry *old;
+					DisappearingLink *old;
 					*p = NULL;
 					/* remove from list */
 					if (prev)
@@ -3720,11 +3726,11 @@ rehash_dislink (void)
 {
 	int i;
 	unsigned int hash;
-	FinalizeEntry **new_hash;
-	FinalizeEntry *entry, *next;
+	DisappearingLink **new_hash;
+	DisappearingLink *entry, *next;
 	int new_size = g_spaced_primes_closest (num_disappearing_links);
 
-	new_hash = get_internal_mem (new_size * sizeof (FinalizeEntry*));
+	new_hash = get_internal_mem (new_size * sizeof (DisappearingLink*));
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		for (entry = disappearing_link_hash [i]; entry; entry = next) {
 			hash = mono_aligned_addr_hash (entry->data) % new_size;
@@ -3741,7 +3747,7 @@ rehash_dislink (void)
 static void
 mono_gc_register_disappearing_link (MonoObject *obj, void *link)
 {
-	FinalizeEntry *entry, *prev;
+	DisappearingLink *entry, *prev;
 	unsigned int hash;
 	LOCK_GC;
 
@@ -3771,7 +3777,7 @@ mono_gc_register_disappearing_link (MonoObject *obj, void *link)
 		}
 		prev = entry;
 	}
-	entry = get_internal_mem (sizeof (FinalizeEntry));
+	entry = get_internal_mem (sizeof (DisappearingLink));
 	entry->object = obj;
 	entry->data = link;
 	entry->next = disappearing_link_hash [hash];
