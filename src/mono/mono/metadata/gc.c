@@ -1035,7 +1035,7 @@ finalize_domain_objects (DomainFinalizationReq *req)
 		for (i = 0; i < objs->len; ++i) {
 			MonoObject *o = (MonoObject*)g_ptr_array_index (objs, i);
 			/* FIXME: Avoid finalizing threads, etc */
-			run_finalize (o, 0);
+			mono_gc_run_finalize (o, 0);
 		}
 
 		g_ptr_array_free (objs, TRUE);
