@@ -215,10 +215,6 @@ mono_debugger_register_class_init_callback (MonoImage *image, const gchar *full_
 	mono_loader_lock ();
 
 	klass = mono_class_from_name (image, name_space ? name_space : "", name);
-	if (klass && klass->inited && klass->methods) {
-		mono_loader_unlock ();
-		return klass;
-	}
 
 	info = g_new0 (ClassInitCallback, 1);
 	info->image = image;
@@ -232,7 +228,7 @@ mono_debugger_register_class_init_callback (MonoImage *image, const gchar *full_
 
 	g_ptr_array_add (class_init_callbacks, info);
 	mono_loader_unlock ();
-	return NULL;
+	return klass;
 }
 
 void

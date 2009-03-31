@@ -308,7 +308,7 @@ debugger_insert_source_breakpoint (guint64 image_argument, guint64 token, guint6
 	mono_debugger_lock ();
 
 	klass = mono_debugger_register_class_init_callback (image, class_name, token, index);
-	if (!klass) {
+	if (!klass || !klass->inited || !klass->methods) {
 		mono_debugger_unlock ();
 		return 0;
 	}
@@ -354,6 +354,7 @@ debugger_remove_breakpoint (guint64 index, G_GNUC_UNUSED guint64 dummy)
 {
 	mono_debugger_lock ();
 	mono_debugger_remove_method_breakpoint (index);
+	mono_debugger_remove_class_init_callback (index);
 	mono_debugger_unlock ();
 }
 
