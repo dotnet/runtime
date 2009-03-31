@@ -303,24 +303,22 @@ static gint32 convert_socketflags (gint32 sflags)
 		flags |= MSG_PEEK;
 	if (sflags & SocketFlags_DontRoute)
 		flags |= MSG_DONTROUTE;
-#if 0
+
 	/* Ignore Partial - see bug 349688.  Don't return -1, because
 	 * according to the comment in that bug ms runtime doesn't for
 	 * UDP sockets (this means we will silently ignore it for TCP
 	 * too)
 	 */
-	if (sflags & SocketFlags_Partial)
 #ifdef MSG_MORE
+	if (sflags & SocketFlags_Partial)
 		flags |= MSG_MORE;
-#else
-		return -1;	
 #endif
-#endif
+#if 0
+	/* Don't do anything for MaxIOVectorLength */
 	if (sflags & SocketFlags_MaxIOVectorLength)
-		/* FIXME: Don't know what to do for MaxIOVectorLength query */
 		return -1;	
-	
-	return (flags ? flags : -1);
+#endif
+	return flags;
 }
 
 /*
