@@ -747,7 +747,7 @@ verifier_load_field (VerifyContext *ctx, int token, MonoClass **klass, const cha
 	}
 
 	field = mono_field_from_token (ctx->image, token, klass, ctx->generic_context);
-	if (!field) {
+	if (!field || !field->parent) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Cannot load field from token 0x%08x for %s at 0x%04x", token, opcode, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return NULL;
 	}
@@ -4829,14 +4829,14 @@ mono_method_verify (MonoMethod *method, int level)
 		MonoExceptionClause *clause = ctx.header->clauses + i;
 		VERIFIER_DEBUG (printf ("clause try %x len %x filter at %x handler at %x len %x\n", clause->try_offset, clause->try_len, clause->data.filter_offset, clause->handler_offset, clause->handler_len); );
 
-		if (clause->try_offset > ctx.code_size)
+		if (clause->try_offset > ctx.code_size || clause->try_offset + clause->try_len > ctx.code_size)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause out of bounds at 0x%04x", clause->try_offset));
 
 		if (clause->try_len <= 0)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
 
-		if (clause->handler_offset > ctx.code_size)
-			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause out of bounds at 0x%04x", clause->try_offset));
+		if (clause->handler_offset > ctx.code_size || clause->handler_offset + clause->handler_len > ctx.code_size)
+			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("handler clause out of bounds at 0x%04x", clause->try_offset));
 
 		if (clause->handler_len <= 0)
 			ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("try clause len <= 0 at 0x%04x", clause->try_offset));
