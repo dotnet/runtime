@@ -4421,7 +4421,7 @@ do_ldstr (VerifyContext *ctx, guint32 token)
 		return;
 	}
 
-	if (mono_metadata_token_index (token) >= ctx->image->heap_us.size) {
+	if (!ctx->image->dynamic && mono_metadata_token_index (token) >= ctx->image->heap_us.size) {
 		ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x", token, ctx->ip_offset), MONO_EXCEPTION_BAD_IMAGE);
 		return;
 	}
