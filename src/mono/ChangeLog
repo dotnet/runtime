@@ -1,6 +1,7 @@
 2009-03-31  Jb Evain  <jbevain@novell.com>
 
 	* scripts: Remove smcs, which is handled by moon now.
+	* data: ditto.
 
 2009-03-20  Zoltan Varga  <vargaz@gmail.com>
 

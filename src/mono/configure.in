@@ -2392,7 +2392,6 @@ data/dotnet.pc
 data/dotnet35.pc
 data/wcf.pc
 data/cecil.pc
-data/smcs.pc
 data/system.web.extensions_1.0.pc
 data/system.web.extensions.design_1.0.pc
 samples/Makefile
