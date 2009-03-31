@@ -2133,6 +2133,8 @@ scan_old_generation (char *start, char* end)
 	}
 	/* scan the list of objects ready for finalization */
 	for (fin = fin_ready_list; fin; fin = fin->next) {
+		if (!fin->object)
+			continue;
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
 		fin->object = copy_object (fin->object, start, end);
 	}
@@ -2606,6 +2608,8 @@ major_collection (void)
 	scan_from_pinned_objects (heap_start, heap_end);
 	/* scan the list of objects ready for finalization */
 	for (fin = fin_ready_list; fin; fin = fin->next) {
+		if (!fin->object)
+			continue;
 		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
 		fin->object = copy_object (fin->object, heap_start, heap_end);
 	}
@@ -3783,30 +3787,55 @@ mono_gc_register_disappearing_link (MonoObject *obj, void *link)
 int
 mono_gc_invoke_finalizers (void)
 {
-	FinalizeEntry *entry;
+	FinalizeEntry *entry = NULL;
 	int count = 0;
 	void *obj;
+	void (*callback)(void *, void*);
 	/* FIXME: batch to reduce lock contention */
-	while (fin_ready_list) {
+	for (;;) {
 		LOCK_GC;
-		entry = fin_ready_list;
+
 		if (entry) {
-			fin_ready_list = entry->next;
+			/* We have finalized entry in the last
+			   interation, now we need to remove it from
+			   the list. */
+			if (fin_ready_list == entry)
+				fin_ready_list = entry->next;
+			else {
+				FinalizeEntry *e = fin_ready_list;
+				while (e->next != entry)
+					e = e->next;
+				e->next = entry->next;
+			}
+			free_internal_mem (entry);
+			entry = NULL;
+		}
+
+		/* Now look for the first non-null entry. */
+		for (entry = fin_ready_list; entry && !entry->object; entry = entry->next)
+			;
+
+		if (entry) {
+			g_assert (entry->object);
 			num_ready_finalizers--;
 			obj = entry->object;
+			entry->object = NULL;
 			DEBUG (7, fprintf (gc_debug_file, "Finalizing object %p (%s)\n", obj, safe_name (obj)));
 		}
+
 		UNLOCK_GC;
-		if (entry) {
-			entry->next = NULL;
-			obj = entry->object;
-			count++;
-			/* the object is on the stack so it is pinned */
-			/*g_print ("Calling finalizer for object: %p (%s)\n", entry->object, safe_name (entry->object));*/
-			mono_gc_run_finalize (obj, NULL);
-			free_internal_mem (entry);
-		}
+
+		if (!entry)
+			break;
+
+		entry->next = NULL;
+		g_assert (entry->object == NULL);
+		count++;
+		/* the object is on the stack so it is pinned */
+		/*g_print ("Calling finalizer for object: %p (%s)\n", entry->object, safe_name (entry->object));*/
+		mono_gc_run_finalize (obj, NULL);
 	}
+	g_assert (!entry);
 	return count;
 }
 
