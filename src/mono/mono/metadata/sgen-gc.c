@@ -528,11 +528,6 @@ typedef struct _FinalizeEntry FinalizeEntry;
 struct _FinalizeEntry {
 	FinalizeEntry *next;
 	void *object;
-	void *data; /* callback for the finalizer */
-	/* Note we could use just one pointer if we don't support multiple callbacks
-	 * for finalizers and per-finalizer data and if we store the obj pointers
-	 * in the link like libgc does
-	 */
 };
 
 typedef struct _DisappearingLink DisappearingLink;
@@ -3681,6 +3676,7 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 	unsigned int hash;
 	if (no_finalize)
 		return;
+	g_assert (user_data == NULL || user_data == mono_gc_run_finalize);
 	hash = mono_object_hash (obj);
 	LOCK_GC;
 	if (num_registered_finalizers >= finalizable_hash_size * 2)
@@ -3689,9 +3685,7 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 	prev = NULL;
 	for (entry = finalizable_hash [hash]; entry; entry = entry->next) {
 		if (entry->object == obj) {
-			if (user_data) {
-				entry->data = user_data;
-			} else {
+			if (!user_data) {
 				/* remove from the list */
 				if (prev)
 					prev->next = entry->next;
@@ -3713,7 +3707,6 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 	}
 	entry = get_internal_mem (sizeof (FinalizeEntry));
 	entry->object = obj;
-	entry->data = user_data;
 	entry->next = finalizable_hash [hash];
 	finalizable_hash [hash] = entry;
 	num_registered_finalizers++;
@@ -3805,13 +3798,12 @@ mono_gc_invoke_finalizers (void)
 		}
 		UNLOCK_GC;
 		if (entry) {
-			void (*callback)(void *, void*) = entry->data;
 			entry->next = NULL;
 			obj = entry->object;
 			count++;
 			/* the object is on the stack so it is pinned */
 			/*g_print ("Calling finalizer for object: %p (%s)\n", entry->object, safe_name (entry->object));*/
-			callback (obj, NULL);
+			mono_gc_run_finalize (obj, NULL);
 			free_internal_mem (entry);
 		}
 	}

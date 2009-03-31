@@ -94,8 +94,8 @@ static gboolean suspend_finalizers = FALSE;
  * actually, we might want to queue the finalize requests in a separate thread,
  * but we need to be careful about the execution domain of the thread...
  */
-static void
-run_finalize (void *obj, void *data)
+void
+mono_gc_run_finalize (void *obj, void *data)
 {
 	MonoObject *exc = NULL;
 	MonoObject *o;
@@ -238,7 +238,7 @@ mono_gc_finalize_threadpool_threads (void)
 		thread->threadpool_thread = FALSE;
 		mono_object_register_finalizer ((MonoObject*)thread);
 
-		run_finalize (thread, NULL);
+		mono_gc_run_finalize (thread, NULL);
 
 		threads_to_finalize = mono_mlist_next (threads_to_finalize);
 	}
@@ -311,7 +311,7 @@ void
 mono_object_register_finalizer (MonoObject *obj)
 {
 	/* g_print ("Registered finalizer on %p %s.%s\n", obj, mono_object_class (obj)->name_space, mono_object_class (obj)->name); */
-	object_register_finalizer (obj, run_finalize);
+	object_register_finalizer (obj, mono_gc_run_finalize);
 }
 
 /**
@@ -424,7 +424,7 @@ ves_icall_System_GC_ReRegisterForFinalize (MonoObject *obj)
 {
 	MONO_ARCH_SAVE_REGS;
 
-	object_register_finalizer (obj, run_finalize);
+	object_register_finalizer (obj, mono_gc_run_finalize);
 }
 
 void
@@ -1047,7 +1047,7 @@ finalize_domain_objects (DomainFinalizationReq *req)
 	while ((count = mono_gc_finalizers_for_domain (domain, to_finalize, NUM_FOBJECTS))) {
 		int i;
 		for (i = 0; i < count; ++i) {
-			run_finalize (to_finalize [i], 0);
+			mono_gc_run_finalize (to_finalize [i], 0);
 		}
 	}
 #endif
