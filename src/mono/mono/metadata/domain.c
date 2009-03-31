@@ -1563,6 +1563,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.internals_visible_class = mono_class_from_name (
 	        mono_defaults.corlib, "System.Runtime.CompilerServices", "InternalsVisibleToAttribute");
 
+	mono_defaults.critical_finalizer_object = mono_class_from_name (
+		mono_defaults.corlib, "System.Runtime.ConstrainedExecution", "CriticalFinalizerObject");
+
 	/*
 	 * mscorlib needs a little help, only now it can load its friends list (after we have
 	 * loaded the InternalsVisibleToAttribute), load it now

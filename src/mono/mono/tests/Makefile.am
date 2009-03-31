@@ -350,7 +350,8 @@ BASE_TEST_CS_SRC=		\
 	gchandles.cs	\
 	interlocked-3.cs	\
 	interlocked-4.2.cs	\
-	finalizer-wait.cs
+	finalizer-wait.cs	\
+	critical-finalizers.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs

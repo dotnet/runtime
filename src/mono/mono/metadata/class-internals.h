@@ -970,6 +970,7 @@ typedef struct {
 	MonoClass *handleref_class;
 	MonoClass *attribute_class;
 	MonoClass *customattribute_data_class;
+	MonoClass *critical_finalizer_object;
 } MonoDefaults;
 
 extern MonoDefaults mono_defaults MONO_INTERNAL;

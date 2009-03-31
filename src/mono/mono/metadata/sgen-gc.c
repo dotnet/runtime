@@ -99,7 +99,7 @@
     Multi-dim arrays have the same issue for rank == 1 for the bounds data.
  *) implement a card table as the write barrier instead of remembered sets?
  *) some sort of blacklist support?
- *) fin_ready_list is part of the root set, too
+ *) fin_ready_list and critical_fin_list are part of the root set, too
  *) consider lowering the large object min size to 16/32KB or so and benchmark
  *) once mark-compact is implemented we could still keep the
     copying collector for the old generation and use it if we think
@@ -544,6 +544,7 @@ struct _DisappearingLink {
 static FinalizeEntry **finalizable_hash = NULL;
 /* objects that are ready to be finalized */
 static FinalizeEntry *fin_ready_list = NULL;
+static FinalizeEntry *critical_fin_list = NULL;
 static DisappearingLink **disappearing_link_hash = NULL;
 static mword disappearing_link_hash_size = 0;
 static mword finalizable_hash_size = 0;
@@ -2099,6 +2100,18 @@ alloc_nursery (void)
 	/* FIXME: frag here is lost */
 }
 
+static void
+scan_finalizer_entries (FinalizeEntry *list, char *start, char *end) {
+	FinalizeEntry *fin;
+
+	for (fin = list; fin; fin = fin->next) {
+		if (!fin->object)
+			continue;
+		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
+		fin->object = copy_object (fin->object, start, end);
+	}
+}
+
 /*
  * Update roots in the old generation. Since we currently don't have the
  * info from the write barriers, we just scan all the objects.
@@ -2107,7 +2120,6 @@ static G_GNUC_UNUSED void
 scan_old_generation (char *start, char* end)
 {
 	GCMemSection *section;
-	FinalizeEntry *fin;
 	LOSObject *big_object;
 	char *p;
 	
@@ -2132,12 +2144,8 @@ scan_old_generation (char *start, char* end)
 		scan_object (big_object->data, start, end);
 	}
 	/* scan the list of objects ready for finalization */
-	for (fin = fin_ready_list; fin; fin = fin->next) {
-		if (!fin->object)
-			continue;
-		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
-		fin->object = copy_object (fin->object, start, end);
-	}
+	scan_finalizer_entries (fin_ready_list, start, end);
+	scan_finalizer_entries (critical_fin_list, start, end);
 }
 
 static mword fragment_total = 0;
@@ -2481,7 +2489,7 @@ collect_nursery (size_t requested_size)
 	/* prepare the pin queue for the next collection */
 	last_num_pinned = next_pin_slot;
 	next_pin_slot = 0;
-	if (fin_ready_list) {
+	if (fin_ready_list || critical_fin_list) {
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
@@ -2494,7 +2502,6 @@ major_collection (void)
 	LOSObject *bigobj, *prevbo;
 	int i;
 	PinnedChunk *chunk;
-	FinalizeEntry *fin;
 	Fragment *frag;
 	int count;
 	TV_DECLARE (all_atv);
@@ -2607,12 +2614,8 @@ major_collection (void)
 	/* alloc_pinned objects */
 	scan_from_pinned_objects (heap_start, heap_end);
 	/* scan the list of objects ready for finalization */
-	for (fin = fin_ready_list; fin; fin = fin->next) {
-		if (!fin->object)
-			continue;
-		DEBUG (5, fprintf (gc_debug_file, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object)));
-		fin->object = copy_object (fin->object, heap_start, heap_end);
-	}
+	scan_finalizer_entries (fin_ready_list, heap_start, heap_end);
+	scan_finalizer_entries (critical_fin_list, heap_start, heap_end);
 	TV_GETTIME (atv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (btv, atv)));
 
@@ -2686,7 +2689,7 @@ major_collection (void)
 	mono_stats.major_gc_time_usecs += TV_ELAPSED (all_atv, all_btv);
 	/* prepare the pin queue for the next collection */
 	next_pin_slot = 0;
-	if (fin_ready_list) {
+	if (fin_ready_list || critical_fin_list) {
 		DEBUG (4, fprintf (gc_debug_file, "Finalizer-thread wakeup: ready %d\n", num_ready_finalizers));
 		mono_gc_finalize_notify ();
 	}
@@ -3516,6 +3519,32 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
  */
 #define object_is_fin_ready(obj) (!object_is_pinned (obj) && !object_is_forwarded (obj))
 
+static gboolean
+is_critical_finalizer (FinalizeEntry *entry)
+{
+	MonoObject *obj;
+	MonoClass *class;
+
+	if (!mono_defaults.critical_finalizer_object)
+		return FALSE;
+
+	obj = entry->object;
+	class = ((MonoVTable*)LOAD_VTABLE (obj))->klass;
+
+	return mono_class_has_parent (class, mono_defaults.critical_finalizer_object);
+}
+
+static void
+queue_finalization_entry (FinalizeEntry *entry) {
+	if (is_critical_finalizer (entry)) {
+		entry->next = critical_fin_list;
+		critical_fin_list = entry;
+	} else {
+		entry->next = fin_ready_list;
+		fin_ready_list = entry;
+	}
+}
+
 static void
 finalize_in_range (char *start, char *end)
 {
@@ -3538,8 +3567,7 @@ finalize_in_range (char *start, char *end)
 					next = entry->next;
 					num_ready_finalizers++;
 					num_registered_finalizers--;
-					entry->next = fin_ready_list;
-					fin_ready_list = entry;
+					queue_finalization_entry (entry);
 					/* Make it survive */
 					from = entry->object;
 					entry->object = copy_object (entry->object, start, end);
@@ -3788,21 +3816,23 @@ int
 mono_gc_invoke_finalizers (void)
 {
 	FinalizeEntry *entry = NULL;
+	gboolean entry_is_critical;
 	int count = 0;
 	void *obj;
-	void (*callback)(void *, void*);
 	/* FIXME: batch to reduce lock contention */
-	for (;;) {
+	while (fin_ready_list || critical_fin_list) {
 		LOCK_GC;
 
 		if (entry) {
+			FinalizeEntry **list = entry_is_critical ? &critical_fin_list : &fin_ready_list;
+
 			/* We have finalized entry in the last
 			   interation, now we need to remove it from
 			   the list. */
-			if (fin_ready_list == entry)
-				fin_ready_list = entry->next;
+			if (*list == entry)
+				*list = entry->next;
 			else {
-				FinalizeEntry *e = fin_ready_list;
+				FinalizeEntry *e = *list;
 				while (e->next != entry)
 					e = e->next;
 				e->next = entry->next;
@@ -3814,6 +3844,13 @@ mono_gc_invoke_finalizers (void)
 		/* Now look for the first non-null entry. */
 		for (entry = fin_ready_list; entry && !entry->object; entry = entry->next)
 			;
+		if (entry) {
+			entry_is_critical = FALSE;
+		} else {
+			entry_is_critical = TRUE;
+			for (entry = critical_fin_list; entry && !entry->object; entry = entry->next)
+				;
+		}
 
 		if (entry) {
 			g_assert (entry->object);
@@ -3828,7 +3865,6 @@ mono_gc_invoke_finalizers (void)
 		if (!entry)
 			break;
 
-		entry->next = NULL;
 		g_assert (entry->object == NULL);
 		count++;
 		/* the object is on the stack so it is pinned */
@@ -3842,7 +3878,7 @@ mono_gc_invoke_finalizers (void)
 gboolean
 mono_gc_pending_finalizers (void)
 {
-	return fin_ready_list != NULL;
+	return fin_ready_list || critical_fin_list;
 }
 
 /* Negative value to remove */
