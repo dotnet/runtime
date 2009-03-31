@@ -1,8 +1,9 @@
 /*
  * security-core-clr.c: CoreCLR security
  *
- * Author:
+ * Authors:
  *	Mark Probst <mark.probst@gmail.com>
+ *	Sebastien Pouliot  <sebastien@ximian.com>
  *
  * Copyright 2007-2009 Novell, Inc (http://www.novell.com)
  */
@@ -223,18 +224,17 @@ check_method_access (MonoMethod *caller, MonoMethod *callee)
 void
 mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field)
 {
-	MonoClass *klass = mono_field_get_parent (field);
-
-	/* under CoreCLR you cannot use the value (get/set) of the reflected field: */
 	MonoMethod *caller = get_reflection_caller ();
+	/* CoreCLR restrictions applies to Transparent code/caller */
+	if (mono_security_core_clr_method_level (caller, TRUE) != MONO_SECURITY_CORE_CLR_TRANSPARENT)
+		return;
 
-	/* (a) of a Critical type when called from a Transparent caller */
-	if (mono_security_core_clr_class_level (klass) == MONO_SECURITY_CORE_CLR_CRITICAL) {
-		if (mono_security_core_clr_method_level (caller, TRUE) == MONO_SECURITY_CORE_CLR_TRANSPARENT)
-			mono_raise_exception (mono_get_exception_field_access ());
-	}
-	/* (b) that are not accessible from the caller pov */
-	if (!mono_method_can_access_field_full (caller, field, klass))
+	/* Transparent code cannot [get|set]value on Critical fields */
+	if (mono_security_core_clr_class_level (mono_field_get_parent (field)) == MONO_SECURITY_CORE_CLR_CRITICAL)
+		mono_raise_exception (mono_get_exception_field_access ());
+
+	/* also it cannot access a fields that is not visible from it's (caller) point of view */
+	if (!check_field_access (caller, field))
 		mono_raise_exception (mono_get_exception_field_access ());
 }
 
@@ -260,7 +260,7 @@ mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
 		mono_raise_exception (mono_get_exception_method_access ());
 
 	/* also it cannot invoke a method that is not visible from it's (caller) point of view */
-	if (!mono_method_can_access_method_full (caller, method, (method->flags & METHOD_ATTRIBUTE_STATIC) ? NULL : method->klass))
+	if (!check_method_access (caller, method))
 		mono_raise_exception (mono_get_exception_method_access ());
 }
 
