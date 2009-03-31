@@ -373,13 +373,17 @@ dump_verify_info (MonoImage *image, int flags)
 			}
 			errors = mono_method_verify (method, flags);
 			if (errors) {
-				char *sig, *name;
 				MonoClass *klass = mono_method_get_class (method);
-				sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
-				name = mono_type_full_name (&klass->byval_arg);
-				g_print ("In method: %s::%s(%s)\n", name, mono_method_get_name (method), sig);
+				char *name = mono_type_full_name (&klass->byval_arg);
+				if (mono_method_signature (method) == NULL) {
+					g_print ("In method: %s::%s(ERROR)\n", name, mono_method_get_name (method));
+				} else {
+					char *sig, *name;
+					sig = mono_signature_get_desc (mono_method_signature (method), FALSE);	
+					g_print ("In method: %s::%s(%s)\n", name, mono_method_get_name (method), sig);
+					g_free (sig);
+				}
 				g_free (name);
-				g_free (sig);
 			}
 
 			for (tmp = errors; tmp; tmp = tmp->next) {
