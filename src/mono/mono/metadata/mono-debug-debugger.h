@@ -37,6 +37,8 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_DOMAIN_UNLOAD,
 	MONO_DEBUGGER_EVENT_CLASS_INITIALIZED,
 	MONO_DEBUGGER_EVENT_INTERRUPTION_REQUEST,
+	MONO_DEBUGGER_EVENT_CREATE_APPDOMAIN,
+	MONO_DEBUGGER_EVENT_UNLOAD_APPDOMAIN,
 
 	/* Extended per-thread notifications */
 	MONO_DEBUGGER_EVENT_TRAMPOLINE			= 256,
@@ -64,6 +66,12 @@ mono_debugger_class_initialized (MonoClass *klass);
 
 void
 mono_debugger_check_interruption (void);
+
+void
+mono_debugger_event_create_appdomain (MonoDomain *domain, gchar *shadow_path);
+
+void
+mono_debugger_event_unload_appdomain (MonoDomain *domain);
 
 MonoDebugMethodAddressList *
 mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 idx);
