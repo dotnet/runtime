@@ -107,7 +107,7 @@ mono_regstate_assign (MonoRegState *rs)
 	if (rs->next_vreg > rs->vassign_size) {
 		g_free (rs->vassign);
 		rs->vassign_size = MAX (rs->next_vreg, 256);
-		rs->vassign = g_malloc (rs->vassign_size * sizeof (int));
+		rs->vassign = g_malloc (rs->vassign_size * sizeof (gint32));
 	}
 
 	memset (rs->isymbolic, 0, MONO_MAX_IREGS * sizeof (rs->isymbolic [0]));
