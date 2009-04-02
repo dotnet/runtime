@@ -533,9 +533,13 @@ struct _FinalizeEntry {
 typedef struct _DisappearingLink DisappearingLink;
 struct _DisappearingLink {
 	DisappearingLink *next;
-	void *object;
-	void *data;
+	void **link;
 };
+
+#define HIDE_POINTER(p)		((gpointer)(~(gulong)(p)))
+#define REVEAL_POINTER(p)	HIDE_POINTER ((p))
+
+#define DISLINK_OBJECT(d)	(REVEAL_POINTER (*(d)->link))
 
 /*
  * The finalizable hash has the object as the key, the 
@@ -3594,9 +3598,10 @@ null_link_in_range (char *start, char *end)
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		prev = NULL;
 		for (entry = disappearing_link_hash [i]; entry;) {
-			if ((char*)entry->object >= start && (char*)entry->object < end && ((char*)entry->object < to_space || (char*)entry->object >= to_space_end)) {
-				if (object_is_fin_ready (entry->object)) {
-					void **p = entry->data;
+			char *object = DISLINK_OBJECT (entry);
+			if (object >= start && object < end && (object < to_space || object >= to_space_end)) {
+				if (object_is_fin_ready (object)) {
+					void **p = entry->link;
 					DisappearingLink *old;
 					*p = NULL;
 					/* remove from list */
@@ -3604,21 +3609,18 @@ null_link_in_range (char *start, char *end)
 						prev->next = entry->next;
 					else
 						disappearing_link_hash [i] = entry->next;
-					DEBUG (5, fprintf (gc_debug_file, "Dislink nullified at %p to GCed object %p\n", p, entry->object));
+					DEBUG (5, fprintf (gc_debug_file, "Dislink nullified at %p to GCed object %p\n", p, object));
 					old = entry->next;
 					free_internal_mem (entry);
 					entry = old;
 					num_disappearing_links--;
 					continue;
 				} else {
-					void **link;
 					/* update pointer if it's moved
 					 * FIXME: what if an object is moved earlier?
 					 */
-					entry->object = copy_object (entry->object, start, end);
-					DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->data, entry->object));
-					link = entry->data;
-					*link = entry->object;
+					*entry->link = HIDE_POINTER (copy_object (object, start, end));
+					DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->link, DISLINK_OBJECT (entry)));
 				}
 			}
 			prev = entry;
@@ -3758,7 +3760,7 @@ rehash_dislink (void)
 	new_hash = get_internal_mem (new_size * sizeof (DisappearingLink*));
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		for (entry = disappearing_link_hash [i]; entry; entry = next) {
-			hash = mono_aligned_addr_hash (entry->data) % new_size;
+			hash = mono_aligned_addr_hash (entry->link) % new_size;
 			next = entry->next;
 			entry->next = new_hash [hash];
 			new_hash [hash] = entry;
@@ -3770,7 +3772,7 @@ rehash_dislink (void)
 }
 
 static void
-mono_gc_register_disappearing_link (MonoObject *obj, void *link)
+mono_gc_register_disappearing_link (MonoObject *obj, void **link)
 {
 	DisappearingLink *entry, *prev;
 	unsigned int hash;
@@ -3784,7 +3786,7 @@ mono_gc_register_disappearing_link (MonoObject *obj, void *link)
 	prev = NULL;
 	for (; entry; entry = entry->next) {
 		/* link already added */
-		if (link == entry->data) {
+		if (link == entry->link) {
 			/* NULL obj means remove */
 			if (obj == NULL) {
 				if (prev)
@@ -3794,8 +3796,9 @@ mono_gc_register_disappearing_link (MonoObject *obj, void *link)
 				num_disappearing_links--;
 				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d)\n", entry, num_disappearing_links));
 				free_internal_mem (entry);
+				*link = NULL;
 			} else {
-				entry->object = obj; /* we allow the change of object */
+				*link = HIDE_POINTER (obj); /* we allow the change of object */
 			}
 			UNLOCK_GC;
 			return;
@@ -3803,8 +3806,8 @@ mono_gc_register_disappearing_link (MonoObject *obj, void *link)
 		prev = entry;
 	}
 	entry = get_internal_mem (sizeof (DisappearingLink));
-	entry->object = obj;
-	entry->data = link;
+	*link = HIDE_POINTER (obj);
+	entry->link = link;
 	entry->next = disappearing_link_hash [hash];
 	disappearing_link_hash [hash] = entry;
 	num_disappearing_links++;
@@ -5337,20 +5340,22 @@ void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj)
 {
 	mono_gc_register_disappearing_link (obj, link_addr);
-	*link_addr = obj;
 }
 
 void
 mono_gc_weak_link_remove (void **link_addr)
 {
 	mono_gc_register_disappearing_link (NULL, link_addr);
-	*link_addr = NULL;
 }
 
 MonoObject*
 mono_gc_weak_link_get (void **link_addr)
 {
-	return *link_addr;
+	MonoObject *obj = REVEAL_POINTER (*link_addr);
+
+	if (obj == HIDE_POINTER (NULL))
+		return NULL;
+	return obj;
 }
 
 void*
