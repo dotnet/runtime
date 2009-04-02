@@ -224,9 +224,9 @@ posix_sources = \
 	mini-posix.c
 
 if ENABLE_LLVM
-llvm_sources = \
-	mini-llvm.c		\
-	mini-llvm-cpp.cpp
+#llvm_sources = \
+#	mini-llvm.c		\
+#	mini-llvm-cpp.cpp
 endif
 
 common_sources = \

@@ -1770,7 +1770,7 @@ dnl **************
 AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the experimental LLVM back-end], enable_llvm=$enableval, enable_llvm=no)
 
 if test "x$enable_llvm" = "xyes"; then
-   AC_PROG_CXX
+#   AC_PROG_CXX
    AC_PATH_PROG(LLVM_CONFIG, llvm-config, no)
    if test "x$LLVM_CONFIG" = "xno"; then
    	  AC_MSG_ERROR([llvm-config not found.])
