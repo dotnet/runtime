@@ -8,6 +8,8 @@
 
 2009-04-02  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Add an ENABLE_LLVM autoconf define.
+	
 	* configure.in: Add --enable-llvm argument to enable the experimental
 	LLVM back end.
 

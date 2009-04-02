@@ -1783,6 +1783,7 @@ if test "x$enable_llvm" = "xyes"; then
 
    AC_SUBST(LLVM_CXXFLAGS)
    AC_SUBST(LLVM_LIBS)
+   AC_DEFINE(ENABLE_LLVM, 1, [Enable the LLVM back end])
 fi
 
 AM_CONDITIONAL(ENABLE_LLVM, [test x$enable_llvm = xyes])
