@@ -2394,6 +2394,7 @@ data/wcf.pc
 data/cecil.pc
 data/system.web.extensions_1.0.pc
 data/system.web.extensions.design_1.0.pc
+data/system.web.mvc.pc
 samples/Makefile
 support/Makefile
 data/config
