@@ -175,8 +175,47 @@ enum {
 
 #define ARM_FMXR(p,freg,reg)	\
 	ARM_EMIT((p), ARM_DEF_VFP_CPT(ARMCOND_AL,ARM_VFP_COPROC_SINGLE,7,0,(freg),(reg)))
-#define ARM_FMRX(p,reg,freg)	\
-	ARM_EMIT((p), ARM_DEF_VFP_CPT(ARMCOND_AL,ARM_VFP_COPROC_SINGLE,7,1,(freg),(reg)))
+#define ARM_FMRX(p,reg,fcreg)	\
+	ARM_EMIT((p), ARM_DEF_VFP_CPT(ARMCOND_AL,ARM_VFP_COPROC_SINGLE,7,1,(fcreg),(reg)))
+
+#define ARM_FMSTAT(p)   \
+	ARM_FMRX((p),ARMREG_R15,ARM_VFP_SCR)
+
+#define ARM_DEF_MCRR(cond,cp,rn,rd,Fm,M) \
+	((Fm) << 0) |					   \
+	(1 << 4)   |					   \
+	((M) << 5) |					   \
+	((cp) << 8) |					   \
+	((rd) << 12) |					   \
+	((rn) << 16) |					   \
+	((2) << 21) |					   \
+	(12 << 24) |					   \
+	ARM_DEF_COND(cond)
+
+#define ARM_FMDRR(p,rd,rn,dm)   \
+	ARM_EMIT((p), ARM_DEF_MCRR(ARMCOND_AL,ARM_VFP_COPROC_DOUBLE,(rn),(rd),(dm) >> 1, (dm) & 1))
+
+#define ARM_DEF_FMRRD(cond,cp,rn,rd,Dm,D)		\
+	((Dm) << 0) |					   \
+	(1 << 4)   |					   \
+	((cp) << 8) |					   \
+	((rd) << 12) |					   \
+	((rn) << 16) |					   \
+	((0xc5) << 20) |					   \
+	ARM_DEF_COND(cond)
+
+#define ARM_FMRRD(p,rd,rn,dm)   \
+	ARM_EMIT((p), ARM_DEF_FMRRD(ARMCOND_AL,ARM_VFP_COPROC_DOUBLE,(rn),(rd),(dm) >> 1, (dm) & 1))
+
+#define ARM_DEF_FUITOS(cond,Dd,D,Fm,M) ((cond) << 28) | ((0x1d) << 23) | ((D) << 22) | ((0x3) << 20) | ((8) << 16) | ((Dd) << 12) | ((0xa) << 8) | ((1) << 6) | ((M) << 5) | ((Fm) << 0)
+
+#define ARM_FUITOS(p,dreg,sreg) \
+	ARM_EMIT((p), ARM_DEF_FUITOS (ARMCOND_AL, (dreg) >> 1, (dreg) & 1, (sreg) >> 1, (sreg) & 1))
+
+#define ARM_DEF_FUITOD(cond,Dd,D,Fm,M) ((cond) << 28) | ((0x1d) << 23) | ((D) << 22) | ((0x3) << 20) | ((8) << 16) | ((Dd) << 12) | ((0xb) << 8) | ((1) << 6) | ((M) << 5) | ((Fm) << 0)
+
+#define ARM_FUITOD(p,dreg,sreg) \
+	ARM_EMIT((p), ARM_DEF_FUITOD (ARMCOND_AL, (dreg) >> 1, (dreg) & 1, (sreg) >> 1, (sreg) & 1))
 
 #endif /* __MONO_ARM_VFP_CODEGEN_H__ */
 
