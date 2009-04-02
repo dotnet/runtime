@@ -265,6 +265,38 @@ mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
 }
 
 /*
+ * can_avoid_corlib_reflection_delegate_optimization:
+ *
+ *	Mono's mscorlib use delegates to optimize PropertyInfo and EventInfo
+ *	reflection calls. This requires either a bunch of additional, and not
+ *	really required, [SecuritySafeCritical] in the class libraries or 
+ *	(like this) a way to skip them. As a bonus we also avoid the stack
+ *	walk to find the caller.
+ *
+ *	Return TRUE if we can skip this "internal" delegate creation, FALSE
+ *	otherwise.
+ */
+static gboolean
+can_avoid_corlib_reflection_delegate_optimization (MonoMethod *method)
+{
+	if (!mono_security_core_clr_is_platform_image (method->klass->image))
+		return FALSE;
+
+	if (strcmp (method->klass->name_space, "System.Reflection") != 0)
+		return FALSE;
+
+	if (strcmp (method->klass->name, "MonoProperty") == 0) {
+		if ((strcmp (method->name, "GetterAdapterFrame") == 0) || strcmp (method->name, "StaticGetterAdapterFrame"))
+			return TRUE;
+	} else if (strcmp (method->klass->name, "EvenInfo") == 0) {
+		if ((strcmp (method->name, "AddEventFrame") == 0) || strcmp (method->name, "StaticAddEventAdapterFrame"))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+/*
  * mono_security_core_clr_ensure_delegate_creation:
  *
  *	Return TRUE if a delegate can be created on the specified method. 
@@ -278,8 +310,13 @@ mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method)
 gboolean
 mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure)
 {
+	MonoMethod *caller;
+
 	/* note: mscorlib creates delegates to avoid reflection (optimization), we ignore those cases */
-	MonoMethod *caller = get_reflection_caller ();
+	if (can_avoid_corlib_reflection_delegate_optimization (method))
+		return TRUE;
+
+	caller = get_reflection_caller ();
 	/* if the "real" caller is not Transparent then it do can anything */
 	if (mono_security_core_clr_method_level (caller, TRUE) != MONO_SECURITY_CORE_CLR_TRANSPARENT)
 		return TRUE;
