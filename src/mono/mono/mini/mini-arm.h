@@ -4,7 +4,7 @@
 #include <mono/arch/arm/arm-codegen.h>
 #include <glib.h>
 
-#if defined(ARM_FPU_NONE) || defined(ARM_FPU_VFP) || defined(__ARM_EABI__)
+#if defined(ARM_FPU_NONE) || (defined(__ARM_EABI__) && !defined(ARM_FPU_VFP))
 #define MONO_ARCH_SOFT_FLOAT 1
 #endif
 
@@ -54,7 +54,12 @@
 #define MONO_ARCH_CALLEE_REGS ((1<<ARMREG_R0) | (1<<ARMREG_R1) | (1<<ARMREG_R2) | (1<<ARMREG_R3) | (1<<ARMREG_IP))
 #define MONO_ARCH_CALLEE_SAVED_REGS ((1<<ARMREG_V1) | (1<<ARMREG_V2) | (1<<ARMREG_V3) | (1<<ARMREG_V4) | (1<<ARMREG_V5) | (1<<ARMREG_V6) | (1<<ARMREG_V7))
 
+#ifdef ARM_FPU_VFP
+/* Every double precision vfp register, d0 is reserved for a scratch reg */
+#define MONO_ARCH_CALLEE_FREGS 0x55555554
+#else
 #define MONO_ARCH_CALLEE_FREGS 0xf
+#endif
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0
 
 #define MONO_ARCH_USE_FPSTACK FALSE
