@@ -3540,7 +3540,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #ifdef ARM_FPU_FPA
 			if (ins->dreg != ins->sreg1)
 				ARM_MVFD (code, ins->dreg, ins->sreg1);
-#else
+#elif defined(ARM_FPU_VFP)
 			ARM_CPYD (code, ins->dreg, ins->sreg1);
 #endif
 			break;
