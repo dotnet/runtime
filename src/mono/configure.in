@@ -1763,6 +1763,30 @@ fi
 AM_CONDITIONAL(ENABLE_DTRACE, [test x$enable_dtrace = xyes])
 AM_CONDITIONAL(DTRACE_G_REQUIRED, [test x$dtrace_g = xyes])
 
+dnl **************
+dnl ***  LLVM  ***
+dnl **************
+
+AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the experimental LLVM back-end], enable_llvm=$enableval, enable_llvm=no)
+
+if test "x$enable_llvm" = "xyes"; then
+   AC_PROG_CXX
+   AC_PATH_PROG(LLVM_CONFIG, llvm-config, no)
+   if test "x$LLVM_CONFIG" = "xno"; then
+   	  AC_MSG_ERROR([llvm-config not found.])
+   fi
+
+   LLVM_CXXFLAGS=`$LLVM_CONFIG --cflags`
+   LLVM_LDFLAGS=`$LLVM_CONFIG --ldflags`
+   LLVM_LIBS=`$LLVM_CONFIG --libs core engine`
+   LLVM_LIBS="$LLVM_LDFLAGS $LLVM_LIBS -lstdc++"
+
+   AC_SUBST(LLVM_CXXFLAGS)
+   AC_SUBST(LLVM_LIBS)
+fi
+
+AM_CONDITIONAL(ENABLE_LLVM, [test x$enable_llvm = xyes])
+
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"
 
@@ -2507,6 +2531,7 @@ echo "
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
 	Parallel Mark: $enable_parallel_mark
+	LLVM Back End: $enable_llvm
 	$disabled
 
 "
@@ -2521,4 +2546,10 @@ if test x$gc = xsgen; then
 	echo IMPORTANT: and is not yet ready for use.  
 	echo IMPORTANT:
 	echo IMPORTANT: There are known problems with it, use at your own risk.
+fi
+
+if test x$enable_llvm = xyes; then
+   echo IMPORTANT:
+   echo IMPORTANT: The LLVM Back End is experimental and does not work yet.
+   echo IMPORTANT:
 fi

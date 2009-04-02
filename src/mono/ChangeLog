@@ -6,6 +6,11 @@
 
 	* data/system.web.mvc.pc.in: added
 
+2009-04-02  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add --enable-llvm argument to enable the experimental
+	LLVM back end.
+
 2009-03-31  Jb Evain  <jbevain@novell.com>
 
 	* scripts: Remove smcs, which is handled by moon now.
