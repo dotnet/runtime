@@ -5600,11 +5600,14 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 		/* call OFFSET(%rip) */
 		disp = *(guint32*)(code + 3);
 		return (gpointer*)(code + disp + 7);
-	} else if ((code [0] == 0xff) && (amd64_modrm_reg (code [1]) == 0x2) && (amd64_modrm_mod (code [1]) == 0x2) && (amd64_modrm_reg (code [2]) == X86_ESP) && (amd64_modrm_mod (code [2]) == 0) && (amd64_modrm_rm (code [2]) == X86_ESP)) {
-		/* call *[r12+disp32] */
-		if (IS_REX (code [-1]))
+	} else if ((code [0] == 0xff) && (amd64_modrm_reg (code [1]) == 0x2) && (amd64_modrm_mod (code [1]) == 0x2) && (amd64_sib_index (code [2]) == 4) && (amd64_sib_scale (code [2]) == 0)) {
+		/* call *[reg+disp32] using indexed addressing */
+		/* The LLVM JIT emits this, and we emit it too for %r12 */
+		if (IS_REX (code [-1])) {
 			rex = code [-1];
-		reg = AMD64_RSP;
+			g_assert (amd64_rex_x (rex) == 0);
+		}			
+		reg = amd64_sib_base (code [2]);
 		disp = *(gint32*)(code + 3);
 	} else if ((code [1] == 0xff) && (amd64_modrm_reg (code [2]) == 0x2) && (amd64_modrm_mod (code [2]) == 0x2)) {
 		/* call *[reg+disp32] */
@@ -5617,11 +5620,11 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 	} else if (code [2] == 0xe8) {
 		/* call <ADDR> */
 		return NULL;
-	} else if ((code [3] == 0xff) && (amd64_modrm_reg (code [4]) == 0x2) && (amd64_modrm_mod (code [4]) == 0x1) && (amd64_modrm_reg (code [5]) == X86_ESP) && (amd64_modrm_mod (code [5]) == 0) && (amd64_modrm_rm (code [5]) == X86_ESP)) {
-		/* call *[r12+disp32] */
+	} else if ((code [3] == 0xff) && (amd64_modrm_reg (code [4]) == 0x2) && (amd64_modrm_mod (code [4]) == 0x1) && (amd64_sib_index (code [5]) == 4) && (amd64_sib_scale (code [5]) == 0)) {
+		/* call *[r12+disp8] using indexed addressing */
 		if (IS_REX (code [2]))
 			rex = code [2];
-		reg = AMD64_RSP;
+		reg = amd64_sib_base (code [5]);
 		disp = *(gint8*)(code + 6);
 	} else if (IS_REX (code [4]) && (code [5] == 0xff) && (amd64_modrm_reg (code [6]) == 0x2) && (amd64_modrm_mod (code [6]) == 0x3)) {
 		/* call *%reg */
