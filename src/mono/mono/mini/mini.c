@@ -3071,7 +3071,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	MonoJitInfo *jinfo;
 	int dfn, i, code_size_ratio;
 	gboolean deadce_has_run = FALSE;
-	gboolean try_generic_shared;
+	gboolean try_generic_shared, try_llvm;
 	MonoMethod *method_to_compile, *method_to_register;
 	int generic_info_size;
 
@@ -3095,6 +3095,21 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		else if (mono_method_is_generic_impl (method))
 			mono_stats.generics_unsharable_methods++;
 	}
+
+	if (strstr (method->name, "test_"))
+		try_llvm = TRUE;
+	else
+		try_llvm = FALSE;
+
+	try_llvm = TRUE;
+
+	/* No way to obtain the location info for 'this' */
+	if (try_generic_shared)
+		try_llvm = FALSE;
+
+#ifndef ENABLE_LLVM
+	try_llvm = FALSE;
+#endif
 
  restart_compile:
 	if (try_generic_shared) {
@@ -3135,6 +3150,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->orig_method = method;
 	if (try_generic_shared)
 		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->generic_sharing_context;
+	cfg->compile_llvm = try_llvm;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 
 	if (cfg->compile_aot && !try_generic_shared && (method->is_generic || method->klass->generic_container)) {
@@ -3198,7 +3214,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * header->max_stack);
 
 	if (cfg->verbose_level > 0) {
-		if (cfg->generic_sharing_context)
+		if (cfg->compile_llvm)
+			g_print ("converting llvm method %s\n", mono_method_full_name (method, TRUE));
+		else if (cfg->generic_sharing_context)
 			g_print ("converting shared method %s\n", mono_method_full_name (method, TRUE));
 		else
 			g_print ("converting method %s\n", mono_method_full_name (method, TRUE));
@@ -3303,6 +3321,33 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_stats.basic_blocks += cfg->num_bblocks;
 	mono_jit_stats.max_basic_blocks = MAX (cfg->num_bblocks, mono_jit_stats.max_basic_blocks);
 
+	if (cfg->compile_llvm) {
+		MonoInst *ins;
+
+		/* The IR has to be in SSA form for LLVM */
+		cfg->opt |= MONO_OPT_SSA;
+
+		if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
+			mono_decompose_array_access_opts (cfg);
+
+		// FIXME:
+		if (cfg->ret) {
+			// Allow SSA on the result value
+			cfg->ret->flags &= ~MONO_INST_VOLATILE;
+
+			// Add an explicit return instruction referencing the return value
+			MONO_INST_NEW (cfg, ins, OP_SETRET);
+			ins->sreg1 = cfg->ret->dreg;
+
+			MONO_ADD_INS (cfg->bb_exit, ins);
+		}
+
+		cfg->opt &= ~MONO_OPT_LINEARS;
+
+		/* FIXME: */
+		cfg->opt &= ~MONO_OPT_BRANCH;
+	}
+
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
 
 	mono_decompose_long_opts (cfg);
@@ -3318,7 +3363,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_handle_global_vregs (cfg);
 	if (cfg->opt & MONO_OPT_DEADCE)
 		mono_local_deadce (cfg);
-	mono_if_conversion (cfg);
+	/* Disable this for LLVM to make the IR easier to handle */
+	if (!cfg->compile_llvm)
+		mono_if_conversion (cfg);
 
 	if ((cfg->opt & MONO_OPT_SSAPRE) || cfg->globalra)
 		mono_remove_critical_edges (cfg);
@@ -3407,7 +3454,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if ((cfg->opt & MONO_OPT_CONSPROP) || (cfg->opt & MONO_OPT_COPYPROP)) {
-		if (cfg->comp_done & MONO_COMP_SSA) {
+		if (cfg->comp_done & MONO_COMP_SSA && !cfg->compile_llvm) {
 #ifndef DISABLE_SSA
 			mono_ssa_cprop (cfg);
 #endif
@@ -3415,7 +3462,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 #ifndef DISABLE_SSA
-	if (cfg->comp_done & MONO_COMP_SSA) {			
+	if (cfg->comp_done & MONO_COMP_SSA && !cfg->compile_llvm) {			
 		//mono_ssa_strength_reduction (cfg);
 
 		if (cfg->opt & MONO_OPT_SSAPRE) {
@@ -3530,19 +3577,19 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 	}
 
-	//mono_print_code (cfg);
+	//mono_print_code (cfg, "");
 
     //print_dfn (cfg);
 	
 	/* variables are allocated after decompose, since decompose could create temps */
-	if (!cfg->globalra)
+	if (!cfg->globalra && !cfg->compile_llvm)
 		mono_arch_allocate_vars (cfg);
 
 	{
 		MonoBasicBlock *bb;
 		gboolean need_local_opts;
 
-		if (!cfg->globalra) {
+		if (!cfg->globalra && !cfg->compile_llvm) {
 			mono_spill_global_vars (cfg, &need_local_opts);
 
 			if (need_local_opts || cfg->compile_aot) {
@@ -3593,7 +3640,41 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 	}
 
-	mono_codegen (cfg);
+	if (cfg->compile_llvm) {
+#ifdef ENABLE_LLVM
+		char *nm;
+
+		/* The IR has to be in SSA form for LLVM */
+		if (!(cfg->comp_done & MONO_COMP_SSA)) {
+			cfg->exception_message = g_strdup ("SSA disabled.");
+			cfg->disable_llvm = TRUE;
+		}
+
+		if (!cfg->disable_llvm)
+			mono_llvm_emit_method (cfg);
+		if (cfg->disable_llvm) {
+			if (cfg->verbose_level >= 2) {
+				//nm = mono_method_full_name (cfg->method, TRUE);
+				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
+				//g_free (nm);
+			}
+			mono_destroy_compile (cfg);
+			try_llvm = FALSE;
+			goto restart_compile;
+		}
+
+		if (cfg->verbose_level > 0) {
+			nm = mono_method_full_name (cfg->method, TRUE);
+			g_print ("LLVM Method %s emitted at %p to %p (code length %d) [%s]\n", 
+					 nm, 
+					 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name);
+			g_free (nm);
+		}
+#endif
+	} else {
+		mono_codegen (cfg);
+	}
+
 	if (cfg->verbose_level >= 2) {
 		char *id =  mono_method_full_name (cfg->method, FALSE);
 		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);

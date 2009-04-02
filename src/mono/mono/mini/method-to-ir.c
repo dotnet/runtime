@@ -2206,6 +2206,7 @@ mono_emit_rgctx_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **ar
 	if (rgctx_arg) {
 		mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
 		cfg->uses_rgctx_reg = TRUE;
+		call->rgctx_reg = TRUE;
 	}
 	return (MonoInst*)call;
 #else
@@ -2364,6 +2365,7 @@ mono_emit_rgctx_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMeth
 #ifdef MONO_ARCH_RGCTX_REG
 		mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
 		cfg->uses_rgctx_reg = TRUE;
+		call->rgctx_reg = TRUE;
 #else
 		NOT_IMPLEMENTED;
 #endif
@@ -6413,6 +6415,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					call = (MonoCallInst*)ins;
 					mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
 					cfg->uses_rgctx_reg = TRUE;
+					call->rgctx_reg = TRUE;
 #else
 					NOT_IMPLEMENTED;
 #endif
@@ -6810,7 +6813,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!cfg->compile_aot)
 				use_op_switch = TRUE;
 #endif
-			
+
+			if (cfg->compile_llvm)
+				use_op_switch = TRUE;
+
 			if (use_op_switch) {
 				MONO_INST_NEW (cfg, ins, OP_SWITCH);
 				ins->sreg1 = src1->dreg;

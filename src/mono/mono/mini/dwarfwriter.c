@@ -1572,8 +1572,10 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	emit_line (w);
 
 	/* Emit unwind info */
-	emit_fde (w, w->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, TRUE);
-	w->fde_index ++;
+	if (unwind_info) {
+		emit_fde (w, w->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, TRUE);
+		w->fde_index ++;
+	}
 
 	/* Emit line number info */
 	if (code && debug_info)

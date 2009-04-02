@@ -1605,6 +1605,51 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, sig->pinvoke);
 
+	if (cfg->compile_llvm) {
+		for (i = 0; i < n; ++i) {
+			MonoInst *ins;
+
+			ainfo = cinfo->args + i;
+
+			in = call->args [i];
+
+			/* Simply remember the arguments */
+			switch (ainfo->storage) {
+			case ArgInIReg:
+				MONO_INST_NEW (cfg, ins, OP_MOVE);
+				ins->dreg = mono_alloc_ireg (cfg);
+				ins->sreg1 = in->dreg;
+				break;
+			case ArgInDoubleSSEReg:
+			case ArgInFloatSSEReg:
+				MONO_INST_NEW (cfg, ins, OP_FMOVE);
+				ins->dreg = mono_alloc_freg (cfg);
+				ins->sreg1 = in->dreg;
+				break;
+			case ArgOnStack:
+				if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
+					cfg->exception_message = g_strdup ("vtype argument");
+					cfg->disable_llvm = TRUE;
+				} else {
+					MONO_INST_NEW (cfg, ins, OP_MOVE);
+					ins->dreg = mono_alloc_ireg (cfg);
+					ins->sreg1 = in->dreg;
+				}
+				break;
+			default:
+				cfg->exception_message = g_strdup ("ainfo->storage");
+				cfg->disable_llvm = TRUE;
+				return;
+			}
+
+			if (!cfg->disable_llvm) {
+				MONO_ADD_INS (cfg->cbb, ins);
+				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, 0, FALSE);
+			}
+		}
+		return;
+	}
+
 	if (cinfo->need_stack_align) {
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
 	}

@@ -519,6 +519,8 @@ struct MonoCallInst {
 	guint vret_in_reg : 1;
 	/* Whenever there is an IMT argument and it is dynamic */
 	guint dynamic_imt_arg : 1;
+	/* Whenever there is an RGCTX argument */
+	guint32 rgctx_reg : 1;
 	regmask_t used_iregs;
 	regmask_t used_fregs;
 	GSList *out_ireg_args;
@@ -878,10 +880,12 @@ typedef struct {
 	gint32           sig_cookie;
 	guint            disable_aot : 1;
 	guint            disable_ssa : 1;
+	guint            disable_llvm : 1;
 	guint            enable_extended_bblocks : 1;
 	guint            run_cctors : 1;
 	guint            need_lmf_area : 1;
 	guint            compile_aot : 1;
+	guint            compile_llvm : 1;
 	guint            got_var_allocated : 1;
 	guint            ret_var_is_local : 1;
 	guint            ret_var_set : 1;
@@ -1327,6 +1331,8 @@ void     mono_save_xdebug_info              (MonoCompile *cfg) MONO_INTERNAL;
 void     mono_save_trampoline_xdebug_info   (const char *tramp_name, guint8 *code, guint32 code_size, GSList *unwind_info) MONO_INTERNAL;
 /* This is an exported function */
 void     mono_xdebug_emit                   (void) MONO_INTERNAL;
+
+void     mono_llvm_emit_method              (MonoCompile *cfg) MONO_INTERNAL;
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;

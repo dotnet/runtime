@@ -39,6 +39,8 @@ AM_CFLAGS = \
 	$(GLIB_CFLAGS)
 	$(PLATFORM_CFLAGS) $(ARCH_CFLAGS)
 
+AM_CXXFLAGS = $(LLVM_CXXFLAGS)
+
 if PLATFORM_WIN32
 export HOST_CC
 # The mingw math.h has "extern inline" functions that dont appear in libs, so
@@ -110,6 +112,7 @@ endif
 mono_LDADD = \
 	$(MONO_LIB)			\
 	$(GLIB_LIBS)		\
+	$(LLVM_LIBS)		\
 	-lm	\
 	$(MONO_DTRACE_OBJECT)
 
@@ -219,6 +222,12 @@ windows_sources = \
 
 posix_sources = \
 	mini-posix.c
+
+if ENABLE_LLVM
+llvm_sources = \
+	mini-llvm.c		\
+	mini-llvm-cpp.cpp
+endif
 
 common_sources = \
 	mini.c			\
@@ -398,7 +407,7 @@ if PLATFORM_DARWIN
 os_sources = $(darwin_sources) $(posix_sources)
 endif
 
-libmono_la_SOURCES = $(common_sources) $(arch_sources) $(os_sources)
+libmono_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
 
 libmono_static_la_SOURCES = $(libmono_la_SOURCES)
 nodist_libmono_static_la_SOURCES = $(nodist_libmono_la_SOURCES)

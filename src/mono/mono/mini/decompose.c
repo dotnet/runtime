@@ -41,18 +41,26 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	/* this doesn't make sense on ppc and other architectures */
 #if !defined(MONO_ARCH_NO_IOV_CHECK)
 	case OP_IADD_OVF:
+		if (cfg->compile_llvm)
+			break;
 		ins->opcode = OP_IADDCC;
 		MONO_EMIT_NEW_COND_EXC (cfg, IOV, "OverflowException");
 		break;
 	case OP_IADD_OVF_UN:
+		if (cfg->compile_llvm)
+			break;
 		ins->opcode = OP_IADDCC;
 		MONO_EMIT_NEW_COND_EXC (cfg, IC, "OverflowException");
 		break;
 	case OP_ISUB_OVF:
+		if (cfg->compile_llvm)
+			break;
 		ins->opcode = OP_ISUBCC;
 		MONO_EMIT_NEW_COND_EXC (cfg, IOV, "OverflowException");
 		break;
 	case OP_ISUB_OVF_UN:
+		if (cfg->compile_llvm)
+			break;
 		ins->opcode = OP_ISUBCC;
 		MONO_EMIT_NEW_COND_EXC (cfg, IC, "OverflowException");
 		break;
@@ -197,22 +205,30 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		break;
 #else
 	case OP_LADD_OVF:
+		if (cfg->compile_llvm)
+			break;
 		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
 		ins->opcode = OP_NOP;
 		break;
 	case OP_LADD_OVF_UN:
+		if (cfg->compile_llvm)
+			break;
 		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		ins->opcode = OP_NOP;
 		break;
 #ifndef __mono_ppc64__
 	case OP_LSUB_OVF:
+		if (cfg->compile_llvm)
+			break;
 		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, OV, "OverflowException");
 		ins->opcode = OP_NOP;
 		break;
 	case OP_LSUB_OVF_UN:
+		if (cfg->compile_llvm)
+			break;
 		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg, ins->sreg1, ins->sreg2);
 		MONO_EMIT_NEW_COND_EXC (cfg, C, "OverflowException");
 		ins->opcode = OP_NOP;
