@@ -404,6 +404,47 @@ mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *ifac
 }
 
 /*
+ * Verify if @type is valid for the given @ctx verification context.
+ * this function checks for VAR and MVAR types that are invalid under the current verifier,
+ * This means that it either 
+ */
+static gboolean
+mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
+{
+	if (mono_type_is_generic_argument (type) && !context)
+		return FALSE;
+	if (type->type == MONO_TYPE_VAR) {
+		if (!context->class_inst)
+			return FALSE;
+		if (type->data.generic_param->num >= context->class_inst->type_argc)
+			return FALSE;
+	} else if (type->type == MONO_TYPE_MVAR) {
+		if (!context->method_inst)
+			return FALSE;
+		if (type->data.generic_param->num >= context->method_inst->type_argc)
+			return FALSE;
+	}
+	if (type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) {
+		MonoClass *klass = type->data.klass;
+		MonoGenericContainer *container = klass->generic_container;
+		if (!container || !context)
+			return TRUE;
+		if (!context->class_inst)
+			return FALSE;
+		return container->context.class_inst->type_argc <= context->class_inst->type_argc;
+	}
+	return TRUE;
+}
+
+/*This function returns NULL if the type is not instantiatable*/
+static MonoType*
+verifier_inflate_type (VerifyContext *ctx, MonoType *type, MonoGenericContext *context)
+{
+	if (!mono_type_is_valid_type_in_context (type, context))
+		return NULL;
+	return mono_class_inflate_generic_type (type, context);
+}
+/*
  * Test if @candidate is a subtype of @target using the minimal possible information
  * TODO move the code for non finished TypeBuilders to here.
  */
@@ -505,7 +546,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
  * This means that @candidate constraints are a super set of @target constaints
  */
 static gboolean
-mono_generic_param_is_constraint_compatible (MonoGenericParam *target, MonoGenericParam *candidate, MonoGenericContext *context)
+mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericParam *target, MonoGenericParam *candidate, MonoGenericContext *context)
 {
 	int tmask = target->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 	int cmask = candidate->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;	
@@ -517,14 +558,17 @@ mono_generic_param_is_constraint_compatible (MonoGenericParam *target, MonoGener
 		if (!candidate->constraints)
 			return FALSE;
 		for (target_class = target->constraints; *target_class; ++target_class) {
-			MonoType *inflated = mono_class_inflate_generic_type (&(*target_class)->byval_arg, context);
+			MonoType *inflated = verifier_inflate_type (ctx, &(*target_class)->byval_arg, context);
+			if (!inflated)
+				return FALSE;
 			MonoClass *tc = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 
 			for (candidate_class = candidate->constraints; *candidate_class; ++candidate_class) {
 				MonoClass *cc;
-
-				inflated = mono_class_inflate_generic_type (&(*candidate_class)->byval_arg, context);
+				inflated = verifier_inflate_type (ctx, &(*candidate_class)->byval_arg, ctx->generic_context);
+				if (!inflated)
+					return FALSE;
 				cc = mono_class_from_mono_type (inflated);
 				mono_metadata_free_type (inflated);
 
@@ -573,20 +617,7 @@ verifier_get_generic_param_from_type (VerifyContext *ctx, MonoType *type)
 static gboolean
 is_valid_type_in_context (VerifyContext *ctx, MonoType *type)
 {
-	if (mono_type_is_generic_argument (type) && !ctx->generic_context)
-		return FALSE;
-	if (type->type == MONO_TYPE_VAR) {
-		if (!ctx->generic_context->class_inst)
-			return FALSE;
-		if (type->data.generic_param->num >= ctx->generic_context->class_inst->type_argc)
-			return FALSE;
-	} else if (type->type == MONO_TYPE_MVAR) {
-		if (!ctx->generic_context->method_inst)
-			return FALSE;
-		if (type->data.generic_param->num >= ctx->generic_context->method_inst->type_argc)
-			return FALSE;
-	}
-	return TRUE;
+	return mono_type_is_valid_type_in_context (type, ctx->generic_context);
 }
 
 static gboolean
@@ -618,7 +649,7 @@ generic_arguments_respect_constraints (VerifyContext *ctx, MonoGenericContainer 
 
 		candidate = verifier_get_generic_param_from_type (ctx, type);
 
-		if (!mono_generic_param_is_constraint_compatible (target, candidate, context))
+		if (!mono_generic_param_is_constraint_compatible (ctx, target, candidate, context))
 			return FALSE;
 	}
 	return TRUE;
