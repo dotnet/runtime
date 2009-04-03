@@ -79,8 +79,10 @@ namespace Mono.Tuner {
 				data_folder,
 				assembly.Name.Name + ".secattr");
 
-			if (!File.Exists (secattr_file))
+			if (!File.Exists (secattr_file)) {
+				Console.Error.WriteLine ("Warning: file '{0}' not found, skipping.", secattr_file);
 				return;
+			}
 
 			_assembly = assembly;
 
