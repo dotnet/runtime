@@ -10,6 +10,8 @@
 // The things which we override are:
 // - the default JIT code manager used by LLVM doesn't allocate memory using
 //   MAP_32BIT, we require it.
+// - add some callbacks so we can obtain the size of methods and their exception
+//   tables.
 //
 
 //
@@ -26,11 +28,9 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
-using namespace llvm;
+#include "mini-llvm-cpp.h"
 
-typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
-typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end);
-typedef void (ExceptionTableCb) (void *data);
+using namespace llvm;
 
 class MonoJITMemoryManager : public JITMemoryManager
 {

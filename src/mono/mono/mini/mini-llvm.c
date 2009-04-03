@@ -11,20 +11,10 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
-/* FIXME: Move these to an include file */
-typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
-typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end);
-typedef void (ExceptionTableCb) (void *data);
-
-LLVMExecutionEngineRef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb);
+#include "mini-llvm-cpp.h"
 
 typedef struct {
 	MonoMemPool *mempool;
-	LLVMModuleRef module;
-	char *(*plt_allocator) (gpointer arg, MonoJumpInfo *ji);
-	gpointer plt_allocator_arg;
-	int method_index, tindex;
 
 	LLVMValueRef got_var;
 
@@ -32,10 +22,8 @@ typedef struct {
 
 	/* Maps method names to the corresponding LLVMValueRef */
 	GHashTable *emitted_method_decls;
-	GHashTable *llvm_types;
 
 	MonoCompile *cfg;
-	char *failure_reason;
 	LLVMValueRef lmethod;
 	LLVMBasicBlockRef *bblocks, *end_bblocks;
 	int sindex, default_index, ex_index;
@@ -78,7 +66,7 @@ llvm_ins_info[] = {
 #define LLVM_INS_INFO(opcode) (&llvm_ins_info [((opcode) - OP_START - 1) * 4])
 
 #define LLVM_FAILURE(ctx, reason) do { \
-	(ctx)->failure_reason = g_strdup (reason); \
+	(ctx)->cfg->exception_message = g_strdup (reason); \
 	(ctx)->cfg->disable_llvm = TRUE; \
 	goto FAILURE; \
 } while (0)
@@ -193,7 +181,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	}
 
 	default:
-		ctx->failure_reason = g_strdup_printf ("type %s", mono_type_full_name (t));
+		ctx->cfg->exception_message = g_strdup_printf ("type %s", mono_type_full_name (t));
 		ctx->cfg->disable_llvm = TRUE;
 		return NULL;
 	}
@@ -464,7 +452,7 @@ static LLVMTypeRef
 sig_to_llvm_sig (EmitContext *ctx, MonoMethodSignature *sig, gboolean vretaddr)
 {
 	LLVMTypeRef ret_type;
-	LLVMTypeRef *param_types;
+	LLVMTypeRef *param_types = NULL;
 	LLVMTypeRef res;
 	int i, pindex;
 
@@ -495,6 +483,8 @@ sig_to_llvm_sig (EmitContext *ctx, MonoMethodSignature *sig, gboolean vretaddr)
 	return res;
 
  FAILURE:
+	g_free (param_types);
+
 	return NULL;
 }
 
@@ -548,16 +538,16 @@ emit_cond_throw_pos (EmitContext *ctx)
 static void
 emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *exc_type, LLVMValueRef cmp)
 {
-	char *bb_name;
+	char bb_name [128];
 	LLVMBasicBlockRef ex_bb, noex_bb;
 	LLVMBuilderRef builder;
 	MonoClass *exc_class;
 	static LLVMValueRef throw;
 
-	bb_name = g_strdup_printf ("EX_BB%d", ctx->ex_index);
+	sprintf (bb_name, "EX_BB%d", ctx->ex_index);
 	ex_bb = LLVMAppendBasicBlock (ctx->lmethod, bb_name);
 
-	bb_name = g_strdup_printf ("NOEX_BB%d", ctx->ex_index);
+	sprintf (bb_name, "NOEX_BB%d", ctx->ex_index);
 	noex_bb = LLVMAppendBasicBlock (ctx->lmethod, bb_name);
 
 	LLVMBuildCondBr (ctx->builder, cmp, ex_bb, noex_bb);
@@ -595,7 +585,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	MonoBasicBlock *bb;
 	LLVMTypeRef method_type;
-	LLVMValueRef method;
+	LLVMValueRef method = NULL;
 	char *method_name;
 	LLVMValueRef *values, *addresses;
 	LLVMTypeRef *vreg_types;
@@ -648,6 +638,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	method_name = mono_method_full_name (cfg->method, TRUE);
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
+	g_free (method_name);
 
 	if (cfg->method->save_lmf)
 		LLVM_FAILURE (ctx, "lmf");
@@ -690,6 +681,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		MonoInst *ins;
 		LLVMBuilderRef builder;
 		char *dname;
+		char dname_buf[128];
 
 		builder = LLVMCreateBuilder ();
 
@@ -705,7 +697,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				 * Have to precreate these, as they can be referenced by
 				 * earlier instructions.
 				 */
-				dname = g_strdup_printf ("t%d", ins->dreg);
+				sprintf (dname_buf, "t%d", ins->dreg);
+				dname = dname_buf;
 				values [ins->dreg] = LLVMBuildPhi (builder, phi_type, dname);
 
 				g_ptr_array_add (phi_values, values [ins->dreg]);
@@ -775,13 +768,16 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		for (ins = bb->code; ins; ins = ins->next) {
 			const char *spec = LLVM_INS_INFO (ins->opcode);
 			char *dname;
+			char dname_buf [128];
 
 			if (has_terminator)
 				/* There could be instructions after a terminator, skip them */
 				break;
 
-			if (spec [MONO_INST_DEST] != ' ' && !MONO_IS_STORE_MEMBASE (ins))
-				dname = g_strdup_printf ("t%d", ins->dreg);
+			if (spec [MONO_INST_DEST] != ' ' && !MONO_IS_STORE_MEMBASE (ins)) {
+				sprintf (dname_buf, "t%d", ins->dreg);
+				dname = dname_buf;
+			}
 
 			if (spec [MONO_INST_SRC1] != ' ' && spec [MONO_INST_SRC1] != 'v') {
 				MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
@@ -1831,11 +1827,33 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	goto CLEANUP;
 
  FAILURE:
-	// FIXME: Cleanup the method
-	cfg->exception_message = ctx->failure_reason;
+
+	if (method) {
+		/* Need to add unused phi nodes as they can be referenced by other values */
+		LLVMBasicBlockRef phi_bb = LLVMAppendBasicBlock (method, "PHI_BB");
+		LLVMBuilderRef builder;
+
+		builder = LLVMCreateBuilder ();
+		LLVMPositionBuilderAtEnd (builder, phi_bb);
+
+		for (i = 0; i < phi_values->len; ++i) {
+			LLVMValueRef v = g_ptr_array_index (phi_values, i);
+			if (LLVMGetInstructionParent (v) == NULL)
+				LLVMInsertIntoBuilder (builder, v);
+		}
+		
+		LLVMDeleteFunction (method);
+	}
 
  CLEANUP:
-	// FIXME: Cleanup
+	g_free (values);
+	g_free (addresses);
+	g_free (vreg_types);
+	g_hash_table_destroy (phi_nodes);
+	g_ptr_array_free (phi_values, TRUE);
+	g_free (ctx->bblocks);
+	g_free (ctx->end_bblocks);
+
 	g_free (ctx);
 
 	TlsSetValue (current_cfg_tls_id, NULL);
