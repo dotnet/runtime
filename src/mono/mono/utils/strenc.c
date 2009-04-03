@@ -292,3 +292,86 @@ mono_utf8_validate_and_len (const gchar *source, glong* oLength, const gchar** o
 }
 
 
+/**
+ * mono_utf8_validate_and_len_with_bounds
+ * @source: Pointer to putative UTF-8 encoded string.
+ * @max_bytes: Max number of bytes that can be decoded. This function returns FALSE if
+ * it needs to decode characters beyond that.
+ *
+ * Checks @source for being valid UTF-8. @utf is assumed to be
+ * null-terminated.
+ *
+ * Return value: true if @source is valid.
+ * oEnd : will equal the null terminator at the end of the string if valid.
+ *            if not valid, it will equal the first charater of the invalid sequence.
+ * oLengh : will equal the length to @oEnd
+ **/
+gboolean
+mono_utf8_validate_and_len_with_bounds (const gchar *source, glong max_bytes, glong* oLength, const gchar** oEnd)
+{
+	gboolean retVal = TRUE;
+	gboolean lastRet = TRUE;
+	guchar* ptr = (guchar*) source;
+	guchar *end = ptr + max_bytes;
+	guchar* srcPtr;
+	guint length;
+	guchar a;
+	*oLength = 0;
+
+	if (max_bytes < 1) {
+		if (oEnd)
+			*oEnd = (gchar*) ptr;
+		return FALSE;
+	}
+
+	while (*ptr != 0) {
+		length = trailingBytesForUTF8 [*ptr] + 1;
+		srcPtr = (guchar*) ptr + length;
+		
+		/* since *ptr is not zero we must ensure that we can decode the current char + the byte after
+		   srcPtr points to the first byte after the current char.*/
+		if (srcPtr >= end) {
+			retVal = FALSE;
+			break;
+		}
+		switch (length) {
+		default: retVal = FALSE;
+		/* Everything else falls through when "TRUE"... */
+		case 4: if ((a = (*--srcPtr)) < (guchar) 0x80 || a > (guchar) 0xBF) retVal = FALSE;
+				if ((a == (guchar) 0xBF || a == (guchar) 0xBE) && *(srcPtr-1) == (guchar) 0xBF) {
+				if (*(srcPtr-2) == (guchar) 0x8F || *(srcPtr-2) == (guchar) 0x9F ||
+					*(srcPtr-2) == (guchar) 0xAF || *(srcPtr-2) == (guchar) 0xBF)
+					retVal = FALSE;
+				}
+		case 3: if ((a = (*--srcPtr)) < (guchar) 0x80 || a > (guchar) 0xBF) retVal = FALSE;
+		case 2: if ((a = (*--srcPtr)) < (guchar) 0x80 || a > (guchar) 0xBF) retVal = FALSE;
+
+		switch (*ptr) {
+		/* no fall-through in this inner switch */
+		case 0xE0: if (a < (guchar) 0xA0) retVal = FALSE; break;
+		case 0xED: if (a > (guchar) 0x9F) retVal = FALSE; break;
+		case 0xEF: if (a == (guchar)0xB7 && (*(srcPtr+1) > (guchar) 0x8F && *(srcPtr+1) < 0xB0)) retVal = FALSE;
+				   if (a == (guchar)0xBF && (*(srcPtr+1) == (guchar) 0xBE || *(srcPtr+1) == 0xBF)) retVal = FALSE; break;
+		case 0xF0: if (a < (guchar) 0x90) retVal = FALSE; break;
+		case 0xF4: if (a > (guchar) 0x8F) retVal = FALSE; break;
+		default:   if (a < (guchar) 0x80) retVal = FALSE;
+		}
+
+		case 1: if (*ptr >= (guchar ) 0x80 && *ptr < (guchar) 0xC2) retVal = FALSE;
+		}
+		if (*ptr > (guchar) 0xF4)
+			retVal = FALSE;
+		//If the string is invalid, set the end to the invalid byte.
+		if (!retVal && lastRet) {
+			if (oEnd != NULL)
+				*oEnd = (gchar*) ptr;
+			lastRet = FALSE;
+		}
+		ptr += length;
+		(*oLength)++;
+	}
+	if (retVal && oEnd != NULL)
+		*oEnd = (gchar*) ptr;
+	return retVal;
+}
+
