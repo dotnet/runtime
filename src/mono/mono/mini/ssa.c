@@ -472,6 +472,8 @@ mono_ssa_compute (MonoCompile *cfg)
 	mono_ssa_rename_vars (cfg, cfg->num_varinfo, cfg->bb_entry, originals, stack, lvreg_stack, lvreg_defined, stack_history, stack_history_size);
 	g_free (stack_history);
 	g_free (originals);
+	g_free (lvreg_stack);
+	g_free (lvreg_defined);
 
 	if (cfg->verbose_level >= 4)
 		printf ("\nEND COMPUTE SSA.\n\n");
