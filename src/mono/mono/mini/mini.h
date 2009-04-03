@@ -54,6 +54,12 @@ typedef gint64 mgreg_t;
 #define MINI_DEBUG(level,limit,code) do {if (G_UNLIKELY ((level) >= (limit))) code} while (0)
 #endif
 
+#if ENABLE_LLVM
+#define COMPILE_LLVM(cfg) ((cfg)->compile_llvm)
+#else
+#define COMPILE_LLVM(cfg) (0)
+#endif
+
 #define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
 
 #ifndef DISABLE_AOT
@@ -914,6 +920,8 @@ typedef struct {
 	char*            exception_message;
 	gpointer         exception_ptr;
 
+	guint8 *         encoded_unwind_ops;
+	guint32          encoded_unwind_ops_len;
 	GSList*          unwind_ops;
 
 	/* Fields used by the local reg allocator */

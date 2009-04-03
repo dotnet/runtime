@@ -21,6 +21,7 @@
 
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JITMemoryManager.h>
+#include <llvm/Target/TargetOptions.h>
 
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
@@ -29,6 +30,7 @@ using namespace llvm;
 
 typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
 typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end);
+typedef void (ExceptionTableCb) (void *data);
 
 class MonoJITMemoryManager : public JITMemoryManager
 {
@@ -163,7 +165,7 @@ static MonoJITMemoryManager *mono_mm;
 extern "C" {
 
 LLVMExecutionEngineRef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb)
+mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb)
 {
   std::string Error;
 
@@ -171,7 +173,10 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   mono_mm->alloc_cb = alloc_cb;
   mono_mm->emitted_cb = emitted_cb;
 
+  ExceptionHandling = true;
+
   ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, false);
+  EE->InstallExceptionTableRegister (exception_cb);
 
   return wrap(EE);
 }

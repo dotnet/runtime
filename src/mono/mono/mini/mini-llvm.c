@@ -14,9 +14,10 @@
 /* FIXME: Move these to an include file */
 typedef unsigned char * (AllocCodeMemoryCb) (LLVMValueRef function, int size);
 typedef void (FunctionEmittedCb) (LLVMValueRef function, void *start, void *end);
+typedef void (ExceptionTableCb) (void *data);
 
 LLVMExecutionEngineRef
-mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb);
+mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb);
 
 typedef struct {
 	MonoMemPool *mempool;
@@ -116,9 +117,7 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 static LLVMModuleRef module;
 static LLVMExecutionEngineRef ee;
 static GHashTable *llvm_types;
-
-/* A hashtable mapping LLVM methods to MonoCompile's */
-static GHashTable *method_to_cfg;
+static guint32 current_cfg_tls_id;
 
 static void mono_llvm_init (void);
 
@@ -611,6 +610,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (!ee)
 		mono_llvm_init ();
 
+	/* Used to communicate with the callbacks */
+	TlsSetValue (current_cfg_tls_id, cfg);
+
 	ctx = g_new0 (EmitContext, 1);
 	ctx->cfg = cfg;
 	ctx->mempool = cfg->mempool;
@@ -646,8 +648,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	method_name = mono_method_full_name (cfg->method, TRUE);
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
-
-	g_hash_table_insert (method_to_cfg, method, cfg);
 
 	if (cfg->method->save_lmf)
 		LLVM_FAILURE (ctx, "lmf");
@@ -1261,13 +1261,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildSExt (builder, LLVMBuildFPToSI (builder, lhs, LLVMInt8Type (), dname), LLVMInt32Type (), get_tempname (ctx));
 				break;
 			case OP_FCONV_TO_U1:
-				values [ins->dreg] = LLVMBuildSExt (builder, LLVMBuildFPToUI (builder, lhs, LLVMInt8Type (), dname), LLVMInt32Type (), get_tempname (ctx));
+				values [ins->dreg] = LLVMBuildZExt (builder, LLVMBuildFPToUI (builder, lhs, LLVMInt8Type (), dname), LLVMInt32Type (), get_tempname (ctx));
 				break;
 			case OP_FCONV_TO_I2:
 				values [ins->dreg] = LLVMBuildSExt (builder, LLVMBuildFPToSI (builder, lhs, LLVMInt16Type (), dname), LLVMInt32Type (), get_tempname (ctx));
 				break;
 			case OP_FCONV_TO_U2:
-				values [ins->dreg] = LLVMBuildSExt (builder, LLVMBuildFPToUI (builder, lhs, LLVMInt16Type (), dname), LLVMInt32Type (), get_tempname (ctx));
+				values [ins->dreg] = LLVMBuildZExt (builder, LLVMBuildFPToUI (builder, lhs, LLVMInt16Type (), dname), LLVMInt32Type (), get_tempname (ctx));
 				break;
 			case OP_FCONV_TO_I8:
 				values [ins->dreg] = LLVMBuildFPToSI (builder, lhs, LLVMInt64Type (), dname);
@@ -1828,8 +1828,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	/* Set by emit_cb */
 	g_assert (cfg->code_len);
 
-	g_hash_table_remove (method_to_cfg, method);
-
 	goto CLEANUP;
 
  FAILURE:
@@ -1840,6 +1838,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	// FIXME: Cleanup
 	g_free (ctx);
 
+	TlsSetValue (current_cfg_tls_id, NULL);
+
 	mono_loader_unlock ();
 }
 
@@ -1848,8 +1848,8 @@ alloc_cb (LLVMValueRef function, int size)
 {
 	MonoCompile *cfg;
 
-	/* This is called while holding the loader lock */
-	cfg = g_hash_table_lookup (method_to_cfg, function);
+	cfg = TlsGetValue (current_cfg_tls_id);
+
 	if (cfg) {
 		// FIXME: dynamic
 		return mono_domain_code_reserve (cfg->domain, size);
@@ -1863,21 +1863,38 @@ emitted_cb (LLVMValueRef function, void *start, void *end)
 {
 	MonoCompile *cfg;
 
-	/* This is called while holding the loader lock */
-	cfg = g_hash_table_lookup (method_to_cfg, function);
+	cfg = TlsGetValue (current_cfg_tls_id);
 	g_assert (cfg);
 	cfg->code_len = (guint8*)end - (guint8*)start;
 }
 
 static void
+exception_cb (void *data)
+{
+	MonoCompile *cfg;
+
+	cfg = TlsGetValue (current_cfg_tls_id);
+	g_assert (cfg);
+
+	/*
+	 * data points to a DWARF FDE structure, convert it to our unwind format and
+	 * save it.
+	 * An alternative would be to save it directly, and modify our unwinder to work
+	 * with it.
+	 */
+	cfg->encoded_unwind_ops = mono_unwind_get_ops_from_fde ((guint8*)data, &cfg->encoded_unwind_ops_len);
+}
+
+static void
 mono_llvm_init (void)
 {
+	current_cfg_tls_id = TlsAlloc ();
+
 	module = LLVMModuleCreateWithName ("mono");
 
-	ee = mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (module), alloc_cb, emitted_cb);
+	ee = mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (module), alloc_cb, emitted_cb, exception_cb);
 
 	llvm_types = g_hash_table_new (NULL, NULL);
-	method_to_cfg = g_hash_table_new (NULL, NULL);
 
 	/* Emit declarations of instrinsics */
 	{

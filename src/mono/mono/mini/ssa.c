@@ -407,7 +407,7 @@ mono_ssa_compute (MonoCompile *cfg)
 
 			/* fixme: create pruned SSA? we would need liveness information for that */
 
-			if (bb == cfg->bb_exit && !cfg->compile_llvm)
+			if (bb == cfg->bb_exit && !COMPILE_LLVM (cfg))
 				continue;
 
 			if ((cfg->comp_done & MONO_COMP_LIVENESS) && !mono_bitset_test_fast (bb->live_in_set, i)) {

@@ -3799,7 +3799,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	 * using it during runtime, hence the define.
 	 */
 #ifdef MONO_ARCH_HAVE_XP_UNWIND
-	if (cfg->unwind_ops) {
+	if (cfg->encoded_unwind_ops) {
+		jinfo->used_regs = mono_cache_unwind_info (cfg->encoded_unwind_ops, cfg->encoded_unwind_ops_len);
+		g_free (cfg->encoded_unwind_ops);
+	} else if (cfg->unwind_ops) {
 		guint32 info_len;
 		guint8 *unwind_info = mono_unwind_ops_encode (cfg->unwind_ops, &info_len);
 

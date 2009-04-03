@@ -144,6 +144,31 @@ decode_uleb128 (guint8 *buf, guint8 **endbuf)
 	return res;
 }
 
+static inline gint32
+decode_sleb128 (guint8 *buf, guint8 **endbuf)
+{
+	guint8 *p = buf;
+	gint32 res = 0;
+	int shift = 0;
+
+	while (TRUE) {
+		guint8 b = *p;
+		p ++;
+
+		res = res | (((int)(b & 0x7f)) << shift);
+		shift += 7;
+		if (!(b & 0x80)) {
+			if (shift < 32 && (b & 0x40))
+				res |= - (1 << shift);
+			break;
+		}
+	}
+
+	*endbuf = p;
+
+	return res;
+}
+
 /*
  * mono_unwind_ops_encode:
  *
@@ -285,6 +310,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				break;
 			case DW_CFA_def_cfa_register:
 				cfa_reg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
+				break;
+			case DW_CFA_advance_loc4:
+				pos += *(guint32*)p;
+				p += 4;
 				break;
 			default:
 				g_assert_not_reached ();
@@ -472,4 +501,141 @@ int
 mono_unwind_get_dwarf_pc_reg (void)
 {
 	return DWARF_PC_REG;
+}
+
+static void
+decode_cie_op (guint8 *p, guint8 **endp)
+{
+	int op = *p & 0xc0;
+
+	switch (op) {
+	case DW_CFA_advance_loc:
+		p ++;
+		break;
+	case DW_CFA_offset:
+		p ++;
+		decode_uleb128 (p, &p);
+		break;
+	case 0: {
+		int ext_op = *p;
+		p ++;
+		switch (ext_op) {
+		case DW_CFA_def_cfa:
+			decode_uleb128 (p, &p);
+			decode_uleb128 (p, &p);
+			break;
+		case DW_CFA_def_cfa_offset:
+			decode_uleb128 (p, &p);
+			break;
+		case DW_CFA_def_cfa_register:
+			decode_uleb128 (p, &p);
+			break;
+		case DW_CFA_advance_loc4:
+			p += 4;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+
+	*endp = p;
+}
+
+/*
+ * mono_unwind_get_ops_from_fde:
+ *
+ *   Return the unwind opcodes encoded in a DWARF FDE entry.
+ */
+guint8*
+mono_unwind_get_ops_from_fde (guint8 *fde, guint32 *out_len)
+{
+	guint8 *p, *cie, *code, *fde_cfi, *cie_cfi;
+	gint32 fde_len, cie_offset, pc_begin, pc_range, aug_len, fde_data_len;
+	gint32 cie_len, cie_id, cie_version, code_align, data_align, return_reg;
+	gint32 i, cie_aug_len, buf_len;
+	char *cie_aug_str;
+	guint8 *buf;
+
+	/* 
+	 * http://refspecs.freestandards.org/LSB_3.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
+	 */
+
+	/* Decode FDE */
+
+	p = fde;
+	// FIXME: Endianess ?
+	fde_len = *(guint32*)p;
+	g_assert (fde_len != 0xffffffff && fde_len != 0);
+	p += 4;
+	cie_offset = *(guint32*)p;
+	cie = p - cie_offset;
+	p += 4;
+	pc_begin = *(gint32*)p;
+	code = p + pc_begin;
+	p += 4;
+	pc_range = *(guint32*)p;
+	p += 4;
+	aug_len = decode_uleb128 (p, &p);
+	g_assert (aug_len == 0);
+	fde_cfi = p;
+	fde_data_len = fde + 4 + fde_len - p;
+
+	/* Decode CIE */
+	p = cie;
+	cie_len = *(guint32*)p;
+	p += 4;
+	cie_id = *(guint32*)p;
+	g_assert (cie_id == 0);
+	p += 4;
+	cie_version = *p;
+	g_assert (cie_version == 1);
+	p += 1;
+	cie_aug_str = (char*)p;
+	p += strlen (cie_aug_str) + 1;
+	code_align = decode_uleb128 (p, &p);
+	data_align = decode_sleb128 (p, &p);
+	return_reg = decode_uleb128 (p, &p);
+	if (strstr (cie_aug_str, "z")) {
+		cie_aug_len = decode_uleb128 (p, &p);
+		p += cie_aug_len;
+	}
+	cie_cfi = p;
+
+	/* Make sure the FDE uses the same constants as we do */
+	g_assert (code_align == 1);
+	g_assert (data_align == DWARF_DATA_ALIGN);
+	g_assert (return_reg == DWARF_PC_REG);
+
+	buf_len = (cie + cie_len + 4 - cie_cfi) + (fde + fde_len + 4 - fde_cfi);
+	buf = g_malloc0 (buf_len);
+
+	i = 0;
+	p = cie_cfi;
+	while (p < cie + cie_len + 4) {
+		if (*p == DW_CFA_nop)
+			break;
+		else
+			decode_cie_op (p, &p);
+	}
+	memcpy (buf + i, cie_cfi, p - cie_cfi);
+	i += p - cie_cfi;
+
+	p = fde_cfi;
+	while (p < fde + fde_len + 4) {
+		if (*p == DW_CFA_nop)
+			break;
+		else
+			decode_cie_op (p, &p);
+	}
+	memcpy (buf + i, fde_cfi, p - fde_cfi);
+	i += p - fde_cfi;
+	g_assert (i <= buf_len);
+
+	*out_len = i;
+
+	return g_realloc (buf, i);
 }
