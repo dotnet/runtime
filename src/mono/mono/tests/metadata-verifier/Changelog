@@ -1,3 +1,9 @@
+2009-04-03 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Fix table offset calculation.
+
+	* cli-tables-tests.md: Add more tests for the module table.
+
 2009-03-30 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* gen-md-tests.c: Parse the source assembly using the runtime

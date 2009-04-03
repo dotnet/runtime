@@ -60,4 +60,25 @@ module-table {
 	#generation
 	valid offset table-row ( 0 0 ) set-ushort 0
 	invalid offset table-row ( 0 0 ) set-ushort 9999
+
+	#rows
+	valid offset tables-header + 24 set-uint 1
+	invalid offset tables-header + 24 set-uint 0
+	invalid offset tables-header + 24 set-uint 2 , offset tables-header + 32 set-uint 1
+	
+	#name
+	#invalid string
+	invalid offset table-row ( 0 0 ) + 2 set-ushort 0x8888
+	#point to an empty string
+	invalid offset table-row ( 0 0 ) + 2 set-ushort 0
+
+	#mvid
+	invalid offset table-row ( 0 0 ) + 4 set-ushort 0x8888
+
+	#encId
+	invalid offset table-row ( 0 0 ) + 6 set-ushort 0x8888
+
+	#encBaseId
+	invalid offset table-row ( 0 0 ) + 8 set-ushort 0x8888
+
 }
