@@ -1605,7 +1605,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, sig->pinvoke);
 
-	if (cfg->compile_llvm) {
+	if (COMPILE_LLVM (cfg)) {
 		for (i = 0; i < n; ++i) {
 			MonoInst *ins;
 

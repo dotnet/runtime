@@ -3214,7 +3214,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * header->max_stack);
 
 	if (cfg->verbose_level > 0) {
-		if (cfg->compile_llvm)
+		if (COMPILE_LLVM (cfg))
 			g_print ("converting llvm method %s\n", mono_method_full_name (method, TRUE));
 		else if (cfg->generic_sharing_context)
 			g_print ("converting shared method %s\n", mono_method_full_name (method, TRUE));
@@ -3321,7 +3321,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_jit_stats.basic_blocks += cfg->num_bblocks;
 	mono_jit_stats.max_basic_blocks = MAX (cfg->num_bblocks, mono_jit_stats.max_basic_blocks);
 
-	if (cfg->compile_llvm) {
+	if (COMPILE_LLVM (cfg)) {
 		MonoInst *ins;
 
 		/* The IR has to be in SSA form for LLVM */
@@ -3364,7 +3364,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (cfg->opt & MONO_OPT_DEADCE)
 		mono_local_deadce (cfg);
 	/* Disable this for LLVM to make the IR easier to handle */
-	if (!cfg->compile_llvm)
+	if (!COMPILE_LLVM (cfg))
 		mono_if_conversion (cfg);
 
 	if ((cfg->opt & MONO_OPT_SSAPRE) || cfg->globalra)
@@ -3454,7 +3454,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 	if ((cfg->opt & MONO_OPT_CONSPROP) || (cfg->opt & MONO_OPT_COPYPROP)) {
-		if (cfg->comp_done & MONO_COMP_SSA && !cfg->compile_llvm) {
+		if (cfg->comp_done & MONO_COMP_SSA && !COMPILE_LLVM (cfg)) {
 #ifndef DISABLE_SSA
 			mono_ssa_cprop (cfg);
 #endif
@@ -3462,7 +3462,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 
 #ifndef DISABLE_SSA
-	if (cfg->comp_done & MONO_COMP_SSA && !cfg->compile_llvm) {			
+	if (cfg->comp_done & MONO_COMP_SSA && !COMPILE_LLVM (cfg)) {
 		//mono_ssa_strength_reduction (cfg);
 
 		if (cfg->opt & MONO_OPT_SSAPRE) {
@@ -3582,14 +3582,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
     //print_dfn (cfg);
 	
 	/* variables are allocated after decompose, since decompose could create temps */
-	if (!cfg->globalra && !cfg->compile_llvm)
+	if (!cfg->globalra && !COMPILE_LLVM (cfg))
 		mono_arch_allocate_vars (cfg);
 
 	{
 		MonoBasicBlock *bb;
 		gboolean need_local_opts;
 
-		if (!cfg->globalra && !cfg->compile_llvm) {
+		if (!cfg->globalra && !COMPILE_LLVM (cfg)) {
 			mono_spill_global_vars (cfg, &need_local_opts);
 
 			if (need_local_opts || cfg->compile_aot) {
@@ -3640,7 +3640,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		}
 	}
 
-	if (cfg->compile_llvm) {
+	if (COMPILE_LLVM (cfg)) {
 #ifdef ENABLE_LLVM
 		char *nm;
 

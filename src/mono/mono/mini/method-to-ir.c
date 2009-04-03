@@ -6814,7 +6814,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				use_op_switch = TRUE;
 #endif
 
-			if (cfg->compile_llvm)
+			if (COMPILE_LLVM (cfg))
 				use_op_switch = TRUE;
 
 			if (use_op_switch) {
