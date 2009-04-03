@@ -19,6 +19,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/utils/strenc.h>
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
@@ -92,6 +93,7 @@ enum {
 
 const static unsigned char table_desc [] = {
 	/* 0x00 Module */
+#define MODULE_TABLE_DESC (0)
 	COL_UINT16, /*Generation*/
 	COL_STRING, /*Name*/
 	COL_GUID, /*Mvid*/
@@ -371,6 +373,7 @@ typedef struct {
 typedef struct {
 	guint32 row_count;
 	guint32 row_size;
+	guint32 offset;
 } TableInfo;
 
 typedef struct {
@@ -1009,7 +1012,8 @@ calc_row_size (VerifyContext *ctx)
 {
 	int i, idx;
 	guint64 total_size = 0;
-	
+	guint32 offset = ctx->tables_offset;
+
 	for (idx = 0, i = 0; i < 0x2D; ++i) {
 		int size = 0, type;
 
@@ -1017,7 +1021,9 @@ calc_row_size (VerifyContext *ctx)
 			size += ctx->field_sizes [type];
 
 		ctx->tables [i].row_size = size;
+		ctx->tables [i].offset = offset;
 		total_size += (guint64)size * ctx->tables [i].row_count;
+		offset += size * ctx->tables [i].row_count;
 	}
 
 	if (total_size > 0xFFFFFFFF)
@@ -1026,6 +1032,81 @@ calc_row_size (VerifyContext *ctx)
 	return (guint32)total_size; 
 }
 
+static void
+decode_row (VerifyContext *ctx, int desc_offset, TableInfo *table, int row, guint32 *res)
+{
+	const unsigned char *data = (unsigned char *)(ctx->data + table->offset);
+	data += table->row_size * row;
+
+	while (table_desc [desc_offset] != COL_LAST) {
+		switch (ctx->field_sizes [table_desc [desc_offset++]]) {
+		case 1:
+			*res++ = *data++; 
+			break;
+		case 2:
+			*res++ = read16 (data);
+			data += 2;
+			break;
+		case 4:
+			*res++ = read32 (data);
+			data += 4;
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
+}
+
+static gboolean
+is_valid_non_empty_string (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize strings = ctx->metadata_streams [STRINGS_STREAM];
+	glong length;
+	const char *data = ctx->data + strings.offset;
+	if (offset >= strings.size)
+		return FALSE;
+	if (data + offset < data) //FIXME, use a generalized and smart unsigned add with overflow check and fix the whole thing  
+		return FALSE;
+
+	if (!mono_utf8_validate_and_len_with_bounds (data + offset, strings.size - offset, &length, NULL))
+		return FALSE;
+	return length > 0;
+}
+
+static gboolean
+is_valid_guid (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize guids = ctx->metadata_streams [GUID_STREAM];
+	return guids.size >= 8 && guids.size - 8 >= offset;
+}
+
+static void
+verify_module_table (VerifyContext *ctx)
+{
+	TableInfo *table = &ctx->tables [MONO_TABLE_MODULE];
+	guint32 data [MONO_MODULE_SIZE];
+
+	if (table->row_count != 1)
+		ADD_ERROR (ctx, g_strdup_printf ("Module table must have exactly one row, but have %d", table->row_count));
+
+	decode_row (ctx, MODULE_TABLE_DESC, table, 0, data);
+
+	printf ("decoded row values %x %x %x %x\n", data [0], data [1], data [2], data [3]);
+	if (data [MONO_MODULE_GENERATION] != 0)
+		ADD_ERROR (ctx, g_strdup_printf ("Module generation is not zero, but %x", data [MONO_MODULE_GENERATION]));
+
+	if (!is_valid_non_empty_string (ctx, data [MONO_MODULE_NAME]))
+		ADD_ERROR (ctx, g_strdup_printf ("Module has an invalid name, string index %x", data [MONO_MODULE_NAME]));
+
+	if (!is_valid_guid (ctx, data [MONO_MODULE_MVID]))
+		ADD_ERROR (ctx, g_strdup_printf ("Module has an invalid Mvid, guid index %x", data [MONO_MODULE_MVID]));
+
+	if (data [MONO_MODULE_ENC] != 0)
+		ADD_ERROR (ctx, g_strdup_printf ("Module has a non zero Enc field %x", data [MONO_MODULE_ENC]));
+
+	if (data [MONO_MODULE_ENCBASE] != 0)
+		ADD_ERROR (ctx, g_strdup_printf ("Module has a non zero EncBase field %x", data [MONO_MODULE_ENCBASE]));
+}
 
 static void
 verify_tables_data (VerifyContext *ctx)
@@ -1040,6 +1121,8 @@ verify_tables_data (VerifyContext *ctx)
 
 	if (!bounds_check_offset (&tables_area, ctx->tables_offset, table_area_size))
 		ADD_ERROR (ctx, g_strdup_printf ("Tables data require %d bytes but the only %d are available in the #~ stream", table_area_size, tables_area.size - (ctx->tables_offset - tables_area.offset)));
+
+	verify_module_table (ctx);
 }
 
 GSList*
