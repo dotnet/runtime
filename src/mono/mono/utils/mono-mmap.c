@@ -410,13 +410,6 @@ mono_vfree (void *addr, size_t length)
 }
 
 int
-mono_file_unmap (void *addr, void *handle)
-{
-	free (addr);
-	return 0;
-}
-
-int
 mono_mprotect (void *addr, size_t length, int flags)
 {
 	if (flags & MONO_MMAP_DISCARD) {

@@ -50,12 +50,23 @@ mono_file_map_close (MonoFileMap *fmap)
 }
 
 #if !defined(HAVE_MMAP) && !defined (PLATFORM_WIN32)
+
+static mono_file_map_alloc_fn alloc_fn = (mono_file_map_alloc_fn) malloc;
+static mono_file_map_release_fn release_fn = (mono_file_map_release_fn) free;
+
+void
+mono_file_map_set_allocator (mono_file_map_alloc_fn alloc, mono_file_map_release_fn release)
+{
+	alloc_fn = alloc == NULL     ? (mono_file_map_alloc_fn) malloc : alloc;
+	release_fn = release == NULL ? (mono_file_map_release_fn) free : release;
+}
+
 void *
 mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
 {
 	guint64 cur_offset;
 	size_t bytes_read;
-	void *ptr = malloc (length);
+	void *ptr = (*alloc_fn) (length);
 	if (!ptr)
 		return NULL;
 	cur_offset = lseek (fd, 0, SEEK_CUR);
@@ -67,5 +78,12 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 	lseek (fd, cur_offset, SEEK_SET);
 	*ret_handle = NULL;
 	return ptr;
+}
+
+int
+mono_file_unmap (void *addr, void *handle)
+{
+	(*release_fn) (addr);
+	return 0;
 }
 #endif
