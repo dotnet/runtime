@@ -1,3 +1,8 @@
+2009-04-03  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner/InjectSecurityAttributes.cs: Show a warning
+	when the secattr file is not found.
+
 2009-03-10  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/MoonlightAssemblyStep.cs: don't remove
