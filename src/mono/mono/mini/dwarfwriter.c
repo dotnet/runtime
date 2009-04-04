@@ -901,6 +901,9 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 	else {
 		switch (t->type) {
 		case MONO_TYPE_CLASS:
+			emit_class_dwarf_info (w, klass, FALSE);
+			tdie = ".LDIE_OBJECT";
+			break;
 		case MONO_TYPE_ARRAY:
 			tdie = ".LDIE_OBJECT";
 			break;
