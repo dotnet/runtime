@@ -883,8 +883,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_ICOMPARE_IMM:
 			case OP_LCOMPARE_IMM:
 			case OP_COMPARE_IMM:
+#ifdef __x86_64__
 			case OP_AMD64_ICOMPARE_MEMBASE_REG:
-			case OP_AMD64_ICOMPARE_MEMBASE_IMM: {
+			case OP_AMD64_ICOMPARE_MEMBASE_IMM:
+#endif
+			{
 				CompRelation rel;
 				LLVMValueRef cmp;
 
@@ -894,6 +897,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				rel = mono_opcode_to_cond (ins->next->opcode);
 
 				/* Used for implementing bound checks */
+#ifdef __x86_64__
 				if ((ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_REG) || (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM)) {
 					int size = 4;
 					LLVMValueRef index;
@@ -906,13 +910,18 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 					lhs = LLVMBuildLoad (builder, LLVMBuildGEP (builder, LLVMBuildIntToPtr (builder, values [ins->inst_basereg], LLVMPointerType (t, 0), get_tempname (ctx)), &index, 1, get_tempname (ctx)), get_tempname (ctx));
 				}
-
-				if ((ins->opcode == OP_ICOMPARE_IMM) || (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM)) {
+				if (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM) {
 					lhs = convert (ctx, lhs, LLVMInt32Type ());
 					rhs = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
 				}
 				if (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_REG)
 					rhs = convert (ctx, rhs, LLVMInt32Type ());
+#endif
+
+				if (ins->opcode == OP_ICOMPARE_IMM) {
+					lhs = convert (ctx, lhs, LLVMInt32Type ());
+					rhs = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
+				}
 				if (ins->opcode == OP_LCOMPARE_IMM)
 					rhs = LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE);
 				if (ins->opcode == OP_ICOMPARE) {
