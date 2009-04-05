@@ -364,6 +364,7 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 #define ABBREV_VARIABLE_LOCLIST 12
 #define ABBREV_POINTER_TYPE 13
 #define ABBREV_PARAM_LOCLIST 14
+#define ABBREV_INHERITANCE 15
 
 static int compile_unit_attr [] = {
 	DW_AT_producer     ,DW_FORM_string,
@@ -445,6 +446,11 @@ static int variable_loclist_attr [] = {
 	DW_AT_name,     DW_FORM_string,
 	DW_AT_type,     DW_FORM_ref4,
 	DW_AT_location, DW_FORM_data4
+};
+ 
+static int inheritance_attr [] = {
+	DW_AT_type,        DW_FORM_ref4,
+	DW_AT_data_member_location, DW_FORM_block1
 };
 
 typedef struct DwarfBasicType {
@@ -652,6 +658,8 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 					   variable_loclist_attr, G_N_ELEMENTS (variable_loclist_attr));
 	emit_dwarf_abbrev (w, ABBREV_POINTER_TYPE, DW_TAG_pointer_type, FALSE,
 					   pointer_type_attr, G_N_ELEMENTS (pointer_type_attr));
+	emit_dwarf_abbrev (w, ABBREV_INHERITANCE, DW_TAG_inheritance, FALSE,
+					   inheritance_attr, G_N_ELEMENTS (inheritance_attr));
 	emit_byte (w, 0);
 
 	emit_section_change (w, ".debug_info", 0);
@@ -701,6 +709,8 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 	emit_cie (w);
 }
 
+static const char* emit_type (MonoDwarfWriter *w, MonoType *t);
+
 /* Returns the local symbol pointing to the emitted debug info */
 static char*
 emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
@@ -749,10 +759,16 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	full_name = g_strdup_printf ("%s%s%s", klass->name_space, klass->name_space ? "." : "", klass->name);
 
 	die = g_strdup_printf (".LTDIE_%d", w->tdie_index);
-	emit_label (w, die);
+	pointer_die = g_strdup_printf (".LTDIE_%d_POINTER", w->tdie_index);
+	w->tdie_index ++;
+
+	g_hash_table_insert (w->class_to_pointer_die, klass, pointer_die);
+	g_hash_table_insert (cache, klass, die);
 
 	if (klass->enumtype) {
 		int size = mono_class_value_size (mono_class_from_mono_type (mono_class_enum_basetype (klass)), NULL);
+
+		emit_label (w, die);
 
 		emit_uleb128 (w, ABBREV_ENUM_TYPE);
 		emit_string (w, full_name);
@@ -812,25 +828,49 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 			}
 		}
 	} else {
+		guint8 buf [128];
+		guint8 *p;
+		char *parent_die;
+
+		if (klass->parent)
+			parent_die = emit_class_dwarf_info (w, klass->parent, FALSE);
+		else
+			parent_die = NULL;
+
+		/* Emit field types */
+		iter = NULL;
+		while ((field = mono_class_get_fields (klass, &iter))) {
+			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+				continue;
+
+			emit_type (w, field->type);
+		}
+
+		emit_label (w, die);
+
 		emit_uleb128 (w, ABBREV_STRUCT_TYPE);
 		emit_string (w, full_name);
 		emit_uleb128 (w, klass->instance_size);
 
+		if (parent_die) {
+			emit_uleb128 (w, ABBREV_INHERITANCE);
+			emit_symbol_diff (w, parent_die, ".Ldebug_info_start", 0);
+
+			p = buf;
+			*p ++= DW_OP_plus_uconst;
+			encode_uleb128 (0, p, &p);
+			emit_byte (w, p - buf);
+			emit_bytes (w, buf, p - buf);
+		}
+
 		/* Emit fields */
 		iter = NULL;
 		while ((field = mono_class_get_fields (klass, &iter))) {
-			guint8 buf [128];
-			guint8 *p;
-
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 
-			for (k = 0; k < G_N_ELEMENTS (basic_types); ++k)
-				if (basic_types [k].type == field->type->type)
-					break;
-			if (k < G_N_ELEMENTS (basic_types) && field->type->type != MONO_TYPE_SZARRAY && field->type->type != MONO_TYPE_CLASS) {
-				fdie = basic_types [k].die_name;
-
+			fdie = emit_type (w, field->type);
+			if (fdie) {
 				emit_uleb128 (w, ABBREV_DATA_MEMBER);
 				emit_string (w, field->name);
 				emit_symbol_diff (w, fdie, ".Ldebug_info_start", 0);
@@ -857,23 +897,18 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	emit_symbol_diff (w, die, ".Ldebug_info_start", 0);
 
 	/* Add a pointer type */
-	pointer_die = g_strdup_printf (".LTDIE_%d_POINTER", w->tdie_index);
 	emit_label (w, pointer_die);
 
 	emit_uleb128 (w, ABBREV_POINTER_TYPE);
 	emit_symbol_diff (w, die, ".Ldebug_info_start", 0);
 
-	g_hash_table_insert (w->class_to_pointer_die, klass, pointer_die);
-
 	g_free (full_name);
-	w->tdie_index ++;
 
 	if (emit_namespace) {
 		/* Namespace end */
 		emit_uleb128 (w, 0x0);
 	}
 
-	g_hash_table_insert (cache, klass, die);
 	return die;
 }
 
@@ -885,11 +920,12 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 	const char *tdie;
 
 	if (t->byref) {
-		if (t->type == MONO_TYPE_VALUETYPE) {
+		if (t->type == MONO_TYPE_VALUETYPE)
 			tdie = emit_class_dwarf_info (w, klass, TRUE);
-			if (tdie)
-				return g_hash_table_lookup (w->class_to_pointer_die, klass);
-		}
+		else
+			tdie = emit_class_dwarf_info (w, klass, FALSE);
+		if (tdie)
+			return g_hash_table_lookup (w->class_to_pointer_die, klass);
 		// FIXME:
 		t = &mono_defaults.int_class->byval_arg;
 	}
@@ -902,6 +938,7 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 		switch (t->type) {
 		case MONO_TYPE_CLASS:
 			emit_class_dwarf_info (w, klass, FALSE);
+			//tdie = g_hash_table_lookup (w->class_to_pointer_die, klass);
 			tdie = ".LDIE_OBJECT";
 			break;
 		case MONO_TYPE_ARRAY:
