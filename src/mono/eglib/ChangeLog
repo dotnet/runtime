@@ -1,3 +1,13 @@
+2009-04-05  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gpath.c: Avoid situations where we add the separator if one
+	of the elements is the separator.
+
+2009-04-02  Miguel de Icaza  <miguel@novell.com>
+
+	* src/gpath.c: If the first element is NULL, return an empty
+	string. 
+
 2009-02-19 Gonzalo Paniagua Javier <gonzalo@novell.com>
 
 	* src/gstr.c: use memset in g_strnfill.

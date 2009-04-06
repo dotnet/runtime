@@ -92,7 +92,14 @@ test_buildpath ()
 	if (strcmp (s, "/a/c/") != 0)
 		return FAILED ("14 Got wrong result, got: %s", s);
 	g_free (s);
-	
+
+	/* Null */
+	s = g_build_path ("/", NULL);
+	if (s == NULL)
+		return FAILED ("must get a non-NULL return");
+	if (s [0] != 0)
+		return FAILED ("must get an empty string");
+	g_free (s);
 	return OK;
 }
 
@@ -109,6 +116,20 @@ test_buildfname ()
 #endif
 		return FAILED ("1 Got wrong result, got: %s", s);
 	g_free (s);
+
+	s = g_build_filename ("/", "a", NULL);
+#ifdef G_OS_WIN32
+	if (strcmp (s, "\\a") != 0)
+#else
+	if (strcmp (s, "/a") != 0)
+#endif
+		return FAILED ("1 Got wrong result, got: %s", s);
+
+#ifndef OS_WIN32
+	s = g_build_filename ("/", "foo", "/bar", "tolo/", "/meo/", NULL);
+	if (strcmp (s, "/foo/bar/tolo/meo/") != 0)
+		return FAILED ("1 Got wrong result, got: %s", s);
+#endif
 	
 	return OK;
 }
@@ -284,8 +305,8 @@ test_misc ()
 }
 
 static Test path_tests [] = {
-	{"g_buildpath", test_buildpath},
 	{"g_build_filename", test_buildfname},
+	{"g_buildpath", test_buildpath},
 	{"g_path_get_dirname", test_dirname},
 	{"g_path_get_basename", test_basename},
 	{"g_find_program_in_path", test_ppath},
