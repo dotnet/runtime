@@ -668,6 +668,9 @@ static GCMemSection *to_space_section = NULL;
 /* objects bigger then this go into the large object space */
 #define MAX_SMALL_OBJ_SIZE 0xffff
 
+/* Functions supplied by the runtime to be called by the GC */
+static MonoGCCallbacks gc_callbacks;
+
 /*
  * ######################################################################
  * ########  Macros and function declarations.
@@ -699,7 +702,7 @@ static G_GNUC_UNUSED void  report_internal_mem_usage (void);
 
 static int stop_world (void);
 static int restart_world (void);
-static void pin_thread_data (void *start_nursery, void *end_nursery);
+static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise);
 static void scan_from_remsets (void *start_nursery, void *end_nursery);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
@@ -939,6 +942,41 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 	desc = DESC_TYPE_COMPLEX_ARR;
 	desc |= alloc_complex_descriptor (elem_bitmap, last_set + 1) << LOW_TYPE_BITS;
 	return (void*) desc;
+}
+
+/* Return the bitmap encoded by a descriptor */
+gsize*
+mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
+{
+	mword d = (mword)descr;
+	gsize *bitmap;
+
+	switch (d & 0x7) {
+	case DESC_TYPE_RUN_LENGTH: {		
+		int first_set = (d >> 16) & 0xff;
+		int num_set = (d >> 16) & 0xff;
+		int i;
+
+		bitmap = g_new0 (gsize, (first_set + num_set + 7) / 8);
+
+		for (i = first_set; i < first_set + num_set; ++i)
+			bitmap [i / GC_BITS_PER_WORD] |= ((gsize)1 << (i % GC_BITS_PER_WORD));
+
+		*numbits = first_set + num_set;
+
+		return bitmap;
+	}
+	case DESC_TYPE_SMALL_BITMAP:
+		bitmap = g_new0 (gsize, 1);
+
+		bitmap [0] = (d >> SMALL_BITMAP_SHIFT) << OBJECT_HEADER_WORDS;
+
+	    *numbits = GC_BITS_PER_WORD;
+		
+		return bitmap;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
@@ -1951,7 +1989,7 @@ pin_from_roots (void *start_nursery, void *end_nursery)
 	 * *) the _last_ managed stack frame
 	 * *) pointers slots in managed frames
 	 */
-	pin_thread_data (start_nursery, end_nursery);
+	scan_thread_data (start_nursery, end_nursery, FALSE);
 }
 
 /* Copy function called from user defined mark functions */
@@ -2472,6 +2510,7 @@ collect_nursery (size_t requested_size)
 	}
 	/* registered roots, this includes static fields */
 	scan_from_registered_roots (nursery_start, nursery_next, ROOT_TYPE_NORMAL);
+	scan_thread_data (nursery_start, nursery_next, TRUE);
 	/* alloc_pinned objects */
 	scan_from_pinned_objects (nursery_start, nursery_next);
 	TV_GETTIME (btv);
@@ -2615,6 +2654,8 @@ major_collection (void)
 	/* registered roots, this includes static fields */
 	scan_from_registered_roots (heap_start, heap_end, ROOT_TYPE_NORMAL);
 	scan_from_registered_roots (heap_start, heap_end, ROOT_TYPE_WBARRIER);
+	/* Threads */
+	scan_thread_data (heap_start, heap_end, TRUE);
 	/* alloc_pinned objects */
 	scan_from_pinned_objects (heap_start, heap_end);
 	/* scan the list of objects ready for finalization */
@@ -4053,6 +4094,7 @@ struct _SgenThreadInfo {
 	char **tlab_temp_end_addr;
 	char **tlab_real_end_addr;
 	RememberedSet *remset;
+	gpointer runtime_data;
 };
 
 /* FIXME: handle large/small config */
@@ -4091,6 +4133,8 @@ update_current_thread_stack (void *start)
 	SgenThreadInfo *info = thread_info_lookup (ARCH_GET_THREAD ());
 	info->stack_start = align_pointer (&ptr);
 	ARCH_STORE_REGS (ptr);
+	if (gc_callbacks.thread_suspend_func)
+		gc_callbacks.thread_suspend_func (info->runtime_data, NULL);
 }
 
 static const char*
@@ -4144,7 +4188,7 @@ thread_handshake (int signum)
 
 /* LOCKING: assumes the GC lock is held (by the stopping thread) */
 static void
-suspend_handler (int sig)
+suspend_handler (int sig, siginfo_t *siginfo, void *context)
 {
 	SgenThreadInfo *info;
 	pthread_t id;
@@ -4167,6 +4211,10 @@ suspend_handler (int sig)
 	 * stack pointer.
 	 */
 	info->stack_start = align_pointer (&id);
+
+	/* Notify the JIT */
+	if (gc_callbacks.thread_suspend_func)
+		gc_callbacks.thread_suspend_func (info->runtime_data, context);
 
 	/* notify the waiting thread */
 	sem_post (&suspend_ack_semaphore);
@@ -4231,14 +4279,38 @@ restart_world (void)
 
 #endif /* USE_SIGNAL_BASED_START_STOP_WORLD */
 
+void
+mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
+{
+	gc_callbacks = *callbacks;
+}
+
+/* Variables holding start/end nursery so it won't have to be passed at every call */
+static void *scan_area_arg_start, *scan_area_arg_end;
+
+void
+mono_gc_conservatively_scan_area (void *start, void *end)
+{
+	conservatively_pin_objects_from (start, end, scan_area_arg_start, scan_area_arg_end);
+}
+
+void*
+mono_gc_scan_object (void *obj)
+{
+	return copy_object (obj, scan_area_arg_start, scan_area_arg_end);
+}
+	
 /*
- * Identify objects pinned in a thread stack and its registers.
+ * Mark from thread stacks and registers.
  */
 static void
-pin_thread_data (void *start_nursery, void *end_nursery)
+scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise)
 {
 	int i;
 	SgenThreadInfo *info;
+
+	scan_area_arg_start = start_nursery;
+	scan_area_arg_end = end_nursery;
 
 	for (i = 0; i < THREAD_HASH_SIZE; ++i) {
 		for (info = thread_table [i]; info; info = info->next) {
@@ -4247,11 +4319,15 @@ pin_thread_data (void *start_nursery, void *end_nursery)
 				continue;
 			}
 			DEBUG (2, fprintf (gc_debug_file, "Scanning thread %p, range: %p-%p, size: %zd, pinned=%d\n", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, next_pin_slot));
-			conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery);
+			if (gc_callbacks.thread_mark_func)
+				gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise);
+			else if (!precise)
+				conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery);
 		}
 	}
 	DEBUG (2, fprintf (gc_debug_file, "Scanning current thread registers, pinned=%d\n", next_pin_slot));
-	conservatively_pin_objects_from ((void*)cur_thread_regs, (void*)(cur_thread_regs + ARCH_NUM_REGS), start_nursery, end_nursery);
+	if (!precise)
+		conservatively_pin_objects_from ((void*)cur_thread_regs, (void*)(cur_thread_regs + ARCH_NUM_REGS), start_nursery, end_nursery);
 }
 
 static void
@@ -4556,6 +4632,10 @@ gc_register_current_thread (void *addr)
 	remembered_set = info->remset = alloc_remset (DEFAULT_REMSET_SIZE, info);
 	pthread_setspecific (remembered_set_key, remembered_set);
 	DEBUG (3, fprintf (gc_debug_file, "registered thread %p (%p) (hash: %d)\n", info, (gpointer)info->id, hash));
+
+	if (gc_callbacks.thread_attach_func)
+		info->runtime_data = gc_callbacks.thread_attach_func ();
+
 	return info;
 }
 
@@ -5447,10 +5527,12 @@ mono_gc_base_init (void)
 				collect_before_allocs = TRUE;
 			} else if (!strcmp (opt, "check-at-minor-collections")) {
 				consistency_check_at_minor_collection = TRUE;
+			} else if (!strcmp (opt, "clear-at-gc")) {
+				nursery_clear_policy = CLEAR_AT_GC;
 			} else {
 				fprintf (stderr, "Invalid format for the MONO_GC_DEBUG env variable: '%s'\n", env);
 				fprintf (stderr, "The format is: MONO_GC_DEBUG=[l[:filename]|<option>]+ where l is a debug level 0-9.\n");
-				fprintf (stderr, "Valid options are: collect-before-allocs, check-at-minor-collections.\n");
+				fprintf (stderr, "Valid options are: collect-before-allocs, check-at-minor-collections, clear-at-gc.\n");
 				exit (1);
 			}
 		}
@@ -5461,7 +5543,7 @@ mono_gc_base_init (void)
 
 	sigfillset (&sinfo.sa_mask);
 	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;
-	sinfo.sa_handler = suspend_handler;
+	sinfo.sa_sigaction = suspend_handler;
 	if (sigaction (suspend_signal_num, &sinfo, NULL) != 0) {
 		g_error ("failed sigaction");
 	}

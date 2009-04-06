@@ -141,5 +141,48 @@ MonoMethod* mono_gc_get_write_barrier (void) MONO_INTERNAL;
 /* helper for the managed alloc support */
 MonoString *mono_string_alloc (int length) MONO_INTERNAL;
 
+/* 
+ * Functions supplied by the runtime and called by the GC. Currently only used
+ * by SGEN.
+ */
+typedef struct {
+	/* 
+	 * Function called during thread startup/attach to allocate thread-local data 
+	 * needed by the other functions.
+	 */
+	gpointer (*thread_attach_func) (void);
+	/* FIXME: Add a cleanup function too */
+	/* 
+	 * Function called from every thread when suspending for GC. It can save
+	 * data needed for marking from thread stacks. user_data is the data returned 
+	 * by attach_func. This might called with GC locks held and the word stopped,
+	 * so it shouldn't do any synchronization etc.
+	 */
+	void (*thread_suspend_func) (gpointer user_data, void *sigcontext);
+	/* 
+	 * Function called to mark from thread stacks. user_data is the data returned 
+	 * by attach_func. This is called twice, with the word stopped:
+	 * - in the first pass, it should mark areas of the stack using
+	 *   conservative marking by calling mono_gc_conservatively_scan_area ().
+	 * - in the second pass, it should mark the remaining areas of the stack
+	 *   using precise marking by calling mono_gc_scan_object ().
+	 */
+	void (*thread_mark_func) (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise);
+} MonoGCCallbacks;
+
+/* Set the callback functions callable by the GC */
+void mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks) MONO_INTERNAL;
+
+/* Functions callable from the thread mark func */
+
+/* Scan the memory area between START and END conservatively */
+void mono_gc_conservatively_scan_area (void *start, void *end) MONO_INTERNAL;
+
+/* Scan OBJ, returning its new address */
+void *mono_gc_scan_object (void *obj) MONO_INTERNAL;
+
+/* Return the bitmap encoded by a descriptor */
+gsize* mono_gc_get_bitmap_for_descr (void *descr, int *numbits) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

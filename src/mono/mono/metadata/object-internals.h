@@ -1384,6 +1384,9 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception) MONO
 void
 mono_method_clear_object (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 
+void
+mono_class_compute_gc_descriptor (MonoClass *class) MONO_INTERNAL;
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 

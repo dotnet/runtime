@@ -845,7 +845,7 @@ mono_string_alloc (int length)
 	return mono_string_new_size (mono_domain_get (), length);
 }
 
-static void
+void
 mono_class_compute_gc_descriptor (MonoClass *class)
 {
 	int max_set = 0;
