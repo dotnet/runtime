@@ -1333,6 +1333,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += (locals_stack_align - 1);
 			offset &= ~(locals_stack_align - 1);
 		}
+		if (cfg->arch.omit_fp) {
+			cfg->locals_min_stack_offset = offset;
+			cfg->locals_max_stack_offset = offset + locals_stack_size;
+		} else {
+			cfg->locals_min_stack_offset = - (offset + locals_stack_size);
+			cfg->locals_max_stack_offset = - offset;
+		}
+		
 		for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
 			if (offsets [i] != -1) {
 				MonoInst *ins = cfg->varinfo [i];

@@ -64,6 +64,7 @@
 #include "jit-icalls.h"
 
 #include "debug-mini.h"
+#include "mini-gc.h"
 
 static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt);
 static gpointer mono_jit_compile_method (MonoMethod *method);
@@ -3034,6 +3035,7 @@ if (valgrind_register){
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
 
 	mono_debug_close_method (cfg);
+
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
 	mono_arch_unwindinfo_install_unwind_info (&cfg->arch.unwindinfo, cfg->native_code, cfg->code_len);
 #endif
@@ -3818,6 +3820,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #endif
 
 	mono_save_xdebug_info (cfg);
+
+	mini_gc_create_gc_map (cfg);
 
 	if (!cfg->compile_aot) {
 		mono_domain_lock (cfg->domain);
@@ -4648,6 +4652,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_arch_init ();
 
 	mono_unwind_init ();
+
+	mini_gc_init ();
 
 	if (getenv ("MONO_XDEBUG")) {
 		mono_xdebug_init ();
