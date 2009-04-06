@@ -54,6 +54,10 @@ typedef gint64 mgreg_t;
 #define MINI_DEBUG(level,limit,code) do {if (G_UNLIKELY ((level) >= (limit))) code} while (0)
 #endif
 
+#if !defined(DISABLE_TASKLETS) && defined(MONO_ARCH_SUPPORT_TASKLETS) && defined(__GNUC__)
+#define MONO_SUPPORT_TASKLETS 1
+#endif
+
 #if ENABLE_LLVM
 #define COMPILE_LLVM(cfg) ((cfg)->compile_llvm)
 #else

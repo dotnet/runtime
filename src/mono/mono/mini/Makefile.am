@@ -273,6 +273,8 @@ common_sources = \
 	mini-generic-sharing.c	\
 	regalloc2.c		\
 	simd-methods.h		\
+	tasklets.c		\
+	tasklets.h		\
 	simd-intrinsics.c	\
 	unwind.h		\
 	unwind.c		\

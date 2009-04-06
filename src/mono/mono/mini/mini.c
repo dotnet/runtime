@@ -55,6 +55,7 @@
 #include <mono/utils/dtrace.h>
 
 #include "mini.h"
+#include "tasklets.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
@@ -4929,6 +4930,10 @@ mini_init (const char *filename, const char *runtime_version)
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	mono_simd_intrinsics_init ();
+#endif
+
+#if MONO_SUPPORT_TASKLETS
+	mono_tasklets_init ();
 #endif
 
 	if (mono_compile_aot)
