@@ -2734,6 +2734,8 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		type->data.array = mono_metadata_parse_array_full (m, container, ptr, &ptr);
 		break;
 	case MONO_TYPE_MVAR:
+		if (container && !container->is_method)
+			return FALSE;
 	case MONO_TYPE_VAR:
 		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr);
 		break;
