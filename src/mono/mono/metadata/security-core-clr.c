@@ -286,10 +286,10 @@ can_avoid_corlib_reflection_delegate_optimization (MonoMethod *method)
 		return FALSE;
 
 	if (strcmp (method->klass->name, "MonoProperty") == 0) {
-		if ((strcmp (method->name, "GetterAdapterFrame") == 0) || strcmp (method->name, "StaticGetterAdapterFrame"))
+		if ((strcmp (method->name, "GetterAdapterFrame") == 0) || strcmp (method->name, "StaticGetterAdapterFrame") == 0)
 			return TRUE;
 	} else if (strcmp (method->klass->name, "EvenInfo") == 0) {
-		if ((strcmp (method->name, "AddEventFrame") == 0) || strcmp (method->name, "StaticAddEventAdapterFrame"))
+		if ((strcmp (method->name, "AddEventFrame") == 0) || strcmp (method->name, "StaticAddEventAdapterFrame") == 0)
 			return TRUE;
 	}
 
