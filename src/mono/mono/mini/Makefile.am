@@ -281,7 +281,9 @@ common_sources = \
 	image-writer.h	\
 	image-writer.c	\
 	dwarfwriter.h	\
-	dwarfwriter.c
+	dwarfwriter.c	\
+	mini-gc.h		\
+	mini-gc.c
 
 test_sources = 			\
 	basic-calls.cs 		\
