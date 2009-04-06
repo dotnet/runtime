@@ -58,6 +58,7 @@ static MonoProfileJitResult    jit_end2;
 static MonoProfileMethodFunc   method_free;
 static MonoProfileMethodResult man_unman_transition;
 static MonoProfileAllocFunc    allocation_cb;
+static MonoProfileMonitorFunc  monitor_event_cb;
 static MonoProfileStatFunc     statistical_cb;
 static MonoProfileStatCallChainFunc statistical_call_chain_cb;
 static int                     statistical_call_chain_depth;
@@ -201,6 +202,12 @@ mono_profiler_install_allocation (MonoProfileAllocFunc callback)
 	allocation_cb = callback;
 }
 
+void
+mono_profiler_install_monitor  (MonoProfileMonitorFunc callback)
+{
+	monitor_event_cb = callback;
+}
+
 void 
 mono_profiler_install_statistical (MonoProfileStatFunc callback)
 {
@@ -330,6 +337,13 @@ mono_profiler_allocation (MonoObject *obj, MonoClass *klass)
 {
 	if ((mono_profiler_events & MONO_PROFILE_ALLOCATIONS) && allocation_cb)
 		allocation_cb (current_profiler, obj, klass);
+}
+
+void
+mono_profiler_monitor_event      (MonoObject *obj, MonoProfilerMonitorEvent event) {
+	if ((mono_profiler_events & MONO_PROFILE_MONITOR_EVENTS) && monitor_event_cb) {
+		monitor_event_cb (current_profiler, obj, event);
+	}
 }
 
 void

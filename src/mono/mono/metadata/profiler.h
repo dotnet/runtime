@@ -24,7 +24,8 @@ typedef enum {
 	MONO_PROFILE_COVERAGE         = 1 << 13,
 	MONO_PROFILE_INS_COVERAGE     = 1 << 14,
 	MONO_PROFILE_STATISTICAL      = 1 << 15,
-	MONO_PROFILE_METHOD_EVENTS    = 1 << 16
+	MONO_PROFILE_METHOD_EVENTS    = 1 << 16,
+	MONO_PROFILE_MONITOR_EVENTS   = 1 << 17
 } MonoProfileFlags;
 
 typedef enum {
@@ -57,6 +58,11 @@ typedef struct {
 
 typedef struct _MonoProfiler MonoProfiler;
 
+typedef enum {
+	MONO_PROFILER_MONITOR_CONTENTION = 1,
+	MONO_PROFILER_MONITOR_DONE = 2,
+	MONO_PROFILER_MONITOR_FAIL = 3
+} MonoProfilerMonitorEvent;
 
 /*
  * Functions that the runtime will call on the profiler.
@@ -69,6 +75,7 @@ typedef void (*MonoProfileMethodFunc)   (MonoProfiler *prof, MonoMethod   *metho
 typedef void (*MonoProfileClassFunc)    (MonoProfiler *prof, MonoClass    *klass);
 typedef void (*MonoProfileModuleFunc)   (MonoProfiler *prof, MonoImage    *module);
 typedef void (*MonoProfileAssemblyFunc) (MonoProfiler *prof, MonoAssembly *assembly);
+typedef void (*MonoProfileMonitorFunc)  (MonoProfiler *prof, MonoObject *obj, MonoProfilerMonitorEvent event);
 
 typedef void (*MonoProfileExceptionFunc) (MonoProfiler *prof, MonoObject *object);
 typedef void (*MonoProfileExceptionClauseFunc) (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num);
@@ -117,6 +124,7 @@ void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfile
 void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
 void mono_profiler_install_transition  (MonoProfileMethodResult callback);
 void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
+void mono_profiler_install_monitor     (MonoProfileMonitorFunc callback);
 void mono_profiler_install_statistical (MonoProfileStatFunc callback);
 void mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth);
 void mono_profiler_install_exception   (MonoProfileExceptionFunc throw_callback, MonoProfileMethodFunc exc_method_leave, MonoProfileExceptionClauseFunc clause_callback);
