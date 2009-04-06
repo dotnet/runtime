@@ -32,6 +32,7 @@ struct _MonoDwarfWriter
 {
 	MonoImageWriter *w;
 	GHashTable *class_to_die, *class_to_vtype_die, *class_to_pointer_die;
+	GHashTable *class_to_reference_die;
 	int fde_index, tdie_index, line_number_file_index, line_number_dir_index;
 	GHashTable *file_to_index, *dir_to_index;
 	FILE *il_file;
@@ -363,8 +364,9 @@ emit_fde (MonoDwarfWriter *w, int fde_index, char *start_symbol, char *end_symbo
 #define ABBREV_VARIABLE 11
 #define ABBREV_VARIABLE_LOCLIST 12
 #define ABBREV_POINTER_TYPE 13
-#define ABBREV_PARAM_LOCLIST 14
-#define ABBREV_INHERITANCE 15
+#define ABBREV_REFERENCE_TYPE 14
+#define ABBREV_PARAM_LOCLIST 15
+#define ABBREV_INHERITANCE 16
 
 static int compile_unit_attr [] = {
 	DW_AT_producer     ,DW_FORM_string,
@@ -418,6 +420,10 @@ static int typedef_attr [] = {
 };
 
 static int pointer_type_attr [] = {
+	DW_AT_type,        DW_FORM_ref4,
+};
+
+static int reference_type_attr [] = {
 	DW_AT_type,        DW_FORM_ref4,
 };
 
@@ -658,6 +664,8 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, GSList *base_unwind_progra
 					   variable_loclist_attr, G_N_ELEMENTS (variable_loclist_attr));
 	emit_dwarf_abbrev (w, ABBREV_POINTER_TYPE, DW_TAG_pointer_type, FALSE,
 					   pointer_type_attr, G_N_ELEMENTS (pointer_type_attr));
+	emit_dwarf_abbrev (w, ABBREV_REFERENCE_TYPE, DW_TAG_reference_type, FALSE,
+					   reference_type_attr, G_N_ELEMENTS (reference_type_attr));
 	emit_dwarf_abbrev (w, ABBREV_INHERITANCE, DW_TAG_inheritance, FALSE,
 					   inheritance_attr, G_N_ELEMENTS (inheritance_attr));
 	emit_byte (w, 0);
@@ -715,8 +723,8 @@ static const char* emit_type (MonoDwarfWriter *w, MonoType *t);
 static char*
 emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 {
-	char *die, *pointer_die;
-	char *full_name;
+	char *die, *pointer_die, *reference_die;
+	char *full_name, *p;
 	gpointer iter;
 	MonoClassField *field;
 	const char *fdie;
@@ -731,6 +739,8 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 		w->class_to_vtype_die = g_hash_table_new (NULL, NULL);
 	if (!w->class_to_pointer_die)
 		w->class_to_pointer_die = g_hash_table_new (NULL, NULL);
+	if (!w->class_to_reference_die)
+		w->class_to_reference_die = g_hash_table_new (NULL, NULL);
 
 	if (vtype)
 		cache = w->class_to_vtype_die;
@@ -741,7 +751,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	if (die)
 		return die;
 
-	if (!((klass->byval_arg.type == MONO_TYPE_CLASS) || klass->enumtype || (klass->byval_arg.type == MONO_TYPE_VALUETYPE && vtype)))
+	if (!((klass->byval_arg.type == MONO_TYPE_CLASS) || (klass->byval_arg.type == MONO_TYPE_OBJECT) || klass->enumtype || (klass->byval_arg.type == MONO_TYPE_VALUETYPE && vtype)))
 		return NULL;
 
 	/*
@@ -757,12 +767,21 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	}
 
 	full_name = g_strdup_printf ("%s%s%s", klass->name_space, klass->name_space ? "." : "", klass->name);
+	/* 
+	 * gdb doesn't support namespaces for non-C++ dwarf objects, so use _
+	 * to separate components.
+	 */
+	for (p = full_name; *p; p ++)
+		if (*p == '.')
+			*p = '_';
 
 	die = g_strdup_printf (".LTDIE_%d", w->tdie_index);
 	pointer_die = g_strdup_printf (".LTDIE_%d_POINTER", w->tdie_index);
+	reference_die = g_strdup_printf (".LTDIE_%d_REFERENCE", w->tdie_index);
 	w->tdie_index ++;
 
 	g_hash_table_insert (w->class_to_pointer_die, klass, pointer_die);
+	g_hash_table_insert (w->class_to_reference_die, klass, reference_die);
 	g_hash_table_insert (cache, klass, die);
 
 	if (klass->enumtype) {
@@ -902,6 +921,12 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	emit_uleb128 (w, ABBREV_POINTER_TYPE);
 	emit_symbol_diff (w, die, ".Ldebug_info_start", 0);
 
+	/* Add a reference type */
+	emit_label (w, reference_die);
+
+	emit_uleb128 (w, ABBREV_REFERENCE_TYPE);
+	emit_symbol_diff (w, die, ".Ldebug_info_start", 0);
+
 	g_free (full_name);
 
 	if (emit_namespace) {
@@ -920,12 +945,16 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 	const char *tdie;
 
 	if (t->byref) {
-		if (t->type == MONO_TYPE_VALUETYPE)
+		if (t->type == MONO_TYPE_VALUETYPE) {
 			tdie = emit_class_dwarf_info (w, klass, TRUE);
-		else
+			if (tdie)
+				return g_hash_table_lookup (w->class_to_pointer_die, klass);
+		}
+		else {
 			tdie = emit_class_dwarf_info (w, klass, FALSE);
-		if (tdie)
-			return g_hash_table_lookup (w->class_to_pointer_die, klass);
+			if (tdie)
+				return g_hash_table_lookup (w->class_to_reference_die, klass);
+		}
 		// FIXME:
 		t = &mono_defaults.int_class->byval_arg;
 	}
@@ -938,8 +967,8 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 		switch (t->type) {
 		case MONO_TYPE_CLASS:
 			emit_class_dwarf_info (w, klass, FALSE);
-			//tdie = g_hash_table_lookup (w->class_to_pointer_die, klass);
-			tdie = ".LDIE_OBJECT";
+			tdie = g_hash_table_lookup (w->class_to_reference_die, klass);
+			//tdie = ".LDIE_OBJECT";
 			break;
 		case MONO_TYPE_ARRAY:
 			tdie = ".LDIE_OBJECT";
@@ -1467,7 +1496,10 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		MonoType *t;
 
 		if (i == 0 && sig->hasthis) {
-			t = &method->klass->this_arg;
+			if (method->klass->valuetype)
+				t = &method->klass->this_arg;
+			else
+				t = &method->klass->byval_arg;
 		} else {
 			t = sig->params [i - sig->hasthis];
 		}
@@ -1518,7 +1550,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 			if (method->klass->valuetype)
 				t = &method->klass->this_arg;
 			else
-				t = &mono_defaults.object_class->byval_arg;
+				t = &method->klass->byval_arg;
 			pname = "this";
 		} else {
 			t = sig->params [i - sig->hasthis];
