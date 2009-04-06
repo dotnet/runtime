@@ -24,6 +24,7 @@
 
 #include "mini.h"
 #include "mini-x86.h"
+#include "tasklets.h"
 #include "debug-mini.h"
 
 #ifdef PLATFORM_WIN32
@@ -909,4 +910,46 @@ mono_arch_handle_altstack_exception (void *sigctx, gpointer fault_addr, gboolean
 	UCONTEXT_REG_ESP (ctx) = (unsigned long)(sp - 1);
 #endif
 }
+
+#if MONO_SUPPORT_TASKLETS
+MonoContinuationRestore
+mono_tasklets_arch_restore (void)
+{
+	static guint8* saved = NULL;
+	guint8 *code, *start;
+
+	if (saved)
+		return (MonoContinuationRestore)saved;
+	code = start = mono_global_codeman_reserve (48);
+	/* the signature is: restore (MonoContinuation *cont, int state, MonoLMF **lmf_addr) */
+	/* put cont in edx */
+	x86_mov_reg_membase (code, X86_EDX, X86_ESP, 4, 4);
+	/* setup the copy of the stack */
+	x86_mov_reg_membase (code, X86_ECX, X86_EDX, G_STRUCT_OFFSET (MonoContinuation, stack_used_size), 4);
+	x86_shift_reg_imm (code, X86_SHR, X86_ECX, 2);
+	x86_cld (code);
+	x86_mov_reg_membase (code, X86_ESI, X86_EDX, G_STRUCT_OFFSET (MonoContinuation, saved_stack), 4);
+	x86_mov_reg_membase (code, X86_EDI, X86_EDX, G_STRUCT_OFFSET (MonoContinuation, return_sp), 4);
+	x86_prefix (code, X86_REP_PREFIX);
+	x86_movsl (code);
+
+	/* now restore the registers from the LMF */
+	x86_mov_reg_membase (code, X86_ECX, X86_EDX, G_STRUCT_OFFSET (MonoContinuation, lmf), 4);
+	x86_mov_reg_membase (code, X86_EBX, X86_ECX, G_STRUCT_OFFSET (MonoLMF, ebx), 4);
+	x86_mov_reg_membase (code, X86_EBP, X86_ECX, G_STRUCT_OFFSET (MonoLMF, ebp), 4);
+	x86_mov_reg_membase (code, X86_ESI, X86_ECX, G_STRUCT_OFFSET (MonoLMF, esi), 4);
+	x86_mov_reg_membase (code, X86_EDI, X86_ECX, G_STRUCT_OFFSET (MonoLMF, edi), 4);
+
+	/* restore the lmf chain */
+	/*x86_mov_reg_membase (code, X86_ECX, X86_ESP, 12, 4);
+	x86_mov_membase_reg (code, X86_ECX, 0, X86_EDX, 4);*/
+
+	/* state in eax, so it's setup as the return value */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 8, 4);
+	x86_jump_membase (code, X86_EDX, G_STRUCT_OFFSET (MonoContinuation, return_ip));
+	g_assert ((code - start) <= 48);
+	saved = start;
+	return (MonoContinuationRestore)saved;
+}
+#endif
 
