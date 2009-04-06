@@ -15,6 +15,7 @@
 /*.mdb
 /*.o
 /*.lo
+/*.so
 /modules-m1.netmodule
 /imt_big_iface_test.cs
 /bin
