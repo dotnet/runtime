@@ -3319,12 +3319,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ICONV_TO_R4:
 			ARM_FMSR (code, ARM_VFP_F0, ins->sreg1);
-			ARM_FUITOS (code, ARM_VFP_F0, ARM_VFP_F0);
+			ARM_FSITOS (code, ARM_VFP_F0, ARM_VFP_F0);
 			ARM_CVTS (code, ins->dreg, ARM_VFP_F0);
 			break;
 		case OP_ICONV_TO_R8:
 			ARM_FMSR (code, ARM_VFP_F0, ins->sreg1);
-			ARM_FUITOD (code, ins->dreg, ARM_VFP_F0);
+			ARM_FSITOD (code, ins->dreg, ARM_VFP_F0);
 			break;
 
 		case OP_SETFRET:

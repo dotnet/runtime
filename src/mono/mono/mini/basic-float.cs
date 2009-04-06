@@ -82,6 +82,12 @@ class Tests {
 		return (int)f;
 	}
 
+	public static int test_0_conv_r4_m1 () {
+		int i = -1;
+		float f = (float)i;
+		return (int)f + 1;
+	}
+
 	public static int test_5_double_conv_r4 () {
 		double d = 5.0;
 		float f = (float)d;
