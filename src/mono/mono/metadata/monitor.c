@@ -24,6 +24,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-time.h>
 
 /*
@@ -512,9 +513,40 @@ retry:
 		return 0;
 	}
 
-	/* The slow path begins here.  We need to make sure theres a
-	 * semaphore handle (creating it if necessary), and block on
-	 * it
+	mono_profiler_monitor_event (obj, MONO_PROFILER_MONITOR_CONTENTION);
+
+	/* The slow path begins here. */
+retry_contended:
+	/* a small amount of duplicated code, but it allows us to insert the profiler
+	 * callbacks without impacting the fast path: from here on we don't need to go back to the
+	 * retry label, but to retry_contended. At this point mon is already installed in the object
+	 * header.
+	 */
+	/* This case differs from Dice's case 3 because we don't
+	 * deflate locks or cache unused lock records
+	 */
+	if (G_LIKELY (mon->owner == 0)) {
+		/* Try to install our ID in the owner field, nest
+		* should have been left at 1 by the previous unlock
+		* operation
+		*/
+		if (G_LIKELY (InterlockedCompareExchangePointer ((gpointer *)&mon->owner, (gpointer)id, 0) == 0)) {
+			/* Success */
+			g_assert (mon->nest == 1);
+			mono_profiler_monitor_event (obj, MONO_PROFILER_MONITOR_DONE);
+			return 1;
+		}
+	}
+
+	/* If the object is currently locked by this thread... */
+	if (mon->owner == id) {
+		mon->nest++;
+		mono_profiler_monitor_event (obj, MONO_PROFILER_MONITOR_DONE);
+		return 1;
+	}
+
+	/* We need to make sure there's a semaphore handle (creating it if
+	 * necessary), and block on it
 	 */
 	if (mon->entry_sem == NULL) {
 		/* Create the semaphore */
@@ -589,7 +621,7 @@ retry:
 
 		if ((ret == WAIT_TIMEOUT || (ret == WAIT_IO_COMPLETION && !allow_interruption)) && ms > 0) {
 			/* More time left */
-			goto retry;
+			goto retry_contended;
 		}
 	} else {
 		if (ret == WAIT_TIMEOUT || (ret == WAIT_IO_COMPLETION && !allow_interruption)) {
@@ -598,20 +630,23 @@ retry:
 				 * We have to obey a stop/suspend request even if 
 				 * allow_interruption is FALSE to avoid hangs at shutdown.
 				 */
+				mono_profiler_monitor_event (obj, MONO_PROFILER_MONITOR_FAIL);
 				return -1;
 			}
 			/* Infinite wait, so just try again */
-			goto retry;
+			goto retry_contended;
 		}
 	}
 	
 	if (ret == WAIT_OBJECT_0) {
 		/* retry from the top */
-		goto retry;
+		goto retry_contended;
 	}
-	
+
 	/* We must have timed out */
 	LOCK_DEBUG (g_message (G_GNUC_PRETTY_FUNCTION ": (%d) timed out waiting, returning FALSE", id));
+
+	mono_profiler_monitor_event (obj, MONO_PROFILER_MONITOR_FAIL);
 
 	if (ret == WAIT_IO_COMPLETION)
 		return -1;
