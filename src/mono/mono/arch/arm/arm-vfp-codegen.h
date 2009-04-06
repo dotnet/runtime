@@ -217,5 +217,15 @@ enum {
 #define ARM_FUITOD(p,dreg,sreg) \
 	ARM_EMIT((p), ARM_DEF_FUITOD (ARMCOND_AL, (dreg) >> 1, (dreg) & 1, (sreg) >> 1, (sreg) & 1))
 
+#define ARM_DEF_FSITOS(cond,Dd,D,Fm,M) ((cond) << 28) | ((0x1d) << 23) | ((D) << 22) | ((0x3) << 20) | ((8) << 16) | ((Dd) << 12) | ((0xa) << 8) | ((1) << 7) | ((1) << 6) | ((M) << 5) | ((Fm) << 0)
+
+#define ARM_FSITOS(p,dreg,sreg) \
+	ARM_EMIT((p), ARM_DEF_FSITOS (ARMCOND_AL, (dreg) >> 1, (dreg) & 1, (sreg) >> 1, (sreg) & 1))
+
+#define ARM_DEF_FSITOD(cond,Dd,D,Fm,M) ((cond) << 28) | ((0x1d) << 23) | ((D) << 22) | ((0x3) << 20) | ((8) << 16) | ((Dd) << 12) | ((0xb) << 8) | ((1) << 7) | ((1) << 6) | ((M) << 5) | ((Fm) << 0)
+
+#define ARM_FSITOD(p,dreg,sreg) \
+	ARM_EMIT((p), ARM_DEF_FSITOD (ARMCOND_AL, (dreg) >> 1, (dreg) & 1, (sreg) >> 1, (sreg) & 1))
+
 #endif /* __MONO_ARM_VFP_CODEGEN_H__ */
 
