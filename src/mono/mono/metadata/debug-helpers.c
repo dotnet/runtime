@@ -503,10 +503,24 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		}
 		ip += 4;
 		break;
-	case MonoInlineString:
-		/* TODO */
+	case MonoInlineString: {
+		const char *blob;
+		char *s;
+		size_t len2;
+
+		token = read32 (ip);
+		blob = mono_metadata_user_string (method->klass->image, mono_metadata_token_index (token));
+
+		len2 = mono_metadata_decode_blob_size (blob, &blob);
+		len2 >>= 1;
+
+		s = g_utf16_to_utf8 ((gunichar2*)blob, len2, NULL, NULL, NULL);
+
+		g_string_sprintfa (str, "\"%s\"", s);
+		g_free (s);
 		ip += 4;
 		break;
+	}
 	case MonoInlineVar:
 		g_string_sprintfa (str, "%d", read16 (ip));
 		ip += 2;
