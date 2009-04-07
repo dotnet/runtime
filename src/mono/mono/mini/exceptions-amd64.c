@@ -28,6 +28,7 @@
 
 #include "mini.h"
 #include "mini-amd64.h"
+#include "tasklets.h"
 #include "debug-mini.h"
 
 #define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
@@ -1295,5 +1296,58 @@ mono_arch_unwindinfo_install_unwind_info (gpointer* monoui, gpointer code, guint
 
 #endif
 
+#if MONO_SUPPORT_TASKLETS
+MonoContinuationRestore
+mono_tasklets_arch_restore (void)
+{
+	static guint8* saved = NULL;
+	guint8 *code, *start;
+	int cont_reg = AMD64_R9; /* register usable on both call conventions */
 
+	if (saved)
+		return (MonoContinuationRestore)saved;
+	code = start = mono_global_codeman_reserve (64);
+	/* the signature is: restore (MonoContinuation *cont, int state, MonoLMF **lmf_addr) */
+	/* cont is in AMD64_ARG_REG1 ($rcx or $rdi)
+	 * state is in AMD64_ARG_REG2 ($rdx or $rsi)
+	 * lmf_addr is in AMD64_ARG_REG3 ($r8 or $rdx)
+	 * We move cont to cont_reg since we need both rcx and rdi for the copy
+	 * state is moved to $rax so it's setup as the return value and we can overwrite $rsi
+ 	 */
+	amd64_mov_reg_reg (code, cont_reg, MONO_AMD64_ARG_REG1, 8);
+	amd64_mov_reg_reg (code, AMD64_RAX, MONO_AMD64_ARG_REG2, 8);
+	/* setup the copy of the stack */
+	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, G_STRUCT_OFFSET (MonoContinuation, stack_used_size), sizeof (int));
+	amd64_shift_reg_imm (code, X86_SHR, AMD64_RCX, 3);
+	x86_cld (code);
+	amd64_mov_reg_membase (code, AMD64_RSI, cont_reg, G_STRUCT_OFFSET (MonoContinuation, saved_stack), sizeof (gpointer));
+	amd64_mov_reg_membase (code, AMD64_RDI, cont_reg, G_STRUCT_OFFSET (MonoContinuation, return_sp), sizeof (gpointer));
+	amd64_prefix (code, X86_REP_PREFIX);
+	amd64_movsl (code);
+
+	/* now restore the registers from the LMF */
+	amd64_mov_reg_membase (code, AMD64_RCX, cont_reg, G_STRUCT_OFFSET (MonoContinuation, lmf), 8);
+	amd64_mov_reg_membase (code, AMD64_RBX, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rbx), 8);
+	amd64_mov_reg_membase (code, AMD64_RBP, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rbp), 8);
+	amd64_mov_reg_membase (code, AMD64_R12, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r12), 8);
+	amd64_mov_reg_membase (code, AMD64_R13, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r13), 8);
+	amd64_mov_reg_membase (code, AMD64_R14, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r14), 8);
+	amd64_mov_reg_membase (code, AMD64_R15, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, r15), 8);
+#ifdef PLATFORM_WIN32
+	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rdi), 8);
+	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rsi), 8);
+#endif
+	amd64_mov_reg_membase (code, AMD64_RSP, AMD64_RCX, G_STRUCT_OFFSET (MonoLMF, rsp), 8);
+
+	/* restore the lmf chain */
+	/*x86_mov_reg_membase (code, X86_ECX, X86_ESP, 12, 4);
+	x86_mov_membase_reg (code, X86_ECX, 0, X86_EDX, 4);*/
+
+	/* state is already in rax */
+	amd64_jump_membase (code, cont_reg, G_STRUCT_OFFSET (MonoContinuation, return_ip));
+	g_assert ((code - start) <= 64);
+	saved = start;
+	return (MonoContinuationRestore)saved;
+}
+#endif
 
