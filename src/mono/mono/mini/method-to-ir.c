@@ -2429,6 +2429,48 @@ mono_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer
 	((MonoCallInst*)ins)->fptr_is_patch = TRUE;
 	return ins;
 }
+ 
+static MonoInst*
+mono_emit_widen_call_res (MonoCompile *cfg, MonoInst *ins, MonoMethodSignature *fsig)
+{
+	if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+		if ((fsig->pinvoke || LLVM_ENABLED) && !fsig->ret->byref) {
+			int widen_op = -1;
+
+			/* 
+			 * Native code might return non register sized integers 
+			 * without initializing the upper bits.
+			 */
+			switch (mono_type_to_load_membase (cfg, fsig->ret)) {
+			case OP_LOADI1_MEMBASE:
+				widen_op = OP_ICONV_TO_I1;
+				break;
+			case OP_LOADU1_MEMBASE:
+				widen_op = OP_ICONV_TO_U1;
+				break;
+			case OP_LOADI2_MEMBASE:
+				widen_op = OP_ICONV_TO_I2;
+				break;
+			case OP_LOADU2_MEMBASE:
+				widen_op = OP_ICONV_TO_U2;
+				break;
+			default:
+				break;
+			}
+
+			if (widen_op != -1) {
+				int dreg = alloc_preg (cfg);
+				MonoInst *widen;
+
+				EMIT_NEW_UNALU (cfg, widen, widen_op, dreg, ins->dreg);
+				widen->type = ins->type;
+				ins = widen;
+			}
+		}
+	}
+
+	return ins;
+}
 
 static MonoMethod*
 get_memcpy_method (void)
@@ -6234,7 +6276,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				if (!MONO_TYPE_IS_VOID (fsig->ret))
-					*sp++ = ins;
+					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
 
 				ip += 5;
 				ins_flag = 0;
@@ -6431,43 +6473,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr);
 					}
 				}
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					if (fsig->pinvoke && !fsig->ret->byref) {
-						int widen_op = -1;
-
-						/* 
-						 * Native code might return non register sized integers 
-						 * without initializing the upper bits.
-						 */
-						switch (mono_type_to_load_membase (cfg, fsig->ret)) {
-						case OP_LOADI1_MEMBASE:
-							widen_op = OP_ICONV_TO_I1;
-							break;
-						case OP_LOADU1_MEMBASE:
-							widen_op = OP_ICONV_TO_U1;
-							break;
-						case OP_LOADI2_MEMBASE:
-							widen_op = OP_ICONV_TO_I2;
-							break;
-						case OP_LOADU2_MEMBASE:
-							widen_op = OP_ICONV_TO_U2;
-							break;
-						default:
-							break;
-						}
-
-						if (widen_op != -1) {
-							int dreg = alloc_preg (cfg);
-							MonoInst *widen;
-
-							EMIT_NEW_UNALU (cfg, widen, widen_op, dreg, ins->dreg);
-							widen->type = ins->type;
-							ins = widen;
-						}
-					}
-
-					*sp++ = ins;
-				}
+				if (!MONO_TYPE_IS_VOID (fsig->ret))
+					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
 
 				ip += 5;
 				ins_flag = 0;
@@ -6515,7 +6522,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins = mini_redirect_call (cfg, cmethod, fsig, sp, virtual ? sp [0] : NULL);
 			if (ins) {
 				if (!MONO_TYPE_IS_VOID (fsig->ret))
-					*sp++ = ins;
+					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
 
 				ip += 5;
 				ins_flag = 0;
@@ -6534,7 +6541,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (!MONO_TYPE_IS_VOID (fsig->ret))
-				*sp++ = ins;
+				*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
 
 			ip += 5;
 			ins_flag = 0;

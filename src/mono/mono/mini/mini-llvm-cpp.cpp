@@ -21,9 +21,13 @@
 
 #include <stdint.h>
 
+#include <llvm/PassManager.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JITMemoryManager.h>
 #include <llvm/Target/TargetOptions.h>
+#include <llvm/Target/TargetData.h>
+#include <llvm/Analysis/Verifier.h>
+#include <llvm/Transforms/Scalar.h>
 
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
@@ -162,7 +166,27 @@ MonoJITMemoryManager::endExceptionTable(const Function *F, unsigned char *TableS
 
 static MonoJITMemoryManager *mono_mm;
 
-extern "C" {
+static FunctionPassManager *fpm;
+
+void
+mono_llvm_optimize_method (LLVMValueRef method)
+{
+	verifyFunction (*(unwrap<Function> (method)));
+	fpm->run (*unwrap<Function> (method));
+}
+
+/* Missing overload for building an alloca with an alignment */
+LLVMValueRef
+mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 
+						LLVMValueRef ArraySize,
+						int alignment, const char *Name)
+{
+	return wrap (unwrap (builder)->Insert (new AllocaInst(unwrap (Ty), unwrap (ArraySize), alignment), Name));
+}
+
+LLVMValueRef LLVMBuildArrayAlloca(LLVMBuilderRef, LLVMTypeRef Ty,
+                                  LLVMValueRef Val, const char *Name);
+
 
 LLVMExecutionEngineRef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb)
@@ -178,7 +202,15 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, false);
   EE->InstallExceptionTableRegister (exception_cb);
 
-  return wrap(EE);
-}
+  fpm = new FunctionPassManager (unwrap (MP));
 
+  fpm->add(new TargetData(*EE->getTargetData()));
+  /* Add a random set of passes */
+  /* Make this run-time configurable */
+  fpm->add(createInstructionCombiningPass());
+  fpm->add(createReassociatePass());
+  fpm->add(createGVNPass());
+  fpm->add(createCFGSimplificationPass());
+
+  return wrap(EE);
 }

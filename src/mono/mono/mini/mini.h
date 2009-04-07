@@ -60,8 +60,10 @@ typedef gint64 mgreg_t;
 
 #if ENABLE_LLVM
 #define COMPILE_LLVM(cfg) ((cfg)->compile_llvm)
+#define LLVM_ENABLED TRUE
 #else
 #define COMPILE_LLVM(cfg) (0)
+#define LLVM_ENABLED FALSE
 #endif
 
 #define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)

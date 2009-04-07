@@ -155,7 +155,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
-		return IntPtrType ();
+		return LLVMPointerType (IntPtrType (), 0);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		/* Because of generic sharing */
@@ -430,6 +430,15 @@ convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 		if (stype == LLVMDoubleType () && dtype == LLVMFloatType ())
 			return LLVMBuildFPTrunc (ctx->builder, v, dtype, get_tempname (ctx));
 
+		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind && LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
+			return LLVMBuildBitCast (ctx->builder, v, dtype, get_tempname (ctx));
+		if (LLVMGetTypeKind (dtype) == LLVMPointerTypeKind)
+			return LLVMBuildIntToPtr (ctx->builder, v, dtype, get_tempname (ctx));
+		if (LLVMGetTypeKind (stype) == LLVMPointerTypeKind)
+			return LLVMBuildPtrToInt (ctx->builder, v, dtype, get_tempname (ctx));
+
+		LLVMDumpValue (v);
+		LLVMDumpValue (LLVMConstNull (dtype));
 		g_assert_not_reached ();
 		return NULL;
 	} else {
@@ -607,20 +616,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	ctx->cfg = cfg;
 	ctx->mempool = cfg->mempool;
 
-#if 0
-	{
-		static int count = 0;
-		count ++;
-
-		if (count == atoi (getenv ("COUNT"))) {
-			printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-			last = TRUE;
-		}
-		if (count > atoi (getenv ("COUNT")))
-			LLVM_FAILURE (ctx, "");
-	}
-#endif
-
 	values = g_new0 (LLVMValueRef, cfg->next_vreg);
 	addresses = g_new0 (LLVMValueRef, cfg->next_vreg);
 	vreg_types = g_new0 (LLVMTypeRef, cfg->next_vreg);
@@ -629,6 +624,22 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	ctx->values = values;
 	ctx->addresses = addresses;
+
+#if 1
+	{
+		static int count = 0;
+		count ++;
+
+		if (getenv ("LLVM_COUNT")) {
+			if (count == atoi (getenv ("LLVM_COUNT"))) {
+				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
+				last = TRUE;
+			}
+			if (count > atoi (getenv ("LLVM_COUNT")))
+				LLVM_FAILURE (ctx, "");
+		}
+	}
+#endif
 
 	sig = mono_method_signature (cfg->method);
 
@@ -908,7 +919,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					g_assert (ins->inst_offset % size == 0);
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
 
-					lhs = LLVMBuildLoad (builder, LLVMBuildGEP (builder, LLVMBuildIntToPtr (builder, values [ins->inst_basereg], LLVMPointerType (t, 0), get_tempname (ctx)), &index, 1, get_tempname (ctx)), get_tempname (ctx));
+					lhs = LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, get_tempname (ctx)), get_tempname (ctx));
 				}
 				if (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM) {
 					lhs = convert (ctx, lhs, LLVMInt32Type ());
@@ -924,9 +935,18 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				}
 				if (ins->opcode == OP_LCOMPARE_IMM)
 					rhs = LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE);
+				if (ins->opcode == OP_LCOMPARE)
+					rhs = convert (ctx, rhs, LLVMInt64Type ());
 				if (ins->opcode == OP_ICOMPARE) {
 					lhs = convert (ctx, lhs, LLVMInt32Type ());
 					rhs = convert (ctx, rhs, LLVMInt32Type ());
+				}
+
+				if (lhs && rhs) {
+					if (LLVMGetTypeKind (LLVMTypeOf (lhs)) == LLVMPointerTypeKind)
+						rhs = convert (ctx, rhs, LLVMTypeOf (lhs));
+					else if (LLVMGetTypeKind (LLVMTypeOf (rhs)) == LLVMPointerTypeKind)
+						lhs = convert (ctx, lhs, LLVMTypeOf (rhs));
 				}
 
 				/* We use COMPARE+SETcc/Bcc, llvm uses SETcc+br cond */
@@ -1150,6 +1170,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					imm = LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE);
 				else
 					imm = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
+				if (LLVMGetTypeKind (LLVMTypeOf (lhs)) == LLVMPointerTypeKind)
+					lhs = convert (ctx, lhs, IntPtrType ());
 				imm = convert (ctx, imm, LLVMTypeOf (lhs));
 				switch (ins->opcode) {
 				case OP_IADD_IMM:
@@ -1311,7 +1333,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				guint32 size = ins->inst_imm;
 				size = (size + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
 
-				v = LLVMBuildArrayAlloca (builder, LLVMInt8Type (), LLVMConstInt (LLVMInt32Type (), size, FALSE), get_tempname (ctx));
+				v = mono_llvm_build_alloca (builder, LLVMInt8Type (), LLVMConstInt (LLVMInt32Type (), size, FALSE), MONO_ARCH_FRAME_ALIGNMENT, get_tempname (ctx));
 
 				if (ins->flags & MONO_INST_INIT) {
 					LLVMValueRef args [4];
@@ -1323,7 +1345,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.memset.i32"), args, 4, "");
 				}
 
-				values [ins->dreg] = LLVMBuildPtrToInt (builder, v, IntPtrType (), dname);
+				values [ins->dreg] = v;
 				break;
 			}
 			case OP_LOADI1_MEMBASE:
@@ -1350,12 +1372,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				g_assert (ins->inst_offset % size == 0);
 				if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM)) {
-					values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), LLVMPointerType (t, 0), get_tempname (ctx)), dname);
+					values [ins->dreg] = LLVMBuildLoad (builder, convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), LLVMPointerType (t, 0)), dname);
 				} else if (ins->inst_offset == 0) {
-					values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, values [ins->inst_basereg], LLVMPointerType (t, 0), get_tempname (ctx)), dname);
+					values [ins->dreg] = LLVMBuildLoad (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), dname);
 				} else {
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-					values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildGEP (builder, LLVMBuildIntToPtr (builder, values [ins->inst_basereg], LLVMPointerType (t, 0), get_tempname (ctx)), &index, 1, get_tempname (ctx)), dname);
+					values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, get_tempname (ctx)), dname);
 				}
 				if (sext)
 					values [ins->dreg] = LLVMBuildSExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
@@ -1365,7 +1387,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					values [ins->dreg] = LLVMBuildFPExt (builder, values [ins->dreg], LLVMDoubleType (), dname);
 				break;
 			}
-
+				
 			case OP_STOREI1_MEMBASE_REG:
 			case OP_STOREI2_MEMBASE_REG:
 			case OP_STOREI4_MEMBASE_REG:
@@ -1382,7 +1404,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				g_assert (ins->inst_offset % size == 0);
 				index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], t), LLVMBuildGEP (builder, LLVMBuildIntToPtr (builder, values [ins->inst_destbasereg], LLVMPointerType (t, 0), get_tempname (ctx)), &index, 1, get_tempname (ctx)));
+				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], t), LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, get_tempname (ctx)));
 				break;
 			}
 
@@ -1400,11 +1422,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				g_assert (ins->inst_offset % size == 0);
 				index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
-				LLVMBuildStore (builder, convert (ctx, LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE), t), LLVMBuildGEP (builder, LLVMBuildIntToPtr (builder, values [ins->inst_destbasereg], LLVMPointerType (t, 0), get_tempname (ctx)), &index, 1, get_tempname (ctx)));
+				LLVMBuildStore (builder, convert (ctx, LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE), t), LLVMBuildGEP (builder, convert (ctx, values [ins->inst_destbasereg], LLVMPointerType (t, 0)), &index, 1, get_tempname (ctx)));
 				break;
 			}
+
 			case OP_CHECK_THIS:
-				LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, values [ins->sreg1], LLVMPointerType (IntPtrType (), 0), get_tempname (ctx)), get_tempname (ctx));
+				LLVMBuildLoad (builder, convert (ctx, values [ins->sreg1], LLVMPointerType (IntPtrType (), 0)), get_tempname (ctx));
 				break;
 			case OP_OUTARG_VTRETADDR:
 				break;
@@ -1481,7 +1504,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					g_assert (ins->inst_offset % size == 0);
 					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
 
-					callee = LLVMBuildIntToPtr (builder, LLVMBuildLoad (builder, LLVMBuildGEP (builder, LLVMBuildIntToPtr (builder, values [ins->inst_basereg], LLVMPointerType (IntPtrType (), 0), get_tempname (ctx)), &index, 1, get_tempname (ctx)), get_tempname (ctx)), LLVMPointerType (llvm_sig, 0), get_tempname (ctx));
+					callee = convert (ctx, LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (IntPtrType (), 0)), &index, 1, get_tempname (ctx)), get_tempname (ctx)), LLVMPointerType (llvm_sig, 0));
 
 					// FIXME: mono_arch_get_vcall_slot () can't decode the code
 					// generated by LLVM
@@ -1549,7 +1572,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 				throw_sig->ret = &mono_defaults.void_class->byval_arg;
-				throw_sig->params [0] = &mono_defaults.int_class->byval_arg;
+				throw_sig->params [0] = &mono_defaults.object_class->byval_arg;
 				// FIXME: Prevent duplicates
 				callee = LLVMAddFunction (module, "mono_arch_throw_exception", sig_to_llvm_sig (ctx, throw_sig, FALSE));
 				LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception"));
@@ -1568,7 +1591,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_LDADDR: {
 				MonoInst *var = ins->inst_p0;
 
-				values [ins->dreg] = LLVMBuildPtrToInt (builder, addresses [var->dreg], IntPtrType (), dname);
+				values [ins->dreg] = addresses [var->dreg];
 				break;
 			}
 			case OP_SIN: {
@@ -1585,6 +1608,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.cos.f64"), args, 1, dname);
 				break;
 			}
+				/* test_0_sqrt_nan fails with LLVM */
+				/*
 			case OP_SQRT: {
 				LLVMValueRef args [1];
 
@@ -1592,6 +1617,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.sqrt.f64"), args, 1, dname);
 				break;
 			}
+				*/
 
 			case OP_IMIN:
 			case OP_LMIN: {
@@ -1622,7 +1648,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				g_assert (ins->inst_offset == 0);
 
-				args [0] = LLVMBuildIntToPtr (builder, lhs, LLVMPointerType (LLVMInt32Type (), 0), get_tempname (ctx));
+				args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt32Type (), 0));
 				args [1] = rhs;
 				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.swap.i32.p0i32"), args, 2, dname);
 				break;
@@ -1632,7 +1658,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				g_assert (ins->inst_offset == 0);
 
-				args [0] = LLVMBuildIntToPtr (builder, lhs, LLVMPointerType (LLVMInt64Type (), 0), get_tempname (ctx));
+				args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt64Type (), 0));
 				args [1] = rhs;
 				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.swap.i64.p0i64"), args, 2, dname);
 				break;
@@ -1642,7 +1668,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				g_assert (ins->inst_offset == 0);
 
-				args [0] = LLVMBuildIntToPtr (builder, lhs, LLVMPointerType (LLVMInt32Type (), 0), get_tempname (ctx));
+				args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt32Type (), 0));
 				args [1] = rhs;
 				values [ins->dreg] = LLVMBuildAdd (builder, LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.load.add.i32.p0i32"), args, 2, get_tempname (ctx)), args [1], dname);
 				break;
@@ -1652,7 +1678,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				g_assert (ins->inst_offset == 0);
 
-				args [0] = LLVMBuildIntToPtr (builder, lhs, LLVMPointerType (LLVMInt64Type (), 0), get_tempname (ctx));
+				args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt64Type (), 0));
 				args [1] = convert (ctx, rhs, LLVMInt64Type ());
 				values [ins->dreg] = LLVMBuildAdd (builder, LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.load.add.i64.p0i64"), args, 2, get_tempname (ctx)), args [1], dname);
 				break;
@@ -1661,7 +1687,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_ATOMIC_CAS_IMM_I4: {
 				LLVMValueRef args [3];
 
-				args [0] = LLVMBuildIntToPtr (builder, lhs, LLVMPointerType (LLVMInt32Type (), 0), get_tempname (ctx));
+				args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt32Type (), 0));
 				/* comparand */
 				args [1] = LLVMConstInt (LLVMInt32Type (), GPOINTER_TO_INT (ins->backend.data), FALSE);
 				/* new value */
@@ -1752,12 +1778,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				switch (ins->opcode) {
 				case OP_STOREV_MEMBASE:
 					src = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (LLVMInt8Type (), 0), get_tempname (ctx));
-					dst = LLVMBuildIntToPtr (builder, LLVMBuildAdd (builder, values [ins->inst_destbasereg], LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), get_tempname (ctx)), LLVMPointerType (LLVMInt8Type (), 0), get_tempname (ctx));
+					dst = convert (ctx, LLVMBuildAdd (builder, values [ins->inst_destbasereg], LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), get_tempname (ctx)), LLVMPointerType (LLVMInt8Type (), 0));
 					break;
 				case OP_LOADV_MEMBASE:
 					if (!addresses [ins->dreg])
 						addresses [ins->dreg] = LLVMBuildAlloca (builder, type_to_llvm_type (ctx, &klass->byval_arg), get_tempname (ctx));
-					src = LLVMBuildIntToPtr (builder, LLVMBuildAdd (builder, values [ins->inst_basereg], LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), get_tempname (ctx)), LLVMPointerType (LLVMInt8Type (), 0), get_tempname (ctx));
+					src = convert (ctx, LLVMBuildAdd (builder, values [ins->inst_basereg], LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), get_tempname (ctx)), LLVMPointerType (LLVMInt8Type (), 0));
 					dst = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), get_tempname (ctx));
 					break;
 				case OP_VMOVE:
@@ -1825,8 +1851,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (last)
 		LLVMDumpValue (method);
 
-	//if (strstr (cfg->method->name, "test_0_ldfld_stfld_soft_float_remote"))
-	//LLVMDumpValue (method);
+	mono_llvm_optimize_method (method);
+
+	if (cfg->verbose_level > 1)
+		LLVMDumpValue (method);
 
 	cfg->native_code = LLVMGetPointerToGlobal (ee, method);
 
