@@ -378,7 +378,7 @@ dump_verify_info (MonoImage *image, int flags)
 				if (mono_method_signature (method) == NULL) {
 					g_print ("In method: %s::%s(ERROR)\n", name, mono_method_get_name (method));
 				} else {
-					char *sig, *name;
+					char *sig;
 					sig = mono_signature_get_desc (mono_method_signature (method), FALSE);	
 					g_print ("In method: %s::%s(%s)\n", name, mono_method_get_name (method), sig);
 					g_free (sig);
