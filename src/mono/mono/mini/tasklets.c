@@ -79,16 +79,16 @@ continuation_mark_frame (MonoContinuation *cont)
 	return NULL;
 }
 
-static MonoException*
-continuation_store (MonoContinuation *cont, int state, int *rstate)
+static int
+continuation_store (MonoContinuation *cont, int state, MonoException **e)
 {
 	MonoLMF *lmf = mono_get_lmf ();
 	gsize num_bytes;
 
 	if (!cont->domain)
-		return mono_get_exception_argument ("cont", "Continuation not initialized");
+		*e =  mono_get_exception_argument ("cont", "Continuation not initialized");
 	if (cont->domain != mono_domain_get () || cont->thread_id != GetCurrentThreadId ())
-		return mono_get_exception_argument ("cont", "Continuation from another thread or domain");
+		*e = mono_get_exception_argument ("cont", "Continuation from another thread or domain");
 
 	cont->lmf = lmf;
 	cont->return_ip = __builtin_return_address (0);
@@ -116,8 +116,8 @@ continuation_store (MonoContinuation *cont, int state, int *rstate)
 		tasklets_unlock ();
 	}
 	memcpy (cont->saved_stack, cont->return_sp, num_bytes);
-	*rstate = state;
-	return NULL;
+
+	return state;
 }
 
 static MonoException*
