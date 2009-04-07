@@ -4887,8 +4887,10 @@ mono_method_verify (MonoMethod *method, int level)
 			break;
 
 		ctx.code [clause->try_offset].flags |= IL_CODE_FLAG_WAS_TARGET;
-		ctx.code [clause->try_offset + clause->try_len].flags |= IL_CODE_FLAG_WAS_TARGET;
-		ctx.code [clause->handler_offset + clause->handler_len].flags |= IL_CODE_FLAG_WAS_TARGET;
+		if (clause->try_offset + clause->try_len < ctx.code_size)
+			ctx.code [clause->try_offset + clause->try_len].flags |= IL_CODE_FLAG_WAS_TARGET;
+		if (clause->handler_offset + clause->handler_len < ctx.code_size)
+			ctx.code [clause->handler_offset + clause->handler_len].flags |= IL_CODE_FLAG_WAS_TARGET;
 
 		if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
 			init_stack_with_value_at_exception_boundary (&ctx, ctx.code + clause->handler_offset, clause->data.catch_class);
