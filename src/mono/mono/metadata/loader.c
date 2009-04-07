@@ -932,8 +932,13 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		type = &klass->byval_arg;
 
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
-			MonoClass *in_class = klass->generic_class ? klass->generic_class->container_class : klass;
-			method = find_method (in_class, NULL, mname, sig, klass);
+			MonoMethodSignature *in_sig = sig;
+			if (klass->generic_class)
+				in_sig = inflate_generic_signature (NULL, sig, &klass->generic_class->context);
+
+			method = find_method (klass, NULL, mname, in_sig, klass);
+			if (in_sig != sig)
+				mono_metadata_free_inflated_signature (in_sig);
 			break;
 		}
 
