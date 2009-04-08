@@ -1,3 +1,7 @@
+2009-04-08  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Linker.csproj: Update.
+
 2009-02-18  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Linker/XApiService.cs: delete, unused.
