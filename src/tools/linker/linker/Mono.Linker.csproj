@@ -1,4 +1,5 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -9,8 +10,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Mono.Linker</RootNamespace>
     <AssemblyName>monolinker</AssemblyName>
-    <StartupObject>
-    </StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -69,7 +68,6 @@
     <Compile Include="Mono.Linker\Pipeline.cs" />
     <Compile Include="Mono.Linker\TypePreserve.cs" />
     <Compile Include="Mono.Linker\XApiReader.cs" />
-    <Compile Include="Mono.Linker\XApiService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\class\Mono.Cecil\Mono.Cecil.csproj">
@@ -96,5 +94,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile" />
+    <None Include="README" />
   </ItemGroup>
 </Project>
