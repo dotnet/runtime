@@ -406,32 +406,36 @@ mono_class_interface_implements_interface (MonoClass *candidate, MonoClass *ifac
 /*
  * Verify if @type is valid for the given @ctx verification context.
  * this function checks for VAR and MVAR types that are invalid under the current verifier,
- * This means that it either 
  */
 static gboolean
 mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
 {
-	if (mono_type_is_generic_argument (type) && !context)
-		return FALSE;
-	if (type->type == MONO_TYPE_VAR) {
-		if (!context->class_inst)
+	int i;
+	MonoGenericInst *inst;
+
+	switch (type->type) {
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		if (!context)
 			return FALSE;
-		if (type->data.generic_param->num >= context->class_inst->type_argc)
+		inst = type->type == MONO_TYPE_VAR ? context->class_inst : context->method_inst;
+		if (!inst || type->data.generic_param->num > inst->type_argc)
 			return FALSE;
-	} else if (type->type == MONO_TYPE_MVAR) {
-		if (!context->method_inst)
-			return FALSE;
-		if (type->data.generic_param->num >= context->method_inst->type_argc)
-			return FALSE;
-	}
-	if (type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) {
-		MonoClass *klass = type->data.klass;
-		MonoGenericContainer *container = klass->generic_container;
-		if (!container || !context)
-			return TRUE;
-		if (!context->class_inst)
-			return FALSE;
-		return container->context.class_inst->type_argc <= context->class_inst->type_argc;
+		break;
+	case MONO_TYPE_SZARRAY:
+		return mono_type_is_valid_type_in_context (&type->data.klass->byval_arg, context);
+	case MONO_TYPE_ARRAY:
+		return mono_type_is_valid_type_in_context (&type->data.array->eklass->byval_arg, context);
+	case MONO_TYPE_PTR:
+		return mono_type_is_valid_type_in_context (type->data.type, context);
+	case MONO_TYPE_GENERICINST:
+		inst = type->data.generic_class->context.class_inst;
+		if (!inst->is_open)
+			break;
+		for (i = 0; i < inst->type_argc; ++i)
+			if (!mono_type_is_valid_type_in_context (inst->type_argv [i], context))
+				return FALSE;
+		break;
 	}
 	return TRUE;
 }
