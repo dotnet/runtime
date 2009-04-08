@@ -187,6 +187,22 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	}
 }
 
+static LLVMTypeRef
+type_to_llvm_arg_type (EmitContext *ctx, MonoType *t)
+{
+	LLVMTypeRef ptype = type_to_llvm_type (ctx, t);
+	
+	if (ptype == LLVMInt8Type () || ptype == LLVMInt16Type ()) {
+		/* 
+		 * LLVM generates code which only sets the lower bits, while JITted
+		 * code expects all the bits to be set.
+		 */
+		ptype = LLVMInt32Type ();
+	}
+
+	return ptype;
+}
+
 static G_GNUC_UNUSED LLVMTypeRef
 llvm_type_to_stack_type (LLVMTypeRef type)
 {
@@ -482,7 +498,7 @@ sig_to_llvm_sig (EmitContext *ctx, MonoMethodSignature *sig, gboolean vretaddr)
 	for (i = 0; i < sig->param_count; ++i) {
 		if (MONO_TYPE_ISSTRUCT (sig->params [i]))
 			LLVM_FAILURE (ctx, "vtype param");
-		param_types [pindex ++] = type_to_llvm_type (ctx, sig->params [i]);
+		param_types [pindex ++] = type_to_llvm_arg_type (ctx, sig->params [i]);
 	}
 	CHECK_FAILURE (ctx);
 
@@ -1543,7 +1559,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					if (i == 0 && sig->hasthis)
 						args [pindex] = convert (ctx, args [pindex], IntPtrType ());
 					else
-						args [pindex] = convert (ctx, args [pindex], type_to_llvm_type (ctx, sig->params [i - sig->hasthis]));
+						args [pindex] = convert (ctx, args [pindex], type_to_llvm_arg_type (ctx, sig->params [i - sig->hasthis]));
 
 					pindex ++;
 					l = l->next;
