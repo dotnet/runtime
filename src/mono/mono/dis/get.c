@@ -787,7 +787,7 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 
 	g_string_append_c (result, '<');
 	for (i = 0; i < container->type_argc; i++) {
-		MonoGenericParam *param = &container->type_params [i];
+		MonoGenericParam *param = mono_generic_container_get_param (container, i);
 		MonoClass **constr;
 		int first = 1;
 		guint16 flags;
@@ -3083,7 +3083,7 @@ check_ambiguous_genparams (MonoGenericContainer *container)
 
 	table = g_hash_table_new (g_str_hash, g_str_equal);
 	for (i = 0; i < container->type_argc; i++) {
-		MonoGenericParam *param = &container->type_params [i];
+		MonoGenericParam *param = mono_generic_container_get_param (container, i);
 
 		if ((p = g_hash_table_lookup (table, param->name)))
 			dup_list = g_slist_prepend (g_slist_prepend (dup_list, GUINT_TO_POINTER (i + 1)), p);
@@ -3097,8 +3097,8 @@ check_ambiguous_genparams (MonoGenericContainer *container)
 		for (l = dup_list; l; l = l->next) {
 			int param = GPOINTER_TO_UINT (l->data);
 			g_hash_table_insert (mono_generic_params_with_ambiguous_names,
-				 &container->type_params [param-1],
-				 &container->type_params [param-1]);
+				mono_generic_container_get_param (container, param-1),
+				mono_generic_container_get_param (container, param-1));
 		}
 		g_slist_free (dup_list);
 	}

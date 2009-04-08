@@ -536,6 +536,8 @@ struct _MonoGenericContainer {
 	MonoGenericParam *type_params;
 };
 
+#define mono_generic_container_get_param(gc, i) ((gc)->type_params + (i))
+
 /*
  * A type parameter.
  */

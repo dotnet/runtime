@@ -2624,7 +2624,7 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 	}
 
 	g_assert (index < generic_container->type_argc);
-	return &generic_container->type_params [index];
+	return mono_generic_container_get_param (generic_container, index);
 }
 
 /*
@@ -5182,7 +5182,7 @@ mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return;
 	for (i = 0; i < container->type_argc; i++)
-		get_constraints (image, start_row + i, &container->type_params [i].constraints, container);
+		get_constraints (image, start_row + i, &(mono_generic_container_get_param (container, i)->constraints), container);
 }
 
 /*
@@ -5268,7 +5268,7 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 		MonoType *t = &helper [i];
 
 		t->type = container->is_method ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
-		t->data.generic_param = &container->type_params [i];
+		t->data.generic_param = mono_generic_container_get_param (container, i);
 
 		type_argv [i] = t;
 	}

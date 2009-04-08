@@ -497,7 +497,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 		return FALSE;
 
 	for (i = 0; i < gc->type_argc; ++i) {
-		MonoGenericParam *param = &gc->type_params [i];
+		MonoGenericParam *param = mono_generic_container_get_param (gc, i);
 		MonoClass *paramClass;
 		MonoClass **constraints;
 
@@ -608,7 +608,7 @@ verifier_get_generic_param_from_type (VerifyContext *ctx, MonoType *type)
 	}
 	if (!gc)
 		return FALSE;
-	return &gc->type_params [num];
+	return mono_generic_container_get_param (gc, num);
 }
 
 
@@ -642,7 +642,7 @@ generic_arguments_respect_constraints (VerifyContext *ctx, MonoGenericContainer 
 	int i;
 	for (i = 0; i < ginst->type_argc; ++i) {
 		MonoType *type = ginst->type_argv [i];
-		MonoGenericParam *target = &gc->type_params [i];
+		MonoGenericParam *target = mono_generic_container_get_param (gc, i);
 		MonoGenericParam *candidate;
 
 		if (!mono_type_is_generic_argument (type))

@@ -368,7 +368,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			for (i = 0; i < klass->generic_container->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
-				g_string_append (str, klass->generic_container->type_params [i].name);
+				g_string_append (str, mono_generic_container_get_param (klass->generic_container, i)->name);
 			}
 			if (format == MONO_TYPE_NAME_FORMAT_IL)	
 				g_string_append_c (str, '>');
@@ -5884,7 +5884,7 @@ mono_class_has_variant_generic_params (MonoClass *klass)
 	container = klass->generic_class->container_class->generic_container;
 
 	for (i = 0; i < container->type_argc; ++i)
-		if (container->type_params [i].flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT))
+		if (mono_generic_container_get_param (container, i)->flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT))
 			return TRUE;
 
 	return FALSE;
@@ -5962,9 +5962,9 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 						 * _CONTRAVARIANT, but they are in a public header so we can't fix it.
 						 */
 						if (param1_class != param2_class) {
-							if ((container->type_params [i].flags & MONO_GEN_PARAM_VARIANT) && mono_class_is_assignable_from (param1_class, param2_class))
+							if ((mono_generic_container_get_param (container, i)->flags & MONO_GEN_PARAM_VARIANT) && mono_class_is_assignable_from (param1_class, param2_class))
 								;
-							else if (((container->type_params [i].flags & MONO_GEN_PARAM_COVARIANT) && mono_class_is_assignable_from (param2_class, param1_class)))
+							else if (((mono_generic_container_get_param (container, i)->flags & MONO_GEN_PARAM_COVARIANT) && mono_class_is_assignable_from (param2_class, param1_class)))
 								;
 							else {
 								match = FALSE;

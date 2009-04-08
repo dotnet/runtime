@@ -2332,7 +2332,7 @@ ves_icall_MonoType_GetGenericArguments (MonoReflectionType *type)
 		MonoGenericContainer *container = klass->generic_container;
 		res = mono_array_new_specific (array_vtable, container->type_argc);
 		for (i = 0; i < container->type_argc; ++i) {
-			pklass = mono_class_from_generic_parameter (&container->type_params [i], klass->image, FALSE);
+			pklass = mono_class_from_generic_parameter (mono_generic_container_get_param (container, i), klass->image, FALSE);
 			mono_array_setref (res, i, mono_type_get_object (domain, &pklass->byval_arg));
 		}
 	} else if (klass->generic_class) {
@@ -3046,7 +3046,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethod *method)
 
 	for (i = 0; i < count; i++) {
 		MonoGenericContainer *container = mono_method_get_generic_container (method->method);
-		MonoGenericParam *param = &container->type_params [i];
+		MonoGenericParam *param = mono_generic_container_get_param (container, i);
 		MonoClass *pklass = mono_class_from_generic_parameter (
 			param, method->method->klass->image, TRUE);
 		mono_array_setref (res, i,
