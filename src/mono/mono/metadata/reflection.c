@@ -693,7 +693,7 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		sigbuffer_add_value (buf, type->type);
-		sigbuffer_add_value (buf, type->data.generic_param->num);
+		sigbuffer_add_value (buf, mono_type_get_generic_param_num (type));
 		break;
 	default:
 		g_error ("need to encode type %x", type->type);
@@ -2116,7 +2116,7 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 
 	values [MONO_GENERICPARAM_OWNER] = entry->owner;
 	values [MONO_GENERICPARAM_FLAGS] = entry->gparam->attrs;
-	values [MONO_GENERICPARAM_NUMBER] = param->num;
+	values [MONO_GENERICPARAM_NUMBER] = mono_generic_param_num (param);
 	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
 
 	mono_image_add_cattrs (assembly, table_idx, MONO_CUSTOM_ATTR_GENERICPAR, entry->gparam->cattrs);
@@ -3642,8 +3642,8 @@ compare_genericparam (const void *a, const void *b)
 
 	if ((*b_entry)->owner == (*a_entry)->owner)
 		return 
-			(*a_entry)->gparam->type.type->data.generic_param->num - 
-			(*b_entry)->gparam->type.type->data.generic_param->num;
+			mono_type_get_generic_param_num ((*a_entry)->gparam->type.type) -
+			mono_type_get_generic_param_num ((*b_entry)->gparam->type.type);
 	else
 		return (*a_entry)->owner - (*b_entry)->owner;
 }

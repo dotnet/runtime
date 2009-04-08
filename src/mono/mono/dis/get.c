@@ -1187,13 +1187,13 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 		if (is_def && !cant_print_generic_param_name (type->data.generic_param))
 			bare = g_strdup_printf ("!!%s", get_escaped_name (type->data.generic_param->name));
 		else
-			bare = g_strdup_printf ("!!%d", type->data.generic_param->num);
+			bare = g_strdup_printf ("!!%d", mono_type_get_generic_param_num (type));
 		break;
 	case MONO_TYPE_VAR:
 		if (is_def && !cant_print_generic_param_name (type->data.generic_param))
 			bare = g_strdup_printf ("!%s", get_escaped_name (type->data.generic_param->name));
 		else
-			bare = g_strdup_printf ("!%d", type->data.generic_param->num);
+			bare = g_strdup_printf ("!%d", mono_type_get_generic_param_num (type));
 		break;
 	case MONO_TYPE_GENERICINST: {
 		GString *str = g_string_new ("");
@@ -3113,10 +3113,12 @@ check_ambiguous_genparams (MonoGenericContainer *container)
 static gboolean
 cant_print_generic_param_name (MonoGenericParam *gparam)
 {
+	MonoGenericContainer *container;
 	g_assert (gparam);
 
-	check_ambiguous_genparams (gparam->owner);
-	return (!gparam->owner || (mono_generic_params_with_ambiguous_names && 
+	container = mono_generic_param_owner (gparam);
+	check_ambiguous_genparams (container);
+	return (!container || (mono_generic_params_with_ambiguous_names &&
 			g_hash_table_lookup (mono_generic_params_with_ambiguous_names, gparam)));
 }
 

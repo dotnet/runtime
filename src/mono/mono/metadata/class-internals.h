@@ -552,6 +552,11 @@ struct _MonoGenericParam {
 	MonoImage *image;
 };
 
+#define mono_generic_param_owner(p)		((p)->owner)
+#define mono_generic_param_num(p)		((p)->num)
+#define mono_type_get_generic_param_owner(t)	(mono_generic_param_owner ((t)->data.generic_param))
+#define mono_type_get_generic_param_num(t)	(mono_generic_param_num   ((t)->data.generic_param))
+
 /*
  * Class information which might be cached by the runtime in the AOT file for
  * example. Caching this allows us to avoid computing a generic vtable

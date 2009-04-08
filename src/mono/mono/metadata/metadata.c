@@ -2109,9 +2109,10 @@ retry:
 		goto retry;
 	case MONO_TYPE_FNPTR:
 		return signature_in_image (type->data.method, image);
-	case MONO_TYPE_VAR:
-		if (type->data.generic_param->owner) {
-			g_assert (!type->data.generic_param->owner->is_method);
+	case MONO_TYPE_VAR: {
+		MonoGenericContainer *container = mono_type_get_generic_param_owner (type);
+		if (container) {
+			g_assert (!container->is_method);
 			/*
 			 * FIXME: The following check is here solely
 			 * for monodis, which uses the internal
@@ -2124,22 +2125,25 @@ retry:
 			 * however, so a crash results without this
 			 * check.
 			 */
-			if (!type->data.generic_param->owner->owner.klass)
+			if (!container->owner.klass)
 				return FALSE;
-			return type->data.generic_param->owner->owner.klass->image == image;
+			return container->owner.klass->image == image;
 		} else {
 			return type->data.generic_param->image == image;
 		}
-	case MONO_TYPE_MVAR:
-		if (type->data.generic_param->owner) {
-			g_assert (type->data.generic_param->owner->is_method);
-			if (!type->data.generic_param->owner->owner.method)
+	}
+	case MONO_TYPE_MVAR: {
+		MonoGenericContainer *container = mono_type_get_generic_param_owner (type);
+		if (container) {
+			g_assert (container->is_method);
+			if (!container->owner.method)
 				/* RefEmit created generic param whose method is not finished */
 				return FALSE;
-			return type->data.generic_param->owner->owner.method->klass->image == image;
+			return container->owner.method->klass->image == image;
 		} else {
 			return type->data.generic_param->image == image;
 		}
+	}
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type () */
 		return image == mono_class_from_mono_type (type)->image;
@@ -3989,7 +3993,7 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 {
 	if (p1 == p2)
 		return TRUE;
-	if (p1->num != p2->num)
+	if (mono_generic_param_num (p1) != mono_generic_param_num (p2))
 		return FALSE;
 
 	/*
@@ -4004,7 +4008,8 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 	 * The AOT runtime doesn't set the image when it's decoding
 	 * types, so we only compare it when the owner is NULL.
 	 */
-	if (p1->owner == p2->owner && (p1->owner || p1->image == p2->image))
+	if (mono_generic_param_owner (p1) == mono_generic_param_owner (p2) &&
+	    (mono_generic_param_owner (p1) || p1->image == p2->image))
 		return TRUE;
 
 	/*

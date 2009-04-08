@@ -492,7 +492,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	switch (type->type) {
 	case MONO_TYPE_MVAR: {
 		MonoType *nt;
-		int num = type->data.generic_param->num;
+		int num = mono_type_get_generic_param_num (type);
 		MonoGenericInst *inst = context->method_inst;
 		if (!inst || !inst->type_argv)
 			return NULL;
@@ -511,7 +511,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	}
 	case MONO_TYPE_VAR: {
 		MonoType *nt;
-		int num = type->data.generic_param->num;
+		int num = mono_type_get_generic_param_num (type);
 		MonoGenericInst *inst = context->class_inst;
 		if (!inst)
 			return NULL;
@@ -4487,6 +4487,7 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
 {
+	MonoGenericContainer *container;
 	MonoClass *klass, **ptr;
 	int count, pos, i;
 
@@ -4497,12 +4498,13 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 		return param->pklass;
 	}
 
-	if (!image && param->owner) {
+	container = mono_generic_param_owner (param);
+	if (!image && container) {
 		if (is_mvar) {
-			MonoMethod *method = param->owner->owner.method;
+			MonoMethod *method = container->owner.method;
 			image = (method && method->klass) ? method->klass->image : NULL;
 		} else {
-			MonoClass *klass = param->owner->owner.klass;
+			MonoClass *klass = container->owner.klass;
 			// FIXME: 'klass' should not be null
 			// 	  But, monodis creates GenericContainers without associating a owner to it
 			image = klass ? klass->image : NULL;
@@ -4519,8 +4521,9 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	if (param->name)
 		klass->name = param->name;
 	else {
+		int n = mono_generic_param_num (param);
 		klass->name = mono_image_alloc0 (image, 16);
-		sprintf ((char*)klass->name, is_mvar ? "!!%d" : "!%d", param->num);
+		sprintf ((char*)klass->name, is_mvar ? "!!%d" : "!%d", n);
 	}
 	klass->name_space = "";
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
@@ -4557,21 +4560,21 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
 	klass->this_arg.byref = TRUE;
 
-	if (param->owner) {
+	if (container) {
 		guint32 owner;
 		guint32 cols [MONO_GENERICPARAM_SIZE];
 		MonoTableInfo *tdef  = &image->tables [MONO_TABLE_GENERICPARAM];
 		i = 0;
 
-		if (is_mvar && param->owner->owner.method)
-			 i = mono_metadata_get_generic_param_row (image, param->owner->owner.method->token, &owner);
-		else if (!is_mvar && param->owner->owner.klass)
-			 i = mono_metadata_get_generic_param_row (image, param->owner->owner.klass->type_token, &owner);
+		if (is_mvar && container->owner.method)
+			 i = mono_metadata_get_generic_param_row (image, container->owner.method->token, &owner);
+		else if (!is_mvar && container->owner.klass)
+			 i = mono_metadata_get_generic_param_row (image, container->owner.klass->type_token, &owner);
 
 		if (i) {
 			mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);
 			do {
-				if (cols [MONO_GENERICPARAM_NUMBER] == param->num) {
+				if (cols [MONO_GENERICPARAM_NUMBER] == mono_generic_param_num (param)) {
 					klass->sizes.generic_param_token = i | MONO_TOKEN_GENERIC_PARAM;
 					break;
 				}

@@ -419,7 +419,7 @@ mono_type_is_valid_type_in_context (MonoType *type, MonoGenericContext *context)
 		if (!context)
 			return FALSE;
 		inst = type->type == MONO_TYPE_VAR ? context->class_inst : context->method_inst;
-		if (!inst || type->data.generic_param->num > inst->type_argc)
+		if (!inst || mono_type_get_generic_param_num (type) >= inst->type_argc)
 			return FALSE;
 		break;
 	case MONO_TYPE_SZARRAY:
@@ -593,7 +593,7 @@ verifier_get_generic_param_from_type (VerifyContext *ctx, MonoType *type)
 	MonoMethod *method = ctx->method;
 	int num;
 
-	num = type->data.generic_param->num;
+	num = mono_type_get_generic_param_num (type);
 
 	if (type->type == MONO_TYPE_VAR) {
 		MonoClass *gtd = method->klass;
@@ -2582,12 +2582,12 @@ handle_enum:
 	case MONO_TYPE_VAR:
 		if (candidate->type != MONO_TYPE_VAR)
 			return FALSE;
-		return candidate->data.generic_param->num == target->data.generic_param->num;
+		return mono_type_get_generic_param_num (candidate) == mono_type_get_generic_param_num (target);
 
 	case MONO_TYPE_MVAR:
 		if (candidate->type != MONO_TYPE_MVAR)
 			return FALSE;
-		return candidate->data.generic_param->num == target->data.generic_param->num;
+		return mono_type_get_generic_param_num (candidate) == mono_type_get_generic_param_num (target);
 
 	default:
 		VERIFIER_DEBUG ( printf ("unknown store type %d\n", target->type); );
@@ -2612,7 +2612,7 @@ verify_type_compatibility (VerifyContext *ctx, MonoType *target, MonoType *candi
 static MonoGenericParam*
 get_generic_param (VerifyContext *ctx, MonoType *param) 
 {
-	guint16 param_num = param->data.generic_param->num;
+	guint16 param_num = mono_type_get_generic_param_num (param);
 	if (param->type == MONO_TYPE_VAR) {
 		if (!ctx->generic_context->class_inst || ctx->generic_context->class_inst->type_argc <= param_num) {
 			ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid generic type argument %d", param_num));
@@ -2759,11 +2759,11 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 		return candidate->type == MONO_TYPE_VALUETYPE && target->data.klass == candidate->data.klass;
 
 	case MONO_TYPE_VAR:
-		return candidate->type == MONO_TYPE_VAR && target->data.generic_param->num == candidate->data.generic_param->num; 
+		return candidate->type == MONO_TYPE_VAR && mono_type_get_generic_param_num (target) == mono_type_get_generic_param_num (candidate);
 		return FALSE;
 
 	case MONO_TYPE_MVAR:
-		return candidate->type == MONO_TYPE_MVAR && target->data.generic_param->num == candidate->data.generic_param->num;
+		return candidate->type == MONO_TYPE_MVAR && mono_type_get_generic_param_num (target) == mono_type_get_generic_param_num (candidate);
 		return FALSE;
 
 	default:
