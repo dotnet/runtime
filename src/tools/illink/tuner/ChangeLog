@@ -1,3 +1,7 @@
+2009-04-08  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Tuner.csproj: Update.
+
 2009-04-03  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner/InjectSecurityAttributes.cs: Show a warning
