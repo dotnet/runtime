@@ -6899,6 +6899,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\mono\mini\mini-gc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\mono\mini\mini-gc.h"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\mini\mini-generic-sharing.c"
 				>
 				<FileConfiguration
