@@ -183,8 +183,10 @@ get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean
 static MonoMethod*
 get_reflection_caller (void)
 {
-	MonoMethod *m = mono_method_get_last_managed ();
+	MonoMethod *m = NULL;
 	mono_stack_walk_no_il (get_caller_no_reflection_related, &m);
+	if (!m)
+		g_warning ("could not find a caller outside reflection");
 	return m;
 }
 
@@ -196,8 +198,12 @@ get_reflection_caller (void)
 static gboolean
 check_field_access (MonoMethod *caller, MonoClassField *field)
 {
-	MonoClass *klass = (mono_field_get_flags (field) & FIELD_ATTRIBUTE_STATIC) ? NULL : mono_field_get_parent (field);
-	return mono_method_can_access_field_full (caller, field, klass);
+	/* if get_reflection_caller returns NULL then we assume the caller has NO privilege */
+	if (caller) {
+		MonoClass *klass = (mono_field_get_flags (field) & FIELD_ATTRIBUTE_STATIC) ? NULL : mono_field_get_parent (field);
+		return mono_method_can_access_field_full (caller, field, klass);
+	}
+	return FALSE;
 }
 
 /*
@@ -208,8 +214,12 @@ check_field_access (MonoMethod *caller, MonoClassField *field)
 static gboolean
 check_method_access (MonoMethod *caller, MonoMethod *callee)
 {
-	MonoClass *klass = (callee->flags & METHOD_ATTRIBUTE_STATIC) ? NULL : callee->klass;
-	return mono_method_can_access_method_full (caller, callee, klass);
+	/* if get_reflection_caller returns NULL then we assume the caller has NO privilege */
+	if (caller) {
+		MonoClass *klass = (callee->flags & METHOD_ATTRIBUTE_STATIC) ? NULL : callee->klass;
+		return mono_method_can_access_method_full (caller, callee, klass);
+	}
+	return FALSE;
 }
 
 /*
@@ -433,6 +443,10 @@ mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_lev
 {
 	MonoCustomAttrInfo *cinfo;
 	MonoSecurityCoreCLRLevel level = MONO_SECURITY_CORE_CLR_TRANSPARENT;
+
+	/* if get_reflection_caller returns NULL then we assume the caller has NO privilege */
+	if (!method)
+		return level;
 
 	/* non-platform code is always Transparent - whatever the attributes says */
 	if (!mono_security_core_clr_test && !mono_security_core_clr_is_platform_image (method->klass->image))
