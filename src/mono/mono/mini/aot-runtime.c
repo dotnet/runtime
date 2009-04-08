@@ -352,15 +352,17 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				gboolean is_method = decode_value (p, &p);
 
 				if (is_method) {
+					MonoMethod *method_def;
 					g_assert (type == MONO_TYPE_MVAR);
-					MonoMethod *method_def = decode_method_ref_2 (module, p, &p);
+					method_def = decode_method_ref_2 (module, p, &p);
 					if (!method_def)
 						return NULL;
 
 					container = mono_method_get_generic_container (method_def);
 				} else {
+					MonoClass *class_def;
 					g_assert (type == MONO_TYPE_VAR);
-					MonoClass *class_def = decode_klass_ref (module, p, &p);
+					class_def = decode_klass_ref (module, p, &p);
 					if (!class_def)
 						return NULL;
 

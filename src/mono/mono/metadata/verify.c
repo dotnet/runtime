@@ -562,10 +562,11 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 		if (!candidate->constraints)
 			return FALSE;
 		for (target_class = target->constraints; *target_class; ++target_class) {
+			MonoClass *tc;
 			MonoType *inflated = verifier_inflate_type (ctx, &(*target_class)->byval_arg, context);
 			if (!inflated)
 				return FALSE;
-			MonoClass *tc = mono_class_from_mono_type (inflated);
+			tc = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 
 			for (candidate_class = candidate->constraints; *candidate_class; ++candidate_class) {
