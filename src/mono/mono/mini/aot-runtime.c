@@ -346,46 +346,39 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				mono_metadata_free_type (type);
 			} else if ((type == MONO_TYPE_VAR) || (type == MONO_TYPE_MVAR)) {
 				MonoType *t;
-				gboolean is_method;
 				MonoGenericContainer *container;
 
-				// FIXME: Maybe use types directly to avoid
-				// the overhead of creating MonoClass-es
+				int num = decode_value (p, &p);
+				gboolean is_method = decode_value (p, &p);
 
-				// FIXME: Memory management
-				t = g_new0 (MonoType, 1);
-				t->type = type;
-				t->data.generic_param = g_new0 (MonoGenericParam, 1);
-				t->data.generic_param->num = decode_value (p, &p);
-				t->data.generic_param->name = "T";
-
-				is_method = decode_value (p, &p);
 				if (is_method) {
+					g_assert (type == MONO_TYPE_MVAR);
 					MonoMethod *method_def = decode_method_ref_2 (module, p, &p);
-
-					if (!method_def) {
-						g_free (t->data.generic_param);
-						g_free (t);
+					if (!method_def)
 						return NULL;
-					}
 
 					container = mono_method_get_generic_container (method_def);
 				} else {
+					g_assert (type == MONO_TYPE_VAR);
 					MonoClass *class_def = decode_klass_ref (module, p, &p);
-					
-					if (!class_def) {
-						g_free (t->data.generic_param);
-						g_free (t);
+					if (!class_def)
 						return NULL;
-					}
 
 					container = class_def->generic_container;
 				}
 
 				g_assert (container);
-				t->data.generic_param->owner = container;
 
+				// FIXME: Memory management
+				t = g_new0 (MonoType, 1);
+				t->type = type;
+				t->data.generic_param = mono_generic_container_get_param (container, num);
+
+				// FIXME: Maybe use types directly to avoid
+				// the overhead of creating MonoClass-es
 				klass = mono_class_from_mono_type (t);
+
+				g_free (t);
 			} else {
 				g_assert_not_reached ();
 			}
