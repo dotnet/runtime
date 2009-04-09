@@ -497,11 +497,11 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 		return FALSE;
 
 	for (i = 0; i < gc->type_argc; ++i) {
-		MonoGenericParam *param = mono_generic_container_get_param (gc, i);
+		MonoGenericParamInfo *param_info = mono_generic_container_get_param_info (gc, i);
 		MonoClass *paramClass;
 		MonoClass **constraints;
 
-		if (!param->constraints && !(param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
+		if (!param_info->constraints && !(param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
 			continue;
 		if (mono_type_is_generic_argument (ginst->type_argv [i]))
 			continue; //it's not our job to validate type variables
@@ -517,19 +517,19 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 				return FALSE;
 		}
 
-		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && (!paramClass->valuetype || mono_class_is_nullable (paramClass)))
+		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && (!paramClass->valuetype || mono_class_is_nullable (paramClass)))
 			return FALSE;
 
-		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && paramClass->valuetype)
+		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && paramClass->valuetype)
 			return FALSE;
 
-		if ((param->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !paramClass->valuetype && !mono_class_has_default_constructor (paramClass))
+		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !paramClass->valuetype && !mono_class_has_default_constructor (paramClass))
 			return FALSE;
 
-		if (!param->constraints)
+		if (!param_info->constraints)
 			continue;
 
-		for (constraints = param->constraints; *constraints; ++constraints) {
+		for (constraints = param_info->constraints; *constraints; ++constraints) {
 			MonoClass *ctr = *constraints;
 			MonoType *inflated;
 
@@ -552,16 +552,19 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 static gboolean
 mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericParam *target, MonoGenericParam *candidate, MonoGenericContext *context)
 {
-	int tmask = target->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
-	int cmask = candidate->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;	
+	MonoGenericParamInfo *tinfo = mono_generic_param_info (target);
+	MonoGenericParamInfo *cinfo = mono_generic_param_info (candidate);
+
+	int tmask = tinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
+	int cmask = cinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 	if ((tmask & cmask) != tmask)
 		return FALSE;
 
-	if (target->constraints) {
+	if (tinfo->constraints) {
 		MonoClass **target_class, **candidate_class;
-		if (!candidate->constraints)
+		if (!cinfo->constraints)
 			return FALSE;
-		for (target_class = target->constraints; *target_class; ++target_class) {
+		for (target_class = tinfo->constraints; *target_class; ++target_class) {
 			MonoClass *tc;
 			MonoType *inflated = verifier_inflate_type (ctx, &(*target_class)->byval_arg, context);
 			if (!inflated)
@@ -569,7 +572,7 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 			tc = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 
-			for (candidate_class = candidate->constraints; *candidate_class; ++candidate_class) {
+			for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
 				MonoClass *cc;
 				inflated = verifier_inflate_type (ctx, &(*candidate_class)->byval_arg, ctx->generic_context);
 				if (!inflated)
@@ -2652,7 +2655,7 @@ is_compatible_boxed_valuetype (VerifyContext *ctx, MonoType *type, MonoType *can
 	if (mono_type_is_generic_argument (candidate)) {
 		MonoGenericParam *param = get_generic_param (ctx, candidate);
 		MonoClass **class;
-		for (class = param->constraints; class && *class; ++class) {
+		for (class = mono_generic_param_info (param)->constraints; class && *class; ++class) {
 			if (verify_type_compatibility_full (ctx, type, mono_type_get_type_byval (& (*class)->byval_arg), FALSE))
 				return TRUE;
 		}

@@ -298,8 +298,8 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_assert (type->data.generic_param->name);
-		g_string_append (str, type->data.generic_param->name);
+		g_assert (mono_generic_param_info (type->data.generic_param)->name);
+		g_string_append (str, mono_generic_param_info (type->data.generic_param)->name);
 	
 		mono_type_name_check_byref (type, str);
 
@@ -368,7 +368,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			for (i = 0; i < klass->generic_container->type_argc; i++) {
 				if (i)
 					g_string_append_c (str, ',');
-				g_string_append (str, mono_generic_container_get_param (klass->generic_container, i)->name);
+				g_string_append (str, mono_generic_container_get_param_info (klass->generic_container, i)->name);
 			}
 			if (format == MONO_TYPE_NAME_FORMAT_IL)	
 				g_string_append_c (str, '>');
@@ -497,7 +497,8 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!inst || !inst->type_argv)
 			return NULL;
 		if (num >= inst->type_argc)
-			g_error ("MVAR %d (%s) cannot be expanded in this context with %d instantiations", num, type->data.generic_param->name, inst->type_argc);
+			g_error ("MVAR %d (%s) cannot be expanded in this context with %d instantiations",
+				num, mono_generic_param_info (type->data.generic_param)->name, inst->type_argc);
 
 		/*
 		 * Note that the VAR/MVAR cases are different from the rest.  The other cases duplicate @type,
@@ -516,7 +517,8 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!inst)
 			return NULL;
 		if (num >= inst->type_argc)
-			g_error ("VAR %d (%s) cannot be expanded in this context with %d instantiations", num, type->data.generic_param->name, inst->type_argc);
+			g_error ("VAR %d (%s) cannot be expanded in this context with %d instantiations",
+				num, mono_generic_param_info (type->data.generic_param)->name, inst->type_argc);
 		nt = mono_metadata_type_dup (image, inst->type_argv [num]);
 		nt->byref = type->byref;
 		nt->attrs = type->attrs;
@@ -4487,15 +4489,16 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
 {
+	MonoGenericParamInfo *pinfo = mono_generic_param_info (param);
 	MonoGenericContainer *container;
 	MonoClass *klass, **ptr;
 	int count, pos, i;
 
 	mono_loader_lock ();
 
-	if (param->pklass) {
+	if (pinfo->pklass) {
 		mono_loader_unlock ();
-		return param->pklass;
+		return pinfo->pklass;
 	}
 
 	container = mono_generic_param_owner (param);
@@ -4518,8 +4521,8 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	classes_size += sizeof (MonoClass);
 
-	if (param->name)
-		klass->name = param->name;
+	if (pinfo->name)
+		klass->name = pinfo->name;
 	else {
 		int n = mono_generic_param_num (param);
 		klass->name = mono_image_alloc0 (image, 16);
@@ -4528,14 +4531,14 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 	klass->name_space = "";
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 	
-	for (count = 0, ptr = param->constraints; ptr && *ptr; ptr++, count++)
+	for (count = 0, ptr = pinfo->constraints; ptr && *ptr; ptr++, count++)
 		;
 
 	pos = 0;
-	if ((count > 0) && !MONO_CLASS_IS_INTERFACE (param->constraints [0])) {
-		klass->parent = param->constraints [0];
+	if ((count > 0) && !MONO_CLASS_IS_INTERFACE (pinfo->constraints [0])) {
+		klass->parent = pinfo->constraints [0];
 		pos++;
-	} else if (param->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
+	} else if (pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
 		klass->parent = mono_class_from_name (mono_defaults.corlib, "System", "ValueType");
 	else
 		klass->parent = mono_defaults.object_class;
@@ -4544,7 +4547,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 		klass->interface_count = count - pos;
 		klass->interfaces = mono_image_alloc0 (image, sizeof (MonoClass *) * (count - pos));
 		for (i = pos; i < count; i++)
-			klass->interfaces [i - pos] = param->constraints [i];
+			klass->interfaces [i - pos] = pinfo->constraints [i];
 	}
 
 	if (!image)
@@ -4589,7 +4592,7 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	mono_memory_barrier ();
 
-	param->pklass = klass;
+	pinfo->pklass = klass;
 
 	mono_loader_unlock ();
 
@@ -5887,7 +5890,7 @@ mono_class_has_variant_generic_params (MonoClass *klass)
 	container = klass->generic_class->container_class->generic_container;
 
 	for (i = 0; i < container->type_argc; ++i)
-		if (mono_generic_container_get_param (container, i)->flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT))
+		if (mono_generic_container_get_param_info (container, i)->flags & (MONO_GEN_PARAM_VARIANT|MONO_GEN_PARAM_COVARIANT))
 			return TRUE;
 
 	return FALSE;
@@ -5965,9 +5968,9 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 						 * _CONTRAVARIANT, but they are in a public header so we can't fix it.
 						 */
 						if (param1_class != param2_class) {
-							if ((mono_generic_container_get_param (container, i)->flags & MONO_GEN_PARAM_VARIANT) && mono_class_is_assignable_from (param1_class, param2_class))
+							if ((mono_generic_container_get_param_info (container, i)->flags & MONO_GEN_PARAM_VARIANT) && mono_class_is_assignable_from (param1_class, param2_class))
 								;
-							else if (((mono_generic_container_get_param (container, i)->flags & MONO_GEN_PARAM_COVARIANT) && mono_class_is_assignable_from (param2_class, param1_class)))
+							else if (((mono_generic_container_get_param_info (container, i)->flags & MONO_GEN_PARAM_COVARIANT) && mono_class_is_assignable_from (param2_class, param1_class)))
 								;
 							else {
 								match = FALSE;

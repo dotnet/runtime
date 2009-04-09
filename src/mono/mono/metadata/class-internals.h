@@ -537,23 +537,31 @@ struct _MonoGenericContainer {
 };
 
 #define mono_generic_container_get_param(gc, i) ((gc)->type_params + (i))
+#define mono_generic_container_get_param_info(gc, i) (mono_generic_param_info ((gc)->type_params + (i)))
+
+/* Additional details about a MonoGenericParam */
+typedef struct {
+	MonoClass *pklass;		/* The corresponding `MonoClass'. */
+	const char *name;
+	guint16 flags;
+	MonoClass** constraints; /* NULL means end of list */
+} MonoGenericParamInfo;
 
 /*
  * A type parameter.
  */
 struct _MonoGenericParam {
 	MonoGenericContainer *owner;	/* Type or method this parameter was defined in. */
-	MonoClass *pklass;		/* The corresponding `MonoClass'. */
-	const char *name;
-	guint16 flags;
 	guint16 num;
-	MonoClass** constraints; /* NULL means end of list */
 	/* If owner is NULL, this is the image whose mempool this struct was allocated from */
 	MonoImage *image;
+
+	MonoGenericParamInfo info;
 };
 
 #define mono_generic_param_owner(p)		((p)->owner)
 #define mono_generic_param_num(p)		((p)->num)
+#define mono_generic_param_info(p)		(&(p)->info)
 #define mono_type_get_generic_param_owner(t)	(mono_generic_param_owner ((t)->data.generic_param))
 #define mono_type_get_generic_param_num(t)	(mono_generic_param_num   ((t)->data.generic_param))
 

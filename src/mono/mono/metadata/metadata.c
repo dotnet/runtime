@@ -2619,8 +2619,8 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 		MonoGenericParam *param;
 
 		param = mono_image_alloc0 (m, sizeof (MonoGenericParam));
-		param->name = mono_image_alloc0 (m, 8);
-		sprintf ((char*)param->name, "%d", index);
+		param->info.name = mono_image_alloc0 (m, 8);
+		sprintf ((char*)param->info.name, "%d", index);
 		param->num = index;
 		param->image = m;
 
@@ -5187,7 +5187,7 @@ mono_metadata_load_generic_param_constraints (MonoImage *image, guint32 token,
 	if (! (start_row = mono_metadata_get_generic_param_row (image, token, &owner)))
 		return;
 	for (i = 0; i < container->type_argc; i++)
-		get_constraints (image, start_row + i, &(mono_generic_container_get_param (container, i)->constraints), container);
+		get_constraints (image, start_row + i, &mono_generic_container_get_param_info (container, i)->constraints, container);
 }
 
 /*
@@ -5228,9 +5228,9 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
 		memset (&params [n - 1], 0, sizeof (MonoGenericParam));
 		params [n - 1].owner = container;
-		params [n - 1].flags = cols [MONO_GENERICPARAM_FLAGS];
+		params [n - 1].info.flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
-		params [n - 1].name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
+		params [n - 1].info.name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
 		if (++i > tdef->rows)
 			break;
 		mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);

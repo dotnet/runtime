@@ -2460,13 +2460,13 @@ ves_icall_Type_GetGenericParameterAttributes (MonoReflectionType *type)
 
 	g_assert (IS_MONOTYPE (type));
 	g_assert (is_generic_parameter (type->type));
-	return type->type->data.generic_param->flags;
+	return mono_generic_param_info (type->type->data.generic_param)->flags;
 }
 
 static MonoArray *
 ves_icall_Type_GetGenericParameterConstraints (MonoReflectionType *type)
 {
-	MonoGenericParam *param;
+	MonoGenericParamInfo *param_info;
 	MonoDomain *domain;
 	MonoClass **ptr;
 	MonoArray *res;
@@ -2477,13 +2477,13 @@ ves_icall_Type_GetGenericParameterConstraints (MonoReflectionType *type)
 	g_assert (IS_MONOTYPE (type));
 
 	domain = mono_object_domain (type);
-	param = type->type->data.generic_param;
-	for (count = 0, ptr = param->constraints; ptr && *ptr; ptr++, count++)
+	param_info = mono_generic_param_info (type->type->data.generic_param);
+	for (count = 0, ptr = param_info->constraints; ptr && *ptr; ptr++, count++)
 		;
 
 	res = mono_array_new (domain, mono_defaults.monotype_class, count);
 	for (i = 0; i < count; i++)
-		mono_array_setref (res, i, mono_type_get_object (domain, &param->constraints [i]->byval_arg));
+		mono_array_setref (res, i, mono_type_get_object (domain, &param_info->constraints [i]->byval_arg));
 
 
 	return res;

@@ -788,6 +788,7 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 	g_string_append_c (result, '<');
 	for (i = 0; i < container->type_argc; i++) {
 		MonoGenericParam *param = mono_generic_container_get_param (container, i);
+		MonoGenericParamInfo *param_info = mono_generic_param_info (param);
 		MonoClass **constr;
 		int first = 1;
 		guint16 flags;
@@ -796,13 +797,13 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 		if (i > 0)
 			g_string_append (result, ",");
 		
-		flags = param->flags & GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK;
+		flags = param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_VARIANCE_MASK;
 		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_COVARIANT) == GENERIC_PARAMETER_ATTRIBUTE_COVARIANT)
 			g_string_append (result, "+ ");
 		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_CONTRAVARIANT) == GENERIC_PARAMETER_ATTRIBUTE_CONTRAVARIANT)
 			g_string_append (result, "- ");
 
-		flags = param->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
+		flags = param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT)
 			g_string_append (result, "class ");
 		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) == GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
@@ -810,7 +811,7 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 		if ((flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) == GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT)
 			g_string_append (result, ".ctor ");
 
-		for (constr = param->constraints; constr && *constr; constr++) {
+		for (constr = param_info->constraints; constr && *constr; constr++) {
 			char *sig;
 
 			if (first) {
@@ -826,7 +827,7 @@ get_generic_param (MonoImage *m, MonoGenericContainer *container)
 		if (!first)
 			g_string_append (result, ") ");
 
-		esname = get_escaped_name (param->name);
+		esname = get_escaped_name (mono_generic_param_info (param)->name);
 		g_string_append (result, esname);
 		g_free (esname);
 	}
@@ -1185,13 +1186,13 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 		break;
 	case MONO_TYPE_MVAR:
 		if (is_def && !cant_print_generic_param_name (type->data.generic_param))
-			bare = g_strdup_printf ("!!%s", get_escaped_name (type->data.generic_param->name));
+			bare = g_strdup_printf ("!!%s", get_escaped_name (mono_generic_param_info (type->data.generic_param)->name));
 		else
 			bare = g_strdup_printf ("!!%d", mono_type_get_generic_param_num (type));
 		break;
 	case MONO_TYPE_VAR:
 		if (is_def && !cant_print_generic_param_name (type->data.generic_param))
-			bare = g_strdup_printf ("!%s", get_escaped_name (type->data.generic_param->name));
+			bare = g_strdup_printf ("!%s", get_escaped_name (mono_generic_param_info (type->data.generic_param)->name));
 		else
 			bare = g_strdup_printf ("!%d", mono_type_get_generic_param_num (type));
 		break;
@@ -3085,10 +3086,10 @@ check_ambiguous_genparams (MonoGenericContainer *container)
 	for (i = 0; i < container->type_argc; i++) {
 		MonoGenericParam *param = mono_generic_container_get_param (container, i);
 
-		if ((p = g_hash_table_lookup (table, param->name)))
+		if ((p = g_hash_table_lookup (table, mono_generic_param_info (param)->name)))
 			dup_list = g_slist_prepend (g_slist_prepend (dup_list, GUINT_TO_POINTER (i + 1)), p);
 		else
-			g_hash_table_insert (table, (char*)param->name, GUINT_TO_POINTER (i + 1));
+			g_hash_table_insert (table, (char*)mono_generic_param_info (param)->name, GUINT_TO_POINTER (i + 1));
 	}
 
 	if (dup_list) {

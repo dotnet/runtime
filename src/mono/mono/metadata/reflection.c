@@ -543,8 +543,8 @@ my_mono_class_from_mono_type (MonoType *type) {
 		return mono_class_from_mono_type (type);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_assert (type->data.generic_param->pklass);
-		return type->data.generic_param->pklass;
+		g_assert (mono_generic_param_info (type->data.generic_param)->pklass);
+		return mono_generic_param_info (type->data.generic_param)->pklass;
 	default:
 		/* should be always valid when we reach this case... */
 		return type->data.klass;
@@ -2117,7 +2117,7 @@ write_generic_param_entry (MonoDynamicImage *assembly, GenericParamTableEntry *e
 	values [MONO_GENERICPARAM_OWNER] = entry->owner;
 	values [MONO_GENERICPARAM_FLAGS] = entry->gparam->attrs;
 	values [MONO_GENERICPARAM_NUMBER] = mono_generic_param_num (param);
-	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, param->name);
+	values [MONO_GENERICPARAM_NAME] = string_heap_insert (&assembly->sheap, mono_generic_param_info (param)->name);
 
 	mono_image_add_cattrs (assembly, table_idx, MONO_CUSTOM_ATTR_GENERICPAR, entry->gparam->cattrs);
 
@@ -4864,7 +4864,7 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 			GenericParamTableEntry *entry = g_ptr_array_index (di->gen_params, i);
 			if (entry->gparam->type.type) {
 				MonoGenericParam *param = entry->gparam->type.type->data.generic_param;
-				g_free ((char*)param->name);
+				g_free ((char*)mono_generic_param_info (param)->name);
 				g_free (param);
 			}
 			g_free (entry);
@@ -9092,7 +9092,7 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 		klass->generic_container->type_params [i] = *gparam->type.type->data.generic_param;
 		/*Make sure we are a diferent type instance */
 		klass->generic_container->type_params [i].owner = klass->generic_container;
-		klass->generic_container->type_params [i].pklass = NULL;
+		klass->generic_container->type_params [i].info.pklass = NULL;
 
 		g_assert (klass->generic_container->type_params [i].owner);
 	}
@@ -10386,6 +10386,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 {
 	MonoGenericParam *param;
 	MonoImage *image;
+	MonoClass *pklass;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -10408,16 +10409,16 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 		param->owner = gparam->tbuilder->generic_container;
 	}
 
-	param->name = mono_string_to_utf8 (gparam->name);
+	param->info.name = mono_string_to_utf8 (gparam->name);
 	param->num = gparam->index;
 
 	image = &gparam->tbuilder->module->dynamic_image->image;
-	mono_class_from_generic_parameter (param, image, gparam->mbuilder != NULL);
+	pklass = mono_class_from_generic_parameter (param, image, gparam->mbuilder != NULL);
 
-	gparam->type.type = &param->pklass->byval_arg;
+	gparam->type.type = &pklass->byval_arg;
 
-	MOVING_GC_REGISTER (&param->pklass->reflection_info);
-	param->pklass->reflection_info = gparam; /* FIXME: GC pin gparam */
+	MOVING_GC_REGISTER (&pklass->reflection_info);
+	pklass->reflection_info = gparam; /* FIXME: GC pin gparam */
 }
 
 MonoArray *
