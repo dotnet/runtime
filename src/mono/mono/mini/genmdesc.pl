@@ -6,13 +6,14 @@ use strict;
 no locale;
 
 # must keep in sync with mini.h
-my @spec_names = qw(dest src1 src2 len clob);
+my @spec_names = qw(dest src1 src2 src3 len clob);
 sub INST_DEST  () {return 0;}
 sub INST_SRC1  () {return 1;}
 sub INST_SRC2  () {return 2;}
-sub INST_LEN   () {return 3;}
-sub INST_CLOB  () {return 4;}
-sub INST_MAX   () {return 5;}
+sub INST_SRC3  () {return 3;}
+sub INST_LEN   () {return 4;}
+sub INST_CLOB  () {return 5;}
+sub INST_MAX   () {return 6;}
 
 # this must include all the #defines used in mini-ops.h
 my @defines = qw (__i386__ __x86_64__ __ppc__ __powerpc__ __arm__ 
