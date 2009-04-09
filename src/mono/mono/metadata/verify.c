@@ -2744,9 +2744,7 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 		return MONO_TYPE_IS_REFERENCE (candidate);
 
 	case MONO_TYPE_CLASS:
-		if (candidate->type != MONO_TYPE_CLASS)
-			return FALSE;
-		return mono_class_is_assignable_from(target->data.klass, candidate->data.klass);
+		return mono_class_is_assignable_from(target->data.klass, mono_class_from_mono_type (candidate));
 
 	case MONO_TYPE_SZARRAY:
 		if (candidate->type != MONO_TYPE_SZARRAY)
@@ -2891,8 +2889,13 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	if (is_static_ldftn)
 		is_first_arg_bound = mono_method_signature (invoke)->param_count + 1 ==  mono_method_signature (method)->param_count;
 
-	if (!mono_delegate_signature_equal (mono_method_signature (invoke), mono_method_signature (method), is_first_arg_bound))
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer parameter for delegate constructor has diferent signature at 0x%04x", ctx->ip_offset));
+	if (!mono_delegate_signature_equal (mono_method_signature (invoke), mono_method_signature (method), is_first_arg_bound)) {
+		char *fun_sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
+		char *invoke_sig = mono_signature_get_desc (mono_method_signature (invoke), FALSE);
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer signature '%s' doesn't match delegate's signatuere  '%s' at 0x%04x", fun_sig, invoke_sig, ctx->ip_offset));
+		g_free (fun_sig);
+		g_free (invoke_sig);
+	}
 
 	/* 
 	 * Delegate code sequences:
