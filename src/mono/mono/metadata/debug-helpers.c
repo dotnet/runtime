@@ -10,6 +10,7 @@
 #include <string.h>
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/opcodes.h"
+#include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/debug-helpers.h"
@@ -508,16 +509,18 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		char *s;
 		size_t len2;
 
-		token = read32 (ip);
-		blob = mono_metadata_user_string (method->klass->image, mono_metadata_token_index (token));
+		if (!method->klass->image->dynamic) {
+			token = read32 (ip);
+			blob = mono_metadata_user_string (method->klass->image, mono_metadata_token_index (token));
 
-		len2 = mono_metadata_decode_blob_size (blob, &blob);
-		len2 >>= 1;
+			len2 = mono_metadata_decode_blob_size (blob, &blob);
+			len2 >>= 1;
 
-		s = g_utf16_to_utf8 ((gunichar2*)blob, len2, NULL, NULL, NULL);
+			s = g_utf16_to_utf8 ((gunichar2*)blob, len2, NULL, NULL, NULL);
 
-		g_string_sprintfa (str, "\"%s\"", s);
-		g_free (s);
+			g_string_sprintfa (str, "\"%s\"", s);
+			g_free (s);
+		}
 		ip += 4;
 		break;
 	}
