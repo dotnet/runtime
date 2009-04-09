@@ -3782,6 +3782,7 @@ get_runtime_invoke_type (MonoType *t)
 	if (t->byref)
 		return &mono_defaults.int_class->byval_arg;
 
+handle_enum:
 	switch (t->type) {
 	case MONO_TYPE_U1:
 		return &mono_defaults.sbyte_class->byval_arg;
@@ -3799,6 +3800,10 @@ get_runtime_invoke_type (MonoType *t)
 	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_VALUETYPE:
+		if (t->data.klass->enumtype) {
+			t = mono_class_enum_basetype (t->data.klass);
+			goto handle_enum;
+		}
 		return t;
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t))
