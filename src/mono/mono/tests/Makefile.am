@@ -383,9 +383,12 @@ if POWERPC
 PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
 endif
 
+# The two finalizer tests only work under sgen
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
+	finalizer-wait.exe	\
+	critical-finalizers.exe	\
 	$(PLATFORM_DISABLED_TESTS)
 
 # These only compile with MS CSC
