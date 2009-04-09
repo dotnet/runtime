@@ -23,6 +23,7 @@ public class foo  {
 		while(true) { 
 			foo instance = new foo(); 
 			list.Add (new WeakReference(instance)); 
+			Thread.Sleep (0);
 		} 
 		return 1;
 	} 
