@@ -100,6 +100,7 @@ typedef struct MonoAotOptions {
 	gboolean static_link;
 	gboolean asm_only;
 	gboolean asm_writer;
+	gboolean nodebug;
 	int nthreads;
 	gboolean print_skipped_methods;
 } MonoAotOptions;
@@ -2385,7 +2386,8 @@ emit_named_code (MonoAotCompile *acfg, const char *name, guint8 *code,
 		sprintf (symbol, "%s", name);
 		sprintf (symbol2, ".Lnamed_%s", name);
 
-		mono_dwarf_writer_emit_trampoline (acfg->dwarf, symbol, symbol2, NULL, NULL, code_size, unwind_ops);
+		if (acfg->dwarf)
+			mono_dwarf_writer_emit_trampoline (acfg->dwarf, symbol, symbol2, NULL, NULL, code_size, unwind_ops);
 	}
 }
 
@@ -2591,6 +2593,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->asm_only = TRUE;
 		} else if (str_begins_with (arg, "asmwriter")) {
 			opts->asm_writer = TRUE;
+		} else if (str_begins_with (arg, "nodebug")) {
+			opts->nodebug = TRUE;
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -3850,6 +3854,18 @@ emit_globals (MonoAotCompile *acfg)
 	}
 }
 
+static void
+emit_mem_end (MonoAotCompile *acfg)
+{
+	char symbol [128];
+
+	sprintf (symbol, "mem_end");
+	emit_section_change (acfg, ".text", 1);
+	emit_global (acfg, symbol, FALSE);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+}
+
 /*
  * Emit a structure containing all the information not stored elsewhere.
  */
@@ -3874,10 +3890,6 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_pointer (acfg, "got");
 }
 
-/*****************************************/
-/*   Emitting DWARF debug information    */
-/*****************************************/
-
 static void
 emit_dwarf_info (MonoAotCompile *acfg)
 {
@@ -3898,6 +3910,106 @@ emit_dwarf_info (MonoAotCompile *acfg)
 		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, symbol, symbol2, NULL, 0, cfg->args, cfg->locals, cfg->unwind_ops, NULL);
 	}
 #endif
+}
+
+static void
+collect_methods (MonoAotCompile *acfg)
+{
+	int i;
+	MonoImage *image = acfg->image;
+
+	/* Collect methods */
+	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
+		MonoMethod *method;
+		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+
+		method = mono_get_method (acfg->image, token, NULL);
+
+		if (!method) {
+			printf ("Failed to load method 0x%x from '%s'.\n", token, image->name);
+			exit (1);
+		}
+			
+		/* Load all methods eagerly to skip the slower lazy loading code */
+		mono_class_setup_methods (method->klass);
+
+		if (acfg->aot_opts.full_aot && method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+			/* Compile the wrapper instead */
+			/* We do this here instead of add_wrappers () because it is easy to do it here */
+			MonoMethod *wrapper = mono_marshal_get_native_wrapper (method, check_for_pending_exc, TRUE);
+			method = wrapper;
+		}
+
+		/* Since we add the normal methods first, their index will be equal to their zero based token index */
+		add_method_with_index (acfg, method, i);
+		acfg->method_index ++;
+	}
+
+	add_generic_instances (acfg);
+
+	if (acfg->aot_opts.full_aot)
+		add_wrappers (acfg);
+}
+
+static void
+compile_methods (MonoAotCompile *acfg)
+{
+	int i, methods_len;
+
+	if (acfg->aot_opts.nthreads > 0) {
+		GPtrArray *frag;
+		int len, j;
+		GPtrArray *threads;
+		HANDLE handle;
+		gpointer *user_data;
+		MonoMethod **methods;
+
+		methods_len = acfg->methods->len;
+
+		len = acfg->methods->len / acfg->aot_opts.nthreads;
+		g_assert (len > 0);
+		/* 
+		 * Partition the list of methods into fragments, and hand it to threads to
+		 * process.
+		 */
+		threads = g_ptr_array_new ();
+		/* Make a copy since acfg->methods is modified by compile_method () */
+		methods = g_new0 (MonoMethod*, methods_len);
+		//memcpy (methods, g_ptr_array_index (acfg->methods, 0), sizeof (MonoMethod*) * methods_len);
+		for (i = 0; i < methods_len; ++i)
+			methods [i] = g_ptr_array_index (acfg->methods, i);
+		i = 0;
+		while (i < methods_len) {
+			frag = g_ptr_array_new ();
+			for (j = 0; j < len; ++j) {
+				if (i < methods_len) {
+					g_ptr_array_add (frag, methods [i]);
+					i ++;
+				}
+			}
+
+			user_data = g_new0 (gpointer, 3);
+			user_data [0] = mono_domain_get ();
+			user_data [1] = acfg;
+			user_data [2] = frag;
+			
+			handle = mono_create_thread (NULL, 0, (gpointer)compile_thread_main, user_data, 0, NULL);
+			g_ptr_array_add (threads, handle);
+		}
+		g_free (methods);
+
+		for (i = 0; i < threads->len; ++i) {
+			WaitForSingleObjectEx (g_ptr_array_index (threads, i), INFINITE, FALSE);
+		}
+	} else {
+		methods_len = 0;
+	}
+
+	/* Compile methods added by compile_method () or all methods if nthreads == 0 */
+	for (i = methods_len; i < acfg->methods->len; ++i) {
+		/* This can new methods to acfg->methods */
+		compile_method (acfg, g_ptr_array_index (acfg->methods, i));
+	}
 }
 
 static int
@@ -3954,19 +4066,19 @@ compile_asm (MonoAotCompile *acfg)
 	tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
 
 #if defined(sparc)
-	command = g_strdup_printf ("ld -shared -G -o %s %s.o", outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("ld -shared -G -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(__ppc__) && defined(__MACH__)
-	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("gcc -dynamiclib -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #elif defined(PLATFORM_WIN32)
-	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #else
 	if (acfg->aot_opts.no_dlsym) {
 		/* 
 		 * Need to link using gcc so our ctor function gets called.
 		 */
-		command = g_strdup_printf ("gcc -shared -o %s %s.o", outfile_name, acfg->tmpfname);
+		command = g_strdup_printf ("gcc -shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 	} else {
-		command = g_strdup_printf ("ld -shared -o %s %s.o", outfile_name, acfg->tmpfname);
+		command = g_strdup_printf ("ld -shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 	}
 #endif
 	printf ("Executing the native linker: %s\n", command);
@@ -3985,6 +4097,22 @@ compile_asm (MonoAotCompile *acfg)
 	system (com);
 	g_free (com);*/
 
+#if defined(__arm__) && !defined(__MACH__)
+	/* 
+	 * gas generates 'mapping symbols' each time code and data is mixed, which 
+	 * happens a lot in emit_and_reloc_code (), so we need to get rid of them.
+	 */
+	command = g_strdup_printf ("strip --strip-symbol=\\$a --strip-symbol=\\$d %s", tmp_outfile_name);
+	printf ("Stripping the binary: %s\n", command);
+	if (system (command) != 0) {
+		g_free (tmp_outfile_name);
+		g_free (outfile_name);
+		g_free (command);
+		g_free (objfile);
+		return 1;
+	}
+#endif
+
 	rename (tmp_outfile_name, outfile_name);
 
 	g_free (tmp_outfile_name);
@@ -3997,6 +4125,33 @@ compile_asm (MonoAotCompile *acfg)
 		unlink (acfg->tmpfname);
 
 	return 0;
+}
+
+static MonoAotCompile*
+acfg_create (MonoAssembly *ass, guint32 opts)
+{
+	MonoImage *image = ass->image;
+	MonoAotCompile *acfg;
+
+	acfg = g_new0 (MonoAotCompile, 1);
+	acfg->methods = g_ptr_array_new ();
+	acfg->method_indexes = g_hash_table_new (NULL, NULL);
+	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
+	acfg->patch_to_plt_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
+	acfg->patch_to_shared_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
+	acfg->shared_patches = g_ptr_array_new ();
+	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
+	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, g_free);
+	acfg->image_hash = g_hash_table_new (NULL, NULL);
+	acfg->image_table = g_ptr_array_new ();
+	acfg->globals = g_ptr_array_new ();
+	acfg->image = image;
+	acfg->opts = opts;
+	acfg->mempool = mono_mempool_new ();
+	acfg->extra_methods = g_ptr_array_new ();
+	InitializeCriticalSection (&acfg->mutex);
+
+	return acfg;
 }
 
 static void
@@ -4029,8 +4184,7 @@ int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	MonoImage *image = ass->image;
-	char symbol [256];
-	int i, res, methods_len;
+	int res;
 	MonoAotCompile *acfg;
 	char *outfile_name, *tmp_outfile_name;
 	TV_DECLARE (atv);
@@ -4038,23 +4192,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	printf ("Mono Ahead of Time compiler - compiling assembly %s\n", image->name);
 
-	acfg = g_new0 (MonoAotCompile, 1);
-	acfg->methods = g_ptr_array_new ();
-	acfg->method_indexes = g_hash_table_new (NULL, NULL);
-	acfg->plt_offset_to_patch = g_hash_table_new (NULL, NULL);
-	acfg->patch_to_plt_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
-	acfg->patch_to_shared_got_offset = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
-	acfg->shared_patches = g_ptr_array_new ();
-	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
-	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, g_free);
-	acfg->image_hash = g_hash_table_new (NULL, NULL);
-	acfg->image_table = g_ptr_array_new ();
-	acfg->globals = g_ptr_array_new ();
-	acfg->image = image;
-	acfg->opts = opts;
-	acfg->mempool = mono_mempool_new ();
-	acfg->extra_methods = g_ptr_array_new ();
-	InitializeCriticalSection (&acfg->mutex);
+	acfg = acfg_create (ass, opts);
 
 	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
 	acfg->aot_opts.write_symbols = TRUE;
@@ -4098,50 +4236,20 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 		acfg->w = img_writer_create (acfg->fp, FALSE);
 		
-		/* hush compiler warnings about these being possibly uninitialized */
 		tmp_outfile_name = NULL;
 		outfile_name = NULL;
 	}
 
 	load_profile_files (acfg);
 
-	acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
+	if (!acfg->aot_opts.nodebug)
+		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
 
 	acfg->num_aot_trampolines = acfg->aot_opts.full_aot ? 10240 : 0;
 
 	acfg->method_index = 1;
 
-	/* Collect methods */
-	for (i = 0; i < image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		MonoMethod *method;
-		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
-
-		method = mono_get_method (acfg->image, token, NULL);
-
-		if (!method) {
-			printf ("Failed to load method 0x%x from '%s'.\n", token, image->name);
-			exit (1);
-		}
-			
-		/* Load all methods eagerly to skip the slower lazy loading code */
-		mono_class_setup_methods (method->klass);
-
-		if (acfg->aot_opts.full_aot && method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-			/* Compile the wrapper instead */
-			/* We do this here instead of add_wrappers () because it is easy to do it here */
-			MonoMethod *wrapper = mono_marshal_get_native_wrapper (method, check_for_pending_exc, TRUE);
-			method = wrapper;
-		}
-
-		/* Since we add the normal methods first, their index will be equal to their zero based token index */
-		add_method_with_index (acfg, method, i);
-		acfg->method_index ++;
-	}
-
-	add_generic_instances (acfg);
-
-	if (acfg->aot_opts.full_aot)
-		add_wrappers (acfg);
+	collect_methods (acfg);
 
 	acfg->cfgs_size = acfg->methods->len + 32;
 	acfg->cfgs = g_new0 (MonoCompile*, acfg->cfgs_size);
@@ -4149,66 +4257,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	/* PLT offset 0 is reserved for the PLT trampoline */
 	acfg->plt_offset = 1;
 
-	/* Compile methods */
 	TV_GETTIME (atv);
 
-	if (acfg->aot_opts.nthreads > 0) {
-		GPtrArray *frag;
-		int len, j;
-		GPtrArray *threads;
-		HANDLE handle;
-		gpointer *user_data;
-		MonoMethod **methods;
-
-		methods_len = acfg->methods->len;
-
-		len = acfg->methods->len / acfg->aot_opts.nthreads;
-		g_assert (len > 0);
-		/* 
-		 * Partition the list of methods into fragments, and hand it to threads to
-		 * process.
-		 */
-		threads = g_ptr_array_new ();
-		/* Make a copy since acfg->methods is modified by compile_method () */
-		methods = g_new0 (MonoMethod*, methods_len);
-		//memcpy (methods, g_ptr_array_index (acfg->methods, 0), sizeof (MonoMethod*) * methods_len);
-		for (i = 0; i < methods_len; ++i)
-			methods [i] = g_ptr_array_index (acfg->methods, i);
-		i = 0;
-		while (i < methods_len) {
-			frag = g_ptr_array_new ();
-			for (j = 0; j < len; ++j) {
-				if (i < methods_len) {
-					g_ptr_array_add (frag, methods [i]);
-					i ++;
-				}
-			}
-
-			user_data = g_new0 (gpointer, 3);
-			user_data [0] = mono_domain_get ();
-			user_data [1] = acfg;
-			user_data [2] = frag;
-			
-			handle = mono_create_thread (NULL, 0, (gpointer)compile_thread_main, user_data, 0, NULL);
-			g_ptr_array_add (threads, handle);
-		}
-		g_free (methods);
-
-		for (i = 0; i < threads->len; ++i) {
-			WaitForSingleObjectEx (g_ptr_array_index (threads, i), INFINITE, FALSE);
-		}
-	} else {
-		methods_len = 0;
-	}
-
-	/* Compile methods added by compile_method () or all methods if nthreads == 0 */
-	for (i = methods_len; i < acfg->methods->len; ++i) {
-		/* This can new methods to acfg->methods */
-		compile_method (acfg, g_ptr_array_index (acfg->methods, i));
-	}
+	compile_methods (acfg);
 
 	TV_GETTIME (btv);
- 
+
 	acfg->stats.jit_time = TV_ELAPSED (atv, btv);
 
 	TV_GETTIME (atv);
@@ -4217,7 +4271,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	img_writer_emit_start (acfg->w);
 
-	mono_dwarf_writer_emit_base_info (acfg->dwarf, arch_get_cie_program ());
+	if (acfg->dwarf)
+		mono_dwarf_writer_emit_base_info (acfg->dwarf, arch_get_cie_program ());
 
 	emit_code (acfg);
 
@@ -4247,13 +4302,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_globals (acfg);
 
-	emit_dwarf_info (acfg);
+	if (acfg->dwarf)
+		emit_dwarf_info (acfg);
 
-	sprintf (symbol, "mem_end");
-	emit_section_change (acfg, ".text", 1);
-	emit_global (acfg, symbol, FALSE);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
+	emit_mem_end (acfg);
 
 	TV_GETTIME (btv);
 

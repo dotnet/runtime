@@ -934,7 +934,7 @@ COND:   ldloc.0
 		ret
 	}
 
-#if !defined(__ppc__) && !defined(__powerpc__)
+#if !defined(__ppc__) && !defined(__powerpc__) && !defined(__arm__)
     	// PPC handles overflow by clipping, but this test assumes
 	// no overflow handling.  According to ECMA the result of
 	// float->int conversion is undefined if overflow occurs, so
