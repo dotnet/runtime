@@ -91,7 +91,6 @@ public class MultiThreadExceptionTest {
 	}
 	
 	public static int Main() {
-
 		// Check aborting the current thread
 		bool aborted = false;
 		try {
@@ -104,27 +103,30 @@ public class MultiThreadExceptionTest {
 		if (!aborted)
 			return 2;
 
-		Thread t1 = new Thread(new ThreadStart
-			(MultiThreadExceptionTest.ThreadStart1));
-		t1.Name = "Thread 1";
-
-		Thread.Sleep (100);
-		
-		t1.Start();
+		Thread t1 = null;
 
 		lock (started) {
+			t1 = new Thread(new ThreadStart
+							(MultiThreadExceptionTest.ThreadStart1));
+			t1.Name = "Thread 1";
+
+			Thread.Sleep (100);
+		
+			t1.Start();
+
 			Monitor.Wait (started);
 		}
 
 		Thread.Sleep (100);
-		
+
 		t1.Abort ("STATETEST");
 
 		t1.Join ();
-		Console.WriteLine ("Result: " + result);
 
-		if (result != 59)
+		if (result != 59) {
+			Console.WriteLine ("Result: " + result);
 			return 1;
+		}
 
 		// Test from #68552
 		try {
