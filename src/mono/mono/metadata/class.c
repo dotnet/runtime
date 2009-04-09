@@ -7443,10 +7443,25 @@ can_access_instantiation (MonoClass *access_klass, MonoGenericInst *ginst)
 	int i;
 	for (i = 0; i < ginst->type_argc; ++i) {
 		MonoType *type = ginst->type_argv[i];
-		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)
-			continue;
-		if (!can_access_type (access_klass, mono_class_from_mono_type (type)))
-			return FALSE;
+		switch (type->type) {
+		case MONO_TYPE_SZARRAY:
+			if (!can_access_type (access_klass, type->data.klass))
+				return FALSE;
+			break;
+		case MONO_TYPE_ARRAY:
+			if (!can_access_type (access_klass, type->data.array->eklass))
+				return FALSE;
+			break;
+		case MONO_TYPE_PTR:
+			if (!can_access_type (access_klass, mono_class_from_mono_type (type->data.type)))
+				return FALSE;
+			break;
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_GENERICINST:
+			if (!can_access_type (access_klass, mono_class_from_mono_type (type)))
+				return FALSE;
+		}
 	}
 	return TRUE;
 }
@@ -7455,6 +7470,9 @@ static gboolean
 can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 {
 	int access_level = member_klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+
+	if (member_klass->byval_arg.type == MONO_TYPE_VAR || member_klass->byval_arg.type == MONO_TYPE_MVAR)
+		return TRUE;
 
 	if (member_klass->generic_class && !can_access_instantiation (access_klass, member_klass->generic_class->context.class_inst))
 		return FALSE;
@@ -7586,13 +7604,13 @@ mono_method_can_access_method (MonoMethod *method, MonoMethod *called)
 }
 
 /*
- * mono_method_can_access_method_with_context:
+ * mono_method_can_access_method_full:
  * @method: The caller method 
  * @called: The called method 
- * @context_klass:TThe static type on stack of the owner @called object used
+ * @context_klass: The static type on stack of the owner @called object used
  * 
  * This function must be used with instance calls, as they have more strict family accessibility.
- * It can be used with static mehthod, but context_klass should be NULL.
+ * It can be used with static methods, but context_klass should be NULL.
  * 
  * Returns: TRUE if caller have proper visibility and acessibility to @called
  */
@@ -7621,7 +7639,7 @@ mono_method_can_access_method_full (MonoMethod *method, MonoMethod *called, Mono
 	if (called->is_inflated) {
 		MonoMethodInflated * infl = (MonoMethodInflated*)called;
 		if (infl->context.method_inst && !can_access_instantiation (access_class, infl->context.method_inst))
-		return FALSE;
+			return FALSE;
 	}
 		
 	return TRUE;
