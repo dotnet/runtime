@@ -532,25 +532,6 @@ add_mono_string_to_blob_cached (MonoDynamicImage *assembly, MonoString *str)
 	return idx;
 }
 
-/* modified version needed to handle building corlib */
-static MonoClass*
-my_mono_class_from_mono_type (MonoType *type) {
-	switch (type->type) {
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_GENERICINST:
-		return mono_class_from_mono_type (type);
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-		g_assert (mono_generic_param_info (type->data.generic_param)->pklass);
-		return mono_generic_param_info (type->data.generic_param)->pklass;
-	default:
-		/* should be always valid when we reach this case... */
-		return type->data.klass;
-	}
-}
-
 static MonoClass *
 default_class_from_mono_type (MonoType *type)
 {
@@ -1600,7 +1581,7 @@ type_get_qualified_name (MonoType *type, MonoAssembly *ass) {
 	MonoClass *klass;
 	MonoAssembly *ta;
 
-	klass = my_mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type (type);
 	if (!klass) 
 		return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_REFLECTION);
 	ta = klass->image->assembly;
@@ -2260,7 +2241,7 @@ mono_image_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *type, gboo
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
 		return token;
-	klass = my_mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type (type);
 	if (!klass)
 		klass = mono_class_from_mono_type (type);
 
@@ -8964,7 +8945,7 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 			/* mono_class_setup_mono_type () guaranteess type->data.klass is valid */
 			parent = monotype_cast (tb->parent)->type->data.klass;
 		} else {
-			parent = my_mono_class_from_mono_type (monotype_cast (tb->parent)->type);
+			parent = mono_class_from_mono_type (monotype_cast (tb->parent)->type);
 		}
 	} else {
 		parent = NULL;
@@ -9070,7 +9051,7 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 
 	MONO_ARCH_SAVE_REGS;
 
-	klass = my_mono_class_from_mono_type (tb->type.type);
+	klass = mono_class_from_mono_type (tb->type.type);
 
 	count = tb->generic_params ? mono_array_length (tb->generic_params) : 0;
 
@@ -9113,7 +9094,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 
 	MONO_ARCH_SAVE_REGS;
 
-	klass = my_mono_class_from_mono_type (tb->type.type);
+	klass = mono_class_from_mono_type (tb->type.type);
 
 	mono_loader_lock ();
 	if (klass->enumtype && mono_class_enum_basetype (klass) == NULL) {
@@ -9132,7 +9113,7 @@ mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 		}
 
 		enum_basetype = monotype_cast (fb->type)->type;
-		klass->element_class = my_mono_class_from_mono_type (enum_basetype);
+		klass->element_class = mono_class_from_mono_type (enum_basetype);
 		if (!klass->element_class)
 			klass->element_class = mono_class_from_mono_type (enum_basetype);
 
@@ -10144,7 +10125,7 @@ mono_reflection_event_builder_get_event_info (MonoReflectionTypeBuilder *tb, Mon
 	MonoClass *klass;
 	int j;
 
-	klass = my_mono_class_from_mono_type (tb->type.type);
+	klass = mono_class_from_mono_type (tb->type.type);
 
 	event->parent = klass;
 	event->attrs = eb->attrs;
@@ -10236,7 +10217,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_object_domain (tb);
-	klass = my_mono_class_from_mono_type (tb->type.type);
+	klass = mono_class_from_mono_type (tb->type.type);
 
 	/*
 	 * Check for user defined Type subclasses.
@@ -10328,7 +10309,7 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 		for (i = 0; i < mono_array_length (tb->subtypes); ++i) {
 			MonoReflectionTypeBuilder *subtb = mono_array_get (tb->subtypes, MonoReflectionTypeBuilder*, i);
 			mono_class_alloc_ext (klass);
-			klass->ext->nested_classes = g_list_prepend_image (klass->image, klass->ext->nested_classes, my_mono_class_from_mono_type (subtb->type.type));
+			klass->ext->nested_classes = g_list_prepend_image (klass->image, klass->ext->nested_classes, mono_class_from_mono_type (subtb->type.type));
 		}
 	}
 
@@ -10395,14 +10376,14 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	if (gparam->mbuilder) {
 		if (!gparam->mbuilder->generic_container) {
 			MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder *)gparam->mbuilder->type;
-			MonoClass *klass = my_mono_class_from_mono_type (tb->type.type);
+			MonoClass *klass = mono_class_from_mono_type (tb->type.type);
 			gparam->mbuilder->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 			gparam->mbuilder->generic_container->is_method = TRUE;
 		}
 		param->owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
 		if (!gparam->tbuilder->generic_container) {
-			MonoClass *klass = my_mono_class_from_mono_type (gparam->tbuilder->type.type);
+			MonoClass *klass = mono_class_from_mono_type (gparam->tbuilder->type.type);
 			gparam->tbuilder->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 			gparam->tbuilder->generic_container->owner.klass = klass;
 		}
