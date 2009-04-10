@@ -328,8 +328,7 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
         ADD_WIDEN_OP (ins, sp [0], sp [1]); \
         ins->dreg = alloc_dreg ((cfg), (ins)->type); \
         MONO_ADD_INS ((cfg)->cbb, (ins)); \
-		*sp++ = ins;	\
-        mono_decompose_opcode ((cfg), (ins)); \
+        *sp++ = mono_decompose_opcode ((cfg), (ins)); \
 	} while (0)
 
 #define ADD_UNOP(op) do {	\
@@ -340,8 +339,7 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		CHECK_TYPE (ins);	\
         (ins)->dreg = alloc_dreg ((cfg), (ins)->type); \
         MONO_ADD_INS ((cfg)->cbb, (ins)); \
-		*sp++ = ins;	\
-		mono_decompose_opcode (cfg, ins); \
+		*sp++ = mono_decompose_opcode (cfg, ins); \
 	} while (0)
 
 #define ADD_BINCOND(next_block) do {	\
@@ -6949,9 +6947,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			MONO_ADD_INS ((cfg)->cbb, (ins));
-			*sp++ = ins;
 
-			mono_decompose_opcode (cfg, ins);
+			*sp++ = mono_decompose_opcode (cfg, ins);
 			ip++;
 			break;
 		case CEE_ADD:
@@ -7004,9 +7001,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 			MONO_ADD_INS ((cfg)->cbb, (ins));
-			*sp++ = ins;
 
-			mono_decompose_opcode (cfg, ins);
+			*sp++ = mono_decompose_opcode (cfg, ins);
 			ip++;
 			break;
 		case CEE_NEG:
@@ -8465,9 +8461,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->dreg = alloc_freg (cfg);
 			ins->type = STACK_R8;
 			MONO_ADD_INS (bblock, ins);
-			*sp++ = ins;
 
-			mono_decompose_opcode (cfg, ins);
+			*sp++ = mono_decompose_opcode (cfg, ins);
 
 			++ip;
 			break;
