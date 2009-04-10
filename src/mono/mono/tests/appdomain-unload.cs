@@ -1,12 +1,20 @@
 using System;
 using System.Threading;
 using System.Reflection;
+using System.Runtime.Remoting;
 
 [Serializable]
 public class Foo {
 
 	~Foo () {
 		Console.WriteLine ("FINALIZING IN DOMAIN " + AppDomain.CurrentDomain.FriendlyName + ": " + AppDomain.CurrentDomain.IsFinalizingForUnload ());
+	}
+}
+
+public class Bar : MarshalByRefObject {
+	public int test (int x) {
+		Console.WriteLine ("in " + Thread.GetDomain ().FriendlyName);
+		return x + 1;
 	}
 }
 
@@ -232,6 +240,26 @@ public class Tests
 		}
 
 		return 0;
+	}
+
+	public static int test_0_invoke_after_unload () {
+		AppDomain domain = AppDomain.CreateDomain ("DeadInvokeTest");
+		Bar bar = (Bar)domain.CreateInstanceAndUnwrap (typeof (Tests).Assembly.FullName, "Bar");
+		int x;
+
+		if (!RemotingServices.IsTransparentProxy(bar))
+			return 3;
+
+		AppDomain.Unload (domain);
+
+		try {
+			x = bar.test (123);
+			if (x == 124)
+				return 1;
+			return 2;
+		} catch (Exception e) {
+			return 0;
+		}
 	}
 
 	// FIXME: This does not work yet, because the thread is finalized too
