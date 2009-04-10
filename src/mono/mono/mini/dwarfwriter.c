@@ -952,8 +952,7 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 		}
 		else {
 			tdie = emit_class_dwarf_info (w, klass, FALSE);
-			if (tdie)
-				return g_hash_table_lookup (w->class_to_reference_die, klass);
+			/* Should return a pointer type to a reference */
 		}
 		// FIXME:
 		t = &mono_defaults.int_class->byval_arg;
