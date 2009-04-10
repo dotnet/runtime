@@ -71,7 +71,7 @@
 #include "image-writer.h"
 #include "dwarfwriter.h"
 
-#ifndef DISABLE_AOT
+#if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 
 #define TV_DECLARE(name) gint64 name
 #define TV_GETTIME(tv) tv = mono_100ns_ticks ()
@@ -3171,6 +3171,8 @@ emit_info (MonoAotCompile *acfg)
 	emit_line (acfg);
 }
 
+#endif /* #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
+
 /*
  * mono_aot_method_hash:
  *
@@ -3192,7 +3194,9 @@ mono_aot_method_hash (MonoMethod *method)
 
 	return hash;
 }
- 
+
+#if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
+
 typedef struct HashEntry {
     guint32 key, value, index;
 	struct HashEntry *next;
