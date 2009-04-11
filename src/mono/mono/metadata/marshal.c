@@ -3984,7 +3984,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 
 		// FIXME: When to free callsig ?
 	}
-	
+
 	/* to make it work with our special string constructors */
 	if (!string_dummy) {
 		MONO_GC_REGISTER_ROOT (string_dummy);

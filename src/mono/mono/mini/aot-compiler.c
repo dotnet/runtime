@@ -975,11 +975,13 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				g_assert_not_reached ();
 			break;
 		case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
-		case MONO_WRAPPER_SYNCHRONIZED: {
+		case MONO_WRAPPER_SYNCHRONIZED:
+		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
 			MonoMethod *m;
 
 			m = mono_marshal_method_from_wrapper (method);
 			g_assert (m);
+			g_assert (m != method);
 			encode_method_ref (acfg, m, p, &p);
 			break;
 		}
@@ -3261,6 +3263,38 @@ mono_aot_method_hash (MonoMethod *method)
 	return hash;
 }
 
+/*
+ * mono_aot_wrapper_name:
+ *
+ *   Return a string which uniqely identifies the given wrapper method.
+ */
+char*
+mono_aot_wrapper_name (MonoMethod *method)
+{
+	char *name, *tmpsig, *klass_desc;
+
+	tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+
+	switch (method->wrapper_type) {
+	case MONO_WRAPPER_RUNTIME_INVOKE:
+	case MONO_WRAPPER_DELEGATE_INVOKE:
+	case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+	case MONO_WRAPPER_DELEGATE_END_INVOKE:
+		/* This is a hack to work around the fact that runtime invoke wrappers get assigned to some random class */
+		name = g_strdup_printf ("%s (%s)", method->name, tmpsig);
+		break;
+	default:
+		klass_desc = mono_type_full_name (&method->klass->byval_arg);
+
+		name = g_strdup_printf ("%s:%s (%s)", klass_desc, method->name, tmpsig);
+		break;
+	}
+
+	g_free (tmpsig);
+
+	return name;
+}
+
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 
 typedef struct HashEntry {
@@ -3299,6 +3333,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->extra_methods->len; ++i) {
 		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
 		MonoCompile *cfg = g_hash_table_lookup (acfg->method_to_cfg, method);
+		char *name;
 
 		if (!cfg)
 			continue;
@@ -3306,31 +3341,27 @@ emit_extra_methods (MonoAotCompile *acfg)
 		nmethods ++;
 		info_offsets [i] = p - buf;
 
+		name = NULL;
 		if (method->wrapper_type) {
-			char *name;
-
-			// FIXME: Optimize disk usage
-			if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
-				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-				name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
-				g_free (tmpsig);
-			} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
-				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-				name = g_strdup_printf ("(wrapper delegate-invoke):%s (%s)", method->name, tmpsig);
-				g_free (tmpsig);
-			} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE) {
-				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-				name = g_strdup_printf ("(wrapper delegate-begin-invoke):%s (%s)", method->name, tmpsig);
-				g_free (tmpsig);
-			} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_END_INVOKE) {
-				char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-				name = g_strdup_printf ("(wrapper delegate-end-invoke):%s (%s)", method->name, tmpsig);
-				g_free (tmpsig);
-			} else {
-				name = mono_method_full_name (cfg->orig_method, TRUE);
+			/* 
+			 * We encode some wrappers using their name, since encoding them
+			 * directly would be difficult. This also avoids creating the wrapper
+			 * methods at runtime, since they are not needed anyway.
+			 */
+			switch (method->wrapper_type) {
+			case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK:
+			case MONO_WRAPPER_SYNCHRONIZED:
+				/* encode_method_ref () can handle these */
+				break;
+			default:
+				name = mono_aot_wrapper_name (method);
+				break;
 			}
+		}
 
+		if (name) {
 			encode_value (1, p, &p);
+			encode_value (method->wrapper_type, p, &p);
 			strcpy ((char*)p, name);
 			p += strlen (name ) + 1;
 			g_free (name);

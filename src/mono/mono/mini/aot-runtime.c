@@ -2164,8 +2164,9 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 {
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
-	char *full_name = NULL;
+	char *name = NULL;
 	int num_checks = 0;
+	guint32 index;
 
 	if (!amodule)
 		return 0xffffff;
@@ -2175,26 +2176,7 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 	entry_size = 3;
 
 	if (method->wrapper_type) {
-		/* FIXME: This is a hack to work around the fact that runtime invoke wrappers get assigned to some random class */
-		if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			full_name = g_strdup_printf ("(wrapper runtime-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			full_name = g_strdup_printf ("(wrapper delegate-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			full_name = g_strdup_printf ("(wrapper delegate-begin-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		} else if (method->wrapper_type == MONO_WRAPPER_DELEGATE_END_INVOKE) {
-			char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-			full_name = g_strdup_printf ("(wrapper delegate-end-invoke):%s (%s)", method->name, tmpsig);
-			g_free (tmpsig);
-		} else {
-			full_name = mono_method_full_name (method, TRUE);
-		}
+		name = mono_aot_wrapper_name (method);
 	}
 
 	hash = mono_aot_method_hash (method) % table_size;
@@ -2204,19 +2186,23 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 	if (entry [0] == 0)
 		return 0xffffff;
 
+	index = 0xffffff;
 	while (TRUE) {
 		guint32 key = entry [0];
 		guint32 value = entry [1];
 		guint32 next = entry [entry_size - 1];
 		MonoMethod *m;
 		guint8 *p;
-		int is_wrapper;
+		int is_wrapper_name;
 
 		p = amodule->extra_method_info + key;
-		is_wrapper = decode_value (p, &p);
-		if (is_wrapper) {
-			if (full_name && !strcmp (full_name, (char*)p))
-				return value;
+		is_wrapper_name = decode_value (p, &p);
+		if (is_wrapper_name) {
+			int wrapper_type = decode_value (p, &p);
+			if (wrapper_type == method->wrapper_type && !strcmp (name, (char*)p)) {
+				index = value;
+				break;
+			}
 		} else if (can_method_ref_match_method (amodule, p, method)) {
 			num_checks ++;
 			mono_aot_lock ();
@@ -2237,8 +2223,10 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 			  if (m)
 			  printf ("%d %s %s\n", num_checks, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE));
 			*/
-			if (m == method)
-				return value;
+			if (m == method) {
+				index = value;
+				break;
+			}
 		}
 
 		if (next != 0)
@@ -2247,7 +2235,8 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 			break;
 	}
 
-	return 0xffffff;
+	g_free (name);
+	return index;
 }
 
 static void
