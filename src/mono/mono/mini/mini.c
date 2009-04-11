@@ -3830,11 +3830,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	mono_arch_fixup_jinfo (cfg);
 #endif
 
+#ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
 	if (cfg->extend_live_ranges) {
 		/* Extend live ranges to cover the whole method */
 		for (i = 0; i < cfg->num_varinfo; ++i)
 			MONO_VARINFO (cfg, i)->live_range_end = cfg->code_len;
 	}
+#endif
 
 	mono_save_xdebug_info (cfg);
 
