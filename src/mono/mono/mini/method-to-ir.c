@@ -6234,7 +6234,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				INLINE_FAILURE;
 
 #if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK
-				if (cmethod->wrapper_type == MONO_WRAPPER_NONE) {
+				if (cmethod->wrapper_type == MONO_WRAPPER_NONE && mono_use_imt) {
 					g_assert (!imt_arg);
 					if (context_used) {
 						imt_arg = emit_get_rgctx_method (cfg, context_used,
@@ -7873,7 +7873,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_CLASSCONST (cfg, iargs [1], klass);
 				EMIT_NEW_FIELDCONST (cfg, iargs [2], field);
 				EMIT_NEW_ICONST (cfg, iargs [3], klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
-				if ((cfg->opt & MONO_OPT_INLINE) && !MONO_TYPE_ISSTRUCT (mono_method_signature (wrapper)->ret)) {
+				if (cfg->opt & MONO_OPT_INLINE || cfg->compile_aot) {
 					costs = inline_method (cfg, wrapper, mono_method_signature (wrapper), 
 										   iargs, ip, cfg->real_offset, dont_inline, TRUE);
 					bblock = cfg->cbb;
