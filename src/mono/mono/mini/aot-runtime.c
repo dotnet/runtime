@@ -2808,10 +2808,18 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	char *symbol;
 	gpointer code;
 
-	amodule = method->klass->image->aot_module;
-	g_assert (amodule);
+	if (method->is_inflated) {
+		guint32 index = find_extra_method (method, &amodule);
 
-	symbol = g_strdup_printf ("unbox_trampoline_%d", method_index);
+		g_assert (index != 0xffffff);
+		
+		symbol = g_strdup_printf ("ut_e_%d", index);
+	} else {
+		amodule = method->klass->image->aot_module;
+		g_assert (amodule);
+
+		symbol = g_strdup_printf ("ut_%d", method_index);
+	}
 	code = load_named_code (amodule, symbol);
 	g_free (symbol);
 	return code;

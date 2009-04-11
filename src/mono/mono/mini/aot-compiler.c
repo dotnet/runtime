@@ -1605,6 +1605,46 @@ add_generic_class (MonoAotCompile *acfg, MonoClass *klass)
 		 */
 		add_extra_method (acfg, method);
 	}
+
+	/* 
+	 * For ICollection<T>, where T is a vtype, add instances of the helper methods
+	 * in Array, since a T[] could be cast to ICollection<T>.
+	 */
+	if (klass->image == mono_defaults.corlib && !strcmp (klass->name_space, "System.Collections.Generic") &&
+		(!strcmp(klass->name, "ICollection`1") || !strcmp (klass->name, "IEnumerable`1") || !strcmp (klass->name, "IList`1") || !strcmp (klass->name, "IEnumerator`1")) &&
+		MONO_TYPE_ISSTRUCT (klass->generic_class->context.class_inst->type_argv [0])) {
+		MonoClass *tclass = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
+		MonoClass *array_class = mono_bounded_array_class_get (tclass, 1, FALSE);
+		gpointer iter;
+		char *name_prefix;
+
+		if (!strcmp (klass->name, "IEnumerator`1"))
+			name_prefix = g_strdup_printf ("%s.%s", klass->name_space, "IEnumerable`1");
+		else
+			name_prefix = g_strdup_printf ("%s.%s", klass->name_space, klass->name);
+
+		/* Add the T[]/InternalEnumerator class */
+		if (!strcmp (klass->name, "IEnumerable`1") || !strcmp (klass->name, "IEnumerator`1")) {
+			MonoClass *nclass;
+
+			iter = NULL;
+			while ((nclass = mono_class_get_nested_types (array_class->parent, &iter))) {
+				if (!strcmp (nclass->name, "InternalEnumerator`1"))
+					break;
+			}
+			g_assert (nclass);
+			nclass = mono_class_inflate_generic_class (nclass, mono_generic_class_get_context (klass->generic_class));
+			add_generic_class (acfg, nclass);
+		}
+
+		iter = NULL;
+		while ((method = mono_class_get_methods (array_class, &iter))) {
+			if (strstr (method->name, name_prefix))
+				add_extra_method (acfg, method);
+		}
+
+		g_free (name_prefix);
+	}
 }
 
 /*
@@ -1618,6 +1658,8 @@ add_generic_instances (MonoAotCompile *acfg)
 	int i;
 	guint32 token;
 	MonoMethod *method;
+	MonoMethodHeader *header;
+	MonoMethodSignature *sig;
 	MonoGenericContext *context;
 
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHODSPEC].rows; ++i) {
@@ -1649,6 +1691,29 @@ add_generic_instances (MonoAotCompile *acfg)
 			continue;
 
 		add_generic_class (acfg, klass);
+	}
+
+	/* Add types of args/locals */
+	for (i = 0; i < acfg->methods->len; ++i) {
+		int j;
+
+		method = g_ptr_array_index (acfg->methods, i);
+
+		sig = mono_method_signature (method);
+
+		if (sig) {
+			for (j = 0; j < sig->param_count; ++j)
+				if (sig->params [j]->type == MONO_TYPE_GENERICINST)
+					add_generic_class (acfg, mono_class_from_mono_type (sig->params [j]));
+		}
+
+		header = mono_method_get_header (method);
+
+		if (header) {
+			for (j = 0; j < header->num_locals; ++j)
+				if (header->locals [j]->type == MONO_TYPE_GENERICINST)
+					add_generic_class (acfg, mono_class_from_mono_type (header->locals [j]));
+		}
 	}
 }
 
@@ -2516,20 +2581,21 @@ emit_trampolines (MonoAotCompile *acfg)
 	}
 
 	/* Unbox trampolines */
-
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		MonoMethod *method;
-		guint32 token = MONO_TOKEN_METHOD_DEF | (i + 1);
+	for (i = 0; i < acfg->methods->len; ++i) {
+		MonoMethod *method = g_ptr_array_index (acfg->methods, i);
 		MonoCompile *cfg;
 		char call_target [256];
-
-		method = mono_get_method (acfg->image, token, NULL);
 
 		cfg = g_hash_table_lookup (acfg->method_to_cfg, method);
 		if (!cfg || !cfg->orig_method->klass->valuetype || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 			continue;
 
-		sprintf (symbol, "unbox_trampoline_%d", i);
+		if (!method->wrapper_type && !method->is_inflated) {
+			g_assert (method->token);
+			sprintf (symbol, "ut_%d", mono_metadata_token_index (method->token) - 1);
+		} else {
+			sprintf (symbol, "ut_e_%d", get_method_index (acfg, method));
+		}
 
 		emit_section_change (acfg, ".text", 0);
 		emit_global (acfg, symbol, TRUE);
