@@ -1907,13 +1907,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 		for (i = 0; i < class->vtable_size; ++i) {
 			MonoMethod *cm;
 
-			if ((cm = class->vtable [i])) {
-				if (mono_method_signature (cm)->generic_param_count)
-					/* FIXME: Why is this needed ? */
-					vt->vtable [i] = cm;
-				else
-					vt->vtable [i] = vtable_trampoline? vtable_trampoline: arch_create_jit_trampoline (cm);
-			}
+			if ((cm = class->vtable [i]))
+				vt->vtable [i] = vtable_trampoline? vtable_trampoline: arch_create_jit_trampoline (cm);
 		}
 	}
 
