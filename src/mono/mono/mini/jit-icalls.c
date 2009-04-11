@@ -52,8 +52,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 		res = mono_class_inflate_generic_method (res, &context);
 	}
 
-	if (mono_method_needs_static_rgctx_invoke (res, FALSE))
-		res = mono_marshal_get_static_rgctx_invoke (res);
+	/* An rgctx wrapper is added by the trampolines no need to do it here */
 
 	return mono_ldftn (res);
 }

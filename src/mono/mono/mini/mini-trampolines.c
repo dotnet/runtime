@@ -337,6 +337,10 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			m = mono_marshal_get_synchronized_wrapper (m);
 	}
 
+	/* Calls made through delegates on platforms without delegate trampolines */
+	if (!code && mono_method_needs_static_rgctx_invoke (m, FALSE))
+		m = mono_marshal_get_static_rgctx_invoke (m);
+
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
@@ -669,6 +673,9 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 
 	if (method && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);
+
+	if (method && mono_method_needs_static_rgctx_invoke (method, FALSE))
+		method = mono_marshal_get_static_rgctx_invoke (method);
 
 	/* 
 	 * If the called address is a trampoline, replace it with the compiled method so
