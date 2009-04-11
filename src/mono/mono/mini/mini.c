@@ -104,7 +104,7 @@ int mono_break_at_bb_bb_num;
 gboolean mono_do_x86_stack_align = TRUE;
 const char *mono_build_date;
 gboolean mono_do_signal_chaining;
-
+static gboolean	mono_using_xdebug;
 static int mini_verbose = 0;
 
 #define mono_jit_lock() EnterCriticalSection (&jit_mutex)
@@ -3190,6 +3190,17 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->opt &= ~MONO_OPT_GSHARED;
 	}
 
+	if (mono_using_xdebug) {
+		/* 
+		 * Make each variable use its own register/stack slot and extend 
+		 * their liveness to cover the whole method, making them displayable
+		 * in gdb even after they are dead.
+		 */
+		cfg->disable_reuse_registers = TRUE;
+		cfg->disable_reuse_stack_slots = TRUE;
+		cfg->extend_live_ranges = TRUE;
+	}
+
 	header = mono_method_get_header (method_to_compile);
 	if (!header) {
 		MonoLoaderError *error;
@@ -3818,6 +3829,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #if defined(__arm__)
 	mono_arch_fixup_jinfo (cfg);
 #endif
+
+	if (cfg->extend_live_ranges) {
+		/* Extend live ranges to cover the whole method */
+		for (i = 0; i < cfg->num_varinfo; ++i)
+			MONO_VARINFO (cfg, i)->live_range_end = cfg->code_len;
+	}
 
 	mono_save_xdebug_info (cfg);
 
@@ -4659,6 +4676,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_xdebug_init ();
 		/* So methods for multiple domains don't have the same address */
 		mono_dont_free_domains = TRUE;
+		mono_using_xdebug = TRUE;
 	}
 
 	mono_trampolines_init ();
