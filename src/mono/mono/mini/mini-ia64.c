@@ -1591,7 +1591,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* Branch opts can eliminate the branch */
 			if (!next || (!(MONO_IS_COND_BRANCH_OP (next) || MONO_IS_COND_EXC (next) || MONO_IS_SETCC (next)))) {
-				ins->opcode = OP_NOP;
+				NULLIFY_INS (ins);
 				break;
 			}
 
@@ -1650,7 +1650,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* Branch opts can eliminate the branch */
 			if (!next || (!(MONO_IS_COND_BRANCH_OP (next) || MONO_IS_COND_EXC (next) || MONO_IS_SETCC (next)))) {
-				ins->opcode = OP_NOP;
+				NULLIFY_INS (ins);
 				break;
 			}
 
