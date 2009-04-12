@@ -63,6 +63,36 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 }
 
 /*
+ * mono_arch_get_static_rgctx_trampoline:
+ *
+ *   Create a trampoline which sets RGCTX_REG to MRGCTX, then jumps to ADDR.
+ */
+gpointer
+mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+{
+	guint8 *code, *start;
+	int buf_len;
+
+	MonoDomain *domain = mono_domain_get ();
+
+#ifdef MONO_ARCH_NOMAP32BIT
+	buf_len = 32;
+#else
+	buf_len = 16;
+#endif
+
+	start = code = mono_domain_code_reserve (domain, buf_len);
+
+	amd64_mov_reg_imm (code, MONO_ARCH_RGCTX_REG, mrgctx);
+	amd64_jump_code (code, addr);
+	g_assert ((code - start) < buf_len);
+
+	mono_arch_flush_icache (start, code - start);
+
+	return start;
+}
+
+/*
  * mono_arch_patch_callsite:
  *
  *   Patch the callsite whose address is given by ORIG_CODE so it calls ADDR. ORIG_CODE

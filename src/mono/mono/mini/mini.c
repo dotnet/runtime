@@ -4335,16 +4335,22 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoObject *(*runtime_invoke) (MonoObject *this, void **params, MonoObject **exc, void* compiled_method);
 	void* compiled_method;
 	MonoVTable *vtable;
+	gboolean need_rgctx_tramp = FALSE;
 
 	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {
 		g_warning ("Ignoring invocation of an instance method on a NULL instance.\n");
 		return NULL;
 	}
 
-	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
+	to_compile = method;
+
+	if (mono_method_needs_static_rgctx_invoke (method, FALSE)) {
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+		need_rgctx_tramp = TRUE;
+#else
 		to_compile = mono_marshal_get_static_rgctx_invoke (method);
-	else
-		to_compile = method;
+#endif
+	}
 
 	/* Special case parameterless ctors to speed up Activator.CreateInstance () */
 	if (method->flags & (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME) && !strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == 0 && !method->klass->valuetype) {
@@ -4361,8 +4367,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		runtime_invoke = mono_jit_compile_method (invoke);
 	}
 
-	/* We need this here becuase mono_marshal_get_runtime_invoke can be place 
-	 * the helper method in System.Object and not the target class
+	/*
+	 * We need this here because mono_marshal_get_runtime_invoke can place 
+	 * the helper method in System.Object and not the target class.
 	 */
 	vtable = mono_class_vtable (mono_domain_get (), method->klass);
 	g_assert (vtable);
@@ -4378,6 +4385,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	} else {
 		compiled_method = mono_jit_compile_method (to_compile);
 	}
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+	if (need_rgctx_tramp)
+		compiled_method = mono_create_static_rgctx_trampoline (to_compile, compiled_method);
+#endif
+
 	return runtime_invoke (obj, params, exc, compiled_method);
 }
 
@@ -4596,6 +4608,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->jump_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->delegate_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	info->static_rgctx_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	domain->runtime_info = info;
 }
@@ -4637,6 +4650,7 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
 	g_hash_table_destroy (info->delegate_trampoline_hash);
+	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 
 	g_free (domain->runtime_info);
 	domain->runtime_info = NULL;

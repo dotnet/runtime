@@ -902,6 +902,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	MonoMethod *vmethod;
 	gpointer addr;
 	MonoGenericContext *context = mono_method_get_context (method);
+	gboolean need_rgctx_tramp = FALSE;
 
 	mono_jit_stats.generic_virtual_invocations++;
 
@@ -911,9 +912,20 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	g_assert (!vmethod->klass->generic_container);
 	g_assert (!vmethod->klass->generic_class || !vmethod->klass->generic_class->context.class_inst->is_open);
 	g_assert (!context->method_inst || !context->method_inst->is_open);
-	if (mono_method_needs_static_rgctx_invoke (vmethod, FALSE))
+
+	if (mono_method_needs_static_rgctx_invoke (vmethod, FALSE)) {
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+		need_rgctx_tramp = TRUE;
+#else
 		vmethod = mono_marshal_get_static_rgctx_invoke (vmethod);
+#endif
+	}
 	addr = mono_compile_method (vmethod);
+
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+	if (need_rgctx_tramp)
+		addr = mono_create_static_rgctx_trampoline (vmethod, addr);
+#endif	
 
 	/* Since this is a virtual call, have to unbox vtypes */
 	if (obj->vtable->klass->valuetype)

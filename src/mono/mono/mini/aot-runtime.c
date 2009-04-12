@@ -113,9 +113,15 @@ typedef struct MonoAotModule {
 	guint32 *extra_method_table;
 	guint32 *extra_method_info_offsets;
 	guint8 *extra_method_info;
-	guint8 *trampolines;
-	guint32 num_trampolines, trampoline_got_offset_base, trampoline_index;
-	guint32 specific_trampoline_size;
+
+	guint8 *specific_trampolines;
+	guint32 num_specific_trampolines, specific_trampoline_got_offset_base;
+	guint32 specific_trampoline_index, specific_trampoline_size;
+
+	guint8 *static_rgctx_trampolines;
+	guint32 num_static_rgctx_trampolines, static_rgctx_trampoline_got_offset_base;
+	guint32 static_rgctx_trampoline_index, static_rgctx_trampoline_size;
+
 	gpointer *globals;
 	MonoDl *sofile;
 } MonoAotModule;
@@ -124,11 +130,14 @@ typedef struct MonoAotModule {
 typedef struct MonoAotFileInfo
 {
 	guint32 plt_got_offset_base;
-	guint32 trampoline_got_offset_base;
-	guint32 num_trampolines;
 	guint32 got_size;
 	guint32 plt_size;
+	guint32 num_specific_trampolines;
 	guint32 specific_trampoline_size;
+	guint32 specific_trampoline_got_offset_base;
+	guint32 num_static_rgctx_trampolines;
+	guint32 static_rgctx_trampoline_size;
+	guint32 static_rgctx_trampoline_got_offset_base;
 	gpointer *got;
 } MonoAotFileInfo;
 
@@ -554,6 +563,14 @@ decode_method_ref (MonoAotModule *module, guint32 *token, MonoMethod **method, g
 			if (!m)
 				return NULL;
 			*method = mono_marshal_get_static_rgctx_invoke (m);
+			break;
+		}
+		case MONO_WRAPPER_SYNCHRONIZED: {
+			MonoMethod *m = decode_method_ref_2 (module, p, &p);
+
+			if (!m)
+				return NULL;
+			*method = mono_marshal_get_synchronized_wrapper (m);
 			break;
 		}
 		case MONO_WRAPPER_UNKNOWN: {
@@ -992,11 +1009,14 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->aot_name = aot_name;
 	amodule->assembly = assembly;
 	amodule->plt_got_offset_base = file_info->plt_got_offset_base;
-	amodule->num_trampolines = file_info->num_trampolines;
-	amodule->trampoline_got_offset_base = file_info->trampoline_got_offset_base;
+	amodule->num_specific_trampolines = file_info->num_specific_trampolines;
+	amodule->specific_trampoline_got_offset_base = file_info->specific_trampoline_got_offset_base;
+	amodule->specific_trampoline_size = file_info->specific_trampoline_size;
 	amodule->got_size = file_info->got_size;
 	amodule->plt_size = file_info->plt_size;
-	amodule->specific_trampoline_size = file_info->specific_trampoline_size;
+	amodule->num_static_rgctx_trampolines = file_info->num_static_rgctx_trampolines;
+	amodule->static_rgctx_trampoline_got_offset_base = file_info->static_rgctx_trampoline_got_offset_base;
+	amodule->static_rgctx_trampoline_size = file_info->static_rgctx_trampoline_size;
 	amodule->got = file_info->got;
 	amodule->got [0] = assembly->image;
 	amodule->globals = globals;
@@ -1064,7 +1084,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "extra_method_info_offsets", (gpointer *)&amodule->extra_method_info_offsets);
 	find_symbol (sofile, globals, "got_info", (gpointer*)&amodule->got_info);
 	find_symbol (sofile, globals, "got_info_offsets", (gpointer*)&amodule->got_info_offsets);
-	find_symbol (sofile, globals, "trampolines", (gpointer*)&amodule->trampolines);
+	find_symbol (sofile, globals, "specific_trampolines", (gpointer*)&amodule->specific_trampolines);
+	find_symbol (sofile, globals, "static_rgctx_trampolines", (gpointer*)&amodule->static_rgctx_trampolines);
 	find_symbol (sofile, globals, "mem_end", (gpointer*)&amodule->mem_end);
 
 	amodule->mem_begin = amodule->code;
@@ -2227,6 +2248,18 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 				index = value;
 				break;
 			}
+
+			/* Special case: wrappers of shared generic methods */
+			if (m && method->wrapper_type && m->wrapper_type == m->wrapper_type &&
+				method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED) {
+				MonoMethod *w1 = mono_marshal_method_from_wrapper (method);
+				MonoMethod *w2 = mono_marshal_method_from_wrapper (m);
+
+				if (w1->is_inflated && ((MonoMethodInflated *)w1)->declaring == w2) {
+					index = value;
+					break;
+				}
+			}
 		}
 
 		if (next != 0)
@@ -2759,10 +2792,10 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	amodule = image->aot_module;
 	g_assert (amodule);
 
-	if (amodule->trampoline_index == amodule->num_trampolines)
-		g_error ("Ran out of trampolines in '%s' (%d)\n", image->name, amodule->num_trampolines);
+	if (amodule->specific_trampoline_index == amodule->num_specific_trampolines)
+		g_error ("Ran out of trampolines in '%s' (%d)\n", image->name, amodule->num_specific_trampolines);
 
-	index = amodule->trampoline_index ++;
+	index = amodule->specific_trampoline_index ++;
 
 	mono_aot_unlock ();
 
@@ -2777,14 +2810,48 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	tramp = generic_trampolines [tramp_type];
 	g_assert (tramp);
 
-	amodule->got [amodule->trampoline_got_offset_base + (index *2)] = tramp;
-	amodule->got [amodule->trampoline_got_offset_base + (index *2) + 1] = arg1;
+	amodule->got [amodule->specific_trampoline_got_offset_base + (index *2)] = tramp;
+	amodule->got [amodule->specific_trampoline_got_offset_base + (index *2) + 1] = arg1;
 
 	tramp_size = amodule->specific_trampoline_size;
 
-	code = amodule->trampolines + (index * tramp_size);
+	code = amodule->specific_trampolines + (index * tramp_size);
 	if (code_len)
 		*code_len = tramp_size;
+
+	return code;
+}
+
+gpointer
+mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr)
+{
+	MonoAotModule *amodule;
+	int index, tramp_size;
+	guint8 *code;
+	MonoImage *image;
+
+	/* Currently, we keep all trampolines in the mscorlib AOT image */
+	image = mono_defaults.corlib;
+	g_assert (image);
+
+	mono_aot_lock ();
+
+	amodule = image->aot_module;
+	g_assert (amodule);
+
+	if (amodule->static_rgctx_trampoline_index == amodule->num_static_rgctx_trampolines)
+		g_error ("Ran out of trampolines in '%s' (%d)\n", image->name, amodule->num_static_rgctx_trampolines);
+
+	index = amodule->static_rgctx_trampoline_index ++;
+
+	mono_aot_unlock ();
+
+	amodule->got [amodule->static_rgctx_trampoline_got_offset_base + (index *2)] = ctx;
+	amodule->got [amodule->static_rgctx_trampoline_got_offset_base + (index *2) + 1] = addr; 
+
+	tramp_size = amodule->static_rgctx_trampoline_size;
+
+	code = amodule->static_rgctx_trampolines + (index * tramp_size);
 
 	return code;
 }
@@ -2898,6 +2965,13 @@ mono_aot_get_plt_info_offset (gssize *regs, guint8 *code)
 
 gpointer
 mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr)
 {
 	g_assert_not_reached ();
 	return NULL;

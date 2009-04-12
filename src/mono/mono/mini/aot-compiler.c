@@ -132,13 +132,16 @@ typedef struct MonoAotCompile {
 	GPtrArray *globals;
 	GList *method_order;
 	guint32 *plt_got_info_offsets;
-	/* Number of trampolines emitted into the AOT file */
-	guint32 num_aot_trampolines;
 	guint32 got_offset, plt_offset, plt_got_offset_base;
 	/* Number of GOT entries reserved for trampolines */
 	guint32 num_trampoline_got_entries;
-	guint32 trampoline_got_offset_base;
+	guint32 num_specific_trampolines;
 	guint32 specific_trampoline_size;
+	guint32 specific_trampoline_got_offset_base;
+	/* Same for static rgctx trampolines */
+	guint32 num_static_rgctx_trampolines;
+	guint32 static_rgctx_trampoline_size;
+	guint32 static_rgctx_trampoline_got_offset_base;
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
@@ -657,6 +660,38 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 	g_assert_not_reached ();
 #endif
 }
+
+/*
+ * arch_emit_static_rgctx_trampoline:
+ *
+ *   Emit code for a static rgctx trampoline. OFFSET is the offset of the first of
+ * two GOT slots which contain the rgctx argument, and the method to jump to.
+ * TRAMP_SIZE is set to the size of the emitted trampoline.
+ * These kinds of trampolines cannot be enumerated statically, since there could
+ * be one trampoline per method instantiation, so we emit the same code for all
+ * trampolines, and parameterize them using two GOT slots.
+ */
+static void
+arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
+{
+#if defined(__x86_64__)
+	/* This should be exactly 13 bytes long */
+	*tramp_size = 13;
+
+	/* mov <OFFSET>(%rip), %r10 */
+	emit_byte (acfg, '\x4d');
+	emit_byte (acfg, '\x8b');
+	emit_byte (acfg, '\x15');
+	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
+
+	/* jmp *<offset>(%rip) */
+	emit_byte (acfg, '\xff');
+	emit_byte (acfg, '\x25');
+	emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4);
+#else
+	g_assert_not_reached ();
+#endif
+}	
 
 /*
  * arch_get_cie_program:
@@ -1489,23 +1524,6 @@ add_wrappers (MonoAotCompile *acfg)
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			add_method (acfg, mono_marshal_get_synchronized_wrapper (method));
 	}
-
-#if 0
-	/* static rgctx wrappers */
-	/* FIXME: Each wrapper belongs to a given instantiation of a generic method */
-	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
-		token = MONO_TOKEN_METHOD_DEF | (i + 1);
-		method = mono_get_method (acfg->image, token, NULL);
-
-		if (((method->flags & METHOD_ATTRIBUTE_STATIC) ||
-			 (method->is_inflated && mono_method_get_context (method)->method_inst)) &&
-			mono_class_generic_sharing_enabled (method->klass) &&
-			mono_method_is_generic_sharable_impl (method, FALSE)) {
-			m = mono_marshal_get_static_rgctx_invoke (method);
-			add_method (acfg, m);
-		}
-	}
-#endif
 
 	/* pinvoke wrappers */
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_METHOD].rows; ++i) {
@@ -2472,9 +2490,9 @@ static void
 emit_trampolines (MonoAotCompile *acfg)
 {
 	char symbol [256];
-	int i, offset;
+	int i;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-	int tramp_type;
+	int tramp_type, tramp_got_offset;
 	guint32 code_size;
 	MonoJumpInfo *ji;
 	guint8 *code;
@@ -2560,25 +2578,50 @@ emit_trampolines (MonoAotCompile *acfg)
 		 */
 
 		/* Reserve some entries at the end of the GOT for our use */
-		acfg->num_trampoline_got_entries = acfg->num_aot_trampolines * 2;
+		acfg->num_trampoline_got_entries = (acfg->num_specific_trampolines * 2) + (acfg->num_static_rgctx_trampolines * 2);
 
-		sprintf (symbol, "trampolines");
+		sprintf (symbol, "specific_trampolines");
 
 		emit_section_change (acfg, ".text", 0);
 		emit_global (acfg, symbol, TRUE);
 		emit_alignment (acfg, 16);
 		emit_label (acfg, symbol);
 
-		for (i = 0; i < acfg->num_aot_trampolines; ++i) {
+		tramp_got_offset = acfg->got_offset;
+
+		acfg->specific_trampoline_got_offset_base = tramp_got_offset;
+
+		for (i = 0; i < acfg->num_specific_trampolines; ++i) {
 			int tramp_size = 0;
 
-			offset = acfg->got_offset + (i * 2);
-
-			arch_emit_specific_trampoline (acfg, offset, &tramp_size);
+			arch_emit_specific_trampoline (acfg, tramp_got_offset, &tramp_size);
 			if (!acfg->specific_trampoline_size) {
 				g_assert (tramp_size);
 				acfg->specific_trampoline_size = tramp_size;
 			}
+
+			tramp_got_offset += 2;
+		}
+
+		sprintf (symbol, "static_rgctx_trampolines");
+
+		emit_section_change (acfg, ".text", 0);
+		emit_global (acfg, symbol, TRUE);
+		emit_alignment (acfg, 16);
+		emit_label (acfg, symbol);
+
+		acfg->static_rgctx_trampoline_got_offset_base = tramp_got_offset;
+
+		for (i = 0; i < acfg->num_static_rgctx_trampolines; ++i) {
+			int tramp_size = 0;
+
+			arch_emit_static_rgctx_trampoline (acfg, tramp_got_offset, &tramp_size);
+			if (!acfg->static_rgctx_trampoline_size) {
+				g_assert (tramp_size);
+				acfg->static_rgctx_trampoline_size = tramp_size;
+			}
+
+			tramp_got_offset += 2;
 		}
 	}
 
@@ -2607,8 +2650,6 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		arch_emit_unbox_trampoline (acfg, cfg->orig_method, cfg->generic_sharing_context, call_target);
 	}
-
-	acfg->trampoline_got_offset_base = acfg->got_offset;
 
 	acfg->got_offset += acfg->num_trampoline_got_entries;
 }
@@ -3983,11 +4024,14 @@ emit_file_info (MonoAotCompile *acfg)
 
 	/* The data emitted here must match MonoAotFileInfo in aot-runtime.c. */
 	emit_int32 (acfg, acfg->plt_got_offset_base);
-	emit_int32 (acfg, acfg->trampoline_got_offset_base);
-	emit_int32 (acfg, acfg->num_aot_trampolines);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
+	emit_int32 (acfg, acfg->num_specific_trampolines);
 	emit_int32 (acfg, acfg->specific_trampoline_size);
+	emit_int32 (acfg, acfg->specific_trampoline_got_offset_base);
+	emit_int32 (acfg, acfg->num_static_rgctx_trampolines);
+	emit_int32 (acfg, acfg->static_rgctx_trampoline_size);
+	emit_int32 (acfg, acfg->static_rgctx_trampoline_got_offset_base);
 	emit_pointer (acfg, "got");
 }
 
@@ -4346,7 +4390,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (!acfg->aot_opts.nodebug)
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
 
-	acfg->num_aot_trampolines = acfg->aot_opts.full_aot ? 10240 : 0;
+	acfg->num_specific_trampolines = acfg->aot_opts.full_aot ? 10240 : 0;
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+	acfg->num_static_rgctx_trampolines = acfg->aot_opts.full_aot ? 1024 : 0;
+#endif
 
 	acfg->method_index = 1;
 

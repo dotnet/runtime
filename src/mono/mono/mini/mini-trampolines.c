@@ -39,6 +39,55 @@ get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m, gpointer 
 		return mono_arch_get_unbox_trampoline (gsctx, m, addr);
 }
 
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+/*
+ * mono_create_static_rgctx_trampoline:
+ *
+ *   Return a static rgctx trampoline for M which branches to ADDR which should
+ * point to the compiled code of M.
+ *
+ *   Static rgctx trampolines are used when a shared generic method which doesn't
+ * have a this argument is called indirectly, ie. from code which can't pass in
+ * the rgctx argument. The trampoline sets the rgctx argument and jumps to the
+ * methods code. These trampolines are similar to the unbox trampolines, they
+ * perform the same task as the static rgctx wrappers, but they are smaller/faster,
+ * and can be made to work with full AOT.
+ */
+gpointer
+mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
+{
+	gpointer ctx;
+	gpointer res;
+	MonoDomain *domain;
+
+	if (mini_method_get_context (m)->method_inst)
+		ctx = mono_method_lookup_rgctx (mono_class_vtable (mono_domain_get (), m->klass), mini_method_get_context (m)->method_inst);
+	else
+		ctx = mono_class_vtable (mono_domain_get (), m->klass);
+
+	if (mono_aot_only)
+		return mono_aot_get_static_rgctx_trampoline (ctx, addr);
+
+	domain = mono_domain_get ();
+
+	mono_domain_lock (domain);
+	res = g_hash_table_lookup (domain_jit_info (domain)->static_rgctx_trampoline_hash,
+							   m);
+	mono_domain_unlock (domain);
+	if (res)
+		return res;
+
+	res = mono_arch_get_static_rgctx_trampoline (m, ctx, addr);
+
+	mono_domain_lock (domain);
+	/* Duplicates inserted while we didn't hold the lock are OK */
+	g_hash_table_insert (domain_jit_info (domain)->static_rgctx_trampoline_hash, m, res);
+	mono_domain_unlock (domain);
+
+	return res;
+}
+#endif
+
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
@@ -129,6 +178,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	MonoMethod *generic_virtual = NULL;
 	int context_used;
 	gboolean proxy = FALSE;
+	gboolean need_rgctx_tramp = FALSE;
 
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	if (m == MONO_FAKE_VTABLE_METHOD) {
@@ -203,7 +253,11 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 				/* Generic virtual method */
 				generic_virtual = m;
 				m = impl_method;
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+				need_rgctx_tramp = TRUE;
+#else
 				m = mono_marshal_get_static_rgctx_invoke (m);
+#endif
 			} else {
 				m = impl_method;
 			}
@@ -234,8 +288,12 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		}
 
 		m = mono_class_inflate_generic_method (declaring, &context);
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+		need_rgctx_tramp = TRUE;
+#else
 		/* FIXME: only do this if the method is sharable */
 		m = mono_marshal_get_static_rgctx_invoke (m);
+#endif
 	} else if ((context_used = mono_method_check_context_used (m))) {
 		MonoClass *klass = NULL;
 		MonoMethod *actual_method = NULL;
@@ -346,6 +404,11 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	mono_debugger_trampoline_compiled (m, addr);
 
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+	if (need_rgctx_tramp)
+		addr = mono_create_static_rgctx_trampoline (m, addr);
+#endif
+
 	if (generic_virtual) {
 		int displacement;
  		MonoVTable *vt = mono_arch_get_vcall_slot (code, (gpointer*)regs, &displacement);
@@ -396,7 +459,6 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	if (vtable_slot) {
 		if (m->klass->valuetype)
 			addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);
-
 		g_assert (*vtable_slot);
 
 		if (!proxy && (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))) {
@@ -638,6 +700,7 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 	MonoMethod *m;
 	MonoMethod *method = NULL;
 	gboolean multicast, callvirt;
+	gboolean need_rgctx_tramp = FALSE;
 	MonoMethod *invoke = tramp_data [0];
 	guint8 *impl_this = tramp_data [1];
 	guint8 *impl_nothis = tramp_data [2];
@@ -674,8 +737,13 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 	if (method && method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);
 
-	if (method && mono_method_needs_static_rgctx_invoke (method, FALSE))
+	if (method && mono_method_needs_static_rgctx_invoke (method, FALSE)) {
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+		need_rgctx_tramp = TRUE;
+#else
 		method = mono_marshal_get_static_rgctx_invoke (method);
+#endif
+	}
 
 	/* 
 	 * If the called address is a trampoline, replace it with the compiled method so
@@ -692,6 +760,9 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 			mono_debugger_trampoline_compiled (method, delegate->method_ptr);
 		}
 	}
+
+	if (need_rgctx_tramp)
+		delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
 	if (!multicast && !callvirt) {
