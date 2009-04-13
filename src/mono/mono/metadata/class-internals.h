@@ -102,7 +102,8 @@ struct _MonoMethodPInvoke {
 
 /* 
  * Stores the default value / RVA of fields.
- * This information is rarely needed, so it is stored separately from MonoClassField.
+ * This information is rarely needed, so it is stored separately from 
+ * MonoClassField.
  */
 typedef struct MonoFieldDefaultValue {
 	/*
@@ -137,6 +138,7 @@ struct _MonoClassField {
 	 * field, it's the offset from the start of the object, if
 	 * it's static, it's from the start of the memory chunk
 	 * allocated for statics for the class.
+	 * For special static fields, this is set to -1 during vtable construction.
 	 */
 	int              offset;
 };

@@ -628,6 +628,10 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 			if (field->type->byref)
 				break;
 
+			if (static_fields && field->offset == -1)
+				/* special static */
+				continue;
+
 			pos = field->offset / sizeof (gpointer);
 			pos += offset;
 
@@ -1818,6 +1822,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 				if (!domain->special_static_fields)
 					domain->special_static_fields = g_hash_table_new (NULL, NULL);
 				g_hash_table_insert (domain->special_static_fields, field, GUINT_TO_POINTER (offset));
+				/* 
+				 * This marks the field as special static to speed up the
+				 * checks in mono_field_static_get/set_value ().
+				 */
+				field->offset = -1;
 				continue;
 			}
 		}
@@ -2701,8 +2710,14 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 	/* you cant set a constant! */
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL));
-	
-	dest = (char*)vt->data + field->offset;
+
+	if (field->offset == -1) {
+		/* Special static */
+		gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+		dest = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
+	} else {
+		dest = (char*)vt->data + field->offset;
+	}
 	set_value (field->type, dest, value, FALSE);
 }
 
@@ -2907,7 +2922,13 @@ mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
 		return;
 	}
 
-	src = (char*)vt->data + field->offset;
+	if (field->offset == -1) {
+		/* Special static */
+		gpointer addr = g_hash_table_lookup (vt->domain->special_static_fields, field);
+		src = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
+	} else {
+		src = (char*)vt->data + field->offset;
+	}
 	set_value (field->type, value, src, TRUE);
 }
 
