@@ -1242,8 +1242,11 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 			if (!AddRef)
 				AddRef = mono_class_get_method_from_name (mono_defaults.marshal_class, "AddRef", 1);
 
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+			mono_mb_emit_byte (mb, CEE_STIND_I);
+
 			mono_mb_emit_ldloc (mb, conv_arg);	
-			/* if null just break, conv arg was already inited to 0 */
 			pos_null = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
 			/* to store later */
