@@ -1323,7 +1323,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 		MonoImtBuilderEntry* entry = imt_builder [i];
 		while (entry != NULL) {
 			MonoImtBuilderEntry* next = entry->next;
-			free (entry);
+			g_free (entry);
 			entry = next;
 		}
 	}
