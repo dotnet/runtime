@@ -80,7 +80,7 @@ static guint32 last_error_tls_id;
 static guint32 load_type_info_tls_id;
 
 static void
-delegate_hash_table_add (MonoDelegate *d);
+delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc);
 
 static void
 emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
@@ -302,6 +302,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 {
 	MonoMethod *method, *wrapper;
 	MonoClass *klass;
+	MonoObject **target_loc;
 
 	if (!delegate)
 		return NULL;
@@ -326,12 +327,21 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 		return ftnptr;
 	}
 
-	wrapper = mono_marshal_get_managed_wrapper (method, klass, delegate->target);
+	if (delegate->target) {
+		/* Produce a location which can be embedded in JITted code */
+		target_loc = g_new0 (MonoObject*, 1);
+		mono_gc_register_root ((char*)target_loc, sizeof (MonoObject*), NULL);
+		*target_loc = delegate->target;
+	} else {
+		target_loc = NULL;
+	}
+
+	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_loc);
 
 	delegate->delegate_trampoline =  mono_compile_method (wrapper);
 
 	// Add the delegate to the delegate hash table
-	delegate_hash_table_add (delegate);
+	delegate_hash_table_add (delegate, target_loc);
 
 	/* when the object is collected, collect the dynamic method, too */
 	mono_object_register_finalizer ((MonoObject*)delegate);
@@ -345,6 +355,8 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
  * object pointer itself, otherwise we use a GC handle.
  */
 static GHashTable *delegate_hash_table;
+/* Contains root locations pointing to the this arguments of delegates */
+static GHashTable *delegate_target_locations;
 
 static GHashTable *
 delegate_hash_table_new (void) {
@@ -354,24 +366,34 @@ delegate_hash_table_new (void) {
 static void 
 delegate_hash_table_remove (MonoDelegate *d)
 {
+	MonoObject **target_loc;
 #ifdef HAVE_MOVING_COLLECTOR
 	guint32 gchandle;
 #endif
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
+	if (delegate_target_locations == NULL)
+		delegate_target_locations = g_hash_table_new (NULL, NULL);
 #ifdef HAVE_MOVING_COLLECTOR
 	gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
 #endif
 	g_hash_table_remove (delegate_hash_table, d->delegate_trampoline);
+	target_loc = g_hash_table_lookup (delegate_target_locations, d->delegate_trampoline);
+	if (target_loc)
+		g_hash_table_remove (delegate_target_locations, d->delegate_trampoline);
 	mono_marshal_unlock ();
+	if (target_loc) {
+		mono_gc_deregister_root ((char*)target_loc);
+		g_free (target_loc);
+	}
 #ifdef HAVE_MOVING_COLLECTOR
 	mono_gchandle_free (gchandle);
 #endif
 }
 
 static void
-delegate_hash_table_add (MonoDelegate *d) 
+delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc) 
 {
 #ifdef HAVE_MOVING_COLLECTOR
 	guint32 gchandle = mono_gchandle_new_weakref ((MonoObject*)d, FALSE);
@@ -379,11 +401,15 @@ delegate_hash_table_add (MonoDelegate *d)
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
+	if (delegate_target_locations == NULL)
+		delegate_target_locations = g_hash_table_new (NULL, NULL);
 #ifdef HAVE_MOVING_COLLECTOR
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, GUINT_TO_POINTER (gchandle));
 #else
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
 #endif
+	if (target_loc)
+		g_hash_table_insert (delegate_target_locations, d->delegate_trampoline, target_loc);
 	mono_marshal_unlock ();
 }
 
@@ -7822,9 +7848,16 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	return res;
 }
 			    
-/* FIXME: moving GC */
+/*
+ * mono_marshal_emit_managed_wrapper:
+ *
+ *   Emit the body of a native-to-managed wrapper. INVOKE_SIG is the signature of
+ * the delegate which wraps the managed method to be called. For closed delegates,
+ * it could have fewer parameters than the method it wraps.
+ * THIS_LOC is the memory location where the target of the delegate is stored.
+ */
 void
-mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoObject* this)
+mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoObject** this_loc)
 {
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
@@ -7871,11 +7904,10 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 
 	emit_thread_interrupt_checkpoint (mb);
 
-	/* fixme: howto handle this ? */
 	if (sig->hasthis) {
-		if (this) {
-			/* FIXME: need a solution for the moving GC here */
-			mono_mb_emit_ptr (mb, this);
+		if (this_loc) {
+			mono_mb_emit_ptr (mb, this_loc);
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		} else {
 			/* fixme: */
 			g_assert_not_reached ();
@@ -8026,7 +8058,7 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
  * generates IL code to call managed methods from unmanaged code 
  */
 MonoMethod *
-mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoObject *this)
+mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoObject **this_loc)
 {
 	static MonoClass *UnmanagedFunctionPointerAttribute;
 	MonoMethodSignature *sig, *csig, *invoke_sig;
@@ -8047,7 +8079,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	 * options.
 	 */
 	cache = get_cache (&method->klass->image->managed_wrapper_cache, mono_aligned_addr_hash, NULL);
-	if (!this && (res = mono_marshal_find_in_cache (cache, method)))
+	if (!this_loc && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
 	invoke = mono_class_get_method_from_name (delegate_klass, "Invoke", mono_method_signature (method)->param_count);
@@ -8062,7 +8094,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 
 	/* we copy the signature, so that we can modify it */
-	if (this)
+	if (this_loc)
 		/* Need to free this later */
 		csig = mono_metadata_signature_dup (sig);
 	else
@@ -8107,9 +8139,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		}
 	}
 
-	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, this);
+	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, this_loc);
 
-	if (!this)
+	if (!this_loc)
 		res = mono_mb_create_and_cache (cache, method,
 											 mb, csig, sig->param_count + 16);
 	else {
