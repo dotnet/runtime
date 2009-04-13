@@ -3759,5 +3759,290 @@ mono_test_Winx64_struct5_ret_managed (managed_struct5_ret_delegate func)
 	return 0;
 }
 
+LIBTEST_API int STDCALL 
+mono_test_marshal_bool_in (int arg, unsigned int expected, unsigned int bDefaultMarsh, unsigned int bBoolCustMarsh,
+			   char bI1CustMarsh, unsigned char bU1CustMarsh, unsigned short bVBCustMarsh)
+{
+	switch (arg) {
+	case 1:	
+		if (bDefaultMarsh != expected)
+			return 1;
+		break;
+	case 2:	
+		if (bBoolCustMarsh != expected)
+			return 2;
+		break;
+	case 3:	
+		if (bI1CustMarsh != expected)
+			return 3;
+		break;
+	case 4:	
+		if (bU1CustMarsh != expected)
+			return 4;
+		break;
+	case 5:	
+		if (bVBCustMarsh != expected)
+			return 5;
+		break;
+	default:
+		return 999;		
+	}
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_bool_out (int arg, unsigned int testVal, unsigned int* bDefaultMarsh, unsigned int* bBoolCustMarsh,
+			   char* bI1CustMarsh, unsigned char* bU1CustMarsh, unsigned short* bVBCustMarsh)
+{
+	switch (arg) {
+	case 1:	
+		if (!bDefaultMarsh)
+			return 1;
+		*bDefaultMarsh = testVal;
+		break;	
+	case 2:	
+		if (!bBoolCustMarsh)
+			return 2;
+		*bBoolCustMarsh = testVal;
+		break;	
+	case 3:	
+		if (!bI1CustMarsh)
+			return 3;
+		*bI1CustMarsh = (char)testVal;
+		break;	
+	case 4:	
+		if (!bU1CustMarsh)
+			return 4;
+		*bU1CustMarsh = (unsigned char)testVal;
+		break;	
+	case 5:	
+		if (!bVBCustMarsh)
+			return 5;
+		*bVBCustMarsh = (unsigned short)testVal;
+		break;	
+	default:
+		return 999;
+	}
+	return 0;
+}
+
+LIBTEST_API int STDCALL 
+mono_test_marshal_bool_ref (int arg, unsigned int expected, unsigned int testVal, unsigned int* bDefaultMarsh,
+			    unsigned int* bBoolCustMarsh, char* bI1CustMarsh, unsigned char* bU1CustMarsh, 
+			    unsigned short* bVBCustMarsh)
+{
+	switch (arg) {
+	case 1:	
+		if (!bDefaultMarsh)
+			return 1;
+		if (*bDefaultMarsh != expected)
+			return 2;
+		*bDefaultMarsh = testVal;
+		break;
+	case 2:	
+		if (!bBoolCustMarsh)
+			return 3;
+		if (*bBoolCustMarsh != expected)
+			return 4;
+		*bBoolCustMarsh = testVal;
+		break;
+	case 3:	
+		if (!bI1CustMarsh)
+			return 5;
+		if (*bI1CustMarsh != expected)
+			return 6;
+		*bI1CustMarsh = (char)testVal;
+		break;
+	case 4:	
+		if (!bU1CustMarsh)
+			return 7;
+		if (*bU1CustMarsh != expected)
+			return 8;
+		*bU1CustMarsh = (unsigned char)testVal;
+		break;
+	case 5:	
+		if (!bVBCustMarsh)
+			return 9;
+		if (*bVBCustMarsh != expected)
+			return 10;
+		*bVBCustMarsh = (unsigned short)testVal;
+		break;
+	default:
+		return 999;		
+	}
+	return 0;
+}
+
+
+typedef int (STDCALL *MarshalBoolInDelegate) (int arg, unsigned int expected, unsigned int bDefaultMarsh,
+	unsigned int bBoolCustMarsh, char bI1CustMarsh, unsigned char bU1CustMarsh, unsigned short bVBCustMarsh);
+
+LIBTEST_API int STDCALL 
+mono_test_managed_marshal_bool_in (int arg, unsigned int expected, unsigned int testVal, MarshalBoolInDelegate pfcn)
+{
+	if (!pfcn)
+		return 0x9900;
+
+	switch (arg) {
+	case 1:
+		return pfcn (arg, expected, testVal, 0, 0, 0, 0);
+	case 2:
+		return pfcn (arg, expected, 0, testVal,  0, 0, 0);
+	case 3:
+		return pfcn (arg, expected, 0, 0, testVal, 0, 0);
+	case 4:
+		return pfcn (arg, expected, 0, 0, 0, testVal, 0);
+	case 5:
+		return pfcn (arg, expected, 0, 0, 0, 0, testVal);
+	default:
+		return 0x9800;
+	}
+
+	return 0;
+}
+
+typedef int (STDCALL *MarshalBoolOutDelegate) (int arg, unsigned int expected, unsigned int* bDefaultMarsh,
+	unsigned int* bBoolCustMarsh, char* bI1CustMarsh, unsigned char* bU1CustMarsh, unsigned short* bVBCustMarsh);
+
+LIBTEST_API int STDCALL 
+mono_test_managed_marshal_bool_out (int arg, unsigned int expected, unsigned int testVal, MarshalBoolOutDelegate pfcn)
+{
+	int ret;
+	unsigned int lDefaultMarsh, lBoolCustMarsh;
+	char lI1CustMarsh = 0;
+	unsigned char lU1CustMarsh = 0;
+	unsigned short lVBCustMarsh = 0;
+	lDefaultMarsh = lBoolCustMarsh = 0;
+
+	if (!pfcn)
+		return 0x9900;
+
+	switch (arg) {
+	case 1: {
+		unsigned int ltVal = 0;
+		ret = pfcn (arg, testVal, &ltVal, &lBoolCustMarsh, &lI1CustMarsh, &lU1CustMarsh, &lVBCustMarsh);
+		if (ret)
+			return 0x0100 + ret;
+		if (expected != ltVal)
+			return 0x0200;
+		break;
+	}
+	case 2: {
+		unsigned int ltVal = 0;
+		ret = pfcn (arg, testVal, &lDefaultMarsh, &ltVal, &lI1CustMarsh, &lU1CustMarsh, &lVBCustMarsh);
+		if (ret)
+			return 0x0300 + ret;
+		if (expected != ltVal)
+			return 0x0400;
+		break;
+	}
+	case 3: {
+		char ltVal = 0;
+		ret = pfcn (arg, testVal, &lDefaultMarsh, &lBoolCustMarsh, &ltVal, &lU1CustMarsh, &lVBCustMarsh);
+		if (ret)
+			return 0x0500 + ret;
+		if (expected != ltVal)
+			return 0x0600;
+		break;
+	}
+	case 4: {
+		unsigned char ltVal = 0;
+		ret = pfcn (arg, testVal, &lDefaultMarsh, &lBoolCustMarsh, &lI1CustMarsh, &ltVal, &lVBCustMarsh);
+		if (ret)
+			return 0x0700 + ret;
+		if (expected != ltVal)
+			return 0x0800;
+		break;
+	}
+	case 5: {
+		unsigned short ltVal = 0;
+		ret = pfcn (arg, testVal, &lDefaultMarsh, &lBoolCustMarsh, &lI1CustMarsh, &lU1CustMarsh, &ltVal);
+		if (ret)
+			return 0x0900 + ret;
+		if (expected != ltVal)
+			return 0x1000;
+		break;
+	}
+	default:
+		return 0x9800;
+	}
+
+	return 0;
+}
+
+typedef int (STDCALL *MarshalBoolRefDelegate) (int arg, unsigned int expected, unsigned int testVal, unsigned int* bDefaultMarsh,
+	unsigned int* bBoolCustMarsh, char* bI1CustMarsh, unsigned char* bU1CustMarsh, unsigned short* bVBCustMarsh);
+
+LIBTEST_API int STDCALL 
+mono_test_managed_marshal_bool_ref (int arg, unsigned int expected, unsigned int testVal, unsigned int outExpected,
+				    unsigned int outTestVal, MarshalBoolRefDelegate pfcn)
+{
+	int ret;
+	unsigned int lDefaultMarsh, lBoolCustMarsh;
+	char lI1CustMarsh = 0;
+	unsigned char lU1CustMarsh = 0;
+	unsigned short lVBCustMarsh = 0;
+	lDefaultMarsh = lBoolCustMarsh = 0;
+
+	if (!pfcn)
+		return 0x9900;
+
+	switch (arg) {
+	case 1:
+	{
+		unsigned int ltestVal = testVal;
+		ret = pfcn (arg, expected, outTestVal, &ltestVal, &lBoolCustMarsh, &lI1CustMarsh, &lU1CustMarsh, &lVBCustMarsh);
+		if (ret)
+			return 0x0100 + ret;
+		if (outExpected != ltestVal)
+			return 0x0200;
+		break;
+	}
+	case 2:
+	{
+		unsigned int ltestVal = testVal;
+		ret = pfcn (arg, expected, outTestVal, &lDefaultMarsh, &ltestVal, &lI1CustMarsh, &lU1CustMarsh, &lVBCustMarsh);
+		if (ret)
+			return 0x0300 + ret;
+		if (outExpected != ltestVal)
+			return 0x0400;
+		break;
+	}
+	case 3:
+	{
+		char ltestVal = testVal;
+		ret = pfcn (arg, expected, outTestVal, &lDefaultMarsh, &lBoolCustMarsh, &ltestVal, &lU1CustMarsh, &lVBCustMarsh);
+		if (ret)
+			return 0x0500 + ret;
+		if (outExpected != ltestVal)
+			return 0x0600;
+		break;
+	}
+	case 4:
+	{
+		unsigned char ltestVal = testVal;
+		ret = pfcn (arg, expected, outTestVal, &lDefaultMarsh, &lBoolCustMarsh, &lI1CustMarsh, &ltestVal, &lVBCustMarsh);
+		if (ret)
+			return 0x0700 + ret;
+		if (outExpected != ltestVal)
+			return 0x0800;
+		break;
+	}
+	case 5:
+	{
+		unsigned short ltestVal = testVal;
+		ret = pfcn (arg, expected, outTestVal, &lDefaultMarsh, &lBoolCustMarsh, &lI1CustMarsh, &lU1CustMarsh, &ltestVal);
+		if (ret)
+			return 0x0900 + ret;
+		if (outExpected != ltestVal)
+			return 0x1000;
+		break;
+	}
+	default:
+		return 0x9800;
+	}
+
+	return 0;
+}
 
 
