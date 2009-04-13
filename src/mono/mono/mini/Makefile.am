@@ -224,9 +224,10 @@ posix_sources = \
 	mini-posix.c
 
 if ENABLE_LLVM
-llvm_sources = \
-	mini-llvm.c		\
-	mini-llvm-cpp.cpp
+# Disabled for now to fix the windows build
+#llvm_sources = \
+#	mini-llvm.c		\
+#	mini-llvm-cpp.cpp
 endif
 
 common_sources = \

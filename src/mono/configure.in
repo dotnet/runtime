@@ -222,7 +222,8 @@ AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
 
 AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
-AC_PROG_CXX
+# Disabled for now to fix the windows build
+#AC_PROG_CXX
 AM_PROG_AS
 AM_PROG_CC_STDC
 AC_PROG_INSTALL

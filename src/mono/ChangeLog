@@ -1,3 +1,12 @@
+2009-04-13  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Disable AC_PROG_CXX for now to fix the windows build.
+
+	In mono/mini:
+
+	* Makefile.am: Comment out the cpp files as f@#%$ automake complains even
+	if they are inside a conditional.
+	
 2009-04-03  Zoltan Varga  <vargaz@gmail.com>
 
 	* scripts/patch-quiet.sh: Process LTCXXCOMPILE too.
