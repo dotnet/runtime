@@ -188,7 +188,7 @@ MonoMethod *
 mono_marshal_get_static_rgctx_invoke (MonoMethod *method) MONO_INTERNAL;
 
 MonoMethod *
-mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoObject *this) MONO_INTERNAL;
+mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoObject **this_loc) MONO_INTERNAL;
 
 gpointer
 mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type) MONO_INTERNAL;
@@ -450,7 +450,7 @@ void
 mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions) MONO_INTERNAL;
 
 void
-mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoObject* this) MONO_INTERNAL;
+mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoObject** this_loc) MONO_INTERNAL;
 
 GHashTable*
 mono_marshal_get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func) MONO_INTERNAL;
