@@ -98,9 +98,7 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, GSList **visited)
 			
 		/* SREGS */
 		num_sregs = mono_inst_get_src_registers (ins, sregs);
-		g_assert (num_sregs <= 2);
 		for (srcindex = 0; srcindex < num_sregs; ++srcindex) {
-			regtype = spec [(srcindex == 0) ? MONO_INST_SRC1 : MONO_INST_SRC2];
 			sreg = sregs [srcindex];
 
 			g_assert (sreg != -1);
