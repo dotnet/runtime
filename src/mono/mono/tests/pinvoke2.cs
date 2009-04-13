@@ -556,6 +556,19 @@ public class Tests {
 		return mono_test_marshal_delegate (d);
 	}
 
+	/* Static delegates closed over their first argument */
+	public static int closed_delegate (Tests t, int a) {
+		return t.int_field + a;
+	}
+
+	public static int test_34_marshal_closed_static_delegate () {
+		Tests t = new Tests ();
+		t.int_field = 32;
+		SimpleDelegate d = (SimpleDelegate)Delegate.CreateDelegate (typeof (SimpleDelegate), t, typeof (Tests).GetMethod ("closed_delegate"));
+
+		return mono_test_marshal_delegate (d);
+	}
+
 	public static int test_0_marshal_return_delegate () {
 		SimpleDelegate d = new SimpleDelegate (delegate_test);
 
