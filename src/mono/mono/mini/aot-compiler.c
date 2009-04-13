@@ -2490,9 +2490,9 @@ static void
 emit_trampolines (MonoAotCompile *acfg)
 {
 	char symbol [256];
-	int i;
+	int i, tramp_got_offset;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
-	int tramp_type, tramp_got_offset;
+	int tramp_type;
 	guint32 code_size;
 	MonoJumpInfo *ji;
 	guint8 *code;
