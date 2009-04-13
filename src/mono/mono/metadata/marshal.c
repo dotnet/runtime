@@ -7128,9 +7128,9 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
 		MonoType *local_type;
-		int variant_bool = 0;
-		if (!t->byref)
-			break;
+		int label_false;
+		guint8 ldc_op = CEE_LDC_I4_1;
+
 		if (spec == NULL) {
 			local_type = &mono_defaults.int32_class->byval_arg;
 		} else {
@@ -7141,7 +7141,10 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			case MONO_NATIVE_VARIANTBOOL:
 				local_type = &mono_defaults.int16_class->byval_arg;
-				variant_bool = 1;
+				ldc_op = CEE_LDC_I4_M1;
+				break;
+			case MONO_NATIVE_BOOLEAN:
+				local_type = &mono_defaults.int32_class->byval_arg;
 				break;
 			default:
 				g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
@@ -7149,29 +7152,49 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			}
 		}
-		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		if (t->byref)
+			*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		else
+			*conv_arg_type = local_type;
 		conv_arg = mono_mb_add_local (mb, local_type);
+		
 		mono_mb_emit_ldarg (mb, argnum);
-		mono_mb_emit_byte (mb, CEE_LDIND_I1);
-		if (variant_bool)
-			mono_mb_emit_byte (mb, CEE_NEG);
+		if (t->byref)
+			mono_mb_emit_byte (mb, CEE_LDIND_I1);
+		label_false = mono_mb_emit_branch (mb, CEE_BRFALSE);
+		mono_mb_emit_byte (mb, ldc_op);
 		mono_mb_emit_stloc (mb, conv_arg);
+		mono_mb_patch_branch (mb, label_false);
+
 		break;
 	}
 
 	case MARSHAL_ACTION_CONV_OUT:
+	{
+		int label_false, label_end;
 		if (!t->byref)
 			break;
+
 		mono_mb_emit_ldarg (mb, argnum);
 		mono_mb_emit_ldloc (mb, conv_arg);
-		if (spec != NULL && spec->native == MONO_NATIVE_VARIANTBOOL)
-			mono_mb_emit_byte (mb, CEE_NEG);
+		
+		label_false = mono_mb_emit_branch (mb, CEE_BRFALSE);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
+
+		label_end = mono_mb_emit_branch (mb, CEE_BR);
+		mono_mb_patch_branch (mb, label_false);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+		mono_mb_patch_branch (mb, label_end);
+
 		mono_mb_emit_byte (mb, CEE_STIND_I1);
 		break;
+	}
 
 	case MARSHAL_ACTION_PUSH:
 		if (t->byref)
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
+		else if (conv_arg)
+			mono_mb_emit_ldloc (mb, conv_arg);
 		else
 			mono_mb_emit_ldarg (mb, argnum);
 		break;
@@ -7182,27 +7205,22 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
+		MonoClass* conv_arg_class = mono_defaults.int32_class;
 		gint variant_bool = 0;
 		guint8 ldop = CEE_LDIND_I4;
-		int label1;
-
-		if (!t->byref)
-			break;
+		int label_null, label_false;
 
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
-
-		*conv_arg_type = &mono_defaults.int32_class->byval_arg;
 
 		if (spec) {
 			switch (spec->native) {
 			case MONO_NATIVE_I1:
 			case MONO_NATIVE_U1:
-				*conv_arg_type = &mono_defaults.byte_class->this_arg;
+				conv_arg_class = mono_defaults.byte_class;
 				ldop = CEE_LDIND_I1;
 				break;
 			case MONO_NATIVE_VARIANTBOOL:
-				*conv_arg_type = &mono_defaults.int16_class->this_arg;
-				variant_bool = 1;
+				conv_arg_class = mono_defaults.int16_class;
 				ldop = CEE_LDIND_I2;
 				break;
 			case MONO_NATIVE_BOOLEAN:
@@ -7212,24 +7230,36 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 		}
 
-		/* Check null */
+		if (t->byref)
+			*conv_arg_type = &conv_arg_class->this_arg;
+		else
+			*conv_arg_type = &conv_arg_class->byval_arg;
+
+
 		mono_mb_emit_ldarg (mb, argnum);
-		label1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 		
-		mono_mb_emit_ldarg (mb, argnum);
-		mono_mb_emit_byte (mb, ldop);	
+		/* Check null */
+		if (t->byref) {
+			
+			label_null = mono_mb_emit_branch (mb, CEE_BRFALSE);
+			mono_mb_emit_ldarg (mb, argnum);
+			mono_mb_emit_byte (mb, ldop);
+		}
 
-		if (variant_bool)
-			mono_mb_emit_byte (mb, CEE_NEG);
+		label_false = mono_mb_emit_branch (mb, CEE_BRFALSE);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_1);
 		mono_mb_emit_stloc (mb, conv_arg);
+		mono_mb_patch_branch (mb, label_false);
 
-		mono_mb_patch_branch (mb, label1);
+		if (t->byref) 
+			mono_mb_patch_branch (mb, label_null);
 		break;
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
 		guint8 stop = CEE_STIND_I4;
-		int label1;
+		guint8 ldc_op = CEE_LDC_I4_1;
+		int label_null,label_false, label_end;;
 
 		if (!t->byref)
 			break;
@@ -7241,6 +7271,7 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			case MONO_NATIVE_VARIANTBOOL:
 				stop = CEE_STIND_I2;
+				ldc_op = CEE_LDC_I4_M1;
 				break;
 			default:
 				break;
@@ -7249,15 +7280,21 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		
 		/* Check null */
 		mono_mb_emit_ldarg (mb, argnum);
-		label1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+		label_null = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 		mono_mb_emit_ldarg (mb, argnum);
 		mono_mb_emit_ldloc (mb, conv_arg);
-		if (spec != NULL && spec->native == MONO_NATIVE_VARIANTBOOL)
-			mono_mb_emit_byte (mb, CEE_NEG);
-		mono_mb_emit_byte (mb, stop);
 
-		mono_mb_patch_branch (mb, label1);
+		label_false = mono_mb_emit_branch (mb, CEE_BRFALSE);
+		mono_mb_emit_byte (mb, ldc_op);
+		label_end = mono_mb_emit_branch (mb, CEE_BR);
+
+		mono_mb_patch_branch (mb, label_false);
+		mono_mb_emit_byte (mb, CEE_LDC_I4_0);
+		mono_mb_patch_branch (mb, label_end);
+
+		mono_mb_emit_byte (mb, stop);
+		mono_mb_patch_branch (mb, label_null);
 		break;
 	}
 
