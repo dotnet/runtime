@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Reflection;
 
 class T {
 	[ThreadStatic]
@@ -39,6 +40,16 @@ class T {
 			return 1;
 		if (tfailed)
 			return 2;
+
+		/* Test access though reflection */
+		var = 42;
+		FieldInfo fi = typeof (T).GetField ("var", BindingFlags.NonPublic|BindingFlags.Static);
+		if ((int)fi.GetValue (null) != 42)
+			return 3;
+		fi.SetValue (null, 43);
+		if (var != 43)
+			return 4;
+
 		return 0;
 	}
 }
