@@ -1210,6 +1210,17 @@ enum {
 	MINI_TOKEN_SOURCE_FIELD
 };
 
+/* 
+ * This structures contains information about a trampoline function required by
+ * the AOT compiler in full-aot mode.
+ */
+typedef struct
+{
+	guint8 *code;
+	guint32 code_size;
+	char *name;
+} MonoAotTrampInfo;
+
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 /* main function */
@@ -1340,6 +1351,8 @@ gpointer mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr) MONO
 guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len) MONO_INTERNAL;
 guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
 char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
+MonoAotTrampInfo* mono_aot_tramp_info_create (char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
+
 /* This is an exported function */
 void     mono_aot_register_globals          (gpointer *globals);
 /* This too */
@@ -1496,6 +1509,7 @@ void      mono_arch_emit_setret                 (MonoCompile *cfg, MonoMethod *m
 MonoInst *mono_arch_emit_inst_for_method        (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args) MONO_INTERNAL;
 void      mono_arch_decompose_opts              (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
 void      mono_arch_decompose_long_opts         (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
+GSList*   mono_arch_get_delegate_invoke_impls   (void) MONO_INTERNAL;
 
 MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain, 
 						 MonoJitTlsData *jit_tls, 

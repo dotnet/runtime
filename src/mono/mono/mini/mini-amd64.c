@@ -5704,6 +5704,78 @@ mono_arch_get_this_arg_from_call (MonoGenericSharingContext *gsctx, MonoMethodSi
 
 #define MAX_ARCH_DELEGATE_PARAMS 10
 
+static gpointer
+get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *code_len)
+{
+	guint8 *code, *start;
+	int i;
+
+	if (has_target) {
+		start = code = mono_global_codeman_reserve (64);
+
+		/* Replace the this argument with the target */
+		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
+		amd64_mov_reg_membase (code, AMD64_ARG_REG1, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, target), 8);
+		amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+
+		g_assert ((code - start) < 64);
+
+		mono_debug_add_delegate_trampoline (start, code - start);
+	} else {
+		start = code = mono_global_codeman_reserve (64);
+
+		if (param_count == 0) {
+			amd64_jump_membase (code, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		} else {
+			/* We have to shift the arguments left */
+			amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
+			for (i = 0; i < param_count; ++i) {
+#ifdef PLATFORM_WIN32
+				if (i < 3)
+					amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
+				else
+					amd64_mov_reg_membase (code, param_regs [i], AMD64_RSP, 0x28, 8);
+#else
+				amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
+#endif
+			}
+
+			amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		}
+		g_assert ((code - start) < 64);
+	}
+
+	if (code_len)
+		*code_len = code - start;
+
+	return start;
+}
+
+/*
+ * mono_arch_get_delegate_invoke_impls:
+ *
+ *   Return a list of MonoAotTrampInfo structures for the delegate invoke impl
+ * trampolines.
+ */
+GSList*
+mono_arch_get_delegate_invoke_impls (void)
+{
+	GSList *res = NULL;
+	guint8 *code;
+	guint32 code_len;
+	int i;
+
+	code = get_delegate_invoke_impl (TRUE, 0, &code_len);
+	res = g_slist_prepend (res, mono_aot_tramp_info_create (g_strdup ("delegate_invoke_impl_has_target"), code, code_len));
+
+	for (i = 0; i < MAX_ARCH_DELEGATE_PARAMS; ++i) {
+		code = get_delegate_invoke_impl (FALSE, i, &code_len);
+		res = g_slist_prepend (res, mono_aot_tramp_info_create (g_strdup_printf ("delegate_invoke_impl_target_%d", i), code, code_len));
+	}
+
+	return res;
+}
+
 gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {
@@ -5723,14 +5795,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		if (cached)
 			return cached;
 
-		start = code = mono_global_codeman_reserve (64);
-
-		/* Replace the this argument with the target */
-		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
-		amd64_mov_reg_membase (code, AMD64_ARG_REG1, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, target), 8);
-		amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-
-		g_assert ((code - start) < 64);
+		if (mono_aot_only)
+			start = mono_aot_get_named_code ("delegate_invoke_impl_has_target");
+		else
+			start = get_delegate_invoke_impl (TRUE, 0, NULL);
 
 		mono_debug_add_delegate_trampoline (start, code - start);
 
@@ -5749,27 +5817,13 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		if (code)
 			return code;
 
-		start = code = mono_global_codeman_reserve (64);
-
-		if (sig->param_count == 0) {
-			amd64_jump_membase (code, AMD64_ARG_REG1, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		if (mono_aot_only) {
+			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
+			start = mono_aot_get_named_code (name);
+			g_free (name);
 		} else {
-			/* We have to shift the arguments left */
-			amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
-			for (i = 0; i < sig->param_count; ++i) {
-#ifdef PLATFORM_WIN32
-				if (i < 3)
-					amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
-				else
-					amd64_mov_reg_membase (code, param_regs [i], AMD64_RSP, 0x28, 8);
-#else
-				amd64_mov_reg_reg (code, param_regs [i], param_regs [i + 1], 8);
-#endif
-			}
-
-			amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			start = get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
 		}
-		g_assert ((code - start) < 64);
 
 		mono_debug_add_delegate_trampoline (start, code - start);
 

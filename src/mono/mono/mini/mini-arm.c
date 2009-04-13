@@ -360,6 +360,9 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 {
 	guint8 *code, *start;
 
+	if (mono_aot_only)
+		return NULL;
+
 	/* FIXME: Support more cases */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		return NULL;
