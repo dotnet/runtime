@@ -1,5 +1,8 @@
 2009-04-13  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Quiet 'copying selected object files' messages from
+	newer libtool versions as well.
+	
 	* configure.in: Disable AC_PROG_CXX for now to fix the windows build.
 
 	In mono/mini:
