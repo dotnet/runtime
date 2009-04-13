@@ -7861,6 +7861,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 {
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
+	gboolean closed = FALSE;
 
 	sig = m->sig;
 	csig = m->csig;
@@ -7871,6 +7872,16 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	/* allocate local 2 (boolean) delete_old */
 	mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
+
+	if (!sig->hasthis && sig->param_count != invoke_sig->param_count) {
+		/* Closed delegate */
+		g_assert (sig->param_count == invoke_sig->param_count + 1);
+		closed = TRUE;
+		/* Use a new signature without the first argument */
+		sig = mono_metadata_signature_dup (sig);
+		memmove (&sig->params [0], &sig->params [1], (sig->param_count - 1) * sizeof (MonoType*));
+		sig->param_count --;
+	}
 
 	if (!MONO_TYPE_IS_VOID(sig->ret)) {
 		/* allocate local 3 to store the return value */
@@ -7884,7 +7895,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
 		MonoType *t = sig->params [i];
-		
+
 		switch (t->type) {
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_CLASS:
@@ -7912,7 +7923,10 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			/* fixme: */
 			g_assert_not_reached ();
 		}
-	} 
+	} else if (closed) {
+		mono_mb_emit_ptr (mb, this_loc);
+		mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	}
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
@@ -7931,9 +7945,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 
 	if (mspecs [0] && mspecs [0]->native == MONO_NATIVE_CUSTOM) {
 		emit_marshal (m, 0, sig->ret, mspecs [0], 0, NULL, MARSHAL_ACTION_MANAGED_CONV_RESULT);
-	}
-	else
-	if (!sig->ret->byref) { 
+	} else if (!sig->ret->byref) { 
 		switch (sig->ret->type) {
 		case MONO_TYPE_VOID:
 			break;
@@ -8015,6 +8027,9 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			mono_mb_emit_ldloc (mb, 3);
 		mono_mb_emit_byte (mb, CEE_RET);
 	}
+
+	if (closed)
+		g_free (sig);
 }
 
 
@@ -8082,7 +8097,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	if (!this_loc && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
-	invoke = mono_class_get_method_from_name (delegate_klass, "Invoke", mono_method_signature (method)->param_count);
+	invoke = mono_get_delegate_invoke (delegate_klass);
 	invoke_sig = mono_method_signature (invoke);
 
 	mspecs = g_new0 (MonoMarshalSpec*, mono_method_signature (invoke)->param_count + 1);
@@ -8092,13 +8107,12 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 
-
 	/* we copy the signature, so that we can modify it */
 	if (this_loc)
 		/* Need to free this later */
-		csig = mono_metadata_signature_dup (sig);
+		csig = mono_metadata_signature_dup (invoke_sig);
 	else
-		csig = signature_dup (method->klass->image, sig);
+		csig = signature_dup (method->klass->image, invoke_sig);
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
