@@ -217,7 +217,7 @@ check_extra_gac_path_env (void) {
 
 	while (*splitted) {
 		if (**splitted && !g_file_test (*splitted, G_FILE_TEST_IS_DIR))
-			g_warning ("'%s' in MONO_GAC_PATH doesn't exist or has wrong permissions.", *splitted);
+			g_warning ("'%s' in MONO_GAC_PREFIX doesn't exist or has wrong permissions.", *splitted);
 
 		splitted++;
 	}
