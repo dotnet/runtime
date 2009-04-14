@@ -32,9 +32,11 @@
  TODO add section relocation support
  TODO verify the relocation table, since we really don't use, no need so far.
  TODO do full PECOFF resources verification 
- TODO verify in the CLI header entry point and resources 
+ TODO verify in the CLI header entry point and resources
+ TODO implement null token typeref validation  
  FIXME has_cattr coded index / 8 -> Permission table? -- it's decl security
  FIXME use subtraction based bounds checking to avoid overflows
+ FIXME calc col size using coded_index_desc;
 */
 
 #define INVALID_OFFSET ((guint32)-1)
@@ -101,6 +103,7 @@ const static unsigned char table_desc [] = {
 	COL_GUID, /*EncBaseId*/
 	COL_LAST,
 
+#define TYPEREF_TABLE_DESC (MODULE_TABLE_DESC + 6)
 	/* 0x01 TypeRef */
 	COL_RES_SCOPE, /*ResolutionScope*/
 	COL_STRING, /*TypeName*/
@@ -350,6 +353,17 @@ const static unsigned char table_desc [] = {
 	COL_LAST,
 };
 
+#define INVALID_TABLE (0xFF)
+/*format: number of bits, number of tables, tables{n. tables} */
+const static unsigned char coded_index_desc[] = {
+#define RES_SCOPE_DESC (0)
+	2, /*bits*/
+	4, /*tables*/
+	MONO_TABLE_MODULE,
+	MONO_TABLE_MODULEREF,
+	MONO_TABLE_ASSEMBLYREF,
+	MONO_TABLE_TYPEREF,
+};
 
 typedef struct {
 	guint32 rva;
@@ -1080,6 +1094,32 @@ is_valid_guid (VerifyContext *ctx, guint32 offset)
 	return guids.size >= 8 && guids.size - 8 >= offset;
 }
 
+static guint32
+get_coded_index_token (VerifyContext *ctx, int token_kind, guint32 coded_token)
+{
+	guint32 bits = coded_index_desc [token_kind];
+	return coded_token >> bits;
+}
+
+static gboolean
+is_valid_coded_index (VerifyContext *ctx, int token_kind, guint32 coded_token)
+{
+	guint32 bits = coded_index_desc [token_kind++];
+	guint32 table_count = coded_index_desc [token_kind++];
+	guint32 table = coded_token & ((1 << bits) - 1);
+	guint32 token = coded_token >> bits;
+
+	if (table >= table_count)
+		return FALSE;
+
+	/*token_kind points to the first table idx*/
+	table = coded_index_desc [token_kind + table];
+
+	if (table == INVALID_TABLE)
+		return FALSE;
+	return token <= ctx->tables [table].row_count;
+}
+
 static void
 verify_module_table (VerifyContext *ctx)
 {
@@ -1091,7 +1131,6 @@ verify_module_table (VerifyContext *ctx)
 
 	decode_row (ctx, MODULE_TABLE_DESC, table, 0, data);
 
-	printf ("decoded row values %x %x %x %x\n", data [0], data [1], data [2], data [3]);
 	if (data [MONO_MODULE_GENERATION] != 0)
 		ADD_ERROR (ctx, g_strdup_printf ("Module generation is not zero, but %x", data [MONO_MODULE_GENERATION]));
 
@@ -1109,6 +1148,23 @@ verify_module_table (VerifyContext *ctx)
 }
 
 static void
+verify_typeref_table (VerifyContext *ctx)
+{
+	TableInfo *table = &ctx->tables [MONO_TABLE_TYPEREF];
+	guint32 data [MONO_TYPEREF_SIZE];
+	int i;
+
+	for (i = 0; i < table->row_count; ++i) {
+		decode_row (ctx, TYPEREF_TABLE_DESC, table, 0, data);
+		if (!is_valid_coded_index (ctx, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d coded index 0x%08x", i, data [MONO_TYPEREF_SCOPE]));
+		
+		if (!get_coded_index_token (ctx, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
+			ADD_ERROR (ctx, g_strdup_printf ("The metadata verifier doesn't support null ResolutionScope tokens for typeref row %d", i));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = ctx->metadata_streams [TILDE_STREAM];
@@ -1123,6 +1179,8 @@ verify_tables_data (VerifyContext *ctx)
 		ADD_ERROR (ctx, g_strdup_printf ("Tables data require %d bytes but the only %d are available in the #~ stream", table_area_size, tables_area.size - (ctx->tables_offset - tables_area.offset)));
 
 	verify_module_table (ctx);
+	CHECK_ERROR ();
+	verify_typeref_table (ctx);
 }
 
 GSList*
