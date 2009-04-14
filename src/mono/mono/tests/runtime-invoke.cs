@@ -17,9 +17,29 @@ public class D
 	}
 }
 
+enum Enum1
+{
+	A,
+	B
+}
+
+enum Enum2
+{
+	C,
+	D
+}
+
 class X
 {
-	static void Main ()
+	public static Enum1 return_enum1 () {
+		return Enum1.A;
+	}
+
+	public static Enum2 return_enum2 () {
+		return Enum2.C;
+	}
+
+	static int Main ()
 	{
 		Assembly ass = Assembly.GetCallingAssembly ();
 		Type a_type = ass.GetType ("A");
@@ -38,5 +58,13 @@ class X
 
 		object d_ret = d_method.Invoke (d, null);
 		Console.WriteLine (d_ret);
+
+		/* Check sharing of wrappers returning enums */
+		if (typeof (X).GetMethod ("return_enum1").Invoke (null, null).GetType () != typeof (Enum1))
+			return 1;
+		if (typeof (X).GetMethod ("return_enum2").Invoke (null, null).GetType () != typeof (Enum2))
+			return 2;
+
+		return 0;
 	}
 }
