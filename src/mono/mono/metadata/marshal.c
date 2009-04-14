@@ -355,7 +355,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
  */
 static GHashTable *delegate_hash_table;
 /* Contains root locations pointing to the this arguments of delegates */
-static GHashTable *delegate_target_locations;
+static MonoGHashTable *delegate_target_locations;
 
 static GHashTable *
 delegate_hash_table_new (void) {
@@ -372,15 +372,16 @@ delegate_hash_table_remove (MonoDelegate *d)
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
-	if (delegate_target_locations == NULL)
-		delegate_target_locations = g_hash_table_new (NULL, NULL);
 #ifdef HAVE_MOVING_COLLECTOR
 	gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
 #endif
 	g_hash_table_remove (delegate_hash_table, d->delegate_trampoline);
-	target_loc = g_hash_table_lookup (delegate_target_locations, d->delegate_trampoline);
+	if (delegate_target_locations)
+		target_loc = mono_g_hash_table_lookup (delegate_target_locations, d->delegate_trampoline);
+	else
+		target_loc = NULL;
 	if (target_loc)
-		g_hash_table_remove (delegate_target_locations, d->delegate_trampoline);
+		mono_g_hash_table_remove (delegate_target_locations, d->delegate_trampoline);
 	mono_marshal_unlock ();
 	if (target_loc) {
 		mono_gc_free_fixed (target_loc);
@@ -399,15 +400,19 @@ delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc)
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
-	if (delegate_target_locations == NULL)
-		delegate_target_locations = g_hash_table_new (NULL, NULL);
+	if (delegate_target_locations == NULL) {
+		/* Has to be conservative as the values are not object references */
+		delegate_target_locations = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_CONSERVATIVE_GC);
+		MONO_GC_REGISTER_ROOT (delegate_target_locations);
+	}
 #ifdef HAVE_MOVING_COLLECTOR
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, GUINT_TO_POINTER (gchandle));
 #else
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
 #endif
 	if (target_loc)
-		g_hash_table_insert (delegate_target_locations, d->delegate_trampoline, target_loc);
+		/* This keeps target_loc alive for Boehm */
+		mono_g_hash_table_insert (delegate_target_locations, d->delegate_trampoline, target_loc);
 	mono_marshal_unlock ();
 }
 
@@ -7204,7 +7209,6 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		MonoClass* conv_arg_class = mono_defaults.int32_class;
-		gint variant_bool = 0;
 		guint8 ldop = CEE_LDIND_I4;
 		int label_null, label_false;
 
