@@ -329,8 +329,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 
 	if (delegate->target) {
 		/* Produce a location which can be embedded in JITted code */
-		target_loc = g_new0 (MonoObject*, 1);
-		mono_gc_register_root ((char*)target_loc, sizeof (MonoObject*), NULL);
+		target_loc = mono_gc_alloc_fixed (sizeof (MonoObject*), NULL);
 		*target_loc = delegate->target;
 	} else {
 		target_loc = NULL;
@@ -338,7 +337,7 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 
 	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_loc);
 
-	delegate->delegate_trampoline =  mono_compile_method (wrapper);
+	delegate->delegate_trampoline = mono_compile_method (wrapper);
 
 	// Add the delegate to the delegate hash table
 	delegate_hash_table_add (delegate, target_loc);
@@ -384,8 +383,7 @@ delegate_hash_table_remove (MonoDelegate *d)
 		g_hash_table_remove (delegate_target_locations, d->delegate_trampoline);
 	mono_marshal_unlock ();
 	if (target_loc) {
-		mono_gc_deregister_root ((char*)target_loc);
-		g_free (target_loc);
+		mono_gc_free_fixed (target_loc);
 	}
 #ifdef HAVE_MOVING_COLLECTOR
 	mono_gchandle_free (gchandle);
