@@ -355,13 +355,75 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
 
 #define MAX_ARCH_DELEGATE_PARAMS 3
 
+static gpointer
+get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *code_size)
+{
+	guint8 *code, *start;
+
+	if (has_target) {
+		start = code = mono_global_codeman_reserve (12);
+
+		/* Replace the this argument with the target */
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, target));
+		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+
+		g_assert ((code - start) <= 12);
+
+		mono_arch_flush_icache (start, 12);
+	} else {
+		int size, i;
+
+		size = 8 + param_count * 4;
+		start = code = mono_global_codeman_reserve (size);
+
+		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		/* slide down the arguments */
+		for (i = 0; i < param_count; ++i) {
+			ARM_MOV_REG_REG (code, (ARMREG_R0 + i), (ARMREG_R0 + i + 1));
+		}
+		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+
+		g_assert ((code - start) <= size);
+
+		mono_arch_flush_icache (start, size);
+	}
+
+	if (code_size)
+		*code_size = code - start;
+
+	return start;
+}
+
+/*
+ * mono_arch_get_delegate_invoke_impls:
+ *
+ *   Return a list of MonoAotTrampInfo structures for the delegate invoke impl
+ * trampolines.
+ */
+GSList*
+mono_arch_get_delegate_invoke_impls (void)
+{
+	GSList *res = NULL;
+	guint8 *code;
+	guint32 code_len;
+	int i;
+
+	code = get_delegate_invoke_impl (TRUE, 0, &code_len);
+	res = g_slist_prepend (res, mono_aot_tramp_info_create (g_strdup ("delegate_invoke_impl_has_target"), code, code_len));
+
+	for (i = 0; i < MAX_ARCH_DELEGATE_PARAMS; ++i) {
+		code = get_delegate_invoke_impl (FALSE, i, &code_len);
+		res = g_slist_prepend (res, mono_aot_tramp_info_create (g_strdup_printf ("delegate_invoke_impl_target_%d", i), code, code_len));
+	}
+
+	return res;
+}
+
 gpointer
 mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
 {
 	guint8 *code, *start;
-
-	if (mono_aot_only)
-		return NULL;
 
 	/* FIXME: Support more cases */
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
@@ -374,23 +436,17 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			mono_mini_arch_unlock ();
 			return cached;
 		}
-		
-		start = code = mono_global_codeman_reserve (12);
 
-		/* Replace the this argument with the target */
-		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, target));
-		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
-
-		g_assert ((code - start) <= 12);
-
-		mono_arch_flush_icache (start, 12);
+		if (mono_aot_only)
+			start = mono_aot_get_named_code ("delegate_invoke_impl_has_target");
+		else
+			start = get_delegate_invoke_impl (TRUE, 0, NULL);
 		cached = start;
 		mono_mini_arch_unlock ();
 		return cached;
 	} else {
 		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
-		int size, i;
+		int i;
 
 		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
 			return NULL;
@@ -405,19 +461,13 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return code;
 		}
 
-		size = 8 + sig->param_count * 4;
-		start = code = mono_global_codeman_reserve (size);
-
-		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_R0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-		/* slide down the arguments */
-		for (i = 0; i < sig->param_count; ++i) {
-			ARM_MOV_REG_REG (code, (ARMREG_R0 + i), (ARMREG_R0 + i + 1));
+		if (mono_aot_only) {
+			char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", sig->param_count);
+			start = mono_aot_get_named_code (name);
+			g_free (name);
+		} else {
+			start = get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
 		}
-		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
-
-		g_assert ((code - start) <= size);
-
-		mono_arch_flush_icache (start, size);
 		cache [sig->param_count] = start;
 		mono_mini_arch_unlock ();
 		return start;

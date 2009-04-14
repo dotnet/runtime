@@ -688,6 +688,26 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	emit_byte (acfg, '\xff');
 	emit_byte (acfg, '\x25');
 	emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4);
+#elif defined(__arm__)
+	guint8 buf [128];
+	guint8 *code;
+
+	/* This should be exactly 24 bytes long */
+	*tramp_size = 24;
+	code = buf;
+	/* Load rgctx value */
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 8);
+	ARM_LDR_REG_REG (code, MONO_ARCH_RGCTX_REG, ARMREG_PC, ARMREG_R1);
+	/* Load branch addr + branch */
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_PC, 4);
+	ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_R1);
+
+	g_assert (code - buf == 16);
+
+	/* Emit it */
+	emit_bytes (acfg, buf, code - buf);
+	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 8);
+	emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4 + 4);
 #else
 	g_assert_not_reached ();
 #endif
@@ -2497,7 +2517,6 @@ emit_trampolines (MonoAotCompile *acfg)
 	MonoJumpInfo *ji;
 	guint8 *code;
 	GSList *unwind_ops;
-	GSList *l;
 #endif
 
 	if (!acfg->aot_opts.full_aot)
@@ -2572,14 +2591,18 @@ emit_trampolines (MonoAotCompile *acfg)
 		}
 #endif
 
-#if defined(__x86_64__)
-		/* delegate_invoke_impl trampolines */
-		l = mono_arch_get_delegate_invoke_impls ();
-		while (l) {
-			MonoAotTrampInfo *info = l->data;
+#if defined(__x86_64__) || defined(__arm__)
+		{
+			GSList *l;
 
-			emit_trampoline (acfg, info->name, info->code, info->code_size, acfg->got_offset, NULL, NULL);
-			l = l->next;
+			/* delegate_invoke_impl trampolines */
+			l = mono_arch_get_delegate_invoke_impls ();
+			while (l) {
+				MonoAotTrampInfo *info = l->data;
+
+				emit_trampoline (acfg, info->name, info->code, info->code_size, acfg->got_offset, NULL, NULL);
+				l = l->next;
+			}
 		}
 #endif
 
