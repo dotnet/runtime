@@ -3806,7 +3806,7 @@ add_string_ctor_signature (MonoMethod *method)
 }
 
 static MonoType*
-get_runtime_invoke_type (MonoType *t)
+get_runtime_invoke_type (MonoType *t, gboolean ret)
 {
 	if (t->byref)
 		return &mono_defaults.int_class->byval_arg;
@@ -3829,7 +3829,7 @@ handle_enum:
 	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass->enumtype) {
+		if (t->data.klass->enumtype && !ret) {
 			t = mono_class_enum_basetype (t->data.klass);
 			goto handle_enum;
 		}
@@ -3852,9 +3852,9 @@ mono_marshal_get_runtime_invoke_sig (MonoMethodSignature *sig)
 	MonoMethodSignature *res = mono_metadata_signature_dup (sig);
 	int i;
 
-	res->ret = get_runtime_invoke_type (sig->ret);
+	res->ret = get_runtime_invoke_type (sig->ret, TRUE);
 	for (i = 0; i < res->param_count; ++i)
-		res->params [i] = get_runtime_invoke_type (sig->params [i]);
+		res->params [i] = get_runtime_invoke_type (sig->params [i], FALSE);
 
 	return res;
 }
