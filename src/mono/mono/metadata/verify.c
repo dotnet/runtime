@@ -2892,7 +2892,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	if (!mono_delegate_signature_equal (mono_method_signature (invoke), mono_method_signature (method), is_first_arg_bound)) {
 		char *fun_sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
 		char *invoke_sig = mono_signature_get_desc (mono_method_signature (invoke), FALSE);
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer signature '%s' doesn't match delegate's signatuere  '%s' at 0x%04x", fun_sig, invoke_sig, ctx->ip_offset));
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer signature '%s' doesn't match delegate's signature '%s' at 0x%04x", fun_sig, invoke_sig, ctx->ip_offset));
 		g_free (fun_sig);
 		g_free (invoke_sig);
 	}
