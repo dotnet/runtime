@@ -80,5 +80,25 @@ module-table {
 
 	#encBaseId
 	invalid offset table-row ( 0 0 ) + 8 set-ushort 0x8888
+}
+
+
+typedef-table {
+	assembly simple-assembly.exe
+
+	#Resolution Scope
+
+	#all table indexes are valid
+	#Invalid module
+	invalid offset table-row ( 1 0 ) set-ushort 0x8000
+
+	#Invalid moduleref
+	invalid offset table-row ( 1 0 ) set-ushort 0x8001
+
+	#Invalid assemblyref
+	invalid offset table-row ( 1 0 ) set-ushort 0x8002
+
+	#Invalid typeref
+	invalid offset table-row ( 1 0 ) set-ushort 0x8003
 
 }

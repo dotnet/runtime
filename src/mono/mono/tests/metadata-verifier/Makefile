@@ -8,7 +8,7 @@ assembly-with-resource.exe: assembly-with-resource.cs
 	gmcs assembly-with-resource.cs -linkresource:Makefile -resource:simple-assembly.il
 
 gen-md-tests: gen-md-tests.c
-	gcc $(GLIB_CFLAGS) $(GLIB_LINK_FLAGS) -I../../../ gen-md-tests.c ../../mini/.libs/libmono.a -g -Wall -o gen-md-tests
+	gcc $(GLIB_CFLAGS) $(GLIB_LINK_FLAGS) -I../../../ gen-md-tests.c ../../mini/.libs/libmono.a -g -Wall -lpthread -lm -ldl -lrt -o gen-md-tests
 
 header-tests.ok: gen-md-tests header-tests.md simple-assembly.exe
 	./gen-md-tests header-tests.md
