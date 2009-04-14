@@ -4952,7 +4952,7 @@ mono_method_verify (MonoMethod *method, int level)
 				start = 1;
 			}
 
-			if (clause->try_offset == ip_offset && ctx.eval.size > 0) {
+			if (clause->try_offset == ip_offset && ctx.eval.size > 0 && start == 0) {
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Try to enter try block with a non-empty stack at 0x%04x", ip_offset));
 				start = 1;
 			}
