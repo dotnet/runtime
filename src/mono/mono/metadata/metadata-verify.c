@@ -1161,6 +1161,13 @@ verify_typeref_table (VerifyContext *ctx)
 		
 		if (!get_coded_index_token (ctx, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("The metadata verifier doesn't support null ResolutionScope tokens for typeref row %d", i));
+
+		if (!data [MONO_TYPEREF_NAME] || !is_valid_non_empty_string (ctx, data [MONO_TYPEREF_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d name token 0x%08x", i, data [MONO_TYPEREF_NAME]));
+
+		if (data [MONO_TYPEREF_NAMESPACE] && !is_valid_non_empty_string (ctx, data [MONO_TYPEREF_NAMESPACE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d namespace token 0x%08x", i, data [MONO_TYPEREF_NAMESPACE]));
+	
 	}
 }
 
