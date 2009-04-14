@@ -21,7 +21,7 @@
 	end:
 	ldc.i4.0
 	pop
-	#the verifier can do DCE before performing stack merging
+	//the verifier can do DCE before performing stack merging
 	newobj instance void object::.ctor()
 	callvirt instance int32 object::GetHashCode()
 	beq.s branch_target
