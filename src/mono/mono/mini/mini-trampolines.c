@@ -178,7 +178,9 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	MonoMethod *generic_virtual = NULL;
 	int context_used;
 	gboolean proxy = FALSE;
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
 	gboolean need_rgctx_tramp = FALSE;
+#endif
 
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	if (m == MONO_FAKE_VTABLE_METHOD) {
@@ -700,7 +702,9 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 	MonoMethod *m;
 	MonoMethod *method = NULL;
 	gboolean multicast, callvirt;
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
 	gboolean need_rgctx_tramp = FALSE;
+#endif
 	MonoMethod *invoke = tramp_data [0];
 	guint8 *impl_this = tramp_data [1];
 	guint8 *impl_nothis = tramp_data [2];
@@ -761,8 +765,10 @@ mono_delegate_trampoline (gssize *regs, guint8 *code, gpointer *tramp_data, guin
 		}
 	}
 
+#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
 	if (need_rgctx_tramp)
 		delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
+#endif
 
 	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
 	if (!multicast && !callvirt) {
