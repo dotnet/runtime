@@ -1,3 +1,7 @@
+2009-04-14 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: More tests for the typeref table.
+
 2009-04-13 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* Makefile: Fix build of gen-md-tests.

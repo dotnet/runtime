@@ -101,4 +101,13 @@ typedef-table {
 	#Invalid typeref
 	invalid offset table-row ( 1 0 ) set-ushort 0x8003
 
+	#Empty TypeName
+	invalid offset table-row ( 1 0 ) + 2 set-ushort 0
+
+	#Invalid TypeName
+	invalid offset table-row ( 1 0 ) + 2 set-ushort 0x8080
+
+	#Empty TypeNamespace
+	invalid offset table-row ( 1 0 ) + 4 set-ushort 0x8080
 }
+
