@@ -83,7 +83,7 @@ module-table {
 }
 
 
-typedef-table {
+typeref-table {
 	assembly simple-assembly.exe
 
 	#Resolution Scope
@@ -109,5 +109,32 @@ typedef-table {
 
 	#Empty TypeNamespace
 	invalid offset table-row ( 1 0 ) + 4 set-ushort 0x8080
+}
+
+typedef-table {
+	assembly simple-assembly.exe
+
+	#rows
+	valid offset tables-header + 32 set-uint 2
+	invalid offset tables-header + 32 set-uint 0
+
+	#This part of the test suite only verifies structural properties, not type validation rules - like an interface that's not abstract.	
+
+	#Flags invalid bits: 9,11,14,15,19,21,24-31
+	invalid offset table-row ( 2 1 ) set-bit 9
+	invalid offset table-row ( 2 1 ) set-bit 11
+	invalid offset table-row ( 2 1 ) set-bit 14
+	invalid offset table-row ( 2 1 ) set-bit 15
+	invalid offset table-row ( 2 1 ) set-bit 19
+	invalid offset table-row ( 2 1 ) set-bit 21
+	invalid offset table-row ( 2 1 ) set-bit 24
+	invalid offset table-row ( 2 1 ) set-bit 25
+	invalid offset table-row ( 2 1 ) set-bit 26
+	invalid offset table-row ( 2 1 ) set-bit 27
+	invalid offset table-row ( 2 1 ) set-bit 28
+	invalid offset table-row ( 2 1 ) set-bit 29
+	invalid offset table-row ( 2 1 ) set-bit 30
+	invalid offset table-row ( 2 1 ) set-bit 31
+
 }
 
