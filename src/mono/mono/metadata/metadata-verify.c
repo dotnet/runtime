@@ -110,6 +110,7 @@ const static unsigned char table_desc [] = {
 	COL_STRING, /*TypeNameSpace*/
 	COL_LAST,
 
+#define TYPEDEF_TABLE_DESC (TYPEREF_TABLE_DESC + 4)
 	/* 0x02 TypeDef */
 	COL_UINT32, /*Flags*/
 	COL_STRING, /*TypeName*/
@@ -1155,7 +1156,7 @@ verify_typeref_table (VerifyContext *ctx)
 	int i;
 
 	for (i = 0; i < table->row_count; ++i) {
-		decode_row (ctx, TYPEREF_TABLE_DESC, table, 0, data);
+		decode_row (ctx, TYPEREF_TABLE_DESC, table, i, data);
 		if (!is_valid_coded_index (ctx, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d coded index 0x%08x", i, data [MONO_TYPEREF_SCOPE]));
 		
@@ -1167,9 +1168,28 @@ verify_typeref_table (VerifyContext *ctx)
 
 		if (data [MONO_TYPEREF_NAMESPACE] && !is_valid_non_empty_string (ctx, data [MONO_TYPEREF_NAMESPACE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d namespace token 0x%08x", i, data [MONO_TYPEREF_NAMESPACE]));
-	
 	}
 }
+
+/*bits 9,11,14,15,19,21,24-31 */
+#define INVALID_TYPEDEF_FLAG_BITS ((1 << 9) | (1 << 11) | (1 << 14) | (1 << 15) | (1 << 19) | (1 << 21) | 0xFF000000)
+static void
+verify_typedef_table (VerifyContext *ctx)
+{
+	TableInfo *table = &ctx->tables [MONO_TABLE_TYPEDEF];
+	guint32 data [MONO_TYPEDEF_SIZE];
+	int i;
+
+	if (table->row_count == 0)
+		ADD_ERROR (ctx, g_strdup_printf ("Typedef table must have exactly at least one row"));
+
+	for (i = 0; i < table->row_count; ++i) {
+		decode_row (ctx, TYPEDEF_TABLE_DESC, table, i, data);
+		if (data [MONO_TYPEDEF_FLAGS] & INVALID_TYPEDEF_FLAG_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid flags field 0x%08x", i, data [MONO_TYPEDEF_FLAGS]));
+	}
+}
+
 
 static void
 verify_tables_data (VerifyContext *ctx)
@@ -1188,6 +1208,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_module_table (ctx);
 	CHECK_ERROR ();
 	verify_typeref_table (ctx);
+	CHECK_ERROR ();
+	verify_typedef_table (ctx);
 }
 
 GSList*
