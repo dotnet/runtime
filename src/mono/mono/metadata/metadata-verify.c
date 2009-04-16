@@ -1200,6 +1200,7 @@ verify_typedef_table (VerifyContext *ctx)
 {
 	TableInfo *table = &ctx->tables [MONO_TABLE_TYPEDEF];
 	guint32 data [MONO_TYPEDEF_SIZE];
+	guint32 fieldlist = 1;
 	int i;
 
 	if (table->row_count == 0)
@@ -1235,6 +1236,8 @@ verify_typedef_table (VerifyContext *ctx)
 			if (data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_INTERFACE) {
 				if (data [MONO_TYPEDEF_EXTENDS])
 					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for interface type must have a null extend field", i));
+				if ((data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_ABSTRACT) == 0)
+					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for interface type must be abstract", i));
 			} else {
 				if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
 					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
@@ -1243,6 +1246,14 @@ verify_typedef_table (VerifyContext *ctx)
 					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for non-interface type must have a non-null extend field", i));
 			}
 		}
+
+		if (data [MONO_TYPEDEF_FIELD_LIST] == 0)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d FieldList be be >= 1", i));
+
+		if (data [MONO_TYPEDEF_FIELD_LIST] < fieldlist)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d FieldList rowid 0x%08x can't be smaller than of previous row 0x%08x", i, data [MONO_TYPEDEF_FIELD_LIST], fieldlist));
+
+		fieldlist = data [MONO_TYPEDEF_FIELD_LIST];
 	}
 }
 
