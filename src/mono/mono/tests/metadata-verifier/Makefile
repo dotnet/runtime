@@ -7,6 +7,9 @@ GLIB_LINK_FLAGS=`pkg-config --libs glib-2.0`
 assembly-with-resource.exe: assembly-with-resource.cs
 	gmcs assembly-with-resource.cs -linkresource:Makefile -resource:simple-assembly.il
 
+assembly-with-complex-type.exe: assembly-with-complex-type.cs
+	gmcs assembly-with-complex-type.cs
+
 gen-md-tests: gen-md-tests.c
 	gcc $(GLIB_CFLAGS) $(GLIB_LINK_FLAGS) -I../../../ gen-md-tests.c ../../mini/.libs/libmono.a -g -Wall -lpthread -lm -ldl -lrt -o gen-md-tests
 
@@ -34,7 +37,7 @@ cli-metadata-tests.ok: gen-md-tests cli-metadata-tests.md simple-assembly.exe
 	./gen-md-tests cli-metadata-tests.md
 	touch cli-metadata-tests.ok
 
-cli-tables-tests.ok: gen-md-tests cli-tables-tests.md simple-assembly.exe
+cli-tables-tests.ok: gen-md-tests cli-tables-tests.md simple-assembly.exe assembly-with-complex-type.exe
 	./gen-md-tests cli-tables-tests.md
 	touch cli-tables-tests.ok
 

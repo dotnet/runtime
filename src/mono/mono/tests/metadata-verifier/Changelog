@@ -1,5 +1,13 @@
 2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for the field list of the typedef table.
+
+	* assembly-with-complex-type.cs: New assembly source. 
+
+	* Makefile: Compile the new assembly source.
+
+2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for the extends field of the typedef table.
 
 2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>

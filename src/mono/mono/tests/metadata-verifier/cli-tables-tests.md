@@ -168,12 +168,31 @@ typedef-table {
 	#make type 1 an inteface but let it remain extending something
 	invalid offset table-row ( 2 1 ) or-uint 0x20
 	#interface must extend nothing
-	valid offset table-row ( 2 1 ) or-uint 0x20 , offset table-row ( 2 1 ) + 8 set-ushort 0x0
+	valid offset table-row ( 2 1 ) or-uint 0xA0 , offset table-row ( 2 1 ) + 8 set-ushort 0x0
+
+	#interface must be abstract
+	invalid offset table-row ( 2 1 ) or-uint 0x20 , offset table-row ( 2 1 ) + 8 set-ushort 0x0
 
 	#TODO add a test for sys.obj (we should test for mscorlib as well)
 
 	valid offset table-row ( 2 0 ) + 8 set-ushort 0
 	#make <module> extend the first typeref entry, which usually is sys.obj
+	#LAMEIMPL MS ignores if <module> extend something.
 	invalid offset table-row ( 2 0 ) + 8 set-ushort 0x5
 }
 
+typedef-table-field-list {
+	assembly assembly-with-complex-type.exe
+
+	valid offset table-row ( 2 1 ) + 10 set-ushort 1
+
+	#bad field list 
+	invalid offset table-row ( 2 1 ) + 10 set-ushort 999
+
+	#this type is bigger than the next
+	invalid offset table-row ( 2 1 ) + 10 set-ushort 4
+
+	#can't be zero
+	invalid offset table-row ( 2 0 ) + 10 set-ushort 0
+
+}
