@@ -5719,8 +5719,6 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		amd64_jump_membase (code, AMD64_RAX, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < 64);
-
-		mono_debug_add_delegate_trampoline (start, code - start);
 	} else {
 		start = code = mono_global_codeman_reserve (64);
 
@@ -5744,6 +5742,8 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		}
 		g_assert ((code - start) < 64);
 	}
+
+	mono_debug_add_delegate_trampoline (start, code - start);
 
 	if (code_len)
 		*code_len = code - start;
@@ -5800,8 +5800,6 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		else
 			start = get_delegate_invoke_impl (TRUE, 0, NULL);
 
-		mono_debug_add_delegate_trampoline (start, code - start);
-
 		mono_memory_barrier ();
 
 		cached = start;
@@ -5824,8 +5822,6 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		} else {
 			start = get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
 		}
-
-		mono_debug_add_delegate_trampoline (start, code - start);
 
 		mono_memory_barrier ();
 
