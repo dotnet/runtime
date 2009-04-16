@@ -1,5 +1,9 @@
 2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* gen-md-tests.c: Add the or-uint effect.
+
+2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* data-directory-tests.md:
 	* header-tests.md:
 	* resources-tests.md: Add comments related to faulty verification

@@ -59,7 +59,7 @@ selector:
 	'offset' expression
 
 effect:
-	('set-byte' | 'set-ushort' | 'set-uint' | 'set-bit' ) expression
+	('set-byte' | 'set-ushort' | 'set-uint' | 'set-bit' | 'or-uint' ) expression
 
 expression:
 	atom ([+-] atom)*
@@ -134,7 +134,8 @@ enum {
 	EFFECT_SET_USHORT,
 	EFFECT_SET_UINT,
 	EFFECT_SET_TRUNC,
-	EFFECT_SET_BIT
+	EFFECT_SET_BIT,
+	EFFECT_OR_UINT,
 };
 
 enum {
@@ -509,6 +510,10 @@ apply_effect (patch_effect_t *effect, test_entry_t *entry, guint32 offset)
 	case EFFECT_SET_BIT:
 		DEBUG_PARSER (printf("\tset-bit effect bit %d old value [%x]\n", value, READ_BIT (ptr, value)));
 		SET_BIT (ptr, value);
+		break;
+	case EFFECT_OR_UINT:
+		DEBUG_PARSER (printf("\or-uint effect old value [%x] new value [%x]\n", READ_VAR (guint32, ptr), value));
+		SET_VAR (guint32, ptr, READ_VAR (guint32, ptr) | value);
 		break;
 	default:
 		printf ("Invalid effect type %d\n", effect->type);
@@ -899,6 +904,8 @@ parse_effect (scanner_t *scanner)
 		type = EFFECT_SET_BIT; 
 	else if (!strcmp ("truncate", name))
 		type = EFFECT_SET_TRUNC;
+	else if (!strcmp ("or-uint", name))
+		type = EFFECT_OR_UINT;
 	else 
 		FAIL(g_strdup_printf ("Invalid effect kind, expected one of: (set-byte set-ushort set-uint) but got %s",name), INVALID_ID_TEXT);
 
