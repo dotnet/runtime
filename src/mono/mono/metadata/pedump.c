@@ -446,7 +446,7 @@ verify_image_file (const char *fname)
 	}
 	fclose (filed);
 
-	errors = mono_image_verify (raw_data, stat_buf.st_size);
+	errors = mono_image_verify (raw_data, stat_buf.st_size, strcmp (fname, "mscorlib.dll") == 0);
 	mono_file_unmap (raw_data, raw_data_handle);
 
 	if (!errors)

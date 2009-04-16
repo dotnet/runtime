@@ -25,7 +25,7 @@ gboolean mono_verifier_verify_class (MonoClass *klass) MONO_INTERNAL;
 
 GSList* mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visibility) MONO_INTERNAL;
 
-GSList* mono_image_verify (const char *data, guint32 size) MONO_INTERNAL;
+GSList* mono_image_verify (const char *data, guint32 size, gboolean is_corlib) MONO_INTERNAL;
 
 G_END_DECLS
 

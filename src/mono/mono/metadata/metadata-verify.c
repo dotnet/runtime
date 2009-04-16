@@ -364,6 +364,12 @@ const static unsigned char coded_index_desc[] = {
 	MONO_TABLE_MODULEREF,
 	MONO_TABLE_ASSEMBLYREF,
 	MONO_TABLE_TYPEREF,
+#define TYPEDEF_OR_REF_DESC (RES_SCOPE_DESC + 6)
+	2, /*bits*/
+	3, /*tables*/
+	MONO_TABLE_TYPEDEF,
+	MONO_TABLE_TYPEREF,
+	MONO_TABLE_TYPESPEC,
 };
 
 typedef struct {
@@ -404,6 +410,7 @@ typedef struct {
 	OffsetAndSize metadata_streams [5]; //offset from begin of the image
 	TableInfo tables [MONO_TABLE_NUM];
 	guint32 field_sizes [COL_LAST];
+	gboolean is_corlib;
 } VerifyContext;
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
@@ -1121,6 +1128,22 @@ is_valid_coded_index (VerifyContext *ctx, int token_kind, guint32 coded_token)
 	return token <= ctx->tables [table].row_count;
 }
 
+/*WARNING: This function doesn't verify if the strings @offset points to a valid string*/
+static int
+string_cmp (VerifyContext *ctx, const char *str, guint offset)
+{
+	if (offset == 0)
+		return strcmp (str, "");
+
+	return strcmp (str, ctx->data + ctx->metadata_streams [STRINGS_STREAM].offset + offset);
+}
+
+static gboolean
+typedef_is_system_object (VerifyContext *ctx, guint32 *data)
+{
+	return ctx->is_corlib && !string_cmp (ctx, "System", data [MONO_TYPEDEF_NAME]) && !string_cmp (ctx, "Object", data [MONO_TYPEDEF_NAMESPACE]);
+}
+
 static void
 verify_module_table (VerifyContext *ctx)
 {
@@ -1133,7 +1156,7 @@ verify_module_table (VerifyContext *ctx)
 	decode_row (ctx, MODULE_TABLE_DESC, table, 0, data);
 
 	if (!is_valid_non_empty_string (ctx, data [MONO_MODULE_NAME]))
-		ADD_ERROR (ctx, g_strdup_printf ("Module has an invalid name, string index %x", data [MONO_MODULE_NAME]));
+		ADD_ERROR (ctx, g_strdup_printf ("Module has an invalid name, string index 0x%08x", data [MONO_MODULE_NAME]));
 
 	if (!is_valid_guid (ctx, data [MONO_MODULE_MVID]))
 		ADD_ERROR (ctx, g_strdup_printf ("Module has an invalid Mvid, guid index %x", data [MONO_MODULE_MVID]));
@@ -1193,6 +1216,31 @@ verify_typedef_table (VerifyContext *ctx)
 
 		if ((data [MONO_TYPEDEF_FLAGS] & 0xC00000) != 0)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d mono doesn't support custom string format", i));
+
+		if (!data [MONO_TYPEDEF_NAME] || !is_valid_non_empty_string (ctx, data [MONO_TYPEDEF_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid name token %08x", i, data [MONO_TYPEDEF_NAME]));
+
+		if (data [MONO_TYPEREF_NAMESPACE] && !is_valid_non_empty_string (ctx, data [MONO_TYPEREF_NAMESPACE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid namespace token %08x", i, data [MONO_TYPEREF_NAMESPACE]));
+
+		if (i == 0) {
+			if (data [MONO_TYPEDEF_EXTENDS] != 0)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row 0 for the special <module> type must have a null extend field"));
+		} else {
+			if (typedef_is_system_object (ctx, data) && data [MONO_TYPEDEF_EXTENDS] != 0)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for System.Object must have a null extend field", i));
+	
+			if (data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_INTERFACE) {
+				if (data [MONO_TYPEDEF_EXTENDS])
+					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for interface type must have a null extend field", i));
+			} else {
+				if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
+					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
+	
+				if (!get_coded_index_token (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS])) 
+					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for non-interface type must have a non-null extend field", i));
+			}
+		}
 	}
 }
 
@@ -1219,13 +1267,14 @@ verify_tables_data (VerifyContext *ctx)
 }
 
 GSList*
-mono_image_verify (const char *data, guint32 size)
+mono_image_verify (const char *data, guint32 size, gboolean is_corlib)
 {
 	VerifyContext ctx;
 	memset (&ctx, 0, sizeof (VerifyContext));
 	ctx.data = data;
 	ctx.size = size;
 	ctx.valid = 1;
+	ctx.is_corlib = is_corlib;
 
 	verify_msdos_header (&ctx);
 	CHECK_STATE();
