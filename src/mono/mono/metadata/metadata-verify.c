@@ -1132,9 +1132,6 @@ verify_module_table (VerifyContext *ctx)
 
 	decode_row (ctx, MODULE_TABLE_DESC, table, 0, data);
 
-	if (data [MONO_MODULE_GENERATION] != 0)
-		ADD_ERROR (ctx, g_strdup_printf ("Module generation is not zero, but %x", data [MONO_MODULE_GENERATION]));
-
 	if (!is_valid_non_empty_string (ctx, data [MONO_MODULE_NAME]))
 		ADD_ERROR (ctx, g_strdup_printf ("Module has an invalid name, string index %x", data [MONO_MODULE_NAME]));
 
