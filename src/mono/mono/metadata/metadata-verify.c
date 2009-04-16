@@ -556,7 +556,8 @@ verify_pe_optional_header (VerifyContext *ctx)
 		if (header_size != 224)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid optional header size %d", header_size));
 
-		/*if (read32 (pe_optional_header + 28) != 0x400000)
+		/* LAMESPEC MS plays around this value and ignore it during validation
+		if (read32 (pe_optional_header + 28) != 0x400000)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid Image base %x", read32 (pe_optional_header + 28)));*/
 		if (read32 (pe_optional_header + 32) != 0x2000)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid Section Aligmnent %x", read32 (pe_optional_header + 32)));
@@ -756,12 +757,13 @@ verify_resources_table (VerifyContext *ctx)
 	named_entries = read16 (ptr + 12);
 	id_entries = read16 (ptr + 14);
 
-	printf ("named %d id_entries %d\n", named_entries, id_entries);
 	if ((named_entries + id_entries) * 8 + 16 > it.size)
 		ADD_ERROR (ctx, g_strdup_printf ("Resource section is too small, the number of entries (%d) doesn't fit on it's size %d", named_entries + id_entries, it.size));
 
+	/* XXX at least one unmanaged resource is added due to a call to AssemblyBuilder::DefineVersionInfoResource () 
 	if (named_entries || id_entries)
 		ADD_ERROR (ctx, g_strdup_printf ("The metadata verifier doesn't support full verification of PECOFF resources"));
+	*/
 }
 
 static void
