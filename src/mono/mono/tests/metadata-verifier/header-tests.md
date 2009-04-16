@@ -136,6 +136,7 @@ pe-optional-header-nt-fields {
 
 	#File alignment
 	valid offset pe-optional-header + 36 set-uint 0x200
+	#LAMEIMPL MS reject this at the same time it produces assemblies with this value
 	valid offset pe-optional-header + 36 set-uint 0x1000
 	invalid offset pe-optional-header + 36 set-uint 999
 	invalid offset pe-optional-header + 36 set-uint 0x1200

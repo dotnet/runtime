@@ -1,3 +1,10 @@
+2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* data-directory-tests.md:
+	* header-tests.md:
+	* resources-tests.md: Add comments related to faulty verification
+	semantics on MS.
+
 2009-04-14 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Initial tests for the typedef table.

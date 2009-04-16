@@ -1,6 +1,7 @@
 
 resources-master-directory {
 	#This assembly has a regular resource and a linked resource
+	#LAMEIMPL MS doesn't validate those.
 	assembly assembly-with-resource.exe
 
 	#the resource directory table is 16 bytes long

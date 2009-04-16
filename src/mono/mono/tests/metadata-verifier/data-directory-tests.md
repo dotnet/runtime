@@ -94,6 +94,7 @@ pe-import-table-IAT {
 	assembly simple-assembly.exe
 
 	#Bad RVA for the Hint/Name table
+	#LAMEIMPL - MS ignores this
 	invalid offset translate.rva.ind ( translate.rva.ind ( pe-optional-header + 104 ) + 16 ) set-uint 0x88888
 
 	#Bad content in the Hint/Name table
@@ -113,6 +114,7 @@ pe-IAT {
 	assembly simple-assembly.exe
 
 	#Bad RVA to the Hint/Name table
+	#LAMEIMPL - MS ignores this
 	invalid offset translate.rva.ind ( pe-optional-header + 192 ) set-uint 0x88880
 
 	#Bad content in the Hint/Name table
