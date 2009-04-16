@@ -1184,6 +1184,15 @@ verify_typedef_table (VerifyContext *ctx)
 		decode_row (ctx, TYPEDEF_TABLE_DESC, table, i, data);
 		if (data [MONO_TYPEDEF_FLAGS] & INVALID_TYPEDEF_FLAG_BITS)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid flags field 0x%08x", i, data [MONO_TYPEDEF_FLAGS]));
+
+		if ((data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_LAYOUT_MASK) == 0x18)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid class layout 0x18", i));
+
+		if ((data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_STRING_FORMAT_MASK) == 0x30000)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d mono doesn't support custom string format", i));
+
+		if ((data [MONO_TYPEDEF_FLAGS] & 0xC00000) != 0)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d mono doesn't support custom string format", i));
 	}
 }
 
