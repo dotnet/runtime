@@ -13,6 +13,7 @@ tables-header {
 	invalid offset stream-header ( 0 ) + 4 set-uint 23
 
 	#heap sizes
+	#LAMEIMPL MS ignore garbage on the upper bits.
 	invalid offset tables-header + 6 set-byte 0x8
 	invalid offset tables-header + 6 set-byte 0x10
 	invalid offset tables-header + 6 set-byte 0xF
@@ -59,7 +60,8 @@ module-table {
 
 	#generation
 	valid offset table-row ( 0 0 ) set-ushort 0
-	invalid offset table-row ( 0 0 ) set-ushort 9999
+	#FALESPEC this field is ignored
+	valid offset table-row ( 0 0 ) set-ushort 9999
 
 	#rows
 	valid offset tables-header + 24 set-uint 1
@@ -136,5 +138,15 @@ typedef-table {
 	invalid offset table-row ( 2 1 ) set-bit 30
 	invalid offset table-row ( 2 1 ) set-bit 31
 
+	#invalid class layout
+	invalid offset table-row ( 2 1 ) or-uint 0x18
+
+	#invalid StringFormatMask - mono doesn't support CustomFormatMask
+	invalid offset table-row ( 2 1 ) or-uint 0x30000
+
+	#CustomStringFormatMask must be zero
+	invalid offset table-row ( 2 1 ) or-uint 0xC00000
+
+	#We ignore all validation requited by HasSecurity
 }
 
