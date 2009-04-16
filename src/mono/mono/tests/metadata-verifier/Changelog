@@ -1,5 +1,9 @@
 2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for the extends field of the typedef table.
+
+2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: More tests for the typedef table.
 
 2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>

@@ -148,5 +148,32 @@ typedef-table {
 	invalid offset table-row ( 2 1 ) or-uint 0xC00000
 
 	#We ignore all validation requited by HasSecurity
+
+	#TypeName
+	invalid offset table-row ( 2 1 ) + 4 set-ushort 0
+	invalid offset table-row ( 2 1 ) + 4 set-ushort 0x9999
+
+	#TypeNameSpace
+	invalid offset table-row ( 2 1 ) + 6 set-ushort 0x9999
+
+	#Extends is a TypeDefOrRef coded token (uses 2 bits to code typedef, typeref and typespec)
+	#invalid coded table
+	invalid offset table-row ( 2 1 ) + 8 set-ushort 0x33003
+
+	#null token (except system.obj, <module> and interfaces)
+	invalid offset table-row ( 2 1 ) + 8 set-ushort 0x0
+	invalid offset table-row ( 2 1 ) + 8 set-ushort 0x01
+	invalid offset table-row ( 2 1 ) + 8 set-ushort 0x02
+
+	#make type 1 an inteface but let it remain extending something
+	invalid offset table-row ( 2 1 ) or-uint 0x20
+	#interface must extend nothing
+	valid offset table-row ( 2 1 ) or-uint 0x20 , offset table-row ( 2 1 ) + 8 set-ushort 0x0
+
+	#TODO add a test for sys.obj (we should test for mscorlib as well)
+
+	valid offset table-row ( 2 0 ) + 8 set-ushort 0
+	#make <module> extend the first typeref entry, which usually is sys.obj
+	invalid offset table-row ( 2 0 ) + 8 set-ushort 0x5
 }
 
