@@ -144,8 +144,12 @@ ins_info[] = {
 #undef MINI_OP
 #undef MINI_OP3
 
-#define MINI_OP(a,b,dest,src1,src2) (((src1) != NONE) + ((src2) != NONE)),
-#define MINI_OP3(a,b,dest,src1,src2,src3) (((src1) != NONE) + ((src2) != NONE) + ((src3) != NONE)),
+#define MINI_OP(a,b,dest,src1,src2) ((src2) != NONE ? 2 : ((src1) != NONE ? 1 : 0)),
+#define MINI_OP3(a,b,dest,src1,src2,src3) ((src3) != NONE ? 3 : ((src2) != NONE ? 2 : ((src1) != NONE ? 1 : 0))),
+/* 
+ * This should contain the index of the last sreg + 1. This is not the same
+ * as the number of sregs for opcodes like IA64_CMP_EQ_IMM.
+ */
 const gint8 ins_sreg_counts[] = {
 #include "mini-ops.h"
 };
