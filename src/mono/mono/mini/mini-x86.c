@@ -2738,6 +2738,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
 			call = (MonoCallInst*)ins;
+
+			/* 
+			 * Emit a few nops to simplify get_vcall_slot ().
+			 */
+			x86_nop (code);
+			x86_nop (code);
+			x86_nop (code);
+
 			x86_call_membase (code, ins->sreg1, ins->inst_offset);
 			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature)) {
 				if (call->stack_usage == 4)
@@ -5276,68 +5284,37 @@ mono_arch_get_vcall_slot (guint8 *code, gpointer *regs, int *displacement)
 
 	*displacement = 0;
 
-	/* go to the start of the call instruction
-	 *
-	 * address_byte = (m << 6) | (o << 3) | reg
-	 * call opcode: 0xff address_byte displacement
-	 * 0xff m=1,o=2 imm8
-	 * 0xff m=2,o=2 imm32
-	 */
 	code -= 6;
 
 	/* 
 	 * A given byte sequence can match more than case here, so we have to be
 	 * really careful about the ordering of the cases. Longer sequences
 	 * come first.
-	 * Some of the rules are only needed because the imm in the mov could 
-	 * match the
-	 * code [2] == 0xe8 case below.
+	 * There are two types of calls:
+	 * - direct calls: 0xff address_byte 8/32 bits displacement
+	 * - indirect calls: nop nop nop <call>
+	 * The nops make sure we don't confuse the instruction preceeding an indirect
+	 * call with a direct call.
 	 */
-	if ((code [-2] == 0x8b) && (x86_modrm_mod (code [-1]) == 0x2) && (code [4] == 0xff) && (x86_modrm_reg (code [5]) == 0x2) && (x86_modrm_mod (code [5]) == 0x0)) {
+	if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
+		reg = code [4] & 0x07;
+		disp = (signed char)code [5];
+	} else if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
+		reg = code [1] & 0x07;
+		disp = *((gint32*)(code + 2));
+	} else if ((code [1] == 0xe8)) {
+			return NULL;
+	} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
 		/*
-		 * This is an interface call
-		 * 8b 80 0c e8 ff ff       mov    0xffffe80c(%eax),%eax
-		 * ff 10                   call   *(%eax)
+		 * This is a interface call
+		 * 8b 40 30   mov    0x30(%eax),%eax
+		 * ff 10      call   *(%eax)
 		 */
-		reg = x86_modrm_rm (code [5]);
 		disp = 0;
-#ifdef MONO_ARCH_HAVE_IMT
-	} else if ((code [-2] == 0xba) && (code [3] == 0xff) && (x86_modrm_mod (code [4]) == 1) && (x86_modrm_reg (code [4]) == 2) && ((signed char)code [5] < 0)) {
-		/* IMT-based interface calls: with MONO_ARCH_IMT_REG == edx
-		 * ba 14 f8 28 08          mov    $0x828f814,%edx
-		 * ff 50 fc                call   *0xfffffffc(%eax)
-		 */
-		reg = code [4] & 0x07;
-		disp = (signed char)code [5];
-#endif
-	} else if ((code [-2] >= 0xb8) && (code [-2] < 0xb8 + 8) && (code [3] == 0xff) && (x86_modrm_reg (code [4]) == 0x2) && (x86_modrm_mod (code [4]) == 0x1)) {
-		/* 
-		 * ba e8 e8 e8 e8     mov    $0xe8e8e8e8,%edx
-		 * ff 50 60              callq  *0x60(%eax)
-		 */
-		reg = x86_modrm_rm (code [4]);
-		disp = *(gint8*)(code + 5);
-	} else if ((code [1] != 0xe8) && (code [3] == 0xff) && ((code [4] & 0x18) == 0x10) && ((code [4] >> 6) == 1)) {
-		reg = code [4] & 0x07;
-		disp = (signed char)code [5];
-	} else {
-		if ((code [0] == 0xff) && ((code [1] & 0x18) == 0x10) && ((code [1] >> 6) == 2)) {
-			reg = code [1] & 0x07;
-			disp = *((gint32*)(code + 2));
-		} else if ((code [1] == 0xe8)) {
-			return NULL;
-		} else if ((code [4] == 0xff) && (((code [5] >> 6) & 0x3) == 0) && (((code [5] >> 3) & 0x7) == 2)) {
-			/*
-			 * This is a interface call
-			 * 8b 40 30   mov    0x30(%eax),%eax
-			 * ff 10      call   *(%eax)
-			 */
-			disp = 0;
-			reg = code [5] & 0x07;
-		}
-		else
-			return NULL;
+		reg = code [5] & 0x07;
 	}
+	else
+		return NULL;
 
 	*displacement = disp;
 	return regs [reg];
