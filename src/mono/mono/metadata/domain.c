@@ -1754,6 +1754,25 @@ mono_domain_get ()
 	return GET_APPDOMAIN ();
 }
 
+void
+mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception)
+{
+	MonoThread *thread;
+
+	SET_APPDOMAIN (domain);
+	SET_APPCONTEXT (domain->default_context);
+
+	if (migrate_exception) {
+		thread = mono_thread_current ();
+		if (!thread->abort_exc)
+			return;
+
+		g_assert (thread->abort_exc->object.vtable->domain != domain);
+		MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
+		g_assert (thread->abort_exc->object.vtable->domain == domain);
+	}
+}
+
 /**
  * mono_domain_set_internal:
  * @domain: the new domain
@@ -1763,8 +1782,7 @@ mono_domain_get ()
 void
 mono_domain_set_internal (MonoDomain *domain)
 {
-	SET_APPDOMAIN (domain);
-	SET_APPCONTEXT (domain->default_context);
+	mono_domain_set_internal_with_options (domain, TRUE);
 }
 
 void

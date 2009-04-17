@@ -320,7 +320,7 @@ struct _MonoThread {
 	guint32	    name_len;
 	guint32	    state;
 	MonoException *abort_exc;
-	MonoObject *abort_state;
+	int abort_state_handle;
 	guint64 tid;	/* This is accessed as a gsize in the code (so it can hold a 64bit pointer on systems that need it), but needs to reserve 64 bits of space on all machines as it corresponds to a field in managed code */
 	HANDLE	    start_notify;
 	gpointer stack_ptr;

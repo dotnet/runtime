@@ -858,6 +858,7 @@ ICALL(THREAD_1, "Abort_internal(object)", ves_icall_System_Threading_Thread_Abor
 ICALL(THREAD_2, "ClrState", ves_icall_System_Threading_Thread_ClrState)
 ICALL(THREAD_3, "CurrentThread_internal", mono_thread_current)
 ICALL(THREAD_4, "FreeLocalSlotValues", mono_thread_free_local_slot_values)
+ICALL(THREAD_55, "GetAbortExceptionState", ves_icall_System_Threading_Thread_GetAbortExceptionState)
 ICALL(THREAD_5, "GetCachedCurrentCulture", ves_icall_System_Threading_Thread_GetCachedCurrentCulture)
 ICALL(THREAD_6, "GetCachedCurrentUICulture", ves_icall_System_Threading_Thread_GetCachedCurrentUICulture)
 ICALL(THREAD_7, "GetDomainID", ves_icall_System_Threading_Thread_GetDomainID)

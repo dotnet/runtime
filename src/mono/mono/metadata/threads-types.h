@@ -119,6 +119,7 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location) 
 
 void ves_icall_System_Threading_Thread_Abort (MonoThread *thread, MonoObject *state) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_ResetAbort (void) MONO_INTERNAL;
+MonoObject* ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *thread) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_Suspend (MonoThread *thread) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_Resume (MonoThread *thread) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_ClrState (MonoThread *thread, guint32 state) MONO_INTERNAL;

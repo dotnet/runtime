@@ -352,6 +352,9 @@ mono_domain_code_commit (MonoDomain *domain, void *data, int size, int newsize) 
 void
 mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *user_data) MONO_INTERNAL;
 
+void
+mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exception) MONO_INTERNAL;
+
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside
  * an AOT module.
