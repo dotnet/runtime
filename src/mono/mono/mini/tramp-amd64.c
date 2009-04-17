@@ -78,7 +78,11 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 #ifdef MONO_ARCH_NOMAP32BIT
 	buf_len = 32;
 #else
-	buf_len = 16;
+	/* AOTed code could still have a non-32 bit address */
+	if ((((guint64)addr) >> 32) == 0)
+		buf_len = 16;
+	else
+		buf_len = 24;
 #endif
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
