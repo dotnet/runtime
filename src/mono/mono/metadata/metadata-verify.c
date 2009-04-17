@@ -398,6 +398,54 @@ const static unsigned char table_desc [] = {
 	COL_LAST,
 };
 
+const static unsigned char table_desc_start [] = {
+	MODULE_TABLE_DESC,
+	TYPEREF_TABLE_DESC,
+	TYPEDEF_TABLE_DESC,
+	TABLE_03_DESC,
+	FIELD_TABLE_DESC,
+	TABLE_05_DESC,
+	METHODDEF_TABLE_DESC,
+	TABLE_07_DESC,
+	PARAM_TABLE_DESC,
+	INTERFACE_IMPL_TABLE_DESC,
+	MEMBERREF_TABLE_DESC,
+	CONSTANT_TABLE_DESC,
+	CUSTOM_ATTRIBUTE_TABLE_DESC,
+	FIELD_MARSHAL_TABLE_DESC,
+	DECL_SECURITY_TABLE_DESC,
+	CLASS_LAYOUT_TABLE_DESC,
+	FIELD_LAYOUT_TABLE_DESC,
+	STANDARD_ALONE_SIG_TABLE_DESC,
+	EVENT_MAP_TABLE_DESC,
+	TABLE_13_DESC,
+	EVENT_TABLE_DESC,
+	PROPERTY_MAP_TABLE_DESC,
+	TABLE_16_DESC,
+	PROPERTY_TABLE_DESC,
+	METHOD_SEMANTICS_TABLE_DESC,
+	METHOD_IMPL_TABLE_DESC,
+	MODULE_REF_TABLE_DESC,
+	TYPESPEC_TABLE_DESC,
+	IMPL_MAP_TABLE_DESC,
+	FIELD_RVA_TABLE_DESC,
+	TABLE_1E_DESC,
+	TABLE_1F_DESC,
+	ASSEMBLY_TABLE_DESC,
+	ASSEMBLY_PROCESSOR_TABLE_DESC,
+	ASSEMBLY_OS_TABLE_DESC,
+	ASSEMBLY_REF_TABLE_DESC,
+	ASSEMBLY_REF_PROCESSOR_TABLE_DESC,
+	ASSEMBLY_REF_OS_TABLE_DESC,
+	FILE_TABLE_DESC,
+	EXPORTED_TYPE_TABLE_DESC,
+	MANIFEST_RESOURCE_TABLE_DESC,
+	NESTED_CLASS_TABLE_DESC,
+	GENERIC_PARAM_TABLE_DESC,
+	METHOD_SPEC_TABLE_DESC,
+	GENERIC_PARAM_CONSTRAINT_TABLE_DESC
+};
+
 #define INVALID_TABLE (0xFF)
 /*format: number of bits, number of tables, tables{n. tables} */
 const static unsigned char coded_index_desc[] = {
@@ -1217,6 +1265,29 @@ decode_row (VerifyContext *ctx, int desc_offset, TableInfo *table, int row, guin
 			g_assert_not_reached ();
 		}
 	}
+}
+
+static guint32
+get_col_offset (VerifyContext *ctx, int table, int column)
+{
+	guint32 desc_offset = table_desc_start [table];
+	guint32 offset = 0;
+
+	while (column-- > 0)
+		offset += ctx->field_sizes [table_desc [desc_offset++]];
+
+	return offset;
+}
+
+static guint32
+get_col_size (VerifyContext *ctx, int table, int column)
+{
+	guint32 desc_offset = table_desc_start [table];
+	guint32 type = table_desc [desc_offset + column];
+	VERIFIER_DEBUG ( printf ("get_col_size table %d column %d type %d size %d\n", table, column, type, ctx->field_sizes [type]));
+
+
+	return ctx->field_sizes [type];
 }
 
 static gboolean
