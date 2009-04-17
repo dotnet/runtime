@@ -196,3 +196,19 @@ typedef-table-field-list {
 	invalid offset table-row ( 2 0 ) + 10 set-ushort 0
 
 }
+
+typedef-table-method-list {
+	assembly assembly-with-complex-type.exe
+
+	valid offset table-row ( 2 1 ) + 12 set-ushort 1
+
+	#bad field list 
+	invalid offset table-row ( 2 1 ) + 12 set-ushort 999
+
+	#this type is bigger than the next
+	invalid offset table-row ( 2 1 ) + 12 set-ushort 5
+
+	#can't be zero
+	invalid offset table-row ( 2 0 ) + 12 set-ushort 0
+
+}

@@ -1,3 +1,7 @@
+2009-04-16 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Tests for the method list of the typedef table.
+
 2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Tests for the field list of the typedef table.
