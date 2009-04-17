@@ -293,6 +293,7 @@ typedef struct {
 #if defined(__linux__) && !defined(HAVE_MOVING_COLLECTOR)
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
 #endif
+#define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
 
 #define MONO_ARCH_HAVE_CMOV_OPS 1
 
