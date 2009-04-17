@@ -59,7 +59,7 @@ selector:
 	'offset' expression
 
 effect:
-	('set-byte' | 'set-ushort' | 'set-uint' | 'set-bit' | 'or-uint' ) expression
+	('set-byte' | 'set-ushort' | 'set-uint' | 'set-bit' | 'or-byte' | 'or-ushort' | 'or-uint' | 'truncate' ) expression
 
 expression:
 	atom ([+-] atom)*
@@ -135,6 +135,8 @@ enum {
 	EFFECT_SET_UINT,
 	EFFECT_SET_TRUNC,
 	EFFECT_SET_BIT,
+	EFFECT_OR_BYTE,
+	EFFECT_OR_USHORT,
 	EFFECT_OR_UINT,
 };
 
@@ -511,8 +513,16 @@ apply_effect (patch_effect_t *effect, test_entry_t *entry, guint32 offset)
 		DEBUG_PARSER (printf("\tset-bit effect bit %d old value [%x]\n", value, READ_BIT (ptr, value)));
 		SET_BIT (ptr, value);
 		break;
+	case EFFECT_OR_BYTE:
+		DEBUG_PARSER (printf("\tor-byte effect old value [%x] new value [%x]\n", READ_VAR (guint8, ptr), value));
+		SET_VAR (guint8, ptr, READ_VAR (guint8, ptr) | value);
+		break;
+	case EFFECT_OR_USHORT:
+		DEBUG_PARSER (printf("\tor-ushort effect old value [%x] new value [%x]\n", READ_VAR (guint16, ptr), value));
+		SET_VAR (guint16, ptr, READ_VAR (guint16, ptr) | value);
+		break;
 	case EFFECT_OR_UINT:
-		DEBUG_PARSER (printf("\or-uint effect old value [%x] new value [%x]\n", READ_VAR (guint32, ptr), value));
+		DEBUG_PARSER (printf("\tor-uint effect old value [%x] new value [%x]\n", READ_VAR (guint32, ptr), value));
 		SET_VAR (guint32, ptr, READ_VAR (guint32, ptr) | value);
 		break;
 	default:
@@ -904,10 +914,14 @@ parse_effect (scanner_t *scanner)
 		type = EFFECT_SET_BIT; 
 	else if (!strcmp ("truncate", name))
 		type = EFFECT_SET_TRUNC;
+	else if (!strcmp ("or-byte", name))
+		type = EFFECT_OR_BYTE;
+	else if (!strcmp ("or-ushort", name))
+		type = EFFECT_OR_USHORT;
 	else if (!strcmp ("or-uint", name))
 		type = EFFECT_OR_UINT;
 	else 
-		FAIL(g_strdup_printf ("Invalid effect kind, expected one of: (set-byte set-ushort set-uint) but got %s",name), INVALID_ID_TEXT);
+		FAIL(g_strdup_printf ("Invalid effect kind, expected one of: (set-byte set-ushort set-uint set-bit or-byte or-ushort or-uint truncate) but got %s",name), INVALID_ID_TEXT);
 
 	effect = g_new0 (patch_effect_t, 1);
 	effect->type = type;

@@ -120,7 +120,7 @@ typedef-table {
 	valid offset tables-header + 32 set-uint 2
 	invalid offset tables-header + 32 set-uint 0
 
-	#This part of the test suite only verifies structural properties, not type validation rules - like an interface that's not abstract.	
+	#This part of the test suite only verifies structural properties, not table relationships	
 
 	#Flags invalid bits: 9,11,14,15,19,21,24-31
 	invalid offset table-row ( 2 1 ) set-bit 9
@@ -212,3 +212,50 @@ typedef-table-method-list {
 	invalid offset table-row ( 2 0 ) + 12 set-ushort 0
 
 }
+
+field-table {
+	assembly assembly-with-complex-type.exe
+
+	#This tests only verify basic structural properties, they don't verify relationship between tables
+	#flags
+
+	#invalid bits 11, 14 (4)
+	invalid offset table-row ( 4 1 ) set-bit 3
+	invalid offset table-row ( 4 1 ) set-bit 11
+	invalid offset table-row ( 4 1 ) set-bit 14
+
+	#invalid visibility (5)
+	invalid offset table-row ( 4 0 ) or-ushort 0x7
+
+	#field with initonly and literal (6)
+	invalid offset table-row ( 4 0 ) or-ushort 0x60
+
+	#field with literal must be static (7)
+	valid offset table-row ( 4 0 ) or-ushort 0x50
+	invalid offset table-row ( 4 0 ) or-ushort 0x40
+
+	#field with rt special name must have special name (8)
+	#special name
+	valid offset table-row ( 4 0 ) or-ushort 0x0200
+	#special name + rt special name
+	valid offset table-row ( 4 0 ) or-ushort 0x0600
+	#only rt special name
+	invalid offset table-row ( 4 0 ) or-ushort 0x0400
+
+	#no row in the field marshal table for field 0 (9)
+	invalid offset table-row ( 4 0 ) or-ushort 0x1000
+
+	#no row in the constant table for field 0 (10)
+	invalid offset table-row ( 4 0 ) or-ushort 0x8000
+
+	#no row in the field rva table for field 0 (11)
+	invalid offset table-row ( 4 0 ) or-ushort 0x0100
+
+
+	#name can't be empty or invalid (12)
+	invalid offset table-row ( 4 1 ) + 2 set-ushort 0
+	invalid offset table-row ( 4 1 ) + 2 set-ushort 0x9999
+
+	#TODO verify 14+
+}
+

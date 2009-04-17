@@ -1,5 +1,15 @@
 2009-04-16 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* assembly-with-complex-type.cs: Add stuff to
+	fill constant, field rva and field marshal tables. 
+
+	* cli-tables-tests.md: Initial tests for the field table.
+
+	* gen-md-tests.c: Add or-byte and or-ushort effects. Fix
+	documentation.
+
+2009-04-16 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for the method list of the typedef table.
 
 2009-04-15 Rodrigo Kumpera  <rkumpera@novell.com>

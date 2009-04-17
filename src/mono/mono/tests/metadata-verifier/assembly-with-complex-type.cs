@@ -1,5 +1,5 @@
 using System;
-
+using System.Runtime.InteropServices;
 public class TypeOne
 {
 	int instance_field;
@@ -27,8 +27,10 @@ public class OtherType
 	int bla;
 }
 
-public class LastType
+public class TypeWithFunkyStuff
 {
-	int more_fields;
-	int bla;
+	const string contant_field = "333";
+	[MarshalAs (UnmanagedType.Struct)] int bla;
+
+	int[] z = new int[] {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
 }
