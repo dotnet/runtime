@@ -1485,6 +1485,7 @@ struct {
 	{ "--typeref",     MONO_TABLE_TYPEREF,     	dump_table_typeref },
 	{ "--typespec",    MONO_TABLE_TYPESPEC,     	dump_table_typespec },
 	{ "--implmap",     MONO_TABLE_IMPLMAP,     	dump_table_implmap },
+	{ "--fieldrva",    MONO_TABLE_FIELDRVA,     dump_table_fieldrva },
 	{ "--standalonesig", MONO_TABLE_STANDALONESIG,  dump_table_standalonesig },
 	{ "--methodptr", MONO_TABLE_METHOD_POINTER,  dump_table_methodptr },
 	{ "--fieldptr", MONO_TABLE_FIELD_POINTER,  dump_table_fieldptr },

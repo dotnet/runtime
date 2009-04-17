@@ -631,6 +631,22 @@ dump_table_implmap (MonoImage *m)
 }
 
 void
+dump_table_fieldrva  (MonoImage *m)
+{
+	MonoTableInfo *t = &m->tables [MONO_TABLE_FIELDRVA];
+	int i;
+
+	fprintf (output, "FieldRVA Table (1..%d)\n", t->rows);
+
+	for (i = 1; i <= t->rows; i++){
+		guint32 cols [MONO_FIELD_RVA_SIZE];
+
+		mono_metadata_decode_row (t, i - 1, cols, MONO_FIELD_RVA_SIZE);
+		fprintf (output, "%d: Field %d: %x\n", i, cols [MONO_FIELD_RVA_FIELD], cols [MONO_FIELD_RVA_RVA]);
+	}
+}
+
+void
 dump_table_methodimpl (MonoImage *m)
 {
 	MonoTableInfo *t = &m->tables [MONO_TABLE_METHODIMPL];
