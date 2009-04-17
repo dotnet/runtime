@@ -149,6 +149,30 @@ public delegate void MethodDelegate ();
 
 public delegate Object InvokeDelegate (Object obj, Object[] parms);
 
+// the 0.1% case from http://blogs.msdn.com/shawnfa/archive/2007/05/11/silverlight-security-iii-inheritance.aspx
+public class TransparentClassWithSafeCriticalDefaultConstructor {
+
+	[SecuritySafeCritical]
+	public TransparentClassWithSafeCriticalDefaultConstructor ()
+	{
+	}
+}
+
+public class TransparentInheritFromSafeCriticalDefaultConstructor : TransparentClassWithSafeCriticalDefaultConstructor {
+
+	public TransparentInheritFromSafeCriticalDefaultConstructor ()
+	{
+	}
+}
+
+public class SafeInheritFromSafeCriticalDefaultConstructor : TransparentClassWithSafeCriticalDefaultConstructor {
+
+	[SecuritySafeCritical]
+	public SafeInheritFromSafeCriticalDefaultConstructor ()
+	{
+	}
+}
+
 public class Test
 {
 	static bool haveError = false;
@@ -373,11 +397,17 @@ public class Test
 		} catch (TypeLoadException) {
 		}
 
-		//Console.WriteLine ("ok");
+		new TransparentClassWithSafeCriticalDefaultConstructor ();
+		try {
+			new TransparentInheritFromSafeCriticalDefaultConstructor ();
+		} catch (TypeLoadException) {
+		}
+		new SafeInheritFromSafeCriticalDefaultConstructor ();
 
 		if (haveError)
 			return 1;
 
+//		Console.WriteLine ("ok");
 		return 0;
 	}
 }
