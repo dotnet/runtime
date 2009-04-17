@@ -39,6 +39,12 @@
  FIXME calc col size using coded_index_desc;
 */
 
+#ifdef MONO_VERIFIER_DEBUG
+#define VERIFIER_DEBUG(code) do { code; } while (0)
+#else
+#define VERIFIER_DEBUG(code)
+#endif
+
 #define INVALID_OFFSET ((guint32)-1)
 
 enum {
@@ -1320,6 +1326,20 @@ get_coded_index_token (VerifyContext *ctx, int token_kind, guint32 coded_token)
 	return coded_token >> bits;
 }
 
+static guint32
+make_coded_token (int kind, guint32 table, guint32 table_idx)
+{
+	guint32 bits = coded_index_desc [kind++];
+	guint32 tables = coded_index_desc [kind++];
+	guint32 i;
+	for (i = 0; i < tables; ++i) {
+		if (coded_index_desc [kind++] == table)
+			return ((table_idx + 1) << bits) | i; 
+	}
+	g_assert_not_reached ();
+	return -1;
+}
+
 static gboolean
 is_valid_coded_index (VerifyContext *ctx, int token_kind, guint32 coded_token)
 {
@@ -1337,6 +1357,42 @@ is_valid_coded_index (VerifyContext *ctx, int token_kind, guint32 coded_token)
 	if (table == INVALID_TABLE)
 		return FALSE;
 	return token <= ctx->tables [table].row_count;
+}
+
+typedef struct {
+	guint32 token;
+	guint32 col_size;
+	guint32 col_offset;
+} RowLocator;
+
+static int
+token_locator (const void *a, const void *b)
+{
+	RowLocator *loc = (RowLocator *)a;
+	unsigned const char *row = (unsigned const char *)b;
+	guint32 token = loc->col_size == 2 ? read16 (row + loc->col_offset) : read32 (row + loc->col_offset);
+
+	VERIFIER_DEBUG ( printf ("\tfound token %x\n", token) );
+	return (int)loc->token - (int)token;
+}
+
+static int
+search_sorted_table (VerifyContext *ctx, int table, int column, guint32 coded_token)
+{
+	TableInfo *tinfo = &ctx->tables [table];
+	RowLocator locator;
+	const char *res, *base;
+	locator.token = coded_token;
+	locator.col_offset = get_col_offset (ctx, table, column);
+	locator.col_size = get_col_size (ctx, table, column);
+	base = ctx->data + tinfo->offset;
+
+	VERIFIER_DEBUG ( printf ("looking token %x table %d col %d rsize %d roff %d\n", coded_token, table, column, locator.col_size, locator.col_offset) );
+	res = bsearch (&locator, base, tinfo->row_count, tinfo->row_size, token_locator);
+	if (!res)
+		return -1;
+
+	return (res - base) / tinfo->row_count;
 }
 
 /*WARNING: This function doesn't verify if the strings @offset points to a valid string*/
