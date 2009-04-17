@@ -162,6 +162,8 @@ const static unsigned char table_desc [] = {
 	COL_LAST,
 
 	/* 0x0B Constant */
+	COL_UINT8, /*Type*/
+	COL_UINT8, /*Padding*/
 	COL_HAS_CONSTANT, /*Parent*/
 	COL_BLOB, /*Value*/
 	COL_LAST,
@@ -310,7 +312,7 @@ const static unsigned char table_desc [] = {
 	COL_ASSEMBLY_REF, /*AssemblyRef*/
 	COL_LAST,
 
-	/* 0x26 Unused */
+	/* 0x26 File */
 	COL_UINT32, /*Flags*/
 	COL_STRING, /*Name*/
 	COL_BLOB, /*HashValue*/
@@ -997,7 +999,7 @@ calc_fields_size (VerifyContext *ctx)
 
 	tmp = MAX3 (MONO_TABLE_METHOD, MONO_TABLE_FIELD, MONO_TABLE_TYPEREF);
 	tmp = MAX (tmp, MAX3 (MONO_TABLE_TYPEDEF, MONO_TABLE_PARAM, MONO_TABLE_INTERFACEIMPL));
-	tmp = MAX (tmp, MAX3 (MONO_TABLE_MEMBERREF, MONO_TABLE_MODULE, COL_HAS_DECL_SECURITY));
+	tmp = MAX (tmp, MAX3 (MONO_TABLE_MEMBERREF, MONO_TABLE_MODULE, MONO_TABLE_DECLSECURITY));
 	tmp = MAX (tmp, MAX3 (MONO_TABLE_PROPERTY, MONO_TABLE_EVENT, MONO_TABLE_STANDALONESIG));
 	tmp = MAX (tmp, MAX3 (MONO_TABLE_MODULEREF, MONO_TABLE_TYPESPEC, MONO_TABLE_ASSEMBLY));
 	tmp = MAX (tmp, MAX3 (MONO_TABLE_ASSEMBLYREF, MONO_TABLE_FILE, MONO_TABLE_EXPORTEDTYPE));
@@ -1021,14 +1023,15 @@ calc_fields_size (VerifyContext *ctx)
 	ctx->field_sizes [COL_TYPE_OR_METHOD_DEF] = enc_index_size (1, MAX2 (MONO_TABLE_TYPEDEF, MONO_TABLE_METHOD));
 
 	ctx->field_sizes [COL_TYPE_DEF] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_METHOD_DEF] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_FIELD] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_PARAM] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_PROPERTY] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_EVENT] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_GENERIC_PARAM] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_ASSEMBLY_REF] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_MODULE_REF] = TB_SIZE (MONO_TABLE_TYPEDEF);
+	ctx->field_sizes [COL_METHOD_DEF] = TB_SIZE (MONO_TABLE_METHOD);
+	ctx->field_sizes [COL_FIELD] = TB_SIZE (MONO_TABLE_FIELD);
+	ctx->field_sizes [COL_PARAM] = TB_SIZE (MONO_TABLE_PARAM);
+	ctx->field_sizes [COL_PROPERTY] = TB_SIZE (MONO_TABLE_PROPERTY);
+	ctx->field_sizes [COL_EVENT] = TB_SIZE (MONO_TABLE_EVENT);
+	ctx->field_sizes [COL_GENERIC_PARAM] = TB_SIZE (MONO_TABLE_GENERICPARAM);
+	ctx->field_sizes [COL_ASSEMBLY_REF] = TB_SIZE (MONO_TABLE_ASSEMBLYREF);
+	ctx->field_sizes [COL_MODULE_REF] = TB_SIZE (MONO_TABLE_MODULEREF);
+
 }
 
 static guint32
