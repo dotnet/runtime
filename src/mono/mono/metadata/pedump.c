@@ -303,11 +303,11 @@ dump_metadata (MonoImage *meta)
 	for (table = 0; table < MONO_TABLE_NUM; table++){
 		if (meta->tables [table].rows == 0)
 			continue;
-		printf ("Table %s: %d records (%d bytes, at %p)\n",
+		printf ("Table %s: %d records (%d bytes, at %x)\n",
 			mono_meta_table_name (table),
 			meta->tables [table].rows,
 			meta->tables [table].row_size,
-			meta->tables [table].base
+			meta->tables [table].base - meta->raw_data
 			);
 	}
 }
