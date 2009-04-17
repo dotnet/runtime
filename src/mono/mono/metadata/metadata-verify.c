@@ -34,6 +34,7 @@
  TODO do full PECOFF resources verification 
  TODO verify in the CLI header entry point and resources
  TODO implement null token typeref validation  
+ TODO verify table wide invariants for typedef (sorting and uniqueness)
  FIXME has_cattr coded index / 8 -> Permission table? -- it's decl security
  FIXME use subtraction based bounds checking to avoid overflows
  FIXME calc col size using coded_index_desc;
@@ -1529,6 +1530,51 @@ verify_typedef_table (VerifyContext *ctx)
 	}
 }
 
+/*bits 3,11,14 */
+#define INVALID_FIELD_FLAG_BITS ((1 << 3) | (1 << 11) | (1 << 14))
+static void
+verify_field_table (VerifyContext *ctx)
+{
+	TableInfo *table = &ctx->tables [MONO_TABLE_FIELD];
+	guint32 data [MONO_TABLE_FIELD], flags;
+	int i;
+
+	for (i = 0; i < table->row_count; ++i) {
+		decode_row (ctx, FIELD_TABLE_DESC, table, i, data);
+		flags = data [MONO_FIELD_FLAGS];
+
+		if (flags & INVALID_FIELD_FLAG_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid flags field 0x%08x", i, flags));
+
+		if ((flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == 0x7)		
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid field visibility 0x7", i));
+
+		if ((flags & (FIELD_ATTRIBUTE_LITERAL | FIELD_ATTRIBUTE_INIT_ONLY)) == (FIELD_ATTRIBUTE_LITERAL | FIELD_ATTRIBUTE_INIT_ONLY))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d cannot be InitOnly and Literal at the same time", i));
+
+		if ((flags & FIELD_ATTRIBUTE_RT_SPECIAL_NAME) && !(flags & FIELD_ATTRIBUTE_SPECIAL_NAME))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d is RTSpecialName but not SpecialName", i));
+
+		if ((flags & FIELD_ATTRIBUTE_LITERAL) && !(flags & FIELD_ATTRIBUTE_STATIC))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d is Literal but not Static", i));
+
+		if ((flags & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL) &&
+				search_sorted_table (ctx, MONO_TABLE_FIELDMARSHAL, MONO_FIELD_MARSHAL_PARENT, make_coded_token (HAS_FIELD_MARSHAL_DESC, MONO_TABLE_FIELD, i)) == -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d has FieldMarshal but there is no corresponding row in the FieldMarshal table", i));
+
+		if ((flags & FIELD_ATTRIBUTE_HAS_DEFAULT) &&
+				search_sorted_table (ctx, MONO_TABLE_CONSTANT, MONO_CONSTANT_PARENT, make_coded_token (HAS_CONSTANT_DESC, MONO_TABLE_FIELD, i)) == -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d has Default but there is no corresponding row in the Constant table", i));
+
+		if ((flags & FIELD_ATTRIBUTE_HAS_FIELD_RVA) &&
+				search_sorted_table (ctx, MONO_TABLE_FIELDRVA, MONO_FIELD_RVA_FIELD, i + 1) == -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d has Default but there is no corresponding row in the Constant table", i));
+
+		if (!data [MONO_FIELD_NAME] || !is_valid_non_empty_string (ctx, data [MONO_FIELD_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid name token %08x", i, data [MONO_FIELD_NAME]));
+
+	}
+}
 
 static void
 verify_tables_data (VerifyContext *ctx)
@@ -1549,6 +1595,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_typeref_table (ctx);
 	CHECK_ERROR ();
 	verify_typedef_table (ctx);
+	CHECK_ERROR ();
+	verify_field_table (ctx);
 }
 
 GSList*
