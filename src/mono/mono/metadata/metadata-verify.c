@@ -120,18 +120,22 @@ const static unsigned char table_desc [] = {
 	COL_METHOD_DEF, /*FieldList*/
 	COL_LAST,
 
+#define TABLE_03_DESC (TYPEDEF_TABLE_DESC + 7)
 	/* 0x03 non documented extension */
 	COL_LAST,
 
+#define FIELD_TABLE_DESC (TABLE_03_DESC + 1)
 	/* 0x04 Field */
 	COL_UINT16, /*FieldAttributes*/
 	COL_STRING, /*Name*/
 	COL_BLOB, /*Signature*/
 	COL_LAST,
 
+#define TABLE_05_DESC (FIELD_TABLE_DESC + 4)
 	/* 0x05 non documented extension */
 	COL_LAST,
 
+#define METHODDEF_TABLE_DESC (TABLE_05_DESC + 1)
 	/* 0x06 MethodDef */
 	COL_UINT32, /*RVA*/
 	COL_UINT16, /*ImplFlags*/
@@ -141,26 +145,31 @@ const static unsigned char table_desc [] = {
 	COL_PARAM, /*ParamList*/
 	COL_LAST,
 
+#define TABLE_07_DESC (METHODDEF_TABLE_DESC + 7)
 	/* 0x07 non documented extension */
 	COL_LAST,
 
+#define PARAM_TABLE_DESC (TABLE_07_DESC + 1)
 	/* 0x08 Param */
 	COL_UINT16, /*Flags*/
 	COL_UINT16, /*Sequence*/
 	COL_STRING, /*Name*/
 	COL_LAST,
 
+#define INTERFACE_IMPL_TABLE_DESC (PARAM_TABLE_DESC + 4)
 	/* 0x09 InterfaceImpl */
 	COL_TYPE_DEF, /*Class*/
 	COL_TYPE_DEF_OR_REF, /*Interface*/
 	COL_LAST,
 	
+#define MEMBERREF_TABLE_DESC (INTERFACE_IMPL_TABLE_DESC + 3)
 	/* 0x0A MemberRef */
 	COL_MEMBER_REF_PARENT, /*Class*/
 	COL_STRING, /*Name*/
 	COL_BLOB, /*Signature*/
 	COL_LAST,
 
+#define CONSTANT_TABLE_DESC (MEMBERREF_TABLE_DESC + 4)
 	/* 0x0B Constant */
 	COL_UINT8, /*Type*/
 	COL_UINT8, /*Padding*/
@@ -168,86 +177,103 @@ const static unsigned char table_desc [] = {
 	COL_BLOB, /*Value*/
 	COL_LAST,
 
+#define CUSTOM_ATTRIBUTE_TABLE_DESC (CONSTANT_TABLE_DESC + 5)
 	/* 0x0C CustomAttribute */
 	COL_HAS_CATTR, /*Parent*/
 	COL_CATTR_TYPE, /*Type*/
 	COL_BLOB, /*Value*/
 	COL_LAST,
 
+#define FIELD_MARSHAL_TABLE_DESC (CUSTOM_ATTRIBUTE_TABLE_DESC + 4)
 	/* 0x0D FieldMarshal */
 	COL_HAS_FIELD_MARSHAL, /*Parent*/
 	COL_BLOB, /*NativeType*/
 	COL_LAST,
 
+#define DECL_SECURITY_TABLE_DESC (FIELD_MARSHAL_TABLE_DESC + 3)
 	/* 0x0E DeclSecurity */
 	COL_UINT16, /*Action*/
 	COL_HAS_DECL_SECURITY, /*Parent*/ 
 	COL_BLOB, /*PermissionSet*/
 	COL_LAST,
 
+#define CLASS_LAYOUT_TABLE_DESC (DECL_SECURITY_TABLE_DESC + 4)
 	/* 0x0F ClassLayout */
 	COL_UINT16, /*Packingsize*/
 	COL_UINT32, /*ClassSize*/
 	COL_TYPE_DEF, /*Parent*/
 	COL_LAST,
 
+#define FIELD_LAYOUT_TABLE_DESC (CLASS_LAYOUT_TABLE_DESC + 4)
 	/* 0x10 FieldLayout */
 	COL_UINT32, /*Offset*/
 	COL_FIELD, /*Field*/
 	COL_LAST,
 
+#define STANDARD_ALONE_SIG_TABLE_DESC (FIELD_LAYOUT_TABLE_DESC + 3)
 	/* 0x11 StandAloneSig */
 	COL_BLOB, /*Signature*/
 	COL_LAST,
 
+#define EVENT_MAP_TABLE_DESC (STANDARD_ALONE_SIG_TABLE_DESC + 2)
 	/* 0x12 EventMap */
 	COL_TYPE_DEF, /*Parent*/
 	COL_EVENT, /*EventList*/
 	COL_LAST,
 
+#define TABLE_13_DESC (EVENT_MAP_TABLE_DESC + 3)
 	/* 0x13 non documented extension */
 	COL_LAST,
 
+#define EVENT_TABLE_DESC (TABLE_13_DESC + 1)
 	/* 0x14 Event */
 	COL_UINT16, /*EventFlags*/
 	COL_STRING, /*Name*/
 	COL_TYPE_DEF_OR_REF, /*EventType*/
 	COL_LAST,
 
+#define PROPERTY_MAP_TABLE_DESC (EVENT_TABLE_DESC + 4)
 	/* 0x15 PropertyMap */
 	COL_TYPE_DEF, /*Parent*/
 	COL_PROPERTY, /*PropertyList*/
 	COL_LAST,
 
+#define TABLE_16_DESC (PROPERTY_MAP_TABLE_DESC + 3)
 	/* 0x16 non documented extension */
 	COL_LAST,
 
+#define PROPERTY_TABLE_DESC (TABLE_16_DESC + 1)
 	/* 0x17 Property */
 	COL_UINT16, /*Flags*/
 	COL_STRING, /*Name*/
 	COL_BLOB, /*Signature*/
 	COL_LAST,
 
+#define METHOD_SEMANTICS_TABLE_DESC (PROPERTY_TABLE_DESC + 4)
 	/* 0x18 MethodSemantics */
 	COL_UINT16, /*Semantics*/
 	COL_METHOD_DEF, /*Method*/
 	COL_HAS_SEMANTICS, /*Association*/
 	COL_LAST,
 
+#define METHOD_IMPL_TABLE_DESC (METHOD_SEMANTICS_TABLE_DESC + 4)
 	/* 0x19 MethodImpl */
 	COL_TYPE_DEF, /*Class*/
 	COL_METHOD_DEF_OR_REF, /*MethodBody*/
 	COL_METHOD_DEF_OR_REF, /*MethodDeclaration*/
 	COL_LAST,
 
+#define MODULE_REF_TABLE_DESC (METHOD_IMPL_TABLE_DESC + 4)
 	/* 0x1A ModuleRef */
 	COL_STRING, /*Name*/
 	COL_LAST,
 
+#define TYPESPEC_TABLE_DESC (MODULE_REF_TABLE_DESC + 2)
 	/* 0x1B TypeSpec */
 	COL_BLOB, /*Signature*/
 	COL_LAST,
 
+#define IMPL_MAP_TABLE_DESC (TYPESPEC_TABLE_DESC + 2)
 	/* 0x1C ImplMap */
 	COL_UINT16, /*MappingFlags*/
 	COL_MEMBER_FORWARDED, /*MappingFlags*/
@@ -255,17 +281,21 @@ const static unsigned char table_desc [] = {
 	COL_MODULE_REF, /*ImportScope*/
 	COL_LAST,
 
+#define FIELD_RVA_TABLE_DESC (IMPL_MAP_TABLE_DESC + 5)
 	/* 0x1D FieldRVA */
 	COL_UINT32, /*RVA*/
 	COL_FIELD, /*Field*/
 	COL_LAST,
 
+#define TABLE_1E_DESC (IMPL_MAP_TABLE_DESC + 3)
 	/* 0x1E Unused */
 	COL_LAST,
 
+#define TABLE_1F_DESC (TABLE_1E_DESC + 1)
 	/* 0x1F Unused */
 	COL_LAST,
 
+#define ASSEMBLY_TABLE_DESC (TABLE_1F_DESC + 1)
 	/* 0x20 Assembly */
 	COL_UINT32, /*HashAlgId*/
 	COL_UINT16, /*Major*/
@@ -278,16 +308,19 @@ const static unsigned char table_desc [] = {
 	COL_STRING, /*Culture*/
 	COL_LAST,
 
+#define ASSEMBLY_PROCESSOR_TABLE_DESC (ASSEMBLY_TABLE_DESC + 10)
 	/* 0x21 AssemblyProcessor */
 	COL_UINT32, /*Processor*/
 	COL_LAST,
 
+#define ASSEMBLY_OS_TABLE_DESC (ASSEMBLY_PROCESSOR_TABLE_DESC + 2)
 	/* 0x22 AssemblyOS */
 	COL_UINT32, /*OSPlatformID*/
 	COL_UINT32, /*OSMajorVersion*/
 	COL_UINT32, /*OSMinorVersion*/
 	COL_LAST,
 
+#define ASSEMBLY_REF_TABLE_DESC (ASSEMBLY_OS_TABLE_DESC + 4)
 	/* 0x23 AssemblyRef */
 	COL_UINT16, /*Major*/
 	COL_UINT16, /*Minor*/
@@ -300,11 +333,13 @@ const static unsigned char table_desc [] = {
 	COL_BLOB, /*HashValue*/
 	COL_LAST,
 
+#define ASSEMBLY_REF_PROCESSOR_TABLE_DESC (ASSEMBLY_REF_TABLE_DESC + 10)
 	/* 0x24 AssemblyRefProcessor */
 	COL_UINT32, /*Processor*/
 	COL_ASSEMBLY_REF, /*AssemblyRef*/
 	COL_LAST,
 
+#define ASSEMBLY_REF_OS_TABLE_DESC (ASSEMBLY_REF_PROCESSOR_TABLE_DESC + 3)
 	/* 0x25 AssemblyRefOS */
 	COL_UINT32, /*OSPlatformID*/
 	COL_UINT32, /*OSMajorVersion*/
@@ -312,12 +347,14 @@ const static unsigned char table_desc [] = {
 	COL_ASSEMBLY_REF, /*AssemblyRef*/
 	COL_LAST,
 
+#define FILE_TABLE_DESC (ASSEMBLY_REF_OS_TABLE_DESC + 5)
 	/* 0x26 File */
 	COL_UINT32, /*Flags*/
 	COL_STRING, /*Name*/
 	COL_BLOB, /*HashValue*/
 	COL_LAST,
 
+#define EXPORTED_TYPE_TABLE_DESC (FILE_TABLE_DESC + 4)
 	/* 0x27 ExportedType */
 	COL_UINT32, /*Flags*/
 	COL_UINT32, /*TypeDefId*/
@@ -326,6 +363,7 @@ const static unsigned char table_desc [] = {
 	COL_IMPLEMENTATION, /*Implementation*/
 	COL_LAST,
 
+#define MANIFEST_RESOURCE_TABLE_DESC (EXPORTED_TYPE_TABLE_DESC + 6)
 	/* 0x28 ManifestResource  */
 	COL_UINT32, /*Offset*/
 	COL_UINT32, /*Flags*/
@@ -333,11 +371,13 @@ const static unsigned char table_desc [] = {
 	COL_IMPLEMENTATION, /*Implementation*/
 	COL_LAST,
 
+#define NESTED_CLASS_TABLE_DESC (MANIFEST_RESOURCE_TABLE_DESC + 5)
 	/* 0x29 NestedClass  */
 	COL_TYPE_DEF, /*NestedClass*/
 	COL_TYPE_DEF, /*EnclosingClass*/
 	COL_LAST,
 
+#define GENERIC_PARAM_TABLE_DESC (NESTED_CLASS_TABLE_DESC + 3)
 	/* 0x2A GenericParam  */
 	COL_UINT16, /*Number*/
 	COL_UINT16, /*Flags*/
@@ -345,11 +385,13 @@ const static unsigned char table_desc [] = {
 	COL_STRING, /*Name*/
 	COL_LAST,
 
+#define METHOD_SPEC_TABLE_DESC (GENERIC_PARAM_TABLE_DESC + 5)
 	/* 0x2B MethodSpec  */
 	COL_METHOD_DEF_OR_REF, /*Method*/
 	COL_BLOB, /*Instantiation*/
 	COL_LAST,
 
+#define GENERIC_PARAM_CONSTRAINT_TABLE_DESC (METHOD_SPEC_TABLE_DESC + 3)
 	/* 0x2C GenericParamConstraint  */
 	COL_GENERIC_PARAM, /*Owner*/
 	COL_TYPE_DEF_OR_REF, /*Constraint*/
@@ -359,19 +401,112 @@ const static unsigned char table_desc [] = {
 #define INVALID_TABLE (0xFF)
 /*format: number of bits, number of tables, tables{n. tables} */
 const static unsigned char coded_index_desc[] = {
-#define RES_SCOPE_DESC (0)
+#define TYPEDEF_OR_REF_DESC (0)
+	2, /*bits*/
+	3, /*tables*/
+	MONO_TABLE_TYPEDEF,
+	MONO_TABLE_TYPEREF,
+	MONO_TABLE_TYPESPEC,
+
+#define HAS_CONSTANT_DESC (TYPEDEF_OR_REF_DESC + 5)
+	2, /*bits*/
+	3, /*tables*/
+	MONO_TABLE_FIELD,
+	MONO_TABLE_PARAM,
+	MONO_TABLE_PROPERTY,
+
+#define HAS_CATTR_DESC (HAS_CONSTANT_DESC + 5)
+	5, /*bits*/
+	19, /*tables*/
+	MONO_TABLE_METHOD,
+	MONO_TABLE_FIELD,
+	MONO_TABLE_TYPEREF,
+	MONO_TABLE_TYPEDEF,
+	MONO_TABLE_PARAM,
+	MONO_TABLE_INTERFACEIMPL,
+	MONO_TABLE_MEMBERREF,
+	MONO_TABLE_MODULE,
+	MONO_TABLE_DECLSECURITY,
+	MONO_TABLE_PROPERTY, 
+	MONO_TABLE_EVENT,
+	MONO_TABLE_STANDALONESIG,
+	MONO_TABLE_MODULEREF,
+	MONO_TABLE_TYPESPEC,
+	MONO_TABLE_ASSEMBLY,
+	MONO_TABLE_ASSEMBLYREF,
+	MONO_TABLE_FILE,
+	MONO_TABLE_EXPORTEDTYPE,
+	MONO_TABLE_MANIFESTRESOURCE,
+
+#define HAS_FIELD_MARSHAL_DESC (HAS_CATTR_DESC + 21)
+	1, /*bits*/
+	2, /*tables*/
+	MONO_TABLE_FIELD,
+	MONO_TABLE_PARAM,
+
+#define HAS_DECL_SECURITY_DESC (HAS_FIELD_MARSHAL_DESC + 4)
+	2, /*bits*/
+	3, /*tables*/
+	MONO_TABLE_TYPEDEF,
+	MONO_TABLE_METHOD,
+	MONO_TABLE_ASSEMBLY,
+
+#define MEMBERREF_PARENT_DESC (HAS_DECL_SECURITY_DESC + 5)
+	3, /*bits*/
+	5, /*tables*/
+	MONO_TABLE_TYPEDEF,
+	MONO_TABLE_TYPEREF,
+	MONO_TABLE_MODULE,
+	MONO_TABLE_METHOD,
+	MONO_TABLE_TYPESPEC,
+
+#define HAS_SEMANTICS_DESC (MEMBERREF_PARENT_DESC + 7)
+	1, /*bits*/
+	2, /*tables*/
+	MONO_TABLE_EVENT,
+	MONO_TABLE_PROPERTY,
+
+#define METHODDEF_OR_REF_DESC (HAS_SEMANTICS_DESC + 4)
+	1, /*bits*/
+	2, /*tables*/
+	MONO_TABLE_METHOD,
+	MONO_TABLE_MEMBERREF,
+
+#define MEMBER_FORWARDED_DESC (METHODDEF_OR_REF_DESC + 4)
+	1, /*bits*/
+	2, /*tables*/
+	MONO_TABLE_FIELD,
+	MONO_TABLE_METHOD,
+
+#define IMPLEMENTATION_DESC (MEMBER_FORWARDED_DESC + 4)
+	2, /*bits*/
+	3, /*tables*/
+	MONO_TABLE_FILE,
+	MONO_TABLE_ASSEMBLYREF,
+	MONO_TABLE_EXPORTEDTYPE,
+
+#define CATTR_TYPE_DESC (IMPLEMENTATION_DESC + 5)
+	3, /*bits*/
+	5, /*tables*/
+	INVALID_TABLE,
+	INVALID_TABLE,
+	MONO_TABLE_METHOD,
+	MONO_TABLE_MEMBERREF,
+	INVALID_TABLE,
+
+#define RES_SCOPE_DESC (CATTR_TYPE_DESC + 7)
 	2, /*bits*/
 	4, /*tables*/
 	MONO_TABLE_MODULE,
 	MONO_TABLE_MODULEREF,
 	MONO_TABLE_ASSEMBLYREF,
 	MONO_TABLE_TYPEREF,
-#define TYPEDEF_OR_REF_DESC (RES_SCOPE_DESC + 6)
-	2, /*bits*/
-	3, /*tables*/
+
+#define TYPE_OR_METHODDEF_DESC (RES_SCOPE_DESC + 6)
+	1, /*bits*/
+	2, /*tables*/
 	MONO_TABLE_TYPEDEF,
-	MONO_TABLE_TYPEREF,
-	MONO_TABLE_TYPESPEC,
+	MONO_TABLE_METHOD
 };
 
 typedef struct {
