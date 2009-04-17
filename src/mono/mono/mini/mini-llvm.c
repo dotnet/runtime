@@ -168,10 +168,10 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		MonoClass *klass;
 		LLVMTypeRef ltype;
 
-		if (t->data.klass->enumtype)
-			return LLVMInt32Type ();
-
 		klass = mono_class_from_mono_type (t);
+
+		if (klass->enumtype)
+			return LLVMInt32Type ();
 		ltype = g_hash_table_lookup (llvm_types, klass);
 		if (!ltype) {
 			ltype = LLVMArrayType (LLVMInt8Type (), mono_class_value_size (klass, NULL));

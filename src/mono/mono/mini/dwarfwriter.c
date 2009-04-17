@@ -1650,7 +1650,9 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 	/* Emit line number info */
 	if (code && debug_info)
-		emit_line_number_info (w, method, code, code_size, debug_info);
+		/* != could happen when using --regression */
+		if (debug_info->code_start == code)
+			emit_line_number_info (w, method, code, code_size, debug_info);
 
 	emit_line (w);
 }
