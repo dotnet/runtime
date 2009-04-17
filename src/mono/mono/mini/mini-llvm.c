@@ -18,8 +18,6 @@ typedef struct {
 
 	LLVMValueRef got_var;
 
-	LLVMValueRef throw_corlib_exception;
-
 	/* Maps method names to the corresponding LLVMValueRef */
 	GHashTable *emitted_method_decls;
 
@@ -106,6 +104,8 @@ static LLVMModuleRef module;
 static LLVMExecutionEngineRef ee;
 static GHashTable *llvm_types;
 static guint32 current_cfg_tls_id;
+
+static LLVMValueRef throw, throw_corlib_exception;
 
 static void mono_llvm_init (void);
 
@@ -567,7 +567,7 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	LLVMBasicBlockRef ex_bb, noex_bb;
 	LLVMBuilderRef builder;
 	MonoClass *exc_class;
-	static LLVMValueRef throw;
+	LLVMValueRef args [2];
 
 	sprintf (bb_name, "EX_BB%d", ctx->ex_index);
 	ex_bb = LLVMAppendBasicBlock (ctx->lmethod, bb_name);
@@ -589,14 +589,30 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, ex_bb);
 
-	// FIXME:
-	if (!throw) {
-		throw = LLVMAddFunction (module, "throw", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));	
+	if (!throw_corlib_exception) {
+		LLVMValueRef callee;
 
-		LLVMAddGlobalMapping (ee, throw, &abort);
+		MonoMethodSignature *throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+		throw_sig->ret = &mono_defaults.void_class->byval_arg;
+		throw_sig->params [0] = &mono_defaults.int32_class->byval_arg;
+		throw_sig->params [1] = &mono_defaults.int32_class->byval_arg;
+
+		callee = LLVMAddFunction (module, "throw_corlib_exception", sig_to_llvm_sig (ctx, throw_sig, FALSE));
+
+		LLVMAddGlobalMapping (ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_corlib_exception"));
+
+		mono_memory_barrier ();
+		throw_corlib_exception = callee;
 	}
 
-	LLVMBuildCall (builder, throw, NULL, 0, "");
+	args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token, FALSE);
+	/*
+	 * FIXME: The offset is 0, this is not a problem for exception handling
+	 * in general, because we don't llvm compile methods with handlers, its only
+	 * a problem for line numbers in stack traces.
+	 */
+	args [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+	LLVMBuildCall (builder, throw_corlib_exception, args, 2, "");
 
 	LLVMBuildUnreachable (builder);
 
@@ -1586,13 +1602,17 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				MonoMethodSignature *throw_sig;
 				LLVMValueRef callee;
 
-				throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-				throw_sig->ret = &mono_defaults.void_class->byval_arg;
-				throw_sig->params [0] = &mono_defaults.object_class->byval_arg;
-				// FIXME: Prevent duplicates
-				callee = LLVMAddFunction (module, "mono_arch_throw_exception", sig_to_llvm_sig (ctx, throw_sig, FALSE));
-				LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception"));
-				LLVMBuildCall (builder, callee, &values [ins->sreg1], 1, "");
+				if (!throw) {
+					throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
+					throw_sig->ret = &mono_defaults.void_class->byval_arg;
+					throw_sig->params [0] = &mono_defaults.object_class->byval_arg;
+					callee = LLVMAddFunction (module, "mono_arch_throw_exception", sig_to_llvm_sig (ctx, throw_sig, FALSE));
+					LLVMAddGlobalMapping (ee, callee, resolve_patch (cfg, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_arch_throw_exception"));
+
+					mono_memory_barrier ();
+					throw = callee;
+				}
+				LLVMBuildCall (builder, throw, &values [ins->sreg1], 1, "");
 				break;
 			}
 			case OP_NOT_REACHED:
