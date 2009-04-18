@@ -107,6 +107,9 @@ gboolean mono_do_signal_chaining;
 static gboolean	mono_using_xdebug;
 static int mini_verbose = 0;
 
+/* Statistics */
+static int methods_with_llvm, methods_without_llvm;
+
 #define mono_jit_lock() EnterCriticalSection (&jit_mutex)
 #define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
 static CRITICAL_SECTION jit_mutex;
@@ -3657,6 +3660,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (COMPILE_LLVM (cfg)) {
 #ifdef ENABLE_LLVM
 		char *nm;
+		static gboolean inited;
+
+		if (!inited) {
+			mono_counters_register ("Methods JITted using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_with_llvm);	
+			mono_counters_register ("Methods JITted without using LLVM", MONO_COUNTER_JIT | MONO_COUNTER_INT, &methods_without_llvm);
+			inited = TRUE;
+		}
 
 		/* The IR has to be in SSA form for LLVM */
 		if (!(cfg->comp_done & MONO_COMP_SSA)) {
@@ -3672,10 +3682,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 				//g_free (nm);
 			}
+			InterlockedIncrement (&methods_without_llvm);
 			mono_destroy_compile (cfg);
 			try_llvm = FALSE;
 			goto restart_compile;
 		}
+
+		InterlockedIncrement (&methods_with_llvm);
 
 		if (cfg->verbose_level > 0) {
 			nm = mono_method_full_name (cfg->method, TRUE);
