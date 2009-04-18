@@ -4559,7 +4559,7 @@ mini_get_imt_trampoline (void)
 
 #ifdef MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 gpointer
-mini_get_vtable_trampoline (void)
+mini_create_vtable_trampoline (MonoVTable *vtable)
 {
 	static gpointer tramp = NULL;
 	if (!tramp)
@@ -4774,7 +4774,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 		mono_install_imt_trampoline (mini_get_imt_trampoline ());
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
-		mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
+		mono_install_vtable_trampoline (mini_create_vtable_trampoline);
 #endif
 	}
 #endif

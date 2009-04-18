@@ -1414,7 +1414,7 @@ void              mono_generic_class_init_trampoline (gssize *regs, guint8 *code
 void              mono_monitor_enter_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 void              mono_monitor_exit_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
-gpointer          mini_get_vtable_trampoline (void) MONO_INTERNAL;
+gpointer          mini_create_vtable_trampoline (MonoVTable *vtable) MONO_INTERNAL;
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;
 void*             mono_global_codeman_reserve (int size) MONO_INTERNAL;

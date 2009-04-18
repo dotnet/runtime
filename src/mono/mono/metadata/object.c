@@ -467,6 +467,7 @@ static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
 static MonoJumpTrampoline arch_create_jump_trampoline = default_jump_trampoline;
 static MonoRemotingTrampoline arch_create_remoting_trampoline = default_remoting_trampoline;
 static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
+static MonoVTableTrampoline arch_create_vtable_trampoline;
 static MonoImtThunkBuilder imt_thunk_builder = NULL;
 #define ARCH_USE_IMT (imt_thunk_builder != NULL)
 #if (MONO_IMT_SIZE > 32)
@@ -495,6 +496,12 @@ void
 mono_install_delegate_trampoline (MonoDelegateTrampoline func) 
 {
 	arch_create_delegate_trampoline = func? func: default_delegate_trampoline;
+}
+
+void
+mono_install_vtable_trampoline (MonoVTableTrampoline func) 
+{
+	arch_create_vtable_trampoline = func;
 }
 
 void
@@ -967,14 +974,6 @@ void
 mono_install_imt_trampoline (gpointer tramp_code)
 {
 	imt_trampoline = tramp_code;
-}
-
-static gpointer vtable_trampoline = NULL;
-
-void
-mono_install_vtable_trampoline (gpointer tramp_code)
-{
-	vtable_trampoline = tramp_code;
 }
 
 #define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
@@ -1581,6 +1580,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	MonoImtBuilderEntry *entries;
 	int i;
 	GPtrArray *sorted;
+	gpointer vtable_trampoline = NULL;
 
 	mono_domain_lock (domain);
 	if (!domain->generic_virtual_cases)
@@ -1614,6 +1614,9 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 
 	if (++gvc->count == THUNK_THRESHOLD) {
 		gpointer *old_thunk = *vtable_slot;
+
+		if (arch_create_vtable_trampoline)
+			vtable_trampoline = arch_create_vtable_trampoline (vtable);
 
 		if ((gpointer)vtable_slot < (gpointer)vtable)
 			/* Force the rebuild of the thunk at the next call */
@@ -1905,7 +1908,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 	}
 
 	/* Initialize vtable */
-	if (vtable_trampoline) {
+	if (arch_create_vtable_trampoline) {
+		gpointer vtable_trampoline = arch_create_vtable_trampoline (vt);
 		// This also covers the AOT case
 		for (i = 0; i < class->vtable_size; ++i) {
 			vt->vtable [i] = vtable_trampoline;
@@ -1917,7 +1921,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class)
 			MonoMethod *cm;
 
 			if ((cm = class->vtable [i]))
-				vt->vtable [i] = vtable_trampoline? vtable_trampoline: arch_create_jit_trampoline (cm);
+				vt->vtable [i] = arch_create_jit_trampoline (cm);
 		}
 	}
 
