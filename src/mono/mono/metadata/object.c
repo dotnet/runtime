@@ -4946,9 +4946,6 @@ mono_raise_exception (MonoException *ex)
 		MonoThread *thread = mono_thread_current ();
 		g_assert (ex->object.vtable->domain == mono_domain_get ());
 		MONO_OBJECT_SETREF (thread, abort_exc, ex);
-		if (thread->abort_state_handle)
-			mono_gchandle_free (thread->abort_state_handle);
-		thread->abort_state_handle = 0;
 	}
 	
 	ex_handler (ex);
