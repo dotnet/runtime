@@ -887,6 +887,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				bb_name = g_strdup_printf ("SWITCH_DEFAULT_BB%d", ctx->default_index ++);
 				new_bb = LLVMAppendBasicBlock (ctx->lmethod, bb_name);
 
+				lhs = convert (ctx, lhs, LLVMInt32Type ());
 				v = LLVMBuildSwitch (builder, lhs, new_bb, GPOINTER_TO_UINT (ins->klass));
 				for (i = 0; i < GPOINTER_TO_UINT (ins->klass); ++i) {
 					MonoBasicBlock *target_bb = ins->inst_many_bb [i];
@@ -1600,7 +1601,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			}
 			case OP_THROW: {
 				MonoMethodSignature *throw_sig;
-				LLVMValueRef callee;
+				LLVMValueRef callee, arg;
 
 				if (!throw) {
 					throw_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
@@ -1612,7 +1613,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					mono_memory_barrier ();
 					throw = callee;
 				}
-				LLVMBuildCall (builder, throw, &values [ins->sreg1], 1, "");
+				arg = convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, &mono_defaults.object_class->byval_arg));
+				LLVMBuildCall (builder, throw, &arg, 1, "");
 				break;
 			}
 			case OP_NOT_REACHED:
