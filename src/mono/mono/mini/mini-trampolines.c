@@ -182,7 +182,6 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	gboolean need_rgctx_tramp = FALSE;
 #endif
 
-#if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	if (m == MONO_FAKE_VTABLE_METHOD) {
 		int displacement;
 		MonoVTable *vt = mono_arch_get_vcall_slot (code, (gpointer*)regs, &displacement);
@@ -223,7 +222,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			/*g_print ("vtable with disp %d at %p\n", displacement, code);*/
 		}
 	}
-#endif
+
 	/* this is the IMT trampoline */
 #ifdef MONO_ARCH_HAVE_IMT
 	if (m == MONO_FAKE_IMT_METHOD) {

@@ -274,7 +274,6 @@ typedef struct MonoCompileArch {
 
 //#define MONO_ARCH_HAVE_IMT 1
 //#define MONO_ARCH_IMT_REG mips_v0		/* XXX */
-#define MONO_ARCH_COMMON_VTABLE_TRAMPOLINE 1
 
 //#define MONO_ARCH_VTABLE_REG	mips_v0		/* XXX */
 #define MONO_ARCH_RGCTX_REG	mips_v0		/* XXX */

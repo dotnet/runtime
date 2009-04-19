@@ -313,7 +313,6 @@ typedef struct {
  * clobbered across method call boundaries.
  */
 #define MONO_ARCH_RGCTX_REG AMD64_R10
-#define MONO_ARCH_COMMON_VTABLE_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_CMOV_OPS 1
 #define MONO_ARCH_HAVE_NOTIFY_PENDING_EXC 1
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
