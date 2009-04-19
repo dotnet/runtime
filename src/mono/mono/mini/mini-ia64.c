@@ -965,7 +965,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
-	if (!strcmp (cfg->method->name, "MoveNextCore") && !strcmp (cfg->method->klass->name, "PredicateIterator"))
+	if (!strcmp (cfg->method->klass->name_space, "System.Xml.XPath"))
 		cfg->verbose_level = 4;
 
 	sig = mono_method_signature (cfg->method);
@@ -2329,8 +2329,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 				ins->inst_basereg = GP_SCRATCH_REG;
 			}
-			if (ins->dreg >= 128)
-				fprintf (stderr, "XX: %s\n", mono_method_full_name (cfg->method, TRUE));
 			ia64_ld8 (code, ins->dreg, ins->inst_basereg);
 			break;
 
