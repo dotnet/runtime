@@ -119,6 +119,7 @@ typedef struct
 	GHashTable *jit_trampoline_hash;
 	GHashTable *delegate_trampoline_hash;
 	GHashTable *static_rgctx_trampoline_hash;
+	GHashTable *llvm_vcall_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
 	GHashTable *dynamic_code_hash;
 	GHashTable *method_code_hash;
@@ -768,6 +769,9 @@ typedef enum {
 	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
 	MONO_TRAMPOLINE_MONITOR_ENTER,
 	MONO_TRAMPOLINE_MONITOR_EXIT,
+#ifdef ENABLE_LLVM
+	MONO_TRAMPOLINE_LLVM_VCALL,
+#endif
 	MONO_TRAMPOLINE_NUM
 } MonoTrampolineType;
 
@@ -1399,6 +1403,7 @@ gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset) MONO_
 gpointer          mono_create_monitor_enter_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_monitor_exit_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr) MONO_INTERNAL;
+gpointer          mono_create_llvm_vcall_trampoline (MonoMethod *method) MONO_INTERNAL;
 MonoVTable*       mono_find_class_init_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 MonoClass*        mono_find_delegate_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;
 guint32           mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr) MONO_INTERNAL;

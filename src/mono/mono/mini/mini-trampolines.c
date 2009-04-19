@@ -510,6 +510,56 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 
 	return addr;
 }
+ 
+#ifdef ENABLE_LLVM
+/*
+ * mono_llvm_vcall_trampoline:
+ *
+ *   This trampoline handles virtual calls when using LLVM.
+ */
+static gpointer
+mono_llvm_vcall_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
+{
+	MonoObject *this;
+	gpointer addr;
+	MonoVTable *vt;
+	gpointer *vtable_slot;
+	gboolean proxy = FALSE;
+
+	/* 
+	 * We have the method which is called, we need to obtain the vtable slot without
+	 * disassembly which is impossible with LLVM.
+	 * So we use the this argument.
+	 */
+	this = mono_arch_get_this_arg_from_call (NULL, mono_method_signature (m), regs, code);
+	g_assert (this);
+
+	vt = this->vtable;
+
+	/* This is a simplified version of mono_magic_trampoline () */
+	/* FIXME: Avoid code duplication */
+
+	addr = mono_compile_method (m);
+	g_assert (addr);
+
+	if (m->klass->valuetype)
+		addr = get_unbox_trampoline (mono_get_generic_context_from_code (code), m, addr);
+
+	vtable_slot = &(vt->vtable [mono_method_get_vtable_slot (m)]);
+	g_assert (*vtable_slot);
+
+	if (!proxy && (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))) {
+#ifdef MONO_ARCH_HAVE_IMT
+		vtable_slot = mono_convert_imt_slot_to_vtable_slot (vtable_slot, (gpointer*)regs, code, m, NULL);
+#endif
+		*vtable_slot = mono_get_addr_from_ftnptr (addr);
+	  }
+
+	mono_debugger_trampoline_compiled (m, addr);
+
+	return addr;
+}
+#endif
 
 gpointer
 mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
@@ -842,6 +892,10 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 		return mono_monitor_enter_trampoline;
 	case MONO_TRAMPOLINE_MONITOR_EXIT:
 		return mono_monitor_exit_trampoline;
+#ifdef ENABLE_LLVM
+	case MONO_TRAMPOLINE_LLVM_VCALL:
+		return mono_llvm_vcall_trampoline;
+#endif
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -872,6 +926,9 @@ mono_trampolines_init (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
 	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_ENTER] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
 	mono_trampoline_code [MONO_TRAMPOLINE_MONITOR_EXIT] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_MONITOR_EXIT);
+#ifdef ENABLE_LLVM
+	mono_trampoline_code [MONO_TRAMPOLINE_LLVM_VCALL] = mono_arch_create_trampoline_code (MONO_TRAMPOLINE_LLVM_VCALL);
+#endif
 }
 
 void
@@ -1203,6 +1260,43 @@ mono_create_monitor_exit_trampoline (void)
 #endif
 	return code;
 }
+ 
+#ifdef ENABLE_LLVM
+/*
+ * mono_create_llvm_vcall_trampoline:
+ *
+ *  LLVM emits code for virtual calls which mono_get_vcall_slot is unable to
+ * decode, i.e. only the final branch address is available:
+ * mov <offset>(%rax), %rax
+ * <random code inserted by instruction scheduling>
+ * call *%rax
+ *
+ * To work around this problem, we don't use the common vtable trampoline when
+ * llvm is enabled. Instead, we use one trampoline per method.
+ */
+gpointer
+mono_create_llvm_vcall_trampoline (MonoMethod *method)
+{
+	MonoDomain *domain;
+	gpointer res;
+
+	domain = mono_domain_get ();
+
+	mono_domain_lock (domain);
+	res = g_hash_table_lookup (domain_jit_info (domain)->llvm_vcall_trampoline_hash, method);
+	mono_domain_unlock (domain);
+	if (res)
+		return res;
+
+	res = mono_create_specific_trampoline (method, MONO_TRAMPOLINE_LLVM_VCALL, domain, NULL);
+
+	mono_domain_lock (domain);
+	g_hash_table_insert (domain_jit_info (domain)->llvm_vcall_trampoline_hash, method, res);
+	mono_domain_unlock (domain);
+
+	return res;
+}
+#endif
 
 MonoVTable*
 mono_find_class_init_trampoline_by_addr (gconstpointer addr)

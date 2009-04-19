@@ -938,6 +938,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				if (ins->next->opcode == OP_NOP)
 					break;
 
+				if (ins->next->opcode == OP_BR)
+					/* The comparison result is not needed */
+					continue;
+
 				rel = mono_opcode_to_cond (ins->next->opcode);
 
 				/* Used for implementing bound checks */
@@ -968,8 +972,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				}
 				if (ins->opcode == OP_LCOMPARE_IMM)
 					rhs = LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE);
-				if (ins->opcode == OP_LCOMPARE)
+				if (ins->opcode == OP_LCOMPARE) {
+					lhs = convert (ctx, lhs, LLVMInt64Type ());
 					rhs = convert (ctx, rhs, LLVMInt64Type ());
+				}
 				if (ins->opcode == OP_ICOMPARE) {
 					lhs = convert (ctx, lhs, LLVMInt32Type ());
 					rhs = convert (ctx, rhs, LLVMInt32Type ());

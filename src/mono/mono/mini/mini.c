@@ -3346,9 +3346,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		/* The IR has to be in SSA form for LLVM */
 		cfg->opt |= MONO_OPT_SSA;
 
-		if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
-			mono_decompose_array_access_opts (cfg);
-
 		// FIXME:
 		if (cfg->ret) {
 			// Allow SSA on the result value
@@ -3365,6 +3362,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		/* FIXME: */
 		cfg->opt &= ~MONO_OPT_BRANCH;
+
+		// FIXME: Enabling ABCREM seems to regress performance
 	}
 
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
@@ -3526,6 +3525,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	}
 #endif
 
+	if (cfg->comp_done & MONO_COMP_SSA && COMPILE_LLVM (cfg)) {
+		if ((cfg->flags & (MONO_CFG_HAS_LDELEMA|MONO_CFG_HAS_CHECK_THIS)) && (cfg->opt & MONO_OPT_ABCREM))
+			mono_perform_abc_removal (cfg);
+	}
+
 	/* after SSA removal */
 	if (parts == 3) {
 		if (MONO_PROBE_METHOD_COMPILE_END_ENABLED ())
@@ -3675,6 +3679,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			cfg->exception_message = g_strdup ("SSA disabled.");
 			cfg->disable_llvm = TRUE;
 		}
+
+		if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
+			mono_decompose_array_access_opts (cfg);
 
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
@@ -4622,6 +4629,7 @@ mini_create_jit_domain_info (MonoDomain *domain)
 	info->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->delegate_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	info->static_rgctx_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	info->llvm_vcall_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
 	domain->runtime_info = info;
 }
@@ -4664,6 +4672,7 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	g_hash_table_destroy (info->jit_trampoline_hash);
 	g_hash_table_destroy (info->delegate_trampoline_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
+	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
 
 	g_free (domain->runtime_info);
 	domain->runtime_info = NULL;
@@ -4741,7 +4750,12 @@ mini_init (const char *filename, const char *runtime_version)
 #ifdef JIT_TRAMPOLINES_WORK
 	mono_install_compile_method (mono_jit_compile_method);
 	mono_install_free_method (mono_jit_free_method);
+#ifdef ENABLE_LLVM
+	/* The runtime currently only uses this for filling out vtables */
+	mono_install_trampoline (mono_create_llvm_vcall_trampoline);
+#else
 	mono_install_trampoline (mono_create_jit_trampoline);
+#endif
 	mono_install_jump_trampoline (mono_create_jump_trampoline);
 	mono_install_remoting_trampoline (mono_jit_create_remoting_trampoline);
 	mono_install_delegate_trampoline (mono_create_delegate_trampoline);
@@ -4773,7 +4787,10 @@ mini_init (const char *filename, const char *runtime_version)
 	if (mono_use_imt) {
 		mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 		mono_install_imt_trampoline (mini_get_imt_trampoline ());
+#ifndef ENABLE_LLVM
+		/* LLVM needs a per-method vtable trampoline */
 		mono_install_vtable_trampoline (mini_get_vtable_trampoline ());
+#endif
 	}
 #endif
 
