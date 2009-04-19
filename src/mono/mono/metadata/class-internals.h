@@ -774,7 +774,6 @@ typedef gpointer (*MonoTrampoline)       (MonoMethod *method);
 typedef gpointer (*MonoJumpTrampoline)       (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper);
 typedef gpointer (*MonoRemotingTrampoline)       (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target);
 typedef gpointer (*MonoDelegateTrampoline)       (MonoClass *klass);
-typedef gpointer (*MonoVTableTrampoline)       (MonoVTable *vtable);
 
 typedef gpointer (*MonoLookupDynamicToken) (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context);
 
