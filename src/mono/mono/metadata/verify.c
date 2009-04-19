@@ -5887,6 +5887,12 @@ mono_verifier_is_enabled_for_class (MonoClass *klass)
 }
 
 gboolean
+mono_verifier_is_enabled_for_image (MonoImage *image)
+{
+	return verify_all || verifier_mode > MONO_VERIFIER_MODE_OFF;
+}
+
+gboolean
 mono_verifier_is_method_full_trust (MonoMethod *method)
 {
 	return mono_verifier_is_class_full_trust (method->klass);

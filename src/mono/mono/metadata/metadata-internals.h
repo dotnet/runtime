@@ -549,5 +549,11 @@ mono_metadata_get_corresponding_property_from_generic_type_definition (MonoPrope
 guint32
 mono_metadata_signature_size (MonoMethodSignature *sig) MONO_INTERNAL;
 
+gboolean mono_image_load_pe_data (MonoImage *image) MONO_INTERNAL;
+
+gboolean mono_image_load_cli_data (MonoImage *image) MONO_INTERNAL;
+
+MonoImage *mono_image_open_raw (const char *fname, MonoImageOpenStatus *status) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

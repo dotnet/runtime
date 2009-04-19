@@ -19,6 +19,8 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/tokentype.h>
+#include <mono/metadata/security-manager.h>
+#include <mono/metadata/security-core-clr.h>
 #include <mono/utils/strenc.h>
 #include <string.h>
 #include <signal.h>
@@ -603,6 +605,9 @@ typedef struct {
 	TableInfo tables [MONO_TABLE_NUM];
 	guint32 field_sizes [COL_LAST];
 	gboolean is_corlib;
+
+	MonoImage *image;
+	gboolean report_error;
 } VerifyContext;
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
@@ -617,7 +622,8 @@ typedef struct {
 
 #define ADD_ERROR(__ctx, __msg)	\
 	do {	\
-		ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR, MONO_EXCEPTION_INVALID_PROGRAM); \
+		if ((__ctx)->report_error) \
+			ADD_VERIFY_INFO(__ctx, __msg, MONO_VERIFY_ERROR, MONO_EXCEPTION_INVALID_PROGRAM); \
 		(__ctx)->valid = 0; \
 		return; \
 	} while (0)
@@ -1599,15 +1605,47 @@ verify_tables_data (VerifyContext *ctx)
 	verify_field_table (ctx);
 }
 
-GSList*
-mono_image_verify (const char *data, guint32 size, gboolean is_corlib)
+static gboolean
+mono_verifier_is_corlib (MonoImage *image)
+{
+	gboolean trusted_location = (mono_security_get_mode () != MONO_SECURITY_MODE_CORE_CLR) ? 
+			TRUE : mono_security_core_clr_is_platform_image (image);
+
+	return trusted_location && !strcmp ("mscorlib.dll", image->name);
+}
+
+static void
+init_verify_context (VerifyContext *ctx, MonoImage *image, GSList **error_list)
+{
+	memset (ctx, 0, sizeof (VerifyContext));
+	ctx->image = image;
+	ctx->report_error = error_list != NULL;
+	ctx->valid = 1;
+	ctx->size = image->raw_data_len;
+	ctx->data = image->raw_data;
+	ctx->is_corlib = mono_verifier_is_corlib (image);	
+}
+
+static gboolean
+cleanup_context (VerifyContext *ctx, GSList **error_list)
+{
+	g_free (ctx->sections);
+	if (error_list)
+		*error_list = ctx->errors;
+	else
+		mono_free_verify_list (ctx->errors);
+	return ctx->valid;	
+}
+
+gboolean
+mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
 {
 	VerifyContext ctx;
-	memset (&ctx, 0, sizeof (VerifyContext));
-	ctx.data = data;
-	ctx.size = size;
-	ctx.valid = 1;
-	ctx.is_corlib = is_corlib;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	init_verify_context (&ctx, image, error_list);
 
 	verify_msdos_header (&ctx);
 	CHECK_STATE();
@@ -1623,16 +1661,46 @@ mono_image_verify (const char *data, guint32 size, gboolean is_corlib)
 	CHECK_STATE();
 	/*No need to check the IAT directory entry, it's content is indirectly verified by verify_import_table*/
 	verify_resources_table (&ctx);
-	CHECK_STATE();
+
+cleanup:
+	return cleanup_context (&ctx, error_list);
+}
+
+gboolean
+mono_verifier_verify_cli_data (MonoImage *image, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	return TRUE; /*disabled because code must be fixed to use data from MonoImage*/
+
+	init_verify_context (&ctx, image, error_list);
+
 	verify_cli_header (&ctx);
 	CHECK_STATE();
 	verify_metadata_header (&ctx);
 	CHECK_STATE();
 	verify_tables_schema (&ctx);
-	CHECK_STATE();
-	verify_tables_data (&ctx);
-	CHECK_STATE();
+
 cleanup:
-	g_free (ctx.sections);
-	return ctx.errors;
+	return cleanup_context (&ctx, error_list);
+}
+
+gboolean
+mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
+{
+	VerifyContext ctx;
+
+	if (!mono_verifier_is_enabled_for_image (image))
+		return TRUE;
+
+	return TRUE; /*disabled because code must be fixed to use data from MonoImage*/
+
+	init_verify_context (&ctx, image, error_list);
+
+	verify_tables_data (&ctx);
+
+	return cleanup_context (&ctx, error_list);
 }

@@ -417,41 +417,42 @@ usage (void)
 static int
 verify_image_file (const char *fname)
 {
-	FILE *filed;
-	struct stat stat_buf;
-	void *raw_data_handle;
-	char *raw_data;
-	GSList *errors, *tmp;
+	GSList *errors = NULL, *tmp;
+	MonoImage *image;
+	MonoImageOpenStatus status;
 	int count = 0;
 	const char* desc [] = {
 		"Ok", "Error", "Warning", NULL, "CLS", NULL, NULL, NULL, "Not Verifiable"
 	};
 
-	if ((filed = fopen (fname, "rb")) == NULL) {
-		fprintf (stderr, "Cannot open file %s\n", fname);
-		exit (1);
+	image = mono_image_open_raw (fname, &status);
+	if (!image) {
+		printf ("Could not open %s\n", fname);
+		return 1;
 	}
 
-	if (fstat (fileno (filed), &stat_buf)) {
-		fclose (filed);
-		fprintf (stderr, "Cannot stat file %s\n", fname);
-		exit (1);
+	if (!mono_verifier_verify_pe_data (image, &errors))
+		goto invalid_image;
+
+	if (!mono_image_load_pe_data (image)) {
+		printf ("Could not load pe data for assembly %s\n", fname);
+		return 1;
 	}
 
-	raw_data = mono_file_map (stat_buf.st_size, MONO_MMAP_READ|MONO_MMAP_PRIVATE, fileno (filed), 0, &raw_data_handle);
+	if (!mono_verifier_verify_cli_data (image, &errors))
+		goto invalid_image;
 
-	if (!raw_data) {
-		fprintf (stderr, "Could not mmap file %s\n", fname);
-		exit (1);
+	if (!mono_image_load_cli_data (image)) {
+		printf ("Could not load cli data for assembly %s\n", fname);
+		return 1;
 	}
-	fclose (filed);
 
-	errors = mono_image_verify (raw_data, stat_buf.st_size, strcmp (fname, "mscorlib.dll") == 0);
-	mono_file_unmap (raw_data, raw_data_handle);
+	if (!mono_verifier_verify_table_data (image, &errors))
+		goto invalid_image;
 
-	if (!errors)
-		return 0;
+	return 0;
 
+invalid_image:
 	for (tmp = errors; tmp; tmp = tmp->next) {
 		MonoVerifyInfo *info = tmp->data;
 		g_print ("%s: %s\n", desc [info->status], info->message);
@@ -461,8 +462,7 @@ verify_image_file (const char *fname)
 	mono_free_verify_list (errors);
 	if (count)
 		g_print ("Error count: %d\n", count);
-
-	return count > 0 ? 1 : 0;
+	return 1;
 }
 
 static gboolean
@@ -642,8 +642,15 @@ main (int argc, char *argv [])
 		/**/
 	}
 
-	if (run_new_metadata_verifier)
+	if (run_new_metadata_verifier) {
+		mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
+
+		mono_init ("pedump");
+
+		mono_marshal_init ();
+
 		return verify_image_file (file);
+	}
 
 	image = mono_image_open (file, NULL);
 	if (!image){

@@ -35,6 +35,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/security-core-clr.h>
+#include <mono/metadata/verify-internals.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -768,24 +769,16 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 	return offset;
 }
 
-static MonoImage *
-do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
-		    gboolean care_about_cli)
+gboolean
+mono_image_load_pe_data (MonoImage *image)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
 	MonoMSDOSHeader msdos;
 	gint32 offset = 0;
 
-	mono_profiler_module_event (image, MONO_PROFILE_START_LOAD);
-
-	mono_image_init (image);
-
 	iinfo = image->image_info;
 	header = &iinfo->cli_header;
-		
-	if (status)
-		*status = MONO_IMAGE_IMAGE_INVALID;
 
 #ifdef PLATFORM_WIN32
 	if (!image->is_module_handle)
@@ -834,16 +827,66 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	
 	if (!load_section_tables (image, iinfo, offset))
 		goto invalid_image;
+
+	return TRUE;
+
+invalid_image:
+	return FALSE;
+}
+
+gboolean
+mono_image_load_cli_data (MonoImage *image)
+{
+	MonoCLIImageInfo *iinfo;
+	MonoDotNetHeader *header;
+
+	iinfo = image->image_info;
+	header = &iinfo->cli_header;
+
+	/* Load the CLI header */
+	if (!load_cli_header (image, iinfo))
+		return FALSE;
+
+	if (!load_metadata (image, iinfo))
+		return FALSE;
+
+	return TRUE;
+}
+
+static MonoImage *
+do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
+		    gboolean care_about_cli, gboolean care_about_pecoff)
+{
+	MonoCLIImageInfo *iinfo;
+	MonoDotNetHeader *header;
+
+	mono_profiler_module_event (image, MONO_PROFILE_START_LOAD);
+
+	mono_image_init (image);
+
+	iinfo = image->image_info;
+	header = &iinfo->cli_header;
+		
+	if (status)
+		*status = MONO_IMAGE_IMAGE_INVALID;
+
+	if (care_about_pecoff == FALSE)
+		goto done;
+
+	if (!mono_verifier_verify_pe_data (image, NULL))
+		goto invalid_image;
+
+	if (!mono_image_load_pe_data (image))
+		goto invalid_image;
 	
 	if (care_about_cli == FALSE) {
 		goto done;
 	}
-	
-	/* Load the CLI header */
-	if (!load_cli_header (image, iinfo))
+
+	if (!mono_verifier_verify_cli_data (image, NULL))
 		goto invalid_image;
 
-	if (!load_metadata (image, iinfo))
+	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
 	/* modules don't have an assembly table row */
@@ -874,7 +917,7 @@ invalid_image:
 
 static MonoImage *
 do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
-		    gboolean care_about_cli, gboolean refonly)
+		    gboolean care_about_cli, gboolean care_about_pecoff, gboolean refonly)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -916,7 +959,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->core_clr_platform_code = mono_security_core_clr_determine_platform_image (image);
 
 	mono_file_map_close (filed);
-	return do_mono_image_load (image, status, care_about_cli);
+	return do_mono_image_load (image, status, care_about_cli, care_about_pecoff);
 }
 
 MonoImage *
@@ -1039,7 +1082,7 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 	image->image_info = iinfo;
 	image->ref_only = refonly;
 
-	image = do_mono_image_load (image, status, TRUE);
+	image = do_mono_image_load (image, status, TRUE, TRUE);
 	if (image == NULL)
 		return NULL;
 
@@ -1069,7 +1112,7 @@ mono_image_open_from_module_handle (HMODULE module_handle, char* fname, gboolean
 	image->ref_count = has_entry_point ? 0 : 1;
 	image->has_entry_point = has_entry_point;
 
-	image = do_mono_image_load (image, status, TRUE);
+	image = do_mono_image_load (image, status, TRUE, TRUE);
 	if (image == NULL)
 		return NULL;
 
@@ -1172,7 +1215,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	}
 	mono_images_unlock ();
 
-	image = do_mono_image_open (fname, status, TRUE, refonly);
+	image = do_mono_image_open (fname, status, TRUE, TRUE, refonly);
 	if (image == NULL)
 		return NULL;
 
@@ -1211,7 +1254,24 @@ mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	return(do_mono_image_open (fname, status, FALSE, FALSE));
+	return(do_mono_image_open (fname, status, FALSE, TRUE, FALSE));
+}
+
+/**
+ * mono_image_open_raw
+ * @fname: filename that points to the module we want to open
+ * @status: An error condition is returned in this field
+ * 
+ * Returns an image without loading neither pe or cli data.
+ * 
+ * Use mono_image_load_pe_data and mono_image_load_cli_data to load them.  
+ */
+MonoImage *
+mono_image_open_raw (const char *fname, MonoImageOpenStatus *status)
+{
+	g_return_val_if_fail (fname != NULL, NULL);
+	
+	return(do_mono_image_open (fname, status, FALSE, FALSE, FALSE));
 }
 
 void
