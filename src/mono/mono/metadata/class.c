@@ -7472,7 +7472,15 @@ can_access_instantiation (MonoClass *access_klass, MonoGenericInst *ginst)
 static gboolean
 can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 {
-	int access_level = member_klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+	int access_level;
+
+	if (access_klass->element_class && !access_klass->enumtype)
+		access_klass = access_klass->element_class;
+
+	if (member_klass->element_class && !member_klass->enumtype)
+		member_klass = member_klass->element_class;
+
+	access_level = member_klass->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 
 	if (member_klass->byval_arg.type == MONO_TYPE_VAR || member_klass->byval_arg.type == MONO_TYPE_MVAR)
 		return TRUE;
