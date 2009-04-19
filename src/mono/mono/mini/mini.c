@@ -108,7 +108,9 @@ static gboolean	mono_using_xdebug;
 static int mini_verbose = 0;
 
 /* Statistics */
+#ifdef ENABLE_LLVM
 static int methods_with_llvm, methods_without_llvm;
+#endif
 
 #define mono_jit_lock() EnterCriticalSection (&jit_mutex)
 #define mono_jit_unlock() LeaveCriticalSection (&jit_mutex)
