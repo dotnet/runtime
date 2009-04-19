@@ -4569,17 +4569,6 @@ mono_arch_get_vcall_slot (guint8* code, gpointer *regs, int *displacement)
 }
 
 gpointer*
-mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
-{
-	gpointer vt;
-	int displacement;
-	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
-	if (!vt)
-		return NULL;
-	return (gpointer*)(gpointer)((char*)vt + displacement);
-}
-
-gpointer*
 mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs)
 {
 	NOT_IMPLEMENTED;

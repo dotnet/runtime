@@ -88,6 +88,17 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 }
 #endif
 
+gpointer*
+mono_get_vcall_slot_addr (guint8* code, gpointer *regs)
+{
+	gpointer vt;
+	int displacement;
+	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
+	if (!vt)
+		return NULL;
+	return (gpointer*)((char*)vt + displacement);
+}
+
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
@@ -206,7 +217,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			/* Avoid loading metadata or creating a generic vtable if possible */
 			addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, displacement);
 			if (addr && !vt->klass->valuetype) {
-				vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+				vtable_slot = mono_get_vcall_slot_addr (code, (gpointer*)regs);
 				if (mono_aot_is_got_entry (code, (guint8*)vtable_slot) || mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot)) {
 					*vtable_slot = mono_get_addr_from_ftnptr (addr);
 				}
@@ -234,7 +245,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		 * needs the signature to be able to find the this argument
 		 */
 		m = mono_arch_find_imt_method ((gpointer*)regs, code);
-		vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+		vtable_slot = mono_get_vcall_slot_addr (code, (gpointer*)regs);
 		g_assert (vtable_slot);
 
 		gsctx = mono_get_generic_context_from_code (code);
@@ -329,7 +340,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 				mono_get_generic_context_from_code (code));
 
 			vt = this_argument->vtable;
-			vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+			vtable_slot = mono_get_vcall_slot_addr (code, (gpointer*)regs);
 
 			g_assert (this_argument->vtable->klass->inited);
 			//mono_class_init (this_argument->vtable->klass);
@@ -414,7 +425,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		int displacement;
  		MonoVTable *vt = mono_arch_get_vcall_slot (code, (gpointer*)regs, &displacement);
 
-		vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+		vtable_slot = mono_get_vcall_slot_addr (code, (gpointer*)regs);
 		g_assert (vtable_slot);
 
 		if (vt->klass->valuetype)
@@ -455,7 +466,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 		return addr;
 	}
 
-	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+	vtable_slot = mono_get_vcall_slot_addr (code, (gpointer*)regs);
 
 	if (vtable_slot) {
 		if (m->klass->valuetype)
@@ -567,7 +578,7 @@ mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info,
 		return mono_magic_trampoline (regs, code, method, tramp);
 	}
 
-	vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+	vtable_slot = mono_get_vcall_slot_addr (code, (gpointer*)regs);
 	g_assert (!vtable_slot);
 
 	/* This is a normal call through a PLT entry */

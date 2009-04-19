@@ -1415,6 +1415,7 @@ void              mono_monitor_enter_trampoline (gssize *regs, guint8 *code, Mon
 void              mono_monitor_exit_trampoline (gssize *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (void) MONO_INTERNAL;
+gpointer*         mono_get_vcall_slot_addr (guint8* code, gpointer *regs) MONO_INTERNAL;
 
 gboolean          mono_running_on_valgrind (void) MONO_INTERNAL;
 void*             mono_global_codeman_reserve (int size) MONO_INTERNAL;
@@ -1542,7 +1543,6 @@ MonoInst* mono_arch_get_thread_intrinsic        (MonoCompile* cfg) MONO_INTERNAL
 gboolean mono_arch_is_int_overflow              (void *sigctx, void *info) MONO_INTERNAL;
 void     mono_arch_invalidate_method            (MonoJitInfo *ji, void *func, gpointer func_arg) MONO_INTERNAL;
 guint32  mono_arch_get_patch_offset             (guint8 *code) MONO_INTERNAL;
-gpointer*mono_arch_get_vcall_slot_addr          (guint8* code, gpointer *regs) MONO_INTERNAL;
 gpointer mono_arch_get_vcall_slot               (guint8 *code, gpointer *regs, int *displacement) MONO_INTERNAL;
 gpointer*mono_arch_get_delegate_method_ptr_addr (guint8* code, gpointer *regs) MONO_INTERNAL;
 void     mono_arch_create_vars                  (MonoCompile *cfg) MONO_INTERNAL;

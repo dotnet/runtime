@@ -189,7 +189,7 @@ mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 		gpointer *vtable_slot;
 
 		/* call *<OFFSET>(%rip) */
-		vtable_slot = mono_arch_get_vcall_slot_addr (code + 3, (gpointer*)regs);
+		vtable_slot = mono_get_vcall_slot_addr (code + 3, (gpointer*)regs);
 		g_assert (vtable_slot);
 
 		*vtable_slot = nullified_class_init_trampoline;

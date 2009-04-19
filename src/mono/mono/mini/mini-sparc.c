@@ -2317,17 +2317,6 @@ mono_arch_get_vcall_slot (guint8 *code8, gpointer *regs, int *displacement)
 	return NULL;
 }
 
-gpointer*
-mono_arch_get_vcall_slot_addr (guint8 *code, gpointer *regs)
-{
-	gpointer vt;
-	int displacement;
-	vt = mono_arch_get_vcall_slot (code, regs, &displacement);
-	if (!vt)
-		return NULL;
-	return (gpointer*)((char*)vt + displacement);
-}
-
 #define CMP_SIZE 3
 #define BR_SMALL_SIZE 2
 #define BR_LARGE_SIZE 2
