@@ -965,9 +965,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
-	if (!strcmp (cfg->method->klass->name_space, "System.Xml.XPath"))
-		cfg->verbose_level = 4;
-
 	sig = mono_method_signature (cfg->method);
 
 	cinfo = get_call_info (cfg, cfg->mempool, sig, FALSE);
@@ -1685,6 +1682,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			temp->sreg2 = ins->sreg2;
 			
 			ins->opcode = OP_IA64_CSET;
+			MONO_INST_NULLIFY_SREGS (ins);
 			break;
 		case OP_MUL_IMM:
 		case OP_LMUL_IMM:
