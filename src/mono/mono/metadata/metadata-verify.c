@@ -21,6 +21,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
+#include <mono/metadata/cil-coff.h>
 #include <mono/utils/strenc.h>
 #include <string.h>
 #include <signal.h>
@@ -37,9 +38,8 @@
  TODO verify in the CLI header entry point and resources
  TODO implement null token typeref validation  
  TODO verify table wide invariants for typedef (sorting and uniqueness)
- FIXME has_cattr coded index / 8 -> Permission table? -- it's decl security
  FIXME use subtraction based bounds checking to avoid overflows
- FIXME calc col size using coded_index_desc;
+ FIXME get rid of metadata_streams and other fields from VerifyContext
 */
 
 #ifdef MONO_VERIFIER_DEBUG
@@ -49,6 +49,12 @@
 #endif
 
 #define INVALID_OFFSET ((guint32)-1)
+
+enum {
+	STAGE_PE,
+	STAGE_CLI,
+	STAGE_TABLES
+};
 
 enum {
 	IMPORT_TABLE_IDX = 1, 
@@ -66,394 +72,6 @@ enum {
 	TILDE_STREAM
 };
 
-enum {
-	COL_UINT8,
-	COL_UINT16,
-	COL_UINT32,
-
-	COL_STRING,
-	COL_GUID,
-	COL_BLOB,
-
-	COL_TYPE_DEF_OR_REF, /*includes typespec*/
-	COL_HAS_CONSTANT,
-	COL_HAS_CATTR,
-	COL_HAS_FIELD_MARSHAL,
-	COL_HAS_DECL_SECURITY,
-	COL_MEMBER_REF_PARENT,
-	COL_HAS_SEMANTICS,
-	COL_METHOD_DEF_OR_REF,
-	COL_MEMBER_FORWARDED,
-	COL_IMPLEMENTATION,
-	COL_CATTR_TYPE,
-	COL_RES_SCOPE,
-	COL_TYPE_OR_METHOD_DEF,
-
-	COL_TYPE_DEF,
-	COL_METHOD_DEF,
-	COL_FIELD,
-	COL_PARAM,
-	COL_PROPERTY,
-	COL_EVENT,
-	COL_GENERIC_PARAM,
-	COL_ASSEMBLY_REF,
-	COL_MODULE_REF,
-
-	COL_LAST
-};
-
-const static unsigned char table_desc [] = {
-	/* 0x00 Module */
-#define MODULE_TABLE_DESC (0)
-	COL_UINT16, /*Generation*/
-	COL_STRING, /*Name*/
-	COL_GUID, /*Mvid*/
-	COL_GUID, /*EncId*/
-	COL_GUID, /*EncBaseId*/
-	COL_LAST,
-
-#define TYPEREF_TABLE_DESC (MODULE_TABLE_DESC + 6)
-	/* 0x01 TypeRef */
-	COL_RES_SCOPE, /*ResolutionScope*/
-	COL_STRING, /*TypeName*/
-	COL_STRING, /*TypeNameSpace*/
-	COL_LAST,
-
-#define TYPEDEF_TABLE_DESC (TYPEREF_TABLE_DESC + 4)
-	/* 0x02 TypeDef */
-	COL_UINT32, /*Flags*/
-	COL_STRING, /*TypeName*/
-	COL_STRING, /*TypeNameSpace*/
-	COL_TYPE_DEF_OR_REF, /*Extends*/
-	COL_FIELD, /*FieldList*/
-	COL_METHOD_DEF, /*FieldList*/
-	COL_LAST,
-
-#define TABLE_03_DESC (TYPEDEF_TABLE_DESC + 7)
-	/* 0x03 non documented extension */
-	COL_LAST,
-
-#define FIELD_TABLE_DESC (TABLE_03_DESC + 1)
-	/* 0x04 Field */
-	COL_UINT16, /*FieldAttributes*/
-	COL_STRING, /*Name*/
-	COL_BLOB, /*Signature*/
-	COL_LAST,
-
-#define TABLE_05_DESC (FIELD_TABLE_DESC + 4)
-	/* 0x05 non documented extension */
-	COL_LAST,
-
-#define METHODDEF_TABLE_DESC (TABLE_05_DESC + 1)
-	/* 0x06 MethodDef */
-	COL_UINT32, /*RVA*/
-	COL_UINT16, /*ImplFlags*/
-	COL_UINT16, /*Flags*/
-	COL_STRING, /*Name*/
-	COL_BLOB, /*Signature*/
-	COL_PARAM, /*ParamList*/
-	COL_LAST,
-
-#define TABLE_07_DESC (METHODDEF_TABLE_DESC + 7)
-	/* 0x07 non documented extension */
-	COL_LAST,
-
-#define PARAM_TABLE_DESC (TABLE_07_DESC + 1)
-	/* 0x08 Param */
-	COL_UINT16, /*Flags*/
-	COL_UINT16, /*Sequence*/
-	COL_STRING, /*Name*/
-	COL_LAST,
-
-#define INTERFACE_IMPL_TABLE_DESC (PARAM_TABLE_DESC + 4)
-	/* 0x09 InterfaceImpl */
-	COL_TYPE_DEF, /*Class*/
-	COL_TYPE_DEF_OR_REF, /*Interface*/
-	COL_LAST,
-	
-#define MEMBERREF_TABLE_DESC (INTERFACE_IMPL_TABLE_DESC + 3)
-	/* 0x0A MemberRef */
-	COL_MEMBER_REF_PARENT, /*Class*/
-	COL_STRING, /*Name*/
-	COL_BLOB, /*Signature*/
-	COL_LAST,
-
-#define CONSTANT_TABLE_DESC (MEMBERREF_TABLE_DESC + 4)
-	/* 0x0B Constant */
-	COL_UINT8, /*Type*/
-	COL_UINT8, /*Padding*/
-	COL_HAS_CONSTANT, /*Parent*/
-	COL_BLOB, /*Value*/
-	COL_LAST,
-
-#define CUSTOM_ATTRIBUTE_TABLE_DESC (CONSTANT_TABLE_DESC + 5)
-	/* 0x0C CustomAttribute */
-	COL_HAS_CATTR, /*Parent*/
-	COL_CATTR_TYPE, /*Type*/
-	COL_BLOB, /*Value*/
-	COL_LAST,
-
-#define FIELD_MARSHAL_TABLE_DESC (CUSTOM_ATTRIBUTE_TABLE_DESC + 4)
-	/* 0x0D FieldMarshal */
-	COL_HAS_FIELD_MARSHAL, /*Parent*/
-	COL_BLOB, /*NativeType*/
-	COL_LAST,
-
-#define DECL_SECURITY_TABLE_DESC (FIELD_MARSHAL_TABLE_DESC + 3)
-	/* 0x0E DeclSecurity */
-	COL_UINT16, /*Action*/
-	COL_HAS_DECL_SECURITY, /*Parent*/ 
-	COL_BLOB, /*PermissionSet*/
-	COL_LAST,
-
-#define CLASS_LAYOUT_TABLE_DESC (DECL_SECURITY_TABLE_DESC + 4)
-	/* 0x0F ClassLayout */
-	COL_UINT16, /*Packingsize*/
-	COL_UINT32, /*ClassSize*/
-	COL_TYPE_DEF, /*Parent*/
-	COL_LAST,
-
-#define FIELD_LAYOUT_TABLE_DESC (CLASS_LAYOUT_TABLE_DESC + 4)
-	/* 0x10 FieldLayout */
-	COL_UINT32, /*Offset*/
-	COL_FIELD, /*Field*/
-	COL_LAST,
-
-#define STANDARD_ALONE_SIG_TABLE_DESC (FIELD_LAYOUT_TABLE_DESC + 3)
-	/* 0x11 StandAloneSig */
-	COL_BLOB, /*Signature*/
-	COL_LAST,
-
-#define EVENT_MAP_TABLE_DESC (STANDARD_ALONE_SIG_TABLE_DESC + 2)
-	/* 0x12 EventMap */
-	COL_TYPE_DEF, /*Parent*/
-	COL_EVENT, /*EventList*/
-	COL_LAST,
-
-#define TABLE_13_DESC (EVENT_MAP_TABLE_DESC + 3)
-	/* 0x13 non documented extension */
-	COL_LAST,
-
-#define EVENT_TABLE_DESC (TABLE_13_DESC + 1)
-	/* 0x14 Event */
-	COL_UINT16, /*EventFlags*/
-	COL_STRING, /*Name*/
-	COL_TYPE_DEF_OR_REF, /*EventType*/
-	COL_LAST,
-
-#define PROPERTY_MAP_TABLE_DESC (EVENT_TABLE_DESC + 4)
-	/* 0x15 PropertyMap */
-	COL_TYPE_DEF, /*Parent*/
-	COL_PROPERTY, /*PropertyList*/
-	COL_LAST,
-
-#define TABLE_16_DESC (PROPERTY_MAP_TABLE_DESC + 3)
-	/* 0x16 non documented extension */
-	COL_LAST,
-
-#define PROPERTY_TABLE_DESC (TABLE_16_DESC + 1)
-	/* 0x17 Property */
-	COL_UINT16, /*Flags*/
-	COL_STRING, /*Name*/
-	COL_BLOB, /*Signature*/
-	COL_LAST,
-
-#define METHOD_SEMANTICS_TABLE_DESC (PROPERTY_TABLE_DESC + 4)
-	/* 0x18 MethodSemantics */
-	COL_UINT16, /*Semantics*/
-	COL_METHOD_DEF, /*Method*/
-	COL_HAS_SEMANTICS, /*Association*/
-	COL_LAST,
-
-#define METHOD_IMPL_TABLE_DESC (METHOD_SEMANTICS_TABLE_DESC + 4)
-	/* 0x19 MethodImpl */
-	COL_TYPE_DEF, /*Class*/
-	COL_METHOD_DEF_OR_REF, /*MethodBody*/
-	COL_METHOD_DEF_OR_REF, /*MethodDeclaration*/
-	COL_LAST,
-
-#define MODULE_REF_TABLE_DESC (METHOD_IMPL_TABLE_DESC + 4)
-	/* 0x1A ModuleRef */
-	COL_STRING, /*Name*/
-	COL_LAST,
-
-#define TYPESPEC_TABLE_DESC (MODULE_REF_TABLE_DESC + 2)
-	/* 0x1B TypeSpec */
-	COL_BLOB, /*Signature*/
-	COL_LAST,
-
-#define IMPL_MAP_TABLE_DESC (TYPESPEC_TABLE_DESC + 2)
-	/* 0x1C ImplMap */
-	COL_UINT16, /*MappingFlags*/
-	COL_MEMBER_FORWARDED, /*MappingFlags*/
-	COL_STRING, /*ImportName*/
-	COL_MODULE_REF, /*ImportScope*/
-	COL_LAST,
-
-#define FIELD_RVA_TABLE_DESC (IMPL_MAP_TABLE_DESC + 5)
-	/* 0x1D FieldRVA */
-	COL_UINT32, /*RVA*/
-	COL_FIELD, /*Field*/
-	COL_LAST,
-
-#define TABLE_1E_DESC (IMPL_MAP_TABLE_DESC + 3)
-	/* 0x1E Unused */
-	COL_LAST,
-
-#define TABLE_1F_DESC (TABLE_1E_DESC + 1)
-	/* 0x1F Unused */
-	COL_LAST,
-
-#define ASSEMBLY_TABLE_DESC (TABLE_1F_DESC + 1)
-	/* 0x20 Assembly */
-	COL_UINT32, /*HashAlgId*/
-	COL_UINT16, /*Major*/
-	COL_UINT16, /*Minor*/
-	COL_UINT16, /*Build*/
-	COL_UINT16, /*Revision*/
-	COL_UINT32, /*Flags*/
-	COL_BLOB, /*PublicKey*/
-	COL_STRING, /*Name*/
-	COL_STRING, /*Culture*/
-	COL_LAST,
-
-#define ASSEMBLY_PROCESSOR_TABLE_DESC (ASSEMBLY_TABLE_DESC + 10)
-	/* 0x21 AssemblyProcessor */
-	COL_UINT32, /*Processor*/
-	COL_LAST,
-
-#define ASSEMBLY_OS_TABLE_DESC (ASSEMBLY_PROCESSOR_TABLE_DESC + 2)
-	/* 0x22 AssemblyOS */
-	COL_UINT32, /*OSPlatformID*/
-	COL_UINT32, /*OSMajorVersion*/
-	COL_UINT32, /*OSMinorVersion*/
-	COL_LAST,
-
-#define ASSEMBLY_REF_TABLE_DESC (ASSEMBLY_OS_TABLE_DESC + 4)
-	/* 0x23 AssemblyRef */
-	COL_UINT16, /*Major*/
-	COL_UINT16, /*Minor*/
-	COL_UINT16, /*Build*/
-	COL_UINT16, /*Revision*/
-	COL_UINT32, /*Flags*/
-	COL_BLOB, /*PublicKeyOrToken*/
-	COL_STRING, /*Name*/
-	COL_STRING, /*Culture*/
-	COL_BLOB, /*HashValue*/
-	COL_LAST,
-
-#define ASSEMBLY_REF_PROCESSOR_TABLE_DESC (ASSEMBLY_REF_TABLE_DESC + 10)
-	/* 0x24 AssemblyRefProcessor */
-	COL_UINT32, /*Processor*/
-	COL_ASSEMBLY_REF, /*AssemblyRef*/
-	COL_LAST,
-
-#define ASSEMBLY_REF_OS_TABLE_DESC (ASSEMBLY_REF_PROCESSOR_TABLE_DESC + 3)
-	/* 0x25 AssemblyRefOS */
-	COL_UINT32, /*OSPlatformID*/
-	COL_UINT32, /*OSMajorVersion*/
-	COL_UINT32, /*OSMinorVersion*/
-	COL_ASSEMBLY_REF, /*AssemblyRef*/
-	COL_LAST,
-
-#define FILE_TABLE_DESC (ASSEMBLY_REF_OS_TABLE_DESC + 5)
-	/* 0x26 File */
-	COL_UINT32, /*Flags*/
-	COL_STRING, /*Name*/
-	COL_BLOB, /*HashValue*/
-	COL_LAST,
-
-#define EXPORTED_TYPE_TABLE_DESC (FILE_TABLE_DESC + 4)
-	/* 0x27 ExportedType */
-	COL_UINT32, /*Flags*/
-	COL_UINT32, /*TypeDefId*/
-	COL_STRING, /*TypeName*/
-	COL_STRING, /*TypeNamespace*/
-	COL_IMPLEMENTATION, /*Implementation*/
-	COL_LAST,
-
-#define MANIFEST_RESOURCE_TABLE_DESC (EXPORTED_TYPE_TABLE_DESC + 6)
-	/* 0x28 ManifestResource  */
-	COL_UINT32, /*Offset*/
-	COL_UINT32, /*Flags*/
-	COL_STRING, /*Name*/
-	COL_IMPLEMENTATION, /*Implementation*/
-	COL_LAST,
-
-#define NESTED_CLASS_TABLE_DESC (MANIFEST_RESOURCE_TABLE_DESC + 5)
-	/* 0x29 NestedClass  */
-	COL_TYPE_DEF, /*NestedClass*/
-	COL_TYPE_DEF, /*EnclosingClass*/
-	COL_LAST,
-
-#define GENERIC_PARAM_TABLE_DESC (NESTED_CLASS_TABLE_DESC + 3)
-	/* 0x2A GenericParam  */
-	COL_UINT16, /*Number*/
-	COL_UINT16, /*Flags*/
-	COL_TYPE_OR_METHOD_DEF, /*Owner*/
-	COL_STRING, /*Name*/
-	COL_LAST,
-
-#define METHOD_SPEC_TABLE_DESC (GENERIC_PARAM_TABLE_DESC + 5)
-	/* 0x2B MethodSpec  */
-	COL_METHOD_DEF_OR_REF, /*Method*/
-	COL_BLOB, /*Instantiation*/
-	COL_LAST,
-
-#define GENERIC_PARAM_CONSTRAINT_TABLE_DESC (METHOD_SPEC_TABLE_DESC + 3)
-	/* 0x2C GenericParamConstraint  */
-	COL_GENERIC_PARAM, /*Owner*/
-	COL_TYPE_DEF_OR_REF, /*Constraint*/
-	COL_LAST,
-};
-
-const static unsigned char table_desc_start [] = {
-	MODULE_TABLE_DESC,
-	TYPEREF_TABLE_DESC,
-	TYPEDEF_TABLE_DESC,
-	TABLE_03_DESC,
-	FIELD_TABLE_DESC,
-	TABLE_05_DESC,
-	METHODDEF_TABLE_DESC,
-	TABLE_07_DESC,
-	PARAM_TABLE_DESC,
-	INTERFACE_IMPL_TABLE_DESC,
-	MEMBERREF_TABLE_DESC,
-	CONSTANT_TABLE_DESC,
-	CUSTOM_ATTRIBUTE_TABLE_DESC,
-	FIELD_MARSHAL_TABLE_DESC,
-	DECL_SECURITY_TABLE_DESC,
-	CLASS_LAYOUT_TABLE_DESC,
-	FIELD_LAYOUT_TABLE_DESC,
-	STANDARD_ALONE_SIG_TABLE_DESC,
-	EVENT_MAP_TABLE_DESC,
-	TABLE_13_DESC,
-	EVENT_TABLE_DESC,
-	PROPERTY_MAP_TABLE_DESC,
-	TABLE_16_DESC,
-	PROPERTY_TABLE_DESC,
-	METHOD_SEMANTICS_TABLE_DESC,
-	METHOD_IMPL_TABLE_DESC,
-	MODULE_REF_TABLE_DESC,
-	TYPESPEC_TABLE_DESC,
-	IMPL_MAP_TABLE_DESC,
-	FIELD_RVA_TABLE_DESC,
-	TABLE_1E_DESC,
-	TABLE_1F_DESC,
-	ASSEMBLY_TABLE_DESC,
-	ASSEMBLY_PROCESSOR_TABLE_DESC,
-	ASSEMBLY_OS_TABLE_DESC,
-	ASSEMBLY_REF_TABLE_DESC,
-	ASSEMBLY_REF_PROCESSOR_TABLE_DESC,
-	ASSEMBLY_REF_OS_TABLE_DESC,
-	FILE_TABLE_DESC,
-	EXPORTED_TYPE_TABLE_DESC,
-	MANIFEST_RESOURCE_TABLE_DESC,
-	NESTED_CLASS_TABLE_DESC,
-	GENERIC_PARAM_TABLE_DESC,
-	METHOD_SPEC_TABLE_DESC,
-	GENERIC_PARAM_CONSTRAINT_TABLE_DESC
-};
 
 #define INVALID_TABLE (0xFF)
 /*format: number of bits, number of tables, tables{n. tables} */
@@ -596,18 +214,16 @@ typedef struct {
 	guint32 size;
 	GSList *errors;
 	int valid;
-	guint32 section_count, tables_offset;
-	SectionHeader *sections;
-	gboolean wide_strings, wide_guid, wide_blob;
-
-	DataDirectory data_directories [16];
-	OffsetAndSize metadata_streams [5]; //offset from begin of the image
-	TableInfo tables [MONO_TABLE_NUM];
-	guint32 field_sizes [COL_LAST];
 	gboolean is_corlib;
-
 	MonoImage *image;
 	gboolean report_error;
+	int stage;
+
+	DataDirectory data_directories [16];
+	guint32 section_count;
+	SectionHeader *sections;
+
+	OffsetAndSize metadata_streams [5]; //offset from begin of the image
 } VerifyContext;
 
 #define ADD_VERIFY_INFO(__ctx, __msg, __status, __exception)	\
@@ -649,6 +265,32 @@ bounds_check_virtual_address (VerifyContext *ctx, guint32 rva, guint32 size)
 {
 	int i;
 
+	if (rva + size < rva) //overflow
+		return FALSE;
+
+	if (ctx->stage > STAGE_PE) {
+		MonoCLIImageInfo *iinfo = ctx->image->image_info;
+		const int top = iinfo->cli_section_count;
+		MonoSectionTable *tables = iinfo->cli_section_tables;
+		int i;
+		
+		for (i = 0; i < top; i++) {
+			guint32 base = tables->st_virtual_address;
+			guint32 end = base + tables->st_raw_data_size;
+
+			if (rva >= base && rva + size <= end)
+				return TRUE;
+
+			/*if ((addr >= tables->st_virtual_address) &&
+			    (addr < tables->st_virtual_address + tables->st_raw_data_size)){
+
+				return addr - tables->st_virtual_address + tables->st_raw_data_ptr;
+			}*/
+			tables++;
+		}
+		return FALSE;
+	}
+
 	if (!ctx->sections)
 		return FALSE;
 
@@ -688,6 +330,9 @@ translate_rva (VerifyContext *ctx, guint32 rva)
 {
 	int i;
 
+	if (ctx->stage > STAGE_PE)
+		return mono_cli_rva_image_map (ctx->image, rva);
+		
 	if (!ctx->sections)
 		return FALSE;
 
@@ -964,10 +609,26 @@ verify_resources_table (VerifyContext *ctx)
 	*/
 }
 
+/*----------nothing from here on can use data_directory---*/
+
+static DataDirectory
+get_data_dir (VerifyContext *ctx, int idx)
+{
+	MonoCLIImageInfo *iinfo = ctx->image->image_info;
+	MonoPEDirEntry *entry= &iinfo->cli_header.datadir.pe_export_table;
+	DataDirectory res;
+
+	entry += idx;
+	res.rva = entry->rva;
+	res.size = entry->size;
+	res.translated_offset = translate_rva (ctx, res.rva);
+	return res;
+
+}
 static void
 verify_cli_header (VerifyContext *ctx)
 {
-	DataDirectory it = ctx->data_directories [CLI_HEADER_IDX];
+	DataDirectory it = get_data_dir (ctx, CLI_HEADER_IDX);
 	guint32 offset;
 	const char *ptr;
 	int i;
@@ -988,6 +649,7 @@ verify_cli_header (VerifyContext *ctx)
 
 	if (!bounds_check_virtual_address (ctx, read32 (ptr + 8), read32 (ptr + 12)))
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid medatata section rva/size pair %x/%x", read32 (ptr + 8), read32 (ptr + 12)));
+
 
 	if (!read32 (ptr + 8) || !read32 (ptr + 12))
 		ADD_ERROR (ctx, g_strdup_printf ("Missing medatata section in the CLI header"));
@@ -1022,7 +684,7 @@ static void
 verify_metadata_header (VerifyContext *ctx)
 {
 	int i;
-	DataDirectory it = ctx->data_directories [CLI_HEADER_IDX];
+	DataDirectory it = get_data_dir (ctx, CLI_HEADER_IDX);
 	guint32 offset;
 	const char *ptr;
 
@@ -1119,20 +781,18 @@ verify_tables_schema (VerifyContext *ctx)
 	guint32 count;
 	int i;
 
+	//printf ("tables_area size %d offset %x %s\n", tables_area.size, tables_area.offset, ctx->image->name);
 	if (tables_area.size < 24)
 		ADD_ERROR (ctx, g_strdup_printf ("Table schemata size (%d) too small to for initial decoding (requires 24 bytes)", tables_area.size));
 
-	if (ptr [4] != 2)
+	//printf ("ptr %x %x\n", ptr[4], ptr[5]);
+	if (ptr [4] != 2 && ptr [4] != 1)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata major version %d, expected 2", ptr [4]));
 	if (ptr [5] != 0)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata minor version %d, expected 0", ptr [5]));
 
 	if ((ptr [6] & ~0x7) != 0)
 		ADD_ERROR (ctx, g_strdup_printf ("Invalid table schemata heap sizes 0x%02x, only bits 0, 1 and 2 can be set", ((unsigned char *) ptr) [6]));
-
-	ctx->wide_strings = ptr [6] & 0x1;
-	ctx->wide_guid = ptr [6] & 0x2;
-	ctx->wide_blob = ptr [6] & 04;
 
 	valid_tables = read64 (ptr + 8);
 	count = 0;
@@ -1152,142 +812,28 @@ verify_tables_schema (VerifyContext *ctx)
 
 	if (tables_area.size < 24 + count * 4)
 		ADD_ERROR (ctx, g_strdup_printf ("Table schemata size (%d) too small to for decoding row counts (requires %d bytes)", tables_area.size, 24 + count * 4));
-
 	ptr += 24;
 
 	for (i = 0; i < 64; ++i) {
 		if (valid_tables & ((guint64)1 << i)) {
-			ctx->tables [i].row_count = read32 (ptr);
+			guint32 row_count = read32 (ptr);
+			if (row_count > (1 << 25) - 1)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid Table %d row count, mono only supports ", i));
 			ptr += 4;
 		}
 	}
-	ctx->tables_offset = offset + 24 + count * 4;
 }
 
-static guint32
-enc_index_size (guint32 bits, guint32 max)
-{
-	guint32 size = 1 << (16 - bits); 
-	return max >= size ? 4 : 2;
-}
-
-static void
-calc_fields_size (VerifyContext *ctx)
-{
-#define TS(T) (ctx->tables [T].row_count)
-#define MAX2(TA,TB) MAX (TS (TA), TS (TB))
-#define MAX3(TA,TB,TC) MAX (TS (TA), MAX (TS (TB), TS (TC)))
-#define TB_SIZE(T) (TS (T) >= (1 << 16) ? 4 : 2)
-
-	int tmp;
-	memset (ctx->field_sizes, 0, sizeof (guint32) * COL_LAST);
-	
-	ctx->field_sizes [COL_UINT8] = 1;
-	ctx->field_sizes [COL_UINT16] = 2;
-	ctx->field_sizes [COL_UINT32] = 4;
-
-	ctx->field_sizes [COL_STRING] = ctx->wide_strings ? 4 : 2;
-	ctx->field_sizes [COL_GUID] = ctx->wide_guid ? 4 : 2;
-	ctx->field_sizes [COL_BLOB] = ctx->wide_blob? 4 : 2;
-
-	ctx->field_sizes [COL_TYPE_DEF_OR_REF] = enc_index_size (2, MAX3 (MONO_TABLE_TYPEDEF, MONO_TABLE_TYPEREF, MONO_TABLE_TYPESPEC));
-	ctx->field_sizes [COL_HAS_CONSTANT] = enc_index_size (2, MAX3 (MONO_TABLE_FIELD, MONO_TABLE_PARAM, MONO_TABLE_PROPERTY));
-
-	tmp = MAX3 (MONO_TABLE_METHOD, MONO_TABLE_FIELD, MONO_TABLE_TYPEREF);
-	tmp = MAX (tmp, MAX3 (MONO_TABLE_TYPEDEF, MONO_TABLE_PARAM, MONO_TABLE_INTERFACEIMPL));
-	tmp = MAX (tmp, MAX3 (MONO_TABLE_MEMBERREF, MONO_TABLE_MODULE, MONO_TABLE_DECLSECURITY));
-	tmp = MAX (tmp, MAX3 (MONO_TABLE_PROPERTY, MONO_TABLE_EVENT, MONO_TABLE_STANDALONESIG));
-	tmp = MAX (tmp, MAX3 (MONO_TABLE_MODULEREF, MONO_TABLE_TYPESPEC, MONO_TABLE_ASSEMBLY));
-	tmp = MAX (tmp, MAX3 (MONO_TABLE_ASSEMBLYREF, MONO_TABLE_FILE, MONO_TABLE_EXPORTEDTYPE));
-	tmp = MAX (tmp, MONO_TABLE_MANIFESTRESOURCE);
-	ctx->field_sizes [COL_HAS_CATTR] = enc_index_size (5, tmp);
-
-	ctx->field_sizes [COL_HAS_FIELD_MARSHAL] = enc_index_size (1, MAX2 (MONO_TABLE_FIELD, MONO_TABLE_PARAM));
-	ctx->field_sizes [COL_HAS_DECL_SECURITY] = enc_index_size (2, MAX3 (MONO_TABLE_TYPEDEF, MONO_TABLE_METHOD, MONO_TABLE_ASSEMBLY));
-
-	tmp = MAX3 (MONO_TABLE_TYPEDEF, MONO_TABLE_TYPEREF, MONO_TABLE_MODULEREF);
-	tmp = MAX (tmp, MAX2 (MONO_TABLE_METHOD, MONO_TABLE_TYPESPEC));
-	ctx->field_sizes [COL_MEMBER_REF_PARENT] = enc_index_size (3, tmp);
-
-	ctx->field_sizes [COL_HAS_SEMANTICS] = enc_index_size (1, MAX2 (MONO_TABLE_EVENT, MONO_TABLE_PROPERTY));
-	ctx->field_sizes [COL_METHOD_DEF_OR_REF] = enc_index_size (1, MAX2 (MONO_TABLE_METHOD, MONO_TABLE_MEMBERREF));
-	ctx->field_sizes [COL_MEMBER_FORWARDED] = enc_index_size (1, MAX2 (MONO_TABLE_FIELD, MONO_TABLE_METHOD));
-	ctx->field_sizes [COL_IMPLEMENTATION] = enc_index_size (2, MAX3 (MONO_TABLE_FILE, MONO_TABLE_ASSEMBLYREF, MONO_TABLE_EXPORTEDTYPE));
-
-	ctx->field_sizes [COL_CATTR_TYPE] = enc_index_size (3, MAX2 (MONO_TABLE_METHOD, MONO_TABLE_MEMBERREF));
-	ctx->field_sizes [COL_RES_SCOPE] = enc_index_size (2, MAX (MAX2 (MONO_TABLE_MODULE, MONO_TABLE_MODULEREF), MAX2 (MONO_TABLE_ASSEMBLYREF, MONO_TABLE_TYPEREF))); 
-	ctx->field_sizes [COL_TYPE_OR_METHOD_DEF] = enc_index_size (1, MAX2 (MONO_TABLE_TYPEDEF, MONO_TABLE_METHOD));
-
-	ctx->field_sizes [COL_TYPE_DEF] = TB_SIZE (MONO_TABLE_TYPEDEF);
-	ctx->field_sizes [COL_METHOD_DEF] = TB_SIZE (MONO_TABLE_METHOD);
-	ctx->field_sizes [COL_FIELD] = TB_SIZE (MONO_TABLE_FIELD);
-	ctx->field_sizes [COL_PARAM] = TB_SIZE (MONO_TABLE_PARAM);
-	ctx->field_sizes [COL_PROPERTY] = TB_SIZE (MONO_TABLE_PROPERTY);
-	ctx->field_sizes [COL_EVENT] = TB_SIZE (MONO_TABLE_EVENT);
-	ctx->field_sizes [COL_GENERIC_PARAM] = TB_SIZE (MONO_TABLE_GENERICPARAM);
-	ctx->field_sizes [COL_ASSEMBLY_REF] = TB_SIZE (MONO_TABLE_ASSEMBLYREF);
-	ctx->field_sizes [COL_MODULE_REF] = TB_SIZE (MONO_TABLE_MODULEREF);
-
-}
-
-static guint32
-calc_row_size (VerifyContext *ctx)
-{
-	int i, idx;
-	guint64 total_size = 0;
-	guint32 offset = ctx->tables_offset;
-
-	for (idx = 0, i = 0; i < 0x2D; ++i) {
-		int size = 0, type;
-
-		while ((type = table_desc [idx++]) != COL_LAST)
-			size += ctx->field_sizes [type];
-
-		ctx->tables [i].row_size = size;
-		ctx->tables [i].offset = offset;
-		total_size += (guint64)size * ctx->tables [i].row_count;
-		offset += size * ctx->tables [i].row_count;
-	}
-
-	if (total_size > 0xFFFFFFFF)
-		return 0;
-
-	return (guint32)total_size; 
-}
-
-static void
-decode_row (VerifyContext *ctx, int desc_offset, TableInfo *table, int row, guint32 *res)
-{
-	const unsigned char *data = (unsigned char *)(ctx->data + table->offset);
-	data += table->row_size * row;
-
-	while (table_desc [desc_offset] != COL_LAST) {
-		switch (ctx->field_sizes [table_desc [desc_offset++]]) {
-		case 1:
-			*res++ = *data++; 
-			break;
-		case 2:
-			*res++ = read16 (data);
-			data += 2;
-			break;
-		case 4:
-			*res++ = read32 (data);
-			data += 4;
-			break;
-		default:
-			g_assert_not_reached ();
-		}
-	}
-}
+/*----------nothing from here on can use data_directory or metadata_streams ---*/
 
 static guint32
 get_col_offset (VerifyContext *ctx, int table, int column)
 {
-	guint32 desc_offset = table_desc_start [table];
+	guint32 bitfield = ctx->image->tables [table].size_bitfield;
 	guint32 offset = 0;
 
 	while (column-- > 0)
-		offset += ctx->field_sizes [table_desc [desc_offset++]];
+		offset += mono_metadata_table_size (bitfield, column);
 
 	return offset;
 }
@@ -1295,20 +841,26 @@ get_col_offset (VerifyContext *ctx, int table, int column)
 static guint32
 get_col_size (VerifyContext *ctx, int table, int column)
 {
-	guint32 desc_offset = table_desc_start [table];
-	guint32 type = table_desc [desc_offset + column];
-	VERIFIER_DEBUG ( printf ("get_col_size table %d column %d type %d size %d\n", table, column, type, ctx->field_sizes [type]));
+	return mono_metadata_table_size (ctx->image->tables [table].size_bitfield, column);
+}
 
+static OffsetAndSize
+get_metadata_stream (VerifyContext *ctx, MonoStreamHeader *header)
+{
+	OffsetAndSize res;
+	res.offset = header->data - ctx->data;
+	res.size = header->size;
 
-	return ctx->field_sizes [type];
+	return res;
 }
 
 static gboolean
 is_valid_non_empty_string (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize strings = ctx->metadata_streams [STRINGS_STREAM];
+	OffsetAndSize strings = get_metadata_stream (ctx, &ctx->image->heap_strings);
 	glong length;
 	const char *data = ctx->data + strings.offset;
+
 	if (offset >= strings.size)
 		return FALSE;
 	if (data + offset < data) //FIXME, use a generalized and smart unsigned add with overflow check and fix the whole thing  
@@ -1322,7 +874,7 @@ is_valid_non_empty_string (VerifyContext *ctx, guint32 offset)
 static gboolean
 is_valid_guid (VerifyContext *ctx, guint32 offset)
 {
-	OffsetAndSize guids = ctx->metadata_streams [GUID_STREAM];
+	OffsetAndSize guids = get_metadata_stream (ctx, &ctx->image->heap_guid);
 	return guids.size >= 8 && guids.size - 8 >= offset;
 }
 
@@ -1363,7 +915,7 @@ is_valid_coded_index (VerifyContext *ctx, int token_kind, guint32 coded_token)
 
 	if (table == INVALID_TABLE)
 		return FALSE;
-	return token <= ctx->tables [table].row_count;
+	return token <= ctx->image->tables [table].rows;
 }
 
 typedef struct {
@@ -1386,20 +938,20 @@ token_locator (const void *a, const void *b)
 static int
 search_sorted_table (VerifyContext *ctx, int table, int column, guint32 coded_token)
 {
-	TableInfo *tinfo = &ctx->tables [table];
+	MonoTableInfo *tinfo = &ctx->image->tables [table];
 	RowLocator locator;
 	const char *res, *base;
 	locator.token = coded_token;
 	locator.col_offset = get_col_offset (ctx, table, column);
 	locator.col_size = get_col_size (ctx, table, column);
-	base = ctx->data + tinfo->offset;
+	base = tinfo->base;
 
 	VERIFIER_DEBUG ( printf ("looking token %x table %d col %d rsize %d roff %d\n", coded_token, table, column, locator.col_size, locator.col_offset) );
-	res = bsearch (&locator, base, tinfo->row_count, tinfo->row_size, token_locator);
+	res = bsearch (&locator, base, tinfo->rows, tinfo->row_size, token_locator);
 	if (!res)
 		return -1;
 
-	return (res - base) / tinfo->row_count;
+	return (res - base) / tinfo->rows;
 }
 
 /*WARNING: This function doesn't verify if the strings @offset points to a valid string*/
@@ -1409,7 +961,7 @@ string_cmp (VerifyContext *ctx, const char *str, guint offset)
 	if (offset == 0)
 		return strcmp (str, "");
 
-	return strcmp (str, ctx->data + ctx->metadata_streams [STRINGS_STREAM].offset + offset);
+	return strcmp (str, ctx->image->heap_strings.data + offset);
 }
 
 static gboolean
@@ -1421,13 +973,13 @@ typedef_is_system_object (VerifyContext *ctx, guint32 *data)
 static void
 verify_module_table (VerifyContext *ctx)
 {
-	TableInfo *table = &ctx->tables [MONO_TABLE_MODULE];
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_MODULE];
 	guint32 data [MONO_MODULE_SIZE];
 
-	if (table->row_count != 1)
-		ADD_ERROR (ctx, g_strdup_printf ("Module table must have exactly one row, but have %d", table->row_count));
+	if (table->rows != 1)
+		ADD_ERROR (ctx, g_strdup_printf ("Module table must have exactly one row, but have %d", table->rows));
 
-	decode_row (ctx, MODULE_TABLE_DESC, table, 0, data);
+	mono_metadata_decode_row (table, 0, data, MONO_MODULE_SIZE);
 
 	if (!is_valid_non_empty_string (ctx, data [MONO_MODULE_NAME]))
 		ADD_ERROR (ctx, g_strdup_printf ("Module has an invalid name, string index 0x%08x", data [MONO_MODULE_NAME]));
@@ -1445,12 +997,12 @@ verify_module_table (VerifyContext *ctx)
 static void
 verify_typeref_table (VerifyContext *ctx)
 {
-	TableInfo *table = &ctx->tables [MONO_TABLE_TYPEREF];
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPEREF];
 	guint32 data [MONO_TYPEREF_SIZE];
 	int i;
 
-	for (i = 0; i < table->row_count; ++i) {
-		decode_row (ctx, TYPEREF_TABLE_DESC, table, i, data);
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_TYPEREF_SIZE);
 		if (!is_valid_coded_index (ctx, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d coded index 0x%08x", i, data [MONO_TYPEREF_SCOPE]));
 		
@@ -1470,16 +1022,16 @@ verify_typeref_table (VerifyContext *ctx)
 static void
 verify_typedef_table (VerifyContext *ctx)
 {
-	TableInfo *table = &ctx->tables [MONO_TABLE_TYPEDEF];
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPEDEF];
 	guint32 data [MONO_TYPEDEF_SIZE];
 	guint32 fieldlist = 1, methodlist = 1;
 	int i;
 
-	if (table->row_count == 0)
+	if (table->rows == 0)
 		ADD_ERROR (ctx, g_strdup_printf ("Typedef table must have exactly at least one row"));
 
-	for (i = 0; i < table->row_count; ++i) {
-		decode_row (ctx, TYPEDEF_TABLE_DESC, table, i, data);
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_TYPEDEF_SIZE);
 		if (data [MONO_TYPEDEF_FLAGS] & INVALID_TYPEDEF_FLAG_BITS)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid flags field 0x%08x", i, data [MONO_TYPEDEF_FLAGS]));
 
@@ -1541,12 +1093,12 @@ verify_typedef_table (VerifyContext *ctx)
 static void
 verify_field_table (VerifyContext *ctx)
 {
-	TableInfo *table = &ctx->tables [MONO_TABLE_FIELD];
-	guint32 data [MONO_TABLE_FIELD], flags;
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_FIELD];
+	guint32 data [MONO_FIELD_SIZE], flags;
 	int i;
 
-	for (i = 0; i < table->row_count; ++i) {
-		decode_row (ctx, FIELD_TABLE_DESC, table, i, data);
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_FIELD_SIZE);
 		flags = data [MONO_FIELD_FLAGS];
 
 		if (flags & INVALID_FIELD_FLAG_BITS)
@@ -1585,16 +1137,27 @@ verify_field_table (VerifyContext *ctx)
 static void
 verify_tables_data (VerifyContext *ctx)
 {
-	OffsetAndSize tables_area = ctx->metadata_streams [TILDE_STREAM];
-	guint table_area_size;
-	calc_fields_size (ctx);
-	table_area_size = calc_row_size (ctx);
+	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
+	guint32 size = 0, tables_offset;
+	int i;
 
-	if (table_area_size == 0)
+	for (i = 0; i < 0x2D; ++i) {
+		MonoTableInfo *table = &ctx->image->tables [i];
+		guint32 tmp_size;
+		tmp_size = size + (guint32)table->row_size * (guint32)table->rows;
+		if (tmp_size < size) {
+			size = 0;
+			break;
+		}
+		size = tmp_size;			
+	}
+
+	if (size == 0)
 		ADD_ERROR (ctx, g_strdup_printf ("table space is either empty or overflowed"));
 
-	if (!bounds_check_offset (&tables_area, ctx->tables_offset, table_area_size))
-		ADD_ERROR (ctx, g_strdup_printf ("Tables data require %d bytes but the only %d are available in the #~ stream", table_area_size, tables_area.size - (ctx->tables_offset - tables_area.offset)));
+	tables_offset = ctx->image->tables_base - ctx->data;
+	if (!bounds_check_offset (&tables_area, tables_offset, size))
+		ADD_ERROR (ctx, g_strdup_printf ("Tables data require %d bytes but the only %d are available in the #~ stream", size, tables_area.size - (tables_offset - tables_area.offset)));
 
 	verify_module_table (ctx);
 	CHECK_ERROR ();
@@ -1646,6 +1209,7 @@ mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
 		return TRUE;
 
 	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_PE;
 
 	verify_msdos_header (&ctx);
 	CHECK_STATE();
@@ -1674,9 +1238,8 @@ mono_verifier_verify_cli_data (MonoImage *image, GSList **error_list)
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	return TRUE; /*disabled because code must be fixed to use data from MonoImage*/
-
 	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_CLI;
 
 	verify_cli_header (&ctx);
 	CHECK_STATE();
@@ -1696,9 +1259,8 @@ mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	return TRUE; /*disabled because code must be fixed to use data from MonoImage*/
-
 	init_verify_context (&ctx, image, error_list);
+	ctx.stage = STAGE_TABLES;
 
 	verify_tables_data (&ctx);
 
