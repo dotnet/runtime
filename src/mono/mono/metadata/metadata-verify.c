@@ -1205,6 +1205,9 @@ mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
 {
 	VerifyContext ctx;
 
+	/* a temporary workaround for bug #496453 */
+	return TRUE;
+
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
