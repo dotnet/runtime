@@ -3682,6 +3682,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			cfg->disable_llvm = TRUE;
 		}
 
+		/* FIXME: */
+		if (cfg->method->dynamic) {
+			cfg->exception_message = g_strdup ("dynamic.");
+			cfg->disable_llvm = TRUE;
+		}
+
 		if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
 			mono_decompose_array_access_opts (cfg);
 

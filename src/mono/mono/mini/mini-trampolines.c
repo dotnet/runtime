@@ -539,6 +539,19 @@ mono_llvm_vcall_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *t
 	/* This is a simplified version of mono_magic_trampoline () */
 	/* FIXME: Avoid code duplication */
 
+	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
+		MonoJitInfo *ji;
+
+		if (code)
+			ji = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+		else
+			ji = NULL;
+
+		/* Avoid recursion */
+		if (!(ji && ji->method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED))
+			m = mono_marshal_get_synchronized_wrapper (m);
+	}
+
 	addr = mono_compile_method (m);
 	g_assert (addr);
 

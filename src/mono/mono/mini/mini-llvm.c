@@ -119,7 +119,7 @@ static LLVMTypeRef
 type_to_llvm_type (EmitContext *ctx, MonoType *t)
 {
 	if (t->byref)
-		return IntPtrType ();
+		return LLVMPointerType (LLVMInt8Type (), 0);
 	switch (t->type) {
 	case MONO_TYPE_VOID:
 		return LLVMVoidType ();
@@ -171,7 +171,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		klass = mono_class_from_mono_type (t);
 
 		if (klass->enumtype)
-			return LLVMInt32Type ();
+			return type_to_llvm_type (ctx, mono_class_enum_basetype (t->data.klass));
 		ltype = g_hash_table_lookup (llvm_types, klass);
 		if (!ltype) {
 			ltype = LLVMArrayType (LLVMInt8Type (), mono_class_value_size (klass, NULL));
@@ -1006,6 +1006,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				} else if (MONO_IS_SETCC (ins->next)) {
 					dname = g_strdup_printf ("t%d", ins->next->dreg);
 					values [ins->next->dreg] = LLVMBuildZExt (builder, cmp, LLVMInt32Type (), dname);
+
+					/* Add stores for volatile variables */
+					emit_volatile_store (ctx, ins->next->dreg);
 				} else if (MONO_IS_COND_EXC (ins->next)) {
 					//emit_cond_throw_pos (ctx);
 					emit_cond_system_exception (ctx, bb, ins->next->inst_p1, cmp);
@@ -1731,19 +1734,28 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMBuildAdd (builder, LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.load.add.i64.p0i64"), args, 2, get_tempname (ctx)), args [1], dname);
 				break;
 			}
-#if 0
-			case OP_ATOMIC_CAS_IMM_I4: {
+			case OP_ATOMIC_CAS_I4:
+			case OP_ATOMIC_CAS_I8: {
 				LLVMValueRef args [3];
+				LLVMTypeRef t;
+				const char *intrins;
+				
+				if (ins->opcode == OP_ATOMIC_CAS_I4) {
+					t = LLVMInt32Type ();
+					intrins = "llvm.atomic.cmp.swap.i32.p0i32";
+				} else {
+					t = LLVMInt64Type ();
+					intrins = "llvm.atomic.cmp.swap.i64.p0i64";
+				}
 
-				args [0] = convert (ctx, lhs, LLVMPointerType (LLVMInt32Type (), 0));
+				args [0] = convert (ctx, lhs, LLVMPointerType (t, 0));
 				/* comparand */
-				args [1] = LLVMConstInt (LLVMInt32Type (), GPOINTER_TO_INT (ins->backend.data), FALSE);
+				args [1] = convert (ctx, values [ins->sreg3], t);
 				/* new value */
-				args [2] = rhs;
-				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, "llvm.atomic.cmp.swap.i32.p0i32"), args, 3, dname);
+				args [2] = convert (ctx, values [ins->sreg2], t);
+				values [ins->dreg] = LLVMBuildCall (builder, LLVMGetNamedFunction (module, intrins), args, 3, dname);
 				break;
 			}
-#endif
 			case OP_MEMORY_BARRIER: {
 				LLVMValueRef args [5];
 
@@ -1899,6 +1911,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (last)
 		LLVMDumpValue (method);
 
+	if (cfg->verbose_level > 1)
+		LLVMDumpValue (method);
+
 	mono_llvm_optimize_method (method);
 
 	if (cfg->verbose_level > 1)
@@ -2028,6 +2043,7 @@ mono_llvm_init (void)
 		LLVMAddFunction (module, "llvm.atomic.load.add.i32.p0i32", LLVMFunctionType2 (LLVMInt32Type (), LLVMPointerType (LLVMInt32Type (), 0), LLVMInt32Type (), FALSE));
 		LLVMAddFunction (module, "llvm.atomic.load.add.i64.p0i64", LLVMFunctionType2 (LLVMInt64Type (), LLVMPointerType (LLVMInt64Type (), 0), LLVMInt64Type (), FALSE));
 		LLVMAddFunction (module, "llvm.atomic.cmp.swap.i32.p0i32", LLVMFunctionType3 (LLVMInt32Type (), LLVMPointerType (LLVMInt32Type (), 0), LLVMInt32Type (), LLVMInt32Type (), FALSE));
+		LLVMAddFunction (module, "llvm.atomic.cmp.swap.i64.p0i64", LLVMFunctionType3 (LLVMInt64Type (), LLVMPointerType (LLVMInt64Type (), 0), LLVMInt64Type (), LLVMInt64Type (), FALSE));
 		LLVMAddFunction (module, "llvm.memory.barrier", LLVMFunctionType (LLVMVoidType (), membar_params, 5, FALSE));
 	}
 
