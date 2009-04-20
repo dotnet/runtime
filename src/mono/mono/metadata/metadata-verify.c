@@ -38,6 +38,7 @@
  TODO verify in the CLI header entry point and resources
  TODO implement null token typeref validation  
  TODO verify table wide invariants for typedef (sorting and uniqueness)
+ TODO implement proper authenticode data directory validation 
  FIXME use subtraction based bounds checking to avoid overflows
  FIXME get rid of metadata_streams and other fields from VerifyContext
 */
@@ -59,6 +60,7 @@ enum {
 enum {
 	IMPORT_TABLE_IDX = 1, 
 	RESOURCE_TABLE_IDX = 2,
+	CERTIFICATE_TABLE_IDX = 4,
 	RELOCATION_TABLE_IDX = 5,
 	IAT_IDX = 12,
 	CLI_HEADER_IDX = 14,
@@ -490,6 +492,11 @@ load_data_directories (VerifyContext *ctx)
 		guint32 rva = read32 (ptr);
 		guint32 size = read32 (ptr + 4);
 
+		/*LAMESPEC the authenticode data directory format is different. We don't support CAS, so lets ignore for now.*/
+		if (i == CERTIFICATE_TABLE_IDX) {
+			ptr += 8;
+			continue;
+		}
 		if ((rva != 0 || size != 0) && !is_valid_data_directory (i))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid data directory %d", i));
 
@@ -1204,9 +1211,6 @@ gboolean
 mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
 {
 	VerifyContext ctx;
-
-	/* a temporary workaround for bug #496453 */
-	return TRUE;
 
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;

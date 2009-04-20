@@ -642,14 +642,28 @@ main (int argc, char *argv [])
 		/**/
 	}
 
-	if (run_new_metadata_verifier) {
-		mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
+	if (verify_pe) {
+		mono_install_assembly_load_hook (pedump_assembly_load_hook, NULL);
+		mono_install_assembly_search_hook (pedump_assembly_search_hook, NULL);
 
-		mono_init ("pedump");
+		mono_init_from_assembly (file, file);
+
+		mono_install_assembly_preload_hook (pedump_preload, GUINT_TO_POINTER (FALSE));
 
 		mono_marshal_init ();
+		run_new_metadata_verifier = 1;
+	} else if (run_new_metadata_verifier) {
+		mono_init ("pedump");
+		mono_marshal_init ();
+	}
+	
+	if (run_new_metadata_verifier) {
+		int res;
+		mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
 
-		return verify_image_file (file);
+		res = verify_image_file (file);
+		if (res || !verify_pe)
+			return res;
 	}
 
 	image = mono_image_open (file, NULL);
@@ -663,14 +677,7 @@ main (int argc, char *argv [])
 	if (verify_pe) {
 		MonoAssembly *assembly;
 
-		mono_install_assembly_load_hook (pedump_assembly_load_hook, NULL);
-		mono_install_assembly_search_hook (pedump_assembly_search_hook, NULL);
-
-		mono_init_from_assembly (file, file);
-
-		mono_install_assembly_preload_hook (pedump_preload, GUINT_TO_POINTER (FALSE));
-
-		mono_marshal_init ();
+		mono_verifier_set_mode (verifier_mode);
 
 		assembly = mono_assembly_open (file, NULL);
 
