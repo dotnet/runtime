@@ -3206,6 +3206,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 		cfg->extend_live_ranges = TRUE;
 	}
 
+	if (COMPILE_LLVM (cfg)) {
+		cfg->opt |= MONO_OPT_ABCREM;
+	}
+
 	header = mono_method_get_header (method_to_compile);
 	if (!header) {
 		MonoLoaderError *error;
@@ -3362,8 +3366,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 		/* FIXME: */
 		cfg->opt &= ~MONO_OPT_BRANCH;
-
-		// FIXME: Enabling ABCREM seems to regress performance
 	}
 
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/

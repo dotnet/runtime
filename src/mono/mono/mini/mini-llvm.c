@@ -312,6 +312,8 @@ load_store_to_llvm_type (int opcode, int *size, gboolean *sext, gboolean *zext)
 		return LLVMInt16Type ();
 	case OP_LOADI4_MEMBASE:
 	case OP_LOADU4_MEMBASE:
+	case OP_LOADI4_MEM:
+	case OP_LOADU4_MEM:
 	case OP_STOREI4_MEMBASE_REG:
 	case OP_STOREI4_MEMBASE_IMM:
 		*size = 4;
@@ -1398,6 +1400,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_LOADR8_MEMBASE:
 			case OP_LOAD_MEMBASE:
 			case OP_LOADI8_MEM:
+			case OP_LOADI4_MEM:
+			case OP_LOADU4_MEM:
 			case OP_LOAD_MEM: {
 				int size = 8;
 				LLVMValueRef index;
@@ -1410,7 +1414,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					dname = (char*)get_tempname (ctx);
 
 				g_assert (ins->inst_offset % size == 0);
-				if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM)) {
+				if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM) || (ins->opcode == OP_LOADI4_MEM) || (ins->opcode == OP_LOADU4_MEM)) {
 					values [ins->dreg] = LLVMBuildLoad (builder, convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), LLVMPointerType (t, 0)), dname);
 				} else if (ins->inst_offset == 0) {
 					values [ins->dreg] = LLVMBuildLoad (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), dname);
