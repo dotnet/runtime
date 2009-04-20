@@ -2574,14 +2574,18 @@ handle_enum:
 	case MONO_TYPE_TYPEDBYREF:
 		return candidate->type == MONO_TYPE_TYPEDBYREF;
 
-	case MONO_TYPE_VALUETYPE:
-		if (candidate->type == MONO_TYPE_VALUETYPE && target->data.klass == candidate->data.klass)
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *target_klass  = mono_class_from_mono_type (target);
+		MonoClass *candidate_klass = mono_class_from_mono_type (candidate);
+
+		if (target_klass == candidate_klass)
 			return TRUE;
 		if (mono_type_is_enum_type (target)) {
 			target = mono_type_get_underlying_type_any (target);
 			goto handle_enum;
 		}
 		return FALSE;
+	}
 
 	case MONO_TYPE_VAR:
 		if (candidate->type != MONO_TYPE_VAR)
