@@ -180,6 +180,13 @@ mono_llvm_optimize_method (LLVMValueRef method)
 	fpm->run (*unwrap<Function> (method));
 }
 
+void
+mono_llvm_dump_value (LLVMValueRef value)
+{
+	/* Same as LLVMDumpValue (), but print to stdout */
+	cout << (*unwrap<Value> (value));
+}
+
 /* Missing overload for building an alloca with an alignment */
 LLVMValueRef
 mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 

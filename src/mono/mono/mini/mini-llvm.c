@@ -680,6 +680,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	method_type = sig_to_llvm_sig (ctx, sig, cfg->vret_addr != NULL);
 	CHECK_FAILURE (ctx);
 
+	for (i = 0; i < sig->param_count; ++i) {
+		if (MONO_TYPE_ISSTRUCT (sig->params [i]))
+			LLVM_FAILURE (ctx, "vtype param");
+	}
+
 	method_name = mono_method_full_name (cfg->method, TRUE);
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
@@ -1909,15 +1914,15 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 
 	if (last)
-		LLVMDumpValue (method);
+		mono_llvm_dump_value (method);
 
 	if (cfg->verbose_level > 1)
-		LLVMDumpValue (method);
+		mono_llvm_dump_value (method);
 
 	mono_llvm_optimize_method (method);
 
 	if (cfg->verbose_level > 1)
-		LLVMDumpValue (method);
+		mono_llvm_dump_value (method);
 
 	cfg->native_code = LLVMGetPointerToGlobal (ee, method);
 

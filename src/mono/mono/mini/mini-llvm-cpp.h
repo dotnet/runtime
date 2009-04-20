@@ -27,6 +27,9 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 void
 mono_llvm_optimize_method (LLVMValueRef method);
 
+void
+mono_llvm_dump_value (LLVMValueRef value);
+
 LLVMValueRef
 mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, 
 						LLVMValueRef ArraySize,
