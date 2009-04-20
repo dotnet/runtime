@@ -1251,7 +1251,7 @@ mini_method_verify (MonoCompile *cfg, MonoMethod *method)
 				mono_free_verify_list (res);
 				return TRUE;
 			}
-			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && !is_fulltrust) {
+			if (info->info.status == MONO_VERIFY_NOT_VERIFIABLE && (!is_fulltrust || info->exception_type == MONO_EXCEPTION_METHOD_ACCESS || info->exception_type == MONO_EXCEPTION_FIELD_ACCESS)) {
 				cfg->exception_type = info->exception_type;
 				cfg->exception_message = g_strdup (info->info.message);
 				mono_free_verify_list (res);
