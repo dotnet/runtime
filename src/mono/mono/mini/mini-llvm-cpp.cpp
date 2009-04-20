@@ -28,6 +28,11 @@
 #include <llvm/Target/TargetData.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Transforms/Scalar.h>
+#include <llvm/Support/CommandLine.h>
+#include "llvm/Support/PassNameParser.h"
+#include <llvm/CodeGen/Passes.h>
+#include <llvm/CodeGen/MachineFunctionPass.h>
+//#include <llvm/LinkAllPasses.h>
 
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
@@ -184,14 +189,15 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 	return wrap (unwrap (builder)->Insert (new AllocaInst(unwrap (Ty), unwrap (ArraySize), alignment), Name));
 }
 
-LLVMValueRef LLVMBuildArrayAlloca(LLVMBuilderRef, LLVMTypeRef Ty,
-                                  LLVMValueRef Val, const char *Name);
-
+static cl::list<const PassInfo*, bool, PassNameParser>
+PassList(cl::desc("Optimizations available:"));
 
 LLVMExecutionEngineRef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb)
 {
   std::string Error;
+
+  llvm::cl::ParseEnvironmentOptions("mono", "MONO_LLVM", "", false);
 
   mono_mm = new MonoJITMemoryManager ();
   mono_mm->alloc_cb = alloc_cb;
@@ -211,6 +217,21 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   fpm->add(createReassociatePass());
   fpm->add(createGVNPass());
   fpm->add(createCFGSimplificationPass());
+
+  /* Add passes specified by the env variable */
+  /* FIXME: This can only add passes which are linked in, thus are already used */
+  for (unsigned i = 0; i < PassList.size(); ++i) {
+      const PassInfo *PassInf = PassList[i];
+      Pass *P = 0;
+
+      if (PassInf->getNormalCtor())
+		  P = PassInf->getNormalCtor()();
+	  if (dynamic_cast<MachineFunctionPass*>(P) != 0) {
+		  cerr << PassInf->getPassName () << " is a machine function pass.\n";
+	  } else {
+		  fpm->add (P);
+	  }
+  }
 
   return wrap(EE);
 }
