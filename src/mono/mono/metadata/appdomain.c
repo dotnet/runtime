@@ -71,7 +71,7 @@
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
  */
-#define MONO_CORLIB_VERSION 75
+#define MONO_CORLIB_VERSION 76
 
 typedef struct
 {

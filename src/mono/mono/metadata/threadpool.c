@@ -987,8 +987,8 @@ mono_async_invoke (MonoAsyncResult *ares)
 	if (ares->execution_context) {
 		/* use captured ExecutionContext (if available) */
 		thread = mono_thread_current ();
-		MONO_OBJECT_SETREF (ares, original_context, thread->execution_context);
-		MONO_OBJECT_SETREF (thread, execution_context, ares->execution_context);
+		MONO_OBJECT_SETREF (ares, original_context, mono_thread_get_execution_context ());
+		mono_thread_set_execution_context (ares->execution_context);
 	} else {
 		ares->original_context = NULL;
 	}
@@ -1014,7 +1014,7 @@ mono_async_invoke (MonoAsyncResult *ares)
 
 	/* restore original thread execution context if flow isn't suppressed, i.e. non null */
 	if (ares->original_context) {
-		MONO_OBJECT_SETREF (thread, execution_context, ares->original_context);
+		mono_thread_set_execution_context (ares->original_context);
 		ares->original_context = NULL;
 	}
 

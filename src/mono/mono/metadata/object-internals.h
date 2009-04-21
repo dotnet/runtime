@@ -341,7 +341,6 @@ struct _MonoThread {
 	guint32 serialized_culture_info_len;
 	guint8* serialized_ui_culture_info;
 	guint32 serialized_ui_culture_info_len;
-	MonoObject *execution_context;
 	MonoBoolean thread_dump_requested;
 	gpointer end_stack; /* This is only used when running in the debugger. */
 	MonoBoolean thread_interrupt_requested;
