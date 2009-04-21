@@ -113,6 +113,7 @@ typedef struct MonoAotModule {
 	guint32 *extra_method_table;
 	guint32 *extra_method_info_offsets;
 	guint8 *extra_method_info;
+	guint8 *unwind_info;
 
 	guint8 *specific_trampolines;
 	guint32 num_specific_trampolines, specific_trampoline_got_offset_base;
@@ -1086,6 +1087,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "got_info_offsets", (gpointer*)&amodule->got_info_offsets);
 	find_symbol (sofile, globals, "specific_trampolines", (gpointer*)&amodule->specific_trampolines);
 	find_symbol (sofile, globals, "static_rgctx_trampolines", (gpointer*)&amodule->static_rgctx_trampolines);
+	find_symbol (sofile, globals, "unwind_info", (gpointer)&amodule->unwind_info);
 	find_symbol (sofile, globals, "mem_end", (gpointer*)&amodule->mem_end);
 
 	amodule->mem_begin = amodule->code;
@@ -1418,9 +1420,9 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 	MonoJitInfo *jinfo;
 	guint code_len, used_int_regs, flags;
 	gboolean has_generic_jit_info, has_dwarf_unwind_info;
-	guint8 *p, *unwind_info_block;
+	guint8 *p;
 	MonoMethodHeader *header;
-	int generic_info_size, unwind_info_len;
+	int generic_info_size;
 
 	header = mono_method_get_header (method);
 
@@ -1431,15 +1433,12 @@ decode_exception_debug_info (MonoAotModule *aot_module, MonoDomain *domain,
 	flags = decode_value (p, &p);
 	has_generic_jit_info = (flags & 1) != 0;
 	has_dwarf_unwind_info = (flags & 2) != 0;
-	unwind_info_block = p;
 	if (has_dwarf_unwind_info) {
-		gssize offset;
+		guint32 offset;
 
-		unwind_info_len = decode_value (p, &p);
-		offset = unwind_info_block - (guint8*)aot_module->ex_info;
-		g_assert (offset > 0 && offset < (1 << 30));
+		offset = decode_value (p, &p);
+		g_assert (offset < (1 << 30));
 		used_int_regs = offset;
-		p += unwind_info_len;
 	} else {
 		used_int_regs = decode_value (p, &p);
 	}
@@ -1521,7 +1520,7 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 	g_assert (amodule);
 	g_assert (ji->from_aot);
 
-	p = amodule->ex_info + ji->used_regs;
+	p = amodule->unwind_info + ji->used_regs;
 	*unwind_info_len = decode_value (p, &p);
 	return p;
 }

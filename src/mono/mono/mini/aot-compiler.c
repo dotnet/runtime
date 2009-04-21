@@ -107,7 +107,7 @@ typedef struct MonoAotOptions {
 
 typedef struct MonoAotStats {
 	int ccount, mcount, lmfcount, abscount, gcount, ocount, genericcount;
-	int code_size, info_size, ex_info_size, got_size, class_info_size, got_info_size, got_info_offsets_size;
+	int code_size, info_size, ex_info_size, unwind_info_size, got_size, class_info_size, got_info_size, got_info_offsets_size;
 	int methods_without_got_slots, direct_calls, all_calls;
 	int got_slots;
 	int got_slot_types [MONO_PATCH_INFO_NONE];
@@ -156,6 +156,9 @@ typedef struct MonoAotCompile {
 	FILE *fp;
 	char *tmpfname;
 	GSList *cie_program;
+	GHashTable *unwind_info_offsets;
+	GPtrArray *unwind_ops;
+	guint32 unwind_info_offset;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -2209,6 +2212,39 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	g_free (buf);
 }
 
+static guint32
+get_unwind_info_offset (MonoAotCompile *acfg, guint8 *encoded, guint32 encoded_len)
+{
+	guint32 cache_index;
+	guint32 offset;
+
+	/* Reuse the unwind module to canonize and store unwind info entries */
+	cache_index = mono_cache_unwind_info (encoded, encoded_len);
+
+	/* Use +/- 1 to distinguish 0s from missing entries */
+	offset = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->unwind_info_offsets, GUINT_TO_POINTER (cache_index + 1)));
+	if (offset)
+		return offset - 1;
+	else {
+		guint8 buf [16];
+		guint8 *p;
+
+		/* 
+		 * It would be easier to use assembler symbols, but the caller needs an
+		 * offset now.
+		 */
+		offset = acfg->unwind_info_offset;
+		g_hash_table_insert (acfg->unwind_info_offsets, GUINT_TO_POINTER (cache_index + 1), GUINT_TO_POINTER (offset + 1));
+		g_ptr_array_add (acfg->unwind_ops, GUINT_TO_POINTER (cache_index));
+
+		p = buf;
+		encode_value (encoded_len, p, &p);
+
+		acfg->unwind_info_offset += encoded_len + (p - buf);
+		return offset;
+	}
+}
+
 static void
 emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 {
@@ -2232,7 +2268,12 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	/* Make the labels local */
 	sprintf (symbol, ".Le_%x_p", method_index);
 
-	mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
+	if (!acfg->aot_opts.nodebug) {
+		mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
+	} else {
+		debug_info = NULL;
+		debug_info_size = 0;
+	}
 
 	buf_size = header->num_clauses * 256 + debug_info_size + 1024;
 	p = buf = g_malloc (buf_size);
@@ -2255,9 +2296,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		 * section cannot be accessed using the dl interface.
 		 */
 		encoded = mono_unwind_ops_encode (cfg->unwind_ops, &encoded_len);
-		encode_value (encoded_len, p, &p);
-		memcpy (p, encoded, encoded_len);
-		p += encoded_len;
+		encode_value (get_unwind_info_offset (acfg, encoded, encoded_len), p, &p);
 		g_free (encoded);
 	} else {
 		encode_value (jinfo->used_regs, p, &p);
@@ -3660,6 +3699,42 @@ emit_exception_info (MonoAotCompile *acfg)
 }
 
 static void
+emit_unwind_info (MonoAotCompile *acfg)
+{
+	int i;
+	char symbol [128];
+
+	/* 
+	 * The unwind info contains a lot of duplicates so we emit each unique
+	 * entry once, and only store the offset from the start of the table in the
+	 * exception info.
+	 */
+
+	sprintf (symbol, "unwind_info");
+	emit_section_change (acfg, ".text", 1);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_global (acfg, symbol, FALSE);
+
+	for (i = 0; i < acfg->unwind_ops->len; ++i) {
+		guint32 index = GPOINTER_TO_UINT (g_ptr_array_index (acfg->unwind_ops, i));
+		guint8 *unwind_info;
+		guint32 unwind_info_len;
+		guint8 buf [16];
+		guint8 *p;
+
+		unwind_info = mono_get_cached_unwind_info (index, &unwind_info_len);
+
+		p = buf;
+		encode_value (unwind_info_len, p, &p);
+		emit_bytes (acfg, buf, p - buf);
+		emit_bytes (acfg, unwind_info, unwind_info_len);
+
+		acfg->stats.unwind_info_size += (p - buf) + unwind_info_len;
+	}
+}
+
+static void
 emit_class_info (MonoAotCompile *acfg)
 {
 	int i;
@@ -4347,6 +4422,8 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->opts = opts;
 	acfg->mempool = mono_mempool_new ();
 	acfg->extra_methods = g_ptr_array_new ();
+	acfg->unwind_info_offsets = g_hash_table_new (NULL, NULL);
+	acfg->unwind_ops = g_ptr_array_new ();
 	InitializeCriticalSection (&acfg->mutex);
 
 	return acfg;
@@ -4367,6 +4444,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_ptr_array_free (acfg->shared_patches, TRUE);
 	g_ptr_array_free (acfg->image_table, TRUE);
 	g_ptr_array_free (acfg->globals, TRUE);
+	g_ptr_array_free (acfg->unwind_ops, TRUE);
 	g_hash_table_destroy (acfg->method_indexes);
 	g_hash_table_destroy (acfg->plt_offset_to_patch);
 	g_hash_table_destroy (acfg->patch_to_plt_offset);
@@ -4374,6 +4452,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->method_to_cfg);
 	g_hash_table_destroy (acfg->token_info_hash);
 	g_hash_table_destroy (acfg->image_hash);
+	g_hash_table_destroy (acfg->unwind_info_offsets);
 	mono_mempool_destroy (acfg->mempool);
 	g_free (acfg);
 }
@@ -4491,6 +4570,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	emit_exception_info (acfg);
 
+	emit_unwind_info (acfg);
+
 	emit_class_info (acfg);
 
 	emit_plt (acfg);
@@ -4512,7 +4593,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	acfg->stats.gen_time = TV_ELAPSED (atv, btv);
 
-	printf ("Code: %d Info: %d Ex Info: %d Class Info: %d PLT: %d GOT Info: %d GOT Info Offsets: %d GOT: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, acfg->stats.got_info_offsets_size, (int)(acfg->got_offset * sizeof (gpointer)));
+	printf ("Code: %d Info: %d Ex Info: %d Unwind Info: %d Class Info: %d PLT: %d GOT Info: %d GOT Info Offsets: %d GOT: %d\n", acfg->stats.code_size, acfg->stats.info_size, acfg->stats.ex_info_size, acfg->stats.unwind_info_size, acfg->stats.class_info_size, acfg->plt_offset, acfg->stats.got_info_size, acfg->stats.got_info_offsets_size, (int)(acfg->got_offset * sizeof (gpointer)));
 
 	TV_GETTIME (atv);
 	res = img_writer_emit_writeout (acfg->w);
