@@ -1919,7 +1919,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_alignment (acfg, func_alignment);
 	emit_label (acfg, symbol);
 
-	if (acfg->aot_opts.write_symbols && acfg->use_bin_writer) {
+	if (acfg->aot_opts.write_symbols && !acfg->aot_opts.nodebug && acfg->use_bin_writer) {
 		char *full_name;
 		/* Emit a local symbol into the symbol table */
 		full_name = mono_method_full_name (method, TRUE);
