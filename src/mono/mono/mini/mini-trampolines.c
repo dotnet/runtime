@@ -714,8 +714,6 @@ mono_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guin
 void
 mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp)
 {
-	g_assert (!vtable->initialized);
-
 	mono_runtime_class_init (vtable);
 }
 
