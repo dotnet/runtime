@@ -1,0 +1,6 @@
+2009-04-21  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Driver.cs: Postprocess custom steps in order to make them
+	  able to find steps determined by the resolve step. Fixes
+	  #493702.
+

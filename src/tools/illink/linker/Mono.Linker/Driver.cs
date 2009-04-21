@@ -76,6 +76,7 @@ namespace Mono.Linker {
 			Pipeline p = GetStandardPipeline ();
 			LinkContext context = GetDefaultContext (p);
 			I18nAssemblies assemblies = I18nAssemblies.All;
+			ArrayList custom_steps = new ArrayList ();
 
 			bool resolver = false;
 			while (HaveMoreTokens ()) {
@@ -121,7 +122,7 @@ namespace Mono.Linker {
 					context.Actions [GetParam ()] = action;
 					break;
 				case 's':
-					AddCustomStep (p, GetParam ());
+					custom_steps.Add (GetParam ());
 					break;
 				case 'x':
 					foreach (string file in GetFiles (GetParam ()))
@@ -160,6 +161,9 @@ namespace Mono.Linker {
 			if (!resolver)
 				Usage ("No resolver was created (use -x, -a or -i)");
 
+			foreach (string custom_step in custom_steps)
+				AddCustomStep (p, custom_step);
+			
 			p.AddStepAfter (typeof (LoadReferencesStep), new LoadI18nAssemblies (assemblies));
 
 			p.Process (context);
