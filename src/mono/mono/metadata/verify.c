@@ -2762,7 +2762,7 @@ mono_delegate_type_equal (MonoType *target, MonoType *candidate)
 
 	case MONO_TYPE_VALUETYPE:
 		/*FIXME handle nullables and enum*/
-		return candidate->type == MONO_TYPE_VALUETYPE && target->data.klass == candidate->data.klass;
+		return mono_class_from_mono_type (candidate) == mono_class_from_mono_type (target);
 
 	case MONO_TYPE_VAR:
 		return candidate->type == MONO_TYPE_VAR && mono_type_get_generic_param_num (target) == mono_type_get_generic_param_num (candidate);
