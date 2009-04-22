@@ -134,6 +134,9 @@ namespace Mono.Tuner {
 			if (meth.IsFamilyOrAssembly && (!AreInDifferentAssemblies (type, dec) || InHierarchy (type, dec)))
 				return true;
 
+			if (meth.IsFamilyAndAssembly && (!AreInDifferentAssemblies (type, dec) && InHierarchy (type, dec)))
+				return true;
+
 			if (!AreInDifferentAssemblies (type, dec) && meth.IsAssembly)
 				return true;
 
@@ -163,6 +166,9 @@ namespace Mono.Tuner {
 				return true;
 
 			if (field.IsFamilyOrAssembly && (!AreInDifferentAssemblies (type, dec) || InHierarchy (type, dec)))
+				return true;
+
+			if (field.IsFamilyAndAssembly && (!AreInDifferentAssemblies (type, dec) && InHierarchy (type, dec)))
 				return true;
 
 			if (!AreInDifferentAssemblies (type, dec) && field.IsAssembly)

@@ -1,5 +1,9 @@
 2009-04-22  Jb Evain  <jbevain@novell.com>
 
+	* Mono.Tuner/CheckVisibility.cs: take FamAndAssem into account.
+
+2009-04-22  Jb Evain  <jbevain@novell.com>
+
 	* AdjustVisibility.cs: we're now turning non exposed fields and
 	methods (API wise) that are `protected` into `protected and internal`.
 
