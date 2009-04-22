@@ -6,6 +6,8 @@
  */
 
 #include <config.h>
+#include <sys/select.h>
+#include <sys/time.h>
 
 #ifndef HAVE_SOCKLEN_T
 #define socklen_t int
