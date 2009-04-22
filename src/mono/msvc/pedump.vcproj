@@ -707,7 +707,7 @@
 			>
 		</File>
 		<File
-			RelativePath="..\mono\metadata\console-io.c"
+			RelativePath="..\mono\metadata\console-win32.c"
 			>
 		</File>
 		<File
