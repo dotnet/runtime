@@ -475,7 +475,7 @@ system)
   fi
   
   ## Versions of dependencies
-  GLIB_REQUIRED_VERSION=1.3.11
+  GLIB_REQUIRED_VERSION=2.4.0
   
   PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
   

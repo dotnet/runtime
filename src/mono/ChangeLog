@@ -1,3 +1,10 @@
+2009-04-22  Jeffrey Stedfast  <fejj@novell.com>
+
+	* configure.in: Check for a stable version of glib-2.0 as opposed
+	to an unstable development version (we don't want people
+	unfamiliar with glib versioning to install an unstable development
+	version of glib).
+
 2009-04-13  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Quiet 'copying selected object files' messages from
