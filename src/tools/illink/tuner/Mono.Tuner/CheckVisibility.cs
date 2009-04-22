@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections;
+using System.Text;
 
 using Mono.Linker;
 using Mono.Linker.Steps;
@@ -83,9 +84,61 @@ namespace Mono.Tuner {
 			return (type.DeclaringType == null && type.IsPublic) || type.IsNestedPublic;
 		}
 
-		static bool AreInDifferentAssemblies (TypeDefinition lhs, TypeDefinition rhs)
+		static bool AreInDifferentAssemblies (TypeDefinition type, TypeDefinition target)
 		{
-			return lhs.Module.Assembly.Name.FullName != rhs.Module.Assembly.Name.FullName;
+			if (type.Module.Assembly.Name.FullName != target.Module.Assembly.Name.FullName)
+				return !IsInternalVisibleTo (target.Module.Assembly, type.Module.Assembly);
+
+			return false;
+		}
+
+		static bool IsInternalVisibleTo (AssemblyDefinition assembly, AssemblyDefinition candidate)
+		{
+			foreach (CustomAttribute attribute in assembly.CustomAttributes) {
+				if (!IsInternalsVisibleToAttribute (attribute))
+					continue;
+
+				if (attribute.ConstructorParameters.Count == 0)
+					continue;
+
+				string signature = (string) attribute.ConstructorParameters [0];
+
+				if (InternalsVisibleToSignatureMatch (signature, candidate.Name))
+					return true;
+			}
+
+			return false;
+		}
+
+		static bool InternalsVisibleToSignatureMatch (string signature, AssemblyNameReference reference)
+		{
+			int pos = signature.IndexOf (",");
+			if (pos == -1)
+				return signature == reference.Name;
+
+			string assembly_name = signature.Substring (0, pos);
+
+			pos = signature.IndexOf ("=");
+			if (pos == -1)
+				throw new ArgumentException ();
+
+			string public_key = signature.Substring (pos + 1).ToLower ();
+
+			return assembly_name == reference.Name && public_key == ToPublicKeyString (reference.PublicKey);
+		}
+
+		static string ToPublicKeyString (byte [] public_key)
+		{
+			StringBuilder signature = new StringBuilder (public_key.Length);
+			for (int i = 0; i < public_key.Length; i++)
+				signature.Append (public_key [i].ToString ("x2"));
+
+			return signature.ToString ();
+		}
+
+		static bool IsInternalsVisibleToAttribute (CustomAttribute attribute)
+		{
+			return attribute.Constructor.DeclaringType.FullName == "System.Runtime.CompilerServices.InternalsVisibleToAttribute";
 		}
 
 		bool IsVisibleFrom (TypeDefinition type, TypeReference reference)
