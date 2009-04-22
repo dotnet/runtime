@@ -86,10 +86,10 @@ namespace Mono.Tuner {
 
 		static bool AreInDifferentAssemblies (TypeDefinition type, TypeDefinition target)
 		{
-			if (type.Module.Assembly.Name.FullName != target.Module.Assembly.Name.FullName)
-				return !IsInternalVisibleTo (target.Module.Assembly, type.Module.Assembly);
+			if (type.Module.Assembly.Name.FullName == target.Module.Assembly.Name.FullName)
+				return false;
 
-			return false;
+			return !IsInternalVisibleTo (target.Module.Assembly, type.Module.Assembly);
 		}
 
 		static bool IsInternalVisibleTo (AssemblyDefinition assembly, AssemblyDefinition candidate)
