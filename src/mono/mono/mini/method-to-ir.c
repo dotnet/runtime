@@ -5226,6 +5226,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	GSList *class_inits = NULL;
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
 	int context_used;
+	gboolean init_locals;
 
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = method->klass->image->assembly->corlib_internal? TRUE: FALSE;
@@ -5251,6 +5252,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	cfg->cil_start = ip;
 	end = ip + header->code_size;
 	mono_jit_stats.cil_code_size += header->code_size;
+	init_locals = header->init_locals;
+
+	/* 
+	 * Methods without init_locals set could cause asserts in various passes
+	 * (#497220).
+	 */
+	init_locals = TRUE;
 
 	method_definition = method;
 	while (method_definition->is_inflated) {
@@ -5483,7 +5491,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 	
-	if ((header->init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || cfg->compile_aot || security || pinvoke) {
+	if ((init_locals || (cfg->method == method && (cfg->opt & MONO_OPT_SHARED))) || cfg->compile_aot || security || pinvoke) {
 		/* we use a separate basic block for the initialization code */
 		NEW_BBLOCK (cfg, init_localsbb);
 		cfg->bb_init = init_localsbb;
@@ -9328,7 +9336,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_ADD_INS (cfg->cbb, ins);
 
 				cfg->flags |= MONO_CFG_HAS_ALLOCA;
-				if (header->init_locals)
+				if (init_locals)
 					ins->flags |= MONO_INST_INIT;
 
 				*sp++ = ins;
@@ -9543,7 +9551,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (cfg->method == method && cfg->got_var)
 		mono_emit_load_got_addr (cfg);
 
-	if (header->init_locals) {
+	if (init_locals) {
 		MonoInst *store;
 
 		cfg->cbb = init_localsbb;
