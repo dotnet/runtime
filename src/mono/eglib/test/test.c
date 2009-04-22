@@ -184,14 +184,9 @@ gdouble
 get_timestamp()
 {
 	/* FIXME: We should use g_get_current_time here */
-#ifdef G_OS_WIN32
-	long int l = GetTickCount();
-	return (gdouble)(l / 1000) + (1.e-6) * ((l % 1000) * 1000);
-#else
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	return (gdouble)tp.tv_sec + (1.e-6) * tp.tv_usec;
-#endif
+	GTimeVal res;
+	g_get_current_time (&res);
+	return res.tv_sec + (1.e-6) * res.tv_usec;
 }
 
 /* 
