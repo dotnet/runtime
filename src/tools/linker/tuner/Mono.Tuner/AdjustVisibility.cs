@@ -83,7 +83,7 @@ namespace Mono.Tuner {
 			else
 				type.Attributes |= TypeAttributes.NestedAssembly;
 
-			TunerAnnotations.Internalized (type);
+			MarkInternalized (type);
 		}
 
 		static void ProcessMethods (ICollection methods)
@@ -108,7 +108,7 @@ namespace Mono.Tuner {
 			method.Attributes &= ~MethodAttributes.MemberAccessMask;
 			method.Attributes |= MethodAttributes.Assem;
 
-			TunerAnnotations.Internalized (method);
+			MarkInternalized (method);
 		}
 
 		static void SetProtectedAndInternalVisibility (MethodDefinition method)
@@ -116,7 +116,7 @@ namespace Mono.Tuner {
 			method.Attributes &= ~MethodAttributes.MemberAccessMask;
 			method.Attributes |= MethodAttributes.FamANDAssem;
 
-			TunerAnnotations.Internalized (method);
+			MarkInternalized (method);
 		}
 
 		static bool IsMarkedAsPublic (IAnnotationProvider provider)
@@ -146,7 +146,7 @@ namespace Mono.Tuner {
 			field.Attributes &= ~FieldAttributes.FieldAccessMask;
 			field.Attributes |= FieldAttributes.Assembly;
 
-			TunerAnnotations.Internalized (field);
+			MarkInternalized (field);
 		}
 
 		static void SetProtectedAndInternalVisibility (FieldDefinition field)
@@ -154,7 +154,12 @@ namespace Mono.Tuner {
 			field.Attributes &= ~FieldAttributes.FieldAccessMask;
 			field.Attributes |= FieldAttributes.FamANDAssem;
 
-			TunerAnnotations.Internalized (field);
+			MarkInternalized (field);
+		}
+
+		static void MarkInternalized (IAnnotationProvider provider)
+		{
+			TunerAnnotations.Internalized (provider);
 		}
 	}
 }
