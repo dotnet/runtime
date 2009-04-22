@@ -1,3 +1,8 @@
+2009-04-22  Jb Evain  <jbevain@novell.com>
+
+	* AdjustVisibility.cs: we're now turning non exposed fields and
+	methods (API wise) that are `protected` into `protected and internal`.
+
 2009-04-08  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Mono.Tuner.csproj: Update.
