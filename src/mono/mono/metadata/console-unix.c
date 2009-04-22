@@ -1,5 +1,5 @@
 /*
- * console-io.c: ConsoleDriver internal calls
+ * console-io.c: ConsoleDriver internal calls for Unix systems.
  *
  * Author:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
@@ -15,11 +15,11 @@
 #include <errno.h>
 #include <signal.h>
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+#    include <sys/time.h>
 #endif
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/object-internals.h>
@@ -27,24 +27,26 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/threadpool.h>
+
 /* On solaris, curses.h must come before both termios.h and term.h */
 #ifdef HAVE_CURSES_H
-#include <curses.h>
+#    include <curses.h>
 #endif
 #ifdef HAVE_TERMIOS_H
-#include <termios.h>
+#    include <termios.h>
 #endif
 #ifdef HAVE_TERM_H
-#include <term.h>
+#    include <term.h>
 #endif
+
 /* Needed for FIONREAD under solaris */
 #ifdef HAVE_SYS_FILIO_H
-#include <sys/filio.h>
+#    include <sys/filio.h>
 #endif
 #ifndef TIOCGWINSZ
-#ifdef HAVE_SYS_IOCTL_H
-#include <sys/ioctl.h>
-#endif
+#    ifdef HAVE_SYS_IOCTL_H
+#        include <sys/ioctl.h>
+#    endif
 #endif
 
 #include <mono/metadata/console-io.h>
@@ -64,12 +66,6 @@ static gchar *keypad_xmit_str;
 static struct termios mono_attr;
 #endif
 
-#if defined(PLATFORM_WIN32)
-void
-mono_console_init (void)
-{
-}
-#else
 void
 mono_console_init (void)
 {
@@ -82,42 +78,7 @@ mono_console_init (void)
 	}
 	close (fd);
 }
-#endif
 
-#if defined (PLATFORM_WIN32) || defined (MONO_NULL_TTYDRIVER)
-MonoBoolean
-ves_icall_System_ConsoleDriver_Isatty (HANDLE handle)
-{
-	MONO_ARCH_SAVE_REGS;
-
-	return (GetFileType (handle) == FILE_TYPE_CHAR);
-}
-
-MonoBoolean
-ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean want_echo)
-{
-	return FALSE;
-}
-
-MonoBoolean
-ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break)
-{
-	return FALSE;
-}
-
-gint32
-ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout)
-{
-	return FALSE;
-}
-
-MonoBoolean
-ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_chars, int **size)
-{
-	return FALSE;
-}
-
-#else
 static struct termios initial_attr;
 
 MonoBoolean
@@ -486,5 +447,3 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 
 	return TRUE;
 }
-
-#endif /* !PLATFORM_WIN32 */

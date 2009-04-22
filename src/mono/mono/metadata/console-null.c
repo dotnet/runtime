@@ -1,5 +1,5 @@
 /*
- * console-io.c: ConsoleDriver internal calls for Win32
+ * console-null.c: Null driver, does nothing.
  *
  * Author:
  *	Gonzalo Paniagua Javier (gonzalo@ximian.com)
@@ -7,25 +7,10 @@
  * Copyright (C) 2005-2009 Novell, Inc. (http://www.novell.com)
  */
 
-#include <config.h>
-#include <glib.h>
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <signal.h>
-#include <sys/types.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
-#include <mono/metadata/metadata.h>
-#include <mono/metadata/threadpool.h>
 
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/exception.h>

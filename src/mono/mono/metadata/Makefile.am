@@ -1,4 +1,9 @@
 if PLATFORM_WIN32
+win32_sources = \
+	console-win32.c
+
+platform_sources = $(win32_sources)
+
 # Use -m here. This will use / as directory separator (C:/WINNT).
 # The files that use MONO_ASSEMBLIES and/or MONO_CFG_DIR replace the
 # / by \ if running under WIN32.
@@ -14,8 +19,13 @@ export HOST_CC
 # optimisation is required to actually inline them
 AM_CFLAGS = -O
 else
+
 assembliesdir = $(exec_prefix)/lib
 confdir = $(sysconfdir)
+unix_sources = \
+	console-unix.c
+
+platform_sources = $(unix_sources)
 endif
 
 bin_PROGRAMS = pedump
@@ -43,7 +53,11 @@ CLEANFILES = mono-bundle.stamp
 
 libmonoruntime_static_la_LIBADD = $(bundle_obj) $(libmonoruntime_la_LIBADD)
 
+null_sources = \
+	console-null.c
+
 libmonoruntime_la_SOURCES = \
+	$(platform_sources)	\
 	appdomain.c		\
 	assembly.c		\
 	attach.h		\
@@ -55,7 +69,6 @@ libmonoruntime_la_SOURCES = \
 	class-internals.h	\
 	cominterop.c		\
 	cominterop.h		\
-	console-io.c		\
 	console-io.h		\
 	coree.c 		\
 	coree.h 		\
@@ -197,5 +210,5 @@ pedump_SOURCES =		\
 pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(PEDUMP_DTRACE_OBJECT)
 
-EXTRA_DIST = make-bundle.pl sample-bundle
+EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources)
 
