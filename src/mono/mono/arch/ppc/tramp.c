@@ -63,7 +63,7 @@ disassemble (guint8 *code, int size)
 {
 	int i;
 	FILE *ofd;
-	const char *tmp = getenv("TMP");
+	const char *tmp = g_getenv("TMP");
 	char *as_file;
 	char *o_file;
 	char *cmd;
