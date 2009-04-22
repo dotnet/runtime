@@ -52,6 +52,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/utils/mono-logger.h>
+#include <mono/utils/mono-mmap.h>
 #include "mono/utils/mono-compiler.h"
 
 #include "mini.h"
@@ -707,7 +708,6 @@ G_GNUC_UNUSED
 static void
 make_writable (guint8* addr, guint32 len)
 {
-#ifndef PLATFORM_WIN32
 	guint8 *page_start;
 	int pages, err;
 
@@ -716,14 +716,9 @@ make_writable (guint8* addr, guint32 len)
 
 	page_start = (guint8 *) (((gssize) (addr)) & ~ (PAGESIZE - 1));
 	pages = (addr + len - page_start + PAGESIZE - 1) / PAGESIZE;
-	err = mprotect (page_start, pages * PAGESIZE, PROT_READ | PROT_WRITE | PROT_EXEC);
+
+	err = mono_mprotect (page_start, pages * PAGESIZE, MONO_MMAP_READ | MONO_MMAP_WRITE | MONO_MMAP_EXEC);
 	g_assert (err == 0);
-#else
-	{
-		DWORD oldp;
-		g_assert (VirtualProtect (addr, len, PAGE_EXECUTE_READWRITE, &oldp) != 0);
-	}
-#endif
 }
 
 static void
