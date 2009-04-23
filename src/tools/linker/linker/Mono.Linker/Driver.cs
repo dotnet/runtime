@@ -202,7 +202,9 @@ namespace Mono.Linker {
 
 		static IStep ResolveStep (string type)
 		{
-			Type step = Type.GetType (type, true);
+			Type step = Type.GetType (type, false);
+			if (step == null)
+				Usage ("Step type '" + type + "' not found.");
 			return (IStep) Activator.CreateInstance (step);
 		}
 

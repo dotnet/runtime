@@ -1,8 +1,14 @@
+2009-04-23  Andrés G. Aragoneses  <aaragoneses@novell.com>
+
+	* Mono.Linker/Driver.cs: Report error and exit if it cannot
+	  resolve some type (useful to avoid an ugly TypeLoadException
+	  when specifying an erroneus custom step).
+
 2009-04-21  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
 	* Driver.cs: Postprocess custom steps in order to make them
-	  able to find steps determined by the resolve step. Fixes
-	  #493702.
+	able to find steps determined by the resolve method. Fixes
+	#493702.
 
 2009-04-08  Andrés G. Aragoneses  <aaragoneses@novell.com>
 
