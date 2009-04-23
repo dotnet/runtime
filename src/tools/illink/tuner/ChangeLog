@@ -1,3 +1,7 @@
+2009-04-23  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/CheckVisibility.cs: check deep nested types.
+
 2009-04-22  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/CheckVisibility.cs: take InternalsVisibleTo into account.

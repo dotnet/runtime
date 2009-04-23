@@ -178,7 +178,7 @@ namespace Mono.Tuner {
 			if (meth.IsPublic)
 				return true;
 
-			if (type == dec || type.DeclaringType == dec)
+			if (type == dec || IsNestedIn (type, dec))
 				return true;
 
 			if (meth.IsFamily && InHierarchy (type, dec))
@@ -212,7 +212,7 @@ namespace Mono.Tuner {
 			if (field.IsPublic)
 				return true;
 
-			if (type == dec || type.DeclaringType == dec)
+			if (type == dec || IsNestedIn (type, dec))
 				return true;
 
 			if (field.IsFamily && InHierarchy (type, dec))
@@ -230,7 +230,23 @@ namespace Mono.Tuner {
 			return false;
 		}
 
-		bool InHierarchy (TypeDefinition type, TypeDefinition other)
+		static bool IsNestedIn (TypeDefinition type, TypeDefinition other)
+		{
+			TypeDefinition declaring = type.DeclaringType;
+
+			if (declaring == null)
+				return false;
+
+			if (declaring == other)
+				return true;
+
+			if (declaring.DeclaringType == null)
+				return false;
+
+			return IsNestedIn (declaring, other);
+		}
+
+		static bool InHierarchy (TypeDefinition type, TypeDefinition other)
 		{
 			if (type.BaseType == null)
 				return false;
