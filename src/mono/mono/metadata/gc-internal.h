@@ -13,6 +13,9 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/utils/gc_wrapper.h>
 
+#define mono_domain_finalizers_lock(domain) EnterCriticalSection (&(domain)->finalizable_objects_hash_lock);
+#define mono_domain_finalizers_unlock(domain) LeaveCriticalSection (&(domain)->finalizable_objects_hash_lock);
+
 #define MONO_GC_REGISTER_ROOT(x) mono_gc_register_root ((char*)&(x), sizeof(x), NULL)
 
 #define MONO_GC_UNREGISTER_ROOT(x) mono_gc_deregister_root ((char*)&(x))
@@ -57,9 +60,16 @@ extern gpointer mono_gc_out_of_memory (size_t size);
 extern void     mono_gc_enable_events (void);
 
 /* disappearing link functionality */
-void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj) MONO_INTERNAL;
+void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj, gboolean track) MONO_INTERNAL;
 void        mono_gc_weak_link_remove (void **link_addr) MONO_INTERNAL;
 MonoObject *mono_gc_weak_link_get    (void **link_addr) MONO_INTERNAL;
+
+#ifndef HAVE_SGEN_GC
+void    mono_gc_add_weak_track_handle    (MonoObject *obj, guint32 gchandle) MONO_INTERNAL;
+void    mono_gc_change_weak_track_handle (MonoObject *old_obj, MonoObject *obj, guint32 gchandle) MONO_INTERNAL;
+void    mono_gc_remove_weak_track_handle (guint32 gchandle) MONO_INTERNAL;
+GSList* mono_gc_remove_weak_track_object (MonoDomain *domain, MonoObject *obj) MONO_INTERNAL;
+#endif
 
 /* simple interface for data structures needed in the runtime */
 void* mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits) MONO_INTERNAL;

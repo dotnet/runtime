@@ -402,7 +402,7 @@ retry:
 		mono_monitor_allocator_lock ();
 		mon = mon_new (id);
 		if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, mon, NULL) == NULL) {
-			mono_gc_weak_link_add (&mon->data, obj);
+			mono_gc_weak_link_add (&mon->data, obj, FALSE);
 			mono_monitor_allocator_unlock ();
 			/* Successfully locked */
 			return 1;
@@ -417,7 +417,7 @@ retry:
 				lw.sync = mon;
 				lw.lock_word |= LOCK_WORD_FAT_HASH;
 				if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, lw.sync, oldlw) == oldlw) {
-					mono_gc_weak_link_add (&mon->data, obj);
+					mono_gc_weak_link_add (&mon->data, obj, FALSE);
 					mono_monitor_allocator_unlock ();
 					/* Successfully locked */
 					return 1;
@@ -456,7 +456,7 @@ retry:
 			lw.sync = mon;
 			lw.lock_word |= LOCK_WORD_FAT_HASH;
 			if (InterlockedCompareExchangePointer ((gpointer*)&obj->synchronisation, lw.sync, oldlw) == oldlw) {
-				mono_gc_weak_link_add (&mon->data, obj);
+				mono_gc_weak_link_add (&mon->data, obj, TRUE);
 				mono_monitor_allocator_unlock ();
 				/* Successfully locked */
 				return 1;

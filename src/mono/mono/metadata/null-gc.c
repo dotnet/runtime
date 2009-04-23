@@ -214,5 +214,26 @@ mono_gc_get_managed_allocator_types (void)
 	return 0;
 }
 
+void
+mono_gc_add_weak_track_handle (MonoObject *obj, guint32 gchandle)
+{
+}
+
+void
+mono_gc_change_weak_track_handle (MonoObject *old_obj, MonoObject *obj, guint32 gchandle)
+{
+}
+
+void
+mono_gc_remove_weak_track_handle (guint32 gchandle)
+{
+}
+
+GSList*
+mono_gc_remove_weak_track_object (MonoDomain *domain, MonoObject *obj)
+{
+	return NULL;
+}
+
 #endif
 
