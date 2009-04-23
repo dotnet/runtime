@@ -1,3 +1,7 @@
+2009-04-23  Jb Evain  <jbevain@novell.com>
+
+	* scripts/Makefile.am: add a pdb2mdb script.
+
 2009-04-22  Jeffrey Stedfast  <fejj@novell.com>
 
 	* configure.in: Check for a stable version of glib-2.0 as opposed
