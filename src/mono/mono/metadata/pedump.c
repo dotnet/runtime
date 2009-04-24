@@ -646,7 +646,7 @@ main (int argc, char *argv [])
 		mono_install_assembly_load_hook (pedump_assembly_load_hook, NULL);
 		mono_install_assembly_search_hook (pedump_assembly_search_hook, NULL);
 
-		mono_init_from_assembly ("pedump", "mscorlib.dll");
+		mono_init_version ("pedump", "v2.0.50727");
 
 		mono_install_assembly_preload_hook (pedump_preload, GUINT_TO_POINTER (FALSE));
 
