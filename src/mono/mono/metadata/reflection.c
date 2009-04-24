@@ -5709,6 +5709,7 @@ reflected_hash (gconstpointer a) {
 /* ReflectedEntry doesn't need to be GC tracked */
 #define ALLOC_REFENTRY g_new0 (ReflectedEntry, 1)
 #define FREE_REFENTRY(entry) g_free ((entry))
+#define REFENTRY_REQUIRES_CLEANUP
 #else
 #define ALLOC_REFENTRY mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry))
 /* FIXME: */
@@ -5752,6 +5753,27 @@ clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
 		}
 	}
 	mono_domain_unlock (domain);
+}
+
+#ifdef REFENTRY_REQUIRES_CLEANUP
+static void
+cleanup_refobject_hash (gpointer key, gpointer value, gpointer user_data)
+{
+	FREE_REFENTRY (key);
+}
+#endif
+
+void
+mono_reflection_cleanup_domain (MonoDomain *domain)
+{
+	if (domain->refobject_hash) {
+/*let's avoid scanning the whole hashtable if not needed*/
+#ifdef REFENTRY_REQUIRES_CLEANUP
+		mono_g_hash_table_foreach (domain->refobject_hash, cleanup_refobject_hash, NULL);
+#endif
+		mono_g_hash_table_destroy (domain->refobject_hash);
+		domain->refobject_hash = NULL;
+	}
 }
 
 static gpointer

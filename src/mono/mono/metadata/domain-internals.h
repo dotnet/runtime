@@ -489,4 +489,6 @@ void mono_set_private_bin_path_from_config (MonoDomain *domain) MONO_INTERNAL;
 
 int mono_framework_version (void) MONO_INTERNAL;
 
+void mono_reflection_cleanup_domain (MonoDomain *domain) MONO_INTERNAL;
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

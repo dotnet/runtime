@@ -1938,13 +1938,12 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_code_manager_destroy (domain->code_mp);
 	domain->code_mp = NULL;
 #endif	
+
+	mono_reflection_cleanup_domain (domain);
+	
 	if (domain->type_hash) {
 		mono_g_hash_table_destroy (domain->type_hash);
 		domain->type_hash = NULL;
-	}
-	if (domain->refobject_hash) {
-		mono_g_hash_table_destroy (domain->refobject_hash);
-		domain->refobject_hash = NULL;
 	}
 	if (domain->type_init_exception_hash) {
 		mono_g_hash_table_destroy (domain->type_init_exception_hash);
