@@ -4482,65 +4482,43 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	return klass;
 }
 
-/*
- * LOCKING: Acquires the loader lock.
- */
-MonoClass *
-mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
+static MonoClass*
+make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is_mvar, MonoGenericParamInfo *pinfo)
 {
-	MonoGenericParamInfo *pinfo = mono_generic_param_info (param);
-	MonoGenericContainer *container;
 	MonoClass *klass, **ptr;
 	int count, pos, i;
 
-	mono_loader_lock ();
-
-	if (pinfo->pklass) {
-		mono_loader_unlock ();
-		return pinfo->pklass;
-	}
-
-	container = mono_generic_param_owner (param);
-	if (!image && container) {
-		if (is_mvar) {
-			MonoMethod *method = container->owner.method;
-			image = (method && method->klass) ? method->klass->image : NULL;
-		} else {
-			MonoClass *klass = container->owner.klass;
-			// FIXME: 'klass' should not be null
-			// 	  But, monodis creates GenericContainers without associating a owner to it
-			image = klass ? klass->image : NULL;
-		}
-	}
 	if (!image)
 		/* FIXME: */
 		image = mono_defaults.corlib;
 
 	klass = mono_image_alloc0 (image, sizeof (MonoClass));
-
 	classes_size += sizeof (MonoClass);
 
-	if (pinfo->name)
+	if (pinfo) {
 		klass->name = pinfo->name;
-	else {
+	} else {
 		int n = mono_generic_param_num (param);
 		klass->name = mono_image_alloc0 (image, 16);
-		sprintf ((char*)klass->name, is_mvar ? "!!%d" : "!%d", n);
+		sprintf ((char*)klass->name, "%d", n);
 	}
+
 	klass->name_space = "";
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
-	
-	for (count = 0, ptr = pinfo->constraints; ptr && *ptr; ptr++, count++)
-		;
+
+	if (pinfo)
+		for (count = 0, ptr = pinfo->constraints; ptr && *ptr; ptr++, count++)
+			;
 
 	pos = 0;
 	if ((count > 0) && !MONO_CLASS_IS_INTERFACE (pinfo->constraints [0])) {
 		klass->parent = pinfo->constraints [0];
 		pos++;
-	} else if (pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
+	} else if (pinfo && pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
 		klass->parent = mono_class_from_name (mono_defaults.corlib, "System", "ValueType");
 	else
 		klass->parent = mono_defaults.object_class;
+
 
 	if (count - pos > 0) {
 		klass->interface_count = count - pos;
@@ -4548,9 +4526,6 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 		for (i = pos; i < count; i++)
 			klass->interfaces [i - pos] = pinfo->constraints [i];
 	}
-
-	if (!image)
-		image = mono_defaults.corlib;
 
 	klass->image = image;
 
@@ -4567,12 +4542,47 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	mono_class_setup_supertypes (klass);
 
+	return klass;
+}
+
+/*
+ * LOCKING: Acquires the loader lock.
+ */
+MonoClass *
+mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
+{
+	MonoGenericContainer *container = mono_generic_param_owner (param);
+	MonoGenericParamInfo *pinfo = mono_generic_param_info (param);
+	MonoClass *klass;
+
+	mono_loader_lock ();
+
+	if (pinfo->pklass) {
+		mono_loader_unlock ();
+		return pinfo->pklass;
+	}
+
+	if (!image && container) {
+		if (is_mvar) {
+			MonoMethod *method = container->owner.method;
+			image = (method && method->klass) ? method->klass->image : NULL;
+		} else {
+			MonoClass *klass = container->owner.klass;
+			// FIXME: 'klass' should not be null
+			// 	  But, monodis creates GenericContainers without associating a owner to it
+			image = klass ? klass->image : NULL;
+		}
+	}
+
+	klass = make_generic_param_class (param, image, is_mvar, pinfo);
+
 	mono_memory_barrier ();
 
 	pinfo->pklass = klass;
 
 	mono_loader_unlock ();
 
+	/* FIXME: Should this go inside 'make_generic_param_klass'? */
 	mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
 
 	return klass;
