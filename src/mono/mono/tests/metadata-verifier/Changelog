@@ -1,3 +1,7 @@
+2009-04-22 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: More tests for the field table.
+
 2009-04-16 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* assembly-with-complex-type.cs: Add stuff to

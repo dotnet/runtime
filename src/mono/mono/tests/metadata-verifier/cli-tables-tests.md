@@ -231,13 +231,15 @@ field-table {
 	invalid offset table-row ( 4 0 ) or-ushort 0x60
 
 	#field with literal must be static (7)
-	valid offset table-row ( 4 0 ) or-ushort 0x50
+	valid offset table-row ( 4 4 ) or-ushort 0x50
 	invalid offset table-row ( 4 0 ) or-ushort 0x40
 
 	#field with rt special name must have special name (8)
 	#special name
 	valid offset table-row ( 4 0 ) or-ushort 0x0200
 	#special name + rt special name
+
+	#LAMEIMPL MS requires that fields marked rtspecialname to be named value__ even if they are not enums
 	valid offset table-row ( 4 0 ) or-ushort 0x0600
 	#only rt special name
 	invalid offset table-row ( 4 0 ) or-ushort 0x0400
@@ -251,11 +253,35 @@ field-table {
 	#no row in the field rva table for field 0 (11)
 	invalid offset table-row ( 4 0 ) or-ushort 0x0100
 
-
 	#name can't be empty or invalid (12)
 	invalid offset table-row ( 4 1 ) + 2 set-ushort 0
 	invalid offset table-row ( 4 1 ) + 2 set-ushort 0x9999
 
-	#TODO verify 14+
+	#invalid signature
+	invalid offset table-row ( 4 1 ) + 4 set-ushort 0x4666
+
+	#if it's a global variable, it must be static and (public|compiler controler|private) (16)
+	#static + compiler controled
+	valid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x10 
+	#static + private
+	valid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x11
+	#static + public
+	valid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x16 
+	#static + bad visibility
+	#LAMEIMPL MS doesn't verify visibility
+	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x12
+	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x13
+	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x14
+	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x15
+
+	#public and not static
+	invalid offset table-row ( 2 1 ) + 10 set-ushort 2 , offset table-row ( 4 0 ) set-ushort 0x06 
+
+	#field is constant but has no row in the contant table
+	#LAMESPEC this check is missing from the spec
+	invalid offset table-row ( 4 0 ) or-ushort 0x50
+
+	#TODO test enum condition and signature content
+
 }
 
