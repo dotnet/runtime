@@ -461,40 +461,40 @@ GENMDESC_PRG=./genmdesc
 endif !CROSS_COMPILING
 
 cpu-x86.h: cpu-x86.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-x86.md cpu-x86.h x86_desc
+	$(GENMDESC_PRG) cpu-x86.h x86_desc $(srcdir)/cpu-x86.md
 
 cpu-amd64.h: cpu-amd64.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-amd64.md cpu-amd64.h amd64_desc
+	$(GENMDESC_PRG) cpu-amd64.h amd64_desc $(srcdir)/cpu-amd64.md
 
 cpu-ppc.h: cpu-ppc.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-ppc.md cpu-ppc.h ppcg4
+	$(GENMDESC_PRG) cpu-ppc.h ppcg4 $(srcdir)/cpu-ppc.md
 
 cpu-ppc64.h: cpu-ppc64.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-ppc64.md cpu-ppc64.h ppc64_cpu_desc
+	$(GENMDESC_PRG) cpu-ppc64.h ppc64_cpu_desc $(srcdir)/cpu-ppc64.md
 
 cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-arm.md cpu-arm.h arm_cpu_desc
+	$(GENMDESC_PRG) cpu-arm.h arm_cpu_desc $(srcdir)/cpu-arm.md
 
 cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-sparc.md cpu-sparc.h sparc_desc
+	$(GENMDESC_PRG) cpu-sparc.h sparc_desc $(srcdir)/cpu-sparc.md
 
 cpu-s390.h: cpu-s390.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-s390.md cpu-s390.h s390_cpu_desc
+	$(GENMDESC_PRG) cpu-s390.h s390_cpu_desc $(srcdir)/cpu-s390.md
 
 cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-s390x.md cpu-s390x.h s390x_cpu_desc
+	$(GENMDESC_PRG) cpu-s390x.h s390x_cpu_desc $(srcdir)/cpu-s390x.md
 
 cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-ia64.md cpu-ia64.h ia64_desc
+	$(GENMDESC_PRG) cpu-ia64.h ia64_desc $(srcdir)/cpu-ia64.md
 
 cpu-alpha.h: cpu-alpha.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-alpha.md cpu-alpha.h alpha_desc
+	$(GENMDESC_PRG) cpu-alpha.h alpha_desc $(srcdir)/cpu-alpha.md
 
 cpu-hppa.h: cpu-hppa.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-hppa.md cpu-hppa.h hppa_desc
+	$(GENMDESC_PRG) cpu-hppa.h hppa_desc $(srcdir)/cpu-hppa.md
 
 cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) $(srcdir)/cpu-mips.md cpu-mips.h mips_desc
+	$(GENMDESC_PRG) cpu-mips.h mips_desc $(srcdir)/cpu-mips.md
 
 testi: mono test.exe
 	$(RUNTIME) -v -v --ncompile 1 --compile Test:$(mtest) test.exe

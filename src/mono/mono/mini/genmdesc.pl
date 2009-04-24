@@ -41,7 +41,7 @@ sub load_opcodes
 	#print "Running: $cpp\n";
 	open (OPS, $cpp) || die "Cannot execute cpp: $!";
 	while (<OPS>) {
-		next unless /MINI_OP\s*\(\s*(\S+?)\s*,\s*"(.*?)"/;
+		next unless /MINI_OP3?\s*\(\s*(\S+?)\s*,\s*"(.*?)"/;
 		my ($sym, $name) = ($1, $2);
 		push @opcodes, [$sym, $name];
 		$table{$name} = {num => $i, name => $name};
@@ -149,16 +149,19 @@ sub build_table {
 }
 
 sub usage {
-	die "genmdesc.pl arch srcdir desc output name\n";
+	die "genmdesc.pl arch srcdir output name desc [desc2 ...]\n";
 }
 
 my $arch = shift || usage ();
 my $srcdir = shift || usage ();
-my $file = shift || usage ();
 my $output = shift || usage ();
 my $name = shift || usage ();
+usage () unless @ARGV;
+my @files = @ARGV;
 
 load_opcodes ($srcdir, $arch);
-load_file ($file);
+foreach my $file (@files) {
+	load_file ($file);
+}
 build_table ($output, $name);
 

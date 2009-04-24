@@ -214,21 +214,20 @@ int
 main (int argc, char* argv [])
 {
 	init_table ();
-	switch (argc) {
-	case 2:
+	if (argc == 2) {
 		/* useful to get a new file when some opcodes are added: looses the comments, though */
 		load_file (argv [1]);
 		dump ();
-		break;
-	case 4:
-		load_file (argv [1]);
-		build_table (argv [2], argv [3]);
-		break;
-	default:
+	} else if (argc < 4) {
 		g_print ("Usage: genmdesc arguments\n");
-		g_print ("\tgenmdesc desc             Output to stdout the description file.\n");
-		g_print ("\tgenmdesc desc output name Write to output the description in a table named 'name'.\n");
+		g_print ("\tgenmdesc desc                        Output to stdout the description file.\n");
+		g_print ("\tgenmdesc output name desc [desc1...] Write to output the description in a table named 'name'.\n");
 		return 1;
+	} else {
+		int i;
+		for (i = 3; i < argc; ++i)
+			load_file (argv [i]);
+		build_table (argv [1], argv [2]);
 	}
 	return 0;
 }
