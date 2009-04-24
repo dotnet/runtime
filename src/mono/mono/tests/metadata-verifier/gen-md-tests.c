@@ -71,6 +71,7 @@ function_call:
 	fun_name '(' arg_list ')'
 
 fun_name:
+	read.ushort |
 	read.uint |
 	translate.rva |
 	translate.rva.ind |
@@ -391,6 +392,15 @@ lookup_var (test_entry_t *entry, const char *name)
 static guint32
 call_func (test_entry_t *entry, const char *name, GSList *args)
 {
+	if (!strcmp ("read.ushort", name)) {
+		guint32 offset;
+		if (g_slist_length (args) != 1) {
+			printf ("Invalid number of args to read.ushort %d\b", g_slist_length (args));
+			exit (INVALID_ARG_COUNT);
+		}
+		offset = expression_eval (args->data, entry);
+		return READ_VAR (guint16, entry->data + offset);
+	}
 	if (!strcmp ("read.uint", name)) {
 		guint32 offset;
 		if (g_slist_length (args) != 1) {

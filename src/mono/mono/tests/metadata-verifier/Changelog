@@ -1,3 +1,7 @@
+2009-04-23 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c: Add read.ushort.
+
 2009-04-22 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: More tests for the field table.
