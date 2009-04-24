@@ -927,13 +927,19 @@ dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, 
 				const char *tp;
 				MonoMarshalSpec *spec;
 				tp = mono_metadata_get_marshal_info (m, param_index - 1, FALSE);
-				g_assert (tp);
-				spec = mono_metadata_parse_marshal_spec (m, tp);
-
-				if (i)
-					marshal_info = dis_stringify_marshal_spec (spec);
-				else
-					ret_marshal_info = dis_stringify_marshal_spec (spec);
+				if (tp) {
+					spec = mono_metadata_parse_marshal_spec (m, tp);
+	
+					if (i)
+						marshal_info = dis_stringify_marshal_spec (spec);
+					else
+						ret_marshal_info = dis_stringify_marshal_spec (spec);
+				} else {
+					if (i)
+						marshal_info = g_strdup ("(missing)");
+					else
+						ret_marshal_info = g_strdup ("(missing)");
+				}
 			}
 			param_index ++;
 		} else {
