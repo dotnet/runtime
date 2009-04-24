@@ -1,3 +1,9 @@
+2009-04-24  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner.dll.sources: adjusted
+	* Mono.Tuner/FilterAttributes.cs: new step to remove some known
+	undesirable custom attributes.
+
 2009-04-23  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner/CheckVisibility.cs: check deep nested types.
