@@ -5228,9 +5228,12 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 		params = g_realloc (params, sizeof (MonoGenericParam) * n);
 		memset (&params [n - 1], 0, sizeof (MonoGenericParam));
 		params [n - 1].owner = container;
-		params [n - 1].info.flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
+		params [n - 1].info.token = i | MONO_TOKEN_GENERIC_PARAM;
+		params [n - 1].info.flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].info.name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
+		if (params [n - 1].num != n - 1)
+			g_warning ("GenericParam table unsorted or hole in generic param sequence: token %d", i);
 		if (++i > tdef->rows)
 			break;
 		mono_metadata_decode_row (tdef, i - 1, cols, MONO_GENERICPARAM_SIZE);

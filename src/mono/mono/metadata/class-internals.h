@@ -546,6 +546,7 @@ typedef struct {
 	MonoClass *pklass;		/* The corresponding `MonoClass'. */
 	const char *name;
 	guint16 flags;
+	guint32 token;
 	MonoClass** constraints; /* NULL means end of list */
 } MonoGenericParamInfo;
 
