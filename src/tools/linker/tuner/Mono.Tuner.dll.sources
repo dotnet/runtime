@@ -5,3 +5,4 @@ Mono.Tuner/AdjustVisibility.cs
 Mono.Tuner/CheckVisibility.cs
 Mono.Tuner/InjectSecurityAttributes.cs
 Mono.Tuner/MoonlightAssemblyStep.cs
+Mono.Tuner/FilterAttributes.cs
