@@ -307,7 +307,7 @@ dump_metadata (MonoImage *meta)
 			mono_meta_table_name (table),
 			meta->tables [table].rows,
 			meta->tables [table].row_size,
-			meta->tables [table].base - meta->raw_data
+			(unsigned int)(meta->tables [table].base - meta->raw_data)
 			);
 	}
 }
