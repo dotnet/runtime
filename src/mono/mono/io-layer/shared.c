@@ -104,7 +104,11 @@ static gchar *_wapi_shm_shm_name (_wapi_shm_t type)
 	char *base_name = _wapi_shm_base_name (type);
 
 	/* Also add the uid to avoid permission problems */
-	return g_strdup_printf ("/mono-shared-%d-%s", getuid (), base_name);
+	char *res = g_strdup_printf ("/mono-shared-%d-%s", getuid (), base_name);
+
+	g_free (base_name);
+
+	return res;
 }
 
 static int
@@ -299,7 +303,7 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	gpointer shm_seg;
 	int fd;
 	struct stat statbuf;
-	gchar *filename = _wapi_shm_file (type);
+	gchar *filename = _wapi_shm_file (type), *shm_name;
 	guint32 size;
 
 	switch(type) {
@@ -320,7 +324,9 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	}
 
 #ifdef USE_SHM
-	fd = _wapi_shm_open (_wapi_shm_shm_name (type), size);
+	shm_name = _wapi_shm_shm_name (type);
+	fd = _wapi_shm_open (shm_name, size);
+	g_free (shm_name);
 #else
 	fd = -1;
 #endif
@@ -528,6 +534,7 @@ static void shm_semaphores_remove (void)
 {
 	int thr_ret;
 	int proc_count;
+	gchar *shm_name;
 	
 #ifdef DEBUG
 	g_message ("%s: Checking process count (%d)", __func__,
@@ -552,8 +559,13 @@ static void shm_semaphores_remove (void)
 
 		semctl (_wapi_sem_id, 0, IPC_RMID);
 #ifdef USE_SHM
-		shm_unlink (_wapi_shm_shm_name (WAPI_SHM_DATA));
-		shm_unlink (_wapi_shm_shm_name (WAPI_SHM_FILESHARE));
+		shm_name = _wapi_shm_shm_name (WAPI_SHM_DATA);
+		shm_unlink (shm_name);
+		g_free (shm_name);
+
+		shm_name = _wapi_shm_shm_name (WAPI_SHM_FILESHARE);
+		shm_unlink (shm_name);
+		g_free (shm_name);
 #endif
 		unlink (_wapi_shm_file (WAPI_SHM_DATA));
 		unlink (_wapi_shm_file (WAPI_SHM_FILESHARE));
