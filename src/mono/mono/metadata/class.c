@@ -4506,8 +4506,9 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	klass->name_space = "";
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
+	count = 0;
 	if (pinfo)
-		for (count = 0, ptr = pinfo->constraints; ptr && *ptr; ptr++, count++)
+		for (ptr = pinfo->constraints; ptr && *ptr; ptr++, count++)
 			;
 
 	pos = 0;
@@ -4538,11 +4539,51 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	klass->this_arg.byref = TRUE;
 
 	/* FIXME: shouldn't this be ->type_token? */
-	klass->sizes.generic_param_token = pinfo->token;
+	klass->sizes.generic_param_token = pinfo ? pinfo->token : 0;
 
 	mono_class_setup_supertypes (klass);
 
 	return klass;
+}
+
+#define FAST_CACHE_SIZE 1024
+static MonoClass *var_cache_fast [FAST_CACHE_SIZE];
+static MonoClass *mvar_cache_fast [FAST_CACHE_SIZE];
+static GHashTable *var_cache_slow;
+static GHashTable *mvar_cache_slow;
+
+static MonoClass *
+get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar)
+{
+	int n = mono_generic_param_num (param);
+	GHashTable *ht;
+
+	if (n < FAST_CACHE_SIZE)
+		return (is_mvar ? mvar_cache_fast : var_cache_fast) [n];
+	ht = is_mvar ? mvar_cache_slow : var_cache_slow;
+	return ht ? g_hash_table_lookup (ht, GINT_TO_POINTER (n)) : NULL;
+}
+
+static void
+set_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, MonoClass *klass)
+{
+	int n = mono_generic_param_num (param);
+	GHashTable *ht;
+
+	if (n < FAST_CACHE_SIZE) {
+		(is_mvar ? mvar_cache_fast : var_cache_fast) [n] = klass;
+		return;
+	}
+	ht = is_mvar ? mvar_cache_slow : var_cache_slow;
+	if (!ht) {
+		ht = g_hash_table_new (NULL, NULL);
+		if (is_mvar)
+			mvar_cache_slow = ht;
+		else
+			var_cache_slow = ht;
+	}
+
+	g_hash_table_insert (ht, GINT_TO_POINTER (n), klass);
 }
 
 /*
@@ -4552,14 +4593,26 @@ MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
 {
 	MonoGenericContainer *container = mono_generic_param_owner (param);
-	MonoGenericParamInfo *pinfo = mono_generic_param_info (param);
+	MonoGenericParamInfo *pinfo;
 	MonoClass *klass;
 
 	mono_loader_lock ();
 
-	if (pinfo->pklass) {
-		mono_loader_unlock ();
-		return pinfo->pklass;
+	if (container) {
+		pinfo = mono_generic_param_info (param);
+		if (pinfo->pklass) {
+			mono_loader_unlock ();
+			return pinfo->pklass;
+		}
+	} else {
+		pinfo = NULL;
+		image = NULL;
+
+		klass = get_anon_gparam_class (param, is_mvar);
+		if (klass) {
+			mono_loader_unlock ();
+			return klass;
+		}
 	}
 
 	if (!image && container) {
@@ -4578,7 +4631,10 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gb
 
 	mono_memory_barrier ();
 
-	pinfo->pklass = klass;
+	if (container)
+		pinfo->pklass = klass;
+	else
+		set_anon_gparam_class (param, is_mvar, klass);
 
 	mono_loader_unlock ();
 
