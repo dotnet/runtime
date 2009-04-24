@@ -642,19 +642,16 @@ main (int argc, char *argv [])
 		/**/
 	}
 
-	if (verify_pe) {
+	if (verify_pe || run_new_metadata_verifier) {
 		mono_install_assembly_load_hook (pedump_assembly_load_hook, NULL);
 		mono_install_assembly_search_hook (pedump_assembly_search_hook, NULL);
 
-		mono_init_from_assembly (file, file);
+		mono_init_from_assembly ("pedump", "mscorlib.dll");
 
 		mono_install_assembly_preload_hook (pedump_preload, GUINT_TO_POINTER (FALSE));
 
 		mono_marshal_init ();
 		run_new_metadata_verifier = 1;
-	} else if (run_new_metadata_verifier) {
-		mono_init ("pedump");
-		mono_marshal_init ();
 	}
 	
 	if (run_new_metadata_verifier) {
