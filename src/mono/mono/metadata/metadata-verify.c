@@ -864,7 +864,7 @@ get_metadata_stream (VerifyContext *ctx, MonoStreamHeader *header)
 }
 
 static gboolean
-is_valid_non_empty_string (VerifyContext *ctx, guint32 offset)
+is_valid_string_full (VerifyContext *ctx, guint32 offset, gboolean allow_empty)
 {
 	OffsetAndSize strings = get_metadata_stream (ctx, &ctx->image->heap_strings);
 	glong length;
@@ -877,7 +877,19 @@ is_valid_non_empty_string (VerifyContext *ctx, guint32 offset)
 
 	if (!mono_utf8_validate_and_len_with_bounds (data + offset, strings.size - offset, &length, NULL))
 		return FALSE;
-	return length > 0;
+	return allow_empty || length > 0;
+}
+
+static gboolean
+is_valid_string (VerifyContext *ctx, guint32 offset)
+{
+	return is_valid_string_full (ctx, offset, TRUE);
+}
+
+static gboolean
+is_valid_non_empty_string (VerifyContext *ctx, guint32 offset)
+{
+	return is_valid_string_full (ctx, offset, FALSE);
 }
 
 static gboolean
@@ -1332,6 +1344,74 @@ verify_method_table (VerifyContext *ctx)
 	}
 }
 
+static guint32
+get_next_param_count (VerifyContext *ctx, guint32 *current_method)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_METHOD];
+	guint32 row = *current_method;
+	guint32 paramlist, tmp;
+
+
+	paramlist = mono_metadata_decode_row_col (table, row++, MONO_METHOD_PARAMLIST);
+	while (row < table->rows) {
+		tmp = mono_metadata_decode_row_col (table, row, MONO_METHOD_PARAMLIST);
+		if (tmp > paramlist) {
+			*current_method = row;
+			return tmp - paramlist;
+		}
+		++row;
+	}
+
+	/*no more methods, all params apply to the last one*/
+	*current_method = table->rows;
+	return (guint32)-1;
+}
+
+
+#define INVALID_PARAM_FLAGS_BITS ((1 << 2) | (1 << 3) | (1 << 5) | (1 << 6) | (1 << 7) | (1 << 8) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 14) | (1 << 15))
+static void
+verify_param_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_PARAM];
+	guint32 data [MONO_PARAM_SIZE], flags, sequence = 0, remaining_params, current_method = 0;
+	gboolean first_param = TRUE;
+	int i;
+
+	remaining_params = get_next_param_count (ctx, &current_method);
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_PARAM_SIZE);
+		flags = data [MONO_PARAM_FLAGS];
+
+		if (flags & INVALID_PARAM_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid param row %d bad Flags value 0x%08x", i, flags));
+
+		if (search_sorted_table (ctx, MONO_TABLE_CONSTANT, MONO_CONSTANT_PARENT, make_coded_token (HAS_CONSTANT_DESC, MONO_TABLE_PARAM, i)) == -1) {
+			if (flags & PARAM_ATTRIBUTE_HAS_DEFAULT)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid param row %d HasDefault = 1 but no owned row in Contant table", i));
+		} else {
+			if (!(flags & PARAM_ATTRIBUTE_HAS_DEFAULT))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid param row %d HasDefault = 0 but has owned row in Contant table", i));
+		}
+
+		if ((flags & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL) && search_sorted_table (ctx, MONO_TABLE_FIELDMARSHAL, MONO_FIELD_MARSHAL_PARENT, make_coded_token (HAS_FIELD_MARSHAL_DESC, MONO_TABLE_PARAM, i)) == -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid param row %d HasFieldMarshal = 1 but no owned row in FieldMarshal table", i));
+
+		if (!is_valid_string (ctx, data [MONO_PARAM_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid param row %d Name = 1 bad token 0x%08x", i, data [MONO_PARAM_NAME]));
+
+		if (!first_param && data [MONO_PARAM_SEQUENCE] <= sequence)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid param row %d sequece = %d previus param has %d", i, data [MONO_PARAM_SEQUENCE], sequence));
+
+		first_param = FALSE;
+		sequence = data [MONO_PARAM_SEQUENCE];
+		if (--remaining_params == 0) {
+			remaining_params = get_next_param_count (ctx, &current_method);
+			first_param = TRUE;
+		}
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -1366,6 +1446,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_field_table (ctx);
 	CHECK_ERROR ();
 	verify_method_table (ctx);
+	CHECK_ERROR ();
+	verify_param_table (ctx);
 }
 
 static gboolean
