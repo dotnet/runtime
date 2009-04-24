@@ -1200,7 +1200,7 @@ static void
 verify_method_table (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_METHOD];
-	guint32 data [MONO_METHOD_SIZE], flags, implflags, rva, module_method_list, access;
+	guint32 data [MONO_METHOD_SIZE], flags, implflags, rva, module_method_list, access, code_type;
 	gboolean is_ctor, is_cctor;
 	const char *name;
 	int i;
@@ -1217,6 +1217,8 @@ verify_method_table (VerifyContext *ctx)
 		implflags = data [MONO_METHOD_IMPLFLAGS];
 		flags = data [MONO_METHOD_FLAGS];
 		access = flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
+		code_type = implflags & METHOD_IMPL_ATTRIBUTE_CODE_TYPE_MASK;
+		
 
 		if (implflags & INVALID_METHOD_IMPLFLAG_BITS)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid implflags field 0x%08x", i, implflags));
@@ -1275,8 +1277,9 @@ verify_method_table (VerifyContext *ctx)
 		if ((flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (flags & METHOD_ATTRIBUTE_VIRTUAL))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is PinvokeImpl and Virtual", i));
 
-		if (!(flags & METHOD_ATTRIBUTE_ABSTRACT) && !rva && !(flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && !(implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is not Abstract and neither PinvokeImpl, InternalCall or with RVA != 0", i));
+		if (!(flags & METHOD_ATTRIBUTE_ABSTRACT) && !rva && !(flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && 
+				!(implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && code_type != METHOD_IMPL_ATTRIBUTE_RUNTIME)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is not Abstract and neither PinvokeImpl, Runtime, InternalCall or with RVA != 0", i));
 
 		if (access == METHOD_ATTRIBUTE_COMPILER_CONTROLLED && !(rva || (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is CompilerControlled but neither RVA != 0 or PinvokeImpl", i));
@@ -1286,13 +1289,13 @@ verify_method_table (VerifyContext *ctx)
 		if (rva) {
 			if (flags & METHOD_ATTRIBUTE_ABSTRACT)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is Abstract", i));
-			if ((implflags & METHOD_IMPL_ATTRIBUTE_CODE_TYPE_MASK) == METHOD_IMPL_ATTRIBUTE_OPTIL)
+			if (code_type == METHOD_IMPL_ATTRIBUTE_OPTIL)
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is CodeTypeMask is neither Native, CIL or Runtime", i));
 			if (!is_valid_method_header (ctx, rva))
 				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d RVA points to an invalid method header", i));
 		} else {
-			if (!(flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_PINVOKE_IMPL)) && !(implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA = 0 but neither Abstract, InternalCall or PinvokeImpl", i));
+			if (!(flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_PINVOKE_IMPL)) && !(implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && code_type != METHOD_IMPL_ATTRIBUTE_RUNTIME)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA = 0 but neither Abstract, InternalCall, Runtime or PinvokeImpl", i));
 		}
 
 		if ((flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
@@ -1306,7 +1309,6 @@ verify_method_table (VerifyContext *ctx)
 
 		if ((is_ctor || is_cctor) && !(flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is named .ctor or .cctor but is not RtSpecialName", i));
-		printf ("is ctor %d is_cctor %d -- %s\n", is_ctor, is_cctor, name);
 	}
 }
 
