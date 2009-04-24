@@ -418,7 +418,6 @@ methoddef-table {
 	invalid offset table-row ( 6 10 ) + 6 set-ushort 0x0016
 
 	#TODO do all .ctor and .cctor valdiation (39, 40)
-	#TODO verify paramlist table (similar to typedef methodlist)
 }
 
 methoddef-table-global-methods {
@@ -449,8 +448,56 @@ methoddef-table-global-methods {
 	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0013
 	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0014
 	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0015
+}
 
+methoddef-table-params {
+	assembly assembly-with-methods.exe
+
+	#method 12,13,14 have 3 params and params: 2,5,8	
+	#method 13 has 3 params and params: 5
+	invalid offset table-row ( 6 12 ) + 12 set-ushort 6
+	invalid offset table-row ( 6 13 ) + 12 set-ushort 99 
 }
 
 
+param-table {
+	assembly assembly-with-params.exe
+
+	#Flags should only have valid bits (3)
+	#bits not used: 2,3,5,6,7,8,910,11,14,15
+	invalid offset table-row ( 8 0 ) set-bit 2
+	invalid offset table-row ( 8 0 ) set-bit 3
+	invalid offset table-row ( 8 0 ) set-bit 5
+	invalid offset table-row ( 8 0 ) set-bit 6
+	invalid offset table-row ( 8 0 ) set-bit 7
+	invalid offset table-row ( 8 0 ) set-bit 8
+	invalid offset table-row ( 8 0 ) set-bit 9
+	invalid offset table-row ( 8 0 ) set-bit 10
+	invalid offset table-row ( 8 0 ) set-bit 11
+	invalid offset table-row ( 8 0 ) set-bit 14
+	invalid offset table-row ( 8 0 ) set-bit 15
+
+	#TODO verify if sequence is < number of params, requires to decode signature (4)
+
+	#ordering
+	valid offset table-row ( 8 0 ) + 2 set-ushort 0
+	invalid offset table-row ( 8 0 ) + 2 set-ushort 2
+	invalid offset table-row ( 8 1 ) + 2 set-ushort 1
+
+	
+	#if HasDefault = 1 then there must be a row in the constant table (6)
+	#param 2 doesn't have a default
+	invalid offset table-row ( 8 2 ) or-ushort 0x1000
+
+	#if HasDefault = 0 then there must be no row in the constant table (7)
+	#param 0 have a default
+	invalid offset table-row ( 8 0 ) set-ushort 0x000
+
+	#if FieldMarshal = 1 the there must be a row in the FieldMarshal table
+	invalid offset table-row ( 8 1 ) set-ushort 0x2000
+
+	invalid offset table-row ( 8 1 ) + 4 set-ushort 0x99999
+	#ok to be empty
+	valid offset table-row ( 8 1 ) + 4 set-ushort 0
+}
 

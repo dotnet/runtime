@@ -42,6 +42,13 @@ public class ClassWithCCtor
 	}
 }
 
+public class MethodWithLostsOfParams
+{
+	static void Foo(int a, int b, int c) {}
+	static void Foo2(int a, int b, int c) {}
+	static void Foo3(int a, int b, int c) {}
+}
+
 public class LastClass
 {
 	public static void Main ()

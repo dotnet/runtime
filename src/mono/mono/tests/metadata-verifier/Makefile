@@ -13,6 +13,9 @@ assembly-with-complex-type.exe: assembly-with-complex-type.cs
 assembly-with-methods.exe: assembly-with-methods.cs
 	gmcs assembly-with-methods.cs
 
+assembly-with-params.exe: assembly-with-params.cs
+	gmcs assembly-with-params.cs
+
 gen-md-tests: gen-md-tests.c
 	gcc $(GLIB_CFLAGS) $(GLIB_LINK_FLAGS) -I../../../ gen-md-tests.c ../../mini/.libs/libmono.a -g -Wall -lpthread -lm -ldl -lrt -o gen-md-tests
 
@@ -40,7 +43,7 @@ cli-metadata-tests.ok: gen-md-tests cli-metadata-tests.md simple-assembly.exe
 	./gen-md-tests cli-metadata-tests.md
 	touch cli-metadata-tests.ok
 
-cli-tables-tests.ok: gen-md-tests cli-tables-tests.md simple-assembly.exe assembly-with-complex-type.exe assembly-with-methods.exe assembly-with-global-method.exe
+cli-tables-tests.ok: gen-md-tests cli-tables-tests.md simple-assembly.exe assembly-with-complex-type.exe assembly-with-methods.exe assembly-with-global-method.exe assembly-with-params.exe
 	./gen-md-tests cli-tables-tests.md
 	touch cli-tables-tests.ok
 

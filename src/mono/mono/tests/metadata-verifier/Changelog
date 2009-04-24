@@ -1,3 +1,14 @@
+2009-04-24 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* assembly-with-params.cs: New test file with all sort of param kinds.
+
+	* assembly-with-methods.cs: Added more stuff to test paramlist.
+
+	* Makefile: Add new dependencies.
+
+	* cli-tables-tests.md: Tests for methoddef's paramlist.
+	Tests for the param table.
+
 2009-04-23 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* assembly-with-methods.cs:
