@@ -3911,6 +3911,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\mono\metadata\metadata-verify.c"
+				>
+			</File>
+			<File
 				RelativePath="..\mono\metadata\metadata.c"
 				>
 				<FileConfiguration

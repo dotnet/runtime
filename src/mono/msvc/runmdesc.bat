@@ -8,11 +8,11 @@ if "%2" == "x64" goto x64
 goto error
 :x86
 echo Platform detected is x86...
-%1 cpu-x86.md cpu-x86.h x86_desc
+%1 cpu-x86.h x86_desc cpu-x86.md
 goto end
 :x64
 echo Platform detected is x64...
-%1 cpu-amd64.md cpu-amd64.h amd64_desc
+%1 cpu-amd64.h amd64_desc cpu-amd64.md
 goto end
 :error
 echo Error: unsupported platform
