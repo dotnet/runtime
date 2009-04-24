@@ -3749,6 +3749,7 @@ ves_icall_Type_GetMethodsByName (MonoReflectionType *type, MonoString *name, gui
 		
 		res = mono_array_new_specific (array_vtable, 1);
 		mono_array_setref (res, 0, member);
+		g_free (mname);
 		return res;
 	}
 
