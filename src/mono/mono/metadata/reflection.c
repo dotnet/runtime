@@ -9086,18 +9086,19 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 
 	klass->generic_container->owner.klass = klass;
 	klass->generic_container->type_argc = count;
-	klass->generic_container->type_params = mono_image_alloc0 (klass->image, sizeof (MonoGenericParam) * count);
+	klass->generic_container->type_params = mono_image_alloc0 (klass->image, sizeof (MonoGenericParamFull) * count);
 
 	klass->is_generic = 1;
 
 	for (i = 0; i < count; i++) {
 		MonoReflectionGenericParam *gparam = mono_array_get (tb->generic_params, gpointer, i);
-		klass->generic_container->type_params [i] = *gparam->type.type->data.generic_param;
+		MonoGenericParamFull *param = (MonoGenericParamFull *) gparam->type.type->data.generic_param;
+		klass->generic_container->type_params [i] = *param;
 		/*Make sure we are a diferent type instance */
-		klass->generic_container->type_params [i].owner = klass->generic_container;
+		klass->generic_container->type_params [i].param.owner = klass->generic_container;
 		klass->generic_container->type_params [i].info.pklass = NULL;
 
-		g_assert (klass->generic_container->type_params [i].owner);
+		g_assert (klass->generic_container->type_params [i].param.owner);
 	}
 
 	klass->generic_container->context.class_inst = mono_get_shared_generic_inst (klass->generic_container);
@@ -9383,14 +9384,14 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			mono_method_set_generic_container (m, container);
 		}
 		container->type_argc = count;
-		container->type_params = image_g_new0 (image, MonoGenericParam, count);
+		container->type_params = image_g_new0 (image, MonoGenericParamFull, count);
 		container->owner.method = m;
 
 		for (i = 0; i < count; i++) {
 			MonoReflectionGenericParam *gp =
 				mono_array_get (rmb->generic_params, MonoReflectionGenericParam*, i);
-
-			container->type_params [i] = *gp->type.type->data.generic_param;
+			MonoGenericParamFull *param = (MonoGenericParamFull *) gp->type.type->data.generic_param;
+			container->type_params [i] = *param;
 		}
 
 		if (klass->generic_container) {
@@ -10387,13 +10388,13 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 void
 mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam)
 {
-	MonoGenericParam *param;
+	MonoGenericParamFull *param;
 	MonoImage *image;
 	MonoClass *pklass;
 
 	MONO_ARCH_SAVE_REGS;
 
-	param = g_new0 (MonoGenericParam, 1);
+	param = g_new0 (MonoGenericParamFull, 1);
 
 	if (gparam->mbuilder) {
 		if (!gparam->mbuilder->generic_container) {
@@ -10402,21 +10403,21 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 			gparam->mbuilder->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 			gparam->mbuilder->generic_container->is_method = TRUE;
 		}
-		param->owner = gparam->mbuilder->generic_container;
+		param->param.owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
 		if (!gparam->tbuilder->generic_container) {
 			MonoClass *klass = mono_class_from_mono_type (gparam->tbuilder->type.type);
 			gparam->tbuilder->generic_container = mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
 			gparam->tbuilder->generic_container->owner.klass = klass;
 		}
-		param->owner = gparam->tbuilder->generic_container;
+		param->param.owner = gparam->tbuilder->generic_container;
 	}
 
 	param->info.name = mono_string_to_utf8 (gparam->name);
-	param->num = gparam->index;
+	param->param.num = gparam->index;
 
 	image = &gparam->tbuilder->module->dynamic_image->image;
-	pklass = mono_class_from_generic_parameter (param, image, gparam->mbuilder != NULL);
+	pklass = mono_class_from_generic_parameter ((MonoGenericParam *) param, image, gparam->mbuilder != NULL);
 
 	gparam->type.type = &pklass->byval_arg;
 

@@ -2619,8 +2619,6 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 		MonoGenericParam *param;
 
 		param = mono_image_alloc0 (m, sizeof (MonoGenericParam));
-		param->info.name = mono_image_alloc0 (m, 8);
-		sprintf ((char*)param->info.name, "%d", index);
 		param->num = index;
 		param->image = m;
 
@@ -5214,7 +5212,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	guint32 cols [MONO_GENERICPARAM_SIZE];
 	guint32 i, owner = 0, n;
 	MonoGenericContainer *container;
-	MonoGenericParam *params;
+	MonoGenericParamFull *params;
 	MonoGenericContext *context;
 
 	if (!(i = mono_metadata_get_generic_param_row (image, token, &owner)))
@@ -5225,14 +5223,14 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	container = mono_image_alloc0 (image, sizeof (MonoGenericContainer));
 	do {
 		n++;
-		params = g_realloc (params, sizeof (MonoGenericParam) * n);
-		memset (&params [n - 1], 0, sizeof (MonoGenericParam));
-		params [n - 1].owner = container;
-		params [n - 1].num = cols [MONO_GENERICPARAM_NUMBER];
+		params = g_realloc (params, sizeof (MonoGenericParamFull) * n);
+		memset (&params [n - 1], 0, sizeof (MonoGenericParamFull));
+		params [n - 1].param.owner = container;
+		params [n - 1].param.num = cols [MONO_GENERICPARAM_NUMBER];
 		params [n - 1].info.token = i | MONO_TOKEN_GENERIC_PARAM;
 		params [n - 1].info.flags = cols [MONO_GENERICPARAM_FLAGS];
 		params [n - 1].info.name = mono_metadata_string_heap (image, cols [MONO_GENERICPARAM_NAME]);
-		if (params [n - 1].num != n - 1)
+		if (params [n - 1].param.num != n - 1)
 			g_warning ("GenericParam table unsorted or hole in generic param sequence: token %d", i);
 		if (++i > tdef->rows)
 			break;
@@ -5240,8 +5238,8 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	} while (cols [MONO_GENERICPARAM_OWNER] == owner);
 
 	container->type_argc = n;
-	container->type_params = mono_image_alloc0 (image, sizeof (MonoGenericParam) * n);
-	memcpy (container->type_params, params, sizeof (MonoGenericParam) * n);
+	container->type_params = mono_image_alloc0 (image, sizeof (MonoGenericParamFull) * n);
+	memcpy (container->type_params, params, sizeof (MonoGenericParamFull) * n);
 	g_free (params);
 	container->parent = parent_container;
 

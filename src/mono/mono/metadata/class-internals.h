@@ -516,6 +516,30 @@ struct _MonoDynamicGenericClass {
 };
 
 /*
+ * A type parameter.
+ */
+struct _MonoGenericParam {
+	MonoGenericContainer *owner;	/* Type or method this parameter was defined in. */
+	guint16 num;
+	/* If owner is NULL, this is the image whose mempool this struct was allocated from */
+	MonoImage *image;
+};
+
+/* Additional details about a MonoGenericParam */
+typedef struct {
+	MonoClass *pklass;		/* The corresponding `MonoClass'. */
+	const char *name;
+	guint16 flags;
+	guint32 token;
+	MonoClass** constraints; /* NULL means end of list */
+} MonoGenericParamInfo;
+
+typedef struct {
+	MonoGenericParam param;
+	MonoGenericParamInfo info;
+} MonoGenericParamFull;
+
+/*
  * The generic container.
  *
  * Stores the type parameters of a generic type definition or a generic method definition.
@@ -535,36 +559,15 @@ struct _MonoGenericContainer {
 	/* Invariant: parent != NULL => is_method */
 	int is_method    : 1;
 	/* Our type parameters. */
-	MonoGenericParam *type_params;
+	MonoGenericParamFull *type_params;
 };
 
-#define mono_generic_container_get_param(gc, i) ((gc)->type_params + (i))
-#define mono_generic_container_get_param_info(gc, i) (mono_generic_param_info ((gc)->type_params + (i)))
-
-/* Additional details about a MonoGenericParam */
-typedef struct {
-	MonoClass *pklass;		/* The corresponding `MonoClass'. */
-	const char *name;
-	guint16 flags;
-	guint32 token;
-	MonoClass** constraints; /* NULL means end of list */
-} MonoGenericParamInfo;
-
-/*
- * A type parameter.
- */
-struct _MonoGenericParam {
-	MonoGenericContainer *owner;	/* Type or method this parameter was defined in. */
-	guint16 num;
-	/* If owner is NULL, this is the image whose mempool this struct was allocated from */
-	MonoImage *image;
-
-	MonoGenericParamInfo info;
-};
+#define mono_generic_container_get_param(gc, i) ((MonoGenericParam *) ((gc)->type_params + (i)))
+#define mono_generic_container_get_param_info(gc, i) (&((gc)->type_params + (i))->info)
 
 #define mono_generic_param_owner(p)		((p)->owner)
 #define mono_generic_param_num(p)		((p)->num)
-#define mono_generic_param_info(p)		(&(p)->info)
+#define mono_generic_param_info(p)		(mono_generic_param_owner (p) ? &((MonoGenericParamFull *) p)->info : NULL)
 #define mono_type_get_generic_param_owner(t)	(mono_generic_param_owner ((t)->data.generic_param))
 #define mono_type_get_generic_param_num(t)	(mono_generic_param_num   ((t)->data.generic_param))
 
