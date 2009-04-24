@@ -977,6 +977,15 @@ typedef_is_system_object (VerifyContext *ctx, guint32 *data)
 	return ctx->is_corlib && !string_cmp (ctx, "System", data [MONO_TYPEDEF_NAME]) && !string_cmp (ctx, "Object", data [MONO_TYPEDEF_NAMESPACE]);
 }
 
+static gboolean
+is_valid_field_signature (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return blob.size >= 2 && blob.size - 2 >= offset;
+
+}
+
 static void
 verify_module_table (VerifyContext *ctx)
 {
@@ -1101,9 +1110,15 @@ static void
 verify_field_table (VerifyContext *ctx)
 {
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_FIELD];
-	guint32 data [MONO_FIELD_SIZE], flags;
+	guint32 data [MONO_FIELD_SIZE], flags, module_field_list;
 	int i;
 
+	module_field_list = (guint32)-1;
+	if (ctx->image->tables [MONO_TABLE_TYPEDEF].rows > 1) {
+		MonoTableInfo *type = &ctx->image->tables [MONO_TABLE_TYPEDEF];
+		module_field_list = mono_metadata_decode_row_col (type, 1, MONO_TYPEDEF_FIELD_LIST);
+	}
+	
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, data, MONO_FIELD_SIZE);
 		flags = data [MONO_FIELD_FLAGS];
@@ -1131,6 +1146,10 @@ verify_field_table (VerifyContext *ctx)
 				search_sorted_table (ctx, MONO_TABLE_CONSTANT, MONO_CONSTANT_PARENT, make_coded_token (HAS_CONSTANT_DESC, MONO_TABLE_FIELD, i)) == -1)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d has Default but there is no corresponding row in the Constant table", i));
 
+		if ((flags & FIELD_ATTRIBUTE_LITERAL) &&
+				search_sorted_table (ctx, MONO_TABLE_CONSTANT, MONO_CONSTANT_PARENT, make_coded_token (HAS_CONSTANT_DESC, MONO_TABLE_FIELD, i)) == -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d is Literal but there is no corresponding row in the Constant table", i));
+
 		if ((flags & FIELD_ATTRIBUTE_HAS_FIELD_RVA) &&
 				search_sorted_table (ctx, MONO_TABLE_FIELDRVA, MONO_FIELD_RVA_FIELD, i + 1) == -1)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d has Default but there is no corresponding row in the Constant table", i));
@@ -1138,6 +1157,17 @@ verify_field_table (VerifyContext *ctx)
 		if (!data [MONO_FIELD_NAME] || !is_valid_non_empty_string (ctx, data [MONO_FIELD_NAME]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid name token %08x", i, data [MONO_FIELD_NAME]));
 
+		//TODO verify contant flag
+		if (!data [MONO_FIELD_SIGNATURE] || !is_valid_field_signature (ctx, data [MONO_FIELD_SIGNATURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d invalid signature token %08x", i, data [MONO_FIELD_SIGNATURE]));
+
+		if (i + 1 < module_field_list) {
+			guint32 access = flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK;
+			if (!(flags & FIELD_ATTRIBUTE_STATIC))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d is a global variable but is not static", i));
+			if (access != FIELD_ATTRIBUTE_COMPILER_CONTROLLED && access != FIELD_ATTRIBUTE_PRIVATE && access != FIELD_ATTRIBUTE_PUBLIC)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid field row %d is a global variable but have wrong visibility %x", i, access));
+		}
 	}
 }
 
