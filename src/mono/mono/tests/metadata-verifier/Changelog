@@ -1,5 +1,16 @@
 2009-04-23 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* assembly-with-methods.cs:
+	* assembly-with-global-method.il: New test files with a global method.
+
+	* assembly-with-complex-type.cs: Add more types and methods to be used generating tests.
+
+	* cli-tables-tests.md: Tests for the methoddef table.
+	
+	* Makefile: Add new dependencies.
+
+2009-04-23 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* gen-md-tests.c: Add read.ushort.
 
 2009-04-22 Rodrigo Kumpera  <rkumpera@novell.com>

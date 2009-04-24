@@ -281,7 +281,176 @@ field-table {
 	#LAMESPEC this check is missing from the spec
 	invalid offset table-row ( 4 0 ) or-ushort 0x50
 
-	#TODO test enum condition and signature content
+	#TODO enum and signature content
+}
+
+methoddef-table {
+	assembly assembly-with-methods.exe
+
+	#bad implflags (3)
+	#unused bits 4,5,6,8,9,10,11,15
+	#LAMEIMPL MS doesn't check invalid bits  6,8,9,10,11,13,14,15
+	invalid offset table-row ( 6 0 ) + 4 set-bit 6
+	invalid offset table-row ( 6 0 ) + 4 set-bit 8
+	invalid offset table-row ( 6 0 ) + 4 set-bit 9
+	invalid offset table-row ( 6 0 ) + 4 set-bit 10
+	invalid offset table-row ( 6 0 ) + 4 set-bit 11
+	invalid offset table-row ( 6 0 ) + 4 set-bit 13
+	invalid offset table-row ( 6 0 ) + 4 set-bit 14
+	invalid offset table-row ( 6 0 ) + 4 set-bit 15
+
+	#bad flags (4)
+	#no unused bits
+	
+	#invalid .ctor with generic params and specialname (6)
+	#method 0 is a .ctor, method 1 is generic
+	invalid offset table-row ( 6 1 ) + 6 or-ushort 0x1800 , offset table-row ( 6 1 ) + 8 set-ushort read.ushort ( table-row ( 6 0 ) + 8 )
+
+	#visibility 0x7 is invalid (6)
+	invalid offset table-row ( 6 0 ) + 6 or-ushort 0x7
+
+	#Invalid combination of flags (7)
+	#static + final
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0030
+	#static + virtual
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0050
+	#static + newslot
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0110
+	#final + abstract
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0420
+	#abstract + pinvokeimpl
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x2400
+
+	#LAMEIMPL MS doesn't care about this
+	#compilercontrolled | specialname
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0800
+
+	#LAMEIMPL MS doesn't care about this
+	#compilercontrolled | rtspecialname
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x1800
+
+	#Abstract method must be virtual (8)
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0400
+
+	#A rtspecialnamemethod must be special name (9)
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x1000
+
+	#XXX we don't care about CAS security (10, 11,12,13)
+
+	#name shall be non empty (14)
+	invalid offset table-row ( 6 2 ) + 8 set-ushort 0
+	invalid offset table-row ( 6 2 ) + 8 set-ushort 0x9999
+
+	#Interface cannot have .ctors (15)
+	#method 3 belongs to an inteface
+	invalid offset table-row ( 6 3 ) + 8 set-ushort read.ushort ( table-row ( 6 0 ) + 8 )
+	#Interfacre methods can't be static 
+	invalid offset table-row ( 6 3 ) + 6 or-ushort 0x0010 
+
+	#XXX we don't care about CLS names (17)
+
+	#signature shall be good (18)
+	invalid offset table-row ( 6 2 ) + 10 set-ushort 0x9999
+
+	#TODO type kind check for valuetypes (21)
+	#TODO implement duplicate detection (22)
+
+	#if (final,newslot or stric) then it must be virtual (24)
+	#final
+	valid offset table-row ( 6 2 ) + 6 set-ushort 0x0060
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0020
+
+	#newslot
+	valid offset table-row ( 6 2 ) + 6 set-ushort 0x0140
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0100
+
+	#strict
+	valid offset table-row ( 6 2 ) + 6 set-ushort 0x0240
+	invalid offset table-row ( 6 2 ) + 6 set-ushort 0x0200
+
+	#if pinvoke then it must not be virtual (25)
+	#this is a pretty stupid test as all pinvokes must be static, which disallows virtual
+	#method 5 is a pinvoke
+	invalid offset table-row ( 6 5 ) + 6 or-ushort 0x0040
+
+	#if !abstract then only one of: rva != 0, pinvoke or implruntime (26)
+	#pinvoke with rva != 0
+	invalid offset table-row ( 6 5 ) set-uint read.uint ( table-row ( 6 2 ) )
+
+	#pinvoke with runtime
+	#LAMEIMPL/SPEC either MS ignores it or the spec is ill defined 
+	#invalid offset table-row ( 6 5 ) + 4 or-ushort 0x1000
+
+	#if compilercontroled (0x0) it must have an RVA or a pinvoke
+	#let's change method 3 which is part of an interface
+	invalid offset table-row ( 6 3 ) + 6 set-ushort 0x05c0
+
+	#TODO check signature (28,29,30,31,32,33)
+
+	#if RVA = 0 then one of (abstract, runtime, pinvoke) (34)
+	#let's test with an abstract class, method 6 is abstract and belongs to one.
+	invalid offset table-row ( 6 7 ) + 6 set-ushort 0x0006
+	#icall 
+	valid offset table-row ( 6 7 ) + 6 set-ushort 0x01c6 , offset table-row ( 6 7 ) + 4 or-ushort 0x1000
+
+	#if rva != 0 then abstract == 0 and codetypemask must be (native,cil,runtime) and rva shall be valid  (35)
+	#rva != 0 and abstract == 0
+	invalid offset table-row ( 6 2 ) + 6 or-ushort 0x0400
+	#rva != 0 and codetypemask == OPTIL
+	invalid offset table-row ( 6 2 ) + 4 set-ushort 0x0002
+	#invalid rva
+	invalid offset table-row ( 6 2 ) set-uint 0x999999
+
+	#if pinvoke the rva == 0 and has a row in implmap (36)
+	#method 5 is a pinvoke
+	#pinvoke with rva !=0
+	invalid offset table-row ( 6 5 ) set-uint 0x20f8
+	#pinvoke without an implmap row
+	invalid offset table-row ( 0x1C 0 ) + 2 set-ushort 0xF
+
+	#if rtspecialname = 1 then name must be: .ctor and .cctor (37)
+	#is not .ctor or .cctor
+	invalid offset table-row ( 6 2 ) + 6 or-ushort 0x1800
+
+	#.ctor or .cctor without rtspecialname (38)
+	#method 9 is .ctor method 10 is .cctor
+	invalid offset table-row ( 6 9 ) + 6 set-ushort 0x0006
+	invalid offset table-row ( 6 10 ) + 6 set-ushort 0x0016
+
+	#TODO do all .ctor and .cctor valdiation (39, 40)
+	#TODO verify paramlist table (similar to typedef methodlist)
+}
+
+methoddef-table-global-methods {
+	assembly assembly-with-global-method.exe
+
+	#checks for methods owned by <module> (20)
+	
+	#static + public
+	valid offset table-row ( 6 0 ) + 6 set-ushort 0x0010
+	#static + private
+	valid offset table-row ( 6 0 ) + 6 set-ushort 0x0011
+	#static + compiler controled
+	valid offset table-row ( 6 0 ) + 6 set-ushort 0x0016
+
+	#must be static
+	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0006
+
+	#must not be abstract
+	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0416
+
+	#must not be virtual
+	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0056
+
+	#can only be compiler controled, public or private
+	#which leaves out: famandassem assem family famorassem
+	#LAMEIMPL MS doesn't care about those bits.
+	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0012
+	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0013
+	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0014
+	invalid offset table-row ( 6 0 ) + 6 set-ushort 0x0015
 
 }
+
+
 
