@@ -38,7 +38,8 @@
  TODO verify in the CLI header entry point and resources
  TODO implement null token typeref validation  
  TODO verify table wide invariants for typedef (sorting and uniqueness)
- TODO implement proper authenticode data directory validation 
+ TODO implement proper authenticode data directory validation
+ TODO verify properties that require multiple tables to be valid 
  FIXME use subtraction based bounds checking to avoid overflows
  FIXME get rid of metadata_streams and other fields from VerifyContext
 */
@@ -50,6 +51,7 @@
 #endif
 
 #define INVALID_OFFSET ((guint32)-1)
+#define INVALID_ADDRESS 0xffffffff
 
 enum {
 	STAGE_PE,
@@ -962,13 +964,20 @@ search_sorted_table (VerifyContext *ctx, int table, int column, guint32 coded_to
 }
 
 /*WARNING: This function doesn't verify if the strings @offset points to a valid string*/
+static const char*
+get_string_ptr (VerifyContext *ctx, guint offset)
+{
+	return ctx->image->heap_strings.data + offset;
+}
+
+/*WARNING: This function doesn't verify if the strings @offset points to a valid string*/
 static int
 string_cmp (VerifyContext *ctx, const char *str, guint offset)
 {
 	if (offset == 0)
 		return strcmp (str, "");
 
-	return strcmp (str, ctx->image->heap_strings.data + offset);
+	return strcmp (str, get_string_ptr (ctx, offset));
 }
 
 static gboolean
@@ -983,7 +992,21 @@ is_valid_field_signature (VerifyContext *ctx, guint32 offset)
 	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
 	//TODO do proper verification
 	return blob.size >= 2 && blob.size - 2 >= offset;
+}
 
+static gboolean
+is_valid_method_signature (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return blob.size >= 2 && blob.size - 2 >= offset;
+}
+
+static gboolean
+is_valid_method_header (VerifyContext *ctx, guint32 rva)
+{
+	//TODO do proper method header validation
+	return mono_cli_rva_image_map (ctx->image, rva) != INVALID_ADDRESS;
 }
 
 static void
@@ -1171,6 +1194,122 @@ verify_field_table (VerifyContext *ctx)
 	}
 }
 
+/*bits 6,8,9,10,11,13,14,15*/
+#define INVALID_METHOD_IMPLFLAG_BITS ((1 << 6) | (1 << 8) | (1 << 9) | (1 << 10) | (1 << 11) | (1 << 13) | (1 << 14) | (1 << 15))
+static void
+verify_method_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_METHOD];
+	guint32 data [MONO_METHOD_SIZE], flags, implflags, rva, module_method_list, access;
+	gboolean is_ctor, is_cctor;
+	const char *name;
+	int i;
+
+	module_method_list = (guint32)-1;
+	if (ctx->image->tables [MONO_TABLE_TYPEDEF].rows > 1) {
+		MonoTableInfo *type = &ctx->image->tables [MONO_TABLE_TYPEDEF];
+		module_method_list = mono_metadata_decode_row_col (type, 1, MONO_TYPEDEF_METHOD_LIST);
+	}
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_METHOD_SIZE);
+		rva = data [MONO_METHOD_RVA];
+		implflags = data [MONO_METHOD_IMPLFLAGS];
+		flags = data [MONO_METHOD_FLAGS];
+		access = flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
+
+		if (implflags & INVALID_METHOD_IMPLFLAG_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid implflags field 0x%08x", i, implflags));
+
+		if (access == 0x7)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid MemberAccessMask 0x7", i));
+
+		if (!data [MONO_METHOD_NAME] || !is_valid_non_empty_string (ctx, data [MONO_METHOD_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid name field 0x%08x", i, data [MONO_METHOD_NAME]));
+
+		name = get_string_ptr (ctx, data [MONO_METHOD_NAME]);
+		is_ctor = !strcmp (".ctor", name);
+		is_cctor = !strcmp (".cctor", name);
+
+		if ((is_ctor || is_cctor) &&
+			search_sorted_table (ctx, MONO_TABLE_GENERICPARAM, MONO_GENERICPARAM_OWNER, make_coded_token (TYPE_OR_METHODDEF_DESC, MONO_TABLE_METHOD, i)) != -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d .ctor or .cctor has generic param", i));
+
+		if ((flags & METHOD_ATTRIBUTE_STATIC) && (flags & (METHOD_ATTRIBUTE_FINAL | METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_NEW_SLOT)))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is static and (final, virtual or new slot)", i));
+		
+		if (flags & METHOD_ATTRIBUTE_ABSTRACT) {
+			if (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is Abstract and PinvokeImpl", i));
+			if (!(flags & METHOD_ATTRIBUTE_VIRTUAL))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is Abstract but not Virtual", i));
+		}
+
+		if (access == METHOD_ATTRIBUTE_COMPILER_CONTROLLED && (flags & (METHOD_ATTRIBUTE_RT_SPECIAL_NAME | METHOD_ATTRIBUTE_SPECIAL_NAME)))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is CompileControlled and SpecialName or RtSpecialName", i));
+
+		if ((flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME) && !(flags & METHOD_ATTRIBUTE_SPECIAL_NAME))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is RTSpecialName but not SpecialName", i));
+
+		//XXX no checks against cas stuff 10,11,12,13)
+
+		//TODO check iface with .ctor (15,16)
+
+		if (!data [MONO_METHOD_SIGNATURE] || !is_valid_method_signature (ctx, data [MONO_METHOD_SIGNATURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d invalid signature token %08x", i, data [MONO_METHOD_SIGNATURE]));
+
+		if (i + 1 < module_method_list) {
+			if (!(flags & METHOD_ATTRIBUTE_STATIC))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is a global method but not Static", i));
+			if (flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_VIRTUAL))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is a global method but is Abstract or Virtual", i));
+			if (!(access == METHOD_ATTRIBUTE_COMPILER_CONTROLLED || access == METHOD_ATTRIBUTE_PUBLIC || access == METHOD_ATTRIBUTE_PRIVATE))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is a global method but not CompilerControled, Public or Private", i));
+		}
+
+		//TODO check valuetype for synchronized
+
+		if ((flags & (METHOD_ATTRIBUTE_FINAL | METHOD_ATTRIBUTE_NEW_SLOT | METHOD_ATTRIBUTE_STRICT)) && !(flags & METHOD_ATTRIBUTE_VIRTUAL))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is (Final, NewSlot or Strict) but not Virtual", i));
+
+		if ((flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && (flags & METHOD_ATTRIBUTE_VIRTUAL))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is PinvokeImpl and Virtual", i));
+
+		if (!(flags & METHOD_ATTRIBUTE_ABSTRACT) && !rva && !(flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) && !(implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is not Abstract and neither PinvokeImpl, InternalCall or with RVA != 0", i));
+
+		if (access == METHOD_ATTRIBUTE_COMPILER_CONTROLLED && !(rva || (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is CompilerControlled but neither RVA != 0 or PinvokeImpl", i));
+
+		//TODO check signature contents
+
+		if (rva) {
+			if (flags & METHOD_ATTRIBUTE_ABSTRACT)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is Abstract", i));
+			if ((implflags & METHOD_IMPL_ATTRIBUTE_CODE_TYPE_MASK) == METHOD_IMPL_ATTRIBUTE_OPTIL)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA != 0 but is CodeTypeMask is neither Native, CIL or Runtime", i));
+			if (!is_valid_method_header (ctx, rva))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d RVA points to an invalid method header", i));
+		} else {
+			if (!(flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_PINVOKE_IMPL)) && !(implflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d has RVA = 0 but neither Abstract, InternalCall or PinvokeImpl", i));
+		}
+
+		if ((flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
+			if (rva)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is PinvokeImpl but has RVA != 0", i));
+			if (search_sorted_table (ctx, MONO_TABLE_IMPLMAP, MONO_IMPLMAP_MEMBER, make_coded_token (MEMBER_FORWARDED_DESC, MONO_TABLE_METHOD, i)) == -1)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is PinvokeImpl but has no row in the ImplMap table", i));
+		}
+		if (flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME && !is_ctor && !is_cctor)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is RtSpecialName but not named .ctor or .cctor", i));
+
+		if ((is_ctor || is_cctor) && !(flags & METHOD_ATTRIBUTE_RT_SPECIAL_NAME))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid method row %d is named .ctor or .cctor but is not RtSpecialName", i));
+		printf ("is ctor %d is_cctor %d -- %s\n", is_ctor, is_cctor, name);
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -1203,6 +1342,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_typedef_table (ctx);
 	CHECK_ERROR ();
 	verify_field_table (ctx);
+	CHECK_ERROR ();
+	verify_method_table (ctx);
 }
 
 static gboolean
