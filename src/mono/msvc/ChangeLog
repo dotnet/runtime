@@ -1,5 +1,16 @@
 2009-04-24  Bill Holmes  <billholmes54@gmail.com>
 
+	Fixing the glib targets for Winx64.
+
+	* libmono.vcproj, mono.vcproj: Correcting the ProgramDatabaseFile
+	  value for the Winx64 glib build.
+
+	* mono.sln: Enabling the glib targets for Winx64.
+
+	Code is contributed under MIT/X11 license.
+
+2009-04-24  Bill Holmes  <billholmes54@gmail.com>
+
 	* libmono.vcproj: Adding metadata/metadata-verify.c to the project.
 
 	* runmdesc.bat: Fixing the argument order to genmdesc.

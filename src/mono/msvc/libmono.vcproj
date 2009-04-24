@@ -341,6 +341,7 @@
 				AdditionalLibraryDirectories="&quot;$(PlatformName)_$(ConfigurationName)/lib&quot;;&quot;$(MONO_DEPENDENCIES_PREFIX)\lib&quot;"
 				ModuleDefinitionFile="mono.def"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(TargetDir)libmono.pdb"
 				ImportLibrary="$(PlatformName)_$(ConfigurationName)/lib/$(TargetName).lib"
 				TargetMachine="17"
 			/>
