@@ -399,6 +399,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	MonoClass *adclass;
 	MonoAppDomain *ad;
 	MonoDomain *data;
+	char *shadow_location;
 	
 	MONO_ARCH_SAVE_REGS;
 
@@ -429,7 +430,9 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	
 	add_assemblies_to_domain (data, mono_defaults.corlib->assembly, NULL);
 
-	mono_debugger_event_create_appdomain (data, get_shadow_assembly_location_base (data));
+	shadow_location = get_shadow_assembly_location_base (data);
+	mono_debugger_event_create_appdomain (data, shadow_location);
+	g_free (shadow_location);
 
 	return ad;
 }
@@ -1158,6 +1161,9 @@ get_cstring_hash (const char *str)
 	return h;
 }
 
+/*
+ * Returned memory is malloc'd. Called must free it 
+ */
 static char *
 get_shadow_assembly_location_base (MonoDomain *domain)
 {
