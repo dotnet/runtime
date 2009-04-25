@@ -2173,7 +2173,14 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	}
 #endif
 
+#ifdef ENABLE_LLVM
+	if (COMPILE_LLVM (cfg))
+		mono_llvm_emit_call (cfg, call);
+	else
+		mono_arch_emit_call (cfg, call);
+#else
 	mono_arch_emit_call (cfg, call);
+#endif
 
 	cfg->param_area = MAX (cfg->param_area, call->stack_usage);
 	cfg->flags |= MONO_CFG_HAS_CALLS;
@@ -3322,6 +3329,9 @@ handle_array_new (MonoCompile *cfg, int rank, MonoInst **sp, unsigned char *ip)
 	info = mono_get_array_new_va_icall (rank);
 
 	cfg->flags |= MONO_CFG_HAS_VARARGS;
+
+	/* mono_array_new_va () needs a vararg calling convention */
+	cfg->disable_llvm = TRUE;
 
 	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
 	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, sp);

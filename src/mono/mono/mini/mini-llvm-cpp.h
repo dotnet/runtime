@@ -25,6 +25,9 @@ LLVMExecutionEngineRef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb);
 
 void
+mono_llvm_dispose_ee (LLVMExecutionEngineRef ee);
+
+void
 mono_llvm_optimize_method (LLVMValueRef method);
 
 void

@@ -455,6 +455,28 @@ typedef struct MonoMemcpyArgs {
 	int size, align;
 } MonoMemcpyArgs;
 
+typedef enum {
+	LLVMArgNone,
+	LLVMArgInIReg,
+	LLVMArgInFPReg,
+	LLVMArgVtypeInReg,
+	LLVMArgVtypeByVal,
+	LLVMArgVtypeRetAddr /* On on cinfo->ret */
+} LLVMArgStorage;
+
+typedef struct {
+	LLVMArgStorage storage;
+
+	/* Only if storage == ArgValuetypeInReg */
+	LLVMArgStorage pair_storage [2];
+} LLVMArgInfo;
+
+typedef struct {
+	LLVMArgInfo ret;
+	/* args [0] is for the this argument if it exists */
+	LLVMArgInfo args [1];
+} LLVMCallInfo;
+
 #define MONO_MAX_SRC_REGS	3
 
 struct MonoInst {
@@ -539,6 +561,9 @@ struct MonoCallInst {
 	regmask_t used_fregs;
 	GSList *out_ireg_args;
 	GSList *out_freg_args;
+#ifdef ENABLE_LLVM
+	LLVMCallInfo *cinfo;
+#endif
 };
 
 struct MonoCallArgParm {
@@ -1368,7 +1393,11 @@ void     mono_save_trampoline_xdebug_info   (const char *tramp_name, guint8 *cod
 /* This is an exported function */
 void     mono_xdebug_emit                   (void) MONO_INTERNAL;
 
+/* LLVM backend */
+void     mono_llvm_init                     (void) MONO_INTERNAL;
+void     mono_llvm_cleanup                  (void) MONO_INTERNAL;
 void     mono_llvm_emit_method              (MonoCompile *cfg) MONO_INTERNAL;
+void     mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
 
 gboolean  mono_method_blittable             (MonoMethod *method) MONO_INTERNAL;
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee) MONO_INTERNAL;
@@ -1516,6 +1545,7 @@ MonoInst *mono_arch_emit_inst_for_method        (MonoCompile *cfg, MonoMethod *c
 void      mono_arch_decompose_opts              (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
 void      mono_arch_decompose_long_opts         (MonoCompile *cfg, MonoInst *ins) MONO_INTERNAL;
 GSList*   mono_arch_get_delegate_invoke_impls   (void) MONO_INTERNAL;
+LLVMCallInfo* mono_arch_get_llvm_call_info      (MonoCompile *cfg, MonoMethodSignature *sig) MONO_INTERNAL;
 
 MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain, 
 						 MonoJitTlsData *jit_tls, 

@@ -389,15 +389,16 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 
 static void
 add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
-	       gboolean is_return,
-	       guint32 *gr, guint32 *fr, guint32 *stack_size)
+			   gboolean is_return,
+			   guint32 *gr, guint32 *fr, guint32 *stack_size)
 {
 	guint32 size, quad, nquads, i;
 	ArgumentClass args [2];
 	MonoMarshalType *info = NULL;
 	MonoClass *klass;
 	MonoGenericSharingContext tmp_gsctx;
-
+	gboolean pass_on_stack = FALSE;
+	
 	/* 
 	 * The gsctx currently contains no data, it is only used for checking whenever
 	 * open types are allowed, some callers like mono_arch_get_argument_info ()
@@ -412,9 +413,15 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	if (!sig->pinvoke && !disable_vtypes_in_regs && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
 		/* We pass and return vtypes of size 8 in a register */
 	} else if (!sig->pinvoke || (size == 0) || (size > 16)) {
+		pass_on_stack = TRUE;
+	}
 #else
 	if (!sig->pinvoke) {
+		pass_on_stack = TRUE;
+	}
 #endif
+
+	if (pass_on_stack) {
 		/* Allways pass in memory */
 		ainfo->offset = *stack_size;
 		*stack_size += ALIGN_TO (size, 8);
@@ -1597,6 +1604,108 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MONO_ADD_INS (cfg->cbb, arg);
 }
 
+static inline LLVMArgStorage
+arg_storage_to_llvm_arg_storage (MonoCompile *cfg, ArgStorage storage)
+{
+	switch (storage) {
+	case ArgInIReg:
+		return LLVMArgInIReg;
+	case ArgNone:
+		return LLVMArgNone;
+	default:
+		g_assert_not_reached ();
+		return LLVMArgNone;
+	}
+}
+
+#ifdef ENABLE_LLVM
+LLVMCallInfo*
+mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
+{
+	int i, n;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	int j;
+	LLVMCallInfo *linfo;
+
+	n = sig->param_count + sig->hasthis;
+
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, sig->pinvoke);
+
+	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
+
+	/*
+	 * LLVM always uses the native ABI while we use our own ABI, the
+	 * only difference is the handling of vtypes:
+	 * - we only pass/receive them in registers in some cases, and only 
+	 *   in 1 or 2 integer registers.
+	 */
+	if (cinfo->ret.storage == ArgValuetypeInReg) {
+		if (sig->pinvoke) {
+			cfg->exception_message = g_strdup ("pinvoke + vtypes");
+			cfg->disable_llvm = TRUE;
+			return linfo;
+		}
+
+		linfo->ret.storage = LLVMArgVtypeInReg;
+		for (j = 0; j < 2; ++j)
+			linfo->ret.pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, cinfo->ret.pair_storage [j]);
+	}
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage == ArgInIReg) {
+		/* Vtype returned using a hidden argument */
+		linfo->ret.storage = LLVMArgVtypeRetAddr;
+	}
+
+	for (i = 0; i < n; ++i) {
+		ainfo = cinfo->args + i;
+
+		linfo->args [i].storage = LLVMArgNone;
+
+		switch (ainfo->storage) {
+		case ArgInIReg:
+			linfo->args [i].storage = LLVMArgInIReg;
+			break;
+		case ArgInDoubleSSEReg:
+		case ArgInFloatSSEReg:
+			linfo->args [i].storage = LLVMArgInFPReg;
+			break;
+		case ArgOnStack:
+			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
+				linfo->args [i].storage = LLVMArgVtypeByVal;
+			} else {
+				linfo->args [i].storage = LLVMArgInIReg;
+				if (!sig->params [i - sig->hasthis]->byref) {
+					if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R4) {
+						linfo->args [i].storage = LLVMArgInFPReg;
+					} else if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8) {
+						linfo->args [i].storage = LLVMArgInFPReg;
+					}
+				}
+			}
+			break;
+		case ArgValuetypeInReg:
+			if (sig->pinvoke) {
+				cfg->exception_message = g_strdup ("pinvoke + vtypes");
+				cfg->disable_llvm = TRUE;
+				return linfo;
+			}
+
+			linfo->args [i].storage = LLVMArgVtypeInReg;
+			for (j = 0; j < 2; ++j)
+				linfo->args [i].pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, ainfo->pair_storage [j]);
+			break;
+		default:
+			cfg->exception_message = g_strdup ("ainfo->storage");
+			cfg->disable_llvm = TRUE;
+			break;
+		}
+	}
+
+	return linfo;
+}
+#endif
+
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
@@ -1614,47 +1723,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, sig->pinvoke);
 
 	if (COMPILE_LLVM (cfg)) {
-		for (i = 0; i < n; ++i) {
-			MonoInst *ins;
-
-			ainfo = cinfo->args + i;
-
-			in = call->args [i];
-
-			/* Simply remember the arguments */
-			switch (ainfo->storage) {
-			case ArgInIReg:
-				MONO_INST_NEW (cfg, ins, OP_MOVE);
-				ins->dreg = mono_alloc_ireg (cfg);
-				ins->sreg1 = in->dreg;
-				break;
-			case ArgInDoubleSSEReg:
-			case ArgInFloatSSEReg:
-				MONO_INST_NEW (cfg, ins, OP_FMOVE);
-				ins->dreg = mono_alloc_freg (cfg);
-				ins->sreg1 = in->dreg;
-				break;
-			case ArgOnStack:
-				if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
-					cfg->exception_message = g_strdup ("vtype argument");
-					cfg->disable_llvm = TRUE;
-				} else {
-					MONO_INST_NEW (cfg, ins, OP_MOVE);
-					ins->dreg = mono_alloc_ireg (cfg);
-					ins->sreg1 = in->dreg;
-				}
-				break;
-			default:
-				cfg->exception_message = g_strdup ("ainfo->storage");
-				cfg->disable_llvm = TRUE;
-				return;
-			}
-
-			if (!cfg->disable_llvm) {
-				MONO_ADD_INS (cfg->cbb, ins);
-				mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, 0, FALSE);
-			}
-		}
+		/* We shouldn't be called in the llvm case */
+		cfg->disable_llvm = TRUE;
 		return;
 	}
 
@@ -1906,7 +1976,10 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 
 	if (!ret->byref) {
 		if (ret->type == MONO_TYPE_R4) {
-			MONO_EMIT_NEW_UNALU (cfg, OP_AMD64_SET_XMMREG_R4, cfg->ret->dreg, val->dreg);
+			if (COMPILE_LLVM (cfg))
+				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
+			else
+				MONO_EMIT_NEW_UNALU (cfg, OP_AMD64_SET_XMMREG_R4, cfg->ret->dreg, val->dreg);
 			return;
 		} else if (ret->type == MONO_TYPE_R8) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);

@@ -242,3 +242,11 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
   return wrap(EE);
 }
+
+void
+mono_llvm_dispose_ee (LLVMExecutionEngineRef ee)
+{
+	delete unwrap (ee);
+
+	delete fpm;
+}

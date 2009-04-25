@@ -1221,3 +1221,8 @@ MINI_OP(OP_HPPA_STORER4_RIGHT, "hppa_storer4_right", NONE, NONE, NONE)
 
 MINI_OP(OP_HPPA_SETF4REG, "hppa_setf4reg", NONE, NONE, NONE)
 #endif
+
+/* Same as OUTARG_VT, but has a dreg */
+#ifdef ENABLE_LLVM
+MINI_OP(OP_LLVM_OUTARG_VT,	"llvm_outarg_vt", IREG, VREG, NONE)
+#endif

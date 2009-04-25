@@ -3104,16 +3104,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			mono_stats.generics_unsharable_methods++;
 	}
 
-	if (strstr (method->name, "test_"))
-		try_llvm = TRUE;
-	else
-		try_llvm = FALSE;
-
 	try_llvm = TRUE;
-
-	/* No way to obtain the location info for 'this' */
-	if (try_generic_shared)
-		try_llvm = FALSE;
 
 #ifndef ENABLE_LLVM
 	try_llvm = FALSE;
@@ -3164,6 +3155,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	if (cfg->compile_aot && !try_generic_shared && (method->is_generic || method->klass->generic_container)) {
 		cfg->exception_type = MONO_EXCEPTION_GENERIC_SHARING_FAILED;
 		return cfg;
+	}
+
+	/* No way to obtain the location info for 'this' */
+	if (try_generic_shared) {
+		cfg->exception_message = g_strdup ("gshared");
+		cfg->disable_llvm = TRUE;
 	}
 
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
@@ -3542,7 +3539,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #ifdef MONO_ARCH_SOFT_FLOAT
 	mono_decompose_soft_float (cfg);
 #endif
-	mono_decompose_vtype_opts (cfg);
+	if (!COMPILE_LLVM (cfg))
+		mono_decompose_vtype_opts (cfg);
 	if (cfg->flags & MONO_CFG_HAS_ARRAY_ACCESS)
 		mono_decompose_array_access_opts (cfg);
 
@@ -4725,6 +4723,10 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_using_xdebug = TRUE;
 	}
 
+#ifdef ENABLE_LLVM
+	mono_llvm_init ();
+#endif
+
 	mono_trampolines_init ();
 
 	if (!g_thread_supported ())
@@ -5151,6 +5153,10 @@ mini_cleanup (MonoDomain *domain)
 	mono_domain_free (domain, TRUE);
 
 	mono_debugger_cleanup ();
+
+#ifdef ENABLE_LLVM
+	mono_llvm_cleanup ();
+#endif
 
 	mono_trampolines_cleanup ();
 
