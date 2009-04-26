@@ -1385,7 +1385,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				rel = mono_opcode_to_cond (ins->opcode);
 
-				cmp = LLVMBuildFCmp (builder, fpcond_to_llvm_cond [rel], lhs, rhs, get_tempname (ctx));
+				cmp = LLVMBuildFCmp (builder, fpcond_to_llvm_cond [rel], convert (ctx, lhs, LLVMDoubleType ()), convert (ctx, rhs, LLVMDoubleType ()), get_tempname (ctx));
 				values [ins->dreg] = LLVMBuildZExt (builder, cmp, LLVMInt32Type (), dname);
 				break;
 			}
@@ -1438,10 +1438,24 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				break;
 			}
 			case OP_MOVE:
-			case OP_FMOVE:
 				g_assert (lhs);
 				values [ins->dreg] = lhs;
 				break;
+			case OP_FMOVE: {
+				MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
+				
+				g_assert (lhs);
+				values [ins->dreg] = lhs;
+
+				if (var && var->klass->byval_arg.type == MONO_TYPE_R4) {
+					/* 
+					 * This is added by the spilling pass in case of the JIT,
+					 * but we have to do it ourselves.
+					 */
+					values [ins->dreg] = convert (ctx, values [ins->dreg], LLVMFloatType ());
+				}
+				break;
+			}
 			case OP_IADD:
 			case OP_ISUB:
 			case OP_IAND:
@@ -1882,6 +1896,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					callee = LLVMAddFunction (module, "", llvm_sig);
 
 					if (info) {
+						/*
 						MonoJumpInfo ji;
 
 						memset (&ji, 0, sizeof (ji));
@@ -1889,6 +1904,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 						ji.data.target = info->name;
 
 						target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, &ji, FALSE);
+						*/
+						target = (gpointer)mono_icall_get_wrapper (info);
 						LLVMAddGlobalMapping (ee, callee, target);
 					} else {
 						target = NULL;

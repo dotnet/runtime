@@ -536,6 +536,8 @@ mono_llvm_vcall_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *t
 
 	vt = this->vtable;
 
+	g_assert (!m->is_generic);
+
 	/* This is a simplified version of mono_magic_trampoline () */
 	/* FIXME: Avoid code duplication */
 

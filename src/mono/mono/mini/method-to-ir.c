@@ -6255,7 +6255,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Prevent inlining of methods that contain indirect calls */
 				INLINE_FAILURE;
 
-#if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK
+#if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK && !defined(ENABLE_LLVM)
 				if (cmethod->wrapper_type == MONO_WRAPPER_NONE && mono_use_imt) {
 					g_assert (!imt_arg);
 					if (context_used) {
