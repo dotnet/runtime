@@ -2222,4 +2222,42 @@ OK:
 		ret
 	}
 */
+
+	.field public static int32 shift1
+
+	.method public static int32 regress_497271_helper (int32 i) cil managed
+	{
+		ldarg.0
+		ret
+	}
+
+	.method public static int32 test_0_regalloc_regress_497271 () cil managed
+	{
+		.locals (int32 var)
+
+		ldc.i4	4
+		stsfld	int32 Tests::shift1
+		ldsfld	int32 Tests::shift1
+		stloc	var
+		ldc.i4	4660
+		ldloc	var
+		shr.un
+		ldc.i4	4660
+		ldc.i4	32
+		ldloc	var
+		sub
+		shl
+		or
+		ldc.i4	1073742115
+		beq	?L10
+?L9:
+		ldc.i4	1
+		call	int32 Tests::regress_497271_helper (int32)
+		ret
+?L10:
+		ldc.i4	0
+		call	int32 Tests::regress_497271_helper (int32)
+		ret
+	}
+		
 }

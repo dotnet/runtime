@@ -1226,7 +1226,19 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 						} else {
 							/* Argument already in hard reg, need to copy */
 							MonoInst *copy = create_copy_ins (cfg, bb, tmp, dest_sreg, val, NULL, ip, 0);
+							int k;
+
 							insert_before_ins (bb, ins, copy);
+							for (k = 0; k < num_sregs; ++k) {
+								if (k != j)
+									sreg_masks [k] &= ~ (regmask (dest_sreg));
+							}
+							/* 
+							 * Prevent the dreg from being allocate to dest_sreg 
+							 * too, since it could force sreg1 to be allocated to 
+							 * the same reg on x86.
+							 */
+							dreg_mask &= ~ (regmask (dest_sreg));
 						}
 					}
 				} else {
