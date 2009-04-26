@@ -25,7 +25,7 @@
 
 
 #define TRACE_ABC_REMOVAL (verbose_level > 2)
-#define REPORT_ABC_REMOVAL (verbose_level > 0)
+#define REPORT_ABC_REMOVAL (verbose_level > 1)
 
 /*
  * A little hack for the verbosity level.
