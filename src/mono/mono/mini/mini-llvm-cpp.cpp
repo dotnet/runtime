@@ -196,6 +196,13 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 	return wrap (unwrap (builder)->Insert (new AllocaInst(unwrap (Ty), unwrap (ArraySize), alignment), Name));
 }
 
+LLVMValueRef 
+mono_llvm_build_volatile_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+							   const char *Name)
+{
+	return wrap(unwrap(builder)->CreateLoad(unwrap(PointerVal), true, Name));
+}
+
 static cl::list<const PassInfo*, bool, PassNameParser>
 PassList(cl::desc("Optimizations available:"));
 

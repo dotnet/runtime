@@ -38,6 +38,10 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 						LLVMValueRef ArraySize,
 						int alignment, const char *Name);
 
+LLVMValueRef 
+mono_llvm_build_volatile_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+							   const char *Name);
+
 G_END_DECLS
 
 #endif /* __MONO_MINI_LLVM_CPP_H__ */  
