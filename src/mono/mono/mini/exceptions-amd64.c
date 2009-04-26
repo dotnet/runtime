@@ -613,6 +613,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~1);
 		}
 
+#ifndef MONO_AMD64_NO_PUSHES
 		/* Pop arguments off the stack */
 		{
 			MonoJitArgumentInfo *arg_info = g_newa (MonoJitArgumentInfo, mono_method_signature (ji->method)->param_count + 1);
@@ -620,6 +621,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 			guint32 stack_to_pop = mono_arch_get_argument_info (mono_method_signature (ji->method), mono_method_signature (ji->method)->param_count, arg_info);
 			new_ctx->rsp += stack_to_pop;
 		}
+#endif
 
 		return ji;
 	} else if (*lmf) {

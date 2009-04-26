@@ -142,7 +142,7 @@ typedef struct MonoCompileArch {
 	gint32 localloc_offset;
 	gint32 reg_save_area_offset;
 	gint32 stack_alloc_size;
-	gboolean omit_fp, omit_fp_computed;
+	gboolean omit_fp, omit_fp_computed, no_pushes;
 	gpointer cinfo;
 	gint32 async_point_count;
 	gpointer vret_addr_loc;
@@ -333,6 +333,10 @@ typedef struct {
 #endif
 
 #define MONO_ARCH_SUPPORT_TASKLETS 1
+
+#ifndef PLATFORM_WIN32
+#define MONO_AMD64_NO_PUSHES 1
+#endif
 
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)

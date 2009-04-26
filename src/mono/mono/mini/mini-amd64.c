@@ -1248,7 +1248,18 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	/*
 	 * We use the ABI calling conventions for managed code as well.
-	 * Exception: valuetypes are never passed or returned in registers.
+	 * Exception: valuetypes are only sometimes passed or returned in registers.
+	 */
+
+	/*
+	 * The stack looks like this:
+	 * <incoming arguments passed on the stack>
+	 * <return value>
+	 * <lmf/caller saved registers>
+	 * <locals>
+	 * <spill area>
+	 * <localloc area>  -> grows dynamically
+	 * <params area>
 	 */
 
 	if (cfg->arch.omit_fp) {
@@ -1263,8 +1274,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	if (cfg->method->save_lmf) {
 		/* Reserve stack space for saving LMF */
-		/* mono_arch_find_jit_info () expects to find the LMF at a fixed offset */
-		g_assert (offset == 0);
 		if (cfg->arch.omit_fp) {
 			cfg->arch.lmf_offset = offset;
 			offset += sizeof (MonoLMF);
@@ -1514,6 +1523,19 @@ mono_arch_create_vars (MonoCompile *cfg)
 			mono_print_ins (cfg->vret_addr);
 		}
 	}
+
+#ifdef MONO_AMD64_NO_PUSHES
+	/*
+	 * When this is set, we pass arguments on the stack by moves, and by allocating 
+	 * a bigger stack frame, instead of pushes.
+	 * Pushes complicate exception handling because the arguments on the stack have
+	 * to be popped each time a frame is unwound. They also make fp elimination
+	 * impossible.
+	 * FIXME: This doesn't work inside filter/finally clauses, since those execute
+	 * on a new frame which doesn't include a param area.
+	 */
+	cfg->arch.no_pushes = TRUE;
+#endif
 }
 
 static void
@@ -1599,9 +1621,13 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	sig_arg->inst_p0 = tmp_sig;
 	MONO_ADD_INS (cfg->cbb, sig_arg);
 
-	MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
-	arg->sreg1 = sig_arg->dreg;
-	MONO_ADD_INS (cfg->cbb, arg);
+	if (cfg->arch.no_pushes) {
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, cinfo->sig_cookie.offset, sig_arg->dreg);
+	} else {
+		MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
+		arg->sreg1 = sig_arg->dreg;
+		MONO_ADD_INS (cfg->cbb, arg);
+	}
 }
 
 static inline LLVMArgStorage
@@ -1729,7 +1755,39 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 	if (cinfo->need_stack_align) {
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
+		if (!cfg->arch.no_pushes)
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
+	}
+
+	/* 
+	 * Emit all arguments which are passed on the stack to prevent register
+	 * allocation problems.
+	 */
+	if (cfg->arch.no_pushes) {
+		for (i = 0; i < n; ++i) {
+			MonoType *t;
+			ainfo = cinfo->args + i;
+
+			in = call->args [i];
+
+			if (sig->hasthis && i == 0)
+				t = &mono_defaults.object_class->byval_arg;
+			else
+				t = sig->params [i - sig->hasthis];
+
+			if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t) && !call->tail_call) {
+				if (!t->byref) {
+					if (t->type == MONO_TYPE_R4)
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
+					else if (t->type == MONO_TYPE_R8)
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
+					else
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
+				} else {
+					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
+				}
+			}
+		}
 	}
 
 	/*
@@ -1800,22 +1858,26 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 					MONO_ADD_INS (cfg->cbb, arg);
 				}
 			} else {
-				MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
-				arg->sreg1 = in->dreg;
-				if (!sig->params [i - sig->hasthis]->byref) {
-					if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R4) {
-						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
-						arg->opcode = OP_STORER4_MEMBASE_REG;
-						arg->inst_destbasereg = X86_ESP;
-						arg->inst_offset = 0;
-					} else if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8) {
-						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
-						arg->opcode = OP_STORER8_MEMBASE_REG;
-						arg->inst_destbasereg = X86_ESP;
-						arg->inst_offset = 0;
+				if (cfg->arch.no_pushes) {
+					/* Already done */
+				} else {
+					MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
+					arg->sreg1 = in->dreg;
+					if (!sig->params [i - sig->hasthis]->byref) {
+						if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R4) {
+							MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
+							arg->opcode = OP_STORER4_MEMBASE_REG;
+							arg->inst_destbasereg = X86_ESP;
+							arg->inst_offset = 0;
+						} else if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8) {
+							MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
+							arg->opcode = OP_STORER8_MEMBASE_REG;
+							arg->inst_destbasereg = X86_ESP;
+							arg->inst_offset = 0;
+						}
 					}
+					MONO_ADD_INS (cfg->cbb, arg);
 				}
-				MONO_ADD_INS (cfg->cbb, arg);
 			}
 			break;
 		default:
@@ -1928,6 +1990,8 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		MonoInst *vtaddr, *load;
 		vtaddr = mono_compile_create_var (cfg, &ins->klass->byval_arg, OP_LOCAL);
 		
+		g_assert (!cfg->arch.no_pushes);
+
 		MONO_INST_NEW (cfg, load, OP_LDADDR);
 		load->inst_p0 = vtaddr;
 		vtaddr->flags |= MONO_INST_INDIRECT;
@@ -1951,20 +2015,36 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		}
 	} else {
 		if (size == 8) {
-			/* Can't use this for < 8 since it does an 8 byte memory load */
-			MONO_INST_NEW (cfg, arg, OP_X86_PUSH_MEMBASE);
-			arg->inst_basereg = src->dreg;
-			arg->inst_offset = 0;
-			MONO_ADD_INS (cfg->cbb, arg);
+			if (cfg->arch.no_pushes) {
+				int dreg = mono_alloc_ireg (cfg);
+
+				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, dreg, src->dreg, 0);
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, dreg);
+			} else {
+				/* Can't use this for < 8 since it does an 8 byte memory load */
+				MONO_INST_NEW (cfg, arg, OP_X86_PUSH_MEMBASE);
+				arg->inst_basereg = src->dreg;
+				arg->inst_offset = 0;
+				MONO_ADD_INS (cfg->cbb, arg);
+			}
 		} else if (size <= 40) {
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, ALIGN_TO (size, 8));
-			mini_emit_memcpy (cfg, X86_ESP, 0, src->dreg, 0, size, 4);
+			if (cfg->arch.no_pushes) {
+				mini_emit_memcpy (cfg, AMD64_RSP, ainfo->offset, src->dreg, 0, size, 4);
+			} else {
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, ALIGN_TO (size, 8));
+				mini_emit_memcpy (cfg, X86_ESP, 0, src->dreg, 0, size, 4);
+			}
 		} else {
-			MONO_INST_NEW (cfg, arg, OP_X86_PUSH_OBJ);
-			arg->inst_basereg = src->dreg;
-			arg->inst_offset = 0;
-			arg->inst_imm = size;
-			MONO_ADD_INS (cfg->cbb, arg);
+			if (cfg->arch.no_pushes) {
+				// FIXME: Code growth
+				mini_emit_memcpy (cfg, AMD64_RSP, ainfo->offset, src->dreg, 0, size, 4);
+			} else {
+				MONO_INST_NEW (cfg, arg, OP_X86_PUSH_OBJ);
+				arg->inst_basereg = src->dreg;
+				arg->inst_offset = 0;
+				arg->inst_imm = size;
+				MONO_ADD_INS (cfg->cbb, arg);
+			}
 		}
 	}
 }
@@ -2457,7 +2537,7 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 }
 
 static unsigned char*
-mono_emit_stack_alloc (guchar *code, MonoInst* tree)
+mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 {
 	int sreg = tree->sreg1;
 	int need_touch = FALSE;
@@ -2529,6 +2609,8 @@ mono_emit_stack_alloc (guchar *code, MonoInst* tree)
 		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
 				
 		amd64_lea_membase (code, AMD64_RDI, AMD64_RSP, offset);
+		if (cfg->param_area && cfg->arch.no_pushes)
+			amd64_alu_reg_imm (code, X86_ADD, AMD64_RDI, cfg->param_area);
 		amd64_cld (code);
 		amd64_prefix (code, X86_REP_PREFIX);
 		amd64_stosl (code);
@@ -3553,7 +3635,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
 			else
 				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr, FALSE);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention) && !cfg->arch.no_pushes)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -3601,7 +3683,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			amd64_call_reg (code, ins->sreg1);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention) && !cfg->arch.no_pushes)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -3630,7 +3712,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_nop (code);
 
 			amd64_call_membase (code, ins->sreg1, ins->inst_offset);
-			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention))
+			if (call->stack_usage && !CALLCONV_IS_STDCALL (call->signature->call_convention) && !cfg->arch.no_pushes)
 				amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, call->stack_usage);
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -3638,17 +3720,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_membase_reg (code, cfg->frame_reg, cfg->arch.lmf_offset + G_STRUCT_OFFSET (MonoLMF, rsp), AMD64_RSP, 8);
 			break;
 		case OP_X86_PUSH:
+			g_assert (!cfg->arch.no_pushes);
 			amd64_push_reg (code, ins->sreg1);
 			break;
 		case OP_X86_PUSH_IMM:
+			g_assert (!cfg->arch.no_pushes);
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_push_imm (code, ins->inst_imm);
 			break;
 		case OP_X86_PUSH_MEMBASE:
+			g_assert (!cfg->arch.no_pushes);
 			amd64_push_membase (code, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_X86_PUSH_OBJ: {
 			int size = ALIGN_TO (ins->inst_imm, 8);
+
+			g_assert (!cfg->arch.no_pushes);
+
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, size);
 			amd64_push_reg (code, AMD64_RDI);
 			amd64_push_reg (code, AMD64_RSI);
@@ -3680,8 +3768,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* keep alignment */
 			amd64_alu_reg_imm (code, X86_ADD, ins->sreg1, MONO_ARCH_FRAME_ALIGNMENT - 1);
 			amd64_alu_reg_imm (code, X86_AND, ins->sreg1, ~(MONO_ARCH_FRAME_ALIGNMENT - 1));
-			code = mono_emit_stack_alloc (code, ins);
+			code = mono_emit_stack_alloc (cfg, code, ins);
 			amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
+			if (cfg->param_area && cfg->arch.no_pushes)
+				amd64_alu_reg_imm (code, X86_ADD, ins->dreg, cfg->param_area);
 			break;
 		case OP_LOCALLOC_IMM: {
 			guint32 size = ins->inst_imm;
@@ -3701,13 +3791,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					amd64_mov_reg_imm (code, ins->dreg, size);
 					ins->sreg1 = ins->dreg;
 
-					code = mono_emit_stack_alloc (code, ins);
+					code = mono_emit_stack_alloc (cfg, code, ins);
 					amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
 				}
 			} else {
 				amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, size);
 				amd64_mov_reg_reg (code, ins->dreg, AMD64_RSP, 8);
 			}
+			if (cfg->param_area && cfg->arch.no_pushes)
+				amd64_alu_reg_imm (code, X86_ADD, ins->dreg, cfg->param_area);
 			break;
 		}
 		case OP_THROW: {
@@ -3733,6 +3825,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_START_HANDLER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 			amd64_mov_membase_reg (code, spvar->inst_basereg, spvar->inst_offset, AMD64_RSP, 8);
+
+			if ((MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_FINALLY) ||
+				 MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_FINALLY)) &&
+				cfg->param_area && cfg->arch.no_pushes) {
+				amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT));
+			}
 			break;
 		}
 		case OP_ENDFINALLY: {
@@ -4588,6 +4686,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				mono_emit_unwind_op_offset (cfg, code, i, - offset);
 				async_exc_point (code);
 			}
+	}
+
+	/* The param area is always at offset 0 from sp */
+	/* This needs to be allocated here, since it has to come after the spill area */
+	if (cfg->arch.no_pushes && cfg->param_area) {
+		if (cfg->arch.omit_fp)
+			// FIXME:
+			g_assert_not_reached ();
+		cfg->stack_offset += ALIGN_TO (cfg->param_area, sizeof (gpointer));
 	}
 
 	if (cfg->arch.omit_fp) {

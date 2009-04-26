@@ -97,7 +97,7 @@ long_max_un: dest:i src1:i src2:i len:16 clob:1
 
 throw: src1:i len:18
 rethrow: src1:i len:18
-start_handler: len:9
+start_handler: len:16
 endfinally: len:9
 endfilter: src1:a len:9
 ckfinite: dest:f src1:f len:43
