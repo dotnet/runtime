@@ -102,6 +102,10 @@ namespace Test {
 			if (!typeof (Y).IsDefined (typeof (ZInterface), true))
 				return 6;
 
+			// Test that synthetic methods have no attributes
+			if (typeof(int[,]).GetConstructor (new Type [] { typeof (int), typeof (int) }).GetCustomAttributes (true).Length != 0)
+				return 7;
+
 			return 0;
 		}
 	}
