@@ -8079,6 +8079,10 @@ mono_custom_attrs_from_method (MonoMethod *method)
 	if (method->dynamic || method->klass->image->dynamic)
 		return lookup_custom_attr (method->klass->image, method);
 
+	if (!method->token)
+		/* Synthetic methods */
+		return NULL;
+
 	idx = mono_method_get_index (method);
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_METHODDEF;
