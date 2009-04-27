@@ -54,6 +54,7 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-mmap.h>
 #include "mono/utils/mono-compiler.h"
+#include <mono/utils/mono-counters.h>
 
 #include "mini.h"
 #include "version.h"
@@ -2776,12 +2777,19 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	int index, tramp_size;
 	guint8 *code, *tramp;
 	static gpointer generic_trampolines [MONO_TRAMPOLINE_NUM];
+	static gboolean inited;
+	static guint32 num_trampolines;
 
 	/* Currently, we keep all trampolines in the mscorlib AOT image */
 	image = mono_defaults.corlib;
 	g_assert (image);
 
 	mono_aot_lock ();
+
+	if (!inited) {
+		mono_counters_register ("Specific trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &num_trampolines);
+		inited = TRUE;
+	}
 
 	amodule = image->aot_module;
 	g_assert (amodule);
@@ -2790,6 +2798,8 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 		g_error ("Ran out of trampolines in '%s' (%d)\n", image->name, amodule->num_specific_trampolines);
 
 	index = amodule->specific_trampoline_index ++;
+
+	num_trampolines ++;
 
 	mono_aot_unlock ();
 

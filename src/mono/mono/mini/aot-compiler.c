@@ -102,6 +102,7 @@ typedef struct MonoAotOptions {
 	gboolean asm_writer;
 	gboolean nodebug;
 	int nthreads;
+	int ntrampolines;
 	gboolean print_skipped_methods;
 } MonoAotOptions;
 
@@ -2779,6 +2780,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->asm_writer = TRUE;
 		} else if (str_begins_with (arg, "nodebug")) {
 			opts->nodebug = TRUE;
+		} else if (str_begins_with (arg, "ntrampolines=")) {
+			opts->ntrampolines = atoi (arg + strlen ("ntrampolines="));
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
 			exit (1);
@@ -4473,6 +4476,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
 	acfg->aot_opts.write_symbols = TRUE;
+	acfg->aot_opts.ntrampolines = 10240;
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 
@@ -4522,7 +4526,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (!acfg->aot_opts.nodebug)
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
 
-	acfg->num_specific_trampolines = acfg->aot_opts.full_aot ? 10240 : 0;
+	acfg->num_specific_trampolines = acfg->aot_opts.full_aot ? acfg->aot_opts.ntrampolines : 0;
 #ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
 	acfg->num_static_rgctx_trampolines = acfg->aot_opts.full_aot ? 1024 : 0;
 #endif

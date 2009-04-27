@@ -512,7 +512,7 @@ aotcheck: mono $(regtests)
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
 	rm -f *.exe.so
 
-# This is not expected to run successfully
+# This currently only works on amd64/arm
 fullaotcheck: mono $(regtests)
 	rm -rf fullaot-tmp
 	mkdir fullaot-tmp
