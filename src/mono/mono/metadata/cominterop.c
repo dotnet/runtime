@@ -1505,7 +1505,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoO
 	proxy = (MonoComInteropProxy*)((MonoTransparentProxy*)object)->rp;
 	g_assert (proxy);
 
+	if (proxy->ref_count == 0)
+		return -1;
+
 	ref_count = InterlockedDecrement (&proxy->ref_count);
+
 	g_assert (ref_count >= 0);
 
 	if (ref_count == 0)
