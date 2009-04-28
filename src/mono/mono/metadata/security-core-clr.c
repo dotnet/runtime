@@ -404,6 +404,31 @@ mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *i
 }
 
 /*
+ * mono_security_core_clr_class_level_no_platform_check:
+ *
+ *	Return the MonoSecurityCoreCLRLevel for the specified class, without 
+ *	checking for platform code. This help us avoid multiple redundant 
+ *	checks, e.g.
+ *	- a check for the method and one for the class;
+ *	- a check for the class and outer class(es) ...
+ */
+static MonoSecurityCoreCLRLevel
+mono_security_core_clr_class_level_no_platform_check (MonoClass *class)
+{
+	MonoSecurityCoreCLRLevel level = MONO_SECURITY_CORE_CLR_TRANSPARENT;
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class (class);
+	if (cinfo) {
+		level = mono_security_core_clr_level_from_cinfo (cinfo, class->image);
+		mono_custom_attrs_free (cinfo);
+	}
+
+	if (level == MONO_SECURITY_CORE_CLR_TRANSPARENT && class->nested_in)
+		level = mono_security_core_clr_class_level_no_platform_check (class->nested_in);
+
+	return level;
+}
+
+/*
  * mono_security_core_clr_class_level:
  *
  *	Return the MonoSecurityCoreCLRLevel for the specified class.
@@ -411,23 +436,11 @@ mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *i
 MonoSecurityCoreCLRLevel
 mono_security_core_clr_class_level (MonoClass *class)
 {
-	MonoCustomAttrInfo *cinfo;
-	MonoSecurityCoreCLRLevel level = MONO_SECURITY_CORE_CLR_TRANSPARENT;
-
 	/* non-platform code is always Transparent - whatever the attributes says */
 	if (!mono_security_core_clr_test && !mono_security_core_clr_is_platform_image (class->image))
-		return level;
+		return MONO_SECURITY_CORE_CLR_TRANSPARENT;
 
-	cinfo = mono_custom_attrs_from_class (class);
-	if (cinfo) {
-		level = mono_security_core_clr_level_from_cinfo (cinfo, class->image);
-		mono_custom_attrs_free (cinfo);
-	}
-
-	if (level == MONO_SECURITY_CORE_CLR_TRANSPARENT && class->nested_in)
-		level = mono_security_core_clr_class_level (class->nested_in);
-
-	return level;
+	return mono_security_core_clr_class_level_no_platform_check (class);
 }
 
 /*
