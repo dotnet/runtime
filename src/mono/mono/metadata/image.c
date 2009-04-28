@@ -1308,12 +1308,12 @@ mono_image_fixup_vtable (MonoImage *image)
 		if (slot_type & VTFIXUP_TYPE_32BIT)
 			while (slot_count--) {
 				*((guint32*) slot) = (guint32) mono_marshal_get_vtfixup_ftnptr (image, *((guint32*) slot), slot_type);
-				((guint32*) slot)++;
+				slot = ((guint32*) slot) + 1;
 			}
 		else if (slot_type & VTFIXUP_TYPE_64BIT)
 			while (slot_count--) {
 				*((guint64*) slot) = (guint64) mono_marshal_get_vtfixup_ftnptr (image, *((guint64*) slot), slot_type);
-				((guint64*) slot)++;
+				slot = ((guint32*) slot) + 1;
 			}
 		else
 			g_assert_not_reached();
