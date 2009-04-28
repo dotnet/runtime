@@ -227,7 +227,7 @@ restart:
 					}
 					else {
 						/* Special cases */
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 						if ((ins->opcode == OP_X86_LEA) && (srcindex == 1)) {
 #if SIZEOF_REGISTER == 8
 							/* FIXME: Use OP_PADD_IMM when the new JIT is done */

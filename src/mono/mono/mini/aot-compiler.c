@@ -420,7 +420,7 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 
 /* ARCHITECTURE SPECIFIC CODE */
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__arm__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
 #define EMIT_DWARF_INFO 1
 #endif
 
@@ -433,12 +433,12 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 static void
 arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
 {
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	/* Need to make sure this is exactly 5 bytes long */
 	emit_byte (acfg, '\xe8');
 	emit_symbol_diff (acfg, target, ".", -4);
 	*call_size = 5;
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 	if (acfg->use_bin_writer) {
 		guint8 buf [4];
 		guint8 *code;
@@ -472,11 +472,11 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
 
 	/* Emit the offset */
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 	emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
-#elif defined(__i386__)
+#elif defined(TARGET_X86)
 	emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 	emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
 #else
 	g_assert_not_reached ();
@@ -493,7 +493,7 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 static void
 arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 {
-#if defined(__i386__)
+#if defined(TARGET_X86)
 		if (index == 0) {
 			/* It is filled up during loading by the AOT loader. */
 			emit_zero_bytes (acfg, 16);
@@ -503,7 +503,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 			emit_symbol_diff (acfg, "plt", ".", -4);
 			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		}
-#elif defined(__x86_64__)
+#elif defined(TARGET_AMD64)
 		/*
 		 * We can't emit jumps because they are 32 bits only so they can't be patched.
 		 * So we make indirect calls through GOT entries which are patched by the AOT 
@@ -516,7 +516,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 		guint8 buf [256];
 		guint8 *code;
 
@@ -575,7 +575,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	 *   loading the argument from there.
 	 * - all the trampolines should be of the same length.
 	 */
-#if defined(__x86_64__)
+#if defined(TARGET_AMD64)
 	/* This should be exactly 16 bytes long */
 	*tramp_size = 16;
 	/* call *<offset>(%rip) */
@@ -586,7 +586,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	/* This should be relative to the start of the trampoline */
 	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 19);
 	emit_zero_bytes (acfg, 5);
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
 
@@ -621,7 +621,7 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 static void
 arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGenericSharingContext *gsctx, const char *call_target)
 {
-#if defined(__x86_64__)
+#if defined(TARGET_AMD64)
 	guint8 buf [32];
 	guint8 *code;
 	int this_reg;
@@ -634,7 +634,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 	/* jump <method> */
 	emit_byte (acfg, '\xe9');
 	emit_symbol_diff (acfg, call_target, ".", -4);
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
 	int this_pos = 0;
@@ -678,7 +678,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoMethod *method, MonoGeneri
 static void
 arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 {
-#if defined(__x86_64__)
+#if defined(TARGET_AMD64)
 	/* This should be exactly 13 bytes long */
 	*tramp_size = 13;
 
@@ -692,7 +692,7 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	emit_byte (acfg, '\xff');
 	emit_byte (acfg, '\x25');
 	emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4);
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
 
@@ -725,7 +725,7 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 static GSList*
 arch_get_cie_program (void)
 {
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 	GSList *l = NULL;
 
 	mono_add_unwind_op_def_cfa (l, (guint8*)NULL, (guint8*)NULL, AMD64_RSP, 8);
@@ -2448,7 +2448,7 @@ emit_plt (MonoAotCompile *acfg)
 
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, symbol, TRUE);
-#ifdef __i386__
+#ifdef TARGET_X86
 	/* This section will be made read-write by the AOT loader */
 	emit_alignment (acfg, PAGESIZE);
 #else
@@ -2586,7 +2586,7 @@ emit_trampolines (MonoAotCompile *acfg)
 
 		code = mono_arch_get_nullified_class_init_trampoline (&code_size);
 		emit_trampoline (acfg, "nullified_class_init_trampoline", code, code_size, acfg->got_offset, NULL, NULL);
-#if defined(__x86_64__) && defined(MONO_ARCH_MONITOR_OBJECT_REG)
+#if defined(TARGET_AMD64) && defined(MONO_ARCH_MONITOR_OBJECT_REG)
 		code = mono_arch_create_monitor_enter_trampoline_full (&code_size, &ji, TRUE);
 		emit_trampoline (acfg, "monitor_enter_trampoline", code, code_size, acfg->got_offset, ji, NULL);
 		code = mono_arch_create_monitor_exit_trampoline_full (&code_size, &ji, TRUE);
@@ -2610,12 +2610,12 @@ emit_trampolines (MonoAotCompile *acfg)
 		code = mono_arch_get_throw_corlib_exception_full (&code_size, &ji, TRUE);
 		emit_trampoline (acfg, "throw_corlib_exception", code, code_size, acfg->got_offset, ji, NULL);
 
-#if defined(__x86_64__)
+#if defined(TARGET_AMD64)
 		code = mono_arch_get_throw_pending_exception_full (&code_size, &ji, TRUE);
 		emit_trampoline (acfg, "throw_pending_exception", code, code_size, acfg->got_offset, ji, NULL);
 #endif
 
-#if defined(__x86_64__) || defined(__arm__)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
 		for (i = 0; i < 128; ++i) {
 			int offset;
 
@@ -2631,7 +2631,7 @@ emit_trampolines (MonoAotCompile *acfg)
 		}
 #endif
 
-#if defined(__x86_64__) || defined(__arm__)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
 		{
 			GSList *l;
 
@@ -4067,14 +4067,14 @@ emit_globals (MonoAotCompile *acfg)
 			emit_label (acfg, symbol);
 			if (acfg->use_bin_writer)
 				g_assert_not_reached ();
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 			fprintf (acfg->fp, "leaq globals(%%rip), %%rdi\n");
 			fprintf (acfg->fp, "call mono_aot_register_globals@PLT\n");
 			fprintf (acfg->fp, "ret\n");
 			fprintf (acfg->fp, ".section .ctors,\"aw\",@progbits\n");
 			emit_alignment (acfg, 8);
 			emit_pointer (acfg, symbol);
-#elif defined(__arm__) && defined(__MACH__)
+#elif defined(TARGET_ARM) && defined(__MACH__)
 				
 			fprintf (acfg->fp, ".text\n");
 			fprintf (acfg->fp, ".align   3\n");
@@ -4098,7 +4098,7 @@ emit_globals (MonoAotCompile *acfg)
 			fprintf (acfg->fp, ".align	2\n");
 			fprintf (acfg->fp, ".long	%s@target1\n", symbol);
 
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 			/* 
 			 * Taken from gcc generated code for:
 			 * static int i;
@@ -4294,7 +4294,7 @@ compile_asm (MonoAotCompile *acfg)
 	char *command, *objfile;
 	char *outfile_name, *tmp_outfile_name;
 
-#if defined(__x86_64__)
+#if defined(TARGET_AMD64)
 #define AS_OPTIONS "--64"
 #elif defined(sparc) && SIZEOF_VOID_P == 8
 #define AS_OPTIONS "-xarch=v9"
@@ -4373,7 +4373,7 @@ compile_asm (MonoAotCompile *acfg)
 	system (com);
 	g_free (com);*/
 
-#if defined(__arm__) && !defined(__MACH__)
+#if defined(TARGET_ARM) && !defined(__MACH__)
 	/* 
 	 * gas generates 'mapping symbols' each time code and data is mixed, which 
 	 * happens a lot in emit_and_reloc_code (), so we need to get rid of them.

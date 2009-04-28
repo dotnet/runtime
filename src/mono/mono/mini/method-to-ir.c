@@ -295,7 +295,7 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 		} \
 	} while (0)
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 #define EMIT_NEW_X86_LEA(cfg,dest,sr1,sr2,shift,imm) do { \
 		MONO_INST_NEW (cfg, dest, OP_X86_LEA); \
 		(dest)->dreg = alloc_preg ((cfg)); \
@@ -3530,7 +3530,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 
 	MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index2_reg);
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	if (size == 1 || size == 2 || size == 4 || size == 8) {
 		static const int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
 
@@ -3663,7 +3663,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #endif	
 			MONO_EMIT_BOUNDS_CHECK (cfg, args [0]->dreg, MonoString, length, index_reg);
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 			EMIT_NEW_X86_LEA (cfg, ins, args [0]->dreg, index_reg, 1, G_STRUCT_OFFSET (MonoString, chars));
 			add_reg = ins->dreg;
 			/* Avoid a warning */
@@ -5673,7 +5673,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cfg->coverage_info->data [cil_offset].cil_code = ip;
 
 			/* TODO: Use an increment here */
-#if defined(__i386__)
+#if defined(TARGET_X86)
 			MONO_INST_NEW (cfg, ins, OP_STORE_MEM_IMM);
 			ins->inst_p0 = &(cfg->coverage_info->data [cil_offset].count);
 			ins->inst_imm = 1;
@@ -5920,7 +5920,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ip++;
 			--sp;
 
-#ifdef __i386__
+#ifdef TARGET_X86
 			if (sp [0]->type == STACK_R8)
 				/* we need to pop the value from the x86 FP stack */
 				MONO_EMIT_NEW_UNALU (cfg, OP_X86_FPOP, -1, sp [0]->dreg);
@@ -5947,7 +5947,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
 				CHECK_CFG_EXCEPTION;
 
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 			{
 				MonoMethodSignature *fsig = mono_method_signature (cmethod);
 				int i, n;
@@ -6318,7 +6318,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				call->method = cmethod;
 				call->signature = mono_method_signature (cmethod);
 
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 				/* Handle tail calls similarly to calls */
 				call->inst.opcode = OP_TAILCALL;
 				call->args = sp;
@@ -6834,7 +6834,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			table->table_size = n;
 
 			use_op_switch = FALSE;
-#ifdef __arm__
+#ifdef TARGET_ARM
 			/* ARM implements SWITCH statements differently */
 			/* FIXME: Make it use the generic implementation */
 			if (!cfg->compile_aot)
@@ -9738,13 +9738,13 @@ mono_op_to_op_imm (int opcode)
 	case OP_STOREI4_MEMBASE_REG:
 		return OP_STOREI4_MEMBASE_IMM;
 
-#if defined(__i386__) || defined (__x86_64__)
+#if defined(TARGET_X86) || defined (TARGET_AMD64)
 	case OP_X86_PUSH:
 		return OP_X86_PUSH_IMM;
 	case OP_X86_COMPARE_MEMBASE_REG:
 		return OP_X86_COMPARE_MEMBASE_IMM;
 #endif
-#if defined(__x86_64__)
+#if defined(TARGET_AMD64)
 	case OP_AMD64_ICOMPARE_MEMBASE_REG:
 		return OP_AMD64_ICOMPARE_MEMBASE_IMM;
 #endif
@@ -9826,7 +9826,7 @@ int
 mono_load_membase_to_load_mem (int opcode)
 {
 	// FIXME: Add a MONO_ARCH_HAVE_LOAD_MEM macro
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	switch (opcode) {
 	case OP_LOAD_MEMBASE:
 		return OP_LOAD_MEM;
@@ -9851,7 +9851,7 @@ mono_load_membase_to_load_mem (int opcode)
 static inline int
 op_to_op_dest_membase (int store_opcode, int opcode)
 {
-#if defined(__i386__)
+#if defined(TARGET_X86)
 	if (!((store_opcode == OP_STORE_MEMBASE_REG) || (store_opcode == OP_STOREI4_MEMBASE_REG)))
 		return -1;
 
@@ -9886,7 +9886,7 @@ op_to_op_dest_membase (int store_opcode, int opcode)
 	}
 #endif
 
-#if defined(__x86_64__)
+#if defined(TARGET_AMD64)
 	if (!((store_opcode == OP_STORE_MEMBASE_REG) || (store_opcode == OP_STOREI4_MEMBASE_REG) || (store_opcode == OP_STOREI8_MEMBASE_REG)))
 		return -1;
 
@@ -9947,7 +9947,7 @@ op_to_op_dest_membase (int store_opcode, int opcode)
 static inline int
 op_to_op_store_membase (int store_opcode, int opcode)
 {
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	switch (opcode) {
 	case OP_ICEQ:
 		if (store_opcode == OP_STOREI1_MEMBASE_REG)
@@ -9964,7 +9964,7 @@ op_to_op_store_membase (int store_opcode, int opcode)
 static inline int
 op_to_op_src1_membase (int load_opcode, int opcode)
 {
-#ifdef __i386__
+#ifdef TARGET_X86
 	/* FIXME: This has sign extension issues */
 	/*
 	if ((opcode == OP_ICOMPARE_IMM) && (load_opcode == OP_LOADU1_MEMBASE))
@@ -9986,7 +9986,7 @@ op_to_op_src1_membase (int load_opcode, int opcode)
 	}
 #endif
 
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 	/* FIXME: This has sign extension issues */
 	/*
 	if ((opcode == OP_ICOMPARE_IMM) && (load_opcode == OP_LOADU1_MEMBASE))
@@ -10026,7 +10026,7 @@ op_to_op_src1_membase (int load_opcode, int opcode)
 static inline int
 op_to_op_src2_membase (int load_opcode, int opcode)
 {
-#ifdef __i386__
+#ifdef TARGET_X86
 	if (!((load_opcode == OP_LOAD_MEMBASE) || (load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE)))
 		return -1;
 	
@@ -10047,7 +10047,7 @@ op_to_op_src2_membase (int load_opcode, int opcode)
 	}
 #endif
 
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 	switch (opcode) {
 	case OP_ICOMPARE:
 		if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE))
@@ -10254,7 +10254,7 @@ mono_handle_global_vregs (MonoCompile *cfg)
 #if SIZEOF_REGISTER == 8
 		case STACK_I8:
 #endif
-#if !defined(__i386__) && !defined(MONO_ARCH_SOFT_FLOAT)
+#if !defined(TARGET_X86) && !defined(MONO_ARCH_SOFT_FLOAT)
 		/* Enabling this screws up the fp stack on x86 */
 		case STACK_R8:
 #endif

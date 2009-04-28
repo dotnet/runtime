@@ -127,7 +127,7 @@ mono_regstate_alloc_int (MonoRegState *rs, regmask_t allow)
 {
 	regmask_t mask = allow & rs->ifree_mask;
 
-#if defined(__x86_64__) && defined(__GNUC__)
+#if defined(TARGET_AMD64) && defined(__GNUC__)
  {
 	guint64 i;
 
@@ -461,7 +461,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_ICONST:
 		printf (" [%d]", (int)ins->inst_c0);
 		break;
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 	case OP_X86_PUSH_IMM:
 #endif
 	case OP_ICOMPARE_IMM:
@@ -889,7 +889,7 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 	else {
 		g_assert (reg >= MONO_MAX_IREGS);
 		g_assert (hreg < MONO_MAX_IREGS);
-#ifndef __arm__
+#ifndef TARGET_ARM
 		/* this seems to trigger a gcc compilation bug sometime (hreg is 0) */
 		g_assert (! is_global_ireg (hreg));
 #endif
@@ -1421,7 +1421,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (prev_dreg > -1);
 			g_assert (!is_global_ireg (rs->vassign [prev_dreg]));
 			mask = regpair_reg2_mask (spec_dest, rs->vassign [prev_dreg]);
-#ifdef __i386__
+#ifdef TARGET_X86
 			/* bug #80489 */
 			mask &= ~regmask (X86_ECX);
 #endif

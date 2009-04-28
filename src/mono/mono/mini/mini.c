@@ -3787,9 +3787,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 			gi->this_reg = inst->dreg;
 		} else {
 			g_assert (inst->opcode == OP_REGOFFSET);
-#ifdef __i386__
+#ifdef TARGET_X86
 			g_assert (inst->inst_basereg == X86_EBP);
-#elif defined(__x86_64__)
+#elif defined(TARGET_AMD64)
 			g_assert (inst->inst_basereg == X86_EBP || inst->inst_basereg == X86_ESP);
 #endif
 			g_assert (inst->inst_offset >= G_MININT32 && inst->inst_offset <= G_MAXINT32);

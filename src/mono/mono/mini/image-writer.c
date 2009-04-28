@@ -73,16 +73,16 @@
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
-#if defined(__x86_64__) && !defined(PLATFORM_WIN32)
+#if defined(TARGET_AMD64) && !defined(PLATFORM_WIN32)
 #define USE_ELF_WRITER 1
 #define USE_ELF_RELA 1
 #endif
 
-#if defined(__i386__) && !defined(PLATFORM_WIN32)
+#if defined(TARGET_X86) && !defined(PLATFORM_WIN32)
 #define USE_ELF_WRITER 1
 #endif
 
-#if defined(__arm__) && !defined(__MACH__)
+#if defined(TARGET_ARM) && !defined(__MACH__)
 #define USE_ELF_WRITER 1
 #endif
 
@@ -867,7 +867,7 @@ resolve_relocations (MonoImageWriter *acfg)
 static void
 do_reloc (MonoImageWriter *acfg, BinReloc *reloc, guint8 *data, gssize addr)
 {
-#ifdef __arm__
+#ifdef TARGET_ARM
 	/*
 	 * We use the official ARM relocation types, but implement only the stuff actually
 	 * needed by the code we generate.
@@ -1196,11 +1196,11 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 		header.e_ident [i] = 0;
 
 	header.e_type = ET_DYN;
-#if defined(__i386__)
+#if defined(TARGET_X86)
 	header.e_machine = EM_386;
-#elif defined(__x86_64__)
+#elif defined(TARGET_AMD64)
 	header.e_machine = EM_X86_64;
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 	header.e_machine = EM_ARM;
 #else
 	g_assert_not_reached ();
@@ -1396,7 +1396,7 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 #elif defined(sparc)
 	/* For solaris as, GNU as should accept the same */
 	fprintf (acfg->fp, ".section \"%s\"\n", section_name);
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 	/* ARM gas doesn't seem to like subsections of .bss */
 	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data")) {
 		fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);
@@ -1427,11 +1427,11 @@ asm_writer_emit_symbol_type (MonoImageWriter *acfg, const char *name, gboolean f
 	asm_writer_emit_unset_mode (acfg);
 #if defined(__MACH__)
 
-#elif defined(sparc) || defined(__arm__)
+#elif defined(sparc) || defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.type %s,#%s\n", name, stype);
 #elif defined(PLATFORM_WIN32)
 
-#elif defined(__x86_64__) || defined(__i386__)
+#elif defined(TARGET_AMD64) || defined(TARGET_X86)
 	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
 #else
 	fprintf (acfg->fp, "\t.type %s,@%s\n", name, stype);
@@ -1497,7 +1497,7 @@ static void
 asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if defined(__arm__)
+#if defined(TARGET_ARM)
 	fprintf (acfg->fp, "\t.align %d\n", ilog2 (size));
 #elif defined(__ppc__) && defined(__MACH__)
 	// the mach-o assembler specifies alignments as powers of 2.
@@ -1513,7 +1513,7 @@ static void
 asm_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
 	asm_writer_emit_unset_mode (acfg);
-#if defined(__x86_64__)
+#if defined(TARGET_AMD64)
 	fprintf (acfg->fp, "\t.quad %s\n", target ? target : "0");
 #elif defined(sparc) && SIZEOF_VOID_P == 8
 	fprintf (acfg->fp, "\t.xword %s\n", target ? target : "0");
@@ -1566,7 +1566,7 @@ asm_writer_emit_int16 (MonoImageWriter *acfg, int value)
 	if ((acfg->col_count++ % 8) == 0)
 #if defined(__MACH__)
 		fprintf (acfg->fp, "\n\t.short ");
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 		/* FIXME: Use .hword on other archs as well */
 		fprintf (acfg->fp, "\n\t.hword ");
 #else

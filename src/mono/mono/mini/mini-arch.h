@@ -1,9 +1,9 @@
 #ifndef __MONO_MINI_ARCH_H__
 #define __MONO_MINI_ARCH_H__
 
-#ifdef __i386__
+#ifdef TARGET_X86
 #include "mini-x86.h"
-#elif defined(__x86_64__)
+#elif defined(TARGET_AMD64)
 #include "mini-amd64.h"
 #elif defined(__mono_ppc__)
 #include "mini-ppc.h"
@@ -17,7 +17,7 @@
 # endif
 #elif defined(__ia64__)
 #include "mini-ia64.h"
-#elif defined(__arm__)
+#elif defined(TARGET_ARM)
 #include "mini-arm.h"
 #elif defined(__alpha__)
 #include "mini-alpha.h"
