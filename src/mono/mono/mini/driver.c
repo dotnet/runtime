@@ -1120,7 +1120,7 @@ mini_trace_usage (void)
 		 "    M:Type:Method        Specifies a method\n"
 		 "    N:Namespace          Specifies a namespace\n"
 		 "    T:Type               Specifies a type\n"
-		 "    +EXPR                Includes expression\n"
+		 "    EXPR                 Includes expression\n"
 		 "    -EXPR                Excludes expression\n"
 		 "    EXPR,EXPR            Multiple expressions\n"
 		 "    disabled             Don't print any output until toggled via SIGUSR2\n");
