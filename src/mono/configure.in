@@ -1985,6 +1985,19 @@ case "$host" in
 		;;
 esac
 
+# FIXME: Define the others as well
+case "$TARGET" in
+X86)
+	AC_DEFINE(TARGET_X86, 1, [...])
+	;;
+AMD64)
+	AC_DEFINE(TARGET_AMD64, 1, [...])
+	;;
+ARM)
+	AC_DEFINE(TARGET_ARM, 1, [...])
+	;;
+esac
+
 if test "x$sizeof_register" = "x4"; then
    AC_DEFINE(SIZEOF_REGISTER,4,[size of machine integer registers])
 elif test "x$sizeof_register" = "x8"; then

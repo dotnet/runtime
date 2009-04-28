@@ -1,3 +1,8 @@
+2009-04-28  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Define a TARGET_<ARCH> preprocessor symbol for some
+	architectures.
+
 2009-04-23  Jb Evain  <jbevain@novell.com>
 
 	* scripts/Makefile.am: add a pdb2mdb script.
