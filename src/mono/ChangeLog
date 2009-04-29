@@ -1,5 +1,7 @@
 2009-04-28  Zoltan Varga  <vargaz@gmail.com>
 
+	* configure.in: Add an option to disable the solaris tar check.
+	
 	* configure.in: Define a TARGET_<ARCH> preprocessor symbol for some
 	architectures.
 

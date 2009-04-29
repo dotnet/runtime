@@ -374,13 +374,19 @@ fi
 # A sanity check to catch cases where the package was unpacked
 # with an ancient tar program (Solaris)
 #
-AC_MSG_CHECKING(integrity of package)
-if test -f $srcdir/$mcsdir/class/System.Runtime.Serialization.Formatters.Soap/System.Runtime.Serialization.Formatters.Soap/SoapTypeMapper.cs
-then
-   AC_MSG_RESULT(ok)
-else
-   errorm="Your mono distribution is incomplete;  if unpacking from a tar file, make sure you use GNU tar;  see http://www.mono-project.com/IncompletePackage for more details"
-   AC_MSG_ERROR([$errorm])
+AC_ARG_ENABLE(solaris-tar-check,
+[  --disable-solaris-tar-check    disable solaris tar check],
+   do_solaris_tar_check=no, do_solaris_tar_check=yes)
+
+if test x"$do_solaris_tar_check" = xyes; then
+   	AC_MSG_CHECKING(integrity of package)
+   	if test -f $srcdir/$mcsdir/class/System.Runtime.Serialization.Formatters.Soap/System.Runtime.Serialization.Formatters.Soap/SoapTypeMapper.cs
+   	then
+		AC_MSG_RESULT(ok)
+   	else
+		errorm="Your mono distribution is incomplete;  if unpacking from a tar file, make sure you use GNU tar;  see http://www.mono-project.com/IncompletePackage for more details"
+		AC_MSG_ERROR([$errorm])
+	fi
 fi
 
 mcs_topdir='$(top_srcdir)/'$mcsdir
