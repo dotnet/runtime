@@ -332,7 +332,9 @@ int _wapi_connect(guint32 fd, const struct sockaddr *serv_addr,
 							  WAPI_HANDLE_SOCKET,
 							  (gpointer *)&socket_handle);
 				if (ok == FALSE) {
-					g_warning ("%s: error looking up socket handle %p", __func__, handle);
+					/* ECONNRESET means the socket was closed by another thread */
+					if (errnum != WSAECONNRESET)
+						g_warning ("%s: error looking up socket handle %p", __func__, handle);
 				} else {
 					socket_handle->saved_error = errnum;
 				}
