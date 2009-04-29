@@ -1031,6 +1031,14 @@ is_vald_cattr_blob (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+is_valid_marshal_spec (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return blob.size >= 1 && blob.size - 1 >= offset;
+}
+
+static gboolean
 decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
 {
 	unsigned char b;
@@ -1620,6 +1628,31 @@ verify_cattr_table (VerifyContext *ctx)
 }
 
 static void
+verify_field_marshal_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_FIELDMARSHAL];
+	guint32 data [MONO_FIELD_MARSHAL_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_FIELD_MARSHAL_SIZE);
+
+		if (!is_valid_coded_index (ctx, HAS_FIELD_MARSHAL_DESC, data [MONO_FIELD_MARSHAL_PARENT]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldMarshal row %d Parent field 0x%08x", i, data [MONO_FIELD_MARSHAL_PARENT]));
+
+		if (!get_coded_index_token (HAS_FIELD_MARSHAL_DESC, data [MONO_FIELD_MARSHAL_PARENT]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldMarshal row %d Parent field is null", i));
+
+		if (!data [MONO_FIELD_MARSHAL_NATIVE_TYPE])
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldMarshal row %d NativeType field is null", i));
+
+		if (!is_valid_marshal_spec (ctx, data [MONO_FIELD_MARSHAL_NATIVE_TYPE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldMarshal row %d NativeType field 0x%08x", i, data [MONO_FIELD_MARSHAL_NATIVE_TYPE]));
+			
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1663,6 +1696,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_constant_table (ctx);
 	CHECK_ERROR ();
 	verify_cattr_table (ctx);
+	CHECK_ERROR ();
+	verify_field_marshal_table (ctx);
 }
 
 static gboolean
