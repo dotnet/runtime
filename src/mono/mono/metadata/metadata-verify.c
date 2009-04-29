@@ -1413,6 +1413,26 @@ verify_param_table (VerifyContext *ctx)
 }
 
 static void
+verify_interfaceimpl_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_INTERFACEIMPL];
+	guint32 data [MONO_INTERFACEIMPL_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_INTERFACEIMPL_SIZE);
+		if (data [MONO_INTERFACEIMPL_CLASS] && data [MONO_INTERFACEIMPL_CLASS] > ctx->image->tables [MONO_TABLE_TYPEDEF].rows)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid InterfaceImpl row %d Class field 0x%08x", i, data [MONO_TABLE_TYPEDEF]));
+
+		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_INTERFACEIMPL_INTERFACE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid InterfaceImpl row %d Inteface field coded index 0x%08x", i, data [MONO_INTERFACEIMPL_INTERFACE]));
+
+		if (!get_coded_index_token (ctx, TYPEDEF_OR_REF_DESC, data [MONO_INTERFACEIMPL_INTERFACE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid InterfaceImpl row %d Inteface field is null", i));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1448,6 +1468,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_method_table (ctx);
 	CHECK_ERROR ();
 	verify_param_table (ctx);
+	CHECK_ERROR ();
+	verify_interfaceimpl_table (ctx);
 }
 
 static gboolean
