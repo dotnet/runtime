@@ -559,4 +559,52 @@ memberref-table {
 	#LAMESPEC what does (11) mean? 
 }
 
+constant-table {
+	assembly assembly-with-constants.exe
+
+	#type must be one of (bool, char, i1, u1, i2, u2, i4, u4, i8, u8, r4, r8, string or class
+	#class must have value zero (1)
+	#this means (type >= 0x02 && type <= 0x0e) or (type == 0x12 && value == 0)
+	#bad type
+	invalid offset table-row ( 0xB 0 ) set-byte 0x00
+	invalid offset table-row ( 0xB 0 ) set-byte 0x01
+	invalid offset table-row ( 0xB 0 ) set-byte 0x01
+	invalid offset table-row ( 0xB 0 ) set-byte 0x0F
+	invalid offset table-row ( 0xB 0 ) set-byte 0x10
+	invalid offset table-row ( 0xB 0 ) set-byte 0x11
+	invalid offset table-row ( 0xB 0 ) set-byte 0x13
+	invalid offset table-row ( 0xB 0 ) set-byte 0x20
+
+	#type == class && value != 0
+	invalid offset table-row ( 0xB 2 ) set-byte 0x12 , offset table-row ( 0xB 2 ) + 4 set-ushort 0x0001
+
+	#parent is a valid row in the field, property or param table (3)
+	#Test for a property with a valid default value
+	#First remove default from param 'a' (param table idx 0)
+	#Then set the has default flag in the property table
+	#Finally, make the first constant point from the part to the property (const 1, prop 0, token 0x6)
+	valid offset table-row ( 0x8 0 ) set-ushort 0 , offset table-row ( 0x17 0 ) or-ushort 0x1000 , offset table-row ( 0xB 1 ) + 2 set-ushort 0x6 
+
+	#Invalid coded table
+	invalid offset table-row ( 0xB 0 ) + 2 set-ushort 0x0013 , offset table-row ( 0x04 0 ) set-ushort 0x16
+	#null
+	invalid offset table-row ( 0xB 0 ) + 2 set-ushort 0x0000 , offset table-row ( 0x04 0 ) set-ushort 0x16
+	#bad field
+	invalid offset table-row ( 0xB 0 ) + 2 set-ushort 0x00F0 , offset table-row ( 0x04 0 ) set-ushort 0x16
+	#bad param
+	invalid offset table-row ( 0xB 0 ) + 2 set-ushort 0x00F1 , offset table-row ( 0x04 0 ) set-ushort 0x16
+	#bad property
+	invalid offset table-row ( 0xB 0 ) + 2 set-ushort 0x00F2 , offset table-row ( 0x04 0 ) set-ushort 0x16
+
+	#TODO check for dups
+
+	#TODO check value range
+	#we set it to 1 less the end of the blob heap
+	invalid offset table-row ( 0xB 0 ) + 4 set-ushort read.uint ( stream-header ( 3 ) + 4 )
+
+	#LAMEIMPL, MS doesn't bound check the constant size. Lame of them.
+	invalid offset table-row ( 0xB 0 ) + 4 set-ushort read.uint ( stream-header ( 3 ) + 4 ) - 1 
+	
+}
+
 

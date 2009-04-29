@@ -353,7 +353,7 @@ get_metadata_stream_header (test_entry_t *entry, guint32 idx)
 
 		offset += 8;
 		for (i = 0; i < 32; ++i) {
-			if (!READ_VAR (guint8, entry->data + offset))
+			if (!READ_VAR (guint8, entry->data + offset++))
 				break;
 		}
 		offset = pad4 (offset);
@@ -486,7 +486,7 @@ apply_selector (patch_selector_t *selector, test_entry_t *entry)
 		value = expression_eval (selector->expression, entry);
 	switch (selector->type) {
 	case SELECTOR_ABS_OFFSET:
-		DEBUG_PARSER (printf("\tabsolute offset selector [%d]\n", value));
+		DEBUG_PARSER (printf("\tabsolute offset selector [%04x]\n", value));
 		return value;
 	default:
 		printf ("Invalid selector type %d\n", selector->type);

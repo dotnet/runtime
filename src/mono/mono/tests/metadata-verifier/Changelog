@@ -1,5 +1,16 @@
 2009-04-28 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* gen-md-tests.c: Fix stream header calculation.
+
+	* cli-tables-tests.md: Tests for constant.
+
+	* assembly-with-constants.cs: New test file for producing tests
+	for constant table.
+
+	* Makefile: Add new dependencies and do some cleanup.
+
+2009-04-28 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for memberref.
 
 2009-04-28 Rodrigo Kumpera  <rkumpera@novell.com>
