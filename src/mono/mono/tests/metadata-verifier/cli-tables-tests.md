@@ -501,3 +501,29 @@ param-table {
 	valid offset table-row ( 8 1 ) + 4 set-ushort 0
 }
 
+interfaceimpl-table {
+	assembly assembly-with-complex-type.exe
+
+	#class cannot be null (2)
+	#LAMEIMPL MS allows a null class
+	valid offset table-row ( 9 0 ) set-ushort 0
+
+	#class must be a valid row (3.a)
+	invalid offset table-row ( 9 0 ) set-ushort 0x9999
+
+	#interface must be a valid token (3.b)
+	#null
+	invalid offset table-row ( 9 0 ) + 2 set-ushort 0
+	#invalid table bit 0x3
+	invalid offset table-row ( 9 0 ) + 2 set-ushort 0x7
+	#invalid token typedef
+	invalid offset table-row ( 9 0 ) + 2 set-ushort 0x8800
+	#invalid token typeref
+	invalid offset table-row ( 9 0 ) + 2 set-ushort 0x8801
+	#invalid token typespec
+	invalid offset table-row ( 9 0 ) + 2 set-ushort 0x8802
+
+	#TODO verify if the target is an interface (3.c)
+
+}
+

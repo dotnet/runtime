@@ -1,3 +1,9 @@
+2009-04-28 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* assembly-with-complex-type.cs: Add more types and methods to be used generating tests.
+
+	* cli-tables-tests.md: Tests for interfaceimpl.
+
 2009-04-24 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* assembly-with-params.cs: New test file with all sort of param kinds.

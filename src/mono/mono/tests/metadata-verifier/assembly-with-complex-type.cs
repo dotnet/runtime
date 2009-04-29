@@ -39,3 +39,8 @@ public enum Foo
 {
 	A,B,C
 }
+
+public class Bla : Iface
+{
+	public void Foo () {}
+}
