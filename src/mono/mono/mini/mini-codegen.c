@@ -127,7 +127,7 @@ mono_regstate_alloc_int (MonoRegState *rs, regmask_t allow)
 {
 	regmask_t mask = allow & rs->ifree_mask;
 
-#if defined(TARGET_AMD64) && defined(__GNUC__)
+#if defined(__x86_64__) && defined(__GNUC__)
  {
 	guint64 i;
 
