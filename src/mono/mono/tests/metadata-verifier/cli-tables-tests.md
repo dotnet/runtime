@@ -527,3 +527,36 @@ interfaceimpl-table {
 
 }
 
+memberref-table {
+	assembly assembly-with-complex-type.exe
+	
+	#class must be a valid token (1 2)
+	#null
+	invalid offset table-row ( 10 0 ) set-ushort 0
+	#invalid coded table
+	invalid offset table-row ( 10 0 ) set-ushort 0x0015
+	invalid offset table-row ( 10 0 ) set-ushort 0x0016
+	invalid offset table-row ( 10 0 ) set-ushort 0x0017
+	#invalid code index
+	invalid offset table-row ( 10 0 ) set-ushort 0x1000
+	invalid offset table-row ( 10 0 ) set-ushort 0x1001
+	invalid offset table-row ( 10 0 ) set-ushort 0x1002
+	invalid offset table-row ( 10 0 ) set-ushort 0x1003
+	invalid offset table-row ( 10 0 ) set-ushort 0x1004
+
+	#name must be valid and non-empty (3)
+	invalid offset table-row ( 10 0 ) + 2 set-ushort 0x0000
+	invalid offset table-row ( 10 0 ) + 2 set-ushort 0x9900
+
+	#signature must be valid (5)
+	invalid offset table-row ( 10 0 ) + 4 set-ushort 0x9900
+	
+
+	#TODO validate the signature (5)
+
+	#LAMESPEC CompilerControled visibility (9,10) is nice but no impl care about
+
+	#LAMESPEC what does (11) mean? 
+}
+
+

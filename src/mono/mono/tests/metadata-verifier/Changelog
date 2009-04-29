@@ -1,5 +1,9 @@
 2009-04-28 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for memberref.
+
+2009-04-28 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* assembly-with-complex-type.cs: Add more types and methods to be used generating tests.
 
 	* cli-tables-tests.md: Tests for interfaceimpl.
