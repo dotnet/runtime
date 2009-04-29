@@ -1015,6 +1015,14 @@ is_valid_method_signature (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return blob.size >= 2 && blob.size - 2 >= offset;
+}
+
+static gboolean
 is_valid_method_header (VerifyContext *ctx, guint32 rva)
 {
 	//TODO do proper method header validation
@@ -1433,6 +1441,30 @@ verify_interfaceimpl_table (VerifyContext *ctx)
 }
 
 static void
+verify_memberref_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_MEMBERREF];
+	guint32 data [MONO_MEMBERREF_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_MEMBERREF_SIZE);
+
+		if (!is_valid_coded_index (ctx, MEMBERREF_PARENT_DESC, data [MONO_MEMBERREF_CLASS]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MemberRef row %d Class field coded index 0x%08x", i, data [MONO_MEMBERREF_CLASS]));
+
+		if (!get_coded_index_token (MEMBERREF_PARENT_DESC, data [MONO_MEMBERREF_CLASS]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MemberRef row %d Class field coded is null", i));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_MEMBERREF_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MemberRef row %d Name field coded is invalid or empty 0x%08x", i, data [MONO_MEMBERREF_NAME]));
+
+		if (!is_valid_method_or_field_signature (ctx, data [MONO_MEMBERREF_SIGNATURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MemberRef row %d Signature field  0x%08x", i, data [MONO_MEMBERREF_SIGNATURE]));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1470,6 +1502,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_param_table (ctx);
 	CHECK_ERROR ();
 	verify_interfaceimpl_table (ctx);
+	CHECK_ERROR ();
+	verify_memberref_table (ctx);
 }
 
 static gboolean
