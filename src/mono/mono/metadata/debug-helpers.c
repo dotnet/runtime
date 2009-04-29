@@ -171,7 +171,15 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_string_append (res, mono_generic_param_info (type->data.generic_param)->name);
+		if (type->data.generic_param) {
+			MonoGenericParamInfo *info = mono_generic_param_info (type->data.generic_param);
+			if (info)
+				g_string_append (res, info->name);
+			else
+				g_string_append_printf (res, "<%s%d>", type->type == MONO_TYPE_VAR ? "!" : "!!", mono_generic_param_num (type->data.generic_param));
+		} else {
+			g_string_append (res, "<unknown>");
+		}
 		break;
 	default:
 		break;

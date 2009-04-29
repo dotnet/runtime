@@ -3313,7 +3313,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		if (!verify_stack_type_compatibility (ctx, sig->params[i], value)) {
 			char *stack_name = stack_slot_full_name (value);
 			char *sig_name = mono_type_full_name (sig->params [i]);
-			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter value with function signature: %s X %s at 0x%04x", sig_name, stack_name, ctx->ip_offset));
+			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Incompatible parameter with function signature: Calling method with signature (%s) but for argument %d there is a (%s) on stack at 0x%04x", sig_name, i, stack_name, ctx->ip_offset));
 			g_free (stack_name);
 			g_free (sig_name);
 		}
