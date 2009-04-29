@@ -589,6 +589,8 @@ test_set_free (test_set_t *set)
 	free (set->name);
 	free (set->assembly);
 	free (set->assembly_data);
+	if (set->image)
+		mono_image_close (set->image);
 }
 
 static void
@@ -1034,12 +1036,7 @@ main (int argc, char **argv)
 		return 1;
 	}
 
-	mono_perfcounters_init ();
-	mono_metadata_init ();
-	mono_images_init ();
-	mono_assemblies_init ();
-	mono_loader_init ();
-	mono_init_from_assembly ("simple-assembly.exe", "simple-assembly.exe");
+	mono_init_version ("gen-md-test", "v2.0.50727");
 	mono_marshal_init ();
 
 	digest_file (argv [1]);
