@@ -22,7 +22,7 @@
 .class public GoodClass {
 	.field initonly valuetype MyValueType x
 
-.method specialname rtspecialname default void .ctor ()
+.method public specialname rtspecialname default void .ctor ()
 {
     .maxstack 8
     ldarg.0
