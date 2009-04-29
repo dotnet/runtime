@@ -1023,6 +1023,107 @@ is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
+{
+	unsigned char b;
+	const unsigned char *ptr = (const unsigned char *)_ptr;
+
+	if (!available)
+		return FALSE;
+
+	b = *ptr;
+	*value = *size = 0;
+	
+	if ((b & 0x80) == 0) {
+		*size = 1;
+		*value = b;
+	} else if ((b & 0x40) == 0) {
+		if (available < 2)
+			return FALSE;
+		*size = 2;
+		*value = ((b & 0x3f) << 8 | ptr [1]);
+	} else {
+		if (available < 4)
+			return FALSE;
+		*size = 4;
+		*value  = ((b & 0x1f) << 24) |
+			(ptr [1] << 16) |
+			(ptr [2] << 8) |
+			ptr [3];
+	}
+
+	return TRUE;
+}
+
+
+static gboolean
+is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	guint32 size, entry_size, bytes;
+
+	if (blob.size < offset) {
+		printf ("1\n");
+		return FALSE;
+	}
+
+	
+	if (!decode_value (ctx->data + offset + blob.offset, blob.size - blob.offset, &entry_size, &bytes))
+		return FALSE;
+
+	if (type == MONO_TYPE_STRING) {
+		//String is encoded as: compressed_int:len len *chars
+
+		offset += bytes;
+		if (offset > offset + entry_size * 2) //overflow
+			return FALSE;
+		offset += offset + entry_size * 2;
+		return  offset <= blob.size;
+	}
+
+	switch (type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		size = 1;
+		break;
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		size = 2;
+		break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_CLASS:
+		size = 4;
+		break;
+
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		size = 8;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	if (size != entry_size)
+		return FALSE;
+	offset += bytes;
+
+	if(offset > offset + size) //overflow
+		return FALSE;
+
+	if (offset + size > blob.size)
+		return FALSE;
+
+	if (type == MONO_TYPE_CLASS && read32 (ctx->data + offset))
+		return FALSE;
+	return TRUE;
+}
+
+static gboolean
 is_valid_method_header (VerifyContext *ctx, guint32 rva)
 {
 	//TODO do proper method header validation
@@ -1465,6 +1566,31 @@ verify_memberref_table (VerifyContext *ctx)
 }
 
 static void
+verify_constant_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_CONSTANT];
+	guint32 data [MONO_CONSTANT_SIZE], type;
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_CONSTANT_SIZE);
+		type = data [MONO_CONSTANT_TYPE];
+
+		if (!((type >= MONO_TYPE_BOOLEAN && type <= MONO_TYPE_STRING) || type == MONO_TYPE_CLASS))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Constant row %d Type field 0x%08x", i, type));
+
+		if (!is_valid_coded_index (ctx, HAS_CONSTANT_DESC, data [MONO_CONSTANT_PARENT]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Constant row %d Parent field coded index 0x%08x", i, data [MONO_CONSTANT_PARENT]));
+
+		if (!get_coded_index_token (HAS_CONSTANT_DESC, data [MONO_CONSTANT_PARENT]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Constant row %d Parent field coded is null", i));
+
+		if (!is_valid_constant (ctx, type, data [MONO_CONSTANT_VALUE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Constant row %d Value field 0x%08x", i, data [MONO_CONSTANT_VALUE]));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1504,6 +1630,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_interfaceimpl_table (ctx);
 	CHECK_ERROR ();
 	verify_memberref_table (ctx);
+	CHECK_ERROR ();
+	verify_constant_table (ctx);
 }
 
 static gboolean
