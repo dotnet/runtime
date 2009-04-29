@@ -655,3 +655,21 @@ cattr-table {
 	#TODO verify is Type is a .ctor.
 }
 
+field-marshal-table {
+	assembly assembly-with-complex-type.exe
+
+	#part must be valid (2)
+	#LAMEIMPL MS doesn't verify for null
+	invalid offset table-row ( 0xd 0 ) set-ushort 0x0000 , offset table-row ( 0x4 5 ) set-ushort 0x0001
+	invalid offset table-row ( 0xd 0 ) set-ushort 0x8800 , offset table-row ( 0x4 5 ) set-ushort 0x0001
+	invalid offset table-row ( 0xd 0 ) set-ushort 0x8801 , offset table-row ( 0x4 5 ) set-ushort 0x0001
+
+	#native type must index non null valid blob index (3)
+	#LAMEIMPL MS doesn't verify for null
+	invalid offset table-row ( 0xd 0 ) + 2 set-ushort 0
+	invalid offset table-row ( 0xd 0 ) + 2 set-ushort 0x9900
+
+	#TODO check for dups (4)
+
+	#TODO check the marshalspec blob (5)
+}

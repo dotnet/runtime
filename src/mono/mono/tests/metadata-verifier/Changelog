@@ -1,5 +1,9 @@
 2009-04-29 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for field marshal table.
+
+2009-04-29 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for cattr table.
 
 	* assembly-with-cattr.cs: New test file for producing tests
