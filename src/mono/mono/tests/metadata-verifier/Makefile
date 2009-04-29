@@ -19,11 +19,15 @@ assembly-with-params.exe: assembly-with-params.cs
 assembly-with-constants.exe: assembly-with-constants.cs
 	gmcs assembly-with-constants.cs
 
+assembly-with-cattr.exe: assembly-with-cattr.cs
+	gmcs assembly-with-cattr.cs
+
 TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-complex-type.exe \
 	assembly-with-methods.exe \
 	assembly-with-params.exe \
 	assembly-with-constants.exe \
+	assembly-with-cattr.exe \
 	simple-assembly.exe
 
 

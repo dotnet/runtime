@@ -1,5 +1,14 @@
 2009-04-29 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for cattr table.
+
+	* assembly-with-cattr.cs: New test file for producing tests
+	for cattr table.
+
+	* Makefile: Add new dependencies and do some cleanup.
+
+2009-04-29 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* gen-md-tests.c: Close the image after using it.
 	Force the runtime to initialize with 2.0.
 

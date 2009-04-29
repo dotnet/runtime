@@ -604,7 +604,54 @@ constant-table {
 
 	#LAMEIMPL, MS doesn't bound check the constant size. Lame of them.
 	invalid offset table-row ( 0xB 0 ) + 4 set-ushort read.uint ( stream-header ( 3 ) + 4 ) - 1 
-	
 }
 
+cattr-table {
+	assembly assembly-with-cattr.exe
+
+	#parent is a valid coded index (2)
+	#The spec say any table can be used, but only 19 tables are allowed on the coded token
+	#bad table
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x33
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x34
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x35
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x36
+
+	#LAMEIMPL MS doesn't test this error
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x37
+	#LAMEIMPL MS doesn't test this error
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x38
+
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x39
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x3A
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x3B
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x3C
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x3D
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x3E
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x3F
+
+	#bad index
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x8801
+	invalid offset table-row ( 0xC 0 ) set-ushort 0x8832
+
+	#type is a valid token (3)
+	#this uses 3 bits and only 0x2/0x3 are valid
+	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x0008
+	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x0009
+	valid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000A
+	valid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000B
+	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000C
+	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000D
+	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000E
+	invalid offset table-row ( 0xC 0 ) + 2 set-ushort 0x000F
+
+	#value is optional (4)
+	valid offset table-row ( 0xC 0 ) + 4 set-ushort 0
+
+	#Valid is a valid blob index (5)
+	invalid offset table-row ( 0xC 0 ) + 4 set-ushort 0x8888
+
+	#TODO validate the cattr blob (6,7,8,9)
+	#TODO verify is Type is a .ctor.
+}
 
