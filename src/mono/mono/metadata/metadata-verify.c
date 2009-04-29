@@ -900,7 +900,7 @@ is_valid_guid (VerifyContext *ctx, guint32 offset)
 }
 
 static guint32
-get_coded_index_token (VerifyContext *ctx, int token_kind, guint32 coded_token)
+get_coded_index_token (int token_kind, guint32 coded_token)
 {
 	guint32 bits = coded_index_desc [token_kind];
 	return coded_token >> bits;
@@ -1057,7 +1057,7 @@ verify_typeref_table (VerifyContext *ctx)
 		if (!is_valid_coded_index (ctx, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typeref row %d coded index 0x%08x", i, data [MONO_TYPEREF_SCOPE]));
 		
-		if (!get_coded_index_token (ctx, RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
+		if (!get_coded_index_token (RES_SCOPE_DESC, data [MONO_TYPEREF_SCOPE]))
 			ADD_ERROR (ctx, g_strdup_printf ("The metadata verifier doesn't support null ResolutionScope tokens for typeref row %d", i));
 
 		if (!data [MONO_TYPEREF_NAME] || !is_valid_non_empty_string (ctx, data [MONO_TYPEREF_NAME]))
@@ -1117,7 +1117,7 @@ verify_typedef_table (VerifyContext *ctx)
 				if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS]))
 					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d extend field coded index 0x%08x", i, data [MONO_TYPEDEF_EXTENDS]));
 	
-				if (!get_coded_index_token (ctx, TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS])) 
+				if (!get_coded_index_token (TYPEDEF_OR_REF_DESC, data [MONO_TYPEDEF_EXTENDS])) 
 					ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d for non-interface type must have a non-null extend field", i));
 			}
 		}
@@ -1427,7 +1427,7 @@ verify_interfaceimpl_table (VerifyContext *ctx)
 		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_INTERFACEIMPL_INTERFACE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid InterfaceImpl row %d Inteface field coded index 0x%08x", i, data [MONO_INTERFACEIMPL_INTERFACE]));
 
-		if (!get_coded_index_token (ctx, TYPEDEF_OR_REF_DESC, data [MONO_INTERFACEIMPL_INTERFACE]))
+		if (!get_coded_index_token (TYPEDEF_OR_REF_DESC, data [MONO_INTERFACEIMPL_INTERFACE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid InterfaceImpl row %d Inteface field is null", i));
 	}
 }
