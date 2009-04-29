@@ -1023,6 +1023,14 @@ is_valid_method_or_field_signature (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+is_vald_cattr_blob (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return blob.size >= 1 && blob.size - 1 >= offset;
+}
+
+static gboolean
 decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
 {
 	unsigned char b;
@@ -1054,7 +1062,6 @@ decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size
 
 	return TRUE;
 }
-
 
 static gboolean
 is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
@@ -1591,6 +1598,28 @@ verify_constant_table (VerifyContext *ctx)
 }
 
 static void
+verify_cattr_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
+	guint32 data [MONO_CUSTOM_ATTR_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_CUSTOM_ATTR_SIZE);
+
+		if (!is_valid_coded_index (ctx, HAS_CATTR_DESC, data [MONO_CUSTOM_ATTR_PARENT]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Parent field 0x%08x", i, data [MONO_CUSTOM_ATTR_PARENT]));
+
+		if (!is_valid_coded_index (ctx, CATTR_TYPE_DESC, data [MONO_CUSTOM_ATTR_TYPE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Parent field 0x%08x", i, data [MONO_CUSTOM_ATTR_PARENT]));
+
+		if (!is_vald_cattr_blob (ctx, data [MONO_CUSTOM_ATTR_VALUE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute row %d Value field 0x%08x", i, data [MONO_CUSTOM_ATTR_VALUE]));
+			
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1632,6 +1661,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_memberref_table (ctx);
 	CHECK_ERROR ();
 	verify_constant_table (ctx);
+	CHECK_ERROR ();
+	verify_cattr_table (ctx);
 }
 
 static gboolean
