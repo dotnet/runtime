@@ -1993,6 +1993,20 @@ loop_start:
 	bb->max_vreg = cfg->next_vreg;
 }
 
+void
+mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
+{
+	MonoInst *ins;
+	int vreg;
+
+	if (long_ins->opcode == OP_LNEG) {
+		ins = long_ins;
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSBS_IMM, ins->dreg + 1, ins->sreg1 + 1, 0);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ARM_RSC_IMM, ins->dreg + 2, ins->sreg1 + 2, 0);
+		NULLIFY_INS (ins);
+	}
+}
+
 static guchar*
 emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gboolean is_signed)
 {

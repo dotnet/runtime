@@ -5525,11 +5525,25 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	ins->backend.source_opcode = src_opcode;
 }
 
+#endif /* #ifdef MONO_ARCH_SIMD_INTRINSICS */
+
 void
 mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 {
 	MonoInst *ins;
 	int vreg;
+
+	if (long_ins->opcode == OP_LNEG) {
+		ins = long_ins;
+		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, ins->dreg + 1, ins->sreg1 + 1);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, ins->dreg + 2, ins->sreg1 + 2, 0);
+		MONO_EMIT_NEW_UNALU (cfg, OP_INEG, ins->dreg + 2, ins->dreg + 2);
+		NULLIFY_INS (ins);
+		return;
+	}
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+
 	if (!(cfg->opt & MONO_OPT_SIMD))
 		return;
 	
@@ -5617,6 +5631,6 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 		long_ins->opcode = OP_NOP;
 		break;
 	}
+#endif /* MONO_ARCH_SIMD_INTRINSICS */
 }
-#endif
 
