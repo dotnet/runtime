@@ -1213,9 +1213,7 @@ scan_area (char *start, char *end)
 			type_rlen++;
 			continue;
 		} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
-			skip_size = (vt->desc >> LOW_TYPE_BITS) & MAX_ELEMENT_SIZE;
-			skip_size *= mono_array_length ((MonoArray*)start);
-			skip_size += sizeof (MonoArray);
+			skip_size = safe_object_get_size ((MonoObject*)start);
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
 			OBJ_VECTOR_FOREACH_PTR (vt, start);
@@ -1307,9 +1305,7 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 			start += skip_size;
 			continue;
 		} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
-			skip_size = (vt->desc >> LOW_TYPE_BITS) & MAX_ELEMENT_SIZE;
-			skip_size *= mono_array_length ((MonoArray*)start);
-			skip_size += sizeof (MonoArray);
+			skip_size = safe_object_get_size ((MonoObject*)start);
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
 			if (type == DESC_TYPE_ARRAY) {
@@ -5180,9 +5176,7 @@ check_remsets_for_area (char *start, char *end)
 			type_rlen++;
 			continue;
 		} else if (type == DESC_TYPE_VECTOR) { // includes ARRAY, too
-			skip_size = (vt->desc >> LOW_TYPE_BITS) & MAX_ELEMENT_SIZE;
-			skip_size *= mono_array_length ((MonoArray*)start);
-			skip_size += sizeof (MonoArray);
+			skip_size = safe_object_get_size ((MonoObject*)start);
 			skip_size += (ALLOC_ALIGN - 1);
 			skip_size &= ~(ALLOC_ALIGN - 1);
 			OBJ_VECTOR_FOREACH_PTR (vt, start);
