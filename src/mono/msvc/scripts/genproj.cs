@@ -19,51 +19,73 @@ public enum LanguageVersion
 }
 
 class MsbuildGenerator {
-	static string read ()
-	{
-		return Console.ReadLine ();
-	}
-
-	// Currently used
-	static bool Unsafe = false;
-	static StringBuilder defines = new StringBuilder ();
-	static bool StdLib = true;
-
-	// Currently unused
-	static Target Target = Target.Exe;
-	static string TargetExt = ".exe";
-	static string OutputFile;
-	static bool Optimize = true;
-	static bool VerifyClsCompliance = true;
-
-	static string win32IconFile;
-	static bool want_debugging_support = false;
-	static bool Checked = false;
-	static bool WarningsAreErrors;
-	static Dictionary<string,string> embedded_resources = new Dictionary<string,string> ();
-	static List<string> references = new List<string> ();
-	static List<string> warning_as_error = new List<string> ();
-	static int WarningLevel = 4;
-	static List<int> ignore_warning = new List<int> ();
-	static bool load_default_config = true;
-	static string StrongNameKeyFile;
-	static string StrongNameKeyContainer;
-	static bool StrongNameDelaySign = false;
-	static LanguageVersion Version = LanguageVersion.Default;
-	static string CodePage;
-
-	static readonly char[] argument_value_separator = new char [] { ';', ',' };
-
 	static void Usage ()
 	{
 		Console.WriteLine ("Invalid argument");
 	}
+
+	static string template;
+	static MsbuildGenerator ()
+	{
+		using (var input = new StreamReader ("csproj.tmpl")){
+			template = input.ReadToEnd ();
+		}
+	}
 	
+	string base_dir, dir;
+	string config_file;
+	string mcs_topdir, class_dir;
+	
+	public MsbuildGenerator (string dir, string config_file)
+	{
+		mcs_topdir = "";
+		
+		foreach (char c in dir){
+			if (c == '/')
+				mcs_topdir = "..\\" + mcs_topdir;
+		}
+		class_dir = mcs_topdir.Substring (3);
+		
+		this.dir = dir;
+		base_dir = "..\\..\\..\\mcs\\" + dir;
+		this.config_file = config_file;
+	}
+	
+	// Currently used
+	bool Unsafe = false;
+	StringBuilder defines = new StringBuilder ();
+	bool StdLib = true;
+
+	// Currently unused
+	Target Target = Target.Exe;
+	string TargetExt = ".exe";
+	string OutputFile;
+	bool Optimize = true;
+	bool VerifyClsCompliance = true;
+
+	string win32IconFile;
+	bool want_debugging_support = false;
+	bool Checked = false;
+	bool WarningsAreErrors;
+	Dictionary<string,string> embedded_resources = new Dictionary<string,string> ();
+	List<string> references = new List<string> ();
+	List<string> warning_as_error = new List<string> ();
+	int WarningLevel = 4;
+	List<int> ignore_warning = new List<int> ();
+	bool load_default_config = true;
+	string StrongNameKeyFile;
+	string StrongNameKeyContainer;
+	bool StrongNameDelaySign = false;
+	LanguageVersion Version = LanguageVersion.Default;
+	string CodePage;
+
+	readonly char[] argument_value_separator = new char [] { ';', ',' };
+
 	//
 	// This parses the -arg and /arg options to the compiler, even if the strings
 	// in the following text use "/arg" on the strings.
 	//
-	static bool CSCParseOption (string option, ref string [] args)
+	bool CSCParseOption (string option, ref string [] args)
 	{
 		int idx = option.IndexOf (':');
 		string arg, value;
@@ -377,72 +399,108 @@ class MsbuildGenerator {
 		return false;
 	}
 
-	static string FindMcsRoot ()
+	static string [] LoadArgs (string file)
 	{
-		string p = Path.GetFullPath (".");
-		string steps = "";
-
-		while (p != Path.GetPathRoot (p)){
-			if (Directory.Exists (Path.Combine (p, "jay")) &&
-			    Directory.Exists (Path.Combine (p, "ilasm")))
-				return steps;
-
-			p = Path.GetFullPath (Path.Combine (p, ".."));
-			steps = Path.Combine (steps, "..");
-		}
-		Console.WriteLine ("Can not detect the root of MCS");
-		Environment.Exit (1);
-		return null;
-	}
-
-	static string FindClassRoot ()
-	{
-		string p = Path.GetFullPath (".");
-		string steps = "";
-
-		while (p != Path.GetPathRoot (p)){
-			if (Directory.Exists (Path.Combine (p, "corlib")) &&
-			    Directory.Exists (Path.Combine (p, "Managed.Windows.Forms")))
-				return steps;
-
-			p = Path.GetFullPath (Path.Combine (p, ".."));
-			steps = Path.Combine (steps, "..");
-		}
-		Console.WriteLine ("Can not detect the mcs/class directory");
-		Environment.Exit (1);
-		return null;
-	}
-
-	static void Main (string [] args)
-	{
-		if (args.Length != 2){
-			Console.WriteLine ("You must specify the template file and the output file");
-			return;
+		StreamReader f;
+		var args = new List<string> ();
+		string line;
+		try {
+			f = new StreamReader (file);
+		} catch {
+			return null;
 		}
 		
+		StringBuilder sb = new StringBuilder ();
+		
+		while ((line = f.ReadLine ()) != null){
+			int t = line.Length;
+			
+			for (int i = 0; i < t; i++){
+				char c = line [i];
+				
+				if (c == '"' || c == '\''){
+					char end = c;
+					
+					for (i++; i < t; i++){
+						c = line [i];
+						
+						if (c == end)
+							break;
+						sb.Append (c);
+					}
+				} else if (c == ' '){
+					if (sb.Length > 0){
+						args.Add (sb.ToString ());
+						sb.Length = 0;
+					}
+				} else
+					sb.Append (c);
+			}
+			if (sb.Length > 0){
+				args.Add (sb.ToString ());
+				sb.Length = 0;
+			}
+		}
+		
+		string [] ret_value = new string [args.Count];
+		args.CopyTo (ret_value, 0);
+		
+		return ret_value;
+	}
+	
+	public void Generate ()
+	{
 		string boot, mcs, flags, output_name, built_sources, library_output, response;
 
-		boot = read ();
-		mcs = read ();
-		flags = read ();
-		output_name = read ();
-		built_sources = read ();
-		library_output = read ();
-		response = read ();
-
-		string [] f = flags.Split ();
-		for (int i = 0; i < f.Length; i++){
-			if (f [i][0] == '-')
-				f [i] = "/" + f [i].Substring (1);
-
-			if (CSCParseOption (f [i], ref f))
-				continue;
-			Console.WriteLine ("Failure with {0}", f [i]);
-			Environment.Exit (1);
+		using (var par = new StreamReader (Path.Combine ("inputs", config_file))){
+			boot = par.ReadLine ();
+			mcs = par.ReadLine ();
+			flags = par.ReadLine ();
+			output_name = par.ReadLine ();
+			built_sources = par.ReadLine ();
+			library_output = par.ReadLine ();
+			response = par.ReadLine ();
+		}
+		string prefile = Path.Combine ("inputs", config_file.Replace (".input", ".pre"));
+		string prebuild = "";
+		if (File.Exists (prefile)){
+			using (var pre = new StreamReader (prefile)){
+				prebuild = pre.ReadToEnd ();
+			}
 		}
 
+		var all_args = new Queue<string []> ();
+		all_args.Enqueue (flags.Split ());
+		while (all_args.Count > 0){
+			string [] f = all_args.Dequeue ();
+			
+			for (int i = 0; i < f.Length; i++){
+				if (f [i][0] == '-')
+					f [i] = "/" + f [i].Substring (1);
+				
+				if (f [i][0] == '@') {
+					string [] extra_args;
+					string response_file = f [i].Substring (1);
+					
+					extra_args = LoadArgs (base_dir + "\\" + response_file);
+					if (extra_args == null) {
+						Console.WriteLine ("Unable to open response file: " + response_file);
+						Environment.Exit (1);
+					}
+
+					all_args.Enqueue (extra_args);
+					continue;
+				}
+				
+				if (CSCParseOption (f [i], ref f))
+					continue;
+				Console.WriteLine ("Failure with {0}", f [i]);
+				Environment.Exit (1);
+			}
+		}
+		
 		string [] source_files;
-		using (var reader = new StreamReader (response)){
+		using (var reader = new StreamReader (base_dir + "\\" + response)){
 			source_files  = reader.ReadToEnd ().Split ();
 		}
 		StringBuilder sources = new StringBuilder ();
@@ -452,9 +510,6 @@ class MsbuildGenerator {
 			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", s));
 		}
 		
-		var input = new StreamReader (args [0]);
-		string template = input.ReadToEnd ();
-
 		//
 		// Compute the csc command that we need to use
 		//
@@ -495,18 +550,16 @@ class MsbuildGenerator {
 		
 		var encoded_mono_paths = string.Join ("-", mono_paths).Replace ("--", "-");
 
-		Console.WriteLine ("The root is at {0}", FindMcsRoot ());
-		string csc_tool_path = FindMcsRoot ().Replace ("/", "\\") + "\\..\\mono\\msvc\\scripts\\" + encoded_mono_paths + "-" + compiler;
+		string csc_tool_path = mcs_topdir + "\\..\\mono\\msvc\\scripts\\" + encoded_mono_paths + "-" + compiler;
 		csc_tool_path = csc_tool_path.Replace ("--", "-");
 
 		var refs = new StringBuilder ();
 		
 		if (references.Count > 0){
 			refs.Append ("<ItemGroup>\n");
-			string class_root = FindClassRoot ();
 			string last = mono_paths [0].Substring (mono_paths [0].LastIndexOf ('/') + 1);
 			
-			string hint_path = FindClassRoot () + "\\lib\\" + last;
+			string hint_path = class_dir + "\\lib\\" + last;
 			
 			foreach (string r in references){
 				refs.Append ("    <Reference Include=\"" + r + "\">\n");
@@ -531,10 +584,40 @@ class MsbuildGenerator {
 			Replace ("@CSCTOOLPATH@", csc_tool_path).
 			Replace ("@DEBUG@", want_debugging_support ? "true" : "false").
 			Replace ("@REFERENCES@", refs.ToString ()).
+			Replace ("@PREBUILD@", prebuild).
 			Replace ("@SOURCES@", sources.ToString ());
 
-		using (var o = new StreamWriter (args [1])){
+
+		string ofile = "..\\..\\..\\mcs\\" + dir + "\\" + config_file.Replace ("input", "csproj");
+		Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
+		using (var o = new StreamWriter (ofile)){
 			o.WriteLine (output);
 		}
 	}
+	
+}
+
+public class Driver {
+	
+	static void Main (string [] args)
+	{
+		if (!Directory.Exists ("inputs") || !File.Exists ("monowrap.cs")){
+			Console.WriteLine ("This command should be ran from mono/msvc/scripts");
+			Environment.Exit (1);
+		}
+		
+		using (var s = new StreamReader ("order")){
+			string line;
+
+			while ((line = s.ReadLine ()) != null){
+				string [] lp = line.Split (new char [] { ':' });
+				if (!lp [0].StartsWith ("class"))
+					continue;
+
+				var gen = new MsbuildGenerator (lp [0], lp [1]);
+				gen.Generate ();
+			}
+		}
+	}
+
 }
