@@ -1761,6 +1761,9 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 {
 	MonoThread *thread;
 
+	if (mono_domain_get () == domain)
+		return;
+
 	SET_APPDOMAIN (domain);
 	SET_APPCONTEXT (domain->default_context);
 
