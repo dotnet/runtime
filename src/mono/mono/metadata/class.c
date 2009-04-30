@@ -297,9 +297,11 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		g_assert (mono_generic_param_info (type->data.generic_param)->name);
-		g_string_append (str, mono_generic_param_info (type->data.generic_param)->name);
-	
+		if (!mono_generic_param_info (type->data.generic_param))
+			g_string_append_printf (str, "%s%d", type->type == MONO_TYPE_VAR ? "!" : "!!", type->data.generic_param->num);
+		else
+			g_string_append (str, mono_generic_param_info (type->data.generic_param)->name);
+
 		mono_type_name_check_byref (type, str);
 
 		break;
