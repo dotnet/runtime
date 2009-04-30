@@ -1950,12 +1950,15 @@ static void
 clear_cached_vtable (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoClass *klass = (MonoClass*)key;
+	MonoVTable *vtable = value;
 	MonoDomain *domain = (MonoDomain*)user_data;
 	MonoClassRuntimeInfo *runtime_info;
 
 	runtime_info = klass->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id)
 		runtime_info->domain_vtables [domain->domain_id] = NULL;
+	if (vtable->data && klass->has_static_refs)
+		mono_gc_free_fixed (vtable->data);
 }
 
 typedef struct unload_data {
