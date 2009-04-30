@@ -673,3 +673,17 @@ field-marshal-table {
 
 	#TODO check the marshalspec blob (5)
 }
+
+decl-security-table {
+	assembly assembly-with-cas.exe
+
+	#bad parent (2)
+	invalid offset table-row ( 0xe 0 ) + 2 set-ushort 0x0000
+	invalid offset table-row ( 0xe 0 ) + 2 set-ushort 0x0007
+	invalid offset table-row ( 0xe 0 ) + 2 set-ushort 0x1000
+	invalid offset table-row ( 0xe 0 ) + 2 set-ushort 0x1001
+	invalid offset table-row ( 0xe 0 ) + 2 set-ushort 0x1002
+
+	#bad permission set (6)
+	invalid offset table-row ( 0xe 0 ) + 4 set-ushort 0x8800
+}

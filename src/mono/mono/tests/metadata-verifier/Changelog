@@ -1,3 +1,12 @@
+2009-04-30 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Tests for decl security table.
+
+	* assembly-with-cas.cs: New test file for producing tests
+	for cattr table.
+
+	* Makefile: Add new dependencies and do some cleanup.
+
 2009-04-29 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Tests for field marshal table.

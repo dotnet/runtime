@@ -22,12 +22,16 @@ assembly-with-constants.exe: assembly-with-constants.cs
 assembly-with-cattr.exe: assembly-with-cattr.cs
 	gmcs assembly-with-cattr.cs
 
+assembly-with-cas.exe: assembly-with-cas.cs
+	gmcs assembly-with-cas.cs
+
 TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-complex-type.exe \
 	assembly-with-methods.exe \
 	assembly-with-params.exe \
 	assembly-with-constants.exe \
 	assembly-with-cattr.exe \
+	assembly-with-cas.exe \
 	simple-assembly.exe
 
 
