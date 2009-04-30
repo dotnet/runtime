@@ -51,6 +51,7 @@
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-path.h>
@@ -1966,6 +1967,49 @@ typedef struct unload_data {
 	char *failure_reason;
 } unload_data;
 
+#ifdef HAVE_SGEN_GC
+static void
+deregister_reflection_info_roots_nspace_table (gpointer key, gpointer value, gpointer image)
+{
+	guint32 index = GPOINTER_TO_UINT (value);
+	MonoClass *class = mono_class_get (image, MONO_TOKEN_TYPE_DEF | index);
+
+	g_assert (class);
+
+	if (class->reflection_info)
+		mono_gc_deregister_root ((char*) &class->reflection_info);
+}
+
+static void
+deregister_reflection_info_roots_name_space (gpointer key, gpointer value, gpointer user_data)
+{
+	g_hash_table_foreach (value, deregister_reflection_info_roots_nspace_table, user_data);
+}
+
+static void
+deregister_reflection_info_roots (MonoDomain *domain)
+{
+	GSList *list;
+
+	mono_loader_lock ();
+	mono_domain_assemblies_lock (domain);
+	for (list = domain->domain_assemblies; list; list = list->next) {
+		MonoAssembly *assembly = list->data;
+		MonoImage *image = assembly->image;
+		int i;
+
+		if (image->dynamic && image->name_cache)
+			g_hash_table_foreach (image->name_cache, deregister_reflection_info_roots_name_space, image);
+		for (i = 0; i < image->module_count; ++i) {
+			MonoImage *module = image->modules [i];
+			if (module && module->dynamic && module->name_cache)
+				g_hash_table_foreach (module->name_cache, deregister_reflection_info_roots_name_space, module);
+		}
+	}
+	mono_domain_assemblies_unlock (domain);
+	mono_loader_unlock ();
+}
+#endif
 
 static guint32 WINAPI
 unload_thread_main (void *arg)
@@ -2004,6 +2048,9 @@ unload_thread_main (void *arg)
 	mono_loader_lock ();
 	mono_domain_lock (domain);
 	g_hash_table_foreach (domain->class_vtable_hash, clear_cached_vtable, domain);
+#ifdef HAVE_SGEN_GC
+	deregister_reflection_info_roots (domain);
+#endif
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 

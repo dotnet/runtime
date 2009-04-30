@@ -590,6 +590,19 @@ obj_is_from_pinned_alloc (char *p)
 	return FALSE;
 }
 
+static int slot_for_size (size_t size);
+
+static void
+free_pinned_object (PinnedChunk *chunk, char *obj, size_t size)
+{
+	void **p = (void**)obj;
+	int slot = slot_for_size (size);
+
+	g_assert (obj >= (char*)chunk->start_data && obj < ((char*)chunk + chunk->num_pages * FREELIST_PAGESIZE));
+	*p = chunk->free_list [slot];
+	chunk->free_list [slot] = p;
+}
+
 enum {
 	ROOT_TYPE_NORMAL = 0, /* "normal" roots */
 	ROOT_TYPE_PINNED = 1, /* roots without a GC descriptor */
@@ -715,11 +728,13 @@ static void update_current_thread_stack (void *start);
 static GCMemSection* alloc_section (size_t size);
 static void finalize_in_range (char *start, char *end);
 static void null_link_in_range (char *start, char *end);
+static void null_links_for_domain (MonoDomain *domain);
 static gboolean search_fragment_for_size (size_t size);
 static void mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end);
 static void clear_remsets (void);
 static void clear_tlabs (void);
 static char *find_tlab_next_from_address (char *addr);
+static void scan_pinned_objects (void (*callback) (PinnedChunk*, char*, size_t, void*), void *callback_data);
 static void sweep_pinned_objects (void);
 static void scan_from_pinned_objects (char *addr_start, char *addr_end);
 static void free_large_object (LOSObject *obj);
@@ -1176,7 +1191,6 @@ static mword obj_references_checked = 0;
  * This section of code deals with detecting the objects no longer in use
  * and reclaiming the memory.
  */
-#if 0
 static void __attribute__((noinline))
 scan_area (char *start, char *end)
 {
@@ -1270,12 +1284,44 @@ scan_area (char *start, char *end)
 		type_str, type_rlen, type_vector, type_bitmap, type_lbit, type_complex);*/
 }
 
+static gboolean
+need_remove_object_for_domain (char *start, MonoDomain *domain)
+{
+	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
+	/* handle threads someway (maybe insert the root domain vtable?) */
+	if (mono_object_domain (start) == domain && vt->klass != mono_defaults.thread_class) {
+		DEBUG (1, fprintf (gc_debug_file, "Need to cleanup object %p, (%s)\n", start, safe_name (start)));
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static void
+process_object_for_domain_clearing (char *start, MonoDomain *domain)
+{
+	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
+	/* The object could be a proxy for an object in the domain
+	   we're deleting. */
+	if (mono_class_has_parent (vt->klass, mono_defaults.real_proxy_class)) {
+		MonoObject *server = ((MonoRealProxy*)start)->unwrapped_server;
+
+		/* The server could already have been zeroed out, so
+		   we need to check for that, too. */
+		if (server && (!LOAD_VTABLE (server) || mono_object_domain (server) == domain)) {
+			DEBUG (1, fprintf (gc_debug_file, "Cleaning up remote pointer in %p to object %p (%s)\n",
+					start, server, LOAD_VTABLE (server) ? safe_name (server) : "null"));
+			((MonoRealProxy*)start)->unwrapped_server = NULL;
+		}
+	}
+}
+
 static void __attribute__((noinline))
 scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 {
 	GCVTable *vt;
 	size_t skip_size;
-	int type, remove;
+	int type;
+	gboolean remove;
 	mword desc;
 
 	while (start < end) {
@@ -1284,13 +1330,8 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 			continue;
 		}
 		vt = (GCVTable*)LOAD_VTABLE (start);
-		/* handle threads someway (maybe insert the root domain vtable?) */
-		if (mono_object_domain (start) == domain && vt->klass != mono_defaults.thread_class) {
-			DEBUG (1, fprintf (gc_debug_file, "Need to cleanup object %p, (%s)\n", start, safe_name (start)));
-			remove = 1;
-		} else {
-			remove = 0;
-		}
+		process_object_for_domain_clearing (start, domain);
+		remove = need_remove_object_for_domain (start, domain);
 		desc = vt->desc;
 		type = desc & 0x7;
 		if (type == DESC_TYPE_STRING) {
@@ -1354,6 +1395,19 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 	}
 }
 
+static void
+clear_domain_process_pinned_object_callback (PinnedChunk *chunk, char *obj, size_t size, MonoDomain *domain)
+{
+	process_object_for_domain_clearing (obj, domain);
+}
+
+static void
+clear_domain_free_pinned_object_callback (PinnedChunk *chunk, char *obj, size_t size, MonoDomain *domain)
+{
+	if (need_remove_object_for_domain (obj, domain))
+		free_pinned_object (chunk, obj, size);
+}
+
 /*
  * When appdomains are unloaded we can easily remove objects that have finalizers,
  * but all the others could still be present in random places on the heap.
@@ -1367,14 +1421,56 @@ void
 mono_gc_clear_domain (MonoDomain * domain)
 {
 	GCMemSection *section;
+	LOSObject *bigobj, *prev;
+	Fragment *frag;
+
 	LOCK_GC;
+	/* Clear all remaining nursery fragments */
+	if (nursery_clear_policy == CLEAR_AT_TLAB_CREATION) {
+		g_assert (nursery_next <= nursery_frag_real_end);
+		memset (nursery_next, 0, nursery_frag_real_end - nursery_next);
+		for (frag = nursery_fragments; frag; frag = frag->next) {
+			memset (frag->fragment_start, 0, frag->fragment_end - frag->fragment_start);
+		}
+	}
+
+	null_links_for_domain (domain);
+
 	for (section = section_list; section; section = section->next) {
 		scan_area_for_domain (domain, section->data, section->end_data);
 	}
-	/* FIXME: handle big and fixed objects (we remove, don't clear in this case) */
+
+	/* We need two passes over pinned and large objects because
+	   freeing such an object gives its memory back to the OS (in
+	   the case of large objects) or obliterates its vtable
+	   (pinned objects), but we might need to dereference a
+	   pointer from an object to another object if the first
+	   object is a proxy. */
+	scan_pinned_objects (clear_domain_process_pinned_object_callback, domain);
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		process_object_for_domain_clearing (bigobj->data, domain);
+
+	prev = NULL;
+	for (bigobj = los_object_list; bigobj;) {
+		if (need_remove_object_for_domain (bigobj->data, domain)) {
+			LOSObject *to_free = bigobj;
+			if (prev)
+				prev->next = bigobj->next;
+			else
+				los_object_list = bigobj->next;
+			bigobj = bigobj->next;
+			DEBUG (1, fprintf (gc_debug_file, "Freeing large object %p (%s)\n",
+					bigobj->data, safe_name (bigobj->data)));
+			free_large_object (to_free);
+			continue;
+		}
+		prev = bigobj;
+		bigobj = bigobj->next;
+	}
+	scan_pinned_objects (clear_domain_free_pinned_object_callback, domain);
+
 	UNLOCK_GC;
 }
-#endif
 
 /*
  * add_to_global_remset:
@@ -2959,44 +3055,7 @@ mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end)
 }
 
 static void
-sweep_pinned_objects (void)
-{
-	PinnedChunk *chunk;
-	int i, obj_size;
-	char *p, *endp;
-	void **ptr;
-	void *end_chunk;
-	for (chunk = pinned_chunk_list; chunk; chunk = chunk->next) {
-		end_chunk = (char*)chunk + chunk->num_pages * FREELIST_PAGESIZE;
-		DEBUG (6, fprintf (gc_debug_file, "Sweeping pinned chunk %p (range: %p-%p)\n", chunk, chunk->start_data, end_chunk));
-		for (i = 0; i < chunk->num_pages; ++i) {
-			obj_size = chunk->page_sizes [i];
-			if (!obj_size)
-				continue;
-			p = i? (char*)chunk + i * FREELIST_PAGESIZE: chunk->start_data;
-			endp = i? p + FREELIST_PAGESIZE: (char*)chunk + FREELIST_PAGESIZE;
-			DEBUG (6, fprintf (gc_debug_file, "Page %d (size: %d, range: %p-%p)\n", i, obj_size, p, endp));
-			while (p + obj_size <= endp) {
-				ptr = (void**)p;
-				DEBUG (9, fprintf (gc_debug_file, "Considering %p (vtable: %p)\n", ptr, *ptr));
-				/* if the first word (the vtable) is outside the chunk we have an object */
-				if (*ptr && (*ptr < (void*)chunk || *ptr >= end_chunk)) {
-					if (object_is_pinned (ptr)) {
-						unpin_object (ptr);
-						DEBUG (6, fprintf (gc_debug_file, "Unmarked pinned object %p (%s)\n", ptr, safe_name (ptr)));
-					} else {
-						/* FIXME: add to freelist */
-						DEBUG (6, fprintf (gc_debug_file, "Going to free unmarked pinned object %p (%s)\n", ptr, safe_name (ptr)));
-					}
-				}
-				p += obj_size;
-			}
-		}
-	}
-}
-
-static void
-scan_from_pinned_objects (char *addr_start, char *addr_end)
+scan_pinned_objects (void (*callback) (PinnedChunk*, char*, size_t, void*), void *callback_data)
 {
 	PinnedChunk *chunk;
 	int i, obj_size;
@@ -3017,16 +3076,46 @@ scan_from_pinned_objects (char *addr_start, char *addr_end)
 				ptr = (void**)p;
 				DEBUG (9, fprintf (gc_debug_file, "Considering %p (vtable: %p)\n", ptr, *ptr));
 				/* if the first word (the vtable) is outside the chunk we have an object */
-				if (*ptr && (*ptr < (void*)chunk || *ptr >= end_chunk)) {
-					DEBUG (6, fprintf (gc_debug_file, "Precise object scan %d of alloc_pinned %p (%s)\n", i, ptr, safe_name (ptr)));
-					// FIXME: Put objects without references into separate chunks
-					// which do not need to be scanned
-					scan_object ((char*)ptr, addr_start, addr_end);
-				}
+				if (*ptr && (*ptr < (void*)chunk || *ptr >= end_chunk))
+					callback (chunk, (char*)ptr, obj_size, callback_data);
 				p += obj_size;
 			}
 		}
 	}
+}
+
+static void
+sweep_pinned_objects_callback (PinnedChunk *chunk, char *ptr, size_t size, void *data)
+{
+	if (object_is_pinned (ptr)) {
+		unpin_object (ptr);
+		DEBUG (6, fprintf (gc_debug_file, "Unmarked pinned object %p (%s)\n", ptr, safe_name (ptr)));
+	} else {
+		DEBUG (6, fprintf (gc_debug_file, "Freeing unmarked pinned object %p (%s)\n", ptr, safe_name (ptr)));
+		free_pinned_object (chunk, ptr, size);
+	}
+}
+
+static void
+sweep_pinned_objects (void)
+{
+	scan_pinned_objects (sweep_pinned_objects_callback, NULL);
+}
+
+static void
+scan_object_callback (PinnedChunk *chunk, char *ptr, size_t size, char **data)
+{
+	DEBUG (6, fprintf (gc_debug_file, "Precise object scan of alloc_pinned %p (%s)\n", ptr, safe_name (ptr)));
+	/* FIXME: Put objects without references into separate chunks
+	   which do not need to be scanned */
+	scan_object (ptr, data [0], data [1]);
+}
+
+static void
+scan_from_pinned_objects (char *addr_start, char *addr_end)
+{
+	char *data [2] = { addr_start, addr_end };
+	scan_pinned_objects (scan_object_callback, data);
 }
 
 /*
@@ -3672,6 +3761,39 @@ null_link_in_range (char *start, char *end)
 					*entry->link = HIDE_POINTER (copy_object (object, start, end), FALSE);
 					DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->link, DISLINK_OBJECT (entry)));
 				}
+			}
+			prev = entry;
+			entry = entry->next;
+		}
+	}
+}
+
+static void
+null_links_for_domain (MonoDomain *domain)
+{
+	DisappearingLink *entry, *prev;
+	int i;
+	for (i = 0; i < disappearing_link_hash_size; ++i) {
+		prev = NULL;
+		for (entry = disappearing_link_hash [i]; entry; ) {
+			char *object = DISLINK_OBJECT (entry);
+			if (object && mono_object_domain (object) == domain) {
+				DisappearingLink *next = entry->next;
+
+				if (prev)
+					prev->next = next;
+				else
+					disappearing_link_hash [i] = next;
+
+				if (*(entry->link)) {
+					*(entry->link) = NULL;
+					g_warning ("Disappearing link not freed");
+				} else {
+					free_internal_mem (entry);
+				}
+
+				entry = next;
+				continue;
 			}
 			prev = entry;
 			entry = entry->next;

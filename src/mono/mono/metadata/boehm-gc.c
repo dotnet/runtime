@@ -541,6 +541,11 @@ mono_gc_wbarrier_object (MonoObject *object)
 {
 }
 
+void
+mono_gc_clear_domain (MonoDomain *domain)
+{
+}
+
 #if defined(USE_INCLUDED_LIBGC) && defined(USE_COMPILER_TLS) && defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
 extern __thread MONO_TLS_FAST void* GC_thread_tls;
 #include "metadata-internals.h"

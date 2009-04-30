@@ -1867,6 +1867,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	mono_debug_domain_unload (domain);
 
+	mono_gc_clear_domain (domain);
+
 	mono_appdomains_lock ();
 	appdomains_list [domain->domain_id] = NULL;
 	mono_appdomains_unlock ();
