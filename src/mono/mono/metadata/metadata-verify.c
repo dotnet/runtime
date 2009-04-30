@@ -1039,6 +1039,14 @@ is_valid_marshal_spec (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+is_valid_permission_set (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return blob.size >= 1 && blob.size - 1 >= offset;
+}
+
+static gboolean
 decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
 {
 	unsigned char b;
@@ -1653,6 +1661,31 @@ verify_field_marshal_table (VerifyContext *ctx)
 }
 
 static void
+verify_decl_security_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_DECLSECURITY];
+	guint32 data [MONO_DECL_SECURITY_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_DECL_SECURITY_SIZE);
+
+		if (!is_valid_coded_index (ctx, HAS_DECL_SECURITY_DESC, data [MONO_DECL_SECURITY_PARENT]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid DeclSecurity row %d Parent field 0x%08x", i, data [MONO_DECL_SECURITY_PARENT]));
+
+		if (!get_coded_index_token (HAS_DECL_SECURITY_DESC, data [MONO_DECL_SECURITY_PARENT]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid DeclSecurity row %d Parent field is null", i));
+
+		if (!data [MONO_DECL_SECURITY_PERMISSIONSET])
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid DeclSecurity row %d PermissionSet field is null", i));
+
+		if (!is_valid_permission_set (ctx, data [MONO_DECL_SECURITY_PERMISSIONSET]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid DeclSecurity row %d PermissionSet field 0x%08x", i, data [MONO_DECL_SECURITY_PERMISSIONSET]));
+
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1698,6 +1731,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_cattr_table (ctx);
 	CHECK_ERROR ();
 	verify_field_marshal_table (ctx);
+	CHECK_ERROR ();
+	verify_decl_security_table (ctx);
 }
 
 static gboolean
