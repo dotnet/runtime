@@ -706,3 +706,13 @@ class-layout-table {
 	#Check layout along the inheritance chain. (7)
 }
 
+field-layout-table {
+	assembly assembly-with-complex-type.exe
+
+	#TODO check properties of the field (2, 5, 7, 8, 9)
+
+	#Field must be valid (4)
+	invalid offset table-row ( 0x10 0 ) + 4 set-ushort 0x0000
+	invalid offset table-row ( 0x10 0 ) + 4 set-ushort 0x8800
+
+}

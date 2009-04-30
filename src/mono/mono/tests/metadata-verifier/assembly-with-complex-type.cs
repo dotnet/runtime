@@ -46,13 +46,18 @@ public class Bla : Iface
 }
 
 [StructLayout (LayoutKind.Sequential, Pack=8)]
-public class ExplicitLayout {
+public class SequentialLayout {
 	int a;
 	int b;
 }
 
 [StructLayout (LayoutKind.Sequential, Pack=4, Size=20)]
-public class ExplicitLayout2 {
+public class SequentialLayout2 {
 	int a;
 	int b;
+}
+[StructLayout (LayoutKind.Explicit)]
+public class ExplicitLayout2 {
+	[FieldOffset (33)] int a;
+	[FieldOffset (0)] int b;
 }

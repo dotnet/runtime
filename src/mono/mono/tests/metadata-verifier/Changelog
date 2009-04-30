@@ -1,5 +1,12 @@
 2009-04-30 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for field layout table.
+
+	* assembly-with-complex-type.cs: Added more stuff for
+	field layout tests.
+
+2009-04-30 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for class layout table.
 
 	* assembly-with-complex-type.cs: Added more stuff for
