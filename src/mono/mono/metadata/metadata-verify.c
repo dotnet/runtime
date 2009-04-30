@@ -1753,6 +1753,25 @@ verify_standalonesig_table (VerifyContext *ctx)
 	}
 }
 
+static void
+verify_eventmap_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_EVENTMAP];
+	guint32 data [MONO_EVENT_MAP_SIZE], eventlist = 0;
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_EVENT_MAP_SIZE);
+
+		if (!data [MONO_EVENT_MAP_PARENT] || data [MONO_EVENT_MAP_PARENT] > ctx->image->tables [MONO_TABLE_TYPEDEF].rows + 1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid EventMap row %d Parent field 0x%08x", i, data [MONO_EVENT_MAP_PARENT]));
+
+		if (!data [MONO_EVENT_MAP_EVENTLIST] || data [MONO_EVENT_MAP_EVENTLIST] <= eventlist)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid EventMap row %d EventList field %d", i, data [MONO_EVENT_MAP_EVENTLIST]));
+
+		eventlist = data [MONO_EVENT_MAP_EVENTLIST];
+	}
+}
 
 static void
 verify_tables_data (VerifyContext *ctx)
@@ -1808,6 +1827,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_field_layout_table (ctx);
 	CHECK_ERROR ();
 	verify_standalonesig_table (ctx);
+	CHECK_ERROR ();
+	verify_eventmap_table (ctx);
 }
 
 static gboolean
