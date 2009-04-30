@@ -1047,6 +1047,14 @@ is_valid_permission_set (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+is_valid_standalonesig_blob (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return blob.size >= 1 && blob.size - 1 >= offset;
+}
+
+static gboolean
 decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
 {
 	unsigned char b;
@@ -1731,6 +1739,22 @@ verify_field_layout_table (VerifyContext *ctx)
 }
 
 static void
+verify_standalonesig_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_STANDALONESIG];
+	guint32 data [MONO_STAND_ALONE_SIGNATURE_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_STAND_ALONE_SIGNATURE_SIZE);
+
+		if (!is_valid_standalonesig_blob (ctx, data [MONO_STAND_ALONE_SIGNATURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid StandAloneSig row %d Signature field 0x%08x", i, data [MONO_STAND_ALONE_SIGNATURE]));
+	}
+}
+
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1782,6 +1806,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_class_layout_table (ctx);
 	CHECK_ERROR ();
 	verify_field_layout_table (ctx);
+	CHECK_ERROR ();
+	verify_standalonesig_table (ctx);
 }
 
 static gboolean
