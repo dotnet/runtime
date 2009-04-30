@@ -1,8 +1,8 @@
 @echo off
-mkdir scripts\net_1_1_bootstrap 2>1 nul
-mkdir scripts\net_1_1 2>1 nul
-mkdir scripts\net_2_0 2>1 nul
-mkdir scripts\net_2_1 2>1 nul
+mkdir scripts\net_1_1_bootstrap > nul 2> nul
+mkdir scripts\net_1_1 > nul 2> nul
+mkdir scripts\net_2_0 > nul 2> nul
+mkdir scripts\net_2_1 > nul 2> nul
 
 csc -debug -out:scripts\monowrap.exe scripts\monowrap.cs 
 copy scripts\monowrap.exe scripts\net_1_1_bootstrap\csc.exe
