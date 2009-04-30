@@ -42,7 +42,10 @@ public enum Foo
 
 public class Bla : Iface
 {
-	public void Foo () {}
+	public void Foo () {
+		int a,b,c;
+		a = b = c = 0;
+	}
 }
 
 [StructLayout (LayoutKind.Sequential, Pack=8)]

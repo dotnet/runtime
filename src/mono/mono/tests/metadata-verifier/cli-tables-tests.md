@@ -716,3 +716,13 @@ field-layout-table {
 	invalid offset table-row ( 0x10 0 ) + 4 set-ushort 0x8800
 
 }
+
+stand-alone-sig-table {
+	assembly assembly-with-complex-type.exe
+
+	#signature has a valid blob index (2)
+
+	#TODO validate the blob content. (3)
+	invalid offset table-row ( 0x11 0 ) set-ushort 0x8800
+
+}
