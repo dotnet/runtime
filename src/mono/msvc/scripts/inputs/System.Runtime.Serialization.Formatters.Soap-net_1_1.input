@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /r:mscorlib.dll /r:System.Xml.dll
+System.Runtime.Serialization.Formatters.Soap.dll
+
+./../../class/lib/net_1_1/System.Runtime.Serialization.Formatters.Soap.dll
+System.Runtime.Serialization.Formatters.Soap.dll.sources

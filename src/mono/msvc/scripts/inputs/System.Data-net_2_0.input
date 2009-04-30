@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -nowarn:649 -unsafe -r:mscorlib.dll -r:./../../class/lib/net_2_0/System.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll -r:Mono.Data.Tds.dll -r:System.Configuration.dll -r:System.Transactions.dll
+System.Data.dll
+Mono.Data.SqlExpressions/Parser.cs
+./../../class/lib/net_2_0/System.Data.dll
+System.Data.dll.sources

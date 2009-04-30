@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../../mcs/gmcs.exe
+/codepage:65001 /resource:Transform.resources,NUnit.Util.Transform.resources -r:nunit.core.dll -r:nunit.core.interfaces.dll -r:System.dll -r:System.Xml.dll -r:System.Runtime.Remoting.dll /d:MONO /d:StronglyNamedAssembly -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig
+nunit.util.dll
+
+./../../../class/lib/net_2_0/nunit.util.dll
+nunit.util.dll.sources

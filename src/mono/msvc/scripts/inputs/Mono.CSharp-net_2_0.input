@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
+/codepage:65001 -d:GMCS_SOURCE -d:NET_1_1 -d:NET_2_0 -r:System -r:System.Xml -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig
+Mono.CSharp.dll
+
+fixup/net_2_0/Mono.CSharp.dll
+Mono.CSharp.dll.sources

@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /unsafe /r:mscorlib.dll /r:System.dll -resource:Assembly/Mono.ico,Mono.ico -resource:Assembly/Information.ico,Information.ico -resource:Assembly/Error.ico,Error.ico -resource:Assembly/Warning.ico,Warning.ico -resource:Assembly/Question.ico,Question.ico
+System.Drawing.dll
+
+./../../class/lib/net_1_1/System.Drawing.dll
+System.Drawing.dll.sources

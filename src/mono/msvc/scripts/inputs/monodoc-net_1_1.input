@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /codepage:utf8 /nowarn:169,164,162,168,219 /r:Commons.Xml.Relaxng /resource:Resources/base.css,base.css /resource:Resources/ecmaspec-html-css.xsl,ecmaspec-html-css.xsl /resource:Resources/ecmaspec-html.xsl,ecmaspec-html.xsl /resource:Resources/ecmaspec.css,ecmaspec.css /resource:Resources/helper.js,helper.js /resource:Resources/home.html,home.html /resource:Resources/Lminus.gif,Lminus.gif /resource:Resources/Lplus.gif,Lplus.gif /resource:Resources/mdoc-html-utils.xsl,mdoc-html-utils.xsl /resource:Resources/mdoc-sections-css.xsl,mdoc-sections-css.xsl /resource:Resources/mdoc-sections.xsl,mdoc-sections.xsl /resource:Resources/mono-ecma-css.xsl,mono-ecma-css.xsl /resource:Resources/mono-ecma-impl.xsl,mono-ecma-impl.xsl /resource:Resources/mono-ecma.css,mono-ecma.css /resource:Resources/mono-ecma.xsl,mono-ecma.xsl /r:ICSharpCode.SharpZipLib /r:mscorlib.dll /r:System.dll /r:System.Web /r:System.Web.Services /r:System.Xml.dll
+monodoc.dll
+
+./../../class/lib/net_1_1/monodoc.dll
+monodoc.dll.sources

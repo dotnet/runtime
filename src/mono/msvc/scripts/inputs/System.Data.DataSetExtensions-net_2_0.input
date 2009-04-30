@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -r:mscorlib.dll -r:System.Core.dll -r:System.dll -r:System.Data.dll -r:System.Xml.dll -r:System.Web.dll -d:NET_3_5 -nowarn:1720
+System.Data.DataSetExtensions.dll
+
+./../../class/lib/net_2_0/System.Data.DataSetExtensions.dll
+System.Data.DataSetExtensions.dll.sources

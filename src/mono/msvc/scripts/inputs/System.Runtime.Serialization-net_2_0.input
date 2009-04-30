@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig /nowarn:168,169,219,414 /r:System.dll /r:System.Xml.dll /r:System.Core.dll /resource:resources/mstypes.schema /d:NET_3_0 /r:System.Data.dll /r:System.Configuration.dll
+System.Runtime.Serialization.dll
+
+./../../class/lib/net_2_0/System.Runtime.Serialization.dll
+System.Runtime.Serialization.dll.sources

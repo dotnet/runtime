@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll /resource:resources/relaxng.rng,relaxng.rng
+Commons.Xml.Relaxng.dll
+Commons.Xml.Relaxng.Rnc/RncParser.cs
+./../../class/lib/net_1_1/Commons.Xml.Relaxng.dll
+Commons.Xml.Relaxng.dll.sources

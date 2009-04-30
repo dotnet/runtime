@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_2_0_bootstrap/gmcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll
+System.Configuration.dll
+
+./../../class/lib/net_2_0_bootstrap/System.Configuration.dll
+System.Configuration.dll.sources

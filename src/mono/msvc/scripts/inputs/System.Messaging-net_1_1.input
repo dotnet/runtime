@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /resource:System.Messaging/MessageQueue.resx /r:System.dll /r:System.Configuration.Install.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll /r:System.Xml /r:Mono.Messaging.dll
+System.Messaging.dll
+
+./../../class/lib/net_1_1/System.Messaging.dll
+System.Messaging.dll.sources

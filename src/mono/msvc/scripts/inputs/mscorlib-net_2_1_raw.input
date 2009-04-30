@@ -1,0 +1,7 @@
+true
+MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe
+/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin
+mscorlib.dll
+
+./../../class/lib/net_2_1_raw/mscorlib.dll
+corlib.dll.sources

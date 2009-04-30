@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../../class/lib/net_1_1/mcs.exe
+/codepage:65001 /unsafe /resource:big5.table /resource:gb2312.table /resource:jis.table /resource:ks.table /resource:gb18030.table /r:mscorlib.dll /r:I18N.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig
+I18N.CJK.dll
+
+./../../../class/lib/net_1_1/I18N.CJK.dll
+I18N.CJK.dll.sources

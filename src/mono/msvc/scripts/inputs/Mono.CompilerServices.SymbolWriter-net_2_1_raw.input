@@ -1,0 +1,7 @@
+true
+MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig /r:mscorlib.dll
+Mono.CompilerServices.SymbolWriter.dll
+
+./../../class/lib/net_2_1_raw/Mono.CompilerServices.SymbolWriter.dll
+Mono.CompilerServices.SymbolWriter.dll.sources

@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig
+Mono.Cairo.dll
+
+./../../class/lib/net_2_0/Mono.Cairo.dll
+Mono.Cairo.dll.sources

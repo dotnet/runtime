@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1_bootstrap/mcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642
+System.Xml.dll
+System.Xml.XPath/Parser.cs Mono.Xml.Xsl/PatternParser.cs Mono.Xml.Xsl/PatternTokenizer.cs
+./../../class/lib/net_1_1_bootstrap/System.Xml.dll
+System.Xml.dll.sources

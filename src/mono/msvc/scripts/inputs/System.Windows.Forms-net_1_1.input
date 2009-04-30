@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /unsafe /r:mscorlib.dll /r:System.dll /r:System.Xml.dll /r:System.Drawing.dll /r:Accessibility.dll /r:System.Data.dll /r:Mono.Posix.dll /r:Mono.WebBrowser @System.Windows.Forms.dll.resources -debug -nowarn:618,612,809
+System.Windows.Forms.dll
+
+./../../class/lib/net_1_1/System.Windows.Forms.dll
+System.Windows.Forms.dll.sources

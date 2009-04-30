@@ -1,0 +1,7 @@
+false
+MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
+/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig /r:System.dll /r:System.Core.dll /r:System.Web.dll -d:NET_3_5
+System.Web.Abstractions.dll
+
+./../../class/lib/net_2_0/System.Web.Abstractions.dll
+System.Web.Abstractions.dll.sources
