@@ -788,7 +788,7 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		ass = tmp->data;
-		if (refonly && !ass->ref_only)
+		if (refonly != ass->ref_only)
 			continue;
 		if (ass->corlib_internal)
 			continue;
