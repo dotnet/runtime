@@ -2193,10 +2193,10 @@ case "x$gc" in
 		;;
 esac
 
-PREVIEW=yes
-AC_ARG_WITH(preview,  [  --with-preview=yes,no          If you want to install the 2.0 FX preview (defaults to yes)],[
-	if test x$with_preview = xno; then
-	      PREVIEW=no
+PROFILE2=yes
+AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0 FX (defaults to yes)],[
+	if test x$with_profile2 = xno; then
+	      PROFILE2=no
 	fi
 ])
 
@@ -2243,7 +2243,7 @@ AC_SUBST(OPROFILE_LIBS)
 
 libmono_ldflags="$libmono_ldflags $LIBS"
 
-AM_CONDITIONAL(INSTALL_2_0, test x$PREVIEW = xyes)
+AM_CONDITIONAL(INSTALL_2_0, test x$PROFILE2 = xyes)
 AM_CONDITIONAL(INSTALL_2_1, test x$MOONLIGHT = xyes)
 
 AM_CONDITIONAL(MIPS_GCC, test ${TARGET}${ac_cv_prog_gcc} = MIPSyes)
@@ -2544,7 +2544,7 @@ echo "
 	TLS:           $with_tls
 	SIGALTSTACK:   $with_sigaltstack
 	Engine:        $jit_status
-	2.0 Beta:      $PREVIEW
+	2.0 Profile:   $PROFILE2
 	2.1 Alpha:     $MOONLIGHT
 	JNI support:   $jdk_headers_found
 	libgdiplus:    $libgdiplus_msg

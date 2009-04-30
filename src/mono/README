@@ -267,10 +267,12 @@ This is Mono.
 
 		This defaults to `yes'.
 
-	--with-preview=yes,no
+	--with-profile2=yes,no
 
-		Whether you want to build libraries that are still not
-	  	completed (The 2.0 APIs).   It defaults to `yes'.
+		Whether you want to build the 2.x libraries (support
+		for Generics and the 2.0/3.5 APIS).
+
+	  	It defaults to `yes'.
 
 	--with-moonlight=yes,no
 
