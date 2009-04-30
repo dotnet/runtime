@@ -1716,6 +1716,21 @@ verify_class_layout_table (VerifyContext *ctx)
 }
 
 static void
+verify_field_layout_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_FIELDLAYOUT];
+	guint32 data [MONO_FIELD_LAYOUT_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_FIELD_LAYOUT_SIZE);
+
+		if (!data [MONO_FIELD_LAYOUT_FIELD] || data[MONO_FIELD_LAYOUT_FIELD] > ctx->image->tables [MONO_TABLE_FIELD].rows + 1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldLayout row %d Field field 0x%08x", i, data [MONO_FIELD_LAYOUT_FIELD]));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1765,6 +1780,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_decl_security_table (ctx);
 	CHECK_ERROR ();
 	verify_class_layout_table (ctx);
+	CHECK_ERROR ();
+	verify_field_layout_table (ctx);
 }
 
 static gboolean
