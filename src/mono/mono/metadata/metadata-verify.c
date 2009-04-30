@@ -1686,6 +1686,36 @@ verify_decl_security_table (VerifyContext *ctx)
 }
 
 static void
+verify_class_layout_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_CLASSLAYOUT];
+	guint32 data [MONO_CLASS_LAYOUT_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_CLASS_LAYOUT_SIZE);
+
+		if (!data [MONO_CLASS_LAYOUT_PARENT] || data[MONO_CLASS_LAYOUT_PARENT] > ctx->image->tables [MONO_TABLE_TYPEDEF].rows + 1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ClassLayout row %d Parent field 0x%08x", i, data [MONO_TABLE_TYPEDEF]));
+
+		switch (data [MONO_CLASS_LAYOUT_PACKING_SIZE]) {
+		case 0:
+		case 1:
+		case 2:
+		case 4:
+		case 8:
+		case 16:
+		case 32:
+		case 64:
+		case 128:
+			break;
+		default:
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ClassLayout row %d Packing field %d", i, data [MONO_CLASS_LAYOUT_PACKING_SIZE]));
+		}
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1733,6 +1763,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_field_marshal_table (ctx);
 	CHECK_ERROR ();
 	verify_decl_security_table (ctx);
+	CHECK_ERROR ();
+	verify_class_layout_table (ctx);
 }
 
 static gboolean
