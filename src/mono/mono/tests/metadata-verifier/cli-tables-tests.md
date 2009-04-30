@@ -726,3 +726,18 @@ stand-alone-sig-table {
 	invalid offset table-row ( 0x11 0 ) set-ushort 0x8800
 
 }
+
+event-map-table {
+	assembly assembly-with-events.exe
+
+	#parent must be a valid typedef token
+	invalid offset table-row ( 0x12 0 ) set-ushort 0x8800
+
+	#bad eventlist
+	invalid offset table-row ( 0x12 0 ) + 2 set-ushort 0x0000
+	invalid offset table-row ( 0x12 0 ) + 2 set-ushort 0x8800
+
+	#eventlist must not be duplicated and increase monotonically
+	#evt list is 1,3,7 we change the first to 4
+	invalid offset table-row ( 0x12 0 ) + 2 set-ushort 4
+}

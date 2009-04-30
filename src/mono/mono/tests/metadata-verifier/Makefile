@@ -25,6 +25,9 @@ assembly-with-cattr.exe: assembly-with-cattr.cs
 assembly-with-cas.exe: assembly-with-cas.cs
 	gmcs assembly-with-cas.cs
 
+assembly-with-events.exe: assembly-with-events.cs
+	gmcs assembly-with-events.cs
+
 TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-complex-type.exe \
 	assembly-with-methods.exe \
@@ -32,6 +35,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-constants.exe \
 	assembly-with-cattr.exe \
 	assembly-with-cas.exe \
+	assembly-with-events.exe \
 	simple-assembly.exe
 
 

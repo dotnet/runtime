@@ -1,5 +1,14 @@
 2009-04-30 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for event map table.
+
+	* assembly-with-events.cs: New test file for producing tests
+	for cattr table.
+
+	* Makefile: Add new dependency.
+
+2009-04-30 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for standalonesig table.
 
 	* assembly-with-complex-type.cs: Added more stuff for
