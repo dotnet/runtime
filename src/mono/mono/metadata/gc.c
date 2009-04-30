@@ -100,6 +100,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	MonoObject *o2;
 #endif
 	MonoMethod* finalizer = NULL;
+	MonoDomain *caller_domain = mono_domain_get ();
 	MonoDomain *domain;
 	RuntimeInvokeFunction runtime_invoke;
 	GSList *l, *refs = NULL;
@@ -167,9 +168,6 @@ mono_gc_run_finalize (void *obj, void *data)
 	/* speedup later... and use a timeout */
 	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
 
-	/* Use _internal here, since this thread can enter a doomed appdomain */
-	mono_domain_set_internal (mono_object_domain (o));		
-
 	/* delegates that have a native function pointer allocated are
 	 * registered for finalization, but they don't have a Finalize
 	 * method, because in most cases it's not needed and it's just a waste.
@@ -181,6 +179,9 @@ mono_gc_run_finalize (void *obj, void *data)
 		return;
 	}
 
+	/* Use _internal here, since this thread can enter a doomed appdomain */
+	mono_domain_set_internal (mono_object_domain (o));
+
 	finalizer = mono_class_get_finalizer (o->vtable->klass);
 
 #ifndef DISABLE_COM
@@ -190,8 +191,10 @@ mono_gc_run_finalize (void *obj, void *data)
 	 * FIXME: what to do about ressurection and suppression
 	 * of finalizer on object with CCW.
 	 */
-	if (mono_marshal_free_ccw (o) && !finalizer)
+	if (mono_marshal_free_ccw (o) && !finalizer) {
+		mono_domain_set_internal (caller_domain);
 		return;
+	}
 #endif
 
 	/* 
@@ -214,6 +217,8 @@ mono_gc_run_finalize (void *obj, void *data)
 	if (exc) {
 		/* fixme: do something useful */
 	}
+
+	mono_domain_set_internal (caller_domain);
 }
 
 void

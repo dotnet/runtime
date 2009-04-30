@@ -2079,6 +2079,7 @@ mono_domain_unload (MonoDomain *domain)
 		mono_domain_set (caller_domain, FALSE);
 		mono_raise_exception ((MonoException*)exc);
 	}
+	mono_domain_set (caller_domain, FALSE);
 
 	thread_data.domain = domain;
 	thread_data.failure_reason = NULL;
@@ -2113,8 +2114,6 @@ mono_domain_unload (MonoDomain *domain)
 			return;
 	}
 	CloseHandle (thread_handle);
-
-	mono_domain_set (caller_domain, FALSE);
 
 	if (thread_data.failure_reason) {
 		MonoException *ex;
