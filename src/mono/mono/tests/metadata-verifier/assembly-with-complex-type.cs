@@ -44,3 +44,15 @@ public class Bla : Iface
 {
 	public void Foo () {}
 }
+
+[StructLayout (LayoutKind.Sequential, Pack=8)]
+public class ExplicitLayout {
+	int a;
+	int b;
+}
+
+[StructLayout (LayoutKind.Sequential, Pack=4, Size=20)]
+public class ExplicitLayout2 {
+	int a;
+	int b;
+}

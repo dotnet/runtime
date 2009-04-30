@@ -1,5 +1,12 @@
 2009-04-30 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for class layout table.
+
+	* assembly-with-complex-type.cs: Added more stuff for
+	class layout tests.
+
+2009-04-30 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for decl security table.
 
 	* assembly-with-cas.cs: New test file for producing tests

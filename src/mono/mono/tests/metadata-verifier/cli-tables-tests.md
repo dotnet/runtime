@@ -687,3 +687,22 @@ decl-security-table {
 	#bad permission set (6)
 	invalid offset table-row ( 0xe 0 ) + 4 set-ushort 0x8800
 }
+
+class-layout-table {
+	assembly assembly-with-complex-type.exe
+
+	#valid parent row (2)
+	invalid offset table-row ( 0xF 0 ) + 6 set-ushort 0x0000
+	invalid offset table-row ( 0xF 0 ) + 6 set-ushort 0x0880
+
+	#TODO check that the type is not an interface (2)
+	#TODO parent must not have auto layout (3)
+
+	#packing must be (0,1,2,4,8,16,32,64,128) (4)
+	invalid offset table-row ( 0xF 0 ) set-ushort 0x0003
+
+	#TODO do checks depending on the kind of parent (4) 
+
+	#Check layout along the inheritance chain. (7)
+}
+
