@@ -86,3 +86,6 @@ bootstrap: all
 patch-quiet:
 	find mono -name Makefile -exec scripts/patch-quiet.sh {} \;
 	find libgc -name Makefile -exec scripts/patch-quiet.sh {} \;
+
+update-csproj:
+	(cd $(mcs_topdir)/build/csproj && gmcs genproj.cs) && (cd runtime; make V=1 extra_targets=csproj-local)
