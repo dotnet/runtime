@@ -19,6 +19,6 @@ copy scripts\monowrap.pdb scripts\net_2_1\csc.pdb
 
 echo Setup complete, you can now use build the solution
 
-csc -debug -out:scripts\genproj.exe scripts\genproj.cs
+csc -r:System.Xml.Linq -debug -out:scripts\genproj.exe scripts\genproj.cs
 cd scripts
 genproj.exe

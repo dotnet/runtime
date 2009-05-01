@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using System.Globalization;
+using System.Xml.Linq;
 
 public enum Target {
 	Library, Exe, Module, WinExe
@@ -33,10 +34,9 @@ class MsbuildGenerator {
 	}
 	
 	string base_dir, dir;
-	string config_file;
 	string mcs_topdir, class_dir;
 	
-	public MsbuildGenerator (string dir, string config_file)
+	public MsbuildGenerator (string dir)
 	{
 		mcs_topdir = "";
 		
@@ -48,7 +48,6 @@ class MsbuildGenerator {
 		
 		this.dir = dir;
 		base_dir = "..\\..\\..\\mcs\\" + dir;
-		this.config_file = config_file;
 	}
 	
 	// Currently used
@@ -444,20 +443,20 @@ class MsbuildGenerator {
 		return ret_value;
 	}
 	
-	public void Generate ()
+	public void Generate (XElement xproject)
 	{
+		string library = xproject.Attribute ("library").Value;
 		string boot, mcs, flags, output_name, built_sources, library_output, response;
 
-		using (var par = new StreamReader (Path.Combine ("inputs", config_file))){
-			boot = par.ReadLine ();
-			mcs = par.ReadLine ();
-			flags = par.ReadLine ();
-			output_name = par.ReadLine ();
-			built_sources = par.ReadLine ();
-			library_output = par.ReadLine ();
-			response = par.ReadLine ();
-		}
-		string prefile = Path.Combine ("inputs", config_file.Replace (".input", ".pre"));
+		boot  = xproject.Element ("boot").Value;
+		mcs   = xproject.Element ("mcs").Value;
+		flags = xproject.Element ("flags").Value;
+		output_name =xproject.Element ("output").Value;
+		built_sources = xproject.Element ("built_sources").Value;
+		library_output = xproject.Element ("library_output").Value;
+		response = xproject.Element ("response").Value;
+
+		string prefile = Path.Combine ("inputs", library + ".pre");
 		string prebuild = "";
 		if (File.Exists (prefile)){
 			using (var pre = new StreamReader (prefile)){
@@ -596,7 +595,7 @@ class MsbuildGenerator {
 			Replace ("@SOURCES@", sources.ToString ());
 
 
-		string ofile = "..\\..\\..\\mcs\\" + dir + "\\" + config_file.Replace ("input", "csproj");
+		string ofile = "..\\..\\..\\mcs\\" + dir + "\\" + library + ".csproj";
 		Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
 		using (var o = new StreamWriter (ofile)){
 			o.WriteLine (output);
@@ -609,25 +608,33 @@ public class Driver {
 	
 	static void Main (string [] args)
 	{
-		if (!Directory.Exists ("inputs") || !File.Exists ("monowrap.cs")){
+		if (!File.Exists ("genproj.cs") || !File.Exists ("monowrap.cs")){
 			Console.WriteLine ("This command should be ran from mono/msvc/scripts");
 			Environment.Exit (1);
 		}
-		
-		using (var s = new StreamReader ("order")){
-			string line;
 
-			while ((line = s.ReadLine ()) != null){
-				string [] lp = line.Split (new char [] { ':' });
-				if (!lp [0].StartsWith ("class"))
-					continue;
+		XDocument doc = XDocument.Load ("order.xml");
+		foreach (XElement project in doc.Root.Elements ()){
+			string dir = project.Attribute ("dir").Value;
+			string library = project.Attribute ("library").Value;
 
-				var gen = new MsbuildGenerator (lp [0], lp [1]);
-				try {
-					gen.Generate ();
-				} catch (Exception e) {
-					Console.WriteLine ("Error in {0}\n{1}", line, e);
-				}
+			//
+			// Do only class libraries for now
+			//
+			if (!dir.StartsWith ("class"))
+				continue;
+
+			//
+			// Do not do 2.1 for now, it is not working yet
+			//
+			if (library.Contains ("net_2_1"))
+				continue;
+			
+			var gen = new MsbuildGenerator (dir);
+			try {
+				gen.Generate (project);
+			} catch (Exception e) {
+				Console.WriteLine ("Error in {0}\n{1}", dir, e);
 			}
 		}
 	}
