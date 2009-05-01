@@ -168,6 +168,9 @@ mono_gc_run_finalize (void *obj, void *data)
 	/* speedup later... and use a timeout */
 	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
 
+	/* Use _internal here, since this thread can enter a doomed appdomain */
+	mono_domain_set_internal (mono_object_domain (o));
+
 	/* delegates that have a native function pointer allocated are
 	 * registered for finalization, but they don't have a Finalize
 	 * method, because in most cases it's not needed and it's just a waste.
@@ -178,9 +181,6 @@ mono_gc_run_finalize (void *obj, void *data)
 			mono_delegate_free_ftnptr ((MonoDelegate*)o);
 		return;
 	}
-
-	/* Use _internal here, since this thread can enter a doomed appdomain */
-	mono_domain_set_internal (mono_object_domain (o));
 
 	finalizer = mono_class_get_finalizer (o->vtable->klass);
 
