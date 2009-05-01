@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /d:LINUX /r:mscorlib.dll /r:System.dll /r:System.Xml.dll /r:System.Data.dll /r:System.Drawing @FirebirdSql.Data.Firebird.dll.resources
-FirebirdSql.Data.Firebird.dll
-
-./../../class/lib/net_1_1/FirebirdSql.Data.Firebird.dll
-FirebirdSql.Data.Firebird.dll.sources

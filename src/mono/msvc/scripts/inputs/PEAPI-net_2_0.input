@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig /r:mscorlib.dll /r:System.dll
-PEAPI.dll
-
-./../../class/lib/net_2_0/PEAPI.dll
-PEAPI.dll.sources

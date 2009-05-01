@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig -unsafe -nowarn:612,618 -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.EnterpriseServices.dll /resource:resources/WebUIValidation.js
-System.Web.dll
-System.Web/UplevelHelper.cs
-./../../class/lib/net_1_1/System.Web.dll
-System.Web.dll.sources

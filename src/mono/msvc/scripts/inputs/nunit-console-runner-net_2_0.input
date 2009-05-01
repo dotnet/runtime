@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../../mcs/gmcs.exe
-/codepage:65001 -r:nunit.core.dll -r:nunit.core.interfaces.dll -r:nunit.util.dll -r:System.dll -r:System.Xml.dll /d:MONO /d:StronglyNamedAssembly -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig
-nunit-console-runner.dll
-
-./../../../class/lib/net_2_0/nunit-console-runner.dll
-nunit-console-runner.dll.sources

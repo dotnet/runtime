@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_2_0_bootstrap/gmcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -r:PrebuiltSystem=../lib/net_2_0_bootstrap/System.dll -d:XML_DEP -r:System.Xml.dll -d:SECURITY_DEP -r:Mono.Security.dll -d:CONFIGURATION_DEP -r:System.Configuration.dll
-System.dll
-
-./../../class/lib/net_2_0_bootstrap/System.dll
-System.dll.sources

@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig
-OpenSystem.C.dll
-
-./../../class/lib/net_1_1/OpenSystem.C.dll
-OpenSystem.C.dll.sources

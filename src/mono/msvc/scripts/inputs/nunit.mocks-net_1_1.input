@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../../class/lib/net_1_1/mcs.exe
-/codepage:65001 -debug -r:nunit.framework.dll -r:System.dll /d:StronglyNamedAssembly -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig
-nunit.mocks.dll
-
-./../../../class/lib/net_1_1/nunit.mocks.dll
-nunit.mocks.dll.sources

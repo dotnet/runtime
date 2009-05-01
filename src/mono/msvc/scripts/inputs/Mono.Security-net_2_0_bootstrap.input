@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_2_0_bootstrap/gmcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig -r:System.dll -unsafe
-Mono.Security.dll
-
-./../../class/lib/net_2_0_bootstrap/Mono.Security.dll
-Mono.Security.dll.sources

@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig /nowarn:168,169,219,414 /r:System.dll /r:System.Xml.dll /r:System.Core.dll /resource:resources/mstypes.schema
-System.Runtime.Serialization.dll
-
-./../../class/lib/net_2_1_raw/System.Runtime.Serialization.dll
-./../../build/deps/net_2_1_raw_System.Runtime.Serialization.dll.sources

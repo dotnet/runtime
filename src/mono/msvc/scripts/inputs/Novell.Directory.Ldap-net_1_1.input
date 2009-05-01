@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /nowarn:649 /nowarn:169 /nowarn:219 /nowarn:168 -r:mscorlib.dll -r:System.dll -r:Mono.Security.dll /res:Novell.Directory.Ldap.Utilclass/ResultCodeMessages.resources
-Novell.Directory.Ldap.dll
-
-./../../class/lib/net_1_1/Novell.Directory.Ldap.dll
-Novell.Directory.Ldap.dll.sources

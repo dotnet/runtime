@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
-/codepage:65001 -r:System.Xml.dll -r:./../../class/lib/net_1_1/monolinker.exe -r:Mono.Cecil.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig
-Mono.Tuner.dll
-
-./../../class/lib/net_1_1/Mono.Tuner.dll
-Mono.Tuner.dll.sources

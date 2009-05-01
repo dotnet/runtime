@@ -1,7 +1,0 @@
-true
-MONO_PATH=./../../class/lib/basic: /cvs/mono/runtime/mono-wrapper ./../../class/lib/basic/mcs.exe
-/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:ONLY_1_1 -d:BOOTSTRAP_WITH_OLDLIB /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin
-mscorlib.dll
-
-./../../class/lib/basic/mscorlib.dll
-corlib.dll.sources

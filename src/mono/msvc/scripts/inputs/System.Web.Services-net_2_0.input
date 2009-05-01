@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -nowarn:649 -nowarn:169 -r:mscorlib.dll -r:System.dll -r:System.EnterpriseServices.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Configuration.dll -resource:System.Web.Services.Description/wsdl-1.1.xsd,wsdl-1.1.xsd -resource:System.Web.Services.Description/wsdl-1.1-soap.xsd,wsdl-1.1-soap.xsd -resource:System.Web.Services.Description/web-reference.xsd,web-reference.xsd
-System.Web.Services.dll
-
-./../../class/lib/net_2_0/System.Web.Services.dll
-System.Web.Services.dll.sources

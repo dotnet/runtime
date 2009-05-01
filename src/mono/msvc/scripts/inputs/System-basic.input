@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/basic: /cvs/mono/runtime/mono-wrapper ./../../class/lib/basic/mcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -d:BOOTSTRAP_WITH_OLDLIB /noconfig -d:XML_DEP -r:System.Xml.dll
-System.dll
-
-./../../class/lib/basic/System.dll
-System.dll.sources

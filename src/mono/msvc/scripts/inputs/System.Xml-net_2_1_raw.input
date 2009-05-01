@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -unsafe -d:AGCLR -d:NET_2_1_HACK
-System.Xml.dll
-
-./../../class/lib/net_2_1_raw/System.Xml.dll
-./../../build/deps/net_2_1_raw_System.Xml.dll.sources

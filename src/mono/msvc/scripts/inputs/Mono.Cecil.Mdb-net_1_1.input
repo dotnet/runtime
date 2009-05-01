@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /r:mscorlib.dll /r:Mono.Cecil.dll /d:CECIL -keyfile:../mono.snk
-Mono.Cecil.Mdb.dll
-
-./../../class/lib/net_1_1/Mono.Cecil.Mdb.dll
-Mono.Cecil.Mdb.dll.sources

@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../../mcs/gmcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -debug /r:nunit.core.dll /r:nunit.core.interfaces.dll /r:System.Xml.dll /r:System.dll /d:StronglyNamedAssembly
-nunit.core.extensions.dll
-
-./../../../class/lib/net_2_0/nunit.core.extensions.dll
-nunit.core.extensions.dll.sources

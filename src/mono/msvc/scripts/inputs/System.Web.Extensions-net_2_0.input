@@ -1,7 +1,0 @@
-false
-MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe
-/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -unsafe -define:NET_3_5 -define:SYSTEM_WEB_EXTENSIONS -r:mscorlib.dll -r:System.dll -r:System.Core.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Data.Linq.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Web.Services.dll -r:System.Configuration.dll -r:System.EnterpriseServices.dll /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.js
-System.Web.Extensions.dll
-
-./../../class/lib/net_2_0/System.Web.Extensions.dll
-System.Web.Extensions.dll.sources
