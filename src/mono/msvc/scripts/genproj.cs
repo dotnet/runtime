@@ -69,6 +69,7 @@ class MsbuildGenerator {
 	bool WarningsAreErrors;
 	Dictionary<string,string> embedded_resources = new Dictionary<string,string> ();
 	List<string> references = new List<string> ();
+	List<string> reference_aliases = new List<string> ();
 	List<string> warning_as_error = new List<string> ();
 	int WarningLevel = 4;
 	List<int> ignore_warning = new List<int> ();
@@ -221,12 +222,8 @@ class MsbuildGenerator {
 				string val = r;
 				int index = val.IndexOf ('=');
 				if (index > -1) {
-					Console.WriteLine ("/reference = not supported");
-					Environment.Exit (1);
-					//string alias = r.Substring (0, index);
-					//string assembly = r.Substring (index + 1);
-					//AddExternAlias (alias, assembly);
-					//return true;
+					reference_aliases.Add (r);
+					continue;
 				}
 
 				if (val.Length != 0)
@@ -241,9 +238,8 @@ class MsbuildGenerator {
 		case "/doc": 
 		case "/lib": 
 		{
-			Console.WriteLine ("{0} = not supported", option);
-			Environment.Exit (1);
-			return true;
+			Console.WriteLine ("{0} = not supported", arg);
+			throw new Exception ();
 		}
 		case "/win32icon": {
 			win32IconFile = value;
@@ -555,7 +551,7 @@ class MsbuildGenerator {
 
 		var refs = new StringBuilder ();
 		
-		if (references.Count > 0){
+		if (references.Count > 0 || reference_aliases.Count > 0){
 			refs.Append ("<ItemGroup>\n");
 			string last = mono_paths [0].Substring (mono_paths [0].LastIndexOf ('/') + 1);
 			
@@ -567,7 +563,19 @@ class MsbuildGenerator {
 				refs.Append ("      <HintPath>" + hint_path + "\\" + r + "</HintPath>\n");
 				refs.Append ("    </Reference>\n");
 			}
-			
+
+			foreach (string r in reference_aliases){
+				int index = r.IndexOf ('=');
+				string alias = r.Substring (0, index);
+				string assembly = r.Substring (index + 1);
+
+				refs.Append ("    <Reference Include=\"" + assembly + "\">\n");
+				refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
+				refs.Append ("      <HintPath>" + hint_path + "\\" + r + "</HintPath>\n");
+				refs.Append ("      <Aliases>" + alias + "</Aliases>\n");
+				refs.Append ("    </Reference>\n");
+			}
+
 			refs.Append ("  </ItemGroup>\n");
 		}
 		
@@ -615,7 +623,11 @@ public class Driver {
 					continue;
 
 				var gen = new MsbuildGenerator (lp [0], lp [1]);
-				gen.Generate ();
+				try {
+					gen.Generate ();
+				} catch (Exception e) {
+					Console.WriteLine ("Error in {0}\n{1}", line, e);
+				}
 			}
 		}
 	}
