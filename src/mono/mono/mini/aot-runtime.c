@@ -1103,7 +1103,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		/* Round down in both directions to avoid modifying data which is not ours */
 		page_start = (guint8 *) (((gssize) (addr)) & ~ (PAGESIZE - 1)) + PAGESIZE;
 		pages = ((addr + len - page_start + PAGESIZE - 1) / PAGESIZE) - 1;
-		err = mprotect (page_start, pages * PAGESIZE, 0);
+		err = mono_mprotect (page_start, pages * PAGESIZE, MONO_MMAP_NONE);
 		g_assert (err == 0);
 #endif
 	}
