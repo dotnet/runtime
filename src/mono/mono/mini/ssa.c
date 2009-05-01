@@ -383,7 +383,7 @@ mono_ssa_compute (MonoCompile *cfg)
 		MonoInst *var = cfg->varinfo [i];
 
 #if SIZEOF_REGISTER == 4
-		if (var->type == STACK_I8)
+		if (var->type == STACK_I8 && !COMPILE_LLVM (cfg))
 			continue;
 #endif
 		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT))

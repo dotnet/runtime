@@ -1105,6 +1105,108 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_X86_PUSH_IMM, -1, -1, tmp_sig);
 }
 
+#ifdef ENABLE_LLVM
+LLVMCallInfo*
+mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
+{
+	int i, n;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	int j;
+	LLVMCallInfo *linfo;
+
+	n = sig->param_count + sig->hasthis;
+
+	cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig, sig->pinvoke);
+
+	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
+
+	/*
+	 * LLVM always uses the native ABI while we use our own ABI, the
+	 * only difference is the handling of vtypes:
+	 * - we only pass/receive them in registers in some cases, and only 
+	 *   in 1 or 2 integer registers.
+	 */
+	if (cinfo->ret.storage == ArgValuetypeInReg) {
+		if (sig->pinvoke) {
+			cfg->exception_message = g_strdup ("pinvoke + vtypes");
+			cfg->disable_llvm = TRUE;
+			return linfo;
+		}
+
+		cfg->exception_message = g_strdup ("vtype ret in call");
+		cfg->disable_llvm = TRUE;
+		/*
+		linfo->ret.storage = LLVMArgVtypeInReg;
+		for (j = 0; j < 2; ++j)
+			linfo->ret.pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, cinfo->ret.pair_storage [j]);
+		*/
+	}
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage == ArgInIReg) {
+		/* Vtype returned using a hidden argument */
+		linfo->ret.storage = LLVMArgVtypeRetAddr;
+	}
+
+	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage != ArgInIReg) {
+		// FIXME:
+		cfg->exception_message = g_strdup ("vtype ret in call");
+		cfg->disable_llvm = TRUE;
+	}
+
+	for (i = 0; i < n; ++i) {
+		ainfo = cinfo->args + i;
+
+		linfo->args [i].storage = LLVMArgNone;
+
+		switch (ainfo->storage) {
+		case ArgInIReg:
+			linfo->args [i].storage = LLVMArgInIReg;
+			break;
+		case ArgInDoubleSSEReg:
+		case ArgInFloatSSEReg:
+			linfo->args [i].storage = LLVMArgInFPReg;
+			break;
+		case ArgOnStack:
+			if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
+				linfo->args [i].storage = LLVMArgVtypeByVal;
+			} else {
+				linfo->args [i].storage = LLVMArgInIReg;
+				if (!sig->params [i - sig->hasthis]->byref) {
+					if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R4) {
+						linfo->args [i].storage = LLVMArgInFPReg;
+					} else if (sig->params [i - sig->hasthis]->type == MONO_TYPE_R8) {
+						linfo->args [i].storage = LLVMArgInFPReg;
+					}
+				}
+			}
+			break;
+		case ArgValuetypeInReg:
+			if (sig->pinvoke) {
+				cfg->exception_message = g_strdup ("pinvoke + vtypes");
+				cfg->disable_llvm = TRUE;
+				return linfo;
+			}
+
+			cfg->exception_message = g_strdup ("vtype arg");
+			cfg->disable_llvm = TRUE;
+			/*
+			linfo->args [i].storage = LLVMArgVtypeInReg;
+			for (j = 0; j < 2; ++j)
+				linfo->args [i].pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, ainfo->pair_storage [j]);
+			*/
+			break;
+		default:
+			cfg->exception_message = g_strdup ("ainfo->storage");
+			cfg->disable_llvm = TRUE;
+			break;
+		}
+	}
+
+	return linfo;
+}
+#endif
+
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
@@ -1297,14 +1399,22 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 
 	if (!ret->byref) {
 		if (ret->type == MONO_TYPE_R4) {
+			if (COMPILE_LLVM (cfg))
+				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
 			/* Nothing to do */
 			return;
 		} else if (ret->type == MONO_TYPE_R8) {
+			if (COMPILE_LLVM (cfg))
+				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
 			/* Nothing to do */
 			return;
 		} else if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EAX, val->dreg + 1);
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EDX, val->dreg + 2);
+			if (COMPILE_LLVM (cfg))
+				MONO_EMIT_NEW_UNALU (cfg, OP_LMOVE, cfg->ret->dreg, val->dreg);
+			else {
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EAX, val->dreg + 1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, X86_EDX, val->dreg + 2);
+			}
 			return;
 		}
 	}
@@ -5489,7 +5599,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	MonoInst *fconv;
 	int dreg, src_opcode;
 
-	if (!(cfg->opt & MONO_OPT_SSE2) || !(cfg->opt & MONO_OPT_SIMD))
+	if (!(cfg->opt & MONO_OPT_SSE2) || !(cfg->opt & MONO_OPT_SIMD) || COMPILE_LLVM (cfg))
 		return;
 
 	switch (src_opcode = ins->opcode) {

@@ -219,7 +219,11 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 
   ExceptionHandling = true;
 
-  ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, false);
+  ExecutionEngine *EE = ExecutionEngine::createJIT (unwrap (MP), &Error, mono_mm, CodeGenOpt::Default);
+  if (!EE) {
+	  cerr << "Unable to create LLVM ExecutionEngine: " << Error << "\n";
+	  g_assert_not_reached ();
+  }
   EE->InstallExceptionTableRegister (exception_cb);
 
   fpm = new FunctionPassManager (unwrap (MP));

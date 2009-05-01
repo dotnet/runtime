@@ -3367,7 +3367,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 
 	/*g_print ("numblocks = %d\n", cfg->num_bblocks);*/
 
-	mono_decompose_long_opts (cfg);
+	if (!COMPILE_LLVM (cfg))
+		mono_decompose_long_opts (cfg);
 
 	/* Should be done before branch opts */
 	if (cfg->opt & (MONO_OPT_CONSPROP | MONO_OPT_COPYPROP))
@@ -3753,6 +3754,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 	jinfo->domain_neutral = (cfg->opt & MONO_OPT_SHARED) != 0;
 	jinfo->cas_inited = FALSE; /* initialization delayed at the first stalk walk using this method */
 	jinfo->num_clauses = header->num_clauses;
+	if (COMPILE_LLVM (cfg))
+		jinfo->from_llvm = TRUE;
 
 	if (cfg->generic_sharing_context) {
 		MonoInst *inst;

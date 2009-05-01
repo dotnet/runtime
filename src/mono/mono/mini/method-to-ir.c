@@ -10182,7 +10182,8 @@ mono_handle_global_vregs (MonoCompile *cfg)
 				}
 
 #if SIZEOF_REGISTER == 4
-				if (regtype == 'l') {
+				/* In the LLVM case, the long opcodes are not decomposed */
+				if (regtype == 'l' && !COMPILE_LLVM (cfg)) {
 					/*
 					 * Since some instructions reference the original long vreg,
 					 * and some reference the two component vregs, it is quite hard

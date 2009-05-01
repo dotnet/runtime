@@ -69,6 +69,12 @@ llvm_ins_info[] = {
 #undef MINI_OP
 #undef MINI_OP3
 
+#if SIZEOF_VOID_P == 4
+#define GET_LONG_IMM(ins) (((guint64)(ins)->inst_ms_word << 32) | (guint64)(guint32)(ins)->inst_ls_word)
+#else
+#define GET_LONG_IMM(ins) ((ins)->inst_imm)
+#endif
+
 #define LLVM_INS_INFO(opcode) (&llvm_ins_info [((opcode) - OP_START - 1) * 4])
 
 #define LLVM_FAILURE(ctx, reason) do { \
@@ -369,6 +375,7 @@ load_store_to_llvm_type (int opcode, int *size, gboolean *sext, gboolean *zext)
 		*sext = TRUE;
 		return LLVMInt8Type ();
 	case OP_LOADU1_MEMBASE:
+	case OP_LOADU1_MEM:
 		*size = 1;
 		*zext = TRUE;
 		return LLVMInt8Type ();
@@ -379,6 +386,7 @@ load_store_to_llvm_type (int opcode, int *size, gboolean *sext, gboolean *zext)
 		*sext = TRUE;
 		return LLVMInt16Type ();
 	case OP_LOADU2_MEMBASE:
+	case OP_LOADU2_MEM:
 		*size = 2;
 		*zext = TRUE;
 		return LLVMInt16Type ();
@@ -1183,7 +1191,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				values [ins->dreg] = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
 				break;
 			case OP_I8CONST:
+#if SIZEOF_VOID_P == 4
+				values [ins->dreg] = LLVMConstInt (LLVMInt64Type (), GET_LONG_IMM (ins), FALSE);
+#else
 				values [ins->dreg] = LLVMConstInt (LLVMInt64Type (), (gint64)ins->inst_c0, FALSE);
+#endif
 				break;
 			case OP_R8CONST:
 				values [ins->dreg] = LLVMConstReal (LLVMDoubleType (), *(double*)ins->inst_p0);
@@ -1269,9 +1281,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_ICOMPARE_IMM:
 			case OP_LCOMPARE_IMM:
 			case OP_COMPARE_IMM:
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 			case OP_AMD64_ICOMPARE_MEMBASE_REG:
 			case OP_AMD64_ICOMPARE_MEMBASE_IMM:
+#endif
+#ifdef TARGET_X86
+			case OP_X86_COMPARE_MEMBASE_REG:
+			case OP_X86_COMPARE_MEMBASE_IMM:
 #endif
 			{
 				CompRelation rel;
@@ -1287,7 +1303,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				rel = mono_opcode_to_cond (ins->next->opcode);
 
 				/* Used for implementing bound checks */
-#ifdef __x86_64__
+#ifdef TARGET_AMD64
 				if ((ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_REG) || (ins->opcode == OP_AMD64_ICOMPARE_MEMBASE_IMM)) {
 					int size = 4;
 					LLVMValueRef index;
@@ -1308,12 +1324,33 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					rhs = convert (ctx, rhs, LLVMInt32Type ());
 #endif
 
+#ifdef TARGET_X86
+				if ((ins->opcode == OP_X86_COMPARE_MEMBASE_REG) || (ins->opcode == OP_X86_COMPARE_MEMBASE_IMM)) {
+					int size = 4;
+					LLVMValueRef index;
+					LLVMTypeRef t;
+
+					t = LLVMInt32Type ();
+
+					g_assert (ins->inst_offset % size == 0);
+					index = LLVMConstInt (LLVMInt32Type (), ins->inst_offset / size, FALSE);				
+
+					lhs = LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), &index, 1, ""), "");
+				}
+				if (ins->opcode == OP_X86_COMPARE_MEMBASE_IMM) {
+					lhs = convert (ctx, lhs, LLVMInt32Type ());
+					rhs = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
+				}
+				if (ins->opcode == OP_X86_COMPARE_MEMBASE_REG)
+					rhs = convert (ctx, rhs, LLVMInt32Type ());
+#endif
+
 				if (ins->opcode == OP_ICOMPARE_IMM) {
 					lhs = convert (ctx, lhs, LLVMInt32Type ());
 					rhs = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
 				}
 				if (ins->opcode == OP_LCOMPARE_IMM)
-					rhs = LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE);
+					rhs = LLVMConstInt (LLVMInt64Type (), GET_LONG_IMM (ins), FALSE);
 				if (ins->opcode == OP_LCOMPARE) {
 					lhs = convert (ctx, lhs, LLVMInt64Type ());
 					rhs = convert (ctx, rhs, LLVMInt64Type ());
@@ -1424,6 +1461,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				break;
 			}
 			case OP_MOVE:
+			case OP_LMOVE:
 				g_assert (lhs);
 				values [ins->dreg] = lhs;
 				break;
@@ -1542,6 +1580,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_ISUB_IMM:
 			case OP_IMUL_IMM:
 			case OP_IREM_IMM:
+			case OP_IREM_UN_IMM:
 			case OP_IDIV_IMM:
 			case OP_IDIV_UN_IMM:
 			case OP_IAND_IMM:
@@ -1566,9 +1605,15 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVMValueRef imm;
 
 				if (spec [MONO_INST_SRC1] == 'l')
-					imm = LLVMConstInt (LLVMInt64Type (), ins->inst_imm, FALSE);
+					imm = LLVMConstInt (LLVMInt64Type (), GET_LONG_IMM (ins), FALSE);
 				else
 					imm = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
+
+#if SIZEOF_VOID_P == 4
+				if (ins->opcode == OP_LSHL_IMM || ins->opcode == OP_LSHR_IMM || ins->opcode == OP_LSHR_UN_IMM)
+					imm = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
+#endif
+
 				if (LLVMGetTypeKind (LLVMTypeOf (lhs)) == LLVMPointerTypeKind)
 					lhs = convert (ctx, lhs, IntPtrType ());
 				imm = convert (ctx, imm, LLVMTypeOf (lhs));
@@ -1597,6 +1642,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				case OP_IREM_IMM:
 				case OP_LREM_IMM:
 					values [ins->dreg] = LLVMBuildSRem (builder, lhs, imm, dname);
+					break;
+				case OP_IREM_UN_IMM:
+					values [ins->dreg] = LLVMBuildURem (builder, lhs, imm, dname);
 					break;
 				case OP_IAND_IMM:
 				case OP_LAND_IMM:
@@ -1644,7 +1692,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				break;
 			}
 			case OP_LNOT: {
-				guint64 v = 0xffffffffffffffff;
+				guint64 v = 0xffffffffffffffffLL;
 				values [ins->dreg] = LLVMBuildXor (builder, LLVMConstInt (LLVMInt64Type (), v, FALSE), lhs, dname);
 				break;
 			}
@@ -1680,6 +1728,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					values [ins->dreg] = LLVMBuildZExt (builder, v, LLVMInt32Type (), dname);
 				break;
 			}
+			case OP_ICONV_TO_I8:
+				values [ins->dreg] = LLVMBuildSExt (builder, lhs, LLVMInt64Type (), dname);
+				break;
+			case OP_ICONV_TO_U8:
+				values [ins->dreg] = LLVMBuildZExt (builder, lhs, LLVMInt64Type (), dname);
+				break;
 			case OP_FCONV_TO_I4:
 				values [ins->dreg] = LLVMBuildFPToSI (builder, lhs, LLVMInt32Type (), dname);
 				break;
@@ -1707,6 +1761,12 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				break;
 			case OP_LCONV_TO_R_UN:
 				values [ins->dreg] = LLVMBuildUIToFP (builder, lhs, LLVMDoubleType (), dname);
+				break;
+#if SIZEOF_VOID_P == 4
+			case OP_LCONV_TO_U:
+#endif
+			case OP_LCONV_TO_I4:
+				values [ins->dreg] = LLVMBuildTrunc (builder, lhs, LLVMInt32Type (), dname);
 				break;
 			case OP_ICONV_TO_R4:
 			case OP_LCONV_TO_R4:
@@ -1758,6 +1818,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_LOADR8_MEMBASE:
 			case OP_LOAD_MEMBASE:
 			case OP_LOADI8_MEM:
+			case OP_LOADU1_MEM:
+			case OP_LOADU2_MEM:
 			case OP_LOADI4_MEM:
 			case OP_LOADU4_MEM:
 			case OP_LOAD_MEM: {
@@ -1772,7 +1834,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 					dname = (char*)"";
 
 				g_assert (ins->inst_offset % size == 0);
-				if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM) || (ins->opcode == OP_LOADI4_MEM) || (ins->opcode == OP_LOADU4_MEM)) {
+				if ((ins->opcode == OP_LOADI8_MEM) || (ins->opcode == OP_LOAD_MEM) || (ins->opcode == OP_LOADI4_MEM) || (ins->opcode == OP_LOADU4_MEM) || (ins->opcode == OP_LOADU1_MEM) || (ins->opcode == OP_LOADU2_MEM)) {
 					values [ins->dreg] = LLVMBuildLoad (builder, convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), LLVMPointerType (t, 0)), dname);
 				} else if (ins->inst_offset == 0) {
 					values [ins->dreg] = LLVMBuildLoad (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (t, 0)), dname);
@@ -2188,10 +2250,13 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_ISUB_OVF_UN:
 			case OP_IMUL_OVF:
 				//case OP_IMUL_OVF_UN:
+#if SIZEOF_VOID_P == 8
 			case OP_LADD_OVF:
 			case OP_LSUB_OVF:
 			case OP_LSUB_OVF_UN:
-			case OP_LMUL_OVF: {
+			case OP_LMUL_OVF:
+#endif
+			{
 				//case OP_LMUL_OVF_UN: {
 				LLVMValueRef args [2], val, ovf, func;
 
