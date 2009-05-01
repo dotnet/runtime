@@ -503,26 +503,15 @@ mono_arch_get_rethrow_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8* start;
-	static int inited = 0;
+	guint8* start;
 	guint8 *code;
 
-	if (inited)
-		return start;
+	start = code = mono_global_codeman_reserve (32);
 
-	inited = 1;
-	code = start = mono_global_codeman_reserve (32);
+	/* Not used */
+	x86_breakpoint (code);
 
-	x86_push_membase (code, X86_ESP, 4); /* exception name */
-	x86_push_imm (code, "System");
-	x86_push_imm (code, mono_defaults.exception_class->image);
-	x86_call_code (code, mono_exception_from_name);
-	x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
-	/* save the newly create object (overwrite exception name)*/
-	x86_mov_membase_reg (code, X86_ESP, 4, X86_EAX, 4);
-	x86_jump_code (code, mono_arch_get_throw_exception ());
-
-	g_assert ((code - start) < 32);
+	mono_arch_flush_icache (start, code - start);
 
 	return start;
 }
