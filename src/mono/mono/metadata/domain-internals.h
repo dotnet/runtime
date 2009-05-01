@@ -123,6 +123,7 @@ struct _MonoJitInfo {
 	gboolean    cas_method_permitonly:1;
 	gboolean    has_generic_jit_info:1;
 	gboolean    from_aot:1;
+	gboolean    from_llvm:1;
 #ifdef HAVE_SGEN_GC
 	/* FIXME: Embed this after the structure later */
 	gpointer    gc_info;
