@@ -30,10 +30,6 @@
 
 #include <errno.h>
 #include <sys/stat.h>
-#include <limits.h>    /* for PAGESIZE */
-#ifndef PAGESIZE
-#define PAGESIZE 4096
-#endif
 
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>  /* for WIFEXITED, WEXITSTATUS */
@@ -715,10 +711,10 @@ make_writable (guint8* addr, guint32 len)
 	if (mono_aot_only)
 		g_error ("Attempt to make AOT memory writable while running in aot-only mode.\n");
 
-	page_start = (guint8 *) (((gssize) (addr)) & ~ (PAGESIZE - 1));
-	pages = (addr + len - page_start + PAGESIZE - 1) / PAGESIZE;
+	page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1));
+	pages = (addr + len - page_start + mono_pagesize () - 1) / mono_pagesize ();
 
-	err = mono_mprotect (page_start, pages * PAGESIZE, MONO_MMAP_READ | MONO_MMAP_WRITE | MONO_MMAP_EXEC);
+	err = mono_mprotect (page_start, pages * mono_pagesize (), MONO_MMAP_READ | MONO_MMAP_WRITE | MONO_MMAP_EXEC);
 	g_assert (err == 0);
 }
 
@@ -1101,9 +1097,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		len = amodule->mem_end - amodule->mem_begin;
 
 		/* Round down in both directions to avoid modifying data which is not ours */
-		page_start = (guint8 *) (((gssize) (addr)) & ~ (PAGESIZE - 1)) + PAGESIZE;
-		pages = ((addr + len - page_start + PAGESIZE - 1) / PAGESIZE) - 1;
-		err = mono_mprotect (page_start, pages * PAGESIZE, MONO_MMAP_NONE);
+		page_start = (guint8 *) (((gssize) (addr)) & ~ (mono_pagesize () - 1)) + mono_pagesize ();
+		pages = ((addr + len - page_start + mono_pagesize () - 1) / mono_pagesize ()) - 1;
+		err = mono_mprotect (page_start, pages * mono_pagesize (), MONO_MMAP_NONE);
 		g_assert (err == 0);
 #endif
 	}

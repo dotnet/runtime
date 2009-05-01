@@ -44,10 +44,6 @@
 
 #include <errno.h>
 #include <sys/stat.h>
-#include <limits.h>    /* for PAGESIZE */
-#ifndef PAGESIZE
-#define PAGESIZE 4096
-#endif
 
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
@@ -2450,7 +2446,7 @@ emit_plt (MonoAotCompile *acfg)
 	emit_global (acfg, symbol, TRUE);
 #ifdef TARGET_X86
 	/* This section will be made read-write by the AOT loader */
-	emit_alignment (acfg, PAGESIZE);
+	emit_alignment (acfg, mono_pagesize ());
 #else
 	emit_alignment (acfg, 16);
 #endif
