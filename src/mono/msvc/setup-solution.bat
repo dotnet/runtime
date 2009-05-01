@@ -18,3 +18,7 @@ copy scripts\monowrap.exe scripts\net_2_1\csc.exe
 copy scripts\monowrap.pdb scripts\net_2_1\csc.pdb
 
 echo Setup complete, you can now use build the solution
+
+csc -debug -out:scripts\genproj.cs scripts\genproj.cs
+cd scripts
+genproj.exe
