@@ -11,8 +11,8 @@ class Prepare {
 	
 	static void Filter (string inpath, string outpath, filt filter)
 	{
-		using (var ins = new StreamReader (){
-			using (var outs = new StreamWriter ()){
+		using (var ins = new StreamReader (inpath)){
+			using (var outs = new StreamWriter (outpath)){
 				filter (ins, outs);
 			}
 		}
