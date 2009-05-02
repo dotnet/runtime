@@ -515,7 +515,13 @@ class MsbuildGenerator {
 		foreach (string s in source_files){
 			if (s.Length == 0)
 				continue;
-			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", s));
+			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", s.Replace ("/", "\\")));
+		}
+		foreach (string s in built_sources.Split ()){
+			if (s.Length == 0)
+				continue;
+			
+			sources.Append (String.Format ("   <Compile Include=\"{0}\" />\n", s.Replace ("/", "\\")));
 		}
 		
 		//

@@ -22,6 +22,11 @@ class Prepare {
 	{
 		string bdir = args.Length == 0 ? "../../../mcs" : args [0];
 
+		if (!Directory.Exists (Path.Combine(bdir, "class"))){
+			Console.Error.WriteLine ("The directory {0} does not contain class at {1}", Path.GetFullPath (bdir), Environment.CurrentDirectory);
+			Environment.Exit (1);
+		}
+		
 		Filter (bdir + "/class/System.XML/System.Xml.XPath/Parser.jay",
 			bdir + "/class/System.XML/Mono.Xml.Xsl/PatternParser.jay",
 			(i, o) => o.Write (i.ReadToEnd ().Replace ("%start Expr", "%start Pattern")));

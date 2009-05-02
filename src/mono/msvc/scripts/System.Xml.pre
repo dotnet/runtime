@@ -1,7 +1,7 @@
-..\..\jay\jay.exe -ct &lt; ..\..\jay\skeleton.cs System.Xml.XPath/Parser.jay > System.Xml.XPath/Parser.cs
-echo #define XSLT_PATTERN > Mono.Xml.Xsl/PatternParser.cs
-..\..\jay\jay.exe -ct &lt; ..\..\jay\skeleton.cs Mono.Xml.Xsl/PatternParser.jay >> Mono.Xml.Xsl/PatternParser.cs
-echo #define XSLT_PATTERN > Mono.Xml.Xsl/PatternTokenizer.cs
-type System.Xml.XPath/Tokenizer.cs >> Mono.Xml.Xsl/PatternTokenizer.cs
-..\..\..\mono\msvc\scripts\prepare .
+$(ProjectDir)\..\..\..\mono\msvc\scripts\prepare.exe $(ProjectDir)..\..
+$(ProjectDir)\..\..\jay\jay.exe -ct &lt; $(ProjectDir)\..\..\jay\skeleton.cs $(ProjectDir)\System.Xml.XPath\Parser.jay > $(ProjectDir)\System.Xml.XPath\Parser.cs
+echo #define XSLT_PATTERN > $(ProjectDir)\Mono.Xml.Xsl\PatternParser.cs
+$(ProjectDir)\..\..\jay\jay.exe -ct &lt; $(ProjectDir)\..\..\jay\skeleton.cs $(ProjectDir)\Mono.Xml.Xsl\PatternParser.jay >> $(ProjectDir)\Mono.Xml.Xsl\PatternParser.cs
+echo #define XSLT_PATTERN > $(ProjectDir)\Mono.Xml.Xsl\PatternTokenizer.cs
+type $(ProjectDir)\System.Xml.XPath\Tokenizer.cs >> $(ProjectDir)\Mono.Xml.Xsl\PatternTokenizer.cs
 
