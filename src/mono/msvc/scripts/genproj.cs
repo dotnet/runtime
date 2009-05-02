@@ -442,6 +442,16 @@ class MsbuildGenerator {
 		
 		return ret_value;
 	}
+
+	static string Load (string f)
+	{
+		if (File.Exists (f)){
+			using (var sr = new StreamReader (f)){
+				return sr.ReadToEnd ();
+			}
+		} else
+			return "";
+	}
 	
 	public void Generate (XElement xproject)
 	{
@@ -456,14 +466,17 @@ class MsbuildGenerator {
 		library_output = xproject.Element ("library_output").Value;
 		response = xproject.Element ("response").Value;
 
-		string prefile = Path.Combine ("inputs", library + ".pre");
-		string prebuild = "";
-		if (File.Exists (prefile)){
-			using (var pre = new StreamReader (prefile)){
-				prebuild = pre.ReadToEnd ();
-			}
-		}
+		//
+		// Prebuild code, might be in inputs, check:
+		//  inputs/LIBRARY-PROFILE.pre
+		//  inputs/LIBRARY.pre
+		//
+		string prebuild = Load (library + ".pre");
 
+		int q = library.IndexOf ("-");
+		if (q != -1)
+			prebuild = prebuild + Load (library.Substring (0, q) + ".pre");
+			
 		var all_args = new Queue<string []> ();
 		all_args.Enqueue (flags.Split ());
 		while (all_args.Count > 0){

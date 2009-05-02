@@ -1,0 +1,7 @@
+..\..\jay\bin\Debug\jay.exe -ct ..\..\jay\skeleton.cs System.Xml.XPath/Parser.jay > System.Xml.XPath/Parser.cs
+echo #define XSLT_PATTERN > Mono.Xml.Xsl/PatternParser.cs
+..\..\jay\bin\Debug\jay.exe -ct ..\..\jay\skeleton.cs Mono.Xml.Xsl/PatternParser.jay >> Mono.Xml.Xsl/PatternParser.cs
+echo #define XSLT_PATTERN > Mono.Xml.Xsl/PatternTokenizer.cs
+type System.Xml.XPath/Tokenizer.cs >> Mono.Xml.Xsl/PatternTokenizer.cs
+..\..\..\mono\msvc\scripts\prepare .
+
