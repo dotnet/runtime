@@ -611,6 +611,7 @@ class MsbuildGenerator {
 			Replace ("@DEFINECONSTANTS@", defines.ToString ()).
 			Replace ("@CSCTOOLPATH@", csc_tool_path).
 			Replace ("@DEBUG@", want_debugging_support ? "true" : "false").
+			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
 			Replace ("@REFERENCES@", refs.ToString ()).
 			Replace ("@PREBUILD@", prebuild).
 			Replace ("@SOURCES@", sources.ToString ());
