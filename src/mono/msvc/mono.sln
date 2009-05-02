@@ -81,6 +81,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "monoposixhelper", "monoposi
 		{B7098DFA-31E6-4006-8A15-1C9A4E925149} = {B7098DFA-31E6-4006-8A15-1C9A4E925149}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jay2008", "..\..\mcs\jay\jay2008.vcproj", "{5D485D32-3B9F-4287-AB24-C8DA5B89F537}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_eglib|Win32 = Debug_eglib|Win32
@@ -241,6 +243,18 @@ Global
 		{33014734-0F46-4099-9A21-0C989E428681}.Release|Win32.ActiveCfg = Release|Win32
 		{33014734-0F46-4099-9A21-0C989E428681}.Release|Win32.Build.0 = Release|Win32
 		{33014734-0F46-4099-9A21-0C989E428681}.Release|x64.ActiveCfg = Release|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Debug_eglib|Win32.ActiveCfg = Debug|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Debug_eglib|Win32.Build.0 = Debug|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Debug_eglib|x64.ActiveCfg = Debug|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Debug|Win32.Build.0 = Debug|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Debug|x64.ActiveCfg = Debug|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Release_eglib|Win32.ActiveCfg = Release|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Release_eglib|Win32.Build.0 = Release|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Release_eglib|x64.ActiveCfg = Release|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Release|Win32.ActiveCfg = Release|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Release|Win32.Build.0 = Release|Win32
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
