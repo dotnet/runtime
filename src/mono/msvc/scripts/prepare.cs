@@ -26,8 +26,8 @@ class Prepare {
 			bdir + "/class/System.XML/Mono.Xml.Xsl/PatternParser.jay",
 			(i, o) => o.Write (i.ReadToEnd ().Replace ("%start Expr", "%start Pattern")));
 
-		Filter (bdir + "/mcs/build/common/Consts.cs.in",
-			bdir + "/mcs/build/common/Consts.cs",
+		Filter (bdir + "/build/common/Consts.cs.in",
+			bdir + "/build/common/Consts.cs",
 			(i, o) => o.Write (i.ReadToEnd ().Replace ("@MONO_VERSION@", "Mono-VSBuild")));
 	}
 	
