@@ -7,17 +7,28 @@ using System.Text;
 using System.IO;
 
 class Prepare {
-
-	static void Main (string [] args)
+	delegate void filt (StreamReader sr, StreamWriter sw);
+	
+	static void Filter (string inpath, string outpath, filt filter)
 	{
-		string bdir = args.Length == 0 ? "../../../mcs/class" : args [0];
-			
-		using (var xps = new StreamReader (bdir + "/System.XML/System.Xml.XPath/Parser.jay")){
-			using (var xpp = new StreamWriter (bdir + "/System.XML/Mono.Xml.Xsl/PatternParser.jay")){
-
-				xpp.Write (xps.ReadToEnd ().Replace ("%start Expr", "%start Pattern"));
+		using (var ins = new StreamReader (){
+			using (var outs = new StreamWriter ()){
+				filter (ins, outs);
 			}
 		}
+	}
+	
+	static void Main (string [] args)
+	{
+		string bdir = args.Length == 0 ? "../../../mcs" : args [0];
+
+		Filter (bdir + "/class/System.XML/System.Xml.XPath/Parser.jay",
+			bdir + "/class/System.XML/Mono.Xml.Xsl/PatternParser.jay",
+			(i, o) => o.Write (i.ReadToEnd ().Replace ("%start Expr", "%start Pattern")));
+
+		Filter (bdir + "/mcs/build/common/Consts.cs.in",
+			bdir + "/mcs/build/common/Consts.cs",
+			(i, o) => o.Write (i.ReadToEnd ().Replace ("@MONO_VERSION@", "Mono-VSBuild")));
 	}
 	
 }
