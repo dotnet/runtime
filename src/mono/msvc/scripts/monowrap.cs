@@ -124,10 +124,16 @@ namespace csc
 				UseShellExecute = false
 			};
 
-			var proc = Process.Start (pi);
+            try {
+                var proc = Process.Start (pi);
 
-			proc.WaitForExit();
-			return proc.ExitCode;
+                proc.WaitForExit ();
+                return proc.ExitCode;
+            } catch (System.ComponentModel.Win32Exception){
+                Console.Error.WriteLine ("Chances are, it did not find {0}", mono_cmd);
+                throw;
+
+            }
 		}
 	}
 }
