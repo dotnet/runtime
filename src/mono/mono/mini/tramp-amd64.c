@@ -82,7 +82,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 	if ((((guint64)addr) >> 32) == 0)
 		buf_len = 16;
 	else
-		buf_len = 24;
+		buf_len = 30;
 #endif
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
