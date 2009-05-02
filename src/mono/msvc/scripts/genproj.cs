@@ -649,9 +649,10 @@ public class Driver {
 			//
 			// Do only class libraries for now
 			//
-			if (!dir.StartsWith ("class"))
+			if (!(dir.StartsWith ("class") || dir.StartsWith ("mcs")))
 				continue;
 
+			Console.WriteLine ("dir={0} lib={1}", dir, library);
 			//
 			// Do not do 2.1 for now, it is not working yet
 			//

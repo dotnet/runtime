@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-    <project dir="class/corlib" library="corlib-basic">
+    <project dir="mcs" library="mcs-basic">
+      <boot></boot>
+      <mcs>mcs /codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -d:BOOTSTRAP_WITH_OLDLIB</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -d:BOOTSTRAP_WITH_OLDLIB /noconfig</flags>
+      <output>./../class/lib/basic/mcs.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mcs.exe.sources</response>
+    </project>
+    <project dir="class/corlib" library="mscorlib-basic">
       <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/basic: /cvs/mono/runtime/mono-wrapper ./../../class/lib/basic/mcs.exe</mcs>
       <flags>/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:ONLY_1_1 -d:BOOTSTRAP_WITH_OLDLIB /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
@@ -36,7 +45,16 @@
       <library_output>./../../class/lib/basic/System.dll</library_output>
       <response>System.dll.sources</response>
     </project>
-    <project dir="class/corlib" library="corlib-net_1_1_bootstrap">
+    <project dir="mcs" library="mcs-net_1_1_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/basic: /cvs/mono/runtime/mono-wrapper ./../class/lib/basic/mcs.exe /codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig</flags>
+      <output>./../class/lib/net_1_1_bootstrap/mcs.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mcs.exe.sources</response>
+    </project>
+    <project dir="class/corlib" library="mscorlib-net_1_1_bootstrap">
       <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
       <flags>/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
@@ -64,7 +82,7 @@
       <response>System.dll.sources</response>
     </project>
     <project dir="class/System.XML" library="System.Xml-net_1_1_bootstrap">
-      <boot>false</boot>
+      <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
@@ -90,7 +108,7 @@
       <library_output>./../../class/lib/net_1_1_bootstrap/System.Security.dll</library_output>
       <response>System.Security.dll.sources</response>
     </project>
-    <project dir="class/System.Configuration" library="System.Configuration-net_1_1_bootstrap">
+    <project dir="class/System.Configuration" library="dummy-System.Configuration-net_1_1_bootstrap">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll</flags>
@@ -117,7 +135,52 @@
       <library_output>./../../class/lib/net_1_1_bootstrap/PEAPI.dll</library_output>
       <response>PEAPI.dll.sources</response>
     </project>
-    <project dir="class/corlib" library="corlib-net_1_1">
+    <project dir="ilasm" library="ilasm-net_1_1_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
+      <flags>/codepage:65001 /lib:../class/lib/net_1_1_bootstrap /r:../class/lib/net_1_1_bootstrap/PEAPI.dll /r:Mono.CompilerServices.SymbolWriter.dll /r:Mono.Security.dll -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig</flags>
+      <output>./../class/lib/net_1_1_bootstrap/ilasm.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>ilasm.exe.sources</response>
+    </project>
+    <project dir="tools/gacutil" library="gacutil-net_1_1_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Security.dll -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig</flags>
+      <output>./../../class/lib/net_1_1_bootstrap/gacutil.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>gacutil.exe.sources</response>
+    </project>
+    <project dir="tools/resgen" library="resgen-net_1_1_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig</flags>
+      <output>./../../class/lib/net_1_1_bootstrap/resgen.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>resgen.exe.sources</response>
+    </project>
+    <project dir="tools/culevel" library="culevel-net_1_1_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig</flags>
+      <output>./../../class/lib/net_1_1_bootstrap/culevel.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>culevel.exe.sources</response>
+    </project>
+    <project dir="mcs" library="mcs-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_1_1_bootstrap/mcs.exe /codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../class/lib/net_1_1/mcs.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mcs.exe.sources</response>
+    </project>
+    <project dir="class/corlib" library="mscorlib-net_1_1">
       <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
@@ -180,7 +243,7 @@
       <library_output>./../../class/lib/net_1_1/System.Security.dll</library_output>
       <response>System.Security.dll.sources</response>
     </project>
-    <project dir="class/System.Configuration" library="System.Configuration-net_1_1">
+    <project dir="class/System.Configuration" library="dummy-System.Configuration-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll -r:System.Security.dll</flags>
@@ -270,7 +333,7 @@
       <library_output>./../../class/lib/net_1_1/System.Drawing.dll</library_output>
       <response>System.Drawing.dll.sources</response>
     </project>
-    <project dir="class/System.Transactions" library="System.Transactions-net_1_1">
+    <project dir="class/System.Transactions" library="dummy-System.Transactions-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /r:mscorlib.dll /r:System.dll</flags>
@@ -288,7 +351,7 @@
       <library_output>./../../class/lib/net_1_1/System.EnterpriseServices.dll</library_output>
       <response>System.EnterpriseServices.dll.sources</response>
     </project>
-    <project dir="class/Mono.C5" library="Mono.C5-net_1_1">
+    <project dir="class/Mono.C5" library="dummy-Mono.C5-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /r:mscorlib.dll /r:System.dll -nowarn:169</flags>
@@ -396,7 +459,7 @@
       <library_output>./../../class/lib/net_1_1/System.Web.dll</library_output>
       <response>System.Web.dll.sources</response>
     </project>
-    <project dir="class/Mono.Web" library="Mono.Web-net_1_1">
+    <project dir="class/Mono.Web" library="dummy-Mono.Web-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
@@ -495,7 +558,7 @@
       <library_output>./../../class/lib/net_1_1/Microsoft.VisualC.dll</library_output>
       <response>Microsoft.VisualC.dll.sources</response>
     </project>
-    <project dir="class/Cscompmgd" library="Cscompmgd-net_1_1">
+    <project dir="class/Cscompmgd" library="cscompmgd-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /r:mscorlib.dll /r:System.dll</flags>
@@ -531,7 +594,7 @@
       <library_output>./../../class/lib/net_1_1/Npgsql.dll</library_output>
       <response>Npgsql.dll.sources</response>
     </project>
-    <project dir="class/Compat.ICSharpCode.SharpZipLib" library="Compat.ICSharpCode.SharpZipLib-net_1_1">
+    <project dir="class/Compat.ICSharpCode.SharpZipLib" library="ICSharpCode.SharpZipLib-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll</flags>
@@ -543,13 +606,13 @@
     <project dir="class/ICSharpCode.SharpZipLib" library="ICSharpCode.SharpZipLib-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
-      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll</flags>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll</flags>
       <output>ICSharpCode.SharpZipLib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_1_1/ICSharpCode.SharpZipLib.dll</library_output>
-      <response>ICSharpCode.SharpZipLib.dll.sources</response>
+      <library_output>./../../class/compat/net_1_1/ICSharpCode.SharpZipLib.dll</library_output>
+      <response>Compat.ICSharpCode.SharpZipLib.dll.sources</response>
     </project>
-    <project dir="class/Compat.ICSharpCode.SharpZipLib" library="Compat.ICSharpCode.SharpZipLib-net_1_1">
+    <project dir="class/Compat.ICSharpCode.SharpZipLib" library="ICSharpCode.SharpZipLib-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll</flags>
@@ -756,7 +819,7 @@
       <library_output>./../../class/lib/net_1_1/Mono.Cecil.Mdb.dll</library_output>
       <response>Mono.Cecil.Mdb.dll.sources</response>
     </project>
-    <project dir="nunit24/NUnit.Framework/framework" library="NUnit.Framework-net_1_1">
+    <project dir="nunit24/NUnit.Framework/framework" library="nunit.framework-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../../class/lib/net_1_1/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig -debug /r:System.Xml.dll /r:System.dll /d:StronglyNamedAssembly</flags>
@@ -828,6 +891,141 @@
       <library_output>./../../../class/lib/net_1_1/nunit-console-runner.dll</library_output>
       <response>nunit-console-runner.dll.sources</response>
     </project>
+    <project dir="nunit24/ConsoleRunner/nunit-console-exe" library="nunit-console-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 /r:nunit.framework.dll /r:nunit.util.dll /r:nunit.core.dll /r:nunit-console-runner.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../../class/lib/net_1_1/nunit-console.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>nunit-console.exe.sources</response>
+    </project>
+    <project dir="ilasm" library="ilasm-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 /lib:../class/lib/net_1_1 /r:../class/lib/net_1_1/PEAPI.dll /r:Mono.CompilerServices.SymbolWriter.dll /r:Mono.Security.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../class/lib/net_1_1/ilasm.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>ilasm.exe.sources</response>
+    </project>
+    <project dir="tools/al" library="al-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Security.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/al.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>al.exe.sources</response>
+    </project>
+    <project dir="tools/cilc" library="cilc-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Posix.dll -resource:res-Makefile -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>cilc.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>cilc.exe.sources</response>
+    </project>
+    <project dir="tools/culevel" library="culevel-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/culevel.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>culevel.exe.sources</response>
+    </project>
+    <project dir="tools/ictool" library="ictool-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>ictool.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>ictool.exe.sources</response>
+    </project>
+    <project dir="tools/mono-xsd" library="xsd-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -r:System.Data.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/xsd.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>xsd.exe.sources</response>
+    </project>
+    <project dir="tools/wsdl" library="wsdl-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -r:System.Web.Services.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/wsdl.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>wsdl.exe.sources</response>
+    </project>
+    <project dir="tools/genxs" library="genxs-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/genxs.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>genxs.exe.sources</response>
+    </project>
+    <project dir="tools/disco" library="disco-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -r:System.Web.Services.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>disco.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>disco.exe.sources</response>
+    </project>
+    <project dir="tools/soapsuds" library="soapsuds-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Runtime.Remoting.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>soapsuds.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>soapsuds.exe.sources</response>
+    </project>
+    <project dir="tools/browsercaps-updater" library="browsercaps-updater-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>browsercaps-updater.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>browsercaps-updater.exe.sources</response>
+    </project>
+    <project dir="tools/monop" library="monop-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/monop.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>monop.exe.sources</response>
+    </project>
+    <project dir="tools/gacutil" library="gacutil-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Security.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/gacutil.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>gacutil.exe.sources</response>
+    </project>
+    <project dir="tools/linker" library="monolinker-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 /r:Mono.Cecil.dll /r:System.Xml.dll -keyfile:../../class/mono.snk -resource:Descriptors/mscorlib.xml -resource:Descriptors/System.xml -resource:Descriptors/System.Drawing.xml -resource:Descriptors/System.Web.xml -resource:Descriptors/Mono.Posix.xml -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/monolinker.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>monolinker.exe.sources</response>
+    </project>
     <project dir="tools/tuner" library="Mono.Tuner-net_1_1">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
@@ -836,6 +1034,87 @@
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_1_1/Mono.Tuner.dll</library_output>
       <response>Mono.Tuner.dll.sources</response>
+    </project>
+    <project dir="tools/cil-strip" library="mono-cil-strip-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 /r:Mono.Cecil.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>mono-cil-strip.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mono-cil-strip.exe.sources</response>
+    </project>
+    <project dir="tools/resgen" library="resgen-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/resgen.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>resgen.exe.sources</response>
+    </project>
+    <project dir="tools/macpack" library="macpack-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 /resource:LOADER /resource:PLIST -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>macpack.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>macpack.exe.sources</response>
+    </project>
+    <project dir="tools/mkbundle" library="mkbundle-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Posix.dll -r:ICSharpCode.SharpZipLib.dll -resource:template.c -resource:template_z.c -resource:template_main.c -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/mkbundle.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mkbundle.exe.sources</response>
+    </project>
+    <project dir="tools/dtd2rng" library="dtd2rng-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -r:Commons.Xml.Relaxng.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>dtd2rng.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>dtd2rng.exe.sources</response>
+    </project>
+    <project dir="tools/dtd2xsd" library="dtd2xsd-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>dtd2xsd.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>dtd2xsd.exe.sources</response>
+    </project>
+    <project dir="tools/mjs" library="mjs-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 /r:Microsoft.JScript.dll /r:Microsoft.Vsa.dll /debug+ -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>mjs.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mjs.exe.sources</response>
+    </project>
+    <project dir="tools/prj2make" library="prj2make-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.GetOptions.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>prj2make.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>prj2make.exe.sources</response>
+    </project>
+    <project dir="tools/mono-service" library="mono-service-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.ServiceProcess.dll -r:Mono.Posix.dll -unsafe -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/mono-service.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mono-service.exe.sources</response>
     </project>
     <project dir="tools/monodoc" library="monodoc-net_1_1">
       <boot>false</boot>
@@ -846,7 +1125,43 @@
       <library_output>./../../class/lib/net_1_1/monodoc.dll</library_output>
       <response>monodoc.dll.sources</response>
     </project>
-    <project dir="class/corlib" library="corlib-net_2_0_bootstrap">
+    <project dir="tools/mod" library="mod-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 /r:./../../class/lib/net_1_1/monodoc.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>mod.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mod.exe.sources</response>
+    </project>
+    <project dir="tools/compiler-tester" library="compiler-tester-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_1_1/compiler-tester.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>compiler-tester.exe.sources</response>
+    </project>
+    <project dir="tools/installvst" library="installvst-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>installvst.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>installvst.exe.sources</response>
+    </project>
+    <project dir="tools/installutil" library="installutil-net_1_1">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_1_1: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1/mcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Configuration.Install -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
+      <output>installutil.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>installutil.exe.sources</response>
+    </project>
+    <project dir="class/corlib" library="mscorlib-net_2_0_bootstrap">
       <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_2_0_bootstrap/gmcs.exe</mcs>
       <flags>/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
@@ -927,7 +1242,25 @@
       <library_output>./../../class/lib/net_2_0_bootstrap/PEAPI.dll</library_output>
       <response>PEAPI.dll.sources</response>
     </project>
-    <project dir="class/corlib" library="corlib-net_2_0_bootstrap">
+    <project dir="ilasm" library="ilasm-net_2_0_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_2_0_bootstrap/gmcs.exe</mcs>
+      <flags>/codepage:65001 /lib:../class/lib/net_2_0_bootstrap /r:../class/lib/net_2_0_bootstrap/PEAPI.dll /r:Mono.CompilerServices.SymbolWriter.dll /r:Mono.Security.dll -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig</flags>
+      <output>./../class/lib/net_2_0_bootstrap/ilasm.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>ilasm.exe.sources</response>
+    </project>
+    <project dir="tools/resgen" library="resgen-net_2_0_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_2_0_bootstrap/gmcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0_bootstrap/resgen.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>resgen.exe.sources</response>
+    </project>
+    <project dir="class/corlib" library="mscorlib-net_2_0_bootstrap">
       <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_2_0_bootstrap/gmcs.exe</mcs>
       <flags>/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
@@ -1008,7 +1341,34 @@
       <library_output>./../../class/lib/net_2_0_bootstrap/PEAPI.dll</library_output>
       <response>PEAPI.dll.sources</response>
     </project>
-    <project dir="class/corlib" library="corlib-net_2_0">
+    <project dir="ilasm" library="ilasm-net_2_0_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_2_0_bootstrap/gmcs.exe</mcs>
+      <flags>/codepage:65001 /lib:../class/lib/net_2_0_bootstrap /r:../class/lib/net_2_0_bootstrap/PEAPI.dll /r:Mono.CompilerServices.SymbolWriter.dll /r:Mono.Security.dll -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig</flags>
+      <output>./../class/lib/net_2_0_bootstrap/ilasm.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>ilasm.exe.sources</response>
+    </project>
+    <project dir="tools/resgen" library="resgen-net_2_0_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_2_0_bootstrap/gmcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:BOOTSTRAP_NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0_bootstrap/resgen.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>resgen.exe.sources</response>
+    </project>
+    <project dir="mcs" library="gmcs-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_2_0_bootstrap/gmcs.exe /codepage:65001 -d:GMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -debug</mcs>
+      <flags>/codepage:65001 -d:GMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../class/lib/net_2_0/gmcs.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>gmcs.exe.sources</response>
+    </project>
+    <project dir="class/corlib" library="mscorlib-net_2_0">
       <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
@@ -1386,7 +1746,7 @@
       <library_output>./../../class/lib/net_2_0/Microsoft.VisualC.dll</library_output>
       <response>Microsoft.VisualC.dll.sources</response>
     </project>
-    <project dir="class/Cscompmgd" library="Cscompmgd-net_2_0">
+    <project dir="class/Cscompmgd" library="cscompmgd-net_2_0">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig /r:mscorlib.dll /r:System.dll</flags>
@@ -1422,7 +1782,7 @@
       <library_output>./../../class/lib/net_2_0/Npgsql.dll</library_output>
       <response>Npgsql.dll.sources</response>
     </project>
-    <project dir="class/Compat.ICSharpCode.SharpZipLib" library="Compat.ICSharpCode.SharpZipLib-net_2_0">
+    <project dir="class/Compat.ICSharpCode.SharpZipLib" library="ICSharpCode.SharpZipLib-net_2_0">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll</flags>
@@ -1434,13 +1794,13 @@
     <project dir="class/ICSharpCode.SharpZipLib" library="ICSharpCode.SharpZipLib-net_2_0">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
-      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll</flags>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll</flags>
       <output>ICSharpCode.SharpZipLib.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/lib/net_2_0/ICSharpCode.SharpZipLib.dll</library_output>
-      <response>ICSharpCode.SharpZipLib.dll.sources</response>
+      <library_output>./../../class/compat/net_2_0/ICSharpCode.SharpZipLib.dll</library_output>
+      <response>Compat.ICSharpCode.SharpZipLib.dll.sources</response>
     </project>
-    <project dir="class/Compat.ICSharpCode.SharpZipLib" library="Compat.ICSharpCode.SharpZipLib-net_2_0">
+    <project dir="class/Compat.ICSharpCode.SharpZipLib" library="ICSharpCode.SharpZipLib-net_2_0">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -r:mscorlib.dll -r:System.dll -r:System.Xml.dll</flags>
@@ -1728,23 +2088,23 @@
       <library_output>./../../class/lib/net_2_0/System.Web.Routing.dll</library_output>
       <response>System.Web.Routing.dll.sources</response>
     </project>
-    <project dir="class/System.Web.Extensions_1.0" library="System.Web.Extensions_1.0-net_2_0">
+    <project dir="class/System.Web.Extensions_1.0" library="System.Web.Extensions-net_2_0">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
-      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -unsafe -define:SYSTEM_WEB_EXTENSIONS -r:mscorlib.dll -r:System.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Web.Services.dll -r:System.Configuration.dll -r:System.EnterpriseServices.dll /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.js</flags>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -unsafe -define:NET_3_5 -define:SYSTEM_WEB_EXTENSIONS -r:mscorlib.dll -r:System.dll -r:System.Core.dll -r:System.Drawing.dll -r:System.Data.dll -r:System.Data.Linq.dll -r:System.Xml.dll -r:System.Web.dll -r:System.Web.Services.dll -r:System.Configuration.dll -r:System.EnterpriseServices.dll /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.js</flags>
       <output>System.Web.Extensions.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/compat/net_2_0/System.Web.Extensions.dll</library_output>
-      <response>System.Web.Extensions_1.0.dll.sources</response>
+      <library_output>./../../class/lib/net_2_0/System.Web.Extensions.dll</library_output>
+      <response>System.Web.Extensions.dll.sources</response>
     </project>
-    <project dir="class/System.Web.Extensions.Design_1.0" library="System.Web.Extensions.Design_1.0-net_2_0">
+    <project dir="class/System.Web.Extensions.Design_1.0" library="System.Web.Extensions.Design-net_2_0">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
-      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -r:System.dll -r:System.Design.dll</flags>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -define:NET_3_5 -r:System.dll -r:System.Design.dll</flags>
       <output>System.Web.Extensions.Design.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../class/compat/net_2_0/System.Web.Extensions.Design.dll</library_output>
-      <response>System.Web.Extensions.Design_1.0.dll.sources</response>
+      <library_output>./../../class/lib/net_2_0/System.Web.Extensions.Design.dll</library_output>
+      <response>System.Web.Extensions.Design.dll.sources</response>
     </project>
     <project dir="class/System.Web.Extensions" library="System.Web.Extensions-net_2_0">
       <boot>false</boot>
@@ -1863,7 +2223,7 @@
       <library_output>./../../class/lib/net_2_0/Mono.Tasklets.dll</library_output>
       <response>Mono.Tasklets.dll.sources</response>
     </project>
-    <project dir="nunit24/NUnit.Framework/framework" library="NUnit.Framework-net_2_0">
+    <project dir="nunit24/NUnit.Framework/framework" library="nunit.framework-net_2_0">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig -debug /r:System.Xml.dll /r:System.dll /d:StronglyNamedAssembly</flags>
@@ -1935,6 +2295,33 @@
       <library_output>./../../../class/lib/net_2_0/nunit-console-runner.dll</library_output>
       <response>nunit-console-runner.dll.sources</response>
     </project>
+    <project dir="nunit24/ConsoleRunner/nunit-console-exe" library="nunit-console-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 /r:nunit.framework.dll /r:nunit.util.dll /r:nunit.core.dll /r:nunit-console-runner.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../../class/lib/net_2_0/nunit-console.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>nunit-console.exe.sources</response>
+    </project>
+    <project dir="ilasm" library="ilasm-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 /lib:../class/lib/net_2_0 /r:../class/lib/net_2_0/PEAPI.dll /r:Mono.CompilerServices.SymbolWriter.dll /r:Mono.Security.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../class/lib/net_2_0/ilasm.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>ilasm.exe.sources</response>
+    </project>
+    <project dir="tools/al" library="al-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Security.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/al.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>al.exe.sources</response>
+    </project>
     <project dir="tools/csharplib" library="Mono.CSharp-net_2_0">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
@@ -1943,6 +2330,195 @@
       <built_sources></built_sources>
       <library_output>fixup/net_2_0/Mono.CSharp.dll</library_output>
       <response>Mono.CSharp.dll.sources</response>
+    </project>
+    <project dir="tools/csharp" library="csharp-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:./../../class/lib/net_2_0/Mono.CSharp.dll -r:./../../class/lib/net_2_0/Mono.Posix.dll -r:Mono.Management.dll -unsafe -nowarn:3021 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/csharp.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>csharp.exe.sources</response>
+    </project>
+    <project dir="tools/mono-xsd" library="xsd-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -r:System.Data.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/xsd.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>xsd.exe.sources</response>
+    </project>
+    <project dir="tools/wsdl" library="wsdl-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -r:System.Web.Services.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/wsdl.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>wsdl.exe.sources</response>
+    </project>
+    <project dir="tools/mono-xmltool" library="mono-xmltool-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -r:Commons.Xml.Relaxng.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>mono-xmltool.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mono-xmltool.exe.sources</response>
+    </project>
+    <project dir="tools/compiler-tester" library="compiler-tester-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/compiler-tester.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>compiler-tester.exe.sources</response>
+    </project>
+    <project dir="tools/monop" library="monop-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/monop.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>monop.exe.sources</response>
+    </project>
+    <project dir="tools/xbuild" library="xbuild-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:Microsoft.Build.Framework.dll -r:Microsoft.Build.Utilities.dll -r:Microsoft.Build.Engine.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>xbuild.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>xbuild.exe.sources</response>
+    </project>
+    <project dir="tools/resgen" library="resgen-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/resgen.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>resgen.exe.sources</response>
+    </project>
+    <project dir="tools/mdoc" library="mdoc-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 /resource:../monodoc/Resources/mdoc-html-utils.xsl,mdoc-html-utils.xsl /resource:../monodoc/Resources/mdoc-sections-css.xsl,mdoc-sections-css.xsl /resource:../monodoc/Resources/mono-ecma-css.xsl,mono-ecma-css.xsl /resource:Resources/defaulttemplate.xsl,defaulttemplate.xsl /resource:Resources/monodoc-ecma.xsd,monodoc-ecma.xsd /resource:Resources/overview.xsl,overview.xsl /resource:Resources/stylesheet.xsl,stylesheet.xsl /r:System.Web.dll /r:ICSharpCode.SharpZipLib.dll /r:./../../class/lib/net_1_1/monodoc.dll /r:./../../class/lib/net_1_1/Mono.Cecil.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>mdoc.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mdoc.exe.sources</response>
+    </project>
+    <project dir="tools/mono-service" library="mono-service-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.ServiceProcess.dll -r:Mono.Posix.dll -unsafe -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/mono-service.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mono-service.exe.sources</response>
+    </project>
+    <project dir="tools/mono-shlib-cop" library="mono-shlib-cop-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Posix.dll -r:Mono.GetOptions.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>mono-shlib-cop.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mono-shlib-cop.exe.sources</response>
+    </project>
+    <project dir="tools/mkbundle" library="mkbundle-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Posix.dll -r:ICSharpCode.SharpZipLib.dll -resource:template.c -resource:template_z.c -resource:template_main.c -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/mkbundle.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mkbundle.exe.sources</response>
+    </project>
+    <project dir="tools/sgen" library="sgen-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>sgen.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>sgen.exe.sources</response>
+    </project>
+    <project dir="tools/mconfig" library="mconfig-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Xml.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>mconfig.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>mconfig.exe.sources</response>
+    </project>
+    <project dir="tools/installutil" library="installutil-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.Configuration.Install -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>installutil.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>installutil.exe.sources</response>
+    </project>
+    <project dir="tools/nunitreport" library="nunitreport-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>nunitreport.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>nunitreport.exe.sources</response>
+    </project>
+    <project dir="tools/pdb2mdb" library="pdb2mdb-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 /r:./../../class/lib/net_1_1/Mono.Cecil.dll /r:Mono.CompilerServices.SymbolWriter.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>pdb2mdb.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>pdb2mdb.exe.sources</response>
+    </project>
+    <project dir="tools/SqlSharp" library="sqlsharp-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:System.dll -r:System.Xml.dll -r:System.Data.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>sqlsharp.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>sqlsharp.exe.sources</response>
+    </project>
+    <project dir="tools/sqlmetal" library="sqlmetal-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -d:MONO_STRICT -keyfile:../../class/System.Data.Linq/src/DbMetal/../DbLinq.snk -resource:../../class/System.Data.Linq/src/DbMetal/Language/EnglishWords.txt,DbMetal.Language.EnglishWords.txt -resource:../../class/System.Data.Linq/src/DbMetal/Language/FrenchWords.txt,DbMetal.Language.FrenchWords.txt -resource:../../class/System.Data.Linq/src/DbMetal/Language/GermanWords.txt,DbMetal.Language.GermanWords.txt -r:System.Configuration -r:System.Core -r:System.Data -r:System.Data.Linq -r:System.Xml -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>sqlmetal.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>sqlmetal.exe.sources</response>
+    </project>
+    <project dir="tools/gacutil" library="gacutil-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.Security.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_0/gacutil.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>gacutil.exe.sources</response>
+    </project>
+    <project dir="tools/svcutil" library="svcutil-net_2_0">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
+      <flags>/codepage:65001 -r:Mono.GetOptions.dll -r:System.Runtime.Serialization.dll -r:System.ServiceModel.dll -r:System.Web.Services.dll -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
+      <output>svcutil.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>svcutil.exe.sources</response>
     </project>
     <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-net_3_5">
       <boot>false</boot>
@@ -1953,7 +2529,7 @@
       <library_output>./../../class/lib/net_3_5/Microsoft.Build.Framework.dll</library_output>
       <response>Microsoft.Build.Framework.dll.sources</response>
     </project>
-    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities-net_3_5">
+    <project dir="class/Microsoft.Build.Utilities" library="Microsoft.Build.Utilities.v3.5-net_3_5">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_3_5:./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -debug /noconfig /r:mscorlib.dll /r:System.dll /r:Microsoft.Build.Framework.dll</flags>
@@ -1971,7 +2547,7 @@
       <library_output>./../../class/lib/net_3_5/Microsoft.Build.Engine.dll</library_output>
       <response>Microsoft.Build.Engine.dll.sources</response>
     </project>
-    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks-net_3_5">
+    <project dir="class/Microsoft.Build.Tasks" library="Microsoft.Build.Tasks.v3.5-net_3_5">
       <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_3_5:./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_3_5 -debug /noconfig /r:mscorlib.dll /r:System.dll /r:System.Xml.dll /r:System.Windows.Forms.dll /r:Microsoft.Build.Utilities.dll /r:Microsoft.Build.Framework.dll</flags>
@@ -1989,7 +2565,16 @@
       <library_output>./../../class/lib/net_3_5/System.Web.Extensions.Design.dll</library_output>
       <response>System.Web.Extensions.Design.dll.sources</response>
     </project>
-    <project dir="class/corlib" library="corlib-net_2_1_bootstrap">
+    <project dir="mcs" library="smcs-net_2_1_bootstrap">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../mcs/gmcs.exe /codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug</mcs>
+      <flags>/codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig</flags>
+      <output>./../class/lib/net_2_1_bootstrap/smcs.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>smcs.exe.sources</response>
+    </project>
+    <project dir="class/corlib" library="mscorlib-net_2_1_bootstrap">
       <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_1_bootstrap:./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_bootstrap/smcs.exe</mcs>
       <flags>/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
@@ -1999,7 +2584,7 @@
       <response>corlib.dll.sources</response>
     </project>
     <project dir="class/System" library="System-net_2_1_bootstrap">
-      <boot>false</boot>
+      <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_1_bootstrap:./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_bootstrap/smcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe</flags>
       <output>System.dll</output>
@@ -2016,7 +2601,16 @@
       <library_output>./../../class/lib/net_2_1_bootstrap/Mono.CompilerServices.SymbolWriter.dll</library_output>
       <response>Mono.CompilerServices.SymbolWriter.dll.sources</response>
     </project>
-    <project dir="class/corlib" library="corlib-net_2_1_raw">
+    <project dir="mcs" library="smcs-net_2_1_raw">
+      <boot></boot>
+      <mcs>MONO_PATH=./../class/lib/net_2_1_bootstrap: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../class/lib/net_2_1_bootstrap/smcs.exe /codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug</mcs>
+      <flags>/codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig</flags>
+      <output>./../class/lib/net_2_1_raw/smcs.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>smcs.exe.sources</response>
+    </project>
+    <project dir="class/corlib" library="mscorlib-net_2_1_raw">
       <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe</mcs>
       <flags>/codepage:65001 -nowarn:612,618 -d:INSIDE_CORLIB -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -unsafe -nostdlib -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin</flags>
@@ -2035,7 +2629,7 @@
       <response>Mono.CompilerServices.SymbolWriter.dll.sources</response>
     </project>
     <project dir="class/System" library="System-net_2_1_raw">
-      <boot>false</boot>
+      <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe</flags>
       <output>System.dll</output>
@@ -2053,7 +2647,7 @@
       <response>System.Net.dll.sources</response>
     </project>
     <project dir="class/System.XML" library="System.Xml-net_2_1_raw">
-      <boot>false</boot>
+      <boot>true</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -unsafe -d:AGCLR -d:NET_2_1_HACK</flags>
       <output>System.Xml.dll</output>
@@ -2105,5 +2699,14 @@
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_2_1_raw/System.ServiceModel.Web.dll</library_output>
       <response>./../../build/deps/net_2_1_raw_System.ServiceModel.Web.dll.sources</response>
+    </project>
+    <project dir="tools/compiler-tester" library="compiler-tester-net_2_1_raw">
+      <boot></boot>
+      <mcs>MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe</mcs>
+      <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig</flags>
+      <output>./../../class/lib/net_2_1_raw/compiler-tester.exe</output>
+      <built_sources></built_sources>
+      <library_output></library_output>
+      <response>compiler-tester.exe.sources</response>
     </project>
 </root>
