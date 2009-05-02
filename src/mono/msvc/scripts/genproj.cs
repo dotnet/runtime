@@ -38,7 +38,7 @@ class MsbuildGenerator {
 	
 	public MsbuildGenerator (string dir)
 	{
-		mcs_topdir = "";
+		mcs_topdir = "..\\";
 		
 		foreach (char c in dir){
 			if (c == '/')
@@ -544,10 +544,18 @@ class MsbuildGenerator {
 		}
 		
 		var encoded_mono_paths = string.Join ("-", mono_paths).Replace ("--", "-");
-
-		string csc_tool_path = mcs_topdir + "\\..\\mono\\msvc\\scripts\\" + encoded_mono_paths + "-" + compiler;
-		csc_tool_path = csc_tool_path.Replace ("--", "-");
-
+		var encoded_mp_compiler = (encoded_mono_paths + "-" + compiler).Replace ("--", "-");
+		
+		string csc_tool_path = mcs_topdir + "..\\mono\\msvc\\scripts\\" + encoded_mp_compiler;
+		if (!Directory.Exists (encoded_mp_compiler)){
+			Console.WriteLine ("Created {0}", encoded_mp_compiler);
+			Directory.CreateDirectory (encoded_mp_compiler);
+		}
+		if (!File.Exists (Path.Combine (encoded_mp_compiler, "csc.exe"))){
+			File.Copy ("monowrap.exe", Path.Combine (encoded_mp_compiler, "csc.exe"));
+			File.Copy ("monowrap.pdb", Path.Combine (encoded_mp_compiler, "csc.pdb"));
+		}
+		
 		var refs = new StringBuilder ();
 		
 		if (references.Count > 0 || reference_aliases.Count > 0){
@@ -596,7 +604,7 @@ class MsbuildGenerator {
 
 
 		string ofile = "..\\..\\..\\mcs\\" + dir + "\\" + library + ".csproj";
-		Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
+		//Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
 		using (var o = new StreamWriter (ofile)){
 			o.WriteLine (output);
 		}
