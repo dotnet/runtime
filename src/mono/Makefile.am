@@ -88,4 +88,24 @@ patch-quiet:
 	find libgc -name Makefile -exec scripts/patch-quiet.sh {} \;
 
 update-csproj:
-	(cd $(mcs_topdir)/build/csproj && gmcs genproj.cs) && (cd runtime; make V=1 extra_targets=csproj-local)
+	-rm msvc/scripts/order 
+	-mkdir msvc/scripts/inputs
+	(cd runtime; make V=1 extra_targets=csproj-local)
+
+package-inputs:
+	echo '<?xml version="1.0" encoding="utf-8"?>' > msvc/scripts/order.xml
+	echo '<root>' >> msvc/scripts/order.xml
+	for i in `cat msvc/scripts/order`; do \
+		set `echo $$i | sed -e 's/:/ /' -e 's/.input//'`; \
+		cat msvc/scripts/inputs/$$2.input | \
+		(echo "    <project dir=\"$$1\" library=\"$$2\">"; \
+		 read boot;   echo "      <boot>$$boot</boot>"; \
+		 read mcs;    echo "      <mcs>$$mcs</mcs>"; \
+		 read flags;  echo "      <flags>$$flags</flags>"; \
+		 read output; echo "      <output>$$output</output>"; \
+		 read built;  echo "      <built_sources>$$built</built_sources>"; \
+		 read libou;  echo "      <library_output>$$libou</library_output>"; \
+		 read resp;   echo "      <response>$$resp</response>"; \
+		echo "    </project>") >> msvc/scripts/order.xml; \
+	done
+	echo "</root>" >> msvc/scripts/order.xml
