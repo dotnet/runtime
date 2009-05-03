@@ -194,33 +194,31 @@ mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *deb
 {
 	int i;
 
-	if (!method_breakpoints)
-		return;
-
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 
-	for (i = 0; i < method_breakpoints->len; i++) {
-		MethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
+	if (method_breakpoints) {
+		for (i = 0; i < method_breakpoints->len; i++) {
+			MethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
 
-		if (method != info->method)
-			continue;
+			if (method != info->method)
+				continue;
 
-		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
-				     (guint64) (gsize) debug_info, info->index);
+			mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
+					     (guint64) (gsize) debug_info, info->index);
+		}
 	}
 
-	if (!class_init_callbacks)
-		return;
+	if (class_init_callbacks) {
+		for (i = 0; i < class_init_callbacks->len; i++) {
+			ClassInitCallback *info = g_ptr_array_index (class_init_callbacks, i);
 
-	for (i = 0; i < class_init_callbacks->len; i++) {
-		ClassInitCallback *info = g_ptr_array_index (class_init_callbacks, i);
+			if ((method->token != info->token) || (method->klass->image != info->image))
+				continue;
 
-		if ((method->token != info->token) || (method->klass->image != info->image))
-			continue;
-
-		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
-				     (guint64) (gsize) debug_info, info->index);
+			mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
+					     (guint64) (gsize) debug_info, info->index);
+		}
 	}
 }
 

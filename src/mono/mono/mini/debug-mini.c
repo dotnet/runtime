@@ -308,9 +308,6 @@ mono_debug_close_method (MonoCompile *cfg)
 
 	mono_debug_add_vg_method (method, jit);
 
-	if (info->breakpoint_id)
-		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
-
 	mono_debugger_check_breakpoints (method, debug_info);
 
 	mono_debug_free_method_jit_info (jit);

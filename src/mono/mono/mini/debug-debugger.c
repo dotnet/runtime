@@ -340,7 +340,7 @@ debugger_insert_source_breakpoint (guint64 image_argument, guint64 token, guint6
 			method = nm;
 		}
 
-		info = mono_debugger_insert_method_breakpoint (method, index);
+		info = mono_debug_lookup_method_addresses (method);
 		mono_debugger_unlock ();
 		return (guint64) (gsize) info;
 	}
