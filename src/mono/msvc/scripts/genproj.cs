@@ -576,13 +576,20 @@ class MsbuildGenerator {
 		}
 		
 		var refs = new StringBuilder ();
+		//
+		// mcs is different that csc in this regard, somehow with -noconfig we still import System and System.XML
+		//
+		if (dir == "mcs" && !load_default_config){
+			references.Add ("System.dll");
+			references.Add ("System.Xml.dll");
+		}
 		
 		if (references.Count > 0 || reference_aliases.Count > 0){
 			refs.Append ("<ItemGroup>\n");
 			string last = mono_paths [0].Substring (mono_paths [0].LastIndexOf ('/') + 1);
 			
 			string hint_path = class_dir + "\\lib\\" + last;
-			
+
 			foreach (string r in references){
 				refs.Append ("    <Reference Include=\"" + r + "\">\n");
 				refs.Append ("      <SpecificVersion>False</SpecificVersion>\n");
@@ -601,8 +608,14 @@ class MsbuildGenerator {
 				refs.Append ("      <Aliases>" + alias + "</Aliases>\n");
 				refs.Append ("    </Reference>\n");
 			}
-
+			
 			refs.Append ("  </ItemGroup>\n");
+		}
+
+		try {
+			Path.GetDirectoryName (library_output);
+		} catch {
+			Console.WriteLine ("Error in path: {0} while processing {1}", library_output, library);
 		}
 		
 		//
@@ -652,11 +665,11 @@ public class Driver {
 			if (!(dir.StartsWith ("class") || dir.StartsWith ("mcs")))
 				continue;
 
-			Console.WriteLine ("dir={0} lib={1}", dir, library);
 			//
-			// Do not do 2.1 for now, it is not working yet
+			// Do not do 2.1, it is not working yet
+			// Do not do basic, as there is no point (requires a system mcs to be installed).
 			//
-			if (library.Contains ("net_2_1"))
+			if (library.Contains ("net_2_1") || library.Contains ("-basic"))
 				continue;
 			
 			var gen = new MsbuildGenerator (dir);

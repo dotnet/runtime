@@ -1,4 +1,4 @@
-$(ProjectDir)\..\..\..\mono\msvc\scripts\prepare.exe $(ProjectDir)..\..
+$(ProjectDir)\..\..\..\mono\msvc\scripts\prepare.exe $(ProjectDir)..\.. xml
 $(ProjectDir)\..\..\jay\jay.exe -ct &lt; $(ProjectDir)\..\..\jay\skeleton.cs $(ProjectDir)\System.Xml.XPath\Parser.jay > $(ProjectDir)\System.Xml.XPath\Parser.cs
 echo #define XSLT_PATTERN > $(ProjectDir)\Mono.Xml.Xsl\PatternParser.cs
 $(ProjectDir)\..\..\jay\jay.exe -ct &lt; $(ProjectDir)\..\..\jay\skeleton.cs $(ProjectDir)\Mono.Xml.Xsl\PatternParser.jay >> $(ProjectDir)\Mono.Xml.Xsl\PatternParser.cs

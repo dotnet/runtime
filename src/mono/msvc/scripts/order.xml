@@ -5,7 +5,7 @@
       <mcs>mcs</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -d:BOOTSTRAP_WITH_OLDLIB /noconfig</flags>
       <output>./../class/lib/basic/mcs.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>./../class/lib/basic/mcs.exe</library_output>
       <response>mcs.exe.sources</response>
     </project>
@@ -50,7 +50,7 @@
       <mcs>MONO_PATH=./../class/lib/basic: /cvs/mono/runtime/mono-wrapper ./../class/lib/basic/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig</flags>
       <output>./../class/lib/net_1_1_bootstrap/mcs.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>./../class/lib/net_1_1_bootstrap/mcs.exe</library_output>
       <response>mcs.exe.sources</response>
     </project>
@@ -176,7 +176,7 @@
       <mcs>MONO_PATH=./../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
       <output>./../class/lib/net_1_1/mcs.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>./../class/lib/net_1_1/mcs.exe</library_output>
       <response>mcs.exe.sources</response>
     </project>
@@ -1364,7 +1364,7 @@
       <mcs>MONO_PATH=./../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_2_0_bootstrap/gmcs.exe</mcs>
       <flags>/codepage:65001 -d:GMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
       <output>./../class/lib/net_2_0/gmcs.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>./../class/lib/net_2_0/gmcs.exe</library_output>
       <response>gmcs.exe.sources</response>
     </project>
@@ -2570,7 +2570,7 @@
       <mcs>MONO_PATH=./../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig</flags>
       <output>./../class/lib/net_2_1_bootstrap/smcs.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>./../class/lib/net_2_1_bootstrap/smcs.exe</library_output>
       <response>smcs.exe.sources</response>
     </project>
@@ -2606,7 +2606,7 @@
       <mcs>MONO_PATH=./../class/lib/net_2_1_bootstrap: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../class/lib/net_2_1_bootstrap/smcs.exe</mcs>
       <flags>/codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig</flags>
       <output>./../class/lib/net_2_1_raw/smcs.exe</output>
-      <built_sources></built_sources>
+      <built_sources>cs-parser.cs</built_sources>
       <library_output>./../class/lib/net_2_1_raw/smcs.exe</library_output>
       <response>smcs.exe.sources</response>
     </project>
