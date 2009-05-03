@@ -2,11 +2,11 @@
 <root>
     <project dir="mcs" library="mcs-basic">
       <boot></boot>
-      <mcs>mcs /codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -d:BOOTSTRAP_WITH_OLDLIB</mcs>
+      <mcs>mcs</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -d:BOOTSTRAP_WITH_OLDLIB /noconfig</flags>
       <output>./../class/lib/basic/mcs.exe</output>
       <built_sources></built_sources>
-      <library_output></library_output>
+      <library_output>./../class/lib/basic/mcs.exe</library_output>
       <response>mcs.exe.sources</response>
     </project>
     <project dir="class/corlib" library="mscorlib-basic">
@@ -47,11 +47,11 @@
     </project>
     <project dir="mcs" library="mcs-net_1_1_bootstrap">
       <boot></boot>
-      <mcs>MONO_PATH=./../class/lib/basic: /cvs/mono/runtime/mono-wrapper ./../class/lib/basic/mcs.exe /codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1</mcs>
+      <mcs>MONO_PATH=./../class/lib/basic: /cvs/mono/runtime/mono-wrapper ./../class/lib/basic/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig</flags>
       <output>./../class/lib/net_1_1_bootstrap/mcs.exe</output>
       <built_sources></built_sources>
-      <library_output></library_output>
+      <library_output>./../class/lib/net_1_1_bootstrap/mcs.exe</library_output>
       <response>mcs.exe.sources</response>
     </project>
     <project dir="class/corlib" library="mscorlib-net_1_1_bootstrap">
@@ -82,7 +82,7 @@
       <response>System.dll.sources</response>
     </project>
     <project dir="class/System.XML" library="System.Xml-net_1_1_bootstrap">
-      <boot>true</boot>
+      <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642</flags>
       <output>System.Xml.dll</output>
@@ -173,11 +173,11 @@
     </project>
     <project dir="mcs" library="mcs-net_1_1">
       <boot></boot>
-      <mcs>MONO_PATH=./../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_1_1_bootstrap/mcs.exe /codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug</mcs>
+      <mcs>MONO_PATH=./../class/lib/net_1_1_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_1_1_bootstrap/mcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:ONLY_1_1 -debug /noconfig</flags>
       <output>./../class/lib/net_1_1/mcs.exe</output>
       <built_sources></built_sources>
-      <library_output></library_output>
+      <library_output>./../class/lib/net_1_1/mcs.exe</library_output>
       <response>mcs.exe.sources</response>
     </project>
     <project dir="class/corlib" library="mscorlib-net_1_1">
@@ -1361,11 +1361,11 @@
     </project>
     <project dir="mcs" library="gmcs-net_2_0">
       <boot></boot>
-      <mcs>MONO_PATH=./../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_2_0_bootstrap/gmcs.exe /codepage:65001 -d:GMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -debug</mcs>
+      <mcs>MONO_PATH=./../class/lib/net_2_0_bootstrap: /cvs/mono/runtime/mono-wrapper ./../class/lib/net_2_0_bootstrap/gmcs.exe</mcs>
       <flags>/codepage:65001 -d:GMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -debug /noconfig</flags>
       <output>./../class/lib/net_2_0/gmcs.exe</output>
       <built_sources></built_sources>
-      <library_output></library_output>
+      <library_output>./../class/lib/net_2_0/gmcs.exe</library_output>
       <response>gmcs.exe.sources</response>
     </project>
     <project dir="class/corlib" library="mscorlib-net_2_0">
@@ -2567,11 +2567,11 @@
     </project>
     <project dir="mcs" library="smcs-net_2_1_bootstrap">
       <boot></boot>
-      <mcs>MONO_PATH=./../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../mcs/gmcs.exe /codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug</mcs>
+      <mcs>MONO_PATH=./../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper ./../mcs/gmcs.exe</mcs>
       <flags>/codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig</flags>
       <output>./../class/lib/net_2_1_bootstrap/smcs.exe</output>
       <built_sources></built_sources>
-      <library_output></library_output>
+      <library_output>./../class/lib/net_2_1_bootstrap/smcs.exe</library_output>
       <response>smcs.exe.sources</response>
     </project>
     <project dir="class/corlib" library="mscorlib-net_2_1_bootstrap">
@@ -2584,7 +2584,7 @@
       <response>corlib.dll.sources</response>
     </project>
     <project dir="class/System" library="System-net_2_1_bootstrap">
-      <boot>true</boot>
+      <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_1_bootstrap:./../../class/lib/net_2_0: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_bootstrap/smcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe</flags>
       <output>System.dll</output>
@@ -2603,11 +2603,11 @@
     </project>
     <project dir="mcs" library="smcs-net_2_1_raw">
       <boot></boot>
-      <mcs>MONO_PATH=./../class/lib/net_2_1_bootstrap: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../class/lib/net_2_1_bootstrap/smcs.exe /codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug</mcs>
+      <mcs>MONO_PATH=./../class/lib/net_2_1_bootstrap: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../class/lib/net_2_1_bootstrap/smcs.exe</mcs>
       <flags>/codepage:65001 -d:GMCS_SOURCE -d:SMCS_SOURCE -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig</flags>
       <output>./../class/lib/net_2_1_raw/smcs.exe</output>
       <built_sources></built_sources>
-      <library_output></library_output>
+      <library_output>./../class/lib/net_2_1_raw/smcs.exe</library_output>
       <response>smcs.exe.sources</response>
     </project>
     <project dir="class/corlib" library="mscorlib-net_2_1_raw">
@@ -2629,7 +2629,7 @@
       <response>Mono.CompilerServices.SymbolWriter.dll.sources</response>
     </project>
     <project dir="class/System" library="System-net_2_1_raw">
-      <boot>true</boot>
+      <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -unsafe</flags>
       <output>System.dll</output>
@@ -2647,7 +2647,7 @@
       <response>System.Net.dll.sources</response>
     </project>
     <project dir="class/System.XML" library="System.Xml-net_2_1_raw">
-      <boot>true</boot>
+      <boot>false</boot>
       <mcs>MONO_PATH=./../../class/lib/net_2_1_raw: /cvs/mono/runtime/mono-wrapper --security=temporary-smcs-hack ./../../class/lib/net_2_1_raw/smcs.exe</mcs>
       <flags>/codepage:65001 -optimize -d:NET_1_1 -d:NET_2_0 -d:NET_2_1 -debug /noconfig -r:mscorlib.dll -r:System.dll -nowarn:0618,0612,0642 -unsafe -d:AGCLR -d:NET_2_1_HACK</flags>
       <output>System.Xml.dll</output>
