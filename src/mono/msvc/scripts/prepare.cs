@@ -32,12 +32,14 @@ class Prepare {
 			Filter (bdir + "/class/System.XML/System.Xml.XPath/Parser.jay",
 				bdir + "/class/System.XML/Mono.Xml.Xsl/PatternParser.jay",
 				(i, o) => o.Write (i.ReadToEnd ().Replace ("%start Expr", "%start Pattern")));
-			
-			Filter (bdir + "/build/common/Consts.cs.in",
-				bdir + "/build/common/Consts.cs",
-				(i, o) => o.Write (i.ReadToEnd ().Replace ("@MONO_VERSION@", "Mono-VSBuild")));
 			break;
 
+		case "core":
+			Filter (bdir + "/build/common/Consts.cs.in",
+				bdir + "/build/common/Consts.cs",
+				(i, o) => o.Write (i.ReadToEnd ().Replace ("@MONO_VERSION@", "2.5.0")));
+			break;
+			
 		default:
 			Console.Error.WriteLine ("Unknonw option to prepare.exe {0}", args [1]);
 			Environment.Exit (1);

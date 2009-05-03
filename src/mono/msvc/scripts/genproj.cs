@@ -32,22 +32,38 @@ class MsbuildGenerator {
 			template = input.ReadToEnd ();
 		}
 	}
-	
-	string base_dir, dir;
-	string mcs_topdir, class_dir;
+
+	// The directory as specified in order.xml
+	string dir;
+
+	//
+	// Our base directory, this is relative to our exectution point mono/msvc/scripts
+	string base_dir;
+
+	string mcs_topdir;
+
+	// Class directory, relative to 
+	string class_dir;
 	
 	public MsbuildGenerator (string dir)
 	{
-		mcs_topdir = "..\\";
-		
-		foreach (char c in dir){
-			if (c == '/')
-				mcs_topdir = "..\\" + mcs_topdir;
-		}
-		class_dir = mcs_topdir.Substring (3);
-		
 		this.dir = dir;
-		base_dir = "..\\..\\..\\mcs\\" + dir;
+		
+		if (dir == "mcs"){
+			mcs_topdir = "..\\";
+			class_dir = "..\\class\\";
+			base_dir = "..\\..\\..\\mcs\\mcs";
+		} else {
+			mcs_topdir = "..\\";
+			
+			foreach (char c in dir){
+				if (c == '/')
+					mcs_topdir = "..\\" + mcs_topdir;
+			}
+			class_dir = mcs_topdir.Substring (3);
+			
+			base_dir = "..\\..\\..\\mcs\\" + dir;
+		}
 	}
 	
 	// Currently used
