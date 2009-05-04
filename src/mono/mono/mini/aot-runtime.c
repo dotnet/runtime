@@ -152,15 +152,6 @@ static CRITICAL_SECTION aot_mutex;
 static GHashTable *static_aot_modules;
 
 /*
- * Disabling this will make a copy of the loaded code and use the copy instead 
- * of the original. This will place the caller and the callee close to each 
- * other in memory, possibly improving cache behavior. Since the original
- * code is in copy-on-write memory, this will not increase the memory usage
- * of the runtime.
- */
-static gboolean use_loaded_code = TRUE;
-
-/*
  * Whenever to AOT compile loaded assemblies on demand and store them in
  * a cache under $HOME/.mono/aot-cache.
  */
@@ -2052,20 +2043,6 @@ load_method (MonoDomain *domain, MonoAotModule *aot_module, MonoImage *image, Mo
 		decode_klass_ref (aot_module, p, &p);
 	} else {
 		klass = decode_klass_ref (aot_module, p, &p);
-	}
-
-	if (!use_loaded_code) {
-		guint8 *code2;
-
-		if (!jinfo) {
-			ex_info = &aot_module->ex_info [aot_module->ex_info_offsets [mono_metadata_token_index (token) - 1]];
-			jinfo = decode_exception_debug_info (aot_module, domain, method, ex_info, code);
-		}
-
-		code2 = mono_domain_code_reserve (domain, jinfo->code_size);
-		memcpy (code2, code, jinfo->code_size);
-		mono_arch_flush_icache (code2, jinfo->code_size);
-		code = code2;
 	}
 
 	if (aot_module->opts & MONO_OPT_SHARED)
