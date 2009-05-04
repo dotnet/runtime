@@ -173,9 +173,6 @@ static guint32 name_table_accesses = 0;
 static gsize aot_code_low_addr = (gssize)-1;
 static gsize aot_code_high_addr = 0;
 
-/* Used to communicate with mono_aot_register_globals () */
-static guint32 globals_tls_id = -1;
-
 static void
 init_plt (MonoAotModule *info);
 
@@ -898,8 +895,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		aot_name = g_strdup_printf ("%s", assembly->aname.name);
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "Found statically linked AOT module '%s'.\n", aot_name);
 	} else {
-		TlsSetValue (globals_tls_id, NULL);
-
 		if (use_aot_cache)
 			sofile = load_aot_module_from_cache (assembly, &aot_name);
 		else {
@@ -913,15 +908,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 				g_free (err);
 			}
 		}
-
-		/*
-		 * If the image was compiled in no-dlsym mode, it contains no global symbols,
-		 * instead it contains an ELF ctor function which is called by dlopen () which 
-		 * in turn calls mono_aot_register_globals () to register a table which contains
-		 * the name and address of the globals.
-		 */
-		globals = TlsGetValue (globals_tls_id);
-		TlsSetValue (globals_tls_id, NULL);
 	}
 
 	if (!sofile && !globals) {
@@ -1136,7 +1122,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 void
 mono_aot_register_globals (gpointer *globals)
 {
-	TlsSetValue (globals_tls_id, globals);
+	g_assert_not_reached ();
 }
 
 /*
@@ -1177,7 +1163,6 @@ mono_aot_init (void)
 {
 	InitializeCriticalSection (&aot_mutex);
 	aot_modules = g_hash_table_new (NULL, NULL);
-	globals_tls_id = TlsAlloc ();
 
 	mono_install_assembly_load_hook (load_aot_module, NULL);
 

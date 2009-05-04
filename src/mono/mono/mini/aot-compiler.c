@@ -2756,15 +2756,6 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->bind_to_runtime_version = TRUE;
 		} else if (str_begins_with (arg, "full")) {
 			opts->full_aot = TRUE;
-			/*
-			 * The no-dlsym option is only useful on the iphone, and even there,
-			 * do to other limitations of the dynamic linker, it doesn't seem to
-			 * work. So disable it for now so we don't have to support it.
-			 */
-			/*
-		} else if (str_begins_with (arg, "no-dlsym")) {
-			opts->no_dlsym = TRUE;
-			*/
 		} else if (str_begins_with (arg, "threads=")) {
 			opts->nthreads = atoi (arg + strlen ("threads="));
 		} else if (str_begins_with (arg, "static")) {
@@ -3986,20 +3977,16 @@ emit_globals (MonoAotCompile *acfg)
 		emit_string_symbol (acfg, "mono_runtime_version", "");
 	}
 
-	/*
-	 * Some platforms like the iphone have no working dlsym (). To work around this,
-	 * we create an ELF ctor function which will be invoked by dlopen, and which
-	 * will call a function in the AOT loader to register the symbols used by the
-	 * image.
+	/* 
 	 * When static linking, we emit a global which will point to the symbol table.
 	 */
-	if (acfg->aot_opts.no_dlsym) {
+	if (acfg->aot_opts.static_link) {
 		int i;
 		char symbol [256];
+		char *p;
 
-		if (acfg->aot_opts.static_link)
-			/* Emit a string holding the assembly name */
-			emit_string_symbol (acfg, "mono_aot_assembly_name", acfg->image->assembly->aname.name);
+		/* Emit a string holding the assembly name */
+		emit_string_symbol (acfg, "mono_aot_assembly_name", acfg->image->assembly->aname.name);
 
 		/* Emit the names */
 		for (i = 0; i < acfg->globals->len; ++i) {
@@ -4028,98 +4015,30 @@ emit_globals (MonoAotCompile *acfg)
 			emit_pointer (acfg, symbol);
 		}
 		/* Null terminate the table */
-		emit_pointer (acfg, NULL);
-		emit_pointer (acfg, NULL);
+		emit_int32 (acfg, 0);
+		emit_int32 (acfg, 0);
 
-#if 0
-		if (acfg->aot_opts.static_link) {
-			char *p;
-
-			/* 
-			 * Emit a global symbol which can be passed by an embedding app to
-			 * mono_aot_register_module ().
-			 */
+		/* 
+		 * Emit a global symbol which can be passed by an embedding app to
+		 * mono_aot_register_module ().
+		 */
 #if defined(__MACH__)
-			sprintf (symbol, "_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
+		sprintf (symbol, "_mono_aot_module_%s_info", acfg->image->assembly->aname.name);
 #else
-			sprintf (symbol, "mono_aot_module_%s_info", acfg->image->assembly->aname.name);
+		sprintf (symbol, "mono_aot_module_%s_info", acfg->image->assembly->aname.name);
 #endif
 
-			/* Get rid of characters which cannot occur in symbols */
-			p = symbol;
-			for (p = symbol; *p; ++p) {
-				if (!(isalnum (*p) || *p == '_'))
-					*p = '_';
-			}
-			acfg->static_linking_symbol = g_strdup (symbol);
-			emit_global_inner (acfg, symbol, FALSE);
-			emit_alignment (acfg, 8);
-			emit_label (acfg, symbol);
-			emit_pointer (acfg, "globals");
-		} else {
-			sprintf (symbol, "init_%s", acfg->image->assembly->aname.name);
-			emit_section_change (acfg, ".text", 1);
-			emit_alignment (acfg, 8);
-			emit_label (acfg, symbol);
-			if (acfg->use_bin_writer)
-				g_assert_not_reached ();
-#ifdef TARGET_AMD64
-			fprintf (acfg->fp, "leaq globals(%%rip), %%rdi\n");
-			fprintf (acfg->fp, "call mono_aot_register_globals@PLT\n");
-			fprintf (acfg->fp, "ret\n");
-			fprintf (acfg->fp, ".section .ctors,\"aw\",@progbits\n");
-			emit_alignment (acfg, 8);
-			emit_pointer (acfg, symbol);
-#elif defined(TARGET_ARM) && defined(__MACH__)
-				
-			fprintf (acfg->fp, ".text\n");
-			fprintf (acfg->fp, ".align   3\n");
-		
-			fprintf (acfg->fp, "ldr	r0, .L5\n");
-			fprintf (acfg->fp, ".LPIC0:\n");
-			fprintf (acfg->fp, "add	r0, pc, r0\n");
-			fprintf (acfg->fp, "ldr r0, [r0]\n");
-			fprintf (acfg->fp, "b	_mono_aot_register_globals@PLT\n");
-			fprintf (acfg->fp, ".align 2\n");
-
-			fprintf (acfg->fp, ".L5:\n");
-			fprintf (acfg->fp, ".long	globals_ptr-(.LPIC0+8)\n");
-			
-			fprintf (acfg->fp, ".data\n");
-			fprintf (acfg->fp, ".align	2\n");
-			fprintf (acfg->fp, "globals_ptr:\n");
-			fprintf (acfg->fp, ".long	globals\n");
-			
-			fprintf (acfg->fp, ".mod_init_func\n");
-			fprintf (acfg->fp, ".align	2\n");
-			fprintf (acfg->fp, ".long	%s@target1\n", symbol);
-
-#elif defined(TARGET_ARM)
-			/* 
-			 * Taken from gcc generated code for:
-			 * static int i;
-			 * void foo () { bar (&i); }
-			 * gcc --shared -fPIC -O2
-			 */
-			fprintf (acfg->fp, "ldr	r3, .L5\n");
-			fprintf (acfg->fp, "ldr	r0, .L5+4\n");
-			fprintf (acfg->fp, ".LPIC0:\n");
-			fprintf (acfg->fp, "add	r3, pc, r3\n");
-			fprintf (acfg->fp, "add	r0, r3, r0\n");
-			fprintf (acfg->fp, "b	mono_aot_register_globals(PLT)\n");
-
-			fprintf (acfg->fp, ".L5:\n");
-			fprintf (acfg->fp, ".word	_GLOBAL_OFFSET_TABLE_-(.LPIC0+8)\n");
-			fprintf (acfg->fp, ".word	globals(GOTOFF)\n");
-
-			fprintf (acfg->fp, ".section	.init_array,\"aw\",%%init_array\n");
-			fprintf (acfg->fp, ".align	2\n");
-			fprintf (acfg->fp, ".word	%s(target1)\n", symbol);
-#else
-			g_assert_not_reached ();
-#endif
+		/* Get rid of characters which cannot occur in symbols */
+		p = symbol;
+		for (p = symbol; *p; ++p) {
+			if (!(isalnum (*p) || *p == '_'))
+				*p = '_';
 		}
-#endif
+		acfg->static_linking_symbol = g_strdup (symbol);
+		emit_global_inner (acfg, symbol, FALSE);
+		emit_alignment (acfg, 8);
+		emit_label (acfg, symbol);
+		emit_pointer (acfg, "globals");
 	}
 }
 
@@ -4344,14 +4263,7 @@ compile_asm (MonoAotCompile *acfg)
 #elif defined(PLATFORM_WIN32)
 	command = g_strdup_printf ("gcc -shared --dll -mno-cygwin -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #else
-	if (acfg->aot_opts.no_dlsym) {
-		/* 
-		 * Need to link using gcc so our ctor function gets called.
-		 */
-		command = g_strdup_printf ("gcc -shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-	} else {
-		command = g_strdup_printf ("ld -shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
-	}
+	command = g_strdup_printf ("ld -shared -o %s %s.o", tmp_outfile_name, acfg->tmpfname);
 #endif
 	printf ("Executing the native linker: %s\n", command);
 	if (system (command) != 0) {
@@ -4484,6 +4396,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		return 1;
 	}
 #endif
+
+	if (acfg->aot_opts.static_link)
+		acfg->aot_opts.asm_writer = TRUE;
 
 	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && bin_writer_supported ()) {
 		if (acfg->aot_opts.outfile)
