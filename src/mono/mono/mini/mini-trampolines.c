@@ -617,7 +617,7 @@ mono_generic_virtual_remoting_trampoline (gssize *regs, guint8 *code, MonoMethod
  *   This trampoline handles calls made from AOT code. We try to bypass the 
  * normal JIT compilation logic to avoid loading the metadata for the method.
  */
-#ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
+#ifdef MONO_ARCH_AOT_SUPPORTED
 gpointer
 mono_aot_trampoline (gssize *regs, guint8 *code, guint8 *token_info, 
 					 guint8* tramp)
@@ -1111,7 +1111,6 @@ mono_create_jit_trampoline (MonoMethod *method)
 	return mono_create_jit_trampoline_in_domain (mono_domain_get (), method);
 }
 
-#ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
 gpointer
 mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 {
@@ -1132,7 +1131,6 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 
 	return tramp;
 }	
-#endif
 
 gpointer
 mono_create_delegate_trampoline (MonoClass *klass)

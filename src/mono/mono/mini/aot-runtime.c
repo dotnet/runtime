@@ -1725,7 +1725,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		if (!image)
 			goto cleanup;
 
-#ifdef MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
 		if (!method && !mono_aot_only && !no_aot_trampoline && (ji->type == MONO_PATCH_INFO_METHOD) && (mono_metadata_token_table (token) == MONO_TABLE_METHOD)) {
 			ji->data.target = mono_create_jit_trampoline_from_token (image, token);
 			ji->type = MONO_PATCH_INFO_ABS;
@@ -1738,12 +1737,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			g_assert (ji->data.method);
 			mono_class_init (ji->data.method->klass);
 		}
-#else
-		ji->data.method = mono_get_method (image, token, NULL);
-		g_assert (ji->data.method);
-		mono_class_init (ji->data.method->klass);
-#endif
-
 		break;
 	}
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
