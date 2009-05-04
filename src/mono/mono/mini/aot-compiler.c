@@ -201,9 +201,6 @@ get_patch_name (int info)
 
 #endif
 
-static void
-emit_global (MonoAotCompile *acfg, const char *name, gboolean func);
-
 /* Wrappers around the image writer functions */
 
 static inline void
@@ -1165,18 +1162,11 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	}
 }
 
-static gboolean 
-is_got_patch (MonoJumpInfoType patch_type)
-{
-	return TRUE;
-}
-
 /*
  * is_shared_got_patch:
  *
  *   Return whenever PATCH_INFO refers to a patch which needs a shared GOT
  * entry.
- * Keep it in sync with the version in aot-runtime.c.
  */
 static inline gboolean
 is_shared_got_patch (MonoJumpInfo *patch_info)
@@ -1198,6 +1188,12 @@ is_shared_got_patch (MonoJumpInfo *patch_info)
 	default:
 		return FALSE;
 	}
+}
+
+gboolean
+mono_aot_is_shared_got_patch (MonoJumpInfo *patch_info)
+{
+	return is_shared_got_patch (patch_info);
 }
 
 static int
@@ -1815,9 +1811,6 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				break;
 			}
 			default: {
-				if (!is_got_patch (patch_info->type))
-					break;
-
 				/*
 				 * If this patch is a call, try emitting a direct call instead of
 				 * through a PLT entry. This is possible if the called method is in
@@ -2067,7 +2060,7 @@ static void
 encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, int first_got_offset, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
-	guint32 last_offset, j, pindex;
+	guint32 pindex;
 	MonoJumpInfo *patch_info;
 
 	encode_value (n_patches, p, &p);
@@ -2075,31 +2068,14 @@ encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, int 
 	if (n_patches)
 		encode_value (first_got_offset, p, &p);
 
-	/* First encode the type+position table */
-	last_offset = 0;
-	j = 0;
 	for (pindex = 0; pindex < patches->len; ++pindex) {
-		guint32 offset;
 		patch_info = g_ptr_array_index (patches, pindex);
-		
+
 		if (patch_info->type == MONO_PATCH_INFO_NONE)
 			/* Nothing to do */
 			continue;
 
-		j ++;
-		//printf ("T: %d O: %d.\n", patch_info->type, patch_info->ip.i);
-		offset = patch_info->ip.i - last_offset;
-		last_offset = patch_info->ip.i;
-
-		/* Only the type is needed */
-		*p = patch_info->type;
-		p++;
-	}
-
-	/* Then encode the other info */
-	for (pindex = 0; pindex < patches->len; ++pindex) {
-		patch_info = g_ptr_array_index (patches, pindex);
-
+		encode_value (patch_info->type, p, &p);
 		if (is_shared_got_patch (patch_info)) {
 			guint32 offset = get_got_offset (acfg, patch_info);
 			encode_value (offset, p, &p);

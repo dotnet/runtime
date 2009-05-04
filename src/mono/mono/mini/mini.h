@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "51"
+#define MONO_AOT_FILE_VERSION "52"
 
 /* Constants used to encode different types of methods in AOT */
 enum {
@@ -1381,6 +1381,8 @@ guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_in
 guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
 char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
 MonoAotTrampInfo* mono_aot_tramp_info_create (char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
+gboolean mono_aot_is_shared_got_patch       (MonoJumpInfo *patch_info) MONO_INTERNAL;
+
 
 /* This is an exported function */
 void     mono_aot_register_globals          (gpointer *globals);

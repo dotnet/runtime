@@ -176,11 +176,6 @@ static gsize aot_code_high_addr = 0;
 static void
 init_plt (MonoAotModule *info);
 
-static MonoJumpInfo*
-load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches, 
-				 guint32 got_index, guint32 **got_slots, 
-				 guint8 *buf, guint8 **endbuf);
-
 /*****************************************************/
 /*                 AOT RUNTIME                       */
 /*****************************************************/
@@ -1496,7 +1491,6 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 MonoJitInfo *
 mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
-
 	int pos, left, right, offset, offset1, offset2, last_offset, new_offset;
 	int page_index, method_index, table_len, is_wrapper;
 	guint32 token;
@@ -1655,29 +1649,6 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	mono_jit_info_table_add (domain, jinfo);
 	
 	return jinfo;
-}
-
-/* Keep it in sync with the version in aot-compiler.c */
-static inline gboolean
-is_shared_got_patch (MonoJumpInfo *patch_info)
-{
-	switch (patch_info->type) {
-	case MONO_PATCH_INFO_VTABLE:
-	case MONO_PATCH_INFO_CLASS:
-	case MONO_PATCH_INFO_IID:
-	case MONO_PATCH_INFO_ADJUSTED_IID:
-	case MONO_PATCH_INFO_FIELD:
-	case MONO_PATCH_INFO_SFLDA:
-	case MONO_PATCH_INFO_DECLSEC:
-	case MONO_PATCH_INFO_LDTOKEN:
-	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-	case MONO_PATCH_INFO_RVA:
-	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_IMAGE:
-		return TRUE;
-	default:
-		return FALSE;
-	}
 }
 
 static gboolean
@@ -1849,84 +1820,51 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	return FALSE;
 }
 
-/*
- * decode_got_entry:
- *
- *   Decode a reference to a GOT entry. GOT_OFFSET is set to the index of the got
- * entry. If that got entry is not already filled out, then JI is filled out with
- * the information required to resolve the value of the GOT entry.
- * FIXME: Clean up this confusing API.
- */
-static gboolean
-decode_got_entry (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guint8 *buf, guint8 **endbuf, guint32 *got_offset)
-{
-	guint8 *p = buf;
-	guint8 *shared_p;
-	gboolean res;
-
-	if (is_shared_got_patch (ji)) {
-		*got_offset = decode_value (p, &p);
-
-		if (aot_module->got [*got_offset]) {
-			/* Already loaded */
-			//printf ("HIT!\n");
-		} else {
-			shared_p = aot_module->got_info + aot_module->got_info_offsets [*got_offset];
-
-			res = decode_patch (aot_module, mp, ji, shared_p, &shared_p);
-			if (!res)
-				return FALSE;
-		}
-	} else {
-		res = decode_patch (aot_module, mp, ji, p, &p);
-		if (!res)
-			return FALSE;
-	}
-
-	*endbuf = p;
-	return TRUE;
-}
-
 static MonoJumpInfo*
 load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches, 
 				 guint32 got_index, guint32 **got_slots, 
 				 guint8 *buf, guint8 **endbuf)
 {
 	MonoJumpInfo *patches;
-	MonoJumpInfo *patch_info = NULL;
 	int pindex;
-	guint32 last_offset;
 	guint8 *p;
 
 	p = buf;
 
-	/* First load the type + offset table */
-	last_offset = 0;
 	patches = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo) * n_patches);
 
-	for (pindex = 0; pindex < n_patches; ++pindex) {		
-		MonoJumpInfo *ji = &patches [pindex];
-
-		ji->type = *p;
-		p ++;
-
-		//printf ("T: %d O: %d.\n", ji->type, ji->ip.i);
-		ji->next = patch_info;
-		patch_info = ji;
-	}
-
 	*got_slots = g_malloc (sizeof (guint32) * n_patches);
-	memset (*got_slots, 0xff, sizeof (guint32) * n_patches);
 
-	/* Then load the other data */
 	for (pindex = 0; pindex < n_patches; ++pindex) {
 		MonoJumpInfo *ji = &patches [pindex];
+		guint8 *shared_p;
+		gboolean res;
+		guint32 got_offset;
 
-		if (!decode_got_entry (aot_module, mp, ji, p, &p, (*got_slots) + pindex))
-			goto cleanup;
+		ji->type = decode_value (p, &p);
 
-		if ((*got_slots) [pindex] == 0xffffffff)
-			(*got_slots) [pindex] = got_index ++;
+		if (mono_aot_is_shared_got_patch (ji)) {
+			got_offset = decode_value (p, &p);
+
+			if (aot_module->got [got_offset]) {
+				/* Already loaded */
+				//printf ("HIT!\n");
+			} else {
+				shared_p = aot_module->got_info + aot_module->got_info_offsets [got_offset];
+
+				res = decode_patch (aot_module, mp, ji, shared_p, &shared_p);
+				if (!res)
+					goto cleanup;
+			}
+		} else {
+			res = decode_patch (aot_module, mp, ji, p, &p);
+			if (!res)
+				goto cleanup;
+
+			got_offset = got_index ++;
+		}
+
+		(*got_slots) [pindex] = got_offset;
 	}
 
 	*endbuf = p;
@@ -2631,7 +2569,7 @@ load_named_code (MonoAotModule *amodule, const char *name)
 				continue;
 
 			/*
-			 * When this code is executed, the runtime may not yet initalized, so
+			 * When this code is executed, the runtime may not be initalized yet, so
 			 * resolve the patch info by hand.
 			 */
 			if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
