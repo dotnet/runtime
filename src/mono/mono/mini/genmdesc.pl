@@ -37,7 +37,18 @@ sub load_opcodes
 	}
 	die "$arch arch is not supported.\n" unless $arch_found;
 
-	$cpp .= " -D$arch $srcdir/mini-ops.h|";
+	my $arch_define = $arch;
+	if ($arch =~ "__i386__") {
+		$arch_define = "TARGET_X86";
+	}
+	if ($arch =~ " __x86_64__") {
+		$arch_define = "TARGET_AMD64";
+	}
+	if ($arch =~ "__arm__") {
+		$arch_define = "TARGET_ARM";
+	}
+		
+	$cpp .= " -D$arch_define $srcdir/mini-ops.h|";
 	#print "Running: $cpp\n";
 	open (OPS, $cpp) || die "Cannot execute cpp: $!";
 	while (<OPS>) {
