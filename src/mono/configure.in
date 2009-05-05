@@ -482,13 +482,18 @@ system)
   
   ## Versions of dependencies
   GLIB_REQUIRED_VERSION=2.4.0
-  
-  PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
-  
-  GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
-  GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
-  GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
-  GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
+
+  dnl
+  dnl No, you will not replace this check with a pkg.m4 check
+  dnl
+  if $PKG_CONFIG --atleast-version=$GLIB_REQUIRED_VERSION glib-2.0; then
+      GLIB_CFLAGS=`$PKG_CONFIG --cflags glib-2.0 gthread-2.0`
+      GLIB_LIBS=`$PKG_CONFIG --libs glib-2.0 gthread-2.0`
+      GMODULE_CFLAGS=`$PKG_CONFIG --cflags gmodule-2.0`
+      GMODULE_LIBS=`$PKG_CONFIG --libs gmodule-2.0`
+  else
+	AC_MSG_ERROR([You need at least glib-2.0 $GLIB_REQUIRED_VERSION])
+  fi
   ;;
 *)
   AC_MSG_ERROR([Invalid argument to --with-glib.])

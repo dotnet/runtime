@@ -1,3 +1,13 @@
+2009-05-05  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: Reduce configure-time dependencies by using
+	pkg-config the way it was originally intended to be used, and not
+	with the incredibly lame and painful inducing pkg.m4 file. 
+
+	I am on a quest to remove this gratuitous dep on pkg.m4 that is
+	making people's lives miserable around the globe, just because
+	someone can not be bothered to learn the shell if construct.
+
 2009-04-28  Zoltan Varga  <vargaz@gmail.com>
 
 	* configure.in: Add an option to disable the solaris tar check.
