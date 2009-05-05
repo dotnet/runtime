@@ -2465,6 +2465,13 @@ if test x$platform_win32 = xyes; then
    sed -e "s,-mno-cygwin,,g" libtool > libtool.new; mv libtool.new libtool; chmod 755 libtool
 fi
 
+dnl
+dnl Consistency settings
+dnl
+if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
+   DISABLE_MCS_DOCS=yes
+fi
+
 (
   case $prefix in
   NONE) prefix=$ac_default_prefix ;;
