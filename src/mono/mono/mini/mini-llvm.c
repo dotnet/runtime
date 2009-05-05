@@ -2243,8 +2243,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			case OP_TLS_GET: {
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 #ifdef TARGET_AMD64
-				// 255 == FS segment register
-				LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 255);
+				// 257 == FS segment register
+				LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 257);
 #else
 				// 256 == GS segment register
 				LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
@@ -2256,8 +2256,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				LLVM_FAILURE (ctx, "opcode tls-get");
 #endif
 
-				/* This depends on uncomitted patches to LLVM */
-				LLVM_FAILURE (ctx, "opcode tls-get");
 				break;
 			}
 
