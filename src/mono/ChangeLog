@@ -1,3 +1,12 @@
+2009-05-06  Raja R Harinath  <harinath@hurrynot.org>
+
+	* Makefile.am (compiler-tests): Rewrite to re-build the moon
+	assemblies after mcs/ is built.
+	* runtime/Makefile.am (build_profiles) [INSTALL_2_1]: Build only
+	the net_2_1_raw profile.
+	(test_profiles): New.  Mention net_2_1 profile.
+	(moon-do-build): New.
+
 2009-05-05  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in: Reduce configure-time dependencies by using

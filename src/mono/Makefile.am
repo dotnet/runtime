@@ -35,9 +35,7 @@ get-monolite-latest:
 	cd $(mcslib) && { (wget -O- $(monolite_url) || curl $(monolite_url)) | gzip -d | tar xf - ; }
 	cd $(mcslib) && mv -f monolite-* monolite
 
-compiler-tests: mcs-do-clean
-	$(MAKE) all
-	$(MAKE) mcs-do-compiler-tests
+compiler-tests: build-test-mono-mcs-moon
 
 compiler-tests-net_2_0:
 	-rm -f $(mcs_topdir)/build/common/Consts.cs.save
@@ -46,7 +44,7 @@ compiler-tests-net_2_0:
 	cd $(mcs_topdir) && $(MAKE) PROFILE=net_2_0 clean
 	-mv -f $(mcs_topdir)/build/common/Consts.cs.save $(mcs_topdir)/build/common/Consts.cs
 	$(MAKE) all
-	$(MAKE) build_profiles=net_2_0 mcs-do-compiler-tests
+	$(MAKE) test_profiles=net_2_0 mcs-do-compiler-tests
 
 bootstrap-world: compiler-tests
 	$(MAKE) install
@@ -55,6 +53,18 @@ bootstrap-world-net_2_0: compiler-tests-net_2_0
 	$(MAKE) install
 
 # internal targets
+.PHONY: build-test-mono-mcs-moon
+build-test-mono-mcs-moon: do-build-moon-maybe
+	$(MAKE) mcs-do-compiler-tests
+
+.PHONY: do-build-mono-mcs
+do-build-mono-mcs: mcs-do-clean
+	$(MAKE) all
+
+.PHONY: do-build-moon-maybe
+do-build-moon-maybe: do-build-mono-mcs
+	cd runtime && $(MAKE) moon-do-build
+
 mcs-do-clean:
 	cd runtime && $(MAKE) clean-local
 	cd mono/tests && $(MAKE) clean
