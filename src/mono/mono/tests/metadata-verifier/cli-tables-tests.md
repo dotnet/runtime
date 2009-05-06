@@ -804,3 +804,44 @@ property-map-table {
 	#property list is 1,3,7 we change the first to 4
 	invalid offset table-row ( 0x15 0 ) + 2 set-ushort 4
 }
+
+property-table {
+	assembly assembly-with-properties.exe
+
+	#valid flags (3)
+	#only bits 9, 10 and 12 are used 
+	invalid offset table-row ( 0x17 0 ) set-bit 0
+	invalid offset table-row ( 0x17 0 ) set-bit 1
+	invalid offset table-row ( 0x17 0 ) set-bit 2
+	invalid offset table-row ( 0x17 0 ) set-bit 3
+	invalid offset table-row ( 0x17 0 ) set-bit 4
+	invalid offset table-row ( 0x17 0 ) set-bit 5
+	invalid offset table-row ( 0x17 0 ) set-bit 6
+	invalid offset table-row ( 0x17 0 ) set-bit 7
+	invalid offset table-row ( 0x17 0 ) set-bit 8
+	invalid offset table-row ( 0x17 0 ) set-bit 11
+	invalid offset table-row ( 0x17 0 ) set-bit 13
+	invalid offset table-row ( 0x17 0 ) set-bit 14
+	invalid offset table-row ( 0x17 0 ) set-bit 15
+
+	#valid non empty name (4)
+	invalid offset table-row ( 0x17 0 ) + 2 set-ushort 0
+	invalid offset table-row ( 0x17 0 ) + 2 set-ushort 0x8800
+
+	#type must be a non null type signature in the blob heap (6)
+	invalid offset table-row ( 0x17 0 ) + 4 set-ushort 0
+	invalid offset table-row ( 0x17 0 ) + 4 set-ushort 0x8800
+
+	#TODO signature must be of the right kind (7)
+
+	#if property has default, there must be a row in the defaults table
+	#we mark row zero as having default value
+	#field zero has default value
+	valid offset table-row (0x17 0) + 0 or-ushort  0x1000, #mark the property with hasdefault
+		  offset table-row (0x04 0) + 0 set-ushort 0x0011, #clear literal and hasdefault from the field
+		  offset table-row (0x0B 0) + 2 set-ushort 0x0006  #change the parent token to row 1 of the property table (0x2) 
+
+	invalid offset table-row (0x17 0) + 0 or-ushort  0x1000
+
+	#TODO check for dups
+}

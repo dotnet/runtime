@@ -7,6 +7,7 @@ public delegate void Del ();
 
 public class Class0
 {
+	const int foo = 10;
 	public int PropA { get; set; }
 	public int PropB { set { int x = value; } }
 	public int PropC { get { return 0; } }

@@ -1,5 +1,11 @@
 2009-05-06 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for property table.
+
+	* assembly-with-property.cs: Added more stuff
+
+2009-05-06 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* gen-md-tests.c (next_token): Stop taking chars
 	for a token when encountering the first delimiter char.
 
@@ -10,7 +16,7 @@
 
 	* cli-tables-tests.md: Tests for propertymap table.
 
-	* assembly-with-cas.cs: New test file for producing tests
+	* assembly-with-property.cs: New test file for producing tests
 	for property tables.
 
 	* Makefile: Add new dependencies.
