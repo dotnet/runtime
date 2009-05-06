@@ -751,7 +751,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	if (die)
 		return die;
 
-	if (!((klass->byval_arg.type == MONO_TYPE_CLASS) || (klass->byval_arg.type == MONO_TYPE_OBJECT) || klass->enumtype || (klass->byval_arg.type == MONO_TYPE_VALUETYPE && vtype)))
+	if (!((klass->byval_arg.type == MONO_TYPE_CLASS) || (klass->byval_arg.type == MONO_TYPE_OBJECT) || klass->byval_arg.type == MONO_TYPE_GENERICINST || klass->enumtype || (klass->byval_arg.type == MONO_TYPE_VALUETYPE && vtype)))
 		return NULL;
 
 	/*
@@ -977,6 +977,14 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 				tdie = emit_class_dwarf_info (w, klass, FALSE);
 			else
 				tdie = ".LDIE_I4";
+			break;
+		case MONO_TYPE_GENERICINST:
+			if (!MONO_TYPE_ISSTRUCT (t)) {
+				emit_class_dwarf_info (w, klass, FALSE);
+				tdie = g_hash_table_lookup (w->class_to_reference_die, klass);
+			} else {
+				tdie = ".LDIE_I4";
+			}
 			break;
 		default:
 			tdie = ".LDIE_I4";
