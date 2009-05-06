@@ -1,3 +1,7 @@
+2009-05-05 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Tests for event table.
+	
 2009-04-30 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Tests for event map table.

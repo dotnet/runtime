@@ -741,3 +741,52 @@ event-map-table {
 	#evt list is 1,3,7 we change the first to 4
 	invalid offset table-row ( 0x12 0 ) + 2 set-ushort 4
 }
+
+event-table {
+	assembly assembly-with-events.exe
+
+	#event flags have valid bits (3)
+	#only bits 9 and 10 are used 
+
+	invalid offset table-row ( 0x14 0 ) set-bit 0
+	invalid offset table-row ( 0x14 0 ) set-bit 1
+	invalid offset table-row ( 0x14 0 ) set-bit 2
+	invalid offset table-row ( 0x14 0 ) set-bit 3
+	invalid offset table-row ( 0x14 0 ) set-bit 4
+	invalid offset table-row ( 0x14 0 ) set-bit 5
+	invalid offset table-row ( 0x14 0 ) set-bit 6
+	invalid offset table-row ( 0x14 0 ) set-bit 7
+	invalid offset table-row ( 0x14 0 ) set-bit 8
+	invalid offset table-row ( 0x14 0 ) set-bit 11
+	invalid offset table-row ( 0x14 0 ) set-bit 12
+	invalid offset table-row ( 0x14 0 ) set-bit 13
+	invalid offset table-row ( 0x14 0 ) set-bit 14
+	invalid offset table-row ( 0x14 0 ) set-bit 15
+
+	#name is a valid non empty string (4)
+	invalid offset table-row ( 0x14 0 ) + 2 set-ushort 0
+	invalid offset table-row ( 0x14 0 ) + 2 set-ushort 0x8880
+
+	#event type can be null (6)
+	valid offset table-row ( 0x14 0 ) + 4 set-ushort 0
+
+	#event type is valid (7)
+	#coded table 0x3 is invalid
+	invalid offset table-row ( 0x14 0 ) + 4 set-ushort 0x7
+	invalid offset table-row ( 0x14 0 ) + 4 set-ushort 0x8880
+	invalid offset table-row ( 0x14 0 ) + 4 set-ushort 0x8881
+	invalid offset table-row ( 0x14 0 ) + 4 set-ushort 0x8882
+
+	#TODO eventtype must be a class (8)
+
+	#TODO for each row, there shall be one add_ and one remove_ row in methodsemantics (9)
+	#change AddOn to Other
+	invalid offset table-row ( 0x18 0 ) set-ushort 0x0004
+	#change RemoveOn to Other
+	invalid offset table-row ( 0x18 1 ) set-ushort 0x0004
+
+	#TODO for each row, there can be zero or one raise_ rows (10)
+
+	#TODO check for dups
+}
+
