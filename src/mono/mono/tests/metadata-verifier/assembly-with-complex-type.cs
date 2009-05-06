@@ -64,3 +64,9 @@ public class ExplicitLayout2 {
 	[FieldOffset (33)] int a;
 	[FieldOffset (0)] int b;
 }
+
+public class ZZ : Iface
+{
+	void Iface.Foo () {
+	}
+}

@@ -1,5 +1,11 @@
 2009-05-06 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Tests for methodimpl table.
+
+	* assembly-with-complex-type.cs: Added more stuff.
+
+2009-05-06 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Tests for property table.
 
 	* assembly-with-property.cs: Added more stuff

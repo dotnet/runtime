@@ -845,3 +845,36 @@ property-table {
 
 	#TODO check for dups
 }
+
+methodimpl-table {
+	assembly assembly-with-complex-type.exe
+
+	#class shall be valid (2)
+	invalid offset table-row (0x19 0) set-ushort 0 
+	invalid offset table-row (0x19 0) set-ushort 0x8800
+
+	#methodbody shall be valid (3)
+	#null
+	invalid offset table-row (0x19 0) + 2 set-ushort 0x0000 
+	invalid offset table-row (0x19 0) + 2 set-ushort 0x0001
+	#out of range
+	invalid offset table-row (0x19 0) + 2 set-ushort 0x8800 
+	invalid offset table-row (0x19 0) + 2 set-ushort 0x8801
+
+	#MethodDeclaration shall be valid
+	#null
+	invalid offset table-row (0x19 0) + 4 set-ushort 0x0000 
+	invalid offset table-row (0x19 0) + 4 set-ushort 0x0001
+	#out of range
+	invalid offset table-row (0x19 0) + 4 set-ushort 0x8800 
+	invalid offset table-row (0x19 0) + 4 set-ushort 0x8801
+	
+
+	#TODO check MethodDeclaration method for virtual and owner type for !sealed (4,5) 	
+	#TODO check MethodBody for belonging to a super type of Class,been virtual and rva != 0 (6,7,8)
+	#TODO check MethodBody must belong to any ancestor or iface of Class (9)
+	#TODO check MethodDeclaration method shall not be final (10)
+	#TODO if MethodDeclaration is strict, it must be visible to Class (11)
+	#TODO the method signature of MethodBody must match of MethodDeclaration (12)	
+	#TODO no dups
+}
