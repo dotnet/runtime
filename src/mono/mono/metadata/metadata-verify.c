@@ -1888,6 +1888,33 @@ verify_property_table (VerifyContext *ctx)
 }
 
 static void
+verify_methodimpl_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_METHODIMPL];
+	guint32 data [MONO_METHODIMPL_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_METHODIMPL_SIZE);
+
+		if (!data [MONO_METHODIMPL_CLASS] || data [MONO_METHODIMPL_CLASS] > ctx->image->tables [MONO_TABLE_TYPEDEF].rows + 1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d Class field %08x", i, data [MONO_TABLE_TYPEDEF]));
+			
+		if (!get_coded_index_token (METHODDEF_OR_REF_DESC, data [MONO_METHODIMPL_BODY]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d MethodBody field %08x", i, data [MONO_METHODIMPL_BODY]));
+		
+		if (!is_valid_coded_index (ctx, METHODDEF_OR_REF_DESC, data [MONO_METHODIMPL_BODY]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d MethodBody field %08x", i, data [MONO_METHODIMPL_BODY]));
+
+		if (!get_coded_index_token (METHODDEF_OR_REF_DESC, data [MONO_METHODIMPL_DECLARATION]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d MethodDeclaration field %08x", i, data [MONO_METHODIMPL_DECLARATION]));
+		
+		if (!is_valid_coded_index (ctx, METHODDEF_OR_REF_DESC, data [MONO_METHODIMPL_DECLARATION]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d MethodDeclaration field %08x", i, data [MONO_METHODIMPL_DECLARATION]));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1949,6 +1976,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_propertymap_table (ctx);
 	CHECK_ERROR ();
 	verify_property_table (ctx);
+	CHECK_ERROR ();
+	verify_methodimpl_table (ctx);
 }
 
 static gboolean
