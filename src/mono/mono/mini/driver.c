@@ -341,6 +341,9 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	TestMethod func;
 	GTimer *timer = g_timer_new ();
 	MonoDomain *domain = mono_domain_get ();
+	guint32 exclude = 0;
+
+	mono_arch_cpu_optimizazions (&exclude);
 
 	if (mini_stats_fd) {
 		fprintf (mini_stats_fd, "$stattitle = \'Mono Benchmark Results (various optimizations)\';\n");
@@ -381,7 +384,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 	for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
 		double elapsed, comp_time, start_time;
 
-		opt_flags = opt_sets [opt];
+		opt_flags = opt_sets [opt] & ~exclude;
 		mono_set_defaults (verbose, opt_flags);
 		n = opt_descr (opt_flags);
 		g_print ("Test run: image=%s, opts=%s\n", mono_image_get_filename (image), n);
