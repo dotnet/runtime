@@ -23,7 +23,7 @@ struct MonoMethodDesc {
 	char *name;
 	char *args;
 	guint num_args;
-	gboolean include_namespace;
+	gboolean include_namespace, klass_glob, name_glob;
 };
 
 #ifdef HAVE_ARRAY_ELEM_INIT
@@ -266,7 +266,7 @@ mono_context_get_desc (MonoGenericContext *context)
  *
  * in all the loaded assemblies.
  *
- * Both classname and methodname can be '*' which matches anything.
+ * Both classname and methodname can contain '*' which matches anything.
  *
  * Returns: a parsed representation of the method description.
  */
@@ -311,6 +311,10 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 	result->klass = class_name;
 	result->namespace = use_namespace? class_nspace: NULL;
 	result->args = use_args? use_args: NULL;
+	if (strstr (result->name, "*"))
+		result->name_glob = TRUE;
+	if (strstr (result->klass, "*"))
+		result->klass_glob = TRUE;
 	if (use_args) {
 		end = use_args;
 		if (*end)
@@ -362,7 +366,14 @@ gboolean
 mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
 {
 	char *sig;
-	if (strcmp (desc->name, method->name) && (strcmp (desc->name, "*") != 0))
+	gboolean name_match;
+
+	name_match = strcmp (desc->name, method->name) == 0;
+#ifndef _EGLIB_MAJOR
+	if (!name_match && desc->name_glob)
+		name_match = g_pattern_match_simple (desc->name, method->name);
+#endif
+	if (!name_match)
 		return FALSE;
 	if (!desc->args)
 		return TRUE;
@@ -398,8 +409,12 @@ match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
 {
 	const char *p;
 
-	if (!strcmp (desc->klass, "*"))
+	if (desc->klass_glob && !strcmp (desc->klass, "*"))
 		return TRUE;
+#ifndef _EGLIB_MAJOR
+	if (desc->klass_glob && g_pattern_match_simple (desc->klass, klass->name))
+		return TRUE;
+#endif
 	p = my_strrchr (desc->klass, '/', &pos);
 	if (!p) {
 		if (strncmp (desc->klass, klass->name, pos))
