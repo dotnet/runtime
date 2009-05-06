@@ -1382,7 +1382,7 @@ guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
 char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
 MonoAotTrampInfo* mono_aot_tramp_info_create (char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
 gboolean mono_aot_is_shared_got_patch       (MonoJumpInfo *patch_info) MONO_INTERNAL;
-
+guint    mono_aot_str_hash                  (gconstpointer v1) MONO_INTERNAL;
 
 /* This is an exported function */
 void     mono_aot_register_globals          (gpointer *globals);
