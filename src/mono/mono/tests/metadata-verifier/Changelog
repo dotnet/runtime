@@ -1,3 +1,11 @@
+2009-05-06 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* gen-md-tests.c (next_token): Stop taking chars
+	for a token when encountering the first delimiter char.
+
+	This makes the parser less brain-dead when encountering
+	sequences like "foo()".
+
 2009-05-05 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Tests for propertymap table.

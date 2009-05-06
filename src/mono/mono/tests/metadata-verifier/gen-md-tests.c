@@ -19,7 +19,7 @@
 
 #if 0
 #define DEBUG_SCANNER(stmt) do { stmt; } while (0)
-#define SCANNER_DEBUG
+#define SCANNER_DEBUG 1
 #else
 #define DEBUG_SCANNER(stmt)
 #endif
@@ -677,6 +677,21 @@ dump_token (scanner_t *scanner, token_t *token)
 
 #endif
 
+static gboolean
+is_special_char (char c)
+{
+	switch (c) {
+	case ';':
+	case ',':
+	case '{':
+	case '}':
+	case '(':
+	case ')':
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static void
 next_token (scanner_t *scanner)
 {
@@ -685,6 +700,13 @@ next_token (scanner_t *scanner)
 	skip_spaces (scanner);
 	start = scanner->idx;
 	while (!is_eof (scanner) && !isspace (CUR_CHAR)) {
+		if (scanner->idx == start) {
+			if (is_special_char (CUR_CHAR)) {
+				++scanner->idx;
+				break;
+			}
+		} else if (is_special_char (CUR_CHAR))
+			break;
 		++scanner->idx;
 	}
 	end = scanner->idx;
