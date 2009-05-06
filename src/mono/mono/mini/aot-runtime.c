@@ -2891,4 +2891,11 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	return NULL;
 }
 
+guint8*
+mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 #endif
