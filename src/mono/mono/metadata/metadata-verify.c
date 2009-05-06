@@ -1833,6 +1833,26 @@ verify_event_table (VerifyContext *ctx)
 }
 
 static void
+verify_propertymap_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_PROPERTYMAP];
+	guint32 data [MONO_PROPERTY_MAP_SIZE], propertylist = 0;
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_PROPERTY_MAP_SIZE);
+
+		if (!data [MONO_PROPERTY_MAP_PARENT] || data [MONO_PROPERTY_MAP_PARENT] > ctx->image->tables [MONO_TABLE_TYPEDEF].rows + 1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid PropertyMap row %d Parent field 0x%08x", i, data [MONO_PROPERTY_MAP_PARENT]));
+
+		if (!data [MONO_PROPERTY_MAP_PROPERTY_LIST] || data [MONO_PROPERTY_MAP_PROPERTY_LIST] <= propertylist)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid PropertyMap row %d PropertyList field %d", i, data [MONO_PROPERTY_MAP_PROPERTY_LIST]));
+
+		propertylist = data [MONO_PROPERTY_MAP_PROPERTY_LIST];
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1890,6 +1910,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_eventmap_table (ctx);
 	CHECK_ERROR ();
 	verify_event_table (ctx);
+	CHECK_ERROR ();
+	verify_propertymap_table (ctx);
 }
 
 static gboolean
