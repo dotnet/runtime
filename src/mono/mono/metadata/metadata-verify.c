@@ -1058,6 +1058,14 @@ is_valid_standalonesig_blob (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+is_valid_property_sig_blob (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return offset > 0 && blob.size >= 1 && blob.size - 1 >= offset;
+}
+
+static gboolean
 decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
 {
 	unsigned char b;
@@ -1852,6 +1860,33 @@ verify_propertymap_table (VerifyContext *ctx)
 	}
 }
 
+#define INVALID_PROPERTY_FLAGS_BITS ~((1 << 9) | (1 << 10) | (1 << 12))
+static void
+verify_property_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_PROPERTY];
+	guint32 data [MONO_PROPERTY_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_PROPERTY_SIZE);
+
+		if (data [MONO_PROPERTY_FLAGS] & INVALID_PROPERTY_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Property row %d PropertyFlags field %08x", i, data [MONO_PROPERTY_FLAGS]));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_PROPERTY_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Property row %d Name field %08x", i, data [MONO_PROPERTY_NAME]));
+
+		if (!is_valid_property_sig_blob (ctx, data [MONO_PROPERTY_TYPE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Property row %d Type field %08x", i, data [MONO_PROPERTY_TYPE]));
+
+		if ((data [MONO_PROPERTY_FLAGS] & PROPERTY_ATTRIBUTE_HAS_DEFAULT) &&
+				search_sorted_table (ctx, MONO_TABLE_CONSTANT, MONO_CONSTANT_PARENT, make_coded_token (HAS_CONSTANT_DESC, MONO_TABLE_PROPERTY, i)) == -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Property row %d has HasDefault but there is no corresponding row in the Constant table", i));
+
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -1912,6 +1947,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_event_table (ctx);
 	CHECK_ERROR ();
 	verify_propertymap_table (ctx);
+	CHECK_ERROR ();
+	verify_property_table (ctx);
 }
 
 static gboolean
