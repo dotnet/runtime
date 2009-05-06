@@ -3324,6 +3324,27 @@ emit_info (MonoAotCompile *acfg)
 #endif /* #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
 
 /*
+ * mono_aot_str_hash:
+ *
+ * Hash function for strings which we use to hash strings for things which are
+ * saved in the AOT image, since g_str_hash () can change.
+ */
+guint
+mono_aot_str_hash (gconstpointer v1)
+{
+	/* Same as g_str_hash () in glib */
+	char *p = (char *) v1;
+	guint hash = *p;
+
+	while (*p++) {
+		if (*p)
+			hash = (hash << 5) - hash + *p;
+	}
+
+	return hash;
+} 
+
+/*
  * mono_aot_method_hash:
  *
  *   Return a hash code for methods which only depends on metadata.
@@ -3334,11 +3355,11 @@ mono_aot_method_hash (MonoMethod *method)
 	guint32 hash;
 
 	if (method->wrapper_type) {
-		hash = g_str_hash (method->name);
+		hash = mono_aot_str_hash (method->name);
 	} else {
 		char *full_name = mono_method_full_name (method, TRUE);
 		// FIXME: Improve this (changing this requires bumping MONO_AOT_FILE_VERSION)
-		hash = g_str_hash (full_name);
+		hash = mono_aot_str_hash (full_name);
 		g_free (full_name);
 	}
 
@@ -3755,7 +3776,7 @@ emit_class_name_table (MonoAotCompile *acfg)
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get (acfg->image, token);
 		full_name = mono_type_get_name_full (mono_class_get_type (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
-		hash = g_str_hash (full_name) % table_size;
+		hash = mono_aot_str_hash (full_name) % table_size;
 		g_free (full_name);
 
 		/* FIXME: Allocate from the mempool */
