@@ -790,3 +790,17 @@ event-table {
 	#TODO check for dups
 }
 
+property-map-table {
+	assembly assembly-with-properties.exe
+
+	#parent must be a valid typedef token
+	invalid offset table-row ( 0x15 0 ) set-ushort 0x8800
+
+	#bad propertylist
+	invalid offset table-row ( 0x15 0 ) + 2 set-ushort 0x0000
+	invalid offset table-row ( 0x15 0 ) + 2 set-ushort 0x8800
+
+	#propertylist must not be duplicated and increase monotonically
+	#property list is 1,3,7 we change the first to 4
+	invalid offset table-row ( 0x15 0 ) + 2 set-ushort 4
+}

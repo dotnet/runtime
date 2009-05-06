@@ -28,6 +28,9 @@ assembly-with-cas.exe: assembly-with-cas.cs
 assembly-with-events.exe: assembly-with-events.cs
 	gmcs assembly-with-events.cs
 
+assembly-with-properties.exe: assembly-with-properties.cs
+	gmcs assembly-with-properties.cs
+
 TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-complex-type.exe \
 	assembly-with-methods.exe \
@@ -36,6 +39,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-cattr.exe \
 	assembly-with-cas.exe \
 	assembly-with-events.exe \
+	assembly-with-properties.exe \
 	simple-assembly.exe
 
 
