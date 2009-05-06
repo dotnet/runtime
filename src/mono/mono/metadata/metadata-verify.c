@@ -943,6 +943,7 @@ typedef struct {
 	guint32 token;
 	guint32 col_size;
 	guint32 col_offset;
+	MonoTableInfo *table;
 } RowLocator;
 
 static int
@@ -952,7 +953,7 @@ token_locator (const void *a, const void *b)
 	unsigned const char *row = (unsigned const char *)b;
 	guint32 token = loc->col_size == 2 ? read16 (row + loc->col_offset) : read32 (row + loc->col_offset);
 
-	VERIFIER_DEBUG ( printf ("\tfound token %x\n", token) );
+	VERIFIER_DEBUG ( printf ("\tfound token %x at idx %d\n", token, ((const char*)row - loc->table->base) / loc->table->row_size) );
 	return (int)loc->token - (int)token;
 }
 
@@ -965,6 +966,8 @@ search_sorted_table (VerifyContext *ctx, int table, int column, guint32 coded_to
 	locator.token = coded_token;
 	locator.col_offset = get_col_offset (ctx, table, column);
 	locator.col_size = get_col_size (ctx, table, column);
+	locator.table = tinfo;
+
 	base = tinfo->base;
 
 	VERIFIER_DEBUG ( printf ("looking token %x table %d col %d rsize %d roff %d\n", coded_token, table, column, locator.col_size, locator.col_offset) );
@@ -972,7 +975,7 @@ search_sorted_table (VerifyContext *ctx, int table, int column, guint32 coded_to
 	if (!res)
 		return -1;
 
-	return (res - base) / tinfo->rows;
+	return (res - base) / tinfo->row_size;
 }
 
 /*WARNING: This function doesn't verify if the strings @offset points to a valid string*/
@@ -1773,6 +1776,62 @@ verify_eventmap_table (VerifyContext *ctx)
 	}
 }
 
+#define INVALID_EVENT_FLAGS_BITS ~((1 << 9) | (1 << 10))
+static void
+verify_event_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_EVENT];
+	MonoTableInfo *sema_table = &ctx->image->tables [MONO_TABLE_METHODSEMANTICS];
+	guint32 data [MONO_EVENT_SIZE], sema_data [MONO_METHOD_SEMA_SIZE], token;
+	gboolean found_add, found_remove;
+	int i, idx;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_EVENT_SIZE);
+
+		if (data [MONO_EVENT_FLAGS] & INVALID_EVENT_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Event row %d EventFlags field %08x", i, data [MONO_EVENT_FLAGS]));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_EVENT_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Event row %d Name field %08x", i, data [MONO_EVENT_NAME]));
+
+		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_EVENT_TYPE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Event row %d EventType field %08x", i, data [MONO_EVENT_TYPE]));
+
+		//check for Add and Remove
+		token = make_coded_token (HAS_SEMANTICS_DESC, MONO_TABLE_EVENT, i);
+		idx = search_sorted_table (ctx, MONO_TABLE_METHODSEMANTICS, MONO_METHOD_SEMA_ASSOCIATION, token);
+		if (idx == -1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Event row %d has no AddOn or RemoveOn associated methods", i));
+
+		//first we move to the first row for this event
+		while (idx > 0) {
+			if (mono_metadata_decode_row_col (sema_table, idx - 1, MONO_METHOD_SEMA_ASSOCIATION) != token)
+				break;
+			--idx;
+		}
+		//now move forward looking for AddOn and RemoveOn rows
+		found_add = found_remove = FALSE;
+		while (idx < sema_table->rows) {
+			mono_metadata_decode_row (sema_table, idx, sema_data, MONO_METHOD_SEMA_SIZE);
+			if (sema_data [MONO_METHOD_SEMA_ASSOCIATION] != token)
+				break;
+			if (sema_data [MONO_METHOD_SEMA_SEMANTICS] & METHOD_SEMANTIC_ADD_ON)
+				found_add = TRUE;
+			if (sema_data [MONO_METHOD_SEMA_SEMANTICS] & METHOD_SEMANTIC_REMOVE_ON)
+				found_remove = TRUE;
+			if (found_add && found_remove)
+				break;
+			++idx;
+		}
+
+		if (!found_add)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Event row %d has no AddOn associated method", i));
+		if (!found_remove)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid Event row %d has no AddOn associated method", i));
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -1829,6 +1888,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_standalonesig_table (ctx);
 	CHECK_ERROR ();
 	verify_eventmap_table (ctx);
+	CHECK_ERROR ();
+	verify_event_table (ctx);
 }
 
 static gboolean
