@@ -451,6 +451,8 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
 #endif
 }
 
+#ifdef MONO_ARCH_AOT_SUPPORTED
+
 /*
  * arch_emit_got_access:
  *
@@ -477,6 +479,8 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 
 	*code_size = mono_arch_get_patch_offset (code) + 4;
 }
+
+#endif
 
 /*
  * arch_emit_plt_entry:
