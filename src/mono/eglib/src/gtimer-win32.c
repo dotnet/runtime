@@ -68,9 +68,14 @@ g_timer_stop (GTimer *timer)
 gdouble
 g_timer_elapsed (GTimer *timer, gulong *microseconds)
 {
-	guint64 stop;
-	guint64 freq;
-	gdouble seconds;
+	static guint64 freq = 0;
+	guint64 delta, stop;
+
+	if (freq == 0) {
+		if (!QueryPerformanceFrequency ((LARGE_INTEGER *)&freq))
+			freq = 1;
+	}
+
 	if (timer->stop == 0) {
 		QueryPerformanceCounter ((LARGE_INTEGER*)&stop);
 	}
@@ -78,13 +83,12 @@ g_timer_elapsed (GTimer *timer, gulong *microseconds)
 		stop = timer->stop;
 	}
 
-	QueryPerformanceFrequency ((LARGE_INTEGER*)&freq);
-	seconds = 1.0 * (stop - timer->start) / freq;
+	delta = stop - timer->start;
 
-	if (microseconds) {
-		*microseconds = (gulong)(1000000.0 * (stop - timer->start) / freq);
-	}
-	return seconds;
+	if (microseconds)
+		*microseconds = (gulong) (delta * (1000000.0 / freq));
+
+	return (gdouble) delta / (gdouble) freq;
 }
 
 

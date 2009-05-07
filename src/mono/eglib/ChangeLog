@@ -1,3 +1,9 @@
+2009-04-22  Jeffrey Stedfast  <fejj@novell.com>
+
+	* src/gtimer-win32.c (g_timer_elapsed): Avoid re-querying freq by
+	just saving it in a static variable. Also modified microseconds
+	calculation to avoid overflow.
+
 2009-04-05  Miguel de Icaza  <miguel@novell.com>
 
 	* src/gpath.c: Avoid situations where we add the separator if one
