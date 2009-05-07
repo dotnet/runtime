@@ -1,3 +1,7 @@
+2009-05-08  Zoltan Varga  <vargaz@gmail.com>
+
+	* acinclude.m4 (dolt_supported): Add powerpc64.
+
 2009-05-07  Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* runtime/Makefile.am (mcs-compileall): Pass --security=validil
