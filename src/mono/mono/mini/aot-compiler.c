@@ -1502,8 +1502,7 @@ add_wrappers (MonoAotCompile *acfg)
 
 		sig = mono_method_signature (method);
 
-		if (sig->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class) && 
-			!(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+		if (sig->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class)) {
 			m = mono_marshal_get_remoting_invoke_with_check (method);
 
 			add_method (acfg, m);
