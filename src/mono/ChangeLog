@@ -1,3 +1,8 @@
+2009-05-07  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* runtime/Makefile.am (mcs-compileall): Pass --security=validil
+	to the runtime so the assemblies are not required to be verifiable.
+
 2009-05-06  Raja R Harinath  <harinath@hurrynot.org>
 
 	* Makefile.am (compiler-tests): Rewrite to re-build the moon
