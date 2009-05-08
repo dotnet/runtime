@@ -337,6 +337,8 @@ typedef struct {
 #define MONO_AMD64_NO_PUSHES 1
 #endif
 
+#define MONO_ARCH_USE_OP_TAIL_CALL(caller_sig, callee_sig) mono_metadata_signature_equal ((caller_sig), (callee_sig))
+
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
 

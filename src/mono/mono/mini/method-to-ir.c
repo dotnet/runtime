@@ -2103,21 +2103,29 @@ mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args);
 
 inline static MonoCallInst *
 mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig, 
-		     MonoInst **args, int calli, int virtual)
+					 MonoInst **args, int calli, int virtual, int tail)
 {
 	MonoCallInst *call;
 #ifdef MONO_ARCH_SOFT_FLOAT
 	int i;
 #endif
 
-	MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (sig->ret, calli, virtual, cfg->generic_sharing_context));
+	if (tail)
+		MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
+	else
+		MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (sig->ret, calli, virtual, cfg->generic_sharing_context));
 
 	call->args = args;
 	call->signature = sig;
 
 	type_to_eval_stack_type ((cfg), sig->ret, &call->inst);
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (tail) {
+		if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+			call->vret_var = cfg->vret_addr;
+			//g_assert_not_reached ();
+		}
+	} else if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoInst *temp = mono_compile_create_var (cfg, sig->ret, OP_LOCAL);
 		MonoInst *loada;
 
@@ -2191,7 +2199,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 inline static MonoInst*
 mono_emit_calli (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **args, MonoInst *addr)
 {
-	MonoCallInst *call = mono_emit_call_args (cfg, sig, args, TRUE, FALSE);
+	MonoCallInst *call = mono_emit_call_args (cfg, sig, args, TRUE, FALSE, FALSE);
 
 	call->inst.sreg1 = addr->dreg;
 
@@ -2241,7 +2249,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		sig = ctor_sig;
 	}
 
-	call = mono_emit_call_args (cfg, sig, args, FALSE, virtual);
+	call = mono_emit_call_args (cfg, sig, args, FALSE, virtual, FALSE);
 
 	if (this && sig->hasthis && 
 	    (method->klass->marshalbyref || method->klass == mono_defaults.object_class) && 
@@ -2397,7 +2405,7 @@ mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature
 
 	g_assert (sig);
 
-	call = mono_emit_call_args (cfg, sig, args, FALSE, FALSE);
+	call = mono_emit_call_args (cfg, sig, args, FALSE, FALSE, FALSE);
 	call->fptr = func;
 
 	MONO_ADD_INS (cfg->cbb, (MonoInst*)call);
@@ -5947,7 +5955,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
 				CHECK_CFG_EXCEPTION;
 
-#ifdef TARGET_AMD64
+#ifdef MONO_ARCH_USE_OP_TAIL_CALL
 			{
 				MonoMethodSignature *fsig = mono_method_signature (cmethod);
 				int i, n;
@@ -5996,6 +6004,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean pass_mrgctx = FALSE;
 			MonoInst *vtable_arg = NULL;
 			gboolean check_this = FALSE;
+			gboolean supported_tail_call = FALSE;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -6303,27 +6312,30 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 
+#ifdef MONO_ARCH_USE_OP_TAIL_CALL
+			supported_tail_call = cmethod && MONO_ARCH_USE_OP_TAIL_CALL (mono_method_signature (method), mono_method_signature (cmethod));
+#else
+			supported_tail_call = mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod))) && !MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->ret);
+#endif
+
 			/* Tail prefix */
 			/* FIXME: runtime generic context pointer for jumps? */
 			/* FIXME: handle this for generic sharing eventually */
-			if ((ins_flag & MONO_INST_TAILCALL) && !cfg->generic_sharing_context && !vtable_arg && cmethod && (*ip == CEE_CALL) &&
-				(mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod))) && !MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->ret)) {
+			if ((ins_flag & MONO_INST_TAILCALL) && !cfg->generic_sharing_context && !vtable_arg && cmethod && (*ip == CEE_CALL) && supported_tail_call) {
 				MonoCallInst *call;
 
 				/* Prevent inlining of methods with tail calls (the call stack would be altered) */
 				INLINE_FAILURE;
 
+#ifdef MONO_ARCH_USE_OP_TAIL_CALL
+				/* Handle tail calls similarly to calls */
+				call = mono_emit_call_args (cfg, mono_method_signature (cmethod), sp, FALSE, FALSE, TRUE);
+#else
 				MONO_INST_NEW_CALL (cfg, call, OP_JMP);
 				call->tail_call = TRUE;
 				call->method = cmethod;
 				call->signature = mono_method_signature (cmethod);
 
-#ifdef TARGET_AMD64
-				/* Handle tail calls similarly to calls */
-				call->inst.opcode = OP_TAILCALL;
-				call->args = sp;
-				mono_arch_emit_call (cfg, call);
-#else
 				/*
 				 * We implement tail calls by storing the actual arguments into the 
 				 * argument variables, then emitting a CEE_JMP.
