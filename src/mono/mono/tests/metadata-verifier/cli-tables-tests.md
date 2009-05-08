@@ -878,3 +878,13 @@ methodimpl-table {
 	#TODO the method signature of MethodBody must match of MethodDeclaration (12)	
 	#TODO no dups
 }
+
+moduleref-table {
+	assembly assembly-with-module.exe
+
+	#string must be valid (2)
+	invalid offset table-row (0x1A 0) set-ushort 0
+	invalid offset table-row (0x1A 0) set-ushort 0x8801
+
+	#TODO there must be a row on the File table with the same name
+}

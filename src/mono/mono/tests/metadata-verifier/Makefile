@@ -40,6 +40,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-cas.exe \
 	assembly-with-events.exe \
 	assembly-with-properties.exe \
+	assembly-with-module.exe \
 	simple-assembly.exe
 
 

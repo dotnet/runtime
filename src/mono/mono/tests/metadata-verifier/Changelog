@@ -1,3 +1,11 @@
+2009-05-07 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Tests for module table.
+
+	* assembly-with-module.il: New file.
+
+	* Makefile: Add new dependencies.
+
 2009-05-06 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Tests for methodimpl table.
