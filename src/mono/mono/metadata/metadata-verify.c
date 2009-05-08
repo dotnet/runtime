@@ -1915,6 +1915,21 @@ verify_methodimpl_table (VerifyContext *ctx)
 }
 
 static void
+verify_moduleref_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_MODULEREF];
+	guint32 data [MONO_MODULEREF_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_MODULEREF_SIZE);
+
+		if (!is_valid_non_empty_string (ctx, data[MONO_MODULEREF_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d Class field %08x", i, data [MONO_TABLE_TYPEDEF]));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -1978,6 +1993,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_property_table (ctx);
 	CHECK_ERROR ();
 	verify_methodimpl_table (ctx);
+	CHECK_ERROR ();
+	verify_moduleref_table (ctx);
 }
 
 static gboolean
