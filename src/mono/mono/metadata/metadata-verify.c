@@ -1066,6 +1066,14 @@ is_valid_property_sig_blob (VerifyContext *ctx, guint32 offset)
 }
 
 static gboolean
+is_valid_typespec_blob (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	//TODO do proper verification
+	return offset > 0 && blob.size >= 1 && blob.size - 1 >= offset;
+}
+
+static gboolean
 decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size)
 {
 	unsigned char b;
@@ -1928,6 +1936,20 @@ verify_moduleref_table (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d Class field %08x", i, data [MONO_TABLE_TYPEDEF]));
 	}
 }
+static void
+verify_typespec_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_TYPESPEC];
+	guint32 data [MONO_TYPESPEC_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_TYPESPEC_SIZE);
+
+		if (!is_valid_typespec_blob (ctx, data [MONO_TYPESPEC_SIGNATURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid TypeSpec row %d Signature field %08x", i, data [MONO_TYPESPEC_SIGNATURE]));
+	}
+}
 
 static void
 verify_tables_data (VerifyContext *ctx)
@@ -1995,6 +2017,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_methodimpl_table (ctx);
 	CHECK_ERROR ();
 	verify_moduleref_table (ctx);
+	CHECK_ERROR ();
+	verify_typespec_table (ctx);
 }
 
 static gboolean
