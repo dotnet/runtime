@@ -1074,6 +1074,7 @@ mono_class_setup_fields (MonoClass *class)
 		MonoClass *gklass = class->generic_class->container_class;
 		mono_class_setup_fields (gklass);
 		top = gklass->field.count;
+		class->field.first = gklass->field.first;
 		class->field.count = gklass->field.count;
 	}
 
