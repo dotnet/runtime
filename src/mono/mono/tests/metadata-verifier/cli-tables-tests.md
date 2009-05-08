@@ -888,3 +888,12 @@ moduleref-table {
 
 	#TODO there must be a row on the File table with the same name
 }
+
+typespec-table {
+	assembly assembly-with-complex-type.exe
+
+	#valid signature
+	invalid offset table-row (0x1B 0) set-ushort 0
+	invalid offset table-row (0x1B 0) set-ushort 0x8800
+}
+
