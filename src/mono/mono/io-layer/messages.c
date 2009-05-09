@@ -1863,7 +1863,7 @@ find_linear_msg (guint32 id, ErrorDesc *base, int n)
 	return NULL;
 }
 
-const gchar *
+static const gchar *
 message_string (guint32 id)
 {
 	const char *msg = find_msg (id, common_messages, G_N_ELEMENTS (common_messages));
