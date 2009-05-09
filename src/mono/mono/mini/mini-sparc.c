@@ -1827,6 +1827,20 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 }
 
 void
+mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
+{
+	switch (ins->opcode) {
+	case OP_LNEG:
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg + 1, 0, ins->sreg1 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_SBB, ins->dreg + 2, 0, ins->sreg1 + 2);
+		NULLIFY_INS (ins);
+		break;
+	default:
+		break;
+	}
+}
+
+void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 }

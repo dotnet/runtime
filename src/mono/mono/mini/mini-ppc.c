@@ -2074,6 +2074,48 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	}
 }
 
+void
+mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *ins)
+{
+	switch (ins->opcode) {
+	case OP_LADD_OVF:
+		/* ADC sets the condition code */
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		NULLIFY_INS (ins);
+		break;
+	case OP_LADD_OVF_UN:
+		/* ADC sets the condition code */
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADDCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_ADD_OVF_UN_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		NULLIFY_INS (ins);
+		break;
+	case OP_LSUB_OVF:
+		/* SBB sets the condition code */
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		NULLIFY_INS (ins);
+		break;
+	case OP_LSUB_OVF_UN:
+		/* SBB sets the condition code */
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUBCC, ins->dreg + 1, ins->sreg1 + 1, ins->sreg2 + 1);
+		MONO_EMIT_NEW_BIALU (cfg, OP_SUB_OVF_UN_CARRY, ins->dreg + 2, ins->sreg1 + 2, ins->sreg2 + 2);
+		NULLIFY_INS (ins);
+		break;
+	case OP_LNEG:
+		/* This is the old version from inssel-long32.brg */
+		MONO_EMIT_NEW_UNALU (cfg, OP_INOT, ins->dreg + 1, ins->sreg1 + 1);
+		MONO_EMIT_NEW_UNALU (cfg, OP_INOT, ins->dreg + 2, ins->sreg1 + 2);
+		/* ADC sets the condition codes */
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, ins->dreg + 1, ins->dreg + 1, 1);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADC_IMM, ins->dreg + 2, ins->dreg + 2, 0);
+		NULLIFY_INS (ins);
+		break;
+	default:
+		break;
+	}
+}
+
 /* 
  * the branch_b0_table should maintain the order of these
  * opcodes.
