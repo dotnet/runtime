@@ -352,7 +352,8 @@ BASE_TEST_CS_SRC=		\
 	interlocked-4.2.cs	\
 	finalizer-wait.cs	\
 	critical-finalizers.cs	\
-	appdomain-thread-abort.cs
+	appdomain-thread-abort.cs \
+	w32message.cs
 
 if AMD64
 TEST_CS_SRC = $(BASE_TEST_CS_SRC) async-exc-compilation.cs
@@ -492,13 +493,21 @@ test_platform:	testbundle test-iomap-regression
 endif
 endif
 
+#
+# Tests that the internals in mono/io-layer/messages.c are ok by triggering the 
+# code that checks that the table is properly sorted
+#
+test_messages: 
+	> test_messages.zero
+	$(JITTEST_PROG_RUN) w32message.exe >& w32message.allout && cmp test_messages.zero w32message.allout
+
 if INSTALL_2_1
 test_2_1 : test-coreclr-security
 else
 test_2_1 :
 endif
 
-test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1
+test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
