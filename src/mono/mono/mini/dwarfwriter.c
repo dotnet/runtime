@@ -8,6 +8,8 @@
  */
 
 #include "config.h"
+
+#if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
 #include "dwarfwriter.h"
 
 #include <sys/types.h>
@@ -1687,3 +1689,4 @@ mono_dwarf_writer_emit_trampoline (MonoDwarfWriter *w, const char *tramp_name, c
 	emit_fde (w, w->fde_index, start_symbol, end_symbol, code, code_size, unwind_info, FALSE);
 	w->fde_index ++;
 }
+#endif /* End of: !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
