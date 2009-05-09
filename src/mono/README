@@ -366,6 +366,11 @@ This is Mono.
 			disabling this will drop support for any
 			libraries using DllImport.
 
+		portability:
+			Removes support for MONO_IOMAP, the environment
+			variables for simplifying porting applications that 
+			are case-insensitive and that mix the Unix and Windows path separators.
+
 		profiler:
 			Disables support for the default profiler.
 
@@ -376,6 +381,11 @@ This is Mono.
 			Drop support for saving dynamically created
 			assemblies (AssemblyBuilderAccess.Save) in
 			System.Reflection.Emit.
+
+		shadow_copy:
+			Disables support for AppDomain's shadow copies
+			(you can disable this if you do not plan on 
+			using appdomains).
 
 		simd:
 			Disables support for the Mono.SIMD intrinsics
