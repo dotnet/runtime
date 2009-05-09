@@ -25,46 +25,119 @@ typedef struct {
 	const char const *txt;
 } ErrorDesc;
 
-static ErrorDesc messages [] = {
+static ErrorDesc common_messages [] = {
 	{ ERROR_SUCCESS, "Success" },
-	{ ERROR_INVALID_FUNCTION, "Invalid function" },
 	{ ERROR_FILE_NOT_FOUND, "Cannot find the specified file" },
 	{ ERROR_PATH_NOT_FOUND, "Cannot find the specified file" },
 	{ ERROR_TOO_MANY_OPEN_FILES, "Too many open files" },
 	{ ERROR_ACCESS_DENIED, "Access denied" },
 	{ ERROR_INVALID_HANDLE, "Invalid handle" },
+	{ ERROR_INVALID_DATA, "Invalid data" },
+	{ ERROR_OUTOFMEMORY, "Out of memory" },
+	{ ERROR_NOT_SAME_DEVICE, "Not same device" },
+	{ ERROR_NO_MORE_FILES, "No more files" },
+	{ ERROR_BAD_LENGTH, "Bad length" },
+	{ ERROR_GEN_FAILURE, "General failure" },
+	{ ERROR_SHARING_VIOLATION, "Sharing violation" },
+	{ ERROR_LOCK_VIOLATION, "Lock violation" },
+	{ ERROR_NOT_SUPPORTED, "Operation not supported" },
+	{ ERROR_INVALID_PARAMETER, "Invalid parameter" },
+	{ ERROR_CALL_NOT_IMPLEMENTED, "Call not implemented" },
+	{ ERROR_INVALID_NAME, "Invalid name" },
+	{ ERROR_PROC_NOT_FOUND, "Process not found" },
+	{ ERROR_ALREADY_EXISTS, "Already exists" },
+	{ ERROR_DIRECTORY, "Is a directory" },
+	{ ERROR_ENCRYPTION_FAILED, "Encryption failed" },
+	{ WSAEINTR, "interrupted" },
+	{ WSAEBADF, "Bad file number" },
+	{ WSAEACCES, "Access denied" },
+	{ WSAEFAULT, "Bad address" },
+	{ WSAEINVAL, "Invalid arguments" },
+	{ WSAEMFILE, "Too many open files" },
+	{ WSAEWOULDBLOCK, "Operation on non-blocking socket would block" },
+	{ WSAEINPROGRESS, "Operation in progress" },
+	{ WSAEALREADY, "Operation already in progress" },
+	{ WSAENOTSOCK, "The descriptor is not a socket" },
+	{ WSAEDESTADDRREQ, "Destination address required" },
+	{ WSAEMSGSIZE, "Message too long" },
+	{ WSAEPROTOTYPE, "Protocol wrong type for socket" },
+	{ WSAENOPROTOOPT, "Protocol option not supported" },
+	{ WSAEPROTONOSUPPORT, "Protocol not supported" },
+	{ WSAESOCKTNOSUPPORT, "Socket not supported" },
+	{ WSAEOPNOTSUPP, "Operation not supported" },
+	{ WSAEPFNOSUPPORT, "Protocol family not supported" },
+	{ WSAEAFNOSUPPORT, "An address incompatible with the requested protocol was used" },
+	{ WSAEADDRINUSE, "Address already in use" },
+	{ WSAEADDRNOTAVAIL, "The requested address is not valid in this context" },
+	{ WSAENETDOWN, "Network subsystem is down" },
+	{ WSAENETUNREACH, "Network is unreachable" },
+	{ WSAENETRESET, "Connection broken, keep-alive detected a problem" },
+	{ WSAECONNABORTED, "An established connection was aborted in your host machine." },
+	{ WSAECONNRESET, "Connection reset by peer" },
+	{ WSAENOBUFS, "Not enough buffer space is available" },
+	{ WSAEISCONN, "Socket is already connected" },
+	{ WSAENOTCONN, "The socket is not connected" },
+	{ WSAESHUTDOWN, "The socket has been shut down" },
+	{ WSAETOOMANYREFS, "Too many references: cannot splice" },
+	{ WSAETIMEDOUT, "Connection timed out" },
+	{ WSAECONNREFUSED, "Connection refused" },
+	{ WSAELOOP, "Too many symbolic links encountered" },
+	{ WSAENAMETOOLONG, "File name too long" },
+	{ WSAEHOSTDOWN, "Host is down" },
+	{ WSAEHOSTUNREACH, "No route to host" },
+	{ WSAENOTEMPTY, "Directory not empty" },
+	{ WSAEPROCLIM, "EPROCLIM" },
+	{ WSAEUSERS, "Too many users" },
+	{ WSAEDQUOT, "Quota exceeded" },
+	{ WSAESTALE, "Stale NFS file handle" },
+	{ WSAEREMOTE, "Object is remote" },
+	{ WSASYSNOTREADY, "SYSNOTREADY" },
+	{ WSAVERNOTSUPPORTED, "VERNOTSUPPORTED" },
+	{ WSANOTINITIALISED, "Winsock not initialised" },
+	{ WSAEDISCON, "EDISCON" },
+	{ WSAENOMORE, "ENOMORE" },
+	{ WSAECANCELLED, "Operation canceled" },
+	{ WSAEINVALIDPROCTABLE, "EINVALIDPROCTABLE" },
+	{ WSAEINVALIDPROVIDER, "EINVALIDPROVIDER" },
+	{ WSAEPROVIDERFAILEDINIT, "EPROVIDERFAILEDINIT" },
+	{ WSASYSCALLFAILURE, "System call failed" },
+	{ WSASERVICE_NOT_FOUND, "SERVICE_NOT_FOUND" },
+	{ WSATYPE_NOT_FOUND, "TYPE_NOT_FOUND" },
+	{ WSA_E_NO_MORE, "E_NO_MORE" },
+	{ WSA_E_CANCELLED, "E_CANCELLED" },
+	{ WSAEREFUSED, "EREFUSED" },
+	{ WSAHOST_NOT_FOUND, "No such host is known" },
+	{ WSATRY_AGAIN, "A temporary error occurred on an authoritative name server.  Try again later." },
+	{ WSANO_RECOVERY, "No recovery" },
+	{ WSANO_DATA, "No data" },
+};
+
+#ifndef DISABLE_FULL_MESSAGES
+static ErrorDesc messages [] = {
+	{ ERROR_INVALID_FUNCTION, "Invalid function" },
 	{ ERROR_ARENA_TRASHED, "Arena trashed" },
 	{ ERROR_NOT_ENOUGH_MEMORY, "Not enough memory" },
 	{ ERROR_INVALID_BLOCK, "Invalid block" },
 	{ ERROR_BAD_ENVIRONMENT, "Bad environment" },
 	{ ERROR_BAD_FORMAT, "Bad format" },
 	{ ERROR_INVALID_ACCESS, "Invalid access" },
-	{ ERROR_INVALID_DATA, "Invalid data" },
-	{ ERROR_OUTOFMEMORY, "Out of memory" },
 	{ ERROR_INVALID_DRIVE, "Invalid drive" },
 	{ ERROR_CURRENT_DIRECTORY, "Current directory" },
-	{ ERROR_NOT_SAME_DEVICE, "Not same device" },
-	{ ERROR_NO_MORE_FILES, "No more files" },
 	{ ERROR_WRITE_PROTECT, "Write protect" },
 	{ ERROR_BAD_UNIT, "Bad unit" },
 	{ ERROR_NOT_READY, "Not ready" },
 	{ ERROR_BAD_COMMAND, "Bad command" },
 	{ ERROR_CRC, "CRC" },
-	{ ERROR_BAD_LENGTH, "Bad length" },
 	{ ERROR_SEEK, "Seek" },
 	{ ERROR_NOT_DOS_DISK, "Not DOS disk" },
 	{ ERROR_SECTOR_NOT_FOUND, "Sector not found" },
 	{ ERROR_OUT_OF_PAPER, "Out of paper" },
 	{ ERROR_WRITE_FAULT, "Write fault" },
 	{ ERROR_READ_FAULT, "Read fault" },
-	{ ERROR_GEN_FAILURE, "General failure" },
-	{ ERROR_SHARING_VIOLATION, "Sharing violation" },
-	{ ERROR_LOCK_VIOLATION, "Lock violation" },
 	{ ERROR_WRONG_DISK, "Wrong disk" },
 	{ ERROR_SHARING_BUFFER_EXCEEDED, "Sharing buffer exceeded" },
 	{ ERROR_HANDLE_EOF, "Handle EOF" },
 	{ ERROR_HANDLE_DISK_FULL, "Handle disk full" },
-	{ ERROR_NOT_SUPPORTED, "Operation not supported" },
 	{ ERROR_REM_NOT_LIST, "Rem not list" },
 	{ ERROR_DUP_NAME, "Duplicate name" },
 	{ ERROR_BAD_NETPATH, "Bad netpath" },
@@ -93,7 +166,6 @@ static ErrorDesc messages [] = {
 	{ ERROR_OUT_OF_STRUCTURES, "Out of structures" },
 	{ ERROR_ALREADY_ASSIGNED, "Already assigned" },
 	{ ERROR_INVALID_PASSWORD, "Invalid password" },
-	{ ERROR_INVALID_PARAMETER, "Invalid parameter" },
 	{ ERROR_NET_WRITE_FAULT, "Net write fault" },
 	{ ERROR_NO_PROC_SLOTS, "No proc slots" },
 	{ ERROR_TOO_MANY_SEMAPHORES, "Too many semaphores" },
@@ -114,14 +186,11 @@ static ErrorDesc messages [] = {
 	{ ERROR_INVALID_CATEGORY, "Invalid category" },
 	{ ERROR_INVALID_VERIFY_SWITCH, "Invalid verify switch" },
 	{ ERROR_BAD_DRIVER_LEVEL, "Bad driver level" },
-	{ ERROR_CALL_NOT_IMPLEMENTED, "Call not implemented" },
 	{ ERROR_SEM_TIMEOUT, "Semaphore timeout" },
 	{ ERROR_INSUFFICIENT_BUFFER, "Insufficient buffer" },
-	{ ERROR_INVALID_NAME, "Invalid name" },
 	{ ERROR_INVALID_LEVEL, "Invalid level" },
 	{ ERROR_NO_VOLUME_LABEL, "No volume label" },
 	{ ERROR_MOD_NOT_FOUND, "Module not found" },
-	{ ERROR_PROC_NOT_FOUND, "Process not found" },
 	{ ERROR_WAIT_NO_CHILDREN, "Wait no children" },
 	{ ERROR_CHILD_NOT_COMPLETE, "Child not complete" },
 	{ ERROR_DIRECT_ACCESS_HANDLE, "Direct access handle" },
@@ -164,7 +233,6 @@ static ErrorDesc messages [] = {
 	{ ERROR_ATOMIC_LOCKS_NOT_SUPPORTED, "Atomic locks not supported" },
 	{ ERROR_INVALID_SEGMENT_NUMBER, "Invalid segment number" },
 	{ ERROR_INVALID_ORDINAL, "Invalid ordinal" },
-	{ ERROR_ALREADY_EXISTS, "Already exists" },
 	{ ERROR_INVALID_FLAG_NUMBER, "Invalid flag number" },
 	{ ERROR_SEM_NOT_FOUND, "Sem not found" },
 	{ ERROR_INVALID_STARTING_CODESEG, "Invalid starting codeseg" },
@@ -204,7 +272,6 @@ static ErrorDesc messages [] = {
 	{ WAIT_TIMEOUT, "Wait timeout" },
 	{ ERROR_NO_MORE_ITEMS, "No more items" },
 	{ ERROR_CANNOT_COPY, "Cannot copy" },
-	{ ERROR_DIRECTORY, "Is a directory" },
 	{ ERROR_EAS_DIDNT_FIT, "EAS didnt fit" },
 	{ ERROR_EA_FILE_CORRUPT, "EA file corrupt" },
 	{ ERROR_EA_TABLE_FULL, "EA table full" },
@@ -1012,7 +1079,6 @@ static ErrorDesc messages [] = {
 	{ ERROR_NODE_CANNOT_BE_CLUSTERED, "Node cannot be clustered" },
 	{ ERROR_CLUSTER_WRONG_OS_VERSION, "Cluster wrong OS version" },
 	{ ERROR_CLUSTER_CANT_CREATE_DUP_CLUSTER_NAME, "Cluster can't create dup cluster name" },
-	{ ERROR_ENCRYPTION_FAILED, "Encryption failed" },
 	{ ERROR_DECRYPTION_FAILED, "Decryption failed" },
 	{ ERROR_FILE_ENCRYPTED, "File encrypted" },
 	{ ERROR_NO_RECOVERY_POLICY, "No recovery policy" },
@@ -1533,68 +1599,6 @@ static ErrorDesc messages [] = {
 	{ DNS_ERROR_DP_ALREADY_EXISTS, "DNS error dp already exists" },
 	{ DNS_ERROR_DP_NOT_ENLISTED, "DNS error dp not enlisted" },
 	{ DNS_ERROR_DP_ALREADY_ENLISTED, "DNS error dp already enlisted" },
-	{ WSAEINTR, "interrupted" },
-	{ WSAEBADF, "Bad file number" },
-	{ WSAEACCES, "Access denied" },
-	{ WSAEFAULT, "Bad address" },
-	{ WSAEINVAL, "Invalid arguments" },
-	{ WSAEMFILE, "Too many open files" },
-	{ WSAEWOULDBLOCK, "Operation on non-blocking socket would block" },
-	{ WSAEINPROGRESS, "Operation in progress" },
-	{ WSAEALREADY, "Operation already in progress" },
-	{ WSAENOTSOCK, "The descriptor is not a socket" },
-	{ WSAEDESTADDRREQ, "Destination address required" },
-	{ WSAEMSGSIZE, "Message too long" },
-	{ WSAEPROTOTYPE, "Protocol wrong type for socket" },
-	{ WSAENOPROTOOPT, "Protocol option not supported" },
-	{ WSAEPROTONOSUPPORT, "Protocol not supported" },
-	{ WSAESOCKTNOSUPPORT, "Socket not supported" },
-	{ WSAEOPNOTSUPP, "Operation not supported" },
-	{ WSAEPFNOSUPPORT, "Protocol family not supported" },
-	{ WSAEAFNOSUPPORT, "An address incompatible with the requested protocol was used" },
-	{ WSAEADDRINUSE, "Address already in use" },
-	{ WSAEADDRNOTAVAIL, "The requested address is not valid in this context" },
-	{ WSAENETDOWN, "Network subsystem is down" },
-	{ WSAENETUNREACH, "Network is unreachable" },
-	{ WSAENETRESET, "Connection broken, keep-alive detected a problem" },
-	{ WSAECONNABORTED, "An established connection was aborted in your host machine." },
-	{ WSAECONNRESET, "Connection reset by peer" },
-	{ WSAENOBUFS, "Not enough buffer space is available" },
-	{ WSAEISCONN, "Socket is already connected" },
-	{ WSAENOTCONN, "The socket is not connected" },
-	{ WSAESHUTDOWN, "The socket has been shut down" },
-	{ WSAETOOMANYREFS, "Too many references: cannot splice" },
-	{ WSAETIMEDOUT, "Connection timed out" },
-	{ WSAECONNREFUSED, "Connection refused" },
-	{ WSAELOOP, "Too many symbolic links encountered" },
-	{ WSAENAMETOOLONG, "File name too long" },
-	{ WSAEHOSTDOWN, "Host is down" },
-	{ WSAEHOSTUNREACH, "No route to host" },
-	{ WSAENOTEMPTY, "Directory not empty" },
-	{ WSAEPROCLIM, "EPROCLIM" },
-	{ WSAEUSERS, "Too many users" },
-	{ WSAEDQUOT, "Quota exceeded" },
-	{ WSAESTALE, "Stale NFS file handle" },
-	{ WSAEREMOTE, "Object is remote" },
-	{ WSASYSNOTREADY, "SYSNOTREADY" },
-	{ WSAVERNOTSUPPORTED, "VERNOTSUPPORTED" },
-	{ WSANOTINITIALISED, "Winsock not initialised" },
-	{ WSAEDISCON, "EDISCON" },
-	{ WSAENOMORE, "ENOMORE" },
-	{ WSAECANCELLED, "Operation canceled" },
-	{ WSAEINVALIDPROCTABLE, "EINVALIDPROCTABLE" },
-	{ WSAEINVALIDPROVIDER, "EINVALIDPROVIDER" },
-	{ WSAEPROVIDERFAILEDINIT, "EPROVIDERFAILEDINIT" },
-	{ WSASYSCALLFAILURE, "System call failed" },
-	{ WSASERVICE_NOT_FOUND, "SERVICE_NOT_FOUND" },
-	{ WSATYPE_NOT_FOUND, "TYPE_NOT_FOUND" },
-	{ WSA_E_NO_MORE, "E_NO_MORE" },
-	{ WSA_E_CANCELLED, "E_CANCELLED" },
-	{ WSAEREFUSED, "EREFUSED" },
-	{ WSAHOST_NOT_FOUND, "No such host is known" },
-	{ WSATRY_AGAIN, "A temporary error occurred on an authoritative name server.  Try again later." },
-	{ WSANO_RECOVERY, "No recovery" },
-	{ WSANO_DATA, "No data" },
 	{ WSA_QOS_RECEIVERS, "QOS receivers" },
 	{ WSA_QOS_SENDERS, "QOS senders" },
 	{ WSA_QOS_NO_SENDERS, "QOS no senders" },
@@ -1809,6 +1813,7 @@ static ErrorDesc messages [] = {
 	{ ERROR_SXS_MISSING_ASSEMBLY_IDENTITY_ATTRIBUTE, "Sxs missing assembly identity attribute" },
 	{ ERROR_SXS_INVALID_ASSEMBLY_IDENTITY_ATTRIBUTE_NAME, "Sxs invalid assembly identity attribute name" },
 };
+#endif /* DISABLE_FULL_MESSAGES */
 
 static int
 msg_compare (const void *first, const void *second)
@@ -1816,36 +1821,78 @@ msg_compare (const void *first, const void *second)
 	ErrorDesc *efirst = (ErrorDesc *) first;
 	ErrorDesc *esecond = (ErrorDesc *) second;
 
-	return esecond->id - efirst->id;
+	return efirst->id - esecond->id;
 }
-       
+
 static const gchar *
-message_string (guint32 id)
+find_msg (guint32 id, ErrorDesc *base, int n)
 {
 	ErrorDesc d, *result;
 	d.id = id;
 	
-	result = bsearch (&d, &messages[0], G_N_ELEMENTS(messages), sizeof (ErrorDesc), msg_compare);
-	if (result == NULL){
-		int i, prev = -1;
-		/*
-		 * Linear search, in case someone adds an error message and does not add it
-		 * to the list in a sorted position
-		 */
-		for (i = 0; i < G_N_ELEMENTS (messages); i++){
-			if (messages [i].id > prev)
-				prev = messages [i].id;
-			else {
-				fprintf (stderr, "Incorrect message sorted in io-layer/messages.c at index %d (msg=%s)\n", i, messages [i].txt);
-			}	
-			if (messages [i].id == id){
-				fprintf (stderr, "Error %d with text %s is improperly sorted in messages.c\n", id, messages [i].txt);
-				return messages [i].txt;
-			}
-		}
+	result = bsearch (&d, base, n, sizeof (ErrorDesc), msg_compare);
+	if (result == NULL)
 		return NULL;
-	}
 	return result->txt;
+}
+
+static const gchar *
+find_linear_msg (guint32 id, ErrorDesc *base, int n)
+{
+	int i, prev = -1;
+
+	for (i = 0; i < n; i++){
+		if (base [i].id > prev)
+			prev = base [i].id;
+		else {
+			static int error_shown;
+			if (!error_shown){
+				error_shown = 1;
+				fprintf (stderr, "Mono: Incorrect message sorted in io-layer/messages.c at index %d (msg=%s)\n", i, base [i].txt);
+			}
+		}	
+		if (base [i].id == id){
+			static int error_shown;
+			if (!error_shown){
+				error_shown = 1;
+				fprintf (stderr, "Mono: Error %d with text %s is improperly sorted in io-layer/messages.c\n", id, base [i].txt);
+			}
+			return base [i].txt;
+		}
+	}
+	return NULL;
+}
+
+const gchar *
+message_string (guint32 id)
+{
+	const char *msg = find_msg (id, common_messages, G_N_ELEMENTS (common_messages));
+	if (msg != NULL)
+		return msg;
+
+#ifndef DISABLE_FULL_MESSAGES
+	msg = find_msg (id, messages, G_N_ELEMENTS (messages));
+	if (msg != NULL){
+		fprintf (stderr, "messages.c: A message was found on the uncommon code path: %d - %s", id, msg);
+		return msg;
+	}
+#endif
+	
+	/*
+	 * Linear search, in case someone adds an error message and does not add it
+	 * to the list in a sorted position, this will be catched during development.
+	 */
+	msg = find_linear_msg (id, common_messages, G_N_ELEMENTS (common_messages));
+	if (msg != NULL)
+		return msg;
+
+#ifndef DISABLE_FULL_MESSAGES
+	msg = find_linear_msg (id, messages, G_N_ELEMENTS (messages));
+	if (msg != NULL)
+		return msg;
+#endif
+
+	return NULL;
 }
 
 static guint32
@@ -1899,7 +1946,7 @@ FormatMessage (guint32 flags, gconstpointer source, guint32 messageid,
 		if (msg != NULL)
 			str = g_utf8_to_utf16 (msg, -1, NULL, NULL, NULL);
 		else {
-			char *msg2 = g_strdup_printf ("WAPI Error 0x%x", messageid);
+			char *msg2 = g_strdup_printf ("mono-io-layer-error (%d)", messageid);
 			str = g_utf8_to_utf16 (msg2, -1, NULL, NULL, NULL);
 			g_free (msg2);
 		}
