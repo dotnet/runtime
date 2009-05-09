@@ -6055,4 +6055,24 @@ mono_verifier_is_enabled_for_method (MonoMethod *method)
 	return FALSE;
 }
 
+GSList*
+mono_method_verify (MonoMethod *method, int level)
+{
+	/* The verifier was disabled at compile time */
+	return NULL;
+}
+
+void
+mono_free_verify_list (GSList *list)
+{
+	/* The verifier was disabled at compile time */
+	/* will always be null if verifier is disabled */
+}
+
+GSList*
+mono_image_verify_tables (MonoImage *image, int level)
+{
+	/* The verifier was disabled at compile time */
+	return NULL;
+}	
 #endif
