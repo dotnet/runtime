@@ -215,7 +215,7 @@ mono_value_hash_table_insert_replace (MonoValueHashTable *hash, gpointer key, gp
 	Slot *s;
 	guint s_index;
 	GEqualFunc equal;
-	guint first_tombstone;
+	guint first_tombstone = 0;
 	gboolean have_tombstone = FALSE;
 	guint step = 0;
 

@@ -343,6 +343,10 @@ mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProces
 		return get_process_stat_item (rpid, 18, FALSE, error) / get_user_hz ();
 	case MONO_PROCESS_PPID:
 		return get_process_stat_time (rpid, 0, FALSE, error);
+
+		/* Nothing yet */
+	case MONO_PROCESS_END:
+		return 0;
 	}
 	return 0;
 }
@@ -457,6 +461,10 @@ mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error)
 	case MONO_CPU_IDLE_TIME:
 		get_cpu_times (cpu_id, NULL, NULL, NULL, NULL, &value);
 		break;
+
+	case MONO_CPU_END:
+		/* Nothing yet */
+		return 0;
 	}
 	return value;
 }
