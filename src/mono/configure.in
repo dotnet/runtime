@@ -639,6 +639,14 @@ if test "x$mono_feature_disable_generics" = "xyes"; then
 	AC_DEFINE(DISABLE_GENERICS, 1, [Disable generics support])
 fi
 
+if test "x$mono_feature_disable_shadowcopy" = "xyes"; then
+   	AC_DEFINE(DISABLE_SHADOW_COPY, 1, [Disable Shadow Copy for AppDomains])
+fi
+
+if test "x$mono_feature_disable_portability" = "xyes"; then
+   	AC_DEFINE(DISABLE_PORTABILITY, 1, [Disables the IO portability layer])
+fi
+
 if test "x$mono_feature_disable_attach" = "xyes"; then
 	AC_DEFINE(DISABLE_ATTACH, 1, [Disable agent attach support])
 fi
