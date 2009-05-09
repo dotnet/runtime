@@ -6,7 +6,6 @@
  *
  * Copyright (C) 2005-2008 Novell, Inc. (http://www.novell.com)
  */
-
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
@@ -27,6 +26,7 @@
 #include <signal.h>
 #include <ctype.h>
 
+#ifndef DISABLE_VERIFIER
 /*
  TODO add fail fast mode
  TODO add PE32+ support
@@ -2119,3 +2119,22 @@ mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
 
 	return cleanup_context (&ctx, error_list);
 }
+#else
+gboolean
+mono_verifier_verify_table_data (MonoImage *image, GSList **error_list)
+{
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_cli_data (MonoImage *image, GSList **error_list)
+{
+	return TRUE;
+}
+
+gboolean
+mono_verifier_verify_pe_data (MonoImage *image, GSList **error_list)
+{
+	return TRUE;
+}
+#endif /* DISABLE_VERIFIER */

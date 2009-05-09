@@ -7,6 +7,7 @@
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
  */
+#include <config.h>
 
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/verify.h>
@@ -27,6 +28,26 @@
 #include <ctype.h>
 
 
+static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
+static gboolean verify_all = FALSE;
+
+/*
+ * Set the desired level of checks for the verfier.
+ * 
+ */
+void
+mono_verifier_set_mode (MiniVerifierMode mode)
+{
+	verifier_mode = mode;
+}
+
+void
+mono_verifier_enable_verify_all ()
+{
+	verify_all = TRUE;
+}
+
+#ifndef DISABLE_VERIFIER
 /*
  * Pull the list of opcodes
  */
@@ -5859,25 +5880,6 @@ mono_verify_corlib ()
 	return NULL;
 }
 
-static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
-static gboolean verify_all = FALSE;
-
-/*
- * Set the desired level of checks for the verfier.
- * 
- */
-void
-mono_verifier_set_mode (MiniVerifierMode mode)
-{
-	verifier_mode = mode;
-}
-
-void
-mono_verifier_enable_verify_all ()
-{
-	verify_all = TRUE;
-}
-
 /*
  * Returns true if @method needs to be verified.
  * 
@@ -6002,3 +6004,55 @@ mono_verifier_verify_class (MonoClass *class)
 		return FALSE;
 	return TRUE;
 }
+#else
+
+gboolean
+mono_verifier_verify_class (MonoClass *class)
+{
+	/* The verifier was disabled at compile time */
+	return TRUE;
+}
+
+GSList*
+mono_method_verify_with_current_settings (MonoMethod *method, gboolean skip_visibility)
+{
+	/* The verifier was disabled at compile time */
+	return NULL;
+}
+
+gboolean
+mono_verifier_is_class_full_trust (MonoClass *klass)
+{
+	/* The verifier was disabled at compile time */
+	return TRUE;
+}
+
+gboolean
+mono_verifier_is_method_full_trust (MonoMethod *method)
+{
+	/* The verifier was disabled at compile time */
+	return TRUE;
+}
+
+gboolean
+mono_verifier_is_enabled_for_image (MonoImage *image)
+{
+	/* The verifier was disabled at compile time */
+	return FALSE;
+}
+
+gboolean
+mono_verifier_is_enabled_for_class (MonoClass *klass)
+{
+	/* The verifier was disabled at compile time */
+	return FALSE;
+}
+
+gboolean
+mono_verifier_is_enabled_for_method (MonoMethod *method)
+{
+	/* The verifier was disabled at compile time */
+	return FALSE;
+}
+
+#endif
