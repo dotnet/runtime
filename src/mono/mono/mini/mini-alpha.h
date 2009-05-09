@@ -286,8 +286,6 @@ unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 
 #endif
 
-#define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
-
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
 
 #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1

@@ -78,7 +78,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_EMULATE_FREM 1
 #define MONO_ARCH_BIGMUL_INTRINS 1
 #define MONO_ARCH_HAVE_ATOMIC_CAS 1
-//#define MONO_ARCH_ENABLE_EMIT_STATE_OPT 1
 
 /* Parameters used by the register allocator */
 #define MONO_ARCH_CALLEE_REGS ((0xff << ppc_r3) | (1 << ppc_r11) | (1 << ppc_r12))
