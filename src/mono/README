@@ -324,6 +324,11 @@ This is Mono.
 			Disables support for the Ahead of Time
 	  		compilation.
 
+		attach:
+			Support for the Mono.Management assembly and the
+			VMAttach API (allowing code to be injected into
+			a target VM)
+
 		com:
 			Disables COM support.
 
@@ -332,6 +337,12 @@ This is Mono.
 
 	 	decimal:
 			Disables support for System.Decimal.
+
+		full_messages:
+			By default Mono comes with a full table
+			of messages for error codes.   This feature
+			turns off uncommon error messages and reduces
+			the runtime size.
 
 		generics:
 			Generics support.  Disabling this will not

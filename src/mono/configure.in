@@ -651,6 +651,11 @@ if test "x$mono_feature_disable_attach" = "xyes"; then
 	AC_DEFINE(DISABLE_ATTACH, 1, [Disable agent attach support])
 fi
 
+if test "x$mono_feature_disable_full_messages" = "xyes"; then
+	AC_DEFINE(DISABLE_FULL_MESSAGES, 1, [Disables building in the full table of WAPI messages])
+fi
+
+
 if test "x$mono_feature_disable_jit" = "xyes"; then
 	AC_DEFINE(DISABLE_JIT, 1, [Disable the JIT, only full-aot mode will be supported by the runtime.])
 fi
