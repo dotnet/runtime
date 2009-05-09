@@ -1,3 +1,9 @@
+2009-05-09  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: Instead of reporting the various disabled features
+	in a loop, where a keyword might fail, report the actual disabled
+	features in the sections that handle them
+
 2009-05-08  Zoltan Varga  <vargaz@gmail.com>
 
 	* acinclude.m4 (dolt_supported): Add powerpc64.
@@ -15,6 +21,12 @@
 	the net_2_1_raw profile.
 	(test_profiles): New.  Mention net_2_1 profile.
 	(moon-do-build): New.
+
+2009-05-05  Miguel de Icaza  <miguel@novell.com>
+
+	* configure.in: Fix the bug reported on the mailing list by
+	Koushik K Dutta: do not build docs when --disable-mcs-builds is
+	passed. 
 
 2009-05-05  Miguel de Icaza  <miguel@novell.com>
 

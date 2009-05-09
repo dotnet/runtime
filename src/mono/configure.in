@@ -581,7 +581,6 @@ AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsy
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
-		AC_MSG_NOTICE([Disabled support for feature: $feature])
 	done
 	DISABLED_FEATURES=$enable_minimal
 	disabled="Disabled:    $enable_minimal"
@@ -591,79 +590,102 @@ AC_DEFINE_UNQUOTED(DISABLED_FEATURES, "$DISABLED_FEATURES", [String of disabled 
 
 if test "x$mono_feature_disable_aot" = "xyes"; then
 	AC_DEFINE(DISABLE_AOT, 1, [Disable AOT support])
+	AC_MSG_NOTICE([Disabled support for AOT])
 fi
 
 if test "x$mono_feature_disable_profiler" = "xyes"; then
 	AC_DEFINE(DISABLE_PROFILER, 1, [Disable default profiler support])
+	AC_MSG_NOTICE([Disabled support for the profiler])
 fi
 AM_CONDITIONAL(DISABLE_PROFILER, test x$mono_feature_disable_profiler = xyes)
 
 if test "x$mono_feature_disable_decimal" = "xyes"; then
 	AC_DEFINE(DISABLE_DECIMAL, 1, [Disable System.Decimal support])
+	AC_MSG_NOTICE([Disabled support for decimal])
 fi
 
 if test "x$mono_feature_disable_pinvoke" = "xyes"; then
 	AC_DEFINE(DISABLE_PINVOKE, 1, [Disable P/Invoke support])
+	AC_MSG_NOTICE([Disabled support for P/Invoke])
 fi
 
 if test "x$mono_feature_disable_debug" = "xyes"; then
 	AC_DEFINE(DISABLE_DEBUG, 1, [Disable runtime debugging support])
+	AC_MSG_NOTICE([Disabled support for runtime debugging])
 fi
 
 if test "x$mono_feature_disable_reflection_emit" = "xyes"; then
 	AC_DEFINE(DISABLE_REFLECTION_EMIT, 1, [Disable reflection emit support])
 	mono_feature_disable_reflection_emit_save=yes
+	AC_MSG_NOTICE([Disabled support for Reflection.Emit])
 fi
 
 if test "x$mono_feature_disable_reflection_emit_save" = "xyes"; then
 	AC_DEFINE(DISABLE_REFLECTION_EMIT_SAVE, 1, [Disable assembly saving support in reflection emit])
+	AC_MSG_NOTICE([Disabled support for Reflection.Emit.Save])
 fi
 
 if test "x$mono_feature_disable_large_code" = "xyes"; then
 	AC_DEFINE(DISABLE_LARGE_CODE, 1, [Disable support for huge assemblies])
+	AC_MSG_NOTICE([Disabled support for large assemblies])
 fi
 
 if test "x$mono_feature_disable_logging" = "xyes"; then
 	AC_DEFINE(DISABLE_LOGGING, 1, [Disable support debug logging])
+	AC_MSG_NOTICE([Disabled support for logging])
 fi
 
 if test "x$mono_feature_disable_com" = "xyes"; then
 	AC_DEFINE(DISABLE_COM, 1, [Disable COM support])
+	AC_MSG_NOTICE([Disabled COM support])
 fi
 
 if test "x$mono_feature_disable_ssa" = "xyes"; then
 	AC_DEFINE(DISABLE_SSA, 1, [Disable advanced SSA JIT optimizations])
+	AC_MSG_NOTICE([Disabled SSA JIT optimizations])
 fi
 
 if test "x$mono_feature_disable_generics" = "xyes"; then
 	AC_DEFINE(DISABLE_GENERICS, 1, [Disable generics support])
+	AC_MSG_NOTICE([Disabled Generics Support])
 fi
 
 if test "x$mono_feature_disable_shadowcopy" = "xyes"; then
    	AC_DEFINE(DISABLE_SHADOW_COPY, 1, [Disable Shadow Copy for AppDomains])
+	AC_MSG_NOTICE([Disabled Shadow copy for AppDomains])
 fi
 
 if test "x$mono_feature_disable_portability" = "xyes"; then
    	AC_DEFINE(DISABLE_PORTABILITY, 1, [Disables the IO portability layer])
+	AC_MSG_NOTICE([Disabled IO Portability layer])
 fi
 
 if test "x$mono_feature_disable_attach" = "xyes"; then
 	AC_DEFINE(DISABLE_ATTACH, 1, [Disable agent attach support])
+	AC_MSG_NOTICE([Disabled agent attach])
 fi
 
 if test "x$mono_feature_disable_full_messages" = "xyes"; then
 	AC_DEFINE(DISABLE_FULL_MESSAGES, 1, [Disables building in the full table of WAPI messages])
+	AC_MSG_NOTICE([Disabled full messages for Win32 errors, only core message strings shipped])
+fi
+
+if test "x$mono_feature_disable_verifier" = "xyes"; then
+	AC_DEFINE(DISABLE_FULL_MESSAGES, 1, [Disables the verifier])
+	AC_MSG_NOTICE([Disabled the metadata and IL verifiers])
 fi
 
 
 if test "x$mono_feature_disable_jit" = "xyes"; then
 	AC_DEFINE(DISABLE_JIT, 1, [Disable the JIT, only full-aot mode will be supported by the runtime.])
+	AC_MSG_NOTICE([Disabled the JIT engine, only full AOT will be supported])
 fi
 
 AM_CONDITIONAL(DISABLE_JIT, test x$mono_feature_disable_jit = xyes)
 
 if test "x$mono_feature_disable_simd" = "xyes"; then
 	AC_DEFINE(DISABLE_SIMD, 1, [Disable SIMD intrinsics related optimizations.])
+	AC_MSG_NOTICE([Disabled SIMD support])
 fi
 
 AC_MSG_CHECKING(for visibility __attribute__)
