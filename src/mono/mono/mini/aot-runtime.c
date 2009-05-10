@@ -1821,40 +1821,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	return FALSE;
 }
 
-/*
- * is_shared_got_patch:
- *
- *   Return whenever PATCH_INFO refers to a patch which needs a shared GOT
- * entry.
- */
-static inline gboolean
-is_shared_got_patch (MonoJumpInfo *patch_info)
-{
-	switch (patch_info->type) {
-	case MONO_PATCH_INFO_VTABLE:
-	case MONO_PATCH_INFO_CLASS:
-	case MONO_PATCH_INFO_IID:
-	case MONO_PATCH_INFO_ADJUSTED_IID:
-	case MONO_PATCH_INFO_FIELD:
-	case MONO_PATCH_INFO_SFLDA:
-	case MONO_PATCH_INFO_DECLSEC:
-	case MONO_PATCH_INFO_LDTOKEN:
-	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-	case MONO_PATCH_INFO_RVA:
-	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_IMAGE:
-		return TRUE;
-	default:
-		return FALSE;
-	}
-}
-
-gboolean
-mono_aot_is_shared_got_patch (MonoJumpInfo *patch_info)
-{
-	return is_shared_got_patch (patch_info);
-}
-
 static MonoJumpInfo*
 load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches, 
 				 guint32 got_index, guint32 **got_slots, 
