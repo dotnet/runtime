@@ -137,7 +137,6 @@ typedef struct MonoAotFileInfo
 	guint32 num_static_rgctx_trampolines;
 	guint32 static_rgctx_trampoline_size;
 	guint32 static_rgctx_trampoline_got_offset_base;
-	gpointer *got;
 } MonoAotFileInfo;
 
 static GHashTable *aot_modules;
@@ -860,6 +859,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	gboolean full_aot = FALSE;
 	MonoAotFileInfo *file_info = NULL;
 	int i;
+	gpointer *got_addr;
 
 	if (mono_compile_aot)
 		return;
@@ -918,6 +918,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	find_symbol (sofile, globals, "mono_aot_version", (gpointer *) &aot_version);
 	find_symbol (sofile, globals, "mono_aot_opt_flags", (gpointer *)&opt_flags);
 	find_symbol (sofile, globals, "mono_runtime_version", (gpointer *)&runtime_version);
+	find_symbol (sofile, globals, "mono_aot_got_addr", (gpointer *)&got_addr);
 
 	if (!aot_version || strcmp (aot_version, MONO_AOT_FILE_VERSION)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT module %s has wrong file format version (expected %s got %s)\n", aot_name, MONO_AOT_FILE_VERSION, aot_version);
@@ -982,7 +983,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->num_static_rgctx_trampolines = file_info->num_static_rgctx_trampolines;
 	amodule->static_rgctx_trampoline_got_offset_base = file_info->static_rgctx_trampoline_got_offset_base;
 	amodule->static_rgctx_trampoline_size = file_info->static_rgctx_trampoline_size;
-	amodule->got = file_info->got;
+	amodule->got = *got_addr;
 	amodule->got [0] = assembly->image;
 	amodule->globals = globals;
 	amodule->sofile = sofile;
@@ -1818,6 +1819,40 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 
  cleanup:
 	return FALSE;
+}
+
+/*
+ * is_shared_got_patch:
+ *
+ *   Return whenever PATCH_INFO refers to a patch which needs a shared GOT
+ * entry.
+ */
+static inline gboolean
+is_shared_got_patch (MonoJumpInfo *patch_info)
+{
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_ADJUSTED_IID:
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_SFLDA:
+	case MONO_PATCH_INFO_DECLSEC:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_RVA:
+	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_IMAGE:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+gboolean
+mono_aot_is_shared_got_patch (MonoJumpInfo *patch_info)
+{
+	return is_shared_got_patch (patch_info);
 }
 
 static MonoJumpInfo*
