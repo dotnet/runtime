@@ -3917,6 +3917,13 @@ emit_got (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 	if (acfg->got_offset > 0)
 		emit_zero_bytes (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
+
+	sprintf (symbol, "mono_aot_got_addr");
+	emit_section_change (acfg, ".data", 0);
+	emit_global (acfg, symbol, FALSE);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_pointer (acfg, "got");
 }
 
 static void
@@ -4044,7 +4051,6 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, acfg->num_static_rgctx_trampolines);
 	emit_int32 (acfg, acfg->static_rgctx_trampoline_size);
 	emit_int32 (acfg, acfg->static_rgctx_trampoline_got_offset_base);
-	emit_pointer (acfg, "got");
 }
 
 static void

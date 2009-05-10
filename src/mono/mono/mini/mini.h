@@ -89,7 +89,7 @@ typedef gint64 mgreg_t;
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "52"
+#define MONO_AOT_FILE_VERSION "53"
 
 /* Constants used to encode different types of methods in AOT */
 enum {
