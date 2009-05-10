@@ -2045,7 +2045,7 @@ encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, int 
 			continue;
 
 		encode_value (patch_info->type, p, &p);
-		if (is_shared_got_patch (patch_info)) {
+		if (mono_aot_is_shared_got_patch (patch_info)) {
 			guint32 offset = get_got_offset (acfg, patch_info);
 			encode_value (offset, p, &p);
 		} else {
@@ -3192,7 +3192,7 @@ alloc_got_slots (MonoAotCompile *acfg)
 			MonoCompile *cfg = acfg->cfgs [i];
 
 			for (ji = cfg->patch_info; ji; ji = ji->next) {
-				if (is_shared_got_patch (ji))
+				if (mono_aot_is_shared_got_patch (ji))
 					get_shared_got_offset (acfg, ji);
 			}
 		}
@@ -3382,6 +3382,34 @@ mono_aot_tramp_info_create (char *name, guint8 *code, guint32 code_size)
 	info->code_size = code_size;
 
 	return info;
+}
+
+/*
+ * mono_is_shared_got_patch:
+ *
+ *   Return whenever PATCH_INFO refers to a patch which needs a shared GOT
+ * entry.
+ */
+gboolean
+mono_aot_is_shared_got_patch (MonoJumpInfo *patch_info)
+{
+	switch (patch_info->type) {
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_ADJUSTED_IID:
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_SFLDA:
+	case MONO_PATCH_INFO_DECLSEC:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_RVA:
+	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_IMAGE:
+		return TRUE;
+	default:
+		return FALSE;
+	}
 }
 
 #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT)
