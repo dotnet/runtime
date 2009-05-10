@@ -103,7 +103,7 @@ mono_gc_deregister_root (char* addr)
 }
 
 void
-mono_gc_weak_link_add (void **link_addr, MonoObject *obj)
+mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
 	*link_addr = obj;
 }
@@ -235,6 +235,7 @@ mono_gc_remove_weak_track_object (MonoDomain *domain, MonoObject *obj)
 	return NULL;
 }
 
+void
 mono_gc_clear_domain (MonoDomain *domain)
 {
 }
