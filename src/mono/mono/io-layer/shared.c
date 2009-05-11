@@ -19,7 +19,11 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/ipc.h>
+#ifdef HAVE_SYS_SEM
 #include <sys/sem.h>
+#else
+#define DISABLE_SHARED_HANDLES
+#endif
 
 #ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
@@ -363,6 +367,7 @@ gpointer _wapi_shm_attach (_wapi_shm_t type)
 	return(shm_seg);
 }
 
+#ifdef HAVE_SYS_SEM
 static void shm_semaphores_init (void)
 {
 	key_t key;
@@ -518,6 +523,7 @@ again:
 	else
 		munmap (tmp_shared, sizeof(struct _WapiHandleSharedLayout));
 }
+#endif
 
 static mono_mutex_t noshm_sems[_WAPI_SHARED_SEM_COUNT];
 
@@ -530,6 +536,7 @@ static void noshm_semaphores_init (void)
 	}
 }
 
+#ifdef HAVE_SYS_SEM
 static void shm_semaphores_remove (void)
 {
 	int thr_ret;
@@ -576,12 +583,14 @@ static void shm_semaphores_remove (void)
 		_wapi_shm_sem_unlock (_WAPI_SHARED_SEM_PROCESS_COUNT_LOCK);
 	}
 }
+#endif
 
 static void noshm_semaphores_remove (void)
 {
 	/* No need to do anything */
 }
 
+#ifdef HAVE_SYS_SEM
 static int shm_sem_lock (int sem)
 {
 	struct sembuf ops;
@@ -627,6 +636,7 @@ static int shm_sem_lock (int sem)
 	
 	return(ret);
 }
+#endif
 
 static int noshm_sem_lock (int sem)
 {
@@ -641,6 +651,7 @@ static int noshm_sem_lock (int sem)
 	return(ret);
 }
 
+#ifdef HAVE_SYS_SEM
 static int shm_sem_trylock (int sem)
 {
 	struct sembuf ops;
@@ -691,6 +702,7 @@ static int shm_sem_trylock (int sem)
 	
 	return(ret);
 }
+#endif
 
 static int noshm_sem_trylock (int sem)
 {
@@ -705,6 +717,7 @@ static int noshm_sem_trylock (int sem)
 	return(ret);
 }
 
+#ifdef HAVE_SYS_SEM
 static int shm_sem_unlock (int sem)
 {
 	struct sembuf ops;
@@ -751,6 +764,7 @@ static int shm_sem_unlock (int sem)
 
 	return(ret);
 }
+#endif
 
 static int noshm_sem_unlock (int sem)
 {
@@ -767,45 +781,65 @@ static int noshm_sem_unlock (int sem)
 
 void _wapi_shm_semaphores_init (void)
 {
+#ifndef HAVE_SYS_SEM
+	noshm_semaphores_init ();
+#else
 	if (check_disabled ()) {
 		noshm_semaphores_init ();
 	} else {
 		shm_semaphores_init ();
 	}
+#endif
 }
 
 void _wapi_shm_semaphores_remove (void)
 {
+#ifndef HAVE_SYS_SEM
+	noshm_semaphores_remove ();
+#else
 	if (_wapi_shm_disabled) {
 		noshm_semaphores_remove ();
 	} else {
 		shm_semaphores_remove ();
 	}
+#endif
 }
 
 int _wapi_shm_sem_lock (int sem)
 {
+#ifndef HAVE_SYS_SEM
+	return(noshm_sem_lock (sem));
+#else
 	if (_wapi_shm_disabled) {
 		return(noshm_sem_lock (sem));
 	} else {
 		return(shm_sem_lock (sem));
 	}
+#endif
 }
 
 int _wapi_shm_sem_trylock (int sem)
 {
+#ifndef HAVE_SYS_SEM
+	return(noshm_sem_trylock (sem));
+#else
 	if (_wapi_shm_disabled) {
 		return(noshm_sem_trylock (sem));
 	} else {
 		return(shm_sem_trylock (sem));
 	}
+#endif
 }
 
 int _wapi_shm_sem_unlock (int sem)
 {
+#ifndef HAVE_SYS_SEM
+	return(noshm_sem_unlock (sem));
+#else
 	if (_wapi_shm_disabled) {
 		return(noshm_sem_unlock (sem));
 	} else {
 		return(shm_sem_unlock (sem));
 	}
+#endif
 }
