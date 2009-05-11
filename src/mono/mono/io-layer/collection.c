@@ -22,7 +22,6 @@
 
 static pthread_t collection_thread_id;
 
-static gpointer collection_thread (gpointer args) G_GNUC_NORETURN;
 static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 {
 	struct timespec sleepytime;
@@ -45,12 +44,7 @@ static gpointer collection_thread (gpointer unused G_GNUC_UNUSED)
 
 	pthread_exit (NULL);
 
-#ifndef __GNUC__
-	/* Even though we tell gcc that this function doesn't return,
-	 * other compilers won't see that.
-	 */
 	return(NULL);
-#endif
 }
 
 void _wapi_collection_init (void)
