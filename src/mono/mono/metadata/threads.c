@@ -511,6 +511,14 @@ static void thread_cleanup (MonoThread *thread)
 {
 	g_assert (thread != NULL);
 
+	if (thread->abort_state_handle) {
+		g_assert (thread->abort_exc);
+		mono_gchandle_free (thread->abort_state_handle);
+		thread->abort_state_handle = 0;
+	}
+	thread->abort_exc = NULL;
+	thread->current_appcontext = NULL;
+
 	/* if the thread is not in the hash it has been removed already */
 	if (!handle_remove (thread))
 		return;
@@ -1034,11 +1042,7 @@ void ves_icall_System_Threading_Thread_Thread_free_internal (MonoThread *this,
 	g_free (this->synch_cs);
 	this->synch_cs = NULL;
 
-	if (this->abort_state_handle) {
-		g_assert (this->abort_exc);
-		mono_gchandle_free (this->abort_state_handle);
-		this->abort_state_handle = 0;
-	}
+	g_assert (!this->abort_exc && !this->abort_state_handle);
 }
 
 static void mono_thread_start (MonoThread *thread)

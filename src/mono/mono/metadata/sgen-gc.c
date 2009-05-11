@@ -1288,8 +1288,7 @@ static gboolean
 need_remove_object_for_domain (char *start, MonoDomain *domain)
 {
 	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
-	/* handle threads someway (maybe insert the root domain vtable?) */
-	if (mono_object_domain (start) == domain && vt->klass != mono_defaults.thread_class) {
+	if (mono_object_domain (start) == domain) {
 		DEBUG (1, fprintf (gc_debug_file, "Need to cleanup object %p, (%s)\n", start, safe_name (start)));
 		return TRUE;
 	}
