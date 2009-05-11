@@ -62,6 +62,7 @@
 #include <mono/utils/mono-logger.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-mmap.h>
 
 #include "mini.h"
 #include "image-writer.h"
@@ -452,6 +453,22 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, int *call_size)
 }
 
 #ifdef MONO_ARCH_AOT_SUPPORTED
+/*
+ * arch_emit_got_offset:
+ *
+ *   The memory pointed to by CODE should hold native code for computing the GOT
+ * address. Emit this code while patching it with the offset between code and
+ * the GOT. CODE_SIZE is set to the number of bytes emitted.
+ */
+static void
+arch_emit_got_offset (MonoAotCompile *acfg, guint8 *code, int *code_size)
+{
+	guint32 offset = mono_arch_get_patch_offset (code);
+	emit_bytes (acfg, code, offset);
+	emit_symbol_diff (acfg, "got", ".", offset);
+
+	*code_size = offset + 4;
+}
 
 /*
  * arch_emit_got_access:
@@ -1771,11 +1788,10 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 			case MONO_PATCH_INFO_NONE:
 				break;
 			case MONO_PATCH_INFO_GOT_OFFSET: {
-				guint32 offset = mono_arch_get_patch_offset (code + i);
-				emit_bytes (acfg, code + i, offset);
-				emit_symbol_diff (acfg, "got", ".", offset);
-
-				i += offset + 4 - 1;
+				int code_size;
+ 
+				arch_emit_got_offset (acfg, code + i, &code_size);
+				i += code_size - 1;
 				skip = TRUE;
 				break;
 			}
