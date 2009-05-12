@@ -2050,9 +2050,8 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
 	char *name = NULL;
-	int num_checks = 0;
 	guint32 index;
-	static guint32 extra_decodes;
+	static guint32 n_extra_decodes;
 
 	if (!amodule)
 		return 0xffffff;
@@ -2090,7 +2089,6 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 				break;
 			}
 		} else if (can_method_ref_match_method (amodule, p, method)) {
-			num_checks ++;
 			mono_aot_lock ();
 			if (!amodule->method_ref_to_method)
 				amodule->method_ref_to_method = g_hash_table_new (NULL, NULL);
@@ -2124,10 +2122,10 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 
 			/* Methods decoded needlessly */
 			/*
-			  if (m)
-			  printf ("%d %s %s\n", num_checks, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE));
+			if (m)
+				printf ("%d %s %s\n", n_extra_decodes, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE));
 			*/
-			extra_decodes ++;
+			n_extra_decodes ++;
 		}
 
 		if (next != 0)
