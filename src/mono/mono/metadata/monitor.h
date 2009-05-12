@@ -21,6 +21,8 @@ void mono_locks_dump (gboolean include_untaken);
 void mono_monitor_init (void) MONO_INTERNAL;
 void mono_monitor_cleanup (void) MONO_INTERNAL;
 
+void** mono_monitor_get_object_monitor_weak_link (MonoObject *object) MONO_INTERNAL;
+
 void mono_monitor_init_tls (void) MONO_INTERNAL;
 
 MonoMethod* mono_monitor_get_fast_path (MonoMethod *enter_or_exit) MONO_INTERNAL;

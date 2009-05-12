@@ -726,6 +726,25 @@ mono_monitor_exit (MonoObject *obj)
 	}
 }
 
+void**
+mono_monitor_get_object_monitor_weak_link (MonoObject *object)
+{
+	LockWord lw;
+	MonoThreadsSync *sync = NULL;
+
+	lw.sync = object->synchronisation;
+	if (lw.lock_word & LOCK_WORD_FAT_HASH) {
+		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
+		sync = lw.sync;
+	} else if (!(lw.lock_word & LOCK_WORD_THIN_HASH)) {
+		sync = lw.sync;
+	}
+
+	if (sync && sync->data)
+		return &sync->data;
+	return NULL;
+}
+
 static void
 emit_obj_syncp_check (MonoMethodBuilder *mb, int syncp_loc, int *obj_null_branch, int *syncp_true_false_branch,
 	gboolean branch_on_true)

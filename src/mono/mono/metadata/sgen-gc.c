@@ -146,6 +146,7 @@
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
+#include "metadata/monitor.h"
 #include "utils/mono-mmap.h"
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
@@ -740,6 +741,8 @@ static void scan_from_pinned_objects (char *addr_start, char *addr_end);
 static void free_large_object (LOSObject *obj);
 static void free_mem_section (GCMemSection *section);
 
+static void mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track);
+
 void describe_ptr (char *ptr);
 void check_consistency (void);
 char* check_object (char *start);
@@ -1331,6 +1334,11 @@ scan_area_for_domain (MonoDomain *domain, char *start, char *end)
 		vt = (GCVTable*)LOAD_VTABLE (start);
 		process_object_for_domain_clearing (start, domain);
 		remove = need_remove_object_for_domain (start, domain);
+		if (remove && ((MonoObject*)start)->synchronisation) {
+			void **dislink = mono_monitor_get_object_monitor_weak_link ((MonoObject*)start);
+			if (dislink)
+				mono_gc_register_disappearing_link (NULL, dislink, FALSE);
+		}
 		desc = vt->desc;
 		type = desc & 0x7;
 		if (type == DESC_TYPE_STRING) {
@@ -1433,8 +1441,6 @@ mono_gc_clear_domain (MonoDomain * domain)
 		}
 	}
 
-	null_links_for_domain (domain);
-
 	for (section = section_list; section; section = section->next) {
 		scan_area_for_domain (domain, section->data, section->end_data);
 	}
@@ -1467,6 +1473,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 		bigobj = bigobj->next;
 	}
 	scan_pinned_objects (clear_domain_free_pinned_object_callback, domain);
+
+	null_links_for_domain (domain);
 
 	UNLOCK_GC;
 }
@@ -3776,7 +3784,11 @@ null_links_for_domain (MonoDomain *domain)
 		prev = NULL;
 		for (entry = disappearing_link_hash [i]; entry; ) {
 			char *object = DISLINK_OBJECT (entry);
-			if (object && mono_object_domain (object) == domain) {
+			/* FIXME: actually there should be no object
+			   left in the domain with a non-null vtable
+			   (provided we remove the Thread special
+			   case) */
+			if (object && (!((MonoObject*)object)->vtable || mono_object_domain (object) == domain)) {
 				DisappearingLink *next = entry->next;
 
 				if (prev)
@@ -3786,7 +3798,7 @@ null_links_for_domain (MonoDomain *domain)
 
 				if (*(entry->link)) {
 					*(entry->link) = NULL;
-					g_warning ("Disappearing link not freed");
+					g_warning ("Disappearing link %p not freed", entry->link);
 				} else {
 					free_internal_mem (entry);
 				}
@@ -3942,12 +3954,12 @@ rehash_dislink (void)
 	disappearing_link_hash_size = new_size;
 }
 
+/* LOCKING: assumes the GC lock is held */
 static void
 mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track)
 {
 	DisappearingLink *entry, *prev;
 	unsigned int hash;
-	LOCK_GC;
 
 	if (num_disappearing_links >= disappearing_link_hash_size * 2)
 		rehash_dislink ();
@@ -3971,7 +3983,6 @@ mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track
 			} else {
 				*link = HIDE_POINTER (obj, track); /* we allow the change of object */
 			}
-			UNLOCK_GC;
 			return;
 		}
 		prev = entry;
@@ -3983,7 +3994,6 @@ mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track
 	disappearing_link_hash [hash] = entry;
 	num_disappearing_links++;
 	DEBUG (5, fprintf (gc_debug_file, "Added dislink %p for object: %p (%s) at %p\n", entry, obj, obj->vtable->klass->name, link));
-	UNLOCK_GC;
 }
 
 int
@@ -5547,13 +5557,17 @@ mono_gc_enable_events (void)
 void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
+	LOCK_GC;
 	mono_gc_register_disappearing_link (obj, link_addr, track);
+	UNLOCK_GC;
 }
 
 void
 mono_gc_weak_link_remove (void **link_addr)
 {
+	LOCK_GC;
 	mono_gc_register_disappearing_link (NULL, link_addr, FALSE);
+	UNLOCK_GC;
 }
 
 MonoObject*
