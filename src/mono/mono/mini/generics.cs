@@ -31,9 +31,9 @@ class Tests {
 		}
 	}
 
-	static int Main ()
+	static int Main (string[] args)
 	{
-		return TestDriver.RunTests (typeof (Tests));
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 
 	public static int test_1_nullable_unbox ()
@@ -330,6 +330,8 @@ class Tests {
 		return 0;
 	}
 
+	// FIXME:
+	[Category ("!FULLAOT")]
     public static int test_0_generic_virtual_call_on_vtype_unbox () {
 		object o = new Object ();
         IFoo h = new Handler(o);
@@ -401,6 +403,10 @@ class Tests {
 		return 0;
 	}
 
+	// This cannot be made to work with full-aot, since there it is impossible to
+	// statically determine that Foo<string>.Bar <int> is needed, the code only
+	// references IFoo.Bar<int>
+	[Category ("!FULLAOT")]
 	public static int test_0_generic_virtual_on_interfaces () {
 		Foo<string>.count1 = 0;
 		Foo<string>.count2 = 0;

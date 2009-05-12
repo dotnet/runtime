@@ -2,6 +2,17 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 
+public class CategoryAttribute : Attribute
+{
+	public CategoryAttribute (string category) {
+		Category = category;
+	}
+
+	public string Category {
+		get; set;
+	}
+}
+
 public class TestDriver {
 
 	static public int RunTests (Type type, string[] args) {
@@ -17,26 +28,27 @@ public class TestDriver {
 
 		iterations = 1;
 
+		var exclude = new Dictionary<string, string> ();
 		List<string> new_args = new List<string> ();
 		if (args != null && args.Length > 0) {
 			for (j = 0; j < args.Length; j++) {
-				bool found = false;
 				if (args [j] == "--time") {
 					do_timings = true;
-					found = true;
 					j ++;
 				} else if (args [j] == "--iter") {
 					iterations = Int32.Parse (args [j + 1]);
 					j += 2;
-					found = true;
 				} else if ((args [j] == "-v") || (args [j] == "--verbose")) {
 					verbose = true;
-					found = true;
+				} else if (args [j] == "--exclude") {
+					exclude [args [j + 1]] = args [j + 1];
+					j += 2;
 				} else {
 					new_args.Add (args [j]);
 				}
 			}
 		}
+		int nskipped = 0;
 		methods = type.GetMethods (BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static);
 		for (int iter = 0; iter < iterations; ++iter) {
 			for (i = 0; i < methods.Length; ++i) {
@@ -53,6 +65,20 @@ public class TestDriver {
 					}
 					if (!found)
 						continue;
+				}
+				if (exclude.Count > 0) {
+					var attrs = methods [i].GetCustomAttributes (typeof (CategoryAttribute), false);
+					bool skip = false;
+					foreach (CategoryAttribute attr in attrs) {
+						if (exclude.ContainsKey (attr.Category))
+							skip = true;
+					}
+					if (skip) {
+						if (verbose)
+							Console.WriteLine ("Skipping '{0}'.", name);
+						nskipped ++;
+						continue;
+					}
 				}
 				for (j = 5; j < name.Length; ++j)
 					if (!Char.IsDigit (name [j]))
@@ -79,7 +105,10 @@ public class TestDriver {
 			if (do_timings) {
 				Console.WriteLine ("Total ms: {0}", tms);
 			}
-			Console.WriteLine ("Regression tests: {0} ran, {1} failed in {2}", ran, failed, type);
+			if (nskipped > 0)
+				Console.WriteLine ("Regression tests: {0} ran, {1} skipped, {2} failed in {3}", ran, nskipped, failed, type);
+			else
+				Console.WriteLine ("Regression tests: {0} ran, {1} failed in {2}", ran, failed, type);
 		}
 
 		//Console.WriteLine ("Regression tests: {0} ran, {1} failed in [{2}]{3}", ran, failed, type.Assembly.GetName().Name, type);
