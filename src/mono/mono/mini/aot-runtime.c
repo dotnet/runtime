@@ -663,7 +663,8 @@ decode_method_ref_2 (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		return method;
 	if (!image)
 		return NULL;
-	return mono_get_method (image, token, NULL);
+	method = mono_get_method (image, token, NULL);
+	return method;
 }
 
 G_GNUC_UNUSED
@@ -2051,6 +2052,7 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 	char *name = NULL;
 	int num_checks = 0;
 	guint32 index;
+	static guint32 extra_decodes;
 
 	if (!amodule)
 		return 0xffffff;
@@ -2103,10 +2105,6 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 					mono_aot_unlock ();
 				}
 			}
-			/*
-			  if (m)
-			  printf ("%d %s %s\n", num_checks, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE));
-			*/
 			if (m == method) {
 				index = value;
 				break;
@@ -2123,6 +2121,13 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 					break;
 				}
 			}
+
+			/* Methods decoded needlessly */
+			/*
+			  if (m)
+			  printf ("%d %s %s\n", num_checks, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE));
+			*/
+			extra_decodes ++;
 		}
 
 		if (next != 0)

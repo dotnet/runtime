@@ -3472,7 +3472,19 @@ mono_aot_method_hash (MonoMethod *method)
 	guint32 hash;
 
 	if (method->wrapper_type) {
-		hash = mono_aot_str_hash (method->name);
+		char *klass_desc, *tmpsig, *name;
+
+		/* Some wrappers are assigned to random classes */
+		if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+			klass_desc = mono_type_full_name (&method->klass->byval_arg);
+		else
+			klass_desc = g_strdup ("");
+		tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+		name = g_strdup_printf ("(%d)%s:%s (%s)", method->wrapper_type, klass_desc, method->name, tmpsig);
+		hash = mono_aot_str_hash (name);
+		g_free (klass_desc);
+		g_free (tmpsig);
+		g_free (name);
 	} else {
 		char *full_name = mono_method_full_name (method, TRUE);
 		// FIXME: Improve this (changing this requires bumping MONO_AOT_FILE_VERSION)
