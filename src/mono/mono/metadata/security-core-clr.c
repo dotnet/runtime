@@ -152,12 +152,17 @@ get_caller_no_reflection_related (MonoMethod *m, gint32 no, gint32 ilo, gboolean
 	/* calls from System.Delegate are also possible and allowed */
 	if (strcmp (ns, "System") == 0) {
 		const char *kname = m->klass->name;
-		if ((*kname == 'D') && (strcmp (kname, "Delegate") == 0))
-			return FALSE;
-		if ((*kname == 'M') && (strcmp (kname, "MulticastDelegate")) == 0)
-			return FALSE;
 		if ((*kname == 'A') && (strcmp (kname, "Activator") == 0))
 			return FALSE;
+
+		// the security check on the delegate is made at creation time, not at invoke time
+		if (((*kname == 'D') && (strcmp (kname, "Delegate") == 0)) || 
+			((*kname == 'M') && (strcmp (kname, "MulticastDelegate")) == 0)) {
+
+			// if we're invoking then we can stop our stack walk
+			if (strcmp (m->name, "DynamicInvoke") != 0)
+				return FALSE;
+		}
 	}
 
 	if (m == *dest) {
