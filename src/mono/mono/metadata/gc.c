@@ -73,7 +73,6 @@ static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 #ifndef HAVE_NULL_GC
 static HANDLE pending_done_event;
 static HANDLE shutdown_event;
-static HANDLE thread_started_event;
 #endif
 
 static void
@@ -992,10 +991,6 @@ finalize_domain_objects (DomainFinalizationReq *req)
 static guint32
 finalizer_thread (gpointer unused)
 {
-	gc_thread = mono_thread_current ();
-
-	SetEvent (thread_started_event);
-
 	while (!finished) {
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
@@ -1057,26 +1052,14 @@ mono_gc_init (void)
 	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	shutdown_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	thread_started_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	if (finalizer_event == NULL || pending_done_event == NULL || shutdown_event == NULL || thread_started_event == NULL) {
+	if (finalizer_event == NULL || pending_done_event == NULL || shutdown_event == NULL) {
 		g_assert_not_reached ();
 	}
 #if USE_POSIX_SEM
 	sem_init (&finalizer_sem, 0, 0);
 #endif
 
-	mono_thread_create (mono_domain_get (), finalizer_thread, NULL);
-
-	/*
-	 * Wait until the finalizer thread sets gc_thread since its value is needed
-	 * by mono_thread_attach ()
-	 *
-	 * FIXME: Eliminate this as to avoid some deadlocks on windows. 
-	 * Waiting for a new thread should result in a deadlock when the runtime is
-	 * initialized from _CorDllMain that is called while the OS loader lock is
-	 * held by LoadLibrary.
-	 */
-	WaitForSingleObjectEx (thread_started_event, INFINITE, FALSE);
+	gc_thread = mono_thread_create_internal (mono_domain_get (), finalizer_thread, NULL, FALSE);
 }
 
 void

@@ -709,7 +709,7 @@ gpointer mono_create_thread (WapiSecurityAttributes *security,
 	return res;
 }
 
-void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread)
+MonoThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread)
 {
 	MonoThread *thread;
 	HANDLE thread_handle;
@@ -734,7 +734,7 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 	mono_threads_lock ();
 	if (shutting_down) {
 		mono_threads_unlock ();
-		return;
+		return NULL;
 	}
 	if (threads_starting_up == NULL) {
 		MONO_GC_REGISTER_ROOT (threads_starting_up);
@@ -757,7 +757,7 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 		mono_threads_unlock ();
 		g_free (start_info);
 		mono_raise_exception (mono_get_exception_execution_engine ("Couldn't create thread"));
-		return;
+		return NULL;
 	}
 
 	thread->handle=thread_handle;
@@ -774,6 +774,8 @@ void mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer ar
 
 	if (handle_store (thread))
 		ResumeThread (thread_handle);
+
+	return thread;
 }
 
 void
