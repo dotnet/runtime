@@ -897,3 +897,45 @@ typespec-table {
 	invalid offset table-row (0x1B 0) set-ushort 0x8800
 }
 
+implmap-table {
+	assembly assembly-with-methods.exe
+
+	#flags has good values (2)
+	#used bits: 0,1,2,7,8,9,10
+	invalid offset table-row (0x1C 0) set-bit 3
+	invalid offset table-row (0x1C 0) set-bit 4
+	invalid offset table-row (0x1C 0) set-bit 5
+	invalid offset table-row (0x1C 0) set-bit 6
+	invalid offset table-row (0x1C 0) set-bit 11
+	invalid offset table-row (0x1C 0) set-bit 12
+	invalid offset table-row (0x1C 0) set-bit 13
+	invalid offset table-row (0x1C 0) set-bit 14
+	invalid offset table-row (0x1C 0) set-bit 15
+
+	#call conv 0 and 6 are invalid
+	invalid offset table-row (0x1C 0) set-ushort 0x0000
+	invalid offset table-row (0x1C 0) set-ushort 0x0600
+	invalid offset table-row (0x1C 0) set-ushort 0x0700
+
+	#memberforwarded token is valid and indexes a method (3)
+	#pinvoke is row 5
+	invalid offset table-row (0x1C 0) + 2 set-ushort 0x0000, #null
+			offset table-row (0x06 5) + 6 set-ushort 0x0444 #set method to abstract instead of pinvoke
+	invalid offset table-row (0x1C 0) + 2 set-ushort 0x0002, #field
+			offset table-row (0x06 5) + 6 set-ushort 0x0444 #set method to abstract instead of pinvoke
+	invalid offset table-row (0x1C 0) + 2 set-ushort 0x8801, #bad method
+			offset table-row (0x06 5) + 6 set-ushort 0x0444 #set method to abstract instead of pinvoke
+
+	#charset rule is not required (4)
+
+	#import name must be valid (5)
+	invalid offset table-row (0x1C 0) + 4 set-ushort 0x0000 #null
+	invalid offset table-row (0x1C 0) + 4 set-ushort 0x8800 #invalid
+
+	#import scope must be valie (6)
+	invalid offset table-row (0x1C 0) + 6 set-ushort 0x0000 #null
+	invalid offset table-row (0x1C 0) + 6 set-ushort 0x8800 #invalid
+
+	#TODO check methoddef for pinvokeimpl and state (7)
+
+}

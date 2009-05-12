@@ -17,7 +17,7 @@ public interface IFace
 }
 
 
-public class TypeTwo
+public abstract class TypeTwo
 {
 	[DllImport ("bla.dll")]
 	public static extern void PInvoke ();
