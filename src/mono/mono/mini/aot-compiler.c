@@ -743,9 +743,8 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 static void
 arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 {
-	guint8 *buf, *code;
-
 #if defined(TARGET_AMD64)
+	guint8 *buf, *code;
 	guint8 *labels [3];
 
 	code = buf = g_malloc (256);
@@ -788,6 +787,56 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	emit_bytes (acfg, buf, code - buf);
 	
 	*tramp_size = code - buf + 7;
+#elif defined(TARGET_ARM)
+	guint8 buf [128];
+	guint8 *code, *code2, *labels [16];
+
+	code = buf;
+
+	/* The IMT method is in v5 */
+
+	/* Only IP is available, but we need at least two free registers */
+	ARM_PUSH1 (code, ARMREG_R1);
+	labels [0] = code;
+	/* Load the parameter from the GOT */
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+	ARM_LDR_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
+
+	labels [1] = code;
+	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_IP, 0);
+	ARM_CMP_REG_REG (code, ARMREG_R1, ARMREG_V5);
+	labels [2] = code;
+	ARM_B_COND (code, ARMCOND_EQ, 0);
+
+	/* End-of-loop check */
+	ARM_CMP_REG_IMM (code, ARMREG_R1, 0, 0);
+	labels [3] = code;
+	ARM_B_COND (code, ARMCOND_EQ, 0);
+
+	/* Loop footer */
+	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_IP, sizeof (gpointer) * 2);
+	labels [4] = code;
+	ARM_B (code, 0);
+	arm_patch (labels [4], labels [1]);
+
+	/* Match */
+	arm_patch (labels [2], code);
+	ARM_POP1 (code, ARMREG_R1);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_IP, 4);
+	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
+
+	/* No match */
+	arm_patch (labels [3], code);
+	ARM_DBRK (code);
+
+	/* Fixup offset */
+	code2 = labels [0];
+	ARM_LDR_IMM (code2, ARMREG_IP, ARMREG_PC, (code - (labels [0] + 8)));
+
+	emit_bytes (acfg, buf, code - buf);
+	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) + (code - (labels [0] + 8)) - 4);
+
+	*tramp_size = code - buf + 4;
 #else
 	g_assert_not_reached ();
 #endif

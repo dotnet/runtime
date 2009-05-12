@@ -4315,13 +4315,17 @@ mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt
 
 		call->dynamic_imt_arg = TRUE;
 
-		MONO_INST_NEW (cfg, ins, OP_AOTCONST);
-		ins->dreg = method_reg;
-		ins->inst_p0 = call->method;
-		ins->inst_c1 = MONO_PATCH_INFO_METHODCONST;
-		MONO_ADD_INS (cfg->cbb, ins);
+		if (imt_arg) {
+			mono_call_inst_add_outarg_reg (cfg, call, imt_arg->dreg, ARMREG_V5, FALSE);
+		} else {
+			MONO_INST_NEW (cfg, ins, OP_AOTCONST);
+			ins->dreg = method_reg;
+			ins->inst_p0 = call->method;
+			ins->inst_c1 = MONO_PATCH_INFO_METHODCONST;
+			MONO_ADD_INS (cfg->cbb, ins);
 
-		mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
+			mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
+		}
 	} else if (cfg->generic_context) {
 
 		/* Always pass in a register for simplicity */

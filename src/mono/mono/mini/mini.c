@@ -4800,7 +4800,10 @@ mini_init (const char *filename, const char *runtime_version)
 
 #ifdef MONO_ARCH_HAVE_IMT
 	if (mono_use_imt) {
-		mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
+		if (mono_aot_only)
+			mono_install_imt_thunk_builder (mono_aot_get_imt_thunk);
+		else
+			mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 		mono_install_imt_trampoline (mini_get_imt_trampoline ());
 #ifndef ENABLE_LLVM
 		/* LLVM needs a per-method vtable trampoline */
