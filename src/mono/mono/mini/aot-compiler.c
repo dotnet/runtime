@@ -3479,7 +3479,9 @@ mono_aot_method_hash (MonoMethod *method)
 			klass_desc = mono_type_full_name (&method->klass->byval_arg);
 		else
 			klass_desc = g_strdup ("");
-		tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+		// FIXME: This doesn't seem to work with generic methods
+		//tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+		tmpsig = g_strdup ("");
 		name = g_strdup_printf ("(%d)%s:%s (%s)", method->wrapper_type, klass_desc, method->name, tmpsig);
 		hash = mono_aot_str_hash (name);
 		g_free (klass_desc);
