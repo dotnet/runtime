@@ -724,8 +724,8 @@ verify_metadata_header (VerifyContext *ctx)
 
 	ptr = ctx->data + offset; //move to streams header 
 
-	if (read16 (ptr + 2) != 5)
-		ADD_ERROR (ctx, g_strdup_printf ("Metadata root section have %d streams (it must have exactly 5)", read16 (ptr + 2)));
+	if (read16 (ptr + 2) < 3)
+		ADD_ERROR (ctx, g_strdup_printf ("Metadata root section must have at least 3 streams (#~, #GUID and #Blob"));
 
 	ptr += 4;
 	offset += 4;
@@ -778,6 +778,14 @@ verify_metadata_header (VerifyContext *ctx)
 		offset = pad4 (offset);
 		ptr = ctx->data + offset;
 	}
+
+	if (!ctx->metadata_streams [TILDE_STREAM].size)
+		ADD_ERROR (ctx, g_strdup_printf ("Metadata #~ stream missing"));
+	if (!ctx->metadata_streams [GUID_STREAM].size)
+		ADD_ERROR (ctx, g_strdup_printf ("Metadata guid stream missing"));
+	if (!ctx->metadata_streams [BLOB_STREAM].size)
+		ADD_ERROR (ctx, g_strdup_printf ("Metadata blob stream missing"));
+		
 }
 
 static void
@@ -904,6 +912,15 @@ get_coded_index_token (int token_kind, guint32 coded_token)
 {
 	guint32 bits = coded_index_desc [token_kind];
 	return coded_token >> bits;
+}
+
+static guint32
+get_coded_index_table (int kind, guint32 coded_token)
+{
+	guint32 idx, bits = coded_index_desc [kind];
+	kind += 2;
+	idx = coded_token & ((1 << bits) - 1);
+	return coded_index_desc [kind + idx];
 }
 
 static guint32
@@ -1936,6 +1953,7 @@ verify_moduleref_table (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid MethodImpl row %d Class field %08x", i, data [MONO_TABLE_TYPEDEF]));
 	}
 }
+
 static void
 verify_typespec_table (VerifyContext *ctx)
 {
@@ -1948,6 +1966,41 @@ verify_typespec_table (VerifyContext *ctx)
 
 		if (!is_valid_typespec_blob (ctx, data [MONO_TYPESPEC_SIGNATURE]))
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid TypeSpec row %d Signature field %08x", i, data [MONO_TYPESPEC_SIGNATURE]));
+	}
+}
+
+#define INVALID_IMPLMAP_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 7) | (1 << 8) | (1 << 9) | (1 << 10))
+static void
+verify_implmap_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_IMPLMAP];
+	guint32 data [MONO_IMPLMAP_SIZE], cconv;
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_IMPLMAP_SIZE);
+
+		if (data [MONO_IMPLMAP_FLAGS] & INVALID_IMPLMAP_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d Flags field %08x", i, data [MONO_IMPLMAP_FLAGS]));
+
+		cconv = data [MONO_IMPLMAP_FLAGS] & PINVOKE_ATTRIBUTE_CALL_CONV_MASK;
+		if (cconv == 0 || cconv == 0x0600 || cconv == 0x0700)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d Invalid call conv field %x", i, cconv));
+
+		if (!is_valid_coded_index (ctx, MEMBER_FORWARDED_DESC, data [MONO_IMPLMAP_MEMBER]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d Invalid MemberForward token %x", i, data [MONO_IMPLMAP_MEMBER]));
+
+		if (get_coded_index_table (MEMBER_FORWARDED_DESC, data [MONO_IMPLMAP_MEMBER]) != MONO_TABLE_METHOD)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d only methods are supported token %x", i, data [MONO_IMPLMAP_MEMBER]));
+
+		if (!get_coded_index_token (MEMBER_FORWARDED_DESC, data [MONO_IMPLMAP_MEMBER]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d null token", i));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_IMPLMAP_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d ImportName Token %x", i, data [MONO_IMPLMAP_NAME]));
+
+		if (!data [MONO_IMPLMAP_SCOPE] || data [MONO_IMPLMAP_SCOPE] > ctx->image->tables [MONO_TABLE_MODULE].rows + 1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid ImplMap row %d Invalid ImportScope token %x", i, data [MONO_IMPLMAP_SCOPE]));
 	}
 }
 
@@ -2019,6 +2072,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_moduleref_table (ctx);
 	CHECK_ERROR ();
 	verify_typespec_table (ctx);
+	CHECK_ERROR ();
+	verify_implmap_table (ctx);
 }
 
 static gboolean
