@@ -3018,11 +3018,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	//acfg->aot_opts.print_skipped_methods = TRUE;
 
-#ifndef MONO_ARCH_FULL_AOT_IMT_SUPPORTED
-	if (acfg->aot_opts.full_aot)
-		mono_use_imt = FALSE;
-#endif
-
 	/*
 	 * Since these methods are the only ones which are compiled with
 	 * AOT support, and they are not used by runtime startup/shutdown code,
@@ -4596,9 +4591,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
 	acfg->num_trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = acfg->aot_opts.full_aot ? 1024 : 0;
 #endif
-#ifdef MONO_ARCH_FULL_AOT_IMT_SUPPORTED
 	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? 128 : 0;
-#endif
 
 	acfg->method_index = 1;
 
