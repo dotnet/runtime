@@ -4547,7 +4547,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
 	acfg->num_trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = acfg->aot_opts.full_aot ? 1024 : 0;
 #endif
+#ifdef MONO_ARCH_FULL_AOT_IMT_SUPPORTED
 	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? 128 : 0;
+#endif
 
 	acfg->method_index = 1;
 
