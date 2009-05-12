@@ -1475,8 +1475,18 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	result->token = token;
 	result->name = mono_metadata_string_heap (image, cols [3]);
 
+	if (!sig) /* already taken from the methodref */
+		sig = mono_metadata_blob_heap (image, cols [4]);
+	size = mono_metadata_decode_blob_size (sig, &sig);
+
 	container = klass->generic_container;
-	generic_container = mono_metadata_load_generic_params (image, token, container);
+
+	/* 
+	 * load_generic_params does a binary search so only call it if the method 
+	 * is generic.
+	 */
+	if (*sig & 0x10)
+		generic_container = mono_metadata_load_generic_params (image, token, container);
 	if (generic_container) {
 		result->is_generic = TRUE;
 		generic_container->owner.method = result;
@@ -1485,11 +1495,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 		container = generic_container;
 	}
-
-
-	if (!sig) /* already taken from the methodref */
-		sig = mono_metadata_blob_heap (image, cols [4]);
-	size = mono_metadata_decode_blob_size (sig, &sig);
 
 	if (cols [1] & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		if (result->klass == mono_defaults.string_class && !strcmp (result->name, ".ctor"))
