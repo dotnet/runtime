@@ -4791,7 +4791,9 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (mono_aot_only) {
 		/* The IMT tables are very dynamic thus they are hard to AOT */
+#ifndef MONO_ARCH_FULL_AOT_IMT_SUPPORTED
 		mono_use_imt = FALSE;
+#endif
 		/* This helps catch code allocation requests */
 		mono_code_manager_set_read_only (domain->code_mp);
 	}

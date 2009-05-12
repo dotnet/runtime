@@ -133,13 +133,11 @@ typedef struct MonoAotCompile {
 	guint32 got_offset, plt_offset, plt_got_offset_base;
 	/* Number of GOT entries reserved for trampolines */
 	guint32 num_trampoline_got_entries;
-	guint32 num_specific_trampolines;
-	guint32 specific_trampoline_size;
-	guint32 specific_trampoline_got_offset_base;
-	/* Same for static rgctx trampolines */
-	guint32 num_static_rgctx_trampolines;
-	guint32 static_rgctx_trampoline_size;
-	guint32 static_rgctx_trampoline_got_offset_base;
+
+	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
+	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
+	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
+
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
 	guint32 opts;
@@ -730,6 +728,70 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	g_assert_not_reached ();
 #endif
 }	
+
+/*
+ * arch_emit_imt_thunk:
+ *
+ *   Emit an IMT thunk usable in full-aot mode. The thunk uses 1 got slot which
+ * points to an array of pointer pairs. The pairs of the form [key, ptr], where
+ * key is the IMT key, and ptr holds the address of a memory location holding
+ * the address to branch to if the IMT arg matches the key. The array is 
+ * terminated by a pair whose key is NULL, and whose ptr is the address of the 
+ * fail_tramp.
+ * TRAMP_SIZE is set to the size of the emitted trampoline.
+ */
+static void
+arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
+{
+	guint8 *buf, *code;
+
+#if defined(TARGET_AMD64)
+	guint8 *labels [3];
+
+	code = buf = g_malloc (256);
+
+	/* FIXME: Optimize this, i.e. use binary search etc. */
+	/* Maybe move the body into a separate function (slower, but much smaller) */
+
+	/* R10 is a free register */
+
+	labels [0] = code;
+	amd64_alu_membase_imm (code, X86_CMP, AMD64_R10, 0, 0);
+	labels [1] = code;
+	amd64_branch8 (code, X86_CC_Z, FALSE, 0);
+
+	/* Check key */
+	amd64_alu_membase_reg (code, X86_CMP, AMD64_R10, 0, MONO_ARCH_IMT_REG);
+	labels [2] = code;
+	amd64_branch8 (code, X86_CC_Z, FALSE, 0);
+
+	/* Loop footer */
+	amd64_alu_reg_imm (code, X86_ADD, AMD64_R10, 2 * sizeof (gpointer));
+	amd64_jump_code (code, labels [0]);
+
+	/* Match */
+	mono_amd64_patch (labels [2], code);
+	amd64_mov_reg_membase (code, AMD64_R10, AMD64_R10, sizeof (gpointer), 8);
+	amd64_jump_membase (code, AMD64_R10, 0);
+
+	/* No match */
+	/* FIXME: */
+	mono_amd64_patch (labels [1], code);
+	x86_breakpoint (code);
+
+	/* mov <OFFSET>(%rip), %r10 */
+	emit_byte (acfg, '\x4d');
+	emit_byte (acfg, '\x8b');
+	emit_byte (acfg, '\x15');
+	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
+
+	emit_bytes (acfg, buf, code - buf);
+	
+	*tramp_size = code - buf + 7;
+#else
+	g_assert_not_reached ();
+#endif
+}
 
 /*
  * arch_get_cie_program:
@@ -2493,21 +2555,12 @@ emit_trampoline (MonoAotCompile *acfg, const char *name, guint8 *code,
 	}
 }
 
-/*
- * When running in aot-only mode, we can't create trampolines at runtime, so we create 
- * a few, and save them in the AOT file. Normal trampolines embed their argument as a 
- * literal inside the trampoline code, we can't do that here, so instead we embed an offset
- * which needs to be added to the trampoline address to get the address of the GOT slot
- * which contains the argument value.
- * The generated trampolines jump to the generic trampolines using another GOT slot, which
- * will be setup by the AOT loader to point to the generic trampoline code of the given 
- * type.
- */
 static void
 emit_trampolines (MonoAotCompile *acfg)
 {
 	char symbol [256];
 	int i, tramp_got_offset;
+	MonoAotTrampoline ntype;
 #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES
 	int tramp_type;
 	guint32 code_size;
@@ -2605,57 +2658,90 @@ emit_trampolines (MonoAotCompile *acfg)
 
 #endif /* #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES */
 
+		/* Emit trampolines which are numerous */
+
+		/*
+		 * These include the following:
+		 * - specific trampolines
+		 * - static rgctx invoke trampolines
+		 * - imt thunks
+		 * These trampolines have the same code, they are parameterized by GOT 
+		 * slots. 
+		 * They are defined in this file, in the arch_... routines instead of
+		 * in tramp-<ARCH>.c, since it is easier to do it this way.
+		 */
+
+		/*
+		 * When running in aot-only mode, we can't create specific trampolines at 
+		 * runtime, so we create a few, and save them in the AOT file. 
+		 * Normal trampolines embed their argument as a literal inside the 
+		 * trampoline code, we can't do that here, so instead we embed an offset
+		 * which needs to be added to the trampoline address to get the address of
+		 * the GOT slot which contains the argument value.
+		 * The generated trampolines jump to the generic trampolines using another
+		 * GOT slot, which will be setup by the AOT loader to point to the 
+		 * generic trampoline code of the given type.
+		 */
+
 		/*
 		 * FIXME: Maybe we should use more specific trampolines (i.e. one class init for
 		 * each class).
 		 */
 
-		/* Reserve some entries at the end of the GOT for our use */
-		acfg->num_trampoline_got_entries = (acfg->num_specific_trampolines * 2) + (acfg->num_static_rgctx_trampolines * 2);
-
-		sprintf (symbol, "specific_trampolines");
-
 		emit_section_change (acfg, ".text", 0);
-		emit_global (acfg, symbol, TRUE);
-		emit_alignment (acfg, 16);
-		emit_label (acfg, symbol);
 
 		tramp_got_offset = acfg->got_offset;
 
-		acfg->specific_trampoline_got_offset_base = tramp_got_offset;
-
-		for (i = 0; i < acfg->num_specific_trampolines; ++i) {
-			int tramp_size = 0;
-
-			arch_emit_specific_trampoline (acfg, tramp_got_offset, &tramp_size);
-			if (!acfg->specific_trampoline_size) {
-				g_assert (tramp_size);
-				acfg->specific_trampoline_size = tramp_size;
+		for (ntype = 0; ntype < MONO_AOT_TRAMP_NUM; ++ntype) {
+			switch (ntype) {
+			case MONO_AOT_TRAMP_SPECIFIC:
+				sprintf (symbol, "specific_trampolines");
+				break;
+			case MONO_AOT_TRAMP_STATIC_RGCTX:
+				sprintf (symbol, "static_rgctx_trampolines");
+				break;
+			case MONO_AOT_TRAMP_IMT_THUNK:
+				sprintf (symbol, "imt_thunks");
+				break;
+			default:
+				g_assert_not_reached ();
 			}
 
-			tramp_got_offset += 2;
-		}
+			emit_global (acfg, symbol, TRUE);
+			emit_alignment (acfg, 16);
+			emit_label (acfg, symbol);
 
-		sprintf (symbol, "static_rgctx_trampolines");
+			acfg->trampoline_got_offset_base [ntype] = tramp_got_offset;
 
-		emit_section_change (acfg, ".text", 0);
-		emit_global (acfg, symbol, TRUE);
-		emit_alignment (acfg, 16);
-		emit_label (acfg, symbol);
+			for (i = 0; i < acfg->num_trampolines [ntype]; ++i) {
+				int tramp_size = 0;
 
-		acfg->static_rgctx_trampoline_got_offset_base = tramp_got_offset;
+				switch (ntype) {
+				case MONO_AOT_TRAMP_SPECIFIC:
+					arch_emit_specific_trampoline (acfg, tramp_got_offset, &tramp_size);
+					tramp_got_offset += 2;
+				break;
+				case MONO_AOT_TRAMP_STATIC_RGCTX:
+					arch_emit_static_rgctx_trampoline (acfg, tramp_got_offset, &tramp_size);				
+					tramp_got_offset += 2;
+					break;
+				case MONO_AOT_TRAMP_IMT_THUNK:
+					arch_emit_imt_thunk (acfg, tramp_got_offset, &tramp_size);
+					tramp_got_offset += 1;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
 
-		for (i = 0; i < acfg->num_static_rgctx_trampolines; ++i) {
-			int tramp_size = 0;
-
-			arch_emit_static_rgctx_trampoline (acfg, tramp_got_offset, &tramp_size);
-			if (!acfg->static_rgctx_trampoline_size) {
-				g_assert (tramp_size);
-				acfg->static_rgctx_trampoline_size = tramp_size;
+				if (!acfg->trampoline_size [ntype]) {
+					g_assert (tramp_size);
+					acfg->trampoline_size [ntype] = tramp_size;
+				}
 			}
-
-			tramp_got_offset += 2;
 		}
+
+		/* Reserve some entries at the end of the GOT for our use */
+		acfg->num_trampoline_got_entries = tramp_got_offset - acfg->got_offset;
 	}
 
 	/* Unbox trampolines */
@@ -2883,8 +2969,10 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	//acfg->aot_opts.print_skipped_methods = TRUE;
 
+#ifndef MONO_ARCH_FULL_AOT_IMT_SUPPORTED
 	if (acfg->aot_opts.full_aot)
 		mono_use_imt = FALSE;
+#endif
 
 	/*
 	 * Since these methods are the only ones which are compiled with
@@ -3389,11 +3477,11 @@ mono_aot_wrapper_name (MonoMethod *method)
  *   Create a MonoAotTrampInfo structure from the arguments.
  */
 MonoAotTrampInfo*
-mono_aot_tramp_info_create (char *name, guint8 *code, guint32 code_size)
+mono_aot_tramp_info_create (const char *name, guint8 *code, guint32 code_size)
 {
 	MonoAotTrampInfo *info = g_new0 (MonoAotTrampInfo, 1);
 
-	info->name = name;
+	info->name = (char*)name;
 	info->code = code;
 	info->code_size = code_size;
 
@@ -4078,6 +4166,7 @@ static void
 emit_file_info (MonoAotCompile *acfg)
 {
 	char symbol [128];
+	int i;
 
 	sprintf (symbol, "mono_aot_file_info");
 	emit_section_change (acfg, ".data", 0);
@@ -4089,12 +4178,13 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
 	emit_int32 (acfg, acfg->plt_offset);
-	emit_int32 (acfg, acfg->num_specific_trampolines);
-	emit_int32 (acfg, acfg->specific_trampoline_size);
-	emit_int32 (acfg, acfg->specific_trampoline_got_offset_base);
-	emit_int32 (acfg, acfg->num_static_rgctx_trampolines);
-	emit_int32 (acfg, acfg->static_rgctx_trampoline_size);
-	emit_int32 (acfg, acfg->static_rgctx_trampoline_got_offset_base);
+
+	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
+		emit_int32 (acfg, acfg->num_trampolines [i]);
+	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
+		emit_int32 (acfg, acfg->trampoline_got_offset_base [i]);
+	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
+		emit_int32 (acfg, acfg->trampoline_size [i]);
 }
 
 static void
@@ -4453,10 +4543,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (!acfg->aot_opts.nodebug)
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL);
 
-	acfg->num_specific_trampolines = acfg->aot_opts.full_aot ? acfg->aot_opts.ntrampolines : 0;
+	acfg->num_trampolines [MONO_AOT_TRAMP_SPECIFIC] = acfg->aot_opts.full_aot ? acfg->aot_opts.ntrampolines : 0;
 #ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
-	acfg->num_static_rgctx_trampolines = acfg->aot_opts.full_aot ? 1024 : 0;
+	acfg->num_trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = acfg->aot_opts.full_aot ? 1024 : 0;
 #endif
+	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? 128 : 0;
 
 	acfg->method_index = 1;
 

@@ -6077,6 +6077,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	guint8 *code, *start;
 	gboolean vtable_is_32bit = ((gsize)(vtable) == (gsize)(int)(gsize)(vtable));
 
+	if (mono_aot_only)
+		return mono_aot_get_imt_thunk (vtable, domain, imt_entries, count, fail_tramp);
+
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		if (item->is_equals) {

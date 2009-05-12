@@ -68,10 +68,6 @@ typedef gint64 mgreg_t;
 
 #define NOT_IMPLEMENTED do { g_assert_not_reached (); } while (0)
 
-#ifndef DISABLE_AOT
-#define MONO_USE_AOT_COMPILER
-#endif
-
 /* for 32 bit systems */
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define MINI_LS_WORD_IDX 0
@@ -88,8 +84,12 @@ typedef gint64 mgreg_t;
 #define MONO_FAKE_IMT_METHOD ((MonoMethod*)GINT_TO_POINTER(-1))
 #define MONO_FAKE_VTABLE_METHOD ((MonoMethod*)GINT_TO_POINTER(-2))
 
+#ifndef DISABLE_AOT
+#define MONO_USE_AOT_COMPILER
+#endif
+
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION "53"
+#define MONO_AOT_FILE_VERSION "54"
 
 /* Constants used to encode different types of methods in AOT */
 enum {
@@ -106,6 +106,26 @@ enum {
 	/* Methods resolve using a METHODSPEC token */
 	MONO_AOT_METHODREF_METHODSPEC = 255,
 };
+
+/* Trampolines which we have a lot of */
+typedef enum {
+	MONO_AOT_TRAMP_SPECIFIC = 0,
+	MONO_AOT_TRAMP_STATIC_RGCTX = 1,
+	MONO_AOT_TRAMP_IMT_THUNK = 2,
+	MONO_AOT_TRAMP_NUM = 3
+} MonoAotTrampoline;
+
+/* This structure is stored in the AOT file */
+typedef struct MonoAotFileInfo
+{
+	guint32 plt_got_offset_base;
+	guint32 got_size;
+	guint32 plt_size;
+
+	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
+	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
+	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
+} MonoAotFileInfo;
  
 /* Per-domain information maintained by the JIT */
 typedef struct
@@ -1377,10 +1397,11 @@ gpointer mono_aot_get_named_code            (const char *name) MONO_INTERNAL;
 gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method) MONO_INTERNAL;
 gpointer mono_aot_get_lazy_fetch_trampoline (guint32 slot) MONO_INTERNAL;
 gpointer mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr) MONO_INTERNAL;
+gpointer mono_aot_get_imt_thunk             (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp) MONO_INTERNAL;
 guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len) MONO_INTERNAL;
 guint32  mono_aot_method_hash               (MonoMethod *method) MONO_INTERNAL;
 char*    mono_aot_wrapper_name              (MonoMethod *method) MONO_INTERNAL;
-MonoAotTrampInfo* mono_aot_tramp_info_create (char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
+MonoAotTrampInfo* mono_aot_tramp_info_create (const char *name, guint8 *code, guint32 code_len) MONO_INTERNAL;
 gboolean mono_aot_is_shared_got_patch       (MonoJumpInfo *patch_info) MONO_INTERNAL;
 guint    mono_aot_str_hash                  (gconstpointer v1) MONO_INTERNAL;
 
