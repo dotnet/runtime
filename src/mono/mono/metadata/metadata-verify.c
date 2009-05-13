@@ -834,8 +834,8 @@ verify_tables_schema (VerifyContext *ctx)
 	for (i = 0; i < 64; ++i) {
 		if (valid_tables & ((guint64)1 << i)) {
 			guint32 row_count = read32 (ptr);
-			if (row_count > (1 << 25) - 1)
-				ADD_ERROR (ctx, g_strdup_printf ("Invalid Table %d row count, mono only supports ", i));
+			if (row_count > (1 << 24) - 1)
+				ADD_ERROR (ctx, g_strdup_printf ("Invalid Table %d row count: %d. Mono only supports 16777215 rows", i, row_count));
 			ptr += 4;
 		}
 	}
