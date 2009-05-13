@@ -1,3 +1,7 @@
+2009-05-13 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Add tests for fieldrva.
+
 2009-05-11 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* assembly-with-methods.cs: Mark the class with the

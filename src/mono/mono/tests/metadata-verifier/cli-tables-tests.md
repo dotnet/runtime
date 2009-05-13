@@ -937,5 +937,25 @@ implmap-table {
 	invalid offset table-row (0x1C 0) + 6 set-ushort 0x8800 #invalid
 
 	#TODO check methoddef for pinvokeimpl and state (7)
-
 }
+
+fieldrva-table {
+	assembly assembly-with-complex-type.exe
+
+	#rva non zero (1)
+	invalid offset table-row (0x1D 0) set-uint 0
+	#valid rva (2)
+	invalid offset table-row (0x1D 0) set-uint 0x88880000
+
+	#valid field (4)
+	#field 17 has rva
+	invalid offset table-row (0x1D 0) + 4 set-ushort 0,
+			offset table-row (0x04 17) set-ushort 0x0013 #remove fieldrva from target field
+	invalid offset table-row (0x1D 0) + 4 set-ushort 0x9901,
+			offset table-row (0x04 17) set-ushort 0x0013 
+
+
+	#TODO verify if the field is a blitable valuetype
+	#TODO verify if the field.size + rva does boundcheck
+}
+
