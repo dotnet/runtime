@@ -959,3 +959,48 @@ fieldrva-table {
 	#TODO verify if the field.size + rva does boundcheck
 }
 
+assembly-table {
+	assembly simple-assembly.exe
+
+	#The table can have zero or 1 row (1)
+	#rows
+	invalid offset tables-header + 40 set-uint 2,
+			offset stream-header (0) + 4 set-uint read.uint (stream-header (0) + 4) + 22 #increase the size of the #~ section
+
+	#bad hasalg (2) 
+	valid offset table-row (0x20 0) set-uint 0
+	valid offset table-row (0x20 0) set-uint 0x8003
+	valid offset table-row (0x20 0) set-uint 0x8004
+	invalid offset table-row (0x20 0) set-uint 0x8005
+	invalid offset table-row (0x20 0) set-uint 1
+
+	#good flags (4)
+	#only bits 8, 14 and 15 are used
+	invalid offset table-row (0x20 0) + 12 set-bit 0
+	invalid offset table-row (0x20 0) + 12 set-bit 1
+	invalid offset table-row (0x20 0) + 12 set-bit 5
+	invalid offset table-row (0x20 0) + 12 set-bit 9
+	invalid offset table-row (0x20 0) + 12 set-bit 11
+	invalid offset table-row (0x20 0) + 12 set-bit 16
+	invalid offset table-row (0x20 0) + 12 set-bit 20
+	invalid offset table-row (0x20 0) + 12 set-bit 23
+	invalid offset table-row (0x20 0) + 12 set-bit 26
+	invalid offset table-row (0x20 0) + 12 set-bit 29
+	invalid offset table-row (0x20 0) + 12 set-bit 30
+	invalid offset table-row (0x20 0) + 12 set-bit 31
+
+
+	#valid pub key (5)
+	valid offset table-row (0x20 0) + 16 set-ushort 0 
+	invalid offset table-row (0x20 0) + 16 set-ushort 0x9990
+
+	#name is a valid non-empty string (5)
+	invalid offset table-row (0x20 0) + 18 set-ushort 0
+	invalid offset table-row (0x20 0) + 18 set-ushort 0x9990
+
+	#string is an optional valid non-empty string
+	valid offset table-row (0x20 0) + 20 set-ushort 0 
+	invalid offset table-row (0x20 0) + 20 set-ushort 0x9990
+
+	#TODO check if culture is one of the listed cultures (23.1.3)
+}
