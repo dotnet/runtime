@@ -531,10 +531,30 @@ struct _FinalizeEntry {
 	void *object;
 };
 
+typedef struct _FinalizeEntryHashTable FinalizeEntryHashTable;
+struct _FinalizeEntryHashTable {
+	FinalizeEntry **table;
+	mword size;
+	int num_registered;
+};
+
 typedef struct _DisappearingLink DisappearingLink;
 struct _DisappearingLink {
 	DisappearingLink *next;
 	void **link;
+};
+
+typedef struct _DisappearingLinkHashTable DisappearingLinkHashTable;
+struct _DisappearingLinkHashTable {
+	DisappearingLink **table;
+	mword size;
+	int num_links;
+};
+
+enum {
+	GENERATION_NURSERY,
+	GENERATION_OLD,
+	GENERATION_MAX
 };
 
 /*
@@ -552,17 +572,16 @@ struct _DisappearingLink {
  * The finalizable hash has the object as the key, the 
  * disappearing_link hash, has the link address as key.
  */
-static FinalizeEntry **finalizable_hash = NULL;
+static FinalizeEntryHashTable minor_finalizable_hash;
+static FinalizeEntryHashTable major_finalizable_hash;
 /* objects that are ready to be finalized */
 static FinalizeEntry *fin_ready_list = NULL;
 static FinalizeEntry *critical_fin_list = NULL;
-static DisappearingLink **disappearing_link_hash = NULL;
-static mword disappearing_link_hash_size = 0;
-static mword finalizable_hash_size = 0;
 
-static int num_registered_finalizers = 0;
+static DisappearingLinkHashTable minor_disappearing_link_hash;
+static DisappearingLinkHashTable major_disappearing_link_hash;
+
 static int num_ready_finalizers = 0;
-static int num_disappearing_links = 0;
 static int no_finalize = 0;
 
 /* keep each size a multiple of ALLOC_ALIGN */
@@ -727,9 +746,11 @@ static void scan_from_remsets (void *start_nursery, void *end_nursery);
 static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static GCMemSection* alloc_section (size_t size);
-static void finalize_in_range (char *start, char *end);
-static void null_link_in_range (char *start, char *end);
-static void null_links_for_domain (MonoDomain *domain);
+static void finalize_in_range (char *start, char *end, int generation);
+static void add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track,
+	DisappearingLinkHashTable *hash);
+static void null_link_in_range (char *start, char *end, int generation);
+static void null_links_for_domain (MonoDomain *domain, int generation);
 static gboolean search_fragment_for_size (size_t size);
 static void mark_pinned_from_addresses (PinnedChunk *chunk, void **start, void **end);
 static void clear_remsets (void);
@@ -1430,6 +1451,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	GCMemSection *section;
 	LOSObject *bigobj, *prev;
 	Fragment *frag;
+	int i;
 
 	LOCK_GC;
 	/* Clear all remaining nursery fragments */
@@ -1474,7 +1496,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 	}
 	scan_pinned_objects (clear_domain_free_pinned_object_callback, domain);
 
-	null_links_for_domain (domain);
+	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
+		null_links_for_domain (domain, i);
 
 	UNLOCK_GC;
 }
@@ -2340,8 +2363,28 @@ scan_needed_big_objects (char *start_addr, char *end_addr)
 	return count;
 }
 
+static DisappearingLinkHashTable*
+get_dislink_hash_table (int generation)
+{
+	switch (generation) {
+	case GENERATION_NURSERY: return &minor_disappearing_link_hash;
+	case GENERATION_OLD: return &major_disappearing_link_hash;
+	default: g_assert_not_reached ();
+	}
+}
+
+static FinalizeEntryHashTable*
+get_finalize_entry_hash_table (int generation)
+{
+	switch (generation) {
+	case GENERATION_NURSERY: return &minor_finalizable_hash;
+	case GENERATION_OLD: return &major_finalizable_hash;
+	default: g_assert_not_reached ();
+	}
+}
+
 static void
-finish_gray_stack (char *start_addr, char *end_addr)
+finish_gray_stack (char *start_addr, char *end_addr, int generation)
 {
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -2378,7 +2421,9 @@ finish_gray_stack (char *start_addr, char *end_addr)
 	 */
 	do {
 		fin_ready = num_ready_finalizers;
-		finalize_in_range (start_addr, end_addr);
+		finalize_in_range (start_addr, end_addr, generation);
+		if (generation == GENERATION_OLD)
+			finalize_in_range (nursery_start, nursery_real_end, GENERATION_NURSERY);
 		bigo_scanned_num = scan_needed_big_objects (start_addr, end_addr);
 
 		/* drain the new stack that might have been created */
@@ -2401,7 +2446,7 @@ finish_gray_stack (char *start_addr, char *end_addr)
 	 * GC a finalized object my lose the monitor because it is cleared before the finalizer is
 	 * called.
 	 */
-	null_link_in_range (start_addr, end_addr);
+	null_link_in_range (start_addr, end_addr, generation);
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 }
@@ -2621,7 +2666,7 @@ collect_nursery (size_t requested_size)
 	TV_GETTIME (btv);
 	DEBUG (2, fprintf (gc_debug_file, "Root scan: %d usecs\n", TV_ELAPSED (atv, btv)));
 
-	finish_gray_stack (nursery_start, nursery_next);
+	finish_gray_stack (nursery_start, nursery_next, GENERATION_NURSERY);
 
 	/* walk the pin_queue, build up the fragment list of free memory, unmark
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
@@ -2775,7 +2820,8 @@ major_collection (void)
 	 */
 	scan_needed_big_objects (heap_start, heap_end);
 	/* all the objects in the heap */
-	finish_gray_stack (heap_start, heap_end);
+	finish_gray_stack (heap_start, heap_end, GENERATION_OLD);
+	null_link_in_range (nursery_start, nursery_real_end, GENERATION_NURSERY);
 
 	/* sweep the big objects list */
 	prevbo = NULL;
@@ -3688,18 +3734,59 @@ queue_finalization_entry (FinalizeEntry *entry) {
 	}
 }
 
+/* LOCKING: requires that the GC lock is held */
 static void
-finalize_in_range (char *start, char *end)
+rehash_fin_table (FinalizeEntryHashTable *hash_table)
 {
+	FinalizeEntry **finalizable_hash = hash_table->table;
+	mword finalizable_hash_size = hash_table->size;
+	int i;
+	unsigned int hash;
+	FinalizeEntry **new_hash;
+	FinalizeEntry *entry, *next;
+	int new_size = g_spaced_primes_closest (hash_table->num_registered);
+
+	new_hash = get_internal_mem (new_size * sizeof (FinalizeEntry*));
+	for (i = 0; i < finalizable_hash_size; ++i) {
+		for (entry = finalizable_hash [i]; entry; entry = next) {
+			hash = mono_object_hash (entry->object) % new_size;
+			next = entry->next;
+			entry->next = new_hash [hash];
+			new_hash [hash] = entry;
+		}
+	}
+	free_internal_mem (finalizable_hash);
+	hash_table->table = new_hash;
+	hash_table->size = new_size;
+}
+
+/* LOCKING: requires that the GC lock is held */
+static void
+rehash_fin_table_if_necessary (FinalizeEntryHashTable *hash_table)
+{
+	if (hash_table->num_registered >= hash_table->size * 2)
+		rehash_fin_table (hash_table);
+}
+
+/* LOCKING: requires that the GC lock is held */
+static void
+finalize_in_range (char *start, char *end, int generation)
+{
+	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	FinalizeEntry *entry, *prev;
 	int i;
+	FinalizeEntry **finalizable_hash = hash_table->table;
+	mword finalizable_hash_size = hash_table->size;
+
 	if (no_finalize)
 		return;
 	for (i = 0; i < finalizable_hash_size; ++i) {
 		prev = NULL;
 		for (entry = finalizable_hash [i]; entry;) {
 			if ((char*)entry->object >= start && (char*)entry->object < end && ((char*)entry->object < to_space || (char*)entry->object >= to_space_end)) {
-				if (object_is_fin_ready (entry->object)) {
+				gboolean is_fin_ready = object_is_fin_ready (entry->object);
+				char *copy = copy_object (entry->object, start, end);
+				if (is_fin_ready) {
 					char *from;
 					FinalizeEntry *next;
 					/* remove and put in fin_ready_list */
@@ -3709,18 +3796,45 @@ finalize_in_range (char *start, char *end)
 						finalizable_hash [i] = entry->next;
 					next = entry->next;
 					num_ready_finalizers++;
-					num_registered_finalizers--;
+					hash_table->num_registered--;
 					queue_finalization_entry (entry);
 					/* Make it survive */
 					from = entry->object;
-					entry->object = copy_object (entry->object, start, end);
-					DEBUG (5, fprintf (gc_debug_file, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)\n", entry->object, safe_name (entry->object), from, num_ready_finalizers, num_registered_finalizers));
+					entry->object = copy;
+					DEBUG (5, fprintf (gc_debug_file, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)\n", entry->object, safe_name (entry->object), from, num_ready_finalizers, hash_table->num_registered));
 					entry = next;
 					continue;
 				} else {
-					/* update pointer */
-					DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s)\n", entry->object, safe_name (entry->object)));
-					entry->object = copy_object (entry->object, start, end);
+					char *from = entry->object;
+					if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
+						FinalizeEntry *next = entry->next;
+						unsigned int major_hash;
+						/* remove from the list */
+						if (prev)
+							prev->next = entry->next;
+						else
+							finalizable_hash [i] = entry->next;
+						hash_table->num_registered--;
+
+						entry->object = copy;
+
+						/* insert it into the major hash */
+						rehash_fin_table_if_necessary (&major_finalizable_hash);
+						major_hash = mono_object_hash ((MonoObject*) copy) %
+							major_finalizable_hash.size;
+						entry->next = major_finalizable_hash.table [major_hash];
+						major_finalizable_hash.table [major_hash] = entry;
+						major_finalizable_hash.num_registered++;
+
+						DEBUG (5, fprintf (gc_debug_file, "Promoting finalization of object %p (%s) (was at %p) to major table\n", copy, safe_name (copy), from));
+
+						entry = next;
+						continue;
+					} else {
+						/* update pointer */
+						DEBUG (5, fprintf (gc_debug_file, "Updating object for finalization: %p (%s) (was at %p)\n", entry->object, safe_name (entry->object), from));
+						entry->object = copy;
+					}
 				}
 			}
 			prev = entry;
@@ -3729,17 +3843,24 @@ finalize_in_range (char *start, char *end)
 	}
 }
 
+/* LOCKING: requires that the GC lock is held */
 static void
-null_link_in_range (char *start, char *end)
+null_link_in_range (char *start, char *end, int generation)
 {
+	DisappearingLinkHashTable *hash = get_dislink_hash_table (generation);
+	DisappearingLink **disappearing_link_hash = hash->table;
+	int disappearing_link_hash_size = hash->size;
 	DisappearingLink *entry, *prev;
 	int i;
+	if (!hash->num_links)
+		return;
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
 		prev = NULL;
 		for (entry = disappearing_link_hash [i]; entry;) {
 			char *object = DISLINK_OBJECT (entry);
 			if (object >= start && object < end && (object < to_space || object >= to_space_end)) {
-				if (!DISLINK_TRACK (entry) && object_is_fin_ready (object)) {
+				gboolean track = DISLINK_TRACK (entry);
+				if (!track && object_is_fin_ready (object)) {
 					void **p = entry->link;
 					DisappearingLink *old;
 					*p = NULL;
@@ -3752,21 +3873,49 @@ null_link_in_range (char *start, char *end)
 					old = entry->next;
 					free_internal_mem (entry);
 					entry = old;
-					num_disappearing_links--;
+					hash->num_links--;
 					continue;
 				} else {
-					/* update pointer if it's moved
+					char *copy = copy_object (object, start, end);
+
+					/* Update pointer if it's moved.  If the object
+					 * has been moved out of the nursery, we need to
+					 * remove the link from the minor hash table to
+					 * the major one.
+					 *
 					 * FIXME: what if an object is moved earlier?
 					 */
-					/* We set the track
-					 * resurrection bit to FALSE
-					 * here so that the object can
-					 * be collected in the next
-					 * cycle (i.e. after it was
-					 * finalized).
-					 */
-					*entry->link = HIDE_POINTER (copy_object (object, start, end), FALSE);
-					DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->link, DISLINK_OBJECT (entry)));
+
+					if (hash == &minor_disappearing_link_hash && !ptr_in_nursery (copy)) {
+						void **link = entry->link;
+						DisappearingLink *old;
+						/* remove from list */
+						if (prev)
+							prev->next = entry->next;
+						else
+							disappearing_link_hash [i] = entry->next;
+						old = entry->next;
+						free_internal_mem (entry);
+						entry = old;
+						hash->num_links--;
+
+						add_or_remove_disappearing_link ((MonoObject*)copy, link, track,
+							&major_disappearing_link_hash);
+
+						DEBUG (5, fprintf (gc_debug_file, "Upgraded dislink at %p to major because object %p moved to %p\n", link, object, copy));
+
+						continue;
+					} else {
+						/* We set the track resurrection bit to
+						 * FALSE if the object is to be finalized
+						 * so that the object can be collected in
+						 * the next cycle (i.e. after it was
+						 * finalized).
+						 */
+						*entry->link = HIDE_POINTER (copy,
+							object_is_fin_ready (object) ? FALSE : track);
+						DEBUG (5, fprintf (gc_debug_file, "Updated dislink at %p to %p\n", entry->link, DISLINK_OBJECT (entry)));
+					}
 				}
 			}
 			prev = entry;
@@ -3775,9 +3924,21 @@ null_link_in_range (char *start, char *end)
 	}
 }
 
-static void
-null_links_for_domain (MonoDomain *domain)
+static const char*
+dislink_table_name (DisappearingLinkHashTable *table)
 {
+	if (table == &minor_disappearing_link_hash)
+		return "minor table";
+	return "major table";
+}
+
+/* LOCKING: requires that the GC lock is held */
+static void
+null_links_for_domain (MonoDomain *domain, int generation)
+{
+	DisappearingLinkHashTable *hash = get_dislink_hash_table (generation);
+	DisappearingLink **disappearing_link_hash = hash->table;
+	int disappearing_link_hash_size = hash->size;
 	DisappearingLink *entry, *prev;
 	int i;
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
@@ -3812,6 +3973,45 @@ null_links_for_domain (MonoDomain *domain)
 	}
 }
 
+/* LOCKING: requires that the GC lock is held */
+static int
+finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
+	FinalizeEntryHashTable *hash_table)
+{
+	FinalizeEntry **finalizable_hash = hash_table->table;
+	mword finalizable_hash_size = hash_table->size;
+	FinalizeEntry *entry, *prev;
+	int i, count;
+
+	if (no_finalize || !out_size || !out_array)
+		return 0;
+	count = 0;
+	for (i = 0; i < finalizable_hash_size; ++i) {
+		prev = NULL;
+		for (entry = finalizable_hash [i]; entry;) {
+			if (mono_object_domain (entry->object) == domain) {
+				FinalizeEntry *next;
+				/* remove and put in out_array */
+				if (prev)
+					prev->next = entry->next;
+				else
+					finalizable_hash [i] = entry->next;
+				next = entry->next;
+				hash_table->num_registered--;
+				out_array [count ++] = entry->object;
+				DEBUG (5, fprintf (gc_debug_file, "Collecting object for finalization: %p (%s) (%d/%d)\n", entry->object, safe_name (entry->object), num_ready_finalizers, hash_table->num_registered));
+				entry = next;
+				if (count == out_size)
+					return count;
+				continue;
+			}
+			prev = entry;
+			entry = entry->next;
+		}
+	}
+	return count;
+}
+
 /**
  * mono_gc_finalizers_for_domain:
  * @domain: the unloading appdomain
@@ -3828,67 +4028,24 @@ null_links_for_domain (MonoDomain *domain)
 int
 mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size)
 {
-	FinalizeEntry *entry, *prev;
-	int i, count;
-	if (no_finalize || !out_size || !out_array)
-		return 0;
-	count = 0;
+	int result;
+
 	LOCK_GC;
-	for (i = 0; i < finalizable_hash_size; ++i) {
-		prev = NULL;
-		for (entry = finalizable_hash [i]; entry;) {
-			if (mono_object_domain (entry->object) == domain) {
-				FinalizeEntry *next;
-				/* remove and put in out_array */
-				if (prev)
-					prev->next = entry->next;
-				else
-					finalizable_hash [i] = entry->next;
-				next = entry->next;
-				num_registered_finalizers--;
-				out_array [count ++] = entry->object;
-				DEBUG (5, fprintf (gc_debug_file, "Collecting object for finalization: %p (%s) (%d/%d)\n", entry->object, safe_name (entry->object), num_ready_finalizers, num_registered_finalizers));
-				entry = next;
-				if (count == out_size) {
-					UNLOCK_GC;
-					return count;
-				}
-				continue;
-			}
-			prev = entry;
-			entry = entry->next;
-		}
+	result = finalizers_for_domain (domain, out_array, out_size, &minor_finalizable_hash);
+	if (result < out_size) {
+		result += finalizers_for_domain (domain, out_array + result, out_size - result,
+			&major_finalizable_hash);
 	}
 	UNLOCK_GC;
-	return count;
+
+	return result;
 }
 
 static void
-rehash_fin_table (void)
+register_for_finalization (MonoObject *obj, void *user_data, FinalizeEntryHashTable *hash_table)
 {
-	int i;
-	unsigned int hash;
-	FinalizeEntry **new_hash;
-	FinalizeEntry *entry, *next;
-	int new_size = g_spaced_primes_closest (num_registered_finalizers);
-
-	new_hash = get_internal_mem (new_size * sizeof (FinalizeEntry*));
-	for (i = 0; i < finalizable_hash_size; ++i) {
-		for (entry = finalizable_hash [i]; entry; entry = next) {
-			hash = mono_object_hash (entry->object) % new_size;
-			next = entry->next;
-			entry->next = new_hash [hash];
-			new_hash [hash] = entry;
-		}
-	}
-	free_internal_mem (finalizable_hash);
-	finalizable_hash = new_hash;
-	finalizable_hash_size = new_size;
-}
-
-void
-mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
-{
+	FinalizeEntry **finalizable_hash;
+	mword finalizable_hash_size;
 	FinalizeEntry *entry, *prev;
 	unsigned int hash;
 	if (no_finalize)
@@ -3896,8 +4053,9 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 	g_assert (user_data == NULL || user_data == mono_gc_run_finalize);
 	hash = mono_object_hash (obj);
 	LOCK_GC;
-	if (num_registered_finalizers >= finalizable_hash_size * 2)
-		rehash_fin_table ();
+	rehash_fin_table_if_necessary (hash_table);
+	finalizable_hash = hash_table->table;
+	finalizable_hash_size = hash_table->size;
 	hash %= finalizable_hash_size;
 	prev = NULL;
 	for (entry = finalizable_hash [hash]; entry; entry = entry->next) {
@@ -3908,8 +4066,8 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 					prev->next = entry->next;
 				else
 					finalizable_hash [hash] = entry->next;
-				num_registered_finalizers--;
-				DEBUG (5, fprintf (gc_debug_file, "Removed finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, num_registered_finalizers));
+				hash_table->num_registered--;
+				DEBUG (5, fprintf (gc_debug_file, "Removed finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
 				free_internal_mem (entry);
 			}
 			UNLOCK_GC;
@@ -3926,19 +4084,30 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 	entry->object = obj;
 	entry->next = finalizable_hash [hash];
 	finalizable_hash [hash] = entry;
-	num_registered_finalizers++;
-	DEBUG (5, fprintf (gc_debug_file, "Added finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, num_registered_finalizers));
+	hash_table->num_registered++;
+	DEBUG (5, fprintf (gc_debug_file, "Added finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
 	UNLOCK_GC;
 }
 
-static void
-rehash_dislink (void)
+void
+mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 {
+	if (ptr_in_nursery (obj))
+		register_for_finalization (obj, user_data, &minor_finalizable_hash);
+	else
+		register_for_finalization (obj, user_data, &minor_finalizable_hash);
+}
+
+static void
+rehash_dislink (DisappearingLinkHashTable *hash_table)
+{
+	DisappearingLink **disappearing_link_hash = hash_table->table;
+	int disappearing_link_hash_size = hash_table->size;
 	int i;
 	unsigned int hash;
 	DisappearingLink **new_hash;
 	DisappearingLink *entry, *next;
-	int new_size = g_spaced_primes_closest (num_disappearing_links);
+	int new_size = g_spaced_primes_closest (hash_table->num_links);
 
 	new_hash = get_internal_mem (new_size * sizeof (DisappearingLink*));
 	for (i = 0; i < disappearing_link_hash_size; ++i) {
@@ -3950,19 +4119,25 @@ rehash_dislink (void)
 		}
 	}
 	free_internal_mem (disappearing_link_hash);
-	disappearing_link_hash = new_hash;
-	disappearing_link_hash_size = new_size;
+	hash_table->table = new_hash;
+	hash_table->size = new_size;
 }
 
 /* LOCKING: assumes the GC lock is held */
 static void
-mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track)
+add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track,
+	DisappearingLinkHashTable *hash_table)
 {
 	DisappearingLink *entry, *prev;
 	unsigned int hash;
+	DisappearingLink **disappearing_link_hash = hash_table->table;
+	int disappearing_link_hash_size = hash_table->size;
 
-	if (num_disappearing_links >= disappearing_link_hash_size * 2)
-		rehash_dislink ();
+	if (hash_table->num_links >= disappearing_link_hash_size * 2) {
+		rehash_dislink (hash_table);
+		disappearing_link_hash = hash_table->table;
+		disappearing_link_hash_size = hash_table->size;
+	}
 	/* FIXME: add check that link is not in the heap */
 	hash = mono_aligned_addr_hash (link) % disappearing_link_hash_size;
 	entry = disappearing_link_hash [hash];
@@ -3976,8 +4151,8 @@ mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track
 					prev->next = entry->next;
 				else
 					disappearing_link_hash [hash] = entry->next;
-				num_disappearing_links--;
-				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d)\n", entry, num_disappearing_links));
+				hash_table->num_links--;
+				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s\n", entry, hash_table->num_links, dislink_table_name (hash_table)));
 				free_internal_mem (entry);
 				*link = NULL;
 			} else {
@@ -3987,13 +4162,29 @@ mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track
 		}
 		prev = entry;
 	}
+	if (obj == NULL)
+		return;
 	entry = get_internal_mem (sizeof (DisappearingLink));
 	*link = HIDE_POINTER (obj, track);
 	entry->link = link;
 	entry->next = disappearing_link_hash [hash];
 	disappearing_link_hash [hash] = entry;
-	num_disappearing_links++;
-	DEBUG (5, fprintf (gc_debug_file, "Added dislink %p for object: %p (%s) at %p\n", entry, obj, obj->vtable->klass->name, link));
+	hash_table->num_links++;
+	DEBUG (5, fprintf (gc_debug_file, "Added dislink %p for object: %p (%s) at %p to %s\n", entry, obj, obj->vtable->klass->name, link, dislink_table_name (hash_table)));
+}
+
+/* LOCKING: assumes the GC lock is held */
+static void
+mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track)
+{
+	add_or_remove_disappearing_link (NULL, link, FALSE, &minor_disappearing_link_hash);
+	add_or_remove_disappearing_link (NULL, link, FALSE, &major_disappearing_link_hash);
+	if (obj) {
+		if (ptr_in_nursery (obj))
+			add_or_remove_disappearing_link (obj, link, track, &minor_disappearing_link_hash);
+		else
+			add_or_remove_disappearing_link (obj, link, track, &major_disappearing_link_hash);
+	}
 }
 
 int
