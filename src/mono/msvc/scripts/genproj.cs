@@ -19,6 +19,60 @@ public enum LanguageVersion
 	Default		= LINQ
 }
 
+class SlnGenerator {
+	const string header = "Microsoft Visual Studio Solution File, Format Version 10.00\n" +
+		"# Visual Studio 2008";
+
+	const string project_start = "Project(\"{{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}}\") = \"{0}\", \"{1}\", \"{{{2}}}\"";
+	const string project_end = "EndProject";
+
+	Dictionary<string, string> libraries = new Dictionary<string, string> ();
+
+	public void Add (string library)
+	{
+		try {
+			libraries.Add (library, Guid.NewGuid ().ToString ().ToUpper ());
+		}
+		catch (Exception ex) {
+			Console.WriteLine (ex);
+		}
+	}
+
+	public void Write (string filename)
+	{
+		using (var sln = new StreamWriter (filename)) {
+			sln.WriteLine ();
+			sln.WriteLine (header);
+			foreach (var library in libraries) {
+				var library_name = Path.GetFileNameWithoutExtension (library.Key);
+				sln.WriteLine (project_start, library_name, library.Key, library.Value);
+				sln.WriteLine (project_end);
+			}
+			sln.WriteLine ("Global");
+
+			sln.WriteLine ("\tGlobalSection(SolutionConfigurationPlatforms) = preSolution");
+			sln.WriteLine ("\t\tDebug|Any CPU = Debug|Any CPU");
+			sln.WriteLine ("\t\tRelease|Any CPU = Release|Any CPU");
+			sln.WriteLine ("\tEndGlobalSection");
+			
+			sln.WriteLine ("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
+			foreach (var library in libraries) {
+				sln.WriteLine ("\t\t{{{0}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU", library.Value);
+				sln.WriteLine ("\t\t{{{0}}}.Debug|Any CPU.Build.0 = Debug|Any CPU", library.Value);
+				sln.WriteLine ("\t\t{{{0}}}.Release|Any CPU.ActiveCfg = Release|Any CPU", library.Value);
+				sln.WriteLine ("\t\t{{{0}}}.Release|Any CPU.Build.0 = Release|Any CPU", library.Value);
+			}
+			sln.WriteLine ("\tEndGlobalSection");
+				
+			sln.WriteLine ("\tGlobalSection(SolutionProperties) = preSolution");
+			sln.WriteLine ("\t\tHideSolutionNode = FALSE");
+			sln.WriteLine ("\tEndGlobalSection");
+
+			sln.WriteLine ("EndGlobal");
+		}
+	}
+}
+
 class MsbuildGenerator {
 	static void Usage ()
 	{
@@ -469,7 +523,7 @@ class MsbuildGenerator {
 			return "";
 	}
 	
-	public void Generate (XElement xproject)
+	public string Generate (XElement xproject)
 	{
 		string library = xproject.Attribute ("library").Value;
 		string boot, mcs, flags, output_name, built_sources, library_output, response;
@@ -653,10 +707,13 @@ class MsbuildGenerator {
 
 
 		string ofile = "..\\..\\..\\mcs\\" + dir + "\\" + library + ".csproj";
+		ofile = ofile.Replace ('/', '\\');
 		//Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
 		using (var o = new StreamWriter (ofile)){
 			o.WriteLine (output);
 		}
+
+		return ofile;
 	}
 	
 }
@@ -670,6 +727,7 @@ public class Driver {
 			Environment.Exit (1);
 		}
 
+        var sln_gen = new SlnGenerator ();
 		XDocument doc = XDocument.Load ("order.xml");
 		foreach (XElement project in doc.Root.Elements ()){
 			string dir = project.Attribute ("dir").Value;
@@ -690,11 +748,12 @@ public class Driver {
 			
 			var gen = new MsbuildGenerator (dir);
 			try {
-				gen.Generate (project);
+				sln_gen.Add (gen.Generate (project));
 			} catch (Exception e) {
 				Console.WriteLine ("Error in {0}\n{1}", dir, e);
 			}
 		}
-	}
+        sln_gen.Write ("mcs_full.sln");
+    }
 
 }
