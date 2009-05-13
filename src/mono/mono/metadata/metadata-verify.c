@@ -2005,6 +2005,24 @@ verify_implmap_table (VerifyContext *ctx)
 }
 
 static void
+verify_fieldrva_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_FIELDRVA];
+	guint32 data [MONO_FIELD_RVA_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_FIELD_RVA_SIZE);
+
+		if (!data [MONO_FIELD_RVA_RVA] || mono_cli_rva_image_map (ctx->image, data [MONO_FIELD_RVA_RVA]) == INVALID_ADDRESS)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldRVA row %d RVA %08x", i, data [MONO_FIELD_RVA_RVA]));
+
+		if (!data [MONO_FIELD_RVA_FIELD] || data [MONO_FIELD_RVA_FIELD] > ctx->image->tables [MONO_TABLE_FIELD].rows + 1)
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid FieldRVA row %d Field %08x", i, data [MONO_FIELD_RVA_FIELD]));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -2074,6 +2092,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_typespec_table (ctx);
 	CHECK_ERROR ();
 	verify_implmap_table (ctx);
+	CHECK_ERROR ();
+	verify_fieldrva_table (ctx);
 }
 
 static gboolean
