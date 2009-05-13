@@ -1124,6 +1124,26 @@ decode_value (const char *_ptr, guint32 available, guint32 *value, guint32 *size
 }
 
 static gboolean
+is_valid_blob_object (VerifyContext *ctx, guint32 offset)
+{
+	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
+	guint32 entry_size, bytes;
+
+	if (blob.size < offset) {
+		printf ("1\n");
+		return FALSE;
+	}
+
+	if (!decode_value (ctx->data + offset + blob.offset, blob.size - blob.offset, &entry_size, &bytes))
+		return FALSE;
+
+	if (offset + entry_size < offset)
+		return FALSE;
+
+	return blob.size >= offset + entry_size;
+}
+
+static gboolean
 is_valid_constant (VerifyContext *ctx, guint32 type, guint32 offset)
 {
 	OffsetAndSize blob = get_metadata_stream (ctx, &ctx->image->heap_blob);
@@ -2022,6 +2042,38 @@ verify_fieldrva_table (VerifyContext *ctx)
 	}
 }
 
+#define INVALID_ASSEMBLY_FLAGS_BITS ~((1 << 8) | (1 << 14) | (1 << 15))
+static void
+verify_assembly_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_ASSEMBLY];
+	guint32 data [MONO_ASSEMBLY_SIZE], hash;
+	int i;
+
+	if (table->rows > 1)
+		ADD_ERROR (ctx, g_strdup_printf ("Assembly table can have zero or one rows, but now %d", table->rows));
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_ASSEMBLY_SIZE);
+
+		hash = data [MONO_ASSEMBLY_HASH_ALG];
+		if (!(hash == 0 || hash == 0x8003 || hash == 0x8004))
+			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid HashAlgId %x", i, hash));
+
+		if (data [MONO_ASSEMBLY_FLAGS] & INVALID_ASSEMBLY_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid Flags %08x", i, data [MONO_ASSEMBLY_FLAGS]));
+
+		if (data [MONO_ASSEMBLY_PUBLIC_KEY] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLY_PUBLIC_KEY]))
+			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid PublicKey %08x", i, data [MONO_ASSEMBLY_FLAGS]));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_ASSEMBLY_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid Name %08x", i, data [MONO_ASSEMBLY_NAME]));
+
+		if (data [MONO_ASSEMBLY_CULTURE] && !is_valid_string (ctx, data [MONO_ASSEMBLY_CULTURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid Name %08x", i, data [MONO_ASSEMBLY_NAME]));
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -2094,6 +2146,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_implmap_table (ctx);
 	CHECK_ERROR ();
 	verify_fieldrva_table (ctx);
+	CHECK_ERROR ();
+	verify_assembly_table (ctx);
 }
 
 static gboolean
