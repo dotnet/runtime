@@ -3461,6 +3461,25 @@ mono_aot_str_hash (gconstpointer v1)
 	return hash;
 } 
 
+#define rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
+#define mix(a,b,c) { \
+	a -= c;  a ^= rot(c, 4);  c += b; \
+	b -= a;  b ^= rot(a, 6);  a += c; \
+	c -= b;  c ^= rot(b, 8);  b += a; \
+	a -= c;  a ^= rot(c,16);  c += b; \
+	b -= a;  b ^= rot(a,19);  a += c; \
+	c -= b;  c ^= rot(b, 4);  b += a; \
+}
+#define final(a,b,c) { \
+	c ^= b; c -= rot(b,14); \
+	a ^= c; a -= rot(c,11); \
+	b ^= a; b -= rot(a,25); \
+	c ^= b; c -= rot(b,16); \
+	a ^= c; a -= rot(c,4);  \
+	b ^= a; b -= rot(a,14); \
+	c ^= b; c -= rot(b,24); \
+}
+
 /*
  * mono_aot_method_hash:
  *
@@ -3469,33 +3488,78 @@ mono_aot_str_hash (gconstpointer v1)
 guint32
 mono_aot_method_hash (MonoMethod *method)
 {
-	guint32 hash;
+	MonoMethodSignature *sig;
+	MonoClass *klass;
+	int i;
+	int hashes_count;
+	guint32 *hashes_start, *hashes;
+	guint32 a, b, c;
 
-	if (method->wrapper_type) {
-		char *klass_desc, *tmpsig, *name;
+	/* Similar to the hash in mono_method_get_imt_slot () */
 
-		/* Some wrappers are assigned to random classes */
-		if (method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
-			klass_desc = mono_type_full_name (&method->klass->byval_arg);
-		else
-			klass_desc = g_strdup ("");
-		// FIXME: This doesn't seem to work with generic methods
-		//tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
-		tmpsig = g_strdup ("");
-		name = g_strdup_printf ("(%d)%s:%s (%s)", method->wrapper_type, klass_desc, method->name, tmpsig);
-		hash = mono_aot_str_hash (name);
-		g_free (klass_desc);
-		g_free (tmpsig);
-		g_free (name);
-	} else {
-		char *full_name = mono_method_full_name (method, TRUE);
-		// FIXME: Improve this (changing this requires bumping MONO_AOT_FILE_VERSION)
-		hash = mono_aot_str_hash (full_name);
+	sig = mono_method_signature (method);
+
+	hashes_count = sig->param_count + 5;
+	hashes_start = malloc (hashes_count * sizeof (guint32));
+	hashes = hashes_start;
+
+	/* Some wrappers are assigned to random classes */
+	if (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)
+		klass = method->klass;
+	else
+		klass = mono_defaults.object_class;
+
+	if (!method->wrapper_type) {
+		char *full_name = mono_type_full_name (&klass->byval_arg);
+
+		hashes [0] = mono_aot_str_hash (full_name);
+		hashes [1] = 0;
 		g_free (full_name);
+	} else {
+		hashes [0] = mono_aot_str_hash (klass->name);
+		hashes [1] = mono_aot_str_hash (klass->name_space);
+	}
+	hashes [2] = mono_aot_str_hash (method->name);
+	hashes [3] = method->wrapper_type;
+	hashes [4] = mono_metadata_type_hash (sig->ret);
+	for (i = 0; i < sig->param_count; i++) {
+		/* This is needed for some reason */
+		if (method->wrapper_type && sig->params [i]->type == MONO_TYPE_GENERICINST)
+			hashes [5 + i] = MONO_TYPE_GENERICINST;
+		else
+			hashes [5 + i] = mono_metadata_type_hash (sig->params [i]);
+	}
+	
+	/* Setup internal state */
+	a = b = c = 0xdeadbeef + (((guint32)hashes_count)<<2);
+
+	/* Handle most of the hashes */
+	while (hashes_count > 3) {
+		a += hashes [0];
+		b += hashes [1];
+		c += hashes [2];
+		mix (a,b,c);
+		hashes_count -= 3;
+		hashes += 3;
 	}
 
-	return hash;
+	/* Handle the last 3 hashes (all the case statements fall through) */
+	switch (hashes_count) { 
+	case 3 : c += hashes [2];
+	case 2 : b += hashes [1];
+	case 1 : a += hashes [0];
+		final (a,b,c);
+	case 0: /* nothing left to add */
+		break;
+	}
+	
+	free (hashes_start);
+	
+	return c;
 }
+#undef rot
+#undef mix
+#undef final
 
 /*
  * mono_aot_wrapper_name:
