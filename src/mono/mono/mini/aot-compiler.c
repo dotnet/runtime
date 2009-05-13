@@ -155,6 +155,7 @@ typedef struct MonoAotCompile {
 	GHashTable *unwind_info_offsets;
 	GPtrArray *unwind_ops;
 	guint32 unwind_info_offset;
+	char *got_symbol;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -463,7 +464,7 @@ arch_emit_got_offset (MonoAotCompile *acfg, guint8 *code, int *code_size)
 {
 	guint32 offset = mono_arch_get_patch_offset (code);
 	emit_bytes (acfg, code, offset);
-	emit_symbol_diff (acfg, "got", ".", offset);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", offset);
 
 	*code_size = offset + 4;
 }
@@ -483,11 +484,11 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 
 	/* Emit the offset */
 #ifdef TARGET_AMD64
-	emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
 #elif defined(TARGET_X86)
 	emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
 #elif defined(TARGET_ARM)
-	emit_symbol_diff (acfg, "got", ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
 #else
 	g_assert_not_reached ();
 #endif
@@ -525,7 +526,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		/* jmpq *<offset>(%rip) */
 		emit_byte (acfg, '\xff');
 		emit_byte (acfg, '\x25');
-		emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 #elif defined(TARGET_ARM)
@@ -541,14 +542,14 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		code = buf;
 		if (acfg->use_bin_writer) {
 			/* We only emit 1 relocation since we implement it ourselves anyway */
-			img_writer_emit_reloc (acfg->w, R_ARM_ALU_PC_G0_NC, "got", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 8);
+			img_writer_emit_reloc (acfg->w, R_ARM_ALU_PC_G0_NC, acfg->got_symbol, ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 8);
 			/* FIXME: A 2 instruction encoding is sufficient in most cases */
 			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_PC, 0, 0);
 			ARM_ADD_REG_IMM (code, ARMREG_IP, ARMREG_IP, 0, 0);
 			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
 			emit_bytes (acfg, buf, code - buf);
 			/* FIXME: Get rid of this */
-			emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
+			emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
 			/* Used by mono_aot_get_plt_info_offset */
 			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		} else {
@@ -556,7 +557,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 			ARM_ADD_REG_REG (code, ARMREG_IP, ARMREG_PC, ARMREG_IP);
 			ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, 0);
 			emit_bytes (acfg, buf, code - buf);
-			emit_symbol_diff (acfg, "got", ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
+			emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
 			/* Used by mono_aot_get_plt_info_offset */
 			emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		}
@@ -594,9 +595,9 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	emit_byte (acfg, '\x41');
 	emit_byte (acfg, '\xff');
 	emit_byte (acfg, '\x15');
-	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
 	/* This should be relative to the start of the trampoline */
-	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 19);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 19);
 	emit_zero_bytes (acfg, 5);
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
@@ -617,8 +618,8 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 
 	/* Emit it */
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 8);
-	emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 8);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 8);
 #else
 	g_assert_not_reached ();
 #endif
@@ -698,12 +699,12 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	emit_byte (acfg, '\x4d');
 	emit_byte (acfg, '\x8b');
 	emit_byte (acfg, '\x15');
-	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
 
 	/* jmp *<offset>(%rip) */
 	emit_byte (acfg, '\xff');
 	emit_byte (acfg, '\x25');
-	emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4);
 #elif defined(TARGET_ARM)
 	guint8 buf [128];
 	guint8 *code;
@@ -722,8 +723,8 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 
 	/* Emit it */
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4 + 8);
-	emit_symbol_diff (acfg, "got", ".", ((offset + 1) * sizeof (gpointer)) - 4 + 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4 + 8);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4 + 4);
 #else
 	g_assert_not_reached ();
 #endif
@@ -782,7 +783,7 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	emit_byte (acfg, '\x4d');
 	emit_byte (acfg, '\x8b');
 	emit_byte (acfg, '\x15');
-	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) - 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
 
 	emit_bytes (acfg, buf, code - buf);
 	
@@ -834,7 +835,7 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	ARM_LDR_IMM (code2, ARMREG_IP, ARMREG_PC, (code - (labels [0] + 8)));
 
 	emit_bytes (acfg, buf, code - buf);
-	emit_symbol_diff (acfg, "got", ".", (offset * sizeof (gpointer)) + (code - (labels [0] + 8)) - 4);
+	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) + (code - (labels [0] + 8)) - 4);
 
 	*tramp_size = code - buf + 4;
 #else
@@ -4180,19 +4181,23 @@ emit_got (MonoAotCompile *acfg)
 	char symbol [256];
 
 	/* Don't make GOT global so accesses to it don't need relocations */
-	sprintf (symbol, "got");
+	sprintf (symbol, acfg->got_symbol);
 	emit_section_change (acfg, ".bss", 0);
 	emit_alignment (acfg, 8);
+	emit_local_symbol (acfg, symbol, "got_end", FALSE);
 	emit_label (acfg, symbol);
 	if (acfg->got_offset > 0)
 		emit_zero_bytes (acfg, (int)(acfg->got_offset * sizeof (gpointer)));
+
+	sprintf (symbol, "got_end");
+	emit_label (acfg, symbol);
 
 	sprintf (symbol, "mono_aot_got_addr");
 	emit_section_change (acfg, ".data", 0);
 	emit_global (acfg, symbol, FALSE);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
-	emit_pointer (acfg, "got");
+	emit_pointer (acfg, acfg->got_symbol);
 }
 
 static void
@@ -4617,7 +4622,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	MonoImage *image = ass->image;
 	int res;
 	MonoAotCompile *acfg;
-	char *outfile_name, *tmp_outfile_name;
+	char *outfile_name, *tmp_outfile_name, *p;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 
@@ -4685,6 +4690,15 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->num_trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = acfg->aot_opts.full_aot ? 1024 : 0;
 #endif
 	acfg->num_trampolines [MONO_AOT_TRAMP_IMT_THUNK] = acfg->aot_opts.full_aot ? 128 : 0;
+
+	acfg->got_symbol = g_strdup_printf ("mono_aot_%s_got", acfg->image->assembly->aname.name);
+
+	/* Get rid of characters which cannot occur in symbols */
+	p = acfg->got_symbol;
+	for (p = acfg->got_symbol; *p; ++p) {
+		if (!(isalnum (*p) || *p == '_'))
+			*p = '_';
+	}
 
 	acfg->method_index = 1;
 
