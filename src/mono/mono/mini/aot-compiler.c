@@ -2008,14 +2008,29 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_alignment (acfg, func_alignment);
 	emit_label (acfg, symbol);
 
-	if (acfg->aot_opts.write_symbols && !acfg->aot_opts.nodebug && acfg->use_bin_writer) {
-		char *full_name;
-		/* Emit a local symbol into the symbol table */
-		full_name = mono_method_full_name (method, TRUE);
+	if (acfg->aot_opts.write_symbols && !acfg->aot_opts.nodebug) {
+		char *name1, *name2;
+		int i, j, len;
+
+		name1 = mono_method_full_name (method, TRUE);
+		len = strlen (name1);
+		name2 = malloc (len + 1);
+		j = 0;
+		for (i = 0; i < len; ++i) {
+			if (isalnum (name1 [i])) {
+				name2 [j ++] = name1 [i];
+			} else if (name1 [i] == ' ' && name1 [i + 1] == '(' && name1 [i + 2] == ')') {
+				i += 2;
+			} else if (name1 [i] == '(' || name1 [i] == ')') {
+			} else
+				name2 [j ++] = '_';
+		}
+		name2 [j] = '\0';
 		sprintf (symbol, ".Lme_%x", method_index);
-		emit_local_symbol (acfg, full_name, symbol, TRUE);
-		emit_label (acfg, full_name);
-		g_free (full_name);
+		emit_local_symbol (acfg, name2, symbol, TRUE);
+		emit_label (acfg, name2);
+		g_free (name1);
+		g_free (name2);
 	}
 
 	if (cfg->verbose_level > 0)
