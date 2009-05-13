@@ -396,6 +396,7 @@ delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc)
 {
 #ifdef HAVE_MOVING_COLLECTOR
 	guint32 gchandle = mono_gchandle_new_weakref ((MonoObject*)d, FALSE);
+	guint32 old_gchandle;
 #endif
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
@@ -406,7 +407,10 @@ delegate_hash_table_add (MonoDelegate *d, MonoObject **target_loc)
 		MONO_GC_REGISTER_ROOT (delegate_target_locations);
 	}
 #ifdef HAVE_MOVING_COLLECTOR
+	old_gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, GUINT_TO_POINTER (gchandle));
+	if (old_gchandle)
+		mono_gchandle_free (old_gchandle);
 #else
 	g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
 #endif
