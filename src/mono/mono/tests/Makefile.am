@@ -20,7 +20,7 @@ JITTEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime MONO_CFG_DIR=$(mon
 RUNTIME_ARGS=--config tests-config --optimize=all --debug
 
 with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
-with_mono_path21 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_1
+with_mono_path21 = MONO_PATH=$(mcs_topdir)/class/lib/net_2_1_raw
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
 RUNTIME21 = $(with_mono_path21) $(top_builddir)/runtime/mono-wrapper
@@ -30,7 +30,7 @@ MKBUNDLE = \
 	$(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/mkbundle.exe
 
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug
-SMCS = $(RUNTIME21) --runtime=moonlight --security=temporary-smcs-hack $(mcs_topdir)/class/lib/net_2_1/smcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
+SMCS = $(RUNTIME21) --runtime=moonlight --security=temporary-smcs-hack $(mcs_topdir)/class/lib/net_2_1_raw/smcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
 ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
