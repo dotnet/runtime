@@ -346,11 +346,11 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
  * Returns a function pointer which can be used to raise 
  * exceptions. The returned function has the following 
  * signature: void (*func) (MonoException *exc); or
- * void (*func) (char *exc_name);
+ * void (*func) (guint32 ex_token, gpointer ip)
  *
  */
 static gpointer 
-mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gboolean rethrow)
+mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboolean rethrow)
 {
 	guint8 *code;
 	int alloc_size, pos;
@@ -358,7 +358,10 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	code = mono_ppc_create_pre_code_ftnptr (start);
 
 	/* store ret addr */
-	ppc_mflr (code, ppc_r0);
+	if (corlib)
+		ppc_mr (code, ppc_r0, ppc_r4);
+	else
+		ppc_mflr (code, ppc_r0);
 	ppc_store_reg (code, ppc_r0, PPC_RET_ADDR_OFFSET, ppc_sp);
 
 	alloc_size = REG_SAVE_STACK_FRAME_SIZE;
@@ -369,11 +372,10 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	code = emit_save_saved_regs (code, alloc_size);
 
 	//ppc_break (code);
-	if (by_name) {
-		ppc_mr (code, ppc_r5, ppc_r3);
+	if (corlib) {
+		ppc_mr (code, ppc_r4, ppc_r3);
 		ppc_load (code, ppc_r3, (gulong)mono_defaults.corlib);
-		ppc_load (code, ppc_r4, "System");
-		ppc_load_func (code, ppc_r0, mono_exception_from_name);
+		ppc_load_func (code, ppc_r0, mono_exception_from_token);
 		ppc_mtctr (code, ppc_r0);
 		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	}
@@ -382,7 +384,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	/* caller sp */
 	ppc_load_reg (code, ppc_r5, 0, ppc_sp);
 	/* exc is already in place in r3 */
-	if (by_name)
+	if (corlib)
 		ppc_load_reg (code, ppc_r4, PPC_RET_ADDR_OFFSET, ppc_r5);
 	else
 		ppc_mr (code, ppc_r4, ppc_r0); /* caller ip */
@@ -471,6 +473,34 @@ mono_arch_get_throw_exception (void)
  */
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
+{
+	static guint8 *start = NULL;
+	static int inited = 0;
+
+	guint8 *code;
+	int size = 64;
+
+	if (inited)
+		return start;
+
+	/* Not used on PPC */	
+	start = code = mono_global_codeman_reserve (size);
+	ppc_break (code);
+	mono_arch_flush_icache (start, code - start);
+	inited = 1;
+	return start;
+}
+
+/**
+ * mono_arch_get_throw_corlib_exception:
+ *
+ * Returns a function pointer which can be used to raise 
+ * corlib exceptions. The returned function has the following 
+ * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * On PPC, we pass the ip instead of the offset
+ */
+gpointer 
+mono_arch_get_throw_corlib_exception (void)
 {
 	static guint8 *start = NULL;
 	static int inited = 0;

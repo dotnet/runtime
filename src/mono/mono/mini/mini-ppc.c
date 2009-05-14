@@ -5059,6 +5059,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_EXC: {
+			MonoClass *exc_class;
+
 			unsigned char *ip = patch_info->ip.i + cfg->native_code;
 			i = exception_id_by_name (patch_info->data.target);
 			if (exc_throw_pos [i]) {
@@ -5068,19 +5070,24 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			} else {
 				exc_throw_pos [i] = code;
 			}
+
+			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
+			g_assert (exc_class);
+
 			ppc_patch (ip, code);
 			/*mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);*/
-			ppc_load (code, ppc_r3, patch_info->data.target);
-			/* we got here from a conditional call, so the calling ip is set in lr already */
+			ppc_load (code, ppc_r3, exc_class->type_token);
+			/* we got here from a conditional call, so the calling ip is set in lr */
+			ppc_mflr (code, ppc_r4);
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-			patch_info->data.name = "mono_arch_throw_exception_by_name";
+			patch_info->data.name = "mono_arch_throw_corlib_exception";
 			patch_info->ip.i = code - cfg->native_code;
 			if (FORCE_INDIR_CALL || cfg->method->dynamic) {
 				ppc_load_func (code, ppc_r0, 0);
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			} else {
-				ppc_b (code, 0);
+				ppc_bl (code, 0);
 			}
 			break;
 		}
