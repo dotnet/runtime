@@ -1457,7 +1457,9 @@ asm_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const cha
 {
 	asm_writer_emit_unset_mode (acfg);
 
+#ifndef __MACH__
 	fprintf (acfg->fp, "\t.local %s\n", name);
+#endif
 
 	asm_writer_emit_symbol_type (acfg, name, func);
 }
