@@ -91,6 +91,44 @@ mono_arch_get_unbox_trampoline (MonoGenericSharingContext *gsctx, MonoMethod *m,
 	return start;
 }
 
+/*
+ * mono_arch_get_static_rgctx_trampoline:
+ *
+ *   Create a trampoline which sets RGCTX_REG to MRGCTX, then jumps to ADDR.
+ */
+gpointer
+mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+{
+	guint8 *code, *start;
+	guint32 short_branch;
+	MonoDomain *domain = mono_domain_get ();
+	int size = MONO_PPC_32_64_CASE (24, 36) + PPC_FTNPTR_SIZE;
+
+	addr = mono_get_addr_from_ftnptr (addr);
+
+	mono_domain_lock (domain);
+	start = code = mono_domain_code_reserve (domain, size);
+	code = mono_ppc_create_pre_code_ftnptr (code);
+	short_branch = branch_for_target_reachable (code + 8, addr);
+	if (short_branch)
+		mono_domain_code_commit (domain, code, size, 12);
+	mono_domain_unlock (domain);
+
+	if (short_branch) {
+		ppc_load (code, MONO_ARCH_RGCTX_REG, mrgctx);
+		ppc_emit32 (code, short_branch);
+	} else {
+		ppc_load (code, ppc_r0, addr);
+		ppc_mtctr (code, ppc_r0);
+		ppc_load (code, MONO_ARCH_RGCTX_REG, mrgctx);
+		ppc_bcctr (code, 20, 0);
+	}
+	mono_arch_flush_icache (start, code - start);
+	g_assert ((code - start) <= size);
+
+	return start;
+}
+
 void
 mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 {

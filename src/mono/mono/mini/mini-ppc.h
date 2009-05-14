@@ -165,6 +165,10 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 
+#ifndef __mono_ppc64__
+#define MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE 1
+#endif
+
 #define MONO_ARCH_NEED_DIV_CHECK 1
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
