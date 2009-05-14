@@ -232,7 +232,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
  *
  */
 static gpointer 
-mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gboolean rethrow)
+mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboolean rethrow)
 {
 	guint8 *code;
 	int alloc_size, pos, i;
@@ -265,11 +265,10 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 		}
 	}
 
-	if (by_name) {
-		mips_move (code, mips_a2, mips_a0);
+	if (corlib) {
+		mips_move (code, mips_a1, mips_a0);
 		mips_load (code, mips_a0, mono_defaults.corlib);
-		mips_load (code, mips_a1, "System");
-		mips_load (code, mips_t9, mono_exception_from_name);
+		mips_load (code, mips_t9, mono_exception_from_token);
 		mips_jalr (code, mips_t9, mips_ra);
 		mips_nop (code);
 		mips_move (code, mips_a0, mips_v0);
@@ -279,7 +278,7 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	/* exc is already in place in a0 */
 
 	/* pointer to ip */
-	if (by_name)
+	if (corlib)
 		mips_lw (code, mips_a1, mips_sp, alloc_size + MIPS_RET_ADDR_OFFSET);
 	else
 		mips_move (code, mips_a1, mips_ra);
@@ -346,19 +345,15 @@ mono_arch_get_throw_exception (void)
 }
 
 /**
- * arch_get_throw_exception_by_name:
+ * mono_arch_get_throw_corlib_exception:
  *
  * Returns a function pointer which can be used to raise 
  * corlib exceptions. The returned function has the following 
- * signature: void (*func) (char *exc_name); 
- * For example to raise an arithmetic exception you can use:
- *
- * x86_push_imm (code, "ArithmeticException"); 
- * x86_call_code (code, arch_get_throw_exception_by_name ()); 
- *
+ * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * On MIPS, the offset argument is missing.
  */
 gpointer 
-mono_arch_get_throw_exception_by_name (void)
+mono_arch_get_throw_corlib_exception (void)
 {
 	static guint8 start [GENERIC_EXCEPTION_SIZE];
 	static int inited = 0;

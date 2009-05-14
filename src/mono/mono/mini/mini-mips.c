@@ -185,9 +185,13 @@ static guint8 *
 mips_emit_exc_by_name(guint8 *code, const char *name)
 {
 	guint32 addr;
+	MonoClass *exc_class;
 
-	mips_load_const (code, mips_a0, name);
-	addr = (guint32) mono_arch_get_throw_exception_by_name ();
+	exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
+	g_assert (exc_class);
+
+	mips_load_const (code, mips_a0, exc_class->type_token);
+	addr = (guint32) mono_arch_get_throw_corlib_exception ();
 	mips_load_const (code, mips_t9, addr);
 	mips_jalr (code, mips_t9, mips_ra);
 	mips_nop (code);
