@@ -5017,6 +5017,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			ppc_b (code, 0);
 			ip = ovfj->data.bb->native_offset + cfg->native_code;
 			ppc_patch (code - 4, ip);
+			patch_info->type = MONO_PATCH_INFO_NONE;
 			break;
 		}
 		case MONO_PATCH_INFO_EXC_OVF: {
@@ -5037,6 +5038,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			newji->data.target = ovfj->data.exception;
 			newji->next = patch_info->next;
 			patch_info->next = newji;
+			patch_info->type = MONO_PATCH_INFO_NONE;
 			break;
 		}
 		case MONO_PATCH_INFO_EXC: {

@@ -22,6 +22,8 @@
 #include "mini.h"
 #include "mini-ppc.h"
 
+static guint8* nullified_class_init_trampoline;
+
 /*
  * Return the instruction to jump from code to target, 0 if not
  * reachable with a single instruction
@@ -164,7 +166,7 @@ mono_arch_patch_plt_entry (guint8 *code, guint8 *addr)
 void
 mono_arch_nullify_class_init_trampoline (guint8 *code, gssize *regs)
 {
-	return;
+	mono_arch_patch_callsite (NULL, code, nullified_class_init_trampoline);
 }
 
 void
@@ -374,6 +376,13 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
 	/* Sanity check */
 	g_assert ((buf - code) <= size);
 
+	if (tramp_type == MONO_TRAMPOLINE_CLASS_INIT) {
+		guint32 code_len;
+
+		/* Initialize the nullified class init trampoline used in the AOT case */
+		nullified_class_init_trampoline = mono_arch_get_nullified_class_init_trampoline (&code_len);
+	}
+
 	return code;
 }
 
@@ -569,6 +578,22 @@ mono_arch_create_generic_class_init_trampoline (void)
 	mono_arch_flush_icache (buf, code - buf);
 
 	g_assert (code - buf <= tramp_size);
+
+	return buf;
+}
+
+gpointer
+mono_arch_get_nullified_class_init_trampoline (guint32 *code_len)
+{
+	guint8 *code, *buf;
+
+	code = buf = mono_global_codeman_reserve (16);
+	code = mono_ppc_create_pre_code_ftnptr (code);
+	ppc_blr (code);
+
+	mono_arch_flush_icache (buf, code - buf);
+
+	*code_len = code - buf;
 
 	return buf;
 }
