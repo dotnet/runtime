@@ -2102,6 +2102,28 @@ verify_assemblyref_table (VerifyContext *ctx)
 	}
 }
 
+#define INVALID_FILE_FLAGS_BITS ~(1)
+static void
+verify_file_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_FILE];
+	guint32 data [MONO_FILE_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_FILE_SIZE);
+		
+		if (data [MONO_FILE_FLAGS] & INVALID_FILE_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("File table row %d has invalid Flags %08x", i, data [MONO_FILE_FLAGS]));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_FILE_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("File table row %d has invalid Name %08x", i, data [MONO_FILE_NAME]));
+
+		if (!data [MONO_FILE_HASH_VALUE] || !is_valid_blob_object (ctx, data [MONO_FILE_HASH_VALUE]))
+			ADD_ERROR (ctx, g_strdup_printf ("File table row %d has invalid HashValue %08x", i, data [MONO_FILE_HASH_VALUE]));
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -2178,6 +2200,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_assembly_table (ctx);
 	CHECK_ERROR ();
 	verify_assemblyref_table (ctx);
+	CHECK_ERROR ();
+	verify_file_table (ctx);
 }
 
 static gboolean
