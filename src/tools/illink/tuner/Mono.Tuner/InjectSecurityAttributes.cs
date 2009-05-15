@@ -306,7 +306,7 @@ namespace Mono.Tuner {
 
 			return method_name.StartsWith (".c") ?
 				GetMethod (type.Constructors, signature) :
-				GetMethod (type.Methods.GetMethod (method_name), signature);
+				GetMethod (type.Methods, signature);
 		}
 
 		static MethodDefinition GetMethod (IEnumerable methods, string signature)
