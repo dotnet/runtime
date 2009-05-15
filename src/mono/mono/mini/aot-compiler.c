@@ -3496,6 +3496,28 @@ mono_aot_str_hash (gconstpointer v1)
 	c ^= b; c -= rot(b,24); \
 }
 
+static guint
+mono_aot_type_hash (MonoType *t1)
+{
+	guint hash = t1->type;
+
+	hash |= t1->byref << 6; /* do not collide with t1->type values */
+	switch (t1->type) {
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+		/* check if the distribution is good enough */
+		return ((hash << 5) - hash) ^ mono_aot_str_hash (t1->data.klass->name);
+	case MONO_TYPE_PTR:
+		return ((hash << 5) - hash) ^ mono_aot_type_hash (t1->data.type);
+	case MONO_TYPE_ARRAY:
+		return ((hash << 5) - hash) ^ mono_aot_type_hash (&t1->data.array->eklass->byval_arg);
+	case MONO_TYPE_GENERICINST:
+		return ((hash << 5) - hash) ^ 0;
+	}
+	return hash;
+}
+
 /*
  * mono_aot_method_hash:
  *
@@ -3537,13 +3559,9 @@ mono_aot_method_hash (MonoMethod *method)
 	}
 	hashes [2] = mono_aot_str_hash (method->name);
 	hashes [3] = method->wrapper_type;
-	hashes [4] = mono_metadata_type_hash (sig->ret);
+	hashes [4] = mono_aot_type_hash (sig->ret);
 	for (i = 0; i < sig->param_count; i++) {
-		/* This is needed for some reason */
-		if (method->wrapper_type && sig->params [i]->type == MONO_TYPE_GENERICINST)
-			hashes [5 + i] = MONO_TYPE_GENERICINST;
-		else
-			hashes [5 + i] = mono_metadata_type_hash (sig->params [i]);
+		hashes [5 + i] = mono_aot_type_hash (sig->params [i]);
 	}
 	
 	/* Setup internal state */
