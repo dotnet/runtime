@@ -188,8 +188,6 @@ macosx_register_exception_handler ()
 void
 mono_runtime_install_handlers (void)
 {
-#if !defined(__arm__)
 	macosx_register_exception_handler ();
-#endif
 	mono_runtime_posix_install_handlers ();
 }
