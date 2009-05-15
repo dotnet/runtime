@@ -156,6 +156,7 @@ typedef struct MonoAotCompile {
 	GPtrArray *unwind_ops;
 	guint32 unwind_info_offset;
 	char *got_symbol;
+	GHashTable *method_label_hash;
 } MonoAotCompile;
 
 #define mono_acfg_lock(acfg) EnterCriticalSection (&((acfg)->mutex))
@@ -2010,8 +2011,8 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_label (acfg, symbol);
 
 	if (acfg->aot_opts.write_symbols && !acfg->aot_opts.nodebug) {
-		char *name1, *name2;
-		int i, j, len;
+		char *name1, *name2, *cached;
+		int i, j, len, count;
 
 		name1 = mono_method_full_name (method, TRUE);
 		len = strlen (name1);
@@ -2030,6 +2031,16 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				name2 [j ++] = '_';
 		}
 		name2 [j] = '\0';
+
+		count = 0;
+		while (g_hash_table_lookup (acfg->method_label_hash, name2)) {
+			sprintf (name2 + j, "_%d", count);
+			count ++;
+		}
+
+		cached = g_strdup (name2);
+		g_hash_table_insert (acfg->method_label_hash, cached, cached);
+
 		sprintf (symbol, ".Lme_%x", method_index);
 		emit_local_symbol (acfg, name2, symbol, TRUE);
 		emit_label (acfg, name2);
@@ -4606,6 +4617,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->extra_methods = g_ptr_array_new ();
 	acfg->unwind_info_offsets = g_hash_table_new (NULL, NULL);
 	acfg->unwind_ops = g_ptr_array_new ();
+	acfg->method_label_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	InitializeCriticalSection (&acfg->mutex);
 
 	return acfg;
@@ -4635,6 +4647,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->token_info_hash);
 	g_hash_table_destroy (acfg->image_hash);
 	g_hash_table_destroy (acfg->unwind_info_offsets);
+	g_hash_table_destroy (acfg->method_label_hash);
 	mono_mempool_destroy (acfg->mempool);
 	g_free (acfg);
 }
