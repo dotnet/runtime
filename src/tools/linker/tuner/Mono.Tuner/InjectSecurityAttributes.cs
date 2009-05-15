@@ -29,6 +29,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Text;
 
 using Mono.Linker;
 using Mono.Linker.Steps;
@@ -311,10 +312,45 @@ namespace Mono.Tuner {
 		static MethodDefinition GetMethod (IEnumerable methods, string signature)
 		{
 			foreach (MethodDefinition method in methods)
-				if (method.ToString () == signature)
+				if (GetFullName (method) == signature)
 					return method;
 
 			return null;
+		}
+
+		static string GetFullName (MethodReference method)
+		{
+			int sentinel = method.GetSentinel ();
+
+			StringBuilder sb = new StringBuilder ();
+			sb.Append (method.ReturnType.ReturnType.FullName);
+			sb.Append (" ");
+			sb.Append (method.DeclaringType.FullName);
+			sb.Append ("::");
+			sb.Append (method.Name);
+			if (method.HasGenericParameters) {
+				sb.Append ("<");
+				for (int i = 0; i < method.GenericParameters.Count; i++ ) {
+					if (i > 0)
+						sb.Append (",");
+					sb.Append (method.GenericParameters [i].Name);
+				}
+				sb.Append (">");
+			}
+			sb.Append ("(");
+			if (method.HasParameters) {
+				for (int i = 0; i < method.Parameters.Count; i++) {
+					if (i > 0)
+						sb.Append (",");
+
+					if (i == sentinel)
+						sb.Append ("...,");
+
+					sb.Append (method.Parameters [i].ParameterType.FullName);
+				}
+			}
+			sb.Append (")");
+			return sb.ToString ();
 		}
 
 		static MethodDefinition GetDefaultConstructor (TypeDefinition type)

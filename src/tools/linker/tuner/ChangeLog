@@ -1,3 +1,8 @@
+2009-05-15  Jb Evain  <jbevain@novell.com>
+
+	* Mono.Tuner/InjectSecurityAttributes.cs: fix issues
+	with non unique MethodReference.ToString for generic method defs.
+
 2009-04-24  Jb Evain  <jbevain@novell.com>
 
 	* Mono.Tuner.dll.sources: adjusted
