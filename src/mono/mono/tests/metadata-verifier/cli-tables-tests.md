@@ -975,8 +975,7 @@ assembly-table {
 	invalid offset table-row (0x20 0) set-uint 1
 
 	#good flags (4)
-	#only bits 8, 14 and 15 are used
-	invalid offset table-row (0x20 0) + 12 set-bit 0
+	#only bits 0, 8, 14 and 15 are used
 	invalid offset table-row (0x20 0) + 12 set-bit 1
 	invalid offset table-row (0x20 0) + 12 set-bit 5
 	invalid offset table-row (0x20 0) + 12 set-bit 9
@@ -998,9 +997,46 @@ assembly-table {
 	invalid offset table-row (0x20 0) + 18 set-ushort 0
 	invalid offset table-row (0x20 0) + 18 set-ushort 0x9990
 
-	#string is an optional valid non-empty string
+	#culture is an optional valid non-empty string (8)
 	valid offset table-row (0x20 0) + 20 set-ushort 0 
 	invalid offset table-row (0x20 0) + 20 set-ushort 0x9990
 
-	#TODO check if culture is one of the listed cultures (23.1.3)
+	#TODO check if culture is one of the listed cultures (9) (23.1.3)
+}
+
+assembly-ref-table {
+	assembly simple-assembly.exe
+
+	#flags can only have publickey set (2)
+	valid offset table-row (0x23 0) + 8 set-uint 0
+	valid offset table-row (0x23 0) + 8 set-uint 1
+	invalid offset table-row (0x23 0) + 8 set-uint 0x0100
+	invalid offset table-row (0x23 0) + 8 set-uint 0x4000
+	invalid offset table-row (0x23 0) + 8 set-uint 0x8000
+	invalid offset table-row (0x23 0) + 8 set-bit 2
+	invalid offset table-row (0x23 0) + 8 set-bit 5
+	invalid offset table-row (0x23 0) + 8 set-bit 9
+	invalid offset table-row (0x23 0) + 8 set-bit 20
+	invalid offset table-row (0x23 0) + 8 set-bit 22
+	invalid offset table-row (0x23 0) + 8 set-bit 30
+
+	#PublicKeyToken is valid (3)
+	valid offset table-row (0x23 0) + 12 set-ushort 0
+	invalid offset table-row (0x23 0) + 12 set-ushort 0x9700
+
+	#name is a valid non-empty string (5)
+	invalid offset table-row (0x23 0) + 14 set-ushort 0x9700
+	invalid offset table-row (0x23 0) + 14 set-ushort 0
+
+	#culture is an optional valid non-empty string (6)
+	valid offset table-row (0x23 0) + 16 set-ushort 0 
+	invalid offset table-row (0x23 0) + 16 set-ushort 0x9990
+
+	#TODO check if culture is one of the listed cultures (7) (23.1.3)
+
+	#HashValue is an optinal valid blob item (9)
+	valid offset table-row (0x23 0) + 18 set-ushort 0
+	invalid offset table-row (0x23 0) + 18 set-ushort 0x9990
+
+	#it's ok to have dups
 }
