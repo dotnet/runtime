@@ -2022,7 +2022,10 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 				name2 [j ++] = name1 [i];
 			} else if (name1 [i] == ' ' && name1 [i + 1] == '(' && name1 [i + 2] == ')') {
 				i += 2;
-			} else if (name1 [i] == '(' || name1 [i] == ')') {
+			} else if (name1 [i] == ',' && name1 [i + 1] == ' ') {
+				name2 [j ++] = '_';
+				i++;
+			} else if (name1 [i] == '(' || name1 [i] == ')' || name1 [i] == '>') {
 			} else
 				name2 [j ++] = '_';
 		}
