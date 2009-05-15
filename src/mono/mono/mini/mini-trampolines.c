@@ -411,6 +411,15 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	if (!code && mono_method_needs_static_rgctx_invoke (m, FALSE))
 		m = mono_marshal_get_static_rgctx_invoke (m);
 
+	if (mono_aot_only && m->wrapper_type == MONO_WRAPPER_STATIC_RGCTX_INVOKE) {
+		/* 
+		 * These wrappers can be created in mono_class_get_vtable_entry () for 
+		 * example.
+		 */
+		need_rgctx_tramp = TRUE;
+		m = mono_marshal_method_from_wrapper (m);
+	}
+
 	addr = mono_compile_method (m);
 	g_assert (addr);
 

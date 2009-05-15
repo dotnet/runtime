@@ -2750,9 +2750,8 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	char *symbol;
 	gpointer code;
 
-	if (method->is_inflated) {
+	if (method->is_inflated && !mono_method_is_generic_sharable_impl (method, FALSE)) {
 		guint32 index = find_extra_method (method, &amodule);
-
 		g_assert (index != 0xffffff);
 		
 		symbol = g_strdup_printf ("ut_e_%d", index);

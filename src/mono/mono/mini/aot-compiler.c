@@ -2938,8 +2938,10 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			case MONO_WRAPPER_PROXY_ISINST:
 			case MONO_WRAPPER_ALLOC:
 			case MONO_WRAPPER_REMOTING_INVOKE:
-			case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
 			case MONO_WRAPPER_UNKNOWN:
+				break;
+			case MONO_WRAPPER_STATIC_RGCTX_INVOKE:
+				g_assert (!acfg->aot_opts.full_aot);
 				break;
 			default:
 				//printf ("Skip (wrapper call): %d -> %s\n", patch_info->type, mono_method_full_name (patch_info->data.method, TRUE));
