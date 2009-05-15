@@ -697,6 +697,16 @@ mono_method_full_name (MonoMethod *method, gboolean signature)
 
 		inst_desc = str->str;
 		g_string_free (str, FALSE);
+	} else if (method->is_generic) {
+		MonoGenericContainer *container = mono_method_get_generic_container (method);
+
+		GString *str = g_string_new ("");
+		g_string_append (str, "<");
+		ginst_get_desc (str, container->context.method_inst);
+		g_string_append (str, ">");
+
+		inst_desc = str->str;
+		g_string_free (str, FALSE);
 	}
 
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
