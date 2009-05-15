@@ -370,7 +370,6 @@ endif
 
 if S390
 arch_sources = $(s390_sources)
-arch_BURGSRC= $(srcdir)/inssel-long32.brg $(srcdir)/inssel-s390.brg
 arch_built=cpu-s390.h
 arch_define=__s390__
 endif

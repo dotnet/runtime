@@ -1627,8 +1627,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (MONO_IS_COND_BRANCH_OP (next)) {
 				next->opcode = OP_IA64_BR_COND;
-				if (! (next->flags & MONO_INST_BRLABEL))
-					next->inst_target_bb = next->inst_true_bb;
+				next->inst_target_bb = next->inst_true_bb;
 			} else if (MONO_IS_COND_EXC (next)) {
 				next->opcode = OP_IA64_COND_EXC;
 			} else if (MONO_IS_SETCC (next)) {
@@ -1658,8 +1657,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (MONO_IS_COND_BRANCH_OP (next)) {
 				next->opcode = OP_IA64_BR_COND;
-				if (! (next->flags & MONO_INST_BRLABEL))
-					next->inst_target_bb = next->inst_true_bb;
+				next->inst_target_bb = next->inst_true_bb;
 			} else if (MONO_IS_COND_EXC (next)) {
 				next->opcode = OP_IA64_COND_EXC;
 			} else if (MONO_IS_SETCC (next)) {
@@ -2070,25 +2068,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			int pred = 0;
 			if (ins->opcode == OP_IA64_BR_COND)
 				pred = 6;
-			if (ins->flags & MONO_INST_BRLABEL) {
-				if (ins->inst_i0->inst_c0) {
-					NOT_IMPLEMENTED;
-				} else {
-					add_patch_info (cfg, code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					ia64_br_cond_pred (code, pred, 0);
-				}
-			} else {
-				if (ins->inst_target_bb->native_offset) {
-					guint8 *pos = code.buf + code.nins;
+			if (ins->inst_target_bb->native_offset) {
+				guint8 *pos = code.buf + code.nins;
 
-					ia64_br_cond_pred (code, pred, 0);
-					ia64_begin_bundle (code);
-					ia64_patch (pos, cfg->native_code + ins->inst_target_bb->native_offset);
-				} else {
-					add_patch_info (cfg, code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					ia64_br_cond_pred (code, pred, 0);
-				} 
-			}
+				ia64_br_cond_pred (code, pred, 0);
+				ia64_begin_bundle (code);
+				ia64_patch (pos, cfg->native_code + ins->inst_target_bb->native_offset);
+			} else {
+				add_patch_info (cfg, code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+				ia64_br_cond_pred (code, pred, 0);
+			} 
 			break;
 		}
 		case OP_LABEL:

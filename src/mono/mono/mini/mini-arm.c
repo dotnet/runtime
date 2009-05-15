@@ -1524,20 +1524,11 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
  * The immediate field for cond branches is big enough for all reasonable methods
  */
 #define EMIT_COND_BRANCH_FLAGS(ins,condcode) \
-if (ins->flags & MONO_INST_BRLABEL) { \
-        if (0 && ins->inst_i0->inst_c0) { \
-		ARM_B_COND (code, (condcode), (code - cfg->native_code + ins->inst_i0->inst_c0) & 0xffffff);	\
-        } else { \
-	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
-		ARM_B_COND (code, (condcode), 0);	\
-        } \
+if (0 && ins->inst_true_bb->native_offset) { \
+	ARM_B_COND (code, (condcode), (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffffff); \
 } else { \
-        if (0 && ins->inst_true_bb->native_offset) { \
-		ARM_B_COND (code, (condcode), (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffffff); \
-        } else { \
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-		ARM_B_COND (code, (condcode), 0);	\
-        } \
+	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+	ARM_B_COND (code, (condcode), 0);	\
 }
 
 #define EMIT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_FLAGS(ins, branch_cc_table [(cond)])
@@ -3096,23 +3087,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = code - cfg->native_code;
 			break;
 		case OP_BR:
-			if (ins->flags & MONO_INST_BRLABEL) {
-				/*if (ins->inst_i0->inst_c0) {
-					ARM_B (code, 0);
-					//x86_jump_code (code, cfg->native_code + ins->inst_i0->inst_c0);
-				} else*/ {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					ARM_B (code, 0);
-				}
-			} else {
-				/*if (ins->inst_target_bb->native_offset) {
-					ARM_B (code, 0);
-					//x86_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
-				} else*/ {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					ARM_B (code, 0);
-				} 
-			}
+			/*if (ins->inst_target_bb->native_offset) {
+				ARM_B (code, 0);
+				//x86_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
+			} else*/ {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+				ARM_B (code, 0);
+			} 
 			break;
 		case OP_BR_REG:
 			ARM_MOV_REG_REG (code, ARMREG_PC, ins->sreg1);

@@ -1154,21 +1154,13 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 } while (0)
 
 #define EMIT_COND_BRANCH_FLAGS(ins,r1,r2,b0,b1) do {\
-	if (ins->flags & MONO_INST_BRLABEL) { \
-		mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
-		if (b0) \
-			hppa_combt (code, r1, r2, b1, 0); \
-		else \
-			hppa_combf (code, r1, r2, b1, 0); \
-	} else { \
-		if (b0) \
-			hppa_combf (code, r1, r2, b1, 2); \
-		else \
-			hppa_combt (code, r1, r2, b1, 2); \
-		hppa_nop (code); \
-		mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-		hppa_bl (code, 0, hppa_r0); \
-	} \
+	if (b0) \
+		hppa_combf (code, r1, r2, b1, 2); \
+	else \
+		hppa_combt (code, r1, r2, b1, 2); \
+	hppa_nop (code); \
+	mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+	hppa_bl (code, 0, hppa_r0); \
 	hppa_nop (code); \
 } while (0)
 
@@ -1177,10 +1169,7 @@ mono_arch_get_vcall_slot_addr (guint8 *code8, gpointer *regs)
 #define EMIT_FLOAT_COND_BRANCH_FLAGS(ins,r1,r2,b0) do {\
 	hppa_fcmp (code, HPPA_FP_FMT_DBL, b0, r1, r2); \
 	hppa_ftest (code, 0); \
-	if (ins->flags & MONO_INST_BRLABEL) \
-		mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
-	else \
-		mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+	mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
 	hppa_bl (code, 8, hppa_r0); \
 	hppa_nop (code); \
 } while (0)
@@ -1725,11 +1714,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_BR: {
 			guint32 target;
 			DEBUG (printf ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins));
-			if (ins->flags & MONO_INST_BRLABEL) {
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			} else {
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-			}
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			hppa_bl (code, 8, hppa_r0); 
 			/* TODO: if the branch is too long, we may need to
 			 * use a long-branch sequence:

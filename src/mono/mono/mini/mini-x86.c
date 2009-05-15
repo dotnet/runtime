@@ -1566,28 +1566,15 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 }
 
 #define EMIT_COND_BRANCH(ins,cond,sign) \
-if (ins->flags & MONO_INST_BRLABEL) { \
-        if (ins->inst_i0->inst_c0) { \
-	        x86_branch (code, cond, cfg->native_code + ins->inst_i0->inst_c0, sign); \
-        } else { \
-	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
-	        if ((cfg->opt & MONO_OPT_BRANCH) && \
-                    x86_is_imm8 (ins->inst_i0->inst_c1 - cpos)) \
-		        x86_branch8 (code, cond, 0, sign); \
-                else \
-	                x86_branch32 (code, cond, 0, sign); \
-        } \
+if (ins->inst_true_bb->native_offset) { \
+	x86_branch (code, cond, cfg->native_code + ins->inst_true_bb->native_offset, sign); \
 } else { \
-        if (ins->inst_true_bb->native_offset) { \
-	        x86_branch (code, cond, cfg->native_code + ins->inst_true_bb->native_offset, sign); \
-        } else { \
-	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-	        if ((cfg->opt & MONO_OPT_BRANCH) && \
-                    x86_is_imm8 (ins->inst_true_bb->max_offset - cpos)) \
-		        x86_branch8 (code, cond, 0, sign); \
-                else \
-	                x86_branch32 (code, cond, 0, sign); \
-        } \
+	mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+	if ((cfg->opt & MONO_OPT_BRANCH) && \
+            x86_is_imm8 (ins->inst_true_bb->max_offset - cpos)) \
+		x86_branch8 (code, cond, 0, sign); \
+        else \
+	        x86_branch32 (code, cond, 0, sign); \
 }
 
 /*  
@@ -2966,28 +2953,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = code - cfg->native_code;
 			break;
 		case OP_BR:
-			if (ins->flags & MONO_INST_BRLABEL) {
-				if (ins->inst_i0->inst_c0) {
-					x86_jump_code (code, cfg->native_code + ins->inst_i0->inst_c0);
-				} else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					if ((cfg->opt & MONO_OPT_BRANCH) &&
-					    x86_is_imm8 (ins->inst_i0->inst_c1 - cpos))
-						x86_jump8 (code, 0);
-					else 
-						x86_jump32 (code, 0);
-				}
+			if (ins->inst_target_bb->native_offset) {
+				x86_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
 			} else {
-				if (ins->inst_target_bb->native_offset) {
-					x86_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
-				} else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					if ((cfg->opt & MONO_OPT_BRANCH) &&
-					    x86_is_imm8 (ins->inst_target_bb->max_offset - cpos))
-						x86_jump8 (code, 0);
-					else 
-						x86_jump32 (code, 0);
-				} 
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+				if ((cfg->opt & MONO_OPT_BRANCH) &&
+				    x86_is_imm8 (ins->inst_target_bb->max_offset - cpos))
+					x86_jump8 (code, 0);
+				else 
+					x86_jump32 (code, 0);
 			}
 			break;
 		case OP_BR_REG:

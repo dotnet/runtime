@@ -1406,20 +1406,11 @@ opcode_to_sparc_cond (int opcode)
 }
 
 #define COMPUTE_DISP(ins) \
-if (ins->flags & MONO_INST_BRLABEL) { \
-        if (ins->inst_i0->inst_c0) \
-           disp = (ins->inst_i0->inst_c0 - ((guint8*)code - cfg->native_code)) >> 2; \
-        else { \
-            disp = 0; \
-	        mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
-        } \
-} else { \
-        if (ins->inst_true_bb->native_offset) \
-           disp = (ins->inst_true_bb->native_offset - ((guint8*)code - cfg->native_code)) >> 2; \
-        else { \
-            disp = 0; \
-	        mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-        } \
+if (ins->inst_true_bb->native_offset) \
+   disp = (ins->inst_true_bb->native_offset - ((guint8*)code - cfg->native_code)) >> 2; \
+else { \
+    disp = 0; \
+	mono_add_patch_info (cfg, (guint8*)code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
 }
 
 #ifdef SPARCV9
@@ -3206,24 +3197,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
 			if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
 				break;
-			if (ins->flags & MONO_INST_BRLABEL) {
-				if (ins->inst_i0->inst_c0) {
-					gint32 disp = (ins->inst_i0->inst_c0 - ((guint8*)code - cfg->native_code)) >> 2;
-					g_assert (sparc_is_imm22 (disp));
-					sparc_branch (code, 1, sparc_ba, disp);
-				} else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					sparc_branch (code, 1, sparc_ba, 0);
-				}
+			if (ins->inst_target_bb->native_offset) {
+				gint32 disp = (ins->inst_target_bb->native_offset - ((guint8*)code - cfg->native_code)) >> 2;
+				g_assert (sparc_is_imm22 (disp));
+				sparc_branch (code, 1, sparc_ba, disp);
 			} else {
-				if (ins->inst_target_bb->native_offset) {
-					gint32 disp = (ins->inst_target_bb->native_offset - ((guint8*)code - cfg->native_code)) >> 2;
-					g_assert (sparc_is_imm22 (disp));
-					sparc_branch (code, 1, sparc_ba, disp);
-				} else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					sparc_branch (code, 1, sparc_ba, 0);
-				} 
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+				sparc_branch (code, 1, sparc_ba, 0);
 			}
 			sparc_nop (code);
 			break;

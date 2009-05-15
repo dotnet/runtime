@@ -268,23 +268,15 @@ mips_emit_cond_branch (MonoCompile *cfg, guint8 *code, int op, MonoInst *ins)
 	default:
 		g_assert_not_reached ();
 	}
-	if (ins->flags & MONO_INST_BRLABEL)
-		mono_add_patch_info (cfg, code - cfg->native_code,
-				     MONO_PATCH_INFO_LABEL, ins->inst_i0);
-	else
-		mono_add_patch_info (cfg, code - cfg->native_code,
-				     MONO_PATCH_INFO_BB, ins->inst_true_bb);
+	mono_add_patch_info (cfg, code - cfg->native_code,
+			     MONO_PATCH_INFO_BB, ins->inst_true_bb);
 	mips_lui (code, mips_at, mips_zero, 0);
 	mips_addiu (code, mips_at, mips_at, 0);
 	mips_jr (code, mips_at);
 	mips_nop (code);
 #else
-	if (ins->flags & MONO_INST_BRLABEL)
-		mono_add_patch_info (cfg, code - cfg->native_code,
-				     MONO_PATCH_INFO_LABEL, ins->inst_i0);
-	else
-		mono_add_patch_info (cfg, code - cfg->native_code,
-				     MONO_PATCH_INFO_BB, ins->inst_true_bb);
+	mono_add_patch_info (cfg, code - cfg->native_code,
+			     MONO_PATCH_INFO_BB, ins->inst_true_bb);
 	switch (op) {
 	case OP_MIPS_BEQ:
 		mips_beq (code, ins->sreg1, ins->sreg2, 0);
@@ -3826,11 +3818,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = code - cfg->native_code;
 			break;
 		case OP_BR:
-			if (ins->flags & MONO_INST_BRLABEL) {
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			} else {
-				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-			}
+			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 #if LONG_BRANCH
 			mips_lui (code, mips_at, mips_zero, 0);
 			mips_addiu (code, mips_at, mips_at, 0);
@@ -4189,100 +4177,70 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MIPS_FBEQ:
 			mips_fcmpd (code, MIPS_FPU_EQ, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBNE:
 			mips_fcmpd (code, MIPS_FPU_EQ, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBLT:
 			mips_fcmpd (code, MIPS_FPU_LT, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBLT_UN:
 			mips_fcmpd (code, MIPS_FPU_ULT, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBGT:
 			mips_fcmpd (code, MIPS_FPU_LE, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBGT_UN:
 			mips_fcmpd (code, MIPS_FPU_OLE, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBGE:
 			mips_fcmpd (code, MIPS_FPU_LT, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBGE_UN:
 			mips_fcmpd (code, MIPS_FPU_OLT, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbfalse (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBLE:
 			mips_fcmpd (code, MIPS_FPU_OLE, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;
 		case OP_MIPS_FBLE_UN:
 			mips_fcmpd (code, MIPS_FPU_ULE, ins->sreg1, ins->sreg2);
 			mips_nop (code);
-			if (ins->flags & MONO_INST_BRLABEL)
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-			else
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb);
 			mips_fbtrue (code, 0);
 			mips_nop (code);
 			break;

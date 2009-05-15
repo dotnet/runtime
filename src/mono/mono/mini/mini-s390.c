@@ -20,70 +20,38 @@
 
 #define EMIT_COND_BRANCH(ins,cond) 							\
 {											\
-if (ins->flags & MONO_INST_BRLABEL) { 							\
-        if (ins->inst_i0->inst_c0) { 							\
-		int displace;								\
-		displace = ((cfg->native_code + ins->inst_i0->inst_c0) - code) / 2;	\
-		if (s390_is_imm16(displace)) {						\
-			s390_brc (code, cond, displace);				\
-		} else { 								\
-			s390_jcl (code, cond, displace); 				\
-		}									\
-        } else { 									\
-	        mono_add_patch_info (cfg, code - cfg->native_code, 			\
-				     MONO_PATCH_INFO_LABEL, ins->inst_i0); 		\
-		s390_jcl (code, cond, 0);						\
-        } 										\
-} else { 										\
-        if (ins->inst_true_bb->native_offset) { 					\
-		int displace;								\
-		displace = ((cfg->native_code + 					\
-			    ins->inst_true_bb->native_offset) - code) / 2;		\
-		if (s390_is_imm16(displace)) {						\
-			s390_brc (code, cond, displace);				\
-		} else { 								\
-			s390_jcl (code, cond, displace); 				\
-		}									\
-        } else { 									\
-		mono_add_patch_info (cfg, code - cfg->native_code, 			\
-				     MONO_PATCH_INFO_BB, ins->inst_true_bb); 		\
-		s390_jcl (code, cond, 0);						\
-        } 										\
-} 											\
+if (ins->inst_true_bb->native_offset) { 					\
+	int displace;								\
+	displace = ((cfg->native_code + 					\
+		    ins->inst_true_bb->native_offset) - code) / 2;		\
+	if (s390_is_imm16(displace)) {						\
+		s390_brc (code, cond, displace);				\
+	} else { 								\
+		s390_jcl (code, cond, displace); 				\
+	}									\
+} else { 									\
+	mono_add_patch_info (cfg, code - cfg->native_code, 			\
+			     MONO_PATCH_INFO_BB, ins->inst_true_bb); 		\
+	s390_jcl (code, cond, 0);						\
+} 										\
 }
 
 #define EMIT_UNCOND_BRANCH(ins) 							\
 {											\
-if (ins->flags & MONO_INST_BRLABEL) { 							\
-        if (ins->inst_i0->inst_c0) { 							\
-		int displace;								\
-		displace = ((cfg->native_code + ins->inst_i0->inst_c0) - code) / 2;	\
-		if (s390_is_imm16(displace)) {						\
-			s390_brc (code, S390_CC_UN, displace);				\
-		} else { 								\
-			s390_jcl (code, S390_CC_UN, displace); 				\
-		}									\
-        } else { 									\
-	        mono_add_patch_info (cfg, code - cfg->native_code, 			\
-				     MONO_PATCH_INFO_LABEL, ins->inst_i0); 		\
-		s390_jcl (code, S390_CC_UN, 0);						\
-        } 										\
-} else { 										\
-        if (ins->inst_target_bb->native_offset) { 					\
-		int displace;								\
-		displace = ((cfg->native_code + 					\
-			    ins->inst_target_bb->native_offset) - code) / 2;		\
-		if (s390_is_imm16(displace)) {						\
-			s390_brc (code, S390_CC_UN, displace);				\
-		} else { 								\
-			s390_jcl (code, S390_CC_UN, displace); 				\
-		}									\
-        } else { 									\
-		mono_add_patch_info (cfg, code - cfg->native_code, 			\
-				     MONO_PATCH_INFO_BB, ins->inst_target_bb); 		\
-		s390_jcl (code, S390_CC_UN, 0);						\
-        } 										\
-}											\
+if (ins->inst_target_bb->native_offset) { 					\
+	int displace;								\
+	displace = ((cfg->native_code + 					\
+		    ins->inst_target_bb->native_offset) - code) / 2;		\
+	if (s390_is_imm16(displace)) {						\
+		s390_brc (code, S390_CC_UN, displace);				\
+	} else { 								\
+		s390_jcl (code, S390_CC_UN, displace); 				\
+	}									\
+} else { 									\
+	mono_add_patch_info (cfg, code - cfg->native_code, 			\
+			     MONO_PATCH_INFO_BB, ins->inst_target_bb); 		\
+	s390_jcl (code, S390_CC_UN, 0);						\
+} 										\
 }
 
 #define EMIT_COND_SYSTEM_EXCEPTION(cond,exc_name)            		\

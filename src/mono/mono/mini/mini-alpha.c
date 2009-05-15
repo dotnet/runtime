@@ -2106,26 +2106,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 #define EMIT_ALPHA_BRANCH(Tins, PRED_REG, ALPHA_BR)	\
   offset = ((char *)code -                      \
 	    (char *)cfg->native_code);          \
-  if (Tins->flags & MONO_INST_BRLABEL)		\
-    {						\
-      if (Tins->inst_i0->inst_c0)		\
-	{								\
-	  CFG_DEBUG(3) g_print("inst_c0: %0lX, data: %p]\n",		\
-		 Tins->inst_i0->inst_c0,				\
-		 cfg->native_code + Tins->inst_i0->inst_c0);		\
-	  alpha_##ALPHA_BR (code, PRED_REG, 0);				\
-	}								\
-      else								\
-	{								\
-	  CFG_DEBUG(3) g_print("add patch info: MONO_PATCH_INFO_LABEL offset: %0X, inst_i0: %p]\n", \
-		 offset, Tins->inst_i0);				\
-	  mono_add_patch_info (cfg, offset,				\
-			       MONO_PATCH_INFO_LABEL, Tins->inst_i0);	\
-	  alpha_##ALPHA_BR (code, PRED_REG, 0);				\
-	}								\
-    }									\
-  else									\
-    {									\
       if (Tins->inst_true_bb->native_offset)				\
 	{								\
 	  long br_offset = (char *)cfg->native_code +			\
@@ -2144,8 +2124,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			       MONO_PATCH_INFO_BB,			\
 			       Tins->inst_true_bb);			\
 	  alpha_##ALPHA_BR (code, PRED_REG, 0);				\
-	}								\
-    }
+	}
 
 
 #define EMIT_COND_EXC_BRANCH(ALPHA_BR, PRED_REG, EXC_NAME)		\
@@ -3616,51 +3595,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [br] target: %p, next: %p, curr: %p, last: %p [",
 		  ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
 	   
-	   if (ins->flags & MONO_INST_BRLABEL)
+	   if (ins->inst_target_bb->native_offset)
 	     {
-	       if (ins->inst_i0->inst_c0)
-		 {
-		   CFG_DEBUG(4) g_print("inst_c0: %0lX, data: %p]\n",
-			  ins->inst_i0->inst_c0,
-			  cfg->native_code + ins->inst_i0->inst_c0);
-		   alpha_br(code, alpha_zero, 0);
-		 }
-	       else
-		 {
-		   CFG_DEBUG(4) g_print("add patch info: MONO_PATCH_INFO_LABEL offset: %0X, inst_i0: %p]\n",
-			  offset, ins->inst_i0);
-		   mono_add_patch_info (cfg, offset,
-					MONO_PATCH_INFO_LABEL, ins->inst_i0);
-		   
-		   alpha_br(code, alpha_zero, 0);
-		 }
+	       // Somehow native offset is offset from
+	       // start of the code. So convert it to
+	       // offset branch
+	       long br_offset = (char *)cfg->native_code +
+		 ins->inst_target_bb->native_offset - 4 - (char *)code;
+
+	       CFG_DEBUG(4) g_print("jump to: native_offset: %0X, address %p]\n",
+		      ins->inst_target_bb->native_offset,
+		      cfg->native_code +
+		      ins->inst_target_bb->native_offset);
+	       alpha_br(code, alpha_zero, br_offset/4);
 	     }
 	   else
 	     {
-	       if (ins->inst_target_bb->native_offset)
-		 {
-		   // Somehow native offset is offset from
-		   // start of the code. So convert it to
-		   // offset branch
-		   long br_offset = (char *)cfg->native_code +
-		     ins->inst_target_bb->native_offset - 4 - (char *)code;
-		   
-		   CFG_DEBUG(4) g_print("jump to: native_offset: %0X, address %p]\n",
-			  ins->inst_target_bb->native_offset,
-			  cfg->native_code +
-			  ins->inst_target_bb->native_offset);
-		   alpha_br(code, alpha_zero, br_offset/4);
-		 }
-	       else
-		 {
-		   CFG_DEBUG(4) g_print("add patch info: MONO_PATCH_INFO_BB offset: %0X, target_bb: %p]\n",
-			  offset, ins->inst_target_bb);
-		   
-		   mono_add_patch_info (cfg, offset,
-					MONO_PATCH_INFO_BB,
-					ins->inst_target_bb);
-		   alpha_br(code, alpha_zero, 0);
-		 }
+	       CFG_DEBUG(4) g_print("add patch info: MONO_PATCH_INFO_BB offset: %0X, target_bb: %p]\n",
+		      offset, ins->inst_target_bb);
+
+	       mono_add_patch_info (cfg, offset,
+				    MONO_PATCH_INFO_BB,
+				    ins->inst_target_bb);
+	       alpha_br(code, alpha_zero, 0);
 	     }
 	   
 	   break;

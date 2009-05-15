@@ -1765,31 +1765,22 @@ typedef struct {
 } MonoOvfJump;
 
 #define EMIT_COND_BRANCH_FLAGS(ins,b0,b1) \
-if (ins->flags & MONO_INST_BRLABEL) { \
-        if (0 && ins->inst_i0->inst_c0) { \
-		ppc_bc (code, (b0), (b1), (code - cfg->native_code + ins->inst_i0->inst_c0) & 0xffff);	\
-        } else { \
-	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
-		ppc_bc (code, (b0), (b1), 0);	\
-        } \
+if (0 && ins->inst_true_bb->native_offset) { \
+	ppc_bc (code, (b0), (b1), (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffff); \
 } else { \
-        if (0 && ins->inst_true_bb->native_offset) { \
-		ppc_bc (code, (b0), (b1), (code - cfg->native_code + ins->inst_true_bb->native_offset) & 0xffff); \
-        } else { \
-		int br_disp = ins->inst_true_bb->max_offset - offset;	\
-		if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
-			MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
-			ovfj->data.bb = ins->inst_true_bb;	\
-			ovfj->ip_offset = 0;	\
-			ovfj->b0_cond = (b0);	\
-			ovfj->b1_cond = (b1);	\
-		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB_OVF, ovfj); \
-			ppc_b (code, 0);	\
-		} else {	\
-		        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
-			ppc_bc (code, (b0), (b1), 0);	\
-		}	\
-        } \
+	int br_disp = ins->inst_true_bb->max_offset - offset;	\
+	if (!ppc_is_imm16 (br_disp + 1024) || ! ppc_is_imm16 (ppc_is_imm16 (br_disp - 1024))) {	\
+		MonoOvfJump *ovfj = mono_mempool_alloc (cfg->mempool, sizeof (MonoOvfJump));	\
+		ovfj->data.bb = ins->inst_true_bb;	\
+		ovfj->ip_offset = 0;	\
+		ovfj->b0_cond = (b0);	\
+		ovfj->b1_cond = (b1);	\
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB_OVF, ovfj); \
+		ppc_b (code, 0);	\
+	} else {	\
+		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
+		ppc_bc (code, (b0), (b1), 0);	\
+	}	\
 }
 
 #define EMIT_COND_BRANCH(ins,cond) EMIT_COND_BRANCH_FLAGS(ins, branch_b0_table [(cond)], branch_b1_table [(cond)])
@@ -3841,22 +3832,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->inst_c0 = code - cfg->native_code;
 			break;
 		case OP_BR:
-			if (ins->flags & MONO_INST_BRLABEL) {
-				/*if (ins->inst_i0->inst_c0) {
-					ppc_b (code, 0);
-					//x86_jump_code (code, cfg->native_code + ins->inst_i0->inst_c0);
-				} else*/ {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					ppc_b (code, 0);
-				}
-			} else {
-				/*if (ins->inst_target_bb->native_offset) {
-					ppc_b (code, 0);
-					//x86_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
-				} else*/ {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
-					ppc_b (code, 0);
-				} 
+			/*if (ins->inst_target_bb->native_offset) {
+				ppc_b (code, 0);
+				//x86_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
+			} else*/ {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
+				ppc_b (code, 0);
 			}
 			break;
 		case OP_BR_REG:

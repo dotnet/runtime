@@ -2071,28 +2071,15 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 }
 
 #define EMIT_COND_BRANCH(ins,cond,sign) \
-if (ins->flags & MONO_INST_BRLABEL) { \
-        if (ins->inst_i0->inst_c0) { \
-	        x86_branch (code, cond, cfg->native_code + ins->inst_i0->inst_c0, sign); \
-        } else { \
-	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_LABEL, ins->inst_i0); \
-	        if ((cfg->opt & MONO_OPT_BRANCH) && \
-                    x86_is_imm8 (ins->inst_i0->inst_c1 - cpos)) \
-		        x86_branch8 (code, cond, 0, sign); \
-                else \
-	                x86_branch32 (code, cond, 0, sign); \
-        } \
-} else { \
         if (ins->inst_true_bb->native_offset) { \
 	        x86_branch (code, cond, cfg->native_code + ins->inst_true_bb->native_offset, sign); \
         } else { \
 	        mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_true_bb); \
 	        if ((cfg->opt & MONO_OPT_BRANCH) && \
-                    x86_is_imm8 (ins->inst_true_bb->max_offset - cpos)) \
+            x86_is_imm8 (ins->inst_true_bb->max_offset - offset)) \
 		        x86_branch8 (code, cond, 0, sign); \
                 else \
 	                x86_branch32 (code, cond, 0, sign); \
-        } \
 }
 
 /* emit an exception if condition is fail */
@@ -3854,18 +3841,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			//g_print ("target: %p, next: %p, curr: %p, last: %p\n", ins->inst_target_bb, bb->next_bb, ins, bb->last_ins);
 			//if ((ins->inst_target_bb == bb->next_bb) && ins == bb->last_ins)
 			//break;
-			if (ins->flags & MONO_INST_BRLABEL) {
-				if (ins->inst_i0->inst_c0) {
-					amd64_jump_code (code, cfg->native_code + ins->inst_i0->inst_c0);
-				} else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_LABEL, ins->inst_i0);
-					if ((cfg->opt & MONO_OPT_BRANCH) &&
-					    x86_is_imm8 (ins->inst_i0->inst_c1 - cpos))
-						x86_jump8 (code, 0);
-					else 
-						x86_jump32 (code, 0);
-				}
-			} else {
 				if (ins->inst_target_bb->native_offset) {
 					amd64_jump_code (code, cfg->native_code + ins->inst_target_bb->native_offset); 
 				} else {
@@ -3875,7 +3850,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 						x86_jump8 (code, 0);
 					else 
 						x86_jump32 (code, 0);
-				} 
 			}
 			break;
 		case OP_BR_REG:
