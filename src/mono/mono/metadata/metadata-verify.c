@@ -1265,7 +1265,7 @@ verify_typeref_table (VerifyContext *ctx)
 }
 
 /*bits 9,11,14,15,19,21,24-31 */
-#define INVALID_TYPEDEF_FLAG_BITS ((1 << 9) | (1 << 11) | (1 << 14) | (1 << 15) | (1 << 19) | (1 << 21) | 0xFF000000)
+#define INVALID_TYPEDEF_FLAG_BITS ((1 << 6) | (1 << 9) | (1 << 14) | (1 << 15) | (1 << 19) | (1 << 21) | 0xFF000000)
 static void
 verify_typedef_table (VerifyContext *ctx)
 {
@@ -2124,6 +2124,38 @@ verify_file_table (VerifyContext *ctx)
 	}
 }
 
+#define INVALID_EXPORTED_TYPE_FLAGS_BITS (INVALID_TYPEDEF_FLAG_BITS & ~TYPE_ATTRIBUTE_FORWARDER)
+static void
+verify_exportedtype_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_EXPORTEDTYPE];
+	guint32 data [MONO_EXP_TYPE_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_EXP_TYPE_SIZE);
+		
+		if (data [MONO_EXP_TYPE_FLAGS] & INVALID_EXPORTED_TYPE_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("ExportedType table row %d has invalid Flags %08x", i, data [MONO_EXP_TYPE_FLAGS]));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_EXP_TYPE_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("ExportedType table row %d has invalid TypeName %08x", i, data [MONO_FILE_NAME]));
+
+		if (data [MONO_EXP_TYPE_NAMESPACE] && !is_valid_string (ctx, data [MONO_EXP_TYPE_NAMESPACE]))
+			ADD_ERROR (ctx, g_strdup_printf ("ExportedType table row %d has invalid TypeNamespace %08x", i, data [MONO_EXP_TYPE_NAMESPACE]));
+
+		if (!is_valid_coded_index (ctx, IMPLEMENTATION_DESC, data [MONO_EXP_TYPE_IMPLEMENTATION]))
+			ADD_ERROR (ctx, g_strdup_printf ("ExportedType table row %d has invalid Implementation token %08x", i, data [MONO_EXP_TYPE_IMPLEMENTATION]));
+
+		if (!get_coded_index_token (IMPLEMENTATION_DESC, data [MONO_EXP_TYPE_IMPLEMENTATION]))
+			ADD_ERROR (ctx, g_strdup_printf ("ExportedType table row %d has null Implementation token", i));
+
+		/*nested type can't have a namespace*/
+		if (get_coded_index_table (IMPLEMENTATION_DESC, data [MONO_EXP_TYPE_IMPLEMENTATION]) == MONO_TABLE_EXPORTEDTYPE && data [MONO_EXP_TYPE_NAMESPACE])
+			ADD_ERROR (ctx, g_strdup_printf ("ExportedType table row %d has denotes a nested type but has a non null TypeNamespace", i));
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -2202,6 +2234,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_assemblyref_table (ctx);
 	CHECK_ERROR ();
 	verify_file_table (ctx);
+	CHECK_ERROR ();
+	verify_exportedtype_table (ctx);
 }
 
 static gboolean
