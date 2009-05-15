@@ -251,7 +251,10 @@ static void shared_init (void)
 	_wapi_fileshare_layout = _wapi_shm_attach (WAPI_SHM_FILESHARE);
 	g_assert (_wapi_fileshare_layout != NULL);
 	
-	_wapi_collection_init ();
+#if !defined (DISABLE_SHARED_HANDLES)
+	if (!g_getenv ("MONO_DISABLE_SHM"))
+		_wapi_collection_init ();
+#endif
 
 	/* Can't call wapi_handle_new as it calls us recursively */
 	_wapi_global_signal_handle = _wapi_handle_real_new (WAPI_HANDLE_EVENT, NULL);
