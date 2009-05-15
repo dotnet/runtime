@@ -1040,3 +1040,32 @@ assembly-ref-table {
 
 	#it's ok to have dups
 }
+
+file-table {
+	assembly assembly-with-resource.exe
+
+	#flags is valid (1)
+	#only bit 0 is valid
+	invalid offset table-row (0x26 0) set-bit 1
+	invalid offset table-row (0x26 0) set-bit 4
+	invalid offset table-row (0x26 0) set-bit 6
+	invalid offset table-row (0x26 0) set-bit 8
+	invalid offset table-row (0x26 0) set-bit 11
+	invalid offset table-row (0x26 0) set-bit 17
+	invalid offset table-row (0x26 0) set-bit 22
+	invalid offset table-row (0x26 0) set-bit 27
+	invalid offset table-row (0x26 0) set-bit 29
+	invalid offset table-row (0x26 0) set-bit 31
+
+	#name is a non empty string (2)
+	invalid offset table-row (0x26 0) + 4 set-ushort 0
+	invalid offset table-row (0x26 0) + 4 set-ushort 0x9999
+
+	#hash is a valid blob item (3)
+	invalid offset table-row (0x26 0) + 6 set-ushort 0
+	invalid offset table-row (0x26 0) + 6 set-ushort 0x9999
+
+	#TODO check name format (I belive only the lack of directory directives should be checked)
+	#TODO check for dups based on name
+	#TODO check for images with rows in file and assembly tables
+}

@@ -1,5 +1,9 @@
 2009-05-15 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Add tests for the file table.
+
+2009-05-15 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Fix one test for the assembly
 	table.
 
