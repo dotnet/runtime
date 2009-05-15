@@ -2070,7 +2070,35 @@ verify_assembly_table (VerifyContext *ctx)
 			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid Name %08x", i, data [MONO_ASSEMBLY_NAME]));
 
 		if (data [MONO_ASSEMBLY_CULTURE] && !is_valid_string (ctx, data [MONO_ASSEMBLY_CULTURE]))
-			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid Name %08x", i, data [MONO_ASSEMBLY_NAME]));
+			ADD_ERROR (ctx, g_strdup_printf ("Assembly table row %d has invalid Culture %08x", i, data [MONO_ASSEMBLY_CULTURE]));
+	}
+}
+
+#define INVALID_ASSEMBLYREF_FLAGS_BITS ~(1)
+static void
+verify_assemblyref_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_ASSEMBLYREF];
+	guint32 data [MONO_ASSEMBLYREF_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_ASSEMBLYREF_SIZE);
+
+		if (data [MONO_ASSEMBLYREF_FLAGS] & INVALID_ASSEMBLYREF_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid Flags %08x", i, data [MONO_ASSEMBLYREF_FLAGS]));
+
+		if (data [MONO_ASSEMBLYREF_PUBLIC_KEY] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLYREF_PUBLIC_KEY]))
+			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid PublicKeyOrToken %08x", i, data [MONO_ASSEMBLYREF_PUBLIC_KEY]));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_ASSEMBLYREF_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid Name %08x", i, data [MONO_ASSEMBLYREF_NAME]));
+
+		if (data [MONO_ASSEMBLYREF_CULTURE] && !is_valid_string (ctx, data [MONO_ASSEMBLYREF_CULTURE]))
+			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid Culture %08x", i, data [MONO_ASSEMBLYREF_CULTURE]));
+
+		if (data [MONO_ASSEMBLYREF_HASH_VALUE] && !is_valid_blob_object (ctx, data [MONO_ASSEMBLYREF_HASH_VALUE]))
+			ADD_ERROR (ctx, g_strdup_printf ("AssemblyRef table row %d has invalid HashValue %08x", i, data [MONO_ASSEMBLYREF_HASH_VALUE]));
 	}
 }
 
@@ -2148,6 +2176,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_fieldrva_table (ctx);
 	CHECK_ERROR ();
 	verify_assembly_table (ctx);
+	CHECK_ERROR ();
+	verify_assemblyref_table (ctx);
 }
 
 static gboolean
