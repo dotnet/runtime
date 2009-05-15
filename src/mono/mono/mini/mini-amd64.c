@@ -3540,7 +3540,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* FIXME: no tracing support... */
 			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
+				code = mono_arch_instrument_epilog_full (cfg, mono_profiler_method_leave, code, FALSE, FALSE);
 
 			g_assert (!cfg->method->save_lmf);
 
@@ -5491,7 +5491,7 @@ enum {
 };
 
 void*
-mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
+mono_arch_instrument_epilog_full (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments, gboolean preserve_argument_registers)
 {
 	guchar *code = p;
 	int save_mode = SAVE_NONE;
@@ -5564,9 +5564,19 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	else
 		amd64_mov_reg_imm (code, AMD64_RAX, 0);
 
+	if (preserve_argument_registers) {
+		amd64_push_reg (code, MONO_AMD64_ARG_REG1);
+		amd64_push_reg (code, MONO_AMD64_ARG_REG2);
+	}
+
 	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_METHODCONST, method);
 	amd64_set_reg_template (code, AMD64_ARG_REG1);
 	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func, TRUE);
+
+	if (preserve_argument_registers) {
+		amd64_pop_reg (code, MONO_AMD64_ARG_REG2);
+		amd64_pop_reg (code, MONO_AMD64_ARG_REG1);
+	}
 
 	/* Restore result */
 	switch (save_mode) {

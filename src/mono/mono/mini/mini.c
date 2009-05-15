@@ -5268,3 +5268,8 @@ void mono_precompile_assemblies ()
 
 	g_hash_table_destroy (assemblies);
 }
+
+void*
+mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments) {
+	return mono_arch_instrument_epilog_full (cfg, func, p, enable_arguments, FALSE);
+}
