@@ -1,5 +1,19 @@
 2009-05-15 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Add tests for the exported type table.
+
+	* assembly-with-module.il: Old file not longer needed.
+
+	* assembly-with-module.cs: File use to generate
+	tests for the exported table.
+
+	* module.il: Same. This file is written in MSIL because
+	gmcs/SRE can't handle the AssemblyAttributesGoHere hack.
+
+	* Makefile: Adjust the build to the new files.
+
+2009-05-15 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Add tests for the file table.
 
 2009-05-15 Rodrigo Kumpera  <rkumpera@novell.com>

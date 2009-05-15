@@ -31,6 +31,12 @@ assembly-with-events.exe: assembly-with-events.cs
 assembly-with-properties.exe: assembly-with-properties.cs
 	gmcs assembly-with-properties.cs
 
+module.netmodule: module.il
+	ilasm2 /dll /output:module.netmodule module.il
+
+assembly-with-module.exe: assembly-with-module.cs module.netmodule
+	gmcs assembly-with-module.cs -addmodule:module.netmodule
+
 TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-complex-type.exe \
 	assembly-with-methods.exe \

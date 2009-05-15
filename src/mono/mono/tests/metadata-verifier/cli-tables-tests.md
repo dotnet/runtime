@@ -122,9 +122,9 @@ typedef-table {
 
 	#This part of the test suite only verifies structural properties, not table relationships	
 
-	#Flags invalid bits: 9,11,14,15,19,21,24-31
+	#Flags invalid bits: 6,9,14,15,19,21,24-31
+	invalid offset table-row ( 2 1 ) set-bit 6
 	invalid offset table-row ( 2 1 ) set-bit 9
-	invalid offset table-row ( 2 1 ) set-bit 11
 	invalid offset table-row ( 2 1 ) set-bit 14
 	invalid offset table-row ( 2 1 ) set-bit 15
 	invalid offset table-row ( 2 1 ) set-bit 19
@@ -1069,3 +1069,52 @@ file-table {
 	#TODO check for dups based on name
 	#TODO check for images with rows in file and assembly tables
 }
+
+exported-type-table {
+	assembly assembly-with-module.exe
+
+	#flags is valid (it's a TypeAttribute flag set) (3)
+	#Flags invalid bits: 6,9,14,15,19,21,24-31
+	invalid offset table-row (0x27 0) set-bit 6 #this is a mysterious bit on MS
+	invalid offset table-row (0x27 0) set-bit 9
+	invalid offset table-row (0x27 0) set-bit 14
+	invalid offset table-row (0x27 0) set-bit 15
+	invalid offset table-row (0x27 0) set-bit 19
+	valid offset table-row (0x27 0) set-bit 21 #this is the non specified FORWARDER bit
+	invalid offset table-row (0x27 0) set-bit 24
+	invalid offset table-row (0x27 0) set-bit 25
+	invalid offset table-row (0x27 0) set-bit 26
+	invalid offset table-row (0x27 0) set-bit 27
+	invalid offset table-row (0x27 0) set-bit 28
+	invalid offset table-row (0x27 0) set-bit 29
+	invalid offset table-row (0x27 0) set-bit 30
+	invalid offset table-row (0x27 0) set-bit 31
+
+	#type 0 is toplevel
+	#type 1 is nested
+	#if Implementation points to file table visibility must be public (4)
+	#invalid offset table-row (0x27 0) set-uint 0x100005 #LAMEIMPL/SPEC this check is not really relevant
+
+	#if Implementation points to exported type table visibility must be nested public (5)
+	#invalid offset table-row (0x27 1) set-uint 0x100005 #LAMEIMPL/SPEC this check is not really relevant
+	
+	#typename is a valid non-empty string (7)
+	invalid offset table-row (0x27 0) + 8 set-ushort 0
+	invalid offset table-row (0x27 0) + 8 set-ushort 0x9900
+	
+	#typenamedpace is a valid string (8,9)
+	invalid offset table-row (0x27 0) + 10 set-ushort 0x9900
+
+	#nested types must have an empty typenamespace (11)
+	valid offset table-row (0x27 1) + 10 set-ushort 0
+	invalid offset table-row (0x27 1) + 10 set-ushort 1 #LAMEIMPL ms doesn't check this.
+
+	#12 implementation is a valid non empty token (12)
+	invalid offset table-row (0x27 0) + 12 set-ushort 0
+	invalid offset table-row (0x27 0) + 12 set-ushort 0x8880
+
+	#TODO check if a type in the exported table is not defined in the current module (2)
+	#TODO check if target type is valid and public (6)
+	#TODO check for dups (14,15,16)
+}
+
