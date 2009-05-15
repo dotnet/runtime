@@ -659,7 +659,7 @@ main (int argc, char *argv [])
 		mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
 
 		res = verify_image_file (file);
-		if (res || !verify_pe)
+		if (res || !verify_code)
 			return res;
 	}
 
@@ -673,10 +673,19 @@ main (int argc, char *argv [])
 		dump_dotnet_iinfo (image);
 	if (verify_pe) {
 		MonoAssembly *assembly;
+		MonoImage *image;
+		MonoImageOpenStatus status;
 
 		mono_verifier_set_mode (verifier_mode);
 
 		assembly = mono_assembly_open (file, NULL);
+		/*fake an assembly for netmodules so the verifier works*/
+		if (!assembly && (image = mono_image_open (file, &status)) && image->tables [MONO_TABLE_ASSEMBLY].rows == 0) {
+			assembly = g_new0 (MonoAssembly, 1);
+			assembly->in_gac = FALSE;
+			assembly->image = image;
+			image->assembly = assembly;
+		}
 
 		if (!assembly) {
 			g_print ("Could not open assembly %s\n", file);
