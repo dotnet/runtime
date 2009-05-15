@@ -33,7 +33,7 @@
  * has the header and functions, but they don't work at all): in other cases
  * we fall back to the io-layer slightly slower and signal-unsafe Event.
  */
-#ifdef __linux__
+#if defined (__linux__) || (defined(__APPLE__) && defined(__arm__))
 #define USE_POSIX_SEM 1
 #endif
 #endif
