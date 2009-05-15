@@ -30,6 +30,9 @@ mono_jit_set_trace_options (const char* options);
 void
 mono_set_signal_chaining   (gboolean chain_signals);
 
+void
+mono_jit_set_aot_only      (gboolean aot_only);
+
 G_END_DECLS
 
 #endif

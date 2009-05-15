@@ -1842,6 +1842,12 @@ mono_jit_cleanup (MonoDomain *domain)
 	mini_cleanup (domain);
 }
 
+void
+mono_jit_set_aot_only (gboolean val)
+{
+	mono_aot_only = val;
+}
+
 /**
  * mono_jit_set_trace_options:
  * @options: string representing the trace options
