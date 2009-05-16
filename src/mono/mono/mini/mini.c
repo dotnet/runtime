@@ -4748,6 +4748,10 @@ mini_init (const char *filename, const char *runtime_version)
 	if (default_opt & MONO_OPT_AOT)
 		mono_aot_init ();
 
+#if defined(__i386__) || defined(__x86_64__) || defined(__arm__) || defined(__mono_ppc__)
+	mono_set_generic_sharing_supported (TRUE);
+#endif
+
 	mono_runtime_install_handlers ();
 	mono_threads_install_cleanup (mini_thread_cleanup);
 

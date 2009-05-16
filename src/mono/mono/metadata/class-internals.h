@@ -1127,6 +1127,9 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method) MONO_INTERN
 MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type) MONO_INTERNAL;
 
+void
+mono_set_generic_sharing_supported (gboolean supported) MONO_INTERNAL;
+
 gboolean
 mono_class_generic_sharing_enabled (MonoClass *class) MONO_INTERNAL;
 

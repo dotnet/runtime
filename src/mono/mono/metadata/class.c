@@ -7815,6 +7815,14 @@ mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
 	return gklass->context.class_inst == gklass->container_class->generic_container->context.class_inst;
 }
 
+static gboolean gshared_supported;
+
+void
+mono_set_generic_sharing_supported (gboolean supported)
+{
+	gshared_supported = supported;
+}
+
 /*
  * mono_class_generic_sharing_enabled:
  * @class: a class
@@ -7828,19 +7836,13 @@ mono_generic_class_is_generic_type_definition (MonoGenericClass *gklass)
 gboolean
 mono_class_generic_sharing_enabled (MonoClass *class)
 {
-#if defined(__i386__) || defined(__x86_64__) || defined(__arm__) || defined(__mono_ppc__)
-	static gboolean supported = TRUE;
-#else
-	/* Not supported by the JIT backends */
-	static gboolean supported = FALSE;
-#endif
 	static int generic_sharing = MONO_GENERIC_SHARING_NONE;
 	static gboolean inited = FALSE;
 
 	if (!inited) {
 		const char *option;
 
-		if (supported)
+		if (gshared_supported)
 			generic_sharing = MONO_GENERIC_SHARING_ALL;
 		else
 			generic_sharing = MONO_GENERIC_SHARING_NONE;
@@ -7858,7 +7860,7 @@ mono_class_generic_sharing_enabled (MonoClass *class)
 				g_warning ("Unknown generic sharing option `%s'.", option);
 		}
 
-		if (!supported)
+		if (!gshared_supported)
 			generic_sharing = MONO_GENERIC_SHARING_NONE;
 
 		inited = TRUE;
