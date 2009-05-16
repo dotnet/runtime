@@ -1782,12 +1782,6 @@ mono_class_get_vtable_entry (MonoClass *class, int offset)
 		m = class->vtable [offset];
 	}
 
-	/* 
-	 * We have to add static rgctx wrappers somewhere, we do it here, 
-	 * altough it should probably be done by the JIT.
-	 */
-	if (mono_method_needs_static_rgctx_invoke (m, FALSE))
-		m = mono_marshal_get_static_rgctx_invoke (m);
 	return m;
 }
 
