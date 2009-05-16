@@ -4377,13 +4377,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 	to_compile = method;
 
-	if (mono_method_needs_static_rgctx_invoke (method, FALSE)) {
-#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
+	if (mono_method_needs_static_rgctx_invoke (method, FALSE))
 		need_rgctx_tramp = TRUE;
-#else
-		to_compile = mono_marshal_get_static_rgctx_invoke (method);
-#endif
-	}
 
 	/* Special case parameterless ctors to speed up Activator.CreateInstance () */
 	if (method->flags & (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME) && !strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == 0 && !method->klass->valuetype) {
@@ -4418,10 +4413,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	} else {
 		compiled_method = mono_jit_compile_method (to_compile);
 	}
-#ifdef MONO_ARCH_HAVE_STATIC_RGCTX_TRAMPOLINE
 	if (need_rgctx_tramp)
 		compiled_method = mono_create_static_rgctx_trampoline (to_compile, compiled_method);
-#endif
 
 	return runtime_invoke (obj, params, exc, compiled_method);
 }

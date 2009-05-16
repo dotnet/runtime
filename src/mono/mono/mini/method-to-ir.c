@@ -9215,12 +9215,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #endif
 
 				if (context_used) {
-					if (needs_static_rgctx_invoke)
-						cmethod = mono_marshal_get_static_rgctx_invoke (cmethod);
-
 					argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
-				} else if (needs_static_rgctx_invoke) {
-					EMIT_NEW_METHODCONST (cfg, argconst, mono_marshal_get_static_rgctx_invoke (cmethod));
 				} else {
 					EMIT_NEW_METHODCONST (cfg, argconst, cmethod);
 				}
