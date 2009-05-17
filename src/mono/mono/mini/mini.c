@@ -3859,9 +3859,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
 #endif
 
 	cfg->jit_info = jinfo;
-#if defined(__arm__)
-	mono_arch_fixup_jinfo (cfg);
-#endif
 
 #ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
 	if (cfg->extend_live_ranges) {

@@ -4280,11 +4280,6 @@ mono_arch_flush_register_windows (void)
 {
 }
 
-void
-mono_arch_fixup_jinfo (MonoCompile *cfg)
-{
-}
-
 #ifdef MONO_ARCH_HAVE_IMT
 
 void

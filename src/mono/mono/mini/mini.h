@@ -1622,7 +1622,6 @@ MonoMethod* mono_arch_find_imt_method           (gpointer *regs, guint8 *code) M
 MonoVTable* mono_arch_find_static_call_vtable   (gpointer *regs, guint8 *code) MONO_INTERNAL;
 gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp) MONO_INTERNAL;
 void    mono_arch_notify_pending_exc            (void) MONO_INTERNAL;
-void    mono_arch_fixup_jinfo                   (MonoCompile *cfg) MONO_INTERNAL;
 
 /* Exception handling */
 void     mono_exceptions_init                   (void) MONO_INTERNAL;
