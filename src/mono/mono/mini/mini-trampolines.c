@@ -529,6 +529,7 @@ mono_llvm_vcall_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8 *t
 	MonoVTable *vt;
 	gpointer *vtable_slot;
 	gboolean proxy = FALSE;
+	gboolean need_rgctx_tramp = FALSE;
 
 	/* 
 	 * We have the method which is called, we need to obtain the vtable slot without
