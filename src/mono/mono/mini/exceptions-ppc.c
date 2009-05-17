@@ -198,13 +198,8 @@ mono_ppc_create_pre_code_ftnptr (guint8 *code)
 gpointer
 mono_arch_get_restore_context (void)
 {
-	static guint8 *start = NULL;
-
-	guint8 *code;
+	guint8 *start, *code;
 	int size = MONO_PPC_32_64_CASE (128, 172) + PPC_FTNPTR_SIZE;
-
-	if (start)
-		return start;
 
 	code = start = mono_global_codeman_reserve (size);
 	code = mono_ppc_create_pre_code_ftnptr (code);
@@ -254,14 +249,9 @@ emit_save_saved_regs (guint8 *code, int pos)
 gpointer
 mono_arch_get_call_filter (void)
 {
-	static guint8 *start = NULL;
-
-	guint8 *code;
+	guint8 *start, *code;
 	int alloc_size, pos, i;
 	int size = MONO_PPC_32_64_CASE (320, 500) + PPC_FTNPTR_SIZE;
-
-	if (start)
-		return start;
 
 	/* call_filter (MonoContext *ctx, unsigned long eip, gpointer exc) */
 	code = start = mono_global_codeman_reserve (size);
@@ -316,7 +306,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
 	MonoContext ctx;
 
 	if (!restore_context)
-		restore_context = mono_arch_get_restore_context ();
+		restore_context = mono_get_restore_context ();
 
 	/* adjust eip so that it point into the call instruction */
 	eip -= 4;
@@ -350,10 +340,12 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
  *
  */
 static gpointer 
-mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboolean rethrow)
+mono_arch_get_throw_exception_generic (int size, int corlib, gboolean rethrow)
 {
-	guint8 *code;
+	guint8 *start, *code;
 	int alloc_size, pos;
+
+	start = mono_global_codeman_reserve (size);
 
 	code = mono_ppc_create_pre_code_ftnptr (start);
 
@@ -417,18 +409,9 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboo
 gpointer
 mono_arch_get_rethrow_exception (void)
 {
-	static guint8 *start = NULL;
-	static int inited = 0;
-
-	guint8 *code;
 	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
 
-	if (inited)
-		return start;
-	code = mono_global_codeman_reserve (size);
-	start = mono_arch_get_throw_exception_generic (code, size, FALSE, TRUE);
-	inited = 1;
-	return start;
+	return mono_arch_get_throw_exception_generic (size, FALSE, TRUE);
 }
 /**
  * arch_get_throw_exception:
@@ -445,18 +428,9 @@ mono_arch_get_rethrow_exception (void)
 gpointer 
 mono_arch_get_throw_exception (void)
 {
-	static guint8 *start = NULL;
-	static int inited = 0;
-
-	guint8 *code;
 	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
 
-	if (inited)
-		return start;
-	code = mono_global_codeman_reserve (size);
-	start = mono_arch_get_throw_exception_generic (code, size, FALSE, FALSE);
-	inited = 1;
-	return start;
+	return mono_arch_get_throw_exception_generic (size, FALSE, FALSE);
 }
 
 /**
@@ -474,20 +448,13 @@ mono_arch_get_throw_exception (void)
 gpointer 
 mono_arch_get_throw_exception_by_name (void)
 {
-	static guint8 *start = NULL;
-	static int inited = 0;
-
-	guint8 *code;
+	guint8 *start, *code;
 	int size = 64;
-
-	if (inited)
-		return start;
 
 	/* Not used on PPC */	
 	start = code = mono_global_codeman_reserve (size);
 	ppc_break (code);
 	mono_arch_flush_icache (start, code - start);
-	inited = 1;
 	return start;
 }
 
@@ -502,18 +469,9 @@ mono_arch_get_throw_exception_by_name (void)
 gpointer 
 mono_arch_get_throw_corlib_exception (void)
 {
-	static guint8 *start = NULL;
-	static int inited = 0;
-
-	guint8 *code;
 	int size = MONO_PPC_32_64_CASE (168, 304) + PPC_FTNPTR_SIZE;
 
-	if (inited)
-		return start;
-	code = mono_global_codeman_reserve (size);
-	start = mono_arch_get_throw_exception_generic (code, size, TRUE, FALSE);
-	inited = 1;
-	return start;
+	return mono_arch_get_throw_exception_generic (size, TRUE, FALSE);
 }
 
 /* mono_arch_find_jit_info:
@@ -658,7 +616,7 @@ altstack_handle_and_restore (void *sigctx, gpointer obj, gboolean test_only)
 	void (*restore_context) (MonoContext *);
 	MonoContext mctx;
 
-	restore_context = mono_arch_get_restore_context ();
+	restore_context = mono_get_restore_context ();
 	mono_arch_sigctx_to_monoctx (sigctx, &mctx);
 	mono_handle_exception (&mctx, obj, (gpointer)mctx.sc_ir, test_only);
 	restore_context (&mctx);
