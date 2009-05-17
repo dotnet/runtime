@@ -539,7 +539,19 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 			len2 = mono_metadata_decode_blob_size (blob, &blob);
 			len2 >>= 1;
 
-			s = g_utf16_to_utf8 ((gunichar2*)blob, len2, NULL, NULL, NULL);
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+			{
+				guint16 *buf = g_new (guint16, len2);
+				int i;
+
+				for (i = 0; i < len2; ++i)
+					buf [i] = GUINT16_FROM_LE (((guint16*)blob) [i]);
+				s = g_utf16_to_utf8 (buf, len2, NULL, NULL, NULL);
+				g_free (buf);
+			}
+#else
+				s = g_utf16_to_utf8 ((gunichar2*)blob, len2, NULL, NULL, NULL);
+#endif
 
 			g_string_sprintfa (str, "\"%s\"", s);
 			g_free (s);
