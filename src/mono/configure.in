@@ -2042,6 +2042,13 @@ AMD64)
 ARM)
 	AC_DEFINE(TARGET_ARM, 1, [...])
 	;;
+POWERPC)
+	AC_DEFINE(TARGET_POWERPC, 1, [...])
+	;;
+POWERPC64)
+	AC_DEFINE(TARGET_POWERPC, 1, [...])
+	AC_DEFINE(TARGET_POWERPC64, 1, [...])
+	;;
 esac
 
 if test "x$sizeof_register" = "x4"; then

@@ -1,3 +1,7 @@
+2009-05-17  Zoltan Varga  <vargaz@gmail.com>
+
+	* configure.in: Add TARGET_POWERPC/POWERPC64 defines.
+
 2009-05-09  Miguel de Icaza  <miguel@novell.com>
 
 	* configure.in: Instead of reporting the various disabled features
