@@ -308,6 +308,8 @@ typedef struct {
 #define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
 #endif
 
+#define MONO_ARCH_GSHARED_SUPPORTED 1
+
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
 

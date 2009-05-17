@@ -154,6 +154,8 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_AOT_SUPPORTED 1
 
+#define MONO_ARCH_GSHARED_SUPPORTED 1
+
 /* ARM doesn't have too many registers, so we have to use a callee saved one */
 #define MONO_ARCH_RGCTX_REG ARMREG_V5
 /* First argument reg */
