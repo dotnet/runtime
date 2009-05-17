@@ -497,7 +497,7 @@ endif
 # Tests that the internals in mono/io-layer/messages.c are ok by triggering the 
 # code that checks that the table is properly sorted
 #
-test_messages: 
+test_messages: w32message.exe
 	> test_messages.zero
 	$(JITTEST_PROG_RUN) w32message.exe >& w32message.allout && cmp test_messages.zero w32message.allout
 
