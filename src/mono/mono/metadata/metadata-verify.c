@@ -2156,6 +2156,47 @@ verify_exportedtype_table (VerifyContext *ctx)
 	}
 }
 
+#define INVALID_MANIFEST_RESOURCE_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2))
+static void
+verify_manifest_resource_table (VerifyContext *ctx)
+{
+	MonoCLIImageInfo *iinfo = ctx->image->image_info;
+	MonoCLIHeader *ch = &iinfo->cli_cli_header;
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_MANIFESTRESOURCE];
+	guint32 data [MONO_MANIFEST_SIZE], impl_table, token, resources_size;
+	int i;
+
+	resources_size = ch->ch_resources.size;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_MANIFEST_SIZE);
+
+		if (data [MONO_MANIFEST_FLAGS] & INVALID_MANIFEST_RESOURCE_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("ManifestResource table row %d has invalid Flags %08x", i, data [MONO_MANIFEST_FLAGS]));
+
+		if (data [MONO_MANIFEST_FLAGS] != 1 && data [MONO_MANIFEST_FLAGS] != 2)
+			ADD_ERROR (ctx, g_strdup_printf ("ManifestResource table row %d has invalid Flags VisibilityMask %08x", i, data [MONO_MANIFEST_FLAGS]));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_MANIFEST_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("ManifestResource table row %d has invalid Name %08x", i, data [MONO_MANIFEST_NAME]));
+
+		if (!is_valid_coded_index (ctx, IMPLEMENTATION_DESC, data [MONO_MANIFEST_IMPLEMENTATION]))
+			ADD_ERROR (ctx, g_strdup_printf ("ManifestResource table row %d has invalid Implementation token %08x", i, data [MONO_MANIFEST_IMPLEMENTATION]));
+
+		impl_table = get_coded_index_table (IMPLEMENTATION_DESC, data [MONO_MANIFEST_IMPLEMENTATION]);
+		token = get_coded_index_token (IMPLEMENTATION_DESC, data [MONO_MANIFEST_IMPLEMENTATION]);
+
+		if (impl_table == MONO_TABLE_EXPORTEDTYPE)
+			ADD_ERROR (ctx, g_strdup_printf ("ManifestResource table row %d has invalid Implementation token table %08x", i, get_coded_index_table (IMPLEMENTATION_DESC, data [MONO_MANIFEST_IMPLEMENTATION])));
+
+		if (impl_table == MONO_TABLE_FILE && token && data [MONO_MANIFEST_OFFSET])
+			ADD_ERROR (ctx, g_strdup_printf ("ManifestResource table row %d points to a file but has non-zero offset", i));
+
+		if (!token && data [MONO_MANIFEST_OFFSET] >= resources_size)
+			ADD_ERROR (ctx, g_strdup_printf ("ManifestResource table row %d invalid Offset field %08x ", i, data [MONO_MANIFEST_OFFSET]));
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -2236,6 +2277,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_file_table (ctx);
 	CHECK_ERROR ();
 	verify_exportedtype_table (ctx);
+	CHECK_ERROR ();
+	verify_manifest_resource_table (ctx);
 }
 
 static gboolean
