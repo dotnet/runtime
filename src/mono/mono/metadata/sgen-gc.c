@@ -747,8 +747,7 @@ static void find_pinning_ref_from_thread (char *obj, size_t size);
 static void update_current_thread_stack (void *start);
 static GCMemSection* alloc_section (size_t size);
 static void finalize_in_range (char *start, char *end, int generation);
-static void add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track,
-	DisappearingLinkHashTable *hash);
+static void add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, int generation);
 static void null_link_in_range (char *start, char *end, int generation);
 static void null_links_for_domain (MonoDomain *domain, int generation);
 static gboolean search_fragment_for_size (size_t size);
@@ -2363,6 +2362,16 @@ scan_needed_big_objects (char *start_addr, char *end_addr)
 	return count;
 }
 
+static const char*
+generation_name (int generation)
+{
+	switch (generation) {
+	case GENERATION_NURSERY: return "nursery";
+	case GENERATION_OLD: return "old";
+	default: g_assert_not_reached ();
+	}
+}
+
 static DisappearingLinkHashTable*
 get_dislink_hash_table (int generation)
 {
@@ -2411,7 +2420,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	}
 	TV_GETTIME (atv);
 	//scan_old_generation (start_addr, end_addr);
-	DEBUG (2, fprintf (gc_debug_file, "Old generation done\n"));
+	DEBUG (2, fprintf (gc_debug_file, "%s generation done\n", generation_name (generation)));
 	/* walk the finalization queue and move also the objects that need to be
 	 * finalized: use the finalized objects as new roots so the objects they depend
 	 * on are also not reclaimed. As with the roots above, only objects in the nursery
@@ -2434,7 +2443,7 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 		}
 	} while (fin_ready != num_ready_finalizers || bigo_scanned_num);
 
-	DEBUG (2, fprintf (gc_debug_file, "Copied to old space: %d bytes\n", (int)(gray_objects - to_space)));
+	DEBUG (2, fprintf (gc_debug_file, "Copied from %s to old space: %d bytes\n", generation_name (generation), (int)(gray_objects - to_space)));
 	to_space = gray_start;
 	to_space_section->next_data = to_space;
 
@@ -2447,8 +2456,10 @@ finish_gray_stack (char *start_addr, char *end_addr, int generation)
 	 * called.
 	 */
 	null_link_in_range (start_addr, end_addr, generation);
+	if (generation == GENERATION_OLD)
+		null_link_in_range (start_addr, end_addr, GENERATION_NURSERY);
 	TV_GETTIME (btv);
-	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan: %d usecs\n", TV_ELAPSED (atv, btv)));
+	DEBUG (2, fprintf (gc_debug_file, "Finalize queue handling scan for %s generation: %d usecs\n", generation_name (generation), TV_ELAPSED (atv, btv)));
 }
 
 static int last_num_pinned = 0;
@@ -2821,7 +2832,6 @@ major_collection (void)
 	scan_needed_big_objects (heap_start, heap_end);
 	/* all the objects in the heap */
 	finish_gray_stack (heap_start, heap_end, GENERATION_OLD);
-	null_link_in_range (nursery_start, nursery_real_end, GENERATION_NURSERY);
 
 	/* sweep the big objects list */
 	prevbo = NULL;
@@ -3899,8 +3909,8 @@ null_link_in_range (char *start, char *end, int generation)
 						entry = old;
 						hash->num_links--;
 
-						add_or_remove_disappearing_link ((MonoObject*)copy, link, track,
-							&major_disappearing_link_hash);
+						add_or_remove_disappearing_link ((MonoObject*)copy, link,
+							track, generation);
 
 						DEBUG (5, fprintf (gc_debug_file, "Upgraded dislink at %p to major because object %p moved to %p\n", link, object, copy));
 
@@ -3922,14 +3932,6 @@ null_link_in_range (char *start, char *end, int generation)
 			entry = entry->next;
 		}
 	}
-}
-
-static const char*
-dislink_table_name (DisappearingLinkHashTable *table)
-{
-	if (table == &minor_disappearing_link_hash)
-		return "minor table";
-	return "major table";
 }
 
 /* LOCKING: requires that the GC lock is held */
@@ -4042,8 +4044,9 @@ mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int o
 }
 
 static void
-register_for_finalization (MonoObject *obj, void *user_data, FinalizeEntryHashTable *hash_table)
+register_for_finalization (MonoObject *obj, void *user_data, int generation)
 {
+	FinalizeEntryHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	FinalizeEntry **finalizable_hash;
 	mword finalizable_hash_size;
 	FinalizeEntry *entry, *prev;
@@ -4085,7 +4088,7 @@ register_for_finalization (MonoObject *obj, void *user_data, FinalizeEntryHashTa
 	entry->next = finalizable_hash [hash];
 	finalizable_hash [hash] = entry;
 	hash_table->num_registered++;
-	DEBUG (5, fprintf (gc_debug_file, "Added finalizer %p for object: %p (%s) (%d)\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered));
+	DEBUG (5, fprintf (gc_debug_file, "Added finalizer %p for object: %p (%s) (%d) to %s table\n", entry, obj, obj->vtable->klass->name, hash_table->num_registered, generation_name (generation)));
 	UNLOCK_GC;
 }
 
@@ -4093,9 +4096,9 @@ void
 mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 {
 	if (ptr_in_nursery (obj))
-		register_for_finalization (obj, user_data, &minor_finalizable_hash);
+		register_for_finalization (obj, user_data, GENERATION_NURSERY);
 	else
-		register_for_finalization (obj, user_data, &minor_finalizable_hash);
+		register_for_finalization (obj, user_data, GENERATION_OLD);
 }
 
 static void
@@ -4125,9 +4128,9 @@ rehash_dislink (DisappearingLinkHashTable *hash_table)
 
 /* LOCKING: assumes the GC lock is held */
 static void
-add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track,
-	DisappearingLinkHashTable *hash_table)
+add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track, int generation)
 {
+	DisappearingLinkHashTable *hash_table = get_dislink_hash_table (generation);
 	DisappearingLink *entry, *prev;
 	unsigned int hash;
 	DisappearingLink **disappearing_link_hash = hash_table->table;
@@ -4152,7 +4155,7 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track,
 				else
 					disappearing_link_hash [hash] = entry->next;
 				hash_table->num_links--;
-				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s\n", entry, hash_table->num_links, dislink_table_name (hash_table)));
+				DEBUG (5, fprintf (gc_debug_file, "Removed dislink %p (%d) from %s table\n", entry, hash_table->num_links, generation_name (generation)));
 				free_internal_mem (entry);
 				*link = NULL;
 			} else {
@@ -4170,20 +4173,20 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, gboolean track,
 	entry->next = disappearing_link_hash [hash];
 	disappearing_link_hash [hash] = entry;
 	hash_table->num_links++;
-	DEBUG (5, fprintf (gc_debug_file, "Added dislink %p for object: %p (%s) at %p to %s\n", entry, obj, obj->vtable->klass->name, link, dislink_table_name (hash_table)));
+	DEBUG (5, fprintf (gc_debug_file, "Added dislink %p for object: %p (%s) at %p to %s table\n", entry, obj, obj->vtable->klass->name, link, generation_name (generation)));
 }
 
 /* LOCKING: assumes the GC lock is held */
 static void
 mono_gc_register_disappearing_link (MonoObject *obj, void **link, gboolean track)
 {
-	add_or_remove_disappearing_link (NULL, link, FALSE, &minor_disappearing_link_hash);
-	add_or_remove_disappearing_link (NULL, link, FALSE, &major_disappearing_link_hash);
+	add_or_remove_disappearing_link (NULL, link, FALSE, GENERATION_NURSERY);
+	add_or_remove_disappearing_link (NULL, link, FALSE, GENERATION_OLD);
 	if (obj) {
 		if (ptr_in_nursery (obj))
-			add_or_remove_disappearing_link (obj, link, track, &minor_disappearing_link_hash);
+			add_or_remove_disappearing_link (obj, link, track, GENERATION_NURSERY);
 		else
-			add_or_remove_disappearing_link (obj, link, track, &major_disappearing_link_hash);
+			add_or_remove_disappearing_link (obj, link, track, GENERATION_OLD);
 	}
 }
 
@@ -4739,7 +4742,7 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 		if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
 			return p + 1;
-		scan_object (*ptr, start_nursery, end_nursery);
+		scan_object ((char*)ptr, start_nursery, end_nursery);
 		return p + 1;
 	case REMSET_OTHER: {
 		ptr = (void**)(*p & ~REMSET_TYPE_MASK);
