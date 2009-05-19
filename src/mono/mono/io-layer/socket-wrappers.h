@@ -74,12 +74,15 @@ extern int _wapi_shutdown(guint32 handle, int how);
 extern guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 			    guint32 unused2, guint32 flags);
 extern struct hostent *_wapi_gethostbyname(const char *hostname);
+
+#ifdef HAVE_SYS_SELECT_H
 extern int _wapi_select(int nfds, fd_set *readfds, fd_set *writefds,
 			fd_set *exceptfds, struct timeval *timeout);
 
 extern void _wapi_FD_CLR(guint32 handle, fd_set *set);
 extern int _wapi_FD_ISSET(guint32 handle, fd_set *set);
 extern void _wapi_FD_SET(guint32 handle, fd_set *set);
+#endif
 
 #endif /* PLATFORM_WIN32 */
 
