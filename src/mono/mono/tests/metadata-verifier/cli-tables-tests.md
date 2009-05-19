@@ -1165,3 +1165,18 @@ manifest-resource-table {
 	
 	#TODO check for dups (9)
 }
+
+nested-class-table {
+	assembly assembly-with-complex-type.exe
+
+	#both nested and enclosing classes must index valid non-null rows in the typedef table (2,3)
+	invalid offset table-row (0x29 0) set-ushort 0
+	invalid offset table-row (0x29 0) set-ushort 0x9800
+
+	invalid offset table-row (0x29 0) + 2 set-ushort 0
+	invalid offset table-row (0x29 0) + 2 set-ushort 0x9800
+
+	invalid offset table-row (0x29 0) + 2 set-ushort read.ushort (table-row (0x29 0))
+
+	#TODO check for dups based on nestedclass (5) 
+}

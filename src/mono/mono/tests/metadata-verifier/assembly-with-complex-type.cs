@@ -83,3 +83,7 @@ public class NonGeneric {
 		return f;
 	}
 }
+
+public class OuterType {
+	public class InnerType {}
+}

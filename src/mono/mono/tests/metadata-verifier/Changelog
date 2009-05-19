@@ -1,5 +1,11 @@
 2009-05-18 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Add tests for the nested class table.
+
+	* assembly-with-complex-type.cs: Add a nested class.
+
+2009-05-18 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Add tests for the manifest resource table.
 
 	* Makefile: Update to the new dependency.
