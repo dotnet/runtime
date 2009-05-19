@@ -21,6 +21,7 @@
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/cil-coff.h>
+#include <mono/metadata/attrdefs.h>
 #include <mono/utils/strenc.h>
 #include <string.h>
 #include <signal.h>
@@ -2216,6 +2217,46 @@ verify_nested_class_table (VerifyContext *ctx)
 	}
 }
 
+#define INVALID_GENERIC_PARAM_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2))
+static void
+verify_generic_param_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_GENERICPARAM];
+	guint32 data [MONO_GENERICPARAM_SIZE], token, last_token = 0;
+	int i, param_number = 0;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_GENERICPARAM_SIZE);
+
+		if (data [MONO_GENERICPARAM_FLAGS] & INVALID_GENERIC_PARAM_FLAGS_BITS)
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParam table row %d has invalid Flags token %08x", i, data [MONO_GENERICPARAM_FLAGS]));
+
+		if ((data [MONO_GENERICPARAM_FLAGS] & MONO_GEN_PARAM_VARIANCE_MASK) == 0x3)
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParam table row %d has invalid VarianceMask 0x3", i));
+
+		if (!is_valid_non_empty_string (ctx, data [MONO_GENERICPARAM_NAME]))
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParam table row %d has invalid Name token %08x", i, data [MONO_GENERICPARAM_NAME]));
+
+		token = data [MONO_GENERICPARAM_OWNER];
+
+		if (!is_valid_coded_index (ctx, TYPE_OR_METHODDEF_DESC, token))
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParam table row %d has invalid Owner token %08x", i, token));
+
+		if (!get_coded_index_token (TYPE_OR_METHODDEF_DESC, token))
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParam table row %d has null Owner token", i));
+
+		if (token != last_token) {
+			param_number = 0;
+			last_token = token;
+		}
+
+		if (data [MONO_GENERICPARAM_NUMBER] != param_number)
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParam table row %d Number is out of order %d expected %d", i, data [MONO_GENERICPARAM_NUMBER], param_number));
+
+		++param_number;
+	}
+}
+
 static void
 verify_tables_data (VerifyContext *ctx)
 {
@@ -2300,6 +2341,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_manifest_resource_table (ctx);
 	CHECK_ERROR ();
 	verify_nested_class_table (ctx);
+	CHECK_ERROR ();
+	verify_generic_param_table (ctx);
 }
 
 static gboolean
