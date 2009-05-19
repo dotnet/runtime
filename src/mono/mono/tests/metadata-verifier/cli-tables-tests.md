@@ -1180,3 +1180,51 @@ nested-class-table {
 
 	#TODO check for dups based on nestedclass (5) 
 }
+
+
+generic-param-table {
+	assembly assembly-with-generics.exe
+
+	#bad flags
+	#only 0-4 are used
+	invalid offset table-row (0x2A 0) + 2 set-bit 5
+	invalid offset table-row (0x2A 0) + 2 set-bit 6
+	invalid offset table-row (0x2A 0) + 2 set-bit 7
+	invalid offset table-row (0x2A 0) + 2 set-bit 8
+	invalid offset table-row (0x2A 0) + 2 set-bit 9
+	invalid offset table-row (0x2A 0) + 2 set-bit 10
+	invalid offset table-row (0x2A 0) + 2 set-bit 11
+	invalid offset table-row (0x2A 0) + 2 set-bit 12
+	invalid offset table-row (0x2A 0) + 2 set-bit 13
+	invalid offset table-row (0x2A 0) + 2 set-bit 14
+	invalid offset table-row (0x2A 0) + 2 set-bit 15
+
+	#variance 0x3 is invalid
+	invalid offset table-row (0x2A 0) + 2 set-ushort 0x3
+
+	#bad or null owner
+	invalid offset table-row (0x2A 0) + 4 set-ushort 0
+	invalid offset table-row (0x2A 0) + 4 set-ushort 0x8800
+	invalid offset table-row (0x2A 0) + 4 set-ushort 0x8801
+
+	#bad or empty name	
+	invalid offset table-row (0x2A 0) + 6 set-ushort 0
+	invalid offset table-row (0x2A 0) + 6 set-ushort 0x8800
+
+	#wrong order
+	invalid offset table-row (0x2A 0)  set-ushort 1,
+			offset table-row (0x2A 1)  set-ushort 0
+
+	#not monotonically growing
+	invalid offset table-row (0x2A 0)  set-ushort 0,
+			offset table-row (0x2A 1)  set-ushort 0
+
+	#start big
+	invalid offset table-row (0x2A 0)  set-ushort 1,
+			offset table-row (0x2A 1)  set-ushort 2
+
+	#step bigger than 1
+	invalid offset table-row (0x2A 0)  set-ushort 0,
+			offset table-row (0x2A 1)  set-ushort 2
+
+}

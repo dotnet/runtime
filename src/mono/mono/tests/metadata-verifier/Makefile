@@ -37,6 +37,9 @@ module.netmodule: module.il
 assembly-with-module.exe: assembly-with-module.cs module.netmodule
 	gmcs assembly-with-module.cs -addmodule:module.netmodule
 
+assembly-with-generics.exe: assembly-with-generics.cs
+	gmcs assembly-with-generics.cs
+
 TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-complex-type.exe \
 	assembly-with-methods.exe \
@@ -48,6 +51,7 @@ TEST_BINARIES = assembly-with-resource.exe \
 	assembly-with-properties.exe \
 	assembly-with-module.exe \
 	assembly-with-resource.exe \
+	assembly-with-generics.exe \
 	simple-assembly.exe
 
 

@@ -1,3 +1,11 @@
+2009-05-19 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Add tests for the generic param table.
+
+	* assembly-with-generics.cs: New file for generic tests.
+
+	* Makefile: Adjust the build to the new file.
+
 2009-05-18 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Add tests for the nested class table.
