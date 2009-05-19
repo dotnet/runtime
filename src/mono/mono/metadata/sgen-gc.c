@@ -372,7 +372,7 @@ enum {
 
 /* Subtypes of REMSET_OTHER */
 enum {
-	REMSET_VTYPE, /* a valuetype described by a gc descriptor */
+	REMSET_VTYPE, /* a valuetype array described by a gc descriptor and a count */
 	REMSET_ROOT_LOCATION, /* a location inside a root */
 };
 
@@ -4750,10 +4750,12 @@ handle_remset (mword *p, void *start_nursery, void *end_nursery, gboolean global
 		switch (p [1]) {
 		case REMSET_VTYPE:
 			if (((void*)ptr >= start_nursery && (void*)ptr < end_nursery) || !ptr_in_heap (ptr))
-				return p + 3;
+				return p + 4;
 			desc = p [2];
-			scan_vtype ((char*)ptr, desc, start_nursery, end_nursery);
-			return p + 3;
+			count = p [3];
+			while (count-- > 0)
+				ptr = (void**) scan_vtype ((char*)ptr, desc, start_nursery, end_nursery);
+			return p + 4;
 		case REMSET_ROOT_LOCATION:
 			/* Same as REMSET_LOCATION, but the address is not required to be in the heap */
 			*ptr = copy_object (*ptr, start_nursery, end_nursery);
@@ -5246,10 +5248,11 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 		return;
 	DEBUG (8, fprintf (gc_debug_file, "Adding value remset at %p, count %d for class %s\n", dest, count, klass->name));
 
-	if (rs->store_next + 2 < rs->end_set) {
+	if (rs->store_next + 3 < rs->end_set) {
 		*(rs->store_next++) = (mword)dest | REMSET_OTHER;
 		*(rs->store_next++) = (mword)REMSET_VTYPE;
 		*(rs->store_next++) = (mword)klass->gc_descr;
+		*(rs->store_next++) = (mword)count;
 		return;
 	}
 	rs = alloc_remset (rs->end_set - rs->data, (void*)1);
@@ -5259,6 +5262,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	*(rs->store_next++) = (mword)dest | REMSET_OTHER;
 	*(rs->store_next++) = (mword)REMSET_VTYPE;
 	*(rs->store_next++) = (mword)klass->gc_descr;
+	*(rs->store_next++) = (mword)count;
 }
 
 /**
@@ -5385,12 +5389,14 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 		case REMSET_VTYPE:
 			ptr = (void**)(*p & ~REMSET_TYPE_MASK);
 			desc = p [2];
+			count = p [3];
 
 			switch (desc & 0x7) {
 			case DESC_TYPE_RUN_LENGTH:
 				OBJ_RUN_LEN_SIZE (skip_size, desc, ptr);
 				/* The descriptor includes the size of MonoObject */
 				skip_size -= sizeof (MonoObject);
+				skip_size *= count;
 				if ((void**)addr >= ptr && (void**)addr < ptr + (skip_size / sizeof (gpointer)))
 					*found = TRUE;
 				break;
@@ -5399,7 +5405,7 @@ find_in_remset_loc (mword *p, char *addr, gboolean *found)
 				g_assert_not_reached ();
 			}
 
-			return p + 3;
+			return p + 4;
 		case REMSET_ROOT_LOCATION:
 			return p + 2;
 		default:
