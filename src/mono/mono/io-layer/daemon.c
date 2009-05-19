@@ -225,6 +225,11 @@ static gboolean sharedata_equal (gconstpointer a, gconstpointer b)
 	       share_a->inode == share_b->inode);
 }
 
+/* Catch this here rather than corrupt the shared data at runtime */
+#if MONO_SIZEOF_SUNPATH==0
+#error configure failed to discover size of unix socket path
+#endif
+
 /*
  * startup:
  *

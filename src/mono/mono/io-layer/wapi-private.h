@@ -17,11 +17,6 @@
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>
 
-/* Catch this here rather than corrupt the shared data at runtime */
-#if MONO_SIZEOF_SUNPATH==0
-#error configure failed to discover size of unix socket path
-#endif
-
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */
