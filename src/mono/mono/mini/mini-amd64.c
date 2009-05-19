@@ -2740,7 +2740,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint8 *code = cfg->native_code + cfg->code_len;
 	MonoInst *last_ins = NULL;
 	guint last_offset = 0;
-	int max_len, cpos;
+	int max_len;
+
+	/* Fix max_offset estimate for each successor bb */
+	if (cfg->opt & MONO_OPT_BRANCH) {
+		int current_offset = cfg->code_len;
+		MonoBasicBlock *current_bb;
+		for (current_bb = bb; current_bb != NULL; current_bb = current_bb->next_bb) {
+			current_bb->max_offset = current_offset;
+			current_offset += current_bb->max_length;
+		}
+	}
 
 	if (cfg->opt & MONO_OPT_LOOP) {
 		int pad, align = LOOP_ALIGNMENT;
@@ -2757,12 +2767,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
 
-	cpos = bb->max_offset;
-
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
 		MonoProfileCoverageInfo *cov = cfg->coverage_info;
 		g_assert (!cfg->compile_aot);
-		cpos += 6;
 
 		cov->data [bb->dfn].cil_code = bb->cil_code;
 		amd64_mov_reg_imm (code, AMD64_R11, (guint64)&cov->data [bb->dfn].count);
@@ -3846,7 +3853,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 					if ((cfg->opt & MONO_OPT_BRANCH) &&
-					    x86_is_imm8 (ins->inst_target_bb->max_offset - cpos))
+					    x86_is_imm8 (ins->inst_target_bb->max_offset - offset))
 						x86_jump8 (code, 0);
 					else 
 						x86_jump32 (code, 0);
@@ -4467,8 +4474,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 		}
 	       
-		cpos += max_len;
-
 		last_ins = ins;
 		last_offset = offset;
 	}
@@ -4588,7 +4593,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	MonoMethodSignature *sig;
 	MonoInst *ins;
-	int alloc_size, pos, max_offset, i, cfa_offset, quad, max_epilog_size;
+	int alloc_size, pos, i, cfa_offset, quad, max_epilog_size;
 	guint8 *code;
 	CallInfo *cinfo;
 	gint32 lmf_offset = cfg->arch.lmf_offset;
@@ -4800,30 +4805,28 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_membase_reg (code, cfg->rgctx_var->inst_basereg, cfg->rgctx_var->inst_offset, MONO_ARCH_RGCTX_REG, 8);
 	}
 
-	/* compute max_offset in order to use short forward jumps */
-	max_offset = 0;
+	/* compute max_length in order to use short forward jumps */
 	max_epilog_size = get_max_epilog_size (cfg);
 	if (cfg->opt & MONO_OPT_BRANCH) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 			MonoInst *ins;
-			bb->max_offset = max_offset;
+			int max_length = 0;
 
 			if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-				max_offset += 6;
+				max_length += 6;
 			/* max alignment for loops */
 			if ((cfg->opt & MONO_OPT_LOOP) && bb_is_loop_start (bb))
-				max_offset += LOOP_ALIGNMENT;
+				max_length += LOOP_ALIGNMENT;
 
 			MONO_BB_FOR_EACH_INS (bb, ins) {
-				if (ins->opcode == OP_LABEL)
-					ins->inst_c1 = max_offset;
-				
-				max_offset += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
+				max_length += ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 			}
 
-			if (mono_jit_trace_calls && bb == cfg->bb_exit)
-				/* The tracing code can be quite large */
-				max_offset += max_epilog_size;
+			/* Take prolog and epilog instrumentation into account */
+			if (bb == cfg->bb_entry || bb == cfg->bb_exit)
+				max_length += max_epilog_size;
+			
+			bb->max_length = max_length;
 		}
 	}
 

@@ -396,6 +396,7 @@ struct MonoBasicBlock {
 	/* The address of the generated code, used for fixups */
 	int native_offset;
 	int max_offset;
+	int max_length;
 
 	/* Visited and reachable flags */
 	guint32 flags;
