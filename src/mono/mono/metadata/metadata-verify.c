@@ -2287,6 +2287,27 @@ verify_method_spec_table (VerifyContext *ctx)
 }
 
 static void
+verify_generic_param_constraint_table (VerifyContext *ctx)
+{
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_GENERICPARAMCONSTRAINT];
+	guint32 data [MONO_GENPARCONSTRAINT_SIZE];
+	int i;
+
+	for (i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, data, MONO_GENPARCONSTRAINT_SIZE);
+
+		if (!data [MONO_GENPARCONSTRAINT_GENERICPAR] || data [MONO_GENPARCONSTRAINT_GENERICPAR] > ctx->image->tables [MONO_TABLE_GENERICPARAM].rows)
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParamConstraint table row %d has invalid Owner token %08x", i, data [MONO_TABLE_GENERICPARAM]));
+
+		if (!is_valid_coded_index (ctx, TYPEDEF_OR_REF_DESC, data [MONO_GENPARCONSTRAINT_CONSTRAINT]))
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParamConstraint table row %d has invalid Constraint token %08x", i, data [MONO_GENPARCONSTRAINT_CONSTRAINT]));
+
+		if (!get_coded_index_token (TYPEDEF_OR_REF_DESC, data [MONO_GENPARCONSTRAINT_CONSTRAINT]))
+			ADD_ERROR (ctx, g_strdup_printf ("GenericParamConstraint table row %d has null Constraint token", i));
+	}
+}
+
+static void
 verify_tables_data (VerifyContext *ctx)
 {
 	OffsetAndSize tables_area = get_metadata_stream (ctx, &ctx->image->heap_tables);
@@ -2374,6 +2395,8 @@ verify_tables_data (VerifyContext *ctx)
 	verify_generic_param_table (ctx);
 	CHECK_ERROR ();
 	verify_method_spec_table (ctx);
+	CHECK_ERROR ();
+	verify_generic_param_constraint_table (ctx);
 }
 
 static gboolean
