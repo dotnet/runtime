@@ -1,3 +1,16 @@
+2009-05-18 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Add tests for the manifest resource table.
+
+	* Makefile: Update to the new dependency.
+
+	* assembly-with-resource.cs: Add an exported type to be used
+	by the new tests.
+
+2009-05-15 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* cli-tables-tests.md: Add tests for the manifest resource table.
+
 2009-05-15 Rodrigo Kumpera  <rkumpera@novell.com>
 
 	* cli-tables-tests.md: Add tests for the exported type table.

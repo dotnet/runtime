@@ -1118,3 +1118,50 @@ exported-type-table {
 	#TODO check for dups (14,15,16)
 }
 
+manifest-resource-table {
+	assembly assembly-with-resource.exe
+
+	#flags must have a valid value (3)
+	#only bits 0-2 are used
+	invalid offset table-row (0x28 0) + 4 set-bit 3
+	invalid offset table-row (0x28 0) + 4 set-bit 7
+	invalid offset table-row (0x28 0) + 4 set-bit 16
+	invalid offset table-row (0x28 0) + 4 set-bit 31
+
+	#inly 0x1 and 0x2 are valid visibility values (4)
+	invalid offset table-row (0x28 0) + 4 set-uint 0
+	invalid offset table-row (0x28 0) + 4 set-uint 3
+	invalid offset table-row (0x28 0) + 4 set-uint 4
+	invalid offset table-row (0x28 0) + 4 set-uint 5
+	invalid offset table-row (0x28 0) + 4 set-uint 6
+	invalid offset table-row (0x28 0) + 4 set-uint 7
+
+	#name shall index a valid non-empty (5)
+	invalid offset table-row (0x28 0) + 8 set-ushort 0
+	invalid offset table-row (0x28 0) + 8 set-ushort 0x9900
+
+	#if implementation is null the offset is a valid offset based on cli resource entry (7)
+	valid offset table-row (0x28 0) + 10 set-ushort 0,
+			offset table-row (0x28 0) + 0  set-uint 1
+
+	#LAMEIMPL it doesn't check the resource offset! 
+	invalid offset table-row (0x28 0) + 10 set-ushort 0,
+			offset table-row (0x28 0) + 0  set-uint 0x990000
+	
+
+	#implementation is a valid token (8)
+	#does it accept exported type? 
+	invalid offset table-row (0x28 0) + 10 set-ushort 0x0006
+
+	#coded table 4 is invalid
+	invalid offset table-row (0x28 0) + 10 set-ushort 0x0007
+	#bad index
+	invalid offset table-row (0x28 0) + 10 set-ushort 0x8800
+	invalid offset table-row (0x28 0) + 10 set-ushort 0x8801
+
+	#if implementation point to a file it's index must be zero (10)
+	#row 0 is a file resource
+	invalid offset table-row (0x28 0) set-uint 1
+	
+	#TODO check for dups (9)
+}
