@@ -1226,5 +1226,20 @@ generic-param-table {
 	#step bigger than 1
 	invalid offset table-row (0x2A 0)  set-ushort 0,
 			offset table-row (0x2A 1)  set-ushort 2
+}
 
+method-spec-table {
+	assembly assembly-with-generics.exe
+
+	#method is a valid token
+	invalid offset table-row (0x2B 0) set-ushort 0
+	invalid offset table-row (0x2B 0) set-ushort 0x8800
+	invalid offset table-row (0x2B 0) set-ushort 0x8801
+
+	#instantiation is invalid
+
+	invalid offset table-row (0x2B 0) + 2 set-ushort 0
+	invalid offset table-row (0x2B 0) + 2 set-ushort 0xABCD
+
+	#TODO check the content of the blob sig and validate against the token.
 }
