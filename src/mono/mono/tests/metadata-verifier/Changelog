@@ -1,5 +1,11 @@
 2009-05-19 Rodrigo Kumpera  <rkumpera@novell.com>
 
+	* cli-tables-tests.md: Add tests for the generic param constraint table.
+
+	* assembly-with-generics.cs: Add stuff for new tests.
+
+2009-05-19 Rodrigo Kumpera  <rkumpera@novell.com>
+
 	* cli-tables-tests.md: Add tests for the methodspec table.
 
 	* assembly-with-generics.cs: Add stuff for new tests.

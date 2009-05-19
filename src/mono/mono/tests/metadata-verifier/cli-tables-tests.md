@@ -1243,3 +1243,20 @@ method-spec-table {
 
 	#TODO check the content of the blob sig and validate against the token.
 }
+
+generic-param-constraint-table {
+	assembly assembly-with-generics.exe
+
+	#owner is a valid rown in the gparam table
+	invalid offset table-row (0x2C 0) set-ushort 0x0000
+	invalid offset table-row (0x2C 0) set-ushort 0x2345
+
+	#constaint is a valid token
+	invalid offset table-row (0x2C 0) + 2 set-ushort 0x0000
+	invalid offset table-row (0x2C 0) + 2 set-ushort 0x0007
+	invalid offset table-row (0x2C 0) + 2 set-ushort 0x8800
+	invalid offset table-row (0x2C 0) + 2 set-ushort 0x8801
+	invalid offset table-row (0x2C 0) + 2 set-ushort 0x8802
+
+	#TODO check for dups and sorting.
+}
