@@ -2225,7 +2225,7 @@ verify_nested_class_table (VerifyContext *ctx)
 	}
 }
 
-#define INVALID_GENERIC_PARAM_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2))
+#define INVALID_GENERIC_PARAM_FLAGS_BITS ~((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4))
 static void
 verify_generic_param_table (VerifyContext *ctx)
 {
