@@ -36,7 +36,7 @@ OTHER_H = \
 	uglify.h	\
 	versioninfo.h	\
 	wait.h		\
-	wapi.h	
+	wapi.h
 
 OTHER_SRC = \
 	access.h		\
@@ -91,7 +91,6 @@ OTHER_SRC = \
 	status.h		\
 	system.c		\
 	system.h		\
-	threads.c		\
 	threads.h		\
 	thread-private.h	\
 	timefuncs.c		\
@@ -106,7 +105,9 @@ OTHER_SRC = \
 	wapi_glob.h		\
 	wapi_glob.c		\
 	wapi.h			\
-	wapi-private.h
+	wapi-private.h		\
+	wthreads.c
+
 
 WINDOWS_H = \
 	io-layer.h
