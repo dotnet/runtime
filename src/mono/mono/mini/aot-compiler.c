@@ -1652,6 +1652,50 @@ add_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
 		}
 	}
+
+	/* StructureToPtr/PtrToStructure wrappers */
+	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
+		MonoClass *klass;
+		
+		token = MONO_TOKEN_TYPE_DEF | (i + 1);
+		klass = mono_class_get (acfg->image, token);
+
+		if (klass->valuetype && !klass->generic_container && ((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT)) {
+			MonoMarshalType *info;
+			gboolean can_marshal = TRUE;
+			int j;
+
+			info = mono_marshal_load_type_info (klass);
+
+			/* Only allow a few field types to avoid asserts in the marshalling code */
+			for (j = 0; j < info->num_fields; j++) {
+				switch (info->fields [j].field->type->type) {
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+				case MONO_TYPE_BOOLEAN:
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+				case MONO_TYPE_CHAR:
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+				case MONO_TYPE_PTR:
+				case MONO_TYPE_R4:
+				case MONO_TYPE_R8:
+					break;
+				default:
+					can_marshal = FALSE;
+					break;
+				}
+			}
+
+			if (can_marshal) {
+				add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
+				add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
+			}
+		}
+	}
 }
 
 static gboolean
