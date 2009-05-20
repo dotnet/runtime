@@ -18,7 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_SYS_SEM
+#ifdef HAVE_SYS_SEM_H
 #  include <sys/sem.h>
 #else
 #  define DISABLE_SHARED_HANDLES
