@@ -12,6 +12,9 @@
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>
 #endif
+#ifdef HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#endif
 
 #ifndef HAVE_SOCKLEN_T
 #define socklen_t int

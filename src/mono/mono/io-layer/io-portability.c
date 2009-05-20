@@ -30,7 +30,6 @@
 #include <mono/io-layer/wapi_glob.h>
 #include <mono/io-layer/io-portability.h>
 #include <mono/utils/mono-io-portability.h>
-
 #undef DEBUG
 
 int _wapi_open (const char *pathname, int flags, mode_t mode)

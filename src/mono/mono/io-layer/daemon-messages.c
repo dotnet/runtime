@@ -15,7 +15,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 /* Freebsd needs this included explicitly, but it doesn't hurt on Linux */
-#include <sys/uio.h>
+#ifdef HAVE_SYS_UIO_H
+#    include <sys/uio.h>
+#endif
 
 #ifndef HAVE_MSG_NOSIGNAL
 #include <signal.h>
