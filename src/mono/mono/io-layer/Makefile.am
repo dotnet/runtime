@@ -63,6 +63,7 @@ OTHER_SRC = \
 	io-portability.h	\
 	io-private.h		\
 	io-layer.h		\
+	locking.c		\
 	macros.h		\
 	messages.c		\
 	messages.h		\
